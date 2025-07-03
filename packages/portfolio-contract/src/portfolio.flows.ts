@@ -18,6 +18,8 @@ import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import { assert, Fail } from '@endo/errors';
+import { type YieldProtocol, RebalanceStrategy } from './constants.js';
 import type {
   AccountInfoFor,
   ChainAccountKey,
@@ -31,6 +33,12 @@ import type {
   ProposalType,
 } from './type-guards.ts';
 import { changeGMPPosition } from './pos-gmp.flows.ts';
+import {
+  decodeAddressHook,
+  type HookQuery,
+} from '@agoric/cosmic-proto/address-hooks.js';
+import type { VTransferIBCEvent } from '@agoric/vats';
+// TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
 const { keys } = Object;
@@ -56,8 +64,6 @@ export type PortfolioInstanceContext = {
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
 };
-
-/* c8 ignore end */
 
 type AssetPlace =
   | { pos: Position }
@@ -199,6 +205,64 @@ export const rebalance = async (
   }
 };
 
+export const rebalanceFromTransfer = (async (
+  orch: Orchestrator,
+  ctx: PortfolioInstanceContext,
+  packet: VTransferIBCEvent['packet'],
+  kit: PortfolioKit,
+): Promise<{
+  parsed: Awaited<ReturnType<LocalAccount['parseInboundTransfer']>> | null;
+  handled: boolean;
+}> => {
+  await null;
+  const { reader } = kit;
+
+  const lca = reader.getLocalAccount();
+  const parsed = await lca.parseInboundTransfer(packet);
+  if (!parsed) {
+    return harden({ parsed: null, handled: false });
+  }
+  trace('rebalanceFromTransfer parsed', parsed);
+
+  const {
+    amount,
+    extra: { receiver },
+  } = parsed;
+  const { baseAddress, query } = decodeAddressHook(receiver);
+  const { rebalance: strategy } = query;
+  if (strategy === undefined) {
+    return harden({ parsed, handled: false });
+  }
+
+  switch (strategy) {
+    // Preset strategy is currently hardcoded to PreserveExistingProportions
+    // XXX make it more dynamic, such as taking into account any prior
+    // explicit earmarking of inbound transfers.
+    case RebalanceStrategy.Preset:
+    case RebalanceStrategy.PreserveExistingProportions: {
+      // XXX implement PreserveExistingProportions
+      trace(
+        'rebalanceFromTransfer PreserveExistingProportions',
+        amount,
+        query,
+        baseAddress,
+      );
+      throw harden({
+        msg: 'rebalanceFromTransfer unimplemented PreserveExistingProportions strategy',
+        amount,
+        query,
+        baseAddress,
+      });
+    }
+    default: {
+      Fail`unknown rebalance strategy ${strategy} for ${amount} in ${baseAddress}`;
+    }
+  }
+
+  // Don't continue with the transfer, since we handled it.
+  return harden({ parsed, handled: true });
+}) satisfies OrchestrationFlow;
+
 /**
  * Offer handler to make a portfolio and, optionally, open yield positions.
  *
@@ -223,6 +287,7 @@ export const openPortfolio = (async (
       inertSubscriber,
     } = ctx;
     const kit = makePortfolioKit();
+    await provideAccountInfo(orch, 'agoric', kit);
 
     const portfolioCtx = {
       axelarChainsMap,

@@ -2,7 +2,6 @@
  * NOTE: This is host side code; can't use await.
  */
 import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
-import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import { AmountMath } from '@agoric/ertp';
 import { makeTracer, mustMatch, type Remote } from '@agoric/internal';
 import type {
@@ -176,6 +175,7 @@ export const preparePortfolioKit = (
   {
     axelarChainsMap,
     rebalance,
+    rebalanceFromTransfer,
     timer,
     proposalShapes,
     vowTools,
@@ -188,8 +188,15 @@ export const preparePortfolioKit = (
     rebalance: (
       seat: ZCFSeat,
       offerArgs: OfferArgsFor['rebalance'],
-      keeper: unknown, // XXX avoid circular reference
+      kit: unknown, // XXX avoid circular reference
     ) => Vow<any>; // XXX HostForGuest???
+    rebalanceFromTransfer: (
+      packet: VTransferIBCEvent['packet'],
+      kit: unknown, // XXX avoid circular reference to this.facets
+    ) => Vow<{
+      parsed: Awaited<ReturnType<LocalAccount['parseInboundTransfer']>> | null;
+      handled: boolean;
+    }>;
     timer: Remote<TimerService>;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     vowTools: VowTools;
@@ -270,15 +277,34 @@ export const preparePortfolioKit = (
       tap: {
         async receiveUpcall(event: VTransferIBCEvent) {
           trace('receiveUpcall', event);
-
-          const tx: FungibleTokenPacketData = JSON.parse(
-            atob(event.packet.data),
+          return vowTools.watch(
+            rebalanceFromTransfer(event.packet, this.facets),
+            this.facets.rebalanceFromTransferWatcher,
           );
+        },
+      },
+      rebalanceFromTransferWatcher: {
+        onRejected(reason) {
+          console.warn('⚠️ rebalanceFromTransfer failure', reason);
+          throw reason;
+        },
+        onFulfilled({ parsed, handled }) {
+          if (handled) {
+            trace('rebalanceFromTransfer handled; skipping GMP processing');
+            return;
+          }
 
-          trace('receiveUpcall packet data', tx);
-          if (!tx.memo) return;
-          const memo: AxelarGmpIncomingMemo = JSON.parse(tx.memo); // XXX unsound! use typed pattern
+          if (!parsed) {
+            trace('GMP processing skipped; no parsed inbound transfer');
+            return;
+          }
 
+          const { extra } = parsed;
+          if (!extra.memo) return;
+          const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
+
+          // XXX we must have more than just a (forgeable) memo check here to
+          // determine if the source of this packet is the Axelar chain!
           if (
             !values(axelarChainsMap)
               .map(chain => chain.axelarId)
@@ -324,6 +350,20 @@ export const preparePortfolioKit = (
         },
       },
       reader: {
+        /**
+         * Get the LocalAccount for the current chain.
+         *
+         * We rely on the portfolio creator internally adding the Agoric
+         * account before making the PortfolioKit available to any clients.
+         *
+         * @returns the LocalAccount for the current chain.
+         */
+        getLocalAccount(): LocalAccount {
+          const { accounts } = this.state;
+          const info = accounts.get('agoric');
+          assert.equal(info?.type, 'agoric');
+          return info.lca;
+        },
         getStoragePath() {
           const { portfolioId } = this.state;
           const node = makePathNode(makePortfolioPath(portfolioId));

@@ -32,3 +32,22 @@ export const SupportedChain = /** @type {const} */ ({
   // TODO: check privateArgs for chainInfo for all of these
 });
 harden(SupportedChain);
+
+/**
+ * Strategies for portfolio rebalancing of bulk deposits.
+ *
+ * @enum {(typeof RebalanceStrategy)[keyof typeof RebalanceStrategy]}
+ */
+export const RebalanceStrategy = /** @type {const} */ ({
+  /**
+   * Use a strategy specified in advance by the portfolio's
+   * configuration.
+   */
+  Preset: 'preset',
+  /**
+   * Divide the deposit between the positions so that the proportions between
+   * the existing balances are preserved.
+   */
+  PreserveExistingProportions: 'pep',
+});
+harden(RebalanceStrategy);
