@@ -18,7 +18,12 @@ import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
 import type { AmountKeywordRecord } from '@agoric/zoe';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
-import { AxelarChains, YieldProtocol, SupportedChain } from './constants.js';
+import {
+  AxelarChains,
+  YieldProtocol,
+  SupportedChain,
+  AxelarChain,
+} from './constants.js';
 
 const { fromEntries, keys } = Object;
 
@@ -108,10 +113,20 @@ type PoolPlace = {
   // ... chain, pool #, ...
 };
 
-const PoolPlaces = {
-  USDN: { protocol: 'USDN', vault: null },
-  USDNVault: { protocol: 'USDN', vault: 1 },
-};
+type PoolPlaceInfo =
+  | { protocol: 'USDN'; vault: null | 1 }
+  | { protocol: 'Aave' | 'Compound'; chainName: AxelarChain };
+
+const PoolPlaces: Record<string, PoolPlaceInfo> = {
+  USDN: { protocol: 'USDN', vault: null }, // MsgSwap only
+  USDNVault: { protocol: 'USDN', vault: 1 }, // MsgSwap, MsgLock
+  Aave_Ethereum: { protocol: 'Aave', chainName: 'Ethereum' },
+  Aave_Base: { protocol: 'Aave', chainName: 'Base' },
+  Aave_Avalanche: { protocol: 'Aave', chainName: 'Avalanche' },
+  Compound_Ethereum: { protocol: 'Compound', chainName: 'Ethereum' },
+  Compound_Base: { protocol: 'Compound', chainName: 'Base' },
+  Compound_Avalanche: { protocol: 'Compound', chainName: 'Avalanche' },
+} as const;
 harden(PoolPlaces);
 
 type PoolKey = keyof typeof PoolPlaces;
@@ -146,10 +161,17 @@ const AssetPlaceRefShape = M.or(
   PositionRefShape,
 );
 
-export const getChainNameOfPlaceRef = (ref: AssetPlaceRef) => {
+export const getChainNameOfPlaceRef = (
+  ref: AssetPlaceRef,
+): SupportedChain | undefined => {
   if (typeof ref !== 'string') return undefined;
   const m = ref.match(/^(?<chain>\w+)\.makeAccount\(\)$/);
-  return m?.groups?.chain;
+  const chain = m?.groups?.chain;
+  if (!chain) return undefined;
+  // validation of external data is done by AssetPlaceRefShape
+  // any bad ref that reaches here is a bug
+  assert(keys(SupportedChain).includes(chain), `bad ref: ${ref}`);
+  return chain as SupportedChain;
 };
 
 export type AssetPlaceDef =
@@ -198,15 +220,10 @@ export type EVMContractAddresses = {
   factory: `0x${string}`;
   usdc: `0x${string}`;
 };
-export type AxelarChain = keyof typeof AxelarChains;
 export type AxelarChainsMap = {
   [chain in AxelarChain]: {
-    caip: CaipChainId;
-    /**
-     * Axelar chain IDs differ between mainnet and testnet.
-     * See [supported-chains-list.ts](https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts)
-     */
-    axelarId: string;
+    caip: CaipChainId; // TODO: move to chainHub
+    axelarId: AxelarChain; // TODO: becomes chainName in chainHub
     contractAddresses: EVMContractAddresses;
   };
 };

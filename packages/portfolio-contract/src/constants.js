@@ -13,23 +13,25 @@ export const YieldProtocol = /** @type {const} */ ({
 harden(YieldProtocol);
 
 /**
- * @enum {(typeof SupportedChain)[keyof typeof SupportedChain]}
+ * @enum {(typeof AxelarChain)[keyof typeof AxelarChain]}
+ *
+ * Subset of Axelar chains supported by YMax
+ *
+ * @see {@link https://docs.axelar.dev/resources/contract-addresses/mainnet/#evm-contract-addresses}
  */
-export const SupportedChain = /** @type {const} */ ({
-  agoric: 'agoric',
-  noble: 'noble',
-  base: 'base',
-  // ... base etc.
-  // TODO: check privateArgs for chainInfo for all of these
-});
-harden(SupportedChain);
-
-/**
- * @enum {(typeof AxelarChains)[keyof typeof AxelarChains]}
- */
-export const AxelarChains = /** @type {const} */ ({
+export const AxelarChain = /** @type {const} */ ({
   Ethereum: 'Ethereum',
   Avalanche: 'Avalanche',
   Base: 'Base',
 });
-harden(AxelarChains);
+harden(AxelarChain);
+
+/**
+ * @enum {(typeof SupportedChain)[keyof typeof SupportedChain]}
+ */
+export const SupportedChain = /** @type {const} */ ({
+  ...AxelarChain,
+  agoric: 'agoric',
+  noble: 'noble',
+});
+harden(SupportedChain);
