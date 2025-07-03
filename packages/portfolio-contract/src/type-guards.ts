@@ -16,16 +16,18 @@ import type {
 } from '@agoric/orchestration';
 import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
 import type { AmountKeywordRecord } from '@agoric/zoe';
-import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
-import { M } from '@endo/patterns';
 import {
-  AxelarChains,
-  YieldProtocol,
-  SupportedChain,
-  AxelarChain,
-} from './constants.js';
+  AmountKeywordRecordShape,
+  InvitationShape,
+} from '@agoric/zoe/src/typeGuards.js';
+import { M } from '@endo/patterns';
+import { YieldProtocol, SupportedChain, AxelarChain } from './constants.js';
 
-const { fromEntries, keys } = Object;
+const { fromEntries, keys, values } = Object;
+
+export const PublicFacetI = M.interface('PublicFacet', {
+  makeOpenPortfolioInvitation: M.callWhen().returns(InvitationShape),
+});
 
 /**
  * @param brand must be a 'nat' brand, not checked
@@ -33,28 +35,16 @@ const { fromEntries, keys } = Object;
 export const makeNatAmountShape = (brand: Brand<'nat'>, min?: NatValue) =>
   harden({ brand, value: min ? M.gte(min) : M.nat() });
 
-export type AaveGive = {
-  AaveGmp: Amount<'nat'>;
-  AaveAccount: Amount<'nat'>;
-  Aave: Amount<'nat'>;
-};
-export type CompoundGive = {
-  CompoundGmp: Amount<'nat'>;
-  CompoundAccount: Amount<'nat'>;
-  Compound: Amount<'nat'>;
-};
-export type GmpGive = {} | AaveGive | CompoundGive | (AaveGive & CompoundGive);
-
-export type OpenPortfolioGive = { Access?: Amount<'nat'> } & (
-  | { Deposit: NatAmount }
-  | GmpGive
-  | {}
-);
-
 export type ProposalType = {
-  openPortfolio: { give: OpenPortfolioGive };
+  openPortfolio: {
+    give: {
+      /** required iff the contract was started with an Access issuer */
+      Access?: NatAmount;
+      Deposit?: NatAmount;
+    };
+  };
   rebalance:
-    | { give: OpenPortfolioGive; want: {} } // XXX Access is incoherent here
+    | { give: { Deposit?: NatAmount }; want: {} }
     | { want: { Cash: NatAmount }; give: {} };
 };
 
@@ -65,59 +55,48 @@ export const makeProposalShapes = (
   // TODO: Update usdcAmountShape, to include BLD/aUSDC after discussion with Axelar team
   const usdcAmountShape = makeNatAmountShape(usdcBrand);
 
-  // The give for openPortfolio and rebalance differ only in required properties
-  const giveWith = accessOpt =>
-    M.splitRecord(accessOpt, {
-      Deposit: usdcAmountShape,
-      NobleFees: usdcAmountShape,
-      Aave: usdcAmountShape,
-      AaveGmp: usdcAmountShape,
-      AaveAccount: usdcAmountShape,
-      Compound: usdcAmountShape,
-      CompoundGmp: usdcAmountShape,
-      CompoundAccount: usdcAmountShape,
-    });
+  const feeShapes = {
+    AaveGmp: usdcAmountShape,
+    AaveAccount: usdcAmountShape,
+    CompoundGmp: usdcAmountShape,
+    CompoundAccount: usdcAmountShape,
+  };
 
-  // {USDNSwapOut: Amount<'nat'>} | { USDNUnlock: Amount<'nat'> }
-  const rebalanceWantShape = M.splitRecord(
-    { Cash: usdcAmountShape },
-    { NobleFees: usdcAmountShape },
-    {},
-  );
+  const rebalanceGiveShapes = {
+    Deposit: usdcAmountShape,
+    ...feeShapes,
+  };
+
   const accessShape = accessBrand
     ? { Access: makeNatAmountShape(accessBrand, 1n) }
     : {};
-  return {
-    openPortfolio: M.splitRecord(
-      { give: giveWith(accessShape) },
+
+  const openPortfolio = M.splitRecord(
+    { give: M.splitRecord(accessShape, rebalanceGiveShapes, {}) },
+    { want: {}, exit: M.any() },
+    {},
+  ) as TypedPattern<ProposalType['openPortfolio']>;
+  const rebalance = M.or(
+    M.splitRecord(
+      { give: M.splitRecord({}, rebalanceGiveShapes, {}) },
       { want: {}, exit: M.any() },
       {},
-    ) as TypedPattern<ProposalType['openPortfolio']>,
-    rebalance: M.or(
-      M.splitRecord({ give: giveWith({}) }, { want: {}, exit: M.any() }, {}),
-      M.splitRecord(
-        { want: rebalanceWantShape },
-        { give: {}, exit: M.any() },
-        {},
-      ),
-    ) as TypedPattern<ProposalType['rebalance']>,
-  };
+    ),
+    M.splitRecord(
+      { want: M.splitRecord({ Cash: usdcAmountShape }, {}) },
+      { give: {}, exit: M.any() },
+      {},
+    ),
+  ) as TypedPattern<ProposalType['rebalance']>;
+  return harden({ openPortfolio, rebalance });
 };
-
-type AxelarOfferArgs = {
-  destinationEVMChain?: AxelarChain; // TODO: let AccountId express EVM chain
-};
-
-type PoolPlace = {
-  protocol: YieldProtocol;
-  // ... chain, pool #, ...
-};
+harden(makeProposalShapes);
 
 type PoolPlaceInfo =
   | { protocol: 'USDN'; vault: null | 1 }
   | { protocol: 'Aave' | 'Compound'; chainName: AxelarChain };
 
-const PoolPlaces: Record<string, PoolPlaceInfo> = {
+export const PoolPlaces = {
   USDN: { protocol: 'USDN', vault: null }, // MsgSwap only
   USDNVault: { protocol: 'USDN', vault: 1 }, // MsgSwap, MsgLock
   Aave_Ethereum: { protocol: 'Aave', chainName: 'Ethereum' },
@@ -126,15 +105,15 @@ const PoolPlaces: Record<string, PoolPlaceInfo> = {
   Compound_Ethereum: { protocol: 'Compound', chainName: 'Ethereum' },
   Compound_Base: { protocol: 'Compound', chainName: 'Base' },
   Compound_Avalanche: { protocol: 'Compound', chainName: 'Avalanche' },
-} as const;
+} as const satisfies Record<string, PoolPlaceInfo>;
 harden(PoolPlaces);
 
-type PoolKey = keyof typeof PoolPlaces;
-type BasisPoints = NatValue;
+export type PoolKey = keyof typeof PoolPlaces;
+type BasisPoints = number;
 
 type AllocationStrategyInfo = {
   type: 'target-allocation';
-  allocation: Record<PoolKey, BasisPoints>; // basis points
+  allocation: Record<PoolKey, BasisPoints>;
   // in basis-points
 };
 
@@ -156,16 +135,19 @@ export type AssetPlaceRef =
 const PositionRefShape = M.number();
 const AssetPlaceRefShape = M.or(
   ...seatKeywords,
-  ...Object.values(SupportedChain).map(c => `${c}.makeAccount()`),
+  ...values(SupportedChain).map(c => `${c}.makeAccount()`),
   ...keys(PoolPlaces),
   PositionRefShape,
 );
+
+// XXX NEEDSTEST: check that all SupportedChains match; no `.`s etc.
+export const accountRefPattern = /^(?<chain>\w+)\.makeAccount\(\)$/;
 
 export const getChainNameOfPlaceRef = (
   ref: AssetPlaceRef,
 ): SupportedChain | undefined => {
   if (typeof ref !== 'string') return undefined;
-  const m = ref.match(/^(?<chain>\w+)\.makeAccount\(\)$/);
+  const m = ref.match(accountRefPattern);
   const chain = m?.groups?.chain;
   if (!chain) return undefined;
   // validation of external data is done by AssetPlaceRefShape
@@ -176,7 +158,7 @@ export const getChainNameOfPlaceRef = (
 
 export type AssetPlaceDef =
   | AssetPlaceRef
-  | { open: YieldProtocol; chainId?: CaipChainId };
+  | { open: PoolKey; chainId?: CaipChainId };
 const AssetPlaceDefShap = M.or(AssetPlaceRefShape, {
   open: M.or(...keys(PoolPlaces)),
 });
@@ -187,7 +169,7 @@ export type MovementDesc = {
 };
 
 export type OfferArgsFor = {
-  openPortfolio: {} | XXXOfferArgs | AxelarOfferArgs;
+  openPortfolio: {} | XXXOfferArgs;
   rebalance: {} | XXXOfferArgs;
 };
 
@@ -204,12 +186,14 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       {},
       {
         flow: M.arrayOf(movementDescShape),
-        destinationEVMChain: M.or(...keys(AxelarChains)),
+        destinationEVMChain: M.or(...keys(AxelarChain)),
       },
     ) as TypedPattern<OfferArgsFor['openPortfolio']>,
-    rebalance: M.or({}, M.arrayOf(movementDescShape)) as TypedPattern<
-      OfferArgsFor['rebalance']
-    >,
+    rebalance: M.splitRecord(
+      {},
+      { flow: M.arrayOf(movementDescShape) },
+      {},
+    ) as TypedPattern<OfferArgsFor['rebalance']>,
   };
 };
 harden(makeOfferArgsShapes);
@@ -244,7 +228,7 @@ const AxelarChainInfoPattern = M.splitRecord({
 export const AxelarChainsMapShape: TypedPattern<AxelarChainsMap> =
   M.splitRecord(
     fromEntries(
-      keys(AxelarChains).map(chain => [chain, AxelarChainInfoPattern]),
+      keys(AxelarChain).map(chain => [chain, AxelarChainInfoPattern]),
     ) as Record<AxelarChain, typeof AxelarChainInfoPattern>,
   );
 
@@ -284,7 +268,7 @@ export const ContractCallShape = M.splitRecord({
 export const GMPArgsShape: TypedPattern<GmpArgsContractCall> = M.splitRecord({
   destinationAddress: M.string(),
   type: M.or(1, 2),
-  destinationEVMChain: M.or(...keys(AxelarChains)),
+  destinationEVMChain: M.or(...keys(AxelarChain)),
   keyword: M.string(),
   amounts: AmountKeywordRecordShape, // XXX brand should be exactly USDC
   contractInvocationData: M.arrayOf(ContractCallShape),

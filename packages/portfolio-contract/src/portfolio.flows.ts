@@ -17,6 +17,7 @@ import type {
   CosmosChainAddress,
   Denom,
   DenomAmount,
+  OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
 } from '@agoric/orchestration';
@@ -36,7 +37,7 @@ import { assert, Fail } from '@endo/errors';
 import type { YieldProtocol } from './constants.js';
 import type {
   AccountInfoFor,
-  ChainAccountKey,
+  SupportedChain,
   PortfolioKit,
   Position,
   USDNPosition,
@@ -54,6 +55,7 @@ import type {
 } from './type-guards.ts';
 import { GMPArgsShape } from './type-guards.ts';
 import { maybeFlip, type AssetMovement, trackFlow } from './run-flow.ts';
+import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 export const trace = makeTracer('PortF');
@@ -271,7 +273,11 @@ const sendGmp = async (
   const axelar = await orch.getChain('axelar');
   const { chainId } = await axelar.getChainInfo();
 
-  const { lca: localAccount } = await provideAccountInfo(orch, 'agoric', kit);
+  const { lca: localAccount } = (await provideAccountInfo(
+    orch,
+    'agoric',
+    kit,
+  )) as AccountInfoFor['agoric'];
   const { keyword, amounts: gasAmounts } = gmpArgs;
   const natAmount = gasAmounts[keyword];
   const denom = await chainHubTools.getDenom(natAmount.brand);
@@ -484,7 +490,7 @@ const moveStatus = ({ how, src, dest, amount }: AssetMovement) => ({
 });
 const errmsg = (err: any) => ('message' in err ? err.message : `${err}`);
 
-const provideAccountInfo = async <C extends ChainAccountKey>(
+export const provideAccountInfo = async <C extends SupportedChain>(
   orch: Orchestrator,
   chainName: C,
   kit: GuestInterface<PortfolioKit>, // Guest<T>?
@@ -542,9 +548,6 @@ const changeUSDNPosition = async (
   const { brand } = USDNAmt;
   const denom = NonNullish(ctx.chainHubTools.getDenom(brand));
 
-  const feeAmounts = 'NobleFees' in give ? { NobleFees: give.NobleFees } : {};
-  const withFees =
-    'NobleFees' in give ? add(USDNAmt, feeAmounts.NobleFees) : USDNAmt;
   const amounts = isDeposit ? give : want;
 
   const toTransfer: DenomAmount = { denom, value: withFees.value };

@@ -30,7 +30,7 @@ import { E } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { HostInterface } from '../../async-flow/src/types.js';
-import { YieldProtocol } from './constants.js';
+import { SupportedChain, YieldProtocol } from './constants.js';
 import type { AxelarChainsMap, NobleAccount } from './type-guards.js';
 import {
   makeFlowPath,
@@ -132,18 +132,18 @@ const recordTransferOut = (
 export type AccountInfoFor = {
   agoric: { type: 'agoric'; lca: LocalAccount; reg: TargetRegistration };
   noble: { type: 'noble'; ica: NobleAccount };
+  Ethereum: never; // TODO: GMPInfo?
+  Avalanche: never;
+  Base: never;
 };
 
 export type AccountInfo = AccountInfoFor['agoric'] | AccountInfoFor['noble'];
 // XXX expand scope to GMP
 
-/** keyed by chain such as agoric, noble, base, arbitrum */
-export type ChainAccountKey = 'agoric' | 'noble';
-
 type PortfolioKitState = {
   portfolioId: number;
-  accountsPending: MapStore<ChainAccountKey, VowKit<AccountInfo>>;
-  accounts: MapStore<ChainAccountKey, AccountInfo>;
+  accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
+  accounts: MapStore<SupportedChain, AccountInfo>;
   positions: MapStore<number, Position>;
   nextFlowId: number;
 };
@@ -458,7 +458,7 @@ export const preparePortfolioKit = (
         },
       },
       manager: {
-        reserveAccount<C extends ChainAccountKey>(
+        reserveAccount<C extends SupportedChain>(
           chainName: C,
         ): undefined | Vow<AccountInfoFor[C]> {
           const { accounts, accountsPending } = this.state;

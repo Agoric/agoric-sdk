@@ -2,22 +2,30 @@ import { type Amount, type NatAmount, type NatValue } from '@agoric/ertp';
 import { NonNullish } from '@agoric/internal';
 import type {
   AccountId,
+  Denom,
   DenomAmount,
   OrchestrationAccount,
+  Orchestrator,
 } from '@agoric/orchestration';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZCFSeat } from '@agoric/zoe';
 import { Fail, q } from '@endo/errors';
 import type { GuestInterface } from '../../async-flow/src/types.ts';
-import type { PortfolioKit, Position } from './portfolio.exo.ts';
+import type {
+  AccountInfoFor,
+  PortfolioKit,
+  Position,
+} from './portfolio.exo.ts';
 import {
   makeSwapLockMessages,
   makeUnlockSwapMessages,
+  provideAccountInfo,
   trace,
   type PortfolioInstanceContext,
 } from './portfolio.flows.ts';
 import {
   getChainNameOfPlaceRef,
+  PoolPlaces,
   seatKeywords,
   type AssetPlaceDef,
   type AssetPlaceRef,
@@ -33,10 +41,12 @@ import {
   multiplyBy,
 } from '@agoric/ertp/src/ratio.js';
 import { SupportedChain } from './constants.js';
+import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 
 type AssetPlace =
   | { pos: Position }
-  | { accountId: AccountId }
+  | { account: OrchestrationAccount<{ namespace: 'cosmos' }> }
+  // TODO:  | { evmStuff: ? }
   | { seat: ZCFSeat; keyword: SeatKeyword };
 
 const getAssetPlaceDefKind = (
@@ -55,14 +65,9 @@ const getAssetPlaceDefKind = (
   }
 };
 
-type AssetPlacePrep =
-  | { pos: Position }
-  | { accountOn: SupportedChain }
-  | { seat: ZCFSeat; keyword: SeatKeyword };
-
 const placeLabel = (place: AssetPlace) => {
   if ('pos' in place) return `position${place.pos.getPositionId()}`;
-  if ('accountId' in place) return place.accountId;
+  if ('account' in place) return coerceAccountId(place.account.getAddress());
   return `seat:${place.keyword}`;
 };
 
@@ -72,8 +77,8 @@ export type AssetMovement = {
   src: AssetPlace;
   dest: AssetPlace;
   // XXX rename apply/recover to deposit/withdraw?
-  apply: () => Promise<void>;
-  recover: () => Promise<void>;
+  apply: (move: any) => Promise<void>;
+  recover: (move: any) => Promise<void>;
 };
 export type AssetMovementNobleSwap = AssetMovement & { usdnOut: NatValue };
 
@@ -235,7 +240,7 @@ export const wayFromSrcToDesc = (
   if (isOpen) {
     getChainNameOfPlaceRef(src) ||
       Fail`source for new position must be account ${q(moveDesc)}}`;
-    return destDef.open;
+    return PoolPlaces[destDef.open].protocol;
   } else {
     const srcKind = getAssetPlaceDefKind(src);
     switch (srcKind) {
@@ -278,13 +283,15 @@ export const wayFromSrcToDesc = (
   }
 };
 
-const addMoveBehavior = async (
-  moveData: Omit<AssetMovement, 'apply' | 'recover'>[],
-  ctx: Pick<PortfolioInstanceContext, 'zoeTools' | 'chainHubTools'>,
-) => {
-  const { zoeTools } = ctx;
-  const toD = (a: NatAmount): DenomAmount =>
-    harden({ ...a, denom: NonNullish(ctx.chainHubTools.getDenom(a.brand)) });
+const interpretFlowDesc = async (
+  orch: Orchestrator,
+  flowDesc: MovementDesc[],
+  zoeTools: PortfolioInstanceContext['zoeTools'],
+  seat: ZCFSeat,
+  kit: GuestInterface<PortfolioKit>,
+  denom: Denom,
+): Promise<AssetMovement[]> => {
+  const toD = (a: NatAmount): DenomAmount => harden({ ...a, denom });
 
   const animate: HowToMove = {
     localTransfer: {
@@ -358,21 +365,55 @@ const addMoveBehavior = async (
       recover: _m => assert.fail('TODO'),
     },
   };
-};
 
-export const applyProRataStrategyTo = (
-  amount: NatAmount,
-  prev: MovementDesc[],
-  start: AssetPlaceRef,
-) => {
-  const startIx = prev.findIndex(move => keyEQ(move.src, start));
-  const startMove = prev[startIx];
-  console.log({ startIx, startMove });
-  return prev.slice(startIx).map(move => ({
-    ...move,
-    amount: multiplyBy(
+  const { reader } = kit;
+
+  const toPlace = async (ref: AssetPlaceDef): Promise<AssetPlace> => {
+    switch (typeof ref) {
+      case 'number':
+        return { pos: reader.getPosition(ref) };
+      case 'string':
+        if ((seatKeywords as string[]).includes(ref)) {
+          return { seat, keyword: ref as SeatKeyword };
+        }
+        const chain = getChainNameOfPlaceRef(ref);
+        assert(chain, `bad ref: ${ref}`);
+        const info = (await provideAccountInfo(
+          orch,
+          chain,
+          kit,
+        )) as AccountInfoFor[typeof chain];
+        switch (info.type) {
+          case 'agoric':
+            return { account: info.lca };
+          case 'noble':
+            return { account: info.ica };
+          default:
+            throw Error('NOT IMPL');
+        }
+      default:
+        throw Error('unreachable');
+    }
+  };
+
+  const m3 = flowDesc.map(async moveDesc => {
+    const how = wayFromSrcToDesc(moveDesc, kit.reader);
+    const { apply, recover } = animate[how];
+    const { amount } = moveDesc;
+    const [src, dest] = await Promise.all([
+      toPlace(moveDesc.src),
+      toPlace(moveDesc.dest),
+    ]);
+    const move: AssetMovement = {
+      how,
       amount,
-      makeRatioFromAmounts(move.amount, startMove.amount),
-    ),
-  }));
+      src,
+      dest,
+      apply,
+      recover,
+    };
+    return move;
+  });
+
+  return Promise.all(m3);
 };

@@ -33,6 +33,7 @@ import {
   AxelarChainsMapShape,
   makeOfferArgsShapes,
   makeProposalShapes,
+  PublicFacetI,
   type AxelarChainsMap,
   type LocalAccount,
   type NobleAccount,
@@ -51,11 +52,11 @@ type PortfolioPrivateArgs = OrchestrationPowers & {
   axelarChainsMap: AxelarChainsMap;
 };
 
-const { values } = Object;
+const { fromEntries, values } = Object;
 
 /** each of the values in SupportedChain must appear in privateArgs.chainInfo */
 const requiredChainsInfoShape = M.splitRecord(
-  values(SupportedChain).map(n => ({ [n]: ChainInfoShape })) as CopyRecord,
+  fromEntries(values(SupportedChain).map(n => [n, ChainInfoShape])),
 );
 
 const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
@@ -149,7 +150,7 @@ export const contract = async (
 
   trace('TODO: baggage test');
 
-  const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
+  const publicFacet = zone.exo('PortfolioPub', PublicFacetI, {
     makeOpenPortfolioInvitation() {
       trace('makeOpenPortfolioInvitation');
       return zcf.makeInvitation(
