@@ -790,14 +790,6 @@ export const prepareLocalOrchestrationAccountKit = (
               amount,
             } = ftPacketData;
 
-            // XXX don't verify it's a real Bech32 because that makes our tests
-            // less legible (preventing readable words on the address string)
-            /**
-             * @param {string} address
-             */
-            const resolveBech32Address = address =>
-              chainHub.resolveAccountId(/** @type {Bech32Address} */ (address));
-
             /**
              * @param {Denom} localDenom
              */
@@ -807,8 +799,8 @@ export const prepareLocalOrchestrationAccountKit = (
                   value: BigInt(amount),
                   denom: localDenom,
                 }),
-                fromAccount: resolveBech32Address(sender),
-                toAccount: resolveBech32Address(receiver),
+                fromAccount: sender,
+                toAccount: receiver,
                 extra: {
                   ...ftPacketData,
                 },
