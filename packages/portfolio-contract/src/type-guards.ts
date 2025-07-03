@@ -122,8 +122,8 @@ export const OfferArgsShapeFor = {
 harden(OfferArgsShapeFor);
 
 export type EVMContractAddresses = {
-  aavePool: `0x${string}`;
-  compound: `0x${string}`;
+  aavePool?: `0x${string}`;
+  compound?: `0x${string}`;
   factory: `0x${string}`;
   usdc: `0x${string}`;
 };

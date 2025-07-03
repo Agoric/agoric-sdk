@@ -241,7 +241,7 @@ test('open a portfolio with Aave position', async t => {
       Aave: usdc.units(3_333),
     },
     {
-      destinationEVMChain: 'Base',
+      destinationEVMChain: 'Ethereum',
     },
   );
   await eventLoopIteration(); // let IBC message go out
@@ -280,7 +280,7 @@ test('open a portfolio with Compound position', async t => {
       Compound: usdc.units(3_333),
     },
     {
-      destinationEVMChain: 'Base',
+      destinationEVMChain: 'Ethereum',
     },
   );
   await eventLoopIteration(); // let IBC message go out
@@ -319,7 +319,7 @@ test('open portfolio with USDN, Aave positions', async t => {
       Aave: usdc.units(3_333),
     },
     {
-      destinationEVMChain: 'Base',
+      destinationEVMChain: 'Ethereum',
     },
   );
   await eventLoopIteration(); // let outgoing IBC happen

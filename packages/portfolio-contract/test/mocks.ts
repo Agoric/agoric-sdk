@@ -176,13 +176,13 @@ export const makeUSDNIBCTraffic = (
 
 export const axelarChainsMapMock: AxelarChainsMap = {
   Ethereum: {
-    caip: 'eip155:1',
+    caip: 'eip155:1337',
     axelarId: 'Ethereum',
     contractAddresses: {
       aavePool: '0x1111111111111111111111111111111111111111',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+      compound: '0x2222222222222222222222222222222222222222',
+      factory: '0x3333333333333333333333333333333333333333',
+      usdc: '0x4444444444444444444444444444444444444444',
     },
   },
   Avalanche: {
@@ -190,19 +190,59 @@ export const axelarChainsMapMock: AxelarChainsMap = {
     axelarId: 'Avalanche',
     contractAddresses: {
       aavePool: '0x1111111111111111111111111111111111111111',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+      compound: '0x2222222222222222222222222222222222222222',
+      factory: '0x3333333333333333333333333333333333333333',
+      usdc: '0x4444444444444444444444444444444444444444',
     },
   },
-  Base: {
-    caip: 'eip155:8453',
-    axelarId: 'base',
+  Optimism: {
+    caip: 'eip155:11155420',
+    axelarId: 'optimism',
     contractAddresses: {
       aavePool: '0x1111111111111111111111111111111111111111',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+      compound: '0x2222222222222222222222222222222222222222',
+      factory: '0x3333333333333333333333333333333333333333',
+      usdc: '0x4444444444444444444444444444444444444444',
+    },
+  },
+  Arbitrum: {
+    caip: 'eip155:421614',
+    axelarId: 'arbitrum',
+    contractAddresses: {
+      aavePool: '0x1111111111111111111111111111111111111111',
+      compound: '0x2222222222222222222222222222222222222222',
+      factory: '0x3333333333333333333333333333333333333333',
+      usdc: '0x4444444444444444444444444444444444444444',
+    },
+  },
+  Polygon: {
+    caip: 'eip155:80002',
+    axelarId: 'polygon',
+    contractAddresses: {
+      aavePool: '0x1111111111111111111111111111111111111111',
+      compound: '0x2222222222222222222222222222222222222222',
+      factory: '0x3333333333333333333333333333333333333333',
+      usdc: '0x4444444444444444444444444444444444444444',
+    },
+  },
+  Fantom: {
+    caip: 'eip155:4002',
+    axelarId: 'fantom',
+    contractAddresses: {
+      aavePool: '0x1111111111111111111111111111111111111111',
+      compound: '0x2222222222222222222222222222222222222222',
+      factory: '0x3333333333333333333333333333333333333333',
+      usdc: '0x4444444444444444444444444444444444444444',
+    },
+  },
+  BNB: {
+    caip: 'eip155:97',
+    axelarId: 'binance',
+    contractAddresses: {
+      aavePool: '0x1111111111111111111111111111111111111111',
+      compound: '0x2222222222222222222222222222222222222222',
+      factory: '0x3333333333333333333333333333333333333333',
+      usdc: '0x4444444444444444444444444444444444444444',
     },
   },
 } as const;
