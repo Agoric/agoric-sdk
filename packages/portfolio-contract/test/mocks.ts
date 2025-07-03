@@ -17,6 +17,7 @@ import type { Brand, Issuer, Payment } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.js';
 import type {
+  ChainInfo,
   CosmosChainAddress,
   DenomAmount,
   OrchestrationAccount,
@@ -30,6 +31,7 @@ import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { Zone } from '@agoric/zone';
 import { makePromiseKit } from '@endo/promise-kit';
 import type { AxelarChainsMap } from '../src/type-guards';
+import type { AxelarChain } from '../src/constants.js';
 
 export const localAccount0 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
 
@@ -248,6 +250,21 @@ export const axelarChainsMap: AxelarChainsMap = {
     },
   },
 } as const;
+
+// see also packages/orchestration/src/cctp-chain-info.js
+export const axelarChainInfo: Record<AxelarChain, ChainInfo> = {
+  Ethereum: { namespace: 'eip155', reference: '1', cctpDestinationDomain: 0 },
+  Avalanche: {
+    namespace: 'eip155',
+    reference: '43114',
+    cctpDestinationDomain: 1,
+  },
+  Base: {
+    namespace: 'eip155',
+    reference: '8453',
+    cctpDestinationDomain: 6,
+  },
+};
 
 /** from https://www.mintscan.io/noble explorer */
 export const explored = [

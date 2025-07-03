@@ -21,11 +21,11 @@ test('ProposalShapes', t => {
     openPortfolio: {
       pass: {
         noPositions: { give: { Access: poc24(1n) } },
-        openUSDN: { give: { USDNSwapIn: usdc(123n), Access: poc24(1n) } },
+        openUSDN: { give: { Deposit: usdc(123n), Access: poc24(1n) } },
         aaveNeedsGMPFee: {
           give: {
+            Deposit: usdc(3000n),
             AaveGmp: usdc(123n),
-            Aave: usdc(3000n),
             AaveAccount: usdc(3000n),
             Access: poc24(1n),
           },

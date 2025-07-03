@@ -17,13 +17,14 @@ import { makeHeapZone } from '@agoric/zone';
 import { q } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
 import { Far } from '@endo/pass-style';
-import { objectMap } from '@endo/patterns';
+import { M, objectMap } from '@endo/patterns';
 import {
   preparePortfolioKit,
   type PortfolioKit,
 } from '../src/portfolio.exo.ts';
-import { applyProRataStrategyTo, wayFromSrcToDesc } from '../src/run-flow.ts';
+import { wayFromSrcToDesc } from '../src/run-flow.ts';
 import {
+  makeNatAmountShape,
   makeOfferArgsShapes,
   makeProposalShapes,
   type LocalAccount,
@@ -36,6 +37,7 @@ import {
   grokRebalanceScenarios,
   importCSV,
   numeral,
+  withBrand,
   type Dollars,
   type RebalanceScenario,
 } from '../tools/rebalance-grok.ts';
@@ -46,42 +48,21 @@ import {
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
 import { localAccount0 } from './mocks.ts';
-
-const makeOfferArgs = (
-  offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>,
-  scenario: RebalanceScenario,
-  $: (d: Dollars) => NatAmount,
-  isEVM: boolean,
-): OfferArgsFor['rebalance'] => {
-  const { flow } = scenario.offerArgs || {};
-  const offerArgs = {
-    flow: (flow || []).map(
-      move => ({ ...move, amount: $(move.amount) }) as MovementDesc,
-    ),
-    ...(isEVM ? { destinationEVMChain: 'Base' as const } : {}),
-  };
-  harden(offerArgs);
-  // console.debug(offerArgs);
-  mustMatch(offerArgs, offerArgsShapes.openPortfolio);
-  return offerArgs;
-};
+import { AnyNatAmountShape } from '@agoric/orchestration';
+import type { AxelarChain } from '../src/constants.js';
 
 test('wayFromSrcToDesc handles 1 scenario', async t => {
   const scenario = (await scenariosP)['Open portfolio with USDN position'];
 
   const usdc = withAmountUtils(makeIssuerKit('USDC'));
-  const $ = (amt: Dollars) =>
-    multiplyBy(usdc.units(1), parseRatio(numeral(amt), usdc.brand));
-
-  const offerArgsShapes = makeOfferArgsShapes(usdc.brand);
-  const args = makeOfferArgs(offerArgsShapes, scenario, $, false);
+  const { offerArgs: args } = withBrand(scenario, usdc.brand);
 
   const reader = harden({
     getPosition: _id => harden({ getYieldProtocol: () => 'USDN' }),
   }) as unknown as PortfolioKit['reader'];
 
   assert('flow' in args);
-  const actual = args.flow.map(m => wayFromSrcToDesc(m, reader));
+  const actual = (args?.flow || []).map(m => wayFromSrcToDesc(m, reader));
 
   t.deepEqual(actual, ['localTransfer', 'transfer', 'USDN']);
 });
@@ -94,6 +75,8 @@ const rebalanceScenarioMacro = test.macro({
     t.log('start', description, 'with', myBalance);
 
     const { usdc } = common.brands;
+    const s2 = withBrand(scenario, usdc.brand);
+
     const $ = (amt: Dollars) =>
       multiplyBy(usdc.units(1), parseRatio(numeral(amt), usdc.brand));
 
@@ -121,18 +104,16 @@ const rebalanceScenarioMacro = test.macro({
     };
 
     // Convert scenario amounts to ERTP amounts
-    const give = objectMap(scenario.proposal.give, a => $(a!));
-    const want = objectMap(scenario.proposal.want, a => $(a!));
-    const before = objectMap(scenario.before, a => $(a!));
-    const openOnly = Object.keys(before).length === 0;
+    const openOnly = Object.keys(s2.before).length === 0;
 
-    const offerArgsShapes = makeOfferArgsShapes(usdc.brand);
-    const isEVM = 'Aave' in give || 'Compound' in give;
-    const offerArgs = makeOfferArgs(offerArgsShapes, scenario, $, isEVM);
-    const openResult = await openPortfolio(openOnly ? give : before, offerArgs);
+    // ??? const isEVM = 'Aave' in give || 'Compound' in give;
+    const openResult = await openPortfolio(
+      openOnly ? s2.proposal.give : s2.before,
+      {},
+    );
     const { result, payouts } = await (openOnly
       ? openResult
-      : trader1.rebalance(t, { give, want }, offerArgs));
+      : trader1.rebalance(t, s2.proposal, s2.offerArgs));
 
     const portfolioPath = trader1.getPortfolioPath();
     t.truthy(portfolioPath);
@@ -168,43 +149,5 @@ test('scenario:', rebalanceScenarioMacro, 'Open portfolio with USDN position');
 test.skip('scenario:', rebalanceScenarioMacro, 'Aave -> USDN');
 
 const scenariosP = importCSV('./move-cases.csv', import.meta.url).then(data =>
-  grokRebalanceScenarios(data),
+  harden(grokRebalanceScenarios(data)),
 );
-
-test('use flow/path by reference', t => {
-  const usdc = withAmountUtils(makeIssuerKit('USDC'));
-  const $ = (amt: Dollars) =>
-    multiplyBy(usdc.units(1), parseRatio(numeral(amt), usdc.brand));
-
-  // const scenario = (await scenariosP)['Open with 3 positions']
-
-  const agoricAcct = 'agoric.makeAccount()';
-  const nobleAcct = 'noble.makeAccount()';
-  const evmAcct = 'base.makeAccount()';
-
-  const prev: MovementDesc[] = [
-    { amount: $('$10,000'), src: 'Deposit', dest: agoricAcct },
-    { amount: $('$10,000'), src: agoricAcct, dest: nobleAcct },
-    { amount: $('$3,333.33'), src: nobleAcct, dest: { open: 'USDN' } },
-    { amount: $('$6,666.67'), src: nobleAcct, dest: evmAcct },
-    { amount: $('$3,333.33'), src: evmAcct, dest: { open: 'Compound' } },
-    { amount: $('$3,333.33'), src: evmAcct, dest: { open: 'Aave' } },
-  ];
-
-  t.deepEqual(
-    applyProRataStrategyTo($('$10,000'), prev, agoricAcct),
-    prev.slice(1),
-  );
-  const actual: MovementDesc[] = applyProRataStrategyTo(
-    $('$100'),
-    prev,
-    agoricAcct,
-  );
-  t.deepEqual(actual, [
-    { amount: $('$100'), src: agoricAcct, dest: nobleAcct },
-    { amount: $('$33.3333'), src: nobleAcct, dest: { open: 'USDN' } },
-    { amount: $('$66.6667'), src: nobleAcct, dest: evmAcct },
-    { amount: $('$33.3333'), src: evmAcct, dest: { open: 'Compound' } },
-    { amount: $('$33.3333'), src: evmAcct, dest: { open: 'Aave' } },
-  ]);
-});

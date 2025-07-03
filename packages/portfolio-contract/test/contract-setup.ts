@@ -9,7 +9,11 @@ import { passStyleOf } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import * as contractExports from '../src/portfolio.contract.ts';
-import { axelarChainsMap, makeUSDNIBCTraffic } from './mocks.ts';
+import {
+  axelarChainInfo,
+  axelarChainsMap,
+  makeUSDNIBCTraffic,
+} from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import {
   chainInfoFantasyTODO,
@@ -43,7 +47,7 @@ const deploy = async (t: ExecutionContext) => {
       ...common.commonPrivateArgs,
       axelarChainsMap,
       timerService,
-      chainInfo: { agoric, noble, axelar, osmosis },
+      chainInfo: { agoric, noble, axelar, osmosis, ...axelarChainInfo },
     }, // privateArgs
   );
   t.notThrows(() =>
