@@ -14,6 +14,7 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import { encodeAbiParameters } from 'viem';
@@ -23,7 +24,6 @@ export const makeIncomingEVMEvent = (
 ) => {
   const encodedAddress = encodeAbiParameters([{ type: 'address' }], [address]);
 
-  const lcaAddress = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
   const axelarConnections =
     fetchedChainInfo.agoric.connections['axelar-dojo-1'];
 
@@ -31,13 +31,7 @@ export const makeIncomingEVMEvent = (
   const agoricToAxelarChannel =
     axelarConnections.transferChannel.counterPartyChannelId;
 
-  return buildVTransferEvent({
-    sequence: '1',
-    amount: 1n,
-    denom: 'uusdc',
-    sender: makeTestAddress(),
-    target: lcaAddress,
-    receiver: lcaAddress,
+  return makeIncomingVTransferEvent({
     sourceChannel: axelarToAgoricChannel,
     destinationChannel: agoricToAxelarChannel,
     memo: JSON.stringify({
@@ -54,6 +48,34 @@ export const makeIncomingEVMEvent = (
       }),
       type: 1,
     }),
+  });
+};
+
+export const makeIncomingVTransferEvent = ({
+  sender = makeTestAddress(),
+  sourcePort = 'transfer',
+  sourceChannel = 'channel-1',
+  destinationPort = 'transfer',
+  destinationChannel = 'channel-2',
+  target = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+  hookQuery = {},
+  receiver = encodeAddressHook(target, hookQuery),
+  memo = '',
+  amount = 1n,
+  denom = 'uusdc',
+} = {}) => {
+  return buildVTransferEvent({
+    sequence: '1',
+    amount,
+    denom,
+    sender,
+    target: target,
+    receiver,
+    source_port: sourcePort,
+    source_channel: sourceChannel,
+    destination_port: destinationPort,
+    destination_channel: destinationChannel,
+    memo,
   });
 };
 
