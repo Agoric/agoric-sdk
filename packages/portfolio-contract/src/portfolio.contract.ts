@@ -37,6 +37,7 @@ import {
   type LocalAccount,
   type NobleAccount,
 } from './type-guards.ts';
+import { SupportedChain } from './constants.js';
 
 const trace = makeTracer('PortC');
 
@@ -50,11 +51,18 @@ type PortfolioPrivateArgs = OrchestrationPowers & {
   axelarChainsMap: AxelarChainsMap;
 };
 
+const { values } = Object;
+
+/** each of the values in SupportedChain must appear in privateArgs.chainInfo */
+const requiredChainsInfoShape = M.splitRecord(
+  values(SupportedChain).map(n => ({ [n]: ChainInfoShape })) as CopyRecord,
+);
+
 const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   ...(OrchestrationPowersShape as CopyRecord),
   marshaller: M.remotable('marshaller'),
   storageNode: M.remotable('storageNode'),
-  chainInfo: M.recordOf(M.string(), ChainInfoShape),
+  chainInfo: requiredChainsInfoShape,
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
   axelarChainsMap: AxelarChainsMapShape,
 };
