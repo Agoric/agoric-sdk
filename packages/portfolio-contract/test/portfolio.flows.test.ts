@@ -32,11 +32,14 @@ import {
   makeSwapLockMessages,
   openPortfolio,
   rebalance,
+  rebalanceFromTransfer,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
 import { axelarChainsMapMock } from './mocks.ts';
 import { makeIncomingEVMEvent } from './supports.ts';
+import type { VTransferIBCEvent } from '@agoric/vats';
+import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 
 const theExit = harden(() => {}); // for ava comparison
 // @ts-expect-error mock
@@ -113,6 +116,41 @@ const mocks = (
                 const reg = harden({});
                 return reg;
               },
+              /** @param {VTransferIBCEvent['packet']} packet */
+              parseInboundTransfer: async packet => {
+                /** @type {FungibleTokenPacketData} */
+                const ftPacketData = JSON.parse(atob(packet.data));
+                const {
+                  denom: transferDenom,
+                  sender,
+                  receiver,
+                  amount,
+                } = ftPacketData;
+
+                let denomOrTrace;
+
+                const prefix = `${packet.source_port}/${packet.source_channel}/`;
+                if (transferDenom.startsWith(prefix)) {
+                  denomOrTrace = transferDenom.slice(prefix.length);
+                } else {
+                  denomOrTrace = `${packet.destination_port}/${packet.destination_channel}/${transferDenom}`;
+                }
+
+                const localMatch = denomOrTrace.match(/^(ibc\/)?[^/].*$/);
+                const localDenom = localMatch ? denomOrTrace : transferDenom;
+
+                return harden({
+                  amount: {
+                    value: BigInt(amount),
+                    denom: localDenom,
+                  },
+                  extra: {
+                    ...ftPacketData,
+                  },
+                  fromAccount: sender,
+                  toAccount: receiver,
+                });
+              },
             });
           }
           if (name === 'noble') {
@@ -159,6 +197,7 @@ const mocks = (
         vow: promise,
       }) as any; // mock
     },
+    when: async specimen => specimen,
     watch: _promise => {
       const taggedVow = {
         payload: {
@@ -209,12 +248,15 @@ const mocks = (
 
   const rebalanceHost = (seat, offerArgs, kit) =>
     rebalance(orch, ctx1, seat, offerArgs, kit);
+  const rebalanceFromTransferHost = (packet, kit) =>
+    rebalanceFromTransfer(orch, ctx1, packet, kit);
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
     vowTools,
     axelarChainsMap: axelarChainsMapMock,
     timer,
     rebalance: rebalanceHost as any,
+    rebalanceFromTransfer: rebalanceFromTransferHost as any,
     proposalShapes: makeProposalShapes(USDC),
     marshaller,
     portfoliosNode,
@@ -270,7 +312,7 @@ test('open portfolio with no positions', async t => {
   const actual = await openPortfolio(orch, ctx, seat, {});
   t.log(log.map(msg => msg._method).join(', '));
 
-  t.like(log, [{ _method: 'exit' }]);
+  t.like(log, [{ _method: 'monitorTransfers' }, { _method: 'exit' }]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
@@ -403,12 +445,12 @@ test('open portfolio with Aave position', async t => {
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', amounts: { AaveAccount: { value: 50n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-1' } },
+    { _method: 'transfer', address: { chainId: 'axelar-3' } },
     { _method: 'localTransfer', amounts: { Aave: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'noble-4' } },
     { _method: 'depositForBurn' },
     { _method: 'localTransfer', amounts: { AaveGmp: { value: 100n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-1' } },
+    { _method: 'transfer', address: { chainId: 'axelar-3' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -439,12 +481,12 @@ test('open portfolio with Compound position', async t => {
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', amounts: { CompoundAccount: { value: 300n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-1' } },
+    { _method: 'transfer', address: { chainId: 'axelar-3' } },
     { _method: 'localTransfer', amounts: { Compound: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'noble-4' } },
     { _method: 'depositForBurn' },
     { _method: 'localTransfer', amounts: { CompoundGmp: { value: 100n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-1' } },
+    { _method: 'transfer', address: { chainId: 'axelar-3' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
