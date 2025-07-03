@@ -1,13 +1,21 @@
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'module';
-import { YieldProtocol } from '../src/constants.js';
-import type {
-  AssetPlaceDef,
-  AssetPlaceRef,
-  MovementDesc,
-  SeatKeyword,
+import { AxelarChain, YieldProtocol } from '../src/constants.js';
+import {
+  makeOfferArgsShapes,
+  makeProposalShapes,
+  PoolPlaces,
+  type AssetPlaceDef,
+  type AssetPlaceRef,
+  type MovementDesc,
+  type OfferArgsFor,
+  type PoolKey,
+  type SeatKeyword,
 } from '../src/type-guards.js';
 import { localAccount0 } from '../test/mocks.js';
+import { AmountMath, type NatAmount } from '@agoric/ertp';
+import { mustMatch, objectMap } from '@agoric/internal';
+import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 
 /** OCap exception: infrastructure to make up for lack of import x from 'foo.txt' */
 export const importText = (specifier: string, base): Promise<string> =>
@@ -130,15 +138,19 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
         currentScenario.offerArgs ||= { flow: [] };
         const { flow } = currentScenario.offerArgs;
 
-        const asPlaceDef = (s: string): AssetPlaceDef => {
-          if (s.startsWith('Seat: '))
-            return s.slice('Seat: '.length) as SeatKeyword;
-          if (s.match(/^LCA/)) return `agoric.makeAccount()`;
-          if (s.match(/^ICA/)) return `noble.makeAccount()`;
-          if (s.match(/^GMP/)) return `base.makeAccount()`;
-          if (Object.keys(YieldProtocol).includes(s))
-            return { open: s as YieldProtocol };
-          throw Error(s);
+        const asPlaceDef = (pDef: string): AssetPlaceDef => {
+          if (pDef.startsWith('Seat: '))
+            return pDef.slice('Seat: '.length) as SeatKeyword;
+          if (pDef.match(/^LCA/)) return `agoric.makeAccount()`;
+          if (pDef.match(/^ICA/)) return `noble.makeAccount()`;
+          if (pDef.match(/^GMP/)) return `Base.makeAccount()`;
+          const { entries, keys } = Object;
+          const [poolKey] =
+            entries(PoolPlaces).find(([_k, p]) => p.protocol === pDef) ||
+            assert.fail();
+          //// @@@@@@22 Ugh! what a pain! switch to codegen? yarn build:scenarios
+          return { open: poolKey as PoolKey };
+          throw Error(pDef);
         };
 
         if (!hd.length) throw Error('missing header');
@@ -181,4 +193,34 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
   }
 
   return scenarios;
+};
+
+export const withBrand = (scenario: RebalanceScenario, brand: Brand<'nat'>) => {
+  const { make } = AmountMath;
+  const unit = make(brand, 1_000_000n);
+  const $ = (amt: Dollars) => multiplyBy(unit, parseRatio(numeral(amt), brand));
+  const $$ = (dollarCells: Record<string, Dollars>) =>
+    objectMap(dollarCells, a => $(a!));
+
+  const offerArgs = harden(
+    'flow' in (scenario.offerArgs || {})
+      ? {
+          flow: (scenario.offerArgs?.flow || []).map(m => ({
+            ...m,
+            amount: $(m.amount),
+          })),
+        }
+      : {},
+  );
+  mustMatch(offerArgs, makeOfferArgsShapes(brand).rebalance);
+
+  const proposal = objectMap(scenario.proposal, $$);
+  mustMatch(proposal, makeProposalShapes(brand).rebalance);
+  return harden({
+    before: $$(scenario.before),
+    proposal,
+    offerArgs,
+    after: $$(scenario.after),
+    payouts: $$(scenario.payouts),
+  });
 };

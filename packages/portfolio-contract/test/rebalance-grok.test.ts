@@ -2,9 +2,14 @@ import test from 'ava';
 import {
   grokRebalanceScenarios,
   importText,
+  numeral,
   parseCSV,
+  withBrand,
+  type Dollars,
 } from '../tools/rebalance-grok.ts';
-import type { MovementDesc } from '../src/type-guards.ts';
+import { makeOfferArgsShapes, type MovementDesc } from '../src/type-guards.ts';
+import { Far } from '@endo/pass-style';
+import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 
 test('parseCSV test utility', async t => {
   const text = await importText('./move-cases.csv', import.meta.url);
@@ -31,6 +36,58 @@ test('grok moves proposal', async t => {
   const { 'Open portfolio with USDN position': scenario } = scenarios;
   t.log(scenario.proposal);
   t.deepEqual(scenario.proposal, { give: { Deposit: '$3,333.00' }, want: {} });
+  t.deepEqual(scenario.offerArgs?.flow, [
+    {
+      amount: '$3,333.00',
+      dest: 'agoric.makeAccount()',
+      src: 'Deposit',
+    },
+    {
+      amount: '$3,333.00',
+      dest: 'noble.makeAccount()',
+      src: 'agoric.makeAccount()',
+    },
+    {
+      amount: '$3,333.00',
+      dest: {
+        open: 'USDN',
+      },
+      src: 'noble.makeAccount()',
+    },
+  ]);
+});
+
+test('makeOfferArgs handles USDN scenario', async t => {
+  const brand = Far('USDC') as unknown as Brand<'nat'>;
+  const unit = harden({ brand, value: 1_000_000n });
+  const $ = (amt: Dollars) => multiplyBy(unit, parseRatio(numeral(amt), brand));
+  const shapes = makeOfferArgsShapes(brand);
+
+  const text = await importText('./move-cases.csv', import.meta.url);
+  const scenarios = grokRebalanceScenarios(parseCSV(text));
+  const { 'Open portfolio with USDN position': scenario } = scenarios;
+
+  const x = withBrand(scenario, brand);
+
+  const { offerArgs: args } = x;
+
+  t.deepEqual('flow' in args && args.flow, [
+    {
+      src: 'Deposit',
+      dest: 'agoric.makeAccount()',
+      amount: $('$3,333.00'),
+    },
+    {
+      src: 'agoric.makeAccount()',
+      dest: 'noble.makeAccount()',
+      amount: $('$3,333.00'),
+    },
+    {
+      src: 'noble.makeAccount()',
+      dest: { open: 'USDN' },
+      amount: $('$3,333.00'),
+    },
+  ]);
 });
 
 test.skip('grok give', async t => {
@@ -64,7 +121,7 @@ test('grok flow of 3 moves', async t => {
   t.deepEqual(scenario.offerArgs.flow.at(-1), {
     amount: '$3,333.00',
     dest: { open: 'USDN' },
-    src: 'cosmos:noble-1:noble1deadbeef',
+    src: 'noble.makeAccount()',
   });
 });
 
