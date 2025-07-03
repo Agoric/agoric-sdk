@@ -18,8 +18,11 @@ import { q } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
 import { Far } from '@endo/pass-style';
 import { objectMap } from '@endo/patterns';
-import { preparePortfolioKit } from '../src/portfolio.exo.ts';
-import { applyProRataStrategyTo, interpretFlowDesc } from '../src/run-flow.ts';
+import {
+  preparePortfolioKit,
+  type PortfolioKit,
+} from '../src/portfolio.exo.ts';
+import { applyProRataStrategyTo, wayFromSrcToDesc } from '../src/run-flow.ts';
 import {
   makeOfferArgsShapes,
   makeProposalShapes,
@@ -63,10 +66,9 @@ const makeOfferArgs = (
   return offerArgs;
 };
 
-test('interpretFlowDesc handles 1 scenario', async t => {
+test('wayFromSrcToDesc handles 1 scenario', async t => {
   const scenario = (await scenariosP)['Open portfolio with USDN position'];
 
-  const zone = makeHeapZone();
   const usdc = withAmountUtils(makeIssuerKit('USDC'));
   const $ = (amt: Dollars) =>
     multiplyBy(usdc.units(1), parseRatio(numeral(amt), usdc.brand));
@@ -74,53 +76,14 @@ test('interpretFlowDesc handles 1 scenario', async t => {
   const offerArgsShapes = makeOfferArgsShapes(usdc.brand);
   const args = makeOfferArgs(offerArgsShapes, scenario, $, false);
 
-  const makeAccount = <C extends string>(value, chainId: C) =>
-    Far(chainId, {
-      getAddress: () => ({ value, chainId }),
-    });
-  const lca = makeAccount(
-    localAccount0,
-    'agoric-3' as const,
-  ) as unknown as LocalAccount;
-  const ica = makeAccount(
-    'noble1deadbeef',
-    'noble-1' as const,
-  ) as unknown as NobleAccount;
-
-  const marshaller = makeMarshal();
-  const storage = makeFakeStorageKit('root');
-  const makePortfolioKit = preparePortfolioKit(zone, {
-    zcf: null as any,
-    vowTools: null as any,
-    axelarChainsMap: null as any,
-    timer: null as any,
-    rebalance: null as any,
-    proposalShapes: makeProposalShapes(usdc.brand),
-    offerArgsShapes,
-    marshaller,
-    portfoliosNode: storage.rootNode,
-    usdcBrand: usdc.brand,
-  });
-  const kit = makePortfolioKit({
-    portfolioId: 1,
-  });
+  const reader = harden({
+    getPosition: _id => harden({ getYieldProtocol: () => 'USDN' }),
+  }) as unknown as PortfolioKit['reader'];
 
   assert('flow' in args);
-  const actual = interpretFlowDesc(args.flow, kit.reader);
+  const actual = args.flow.map(m => wayFromSrcToDesc(m, reader));
 
-  const pos = kit.manager.provideUSDNPosition(
-    coerceAccountId(ica.getAddress()),
-  );
-  const seatDeposit = { keyword: 'Deposit', seat: null };
-  const amount = $('$3,333');
   t.deepEqual(actual, ['localTransfer', 'transfer', 'USDN']);
-
-  await eventLoopIteration();
-  t.deepEqual(
-    [...storage.data.keys()],
-    ['root.portfolio1', 'root.portfolio1.positions.position1'],
-    'a position was allocated and published in vstorage',
-  );
 });
 
 const rebalanceScenarioMacro = test.macro({

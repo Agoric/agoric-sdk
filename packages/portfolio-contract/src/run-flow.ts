@@ -224,65 +224,58 @@ type HowToMove = {
   };
 };
 
-export const interpretFlowDesc = (
-  flowDesc: MovementDesc[],
+export const wayFromSrcToDesc = (
+  moveDesc: MovementDesc,
   reader: PortfolioKit['reader'],
-): Array<keyof AnimationMove> => {
-  const ways: Array<keyof AnimationMove> = [];
+): keyof AnimationMove => {
+  const { src } = moveDesc;
+  const { dest: destDef } = moveDesc;
+  const isOpen = typeof destDef === 'object' && 'open' in destDef;
 
-  // Check all the rules before running any of them
-  for (const moveDesc of flowDesc) {
-    const { src } = moveDesc;
-    const { dest: destDef } = moveDesc;
-    const isOpen = typeof destDef === 'object' && 'open' in destDef;
-
-    if (isOpen) {
-      getChainNameOfPlaceRef(src) ||
-        Fail`source for new position must be account ${q(moveDesc)}}`;
-      ways.push(destDef.open);
-    } else {
-      const srcKind = getAssetPlaceDefKind(src);
-      switch (srcKind) {
-        case 'pos': {
-          getAssetPlaceDefKind(destDef) === 'accountId' ||
-            Fail`src pos must have account as dest ${q(moveDesc)}`;
-          const pos = reader.getPosition(destDef as number);
-          ways.push(pos.getYieldProtocol());
-          break;
-        }
-
-        case 'seat':
-          getAssetPlaceDefKind(destDef) === 'accountId' ||
-            Fail`src seat must have account as dest ${q(moveDesc)}`;
-          ways.push('localTransfer');
-          break;
-
-        case 'accountId': {
-          const destKind = getAssetPlaceDefKind(destDef);
-          switch (destKind) {
-            case 'seat':
-              ways.push('withdrawToSeat');
-              break;
-            case 'accountId':
-              ways.push('transfer');
-              break;
-            case 'pos': {
-              const pos = reader.getPosition(destDef as number);
-              ways.push(pos.getYieldProtocol());
-              break;
-            }
-            default:
-              throw Error(`unreachable:${destKind}`);
-          }
-          break;
-        }
-        default:
-          throw Error(`unreachable: ${srcKind}`);
+  if (isOpen) {
+    getChainNameOfPlaceRef(src) ||
+      Fail`source for new position must be account ${q(moveDesc)}}`;
+    return destDef.open;
+  } else {
+    const srcKind = getAssetPlaceDefKind(src);
+    switch (srcKind) {
+      case 'pos': {
+        getAssetPlaceDefKind(destDef) === 'accountId' ||
+          Fail`src pos must have account as dest ${q(moveDesc)}`;
+        const pos = reader.getPosition(destDef as number);
+        return pos.getYieldProtocol();
+        break;
       }
+
+      case 'seat':
+        getAssetPlaceDefKind(destDef) === 'accountId' ||
+          Fail`src seat must have account as dest ${q(moveDesc)}`;
+        return 'localTransfer';
+        break;
+
+      case 'accountId': {
+        const destKind = getAssetPlaceDefKind(destDef);
+        switch (destKind) {
+          case 'seat':
+            return 'withdrawToSeat';
+            break;
+          case 'accountId':
+            return 'transfer';
+            break;
+          case 'pos': {
+            const pos = reader.getPosition(destDef as number);
+            return pos.getYieldProtocol();
+            break;
+          }
+          default:
+            throw Fail`unreachable:${destKind}`;
+        }
+        break;
+      }
+      default:
+        throw Fail`unreachable: ${srcKind}`;
     }
   }
-
-  return ways;
 };
 
 const addMoveBehavior = async (
