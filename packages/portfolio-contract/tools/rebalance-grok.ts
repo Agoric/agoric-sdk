@@ -133,9 +133,9 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
         const asPlaceDef = (s: string): AssetPlaceDef => {
           if (s.startsWith('Seat: '))
             return s.slice('Seat: '.length) as SeatKeyword;
-          if (s.match(/^LCA/)) return `cosmos:agoric-3:${localAccount0}`;
-          if (s.match(/^ICA/)) return `cosmos:noble-1:noble1deadbeef`;
-          if (s.match(/^GMP/)) return `eip155:8453:0xe0d43135`;
+          if (s.match(/^LCA/)) return `agoric.makeAccount()`;
+          if (s.match(/^ICA/)) return `noble.makeAccount()`;
+          if (s.match(/^GMP/)) return `base.makeAccount()`;
           if (Object.keys(YieldProtocol).includes(s))
             return { open: s as YieldProtocol };
           throw Error(s);

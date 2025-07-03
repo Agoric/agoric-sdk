@@ -48,7 +48,7 @@ const getAssetPlaceDefKind = (
     case 'object':
       return 'pos';
     case 'string':
-      if (ref.startsWith('seat:')) return 'seat';
+      if ((seatKeywords as string[]).includes(ref)) return 'seat';
       if (getChainNameOfPlaceRef(ref)) return 'accountId';
     default:
       throw Fail`bad ref: ${ref}`;
@@ -240,8 +240,9 @@ export const interpretFlowDesc = (
       getChainNameOfPlaceRef(src) ||
         Fail`source for new position must be account ${q(moveDesc)}}`;
       ways.push(destDef.open);
-    } else
-      switch (getAssetPlaceDefKind(src)) {
+    } else {
+      const srcKind = getAssetPlaceDefKind(src);
+      switch (srcKind) {
         case 'pos': {
           getAssetPlaceDefKind(destDef) === 'accountId' ||
             Fail`src pos must have account as dest ${q(moveDesc)}`;
@@ -256,8 +257,9 @@ export const interpretFlowDesc = (
           ways.push('localTransfer');
           break;
 
-        case 'accountId':
-          switch (getAssetPlaceDefKind(destDef)) {
+        case 'accountId': {
+          const destKind = getAssetPlaceDefKind(destDef);
+          switch (destKind) {
             case 'seat':
               ways.push('withdrawToSeat');
               break;
@@ -270,12 +272,14 @@ export const interpretFlowDesc = (
               break;
             }
             default:
-              throw Error('unreachable');
+              throw Error(`unreachable:${destKind}`);
           }
-
+          break;
+        }
         default:
-          throw Error('unreachable');
+          throw Error(`unreachable: ${srcKind}`);
       }
+    }
   }
 
   return ways;

@@ -109,8 +109,8 @@ type PoolPlace = {
 };
 
 const PoolPlaces = {
-  usdn: { protocol: 'USDN', vault: null },
-  usdnLock: { protocol: 'USDN', vault: 1 },
+  USDN: { protocol: 'USDN', vault: null },
+  USDNVault: { protocol: 'USDN', vault: 1 },
 };
 harden(PoolPlaces);
 
@@ -141,13 +141,14 @@ export type AssetPlaceRef =
 const PositionRefShape = M.number();
 const AssetPlaceRefShape = M.or(
   ...seatKeywords,
+  ...Object.values(SupportedChain).map(c => `${c}.makeAccount()`),
   ...keys(PoolPlaces),
   PositionRefShape,
 );
 
 export const getChainNameOfPlaceRef = (ref: AssetPlaceRef) => {
   if (typeof ref !== 'string') return undefined;
-  const m = ref.match(/^(?<chain>)\.makeAccount\(\)$/);
+  const m = ref.match(/^(?<chain>\w+)\.makeAccount\(\)$/);
   return m?.groups?.chain;
 };
 
