@@ -1,6 +1,7 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { FeedPolicyShape } from '@agoric/fast-usdc/src/type-guards.js';
 import { parseArgs } from 'node:util';
+import { M, mustMatch } from '@endo/patterns';
 import { getManifestForUpdateFastUsdcPolicy } from './fast-usdc-policy.core.js';
 import { ChainPolicies } from './utils/chain-policies.js';
 import { toExternalConfig } from './utils/config-marshal.js';
@@ -63,14 +64,13 @@ export default async (homeP, endowments) => {
     if (typeof network !== 'string') {
       throw Error('--network requires a string argument');
     }
-    if (!Object.hasOwn(ChainPolicies, network)) {
-      const q = JSON.stringify;
-      throw Error(
-        `network name ${q(network)} not in ${q(Reflect.ownKeys(ChainPolicies))}`,
-      );
-    }
+    mustMatch(
+      network,
+      M.or(...Object.keys(ChainPolicies)),
+      'unknown network name',
+    );
     if (feedPolicy.chainPolicies) throw Error('cannot merge chainPolicies');
-    feedPolicy.chainPolicies = ChainPolicies[network];
+    feedPolicy = { ...feedPolicy, chainPolicies: ChainPolicies[network] };
   }
   const config = harden({ feedPolicy });
   await writeCoreEval('eval-fast-usdc-policy-update', utils =>
