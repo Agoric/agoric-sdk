@@ -34,13 +34,6 @@ Fast USDC in turn builds on
  - and the Zoe smart contract platform, and
  - the endo distributed computing platform
 
-import {
-  makeTracer,
-  mustMatch,
-  type Remote,
-  type TypedPattern,
-} from '@agoric/internal';
-
 ### `TypedPattern`s
 
 In particular, we make extensive use of `@endo/patterns` aka shapes, especially `TypedPattern<T>`
