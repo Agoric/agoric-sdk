@@ -13,6 +13,8 @@ import { AmountMath } from '@agoric/ertp';
 const { fromEntries } = Object;
 const range = (n: number) => [...Array(n).keys()];
 
+type PublicMethodName = keyof Awaited<ReturnType<typeof start>>['publicFacet'];
+
 export const makeTrader = (
   wallet: WalletTool,
   instance: Instance<typeof start>,
@@ -33,10 +35,13 @@ export const makeTrader = (
       if (portfolioPath) throw Error('already opened');
       if (openId) throw Error('already opening');
 
+      const publicInvitationMaker: PublicMethodName =
+        'makeOpenPortfolioInvitation';
+
       const invitationSpec = {
         source: 'contract' as const,
         instance,
-        publicInvitationMaker: 'makeOpenPortfolioInvitation' as const,
+        publicInvitationMaker,
       };
       t.log('I ask the portfolio manager to allocate', give);
       const proposal = { give: { Access, ...give } };
@@ -69,7 +74,7 @@ export const makeTrader = (
       };
 
       return wallet.executeContinuingOffer({
-        id: openId,
+        id,
         invitationSpec,
         proposal,
         offerArgs,
