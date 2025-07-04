@@ -2,14 +2,14 @@
   "name": "@aglocal/portfolio-contract",
   "private": true,
   "version": "0.1.0",
-  "description": "Dapp to manage a portfolio of stables",
+  "description": "portfolio-contract aka ymax0 or YMax Proof of Concept (PoC)",
   "type": "module",
   "files": [
     "src",
     "tools"
   ],
   "scripts": {
-    "build": "exit 0",
+    "build": "echo see ../portfolio-deploy; exit 0",
     "test": "ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
