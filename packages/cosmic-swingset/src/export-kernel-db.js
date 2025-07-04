@@ -112,12 +112,11 @@ export const checkExportDataMode = (mode, isImport = false) => {
 
 /**
  * @typedef {object} StateSyncExporterOptions
- * @property {SwingStoreArtifactMode} [artifactMode] the level of artifacts to include in the export
- * @property {number} [blockHeight] block height to check for
- * @property {boolean} compressed wether the generated artificats should be compressed or not
- * @property {SwingStoreExportDataMode} [exportDataMode] include a synthetic artifact for the export data in the export
- * @property {string} exportDir the directory in which to place the exported artifacts and manifest
  * @property {string} stateDir the directory containing the SwingStore to export
+ * @property {string} exportDir the directory in which to place the exported artifacts and manifest
+ * @property {number} [blockHeight] block height to check for
+ * @property {SwingStoreArtifactMode} [artifactMode] the level of artifacts to include in the export
+ * @property {SwingStoreExportDataMode} [exportDataMode] include a synthetic artifact for the export data in the export
  */
 
 /**
@@ -151,14 +150,7 @@ export const validateExporterOptions = options => {
  * @returns {StateSyncExporter}
  */
 export const initiateSwingStoreExport = (
-  {
-    artifactMode,
-    blockHeight,
-    compressed,
-    exportDataMode,
-    exportDir,
-    stateDir,
-  },
+  { stateDir, exportDir, blockHeight, artifactMode, exportDataMode },
   {
     fs: { open, writeFile },
     pathResolve,
@@ -188,7 +180,7 @@ export const initiateSwingStoreExport = (
 
     const swingStoreExporter = makeExporter(stateDir, {
       artifactMode: effectiveArtifactMode,
-      compressed,
+      compressed: true,
     });
     cleanup.push(async () => swingStoreExporter.close());
 
@@ -213,7 +205,7 @@ export const initiateSwingStoreExport = (
       artifactMode: artifactMode || effectiveArtifactMode,
       artifacts: [],
       blockHeight: savedBlockHeight,
-      compressed,
+      compressed: true,
     };
 
     if (exportDataMode === 'all') {
@@ -349,14 +341,11 @@ export const main = async (
 
   const exporter = initiateSwingStoreExport(
     {
-      artifactMode,
-      blockHeight: checkBlockHeight,
-      compressed: !!processValue.getBoolean({
-        flagName: 'compressed',
-      }),
-      exportDataMode,
-      exportDir,
       stateDir,
+      exportDir,
+      blockHeight: checkBlockHeight,
+      artifactMode,
+      exportDataMode,
     },
     {
       fs,
@@ -397,24 +386,10 @@ export const main = async (
  * @returns {StateSyncExporter}
  */
 export const spawnSwingStoreExport = (
-  {
-    artifactMode,
-    blockHeight,
-    compressed,
-    exportDataMode,
-    exportDir,
-    stateDir,
-  },
+  { stateDir, exportDir, blockHeight, artifactMode, exportDataMode },
   { fork, verbose },
 ) => {
-  const args = [
-    '--compressed',
-    String(compressed),
-    '--export-dir',
-    exportDir,
-    '--state-dir',
-    stateDir,
-  ];
+  const args = ['--state-dir', stateDir, '--export-dir', exportDir];
 
   if (blockHeight !== undefined) {
     args.push('--check-block-height', String(blockHeight));

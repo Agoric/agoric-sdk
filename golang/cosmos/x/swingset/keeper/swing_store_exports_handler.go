@@ -125,10 +125,10 @@ const swingStoreExportActionType = "SWING_STORE_EXPORT"
 const initiateRequest = "initiate"
 
 type swingStoreInitiateExportAction struct {
-	Args        [1]SwingStoreExportOptions `json:"args"`
-	BlockHeight uint64                     `json:"blockHeight,omitempty"` // empty if no blockHeight requested (latest)
-	Request     string                     `json:"request"`               // "initiate"
 	Type        string                     `json:"type"`                  // "SWING_STORE_EXPORT"
+	Request     string                     `json:"request"`               // "initiate"
+	BlockHeight uint64                     `json:"blockHeight,omitempty"` // empty if no blockHeight requested (latest)
+	Args        [1]SwingStoreExportOptions `json:"args"`
 }
 
 // retrieveRequest is the request type for retrieving an initiated export
@@ -204,7 +204,6 @@ type SwingStoreExportOptions struct {
 	// (None, Operational, Replay, Archival, Debug).
 	// See packages/cosmic-swingset/src/export-kernel-db.js initiateSwingStoreExport
 	ArtifactMode string `json:"artifactMode,omitempty"`
-	Compressed   bool   `json:"compressed"`
 	// ExportDataMode selects whether to include "export data" in the swing-store
 	// export or not. Use the value SwingStoreExportDataModeSkip or
 	// SwingStoreExportDataModeAll. If "skip", the reader returned by
@@ -533,10 +532,10 @@ func (exportsHandler SwingStoreExportsHandler) InitiateExport(
 		}()
 
 		initiateAction := &swingStoreInitiateExportAction{
-			Args:        [1]SwingStoreExportOptions{exportOptions},
+			Type:        swingStoreExportActionType,
 			BlockHeight: blockHeight,
 			Request:     initiateRequest,
-			Type:        swingStoreExportActionType,
+			Args:        [1]SwingStoreExportOptions{exportOptions},
 		}
 
 		// blockingSend for SWING_STORE_EXPORT action is safe to call from a goroutine

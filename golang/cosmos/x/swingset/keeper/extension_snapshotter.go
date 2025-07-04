@@ -72,34 +72,34 @@ type ExtensionSnapshotter struct {
 	activeSnapshot                          *snapshotDetails
 }
 
-func compressGzipBytes(data []byte) ([]byte, error) {
+func compressToGzip(data []byte) ([]byte, error) {
 	var buf bytes.Buffer
 	gzipWriter := gzip.NewWriter(&buf)
 
 	_, err := gzipWriter.Write(data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to write gzip data: %w", err)
+		return nil, fmt.Errorf("failed to write gzip data: %s", err.Error())
 	}
 
 	err = gzipWriter.Close()
 	if err != nil {
-		return nil, fmt.Errorf("failed to close gzip writer: %w", err)
+		return nil, fmt.Errorf("failed to close gzip writer: %s", err.Error())
 	}
 
 	return buf.Bytes(), nil
 }
 
-func decompressGzipBytes(data []byte) ([]byte, error) {
+func decompressFromGzip(data []byte) ([]byte, error) {
 	reader, err := gzip.NewReader(bytes.NewReader(data))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create gzip reader: %w", err)
+		return nil, fmt.Errorf("failed to create gzip reader: %s", err.Error())
 	}
 	defer reader.Close()
 
 	var out bytes.Buffer
 	_, err = io.Copy(&out, reader)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decompress: %w", err)
+		return nil, fmt.Errorf("failed to decompress: %s", err.Error())
 	}
 
 	return out.Bytes(), nil
@@ -158,15 +158,10 @@ func (snapshotter *ExtensionSnapshotter) InitiateSnapshot(height int64) error {
 
 	blockHeight := uint64(height)
 
-	return snapshotter.swingStoreExportsHandler.InitiateExport(
-		blockHeight,
-		snapshotter,
-		SwingStoreExportOptions{
-			ArtifactMode:   SwingStoreArtifactModeOperational,
-			Compressed:     true,
-			ExportDataMode: SwingStoreExportDataModeSkip,
-		},
-	)
+	return snapshotter.swingStoreExportsHandler.InitiateExport(blockHeight, snapshotter, SwingStoreExportOptions{
+		ArtifactMode:   SwingStoreArtifactModeOperational,
+		ExportDataMode: SwingStoreExportDataModeSkip,
+	})
 }
 
 // OnExportStarted performs the actual cosmos state-sync app snapshot.
@@ -254,7 +249,7 @@ func (snapshotter *ExtensionSnapshotter) OnExportRetrieved(provider SwingStoreEx
 
 	writeArtifactToPayload := func(artifact types.SwingStoreArtifact, decompress bool) error {
 		if decompress {
-			decompressedData, err := decompressGzipBytes(artifact.Data)
+			decompressedData, err := decompressFromGzip(artifact.Data)
 			if err != nil {
 				return err
 			} else {
@@ -351,7 +346,7 @@ func (snapshotter *ExtensionSnapshotter) RestoreExtension(blockHeight uint64, fo
 			return artifact, err
 		}
 
-		compressData, err := compressGzipBytes(artifact.Data)
+		compressData, err := compressToGzip(artifact.Data)
 		if err != nil {
 			return artifact, err
 		} else {

@@ -661,7 +661,7 @@ export default async function main(
    * @param {string} request
    * @param {Array<{
    *  artifactMode: import("@agoric/cosmic-swingset/src/export-kernel-db.js").StateSyncExporterOptions['artifactMode'];
-   *  compressed: import("@agoric/cosmic-swingset/src/export-kernel-db.js").StateSyncExporterOptions['compressed'];
+   *  compressed: boolean;
    *  exportDataMode: import("@agoric/cosmic-swingset/src/export-kernel-db.js").StateSyncExporterOptions['exportDataMode'];
    *  exportDir: import("@agoric/cosmic-swingset/src/export-kernel-db.js").StateSyncExporterOptions['exportDir'];
    * }>} requestArgs
