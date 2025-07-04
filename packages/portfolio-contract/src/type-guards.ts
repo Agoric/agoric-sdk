@@ -156,9 +156,7 @@ export const getChainNameOfPlaceRef = (
   return chain as SupportedChain;
 };
 
-export type AssetPlaceDef =
-  | AssetPlaceRef
-  | { open: PoolKey; chainId?: CaipChainId };
+export type AssetPlaceDef = AssetPlaceRef | { open: PoolKey };
 const AssetPlaceDefShap = M.or(AssetPlaceRefShape, {
   open: M.or(...keys(PoolPlaces)),
 });

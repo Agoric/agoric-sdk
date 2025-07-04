@@ -4,7 +4,7 @@
  * @see {openPortfolio}
  * @see {rebalance}
  */
-import type { GuestInterface } from '@agoric/async-flow';
+import type { Guest, GuestInterface } from '@agoric/async-flow';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import {
   MsgLock,
@@ -34,10 +34,9 @@ import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { assert, Fail } from '@endo/errors';
-import type { YieldProtocol } from './constants.js';
+import type { SupportedChain, YieldProtocol } from './constants.js';
 import type {
   AccountInfoFor,
-  SupportedChain,
   PortfolioKit,
   Position,
   USDNPosition,
@@ -68,7 +67,7 @@ type PortfolioBootstrapContext = {
     getDenom: (brand: Brand) => Denom | undefined;
   };
   zoeTools: GuestInterface<ZoeTools>;
-  makePortfolioKit: () => GuestInterface<PortfolioKit>;
+  makePortfolioKit: () => Guest<PortfolioKit>;
   inertSubscriber: GuestInterface<ResolvedPublicTopic<unknown>['subscriber']>;
 };
 
@@ -493,14 +492,16 @@ const errmsg = (err: any) => ('message' in err ? err.message : `${err}`);
 export const provideAccountInfo = async <C extends SupportedChain>(
   orch: Orchestrator,
   chainName: C,
-  kit: GuestInterface<PortfolioKit>, // Guest<T>?
+  kit: Guest<PortfolioKit>, // Guest<T>?
 ): Promise<AccountInfoFor[C]> => {
   await null;
-  // TODO: async provide
+  trace('provideAccountInfo', chainName);
   let promiseMaybe = kit.manager.reserveAccount(chainName);
   if (promiseMaybe) {
+    trace('reserve truthy', chainName);
     return promiseMaybe as unknown as Promise<AccountInfoFor[C]>;
   }
+  trace('reserve falsy', chainName);
 
   // We have the map entry reserved
   switch (chainName) {
@@ -618,10 +619,9 @@ export const rebalance = async (
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['rebalance'],
-  kit: GuestInterface<PortfolioKit>,
+  kit: Guest<PortfolioKit>,
 ) => {
   const { axelarChainsMap } = ctx;
-  const { destinationEVMChain } = offerArgs;
 
   const proposal = seat.getProposal() as ProposalType['rebalance'];
   trace('rebalance proposal', proposal.give, proposal.want, offerArgs);
@@ -732,6 +732,7 @@ export const openPortfolio = (async (
       inertSubscriber,
     } = ctx;
     const kit = makePortfolioKit();
+    await provideAccountInfo(orch, 'agoric', kit);
 
     const portfolioCtx = {
       axelarChainsMap,

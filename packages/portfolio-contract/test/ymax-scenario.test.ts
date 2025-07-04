@@ -4,42 +4,21 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeIssuerKit, type NatAmount } from '@agoric/ertp';
+import { makeIssuerKit } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
-import { mustMatch } from '@agoric/store';
-import {
-  makeFakeStorageKit,
-  withAmountUtils,
-} from '@agoric/zoe/tools/test-utils.js';
-import { makeHeapZone } from '@agoric/zone';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { q } from '@endo/errors';
-import { makeMarshal } from '@endo/marshal';
-import { Far } from '@endo/pass-style';
-import { M, objectMap } from '@endo/patterns';
-import {
-  preparePortfolioKit,
-  type PortfolioKit,
-} from '../src/portfolio.exo.ts';
+import { objectMap } from '@endo/patterns';
+import { type PortfolioKit } from '../src/portfolio.exo.ts';
 import { wayFromSrcToDesc } from '../src/run-flow.ts';
-import {
-  makeNatAmountShape,
-  makeOfferArgsShapes,
-  makeProposalShapes,
-  type LocalAccount,
-  type MovementDesc,
-  type NobleAccount,
-  type OfferArgsFor,
-  type ProposalType,
-} from '../src/type-guards.ts';
+import { type OfferArgsFor, type ProposalType } from '../src/type-guards.ts';
 import {
   grokRebalanceScenarios,
   importCSV,
   numeral,
   withBrand,
   type Dollars,
-  type RebalanceScenario,
 } from '../tools/rebalance-grok.ts';
 import {
   setupTrader,
@@ -47,9 +26,6 @@ import {
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
-import { localAccount0 } from './mocks.ts';
-import { AnyNatAmountShape } from '@agoric/orchestration';
-import type { AxelarChain } from '../src/constants.js';
 
 test('wayFromSrcToDesc handles 1 scenario', async t => {
   const scenario = (await scenariosP)['Open portfolio with USDN position'];

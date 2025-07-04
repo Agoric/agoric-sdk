@@ -1,4 +1,7 @@
+import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
+import { Far } from '@endo/pass-style';
 import test from 'ava';
+import { makeOfferArgsShapes } from '../src/type-guards.ts';
 import {
   grokRebalanceScenarios,
   importText,
@@ -7,9 +10,6 @@ import {
   withBrand,
   type Dollars,
 } from '../tools/rebalance-grok.ts';
-import { makeOfferArgsShapes, type MovementDesc } from '../src/type-guards.ts';
-import { Far } from '@endo/pass-style';
-import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 
 test('parseCSV test utility', async t => {
   const text = await importText('./move-cases.csv', import.meta.url);

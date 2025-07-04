@@ -9,27 +9,23 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import {
-  type AccountId,
-  type CaipChainId,
-  type CosmosChainAddress,
-  type OrchestrationAccount,
-} from '@agoric/orchestration';
+import { type AccountId, type CaipChainId } from '@agoric/orchestration';
 import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import type { MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import type { VTransferIBCEvent } from '@agoric/vats';
+import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { VowShape, type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { atob, decodeBase64 } from '@endo/base64';
+import { X } from '@endo/errors';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
-import type { HostInterface } from '../../async-flow/src/types.js';
 import { SupportedChain, YieldProtocol } from './constants.js';
 import type { AxelarChainsMap, NobleAccount } from './type-guards.js';
 import {
@@ -38,12 +34,9 @@ import {
   makePositionPath,
   type LocalAccount,
   type OfferArgsFor,
-  type makeProposalShapes,
   type makeOfferArgsShapes,
+  type makeProposalShapes,
 } from './type-guards.js';
-import { X } from '@endo/errors';
-import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
-import { Fail, q } from '@endo/errors';
 
 const trace = makeTracer('PortExo');
 const { assign, values } = Object;
@@ -209,6 +202,7 @@ export const preparePortfolioKit = (
     return node;
   };
   const publishStatus = (path: string[], status: CopyRecord): void => {
+    trace('publishStatus', path, status);
     const node = makePathNode(path);
     // Don't await, just writing to vstorage.
     void E.when(E(marshaller).toCapData(status), capData =>
@@ -369,10 +363,10 @@ export const preparePortfolioKit = (
 
           if (
             !values(axelarChainsMap)
-              .map(chain => chain.axelarId)
+              .map(chain => chain.axelarId as string)
               .includes(memo.source_chain)
           ) {
-            console.warn('unknown source_chain', memo);
+            trace('⚠️ unknown source_chain', memo);
             return;
           }
 
@@ -439,11 +433,18 @@ export const preparePortfolioKit = (
       },
       reporter: {
         publishStatus() {
-          const { portfolioId, positions, accounts, nextFlowId } = this.state;
+          const {
+            portfolioId,
+            positions,
+            accounts,
+            accountsPending,
+            nextFlowId,
+          } = this.state;
           publishStatus(makePortfolioPath(portfolioId), {
             positionCount: positions.getSize(),
             flowCount: nextFlowId - 1,
             accountIdByChain: accountIdByChain(accounts),
+            accountsPending: [...accountsPending.keys()],
           });
         },
         allocateFlowId() {
@@ -475,6 +476,7 @@ export const preparePortfolioKit = (
           }
           const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
           accountsPending.init(chainName, pending);
+          this.facets.reporter.publishStatus();
           return undefined;
         },
         resolveAccount(info: AccountInfo) {

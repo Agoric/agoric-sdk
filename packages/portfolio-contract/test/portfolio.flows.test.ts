@@ -5,7 +5,7 @@
  */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import type { GuestInterface } from '@agoric/async-flow';
+import type { Guest, GuestInterface } from '@agoric/async-flow';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { mustMatch } from '@agoric/internal';
 import {
@@ -24,7 +24,6 @@ import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
-import { decodeToJustin, makeMarshal } from '@endo/marshal';
 import {
   preparePortfolioKit,
   type PortfolioKit,
@@ -36,11 +35,17 @@ import {
   rebalance,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
+import { interpretFlowDesc } from '../src/run-flow.ts';
 import {
   makeOfferArgsShapes,
   makeProposalShapes,
   type ProposalType,
 } from '../src/type-guards.ts';
+import {
+  grokRebalanceScenarios,
+  importCSV,
+  withBrand,
+} from '../tools/rebalance-grok.ts';
 import { axelarChainsMap } from './mocks.ts';
 import { makeIncomingEVMEvent } from './supports.ts';
 
@@ -230,7 +235,7 @@ const mocks = (
   const makePortfolioKitGuest = () =>
     makePortfolioKit({
       portfolioId: 1,
-    }) as unknown as GuestInterface<PortfolioKit>;
+    }) as unknown as Guest<PortfolioKit>;
 
   const proposal: ProposalType['openPortfolio'] = harden({ give, want: {} });
   let hasExited = false;
@@ -308,6 +313,58 @@ test('Noble Dollar Swap, Lock messages', t => {
     msgsByKW.USDNUnlock.msgSwap.amount.amount,
     'amount locked should be amount swapped after unlock',
   );
+});
+
+const scenariosP = importCSV('./move-cases.csv', import.meta.url).then(data =>
+  harden(grokRebalanceScenarios(data)),
+);
+
+test('interpretFlowDesc handles USDN scenario', async t => {
+  const { orch, ctx, offer, storage } = mocks();
+  const { log, seat } = offer;
+  const { 'Open portfolio with USDN position': sceneData } = await scenariosP;
+
+  const pk = ctx.makePortfolioKit();
+  const { offerArgs } = withBrand(sceneData, USDC);
+  const denom = ctx.chainHubTools.getDenom(USDC);
+  assert(denom);
+  const flow = offerArgs.flow || [];
+
+  t.deepEqual(flow, [
+    {
+      amount: { brand: USDC, value: 3333000000n },
+      dest: 'agoric.makeAccount()',
+      src: 'Deposit',
+    },
+    {
+      amount: { brand: USDC, value: 3333000000n },
+      dest: 'noble.makeAccount()',
+      src: 'agoric.makeAccount()',
+    },
+    {
+      amount: { brand: USDC, value: 3333000000n },
+      dest: { open: 'USDN' },
+      src: 'noble.makeAccount()',
+    },
+  ]);
+
+  const actual = await interpretFlowDesc(
+    orch,
+    flow,
+    ctx.zoeTools,
+    seat,
+    pk,
+    denom,
+  );
+  t.like(actual, [
+    { how: 'localTransfer' },
+    { how: 'transfer' },
+    { how: 'USDN' },
+  ]);
+  // only account creation is expected in the log
+  // we don't actually run the flow (yet).
+  t.snapshot(log, 'call log');
+  await documentStorageSchema(t, storage, docOpts);
 });
 
 test('open portfolio with USDN position', async t => {

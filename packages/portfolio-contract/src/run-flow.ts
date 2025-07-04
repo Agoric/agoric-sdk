@@ -10,7 +10,7 @@ import type {
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZCFSeat } from '@agoric/zoe';
 import { Fail, q } from '@endo/errors';
-import type { GuestInterface } from '../../async-flow/src/types.ts';
+import type { Guest, GuestInterface } from '../../async-flow/src/types.ts';
 import type {
   AccountInfoFor,
   PortfolioKit,
@@ -32,6 +32,7 @@ import {
   type LocalAccount,
   type MovementDesc,
   type NobleAccount,
+  type PoolKey,
   type SeatKeyword,
 } from './type-guards.ts';
 import { keyEQ } from '@endo/patterns';
@@ -109,7 +110,7 @@ export const trackFlow = async (
     for (const move of moves) {
       trace(step, moveStatus(move));
       reporter.publishFlowStatus(flowId, { step, ...moveStatus(move) });
-      await move.apply();
+      await move.apply(move);
       const { amount, src, dest } = move;
       if ('pos' in src) {
         src.pos.recordTransferOut(amount);
@@ -131,7 +132,7 @@ export const trackFlow = async (
       const how = `unwind: ${move.how}`;
       reporter.publishFlowStatus(flowId, { step, ...moveStatus(move), how });
       try {
-        await move.recover();
+        await move.recover(move);
       } catch (err) {
         console.error('⚠️ unwind step', step, ' failed', err);
         // if a recover fails, we just give up and report `where` the assets are
@@ -151,7 +152,7 @@ export const trackFlow = async (
 };
 
 const trackFlowCHECKME = async (
-  reporter: GuestInterface<PortfolioKit['reporter']>,
+  reporter: Guest<PortfolioKit['reporter']>,
   moves: AssetMovement[],
 ) => {
   const flowId = reporter.allocateFlowId();
@@ -160,7 +161,7 @@ const trackFlowCHECKME = async (
     for (const move of moves) {
       trace(step, moveStatus(move));
       reporter.publishFlowStatus(flowId, { step, ...moveStatus(move) });
-      await move.apply();
+      await move.apply(move);
       const { amount, src, dest } = move;
       if ('pos' in src) {
         src.pos.recordTransferOut(amount);
@@ -182,7 +183,7 @@ const trackFlowCHECKME = async (
       const how = `unwind: ${move.how}`;
       reporter.publishFlowStatus(flowId, { step, ...moveStatus(move), how });
       try {
-        await move.recover();
+        await move.recover(move);
       } catch (err) {
         console.error('⚠️ unwind step', step, ' failed', err);
         // if a recover fails, we just give up and report `where` the assets are
@@ -283,12 +284,12 @@ export const wayFromSrcToDesc = (
   }
 };
 
-const interpretFlowDesc = async (
+export const interpretFlowDesc = async (
   orch: Orchestrator,
   flowDesc: MovementDesc[],
   zoeTools: PortfolioInstanceContext['zoeTools'],
   seat: ZCFSeat,
-  kit: GuestInterface<PortfolioKit>,
+  kit: Guest<PortfolioKit>,
   denom: Denom,
 ): Promise<AssetMovement[]> => {
   const toD = (a: NatAmount): DenomAmount => harden({ ...a, denom });
@@ -368,10 +369,10 @@ const interpretFlowDesc = async (
 
   const { reader } = kit;
 
-  const toPlace = async (ref: AssetPlaceDef): Promise<AssetPlace> => {
+  const toPlace = async (ref: AssetPlaceRef): Promise<AssetPlace> => {
     switch (typeof ref) {
       case 'number':
-        return { pos: reader.getPosition(ref) };
+        return { pos: reader.getPosition(ref) }; // XXX what if get throws?
       case 'string':
         if ((seatKeywords as string[]).includes(ref)) {
           return { seat, keyword: ref as SeatKeyword };
@@ -392,18 +393,44 @@ const interpretFlowDesc = async (
             throw Error('NOT IMPL');
         }
       default:
-        throw Error('unreachable');
+        throw Fail`unreachable: ${q(ref)}`;
     }
   };
 
-  const m3 = flowDesc.map(async moveDesc => {
+  const makePositionPlace = async (
+    desc: AssetPlaceDef & { open: PoolKey },
+  ): Promise<AssetPlace> => {
+    const { open: poolKey } = desc;
+    const info = PoolPlaces[poolKey];
+    switch (info.protocol) {
+      case 'USDN': {
+        const { ica } = await provideAccountInfo(orch, 'noble', kit);
+        const pos = kit.manager.provideUSDNPosition(
+          coerceAccountId(ica.getAddress()),
+        );
+        return { pos };
+      }
+      default:
+        throw Fail`not implemented: ${q(desc)}`;
+    }
+  };
+
+  const movesWithPlaces: AssetMovement[] = [];
+
+  let ix = 0;
+  for (const moveDesc of flowDesc) {
     const how = wayFromSrcToDesc(moveDesc, kit.reader);
     const { apply, recover } = animate[how];
     const { amount } = moveDesc;
-    const [src, dest] = await Promise.all([
-      toPlace(moveDesc.src),
-      toPlace(moveDesc.dest),
-    ]);
+    const src = await toPlace(moveDesc.src);
+    const { dest: destDesc } = moveDesc;
+    const dest = await (() => {
+      if (typeof destDesc === 'object' && 'open' in destDesc) {
+        return makePositionPlace(destDesc);
+      } else {
+        return toPlace(destDesc);
+      }
+    })();
     const move: AssetMovement = {
       how,
       amount,
@@ -412,8 +439,9 @@ const interpretFlowDesc = async (
       apply,
       recover,
     };
-    return move;
-  });
+    ix += 1;
+    movesWithPlaces.push(move);
+  }
 
-  return Promise.all(m3);
+  return harden(movesWithPlaces);
 };
