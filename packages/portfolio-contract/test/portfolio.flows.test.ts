@@ -35,7 +35,7 @@ import {
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
-import { axelarChainsMapMock } from './mocks.ts';
+import { contractAddressesMock } from './mocks.ts';
 import { makeIncomingEVMEvent } from './supports.ts';
 
 const theExit = harden(() => {}); // for ava comparison
@@ -203,7 +203,7 @@ const mocks = (
   const ctx1: PortfolioInstanceContext = {
     zoeTools,
     chainHubTools,
-    axelarChainsMap: axelarChainsMapMock,
+    contractAddresses: contractAddressesMock,
     inertSubscriber,
   };
 
@@ -212,7 +212,6 @@ const mocks = (
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
     vowTools,
-    axelarChainsMap: axelarChainsMapMock,
     timer,
     rebalance: rebalanceHost as any,
     proposalShapes: makeProposalShapes(USDC),
@@ -403,12 +402,12 @@ test('open portfolio with Aave position', async t => {
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', amounts: { AaveAccount: { value: 50n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-1' } },
+    { _method: 'transfer', address: { chainId: 'axelar-2' } },
     { _method: 'localTransfer', amounts: { Aave: { value: 300n } } },
-    { _method: 'transfer', address: { chainId: 'noble-4' } },
+    { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'depositForBurn' },
     { _method: 'localTransfer', amounts: { AaveGmp: { value: 100n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-1' } },
+    { _method: 'transfer', address: { chainId: 'axelar-2' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -439,12 +438,12 @@ test('open portfolio with Compound position', async t => {
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', amounts: { CompoundAccount: { value: 300n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-1' } },
+    { _method: 'transfer', address: { chainId: 'axelar-2' } },
     { _method: 'localTransfer', amounts: { Compound: { value: 300n } } },
-    { _method: 'transfer', address: { chainId: 'noble-4' } },
+    { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'depositForBurn' },
     { _method: 'localTransfer', amounts: { CompoundGmp: { value: 100n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-1' } },
+    { _method: 'transfer', address: { chainId: 'axelar-2' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details

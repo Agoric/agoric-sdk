@@ -9,7 +9,7 @@ import { passStyleOf } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import * as contractExports from '../src/portfolio.contract.ts';
-import { axelarChainsMapMock, makeUSDNIBCTraffic } from './mocks.ts';
+import { contractAddressesMock, makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import {
   chainInfoFantasyTODO,
@@ -34,16 +34,37 @@ const deploy = async (t: ExecutionContext) => {
   const { usdc, poc26 } = common.brands;
   const timerService = buildZoeManualTimer();
 
-  const { agoric, noble, axelar, osmosis } = chainInfoFantasyTODO;
+  const selectedChains = [
+    'agoric',
+    'noble',
+    'axelar',
+    'osmosis',
+    'Polygon',
+    'optimism',
+    'Fantom',
+    'binance',
+    'Avalanche',
+    'arbitrum',
+    'Ethereum',
+    'polygon-sepolia',
+    'optimism-sepolia',
+    'ethereum-sepolia',
+    'arbitrum-sepolia',
+  ];
+
+  const chainInfo = Object.fromEntries(
+    selectedChains.map(name => [name, chainInfoFantasyTODO[name]]),
+  );
+
   const started = await E(zoe).startInstance(
     installation,
     { USDC: usdc.issuer, Access: poc26.issuer },
     {}, // terms
     {
       ...common.commonPrivateArgs,
-      axelarChainsMap: axelarChainsMapMock,
+      contractAddresses: contractAddressesMock,
       timerService,
-      chainInfo: { agoric, noble, axelar, osmosis },
+      chainInfo,
     }, // privateArgs
   );
   t.notThrows(() =>
@@ -61,7 +82,7 @@ const deploy = async (t: ExecutionContext) => {
 };
 
 export const setupTrader = async (t, initial = 10_000) => {
-  const { common, zoe, started } = await deploy(t);
+  const { common, zoe, started, timerService } = await deploy(t);
   const { usdc, poc26 } = common.brands;
   const { when } = common.utils.vowTools;
 
@@ -78,7 +99,7 @@ export const setupTrader = async (t, initial = 10_000) => {
     ibcBridge.addMockAck(msg, ack);
   }
 
-  return { common, zoe, started, myBalance, myWallet, trader1 };
+  return { common, zoe, started, myBalance, myWallet, trader1, timerService };
 };
 
 export const simulateUpcallFromAxelar = async (

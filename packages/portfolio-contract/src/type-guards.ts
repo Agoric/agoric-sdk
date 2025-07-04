@@ -14,7 +14,12 @@ import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
 import type { AmountKeywordRecord } from '@agoric/zoe';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
-import { AxelarChain, SupportedChain, YieldProtocol } from './constants.js';
+import {
+  MainnetAxelarChain,
+  SupportedChain,
+  TestnetAxelarChain,
+  YieldProtocol,
+} from './constants.js';
 
 const { fromEntries, keys } = Object;
 
@@ -102,15 +107,23 @@ export const makeProposalShapes = (
   };
 };
 
+export type AxelarChain =
+  | (typeof MainnetAxelarChain)[keyof typeof MainnetAxelarChain]
+  | (typeof TestnetAxelarChain)[keyof typeof TestnetAxelarChain];
 type OfferArgs1 = {
-  destinationEVMChain?: AxelarChain;
+  destinationEVMChain?: MainnetAxelarChain | TestnetAxelarChain;
   usdnOut?: NatValue;
 };
+
+const destinationEVMChainShape = M.or(
+  ...keys(MainnetAxelarChain),
+  ...keys(TestnetAxelarChain),
+);
 
 const offerArgsShape: TypedPattern<OfferArgs1> = M.splitRecord(
   {},
   {
-    destinationEVMChain: M.or(...keys(AxelarChain)),
+    destinationEVMChain: destinationEVMChainShape,
     usdnOut: M.nat(),
   },
 );
@@ -127,20 +140,22 @@ type PoolPlaceInfo =
 const PoolPlaces: Record<string, PoolPlaceInfo> = {
   USDN: { protocol: 'USDN', vault: null }, // MsgSwap only
   USDNVault: { protocol: 'USDN', vault: 1 }, // MsgSwap, MsgLock
-  Aave_Arbitrum: { protocol: 'Aave', chainName: 'Arbitrum' },
+
+  // Mainnet values
+  Aave_Arbitrum: { protocol: 'Aave', chainName: 'arbitrum' },
   Aave_Avalanche: { protocol: 'Aave', chainName: 'Avalanche' },
-  Aave_BNB: { protocol: 'Aave', chainName: 'BNB' },
+  Aave_BNB: { protocol: 'Aave', chainName: 'binance' },
   Aave_Ethereum: { protocol: 'Aave', chainName: 'Ethereum' },
   Aave_Fantom: { protocol: 'Aave', chainName: 'Fantom' },
-  Aave_Optimism: { protocol: 'Aave', chainName: 'Optimism' },
+  Aave_Optimism: { protocol: 'Aave', chainName: 'optimism' },
   Aave_Polygon: { protocol: 'Aave', chainName: 'Polygon' },
 
-  Compound_Arbitrum: { protocol: 'Compound', chainName: 'Arbitrum' },
+  Compound_Arbitrum: { protocol: 'Compound', chainName: 'arbitrum' },
   Compound_Avalanche: { protocol: 'Compound', chainName: 'Avalanche' },
-  Compound_BNB: { protocol: 'Compound', chainName: 'BNB' },
+  Compound_BNB: { protocol: 'Compound', chainName: 'binance' },
   Compound_Ethereum: { protocol: 'Compound', chainName: 'Ethereum' },
   Compound_Fantom: { protocol: 'Compound', chainName: 'Fantom' },
-  Compound_Optimism: { protocol: 'Compound', chainName: 'Optimism' },
+  Compound_Optimism: { protocol: 'Compound', chainName: 'optimism' },
   Compound_Polygon: { protocol: 'Compound', chainName: 'Polygon' },
 } as const;
 harden(PoolPlaces);
@@ -214,37 +229,28 @@ export const OfferArgsShapeFor = {
 harden(OfferArgsShapeFor);
 
 export type EVMContractAddresses = {
-  aavePool?: `0x${string}`;
-  compound?: `0x${string}`;
-  factory: `0x${string}`;
-  usdc: `0x${string}`;
-};
-export type AxelarChainsMap = {
   [chain in AxelarChain]: {
-    caip: CaipChainId; // TODO: move to chainHub
-    axelarId: AxelarChain; // TODO: becomes chainName in chainHub
-    contractAddresses: EVMContractAddresses;
+    aavePool: `0x${string}`;
+    compound: `0x${string}`;
+    factory: `0x${string}`;
+    usdc: `0x${string}`;
   };
 };
+export const AxelarChains = { ...MainnetAxelarChain, ...TestnetAxelarChain };
 
 export const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
-  M.splitRecord({
-    aavePool: M.string(),
-    compound: M.string(),
-    factory: M.string(),
-    usdc: M.string(),
-  });
-
-const AxelarChainInfoPattern = M.splitRecord({
-  caip: M.string(),
-  contractAddresses: EVMContractAddressesShape,
-});
-
-export const AxelarChainsMapShape: TypedPattern<AxelarChainsMap> =
   M.splitRecord(
     fromEntries(
-      keys(AxelarChain).map(chain => [chain, AxelarChainInfoPattern]),
-    ) as Record<AxelarChain, typeof AxelarChainInfoPattern>,
+      keys(AxelarChains).map(chain => [
+        chain,
+        M.splitRecord({
+          aavePool: M.string(),
+          compound: M.string(),
+          factory: M.string(),
+          usdc: M.string(),
+        }),
+      ]),
+    ),
   );
 
 export type BaseGmpArgs = {
@@ -283,7 +289,7 @@ export const ContractCallShape = M.splitRecord({
 export const GMPArgsShape: TypedPattern<GmpArgsContractCall> = M.splitRecord({
   destinationAddress: M.string(),
   type: M.or(1, 2),
-  destinationEVMChain: M.or(...keys(AxelarChain)),
+  destinationEVMChain: destinationEVMChainShape,
   keyword: M.string(),
   amounts: AmountKeywordRecordShape, // XXX brand should be exactly USDC
   contractInvocationData: M.arrayOf(ContractCallShape),
