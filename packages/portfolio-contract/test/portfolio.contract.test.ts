@@ -15,7 +15,7 @@ import {
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
-import { axelarChainsMapMock, localAccount0 } from './mocks.ts';
+import { localAccount0 } from './mocks.ts';
 
 const { fromEntries, keys } = Object;
 
@@ -115,7 +115,7 @@ test('ProposalShapes', t => {
   }
 });
 
-test('makeAxelarMemo constructs correct memo JSON', t => {
+test('makeAxelarMemo constructs correct memo JSON', async t => {
   const { brand } = makeIssuerKit('USDC');
 
   const type = 1; // contract call
@@ -145,12 +145,12 @@ test('makeAxelarMemo constructs correct memo JSON', t => {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   ];
 
-  const result = makeAxelarMemo(axelarChainsMapMock, gmpArgs);
+  const result = await makeAxelarMemo('Avalanche', gmpArgs);
   const parsed = JSON.parse(result);
 
   t.deepEqual(parsed, {
     type,
-    destination_chain: destinationEVMChain,
+    destination_chain: 'Avalanche',
     destination_address: destinationAddress,
     payload: expectedPayload,
     fee: {

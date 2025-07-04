@@ -19,26 +19,21 @@ import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { VowShape, type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { atob, decodeBase64 } from '@endo/base64';
+import { decodeBase64 } from '@endo/base64';
 import { X } from '@endo/errors';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { YieldProtocol } from './constants.js';
+import type { NobleAccount } from './type-guards.js';
 import {
-  SupportedChain,
-  YieldProtocol,
-  type AxelarChain,
-} from './constants.js';
-import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
-import { preparePosition, type Position } from './pos.exo.js';
-import type { AxelarChainsMap, PoolKey, StatusFor } from './type-guards.js';
-import {
+  AxelarChains,
   makeFlowPath,
   makePortfolioPath,
   OfferArgsShapeFor,
   PoolKeyShape,
   type makeProposalShapes,
-  type OfferArgsFor,
+  type OfferArgsFor
 } from './type-guards.js';
 
 const trace = makeTracer('PortExo');
@@ -145,7 +140,6 @@ export type PublishStatusFn = <K extends keyof StatusFor>(
 export const preparePortfolioKit = (
   zone: Zone,
   {
-    axelarChainsMap,
     rebalance,
     rebalanceFromTransfer,
     timer,
@@ -156,7 +150,6 @@ export const preparePortfolioKit = (
     marshaller,
     usdcBrand,
   }: {
-    axelarChainsMap: AxelarChainsMap;
     rebalance: (
       seat: ZCFSeat,
       offerArgs: OfferArgsFor['rebalance'],
@@ -270,7 +263,15 @@ export const preparePortfolioKit = (
             chain => chain.axelarId === memo.source_chain,
           );
 
-          if (!axelarChain) {
+          trace('receiveUpcall packet data', tx);
+          if (!tx.memo) return;
+          const memo: AxelarGmpIncomingMemo = JSON.parse(tx.memo); // XXX unsound! use typed pattern
+
+          if (
+            !values(AxelarChains).includes(
+              memo.source_chain as keyof typeof AxelarChains,
+            )
+          ) {
             console.warn('unknown source_chain', memo);
             return;
           }
