@@ -6,7 +6,10 @@ import {
   type CosmosChainInfo,
   type Denom,
 } from '@agoric/orchestration';
-import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
+import {
+  axelarCCTPConfig,
+  axelarCCTPConfigTestnet,
+} from '@agoric/orchestration/src/cctp-chain-info.js';
 import { type DenomDetail } from '@agoric/orchestration/src/exos/chain-hub.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { setupOrchestrationTest } from '@agoric/orchestration/tools/contract-tests.ts';
@@ -59,8 +62,10 @@ export const makeIncomingEVMEvent = (
 
 export {
   makeFakeLocalchainBridge,
-  makeFakeTransferBridge,
+  makeFakeTransferBridge
 } from '@agoric/vats/tools/fake-bridge.js';
+
+const ccptConfig = { ...axelarCCTPConfig, ...axelarCCTPConfigTestnet };
 
 /** TODO: how to address this in production? route thru Osmosis? */
 export const chainInfoFantasyTODO = {
@@ -90,10 +95,7 @@ export const chainInfoFantasyTODO = {
       },
     },
   },
-  ethereum: {
-    chainId: 'mockId',
-    ...cctpChainInfo.ethereum,
-  },
+  ...ccptConfig,
 };
 
 const assetOn = (

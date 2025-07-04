@@ -11,6 +11,7 @@ import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import { AmountMath, type Amount } from '@agoric/ertp';
 import { makeTracer, mustMatch, NonNullish } from '@agoric/internal';
 import type {
+  CaipChainId,
   CosmosChainAddress,
   Denom,
   DenomAmount,
@@ -41,8 +42,8 @@ import type {
   USDNPosition,
 } from './portfolio.exo.ts';
 import type {
-  AxelarChainsMap,
   BaseGmpArgs,
+  EVMContractAddresses,
   GmpArgsContractCall,
   GmpArgsTransferAmount,
   GmpArgsWithdrawAmount,
@@ -59,7 +60,7 @@ const { add } = AmountMath;
 const { keys } = Object;
 
 type PortfolioBootstrapContext = {
-  axelarChainsMap: AxelarChainsMap;
+  contractAddresses: EVMContractAddresses;
   chainHubTools: {
     getDenom: (brand: Brand) => Denom | undefined;
   };
@@ -69,7 +70,7 @@ type PortfolioBootstrapContext = {
 };
 
 export type PortfolioInstanceContext = {
-  axelarChainsMap: AxelarChainsMap;
+  contractAddresses: EVMContractAddresses;
   chainHubTools: {
     getDenom: (brand: Brand) => Denom | undefined;
   };
@@ -120,7 +121,7 @@ const createRemoteEVMAccount = async (
   protocol: YieldProtocol,
 ) => {
   const { destinationEVMChain, keyword, amounts: gasAmounts } = gmpArgs;
-  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
+  const contractAddresses = ctx.contractAddresses[destinationEVMChain];
 
   await sendGmp(
     orch,
@@ -148,7 +149,7 @@ const sendTokensViaCCTP = async (
   kit: GuestInterface<PortfolioKit>,
   protocol: YieldProtocol,
 ) => {
-  const { axelarChainsMap, chainHubTools, zoeTools } = ctx;
+  const { chainHubTools, zoeTools } = ctx;
   const { keyword, amounts, destinationEVMChain } = args;
   const amount = amounts[keyword];
   const denom = NonNullish(chainHubTools.getDenom(amount.brand));
@@ -161,7 +162,9 @@ const sendTokensViaCCTP = async (
   await zoeTools.localTransfer(seat, localAcct, amounts);
   try {
     await localAcct.transfer(nobleAccount.getAddress(), denomAmount);
-    const caipChainId = axelarChainsMap[destinationEVMChain].caip;
+    const evmChain = await orch.getChain(destinationEVMChain);
+    const info = await evmChain.getChainInfo();
+    const caipChainId: CaipChainId = `${info.namespace}:${info.reference}`;
     const remoteAccountAddress = await kit.reader.getGMPAddress(protocol);
     const destinationAddress = `${caipChainId}:${remoteAccountAddress}`;
     trace(`CCTP destinationAddress: ${destinationAddress}`);
@@ -187,13 +190,12 @@ const sendTokensViaCCTP = async (
   }
 };
 
-export const makeAxelarMemo = (
-  axelarChainsMap: AxelarChainsMap,
+export const makeAxelarMemo = async (
+  chainId: string,
   gmpArgs: GmpArgsContractCall,
 ) => {
   const {
     contractInvocationData,
-    destinationEVMChain,
     destinationAddress,
     keyword,
     amounts: gasAmounts,
@@ -204,7 +206,7 @@ export const makeAxelarMemo = (
 
   const payload = buildGMPPayload(contractInvocationData);
   const memo: AxelarGmpOutgoingMemo = {
-    destination_chain: axelarChainsMap[destinationEVMChain].axelarId,
+    destination_chain: chainId,
     destination_address: destinationAddress,
     payload,
     type,
@@ -228,13 +230,13 @@ const sendGmp = async (
   kit: GuestInterface<PortfolioKit>,
 ) => {
   mustMatch(gmpArgs, GMPArgsShape);
-  const { axelarChainsMap, chainHubTools, zoeTools } = ctx;
+  const { chainHubTools, zoeTools } = ctx;
 
   const axelar = await orch.getChain('axelar');
   const { chainId } = await axelar.getChainInfo();
 
   const { lca: localAccount } = await provideAccountInfo(orch, 'agoric', kit);
-  const { keyword, amounts: gasAmounts } = gmpArgs;
+  const { keyword, amounts: gasAmounts, destinationEVMChain } = gmpArgs;
   const natAmount = gasAmounts[keyword];
   const denom = await chainHubTools.getDenom(natAmount.brand);
   assert(denom, 'denom must be defined');
@@ -245,7 +247,7 @@ const sendGmp = async (
 
   try {
     await zoeTools.localTransfer(seat, localAccount, gasAmounts);
-    const memo = makeAxelarMemo(axelarChainsMap, gmpArgs);
+    const memo = await makeAxelarMemo(destinationEVMChain, gmpArgs);
     await localAccount.transfer(
       {
         value: gmpAddresses.AXELAR_GMP,
@@ -274,7 +276,7 @@ const supplyToAave = async (
     keyword,
     amounts: gasAmounts,
   } = gmpArgs;
-  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
+  const contractAddresses = ctx.contractAddresses[destinationEVMChain];
   const remoteEVMAddress = await kit.reader.getGMPAddress('Aave');
 
   await sendGmp(
@@ -318,7 +320,7 @@ const withdrawFromAave = async (
     keyword,
     amounts: gasAmounts,
   } = gmpArgs;
-  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
+  const contractAddresses = ctx.contractAddresses[destinationEVMChain];
   const remoteEVMAddress = await kit.reader.getGMPAddress('Aave');
 
   await sendGmp(
@@ -357,7 +359,7 @@ const supplyToCompound = async (
     keyword,
     amounts: gasAmounts,
   } = gmpArgs;
-  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
+  const contractAddresses = ctx.contractAddresses[destinationEVMChain];
   const remoteEVMAddress = await kit.reader.getGMPAddress('Compound');
 
   await sendGmp(
@@ -401,7 +403,7 @@ const withdrawFromCompound = async (
     keyword,
     amounts: gasAmounts,
   } = gmpArgs;
-  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
+  const contractAddresses = ctx.contractAddresses[destinationEVMChain];
   const remoteEVMAddress = await kit.reader.getGMPAddress('Compound');
 
   await sendGmp(
@@ -612,7 +614,6 @@ export const rebalance = async (
   offerArgs: OfferArgsFor['rebalance'],
   kit: GuestInterface<PortfolioKit>,
 ) => {
-  const { axelarChainsMap } = ctx;
   const { destinationEVMChain } = offerArgs;
 
   const proposal = seat.getProposal() as ProposalType['rebalance'];
@@ -652,9 +653,12 @@ export const rebalance = async (
         ? ['AaveGmp', 'AaveAccount']
         : ['CompoundGmp', 'CompoundAccount'];
 
+    const evmChain = await orch.getChain(destinationEVMChain);
+    const info = await evmChain.getChainInfo();
+    const caip: CaipChainId = `${info.namespace}:${info.reference}`;
     const { position: _TODO, isNew } = kit.manager.provideGMPPositionOn(
       protocol as YieldProtocol,
-      axelarChainsMap[destinationEVMChain].caip,
+      caip,
     );
 
     if (isNew) {
@@ -718,14 +722,14 @@ export const openPortfolio = (async (
     const {
       makePortfolioKit,
       zoeTools,
-      axelarChainsMap,
+      contractAddresses,
       chainHubTools,
       inertSubscriber,
     } = ctx;
     const kit = makePortfolioKit();
 
     const portfolioCtx = {
-      axelarChainsMap,
+      contractAddresses,
       chainHubTools,
       keeper: { ...kit.reader, ...kit.manager },
       zoeTools,

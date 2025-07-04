@@ -13,11 +13,48 @@ export const YieldProtocol = /** @type {const} */ ({
 harden(YieldProtocol);
 
 /**
- * @enum {(typeof AxelarChains)[keyof typeof AxelarChains]}
+ * @enum {(typeof MainnetAxelarChain)[keyof typeof MainnetAxelarChain]}
+ *
+ * Subset of Axelar Mainnet chains supported by YMax
+ *
+ * @see {@link https://docs.axelar.dev/resources/contract-addresses/mainnet/#evm-contract-addresses}
  */
-export const AxelarChains = /** @type {const} */ ({
+export const MainnetAxelarChain = /** @type {const} */ ({
   Ethereum: 'Ethereum',
   Avalanche: 'Avalanche',
-  Base: 'Base',
+  arbitrum: 'arbitrum',
+  optimism: 'optimism',
+  Polygon: 'Polygon',
+  Fantom: 'Fantom',
+  binance: 'binance',
 });
-harden(AxelarChains);
+harden(MainnetAxelarChain);
+
+/**
+ * @enum {(typeof TestnetAxelarChain)[keyof typeof TestnetAxelarChain]}
+ *
+ * Subset of Axelar testnet chains supported by YMax
+ *
+ * @see {@link https://docs.axelar.dev/resources/contract-addresses/testnet/#evm-contract-addresses}
+ */
+export const TestnetAxelarChain = /** @type {const} */ ({
+  'ethereum-sepolia': 'ethereum-sepolia',
+  Avalanche: 'Avalanche',
+  'arbitrum-sepolia': 'arbitrum-sepolia',
+  'optimism-sepolia': 'optimism-sepolia',
+  'polygon-sepolia': 'polygon-sepolia',
+  Fantom: 'Fantom',
+  binance: 'binance',
+});
+harden(TestnetAxelarChain);
+
+/**
+ * @enum {(typeof SupportedChain)[keyof typeof SupportedChain]}
+ */
+export const SupportedChain = /** @type {const} */ ({
+  ...MainnetAxelarChain,
+  ...TestnetAxelarChain,
+  agoric: 'agoric',
+  noble: 'noble',
+});
+harden(SupportedChain);

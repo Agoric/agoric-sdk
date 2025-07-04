@@ -26,16 +26,14 @@ import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
-import type { HostInterface } from '../../async-flow/src/types.ts';
+import { SupportedChain } from './constants.js';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import {
-  AxelarChainsMapShape,
+  EVMContractAddressesShape,
   makeProposalShapes,
   OfferArgsShapeFor,
-  type AxelarChainsMap,
-  type LocalAccount,
-  type NobleAccount,
+  type EVMContractAddresses,
 } from './type-guards.ts';
 
 const trace = makeTracer('PortC');
@@ -47,16 +45,25 @@ type PortfolioPrivateArgs = OrchestrationPowers & {
   chainInfo: Record<string, ChainInfo>;
   marshaller: Marshaller;
   storageNode: Remote<StorageNode>;
-  axelarChainsMap: AxelarChainsMap;
+  contractAddresses: EVMContractAddresses;
 };
+
+const { values, fromEntries } = Object;
+
+/** each of the values in SupportedChain must appear in privateArgs.chainInfo */
+const requiredChainsInfoShape = M.splitRecord(
+  fromEntries(
+    values(SupportedChain).map(n => [n, ChainInfoShape]),
+  ) as CopyRecord,
+);
 
 const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   ...(OrchestrationPowersShape as CopyRecord),
   marshaller: M.remotable('marshaller'),
   storageNode: M.remotable('storageNode'),
-  chainInfo: M.recordOf(M.string(), ChainInfoShape),
+  chainInfo: requiredChainsInfoShape,
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
-  axelarChainsMap: AxelarChainsMapShape,
+  contractAddresses: EVMContractAddressesShape,
 };
 
 export const meta = {
@@ -73,7 +80,7 @@ export const contract = async (
   const {
     chainInfo,
     assetInfo,
-    axelarChainsMap,
+    contractAddresses,
     timerService,
     marshaller,
     storageNode,
@@ -106,7 +113,7 @@ export const contract = async (
   const ctx1 = {
     zoeTools,
     chainHubTools,
-    axelarChainsMap,
+    contractAddresses,
   };
   const { rebalance } = orchestrateAll({ rebalance: flows.rebalance }, ctx1);
 
@@ -115,7 +122,6 @@ export const contract = async (
     vowTools,
     rebalance,
     proposalShapes,
-    axelarChainsMap,
     timer: timerService,
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller,

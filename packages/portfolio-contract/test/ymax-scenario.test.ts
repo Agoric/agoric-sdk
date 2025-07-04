@@ -64,7 +64,7 @@ const rebalanceScenarioMacro = test.macro({
 
     const offerArgs =
       'Aave' in give || 'Compound' in give
-        ? { destinationEVMChain: 'Base' as const }
+        ? { destinationEVMChain: 'Ethereum' as const }
         : {};
 
     const { result, payouts } = await (openOnly
