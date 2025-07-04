@@ -5,18 +5,70 @@ import { BridgeId } from '@agoric/internal';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { AckBehavior } from '@aglocal/boot/tools/supports.js';
 import { configurations } from '../src/utils/deploy-config.js'; //TODO this will be removed
+import { makePromiseKit } from '@endo/promise-kit';
 
 import type { IBCChannelID } from '@agoric/vats';
 import type { CosmosChainAddress } from '@agoric/orchestration';
 // The simulation context type is based on WalletFactoryTestContext
 import type { WalletFactoryTestContext } from './walletFactory.ts';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type {
   CctpTxEvidence,
   EvmAddress,
   NobleAddress,
 } from '@agoric/fast-usdc';
 
+type SmartWallet = Awaited<
+  ReturnType<
+    WalletFactoryTestContext['walletFactoryDriver']['provideSmartWallet']
+  >
+>;
+
 const nobleAgoricChannelId = 'channel-21';
+
+const makeTxOracle = (
+  ctx: WalletFactoryTestContext,
+  name: string,
+  addr: string,
+) => {
+  const { agoricNamesRemotes, walletFactoryDriver: wfd } = ctx;
+  const walletPK = makePromiseKit<SmartWallet>();
+
+  return harden({
+    async provision() {
+      walletPK.resolve(wfd.provideSmartWallet(addr));
+      return walletPK.promise;
+    },
+    async claim() {
+      const wallet = await walletPK.promise;
+      await wallet.sendOffer({
+        id: 'claim-oracle-invitation',
+        invitationSpec: {
+          source: 'purse',
+          instance: agoricNamesRemotes.instance.fastUsdc,
+          description: 'oracle operator invitation',
+        },
+        proposal: {},
+      });
+    },
+    async submit(evidence: CctpTxEvidence, nonce: number) {
+      const wallet = await walletPK.promise;
+      const it: OfferSpec = {
+        id: `submit-evidence-${nonce}`,
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: 'claim-oracle-invitation',
+          invitationMakerName: 'SubmitEvidence',
+          invitationArgs: [evidence],
+        },
+        proposal: {},
+      };
+      await wallet.sendOffer(it);
+      return it;
+    },
+  });
+};
+type TxOracle = ReturnType<typeof makeTxOracle>;
 
 const makeCctp = (
   ctx: WalletFactoryTestContext,

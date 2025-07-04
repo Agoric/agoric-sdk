@@ -111,13 +111,15 @@ export const startPortfolio = async (permitted, configStruct) => {
   await permitted.consume.chainInfoPublished;
 
   const { issuer } = permitted;
-  const [BLD, USDC, PoC26] = await Promise.all([
-    issuer.consume.BLD,
-    issuer.consume.USDC,
-    issuer.consume.PoC26,
-  ]);
-  // Include BLD: BLD for use with assetInfo.brandKey
-  const issuerKeywordRecord = { USDC, Access: PoC26, Fee: BLD, BLD };
+
+  const PoC26 = await issuer.consume.PoC26;
+  trace('startPortfolio: settled PoC26');
+  const USDC = await issuer.consume.USDC;
+  trace('startPortfolio: settled USDC');
+
+  const issuerKeywordRecord = { USDC: USDC, Access: PoC26 };
+  // const issuerKeywordRecord = {  Access: PoC26 };
+  trace('startPortfolio: issuerKeywordRecord', issuerKeywordRecord);
   await startOrchContract(
     name,
     portfolioDeployConfigShape,
