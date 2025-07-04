@@ -39,15 +39,19 @@ import { interpretFlowDesc, trackFlow } from '../src/run-flow.ts';
 import {
   makeOfferArgsShapes,
   makeProposalShapes,
+  type MovementDesc,
   type ProposalType,
 } from '../src/type-guards.ts';
 import {
   grokRebalanceScenarios,
   importCSV,
+  numeral,
   withBrand,
+  type Dollars,
 } from '../tools/rebalance-grok.ts';
 import { axelarChainsMap } from './mocks.ts';
 import { makeIncomingEVMEvent } from './supports.ts';
+import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 
 const theExit = harden(() => {}); // for ava comparison
 // @ts-expect-error mock
@@ -60,6 +64,8 @@ const mockZCF: ZCF = Far('MockZCF', {
 
 const { brand: USDC } = makeIssuerKit('USDC');
 const { make } = AmountMath;
+const $ = (amt: Dollars) =>
+  multiplyBy(make(USDC, 1_000_000n), parseRatio(numeral(amt), USDC));
 
 // XXX move to mocks.ts for readability?
 const mocks = (
@@ -362,17 +368,32 @@ test('interpretFlowDesc, trackFlow handle USDN scenario', async t => {
 
 test('open portfolio with USDN position', async t => {
   // XXX NobleFees: make(USDC, 100n)?
-  const { orch, ctx, offer, storage } = mocks(
-    {},
-    { Deposit: make(USDC, 50_000_000n) },
-  );
+  const { orch, ctx, offer, storage } = mocks({}, { Deposit: $('$50') });
   const { log, seat } = offer;
 
   const shapes = makeProposalShapes(USDC);
   mustMatch(seat.getProposal(), shapes.openPortfolio);
 
+  const moves: MovementDesc[] = [
+    {
+      amount: $('$50'),
+      src: 'Deposit',
+      dest: 'agoric.makeAccount()',
+    },
+    {
+      amount: $('$50'),
+      src: 'agoric.makeAccount()',
+      dest: 'noble.makeAccount()',
+    },
+    {
+      amount: $('$50'),
+      src: 'noble.makeAccount()',
+      dest: { open: 'USDN' },
+    },
+  ];
   const actual = await openPortfolio(orch, ctx, seat, {
-    usdnOut: (50_000_000n * 99n) / 100n,
+    // usdnOut: (50_000_000n * 99n) / 100n,
+    flow: moves,
   });
   t.log(log.map(msg => msg._method).join(', '));
 
