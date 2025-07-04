@@ -1,9 +1,13 @@
 import {
   AaveV3Arbitrum,
   AaveV3ArbitrumSepolia,
+  AaveV3Avalanche,
+  AaveV3BNB,
   AaveV3Ethereum,
+  AaveV3Fuji,
   AaveV3Optimism,
   AaveV3OptimismSepolia,
+  AaveV3Polygon,
   AaveV3Sepolia,
 } from '@bgd-labs/aave-address-book';
 
@@ -20,6 +24,11 @@ const aaveAddresses = {
       Pool: AaveV3Ethereum.POOL,
       AaveOracle: AaveV3Ethereum.ORACLE,
     },
+    Avalanche: {
+      PoolAddressesProvider: AaveV3Avalanche.POOL_ADDRESSES_PROVIDER,
+      Pool: AaveV3Avalanche.POOL,
+      AaveOracle: AaveV3Avalanche.ORACLE,
+    },
     Arbitrum: {
       PoolAddressesProvider: AaveV3Arbitrum.POOL_ADDRESSES_PROVIDER,
       Pool: AaveV3Arbitrum.POOL,
@@ -30,12 +39,33 @@ const aaveAddresses = {
       Pool: AaveV3Optimism.POOL,
       AaveOracle: AaveV3Optimism.ORACLE,
     },
+    Polygon: {
+      PoolAddressesProvider: AaveV3Polygon.AAVE_PROTOCOL_DATA_PROVIDER,
+      Pool: AaveV3Polygon.POOL,
+      AaveOracle: AaveV3Polygon.ORACLE,
+    },
+    Fantom: {
+      // TODO: does Fantom has AAVE?
+      PoolAddressesProvider: '0x',
+      Pool: '0x',
+      AaveOracle: '0x',
+    },
+    BNB: {
+      PoolAddressesProvider: AaveV3BNB.POOL_ADDRESSES_PROVIDER,
+      Pool: AaveV3BNB.POOL,
+      AaveOracle: AaveV3BNB.ORACLE,
+    },
   },
   testnet: {
     Ethereum: {
       PoolAddressesProvider: AaveV3Sepolia.POOL_ADDRESSES_PROVIDER,
       Pool: AaveV3Sepolia.POOL,
       AaveOracle: AaveV3Sepolia.ORACLE,
+    },
+    Avalanche: {
+      PoolAddressesProvider: AaveV3Fuji.POOL_ADDRESSES_PROVIDER,
+      Pool: AaveV3Fuji.POOL,
+      AaveOracle: AaveV3Fuji.ORACLE,
     },
     Arbitrum: {
       PoolAddressesProvider: AaveV3ArbitrumSepolia.POOL_ADDRESSES_PROVIDER,
@@ -46,6 +76,24 @@ const aaveAddresses = {
       PoolAddressesProvider: AaveV3OptimismSepolia.POOL_ADDRESSES_PROVIDER,
       Pool: AaveV3OptimismSepolia.POOL,
       AaveOracle: AaveV3OptimismSepolia.ORACLE,
+    },
+    Polygon: {
+      // TODO: find polygon testnet addresses for testing aave with polygon
+      PoolAddressesProvider: '0x',
+      Pool: '0x',
+      AaveOracle: '0x',
+    },
+    Fantom: {
+      // TODO: does Fantom has AAVE?
+      PoolAddressesProvider: '0x',
+      Pool: '0x',
+      AaveOracle: '0x',
+    },
+    BNB: {
+      // TODO: find Binance testnet addresses for testing aave with BNB
+      PoolAddressesProvider: '0x',
+      Pool: '0x',
+      AaveOracle: '0x',
     },
   },
 };
@@ -178,6 +226,8 @@ export const mainnetAxelarChainsMap = {
     caip: caipIds.mainnet.Avalanche,
     axelarId: axelarIds.mainnet.Avalanche,
     contractAddresses: {
+      aavePool: aaveAddresses.mainnet.Avalanche.Pool,
+      compound: '0x', // TODO
       factory: factoryAddresses.mainnet.Avalanche,
       usdc: usdcAddresses.mainnet.Avalanche,
     },
@@ -187,6 +237,7 @@ export const mainnetAxelarChainsMap = {
     axelarId: axelarIds.mainnet.Optimism,
     contractAddresses: {
       aavePool: aaveAddresses.mainnet.Optimism.Pool,
+      compound: '0x', // TODO
       factory: factoryAddresses.mainnet.Optimism,
       usdc: usdcAddresses.mainnet.Optimism,
     },
@@ -205,6 +256,7 @@ export const mainnetAxelarChainsMap = {
     caip: caipIds.mainnet.Polygon,
     axelarId: axelarIds.mainnet.Polygon,
     contractAddresses: {
+      aavePool: aaveAddresses.mainnet.Polygon.Pool,
       compound: '0x', // TODO
       factory: factoryAddresses.mainnet.Polygon,
       usdc: usdcAddresses.mainnet.Polygon,
@@ -214,6 +266,7 @@ export const mainnetAxelarChainsMap = {
     caip: caipIds.mainnet.Fantom,
     axelarId: axelarIds.mainnet.Fantom,
     contractAddresses: {
+      // TODO: aave and compound?
       factory: factoryAddresses.mainnet.Fantom,
       usdc: usdcAddresses.mainnet.Fantom,
     },
@@ -222,6 +275,8 @@ export const mainnetAxelarChainsMap = {
     caip: caipIds.mainnet.BNB,
     axelarId: axelarIds.mainnet.BNB,
     contractAddresses: {
+      aavePool: aaveAddresses.mainnet.BNB.Pool,
+      compound: '0x', // TODO
       factory: factoryAddresses.mainnet.BNB,
       usdc: usdcAddresses.mainnet.BNB,
     },
@@ -248,6 +303,8 @@ export const testnetAxelarChainsMap = {
     caip: caipIds.testnet.Avalanche,
     axelarId: axelarIds.testnet.Avalanche,
     contractAddresses: {
+      aavePool: aaveAddresses.testnet.Avalanche.Pool,
+      compound: '0x', // TODO
       factory: factoryAddresses.testnet.Avalanche,
       usdc: usdcAddresses.testnet.Avalanche,
     },
@@ -257,6 +314,7 @@ export const testnetAxelarChainsMap = {
     axelarId: axelarIds.testnet.Optimism,
     contractAddresses: {
       aavePool: aaveAddresses.testnet.Optimism.Pool,
+      compound: '0x', // TODO
       factory: factoryAddresses.testnet.Optimism,
       usdc: usdcAddresses.testnet.Optimism,
     },
@@ -275,6 +333,7 @@ export const testnetAxelarChainsMap = {
     caip: caipIds.testnet.Polygon,
     axelarId: axelarIds.testnet.Polygon,
     contractAddresses: {
+      // TODO: AAVE on polygon testnet?
       compound: '0x', // TODO
       factory: factoryAddresses.testnet.Polygon,
       usdc: usdcAddresses.testnet.Polygon,
@@ -284,6 +343,7 @@ export const testnetAxelarChainsMap = {
     caip: caipIds.testnet.Fantom,
     axelarId: axelarIds.testnet.Fantom,
     contractAddresses: {
+      // TODO: aave and compound?
       factory: factoryAddresses.testnet.Fantom,
       usdc: usdcAddresses.testnet.Fantom,
     },
@@ -292,6 +352,7 @@ export const testnetAxelarChainsMap = {
     caip: caipIds.testnet.BNB,
     axelarId: axelarIds.testnet.BNB,
     contractAddresses: {
+      // TODO: AAVE on BNB testnet?
       factory: factoryAddresses.testnet.BNB,
       usdc: usdcAddresses.testnet.BNB,
     },
