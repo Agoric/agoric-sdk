@@ -1,7 +1,5 @@
 import { type Amount, type NatAmount, type NatValue } from '@agoric/ertp';
-import { NonNullish } from '@agoric/internal';
 import type {
-  AccountId,
   Denom,
   DenomAmount,
   OrchestrationAccount,
@@ -35,14 +33,6 @@ import {
   type PoolKey,
   type SeatKeyword,
 } from './type-guards.ts';
-import { keyEQ } from '@endo/patterns';
-import {
-  makeRatio,
-  makeRatioFromAmounts,
-  multiplyBy,
-} from '@agoric/ertp/src/ratio.js';
-import { SupportedChain } from './constants.js';
-import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 
 type AssetPlace =
   | { pos: Position }
