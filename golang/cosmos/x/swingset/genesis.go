@@ -129,6 +129,7 @@ func InitGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingStore
 	err = swingStoreExportsHandler.RestoreExport(
 		keeper.SwingStoreExportProvider{
 			BlockHeight:         snapshotHeight,
+			Compressed:          artifactProvider.Compressed,
 			GetExportDataReader: getExportDataReader,
 			ReadNextArtifact:    artifactProvider.ReadNextArtifact,
 		},
@@ -222,6 +223,7 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider kee
 	artifactsEnded := false
 
 	artifactsProvider := keeper.SwingStoreExportProvider{
+		Compressed: provider.Compressed,
 		GetExportDataReader: func() (agoric.KVEntryReader, error) {
 			exportDataIterator := eventHandler.swingStore.Iterator(nil, nil)
 			kvReader := agoric.NewKVIteratorReader(exportDataIterator)

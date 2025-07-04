@@ -5,12 +5,13 @@
 // This file functions as both an importable module and a standalone script.
 import './helpers/maybe-unsafe-lockdown.js';
 
-import os from 'os';
-import process from 'process';
-import { Transform } from 'stream';
-import fsPower from 'fs';
-import fsPromisesPower from 'fs/promises';
-import pathPower from 'path';
+import fsPower from 'node:fs';
+import fsPromisesPower from 'node:fs/promises';
+import os from 'node:os';
+import pathPower from 'node:path';
+import process from 'node:process';
+import { Transform } from 'node:stream';
+import { createGunzip } from 'node:zlib';
 
 import { Fail, q } from '@endo/errors';
 import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform.js';
@@ -26,11 +27,12 @@ import {
 
 /**
  * @typedef {object} StateSyncImporterOptions
- * @property {string} stateDir the directory containing the SwingStore to export
- * @property {string} exportDir the directory where to place the exported artifacts and manifest
+ * @property {import('@agoric/cosmic-swingset/src/export-kernel-db.js').SwingStoreArtifactMode} [artifactMode] the level of historical artifacts to import
  * @property {number} [blockHeight] block height to check for
- * @property {import('./export-kernel-db.js').SwingStoreExportDataMode} [exportDataMode] how to handle export data
- * @property {import('./export-kernel-db.js').SwingStoreArtifactMode} [artifactMode] the level of historical artifacts to import
+ * @property {boolean} compressed wether the artificats are compressed or not
+ * @property {import('@agoric/cosmic-swingset/src/export-kernel-db.js').SwingStoreExportDataMode} [exportDataMode] how to handle export data
+ * @property {string} exportDir the directory where to place the exported artifacts and manifest
+ * @property {string} stateDir the directory containing the SwingStore to export
  */
 
 /**
@@ -110,7 +112,14 @@ const checkAndGetImportSwingStoreOptions = (options, manifest) => {
  * @returns {Promise<void>}
  */
 export const performStateSyncImport = async (
-  { stateDir, exportDir, blockHeight, exportDataMode = 'all', artifactMode },
+  {
+    artifactMode,
+    blockHeight,
+    compressed,
+    exportDataMode = 'all',
+    exportDir,
+    stateDir,
+  },
   {
     fs: { createReadStream, readFile },
     pathResolve,
@@ -177,8 +186,13 @@ export const performStateSyncImport = async (
       if (!fileName) {
         Fail`invalid artifact ${q(name)}`;
       }
+
       const stream = createReadStream(safeExportFileResolve(fileName));
-      yield* stream;
+
+      if (compressed) {
+        const unzip = createGunzip();
+        yield* stream.pipe(unzip);
+      } else yield* stream;
     },
     async *getArtifactNames() {
       yield* Object.keys(artifacts);
@@ -285,11 +299,14 @@ export const main = async (
 
   await performStateSyncImport(
     {
-      stateDir,
-      exportDir,
-      blockHeight: checkBlockHeight,
       artifactMode,
+      blockHeight: checkBlockHeight,
+      compressed: !!processValue.getBoolean({
+        flagName: 'compressed',
+      }),
       exportDataMode,
+      exportDir,
+      stateDir,
     },
     {
       fs,

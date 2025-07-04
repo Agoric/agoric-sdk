@@ -232,15 +232,13 @@ export const initiateSwingStoreExport = (
 
     if (artifactMode !== 'none') {
       for await (const artifactName of swingStoreExporter.getArtifactNames()) {
-        let artifactFileName = artifactName;
-        if (compressed) artifactFileName += '.gz';
         abortIfStopped();
         log?.(`Writing artifact: ${artifactName}`);
         const artifactData = swingStoreExporter.getArtifact(artifactName);
         // Use artifactName as the file name as we trust swingStore to generate
         // artifact names that are valid file names.
-        await writeFile(pathResolve(exportDir, artifactFileName), artifactData);
-        manifest.artifacts.push([artifactName, artifactFileName]);
+        await writeFile(pathResolve(exportDir, artifactName), artifactData);
+        manifest.artifacts.push([artifactName, artifactName]);
       }
     }
 
