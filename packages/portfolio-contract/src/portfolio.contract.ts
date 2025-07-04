@@ -31,16 +31,10 @@ import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
-import { AxelarChain, SupportedChain, YieldProtocol } from './constants.js';
+import { SupportedChain } from './constants.js';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
-import {
-  makeProposalShapes,
-  OfferArgsShapeFor,
-  type AxelarChainsMap,
-  type OfferArgsFor,
-  type ProposalType,
-} from './type-guards.ts';
+import { makeProposalShapes, OfferArgsShapeFor } from './type-guards.ts';
 
 const trace = makeTracer('PortC');
 const { fromEntries, keys } = Object;
@@ -61,16 +55,6 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
     factory: M.string(),
     usdc: M.string(),
   });
-const AxelarChainInfoPattern = M.splitRecord({
-  caip: M.string(),
-  contractAddresses: EVMContractAddressesShape,
-});
-
-const AxelarChainsMapShape: TypedPattern<AxelarChainsMap> = M.splitRecord(
-  fromEntries(
-    keys(AxelarChain).map(chain => [chain, AxelarChainInfoPattern]),
-  ) as Record<AxelarChain, typeof AxelarChainInfoPattern>,
-);
 
 type PortfolioPrivateArgs = OrchestrationPowers & {
   // XXX document required assets, chains
@@ -78,14 +62,16 @@ type PortfolioPrivateArgs = OrchestrationPowers & {
   chainInfo: Record<string, ChainInfo>;
   marshaller: Marshaller;
   storageNode: Remote<StorageNode>;
-  axelarChainsMap: AxelarChainsMap; // XXX split between chainInfo and contractInfo
+  contractAddresses: EVMContractAddresses;
 };
 
 const { values } = Object;
 
 /** each of the values in SupportedChain must appear in privateArgs.chainInfo */
 const requiredChainsInfoShape = M.splitRecord(
-  values(SupportedChain).map(n => ({ [n]: ChainInfoShape })) as CopyRecord,
+  fromEntries(
+    values(SupportedChain).map(n => [n, ChainInfoShape]),
+  ) as CopyRecord,
 );
 
 const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
@@ -94,7 +80,7 @@ const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   storageNode: M.remotable('storageNode'),
   chainInfo: requiredChainsInfoShape,
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
-  axelarChainsMap: AxelarChainsMapShape,
+  contractAddresses: EVMContractAddressesShape,
 };
 
 export const meta: ContractMeta = {
@@ -135,7 +121,7 @@ export const contract = async (
   const {
     chainInfo,
     assetInfo,
-    axelarChainsMap,
+    contractAddresses,
     timerService,
     marshaller,
     storageNode,
@@ -166,8 +152,8 @@ export const contract = async (
   assert(denom, 'no denom for USDC brand');
   const ctx1 = {
     zoeTools,
-    usdc: { brand: brands.USDC, denom },
-    axelarChainsMap,
+    chainHubTools,
+    contractAddresses,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
@@ -185,7 +171,6 @@ export const contract = async (
     rebalance,
     rebalanceFromTransfer,
     proposalShapes,
-    axelarChainsMap,
     timer: timerService,
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller,

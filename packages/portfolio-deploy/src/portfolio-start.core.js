@@ -1,7 +1,7 @@
 // import { meta } from '@aglocal/portfolio-contract/src/portfolio.contract.meta.js';
 import { makeTracer } from '@agoric/internal';
 import { M } from '@endo/patterns';
-import { getAxelarChainsMap } from './axelar-configs.js';
+import { getContractAddresses } from './axelar-configs.js';
 import {
   lookupInterchainInfo,
   makeGetManifest,
@@ -45,17 +45,15 @@ export const makePrivateArgs = async (
   });
   trace('@@@@assetInfo', JSON.stringify(assetInfo, null, 2));
 
-  const axelarChainsMap = getAxelarChainsMap(config.net);
-  if (!axelarChainsMap) {
+  const contractAddresses = getContractAddresses(config.net);
+  if (!contractAddresses) {
     throw new Error(
       `axelarChainsMap is undefined for environment: ${config.net}`,
     );
   }
 
-  for (const [_chain, { contractAddresses }] of Object.entries(
-    axelarChainsMap,
-  )) {
-    for (const [_name, address] of Object.entries(contractAddresses)) {
+  for (const [_chain, addresses] of Object.entries(contractAddresses)) {
+    for (const address of Object.values(addresses)) {
       if (!isValidEVMAddress(address)) {
         throw new Error(`Invalid EVM address: ${address}`);
       }
@@ -68,7 +66,7 @@ export const makePrivateArgs = async (
     marshaller,
     chainInfo,
     assetInfo,
-    axelarChainsMap,
+    contractAddresses,
   });
   return it;
 };
