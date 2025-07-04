@@ -36,7 +36,7 @@ export type RebalanceScenario = {
     | { want: { Cash: Dollars }; give: {} };
   offerArgs?: { flow: (Omit<MovementDesc, 'amount'> & { amount: Dollars })[] };
   after: Partial<Record<YieldProtocol, Dollars>>;
-  payouts: { Cash?: Dollars };
+  payouts: { Deposit?: Dollars; Cash?: Dollars };
   positionsNet: Dollars;
   offerNet: Dollars;
   operationNet: Dollars;
@@ -174,7 +174,10 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
         currentScenario.after = parseProtocolAmounts(row);
         currentScenario.positionsNet = T2B as Dollars;
       case 'Payouts':
-        currentScenario.payouts = parseCell('Cash', Cash);
+        currentScenario.payouts = {
+          ...parseCell('Deposit', Deposit),
+          ...parseCell('Cash', Cash),
+        };
         currentScenario.offerNet = T2B as Dollars;
         currentScenario.operationNet = T2C as Dollars;
       // console.debug(

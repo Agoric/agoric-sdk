@@ -57,19 +57,20 @@ test('grok moves proposal', async t => {
   ]);
 });
 
-test('makeOfferArgs handles USDN scenario', async t => {
+test('withBrand handles USDN scenario', async t => {
   const brand = Far('USDC') as unknown as Brand<'nat'>;
   const unit = harden({ brand, value: 1_000_000n });
   const $ = (amt: Dollars) => multiplyBy(unit, parseRatio(numeral(amt), brand));
-  const shapes = makeOfferArgsShapes(brand);
 
   const text = await importText('./move-cases.csv', import.meta.url);
   const scenarios = grokRebalanceScenarios(parseCSV(text));
   const { 'Open portfolio with USDN position': scenario } = scenarios;
 
-  const x = withBrand(scenario, brand);
+  const scenarioB = withBrand(scenario, brand);
+  t.log('@@s', scenario);
+  t.log('@@ss', scenarioB);
 
-  const { offerArgs: args } = x;
+  const { offerArgs: args } = scenarioB;
 
   t.deepEqual('flow' in args && args.flow, [
     {
@@ -88,6 +89,7 @@ test('makeOfferArgs handles USDN scenario', async t => {
       amount: $('$3,333.00'),
     },
   ]);
+  t.deepEqual(scenarioB.payouts, { Deposit: $('$0.00') });
 });
 
 test.skip('grok give', async t => {
