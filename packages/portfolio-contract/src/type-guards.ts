@@ -131,7 +131,7 @@ harden(seatKeywords);
 export type AssetPlaceRef =
   | SeatKeyword
   | `${SupportedChain}.makeAccount()`
-  | number;
+  | PoolKey;
 const PositionRefShape = M.number();
 const AssetPlaceRefShape = M.or(
   ...seatKeywords,
@@ -156,14 +156,10 @@ export const getChainNameOfPlaceRef = (
   return chain as SupportedChain;
 };
 
-export type AssetPlaceDef = AssetPlaceRef | { open: PoolKey };
-const AssetPlaceDefShap = M.or(AssetPlaceRefShape, {
-  open: M.or(...keys(PoolPlaces)),
-});
 export type MovementDesc = {
   amount: NatAmount;
   src: AssetPlaceRef;
-  dest: AssetPlaceDef;
+  dest: AssetPlaceRef;
 };
 
 export type OfferArgsFor = {
@@ -176,7 +172,7 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
   const movementDescShape = harden({
     amount: usdcAmountShape,
     src: AssetPlaceRefShape,
-    dest: AssetPlaceDefShap,
+    dest: AssetPlaceRefShape,
   });
 
   return {

@@ -27,7 +27,7 @@ import { E } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import { SupportedChain, YieldProtocol } from './constants.js';
-import type { AxelarChainsMap, NobleAccount } from './type-guards.js';
+import type { AxelarChainsMap, NobleAccount, PoolKey } from './type-guards.js';
 import {
   makeFlowPath,
   makePortfolioPath,
@@ -75,7 +75,7 @@ const ManagerI = M.interface('manager', {
 });
 
 interface PositionRd {
-  getPositionId(): number;
+  getPoolKey(): number;
   getYieldProtocol(): YieldProtocol;
 }
 
@@ -137,7 +137,7 @@ type PortfolioKitState = {
   portfolioId: number;
   accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
   accounts: MapStore<SupportedChain, AccountInfo>;
-  positions: MapStore<number, Position>;
+  positions: MapStore<PoolKey, Position>;
   nextFlowId: number;
 };
 
@@ -162,6 +162,9 @@ const accountIdByChain = (accounts: PortfolioKitState['accounts']) => {
   }
   return harden(byChain);
 };
+
+/** a value that no caller can know */
+const noFallback = harden({});
 
 export const preparePortfolioKit = (
   zone: Zone,
@@ -220,9 +223,13 @@ export const preparePortfolioKit = (
   const makeUSDNPosition = zone.exoClass(
     'USDN Position',
     undefined, // interface TODO
-    (portfolioId: number, positionId: number, accountId: AccountId) => ({
+    (
+      portfolioId: number,
+      poolKey: 'USDN' | 'USDNVault',
+      accountId: AccountId,
+    ) => ({
       portfolioId,
-      positionId,
+      poolKey,
       accountId,
       ...emptyTransferState,
     }),
@@ -343,7 +350,7 @@ export const preparePortfolioKit = (
         accountsPending: zone.detached().mapStore('accountsPending'),
         // NEEDSTEST: for forgetting to use detached()
         positions: zone.detached().mapStore('positions', {
-          keyShape: M.number(),
+          keyShape: M.string(), // PoolKeyShape but extensible
           valueShape: M.remotable('Position'),
         }),
       };
@@ -426,8 +433,15 @@ export const preparePortfolioKit = (
           }
           assert.fail(`no position for ${protocol}`);
         },
-        getPosition(key: number) {
+
+        getPosition(key: PoolKey, fallback = noFallback) {
           const { positions } = this.state;
+          if (!positions.has(key)) {
+            if (fallback === noFallback) {
+              throw assert.error(X`no such position: ${key}`);
+            }
+            return fallback;
+          }
           return positions.get(key);
         },
       },

@@ -476,7 +476,7 @@ type AssetPlace =
   | { seat: ZCFSeat; keyword: string };
 
 const placeLabel = (place: AssetPlace) => {
-  if ('pos' in place) return `position${place.pos.getPositionId()}`;
+  if ('pos' in place) return `position${place.pos.getPoolKey()}`;
   if ('account' in place) return coerceAccountId(place.account.getAddress());
   return `seat:${place.keyword}`;
 };

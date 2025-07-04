@@ -25,7 +25,6 @@ import {
   getChainNameOfPlaceRef,
   PoolPlaces,
   seatKeywords,
-  type AssetPlaceDef,
   type AssetPlaceRef,
   type LocalAccount,
   type MovementDesc,
@@ -34,30 +33,25 @@ import {
   type SeatKeyword,
 } from './type-guards.ts';
 
+const { keys } = Object;
+
 type AssetPlace =
   | { pos: Position }
   | { account: OrchestrationAccount<{ namespace: 'cosmos' }> }
   // TODO:  | { evmStuff: ? }
   | { seat: ZCFSeat; keyword: SeatKeyword };
 
-const getAssetPlaceDefKind = (
-  ref: AssetPlaceDef,
+const getAssetPlaceRefKind = (
+  ref: AssetPlaceRef,
 ): 'pos' | 'accountId' | 'seat' => {
-  switch (typeof ref) {
-    case 'number':
-      return 'pos';
-    case 'object':
-      return 'pos';
-    case 'string':
-      if ((seatKeywords as string[]).includes(ref)) return 'seat';
-      if (getChainNameOfPlaceRef(ref)) return 'accountId';
-    default:
-      throw Fail`bad ref: ${ref}`;
-  }
+  if (keys(PoolPlaces).includes(ref)) return 'pos';
+  if ((seatKeywords as string[]).includes(ref)) return 'seat';
+  if (getChainNameOfPlaceRef(ref)) return 'accountId';
+  throw Fail`bad ref: ${ref}`;
 };
 
 const placeLabel = (place: AssetPlace) => {
-  if ('pos' in place) return `position${place.pos.getPositionId()}`;
+  if ('pos' in place) return `position${place.pos.getPoolKey()}`;
   if ('account' in place) return coerceAccountId(place.account.getAddress());
   return `seat:${place.keyword}`;
 };
@@ -223,55 +217,42 @@ type HowToMove = {
 
 export const wayFromSrcToDesc = (
   moveDesc: MovementDesc,
-  reader: PortfolioKit['reader'],
 ): keyof AnimationMove => {
   const { src } = moveDesc;
-  const { dest: destDef } = moveDesc;
-  const isOpen = typeof destDef === 'object' && 'open' in destDef;
+  const { dest } = moveDesc;
 
-  if (isOpen) {
-    getChainNameOfPlaceRef(src) ||
-      Fail`source for new position must be account ${q(moveDesc)}}`;
-    return PoolPlaces[destDef.open].protocol;
-  } else {
-    const srcKind = getAssetPlaceDefKind(src);
-    switch (srcKind) {
-      case 'pos': {
-        getAssetPlaceDefKind(destDef) === 'accountId' ||
-          Fail`src pos must have account as dest ${q(moveDesc)}`;
-        const pos = reader.getPosition(destDef as number);
-        return pos.getYieldProtocol();
-        break;
-      }
-
-      case 'seat':
-        getAssetPlaceDefKind(destDef) === 'accountId' ||
-          Fail`src seat must have account as dest ${q(moveDesc)}`;
-        return 'localTransfer';
-        break;
-
-      case 'accountId': {
-        const destKind = getAssetPlaceDefKind(destDef);
-        switch (destKind) {
-          case 'seat':
-            return 'withdrawToSeat';
-            break;
-          case 'accountId':
-            return 'transfer';
-            break;
-          case 'pos': {
-            const pos = reader.getPosition(destDef as number);
-            return pos.getYieldProtocol();
-            break;
-          }
-          default:
-            throw Fail`unreachable:${destKind}`;
-        }
-        break;
-      }
-      default:
-        throw Fail`unreachable: ${srcKind}`;
+  const srcKind = getAssetPlaceRefKind(src);
+  switch (srcKind) {
+    case 'pos': {
+      getAssetPlaceRefKind(dest) === 'accountId' ||
+        Fail`src pos must have account as dest ${q(moveDesc)}`;
+      // XXX supply vs. withdraw?
+      return PoolPlaces[src].protocol;
     }
+
+    case 'seat':
+      getAssetPlaceRefKind(dest) === 'accountId' ||
+        Fail`src seat must have account as dest ${q(moveDesc)}`;
+      return 'localTransfer';
+      break;
+
+    case 'accountId': {
+      const destKind = getAssetPlaceRefKind(dest);
+      switch (destKind) {
+        case 'seat':
+          return 'withdrawToSeat';
+        case 'accountId':
+          return 'transfer';
+        case 'pos': {
+          return PoolPlaces[dest].protocol;
+        }
+        default:
+          throw Fail`unreachable:${destKind} ${dest}`;
+      }
+      break;
+    }
+    default:
+      throw Fail`unreachable: ${srcKind} ${src}`;
   }
 };
 
