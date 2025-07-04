@@ -5,7 +5,7 @@ import { Fail } from '@endo/errors';
  * @typedef {{
  *   has: (key: string) => boolean,
  *   get: (key: string) => string | undefined,
- *   getExportData: () => IterableIterator<import('./exporter').KVPair>
+ *   getExportData: () => IterableIterator<import('./exporter.js').KVPair>
  *   getNextKey: (previousKey: string) => string | undefined,
  *   set: (key: string, value: string, bypassHash?: boolean ) => void,
  *   delete: (key: string) => void,
