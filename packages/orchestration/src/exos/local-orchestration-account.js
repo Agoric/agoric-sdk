@@ -28,7 +28,7 @@ import { TransferRouteShape } from './chain-hub.js';
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute, AccountIdArg, Denom, Bech32Address} from '@agoric/orchestration';
+ * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute, AccountIdArg, Denom, Bech32Address, AccountId} from '@agoric/orchestration';
  * @import {OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {IBCEvent} from '@agoric/vats';
  * @import {QueryDenomHashResponse} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/query.js';
@@ -793,10 +793,18 @@ export const prepareLocalOrchestrationAccountKit = (
             // XXX don't verify it's a real Bech32 because that makes our tests
             // less legible (preventing readable words on the address string)
             /**
-             * @param {string} address
+             * @param {string} accountId
              */
-            const resolveBech32Address = address =>
-              chainHub.resolveAccountId(/** @type {Bech32Address} */ (address));
+            const resolveAccountId = accountId => {
+              try {
+                return chainHub.resolveAccountId(
+                  /** @type {Bech32Address} */ (accountId),
+                );
+              } catch (_error) {
+                // If the address is not a valid Bech32 address, we return it.
+                return /** @type {AccountId} */ (accountId);
+              }
+            };
 
             /**
              * @param {Denom} localDenom
@@ -807,8 +815,8 @@ export const prepareLocalOrchestrationAccountKit = (
                   value: BigInt(amount),
                   denom: localDenom,
                 }),
-                fromAccount: resolveBech32Address(sender),
-                toAccount: resolveBech32Address(receiver),
+                fromAccount: resolveAccountId(sender),
+                toAccount: resolveAccountId(receiver),
                 extra: {
                   ...ftPacketData,
                 },

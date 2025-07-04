@@ -52,6 +52,11 @@ import type {
   ProposalType,
 } from './type-guards.ts';
 import { GMPArgsShape } from './type-guards.ts';
+import {
+  decodeAddressHook,
+  type HookQuery,
+} from '@agoric/cosmic-proto/address-hooks.js';
+import type { VTransferIBCEvent } from '@agoric/vats';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
@@ -699,6 +704,36 @@ export const rebalance = async (
   }
 };
 
+export const rebalanceFromTransfer = (async (
+  orch: Orchestrator,
+  ctx: PortfolioInstanceContext,
+  packet: VTransferIBCEvent['packet'],
+  kit: PortfolioKit,
+): Promise<ReturnType<LocalAccount['parseInboundTransfer']> | null> => {
+  await null;
+  const { reader } = kit;
+
+  const lca = reader.getLocalAccount();
+  const parsed = await lca.parseInboundTransfer(packet);
+  if (!parsed) {
+    return null;
+  }
+  trace('rebalanceFromTransfer parsed', parsed);
+
+  const { amount, extra } = parsed;
+  const { query } = decodeAddressHook(extra.receiver);
+  if (!('rebalance' in query)) {
+    return harden(parsed);
+  }
+
+  throw harden({
+    msg: 'rebalanceFromTransfer is not implemented yet',
+    query,
+    amount,
+    kit,
+  });
+}) satisfies OrchestrationFlow;
+
 /**
  * Offer handler to make a portfolio and, optionally, open yield positions.
  *
@@ -723,6 +758,7 @@ export const openPortfolio = (async (
       inertSubscriber,
     } = ctx;
     const kit = makePortfolioKit();
+    await provideAccountInfo(orch, 'agoric', kit);
 
     const portfolioCtx = {
       axelarChainsMap,
