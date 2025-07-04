@@ -46,7 +46,7 @@ test('wayFromSrcToDesc handles 1 scenario', async t => {
 const rebalanceScenarioMacro = test.macro({
   async exec(t, description: string) {
     const { trader1, myBalance, common } = await setupTrader(t);
-    const scenario = (await scenariosP)[description];
+    const { [description]: scenario } = await scenariosP;
     if (!scenario) return t.fail(`Scenario ${q(description)} not found`);
     t.log('start', description, 'with', myBalance);
 
@@ -55,8 +55,6 @@ const rebalanceScenarioMacro = test.macro({
 
     const $ = (amt: Dollars) =>
       multiplyBy(usdc.units(1), parseRatio(numeral(amt), usdc.brand));
-
-    const u1 = usdc.make(1n);
 
     const openPortfolio = async (
       give: ProposalType['openPortfolio']['give'],
@@ -85,7 +83,7 @@ const rebalanceScenarioMacro = test.macro({
     // ??? const isEVM = 'Aave' in give || 'Compound' in give;
     const openResult = await openPortfolio(
       openOnly ? s2.proposal.give : s2.before,
-      {},
+      s2.offerArgs,
     );
     const { result, payouts } = await (openOnly
       ? openResult
@@ -110,8 +108,9 @@ const rebalanceScenarioMacro = test.macro({
     );
 
     t.log('payouts', payouts);
-    const { Access: _, ...skipAssets } = payouts;
-    t.deepEqual(skipAssets, objectMap(scenario.payouts, $), 'payouts');
+    t.log('expected payouts', s2.payouts);
+    const { Access: _, ...skipAccess } = payouts;
+    t.deepEqual(skipAccess, objectMap(scenario.payouts, $), 'payouts');
 
     // TODO: inspect bridge for correct flow to remote chains?
   },

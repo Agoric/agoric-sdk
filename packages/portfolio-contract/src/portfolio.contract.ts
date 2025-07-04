@@ -26,7 +26,7 @@ import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
-import type { HostInterface } from '../../async-flow/src/types.ts';
+import { SupportedChain } from './constants.js';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import {
@@ -35,10 +35,7 @@ import {
   makeProposalShapes,
   PublicFacetI,
   type AxelarChainsMap,
-  type LocalAccount,
-  type NobleAccount,
 } from './type-guards.ts';
-import { SupportedChain } from './constants.js';
 
 const trace = makeTracer('PortC');
 
@@ -96,6 +93,8 @@ export const contract = async (
   registerChainsAndAssets(chainHub, brands, chainInfo, assetInfo, {
     log: trace,
   });
+  const denom = chainHub.getDenom(brands.USDC);
+  assert(denom, 'assetInfo missing USDC brand');
 
   const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
@@ -109,13 +108,9 @@ export const contract = async (
     },
   };
 
-  // UNTIL #11309
-  const chainHubTools = {
-    getDenom: chainHub.getDenom.bind(chainHub),
-  };
   const ctx1 = {
     zoeTools,
-    chainHubTools,
+    usdc: { brand: brands.USDC, denom },
     axelarChainsMap,
   };
   const { rebalance } = orchestrateAll({ rebalance: flows.rebalance }, ctx1);

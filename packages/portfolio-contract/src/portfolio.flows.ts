@@ -53,7 +53,12 @@ import type {
   ProposalType,
 } from './type-guards.ts';
 import { GMPArgsShape } from './type-guards.ts';
-import { maybeFlip, type AssetMovement, trackFlow } from './run-flow.ts';
+import {
+  maybeFlip,
+  type AssetMovement,
+  trackFlow,
+  interpretFlowDesc,
+} from './run-flow.ts';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
@@ -63,9 +68,7 @@ const { keys } = Object;
 
 type PortfolioBootstrapContext = {
   axelarChainsMap: AxelarChainsMap;
-  chainHubTools: {
-    getDenom: (brand: Brand) => Denom | undefined;
-  };
+  usdc: { denom: Denom; brand: Brand<'nat'> };
   zoeTools: GuestInterface<ZoeTools>;
   makePortfolioKit: () => Guest<PortfolioKit>;
   inertSubscriber: GuestInterface<ResolvedPublicTopic<unknown>['subscriber']>;
@@ -73,9 +76,7 @@ type PortfolioBootstrapContext = {
 
 export type PortfolioInstanceContext = {
   axelarChainsMap: AxelarChainsMap;
-  chainHubTools: {
-    getDenom: (brand: Brand) => Denom | undefined;
-  };
+  usdc: { denom: Denom; brand: Brand<'nat'> };
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
 };
@@ -187,10 +188,10 @@ const sendTokensViaCCTP = async (
   kit: GuestInterface<PortfolioKit>,
   protocol: YieldProtocol,
 ) => {
-  const { axelarChainsMap, chainHubTools, zoeTools } = ctx;
+  const { axelarChainsMap, usdc, zoeTools } = ctx;
+  const { denom } = usdc;
   const { keyword, amounts, destinationEVMChain } = args;
   const amount = amounts[keyword];
-  const denom = NonNullish(chainHubTools.getDenom(amount.brand));
   const denomAmount: DenomAmount = { denom, value: amount.value };
 
   const { lca: localAcct } = await provideAccountInfo(orch, 'agoric', kit);
@@ -267,7 +268,8 @@ const sendGmp = async (
   kit: GuestInterface<PortfolioKit>,
 ) => {
   mustMatch(gmpArgs, GMPArgsShape);
-  const { axelarChainsMap, chainHubTools, zoeTools } = ctx;
+  const { axelarChainsMap, usdc, zoeTools } = ctx;
+  const { denom } = usdc;
 
   const axelar = await orch.getChain('axelar');
   const { chainId } = await axelar.getChainInfo();
@@ -279,8 +281,6 @@ const sendGmp = async (
   )) as AccountInfoFor['agoric'];
   const { keyword, amounts: gasAmounts } = gmpArgs;
   const natAmount = gasAmounts[keyword];
-  const denom = await chainHubTools.getDenom(natAmount.brand);
-  assert(denom, 'denom must be defined');
   const denomAmount = {
     denom,
     value: natAmount.value,
@@ -547,7 +547,7 @@ const changeUSDNPosition = async (
 
   const USDNAmt = kwUSDNGive ? give[kwUSDNGive] : want[kwUSDNWant as string];
   const { brand } = USDNAmt;
-  const denom = NonNullish(ctx.chainHubTools.getDenom(brand));
+  const { denom } = ctx.usdc;
 
   const amounts = isDeposit ? give : want;
 
@@ -621,6 +621,20 @@ export const rebalance = async (
   offerArgs: OfferArgsFor['rebalance'],
   kit: Guest<PortfolioKit>,
 ) => {
+  if (!('flow' in offerArgs)) return;
+  const { denom } = ctx.usdc;
+  const moves = await interpretFlowDesc(
+    orch,
+    offerArgs.flow,
+    ctx.zoeTools,
+    seat,
+    kit,
+    denom,
+  );
+  await trackFlow(kit.reporter, moves);
+  return;
+
+  // XXX
   const { axelarChainsMap } = ctx;
 
   const proposal = seat.getProposal() as ProposalType['rebalance'];
@@ -727,8 +741,8 @@ export const openPortfolio = (async (
     const {
       makePortfolioKit,
       zoeTools,
+      usdc,
       axelarChainsMap,
-      chainHubTools,
       inertSubscriber,
     } = ctx;
     const kit = makePortfolioKit();
@@ -736,7 +750,7 @@ export const openPortfolio = (async (
 
     const portfolioCtx = {
       axelarChainsMap,
-      chainHubTools,
+      usdc,
       keeper: { ...kit.reader, ...kit.manager },
       zoeTools,
       inertSubscriber,

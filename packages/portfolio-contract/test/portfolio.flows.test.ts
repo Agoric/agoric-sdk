@@ -203,17 +203,11 @@ const mocks = (
   const timer = buildZoeManualTimer();
 
   const denom = `ibc/${denomHash({ channelId: 'channel-123', denom: 'uusdc' })}`;
-  const chainHubTools = harden({
-    getDenom: brand => {
-      assert(brand === USDC);
-      return denom;
-    },
-  });
 
   const inertSubscriber = {} as ResolvedPublicTopic<never>['subscriber'];
   const ctx1: PortfolioInstanceContext = {
     zoeTools,
-    chainHubTools,
+    usdc: { brand: USDC, denom },
     axelarChainsMap,
     inertSubscriber,
   };
@@ -326,8 +320,7 @@ test('interpretFlowDesc, trackFlow handle USDN scenario', async t => {
 
   const pk = ctx.makePortfolioKit();
   const { offerArgs } = withBrand(sceneData, USDC);
-  const denom = ctx.chainHubTools.getDenom(USDC);
-  assert(denom);
+  const { denom } = ctx.usdc;
   const flow = offerArgs.flow || [];
 
   t.deepEqual(flow, [
@@ -363,8 +356,6 @@ test('interpretFlowDesc, trackFlow handle USDN scenario', async t => {
   ]);
 
   await trackFlow(pk.reporter, moves);
-  // only account creation is expected in the log
-  // we don't actually run the flow (yet).
   t.snapshot(log, 'call log');
   await documentStorageSchema(t, storage, docOpts);
 });
