@@ -1,7 +1,9 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { FeedPolicyShape } from '@agoric/fast-usdc/src/type-guards.js';
 import { parseArgs } from 'node:util';
+import { M, mustMatch } from '@endo/patterns';
 import { getManifestForUpdateFastUsdcPolicy } from './fast-usdc-policy.core.js';
+import { ChainPolicies } from './utils/chain-policies.js';
 import { toExternalConfig } from './utils/config-marshal.js';
 
 /**
@@ -13,8 +15,10 @@ import { toExternalConfig } from './utils/config-marshal.js';
 /** @type {ParseArgsConfig['options']} */
 const options = {
   feedPolicy: { type: 'string' },
+  network: { type: 'string' },
 };
-const feedPolicyUsage = 'use --feedPolicy <policy> ...';
+const feedPolicyUsage =
+  'use --feedPolicy <JSON>, optionally with --network <MAINNET|TESTNET> for chainPolicies';
 
 /**
  * @typedef {{
@@ -51,14 +55,24 @@ export const updateProposalBuilder = async (
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   const {
-    values: { feedPolicy },
+    values: { feedPolicy: feedPolicyJSON, network },
   } = parseArgs({ args: endowments.scriptArgs, options });
 
-  const parseFeedPolicy = () => {
-    if (typeof feedPolicy !== 'string') throw Error(feedPolicyUsage);
-    return JSON.parse(feedPolicy);
-  };
-  const config = harden({ feedPolicy: parseFeedPolicy() });
+  if (typeof feedPolicyJSON !== 'string') throw Error(feedPolicyUsage);
+  const feedPolicy = JSON.parse(feedPolicyJSON);
+  if (network !== undefined) {
+    if (typeof network !== 'string') {
+      throw Error('--network requires a string argument');
+    }
+    mustMatch(
+      network,
+      M.or(...Object.keys(ChainPolicies)),
+      'unknown network name',
+    );
+    if (feedPolicy.chainPolicies) throw Error('cannot merge chainPolicies');
+    feedPolicy = { ...feedPolicy, chainPolicies: ChainPolicies[network] };
+  }
+  const config = harden({ feedPolicy });
   await writeCoreEval('eval-fast-usdc-policy-update', utils =>
     updateProposalBuilder(utils, config),
   );
