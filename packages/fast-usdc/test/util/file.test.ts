@@ -55,6 +55,8 @@ const makeMkdirMock = () => {
 
 test('returns the path', t => {
   const path = 'config/dir/.fast-usdc/config.json';
+  // @ts-expect-error missing arguments
+  // but we are only testing the path here
   const file = makeFile(path);
 
   t.is(file.path, path);
