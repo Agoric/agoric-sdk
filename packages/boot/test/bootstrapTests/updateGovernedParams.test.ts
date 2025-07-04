@@ -7,43 +7,69 @@
  * 2. force prices to drop so a vault liquidates
  * 3. verify that the bidder gets the liquidated assets.
  */
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
-import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { Fail } from '@endo/errors';
 
-import { makeSwingsetTestKit } from '../../tools/supports.js';
-import {
-  makeGovernanceDriver,
-  makeWalletFactoryDriver,
-} from '../../tools/drivers.js';
 import {
   updateVaultDirectorParams,
   updateVaultManagerParams,
-} from '../tools/changeVaultParams.js';
+} from '@aglocal/boot/test/tools/changeVaultParams.js';
+import {
+  makeGovernanceDriver,
+  makeWalletFactoryDriver,
+} from '@aglocal/boot/tools/drivers.js';
+import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
+import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
+import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
+import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  boardSlottingMarshaller,
+  makeAgoricNamesRemotesFromFakeStorage,
+  slotToBoardRemote,
+} from '@agoric/vats/tools/board-utils.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { Fail } from '@endo/errors';
 
-const makeDefaultTestContext = async t => {
+const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
+
+const makeDefaultTestContext = async () => {
   console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t.log);
 
-  const { runUtils, storage } = swingsetTestKit;
+  const storage = makeFakeStorageKit('bootstrapTests');
+  const swingsetTestKit = await makeCosmicSwingsetTestKit({
+    configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
+    mockBridgeReceiver: makeMockBridgeKit({ storageKit: storage }),
+  });
+
+  const { EV, queueAndRun } = swingsetTestKit;
+
+  const readLatestEntryFromStorage = (path: string) => {
+    let data;
+    try {
+      data = unmarshalFromVstorage(storage.data, path, fromCapData, -1);
+    } catch {
+      // fall back to regular JSON
+      const raw = storage.getValues(path).at(-1);
+      assert(raw, `No data found for ${path}`);
+      data = JSON.parse(raw);
+    }
+    return data;
+  };
+
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
-  const { EV } = runUtils;
 
   // Wait for ATOM to make it into agoricNames
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
   console.timeLog('DefaultTestContext', 'vaultFactoryKit');
 
   // has to be late enough for agoricNames data to have been published
-  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
-    swingsetTestKit.storage,
-  );
+  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
   agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
-    runUtils,
+    { EV, queueAndRun },
     storage,
     agoricNamesRemotes,
   );
@@ -52,7 +78,12 @@ const makeDefaultTestContext = async t => {
   console.timeEnd('DefaultTestContext');
 
   const gd = await makeGovernanceDriver(
-    swingsetTestKit,
+    // @ts-expect-error
+    {
+      ...swingsetTestKit,
+      readPublished: (subPath: string) =>
+        readLatestEntryFromStorage(`published.${subPath}`),
+    },
     agoricNamesRemotes,
     walletFactoryDriver,
     [
@@ -69,33 +100,27 @@ const test = anyTest as TestFn<
   Awaited<ReturnType<typeof makeDefaultTestContext>>
 >;
 
-test.before(async t => {
-  t.context = await makeDefaultTestContext(t);
-});
-test.after.always(t => {
-  return t.context.shutdown && t.context.shutdown();
-});
+test.before(async t => (t.context = await makeDefaultTestContext()));
+test.after.always(t => t.context.shutdown?.());
 
 test('modify manager & director params; update vats, check', async t => {
-  const { agoricNamesRemotes, evalProposal, buildProposal, gd } = t.context;
+  const { agoricNamesRemotes, EV, evaluateProposal, gd } = t.context;
 
   const { ATOM } = agoricNamesRemotes.brand;
   ATOM || Fail`ATOM missing from agoricNames`;
 
-  const { EV } = t.context.runUtils;
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
   const vaultFactoryKit =
     await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
   const brands = await EV(zoe).getBrands(vaultFactoryKit.instance);
 
   // /// Modify Manager params ///////////////
-  t.log('modify manager params');
+  console.log('modify manager params');
   const getDebtLimitValue = async () => {
     const params = await EV(vaultFactoryKit.publicFacet).getGovernedParams({
       collateralBrand: brands.ATOM,
     });
 
-    // @ts-expect-error getGovernedParams doesn't declare these fields
     return params.DebtLimit.value.value;
   };
 
@@ -105,7 +130,7 @@ test('modify manager & director params; update vats, check', async t => {
   t.is(await getDebtLimitValue(), 50_000_000n);
 
   // /// Modify Director params ///////////////
-  t.log('modify director params');
+  console.log('modify director params');
   const directorPF = vaultFactoryKit.publicFacet;
   const subscriptionPre = await EV(directorPF).getElectorateSubscription();
 
@@ -130,7 +155,7 @@ test('modify manager & director params; update vats, check', async t => {
   t.is(next.value.current.ReferencedUI.value, ANOTHER_GUI);
 
   // /// run the coreEval ///////////////
-  t.log('upgrade priceFeeds, vaults, and auctions');
+  console.log('upgrade priceFeeds, vaults, and auctions');
   const priceFeedBuilder =
     '@agoric/builders/scripts/inter-protocol/updatePriceFeeds.js';
   const coreEvals = await Promise.all([
@@ -142,8 +167,8 @@ test('modify manager & director params; update vats, check', async t => {
     evals: coreEvals.flatMap(e => e.evals),
     bundles: coreEvals.flatMap(e => e.bundles),
   };
-  t.log('evaluating', coreEvals.length, 'scripts');
-  await evalProposal(combined);
+  console.log('evaluating', coreEvals.length, 'scripts');
+  await evaluateProposal(combined);
 
   // verify manager params restored to latest value
   t.is(await getDebtLimitValue(), 50_000_000n);

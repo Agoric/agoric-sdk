@@ -2,27 +2,35 @@
 
 import fs from 'node:fs';
 import * as fsPromises from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import nativePath from 'node:path';
 
 import tmp from 'tmp';
-import { Fail } from '@endo/errors';
 
-import {
-  SwingsetMessageType,
-  QueuedActionType,
-} from '@agoric/internal/src/action-types.js';
-import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
-import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
-import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
-import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
-import { initSwingStore } from '@agoric/swing-store';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import {
   extractPortNums,
   makeLaunchChain,
   makeQueueStorage,
-} from '../src/chain-main.js';
-import { DEFAULT_SIM_SWINGSET_PARAMS } from '../src/sim-params.js';
-import { makeQueue } from '../src/helpers/make-queue.js';
+} from '@agoric/cosmic-swingset/src/chain-main.js';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { makeQueue } from '@agoric/cosmic-swingset/src/helpers/make-queue.js';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { DEFAULT_SIM_SWINGSET_PARAMS } from '@agoric/cosmic-swingset/src/sim-params.js';
+import { NonNullish } from '@agoric/internal';
+import {
+  QueuedActionType,
+  SwingsetMessageType,
+} from '@agoric/internal/src/action-types.js';
+import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
+import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
+import { initSwingStore } from '@agoric/swing-store';
+import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
+import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
+import { Fail } from '@endo/errors';
+
+import { makeMockBridgeKit } from './test-bridge-utils.ts';
 
 /** @import {EReturn} from '@endo/far'; */
 /** @import { BlockInfo, InitMsg } from '@agoric/internal/src/chain-utils.js' */
@@ -30,6 +38,7 @@ import { makeQueue } from '../src/helpers/make-queue.js';
 /** @import { InboundQueue } from '../src/launch-chain.js'; */
 
 const tmpDir = makeTempDirFactory(tmp);
+const { resolve: importLoader } = createRequire(import.meta.url);
 
 /**
  * @template T
@@ -59,7 +68,9 @@ export const defaultInitMessage = harden({
       storagePort: 0,
       swingsetPort: 0,
       vbankPort: 0,
+      vlocalchainPort: 0,
       vibcPort: 0,
+      vtransferPort: 0,
     })
       .sort(() => Math.random() - 0.5)
       .map(([name, _zero], i) => [name, i + 1]),
@@ -96,21 +107,13 @@ const baseConfig = harden({
   vats: {
     bootstrap: {
       sourceSpec: '@agoric/vats/tools/bootstrap-chain-reflective.js',
-      creationOptions: {
-        critical: true,
-      },
-      parameters: {
-        baseManifest: 'MINIMAL',
-      },
+      creationOptions: { critical: true },
+      parameters: { baseManifest: 'MINIMAL' },
     },
   },
   bundles: {
-    agoricNames: {
-      sourceSpec: '@agoric/vats/src/vat-agoricNames.js',
-    },
-    bridge: {
-      sourceSpec: '@agoric/vats/src/vat-bridge.js',
-    },
+    agoricNames: { sourceSpec: '@agoric/vats/src/vat-agoricNames.js' },
+    bridge: { sourceSpec: '@agoric/vats/src/vat-bridge.js' },
   },
 });
 
@@ -128,13 +131,19 @@ const baseConfig = harden({
  * t.after.always(shutdown), because the normal t.after() hooks are not run if a
  * test fails.
  *
- * @param {((destPort: string, msg: unknown) => unknown)} receiveBridgeSend
  * @param {object} [options]
+ * @param {string[]} [options.addBootstrapBehaviors] additional specific
+ *   behavior functions to augment the selected manifest (see
+ *   {@link ../../vats/src/core})
+ * @param {string} [options.baseBootstrapManifest] identifies the colletion of
+ *   "behaviors" to run at bootstrap for creating and configuring the initial
+ *   population of vats (see
+ *   {@link ../../vats/tools/bootstrap-chain-reflective.js})
+ * @param {string[]} [options.bootstrapCoreEvals] code defining functions to be
+ *   called with a set of powers, each in their own isolated compartment
  * @param {string | null} [options.bundleDir] relative to working directory
  * @param {SwingSetConfig['bundles']} [options.bundles] extra bundles configuration
- * @param {Partial<SwingSetConfig>} [options.configOverrides] extensions to the
- *   default SwingSet configuration (may be overridden by more specific options
- *   such as `defaultManagerType`)
+ * @param {string} [options.configSpecifier] config path
  * @param {string} [options.debugName]
  * @param {ManagerType} [options.defaultManagerType] As documented at
  *   {@link ../../../docs/env.md#swingset_worker_type}, the implicit default of
@@ -144,54 +153,62 @@ const baseConfig = harden({
  *   any changes
  * @param {Replacer<SwingSetConfig>} [options.fixupConfig] a final opportunity
  *   to make any changes
+ * @param {import('@agoric/swingset-vat/tools/run-utils.js').RunHarness} [options.harness] - Optional run harness
+ * @param {((destPort: string, msg: unknown) => unknown)} [options.mockBridgeReceiver]
  * @param {import('@agoric/telemetry').SlogSender} [options.slogSender]
  * @param {import('../src/chain-main.js').CosmosSwingsetConfig} [options.swingsetConfig]
  * @param {import('@agoric/swing-store').SwingStore} [options.swingStore]
  *   defaults to a new in-memory store
  * @param {SwingSetConfig['vats']} [options.vats] extra static vat configuration
- * @param {string} [options.baseBootstrapManifest] identifies the colletion of
- *   "behaviors" to run at bootstrap for creating and configuring the initial
- *   population of vats (see
- *   {@link ../../vats/tools/bootstrap-chain-reflective.js})
- * @param {string[]} [options.addBootstrapBehaviors] additional specific
- *   behavior functions to augment the selected manifest (see
- *   {@link ../../vats/src/core})
- * @param {string[]} [options.bootstrapCoreEvals] code defining functions to be
- *   called with a set of powers, each in their own isolated compartment
  * @param {object} [powers]
  * @param {Pick<import('node:fs/promises'), 'mkdir'>} [powers.fsp]
  * @param {typeof import('node:path').resolve} [powers.resolvePath]
  */
 export const makeCosmicSwingsetTestKit = async (
-  receiveBridgeSend,
   {
     // Options for the SwingSet controller/kernel.
     bundleDir = 'bundles',
     bundles,
-    configOverrides,
-    defaultManagerType,
+    configSpecifier,
     debugName,
+    defaultManagerType,
     env = process.env,
     fixupInitMessage,
     fixupConfig,
+    harness,
+    mockBridgeReceiver = makeMockBridgeKit(),
     slogSender,
     swingsetConfig,
     swingStore,
     vats,
 
     // Options for vats (particularly the reflective bootstrap vat).
-    baseBootstrapManifest,
     addBootstrapBehaviors,
+    baseBootstrapManifest,
     bootstrapCoreEvals,
   } = {},
   { fsp = fsPromises, resolvePath = nativePath.resolve } = {},
 ) => {
-  await null;
+  await Promise.resolve();
+
+  if (!defaultManagerType)
+    defaultManagerType =
+      /** @type {ManagerType | undefined} */ (
+        process.env.SWINGSET_WORKER_TYPE
+      ) || 'local';
+
   /** @type {SwingSetConfig} */
-  let config = {
+  let config = {};
+
+  if (configSpecifier)
+    config = NonNullish(
+      await loadSwingsetConfigFile(importLoader(configSpecifier)),
+    );
+
+  config = {
     ...deepCopyJsonable(baseConfig),
-    ...configOverrides,
-    ...stripUndefined({ defaultManagerType }),
+    ...config,
+    defaultManagerType,
   };
   if (bundleDir) {
     bundleDir = resolvePath(bundleDir);
@@ -235,7 +252,7 @@ export const makeCosmicSwingsetTestKit = async (
       const portName =
         knownPorts.get(destPort) || Fail`unknown cosmos port ${destPort}`;
       const msg = JSON.parse(msgJson);
-      const result = receiveBridgeSend(portName, msg);
+      const result = mockBridgeReceiver(portName, msg);
       return JSON.stringify(result);
     },
   };
@@ -280,7 +297,6 @@ export const makeCosmicSwingsetTestKit = async (
     await cleanupDB();
   };
   const { controller, bridgeInbound, timer } = internals;
-  const { queueAndRun, EV } = makeRunUtils(controller);
 
   // Remember information about the current block, starting with the init
   // message.
@@ -291,7 +307,24 @@ export const makeCosmicSwingsetTestKit = async (
     params: lastBlockParams,
   } = initMessage;
   let lastBlockWalltime = Date.now();
-  await blockingSend(initMessage);
+  const runUtils = makeRunUtils(controller, harness);
+
+  const timeUnitMultiplier = {
+    seconds: 1,
+    minutes: 60,
+    hours: 60 * 60,
+    days: 60 * 60 * 24,
+  };
+
+  /**
+   * @param {number} shift
+   * @param {keyof typeof timeUnitMultiplier} unit
+   */
+  const advanceTimeBy = (shift, unit) => {
+    const { blockTime } = getLastBlockInfo();
+    const targetTime = blockTime + timeUnitMultiplier[unit] * shift;
+    return runNextBlock({ blockTime: targetTime });
+  };
 
   /**
    * @returns {BlockInfo}
@@ -365,53 +398,90 @@ export const makeCosmicSwingsetTestKit = async (
       },
     });
   };
+
   /**
    * @param {string} fnText must evaluate to a function that will be invoked in
    *   a core eval compartment with a "powers" argument as attenuated by
    *   `jsonPermits` (with no attenuation by default).
    * @param {string} [jsonPermits] must deserialize into a BootstrapManifestPermit
-   * @param {InboundQueue} [queue]
    */
-  const pushCoreEval = (
-    fnText,
-    jsonPermits = 'true',
-    queue = highPriorityQueue,
-  ) => {
+  const pushCoreEval = (fnText, jsonPermits = 'true') => {
     // Fail noisily if fnText does not evaluate to a function.
     // This must be refactored if there is ever a need for such input.
     const fn = new Compartment().evaluate(fnText);
     typeof fn === 'function' || Fail`text must evaluate to a function`;
-    /** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifestPermit} */
-    // eslint-disable-next-line no-unused-vars
-    const permit = JSON.parse(jsonPermits);
     /** @type {import('@agoric/cosmic-proto/swingset/swingset.js').CoreEvalSDKType} */
-    const coreEvalDesc = {
-      json_permits: jsonPermits,
-      js_code: fnText,
-    };
-    const action = {
-      type: QueuedActionType.CORE_EVAL,
-      evals: [coreEvalDesc],
-    };
-    pushQueueRecord(action, queue);
+    const coreEvalDesc = { json_permits: jsonPermits, js_code: fnText };
+    return evaluateProposal({ bundles: [], evals: [coreEvalDesc] });
   };
+
+  /**
+   * @param {Awaited<ReturnType<import('./test-proposal-utils.ts')['buildProposal']>>} proposal
+   */
+  const evaluateProposal = async ({ bundles: proposalBundles, evals }) => {
+    await Promise.resolve();
+
+    for (const bundle of proposalBundles) await installBundle(bundle);
+    pushQueueRecord(
+      { evals, type: QueuedActionType.CORE_EVAL },
+      highPriorityQueue,
+    );
+
+    return runUntilQueuesEmpty();
+  };
+
+  /**
+   * @param {EndoZipBase64Bundle} bundle
+   */
+  const installBundle = bundle => {
+    pushQueueRecord(
+      { bundle: JSON.stringify(bundle), type: QueuedActionType.INSTALL_BUNDLE },
+      highPriorityQueue,
+    );
+    return runNextBlock();
+  };
+
+  const runUntilQueuesEmpty = async () => {
+    await Promise.resolve();
+
+    let stats = controller.getStats();
+
+    while (
+      actionQueue.size() +
+        highPriorityQueue.size() +
+        stats.acceptanceQueueLength +
+        stats.runQueueLength >
+      0
+    ) {
+      await runNextBlock();
+      stats = controller.getStats();
+    }
+  };
+
+  await blockingSend(initMessage);
+  await runNextBlock();
 
   return {
     // SwingSet-oriented references.
     actionQueue,
     highPriorityQueue,
+    lastBlockTime,
     shutdown,
     swingStore,
 
     // Controller-oriented helpers.
-    controller,
     bridgeInbound,
+    controller,
+    runUntilQueuesEmpty,
+    runUtils, // TODO: remove this
     timer,
-    queueAndRun,
-    EV,
+    ...runUtils,
 
     // Functions specific to this kit.
+    advanceTimeBy,
+    evaluateProposal,
     getLastBlockInfo,
+    installBundle,
     pushQueueRecord,
     pushCoreEval,
     runNextBlock,
