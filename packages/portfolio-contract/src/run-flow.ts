@@ -110,6 +110,7 @@ export const trackFlow = async (
     for (const move of moves) {
       trace(step, moveStatus(move));
       reporter.publishFlowStatus(flowId, { step, ...moveStatus(move) });
+      // XXX move the how -> apply/recover lookup here.
       await move.apply(move);
       const { amount, src, dest } = move;
       if ('pos' in src) {
@@ -292,7 +293,7 @@ export const interpretFlowDesc = async (
   kit: Guest<PortfolioKit>,
   denom: Denom,
 ): Promise<AssetMovement[]> => {
-  const toD = (a: NatAmount): DenomAmount => harden({ ...a, denom });
+  const toD = (a: NatAmount): DenomAmount => harden({ denom, value: a.value });
 
   const animate: HowToMove = {
     localTransfer: {
