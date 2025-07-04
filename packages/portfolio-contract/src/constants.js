@@ -14,6 +14,10 @@ harden(YieldProtocol);
 
 /**
  * @enum {(typeof AxelarChain)[keyof typeof AxelarChain]}
+ *
+ * Subset of Axelar chains supported by YMax
+ *
+ * @see {@link https://docs.axelar.dev/resources/contract-addresses/mainnet/#evm-contract-addresses}
  */
 export const AxelarChain = /** @type {const} */ ({
   Ethereum: 'Ethereum',
@@ -33,25 +37,5 @@ export const SupportedChain = /** @type {const} */ ({
   ...AxelarChain,
   agoric: 'agoric',
   noble: 'noble',
-  // TODO: check privateArgs for chainInfo for all of these
 });
 harden(SupportedChain);
-
-/**
- * Strategies for portfolio rebalancing of bulk deposits.
- *
- * @enum {(typeof RebalanceStrategy)[keyof typeof RebalanceStrategy]}
- */
-export const RebalanceStrategy = /** @type {const} */ ({
-  /**
-   * Use a strategy specified in advance by the portfolio's
-   * configuration.
-   */
-  Preset: 'preset',
-  /**
-   * Divide the deposit between the positions so that the proportions between
-   * the existing balances are preserved.
-   */
-  PreserveExistingProportions: 'pep',
-});
-harden(RebalanceStrategy);

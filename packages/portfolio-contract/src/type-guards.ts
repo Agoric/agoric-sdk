@@ -20,21 +20,22 @@
  *
  * For usage examples, see `makeTrader` in {@link ../test/portfolio-actors.ts}.
  */
-import { type Amount, type Brand, type NatValue } from '@agoric/ertp';
+import {
+  type Amount,
+  type Brand,
+  type NatAmount,
+  type NatValue,
+} from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import {
-  AnyNatAmountShape,
-  type AccountId,
-  type CaipChainId,
+  type CaipChainId
 } from '@agoric/orchestration';
 import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
 import { M } from '@endo/patterns';
-import { AxelarChain, YieldProtocol } from './constants.js';
-import type { EVMContractAddresses, start } from './portfolio.contract.js';
-import type { PortfolioKit } from './portfolio.exo.js';
+import { AxelarChain, SupportedChain, YieldProtocol } from './constants.js';
 
 // #region preliminaries
 const { fromEntries, keys } = Object;
@@ -191,6 +192,93 @@ const offerArgsShape: TypedPattern<OfferArgs1> = M.splitRecord(
   },
 );
 
+type PoolPlace = {
+  protocol: YieldProtocol;
+  // ... chain, pool #, ...
+};
+
+type PoolPlaceInfo =
+  | { protocol: 'USDN'; vault: null | 1 }
+  | { protocol: 'Aave' | 'Compound'; chainName: AxelarChain };
+
+const PoolPlaces: Record<string, PoolPlaceInfo> = {
+  USDN: { protocol: 'USDN', vault: null }, // MsgSwap only
+  USDNVault: { protocol: 'USDN', vault: 1 }, // MsgSwap, MsgLock
+  Aave_Arbitrum: { protocol: 'Aave', chainName: 'Arbitrum' },
+  Aave_Avalanche: { protocol: 'Aave', chainName: 'Avalanche' },
+  Aave_BNB: { protocol: 'Aave', chainName: 'BNB' },
+  Aave_Ethereum: { protocol: 'Aave', chainName: 'Ethereum' },
+  Aave_Fantom: { protocol: 'Aave', chainName: 'Fantom' },
+  Aave_Optimism: { protocol: 'Aave', chainName: 'Optimism' },
+  Aave_Polygon: { protocol: 'Aave', chainName: 'Polygon' },
+
+  Compound_Arbitrum: { protocol: 'Compound', chainName: 'Arbitrum' },
+  Compound_Avalanche: { protocol: 'Compound', chainName: 'Avalanche' },
+  Compound_BNB: { protocol: 'Compound', chainName: 'BNB' },
+  Compound_Ethereum: { protocol: 'Compound', chainName: 'Ethereum' },
+  Compound_Fantom: { protocol: 'Compound', chainName: 'Fantom' },
+  Compound_Optimism: { protocol: 'Compound', chainName: 'Optimism' },
+  Compound_Polygon: { protocol: 'Compound', chainName: 'Polygon' },
+} as const;
+harden(PoolPlaces);
+
+type PoolKey = keyof typeof PoolPlaces;
+type BasisPoints = NatValue;
+
+type AllocationStrategyInfo = {
+  type: 'target-allocation';
+  allocation: Record<PoolKey, BasisPoints>; // basis points
+  // in basis-points
+};
+
+type XXXOfferArgs = {
+  flow: MovementDesc[];
+  strategy: AllocationStrategyInfo;
+};
+
+export type SeatKeyword = 'Cash' | 'Deposit';
+export const seatKeywords: SeatKeyword[] = ['Cash', 'Deposit'];
+harden(seatKeywords);
+
+// TODO: how to ensure SeatKeyword is disjoint with SupportedChain?
+
+export type AssetPlaceRef =
+  | SeatKeyword
+  | `${SupportedChain}.makeAccount()`
+  | number;
+const PositionRefShape = M.number();
+const AssetPlaceRefShape = M.or(
+  ...seatKeywords,
+  ...Object.values(SupportedChain).map(c => `${c}.makeAccount()`),
+  ...keys(PoolPlaces),
+  PositionRefShape,
+);
+
+export const getChainNameOfPlaceRef = (
+  ref: AssetPlaceRef,
+): SupportedChain | undefined => {
+  if (typeof ref !== 'string') return undefined;
+  const m = ref.match(/^(?<chain>\w+)\.makeAccount\(\)$/);
+  const chain = m?.groups?.chain;
+  if (!chain) return undefined;
+  // validation of external data is done by AssetPlaceRefShape
+  // any bad ref that reaches here is a bug
+  assert(keys(SupportedChain).includes(chain), `bad ref: ${ref}`);
+  return chain as SupportedChain;
+};
+
+export type AssetPlaceDef =
+  | AssetPlaceRef
+  | { open: YieldProtocol; chainId?: CaipChainId };
+const AssetPlaceDefShape = M.or(AssetPlaceRefShape, {
+  open: M.or(...keys(PoolPlaces)),
+});
+export type MovementDesc = {
+  amount: NatAmount;
+  src: AssetPlaceRef;
+  dest: AssetPlaceDef;
+};
+
 export type OfferArgsFor = {
   openPortfolio: OfferArgs1;
   rebalance: OfferArgs1;
@@ -209,122 +297,88 @@ export type EVMContractAddresses = {
   factory: `0x${string}`;
   usdc: `0x${string}`;
 };
-
-// XXX refactor using AssetMoveDesc
-type FlowStatus = {
-  step: number;
-  how: string;
-  src: string;
-  dest: string;
-  amount: Amount<'nat'>;
-  error?: string;
-};
-type GMPStatusTODO = {
-  protocol: YieldProtocol;
-  accountId: AccountId | undefined;
-};
-
-// XXX relate paths to types a la readPublished()
-export type StatusFor = {
-  portfolio: {
-    positionKeys: PoolKey[];
-    flowCount: number;
-    // TODO: accountIdByChain: Record<ChainAccountKey, AccountId>;
-    accountIdByChain: Record<string, AccountId>;
+export type AxelarChainsMap = {
+  [chain in AxelarChain]: {
+    caip: CaipChainId; // TODO: move to chainHub
+    axelarId: AxelarChain; // TODO: becomes chainName in chainHub
+    contractAddresses: EVMContractAddresses;
   };
-  position: {
-    protocol: YieldProtocol;
-    accountId: AccountId;
-    netTransfers: Amount<'nat'>;
-    totalIn: Amount<'nat'>;
-    totalOut: Amount<'nat'>;
-  };
-  // XXX refactor using AssetMoveDesc
-  flow:
-    | FlowStatus
-    | (Omit<FlowStatus, 'dest'> & { where: string }) // recovery failed
-    | GMPStatusTODO;
 };
 
-export const PoolKeyShape = M.string(); // prefer string over M.or(...) for extensibility
-export const PortfolioStatusShape: TypedPattern<StatusFor['portfolio']> =
+export const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
   M.splitRecord({
-    positionKeys: M.arrayOf(PoolKeyShape),
-    flowCount: M.nat(),
-    accountIdByChain: M.recordOf(
-      M.or('agoric', 'noble'), // ChainAccountKey
-      M.string(), // AccountId
-    ),
+    aavePool: M.string(),
+    compound: M.string(),
+    factory: M.string(),
+    usdc: M.string(),
   });
 
-/**
- * Creates vstorage path for position transfer history.
- *
- * Position tracking shows transfer history per yield protocol.
- * Used by {@link Position.publishStatus} to publish position state.
- *
- * @param parent - Portfolio ID
- * @param key - PoolKey
- * @returns Path segments for vstorage
- */
-export const makePositionPath = (parent: number, key: PoolKey) => [
+const AxelarChainInfoPattern = M.splitRecord({
+  caip: M.string(),
+  contractAddresses: EVMContractAddressesShape,
+});
+
+export const AxelarChainsMapShape: TypedPattern<AxelarChainsMap> =
+  M.splitRecord(
+    fromEntries(
+      keys(AxelarChain).map(chain => [chain, AxelarChainInfoPattern]),
+    ) as Record<AxelarChain, typeof AxelarChainInfoPattern>,
+  );
+
+export type BaseGmpArgs = {
+  destinationEVMChain: AxelarChain;
+  keyword: string;
+  amounts: AmountKeywordRecord;
+};
+
+export const GmpCallType = {
+  ContractCall: 1,
+  ContractCallWithToken: 2,
+} as const;
+
+export type GmpCallType = (typeof GmpCallType)[keyof typeof GmpCallType];
+
+export type GmpArgsContractCall = BaseGmpArgs & {
+  destinationAddress: string;
+  type: GmpCallType;
+  contractInvocationData: Array<ContractCall>;
+};
+
+export type GmpArgsTransferAmount = BaseGmpArgs & {
+  transferAmount: bigint;
+};
+
+export type GmpArgsWithdrawAmount = BaseGmpArgs & {
+  withdrawAmount: bigint;
+};
+
+export const ContractCallShape = M.splitRecord({
+  target: M.string(),
+  functionSignature: M.string(),
+  args: M.arrayOf(M.any()),
+});
+
+export const GMPArgsShape: TypedPattern<GmpArgsContractCall> = M.splitRecord({
+  destinationAddress: M.string(),
+  type: M.or(1, 2),
+  destinationEVMChain: M.or(...keys(AxelarChain)),
+  keyword: M.string(),
+  amounts: AmountKeywordRecordShape, // XXX brand should be exactly USDC
+  contractInvocationData: M.arrayOf(ContractCallShape),
+});
+
+export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
+export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>; // TODO: move to type-guards as external interface?
+
+/** vstorage path for portfolio, under published.ymax0 */
+export const makePortfolioPath = (id: number) => [`portfolio${id}`];
+export const makePositionPath = (parent: number, id: number) => [
   `portfolio${parent}`,
   'positions',
-  key,
+  `position${id}`,
 ];
-
-export const PositionStatusShape: TypedPattern<StatusFor['position']> =
-  M.splitRecord({
-    protocol: M.or('USDN', 'Aave', 'Compound'), // YieldProtocol
-    accountId: M.string(), // AccountId
-    netTransfers: AnyNatAmountShape, // XXX constrain brand to USDC
-    totalIn: AnyNatAmountShape,
-    totalOut: AnyNatAmountShape,
-  });
-
-/**
- * Creates vstorage path for flow operation logging.
- *
- * Flow logging provides real-time operation progress for transparency.
- * Used by {@link PortfolioKit.reporter.publishFlowStatus} to track rebalancing operations.
- *
- * @param parent - Portfolio ID
- * @param id - Flow ID within the portfolio
- * @returns Path segments for vstorage
- */
 export const makeFlowPath = (parent: number, id: number) => [
   `portfolio${parent}`,
   'flows',
   `flow${id}`,
 ];
-
-export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.splitRecord(
-  {
-    step: M.nat(),
-    how: M.string(),
-    src: M.string(),
-    dest: M.string(),
-    amount: AnyNatAmountShape,
-  },
-  {
-    where: M.string(),
-    error: M.string(),
-  },
-);
-// #endregion
-
-// XXX deployment concern, not part of contract external interface
-// but avoid changing the import from the deploy package
-
-// XXX split between chainInfo and contractAddresses
-export type AxelarChainsMap = {
-  [chain in AxelarChain]: {
-    caip: CaipChainId;
-    /**
-     * Axelar chain IDs differ between mainnet and testnet.
-     * See [supported-chains-list.ts](https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts)
-     */
-    axelarId: string;
-    contractAddresses: EVMContractAddresses;
-  };
-};
