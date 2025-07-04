@@ -62,11 +62,16 @@ harden(makePrivateArgs);
 export const startPortfolio = async (permitted, configStruct) => {
   trace('startPortfolio');
   const { issuer } = permitted;
-  const [USDC, PoC26] = await Promise.all([
-    issuer.consume.USDC,
-    issuer.consume.PoC26,
-  ]);
-  const issuerKeywordRecord = { USDC, Access: PoC26 };
+
+const PoC26 = await issuer.consume.PoC26;
+trace('startPortfolio: settled PoC26');
+const USDC = await issuer.consume.USDC;
+trace('startPortfolio: settled USDC');
+
+
+  const issuerKeywordRecord = { USDC: USDC, Access: PoC26 };
+  // const issuerKeywordRecord = {  Access: PoC26 };
+  trace('startPortfolio: issuerKeywordRecord', issuerKeywordRecord);
   await startOrchContract(
     name,
     deployConfigShape,
