@@ -35,7 +35,7 @@ import {
   rebalance,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
-import { interpretFlowDesc } from '../src/run-flow.ts';
+import { interpretFlowDesc, trackFlow } from '../src/run-flow.ts';
 import {
   makeOfferArgsShapes,
   makeProposalShapes,
@@ -319,7 +319,7 @@ const scenariosP = importCSV('./move-cases.csv', import.meta.url).then(data =>
   harden(grokRebalanceScenarios(data)),
 );
 
-test('interpretFlowDesc handles USDN scenario', async t => {
+test('interpretFlowDesc, trackFlow handle USDN scenario', async t => {
   const { orch, ctx, offer, storage } = mocks();
   const { log, seat } = offer;
   const { 'Open portfolio with USDN position': sceneData } = await scenariosP;
@@ -348,7 +348,7 @@ test('interpretFlowDesc handles USDN scenario', async t => {
     },
   ]);
 
-  const actual = await interpretFlowDesc(
+  const moves = await interpretFlowDesc(
     orch,
     flow,
     ctx.zoeTools,
@@ -356,11 +356,13 @@ test('interpretFlowDesc handles USDN scenario', async t => {
     pk,
     denom,
   );
-  t.like(actual, [
+  t.like(moves, [
     { how: 'localTransfer' },
     { how: 'transfer' },
     { how: 'USDN' },
   ]);
+
+  await trackFlow(pk.reporter, moves);
   // only account creation is expected in the log
   // we don't actually run the flow (yet).
   t.snapshot(log, 'call log');
