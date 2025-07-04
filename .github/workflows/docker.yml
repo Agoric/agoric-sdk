@@ -148,14 +148,6 @@ jobs:
           push: true
           build-args: |
             TAG=${{ env.BUILD_TAG }}
-      - name: notify on failure
-        if: failure()
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
   docker-solo:
     needs: [docker-sdk, snapshot]
@@ -200,11 +192,15 @@ jobs:
           tags: '${{ steps.prefix-tags.outputs.tags }}'
           build-args: |
             TAG=${{env.SDK_TAG}}
-      - name: notify on failure
-        if: failure()
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+
+  post-docker:
+    uses: ./.github/workflows/result.yml
+    if: (success() || failure())
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+    with:
+      event: ${{ github.event_name }}
+      needs-json: ${{ toJSON(needs) }}
+    needs:
+      - docker-sdk
+      - docker-solo
