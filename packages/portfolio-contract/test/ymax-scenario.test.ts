@@ -26,6 +26,7 @@ import {
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
+import { movementRules } from '../src/plan-moves.ts';
 
 test('wayFromSrcToDesc handles 1 scenario', async t => {
   const scenario = (await scenariosP)['Open portfolio with USDN position'];
@@ -41,6 +42,20 @@ test('wayFromSrcToDesc handles 1 scenario', async t => {
   const actual = (args?.flow || []).map(m => wayFromSrcToDesc(m, reader));
 
   t.deepEqual(actual, ['localTransfer', 'transfer', 'USDN']);
+});
+
+test('wayFromSrcToDest handles all rules', t => {
+  const usdc = withAmountUtils(makeIssuerKit('USDC'));
+  const amount = usdc.make(1n);
+
+  for (const [key, rules] of Object.entries(movementRules)) {
+    for (const [dir, rule] of Object.entries(rules)) {
+      const { goal, path } = rule;
+      for (const move of path) {
+        t.notThrows(() => wayFromSrcToDesc(harden({ ...move, amount })));
+      }
+    }
+  }
 });
 
 const rebalanceScenarioMacro = test.macro({
