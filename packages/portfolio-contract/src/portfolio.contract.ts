@@ -31,7 +31,7 @@ import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
-import { AxelarChain, YieldProtocol } from './constants.js';
+import { AxelarChain, SupportedChain, YieldProtocol } from './constants.js';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import {
@@ -81,12 +81,18 @@ type PortfolioPrivateArgs = OrchestrationPowers & {
   axelarChainsMap: AxelarChainsMap; // XXX split between chainInfo and contractInfo
 };
 
+const { values } = Object;
+
+/** each of the values in SupportedChain must appear in privateArgs.chainInfo */
+const requiredChainsInfoShape = M.splitRecord(
+  values(SupportedChain).map(n => ({ [n]: ChainInfoShape })) as CopyRecord,
+);
+
 const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   ...(OrchestrationPowersShape as CopyRecord),
   marshaller: M.remotable('marshaller'),
   storageNode: M.remotable('storageNode'),
-  // XXX use shape to validate required chains / assets?
-  chainInfo: M.recordOf(M.string(), ChainInfoShape),
+  chainInfo: requiredChainsInfoShape,
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
   axelarChainsMap: AxelarChainsMapShape,
 };
