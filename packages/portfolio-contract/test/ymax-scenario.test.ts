@@ -74,17 +74,13 @@ const rebalanceScenarioMacro = test.macro({
     const portfolioPath = trader1.getPortfolioPath();
     t.truthy(portfolioPath);
 
-    const { storage } = common.bootstrap;
     // not interested in account addresses
-    const {
-      local: _1,
-      noble: _2,
-      ...portfolioStatus
-    } = trader1.getPortfolioStatus(storage);
+    const { accountIdByChain: _1, ...portfolioStatus } =
+      await trader1.getPortfolioStatus();
 
     t.log('after:', portfolioPath, portfolioStatus);
 
-    const txfrs = trader1.netTransfersByProtocol(storage);
+    const txfrs = await trader1.netTransfersByProtocol();
     t.log('net transfers by protocol', txfrs);
     t.deepEqual(
       txfrs,

@@ -5,45 +5,39 @@ import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import { AmountMath } from '@agoric/ertp';
 import { makeTracer, mustMatch, type Remote } from '@agoric/internal';
-import { decodeBase64 } from '@endo/base64';
 import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import {
-  type AccountId,
-  type CaipChainId,
-  type CosmosChainAddress,
-  type OrchestrationAccount,
-} from '@agoric/orchestration';
+import { type AccountId, type CaipChainId } from '@agoric/orchestration';
 import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import type { MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import type { VTransferIBCEvent } from '@agoric/vats';
+import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { VowShape, type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { atob } from '@endo/base64';
+import { atob, decodeBase64 } from '@endo/base64';
+import { X } from '@endo/errors';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
-import type { HostInterface } from '../../async-flow/src/types.js';
 import { YieldProtocol } from './constants.js';
-import type { AxelarChainsMap, NobleAccount } from './type-guards.js';
+import type { NobleAccount } from './portfolio.flows.js';
+import { type LocalAccount } from './portfolio.flows.js';
+import type { AxelarChainsMap } from './type-guards.js';
 import {
-  OfferArgsShapeFor,
   makeFlowPath,
   makePortfolioPath,
   makePositionPath,
-  type LocalAccount,
-  type OfferArgsFor,
+  OfferArgsShapeFor,
   type makeProposalShapes,
+  type OfferArgsFor,
 } from './type-guards.js';
-import { X } from '@endo/errors';
-import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 
 const trace = makeTracer('PortExo');
 const { assign, values } = Object;
