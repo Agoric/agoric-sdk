@@ -17,6 +17,7 @@ import {
   setupPortfolioTest,
 } from './supports.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
+import type { SmartWalletKit, VstorageKit } from '@agoric/client-utils';
 
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
@@ -65,13 +66,18 @@ export const setupTrader = async (t, initial = 10_000) => {
   const { usdc, poc26 } = common.brands;
   const { when } = common.utils.vowTools;
 
+  const { storage } = common.bootstrap;
+  const readPublished = (async subpath => {
+    const val = storage.getDeserialized(`orchtest.${subpath}`).at(-1);
+    return val;
+  }) as unknown as VstorageKit['readPublished'];
   const myBalance = usdc.units(initial);
   const funds = await common.utils.pourPayment(myBalance);
   const { mint: _, ...poc26SansMint } = poc26;
   const myWallet = makeWallet({ USDC: usdc, Access: poc26SansMint }, zoe, when);
   await E(myWallet).deposit(funds);
   await E(myWallet).deposit(poc26.mint.mintPayment(poc26.make(1n)));
-  const trader1 = makeTrader(myWallet, started.instance);
+  const trader1 = makeTrader(myWallet, started.instance, readPublished);
 
   const { ibcBridge } = common.mocks;
   for (const { msg, ack } of values(makeUSDNIBCTraffic())) {

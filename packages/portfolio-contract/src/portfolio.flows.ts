@@ -46,8 +46,6 @@ import type {
   GmpArgsContractCall,
   GmpArgsTransferAmount,
   GmpArgsWithdrawAmount,
-  LocalAccount,
-  NobleAccount,
   OfferArgsFor,
   ProposalType,
 } from './type-guards.ts';
@@ -57,6 +55,9 @@ import { GMPArgsShape } from './type-guards.ts';
 const trace = makeTracer('PortF');
 const { add } = AmountMath;
 const { keys } = Object;
+
+export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
+export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>; // TODO: move to type-guards as external interface?
 
 type PortfolioBootstrapContext = {
   axelarChainsMap: AxelarChainsMap;
@@ -762,4 +763,4 @@ export const openPortfolio = (async (
   }
   /* c8 ignore end */
 }) satisfies OrchestrationFlow;
-harden(openPortfolio);
+harden(openPortfolio); // #endregion
