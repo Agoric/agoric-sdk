@@ -1956,13 +1956,13 @@ __metadata:
   linkType: hard
 
 "axios@npm:^1.6.0, axios@npm:^1.6.7":
-  version: 1.8.1
-  resolution: "axios@npm:1.8.1"
+  version: 1.9.0
+  resolution: "axios@npm:1.9.0"
   dependencies:
     follow-redirects: "npm:^1.15.6"
     form-data: "npm:^4.0.0"
     proxy-from-env: "npm:^1.1.0"
-  checksum: 10c0/b2e1d5a61264502deee4b50f0a6df0aa3b174c546ccf68c0dff714a2b8863232e0bd8cb5b84f853303e97f242a98260f9bb9beabeafe451ad5af538e9eb7ac22
+  checksum: 10c0/9371a56886c2e43e4ff5647b5c2c3c046ed0a3d13482ef1d0135b994a628c41fbad459796f101c655e62f0c161d03883454474d2e435b2e021b1924d9f24994c
   languageName: node
   linkType: hard
 
