@@ -41,12 +41,11 @@ For example, this package takes advantage of emerging support for typescript tha
 Fast USDC in turn builds on
  - the Agoric Orchestration SDK (aka API),
  - and the Zoe smart contract platform, and
- - the endo distributed computing platform
+ - the endo distributed computing platform; in particular, `@endo/patterns`
 
-### `TypedPattern`s
+## `TypedPattern`s
 
-In particular, we make extensive use of `@endo/patterns` aka shapes, especially `TypedPattern<T>`
-for data validation.
+We make extensive use of `@endo/patterns` aka shapes, especially `TypedPattern<T>` for data validation.
 
 ```ts
 import {
@@ -67,6 +66,18 @@ const workWithExternalData = (data: unknown) => {
 
 Note that while the `GoodStuffShape` pattern/shape is a value, we use an initial uppercase letter like the type, `GoodStuff`.
 
-### Offer Safety Limitations
+## OrchestrationFlow API is convenient though a bit rough
+
+`OrchestrationFlow`s are resumable async functions; for example, `openPortfolio` and `rebalance` in `portfolio.flows.ts`.
+
+Where an async flow uses a `Promise<T>`, it appears on the other side
+of the guest/host membrane as a `Vow<T>`. `GuestInterface<T>` is designed
+to propagate this to all methods in an interface. Though it has rough
+edges ([#9822](https://github.com/Agoric/agoric-sdk/issues/9822)), we
+aim to keep most business logic in flows rather than host code since
+`async`/`await` is so much more straightforward than `Watcher.onFulfilled`
+and `.onRejected`.
+
+## Offer Safety Limitations in the Orchestration SDK
 
 While support for Offer Safety in the Orchestration SDK is a goal with work-in-progress ([#10504 ERTP face on orch assets](https://github.com/Agoric/agoric-sdk/pull/10504)), currently, the use of basic orchestration features such as `acct.localTransfer(seat, ...)` moves assets out of the Zoe-managed seat before any `want:` might be satisfied.
