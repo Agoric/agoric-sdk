@@ -31,22 +31,48 @@ import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
+import { AxelarChains, YieldProtocol } from './constants.js';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import {
-  AxelarChainsMapShape,
   makeProposalShapes,
   OfferArgsShapeFor,
   type AxelarChainsMap,
   type OfferArgsFor,
   type ProposalType,
 } from './type-guards.ts';
-import { YieldProtocol } from './constants.js';
-import type { SupportedEVMChains } from '@agoric/orchestration/src/axelar-types.js';
 
 const trace = makeTracer('PortC');
+const { fromEntries, keys } = Object;
 
 const interfaceTODO = undefined;
+
+type AxelarChain = keyof typeof AxelarChains; // rename AxelarChains -> AxelarChain
+
+export type EVMContractAddresses = {
+  aavePool: `0x${string}`;
+  compound: `0x${string}`;
+  factory: `0x${string}`;
+  usdc: `0x${string}`;
+};
+
+const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
+  M.splitRecord({
+    aavePool: M.string(),
+    compound: M.string(),
+    factory: M.string(),
+    usdc: M.string(),
+  });
+const AxelarChainInfoPattern = M.splitRecord({
+  caip: M.string(),
+  contractAddresses: EVMContractAddressesShape,
+});
+
+const AxelarChainsMapShape: TypedPattern<AxelarChainsMap> = M.splitRecord(
+  fromEntries(
+    keys(AxelarChains).map(chain => [chain, AxelarChainInfoPattern]),
+  ) as Record<AxelarChain, typeof AxelarChainInfoPattern>,
+);
 
 type PortfolioPrivateArgs = OrchestrationPowers & {
   // XXX document required assets, chains
@@ -214,7 +240,7 @@ harden(contract);
 
 const keepDocsTypesImported:
   | undefined
-  | SupportedEVMChains // XXX change to SupportedChain
+  // | SupportedEVMChains // XXX change to SupportedChain
   | YieldProtocol
   | OfferArgsFor
   | PortfolioKit
