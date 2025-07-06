@@ -27,18 +27,15 @@ import {
   type AccountId,
   type CaipChainId,
 } from '@agoric/orchestration';
-import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
 import type {
-  ContractInvitationSpec,
   ContinuingInvitationSpec,
+  ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
-import type { AmountKeywordRecord } from '@agoric/zoe';
-import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
 import { AxelarChains, YieldProtocol } from './constants.js';
-import type { start } from './portfolio.contract.js';
-import type { ChainAccountKey, PortfolioKit } from './portfolio.exo.js';
+import type { EVMContractAddresses, start } from './portfolio.contract.js';
+import type { PortfolioKit } from './portfolio.exo.js';
 
 // #region preliminaries
 const { fromEntries, keys } = Object;
@@ -161,7 +158,7 @@ export const makeProposalShapes = (
 
 // #region Offer Args
 type OfferArgs1 = {
-  destinationEVMChain?: AxelarChain;
+  destinationEVMChain?: AxelarChains;
   usdnOut?: NatValue;
 };
 
@@ -183,87 +180,8 @@ export const OfferArgsShapeFor = {
   rebalance: offerArgsShape,
 };
 harden(OfferArgsShapeFor);
+// #endregion
 
-export type EVMContractAddresses = {
-  aavePool: `0x${string}`;
-  compound: `0x${string}`;
-  factory: `0x${string}`;
-  usdc: `0x${string}`;
-};
-export type AxelarChain = keyof typeof AxelarChains;
-export type AxelarChainsMap = {
-  [chain in AxelarChain]: {
-    caip: CaipChainId;
-    /**
-     * Axelar chain IDs differ between mainnet and testnet.
-     * See [supported-chains-list.ts](https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts)
-     */
-    axelarId: string;
-    contractAddresses: EVMContractAddresses;
-  };
-};
-
-export const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
-  M.splitRecord({
-    aavePool: M.string(),
-    compound: M.string(),
-    factory: M.string(),
-    usdc: M.string(),
-  });
-
-const AxelarChainInfoPattern = M.splitRecord({
-  caip: M.string(),
-  contractAddresses: EVMContractAddressesShape,
-});
-
-export const AxelarChainsMapShape: TypedPattern<AxelarChainsMap> =
-  M.splitRecord(
-    fromEntries(
-      keys(AxelarChains).map(chain => [chain, AxelarChainInfoPattern]),
-    ) as Record<AxelarChain, typeof AxelarChainInfoPattern>,
-  );
-
-export type BaseGmpArgs = {
-  destinationEVMChain: AxelarChain;
-  keyword: string;
-  amounts: AmountKeywordRecord;
-};
-
-export const GmpCallType = {
-  ContractCall: 1,
-  ContractCallWithToken: 2,
-} as const;
-
-export type GmpCallType = (typeof GmpCallType)[keyof typeof GmpCallType];
-
-export type GmpArgsContractCall = BaseGmpArgs & {
-  destinationAddress: string;
-  type: GmpCallType;
-  contractInvocationData: Array<ContractCall>;
-};
-
-export type GmpArgsTransferAmount = BaseGmpArgs & {
-  transferAmount: bigint;
-};
-
-export type GmpArgsWithdrawAmount = BaseGmpArgs & {
-  withdrawAmount: bigint;
-};
-
-export const ContractCallShape = M.splitRecord({
-  target: M.string(),
-  functionSignature: M.string(),
-  args: M.arrayOf(M.any()),
-});
-
-export const GMPArgsShape: TypedPattern<GmpArgsContractCall> = M.splitRecord({
-  destinationAddress: M.string(),
-  type: M.or(1, 2),
-  destinationEVMChain: M.or(...keys(AxelarChains)),
-  keyword: M.string(),
-  amounts: AmountKeywordRecordShape, // XXX brand should be exactly USDC
-  contractInvocationData: M.arrayOf(ContractCallShape),
-});
 // #region ymax0 vstorage keys and values
 
 /**
@@ -383,3 +301,20 @@ export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.splitRecord(
   },
 );
 // #endregion
+
+// XXX deployment concern, not part of contract external interface
+// but avoid changing the import from the deploy package
+
+// XXX split between chainInfo and contractAddresses
+export type AxelarChainsMap = {
+  [chain in AxelarChain]: {
+    caip: CaipChainId;
+    /**
+     * Axelar chain IDs differ between mainnet and testnet.
+     * See [supported-chains-list.ts](https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts)
+     */
+    axelarId: string;
+    contractAddresses: EVMContractAddresses;
+  };
+};
+type AxelarChain = keyof typeof AxelarChains; // rename AxelarChains -> AxelarChain

@@ -9,7 +9,12 @@ import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import { AmountMath, type Amount } from '@agoric/ertp';
-import { makeTracer, mustMatch, NonNullish } from '@agoric/internal';
+import {
+  makeTracer,
+  mustMatch,
+  NonNullish,
+  type TypedPattern,
+} from '@agoric/internal';
 import type {
   CosmosChainAddress,
   Denom,
@@ -21,6 +26,7 @@ import type {
 import {
   AxelarGMPMessageType,
   type AxelarGmpOutgoingMemo,
+  type ContractCall,
 } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import {
@@ -29,10 +35,12 @@ import {
 } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
-import type { ZCFSeat } from '@agoric/zoe';
+import type { AmountKeywordRecord, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { assert, Fail } from '@endo/errors';
-import type { YieldProtocol } from './constants.js';
+import { M } from '@endo/patterns';
+import { AxelarChains, type YieldProtocol } from './constants.js';
 import type {
   AccountInfoFor,
   ChainAccountKey,
@@ -42,19 +50,14 @@ import type {
 } from './portfolio.exo.ts';
 import type {
   AxelarChainsMap,
-  BaseGmpArgs,
-  GmpArgsContractCall,
-  GmpArgsTransferAmount,
-  GmpArgsWithdrawAmount,
   OfferArgsFor,
   ProposalType,
 } from './type-guards.ts';
-import { GMPArgsShape } from './type-guards.ts';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
 const { add } = AmountMath;
-const { keys } = Object;
+const { fromEntries, keys } = Object;
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>; // TODO: move to type-guards as external interface?
@@ -77,6 +80,50 @@ export type PortfolioInstanceContext = {
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
 };
+
+type AxelarChain = keyof typeof AxelarChains; // XXX rename AxelarChains -> AxelarChain
+
+type BaseGmpArgs = {
+  destinationEVMChain: AxelarChain;
+  keyword: string;
+  amounts: AmountKeywordRecord;
+};
+
+const GmpCallType = {
+  ContractCall: 1,
+  ContractCallWithToken: 2,
+} as const;
+
+type GmpCallType = (typeof GmpCallType)[keyof typeof GmpCallType];
+
+export type GmpArgsContractCall = BaseGmpArgs & {
+  destinationAddress: string;
+  type: GmpCallType;
+  contractInvocationData: Array<ContractCall>;
+};
+
+type GmpArgsTransferAmount = BaseGmpArgs & {
+  transferAmount: bigint;
+};
+
+type GmpArgsWithdrawAmount = BaseGmpArgs & {
+  withdrawAmount: bigint;
+};
+
+const ContractCallShape = M.splitRecord({
+  target: M.string(),
+  functionSignature: M.string(),
+  args: M.arrayOf(M.any()),
+});
+
+const GMPArgsShape: TypedPattern<GmpArgsContractCall> = M.splitRecord({
+  destinationAddress: M.string(),
+  type: M.or(1, 2),
+  destinationEVMChain: M.or(...keys(AxelarChains)),
+  keyword: M.string(),
+  amounts: AmountKeywordRecordShape, // XXX brand should be exactly USDC
+  contractInvocationData: M.arrayOf(ContractCallShape),
+});
 
 // XXX: push down to Orchestration API in NobleMethods, in due course
 export const makeSwapLockMessages = (
@@ -763,4 +810,4 @@ export const openPortfolio = (async (
   }
   /* c8 ignore end */
 }) satisfies OrchestrationFlow;
-harden(openPortfolio); // #endregion
+harden(openPortfolio);

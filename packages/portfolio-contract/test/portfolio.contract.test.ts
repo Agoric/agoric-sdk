@@ -8,10 +8,8 @@ import { q } from '@endo/errors';
 import { passStyleOf } from '@endo/far';
 import { matches, mustMatch } from '@endo/patterns';
 import { makeAxelarMemo } from '../src/portfolio.flows.ts';
-import {
-  makeProposalShapes,
-  type GmpArgsContractCall,
-} from '../src/type-guards.ts';
+import { makeProposalShapes } from '../src/type-guards.ts';
+import { type GmpArgsContractCall } from '../src/portfolio.flows.ts';
 import {
   setupTrader,
   simulateAckTransferToAxelar,
