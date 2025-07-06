@@ -28,12 +28,16 @@ import { M } from '@endo/patterns';
 import { YieldProtocol } from './constants.js';
 import type { NobleAccount } from './portfolio.flows.js';
 import { type LocalAccount } from './portfolio.flows.js';
+import {
+  prepareGMPPosition,
+  type GMPPosition,
+  type GMPProtocol,
+} from './pos-gmp.exo.js';
 import { prepareUSDNPosition } from './pos-usdn.exo.js';
 import type { AxelarChainsMap, StatusFor } from './type-guards.js';
 import {
   makeFlowPath,
   makePortfolioPath,
-  makePositionPath,
   OfferArgsShapeFor,
   type makeProposalShapes,
   type OfferArgsFor,
@@ -142,8 +146,6 @@ type PortfolioKitState = {
   nextFlowId: number;
 };
 
-type PKit<T> = { promise: Vow<T>; pending: boolean };
-
 const accountIdByChain = (accounts: PortfolioKitState['accounts']) => {
   const byChain = {};
   for (const [n, info] of accounts.entries()) {
@@ -219,64 +221,15 @@ export const preparePortfolioKit = (
     netTransfers: usdcEmpty,
   });
 
-  const makeGMPPosition = zone.exoClass(
-    'GMP Position',
-    undefined, // interface TODO
-    (
-      portfolioId: number,
-      positionId: number,
-      protocol: YieldProtocol,
-      chainId: CaipChainId,
-    ) => ({
-      portfolioId,
-      positionId,
-      protocol,
-      ...emptyTransferState,
-      chainId,
-      // nobleAccount,
-      remoteAddressVK: vowTools.makeVowKit<`0x${string}`>(),
-      accountId: undefined as undefined | AccountId,
-    }),
-    {
-      getPositionId() {
-        return this.state.positionId;
-      },
-      getYieldProtocol() {
-        const { protocol } = this.state;
-        return protocol;
-      },
-      getAddress(): Vow<`0x${string}`> {
-        const { remoteAddressVK } = this.state;
-        // TODO: when the vow resolves, publishStatus()
-        return remoteAddressVK.vow;
-      },
-      getChainId() {
-        return this.state.chainId;
-      },
-      recordTransferIn(amount: Amount<'nat'>) {
-        return recordTransferIn(amount, this.state, this.self);
-      },
-      recordTransferOut(amount: Amount<'nat'>) {
-        return recordTransferOut(amount, this.state, this.self);
-      },
-      publishStatus() {
-        const { portfolioId, positionId, protocol, accountId } = this.state;
-        // TODO: typed pattern for GMP status
-        const status = { protocol, accountId };
-        publishStatus(makePositionPath(portfolioId, positionId), status);
-      },
-      resolveAddress(address: `0x${string}`) {
-        const { chainId, remoteAddressVK } = this.state;
-        remoteAddressVK.resolver.resolve(address);
-        this.state.accountId = `${chainId}:${address}`;
-        this.self.publishStatus();
-      },
-    },
-  ); // TODO: satisfies (...args: any[]) => Position
-  type GMPPosition = ReturnType<typeof makeGMPPosition>;
-
   const makeUSDNPosition = prepareUSDNPosition(
     zone,
+    emptyTransferState,
+    publishStatus,
+  );
+
+  const makeGMPPosition = prepareGMPPosition(
+    zone,
+    vowTools,
     emptyTransferState,
     publishStatus,
   );
@@ -449,7 +402,7 @@ export const preparePortfolioKit = (
           }
           return undefined; // like array.find()
         },
-        provideGMPPositionOn(protocol: YieldProtocol, chain: CaipChainId) {
+        provideGMPPositionOn(protocol: GMPProtocol, chain: CaipChainId) {
           const { positions } = this.state;
           for (const pos of positions.values()) {
             if (['Aave', 'Compound'].includes(pos.getYieldProtocol())) {
