@@ -7,9 +7,9 @@ import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import { q } from '@endo/errors';
 import { passStyleOf } from '@endo/far';
 import { matches, mustMatch } from '@endo/patterns';
-import { makeAxelarMemo } from '../src/portfolio.flows.ts';
+import { makeAxelarMemo } from '../src/pos-gmp.flows.ts';
 import { makeProposalShapes } from '../src/type-guards.ts';
-import { type GmpArgsContractCall } from '../src/portfolio.flows.ts';
+import { type GmpArgsContractCall } from '../src/pos-gmp.flows.ts';
 import {
   setupTrader,
   simulateAckTransferToAxelar,
