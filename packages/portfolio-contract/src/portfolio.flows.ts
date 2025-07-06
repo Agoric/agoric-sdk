@@ -5,9 +5,6 @@
  * @see {rebalance}
  */
 import type { GuestInterface } from '@agoric/async-flow';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
-import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import { AmountMath, type Amount } from '@agoric/ertp';
 import {
   makeTracer,
@@ -16,7 +13,6 @@ import {
   type TypedPattern,
 } from '@agoric/internal';
 import type {
-  CosmosChainAddress,
   Denom,
   DenomAmount,
   OrchestrationAccount,
@@ -46,18 +42,17 @@ import type {
   ChainAccountKey,
   PortfolioKit,
   Position,
-  USDNPosition,
 } from './portfolio.exo.ts';
+import { changeUSDCPosition } from './pos-usdn.flows.ts';
 import type {
   AxelarChainsMap,
   OfferArgsFor,
   ProposalType,
 } from './type-guards.ts';
-// TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
-const trace = makeTracer('PortF');
 const { add } = AmountMath;
 const { fromEntries, keys } = Object;
+const trace = makeTracer('PortF');
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>; // TODO: move to type-guards as external interface?
@@ -124,40 +119,6 @@ const GMPArgsShape: TypedPattern<GmpArgsContractCall> = M.splitRecord({
   amounts: AmountKeywordRecordShape, // XXX brand should be exactly USDC
   contractInvocationData: M.arrayOf(ContractCallShape),
 });
-
-// XXX: push down to Orchestration API in NobleMethods, in due course
-export const makeSwapLockMessages = (
-  nobleAddr: CosmosChainAddress,
-  usdcIn: bigint,
-  {
-    poolId = 0n,
-    denom = 'uusdc',
-    denomTo = 'uusdn',
-    vault = 1, // VaultType.STAKED,
-    usdnOut = undefined as bigint | undefined,
-  } = {},
-) => {
-  const msgSwap = MsgSwap.fromPartial({
-    signer: nobleAddr.value,
-    amount: { denom, amount: `${usdcIn}` },
-    routes: [{ poolId, denomTo }],
-    min: { denom: denomTo, amount: `${usdnOut || usdcIn}` },
-  });
-  if (!usdnOut) {
-    const protoMessages = [Any.toJSON(MsgSwap.toProtoMsg(msgSwap))];
-    return { msgSwap, protoMessages };
-  }
-  const msgLock = MsgLock.fromPartial({
-    signer: nobleAddr.value,
-    vault,
-    amount: `${usdnOut}`,
-  });
-  const protoMessages = [
-    Any.toJSON(MsgSwap.toProtoMsg(msgSwap)),
-    Any.toJSON(MsgLock.toProtoMsg(msgLock)),
-  ];
-  return { msgSwap, msgLock, protoMessages };
-};
 
 const createRemoteEVMAccount = async (
   orch: Orchestrator,
@@ -502,7 +463,7 @@ const moveStatus = ({ how, src, dest, amount }: AssetMovement) => ({
 });
 const errmsg = (err: any) => ('message' in err ? err.message : `${err}`);
 
-const trackFlow = async (
+export const trackFlow = async (
   reporter: GuestInterface<PortfolioKit['reporter']>,
   moves: AssetMovement[],
 ) => {
@@ -588,71 +549,6 @@ const provideAccountInfo = async <C extends ChainAccountKey>(
   }
 };
 
-const addToUSDNPosition = async (
-  ctx: PortfolioInstanceContext,
-  seat: ZCFSeat,
-  lca: LocalAccount,
-  ica: NobleAccount,
-  pos: USDNPosition,
-  reporter: GuestInterface<PortfolioKit['reporter']>,
-  { USDN, NobleFees }: { USDN: Amount<'nat'>; NobleFees?: Amount<'nat'> },
-  usdnOut: bigint = USDN.value,
-) => {
-  const amounts = harden({ USDN, ...(NobleFees ? { NobleFees } : {}) });
-  const denom = NonNullish(ctx.chainHubTools.getDenom(USDN.brand));
-  const volume: DenomAmount = { denom, value: USDN.value };
-  const withFees = NobleFees ? add(USDN, NobleFees) : USDN;
-
-  const nobleAddr = ica.getAddress();
-  await trackFlow(reporter, [
-    {
-      how: 'localTransfer',
-      src: { seat, keyword: 'USDN' },
-      dest: { account: lca },
-      amount: withFees,
-      apply: async () => {
-        await ctx.zoeTools.localTransfer(seat, lca, amounts);
-      },
-      recover: async () => {
-        await ctx.zoeTools.withdrawToSeat(lca, seat, amounts);
-      },
-    },
-    {
-      how: 'IBC transfer',
-      src: { account: lca },
-      dest: { account: ica },
-      amount: withFees,
-      apply: async () => {
-        await lca.transfer(nobleAddr, volume);
-      },
-      recover: async () => {
-        const nobleAmount = { ...volume, denom: 'uusdc' };
-        await ica.transfer(lca.getAddress(), nobleAmount);
-      },
-    },
-    {
-      how: 'Swap, Lock',
-      amount: USDN,
-      src: { account: ica },
-      dest: { pos },
-      apply: async () => {
-        // NOTE: proposalShape guarantees that amount.brand is USDC
-        const { msgSwap, msgLock, protoMessages } = makeSwapLockMessages(
-          nobleAddr,
-          USDN.value,
-          { usdnOut },
-        );
-
-        trace('executing', [msgSwap, msgLock].filter(Boolean));
-        const result = await ica.executeEncodedTx(protoMessages);
-        trace('TODO: decode Swap, Lock result; detect errors', result);
-      },
-      // XXX consider putting withdaw here
-      recover: async () => {},
-    },
-  ]);
-};
-
 export const rebalance = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -677,14 +573,7 @@ export const rebalance = async (
 
   const { give } = proposal;
   if ('USDN' in give && give.USDN) {
-    const { USDN, NobleFees } = give;
-    const g = harden({ USDN, NobleFees });
-    const { usdnOut } = offerArgs;
-    const { lca } = await provideAccountInfo(orch, 'agoric', kit);
-    const { ica } = await provideAccountInfo(orch, 'noble', kit);
-    const accountId = coerceAccountId(ica.getAddress());
-    const pos = kit.manager.provideUSDNPosition(accountId);
-    await addToUSDNPosition(ctx, seat, lca, ica, pos, kit.reporter, g, usdnOut);
+    await changeUSDCPosition(give, offerArgs, orch, kit, ctx, seat);
   }
 
   const { entries } = Object;

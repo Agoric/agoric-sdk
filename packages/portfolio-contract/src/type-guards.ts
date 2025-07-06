@@ -209,6 +209,20 @@ export const portfolioIdOfPath = (path: string | string[]) => {
   return id;
 };
 
+// XXX refactor using AssetMoveDesc
+type FlowStatus = {
+  step: number;
+  how: string;
+  src: string;
+  dest: string;
+  amount: Amount<'nat'>;
+  error?: string;
+};
+type GMPStatusTODO = {
+  protocol: YieldProtocol;
+  accountId: AccountId | undefined;
+};
+
 // XXX relate paths to types a la readPublished()
 export type StatusFor = {
   portfolio: {
@@ -225,15 +239,10 @@ export type StatusFor = {
     totalOut: Amount<'nat'>;
   };
   // XXX refactor using AssetMoveDesc
-  flow: {
-    step: number;
-    how: string;
-    src: string;
-    dest: string;
-    amount: Amount<'nat'>;
-    where?: string;
-    error?: string;
-  };
+  flow:
+    | FlowStatus
+    | (Omit<FlowStatus, 'dest'> & { where: string }) // recovery failed
+    | GMPStatusTODO;
 };
 
 export const PortfolioStatusShape: TypedPattern<StatusFor['portfolio']> =
