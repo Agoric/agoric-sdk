@@ -24,12 +24,12 @@ import { atob, decodeBase64 } from '@endo/base64';
 import { X } from '@endo/errors';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
-import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import { YieldProtocol } from './constants.js';
 import type { NobleAccount } from './portfolio.flows.js';
 import { type LocalAccount } from './portfolio.flows.js';
-import type { AxelarChainsMap } from './type-guards.js';
+import { prepareUSDNPosition } from './pos-usdn.exo.js';
+import type { AxelarChainsMap, StatusFor } from './type-guards.js';
 import {
   makeFlowPath,
   makePortfolioPath,
@@ -89,13 +89,13 @@ export interface Position extends PositionPub {
   recordTransferOut(amount: Amount<'nat'>): Amount<'nat'>;
 }
 
-type TransferStatus = {
+export type TransferStatus = {
   totalIn: Amount<'nat'>;
   totalOut: Amount<'nat'>;
   netTransfers: Amount<'nat'>;
 };
 
-const recordTransferIn = (
+export const recordTransferIn = (
   amount: Amount<'nat'>,
   state: TransferStatus,
   position: Pick<Position, 'publishStatus'>,
@@ -109,7 +109,7 @@ const recordTransferIn = (
   return state.netTransfers;
 };
 
-const recordTransferOut = (
+export const recordTransferOut = (
   amount: Amount<'nat'>,
   state: TransferStatus,
   position: Pick<Position, 'publishStatus'>,
@@ -164,6 +164,11 @@ const accountIdByChain = (accounts: PortfolioKitState['accounts']) => {
   return harden(byChain);
 };
 
+export type PublishStatusFn = <K extends keyof StatusFor>(
+  path: string[],
+  status: StatusFor[K],
+) => void;
+
 export const preparePortfolioKit = (
   zone: Zone,
   {
@@ -199,7 +204,7 @@ export const preparePortfolioKit = (
     }
     return node;
   };
-  const publishStatus = (path: string[], status: CopyRecord): void => {
+  const publishStatus: PublishStatusFn = (path, status): void => {
     const node = makePathNode(path);
     // Don't await, just writing to vstorage.
     void E.when(E(marshaller).toCapData(status), capData =>
@@ -213,49 +218,6 @@ export const preparePortfolioKit = (
     totalOut: usdcEmpty,
     netTransfers: usdcEmpty,
   });
-
-  const makeUSDNPosition = zone.exoClass(
-    'USDN Position',
-    undefined, // interface TODO
-    (portfolioId: number, positionId: number, accountId: AccountId) => ({
-      portfolioId,
-      positionId,
-      accountId,
-      ...emptyTransferState,
-    }),
-    {
-      getPositionId() {
-        return this.state.positionId;
-      },
-      getYieldProtocol() {
-        return 'USDN';
-      },
-      publishStatus() {
-        const {
-          portfolioId,
-          positionId,
-          accountId,
-          netTransfers,
-          totalIn,
-          totalOut,
-        } = this.state;
-        // TODO: typed pattern for USDN status
-        publishStatus(makePositionPath(portfolioId, positionId), {
-          protocol: 'USDN',
-          accountId,
-          netTransfers,
-          totalIn,
-          totalOut,
-        });
-      },
-      recordTransferIn(amount: Amount<'nat'>) {
-        return recordTransferIn(amount, this.state, this.self);
-      },
-      recordTransferOut(amount: Amount<'nat'>) {
-        return recordTransferOut(amount, this.state, this.self);
-      },
-    },
-  ) satisfies (...args: any[]) => Position;
 
   const makeGMPPosition = zone.exoClass(
     'GMP Position',
@@ -312,6 +274,12 @@ export const preparePortfolioKit = (
     },
   ); // TODO: satisfies (...args: any[]) => Position
   type GMPPosition = ReturnType<typeof makeGMPPosition>;
+
+  const makeUSDNPosition = prepareUSDNPosition(
+    zone,
+    emptyTransferState,
+    publishStatus,
+  );
 
   return zone.exoClassKit(
     'Portfolio',
@@ -439,7 +407,7 @@ export const preparePortfolioKit = (
           this.facets.reporter.publishStatus();
           return nextFlowId;
         },
-        publishFlowStatus(id: number, status: CopyRecord) {
+        publishFlowStatus(id: number, status: StatusFor['flow']) {
           const { portfolioId } = this.state;
           publishStatus(makeFlowPath(portfolioId, id), status);
         },
