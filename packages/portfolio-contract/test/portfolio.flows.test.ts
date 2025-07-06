@@ -29,11 +29,11 @@ import {
   type PortfolioKit,
 } from '../src/portfolio.exo.ts';
 import {
-  makeSwapLockMessages,
   openPortfolio,
   rebalance,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
+import { makeSwapLockMessages } from '../src/pos-usdn.flows.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
 import { axelarChainsMapMock } from './mocks.ts';
 import { makeIncomingEVMEvent } from './supports.ts';
