@@ -2,6 +2,7 @@
 import { makeTracer } from '@agoric/internal';
 import { M } from '@endo/patterns';
 import { localchainContracts } from './axelar-configs.js';
+import { E } from '@endo/far';
 import {
   lookupInterchainInfo,
   makeGetManifest,
@@ -61,15 +62,18 @@ harden(makePrivateArgs);
  */
 export const startPortfolio = async (permitted, configStruct) => {
   trace('startPortfolio');
-  const { issuer } = permitted;
+  const {
+    issuer,
+    consume: { agoricNames },
+  } = permitted;
 
-const PoC26 = await issuer.consume.PoC26;
-trace('startPortfolio: settled PoC26');
-const USDC = await issuer.consume.USDC;
-trace('startPortfolio: settled USDC');
+  const PoC26 = await issuer.consume.PoC26;
+  trace('startPortfolio: settled PoC26');
+  const USDCissuer = await E(agoricNames).lookup('issuer', 'USDC');
+  // const USDC = await issuer.consume.USDC;
+  trace('startPortfolio: settled USDC');
 
-
-  const issuerKeywordRecord = { USDC: USDC, Access: PoC26 };
+  const issuerKeywordRecord = { USDC: USDCissuer, Access: PoC26 };
   // const issuerKeywordRecord = {  Access: PoC26 };
   trace('startPortfolio: issuerKeywordRecord', issuerKeywordRecord);
   await startOrchContract(
