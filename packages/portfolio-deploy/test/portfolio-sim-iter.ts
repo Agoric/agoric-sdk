@@ -145,26 +145,23 @@ const makeIBCChannel = (
 };
 
 export const makeSimulation = (ctx: WalletFactoryTestContext) => {
-  
   const cctp = makeCctp(ctx, nobleAgoricChannelId, 'channel-62');
   const toNoble = makeIBCChannel(ctx.bridgeUtils, 'channel-62');
   const oracles = Object.entries(configurations.MAINNET.oracles).map(
     ([name, addr]) => makeTxOracle(ctx, name, addr),
   );
-  
+
   let trader;
   let instance;
   let wallet;
 
   return {
-    async beforeDeploy(t: ExecutionContext) {  
+    async beforeDeploy(t: ExecutionContext) {
       t.log('provision oracle smart wallets');
       await Promise.all(oracles.map(o => o.provision()));
-      
     },
     async deployContract(context: WalletFactoryTestContext) {
-
-    const {
+      const {
         agoricNamesRemotes,
         bridgeUtils,
         buildProposal,
@@ -173,7 +170,7 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
         walletFactoryDriver,
       } = context;
       // inbound `startChannelOpenInit` responses immediately.
-    // needed since the YMAX StartFn relies on an ICA being created
+      // needed since the YMAX StartFn relies on an ICA being created
       bridgeUtils.setAckBehavior(
         BridgeId.DIBC,
         'startChannelOpenInit',
@@ -182,7 +179,9 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
       bridgeUtils.setBech32Prefix('noble');
 
       const beneficiary = 'agoric126sd64qkuag2fva3vy3syavggvw44ca2zfrzyy';
-      wallet = await walletFactoryDriver.provideSmartWallet("agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce");
+      wallet = await walletFactoryDriver.provideSmartWallet(
+        'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
+      );
       let materials = buildProposal(
         '@aglocal/portfolio-deploy/src/access-token-setup.build.js',
       );
@@ -216,4 +215,4 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
       // No-op for now
     },
   };
-}; 
+};

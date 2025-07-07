@@ -15,7 +15,10 @@ import type { TestFn } from 'ava';
 
 import { makeSwingsetHarness } from '@aglocal/boot/tools/supports.js';
 import { makeSimulation } from './portfolio-sim-iter.ts';
-import { makeWalletFactoryContext, type WalletFactoryTestContext } from './walletFactory.ts';
+import {
+  makeWalletFactoryContext,
+  type WalletFactoryTestContext,
+} from './walletFactory.ts';
 
 const test: TestFn<
   WalletFactoryTestContext & {
@@ -58,7 +61,11 @@ test.before(async t => {
       snapshotInterval: Number.MAX_SAFE_INTEGER,
     },
     ...(snapshotDir
-      ? { archiveSnapshot: (await import('@agoric/swing-store')).makeArchiveSnapshot(snapshotDir, { fs, path, tmp }) }
+      ? {
+          archiveSnapshot: (
+            await import('@agoric/swing-store')
+          ).makeArchiveSnapshot(snapshotDir, { fs, path, tmp }),
+        }
       : {}),
   });
 
@@ -70,11 +77,15 @@ test.before(async t => {
   const { log } = console;
   const doCoreEval = async (specifier: string) => {
     const { EV } = ctx.runUtils;
-    const script = await (await import('node:fs/promises')).readFile(require.resolve(specifier), 'utf-8');
+    const script = await (
+      await import('node:fs/promises')
+    ).readFile(require.resolve(specifier), 'utf-8');
     const eval0 = { js_code: script, json_permits: 'true' };
     log('executing proposal');
     const bridgeMessage = { type: 'CORE_EVAL', evals: [eval0] };
-    const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem('coreEvalBridgeHandler');
+    const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
+      'coreEvalBridgeHandler',
+    );
     await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
     log(`proposal executed`);
   };
@@ -102,10 +113,7 @@ test.after.always(async t => {
   }
 });
 
-const getResourceUsageStats = (
-  controller,
-  data,
-) => {
+const getResourceUsageStats = (controller, data) => {
   const stats = controller.getStats();
   const { promiseQueuesLength, kernelPromises, kernelObjects, clistEntries } =
     stats;
@@ -180,9 +188,7 @@ test.serial('iterate simulation several times', async t => {
   const { updateNewCellBlockHeight } = storage;
 
   if (writeStats) {
-    await writeStats(
-      JSON.stringify(controller.dump(), null, 2),
-    );
+    await writeStats(JSON.stringify(controller.dump(), null, 2));
   }
 
   harness.useRunPolicy(true);
@@ -211,7 +217,10 @@ test.serial('iterate simulation several times', async t => {
       snapshots = [...snapStoreAny.listAllSnapshots()].filter(
         (s: any) => s.inUse && snapshotted.has(s.vatID),
       );
-    } else if (snapStoreAny.snapshots && typeof snapStoreAny.snapshots.values === 'function') {
+    } else if (
+      snapStoreAny.snapshots &&
+      typeof snapStoreAny.snapshots.values === 'function'
+    ) {
       snapshots = Array.from(snapStoreAny.snapshots.values()).filter(
         (s: any) => s.inUse && snapshotted.has(s.vatID),
       );
@@ -256,9 +265,7 @@ test.serial('iterate simulation several times', async t => {
   await doCleanupAndSnapshot('final');
 
   if (writeStats) {
-    await writeStats(
-      JSON.stringify(controller.dump(), null, 2),
-    );
+    await writeStats(JSON.stringify(controller.dump(), null, 2));
   }
 });
 
