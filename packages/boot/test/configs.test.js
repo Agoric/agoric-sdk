@@ -15,8 +15,11 @@ import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 
 const resolver = createRequire(import.meta.url);
 
+/**
+ * @param {string} configName
+ */
 const importConfig = async configName =>
-  new URL(resolver.resolve(`@agoric/vm-config/${configName}`)).pathname;
+  resolver.resolve(`@agoric/vm-config/${configName}`);
 
 const test =
   /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>}} */ (

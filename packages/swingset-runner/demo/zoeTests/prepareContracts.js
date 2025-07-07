@@ -32,8 +32,7 @@ const generateBundlesP = Promise.all(
     } else {
       ({ bundleName, contractPath } = settings);
     }
-    const sourceUrl = resolve(`@agoric/zoe/src/contracts/${contractPath}.js`);
-    const sourcePath = new URL(sourceUrl).pathname;
+    const sourcePath = resolve(`@agoric/zoe/src/contracts/${contractPath}.js`);
     const bundle = await bundleSource(sourcePath);
     const obj = { bundle, bundleName };
     fs.writeFileSync(

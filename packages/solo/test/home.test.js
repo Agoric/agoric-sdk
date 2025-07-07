@@ -33,8 +33,7 @@ export const Stable = harden(
 //#region setup (ambient authority is confined to this region)
 test.before('setup', async t => {
   const loadBundle = async specifier => {
-    const contractUrl = resolve(specifier);
-    const contractRoot = new URL(contractUrl).pathname;
+    const contractRoot = resolve(specifier);
     t.log({ contractRoot });
     const bundle = await bundleSourceAmbient(contractRoot);
     return bundle;

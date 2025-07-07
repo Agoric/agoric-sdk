@@ -84,14 +84,11 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     },
   };
 
-  const getVatConfig = async () => {
-    const href = resolve(
+  const getVatConfig = async () =>
+    resolve(
       env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
         argv.bootMsg.params.bootstrap_vat_config,
     );
-    const { pathname } = new URL(href);
-    return pathname;
-  };
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
   function replayChainSends() {
     Fail`Replay not implemented`;

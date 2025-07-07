@@ -14,7 +14,10 @@ const resolve = createRequire(import.meta.url).resolve;
 const test = anyTest;
 
 const bfile = name => new URL(name, import.meta.url).pathname;
-const importSpec = async spec => new URL(resolve(spec)).pathname;
+/**
+ * @param {string} spec
+ */
+const importSpec = async spec => resolve(spec);
 
 test('upgrade mintHolder', async t => {
   /** @type {SwingSetConfig} */

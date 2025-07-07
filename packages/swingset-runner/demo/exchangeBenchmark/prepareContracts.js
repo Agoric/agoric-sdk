@@ -11,8 +11,7 @@ const resolve = createRequire(import.meta.url).resolve;
 
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
-    const contractUrl = resolve(`@agoric/zoe/src/contracts/${contract}`);
-    const contractPath = new URL(contractUrl).pathname;
+    const contractPath = resolve(`@agoric/zoe/src/contracts/${contract}`);
     const bundle = await bundleSource(contractPath);
     const obj = { bundle, contract };
     fs.writeFileSync(

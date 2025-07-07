@@ -15,7 +15,11 @@ import type { buildRootObject as buildTestMintVat } from './vat-mint.js';
 const resolve = createRequire(import.meta.url).resolve;
 
 const bfile = name => new URL(name, import.meta.url).pathname;
-const importSpec = async spec => new URL(resolve(spec)).pathname;
+/**
+ * @param {string} configName
+ */
+const importSpec = async configName =>
+  resolve(`@agoric/vm-config/${configName}`);
 
 const makeCallOutbound = t => (srcID, obj) => {
   t.log(`callOutbound(${srcID}, ${obj})`);

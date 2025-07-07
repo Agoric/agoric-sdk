@@ -432,14 +432,11 @@ export const makeLaunchChain = (
     const argv = {
       bootMsg: makeInitMsg(initAction),
     };
-    const getVatConfig = async () => {
-      const href = resolve(
+    const getVatConfig = async () =>
+      resolve(
         env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
           argv.bootMsg.params.bootstrap_vat_config,
       );
-      const { pathname } = new URL(href);
-      return pathname;
-    };
 
     const { metricsProvider } = getTelemetryProviders({
       console,
