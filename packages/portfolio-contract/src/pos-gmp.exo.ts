@@ -9,14 +9,14 @@
 import type { AccountId, CaipChainId } from '@agoric/orchestration';
 import type { Vow, VowTools } from '@agoric/vow';
 import type { Zone } from '@agoric/zone';
-import type { YieldProtocol } from './constants.js';
+import type { AxelarChain, YieldProtocol } from './constants.js';
 import {
   recordTransferIn,
   recordTransferOut,
   type PublishStatusFn,
   type TransferStatus,
 } from './portfolio.exo.ts';
-import { makePositionPath } from './type-guards.ts';
+import { makePositionPath, type PoolKey } from './type-guards.ts';
 
 export type GMPProtocol = YieldProtocol & ('Aave' | 'Compound');
 
@@ -31,21 +31,22 @@ export const prepareGMPPosition = (
     undefined, // interface TODO
     (
       portfolioId: number,
-      positionId: number,
       protocol: GMPProtocol,
+      // XXX separate GMP account from position
       chainId: CaipChainId,
+      chainName: AxelarChain,
     ) => ({
       portfolioId,
-      positionId,
       protocol,
       ...emptyTransferState,
+      poolKey: `${protocol}_${chainName}` as PoolKey,
       chainId,
       remoteAddressVK: vowTools.makeVowKit<`0x${string}`>(),
       accountId: undefined as undefined | AccountId,
     }),
     {
-      getPositionId() {
-        return this.state.positionId;
+      getPoolKey(): PoolKey {
+        return this.state.poolKey;
       },
       getYieldProtocol() {
         const { protocol } = this.state;
@@ -66,11 +67,13 @@ export const prepareGMPPosition = (
         return recordTransferOut(amount, this.state, this.self);
       },
       publishStatus() {
-        const { portfolioId, positionId, protocol, accountId } = this.state;
+        // XXX separate GMP positions from accounts
+        const { portfolioId, poolKey, protocol, accountId } = this.state;
         // TODO: typed pattern for GMP status
         const status = { protocol, accountId };
-        publishStatus(makePositionPath(portfolioId, positionId), status);
+        publishStatus(makePositionPath(portfolioId, poolKey), status);
       },
+      // XXX separate GMP positions from accounts
       resolveAddress(address: `0x${string}`) {
         const { chainId, remoteAddressVK } = this.state;
         remoteAddressVK.resolver.resolve(address);

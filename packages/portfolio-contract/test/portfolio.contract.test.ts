@@ -165,10 +165,10 @@ const range = (n: number) => [...Array(n).keys()];
 
 const getPortfolioInfo = (key, storage) => {
   const info = storage.getDeserialized(key).at(-1);
-  const { positionCount, flowCount } = info;
+  const { positionKeys, flowCount } = info;
+  const positionPaths = positionKeys.map(k => `${key}.positions.${k}`);
   const toPaths = (kind, count) =>
     range(count).map(ix => `${key}.${kind}s.${kind}${ix + 1}`);
-  const positionPaths = toPaths('position', positionCount);
   const flowPaths = toPaths('flow', flowCount);
   const contents = fromEntries([
     [key, info],

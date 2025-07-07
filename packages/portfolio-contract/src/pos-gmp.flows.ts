@@ -32,7 +32,7 @@ import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { assert, throwRedacted as Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
 import type { GuestInterface } from '../../async-flow/src/types.ts';
-import { AxelarChains, type YieldProtocol } from './constants.js';
+import { AxelarChain, type YieldProtocol } from './constants.js';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import {
   type PortfolioInstanceContext,
@@ -47,7 +47,6 @@ import type {
 const trace = makeTracer('GMPF');
 const { keys } = Object;
 
-type AxelarChain = keyof typeof AxelarChains; // XXX rename AxelarChains -> AxelarChain
 type BaseGmpArgs = {
   destinationEVMChain: AxelarChain;
   keyword: string;
@@ -78,7 +77,7 @@ const ContractCallShape = M.splitRecord({
 const GMPArgsShape: TypedPattern<GmpArgsContractCall> = M.splitRecord({
   destinationAddress: M.string(),
   type: M.or(1, 2),
-  destinationEVMChain: M.or(...keys(AxelarChains)),
+  destinationEVMChain: M.or(...keys(AxelarChain)),
   keyword: M.string(),
   amounts: AmountKeywordRecordShape, // XXX brand should be exactly USDC
   contractInvocationData: M.arrayOf(ContractCallShape),
@@ -403,7 +402,7 @@ export const changeGMPPosition = async (
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['rebalance'],
-  kit,
+  kit: GuestInterface<PortfolioKit>,
   protocol: 'Aave' | 'Compound',
   give: {} | OpenPortfolioGive,
 ) => {
@@ -420,8 +419,9 @@ export const changeGMPPosition = async (
       : ['CompoundGmp', 'CompoundAccount'];
 
   const { position: _TODO, isNew } = kit.manager.provideGMPPositionOn(
-    protocol as YieldProtocol,
+    protocol,
     axelarChainsMap[destinationEVMChain].caip,
+    destinationEVMChain,
   );
 
   if (isNew) {

@@ -31,7 +31,7 @@ import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
-import { AxelarChains, YieldProtocol } from './constants.js';
+import { AxelarChain, YieldProtocol } from './constants.js';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import {
@@ -46,8 +46,6 @@ const trace = makeTracer('PortC');
 const { fromEntries, keys } = Object;
 
 const interfaceTODO = undefined;
-
-type AxelarChain = keyof typeof AxelarChains; // rename AxelarChains -> AxelarChain
 
 export type EVMContractAddresses = {
   aavePool: `0x${string}`;
@@ -70,7 +68,7 @@ const AxelarChainInfoPattern = M.splitRecord({
 
 const AxelarChainsMapShape: TypedPattern<AxelarChainsMap> = M.splitRecord(
   fromEntries(
-    keys(AxelarChains).map(chain => [chain, AxelarChainInfoPattern]),
+    keys(AxelarChain).map(chain => [chain, AxelarChainInfoPattern]),
   ) as Record<AxelarChain, typeof AxelarChainInfoPattern>,
 );
 
