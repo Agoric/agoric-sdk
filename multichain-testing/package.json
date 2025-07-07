@@ -17,6 +17,7 @@
   "devDependencies": {
     "@agoric/cosmic-proto": "dev",
     "@agoric/fast-usdc": "dev",
+    "@agoric/internal": "dev",
     "@cosmjs/amino": "npm:^0.32.4",
     "@cosmjs/cosmwasm-stargate": "^0.33.1",
     "@cosmjs/crypto": "^0.33.0",
