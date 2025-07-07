@@ -21,8 +21,7 @@ const resolve = createRequire(import.meta.url).resolve;
 
 const makeBundle = async sourceRoot => {
   const url = resolve(sourceRoot);
-  const path = new URL(url).pathname;
-  const contractBundle = await bundleSource(path);
+  const contractBundle = await bundleSource(url);
   return contractBundle;
 };
 // makeBundle is a slow step, so we do it once for all the tests.

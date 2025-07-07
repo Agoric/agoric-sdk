@@ -43,8 +43,7 @@ const { zoe, feeMintAccessP: feeMintAccess } = await setUpZoeForTest({
  * @param {string} sourceRoot
  */
 async function launch(zoeP, sourceRoot) {
-  const contractUrl = resolve(sourceRoot);
-  const contractPath = new URL(contractUrl).pathname;
+  const contractPath = resolve(sourceRoot);
   const contractBundle = await bundleSource(contractPath);
   const installation = await E(zoeP).install(contractBundle);
   const { creatorInvitation, creatorFacet, instance } = await E(

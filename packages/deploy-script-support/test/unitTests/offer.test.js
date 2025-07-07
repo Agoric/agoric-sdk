@@ -39,8 +39,7 @@ test('offer', async t => {
   };
   const zoe = makeZoeForTest();
 
-  const bundleUrl = resolve('@agoric/zoe/src/contracts/automaticRefund.js');
-  const bundlePath = new URL(bundleUrl).pathname;
+  const bundlePath = resolve('@agoric/zoe/src/contracts/automaticRefund.js');
   const bundle = await bundleSource(bundlePath);
   const installation = E(zoe).install(bundle);
 

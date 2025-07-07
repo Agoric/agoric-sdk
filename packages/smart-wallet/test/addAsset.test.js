@@ -18,7 +18,10 @@ import { makeImportContext } from '../src/marshal-contexts.js';
 
 const resolve = createRequire(import.meta.url).resolve;
 
-const importSpec = async spec => new URL(resolve(spec)).pathname;
+/**
+ * @param {string} spec
+ */
+const importSpec = async spec => resolve(spec);
 
 /**
  * @type {import('ava').TestFn<

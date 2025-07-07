@@ -27,8 +27,7 @@ test('install', async t => {
   const board = makeFakeBoard();
   const install = makeInstall(bundleSource, zoe, installationManager, board);
 
-  const resolvedUrl = resolve('@agoric/zoe/src/contracts/automaticRefund.js');
-  const resolvedPath = new URL(resolvedUrl).pathname;
+  const resolvedPath = resolve('@agoric/zoe/src/contracts/automaticRefund.js');
 
   const { installation, id } = await install(resolvedPath, 'automaticRefund');
   t.deepEqual(installation, addedInstallation);

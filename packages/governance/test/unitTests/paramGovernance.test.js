@@ -27,8 +27,7 @@ const committeeRoot = '../../src/committee.js';
 
 const makeBundle = async sourceRoot => {
   const url = resolve(sourceRoot);
-  const path = new URL(url).pathname;
-  const contractBundle = await bundleSource(path);
+  const contractBundle = await bundleSource(url);
   return contractBundle;
 };
 

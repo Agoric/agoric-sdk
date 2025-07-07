@@ -16,7 +16,7 @@ const test = anyTest;
 const makeTestContext = t => {
   /** @param {string} specifier */
   const loadConfig = async specifier => {
-    const fullPath = new URL(resolve(specifier)).pathname;
+    const fullPath = resolve(specifier);
     t.is(typeof fullPath, 'string');
     const txt = await ambientFs.promises.readFile(fullPath, 'utf-8');
     t.is(typeof txt, 'string');

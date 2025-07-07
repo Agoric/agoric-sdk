@@ -11,7 +11,10 @@ const resolve = createRequire(import.meta.url).resolve;
 
 // so paths can be expresssed relative to this file and made absolute
 const bfile = name => new URL(name, import.meta.url).pathname;
-const resolvePathname = spec => new URL(resolve(spec)).pathname;
+/**
+ * @param {string} spec
+ */
+const resolvePathname = spec => resolve(spec);
 
 test('PSM service upgrade', async t => {
   /** @type {SwingSetConfig} */

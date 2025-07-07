@@ -165,7 +165,7 @@ export function loadBasedir(basedir, options = {}) {
 async function resolveSpecFromConfig(referrer, specPath) {
   await null;
   try {
-    return new URL(createRequire(referrer).resolve(specPath)).pathname;
+    return createRequire(referrer).resolve(specPath);
   } catch (e) {
     if (e.code !== 'MODULE_NOT_FOUND' && e.code !== 'ERR_MODULE_NOT_FOUND') {
       throw e;

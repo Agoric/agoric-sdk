@@ -140,19 +140,16 @@ test.before(async t => {
   const zoe = makeZoeForTest();
 
   // Create AutomaticRefund instance
-  const automaticRefundContractUrl = resolve(
+  const automaticRefundContractRoot = resolve(
     '@agoric/zoe/src/contracts/automaticRefund.js',
   );
-  const automaticRefundContractRoot = new URL(automaticRefundContractUrl)
-    .pathname;
   const automaticRefundBundle = await bundleSource(automaticRefundContractRoot);
   const automaticRefundInstallation = await E(zoe).install(
     automaticRefundBundle,
   );
 
   // Create Autoswap instance
-  const autoswapContractUrl = resolve('@agoric/zoe/src/contracts/autoswap.js');
-  const autoswapContractRoot = new URL(autoswapContractUrl).pathname;
+  const autoswapContractRoot = resolve('@agoric/zoe/src/contracts/autoswap.js');
   const autoswapBundle = await bundleSource(autoswapContractRoot);
   const autoswapInstallation = await E(zoe).install(autoswapBundle);
 
@@ -1490,8 +1487,7 @@ test('addOffer makeContinuingInvitation', async t => {
   const board = makeFakeBoard();
 
   // Create ContinuingInvitationExample instance
-  const url = resolve('./continuingInvitationExample.js');
-  const path = new URL(url).pathname;
+  const path = resolve('./continuingInvitationExample.js');
   const bundle = await bundleSource(path);
   const installation = await E(t.context.zoe).install(bundle);
   const { creatorInvitation, instance } = await E(t.context.zoe).startInstance(

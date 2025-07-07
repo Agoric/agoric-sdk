@@ -11,12 +11,10 @@ const resolve = createRequire(import.meta.url).resolve;
  * @import {GovernableStartFn} from '../src/types.js';
  */
 
-const makeBundle = async sourceRoot => {
-  const url = resolve(sourceRoot);
-  const path = new URL(url).pathname;
-  const contractBundle = await bundleSource(path);
-  return contractBundle;
-};
+/**
+ * @param {string} sourceRoot
+ */
+const makeBundle = sourceRoot => bundleSource(resolve(sourceRoot));
 
 // makeBundle is a slow step, so we do it once for all the tests.
 const contractGovernorBundleP = makeBundle('./puppetContractGovernor.js');
