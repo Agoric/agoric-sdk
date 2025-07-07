@@ -1,19 +1,21 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { createRequire } from 'node:module';
+
 import { BridgeId, deepCopyJsonable } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { Fail } from '@endo/errors';
 import { makeTagged } from '@endo/marshal';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import type { IssuerKit } from '@agoric/ertp/src/types.js';
 import { matchAmount, matchIter, matchRef } from '../../tools/supports.js';
 
 import type { buildRootObject as buildTestMintVat } from './vat-mint.js';
 
+const resolve = createRequire(import.meta.url).resolve;
+
 const bfile = name => new URL(name, import.meta.url).pathname;
-const importSpec = async spec =>
-  new URL(importMetaResolve(spec, import.meta.url)).pathname;
+const importSpec = async spec => new URL(resolve(spec)).pathname;
 
 const makeCallOutbound = t => (srcID, obj) => {
   t.log(`callOutbound(${srcID}, ${obj})`);

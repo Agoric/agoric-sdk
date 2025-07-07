@@ -1,6 +1,8 @@
 /* eslint-env node */
-import path from 'path';
-import fs from 'fs';
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+import path from 'node:path';
+
 import { Fail } from '@endo/errors';
 import {
   importMailbox,
@@ -11,7 +13,6 @@ import anylogger from 'anylogger';
 
 import { getTelemetryProviders, makeSlogSender } from '@agoric/telemetry';
 
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeBatchedDeliver } from '@agoric/internal/src/batched-deliver.js';
 import stringify from './helpers/json-stable-stringify.js';
@@ -28,6 +29,7 @@ const console = anylogger('fake-chain');
 const TELEMETRY_SERVICE_NAME = 'sim-cosmos';
 
 const PRETEND_BLOCK_DELAY = 5;
+const resolve = createRequire(import.meta.url).resolve;
 const scaleBlockTime = ms => Math.floor(ms / 1000);
 
 async function makeMailboxStorageFromFile(file) {
@@ -83,10 +85,9 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   };
 
   const getVatConfig = async () => {
-    const href = importMetaResolve(
+    const href = resolve(
       env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
         argv.bootMsg.params.bootstrap_vat_config,
-      import.meta.url,
     );
     const { pathname } = new URL(href);
     return pathname;

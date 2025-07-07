@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import { performance } from 'node:perf_hooks';
 import { fork } from 'node:child_process';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { createRequire } from 'node:module';
 import tmp from 'tmp';
 
 import { Fail, q } from '@endo/errors';
@@ -64,6 +64,8 @@ import {
  */
 
 const ignore = () => {};
+
+const resolve = createRequire(import.meta.url).resolve;
 
 const tmpDir = makeTempDirFactory(tmp);
 
@@ -431,10 +433,9 @@ export const makeLaunchChain = (
       bootMsg: makeInitMsg(initAction),
     };
     const getVatConfig = async () => {
-      const href = importMetaResolve(
+      const href = resolve(
         env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
           argv.bootMsg.params.bootstrap_vat_config,
-        import.meta.url,
       );
       const { pathname } = new URL(href);
       return pathname;

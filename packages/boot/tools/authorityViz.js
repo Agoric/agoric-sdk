@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // @ts-check
 import '@endo/init';
-import process from 'process';
+import fs from 'fs/promises';
+import { createRequire } from 'node:module';
+import process from 'node:process';
 
 import { Fail, q } from '@endo/errors';
 
@@ -264,23 +266,17 @@ const main = async (args, { stdout, fsp, meta }) => {
   }
 };
 
-const run = async () => {
-  const [fsp, metaResolve] = await Promise.all([
-    import('fs/promises'),
-    import('import-meta-resolve'),
-  ]);
-
-  return main(process.argv.slice(2), {
+const run = () =>
+  main(process.argv.slice(2), {
     stdout: process.stdout,
-    fsp,
+    fsp: fs,
     meta: {
       resolve: async (specifier, parent) =>
-        metaResolve.resolve(specifier, parent),
+        createRequire(parent).resolve(specifier),
       url: import.meta.url,
       load: specifier => import(specifier),
     },
   });
-};
 
 process.exitCode = 1;
 run().then(

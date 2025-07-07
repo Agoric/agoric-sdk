@@ -1,9 +1,10 @@
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
-import bundleSource from '@endo/bundle-source';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-import fs from 'fs';
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+
+import bundleSource from '@endo/bundle-source';
 
 const CONTRACT_FILES = [
   'automaticRefund',
@@ -19,6 +20,7 @@ const CONTRACT_FILES = [
   'mintAndSellNFT',
   'otcDesk',
 ];
+const resolve = createRequire(import.meta.url).resolve;
 
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async settings => {
@@ -30,10 +32,7 @@ const generateBundlesP = Promise.all(
     } else {
       ({ bundleName, contractPath } = settings);
     }
-    const sourceUrl = importMetaResolve(
-      `@agoric/zoe/src/contracts/${contractPath}.js`,
-      import.meta.url,
-    );
+    const sourceUrl = resolve(`@agoric/zoe/src/contracts/${contractPath}.js`);
     const sourcePath = new URL(sourceUrl).pathname;
     const bundle = await bundleSource(sourcePath);
     const obj = { bundle, bundleName };

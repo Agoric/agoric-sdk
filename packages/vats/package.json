@@ -43,7 +43,6 @@
     "@endo/pass-style": "^1.5.0",
     "@endo/patterns": "^1.5.0",
     "@endo/promise-kit": "^1.1.10",
-    "import-meta-resolve": "^4.1.0",
     "jessie.js": "^0.3.4"
   },
   "devDependencies": {

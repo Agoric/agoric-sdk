@@ -1,7 +1,10 @@
 // @ts-check
+import * as ambientFs from 'node:fs';
+import { createRequire } from 'node:module';
+
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import * as ambientFs from 'fs';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
+
+const resolve = createRequire(import.meta.url).resolve;
 
 const configSpecifier = '@agoric/vm-config/decentral-itest-vaults-config.json';
 const noop = harden(() => {});
@@ -13,8 +16,7 @@ const test = anyTest;
 const makeTestContext = t => {
   /** @param {string} specifier */
   const loadConfig = async specifier => {
-    const fullPath = new URL(importMetaResolve(specifier, import.meta.url))
-      .pathname;
+    const fullPath = new URL(resolve(specifier)).pathname;
     t.is(typeof fullPath, 'string');
     const txt = await ambientFs.promises.readFile(fullPath, 'utf-8');
     t.is(typeof txt, 'string');

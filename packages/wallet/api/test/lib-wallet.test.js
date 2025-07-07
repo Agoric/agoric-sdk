@@ -1,4 +1,6 @@
 // @ts-check
+import { createRequire } from 'node:module';
+
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { assert } from '@endo/errors';
@@ -15,9 +17,10 @@ import {
   makeNameHubKit,
   prepareMixinMyAddress,
 } from '@agoric/vats/src/nameHub.js';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeHeapZone } from '@agoric/zone';
 import { makeWalletRoot } from '../src/lib-wallet.js';
+
+const resolve = createRequire(import.meta.url).resolve;
 
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
@@ -137,9 +140,8 @@ test.before(async t => {
   const zoe = makeZoeForTest();
 
   // Create AutomaticRefund instance
-  const automaticRefundContractUrl = importMetaResolve(
+  const automaticRefundContractUrl = resolve(
     '@agoric/zoe/src/contracts/automaticRefund.js',
-    import.meta.url,
   );
   const automaticRefundContractRoot = new URL(automaticRefundContractUrl)
     .pathname;
@@ -149,10 +151,7 @@ test.before(async t => {
   );
 
   // Create Autoswap instance
-  const autoswapContractUrl = importMetaResolve(
-    '@agoric/zoe/src/contracts/autoswap.js',
-    import.meta.url,
-  );
+  const autoswapContractUrl = resolve('@agoric/zoe/src/contracts/autoswap.js');
   const autoswapContractRoot = new URL(autoswapContractUrl).pathname;
   const autoswapBundle = await bundleSource(autoswapContractRoot);
   const autoswapInstallation = await E(zoe).install(autoswapBundle);
@@ -1491,10 +1490,7 @@ test('addOffer makeContinuingInvitation', async t => {
   const board = makeFakeBoard();
 
   // Create ContinuingInvitationExample instance
-  const url = importMetaResolve(
-    './continuingInvitationExample.js',
-    import.meta.url,
-  );
+  const url = resolve('./continuingInvitationExample.js');
   const path = new URL(url).pathname;
   const bundle = await bundleSource(path);
   const installation = await E(t.context.zoe).install(bundle);

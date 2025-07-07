@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module';
+
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
@@ -5,19 +7,20 @@ import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 
 import { CONTRACT_ELECTORATE, ParamTypes } from '../../src/index.js';
 import { setUpGovernedContract } from '../../tools/puppetGovernance.js';
 import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
 
+const resolve = createRequire(import.meta.url).resolve;
+
 /**
  * @import {GovernedPublicFacet, SimpleIssue} from '../../src/types.js';
  */
 
 const makeBundle = async sourceRoot => {
-  const url = importMetaResolve(sourceRoot, import.meta.url);
+  const url = resolve(sourceRoot);
   const path = new URL(url).pathname;
   const contractBundle = await bundleSource(path);
   return contractBundle;

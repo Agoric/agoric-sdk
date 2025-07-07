@@ -1,18 +1,17 @@
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
-import bundleSource from '@endo/bundle-source';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-import fs from 'fs';
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+
+import bundleSource from '@endo/bundle-source';
 
 const CONTRACT_FILES = ['simpleExchange.js'];
+const resolve = createRequire(import.meta.url).resolve;
 
 const generateBundlesP = Promise.all(
   CONTRACT_FILES.map(async contract => {
-    const contractUrl = importMetaResolve(
-      `@agoric/zoe/src/contracts/${contract}`,
-      import.meta.url,
-    );
+    const contractUrl = resolve(`@agoric/zoe/src/contracts/${contract}`);
     const contractPath = new URL(contractUrl).pathname;
     const bundle = await bundleSource(contractPath);
     const obj = { bundle, contract };

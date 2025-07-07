@@ -1,14 +1,17 @@
 /* eslint-env node */
 
+import { createRequire } from 'node:module';
+
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import bundleSourceAmbient from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 import { TimeMath } from '@agoric/time';
 import { Far } from '@endo/marshal';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { makeFixture, E } from './captp-fixture.js';
+
+const resolve = createRequire(import.meta.url).resolve;
 
 const SOLO_PORT = 7999;
 
@@ -30,7 +33,7 @@ export const Stable = harden(
 //#region setup (ambient authority is confined to this region)
 test.before('setup', async t => {
   const loadBundle = async specifier => {
-    const contractUrl = importMetaResolve(specifier, import.meta.url);
+    const contractUrl = resolve(specifier);
     const contractRoot = new URL(contractUrl).pathname;
     t.log({ contractRoot });
     const bundle = await bundleSourceAmbient(contractRoot);

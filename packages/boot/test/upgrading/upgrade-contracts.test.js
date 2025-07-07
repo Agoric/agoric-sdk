@@ -2,10 +2,11 @@
  * @file cribbed from
  *   packages/zoe/test/swingsetTests/upgradeCoveredCall/test-coveredCall-service-upgrade.js
  */
+import { createRequire } from 'node:module';
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { buildVatController } from '@agoric/swingset-vat';
+
+const resolve = createRequire(import.meta.url).resolve;
 
 /**
  * @type {import('ava').TestFn<{}>}
@@ -13,8 +14,7 @@ import { buildVatController } from '@agoric/swingset-vat';
 const test = anyTest;
 
 const bfile = name => new URL(name, import.meta.url).pathname;
-const importSpec = async spec =>
-  new URL(importMetaResolve(spec, import.meta.url)).pathname;
+const importSpec = async spec => new URL(resolve(spec)).pathname;
 
 test('upgrade mintHolder', async t => {
   /** @type {SwingSetConfig} */

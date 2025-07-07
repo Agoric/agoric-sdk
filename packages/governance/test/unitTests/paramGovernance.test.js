@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module';
+
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
@@ -8,10 +10,11 @@ import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../../src/index.js';
 import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
 import { remoteNullMarshaller } from '../swingsetTests/utils.js';
+
+const resolve = createRequire(import.meta.url).resolve;
 
 /**
  * @import {GovernedPublicFacet, SimpleIssue} from '../../src/types.js';
@@ -23,7 +26,7 @@ const contractGovernorRoot = '../../src/contractGovernor.js';
 const committeeRoot = '../../src/committee.js';
 
 const makeBundle = async sourceRoot => {
-  const url = importMetaResolve(sourceRoot, import.meta.url);
+  const url = resolve(sourceRoot);
   const path = new URL(url).pathname;
   const contractBundle = await bundleSource(path);
   return contractBundle;

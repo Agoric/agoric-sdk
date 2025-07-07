@@ -51,7 +51,6 @@
     "@endo/marshal": "^1.6.4",
     "@endo/promise-kit": "^1.1.10",
     "@endo/stream": "^1.2.10",
-    "import-meta-resolve": "^4.1.0",
     "node-fetch-cache": "^5.0.2",
     "tmp": "^0.2.1",
     "viem": "^2.31.0"

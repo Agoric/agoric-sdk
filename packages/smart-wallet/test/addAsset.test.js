@@ -1,4 +1,6 @@
 // @ts-check
+import { createRequire } from 'node:module';
+
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@endo/errors';
@@ -9,14 +11,14 @@ import { makeMarshal } from '@endo/marshal';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeCopyBag } from '@agoric/store';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeDefaultTestContext } from './contexts.js';
 import { ActionType, headValue, makeMockTestSpace } from './supports.js';
 import { makeImportContext } from '../src/marshal-contexts.js';
 
-const importSpec = async spec =>
-  new URL(importMetaResolve(spec, import.meta.url)).pathname;
+const resolve = createRequire(import.meta.url).resolve;
+
+const importSpec = async spec => new URL(resolve(spec)).pathname;
 
 /**
  * @type {import('ava').TestFn<

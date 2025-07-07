@@ -1,18 +1,14 @@
 // @ts-check
 /* eslint-env node */
-import fs from 'fs';
-import url from 'url';
-import path from 'path';
-import temp from 'temp';
-import { fork } from 'child_process';
-import { promisify } from 'util';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-// import { createHash } from 'crypto';
+import { fork } from 'node:child_process';
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+import path from 'node:path';
+import url from 'node:url';
+import { promisify } from 'node:util';
 
 import anylogger from 'anylogger';
-
-// import connect from 'lotion-connect';
-// import djson from 'deterministic-json';
+import temp from 'temp';
 
 import { assert, Fail } from '@endo/errors';
 import {
@@ -55,6 +51,7 @@ let swingSetRunning = false;
 
 const fsWrite = promisify(fs.write);
 const fsClose = promisify(fs.close);
+const resolver = createRequire(import.meta.url);
 const rename = promisify(fs.rename);
 const unlink = promisify(fs.unlink);
 
@@ -358,10 +355,7 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
   // This part only runs if there were wallet deploys to do.
   const resolvedDeploys = deploys.map(dep => path.resolve(agWallet, dep));
 
-  const resolvedUrl = importMetaResolve(
-    'agoric/src/entrypoint.js',
-    import.meta.url,
-  );
+  const resolvedUrl = resolver.resolve('agoric/src/entrypoint.js');
   const agoricCli = new URL(resolvedUrl).pathname;
 
   // Use the same verbosity as our caller did for us.
@@ -474,10 +468,7 @@ const start = async (basedir, argv) => {
   // Remove wallet traces.
   await unlink('html/wallet').catch(_ => {});
 
-  const packageUrl = importMetaResolve(
-    `${wallet}/package.json`,
-    import.meta.url,
-  );
+  const packageUrl = resolver.resolve(`${wallet}/package.json`);
   // Find the wallet.
   const pjs = new URL(packageUrl).pathname;
   const { 'agoric-wallet': { htmlBasedir = 'ui/build', deploy = [] } = {} } =
@@ -489,7 +480,7 @@ const start = async (basedir, argv) => {
   );
 
   const agWallet = path.dirname(pjs);
-  const agWalletHtmlUrl = importMetaResolve(htmlBasePath, packageUrl);
+  const agWalletHtmlUrl = createRequire(packageUrl).resolve(htmlBasePath);
   const agWalletHtml = new URL(agWalletHtmlUrl).pathname;
 
   let hostport;

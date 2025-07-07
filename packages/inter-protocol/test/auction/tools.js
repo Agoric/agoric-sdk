@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module';
+
 import { Far } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
 import { makeStoredPublisherKit } from '@agoric/notifier';
@@ -7,8 +9,6 @@ import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
 import { GOVERNANCE_STORAGE_KEY } from '@agoric/governance/src/contractHelper.js';
 import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 /**
  * @typedef {{
@@ -23,10 +23,12 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
  * }} AuctionTestInstallations
  */
 
+const resolve = createRequire(import.meta.url).resolve;
+
 /** @param {ZoeService} zoe */
 export const setUpInstallations = async zoe => {
   const autoRefund = '@agoric/zoe/src/contracts/automaticRefund.js';
-  const autoRefundUrl = importMetaResolve(autoRefund, import.meta.url);
+  const autoRefundUrl = resolve(autoRefund);
   const autoRefundPath = new URL(autoRefundUrl).pathname;
 
   const bundleCache = await unsafeMakeBundleCache('./bundles/'); // package-relative

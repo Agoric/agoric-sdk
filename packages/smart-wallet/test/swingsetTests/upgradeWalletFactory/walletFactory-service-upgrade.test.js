@@ -1,7 +1,8 @@
+import { createRequire } from 'node:module';
+
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { assert } from '@endo/errors';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { buildVatController } from '@agoric/swingset-vat';
 import {
@@ -9,11 +10,12 @@ import {
   wfV2BundleName,
 } from './bootstrap-walletFactory-service-upgrade.js';
 
+const resolve = createRequire(import.meta.url).resolve;
+
 // so paths can be expresssed relative to this file and made absolute
 const bfile = name => new URL(name, import.meta.url).pathname;
 
-const importSpec = async spec =>
-  new URL(importMetaResolve(spec, import.meta.url)).pathname;
+const importSpec = async spec => new URL(resolve(spec)).pathname;
 
 test('walletFactory service upgrade', async t => {
   /** @type {SwingSetConfig} */

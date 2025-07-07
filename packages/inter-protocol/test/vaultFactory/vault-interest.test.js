@@ -1,14 +1,17 @@
+import { createRequire } from 'node:module';
+
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { AmountMath } from '@agoric/ertp';
 
 import { makeTracer } from '@agoric/internal';
+
+const resolve = createRequire(import.meta.url).resolve;
 
 const vaultRoot = './vault-contract-wrapper.js';
 const trace = makeTracer('TestVaultInterest', false);
@@ -40,7 +43,7 @@ const { zoe, feeMintAccessP: feeMintAccess } = await setUpZoeForTest({
  * @param {string} sourceRoot
  */
 async function launch(zoeP, sourceRoot) {
-  const contractUrl = importMetaResolve(sourceRoot, import.meta.url);
+  const contractUrl = resolve(sourceRoot);
   const contractPath = new URL(contractUrl).pathname;
   const contractBundle = await bundleSource(contractPath);
   const installation = await E(zoeP).install(contractBundle);
