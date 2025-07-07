@@ -25,20 +25,20 @@ import { X } from '@endo/errors';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { YieldProtocol } from './constants.js';
-import type { NobleAccount } from './portfolio.flows.js';
-import { type LocalAccount } from './portfolio.flows.js';
+import { YieldProtocol, type AxelarChain } from './constants.js';
+import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
 import {
   prepareGMPPosition,
   type GMPPosition,
   type GMPProtocol,
 } from './pos-gmp.exo.js';
-import { prepareUSDNPosition } from './pos-usdn.exo.js';
-import type { AxelarChainsMap, StatusFor } from './type-guards.js';
+import { prepareUSDNPosition, type USDNPosition } from './pos-usdn.exo.js';
+import type { AxelarChainsMap, PoolKey, StatusFor } from './type-guards.js';
 import {
   makeFlowPath,
   makePortfolioPath,
   OfferArgsShapeFor,
+  PoolKeyShape,
   type makeProposalShapes,
   type OfferArgsFor,
 } from './type-guards.js';
@@ -80,7 +80,7 @@ const ManagerI = M.interface('manager', {
 });
 
 interface PositionRd {
-  getPositionId(): number;
+  getPoolKey(): PoolKey;
   getYieldProtocol(): YieldProtocol;
 }
 
@@ -142,7 +142,7 @@ type PortfolioKitState = {
   portfolioId: number;
   accountsPending: MapStore<ChainAccountKey, VowKit<AccountInfo>>;
   accounts: MapStore<ChainAccountKey, AccountInfo>;
-  positions: MapStore<number, Position>;
+  positions: MapStore<PoolKey, Position>;
   nextFlowId: number;
 };
 
@@ -261,7 +261,7 @@ export const preparePortfolioKit = (
         accountsPending: zone.detached().mapStore('accountsPending'),
         // NEEDSTEST: for forgetting to use detached()
         positions: zone.detached().mapStore('positions', {
-          keyShape: M.number(),
+          keyShape: PoolKeyShape,
           valueShape: M.remotable('Position'),
         }),
       };
@@ -349,7 +349,7 @@ export const preparePortfolioKit = (
         publishStatus() {
           const { portfolioId, positions, accounts, nextFlowId } = this.state;
           publishStatus(makePortfolioPath(portfolioId), {
-            positionCount: positions.getSize(),
+            positionKeys: [...positions.keys()],
             flowCount: nextFlowId - 1,
             accountIdByChain: accountIdByChain(accounts),
           });
@@ -402,47 +402,50 @@ export const preparePortfolioKit = (
           }
           return undefined; // like array.find()
         },
-        provideGMPPositionOn(protocol: GMPProtocol, chain: CaipChainId) {
+        provideGMPPositionOn(
+          protocol: GMPProtocol,
+          chainId: CaipChainId,
+          chainName: AxelarChain,
+        ): { position: GMPPosition; isNew: boolean } {
+          const poolKey: PoolKey = `${protocol}_${chainName}`;
           const { positions } = this.state;
-          for (const pos of positions.values()) {
-            if (['Aave', 'Compound'].includes(pos.getYieldProtocol())) {
-              const gpos = pos as unknown as GMPPosition;
-              if (gpos.getChainId() === chain)
-                return { position: gpos, isNew: false };
-            }
+          if (positions.has(poolKey)) {
+            const pos = positions.get(poolKey);
+            const gpos = pos as unknown as GMPPosition;
+            return { position: gpos, isNew: false };
           }
           const { portfolioId } = this.state;
-          const positionId = positions.getSize() + 1;
           const position = makeGMPPosition(
             portfolioId,
-            positionId,
             protocol,
-            chain,
+            chainId,
+            chainName,
           );
-          positions.init(positionId, position);
+          positions.init(poolKey, position);
           position.publishStatus();
           this.facets.reporter.publishStatus();
           return { position, isNew: true };
         },
-        provideAavePositionOn(chain: CaipChainId) {
+        provideAavePositionOn(chainId: CaipChainId, chainName: AxelarChain) {
           const { manager } = this.facets;
-          return manager.provideGMPPositionOn('Aave', chain);
+          return manager.provideGMPPositionOn('Aave', chainId, chainName);
         },
-        provideCompoundPositionOn(chain: CaipChainId) {
+        provideCompoundPositionOn(chain: CaipChainId, chainName: AxelarChain) {
           const { manager } = this.facets;
-          return manager.provideGMPPositionOn('Compound', chain);
+          return manager.provideGMPPositionOn('Compound', chain, chainName);
         },
-        provideUSDNPosition(accountId: AccountId) {
+
+        provideUSDNPosition(accountId: AccountId): USDNPosition {
           const { positions } = this.state;
-          for (const pos of positions.values()) {
-            if (pos.getYieldProtocol() === 'USDN') {
-              return pos;
-            }
+          const poolKey: PoolKey = 'USDN'; // XXX support USDNLock too
+          if (positions.has(poolKey)) {
+            const pos = positions.get(poolKey);
+            const npos = pos as unknown as USDNPosition;
+            return npos;
           }
           const { portfolioId } = this.state;
-          const positionId = positions.getSize() + 1;
-          const position = makeUSDNPosition(portfolioId, positionId, accountId);
-          positions.init(positionId, position);
+          const position = makeUSDNPosition(portfolioId, accountId);
+          positions.init(poolKey, position);
           position.publishStatus();
           this.facets.reporter.publishStatus();
           return position;
@@ -482,7 +485,3 @@ export const preparePortfolioKit = (
 harden(preparePortfolioKit);
 
 export type PortfolioKit = ReturnType<ReturnType<typeof preparePortfolioKit>>;
-
-export type USDNPosition = ReturnType<
-  PortfolioKit['manager']['provideUSDNPosition']
->;
