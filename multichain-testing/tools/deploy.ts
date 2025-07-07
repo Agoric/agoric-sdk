@@ -2,7 +2,7 @@
 import { createRequire } from 'module';
 import type { AgdTools } from './agd-tools.js';
 import type { CoreEvalPlan } from '@agoric/deploy-script-support/src/writeCoreEvalParts.js';
-import { flags } from './agd-lib.js';
+import { flags } from './chaind-lib.js';
 import { makeTracer } from '@agoric/internal';
 
 const nodeRequire = createRequire(import.meta.url);

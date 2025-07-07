@@ -1,4 +1,8 @@
+import { VBankAccount } from '@agoric/internal/src/config.js';
+
+export { VBankAccount };
 export * from './cli.js';
+export * from './marshalTables.js';
 export * from './network-config.js';
 export * from './rpc.js';
 export * from './smart-wallet-kit.js';

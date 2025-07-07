@@ -9,13 +9,16 @@
     "test:main": "ava --config ava.rest.config.js",
     "test:fast-usdc": "ava --config ava.fusdc.config.js",
     "test:queries": "ava --config ava.queries.config.js",
-    "test:staking": "ava --config ava.staking.config.js"
+    "test:staking": "ava --config ava.staking.config.js",
+    "test:ymd": "ava --config ava.ymd.config.js",
+    "test:xcs": "ava --config ava.xcs.config.js"
   },
   "packageManager": "yarn@4.9.1",
   "devDependencies": {
     "@agoric/cosmic-proto": "dev",
     "@agoric/fast-usdc": "dev",
     "@cosmjs/amino": "npm:^0.32.4",
+    "@cosmjs/cosmwasm-stargate": "^0.33.1",
     "@cosmjs/crypto": "^0.33.0",
     "@cosmjs/proto-signing": "^0.33.0",
     "@cosmjs/stargate": "^0.33.0",
@@ -23,6 +26,7 @@
     "@endo/far": "^1.1.11",
     "@endo/nat": "^5.1.0",
     "@endo/ses-ava": "^1.2.10",
+    "@starship-ci/cli": "^3.10.0",
     "@types/eslint": "^9.6.1",
     "@types/fs-extra": "^11",
     "@types/node": "^22.0.0",
@@ -33,7 +37,8 @@
     "eslint-config-prettier": "^10.1.1",
     "execa": "^9.5.2",
     "fs-extra": "^11.2.0",
-    "starshipjs": "2.4.1",
+    "osmojs": "^16.15.0",
+    "starshipjs": "^3.3.0",
     "ts-blank-space": "^0.4.4",
     "typescript": "~5.8.2"
   },
@@ -94,8 +99,8 @@
     "@agoric/xsnap-lockdown": "portal:../packages/xsnap-lockdown",
     "@agoric/zoe": "portal:../packages/zoe",
     "@agoric/zone": "portal:../packages/zone",
-    "@cosmjs/proto-signing@npm:0.32.3": "npm:@cosmjs/proto-signing@0.33.0",
-    "@cosmjs/stargate@npm:0.32.3": "npm:@cosmjs/stargate@0.33.0"
+    "@cosmjs/proto-signing": "0.33.1",
+    "@cosmjs/stargate": "0.33.1"
   },
   "license": "Apache-2.0"
 }

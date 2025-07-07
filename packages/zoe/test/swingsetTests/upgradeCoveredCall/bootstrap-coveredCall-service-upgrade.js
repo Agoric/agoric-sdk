@@ -1,4 +1,4 @@
-import { q, X } from '@endo/errors';
+import { q, Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
@@ -55,9 +55,7 @@ const depositPayout = (seat, keyword, purse, expectedAmount) => {
     })
     .then(depositAmount => {
       AmountMath.isEqual(depositAmount, expectedAmount) ||
-        assert.fail(
-          X`amounts don't match: ${q(depositAmount)}, ${q(expectedAmount)}`,
-        );
+        Fail`amounts don't match: ${q(depositAmount)}, ${q(expectedAmount)}`;
     });
 };
 

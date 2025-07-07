@@ -730,20 +730,21 @@ export const adjustBalancesIfNotProvisioned = async (balances, address) => {
 
   if (addressProvisioned === true) return balances;
 
-  const balancesAdjusted = [];
+  // provisioning currently costs 10 BLD and deposits 10 BLD, so no adjustment
+  // is needed.
+  return balances;
 
-  // provisioning currently costs 10 BLD and deposits 0.25 IST
-  for (const { denom, amount } of balances) {
-    let newAmount = amount;
-    if (denom === 'ubld') {
-      newAmount = (BigInt(amount) - BigInt(10e6)).toString();
-    } else if (denom === 'uist') {
-      newAmount = (BigInt(amount) + BigInt(0.25e6)).toString();
-    }
-    balancesAdjusted.push({ denom, amount: newAmount });
-  }
-
-  return balancesAdjusted;
+  // const balancesAdjusted = [];
+  // for (const { denom, amount } of balances) {
+  //   let newAmount = amount;
+  //   if (denom === 'ubld') {
+  //     newAmount = (BigInt(amount) - BigInt(10e6)).toString();
+  //   } else if (denom === 'uist') {
+  //     newAmount = (BigInt(amount) + BigInt(0.25e6)).toString();
+  //   }
+  //   balancesAdjusted.push({ denom, amount: newAmount });
+  // }
+  // return balancesAdjusted;
 };
 
 /**
