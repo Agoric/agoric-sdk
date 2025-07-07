@@ -128,7 +128,10 @@ test('passability of store iters', t => {
   m.init('x', 8);
   m.init('y', 7);
   const keys = m.keys();
-  t.is(passStyleOf(keys), 'remotable');
+  t.throws(() => passStyleOf(keys), {
+    message:
+      /Remotables can only have string-named methods:|Remotables must be explicitly declared/,
+  });
   const iter = keys[Symbol.iterator]();
   t.is(passStyleOf(iter), 'remotable');
   const iterResult = iter.next();

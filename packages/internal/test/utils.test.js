@@ -12,6 +12,7 @@ import {
   forever,
   deeplyFulfilledObject,
   synchronizedTee,
+  unpassableSymbolForName,
 } from '../src/ses-utils.js';
 
 /** @import {Permit, Attenuated} from '../src/types.js'; */
@@ -334,7 +335,7 @@ const { value: arbShallow } = fc.letrec(tie => ({
     ]),
     // @ts-expect-error TS2345 function signature
     async (t, { specimen, permit }) => {
-      const tag = Symbol('transformed');
+      const tag = unpassableSymbolForName('transformed');
 
       let mutationCallCount = 0;
       const mutatedAttenuation = attenuate(specimen, permit, obj => {
@@ -527,7 +528,7 @@ test('makeMeasureSeconds', async t => {
   const mockNow = () => times.shift();
   const measureSeconds = makeMeasureSeconds(mockNow);
 
-  const unique = Symbol('unique');
+  const unique = unpassableSymbolForName('unique');
   const output = await measureSeconds(async () => unique);
   t.deepEqual(output, { result: unique, duration: 1.0005 });
   t.deepEqual(times, [NaN]);

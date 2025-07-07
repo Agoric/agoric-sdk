@@ -1,5 +1,11 @@
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { allValues, makeTracer, NonNullish, objectMap } from '@agoric/internal';
+import {
+  allValues,
+  makeTracer,
+  NonNullish,
+  objectMap,
+  unpassableSymbolForName,
+} from '@agoric/internal';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
@@ -38,7 +44,11 @@ import {
 
 const trace = makeTracer('VFDriver');
 
-export const AT_NEXT = Symbol('AT_NEXT');
+// TODO What does it mean to type something to the typeof itself?
+// That was the inferred type when the right hand side was `Symbol('AT_NEXT')`
+export const AT_NEXT = /** @type {typeof AT_NEXT} */ (
+  unpassableSymbolForName('AT_NEXT')
+);
 
 export const BASIS_POINTS = 10000n;
 

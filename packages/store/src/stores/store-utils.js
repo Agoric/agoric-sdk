@@ -57,7 +57,7 @@ export const makeCurrentKeysKit = (
     return sortedKeysMemo;
   };
 
-  const iterableKeys = Far('Iterable of keys', {
+  const iterableKeys = harden({
     [Symbol.iterator]: () => {
       const generation = updateCount;
       getSortedKeys();

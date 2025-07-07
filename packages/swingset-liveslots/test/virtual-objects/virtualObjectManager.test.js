@@ -442,10 +442,8 @@ test('symbol named methods', t => {
       log,
     });
 
-  const IncSym = Symbol.for('incsym');
-
   const symThingBehavior = {
-    [IncSym]({ state }) {
+    m0({ state }) {
       state.counter += 1;
       return state.counter;
     },
@@ -488,7 +486,7 @@ test('symbol named methods', t => {
   ]);
 
   // phase 2: call symbol-named method on thing1
-  t.is(thing1[IncSym](), 1); // [t1-1*]
+  t.is(thing1.m0(), 1); // [t1-1*]
   t.is(log.shift(), `get vom.${tid}/1 => ${thingVal(0, 'thing-1', 0)}`); // load t1-0
   t.deepEqual(log, []);
   flushStateCache();
@@ -502,7 +500,7 @@ test('symbol named methods', t => {
   ]);
 
   // phase 3: call symbol-named method on thing2
-  t.is(thing2[IncSym](), 101); // [t2-1*]
+  t.is(thing2.m0(), 101); // [t2-1*]
   t.is(log.shift(), `get vom.${tid}/2 => ${thingVal(100, 'thing-2', 0)}`); // load t2-0
   t.deepEqual(log, []);
   flushStateCache();
