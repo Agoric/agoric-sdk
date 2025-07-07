@@ -3,6 +3,7 @@ import { makeIssuerKit } from '@agoric/ertp';
 import {
   denomHash,
   withChainCapabilities,
+  type ChainInfo,
   type CosmosChainInfo,
   type Denom,
 } from '@agoric/orchestration';
@@ -155,7 +156,13 @@ export const setupPortfolioTest = async ({
 }: {
   log: ExecutionContext<any>['log'];
 }) => {
-  const common = await setupOrchestrationTest({ log });
+  const axelarChains = { ...axelarCCTPConfig, ...axelarCCTPConfigTestnet };
+  const chains = harden({
+    ...withChainCapabilities(fetchedChainInfo),
+    ...axelarChains,
+  }) as Record<string, ChainInfo>;
+
+  const common = await setupOrchestrationTest({ log, chains });
   const {
     bootstrap: { agoricNamesAdmin, bankManager },
   } = common;

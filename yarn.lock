@@ -233,7 +233,6 @@ __metadata:
     "@agoric/vats": "workspace:*"
     "@agoric/vow": "workspace:*"
     "@agoric/zoe": "workspace:*"
-    "@bgd-labs/aave-address-book": "npm:^4.24.2"
     "@endo/errors": "npm:^1.2.10"
     "@endo/eventual-send": "npm:^1.3.1"
     "@endo/far": "npm:^1.1.11"
@@ -2912,13 +2911,6 @@ __metadata:
   version: 1.0.2
   resolution: "@bcoe/v8-coverage@npm:1.0.2"
   checksum: 10c0/1eb1dc93cc17fb7abdcef21a6e7b867d6aa99a7ec88ec8207402b23d9083ab22a8011213f04b2cf26d535f1d22dc26139b7929e6c2134c254bd1e14ba5e678c3
-  languageName: node
-  linkType: hard
-
-"@bgd-labs/aave-address-book@npm:^4.24.2":
-  version: 4.24.2
-  resolution: "@bgd-labs/aave-address-book@npm:4.24.2"
-  checksum: 10c0/2ebcba604c98e74d759789233c27c7d04d9bd1ee4854d6aa0b4e2a15c91740aa81ad52654378f7f15782137fac2bbe223dc627be84102bfd2651d64b87de177e
   languageName: node
   linkType: hard
 
