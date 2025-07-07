@@ -4,7 +4,7 @@ A smart contract for managing diversified stablecoin yield portfolios across mul
 
 ## Overview
 
-The YMax Portfolio Contract enables users to create and manage portfolios that deploy stablecoins across different yield-generating protocols. Users can rebalance their positions between USDN (on Agoric), Aave, and Compound (via cross-chain operations).
+The YMax Portfolio Contract enables users to create and manage portfolios that deploy stablecoins across different yield-generating protocols. Users can rebalance their positions between USDN, Aave, and Compound (via cross-chain operations).
 
 ## Parties to the Contract
 
@@ -12,7 +12,7 @@ The YMax Portfolio Contract enables users to create and manage portfolios that d
 - **Create Portfolios**: Open new portfolios by providing USDC, Access tokens, and fees
 - **Fund Positions**: Allocate capital across different yield protocols (USDN, Aave, Compound)
 - **Portfolio Rebalancing**: Execute rebalancing operations by specifying desired asset movements
-- **Multi-chain Operations**: Manage positions across Agoric, Noble, and EVM chains via Axelar GMP
+- **Multi-chain Operations**: Manage positions across Noble and EVM chains
 
 ### The Contract
 - **Portfolio Orchestration**: Manages multiple independent portfolios
@@ -29,7 +29,7 @@ The YMax Portfolio Contract enables users to create and manage portfolios that d
 
 ### Opening a Portfolio
 Users can create a new portfolio by:
-1. Making an `openPortfolio` offer with USDC and fees
+1. Making an `openPortfolio` offer
 2. Specifying initial yield protocol allocations
 3. Receiving a portfolio with rebalancing capabilities
 
@@ -39,4 +39,10 @@ Portfolio holders can:
 - Specify exact amounts to transfer between USDN, Aave, and Compound positions
 - Execute complex cross-chain operations seamlessly through the contract's orchestration
 
+## Client Queries and Offers
 
+For details on making offers and querying vstorage, see
+
+ - `src/type-guards.ts` - types and pattern guards
+ - `test/portfolio-agents.ts` - example client code
+ - `test/snapshots/*.md` - example vstorage data
