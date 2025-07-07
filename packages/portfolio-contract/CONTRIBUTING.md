@@ -4,13 +4,11 @@ Thanks for your interest in improving YMax! This package is in a proof-of-concep
 
  - `README.md` - user-level description of the contract.
  - `src/`
-    - `portfolio.contract.ts` - contract `start` function
-    - `type-guards.ts` - staic types for the external interface along
-      with (dynamic) pattern guards, aka shapes
-    - `constants.js` - enumerated constants
-    - `portfolio.exo.ts` - durable object for portfolio state
-    - `portfolio.flows.ts` - orchestration flows for opening and
-      managing portfolios
+  - `portfolio.contract.ts` - contract entry point and public facet
+  - `portfolio.{flows,exo}.ts` - orchestration flows and durable state
+  - `pos-{usdn,gmp}.{flows,exo}.ts` - position management for different protocols
+  - `type-guards.ts` - external interface types and validation patterns
+  - `constants.js` - enumerated constants
  - `test/` - tests for contract, flows, etc.
  - `tools/` - utilities exported for use in other packages
 

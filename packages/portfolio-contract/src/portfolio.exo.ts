@@ -24,16 +24,20 @@ import { atob, decodeBase64 } from '@endo/base64';
 import { X } from '@endo/errors';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
-import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import { YieldProtocol } from './constants.js';
 import type { NobleAccount } from './portfolio.flows.js';
 import { type LocalAccount } from './portfolio.flows.js';
-import type { AxelarChainsMap } from './type-guards.js';
+import {
+  prepareGMPPosition,
+  type GMPPosition,
+  type GMPProtocol,
+} from './pos-gmp.exo.js';
+import { prepareUSDNPosition } from './pos-usdn.exo.js';
+import type { AxelarChainsMap, StatusFor } from './type-guards.js';
 import {
   makeFlowPath,
   makePortfolioPath,
-  makePositionPath,
   OfferArgsShapeFor,
   type makeProposalShapes,
   type OfferArgsFor,
@@ -89,13 +93,13 @@ export interface Position extends PositionPub {
   recordTransferOut(amount: Amount<'nat'>): Amount<'nat'>;
 }
 
-type TransferStatus = {
+export type TransferStatus = {
   totalIn: Amount<'nat'>;
   totalOut: Amount<'nat'>;
   netTransfers: Amount<'nat'>;
 };
 
-const recordTransferIn = (
+export const recordTransferIn = (
   amount: Amount<'nat'>,
   state: TransferStatus,
   position: Pick<Position, 'publishStatus'>,
@@ -109,7 +113,7 @@ const recordTransferIn = (
   return state.netTransfers;
 };
 
-const recordTransferOut = (
+export const recordTransferOut = (
   amount: Amount<'nat'>,
   state: TransferStatus,
   position: Pick<Position, 'publishStatus'>,
@@ -142,8 +146,6 @@ type PortfolioKitState = {
   nextFlowId: number;
 };
 
-type PKit<T> = { promise: Vow<T>; pending: boolean };
-
 const accountIdByChain = (accounts: PortfolioKitState['accounts']) => {
   const byChain = {};
   for (const [n, info] of accounts.entries()) {
@@ -163,6 +165,11 @@ const accountIdByChain = (accounts: PortfolioKitState['accounts']) => {
   }
   return harden(byChain);
 };
+
+export type PublishStatusFn = <K extends keyof StatusFor>(
+  path: string[],
+  status: StatusFor[K],
+) => void;
 
 export const preparePortfolioKit = (
   zone: Zone,
@@ -199,7 +206,7 @@ export const preparePortfolioKit = (
     }
     return node;
   };
-  const publishStatus = (path: string[], status: CopyRecord): void => {
+  const publishStatus: PublishStatusFn = (path, status): void => {
     const node = makePathNode(path);
     // Don't await, just writing to vstorage.
     void E.when(E(marshaller).toCapData(status), capData =>
@@ -214,104 +221,18 @@ export const preparePortfolioKit = (
     netTransfers: usdcEmpty,
   });
 
-  const makeUSDNPosition = zone.exoClass(
-    'USDN Position',
-    undefined, // interface TODO
-    (portfolioId: number, positionId: number, accountId: AccountId) => ({
-      portfolioId,
-      positionId,
-      accountId,
-      ...emptyTransferState,
-    }),
-    {
-      getPositionId() {
-        return this.state.positionId;
-      },
-      getYieldProtocol() {
-        return 'USDN';
-      },
-      publishStatus() {
-        const {
-          portfolioId,
-          positionId,
-          accountId,
-          netTransfers,
-          totalIn,
-          totalOut,
-        } = this.state;
-        // TODO: typed pattern for USDN status
-        publishStatus(makePositionPath(portfolioId, positionId), {
-          protocol: 'USDN',
-          accountId,
-          netTransfers,
-          totalIn,
-          totalOut,
-        });
-      },
-      recordTransferIn(amount: Amount<'nat'>) {
-        return recordTransferIn(amount, this.state, this.self);
-      },
-      recordTransferOut(amount: Amount<'nat'>) {
-        return recordTransferOut(amount, this.state, this.self);
-      },
-    },
-  ) satisfies (...args: any[]) => Position;
+  const makeUSDNPosition = prepareUSDNPosition(
+    zone,
+    emptyTransferState,
+    publishStatus,
+  );
 
-  const makeGMPPosition = zone.exoClass(
-    'GMP Position',
-    undefined, // interface TODO
-    (
-      portfolioId: number,
-      positionId: number,
-      protocol: YieldProtocol,
-      chainId: CaipChainId,
-    ) => ({
-      portfolioId,
-      positionId,
-      protocol,
-      ...emptyTransferState,
-      chainId,
-      // nobleAccount,
-      remoteAddressVK: vowTools.makeVowKit<`0x${string}`>(),
-      accountId: undefined as undefined | AccountId,
-    }),
-    {
-      getPositionId() {
-        return this.state.positionId;
-      },
-      getYieldProtocol() {
-        const { protocol } = this.state;
-        return protocol;
-      },
-      getAddress(): Vow<`0x${string}`> {
-        const { remoteAddressVK } = this.state;
-        // TODO: when the vow resolves, publishStatus()
-        return remoteAddressVK.vow;
-      },
-      getChainId() {
-        return this.state.chainId;
-      },
-      recordTransferIn(amount: Amount<'nat'>) {
-        return recordTransferIn(amount, this.state, this.self);
-      },
-      recordTransferOut(amount: Amount<'nat'>) {
-        return recordTransferOut(amount, this.state, this.self);
-      },
-      publishStatus() {
-        const { portfolioId, positionId, protocol, accountId } = this.state;
-        // TODO: typed pattern for GMP status
-        const status = { protocol, accountId };
-        publishStatus(makePositionPath(portfolioId, positionId), status);
-      },
-      resolveAddress(address: `0x${string}`) {
-        const { chainId, remoteAddressVK } = this.state;
-        remoteAddressVK.resolver.resolve(address);
-        this.state.accountId = `${chainId}:${address}`;
-        this.self.publishStatus();
-      },
-    },
-  ); // TODO: satisfies (...args: any[]) => Position
-  type GMPPosition = ReturnType<typeof makeGMPPosition>;
+  const makeGMPPosition = prepareGMPPosition(
+    zone,
+    vowTools,
+    emptyTransferState,
+    publishStatus,
+  );
 
   return zone.exoClassKit(
     'Portfolio',
@@ -439,7 +360,7 @@ export const preparePortfolioKit = (
           this.facets.reporter.publishStatus();
           return nextFlowId;
         },
-        publishFlowStatus(id: number, status: CopyRecord) {
+        publishFlowStatus(id: number, status: StatusFor['flow']) {
           const { portfolioId } = this.state;
           publishStatus(makeFlowPath(portfolioId, id), status);
         },
@@ -481,7 +402,7 @@ export const preparePortfolioKit = (
           }
           return undefined; // like array.find()
         },
-        provideGMPPositionOn(protocol: YieldProtocol, chain: CaipChainId) {
+        provideGMPPositionOn(protocol: GMPProtocol, chain: CaipChainId) {
           const { positions } = this.state;
           for (const pos of positions.values()) {
             if (['Aave', 'Compound'].includes(pos.getYieldProtocol())) {
