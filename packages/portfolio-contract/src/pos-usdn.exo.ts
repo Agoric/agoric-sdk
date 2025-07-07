@@ -22,30 +22,22 @@ export const prepareUSDNPosition = (
   zone.exoClass(
     'USDN Position',
     undefined, // interface TODO
-    (portfolioId: number, positionId: number, accountId: AccountId) => ({
+    (portfolioId: number, accountId: AccountId) => ({
       portfolioId,
-      positionId,
       accountId,
       ...emptyTransferState,
     }),
     {
-      getPositionId() {
-        return this.state.positionId;
+      getPoolKey() {
+        return 'USDN'; // XXX USDNLock too
       },
       getYieldProtocol() {
         return 'USDN';
       },
       publishStatus() {
-        const {
-          portfolioId,
-          positionId,
-          accountId,
-          netTransfers,
-          totalIn,
-          totalOut,
-        } = this.state;
-        // TODO: typed pattern for USDN status
-        publishStatus(makePositionPath(portfolioId, positionId), {
+        const { portfolioId, accountId, netTransfers, totalIn, totalOut } =
+          this.state;
+        publishStatus(makePositionPath(portfolioId, 'USDN'), {
           protocol: 'USDN',
           accountId,
           netTransfers,
@@ -61,3 +53,5 @@ export const prepareUSDNPosition = (
       },
     },
   ) satisfies (...args: any[]) => Position;
+
+export type USDNPosition = ReturnType<ReturnType<typeof prepareUSDNPosition>>;

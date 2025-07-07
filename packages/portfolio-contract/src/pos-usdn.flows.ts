@@ -19,7 +19,7 @@ import type {
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { GuestInterface } from '../../async-flow/src/types.ts';
-import type { PortfolioKit, USDNPosition } from './portfolio.exo.ts';
+import type { PortfolioKit } from './portfolio.exo.ts';
 import {
   provideAccountInfo,
   trackFlow,
@@ -28,6 +28,7 @@ import {
   type PortfolioInstanceContext,
 } from './portfolio.flows.ts';
 import type { OpenPortfolioGive } from './type-guards.ts';
+import type { USDNPosition } from './pos-usdn.exo.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const { add } = AmountMath;
