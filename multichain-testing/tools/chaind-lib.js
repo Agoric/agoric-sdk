@@ -1,6 +1,7 @@
 // @ts-check
 // import { makeTracer } from '@agoric/internal';
 import assert from 'node:assert';
+import { toCLIOptions } from '@agoric/internal/src/cli-utils.js';
 
 /**Add commentMore actions
  * @typedef {{ event: string, condition?: '=', value: string }} EventQuery
@@ -37,24 +38,6 @@ const binaryArgs = (chainName = 'agoric') => [
 ];
 
 /**
- * @param {Record<string, string | string[] | undefined>} record - e.g. { color: 'blue' }
- * @returns {string[]} - e.g. ['--color', 'blue']
- */
-export const flags = record => {
-  // TODO? support --yes with boolean?
-
-  /** @type {[string, string][]} */
-  // @ts-expect-error undefined is filtered out
-  const skipUndef = Object.entries(record).filter(([_k, v]) => v !== undefined);
-  return skipUndef.flatMap(([key, value]) => {
-    if (Array.isArray(value)) {
-      return value.flatMap(v => [`--${key}`, v]);
-    }
-    return [`--${key}`, value];
-  });
-};
-
-/**
  * @callback ExecSync
  * @param {string} file
  * @param {string[]} args
@@ -82,7 +65,10 @@ export const makeAgd = ({ execFileSync }) => {
     chainName = 'agoric',
     broadcastMode = 'block',
   } = {}) => {
-    const keyringArgs = flags({ home, 'keyring-backend': keyringBackend });
+    const keyringArgs = toCLIOptions({
+      home,
+      'keyring-backend': keyringBackend,
+    });
     if (rpcAddrs) {
       assert.equal(
         rpcAddrs.length,
@@ -90,7 +76,7 @@ export const makeAgd = ({ execFileSync }) => {
         'XXX rpcAddrs must contain only one entry',
       );
     }
-    const nodeArgs = flags({ node: rpcAddrs && rpcAddrs[0] });
+    const nodeArgs = toCLIOptions({ node: rpcAddrs && rpcAddrs[0] });
 
     /**
      * @param {string[]} args
@@ -101,7 +87,7 @@ export const makeAgd = ({ execFileSync }) => {
       opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
     ) => execFileSync(kubectlBinary, [...binaryArgs(chainName), ...args], opts);
 
-    const outJson = flags({ output: 'json' });
+    const outJson = toCLIOptions({ output: 'json' });
 
     /** @type {Record<string, any> | undefined} */
     let version;
@@ -263,8 +249,8 @@ export const makeAgd = ({ execFileSync }) => {
           ...txArgs,
           ...nodeArgs,
           ...keyringArgs,
-          ...flags({ 'chain-id': chainId, from }),
-          ...flags({
+          ...toCLIOptions({ 'chain-id': chainId, from }),
+          ...toCLIOptions({
             'broadcast-mode': broadcastMode,
             gas: 'auto',
             'gas-adjustment': '1.4',
