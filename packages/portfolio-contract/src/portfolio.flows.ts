@@ -5,7 +5,7 @@
  * @see {rebalance}
  */
 import type { GuestInterface } from '@agoric/async-flow';
-import { AmountMath, type Amount } from '@agoric/ertp';
+import { type Amount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type {
   Denom,
@@ -20,19 +20,15 @@ import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { assert, Fail } from '@endo/errors';
 import { type YieldProtocol, RebalanceStrategy } from './constants.js';
-import type {
-  AccountInfoFor,
-  ChainAccountKey,
-  PortfolioKit,
-  Position,
-} from './portfolio.exo.ts';
+import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
+import { changeGMPPosition } from './pos-gmp.flows.ts';
 import { changeUSDCPosition } from './pos-usdn.flows.ts';
+import type { Position } from './pos.exo.ts';
 import type {
   AxelarChainsMap,
   OfferArgsFor,
   ProposalType,
 } from './type-guards.ts';
-import { changeGMPPosition } from './pos-gmp.flows.ts';
 import {
   decodeAddressHook,
   type HookQuery,
@@ -143,13 +139,12 @@ export const trackFlow = async (
   }
 };
 
-export const provideAccountInfo = async <C extends ChainAccountKey>(
+export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
   orch: Orchestrator,
   chainName: C,
   kit: GuestInterface<PortfolioKit>, // Guest<T>?
 ): Promise<AccountInfoFor[C]> => {
   await null;
-  // TODO: async provide
   let promiseMaybe = kit.manager.reserveAccount(chainName);
   if (promiseMaybe) {
     return promiseMaybe as unknown as Promise<AccountInfoFor[C]>;
@@ -160,7 +155,11 @@ export const provideAccountInfo = async <C extends ChainAccountKey>(
     case 'noble': {
       const nobleChain = await orch.getChain('noble');
       const ica: NobleAccount = await nobleChain.makeAccount();
-      const info: AccountInfoFor['noble'] = { type: 'noble' as const, ica };
+      const info: AccountInfoFor['noble'] = {
+        namespace: 'cosmos',
+        chainName: 'noble' as const,
+        ica,
+      };
       kit.manager.resolveAccount(info);
       return info as AccountInfoFor[C];
     }
@@ -169,7 +168,12 @@ export const provideAccountInfo = async <C extends ChainAccountKey>(
       const lca = await agoricChain.makeAccount();
       const reg = await lca.monitorTransfers(kit.tap);
       trace('Monitoring transfers for', lca.getAddress().value);
-      const info: AccountInfoFor['agoric'] = { type: chainName, lca, reg };
+      const info: AccountInfoFor['agoric'] = {
+        namespace: 'cosmos',
+        chainName,
+        lca,
+        reg,
+      };
       kit.manager.resolveAccount(info);
       return info as AccountInfoFor[C];
     }
@@ -287,7 +291,7 @@ export const openPortfolio = (async (
       inertSubscriber,
     } = ctx;
     const kit = makePortfolioKit();
-    await provideAccountInfo(orch, 'agoric', kit);
+    await provideCosmosAccount(orch, 'agoric', kit);
 
     const portfolioCtx = {
       axelarChainsMap,

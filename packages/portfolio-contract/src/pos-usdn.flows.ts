@@ -21,14 +21,14 @@ import type { ZCFSeat } from '@agoric/zoe';
 import type { GuestInterface } from '../../async-flow/src/types.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import {
-  provideAccountInfo,
+  provideCosmosAccount,
   trackFlow,
   type LocalAccount,
   type NobleAccount,
   type PortfolioInstanceContext,
 } from './portfolio.flows.ts';
+import type { Position } from './pos.exo.ts';
 import type { OpenPortfolioGive } from './type-guards.ts';
-import type { USDNPosition } from './pos-usdn.exo.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const { add } = AmountMath;
@@ -72,7 +72,7 @@ export const addToUSDNPosition = async (
   seat: ZCFSeat,
   lca: LocalAccount,
   ica: NobleAccount,
-  pos: USDNPosition,
+  pos: Position,
   reporter: GuestInterface<PortfolioKit['reporter']>,
   { USDN, NobleFees }: { USDN: Amount<'nat'>; NobleFees?: Amount<'nat'> },
   usdnOut: bigint = USDN.value,
@@ -136,7 +136,7 @@ export const changeUSDCPosition = async (
   give: OpenPortfolioGive,
   offerArgs: { usdnOut?: NatValue },
   orch: Orchestrator,
-  kit,
+  kit: GuestInterface<PortfolioKit>,
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
 ) => {
@@ -144,9 +144,9 @@ export const changeUSDCPosition = async (
   const { USDN, NobleFees } = give;
   const g = harden({ USDN, NobleFees });
   const { usdnOut } = offerArgs;
-  const { lca } = await provideAccountInfo(orch, 'agoric', kit);
-  const { ica } = await provideAccountInfo(orch, 'noble', kit);
+  const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
+  const { ica } = await provideCosmosAccount(orch, 'noble', kit);
   const accountId = coerceAccountId(ica.getAddress());
-  const pos = kit.manager.provideUSDNPosition(accountId);
+  const pos = kit.manager.providePosition('USDN', 'USDN', accountId);
   await addToUSDNPosition(ctx, seat, lca, ica, pos, kit.reporter, g, usdnOut);
 };
