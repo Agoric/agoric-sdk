@@ -1,21 +1,9 @@
 import assert from 'node:assert';
+import { toCLIOptions } from '@agoric/internal/src/cli-utils.js';
 
 const { freeze } = Object;
 
 const agdBinary = 'agd';
-
-/**
- * @param {Record<string, unknown>} record - e.g. { color: 'blue' }
- * @returns {string[]} - e.g. ['--color', 'blue']
- */
-export const flags = record => {
-  // TODO? support --yes with boolean?
-
-  /** @type {[string, string][]} */
-  // @ts-expect-error undefined is filtered out
-  const skipUndef = Object.entries(record).filter(([_k, v]) => v !== undefined);
-  return skipUndef.map(([k, v]) => [`--${k}`, v]).flat();
-};
 
 /**
  * @callback ExecSync
@@ -37,7 +25,10 @@ export const makeAgd = ({ execFileSync, log = console.log }) => {
    * }} opts
    */
   const make = ({ home, keyringBackend, rpcAddrs } = {}) => {
-    const keyringArgs = flags({ home, 'keyring-backend': keyringBackend });
+    const keyringArgs = toCLIOptions({
+      home,
+      'keyring-backend': keyringBackend,
+    });
     if (rpcAddrs) {
       assert.equal(
         rpcAddrs.length,
@@ -45,7 +36,7 @@ export const makeAgd = ({ execFileSync, log = console.log }) => {
         'XXX rpcAddrs must contain only one entry',
       );
     }
-    const nodeArgs = flags({ node: rpcAddrs && rpcAddrs[0] });
+    const nodeArgs = toCLIOptions({ node: rpcAddrs && rpcAddrs[0] });
 
     /**
      * @param {string[]} args
@@ -54,7 +45,7 @@ export const makeAgd = ({ execFileSync, log = console.log }) => {
     const exec = (args, opts = { encoding: 'utf-8' }) =>
       execFileSync(agdBinary, args, opts);
 
-    const outJson = flags({ output: 'json' });
+    const outJson = toCLIOptions({ output: 'json' });
 
     const ro = freeze({
       status: async () => JSON.parse(exec([...nodeArgs, 'status'])),
@@ -110,8 +101,8 @@ export const makeAgd = ({ execFileSync, log = console.log }) => {
           ...txArgs,
           ...nodeArgs,
           ...keyringArgs,
-          ...flags({ 'chain-id': chainId, from }),
-          ...flags({
+          ...toCLIOptions({ 'chain-id': chainId, from }),
+          ...toCLIOptions({
             'broadcast-mode': 'block',
             gas: 'auto',
             'gas-adjustment': '1.4',
