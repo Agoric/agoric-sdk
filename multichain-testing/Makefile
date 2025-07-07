@@ -187,5 +187,16 @@ open-with-usdn: deploy-ymax usdc-available ./scripts/ymax-tool.ts
 
 usdc-available: ./scripts/noble-usdn-lab.ts
 	yarn test:ymd test/ymax0 -m usdc-available || \
-	(FAUCET=trader1 NET=starship ./scripts/noble-usdn-lab.ts && \
-	TXFR=9950000 NET=starship ./scripts/noble-usdn-lab.ts)
+	( \
+		FAUCET=trader1 NET=starship ./scripts/noble-usdn-lab.ts && \
+		TXFR=9950000 NET=starship ./scripts/noble-usdn-lab.ts && \
+		( \
+			yarn test:ymd test/ymax0 -m usdc-available || { \
+				sleep 3 && \
+				yarn test:ymd test/ymax0 -m usdc-available || { \
+					sleep 5 && \
+					yarn test:ymd test/ymax0 -m usdc-available; \
+				}; \
+			} \
+		) \
+	)
