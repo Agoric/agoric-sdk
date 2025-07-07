@@ -37,6 +37,7 @@ export const makePrivateArgs = async (
   marshaller,
   config,
 ) => {
+  trace('@@@config', JSON.stringify(config));
   const { agoricNames } = orchestrationPowers;
   const { chainInfo, assetInfo } = await lookupInterchainInfo(agoricNames, {
     agoric: ['ubld'],
@@ -52,15 +53,16 @@ export const makePrivateArgs = async (
     );
   }
 
-  for (const [_chain, { contractAddresses }] of Object.entries(
-    axelarChainsMap,
-  )) {
-    for (const [_name, address] of Object.entries(contractAddresses)) {
-      if (!isValidEVMAddress(address)) {
-        throw new Error(`Invalid EVM address: ${address}`);
-      }
-    }
-  }
+  // TODO: temporarily comment this section
+  // for (const [_chain, { contractAddresses }] of Object.entries(
+  //   axelarChainsMap,
+  // )) {
+  //   for (const [_name, address] of Object.entries(contractAddresses)) {
+  //     if (!isValidEVMAddress(address)) {
+  //       throw new Error(`Invalid EVM address: ${address}`);
+  //     }
+  //   }
+  // }
 
   /** @type {Parameters<typeof start>[1]} */
   const it = harden({

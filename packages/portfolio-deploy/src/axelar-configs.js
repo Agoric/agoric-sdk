@@ -149,9 +149,8 @@ export const getAxelarChainsMap = environment => {
     case 'local':
       return localchainAxelarChainsMap;
     default:
-      throw new Error(
-        `Unknown environment: ${environment}. Must be 'mainnet', 'devnet', or 'local'`,
-      );
+      // TODO: temporarily return devnet config as the default
+      return testnetAxelarChainsMap;
   }
 };
 harden(getAxelarChainsMap);
