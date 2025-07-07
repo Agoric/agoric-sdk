@@ -23,10 +23,9 @@ import {
 } from '@cosmjs/proto-signing';
 import { SigningStargateClient, type StdFee } from '@cosmjs/stargate';
 
-/**
- * Generate the usage help message for this tool
- */
-const getUsage = (programName: string): string => `USAGE: ${programName} <volume> [options]
+const getUsage = (
+  programName: string,
+): string => `USAGE: ${programName} <volume> [options]
 Options:
   --skip-poll       Skip polling for offer result
   --exit-success    Exit with success code even if errors occur
@@ -116,7 +115,7 @@ const openPosition = async (
     const status = { result: { transaction: actual } };
     return status;
   }
-  
+
   trace(
     'starting to poll for offer result from block height',
     before.header.height,
@@ -131,7 +130,6 @@ const openPosition = async (
   if ('error' in status) {
     trace('offer failed with error', status.error);
     throw Error(status.error);
-
   }
   trace('offer completed successfully', {
     statusType: 'success',
@@ -154,19 +152,9 @@ const main = async (
   const { values, positionals } = parseArgs({
     args: argv.slice(2),
     options: {
-      'skip-poll': {
-        type: 'boolean',
-        default: false,
-      },
-      'exit-success': {
-        type: 'boolean',
-        default: false,
-      },
-      help: {
-        type: 'boolean',
-        short: 'h',
-        default: false,
-      },
+      'skip-poll': { type: 'boolean', default: false },
+      'exit-success': { type: 'boolean', default: false },
+      help: { type: 'boolean', short: 'h', default: false },
     },
     allowPositionals: true,
   });
@@ -197,7 +185,7 @@ const main = async (
   const client = await connectWithSigner(networkConfig.rpcAddrs[0], signer, {
     registry: new Registry(agoricRegistryTypes),
   });
-  
+
   try {
     // Pass the parsed skipPoll option to openPosition
     await openPosition(volume, {
@@ -220,7 +208,10 @@ const main = async (
 main().catch(err => {
   // Check if this is our special non-error signal for exitSuccess
   if (err && typeof err === 'object' && 'exitSuccess' in err) {
-    console.error('Error occurred but exiting with success code as requested:', err.originalError);
+    console.error(
+      'Error occurred but exiting with success code as requested:',
+      err.originalError,
+    );
     process.exit(0);
   }
 
