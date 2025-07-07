@@ -1,4 +1,5 @@
 import { makeReceiveUpCallPayload } from '@aglocal/boot/tools/axelar-supports.ts';
+import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import {
   denomHash,
@@ -18,7 +19,6 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import { encodeAbiParameters } from 'viem';

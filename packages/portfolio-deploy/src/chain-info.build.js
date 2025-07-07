@@ -8,14 +8,14 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { mustMatch } from '@agoric/internal';
 import { ChainInfoShape, IBCConnectionInfoShape } from '@agoric/orchestration';
-import {
-  axelarCCTPConfig,
-  axelarCCTPConfigTestnet,
-} from '@agoric/orchestration/src/cctp-chain-info.js';
 import { M } from '@endo/patterns';
 import { parseArgs } from 'node:util';
+import {
+  axelarConfigTestnet,
+  axelarConfig as axelarMainnetConfig,
+} from './axelar-configs.js';
 
-const { entries } = Object;
+const { keys } = Object;
 
 // TODO: factor out overlap with builders/scripts/orchestration/write-chain-info.js
 
@@ -48,12 +48,16 @@ const options = {
 /**
  * @param {unknown} _utils
  * @param {Record<string, ChainInfo>} chainInfo
+ * @param {import('./axelar-configs.js').AxelarChainConfigMap} axelarConfig
  * @satisfies {CoreEvalBuilder}
  */
-export const defaultProposalBuilder = async (_utils, chainInfo) =>
+export const defaultProposalBuilder = async (_utils, chainInfo, axelarConfig) =>
   harden({
     sourceSpec,
-    getManifestCall: ['getManifestForChainInfo', { options: { chainInfo } }],
+    getManifestCall: [
+      'getManifestForChainInfo',
+      { options: { chainInfo, axelarConfig } },
+    ],
   });
 
 /** @type {TypedPattern<Record<string, ChainInfo>>} */
@@ -213,6 +217,10 @@ export default async (homeP, endowments) => {
   const { values: flags } = parseArgs({ args: scriptArgs, options });
   const { chainInfo: chainJSON, baseName } = flags;
   let chainInfo = harden(JSON.parse(chainJSON));
+  const isMainnet = flags.net === 'mainnet';
+  const axelarConfig = isMainnet
+    ? harden({ ...axelarMainnetConfig })
+    : harden({ ...axelarConfigTestnet });
 
   await null;
   if (flags.net) {
@@ -226,19 +234,14 @@ export default async (homeP, endowments) => {
     const agd = makeAgd({ execFileSync }).withOpts({ rpcAddrs });
     const dynChainInfo = await getPeerChainInfo(chainId, flags.peer, { agd });
 
-    // Merge Axelar chain config
-    const isMainnet = flags.net === 'mainnet';
-    const cctpConfig = isMainnet ? axelarCCTPConfig : axelarCCTPConfigTestnet;
-    for (const [chain, cctp] of entries(cctpConfig)) {
-      chainInfo[chain] = { ...cctp };
-    }
     chainInfo = harden({ ...chainInfo, ...dynChainInfo });
   }
 
   mustMatch(chainInfo, ChainInfosShape);
-  console.log('configured chains:', Object.keys(chainInfo));
+  console.log('configured chains:', keys(chainInfo));
+  console.log('configured axelar chains:', keys(axelarConfig));
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval(baseName, utils =>
-    defaultProposalBuilder(utils, chainInfo),
+    defaultProposalBuilder(utils, chainInfo, axelarConfig),
   );
 };

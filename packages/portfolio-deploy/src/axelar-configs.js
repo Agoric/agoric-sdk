@@ -2,6 +2,17 @@
  * @typedef {`0x${string}`} HexAddress
  * @typedef {Record<string, HexAddress>} EvmAddressesMap
  * @typedef {{ mainnet: EvmAddressesMap, testnet: EvmAddressesMap }} AddressesMap
+ * @typedef {import('@agoric/orchestration').BaseChainInfo} BaseChainInfo
+ */
+
+/**
+ * @typedef {object} AxelarChainConfig
+ * @property {BaseChainInfo} chainInfo
+ * @property {Record<string, HexAddress>} contracts
+ */
+
+/**
+ * @typedef {Record<string, AxelarChainConfig>} AxelarChainConfigMap
  */
 
 /** @type {AddressesMap} */
@@ -72,12 +83,6 @@ const factoryAddresses = {
 };
 
 /**
- * @typedef {`${string}:${string}`} CaipId
- * @typedef {{[key: string]: CaipId}} CaipIdMap
- * @typedef {{ mainnet: CaipIdMap, testnet: CaipIdMap }} CaipIds
- */
-
-/**
  * TODO:
  * - Add USDC addresses for Fantom and Binance (mainnet and testnet)
  * - Find a way to pass testnet and mainnet config seperately
@@ -87,7 +92,7 @@ const factoryAddresses = {
  * Mainnet configuration with real contract addresses
  * @type import('@aglocal/portfolio-contract/src/type-guards').MainnetEVMContractAddresses
  */
-export const mainnetContracts = {
+const mainnetContracts = {
   Ethereum: {
     aavePool: aaveAddresses.mainnet.Ethereum,
     compound: '0x', // TODO
@@ -138,7 +143,7 @@ harden(mainnetContracts);
  * Testnet configuration with testnet contract addresses
  * @type import('@aglocal/portfolio-contract/src/type-guards').TestnetEVMContractAddresses
  */
-export const testnetContracts = {
+const testnetContracts = {
   'ethereum-sepolia': {
     aavePool: aaveAddresses.testnet.Ethereum,
     compound: '0x', // TODO
@@ -262,22 +267,137 @@ export const localchainContracts = {
 harden(localchainContracts);
 
 /**
- * Get the appropriate axelarChainsMap based on environment
- * @param {string} environment - The environment ('mainnet', 'devnet', 'localchain')
- * @returns {import('@aglocal/portfolio-contract/src/type-guards').EVMContractAddresses} The configuration for the specified environment
+ * Mainnet chains only.
+ *
+ * Sourced from:
+ *
+ * - https://developers.circle.com/stablecoins/supported-domains
+ * - https://chainlist.org/
+ * - https://docs.simplehash.com/reference/supported-chains-testnets (accessed on
+ *   4 July 2025)
+ *  @satisfies {AxelarChainConfigMap}
  */
-export const getContractAddresses = environment => {
-  switch (environment) {
-    case 'mainnet':
-      return mainnetContracts;
-    case 'devnet':
-      return testnetContracts;
-    case 'local':
-      return localchainContracts;
-    default:
-      throw new Error(
-        `Unknown environment: ${environment}. Must be 'mainnet', 'devnet', or 'local'`,
-      );
-  }
+export const axelarConfig = {
+  Ethereum: {
+    chainInfo: {
+      namespace: 'eip155',
+      reference: '1',
+      cctpDestinationDomain: 0,
+    },
+    contracts: { ...mainnetContracts.Ethereum },
+  },
+  Avalanche: {
+    chainInfo: {
+      namespace: 'eip155',
+      reference: '43114',
+      cctpDestinationDomain: 1,
+    },
+    contracts: { ...mainnetContracts.Avalanche },
+  },
+  optimism: {
+    chainInfo: {
+      namespace: 'eip155',
+      reference: '10',
+      cctpDestinationDomain: 2,
+    },
+    contracts: { ...mainnetContracts.optimism },
+  },
+  arbitrum: {
+    chainInfo: {
+      namespace: 'eip155',
+      reference: '42161',
+      cctpDestinationDomain: 3,
+    },
+    contracts: { ...mainnetContracts.arbitrum },
+  },
+  Polygon: {
+    chainInfo: {
+      namespace: 'eip155',
+      reference: '137',
+      cctpDestinationDomain: 7,
+    },
+    contracts: { ...mainnetContracts.Polygon },
+  },
+  Fantom: {
+    chainInfo: {
+      namespace: 'eip155',
+      reference: '250',
+    },
+    contracts: { ...mainnetContracts.Fantom },
+  },
+  binance: {
+    chainInfo: {
+      namespace: 'eip155',
+      reference: '56',
+    },
+    contracts: { ...mainnetContracts.binance },
+  },
 };
-harden(getContractAddresses);
+
+/**
+ * Testnet chains only.
+ *
+ * Sourced from:
+ *
+ * - https://developers.circle.com/stablecoins/supported-domains
+ * - https://chainlist.org/
+ * - https://docs.simplehash.com/reference/supported-chains-testnets (accessed on
+ *   4 July 2025)
+ *  @satisfies {AxelarChainConfigMap}
+ */
+export const axelarConfigTestnet = {
+  'ethereum-sepolia': {
+    chainInfo: {
+      namespace: 'eip155',
+      reference: '11155111',
+      cctpDestinationDomain: 0,
+    },
+    contracts: { ...testnetContracts['ethereum-sepolia'] },
+  },
+  Avalanche: {
+    chainInfo: {
+      namespace: 'eip155',
+      reference: '43113',
+      cctpDestinationDomain: 1,
+    },
+    contracts: { ...testnetContracts.Avalanche },
+  },
+  'optimism-sepolia': {
+    chainInfo: {
+      namespace: 'eip155',
+      reference: '11155420',
+      cctpDestinationDomain: 2,
+    },
+    contracts: { ...testnetContracts['optimism-sepolia'] },
+  },
+  'arbitrum-sepolia': {
+    chainInfo: {
+      namespace: 'eip155',
+      reference: '421614',
+      cctpDestinationDomain: 3,
+    },
+    contracts: { ...testnetContracts['arbitrum-sepolia'] },
+  },
+  'polygon-sepolia': {
+    chainInfo: {
+      namespace: 'eip155',
+      reference: '80002',
+      cctpDestinationDomain: 7,
+    },
+    contracts: { ...testnetContracts['polygon-sepolia'] },
+  },
+  Fantom: {
+    chainInfo: {
+      namespace: 'eip155',
+      reference: '4002', // XXX: confirm this ID
+    },
+    contracts: { ...testnetContracts.Fantom },
+  },
+  binance: {
+    chainInfo: {
+      namespace: 'eip155',
+      reference: '97',
+    },
+    contracts: { ...testnetContracts.binance },
+  },
+};
