@@ -1,100 +1,28 @@
-import {
-  AaveV3Arbitrum,
-  AaveV3ArbitrumSepolia,
-  AaveV3Avalanche,
-  AaveV3BNB,
-  AaveV3Ethereum,
-  AaveV3Fuji,
-  AaveV3Optimism,
-  AaveV3OptimismSepolia,
-  AaveV3Polygon,
-  AaveV3Sepolia,
-} from '@bgd-labs/aave-address-book';
-
 /**
- * @typedef {`0x${string}`} OxAddress
- * @typedef {Record<string, OxAddress>} EvmAddressesMap
+ * @typedef {`0x${string}`} HexAddress
+ * @typedef {Record<string, HexAddress>} EvmAddressesMap
  * @typedef {{ mainnet: EvmAddressesMap, testnet: EvmAddressesMap }} AddressesMap
  */
 
+/** @type {AddressesMap} */
 const aaveAddresses = {
   mainnet: {
-    Ethereum: {
-      PoolAddressesProvider: AaveV3Ethereum.POOL_ADDRESSES_PROVIDER,
-      Pool: AaveV3Ethereum.POOL,
-      AaveOracle: AaveV3Ethereum.ORACLE,
-    },
-    Avalanche: {
-      PoolAddressesProvider: AaveV3Avalanche.POOL_ADDRESSES_PROVIDER,
-      Pool: AaveV3Avalanche.POOL,
-      AaveOracle: AaveV3Avalanche.ORACLE,
-    },
-    Arbitrum: {
-      PoolAddressesProvider: AaveV3Arbitrum.POOL_ADDRESSES_PROVIDER,
-      Pool: AaveV3Arbitrum.POOL,
-      AaveOracle: AaveV3Arbitrum.ORACLE,
-    },
-    Optimism: {
-      PoolAddressesProvider: AaveV3Optimism.POOL_ADDRESSES_PROVIDER,
-      Pool: AaveV3Optimism.POOL,
-      AaveOracle: AaveV3Optimism.ORACLE,
-    },
-    Polygon: {
-      PoolAddressesProvider: AaveV3Polygon.AAVE_PROTOCOL_DATA_PROVIDER,
-      Pool: AaveV3Polygon.POOL,
-      AaveOracle: AaveV3Polygon.ORACLE,
-    },
-    Fantom: {
-      // TODO: does Fantom has AAVE?
-      PoolAddressesProvider: '0x',
-      Pool: '0x',
-      AaveOracle: '0x',
-    },
-    BNB: {
-      PoolAddressesProvider: AaveV3BNB.POOL_ADDRESSES_PROVIDER,
-      Pool: AaveV3BNB.POOL,
-      AaveOracle: AaveV3BNB.ORACLE,
-    },
+    Ethereum: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    Avalanche: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
+    Arbitrum: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
+    Optimism: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
+    Polygon: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
+    Fantom: '0x', // TODO: does Fantom have AAVE?
+    Binance: '0x6807dc923806fE8Fd134338EABCA509979a7e0cB',
   },
   testnet: {
-    Ethereum: {
-      PoolAddressesProvider: AaveV3Sepolia.POOL_ADDRESSES_PROVIDER,
-      Pool: AaveV3Sepolia.POOL,
-      AaveOracle: AaveV3Sepolia.ORACLE,
-    },
-    Avalanche: {
-      PoolAddressesProvider: AaveV3Fuji.POOL_ADDRESSES_PROVIDER,
-      Pool: AaveV3Fuji.POOL,
-      AaveOracle: AaveV3Fuji.ORACLE,
-    },
-    Arbitrum: {
-      PoolAddressesProvider: AaveV3ArbitrumSepolia.POOL_ADDRESSES_PROVIDER,
-      Pool: AaveV3ArbitrumSepolia.POOL,
-      AaveOracle: AaveV3ArbitrumSepolia.ORACLE,
-    },
-    Optimism: {
-      PoolAddressesProvider: AaveV3OptimismSepolia.POOL_ADDRESSES_PROVIDER,
-      Pool: AaveV3OptimismSepolia.POOL,
-      AaveOracle: AaveV3OptimismSepolia.ORACLE,
-    },
-    Polygon: {
-      // TODO: find polygon testnet addresses for testing aave with polygon
-      PoolAddressesProvider: '0x',
-      Pool: '0x',
-      AaveOracle: '0x',
-    },
-    Fantom: {
-      // TODO: does Fantom has AAVE?
-      PoolAddressesProvider: '0x',
-      Pool: '0x',
-      AaveOracle: '0x',
-    },
-    BNB: {
-      // TODO: find Binance testnet addresses for testing aave with BNB
-      PoolAddressesProvider: '0x',
-      Pool: '0x',
-      AaveOracle: '0x',
-    },
+    Ethereum: '0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951',
+    Avalanche: '0x8B9b2AF4afB389b4a70A474dfD4AdCD4a302bb40',
+    Arbitrum: '0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff',
+    Optimism: '0xb50201558B00496A145fE76f7424749556E326D8',
+    Polygon: '0x', // TODO: find polygon testnet addresses for testing aave with polygon
+    Fantom: '0x', // TODO: does Fantom have AAVE?
+    Binance: '0x', // TODO: find Binance testnet addresses for testing aave with Binance
   },
 };
 
@@ -107,7 +35,7 @@ const usdcAddresses = {
     Optimism: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
     Polygon: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
     Fantom: '0x',
-    BNB: '0x',
+    Binance: '0x',
   },
   testnet: {
     Ethereum: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238', // Sepolia
@@ -116,7 +44,7 @@ const usdcAddresses = {
     Optimism: '0x4200000000000000000000000000000000000042', // OP Sepolia
     Polygon: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', // Amoy
     Fantom: '0x',
-    BNB: '0x',
+    Binance: '0x',
   },
 };
 
@@ -130,7 +58,7 @@ const factoryAddresses = {
     Optimism: '0x',
     Polygon: '0x',
     Fantom: '0x',
-    BNB: '0x',
+    Binance: '0x',
   },
   testnet: {
     Ethereum: '0x',
@@ -139,7 +67,7 @@ const factoryAddresses = {
     Optimism: '0x',
     Polygon: '0x',
     Fantom: '0x',
-    BNB: '0x',
+    Binance: '0x',
   },
 };
 
@@ -151,7 +79,7 @@ const factoryAddresses = {
 
 /**
  * TODO:
- * - Add USDC addresses for Fantom and BNB (mainnet and testnet)
+ * - Add USDC addresses for Fantom and Binance (mainnet and testnet)
  * - Find a way to pass testnet and mainnet config seperately
  */
 
@@ -161,31 +89,31 @@ const factoryAddresses = {
  */
 export const mainnetContracts = {
   Ethereum: {
-    aavePool: aaveAddresses.mainnet.Ethereum.Pool,
+    aavePool: aaveAddresses.mainnet.Ethereum,
     compound: '0x', // TODO
     factory: factoryAddresses.mainnet.Ethereum,
     usdc: usdcAddresses.mainnet.Ethereum,
   },
   Avalanche: {
-    aavePool: aaveAddresses.mainnet.Avalanche.Pool,
+    aavePool: aaveAddresses.mainnet.Avalanche,
     compound: '0x', // TODO
     factory: factoryAddresses.mainnet.Avalanche,
     usdc: usdcAddresses.mainnet.Avalanche,
   },
   optimism: {
-    aavePool: aaveAddresses.mainnet.Optimism.Pool,
+    aavePool: aaveAddresses.mainnet.Optimism,
     compound: '0x', // TODO
     factory: factoryAddresses.mainnet.Optimism,
     usdc: usdcAddresses.mainnet.Optimism,
   },
   arbitrum: {
-    aavePool: aaveAddresses.mainnet.Arbitrum.Pool,
+    aavePool: aaveAddresses.mainnet.Arbitrum,
     compound: '0x', // TODO
     factory: factoryAddresses.mainnet.Arbitrum,
     usdc: usdcAddresses.mainnet.Arbitrum,
   },
   Polygon: {
-    aavePool: aaveAddresses.mainnet.Polygon.Pool,
+    aavePool: aaveAddresses.mainnet.Polygon,
     compound: '0x', // TODO
     factory: factoryAddresses.mainnet.Polygon,
     usdc: usdcAddresses.mainnet.Polygon,
@@ -198,10 +126,10 @@ export const mainnetContracts = {
     usdc: usdcAddresses.mainnet.Fantom,
   },
   binance: {
-    aavePool: aaveAddresses.mainnet.BNB.Pool,
+    aavePool: aaveAddresses.mainnet.Binance,
     compound: '0x', // TODO
-    factory: factoryAddresses.mainnet.BNB,
-    usdc: usdcAddresses.mainnet.BNB,
+    factory: factoryAddresses.mainnet.Binance,
+    usdc: usdcAddresses.mainnet.Binance,
   },
 };
 harden(mainnetContracts);
@@ -212,25 +140,25 @@ harden(mainnetContracts);
  */
 export const testnetContracts = {
   'ethereum-sepolia': {
-    aavePool: aaveAddresses.testnet.Ethereum.Pool,
+    aavePool: aaveAddresses.testnet.Ethereum,
     compound: '0x', // TODO
     factory: factoryAddresses.testnet.Ethereum,
     usdc: usdcAddresses.testnet.Ethereum,
   },
   Avalanche: {
-    aavePool: aaveAddresses.testnet.Avalanche.Pool,
+    aavePool: aaveAddresses.testnet.Avalanche,
     compound: '0x', // TODO
     factory: factoryAddresses.testnet.Avalanche,
     usdc: usdcAddresses.testnet.Avalanche,
   },
   'optimism-sepolia': {
-    aavePool: aaveAddresses.testnet.Optimism.Pool,
+    aavePool: aaveAddresses.testnet.Optimism,
     compound: '0x', // TODO
     factory: factoryAddresses.testnet.Optimism,
     usdc: usdcAddresses.testnet.Optimism,
   },
   'arbitrum-sepolia': {
-    aavePool: aaveAddresses.testnet.Arbitrum.Pool,
+    aavePool: aaveAddresses.testnet.Arbitrum,
     compound: '0x', // TODO
     factory: factoryAddresses.testnet.Arbitrum,
     usdc: usdcAddresses.testnet.Arbitrum,
@@ -250,11 +178,11 @@ export const testnetContracts = {
     usdc: usdcAddresses.testnet.Fantom,
   },
   binance: {
-    // TODO: AAVE on BNB testnet?
+    // TODO: AAVE on Binance testnet?
     aavePool: '0x',
     compound: '0x',
-    factory: factoryAddresses.testnet.BNB,
-    usdc: usdcAddresses.testnet.BNB,
+    factory: factoryAddresses.testnet.Binance,
+    usdc: usdcAddresses.testnet.Binance,
   },
 };
 harden(testnetContracts);

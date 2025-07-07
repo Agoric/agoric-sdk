@@ -40,7 +40,7 @@ import { setupFakeNetwork } from './network-fakes.js';
 
 export {
   makeFakeLocalchainBridge,
-  makeFakeTransferBridge,
+  makeFakeTransferBridge
 } from '@agoric/vats/tools/fake-bridge.js';
 
 export const commonSetup = async (t: ExecutionContext<any>) => {

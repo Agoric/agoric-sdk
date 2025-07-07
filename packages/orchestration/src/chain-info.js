@@ -7,11 +7,11 @@
 
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
+import cctpChainInfo from './cctp-chain-info.js';
+import { withChainCapabilities } from './chain-capabilities.js';
 import { HubName, normalizeConnectionInfo } from './exos/chain-hub.js';
 import fetchedChainInfo from './fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
 import { ChainInfoShape, CosmosAssetInfoShape } from './typeGuards.js';
-import cctpChainInfo from './cctp-chain-info.js';
-import { withChainCapabilities } from './chain-capabilities.js';
 
 /**
  * @import {CosmosAssetInfo, CosmosChainInfo, IBCConnectionInfo} from './types.js';
@@ -125,10 +125,15 @@ export const registerChain = async (
  *
  * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
  * @param {(...messages: string[]) => void} [log]
+ * @param {Record<string, ChainInfo>} chains
  */
-export const registerKnownChains = async (agoricNamesAdmin, log) => {
+export const registerKnownChains = async (
+  agoricNamesAdmin,
+  log,
+  chains = knownChains,
+) => {
   const handledConnections = new Set();
-  for await (const [name, info] of Object.entries(knownChains)) {
+  for await (const [name, info] of Object.entries(chains)) {
     await registerChain(agoricNamesAdmin, name, info, log, handledConnections);
   }
 };
