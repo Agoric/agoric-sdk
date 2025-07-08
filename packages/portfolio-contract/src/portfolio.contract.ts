@@ -156,13 +156,11 @@ export const contract = async (
     },
   };
 
-  // UNTIL #11309
-  const chainHubTools = {
-    getDenom: chainHub.getDenom.bind(chainHub),
-  };
+  const denom = chainHub.getDenom(brands.USDC);
+  assert(denom, 'no denom for USDC brand');
   const ctx1 = {
     zoeTools,
-    chainHubTools,
+    usdc: { brand: brands.USDC, denom },
     axelarChainsMap,
   };
 
