@@ -108,7 +108,12 @@ type PortfolioKitState = {
   nextFlowId: number;
 };
 
-const accountIdByChain = (accounts: PortfolioKitState['accounts']) => {
+/**
+ * For publishing, represent accounts collection using accountId values
+ */
+const accountIdByChain = (
+  accounts: PortfolioKitState['accounts'],
+): Partial<Record<SupportedChain, AccountId>> => {
   const byChain = {};
   for (const [n, info] of accounts.entries()) {
     switch (info.namespace) {
