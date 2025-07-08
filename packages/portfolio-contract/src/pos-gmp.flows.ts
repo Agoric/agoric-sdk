@@ -126,10 +126,10 @@ export const sendTokensViaCCTP = async (
   kit: GuestInterface<PortfolioKit>,
   protocol: YieldProtocol,
 ) => {
-  const { axelarChainsMap, chainHubTools, zoeTools } = ctx;
+  const { axelarChainsMap, usdc, zoeTools } = ctx;
   const { keyword, amounts, destinationEVMChain } = args;
   const amount = amounts[keyword];
-  const denom = NonNullish(chainHubTools.getDenom(amount.brand));
+  const { denom } = usdc;
   const denomAmount: DenomAmount = { denom, value: amount.value };
 
   const { lca: localAcct } = await provideCosmosAccount(orch, 'agoric', kit);
@@ -205,7 +205,7 @@ const sendGmp = async (
   kit: GuestInterface<PortfolioKit>,
 ) => {
   mustMatch(gmpArgs, GMPArgsShape);
-  const { axelarChainsMap, chainHubTools, zoeTools } = ctx;
+  const { axelarChainsMap, usdc, zoeTools } = ctx;
 
   const axelar = await orch.getChain('axelar');
   const { chainId } = await axelar.getChainInfo();
@@ -213,8 +213,7 @@ const sendGmp = async (
   const { lca: localAccount } = await provideCosmosAccount(orch, 'agoric', kit);
   const { keyword, amounts: gasAmounts } = gmpArgs;
   const natAmount = gasAmounts[keyword];
-  const denom = await chainHubTools.getDenom(natAmount.brand);
-  assert(denom, 'denom must be defined');
+  const { denom } = usdc;
   const denomAmount = {
     denom,
     value: natAmount.value,
