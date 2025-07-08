@@ -10,7 +10,11 @@ import { passStyleOf } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import * as contractExports from '../src/portfolio.contract.ts';
-import { contractAddressesMock, makeUSDNIBCTraffic } from './mocks.ts';
+import {
+  contractAddressesMock,
+  makeCCTPTraffic,
+  makeUSDNIBCTraffic,
+} from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import {
   chainInfoFantasyTODO,
@@ -104,6 +108,9 @@ export const setupTrader = async (t, initial = 10_000) => {
 
   const { ibcBridge } = common.mocks;
   for (const { msg, ack } of values(makeUSDNIBCTraffic())) {
+    ibcBridge.addMockAck(msg, ack);
+  }
+  for (const { msg, ack } of values(makeCCTPTraffic())) {
     ibcBridge.addMockAck(msg, ack);
   }
 
