@@ -433,7 +433,7 @@ export const changeGMPPosition = async (
     amounts: { [accountKW]: give[accountKW] },
   };
   const info = await provideEVMAccount(orch, ctx, seat, gmpArgs, kit);
-  const _positionTODO = kit.manager.providePosition(
+  const position = kit.manager.providePosition(
     poolKey,
     protocol,
     `${info.chainId}:${info.remoteAddress}`,
@@ -465,4 +465,5 @@ export const changeGMPPosition = async (
       await supplyToCompound(orch, ctx, seat, txfrArgs, kit);
       break;
   }
+  position.recordTransferIn(give[protocol]);
 };
