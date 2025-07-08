@@ -39,6 +39,55 @@ Portfolio holders can:
 - Specify exact amounts to transfer between USDN, Aave, and Compound positions
 - Execute complex cross-chain operations seamlessly through the contract's orchestration
 
+## Design
+
+```mermaid
+architecture-beta
+  group User(cloud)[User]
+    service ymaxui(internet)[ymax UI] in User
+
+    ymaxui:R -- L:ymaxcontract
+    ymaxui:R -- L:PE
+
+  group offchain(cloud)[Agoric Off Chain]
+    service PE(server)[Planning Engine] in offchain
+
+    PE:R -- L:spectrum
+
+  group onchain(cloud)[Agoric On Chain]
+    service ymaxcontract(server)[ymax contract] in onchain
+
+    PE:B -- T:ymaxcontract
+
+  group SS(cloud)[Simply Staking]
+    service spectrum(database)[Spectrum] in SS
+    service APY(disk)[APY] in SS
+    service fees(disk)[gas and other fees] in SS
+    service slippage(disk)[slippage] in SS
+
+    APY:L -- R:spectrum
+    fees:L -- R:spectrum
+    slippage:L -- R:spectrum
+```
+
+### User stories
+Each user story below is one smart contract offer
+
+1. new portfolio
+2. deposit from Agoric chain into existing portfolio
+3. 1 + 2
+4. update portfolio (allocation)
+5. rebalance (move tokens according to portfolio allocation)
+6. 4 + 5
+7. automatic rebalance (to recover from errors during rebalance)
+8. deposit from Fast USDC source chains into existing portfolio via address hook
+9. deposit from Fast USDC source chains and create a new portfolio via address
+   hook
+
+#### NOT in scope for MVP
+1. connect with existing positions on Aave, Compound, etc
+
+
 ## Client Queries and Offers
 
 For details on making offers and querying vstorage, see
