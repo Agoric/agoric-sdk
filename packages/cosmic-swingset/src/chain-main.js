@@ -256,13 +256,6 @@ export const makeLaunchChain = (
   /** @type {SavedChainSend[]} */
   let savedChainSends = [];
 
-  // Send a chain downcall, recording what we sent and received.
-  function chainSend(...sendArgs) {
-    const ret = agcc.send(...sendArgs);
-    savedChainSends.push([sendArgs, ret]);
-    return ret;
-  }
-
   const clearChainSends = async () => {
     // TODO: Make `readyForCommit` an explicit `launch` input rather than
     // having an overloaded async `clearChainSends` with the expectation that
@@ -322,6 +315,21 @@ export const makeLaunchChain = (
     // As a kludge, back-propagate selected configuration into environment variables.
     // eslint-disable-next-line dot-notation
     if (slogfile) env['SLOGFILE'] = slogfile;
+
+    // Send a chain downcall, recording what we sent and received.
+    function chainSend(...sendArgs) {
+      /**
+       * @type {string}
+       */
+      const ret = agcc.send(...sendArgs);
+      /**
+       * @type {{slogs: Array<string>; response: string}}
+       */
+      const data = JSON.parse(ret);
+      data.slogs.map(slogString => slogSender?.(JSON.parse(slogString)));
+      savedChainSends.push([sendArgs, data.response]);
+      return data.response;
+    }
 
     const sendToChainStorage = msg => chainSend(portNums.storage, msg);
     // this object is used to store the mailbox state.
