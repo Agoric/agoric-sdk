@@ -78,7 +78,7 @@ export const addToUSDNPosition = async (
   usdnOut: bigint = USDN.value,
 ) => {
   const amounts = harden({ USDN, ...(NobleFees ? { NobleFees } : {}) });
-  const denom = NonNullish(ctx.chainHubTools.getDenom(USDN.brand));
+  const { denom } = ctx.usdc;
   const volume: DenomAmount = { denom, value: USDN.value };
   const withFees = NobleFees ? add(USDN, NobleFees) : USDN;
 

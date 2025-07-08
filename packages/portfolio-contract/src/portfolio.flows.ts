@@ -44,9 +44,7 @@ export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>; // TO
 
 type PortfolioBootstrapContext = {
   axelarChainsMap: AxelarChainsMap;
-  chainHubTools: {
-    getDenom: (brand: Brand) => Denom | undefined;
-  };
+  usdc: { brand: Brand<'nat'>; denom: Denom };
   zoeTools: GuestInterface<ZoeTools>;
   makePortfolioKit: () => GuestInterface<PortfolioKit>;
   inertSubscriber: GuestInterface<ResolvedPublicTopic<unknown>['subscriber']>;
@@ -54,9 +52,7 @@ type PortfolioBootstrapContext = {
 
 export type PortfolioInstanceContext = {
   axelarChainsMap: AxelarChainsMap;
-  chainHubTools: {
-    getDenom: (brand: Brand) => Denom | undefined;
-  };
+  usdc: { brand: Brand<'nat'>; denom: Denom };
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
 };
@@ -287,7 +283,7 @@ export const openPortfolio = (async (
       makePortfolioKit,
       zoeTools,
       axelarChainsMap,
-      chainHubTools,
+      usdc,
       inertSubscriber,
     } = ctx;
     const kit = makePortfolioKit();
@@ -295,7 +291,7 @@ export const openPortfolio = (async (
 
     const portfolioCtx = {
       axelarChainsMap,
-      chainHubTools,
+      usdc,
       keeper: { ...kit.reader, ...kit.manager },
       zoeTools,
       inertSubscriber,
