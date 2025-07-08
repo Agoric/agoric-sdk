@@ -8,6 +8,8 @@ import {
   KERNEL_STATS_METRICS,
   makeQueueMetrics,
 } from '@agoric/internal/src/metrics.js';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { SLOG_TYPES } from '@agoric/telemetry/src/constants.js';
 
 /**
  * @import {MetricOptions, ObservableCounter, ObservableUpDownCounter} from '@opentelemetry/api';
@@ -106,15 +108,18 @@ export const makeSlogSender = async (opts = /** @type {any} */ ({})) => {
     heapStats: makeLazyStats('heapStats_', 'v8 kernel heap statistic'),
   };
 
+  /**
+   * @param {import('./types.js').Slog} Slog
+   */
   const slogSender = ({ type: slogType, ...slogObj }) => {
     switch (slogType) {
       // Consume cosmic-swingset block lifecycle slog entries.
-      case 'cosmic-swingset-init': {
+      case SLOG_TYPES.COSMIC_SWINGSET.INIT: {
         const { inboundQueueInitialLengths: lengths } = slogObj;
         inboundQueueMetrics.initLengths(lengths);
         break;
       }
-      case 'cosmic-swingset-begin-block': {
+      case SLOG_TYPES.COSMIC_SWINGSET.BEGIN_BLOCK: {
         const {
           interBlockSeconds,
           afterCommitHangoverSeconds,
@@ -130,11 +135,12 @@ export const makeSlogSender = async (opts = /** @type {any} */ ({})) => {
           histograms.blockLagSeconds.record(blockLagSeconds);
         break;
       }
-      case 'cosmic-swingset-run-finish': {
+      // eslint-disable-next-line no-restricted-syntax
+      case SLOG_TYPES.COSMIC_SWINGSET.RUN.FINISH: {
         histograms.swingset_block_processing_seconds.record(slogObj.seconds);
         break;
       }
-      case 'cosmic-swingset-end-block-finish': {
+      case SLOG_TYPES.COSMIC_SWINGSET.END_BLOCK.FINISH: {
         const { inboundQueueStartLengths, processedActionCounts } = slogObj;
         inboundQueueMetrics.updateLengths(inboundQueueStartLengths);
         for (const processedActionRecord of processedActionCounts) {
@@ -143,11 +149,11 @@ export const makeSlogSender = async (opts = /** @type {any} */ ({})) => {
             console.warn('Unknown inbound action type', actionType);
           }
           processedInboundActionCounter.add(count, { actionType });
-          inboundQueueMetrics.decLength(phase);
+          inboundQueueMetrics.decLength(String(phase));
         }
         break;
       }
-      case 'cosmic-swingset-commit-block-finish': {
+      case SLOG_TYPES.COSMIC_SWINGSET.COMMIT.FINISH: {
         const {
           runSeconds,
           chainTime,
@@ -164,11 +170,19 @@ export const makeSlogSender = async (opts = /** @type {any} */ ({})) => {
       }
 
       // Consume Swingset kernel slog entries.
-      case 'vat-startup-finish': {
+      case SLOG_TYPES.VAT.STARTUP.FINISH: {
         histograms.swingset_vat_startup.record(slogObj.seconds * 1000);
         break;
       }
-      case 'crank-finish': {
+      case SLOG_TYPES.SNAPSHOT.SAVE: {
+        histograms.heap_snapshot_duration.record(
+          slogObj.archiveWriteSeconds +
+            slogObj.compressSeconds +
+            slogObj.dbSaveSeconds,
+        );
+        break;
+      }
+      case SLOG_TYPES.CRANK.FINISH: {
         const { crankType, messageType, seconds } = slogObj;
         // TODO: Reflect crankType/messageType as proper dimensional attributes.
         // For now, we're going for parity with direct metrics.
@@ -179,7 +193,7 @@ export const makeSlogSender = async (opts = /** @type {any} */ ({})) => {
       }
 
       // Consume miscellaneous slog entries.
-      case 'kernel-stats': {
+      case SLOG_TYPES.KERNEL.STATS: {
         const { stats } = slogObj;
         const notYetFoundKernelStats = new Set(expectedKernelStats);
         for (const [key, value] of Object.entries(stats)) {
@@ -196,7 +210,7 @@ export const makeSlogSender = async (opts = /** @type {any} */ ({})) => {
         }
         break;
       }
-      case 'cosmic-swingset-after-commit-stats': {
+      case SLOG_TYPES.COSMIC_SWINGSET.AFTER_COMMIT_STATS: {
         const dynamicCounterEntries = Object.entries(
           dynamicAfterCommitStatsCounters,
         );
