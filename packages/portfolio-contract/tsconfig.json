@@ -4,7 +4,8 @@
   "include": [
     "src",
     "test",
-    "testing"
+    "testing",
+    "tools"
   ],
   "exclude": [
     "src/vendor/viem/viem-abi.bundle.js",
