@@ -9,7 +9,11 @@ import { passStyleOf } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import * as contractExports from '../src/portfolio.contract.ts';
-import { axelarChainsMapMock, makeUSDNIBCTraffic } from './mocks.ts';
+import {
+  axelarChainsMapMock,
+  makeCCTPTraffic,
+  makeUSDNIBCTraffic,
+} from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import {
   chainInfoFantasyTODO,
@@ -35,7 +39,12 @@ const deploy = async (t: ExecutionContext) => {
   const { usdc, poc26 } = common.brands;
   const timerService = buildZoeManualTimer();
 
-  const { agoric, noble, axelar, osmosis } = chainInfoFantasyTODO;
+  const chainInfo = Object.fromEntries(
+    ['agoric', 'noble', 'axelar', 'osmosis', 'Ethereum'].map(name => [
+      name,
+      chainInfoFantasyTODO[name],
+    ]),
+  );
   const started = await E(zoe).startInstance(
     installation,
     { USDC: usdc.issuer, Access: poc26.issuer },
@@ -44,7 +53,7 @@ const deploy = async (t: ExecutionContext) => {
       ...common.commonPrivateArgs,
       axelarChainsMap: axelarChainsMapMock,
       timerService,
-      chainInfo: { agoric, noble, axelar, osmosis },
+      chainInfo,
     }, // privateArgs
   );
   t.notThrows(() =>
@@ -81,6 +90,9 @@ export const setupTrader = async (t, initial = 10_000) => {
 
   const { ibcBridge } = common.mocks;
   for (const { msg, ack } of values(makeUSDNIBCTraffic())) {
+    ibcBridge.addMockAck(msg, ack);
+  }
+  for (const { msg, ack } of values(makeCCTPTraffic())) {
     ibcBridge.addMockAck(msg, ack);
   }
 

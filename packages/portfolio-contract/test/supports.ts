@@ -3,6 +3,7 @@ import { makeIssuerKit } from '@agoric/ertp';
 import {
   denomHash,
   withChainCapabilities,
+  type ChainInfo,
   type CosmosChainInfo,
   type Denom,
 } from '@agoric/orchestration';
@@ -84,6 +85,15 @@ export {
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
 
+// TODO: more coming in pull/11563
+const cctpConfig: Record<string, ChainInfo> = {
+  Ethereum: {
+    namespace: 'eip155',
+    reference: '1',
+    cctpDestinationDomain: 0,
+  },
+};
+
 /** TODO: how to address this in production? route thru Osmosis? */
 export const chainInfoFantasyTODO = {
   ...withChainCapabilities(fetchedChainInfo),
@@ -112,10 +122,7 @@ export const chainInfoFantasyTODO = {
       },
     },
   },
-  ethereum: {
-    chainId: 'mockId',
-    ...cctpChainInfo.ethereum,
-  },
+  ...cctpConfig,
 };
 
 const assetOn = (

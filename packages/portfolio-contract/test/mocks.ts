@@ -1,5 +1,9 @@
 import type { HostInterface } from '@agoric/async-flow';
 import {
+  MsgDepositForBurn,
+  MsgDepositForBurnResponse,
+} from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
+import {
   MsgLock,
   MsgLockResponse,
 } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
@@ -15,9 +19,11 @@ import type {
   DenomAmount,
   OrchestrationAccount,
 } from '@agoric/orchestration';
+import { leftPadEthAddressTo32Bytes } from '@agoric/orchestration/src/utils/address.js';
 import {
   buildMsgResponseString,
   buildTxPacketString,
+  buildTxResponseString,
 } from '@agoric/orchestration/tools/ibc-mocks.ts';
 import type { VowTools } from '@agoric/vow';
 import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
@@ -171,6 +177,28 @@ export const makeUSDNIBCTraffic = (
     // XXX { ..., vault: 1n } ???
     msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xvS0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUUFvTFkyOXpiVzl6TVhSbGMzUVNFd29GZFhWelpHTVNDak16TXpNd01EQXdNREFhQnhJRmRYVnpaRzRpRXdvRmRYVnpaRzRTQ2pNek16TXdNREF3TURBS1Bnb2ZMMjV2WW14bExtUnZiR3hoY2k1MllYVnNkSE11ZGpFdVRYTm5URzlqYXhJYkNndGpiM050YjNNeGRHVnpkQkFCR2dvek16TXpNREF3TURBdyIsIm1lbW8iOiIifQ==',
     ack: buildMsgResponseString(MsgLockResponse, {}),
+  },
+});
+
+export const makeCCTPTraffic = (
+  from = 'cosmos1test',
+  money = `${3333 * 1000000}`,
+  dest = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+) => ({
+  depositForBurn: {
+    msg: buildTxPacketString([
+      MsgDepositForBurn.toProtoMsg({
+        amount: money,
+        burnToken: 'uusdc',
+        destinationDomain: 0,
+        from,
+        mintRecipient: leftPadEthAddressTo32Bytes(dest),
+      }),
+    ]),
+
+    ack: buildTxResponseString([
+      { encoder: MsgDepositForBurnResponse, message: {} },
+    ]),
   },
 });
 
