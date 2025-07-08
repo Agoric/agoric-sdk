@@ -31,12 +31,19 @@ import {
 import {
   openPortfolio,
   rebalance,
+  rebalanceFromTransfer,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
 import { makeSwapLockMessages } from '../src/pos-usdn.flows.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
 import { axelarChainsMapMock } from './mocks.ts';
-import { makeIncomingEVMEvent } from './supports.ts';
+import {
+  makeIncomingEVMEvent,
+  makeIncomingVTransferEvent,
+} from './supports.ts';
+import type { VTransferIBCEvent } from '@agoric/vats';
+import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+import { RebalanceStrategy } from '../src/constants.js';
 
 const theExit = harden(() => {}); // for ava comparison
 // @ts-expect-error mock
@@ -49,6 +56,34 @@ const mockZCF: ZCF = Far('MockZCF', {
 
 const { brand: USDC } = makeIssuerKit('USDC');
 const { make } = AmountMath;
+
+const makeVowToolsAreJustPromises = () => {
+  const vowTools = harden({
+    makeVowKit: () => {
+      const { resolve, reject, promise } = makePromiseKit();
+      const resolver = Far('FakeVowResolver', { resolve, reject });
+      return harden({
+        resolver,
+        vow: promise,
+      });
+    },
+    when: async (specimen, onFulfilled, onRejected) =>
+      Promise.resolve(specimen).then(onFulfilled, onRejected),
+    watch: (specimen, watcher, ...watcherArgs) => {
+      let onFulfilled;
+      if (watcher?.onFulfilled) {
+        onFulfilled = value => watcher.onFulfilled(value, ...watcherArgs);
+      }
+      let onRejected;
+      if (watcher?.onRejected) {
+        onRejected = err => watcher.onRejected(err, ...watcherArgs);
+      }
+      return vowTools.when(specimen, onFulfilled, onRejected);
+    },
+    asVow: async thunk => thunk(),
+  }) as any; // mock
+  return vowTools as VowTools;
+};
 
 // XXX move to mocks.ts for readability?
 const mocks = (
@@ -113,6 +148,42 @@ const mocks = (
                 const reg = harden({});
                 return reg;
               },
+              parseInboundTransfer: async (
+                packet: VTransferIBCEvent['packet'],
+              ) => {
+                const ftPacketData = JSON.parse(atob(packet.data));
+                const {
+                  denom: transferDenom,
+                  sender,
+                  receiver,
+                  amount,
+                } = ftPacketData as FungibleTokenPacketData;
+
+                let denomOrTrace;
+
+                const prefix = `${packet.source_port}/${packet.source_channel}/`;
+                if (transferDenom.startsWith(prefix)) {
+                  denomOrTrace = transferDenom.slice(prefix.length);
+                } else {
+                  denomOrTrace = `${packet.destination_port}/${packet.destination_channel}/${transferDenom}`;
+                }
+
+                const localDenom = denomOrTrace.match(/^([^/]+)(\/[^\/]+)?$/)
+                  ? denomOrTrace
+                  : `ibc/${denomHash(denomOrTrace.match(/^(?<path>[^/]+\/[^/]+)\/(?<denom>.*)$/)?.groups)}`;
+
+                return harden({
+                  amount: {
+                    value: BigInt(amount),
+                    denom: localDenom,
+                  },
+                  extra: {
+                    ...ftPacketData,
+                  },
+                  fromAccount: sender,
+                  toAccount: receiver,
+                });
+              },
             });
           }
           if (name === 'noble') {
@@ -151,36 +222,7 @@ const mocks = (
     },
   }) as GuestInterface<ZoeTools>;
 
-  const vowTools: VowTools = harden({
-    makeVowKit: () => {
-      const { promise, resolve, reject } = makePromiseKit();
-      return harden({
-        resolver: Far('FakeVow', { resolve, reject }),
-        vow: promise,
-      }) as any; // mock
-    },
-    watch: _promise => {
-      const taggedVow = {
-        payload: {
-          vowV0: Far('VowV0', {
-            shorten: () => Promise.resolve('mock resolved value'),
-          }),
-        },
-      };
-      Object.defineProperty(taggedVow, Symbol.for('passStyle'), {
-        value: 'tagged',
-        enumerable: false,
-      });
-      Object.defineProperty(taggedVow, Symbol.toStringTag, {
-        value: 'Vow',
-        enumerable: false,
-      });
-      return harden(taggedVow);
-    },
-    asVow: thunk => {
-      return thunk() as any;
-    },
-  }) as any; // mock
+  const vowTools: VowTools = makeVowToolsAreJustPromises();
 
   const board = makeFakeBoard();
   const marshaller = board.getReadonlyMarshaller();
@@ -209,12 +251,15 @@ const mocks = (
 
   const rebalanceHost = (seat, offerArgs, kit) =>
     rebalance(orch, ctx1, seat, offerArgs, kit);
+  const rebalanceFromTransferHost = (packet, kit) =>
+    rebalanceFromTransfer(orch, ctx1, packet, kit);
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
     vowTools,
     axelarChainsMap: axelarChainsMapMock,
     timer,
     rebalance: rebalanceHost as any,
+    rebalanceFromTransfer: rebalanceFromTransferHost as any,
     proposalShapes: makeProposalShapes(USDC),
     marshaller,
     portfoliosNode,
@@ -248,6 +293,7 @@ const mocks = (
     ctx: { ...ctx1, makePortfolioKit: makePortfolioKitGuest },
     offer: { log: buf, seat, factoryPK },
     storage,
+    vowTools,
   };
 };
 
@@ -270,7 +316,7 @@ test('open portfolio with no positions', async t => {
   const actual = await openPortfolio(orch, ctx, seat, {});
   t.log(log.map(msg => msg._method).join(', '));
 
-  t.like(log, [{ _method: 'exit' }]);
+  t.like(log, [{ _method: 'monitorTransfers' }, { _method: 'exit' }]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
@@ -344,41 +390,53 @@ test('open portfolio with USDN position', async t => {
 });
 
 // TODO: and , Compound,
-test('open portfolio with Aave and USDN positions', async t => {
-  const { make } = AmountMath;
-  const oneThird = make(USDC, 3_333_000_000n);
+const openAndTransfer: import('ava').Macro<[() => VTransferIBCEvent[]]> =
+  test.macro(async (t, makeEvents) => {
+    const { make } = AmountMath;
+    const oneThird = make(USDC, 3_333_000_000n);
 
-  const { orch, ctx, offer, storage, tapPK } = mocks(
-    {},
-    {
-      USDN: oneThird,
-      Aave: oneThird,
-      AaveGmp: make(USDC, 100n),
-      AaveAccount: make(USDC, 150n),
-      // Compound: oneThird,
-      // CompoundGmp: make(USDC, 100n),
-      // CompoundAccount: make(USDC, 150n),
-    },
-  );
-  const { log, seat } = offer;
+    const { orch, ctx, offer, storage, tapPK } = mocks(
+      {},
+      {
+        USDN: oneThird,
+        Aave: oneThird,
+        AaveGmp: make(USDC, 100n),
+        AaveAccount: make(USDC, 150n),
+        // Compound: oneThird,
+        // CompoundGmp: make(USDC, 100n),
+        // CompoundAccount: make(USDC, 150n),
+      },
+    );
+    const { log, seat } = offer;
 
-  const shapes = makeProposalShapes(USDC);
-  mustMatch(seat.getProposal(), shapes.openPortfolio);
+    const shapes = makeProposalShapes(USDC);
+    mustMatch(seat.getProposal(), shapes.openPortfolio);
 
-  const [actual] = await Promise.all([
-    openPortfolio(orch, ctx, seat, {
-      destinationEVMChain: 'Ethereum',
-    }),
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
-      tap.receiveUpcall(makeIncomingEVMEvent());
-    }),
-  ]);
-  t.log(log.map(msg => msg._method).join(', '));
+    const [actual] = await Promise.all([
+      openPortfolio(orch, ctx, seat, {
+        destinationEVMChain: 'Ethereum',
+      }),
+      Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
+        async ([tap, _]) => {
+          for (const event of makeEvents()) {
+            t.log(`tap.receiveUpcall(${event})`);
+            await tap.receiveUpcall(event);
+          }
+        },
+      ),
+    ]);
+    t.log(log.map(msg => msg._method).join(', '));
 
-  t.snapshot(log, 'call log'); // see snapshot for call log
-  t.is(passStyleOf(actual.invitationMakers), 'remotable');
-  await documentStorageSchema(t, storage, docOpts);
-});
+    t.snapshot(log, 'call log'); // see snapshot for call log
+    t.is(passStyleOf(actual.invitationMakers), 'remotable');
+    await documentStorageSchema(t, storage, docOpts);
+  });
+
+test(
+  'open portfolio with Aave and USDN positions then inbound GMP',
+  openAndTransfer,
+  () => [makeIncomingEVMEvent()],
+);
 
 test('open portfolio with Aave position', async t => {
   const { orch, tapPK, ctx, offer, storage } = mocks(
@@ -394,21 +452,21 @@ test('open portfolio with Aave position', async t => {
     openPortfolio(orch, { ...ctx }, offer.seat, {
       destinationEVMChain: 'Ethereum',
     }),
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
-      tap.receiveUpcall(makeIncomingEVMEvent());
-    }),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
+      tap.receiveUpcall(makeIncomingEVMEvent()),
+    ),
   ]);
   const { log } = offer;
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', amounts: { AaveAccount: { value: 50n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-1' } },
+    { _method: 'transfer', address: { chainId: 'axelar-3' } },
     { _method: 'localTransfer', amounts: { Aave: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'noble-4' } },
     { _method: 'depositForBurn' },
     { _method: 'localTransfer', amounts: { AaveGmp: { value: 100n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-1' } },
+    { _method: 'transfer', address: { chainId: 'axelar-3' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -417,7 +475,7 @@ test('open portfolio with Aave position', async t => {
 });
 
 test('open portfolio with Compound position', async t => {
-  const { orch, tapPK, ctx, offer, storage } = mocks(
+  const { orch, tapPK, ctx, offer, storage } = await mocks(
     {},
     {
       Compound: AmountMath.make(USDC, 300n),
@@ -430,21 +488,21 @@ test('open portfolio with Compound position', async t => {
     openPortfolio(orch, { ...ctx }, offer.seat, {
       destinationEVMChain: 'Ethereum',
     }),
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) => {
-      tap.receiveUpcall(makeIncomingEVMEvent());
-    }),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
+      tap.receiveUpcall(makeIncomingEVMEvent()),
+    ),
   ]);
   const { log } = offer;
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', amounts: { CompoundAccount: { value: 300n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-1' } },
+    { _method: 'transfer', address: { chainId: 'axelar-3' } },
     { _method: 'localTransfer', amounts: { Compound: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'noble-4' } },
     { _method: 'depositForBurn' },
     { _method: 'localTransfer', amounts: { CompoundGmp: { value: 100n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-1' } },
+    { _method: 'transfer', address: { chainId: 'axelar-3' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -523,7 +581,13 @@ test('handle failure in executeEncodedTx', async t => {
 });
 
 test('handle failure in recovery from executeEncodedTx', async t => {
-  const { orch, ctx, offer, storage } = mocks(
+  const {
+    orch,
+    ctx,
+    offer,
+    storage,
+    vowTools: { when },
+  } = mocks(
     {
       executeEncodedTx: Error('Swap or Lock failed'),
       transfer: Error('IBC transfer from noble-3 failed'),
@@ -567,7 +631,7 @@ test.skip('handle failure in sendGmp with Aave position', async t => {
   // Ensure the upcall happens to resolve getGMPAddress(), then let the transfer fail
   // the failure is expected before offer.factoryPK resolves, so don't wait for it.
   const tap = await tapPK.promise;
-  tap.receiveUpcall(makeIncomingEVMEvent());
+  await tap.receiveUpcall(makeIncomingEVMEvent());
 
   const actual = await portfolioPromise;
   const { log } = offer;
@@ -583,3 +647,16 @@ test.skip('handle failure in sendGmp with Aave position', async t => {
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
 });
+
+test.failing(
+  'open portfolio with Compound and USDN positions then rebalanceFromTransfer',
+  openAndTransfer,
+  () => [
+    makeIncomingEVMEvent(),
+    makeIncomingVTransferEvent({
+      hookQuery: { rebalance: RebalanceStrategy.Preset },
+      amount: 1_000_000_000n,
+      denom: `transfer/channel-1/uusdc`,
+    }),
+  ],
+);
