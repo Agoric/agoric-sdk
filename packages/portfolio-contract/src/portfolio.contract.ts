@@ -36,10 +36,11 @@ import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import {
   makeProposalShapes,
+  makeProposalShapes0,
   OfferArgsShapeFor,
   type EVMContractAddressesMap,
   type OfferArgsFor,
-  type ProposalType,
+  type ProposalType0,
 } from './type-guards.ts';
 
 const trace = makeTracer('PortC');
@@ -142,7 +143,8 @@ export const contract = async (
     log: trace,
   });
 
-  const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
+  const proposalShapes = makeProposalShapes0(brands.USDC, brands.Access);
+  const proposalShapes2 = makeProposalShapes(brands.USDC, brands.Access);
 
   // Until we find a need for on-chain subscribers, this stop-gap will do.
   const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
@@ -213,7 +215,7 @@ export const contract = async (
      * that can allocate capital across different {@link YieldProtocol}s.
      * The resulting portfolio can be rebalanced via continuing invitations.
      *
-     * @see {@link ProposalType.openPortfolio} for proposal structure.
+     * @see {@link ProposalType0.openPortfolio} for proposal structure.
      *   Note that if the contract is started with an `Access` issuer,
      *   a non-empty amount of that token is required.
      *
@@ -230,7 +232,7 @@ export const contract = async (
         },
         'openPortfolio',
         undefined,
-        proposalShapes.openPortfolio,
+        M.or(proposalShapes.openPortfolio, proposalShapes2.openPortfolio),
       );
     },
   });
@@ -245,7 +247,7 @@ const keepDocsTypesImported:
   | YieldProtocol
   | OfferArgsFor
   | PortfolioKit
-  | ProposalType = undefined;
+  | ProposalType0 = undefined;
 
 /**
  * @see {@link contract}

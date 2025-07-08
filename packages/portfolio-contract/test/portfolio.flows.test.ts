@@ -38,7 +38,7 @@ import {
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
 import { makeSwapLockMessages } from '../src/pos-usdn.flows.ts';
-import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
+import { makeProposalShapes0, type ProposalType0 } from '../src/type-guards.ts';
 import { contractAddressesMock } from './mocks.ts';
 import {
   axelarCCTPConfig,
@@ -89,7 +89,7 @@ const makeVowToolsAreJustPromises = () => {
 // XXX move to mocks.ts for readability?
 const mocks = (
   errs: Record<string, Error> = {},
-  give: ProposalType['openPortfolio']['give'] = {},
+  give: ProposalType0['openPortfolio']['give'] = {},
 ) => {
   const buf = [] as any[];
   const log = ev => {
@@ -265,7 +265,7 @@ const mocks = (
     chainHubTools: { getChainInfo },
     rebalance: rebalanceHost as any,
     rebalanceFromTransfer: rebalanceFromTransferHost as any,
-    proposalShapes: makeProposalShapes(USDC),
+    proposalShapes: makeProposalShapes0(USDC),
     marshaller,
     portfoliosNode,
     usdcBrand: USDC,
@@ -315,7 +315,7 @@ test('open portfolio with no positions', async t => {
   const { orch, ctx, offer, storage } = mocks();
   const { log, seat } = offer;
 
-  const shapes = makeProposalShapes(USDC);
+  const shapes = makeProposalShapes0(USDC);
   mustMatch(seat.getProposal(), shapes.openPortfolio);
 
   const actual = await openPortfolio(orch, ctx, seat, {});
@@ -374,7 +374,7 @@ test('open portfolio with USDN position', async t => {
   );
   const { log, seat } = offer;
 
-  const shapes = makeProposalShapes(USDC);
+  const shapes = makeProposalShapes0(USDC);
   mustMatch(seat.getProposal(), shapes.openPortfolio);
 
   const actual = await openPortfolio(orch, ctx, seat, {
@@ -414,7 +414,7 @@ const openAndTransfer: import('ava').Macro<[() => VTransferIBCEvent[]]> =
     );
     const { log, seat } = offer;
 
-    const shapes = makeProposalShapes(USDC);
+    const shapes = makeProposalShapes0(USDC);
     mustMatch(seat.getProposal(), shapes.openPortfolio);
 
     const [actual] = await Promise.all([

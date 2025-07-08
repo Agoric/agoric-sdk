@@ -24,7 +24,7 @@ import {
   type PortfolioContinuingInvitationMaker,
   type PortfolioInvitationMaker,
   type StatusFor,
-  type ProposalType,
+  type ProposalType0,
 } from '../src/type-guards.ts';
 import type { WalletTool } from './wallet-offer-tools.ts';
 
@@ -123,7 +123,7 @@ export const makeTrader = (
      */
     async rebalance(
       t: ExecutionContext,
-      proposal: ProposalType['rebalance'],
+      proposal: ProposalType0['rebalance'],
       offerArgs: OfferArgsFor['rebalance'],
     ) {
       if (!openId) throw Error('not open');
@@ -153,11 +153,14 @@ export const makeTrader = (
     getPositionPaths: async () => {
       const { positionKeys } = await self.getPortfolioStatus();
 
+      // XXX why do we have to add 'portfolios'?
       return positionKeys.map(key =>
-        makePositionPath(self.getPortfolioId(), key).join('.'),
+        ['portfolios', ...makePositionPath(self.getPortfolioId(), key)].join(
+          '.',
+        ),
       );
     },
-    netTransfersByProtocol: async () => {
+    netTransfersByPosition: async () => {
       const paths = await self.getPositionPaths();
       const positionStatuses = await Promise.all(
         paths.map(

@@ -4,6 +4,10 @@ import {
   MsgDepositForBurnResponse,
 } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import {
+  MsgTransfer,
+  MsgTransferResponse,
+} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import {
   MsgLock,
   MsgLockResponse,
 } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
@@ -177,6 +181,22 @@ export const makeUSDNIBCTraffic = (
     // XXX { ..., vault: 1n } ???
     msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xvS0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUUFvTFkyOXpiVzl6TVhSbGMzUVNFd29GZFhWelpHTVNDak16TXpNd01EQXdNREFhQnhJRmRYVnpaRzRpRXdvRmRYVnpaRzRTQ2pNek16TXdNREF3TURBS1Bnb2ZMMjV2WW14bExtUnZiR3hoY2k1MllYVnNkSE11ZGpFdVRYTm5URzlqYXhJYkNndGpiM050YjNNeGRHVnpkQkFCR2dvek16TXpNREF3TURBdyIsIm1lbW8iOiIifQ==',
     ack: buildMsgResponseString(MsgLockResponse, {}),
+  },
+  transferBackFromNoble: {
+    msg: buildTxPacketString([
+      MsgTransfer.toProtoMsg({
+        sourcePort: 'transfer',
+        sourceChannel: 'channel-21',
+        // XXX 300 is taken from spreadsheet
+        token: { denom: 'uusdc', amount: `${300 * 1000000}` },
+        sender: signer,
+        receiver: 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+        timeoutHeight: { revisionHeight: 0n, revisionNumber: 0n },
+        timeoutTimestamp: 300000000000n,
+        memo: '',
+      }),
+    ]),
+    ack: buildTxResponseString([{ encoder: MsgTransferResponse, message: {} }]),
   },
 });
 

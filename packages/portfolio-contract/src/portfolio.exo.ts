@@ -37,7 +37,7 @@ import {
   makePortfolioPath,
   OfferArgsShapeFor,
   PoolKeyShape,
-  type makeProposalShapes,
+  type makeProposalShapes0,
   type OfferArgsFor,
 } from './type-guards.js';
 
@@ -172,7 +172,7 @@ export const preparePortfolioKit = (
     chainHubTools: {
       getChainInfo: <K extends string>(chainName: K) => Vow<ActualChainInfo<K>>;
     };
-    proposalShapes: ReturnType<typeof makeProposalShapes>;
+    proposalShapes: ReturnType<typeof makeProposalShapes0>;
     vowTools: VowTools;
     zcf: ZCF;
     portfoliosNode: ERef<StorageNode>;
