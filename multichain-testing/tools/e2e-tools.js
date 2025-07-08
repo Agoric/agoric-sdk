@@ -5,12 +5,12 @@ import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { makePromiseKit } from '@endo/promise-kit';
-import { flags, makeAgd, makeCopyFiles } from './chaind-lib.js';
+import { makeAgd, makeCopyFiles } from './chaind-lib.js';
 import { makeHttpClient, makeAPI } from './makeHttpClient.js';
 import { dedup, makeQueryKit, poll } from './queryKit.js';
 import { makeVStorage } from './batchQuery.js';
 import { makeRetryUntilCondition } from './sleep.js';
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, toCLIOptions } from '@agoric/internal';
 
 /**
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
@@ -463,7 +463,7 @@ const runCoreEval = async (
       'submit-proposal',
       'swingset-core-eval',
       ...evalPaths,
-      ...flags({ ...info, deposit }),
+      ...toCLIOptions({ ...info, deposit }),
     ],
     { from, chainId, yes: true },
   );
