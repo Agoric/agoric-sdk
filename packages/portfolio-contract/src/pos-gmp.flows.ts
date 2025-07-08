@@ -11,13 +11,12 @@
  * @see {@link sendTokensViaCCTP}
  */
 import type { Amount } from '@agoric/ertp';
-import {
-  makeTracer,
-  mustMatch,
-  NonNullish,
-  type TypedPattern,
-} from '@agoric/internal';
-import type { DenomAmount, Orchestrator } from '@agoric/orchestration';
+import { makeTracer, mustMatch, type TypedPattern } from '@agoric/internal';
+import type {
+  AccountId,
+  DenomAmount,
+  Orchestrator,
+} from '@agoric/orchestration';
 import {
   AxelarGMPMessageType,
   type AxelarGmpOutgoingMemo,
@@ -29,7 +28,7 @@ import {
 } from '@agoric/orchestration/src/utils/gmp.js';
 import type { AmountKeywordRecord, ZCFSeat } from '@agoric/zoe';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
-import { assert, throwRedacted as Fail } from '@endo/errors';
+import { throwRedacted as Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
 import type { GuestInterface } from '../../async-flow/src/types.ts';
 import { AxelarChain, type YieldProtocol } from './constants.js';
@@ -95,7 +94,7 @@ export const provideEVMAccount = async (
   const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
   let promiseMaybe = kit.manager.reserveAccount(destinationEVMChain);
   if (promiseMaybe) {
-    return promiseMaybe as unknown as Promise<GMPAccountInfo>;
+    return promiseMaybe as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
   }
 
   await sendGmp(
@@ -115,7 +114,7 @@ export const provideEVMAccount = async (
 
   return kit.reader.getGMPInfo(
     destinationEVMChain,
-  ) as unknown as Promise<GMPAccountInfo>;
+  ) as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
 };
 
 export const sendTokensViaCCTP = async (
@@ -141,14 +140,11 @@ export const sendTokensViaCCTP = async (
     await localAcct.transfer(nobleAccount.getAddress(), denomAmount);
     const caipChainId = axelarChainsMap[destinationEVMChain].caip;
     const { remoteAddress } = await kit.reader.getGMPInfo(destinationEVMChain);
-    const destinationAddress = `${caipChainId}:${remoteAddress}`;
+    const destinationAddress: AccountId = `${caipChainId}:${remoteAddress}`;
     trace(`CCTP destinationAddress: ${destinationAddress}`);
 
     try {
-      await nobleAccount.depositForBurn(
-        destinationAddress as `${string}:${string}:${string}`,
-        denomAmount,
-      );
+      await nobleAccount.depositForBurn(destinationAddress, denomAmount);
     } catch (err) {
       console.error('⚠️ recover to local account.', amount);
       const nobleAmount: DenomAmount = { denom: 'uusdc', value: amount.value };
