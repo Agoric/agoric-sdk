@@ -33,7 +33,7 @@ export const SupportedChain = /** @type {const} */ ({
   ...AxelarChain,
   agoric: 'agoric',
   noble: 'noble',
-  // TODO: check privateArgs for chainInfo for all of these
+  // XXX: check privateArgs for chainInfo for all of these
 });
 harden(SupportedChain);
 
