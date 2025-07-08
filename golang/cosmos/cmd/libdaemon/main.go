@@ -38,7 +38,7 @@ type goReturn = struct {
 
 const SwingSetPort = 123
 
-var logger = log.NewTMLogger(log.NewSyncWriter(os.Stderr)).With("module", "cmd/libdaemon")
+var logger = log.NewLogger(os.Stderr).With("module", "cmd/libdaemon")
 
 var vmClientCodec *vm.ClientCodec
 var agdServer *vm.AgdServer
