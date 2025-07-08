@@ -34,7 +34,7 @@
  *
  * @typedef {{
  *  afterCommitHangoverSeconds: number;
- *  archiveWriteSeconds: number;
+ *  archiveWriteSeconds: number | undefined;
  *  blockHeight?: number;
  *  blockLagSeconds: number;
  *  blockTime?: number;

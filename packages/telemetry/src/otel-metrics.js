@@ -176,7 +176,7 @@ export const makeSlogSender = async (opts = /** @type {any} */ ({})) => {
       }
       case SLOG_TYPES.SNAPSHOT.SAVE: {
         histograms.heap_snapshot_duration.record(
-          slogObj.archiveWriteSeconds +
+          (slogObj.archiveWriteSeconds || 0) +
             slogObj.compressSeconds +
             slogObj.dbSaveSeconds,
         );
