@@ -1,7 +1,7 @@
 // import { meta } from '@aglocal/portfolio-contract/src/portfolio.contract.meta.js';
 import { makeTracer } from '@agoric/internal';
 import { M } from '@endo/patterns';
-import { getAxelarChainsMap } from './axelar-configs.js';
+import { localchainContracts } from './axelar-configs.js';
 import {
   lookupInterchainInfo,
   makeGetManifest,
@@ -23,19 +23,15 @@ const deployConfigShape = M.splitRecord({});
 
 const trace = makeTracer(`YMX-Start`, true);
 
-const isValidEVMAddress = address => {
-  return /^0x[a-fA-F0-9]{40}$/.test(address);
-};
-
 /**
  * @param {OrchestrationPowersWithStorage} orchestrationPowers
  * @param {Marshaller} marshaller
- * @param {CopyRecord} config
+ * @param {CopyRecord} _config
  */
 export const makePrivateArgs = async (
   orchestrationPowers,
   marshaller,
-  config,
+  _config,
 ) => {
   const { agoricNames } = orchestrationPowers;
   const { chainInfo, assetInfo } = await lookupInterchainInfo(agoricNames, {
@@ -45,30 +41,14 @@ export const makePrivateArgs = async (
   });
   trace('@@@@assetInfo', JSON.stringify(assetInfo, null, 2));
 
-  const axelarChainsMap = getAxelarChainsMap(config.net);
-  if (!axelarChainsMap) {
-    throw new Error(
-      `axelarChainsMap is undefined for environment: ${config.net}`,
-    );
-  }
-
-  for (const [_chain, { contractAddresses }] of Object.entries(
-    axelarChainsMap,
-  )) {
-    for (const [_name, address] of Object.entries(contractAddresses)) {
-      if (!isValidEVMAddress(address)) {
-        throw new Error(`Invalid EVM address: ${address}`);
-      }
-    }
-  }
-
   /** @type {Parameters<typeof start>[1]} */
   const it = harden({
     ...orchestrationPowers,
     marshaller,
     chainInfo,
     assetInfo,
-    axelarChainsMap,
+    // TODO: fetch the addresses from agoricNames
+    contracts: localchainContracts,
   });
   return it;
 };

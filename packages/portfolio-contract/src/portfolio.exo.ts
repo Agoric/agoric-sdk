@@ -8,7 +8,11 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { type AccountId, type CaipChainId } from '@agoric/orchestration';
+import {
+  type AccountId,
+  type ActualChainInfo,
+  type CaipChainId,
+} from '@agoric/orchestration';
 import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
@@ -19,19 +23,15 @@ import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { VowShape, type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { atob, decodeBase64 } from '@endo/base64';
+import { decodeBase64 } from '@endo/base64';
 import { X } from '@endo/errors';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import {
-  SupportedChain,
-  YieldProtocol,
-  type AxelarChain,
-} from './constants.js';
+import { AxelarChain, SupportedChain, YieldProtocol } from './constants.js';
 import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
-import type { AxelarChainsMap, PoolKey, StatusFor } from './type-guards.js';
+import type { PoolKey, StatusFor } from './type-guards.js';
 import {
   makeFlowPath,
   makePortfolioPath,
@@ -145,10 +145,10 @@ export type PublishStatusFn = <K extends keyof StatusFor>(
 export const preparePortfolioKit = (
   zone: Zone,
   {
-    axelarChainsMap,
     rebalance,
     rebalanceFromTransfer,
     timer,
+    chainHubTools,
     proposalShapes,
     vowTools,
     zcf,
@@ -156,7 +156,6 @@ export const preparePortfolioKit = (
     marshaller,
     usdcBrand,
   }: {
-    axelarChainsMap: AxelarChainsMap;
     rebalance: (
       seat: ZCFSeat,
       offerArgs: OfferArgsFor['rebalance'],
@@ -170,6 +169,9 @@ export const preparePortfolioKit = (
       handled: boolean;
     }>;
     timer: Remote<TimerService>;
+    chainHubTools: {
+      getChainInfo: <K extends string>(chainName: K) => Vow<ActualChainInfo<K>>;
+    };
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     vowTools: VowTools;
     zcf: ZCF;
@@ -249,7 +251,7 @@ export const preparePortfolioKit = (
           console.warn('⚠️ rebalanceFromTransfer failure', reason);
           throw reason;
         },
-        onFulfilled({ parsed, handled }) {
+        async onFulfilled({ parsed, handled }) {
           if (handled) {
             trace('rebalanceFromTransfer handled; skipping GMP processing');
             return;
@@ -266,11 +268,11 @@ export const preparePortfolioKit = (
 
           // XXX we must have more than just a (forgeable) memo check here to
           // determine if the source of this packet is the Axelar chain!
-          const axelarChain = values(axelarChainsMap).find(
-            chain => chain.axelarId === memo.source_chain,
-          );
-
-          if (!axelarChain) {
+          if (
+            !values(AxelarChain).includes(
+              memo.source_chain as keyof typeof AxelarChain,
+            )
+          ) {
             console.warn('unknown source_chain', memo);
             return;
           }
@@ -299,10 +301,17 @@ export const preparePortfolioKit = (
               result,
             );
 
+            // chainInfo is safe to await: registerChain(...) ensure it's already resolved,
+            // so vowTools.when won't cause async delays or cross-vat calls.
+            const chainInfo = await vowTools.when(
+              chainHubTools.getChainInfo(chainName),
+            );
+            const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
+
             this.facets.manager.resolveAccount({
               namespace: 'eip155',
               chainName,
-              chainId: axelarChain.caip,
+              chainId: caipId,
               remoteAddress: address,
             });
             trace(`remoteAddress ${address}`);

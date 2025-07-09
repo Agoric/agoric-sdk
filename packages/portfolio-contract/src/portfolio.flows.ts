@@ -5,6 +5,7 @@
  * @see {rebalance}
  */
 import type { GuestInterface } from '@agoric/async-flow';
+import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { type Amount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type {
@@ -16,24 +17,20 @@ import type {
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
+import type { VTransferIBCEvent } from '@agoric/vats';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
-import { assert, Fail } from '@endo/errors';
-import { type YieldProtocol, RebalanceStrategy } from './constants.js';
+import { Fail } from '@endo/errors';
+import { RebalanceStrategy } from './constants.js';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import { changeGMPPosition } from './pos-gmp.flows.ts';
 import { changeUSDCPosition } from './pos-usdn.flows.ts';
 import type { Position } from './pos.exo.ts';
 import type {
-  AxelarChainsMap,
+  EVMContractAddressesMap,
   OfferArgsFor,
   ProposalType,
 } from './type-guards.ts';
-import {
-  decodeAddressHook,
-  type HookQuery,
-} from '@agoric/cosmic-proto/address-hooks.js';
-import type { VTransferIBCEvent } from '@agoric/vats';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
@@ -43,7 +40,7 @@ export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>; // TODO: move to type-guards as external interface?
 
 type PortfolioBootstrapContext = {
-  axelarChainsMap: AxelarChainsMap;
+  contracts: EVMContractAddressesMap;
   usdc: { brand: Brand<'nat'>; denom: Denom };
   zoeTools: GuestInterface<ZoeTools>;
   makePortfolioKit: () => GuestInterface<PortfolioKit>;
@@ -51,7 +48,7 @@ type PortfolioBootstrapContext = {
 };
 
 export type PortfolioInstanceContext = {
-  axelarChainsMap: AxelarChainsMap;
+  contracts: EVMContractAddressesMap;
   usdc: { brand: Brand<'nat'>; denom: Denom };
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
@@ -279,18 +276,13 @@ export const openPortfolio = (async (
 ) => {
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   try {
-    const {
-      makePortfolioKit,
-      zoeTools,
-      axelarChainsMap,
-      usdc,
-      inertSubscriber,
-    } = ctx;
+    const { makePortfolioKit, zoeTools, contracts, usdc, inertSubscriber } =
+      ctx;
     const kit = makePortfolioKit();
     await provideCosmosAccount(orch, 'agoric', kit);
 
     const portfolioCtx = {
-      axelarChainsMap,
+      contracts,
       usdc,
       keeper: { ...kit.reader, ...kit.manager },
       zoeTools,

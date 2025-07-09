@@ -93,6 +93,39 @@ const exampleDynamicChainInfo = {
       },
     },
   },
+  Ethereum: {
+    namespace: 'eip155',
+    reference: '1',
+    cctpDestinationDomain: 0,
+  },
+  Avalanche: {
+    namespace: 'eip155',
+    reference: '43114',
+    cctpDestinationDomain: 1,
+  },
+  optimism: {
+    namespace: 'eip155',
+    reference: '10',
+    cctpDestinationDomain: 2,
+  },
+  arbitrum: {
+    namespace: 'eip155',
+    reference: '42161',
+    cctpDestinationDomain: 3,
+  },
+  Polygon: {
+    namespace: 'eip155',
+    reference: '137',
+    cctpDestinationDomain: 7,
+  },
+  Fantom: {
+    namespace: 'eip155',
+    reference: '250',
+  },
+  binance: {
+    namespace: 'eip155',
+    reference: '56',
+  },
 } satisfies Record<string, ChainInfo>;
 
 test.before('bootstrap', async t => {
@@ -113,7 +146,17 @@ test.serial('publish chainInfo etc.', async t => {
   await evalProposal(materials);
   const { EV } = runUtils;
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
-  for (const chain of ['agoric', 'noble']) {
+  for (const chain of [
+    'agoric',
+    'noble',
+    'Ethereum',
+    'Avalanche',
+    'optimism',
+    'arbitrum',
+    'Polygon',
+    'Fantom',
+    'binance',
+  ]) {
     const info = await EV(agoricNames).lookup('chain', chain);
     t.log(info);
     t.truthy(info);

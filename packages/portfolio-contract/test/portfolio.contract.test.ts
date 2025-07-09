@@ -7,16 +7,18 @@ import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import { q } from '@endo/errors';
 import { passStyleOf } from '@endo/far';
 import { matches, mustMatch } from '@endo/patterns';
-import { makeAxelarMemo } from '../src/pos-gmp.flows.ts';
+import {
+  makeAxelarMemo,
+  type GmpArgsContractCall,
+} from '../src/pos-gmp.flows.ts';
 import { makeProposalShapes } from '../src/type-guards.ts';
-import { type GmpArgsContractCall } from '../src/pos-gmp.flows.ts';
 import {
   setupTrader,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
-import { axelarChainsMapMock, localAccount0 } from './mocks.ts';
+import { localAccount0 } from './mocks.ts';
 
 const { fromEntries, keys } = Object;
 
@@ -146,12 +148,12 @@ test('makeAxelarMemo constructs correct memo JSON', t => {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   ];
 
-  const result = makeAxelarMemo(axelarChainsMapMock, gmpArgs);
+  const result = makeAxelarMemo('Avalanche', gmpArgs);
   const parsed = JSON.parse(result);
 
   t.deepEqual(parsed, {
     type,
-    destination_chain: destinationEVMChain,
+    destination_chain: 'Avalanche',
     destination_address: destinationAddress,
     payload: expectedPayload,
     fee: {
