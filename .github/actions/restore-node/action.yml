@@ -133,9 +133,19 @@ runs:
       shell: bash
       run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
 
-    # Before setup-node because that action runs `yarn cache dir`. See https://github.com/actions/setup-node/issues/480#issuecomment-1915448139
-    - run: corepack enable
-      shell: bash
+    # Set up for Corepack before trying to cache yarn. See
+    # https://github.com/actions/setup-node/issues/899#issuecomment-1828798029.
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ steps.set-node-version.outputs.NODE_VERSION }}
+
+    # Before setup-node because that action tries to discover the cache directory.
+    # See https://github.com/actions/setup-node/issues/480#issuecomment-1915448139
+    - shell: bash
+      run: |
+        set -ex
+        corepack enable
+        mkdir -p "$(yarn config get cacheFolder)"
 
     - uses: actions/setup-node@v4
       with:
@@ -143,6 +153,9 @@ runs:
         cache: yarn
         cache-dependency-path: |
           ${{ inputs.path }}/yarn.lock
+          ${{ inputs.path }}/a3p-integration/yarn.lock
+          ${{ inputs.path }}/a3p-integration/proposals/*/yarn.lock
+          ${{ inputs.path }}/multichain-testing/yarn.lock
           ${{ inputs.path }}/endo-sha.txt
 
     - uses: kenchan0130/actions-system-info@master
