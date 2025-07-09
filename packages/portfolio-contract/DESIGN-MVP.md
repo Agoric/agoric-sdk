@@ -53,20 +53,13 @@ sequenceDiagram
   Contract ->> vstorage: write portfolio
   Contract ->> LCA: localTransfer
 ```
-4. update portfolio (allocation)
-  Mermaid diagram same as 1
-  [Will be deleted if agreed]
-5. rebalance (move tokens according to portfolio allocation)
-  [Will be deleted if agreed]
-6. 4 + 5
-  [Will be deleted if agreed]
-7. automatic rebalance
+4. automatic rebalance
 ```mermaid
 sequenceDiagram
   Contract ->> Execution Engine: notification of funds in LCA
   Execution Engine ->> Contract: flow sequence
 ```
-8. deposit from Fast USDC source chains into existing portfolio via address hook
+5. deposit from Fast USDC source chains into existing portfolio via address hook
 ```mermaid
 sequenceDiagram
   Non-agoric Chain ->> LCA: send USDC via IBC, CCTP, or Fast USDC
@@ -74,7 +67,7 @@ sequenceDiagram
   Contract ->> Execution Engine: notification of funds in LCA
   Execution Engine ->> Contract: flow sequence
 ```
-9. claim bonus
+6. claim bonus
 ```mermaid
 sequenceDiagram
   UI ->> Contract: claim rewards intent
@@ -128,9 +121,20 @@ sequenceDiagram
     - can only move tokens between LCA and positions
   - notify execution engine
 - [execution engine]
-  - receive/subscribe to notifications
-  - given portfolio, current positions, generate steps and make offer
-    - errors out if it encounter a situation it can't generate steps
+  - [poller]
+    - being able to poll and notify
+      - portfolio changes
+      - balance changes on LCA, ICAs, and ICA-equivalents
+  - [planner]
+    - given
+      - portfolio
+      - current balances in various positions
+      - current inflight txns
+    - produce
+      - steps that can all be executed in parallel to each other to move user's
+        balances closer to their desired portfolio allocation
+  - [executor]
+    - take steps produced by planner and send to portfolio contract
 
 #### NOT in scope for MVP
 1. deposit from Fast USDC source chains and create a new portfolio via address hook
@@ -139,3 +143,4 @@ sequenceDiagram
 #### changelog
 1. add claim rewards user story
 1. make it so deposit = intent to rebalance
+1. add an example for execution engine and break down eng tasks further
