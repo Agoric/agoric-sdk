@@ -14,6 +14,7 @@ import type { Amount } from '@agoric/ertp';
 import { makeTracer, mustMatch, type TypedPattern } from '@agoric/internal';
 import type {
   AccountId,
+  CaipChainId,
   DenomAmount,
   Orchestrator,
 } from '@agoric/orchestration';
@@ -38,7 +39,6 @@ import {
   provideCosmosAccount,
 } from './portfolio.flows.ts';
 import type {
-  AxelarChainsMap,
   OfferArgsFor,
   OpenPortfolioGive,
   PoolKey,
@@ -83,6 +83,13 @@ const GMPArgsShape: TypedPattern<GmpArgsContractCall> = M.splitRecord({
   contractInvocationData: M.arrayOf(ContractCallShape),
 });
 
+const getCaipId = async (orch: Orchestrator, chainName: AxelarChain) => {
+  const evmChain = await orch.getChain(chainName);
+  const info = await evmChain.getChainInfo();
+  const caipChainId: CaipChainId = `${info.namespace}:${info.reference}`;
+  return caipChainId;
+};
+
 export const provideEVMAccount = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -91,7 +98,7 @@ export const provideEVMAccount = async (
   kit: GuestInterface<PortfolioKit>,
 ) => {
   const { destinationEVMChain, keyword, amounts: gasAmounts } = gmpArgs;
-  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
+  const addresses = ctx.contracts[destinationEVMChain];
   let promiseMaybe = kit.manager.reserveAccount(destinationEVMChain);
   if (promiseMaybe) {
     return promiseMaybe as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
@@ -102,7 +109,7 @@ export const provideEVMAccount = async (
     ctx,
     seat,
     harden({
-      destinationAddress: contractAddresses.factory,
+      destinationAddress: addresses.factory,
       destinationEVMChain,
       type: AxelarGMPMessageType.ContractCall,
       keyword,
@@ -125,7 +132,7 @@ export const sendTokensViaCCTP = async (
   kit: GuestInterface<PortfolioKit>,
   protocol: YieldProtocol,
 ) => {
-  const { axelarChainsMap, usdc, zoeTools } = ctx;
+  const { usdc, zoeTools } = ctx;
   const { keyword, amounts, destinationEVMChain } = args;
   const amount = amounts[keyword];
   const { denom } = usdc;
@@ -138,7 +145,7 @@ export const sendTokensViaCCTP = async (
   await zoeTools.localTransfer(seat, localAcct, amounts);
   try {
     await localAcct.transfer(nobleAccount.getAddress(), denomAmount);
-    const caipChainId = axelarChainsMap[destinationEVMChain].caip;
+    const caipChainId = await getCaipId(orch, destinationEVMChain);
     const { remoteAddress } = await kit.reader.getGMPInfo(destinationEVMChain);
     const destinationAddress: AccountId = `${caipChainId}:${remoteAddress}`;
     trace(`CCTP destinationAddress: ${destinationAddress}`);
@@ -162,12 +169,11 @@ export const sendTokensViaCCTP = async (
 };
 
 export const makeAxelarMemo = (
-  axelarChainsMap: AxelarChainsMap,
+  chainId: string,
   gmpArgs: GmpArgsContractCall,
 ) => {
   const {
     contractInvocationData,
-    destinationEVMChain,
     destinationAddress,
     keyword,
     amounts: gasAmounts,
@@ -178,7 +184,7 @@ export const makeAxelarMemo = (
 
   const payload = buildGMPPayload(contractInvocationData);
   const memo: AxelarGmpOutgoingMemo = {
-    destination_chain: axelarChainsMap[destinationEVMChain].axelarId,
+    destination_chain: chainId,
     destination_address: destinationAddress,
     payload,
     type,
@@ -201,13 +207,13 @@ const sendGmp = async (
   kit: GuestInterface<PortfolioKit>,
 ) => {
   mustMatch(gmpArgs, GMPArgsShape);
-  const { axelarChainsMap, usdc, zoeTools } = ctx;
+  const { usdc, zoeTools } = ctx;
 
   const axelar = await orch.getChain('axelar');
   const { chainId } = await axelar.getChainInfo();
 
   const { lca: localAccount } = await provideCosmosAccount(orch, 'agoric', kit);
-  const { keyword, amounts: gasAmounts } = gmpArgs;
+  const { keyword, amounts: gasAmounts, destinationEVMChain } = gmpArgs;
   const natAmount = gasAmounts[keyword];
   const { denom } = usdc;
   const denomAmount = {
@@ -217,7 +223,7 @@ const sendGmp = async (
 
   try {
     await zoeTools.localTransfer(seat, localAccount, gasAmounts);
-    const memo = makeAxelarMemo(axelarChainsMap, gmpArgs);
+    const memo = makeAxelarMemo(destinationEVMChain, gmpArgs);
     await localAccount.transfer(
       {
         value: gmpAddresses.AXELAR_GMP,
@@ -246,7 +252,8 @@ export const supplyToAave = async (
     keyword,
     amounts: gasAmounts,
   } = gmpArgs;
-  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
+
+  const addresses = ctx.contracts[destinationEVMChain];
   const info = await provideEVMAccount(orch, ctx, seat, gmpArgs, kit);
   const { remoteAddress } = info;
 
@@ -263,13 +270,13 @@ export const supplyToAave = async (
       contractInvocationData: [
         {
           functionSignature: 'approve(address,uint256)',
-          args: [contractAddresses.aavePool, transferAmount],
-          target: contractAddresses.usdc,
+          args: [addresses.aavePool, transferAmount],
+          target: addresses.usdc,
         },
         {
           functionSignature: 'supply(address,uint256,address,uint16)',
-          args: [contractAddresses.usdc, transferAmount, remoteAddress, 0],
-          target: contractAddresses.aavePool,
+          args: [addresses.usdc, transferAmount, remoteAddress, 0],
+          target: addresses.aavePool,
         },
       ],
     }),
@@ -291,7 +298,7 @@ const withdrawFromAave = async (
     keyword,
     amounts: gasAmounts,
   } = gmpArgs;
-  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
+  const addresses = ctx.contracts[destinationEVMChain];
   const info = await provideEVMAccount(orch, ctx, seat, gmpArgs, kit);
   const { remoteAddress } = info;
 
@@ -308,8 +315,8 @@ const withdrawFromAave = async (
       contractInvocationData: [
         {
           functionSignature: 'withdraw(address,uint256,address)',
-          args: [contractAddresses.usdc, withdrawAmount, remoteAddress],
-          target: contractAddresses.aavePool,
+          args: [addresses.usdc, withdrawAmount, remoteAddress],
+          target: addresses.aavePool,
         },
       ],
     }),
@@ -331,7 +338,7 @@ export const supplyToCompound = async (
     keyword,
     amounts: gasAmounts,
   } = gmpArgs;
-  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
+  const addresses = ctx.contracts[destinationEVMChain];
   const info = await provideEVMAccount(orch, ctx, seat, gmpArgs, kit);
   const { remoteAddress } = info;
 
@@ -348,13 +355,13 @@ export const supplyToCompound = async (
       contractInvocationData: [
         {
           functionSignature: 'approve(address,uint256)',
-          args: [contractAddresses.compound, transferAmount],
-          target: contractAddresses.usdc,
+          args: [addresses.compound, transferAmount],
+          target: addresses.usdc,
         },
         {
           functionSignature: 'supply(address,uint256)',
-          args: [contractAddresses.usdc, transferAmount],
-          target: contractAddresses.compound,
+          args: [addresses.usdc, transferAmount],
+          target: addresses.compound,
         },
       ],
     }),
@@ -376,7 +383,7 @@ const withdrawFromCompound = async (
     keyword,
     amounts: gasAmounts,
   } = gmpArgs;
-  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
+  const addresses = ctx.contracts[destinationEVMChain];
   const info = await provideEVMAccount(orch, ctx, seat, gmpArgs, kit);
   const { remoteAddress } = info;
 
@@ -393,8 +400,8 @@ const withdrawFromCompound = async (
       contractInvocationData: [
         {
           functionSignature: 'withdraw(address,uint256)',
-          args: [contractAddresses.usdc, withdrawAmount],
-          target: contractAddresses.compound,
+          args: [addresses.usdc, withdrawAmount],
+          target: addresses.compound,
         },
       ],
     }),
@@ -429,10 +436,11 @@ export const changeGMPPosition = async (
     amounts: { [accountKW]: give[accountKW] },
   };
   const info = await provideEVMAccount(orch, ctx, seat, gmpArgs, kit);
+  const caipChainId = await getCaipId(orch, destinationEVMChain);
   const position = kit.manager.providePosition(
     poolKey,
     protocol,
-    `${info.chainId}:${info.remoteAddress}`,
+    `${caipChainId}:${info.remoteAddress}`,
   );
 
   const args = {

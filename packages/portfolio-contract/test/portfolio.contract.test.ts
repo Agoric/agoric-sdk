@@ -7,7 +7,10 @@ import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import { q } from '@endo/errors';
 import { passStyleOf } from '@endo/far';
 import { matches, mustMatch } from '@endo/patterns';
-import { makeAxelarMemo, type GmpArgsContractCall } from '../src/pos-gmp.flows.ts';
+import {
+  makeAxelarMemo,
+  type GmpArgsContractCall,
+} from '../src/pos-gmp.flows.ts';
 import { makeProposalShapes } from '../src/type-guards.ts';
 import {
   setupTrader,
@@ -115,7 +118,7 @@ test('ProposalShapes', t => {
   }
 });
 
-test('makeAxelarMemo constructs correct memo JSON', async t => {
+test('makeAxelarMemo constructs correct memo JSON', t => {
   const { brand } = makeIssuerKit('USDC');
 
   const type = 1; // contract call
@@ -145,7 +148,7 @@ test('makeAxelarMemo constructs correct memo JSON', async t => {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   ];
 
-  const result = await makeAxelarMemo('Avalanche', gmpArgs);
+  const result = makeAxelarMemo('Avalanche', gmpArgs);
   const parsed = JSON.parse(result);
 
   t.deepEqual(parsed, {

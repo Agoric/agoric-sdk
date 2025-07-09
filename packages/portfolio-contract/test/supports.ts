@@ -81,7 +81,7 @@ export const makeIncomingVTransferEvent = ({
 
 export {
   makeFakeLocalchainBridge,
-  makeFakeTransferBridge
+  makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
 
 /**

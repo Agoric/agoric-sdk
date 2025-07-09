@@ -1,3 +1,4 @@
+import type { VstorageKit } from '@agoric/client-utils';
 import { mustMatch } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { ScopedBridgeManager } from '@agoric/vats';
@@ -17,7 +18,6 @@ import {
   setupPortfolioTest,
 } from './supports.ts';
 import { makeWallet } from './wallet-offer-tools.ts';
-import type { SmartWalletKit, VstorageKit } from '@agoric/client-utils';
 
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
@@ -35,6 +35,8 @@ const deploy = async (t: ExecutionContext) => {
   const { usdc, poc26 } = common.brands;
   const timerService = buildZoeManualTimer();
 
+  // List of all chains whose `chainInfo` is utilized by the Portfolio contract.
+  // Includes both Cosmos-based and EVM-based chains (mainnet and testnet).
   const selectedChains = [
     'agoric',
     'noble',
@@ -63,7 +65,7 @@ const deploy = async (t: ExecutionContext) => {
     {}, // terms
     {
       ...common.commonPrivateArgs,
-      contractAddresses: contractAddressesMock,
+      contracts: contractAddressesMock,
       timerService,
       chainInfo,
     }, // privateArgs

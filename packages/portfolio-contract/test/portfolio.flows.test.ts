@@ -6,6 +6,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { GuestInterface } from '@agoric/async-flow';
+import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { mustMatch } from '@agoric/internal';
 import {
@@ -13,12 +14,9 @@ import {
   documentStorageSchema,
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
-import {
-  denomHash,
-  type ChainHub,
-  type Orchestrator,
-} from '@agoric/orchestration';
+import { denomHash, type Orchestrator } from '@agoric/orchestration';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import type { VowTools } from '@agoric/vow';
@@ -28,6 +26,7 @@ import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
+import { RebalanceStrategy } from '../src/constants.js';
 import {
   preparePortfolioKit,
   type PortfolioKit,
@@ -110,6 +109,9 @@ const mocks = (
       }[name];
       const it = harden({
         getChainInfo() {
+          if (name in axelarCCTPConfig) {
+            return axelarCCTPConfig[name];
+          }
           return harden({ chainId, stakingTokens });
         },
         async makeAccount() {
@@ -240,18 +242,16 @@ const mocks = (
   const inertSubscriber = {} as ResolvedPublicTopic<never>['subscriber'];
   const ctx1: PortfolioInstanceContext = {
     zoeTools,
-    chainHubTools,
-    contractAddresses: contractAddressesMock,
+    usdc: { denom, brand: USDC },
+    contracts: contractAddressesMock,
     inertSubscriber,
   };
 
-  const mockChainhub = {
-    getChainInfo: chainName => {
-      if (!(chainName in axelarCCTPConfig)) {
-        throw Error(`unable to get chainInfo for ${chainName}`);
-      }
-      return axelarCCTPConfig[chainName];
-    },
+  const getChainInfo = chainName => {
+    if (!(chainName in axelarCCTPConfig)) {
+      throw Error(`unable to get chainInfo for ${chainName}`);
+    }
+    return axelarCCTPConfig[chainName];
   };
 
   const rebalanceHost = (seat, offerArgs, kit) =>
@@ -262,7 +262,7 @@ const mocks = (
     zcf: mockZCF,
     vowTools,
     timer,
-    chainHub: mockChainhub as ChainHub,
+    chainHubTools: { getChainInfo },
     rebalance: rebalanceHost as any,
     rebalanceFromTransfer: rebalanceFromTransferHost as any,
     proposalShapes: makeProposalShapes(USDC),
@@ -466,12 +466,12 @@ test('open portfolio with Aave position', async t => {
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', amounts: { AaveAccount: { value: 50n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-2' } },
+    { _method: 'transfer', address: { chainId: 'axelar-3' } },
     { _method: 'localTransfer', amounts: { Aave: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'depositForBurn' },
     { _method: 'localTransfer', amounts: { AaveGmp: { value: 100n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-2' } },
+    { _method: 'transfer', address: { chainId: 'axelar-3' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -502,12 +502,12 @@ test('open portfolio with Compound position', async t => {
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', amounts: { CompoundAccount: { value: 300n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-2' } },
+    { _method: 'transfer', address: { chainId: 'axelar-3' } },
     { _method: 'localTransfer', amounts: { Compound: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'depositForBurn' },
     { _method: 'localTransfer', amounts: { CompoundGmp: { value: 100n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-2' } },
+    { _method: 'transfer', address: { chainId: 'axelar-3' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details

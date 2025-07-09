@@ -10,8 +10,8 @@ import type {
 } from '@agoric/internal/src/lib-chainStorage.js';
 import {
   type AccountId,
+  type ActualChainInfo,
   type CaipChainId,
-  type ChainHub,
 } from '@agoric/orchestration';
 import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
@@ -28,16 +28,17 @@ import { X } from '@endo/errors';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { YieldProtocol } from './constants.js';
-import type { NobleAccount } from './type-guards.js';
+import { AxelarChain, SupportedChain, YieldProtocol } from './constants.js';
+import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
+import { preparePosition, type Position } from './pos.exo.js';
+import type { PoolKey, StatusFor } from './type-guards.js';
 import {
-  AxelarChains,
   makeFlowPath,
   makePortfolioPath,
   OfferArgsShapeFor,
   PoolKeyShape,
   type makeProposalShapes,
-  type OfferArgsFor
+  type OfferArgsFor,
 } from './type-guards.js';
 
 const trace = makeTracer('PortExo');
@@ -147,7 +148,7 @@ export const preparePortfolioKit = (
     rebalance,
     rebalanceFromTransfer,
     timer,
-    chainHub,
+    chainHubTools,
     proposalShapes,
     vowTools,
     zcf,
@@ -168,7 +169,9 @@ export const preparePortfolioKit = (
       handled: boolean;
     }>;
     timer: Remote<TimerService>;
-    chainHub: ChainHub;
+    chainHubTools: {
+      getChainInfo: <K extends string>(chainName: K) => Vow<ActualChainInfo<K>>;
+    };
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     vowTools: VowTools;
     zcf: ZCF;
@@ -265,17 +268,9 @@ export const preparePortfolioKit = (
 
           // XXX we must have more than just a (forgeable) memo check here to
           // determine if the source of this packet is the Axelar chain!
-          const axelarChain = values(axelarChainsMap).find(
-            chain => chain.axelarId === memo.source_chain,
-          );
-
-          trace('receiveUpcall packet data', tx);
-          if (!tx.memo) return;
-          const memo: AxelarGmpIncomingMemo = JSON.parse(tx.memo); // XXX unsound! use typed pattern
-
           if (
-            !values(AxelarChains).includes(
-              memo.source_chain as keyof typeof AxelarChains,
+            !values(AxelarChain).includes(
+              memo.source_chain as keyof typeof AxelarChain,
             )
           ) {
             console.warn('unknown source_chain', memo);
@@ -306,8 +301,10 @@ export const preparePortfolioKit = (
               result,
             );
 
+            // chainInfo is safe to await: registerChain(...) ensure it's already resolved,
+            // so vowTools.when won't cause async delays or cross-vat calls.
             const chainInfo = await vowTools.when(
-              chainHub.getChainInfo(chainName),
+              chainHubTools.getChainInfo(chainName),
             );
             const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
 
