@@ -289,17 +289,13 @@ type FlowStatus = {
   amount: Amount<'nat'>;
   error?: string;
 };
-type GMPStatusTODO = {
-  protocol: YieldProtocol;
-  accountId: AccountId | undefined;
-};
 
 // XXX relate paths to types a la readPublished()
 export type StatusFor = {
   portfolio: {
     positionKeys: PoolKey[];
     flowCount: number;
-    // TODO: accountIdByChain: Record<ChainAccountKey, AccountId>;
+    // XXX: accountIdByChain: Record<ChainAccountKey, AccountId>;
     accountIdByChain: Record<string, AccountId>;
   };
   position: {
@@ -310,10 +306,7 @@ export type StatusFor = {
     totalOut: Amount<'nat'>;
   };
   // XXX refactor using AssetMoveDesc
-  flow:
-    | FlowStatus
-    | (Omit<FlowStatus, 'dest'> & { where: string }) // recovery failed
-    | GMPStatusTODO;
+  flow: FlowStatus | (Omit<FlowStatus, 'dest'> & { where: string }); // recovery failed
 };
 
 export const PoolKeyShape = M.string(); // prefer string over M.or(...) for extensibility

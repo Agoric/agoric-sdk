@@ -91,7 +91,7 @@ const rebalanceScenarioMacro = test.macro({
     const { Access: _, ...skipAssets } = payouts;
     t.deepEqual(skipAssets, s2.payouts, 'payouts');
 
-    // TODO: inspect bridge for netTransfersByPosition chains?
+    // XXX: inspect bridge for netTransfersByPosition chains?
   },
   title(providedTitle = '', description: string) {
     return `${providedTitle} ${description}`.trim();

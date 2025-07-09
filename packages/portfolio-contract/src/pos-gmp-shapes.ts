@@ -32,7 +32,7 @@ export const makeGMPGiveRestShape = (
     harden({}),
     AaveGiveShape,
     CompoundGiveShape,
-    // TODO: and no others
+    // XXX: and no others
     M.and(M.splitRecord(AaveGiveShape), M.splitRecord(CompoundGiveShape)),
   );
 };

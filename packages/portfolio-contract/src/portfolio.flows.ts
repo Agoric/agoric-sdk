@@ -49,13 +49,13 @@ import {
   type PoolKey,
   type ProposalType0,
 } from './type-guards.ts';
-// TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
+// XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
 const { keys } = Object;
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
-export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>; // TODO: move to type-guards as external interface?
+export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
 
 type PortfolioBootstrapContext = {
   contracts: EVMContractAddressesMap;
@@ -119,7 +119,7 @@ export const trackFlow = async (
       }
       step += 1;
     }
-    // TODO: delete the flow storage node
+    // TODO(#NNNN): delete the flow storage node
     // reporter.publishFlowStatus(flowId, { complete: true });
   } catch (err) {
     console.error('⚠️ step', step, ' failed', err);
@@ -461,7 +461,7 @@ export const openPortfolio = (async (
   orch: Orchestrator,
   ctx: PortfolioBootstrapContext,
   seat: ZCFSeat,
-  offerArgs: OfferArgsFor['openPortfolio'], // TODO: USDN/USDC ratio
+  offerArgs: OfferArgsFor['openPortfolio'],
 ) => {
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   try {

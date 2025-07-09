@@ -163,7 +163,6 @@ test('open a portfolio with Aave position', async t => {
   t.snapshot(actual.payouts, 'refund payouts');
 });
 
-// TODO: to deal with bridge coordination, move this to a bootstrap test
 test('open a portfolio with Compound position', async t => {
   const { trader1, common } = await setupTrader(t);
   const { usdc, poc26 } = common.brands;
@@ -200,7 +199,6 @@ test('open a portfolio with Compound position', async t => {
   t.snapshot(actual.payouts, 'refund payouts');
 });
 
-// TODO: to deal with bridge coordination, move this to a bootstrap test
 test('open portfolio with USDN, Aave positions', async t => {
   const { trader1, common } = await setupTrader(t);
   const { usdc, poc26 } = common.brands;

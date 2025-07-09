@@ -149,6 +149,7 @@ export const sendTokensViaCCTP = async (
     const { remoteAddress } = await kit.reader.getGMPInfo(destinationEVMChain);
     const destinationAddress: AccountId = `${caipChainId}:${remoteAddress}`;
     trace(`CCTP destinationAddress: ${destinationAddress}`);
+    // TODO(Luqi): how to recover from CCTP transfer?
 
     try {
       await nobleAccount.depositForBurn(destinationAddress, denomAmount);
@@ -160,7 +161,7 @@ export const sendTokensViaCCTP = async (
       throw err;
     }
   } catch (err) {
-    // TODO: use X from @endo/errors
+    // XXX: use X from @endo/errors
     const errorMsg = `⚠️ Noble transfer failed`;
     console.error(errorMsg, err);
     await zoeTools.withdrawToSeat(localAcct, seat, amounts);

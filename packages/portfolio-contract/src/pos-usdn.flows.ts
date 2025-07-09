@@ -136,7 +136,7 @@ export const protocolUSDN = {
 
       trace('executing', [msgSwap].filter(Boolean));
       const result = await ica.executeEncodedTx(protoMessages);
-      trace('TODO: decode Swap, Lock result; detect errors', result);
+      trace('XXX: decode Swap, Lock result; detect errors', result);
     },
   },
   withdraw: {
@@ -150,7 +150,7 @@ export const protocolUSDN = {
       );
       trace('executing', [msgUnlock, msgSwap].filter(Boolean));
       const result = await ica.executeEncodedTx(protoMessages);
-      trace('TODO: decode Swap, Lock result; detect errors', result);
+      trace('XXX: decode Swap, Lock result; detect errors', result);
     },
     recover: async () => {},
   },
@@ -275,7 +275,7 @@ export const addToUSDNPosition = async (
 
         trace('executing', [msgSwap, msgLock].filter(Boolean));
         const result = await ica.executeEncodedTx(protoMessages);
-        trace('TODO: decode Swap, Lock result; detect errors', result);
+        trace('XXX: decode Swap, Lock result; detect errors', result);
       },
       // XXX consider putting withdaw here
       recover: async () => {},

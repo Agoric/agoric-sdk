@@ -201,7 +201,6 @@ const mocks = (
                   destinationAddress,
                   denomAmount,
                 });
-                // TODO: errors
               },
             });
           }
@@ -394,7 +393,6 @@ test('open portfolio with USDN position', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
-// TODO: and , Compound,
 const openAndTransfer: import('ava').Macro<[() => VTransferIBCEvent[]]> =
   test.macro(async (t, makeEvents) => {
     const { make } = AmountMath;
@@ -407,6 +405,7 @@ const openAndTransfer: import('ava').Macro<[() => VTransferIBCEvent[]]> =
         Aave: oneThird,
         AaveGmp: make(USDC, 100n),
         AaveAccount: make(USDC, 150n),
+        // XXX: check snapshots with Compound
         // Compound: oneThird,
         // CompoundGmp: make(USDC, 100n),
         // CompoundAccount: make(USDC, 150n),

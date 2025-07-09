@@ -182,7 +182,7 @@ const axelarCCTPConfigTestnet = {
 
 const ccptConfig = { ...axelarCCTPConfig, ...axelarCCTPConfigTestnet };
 
-/** TODO: how to address this in production? route thru Osmosis? */
+/** TODO: use BLD for Axelar fees so we can send direct, not via Noble */
 export const chainInfoFantasyTODO = {
   ...withChainCapabilities(fetchedChainInfo),
   noble: {
