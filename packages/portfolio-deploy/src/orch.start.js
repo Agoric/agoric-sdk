@@ -1,5 +1,5 @@
 import { deeplyFulfilledObject, makeTracer, objectMap } from '@agoric/internal';
-import { E } from '@endo/far';
+import { E, passStyleOf } from '@endo/far';
 import { makeAssetInfo } from './chain-name-service.js';
 import { fromExternalConfig } from './config-marshal.js';
 /**
@@ -68,6 +68,7 @@ export const permittedIssuers = async (agoricNames, permitG) => {
  * @param {MakePrivateArgs<SF, CFG>} makePrivateArgs
  * @param {CorePowersG<CN, SF, P> & BootstrapPowers & ChainStoragePowers} powers
  * @param {{ options: LegibleCapData<CFG> }} configStruct
+ * @param {IssuerKeywordRecord} [issuerKeywordRecord]
  * @returns {Promise<{ config: any, kit: UpgradeKit<SF> }>}
  */
 export const startOrchContract = async (
@@ -79,18 +80,22 @@ export const startOrchContract = async (
     produce,
     consume,
     installation: {
-      consume: { [name]: installation },
+      consume: { [name]: installationP },
     },
     instance: {
       produce: { [name]: produceInstance },
     },
   },
   configStruct,
+  issuerKeywordRecord,
 ) => {
   trace('startOrchContract');
 
   const { agoricNames, zoe } = consume;
-  const issuerKeywordRecord = await permittedIssuers(agoricNames, permitG);
+  await null;
+  // XXX This is becoming messy. try turning startOrchContract
+  // the other way around, more like withOrchestration?
+  issuerKeywordRecord ||= await permittedIssuers(agoricNames, permitG);
 
   /** @type {Promise<NameHub>} */
   const brandHub = E(agoricNames).lookup('brand');
@@ -100,8 +105,8 @@ export const startOrchContract = async (
     fromEntries(xVatEntries),
     deployConfigShape,
   );
-  const { terms } = config;
-  trace('using terms', terms);
+  const { terms: customTerms } = config;
+  trace('using terms', customTerms);
 
   const { chainStorage, board } = consume;
   const { storageNode, marshaller } = await makePublishingStorageKit(name, {
@@ -129,21 +134,25 @@ export const startOrchContract = async (
     config,
   );
 
-  trace(
-    '@@@',
-    name,
-    await E(zoe).getBundleIDFromInstallation(await installation),
-  );
   const { startUpgradable } = consume;
+  const installation = await installationP;
+
+  const [installationId, bundleId] = await Promise.all([
+    E(board).getId(installation),
+    E(zoe).getBundleIDFromInstallation(installation),
+  ]);
+
+  trace('startUpgradable', { installationId, bundleId });
+
   const kit = await E(startUpgradable)({
     label: name,
     installation,
     issuerKeywordRecord,
-    terms,
+    terms: customTerms,
     privateArgs,
   });
   const { instance } = kit;
-  trace('started terms', await E(zoe).getTerms(instance));
+
   /** @type {UpgradeKit<SF>} */
   const fullKit = harden({ ...kit, privateArgs });
   // @ts-expect-error XXX tsc gets confused?
@@ -152,15 +161,22 @@ export const startOrchContract = async (
   produceInstance.reset();
   produceInstance.resolve(instance);
 
-  trace('startOrchContract done', instance);
+  const [instanceId, terms] = await Promise.all([
+    E(board).getId(instance),
+    E(zoe).getTerms(instance),
+  ]);
+
+  trace(
+    ...[
+      ['startOrchContract done', name],
+      ['getId(instance):', instanceId],
+      ['terms:', terms],
+      [objectMap(fullKit, it => passStyleOf(it))],
+    ].flat(),
+  );
   return { config, kit: fullKit };
 };
 harden(startOrchContract);
-
-const DBG = (label, x) => {
-  console.log(label, x);
-  return x;
-};
 
 /**
  * @template {CopyRecord} CFG
@@ -177,13 +193,12 @@ export const makeGetManifest = (startFn, permit, contractName) => {
    * @param {{ installKeys: Record<CN, ERef<ManifestBundleRef>>, options: LegibleCapData<CFG> }} config
    */
   const getManifestForOrch = ({ restoreRef }, { installKeys, options }) => {
-    DBG('@@@installKeys', installKeys);
-    return DBG('@@@getManifestForOrch returns', {
+    return {
       /** @type {BootstrapManifest} */
       manifest: { [startFn.name]: permit },
       installations: { [contractName]: restoreRef(installKeys[contractName]) },
       options,
-    });
+    };
   };
   harden(getManifestForOrch);
 

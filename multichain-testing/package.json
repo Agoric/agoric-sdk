@@ -10,12 +10,14 @@
     "test:fast-usdc": "ava --config ava.fusdc.config.js",
     "test:queries": "ava --config ava.queries.config.js",
     "test:staking": "ava --config ava.staking.config.js",
+    "test:ymd": "ava --config ava.ymd.config.js",
     "test:xcs": "ava --config ava.xcs.config.js"
   },
   "packageManager": "yarn@4.9.1",
   "devDependencies": {
     "@agoric/cosmic-proto": "dev",
     "@agoric/fast-usdc": "dev",
+    "@agoric/internal": "dev",
     "@cosmjs/amino": "npm:^0.32.4",
     "@cosmjs/cosmwasm-stargate": "^0.33.1",
     "@cosmjs/crypto": "^0.33.0",

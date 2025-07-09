@@ -1,7 +1,7 @@
 // import { meta } from '@aglocal/portfolio-contract/src/portfolio.contract.meta.js';
-import { makeTracer, objectMap } from '@agoric/internal';
-import { passStyleOf } from '@endo/pass-style';
+import { makeTracer } from '@agoric/internal';
 import { M } from '@endo/patterns';
+import { getAxelarChainsMap } from './axelar-configs.js';
 import {
   lookupInterchainInfo,
   makeGetManifest,
@@ -11,12 +11,11 @@ import { name, permit } from './portfolio.contract.permit.js';
 
 /**
  * @import { start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
- * @import {AxelarChainsMap, EVMContractAddresses } from '@aglocal/portfolio-contract/src/type-guards.js';
  * @import { Marshaller } from '@agoric/internal/src/lib-chainStorage.js';
- * @import { OrchestrationPowers } from '@agoric/orchestration';
  * @import { CopyRecord } from '@endo/pass-style';
  * @import { LegibleCapData } from './config-marshal.js';
- * @import { CorePowersG } from './orch.start.types.ts';
+ * @import { OrchestrationPowersWithStorage } from './orch.start.types.ts';
+ * @import {PortfolioBootPowers} from './portfolio-start.type.ts';
  */
 
 // TODO: use assetInfo, chainInfo from config too?
@@ -24,41 +23,19 @@ const deployConfigShape = M.splitRecord({});
 
 const trace = makeTracer(`YMX-Start`, true);
 
-// TODO: where do we get these contract addresses in production? in devnet? in multichain-testing?
-/** @type {EVMContractAddresses} */
-const contractAddresses = {
-  aavePool: '0x1111111111111111111111111111111111111111',
-  compound: '0xA0b86a33E6A3E81E27Da9c18c4A77c9Cd4e08D57',
-  factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-  usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-};
-
-// TODO: sort out the values for this map for production and testnet
-/** @type {AxelarChainsMap} */
-const axelarChainsMap = {
-  Ethereum: {
-    caip: 'eip155:1',
-    axelarId: 'ethereum',
-  },
-  Avalanche: {
-    caip: 'eip155:43114',
-    axelarId: 'avalanche',
-  },
-  Base: {
-    caip: 'eip155:8453',
-    axelarId: 'base',
-  },
+const isValidEVMAddress = address => {
+  return /^0x[a-fA-F0-9]{40}$/.test(address);
 };
 
 /**
- * @param {OrchestrationPowers} orchestrationPowers
+ * @param {OrchestrationPowersWithStorage} orchestrationPowers
  * @param {Marshaller} marshaller
- * @param {unknown} _config
+ * @param {CopyRecord} config
  */
 export const makePrivateArgs = async (
   orchestrationPowers,
   marshaller,
-  _config,
+  config,
 ) => {
   const { agoricNames } = orchestrationPowers;
   const { chainInfo, assetInfo } = await lookupInterchainInfo(agoricNames, {
@@ -68,13 +45,29 @@ export const makePrivateArgs = async (
   });
   trace('@@@@assetInfo', JSON.stringify(assetInfo, null, 2));
 
+  const axelarChainsMap = getAxelarChainsMap(config.net);
+  if (!axelarChainsMap) {
+    throw new Error(
+      `axelarChainsMap is undefined for environment: ${config.net}`,
+    );
+  }
+
+  for (const [_chain, { contractAddresses }] of Object.entries(
+    axelarChainsMap,
+  )) {
+    for (const [_name, address] of Object.entries(contractAddresses)) {
+      if (!isValidEVMAddress(address)) {
+        throw new Error(`Invalid EVM address: ${address}`);
+      }
+    }
+  }
+
   /** @type {Parameters<typeof start>[1]} */
   const it = harden({
     ...orchestrationPowers,
     marshaller,
     chainInfo,
     assetInfo,
-    contractAddresses,
     axelarChainsMap,
   });
   return it;
@@ -82,25 +75,29 @@ export const makePrivateArgs = async (
 harden(makePrivateArgs);
 
 /**
- * @param {BootstrapPowers & CorePowersG<name, typeof start, typeof permit>} permitted
+ * @param {BootstrapPowers & PortfolioBootPowers} permitted
  * @param {{ options: LegibleCapData<CopyRecord> }} configStruct
  * @returns {Promise<void>}
  */
 export const startPortfolio = async (permitted, configStruct) => {
   trace('startPortfolio');
-  const { config, kit } = await startOrchContract(
+  const { issuer } = permitted;
+  const [USDC, PoC26] = await Promise.all([
+    issuer.consume.USDC,
+    issuer.consume.PoC26,
+  ]);
+  const issuerKeywordRecord = { USDC, Access: PoC26 };
+  await startOrchContract(
     name,
     deployConfigShape,
     permit,
     makePrivateArgs,
     permitted,
     configStruct,
+    issuerKeywordRecord,
   );
 
-  trace('startPortfolio done', {
-    config: objectMap(config, v => passStyleOf(v)),
-    kit: objectMap(kit, v => passStyleOf(v)),
-  });
+  trace('startPortfolio done');
 };
 
 // XXX hm... we need to preserve the function name.

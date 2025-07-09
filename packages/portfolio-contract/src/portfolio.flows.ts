@@ -1,524 +1,267 @@
 /**
  * OrchestrationFlow functions for {@link portfolio.contract.ts}
- * @see {makeLocalAccount}
+ *
  * @see {openPortfolio}
+ * @see {rebalance}
  */
 import type { GuestInterface } from '@agoric/async-flow';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
-import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
-import type { Amount } from '@agoric/ertp';
-import { makeTracer, mustMatch } from '@agoric/internal';
-import { assert } from '@endo/errors';
+import { type Amount } from '@agoric/ertp';
+import { makeTracer } from '@agoric/internal';
 import type {
-  CosmosChainAddress,
+  Denom,
   OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
-  AccountId,
 } from '@agoric/orchestration';
-import {
-  AxelarGMPMessageType,
-  type AxelarGmpOutgoingMemo,
-} from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
+import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
-import type { PortfolioKit } from './portfolio.exo.ts';
-import {
-  buildGMPPayload,
-  gmpAddresses,
-} from '@agoric/orchestration/src/utils/gmp.js';
+import { assert, Fail } from '@endo/errors';
+import { type YieldProtocol, RebalanceStrategy } from './constants.js';
+import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
+import { changeGMPPosition } from './pos-gmp.flows.ts';
+import { changeUSDCPosition } from './pos-usdn.flows.ts';
+import type { Position } from './pos.exo.ts';
 import type {
-  AxelarChain,
   AxelarChainsMap,
-  BaseGmpArgs,
-  GmpArgsContractCall,
-  GmpArgsTransferAmount,
-  GmpArgsWithdrawAmount,
-  LocalAccount,
   OfferArgsFor,
-  PortfolioBootstrapContext,
-  PortfolioInstanceContext,
   ProposalType,
 } from './type-guards.ts';
-import { GMPArgsShape } from './type-guards.ts';
+import {
+  decodeAddressHook,
+  type HookQuery,
+} from '@agoric/cosmic-proto/address-hooks.js';
+import type { VTransferIBCEvent } from '@agoric/vats';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
-const { values } = Object;
+const { keys } = Object;
 
-// XXX: push down to Orchestration API in NobleMethods, in due course
-const makeSwapLockMessages = (
-  nobleAddr: CosmosChainAddress,
-  amountValue: bigint,
-  {
-    poolId = 0n,
-    denom = 'uusdc',
-    denomTo = 'uusdn',
-    vault = 1, // VaultType.STAKED,
-  } = {},
-) => {
-  const amount = `${amountValue}`;
-  const msgSwap: MsgSwap = {
-    signer: nobleAddr.value,
-    amount: { denom, amount },
-    routes: [{ poolId, denomTo }],
-    // TODO: swap min multiplier?
-    min: { denom: denomTo, amount },
-  };
-  const msgLock: MsgLock = {
-    signer: nobleAddr.value,
-    vault,
-    // TODO: swap multiplier
-    amount,
-  };
-  return { msgSwap, msgLock };
+export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
+export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>; // TODO: move to type-guards as external interface?
+
+type PortfolioBootstrapContext = {
+  axelarChainsMap: AxelarChainsMap;
+  usdc: { brand: Brand<'nat'>; denom: Denom };
+  zoeTools: GuestInterface<ZoeTools>;
+  makePortfolioKit: () => GuestInterface<PortfolioKit>;
+  inertSubscriber: GuestInterface<ResolvedPublicTopic<unknown>['subscriber']>;
 };
 
-const initRemoteEVMAccount = async (
-  orch,
-  ctx: PortfolioInstanceContext,
-  seat,
-  gmpArgs: BaseGmpArgs,
-  keeper: GuestInterface<PortfolioKit['keeper']>,
-) => {
-  const { axelarChainsMap, contractAddresses, inertSubscriber } = ctx;
-  const { destinationEVMChain, amount: gasAmount } = gmpArgs;
-
-  await sendGmp(
-    orch,
-    ctx,
-    seat,
-    harden({
-      destinationAddress: contractAddresses.factory,
-      destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCall,
-      amount: gasAmount,
-      contractInvocationData: [],
-    }),
-    keeper,
-  );
-
-  const addr = await keeper.getGMPAddress();
-  const caipChainId = axelarChainsMap[destinationEVMChain].caip;
-  const accountId: AccountId = `${caipChainId}:${addr}`;
-
-  const topic: GuestInterface<ResolvedPublicTopic<unknown>> = {
-    description: `EVM Addr`,
-    subscriber: inertSubscriber,
-    storagePath: accountId,
-  };
-  return topic;
+export type PortfolioInstanceContext = {
+  axelarChainsMap: AxelarChainsMap;
+  usdc: { brand: Brand<'nat'>; denom: Denom };
+  inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
+  zoeTools: GuestInterface<ZoeTools>;
 };
 
-const sendTokensViaCCTP = async (
-  orch,
-  ctx: PortfolioInstanceContext,
-  seat,
-  args: BaseGmpArgs,
-  keeper: GuestInterface<PortfolioKit>['keeper'],
+type AssetPlace =
+  | { pos: Position }
+  | { account: OrchestrationAccount<any> }
+  | { seat: ZCFSeat; keyword: string };
+
+const placeLabel = (place: AssetPlace) => {
+  if ('pos' in place) return place.pos.getPoolKey();
+  if ('account' in place) return coerceAccountId(place.account.getAddress());
+  return `seat:${place.keyword}`;
+};
+
+type AssetMovement = {
+  how: string;
+  amount: Amount<'nat'>;
+  src: AssetPlace;
+  dest: AssetPlace;
+  apply: () => Promise<void>;
+  recover: () => Promise<void>;
+};
+const moveStatus = ({ how, src, dest, amount }: AssetMovement) => ({
+  how,
+  src: placeLabel(src),
+  dest: placeLabel(dest),
+  amount,
+});
+const errmsg = (err: any) => ('message' in err ? err.message : `${err}`);
+
+export const trackFlow = async (
+  reporter: GuestInterface<PortfolioKit['reporter']>,
+  moves: AssetMovement[],
 ) => {
-  const { axelarChainsMap, chainHubTools, zoeTools } = ctx;
-  const { amount, destinationEVMChain } = args;
-  const natAmount = values(amount)[0];
-  const denom = await chainHubTools.getDenom(natAmount.brand);
-  assert(denom, 'denom must be defined');
-  const denomAmount = {
-    denom,
-    value: natAmount.value,
-  };
-
-  const nobleAccount = keeper.getUSDNICA();
-  const localAcct = keeper.getLCA();
-
-  trace('localTransfer', amount, 'to local', localAcct.getAddress().value);
-  // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
-  await zoeTools.localTransfer(seat, localAcct, amount);
+  const flowId = reporter.allocateFlowId();
+  let step = 1;
   try {
-    await localAcct.transfer(nobleAccount.getAddress(), natAmount);
-    const caipChainId = axelarChainsMap[destinationEVMChain].caip;
-    const remoteAccountAddress = await keeper.getGMPAddress();
-    const destinationAddress = `${caipChainId}:${remoteAccountAddress}`;
-    trace(`CCTP destinationAddress: ${destinationAddress}`);
-
-    try {
-      await nobleAccount.depositForBurn(
-        destinationAddress as `${string}:${string}:${string}`,
-        denomAmount,
-      );
-    } catch (err) {
-      console.error('⚠️ recover to local account.', amount);
-      await nobleAccount.transfer(localAcct.getAddress(), natAmount);
-      // TODO: and what if this transfer fails?
-      throw err;
+    for (const move of moves) {
+      trace(step, moveStatus(move));
+      reporter.publishFlowStatus(flowId, { step, ...moveStatus(move) });
+      await move.apply();
+      const { amount, src, dest } = move;
+      if ('pos' in src) {
+        src.pos.recordTransferOut(amount);
+      }
+      if ('pos' in dest) {
+        dest.pos.recordTransferIn(amount);
+      }
+      step += 1;
     }
+    // TODO: delete the flow storage node
+    // reporter.publishFlowStatus(flowId, { complete: true });
   } catch (err) {
-    // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
-    await zoeTools.withdrawToSeat(localAcct, seat, amount);
-    // TODO: use X from @endo/errors
-    const errorMsg = `⚠️ Noble transfer failed: ${err}`;
-    throw new Error(errorMsg);
+    console.error('⚠️ step', step, ' failed', err);
+    const failure = moves[step - 1];
+    const errStep = step;
+    while (step > 1) {
+      step -= 1;
+      const move = moves[step - 1];
+      const how = `unwind: ${move.how}`;
+      reporter.publishFlowStatus(flowId, { step, ...moveStatus(move), how });
+      try {
+        await move.recover();
+      } catch (err) {
+        console.error('⚠️ unwind step', step, ' failed', err);
+        // if a recover fails, we just give up and report `where` the assets are
+        const { dest: where, ...ms } = moveStatus(move);
+        const final = { step, ...ms, how, where, error: errmsg(err) };
+        reporter.publishFlowStatus(flowId, final);
+        throw err;
+      }
+    }
+    reporter.publishFlowStatus(flowId, {
+      step: errStep,
+      ...moveStatus(failure),
+      error: errmsg(err),
+    });
+    throw err;
   }
 };
 
-const makeAxelarMemo = (
-  axelarChainsMap: AxelarChainsMap,
-  gmpArgs: GmpArgsContractCall,
-) => {
-  const {
-    contractInvocationData,
-    destinationEVMChain,
-    destinationAddress,
-    amount: gasAmount,
-    type,
-  } = gmpArgs;
-
-  trace(`targets: [${destinationAddress}]`);
-
-  const payload = buildGMPPayload(contractInvocationData);
-  const memo: AxelarGmpOutgoingMemo = {
-    destination_chain: axelarChainsMap[destinationEVMChain].axelarId,
-    destination_address: destinationAddress,
-    payload,
-    type,
-  };
-
-  memo.fee = {
-    amount: String(gasAmount.value),
-    recipient: gmpAddresses.AXELAR_GAS,
-  };
-
-  return harden(JSON.stringify(memo));
-};
-
-const sendGmp = async (
+export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
   orch: Orchestrator,
-  ctx: PortfolioInstanceContext,
-  seat: ZCFSeat,
-  gmpArgs: GmpArgsContractCall,
-  keeper: GuestInterface<PortfolioKit>['keeper'],
-) => {
-  mustMatch(gmpArgs, GMPArgsShape);
-  const { amount: gasAmount } = gmpArgs;
-  const { axelarChainsMap, chainHubTools, zoeTools } = ctx;
+  chainName: C,
+  kit: GuestInterface<PortfolioKit>, // Guest<T>?
+): Promise<AccountInfoFor[C]> => {
+  await null;
+  let promiseMaybe = kit.manager.reserveAccount(chainName);
+  if (promiseMaybe) {
+    return promiseMaybe as unknown as Promise<AccountInfoFor[C]>;
+  }
 
-  const axelar = await orch.getChain('axelar');
-  const { chainId } = await axelar.getChainInfo();
-
-  const localAccount = keeper.getLCA();
-  const natAmount = values(gasAmount)[0];
-  const denom = await chainHubTools.getDenom(natAmount.brand);
-  assert(denom, 'denom must be defined');
-  const denomAmount = {
-    denom,
-    value: natAmount.value,
-  };
-
-  try {
-    // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
-    await zoeTools.localTransfer(seat, localAccount, gasAmount);
-    const memo = makeAxelarMemo(axelarChainsMap, gmpArgs);
-    await localAccount.transfer(
-      {
-        value: gmpAddresses.AXELAR_GMP,
-        encoding: 'bech32',
-        chainId,
-      },
-      denomAmount,
-      { memo },
-    );
-  } catch (err) {
-    // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
-    await ctx.zoeTools.withdrawToSeat(localAccount, seat, gasAmount);
-    throw new Error(`sendGmp failed: ${err}`);
+  // We have the map entry reserved
+  switch (chainName) {
+    case 'noble': {
+      const nobleChain = await orch.getChain('noble');
+      const ica: NobleAccount = await nobleChain.makeAccount();
+      const info: AccountInfoFor['noble'] = {
+        namespace: 'cosmos',
+        chainName: 'noble' as const,
+        ica,
+      };
+      kit.manager.resolveAccount(info);
+      return info as AccountInfoFor[C];
+    }
+    case 'agoric': {
+      const agoricChain = await orch.getChain('agoric');
+      const lca = await agoricChain.makeAccount();
+      const reg = await lca.monitorTransfers(kit.tap);
+      trace('Monitoring transfers for', lca.getAddress().value);
+      const info: AccountInfoFor['agoric'] = {
+        namespace: 'cosmos',
+        chainName,
+        lca,
+        reg,
+      };
+      kit.manager.resolveAccount(info);
+      return info as AccountInfoFor[C];
+    }
+    default:
+      throw Error('unreachable');
   }
 };
-
-const supplyToAave = async (
-  orch: Orchestrator,
-  ctx: PortfolioInstanceContext,
-  seat: ZCFSeat,
-  gmpArgs: GmpArgsTransferAmount,
-  keeper: GuestInterface<PortfolioKit>['keeper'],
-) => {
-  const { destinationEVMChain, transferAmount, amount: gasAmount } = gmpArgs;
-  const { contractAddresses } = ctx;
-
-  const remoteEVMAddress = await keeper.getGMPAddress();
-
-  await sendGmp(
-    orch,
-    ctx,
-    seat,
-    harden({
-      destinationAddress: contractAddresses.factory,
-      destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCall,
-      amount: gasAmount,
-      contractInvocationData: [
-        {
-          functionSignature: 'approve(address,uint256)',
-          args: [contractAddresses.aavePool, transferAmount],
-          target: contractAddresses.usdc,
-        },
-        {
-          functionSignature: 'supply(address,uint256,address,uint16)',
-          args: [contractAddresses.usdc, transferAmount, remoteEVMAddress, 0],
-          target: contractAddresses.aavePool,
-        },
-      ],
-    }),
-    keeper,
-  );
-};
-
-/* c8 ignore start */
-const withdrawFromAave = async (
-  orch: Orchestrator,
-  ctx: PortfolioInstanceContext,
-  seat: ZCFSeat,
-  gmpArgs: GmpArgsWithdrawAmount,
-  keeper: GuestInterface<PortfolioKit>['keeper'],
-) => {
-  const { destinationEVMChain, withdrawAmount, amount: gasAmount } = gmpArgs;
-  const { contractAddresses } = ctx;
-
-  const remoteEVMAddress = await keeper.getGMPAddress();
-
-  await sendGmp(
-    orch,
-    ctx,
-    seat,
-    harden({
-      destinationAddress: contractAddresses.factory,
-      destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCall,
-      amount: gasAmount,
-      contractInvocationData: [
-        {
-          functionSignature: 'withdraw(address,uint256,address)',
-          args: [contractAddresses.usdc, withdrawAmount, remoteEVMAddress],
-          target: contractAddresses.aavePool,
-        },
-      ],
-    }),
-    keeper,
-  );
-};
-/* c8 ignore end */
-
-const supplyToCompound = async (
-  orch: Orchestrator,
-  ctx: PortfolioInstanceContext,
-  seat: ZCFSeat,
-  gmpArgs: GmpArgsTransferAmount,
-  keeper: GuestInterface<PortfolioKit>['keeper'],
-) => {
-  const { destinationEVMChain, transferAmount, amount: gasAmount } = gmpArgs;
-  const { contractAddresses } = ctx;
-
-  const remoteEVMAddress = await keeper.getGMPAddress();
-  assert(remoteEVMAddress, 'remoteEVMAddress must be defined');
-
-  await sendGmp(
-    orch,
-    ctx,
-    seat,
-    harden({
-      destinationAddress: contractAddresses.factory,
-      destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCall,
-      amount: gasAmount,
-      contractInvocationData: [
-        {
-          functionSignature: 'approve(address,uint256)',
-          args: [contractAddresses.compound, transferAmount],
-          target: contractAddresses.usdc,
-        },
-        {
-          functionSignature: 'supply(address,uint256)',
-          args: [contractAddresses.usdc, transferAmount],
-          target: contractAddresses.compound,
-        },
-      ],
-    }),
-    keeper,
-  );
-};
-
-/* c8 ignore start */
-const withdrawFromCompound = async (
-  orch: Orchestrator,
-  ctx: PortfolioInstanceContext,
-  seat: ZCFSeat,
-  gmpArgs: GmpArgsWithdrawAmount,
-  keeper: GuestInterface<PortfolioKit>['keeper'],
-) => {
-  const { destinationEVMChain, withdrawAmount, amount: gasAmount } = gmpArgs;
-  const { contractAddresses } = ctx;
-
-  const remoteEVMAddress = await keeper.getGMPAddress();
-  assert(remoteEVMAddress, 'remoteEVMAddress must be defined');
-
-  await sendGmp(
-    orch,
-    ctx,
-    seat,
-    harden({
-      destinationAddress: contractAddresses.factory,
-      destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCall,
-      amount: gasAmount,
-      contractInvocationData: [
-        {
-          functionSignature: 'withdraw(address,uint256)',
-          args: [contractAddresses.usdc, withdrawAmount],
-          target: contractAddresses.compound,
-        },
-      ],
-    }),
-    keeper,
-  );
-};
-/* c8 ignore end */
 
 export const rebalance = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['rebalance'],
-  keeper: GuestInterface<PortfolioKit>['keeper'],
+  kit: GuestInterface<PortfolioKit>,
 ) => {
-  const { destinationEVMChain } = offerArgs;
-  const addToUSDNPosition = async (amount: Amount<'nat'>) => {
-    const ica = keeper.getUSDNICA();
-    const there = ica.getAddress();
-
-    const localAcct = keeper.getLCA();
-    const amounts = harden({ USDN: amount });
-    trace('localTransfer', amount, 'to local', localAcct.getAddress().value);
-    // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
-    await ctx.zoeTools.localTransfer(seat, localAcct, amounts);
-    try {
-      trace('IBC transfer', amount, 'to', there, `${ica}`);
-      await localAcct.transfer(there, amount);
-      try {
-        // NOTE: proposalShape guarantees that amount.brand is USDC
-        const { msgSwap, msgLock } = makeSwapLockMessages(there, amount.value);
-
-        trace('executing', [msgSwap, msgLock]);
-        const result = await ica.executeEncodedTx([
-          Any.toJSON(MsgSwap.toProtoMsg(msgSwap)),
-          Any.toJSON(MsgLock.toProtoMsg(msgLock)),
-        ]);
-        trace('TODO: decode Swap, Lock result; detect errors', result);
-      } catch (err) {
-        console.error('⚠️ recover to local account.', amounts);
-        await ica.transfer(localAcct.getAddress(), amount);
-        // TODO: and what if this transfer fails?
-        throw err;
-      }
-    } catch (err) {
-      console.error('⚠️ recover to seat.', err);
-      // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
-      await ctx.zoeTools.withdrawToSeat(localAcct, seat, amounts);
-      // TODO: and what if the withdrawToSeat fails?
-      throw err;
-    }
-  };
-
   const proposal = seat.getProposal() as ProposalType['rebalance'];
-  trace(
-    'rebalance proposal',
-    (proposal as any).give,
-    (proposal as any).want,
-    offerArgs,
-  );
+  trace('rebalance proposal', proposal.give, proposal.want, offerArgs);
 
-  if (!('give' in proposal)) {
-    trace('TODO: withdraw');
-    return;
+  if (keys(proposal.want).length > 0) {
+    throw Error('TODO: withdraw');
   }
 
   const { give } = proposal;
-  if (give.USDN) {
-    await addToUSDNPosition(give.USDN);
+  if ('USDN' in give && give.USDN) {
+    await changeUSDCPosition(give, offerArgs, orch, kit, ctx, seat);
   }
-  // TODO: apply DRY for AAVE and Compound related functions
-  if (give.Gmp && give.Aave) {
-    trace('getGMPAddress()...');
-    const evmAddr = await keeper.getGMPAddress();
-    trace('evmAddr vow resolved', evmAddr);
 
-    await sendTokensViaCCTP(
-      orch,
-      ctx,
-      seat,
-      {
-        destinationEVMChain,
-        amount: harden({ Aave: give.Aave }),
-      },
-      keeper,
-    );
-    // Wait before supplying funds to aave - make sure tokens reach the remote EVM account
-    keeper.wait(20n);
-    assert(
-      destinationEVMChain,
-      'destinationEVMChain is required to open a remote EVM account',
-    );
-    trace(
-      'TODO: add unit tests for supply/withdraw functions for Aave and Compound',
-    );
-    await supplyToAave(
-      orch,
-      ctx,
-      seat,
-      {
-        destinationEVMChain: offerArgs.destinationEVMChain,
-        transferAmount: give.Aave.value,
-        amount: harden({ Gmp: give.Gmp }),
-      },
-      keeper,
-    );
-  }
-  if (give.Gmp && give.Compound) {
-    trace('getGMPAddress()...');
-    const evmAddr = await keeper.getGMPAddress();
-    trace('evmAddr vow resolved', evmAddr);
-
-    await sendTokensViaCCTP(
-      orch,
-      ctx,
-      seat,
-      {
-        destinationEVMChain,
-        amount: harden({ Compound: give.Compound }),
-      },
-      keeper,
-    );
-    // Wait before supplying funds to aave - make sure tokens reach the remote EVM account
-    keeper.wait(20n);
-    assert(
-      destinationEVMChain,
-      'destinationEVMChain is required to open a remote EVM account',
-    );
-    trace(
-      'TODO: add unit tests for supply/withdraw functions for Aave and Compound',
-    );
-    await supplyToCompound(
-      orch,
-      ctx,
-      seat,
-      {
-        destinationEVMChain: offerArgs.destinationEVMChain,
-        transferAmount: give.Compound.value,
-        amount: harden({ Gmp: give.Gmp }),
-      },
-      keeper,
-    );
+  const { entries } = Object;
+  for (const [keyword, amount] of entries(give)) {
+    if (!['Aave', 'Compound'].includes(keyword)) continue;
+    const protocol = keyword as 'Aave' | 'Compound';
+    await changeGMPPosition(orch, ctx, seat, offerArgs, kit, protocol, give);
   }
 };
+
+export const rebalanceFromTransfer = (async (
+  orch: Orchestrator,
+  ctx: PortfolioInstanceContext,
+  packet: VTransferIBCEvent['packet'],
+  kit: PortfolioKit,
+): Promise<{
+  parsed: Awaited<ReturnType<LocalAccount['parseInboundTransfer']>> | null;
+  handled: boolean;
+}> => {
+  await null;
+  const { reader } = kit;
+
+  const lca = reader.getLocalAccount();
+  const parsed = await lca.parseInboundTransfer(packet);
+  if (!parsed) {
+    return harden({ parsed: null, handled: false });
+  }
+  trace('rebalanceFromTransfer parsed', parsed);
+
+  const {
+    amount,
+    extra: { receiver },
+  } = parsed;
+  const { baseAddress, query } = decodeAddressHook(receiver);
+  const { rebalance: strategy } = query;
+  if (strategy === undefined) {
+    return harden({ parsed, handled: false });
+  }
+
+  switch (strategy) {
+    // Preset strategy is currently hardcoded to PreserveExistingProportions
+    // XXX make it more dynamic, such as taking into account any prior
+    // explicit earmarking of inbound transfers.
+    case RebalanceStrategy.Preset:
+    case RebalanceStrategy.PreserveExistingProportions: {
+      // XXX implement PreserveExistingProportions
+      trace(
+        'rebalanceFromTransfer PreserveExistingProportions',
+        amount,
+        query,
+        baseAddress,
+      );
+      throw harden({
+        msg: 'rebalanceFromTransfer unimplemented PreserveExistingProportions strategy',
+        amount,
+        query,
+        baseAddress,
+      });
+    }
+    default: {
+      Fail`unknown rebalance strategy ${strategy} for ${amount} in ${baseAddress}`;
+    }
+  }
+
+  // Don't continue with the transfer, since we handled it.
+  return harden({ parsed, handled: true });
+}) satisfies OrchestrationFlow;
 
 /**
  * Offer handler to make a portfolio and, optionally, open yield positions.
@@ -526,7 +269,7 @@ export const rebalance = async (
  * ASSUME seat's proposal is guarded as per {@link makeProposalShapes}
  *
  * @returns {*} following continuing invitation pattern, with a topic
- * for each position opened, with the address in storagePath.
+ * with a topic for the portfolio.
  */
 export const openPortfolio = (async (
   orch: Orchestrator,
@@ -540,79 +283,23 @@ export const openPortfolio = (async (
       makePortfolioKit,
       zoeTools,
       axelarChainsMap,
-      chainHubTools,
-      contractAddresses,
+      usdc,
       inertSubscriber,
     } = ctx;
-    const { destinationEVMChain } = offerArgs;
-    const agoric = await orch.getChain('agoric');
-    const { chainId } = await agoric.getChainInfo();
-    const localAccount: LocalAccount = await agoric.makeAccount();
-    const localAccountId: AccountId = `cosmos:${chainId}:${localAccount.getAddress().value}`;
+    const kit = makePortfolioKit();
+    await provideCosmosAccount(orch, 'agoric', kit);
 
-    const nobleChain = await orch.getChain('noble');
-    // Always make a Noble ICA, since we need it for CCTP
-    const nobleAccount = await nobleChain.makeAccount();
-    const nobleAddr = nobleAccount.getAddress();
-
-    // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
-    const kit = makePortfolioKit(nobleAccount, localAccount);
-    kit.keeper.initAave(axelarChainsMap[destinationEVMChain].caip);
-    kit.keeper.initCompound(axelarChainsMap[destinationEVMChain].caip);
-    const reg = await localAccount.monitorTransfers(kit.tap);
-    trace('Monitoring transfers for', localAccountId);
-    // TODO: save reg somewhere???
-
-    const storagePath = coerceAccountId(nobleAddr);
-    const nobleTopic: GuestInterface<ResolvedPublicTopic<unknown>> = {
-      description: 'USDN ICA',
-      subscriber: inertSubscriber,
-      storagePath,
-    };
-
-    const topics: GuestInterface<ResolvedPublicTopic<never>>[] = [
-      {
-        description: 'LCA',
-        storagePath: localAccountId,
-        subscriber: inertSubscriber,
-      },
-      nobleTopic,
-    ];
-
-    const { give } = seat.getProposal() as ProposalType['openPortfolio'];
     const portfolioCtx = {
       axelarChainsMap,
-      chainHubTools,
-      contractAddresses,
-      keeper: kit.keeper,
+      usdc,
+      keeper: { ...kit.reader, ...kit.manager },
       zoeTools,
       inertSubscriber,
     };
 
-    // Only initialize EVM account if there are EVM protocol positions
-    // TODO: Add a conditional for Compound
-    if (give.Account) {
-      try {
-        const topic = await initRemoteEVMAccount(
-          orch,
-          { ...portfolioCtx },
-          seat,
-          {
-            destinationEVMChain,
-            amount: harden({ Account: give.Account }),
-          },
-          kit.keeper,
-        );
-        topics.push(topic);
-      } catch (err) {
-        console.error('⚠️ initRemoteEVMAccount failed for Aave', err);
-        seat.fail(err);
-      }
-    }
-
     if (!seat.hasExited()) {
       try {
-        await rebalance(orch, portfolioCtx, seat, offerArgs, kit.keeper);
+        await rebalance(orch, portfolioCtx, seat, offerArgs, kit);
       } catch (err) {
         console.error('⚠️ rebalance failed', err);
         seat.fail(err);
@@ -620,9 +307,17 @@ export const openPortfolio = (async (
     }
 
     if (!seat.hasExited()) seat.exit();
+
+    const publicSubscribers: GuestInterface<PublicSubscribers> = {
+      portfolio: {
+        description: 'Portfolio',
+        storagePath: await kit.reader.getStoragePath(),
+        subscriber: inertSubscriber as any,
+      },
+    };
     return harden({
       invitationMakers: kit.invitationMakers,
-      publicTopics: topics,
+      publicSubscribers,
     });
     /* c8 ignore start */
   } catch (err) {

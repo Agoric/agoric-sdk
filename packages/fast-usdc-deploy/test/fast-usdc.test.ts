@@ -148,13 +148,10 @@ test.serial('prop 87: Beta', async t => {
     'startChannelOpenInit',
     AckBehavior.Never,
   );
-  await evalReleasedProposal('fast-usdc-beta-1', 'start-fast-usdc').catch(err =>
-    // the deployment succeeds so allow the particular known problem
-    assert.equal(
-      err.message,
-      'unsettled value for "kp1205"',
-      'unexpected error message',
-    ),
+  // the deployment succeeds so allow the particular known problem
+  await t.throwsAsync(
+    () => evalReleasedProposal('fast-usdc-beta-1', 'start-fast-usdc'),
+    { message: /^unsettled value for "kp[0-9]+"/ },
   );
 
   t.truthy(agoricNamesRemotes.instance.fastUsdc);

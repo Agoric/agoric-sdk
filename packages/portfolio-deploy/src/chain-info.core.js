@@ -131,7 +131,9 @@ export const publishChainInfo = async (
     const node = E(agoricNamesNode).makeChildNode(kind);
     // XXX setValue('') deletes a vstorage key (right?)
     await Promise.all(
-      oldKeys.map(k => E(E(node).makeChildNode(k)).setValue('')),
+      oldKeys.map(k =>
+        E(E(node).makeChildNode(k, { sequence: false })).setValue(''),
+      ),
     );
   }
 

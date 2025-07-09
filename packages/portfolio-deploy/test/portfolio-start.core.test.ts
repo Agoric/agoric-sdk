@@ -7,27 +7,34 @@ import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.js';
 import { makeTrader } from '@aglocal/portfolio-contract/test/portfolio-actors.ts';
 import { setupPortfolioTest } from '@aglocal/portfolio-contract/test/supports.ts';
 import { makeWallet } from '@aglocal/portfolio-contract/test/wallet-offer-tools.ts';
+import {
+  defaultSerializer,
+  documentStorageSchema,
+} from '@agoric/internal/src/storage-test-utils.js';
 import { makePromiseSpace } from '@agoric/vats';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import type { Instance, ZoeService } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
 import { toExternalConfig } from '../src/config-marshal.js';
-import type { CorePowersG } from '../src/orch.start.types.ts';
 import { startPortfolio } from '../src/portfolio-start.core.js';
-import {
-  name as contractName,
-  type permit,
-} from '../src/portfolio.contract.permit.js';
-
-type StartFn = typeof contractExports.start;
-type PortfolioBootPowers = CorePowersG<
-  typeof contractName,
+import type {
+  PortfolioBootPowers,
   StartFn,
-  typeof permit
->;
+} from '../src/portfolio-start.type.ts';
+import { name as contractName } from '../src/portfolio.contract.permit.js';
 
 const { entries, keys } = Object;
+
+const docOpts = {
+  note: 'YMax VStorage Schema',
+  // XXX?
+  // node: 'orchtest.ymax0',
+  // owner: 'ymax',
+  // pattern: 'orchtest.',
+  // replacement: 'published.',
+  showValue: defaultSerializer.parse,
+};
 
 test('coreEval code without swingset', async t => {
   const common = await setupPortfolioTest(t);
@@ -41,7 +48,7 @@ test('coreEval code without swingset', async t => {
   // XXX type of zoe from setUpZoeForTest is any???
   const { zoe: zoeAny, bundleAndInstall } = await setUpZoeForTest();
   const zoe: ZoeService = zoeAny;
-  const { usdc } = common.brands;
+  const { usdc, poc26 } = common.brands;
 
   {
     t.log('produce bootstrap entries from commonSetup()', keys(bootstrap));
@@ -59,7 +66,10 @@ test('coreEval code without swingset', async t => {
       }
     }
 
-    for (const [name, { brand, issuer }] of entries({ USDC: usdc })) {
+    for (const [name, { brand, issuer }] of entries({
+      USDC: usdc,
+      PoC26: poc26,
+    })) {
       t.log('produce brand, issuer for', name);
       wk.brand.produce[name].resolve(brand);
       wk.issuer.produce[name].resolve(issuer);
@@ -86,7 +96,7 @@ test('coreEval code without swingset', async t => {
   );
 
   const options = toExternalConfig(
-    harden({ assetInfo: [], chainInfo: {} }),
+    harden({ assetInfo: [], chainInfo: {}, net: 'local' }),
     {},
     // currently no config. PortfolioConfigShape,
   );
@@ -107,21 +117,34 @@ test('coreEval code without swingset', async t => {
   t.is(passStyleOf(instance), 'remotable');
 
   const { vowTools, pourPayment } = utils;
-  const wallet = makeWallet({ USDC: usdc }, zoe, vowTools.when);
+  const { mint: _, ...poc26sansMint } = poc26;
+  const wallet = makeWallet(
+    { USDC: usdc, Access: poc26sansMint },
+    zoe,
+    vowTools.when,
+  );
   await wallet.deposit(await pourPayment(usdc.units(10_000)));
+  await wallet.deposit(poc26.mint.mintPayment(poc26.make(100n)));
   const silvia = makeTrader(wallet, instance);
-  const actualP = silvia.openPortfolio(t, { USDN: usdc.units(3_333) });
+  const actualP = silvia.openPortfolio(t, {
+    USDN: usdc.units(3_333),
+    Access: poc26.make(1n),
+  });
   // ack IBC transfer for forward
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   const actual = await actualP;
-  const ag1 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
   t.like(actual, {
     payouts: { USDN: { value: 0n } },
     result: {
-      publicTopics: [
-        { description: 'LCA', storagePath: `cosmos:agoric-3:${ag1}` },
-        { description: 'USDN ICA', storagePath: 'cosmos:noble-1:cosmos1test' },
-      ],
+      publicSubscribers: {
+        portfolio: {
+          description: 'Portfolio',
+          storagePath: `orchtest.ymax0.portfolios.portfolio0`,
+        },
+      },
     },
   });
+
+  const { storage } = common.bootstrap;
+  await documentStorageSchema(t, storage, docOpts);
 });

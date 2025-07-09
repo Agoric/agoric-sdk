@@ -1,8 +1,5 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
 import '@endo/init/debug.js';
-import childProcess from 'node:child_process';
-import fsp from 'node:fs/promises';
-import path from 'node:path';
 
 import { fetchNetworkConfig } from '@agoric/client-utils';
 import {
@@ -12,9 +9,13 @@ import {
   txFlags,
   waitForBlock,
 } from '@agoric/deploy-script-support/src/permissioned-deployment.js';
-import { flags, makeCmdRunner, makeFileRd } from '@agoric/pola-io';
+import { toCLIOptions } from '@agoric/internal/src/cli-utils.js';
+import { makeCmdRunner, makeFileRd } from '@agoric/pola-io';
+import { execa } from 'execa';
+import fsp from 'node:fs/promises';
+import path from 'node:path';
 import url from 'node:url';
-import { parseArgs, promisify, type ParseArgsConfig } from 'node:util';
+import { parseArgs, type ParseArgsConfig } from 'node:util';
 
 const TITLE = 'ymax0 w/Noble Dollar';
 
@@ -37,8 +38,11 @@ type ParsedArgs = {
 
 const main = async (
   argv = process.argv,
-  { execFile = promisify(childProcess.execFile) } = {},
-  fetch = globalThis.fetch,
+  {
+    fetch = globalThis.fetch,
+    execFile = (cmd, args, opts) =>
+      execa({ verbose: 'short' })(cmd, args, opts),
+  } = {},
 ) => {
   const getVersion = () =>
     makeCmdRunner('git', { execFile })
@@ -54,6 +58,9 @@ const main = async (
     values: ParsedArgs;
   };
   if (!builder) throw Error(USAGE);
+  if (!['mainnet', 'devnet', 'local'].includes(net)) {
+    throw Error(`Invalid net: ${net}. Must be 'mainnet', 'devnet', or 'local'`);
+  }
 
   // XXX ugh. what a pain.
   const pkg = path.join(url.fileURLToPath(import.meta.url), '../../');
@@ -76,7 +83,7 @@ const main = async (
   } = await fetchNetworkConfig(net, { fetch });
   const agdq = makeCmdRunner('agd', { execFile }).withFlags('--node', node);
   const agdTx = agdq.withFlags(
-    ...flags(txFlags({ node, from, chainId })),
+    ...toCLIOptions(txFlags({ node, from, chainId })),
     '--yes',
   );
   for (const b of plan.bundles) {

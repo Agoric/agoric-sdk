@@ -6,6 +6,7 @@
 DENOM="${DENOM:=uusdc}"
 CHAIN_BIN="${CHAIN_BIN:=nobled}"
 CHAIN_DIR="${CHAIN_DIR:=$HOME/.nobled}"
+INITIAL_UUSDN_AMOUNT="${INITIAL_UUSDN_AMOUNT:=100000000000000}"
 
 set -eux
 
@@ -175,6 +176,24 @@ USDC_METADATA='{
   ]
 }'
 
+USDN_METADATA='{
+  "base": "uusdn",
+  "display": "usdn",
+  "name": "usdn",
+  "symbol": "USDN",
+  "denom_units": [
+    {
+      "denom": "uusdn",
+      "aliases": ["microusdn"],
+      "exponent": "0"
+    },
+    {
+      "denom": "usdn",
+      "exponent": "6"
+    }
+  ]
+}'
+
 FRNZ_METADATA='{
   "base": "ufrienzies",
   "display": "ufrienzies",
@@ -198,8 +217,12 @@ FRNZ_METADATA='{
   ]
 }'
 
-jq --argjson usdc "$USDC_METADATA" --argjson frnz "$FRNZ_METADATA" \
-  '.app_state.bank.denom_metadata += [$usdc, $frnz]' \
+jq --argjson usdc "$USDC_METADATA" --argjson usdn "$USDN_METADATA" --argjson frnz "$FRNZ_METADATA" \
+  '.app_state.bank.denom_metadata += [$usdc, $usdn, $frnz]' \
+  $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
+
+jq --arg amount "$INITIAL_UUSDN_AMOUNT" \
+  '.app_state.bank.supply += [{ "denom": "uusdn", "amount": $amount }]' \
   $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
 
 # Configure parameter authority
@@ -216,6 +239,15 @@ jq --arg addr "$GENESIS_ADDR" '
   }
 ' $CHAIN_DIR/config/genesis.json \
   > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
+
+# Send uusdn to the "genesis" account
+jq --arg addr "$GENESIS_ADDR" --arg amount "$INITIAL_UUSDN_AMOUNT" \
+  '.app_state.bank.balances += [
+      { "address": $addr,
+        "coins": [{ "denom": "uusdn", "amount": $amount }]
+      }
+    ]' \
+  $CHAIN_DIR/config/genesis.json > /tmp/genesis.json && mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
 
 # Configure CCTP module
 echo "Configure CCTP module..."
@@ -308,7 +340,7 @@ function gov_overrides_sdk_v46() {
   mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
   jq -r '.app_state.gov.deposit_params.min_deposit[0].amount |= "10"' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json
   mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
-  jq -r '.app_state.gov.voting_params.voting_period |= "30s"' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json
+  jq -r '.app_state.gov.voting_params.voting_period |= "6s"' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json
   mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
   jq -r '.app_state.gov.tally_params.quorum |= "0.000000000000000000"' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json
   mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
@@ -324,7 +356,7 @@ function gov_overrides_sdk_v47() {
   mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
   jq -r '.app_state.gov.params.min_deposit[0].amount |= "10"' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json
   mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
-  jq -r '.app_state.gov.params.voting_period |= "30s"' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json
+  jq -r '.app_state.gov.params.voting_period |= "6s"' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json
   mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json
   jq -r '.app_state.gov.params.quorum |= "0.000000000000000000"' $CHAIN_DIR/config/genesis.json > /tmp/genesis.json
   mv /tmp/genesis.json $CHAIN_DIR/config/genesis.json

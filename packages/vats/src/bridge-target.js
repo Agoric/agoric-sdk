@@ -187,17 +187,28 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
     }),
     {
       bridgeHandler: {
-        fromBridge(obj) {
+        async fromBridge(obj) {
           const { inboundEventType, targetToApp } = this.state;
-          const { type, target } = obj;
+          const { type, target: inboundTarget } = obj;
 
           type === inboundEventType ||
             Fail`Invalid inbound event type ${type}; expected ${inboundEventType}`;
 
+          const { onlyIfRegistered } = inboundTarget || {};
+          const target = onlyIfRegistered || inboundTarget;
+
+          const hasApp = targetToApp.has(target);
+          if (onlyIfRegistered && !hasApp) {
+            // Skip without erroring if they requested the target only if
+            // registered, and the target is not registered.
+            return;
+          }
+
           target || Fail`Missing target property in ${obj}`;
 
           const app = targetToApp.get(target);
-          return E(app).receiveUpcall(obj);
+          const specificObj = { ...obj, target };
+          return E(app).receiveUpcall(specificObj);
         },
       },
       targetHost: {
@@ -216,7 +227,7 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
          * @returns {Promise<TargetRegistration>} power to set or delete the
          *   registration
          */
-        async register(target, app, args = []) {
+        async register(target, app, args = harden([])) {
           const { targetHost } = this.facets;
           const { appTransformer, targetToApp } = this.state;
 

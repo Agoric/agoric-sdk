@@ -1,31 +1,48 @@
+/**
+ * NOTE: This is host side code; can't use await.
+ */
 import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
-import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import { makeTracer, type Remote } from '@agoric/internal';
-import { type CaipChainId } from '@agoric/orchestration';
+import { AmountMath } from '@agoric/ertp';
+import { makeTracer, mustMatch, type Remote } from '@agoric/internal';
+import type {
+  Marshaller,
+  StorageNode,
+} from '@agoric/internal/src/lib-chainStorage.js';
+import { type AccountId, type CaipChainId } from '@agoric/orchestration';
 import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
+import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
+import type { MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import type { VTransferIBCEvent } from '@agoric/vats';
-import { VowShape, type VowKit, type VowTools } from '@agoric/vow';
-import type { Zone } from '@agoric/zone';
-import { atob } from '@endo/base64';
-import { E } from '@endo/far';
-import { M, mustMatch } from '@endo/patterns';
-import { YieldProtocol } from './constants.js';
-import type { AxelarChainsMap, NobleAccount } from './type-guards.js';
-import { type Vow } from '@agoric/vow';
+import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
+import { VowShape, type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
-import { InvitationShape, OfferHandlerI } from '@agoric/zoe/src/typeGuards.js';
+import type { Zone } from '@agoric/zone';
+import { atob, decodeBase64 } from '@endo/base64';
+import { X } from '@endo/errors';
+import type { ERef } from '@endo/far';
+import { E } from '@endo/far';
+import { M } from '@endo/patterns';
 import {
-  type makeProposalShapes,
-  type LocalAccount,
-  type OfferArgsFor,
+  SupportedChain,
+  YieldProtocol,
+  type AxelarChain,
+} from './constants.js';
+import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
+import { preparePosition, type Position } from './pos.exo.js';
+import type { AxelarChainsMap, PoolKey, StatusFor } from './type-guards.js';
+import {
+  makeFlowPath,
+  makePortfolioPath,
   OfferArgsShapeFor,
+  PoolKeyShape,
+  type makeProposalShapes,
+  type OfferArgsFor,
 } from './type-guards.js';
-import type { HostInterface } from '../../async-flow/src/types.js';
 
 const trace = makeTracer('PortExo');
-const { keys, values } = Object;
+const { values } = Object;
 
 export const DECODE_CONTRACT_CALL_RESULT_ABI = [
   {
@@ -46,76 +63,174 @@ export const DECODE_CONTRACT_CALL_RESULT_ABI = [
 harden(DECODE_CONTRACT_CALL_RESULT_ABI);
 
 const OrchestrationAccountShape = M.remotable('OrchestrationAccount');
-const KeeperI = M.interface('keeper', {
+const ReaderI = M.interface('reader', {
   getGMPAddress: M.call().returns(M.any()),
   getLCA: M.call().returns(OrchestrationAccountShape),
   getPositions: M.call().returns(M.arrayOf(M.string())),
   getUSDNICA: M.call().returns(OrchestrationAccountShape),
+});
+
+const ManagerI = M.interface('manager', {
   initAave: M.call(M.string()).returns(),
   initCompound: M.call(M.string()).returns(),
   wait: M.call(M.bigint()).returns(VowShape),
 });
 
-type EVMProtocolState = {
-  chain: CaipChainId;
+export type AccountInfo = GMPAccountInfo | AgoricAccountInfo | NobleAccountInfo;
+export type GMPAccountInfo = {
+  namespace: 'eip155';
+  chainName: AxelarChain;
+  chainId: CaipChainId;
+  remoteAddress: `0x${string}`;
+};
+type AgoricAccountInfo = {
+  namespace: 'cosmos';
+  chainName: 'agoric';
+  lca: LocalAccount;
+  reg: TargetRegistration;
+};
+type NobleAccountInfo = {
+  namespace: 'cosmos';
+  chainName: 'noble';
+  ica: NobleAccount;
+};
+
+export type AccountInfoFor = Record<AxelarChain, GMPAccountInfo> & {
+  agoric: AgoricAccountInfo;
+  noble: NobleAccountInfo;
 };
 
 type PortfolioKitState = {
-  Aave: EVMProtocolState | undefined;
-  Compound: EVMProtocolState | undefined;
-  USDN: NobleAccount;
-  Gmp: {
-    localAccount: HostInterface<LocalAccount>;
-    remoteAddressVK: VowKit<`0x${string}`>;
-  };
+  portfolioId: number;
+  accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
+  accounts: MapStore<SupportedChain, AccountInfo>;
+  positions: MapStore<PoolKey, Position>;
+  nextFlowId: number;
 };
 
-// NOTE: This is host side code; can't use await.
+/**
+ * For publishing, represent accounts collection using accountId values
+ */
+const accountIdByChain = (
+  accounts: PortfolioKitState['accounts'],
+): Partial<Record<SupportedChain, AccountId>> => {
+  const byChain = {};
+  for (const [n, info] of accounts.entries()) {
+    switch (info.namespace) {
+      case 'cosmos':
+        switch (info.chainName) {
+          case 'agoric':
+            byChain[n] = coerceAccountId(info.lca.getAddress());
+            break;
+          case 'noble':
+            byChain[n] = coerceAccountId(info.ica.getAddress());
+            break;
+        }
+        break;
+      case 'eip155':
+        byChain[n] = `${info.chainId}:${info.remoteAddress}`;
+        break;
+      default:
+        assert.fail(X`no such type: ${info}`);
+    }
+  }
+  return harden(byChain);
+};
+
+export type PublishStatusFn = <K extends keyof StatusFor>(
+  path: string[],
+  status: StatusFor[K],
+) => void;
+
 export const preparePortfolioKit = (
   zone: Zone,
   {
     axelarChainsMap,
     rebalance,
+    rebalanceFromTransfer,
     timer,
     proposalShapes,
     vowTools,
     zcf,
+    portfoliosNode,
+    marshaller,
+    usdcBrand,
   }: {
     axelarChainsMap: AxelarChainsMap;
     rebalance: (
       seat: ZCFSeat,
       offerArgs: OfferArgsFor['rebalance'],
-      keeper: unknown, // XXX avoid circular reference
+      kit: unknown, // XXX avoid circular reference
     ) => Vow<any>; // XXX HostForGuest???
+    rebalanceFromTransfer: (
+      packet: VTransferIBCEvent['packet'],
+      kit: unknown, // XXX avoid circular reference to this.facets
+    ) => Vow<{
+      parsed: Awaited<ReturnType<LocalAccount['parseInboundTransfer']>> | null;
+      handled: boolean;
+    }>;
     timer: Remote<TimerService>;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     vowTools: VowTools;
     zcf: ZCF;
+    portfoliosNode: ERef<StorageNode>;
+    marshaller: Marshaller;
+    usdcBrand: Brand<'nat'>;
   },
-) =>
-  zone.exoClassKit(
+) => {
+  const makePathNode = (path: string[]) => {
+    let node = portfoliosNode;
+    for (const segment of path) {
+      node = E(node).makeChildNode(segment);
+    }
+    return node;
+  };
+  const publishStatus: PublishStatusFn = (path, status): void => {
+    const node = makePathNode(path);
+    // Don't await, just writing to vstorage.
+    void E.when(E(marshaller).toCapData(status), capData =>
+      E(node).setValue(JSON.stringify(capData)),
+    );
+  };
+
+  const usdcEmpty = AmountMath.makeEmpty(usdcBrand);
+  const emptyTransferState = harden({
+    totalIn: usdcEmpty,
+    totalOut: usdcEmpty,
+    netTransfers: usdcEmpty,
+  });
+
+  const makePosition = preparePosition(zone, emptyTransferState, publishStatus);
+
+  return zone.exoClassKit(
     'Portfolio',
-    {
+    undefined /* TODO {
       tap: M.interface('tap', {
         receiveUpcall: M.call(M.record()).returns(M.promise()),
       }),
-      keeper: KeeperI,
+      reader: ReaderI,
+      manager: ManagerI,
       rebalanceHandler: OfferHandlerI,
       invitationMakers: M.interface('invitationMakers', {
         Rebalance: M.callWhen().returns(InvitationShape),
-      }),
-    },
-    (
-      nobleAcct: NobleAccount,
-      localAcct: HostInterface<LocalAccount>,
-    ): PortfolioKitState => {
+      })}*/,
+    ({ portfolioId }: { portfolioId: number }): PortfolioKitState => {
       return {
-        Aave: undefined,
-        Compound: undefined,
-        USDN: nobleAcct,
-        Gmp: harden({
-          localAccount: localAcct,
-          remoteAddressVK: vowTools.makeVowKit(),
+        portfolioId,
+        nextFlowId: 1,
+        accounts: zone.detached().mapStore('accounts', {
+          keyShape: M.string(),
+          valueShape: M.or(
+            M.remotable('Account'),
+            // XXX for EVM/GMP account info
+            M.record(),
+          ),
+        }),
+        accountsPending: zone.detached().mapStore('accountsPending'),
+        // NEEDSTEST: for forgetting to use detached()
+        positions: zone.detached().mapStore('positions', {
+          keyShape: PoolKeyShape,
+          valueShape: M.remotable('Position'),
         }),
       };
     },
@@ -123,27 +238,48 @@ export const preparePortfolioKit = (
       tap: {
         async receiveUpcall(event: VTransferIBCEvent) {
           trace('receiveUpcall', event);
-
-          const tx: FungibleTokenPacketData = JSON.parse(
-            atob(event.packet.data),
+          return vowTools.watch(
+            rebalanceFromTransfer(event.packet, this.facets),
+            this.facets.rebalanceFromTransferWatcher,
           );
-
-          trace('receiveUpcall packet data', tx);
-          if (!tx.memo) return;
-          const memo: AxelarGmpIncomingMemo = JSON.parse(tx.memo); // XXX unsound! use typed pattern
-
-          if (
-            !values(axelarChainsMap)
-              .map(chain => chain.axelarId)
-              .includes(memo.source_chain)
-          ) {
-            console.warn('unknown source_chain', memo);
+        },
+      },
+      rebalanceFromTransferWatcher: {
+        onRejected(reason) {
+          console.warn('⚠️ rebalanceFromTransfer failure', reason);
+          throw reason;
+        },
+        onFulfilled({ parsed, handled }) {
+          if (handled) {
+            trace('rebalanceFromTransfer handled; skipping GMP processing');
             return;
           }
 
+          if (!parsed) {
+            trace('GMP processing skipped; no parsed inbound transfer');
+            return;
+          }
+
+          const { extra } = parsed;
+          if (!extra.memo) return;
+          const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
+
+          // XXX we must have more than just a (forgeable) memo check here to
+          // determine if the source of this packet is the Axelar chain!
+          const axelarChain = values(axelarChainsMap).find(
+            chain => chain.axelarId === memo.source_chain,
+          );
+
+          if (!axelarChain) {
+            console.warn('unknown source_chain', memo);
+            return;
+          }
+          const chainName = memo.source_chain as AxelarChain;
+
+          const payloadBytes = decodeBase64(memo.payload);
           const [{ isContractCallResult, data }] = decodeAbiParameters(
             DECODE_CONTRACT_CALL_RESULT_ABI,
-            memo.payload as `0x${string}`, // hm.. cast...
+            payloadBytes,
           ) as [AgoricResponse];
 
           trace(
@@ -163,52 +299,134 @@ export const preparePortfolioKit = (
               result,
             );
 
-            const { Gmp } = this.state;
-            Gmp.remoteAddressVK.resolver.resolve(address);
+            this.facets.manager.resolveAccount({
+              namespace: 'eip155',
+              chainName,
+              chainId: axelarChain.caip,
+              remoteAddress: address,
+            });
             trace(`remoteAddress ${address}`);
           }
 
           trace('receiveUpcall completed');
         },
       },
-      keeper: {
-        getGMPAddress() {
-          const { Gmp } = this.state;
-          return Gmp.remoteAddressVK.vow;
+      reader: {
+        /**
+         * Get the LocalAccount for the current chain.
+         *
+         * We rely on the portfolio creator internally adding the Agoric
+         * account before making the PortfolioKit available to any clients.
+         *
+         * @returns the LocalAccount for the current chain.
+         */
+        getLocalAccount(): LocalAccount {
+          const { accounts } = this.state;
+          const info = accounts.get('agoric');
+          assert.equal(info?.chainName, 'agoric');
+          return info.lca;
         },
-        getLCA() {
-          const { Gmp } = this.state;
-          return Gmp.localAccount;
+        getStoragePath() {
+          const { portfolioId } = this.state;
+          const node = makePathNode(makePortfolioPath(portfolioId));
+          return vowTools.asVow(() => E(node).getPath());
         },
-        getPositions(): YieldProtocol[] {
-          const { state } = this;
-          return harden(
-            (keys(YieldProtocol) as YieldProtocol[]).filter(k => !!state[k]),
+        getPortfolioId() {
+          return this.state.portfolioId;
+        },
+        getGMPInfo(chainName: AxelarChain): Vow<GMPAccountInfo> {
+          const { accounts, accountsPending } = this.state;
+          if (accounts.has(chainName)) {
+            return vowTools.asVow(
+              () => accounts.get(chainName) as GMPAccountInfo,
+            );
+          }
+          const { vow } = accountsPending.get(chainName);
+          return vow as Vow<GMPAccountInfo>;
+        },
+      },
+      reporter: {
+        publishStatus() {
+          const { portfolioId, positions, accounts, nextFlowId } = this.state;
+          publishStatus(makePortfolioPath(portfolioId), {
+            positionKeys: [...positions.keys()],
+            flowCount: nextFlowId - 1,
+            accountIdByChain: accountIdByChain(accounts),
+          });
+        },
+        allocateFlowId() {
+          const { nextFlowId } = this.state;
+          this.state.nextFlowId = nextFlowId + 1;
+          this.facets.reporter.publishStatus();
+          return nextFlowId;
+        },
+        publishFlowStatus(id: number, status: StatusFor['flow']) {
+          const { portfolioId } = this.state;
+          publishStatus(makeFlowPath(portfolioId, id), status);
+        },
+      },
+      manager: {
+        reserveAccount<C extends SupportedChain>(
+          chainName: C,
+        ): undefined | Vow<AccountInfoFor[C]> {
+          const { accounts, accountsPending } = this.state;
+          if (accounts.has(chainName)) {
+            return vowTools.asVow(async () => {
+              const infoAny = accounts.get(chainName);
+              assert.equal(infoAny.chainName, chainName);
+              const info = infoAny as AccountInfoFor[C];
+              return info;
+            });
+          }
+          if (accountsPending.has(chainName)) {
+            return accountsPending.get(chainName).vow as Vow<AccountInfoFor[C]>;
+          }
+          const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
+          accountsPending.init(chainName, pending);
+          return undefined;
+        },
+        resolveAccount(info: AccountInfo) {
+          const { accounts, accountsPending } = this.state;
+          if (accountsPending.has(info.chainName)) {
+            const vow = accountsPending.get(info.chainName);
+            // NEEDSTEST - why did all tests pass without .resolve()?
+            vow.resolver.resolve(info);
+            accountsPending.delete(info.chainName);
+          }
+          accounts.init(info.chainName, info);
+          this.facets.reporter.publishStatus();
+        },
+        providePosition(
+          poolKey: PoolKey,
+          protocol: YieldProtocol,
+          accountId: AccountId,
+        ): Position {
+          const { positions } = this.state;
+          if (positions.has(poolKey)) {
+            return positions.get(poolKey);
+          }
+          const { portfolioId } = this.state;
+          const position = makePosition(
+            portfolioId,
+            poolKey,
+            protocol,
+            accountId,
           );
-        },
-        getUSDNICA() {
-          return this.state.USDN;
-        },
-        initAave(chain: CaipChainId) {
-          this.state.Aave = harden({
-            chain,
-          });
-        },
-        initCompound(chain: CaipChainId) {
-          this.state.Compound = harden({
-            chain,
-          });
+          positions.init(poolKey, position);
+          position.publishStatus();
+          this.facets.reporter.publishStatus();
+          return position;
         },
         /** KLUDGE around lack of synchronization signals for now. TODO: rethink design. */
-        wait(val: bigint) {
+        waitKLUDGE(val: bigint) {
           return vowTools.watch(E(timer).delay(val));
         },
       },
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
-          const { keeper } = this.facets;
+          const { reader, manager } = this.facets;
+          const keeper = { ...reader, ...manager };
           mustMatch(offerArgs, OfferArgsShapeFor.rebalance);
-          // @ts-expect-error: offerArgs is validated just above and safe to use as OfferArgsFor['rebalance']
           return rebalance(seat, offerArgs, keeper);
         },
       },
@@ -224,7 +442,13 @@ export const preparePortfolioKit = (
         },
       },
     },
+    {
+      finish({ facets }) {
+        facets.reporter.publishStatus();
+      },
+    },
   );
+};
+harden(preparePortfolioKit);
 
 export type PortfolioKit = ReturnType<ReturnType<typeof preparePortfolioKit>>;
-harden(preparePortfolioKit);

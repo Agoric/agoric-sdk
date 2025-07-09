@@ -13,7 +13,7 @@
  * @see {installBundles}
  * @see {submitCoreEval}
  */
-import { flags } from '@agoric/pola-io';
+import { toCLIOptions } from '@agoric/internal/src/cli-utils.js';
 
 /**
  * @import {CmdRunner} from '@agoric/pola-io';
@@ -52,7 +52,9 @@ export const runBuilder = async (
   builderOpts = {},
   { cwd = builder.join('../../') } = {},
 ) => {
-  const cmd = agoric.withFlags(...(builderOpts ? flags(builderOpts) : []));
+  const cmd = agoric.withFlags(
+    ...(builderOpts ? toCLIOptions(builderOpts) : []),
+  );
   const { stdout } = await cmd.exec(['run', String(builder)]);
   const match = stdout?.match(/ (?<name>[-\w]+)-permit.json/);
   if (!(match && match.groups)) {
@@ -156,12 +158,12 @@ export const submitCoreEval = async (
   {
     title = evals[0].script,
     description = title,
-    depositOpts: { denom = 'ubld', unit = 1_000_000, qty = 1 } = {},
+    depositOpts: { denom = 'ubld', unit = 1_000_000, qty = 10 } = {},
     deposit = `${qty * unit}${denom}`,
   } = {},
 ) =>
   runTx(agd, [
     ...'gov submit-proposal swingset-core-eval'.split(' '),
     ...evals.map(e => [e.permit, e.script]).flat(),
-    ...flags({ title, description, deposit }),
+    ...toCLIOptions({ title, description, deposit }),
   ]);
