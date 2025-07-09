@@ -83,23 +83,23 @@ sequenceDiagram
   participant vstorage
   participant EE as Execution Engine
   participant Contract
-  vstorage ->> EE: desired allocation changed to 50% Aave on Avalanche, 50% Compound on Polygon, no outstanding txns for this portfolio
-  Spectrum ->> EE: user currently has $100 on Aave-Avalanche pool, and $0 on Compound-Polygon pool
+  vstorage ->> EE: desired allocation changed to (50% Aave on Avalanche,<br/>50% Compound on Polygon)<br/>no inflight txns for this portfolio
+  Spectrum ->> EE: user currently has<br/>$100 on Aave-Avalanche pool<br/>and $0 on Compound-Polygon pool
   EE ->> EE: figures out the next step towards user's desired allocation
-  EE ->> Contract: withdraw $50 from Aave-Avalanche pool to ICA-equivalent on Avalanche
+  EE ->> Contract: withdraw $50 from Aave-Avalanche pool<br/>to ICA-equivalent on Avalanche
   Contract ->> vstorage: record inflight tx
   Contract ->> Axelar: invoke GMP
   Axelar ->> Proxy Contract on Avalanche: deliver GMP message
   Proxy Contract on Avalanche ->> Axelar: GMP message delivered
-  Proxy Contract on Avalanche ->> ICA-equivalent on Avalanche: execute GMP message (could fail, proxy contract could retry)
+  Proxy Contract on Avalanche ->> ICA-equivalent on Avalanche: execute GMP message<br/>(could fail, proxy contract could retry)
   Axelar ->> Contract: GMP message delivered
   Contract ->> vstorage: delete inflight tx because it's successful
   EE ->> Spectrum: polling ICA-equivalent on Avalanche until balance >= $50
   EE ->> EE: figures out the next step towards user's desired allocation
-  EE ->> Contract: transfer $50 from ICA-equivalent on Avalanche to ICA-equivalent on Polygon via CCTP (Axelar interactions similar to withdraw $50)
+  EE ->> Contract: transfer $50 from ICA-equivalent on Avalanche<br/>to ICA-equivalent on Polygon via CCTP<br/>(Axelar interactions similar to withdraw $50)
   EE ->> Spectrum: polling ICA-equivalent on Polygon until balance >= $50
   EE ->> EE: figures out the next step towards user's desired allocation
-  EE ->> Contract: deposit $50 from ICA-equivalent on Polygon to Compound on Polygon pool (Axelar interactions similar to withdraw $50)
+  EE ->> Contract: deposit $50 from ICA-equivalent on Polygon to<br/>Compound on Polygon pool<br/>(Axelar interactions similar to withdraw $50)
   EE ->> Spectrum: polling Compound on Polygon pool
   EE ->> EE: user's balances match user's desired allocation, go back to sleep
 ```
