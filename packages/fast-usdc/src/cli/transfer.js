@@ -21,15 +21,27 @@ import { queryUSDCBalance } from './util/bank.js';
 /** @import { SigningStargateClient } from '@cosmjs/stargate' */
 /** @import { JsonRpcProvider as ethProvider } from 'ethers' */
 
+/**
+ * @param {File} configFile
+ * @param {string} amount
+ * @param {string} EUD
+ * @param {typeof globalThis.console} [out]
+ * @param {typeof globalThis.fetch} [fetch]
+ * @param {VStorage} [vstorage]
+ * @param {{signer: SigningStargateClient, address: string}} [nobleSigner]
+ * @param {ethProvider} [ethProvider]
+ * @param {typeof process.env} [env]
+ * @param {typeof globalThis.setTimeout} [setTimeout]
+ */
 export const transfer = async (
-  /** @type {File} */ configFile,
-  /** @type {string} */ amount,
-  /** @type {string} */ EUD,
+  configFile,
+  amount,
+  EUD,
   out = console,
   fetch = globalThis.fetch,
-  /** @type {VStorage | undefined} */ vstorage,
-  /** @type {{signer: SigningStargateClient, address: string} | undefined} */ nobleSigner,
-  /** @type {ethProvider | undefined} */ ethProvider,
+  vstorage,
+  nobleSigner,
+  ethProvider,
   env = process.env,
   setTimeout = globalThis.setTimeout,
 ) => {
