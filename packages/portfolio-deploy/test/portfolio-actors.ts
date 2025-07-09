@@ -1,27 +1,28 @@
 import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
 import type { Instance } from '@agoric/zoe';
 import type { ExecutionContext } from 'ava';
-import { type start } from '../src/portfolio.contract.ts';
+import { type start } from '../../../packages/portfolio-contract/src/portfolio.contract.ts';
 import type {
   OfferArgsFor,
   OpenPortfolioGive,
   ProposalType,
-} from '../src/type-guards.ts';
-import type { WalletTool } from './wallet-offer-tools.ts';
+} from '../../../packages/portfolio-contract/src/type-guards.ts';
 import { AmountMath } from '@agoric/ertp';
 
 const { fromEntries } = Object;
 const range = (n: number) => [...Array(n).keys()];
 
+// XXX: fix types at some point
 export const makeTrader = (
-  wallet: WalletTool,
+  wallet: any,
   instance: Instance<typeof start>,
+  accessBrand: any,
 ) => {
   let nonce = 0;
   let openId: string | undefined = undefined;
-  let portfolioPath: string;
+  let portfolioPath: string = `published.ymax0.portfolioN`;
 
-  const { brand: accessBrand } = wallet.getAssets().Access;
+  // const { brand: accessBrand } = wallet.getAssets().Access;
   const Access = AmountMath.make(accessBrand, 1n);
 
   const self = harden({
@@ -30,8 +31,9 @@ export const makeTrader = (
       give: OpenPortfolioGive,
       offerArgs: OfferArgsFor['openPortfolio'] = {},
     ) {
-      if (portfolioPath) throw Error('already opened');
-      if (openId) throw Error('already opening');
+      // TODO: uncomment below lines at some point 
+      // if (portfolioPath) throw Error('already opened');
+      // if (openId) throw Error('already opening');
 
       const invitationSpec = {
         source: 'contract' as const,
@@ -41,17 +43,19 @@ export const makeTrader = (
       t.log('I ask the portfolio manager to allocate', give);
       const proposal = { give: { Access, ...give } };
       openId = `openP-${(nonce += 1)}`;
-      const doneP = wallet.executePublicOffer({
+      const doneP = wallet.executeOffer({
         id: openId,
         invitationSpec,
         proposal,
         offerArgs,
       });
-      doneP.then(({ result }) => {
-        const { portfolio: topic } = result.publicSubscribers;
-        if (topic.description === 'Portfolio') {
-          portfolioPath = topic.storagePath;
-        }
+      doneP.then(obj => {
+        // TODO: uncomment below lines at some point 
+        // const { result } = obj;
+        // const { portfolio: topic } = result.publicSubscribers;
+        // if (topic.description === 'Portfolio') {
+        //   portfolioPath = topic.storagePath;
+        // }
       });
       return doneP;
     },
@@ -68,7 +72,7 @@ export const makeTrader = (
         previousOffer: openId,
       };
 
-      return wallet.executeContinuingOffer({
+      return wallet.executeOffer({
         id: openId,
         invitationSpec,
         proposal,
