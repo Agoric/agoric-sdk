@@ -14,14 +14,16 @@ import type { TransferVat } from '@agoric/vats/src/vat-transfer.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 const makeDefaultTestContext = async () => {
-  const outboundMessages = new Map();
+  const { handleBridgeSend, outboundMessages } = makeMockBridgeKit({
+    ibcKit: { handleOutboundMessage: () => String(undefined) },
+  });
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
     configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
     fixupConfig: config => ({
       ...config,
       defaultManagerType: 'local', // FIXME: fix for xs-worker
     }),
-    handleBridgeSend: makeMockBridgeKit({ outboundMessages }).handleBridgeSend,
+    handleBridgeSend,
   });
   return { ...swingsetTestKit, outboundMessages };
 };
