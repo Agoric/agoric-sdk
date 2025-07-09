@@ -21,7 +21,7 @@ const makeDefaultTestContext = async () => {
       ...config,
       defaultManagerType: 'local', // FIXME: fix for xs-worker
     }),
-    mockBridgeReceiver: makeMockBridgeKit({ outboundMessages }),
+    handleBridgeSend: makeMockBridgeKit({ outboundMessages }),
   });
   return { ...swingsetTestKit, outboundMessages };
 };
@@ -33,7 +33,7 @@ test.before(async t => (t.context = await makeDefaultTestContext()));
 test.after.always(t => t.context.shutdown?.());
 
 test('vtransfer', async t => {
-  const { EV, evaluateProposal, outboundMessages } = t.context;
+  const { EV, evaluateCoreProposal, outboundMessages } = t.context;
 
   // Pull what transfer-proposal produced into local scope
   const transferVat = (await EV.vat('bootstrap').consumeItem(
@@ -81,7 +81,7 @@ test('vtransfer', async t => {
   const testVtransferProposal = await buildProposal(
     '@agoric/builders/scripts/vats/test-vtransfer.js',
   );
-  await evaluateProposal(testVtransferProposal);
+  await evaluateCoreProposal(testVtransferProposal);
 
   // simulate a Golang upcall with arbitrary payload
   // note that property order matters!
@@ -105,11 +105,11 @@ test('vtransfer', async t => {
       type: 'IBC_METHOD',
     },
   ]);
-  await evaluateProposal(testVtransferProposal);
+  await evaluateCoreProposal(testVtransferProposal);
 
   /**
    * test adding an interceptor for the same target, which should fail
-   * We could use `evaluateProposal` here as well but the core eval
+   * We could use `evaluateCoreProposal` here as well but the core eval
    * failure is not critical so the failure is not propagated up
    */
   const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(

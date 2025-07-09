@@ -722,8 +722,8 @@ const main = async (argv, options = {}, powers = {}) => {
   const { db, kvStore } = swingStore.internal;
   /** @type {Parameters<typeof makeCosmicSwingsetTestKit>[0]} */
   const config = {
-    fixupConfig: _config => ({
-      ..._config,
+    fixupConfig: cfg => ({
+      ...cfg,
       // Default to XS workers with no GC or snapshots.
       defaultManagerType: 'xsnap',
       defaultReapGCKrefs: 'never',
@@ -749,8 +749,8 @@ const main = async (argv, options = {}, powers = {}) => {
   const {
     controller,
     EV,
+    evaluateCoreEval,
     getLastBlockInfo,
-    pushCoreEval,
     pushQueueRecord,
     runNextBlock,
     shutdown,
@@ -760,7 +760,7 @@ const main = async (argv, options = {}, powers = {}) => {
     // Raw access to overlay data.
     ...{ kvStore: provideEnhancedKVStore(kvStore), swingStore },
     // Block interactions
-    ...{ getLastBlockInfo, pushQueueRecord, pushCoreEval, runNextBlock },
+    ...{ evaluateCoreEval, getLastBlockInfo, pushQueueRecord, runNextBlock },
     // Vat interactions.
     ...{ EV, controller, krefOf, kser, kslot, kunser },
     // Inquisitor API.

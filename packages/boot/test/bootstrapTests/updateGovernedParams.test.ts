@@ -39,7 +39,7 @@ const makeDefaultTestContext = async () => {
   const storage = makeFakeStorageKit('bootstrapTests');
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
     configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
-    mockBridgeReceiver: makeMockBridgeKit({ storageKit: storage }),
+    handleBridgeSend: makeMockBridgeKit({ storageKit: storage }),
   });
 
   const { EV, queueAndRun } = swingsetTestKit;
@@ -104,7 +104,7 @@ test.before(async t => (t.context = await makeDefaultTestContext()));
 test.after.always(t => t.context.shutdown?.());
 
 test('modify manager & director params; update vats, check', async t => {
-  const { agoricNamesRemotes, EV, evaluateProposal, gd } = t.context;
+  const { agoricNamesRemotes, EV, evaluateCoreProposal, gd } = t.context;
 
   const { ATOM } = agoricNamesRemotes.brand;
   ATOM || Fail`ATOM missing from agoricNames`;
@@ -168,7 +168,7 @@ test('modify manager & director params; update vats, check', async t => {
     bundles: coreEvals.flatMap(e => e.bundles),
   };
   console.log('evaluating', coreEvals.length, 'scripts');
-  await evaluateProposal(combined);
+  await evaluateCoreProposal(combined);
 
   // verify manager params restored to latest value
   t.is(await getDebtLimitValue(), 50_000_000n);

@@ -54,7 +54,7 @@ const makeZoeTestContext = async t => {
   const storage = makeFakeStorageKit('bootstrapTests');
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
     configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
-    mockBridgeReceiver: makeMockBridgeKit({ storageKit: storage }),
+    handleBridgeSend: makeMockBridgeKit({ storageKit: storage }),
   });
 
   const { EV, queueAndRun } = swingsetTestKit;
@@ -225,7 +225,7 @@ test.serial('Update reserve metrics', async t => {
   // Need to update metrics before membership upgrade for tests related to vault params later
   const {
     advanceTimeBy,
-    lastBlockTime,
+    getLastBlockInfo,
     priceFeedDrivers,
     readPublished,
     setupVaults,
@@ -260,17 +260,17 @@ test.serial('Update reserve metrics', async t => {
   const liveSchedule = readPublished('auction.schedule');
   await advanceTimeBy(
     Number(TimeMath.absValue(NonNullish(liveSchedule.nextDescendingStepTime))) -
-      lastBlockTime,
+      getLastBlockInfo().blockTime,
     'seconds',
   );
   t.pass();
 });
 
 test.serial('replace committee', async t => {
-  const { evaluateProposal, storage } = t.context;
+  const { evaluateCoreProposal, storage } = t.context;
 
   const preEvalAgoricNames = makeAgoricNamesRemotesFromFakeStorage(storage);
-  await evaluateProposal(
+  await evaluateCoreProposal(
     await buildProposal(
       '@agoric/builders/scripts/inter-protocol/replace-electorate-core.js',
       ['BOOTSTRAP_TEST'],

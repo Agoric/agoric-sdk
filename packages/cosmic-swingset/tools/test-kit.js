@@ -133,9 +133,9 @@ const baseConfig = harden({
  *
  * @param {object} [options]
  * @param {string[]} [options.addBootstrapBehaviors] additional specific
- *   behavior functions to augment the selected manifest (see
- *   {@link ../../vats/src/core})
- * @param {string} [options.baseBootstrapManifest] identifies the colletion of
+ *   behavior functions to augment bootstrap manifest (see
+ *   `baseBootstrapManifest` and {@link ../../vats/src/core})
+ * @param {keyof import('@agoric/vats/tools/bootstrap-chain-reflective.js').BootstrapManifests} [options.baseBootstrapManifest] identifies the collection of
  *   "behaviors" to run at bootstrap for creating and configuring the initial
  *   population of vats (see
  *   {@link ../../vats/tools/bootstrap-chain-reflective.js})
@@ -143,7 +143,11 @@ const baseConfig = harden({
  *   called with a set of powers, each in their own isolated compartment
  * @param {string | null} [options.bundleDir] relative to working directory
  * @param {SwingSetConfig['bundles']} [options.bundles] extra bundles configuration
- * @param {string} [options.configSpecifier] config path
+ * @param {string} [options.configSpecifier] path to a SwingSet config file (see
+     `loadSwingsetConfigFile`) for first-level overrides of the minimal
+     configuration. The result may be further overridden by more specific
+     options such as `defaultManagerType` and augmented by `bundles` and `vats`,
+     and ultimately also by `fixupConfig`
  * @param {string} [options.debugName]
  * @param {ManagerType} [options.defaultManagerType] As documented at
  *   {@link ../../../docs/env.md#swingset_worker_type}, the implicit default of
@@ -153,8 +157,9 @@ const baseConfig = harden({
  *   any changes
  * @param {Replacer<SwingSetConfig>} [options.fixupConfig] a final opportunity
  *   to make any changes
- * @param {import('@agoric/swingset-vat/tools/run-utils.js').RunHarness} [options.harness] - Optional run harness
- * @param {((destPort: string, msg: unknown) => unknown)} [options.mockBridgeReceiver]
+ * @param {((destPort: string, msg: unknown) => unknown)} [options.handleBridgeSend]
+ * receives and responds to bridge messages outbound from the SwingSet kernel
+ * @param {import('@agoric/swingset-vat/tools/run-utils.js').RunHarness} [options.runHarness] - for controlling run policy etc
  * @param {import('@agoric/telemetry').SlogSender} [options.slogSender]
  * @param {import('../src/chain-main.js').CosmosSwingsetConfig} [options.swingsetConfig]
  * @param {import('@agoric/swing-store').SwingStore} [options.swingStore]
@@ -175,8 +180,8 @@ export const makeCosmicSwingsetTestKit = async (
     env = process.env,
     fixupInitMessage,
     fixupConfig,
-    harness,
-    mockBridgeReceiver = makeMockBridgeKit(),
+    handleBridgeSend = makeMockBridgeKit(),
+    runHarness,
     slogSender,
     swingsetConfig,
     swingStore,
@@ -189,26 +194,17 @@ export const makeCosmicSwingsetTestKit = async (
   } = {},
   { fsp = fsPromises, resolvePath = nativePath.resolve } = {},
 ) => {
-  await Promise.resolve();
+  await null;
 
-  if (!defaultManagerType)
-    defaultManagerType =
-      /** @type {ManagerType | undefined} */ (
-        process.env.SWINGSET_WORKER_TYPE
-      ) || 'local';
+  const configOverrides =
+    configSpecifier &&
+    NonNullish(await loadSwingsetConfigFile(importLoader(configSpecifier)));
 
   /** @type {SwingSetConfig} */
-  let config = {};
-
-  if (configSpecifier)
-    config = NonNullish(
-      await loadSwingsetConfigFile(importLoader(configSpecifier)),
-    );
-
-  config = {
+  let config = {
     ...deepCopyJsonable(baseConfig),
-    ...config,
-    defaultManagerType,
+    ...configOverrides,
+    ...stripUndefined({ defaultManagerType }),
   };
   if (bundleDir) {
     bundleDir = resolvePath(bundleDir);
@@ -252,7 +248,7 @@ export const makeCosmicSwingsetTestKit = async (
       const portName =
         knownPorts.get(destPort) || Fail`unknown cosmos port ${destPort}`;
       const msg = JSON.parse(msgJson);
-      const result = mockBridgeReceiver(portName, msg);
+      const result = handleBridgeSend(portName, msg);
       return JSON.stringify(result);
     },
   };
@@ -297,6 +293,7 @@ export const makeCosmicSwingsetTestKit = async (
     await cleanupDB();
   };
   const { controller, bridgeInbound, timer } = internals;
+  const { queueAndRun, EV } = makeRunUtils(controller, runHarness);
 
   // Remember information about the current block, starting with the init
   // message.
@@ -307,7 +304,6 @@ export const makeCosmicSwingsetTestKit = async (
     params: lastBlockParams,
   } = initMessage;
   let lastBlockWalltime = Date.now();
-  const runUtils = makeRunUtils(controller, harness);
 
   const timeUnitMultiplier = {
     seconds: 1,
@@ -405,25 +401,26 @@ export const makeCosmicSwingsetTestKit = async (
    *   `jsonPermits` (with no attenuation by default).
    * @param {string} [jsonPermits] must deserialize into a BootstrapManifestPermit
    */
-  const pushCoreEval = (fnText, jsonPermits = 'true') => {
+  const evaluateCoreEval = (fnText, jsonPermits = 'true') => {
     // Fail noisily if fnText does not evaluate to a function.
     // This must be refactored if there is ever a need for such input.
     const fn = new Compartment().evaluate(fnText);
     typeof fn === 'function' || Fail`text must evaluate to a function`;
+    JSON.parse(jsonPermits);
     /** @type {import('@agoric/cosmic-proto/swingset/swingset.js').CoreEvalSDKType} */
     const coreEvalDesc = { json_permits: jsonPermits, js_code: fnText };
-    return evaluateProposal({ bundles: [], evals: [coreEvalDesc] });
+    return evaluateCoreProposal({ bundles: [], evals: [coreEvalDesc] });
   };
 
   /**
    * @param {Awaited<ReturnType<import('./test-proposal-utils.ts')['buildProposal']>>} proposal
    */
-  const evaluateProposal = async ({ bundles: proposalBundles, evals }) => {
-    await Promise.resolve();
+  const evaluateCoreProposal = async ({ bundles: proposalBundles, evals }) => {
+    await null;
 
     for (const bundle of proposalBundles) await installBundle(bundle);
     pushQueueRecord(
-      { evals, type: QueuedActionType.CORE_EVAL },
+      { type: QueuedActionType.CORE_EVAL, evals },
       highPriorityQueue,
     );
 
@@ -435,27 +432,25 @@ export const makeCosmicSwingsetTestKit = async (
    */
   const installBundle = bundle => {
     pushQueueRecord(
-      { bundle: JSON.stringify(bundle), type: QueuedActionType.INSTALL_BUNDLE },
+      { type: QueuedActionType.INSTALL_BUNDLE, bundle: JSON.stringify(bundle) },
       highPriorityQueue,
     );
     return runNextBlock();
   };
 
   const runUntilQueuesEmpty = async () => {
-    await Promise.resolve();
+    await null;
 
-    let stats = controller.getStats();
+    const queuesEmpty = () => {
+      const stats = controller.getStats();
+      if (highPriorityQueue.size()) return false;
+      if (actionQueue.size()) return false;
+      if (stats.acceptanceQueueLength) return false;
+      if (stats.runQueueLength) return false;
+      return true;
+    };
 
-    while (
-      actionQueue.size() +
-        highPriorityQueue.size() +
-        stats.acceptanceQueueLength +
-        stats.runQueueLength >
-      0
-    ) {
-      await runNextBlock();
-      stats = controller.getStats();
-    }
+    while (!queuesEmpty()) await runNextBlock();
   };
 
   await blockingSend(initMessage);
@@ -465,25 +460,25 @@ export const makeCosmicSwingsetTestKit = async (
     // SwingSet-oriented references.
     actionQueue,
     highPriorityQueue,
-    lastBlockTime,
     shutdown,
     swingStore,
 
     // Controller-oriented helpers.
     bridgeInbound,
     controller,
+    EV,
+    queueAndRun,
     runUntilQueuesEmpty,
-    runUtils, // TODO: remove this
+    runUtils: { queueAndRun, EV }, // TODO: remove this
     timer,
-    ...runUtils,
 
     // Functions specific to this kit.
     advanceTimeBy,
-    evaluateProposal,
+    evaluateCoreEval,
+    evaluateCoreProposal,
     getLastBlockInfo,
     installBundle,
     pushQueueRecord,
-    pushCoreEval,
     runNextBlock,
   };
 };

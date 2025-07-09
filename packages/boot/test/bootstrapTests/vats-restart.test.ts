@@ -22,7 +22,7 @@ export const makeTestContext = async () => {
       ...config,
       defaultManagerType: 'local', // FIXME: fix for xs-worker
     }),
-    mockBridgeReceiver: makeMockBridgeKit({ storageKit: storage }),
+    handleBridgeSend: makeMockBridgeKit({ storageKit: storage }),
   });
 
   const { EV, queueAndRun } = swingsetTestKit;
@@ -99,10 +99,10 @@ test.serial('make IBC callbacks before upgrade', async t => {
 });
 
 test.serial('run restart-vats proposal', async t => {
-  const { evaluateProposal } = t.context;
+  const { evaluateCoreProposal } = t.context;
 
   console.log('building proposal');
-  await evaluateProposal(
+  await evaluateCoreProposal(
     await buildProposal('@agoric/builders/scripts/vats/restart-vats.js'),
   );
 

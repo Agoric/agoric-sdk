@@ -27,6 +27,28 @@ export const makeProposalExtractor = (
 ) => {
   const importSpec = createRequire(resolveBase).resolve;
 
+  const parseProposalParts = (agoricRunOutput: string) => {
+    const evals = [
+      ...agoricRunOutput.matchAll(
+        /swingset-core-eval (?<permit>\S+) (?<script>\S+)/g,
+      ),
+    ].map(m => {
+      if (!m.groups) throw Fail`Invalid proposal output ${m[0]}`;
+      const { permit, script } = m.groups;
+      return { permit, script };
+    });
+    evals.length ||
+      Fail`No swingset-core-eval found in proposal output: ${agoricRunOutput}`;
+
+    const bundles = [
+      ...agoricRunOutput.matchAll(/swingset install-bundle @([^\n]+)/g),
+    ].map(([, bundle]) => bundle);
+    bundles.length ||
+      Fail`No bundles found in proposal output: ${agoricRunOutput}`;
+
+    return { evals, bundles };
+  };
+
   const readJSONFile = <T>(filePath: string) =>
     readFile(filePath, 'utf8').then(file => harden(JSON.parse(file) as T));
 
@@ -77,28 +99,6 @@ export const makeProposalExtractor = (
     }
   };
   return buildAndExtract;
-};
-
-const parseProposalParts = (agoricRunOutput: string) => {
-  const evals = [
-    ...agoricRunOutput.matchAll(
-      /swingset-core-eval (?<permit>\S+) (?<script>\S+)/g,
-    ),
-  ].map(m => {
-    if (!m.groups) throw Fail`Invalid proposal output ${m[0]}`;
-    const { permit, script } = m.groups;
-    return { permit, script };
-  });
-  evals.length ||
-    Fail`No swingset-core-eval found in proposal output: ${agoricRunOutput}`;
-
-  const bundles = [
-    ...agoricRunOutput.matchAll(/swingset install-bundle @([^\n]+)/g),
-  ].map(([, bundle]) => bundle);
-  bundles.length ||
-    Fail`No bundles found in proposal output: ${agoricRunOutput}`;
-
-  return { evals, bundles };
 };
 
 export const buildProposal = makeProposalExtractor({

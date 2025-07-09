@@ -15,12 +15,12 @@ test('smoke test', async t => {
   const testKit = await makeCosmicSwingsetTestKit({
     env,
   });
-  const { EV, pushCoreEval, swingStore, shutdown } = testKit;
+  const { EV, evaluateCoreEval, swingStore, shutdown } = testKit;
   t.teardown(shutdown);
 
   // To tickle some activity, run a couple of trivial blocks.
-  await pushCoreEval(`${() => {}}`);
-  await pushCoreEval(`${() => {}}`);
+  await evaluateCoreEval(`${() => {}}`);
+  await evaluateCoreEval(`${() => {}}`);
 
   // Build and exercise the helpers.
   const { db } = swingStore.internal;

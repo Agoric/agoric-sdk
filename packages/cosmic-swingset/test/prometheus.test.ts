@@ -72,12 +72,12 @@ const testPrometheusMetrics = async t => {
   const testKit = await makeCosmicSwingsetTestKit({
     env,
   });
-  const { pushCoreEval, shutdown } = testKit;
+  const { evaluateCoreEval, shutdown } = testKit;
   t.teardown(shutdown);
 
   // To tickle some metrics events, run a couple of trivial blocks.
-  await pushCoreEval(`${() => {}}`);
-  await pushCoreEval(`${() => {}}`);
+  await evaluateCoreEval(`${() => {}}`);
+  await evaluateCoreEval(`${() => {}}`);
 
   // Scrape both Prometheus endpoints.
   const [directMetrics, slogMetrics] = await Promise.all(

@@ -68,7 +68,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
     }),
   };
   const testKit = await makeCosmicSwingsetTestKit(options);
-  const { pushCoreEval, runNextBlock, shutdown, swingStore } = testKit;
+  const { evaluateCoreEval, runNextBlock, shutdown, swingStore } = testKit;
   finish = shutdown;
 
   // Define helper functions for interacting with its swing store.
@@ -82,7 +82,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
   };
 
   // Launch the new vat and capture its ID.
-  await pushCoreEval(
+  await evaluateCoreEval(
     `${async powers => {
       const { bootstrap } = powers.vats;
       await E(bootstrap).createVat('doomed', 'puppet');
@@ -112,7 +112,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
   t.not(initialEntries.size, 0, 'initial kvStore entries must exist');
 
   // Give the vat a big footprint.
-  await pushCoreEval(
+  await evaluateCoreEval(
     `${async powers => {
       const { bootstrap } = powers.vats;
       const doomed = await E(bootstrap).getVatRoot('doomed');
@@ -175,7 +175,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
   );
 
   // Terminate the vat and verify lack of cleanup.
-  await pushCoreEval(
+  await evaluateCoreEval(
     `${async powers => {
       const { bootstrap } = powers.vats;
       const adminNode = await E(bootstrap).getVatAdminNode('doomed');

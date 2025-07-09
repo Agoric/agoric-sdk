@@ -125,7 +125,7 @@ const makeDefaultTestContext = async () => {
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
     // A more minimal set would be better. We need governance, but not econ vats.
     configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
-    mockBridgeReceiver: makeMockBridgeKit({ storageKit: storage }),
+    handleBridgeSend: makeMockBridgeKit({ storageKit: storage }),
   });
 
   const { controller, EV, queueAndRun } = swingsetTestKit;

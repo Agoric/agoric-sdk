@@ -28,14 +28,14 @@ test.after.always(t => t.context.shutdown?.());
 
 test('Create a contract via core-eval and kill it via core-eval by boardID', async t => {
   const TEST_CONTRACT_LABEL = 'testContractLabel';
-  const { EV, evaluateProposal, zoe } = t.context;
+  const { EV, evaluateCoreProposal, zoe } = t.context;
 
   // Create a contract via core-eval.
   const creatorProposal = await buildProposal(
     '@agoric/governance/test/swingsetTests/contractGovernor/add-governedContract.js',
     [TEST_CONTRACT_LABEL],
   );
-  await evaluateProposal(creatorProposal);
+  await evaluateCoreProposal(creatorProposal);
 
   const { boardID, governor, instance, publicFacet } = (await EV.vat(
     'bootstrap',
@@ -59,7 +59,7 @@ test('Create a contract via core-eval and kill it via core-eval by boardID', asy
     '@agoric/vats/src/proposals/terminate-governed-instance.js',
     [`${boardID}:${TEST_CONTRACT_LABEL}`],
   );
-  await evaluateProposal(terminatorProposal);
+  await evaluateCoreProposal(terminatorProposal);
 
   // Confirm termination.
   const expectTerminationError = p =>

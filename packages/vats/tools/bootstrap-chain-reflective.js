@@ -16,6 +16,16 @@ import * as basicBehaviorsNamespace from '../src/core/basic-behaviors.js';
 import * as chainBehaviorsNamespace from '../src/core/chain-behaviors.js';
 import * as utils from '../src/core/utils.js';
 
+/**
+ * @typedef {Record<
+ *   | 'BASIC_BOOTSTRAP'
+ *   | 'CHAIN_BOOTSTRAP'
+ *   | 'MINIMAL'
+ *   | 'SHARED_CHAIN_BOOTSTRAP',
+ *   import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest
+ * >} BootstrapManifests
+ */
+
 // Gather up all defined bootstrap behaviors.
 const { BASIC_BOOTSTRAP_PERMITS: BASIC_BOOTSTRAP, ...basicBehaviors } =
   basicBehaviorsNamespace;
