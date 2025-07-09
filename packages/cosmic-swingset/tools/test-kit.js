@@ -180,7 +180,7 @@ export const makeCosmicSwingsetTestKit = async (
     env = process.env,
     fixupInitMessage,
     fixupConfig,
-    handleBridgeSend = makeMockBridgeKit(),
+    handleBridgeSend,
     runHarness,
     slogSender,
     swingsetConfig,
@@ -195,6 +195,8 @@ export const makeCosmicSwingsetTestKit = async (
   { fsp = fsPromises, resolvePath = nativePath.resolve } = {},
 ) => {
   await null;
+
+  if (!handleBridgeSend) ({ handleBridgeSend } = makeMockBridgeKit());
 
   const configOverrides =
     configSpecifier &&

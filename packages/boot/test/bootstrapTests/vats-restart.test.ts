@@ -22,7 +22,8 @@ export const makeTestContext = async () => {
       ...config,
       defaultManagerType: 'local', // FIXME: fix for xs-worker
     }),
-    handleBridgeSend: makeMockBridgeKit({ storageKit: storage }),
+    handleBridgeSend: makeMockBridgeKit({ storageKit: storage })
+      .handleBridgeSend,
   });
 
   const { EV, queueAndRun } = swingsetTestKit;

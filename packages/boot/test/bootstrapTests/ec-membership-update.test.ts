@@ -54,7 +54,8 @@ const makeZoeTestContext = async t => {
   const storage = makeFakeStorageKit('bootstrapTests');
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
     configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
-    handleBridgeSend: makeMockBridgeKit({ storageKit: storage }),
+    handleBridgeSend: makeMockBridgeKit({ storageKit: storage })
+      .handleBridgeSend,
   });
 
   const { EV, queueAndRun } = swingsetTestKit;

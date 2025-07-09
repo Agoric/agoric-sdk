@@ -39,7 +39,8 @@ const makeDefaultTestContext = async () => {
   const storage = makeFakeStorageKit('bootstrapTests');
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
     configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
-    handleBridgeSend: makeMockBridgeKit({ storageKit: storage }),
+    handleBridgeSend: makeMockBridgeKit({ storageKit: storage })
+      .handleBridgeSend,
   });
 
   const { EV, queueAndRun } = swingsetTestKit;

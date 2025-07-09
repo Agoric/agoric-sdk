@@ -21,7 +21,7 @@ const makeDefaultTestContext = async () => {
       ...config,
       defaultManagerType: 'local', // FIXME: fix for xs-worker
     }),
-    handleBridgeSend: makeMockBridgeKit({ outboundMessages }),
+    handleBridgeSend: makeMockBridgeKit({ outboundMessages }).handleBridgeSend,
   });
   return { ...swingsetTestKit, outboundMessages };
 };
