@@ -23,7 +23,7 @@ import type { VowTools } from '@agoric/vow';
 import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { Zone } from '@agoric/zone';
 import { makePromiseKit } from '@endo/promise-kit';
-import type { AxelarChainsMap } from '../src/type-guards';
+import type { EVMContractAddressesMap } from '../src/type-guards';
 
 export const localAccount0 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
 
@@ -174,36 +174,72 @@ export const makeUSDNIBCTraffic = (
   },
 });
 
-export const axelarChainsMapMock: AxelarChainsMap = {
+export const contractAddressesMock: EVMContractAddressesMap = {
   Ethereum: {
-    caip: 'eip155:1',
-    axelarId: 'Ethereum',
-    contractAddresses: {
-      aavePool: '0x1111111111111111111111111111111111111111',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    },
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+  },
+  'ethereum-sepolia': {
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
   },
   Avalanche: {
-    caip: 'eip155:43114',
-    axelarId: 'Avalanche',
-    contractAddresses: {
-      aavePool: '0x1111111111111111111111111111111111111111',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    },
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
   },
-  Base: {
-    caip: 'eip155:8453',
-    axelarId: 'base',
-    contractAddresses: {
-      aavePool: '0x1111111111111111111111111111111111111111',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    },
+  optimism: {
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+  },
+  'optimism-sepolia': {
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+  },
+  arbitrum: {
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+  },
+  'arbitrum-sepolia': {
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+  },
+  Polygon: {
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+  },
+  'polygon-sepolia': {
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+  },
+  Fantom: {
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+  },
+  binance: {
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
   },
 } as const;
 

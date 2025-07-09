@@ -6,6 +6,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { GuestInterface } from '@agoric/async-flow';
+import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { mustMatch } from '@agoric/internal';
 import {
@@ -15,6 +16,7 @@ import {
 } from '@agoric/internal/src/storage-test-utils.js';
 import { denomHash, type Orchestrator } from '@agoric/orchestration';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import type { VowTools } from '@agoric/vow';
@@ -24,6 +26,7 @@ import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
+import { RebalanceStrategy } from '../src/constants.js';
 import {
   preparePortfolioKit,
   type PortfolioKit,
@@ -36,14 +39,12 @@ import {
 } from '../src/portfolio.flows.ts';
 import { makeSwapLockMessages } from '../src/pos-usdn.flows.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
-import { axelarChainsMapMock } from './mocks.ts';
+import { contractAddressesMock } from './mocks.ts';
 import {
+  axelarCCTPConfig,
   makeIncomingEVMEvent,
   makeIncomingVTransferEvent,
 } from './supports.ts';
-import type { VTransferIBCEvent } from '@agoric/vats';
-import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import { RebalanceStrategy } from '../src/constants.js';
 
 const theExit = harden(() => {}); // for ava comparison
 // @ts-expect-error mock
@@ -108,6 +109,9 @@ const mocks = (
       }[name];
       const it = harden({
         getChainInfo() {
+          if (name in axelarCCTPConfig) {
+            return axelarCCTPConfig[name];
+          }
           return harden({ chainId, stakingTokens });
         },
         async makeAccount() {
@@ -239,8 +243,15 @@ const mocks = (
   const ctx1: PortfolioInstanceContext = {
     zoeTools,
     usdc: { denom, brand: USDC },
-    axelarChainsMap: axelarChainsMapMock,
+    contracts: contractAddressesMock,
     inertSubscriber,
+  };
+
+  const getChainInfo = chainName => {
+    if (!(chainName in axelarCCTPConfig)) {
+      throw Error(`unable to get chainInfo for ${chainName}`);
+    }
+    return axelarCCTPConfig[chainName];
   };
 
   const rebalanceHost = (seat, offerArgs, kit) =>
@@ -250,8 +261,8 @@ const mocks = (
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
     vowTools,
-    axelarChainsMap: axelarChainsMapMock,
     timer,
+    chainHubTools: { getChainInfo },
     rebalance: rebalanceHost as any,
     rebalanceFromTransfer: rebalanceFromTransferHost as any,
     proposalShapes: makeProposalShapes(USDC),
@@ -457,7 +468,7 @@ test('open portfolio with Aave position', async t => {
     { _method: 'localTransfer', amounts: { AaveAccount: { value: 50n } } },
     { _method: 'transfer', address: { chainId: 'axelar-3' } },
     { _method: 'localTransfer', amounts: { Aave: { value: 300n } } },
-    { _method: 'transfer', address: { chainId: 'noble-4' } },
+    { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'depositForBurn' },
     { _method: 'localTransfer', amounts: { AaveGmp: { value: 100n } } },
     { _method: 'transfer', address: { chainId: 'axelar-3' } },
@@ -493,7 +504,7 @@ test('open portfolio with Compound position', async t => {
     { _method: 'localTransfer', amounts: { CompoundAccount: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'axelar-3' } },
     { _method: 'localTransfer', amounts: { Compound: { value: 300n } } },
-    { _method: 'transfer', address: { chainId: 'noble-4' } },
+    { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'depositForBurn' },
     { _method: 'localTransfer', amounts: { CompoundGmp: { value: 100n } } },
     { _method: 'transfer', address: { chainId: 'axelar-3' } },
