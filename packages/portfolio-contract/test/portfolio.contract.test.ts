@@ -7,9 +7,11 @@ import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import { q } from '@endo/errors';
 import { passStyleOf } from '@endo/far';
 import { matches, mustMatch } from '@endo/patterns';
-import { makeAxelarMemo } from '../src/pos-gmp.flows.ts';
+import {
+  makeAxelarMemo,
+  type GmpArgsContractCall,
+} from '../src/pos-gmp.flows.ts';
 import { makeProposalShapes } from '../src/type-guards.ts';
-import { type GmpArgsContractCall } from '../src/pos-gmp.flows.ts';
 import {
   setupTrader,
   simulateAckTransferToAxelar,
@@ -225,7 +227,6 @@ test('open portfolio with USDN position', async t => {
   t.snapshot(done.payouts, 'refund payouts');
 });
 
-// TODO: depositForBurn is throwing
 test('open a portfolio with Aave position', async t => {
   const { trader1, common } = await setupTrader(t);
   const { usdc, poc26 } = common.brands;
@@ -240,7 +241,6 @@ test('open a portfolio with Aave position', async t => {
     },
     { destinationEVMChain: 'Ethereum' },
   );
-  await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   console.log('ackd send to Axelar to create account');
 
