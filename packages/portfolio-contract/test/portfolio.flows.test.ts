@@ -234,17 +234,11 @@ const mocks = (
   const timer = buildZoeManualTimer();
 
   const denom = `ibc/${denomHash({ channelId: 'channel-123', denom: 'uusdc' })}`;
-  const chainHubTools = harden({
-    getDenom: brand => {
-      assert(brand === USDC);
-      return denom;
-    },
-  });
 
   const inertSubscriber = {} as ResolvedPublicTopic<never>['subscriber'];
   const ctx1: PortfolioInstanceContext = {
     zoeTools,
-    chainHubTools,
+    usdc: { denom, brand: USDC },
     axelarChainsMap: axelarChainsMapMock,
     inertSubscriber,
   };

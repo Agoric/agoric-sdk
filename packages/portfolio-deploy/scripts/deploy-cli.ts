@@ -9,7 +9,8 @@ import {
   txFlags,
   waitForBlock,
 } from '@agoric/deploy-script-support/src/permissioned-deployment.js';
-import { flags, makeCmdRunner, makeFileRd } from '@agoric/pola-io';
+import { toCLIOptions } from '@agoric/internal/src/cli-utils.js';
+import { makeCmdRunner, makeFileRd } from '@agoric/pola-io';
 import { execa } from 'execa';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
@@ -82,7 +83,7 @@ const main = async (
   } = await fetchNetworkConfig(net, { fetch });
   const agdq = makeCmdRunner('agd', { execFile }).withFlags('--node', node);
   const agdTx = agdq.withFlags(
-    ...flags(txFlags({ node, from, chainId })),
+    ...toCLIOptions(txFlags({ node, from, chainId })),
     '--yes',
   );
   for (const b of plan.bundles) {
