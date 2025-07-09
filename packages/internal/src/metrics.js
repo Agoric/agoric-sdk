@@ -68,6 +68,11 @@ export const HISTOGRAM_METRICS = /** @type {const} */ ({
     unit: 'ms',
     boundaries: HISTOGRAM_MS_LATENCY_BOUNDARIES,
   },
+  syscall_processing_time: {
+    boundaries: HISTOGRAM_SECONDS_LATENCY_BOUNDARIES,
+    description: 'Time taken to ccomplete a syscall, in seconds',
+    unit: 's',
+  },
 });
 
 const blockHistogramMetricDesc = {

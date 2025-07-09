@@ -10,6 +10,10 @@ import {
 } from '@agoric/internal/src/metrics.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { SLOG_TYPES } from '@agoric/telemetry/src/constants.js';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { makeContextualSlogProcessor } from '@agoric/telemetry/src/context-aware-slog.js';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { getContextFilePersistenceUtils } from '@agoric/telemetry/src/utils.js';
 
 /**
  * @import {MetricOptions, ObservableCounter, ObservableUpDownCounter} from '@opentelemetry/api';
@@ -21,7 +25,7 @@ const knownActionTypes = new Set(Object.values(ActionType.QueuedActionType));
 
 /** @param {import('./index.js').MakeSlogSenderOptions & {otelMeterName: string, otelMeterProvider?: MeterProvider}} opts */
 export const makeSlogSender = async (opts = /** @type {any} */ ({})) => {
-  const { otelMeterName, otelMeterProvider } = opts;
+  const { env, otelMeterName, otelMeterProvider, stateDir } = opts;
   if (!otelMeterName) throw Fail`OTel meter name is required`;
   if (!otelMeterProvider) return;
 
@@ -108,11 +112,22 @@ export const makeSlogSender = async (opts = /** @type {any} */ ({})) => {
     heapStats: makeLazyStats('heapStats_', 'v8 kernel heap statistic'),
   };
 
+  const persistenceUtils = getContextFilePersistenceUtils(
+    env?.SLOG_CONTEXT_FILE_PATH || `${stateDir}/slog-context.json`,
+  );
+
+  const contextualSlogProcessor = makeContextualSlogProcessor(
+    { 'chain-id': env?.CHAIN_ID },
+    persistenceUtils,
+  );
+
   /**
-   * @param {import('./types.js').Slog} Slog
+   * @param {import('@agoric/telemetry/src/types.js').Slog} slogObj
    */
-  const slogSender = ({ type: slogType, ...slogObj }) => {
-    switch (slogType) {
+  const slogSender = slogObj => {
+    const { attributes, body } = contextualSlogProcessor(slogObj);
+
+    switch (slogObj.type) {
       // Consume cosmic-swingset block lifecycle slog entries.
       case SLOG_TYPES.COSMIC_SWINGSET.INIT: {
         const { inboundQueueInitialLengths: lengths } = slogObj;
@@ -179,7 +194,19 @@ export const makeSlogSender = async (opts = /** @type {any} */ ({})) => {
           (slogObj.archiveWriteSeconds || 0) +
             slogObj.compressSeconds +
             slogObj.dbSaveSeconds,
+          {
+            block_height: attributes['block.height'],
+            run_id: attributes['run.id'],
+          },
         );
+        break;
+      }
+      case SLOG_TYPES.SYSCALL_RESULT: {
+        histograms.syscall_processing_time.record(slogObj.seconds, {
+          block_height: attributes['block.height'],
+          run_id: attributes['run.id'],
+          vat_id: body.vatID,
+        });
         break;
       }
       case SLOG_TYPES.CRANK.FINISH: {
