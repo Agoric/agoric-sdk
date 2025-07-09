@@ -1,12 +1,14 @@
 import type { ExecutionContext } from 'ava';
 import { AmountMath } from '@agoric/ertp';
-import { makeTrader } from '../../../packages/portfolio-contract/test/portfolio-actors.ts';
+import { makeTrader } from './portfolio-actors.ts';
 import { BridgeId } from '@agoric/internal';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { AckBehavior } from '@aglocal/boot/tools/supports.js';
 import { configurations } from '../src/utils/deploy-config.js'; //TODO this will be removed
 import { makePromiseKit } from '@endo/promise-kit';
+import { makeWallet } from '../../../packages/portfolio-contract/test/wallet-offer-tools.ts';
 
+import type { WalletTool } from '../../../packages/portfolio-contract/test/wallet-offer-tools.ts';
 import type { IBCChannelID } from '@agoric/vats';
 import type { CosmosChainAddress } from '@agoric/orchestration';
 // The simulation context type is based on WalletFactoryTestContext
@@ -154,11 +156,15 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
   let trader;
   let instance;
   let wallet;
+  let zoe: ZoeService;
 
   return {
-    async beforeDeploy(t: ExecutionContext) {
+    async beforeDeploy(t: ExecutionContext<{ runUtils: { EV: any } }>) {
       t.log('provision oracle smart wallets');
-      await Promise.all(oracles.map(o => o.provision()));
+      const { EV } = t.context.runUtils;
+      zoe = await EV.vat('bootstrap').consumeItem('zoe');
+
+      // await Promise.all(oracles.map(o => o.provision()));
     },
     async deployContract(context: WalletFactoryTestContext) {
       const {
@@ -178,7 +184,7 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
       );
       bridgeUtils.setBech32Prefix('noble');
 
-      const beneficiary = 'agoric126sd64qkuag2fva3vy3syavggvw44ca2zfrzyy';
+      const beneficiary = 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce';
       wallet = await walletFactoryDriver.provideSmartWallet(
         'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
       );
@@ -196,11 +202,23 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
         '@aglocal/portfolio-deploy/src/portfolio.build.js',
       );
       await evalProposal(materials);
+      // agoricNamesRemotes.brand
+
       refreshAgoricNamesRemotes();
       instance = agoricNamesRemotes.instance.ymax0;
       // Set up a wallet for the trader
       wallet = await walletFactoryDriver.provideSmartWallet(beneficiary);
-      trader = makeTrader(wallet, instance);
+
+      // wallet.deposit(
+      //   AmountMath.make(
+      //     agoricNamesRemotes.brand.Access,
+      //     100n,
+      //   ),
+      // );
+
+      // makeWallet({ Access: { issuer: agoricNamesRemotes.issuer.Access }, USDC: { issuer: agoricNamesRemotes.issuer.USDC } }, zoe, vowTools.when);
+
+      trader = makeTrader(wallet, instance, agoricNamesRemotes.brand.PoC26);
       return instance;
     },
     async beforeIterations(t: ExecutionContext) {
