@@ -133,8 +133,18 @@ jobs:
         run: make register-bank-assets
         working-directory: ./agoric-sdk/multichain-testing
 
-      - name: Create Noble Swap Pool (If needed)
+      - name: Create Noble Swap Pool
         run: make create-noble-swap-pool
+        working-directory: ./agoric-sdk/multichain-testing
+
+      - name: Install agd and add to PATH
+        run: |
+          ./bin/agd
+          echo "$GITHUB_WORKSPACE/agoric-sdk/golang/cosmos/build" >> $GITHUB_PATH
+        working-directory: ./agoric-sdk
+
+      - name: Deploy YMAX and Create a Portfolio
+        run: make open-with-usdn
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: Run @agoric/multichain-testing E2E Tests
