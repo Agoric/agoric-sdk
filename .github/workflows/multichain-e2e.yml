@@ -17,6 +17,7 @@ on:
           - orchestration-queries-go-relayer
           - orchestration-queries-hermes
           - swap-on-osmosis
+          - ymax-hermes
   workflow_call:
 
 jobs:
@@ -121,3 +122,12 @@ jobs:
       config: config.xcs-swap-anything.yaml
       test_command: yarn test:xcs
       test_suite_name: swap-on-osmosis
+
+  ymax-hermes:
+    name: YMax - Hermes
+    if: github.event_name == 'workflow_dispatch' && inputs.test_type == 'ymax-hermes'
+    uses: ./.github/workflows/multichain-e2e-template.yml
+    with:
+      config: config.ymax.yaml
+      test_command: yarn test:ymd
+      test_suite_name: ymax-hermes
