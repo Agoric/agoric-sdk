@@ -98,7 +98,7 @@ jobs:
           node-version: 'node-new'
 
       - env:
-          NODE_MEMORY_SIZE: "8192"
+          NODE_MEMORY_SIZE: '8192'
         name: generate test coverage report
         run: ./scripts/ci/generate-test-coverage-report.sh
       - uses: actions/upload-artifact@v4
