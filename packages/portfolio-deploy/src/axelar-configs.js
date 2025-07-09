@@ -8,7 +8,7 @@
 /**
  * @typedef {object} AxelarChainConfig
  * @property {BaseChainInfo} chainInfo
- * @property {Record<string, HexAddress>} contracts
+ * @property {Partial<import('@aglocal/portfolio-contract/src/portfolio.contract').EVMContractAddresses>} contracts
  */
 
 /**
@@ -90,7 +90,8 @@ const factoryAddresses = {
 
 /**
  * Mainnet configuration with real contract addresses
- * @type import('@aglocal/portfolio-contract/src/type-guards').MainnetEVMContractAddresses
+ * @type {Partial<import('@aglocal/portfolio-contract/src/type-guards').EVMContractAddressesMap>}
+ 
  */
 const mainnetContracts = {
   Ethereum: {
@@ -141,7 +142,7 @@ harden(mainnetContracts);
 
 /**
  * Testnet configuration with testnet contract addresses
- * @type import('@aglocal/portfolio-contract/src/type-guards').TestnetEVMContractAddresses
+ * @type {Partial<import('@aglocal/portfolio-contract/src/type-guards').EVMContractAddressesMap>}
  */
 const testnetContracts = {
   'ethereum-sepolia': {
@@ -194,7 +195,7 @@ harden(testnetContracts);
 
 /**
  * Localchain configuration with mock addresses for testing
- * @type import('@aglocal/portfolio-contract/src/type-guards').EVMContractAddresses
+ * @type {import('@aglocal/portfolio-contract/src/type-guards').EVMContractAddressesMap}
  */
 export const localchainContracts = {
   Ethereum: {

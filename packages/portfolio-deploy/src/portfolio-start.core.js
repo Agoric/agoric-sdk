@@ -48,7 +48,7 @@ export const makePrivateArgs = async (
     chainInfo,
     assetInfo,
     // TODO: fetch the addresses from agoricNames
-    contractAddresses: localchainContracts,
+    contracts: localchainContracts,
   });
   return it;
 };

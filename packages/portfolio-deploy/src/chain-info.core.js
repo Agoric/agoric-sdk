@@ -93,6 +93,7 @@ const publishChainInfoToChainStorage = async (
 const publishAxelarChainInfo = async (agoricNamesNode, axelarConfig) => {
   const chainNode = await E(agoricNamesNode).makeChildNode('chain');
 
+  // XXX: refactor the loop to allow it to work with different parent node
   for await (const [chainName, chainData] of Object.entries(axelarConfig)) {
     const baseNode = await E(chainNode).makeChildNode(chainName);
     await E(baseNode).setValue(
