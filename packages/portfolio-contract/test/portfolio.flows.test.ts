@@ -13,7 +13,11 @@ import {
   documentStorageSchema,
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
-import { denomHash, type Orchestrator } from '@agoric/orchestration';
+import {
+  denomHash,
+  type ChainHub,
+  type Orchestrator,
+} from '@agoric/orchestration';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
@@ -37,7 +41,11 @@ import {
 import { makeSwapLockMessages } from '../src/pos-usdn.flows.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
 import { contractAddressesMock } from './mocks.ts';
-import { makeIncomingEVMEvent } from './supports.ts';
+import {
+  axelarCCTPConfig,
+  makeIncomingEVMEvent,
+  makeIncomingVTransferEvent,
+} from './supports.ts';
 
 const theExit = harden(() => {}); // for ava comparison
 // @ts-expect-error mock
@@ -237,6 +245,15 @@ const mocks = (
     inertSubscriber,
   };
 
+  const mockChainhub = {
+    getChainInfo: chainName => {
+      if (!(chainName in axelarCCTPConfig)) {
+        throw Error(`unable to get chainInfo for ${chainName}`);
+      }
+      return axelarCCTPConfig[chainName];
+    },
+  };
+
   const rebalanceHost = (seat, offerArgs, kit) =>
     rebalance(orch, ctx1, seat, offerArgs, kit);
   const rebalanceFromTransferHost = (packet, kit) =>
@@ -245,6 +262,7 @@ const mocks = (
     zcf: mockZCF,
     vowTools,
     timer,
+    chainHub: mockChainhub as ChainHub,
     rebalance: rebalanceHost as any,
     rebalanceFromTransfer: rebalanceFromTransferHost as any,
     proposalShapes: makeProposalShapes(USDC),

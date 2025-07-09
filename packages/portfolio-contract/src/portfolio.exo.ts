@@ -8,7 +8,11 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { type AccountId, type CaipChainId } from '@agoric/orchestration';
+import {
+  type AccountId,
+  type CaipChainId,
+  type ChainHub,
+} from '@agoric/orchestration';
 import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
@@ -143,6 +147,7 @@ export const preparePortfolioKit = (
     rebalance,
     rebalanceFromTransfer,
     timer,
+    chainHub,
     proposalShapes,
     vowTools,
     zcf,
@@ -163,6 +168,7 @@ export const preparePortfolioKit = (
       handled: boolean;
     }>;
     timer: Remote<TimerService>;
+    chainHub: ChainHub;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     vowTools: VowTools;
     zcf: ZCF;
@@ -242,7 +248,7 @@ export const preparePortfolioKit = (
           console.warn('⚠️ rebalanceFromTransfer failure', reason);
           throw reason;
         },
-        onFulfilled({ parsed, handled }) {
+        async onFulfilled({ parsed, handled }) {
           if (handled) {
             trace('rebalanceFromTransfer handled; skipping GMP processing');
             return;
@@ -300,10 +306,15 @@ export const preparePortfolioKit = (
               result,
             );
 
+            const chainInfo = await vowTools.when(
+              chainHub.getChainInfo(chainName),
+            );
+            const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
+
             this.facets.manager.resolveAccount({
               namespace: 'eip155',
               chainName,
-              chainId: axelarChain.caip,
+              chainId: caipId,
               remoteAddress: address,
             });
             trace(`remoteAddress ${address}`);
