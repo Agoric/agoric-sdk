@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NODE_MEMORY_SIZE="${NODE_MEMORY_SIZE:-"2048"}"
+NODE_MEMORY_SIZE="${NODE_MEMORY_SIZE:-"4096"}"
 
 # CI artifact export expects the files to be under `coverage` (same for /html below)
 export NODE_V8_COVERAGE="$PWD/coverage/tmp"
