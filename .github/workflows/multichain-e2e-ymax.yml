@@ -1,0 +1,176 @@
+name: Multichain E2E Workflow Template
+
+on:
+  workflow_call:
+    inputs:
+      config:
+        required: true
+        type: string
+      test_command:
+        required: true
+        type: string
+        description: 'Test command to run (e.g., "test:main" or "test:fast-usdc")'
+      test_suite_name:
+        required: true
+        type: string
+        description: 'Identifier for the test suite that will be used as part of the filename name for logs'
+
+jobs:
+  multichain-e2e:
+    name: Multichain E2E (${{ inputs.test_command }})
+    runs-on: 'depot-ubuntu-24.04-16'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+          path: ./agoric-sdk
+
+      - uses: ./agoric-sdk/.github/actions/restore-node
+        with:
+          node-version: 'node-new'
+          path: ./agoric-sdk
+
+      # Extract chain and relayer information
+      - name: Extract config information
+        id: extract-config
+        run: |
+          # Create logs directory with unique path per run/job
+          LOG_DIR="$GITHUB_WORKSPACE/agoric-sdk/multichain-testing/logs/$GITHUB_RUN_ID/$GITHUB_JOB"
+          mkdir -p "$LOG_DIR/validators"
+          mkdir -p "$LOG_DIR/relayers"
+          echo "LOG_DIR=${LOG_DIR}" >> $GITHUB_ENV
+
+          # Extract namespace name
+          NAMESPACE=$(yq e '.name' ./agoric-sdk/multichain-testing/${{ inputs.config }})
+          echo "NAMESPACE=${NAMESPACE}" >> $GITHUB_ENV
+
+          # Build validator pod names (chainid-genesis-0)
+          VALIDATOR_PODS=$(yq e '.chains[] | .id + "-genesis-0"' ./agoric-sdk/multichain-testing/${{ inputs.config }} | tr '\n' ' ')
+          echo "VALIDATOR_PODS=${VALIDATOR_PODS}" >> $GITHUB_ENV
+
+          # Build relayer pod names (type-name-0)
+          RELAYER_PODS=$(yq e '.relayers[] | .type + "-" + .name + "-0"' ./agoric-sdk/multichain-testing/${{ inputs.config }} | tr '\n' ' ')
+          echo "RELAYER_PODS=${RELAYER_PODS}" >> $GITHUB_ENV
+
+          # For debugging
+          echo "Namespace: ${NAMESPACE}"
+          echo "Validator pods: ${VALIDATOR_PODS}"
+          echo "Relayer pods: ${RELAYER_PODS}"
+
+      - name: yarn link
+        run: |
+          yarn link-cli ~/bin/agoric
+          echo "/home/runner/bin" >> $GITHUB_PATH
+        working-directory: ./agoric-sdk
+
+      - name: Enable Corepack
+        run: corepack enable
+        working-directory: ./agoric-sdk/multichain-testing
+
+      # Before multichain-testing deps because that project portals into SDK
+      # but only the SDK postinstall script will runs its package patching.
+      - name: Install SDK deps
+        run: yarn install
+
+      - name: Install @agoric/multichain-testing deps
+        run: yarn install
+        working-directory: ./agoric-sdk/multichain-testing
+
+      - name: Lint @agoric/multichain-testing
+        # include testing imports to check package patches
+        run: yarn lint && yarn ava test/imports.test.ts
+        working-directory: ./agoric-sdk/multichain-testing
+
+      - name: docker build (sdk)
+        # Produces local ghcr.io/agoric/agoric-sdk:dev used in Kind.
+        run: |
+          make docker-build-sdk TAG=dev
+        working-directory: ./agoric-sdk/packages/deployment
+
+      - name: Setup kind cluster
+        uses: helm/kind-action@v1.8.0
+        with:
+          cluster_name: kind-starship
+
+      - name: Prepare kind for Starship
+        run: |
+          set -ex
+          # Preload local Docker image into kind cluster.
+          kind load docker-image --name kind-starship ghcr.io/agoric/agoric-sdk:dev
+
+          # Get kind kubeconfig
+          KIND_KUBECONFIG="$HOME/kind-kubeconfig"
+          touch "$KIND_KUBECONFIG"
+          chmod go= "$KIND_KUBECONFIG"
+          kind get kubeconfig --name kind-starship > "$KIND_KUBECONFIG"
+          echo "KUBECONFIG=$KIND_KUBECONFIG" >> $GITHUB_ENV
+
+      - name: Setup Starship Infrastructure
+        id: starship-infra
+        # `inputs.name` is fixed in this commit (hyperweb-io/starship-action#43).
+        # TODO: Adopt an official tag of `starship-action` when it is released
+        uses: hyperweb-io/starship-action@d854f77ccefe7fc3dfe05b0500931ff2563d1406
+        timeout-minutes: 20
+        with:
+          config: ./agoric-sdk/multichain-testing/${{ inputs.config }}
+          timeout: 20m # Usually 13min
+          kubeconfig: ${{ env.KUBECONFIG }}
+          namespace: ${{ env.NAMESPACE }}
+          #`chain.scripts.chainRpcReady` is added in this PR: hyperweb-io/starship#688
+          # TODO: Use the official `hyperweb-io` when a new version is released
+          #repo: https://agoric-labs.github.io/starship
+          repo: https://agoric-labs.github.io/starship
+
+      - name: Fund Provision Pool
+        run: |
+          kubectl config set-context --current --namespace=${NAMESPACE}
+          kubectl get pods
+          make fund-provision-pool
+        working-directory: ./agoric-sdk/multichain-testing
+
+      - name: Register Interchain Bank Assets
+        run: make register-bank-assets
+        working-directory: ./agoric-sdk/multichain-testing
+
+      - name: Create Noble Swap Pool (If needed)
+        run: make create-noble-swap-pool
+        working-directory: ./agoric-sdk/multichain-testing
+
+      - name: Run @agoric/multichain-testing E2E Tests
+        run: ${{ inputs.test_command }}
+        working-directory: ./agoric-sdk/multichain-testing
+        env:
+          FILE: ${{ inputs.config }}
+
+      - name: Capture slog.slog
+        if: always()
+        run: |
+          cd $GITHUB_WORKSPACE
+          echo "Capturing agoric slog.slog"
+          kubectl exec -i agoriclocal-genesis-0 -c validator -- cat slog.slog > "${LOG_DIR}/slog.slog" 2>&1 || true
+
+      - name: Capture validator logs
+        if: always()
+        run: |
+          cd $GITHUB_WORKSPACE
+          for pod in ${VALIDATOR_PODS}; do
+            echo "Capturing validator logs for ${pod}"
+            kubectl logs ${pod} --container=validator > "${LOG_DIR}/validators/${pod}.log" 2>&1 || true
+          done
+
+      - name: Capture relayer logs
+        if: always()
+        run: |
+          cd $GITHUB_WORKSPACE
+          for pod in ${RELAYER_PODS}; do
+            echo "Capturing relayer logs for ${pod}"
+            kubectl logs ${pod} --container=relayer > "${LOG_DIR}/relayers/${pod}.log" 2>&1 || true
+          done
+
+      - name: Upload validator and relayer logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: multichain-e2e-logs-${{ env.NAMESPACE }}-${{ inputs.test_suite_name }}-${{ github.run_id }}-${{ github.job }}
+          path: ${{ env.LOG_DIR }}
