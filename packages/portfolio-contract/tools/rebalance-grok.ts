@@ -143,7 +143,7 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
             return `<${pDef.slice('Seat: '.length) as SeatKeyword}>`;
           if (pDef.match(/^LCA/)) return `@agoric`;
           if (pDef.match(/^ICA/)) return `@noble`;
-          if (pDef.match(/^GMP/)) return `@Base`;
+          if (pDef.match(/^GMP/)) return `@Ethereum`;
           const { entries, keys } = Object;
           const [poolKey] =
             entries(PoolPlaces).find(([_k, p]) => p.protocol === pDef) ||

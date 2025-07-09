@@ -10,7 +10,7 @@
  * @see {@link provideEVMAccount}
  * @see {@link sendTokensViaCCTP}
  */
-import type { Amount } from '@agoric/ertp';
+import type { Amount, NatAmount } from '@agoric/ertp';
 import { makeTracer, mustMatch, type TypedPattern } from '@agoric/internal';
 import type {
   AccountId,
@@ -33,10 +33,15 @@ import { throwRedacted as Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
 import type { GuestInterface } from '../../async-flow/src/types.ts';
 import { AxelarChain, type YieldProtocol } from './constants.js';
-import type { GMPAccountInfo, PortfolioKit } from './portfolio.exo.ts';
+import type {
+  AccountInfoFor,
+  GMPAccountInfo,
+  PortfolioKit,
+} from './portfolio.exo.ts';
 import {
   type PortfolioInstanceContext,
   provideCosmosAccount,
+  type TransportDetail,
 } from './portfolio.flows.ts';
 import type {
   OfferArgsFor,
@@ -124,6 +129,7 @@ export const provideEVMAccount = async (
   ) as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
 };
 
+/** @deprecated in favor of {@link CCTP} transport */
 export const sendTokensViaCCTP = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -168,6 +174,34 @@ export const sendTokensViaCCTP = async (
     throw new Error(`${errorMsg}: ${err}`);
   }
 };
+
+export const CCTP = {
+  how: 'CCTP',
+  connections: keys(AxelarChain).map((dest: AxelarChain) => ({
+    src: 'noble',
+    dest,
+  })),
+  apply: async (
+    amount: NatAmount,
+    src: AccountInfoFor['noble'],
+    dest: AccountInfoFor[AxelarChain],
+  ) => {
+    const denomAmount: DenomAmount = { denom: 'uusdc', value: amount.value };
+    const { chainId, remoteAddress } = dest;
+    const destinationAddress: AccountId = `${chainId}:${remoteAddress}`;
+    trace(`CCTP destinationAddress: ${destinationAddress}`);
+    const { ica } = src;
+    await ica.depositForBurn(destinationAddress, denomAmount);
+  },
+  recover: async (
+    amount: NatAmount,
+    src: AccountInfoFor['noble'],
+    dest: AccountInfoFor[AxelarChain],
+  ) => {
+    throw Error('TODO(Luqi): how to recover from CCTP transfer?');
+  },
+} as const satisfies TransportDetail<'CCTP', 'noble', AxelarChain>;
+harden(CCTP);
 
 export const makeAxelarMemo = (
   chainId: string,
@@ -410,6 +444,7 @@ const withdrawFromCompound = async (
   );
 };
 
+/** @deprecated in favor of trackFlow style */
 export const changeGMPPosition = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,

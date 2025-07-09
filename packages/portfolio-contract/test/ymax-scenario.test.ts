@@ -8,7 +8,11 @@ import { type NatAmount } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { objectMap } from '@endo/patterns';
-import type { YieldProtocol } from '../src/constants.js';
+import {
+  AxelarChain,
+  type SupportedChain,
+  type YieldProtocol,
+} from '../src/constants.js';
 import {
   grokRebalanceScenarios,
   importCSV,
@@ -24,6 +28,7 @@ import {
 } from './contract-setup.ts';
 import { E } from '@endo/far';
 import { localAccount0 } from './mocks.ts';
+import { getChainNameOfPlaceRef } from '../src/offer-args.ts';
 
 const rebalanceScenarioMacro = test.macro({
   async exec(t, description: string) {
@@ -46,19 +51,33 @@ const rebalanceScenarioMacro = test.macro({
 
     const openPortfolio = async (
       give: Partial<Record<YieldProtocol, NatAmount>>,
+      offerArgs = {},
     ) => {
-      const doneP = trader1.openPortfolio(t, give, s2.offerArgs);
+      const doneP = trader1.openPortfolio(t, give, offerArgs);
 
-      await eventLoopIteration();
-      if (Object.keys(give).length > 0) {
-        await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-      }
-      if ('Aave' in give || 'Compound' in give) {
-        await simulateUpcallFromAxelar(common.mocks.transferBridge).then(() =>
-          simulateCCTPAck(common.utils).finally(() =>
+      const { flow: moves = [] } = offerArgs;
+      console.log('@@@openPortfolio moves', moves);
+
+      let txfr = 0;
+      const remotesDone: SupportedChain[] = [];
+      for (const { dest } of moves) {
+        const chain = getChainNameOfPlaceRef(dest);
+        if (!chain) continue;
+        if (chain === 'noble') {
+          await common.utils.transmitVTransferEvent(
+            'acknowledgementPacket',
+            txfr,
+          );
+          txfr += 1;
+        } else if (Object.keys(AxelarChain).includes(chain)) {
+          if (!remotesDone.includes(chain)) {
+            remotesDone.push(chain);
+            await simulateUpcallFromAxelar(common.mocks.transferBridge);
+          }
+          await simulateCCTPAck(common.utils).finally(() =>
             simulateAckTransferToAxelar(common.utils),
-          ),
-        );
+          );
+        }
       }
       const { result, payouts } = await doneP;
       return { result, payouts };
@@ -68,6 +87,7 @@ const rebalanceScenarioMacro = test.macro({
     const openOnly = Object.keys(s2.before).length === 0;
     const openResult = await openPortfolio(
       openOnly ? s2.proposal.give : s2.before,
+      openOnly ? s2.offerArgs : {},
     );
 
     const { result, payouts } = await (openOnly
@@ -101,6 +121,7 @@ const rebalanceScenarioMacro = test.macro({
 test('scenario:', rebalanceScenarioMacro, 'Open empty portfolio');
 test('scenario:', rebalanceScenarioMacro, 'Open portfolio with USDN position');
 test('scenario:', rebalanceScenarioMacro, 'Recover funds from Noble ICA');
+test('scenario:', rebalanceScenarioMacro, 'Open with 3 positions');
 
 test.skip('scenario:', rebalanceScenarioMacro, 'Aave -> USDN');
 
@@ -109,8 +130,15 @@ const scenariosP = importCSV('./move-cases.csv', import.meta.url).then(data =>
 );
 
 test('list scenarios', async t => {
+  const tested = [
+    'Open empty portfolio',
+    'Open portfolio with USDN position',
+    'Recover funds from Noble ICA',
+    'Open with 3 positions',
+  ];
   const scenarios = await scenariosP;
   const names = Object.keys(scenarios);
-  t.log(names);
+  const todo = names.filter(n => !tested.includes(n));
+  t.log('tested:', tested.length, 'todo:', todo.length, todo);
   t.true(names.length >= 3);
 });

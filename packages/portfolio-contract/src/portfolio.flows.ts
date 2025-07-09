@@ -6,7 +6,7 @@
  */
 import type { GuestInterface } from '@agoric/async-flow';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import { type Amount } from '@agoric/ertp';
+import { type Amount, type NatAmount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type {
   Denom,
@@ -34,7 +34,7 @@ import {
   type MovementDesc,
 } from './offer-args.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
-import { changeGMPPosition } from './pos-gmp.flows.ts';
+import { CCTP, changeGMPPosition, provideEVMAccount } from './pos-gmp.flows.ts';
 import {
   agoricToNoble,
   changeUSDCPosition,
@@ -75,11 +75,14 @@ export type PortfolioInstanceContext = {
 type AssetPlace =
   | { pos: Position }
   | { account: OrchestrationAccount<any> }
+  | { proxy: AccountInfoFor[AxelarChain] }
   | { seat: ZCFSeat; keyword: string };
 
 const placeLabel = (place: AssetPlace) => {
   if ('pos' in place) return place.pos.getPoolKey();
   if ('account' in place) return coerceAccountId(place.account.getAddress());
+  if ('proxy' in place)
+    return `${place.proxy.chainId}:${place.proxy.remoteAddress}`;
   return `seat:${place.keyword}`;
 };
 
@@ -99,6 +102,35 @@ const moveStatus = ({ how, src, dest, amount }: AssetMovement) => ({
 });
 const errmsg = (err: any) => ('message' in err ? err.message : `${err}`);
 
+export type TransportDetail<
+  How extends string,
+  S extends SupportedChain,
+  D extends SupportedChain,
+> = {
+  how: How;
+  connections: { src: SupportedChain; dest: SupportedChain }[];
+  apply: (
+    amount: NatAmount,
+    src: AccountInfoFor[S],
+    dest: AccountInfoFor[D],
+  ) => Promise<void>;
+  recover: (
+    amount: NatAmount,
+    src: AccountInfoFor[S],
+    dest: AccountInfoFor[D],
+  ) => Promise<void>;
+};
+
+export type ProtocolDetail<
+  P extends YieldProtocol,
+  C extends SupportedChain,
+> = {
+  protocol: P;
+  chains: C[];
+  supply: (amount: NatAmount, src: AccountInfoFor[C]) => Promise<void>;
+  withdraw: (amount: NatAmount, dest: AccountInfoFor[C]) => Promise<void>;
+};
+
 export const trackFlow = async (
   reporter: GuestInterface<PortfolioKit['reporter']>,
   moves: AssetMovement[],
@@ -107,7 +139,7 @@ export const trackFlow = async (
   let step = 1;
   try {
     for (const move of moves) {
-      trace(step, moveStatus(move));
+      trace('trackFlow', step, moveStatus(move));
       reporter.publishFlowStatus(flowId, { step, ...moveStatus(move) });
       await move.apply();
       const { amount, src, dest } = move;
@@ -271,6 +303,7 @@ const stepFlow = async (
 ) => {
   const todo: AssetMovement[] = [];
   for (const move of moves) {
+    trace('move', move);
     const way = wayFromSrcToDesc(move);
     const { amount } = move;
     switch (way.how) {
@@ -308,6 +341,7 @@ const stepFlow = async (
         });
         break;
       }
+
       case 'IBC': {
         const [aInfo, nInfo] = await Promise.all([
           provideCosmosAccount(orch, 'agoric', kit),
@@ -336,20 +370,43 @@ const stepFlow = async (
         }
         break;
       }
+
+      case 'CCTP': {
+        const { how, apply, recover } = CCTP;
+        const nInfo = await provideCosmosAccount(orch, 'noble', kit);
+        const gArgs = {
+          destinationEVMChain: way.dest,
+          amounts: { Deposit: amount },
+          keyword: 'Deposit',
+        };
+        const gInfo = await provideEVMAccount(orch, ctx, seat, gArgs, kit);
+        todo.push({
+          how,
+          amount,
+          src: { account: nInfo.ica },
+          dest: { proxy: gInfo },
+          apply: () => apply(amount, nInfo, gInfo),
+          recover: () => recover(amount, nInfo, gInfo),
+        });
+        break;
+      }
+
       case 'USDN': {
         const nInfo = await provideCosmosAccount(orch, 'noble', kit);
         const acctId = coerceAccountId(nInfo.ica.getAddress());
         const pos = kit.manager.providePosition('USDN', 'USDN', acctId);
         if ('src' in way) {
-          const { apply } = protocolUSDN.supply;
+          const { supply } = protocolUSDN;
           todo.push({
             how: way.how,
             amount,
             src: { account: nInfo.ica },
             dest: { pos },
-            apply: () => apply(amount, nInfo),
-            recover: () => Fail`no recovery`,
+            apply: () => supply(amount, nInfo),
+            recover: () => Fail`no recovery from supply`,
           });
+        } else {
+          Fail`TODO`;
         }
         break;
       }

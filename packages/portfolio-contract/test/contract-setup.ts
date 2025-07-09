@@ -95,6 +95,7 @@ export const setupTrader = async (t, initial = 10_000) => {
 
   const { storage } = common.bootstrap;
   const readPublished = (async subpath => {
+    await eventLoopIteration();
     const val = storage.getDeserialized(`orchtest.${subpath}`).at(-1);
     return val;
   }) as unknown as VstorageKit['readPublished'];

@@ -22,7 +22,6 @@ import type {
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { GuestInterface } from '../../async-flow/src/types.ts';
-import { SupportedChain, YieldProtocol } from './constants.js';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {
   provideCosmosAccount,
@@ -30,6 +29,8 @@ import {
   type LocalAccount,
   type NobleAccount,
   type PortfolioInstanceContext,
+  type ProtocolDetail,
+  type TransportDetail,
 } from './portfolio.flows.ts';
 import type { Position } from './pos.exo.ts';
 import type { OpenPortfolioGive } from './type-guards.ts';
@@ -107,74 +108,37 @@ export const makeUnlockSwapMessages = (
   return { msgUnlock, msgSwap, protoMessages };
 };
 
-type ProtocolDetail<P extends YieldProtocol, C extends SupportedChain> = {
-  protocol: P;
-  chains: C[];
-  supply: {
-    apply: (amount: NatAmount, src: AccountInfoFor[C]) => Promise<void>;
-    recover?: (amount: NatAmount, src: AccountInfoFor[C]) => Promise<void>;
-  };
-  withdraw: {
-    apply: (amount: NatAmount, dest: AccountInfoFor[C]) => Promise<void>;
-    recover?: (amount: NatAmount, dest: AccountInfoFor[C]) => Promise<void>;
-  };
-};
-
 export const protocolUSDN = {
   protocol: 'USDN',
   chains: ['noble'],
-  supply: {
-    apply: async (amount: NatAmount, src: AccountInfoFor['noble']) => {
-      const { ica } = src;
-      const nobleAddr = ica.getAddress();
+  supply: async (amount: NatAmount, src: AccountInfoFor['noble']) => {
+    const { ica } = src;
+    const nobleAddr = ica.getAddress();
 
-      // TODO: MsgLock
-      const { msgSwap, protoMessages } = makeSwapLockMessages(
-        nobleAddr,
-        amount.value,
-      );
+    // TODO: MsgLock
+    const { msgSwap, protoMessages } = makeSwapLockMessages(
+      nobleAddr,
+      amount.value,
+    );
 
-      trace('executing', [msgSwap].filter(Boolean));
-      const result = await ica.executeEncodedTx(protoMessages);
-      trace('XXX: decode Swap, Lock result; detect errors', result);
-    },
+    trace('executing', [msgSwap].filter(Boolean));
+    const result = await ica.executeEncodedTx(protoMessages);
+    trace('XXX: decode Swap, Lock result; detect errors', result);
   },
-  withdraw: {
-    apply: async (amount: NatAmount, dest: AccountInfoFor['noble']) => {
-      const { ica } = dest;
-      const address = ica.getAddress();
-      const { msgUnlock, msgSwap, protoMessages } = makeUnlockSwapMessages(
-        address,
-        amount.value,
-        // TODO: { usdnOut },
-      );
-      trace('executing', [msgUnlock, msgSwap].filter(Boolean));
-      const result = await ica.executeEncodedTx(protoMessages);
-      trace('XXX: decode Swap, Lock result; detect errors', result);
-    },
-    recover: async () => {},
+  withdraw: async (amount: NatAmount, dest: AccountInfoFor['noble']) => {
+    const { ica } = dest;
+    const address = ica.getAddress();
+    const { msgUnlock, msgSwap, protoMessages } = makeUnlockSwapMessages(
+      address,
+      amount.value,
+      // TODO: { usdnOut },
+    );
+    trace('executing', [msgUnlock, msgSwap].filter(Boolean));
+    const result = await ica.executeEncodedTx(protoMessages);
+    trace('XXX: decode Swap, Lock result; detect errors', result);
   },
 } as const satisfies ProtocolDetail<'USDN', 'noble'>;
 harden(protocolUSDN);
-
-type TransportDetail<
-  How extends string,
-  S extends SupportedChain,
-  D extends SupportedChain,
-> = {
-  how: How;
-  connections: { src: SupportedChain; dest: SupportedChain }[];
-  apply: (
-    amount: NatAmount,
-    src: AccountInfoFor[S],
-    dest: AccountInfoFor[D],
-  ) => Promise<void>;
-  recover?: (
-    amount: NatAmount,
-    src: AccountInfoFor[S],
-    dest: AccountInfoFor[D],
-  ) => Promise<void>;
-};
 
 export const agoricToNoble = {
   how: 'IBC to Noble',

@@ -378,8 +378,10 @@ export const preparePortfolioKit = (
         reserveAccount<C extends SupportedChain>(
           chainName: C,
         ): undefined | Vow<AccountInfoFor[C]> {
+          trace('reserveAccount', chainName);
           const { accounts, accountsPending } = this.state;
           if (accounts.has(chainName)) {
+            trace('accounts.has', chainName);
             return vowTools.asVow(async () => {
               const infoAny = accounts.get(chainName);
               assert.equal(infoAny.chainName, chainName);
@@ -388,10 +390,13 @@ export const preparePortfolioKit = (
             });
           }
           if (accountsPending.has(chainName)) {
+            trace('accountsPending.has', chainName);
             return accountsPending.get(chainName).vow as Vow<AccountInfoFor[C]>;
           }
           const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
+          trace('accountsPending.init', chainName);
           accountsPending.init(chainName, pending);
+          this.facets.reporter.publishStatus();
           return undefined;
         },
         resolveAccount(info: AccountInfo) {
