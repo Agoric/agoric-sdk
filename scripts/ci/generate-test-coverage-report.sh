@@ -1,5 +1,7 @@
 #!/bin/bash
 
+NODE_MEMORY_SIZE="${NODE_MEMORY_SIZE:-"2048"}"
+
 # CI artifact export expects the files to be under `coverage` (same for /html below)
 export NODE_V8_COVERAGE="$PWD/coverage/tmp"
 
@@ -9,6 +11,7 @@ mkdir -p "$NODE_V8_COVERAGE"
 
 # the package test:c8 commands will include this
 export C8_OPTIONS="--clean=false"
+export NODE_OPTIONS="--max-old-space-size=$NODE_MEMORY_SIZE"
 
 # XXX uses lerna when `yarn workspaces run` should work, but in v1 it always bails on missing script
 yarn lerna run test:c8 --no-bail

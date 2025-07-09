@@ -40,7 +40,9 @@ jobs:
         with:
           node-version: 'node-new'
 
-      - name: generate test coverage report
+      - env:
+          NODE_MEMORY_SIZE: "4096"
+        name: generate test coverage report
         run: ./scripts/ci/generate-test-coverage-report.sh
       - uses: actions/upload-artifact@v4
         with:
