@@ -11,7 +11,7 @@ architecture-beta
     ymaxui:R -- L:PE
 
   group offchain(cloud)[Agoric Off Chain]
-    service PE(server)[Planning Engine] in offchain
+    service PE(server)[Execution Engine] in offchain
 
     PE:R -- L:spectrum
 
@@ -63,16 +63,16 @@ sequenceDiagram
 7. automatic rebalance
 ```mermaid
 sequenceDiagram
-  Contract ->> Planning Engine: notification of funds in LCA
-  Planning Engine ->> Contract: flow sequence
+  Contract ->> Execution Engine: notification of funds in LCA
+  Execution Engine ->> Contract: flow sequence
 ```
 8. deposit from Fast USDC source chains into existing portfolio via address hook
 ```mermaid
 sequenceDiagram
   Non-agoric Chain ->> LCA: send USDC via IBC, CCTP, or Fast USDC
   LCA ->> Contract: receive upcall
-  Contract ->> Planning Engine: notification of funds in LCA
-  Planning Engine ->> Contract: flow sequence
+  Contract ->> Execution Engine: notification of funds in LCA
+  Execution Engine ->> Contract: flow sequence
 ```
 9. claim bonus
 ```mermaid
@@ -81,27 +81,56 @@ sequenceDiagram
   Contract ->> Contract: claim rewards at applicable positions
 ```
 
-#### Eng Tasks
+#### Execution Engine
 
-  - [EVM]
-    - Aave + Compound + USDN [M0]
-    - Remaining protocols/pools [M1]
-  - [contract]
-    - accept flow as sequence of moves [M0]
-    - administrative facet
-      - update portfolio
-      - deposit into LCA
-      - withdraw from LCA
-      - claim rewards intent
-        - claim rewards operation (triggered by user for now, could move to by
-          planning engine in the future)
-    - planning engine facet
-      - can only move tokens between LCA and positions
-    - notify planning engine
-  - [planning engine]
-    - receive/subscribe to notifications
-    - given portfolio, current positions, generate steps and make offer
-      - errors out if it encounter a situation it can't generate steps
+##### Move from Aave to Compound
+```mermaid
+sequenceDiagram
+  autoNumber
+  participant vstorage
+  participant EE as Execution Engine
+  participant Contract
+  vstorage ->> EE: desired allocation changed to 50% Aave on Avalanche, 50% Compound on Polygon, no outstanding txns for this portfolio
+  Spectrum ->> EE: user currently has $100 on Aave-Avalanche pool, and $0 on Compound-Polygon pool
+  EE ->> EE: figures out the next step towards user's desired allocation
+  EE ->> Contract: withdraw $50 from Aave-Avalanche pool to ICA-equivalent on Avalanche
+  Contract ->> vstorage: record inflight tx
+  Contract ->> Axelar: invoke GMP
+  Axelar ->> Proxy Contract on Avalanche: deliver GMP message
+  Proxy Contract on Avalanche ->> Axelar: GMP message delivered
+  Proxy Contract on Avalanche ->> ICA-equivalent on Avalanche: execute GMP message (could fail, proxy contract could retry)
+  Axelar ->> Contract: GMP message delivered
+  Contract ->> vstorage: delete inflight tx because it's successful
+  EE ->> Spectrum: polling ICA-equivalent on Avalanche until balance >= $50
+  EE ->> EE: figures out the next step towards user's desired allocation
+  EE ->> Contract: transfer $50 from ICA-equivalent on Avalanche to ICA-equivalent on Polygon via CCTP (Axelar interactions similar to withdraw $50)
+  EE ->> Spectrum: polling ICA-equivalent on Polygon until balance >= $50
+  EE ->> EE: figures out the next step towards user's desired allocation
+  EE ->> Contract: deposit $50 from ICA-equivalent on Polygon to Compound on Polygon pool (Axelar interactions similar to withdraw $50)
+  EE ->> Spectrum: polling Compound on Polygon pool
+  EE ->> EE: user's balances match user's desired allocation, go back to sleep
+```
+
+#### Eng Tasks
+- [EVM]
+  - Aave + Compound + USDN [M0]
+  - Remaining protocols/pools [M1]
+- [contract]
+  - accept flow as sequence of moves [M0]
+  - administrative facet
+    - update portfolio
+    - deposit into LCA
+    - withdraw from LCA
+    - claim rewards intent
+      - claim rewards operation (triggered by user for now, could move to by
+        execution engine in the future)
+  - execution engine facet
+    - can only move tokens between LCA and positions
+  - notify execution engine
+- [execution engine]
+  - receive/subscribe to notifications
+  - given portfolio, current positions, generate steps and make offer
+    - errors out if it encounter a situation it can't generate steps
 
 #### NOT in scope for MVP
 1. deposit from Fast USDC source chains and create a new portfolio via address hook
