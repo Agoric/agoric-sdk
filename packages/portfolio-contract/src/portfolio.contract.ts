@@ -172,6 +172,7 @@ export const contract = async (
     rebalanceFromTransfer,
     proposalShapes,
     timer: timerService,
+    chainHub,
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller,
     usdcBrand: brands.USDC,
