@@ -4,7 +4,7 @@
 on:
   push:
     branches:
-      - 'usman*'
+      - 'usman/fix-after-merge'
   workflow_dispatch:
 
 jobs:
@@ -30,60 +30,6 @@ jobs:
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 
-  dev-canary:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: 'node-new'
-
-      # Adapted from https://johnny.sh/notes/publish-canary-lerna-cicd/
-      - name: configure NPM token
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: check credentials
-        run: npm whoami
-      - name: publish to NPM tag
-        run: |
-          case $GITHUB_REF_NAME in
-            release-*)
-              # A pre-release.
-              TAG=${GITHUB_REF_NAME#release-}-dev
-              ;;
-            dev-*)
-              # A pre-release while our release branch is straying from master
-              TAG=${GITHUB_REF_NAME#dev-}-dev
-              ;;
-            master)
-              # A trunk dev release.
-              TAG=dev
-              ;;
-            *)
-              # Some other dev release.
-              TAG=other-dev
-              ;;
-          esac
-          # Prevent `lerna publish` from failing due to uncommitted changes.
-          git stash || true
-          # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
-          yarn lerna publish --concurrency 1 --conventional-prerelease --canary --exact \
-            --dist-tag=$TAG --preid=$TAG-$(git rev-parse --short=7 HEAD) \
-            --no-push --no-verify-access --yes
-          # restore any stashed changes for caching
-          git stash pop || true
-      - name: notify on failure
-        if: failure()
-        uses: ./.github/actions/notify-status
-        with:
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-
   coverage:
     needs: build
     runs-on: ubuntu-latest
@@ -100,51 +46,3 @@ jobs:
         with:
           name: coverage
           path: coverage
-      - name: Find Netlify site ID
-        run: |
-          echo "NETLIFY_SITE_ID=$(cat COVERAGE_NETLIFY_SITE_ID)" >> $GITHUB_ENV
-
-      - uses: nwtgck/actions-netlify@v1.1
-        with:
-          # Production deployment if a push or merged PR.
-          production-deploy: ${{ github.event_name == 'push' && github.ref_name == 'master' }}
-          publish-dir: coverage/html
-          # SECURITY: we don't want to hand out the Github token to this action.
-          # github-token: ${{ secrets.GITHUB_TOKEN }}
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-      - name: notify on failure
-        if: failure()
-        uses: ./.github/actions/notify-status
-        with:
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-  benchmark:
-    needs: build
-    runs-on: ubuntu-latest
-    if: ${{github.event_name == 'push'}}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: 'node-new'
-
-      - name: benchmark changes
-        env:
-          AUTOBENCH_METRICS_URL: ${{ secrets.AUTOBENCH_METRICS_URL }}
-        run: cd packages/swingset-runner && yarn ci:autobench
-      - uses: actions/upload-artifact@v4
-        with:
-          name: benchmarkstats.json
-          path: packages/swingset-runner/benchstats*.json
-      - name: notify on failure
-        if: failure()
-        uses: ./.github/actions/notify-status
-        with:
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
