@@ -6,6 +6,7 @@
 import {
   makeTracer,
   mustMatch,
+  NonNullish,
   type Remote,
   type TypedPattern,
 } from '@agoric/internal';
@@ -137,6 +138,7 @@ export const contract = async (
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
 
   assert(brands.USDC, 'USDC missing from brands in terms');
+  assert(brands.Fee, 'Fee missing from brands in terms');
 
   // TODO: only on 1st incarnation
   registerChainsAndAssets(chainHub, brands, chainInfo, assetInfo, {
@@ -144,7 +146,11 @@ export const contract = async (
   });
 
   const proposalShapes = makeProposalShapes0(brands.USDC, brands.Access);
-  const proposalShapes2 = makeProposalShapes(brands.USDC, brands.Access);
+  const proposalShapes2 = makeProposalShapes(
+    brands.USDC,
+    brands.Fee,
+    brands.Access,
+  );
 
   // Until we find a need for on-chain subscribers, this stop-gap will do.
   const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
@@ -156,11 +162,22 @@ export const contract = async (
     },
   };
 
-  const denom = chainHub.getDenom(brands.USDC);
-  assert(denom, 'no denom for USDC brand');
   const ctx1 = {
     zoeTools,
-    usdc: { brand: brands.USDC, denom },
+    usdc: {
+      brand: brands.USDC,
+      denom: NonNullish(
+        chainHub.getDenom(brands.USDC),
+        'no denom for USDC brand',
+      ),
+    },
+    gmpFeeToken: {
+      brand: brands.Fee,
+      denom: NonNullish(
+        chainHub.getDenom(brands.Fee),
+        'no denom for Fee brand',
+      ),
+    },
     contracts,
   };
 

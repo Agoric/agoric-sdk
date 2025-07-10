@@ -53,6 +53,7 @@ export type MovementDesc = {
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
+  fee?: NatAmount;
 };
 
 type XXXOfferArgs = {

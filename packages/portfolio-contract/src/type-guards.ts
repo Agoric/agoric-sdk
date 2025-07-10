@@ -91,19 +91,22 @@ export type ProposalType = {
       /** required iff the contract was started with an Access issuer */
       Access?: NatAmount;
       Deposit?: NatAmount;
+      GmpFee?: NatAmount;
     };
   };
   rebalance:
-    | { give: { Deposit?: NatAmount }; want: {} }
-    | { want: { Cash: NatAmount }; give: {} };
+    | { give: { Deposit?: NatAmount; GmpFee?: NatAmount }; want: {} }
+    | { want: { Cash: NatAmount }; give: { GmpFee?: NatAmount } };
 };
 
 export const makeProposalShapes = (
   usdcBrand: Brand<'nat'>,
+  feeBrand: Brand<'nat'>,
   accessBrand?: Brand<'nat'>,
 ) => {
   // TODO: Update usdcAmountShape, to include BLD/aUSDC after discussion with Axelar team
   const $Shape = makeNatAmountShape(usdcBrand);
+  const FeeShape = makeNatAmountShape(feeBrand);
   const accessShape = accessBrand
     ? { Access: makeNatAmountShape(accessBrand, 1n) }
     : {};
@@ -115,13 +118,13 @@ export const makeProposalShapes = (
   ) as TypedPattern<ProposalType['openPortfolio']>;
   const rebalance = M.or(
     M.splitRecord(
-      { give: M.splitRecord({}, { Deposit: $Shape }, {}) },
+      { give: M.splitRecord({}, { Deposit: $Shape, GmpFee: FeeShape }, {}) },
       { want: {}, exit: M.any() },
       {},
     ),
     M.splitRecord(
       { want: M.splitRecord({ Cash: $Shape }, {}, {}) },
-      { give: {}, exit: M.any() },
+      { give: M.splitRecord({}, { GmpFee: FeeShape }, {}), exit: M.any() },
       {},
     ),
   ) as TypedPattern<ProposalType['rebalance']>;

@@ -6,7 +6,7 @@
  */
 import type { GuestInterface } from '@agoric/async-flow';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import { type Amount, type NatAmount } from '@agoric/ertp';
+import { AmountMath, type Amount, type NatAmount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type {
   AccountId,
@@ -54,6 +54,7 @@ import {
   type EVMContractAddressesMap,
   type OfferArgsFor,
   type PoolKey,
+  type ProposalType,
   type ProposalType0,
 } from './type-guards.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
@@ -67,6 +68,7 @@ export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
 type PortfolioBootstrapContext = {
   contracts: EVMContractAddressesMap;
   usdc: { brand: Brand<'nat'>; denom: Denom };
+  gmpFeeToken: { brand: Brand<'nat'>; denom: Denom };
   zoeTools: GuestInterface<ZoeTools>;
   makePortfolioKit: () => GuestInterface<PortfolioKit>;
   inertSubscriber: GuestInterface<ResolvedPublicTopic<unknown>['subscriber']>;
@@ -75,6 +77,7 @@ type PortfolioBootstrapContext = {
 export type PortfolioInstanceContext = {
   contracts: EVMContractAddressesMap;
   usdc: { brand: Brand<'nat'>; denom: Denom };
+  gmpFeeToken: { brand: Brand<'nat'>; denom: Denom };
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
 };
@@ -329,12 +332,24 @@ const stepFlow = async (
     switch (way.how) {
       case 'localTransfer': {
         const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
-        const amounts = { Deposit: amount };
+        const amounts = (seat.getProposal() as ProposalType['rebalance']).give;
+        if (
+          'Deposit' in amounts &&
+          amounts.Deposit &&
+          !AmountMath.isEqual(amounts.Deposit, amount)
+        ) {
+          console.warn(
+            'ignoring move amount',
+            amount,
+            'in favor of proposal',
+            amounts.Deposit,
+          );
+        }
         todo.push({
           how: 'localTransfer',
           src: { seat, keyword: 'Deposit' },
           dest: { account: lca },
-          amount,
+          amount, // XXX use amounts.Deposit
           apply: async () => {
             await ctx.zoeTools.localTransfer(seat, lca, amounts);
           },
@@ -450,14 +465,12 @@ const stepFlow = async (
           'Compound',
           accountId,
         );
-        const feeB = seat.getAmountAllocated('CompoundGmp');
-        // XXX hoist this lookup to once in the contract
-        const feeDenom = chainHub.getDenom(feeB.brand);
-        const fee = { denom: feeDenom, value: feeB.value };
+        const { denom } = ctx.gmpFeeToken;
+        const fee = { denom, value: move.fee ? move.fee.value : 0n };
         const evmCtx: EVMContext<'compound'> = {
           addresses: contracts[evmChain],
           lca,
-          chainHub,
+          chainHub: ctx.chainHubTools,
           fee,
         };
 

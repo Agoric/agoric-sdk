@@ -36,7 +36,7 @@ const deploy = async (t: ExecutionContext) => {
     await bundleAndInstall(contractExports);
   t.is(passStyleOf(installation), 'remotable');
 
-  const { usdc, poc26 } = common.brands;
+  const { usdc, poc26, bld } = common.brands;
   const timerService = buildZoeManualTimer();
 
   // List of all chains whose `chainInfo` is utilized by the Portfolio contract.
@@ -65,7 +65,7 @@ const deploy = async (t: ExecutionContext) => {
 
   const started = await E(zoe).startInstance(
     installation,
-    { USDC: usdc.issuer, Access: poc26.issuer },
+    { USDC: usdc.issuer, Fee: bld.issuer, Access: poc26.issuer },
     {}, // terms
     {
       ...common.commonPrivateArgs,

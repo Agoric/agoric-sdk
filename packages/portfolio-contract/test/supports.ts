@@ -259,6 +259,7 @@ export const setupPortfolioTest = async ({
     bootstrap: { agoricNamesAdmin, bankManager },
   } = common;
   const usdc = withAmountUtils(makeIssuerKit('USDC'));
+  const bld = withAmountUtils(makeIssuerKit('BLD'));
   const poc26 = withAmountUtils(makeIssuerKit('Poc26'));
   await E(bankManager).addAsset(
     uusdcOnAgoric,
@@ -266,6 +267,7 @@ export const setupPortfolioTest = async ({
     'USD Circle Stablecoin',
     usdc.issuerKit,
   );
+  await E(bankManager).addAsset('ubld', 'BLD', 'BLD', bld.issuerKit);
   await E(bankManager).addAsset(
     'upoc26',
     'Poc26',
@@ -288,9 +290,16 @@ export const setupPortfolioTest = async ({
     }) as AssetInfo,
   );
 
+  const bldDetail = {
+    baseDenom: 'ubld',
+    baseName: 'agoric',
+    chainName: 'agoric',
+    brand: bld.brand,
+  };
   const assetInfo: [Denom, DenomDetail & { brandKey?: string }][] = harden([
     assetOn('uusdc', 'noble'),
     [uusdcOnAgoric, agUSDCDetail],
+    ['ubld', bldDetail],
     assetOn('uusdc', 'noble', 'osmosis', fetchedChainInfo),
   ]);
 
@@ -300,7 +309,7 @@ export const setupPortfolioTest = async ({
 
   return {
     ...common,
-    brands: { usdc: usdcSansMint, poc26 },
+    brands: { usdc: usdcSansMint, poc26, bld },
     commonPrivateArgs: {
       ...commonPrivateArgs,
       assetInfo,

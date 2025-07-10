@@ -401,7 +401,7 @@ const Compound: CompoundI = {
   supply: ['address', 'uint256'],
 };
 
-type EVMContext<CN extends string> = {
+export type EVMContext<CN extends string> = {
   lca: LocalAccount;
   fee: DenomAmount;
   addresses: Record<CN | 'usdc', EVMT['address']>;
