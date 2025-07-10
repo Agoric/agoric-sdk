@@ -22,11 +22,7 @@
  */
 import { type Amount, type Brand, type NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
-import {
-  AnyNatAmountShape,
-  type AccountId,
-  type CaipChainId,
-} from '@agoric/orchestration';
+import { AnyNatAmountShape, type AccountId } from '@agoric/orchestration';
 import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
@@ -166,11 +162,40 @@ export const PoolPlaces = {
   USDN: { protocol: 'USDN', vault: null }, // MsgSwap only
   USDNVault: { protocol: 'USDN', vault: 1 }, // MsgSwap, MsgLock
   Aave_Ethereum: { protocol: 'Aave', chainName: 'Ethereum' },
-  Aave_Base: { protocol: 'Aave', chainName: 'Base' },
   Aave_Avalanche: { protocol: 'Aave', chainName: 'Avalanche' },
+  Aave_optimism: { protocol: 'Aave', chainName: 'optimism' },
+  Aave_arbitrum: { protocol: 'Aave', chainName: 'arbitrum' },
+  Aave_Polygon: { protocol: 'Aave', chainName: 'Polygon' },
+  Aave_Fantom: { protocol: 'Aave', chainName: 'Fantom' },
+  Aave_binance: { protocol: 'Aave', chainName: 'binance' },
+  'Aave_ethereum-sepolia': { protocol: 'Aave', chainName: 'ethereum-sepolia' },
+  'Aave_optimism-sepolia': { protocol: 'Aave', chainName: 'optimism-sepolia' },
+  'Aave_arbitrum-sepolia': { protocol: 'Aave', chainName: 'arbitrum-sepolia' },
+  'Aave_polygon-sepolia': { protocol: 'Aave', chainName: 'polygon-sepolia' },
+
   Compound_Ethereum: { protocol: 'Compound', chainName: 'Ethereum' },
-  Compound_Base: { protocol: 'Compound', chainName: 'Base' },
   Compound_Avalanche: { protocol: 'Compound', chainName: 'Avalanche' },
+  Compound_optimism: { protocol: 'Compound', chainName: 'optimism' },
+  Compound_arbitrum: { protocol: 'Compound', chainName: 'arbitrum' },
+  Compound_Polygon: { protocol: 'Compound', chainName: 'Polygon' },
+  Compound_Fantom: { protocol: 'Compound', chainName: 'Fantom' },
+  Compound_binance: { protocol: 'Compound', chainName: 'binance' },
+  'Compound_ethereum-sepolia': {
+    protocol: 'Compound',
+    chainName: 'ethereum-sepolia',
+  },
+  'Compound_optimism-sepolia': {
+    protocol: 'Compound',
+    chainName: 'optimism-sepolia',
+  },
+  'Compound_arbitrum-sepolia': {
+    protocol: 'Compound',
+    chainName: 'arbitrum-sepolia',
+  },
+  'Compound_polygon-sepolia': {
+    protocol: 'Compound',
+    chainName: 'polygon-sepolia',
+  },
 } as const satisfies Record<string, PoolPlaceInfo>;
 harden(PoolPlaces);
 
@@ -337,15 +362,6 @@ export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.splitRecord(
 // XXX deployment concern, not part of contract external interface
 // but avoid changing the import from the deploy package
 
-// XXX split between chainInfo and contractAddresses
-export type AxelarChainsMap = {
-  [chain in AxelarChain]: {
-    caip: CaipChainId;
-    /**
-     * Axelar chain IDs differ between mainnet and testnet.
-     * See [supported-chains-list.ts](https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts)
-     */
-    axelarId: string;
-    contractAddresses: EVMContractAddresses;
-  };
+export type EVMContractAddressesMap = {
+  [chain in AxelarChain]: EVMContractAddresses;
 };

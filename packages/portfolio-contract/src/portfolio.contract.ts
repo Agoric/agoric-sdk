@@ -37,7 +37,7 @@ import * as flows from './portfolio.flows.ts';
 import {
   makeProposalShapes,
   OfferArgsShapeFor,
-  type AxelarChainsMap,
+  type EVMContractAddressesMap,
   type OfferArgsFor,
   type ProposalType,
 } from './type-guards.ts';
@@ -61,16 +61,13 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
     factory: M.string(),
     usdc: M.string(),
   });
-const AxelarChainInfoPattern = M.splitRecord({
-  caip: M.string(),
-  contractAddresses: EVMContractAddressesShape,
-});
 
-const AxelarChainsMapShape: TypedPattern<AxelarChainsMap> = M.splitRecord(
-  fromEntries(
-    keys(AxelarChain).map(chain => [chain, AxelarChainInfoPattern]),
-  ) as Record<AxelarChain, typeof AxelarChainInfoPattern>,
-);
+const EVMContractAddressesMap: TypedPattern<EVMContractAddressesMap> =
+  M.splitRecord(
+    fromEntries(
+      keys(AxelarChain).map(chain => [chain, EVMContractAddressesShape]),
+    ) as Record<AxelarChain, typeof EVMContractAddressesShape>,
+  );
 
 type PortfolioPrivateArgs = OrchestrationPowers & {
   // XXX document required assets, chains
@@ -78,7 +75,7 @@ type PortfolioPrivateArgs = OrchestrationPowers & {
   chainInfo: Record<string, ChainInfo>;
   marshaller: Marshaller;
   storageNode: Remote<StorageNode>;
-  axelarChainsMap: AxelarChainsMap; // XXX split between chainInfo and contractInfo
+  contracts: EVMContractAddressesMap;
 };
 
 const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
@@ -88,7 +85,8 @@ const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   // XXX use shape to validate required chains / assets?
   chainInfo: M.recordOf(M.string(), ChainInfoShape),
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
-  axelarChainsMap: AxelarChainsMapShape,
+  // TODO: Handle the scenario where the map contains only testnet or only mainnet chains
+  contracts: EVMContractAddressesMap,
 };
 
 export const meta: ContractMeta = {
@@ -129,7 +127,7 @@ export const contract = async (
   const {
     chainInfo,
     assetInfo,
-    axelarChainsMap,
+    contracts,
     timerService,
     marshaller,
     storageNode,
@@ -161,7 +159,7 @@ export const contract = async (
   const ctx1 = {
     zoeTools,
     usdc: { brand: brands.USDC, denom },
-    axelarChainsMap,
+    contracts,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
@@ -179,8 +177,8 @@ export const contract = async (
     rebalance,
     rebalanceFromTransfer,
     proposalShapes,
-    axelarChainsMap,
     timer: timerService,
+    chainHubTools: { getChainInfo: chainHub.getChainInfo.bind(chainHub) },
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller,
     usdcBrand: brands.USDC,

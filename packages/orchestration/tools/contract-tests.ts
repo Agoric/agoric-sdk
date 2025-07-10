@@ -31,7 +31,7 @@ import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import { objectMap } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
-import { withChainCapabilities } from '../index.js';
+import { withChainCapabilities, type ChainInfo } from '../index.js';
 import cctpChainInfo from '../src/cctp-chain-info.js';
 import { registerKnownChains } from '../src/chain-info.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';
@@ -46,8 +46,10 @@ export const ROOT_STORAGE_PATH = 'orchtest'; // Orchetration Contract Test
  */
 export const setupOrchestrationTest = async ({
   log,
+  chains,
 }: {
   log: ExecutionContext<any>['log'];
+  chains?: Record<string, ChainInfo>;
 }) => {
   // The common setup cannot support a durable zone because many of the fakes are not durable.
   // They were made before we had durable kinds (and thus don't take a zone or baggage).
@@ -136,7 +138,8 @@ export const setupOrchestrationTest = async ({
     portAllocator,
   });
 
-  await registerKnownChains(agoricNamesAdmin, () => {});
+  const chainsToRegister = chains || undefined;
+  await registerKnownChains(agoricNamesAdmin, () => {}, chainsToRegister);
 
   type TransferMessageInfo = {
     message: MsgTransfer;

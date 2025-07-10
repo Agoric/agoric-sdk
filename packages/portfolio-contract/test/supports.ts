@@ -1,12 +1,13 @@
 import { makeReceiveUpCallPayload } from '@aglocal/boot/tools/axelar-supports.ts';
+import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import {
   denomHash,
   withChainCapabilities,
+  type ChainInfo,
   type CosmosChainInfo,
   type Denom,
 } from '@agoric/orchestration';
-import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import { type DenomDetail } from '@agoric/orchestration/src/exos/chain-hub.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { setupOrchestrationTest } from '@agoric/orchestration/tools/contract-tests.ts';
@@ -14,7 +15,6 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import { encodeAbiParameters } from 'viem';
@@ -84,6 +84,104 @@ export {
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
 
+/**
+ * Mainnet chains only.
+ *
+ * Sourced from:
+ *
+ * - https://developers.circle.com/stablecoins/supported-domains
+ * - https://chainlist.org/
+ * - https://docs.simplehash.com/reference/supported-chains-testnets (accessed on
+ *   4 July 2025)
+ *
+ * @satisfies {Record<string, import('./orchestration-api').BaseChainInfo>}
+ */
+export const axelarCCTPConfig = {
+  Ethereum: {
+    namespace: 'eip155',
+    reference: '1',
+    cctpDestinationDomain: 0,
+  },
+  Avalanche: {
+    namespace: 'eip155',
+    reference: '43114',
+    cctpDestinationDomain: 1,
+  },
+  optimism: {
+    namespace: 'eip155',
+    reference: '10',
+    cctpDestinationDomain: 2,
+  },
+  arbitrum: {
+    namespace: 'eip155',
+    reference: '42161',
+    cctpDestinationDomain: 3,
+  },
+  Polygon: {
+    namespace: 'eip155',
+    reference: '137',
+    cctpDestinationDomain: 7,
+  },
+  Fantom: {
+    namespace: 'eip155',
+    reference: '250',
+  },
+  binance: {
+    namespace: 'eip155',
+    reference: '56',
+  },
+};
+
+/**
+ * Testnet chains only.
+ *
+ * Sourced from:
+ *
+ * - https://developers.circle.com/stablecoins/supported-domains
+ * - https://chainlist.org/
+ * - https://docs.simplehash.com/reference/supported-chains-testnets (accessed on
+ *   4 July 2025)
+ *
+ * @satisfies {Record<string, import('./orchestration-api').BaseChainInfo>}
+ */
+const axelarCCTPConfigTestnet = {
+  'ethereum-sepolia': {
+    namespace: 'eip155',
+    reference: '11155111',
+    cctpDestinationDomain: 0,
+  },
+  Avalanche: {
+    namespace: 'eip155',
+    reference: '43113',
+    cctpDestinationDomain: 1,
+  },
+  'optimism-sepolia': {
+    namespace: 'eip155',
+    reference: '11155420',
+    cctpDestinationDomain: 2,
+  },
+  'arbitrum-sepolia': {
+    namespace: 'eip155',
+    reference: '421614',
+    cctpDestinationDomain: 3,
+  },
+  'polygon-sepolia': {
+    namespace: 'eip155',
+    reference: '80002',
+    cctpDestinationDomain: 7,
+  },
+  Fantom: {
+    namespace: 'eip155',
+    reference: '4002', // XXX: confirm this ID
+  },
+  binance: {
+    namespace: 'eip155',
+    reference: '97',
+  },
+};
+
+const ccptConfig = { ...axelarCCTPConfig, ...axelarCCTPConfigTestnet };
+
 /** TODO: how to address this in production? route thru Osmosis? */
 export const chainInfoFantasyTODO = {
   ...withChainCapabilities(fetchedChainInfo),
@@ -112,10 +210,7 @@ export const chainInfoFantasyTODO = {
       },
     },
   },
-  ethereum: {
-    chainId: 'mockId',
-    ...cctpChainInfo.ethereum,
-  },
+  ...ccptConfig,
 };
 
 const assetOn = (
@@ -153,7 +248,13 @@ export const setupPortfolioTest = async ({
 }: {
   log: ExecutionContext<any>['log'];
 }) => {
-  const common = await setupOrchestrationTest({ log });
+  const axelarChains = { ...axelarCCTPConfig, ...axelarCCTPConfigTestnet };
+  const chains = harden({
+    ...withChainCapabilities(fetchedChainInfo),
+    ...axelarChains,
+  }) as Record<string, ChainInfo>;
+
+  const common = await setupOrchestrationTest({ log, chains });
   const {
     bootstrap: { agoricNamesAdmin, bankManager },
   } = common;
