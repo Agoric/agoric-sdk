@@ -241,27 +241,27 @@ replace (
 	//
 	// TODO: Check if this is still true past v0.50.13.
 	//
-	// cosmossdk.io/api => github.com/agoric-labs/cosmos-sdk/api v0.50.13-alpha.agoric.4
-	// cosmossdk.io/depinject => github.com/agoric-labs/cosmos-sdk/depinject v0.50.13-alpha.agoric.4
-	// cosmossdk.io/log => github.com/agoric-labs/cosmos-sdk/log v0.50.13-alpha.agoric.4
+	// cosmossdk.io/api => github.com/agoric-labs/cosmos-sdk/api v0.50.14-alpha.agoric.1
+	// cosmossdk.io/depinject => github.com/agoric-labs/cosmos-sdk/depinject v0.50.14-alpha.agoric.1
+	// cosmossdk.io/log => github.com/agoric-labs/cosmos-sdk/log v0.50.14-alpha.agoric.1
 	//
 	// Ensure specific packages use our fork
-	cosmossdk.io/client/v2 => github.com/agoric-labs/cosmos-sdk/client/v2 v2.0.0-alpha.agoric.4
-	cosmossdk.io/core => github.com/agoric-labs/cosmos-sdk/core v0.50.13-alpha.agoric.4
-	cosmossdk.io/errors => github.com/agoric-labs/cosmos-sdk/errors v0.50.13-alpha.agoric.4
-	cosmossdk.io/math => github.com/agoric-labs/cosmos-sdk/math v0.50.13-alpha.agoric.4
-	cosmossdk.io/simapp => github.com/agoric-labs/cosmos-sdk/simapp v0.50.13-alpha.agoric.4
-	cosmossdk.io/store => github.com/agoric-labs/cosmos-sdk/store v0.50.13-alpha.agoric.4
-	cosmossdk.io/tools/confix => github.com/agoric-labs/cosmos-sdk/tools/confix v0.50.13-alpha.agoric.4
-	cosmossdk.io/x/circuit => github.com/agoric-labs/cosmos-sdk/x/circuit v0.50.13-alpha.agoric.4
-	cosmossdk.io/x/evidence => github.com/agoric-labs/cosmos-sdk/x/evidence v0.50.13-alpha.agoric.4
-	cosmossdk.io/x/feegrant => github.com/agoric-labs/cosmos-sdk/x/feegrant v0.50.13-alpha.agoric.4
-	cosmossdk.io/x/tx => github.com/agoric-labs/cosmos-sdk/x/tx v0.50.13-alpha.agoric.4
-	cosmossdk.io/x/upgrade => github.com/agoric-labs/cosmos-sdk/x/upgrade v0.50.13-alpha.agoric.4
+	cosmossdk.io/client/v2 => github.com/agoric-labs/cosmos-sdk/client/v2 v2.0.0-v0.50.14-alpha.agoric.1
+	cosmossdk.io/core => github.com/agoric-labs/cosmos-sdk/core v0.50.14-alpha.agoric.1
+	cosmossdk.io/errors => github.com/agoric-labs/cosmos-sdk/errors v0.50.14-alpha.agoric.1
+	cosmossdk.io/math => github.com/agoric-labs/cosmos-sdk/math v0.50.14-alpha.agoric.1
+	cosmossdk.io/simapp => github.com/agoric-labs/cosmos-sdk/simapp v0.50.14-alpha.agoric.1
+	cosmossdk.io/store => github.com/agoric-labs/cosmos-sdk/store v0.50.14-alpha.agoric.1
+	cosmossdk.io/tools/confix => github.com/agoric-labs/cosmos-sdk/tools/confix v0.50.14-alpha.agoric.1
+	cosmossdk.io/x/circuit => github.com/agoric-labs/cosmos-sdk/x/circuit v0.50.14-alpha.agoric.1
+	cosmossdk.io/x/evidence => github.com/agoric-labs/cosmos-sdk/x/evidence v0.50.14-alpha.agoric.1
+	cosmossdk.io/x/feegrant => github.com/agoric-labs/cosmos-sdk/x/feegrant v0.50.14-alpha.agoric.1
+	cosmossdk.io/x/tx => github.com/agoric-labs/cosmos-sdk/x/tx v0.50.14-alpha.agoric.1
+	cosmossdk.io/x/upgrade => github.com/agoric-labs/cosmos-sdk/x/upgrade v0.50.14-alpha.agoric.1
 
 	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with
 	// https://github.com/cometbft/cometbft/issue/6899 resolved.
 	github.com/cometbft/cometbft => github.com/agoric-labs/cometbft v0.38.17-alpha.agoric.1
-	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.50.13-alpha.agoric.4
+	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.50.14-alpha.agoric.1
 )
