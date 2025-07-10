@@ -37,7 +37,6 @@ import * as flows from './portfolio.flows.ts';
 import {
   makeProposalShapes,
   OfferArgsShapeFor,
-  type EVMContractAddressesMap,
   type OfferArgsFor,
   type ProposalType,
 } from './type-guards.ts';
@@ -62,12 +61,27 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
     usdc: M.string(),
   });
 
-const EVMContractAddressesMap: TypedPattern<EVMContractAddressesMap> =
-  M.splitRecord(
-    fromEntries(
-      keys(AxelarChain).map(chain => [chain, EVMContractAddressesShape]),
-    ) as Record<AxelarChain, typeof EVMContractAddressesShape>,
-  );
+export type AxelarConfig = {
+  [chain in AxelarChain]: {
+    /**
+     * Axelar chain IDs differ between mainnet and testnet.
+     * See [supported-chains-list.ts](https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts)
+     */
+    axelarId: string;
+    contracts: EVMContractAddresses;
+  };
+};
+
+const AxelarChainInfoPattern = M.splitRecord({
+  axelarId: M.string(),
+  contracts: EVMContractAddressesShape,
+});
+
+const AxelarConfigShape: TypedPattern<AxelarConfig> = M.splitRecord(
+  fromEntries(
+    keys(AxelarChain).map(chain => [chain, AxelarChainInfoPattern]),
+  ) as Record<AxelarChain, typeof AxelarChainInfoPattern>,
+);
 
 type PortfolioPrivateArgs = OrchestrationPowers & {
   // XXX document required assets, chains
@@ -75,7 +89,7 @@ type PortfolioPrivateArgs = OrchestrationPowers & {
   chainInfo: Record<string, ChainInfo>;
   marshaller: Marshaller;
   storageNode: Remote<StorageNode>;
-  contracts: EVMContractAddressesMap;
+  axelarConfig: AxelarConfig;
 };
 
 const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
@@ -85,8 +99,7 @@ const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   // XXX use shape to validate required chains / assets?
   chainInfo: M.recordOf(M.string(), ChainInfoShape),
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
-  // TODO: Handle the scenario where the map contains only testnet or only mainnet chains
-  contracts: EVMContractAddressesMap,
+  axelarConfig: AxelarConfigShape,
 };
 
 export const meta: ContractMeta = {
@@ -127,7 +140,7 @@ export const contract = async (
   const {
     chainInfo,
     assetInfo,
-    contracts,
+    axelarConfig,
     timerService,
     marshaller,
     storageNode,
@@ -159,7 +172,7 @@ export const contract = async (
   const ctx1 = {
     zoeTools,
     usdc: { brand: brands.USDC, denom },
-    contracts,
+    axelarConfig,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
@@ -174,6 +187,7 @@ export const contract = async (
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
     vowTools,
+    axelarConfig,
     rebalance,
     rebalanceFromTransfer,
     proposalShapes,

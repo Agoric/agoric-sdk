@@ -26,7 +26,7 @@ import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
-import { RebalanceStrategy } from '../src/constants.js';
+import { AxelarChain, RebalanceStrategy } from '../src/constants.js';
 import {
   preparePortfolioKit,
   type PortfolioKit,
@@ -39,12 +39,31 @@ import {
 } from '../src/portfolio.flows.ts';
 import { makeSwapLockMessages } from '../src/pos-usdn.flows.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
-import { contractAddressesMock } from './mocks.ts';
+import { axelarConfigMock } from './mocks.ts';
 import {
   axelarCCTPConfig,
   makeIncomingEVMEvent,
   makeIncomingVTransferEvent,
 } from './supports.ts';
+
+/**
+ * Use Arbitrum or any other EVM chain whose Axelar chain ID (`axelarId`) differs
+ * from the chain name. For example, Arbitrum's `axelarId` is "arbitrum", while
+ * Ethereum’s is "Ethereum" (case-sensitive). The challenge is that if a mismatch
+ * occurs, it may go undetected since the `axelarId` is passed via the IBC memo
+ * and not validated automatically.
+ *
+ * To ensure proper testing, it's best to use a chain where the `chainName` and
+ * `axelarId` are not identical. This increases the likelihood of catching issues
+ * with misconfigured or incorrectly passed `axelarId` values.
+ *
+ * To see the `axelarId` for a given chain, refer to:
+ * @see {@link https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts | supported-chains-list.ts}
+ */
+/**@type {AxelarChain} */
+const destinationEVMChain = 'Arbitrum';
+// Must be axelarId of destinationEVMChain
+const sourceChain = 'arbitrum';
 
 const theExit = harden(() => {}); // for ava comparison
 // @ts-expect-error mock
@@ -243,7 +262,7 @@ const mocks = (
   const ctx1: PortfolioInstanceContext = {
     zoeTools,
     usdc: { denom, brand: USDC },
-    contracts: contractAddressesMock,
+    axelarConfig: axelarConfigMock,
     inertSubscriber,
   };
 
@@ -260,6 +279,7 @@ const mocks = (
     rebalanceFromTransfer(orch, ctx1, packet, kit);
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
+    axelarConfig: axelarConfigMock,
     vowTools,
     timer,
     chainHubTools: { getChainInfo },
@@ -419,7 +439,7 @@ const openAndTransfer: import('ava').Macro<[() => VTransferIBCEvent[]]> =
 
     const [actual] = await Promise.all([
       openPortfolio(orch, ctx, seat, {
-        destinationEVMChain: 'Ethereum',
+        destinationEVMChain,
       }),
       Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
         async ([tap, _]) => {
@@ -440,7 +460,7 @@ const openAndTransfer: import('ava').Macro<[() => VTransferIBCEvent[]]> =
 test(
   'open portfolio with Aave and USDN positions then inbound GMP',
   openAndTransfer,
-  () => [makeIncomingEVMEvent()],
+  () => [makeIncomingEVMEvent({ sourceChain })],
 );
 
 test('open portfolio with Aave position', async t => {
@@ -455,10 +475,10 @@ test('open portfolio with Aave position', async t => {
 
   const [actual] = await Promise.all([
     openPortfolio(orch, { ...ctx }, offer.seat, {
-      destinationEVMChain: 'Ethereum',
+      destinationEVMChain,
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
-      tap.receiveUpcall(makeIncomingEVMEvent()),
+      tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain })),
     ),
   ]);
   const { log } = offer;
@@ -491,10 +511,10 @@ test('open portfolio with Compound position', async t => {
 
   const [actual] = await Promise.all([
     openPortfolio(orch, { ...ctx }, offer.seat, {
-      destinationEVMChain: 'Ethereum',
+      destinationEVMChain,
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
-      tap.receiveUpcall(makeIncomingEVMEvent()),
+      tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain })),
     ),
   ]);
   const { log } = offer;
@@ -523,7 +543,7 @@ test('handle failure in localTransfer from seat to local account', async t => {
   const { log, seat } = offer;
 
   const actual = await openPortfolio(orch, { ...ctx }, seat, {
-    destinationEVMChain: 'Ethereum',
+    destinationEVMChain,
   });
   t.log(log.map(msg => msg._method).join(', '));
   t.snapshot(log, 'call log');
@@ -545,7 +565,7 @@ test('handle failure in IBC transfer', async t => {
   const { log, seat } = offer;
 
   const actual = await openPortfolio(orch, { ...ctx }, seat, {
-    destinationEVMChain: 'Ethereum',
+    destinationEVMChain,
   });
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
@@ -568,7 +588,7 @@ test('handle failure in executeEncodedTx', async t => {
   const { log, seat } = offer;
 
   const actual = await openPortfolio(orch, { ...ctx }, seat, {
-    destinationEVMChain: 'Ethereum',
+    destinationEVMChain,
   });
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
@@ -602,7 +622,7 @@ test('handle failure in recovery from executeEncodedTx', async t => {
   const { log, seat } = offer;
 
   const actual = await openPortfolio(orch, { ...ctx }, seat, {
-    destinationEVMChain: 'Ethereum',
+    destinationEVMChain,
   });
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
@@ -630,13 +650,13 @@ test.skip('handle failure in sendGmp with Aave position', async t => {
 
   // Start the openPortfolio flow
   const portfolioPromise = openPortfolio(orch, { ...ctx }, offer.seat, {
-    destinationEVMChain: 'Ethereum',
+    destinationEVMChain,
   });
 
   // Ensure the upcall happens to resolve getGMPAddress(), then let the transfer fail
   // the failure is expected before offer.factoryPK resolves, so don't wait for it.
   const tap = await tapPK.promise;
-  await tap.receiveUpcall(makeIncomingEVMEvent());
+  await tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain }));
 
   const actual = await portfolioPromise;
   const { log } = offer;
@@ -657,7 +677,7 @@ test.failing(
   'open portfolio with Compound and USDN positions then rebalanceFromTransfer',
   openAndTransfer,
   () => [
-    makeIncomingEVMEvent(),
+    makeIncomingEVMEvent({ sourceChain }),
     makeIncomingVTransferEvent({
       hookQuery: { rebalance: RebalanceStrategy.Preset },
       amount: 1_000_000_000n,

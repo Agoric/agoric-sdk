@@ -103,12 +103,12 @@ const exampleDynamicChainInfo = {
     reference: '43114',
     cctpDestinationDomain: 1,
   },
-  optimism: {
+  Optimism: {
     namespace: 'eip155',
     reference: '10',
     cctpDestinationDomain: 2,
   },
-  arbitrum: {
+  Arbitrum: {
     namespace: 'eip155',
     reference: '42161',
     cctpDestinationDomain: 3,
@@ -122,7 +122,7 @@ const exampleDynamicChainInfo = {
     namespace: 'eip155',
     reference: '250',
   },
-  binance: {
+  Binance: {
     namespace: 'eip155',
     reference: '56',
   },
@@ -151,11 +151,11 @@ test.serial('publish chainInfo etc.', async t => {
     'noble',
     'Ethereum',
     'Avalanche',
-    'optimism',
-    'arbitrum',
+    'Optimism',
+    'Arbitrum',
     'Polygon',
     'Fantom',
-    'binance',
+    'Binance',
   ]) {
     const info = await EV(agoricNames).lookup('chain', chain);
     t.log(info);

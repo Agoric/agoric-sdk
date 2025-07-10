@@ -1,7 +1,7 @@
 // import { meta } from '@aglocal/portfolio-contract/src/portfolio.contract.meta.js';
 import { makeTracer } from '@agoric/internal';
 import { M } from '@endo/patterns';
-import { localchainContracts } from './axelar-configs.js';
+import { axelarConfigMock } from './axelar-configs.js';
 import {
   lookupInterchainInfo,
   makeGetManifest,
@@ -48,7 +48,7 @@ export const makePrivateArgs = async (
     chainInfo,
     assetInfo,
     // TODO: fetch the addresses from agoricNames
-    contracts: localchainContracts,
+    axelarConfig: axelarConfigMock,
   });
   return it;
 };
