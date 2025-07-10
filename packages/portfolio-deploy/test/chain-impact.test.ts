@@ -32,8 +32,8 @@ const test: TestFn<
 > = anyTest;
 
 const config = '@agoric/vm-config/decentral-itest-orchestration-config.json';
-const REAP_PERIOD = 4;
-const SUFFICIENT_ITERATIONS = REAP_PERIOD * 16 - 1;
+const REAP_PERIOD = 2;
+const SUFFICIENT_ITERATIONS = REAP_PERIOD * 2 - 1;
 
 test.before(async t => {
   const { env } = globalThis.process;
@@ -62,10 +62,10 @@ test.before(async t => {
     },
     ...(snapshotDir
       ? {
-          archiveSnapshot: (
-            await import('@agoric/swing-store')
-          ).makeArchiveSnapshot(snapshotDir, { fs, path, tmp }),
-        }
+        archiveSnapshot: (
+          await import('@agoric/swing-store')
+        ).makeArchiveSnapshot(snapshotDir, { fs, path, tmp }),
+      }
       : {}),
   });
 
