@@ -180,7 +180,11 @@ export const contract = async (
     rebalanceFromTransfer,
     proposalShapes,
     timer: timerService,
-    chainHubTools: { getChainInfo: chainHub.getChainInfo.bind(chainHub) },
+    chainHubTools: {
+      getChainInfo: chainHub.getChainInfo.bind(chainHub),
+      coerceCosmosAddress: chainHub.coerceCosmosAddress.bind(chainHub),
+      resolveAccountId: chainHub.resolveAccountId.bind(chainHub),
+    },
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller,
     usdcBrand: brands.USDC,

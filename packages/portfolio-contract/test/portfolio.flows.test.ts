@@ -14,7 +14,11 @@ import {
   documentStorageSchema,
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
-import { denomHash, type Orchestrator } from '@agoric/orchestration';
+import {
+  denomHash,
+  type CosmosChainAddress,
+  type Orchestrator,
+} from '@agoric/orchestration';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
@@ -45,6 +49,7 @@ import {
   makeIncomingEVMEvent,
   makeIncomingVTransferEvent,
 } from './supports.ts';
+import { getBech32Prefix } from '@agoric/orchestration/src/utils/address.js';
 
 const theExit = harden(() => {}); // for ava comparison
 // @ts-expect-error mock
@@ -246,12 +251,20 @@ const mocks = (
     inertSubscriber,
   };
 
-  const getChainInfo = chainName => {
-    if (!(chainName in axelarCCTPConfig)) {
-      throw Error(`unable to get chainInfo for ${chainName}`);
-    }
-    return axelarCCTPConfig[chainName];
-  };
+  const chainHubTools = harden({
+    getChainInfo: chainName => {
+      if (!(chainName in axelarCCTPConfig)) {
+        throw Error(`unable to get chainInfo for ${chainName}`);
+      }
+      return axelarCCTPConfig[chainName];
+    },
+    coerceCosmosAddress: (address): CosmosChainAddress => {
+      const prefix = getBech32Prefix(address);
+      const { chainId } = chainHubTools.getChainInfo(prefix);
+      return { chainId, encoding: 'bech32', value: address };
+    },
+    resolveAccountId: () => assert.fail('unused'),
+  });
 
   const rebalanceHost = (seat, offerArgs, kit) =>
     rebalance(orch, ctx1, seat, offerArgs, kit);
@@ -261,7 +274,7 @@ const mocks = (
     zcf: mockZCF,
     vowTools,
     timer,
-    chainHubTools: { getChainInfo },
+    chainHubTools,
     rebalance: rebalanceHost as any,
     rebalanceFromTransfer: rebalanceFromTransferHost as any,
     proposalShapes: makeProposalShapes0(USDC),

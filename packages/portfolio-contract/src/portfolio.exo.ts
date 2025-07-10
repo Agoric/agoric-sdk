@@ -12,6 +12,7 @@ import {
   type AccountId,
   type ActualChainInfo,
   type CaipChainId,
+  type ChainHub,
 } from '@agoric/orchestration';
 import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
@@ -169,9 +170,10 @@ export const preparePortfolioKit = (
       handled: boolean;
     }>;
     timer: Remote<TimerService>;
-    chainHubTools: {
-      getChainInfo: <K extends string>(chainName: K) => Vow<ActualChainInfo<K>>;
-    };
+    chainHubTools: Pick<
+      ChainHub,
+      'getChainInfo' | 'coerceCosmosAddress' | 'resolveAccountId'
+    >;
     proposalShapes: ReturnType<typeof makeProposalShapes0>;
     vowTools: VowTools;
     zcf: ZCF;
