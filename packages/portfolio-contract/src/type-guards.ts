@@ -163,39 +163,18 @@ export const PoolPlaces = {
   USDNVault: { protocol: 'USDN', vault: 1 }, // MsgSwap, MsgLock
   Aave_Ethereum: { protocol: 'Aave', chainName: 'Ethereum' },
   Aave_Avalanche: { protocol: 'Aave', chainName: 'Avalanche' },
-  Aave_optimism: { protocol: 'Aave', chainName: 'optimism' },
-  Aave_arbitrum: { protocol: 'Aave', chainName: 'arbitrum' },
+  Aave_Optimism: { protocol: 'Aave', chainName: 'Optimism' },
+  Aave_Arbitrum: { protocol: 'Aave', chainName: 'Arbitrum' },
   Aave_Polygon: { protocol: 'Aave', chainName: 'Polygon' },
   Aave_Fantom: { protocol: 'Aave', chainName: 'Fantom' },
-  Aave_binance: { protocol: 'Aave', chainName: 'binance' },
-  'Aave_ethereum-sepolia': { protocol: 'Aave', chainName: 'ethereum-sepolia' },
-  'Aave_optimism-sepolia': { protocol: 'Aave', chainName: 'optimism-sepolia' },
-  'Aave_arbitrum-sepolia': { protocol: 'Aave', chainName: 'arbitrum-sepolia' },
-  'Aave_polygon-sepolia': { protocol: 'Aave', chainName: 'polygon-sepolia' },
-
+  Aave_Binance: { protocol: 'Aave', chainName: 'Binance' },
   Compound_Ethereum: { protocol: 'Compound', chainName: 'Ethereum' },
   Compound_Avalanche: { protocol: 'Compound', chainName: 'Avalanche' },
-  Compound_optimism: { protocol: 'Compound', chainName: 'optimism' },
-  Compound_arbitrum: { protocol: 'Compound', chainName: 'arbitrum' },
+  Compound_Optimism: { protocol: 'Compound', chainName: 'Optimism' },
+  Compound_Arbitrum: { protocol: 'Compound', chainName: 'Arbitrum' },
   Compound_Polygon: { protocol: 'Compound', chainName: 'Polygon' },
   Compound_Fantom: { protocol: 'Compound', chainName: 'Fantom' },
-  Compound_binance: { protocol: 'Compound', chainName: 'binance' },
-  'Compound_ethereum-sepolia': {
-    protocol: 'Compound',
-    chainName: 'ethereum-sepolia',
-  },
-  'Compound_optimism-sepolia': {
-    protocol: 'Compound',
-    chainName: 'optimism-sepolia',
-  },
-  'Compound_arbitrum-sepolia': {
-    protocol: 'Compound',
-    chainName: 'arbitrum-sepolia',
-  },
-  'Compound_polygon-sepolia': {
-    protocol: 'Compound',
-    chainName: 'polygon-sepolia',
-  },
+  Compound_Binance: { protocol: 'Compound', chainName: 'Binance' },
 } as const satisfies Record<string, PoolPlaceInfo>;
 harden(PoolPlaces);
 

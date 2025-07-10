@@ -29,6 +29,7 @@ import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { AxelarChain, SupportedChain, YieldProtocol } from './constants.js';
+import type { AxelarConfig } from './portfolio.contract.js';
 import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
 import type { PoolKey, StatusFor } from './type-guards.js';
@@ -145,6 +146,7 @@ export type PublishStatusFn = <K extends keyof StatusFor>(
 export const preparePortfolioKit = (
   zone: Zone,
   {
+    axelarConfig,
     rebalance,
     rebalanceFromTransfer,
     timer,
@@ -156,6 +158,7 @@ export const preparePortfolioKit = (
     marshaller,
     usdcBrand,
   }: {
+    axelarConfig: AxelarConfig;
     rebalance: (
       seat: ZCFSeat,
       offerArgs: OfferArgsFor['rebalance'],
@@ -266,17 +269,18 @@ export const preparePortfolioKit = (
           if (!extra.memo) return;
           const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
 
+          const result = Object.entries(axelarConfig).find(
+            ([_, chain]) => chain.axelarId === memo.source_chain,
+          );
+
           // XXX we must have more than just a (forgeable) memo check here to
           // determine if the source of this packet is the Axelar chain!
-          if (
-            !values(AxelarChain).includes(
-              memo.source_chain as keyof typeof AxelarChain,
-            )
-          ) {
+          if (!result) {
             console.warn('unknown source_chain', memo);
             return;
           }
-          const chainName = memo.source_chain as AxelarChain;
+
+          const [chainName, _] = result;
 
           const payloadBytes = decodeBase64(memo.payload);
           const [{ isContractCallResult, data }] = decodeAbiParameters(
@@ -310,7 +314,7 @@ export const preparePortfolioKit = (
 
             this.facets.manager.resolveAccount({
               namespace: 'eip155',
-              chainName,
+              chainName: chainName as AxelarChain,
               chainId: caipId,
               remoteAddress: address,
             });

@@ -98,7 +98,7 @@ export const provideEVMAccount = async (
   kit: GuestInterface<PortfolioKit>,
 ) => {
   const { destinationEVMChain, keyword, amounts: gasAmounts } = gmpArgs;
-  const addresses = ctx.contracts[destinationEVMChain];
+  const addresses = ctx.axelarConfig[destinationEVMChain].contracts;
   let promiseMaybe = kit.manager.reserveAccount(destinationEVMChain);
   if (promiseMaybe) {
     return promiseMaybe as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
@@ -207,7 +207,7 @@ const sendGmp = async (
   kit: GuestInterface<PortfolioKit>,
 ) => {
   mustMatch(gmpArgs, GMPArgsShape);
-  const { usdc, zoeTools } = ctx;
+  const { axelarConfig, usdc, zoeTools } = ctx;
 
   const axelar = await orch.getChain('axelar');
   const { chainId } = await axelar.getChainInfo();
@@ -223,7 +223,10 @@ const sendGmp = async (
 
   try {
     await zoeTools.localTransfer(seat, localAccount, gasAmounts);
-    const memo = makeAxelarMemo(destinationEVMChain, gmpArgs);
+    const memo = makeAxelarMemo(
+      axelarConfig[destinationEVMChain].axelarId,
+      gmpArgs,
+    );
     await localAccount.transfer(
       {
         value: gmpAddresses.AXELAR_GMP,
@@ -253,7 +256,7 @@ export const supplyToAave = async (
     amounts: gasAmounts,
   } = gmpArgs;
 
-  const addresses = ctx.contracts[destinationEVMChain];
+  const addresses = ctx.axelarConfig[destinationEVMChain].contracts;
   const info = await provideEVMAccount(orch, ctx, seat, gmpArgs, kit);
   const { remoteAddress } = info;
 
@@ -298,7 +301,7 @@ const withdrawFromAave = async (
     keyword,
     amounts: gasAmounts,
   } = gmpArgs;
-  const addresses = ctx.contracts[destinationEVMChain];
+  const addresses = ctx.axelarConfig[destinationEVMChain].contracts;
   const info = await provideEVMAccount(orch, ctx, seat, gmpArgs, kit);
   const { remoteAddress } = info;
 
@@ -338,7 +341,7 @@ export const supplyToCompound = async (
     keyword,
     amounts: gasAmounts,
   } = gmpArgs;
-  const addresses = ctx.contracts[destinationEVMChain];
+  const addresses = ctx.axelarConfig[destinationEVMChain].contracts;
   const info = await provideEVMAccount(orch, ctx, seat, gmpArgs, kit);
   const { remoteAddress } = info;
 
@@ -383,7 +386,7 @@ const withdrawFromCompound = async (
     keyword,
     amounts: gasAmounts,
   } = gmpArgs;
-  const addresses = ctx.contracts[destinationEVMChain];
+  const addresses = ctx.axelarConfig[destinationEVMChain].contracts;
   const info = await provideEVMAccount(orch, ctx, seat, gmpArgs, kit);
   const { remoteAddress } = info;
 

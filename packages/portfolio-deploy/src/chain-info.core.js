@@ -100,6 +100,11 @@ const publishAxelarChainInfo = async (agoricNamesNode, axelarConfig) => {
       JSON.stringify(marshalData.toCapData(harden({ ...chainData.chainInfo }))),
     );
 
+    const axelarId = await E(baseNode).makeChildNode('axelarId');
+    await E(axelarId).setValue(
+      JSON.stringify(marshalData.toCapData(harden({ id: chainData.axelarId }))),
+    );
+
     const contractsNode = await E(baseNode).makeChildNode('contracts');
     await E(contractsNode).setValue(
       JSON.stringify(marshalData.toCapData(harden({ ...chainData.contracts }))),
@@ -118,18 +123,18 @@ const publishAxelarChainInfo = async (agoricNamesNode, axelarConfig) => {
  *
  * @param {BootstrapPowers & ChainStoragePresent} powers
  * @param {{
- *   options?: {
+ *   options: {
  *     chainInfo?: Record<string, ChainInfo>;
- *     axelarConfig?: import('./axelar-configs').AxelarChainConfigMap;
+ *     axelarConfig: import('./axelar-configs.js').AxelarChainConfigMap;
  *   };
- * }} [config]
+ * }} config
  */
 export const publishChainInfo = async (
   { consume: { agoricNames, agoricNamesAdmin, chainStorage } },
-  config = {},
+  config,
 ) => {
   const { keys } = Object;
-  const { chainInfo = {}, axelarConfig = {} } = config?.options || {};
+  const { chainInfo = {}, axelarConfig } = config.options;
   trace('publishChainInfo', keys(chainInfo));
   trace('publishAxelarChainInfo', keys(axelarConfig));
 
