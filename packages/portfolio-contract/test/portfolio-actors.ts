@@ -151,10 +151,10 @@ export const makeTrader = (
         self.getPortfolioPath().replace(/^orchtest\./, ''),
       ) as Promise<StatusFor['portfolio']>,
     getPositionPaths: async () => {
-      const { positionCount } = await self.getPortfolioStatus();
+      const { positionKeys } = await self.getPortfolioStatus();
 
-      return range(positionCount).map(pIx =>
-        makePositionPath(self.getPortfolioId(), pIx + 1).join('.'),
+      return positionKeys.map(key =>
+        makePositionPath(self.getPortfolioId(), key).join('.'),
       );
     },
     netTransfersByProtocol: async () => {

@@ -2,14 +2,17 @@
  * NOTE: This is host side code; can't use await.
  */
 import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
-import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import { AmountMath } from '@agoric/ertp';
 import { makeTracer, mustMatch, type Remote } from '@agoric/internal';
 import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { type AccountId, type CaipChainId } from '@agoric/orchestration';
+import {
+  type AccountId,
+  type ActualChainInfo,
+  type CaipChainId,
+} from '@agoric/orchestration';
 import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
@@ -20,32 +23,26 @@ import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { VowShape, type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { atob, decodeBase64 } from '@endo/base64';
+import { decodeBase64 } from '@endo/base64';
 import { X } from '@endo/errors';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { YieldProtocol } from './constants.js';
-import type { NobleAccount } from './portfolio.flows.js';
-import { type LocalAccount } from './portfolio.flows.js';
-import {
-  prepareGMPPosition,
-  type GMPPosition,
-  type GMPProtocol,
-} from './pos-gmp.exo.js';
-import { prepareUSDNPosition } from './pos-usdn.exo.js';
-import type { AxelarChainsMap, StatusFor } from './type-guards.js';
+import { AxelarChain, SupportedChain, YieldProtocol } from './constants.js';
+import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
+import { preparePosition, type Position } from './pos.exo.js';
+import type { PoolKey, StatusFor } from './type-guards.js';
 import {
   makeFlowPath,
   makePortfolioPath,
   OfferArgsShapeFor,
+  PoolKeyShape,
   type makeProposalShapes,
   type OfferArgsFor,
 } from './type-guards.js';
 
 const trace = makeTracer('PortExo');
-const { assign, values } = Object;
-const { add, subtract } = AmountMath;
+const { values } = Object;
 
 export const DECODE_CONTRACT_CALL_RESULT_ABI = [
   {
@@ -79,85 +76,59 @@ const ManagerI = M.interface('manager', {
   wait: M.call(M.bigint()).returns(VowShape),
 });
 
-interface PositionRd {
-  getPositionId(): number;
-  getYieldProtocol(): YieldProtocol;
-}
-
-interface PositionPub extends PositionRd {
-  publishStatus(): void;
-}
-
-export interface Position extends PositionPub {
-  recordTransferIn(amount: Amount<'nat'>): Amount<'nat'>;
-  recordTransferOut(amount: Amount<'nat'>): Amount<'nat'>;
-}
-
-export type TransferStatus = {
-  totalIn: Amount<'nat'>;
-  totalOut: Amount<'nat'>;
-  netTransfers: Amount<'nat'>;
+export type AccountInfo = GMPAccountInfo | AgoricAccountInfo | NobleAccountInfo;
+export type GMPAccountInfo = {
+  namespace: 'eip155';
+  chainName: AxelarChain;
+  chainId: CaipChainId;
+  remoteAddress: `0x${string}`;
+};
+type AgoricAccountInfo = {
+  namespace: 'cosmos';
+  chainName: 'agoric';
+  lca: LocalAccount;
+  reg: TargetRegistration;
+};
+type NobleAccountInfo = {
+  namespace: 'cosmos';
+  chainName: 'noble';
+  ica: NobleAccount;
 };
 
-export const recordTransferIn = (
-  amount: Amount<'nat'>,
-  state: TransferStatus,
-  position: Pick<Position, 'publishStatus'>,
-) => {
-  const { netTransfers, totalIn } = state;
-  assign(state, {
-    netTransfers: add(netTransfers, amount),
-    totalIn: add(totalIn, amount),
-  });
-  position.publishStatus();
-  return state.netTransfers;
+export type AccountInfoFor = Record<AxelarChain, GMPAccountInfo> & {
+  agoric: AgoricAccountInfo;
+  noble: NobleAccountInfo;
 };
-
-export const recordTransferOut = (
-  amount: Amount<'nat'>,
-  state: TransferStatus,
-  position: Pick<Position, 'publishStatus'>,
-) => {
-  const { netTransfers, totalOut } = state;
-  assign(state, {
-    netTransfers: subtract(netTransfers, amount),
-    totalOut: add(totalOut, amount),
-  });
-  position.publishStatus();
-  return state.netTransfers;
-};
-
-export type AccountInfoFor = {
-  agoric: { type: 'agoric'; lca: LocalAccount; reg: TargetRegistration };
-  noble: { type: 'noble'; ica: NobleAccount };
-};
-
-export type AccountInfo = AccountInfoFor['agoric'] | AccountInfoFor['noble'];
-// XXX expand scope to GMP
-
-/** keyed by chain such as agoric, noble, base, arbitrum */
-export type ChainAccountKey = 'agoric' | 'noble';
 
 type PortfolioKitState = {
   portfolioId: number;
-  accountsPending: MapStore<ChainAccountKey, VowKit<AccountInfo>>;
-  accounts: MapStore<ChainAccountKey, AccountInfo>;
-  positions: MapStore<number, Position>;
+  accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
+  accounts: MapStore<SupportedChain, AccountInfo>;
+  positions: MapStore<PoolKey, Position>;
   nextFlowId: number;
 };
 
-const accountIdByChain = (accounts: PortfolioKitState['accounts']) => {
+/**
+ * For publishing, represent accounts collection using accountId values
+ */
+const accountIdByChain = (
+  accounts: PortfolioKitState['accounts'],
+): Partial<Record<SupportedChain, AccountId>> => {
   const byChain = {};
   for (const [n, info] of accounts.entries()) {
-    assert.equal(n, info.type);
-    switch (info.type) {
-      case 'agoric':
-        const { lca } = info;
-        byChain[n] = coerceAccountId(lca.getAddress());
+    switch (info.namespace) {
+      case 'cosmos':
+        switch (info.chainName) {
+          case 'agoric':
+            byChain[n] = coerceAccountId(info.lca.getAddress());
+            break;
+          case 'noble':
+            byChain[n] = coerceAccountId(info.ica.getAddress());
+            break;
+        }
         break;
-      case 'noble':
-        const { ica } = info;
-        byChain[n] = coerceAccountId(ica.getAddress());
+      case 'eip155':
+        byChain[n] = `${info.chainId}:${info.remoteAddress}`;
         break;
       default:
         assert.fail(X`no such type: ${info}`);
@@ -174,9 +145,10 @@ export type PublishStatusFn = <K extends keyof StatusFor>(
 export const preparePortfolioKit = (
   zone: Zone,
   {
-    axelarChainsMap,
     rebalance,
+    rebalanceFromTransfer,
     timer,
+    chainHubTools,
     proposalShapes,
     vowTools,
     zcf,
@@ -184,13 +156,22 @@ export const preparePortfolioKit = (
     marshaller,
     usdcBrand,
   }: {
-    axelarChainsMap: AxelarChainsMap;
     rebalance: (
       seat: ZCFSeat,
       offerArgs: OfferArgsFor['rebalance'],
-      keeper: unknown, // XXX avoid circular reference
+      kit: unknown, // XXX avoid circular reference
     ) => Vow<any>; // XXX HostForGuest???
+    rebalanceFromTransfer: (
+      packet: VTransferIBCEvent['packet'],
+      kit: unknown, // XXX avoid circular reference to this.facets
+    ) => Vow<{
+      parsed: Awaited<ReturnType<LocalAccount['parseInboundTransfer']>> | null;
+      handled: boolean;
+    }>;
     timer: Remote<TimerService>;
+    chainHubTools: {
+      getChainInfo: <K extends string>(chainName: K) => Vow<ActualChainInfo<K>>;
+    };
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     vowTools: VowTools;
     zcf: ZCF;
@@ -221,18 +202,7 @@ export const preparePortfolioKit = (
     netTransfers: usdcEmpty,
   });
 
-  const makeUSDNPosition = prepareUSDNPosition(
-    zone,
-    emptyTransferState,
-    publishStatus,
-  );
-
-  const makeGMPPosition = prepareGMPPosition(
-    zone,
-    vowTools,
-    emptyTransferState,
-    publishStatus,
-  );
+  const makePosition = preparePosition(zone, emptyTransferState, publishStatus);
 
   return zone.exoClassKit(
     'Portfolio',
@@ -261,7 +231,7 @@ export const preparePortfolioKit = (
         accountsPending: zone.detached().mapStore('accountsPending'),
         // NEEDSTEST: for forgetting to use detached()
         positions: zone.detached().mapStore('positions', {
-          keyShape: M.number(),
+          keyShape: PoolKeyShape,
           valueShape: M.remotable('Position'),
         }),
       };
@@ -270,23 +240,43 @@ export const preparePortfolioKit = (
       tap: {
         async receiveUpcall(event: VTransferIBCEvent) {
           trace('receiveUpcall', event);
-
-          const tx: FungibleTokenPacketData = JSON.parse(
-            atob(event.packet.data),
+          return vowTools.watch(
+            rebalanceFromTransfer(event.packet, this.facets),
+            this.facets.rebalanceFromTransferWatcher,
           );
+        },
+      },
+      rebalanceFromTransferWatcher: {
+        onRejected(reason) {
+          console.warn('⚠️ rebalanceFromTransfer failure', reason);
+          throw reason;
+        },
+        async onFulfilled({ parsed, handled }) {
+          if (handled) {
+            trace('rebalanceFromTransfer handled; skipping GMP processing');
+            return;
+          }
 
-          trace('receiveUpcall packet data', tx);
-          if (!tx.memo) return;
-          const memo: AxelarGmpIncomingMemo = JSON.parse(tx.memo); // XXX unsound! use typed pattern
+          if (!parsed) {
+            trace('GMP processing skipped; no parsed inbound transfer');
+            return;
+          }
 
+          const { extra } = parsed;
+          if (!extra.memo) return;
+          const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
+
+          // XXX we must have more than just a (forgeable) memo check here to
+          // determine if the source of this packet is the Axelar chain!
           if (
-            !values(axelarChainsMap)
-              .map(chain => chain.axelarId)
-              .includes(memo.source_chain)
+            !values(AxelarChain).includes(
+              memo.source_chain as keyof typeof AxelarChain,
+            )
           ) {
             console.warn('unknown source_chain', memo);
             return;
           }
+          const chainName = memo.source_chain as AxelarChain;
 
           const payloadBytes = decodeBase64(memo.payload);
           const [{ isContractCallResult, data }] = decodeAbiParameters(
@@ -311,12 +301,19 @@ export const preparePortfolioKit = (
               result,
             );
 
-            const gmpPos = this.facets.manager.findPendingGMPPosition();
-            if (!gmpPos) {
-              trace('no pending GMP position', address);
-              return;
-            }
-            gmpPos.resolveAddress(address);
+            // chainInfo is safe to await: registerChain(...) ensure it's already resolved,
+            // so vowTools.when won't cause async delays or cross-vat calls.
+            const chainInfo = await vowTools.when(
+              chainHubTools.getChainInfo(chainName),
+            );
+            const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
+
+            this.facets.manager.resolveAccount({
+              namespace: 'eip155',
+              chainName,
+              chainId: caipId,
+              remoteAddress: address,
+            });
             trace(`remoteAddress ${address}`);
           }
 
@@ -324,6 +321,20 @@ export const preparePortfolioKit = (
         },
       },
       reader: {
+        /**
+         * Get the LocalAccount for the current chain.
+         *
+         * We rely on the portfolio creator internally adding the Agoric
+         * account before making the PortfolioKit available to any clients.
+         *
+         * @returns the LocalAccount for the current chain.
+         */
+        getLocalAccount(): LocalAccount {
+          const { accounts } = this.state;
+          const info = accounts.get('agoric');
+          assert.equal(info?.chainName, 'agoric');
+          return info.lca;
+        },
         getStoragePath() {
           const { portfolioId } = this.state;
           const node = makePathNode(makePortfolioPath(portfolioId));
@@ -332,24 +343,22 @@ export const preparePortfolioKit = (
         getPortfolioId() {
           return this.state.portfolioId;
         },
-        getGMPAddress(protocol: YieldProtocol) {
-          const { positions } = this.state;
-          for (const pos of positions.values()) {
-            if (protocol === pos.getYieldProtocol()) {
-              // XXX is there a typesafe way?
-              const gp = pos as unknown as GMPPosition;
-              return gp.getAddress();
-              // TODO: what if there are > 1?
-            }
+        getGMPInfo(chainName: AxelarChain): Vow<GMPAccountInfo> {
+          const { accounts, accountsPending } = this.state;
+          if (accounts.has(chainName)) {
+            return vowTools.asVow(
+              () => accounts.get(chainName) as GMPAccountInfo,
+            );
           }
-          assert.fail(`no position for ${protocol}`);
+          const { vow } = accountsPending.get(chainName);
+          return vow as Vow<GMPAccountInfo>;
         },
       },
       reporter: {
         publishStatus() {
           const { portfolioId, positions, accounts, nextFlowId } = this.state;
           publishStatus(makePortfolioPath(portfolioId), {
-            positionCount: positions.getSize(),
+            positionKeys: [...positions.keys()],
             flowCount: nextFlowId - 1,
             accountIdByChain: accountIdByChain(accounts),
           });
@@ -366,14 +375,14 @@ export const preparePortfolioKit = (
         },
       },
       manager: {
-        reserveAccount<C extends ChainAccountKey>(
+        reserveAccount<C extends SupportedChain>(
           chainName: C,
         ): undefined | Vow<AccountInfoFor[C]> {
           const { accounts, accountsPending } = this.state;
           if (accounts.has(chainName)) {
             return vowTools.asVow(async () => {
               const infoAny = accounts.get(chainName);
-              assert.equal(infoAny.type, chainName);
+              assert.equal(infoAny.chainName, chainName);
               const info = infoAny as AccountInfoFor[C];
               return info;
             });
@@ -387,62 +396,32 @@ export const preparePortfolioKit = (
         },
         resolveAccount(info: AccountInfo) {
           const { accounts, accountsPending } = this.state;
-          accountsPending.delete(info.type);
-          accounts.init(info.type, info);
+          if (accountsPending.has(info.chainName)) {
+            const vow = accountsPending.get(info.chainName);
+            // NEEDSTEST - why did all tests pass without .resolve()?
+            vow.resolver.resolve(info);
+            accountsPending.delete(info.chainName);
+          }
+          accounts.init(info.chainName, info);
           this.facets.reporter.publishStatus();
         },
-        // TODO: support >1 pending position?
-        findPendingGMPPosition() {
+        providePosition(
+          poolKey: PoolKey,
+          protocol: YieldProtocol,
+          accountId: AccountId,
+        ): Position {
           const { positions } = this.state;
-          for (const pos of positions.values()) {
-            if (['Aave', 'Compound'].includes(pos.getYieldProtocol())) {
-              // XXX is there a typesafe way?
-              return pos as unknown as GMPPosition;
-            }
-          }
-          return undefined; // like array.find()
-        },
-        provideGMPPositionOn(protocol: GMPProtocol, chain: CaipChainId) {
-          const { positions } = this.state;
-          for (const pos of positions.values()) {
-            if (['Aave', 'Compound'].includes(pos.getYieldProtocol())) {
-              const gpos = pos as unknown as GMPPosition;
-              if (gpos.getChainId() === chain)
-                return { position: gpos, isNew: false };
-            }
+          if (positions.has(poolKey)) {
+            return positions.get(poolKey);
           }
           const { portfolioId } = this.state;
-          const positionId = positions.getSize() + 1;
-          const position = makeGMPPosition(
+          const position = makePosition(
             portfolioId,
-            positionId,
+            poolKey,
             protocol,
-            chain,
+            accountId,
           );
-          positions.init(positionId, position);
-          position.publishStatus();
-          this.facets.reporter.publishStatus();
-          return { position, isNew: true };
-        },
-        provideAavePositionOn(chain: CaipChainId) {
-          const { manager } = this.facets;
-          return manager.provideGMPPositionOn('Aave', chain);
-        },
-        provideCompoundPositionOn(chain: CaipChainId) {
-          const { manager } = this.facets;
-          return manager.provideGMPPositionOn('Compound', chain);
-        },
-        provideUSDNPosition(accountId: AccountId) {
-          const { positions } = this.state;
-          for (const pos of positions.values()) {
-            if (pos.getYieldProtocol() === 'USDN') {
-              return pos;
-            }
-          }
-          const { portfolioId } = this.state;
-          const positionId = positions.getSize() + 1;
-          const position = makeUSDNPosition(portfolioId, positionId, accountId);
-          positions.init(positionId, position);
+          positions.init(poolKey, position);
           position.publishStatus();
           this.facets.reporter.publishStatus();
           return position;
@@ -482,7 +461,3 @@ export const preparePortfolioKit = (
 harden(preparePortfolioKit);
 
 export type PortfolioKit = ReturnType<ReturnType<typeof preparePortfolioKit>>;
-
-export type USDNPosition = ReturnType<
-  PortfolioKit['manager']['provideUSDNPosition']
->;

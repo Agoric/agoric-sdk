@@ -7,16 +7,18 @@ import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import { q } from '@endo/errors';
 import { passStyleOf } from '@endo/far';
 import { matches, mustMatch } from '@endo/patterns';
-import { makeAxelarMemo } from '../src/pos-gmp.flows.ts';
+import {
+  makeAxelarMemo,
+  type GmpArgsContractCall,
+} from '../src/pos-gmp.flows.ts';
 import { makeProposalShapes } from '../src/type-guards.ts';
-import { type GmpArgsContractCall } from '../src/pos-gmp.flows.ts';
 import {
   setupTrader,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
-import { axelarChainsMapMock, localAccount0 } from './mocks.ts';
+import { localAccount0 } from './mocks.ts';
 
 const { fromEntries, keys } = Object;
 
@@ -146,12 +148,12 @@ test('makeAxelarMemo constructs correct memo JSON', t => {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   ];
 
-  const result = makeAxelarMemo(axelarChainsMapMock, gmpArgs);
+  const result = makeAxelarMemo('Avalanche', gmpArgs);
   const parsed = JSON.parse(result);
 
   t.deepEqual(parsed, {
     type,
-    destination_chain: destinationEVMChain,
+    destination_chain: 'Avalanche',
     destination_address: destinationAddress,
     payload: expectedPayload,
     fee: {
@@ -165,10 +167,10 @@ const range = (n: number) => [...Array(n).keys()];
 
 const getPortfolioInfo = (key, storage) => {
   const info = storage.getDeserialized(key).at(-1);
-  const { positionCount, flowCount } = info;
+  const { positionKeys, flowCount } = info;
+  const positionPaths = positionKeys.map(k => `${key}.positions.${k}`);
   const toPaths = (kind, count) =>
     range(count).map(ix => `${key}.${kind}s.${kind}${ix + 1}`);
-  const positionPaths = toPaths('position', positionCount);
   const flowPaths = toPaths('flow', flowCount);
   const contents = fromEntries([
     [key, info],
@@ -238,9 +240,7 @@ test('open a portfolio with Aave position', async t => {
       AaveGmp: usdc.make(100n), // fee
       Aave: usdc.units(3_333),
     },
-    {
-      destinationEVMChain: 'Base',
-    },
+    { destinationEVMChain: 'Ethereum' },
   );
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
@@ -277,9 +277,7 @@ test('open a portfolio with Compound position', async t => {
       CompoundGmp: usdc.make(100n), // fee
       Compound: usdc.units(3_333),
     },
-    {
-      destinationEVMChain: 'Base',
-    },
+    { destinationEVMChain: 'Ethereum' },
   );
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
@@ -316,9 +314,7 @@ test('open portfolio with USDN, Aave positions', async t => {
       AaveGmp: usdc.make(100n), // fee
       Aave: usdc.units(3_333),
     },
-    {
-      destinationEVMChain: 'Base',
-    },
+    { destinationEVMChain: 'Ethereum' },
   );
   await eventLoopIteration(); // let outgoing IBC happen
   console.log('openPortfolio, eventloop');

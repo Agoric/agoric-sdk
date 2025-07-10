@@ -7,17 +7,17 @@
  * @see {@link changeGMPPosition}
  * @see {@link supplyToAave}
  * @see {@link supplyToCompound}
- * @see {@link createRemoteEVMAccount}
+ * @see {@link provideEVMAccount}
  * @see {@link sendTokensViaCCTP}
  */
 import type { Amount } from '@agoric/ertp';
-import {
-  makeTracer,
-  mustMatch,
-  NonNullish,
-  type TypedPattern,
-} from '@agoric/internal';
-import type { DenomAmount, Orchestrator } from '@agoric/orchestration';
+import { makeTracer, mustMatch, type TypedPattern } from '@agoric/internal';
+import type {
+  AccountId,
+  CaipChainId,
+  DenomAmount,
+  Orchestrator,
+} from '@agoric/orchestration';
 import {
   AxelarGMPMessageType,
   type AxelarGmpOutgoingMemo,
@@ -29,25 +29,24 @@ import {
 } from '@agoric/orchestration/src/utils/gmp.js';
 import type { AmountKeywordRecord, ZCFSeat } from '@agoric/zoe';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
-import { assert, throwRedacted as Fail } from '@endo/errors';
+import { throwRedacted as Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
 import type { GuestInterface } from '../../async-flow/src/types.ts';
-import { AxelarChains, type YieldProtocol } from './constants.js';
-import type { PortfolioKit } from './portfolio.exo.ts';
+import { AxelarChain, type YieldProtocol } from './constants.js';
+import type { GMPAccountInfo, PortfolioKit } from './portfolio.exo.ts';
 import {
   type PortfolioInstanceContext,
-  provideAccountInfo,
+  provideCosmosAccount,
 } from './portfolio.flows.ts';
 import type {
-  AxelarChainsMap,
   OfferArgsFor,
   OpenPortfolioGive,
+  PoolKey,
 } from './type-guards.ts';
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
 
-type AxelarChain = keyof typeof AxelarChains; // XXX rename AxelarChains -> AxelarChain
 type BaseGmpArgs = {
   destinationEVMChain: AxelarChain;
   keyword: string;
@@ -78,29 +77,39 @@ const ContractCallShape = M.splitRecord({
 const GMPArgsShape: TypedPattern<GmpArgsContractCall> = M.splitRecord({
   destinationAddress: M.string(),
   type: M.or(1, 2),
-  destinationEVMChain: M.or(...keys(AxelarChains)),
+  destinationEVMChain: M.or(...keys(AxelarChain)),
   keyword: M.string(),
   amounts: AmountKeywordRecordShape, // XXX brand should be exactly USDC
   contractInvocationData: M.arrayOf(ContractCallShape),
 });
 
-export const createRemoteEVMAccount = async (
+const getCaipId = async (orch: Orchestrator, chainName: AxelarChain) => {
+  const evmChain = await orch.getChain(chainName);
+  const info = await evmChain.getChainInfo();
+  const caipChainId: CaipChainId = `${info.namespace}:${info.reference}`;
+  return caipChainId;
+};
+
+export const provideEVMAccount = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
   gmpArgs: BaseGmpArgs,
   kit: GuestInterface<PortfolioKit>,
-  protocol: YieldProtocol,
 ) => {
   const { destinationEVMChain, keyword, amounts: gasAmounts } = gmpArgs;
-  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
+  const addresses = ctx.contracts[destinationEVMChain];
+  let promiseMaybe = kit.manager.reserveAccount(destinationEVMChain);
+  if (promiseMaybe) {
+    return promiseMaybe as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
+  }
 
   await sendGmp(
     orch,
     ctx,
     seat,
     harden({
-      destinationAddress: contractAddresses.factory,
+      destinationAddress: addresses.factory,
       destinationEVMChain,
       type: AxelarGMPMessageType.ContractCall,
       keyword,
@@ -110,7 +119,9 @@ export const createRemoteEVMAccount = async (
     kit,
   );
 
-  return kit.reader.getGMPAddress(protocol);
+  return kit.reader.getGMPInfo(
+    destinationEVMChain,
+  ) as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
 };
 
 export const sendTokensViaCCTP = async (
@@ -121,29 +132,26 @@ export const sendTokensViaCCTP = async (
   kit: GuestInterface<PortfolioKit>,
   protocol: YieldProtocol,
 ) => {
-  const { axelarChainsMap, chainHubTools, zoeTools } = ctx;
+  const { usdc, zoeTools } = ctx;
   const { keyword, amounts, destinationEVMChain } = args;
   const amount = amounts[keyword];
-  const denom = NonNullish(chainHubTools.getDenom(amount.brand));
+  const { denom } = usdc;
   const denomAmount: DenomAmount = { denom, value: amount.value };
 
-  const { lca: localAcct } = await provideAccountInfo(orch, 'agoric', kit);
-  const { ica: nobleAccount } = await provideAccountInfo(orch, 'noble', kit);
+  const { lca: localAcct } = await provideCosmosAccount(orch, 'agoric', kit);
+  const { ica: nobleAccount } = await provideCosmosAccount(orch, 'noble', kit);
 
   trace('localTransfer', amount, 'to local', localAcct.getAddress().value);
   await zoeTools.localTransfer(seat, localAcct, amounts);
   try {
     await localAcct.transfer(nobleAccount.getAddress(), denomAmount);
-    const caipChainId = axelarChainsMap[destinationEVMChain].caip;
-    const remoteAccountAddress = await kit.reader.getGMPAddress(protocol);
-    const destinationAddress = `${caipChainId}:${remoteAccountAddress}`;
+    const caipChainId = await getCaipId(orch, destinationEVMChain);
+    const { remoteAddress } = await kit.reader.getGMPInfo(destinationEVMChain);
+    const destinationAddress: AccountId = `${caipChainId}:${remoteAddress}`;
     trace(`CCTP destinationAddress: ${destinationAddress}`);
 
     try {
-      await nobleAccount.depositForBurn(
-        destinationAddress as `${string}:${string}:${string}`,
-        denomAmount,
-      );
+      await nobleAccount.depositForBurn(destinationAddress, denomAmount);
     } catch (err) {
       console.error('⚠️ recover to local account.', amount);
       const nobleAmount: DenomAmount = { denom: 'uusdc', value: amount.value };
@@ -161,12 +169,11 @@ export const sendTokensViaCCTP = async (
 };
 
 export const makeAxelarMemo = (
-  axelarChainsMap: AxelarChainsMap,
+  chainId: string,
   gmpArgs: GmpArgsContractCall,
 ) => {
   const {
     contractInvocationData,
-    destinationEVMChain,
     destinationAddress,
     keyword,
     amounts: gasAmounts,
@@ -177,7 +184,7 @@ export const makeAxelarMemo = (
 
   const payload = buildGMPPayload(contractInvocationData);
   const memo: AxelarGmpOutgoingMemo = {
-    destination_chain: axelarChainsMap[destinationEVMChain].axelarId,
+    destination_chain: chainId,
     destination_address: destinationAddress,
     payload,
     type,
@@ -200,16 +207,15 @@ const sendGmp = async (
   kit: GuestInterface<PortfolioKit>,
 ) => {
   mustMatch(gmpArgs, GMPArgsShape);
-  const { axelarChainsMap, chainHubTools, zoeTools } = ctx;
+  const { usdc, zoeTools } = ctx;
 
   const axelar = await orch.getChain('axelar');
   const { chainId } = await axelar.getChainInfo();
 
-  const { lca: localAccount } = await provideAccountInfo(orch, 'agoric', kit);
-  const { keyword, amounts: gasAmounts } = gmpArgs;
+  const { lca: localAccount } = await provideCosmosAccount(orch, 'agoric', kit);
+  const { keyword, amounts: gasAmounts, destinationEVMChain } = gmpArgs;
   const natAmount = gasAmounts[keyword];
-  const denom = await chainHubTools.getDenom(natAmount.brand);
-  assert(denom, 'denom must be defined');
+  const { denom } = usdc;
   const denomAmount = {
     denom,
     value: natAmount.value,
@@ -217,7 +223,7 @@ const sendGmp = async (
 
   try {
     await zoeTools.localTransfer(seat, localAccount, gasAmounts);
-    const memo = makeAxelarMemo(axelarChainsMap, gmpArgs);
+    const memo = makeAxelarMemo(destinationEVMChain, gmpArgs);
     await localAccount.transfer(
       {
         value: gmpAddresses.AXELAR_GMP,
@@ -246,15 +252,17 @@ export const supplyToAave = async (
     keyword,
     amounts: gasAmounts,
   } = gmpArgs;
-  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
-  const remoteEVMAddress = await kit.reader.getGMPAddress('Aave');
+
+  const addresses = ctx.contracts[destinationEVMChain];
+  const info = await provideEVMAccount(orch, ctx, seat, gmpArgs, kit);
+  const { remoteAddress } = info;
 
   await sendGmp(
     orch,
     ctx,
     seat,
     harden({
-      destinationAddress: remoteEVMAddress,
+      destinationAddress: remoteAddress,
       destinationEVMChain,
       type: AxelarGMPMessageType.ContractCall,
       keyword,
@@ -262,13 +270,13 @@ export const supplyToAave = async (
       contractInvocationData: [
         {
           functionSignature: 'approve(address,uint256)',
-          args: [contractAddresses.aavePool, transferAmount],
-          target: contractAddresses.usdc,
+          args: [addresses.aavePool, transferAmount],
+          target: addresses.usdc,
         },
         {
           functionSignature: 'supply(address,uint256,address,uint16)',
-          args: [contractAddresses.usdc, transferAmount, remoteEVMAddress, 0],
-          target: contractAddresses.aavePool,
+          args: [addresses.usdc, transferAmount, remoteAddress, 0],
+          target: addresses.aavePool,
         },
       ],
     }),
@@ -290,15 +298,16 @@ const withdrawFromAave = async (
     keyword,
     amounts: gasAmounts,
   } = gmpArgs;
-  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
-  const remoteEVMAddress = await kit.reader.getGMPAddress('Aave');
+  const addresses = ctx.contracts[destinationEVMChain];
+  const info = await provideEVMAccount(orch, ctx, seat, gmpArgs, kit);
+  const { remoteAddress } = info;
 
   await sendGmp(
     orch,
     ctx,
     seat,
     harden({
-      destinationAddress: remoteEVMAddress,
+      destinationAddress: remoteAddress,
       destinationEVMChain,
       type: AxelarGMPMessageType.ContractCall,
       keyword,
@@ -306,8 +315,8 @@ const withdrawFromAave = async (
       contractInvocationData: [
         {
           functionSignature: 'withdraw(address,uint256,address)',
-          args: [contractAddresses.usdc, withdrawAmount, remoteEVMAddress],
-          target: contractAddresses.aavePool,
+          args: [addresses.usdc, withdrawAmount, remoteAddress],
+          target: addresses.aavePool,
         },
       ],
     }),
@@ -329,15 +338,16 @@ export const supplyToCompound = async (
     keyword,
     amounts: gasAmounts,
   } = gmpArgs;
-  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
-  const remoteEVMAddress = await kit.reader.getGMPAddress('Compound');
+  const addresses = ctx.contracts[destinationEVMChain];
+  const info = await provideEVMAccount(orch, ctx, seat, gmpArgs, kit);
+  const { remoteAddress } = info;
 
   await sendGmp(
     orch,
     ctx,
     seat,
     harden({
-      destinationAddress: remoteEVMAddress,
+      destinationAddress: remoteAddress,
       destinationEVMChain,
       type: AxelarGMPMessageType.ContractCall,
       keyword,
@@ -345,13 +355,13 @@ export const supplyToCompound = async (
       contractInvocationData: [
         {
           functionSignature: 'approve(address,uint256)',
-          args: [contractAddresses.compound, transferAmount],
-          target: contractAddresses.usdc,
+          args: [addresses.compound, transferAmount],
+          target: addresses.usdc,
         },
         {
           functionSignature: 'supply(address,uint256)',
-          args: [contractAddresses.usdc, transferAmount],
-          target: contractAddresses.compound,
+          args: [addresses.usdc, transferAmount],
+          target: addresses.compound,
         },
       ],
     }),
@@ -373,15 +383,16 @@ const withdrawFromCompound = async (
     keyword,
     amounts: gasAmounts,
   } = gmpArgs;
-  const { contractAddresses } = ctx.axelarChainsMap[destinationEVMChain];
-  const remoteEVMAddress = await kit.reader.getGMPAddress('Compound');
+  const addresses = ctx.contracts[destinationEVMChain];
+  const info = await provideEVMAccount(orch, ctx, seat, gmpArgs, kit);
+  const { remoteAddress } = info;
 
   await sendGmp(
     orch,
     ctx,
     seat,
     harden({
-      destinationAddress: remoteEVMAddress,
+      destinationAddress: remoteAddress,
       destinationEVMChain,
       type: AxelarGMPMessageType.ContractCall,
       keyword,
@@ -389,8 +400,8 @@ const withdrawFromCompound = async (
       contractInvocationData: [
         {
           functionSignature: 'withdraw(address,uint256)',
-          args: [contractAddresses.usdc, withdrawAmount],
-          target: contractAddresses.compound,
+          args: [addresses.usdc, withdrawAmount],
+          target: addresses.compound,
         },
       ],
     }),
@@ -403,11 +414,10 @@ export const changeGMPPosition = async (
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['rebalance'],
-  kit,
+  kit: GuestInterface<PortfolioKit>,
   protocol: 'Aave' | 'Compound',
   give: {} | OpenPortfolioGive,
 ) => {
-  const { axelarChainsMap } = ctx;
   const { destinationEVMChain } = offerArgs;
 
   (`${protocol}Gmp` in give && `${protocol}Account` in give) ||
@@ -419,24 +429,19 @@ export const changeGMPPosition = async (
       ? ['AaveGmp', 'AaveAccount']
       : ['CompoundGmp', 'CompoundAccount'];
 
-  const { position: _TODO, isNew } = kit.manager.provideGMPPositionOn(
-    protocol as YieldProtocol,
-    axelarChainsMap[destinationEVMChain].caip,
+  const poolKey: PoolKey = `${protocol}_${destinationEVMChain}`;
+  const gmpArgs = {
+    destinationEVMChain,
+    keyword: accountKW,
+    amounts: { [accountKW]: give[accountKW] },
+  };
+  const info = await provideEVMAccount(orch, ctx, seat, gmpArgs, kit);
+  const caipChainId = await getCaipId(orch, destinationEVMChain);
+  const position = kit.manager.providePosition(
+    poolKey,
+    protocol,
+    `${caipChainId}:${info.remoteAddress}`,
   );
-
-  if (isNew) {
-    const gmpArgs = {
-      destinationEVMChain,
-      keyword: accountKW,
-      amounts: { [accountKW]: give[accountKW] },
-    };
-    try {
-      await createRemoteEVMAccount(orch, ctx, seat, gmpArgs, kit, protocol);
-    } catch (err) {
-      console.error('⚠️ initRemoteEVMAccount failed for', protocol, err);
-      seat.fail(err);
-    }
-  }
 
   const args = {
     destinationEVMChain,
@@ -449,18 +454,20 @@ export const changeGMPPosition = async (
   kit.manager.waitKLUDGE(20n);
 
   const { value: transferAmount } = give[protocol] as Amount<'nat'>;
-  const gmpArgs = {
-    destinationEVMChain,
-    transferAmount,
+  const txfrArgs = {
+    ...gmpArgs,
     keyword: gmpKW,
     amounts: { [gmpKW]: give[gmpKW] },
+    transferAmount,
   };
+
   switch (protocol) {
     case 'Aave':
-      await supplyToAave(orch, ctx, seat, gmpArgs, kit);
+      await supplyToAave(orch, ctx, seat, txfrArgs, kit);
       break;
     case 'Compound':
-      await supplyToCompound(orch, ctx, seat, gmpArgs, kit);
+      await supplyToCompound(orch, ctx, seat, txfrArgs, kit);
       break;
   }
+  position.recordTransferIn(give[protocol]);
 };

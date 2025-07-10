@@ -34,7 +34,7 @@ import { $ } from 'execa';
 import { ConfigContext, useChain, useRegistry } from 'starshipjs';
 import { DEFAULT_TIMEOUT_NS } from '../tools/ibc-transfer.ts';
 import { makeQueryClient } from '../tools/query.ts';
-import { makeSwapLockMessages } from '@aglocal/portfolio-contract/src/portfolio.flows.ts';
+import { makeSwapLockMessages } from '@aglocal/portfolio-contract/src/pos-usdn.flows.ts';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import starshipChainInfo from '../starship-chain-info.js';

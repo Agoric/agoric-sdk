@@ -22,18 +22,14 @@
  */
 import { type Amount, type Brand, type NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
-import {
-  AnyNatAmountShape,
-  type AccountId,
-  type CaipChainId,
-} from '@agoric/orchestration';
+import { AnyNatAmountShape, type AccountId } from '@agoric/orchestration';
 import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
 import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
-import { AxelarChains, YieldProtocol } from './constants.js';
+import { AxelarChain, YieldProtocol } from './constants.js';
 import type { EVMContractAddresses, start } from './portfolio.contract.js';
 import type { PortfolioKit } from './portfolio.exo.js';
 
@@ -157,15 +153,66 @@ export const makeProposalShapes = (
 // #endregion
 
 // #region Offer Args
+
+type PoolPlaceInfo =
+  | { protocol: 'USDN'; vault: null | 1 }
+  | { protocol: 'Aave' | 'Compound'; chainName: AxelarChain };
+
+export const PoolPlaces = {
+  USDN: { protocol: 'USDN', vault: null }, // MsgSwap only
+  USDNVault: { protocol: 'USDN', vault: 1 }, // MsgSwap, MsgLock
+  Aave_Ethereum: { protocol: 'Aave', chainName: 'Ethereum' },
+  Aave_Avalanche: { protocol: 'Aave', chainName: 'Avalanche' },
+  Aave_optimism: { protocol: 'Aave', chainName: 'optimism' },
+  Aave_arbitrum: { protocol: 'Aave', chainName: 'arbitrum' },
+  Aave_Polygon: { protocol: 'Aave', chainName: 'Polygon' },
+  Aave_Fantom: { protocol: 'Aave', chainName: 'Fantom' },
+  Aave_binance: { protocol: 'Aave', chainName: 'binance' },
+  'Aave_ethereum-sepolia': { protocol: 'Aave', chainName: 'ethereum-sepolia' },
+  'Aave_optimism-sepolia': { protocol: 'Aave', chainName: 'optimism-sepolia' },
+  'Aave_arbitrum-sepolia': { protocol: 'Aave', chainName: 'arbitrum-sepolia' },
+  'Aave_polygon-sepolia': { protocol: 'Aave', chainName: 'polygon-sepolia' },
+
+  Compound_Ethereum: { protocol: 'Compound', chainName: 'Ethereum' },
+  Compound_Avalanche: { protocol: 'Compound', chainName: 'Avalanche' },
+  Compound_optimism: { protocol: 'Compound', chainName: 'optimism' },
+  Compound_arbitrum: { protocol: 'Compound', chainName: 'arbitrum' },
+  Compound_Polygon: { protocol: 'Compound', chainName: 'Polygon' },
+  Compound_Fantom: { protocol: 'Compound', chainName: 'Fantom' },
+  Compound_binance: { protocol: 'Compound', chainName: 'binance' },
+  'Compound_ethereum-sepolia': {
+    protocol: 'Compound',
+    chainName: 'ethereum-sepolia',
+  },
+  'Compound_optimism-sepolia': {
+    protocol: 'Compound',
+    chainName: 'optimism-sepolia',
+  },
+  'Compound_arbitrum-sepolia': {
+    protocol: 'Compound',
+    chainName: 'arbitrum-sepolia',
+  },
+  'Compound_polygon-sepolia': {
+    protocol: 'Compound',
+    chainName: 'polygon-sepolia',
+  },
+} as const satisfies Record<string, PoolPlaceInfo>;
+harden(PoolPlaces);
+
+/**
+ * Names of places where a portfolio may have a position.
+ */
+export type PoolKey = keyof typeof PoolPlaces;
+
 type OfferArgs1 = {
-  destinationEVMChain?: AxelarChains;
+  destinationEVMChain?: AxelarChain;
   usdnOut?: NatValue;
 };
 
 const offerArgsShape: TypedPattern<OfferArgs1> = M.splitRecord(
   {},
   {
-    destinationEVMChain: M.or(...keys(AxelarChains)),
+    destinationEVMChain: M.or(...keys(AxelarChain)),
     usdnOut: M.nat(),
   },
 );
@@ -226,7 +273,7 @@ type GMPStatusTODO = {
 // XXX relate paths to types a la readPublished()
 export type StatusFor = {
   portfolio: {
-    positionCount: number;
+    positionKeys: PoolKey[];
     flowCount: number;
     // TODO: accountIdByChain: Record<ChainAccountKey, AccountId>;
     accountIdByChain: Record<string, AccountId>;
@@ -245,9 +292,10 @@ export type StatusFor = {
     | GMPStatusTODO;
 };
 
+export const PoolKeyShape = M.string(); // prefer string over M.or(...) for extensibility
 export const PortfolioStatusShape: TypedPattern<StatusFor['portfolio']> =
   M.splitRecord({
-    positionCount: M.nat(),
+    positionKeys: M.arrayOf(PoolKeyShape),
     flowCount: M.nat(),
     accountIdByChain: M.recordOf(
       M.or('agoric', 'noble'), // ChainAccountKey
@@ -262,13 +310,13 @@ export const PortfolioStatusShape: TypedPattern<StatusFor['portfolio']> =
  * Used by {@link Position.publishStatus} to publish position state.
  *
  * @param parent - Portfolio ID
- * @param id - Position ID within the portfolio
+ * @param key - PoolKey
  * @returns Path segments for vstorage
  */
-export const makePositionPath = (parent: number, id: number) => [
+export const makePositionPath = (parent: number, key: PoolKey) => [
   `portfolio${parent}`,
   'positions',
-  `position${id}`,
+  key,
 ];
 
 export const PositionStatusShape: TypedPattern<StatusFor['position']> =
@@ -314,16 +362,6 @@ export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.splitRecord(
 // XXX deployment concern, not part of contract external interface
 // but avoid changing the import from the deploy package
 
-// XXX split between chainInfo and contractAddresses
-export type AxelarChainsMap = {
-  [chain in AxelarChain]: {
-    caip: CaipChainId;
-    /**
-     * Axelar chain IDs differ between mainnet and testnet.
-     * See [supported-chains-list.ts](https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts)
-     */
-    axelarId: string;
-    contractAddresses: EVMContractAddresses;
-  };
+export type EVMContractAddressesMap = {
+  [chain in AxelarChain]: EVMContractAddresses;
 };
-type AxelarChain = keyof typeof AxelarChains; // rename AxelarChains -> AxelarChain
