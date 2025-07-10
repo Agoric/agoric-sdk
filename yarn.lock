@@ -713,7 +713,6 @@ __metadata:
   dependencies:
     "@agoric/base-zone": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
-    "@agoric/vats": "workspace:*"
     "@endo/common": "npm:^1.2.10"
     "@endo/compartment-mapper": "npm:^1.6.0"
     "@endo/errors": "npm:^1.2.10"

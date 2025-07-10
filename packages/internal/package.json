@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "@agoric/base-zone": "workspace:*",
-    "@agoric/vats": "workspace:*",
     "@endo/common": "^1.2.10",
     "@endo/compartment-mapper": "^1.6.0",
     "@endo/errors": "^1.2.10",

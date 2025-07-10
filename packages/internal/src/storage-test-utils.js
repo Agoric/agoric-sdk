@@ -1,15 +1,15 @@
 // @ts-check
-import {
-  boardSlottingMarshaller,
-  slotToBoardRemote,
-} from '@agoric/vats/tools/board-utils.js';
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import { makeMarshal, Remotable } from '@endo/marshal';
 import { makeTracer } from './debug.js';
 import { NonNullish } from './errors.js';
 import { isStreamCell, makeChainStorageRoot } from './lib-chainStorage.js';
-import { unmarshalFromVstorage } from './marshal.js';
+import {
+  boardSlottingMarshaller,
+  slotToBoardRemote,
+  unmarshalFromVstorage,
+} from './marshal.js';
 import { bindAllMethods } from './method-tools.js';
 import { eventLoopIteration } from './testing-utils.js';
 
