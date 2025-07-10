@@ -1,6 +1,4 @@
 // @ts-check
-import { inspect } from 'node:util';
-
 import {
   boardSlottingMarshaller,
   slotToBoardRemote,
@@ -254,7 +252,6 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
       assert(raw, `No data found for ${path}`);
       value = JSON.parse(raw);
     }
-    trace('readLatest', path, 'returning', inspect(value, false, 20, true));
     return value;
   };
 
