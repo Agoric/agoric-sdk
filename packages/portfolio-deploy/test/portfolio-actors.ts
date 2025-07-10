@@ -31,7 +31,7 @@ export const makeTrader = (
       give: OpenPortfolioGive,
       offerArgs: OfferArgsFor['openPortfolio'] = {},
     ) {
-      // TODO: uncomment below lines at some point 
+      // TODO: uncomment below lines at some point
       // if (portfolioPath) throw Error('already opened');
       // if (openId) throw Error('already opening');
 
@@ -50,7 +50,7 @@ export const makeTrader = (
         offerArgs,
       });
       doneP.then(obj => {
-        // TODO: uncomment below lines at some point 
+        // TODO: uncomment below lines at some point
         // const { result } = obj;
         // const { portfolio: topic } = result.publicSubscribers;
         // if (topic.description === 'Portfolio') {

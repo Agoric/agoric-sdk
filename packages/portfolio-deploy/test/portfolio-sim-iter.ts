@@ -7,6 +7,8 @@ import { AckBehavior } from '@aglocal/boot/tools/supports.js';
 import { configurations } from '../src/utils/deploy-config.js'; //TODO this will be removed
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeWallet } from '../../../packages/portfolio-contract/test/wallet-offer-tools.ts';
+import { makeFakeBankManagerKit } from '../../../packages/vats/tools/bank-utils.js';
+import { E } from '@endo/far';
 
 import type { WalletTool } from '../../../packages/portfolio-contract/test/wallet-offer-tools.ts';
 import type { IBCChannelID } from '@agoric/vats';
@@ -19,6 +21,7 @@ import type {
   EvmAddress,
   NobleAddress,
 } from '@agoric/fast-usdc';
+import { trace } from 'console';
 
 type SmartWallet = Awaited<
   ReturnType<
@@ -157,6 +160,7 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
   let instance;
   let wallet;
   let zoe: ZoeService;
+  let usdcBrand: Brand<'nat'>;
 
   return {
     async beforeDeploy(t: ExecutionContext<{ runUtils: { EV: any } }>) {
@@ -220,6 +224,23 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
 
       trader = makeTrader(wallet, instance, agoricNamesRemotes.brand.PoC26);
 
+      // Initialize bank manager kit to get pourPayment
+      const { bankManager, pourPayment } = await makeFakeBankManagerKit();
+      refreshAgoricNamesRemotes();
+      trace('usdcBrand', agoricNamesRemotes.brand);
+      usdcBrand = agoricNamesRemotes.brand.USDC as any;
+      const USDCPmt = await pourPayment(AmountMath.make(usdcBrand, 100000n));
+      const purse = await E(E(bankManager).getBankForAddress(beneficiary)).getPurse(
+        usdcBrand,
+      );
+      await E(purse).deposit(USDCPmt);
+
+      // const brand = await E(issuer).getBrand();
+      // const purse = E(issuer).makeEmptyPurse();
+      // const pmt = await pourPayment(make(brand, value));
+      // await E(purse).deposit(pmt);
+      // return purse;
+
       return instance;
     },
     async beforeIterations(t: ExecutionContext) {
@@ -227,7 +248,12 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
     },
     async iteration(t: ExecutionContext, iter: number) {
       // Simulate opening a portfolio with a small Access token give
-      const give = {};
+      const give = {
+        USDC: AmountMath.make(
+          usdcBrand,
+          100_000n,
+        )
+      };
       await trader.openPortfolio(t, give, {});
     },
     async cleanup(doCoreEval: (specifier: string) => Promise<void>) {
