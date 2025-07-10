@@ -211,7 +211,7 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
 
       // wallet.deposit(
       //   AmountMath.make(
-      //     agoricNamesRemotes.brand.Access,
+      //     agoricNamesRemotes.brand.PoC26,
       //     100n,
       //   ),
       // );
@@ -219,6 +219,7 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
       // makeWallet({ Access: { issuer: agoricNamesRemotes.issuer.Access }, USDC: { issuer: agoricNamesRemotes.issuer.USDC } }, zoe, vowTools.when);
 
       trader = makeTrader(wallet, instance, agoricNamesRemotes.brand.PoC26);
+
       return instance;
     },
     async beforeIterations(t: ExecutionContext) {
