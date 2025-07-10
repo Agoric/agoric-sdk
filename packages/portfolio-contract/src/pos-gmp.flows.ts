@@ -15,6 +15,8 @@ import { makeTracer, mustMatch, type TypedPattern } from '@agoric/internal';
 import type {
   AccountId,
   CaipChainId,
+  ChainHub,
+  CosmosChainAddress,
   DenomAmount,
   Orchestrator,
 } from '@agoric/orchestration';
@@ -39,7 +41,9 @@ import type {
   PortfolioKit,
 } from './portfolio.exo.ts';
 import {
+  type LocalAccount,
   type PortfolioInstanceContext,
+  type ProtocolDetail,
   provideCosmosAccount,
   type TransportDetail,
 } from './portfolio.flows.ts';
@@ -48,6 +52,13 @@ import type {
   OpenPortfolioGive,
   PoolKey,
 } from './type-guards.ts';
+import type { EVMContractAddresses } from './portfolio.contract.ts';
+import {
+  ERC20,
+  makeEVMSession,
+  type EVMInterface,
+  type EVMT,
+} from './evm-facade.ts';
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
@@ -223,17 +234,39 @@ export const makeAxelarMemo = (
     destination_address: destinationAddress,
     payload,
     type,
+    fee: {
+      amount: String(gasAmounts[keyword].value),
+      recipient: gmpAddresses.AXELAR_GAS,
+    },
   };
 
-  memo.fee = {
-    amount: String(gasAmounts[keyword].value),
-    recipient: gmpAddresses.AXELAR_GAS,
-  };
-
-  return harden(JSON.stringify(memo));
+  return JSON.stringify(memo);
 };
 harden(makeAxelarMemo);
 
+const sendGMPContractCall = async (
+  dest: { chainName: AxelarChain; remoteAddress: EVMT['address'] },
+  calls: ContractCall[],
+  fee: DenomAmount,
+  lca: LocalAccount,
+  /** @see gmpAddresses.AXELAR_GMP */
+  axelarGas: CosmosChainAddress,
+) => {
+  const payload = buildGMPPayload(calls);
+  const memo: AxelarGmpOutgoingMemo = {
+    destination_chain: dest.chainName,
+    destination_address: dest.remoteAddress,
+    payload,
+    type: AxelarGMPMessageType.ContractCall,
+    fee: {
+      amount: String(fee.value),
+      recipient: gmpAddresses.AXELAR_GAS,
+    },
+  };
+  await lca.transfer(axelarGas, fee, { memo: JSON.stringify(memo) });
+};
+
+/** @deprecated use {@link sendGMPContractCall} */
 const sendGmp = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -360,6 +393,38 @@ const withdrawFromAave = async (
 };
 /* c8 ignore end */
 
+const Compound: EVMInterface = {
+  supply: ['address', 'uint256'],
+};
+
+// XXX add a ctx type to ProtocolDetail
+export const makeCompoundProtocol = (ctx: {
+  lca: LocalAccount;
+  fee: DenomAmount;
+  addresses: Record<'compound' | 'usdc', EVMT['address']>;
+  chainHub: Pick<ChainHub, 'coerceCosmosAddress'>;
+}) => {
+  const { addresses: a, lca, chainHub, fee } = ctx;
+  const axGas = chainHub.coerceCosmosAddress(gmpAddresses.AXELAR_GMP);
+
+  return {
+    protocol: 'Compound',
+    chains: keys(AxelarChain) as AxelarChain[],
+    supply: async (amount: NatAmount, src: AccountInfoFor[AxelarChain]) => {
+      const session = makeEVMSession();
+      const usdc = session.makeContract(a.usdc, ERC20);
+      const compound = session.makeContract(a.compound, Compound);
+      usdc.approve(a.compound, amount.value);
+      compound.supply(a.usdc, amount.value);
+      const calls = session.finish();
+
+      await sendGMPContractCall(src, calls, fee, lca, axGas);
+    },
+    withdraw: async (amount: NatAmount, dest: AccountInfoFor[AxelarChain]) =>
+      assert.fail('TODO'),
+  } as const satisfies ProtocolDetail<'Compound', AxelarChain>;
+};
+
 export const supplyToCompound = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -377,31 +442,15 @@ export const supplyToCompound = async (
   const info = await provideEVMAccount(orch, ctx, seat, gmpArgs, kit);
   const { remoteAddress } = info;
 
-  await sendGmp(
-    orch,
-    ctx,
-    seat,
-    harden({
-      destinationAddress: remoteAddress,
-      destinationEVMChain,
-      type: AxelarGMPMessageType.ContractCall,
-      keyword,
-      amounts: gasAmounts,
-      contractInvocationData: [
-        {
-          functionSignature: 'approve(address,uint256)',
-          args: [addresses.compound, transferAmount],
-          target: addresses.usdc,
-        },
-        {
-          functionSignature: 'supply(address,uint256)',
-          args: [addresses.usdc, transferAmount],
-          target: addresses.compound,
-        },
-      ],
-    }),
-    kit,
+  const callArgs = makeCompoundCall(
+    destinationEVMChain,
+    remoteAddress,
+    transferAmount,
+    addresses,
+    gasAmounts[keyword],
   );
+
+  await sendGmp(orch, ctx, seat, callArgs, kit);
 };
 
 /* c8 ignore start */

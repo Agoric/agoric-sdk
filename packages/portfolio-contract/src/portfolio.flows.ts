@@ -34,7 +34,12 @@ import {
   type MovementDesc,
 } from './offer-args.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
-import { CCTP, changeGMPPosition, provideEVMAccount } from './pos-gmp.flows.ts';
+import {
+  CCTP,
+  changeGMPPosition,
+  makeCompoundProtocol,
+  provideEVMAccount,
+} from './pos-gmp.flows.ts';
 import {
   agoricToNoble,
   changeUSDCPosition,
@@ -253,11 +258,12 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
       const destName = getChainNameOfPlaceRef(dest);
       if (!destName)
         throw Fail`src pos must have account as dest ${q(moveDesc)}`;
+      // XXX check that destName is in protocol.chains
       return { how: PoolPlaces[src as PoolKey].protocol, dest: destName };
     }
 
     case 'seat':
-      getAssetPlaceRefKind(dest) === 'accountId' ||
+      getAssetPlaceRefKind(dest) === 'accountId' || // XXX check for agoric
         Fail`src seat must have account as dest ${q(moveDesc)}`;
       return { how: 'localTransfer' };
 
@@ -267,7 +273,7 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
       const destKind = getAssetPlaceRefKind(dest);
       switch (destKind) {
         case 'seat':
-          return { how: 'withdrawToSeat' };
+          return { how: 'withdrawToSeat' }; // XXX check that src is agoric
         case 'accountId':
           const destName = getChainNameOfPlaceRef(dest);
           assert(destName);
@@ -403,13 +409,47 @@ const stepFlow = async (
             src: { account: nInfo.ica },
             dest: { pos },
             apply: () => supply(amount, nInfo),
-            recover: () => Fail`no recovery from supply`,
+            recover: () => Fail`no recovery from supply (final step)`,
           });
         } else {
           Fail`TODO`;
         }
         break;
       }
+
+      case 'Compound': {
+        const { contracts } = ctx;
+        const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
+
+        // XXX move this check up to wayFromSrcToDesc
+        const chainName = 'src' in way ? way.src : way.dest;
+        assert(keys(AxelarChain).includes(chainName));
+        const evmChain = chainName as AxelarChain;
+
+        const gArgs = {
+          destinationEVMChain: evmChain,
+          amounts: { CompoundAccount: amount },
+          keyword: 'CompoundAccount',
+        };
+        const gInfo = await provideEVMAccount(orch, ctx, seat, gArgs, kit);
+        const feeB = seat.getAmountAllocated('CompoundGmp');
+        const feeDenom = chainHub.getDenom(feeB.brand);
+        const fee = { denom: feeDenom, value: feeB.value };
+        const cp = makeCompoundProtocol({
+          addresses: contracts[evmChain],
+          lca,
+          chainHub,
+          fee,
+        });
+
+        if ('src' in way) {
+          await cp.supply(move.amount, gInfo);
+        } else {
+          await cp.withdraw(move.amount, gInfo);
+        }
+        break;
+      }
+
       default:
         throw Fail`TODO: ${way.how}`;
     }
