@@ -9,6 +9,7 @@ import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { type Amount, type NatAmount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type {
+  AccountId,
   Denom,
   OrchestrationAccount,
   OrchestrationFlow,
@@ -37,8 +38,9 @@ import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {
   CCTP,
   changeGMPPosition,
-  makeCompoundProtocol,
+  CompoundProtocol,
   provideEVMAccount,
+  type EVMContext,
 } from './pos-gmp.flows.ts';
 import {
   agoricToNoble,
@@ -129,11 +131,20 @@ export type TransportDetail<
 export type ProtocolDetail<
   P extends YieldProtocol,
   C extends SupportedChain,
+  CTX,
 > = {
   protocol: P;
   chains: C[];
-  supply: (amount: NatAmount, src: AccountInfoFor[C]) => Promise<void>;
-  withdraw: (amount: NatAmount, dest: AccountInfoFor[C]) => Promise<void>;
+  supply: (
+    ctx: CTX,
+    amount: NatAmount,
+    src: AccountInfoFor[C],
+  ) => Promise<void>;
+  withdraw: (
+    ctx: CTX,
+    amount: NatAmount,
+    dest: AccountInfoFor[C],
+  ) => Promise<void>;
 };
 
 export const trackFlow = async (
@@ -245,8 +256,8 @@ type Way =
   | { how: 'IBC'; src: 'agoric'; dest: 'noble' }
   | { how: 'IBC'; src: 'noble'; dest: 'agoric' }
   | { how: 'CCTP'; dest: AxelarChain }
-  | { how: YieldProtocol; src: SupportedChain }
-  | { how: YieldProtocol; dest: SupportedChain };
+  | { how: YieldProtocol; poolKey: PoolKey; src: SupportedChain }
+  | { how: YieldProtocol; poolKey: PoolKey; dest: SupportedChain };
 
 export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
   const { src } = moveDesc;
@@ -258,8 +269,9 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
       const destName = getChainNameOfPlaceRef(dest);
       if (!destName)
         throw Fail`src pos must have account as dest ${q(moveDesc)}`;
+      const poolKey = src as PoolKey;
       // XXX check that destName is in protocol.chains
-      return { how: PoolPlaces[src as PoolKey].protocol, dest: destName };
+      return { how: PoolPlaces[poolKey].protocol, poolKey, dest: destName };
     }
 
     case 'seat':
@@ -289,7 +301,9 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
             throw Fail`no route between chains: ${q(moveDesc)}`;
           }
         case 'pos': {
-          return { how: PoolPlaces[dest as PoolKey].protocol, src: srcName };
+          const poolKey = dest as PoolKey;
+
+          return { how: PoolPlaces[poolKey].protocol, poolKey, src: srcName };
         }
         default:
           throw Fail`unreachable:${destKind} ${dest}`;
@@ -418,9 +432,6 @@ const stepFlow = async (
       }
 
       case 'Compound': {
-        const { contracts } = ctx;
-        const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
-
         // XXX move this check up to wayFromSrcToDesc
         const chainName = 'src' in way ? way.src : way.dest;
         assert(keys(AxelarChain).includes(chainName));
@@ -431,21 +442,43 @@ const stepFlow = async (
           amounts: { CompoundAccount: amount },
           keyword: 'CompoundAccount',
         };
+        const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
         const gInfo = await provideEVMAccount(orch, ctx, seat, gArgs, kit);
+        const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
+        const pos = kit.manager.providePosition(
+          way.poolKey,
+          'Compound',
+          accountId,
+        );
         const feeB = seat.getAmountAllocated('CompoundGmp');
+        // XXX hoist this lookup to once in the contract
         const feeDenom = chainHub.getDenom(feeB.brand);
         const fee = { denom: feeDenom, value: feeB.value };
-        const cp = makeCompoundProtocol({
+        const evmCtx: EVMContext<'compound'> = {
           addresses: contracts[evmChain],
           lca,
           chainHub,
           fee,
-        });
+        };
 
         if ('src' in way) {
-          await cp.supply(move.amount, gInfo);
+          todo.push({
+            how: way.how,
+            src: { proxy: gInfo },
+            amount,
+            dest: { pos },
+            apply: () => CompoundProtocol.supply(evmCtx, amount, gInfo),
+            recover: () => assert.fail('last step. cannot recover'),
+          });
         } else {
-          await cp.withdraw(move.amount, gInfo);
+          todo.push({
+            how: way.how,
+            src: { proxy: gInfo },
+            amount,
+            dest: { pos },
+            apply: () => CompoundProtocol.withdraw(evmCtx, amount, gInfo),
+            recover: () => CompoundProtocol.supply(evmCtx, amount, gInfo),
+          });
         }
         break;
       }

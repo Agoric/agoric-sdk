@@ -393,37 +393,50 @@ const withdrawFromAave = async (
 };
 /* c8 ignore end */
 
-const Compound: EVMInterface = {
+type CompoundI = {
+  supply: ['address', 'uint256'];
+};
+
+const Compound: CompoundI = {
   supply: ['address', 'uint256'],
 };
 
-// XXX add a ctx type to ProtocolDetail
-export const makeCompoundProtocol = (ctx: {
+type EVMContext<CN extends string> = {
   lca: LocalAccount;
   fee: DenomAmount;
-  addresses: Record<'compound' | 'usdc', EVMT['address']>;
+  addresses: Record<CN | 'usdc', EVMT['address']>;
   chainHub: Pick<ChainHub, 'coerceCosmosAddress'>;
-}) => {
-  const { addresses: a, lca, chainHub, fee } = ctx;
-  const axGas = chainHub.coerceCosmosAddress(gmpAddresses.AXELAR_GMP);
-
-  return {
-    protocol: 'Compound',
-    chains: keys(AxelarChain) as AxelarChain[],
-    supply: async (amount: NatAmount, src: AccountInfoFor[AxelarChain]) => {
-      const session = makeEVMSession();
-      const usdc = session.makeContract(a.usdc, ERC20);
-      const compound = session.makeContract(a.compound, Compound);
-      usdc.approve(a.compound, amount.value);
-      compound.supply(a.usdc, amount.value);
-      const calls = session.finish();
-
-      await sendGMPContractCall(src, calls, fee, lca, axGas);
-    },
-    withdraw: async (amount: NatAmount, dest: AccountInfoFor[AxelarChain]) =>
-      assert.fail('TODO'),
-  } as const satisfies ProtocolDetail<'Compound', AxelarChain>;
 };
+
+export const CompoundProtocol = {
+  protocol: 'Compound',
+  chains: keys(AxelarChain) as AxelarChain[],
+  supply: async (
+    ctx: EVMContext<'compound'>,
+    amount: NatAmount,
+    src: AccountInfoFor[AxelarChain],
+  ) => {
+    const { addresses: a, lca, chainHub, fee } = ctx;
+    const axGas = chainHub.coerceCosmosAddress(gmpAddresses.AXELAR_GMP);
+    const session = makeEVMSession();
+    const usdc = session.makeContract(a.usdc, ERC20);
+    const compound = session.makeContract(a.compound, Compound);
+    usdc.approve(a.compound, amount.value);
+    compound.supply(a.usdc, amount.value);
+    const calls = session.finish();
+
+    await sendGMPContractCall(src, calls, fee, lca, axGas);
+  },
+  withdraw: async (
+    ctx: EVMContext<'compound'>,
+    amount: NatAmount,
+    dest: AccountInfoFor[AxelarChain],
+  ) => assert.fail('TODO'),
+} as const satisfies ProtocolDetail<
+  'Compound',
+  AxelarChain,
+  EVMContext<'compound'>
+>;
 
 export const supplyToCompound = async (
   orch: Orchestrator,
