@@ -6,19 +6,13 @@ import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-uti
 import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import type { ParamChangesOfferArgs } from '@agoric/inter-protocol/src/econCommitteeCharter.js';
-import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import {
-  boardSlottingMarshaller,
-  makeAgoricNamesRemotesFromFakeStorage,
-  slotToBoardRemote,
-} from '@agoric/vats/tools/board-utils.js';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Fail } from '@endo/errors';
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';
-const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
 
 const likePayouts = (collateral: number, minted: number) => ({
   Collateral: { value: BigInt(collateral * 1_000_000) },
@@ -29,28 +23,19 @@ const makeDefaultTestContext = async () => {
   console.time('DefaultTestContext');
 
   const storage = makeFakeStorageKit('bootstrapTests');
+
+  const { handleBridgeSend } = makeMockBridgeKit({
+    ibcKit: { handleOutboundMessage: () => String(undefined) },
+    storageKit: storage,
+  });
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
     configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
-    handleBridgeSend: makeMockBridgeKit({ storageKit: storage })
-      .handleBridgeSend,
+    handleBridgeSend,
   });
 
   const { EV, queueAndRun } = swingsetTestKit;
 
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
-
-  const readLatestEntryFromStorage = (path: string) => {
-    let data;
-    try {
-      data = unmarshalFromVstorage(storage.data, path, fromCapData, -1);
-    } catch {
-      // fall back to regular JSON
-      const raw = storage.getValues(path).at(-1);
-      assert(raw, `No data found for ${path}`);
-      data = JSON.parse(raw);
-    }
-    return data;
-  };
 
   // Wait for ATOM to make it into agoricNames
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
@@ -73,7 +58,7 @@ const makeDefaultTestContext = async () => {
   return {
     ...swingsetTestKit,
     agoricNamesRemotes,
-    readLatestEntryFromStorage,
+    storage,
     walletFactoryDriver,
   };
 };
@@ -295,11 +280,7 @@ test.serial('exit bid', async t => {
 });
 
 test.serial('propose change to auction governance param', async t => {
-  const {
-    walletFactoryDriver,
-    agoricNamesRemotes,
-    readLatestEntryFromStorage,
-  } = t.context;
+  const { agoricNamesRemotes, storage, walletFactoryDriver } = t.context;
 
   const gov1 = 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce';
   const wd = await walletFactoryDriver.provideSmartWallet(gov1);
@@ -347,7 +328,7 @@ test.serial('propose change to auction governance param', async t => {
 
   t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
 
-  const lastQuestion = readLatestEntryFromStorage(
+  const lastQuestion = storage.readLatest(
     'published.committees.Economic_Committee.latestQuestion',
   );
   const changes = lastQuestion?.issue?.spec?.changes;

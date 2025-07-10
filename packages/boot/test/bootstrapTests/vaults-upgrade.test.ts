@@ -13,21 +13,14 @@ import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-ki
 import { NonNullish } from '@agoric/internal';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { SECONDS_PER_YEAR } from '@agoric/inter-protocol/src/interest.js';
-import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import {
-  boardSlottingMarshaller,
-  makeAgoricNamesRemotesFromFakeStorage,
-  slotToBoardRemote,
-} from '@agoric/vats/tools/board-utils.js';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Fail } from '@endo/errors';
 import { Far, makeMarshal } from '@endo/marshal';
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';
-
-const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
 
 const makeDefaultTestContext = async ({
   incarnation = 1,
@@ -36,30 +29,17 @@ const makeDefaultTestContext = async ({
 } = {}) => {
   logTiming && console.time('DefaultTestContext');
   // TODO: fix this test for xs-worker
+  const { handleBridgeSend } = makeMockBridgeKit({ storageKit: storage });
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
     configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
     fixupConfig: config => ({
       ...config,
       defaultManagerType: 'local', // FIXME: fix for xs-worker
     }),
-    handleBridgeSend: makeMockBridgeKit({ storageKit: storage })
-      .handleBridgeSend,
+    handleBridgeSend,
   });
 
   const { EV, queueAndRun } = swingsetTestKit;
-
-  const readLatestEntryFromStorage = (path: string) => {
-    let data;
-    try {
-      data = unmarshalFromVstorage(storage.data, path, fromCapData, -1);
-    } catch {
-      // fall back to regular JSON
-      const raw = storage.getValues(path).at(-1);
-      assert(raw, `No data found for ${path}`);
-      data = JSON.parse(raw);
-    }
-    return data;
-  };
 
   logTiming && console.timeLog('DefaultTestContext', 'swingsetTestKit');
 
@@ -82,11 +62,11 @@ const makeDefaultTestContext = async ({
   logTiming && console.timeEnd('DefaultTestContext');
 
   const readRewardPoolBalance = () => {
-    return readLatestEntryFromStorage('published.vaultFactory.metrics')
+    return storage.readLatest('published.vaultFactory.metrics')
       .rewardPoolAllocation.Minted?.value;
   };
   const readCollateralMetrics = vaultManagerIndex =>
-    readLatestEntryFromStorage(
+    storage.readLatest(
       `published.vaultFactory.managers.manager${vaultManagerIndex}.metrics`,
     );
 
@@ -95,7 +75,6 @@ const makeDefaultTestContext = async ({
     agoricNamesRemotes,
     incarnation,
     readCollateralMetrics,
-    readLatestEntryFromStorage,
     readRewardPoolBalance,
     storage,
     walletFactoryDriver,
@@ -123,7 +102,7 @@ test.serial('re-bootstrap', async t => {
   t.true(wd1.isNew);
 
   const assertWalletCount = (_, __) => {
-    oldContext.readLatestEntryFromStorage('published.provisionPool.metrics');
+    oldContext.storage.readLatest('published.provisionPool.metrics');
     // FIXME make wallet provisioning use the provisionPool
     // disabled while wallet provisioning bypasses provisionPool
     // t.like(metrics, { walletsProvisioned }, message);

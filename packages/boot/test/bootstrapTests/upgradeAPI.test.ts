@@ -1,29 +1,20 @@
-import path from 'node:path';
+import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
+import path from 'path';
+import bundleSource from '@endo/bundle-source';
+import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+import { MALLEABLE_NUMBER } from '@agoric/governance/test/swingsetTests/contractGovernor/governedContract.js';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 
+import { makePromiseKit } from '@endo/promise-kit';
+import { makeSwingsetTestKit } from '../../tools/supports.js';
 import {
   makeGovernanceDriver,
   makeWalletFactoryDriver,
-} from '@aglocal/boot/tools/drivers.js';
-import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
-import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
-import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
-import { MALLEABLE_NUMBER } from '@agoric/governance/test/swingsetTests/contractGovernor/governedContract.js';
-import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { makeSwingsetController } from '@agoric/swingset-vat';
-import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import {
-  boardSlottingMarshaller,
-  makeAgoricNamesRemotesFromFakeStorage,
-  slotToBoardRemote,
-} from '@agoric/vats/tools/board-utils.js';
-import bundleSource from '@endo/bundle-source';
-import { makePromiseKit } from '@endo/promise-kit';
+} from '../../tools/drivers.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
-const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
 
 const GOVERNED_CONTRACT_SRC = './governedContract.js';
 const GOVERNED_CONTRACT2_SRC = './governedContract2.js';
@@ -37,12 +28,7 @@ const wallets = [
   'agoric1zayxg4e9vd0es9c9jlpt36qtth255txjp6a8yc',
 ];
 
-const setUpGovernedContract = async (
-  controller: Awaited<ReturnType<typeof makeSwingsetController>>,
-  EV: import('@agoric/swingset-vat/tools/run-utils.js').RunUtils['EV'],
-  timer: import('@agoric/time').TimerService,
-  zoe: ZoeService,
-) => {
+const setUpGovernedContract = async (zoe, timer, EV, controller) => {
   const installBundle = contractBundle => EV(zoe).install(contractBundle);
   const installBundleToVatAdmin = contractBundle =>
     controller.validateAndInstallBundle(contractBundle);
@@ -101,7 +87,6 @@ const setUpGovernedContract = async (
   const governorFacets = await EV(zoe).startInstance(
     governorInstallation,
     {},
-    // @ts-expect-error
     governorTerms,
     {
       governed: {
@@ -119,19 +104,18 @@ const setUpGovernedContract = async (
   };
 };
 
-const makeDefaultTestContext = async () => {
+// A more minimal set would be better. We need governance, but not econ vats.
+const PLATFORM_CONFIG = '@agoric/vm-config/decentral-main-vaults-config.json';
+
+const makeDefaultTestContext = async t => {
   console.time('DefaultTestContext');
-  const storage = makeFakeStorageKit('bootstrapTests');
-  const swingsetTestKit = await makeCosmicSwingsetTestKit({
-    // A more minimal set would be better. We need governance, but not econ vats.
-    configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
-    handleBridgeSend: makeMockBridgeKit({ storageKit: storage })
-      .handleBridgeSend,
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
+    configSpecifier: PLATFORM_CONFIG,
   });
 
-  const { controller, EV, queueAndRun } = swingsetTestKit;
-
+  const { runUtils, storage, controller } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
+  const { EV } = runUtils;
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
   const timer = await EV.vat('bootstrap').consumeItem('chainTimerService');
 
@@ -139,60 +123,42 @@ const makeDefaultTestContext = async () => {
   const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
-    { EV, queueAndRun },
+    runUtils,
     storage,
     agoricNamesRemotes,
   );
 
-  const readLatestEntryFromStorage = (_path: string) => {
-    let data;
-    try {
-      data = unmarshalFromVstorage(storage.data, _path, fromCapData, -1);
-    } catch {
-      // fall back to regular JSON
-      const raw = storage.getValues(_path).at(-1);
-      assert(raw, `No data found for ${_path}`);
-      data = JSON.parse(raw);
-    }
-    return data;
-  };
-
-  const readPublished = (subPath: string) =>
-    readLatestEntryFromStorage(`published.${subPath}`);
-
   const governanceDriver = await makeGovernanceDriver(
-    // @ts-expect-error
-    { ...swingsetTestKit, readPublished },
+    swingsetTestKit,
     agoricNamesRemotes,
     walletFactoryDriver,
     wallets,
   );
 
-  const facets = await setUpGovernedContract(controller, EV, timer, zoe);
+  const facets = await setUpGovernedContract(zoe, timer, EV, controller);
 
   const governedContract = makePromiseKit();
-  return {
-    ...swingsetTestKit,
-    facets,
-    governedContract,
-    governanceDriver,
-    storage,
-  };
+  return { ...swingsetTestKit, facets, governedContract, governanceDriver };
 };
 
 const test = anyTest as TestFn<
   Awaited<ReturnType<typeof makeDefaultTestContext>>
 >;
 
-test.before(async t => (t.context = await makeDefaultTestContext()));
+test.before(async t => {
+  t.context = await makeDefaultTestContext(t);
+});
 
-test.after.always(t => t.context.shutdown?.());
+test.after.always(t => {
+  return t.context.shutdown && t.context.shutdown();
+});
 
-test.serial('start contract; verify', async t => {
-  const { EV, facets } = t.context;
+test.serial(`start contract; verify`, async t => {
+  const { runUtils, facets } = t.context;
   const {
     governorFacets: { creatorFacet },
   } = facets;
+  const { EV } = runUtils;
   const contractPublicFacet = await EV(creatorFacet).getPublicFacet();
 
   const avogadro = await EV(contractPublicFacet).getNum();
@@ -200,8 +166,8 @@ test.serial('start contract; verify', async t => {
   t.is(avogadro, 602214090000000000000000n);
 });
 
-const getQuestionId = (id: number) => `propose-question-${id}`;
-const getVoteId = (id: number) => `vote-${id}`;
+const getQuestionId = id => `propose-question-${id}`;
+const getVoteId = id => `vote-${id}`;
 
 const offerIds = {
   invite: { charter: 'ch', committee: 'ctt' },
@@ -209,18 +175,20 @@ const offerIds = {
   add2: { outgoing: 'add2' },
 };
 
-test.serial('verify API governance', async t => {
+test.serial(`verify API governance`, async t => {
   const {
-    advanceTimeBy,
-    EV,
-    facets: {
-      governorFacets: { creatorFacet, instance },
-    },
+    runUtils,
+    facets,
     governanceDriver,
-    governedContract,
     storage,
+    advanceTimeBy,
+    governedContract,
   } = t.context;
+  const {
+    governorFacets: { creatorFacet, instance },
+  } = facets;
 
+  const { EV } = runUtils;
   const contractPublicFacet = await EV(creatorFacet).getPublicFacet();
 
   const committee = governanceDriver.ecMembers;
@@ -232,6 +200,7 @@ test.serial('verify API governance', async t => {
   const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
   governedContract.resolve(agoricNamesRemotes.instance.governedContract);
 
+  await null;
   for (const member of committee) {
     await member.acceptOutstandingCharterInvitation(offerIds.invite.charter);
     await member.acceptOutstandingCommitteeInvitation(
@@ -275,7 +244,7 @@ test.serial('verify API governance', async t => {
   }
   await advanceTimeBy(1, 'minutes');
 
-  const lastOutcome = governanceDriver.getLatestOutcome();
+  const lastOutcome = await governanceDriver.getLatestOutcome();
   t.is(lastOutcome.outcome, 'win');
 
   const calls = await EV(contractPublicFacet).getApiCalled();
@@ -283,15 +252,14 @@ test.serial('verify API governance', async t => {
 });
 
 test.serial(`upgrade`, async t => {
+  const { runUtils, facets } = t.context;
   const {
-    EV,
-    facets: {
-      governorFacets: { creatorFacet },
-      contract2SHA,
-      poserInvitation2,
-    },
-  } = t.context;
+    governorFacets: { creatorFacet },
+    contract2SHA,
+    poserInvitation2,
+  } = facets;
 
+  const { EV } = runUtils;
   const af = await EV(creatorFacet).getAdminFacet();
 
   await EV(af).upgradeContract(`b1-${contract2SHA}`, {
@@ -305,14 +273,17 @@ test.serial(`upgrade`, async t => {
 
 test.serial(`verify API governance post-upgrade`, async t => {
   const {
-    advanceTimeBy,
-    EV,
-    facets: {
-      governorFacets: { creatorFacet },
-    },
+    runUtils,
+    facets,
     governanceDriver,
+    advanceTimeBy,
     governedContract,
   } = t.context;
+  const {
+    governorFacets: { creatorFacet },
+  } = facets;
+
+  const { EV } = runUtils;
 
   const committee = governanceDriver.ecMembers;
 
@@ -342,7 +313,7 @@ test.serial(`verify API governance post-upgrade`, async t => {
   }
   await advanceTimeBy(1, 'minutes');
 
-  const lastOutcome = governanceDriver.getLatestOutcome();
+  const lastOutcome = await governanceDriver.getLatestOutcome();
   t.is(lastOutcome.outcome, 'win');
 
   const contractPublicFacet = await EV(creatorFacet).getPublicFacet();

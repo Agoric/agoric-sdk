@@ -4,6 +4,7 @@ import type { ExecutionContext, TestFn } from 'ava';
 
 import { createRequire } from 'node:module';
 
+import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
 import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
@@ -27,12 +28,17 @@ export const makeTestContext = async () => {
     s => import(s),
   );
 
+  const { handleBridgeSend } = makeMockBridgeKit({
+    ibcKit: { handleOutboundMessage: () => String(undefined) },
+  });
+
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
     configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
     fixupConfig: config => ({
       ...config,
       bundleCachePath: bundleDir,
     }),
+    handleBridgeSend,
   });
 
   console.timeLog('DefaultTestContext', 'swingsetTestKit');

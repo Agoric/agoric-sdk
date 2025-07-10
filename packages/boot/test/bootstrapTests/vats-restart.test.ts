@@ -15,6 +15,8 @@ import { Fail } from '@endo/errors';
 export const makeTestContext = async () => {
   console.time('DefaultTestContext');
   const storage = makeFakeStorageKit('bootstrapTests');
+
+  const { handleBridgeSend } = makeMockBridgeKit({ storageKit: storage });
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
     // main/production config doesn't have initialPrice, upon which 'open vaults' depends
     configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
@@ -22,8 +24,7 @@ export const makeTestContext = async () => {
       ...config,
       defaultManagerType: 'local', // FIXME: fix for xs-worker
     }),
-    handleBridgeSend: makeMockBridgeKit({ storageKit: storage })
-      .handleBridgeSend,
+    handleBridgeSend,
   });
 
   const { EV, queueAndRun } = swingsetTestKit;

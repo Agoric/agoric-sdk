@@ -1,4 +1,10 @@
 // @ts-check
+import { inspect } from 'node:util';
+
+import {
+  boardSlottingMarshaller,
+  slotToBoardRemote,
+} from '@agoric/vats/tools/board-utils.js';
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import { makeMarshal, Remotable } from '@endo/marshal';
@@ -97,6 +103,7 @@ export const slotStringUnserialize = makeSlotStringUnserialize();
  * @param {Parameters<typeof makeChainStorageRoot>[2]} [rootOptions]
  */
 export const makeFakeStorageKit = (rootPath, rootOptions) => {
+  const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
   const resolvedOptions = { sequence: true, ...rootOptions };
   /** @type {TotalMap<string, string>} */
   const data = new Map();
@@ -234,6 +241,23 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
     return wrapper.values;
   };
 
+  /**
+   * @param {string} path
+   */
+  const readLatest = path => {
+    let value;
+    try {
+      value = unmarshalFromVstorage(data, path, fromCapData, -1);
+    } catch {
+      // fall back to regular JSON
+      const raw = getValues(path).at(-1);
+      assert(raw, `No data found for ${path}`);
+      value = JSON.parse(raw);
+    }
+    trace('readLatest', path, 'returning', inspect(value, false, 20, true));
+    return value;
+  };
+
   return {
     rootNode,
     // eslint-disable-next-line object-shorthand
@@ -241,6 +265,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
     updateNewCellBlockHeight,
     getValues,
     messages,
+    readLatest,
     toStorage,
   };
 };

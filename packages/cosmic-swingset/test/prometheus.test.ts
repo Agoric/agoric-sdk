@@ -3,14 +3,6 @@ import { execa } from 'execa';
 
 import anyTest, { type TestFn, type Implementation } from 'ava';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-import {
-  leadingPrometheusNameRegExp,
-  prometheusSampleRegExp,
-  prometheusNumberValue,
-} from '@agoric/cosmic-swingset/tools/prometheus.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { type TotalMap } from '@agoric/internal';
 import {
   HISTOGRAM_METRICS,
@@ -18,6 +10,13 @@ import {
 } from '@agoric/internal/src/metrics.js';
 import { avaRetry } from '@agoric/internal/tools/avaRetry.js';
 import { q } from '@endo/errors';
+
+import {
+  leadingPrometheusNameRegExp,
+  prometheusSampleRegExp,
+  prometheusNumberValue,
+} from '../tools/prometheus.js';
+import { makeCosmicSwingsetTestKit } from '../tools/test-kit.js';
 
 const test = anyTest as TestFn;
 

@@ -3,26 +3,24 @@
 import anyTest, { type TestFn } from 'ava';
 
 import type { ParamsSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { provideEnhancedKVStore } from '@agoric/cosmic-swingset/src/helpers/bufferedStorage.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import {
-  DEFAULT_SIM_SWINGSET_PARAMS,
-  makeVatCleanupBudgetFromKeywords,
-  type VatCleanupKeywordsRecord,
-} from '@agoric/cosmic-swingset/src/sim-params.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import {
-  defaultBootstrapMessage,
-  defaultInitMessage,
-  makeCosmicSwingsetTestKit,
-} from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { deepCopyJsonable, objectMap } from '@agoric/internal';
 import type { BlockInfo } from '@agoric/internal/src/chain-utils.js';
 import type { SwingSetConfigDescriptor } from '@agoric/swingset-vat';
 import { assert } from '@endo/errors';
 import { E } from '@endo/far';
-import type { KVStore } from '@agoric/cosmic-swingset/src/helpers/bufferedStorage.js';
+
+import {
+  defaultBootstrapMessage,
+  defaultInitMessage,
+  makeCosmicSwingsetTestKit,
+} from '../tools/test-kit.js';
+import {
+  DEFAULT_SIM_SWINGSET_PARAMS,
+  makeVatCleanupBudgetFromKeywords,
+  type VatCleanupKeywordsRecord,
+} from '../src/sim-params.js';
+import { provideEnhancedKVStore } from '../src/helpers/bufferedStorage.js';
+import type { KVStore } from '../src/helpers/bufferedStorage.js';
 
 const test = anyTest as TestFn;
 

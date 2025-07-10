@@ -7,16 +7,6 @@ import nativePath from 'node:path';
 
 import tmp from 'tmp';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-import {
-  extractPortNums,
-  makeLaunchChain,
-  makeQueueStorage,
-} from '@agoric/cosmic-swingset/src/chain-main.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { makeQueue } from '@agoric/cosmic-swingset/src/helpers/make-queue.js';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { DEFAULT_SIM_SWINGSET_PARAMS } from '@agoric/cosmic-swingset/src/sim-params.js';
 import { NonNullish } from '@agoric/internal';
 import {
   QueuedActionType,
@@ -29,7 +19,13 @@ import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { Fail } from '@endo/errors';
-
+import { DEFAULT_SIM_SWINGSET_PARAMS } from '../src/sim-params.js';
+import { makeQueue } from '../src/helpers/make-queue.js';
+import {
+  extractPortNums,
+  makeLaunchChain,
+  makeQueueStorage,
+} from '../src/chain-main.js';
 import { makeMockBridgeKit } from './test-bridge-utils.ts';
 
 /** @import {EReturn} from '@endo/far'; */
@@ -471,7 +467,6 @@ export const makeCosmicSwingsetTestKit = async (
     EV,
     queueAndRun,
     runUntilQueuesEmpty,
-    runUtils: { queueAndRun, EV }, // TODO: remove this
     timer,
 
     // Functions specific to this kit.
