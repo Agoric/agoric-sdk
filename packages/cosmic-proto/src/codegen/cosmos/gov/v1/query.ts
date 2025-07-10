@@ -27,8 +27,28 @@ import {
   type PageResponseSDKType,
 } from '../../base/query/v1beta1/pagination.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+import { isSet } from '../../../helpers.js';
+/** QueryConstitutionRequest is the request type for the Query/Constitution RPC method */
+export interface QueryConstitutionRequest {}
+export interface QueryConstitutionRequestProtoMsg {
+  typeUrl: '/cosmos.gov.v1.QueryConstitutionRequest';
+  value: Uint8Array;
+}
+/** QueryConstitutionRequest is the request type for the Query/Constitution RPC method */
+export interface QueryConstitutionRequestSDKType {}
+/** QueryConstitutionResponse is the response type for the Query/Constitution RPC method */
+export interface QueryConstitutionResponse {
+  constitution: string;
+}
+export interface QueryConstitutionResponseProtoMsg {
+  typeUrl: '/cosmos.gov.v1.QueryConstitutionResponse';
+  value: Uint8Array;
+}
+/** QueryConstitutionResponse is the response type for the Query/Constitution RPC method */
+export interface QueryConstitutionResponseSDKType {
+  constitution: string;
+}
 /** QueryProposalRequest is the request type for the Query/Proposal RPC method. */
 export interface QueryProposalRequest {
   /** proposal_id defines the unique id of the proposal. */
@@ -304,6 +324,139 @@ export interface QueryTallyResultResponseProtoMsg {
 export interface QueryTallyResultResponseSDKType {
   tally?: TallyResultSDKType;
 }
+function createBaseQueryConstitutionRequest(): QueryConstitutionRequest {
+  return {};
+}
+export const QueryConstitutionRequest = {
+  typeUrl: '/cosmos.gov.v1.QueryConstitutionRequest',
+  encode(
+    _: QueryConstitutionRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryConstitutionRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryConstitutionRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(_: any): QueryConstitutionRequest {
+    return {};
+  },
+  toJSON(_: QueryConstitutionRequest): JsonSafe<QueryConstitutionRequest> {
+    const obj: any = {};
+    return obj;
+  },
+  fromPartial(_: Partial<QueryConstitutionRequest>): QueryConstitutionRequest {
+    const message = createBaseQueryConstitutionRequest();
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryConstitutionRequestProtoMsg,
+  ): QueryConstitutionRequest {
+    return QueryConstitutionRequest.decode(message.value);
+  },
+  toProto(message: QueryConstitutionRequest): Uint8Array {
+    return QueryConstitutionRequest.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryConstitutionRequest,
+  ): QueryConstitutionRequestProtoMsg {
+    return {
+      typeUrl: '/cosmos.gov.v1.QueryConstitutionRequest',
+      value: QueryConstitutionRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryConstitutionResponse(): QueryConstitutionResponse {
+  return {
+    constitution: '',
+  };
+}
+export const QueryConstitutionResponse = {
+  typeUrl: '/cosmos.gov.v1.QueryConstitutionResponse',
+  encode(
+    message: QueryConstitutionResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.constitution !== '') {
+      writer.uint32(10).string(message.constitution);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryConstitutionResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryConstitutionResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.constitution = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryConstitutionResponse {
+    return {
+      constitution: isSet(object.constitution)
+        ? String(object.constitution)
+        : '',
+    };
+  },
+  toJSON(
+    message: QueryConstitutionResponse,
+  ): JsonSafe<QueryConstitutionResponse> {
+    const obj: any = {};
+    message.constitution !== undefined &&
+      (obj.constitution = message.constitution);
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryConstitutionResponse>,
+  ): QueryConstitutionResponse {
+    const message = createBaseQueryConstitutionResponse();
+    message.constitution = object.constitution ?? '';
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryConstitutionResponseProtoMsg,
+  ): QueryConstitutionResponse {
+    return QueryConstitutionResponse.decode(message.value);
+  },
+  toProto(message: QueryConstitutionResponse): Uint8Array {
+    return QueryConstitutionResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryConstitutionResponse,
+  ): QueryConstitutionResponseProtoMsg {
+    return {
+      typeUrl: '/cosmos.gov.v1.QueryConstitutionResponse',
+      value: QueryConstitutionResponse.encode(message).finish(),
+    };
+  },
+};
 function createBaseQueryProposalRequest(): QueryProposalRequest {
   return {
     proposalId: BigInt(0),
