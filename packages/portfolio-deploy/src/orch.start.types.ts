@@ -3,7 +3,6 @@ import type { OrchestrationPowers } from '@agoric/orchestration';
 import type { BootstrapManifest } from '@agoric/vats/src/core/lib-boot.js';
 import type { ContractStartFunction } from '@agoric/zoe/src/zoeService/utils';
 import type { CopyRecord } from '@endo/pass-style';
-import type { AxelarChainConfigMap } from './axelar-configs.js';
 
 /** generic permit constraints */
 export type PermitG = BootstrapManifest & { issuer: BootstrapManifest } & {
@@ -21,7 +20,6 @@ export type MakePrivateArgs<
   op: OrchestrationPowersWithStorage,
   m: Marshaller,
   cfg: CFG,
-  axelarConfig: AxelarChainConfigMap,
 ) => Parameters<SF>[1];
 
 export type UpgradeKit<SF extends ContractStartFunction> =

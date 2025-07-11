@@ -108,7 +108,7 @@ export const publishChainInfo = async (
   config,
 ) => {
   const { keys } = Object;
-  const { chainInfo = {}, axelarConfig } = config.options;
+  const { chainInfo = {} } = config.options;
   trace('publishChainInfo', keys(chainInfo));
 
   const agoricNamesNode = E(chainStorage).makeChildNode('agoricNames');

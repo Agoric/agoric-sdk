@@ -97,12 +97,12 @@ test('coreEval code without swingset', async t => {
   );
 
   const options = toExternalConfig(
-    harden({ assetInfo: [], chainInfo: {}, net: 'local' }),
+    harden({ axelarConfig, assetInfo: [], chainInfo: {}, net: 'local' }),
     {},
     // currently no config. PortfolioConfigShape,
   );
   t.log('invoke coreEval');
-  await t.notThrowsAsync(startPortfolio(powers, { options }, axelarConfig));
+  await t.notThrowsAsync(startPortfolio(powers, { options }));
 
   // TODO:  common.mocks.ibcBridge.setAddressPrefix('noble');
   for (const { msg, ack } of Object.values(makeUSDNIBCTraffic())) {
