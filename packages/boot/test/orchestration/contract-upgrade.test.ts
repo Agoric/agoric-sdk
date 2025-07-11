@@ -1,27 +1,25 @@
 /** @file Bootstrap test of restarting contracts using orchestration */
-
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
+import { BridgeId } from '@agoric/internal';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import { withChainCapabilities } from '@agoric/orchestration';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
-} from '@aglocal/boot/test/bootstrapTests/walletFactory.js';
-import { minimalChainInfos } from '@aglocal/boot/test/tools/chainInfo.js';
-import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
-import { withChainCapabilities } from '@agoric/orchestration';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
-import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+} from '../bootstrapTests/walletFactory.js';
+import { minimalChainInfos } from '../tools/chainInfo.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
-
 test.before(async t => {
-  t.context = await makeWalletFactoryContext({
-    configSpecifier:
-      '@agoric/vm-config/decentral-itest-orchestration-config.json',
-  });
+  t.context = await makeWalletFactoryContext(
+    t,
+    '@agoric/vm-config/decentral-itest-orchestration-config.json',
+  );
 });
-test.after.always(t => t.context.swingsetTestKit.shutdown?.());
+test.after.always(t => t.context.shutdown?.());
 
 /**
  * This test core-evals an installation of the sendAnywhere contract that
@@ -34,44 +32,37 @@ test.after.always(t => t.context.swingsetTestKit.shutdown?.());
  */
 test('resume', async t => {
   const {
-    agoricNamesRemotes,
-    storage,
-    swingsetTestKit: {
-      evaluateCoreProposal,
-      pushQueueRecord,
-      runUntilQueuesEmpty,
-    },
     walletFactoryDriver,
+    bridgeUtils: { runInbound },
+    buildProposal,
+    evalProposal,
+    storage,
   } = t.context;
 
-  const { IST } = agoricNamesRemotes.brand;
+  const { IST } = t.context.agoricNamesRemotes.brand;
 
-  console.log('start sendAnywhere');
-  await evaluateCoreProposal(
-    await buildProposal(
-      '@agoric/builders/scripts/testing/init-send-anywhere.js',
-      [
-        '--chainInfo',
-        JSON.stringify(withChainCapabilities(minimalChainInfos)),
-        '--assetInfo',
-        JSON.stringify([
-          [
-            'uist',
-            {
-              baseDenom: 'uist',
-              brandKey: 'IST',
-              baseName: 'agoric',
-              chainName: 'agoric',
-            },
-          ],
-        ]),
-      ],
-    ),
+  t.log('start sendAnywhere');
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/testing/init-send-anywhere.js', [
+      '--chainInfo',
+      JSON.stringify(withChainCapabilities(minimalChainInfos)),
+      '--assetInfo',
+      JSON.stringify([
+        [
+          'uist',
+          {
+            baseDenom: 'uist',
+            brandKey: 'IST',
+            baseName: 'agoric',
+            chainName: 'agoric',
+          },
+        ],
+      ]),
+    ]),
   );
 
-  console.log('making offer');
+  t.log('making offer');
   const wallet = await walletFactoryDriver.provideSmartWallet('agoric1test');
-
   // no money in wallet to actually send
   const zero = { brand: IST, value: 0n };
   // send because it won't resolve
@@ -88,7 +79,6 @@ test('resume', async t => {
     },
     offerArgs: { destAddr: 'cosmos1whatever', chainName: 'cosmoshub' },
   });
-  await runUntilQueuesEmpty();
 
   // XXX golden test
   const getLogged = () =>
@@ -101,16 +91,15 @@ test('resume', async t => {
     'completed transfer to localAccount',
   ]);
 
-  console.log('null upgrading sendAnywhere');
-  await evaluateCoreProposal(
-    await buildProposal(
-      '@agoric/builders/scripts/testing/upgrade-send-anywhere.js',
-    ),
+  t.log('null upgrading sendAnywhere');
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/testing/upgrade-send-anywhere.js'),
   );
 
   // simulate ibc/MsgTransfer ack from remote chain, enabling `.transfer()` promise
   // to resolve
-  pushQueueRecord(
+  await runInbound(
+    BridgeId.VTRANSFER,
     buildVTransferEvent({
       sender: makeTestAddress(),
       target: makeTestAddress(),
@@ -118,7 +107,6 @@ test('resume', async t => {
       sequence: '1',
     }),
   );
-  await runUntilQueuesEmpty();
 
   t.deepEqual(getLogged(), [
     'sending {0} from cosmoshub to cosmos1whatever',

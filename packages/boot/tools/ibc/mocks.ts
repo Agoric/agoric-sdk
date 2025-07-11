@@ -4,14 +4,6 @@ import type { IBCChannelID, IBCEvent, IBCMethod } from '@agoric/vats';
 
 /** @import { IBCChannelID, IBCMethod, IBCEvent } from '@agoric/vats'; */
 
-export const IBC_METHODS = {
-  BIND_PORT: 'bindPort',
-  SEND_PACKET: 'sendPacket',
-  START_CHANNEL_OPEN_INIT: 'startChannelOpenInit',
-} as const;
-
-export const MESSAGE_TYPE = 'IBC_METHOD';
-
 const responses = {
   // {"result":"+/cosmos.staking.v1beta1.MsgDelegateResponse"}
   delegate:

@@ -1,14 +1,11 @@
 import { BridgeId, VBankAccount } from '@agoric/internal';
-import { MESSAGE_TYPE as IBC_MESSAGE_TYPE } from '@aglocal/boot/tools/ibc/mocks.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { fakeLocalChainBridgeTxMsgHandler } from '@agoric/vats/tools/fake-bridge.js';
 import { Fail, q } from '@endo/errors';
 
 type MockBridgeOptions = {
-  ibcKit: {
-    handleOutboundMessage: (destinationPort: BridgeId, msg: any) => unknown;
-  };
+  ibcKit: { handleOutboundMessage: (msg: any) => unknown };
   outboundMessages: Map<BridgeId, any[]>;
   storageKit: import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit;
 };
@@ -21,7 +18,6 @@ export const makeMockBridgeKit = ({
   outboundMessages = new Map(),
   storageKit = makeFakeStorageKit(''),
 }: Partial<MockBridgeOptions> = {}) => {
-  const bridgeTargetRegistered = new Set<string>();
   let lastBankNonce = 0;
   let lcaAccountsCreated = 0;
   let lcaSequenceNonce = 0;
@@ -40,8 +36,7 @@ export const makeMockBridgeKit = ({
       return storageKit.toStorage(obj as unknown as StorageMessage);
 
     // `ibcKit` handles the "IBC_METHOD" type for all ports.
-    if (obj.type === IBC_MESSAGE_TYPE)
-      return ibcKit.handleOutboundMessage(destinationPort, obj);
+    if (obj.type === 'IBC_METHOD') return ibcKit.handleOutboundMessage(obj);
 
     // All other sends are handled by port and type.
     const bridgeType = `${destinationPort}:${obj.type}`;
@@ -74,15 +69,6 @@ export const makeMockBridgeKit = ({
         return obj.messages.map(message =>
           fakeLocalChainBridgeTxMsgHandler(message, lcaSequenceNonce),
         );
-      }
-
-      case `${BridgeId.VTRANSFER}:BRIDGE_TARGET_REGISTER`: {
-        bridgeTargetRegistered.add(obj.target);
-        return String(undefined);
-      }
-      case `${BridgeId.VTRANSFER}:BRIDGE_TARGET_UNREGISTER`: {
-        bridgeTargetRegistered.delete(obj.target);
-        return String(undefined);
       }
       default:
         Fail`bridge port ${q(destinationPort)} not implemented for message type ${q(obj.type)}`;
