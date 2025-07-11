@@ -5,24 +5,16 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { type NatAmount } from '@agoric/ertp';
-import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { objectMap } from '@endo/patterns';
-import type { YieldProtocol } from '../src/constants.js';
+import { E } from '@endo/far';
+import { type YieldProtocol } from '../src/constants.js';
 import {
   grokRebalanceScenarios,
   importCSV,
-  numeral,
-  type Dollars,
+  withBrand,
 } from '../tools/rebalance-grok.ts';
-import {
-  setupTrader,
-  simulateAckTransferToAxelar,
-  simulateCCTPAck,
-  simulateUpcallFromAxelar,
-} from './contract-setup.ts';
-
-const obArgs = { destinationEVMChain: 'Ethereum' } as const; // TODO: should be optional
+import { setupTrader, simulateUpcallFromAxelar } from './contract-setup.ts';
+import { localAccount0 } from './mocks.ts';
 
 const rebalanceScenarioMacro = test.macro({
   async exec(t, description: string) {
@@ -32,44 +24,54 @@ const rebalanceScenarioMacro = test.macro({
     t.log('start', description, 'with', myBalance);
 
     const { usdc } = common.brands;
-    const $ = (amt: Dollars) =>
-      multiplyBy(usdc.units(1), parseRatio(numeral(amt), usdc.brand));
+    const s2 = withBrand(scenario, usdc.brand);
+
+    if (description.includes('Recover')) {
+      // simulate arrival of funds in the LCA via IBC from Noble
+      const funds = await common.utils.pourPayment(usdc.units(500));
+      const { bankManager } = common.bootstrap;
+      const bank = E(bankManager).getBankForAddress(localAccount0);
+      const purse = E(bank).getPurse(usdc.brand);
+      await E(purse).deposit(funds);
+    }
 
     const openPortfolio = async (
       give: Partial<Record<YieldProtocol, NatAmount>>,
+      offerArgs = {},
     ) => {
-      const doneP = trader1.openPortfolio(t, give, obArgs);
+      const doneP = trader1.openPortfolio(t, give, offerArgs);
 
-      await eventLoopIteration();
-      if (Object.keys(give).length > 0) {
-        await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-      }
-      if ('Aave' in give || 'Compound' in give) {
-        await simulateUpcallFromAxelar(common.mocks.transferBridge).then(() =>
-          simulateCCTPAck(common.utils).finally(() =>
-            simulateAckTransferToAxelar(common.utils),
-          ),
-        );
+      const { flow: moves = [] } = offerArgs;
+      console.log('@@@openPortfolio moves', moves);
+
+      for (const { dest } of moves) {
+        await eventLoopIteration();
+        if (dest === '@Ethereum') {
+          await simulateUpcallFromAxelar(common.mocks.transferBridge);
+        }
+        try {
+          await common.utils.transmitVTransferEvent(
+            'acknowledgementPacket',
+            -1,
+          );
+        } catch (oops) {
+          console.error('nothing to ack?', oops);
+        }
       }
       const { result, payouts } = await doneP;
       return { result, payouts };
     };
 
     // Convert scenario amounts to ERTP amounts
-    const give = objectMap(scenario.proposal.give, a => $(a!));
-    const want = objectMap(scenario.proposal.want, a => $(a!));
-    const before = objectMap(scenario.before, a => $(a!));
-    const openOnly = Object.keys(before).length === 0;
-    const openResult = await openPortfolio(openOnly ? give : before);
-
-    const offerArgs =
-      'Aave' in give || 'Compound' in give
-        ? { destinationEVMChain: 'Ethereum' as const }
-        : {};
+    const openOnly = Object.keys(s2.before).length === 0;
+    const openResult = await openPortfolio(
+      openOnly ? s2.proposal.give : s2.before,
+      openOnly ? s2.offerArgs : {},
+    );
 
     const { result, payouts } = await (openOnly
       ? openResult
-      : trader1.rebalance(t, { give, want }, offerArgs));
+      : trader1.rebalance(t, s2.proposal, s2.offerArgs));
 
     const portfolioPath = trader1.getPortfolioPath();
     t.truthy(portfolioPath);
@@ -80,19 +82,15 @@ const rebalanceScenarioMacro = test.macro({
 
     t.log('after:', portfolioPath, portfolioStatus);
 
-    const txfrs = await trader1.netTransfersByProtocol();
-    t.log('net transfers by protocol', txfrs);
-    t.deepEqual(
-      txfrs,
-      objectMap(scenario.after, $),
-      'net transfers should match After row',
-    );
+    const txfrs = await trader1.netTransfersByPosition();
+    t.log('net transfers by position', txfrs);
+    t.deepEqual(txfrs, s2.after, 'net transfers should match After row');
 
     t.log('payouts', payouts);
     const { Access: _, ...skipAssets } = payouts;
-    t.deepEqual(skipAssets, objectMap(scenario.payouts, $), 'payouts');
+    t.deepEqual(skipAssets, s2.payouts, 'payouts');
 
-    // TODO: inspect bridge for correct flow to remote chains?
+    // XXX: inspect bridge for netTransfersByPosition chains?
   },
   title(providedTitle = '', description: string) {
     return `${providedTitle} ${description}`.trim();
@@ -100,8 +98,26 @@ const rebalanceScenarioMacro = test.macro({
 });
 
 test('scenario:', rebalanceScenarioMacro, 'Open empty portfolio');
+test('scenario:', rebalanceScenarioMacro, 'Open portfolio with USDN position');
+test('scenario:', rebalanceScenarioMacro, 'Recover funds from Noble ICA');
+test('scenario:', rebalanceScenarioMacro, 'Open with 3 positions');
+
 test.skip('scenario:', rebalanceScenarioMacro, 'Aave -> USDN');
 
-const scenariosP = importCSV('./rebalance-cases.csv', import.meta.url).then(
-  data => grokRebalanceScenarios(data),
+const scenariosP = importCSV('./move-cases.csv', import.meta.url).then(data =>
+  grokRebalanceScenarios(data),
 );
+
+test('list scenarios', async t => {
+  const tested = [
+    'Open empty portfolio',
+    'Open portfolio with USDN position',
+    'Recover funds from Noble ICA',
+    'Open with 3 positions',
+  ];
+  const scenarios = await scenariosP;
+  const names = Object.keys(scenarios);
+  const todo = names.filter(n => !tested.includes(n));
+  t.log('tested:', tested.length, 'todo:', todo.length, todo);
+  t.true(names.length >= 3);
+});

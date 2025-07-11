@@ -19,7 +19,6 @@ sequenceDiagram
     %% Notation: ->> for initial message, -->> for consequences
 
     trader ->> ymax: openPortfolio({give:<br/>{Aave: 3k, Compound: 2k,<br/>USDN: 3K}})
-    note left of flow: *TODO(11456):<br/>USDN/USDC ratio
 
     ymax -->> flow: (seat, ...*)
 
@@ -39,7 +38,6 @@ sequenceDiagram
     ICAn -->> portfolio: ack
 
     flow -->> ICAn: executeEncodedTx(<br/>[MsgSwap(3K),MsgLock(3K*)])
-    note left of ICAn: *TODO(11456):<br/>USDN/USDC ratio
     ICAn -->> USDN: [MsgSwap(3K),MsgLock(3K*)]
     USDN -->> ICAn: ack
     ICAn -->> flow: ack

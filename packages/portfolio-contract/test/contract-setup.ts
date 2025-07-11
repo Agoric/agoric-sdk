@@ -10,7 +10,11 @@ import { passStyleOf } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import * as contractExports from '../src/portfolio.contract.ts';
-import { contractAddressesMock, makeUSDNIBCTraffic } from './mocks.ts';
+import {
+  contractAddressesMock,
+  makeCCTPTraffic,
+  makeUSDNIBCTraffic,
+} from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import {
   chainInfoFantasyTODO,
@@ -32,7 +36,7 @@ const deploy = async (t: ExecutionContext) => {
     await bundleAndInstall(contractExports);
   t.is(passStyleOf(installation), 'remotable');
 
-  const { usdc, poc26 } = common.brands;
+  const { usdc, poc26, bld } = common.brands;
   const timerService = buildZoeManualTimer();
 
   // List of all chains whose `chainInfo` is utilized by the Portfolio contract.
@@ -61,7 +65,7 @@ const deploy = async (t: ExecutionContext) => {
 
   const started = await E(zoe).startInstance(
     installation,
-    { USDC: usdc.issuer, Access: poc26.issuer },
+    { USDC: usdc.issuer, Fee: bld.issuer, Access: poc26.issuer },
     {}, // terms
     {
       ...common.commonPrivateArgs,
@@ -86,24 +90,34 @@ const deploy = async (t: ExecutionContext) => {
 
 export const setupTrader = async (t, initial = 10_000) => {
   const { common, zoe, started, timerService } = await deploy(t);
-  const { usdc, poc26 } = common.brands;
+  const { usdc, bld, poc26 } = common.brands;
   const { when } = common.utils.vowTools;
 
   const { storage } = common.bootstrap;
   const readPublished = (async subpath => {
+    await eventLoopIteration();
     const val = storage.getDeserialized(`orchtest.${subpath}`).at(-1);
     return val;
   }) as unknown as VstorageKit['readPublished'];
   const myBalance = usdc.units(initial);
   const funds = await common.utils.pourPayment(myBalance);
   const { mint: _, ...poc26SansMint } = poc26;
-  const myWallet = makeWallet({ USDC: usdc, Access: poc26SansMint }, zoe, when);
+  const { mint: _b, ...bldSansMint } = bld;
+  const myWallet = makeWallet(
+    { USDC: usdc, BLD: bldSansMint, Access: poc26SansMint },
+    zoe,
+    when,
+  );
   await E(myWallet).deposit(funds);
   await E(myWallet).deposit(poc26.mint.mintPayment(poc26.make(1n)));
+  await E(myWallet).deposit(bld.mint.mintPayment(bld.make(10_000n)));
   const trader1 = makeTrader(myWallet, started.instance, readPublished);
 
   const { ibcBridge } = common.mocks;
   for (const { msg, ack } of values(makeUSDNIBCTraffic())) {
+    ibcBridge.addMockAck(msg, ack);
+  }
+  for (const { msg, ack } of values(makeCCTPTraffic())) {
     ibcBridge.addMockAck(msg, ack);
   }
 

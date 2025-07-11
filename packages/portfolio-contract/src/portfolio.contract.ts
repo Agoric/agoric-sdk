@@ -6,6 +6,7 @@
 import {
   makeTracer,
   mustMatch,
+  NonNullish,
   type Remote,
   type TypedPattern,
 } from '@agoric/internal';
@@ -20,6 +21,7 @@ import {
   registerChainsAndAssets,
   withOrchestration,
   type ChainInfo,
+  type CosmosChainInfo,
   type Denom,
   type DenomDetail,
   type OrchestrationPowers,
@@ -136,13 +138,18 @@ export const contract = async (
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
 
   assert(brands.USDC, 'USDC missing from brands in terms');
+  assert(brands.Fee, 'Fee missing from brands in terms');
 
   // TODO: only on 1st incarnation
   registerChainsAndAssets(chainHub, brands, chainInfo, assetInfo, {
     log: trace,
   });
 
-  const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
+  const proposalShapes = makeProposalShapes(
+    brands.USDC,
+    brands.Fee,
+    brands.Access,
+  );
 
   // Until we find a need for on-chain subscribers, this stop-gap will do.
   const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
@@ -154,11 +161,24 @@ export const contract = async (
     },
   };
 
-  const denom = chainHub.getDenom(brands.USDC);
-  assert(denom, 'no denom for USDC brand');
   const ctx1 = {
     zoeTools,
-    usdc: { brand: brands.USDC, denom },
+    usdc: {
+      brand: brands.USDC,
+      denom: NonNullish(
+        chainHub.getDenom(brands.USDC),
+        'no denom for USDC brand',
+      ),
+    },
+    gmpFeeInfo: {
+      brand: brands.Fee,
+      denom: NonNullish(
+        chainHub.getDenom(brands.Fee),
+        'no denom for Fee brand',
+      ),
+      // to expand AXELAR_GMP to a CosmosChainAddress
+      chainId: (chainInfo.axelar as CosmosChainInfo).chainId,
+    },
     contracts,
   };
 
@@ -178,7 +198,9 @@ export const contract = async (
     rebalanceFromTransfer,
     proposalShapes,
     timer: timerService,
-    chainHubTools: { getChainInfo: chainHub.getChainInfo.bind(chainHub) },
+    chainHubTools: {
+      getChainInfo: chainHub.getChainInfo.bind(chainHub),
+    },
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller,
     usdcBrand: brands.USDC,
@@ -241,7 +263,6 @@ harden(contract);
 
 const keepDocsTypesImported:
   | undefined
-  // | SupportedEVMChains // XXX change to SupportedChain
   | YieldProtocol
   | OfferArgsFor
   | PortfolioKit

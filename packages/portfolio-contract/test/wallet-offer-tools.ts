@@ -94,16 +94,13 @@ export interface WalletTool {
 
 export const makeWallet = (
   assets: Record<
-    'USDC' | 'Access',
+    'USDC' | 'BLD' | 'Access',
     Omit<ReturnType<typeof withAmountUtils>, 'mint'>
   >,
   zoe: ZoeService,
   when,
 ): WalletTool => {
-  const purses = {
-    USDC: assets.USDC.issuer.makeEmptyPurse(),
-    Access: assets.Access.issuer.makeEmptyPurse(),
-  };
+  const purses = objectMap(assets, a => a.issuer.makeEmptyPurse());
 
   const providePurse = (b: Brand) =>
     purses[

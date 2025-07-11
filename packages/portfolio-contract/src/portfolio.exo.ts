@@ -10,8 +10,8 @@ import type {
 } from '@agoric/internal/src/lib-chainStorage.js';
 import {
   type AccountId,
-  type ActualChainInfo,
   type CaipChainId,
+  type ChainHub,
 } from '@agoric/orchestration';
 import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
@@ -31,13 +31,12 @@ import { M } from '@endo/patterns';
 import { AxelarChain, SupportedChain, YieldProtocol } from './constants.js';
 import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
-import type { PoolKey, StatusFor } from './type-guards.js';
+import type { makeProposalShapes, PoolKey, StatusFor } from './type-guards.js';
 import {
   makeFlowPath,
   makePortfolioPath,
   OfferArgsShapeFor,
   PoolKeyShape,
-  type makeProposalShapes,
   type OfferArgsFor,
 } from './type-guards.js';
 
@@ -169,9 +168,7 @@ export const preparePortfolioKit = (
       handled: boolean;
     }>;
     timer: Remote<TimerService>;
-    chainHubTools: {
-      getChainInfo: <K extends string>(chainName: K) => Vow<ActualChainInfo<K>>;
-    };
+    chainHubTools: Pick<ChainHub, 'getChainInfo'>;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     vowTools: VowTools;
     zcf: ZCF;
@@ -378,8 +375,10 @@ export const preparePortfolioKit = (
         reserveAccount<C extends SupportedChain>(
           chainName: C,
         ): undefined | Vow<AccountInfoFor[C]> {
+          trace('reserveAccount', chainName);
           const { accounts, accountsPending } = this.state;
           if (accounts.has(chainName)) {
+            trace('accounts.has', chainName);
             return vowTools.asVow(async () => {
               const infoAny = accounts.get(chainName);
               assert.equal(infoAny.chainName, chainName);
@@ -388,10 +387,13 @@ export const preparePortfolioKit = (
             });
           }
           if (accountsPending.has(chainName)) {
+            trace('accountsPending.has', chainName);
             return accountsPending.get(chainName).vow as Vow<AccountInfoFor[C]>;
           }
           const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
+          trace('accountsPending.init', chainName);
           accountsPending.init(chainName, pending);
+          this.facets.reporter.publishStatus();
           return undefined;
         },
         resolveAccount(info: AccountInfo) {

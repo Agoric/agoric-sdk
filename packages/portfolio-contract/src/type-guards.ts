@@ -8,8 +8,8 @@
  * makers for ongoing operations like rebalancing.
  *
  * **Proposals and Offer Args**
- * - {@link ProposalType.openPortfolio}: Initial funding with USDC, Access tokens, and protocol allocations
- * - {@link ProposalType.rebalance}: Add funds (give) or withdraw funds (want) from protocols
+ * - {@link ProposalType0.openPortfolio}: Initial funding with USDC, Access tokens, and protocol allocations
+ * - {@link ProposalType0.rebalance}: Add funds (give) or withdraw funds (want) from protocols
  * - {@link OfferArgsFor}: Cross-chain parameters like `destinationEVMChain` for EVM operations
  *
  * **VStorage Data**
@@ -20,7 +20,12 @@
  *
  * For usage examples, see `makeTrader` in {@link ../test/portfolio-actors.ts}.
  */
-import { type Amount, type Brand, type NatValue } from '@agoric/ertp';
+import {
+  type Amount,
+  type Brand,
+  type NatAmount,
+  type NatValue,
+} from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { AnyNatAmountShape, type AccountId } from '@agoric/orchestration';
 import type {
@@ -32,6 +37,10 @@ import { M } from '@endo/patterns';
 import { AxelarChain, YieldProtocol } from './constants.js';
 import type { EVMContractAddresses, start } from './portfolio.contract.js';
 import type { PortfolioKit } from './portfolio.exo.js';
+import { makeGMPGiveRestShape, type GmpGive } from './pos-gmp-shapes.js';
+import { makeUSDNGiveFields } from './pos-usdn-shapes.js';
+
+export type { OfferArgsFor } from './type-guards-steps.js';
 
 // #region preliminaries
 const { fromEntries, keys } = Object;
@@ -66,17 +75,6 @@ export type PortfolioContinuingInvitationMaker =
   keyof PortfolioKit['invitationMakers'];
 
 // #region Proposal Shapes
-export type AaveGive = {
-  AaveGmp: Amount<'nat'>;
-  AaveAccount: Amount<'nat'>;
-  Aave: Amount<'nat'>;
-};
-export type CompoundGive = {
-  CompoundGmp: Amount<'nat'>;
-  CompoundAccount: Amount<'nat'>;
-  Compound: Amount<'nat'>;
-};
-export type GmpGive = {} | AaveGive | CompoundGive | (AaveGive & CompoundGive);
 export type OpenPortfolioGive = {
   USDN?: Amount<'nat'>;
   NobleFees?: Amount<'nat'>;
@@ -90,6 +88,59 @@ export type OpenPortfolioGive = {
  * **rebalance**: Add funds (give) or withdraw funds (want) from protocols
  */
 export type ProposalType = {
+  openPortfolio: {
+    give: {
+      /** required iff the contract was started with an Access issuer */
+      Access?: NatAmount;
+      Deposit?: NatAmount;
+      GmpFee?: NatAmount;
+    };
+  };
+  rebalance:
+    | { give: { Deposit?: NatAmount; GmpFee?: NatAmount }; want: {} }
+    | { want: { Cash: NatAmount }; give: { GmpFee?: NatAmount } };
+};
+
+export const makeProposalShapes = (
+  usdcBrand: Brand<'nat'>,
+  feeBrand: Brand<'nat'>,
+  accessBrand?: Brand<'nat'>,
+) => {
+  // TODO: Update usdcAmountShape, to include BLD/aUSDC after discussion with Axelar team
+  const $Shape = makeNatAmountShape(usdcBrand);
+  const FeeShape = makeNatAmountShape(feeBrand);
+  const accessShape = accessBrand
+    ? { Access: makeNatAmountShape(accessBrand, 1n) }
+    : {};
+
+  const openPortfolio = M.splitRecord(
+    {
+      give: M.splitRecord(
+        accessShape,
+        { Deposit: $Shape, GmpFee: FeeShape },
+        {},
+      ),
+    },
+    { want: {}, exit: M.any() },
+    {},
+  ) as TypedPattern<ProposalType['openPortfolio']>;
+  const rebalance = M.or(
+    M.splitRecord(
+      { give: M.splitRecord({}, { Deposit: $Shape, GmpFee: FeeShape }, {}) },
+      { want: {}, exit: M.any() },
+      {},
+    ),
+    M.splitRecord(
+      { want: M.splitRecord({ Cash: $Shape }, {}, {}) },
+      { give: M.splitRecord({}, { GmpFee: FeeShape }, {}), exit: M.any() },
+      {},
+    ),
+  ) as TypedPattern<ProposalType['rebalance']>;
+  return harden({ openPortfolio, rebalance });
+};
+harden(makeProposalShapes);
+
+export type ProposalType0 = {
   openPortfolio: { give: OpenPortfolioGive };
   rebalance:
     | { give: OpenPortfolioGive; want: {} }
@@ -98,35 +149,19 @@ export type ProposalType = {
 
 const YieldProtocolShape = M.or(...keys(YieldProtocol));
 
-export const makeProposalShapes = (
+export const makeProposalShapes0 = (
   usdcBrand: Brand<'nat'>,
   accessBrand?: Brand<'nat'>,
 ) => {
   // TODO: Update usdcAmountShape, to include BLD/aUSDC after discussion with Axelar team
   const usdcAmountShape = makeNatAmountShape(usdcBrand);
-  const AaveGiveShape = harden({
-    Aave: usdcAmountShape,
-    AaveGmp: usdcAmountShape,
-    AaveAccount: usdcAmountShape,
-  });
-  const CompoundGiveShape = harden({
-    Compound: usdcAmountShape,
-    CompoundGmp: usdcAmountShape,
-    CompoundAccount: usdcAmountShape,
-  });
 
   // The give for openPortfolio and rebalance differ only in required properties
   const giveWith = x => {
     return M.splitRecord(
       x,
-      { USDN: usdcAmountShape, NobleFees: usdcAmountShape },
-      M.or(
-        harden({}),
-        AaveGiveShape,
-        CompoundGiveShape,
-        // TODO: and no others
-        M.and(M.splitRecord(AaveGiveShape), M.splitRecord(CompoundGiveShape)),
-      ),
+      makeUSDNGiveFields(usdcAmountShape),
+      makeGMPGiveRestShape(usdcAmountShape),
     );
   };
 
@@ -139,7 +174,7 @@ export const makeProposalShapes = (
       },
       { want: {}, exit: M.any() },
       {},
-    ) as TypedPattern<ProposalType['openPortfolio']>,
+    ) as TypedPattern<ProposalType0['openPortfolio']>,
     rebalance: M.or(
       M.splitRecord({ give: giveWith({}) }, { want: {}, exit: M.any() }, {}),
       M.splitRecord(
@@ -147,7 +182,7 @@ export const makeProposalShapes = (
         { give: {}, exit: M.any() },
         {},
       ),
-    ) as TypedPattern<ProposalType['rebalance']>,
+    ) as TypedPattern<ProposalType0['rebalance']>,
   };
 };
 // #endregion
@@ -217,7 +252,7 @@ const offerArgsShape: TypedPattern<OfferArgs1> = M.splitRecord(
   },
 );
 
-export type OfferArgsFor = {
+export type OfferArgsFor0 = {
   openPortfolio: OfferArgs1;
   rebalance: OfferArgs1;
 };
@@ -265,17 +300,13 @@ type FlowStatus = {
   amount: Amount<'nat'>;
   error?: string;
 };
-type GMPStatusTODO = {
-  protocol: YieldProtocol;
-  accountId: AccountId | undefined;
-};
 
 // XXX relate paths to types a la readPublished()
 export type StatusFor = {
   portfolio: {
     positionKeys: PoolKey[];
     flowCount: number;
-    // TODO: accountIdByChain: Record<ChainAccountKey, AccountId>;
+    // XXX: accountIdByChain: Record<ChainAccountKey, AccountId>;
     accountIdByChain: Record<string, AccountId>;
   };
   position: {
@@ -286,10 +317,7 @@ export type StatusFor = {
     totalOut: Amount<'nat'>;
   };
   // XXX refactor using AssetMoveDesc
-  flow:
-    | FlowStatus
-    | (Omit<FlowStatus, 'dest'> & { where: string }) // recovery failed
-    | GMPStatusTODO;
+  flow: FlowStatus | (Omit<FlowStatus, 'dest'> & { where: string }); // recovery failed
 };
 
 export const PoolKeyShape = M.string(); // prefer string over M.or(...) for extensibility
