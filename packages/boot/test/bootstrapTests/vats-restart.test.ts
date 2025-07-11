@@ -18,7 +18,6 @@ export const makeTestContext = async () => {
 
   const { handleBridgeSend } = makeMockBridgeKit({ storageKit: storage });
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
-    // main/production config doesn't have initialPrice, upon which 'open vaults' depends
     configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
     fixupConfig: config => ({
       ...config,
@@ -65,7 +64,9 @@ const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';
 
-test.before(async t => (t.context = await makeTestContext()));
+test.before(async t => {
+  t.context = await makeTestContext();
+});
 test.after.always(t => t.context.shutdown?.());
 
 const walletAddr = 'agoric1a';

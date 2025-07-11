@@ -56,7 +56,7 @@ export const makeProposalExtractor = (
     builderPath: string,
     args: Array<string> = [],
   ) => {
-    await Promise.resolve();
+    await null;
 
     const [builtDir, cleanup] = tmpDir('agoric-proposal');
 

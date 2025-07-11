@@ -129,9 +129,9 @@ const baseConfig = harden({
  *
  * @param {object} [options]
  * @param {string[]} [options.addBootstrapBehaviors] additional specific
- *   behavior functions to augment bootstrap manifest (see
+ *   behavior functions to augment the bootstrap manifest (see
  *   `baseBootstrapManifest` and {@link ../../vats/src/core})
- * @param {keyof import('@agoric/vats/tools/bootstrap-chain-reflective.js').BootstrapManifests} [options.baseBootstrapManifest] identifies the collection of
+ * @param {import('@agoric/vats/tools/bootstrap-chain-reflective.js').BootstrapManifestName} [options.baseBootstrapManifest] identifies the collection of
  *   "behaviors" to run at bootstrap for creating and configuring the initial
  *   population of vats (see
  *   {@link ../../vats/tools/bootstrap-chain-reflective.js})
@@ -154,7 +154,7 @@ const baseConfig = harden({
  * @param {Replacer<SwingSetConfig>} [options.fixupConfig] a final opportunity
  *   to make any changes
  * @param {((destPort: string, msg: unknown) => unknown)} [options.handleBridgeSend]
- * receives and responds to bridge messages outbound from the SwingSet kernel
+ *   receives and responds to bridge messages outbound from the SwingSet kernel
  * @param {import('@agoric/swingset-vat/tools/run-utils.js').RunHarness} [options.runHarness] - for controlling run policy etc
  * @param {import('@agoric/telemetry').SlogSender} [options.slogSender]
  * @param {import('../src/chain-main.js').CosmosSwingsetConfig} [options.swingsetConfig]
@@ -176,7 +176,7 @@ export const makeCosmicSwingsetTestKit = async (
     env = process.env,
     fixupInitMessage,
     fixupConfig,
-    handleBridgeSend,
+    handleBridgeSend = makeMockBridgeKit().handleBridgeSend,
     runHarness,
     slogSender,
     swingsetConfig,
@@ -191,8 +191,6 @@ export const makeCosmicSwingsetTestKit = async (
   { fsp = fsPromises, resolvePath = nativePath.resolve } = {},
 ) => {
   await null;
-
-  if (!handleBridgeSend) ({ handleBridgeSend } = makeMockBridgeKit());
 
   const configOverrides =
     configSpecifier &&

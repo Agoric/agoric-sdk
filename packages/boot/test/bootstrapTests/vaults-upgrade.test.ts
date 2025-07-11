@@ -88,9 +88,9 @@ const makeDefaultTestContext = async ({
 const test = anyTest as TestFn<{
   shared: Awaited<ReturnType<typeof makeDefaultTestContext>>;
 }>;
-test.before(
-  async t => (t.context = { shared: await makeDefaultTestContext() }),
-);
+test.before(async t => {
+  t.context = { shared: await makeDefaultTestContext() };
+});
 test.after.always(t => t.context.shared.shutdown());
 
 test.serial('re-bootstrap', async t => {

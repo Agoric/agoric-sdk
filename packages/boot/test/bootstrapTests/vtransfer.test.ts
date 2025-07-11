@@ -14,9 +14,7 @@ import type { TransferVat } from '@agoric/vats/src/vat-transfer.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 const makeDefaultTestContext = async () => {
-  const { handleBridgeSend, outboundMessages } = makeMockBridgeKit({
-    ibcKit: { handleOutboundMessage: () => String(undefined) },
-  });
+  const { handleBridgeSend, outboundMessages } = makeMockBridgeKit();
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
     configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
     fixupConfig: config => ({
@@ -31,7 +29,9 @@ type DefaultTestContext = Awaited<ReturnType<typeof makeDefaultTestContext>>;
 
 const test: TestFn<DefaultTestContext> = anyTest;
 
-test.before(async t => (t.context = await makeDefaultTestContext()));
+test.before(async t => {
+  t.context = await makeDefaultTestContext();
+});
 test.after.always(t => t.context.shutdown?.());
 
 test('vtransfer', async t => {
@@ -107,7 +107,6 @@ test('vtransfer', async t => {
       type: 'IBC_METHOD',
     },
   ]);
-  await evaluateCoreProposal(testVtransferProposal);
 
   /**
    * test adding an interceptor for the same target, which should fail

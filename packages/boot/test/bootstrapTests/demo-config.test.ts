@@ -1,7 +1,6 @@
 import type { TestFn } from 'ava';
 
 import { keyArrayEqual } from '@aglocal/boot/tools/supports.js';
-import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
 import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import type { RunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
@@ -9,21 +8,18 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 const { keys } = Object;
 
-const makeDefaultTestContext = () => {
-  const { handleBridgeSend } = makeMockBridgeKit({
-    ibcKit: { handleOutboundMessage: () => String(undefined) },
-  });
-  return makeCosmicSwingsetTestKit({
+const makeDefaultTestContext = () =>
+  makeCosmicSwingsetTestKit({
     configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
-    handleBridgeSend,
   });
-};
 
 type DefaultTestContext = Awaited<ReturnType<typeof makeDefaultTestContext>>;
 
 const test: TestFn<DefaultTestContext> = anyTest;
 
-test.before(async t => (t.context = await makeDefaultTestContext()));
+test.before(async t => {
+  t.context = await makeDefaultTestContext();
+});
 test.after.always(t => t.context.shutdown?.());
 
 // Goal: test that prod config does not expose mailbox access.

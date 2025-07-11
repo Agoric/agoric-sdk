@@ -10,8 +10,11 @@ type MockBridgeOptions = {
   storageKit: import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit;
 };
 
+type StorageMessage =
+  import('@agoric/internal/src/lib-chainStorage.js').StorageMessage;
+
 export const makeMockBridgeKit = ({
-  ibcKit,
+  ibcKit = { handleOutboundMessage: () => String(undefined) },
   outboundMessages = new Map(),
   storageKit = makeFakeStorageKit(''),
 }: Partial<MockBridgeOptions> = {}) => {
@@ -19,31 +22,32 @@ export const makeMockBridgeKit = ({
   let lcaAccountsCreated = 0;
   let lcaSequenceNonce = 0;
 
-  const handleBridgeSend = (bridgeId: BridgeId, obj: any) => {
-    if (!outboundMessages.has(bridgeId)) outboundMessages.set(bridgeId, []);
+  const handleBridgeSend = (
+    destinationPort: BridgeId,
+    obj: Record<string, any> & { type: string },
+  ) => {
+    if (!outboundMessages.has(destinationPort))
+      outboundMessages.set(destinationPort, []);
 
-    outboundMessages.get(bridgeId)!.push(obj);
+    outboundMessages.get(destinationPort)!.push(obj);
 
     // `storageKit` handles the "storage" port.
-    if (bridgeId === BridgeId.STORAGE) return storageKit!.toStorage(obj);
+    if (destinationPort === BridgeId.STORAGE)
+      return storageKit.toStorage(obj as unknown as StorageMessage);
 
     // `ibcKit` handles the "IBC_METHOD" type for all ports.
-    if (obj.type === 'IBC_METHOD') return ibcKit!.handleOutboundMessage(obj);
-
-    const bridgeType = `${bridgeId}:${obj.type}`;
+    if (obj.type === 'IBC_METHOD') return ibcKit.handleOutboundMessage(obj);
 
     // All other sends are handled by port and type.
+    const bridgeType = `${destinationPort}:${obj.type}`;
     switch (bridgeType) {
       case `${BridgeId.BANK}:VBANK_GET_BALANCE`:
         return '0';
       case `${BridgeId.BANK}:VBANK_GET_MODULE_ACCOUNT_ADDRESS`: {
-        const { moduleName } = obj;
-        const moduleDescriptor = Object.values(VBankAccount).find(
-          ({ module }) => module === moduleName,
-        );
+        for (const { module, address } of Object.values(VBankAccount))
+          if (module === obj.moduleName) return address;
 
-        if (moduleDescriptor) return moduleDescriptor.address;
-        else break;
+        return String(undefined);
       }
       case `${BridgeId.BANK}:VBANK_GIVE`:
       case `${BridgeId.BANK}:VBANK_GRAB`: {
@@ -67,10 +71,8 @@ export const makeMockBridgeKit = ({
         );
       }
       default:
-        Fail`bridge port ${q(bridgeId)} not implemented for message type ${q(obj.type)}`;
+        Fail`bridge port ${q(destinationPort)} not implemented for message type ${q(obj.type)}`;
     }
-
-    return String(undefined);
   };
 
   return { handleBridgeSend, outboundMessages, storageKit };

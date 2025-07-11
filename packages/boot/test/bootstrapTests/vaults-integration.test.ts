@@ -25,7 +25,6 @@ const makeDefaultTestContext = async () => {
   const storage = makeFakeStorageKit('bootstrapTests');
 
   const { handleBridgeSend } = makeMockBridgeKit({
-    ibcKit: { handleOutboundMessage: () => String(undefined) },
     storageKit: storage,
   });
   const swingsetTestKit = await makeCosmicSwingsetTestKit({
@@ -67,7 +66,9 @@ const test = anyTest as TestFn<
   Awaited<ReturnType<typeof makeDefaultTestContext>>
 >;
 
-test.before(async t => (t.context = await makeDefaultTestContext()));
+test.before(async t => {
+  t.context = await makeDefaultTestContext();
+});
 test.after.always(t => t.context.shutdown());
 
 test.serial('metrics path', async t => {
@@ -206,42 +207,39 @@ test.serial('close vault', async t => {
   });
 });
 
-test.serial(
-  'open vault with insufficient funds gives helpful error',
-  async t => {
-    const { walletFactoryDriver } = t.context;
+test.serial('excessive debt error contains helpful details', async t => {
+  const { walletFactoryDriver } = t.context;
 
-    const wd = await walletFactoryDriver.provideSmartWallet(
-      'agoric1insufficient',
-    );
+  const wd = await walletFactoryDriver.provideSmartWallet(
+    'agoric1insufficient',
+  );
 
-    const giveCollateral = 9.0;
-    const wantMinted = giveCollateral * 100;
-    const message =
-      'Proposed debt {"brand":"[Alleged: IST brand]","value":"[904500000n]"} exceeds max {"brand":"[Alleged: IST brand]","value":"[63462857n]"} for {"brand":"[Alleged: ATOM brand]","value":"[9000000n]"} collateral';
+  const giveCollateral = 9.0;
+  const wantMinted = giveCollateral * 100;
+  const message =
+    'Proposed debt {"brand":"[Alleged: IST brand]","value":"[904500000n]"} exceeds max {"brand":"[Alleged: IST brand]","value":"[63462857n]"} for {"brand":"[Alleged: ATOM brand]","value":"[9000000n]"} collateral';
 
-    await t.throwsAsync(
-      wd.executeOfferMaker(Offers.vaults.OpenVault, {
-        offerId: 'open-vault',
-        collateralBrandKey,
-        giveCollateral,
-        wantMinted,
-      }),
-      { message },
-    );
+  await t.throwsAsync(
+    wd.executeOfferMaker(Offers.vaults.OpenVault, {
+      offerId: 'open-vault',
+      collateralBrandKey,
+      giveCollateral,
+      wantMinted,
+    }),
+    { message },
+  );
 
-    t.like(wd.getLatestUpdateRecord(), {
-      updated: 'offerStatus',
-      status: {
-        id: 'open-vault',
-        numWantsSatisfied: 0,
-        error: `Error: ${message}`,
-        // funds are returned
-        payouts: likePayouts(giveCollateral, 0),
-      },
-    });
-  },
-);
+  t.like(wd.getLatestUpdateRecord(), {
+    updated: 'offerStatus',
+    status: {
+      id: 'open-vault',
+      numWantsSatisfied: 0,
+      error: `Error: ${message}`,
+      // funds are returned
+      payouts: likePayouts(giveCollateral, 0),
+    },
+  });
+});
 
 test.serial('exit bid', async t => {
   const { walletFactoryDriver } = t.context;

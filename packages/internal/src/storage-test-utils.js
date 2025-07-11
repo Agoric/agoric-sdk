@@ -245,6 +245,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
   const readLatest = path => {
     let value;
     try {
+      // First try to parse as a StreamCell.
       value = unmarshalFromVstorage(data, path, fromCapData, -1);
     } catch {
       // fall back to regular JSON

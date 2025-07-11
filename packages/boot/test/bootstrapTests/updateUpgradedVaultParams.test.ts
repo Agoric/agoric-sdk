@@ -5,40 +5,47 @@
  * objects from the contract held by the governor are gone, then try to change
  * param again, to show that the bug is fixed.
  */
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
-import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { Fail } from '@endo/errors';
 
-import { makeSwingsetTestKit } from '../../tools/supports.js';
+import { updateVaultManagerParams } from '@aglocal/boot/test/tools/changeVaultParams.js';
 import {
+  adaptCosmicSwingsetTestKitForDriver,
   makeGovernanceDriver,
   makeWalletFactoryDriver,
-} from '../../tools/drivers.js';
-import { updateVaultManagerParams } from '../tools/changeVaultParams.js';
+} from '@aglocal/boot/tools/drivers.js';
+import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
+import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { Fail } from '@endo/errors';
 
-const makeDefaultTestContext = async t => {
+const makeDefaultTestContext = async () => {
   console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t.log);
 
-  const { runUtils, storage } = swingsetTestKit;
+  const storage = makeFakeStorageKit('bootstrapTests');
+  const { handleBridgeSend } = makeMockBridgeKit({ storageKit: storage });
+  const swingsetTestKit = await makeCosmicSwingsetTestKit({
+    configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
+    handleBridgeSend,
+  });
+
+  const { EV, queueAndRun } = swingsetTestKit;
+
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
-  const { EV } = runUtils;
 
   // Wait for ATOM to make it into agoricNames
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
   console.timeLog('DefaultTestContext', 'vaultFactoryKit');
 
   // has to be late enough for agoricNames data to have been published
-  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
-    swingsetTestKit.storage,
-  );
+  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
   agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
-    runUtils,
+    { EV, queueAndRun },
     storage,
     agoricNamesRemotes,
   );
@@ -47,7 +54,7 @@ const makeDefaultTestContext = async t => {
   console.timeEnd('DefaultTestContext');
 
   const gd = await makeGovernanceDriver(
-    swingsetTestKit,
+    adaptCosmicSwingsetTestKitForDriver(storage, swingsetTestKit),
     agoricNamesRemotes,
     walletFactoryDriver,
     [
@@ -65,15 +72,12 @@ const test = anyTest as TestFn<
 >;
 
 test.before(async t => {
-  t.context = await makeDefaultTestContext(t);
+  t.context = await makeDefaultTestContext();
 });
-test.after.always(t => {
-  return t.context.shutdown && t.context.shutdown();
-});
+test.after.always(t => t.context.shutdown?.());
 
 test('restart vaultFactory, change params', async t => {
-  const { runUtils, gd, agoricNamesRemotes } = t.context;
-  const { EV } = runUtils;
+  const { agoricNamesRemotes, EV, gd } = t.context;
   const vaultFactoryKit =
     await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
 
@@ -98,7 +102,6 @@ test('restart vaultFactory, change params', async t => {
       collateralBrand: brands.ATOM,
     });
 
-    // @ts-expect-error getGovernedParams doesn't declare these fields
     return params.DebtLimit.value.value;
   };
 
@@ -109,7 +112,6 @@ test('restart vaultFactory, change params', async t => {
   t.is(await getDebtLimitValue(), 50_000_000n);
 
   const privateArgs = {
-    // @ts-expect-error cast XXX missing from type
     ...vaultFactoryKit.privateArgs,
     initialPoserInvitation: poserInvitation,
     initialShortfallInvitation: shortfallInvitation,
@@ -119,7 +121,7 @@ test('restart vaultFactory, change params', async t => {
     vaultFactoryKit.governorCreatorFacet,
   ).getAdminFacet();
 
-  t.log('awaiting VaultFactory restartContract');
+  console.log('awaiting VaultFactory restartContract');
   const upgradeResult = await EV(vfAdminFacet).restartContract(privateArgs);
   t.deepEqual(upgradeResult, { incarnationNumber: 1 });
 
