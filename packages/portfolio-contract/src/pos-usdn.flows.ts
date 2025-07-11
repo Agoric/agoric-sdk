@@ -16,6 +16,7 @@ import { AmountMath, type Amount, type NatAmount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type {
   CosmosChainAddress,
+  Denom,
   DenomAmount,
   Orchestrator,
 } from '@agoric/orchestration';
@@ -46,7 +47,7 @@ export const makeSwapLockMessages = (
     poolId = 0n,
     denom = 'uusdc',
     denomTo = 'uusdn',
-    vault = 1, // VaultType.STAKED,
+    vault = undefined as number | undefined,
     usdnOut = undefined as bigint | undefined,
   } = {},
 ) => {
@@ -56,7 +57,7 @@ export const makeSwapLockMessages = (
     routes: [{ poolId, denomTo }],
     min: { denom: denomTo, amount: `${usdnOut || usdcIn}` },
   });
-  if (!usdnOut) {
+  if (vault === undefined) {
     const protoMessages = [Any.toJSON(MsgSwap.toProtoMsg(msgSwap))];
     return { msgSwap, protoMessages };
   }
@@ -111,75 +112,79 @@ export const makeUnlockSwapMessages = (
 export const protocolUSDN = {
   protocol: 'USDN',
   chains: ['noble'],
-  supply: async (amount: NatAmount, src: AccountInfoFor['noble']) => {
+  supply: async (ctx, amount, src) => {
+    const { usdnOut, vault } = ctx;
     const { ica } = src;
     const nobleAddr = ica.getAddress();
 
-    // TODO: MsgLock
-    const { msgSwap, protoMessages } = makeSwapLockMessages(
+    const { msgSwap, msgLock, protoMessages } = makeSwapLockMessages(
       nobleAddr,
       amount.value,
+      { usdnOut, vault },
     );
 
-    trace('executing', [msgSwap].filter(Boolean));
+    trace('executing', [msgSwap, msgLock].filter(Boolean));
     const result = await ica.executeEncodedTx(protoMessages);
     trace('XXX: decode Swap, Lock result; detect errors', result);
   },
-  withdraw: async (amount: NatAmount, dest: AccountInfoFor['noble']) => {
+  withdraw: async (ctx, amount, dest) => {
+    const { usdnOut } = ctx;
     const { ica } = dest;
     const address = ica.getAddress();
     const { msgUnlock, msgSwap, protoMessages } = makeUnlockSwapMessages(
       address,
       amount.value,
-      // TODO: { usdnOut },
+      { usdnOut },
     );
     trace('executing', [msgUnlock, msgSwap].filter(Boolean));
     const result = await ica.executeEncodedTx(protoMessages);
     trace('XXX: decode Swap, Lock result; detect errors', result);
   },
-} as const satisfies ProtocolDetail<'USDN', 'noble'>;
+} as const satisfies ProtocolDetail<
+  'USDN',
+  'noble',
+  { usdnOut?: NatValue; vault?: number }
+>;
 harden(protocolUSDN);
 
 export const agoricToNoble = {
   how: 'IBC to Noble',
   connections: [{ src: 'agoric', dest: 'noble' }],
-  apply: async (
-    amount: NatAmount,
-    src: AccountInfoFor['agoric'],
-    dest: AccountInfoFor['noble'],
-  ) => {
-    await src.lca.transfer(dest.ica.getAddress(), amount);
+  apply: async (ctx, amount, src, dest) => {
+    const { denom } = ctx.usdc;
+    const denomAmount = { value: amount.value, denom };
+    await src.lca.transfer(dest.ica.getAddress(), denomAmount);
   },
-  recover: async (
-    amount: NatAmount,
-    src: AccountInfoFor['agoric'],
-    dest: AccountInfoFor['noble'],
-  ) => {
+  recover: async (ctx, amount, src, dest) => {
     const nobleAmount = { value: amount.value, denom: 'uusdc' };
     await dest.ica.transfer(src.lca.getAddress(), nobleAmount);
   },
-} as const satisfies TransportDetail<'IBC to Noble', 'agoric', 'noble'>;
+} as const satisfies TransportDetail<
+  'IBC to Noble',
+  'agoric',
+  'noble',
+  { usdc: { denom: Denom } }
+>;
 harden(agoricToNoble);
 
 export const nobleToAgoric = {
   how: 'IBC from Noble',
   connections: [{ src: 'noble', dest: 'agoric' }],
-  apply: async (
-    amount: NatAmount,
-    src: AccountInfoFor['noble'],
-    dest: AccountInfoFor['agoric'],
-  ) => {
+  apply: async (_ctx, amount, src, dest) => {
     const nobleAmount = { value: amount.value, denom: 'uusdc' };
     await src.ica.transfer(dest.lca.getAddress(), nobleAmount);
   },
-  recover: async (
-    amount: NatAmount,
-    src: AccountInfoFor['noble'],
-    dest: AccountInfoFor['agoric'],
-  ) => {
-    await dest.lca.transfer(src.ica.getAddress(), amount);
+  recover: async (ctx, amount, src, dest) => {
+    const { denom } = ctx.usdc;
+    const denomAmount = { value: amount.value, denom };
+    await dest.lca.transfer(src.ica.getAddress(), denomAmount);
   },
-} as const satisfies TransportDetail<'IBC from Noble', 'noble', 'agoric'>;
+} as const satisfies TransportDetail<
+  'IBC from Noble',
+  'noble',
+  'agoric',
+  { usdc: { denom: Denom } }
+>;
 harden(agoricToNoble);
 
 export const addToUSDNPosition = async (

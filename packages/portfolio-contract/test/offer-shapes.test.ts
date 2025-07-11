@@ -1,12 +1,18 @@
+/** @file test for ProposalShapes, offerArgs shapes */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { q } from '@endo/errors';
 import { matches, mustMatch } from '@endo/patterns';
 import { makeProposalShapes0 } from '../src/type-guards.ts';
+import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+
+const usdc = withAmountUtils(makeIssuerKit('USDC'));
+const { brand: USDC } = usdc;
+const bld = withAmountUtils(makeIssuerKit('BLD'));
 
 test('ProposalShapes', t => {
-  const { brand: USDC } = makeIssuerKit('USDC');
   const { brand: Poc26 } = makeIssuerKit('Poc26');
   const shapes = makeProposalShapes0(USDC, Poc26);
 
@@ -101,4 +107,22 @@ test('ProposalShapes', t => {
       t.false(matches(proposal, shapes[desc]), name);
     }
   }
+});
+
+test('offerArgs can carry fee', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  const [amount, fee] = [usdc.make(200n), bld.make(100n)];
+  const specimen = harden({
+    flow: [{ src: '@noble', dest: '@Ethereum', amount, fee }],
+  });
+  t.notThrows(() => mustMatch(specimen, shapes.rebalance));
+});
+
+test('offerArgs can carry usdnOut', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  const [amount, detail] = [usdc.make(200n), { usdnOut: 198n }];
+  const specimen = harden({
+    flow: [{ src: '@noble', dest: 'USDN', amount, detail }],
+  });
+  t.notThrows(() => mustMatch(specimen, shapes.rebalance));
 });

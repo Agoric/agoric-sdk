@@ -28,7 +28,7 @@ import {
 } from './contract-setup.ts';
 import { E } from '@endo/far';
 import { localAccount0 } from './mocks.ts';
-import { getChainNameOfPlaceRef } from '../src/offer-args.ts';
+import { getChainNameOfPlaceRef } from '../src/type-guards-steps.ts';
 
 const rebalanceScenarioMacro = test.macro({
   async exec(t, description: string) {
@@ -63,9 +63,10 @@ const rebalanceScenarioMacro = test.macro({
         if (dest === '@Ethereum') {
           await simulateUpcallFromAxelar(common.mocks.transferBridge);
         }
-        await simulateCCTPAck(common.utils).finally(() =>
-          simulateAckTransferToAxelar(common.utils),
-        );
+        common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+        // await simulateCCTPAck(common.utils).finally(() =>
+        //   simulateAckTransferToAxelar(common.utils),
+        // );
       }
       const { result, payouts } = await doneP;
       return { result, payouts };

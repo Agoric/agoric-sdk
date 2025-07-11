@@ -40,6 +40,8 @@ import type { PortfolioKit } from './portfolio.exo.js';
 import { makeGMPGiveRestShape, type GmpGive } from './pos-gmp-shapes.js';
 import { makeUSDNGiveFields } from './pos-usdn-shapes.js';
 
+export type { OfferArgsFor } from './type-guards-steps.js';
+
 // #region preliminaries
 const { fromEntries, keys } = Object;
 
@@ -244,7 +246,7 @@ const offerArgsShape: TypedPattern<OfferArgs1> = M.splitRecord(
   },
 );
 
-export type OfferArgsFor = {
+export type OfferArgsFor0 = {
   openPortfolio: OfferArgs1;
   rebalance: OfferArgs1;
 };

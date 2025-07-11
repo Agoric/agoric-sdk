@@ -42,7 +42,7 @@ import {
   OfferArgsShapeFor,
   type EVMContractAddressesMap,
   type OfferArgsFor,
-  type ProposalType0,
+  type ProposalType,
 } from './type-guards.ts';
 
 const trace = makeTracer('PortC');
@@ -237,7 +237,7 @@ export const contract = async (
      * that can allocate capital across different {@link YieldProtocol}s.
      * The resulting portfolio can be rebalanced via continuing invitations.
      *
-     * @see {@link ProposalType0.openPortfolio} for proposal structure.
+     * @see {@link ProposalType.openPortfolio} for proposal structure.
      *   Note that if the contract is started with an `Access` issuer,
      *   a non-empty amount of that token is required.
      *
@@ -265,11 +265,10 @@ harden(contract);
 
 const keepDocsTypesImported:
   | undefined
-  // | SupportedEVMChains // XXX change to SupportedChain
   | YieldProtocol
   | OfferArgsFor
   | PortfolioKit
-  | ProposalType0 = undefined;
+  | ProposalType = undefined;
 
 /**
  * @see {@link contract}

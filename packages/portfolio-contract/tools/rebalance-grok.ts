@@ -9,7 +9,7 @@ import {
   type AssetPlaceRef,
   type MovementDesc,
   type SeatKeyword,
-} from '../src/offer-args.js';
+} from '../src/type-guards-steps.js';
 import {
   makeProposalShapes,
   PoolPlaces,

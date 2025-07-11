@@ -33,7 +33,8 @@ import {
   getKeywordOfPlaceRef,
   type AssetPlaceRef,
   type MovementDesc,
-} from './offer-args.ts';
+  type OfferArgsFor,
+} from './type-guards-steps.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {
   AaveProtocol,
@@ -53,7 +54,6 @@ import type { Position } from './pos.exo.ts';
 import {
   PoolPlaces,
   type EVMContractAddressesMap,
-  type OfferArgsFor,
   type PoolKey,
   type ProposalType,
   type ProposalType0,
@@ -112,15 +112,18 @@ export type TransportDetail<
   How extends string,
   S extends SupportedChain,
   D extends SupportedChain,
+  CTX = unknown,
 > = {
   how: How;
-  connections: { src: SupportedChain; dest: SupportedChain }[];
+  connections: { src: S; dest: D }[];
   apply: (
+    ctx: CTX,
     amount: NatAmount,
     src: AccountInfoFor[S],
     dest: AccountInfoFor[D],
   ) => Promise<void>;
   recover: (
+    ctx: CTX,
     amount: NatAmount,
     src: AccountInfoFor[S],
     dest: AccountInfoFor[D],
@@ -130,7 +133,7 @@ export type TransportDetail<
 export type ProtocolDetail<
   P extends YieldProtocol,
   C extends SupportedChain,
-  CTX,
+  CTX = unknown,
 > = {
   protocol: P;
   chains: C[];
@@ -381,6 +384,7 @@ const stepFlow = async (
           provideCosmosAccount(orch, 'agoric', kit),
           provideCosmosAccount(orch, 'noble', kit),
         ]);
+        const ctxI = { usdc: ctx.usdc };
         if (way.src === 'agoric' && way.dest === 'noble') {
           const { how, apply, recover } = agoricToNoble;
           todo.push({
@@ -388,8 +392,8 @@ const stepFlow = async (
             amount,
             src: { account: aInfo.lca },
             dest: { account: nInfo.ica },
-            apply: () => apply(amount, aInfo, nInfo),
-            recover: () => recover(amount, aInfo, nInfo),
+            apply: () => apply(ctxI, amount, aInfo, nInfo),
+            recover: () => recover(ctxI, amount, aInfo, nInfo),
           });
         } else if (way.src === 'noble' && way.dest === 'agoric') {
           const { how, apply, recover } = nobleToAgoric;
@@ -398,8 +402,8 @@ const stepFlow = async (
             amount,
             src: { account: nInfo.ica },
             dest: { account: aInfo.lca },
-            apply: () => apply(amount, nInfo, aInfo),
-            recover: () => recover(amount, nInfo, aInfo),
+            apply: () => apply(ctxI, amount, nInfo, aInfo),
+            recover: () => recover(ctxI, amount, nInfo, aInfo),
           });
         }
         break;
@@ -420,8 +424,8 @@ const stepFlow = async (
           amount,
           src: { account: nInfo.ica },
           dest: { proxy: gInfo },
-          apply: () => apply(amount, nInfo, gInfo),
-          recover: () => recover(amount, nInfo, gInfo),
+          apply: () => apply(null, amount, nInfo, gInfo),
+          recover: () => recover(null, amount, nInfo, gInfo),
         });
         break;
       }
@@ -430,6 +434,8 @@ const stepFlow = async (
         const nInfo = await provideCosmosAccount(orch, 'noble', kit);
         const acctId = coerceAccountId(nInfo.ica.getAddress());
         const pos = kit.manager.providePosition('USDN', 'USDN', acctId);
+        const vault = way.poolKey === 'USDNVault' ? 1 : undefined;
+        const ctxU = { usdnOut: move?.detail?.usdnOut, vault };
         if ('src' in way) {
           const { supply } = protocolUSDN;
           todo.push({
@@ -437,7 +443,7 @@ const stepFlow = async (
             amount,
             src: { account: nInfo.ica },
             dest: { pos },
-            apply: () => supply(amount, nInfo),
+            apply: () => supply(ctxU, amount, nInfo),
             recover: () => Fail`no recovery from supply (final step)`,
           });
         } else {

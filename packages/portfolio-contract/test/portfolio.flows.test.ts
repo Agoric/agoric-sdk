@@ -42,7 +42,12 @@ import {
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
 import { makeSwapLockMessages } from '../src/pos-usdn.flows.ts';
-import { makeProposalShapes0, type ProposalType0 } from '../src/type-guards.ts';
+import {
+  makeProposalShapes,
+  makeProposalShapes0,
+  type ProposalType,
+  type ProposalType0,
+} from '../src/type-guards.ts';
 import { contractAddressesMock } from './mocks.ts';
 import {
   axelarCCTPConfig,
@@ -61,8 +66,10 @@ const mockZCF: ZCF = Far('MockZCF', {
 });
 
 const { brand: USDC } = makeIssuerKit('USDC');
+const { brand: BLD } = makeIssuerKit('BLD');
 const { make } = AmountMath;
 
+// XXX move to mocks.ts?
 const makeVowToolsAreJustPromises = () => {
   const vowTools = harden({
     makeVowKit: () => {
@@ -94,7 +101,7 @@ const makeVowToolsAreJustPromises = () => {
 // XXX move to mocks.ts for readability?
 const mocks = (
   errs: Record<string, Error> = {},
-  give: ProposalType0['openPortfolio']['give'] = {},
+  give: ProposalType['openPortfolio']['give'] = {},
 ) => {
   const buf = [] as any[];
   const log = ev => {
@@ -247,23 +254,18 @@ const mocks = (
   const ctx1: PortfolioInstanceContext = {
     zoeTools,
     usdc: { denom, brand: USDC },
+    gmpFeeInfo: { brand: BLD, denom: 'uusdc', chainId: 'axelar-XXX' },
     contracts: contractAddressesMock,
     inertSubscriber,
   };
 
   const chainHubTools = harden({
-    getChainInfo: chainName => {
+    getChainInfo: (chainName: string) => {
       if (!(chainName in axelarCCTPConfig)) {
         throw Error(`unable to get chainInfo for ${chainName}`);
       }
       return axelarCCTPConfig[chainName];
     },
-    coerceCosmosAddress: (address): CosmosChainAddress => {
-      const prefix = getBech32Prefix(address);
-      const { chainId } = chainHubTools.getChainInfo(prefix);
-      return { chainId, encoding: 'bech32', value: address };
-    },
-    resolveAccountId: () => assert.fail('unused'),
   });
 
   const rebalanceHost = (seat, offerArgs, kit) =>
@@ -327,7 +329,7 @@ test('open portfolio with no positions', async t => {
   const { orch, ctx, offer, storage } = mocks();
   const { log, seat } = offer;
 
-  const shapes = makeProposalShapes0(USDC);
+  const shapes = makeProposalShapes(USDC, BLD);
   mustMatch(seat.getProposal(), shapes.openPortfolio);
 
   const actual = await openPortfolio(orch, ctx, seat, {});
@@ -339,6 +341,7 @@ test('open portfolio with no positions', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
+// XXX unlock too. use snapshot
 test('Noble Dollar Swap, Lock messages', t => {
   const signer =
     'noble1reheu4ym85k9gktyf9vzhzt0zvqym9txwejsj4vaxdrw98wm4emsddarrd' as const;
@@ -380,17 +383,20 @@ test('Noble Dollar Swap, Lock messages', t => {
 });
 
 test('open portfolio with USDN position', async t => {
-  const { orch, ctx, offer, storage } = mocks(
-    {},
-    { USDN: make(USDC, 50_000_000n), NobleFees: make(USDC, 100n) },
-  );
+  const amount = make(USDC, 50_000_000n);
+  const { orch, ctx, offer, storage } = mocks({}, { Deposit: amount });
   const { log, seat } = offer;
 
-  const shapes = makeProposalShapes0(USDC);
+  const shapes = makeProposalShapes(USDC, BLD);
   mustMatch(seat.getProposal(), shapes.openPortfolio);
 
+  const detail = { usdnOut: (50_000_000n * 99n) / 100n };
   const actual = await openPortfolio(orch, ctx, seat, {
-    usdnOut: (50_000_000n * 99n) / 100n,
+    flow: [
+      { src: '<Deposit>', dest: '@agoric', amount },
+      { src: '@agoric', dest: '@noble', amount },
+      { src: '@noble', dest: 'USDNVault', amount, detail },
+    ],
   });
   t.log(log.map(msg => msg._method).join(', '));
 

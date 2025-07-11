@@ -9,7 +9,7 @@ import {
   withBrand,
   type Dollars,
 } from '../tools/rebalance-grok.ts';
-import type { MovementDesc } from '../src/offer-args.ts';
+import type { MovementDesc } from '../src/type-guards-steps.ts';
 
 test('parseCSV test utility', async t => {
   const text = await importText('./move-cases.csv', import.meta.url);

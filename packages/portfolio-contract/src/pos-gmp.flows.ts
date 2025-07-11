@@ -185,11 +185,7 @@ export const CCTP = {
     src: 'noble',
     dest,
   })),
-  apply: async (
-    amount: NatAmount,
-    src: AccountInfoFor['noble'],
-    dest: AccountInfoFor[AxelarChain],
-  ) => {
+  apply: async (_ctx, amount, src, dest) => {
     const denomAmount: DenomAmount = { denom: 'uusdc', value: amount.value };
     const { chainId, remoteAddress } = dest;
     const destinationAddress: AccountId = `${chainId}:${remoteAddress}`;
@@ -197,11 +193,7 @@ export const CCTP = {
     const { ica } = src;
     await ica.depositForBurn(destinationAddress, denomAmount);
   },
-  recover: async (
-    amount: NatAmount,
-    src: AccountInfoFor['noble'],
-    dest: AccountInfoFor[AxelarChain],
-  ) => {
+  recover: async (_ctx, amount, src, dest) => {
     throw Error('TODO(Luqi): how to recover from CCTP transfer?');
   },
 } as const satisfies TransportDetail<'CCTP', 'noble', AxelarChain>;
