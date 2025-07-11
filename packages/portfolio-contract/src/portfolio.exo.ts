@@ -10,7 +10,6 @@ import type {
 } from '@agoric/internal/src/lib-chainStorage.js';
 import {
   type AccountId,
-  type ActualChainInfo,
   type CaipChainId,
   type ChainHub,
 } from '@agoric/orchestration';
@@ -32,13 +31,12 @@ import { M } from '@endo/patterns';
 import { AxelarChain, SupportedChain, YieldProtocol } from './constants.js';
 import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
-import type { PoolKey, StatusFor } from './type-guards.js';
+import type { makeProposalShapes, PoolKey, StatusFor } from './type-guards.js';
 import {
   makeFlowPath,
   makePortfolioPath,
   OfferArgsShapeFor,
   PoolKeyShape,
-  type makeProposalShapes0,
   type OfferArgsFor,
 } from './type-guards.js';
 
@@ -171,7 +169,7 @@ export const preparePortfolioKit = (
     }>;
     timer: Remote<TimerService>;
     chainHubTools: Pick<ChainHub, 'getChainInfo'>;
-    proposalShapes: ReturnType<typeof makeProposalShapes0>;
+    proposalShapes: ReturnType<typeof makeProposalShapes>;
     vowTools: VowTools;
     zcf: ZCF;
     portfoliosNode: ERef<StorageNode>;

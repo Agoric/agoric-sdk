@@ -25,6 +25,7 @@ import {
   type PortfolioInvitationMaker,
   type StatusFor,
   type ProposalType0,
+  type ProposalType,
 } from '../src/type-guards.ts';
 import type { WalletTool } from './wallet-offer-tools.ts';
 
@@ -80,7 +81,7 @@ export const makeTrader = (
      */
     async openPortfolio(
       t: ExecutionContext,
-      give: OpenPortfolioGive,
+      give: ProposalType['openPortfolio']['give'],
       offerArgs: OfferArgsFor['openPortfolio'] = {},
     ) {
       if (portfolioPath !== undefined) throw Error('already opened');

@@ -114,7 +114,13 @@ export const makeProposalShapes = (
     : {};
 
   const openPortfolio = M.splitRecord(
-    { give: M.splitRecord(accessShape, { Deposit: $Shape }, {}) },
+    {
+      give: M.splitRecord(
+        accessShape,
+        { Deposit: $Shape, GmpFee: FeeShape },
+        {},
+      ),
+    },
     { want: {}, exit: M.any() },
     {},
   ) as TypedPattern<ProposalType['openPortfolio']>;

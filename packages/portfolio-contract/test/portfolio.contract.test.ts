@@ -1,7 +1,7 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeIssuerKit } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import { passStyleOf } from '@endo/far';
@@ -85,14 +85,17 @@ test('open portfolio with USDN position', async t => {
   const { trader1, common } = await setupTrader(t);
   const { usdc, poc26 } = common.brands;
 
+  const amount = usdc.units(3_333.33);
   const doneP = trader1.openPortfolio(
     t,
+    { Deposit: amount, Access: poc26.make(1n) },
     {
-      USDN: usdc.units(3_333),
-      NobleFees: usdc.make(100n),
-      Access: poc26.make(1n),
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: 'USDN', amount },
+      ],
     },
-    { destinationEVMChain: 'Ethereum' },
   );
 
   // ack IBC transfer for forward
@@ -130,17 +133,22 @@ test('open portfolio with USDN position', async t => {
 
 test('open a portfolio with Aave position', async t => {
   const { trader1, common } = await setupTrader(t);
-  const { usdc, poc26 } = common.brands;
+  const { usdc, bld, poc26 } = common.brands;
 
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
   const actualP = trader1.openPortfolio(
     t,
+    { Deposit: amount, Access: poc26.make(1n) },
     {
-      Access: poc26.make(1n),
-      AaveAccount: usdc.make(100n), // fee
-      AaveGmp: usdc.make(100n), // fee
-      Aave: usdc.units(3_333),
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Ethereum', amount, fee: feeAcct },
+        { src: '@Ethereum', dest: 'Aave_Ethereum', amount, fee: feeCall },
+      ],
     },
-    { destinationEVMChain: 'Ethereum' },
   );
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   console.log('ackd send to Axelar to create account');
@@ -165,17 +173,26 @@ test('open a portfolio with Aave position', async t => {
 
 test('open a portfolio with Compound position', async t => {
   const { trader1, common } = await setupTrader(t);
-  const { usdc, poc26 } = common.brands;
+  const { bld, usdc, poc26 } = common.brands;
 
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
   const actualP = trader1.openPortfolio(
     t,
     {
       Access: poc26.make(1n),
-      CompoundAccount: usdc.make(100n), // fee
-      CompoundGmp: usdc.make(100n), // fee
-      Compound: usdc.units(3_333),
+      Deposit: amount,
+      GmpFee: AmountMath.add(feeAcct, feeCall),
     },
-    { destinationEVMChain: 'Ethereum' },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Ethereum', amount, fee: feeAcct },
+        { src: '@Ethereum', dest: 'Compound_Ethereum', amount, fee: feeCall },
+      ],
+    },
   );
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
@@ -201,17 +218,29 @@ test('open a portfolio with Compound position', async t => {
 
 test('open portfolio with USDN, Aave positions', async t => {
   const { trader1, common } = await setupTrader(t);
-  const { usdc, poc26 } = common.brands;
+  const { bld, usdc, poc26 } = common.brands;
+
+  const { add } = AmountMath;
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
 
   const doneP = trader1.openPortfolio(
     t,
     {
       Access: poc26.make(1n),
-      AaveAccount: usdc.make(100n), // fee
-      AaveGmp: usdc.make(100n), // fee
-      Aave: usdc.units(3_333),
+      Deposit: add(amount, amount),
     },
-    { destinationEVMChain: 'Ethereum' },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount: add(amount, amount) },
+        { src: '@agoric', dest: '@noble', amount: add(amount, amount) },
+        { src: '@noble', dest: 'USDN', amount },
+
+        { src: '@noble', dest: '@Ethereum', amount, fee: feeAcct },
+        { src: '@Ethereum', dest: 'Aave_Ethereum', amount, fee: feeCall },
+      ],
+    },
   );
   await eventLoopIteration(); // let outgoing IBC happen
   console.log('openPortfolio, eventloop');

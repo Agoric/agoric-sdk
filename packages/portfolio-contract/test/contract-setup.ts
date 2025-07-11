@@ -90,7 +90,7 @@ const deploy = async (t: ExecutionContext) => {
 
 export const setupTrader = async (t, initial = 10_000) => {
   const { common, zoe, started, timerService } = await deploy(t);
-  const { usdc, poc26 } = common.brands;
+  const { usdc, bld, poc26 } = common.brands;
   const { when } = common.utils.vowTools;
 
   const { storage } = common.bootstrap;
@@ -102,9 +102,15 @@ export const setupTrader = async (t, initial = 10_000) => {
   const myBalance = usdc.units(initial);
   const funds = await common.utils.pourPayment(myBalance);
   const { mint: _, ...poc26SansMint } = poc26;
-  const myWallet = makeWallet({ USDC: usdc, Access: poc26SansMint }, zoe, when);
+  const { mint: _b, ...bldSansMint } = bld;
+  const myWallet = makeWallet(
+    { USDC: usdc, BLD: bldSansMint, Access: poc26SansMint },
+    zoe,
+    when,
+  );
   await E(myWallet).deposit(funds);
   await E(myWallet).deposit(poc26.mint.mintPayment(poc26.make(1n)));
+  await E(myWallet).deposit(bld.mint.mintPayment(bld.make(10_000n)));
   const trader1 = makeTrader(myWallet, started.instance, readPublished);
 
   const { ibcBridge } = common.mocks;

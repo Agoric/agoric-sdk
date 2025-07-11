@@ -5,30 +5,16 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { type NatAmount } from '@agoric/ertp';
-import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { objectMap } from '@endo/patterns';
-import {
-  AxelarChain,
-  type SupportedChain,
-  type YieldProtocol,
-} from '../src/constants.js';
+import { E } from '@endo/far';
+import { type YieldProtocol } from '../src/constants.js';
 import {
   grokRebalanceScenarios,
   importCSV,
-  numeral,
   withBrand,
-  type Dollars,
 } from '../tools/rebalance-grok.ts';
-import {
-  setupTrader,
-  simulateAckTransferToAxelar,
-  simulateCCTPAck,
-  simulateUpcallFromAxelar,
-} from './contract-setup.ts';
-import { E } from '@endo/far';
+import { setupTrader, simulateUpcallFromAxelar } from './contract-setup.ts';
 import { localAccount0 } from './mocks.ts';
-import { getChainNameOfPlaceRef } from '../src/type-guards-steps.ts';
 
 const rebalanceScenarioMacro = test.macro({
   async exec(t, description: string) {
@@ -63,10 +49,14 @@ const rebalanceScenarioMacro = test.macro({
         if (dest === '@Ethereum') {
           await simulateUpcallFromAxelar(common.mocks.transferBridge);
         }
-        common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-        // await simulateCCTPAck(common.utils).finally(() =>
-        //   simulateAckTransferToAxelar(common.utils),
-        // );
+        try {
+          await common.utils.transmitVTransferEvent(
+            'acknowledgementPacket',
+            -1,
+          );
+        } catch (oops) {
+          console.error('nothing to ack?', oops);
+        }
       }
       const { result, payouts } = await doneP;
       return { result, payouts };

@@ -36,20 +36,20 @@ test('grok moves proposal', async t => {
   const scenarios = grokRebalanceScenarios(parseCSV(text));
   const { 'Open portfolio with USDN position': scenario } = scenarios;
   t.log(scenario.proposal);
-  t.deepEqual(scenario.proposal, { give: { Deposit: '$3,333.00' }, want: {} });
+  t.deepEqual(scenario.proposal, { give: { Deposit: '$3,333.33' }, want: {} });
   t.deepEqual(scenario.offerArgs?.flow, [
     {
-      amount: '$3,333.00',
+      amount: '$3,333.33',
       dest: '@agoric',
       src: '<Deposit>',
     },
     {
-      amount: '$3,333.00',
+      amount: '$3,333.33',
       dest: '@noble',
       src: '@agoric',
     },
     {
-      amount: '$3,333.00',
+      amount: '$3,333.33',
       dest: 'USDN',
       src: '@noble',
     },
@@ -72,17 +72,17 @@ test('withBrand handles USDN scenario', async t => {
     {
       src: '<Deposit>',
       dest: '@agoric',
-      amount: $('$3,333.00'),
+      amount: $('$3,333.33'),
     },
     {
       src: '@agoric',
       dest: '@noble',
-      amount: $('$3,333.00'),
+      amount: $('$3,333.33'),
     },
     {
       src: '@noble',
       dest: 'USDN',
-      amount: $('$3,333.00'),
+      amount: $('$3,333.33'),
     },
   ]);
   t.deepEqual(scenarioB.payouts, { Deposit: $('$0.00') });
@@ -108,7 +108,7 @@ test('grok flow of 3 moves', async t => {
   const text = await importText('./move-cases.csv', import.meta.url);
   const scenarios = grokRebalanceScenarios(parseCSV(text));
   const { 'Open portfolio with USDN position': scenario } = scenarios;
-  t.deepEqual(scenario.proposal.give, { Deposit: '$3,333.00' });
+  t.deepEqual(scenario.proposal.give, { Deposit: '$3,333.33' });
   assert(
     'offerArgs' in scenario &&
       scenario.offerArgs &&
@@ -117,7 +117,7 @@ test('grok flow of 3 moves', async t => {
   t.log('flow', scenario.offerArgs.flow);
   t.is(scenario.offerArgs.flow.length, 3);
   t.deepEqual(scenario.offerArgs.flow.at(-1), {
-    amount: '$3,333.00',
+    amount: '$3,333.33',
     dest: 'USDN',
     src: '@noble',
   });

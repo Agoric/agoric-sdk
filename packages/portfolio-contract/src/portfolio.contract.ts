@@ -38,7 +38,6 @@ import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import {
   makeProposalShapes,
-  makeProposalShapes0,
   OfferArgsShapeFor,
   type EVMContractAddressesMap,
   type OfferArgsFor,
@@ -146,8 +145,7 @@ export const contract = async (
     log: trace,
   });
 
-  const proposalShapes = makeProposalShapes0(brands.USDC, brands.Access);
-  const proposalShapes2 = makeProposalShapes(
+  const proposalShapes = makeProposalShapes(
     brands.USDC,
     brands.Fee,
     brands.Access,
@@ -254,7 +252,7 @@ export const contract = async (
         },
         'openPortfolio',
         undefined,
-        M.or(proposalShapes.openPortfolio, proposalShapes2.openPortfolio),
+        proposalShapes.openPortfolio,
       );
     },
   });
