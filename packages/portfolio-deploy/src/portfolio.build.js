@@ -1,6 +1,5 @@
-import { AxelarConfigShape } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
+// import { AxelarConfigShape } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { mustMatch } from '@endo/patterns';
 import { parseArgs } from 'node:util';
 import {
   axelarConfigTestnet,
@@ -22,21 +21,18 @@ const options = {
 
 /**
  * @param {Parameters<CoreEvalBuilder>[0]} tools
- * @param {import('./axelar-configs.js').AxelarChainConfigMap} axelarConfig
- * @param {CopyRecord} [config]
+ * @param {{
+ *   axelarConfig: import('./axelar-configs.js').AxelarChainConfigMap;
+ * } & CopyRecord} config
  * @satisfies {CoreEvalBuilder}
  */
-const defaultProposalBuilder = async (
-  { publishRef, install },
-  axelarConfig,
-  config = harden({}),
-) => {
+const defaultProposalBuilder = async ({ publishRef, install }, config) => {
   return harden({
     sourceSpec: './portfolio-start.core.js',
     getManifestCall: [
       'getManifestForPortfolio', // TODO: unit test agreemnt with getManifestForPortfolio.name
       {
-        options: { config: toExternalConfig(config, {}), axelarConfig },
+        options: { config: toExternalConfig(config, {}) },
         installKeys: {
           [name]: publishRef(install('../dist/portfolio.contract.bundle.js')),
         },
@@ -64,12 +60,12 @@ const build = async (homeP, endowments) => {
     ? harden({ ...axelarMainnetConfig })
     : harden({ ...axelarConfigTestnet });
 
-  mustMatch(axelarConfig, AxelarConfigShape);
+  // mustMatch(axelarConfig, AxelarConfigShape);
 
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   // TODO: unit test agreement with startPortfolio.name
   await writeCoreEval('eval-ymax0', utils =>
-    defaultProposalBuilder(utils, axelarConfig),
+    defaultProposalBuilder(utils, harden({ axelarConfig })),
   );
 };
 

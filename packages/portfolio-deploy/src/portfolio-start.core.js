@@ -25,15 +25,16 @@ const trace = makeTracer(`YMX-Start`, true);
 /**
  * @param {OrchestrationPowersWithStorage} orchestrationPowers
  * @param {Marshaller} marshaller
- * @param {CopyRecord} _config
- * @param {import('./axelar-configs.js').AxelarChainConfigMap} axelarConfig
+ * @param {{
+ *   axelarConfig: import('./axelar-configs.js').AxelarChainConfigMap;
+ * }} config
  */
 export const makePrivateArgs = async (
   orchestrationPowers,
   marshaller,
-  _config,
-  axelarConfig,
+  config,
 ) => {
+  const { axelarConfig } = config;
   const { agoricNames } = orchestrationPowers;
   const { chainInfo: cosmosChainInfo, assetInfo } = await lookupInterchainInfo(
     agoricNames,
@@ -43,8 +44,16 @@ export const makePrivateArgs = async (
       axelar: ['uaxl'],
     },
   );
-  /** @type {Record<string, import('@agoric/orchestration').ChainInfo>} */
-  const chainInfo = { ...cosmosChainInfo };
+
+  const chainInfo = {
+    ...cosmosChainInfo,
+    ...Object.fromEntries(
+      Object.entries(axelarConfig).map(([chain, info]) => [
+        chain,
+        info.chainInfo,
+      ]),
+    ),
+  };
 
   /** @type {AxelarId} */
   const axelarIds = {
@@ -84,10 +93,9 @@ harden(makePrivateArgs);
 /**
  * @param {BootstrapPowers & PortfolioBootPowers} permitted
  * @param {{ options: LegibleCapData<CopyRecord> }} configStruct
- * @param {import('./axelar-configs.js').AxelarChainConfigMap} axelarConfig
  * @returns {Promise<void>}
  */
-export const startPortfolio = async (permitted, configStruct, axelarConfig) => {
+export const startPortfolio = async (permitted, configStruct) => {
   trace('startPortfolio');
   const { issuer } = permitted;
   const [USDC, PoC26] = await Promise.all([
@@ -101,7 +109,6 @@ export const startPortfolio = async (permitted, configStruct, axelarConfig) => {
     permit,
     makePrivateArgs,
     permitted,
-    axelarConfig,
     configStruct,
     issuerKeywordRecord,
   );
