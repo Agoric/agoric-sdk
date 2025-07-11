@@ -11,7 +11,7 @@ architecture-beta
     ymaxui:R -- L:PE
 
   group offchain(cloud)[Agoric Off Chain]
-    service PE(server)[Execution Engine] in offchain
+    service PE(server)[Planning Engine] in offchain
 
     PE:R -- L:spectrum
 
@@ -56,16 +56,16 @@ sequenceDiagram
 4. automatic rebalance
 ```mermaid
 sequenceDiagram
-  Contract ->> Execution Engine: notification of funds in LCA
-  Execution Engine ->> Contract: flow sequence
+  Contract ->> Planning Engine: notification of funds in LCA
+  Planning Engine ->> Contract: flow sequence
 ```
 5. deposit from Fast USDC source chains into existing portfolio via address hook
 ```mermaid
 sequenceDiagram
   Non-agoric Chain ->> LCA: send USDC via IBC, CCTP, or Fast USDC
   LCA ->> Contract: receive upcall
-  Contract ->> Execution Engine: notification of funds in LCA
-  Execution Engine ->> Contract: flow sequence
+  Contract ->> Planning Engine: notification of funds in LCA
+  Planning Engine ->> Contract: flow sequence
 ```
 6. claim bonus
 ```mermaid
@@ -74,33 +74,30 @@ sequenceDiagram
   Contract ->> Contract: claim rewards at applicable positions
 ```
 
-#### Execution Engine
+#### Planning Engine
 
 ##### Move from Aave to Compound
 ```mermaid
 sequenceDiagram
   autoNumber
   participant vstorage
-  participant EE as Execution Engine
+  participant EE as Planning Engine
   participant Contract
   vstorage ->> EE: desired allocation changed to (50% Aave on Avalanche,<br/>50% Compound on Polygon)<br/>no inflight txns for this portfolio
   Spectrum ->> EE: user currently has<br/>$100 on Aave-Avalanche pool<br/>and $0 on Compound-Polygon pool
   EE ->> EE: figures out the next step towards user's desired allocation
-  EE ->> Contract: withdraw $50 from Aave-Avalanche pool<br/>to ICA-equivalent on Avalanche
-  Contract ->> vstorage: record inflight tx
+  EE ->> Contract: move1(Aave on Avalanche, GMP.Arbitrum)<br/>move2(GMP.Arbitrum, Compound on Polygon)
+  Contract ->> vstorage: record all moves
+  loop repeat until all moves are done
   Contract ->> Axelar: invoke GMP
-  Axelar ->> Proxy Contract on Avalanche: deliver GMP message
-  Proxy Contract on Avalanche ->> Axelar: GMP message delivered
-  Proxy Contract on Avalanche ->> ICA-equivalent on Avalanche: execute GMP message<br/>(could fail, proxy contract could retry)
+  Axelar ->> Proxy Contract: deliver GMP message
+  Proxy Contract ->> Axelar: GMP message delivered
   Axelar ->> Contract: GMP message delivered
-  Contract ->> vstorage: delete inflight tx because it's successful
-  EE ->> Spectrum: polling ICA-equivalent on Avalanche until balance >= $50
-  EE ->> EE: figures out the next step towards user's desired allocation
-  EE ->> Contract: transfer $50 from ICA-equivalent on Avalanche<br/>to ICA-equivalent on Polygon via CCTP<br/>(Axelar interactions similar to withdraw $50)
-  EE ->> Spectrum: polling ICA-equivalent on Polygon until balance >= $50
-  EE ->> EE: figures out the next step towards user's desired allocation
-  EE ->> Contract: deposit $50 from ICA-equivalent on Polygon to<br/>Compound on Polygon pool<br/>(Axelar interactions similar to withdraw $50)
-  EE ->> Spectrum: polling Compound on Polygon pool
+  Proxy Contract ->> Proxy Contract: execute GMP message<br/>(could fail, proxy contract could retry)
+  EE ->> Spectrum: polling balances at relevant places until conditions are satisified
+  EE ->> Contract: resolve move promise so contract can execute the next move
+  end
+  Contract ->> vstorage: delete all moves because they're successful
   EE ->> EE: user's balances match user's desired allocation, go back to sleep
 ```
 
@@ -110,17 +107,17 @@ sequenceDiagram
   - Remaining protocols/pools [M1]
 - [contract]
   - accept flow as sequence of moves [M0]
-  - administrative facet
+  - portfolio facet
     - update portfolio
     - deposit into LCA
     - withdraw from LCA
     - claim rewards intent
       - claim rewards operation (triggered by user for now, could move to by
-        execution engine in the future)
-  - execution engine facet
+        planning engine in the future)
+  - planning engine facet
     - can only move tokens between LCA and positions
-  - notify execution engine
-- [execution engine]
+  - notify planning engine
+- [planning engine]
   - [poller]
     - being able to poll and notify
       - portfolio changes
@@ -131,8 +128,7 @@ sequenceDiagram
       - current balances in various positions
       - current inflight txns
     - produce
-      - steps that can all be executed in parallel to each other to move user's
-        balances closer to their desired portfolio allocation
+      - moves to rearrange user's balances to their desired portfolio allocation
   - [executor]
     - take steps produced by planner and send to portfolio contract
 
@@ -143,4 +139,4 @@ sequenceDiagram
 #### changelog
 1. add claim rewards user story
 1. make it so deposit = intent to rebalance
-1. add an example for execution engine and break down eng tasks further
+1. add an example for planning engine and break down eng tasks further
