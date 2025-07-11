@@ -64,7 +64,7 @@ const AxelarChainIdMap = harden({
 /**
  * @typedef {object} AxelarChainConfig
  * @property {string} axelarId
- * @property {BaseChainInfo} chainInfo
+ * @property {BaseChainInfo<"eip155">} chainInfo
  * @property {EVMContractAddresses} contracts
  */
 
@@ -249,74 +249,6 @@ const testnetContracts = {
   },
 };
 harden(testnetContracts);
-
-/** @type {AxelarConfig} */
-export const axelarConfigMock = {
-  Ethereum: {
-    axelarId: 'Ethereum',
-    contracts: {
-      aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    },
-  },
-  Avalanche: {
-    axelarId: 'Avalanche',
-    contracts: {
-      aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    },
-  },
-  Optimism: {
-    axelarId: 'optimism',
-    contracts: {
-      aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    },
-  },
-  Arbitrum: {
-    axelarId: 'arbitrum',
-    contracts: {
-      aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    },
-  },
-  Polygon: {
-    axelarId: 'Polygon',
-    contracts: {
-      aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    },
-  },
-  Fantom: {
-    axelarId: 'Fantom',
-    contracts: {
-      aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    },
-  },
-  Binance: {
-    axelarId: 'binance',
-    contracts: {
-      aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    },
-  },
-};
-harden(axelarConfigMock);
 
 /**
  * Mainnet chains only.

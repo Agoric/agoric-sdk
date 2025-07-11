@@ -16,6 +16,7 @@ import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import type { Instance, ZoeService } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
+import { axelarConfig } from '../src/axelar-configs.js';
 import { toExternalConfig } from '../src/config-marshal.js';
 import { startPortfolio } from '../src/portfolio-start.core.js';
 import type {
@@ -101,7 +102,7 @@ test('coreEval code without swingset', async t => {
     // currently no config. PortfolioConfigShape,
   );
   t.log('invoke coreEval');
-  await t.notThrowsAsync(startPortfolio(powers, { options }));
+  await t.notThrowsAsync(startPortfolio(powers, { options }, axelarConfig));
 
   // TODO:  common.mocks.ibcBridge.setAddressPrefix('noble');
   for (const { msg, ack } of Object.values(makeUSDNIBCTraffic())) {

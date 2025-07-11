@@ -23,7 +23,8 @@ import type { VowTools } from '@agoric/vow';
 import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { Zone } from '@agoric/zone';
 import { makePromiseKit } from '@endo/promise-kit';
-import type { AxelarConfig } from '../src/portfolio.contract';
+import type { AxelarId } from '../src/portfolio.contract';
+import type { EVMContractAddressesMap } from '../src/type-guards';
 
 export const localAccount0 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
 
@@ -174,70 +175,59 @@ export const makeUSDNIBCTraffic = (
   },
 });
 
-export const axelarConfigMock: AxelarConfig = {
+export const contractsMock: EVMContractAddressesMap = {
   Ethereum: {
-    axelarId: 'Ethereum',
-    contracts: {
-      aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    },
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
   },
   Avalanche: {
-    axelarId: 'Avalanche',
-    contracts: {
-      aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    },
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
   },
   Optimism: {
-    axelarId: 'optimism',
-    contracts: {
-      aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    },
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
   },
   Arbitrum: {
-    axelarId: 'arbitrum',
-    contracts: {
-      aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    },
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
   },
   Polygon: {
-    axelarId: 'Polygon',
-    contracts: {
-      aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    },
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
   },
   Fantom: {
-    axelarId: 'Fantom',
-    contracts: {
-      aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    },
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
   },
   Binance: {
-    axelarId: 'binance',
-    contracts: {
-      aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-      usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    },
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
   },
+} as const;
+
+export const axelarIdsMock: AxelarId = {
+  Ethereum: 'Ethereum',
+  Avalanche: 'Avalanche',
+  Optimism: 'optimism',
+  Arbitrum: 'arbitrum',
+  Polygon: 'Polygon',
+  Fantom: 'Fantom',
+  Binance: 'binance',
 } as const;
 
 /** from https://www.mintscan.io/noble explorer */

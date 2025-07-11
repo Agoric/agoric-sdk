@@ -39,7 +39,7 @@ import {
 } from '../src/portfolio.flows.ts';
 import { makeSwapLockMessages } from '../src/pos-usdn.flows.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
-import { axelarConfigMock } from './mocks.ts';
+import { axelarIdsMock, contractsMock } from './mocks.ts';
 import {
   axelarCCTPConfig,
   makeIncomingEVMEvent,
@@ -262,7 +262,8 @@ const mocks = (
   const ctx1: PortfolioInstanceContext = {
     zoeTools,
     usdc: { denom, brand: USDC },
-    axelarConfig: axelarConfigMock,
+    axelarIds: axelarIdsMock,
+    contracts: contractsMock,
     inertSubscriber,
   };
 
@@ -279,7 +280,7 @@ const mocks = (
     rebalanceFromTransfer(orch, ctx1, packet, kit);
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
-    axelarConfig: axelarConfigMock,
+    axelarIds: axelarIdsMock,
     vowTools,
     timer,
     chainHubTools: { getChainInfo },

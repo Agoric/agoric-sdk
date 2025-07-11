@@ -10,7 +10,7 @@ import { passStyleOf } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import * as contractExports from '../src/portfolio.contract.ts';
-import { axelarConfigMock, makeUSDNIBCTraffic } from './mocks.ts';
+import { axelarIdsMock, contractsMock, makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import {
   chainInfoFantasyTODO,
@@ -61,7 +61,8 @@ const deploy = async (t: ExecutionContext) => {
     {}, // terms
     {
       ...common.commonPrivateArgs,
-      axelarConfig: axelarConfigMock,
+      axelarIds: axelarIdsMock,
+      contracts: contractsMock,
       timerService,
       chainInfo,
     }, // privateArgs
