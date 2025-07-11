@@ -21,6 +21,7 @@ import {
   registerChainsAndAssets,
   withOrchestration,
   type ChainInfo,
+  type CosmosChainInfo,
   type Denom,
   type DenomDetail,
   type OrchestrationPowers,
@@ -171,12 +172,14 @@ export const contract = async (
         'no denom for USDC brand',
       ),
     },
-    gmpFeeToken: {
+    gmpFeeInfo: {
       brand: brands.Fee,
       denom: NonNullish(
         chainHub.getDenom(brands.Fee),
         'no denom for Fee brand',
       ),
+      // to expand AXELAR_GMP to a CosmosChainAddress
+      chainId: (chainInfo.axelar as CosmosChainInfo).chainId,
     },
     contracts,
   };
@@ -199,8 +202,6 @@ export const contract = async (
     timer: timerService,
     chainHubTools: {
       getChainInfo: chainHub.getChainInfo.bind(chainHub),
-      coerceCosmosAddress: chainHub.coerceCosmosAddress.bind(chainHub),
-      resolveAccountId: chainHub.resolveAccountId.bind(chainHub),
     },
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller,

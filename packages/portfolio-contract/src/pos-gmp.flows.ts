@@ -403,9 +403,9 @@ const Compound: CompoundI = {
 
 export type EVMContext<CN extends string> = {
   lca: LocalAccount;
-  fee: DenomAmount;
+  gmpFee: DenomAmount;
+  gmpChainId: string;
   addresses: Record<CN | 'usdc', EVMT['address']>;
-  chainHub: Pick<ChainHub, 'coerceCosmosAddress'>;
 };
 
 export const CompoundProtocol = {
@@ -416,8 +416,9 @@ export const CompoundProtocol = {
     amount: NatAmount,
     src: AccountInfoFor[AxelarChain],
   ) => {
-    const { addresses: a, lca, chainHub, fee } = ctx;
-    const axGas = chainHub.coerceCosmosAddress(gmpAddresses.AXELAR_GMP);
+    const { addresses: a, lca, gmpChainId: chainId, gmpFee: fee } = ctx;
+    const { AXELAR_GMP } = gmpAddresses;
+    const axGas = { chainId, value: AXELAR_GMP, encoding: 'bech32' as const };
     const session = makeEVMSession();
     const usdc = session.makeContract(a.usdc, ERC20);
     const compound = session.makeContract(a.compound, Compound);

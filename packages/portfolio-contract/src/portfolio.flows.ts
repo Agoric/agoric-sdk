@@ -65,21 +65,16 @@ const { keys } = Object;
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
 
-type PortfolioBootstrapContext = {
-  contracts: EVMContractAddressesMap;
-  usdc: { brand: Brand<'nat'>; denom: Denom };
-  gmpFeeToken: { brand: Brand<'nat'>; denom: Denom };
-  zoeTools: GuestInterface<ZoeTools>;
-  makePortfolioKit: () => GuestInterface<PortfolioKit>;
-  inertSubscriber: GuestInterface<ResolvedPublicTopic<unknown>['subscriber']>;
-};
-
 export type PortfolioInstanceContext = {
   contracts: EVMContractAddressesMap;
   usdc: { brand: Brand<'nat'>; denom: Denom };
-  gmpFeeToken: { brand: Brand<'nat'>; denom: Denom };
+  gmpFeeInfo: { brand: Brand<'nat'>; denom: Denom; chainId: string };
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
+};
+
+type PortfolioBootstrapContext = PortfolioInstanceContext & {
+  makePortfolioKit: () => GuestInterface<PortfolioKit>;
 };
 
 type AssetPlace =
@@ -465,13 +460,13 @@ const stepFlow = async (
           'Compound',
           accountId,
         );
-        const { denom } = ctx.gmpFeeToken;
+        const { denom } = ctx.gmpFeeInfo;
         const fee = { denom, value: move.fee ? move.fee.value : 0n };
         const evmCtx: EVMContext<'compound'> = {
-          addresses: contracts[evmChain],
+          addresses: ctx.contracts[evmChain],
           lca,
-          chainHub: ctx.chainHubTools,
-          fee,
+          gmpFee: fee,
+          gmpChainId: ctx.gmpFeeInfo.chainId,
         };
 
         if ('src' in way) {
@@ -511,6 +506,7 @@ export const rebalance = async (
   offerArgs: OfferArgsFor['rebalance'],
   kit: GuestInterface<PortfolioKit>,
 ) => {
+  trace('@@rebalance ctx', ctx);
   const { flow } = offerArgs || {};
   if (flow) return stepFlow(orch, ctx, seat, flow, kit);
 
@@ -614,11 +610,8 @@ export const openPortfolio = (async (
     await provideCosmosAccount(orch, 'agoric', kit);
 
     const portfolioCtx = {
-      contracts,
-      usdc,
+      ...ctx,
       keeper: { ...kit.reader, ...kit.manager },
-      zoeTools,
-      inertSubscriber,
     };
 
     if (!seat.hasExited()) {

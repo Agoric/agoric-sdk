@@ -170,10 +170,7 @@ export const preparePortfolioKit = (
       handled: boolean;
     }>;
     timer: Remote<TimerService>;
-    chainHubTools: Pick<
-      ChainHub,
-      'getChainInfo' | 'coerceCosmosAddress' | 'resolveAccountId'
-    >;
+    chainHubTools: Pick<ChainHub, 'getChainInfo'>;
     proposalShapes: ReturnType<typeof makeProposalShapes0>;
     vowTools: VowTools;
     zcf: ZCF;
