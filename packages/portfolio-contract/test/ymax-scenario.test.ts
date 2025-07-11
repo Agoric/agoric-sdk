@@ -58,26 +58,14 @@ const rebalanceScenarioMacro = test.macro({
       const { flow: moves = [] } = offerArgs;
       console.log('@@@openPortfolio moves', moves);
 
-      let txfr = 0;
-      const remotesDone: SupportedChain[] = [];
       for (const { dest } of moves) {
-        const chain = getChainNameOfPlaceRef(dest);
-        if (!chain) continue;
-        if (chain === 'noble') {
-          await common.utils.transmitVTransferEvent(
-            'acknowledgementPacket',
-            txfr,
-          );
-          txfr += 1;
-        } else if (Object.keys(AxelarChain).includes(chain)) {
-          if (!remotesDone.includes(chain)) {
-            remotesDone.push(chain);
-            await simulateUpcallFromAxelar(common.mocks.transferBridge);
-          }
-          await simulateCCTPAck(common.utils).finally(() =>
-            simulateAckTransferToAxelar(common.utils),
-          );
+        await eventLoopIteration();
+        if (dest === '@Ethereum') {
+          await simulateUpcallFromAxelar(common.mocks.transferBridge);
         }
+        await simulateCCTPAck(common.utils).finally(() =>
+          simulateAckTransferToAxelar(common.utils),
+        );
       }
       const { result, payouts } = await doneP;
       return { result, payouts };
