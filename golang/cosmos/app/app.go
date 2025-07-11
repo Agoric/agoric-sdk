@@ -113,6 +113,8 @@ import (
 	ibcporttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
+	ibcsolo "github.com/cosmos/ibc-go/v8/modules/light-clients/06-solomachine"
+	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -743,6 +745,8 @@ func NewAgoricApp(
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		ibc.NewAppModule(app.IBCKeeper),
+		ibctm.NewAppModule(),
+		ibcsolo.NewAppModule(),
 		params.NewAppModule(app.ParamsKeeper),
 		ics20TransferModule,
 		icaModule,
@@ -875,6 +879,8 @@ func NewAgoricApp(
 		ibctransfertypes.ModuleName,
 		packetforwardtypes.ModuleName,
 		ibcexported.ModuleName,
+		ibcsolo.ModuleName,
+		ibctm.ModuleName,
 		icatypes.ModuleName,
 		evidencetypes.ModuleName,
 		feegrant.ModuleName,
