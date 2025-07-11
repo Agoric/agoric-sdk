@@ -42,6 +42,7 @@ import {
   changeGMPPosition,
   CompoundProtocol,
   provideEVMAccount,
+  provideEVMAccount2,
   type EVMContext,
 } from './pos-gmp.flows.ts';
 import {
@@ -333,20 +334,11 @@ const stepFlow = async (
     switch (way.how) {
       case 'localTransfer': {
         const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
-        // TODO: this eats the Access token; do we want to start doing that?
-        const amounts = (seat.getProposal() as ProposalType['rebalance']).give;
-        if (
-          'Deposit' in amounts &&
-          amounts.Deposit &&
-          !AmountMath.isEqual(amounts.Deposit, amount)
-        ) {
-          console.warn(
-            'ignoring move amount',
-            amount,
-            'in favor of proposal',
-            amounts.Deposit,
-          );
-        }
+        const { give } = seat.getProposal() as ProposalType['rebalance'];
+        const amounts = harden({
+          Deposit: amount,
+          ...('GmpFee' in give ? { GmpFee: give.GmpFee } : {}),
+        });
         todo.push({
           how: 'localTransfer',
           src: { seat, keyword: 'Deposit' },
@@ -411,14 +403,14 @@ const stepFlow = async (
 
       case 'CCTP': {
         const { how, apply, recover } = CCTP;
-        const nInfo = await provideCosmosAccount(orch, 'noble', kit);
+        const [{ lca }, nInfo, axelar] = await Promise.all([
+          provideCosmosAccount(orch, 'agoric', kit),
+          provideCosmosAccount(orch, 'noble', kit),
+          orch.getChain('axelar'),
+        ]);
 
-        const gArgs = {
-          destinationEVMChain: way.dest,
-          amounts: { GmpFee: { brand: ctx.gmpFeeInfo.brand, value: 0n } },
-          keyword: 'GmpFee', // TODO: BLD fees
-        };
-        const gInfo = await provideEVMAccount(orch, ctx, seat, gArgs, kit);
+        const gmp = { chain: axelar, fee: move.fee?.value || 0n };
+        const gInfo = await provideEVMAccount2(way.dest, gmp, lca, ctx, kit);
         todo.push({
           how,
           amount,
@@ -458,13 +450,10 @@ const stepFlow = async (
         assert(keys(AxelarChain).includes(chainName));
         const evmChain = chainName as AxelarChain;
 
-        const gArgs = {
-          destinationEVMChain: evmChain,
-          amounts: { CompoundAccount: amount },
-          keyword: 'CompoundAccount', // TODO: fix account creation fee
-        };
+        const axelar = await orch.getChain('axelar');
+        const gmp = { chain: axelar, fee: move.fee?.value || 0n }; // XXX throw if fee missing?
         const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
-        const gInfo = await provideEVMAccount(orch, ctx, seat, gArgs, kit);
+        const gInfo = await provideEVMAccount2(evmChain, gmp, lca, ctx, kit);
         const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
         const pos = kit.manager.providePosition(
           way.poolKey,
@@ -477,7 +466,7 @@ const stepFlow = async (
           addresses: ctx.contracts[evmChain],
           lca,
           gmpFee: fee,
-          gmpChainId: ctx.gmpFeeInfo.chainId,
+          gmpChain: axelar,
         };
 
         if ('src' in way) {
@@ -509,13 +498,10 @@ const stepFlow = async (
         assert(keys(AxelarChain).includes(chainName));
         const evmChain = chainName as AxelarChain;
 
-        const gArgs = {
-          destinationEVMChain: evmChain,
-          amounts: { AaveAccount: amount },
-          keyword: 'AaveAccount', // TODO: fix account creation fee
-        };
+        const axelar = await orch.getChain('axelar');
+        const gmp = { chain: axelar, fee: move.fee?.value || 0n }; // XXX throw if fee missing?
         const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
-        const gInfo = await provideEVMAccount(orch, ctx, seat, gArgs, kit);
+        const gInfo = await provideEVMAccount2(evmChain, gmp, lca, ctx, kit);
         const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
         const pos = kit.manager.providePosition(way.poolKey, 'Aave', accountId);
         const { denom } = ctx.gmpFeeInfo;
@@ -524,7 +510,7 @@ const stepFlow = async (
           addresses: ctx.contracts[evmChain],
           lca,
           gmpFee: fee,
-          gmpChainId: ctx.gmpFeeInfo.chainId,
+          gmpChain: axelar,
         };
 
         if ('src' in way) {
@@ -564,13 +550,14 @@ export const rebalance = async (
   offerArgs: OfferArgsFor['rebalance'],
   kit: GuestInterface<PortfolioKit>,
 ) => {
-  const proposal = seat.getProposal() as ProposalType0['rebalance'];
+  const proposal = seat.getProposal() as ProposalType['rebalance'];
   trace('rebalance proposal', proposal.give, proposal.want, offerArgs);
 
   // trace('rebalance ctx', ctx);
-  const { flow } = offerArgs || {};
+  const { flow } = offerArgs;
   if (flow) return stepFlow(orch, ctx, seat, flow, kit);
 
+  throw Error('OLD DESIGN');
   if (keys(proposal.want).length > 0) {
     throw Error('TODO: withdraw');
   }

@@ -114,7 +114,7 @@ const mocks = (
   const orch = harden({
     async getChain(name: string) {
       if (chains.has(name)) return chains.get(name);
-      const chainId = `${name}-${(nonce += 1)}`;
+      const chainId = `${name}-${name.length}`;
       const stakingTokens = {
         noble: undefined,
         axelar: [{ denom: 'uaxl' }],
@@ -254,7 +254,7 @@ const mocks = (
   const ctx1: PortfolioInstanceContext = {
     zoeTools,
     usdc: { denom, brand: USDC },
-    gmpFeeInfo: { brand: BLD, denom: 'uusdc', chainId: 'axelar-XXX' },
+    gmpFeeInfo: { brand: BLD, denom: 'ubld', chainId: 'axelar-XXX' },
     contracts: contractAddressesMock,
     inertSubscriber,
   };
@@ -415,30 +415,17 @@ test('open portfolio with USDN position', async t => {
 const openAndTransfer: import('ava').Macro<[() => VTransferIBCEvent[]]> =
   test.macro(async (t, makeEvents) => {
     const { make } = AmountMath;
-    const oneThird = make(USDC, 3_333_000_000n);
-
     const { orch, ctx, offer, storage, tapPK } = mocks(
       {},
-      {
-        USDN: oneThird,
-        Aave: oneThird,
-        AaveGmp: make(USDC, 100n),
-        AaveAccount: make(USDC, 150n),
-        // XXX: check snapshots with Compound
-        // Compound: oneThird,
-        // CompoundGmp: make(USDC, 100n),
-        // CompoundAccount: make(USDC, 150n),
-      },
+      { Deposit: make(USDC, 100n * 1_000_000n) },
     );
     const { log, seat } = offer;
 
-    const shapes = makeProposalShapes0(USDC);
+    const shapes = makeProposalShapes(USDC, BLD);
     mustMatch(seat.getProposal(), shapes.openPortfolio);
 
     const [actual] = await Promise.all([
-      openPortfolio(orch, ctx, seat, {
-        destinationEVMChain: 'Ethereum',
-      }),
+      openPortfolio(orch, ctx, seat, {}),
       Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
         async ([tap, _]) => {
           for (const event of makeEvents()) {
@@ -462,18 +449,23 @@ test(
 );
 
 test('open portfolio with Aave position', async t => {
+  const { add } = AmountMath;
+  const amount = AmountMath.make(USDC, 300n);
+  const feeAcct = AmountMath.make(BLD, 50n);
+  const feeCall = AmountMath.make(BLD, 100n);
   const { orch, tapPK, ctx, offer, storage } = mocks(
     {},
-    {
-      Aave: AmountMath.make(USDC, 300n),
-      AaveAccount: AmountMath.make(USDC, 50n),
-      AaveGmp: AmountMath.make(USDC, 100n),
-    },
+    { Deposit: amount, GmpFee: add(feeAcct, feeCall) },
   );
 
   const [actual] = await Promise.all([
-    openPortfolio(orch, { ...ctx }, offer.seat, {
-      destinationEVMChain: 'Ethereum',
+    openPortfolio(orch, ctx, offer.seat, {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Ethereum', amount, fee: feeAcct },
+        { src: '@Ethereum', dest: 'Aave_Ethereum', amount, fee: feeCall },
+      ],
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
       tap.receiveUpcall(makeIncomingEVMEvent()),
@@ -483,13 +475,17 @@ test('open portfolio with Aave position', async t => {
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'localTransfer', amounts: { AaveAccount: { value: 50n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-3' } },
-    { _method: 'localTransfer', amounts: { Aave: { value: 300n } } },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    {
+      _method: 'localTransfer',
+      amounts: {
+        Deposit: { value: 300n },
+        GmpFee: { value: 150n },
+      },
+    },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'depositForBurn' },
-    { _method: 'localTransfer', amounts: { AaveGmp: { value: 100n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-3' } },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -498,10 +494,11 @@ test('open portfolio with Aave position', async t => {
 });
 
 test('open portfolio with Compound position', async t => {
+  const amount = AmountMath.make(USDC, 300n);
   const { orch, tapPK, ctx, offer, storage } = await mocks(
     {},
     {
-      Compound: AmountMath.make(USDC, 300n),
+      Compound: amount,
       CompoundAccount: AmountMath.make(USDC, 300n),
       CompoundGmp: AmountMath.make(USDC, 100n),
     },
@@ -509,7 +506,11 @@ test('open portfolio with Compound position', async t => {
 
   const [actual] = await Promise.all([
     openPortfolio(orch, { ...ctx }, offer.seat, {
-      destinationEVMChain: 'Ethereum',
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: 'USDNVault', amount, detail },
+      ],
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
       tap.receiveUpcall(makeIncomingEVMEvent()),

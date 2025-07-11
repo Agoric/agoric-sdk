@@ -15,6 +15,7 @@ import { makeTracer, mustMatch, type TypedPattern } from '@agoric/internal';
 import type {
   AccountId,
   CaipChainId,
+  Chain,
   CosmosChainAddress,
   DenomAmount,
   Orchestrator,
@@ -52,6 +53,7 @@ import type {
   OpenPortfolioGive,
   PoolKey,
 } from './type-guards.ts';
+import type { EVMContractAddresses } from './portfolio.contract.ts';
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
@@ -99,6 +101,26 @@ const getCaipId = async (orch: Orchestrator, chainName: AxelarChain) => {
   return caipChainId;
 };
 
+export const provideEVMAccount2 = async (
+  chainName: AxelarChain,
+  gmp: { chain: Chain<{ chainId: string }>; fee: NatValue },
+  lca: LocalAccount,
+  ctx: PortfolioInstanceContext,
+  pk: GuestInterface<PortfolioKit>,
+) => {
+  const found = pk.manager.reserveAccount(chainName);
+  if (found) {
+    return found as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
+  }
+
+  const target = { chainName, remoteAddress: ctx.contracts[chainName].factory };
+  const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
+  await sendGMPContractCall(target, [], fee, lca, gmp.chain);
+
+  return pk.reader.getGMPInfo(chainName) as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
+};
+
+/** @deprecated overly coupled to AmountKeywordRecord; use {@link provideEVMAccount2} */
 export const provideEVMAccount = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -235,10 +257,10 @@ const sendGMPContractCall = async (
   calls: ContractCall[],
   fee: DenomAmount,
   lca: LocalAccount,
-  /** @see gmpAddresses.AXELAR_GMP */
-  axelarGas: CosmosChainAddress,
+  gmpChain: Chain<{ chainId: string }>,
 ) => {
   const payload = buildGMPPayload(calls);
+  const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
   const memo: AxelarGmpOutgoingMemo = {
     destination_chain: dest.chainName,
     destination_address: dest.remoteAddress,
@@ -246,10 +268,12 @@ const sendGMPContractCall = async (
     type: AxelarGMPMessageType.ContractCall,
     fee: {
       amount: String(fee.value),
-      recipient: gmpAddresses.AXELAR_GAS,
+      recipient: AXELAR_GAS,
     },
   };
-  await lca.transfer(axelarGas, fee, { memo: JSON.stringify(memo) });
+  const { chainId } = await gmpChain.getChainInfo();
+  const gmp = { chainId, value: AXELAR_GMP, encoding: 'bech32' as const };
+  await lca.transfer(gmp, fee, { memo: JSON.stringify(memo) });
 };
 
 /** @deprecated use {@link sendGMPContractCall} */
@@ -382,7 +406,7 @@ const withdrawFromAave = async (
 export type EVMContext<CN extends string> = {
   lca: LocalAccount;
   gmpFee: DenomAmount;
-  gmpChainId: string;
+  gmpChain: Chain<{ chainId: string }>;
   addresses: Record<CN | 'usdc', EVMT['address']>;
 };
 
@@ -404,9 +428,7 @@ export const AaveProtocol = {
     amount: NatAmount,
     src: AccountInfoFor[AxelarChain],
   ) => {
-    const { addresses: a, lca, gmpChainId: chainId, gmpFee: fee } = ctx;
-    const { AXELAR_GMP } = gmpAddresses;
-    const axGas = { chainId, value: AXELAR_GMP, encoding: 'bech32' as const };
+    const { addresses: a, lca, gmpChain, gmpFee } = ctx;
     const session = makeEVMSession();
     const usdc = session.makeContract(a.usdc, ERC20);
     const aave = session.makeContract(a.aavePool, Aave);
@@ -415,7 +437,7 @@ export const AaveProtocol = {
 
     const calls = session.finish();
 
-    await sendGMPContractCall(src, calls, fee, lca, axGas);
+    await sendGMPContractCall(src, calls, gmpFee, lca, gmpChain);
   },
   withdraw: async (
     ctx: EVMContext<'aavePool'>,
@@ -444,9 +466,8 @@ export const CompoundProtocol = {
     amount: NatAmount,
     src: AccountInfoFor[AxelarChain],
   ) => {
-    const { addresses: a, lca, gmpChainId: chainId, gmpFee: fee } = ctx;
+    const { addresses: a, lca, gmpChain, gmpFee: fee } = ctx;
     const { AXELAR_GMP } = gmpAddresses;
-    const axGas = { chainId, value: AXELAR_GMP, encoding: 'bech32' as const };
     const session = makeEVMSession();
     const usdc = session.makeContract(a.usdc, ERC20);
     const compound = session.makeContract(a.compound, Compound);
@@ -454,7 +475,7 @@ export const CompoundProtocol = {
     compound.supply(a.usdc, amount.value);
     const calls = session.finish();
 
-    await sendGMPContractCall(src, calls, fee, lca, axGas);
+    await sendGMPContractCall(src, calls, fee, lca, gmpChain);
   },
   withdraw: async (
     ctx: EVMContext<'compound'>,
@@ -561,6 +582,7 @@ export const changeGMPPosition = async (
   protocol: 'Aave' | 'Compound',
   give: {} | OpenPortfolioGive,
 ) => {
+  throw Error('OLD DESIGN');
   const { destinationEVMChain } = offerArgs;
 
   (`${protocol}Gmp` in give && `${protocol}Account` in give) ||
