@@ -36,6 +36,7 @@ import {
 } from './offer-args.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {
+  AaveProtocol,
   CCTP,
   changeGMPPosition,
   CompoundProtocol,
@@ -151,6 +152,7 @@ export const trackFlow = async (
 ) => {
   const flowId = reporter.allocateFlowId();
   let step = 1;
+  trace('@@trackFlow moves', moves);
   try {
     for (const move of moves) {
       trace('trackFlow', step, moveStatus(move));
@@ -404,6 +406,7 @@ const stepFlow = async (
       case 'CCTP': {
         const { how, apply, recover } = CCTP;
         const nInfo = await provideCosmosAccount(orch, 'noble', kit);
+        // TODO: BLD fees
         const gArgs = {
           destinationEVMChain: way.dest,
           amounts: { Deposit: amount },
@@ -450,7 +453,7 @@ const stepFlow = async (
         const gArgs = {
           destinationEVMChain: evmChain,
           amounts: { CompoundAccount: amount },
-          keyword: 'CompoundAccount',
+          keyword: 'CompoundAccount', // TODO: fix account creation fee
         };
         const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
         const gInfo = await provideEVMAccount(orch, ctx, seat, gArgs, kit);
@@ -491,6 +494,53 @@ const stepFlow = async (
         break;
       }
 
+      // XXX factor out duplication with Compound?
+      case 'Aave': {
+        // XXX move this check up to wayFromSrcToDesc
+        const chainName = 'src' in way ? way.src : way.dest;
+        assert(keys(AxelarChain).includes(chainName));
+        const evmChain = chainName as AxelarChain;
+
+        const gArgs = {
+          destinationEVMChain: evmChain,
+          amounts: { AaveAccount: amount },
+          keyword: 'AaveAccount', // TODO: fix account creation fee
+        };
+        const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
+        const gInfo = await provideEVMAccount(orch, ctx, seat, gArgs, kit);
+        const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
+        const pos = kit.manager.providePosition(way.poolKey, 'Aave', accountId);
+        const { denom } = ctx.gmpFeeInfo;
+        const fee = { denom, value: move.fee ? move.fee.value : 0n };
+        const evmCtx: EVMContext<'aavePool'> = {
+          addresses: ctx.contracts[evmChain],
+          lca,
+          gmpFee: fee,
+          gmpChainId: ctx.gmpFeeInfo.chainId,
+        };
+
+        if ('src' in way) {
+          todo.push({
+            how: way.how,
+            src: { proxy: gInfo },
+            amount,
+            dest: { pos },
+            apply: () => AaveProtocol.supply(evmCtx, amount, gInfo),
+            recover: () => assert.fail('last step. cannot recover'),
+          });
+        } else {
+          todo.push({
+            how: way.how,
+            src: { proxy: gInfo },
+            amount,
+            dest: { pos },
+            apply: () => AaveProtocol.withdraw(evmCtx, amount, gInfo),
+            recover: () => AaveProtocol.supply(evmCtx, amount, gInfo),
+          });
+        }
+        break;
+      }
+
       default:
         throw Fail`TODO: ${way.how}`;
     }
@@ -506,12 +556,12 @@ export const rebalance = async (
   offerArgs: OfferArgsFor['rebalance'],
   kit: GuestInterface<PortfolioKit>,
 ) => {
-  trace('@@rebalance ctx', ctx);
-  const { flow } = offerArgs || {};
-  if (flow) return stepFlow(orch, ctx, seat, flow, kit);
-
   const proposal = seat.getProposal() as ProposalType0['rebalance'];
   trace('rebalance proposal', proposal.give, proposal.want, offerArgs);
+
+  // trace('rebalance ctx', ctx);
+  const { flow } = offerArgs || {};
+  if (flow) return stepFlow(orch, ctx, seat, flow, kit);
 
   if (keys(proposal.want).length > 0) {
     throw Error('TODO: withdraw');

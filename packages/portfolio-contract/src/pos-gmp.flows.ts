@@ -15,7 +15,6 @@ import { makeTracer, mustMatch, type TypedPattern } from '@agoric/internal';
 import type {
   AccountId,
   CaipChainId,
-  ChainHub,
   CosmosChainAddress,
   DenomAmount,
   Orchestrator,
@@ -35,16 +34,17 @@ import { throwRedacted as Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
 import type { GuestInterface } from '../../async-flow/src/types.ts';
 import { AxelarChain, type YieldProtocol } from './constants.js';
+import { ERC20, makeEVMSession, type EVMT } from './evm-facade.ts';
 import type {
   AccountInfoFor,
   GMPAccountInfo,
   PortfolioKit,
 } from './portfolio.exo.ts';
 import {
+  provideCosmosAccount,
   type LocalAccount,
   type PortfolioInstanceContext,
   type ProtocolDetail,
-  provideCosmosAccount,
   type TransportDetail,
 } from './portfolio.flows.ts';
 import type {
@@ -52,13 +52,6 @@ import type {
   OpenPortfolioGive,
   PoolKey,
 } from './type-guards.ts';
-import type { EVMContractAddresses } from './portfolio.contract.ts';
-import {
-  ERC20,
-  makeEVMSession,
-  type EVMInterface,
-  type EVMT,
-} from './evm-facade.ts';
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
@@ -214,6 +207,7 @@ export const CCTP = {
 } as const satisfies TransportDetail<'CCTP', 'noble', AxelarChain>;
 harden(CCTP);
 
+/** @deprecated overly coupled with AmountKeywordRecord */
 export const makeAxelarMemo = (
   chainId: string,
   gmpArgs: GmpArgsContractCall,
@@ -393,19 +387,61 @@ const withdrawFromAave = async (
 };
 /* c8 ignore end */
 
+export type EVMContext<CN extends string> = {
+  lca: LocalAccount;
+  gmpFee: DenomAmount;
+  gmpChainId: string;
+  addresses: Record<CN | 'usdc', EVMT['address']>;
+};
+
+type AaveI = {
+  supply: ['address', 'uint256', 'address', 'uint16'];
+  withdraw: ['address', 'uint256', 'address'];
+};
+
+const Aave: AaveI = {
+  supply: ['address', 'uint256', 'address', 'uint16'],
+  withdraw: ['address', 'uint256', 'address'],
+};
+
+export const AaveProtocol = {
+  protocol: 'Aave',
+  chains: keys(AxelarChain) as AxelarChain[],
+  supply: async (
+    ctx: EVMContext<'aavePool'>,
+    amount: NatAmount,
+    src: AccountInfoFor[AxelarChain],
+  ) => {
+    const { addresses: a, lca, gmpChainId: chainId, gmpFee: fee } = ctx;
+    const { AXELAR_GMP } = gmpAddresses;
+    const axGas = { chainId, value: AXELAR_GMP, encoding: 'bech32' as const };
+    const session = makeEVMSession();
+    const usdc = session.makeContract(a.usdc, ERC20);
+    const aave = session.makeContract(a.aavePool, Aave);
+    usdc.approve(a.aavePool, amount.value);
+    aave.supply(a.usdc, amount.value, src.remoteAddress, 0);
+
+    const calls = session.finish();
+
+    await sendGMPContractCall(src, calls, fee, lca, axGas);
+  },
+  withdraw: async (
+    ctx: EVMContext<'aavePool'>,
+    amount: NatAmount,
+    dest: AccountInfoFor[AxelarChain],
+  ) => assert.fail('TODO'),
+} as const satisfies ProtocolDetail<
+  'Aave',
+  AxelarChain,
+  EVMContext<'aavePool'>
+>;
+
 type CompoundI = {
   supply: ['address', 'uint256'];
 };
 
 const Compound: CompoundI = {
   supply: ['address', 'uint256'],
-};
-
-export type EVMContext<CN extends string> = {
-  lca: LocalAccount;
-  gmpFee: DenomAmount;
-  gmpChainId: string;
-  addresses: Record<CN | 'usdc', EVMT['address']>;
 };
 
 export const CompoundProtocol = {
