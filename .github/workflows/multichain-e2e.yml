@@ -125,10 +125,7 @@ jobs:
 
   ymax-hermes:
     name: YMax - Hermes
-    if: |
-      github.event_name == 'workflow_call' ||
-      github.event_name == 'pull_request' ||
-      (github.event_name == 'workflow_dispatch' && inputs.test_type == 'ymax-hermes')
+    if: github.event_name == 'workflow_dispatch' && inputs.test_type == 'ymax-hermes'
     uses: ./.github/workflows/multichain-e2e-ymax.yml
     with:
       config: config.ymax.yaml
