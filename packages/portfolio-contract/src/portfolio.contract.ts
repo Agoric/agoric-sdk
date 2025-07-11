@@ -47,13 +47,6 @@ const { fromEntries, keys } = Object;
 
 const interfaceTODO = undefined;
 
-export type EVMContractAddresses = {
-  aavePool: `0x${string}`;
-  compound: `0x${string}`;
-  factory: `0x${string}`;
-  usdc: `0x${string}`;
-};
-
 const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
   M.splitRecord({
     aavePool: M.string(),
@@ -62,11 +55,37 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
     usdc: M.string(),
   });
 
+export type AxelarConfig = {
+  [chain in AxelarChain]: {
+    /**
+     * Axelar chain IDs differ between mainnet and testnet.
+     * See [supported-chains-list.ts](https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts)
+     */
+    axelarId: string;
+    contracts: EVMContractAddresses;
+  };
+};
+
+const AxelarConfigPattern = M.splitRecord({
+  axelarId: M.string(),
+  chainInfo: ChainInfoShape,
+  contracts: EVMContractAddressesShape,
+});
+
+export const AxelarConfigShape: TypedPattern<AxelarConfig> = M.splitRecord(
+  fromEntries(
+    keys(AxelarChain).map(chain => [chain, AxelarConfigPattern]),
+  ) as Record<AxelarChain, typeof AxelarConfigPattern>,
+);
+
+export type EVMContractAddresses = {
+  aavePool: `0x${string}`;
+  compound: `0x${string}`;
+  factory: `0x${string}`;
+  usdc: `0x${string}`;
+};
+
 export type AxelarId = {
-  /**
-   * Axelar chain IDs differ between mainnet and testnet.
-   * See [supported-chains-list.ts](https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts)
-   */
   [chain in AxelarChain]: string;
 };
 

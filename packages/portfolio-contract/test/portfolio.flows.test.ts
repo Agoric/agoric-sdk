@@ -60,8 +60,7 @@ import {
  * To see the `axelarId` for a given chain, refer to:
  * @see {@link https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts | supported-chains-list.ts}
  */
-/**@type {AxelarChain} */
-const destinationEVMChain = 'Arbitrum';
+const destinationEVMChain: AxelarChain = 'Arbitrum';
 // Must be axelarId of destinationEVMChain
 const sourceChain = 'arbitrum';
 

@@ -269,9 +269,9 @@ export const preparePortfolioKit = (
           if (!extra.memo) return;
           const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
 
-          const result = Object.entries(axelarIds).find(
-            ([_, chainId]) => chainId === memo.source_chain,
-          );
+          const result = (
+            Object.entries(axelarIds) as [AxelarChain, string][]
+          ).find(([_, chainId]) => chainId === memo.source_chain);
 
           // XXX we must have more than just a (forgeable) memo check here to
           // determine if the source of this packet is the Axelar chain!
@@ -314,7 +314,7 @@ export const preparePortfolioKit = (
 
             this.facets.manager.resolveAccount({
               namespace: 'eip155',
-              chainName: chainName as AxelarChain,
+              chainName: chainName,
               chainId: caipId,
               remoteAddress: address,
             });
