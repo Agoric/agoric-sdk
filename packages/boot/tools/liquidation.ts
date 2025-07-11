@@ -1,36 +1,24 @@
-import type { ExecutionContext } from 'ava';
-
-import {
-  insistManagerType,
-  makeSwingsetHarness,
-} from '@aglocal/boot/tools/supports.js';
-import {
-  type GovernanceDriver,
-  type PriceFeedDriver,
-  type WalletFactoryDriver,
-  adaptCosmicSwingsetTestKitForDriver,
-  makeGovernanceDriver,
-  makePriceFeedDriver,
-  makeWalletFactoryDriver,
-} from '@aglocal/boot/tools/drivers.js';
-import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
-import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
-import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { Fail } from '@endo/errors';
 import {
   SECONDS_PER_HOUR,
   SECONDS_PER_MINUTE,
 } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import {
-  type FakeStorageKit,
-  makeFakeStorageKit,
-} from '@agoric/internal/src/storage-test-utils.js';
-import { makeSlogSender } from '@agoric/telemetry';
-import {
   type AgoricNamesRemotes,
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
-import { Fail } from '@endo/errors';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import type { ExecutionContext } from 'ava';
+import { insistManagerType, makeSwingsetHarness } from './supports.js';
+import { type SwingsetTestKit, makeSwingsetTestKit } from './supports.js';
+import {
+  type GovernanceDriver,
+  type PriceFeedDriver,
+  type WalletFactoryDriver,
+  makeGovernanceDriver,
+  makePriceFeedDriver,
+  makeWalletFactoryDriver,
+} from './drivers.js';
 
 export type LiquidationSetup = {
   vaults: {
@@ -77,7 +65,7 @@ export const atomConfig = {
   ],
 };
 
-export const scale6 = (x: number) => BigInt(Math.round(x * 1_000_000));
+export const scale6 = x => BigInt(Math.round(x * 1_000_000));
 
 const DebtLimitValue = scale6(100_000);
 
@@ -97,17 +85,13 @@ export const makeLiquidationTestKit = async ({
   governanceDriver,
   t,
 }: {
-  swingsetTestKit: Awaited<ReturnType<typeof makeCosmicSwingsetTestKit>>;
+  swingsetTestKit: SwingsetTestKit;
   agoricNamesRemotes: AgoricNamesRemotes;
   walletFactoryDriver: WalletFactoryDriver;
   governanceDriver: GovernanceDriver;
   t: Pick<ExecutionContext, 'like'>;
 }) => {
   const priceFeedDrivers = {} as Record<string, PriceFeedDriver>;
-  const { storage } = swingsetTestKit;
-
-  const readPublished = (subPath: string) =>
-    storage.readLatest(`published.${subPath}`);
 
   console.timeLog('DefaultTestContext', 'priceFeedDriver');
 
@@ -123,7 +107,7 @@ export const makeLiquidationTestKit = async ({
     price: number;
   }) => {
     const managerPath = `vaultFactory.managers.manager${managerIndex}`;
-    const { advanceTimeBy } = swingsetTestKit;
+    const { advanceTimeBy, readPublished } = swingsetTestKit;
 
     await null;
     if (!priceFeedDrivers[collateralBrandKey]) {
@@ -223,6 +207,8 @@ export const makeLiquidationTestKit = async ({
       vaultIndex: number,
       partial: Record<string, any>,
     ) {
+      const { readPublished } = swingsetTestKit;
+
       const notification = readPublished(
         `vaultFactory.managers.manager${managerIndex}.vaults.vault${vaultIndex}`,
       );
@@ -302,7 +288,7 @@ export const makeLiquidationTestKit = async ({
         ...setup.bids[i],
         maxBuy,
       });
-      t.like(readPublished(`wallet.${buyerWalletAddress}`), {
+      t.like(swingsetTestKit.readPublished(`wallet.${buyerWalletAddress}`), {
         status: {
           id: offerId,
           result: 'Your bid has been accepted',
@@ -327,45 +313,27 @@ function assertManagerType(specimen: string): asserts specimen is ManagerType {
 }
 
 export const makeLiquidationTestContext = async (
-  parameters: Parameters<typeof makeCosmicSwingsetTestKit>[0] &
-    Partial<{ storage: FakeStorageKit }>,
-  t: Pick<ExecutionContext, 'like'>,
+  t,
+  io: { env?: Record<string, string | undefined> } = {},
 ) => {
-  let handleBridgeSend = parameters.handleBridgeSend;
-  let storage = parameters.storage;
+  const { env = {} } = io;
   const {
     SLOGFILE: slogFile,
     SWINGSET_WORKER_TYPE: defaultManagerType = 'local',
-  } = process.env;
-
+  } = env;
   assertManagerType(defaultManagerType);
-
-  if (!storage) storage = makeFakeStorageKit('bootstrapTests');
-
-  if (!handleBridgeSend)
-    ({ handleBridgeSend } = makeMockBridgeKit({ storageKit: storage }));
-
   const harness =
     defaultManagerType === 'xsnap' ? makeSwingsetHarness() : undefined;
-  const slogSender = slogFile
-    ? makeSlogSender({
-        env: {
-          ...process.env,
-          SLOGFILE: slogFile,
-        },
-        stateDir: '.',
-      })
-    : undefined;
-
-  const swingsetTestKit = await makeCosmicSwingsetTestKit({
-    ...parameters,
-    handleBridgeSend,
-    slogSender,
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
+    slogFile,
+    defaultManagerType,
+    harness,
   });
   console.time('DefaultTestContext');
 
-  const { EV, queueAndRun } = swingsetTestKit;
+  const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
+  const { EV } = runUtils;
 
   // Wait for ATOM to make it into agoricNames
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
@@ -384,14 +352,14 @@ export const makeLiquidationTestContext = async (
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
-    { EV, queueAndRun },
+    runUtils,
     storage,
     agoricNamesRemotes,
   );
   console.timeLog('DefaultTestContext', 'walletFactoryDriver');
 
   const governanceDriver = await makeGovernanceDriver(
-    adaptCosmicSwingsetTestKitForDriver(storage, swingsetTestKit),
+    swingsetTestKit,
     agoricNamesRemotes,
     walletFactoryDriver,
     // TODO read from the config file
@@ -404,21 +372,20 @@ export const makeLiquidationTestContext = async (
   console.timeLog('DefaultTestContext', 'governanceDriver');
 
   const liquidationTestKit = await makeLiquidationTestKit({
-    agoricNamesRemotes,
-    governanceDriver,
     swingsetTestKit,
+    agoricNamesRemotes,
     walletFactoryDriver,
+    governanceDriver,
     t,
   });
   return {
+    ...swingsetTestKit,
+    ...liquidationTestKit,
     agoricNamesRemotes,
+    refreshAgoricNamesRemotes,
+    walletFactoryDriver,
     governanceDriver,
     harness,
-    liquidationTestKit,
-    refreshAgoricNamesRemotes,
-    storage,
-    swingsetTestKit,
-    walletFactoryDriver,
   };
 };
 
@@ -429,33 +396,53 @@ export type LiquidationTestContext = Awaited<
 const addSTARsCollateral = async (
   t: ExecutionContext<LiquidationTestContext>,
 ) => {
-  const {
-    refreshAgoricNamesRemotes,
-    swingsetTestKit: { evaluateCoreProposal },
-  } = t.context;
+  const { controller, buildProposal } = t.context;
 
-  await evaluateCoreProposal(
-    await buildProposal('@agoric/builders/scripts/inter-protocol/add-STARS.js'),
+  t.log('building proposal');
+  const proposal = await buildProposal(
+    '@agoric/builders/scripts/inter-protocol/add-STARS.js',
   );
 
-  refreshAgoricNamesRemotes();
+  for await (const bundle of proposal.bundles) {
+    await controller.validateAndInstallBundle(bundle);
+  }
+  t.log('installed', proposal.bundles.length, 'bundles');
 
-  console.log('add-STARS proposal executed');
+  t.log('launching proposal');
+  const bridgeMessage = {
+    type: 'CORE_EVAL',
+    evals: proposal.evals,
+  };
+  t.log({ bridgeMessage });
+
+  const { EV } = t.context.runUtils;
+  const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
+    'coreEvalBridgeHandler',
+  );
+  await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+
+  t.context.refreshAgoricNamesRemotes();
+
+  t.log('add-STARS proposal executed');
 };
 
 export const ensureVaultCollateral = async (
   collateralBrandKey: string,
   t: ExecutionContext<LiquidationTestContext>,
 ) => {
-  await null;
-
   // TODO: we'd like to have this work on any brand
   const SUPPORTED_BRANDS = ['ATOM', 'STARS'];
 
-  if (!SUPPORTED_BRANDS.includes(collateralBrandKey))
+  if (!SUPPORTED_BRANDS.includes(collateralBrandKey)) {
     throw Error('Unsupported brand type');
+  }
 
-  if (collateralBrandKey === 'ATOM') return;
+  if (collateralBrandKey === 'ATOM') {
+    return;
+  }
 
-  if (collateralBrandKey === 'STARS') await addSTARsCollateral(t);
+  if (collateralBrandKey === 'STARS') {
+    // eslint-disable-next-line @jessie.js/safe-await-separator
+    await addSTARsCollateral(t);
+  }
 };
