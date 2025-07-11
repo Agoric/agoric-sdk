@@ -2,16 +2,15 @@
  * @file tests of adding an asset to the vaultFactory.
  * Checks that auctions update correctly.
  */
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
 import type { TestFn } from 'ava';
 
-import { TimeMath } from '@agoric/time';
 import {
   type LiquidationTestContext,
   makeLiquidationTestContext,
-} from '../../tools/liquidation.js';
-import { makeProposalExtractor } from '../../tools/supports.js';
+} from '@aglocal/boot/tools/liquidation.js';
+import { makeProposalExtractor } from '@aglocal/boot/tools/supports.js';
+import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 const test = anyTest as TestFn<
   LiquidationTestContext & {
@@ -26,12 +25,15 @@ const test = anyTest as TestFn<
 const auctioneerPath = 'published.auction';
 
 test.before(async t => {
-  const context = await makeLiquidationTestContext(t);
-  const proposal = await context.buildProposal(
+  const context = await makeLiquidationTestContext(
+    { configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json' },
+    t,
+  );
+  const proposal = await buildProposal(
     '@agoric/builders/scripts/inter-protocol/add-STARS.js',
   );
 
-  const getCollateralProposal = (name, id) => {
+  const getCollateralProposal = (name: string, id: string) => {
     // stringify, modify and parse because modifying a deep copy was fragile.
     const proposalJSON = JSON.stringify(proposal);
     const proposalMod = proposalJSON
@@ -52,38 +54,26 @@ test.before(async t => {
   };
 });
 
-test.after.always(t => {
-  return t.context.shutdown && t.context.shutdown();
-});
+test.after.always(t => t.context.swingsetTestKit.shutdown());
 
 test.serial('addAsset to quiescent auction', async t => {
-  const { advanceTimeTo, evalProposal, getNumAuctionBooks, readLatest } =
-    t.context;
+  const {
+    getNumAuctionBooks,
+    storage,
+    swingsetTestKit: { advanceTimeBy, evaluateCoreProposal },
+  } = t.context;
 
   const booksBefore = getNumAuctionBooks();
 
-  await evalProposal(t.context.getCollateralProposal('COMETS', 'A'));
+  await evaluateCoreProposal(t.context.getCollateralProposal('COMETS', 'A'));
 
-  const { EV } = t.context.runUtils;
-
-  const auctioneerKit = await EV.vat('bootstrap').consumeItem('auctioneerKit');
-  const schedules = await EV(auctioneerKit.creatorFacet).getSchedule();
-  const { liveAuctionSchedule, nextAuctionSchedule } = schedules;
-  const nextEndTime = liveAuctionSchedule
-    ? liveAuctionSchedule.endTime
-    : nextAuctionSchedule!.endTime;
-  const fiveMinutes = harden({
-    relValue: 5n * 60n,
-    timerBrand: nextEndTime.timerBrand,
-  });
-  const nextQuiescentTime = TimeMath.addAbsRel(nextEndTime, fiveMinutes);
-  await advanceTimeTo(nextQuiescentTime);
+  await advanceTimeBy(5, 'minutes');
 
   const booksAfter = getNumAuctionBooks();
   t.is(booksAfter, booksBefore + 1);
 
   t.like(
-    readLatest(`${auctioneerPath}.book${booksAfter - 1}`),
+    storage.readLatest(`${auctioneerPath}.book${booksAfter - 1}`),
     {
       currentPriceLevel: null,
     },
@@ -92,13 +82,16 @@ test.serial('addAsset to quiescent auction', async t => {
 });
 
 test.serial('addAsset to active auction', async t => {
-  const { advanceTimeTo, getNumAuctionBooks, readLatest } = t.context;
-  const { EV } = t.context.runUtils;
+  const {
+    getNumAuctionBooks,
+    storage,
+    swingsetTestKit: { advanceTimeBy, EV, evaluateCoreProposal },
+  } = t.context;
 
   const booksBefore = getNumAuctionBooks();
 
   t.like(
-    readLatest(`${auctioneerPath}.book${booksBefore - 1}`),
+    storage.readLatest(`${auctioneerPath}.book${booksBefore - 1}`),
     {
       startPrice: null,
     },
@@ -107,35 +100,12 @@ test.serial('addAsset to active auction', async t => {
 
   const auctioneerKit = await EV.vat('bootstrap').consumeItem('auctioneerKit');
   const schedules = await EV(auctioneerKit.creatorFacet).getSchedule();
-  const { nextAuctionSchedule } = schedules;
-  assert(nextAuctionSchedule);
-  const nextStartTime = nextAuctionSchedule.startTime;
-  const fiveMinutes = harden({
-    relValue: 5n * 60n,
-    timerBrand: nextStartTime.timerBrand,
-  });
-  const futureBusyTime = TimeMath.addAbsRel(nextStartTime, fiveMinutes);
 
-  await advanceTimeTo(futureBusyTime);
+  await advanceTimeBy(5, 'minutes');
 
   t.log('launching proposal');
 
-  const proposal = t.context.getCollateralProposal('PLANETS', 'B');
-  const bridgeMessage = {
-    type: 'CORE_EVAL',
-    evals: proposal.evals,
-  };
-  t.log({ bridgeMessage });
-
-  const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
-    'coreEvalBridgeHandler',
-  );
-  // XXX races with the following lines
-  void EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
-
-  const nextEndTime = nextAuctionSchedule!.endTime;
-  const afterEndTime = TimeMath.addAbsRel(nextEndTime, fiveMinutes);
-  await advanceTimeTo(afterEndTime);
+  await evaluateCoreProposal(t.context.getCollateralProposal('PLANETS', 'B'));
   t.log('proposal executed');
 
   const schedulesAfter = await EV(auctioneerKit.creatorFacet).getSchedule();
@@ -150,42 +120,19 @@ test.serial('addAsset to active auction', async t => {
 });
 
 test.serial('addAsset to auction starting soon', async t => {
-  const { advanceTimeTo, getNumAuctionBooks } = t.context;
-  const { EV } = t.context.runUtils;
+  const {
+    getNumAuctionBooks,
+    swingsetTestKit: { advanceTimeBy, EV, evaluateCoreProposal },
+  } = t.context;
   const booksBefore = getNumAuctionBooks();
 
   const auctioneerKit = await EV.vat('bootstrap').consumeItem('auctioneerKit');
   const schedules = await EV(auctioneerKit.creatorFacet).getSchedule();
   const { nextAuctionSchedule } = schedules;
   assert(nextAuctionSchedule);
-  const nextStartTime = nextAuctionSchedule.startTime;
-  const fiveMinutes = harden({
-    relValue: 5n * 60n,
-    timerBrand: nextStartTime.timerBrand,
-  });
-  const tooCloseTime = TimeMath.subtractAbsRel(nextStartTime, fiveMinutes);
+  await advanceTimeBy(5, 'minutes');
 
-  await advanceTimeTo(tooCloseTime);
-
-  const proposal = t.context.getCollateralProposal('MOONS', 'C');
-  t.log('launching proposal');
-  const bridgeMessage = {
-    type: 'CORE_EVAL',
-    evals: proposal.evals,
-  };
-  t.log({ bridgeMessage });
-
-  const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
-    'coreEvalBridgeHandler',
-  );
-  // XXX races with the following lines
-  void EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
-
-  const nextEndTime = nextAuctionSchedule.endTime;
-  const afterEndTime = TimeMath.addAbsRel(nextEndTime, fiveMinutes);
-  await advanceTimeTo(afterEndTime);
-
-  t.log('proposal executed');
+  await evaluateCoreProposal(t.context.getCollateralProposal('MOONS', 'C'));
 
   const schedulesAfter = await EV(auctioneerKit.creatorFacet).getSchedule();
   t.truthy(

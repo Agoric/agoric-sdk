@@ -6,16 +6,17 @@
  *   manager state. TODO is there a way to _reset_ the vaultmanager to make the
  *   two tests run faster?
  */
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
-import { NonNullish } from '@agoric/internal';
 import type { ExecutionContext, TestFn } from 'ava';
+
 import {
   type LiquidationTestContext,
   ensureVaultCollateral,
   makeLiquidationTestContext,
   scale6,
-} from '../../tools/liquidation.js';
+} from '@aglocal/boot/tools/liquidation.js';
+import { NonNullish } from '@agoric/internal';
+import { TimeMath } from '@agoric/time';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 const test = anyTest as TestFn<LiquidationTestContext>;
 
@@ -190,25 +191,25 @@ const outcomes = {
 };
 
 test.before(async t => {
-  t.context = await makeLiquidationTestContext(t);
+  t.context = await makeLiquidationTestContext(
+    { configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json' },
+    t,
+  );
 });
-test.after.always(t => {
-  return t.context.shutdown && t.context.shutdown();
-});
+
+test.after.always(t => t.context.swingsetTestKit.shutdown());
 
 test.serial(
   'concurrent flow 2',
   async (t: ExecutionContext<LiquidationTestContext>) => {
     const {
-      advanceTimeBy,
-      advanceTimeTo,
-      check,
-      priceFeedDrivers,
-      readLatest,
-      readPublished,
-      setupVaults,
-      placeBids,
+      liquidationTestKit: { check, placeBids, priceFeedDrivers, setupVaults },
+      storage,
+      swingsetTestKit: { advanceTimeBy, getLastBlockInfo, runUntilQueuesEmpty },
     } = t.context;
+
+    const readPublished = (subPath: string) =>
+      storage.readLatest(`published.${subPath}`);
 
     const cases = [
       { collateralBrandKey: 'ATOM', managerIndex: 0 },
@@ -267,22 +268,31 @@ test.serial(
       setups[collateralBrandKeySt].price.trigger,
     );
 
+    await runUntilQueuesEmpty();
+
     const liveSchedule = readPublished('auction.schedule');
 
     for (const { collateralBrandKey, managerIndex } of cases) {
       // check nothing liquidating yet
       t.is(liveSchedule.activeStartTime, null);
-      t.like(readLatest(metricsPaths[managerIndex]), {
+      t.like(storage.readLatest(metricsPaths[managerIndex]), {
         numActiveVaults: setups[collateralBrandKey].vaults.length,
         numLiquidatingVaults: 0,
       });
     }
 
     console.log('step 0 of 11');
-    await advanceTimeTo(NonNullish(liveSchedule.nextDescendingStepTime));
+
+    await advanceTimeBy(
+      Number(
+        TimeMath.absValue(NonNullish(liveSchedule.nextDescendingStepTime)),
+      ) - getLastBlockInfo().blockTime,
+      'seconds',
+    );
+    await runUntilQueuesEmpty();
 
     for (const { collateralBrandKey, managerIndex } of cases) {
-      t.like(readLatest(metricsPaths[managerIndex]), {
+      t.like(storage.readLatest(metricsPaths[managerIndex]), {
         numActiveVaults: 0,
         numLiquidatingVaults: setups[collateralBrandKey].vaults.length,
         liquidatingCollateral: {
@@ -377,7 +387,7 @@ test.serial(
     const metricsPathSt = metricsPaths[managerIndexSt];
 
     // ATOM
-    t.like(readLatest(metricsPathA), {
+    t.like(storage.readLatest(metricsPathA), {
       // reconstituted
       numActiveVaults: 2,
       numLiquidationsCompleted: 1,
@@ -394,7 +404,7 @@ test.serial(
     });
 
     // STARS
-    t.like(readLatest(metricsPathSt), {
+    t.like(storage.readLatest(metricsPathSt), {
       // reconstituted
       numActiveVaults: 2,
       numLiquidationsCompleted: 1,

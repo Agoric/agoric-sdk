@@ -1,10 +1,9 @@
 // @ts-check
 /** @file Bootstrap test of liquidation across multiple collaterals */
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import process from 'node:process';
 
-import { NonNullish } from '@agoric/internal';
-import process from 'process';
 import type { TestFn } from 'ava';
+
 import {
   type LiquidationSetup,
   type LiquidationTestContext,
@@ -12,7 +11,10 @@ import {
   likePayouts,
   makeLiquidationTestContext,
   scale6,
-} from '../../tools/liquidation.js';
+} from '@aglocal/boot/tools/liquidation.js';
+import { NonNullish } from '@agoric/internal';
+import { TimeMath } from '@agoric/time';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 const test = anyTest as TestFn<LiquidationTestContext>;
 
@@ -225,12 +227,13 @@ const outcomes = {
 };
 
 test.before(async t => {
-  t.context = await makeLiquidationTestContext(t);
+  t.context = await makeLiquidationTestContext(
+    { configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json' },
+    t,
+  );
 });
 
-test.after.always(t => {
-  return t.context.shutdown && t.context.shutdown();
-});
+test.after.always(t => t.context.swingsetTestKit.shutdown());
 
 // Reference: Flow 1 from https://github.com/Agoric/agoric-sdk/issues/7123
 test('concurrent flow 1', async t => {
@@ -240,16 +243,14 @@ test('concurrent flow 1', async t => {
   });
 
   const {
-    advanceTimeBy,
-    advanceTimeTo,
-    check,
-    priceFeedDrivers,
-    readLatest,
-    readPublished,
+    liquidationTestKit: { check, placeBids, priceFeedDrivers, setupVaults },
+    storage,
+    swingsetTestKit: { advanceTimeBy, getLastBlockInfo, runUntilQueuesEmpty },
     walletFactoryDriver,
-    setupVaults,
-    placeBids,
   } = t.context;
+
+  const readPublished = (subPath: string) =>
+    storage.readLatest(`published.${subPath}`);
 
   const cases = [
     { collateralBrandKey: 'ATOM', managerIndex: 0 },
@@ -311,7 +312,7 @@ test('concurrent flow 1', async t => {
   for (const { collateralBrandKey, managerIndex } of cases) {
     // check nothing liquidating yet
     t.is(liveSchedule.activeStartTime, null);
-    t.like(readLatest(metricsPaths[managerIndex]), {
+    t.like(storage.readLatest(metricsPaths[managerIndex]), {
       numActiveVaults: setups[collateralBrandKey].vaults.length,
       numLiquidatingVaults: 0,
     });
@@ -319,10 +320,15 @@ test('concurrent flow 1', async t => {
 
   // advance time to start an auction
   console.log('step 1 of 10');
-  await advanceTimeTo(NonNullish(liveSchedule.nextDescendingStepTime));
+  await advanceTimeBy(
+    Number(TimeMath.absValue(NonNullish(liveSchedule.nextDescendingStepTime))) -
+      getLastBlockInfo().blockTime,
+    'seconds',
+  );
+  await runUntilQueuesEmpty();
 
   for (const { collateralBrandKey, managerIndex } of cases) {
-    t.like(readLatest(metricsPaths[managerIndex]), {
+    t.like(storage.readLatest(metricsPaths[managerIndex]), {
       numActiveVaults: 0,
       numLiquidatingVaults: setups[collateralBrandKey].vaults.length,
       liquidatingCollateral: {
@@ -395,7 +401,6 @@ test('concurrent flow 1', async t => {
   {
     const { nextDescendingStepTime, nextStartTime } =
       readPublished('auction.schedule');
-    // @ts-expect-error could be null or a different shape
     t.is(nextDescendingStepTime.absValue, nextStartTime.absValue);
   }
 
@@ -436,7 +441,7 @@ test('concurrent flow 1', async t => {
   const metricsPathSt = metricsPaths[managerIndexSt];
 
   // ATOM
-  t.like(readLatest(metricsPathA), {
+  t.like(storage.readLatest(metricsPathA), {
     numActiveVaults: 0,
     numLiquidationsCompleted: setups[collateralBrandKeyA].vaults.length,
     numLiquidatingVaults: 0,
@@ -465,7 +470,7 @@ test('concurrent flow 1', async t => {
   });
 
   // STARS
-  t.like(readLatest(metricsPathSt), {
+  t.like(storage.readLatest(metricsPathSt), {
     numActiveVaults: 0,
     numLiquidationsCompleted: setups[collateralBrandKeySt].vaults.length,
     numLiquidatingVaults: 0,

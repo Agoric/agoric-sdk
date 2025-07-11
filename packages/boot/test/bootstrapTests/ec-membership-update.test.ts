@@ -101,10 +101,7 @@ const makeZoeTestContext = async t => {
   );
 
   const liquidationTestKit = await makeLiquidationTestKit({
-    swingsetTestKit: adaptCosmicSwingsetTestKitForDriver(
-      storage,
-      swingsetTestKit,
-    ),
+    swingsetTestKit,
     agoricNamesRemotes,
     walletFactoryDriver,
     governanceDriver,

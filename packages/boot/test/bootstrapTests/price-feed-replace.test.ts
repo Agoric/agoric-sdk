@@ -7,13 +7,8 @@
  * 2. force prices to drop so a vault liquidates
  * 3. verify that the bidder gets the liquidated assets.
  */
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
-import type { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
-import { NonNullish } from '@agoric/internal';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { Fail } from '@endo/errors';
 
 import {
   type LiquidationTestContext,
@@ -21,18 +16,28 @@ import {
   makeLiquidationTestContext,
   scale6,
   type LiquidationSetup,
-} from '../../tools/liquidation.js';
+} from '@aglocal/boot/tools/liquidation.js';
 import {
   updateVaultDirectorParams,
   updateVaultManagerParams,
-} from '../tools/changeVaultParams.js';
+} from '@aglocal/boot/test/tools/changeVaultParams.js';
+import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
+import type { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
+import { NonNullish } from '@agoric/internal';
+import { TimeMath } from '@agoric/time';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { Fail } from '@endo/errors';
 
 const test = anyTest as TestFn<LiquidationTestContext>;
-test.before(
-  async t =>
-    (t.context = await makeLiquidationTestContext(t, { env: process.env })),
-);
-test.after.always(t => t.context.shutdown());
+
+test.before(async t => {
+  t.context = await makeLiquidationTestContext(
+    { configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json' },
+    t,
+  );
+});
+
+test.after.always(t => t.context.swingsetTestKit.shutdown());
 
 const collateralBrandKey = 'ATOM';
 const managerIndex = 0;
@@ -57,15 +62,16 @@ const outcome = {
 test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
   const {
     agoricNamesRemotes,
-    buildProposal,
-    evalProposal,
-    priceFeedDrivers,
-    refreshAgoricNamesRemotes,
-    setupVaults,
     governanceDriver: gd,
-    readPublished,
+    liquidationTestKit: { priceFeedDrivers, setupVaults },
+    refreshAgoricNamesRemotes,
     harness,
+    storage,
+    swingsetTestKit: { EV, evaluateCoreProposal },
   } = t.context;
+
+  const readPublished = (subPath: string) =>
+    storage.readLatest(`published.${subPath}`);
 
   await setupVaults(collateralBrandKey, managerIndex, setup);
 
@@ -95,7 +101,6 @@ test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
   const SOME_GUI = 'someGUIHASH';
   await updateVaultDirectorParams(t, gd, SOME_GUI);
 
-  const { EV } = t.context.runUtils;
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
   const oldVaultInstallation = await EV(agoricNames).lookup(
     'installation',
@@ -113,7 +118,7 @@ test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
     bundles: coreEvals.flatMap(e => e.bundles),
   };
   t.log('evaluating', coreEvals.length, 'scripts');
-  await evalProposal(combined);
+  await evaluateCoreProposal(combined);
 
   refreshAgoricNamesRemotes();
   const instancePost = agoricNamesRemotes.instance['ATOM-USD price feed'];
@@ -138,7 +143,14 @@ test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
 });
 
 test.serial('1. place bid', async t => {
-  const { placeBids, readPublished } = t.context;
+  const {
+    liquidationTestKit: { placeBids },
+    storage,
+  } = t.context;
+
+  const readPublished = (subPath: string) =>
+    storage.readLatest(`published.${subPath}`);
+
   await placeBids(collateralBrandKey, 'agoric1buyer', setup, 0);
 
   t.like(readPublished('wallet.agoric1buyer.current'), {
@@ -147,7 +159,13 @@ test.serial('1. place bid', async t => {
 });
 
 test.serial('2. trigger liquidation by changing price', async t => {
-  const { priceFeedDrivers, readPublished } = t.context;
+  const {
+    liquidationTestKit: { priceFeedDrivers },
+    storage,
+  } = t.context;
+
+  const readPublished = (subPath: string) =>
+    storage.readLatest(`published.${subPath}`);
 
   // the current roundId is still 1. Round 1 is special, and you can't get to
   // round 2 until roundTimeout (10s) has elapsed.
@@ -176,15 +194,26 @@ test.serial('2. trigger liquidation by changing price', async t => {
 });
 
 test.serial('3. verify liquidation', async t => {
-  const { advanceTimeBy, advanceTimeTo, readPublished } = t.context;
+  const {
+    storage,
+    swingsetTestKit: { advanceTimeBy, getLastBlockInfo, runUntilQueuesEmpty },
+  } = t.context;
+
+  const readPublished = (subPath: string) =>
+    storage.readLatest(`published.${subPath}`);
 
   const liveSchedule: ScheduleNotification = readPublished('auction.schedule');
   const metricsPath = `vaultFactory.managers.manager${managerIndex}.metrics`;
 
   // advance time to start an auction
   console.log(collateralBrandKey, 'step 1 of 10');
-  await advanceTimeTo(NonNullish(liveSchedule.nextDescendingStepTime));
-  await eventLoopIteration(); // let promises to update vstorage settle
+
+  await advanceTimeBy(
+    Number(TimeMath.absValue(NonNullish(liveSchedule.nextDescendingStepTime))) -
+      getLastBlockInfo().blockTime,
+    'seconds',
+  );
+  await runUntilQueuesEmpty();
 
   // vaultFactory sent collateral for liquidation
   t.like(readPublished(metricsPath), {

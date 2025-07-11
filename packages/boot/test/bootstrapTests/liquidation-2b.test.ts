@@ -6,16 +6,17 @@
  *   manager state. TODO is there a way to _reset_ the vaultmanager to make the
  *   two tests run faster?
  */
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
-import { NonNullish } from '@agoric/internal';
 import type { TestFn } from 'ava';
+
 import {
   type LiquidationSetup,
   type LiquidationTestContext,
   makeLiquidationTestContext,
   scale6,
-} from '../../tools/liquidation.js';
+} from '@aglocal/boot/tools/liquidation.js';
+import { NonNullish } from '@agoric/internal';
+import { TimeMath } from '@agoric/time';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 const test = anyTest as TestFn<LiquidationTestContext>;
 
@@ -117,23 +118,24 @@ const outcome = {
 //#endregion
 
 test.before(async t => {
-  t.context = await makeLiquidationTestContext(t);
+  t.context = await makeLiquidationTestContext(
+    { configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json' },
+    t,
+  );
 });
-test.after.always(t => {
-  return t.context.shutdown && t.context.shutdown();
-});
+
+test.after.always(t => t.context.swingsetTestKit.shutdown());
 
 // Reference: Flow 2b from https://github.com/Agoric/agoric-sdk/issues/7123
 test.serial('scenario: Flow 2b', async t => {
   const {
-    advanceTimeBy,
-    advanceTimeTo,
-    check,
-    priceFeedDrivers,
-    readPublished,
-    setupVaults,
-    placeBids,
+    liquidationTestKit: { check, placeBids, priceFeedDrivers, setupVaults },
+    storage,
+    swingsetTestKit: { advanceTimeBy, getLastBlockInfo, runUntilQueuesEmpty },
   } = t.context;
+
+  const readPublished = (subPath: string) =>
+    storage.readLatest(`published.${subPath}`);
 
   const managerIndex = 0;
   const publishedMetrics = `vaultFactory.managers.manager${managerIndex}.metrics`;
@@ -141,97 +143,101 @@ test.serial('scenario: Flow 2b', async t => {
   await setupVaults(collateralBrandKey, managerIndex, setup);
   await placeBids(collateralBrandKey, 'agoric1buyer', setup);
 
-  {
-    // ---------------
-    //  Change price to trigger liquidation
-    // ---------------
+  // ---------------
+  //  Change price to trigger liquidation
+  // ---------------
 
-    await priceFeedDrivers.ATOM.setPrice(setup.price.trigger);
+  await priceFeedDrivers.ATOM.setPrice(setup.price.trigger);
 
-    // check nothing liquidating yet
-    const liveSchedule = readPublished('auction.schedule');
-    t.is(liveSchedule.activeStartTime, null);
-    t.like(readPublished(publishedMetrics), {
-      numActiveVaults: setup.vaults.length,
-      numLiquidatingVaults: 0,
-    });
+  // check nothing liquidating yet
+  const liveSchedule = readPublished('auction.schedule');
+  t.is(liveSchedule.activeStartTime, null);
+  t.like(readPublished(publishedMetrics), {
+    numActiveVaults: setup.vaults.length,
+    numLiquidatingVaults: 0,
+  });
 
-    // advance time to start an auction
-    console.log('step 0 of 10');
-    await advanceTimeTo(NonNullish(liveSchedule.nextDescendingStepTime));
-    t.like(readPublished(publishedMetrics), {
-      numActiveVaults: 0,
-      numLiquidatingVaults: setup.vaults.length,
-      liquidatingCollateral: {
-        value: scale6(setup.auction.start.collateral),
-      },
-      liquidatingDebt: { value: scale6(setup.auction.start.debt) },
-    });
+  // advance time to start an auction
+  console.log('step 0 of 10');
+  await advanceTimeBy(
+    Number(TimeMath.absValue(NonNullish(liveSchedule.nextDescendingStepTime))) -
+      getLastBlockInfo().blockTime,
+    'seconds',
+  );
+  await runUntilQueuesEmpty();
 
-    console.log('step 1 of 10');
-    await advanceTimeBy(3, 'minutes');
-    t.like(readPublished(`auction.book${managerIndex}`), {
-      collateralAvailable: { value: scale6(setup.auction.start.collateral) },
-      startCollateral: { value: scale6(setup.auction.start.collateral) },
-      startProceedsGoal: { value: scale6(setup.auction.start.debt) },
-    });
+  t.like(readPublished(publishedMetrics), {
+    numActiveVaults: 0,
+    numLiquidatingVaults: setup.vaults.length,
+    liquidatingCollateral: {
+      value: scale6(setup.auction.start.collateral),
+    },
+    liquidatingDebt: { value: scale6(setup.auction.start.debt) },
+  });
 
-    console.log('step 2 of 10');
-    await advanceTimeBy(3, 'minutes');
+  console.log('step 1 of 10');
+  await advanceTimeBy(3, 'minutes');
+  t.like(readPublished(`auction.book${managerIndex}`), {
+    collateralAvailable: { value: scale6(setup.auction.start.collateral) },
+    startCollateral: { value: scale6(setup.auction.start.collateral) },
+    startProceedsGoal: { value: scale6(setup.auction.start.debt) },
+  });
 
-    console.log('step 3 of 10');
-    await advanceTimeBy(3, 'minutes');
+  console.log('step 2 of 10');
+  await advanceTimeBy(3, 'minutes');
 
-    console.log('step 4 of 10');
-    await advanceTimeBy(3, 'minutes');
+  console.log('step 3 of 10');
+  await advanceTimeBy(3, 'minutes');
 
-    console.log('step 5 of 10');
-    await advanceTimeBy(3, 'minutes');
-    t.like(readPublished(`auction.book${managerIndex}`), {
-      collateralAvailable: { value: scale6(45) },
-    });
+  console.log('step 4 of 10');
+  await advanceTimeBy(3, 'minutes');
 
-    console.log('step 6 of 10');
-    await advanceTimeBy(3, 'minutes');
+  console.log('step 5 of 10');
+  await advanceTimeBy(3, 'minutes');
+  t.like(readPublished(`auction.book${managerIndex}`), {
+    collateralAvailable: { value: scale6(45) },
+  });
 
-    console.log('step 7 of 10');
-    await advanceTimeBy(3, 'minutes');
+  console.log('step 6 of 10');
+  await advanceTimeBy(3, 'minutes');
 
-    console.log('step 8 of 10');
-    await advanceTimeBy(3, 'minutes');
+  console.log('step 7 of 10');
+  await advanceTimeBy(3, 'minutes');
 
-    console.log('step 9 of 10');
-    await advanceTimeBy(3, 'minutes');
+  console.log('step 8 of 10');
+  await advanceTimeBy(3, 'minutes');
 
-    console.log('step 10 of 10');
-    await advanceTimeBy(3, 'minutes');
+  console.log('step 9 of 10');
+  await advanceTimeBy(3, 'minutes');
 
-    console.log('step 11 of 10');
-    await advanceTimeBy(3, 'minutes');
+  console.log('step 10 of 10');
+  await advanceTimeBy(3, 'minutes');
 
-    // TODO express spec up top in a way it can be passed in here
-    check.vaultNotification(0, 0, {
-      debt: undefined,
-      vaultState: 'active',
-      locked: {
-        value: scale6(outcome.vaultsActual[0].locked),
-      },
-    });
-    check.vaultNotification(0, 1, {
-      debt: undefined,
-      vaultState: 'active',
-      locked: {
-        value: scale6(outcome.vaultsActual[1].locked),
-      },
-    });
-    check.vaultNotification(0, 2, {
-      debt: undefined,
-      vaultState: 'liquidated',
-      locked: {
-        value: scale6(outcome.vaultsActual[2].locked),
-      },
-    });
-  }
+  console.log('step 11 of 10');
+  await advanceTimeBy(3, 'minutes');
+
+  // TODO express spec up top in a way it can be passed in here
+  check.vaultNotification(0, 0, {
+    debt: undefined,
+    vaultState: 'active',
+    locked: {
+      value: scale6(outcome.vaultsActual[0].locked),
+    },
+  });
+  check.vaultNotification(0, 1, {
+    debt: undefined,
+    vaultState: 'active',
+    locked: {
+      value: scale6(outcome.vaultsActual[1].locked),
+    },
+  });
+  check.vaultNotification(0, 2, {
+    debt: undefined,
+    vaultState: 'liquidated',
+    locked: {
+      value: scale6(outcome.vaultsActual[2].locked),
+    },
+  });
 
   // check reserve balances
   t.like(readPublished('reserve.metrics'), {

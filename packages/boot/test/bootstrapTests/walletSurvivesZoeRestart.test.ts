@@ -1,15 +1,16 @@
 /** @file Bootstrap test of liquidation across multiple collaterals */
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import process from 'node:process';
 
 import type { TestFn } from 'ava';
-import process from 'process';
 
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import {
-  makeLiquidationTestContext,
   type LiquidationSetup,
   type LiquidationTestContext,
-} from '../../tools/liquidation.js';
+  makeLiquidationTestContext,
+} from '@aglocal/boot/tools/liquidation.js';
+import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 const test = anyTest as TestFn<LiquidationTestContext>;
 
@@ -44,23 +45,28 @@ const setup: LiquidationSetup = {
 };
 
 test.before(async t => {
-  t.context = await makeLiquidationTestContext(t);
+  t.context = await makeLiquidationTestContext(
+    { configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json' },
+    t,
+  );
 });
 
-test.after.always(t => {
-  return t.context.shutdown && t.context.shutdown();
-});
+test.after.always(t => t.context.swingsetTestKit.shutdown());
 
 test.serial('wallet survives zoe null upgrade', async t => {
   // fail if there are any unhandled rejections
   process.on('unhandledRejection', (error: Error) => {
     t.fail(error.message);
   });
+
   const collateralBrandKey = 'ATOM';
   const managerIndex = 0;
 
-  const { walletFactoryDriver, setupVaults, buildProposal, evalProposal } =
-    t.context;
+  const {
+    liquidationTestKit: { setupVaults },
+    swingsetTestKit: { evaluateCoreProposal },
+    walletFactoryDriver,
+  } = t.context;
 
   const buyer = await walletFactoryDriver.provideSmartWallet('agoric1buyer');
 
@@ -69,11 +75,11 @@ test.serial('wallet survives zoe null upgrade', async t => {
   // restart Zoe
 
   // /////// Upgrading ////////////////////////////////
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/vats/upgrade-zoe.js'),
+  await evaluateCoreProposal(
+    await buildProposal('@agoric/builders/scripts/vats/upgrade-zoe.js'),
   );
 
-  t.like(await buyer.getLatestUpdateRecord(), {
+  t.like(buyer.getLatestUpdateRecord(), {
     currentAmount: {
       // brand from EV() doesn't compare correctly
       // brand: invitationBrand,
