@@ -494,14 +494,13 @@ test('open portfolio with Aave position', async t => {
 });
 
 test('open portfolio with Compound position', async t => {
+  const { add } = AmountMath;
   const amount = AmountMath.make(USDC, 300n);
-  const { orch, tapPK, ctx, offer, storage } = await mocks(
+  const feeAcct = AmountMath.make(BLD, 300n);
+  const feeCall = AmountMath.make(BLD, 100n);
+  const { orch, tapPK, ctx, offer, storage } = mocks(
     {},
-    {
-      Compound: amount,
-      CompoundAccount: AmountMath.make(USDC, 300n),
-      CompoundGmp: AmountMath.make(USDC, 100n),
-    },
+    { Deposit: amount, GmpFee: add(feeAcct, feeCall) },
   );
 
   const [actual] = await Promise.all([
@@ -509,7 +508,8 @@ test('open portfolio with Compound position', async t => {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: 'USDNVault', amount, detail },
+        { src: '@noble', dest: '@Ethereum', amount, fee: feeAcct },
+        { src: '@Ethereum', dest: 'Compound_Ethereum', amount, fee: feeCall },
       ],
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
@@ -520,13 +520,11 @@ test('open portfolio with Compound position', async t => {
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'localTransfer', amounts: { CompoundAccount: { value: 300n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-3' } },
-    { _method: 'localTransfer', amounts: { Compound: { value: 300n } } },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'localTransfer', amounts: { GmpFee: { value: 400n } } },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'depositForBurn' },
-    { _method: 'localTransfer', amounts: { CompoundGmp: { value: 100n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-3' } },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
