@@ -67,6 +67,7 @@ export const permittedIssuers = async (agoricNames, permitG) => {
  * @param {P} permitG
  * @param {MakePrivateArgs<SF, CFG>} makePrivateArgs
  * @param {CorePowersG<CN, SF, P> & BootstrapPowers & ChainStoragePowers} powers
+ * @param {import('./axelar-configs.js').AxelarChainConfigMap} axelarConfig
  * @param {{ options: LegibleCapData<CFG> }} configStruct
  * @param {IssuerKeywordRecord} [issuerKeywordRecord]
  * @returns {Promise<{ config: any, kit: UpgradeKit<SF> }>}
@@ -86,6 +87,7 @@ export const startOrchContract = async (
       produce: { [name]: produceInstance },
     },
   },
+  axelarConfig,
   configStruct,
   issuerKeywordRecord,
 ) => {
@@ -128,10 +130,12 @@ export const startOrchContract = async (
       agoricNames,
     }),
   );
+
   const privateArgs = await makePrivateArgs(
     orchestrationPowers,
     marshaller,
     config,
+    axelarConfig,
   );
 
   const { startUpgradable } = consume;

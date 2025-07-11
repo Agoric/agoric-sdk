@@ -22,12 +22,16 @@ import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { Fail } from '@endo/errors';
 import { RebalanceStrategy } from './constants.js';
-import type { AxelarConfig } from './portfolio.contract.ts';
+import type { AxelarId } from './portfolio.contract.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import { changeGMPPosition } from './pos-gmp.flows.ts';
 import { changeUSDCPosition } from './pos-usdn.flows.ts';
 import type { Position } from './pos.exo.ts';
-import type { OfferArgsFor, ProposalType } from './type-guards.ts';
+import type {
+  EVMContractAddressesMap,
+  OfferArgsFor,
+  ProposalType,
+} from './type-guards.ts';
 // TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
@@ -37,7 +41,8 @@ export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>; // TODO: move to type-guards as external interface?
 
 type PortfolioBootstrapContext = {
-  axelarConfig: AxelarConfig;
+  axelarIds: AxelarId;
+  contracts: EVMContractAddressesMap;
   usdc: { brand: Brand<'nat'>; denom: Denom };
   zoeTools: GuestInterface<ZoeTools>;
   makePortfolioKit: () => GuestInterface<PortfolioKit>;
@@ -45,7 +50,8 @@ type PortfolioBootstrapContext = {
 };
 
 export type PortfolioInstanceContext = {
-  axelarConfig: AxelarConfig;
+  axelarIds: AxelarId;
+  contracts: EVMContractAddressesMap;
   usdc: { brand: Brand<'nat'>; denom: Denom };
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
@@ -273,13 +279,20 @@ export const openPortfolio = (async (
 ) => {
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   try {
-    const { makePortfolioKit, zoeTools, axelarConfig, usdc, inertSubscriber } =
-      ctx;
+    const {
+      makePortfolioKit,
+      zoeTools,
+      axelarIds,
+      contracts,
+      usdc,
+      inertSubscriber,
+    } = ctx;
     const kit = makePortfolioKit();
     await provideCosmosAccount(orch, 'agoric', kit);
 
     const portfolioCtx = {
-      axelarConfig,
+      axelarIds,
+      contracts,
       usdc,
       keeper: { ...kit.reader, ...kit.manager },
       zoeTools,

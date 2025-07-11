@@ -37,6 +37,7 @@ import * as flows from './portfolio.flows.ts';
 import {
   makeProposalShapes,
   OfferArgsShapeFor,
+  type EVMContractAddressesMap,
   type OfferArgsFor,
   type ProposalType,
 } from './type-guards.ts';
@@ -61,26 +62,27 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
     usdc: M.string(),
   });
 
-export type AxelarConfig = {
-  [chain in AxelarChain]: {
-    /**
-     * Axelar chain IDs differ between mainnet and testnet.
-     * See [supported-chains-list.ts](https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts)
-     */
-    axelarId: string;
-    contracts: EVMContractAddresses;
-  };
+export type AxelarId = {
+  /**
+   * Axelar chain IDs differ between mainnet and testnet.
+   * See [supported-chains-list.ts](https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts)
+   */
+  [chain in AxelarChain]: string;
 };
 
-const AxelarChainInfoPattern = M.splitRecord({
-  axelarId: M.string(),
-  contracts: EVMContractAddressesShape,
-});
+const EVMContractAddressesMap: TypedPattern<EVMContractAddressesMap> =
+  M.splitRecord(
+    fromEntries(
+      keys(AxelarChain).map(chain => [chain, EVMContractAddressesShape]),
+    ) as Record<AxelarChain, typeof EVMContractAddressesShape>,
+  );
 
-const AxelarConfigShape: TypedPattern<AxelarConfig> = M.splitRecord(
+const AxelarIdsPattern = M.string();
+
+const AxelarIdShape: TypedPattern<AxelarId> = M.splitRecord(
   fromEntries(
-    keys(AxelarChain).map(chain => [chain, AxelarChainInfoPattern]),
-  ) as Record<AxelarChain, typeof AxelarChainInfoPattern>,
+    keys(AxelarChain).map(chain => [chain, AxelarIdsPattern]),
+  ) as Record<AxelarChain, typeof AxelarIdsPattern>,
 );
 
 type PortfolioPrivateArgs = OrchestrationPowers & {
@@ -89,7 +91,8 @@ type PortfolioPrivateArgs = OrchestrationPowers & {
   chainInfo: Record<string, ChainInfo>;
   marshaller: Marshaller;
   storageNode: Remote<StorageNode>;
-  axelarConfig: AxelarConfig;
+  axelarIds: AxelarId;
+  contracts: EVMContractAddressesMap;
 };
 
 const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
@@ -99,7 +102,8 @@ const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   // XXX use shape to validate required chains / assets?
   chainInfo: M.recordOf(M.string(), ChainInfoShape),
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
-  axelarConfig: AxelarConfigShape,
+  axelarIds: AxelarIdShape,
+  contracts: EVMContractAddressesMap,
 };
 
 export const meta: ContractMeta = {
@@ -140,7 +144,8 @@ export const contract = async (
   const {
     chainInfo,
     assetInfo,
-    axelarConfig,
+    axelarIds,
+    contracts,
     timerService,
     marshaller,
     storageNode,
@@ -172,7 +177,8 @@ export const contract = async (
   const ctx1 = {
     zoeTools,
     usdc: { brand: brands.USDC, denom },
-    axelarConfig,
+    axelarIds,
+    contracts,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
@@ -187,7 +193,7 @@ export const contract = async (
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
     vowTools,
-    axelarConfig,
+    axelarIds,
     rebalance,
     rebalanceFromTransfer,
     proposalShapes,

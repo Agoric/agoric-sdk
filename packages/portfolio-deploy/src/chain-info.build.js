@@ -218,6 +218,7 @@ export default async (homeP, endowments) => {
   const { chainInfo: chainJSON, baseName } = flags;
   let chainInfo = harden(JSON.parse(chainJSON));
   const isMainnet = flags.net === 'mainnet';
+  // Move it to the portfolio builder
   const axelarConfig = isMainnet
     ? harden({ ...axelarMainnetConfig })
     : harden({ ...axelarConfigTestnet });

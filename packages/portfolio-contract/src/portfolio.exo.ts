@@ -29,7 +29,7 @@ import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { AxelarChain, SupportedChain, YieldProtocol } from './constants.js';
-import type { AxelarConfig } from './portfolio.contract.js';
+import type { AxelarId } from './portfolio.contract.js';
 import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
 import type { PoolKey, StatusFor } from './type-guards.js';
@@ -146,7 +146,7 @@ export type PublishStatusFn = <K extends keyof StatusFor>(
 export const preparePortfolioKit = (
   zone: Zone,
   {
-    axelarConfig,
+    axelarIds,
     rebalance,
     rebalanceFromTransfer,
     timer,
@@ -158,7 +158,7 @@ export const preparePortfolioKit = (
     marshaller,
     usdcBrand,
   }: {
-    axelarConfig: AxelarConfig;
+    axelarIds: AxelarId;
     rebalance: (
       seat: ZCFSeat,
       offerArgs: OfferArgsFor['rebalance'],
@@ -269,8 +269,8 @@ export const preparePortfolioKit = (
           if (!extra.memo) return;
           const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
 
-          const result = Object.entries(axelarConfig).find(
-            ([_, chain]) => chain.axelarId === memo.source_chain,
+          const result = Object.entries(axelarIds).find(
+            ([_, chainId]) => chainId === memo.source_chain,
           );
 
           // XXX we must have more than just a (forgeable) memo check here to
