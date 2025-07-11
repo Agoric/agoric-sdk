@@ -492,27 +492,31 @@ export const supplyToCompound = async (
   const info = await provideEVMAccount(orch, ctx, seat, gmpArgs, kit);
   const { remoteAddress } = info;
 
-  const callArgs = harden({
-    destinationAddress: remoteAddress,
-    destinationEVMChain,
-    type: AxelarGMPMessageType.ContractCall,
-    keyword,
-    amounts: gasAmounts,
-    contractInvocationData: [
-      {
-        functionSignature: 'approve(address,uint256)',
-        args: [addresses.compound, transferAmount],
-        target: addresses.usdc,
-      },
-      {
-        functionSignature: 'supply(address,uint256)',
-        args: [addresses.usdc, transferAmount],
-        target: addresses.compound,
-      },
-    ],
-  });
-
-  await sendGmp(orch, ctx, seat, callArgs, kit);
+  await sendGmp(
+    orch,
+    ctx,
+    seat,
+    harden({
+      destinationAddress: remoteAddress,
+      destinationEVMChain,
+      type: AxelarGMPMessageType.ContractCall,
+      keyword,
+      amounts: gasAmounts,
+      contractInvocationData: [
+        {
+          functionSignature: 'approve(address,uint256)',
+          args: [addresses.compound, transferAmount],
+          target: addresses.usdc,
+        },
+        {
+          functionSignature: 'supply(address,uint256)',
+          args: [addresses.usdc, transferAmount],
+          target: addresses.compound,
+        },
+      ],
+    }),
+    kit,
+  );
 };
 
 /* c8 ignore start */
