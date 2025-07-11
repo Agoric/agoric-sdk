@@ -1,4 +1,6 @@
+import { AxelarConfigShape } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import { makeHelpers } from '@agoric/deploy-script-support';
+import { mustMatch } from '@endo/patterns';
 import { parseArgs } from 'node:util';
 import {
   axelarConfigTestnet,
@@ -61,6 +63,8 @@ const build = async (homeP, endowments) => {
   const axelarConfig = isMainnet
     ? harden({ ...axelarMainnetConfig })
     : harden({ ...axelarConfigTestnet });
+
+  mustMatch(axelarConfig, AxelarConfigShape);
 
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   // TODO: unit test agreement with startPortfolio.name

@@ -87,32 +87,6 @@ const publishChainInfoToChainStorage = async (
 };
 
 /**
- * @param {ERef<StorageNode>} agoricNamesNode
- * @param {import('./axelar-configs').AxelarChainConfigMap} axelarConfig
- */
-const publishAxelarChainInfo = async (agoricNamesNode, axelarConfig) => {
-  const chainNode = await E(agoricNamesNode).makeChildNode('chain');
-
-  // XXX: refactor the loop to allow it to work with different parent node
-  for await (const [chainName, chainData] of Object.entries(axelarConfig)) {
-    const baseNode = await E(chainNode).makeChildNode(chainName);
-    await E(baseNode).setValue(
-      JSON.stringify(marshalData.toCapData(harden({ ...chainData.chainInfo }))),
-    );
-
-    const axelarId = await E(baseNode).makeChildNode('axelarId');
-    await E(axelarId).setValue(
-      JSON.stringify(marshalData.toCapData(harden({ id: chainData.axelarId }))),
-    );
-
-    const contractsNode = await E(baseNode).makeChildNode('contracts');
-    await E(contractsNode).setValue(
-      JSON.stringify(marshalData.toCapData(harden({ ...chainData.contracts }))),
-    );
-  }
-};
-
-/**
  * null chainStorage case is vestigial
  *
  * @typedef {{ consume: { chainStorage: Promise<StorageNode> } }} ChainStoragePresent
@@ -136,7 +110,6 @@ export const publishChainInfo = async (
   const { keys } = Object;
   const { chainInfo = {}, axelarConfig } = config.options;
   trace('publishChainInfo', keys(chainInfo));
-  trace('publishAxelarChainInfo', keys(axelarConfig));
 
   const agoricNamesNode = E(chainStorage).makeChildNode('agoricNames');
 
@@ -146,8 +119,6 @@ export const publishChainInfo = async (
     agoricNamesNode,
     agoricNames,
   );
-
-  await publishAxelarChainInfo(agoricNamesNode, axelarConfig);
 
   for (const kind of Object.values(HubName)) {
     const hub = E(agoricNames).lookup(kind);

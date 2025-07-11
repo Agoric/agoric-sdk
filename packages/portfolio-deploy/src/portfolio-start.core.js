@@ -43,7 +43,6 @@ export const makePrivateArgs = async (
       axelar: ['uaxl'],
     },
   );
-  trace('@@@@assetInfo', JSON.stringify(assetInfo, null, 2));
   /** @type {Record<string, import('@agoric/orchestration').ChainInfo>} */
   const chainInfo = { ...cosmosChainInfo };
 

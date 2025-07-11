@@ -7,6 +7,7 @@ import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import { q } from '@endo/errors';
 import { passStyleOf } from '@endo/far';
 import { matches, mustMatch } from '@endo/patterns';
+import type { AxelarChain } from '../src/constants.js';
 import {
   makeAxelarMemo,
   type GmpArgsContractCall,
@@ -36,8 +37,7 @@ const { fromEntries, keys } = Object;
  * To see the `axelarId` for a given chain, refer to:
  * @see {@link https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts | supported-chains-list.ts}
  */
-/**@type {AxelarChain} */
-const destinationEVMChain = 'Arbitrum';
+const destinationEVMChain: AxelarChain = 'Arbitrum';
 const sourceChain = 'arbitrum';
 
 test('ProposalShapes', t => {

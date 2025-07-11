@@ -136,8 +136,6 @@ export const axelarCCTPConfig = {
   },
 };
 
-const ccptConfig = { ...axelarCCTPConfig };
-
 /** TODO: how to address this in production? route thru Osmosis? */
 export const chainInfoFantasyTODO = {
   ...withChainCapabilities(fetchedChainInfo),
@@ -166,7 +164,7 @@ export const chainInfoFantasyTODO = {
       },
     },
   },
-  ...ccptConfig,
+  ...axelarCCTPConfig,
 };
 
 const assetOn = (
@@ -204,7 +202,7 @@ export const setupPortfolioTest = async ({
 }: {
   log: ExecutionContext<any>['log'];
 }) => {
-  const axelarChains = { ...axelarCCTPConfig };
+  const axelarChains = axelarCCTPConfig;
   const chains = harden({
     ...withChainCapabilities(fetchedChainInfo),
     ...axelarChains,
