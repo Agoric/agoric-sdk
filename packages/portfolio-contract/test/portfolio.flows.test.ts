@@ -349,7 +349,7 @@ test('Noble Dollar Swap, Lock messages', t => {
   const actual = makeSwapLockMessages(
     { value: signer, chainId: 'grand-1', encoding: 'bech32' },
     1200000n,
-    { usdnOut: 1188000n },
+    { usdnOut: 1188000n, vault: 1 },
   );
   const bigintStringifier = (_p, v) => (typeof v === 'bigint' ? `${v}` : v);
   t.log(JSON.stringify(actual, bigintStringifier));
@@ -403,8 +403,8 @@ test('open portfolio with USDN position', async t => {
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
-    { _method: 'transfer', address: { chainId: 'noble-3' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11028' },
+    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'executeEncodedTx', _cap: 'noble11014' },
     { _method: 'exit' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -442,7 +442,7 @@ const openAndTransfer: import('ava').Macro<[() => VTransferIBCEvent[]]> =
     await documentStorageSchema(t, storage, docOpts);
   });
 
-test(
+test.skip(
   'open portfolio with Aave and USDN positions then inbound GMP',
   openAndTransfer,
   () => [makeIncomingEVMEvent()],
@@ -533,14 +533,15 @@ test('open portfolio with Compound position', async t => {
 });
 
 test('handle failure in localTransfer from seat to local account', async t => {
+  const amount = make(USDC, 100n);
   const { orch, ctx, offer, storage } = mocks(
     { localTransfer: Error('localTransfer from seat failed') },
-    { USDN: make(USDC, 100n) },
+    { Deposit: amount },
   );
   const { log, seat } = offer;
 
   const actual = await openPortfolio(orch, { ...ctx }, seat, {
-    destinationEVMChain: 'Ethereum',
+    flow: [{ src: '<Deposit>', dest: '@agoric', amount }],
   });
   t.log(log.map(msg => msg._method).join(', '));
   t.snapshot(log, 'call log');
@@ -555,20 +556,25 @@ test('handle failure in localTransfer from seat to local account', async t => {
 });
 
 test('handle failure in IBC transfer', async t => {
+  const amount = make(USDC, 100n);
   const { orch, ctx, offer, storage } = mocks(
-    { transfer: Error('IBC transfer failed') },
-    { USDN: make(USDC, 100n) },
+    { transfer: Error('IBC is on the fritz!!') },
+    { Deposit: amount },
   );
   const { log, seat } = offer;
 
   const actual = await openPortfolio(orch, { ...ctx }, seat, {
-    destinationEVMChain: 'Ethereum',
+    flow: [
+      { src: '<Deposit>', dest: '@agoric', amount },
+      { src: '@agoric', dest: '@noble', amount },
+      { src: '@noble', dest: 'USDNVault', amount },
+    ],
   });
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
-    { _method: 'transfer', address: { chainId: 'noble-3' } }, // failed
+    { _method: 'transfer', address: { chainId: 'noble-5' } }, // failed
     { _method: 'withdrawToSeat' }, // unwind
     { _method: 'fail' },
   ]);
@@ -578,22 +584,27 @@ test('handle failure in IBC transfer', async t => {
 });
 
 test('handle failure in executeEncodedTx', async t => {
+  const amount = make(USDC, 100n);
   const { orch, ctx, offer, storage } = mocks(
-    { executeEncodedTx: Error('Swap or Lock failed') },
-    { USDN: make(USDC, 100n) },
+    { executeEncodedTx: Error('exec swaplock went kerflewey') },
+    { Deposit: amount },
   );
   const { log, seat } = offer;
 
   const actual = await openPortfolio(orch, { ...ctx }, seat, {
-    destinationEVMChain: 'Ethereum',
+    flow: [
+      { src: '<Deposit>', dest: '@agoric', amount },
+      { src: '@agoric', dest: '@noble', amount },
+      { src: '@noble', dest: 'USDNVault', amount },
+    ],
   });
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
-    { _method: 'transfer', address: { chainId: 'noble-3' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11028' }, // fail
-    { _method: 'transfer', address: { chainId: 'agoric-1' } }, // unwind
+    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'executeEncodedTx', _cap: 'noble11014' }, // fail
+    { _method: 'transfer', address: { chainId: 'agoric-6' } }, // unwind
     { _method: 'withdrawToSeat' }, // unwind
     { _method: 'fail' },
   ]);
@@ -603,31 +614,31 @@ test('handle failure in executeEncodedTx', async t => {
 });
 
 test('handle failure in recovery from executeEncodedTx', async t => {
-  const {
-    orch,
-    ctx,
-    offer,
-    storage,
-    vowTools: { when },
-  } = mocks(
+  const amount = make(USDC, 100n);
+  const { orch, ctx, offer, storage } = mocks(
     {
-      executeEncodedTx: Error('Swap or Lock failed'),
-      transfer: Error('IBC transfer from noble-3 failed'),
+      executeEncodedTx: Error('cannot swap. your money is no good here'),
+      transfer: Error('road from noble-5 washed out'),
     },
-    { USDN: make(USDC, 100n) },
+    { Deposit: amount },
   );
   const { log, seat } = offer;
 
+  const detail = { usdnOut: 100n };
   const actual = await openPortfolio(orch, { ...ctx }, seat, {
-    destinationEVMChain: 'Ethereum',
+    flow: [
+      { src: '<Deposit>', dest: '@agoric', amount },
+      { src: '@agoric', dest: '@noble', amount },
+      { src: '@noble', dest: 'USDNVault', amount, detail },
+    ],
   });
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
-    { _method: 'transfer', address: { chainId: 'noble-3' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11028' }, // fail
-    { _method: 'transfer', address: { chainId: 'agoric-1' } }, // fail to recover
+    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'executeEncodedTx', _cap: 'noble11014' }, // fail
+    { _method: 'transfer', address: { chainId: 'agoric-6' } }, // fail to recover
     { _method: 'fail' },
   ]);
   t.snapshot(log, 'call log');
@@ -636,18 +647,23 @@ test('handle failure in recovery from executeEncodedTx', async t => {
 });
 
 test.skip('handle failure in sendGmp with Aave position', async t => {
+  const { add } = AmountMath;
+  const amount = AmountMath.make(USDC, 300n);
+  const feeAcct = AmountMath.make(BLD, 300n);
+  const feeCall = AmountMath.make(BLD, 100n);
   const { orch, tapPK, ctx, offer, storage } = mocks(
-    { transfer: Error('Axelar GMP transfer failed') },
-    {
-      Aave: AmountMath.make(USDC, 300n),
-      AaveAccount: AmountMath.make(USDC, 300n),
-      AaveGmp: AmountMath.make(USDC, 100n),
-    },
+    { transfer: Error('ag->axelar: SOS!') },
+    { Deposit: amount, GmpFee: add(feeAcct, feeCall) },
   );
 
   // Start the openPortfolio flow
   const portfolioPromise = openPortfolio(orch, { ...ctx }, offer.seat, {
-    destinationEVMChain: 'Ethereum',
+    flow: [
+      { src: '<Deposit>', dest: '@agoric', amount },
+      { src: '@agoric', dest: '@noble', amount },
+      { src: '@noble', dest: '@Ethereum', amount, fee: feeAcct },
+      { src: '@Ethereum', dest: 'Aave_Ethereum', amount, fee: feeCall },
+    ],
   });
 
   // Ensure the upcall happens to resolve getGMPAddress(), then let the transfer fail

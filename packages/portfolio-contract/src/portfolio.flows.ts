@@ -553,26 +553,8 @@ export const rebalance = async (
   const proposal = seat.getProposal() as ProposalType['rebalance'];
   trace('rebalance proposal', proposal.give, proposal.want, offerArgs);
 
-  // trace('rebalance ctx', ctx);
-  const { flow } = offerArgs;
-  if (flow) return stepFlow(orch, ctx, seat, flow, kit);
-
-  throw Error('OLD DESIGN');
-  if (keys(proposal.want).length > 0) {
-    throw Error('TODO: withdraw');
-  }
-
-  const { give } = proposal;
-  if ('USDN' in give && give.USDN) {
-    await changeUSDCPosition(give, offerArgs, orch, kit, ctx, seat);
-  }
-
-  const { entries } = Object;
-  for (const [keyword, amount] of entries(give)) {
-    if (!['Aave', 'Compound'].includes(keyword)) continue;
-    const protocol = keyword as 'Aave' | 'Compound';
-    await changeGMPPosition(orch, ctx, seat, offerArgs, kit, protocol, give);
-  }
+  if ('flow' in offerArgs)
+    return stepFlow(orch, ctx, seat, offerArgs.flow, kit);
 };
 
 export const rebalanceFromTransfer = (async (
