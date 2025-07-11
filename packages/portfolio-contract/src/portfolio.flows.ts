@@ -329,6 +329,7 @@ const stepFlow = async (
     switch (way.how) {
       case 'localTransfer': {
         const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
+        // TODO: this eats the Access token; do we want to start doing that?
         const amounts = (seat.getProposal() as ProposalType['rebalance']).give;
         if (
           'Deposit' in amounts &&
@@ -406,11 +407,11 @@ const stepFlow = async (
       case 'CCTP': {
         const { how, apply, recover } = CCTP;
         const nInfo = await provideCosmosAccount(orch, 'noble', kit);
-        // TODO: BLD fees
+
         const gArgs = {
           destinationEVMChain: way.dest,
-          amounts: { Deposit: amount },
-          keyword: 'Deposit',
+          amounts: { GmpFee: { brand: ctx.gmpFeeInfo.brand, value: 0n } },
+          keyword: 'GmpFee', // TODO: BLD fees
         };
         const gInfo = await provideEVMAccount(orch, ctx, seat, gArgs, kit);
         todo.push({
