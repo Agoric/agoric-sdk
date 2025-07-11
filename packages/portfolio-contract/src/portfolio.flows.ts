@@ -158,6 +158,7 @@ export const trackFlow = async (
       trace('trackFlow', step, moveStatus(move));
       reporter.publishFlowStatus(flowId, { step, ...moveStatus(move) });
       await move.apply();
+      trace(step, 'step done');
       const { amount, src, dest } = move;
       if ('pos' in src) {
         src.pos.recordTransferOut(amount);
