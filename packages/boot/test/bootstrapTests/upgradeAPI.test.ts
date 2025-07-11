@@ -162,7 +162,9 @@ const test = anyTest as TestFn<
   Awaited<ReturnType<typeof makeDefaultTestContext>>
 >;
 
-test.before(async t => (t.context = await makeDefaultTestContext()));
+test.before(async t => {
+  t.context = await makeDefaultTestContext();
+});
 
 test.after.always(t => t.context.shutdown?.());
 

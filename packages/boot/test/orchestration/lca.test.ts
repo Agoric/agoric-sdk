@@ -1,41 +1,44 @@
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
 import type { TestFn } from 'ava';
 
-import { Fail } from '@endo/errors';
-import type { start as stakeBldStart } from '@agoric/orchestration/src/examples/stake-bld.contract.js';
-import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
-import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
-} from '../bootstrapTests/walletFactory.js';
+} from '@aglocal/boot/test/bootstrapTests/walletFactory.js';
+import { buildProposal } from '@agoric/cosmic-swingset/tools/test-proposal-utils.ts';
+import type { start as stakeBldStart } from '@agoric/orchestration/src/examples/stake-bld.contract.js';
+import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
+import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { Fail } from '@endo/errors';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 
 test.before(async t => {
-  t.context = await makeWalletFactoryContext(
-    t,
-    '@agoric/vm-config/decentral-itest-orchestration-config.json',
-  );
+  t.context = await makeWalletFactoryContext({
+    configSpecifier:
+      '@agoric/vm-config/decentral-itest-orchestration-config.json',
+  });
 });
-test.after.always(t => t.context.shutdown?.());
+test.after.always(t => t.context.swingsetTestKit.shutdown?.());
 
-test.serial('stakeBld', async t => {
+test('stakeBld', async t => {
   const {
     agoricNamesRemotes,
-    buildProposal,
-    evalProposal,
     refreshAgoricNamesRemotes,
+    swingsetTestKit: { evaluateCoreProposal },
+    walletFactoryDriver: { provideSmartWallet },
   } = t.context;
 
   // start-stakeBld depends on this. Sanity check in case the context changes.
   const { BLD } = agoricNamesRemotes.brand;
   BLD || Fail`BLD missing from agoricNames`;
 
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/orchestration/init-stakeBld.js'),
+  await evaluateCoreProposal(
+    await buildProposal(
+      '@agoric/builders/scripts/orchestration/init-stakeBld.js',
+    ),
   );
+
   // update now that stakeBld is instantiated
   refreshAgoricNamesRemotes();
 
@@ -44,9 +47,7 @@ test.serial('stakeBld', async t => {
   >;
   t.truthy(stakeBld);
 
-  const wd = await t.context.walletFactoryDriver.provideSmartWallet(
-    'agoric1testStakeBld',
-  );
+  const wd = await provideSmartWallet('agoric1testStakeBld');
 
   await wd.executeOffer({
     id: 'request-stake',
