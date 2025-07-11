@@ -12,7 +12,7 @@ import { E } from '@endo/far';
 
 import type { WalletTool } from '../../../packages/portfolio-contract/test/wallet-offer-tools.ts';
 import type { IBCChannelID } from '@agoric/vats';
-import type { CosmosChainAddress } from '@agoric/orchestration';
+import type { CosmosChainAddress, ChainInfo } from '@agoric/orchestration';
 // The simulation context type is based on WalletFactoryTestContext
 import type { WalletFactoryTestContext } from './walletFactory.ts';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
@@ -22,6 +22,7 @@ import type {
   NobleAddress,
 } from '@agoric/fast-usdc';
 import { trace } from 'console';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 
 type SmartWallet = Awaited<
   ReturnType<
@@ -150,8 +151,8 @@ const makeIBCChannel = (
 };
 
 export const makeSimulation = (ctx: WalletFactoryTestContext) => {
-  const cctp = makeCctp(ctx, nobleAgoricChannelId, 'channel-62');
-  const toNoble = makeIBCChannel(ctx.bridgeUtils, 'channel-62');
+  const cctp = makeCctp(ctx, nobleAgoricChannelId, 'channel-0');
+  const toNoble = makeIBCChannel(ctx.bridgeUtils, 'channel-0');
   const oracles = Object.entries(configurations.MAINNET.oracles).map(
     ([name, addr]) => makeTxOracle(ctx, name, addr),
   );
@@ -187,18 +188,121 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
         AckBehavior.Immediate,
       );
       bridgeUtils.setBech32Prefix('noble');
-
-      const beneficiary = 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce';
+      // const beneficiary = 'agoric1dy0yegdsev4xvce3dx7zrz2ad9pesf5svzud6y';
+      // const beneficiary = 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce';
+      const beneficiary = 'agoric1estsewt6jqsx77pwcxkn5ah0jqgu8rhgflwfdl';
       wallet = await walletFactoryDriver.provideSmartWallet(
         'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
       );
       let materials = buildProposal(
         '@aglocal/portfolio-deploy/src/access-token-setup.build.js',
       );
+
       await evalProposal(materials);
+      /**
+       * To facilitate deployment to environments other than devnet,
+       * ../src/chain-info.build.js fetches chainInfo dynamically
+       * using --net and --peer.
+       *
+       * This is an example of the sort of chain info that results.
+       * Here we're testing that things work without using the static
+       * fetched-chain-info.js.
+       */
+      const exampleDynamicChainInfo = {
+        agoric: {
+          bech32Prefix: 'agoric',
+          chainId: 'agoriclocal',
+          icqEnabled: false,
+          namespace: 'cosmos',
+          reference: 'agoriclocal',
+          stakingTokens: [{ denom: 'ubld' }],
+          connections: {
+            noblelocal: {
+              id: 'connection-0',
+              client_id: '07-tendermint-0',
+              counterparty: {
+                client_id: '07-tendermint-0',
+                connection_id: 'connection-0',
+              },
+              state: 3,
+              transferChannel: {
+                channelId: 'channel-0',
+                portId: 'transfer',
+                counterPartyChannelId: 'channel-0',
+                counterPartyPortId: 'transfer',
+                ordering: 0,
+                state: 3,
+                version: 'ics20-1',
+              },
+            },
+          },
+        },
+        noble: {
+          bech32Prefix: 'noble',
+          chainId: 'noblelocal',
+          icqEnabled: false,
+          namespace: 'cosmos',
+          reference: 'noblelocal',
+          stakingTokens: [{ denom: 'uusdc' }],
+          connections: {
+            agoriclocal: {
+              id: 'connection-0',
+              client_id: '07-tendermint-0',
+              counterparty: {
+                client_id: '07-tendermint-0',
+                connection_id: 'connection-0',
+              },
+              state: 3,
+              transferChannel: {
+                channelId: 'channel-0',
+                portId: 'transfer',
+                counterPartyChannelId: 'channel-0',
+                counterPartyPortId: 'transfer',
+                ordering: 0,
+                state: 3,
+                version: 'ics20-1',
+              },
+            },
+          },
+        },
+        Ethereum: {
+          namespace: 'eip155',
+          reference: '1',
+          cctpDestinationDomain: 0,
+        },
+        Avalanche: {
+          namespace: 'eip155',
+          reference: '43114',
+          cctpDestinationDomain: 1,
+        },
+        optimism: {
+          namespace: 'eip155',
+          reference: '10',
+          cctpDestinationDomain: 2,
+        },
+        arbitrum: {
+          namespace: 'eip155',
+          reference: '42161',
+          cctpDestinationDomain: 3,
+        },
+        Polygon: {
+          namespace: 'eip155',
+          reference: '137',
+          cctpDestinationDomain: 7,
+        },
+        Fantom: {
+          namespace: 'eip155',
+          reference: '250',
+        },
+        binance: {
+          namespace: 'eip155',
+          reference: '56',
+        },
+      } satisfies Record<string, ChainInfo>;
       // Deploy the contract
       materials = buildProposal(
         '@aglocal/portfolio-deploy/src/chain-info.build.js',
+        ['--chainInfo', JSON.stringify(exampleDynamicChainInfo)],
       );
       await evalProposal(materials);
       // Deploy the contract
@@ -225,15 +329,24 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
       trader = makeTrader(wallet, instance, agoricNamesRemotes.brand.PoC26);
 
       // Initialize bank manager kit to get pourPayment
-      const { bankManager, pourPayment } = await makeFakeBankManagerKit();
+      // const { bankManager, pourPayment } = await makeFakeBankManagerKit();
+
       refreshAgoricNamesRemotes();
-      trace('usdcBrand', agoricNamesRemotes.brand);
+      trace('Checking USDC in brands list :', agoricNamesRemotes.brand);
       usdcBrand = agoricNamesRemotes.brand.USDC as any;
-      const USDCPmt = await pourPayment(AmountMath.make(usdcBrand, 100000n));
-      const purse = await E(E(bankManager).getBankForAddress(beneficiary)).getPurse(
-        usdcBrand,
-      );
-      await E(purse).deposit(USDCPmt);
+      trace('usdcBrand', usdcBrand);
+
+      // const usdcAmount = AmountMath.make(usdcBrand, 100_000_000n);
+      // trace('usdcAmount', usdcAmount);
+      // const USDCPmt = await pourPayment(usdcAmount);
+      // trace('USDCPmt', USDCPmt);
+      // const purse = await E(E(bankManager).getBankForAddress(beneficiary)).getPurse(
+      //   usdcBrand,
+      // );
+      // trace('purse', purse);
+      // await E(purse).deposit(USDCPmt);
+      // trace('purse after deposit', purse);
+
 
       // const brand = await E(issuer).getBrand();
       // const purse = E(issuer).makeEmptyPurse();
@@ -249,11 +362,12 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
     async iteration(t: ExecutionContext, iter: number) {
       // Simulate opening a portfolio with a small Access token give
       const give = {
-        USDC: AmountMath.make(
-          usdcBrand,
-          100_000n,
-        )
+        USDN: { brand: usdcBrand, value: 1_300_000n },
       };
+      // const give = {};
+      toNoble.ack('agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht');
+      await eventLoopIteration();
+
       await trader.openPortfolio(t, give, {});
     },
     async cleanup(doCoreEval: (specifier: string) => Promise<void>) {
