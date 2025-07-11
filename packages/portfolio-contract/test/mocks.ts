@@ -158,7 +158,7 @@ export const makeTestFeeConfig = (usdc: Omit<AmountUtils, 'mint'>): FeeConfig =>
 
 export const makeUSDNIBCTraffic = (
   signer = 'cosmos1test',
-  money = `${3333 * 1000000}`,
+  money = `${3_333.33 * 1000000}`,
 ) => ({
   swap: {
     msg: buildTxPacketString([
@@ -202,13 +202,28 @@ export const makeUSDNIBCTraffic = (
 
 export const makeCCTPTraffic = (
   from = 'cosmos1test',
-  money = `${3333 * 1000000}`,
+  money = `${3_333.33 * 1000000}`,
   dest = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
 ) => ({
   depositForBurn: {
     msg: buildTxPacketString([
       MsgDepositForBurn.toProtoMsg({
         amount: money,
+        burnToken: 'uusdc',
+        destinationDomain: 0,
+        from,
+        mintRecipient: leftPadEthAddressTo32Bytes(dest),
+      }),
+    ]),
+
+    ack: buildTxResponseString([
+      { encoder: MsgDepositForBurnResponse, message: {} },
+    ]),
+  },
+  depositForBurnx2: {
+    msg: buildTxPacketString([
+      MsgDepositForBurn.toProtoMsg({
+        amount: `${6_666.67 * 1000000}`,
         burnToken: 'uusdc',
         destinationDomain: 0,
         from,
