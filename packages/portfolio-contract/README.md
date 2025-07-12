@@ -39,6 +39,7 @@ Portfolio holders can:
 - Specify exact amounts to transfer between USDN, Aave, and Compound positions
 - Execute complex cross-chain operations seamlessly through the contract's orchestration
 
+
 ## Client Queries and Offers
 
 For details on making offers and querying vstorage, see
