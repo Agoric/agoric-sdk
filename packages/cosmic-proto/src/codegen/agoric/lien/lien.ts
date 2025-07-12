@@ -29,7 +29,7 @@ function createBaseLien(): Lien {
   };
 }
 export const Lien = {
-  typeUrl: '/agoric.lien.Lien',
+  typeUrl: '/agoric.lien.Lien' as const,
   encode(
     message: Lien,
     writer: BinaryWriter = BinaryWriter.create(),

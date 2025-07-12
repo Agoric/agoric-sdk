@@ -192,7 +192,7 @@ function createBaseClientState(): ClientState {
   };
 }
 export const ClientState = {
-  typeUrl: '/ibc.lightclients.solomachine.v3.ClientState',
+  typeUrl: '/ibc.lightclients.solomachine.v3.ClientState' as const,
   encode(
     message: ClientState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -294,7 +294,7 @@ function createBaseConsensusState(): ConsensusState {
   };
 }
 export const ConsensusState = {
-  typeUrl: '/ibc.lightclients.solomachine.v3.ConsensusState',
+  typeUrl: '/ibc.lightclients.solomachine.v3.ConsensusState' as const,
   encode(
     message: ConsensusState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -392,7 +392,7 @@ function createBaseHeader(): Header {
   };
 }
 export const Header = {
-  typeUrl: '/ibc.lightclients.solomachine.v3.Header',
+  typeUrl: '/ibc.lightclients.solomachine.v3.Header' as const,
   encode(
     message: Header,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -505,7 +505,7 @@ function createBaseMisbehaviour(): Misbehaviour {
   };
 }
 export const Misbehaviour = {
-  typeUrl: '/ibc.lightclients.solomachine.v3.Misbehaviour',
+  typeUrl: '/ibc.lightclients.solomachine.v3.Misbehaviour' as const,
   encode(
     message: Misbehaviour,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -622,7 +622,7 @@ function createBaseSignatureAndData(): SignatureAndData {
   };
 }
 export const SignatureAndData = {
-  typeUrl: '/ibc.lightclients.solomachine.v3.SignatureAndData',
+  typeUrl: '/ibc.lightclients.solomachine.v3.SignatureAndData' as const,
   encode(
     message: SignatureAndData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -733,7 +733,7 @@ function createBaseTimestampedSignatureData(): TimestampedSignatureData {
   };
 }
 export const TimestampedSignatureData = {
-  typeUrl: '/ibc.lightclients.solomachine.v3.TimestampedSignatureData',
+  typeUrl: '/ibc.lightclients.solomachine.v3.TimestampedSignatureData' as const,
   encode(
     message: TimestampedSignatureData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -832,7 +832,7 @@ function createBaseSignBytes(): SignBytes {
   };
 }
 export const SignBytes = {
-  typeUrl: '/ibc.lightclients.solomachine.v3.SignBytes',
+  typeUrl: '/ibc.lightclients.solomachine.v3.SignBytes' as const,
   encode(
     message: SignBytes,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -954,7 +954,7 @@ function createBaseHeaderData(): HeaderData {
   };
 }
 export const HeaderData = {
-  typeUrl: '/ibc.lightclients.solomachine.v3.HeaderData',
+  typeUrl: '/ibc.lightclients.solomachine.v3.HeaderData' as const,
   encode(
     message: HeaderData,
     writer: BinaryWriter = BinaryWriter.create(),

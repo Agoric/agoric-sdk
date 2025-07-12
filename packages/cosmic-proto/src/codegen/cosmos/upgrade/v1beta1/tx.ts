@@ -87,7 +87,7 @@ function createBaseMsgSoftwareUpgrade(): MsgSoftwareUpgrade {
   };
 }
 export const MsgSoftwareUpgrade = {
-  typeUrl: '/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade',
+  typeUrl: '/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade' as const,
   encode(
     message: MsgSoftwareUpgrade,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -163,7 +163,7 @@ function createBaseMsgSoftwareUpgradeResponse(): MsgSoftwareUpgradeResponse {
   return {};
 }
 export const MsgSoftwareUpgradeResponse = {
-  typeUrl: '/cosmos.upgrade.v1beta1.MsgSoftwareUpgradeResponse',
+  typeUrl: '/cosmos.upgrade.v1beta1.MsgSoftwareUpgradeResponse' as const,
   encode(
     _: MsgSoftwareUpgradeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -224,7 +224,7 @@ function createBaseMsgCancelUpgrade(): MsgCancelUpgrade {
   };
 }
 export const MsgCancelUpgrade = {
-  typeUrl: '/cosmos.upgrade.v1beta1.MsgCancelUpgrade',
+  typeUrl: '/cosmos.upgrade.v1beta1.MsgCancelUpgrade' as const,
   encode(
     message: MsgCancelUpgrade,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -284,7 +284,7 @@ function createBaseMsgCancelUpgradeResponse(): MsgCancelUpgradeResponse {
   return {};
 }
 export const MsgCancelUpgradeResponse = {
-  typeUrl: '/cosmos.upgrade.v1beta1.MsgCancelUpgradeResponse',
+  typeUrl: '/cosmos.upgrade.v1beta1.MsgCancelUpgradeResponse' as const,
   encode(
     _: MsgCancelUpgradeResponse,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -88,7 +88,7 @@ function createBaseMsgLock(): MsgLock {
   };
 }
 export const MsgLock = {
-  typeUrl: '/noble.dollar.vaults.v1.MsgLock',
+  typeUrl: '/noble.dollar.vaults.v1.MsgLock' as const,
   encode(
     message: MsgLock,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -166,7 +166,7 @@ function createBaseMsgLockResponse(): MsgLockResponse {
   return {};
 }
 export const MsgLockResponse = {
-  typeUrl: '/noble.dollar.vaults.v1.MsgLockResponse',
+  typeUrl: '/noble.dollar.vaults.v1.MsgLockResponse' as const,
   encode(
     _: MsgLockResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -220,7 +220,7 @@ function createBaseMsgUnlock(): MsgUnlock {
   };
 }
 export const MsgUnlock = {
-  typeUrl: '/noble.dollar.vaults.v1.MsgUnlock',
+  typeUrl: '/noble.dollar.vaults.v1.MsgUnlock' as const,
   encode(
     message: MsgUnlock,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -298,7 +298,7 @@ function createBaseMsgUnlockResponse(): MsgUnlockResponse {
   return {};
 }
 export const MsgUnlockResponse = {
-  typeUrl: '/noble.dollar.vaults.v1.MsgUnlockResponse',
+  typeUrl: '/noble.dollar.vaults.v1.MsgUnlockResponse' as const,
   encode(
     _: MsgUnlockResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -351,7 +351,7 @@ function createBaseMsgSetPausedState(): MsgSetPausedState {
   };
 }
 export const MsgSetPausedState = {
-  typeUrl: '/noble.dollar.vaults.v1.MsgSetPausedState',
+  typeUrl: '/noble.dollar.vaults.v1.MsgSetPausedState' as const,
   encode(
     message: MsgSetPausedState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -421,7 +421,7 @@ function createBaseMsgSetPausedStateResponse(): MsgSetPausedStateResponse {
   return {};
 }
 export const MsgSetPausedStateResponse = {
-  typeUrl: '/noble.dollar.vaults.v1.MsgSetPausedStateResponse',
+  typeUrl: '/noble.dollar.vaults.v1.MsgSetPausedStateResponse' as const,
   encode(
     _: MsgSetPausedStateResponse,
     writer: BinaryWriter = BinaryWriter.create(),

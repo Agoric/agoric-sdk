@@ -44,7 +44,7 @@ function createBaseTokenPair(): TokenPair {
   };
 }
 export const TokenPair = {
-  typeUrl: '/circle.cctp.v1.TokenPair',
+  typeUrl: '/circle.cctp.v1.TokenPair' as const,
   encode(
     message: TokenPair,
     writer: BinaryWriter = BinaryWriter.create(),
