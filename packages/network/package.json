@@ -24,19 +24,19 @@
     "@agoric/internal": "workspace:*",
     "@agoric/store": "workspace:*",
     "@agoric/vat-data": "workspace:*",
-    "@endo/base64": "^1.0.9",
-    "@endo/errors": "^1.2.10",
-    "@endo/far": "^1.1.11",
-    "@endo/pass-style": "^1.5.0",
-    "@endo/patterns": "^1.5.0",
-    "@endo/promise-kit": "^1.1.10"
+    "@endo/base64": "^1.0.12",
+    "@endo/errors": "^1.2.13",
+    "@endo/far": "^1.1.14",
+    "@endo/pass-style": "^1.6.3",
+    "@endo/patterns": "^1.7.0",
+    "@endo/promise-kit": "^1.1.13"
   },
   "devDependencies": {
     "@agoric/swingset-liveslots": "workspace:*",
     "@agoric/swingset-vat": "workspace:*",
     "@agoric/vow": "workspace:*",
     "@agoric/zone": "workspace:*",
-    "@endo/bundle-source": "^4.0.0",
+    "@endo/bundle-source": "^4.1.2",
     "ava": "^5.3.0",
     "c8": "^10.1.3"
   },
