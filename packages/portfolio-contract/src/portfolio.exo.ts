@@ -35,7 +35,6 @@ import type { makeProposalShapes, PoolKey, StatusFor } from './type-guards.js';
 import {
   makeFlowPath,
   makePortfolioPath,
-  OfferArgsShapeFor,
   PoolKeyShape,
   type OfferArgsFor,
 } from './type-guards.js';

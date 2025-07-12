@@ -42,12 +42,7 @@ import {
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
 import { makeSwapLockMessages } from '../src/pos-usdn.flows.ts';
-import {
-  makeProposalShapes,
-  makeProposalShapes0,
-  type ProposalType,
-  type ProposalType0,
-} from '../src/type-guards.ts';
+import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
 import { contractAddressesMock } from './mocks.ts';
 import {
   axelarCCTPConfig,
@@ -279,7 +274,7 @@ const mocks = (
     chainHubTools,
     rebalance: rebalanceHost as any,
     rebalanceFromTransfer: rebalanceFromTransferHost as any,
-    proposalShapes: makeProposalShapes0(USDC),
+    proposalShapes: makeProposalShapes(USDC, BLD),
     marshaller,
     portfoliosNode,
     usdcBrand: USDC,

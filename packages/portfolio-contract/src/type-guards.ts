@@ -8,8 +8,8 @@
  * makers for ongoing operations like rebalancing.
  *
  * **Proposals and Offer Args**
- * - {@link ProposalType0.openPortfolio}: Initial funding with USDC, Access tokens, and protocol allocations
- * - {@link ProposalType0.rebalance}: Add funds (give) or withdraw funds (want) from protocols
+ * - {@link ProposalType.openPortfolio}: Initial funding with USDC, Access tokens, and protocol allocations
+ * - {@link ProposalType.rebalance}: Add funds (give) or withdraw funds (want) from protocols
  * - {@link OfferArgsFor}: Cross-chain parameters like `destinationEVMChain` for EVM operations
  *
  * **VStorage Data**
@@ -37,14 +37,10 @@ import { M } from '@endo/patterns';
 import { AxelarChain, YieldProtocol } from './constants.js';
 import type { EVMContractAddresses, start } from './portfolio.contract.js';
 import type { PortfolioKit } from './portfolio.exo.js';
-import { makeGMPGiveRestShape, type GmpGive } from './pos-gmp-shapes.js';
-import { makeUSDNGiveFields } from './pos-usdn-shapes.js';
 
 export type { OfferArgsFor } from './type-guards-steps.js';
 
 // #region preliminaries
-const { fromEntries, keys } = Object;
-
 /**
  * @param brand must be a 'nat' brand, not checked
  */
@@ -75,12 +71,6 @@ export type PortfolioContinuingInvitationMaker =
   keyof PortfolioKit['invitationMakers'];
 
 // #region Proposal Shapes
-export type OpenPortfolioGive = {
-  USDN?: Amount<'nat'>;
-  NobleFees?: Amount<'nat'>;
-  Access?: Amount<'nat'>;
-} & ({} | GmpGive);
-
 /**
  * Proposal shapes for portfolio operations.
  *
@@ -138,52 +128,6 @@ export const makeProposalShapes = (
   return harden({ openPortfolio, rebalance });
 };
 harden(makeProposalShapes);
-
-export type ProposalType0 = {
-  openPortfolio: { give: OpenPortfolioGive };
-  rebalance:
-    | { give: OpenPortfolioGive; want: {} }
-    | { want: Partial<Record<YieldProtocol, Amount<'nat'>>>; give: {} };
-};
-
-const YieldProtocolShape = M.or(...keys(YieldProtocol));
-
-export const makeProposalShapes0 = (
-  usdcBrand: Brand<'nat'>,
-  accessBrand?: Brand<'nat'>,
-) => {
-  // TODO: Update usdcAmountShape, to include BLD/aUSDC after discussion with Axelar team
-  const usdcAmountShape = makeNatAmountShape(usdcBrand);
-
-  // The give for openPortfolio and rebalance differ only in required properties
-  const giveWith = x => {
-    return M.splitRecord(
-      x,
-      makeUSDNGiveFields(usdcAmountShape),
-      makeGMPGiveRestShape(usdcAmountShape),
-    );
-  };
-
-  return {
-    openPortfolio: M.splitRecord(
-      {
-        give: giveWith(
-          accessBrand ? { Access: makeNatAmountShape(accessBrand, 1n) } : {},
-        ),
-      },
-      { want: {}, exit: M.any() },
-      {},
-    ) as TypedPattern<ProposalType0['openPortfolio']>,
-    rebalance: M.or(
-      M.splitRecord({ give: giveWith({}) }, { want: {}, exit: M.any() }, {}),
-      M.splitRecord(
-        { want: M.recordOf(YieldProtocolShape, usdcAmountShape) },
-        { give: {}, exit: M.any() },
-        {},
-      ),
-    ) as TypedPattern<ProposalType0['rebalance']>,
-  };
-};
 // #endregion
 
 // #region Offer Args
@@ -237,30 +181,6 @@ harden(PoolPlaces);
  * Names of places where a portfolio may have a position.
  */
 export type PoolKey = keyof typeof PoolPlaces;
-
-type OfferArgs1 = {
-  destinationEVMChain?: AxelarChain;
-  usdnOut?: NatValue;
-};
-
-const offerArgsShape: TypedPattern<OfferArgs1> = M.splitRecord(
-  {},
-  {
-    destinationEVMChain: M.or(...keys(AxelarChain)),
-    usdnOut: M.nat(),
-  },
-);
-
-export type OfferArgsFor0 = {
-  openPortfolio: OfferArgs1;
-  rebalance: OfferArgs1;
-};
-
-export const OfferArgsShapeFor = {
-  openPortfolio: offerArgsShape,
-  rebalance: offerArgsShape,
-};
-harden(OfferArgsShapeFor);
 // #endregion
 
 // #region ymax0 vstorage keys and values

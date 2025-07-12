@@ -20,11 +20,9 @@ import {
   makePositionPath,
   portfolioIdOfPath,
   type OfferArgsFor,
-  type OpenPortfolioGive,
   type PortfolioContinuingInvitationMaker,
   type PortfolioInvitationMaker,
   type StatusFor,
-  type ProposalType0,
   type ProposalType,
 } from '../src/type-guards.ts';
 import type { WalletTool } from './wallet-offer-tools.ts';

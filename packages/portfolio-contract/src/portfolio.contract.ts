@@ -38,11 +38,11 @@ import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import {
   makeProposalShapes,
-  OfferArgsShapeFor,
   type EVMContractAddressesMap,
   type OfferArgsFor,
   type ProposalType,
 } from './type-guards.ts';
+import { makeOfferArgsShapes } from './type-guards-steps.ts';
 
 const trace = makeTracer('PortC');
 const { fromEntries, keys } = Object;
@@ -150,6 +150,7 @@ export const contract = async (
     brands.Fee,
     brands.Access,
   );
+  const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
 
   // Until we find a need for on-chain subscribers, this stop-gap will do.
   const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
@@ -247,7 +248,7 @@ export const contract = async (
       trace('makeOpenPortfolioInvitation');
       return zcf.makeInvitation(
         (seat, offerArgs) => {
-          mustMatch(offerArgs, OfferArgsShapeFor.openPortfolio);
+          mustMatch(offerArgs, offerArgsShapes.openPortfolio);
           return openPortfolio(seat, offerArgs);
         },
         'openPortfolio',
