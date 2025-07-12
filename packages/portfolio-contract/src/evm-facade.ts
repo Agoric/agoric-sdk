@@ -1,3 +1,7 @@
+/**
+ * @file Type-safe EVM contract call builder for Axelar GMP integration.
+ * @see {@link makeEVMSession} for creating contract call batches
+ */
 import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
 
 export type EVMT = {
