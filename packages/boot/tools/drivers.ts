@@ -1,3 +1,4 @@
+import { type makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
 import { type Amount } from '@agoric/ertp';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { SECONDS_PER_MINUTE } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
@@ -11,8 +12,6 @@ import {
   slotToRemotable,
   type FakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
-import { Fail } from '@endo/errors';
-
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type {
   CurrentWalletRecord,
@@ -25,10 +24,28 @@ import type { TimerService } from '@agoric/time';
 import type { WalletFactoryStartResult } from '@agoric/vats/src/core/startWalletFactory.js';
 import { type AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
 import type { InvitationDetails } from '@agoric/zoe';
+import { Fail } from '@endo/errors';
 import type { Marshal } from '@endo/marshal';
 import type { SwingsetTestKit } from './supports.js';
 
 type Marshaller = Omit<Marshal<string | null>, 'serialize' | 'unserialize'>;
+
+/**
+ * Adapt output from `makeCosmicSwingsetTestKit` for `makeGovernanceDriver`.
+ * @deprecated https://github.com/Agoric/agoric-sdk/pull/11448 calls for
+ *   modifying `makeCosmicSwingsetTestKit` and/or `makeGovernanceDriver` to
+ *   eliminate the need for this adapter
+ */
+export const adaptCosmicSwingsetTestKitForDriver = (
+  storage: FakeStorageKit,
+  testKit: Awaited<ReturnType<typeof makeCosmicSwingsetTestKit>>,
+) =>
+  ({
+    ...testKit,
+    readPublished: (subpath: string) =>
+      storage.readLatest(`published.${subpath}`),
+    runUtils: { queueAndRun: testKit.queueAndRun, EV: testKit.EV },
+  }) as unknown as SwingsetTestKit;
 
 // XXX SwingsetTestKit would simplify this
 export const makeWalletFactoryDriver = async (
@@ -413,89 +430,3 @@ export const makeGovernanceDriver = async (
 };
 harden(makeGovernanceDriver);
 export type GovernanceDriver = Awaited<ReturnType<typeof makeGovernanceDriver>>;
-
-export const makeZoeDriver = async (testKit: SwingsetTestKit) => {
-  const { EV } = testKit.runUtils;
-  const zoe = await EV.vat('bootstrap').consumeItem('zoe');
-  const chainStorage = await EV.vat('bootstrap').consumeItem('chainStorage');
-  const storageNode = await EV(chainStorage!).makeChildNode('prober-asid9a');
-  let creatorFacet;
-  let adminFacet;
-  let brand;
-  const sub = (a, v) => {
-    return { brand: a.brand, value: a.value - v };
-  };
-
-  return {
-    async instantiateProbeContract(probeContractBundle) {
-      const installation = await EV(zoe).install(probeContractBundle);
-      const startResults = await EV(zoe).startInstance(
-        installation,
-        undefined,
-        undefined,
-        { storageNode },
-        'probe',
-      );
-      ({ creatorFacet, adminFacet } = startResults);
-
-      const issuers = await EV(zoe).getIssuers(startResults.instance);
-      const brands = await EV(zoe).getBrands(startResults.instance);
-      brand = brands.Ducats;
-      return { creatorFacet, issuer: issuers.Ducats, brand };
-    },
-    async upgradeProbe(probeContractBundle) {
-      const fabricateBundleId = bundle => {
-        return `b1-${bundle.endoZipBase64Sha512}`;
-      };
-
-      await EV(adminFacet).upgradeContract(
-        fabricateBundleId(probeContractBundle),
-      );
-    },
-
-    verifyRealloc() {
-      return EV(creatorFacet).getAllocation();
-    },
-    async probeReallocation(value, payment) {
-      const stagingInv = await EV(creatorFacet).makeProbeStagingInvitation();
-
-      const stagingSeat = await EV(zoe).offer(
-        stagingInv,
-        { give: { Ducats: value } },
-        { Ducats: payment },
-      );
-      const helperPayments = await EV(stagingSeat).getPayouts();
-
-      const helperInv = await EV(creatorFacet).makeProbeHelperInvitation();
-      const helperSeat = await EV(zoe).offer(
-        helperInv,
-        { give: { Ducats: sub(value, 1n) } },
-        { Ducats: helperPayments.Ducats },
-      );
-      const internalPayments = await EV(helperSeat).getPayouts();
-
-      const internalInv = await EV(creatorFacet).makeProbeInternalInvitation();
-      const internalSeat = await EV(zoe).offer(
-        internalInv,
-        { give: { Ducats: sub(value, 2n) } },
-        { Ducats: internalPayments.Ducats },
-      );
-      const leftoverPayments = await EV(internalSeat).getPayouts();
-
-      return {
-        stagingResult: await EV(stagingSeat).getOfferResult(),
-        helperResult: await EV(helperSeat).getOfferResult(),
-        internalResult: await EV(internalSeat).getOfferResult(),
-        leftoverPayments,
-      };
-    },
-    async faucet() {
-      const faucetInv = await EV(creatorFacet).makeFaucetInvitation();
-      const seat = await EV(zoe).offer(faucetInv);
-
-      return EV(seat).getPayout('Ducats');
-    },
-  };
-};
-harden(makeZoeDriver);
-export type ZoeDriver = Awaited<ReturnType<typeof makeZoeDriver>>;
