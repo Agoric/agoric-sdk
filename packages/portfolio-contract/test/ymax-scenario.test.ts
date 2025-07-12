@@ -4,10 +4,9 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { type NatAmount } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { E } from '@endo/far';
-import { type YieldProtocol } from '../src/constants.js';
+import type { OfferArgsFor, ProposalType } from '../src/type-guards.ts';
 import {
   grokRebalanceScenarios,
   importCSV,
@@ -24,7 +23,7 @@ const rebalanceScenarioMacro = test.macro({
     t.log('start', description, 'with', myBalance);
 
     const { usdc } = common.brands;
-    const s2 = withBrand(scenario, usdc.brand);
+    const sceneB = withBrand(scenario, usdc.brand);
 
     if (description.includes('Recover')) {
       // simulate arrival of funds in the LCA via IBC from Noble
@@ -35,25 +34,22 @@ const rebalanceScenarioMacro = test.macro({
       await E(purse).deposit(funds);
     }
 
-    const openPortfolio = async (
-      give: Partial<Record<YieldProtocol, NatAmount>>,
-      offerArgs = {},
+    const openPortfolioAndAck = async (
+      give: ProposalType['openPortfolio']['give'],
+      offerArgs: OfferArgsFor['openPortfolio'] = {},
     ) => {
       const doneP = trader1.openPortfolio(t, give, offerArgs);
 
-      const { flow: moves = [] } = offerArgs;
-      console.log('@@@openPortfolio moves', moves);
+      const { flow: moves = [] } = { flow: [], ...offerArgs };
 
+      const { transmitVTransferEvent } = common.utils;
       for (const { dest } of moves) {
         await eventLoopIteration();
         if (dest === '@Ethereum') {
           await simulateUpcallFromAxelar(common.mocks.transferBridge);
         }
         try {
-          await common.utils.transmitVTransferEvent(
-            'acknowledgementPacket',
-            -1,
-          );
+          await transmitVTransferEvent('acknowledgementPacket', -1);
         } catch (oops) {
           console.error('nothing to ack?', oops);
         }
@@ -62,16 +58,16 @@ const rebalanceScenarioMacro = test.macro({
       return { result, payouts };
     };
 
-    // Convert scenario amounts to ERTP amounts
-    const openOnly = Object.keys(s2.before).length === 0;
-    const openResult = await openPortfolio(
-      openOnly ? s2.proposal.give : s2.before,
-      openOnly ? s2.offerArgs : {},
+    const openOnly = Object.keys(sceneB.before).length === 0;
+    const openResult = await openPortfolioAndAck(
+      // @ts-expect-error XXX only openOnly supported so far
+      openOnly ? sceneB.proposal.give : sceneB.before,
+      openOnly ? sceneB.offerArgs : {},
     );
 
     const { result, payouts } = await (openOnly
       ? openResult
-      : trader1.rebalance(t, s2.proposal, s2.offerArgs));
+      : trader1.rebalance(t, sceneB.proposal, sceneB.offerArgs));
 
     const portfolioPath = trader1.getPortfolioPath();
     t.truthy(portfolioPath);
@@ -84,11 +80,11 @@ const rebalanceScenarioMacro = test.macro({
 
     const txfrs = await trader1.netTransfersByPosition();
     t.log('net transfers by position', txfrs);
-    t.deepEqual(txfrs, s2.after, 'net transfers should match After row');
+    t.deepEqual(txfrs, sceneB.after, 'net transfers should match After row');
 
     t.log('payouts', payouts);
     const { Access: _, ...skipAssets } = payouts;
-    t.deepEqual(skipAssets, s2.payouts, 'payouts');
+    t.deepEqual(skipAssets, sceneB.payouts, 'payouts');
 
     // XXX: inspect bridge for netTransfersByPosition chains?
   },

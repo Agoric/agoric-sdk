@@ -1,14 +1,9 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import { passStyleOf } from '@endo/far';
-import {
-  makeAxelarMemo,
-  type GmpArgsContractCall,
-} from '../src/pos-gmp.flows.ts';
 import {
   setupTrader,
   simulateAckTransferToAxelar,
@@ -18,51 +13,6 @@ import {
 import { localAccount0 } from './mocks.ts';
 
 const { fromEntries, keys } = Object;
-
-test('makeAxelarMemo constructs correct memo JSON', t => {
-  const { brand } = makeIssuerKit('USDC');
-
-  const type = 1; // contract call
-  const destinationEVMChain = 'Avalanche';
-  const destinationAddress = '0x58E0bd49520364A115CeE4B03DffC1C08A2D1D09';
-  const keyword = 'Gas';
-  const amounts = {
-    Gas: {
-      brand,
-      value: 2000000n,
-    },
-  };
-
-  const gmpArgs: GmpArgsContractCall = {
-    type,
-    contractInvocationData: [],
-    destinationEVMChain,
-    destinationAddress,
-    keyword,
-    amounts,
-  };
-
-  // From a valid transaction from AxelarScan: https://testnet.axelarscan.io/tx/CA5A2E8CA6770B0FBBC1789DE5FB14F5955BD62CD0C1F975C88DE3DA657025F2
-  const expectedPayload = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  ];
-
-  const result = makeAxelarMemo('Avalanche', gmpArgs);
-  const parsed = JSON.parse(result);
-
-  t.deepEqual(parsed, {
-    type,
-    destination_chain: 'Avalanche',
-    destination_address: destinationAddress,
-    payload: expectedPayload,
-    fee: {
-      amount: String(amounts[keyword].value),
-      recipient: gmpAddresses.AXELAR_GAS,
-    },
-  });
-});
 
 const range = (n: number) => [...Array(n).keys()];
 

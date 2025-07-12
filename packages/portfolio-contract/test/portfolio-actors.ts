@@ -124,7 +124,7 @@ export const makeTrader = (
      */
     async rebalance(
       t: ExecutionContext,
-      proposal: ProposalType0['rebalance'],
+      proposal: ProposalType['rebalance'],
       offerArgs: OfferArgsFor['rebalance'],
     ) {
       if (!openId) throw Error('not open');

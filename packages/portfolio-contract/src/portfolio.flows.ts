@@ -6,7 +6,7 @@
  */
 import type { GuestInterface } from '@agoric/async-flow';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import { AmountMath, type Amount, type NatAmount } from '@agoric/ertp';
+import { type Amount, type NatAmount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type {
   AccountId,
@@ -28,6 +28,20 @@ import {
   SupportedChain,
   type YieldProtocol,
 } from './constants.js';
+import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
+import {
+  AaveProtocol,
+  CCTP,
+  CompoundProtocol,
+  provideEVMAccount,
+  type EVMContext,
+} from './pos-gmp.flows.ts';
+import {
+  agoricToNoble,
+  nobleToAgoric,
+  protocolUSDN,
+} from './pos-usdn.flows.ts';
+import type { Position } from './pos.exo.ts';
 import {
   getChainNameOfPlaceRef,
   getKeywordOfPlaceRef,
@@ -35,29 +49,11 @@ import {
   type MovementDesc,
   type OfferArgsFor,
 } from './type-guards-steps.ts';
-import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
-import {
-  AaveProtocol,
-  CCTP,
-  changeGMPPosition,
-  CompoundProtocol,
-  provideEVMAccount,
-  provideEVMAccount2,
-  type EVMContext,
-} from './pos-gmp.flows.ts';
-import {
-  agoricToNoble,
-  changeUSDCPosition,
-  nobleToAgoric,
-  protocolUSDN,
-} from './pos-usdn.flows.ts';
-import type { Position } from './pos.exo.ts';
 import {
   PoolPlaces,
   type EVMContractAddressesMap,
   type PoolKey,
   type ProposalType,
-  type ProposalType0,
 } from './type-guards.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
@@ -410,7 +406,7 @@ const stepFlow = async (
         ]);
 
         const gmp = { chain: axelar, fee: move.fee?.value || 0n };
-        const gInfo = await provideEVMAccount2(way.dest, gmp, lca, ctx, kit);
+        const gInfo = await provideEVMAccount(way.dest, gmp, lca, ctx, kit);
         todo.push({
           how,
           amount,
@@ -453,7 +449,7 @@ const stepFlow = async (
         const axelar = await orch.getChain('axelar');
         const gmp = { chain: axelar, fee: move.fee?.value || 0n }; // XXX throw if fee missing?
         const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
-        const gInfo = await provideEVMAccount2(evmChain, gmp, lca, ctx, kit);
+        const gInfo = await provideEVMAccount(evmChain, gmp, lca, ctx, kit);
         const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
         const pos = kit.manager.providePosition(
           way.poolKey,
@@ -501,7 +497,7 @@ const stepFlow = async (
         const axelar = await orch.getChain('axelar');
         const gmp = { chain: axelar, fee: move.fee?.value || 0n }; // XXX throw if fee missing?
         const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
-        const gInfo = await provideEVMAccount2(evmChain, gmp, lca, ctx, kit);
+        const gInfo = await provideEVMAccount(evmChain, gmp, lca, ctx, kit);
         const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
         const pos = kit.manager.providePosition(way.poolKey, 'Aave', accountId);
         const { denom } = ctx.gmpFeeInfo;
@@ -536,7 +532,7 @@ const stepFlow = async (
       }
 
       default:
-        throw Fail`TODO: ${way.how}`;
+        throw Fail`TODO: ${way}`;
     }
   }
 

@@ -200,7 +200,7 @@ export const withBrand = (scenario: RebalanceScenario, brand: Brand<'nat'>) => {
   const { make } = AmountMath;
   const unit = make(brand, 1_000_000n);
   const $ = (amt: Dollars) => multiplyBy(unit, parseRatio(numeral(amt), brand));
-  const $$ = (dollarCells: Record<string, Dollars>) =>
+  const $$ = <C extends Record<string, Dollars>>(dollarCells: C) =>
     objectMap(dollarCells, a => $(a!));
 
   const offerArgs = harden(
@@ -216,7 +216,7 @@ export const withBrand = (scenario: RebalanceScenario, brand: Brand<'nat'>) => {
   mustMatch(offerArgs, makeOfferArgsShapes(brand).rebalance);
 
   const proposal = objectMap(scenario.proposal, $$);
-  mustMatch(proposal, makeProposalShapes(brand).rebalance);
+  mustMatch(proposal, makeProposalShapes(brand, brand).rebalance);
   return harden({
     before: $$(scenario.before),
     proposal,

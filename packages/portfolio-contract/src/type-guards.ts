@@ -106,7 +106,6 @@ export const makeProposalShapes = (
   feeBrand: Brand<'nat'>,
   accessBrand?: Brand<'nat'>,
 ) => {
-  // TODO: Update usdcAmountShape, to include BLD/aUSDC after discussion with Axelar team
   const $Shape = makeNatAmountShape(usdcBrand);
   const FeeShape = makeNatAmountShape(feeBrand);
   const accessShape = accessBrand
