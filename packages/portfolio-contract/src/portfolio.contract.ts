@@ -198,6 +198,7 @@ export const contract = async (
     rebalance,
     rebalanceFromTransfer,
     proposalShapes,
+    offerArgsShapes,
     timer: timerService,
     chainHubTools: {
       getChainInfo: chainHub.getChainInfo.bind(chainHub),

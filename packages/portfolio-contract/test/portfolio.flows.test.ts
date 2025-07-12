@@ -50,6 +50,7 @@ import {
   makeIncomingVTransferEvent,
 } from './supports.ts';
 import { getBech32Prefix } from '@agoric/orchestration/src/utils/address.js';
+import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 
 const theExit = harden(() => {}); // for ava comparison
 // @ts-expect-error mock
@@ -275,6 +276,7 @@ const mocks = (
     rebalance: rebalanceHost as any,
     rebalanceFromTransfer: rebalanceFromTransferHost as any,
     proposalShapes: makeProposalShapes(USDC, BLD),
+    offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
     portfoliosNode,
     usdcBrand: USDC,

@@ -38,6 +38,7 @@ import {
   PoolKeyShape,
   type OfferArgsFor,
 } from './type-guards.js';
+import type { makeOfferArgsShapes } from './type-guards-steps.js';
 
 const trace = makeTracer('PortExo');
 const { values } = Object;
@@ -148,6 +149,7 @@ export const preparePortfolioKit = (
     timer,
     chainHubTools,
     proposalShapes,
+    offerArgsShapes,
     vowTools,
     zcf,
     portfoliosNode,
@@ -169,6 +171,7 @@ export const preparePortfolioKit = (
     timer: Remote<TimerService>;
     chainHubTools: Pick<ChainHub, 'getChainInfo'>;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
+    offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>;
     vowTools: VowTools;
     zcf: ZCF;
     portfoliosNode: ERef<StorageNode>;
@@ -434,7 +437,7 @@ export const preparePortfolioKit = (
       },
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
-          mustMatch(offerArgs, OfferArgsShapeFor.rebalance);
+          mustMatch(offerArgs, offerArgsShapes.rebalance);
           return rebalance(seat, offerArgs, this.facets);
         },
       },
