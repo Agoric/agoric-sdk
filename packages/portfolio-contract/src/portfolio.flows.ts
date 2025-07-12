@@ -435,7 +435,7 @@ const stepFlow = async (
             recover: () => Fail`no recovery from supply (final step)`,
           });
         } else {
-          Fail`TODO`;
+          Fail`TODO: withdraw from USDN`;
         }
         break;
       }
@@ -532,7 +532,7 @@ const stepFlow = async (
       }
 
       default:
-        throw Fail`TODO: ${way}`;
+        throw Fail`unreachable: ${way}`;
     }
   }
 

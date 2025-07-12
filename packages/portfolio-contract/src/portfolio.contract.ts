@@ -227,7 +227,7 @@ export const contract = async (
     },
   );
 
-  trace('TODO: baggage test');
+  trace('XXX NEEDSTEST: baggage test');
 
   const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
     /**
