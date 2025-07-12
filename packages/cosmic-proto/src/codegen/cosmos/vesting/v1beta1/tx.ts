@@ -248,7 +248,7 @@ function createBaseMsgCreateVestingAccount(): MsgCreateVestingAccount {
   };
 }
 export const MsgCreateVestingAccount = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreateVestingAccount',
+  typeUrl: '/cosmos.vesting.v1beta1.MsgCreateVestingAccount' as const,
   encode(
     message: MsgCreateVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -366,7 +366,7 @@ function createBaseMsgCreateVestingAccountResponse(): MsgCreateVestingAccountRes
   return {};
 }
 export const MsgCreateVestingAccountResponse = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreateVestingAccountResponse',
+  typeUrl: '/cosmos.vesting.v1beta1.MsgCreateVestingAccountResponse' as const,
   encode(
     _: MsgCreateVestingAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -431,7 +431,7 @@ function createBaseMsgCreatePermanentLockedAccount(): MsgCreatePermanentLockedAc
   };
 }
 export const MsgCreatePermanentLockedAccount = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccount',
+  typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccount' as const,
   encode(
     message: MsgCreatePermanentLockedAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -527,7 +527,8 @@ function createBaseMsgCreatePermanentLockedAccountResponse(): MsgCreatePermanent
   return {};
 }
 export const MsgCreatePermanentLockedAccountResponse = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccountResponse',
+  typeUrl:
+    '/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccountResponse' as const,
   encode(
     _: MsgCreatePermanentLockedAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -595,7 +596,7 @@ function createBaseMsgCreatePeriodicVestingAccount(): MsgCreatePeriodicVestingAc
   };
 }
 export const MsgCreatePeriodicVestingAccount = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccount',
+  typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccount' as const,
   encode(
     message: MsgCreatePeriodicVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -718,7 +719,8 @@ function createBaseMsgCreatePeriodicVestingAccountResponse(): MsgCreatePeriodicV
   return {};
 }
 export const MsgCreatePeriodicVestingAccountResponse = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccountResponse',
+  typeUrl:
+    '/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccountResponse' as const,
   encode(
     _: MsgCreatePeriodicVestingAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -787,7 +789,7 @@ function createBaseMsgCreateClawbackVestingAccount(): MsgCreateClawbackVestingAc
   };
 }
 export const MsgCreateClawbackVestingAccount = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccount',
+  typeUrl: '/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccount' as const,
   encode(
     message: MsgCreateClawbackVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -928,7 +930,8 @@ function createBaseMsgCreateClawbackVestingAccountResponse(): MsgCreateClawbackV
   return {};
 }
 export const MsgCreateClawbackVestingAccountResponse = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccountResponse',
+  typeUrl:
+    '/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccountResponse' as const,
   encode(
     _: MsgCreateClawbackVestingAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -994,7 +997,7 @@ function createBaseMsgClawback(): MsgClawback {
   };
 }
 export const MsgClawback = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgClawback',
+  typeUrl: '/cosmos.vesting.v1beta1.MsgClawback' as const,
   encode(
     message: MsgClawback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1076,7 +1079,7 @@ function createBaseMsgClawbackResponse(): MsgClawbackResponse {
   return {};
 }
 export const MsgClawbackResponse = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgClawbackResponse',
+  typeUrl: '/cosmos.vesting.v1beta1.MsgClawbackResponse' as const,
   encode(
     _: MsgClawbackResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1131,7 +1134,7 @@ function createBaseMsgReturnGrants(): MsgReturnGrants {
   };
 }
 export const MsgReturnGrants = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgReturnGrants',
+  typeUrl: '/cosmos.vesting.v1beta1.MsgReturnGrants' as const,
   encode(
     message: MsgReturnGrants,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1191,7 +1194,7 @@ function createBaseMsgReturnGrantsResponse(): MsgReturnGrantsResponse {
   return {};
 }
 export const MsgReturnGrantsResponse = {
-  typeUrl: '/cosmos.vesting.v1beta1.MsgReturnGrantsResponse',
+  typeUrl: '/cosmos.vesting.v1beta1.MsgReturnGrantsResponse' as const,
   encode(
     _: MsgReturnGrantsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

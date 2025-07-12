@@ -312,7 +312,7 @@ function createBaseParams(): Params {
   };
 }
 export const Params = {
-  typeUrl: '/cosmos.distribution.v1beta1.Params',
+  typeUrl: '/cosmos.distribution.v1beta1.Params' as const,
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -429,7 +429,7 @@ function createBaseValidatorHistoricalRewards(): ValidatorHistoricalRewards {
   };
 }
 export const ValidatorHistoricalRewards = {
-  typeUrl: '/cosmos.distribution.v1beta1.ValidatorHistoricalRewards',
+  typeUrl: '/cosmos.distribution.v1beta1.ValidatorHistoricalRewards' as const,
   encode(
     message: ValidatorHistoricalRewards,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -526,7 +526,7 @@ function createBaseValidatorCurrentRewards(): ValidatorCurrentRewards {
   };
 }
 export const ValidatorCurrentRewards = {
-  typeUrl: '/cosmos.distribution.v1beta1.ValidatorCurrentRewards',
+  typeUrl: '/cosmos.distribution.v1beta1.ValidatorCurrentRewards' as const,
   encode(
     message: ValidatorCurrentRewards,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -620,7 +620,8 @@ function createBaseValidatorAccumulatedCommission(): ValidatorAccumulatedCommiss
   };
 }
 export const ValidatorAccumulatedCommission = {
-  typeUrl: '/cosmos.distribution.v1beta1.ValidatorAccumulatedCommission',
+  typeUrl:
+    '/cosmos.distribution.v1beta1.ValidatorAccumulatedCommission' as const,
   encode(
     message: ValidatorAccumulatedCommission,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -702,7 +703,7 @@ function createBaseValidatorOutstandingRewards(): ValidatorOutstandingRewards {
   };
 }
 export const ValidatorOutstandingRewards = {
-  typeUrl: '/cosmos.distribution.v1beta1.ValidatorOutstandingRewards',
+  typeUrl: '/cosmos.distribution.v1beta1.ValidatorOutstandingRewards' as const,
   encode(
     message: ValidatorOutstandingRewards,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -784,7 +785,7 @@ function createBaseValidatorSlashEvent(): ValidatorSlashEvent {
   };
 }
 export const ValidatorSlashEvent = {
-  typeUrl: '/cosmos.distribution.v1beta1.ValidatorSlashEvent',
+  typeUrl: '/cosmos.distribution.v1beta1.ValidatorSlashEvent' as const,
   encode(
     message: ValidatorSlashEvent,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -869,7 +870,7 @@ function createBaseValidatorSlashEvents(): ValidatorSlashEvents {
   };
 }
 export const ValidatorSlashEvents = {
-  typeUrl: '/cosmos.distribution.v1beta1.ValidatorSlashEvents',
+  typeUrl: '/cosmos.distribution.v1beta1.ValidatorSlashEvents' as const,
   encode(
     message: ValidatorSlashEvents,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -949,7 +950,7 @@ function createBaseFeePool(): FeePool {
   };
 }
 export const FeePool = {
-  typeUrl: '/cosmos.distribution.v1beta1.FeePool',
+  typeUrl: '/cosmos.distribution.v1beta1.FeePool' as const,
   encode(
     message: FeePool,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1024,7 +1025,7 @@ function createBaseCommunityPoolSpendProposal(): CommunityPoolSpendProposal {
   };
 }
 export const CommunityPoolSpendProposal = {
-  typeUrl: '/cosmos.distribution.v1beta1.CommunityPoolSpendProposal',
+  typeUrl: '/cosmos.distribution.v1beta1.CommunityPoolSpendProposal' as const,
   encode(
     message: CommunityPoolSpendProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1133,7 +1134,7 @@ function createBaseDelegatorStartingInfo(): DelegatorStartingInfo {
   };
 }
 export const DelegatorStartingInfo = {
-  typeUrl: '/cosmos.distribution.v1beta1.DelegatorStartingInfo',
+  typeUrl: '/cosmos.distribution.v1beta1.DelegatorStartingInfo' as const,
   encode(
     message: DelegatorStartingInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1231,7 +1232,7 @@ function createBaseDelegationDelegatorReward(): DelegationDelegatorReward {
   };
 }
 export const DelegationDelegatorReward = {
-  typeUrl: '/cosmos.distribution.v1beta1.DelegationDelegatorReward',
+  typeUrl: '/cosmos.distribution.v1beta1.DelegationDelegatorReward' as const,
   encode(
     message: DelegationDelegatorReward,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1328,7 +1329,8 @@ function createBaseCommunityPoolSpendProposalWithDeposit(): CommunityPoolSpendPr
   };
 }
 export const CommunityPoolSpendProposalWithDeposit = {
-  typeUrl: '/cosmos.distribution.v1beta1.CommunityPoolSpendProposalWithDeposit',
+  typeUrl:
+    '/cosmos.distribution.v1beta1.CommunityPoolSpendProposalWithDeposit' as const,
   encode(
     message: CommunityPoolSpendProposalWithDeposit,
     writer: BinaryWriter = BinaryWriter.create(),

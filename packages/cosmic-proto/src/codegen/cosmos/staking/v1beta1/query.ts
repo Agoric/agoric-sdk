@@ -546,7 +546,7 @@ function createBaseQueryValidatorsRequest(): QueryValidatorsRequest {
   };
 }
 export const QueryValidatorsRequest = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryValidatorsRequest',
+  typeUrl: '/cosmos.staking.v1beta1.QueryValidatorsRequest' as const,
   encode(
     message: QueryValidatorsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -631,7 +631,7 @@ function createBaseQueryValidatorsResponse(): QueryValidatorsResponse {
   };
 }
 export const QueryValidatorsResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryValidatorsResponse',
+  typeUrl: '/cosmos.staking.v1beta1.QueryValidatorsResponse' as const,
   encode(
     message: QueryValidatorsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -731,7 +731,7 @@ function createBaseQueryValidatorRequest(): QueryValidatorRequest {
   };
 }
 export const QueryValidatorRequest = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryValidatorRequest',
+  typeUrl: '/cosmos.staking.v1beta1.QueryValidatorRequest' as const,
   encode(
     message: QueryValidatorRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -799,7 +799,7 @@ function createBaseQueryValidatorResponse(): QueryValidatorResponse {
   };
 }
 export const QueryValidatorResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryValidatorResponse',
+  typeUrl: '/cosmos.staking.v1beta1.QueryValidatorResponse' as const,
   encode(
     message: QueryValidatorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -875,7 +875,7 @@ function createBaseQueryValidatorDelegationsRequest(): QueryValidatorDelegations
   };
 }
 export const QueryValidatorDelegationsRequest = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryValidatorDelegationsRequest',
+  typeUrl: '/cosmos.staking.v1beta1.QueryValidatorDelegationsRequest' as const,
   encode(
     message: QueryValidatorDelegationsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -969,7 +969,7 @@ function createBaseQueryValidatorDelegationsResponse(): QueryValidatorDelegation
   };
 }
 export const QueryValidatorDelegationsResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryValidatorDelegationsResponse',
+  typeUrl: '/cosmos.staking.v1beta1.QueryValidatorDelegationsResponse' as const,
   encode(
     message: QueryValidatorDelegationsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1077,7 +1077,8 @@ function createBaseQueryValidatorUnbondingDelegationsRequest(): QueryValidatorUn
   };
 }
 export const QueryValidatorUnbondingDelegationsRequest = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryValidatorUnbondingDelegationsRequest',
+  typeUrl:
+    '/cosmos.staking.v1beta1.QueryValidatorUnbondingDelegationsRequest' as const,
   encode(
     message: QueryValidatorUnbondingDelegationsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1172,7 +1173,8 @@ function createBaseQueryValidatorUnbondingDelegationsResponse(): QueryValidatorU
   };
 }
 export const QueryValidatorUnbondingDelegationsResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryValidatorUnbondingDelegationsResponse',
+  typeUrl:
+    '/cosmos.staking.v1beta1.QueryValidatorUnbondingDelegationsResponse' as const,
   encode(
     message: QueryValidatorUnbondingDelegationsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1282,7 +1284,7 @@ function createBaseQueryDelegationRequest(): QueryDelegationRequest {
   };
 }
 export const QueryDelegationRequest = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryDelegationRequest',
+  typeUrl: '/cosmos.staking.v1beta1.QueryDelegationRequest' as const,
   encode(
     message: QueryDelegationRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1364,7 +1366,7 @@ function createBaseQueryDelegationResponse(): QueryDelegationResponse {
   };
 }
 export const QueryDelegationResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryDelegationResponse',
+  typeUrl: '/cosmos.staking.v1beta1.QueryDelegationResponse' as const,
   encode(
     message: QueryDelegationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1451,7 +1453,7 @@ function createBaseQueryUnbondingDelegationRequest(): QueryUnbondingDelegationRe
   };
 }
 export const QueryUnbondingDelegationRequest = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryUnbondingDelegationRequest',
+  typeUrl: '/cosmos.staking.v1beta1.QueryUnbondingDelegationRequest' as const,
   encode(
     message: QueryUnbondingDelegationRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1539,7 +1541,7 @@ function createBaseQueryUnbondingDelegationResponse(): QueryUnbondingDelegationR
   };
 }
 export const QueryUnbondingDelegationResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryUnbondingDelegationResponse',
+  typeUrl: '/cosmos.staking.v1beta1.QueryUnbondingDelegationResponse' as const,
   encode(
     message: QueryUnbondingDelegationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1624,7 +1626,7 @@ function createBaseQueryDelegatorDelegationsRequest(): QueryDelegatorDelegations
   };
 }
 export const QueryDelegatorDelegationsRequest = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryDelegatorDelegationsRequest',
+  typeUrl: '/cosmos.staking.v1beta1.QueryDelegatorDelegationsRequest' as const,
   encode(
     message: QueryDelegatorDelegationsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1718,7 +1720,7 @@ function createBaseQueryDelegatorDelegationsResponse(): QueryDelegatorDelegation
   };
 }
 export const QueryDelegatorDelegationsResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryDelegatorDelegationsResponse',
+  typeUrl: '/cosmos.staking.v1beta1.QueryDelegatorDelegationsResponse' as const,
   encode(
     message: QueryDelegatorDelegationsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1826,7 +1828,8 @@ function createBaseQueryDelegatorUnbondingDelegationsRequest(): QueryDelegatorUn
   };
 }
 export const QueryDelegatorUnbondingDelegationsRequest = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryDelegatorUnbondingDelegationsRequest',
+  typeUrl:
+    '/cosmos.staking.v1beta1.QueryDelegatorUnbondingDelegationsRequest' as const,
   encode(
     message: QueryDelegatorUnbondingDelegationsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1921,7 +1924,8 @@ function createBaseQueryDelegatorUnbondingDelegationsResponse(): QueryDelegatorU
   };
 }
 export const QueryDelegatorUnbondingDelegationsResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryDelegatorUnbondingDelegationsResponse',
+  typeUrl:
+    '/cosmos.staking.v1beta1.QueryDelegatorUnbondingDelegationsResponse' as const,
   encode(
     message: QueryDelegatorUnbondingDelegationsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2033,7 +2037,7 @@ function createBaseQueryRedelegationsRequest(): QueryRedelegationsRequest {
   };
 }
 export const QueryRedelegationsRequest = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryRedelegationsRequest',
+  typeUrl: '/cosmos.staking.v1beta1.QueryRedelegationsRequest' as const,
   encode(
     message: QueryRedelegationsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2151,7 +2155,7 @@ function createBaseQueryRedelegationsResponse(): QueryRedelegationsResponse {
   };
 }
 export const QueryRedelegationsResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryRedelegationsResponse',
+  typeUrl: '/cosmos.staking.v1beta1.QueryRedelegationsResponse' as const,
   encode(
     message: QueryRedelegationsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2260,7 +2264,7 @@ function createBaseQueryDelegatorValidatorsRequest(): QueryDelegatorValidatorsRe
   };
 }
 export const QueryDelegatorValidatorsRequest = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryDelegatorValidatorsRequest',
+  typeUrl: '/cosmos.staking.v1beta1.QueryDelegatorValidatorsRequest' as const,
   encode(
     message: QueryDelegatorValidatorsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2354,7 +2358,7 @@ function createBaseQueryDelegatorValidatorsResponse(): QueryDelegatorValidatorsR
   };
 }
 export const QueryDelegatorValidatorsResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryDelegatorValidatorsResponse',
+  typeUrl: '/cosmos.staking.v1beta1.QueryDelegatorValidatorsResponse' as const,
   encode(
     message: QueryDelegatorValidatorsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2457,7 +2461,7 @@ function createBaseQueryDelegatorValidatorRequest(): QueryDelegatorValidatorRequ
   };
 }
 export const QueryDelegatorValidatorRequest = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryDelegatorValidatorRequest',
+  typeUrl: '/cosmos.staking.v1beta1.QueryDelegatorValidatorRequest' as const,
   encode(
     message: QueryDelegatorValidatorRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2545,7 +2549,7 @@ function createBaseQueryDelegatorValidatorResponse(): QueryDelegatorValidatorRes
   };
 }
 export const QueryDelegatorValidatorResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryDelegatorValidatorResponse',
+  typeUrl: '/cosmos.staking.v1beta1.QueryDelegatorValidatorResponse' as const,
   encode(
     message: QueryDelegatorValidatorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2626,7 +2630,7 @@ function createBaseQueryHistoricalInfoRequest(): QueryHistoricalInfoRequest {
   };
 }
 export const QueryHistoricalInfoRequest = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryHistoricalInfoRequest',
+  typeUrl: '/cosmos.staking.v1beta1.QueryHistoricalInfoRequest' as const,
   encode(
     message: QueryHistoricalInfoRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2705,7 +2709,7 @@ function createBaseQueryHistoricalInfoResponse(): QueryHistoricalInfoResponse {
   };
 }
 export const QueryHistoricalInfoResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryHistoricalInfoResponse',
+  typeUrl: '/cosmos.staking.v1beta1.QueryHistoricalInfoResponse' as const,
   encode(
     message: QueryHistoricalInfoResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2784,7 +2788,7 @@ function createBaseQueryPoolRequest(): QueryPoolRequest {
   return {};
 }
 export const QueryPoolRequest = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryPoolRequest',
+  typeUrl: '/cosmos.staking.v1beta1.QueryPoolRequest' as const,
   encode(
     _: QueryPoolRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2836,7 +2840,7 @@ function createBaseQueryPoolResponse(): QueryPoolResponse {
   };
 }
 export const QueryPoolResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryPoolResponse',
+  typeUrl: '/cosmos.staking.v1beta1.QueryPoolResponse' as const,
   encode(
     message: QueryPoolResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2900,7 +2904,7 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
 export const QueryParamsRequest = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryParamsRequest',
+  typeUrl: '/cosmos.staking.v1beta1.QueryParamsRequest' as const,
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2955,7 +2959,7 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
   };
 }
 export const QueryParamsResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.QueryParamsResponse',
+  typeUrl: '/cosmos.staking.v1beta1.QueryParamsResponse' as const,
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -89,7 +89,7 @@ function createBaseRecord(): Record {
   };
 }
 export const Record = {
-  typeUrl: '/cosmos.crypto.keyring.v1.Record',
+  typeUrl: '/cosmos.crypto.keyring.v1.Record' as const,
   encode(
     message: Record,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -232,7 +232,7 @@ function createBaseRecord_Local(): Record_Local {
   };
 }
 export const Record_Local = {
-  typeUrl: '/cosmos.crypto.keyring.v1.Local',
+  typeUrl: '/cosmos.crypto.keyring.v1.Local' as const,
   encode(
     message: Record_Local,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -298,7 +298,7 @@ function createBaseRecord_Ledger(): Record_Ledger {
   };
 }
 export const Record_Ledger = {
-  typeUrl: '/cosmos.crypto.keyring.v1.Ledger',
+  typeUrl: '/cosmos.crypto.keyring.v1.Ledger' as const,
   encode(
     message: Record_Ledger,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -362,7 +362,7 @@ function createBaseRecord_Multi(): Record_Multi {
   return {};
 }
 export const Record_Multi = {
-  typeUrl: '/cosmos.crypto.keyring.v1.Multi',
+  typeUrl: '/cosmos.crypto.keyring.v1.Multi' as const,
   encode(
     _: Record_Multi,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -412,7 +412,7 @@ function createBaseRecord_Offline(): Record_Offline {
   return {};
 }
 export const Record_Offline = {
-  typeUrl: '/cosmos.crypto.keyring.v1.Offline',
+  typeUrl: '/cosmos.crypto.keyring.v1.Offline' as const,
   encode(
     _: Record_Offline,
     writer: BinaryWriter = BinaryWriter.create(),

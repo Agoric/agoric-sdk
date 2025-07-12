@@ -26,7 +26,7 @@ function createBaseConfigRequest(): ConfigRequest {
   return {};
 }
 export const ConfigRequest = {
-  typeUrl: '/cosmos.base.node.v1beta1.ConfigRequest',
+  typeUrl: '/cosmos.base.node.v1beta1.ConfigRequest' as const,
   encode(
     _: ConfigRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -78,7 +78,7 @@ function createBaseConfigResponse(): ConfigResponse {
   };
 }
 export const ConfigResponse = {
-  typeUrl: '/cosmos.base.node.v1beta1.ConfigResponse',
+  typeUrl: '/cosmos.base.node.v1beta1.ConfigResponse' as const,
   encode(
     message: ConfigResponse,
     writer: BinaryWriter = BinaryWriter.create(),
