@@ -22,6 +22,7 @@ import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { Fail } from '@endo/errors';
 import { RebalanceStrategy } from './constants.js';
+import type { AxelarId } from './portfolio.contract.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import { changeGMPPosition } from './pos-gmp.flows.ts';
 import { changeUSDCPosition } from './pos-usdn.flows.ts';
@@ -40,6 +41,7 @@ export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>; // TODO: move to type-guards as external interface?
 
 type PortfolioBootstrapContext = {
+  axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
   usdc: { brand: Brand<'nat'>; denom: Denom };
   zoeTools: GuestInterface<ZoeTools>;
@@ -48,6 +50,7 @@ type PortfolioBootstrapContext = {
 };
 
 export type PortfolioInstanceContext = {
+  axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
   usdc: { brand: Brand<'nat'>; denom: Denom };
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
@@ -276,12 +279,19 @@ export const openPortfolio = (async (
 ) => {
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   try {
-    const { makePortfolioKit, zoeTools, contracts, usdc, inertSubscriber } =
-      ctx;
+    const {
+      makePortfolioKit,
+      zoeTools,
+      axelarIds,
+      contracts,
+      usdc,
+      inertSubscriber,
+    } = ctx;
     const kit = makePortfolioKit();
     await provideCosmosAccount(orch, 'agoric', kit);
 
     const portfolioCtx = {
+      axelarIds,
       contracts,
       usdc,
       keeper: { ...kit.reader, ...kit.manager },

@@ -47,13 +47,6 @@ const { fromEntries, keys } = Object;
 
 const interfaceTODO = undefined;
 
-export type EVMContractAddresses = {
-  aavePool: `0x${string}`;
-  compound: `0x${string}`;
-  factory: `0x${string}`;
-  usdc: `0x${string}`;
-};
-
 const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
   M.splitRecord({
     aavePool: M.string(),
@@ -62,6 +55,40 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
     usdc: M.string(),
   });
 
+export type AxelarConfig = {
+  [chain in AxelarChain]: {
+    /**
+     * Axelar chain IDs differ between mainnet and testnet.
+     * See [supported-chains-list.ts](https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts)
+     */
+    axelarId: string;
+    contracts: EVMContractAddresses;
+  };
+};
+
+const AxelarConfigPattern = M.splitRecord({
+  axelarId: M.string(),
+  chainInfo: ChainInfoShape,
+  contracts: EVMContractAddressesShape,
+});
+
+export const AxelarConfigShape: TypedPattern<AxelarConfig> = M.splitRecord(
+  fromEntries(
+    keys(AxelarChain).map(chain => [chain, AxelarConfigPattern]),
+  ) as Record<AxelarChain, typeof AxelarConfigPattern>,
+);
+
+export type EVMContractAddresses = {
+  aavePool: `0x${string}`;
+  compound: `0x${string}`;
+  factory: `0x${string}`;
+  usdc: `0x${string}`;
+};
+
+export type AxelarId = {
+  [chain in AxelarChain]: string;
+};
+
 const EVMContractAddressesMap: TypedPattern<EVMContractAddressesMap> =
   M.splitRecord(
     fromEntries(
@@ -69,12 +96,21 @@ const EVMContractAddressesMap: TypedPattern<EVMContractAddressesMap> =
     ) as Record<AxelarChain, typeof EVMContractAddressesShape>,
   );
 
+const AxelarIdsPattern = M.string();
+
+const AxelarIdShape: TypedPattern<AxelarId> = M.splitRecord(
+  fromEntries(
+    keys(AxelarChain).map(chain => [chain, AxelarIdsPattern]),
+  ) as Record<AxelarChain, typeof AxelarIdsPattern>,
+);
+
 type PortfolioPrivateArgs = OrchestrationPowers & {
   // XXX document required assets, chains
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
   chainInfo: Record<string, ChainInfo>;
   marshaller: Marshaller;
   storageNode: Remote<StorageNode>;
+  axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
 };
 
@@ -85,7 +121,7 @@ const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   // XXX use shape to validate required chains / assets?
   chainInfo: M.recordOf(M.string(), ChainInfoShape),
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
-  // TODO: Handle the scenario where the map contains only testnet or only mainnet chains
+  axelarIds: AxelarIdShape,
   contracts: EVMContractAddressesMap,
 };
 
@@ -127,6 +163,7 @@ export const contract = async (
   const {
     chainInfo,
     assetInfo,
+    axelarIds,
     contracts,
     timerService,
     marshaller,
@@ -159,6 +196,7 @@ export const contract = async (
   const ctx1 = {
     zoeTools,
     usdc: { brand: brands.USDC, denom },
+    axelarIds,
     contracts,
   };
 
@@ -174,6 +212,7 @@ export const contract = async (
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
     vowTools,
+    axelarIds,
     rebalance,
     rebalanceFromTransfer,
     proposalShapes,

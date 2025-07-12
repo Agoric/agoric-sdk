@@ -10,7 +10,7 @@ import { passStyleOf } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import * as contractExports from '../src/portfolio.contract.ts';
-import { contractAddressesMock, makeUSDNIBCTraffic } from './mocks.ts';
+import { axelarIdsMock, contractsMock, makeUSDNIBCTraffic } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import {
   chainInfoFantasyTODO,
@@ -43,16 +43,12 @@ const deploy = async (t: ExecutionContext) => {
     'axelar',
     'osmosis',
     'Polygon',
-    'optimism',
+    'Optimism',
     'Fantom',
-    'binance',
+    'Binance',
     'Avalanche',
-    'arbitrum',
+    'Arbitrum',
     'Ethereum',
-    'polygon-sepolia',
-    'optimism-sepolia',
-    'ethereum-sepolia',
-    'arbitrum-sepolia',
   ];
 
   const chainInfo = Object.fromEntries(
@@ -65,7 +61,8 @@ const deploy = async (t: ExecutionContext) => {
     {}, // terms
     {
       ...common.commonPrivateArgs,
-      contracts: contractAddressesMock,
+      axelarIds: axelarIdsMock,
+      contracts: contractsMock,
       timerService,
       chainInfo,
     }, // privateArgs
@@ -112,8 +109,9 @@ export const setupTrader = async (t, initial = 10_000) => {
 
 export const simulateUpcallFromAxelar = async (
   transferBridge: ScopedBridgeManager<'vtransfer'>,
+  sourceChain: string,
 ) => {
-  const event = makeIncomingEVMEvent();
+  const event = makeIncomingEVMEvent({ sourceChain });
   return (
     VE(transferBridge)
       .fromBridge(event)

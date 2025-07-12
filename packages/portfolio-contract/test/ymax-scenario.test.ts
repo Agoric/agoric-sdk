@@ -8,7 +8,7 @@ import { type NatAmount } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { objectMap } from '@endo/patterns';
-import type { YieldProtocol } from '../src/constants.js';
+import type { AxelarChain, YieldProtocol } from '../src/constants.js';
 import {
   grokRebalanceScenarios,
   importCSV,
@@ -22,7 +22,11 @@ import {
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
 
-const obArgs = { destinationEVMChain: 'Ethereum' } as const; // TODO: should be optional
+// Again, use an EVM chain whose axelar ID differs from its chain name
+const destinationEVMChain: AxelarChain = 'Arbitrum';
+const sourceChain = 'arbitrum';
+
+const obArgs = { destinationEVMChain } as const; // TODO: should be optional
 
 const rebalanceScenarioMacro = test.macro({
   async exec(t, description: string) {
@@ -45,7 +49,10 @@ const rebalanceScenarioMacro = test.macro({
         await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
       }
       if ('Aave' in give || 'Compound' in give) {
-        await simulateUpcallFromAxelar(common.mocks.transferBridge).then(() =>
+        await simulateUpcallFromAxelar(
+          common.mocks.transferBridge,
+          sourceChain,
+        ).then(() =>
           simulateCCTPAck(common.utils).finally(() =>
             simulateAckTransferToAxelar(common.utils),
           ),

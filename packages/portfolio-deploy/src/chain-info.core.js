@@ -87,27 +87,6 @@ const publishChainInfoToChainStorage = async (
 };
 
 /**
- * @param {ERef<StorageNode>} agoricNamesNode
- * @param {import('./axelar-configs').AxelarChainConfigMap} axelarConfig
- */
-const publishAxelarChainInfo = async (agoricNamesNode, axelarConfig) => {
-  const chainNode = await E(agoricNamesNode).makeChildNode('chain');
-
-  // XXX: refactor the loop to allow it to work with different parent node
-  for await (const [chainName, chainData] of Object.entries(axelarConfig)) {
-    const baseNode = await E(chainNode).makeChildNode(chainName);
-    await E(baseNode).setValue(
-      JSON.stringify(marshalData.toCapData(harden({ ...chainData.chainInfo }))),
-    );
-
-    const contractsNode = await E(baseNode).makeChildNode('contracts');
-    await E(contractsNode).setValue(
-      JSON.stringify(marshalData.toCapData(harden({ ...chainData.contracts }))),
-    );
-  }
-};
-
-/**
  * null chainStorage case is vestigial
  *
  * @typedef {{ consume: { chainStorage: Promise<StorageNode> } }} ChainStoragePresent
@@ -118,20 +97,19 @@ const publishAxelarChainInfo = async (agoricNamesNode, axelarConfig) => {
  *
  * @param {BootstrapPowers & ChainStoragePresent} powers
  * @param {{
- *   options?: {
+ *   options: {
  *     chainInfo?: Record<string, ChainInfo>;
- *     axelarConfig?: import('./axelar-configs').AxelarChainConfigMap;
+ *     axelarConfig: import('./axelar-configs.js').AxelarChainConfigMap;
  *   };
- * }} [config]
+ * }} config
  */
 export const publishChainInfo = async (
   { consume: { agoricNames, agoricNamesAdmin, chainStorage } },
-  config = {},
+  config,
 ) => {
   const { keys } = Object;
-  const { chainInfo = {}, axelarConfig = {} } = config?.options || {};
+  const { chainInfo = {} } = config.options;
   trace('publishChainInfo', keys(chainInfo));
-  trace('publishAxelarChainInfo', keys(axelarConfig));
 
   const agoricNamesNode = E(chainStorage).makeChildNode('agoricNames');
 
@@ -141,8 +119,6 @@ export const publishChainInfo = async (
     agoricNamesNode,
     agoricNames,
   );
-
-  await publishAxelarChainInfo(agoricNamesNode, axelarConfig);
 
   for (const kind of Object.values(HubName)) {
     const hub = E(agoricNames).lookup(kind);
