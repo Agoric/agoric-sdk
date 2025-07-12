@@ -1,20 +1,25 @@
 // @ts-check
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
+import { spawn as ambientSpawn } from 'node:child_process';
+import { promises as fsPromises } from 'node:fs';
+import { createRequire } from 'node:module';
+import path from 'node:path';
+
 import anyTest from 'ava';
-import { spawn as ambientSpawn } from 'child_process';
-import { promises as fsPromises } from 'fs';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-import path from 'path';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 import { mustMatch } from '@agoric/store';
 import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
 import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 
+const resolver = createRequire(import.meta.url);
+
+/**
+ * @param {string} configName
+ */
 const importConfig = async configName =>
-  new URL(importMetaResolve(`@agoric/vm-config/${configName}`, import.meta.url))
-    .pathname;
+  resolver.resolve(`@agoric/vm-config/${configName}`);
 
 const test =
   /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>}} */ (
