@@ -632,14 +632,9 @@ export const openPortfolio = (async (
     const kit = makePortfolioKit();
     await provideCosmosAccount(orch, 'agoric', kit);
 
-    const portfolioCtx = {
-      ...ctx,
-      keeper: { ...kit.reader, ...kit.manager },
-    };
-
     if (!seat.hasExited()) {
       try {
-        await rebalance(orch, portfolioCtx, seat, offerArgs, kit);
+        await rebalance(orch, ctx, seat, offerArgs, kit);
       } catch (err) {
         console.error('⚠️ rebalance failed', err);
         seat.fail(err);

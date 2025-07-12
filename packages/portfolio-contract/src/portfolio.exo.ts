@@ -435,10 +435,8 @@ export const preparePortfolioKit = (
       },
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
-          const { reader, manager } = this.facets;
-          const keeper = { ...reader, ...manager };
           mustMatch(offerArgs, OfferArgsShapeFor.rebalance);
-          return rebalance(seat, offerArgs, keeper);
+          return rebalance(seat, offerArgs, this.facets);
         },
       },
       invitationMakers: {
