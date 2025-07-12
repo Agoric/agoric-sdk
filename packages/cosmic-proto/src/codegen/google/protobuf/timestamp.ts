@@ -200,7 +200,7 @@ function createBaseTimestamp(): Timestamp {
   };
 }
 export const Timestamp = {
-  typeUrl: '/google.protobuf.Timestamp',
+  typeUrl: '/google.protobuf.Timestamp' as const,
   encode(
     message: Timestamp,
     writer: BinaryWriter = BinaryWriter.create(),

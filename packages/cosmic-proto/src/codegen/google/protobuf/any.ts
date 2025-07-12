@@ -224,7 +224,7 @@ function createBaseAny(): Any {
   };
 }
 export const Any = {
-  typeUrl: '/google.protobuf.Any',
+  typeUrl: '/google.protobuf.Any' as const,
   encode(
     message: Any,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -37,7 +37,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/agoric.lien.GenesisState',
+  typeUrl: '/agoric.lien.GenesisState' as const,
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -108,7 +108,7 @@ function createBaseAccountLien(): AccountLien {
   };
 }
 export const AccountLien = {
-  typeUrl: '/agoric.lien.AccountLien',
+  typeUrl: '/agoric.lien.AccountLien' as const,
   encode(
     message: AccountLien,
     writer: BinaryWriter = BinaryWriter.create(),

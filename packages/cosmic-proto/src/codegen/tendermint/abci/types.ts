@@ -688,7 +688,7 @@ function createBaseRequestQuery(): RequestQuery {
   };
 }
 export const RequestQuery = {
-  typeUrl: '/tendermint.abci.RequestQuery',
+  typeUrl: '/tendermint.abci.RequestQuery' as const,
   encode(
     message: RequestQuery,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -791,7 +791,7 @@ function createBaseRequestBeginBlock(): RequestBeginBlock {
   };
 }
 export const RequestBeginBlock = {
-  typeUrl: '/tendermint.abci.RequestBeginBlock',
+  typeUrl: '/tendermint.abci.RequestBeginBlock' as const,
   encode(
     message: RequestBeginBlock,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -915,7 +915,7 @@ function createBaseRequestCheckTx(): RequestCheckTx {
   };
 }
 export const RequestCheckTx = {
-  typeUrl: '/tendermint.abci.RequestCheckTx',
+  typeUrl: '/tendermint.abci.RequestCheckTx' as const,
   encode(
     message: RequestCheckTx,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -989,7 +989,7 @@ function createBaseRequestDeliverTx(): RequestDeliverTx {
   };
 }
 export const RequestDeliverTx = {
-  typeUrl: '/tendermint.abci.RequestDeliverTx',
+  typeUrl: '/tendermint.abci.RequestDeliverTx' as const,
   encode(
     message: RequestDeliverTx,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1054,7 +1054,7 @@ function createBaseRequestEndBlock(): RequestEndBlock {
   };
 }
 export const RequestEndBlock = {
-  typeUrl: '/tendermint.abci.RequestEndBlock',
+  typeUrl: '/tendermint.abci.RequestEndBlock' as const,
   encode(
     message: RequestEndBlock,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1120,7 +1120,7 @@ function createBaseRequestCommit(): RequestCommit {
   return {};
 }
 export const RequestCommit = {
-  typeUrl: '/tendermint.abci.RequestCommit',
+  typeUrl: '/tendermint.abci.RequestCommit' as const,
   encode(
     _: RequestCommit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1180,7 +1180,7 @@ function createBaseResponseQuery(): ResponseQuery {
   };
 }
 export const ResponseQuery = {
-  typeUrl: '/tendermint.abci.ResponseQuery',
+  typeUrl: '/tendermint.abci.ResponseQuery' as const,
   encode(
     message: ResponseQuery,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1340,7 +1340,7 @@ function createBaseResponseBeginBlock(): ResponseBeginBlock {
   };
 }
 export const ResponseBeginBlock = {
-  typeUrl: '/tendermint.abci.ResponseBeginBlock',
+  typeUrl: '/tendermint.abci.ResponseBeginBlock' as const,
   encode(
     message: ResponseBeginBlock,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1418,7 +1418,7 @@ function createBaseResponseCheckTx(): ResponseCheckTx {
   };
 }
 export const ResponseCheckTx = {
-  typeUrl: '/tendermint.abci.ResponseCheckTx',
+  typeUrl: '/tendermint.abci.ResponseCheckTx' as const,
   encode(
     message: ResponseCheckTx,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1573,7 +1573,7 @@ function createBaseResponseDeliverTx(): ResponseDeliverTx {
   };
 }
 export const ResponseDeliverTx = {
-  typeUrl: '/tendermint.abci.ResponseDeliverTx',
+  typeUrl: '/tendermint.abci.ResponseDeliverTx' as const,
   encode(
     message: ResponseDeliverTx,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1723,7 +1723,7 @@ function createBaseResponseEndBlock(): ResponseEndBlock {
   };
 }
 export const ResponseEndBlock = {
-  typeUrl: '/tendermint.abci.ResponseEndBlock',
+  typeUrl: '/tendermint.abci.ResponseEndBlock' as const,
   encode(
     message: ResponseEndBlock,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1836,7 +1836,7 @@ function createBaseResponseCommit(): ResponseCommit {
   };
 }
 export const ResponseCommit = {
-  typeUrl: '/tendermint.abci.ResponseCommit',
+  typeUrl: '/tendermint.abci.ResponseCommit' as const,
   encode(
     message: ResponseCommit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1919,7 +1919,7 @@ function createBaseLastCommitInfo(): LastCommitInfo {
   };
 }
 export const LastCommitInfo = {
-  typeUrl: '/tendermint.abci.LastCommitInfo',
+  typeUrl: '/tendermint.abci.LastCommitInfo' as const,
   encode(
     message: LastCommitInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1997,7 +1997,7 @@ function createBaseEvent(): Event {
   };
 }
 export const Event = {
-  typeUrl: '/tendermint.abci.Event',
+  typeUrl: '/tendermint.abci.Event' as const,
   encode(
     message: Event,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2081,7 +2081,7 @@ function createBaseEventAttribute(): EventAttribute {
   };
 }
 export const EventAttribute = {
-  typeUrl: '/tendermint.abci.EventAttribute',
+  typeUrl: '/tendermint.abci.EventAttribute' as const,
   encode(
     message: EventAttribute,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2172,7 +2172,7 @@ function createBaseTxResult(): TxResult {
   };
 }
 export const TxResult = {
-  typeUrl: '/tendermint.abci.TxResult',
+  typeUrl: '/tendermint.abci.TxResult' as const,
   encode(
     message: TxResult,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2282,7 +2282,7 @@ function createBaseValidator(): Validator {
   };
 }
 export const Validator = {
-  typeUrl: '/tendermint.abci.Validator',
+  typeUrl: '/tendermint.abci.Validator' as const,
   encode(
     message: Validator,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2363,7 +2363,7 @@ function createBaseValidatorUpdate(): ValidatorUpdate {
   };
 }
 export const ValidatorUpdate = {
-  typeUrl: '/tendermint.abci.ValidatorUpdate',
+  typeUrl: '/tendermint.abci.ValidatorUpdate' as const,
   encode(
     message: ValidatorUpdate,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2447,7 +2447,7 @@ function createBaseVoteInfo(): VoteInfo {
   };
 }
 export const VoteInfo = {
-  typeUrl: '/tendermint.abci.VoteInfo',
+  typeUrl: '/tendermint.abci.VoteInfo' as const,
   encode(
     message: VoteInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2533,7 +2533,7 @@ function createBaseEvidence(): Evidence {
   };
 }
 export const Evidence = {
-  typeUrl: '/tendermint.abci.Evidence',
+  typeUrl: '/tendermint.abci.Evidence' as const,
   encode(
     message: Evidence,
     writer: BinaryWriter = BinaryWriter.create(),

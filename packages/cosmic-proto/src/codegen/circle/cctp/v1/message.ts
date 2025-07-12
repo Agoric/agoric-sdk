@@ -73,7 +73,7 @@ function createBaseMessage(): Message {
   };
 }
 export const Message = {
-  typeUrl: '/circle.cctp.v1.Message',
+  typeUrl: '/circle.cctp.v1.Message' as const,
   encode(
     message: Message,
     writer: BinaryWriter = BinaryWriter.create(),

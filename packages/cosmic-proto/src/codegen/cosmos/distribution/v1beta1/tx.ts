@@ -242,7 +242,7 @@ function createBaseMsgSetWithdrawAddress(): MsgSetWithdrawAddress {
   };
 }
 export const MsgSetWithdrawAddress = {
-  typeUrl: '/cosmos.distribution.v1beta1.MsgSetWithdrawAddress',
+  typeUrl: '/cosmos.distribution.v1beta1.MsgSetWithdrawAddress' as const,
   encode(
     message: MsgSetWithdrawAddress,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -320,7 +320,8 @@ function createBaseMsgSetWithdrawAddressResponse(): MsgSetWithdrawAddressRespons
   return {};
 }
 export const MsgSetWithdrawAddressResponse = {
-  typeUrl: '/cosmos.distribution.v1beta1.MsgSetWithdrawAddressResponse',
+  typeUrl:
+    '/cosmos.distribution.v1beta1.MsgSetWithdrawAddressResponse' as const,
   encode(
     _: MsgSetWithdrawAddressResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -384,7 +385,7 @@ function createBaseMsgWithdrawDelegatorReward(): MsgWithdrawDelegatorReward {
   };
 }
 export const MsgWithdrawDelegatorReward = {
-  typeUrl: '/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward',
+  typeUrl: '/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward' as const,
   encode(
     message: MsgWithdrawDelegatorReward,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -472,7 +473,8 @@ function createBaseMsgWithdrawDelegatorRewardResponse(): MsgWithdrawDelegatorRew
   };
 }
 export const MsgWithdrawDelegatorRewardResponse = {
-  typeUrl: '/cosmos.distribution.v1beta1.MsgWithdrawDelegatorRewardResponse',
+  typeUrl:
+    '/cosmos.distribution.v1beta1.MsgWithdrawDelegatorRewardResponse' as const,
   encode(
     message: MsgWithdrawDelegatorRewardResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -552,7 +554,8 @@ function createBaseMsgWithdrawValidatorCommission(): MsgWithdrawValidatorCommiss
   };
 }
 export const MsgWithdrawValidatorCommission = {
-  typeUrl: '/cosmos.distribution.v1beta1.MsgWithdrawValidatorCommission',
+  typeUrl:
+    '/cosmos.distribution.v1beta1.MsgWithdrawValidatorCommission' as const,
   encode(
     message: MsgWithdrawValidatorCommission,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -629,7 +632,7 @@ function createBaseMsgWithdrawValidatorCommissionResponse(): MsgWithdrawValidato
 }
 export const MsgWithdrawValidatorCommissionResponse = {
   typeUrl:
-    '/cosmos.distribution.v1beta1.MsgWithdrawValidatorCommissionResponse',
+    '/cosmos.distribution.v1beta1.MsgWithdrawValidatorCommissionResponse' as const,
   encode(
     message: MsgWithdrawValidatorCommissionResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -710,7 +713,7 @@ function createBaseMsgFundCommunityPool(): MsgFundCommunityPool {
   };
 }
 export const MsgFundCommunityPool = {
-  typeUrl: '/cosmos.distribution.v1beta1.MsgFundCommunityPool',
+  typeUrl: '/cosmos.distribution.v1beta1.MsgFundCommunityPool' as const,
   encode(
     message: MsgFundCommunityPool,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -788,7 +791,7 @@ function createBaseMsgFundCommunityPoolResponse(): MsgFundCommunityPoolResponse 
   return {};
 }
 export const MsgFundCommunityPoolResponse = {
-  typeUrl: '/cosmos.distribution.v1beta1.MsgFundCommunityPoolResponse',
+  typeUrl: '/cosmos.distribution.v1beta1.MsgFundCommunityPoolResponse' as const,
   encode(
     _: MsgFundCommunityPoolResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -852,7 +855,7 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
   };
 }
 export const MsgUpdateParams = {
-  typeUrl: '/cosmos.distribution.v1beta1.MsgUpdateParams',
+  typeUrl: '/cosmos.distribution.v1beta1.MsgUpdateParams' as const,
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -925,7 +928,7 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
 }
 export const MsgUpdateParamsResponse = {
-  typeUrl: '/cosmos.distribution.v1beta1.MsgUpdateParamsResponse',
+  typeUrl: '/cosmos.distribution.v1beta1.MsgUpdateParamsResponse' as const,
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -986,7 +989,7 @@ function createBaseMsgCommunityPoolSpend(): MsgCommunityPoolSpend {
   };
 }
 export const MsgCommunityPoolSpend = {
-  typeUrl: '/cosmos.distribution.v1beta1.MsgCommunityPoolSpend',
+  typeUrl: '/cosmos.distribution.v1beta1.MsgCommunityPoolSpend' as const,
   encode(
     message: MsgCommunityPoolSpend,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1073,7 +1076,8 @@ function createBaseMsgCommunityPoolSpendResponse(): MsgCommunityPoolSpendRespons
   return {};
 }
 export const MsgCommunityPoolSpendResponse = {
-  typeUrl: '/cosmos.distribution.v1beta1.MsgCommunityPoolSpendResponse',
+  typeUrl:
+    '/cosmos.distribution.v1beta1.MsgCommunityPoolSpendResponse' as const,
   encode(
     _: MsgCommunityPoolSpendResponse,
     writer: BinaryWriter = BinaryWriter.create(),

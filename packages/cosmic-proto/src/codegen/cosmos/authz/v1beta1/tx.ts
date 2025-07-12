@@ -113,7 +113,7 @@ function createBaseMsgGrant(): MsgGrant {
   };
 }
 export const MsgGrant = {
-  typeUrl: '/cosmos.authz.v1beta1.MsgGrant',
+  typeUrl: '/cosmos.authz.v1beta1.MsgGrant' as const,
   encode(
     message: MsgGrant,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -197,7 +197,7 @@ function createBaseMsgExecResponse(): MsgExecResponse {
   };
 }
 export const MsgExecResponse = {
-  typeUrl: '/cosmos.authz.v1beta1.MsgExecResponse',
+  typeUrl: '/cosmos.authz.v1beta1.MsgExecResponse' as const,
   encode(
     message: MsgExecResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -268,7 +268,7 @@ function createBaseMsgExec(): MsgExec {
   };
 }
 export const MsgExec = {
-  typeUrl: '/cosmos.authz.v1beta1.MsgExec',
+  typeUrl: '/cosmos.authz.v1beta1.MsgExec' as const,
   encode(
     message: MsgExec,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -343,7 +343,7 @@ function createBaseMsgGrantResponse(): MsgGrantResponse {
   return {};
 }
 export const MsgGrantResponse = {
-  typeUrl: '/cosmos.authz.v1beta1.MsgGrantResponse',
+  typeUrl: '/cosmos.authz.v1beta1.MsgGrantResponse' as const,
   encode(
     _: MsgGrantResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -397,7 +397,7 @@ function createBaseMsgRevoke(): MsgRevoke {
   };
 }
 export const MsgRevoke = {
-  typeUrl: '/cosmos.authz.v1beta1.MsgRevoke',
+  typeUrl: '/cosmos.authz.v1beta1.MsgRevoke' as const,
   encode(
     message: MsgRevoke,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -475,7 +475,7 @@ function createBaseMsgRevokeResponse(): MsgRevokeResponse {
   return {};
 }
 export const MsgRevokeResponse = {
-  typeUrl: '/cosmos.authz.v1beta1.MsgRevokeResponse',
+  typeUrl: '/cosmos.authz.v1beta1.MsgRevokeResponse' as const,
   encode(
     _: MsgRevokeResponse,
     writer: BinaryWriter = BinaryWriter.create(),

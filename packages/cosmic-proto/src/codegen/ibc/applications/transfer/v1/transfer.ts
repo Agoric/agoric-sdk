@@ -66,7 +66,7 @@ function createBaseDenomTrace(): DenomTrace {
   };
 }
 export const DenomTrace = {
-  typeUrl: '/ibc.applications.transfer.v1.DenomTrace',
+  typeUrl: '/ibc.applications.transfer.v1.DenomTrace' as const,
   encode(
     message: DenomTrace,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -138,7 +138,7 @@ function createBaseParams(): Params {
   };
 }
 export const Params = {
-  typeUrl: '/ibc.applications.transfer.v1.Params',
+  typeUrl: '/ibc.applications.transfer.v1.Params' as const,
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
