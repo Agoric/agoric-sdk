@@ -236,15 +236,15 @@ export const makeCosmicSwingsetTestKit = async (
         knownPorts.get(destPort) || Fail`unknown cosmos port ${destPort}`;
       const msg = JSON.parse(msgJson);
       const result = receiveBridgeSend(portName, msg);
-      return JSON.stringify(result);
+      return JSON.stringify({ response: JSON.stringify(result), slogs: [] });
     },
   };
   const actionQueueStorage = makeQueueStorage(
-    msg => fakeAgcc.send(portNums.storage, msg),
+    msg => JSON.parse(fakeAgcc.send(portNums.storage, msg)).response,
     STORAGE_PATH.ACTION_QUEUE,
   );
   const highPriorityQueueStorage = makeQueueStorage(
-    msg => fakeAgcc.send(portNums.storage, msg),
+    msg => JSON.parse(fakeAgcc.send(portNums.storage, msg)).response,
     STORAGE_PATH.HIGH_PRIORITY_QUEUE,
   );
 
