@@ -1,8 +1,0 @@
-digraph G {
- idle -> idle [label="snapshot"]
- idle -> running [label="rx:eval"]
- idle -> running [label="rx:handleCommand"]
- running -> sysCalling [label="tx:issueCommand"]
- sysCalling -> running [label="rx:response"]
- running -> idle [label="tx:response"]
-}

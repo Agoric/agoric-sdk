@@ -1,8 +1,0 @@
-syntax = "proto3";
-package agoric.vbank;
-
-option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types";
-
-// No transactions.
-service Msg {
-}

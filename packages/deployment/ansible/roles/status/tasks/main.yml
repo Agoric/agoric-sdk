@@ -1,8 +1,0 @@
----
-- name: application service status
-  command: 'systemctl log {{ service }} -n20'
-  changed_when: false
-  register: status
-
-- name: Result
-  debug: var=status.stdout_lines

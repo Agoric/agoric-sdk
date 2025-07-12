@@ -1,1 +1,0 @@
-# interchain accounts
