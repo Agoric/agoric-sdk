@@ -386,7 +386,8 @@ From `origin/master`, begin a branch for syncing Endo.
 ```sh
 NOW=`date -u +%Y-%m-%d-%H-%M-%S`
 git checkout -b "$USER-sync-endo-$NOW"
-git rebase origin/integration-endo-master
+git merge origin/integration-endo-master
+git rebase origin/master
 ```
 
 Use a helper script from the Endo repository to update the dependency versions
