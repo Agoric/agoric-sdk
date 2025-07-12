@@ -182,34 +182,8 @@ const axelarCCTPConfigTestnet = {
 
 const ccptConfig = { ...axelarCCTPConfig, ...axelarCCTPConfigTestnet };
 
-/** TODO: use BLD for Axelar fees so we can send direct, not via Noble */
-export const chainInfoFantasyTODO = {
+export const chainInfoWithCCTP = {
   ...withChainCapabilities(fetchedChainInfo),
-  noble: {
-    ...withChainCapabilities(fetchedChainInfo).noble,
-    connections: {
-      ...fetchedChainInfo.noble.connections,
-      // Patch noble.connections to add axelar-dojo-1 for test
-      'axelar-dojo-1': {
-        id: 'connection-1' as const,
-        client_id: '07-tendermint-mock',
-        counterparty: {
-          client_id: '07-tendermint-mock',
-          connection_id: 'connection-1' as const,
-        },
-        state: 3,
-        transferChannel: {
-          channelId: 'channel-1' as const,
-          portId: 'transfer',
-          counterPartyChannelId: 'channel-1' as const,
-          counterPartyPortId: 'transfer',
-          ordering: 0,
-          state: 3,
-          version: 'ics20-1',
-        },
-      },
-    },
-  },
   ...ccptConfig,
 };
 

@@ -17,7 +17,7 @@ import {
 } from './mocks.ts';
 import { makeTrader } from './portfolio-actors.ts';
 import {
-  chainInfoFantasyTODO,
+  chainInfoWithCCTP,
   makeIncomingEVMEvent,
   setupPortfolioTest,
 } from './supports.ts';
@@ -60,7 +60,7 @@ const deploy = async (t: ExecutionContext) => {
   ];
 
   const chainInfo = Object.fromEntries(
-    selectedChains.map(name => [name, chainInfoFantasyTODO[name]]),
+    selectedChains.map(name => [name, chainInfoWithCCTP[name]]),
   );
 
   const started = await E(zoe).startInstance(
