@@ -593,7 +593,7 @@ function createBaseMember(): Member {
   };
 }
 export const Member = {
-  typeUrl: '/cosmos.group.v1.Member',
+  typeUrl: '/cosmos.group.v1.Member' as const,
   encode(
     message: Member,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -690,7 +690,7 @@ function createBaseMemberRequest(): MemberRequest {
   };
 }
 export const MemberRequest = {
-  typeUrl: '/cosmos.group.v1.MemberRequest',
+  typeUrl: '/cosmos.group.v1.MemberRequest' as const,
   encode(
     message: MemberRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -772,7 +772,7 @@ function createBaseThresholdDecisionPolicy(): ThresholdDecisionPolicy {
   };
 }
 export const ThresholdDecisionPolicy = {
-  typeUrl: '/cosmos.group.v1.ThresholdDecisionPolicy',
+  typeUrl: '/cosmos.group.v1.ThresholdDecisionPolicy' as const,
   encode(
     message: ThresholdDecisionPolicy,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -868,7 +868,7 @@ function createBasePercentageDecisionPolicy(): PercentageDecisionPolicy {
   };
 }
 export const PercentageDecisionPolicy = {
-  typeUrl: '/cosmos.group.v1.PercentageDecisionPolicy',
+  typeUrl: '/cosmos.group.v1.PercentageDecisionPolicy' as const,
   encode(
     message: PercentageDecisionPolicy,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -965,7 +965,7 @@ function createBaseDecisionPolicyWindows(): DecisionPolicyWindows {
   };
 }
 export const DecisionPolicyWindows = {
-  typeUrl: '/cosmos.group.v1.DecisionPolicyWindows',
+  typeUrl: '/cosmos.group.v1.DecisionPolicyWindows' as const,
   encode(
     message: DecisionPolicyWindows,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1064,7 +1064,7 @@ function createBaseGroupInfo(): GroupInfo {
   };
 }
 export const GroupInfo = {
-  typeUrl: '/cosmos.group.v1.GroupInfo',
+  typeUrl: '/cosmos.group.v1.GroupInfo' as const,
   encode(
     message: GroupInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1188,7 +1188,7 @@ function createBaseGroupMember(): GroupMember {
   };
 }
 export const GroupMember = {
-  typeUrl: '/cosmos.group.v1.GroupMember',
+  typeUrl: '/cosmos.group.v1.GroupMember' as const,
   encode(
     message: GroupMember,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1275,7 +1275,7 @@ function createBaseGroupPolicyInfo(): GroupPolicyInfo {
   };
 }
 export const GroupPolicyInfo = {
-  typeUrl: '/cosmos.group.v1.GroupPolicyInfo',
+  typeUrl: '/cosmos.group.v1.GroupPolicyInfo' as const,
   encode(
     message: GroupPolicyInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1434,7 +1434,7 @@ function createBaseProposal(): Proposal {
   };
 }
 export const Proposal = {
-  typeUrl: '/cosmos.group.v1.Proposal',
+  typeUrl: '/cosmos.group.v1.Proposal' as const,
   encode(
     message: Proposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1686,7 +1686,7 @@ function createBaseTallyResult(): TallyResult {
   };
 }
 export const TallyResult = {
-  typeUrl: '/cosmos.group.v1.TallyResult',
+  typeUrl: '/cosmos.group.v1.TallyResult' as const,
   encode(
     message: TallyResult,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1785,7 +1785,7 @@ function createBaseVote(): Vote {
   };
 }
 export const Vote = {
-  typeUrl: '/cosmos.group.v1.Vote',
+  typeUrl: '/cosmos.group.v1.Vote' as const,
   encode(
     message: Vote,
     writer: BinaryWriter = BinaryWriter.create(),

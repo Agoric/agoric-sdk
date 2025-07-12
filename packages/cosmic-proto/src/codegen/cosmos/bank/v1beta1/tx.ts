@@ -172,7 +172,7 @@ function createBaseMsgSend(): MsgSend {
   };
 }
 export const MsgSend = {
-  typeUrl: '/cosmos.bank.v1beta1.MsgSend',
+  typeUrl: '/cosmos.bank.v1beta1.MsgSend' as const,
   encode(
     message: MsgSend,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -257,7 +257,7 @@ function createBaseMsgSendResponse(): MsgSendResponse {
   return {};
 }
 export const MsgSendResponse = {
-  typeUrl: '/cosmos.bank.v1beta1.MsgSendResponse',
+  typeUrl: '/cosmos.bank.v1beta1.MsgSendResponse' as const,
   encode(
     _: MsgSendResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -310,7 +310,7 @@ function createBaseMsgMultiSend(): MsgMultiSend {
   };
 }
 export const MsgMultiSend = {
-  typeUrl: '/cosmos.bank.v1beta1.MsgMultiSend',
+  typeUrl: '/cosmos.bank.v1beta1.MsgMultiSend' as const,
   encode(
     message: MsgMultiSend,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -393,7 +393,7 @@ function createBaseMsgMultiSendResponse(): MsgMultiSendResponse {
   return {};
 }
 export const MsgMultiSendResponse = {
-  typeUrl: '/cosmos.bank.v1beta1.MsgMultiSendResponse',
+  typeUrl: '/cosmos.bank.v1beta1.MsgMultiSendResponse' as const,
   encode(
     _: MsgMultiSendResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -449,7 +449,7 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
   };
 }
 export const MsgUpdateParams = {
-  typeUrl: '/cosmos.bank.v1beta1.MsgUpdateParams',
+  typeUrl: '/cosmos.bank.v1beta1.MsgUpdateParams' as const,
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -522,7 +522,7 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
 }
 export const MsgUpdateParamsResponse = {
-  typeUrl: '/cosmos.bank.v1beta1.MsgUpdateParamsResponse',
+  typeUrl: '/cosmos.bank.v1beta1.MsgUpdateParamsResponse' as const,
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -583,7 +583,7 @@ function createBaseMsgSetSendEnabled(): MsgSetSendEnabled {
   };
 }
 export const MsgSetSendEnabled = {
-  typeUrl: '/cosmos.bank.v1beta1.MsgSetSendEnabled',
+  typeUrl: '/cosmos.bank.v1beta1.MsgSetSendEnabled' as const,
   encode(
     message: MsgSetSendEnabled,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -676,7 +676,7 @@ function createBaseMsgSetSendEnabledResponse(): MsgSetSendEnabledResponse {
   return {};
 }
 export const MsgSetSendEnabledResponse = {
-  typeUrl: '/cosmos.bank.v1beta1.MsgSetSendEnabledResponse',
+  typeUrl: '/cosmos.bank.v1beta1.MsgSetSendEnabledResponse' as const,
   encode(
     _: MsgSetSendEnabledResponse,
     writer: BinaryWriter = BinaryWriter.create(),

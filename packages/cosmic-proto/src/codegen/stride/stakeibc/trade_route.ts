@@ -160,7 +160,7 @@ function createBaseTradeConfig(): TradeConfig {
   };
 }
 export const TradeConfig = {
-  typeUrl: '/stride.stakeibc.TradeConfig',
+  typeUrl: '/stride.stakeibc.TradeConfig' as const,
   encode(
     message: TradeConfig,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -315,7 +315,7 @@ function createBaseTradeRoute(): TradeRoute {
   };
 }
 export const TradeRoute = {
-  typeUrl: '/stride.stakeibc.TradeRoute',
+  typeUrl: '/stride.stakeibc.TradeRoute' as const,
   encode(
     message: TradeRoute,
     writer: BinaryWriter = BinaryWriter.create(),

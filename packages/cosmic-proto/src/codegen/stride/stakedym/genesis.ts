@@ -72,7 +72,7 @@ function createBaseParams(): Params {
   return {};
 }
 export const Params = {
-  typeUrl: '/stride.stakedym.Params',
+  typeUrl: '/stride.stakedym.Params' as const,
   encode(
     _: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -126,7 +126,7 @@ function createBaseTransferInProgressRecordIds(): TransferInProgressRecordIds {
   };
 }
 export const TransferInProgressRecordIds = {
-  typeUrl: '/stride.stakedym.TransferInProgressRecordIds',
+  typeUrl: '/stride.stakedym.TransferInProgressRecordIds' as const,
   encode(
     message: TransferInProgressRecordIds,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -235,7 +235,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/stride.stakedym.GenesisState',
+  typeUrl: '/stride.stakedym.GenesisState' as const,
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

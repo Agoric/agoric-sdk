@@ -36,7 +36,7 @@ function createBaseAddressUnbonding(): AddressUnbonding {
   };
 }
 export const AddressUnbonding = {
-  typeUrl: '/stride.stakeibc.AddressUnbonding',
+  typeUrl: '/stride.stakeibc.AddressUnbonding' as const,
   encode(
     message: AddressUnbonding,
     writer: BinaryWriter = BinaryWriter.create(),
