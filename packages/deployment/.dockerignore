@@ -1,9 +1,0 @@
-node_modules
-**/vars.tf
-**/deployment.json
-*.log
-dist
-build/
-__pycache__
-*.egg-info
-swingset-kernel-state

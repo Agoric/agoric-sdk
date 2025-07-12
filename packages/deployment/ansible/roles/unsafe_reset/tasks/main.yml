@@ -1,3 +1,0 @@
-- command: "{{service}} tendermint unsafe-reset-all {{ (service != 'ag-chain-cosmos') | ternary('node','') }} --home /home/{{service}}/.{{service}}"
-  become_user: '{{service}}'
-  become: yes

@@ -1,4 +1,0 @@
----
-- name: restart fluentd
-  #  shell: "echo done"
-  systemd: name=td-agent state=restarted

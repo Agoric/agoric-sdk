@@ -1,2 +1,0 @@
-# SwingSet Liveslots
-

@@ -1,9 +1,0 @@
-{
-    "extends": [
-        "../../typedoc.base.json"
-    ],
-    "entryPoints": [
-        "src/timeMath.js",
-        "src/types.d.ts"
-    ]
-}

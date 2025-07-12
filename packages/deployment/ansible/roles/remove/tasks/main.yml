@@ -1,5 +1,0 @@
-- name: 'Remove {{to_remove}}'
-  file:
-    path: '{{ item }}'
-    state: absent
-  loop: '{{ to_remove }}'

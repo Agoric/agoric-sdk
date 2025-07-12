@@ -1,3 +1,0 @@
----
-- name: stop service
-  systemd: 'name={{service}} state=stopped enabled=no'
