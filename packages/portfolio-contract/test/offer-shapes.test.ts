@@ -4,90 +4,77 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { q } from '@endo/errors';
 import { matches, mustMatch } from '@endo/patterns';
-import { makeProposalShapes0 } from '../src/type-guards.ts';
+import { makeProposalShapes } from '../src/type-guards.ts';
 import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 
 const usdc = withAmountUtils(makeIssuerKit('USDC'));
 const { brand: USDC } = usdc;
 const bld = withAmountUtils(makeIssuerKit('BLD'));
+const { brand: BLD } = bld;
 
 test('ProposalShapes', t => {
   const { brand: Poc26 } = makeIssuerKit('Poc26');
-  const shapes = makeProposalShapes0(USDC, Poc26);
+  const shapes = makeProposalShapes(USDC, BLD, Poc26);
 
   const usdc = (value: bigint) => AmountMath.make(USDC, value);
+  const fee = (value: bigint) => AmountMath.make(BLD, value);
   const poc26 = (value: bigint) => AmountMath.make(Poc26, value);
   const cases = harden({
     openPortfolio: {
       pass: {
         noPositions: { give: { Access: poc26(1n) } },
-        openUSDN: { give: { USDN: usdc(123n), Access: poc26(1n) } },
+        withDeposit: { give: { Deposit: usdc(123n), Access: poc26(1n) } },
         aaveNeedsGMPFee: {
           give: {
-            AaveGmp: usdc(123n),
-            Aave: usdc(3000n),
-            AaveAccount: usdc(3000n),
+            Deposit: usdc(6123n),
+            GmpFee: fee(123n),
             Access: poc26(1n),
           },
         },
-        open3: {
+        withDepositAndFee: {
           give: {
-            USDN: usdc(123n),
-            Aave: usdc(3000n),
-            AaveGmp: usdc(123n),
-            AaveAccount: usdc(3000n),
-            Compound: usdc(1000n),
-            CompoundGmp: usdc(3000n),
-            CompoundAccount: usdc(3000n),
+            Deposit: usdc(10123n),
+            GmpFee: fee(7123n),
             Access: poc26(1n),
           },
         },
       },
       fail: {
         noGive: {},
-        missingGMPFee: { give: { Aave: usdc(3000n) } },
-        noPayouts: { want: { USDN: usdc(123n) } },
+        noPayouts: { want: { Cash: usdc(123n) } },
         strayKW: { give: { X: usdc(1n) } },
-        // New negative cases for openPortfolio
         accessWrongBrand: { give: { Access: usdc(1n) } },
         accessZeroValue: { give: { Access: poc26(0n) } },
-        usdnWrongBrandWithAccess: {
-          give: { USDN: poc26(123n), Access: poc26(1n) },
+        depositWrongBrand: {
+          give: { Deposit: poc26(123n), Access: poc26(1n) },
         },
-        aaveIncompleteAndAccessOk: {
-          give: { Aave: usdc(100n), AaveGmp: usdc(100n), Access: poc26(1n) },
-        },
-        compoundIncompleteAndAccessOk: {
-          give: {
-            Compound: usdc(100n),
-            CompoundGmp: usdc(100n),
-            Access: poc26(1n),
-          },
+        gmpFeeWrongBrand: {
+          give: { GmpFee: usdc(123n), Access: poc26(1n) },
         },
         openTopLevelStray: { give: { Access: poc26(1n) }, extra: 'property' },
       },
     },
     rebalance: {
       pass: {
-        deposit: { give: { USDN: usdc(123n) } },
-        withdraw: { want: { USDN: usdc(123n) } },
+        deposit: { give: { Deposit: usdc(123n) } },
+        depositWithFee: { give: { Deposit: usdc(123n), GmpFee: fee(50n) } },
+        withdraw: { want: { Cash: usdc(123n) } },
+        withdrawWithFee: { want: { Cash: usdc(123n) }, give: { GmpFee: fee(50n) } },
       },
       fail: {
-        both: { give: { USDN: usdc(123n) }, want: { USDN: usdc(123n) } },
-        // New negative cases for rebalance
+        both: { give: { Deposit: usdc(123n) }, want: { Cash: usdc(123n) } },
         rebalGiveHasAccess: { give: { Access: poc26(1n) } },
-        rebalGiveUsdnBadBrand: { give: { USDN: poc26(1n) } },
-        rebalGiveAaveIncomplete: { give: { Aave: usdc(100n) } },
-        rebalWantBadKey: { want: { BogusProtocol: usdc(1n) } },
-        rebalWantUsdnBadBrand: { want: { USDN: poc26(1n) } },
+        rebalGiveDepositBadBrand: { give: { Deposit: poc26(1n) } },
+        rebalGiveFeeBadBrand: { give: { GmpFee: usdc(1n) } },
+        rebalWantCashBadBrand: { want: { Cash: poc26(1n) } },
         rebalEmpty: {},
         rebalGiveTopLevelStray: {
-          give: { USDN: usdc(1n) },
+          give: { Deposit: usdc(1n) },
           extra: 'property',
         },
         rebalWantTopLevelStray: {
-          want: { USDN: usdc(1n) },
+          want: { Cash: usdc(1n) },
           extra: 'property',
         },
       },
