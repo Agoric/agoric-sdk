@@ -1,66 +1,15 @@
 import { RequestQuery } from './codegen/tendermint/abci/types.js';
 
-import type {
-  Bech32PrefixRequest,
-  Bech32PrefixResponse,
-} from './codegen/cosmos/auth/v1beta1/query.js';
-import type {
-  QueryAllBalancesRequest,
-  QueryAllBalancesResponse,
-  QueryBalanceRequest,
-  QueryBalanceRequestProtoMsg,
-  QueryBalanceResponse,
-} from './codegen/cosmos/bank/v1beta1/query.js';
-import type {
-  MsgSend,
-  MsgSendResponse,
-} from './codegen/cosmos/bank/v1beta1/tx.js';
-import type {
-  MsgDelegate,
-  MsgDelegateResponse,
-  MsgUndelegate,
-  MsgUndelegateResponse,
-} from './codegen/cosmos/staking/v1beta1/tx.js';
-import type { Any } from './codegen/google/protobuf/any.js';
-import type {
-  MsgTransfer,
-  MsgTransferResponse,
-} from './codegen/ibc/applications/transfer/v1/tx.js';
+import type { TypeFromUrl } from './codegen/typeFromUrl.js';
 import type { JsonSafe } from './codegen/index.js';
-import type {
-  QueryDenomHashRequest,
-  QueryDenomHashResponse,
-  QueryDenomTraceRequest,
-  QueryDenomTraceResponse,
-} from './codegen/ibc/applications/transfer/v1/query.js';
+import type { Any } from './codegen/google/protobuf/any.js';
+import type { QueryBalanceRequestProtoMsg } from './codegen/cosmos/bank/v1beta1/query.js';
 
 /**
  * The result of Any.toJSON(). Exported at top level as a convenience
  * for a very common import.
  */
 export type AnyJson = JsonSafe<Any>;
-
-// TODO codegen this by modifying Telescope
-export type Proto3Shape = {
-  '/cosmos.bank.v1beta1.MsgSend': MsgSend;
-  '/cosmos.bank.v1beta1.MsgSendResponse': MsgSendResponse;
-  '/cosmos.bank.v1beta1.QueryAllBalancesRequest': QueryAllBalancesRequest;
-  '/cosmos.bank.v1beta1.QueryAllBalancesResponse': QueryAllBalancesResponse;
-  '/cosmos.bank.v1beta1.QueryBalanceRequest': QueryBalanceRequest;
-  '/cosmos.bank.v1beta1.QueryBalanceResponse': QueryBalanceResponse;
-  '/cosmos.staking.v1beta1.MsgDelegate': MsgDelegate;
-  '/cosmos.staking.v1beta1.MsgDelegateResponse': MsgDelegateResponse;
-  '/cosmos.staking.v1beta1.MsgUndelegate': MsgUndelegate;
-  '/cosmos.staking.v1beta1.MsgUndelegateResponse': MsgUndelegateResponse;
-  '/ibc.applications.transfer.v1.MsgTransfer': MsgTransfer;
-  '/ibc.applications.transfer.v1.MsgTransferResponse': MsgTransferResponse;
-  '/ibc.applications.transfer.v1.QueryDenomHashRequest': QueryDenomHashRequest;
-  '/ibc.applications.transfer.v1.QueryDenomHashResponse': QueryDenomHashResponse;
-  '/ibc.applications.transfer.v1.QueryDenomTraceRequest': QueryDenomTraceRequest;
-  '/ibc.applications.transfer.v1.QueryDenomTraceResponse': QueryDenomTraceResponse;
-  '/cosmos.auth.v1beta1.Bech32PrefixRequest': Bech32PrefixRequest;
-  '/cosmos.auth.v1beta1.Bech32PrefixResponse': Bech32PrefixResponse;
-};
 
 /**
  * The encoding introduced in Protobuf 3 for Any that can be serialized to JSON.
@@ -69,12 +18,17 @@ export type Proto3Shape = {
  * more accurately "JSON-ifiable" but we don't expect anyone to confuse this
  * type with a string.
  */
-export type TypedJson<T extends unknown | keyof Proto3Shape = unknown> =
-  T extends keyof Proto3Shape
-    ? Proto3Shape[T] & {
-        '@type': T;
+export type TypedJson<TU extends unknown | keyof TypeFromUrl = unknown> =
+  TU extends keyof TypeFromUrl
+    ? TypeFromUrl[TU] & {
+        '@type': TU;
       }
     : { '@type': string };
+
+export type MessageBody<TU extends keyof TypeFromUrl | unknown> = Omit<
+  TypedJson<TU>,
+  '@type'
+>;
 
 /** General pattern for Request that has a corresponding Response */
 type RequestTypeUrl<Base extends string> = `/${Base}Request`;
@@ -91,14 +45,14 @@ export type ResponseTo<T extends TypedJson> =
       ? TypedJson<`/${Package}.Msg${Name}Response`>
       : TypedJson;
 
-export const typedJson = <T extends keyof Proto3Shape>(
-  typeStr: T,
-  obj: Proto3Shape[T],
+export const typedJson = <TU extends keyof TypeFromUrl>(
+  typeStr: TU,
+  value: MessageBody<TU>,
 ) => {
   return {
     '@type': typeStr,
-    ...obj,
-  } as TypedJson<T>;
+    ...value,
+  } as TypedJson<TU>;
 };
 
 const QUERY_REQ_TYPEURL_RE =
