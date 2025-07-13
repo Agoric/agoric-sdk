@@ -53,7 +53,7 @@ test('coreEval code without swingset', async t => {
   // XXX type of zoe from setUpZoeForTest is any???
   const { zoe: zoeAny, bundleAndInstall } = await setUpZoeForTest();
   const zoe: ZoeService = zoeAny;
-  const { usdc, poc26 } = common.brands;
+  const { usdc, bld, poc26 } = common.brands;
 
   {
     t.log('produce bootstrap entries from commonSetup()', keys(bootstrap));
@@ -72,6 +72,7 @@ test('coreEval code without swingset', async t => {
     }
 
     for (const [name, { brand, issuer }] of entries({
+      BLD: bld,
       USDC: usdc,
       PoC26: poc26,
     })) {
