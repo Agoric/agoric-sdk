@@ -107,11 +107,13 @@ harden(makePrivateArgs);
 export const startPortfolio = async (permitted, configStruct) => {
   trace('startPortfolio', configStruct);
   const { issuer } = permitted;
-  const [USDC, PoC26] = await Promise.all([
+  const [BLD, USDC, PoC26] = await Promise.all([
+    issuer.consume.BLD,
     issuer.consume.USDC,
     issuer.consume.PoC26,
   ]);
-  const issuerKeywordRecord = { USDC, Access: PoC26 };
+  // Include BLD: BLD for use with assetInfo.brandKey
+  const issuerKeywordRecord = { USDC, Access: PoC26, Fee: BLD, BLD };
   await startOrchContract(
     name,
     portfolioDeployConfigShape,
