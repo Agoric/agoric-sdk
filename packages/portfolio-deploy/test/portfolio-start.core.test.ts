@@ -123,23 +123,33 @@ test('coreEval code without swingset', async t => {
 
   const { vowTools, pourPayment } = utils;
   const { mint: _, ...poc26sansMint } = poc26;
+  const { mint: _2, ...bldSansMint } = bld;
   const wallet = makeWallet(
-    { USDC: usdc, Access: poc26sansMint },
+    { USDC: usdc, BLD: bldSansMint, Access: poc26sansMint },
     zoe,
     vowTools.when,
   );
   await wallet.deposit(await pourPayment(usdc.units(10_000)));
   await wallet.deposit(poc26.mint.mintPayment(poc26.make(100n)));
   const silvia = makeTrader(wallet, instance);
-  const actualP = silvia.openPortfolio(t, {
-    USDN: usdc.units(3_333),
-    Access: poc26.make(1n),
-  });
+  const amount = usdc.units(3_333);
+  const detail = { usdnOut: amount.value }; // XXX  * 99n / 100n
+  const actualP = silvia.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: 'USDNVault', amount, detail },
+      ],
+    },
+  );
   // ack IBC transfer for forward
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   const actual = await actualP;
   t.like(actual, {
-    payouts: { USDN: { value: 0n } },
+    payouts: { Deposit: { value: 0n } },
     result: {
       publicSubscribers: {
         portfolio: {
