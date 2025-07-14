@@ -148,6 +148,10 @@ export type ProtocolDetail<
     amount: NatAmount,
     dest: AccountInfoFor[C],
   ) => Promise<void>;
+  claimRewards: (
+    ctx: CTX,
+    src: AccountInfoFor[C],
+  ) => Promise<void>;
 };
 
 export const trackFlow = async (

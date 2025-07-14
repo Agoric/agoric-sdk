@@ -183,11 +183,13 @@ export type EVMContext<CN extends string> = {
 type AaveI = {
   supply: ['address', 'uint256', 'address', 'uint16'];
   withdraw: ['address', 'uint256', 'address'];
+  claimAllRewardsToSelf: ['address[]'];
 };
 
 const Aave: AaveI = {
   supply: ['address', 'uint256', 'address', 'uint16'],
   withdraw: ['address', 'uint256', 'address'],
+  claimAllRewardsToSelf: ['address[]'],
 };
 
 export const AaveProtocol = {
@@ -221,10 +223,22 @@ export const AaveProtocol = {
     const target = { axelarId, remoteAddress };
     await sendGMPContractCall(target, calls, gmpFee, lca, gmpChain);
   },
+  claimRewards: async (ctx, src) => {
+    const { addresses: a, lca, gmpChain, gmpFee } = ctx;
+
+    const session = makeEVMSession();
+    const aave = session.makeContract(a.aaveRewardsController, Aave);
+    aave.claimAllRewardsToSelf([a.aaveUSDC]);
+    const calls = session.finish();
+
+    const axelarId = ctx.axelarIds[src.chainName];
+    const target = { axelarId, remoteAddress: src.remoteAddress };
+    await sendGMPContractCall(target, calls, gmpFee, lca, gmpChain);
+  },
 } as const satisfies ProtocolDetail<
   'Aave',
   AxelarChain,
-  EVMContext<'aavePool'>
+  EVMContext<'aavePool' | 'aaveRewardsController' | 'aaveUSDC'>
 >;
 
 type CompoundI = {

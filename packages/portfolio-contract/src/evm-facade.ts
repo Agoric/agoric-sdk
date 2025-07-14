@@ -10,6 +10,7 @@ export type EVMT = {
   uint256: NatValue;
   address: `0x${string}`;
   bytes32: `0x${string}`;
+  'address[]': Array<`0x${string}`>;
   // ... others from the yellow book would go here.
   // We only use these, so far.
 };
