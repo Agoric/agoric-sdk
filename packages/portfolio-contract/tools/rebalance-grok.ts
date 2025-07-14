@@ -29,6 +29,7 @@ export const numeral = (amt: Dollars) => amt.replace(/[$,]/g, '');
 export type RebalanceScenario = {
   description: string;
   before: Partial<Record<YieldProtocol, Dollars>>;
+  previous: string;
   proposal:
     | { give: {}; want: {} }
     | { give: { Deposit: Dollars }; want: {} }
@@ -125,6 +126,7 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
         break;
       case 'Before':
         currentScenario.before = parseProtocolAmounts(row);
+        currentScenario.previous = T2A;
         break;
       case 'Offer: Give':
         currentScenario.proposal ||= { give: {}, want: {} };
@@ -199,7 +201,11 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
   return scenarios;
 };
 
-export const withBrand = (scenario: RebalanceScenario, brand: Brand<'nat'>) => {
+export const withBrand = (
+  scenario: RebalanceScenario,
+  brand: Brand<'nat'>,
+  feeBrand = brand,
+) => {
   const { make } = AmountMath;
   const unit = make(brand, 1_000_000n);
   const $ = (amt: Dollars): NatAmount =>
@@ -207,9 +213,14 @@ export const withBrand = (scenario: RebalanceScenario, brand: Brand<'nat'>) => {
   const $$ = <C extends Record<string, Dollars>>(dollarCells: C) =>
     objectMap(dollarCells, a => $(a!));
 
+  const withFee = m =>
+    ['Compound', 'Aave'].some(p => m.dest.startsWith(p) || m.src.startsWith(p))
+      ? { ...m, fee: { brand: feeBrand, value: 100n } }
+      : m;
+
   const flow = scenario.offerArgs?.flow;
   const offerArgs = flow
-    ? harden({ flow: flow.map(m => ({ ...m, amount: $(m.amount) })) })
+    ? harden({ flow: flow.map(m => withFee({ ...m, amount: $(m.amount) })) })
     : harden({});
 
   mustMatch(offerArgs, makeOfferArgsShapes(brand).rebalance);

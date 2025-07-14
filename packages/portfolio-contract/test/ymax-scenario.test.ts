@@ -13,20 +13,40 @@ import {
   withBrand,
 } from '../tools/rebalance-grok.ts';
 import { setupTrader, simulateUpcallFromAxelar } from './contract-setup.ts';
-import { localAccount0 } from './mocks.ts';
+import { localAccount0, makeCCTPTraffic, makeUSDNIBCTraffic } from './mocks.ts';
 
 // Again, use an EVM chain whose axelar ID differs from its chain name
 const sourceChain = 'arbitrum';
 
+const { values } = Object;
+
 const rebalanceScenarioMacro = test.macro({
   async exec(t, description: string) {
     const { trader1, myBalance, common } = await setupTrader(t);
-    const scenario = (await scenariosP)[description];
+    const scenarios = await scenariosP;
+    const scenario = scenarios[description];
     if (!scenario) return t.fail(`Scenario "${description}" not found`);
     t.log('start', description, 'with', myBalance);
 
+    const { ibcBridge } = common.mocks;
+    for (const money of [300, 500, 2_000, 3_000, 3_333.33, 5_000]) {
+      for (const { msg, ack } of values({
+        ...makeUSDNIBCTraffic(undefined, `${money * 1_000_000}`),
+        ...makeUSDNIBCTraffic(undefined, `${money * 1_000_000}`, {
+          denom: 'uusdn',
+          denomTo: 'uusdc',
+        }),
+        ...makeCCTPTraffic(undefined, `${money * 1_000_000}`),
+      })) {
+        ibcBridge.addMockAck(msg, ack);
+      }
+    }
+
     const { usdc } = common.brands;
     const sceneB = withBrand(scenario, usdc.brand);
+    const sceneBP = scenario.previous
+      ? withBrand(scenarios[scenario.previous], usdc.brand)
+      : undefined;
 
     if (description.includes('Recover')) {
       // simulate arrival of funds in the LCA via IBC from Noble
@@ -37,16 +57,22 @@ const rebalanceScenarioMacro = test.macro({
       await E(purse).deposit(funds);
     }
 
+    const upcallDone = new Set();
+
     const ackSteps = async (offerArgs: OfferArgsFor['openPortfolio']) => {
-      const { flow: moves = [] } = { flow: [], ...offerArgs };
+      const { flow: moves } = { flow: [], ...offerArgs };
       const { transmitVTransferEvent } = common.utils;
       for (const { dest } of moves) {
         await eventLoopIteration();
         if (dest === '@Arbitrum') {
-          await simulateUpcallFromAxelar(
-            common.mocks.transferBridge,
-            sourceChain,
-          );
+          if (!upcallDone.has(dest)) {
+            upcallDone.add(dest);
+            await simulateUpcallFromAxelar(
+              common.mocks.transferBridge,
+              sourceChain,
+            );
+            continue;
+          }
         }
         try {
           await transmitVTransferEvent('acknowledgementPacket', -1);
@@ -67,10 +93,9 @@ const rebalanceScenarioMacro = test.macro({
     };
 
     const openOnly = Object.keys(sceneB.before).length === 0;
-    const openResult = await openPortfolioAndAck(
-      openOnly ? sceneB.proposal.give : {},
-      openOnly ? sceneB.offerArgs : {},
-    );
+    const openResult = await (openOnly
+      ? openPortfolioAndAck(sceneB.proposal.give, sceneB.offerArgs)
+      : openPortfolioAndAck(sceneBP!.proposal.give, sceneBP!.offerArgs));
 
     const { result, payouts } = await (async () => {
       if (openOnly) return openResult;

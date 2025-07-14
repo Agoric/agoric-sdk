@@ -188,8 +188,7 @@ export const makeUSDNIBCTraffic = (
       MsgTransfer.toProtoMsg({
         sourcePort: 'transfer',
         sourceChannel: 'channel-21',
-        // XXX 300 is taken from spreadsheet
-        token: { denom: 'uusdc', amount: `${300 * 1000000}` },
+        token: { denom: 'uusdc', amount: money },
         sender: signer,
         receiver: 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
         timeoutHeight: { revisionHeight: 0n, revisionNumber: 0n },
