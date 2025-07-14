@@ -22,6 +22,7 @@ import type { Timestamp } from '../src/codegen/google/protobuf/timestamp.js';
 {
   const request = typedJson('/cosmos.bank.v1beta1.QueryAllBalancesRequest', {
     address: 'agoric1from',
+    resolveDenom: false,
   });
   const response: ResponseTo<typeof request> = null as any;
   expectType<'/cosmos.bank.v1beta1.QueryAllBalancesResponse'>(

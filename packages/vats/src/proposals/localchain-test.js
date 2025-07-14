@@ -44,6 +44,7 @@ export const testLocalChain = async (
 
     const queryMsg = typedJson('/cosmos.bank.v1beta1.QueryAllBalancesRequest', {
       address: receiverAddress,
+      resolveDenom: false, // don't resolve the denom, just return the raw data
     });
     const balances = await E(localchain).query(queryMsg);
     console.info('balances', balances);
