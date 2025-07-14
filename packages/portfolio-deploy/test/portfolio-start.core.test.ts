@@ -4,9 +4,9 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import * as contractExports from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.js';
-import { makeTrader } from '@aglocal/portfolio-contract/test/portfolio-actors.ts';
 import { setupPortfolioTest } from '@aglocal/portfolio-contract/test/supports.ts';
-import { makeWallet } from '@aglocal/portfolio-contract/test/wallet-offer-tools.ts';
+import { makeTrader } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
+import { makeWallet } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.ts';
 import {
   defaultSerializer,
   documentStorageSchema,
@@ -18,7 +18,11 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
 import { axelarConfig } from '../src/axelar-configs.js';
 import { toExternalConfig } from '../src/config-marshal.js';
-import { startPortfolio } from '../src/portfolio-start.core.js';
+import {
+  portfolioDeployConfigShape,
+  startPortfolio,
+  type PortfolioDeployConfig,
+} from '../src/portfolio-start.core.js';
 import type {
   PortfolioBootPowers,
   StartFn,
@@ -97,9 +101,9 @@ test('coreEval code without swingset', async t => {
   );
 
   const options = toExternalConfig(
-    harden({ axelarConfig, assetInfo: [], chainInfo: {}, net: 'local' }),
+    harden({ axelarConfig } as PortfolioDeployConfig),
     {},
-    // currently no config. PortfolioConfigShape,
+    portfolioDeployConfigShape,
   );
   t.log('invoke coreEval');
   await t.notThrowsAsync(startPortfolio(powers, { options }));
