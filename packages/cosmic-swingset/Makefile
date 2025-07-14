@@ -246,7 +246,7 @@ t1-provision-one-with-powers: wait-for-cosmos
 # but we generate it here similarly to how we do in JS.
 fund-provision-pool:
 	PROVISION_POOL=$$($(AGCH) query auth module-account vbank/provision -ojson | \
-	  jq -r .account.base_account.address) && \
+	  jq -e -r '.account | .value // .base_account | .address') && \
 	  $(MAKE) ACCT_ADDR="$$PROVISION_POOL" FUNDS=1000000000ibc/toyusdc fund-acct
 
 fund-acct:
