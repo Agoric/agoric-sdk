@@ -1,7 +1,6 @@
 // import { meta } from '@aglocal/portfolio-contract/src/portfolio.contract.meta.js';
 import { makeTracer } from '@agoric/internal';
 import { M } from '@endo/patterns';
-import { localchainContracts } from './axelar-configs.js';
 import {
   lookupInterchainInfo,
   makeGetManifest,
@@ -10,7 +9,7 @@ import {
 import { name, permit } from './portfolio.contract.permit.js';
 
 /**
- * @import { start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
+ * @import { AxelarId, start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
  * @import { Marshaller } from '@agoric/internal/src/lib-chainStorage.js';
  * @import { CopyRecord } from '@endo/pass-style';
  * @import { LegibleCapData } from './config-marshal.js';
@@ -26,20 +25,57 @@ const trace = makeTracer(`YMX-Start`, true);
 /**
  * @param {OrchestrationPowersWithStorage} orchestrationPowers
  * @param {Marshaller} marshaller
- * @param {CopyRecord} _config
+ * @param {{
+ *   axelarConfig: import('./axelar-configs.js').AxelarChainConfigMap;
+ * }} config
  */
 export const makePrivateArgs = async (
   orchestrationPowers,
   marshaller,
-  _config,
+  config,
 ) => {
+  const { axelarConfig } = config;
   const { agoricNames } = orchestrationPowers;
-  const { chainInfo, assetInfo } = await lookupInterchainInfo(agoricNames, {
-    agoric: ['ubld'],
-    noble: ['uusdc'],
-    axelar: ['uaxl'],
-  });
-  trace('@@@@assetInfo', JSON.stringify(assetInfo, null, 2));
+  const { chainInfo: cosmosChainInfo, assetInfo } = await lookupInterchainInfo(
+    agoricNames,
+    {
+      agoric: ['ubld'],
+      noble: ['uusdc'],
+      axelar: ['uaxl'],
+    },
+  );
+
+  const chainInfo = {
+    ...cosmosChainInfo,
+    ...Object.fromEntries(
+      Object.entries(axelarConfig).map(([chain, info]) => [
+        chain,
+        info.chainInfo,
+      ]),
+    ),
+  };
+
+  /** @type {AxelarId} */
+  const axelarIds = {
+    Ethereum: axelarConfig.Ethereum.axelarId,
+    Avalanche: axelarConfig.Avalanche.axelarId,
+    Arbitrum: axelarConfig.Arbitrum.axelarId,
+    Optimism: axelarConfig.Optimism.axelarId,
+    Binance: axelarConfig.Binance.axelarId,
+    Polygon: axelarConfig.Polygon.axelarId,
+    Fantom: axelarConfig.Fantom.axelarId,
+  };
+
+  /** @type {import('@aglocal/portfolio-contract/src/type-guards.ts').EVMContractAddressesMap} */
+  const contracts = {
+    Ethereum: { ...axelarConfig.Ethereum.contracts },
+    Avalanche: { ...axelarConfig.Avalanche.contracts },
+    Arbitrum: { ...axelarConfig.Arbitrum.contracts },
+    Optimism: { ...axelarConfig.Optimism.contracts },
+    Binance: { ...axelarConfig.Binance.contracts },
+    Polygon: { ...axelarConfig.Polygon.contracts },
+    Fantom: { ...axelarConfig.Fantom.contracts },
+  };
 
   /** @type {Parameters<typeof start>[1]} */
   const it = harden({
@@ -47,8 +83,8 @@ export const makePrivateArgs = async (
     marshaller,
     chainInfo,
     assetInfo,
-    // TODO: fetch the addresses from agoricNames
-    contracts: localchainContracts,
+    axelarIds,
+    contracts,
   });
   return it;
 };

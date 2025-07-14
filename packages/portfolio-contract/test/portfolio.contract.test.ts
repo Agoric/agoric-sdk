@@ -7,6 +7,7 @@ import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
 import { q } from '@endo/errors';
 import { passStyleOf } from '@endo/far';
 import { matches, mustMatch } from '@endo/patterns';
+import type { AxelarChain } from '../src/constants.js';
 import {
   makeAxelarMemo,
   type GmpArgsContractCall,
@@ -21,6 +22,23 @@ import {
 import { localAccount0 } from './mocks.ts';
 
 const { fromEntries, keys } = Object;
+
+/**
+ * Use Arbitrum or any other EVM chain whose Axelar chain ID (`axelarId`) differs
+ * from the chain name. For example, Arbitrum's `axelarId` is "arbitrum", while
+ * Ethereum’s is "Ethereum" (case-sensitive). The challenge is that if a mismatch
+ * occurs, it may go undetected since the `axelarId` is passed via the IBC memo
+ * and not validated automatically.
+ *
+ * To ensure proper testing, it's best to use a chain where the `chainName` and
+ * `axelarId` are not identical. This increases the likelihood of catching issues
+ * with misconfigured or incorrectly passed `axelarId` values.
+ *
+ * To see the `axelarId` for a given chain, refer to:
+ * @see {@link https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts | supported-chains-list.ts}
+ */
+const destinationEVMChain: AxelarChain = 'Arbitrum';
+const sourceChain = 'arbitrum';
 
 test('ProposalShapes', t => {
   const { brand: USDC } = makeIssuerKit('USDC');
@@ -191,7 +209,7 @@ test('open portfolio with USDN position', async t => {
       NobleFees: usdc.make(100n),
       Access: poc26.make(1n),
     },
-    { destinationEVMChain: 'Ethereum' },
+    { destinationEVMChain },
   );
 
   // ack IBC transfer for forward
@@ -240,16 +258,17 @@ test('open a portfolio with Aave position', async t => {
       AaveGmp: usdc.make(100n), // fee
       Aave: usdc.units(3_333),
     },
-    { destinationEVMChain: 'Ethereum' },
+    { destinationEVMChain },
   );
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   console.log('ackd send to Axelar to create account');
 
-  await simulateUpcallFromAxelar(common.mocks.transferBridge).then(() =>
-    simulateCCTPAck(common.utils).finally(() =>
-      simulateAckTransferToAxelar(common.utils),
-    ),
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
   );
 
   const actual = await actualP;
@@ -277,16 +296,17 @@ test('open a portfolio with Compound position', async t => {
       CompoundGmp: usdc.make(100n), // fee
       Compound: usdc.units(3_333),
     },
-    { destinationEVMChain: 'Ethereum' },
+    { destinationEVMChain },
   );
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   console.log('ackd send to Axelar to create account');
 
-  await simulateUpcallFromAxelar(common.mocks.transferBridge).then(() =>
-    simulateCCTPAck(common.utils).finally(() =>
-      simulateAckTransferToAxelar(common.utils),
-    ),
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
   );
 
   const actual = await actualP;
@@ -314,7 +334,7 @@ test('open portfolio with USDN, Aave positions', async t => {
       AaveGmp: usdc.make(100n), // fee
       Aave: usdc.units(3_333),
     },
-    { destinationEVMChain: 'Ethereum' },
+    { destinationEVMChain },
   );
   await eventLoopIteration(); // let outgoing IBC happen
   console.log('openPortfolio, eventloop');
@@ -323,6 +343,7 @@ test('open portfolio with USDN, Aave positions', async t => {
 
   const ackNP = await simulateUpcallFromAxelar(
     common.mocks.transferBridge,
+    sourceChain,
   ).then(() =>
     simulateCCTPAck(common.utils).finally(() =>
       simulateAckTransferToAxelar(common.utils),

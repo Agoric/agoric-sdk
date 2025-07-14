@@ -1,18 +1,75 @@
 /**
+ * @import {AxelarChain} from '@aglocal/portfolio-contract/src/constants.js';
+ * @import {EVMContractAddresses} from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+ * @import {BaseChainInfo} from '@agoric/orchestration'
+ * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.ts';
+ */
+
+/**
+ * @typedef {object} AxelarChainIdEntry
+ * @property {string} testnet - The Axelar chain ID used in testnet.
+ * @property {string} mainnet - The Axelar chain ID used in mainnet.
+ *
+ */
+
+/**
+ * A mapping between internal AxelarChain enum keys and their corresponding
+ * Axelar chain identifiers for both testnet and mainnet environments.
+ *
+ * This is used by YMax to dynamically switch between environments when interacting
+ * with Axelar-supported chains.
+ *
+ * @type {Record<keyof typeof AxelarChain, AxelarChainIdEntry>}
+ *
+ * @see {@link https://docs.axelar.dev/resources/contract-addresses/testnet/#evm-contract-addresses}
+ * @see {@link https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts | supported-chains-list.ts}
+ */
+const AxelarChainIdMap = harden({
+  Ethereum: {
+    testnet: 'ethereum-sepolia',
+    mainnet: 'Ethereum',
+  },
+  Avalanche: {
+    testnet: 'Avalanche',
+    mainnet: 'Avalanche',
+  },
+  Arbitrum: {
+    testnet: 'arbitrum-sepolia',
+    mainnet: 'arbitrum',
+  },
+  Optimism: {
+    testnet: 'optimism-sepolia',
+    mainnet: 'optimism',
+  },
+  Polygon: {
+    testnet: 'polygon-sepolia',
+    mainnet: 'Polygon',
+  },
+  Fantom: {
+    testnet: 'Fantom',
+    mainnet: 'Fantom',
+  },
+  Binance: {
+    testnet: 'binance',
+    mainnet: 'binance',
+  },
+});
+
+/**
  * @typedef {`0x${string}`} HexAddress
  * @typedef {Record<string, HexAddress>} EvmAddressesMap
  * @typedef {{ mainnet: EvmAddressesMap, testnet: EvmAddressesMap }} AddressesMap
- * @typedef {import('@agoric/orchestration').BaseChainInfo} BaseChainInfo
  */
 
 /**
  * @typedef {object} AxelarChainConfig
- * @property {BaseChainInfo} chainInfo
- * @property {Partial<import('@aglocal/portfolio-contract/src/portfolio.contract').EVMContractAddresses>} contracts
+ * @property {string} axelarId
+ * @property {BaseChainInfo<"eip155">} chainInfo
+ * @property {EVMContractAddresses} contracts
  */
 
 /**
- * @typedef {Record<string, AxelarChainConfig>} AxelarChainConfigMap
+ * @typedef {Record<AxelarChain, AxelarChainConfig>} AxelarChainConfigMap
  */
 
 /** @type {AddressesMap} */
@@ -90,7 +147,7 @@ const factoryAddresses = {
 
 /**
  * Mainnet configuration with real contract addresses
- * @type {Partial<import('@aglocal/portfolio-contract/src/type-guards').EVMContractAddressesMap>}
+ * @type {EVMContractAddressesMap}
  
  */
 const mainnetContracts = {
@@ -106,13 +163,13 @@ const mainnetContracts = {
     factory: factoryAddresses.mainnet.Avalanche,
     usdc: usdcAddresses.mainnet.Avalanche,
   },
-  optimism: {
+  Optimism: {
     aavePool: aaveAddresses.mainnet.Optimism,
     compound: '0x', // TODO
     factory: factoryAddresses.mainnet.Optimism,
     usdc: usdcAddresses.mainnet.Optimism,
   },
-  arbitrum: {
+  Arbitrum: {
     aavePool: aaveAddresses.mainnet.Arbitrum,
     compound: '0x', // TODO
     factory: factoryAddresses.mainnet.Arbitrum,
@@ -131,7 +188,7 @@ const mainnetContracts = {
     factory: factoryAddresses.mainnet.Fantom,
     usdc: usdcAddresses.mainnet.Fantom,
   },
-  binance: {
+  Binance: {
     aavePool: aaveAddresses.mainnet.Binance,
     compound: '0x', // TODO
     factory: factoryAddresses.mainnet.Binance,
@@ -142,10 +199,10 @@ harden(mainnetContracts);
 
 /**
  * Testnet configuration with testnet contract addresses
- * @type {Partial<import('@aglocal/portfolio-contract/src/type-guards').EVMContractAddressesMap>}
+ * @type {EVMContractAddressesMap}
  */
 const testnetContracts = {
-  'ethereum-sepolia': {
+  Ethereum: {
     aavePool: aaveAddresses.testnet.Ethereum,
     compound: '0x', // TODO
     factory: factoryAddresses.testnet.Ethereum,
@@ -157,19 +214,19 @@ const testnetContracts = {
     factory: factoryAddresses.testnet.Avalanche,
     usdc: usdcAddresses.testnet.Avalanche,
   },
-  'optimism-sepolia': {
+  Optimism: {
     aavePool: aaveAddresses.testnet.Optimism,
     compound: '0x', // TODO
     factory: factoryAddresses.testnet.Optimism,
     usdc: usdcAddresses.testnet.Optimism,
   },
-  'arbitrum-sepolia': {
+  Arbitrum: {
     aavePool: aaveAddresses.testnet.Arbitrum,
     compound: '0x', // TODO
     factory: factoryAddresses.testnet.Arbitrum,
     usdc: usdcAddresses.testnet.Arbitrum,
   },
-  'polygon-sepolia': {
+  Polygon: {
     // TODO: AAVE and Compound on polygon testnet?
     aavePool: '0x',
     compound: '0x',
@@ -183,7 +240,7 @@ const testnetContracts = {
     factory: factoryAddresses.testnet.Fantom,
     usdc: usdcAddresses.testnet.Fantom,
   },
-  binance: {
+  Binance: {
     // TODO: AAVE on Binance testnet?
     aavePool: '0x',
     compound: '0x',
@@ -192,80 +249,6 @@ const testnetContracts = {
   },
 };
 harden(testnetContracts);
-
-/**
- * Localchain configuration with mock addresses for testing
- * @type {import('@aglocal/portfolio-contract/src/type-guards').EVMContractAddressesMap}
- */
-export const localchainContracts = {
-  Ethereum: {
-    aavePool: '0x1111111111111111111111111111111111111111',
-    compound: '0x2222222222222222222222222222222222222222',
-    factory: '0x3333333333333333333333333333333333333333',
-    usdc: '0x4444444444444444444444444444444444444444',
-  },
-  'ethereum-sepolia': {
-    aavePool: '0x1111111111111111111111111111111111111111',
-    compound: '0x2222222222222222222222222222222222222222',
-    factory: '0x3333333333333333333333333333333333333333',
-    usdc: '0x4444444444444444444444444444444444444444',
-  },
-  Avalanche: {
-    aavePool: '0x1111111111111111111111111111111111111111',
-    compound: '0x2222222222222222222222222222222222222222',
-    factory: '0x3333333333333333333333333333333333333333',
-    usdc: '0x4444444444444444444444444444444444444444',
-  },
-  optimism: {
-    aavePool: '0x1111111111111111111111111111111111111111',
-    compound: '0x2222222222222222222222222222222222222222',
-    factory: '0x3333333333333333333333333333333333333333',
-    usdc: '0x4444444444444444444444444444444444444444',
-  },
-  'optimism-sepolia': {
-    aavePool: '0x1111111111111111111111111111111111111111',
-    compound: '0x2222222222222222222222222222222222222222',
-    factory: '0x3333333333333333333333333333333333333333',
-    usdc: '0x4444444444444444444444444444444444444444',
-  },
-  arbitrum: {
-    aavePool: '0x1111111111111111111111111111111111111111',
-    compound: '0x2222222222222222222222222222222222222222',
-    factory: '0x3333333333333333333333333333333333333333',
-    usdc: '0x4444444444444444444444444444444444444444',
-  },
-  'arbitrum-sepolia': {
-    aavePool: '0x1111111111111111111111111111111111111111',
-    compound: '0x2222222222222222222222222222222222222222',
-    factory: '0x3333333333333333333333333333333333333333',
-    usdc: '0x4444444444444444444444444444444444444444',
-  },
-  Polygon: {
-    aavePool: '0x1111111111111111111111111111111111111111',
-    compound: '0x2222222222222222222222222222222222222222',
-    factory: '0x3333333333333333333333333333333333333333',
-    usdc: '0x4444444444444444444444444444444444444444',
-  },
-  'polygon-sepolia': {
-    aavePool: '0x1111111111111111111111111111111111111111',
-    compound: '0x2222222222222222222222222222222222222222',
-    factory: '0x3333333333333333333333333333333333333333',
-    usdc: '0x4444444444444444444444444444444444444444',
-  },
-  Fantom: {
-    aavePool: '0x1111111111111111111111111111111111111111',
-    compound: '0x2222222222222222222222222222222222222222',
-    factory: '0x3333333333333333333333333333333333333333',
-    usdc: '0x4444444444444444444444444444444444444444',
-  },
-  binance: {
-    aavePool: '0x1111111111111111111111111111111111111111',
-    compound: '0x2222222222222222222222222222222222222222',
-    factory: '0x3333333333333333333333333333333333333333',
-    usdc: '0x4444444444444444444444444444444444444444',
-  },
-};
-harden(localchainContracts);
 
 /**
  * Mainnet chains only.
@@ -280,6 +263,7 @@ harden(localchainContracts);
  */
 export const axelarConfig = {
   Ethereum: {
+    axelarId: AxelarChainIdMap.Ethereum.mainnet,
     chainInfo: {
       namespace: 'eip155',
       reference: '1',
@@ -288,6 +272,7 @@ export const axelarConfig = {
     contracts: { ...mainnetContracts.Ethereum },
   },
   Avalanche: {
+    axelarId: AxelarChainIdMap.Avalanche.mainnet,
     chainInfo: {
       namespace: 'eip155',
       reference: '43114',
@@ -295,23 +280,26 @@ export const axelarConfig = {
     },
     contracts: { ...mainnetContracts.Avalanche },
   },
-  optimism: {
+  Optimism: {
+    axelarId: AxelarChainIdMap.Optimism.mainnet,
     chainInfo: {
       namespace: 'eip155',
       reference: '10',
       cctpDestinationDomain: 2,
     },
-    contracts: { ...mainnetContracts.optimism },
+    contracts: { ...mainnetContracts.Optimism },
   },
-  arbitrum: {
+  Arbitrum: {
+    axelarId: AxelarChainIdMap.Arbitrum.mainnet,
     chainInfo: {
       namespace: 'eip155',
       reference: '42161',
       cctpDestinationDomain: 3,
     },
-    contracts: { ...mainnetContracts.arbitrum },
+    contracts: { ...mainnetContracts.Arbitrum },
   },
   Polygon: {
+    axelarId: AxelarChainIdMap.Polygon.mainnet,
     chainInfo: {
       namespace: 'eip155',
       reference: '137',
@@ -320,18 +308,20 @@ export const axelarConfig = {
     contracts: { ...mainnetContracts.Polygon },
   },
   Fantom: {
+    axelarId: AxelarChainIdMap.Fantom.mainnet,
     chainInfo: {
       namespace: 'eip155',
       reference: '250',
     },
     contracts: { ...mainnetContracts.Fantom },
   },
-  binance: {
+  Binance: {
+    axelarId: AxelarChainIdMap.Binance.mainnet,
     chainInfo: {
       namespace: 'eip155',
       reference: '56',
     },
-    contracts: { ...mainnetContracts.binance },
+    contracts: { ...mainnetContracts.Binance },
   },
 };
 
@@ -347,15 +337,17 @@ export const axelarConfig = {
  *  @satisfies {AxelarChainConfigMap}
  */
 export const axelarConfigTestnet = {
-  'ethereum-sepolia': {
+  Ethereum: {
+    axelarId: AxelarChainIdMap.Ethereum.testnet,
     chainInfo: {
       namespace: 'eip155',
       reference: '11155111',
       cctpDestinationDomain: 0,
     },
-    contracts: { ...testnetContracts['ethereum-sepolia'] },
+    contracts: { ...testnetContracts.Ethereum },
   },
   Avalanche: {
+    axelarId: AxelarChainIdMap.Avalanche.testnet,
     chainInfo: {
       namespace: 'eip155',
       reference: '43113',
@@ -363,42 +355,47 @@ export const axelarConfigTestnet = {
     },
     contracts: { ...testnetContracts.Avalanche },
   },
-  'optimism-sepolia': {
+  Optimism: {
+    axelarId: AxelarChainIdMap.Optimism.testnet,
     chainInfo: {
       namespace: 'eip155',
       reference: '11155420',
       cctpDestinationDomain: 2,
     },
-    contracts: { ...testnetContracts['optimism-sepolia'] },
+    contracts: { ...testnetContracts.Optimism },
   },
-  'arbitrum-sepolia': {
+  Arbitrum: {
+    axelarId: AxelarChainIdMap.Arbitrum.testnet,
     chainInfo: {
       namespace: 'eip155',
       reference: '421614',
       cctpDestinationDomain: 3,
     },
-    contracts: { ...testnetContracts['arbitrum-sepolia'] },
+    contracts: { ...testnetContracts.Arbitrum },
   },
-  'polygon-sepolia': {
+  Polygon: {
+    axelarId: AxelarChainIdMap.Polygon.testnet,
     chainInfo: {
       namespace: 'eip155',
       reference: '80002',
       cctpDestinationDomain: 7,
     },
-    contracts: { ...testnetContracts['polygon-sepolia'] },
+    contracts: { ...testnetContracts.Polygon },
   },
   Fantom: {
+    axelarId: AxelarChainIdMap.Fantom.testnet,
     chainInfo: {
       namespace: 'eip155',
       reference: '4002', // XXX: confirm this ID
     },
     contracts: { ...testnetContracts.Fantom },
   },
-  binance: {
+  Binance: {
+    axelarId: AxelarChainIdMap.Binance.testnet,
     chainInfo: {
       namespace: 'eip155',
       reference: '97',
     },
-    contracts: { ...testnetContracts.binance },
+    contracts: { ...testnetContracts.Binance },
   },
 };

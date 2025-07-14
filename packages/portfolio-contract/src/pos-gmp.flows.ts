@@ -207,7 +207,7 @@ const sendGmp = async (
   kit: GuestInterface<PortfolioKit>,
 ) => {
   mustMatch(gmpArgs, GMPArgsShape);
-  const { usdc, zoeTools } = ctx;
+  const { axelarIds, usdc, zoeTools } = ctx;
 
   const axelar = await orch.getChain('axelar');
   const { chainId } = await axelar.getChainInfo();
@@ -223,7 +223,7 @@ const sendGmp = async (
 
   try {
     await zoeTools.localTransfer(seat, localAccount, gasAmounts);
-    const memo = makeAxelarMemo(destinationEVMChain, gmpArgs);
+    const memo = makeAxelarMemo(axelarIds[destinationEVMChain], gmpArgs);
     await localAccount.transfer(
       {
         value: gmpAddresses.AXELAR_GMP,
