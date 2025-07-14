@@ -9,13 +9,13 @@ Payouts,,,,,,,,,offer net:,$0.00,$0.00
 ,,,,,,,,,,,
 Description,,,,,,,,,Open portfolio with USDN position,,
 Before,,,,,,no portfolio,,,,,
-Offer: Give,"$3,333.33",,,,,,,,,,
-flow move,src,,dest,,,,,,,"$3,333.33",
-flow move,,,src,dest,,,,,,"$3,333.33",
-flow move,,,,src,,,,dest,,"$3,333.33",
+Offer: Give,"$5,000.00",,,,,,,,,,
+flow move,src,,dest,,,,,,,"$5,000.00",
+flow move,,,src,dest,,,,,,"$5,000.00",
+flow move,,,,src,,,,dest,,"$5,000.00",
 Offer: Want,,,,,,,,,,,operation net
-After,,,,,,,,"$3,333.33",positions net:,"$3,333.33",
-Payouts,$0.00,,,,,$0.00,$0.00,$0.00,offer net:,"-$3,333.33",$0.00
+After,,,,,,,,"$5,000.00",positions net:,"$5,000.00",
+Payouts,$0.00,,,,,$0.00,$0.00,$0.00,offer net:,"-$5,000.00",$0.00
 ,,,,,,,,,,,
 Description,,,,,,,,,Recover funds from Noble ICA,,
 Before,,,,$300.00,,,,,,,
@@ -87,7 +87,7 @@ After,,,,,,"$5,000.00","$1,500.00",,positions net:,"$1,500.00",
 Payouts,,,,,,,,,offer net:,$0.00,"$1,500.00"
 ,,,,,,,,,,,
 Description,,,,,,,,,USDN -> Aave,,
-Before,,,,,,,,"$5,000.00",,,
+Before,,,,,,,,"$5,000.00",Open portfolio with USDN position,,
 Offer: Give,,,,,,,,,,,
 flow move,,,,dest,,,,src,,$500.00,
 flow move,,,,src,dest,,,,,$500.00,
