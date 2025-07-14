@@ -132,6 +132,7 @@ test('scenario:', rebalanceScenarioMacro, 'Open empty portfolio');
 test('scenario:', rebalanceScenarioMacro, 'Open portfolio with USDN position');
 test('scenario:', rebalanceScenarioMacro, 'Recover funds from Noble ICA');
 test('scenario:', rebalanceScenarioMacro, 'Open with 3 positions');
+test('scenario:', rebalanceScenarioMacro, 'Withdraw some from Compound');
 
 test.skip('scenario:', rebalanceScenarioMacro, 'Aave -> USDN');
 
@@ -145,6 +146,7 @@ test('list scenarios', async t => {
     'Open portfolio with USDN position',
     'Recover funds from Noble ICA',
     'Open with 3 positions',
+    'Withdraw some from Compound',
   ];
   const scenarios = await scenariosP;
   const names = Object.keys(scenarios);

@@ -11,6 +11,7 @@ import { makeTracer } from '@agoric/internal';
 import type {
   AccountId,
   Denom,
+  DenomAmount,
   OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
@@ -33,6 +34,7 @@ import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {
   AaveProtocol,
   CCTP,
+  CCTPfromEVM,
   CompoundProtocol,
   provideEVMAccount,
   type EVMContext,
@@ -261,6 +263,7 @@ type Way =
   | { how: 'IBC'; src: 'agoric'; dest: 'noble' }
   | { how: 'IBC'; src: 'noble'; dest: 'agoric' }
   | { how: 'CCTP'; dest: AxelarChain }
+  | { how: 'CCTP'; src: AxelarChain }
   | {
       how: YieldProtocol;
       /** pool we're supplying */
@@ -314,6 +317,10 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
           if (keys(AxelarChain).includes(destName)) {
             srcName === 'noble' || Fail`src for ${q(destName)} must be noble`;
             return { how: 'CCTP', dest: destName as AxelarChain };
+          }
+          if (keys(AxelarChain).includes(srcName)) {
+            destName === 'noble' || Fail`dest for ${q(srcName)} must be noble`;
+            return { how: 'CCTP', src: srcName as AxelarChain };
           }
           if (srcName === 'agoric' && destName === 'noble') {
             return { how: 'IBC', src: srcName, dest: destName };
@@ -509,17 +516,32 @@ const stepFlow = async (
             orch.getChain('axelar'),
           ]);
 
-          const { axelarIds } = ctx;
-          const gmp = { chain: axelar, fee: move.fee?.value || 0n, axelarIds };
-          const gInfo = await provideEVMAccount(way.dest, gmp, lca, ctx, kit);
-          return {
-            how,
-            amount,
-            src: { account: nInfo.ica },
-            dest: { proxy: gInfo },
-            apply: () => apply(null, amount, nInfo, gInfo),
-            recover: () => recover(null, amount, nInfo, gInfo),
-          };
+          const evmChain = 'dest' in way ? way.dest : way.src;
+          const { evmCtx, gInfo } = await provideEVMInfo(
+            'tokenMessenger',
+            evmChain,
+            move,
+          );
+
+          if ('dest' in way) {
+            return {
+              how: CCTP.how,
+              amount,
+              src: { account: nInfo.ica },
+              dest: { proxy: gInfo },
+              apply: () => CCTP.apply(null, amount, nInfo, gInfo),
+              recover: () => CCTP.recover(null, amount, nInfo, gInfo),
+            };
+          } else {
+            return {
+              how: CCTPfromEVM.how,
+              amount,
+              src: { proxy: gInfo },
+              dest: { account: nInfo.ica },
+              apply: () => CCTPfromEVM.apply(evmCtx, amount, gInfo, nInfo),
+              recover: () => CCTPfromEVM.recover(evmCtx, amount, gInfo, nInfo),
+            };
+          }
         });
         break;
       }

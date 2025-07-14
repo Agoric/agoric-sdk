@@ -84,6 +84,7 @@ export type EVMContractAddresses = {
   compound: `0x${string}`;
   factory: `0x${string}`;
   usdc: `0x${string}`;
+  tokenMessenger: `0x${string}`;
 };
 
 export type AxelarId = {
