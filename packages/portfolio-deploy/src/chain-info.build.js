@@ -32,6 +32,8 @@ const options = {
   chainInfo: { type: 'string' },
   net: { type: 'string' },
   peer: { type: 'string', multiple: true },
+  podName: { type: 'string' },
+  container: { type: 'string' },
 };
 /**
  * @typedef {{
@@ -39,6 +41,8 @@ const options = {
  *   chainInfo?: string;
  *   net?: string;
  *   peer?: string[];
+ *   podName?: string;
+ *   container?: string;
  * }} FlagValues
  */
 
@@ -90,14 +94,23 @@ const parsePeers = strs => {
  *                 .withOpts({rpcAddrs: ['https...]});
  *   const info = await agd.query(['bank', 'balances', 'agoric1...]);
  * @param {{ execFileSync: typeof import('child_process').execFileSync}} io
+ * @param {{ podName?: string, container?: string }} [options] - Optional configuration for kubectl
  */
-const makeAgd = ({ execFileSync }) => {
+const makeAgd = (
+  { execFileSync },
+  { podName = 'agoriclocal-genesis-0', container = 'validator' } = {},
+) => {
   const exec = (
     /** @type {string[]} */
     args,
     /** @type {import('node:child_process').ExecFileSyncOptionsWithStringEncoding} */
     opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
-  ) => execFileSync('agd', [...args], opts);
+  ) =>
+    execFileSync(
+      'kubectl',
+      ['exec', podName, '-c', container, '--', 'agd', ...args],
+      opts,
+    );
 
   /** @param {{ rpcAddrs?: string[] }} opts */
   const make = ({ rpcAddrs = [] } = {}) => {
