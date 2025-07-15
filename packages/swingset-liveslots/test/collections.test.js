@@ -326,7 +326,7 @@ test('constrain map key shape', t => {
   t.throws(
     () => noStrings.init('foo', 'string not ok?'),
     m(
-      'invalid key type for collection "map key no strings": "foo" - Must fail negated pattern: "[match:string]"',
+      /^invalid key type for collection "map key no strings": "foo" - Must fail negated pattern: (.*)$/,
     ),
   );
   t.is(noStrings.get(47), 'number ok');
@@ -335,7 +335,14 @@ test('constrain map key shape', t => {
   t.throws(
     () => noStrings.get('foo'),
     m(
-      'invalid key type for collection "map key no strings": "foo" - Must fail negated pattern: "[match:string]"',
+      // TODO https://github.com/Agoric/agoric-sdk/issues/11605
+      // This is a golden error message test. We're currently in transition
+      // from having pattern error messages quote nested patterns using
+      // `q` to quoting them using `qp`. In order to tolerate both during
+      // this transition at reasonable cost, this golden error message
+      // pattern accepts anything in the position of the quoted nested
+      // pattern.
+      /^invalid key type for collection "map key no strings": "foo" - Must fail negated pattern: (.*)$/,
     ),
   );
 
@@ -397,7 +404,14 @@ test('constrain map value shape', t => {
   t.throws(
     () => noStrings.init('skey', 'string not ok?'),
     m(
-      'invalid value type for collection "map value no strings": "string not ok?" - Must fail negated pattern: "[match:string]"',
+      // TODO https://github.com/Agoric/agoric-sdk/issues/11605
+      // This is a golden error message test. We're currently in transition
+      // from having pattern error messages quote nested patterns using
+      // `q` to quoting them using `qp`. In order to tolerate both during
+      // this transition at reasonable cost, this golden error message
+      // pattern accepts anything in the position of the quoted nested
+      // pattern.
+      /^invalid value type for collection "map value no strings": "string not ok\?" - Must fail negated pattern: (.*)$/,
     ),
   );
   t.is(noStrings.get('nkey'), 47);
@@ -458,7 +472,14 @@ test('constrain set key shape', t => {
   t.throws(
     () => noStrings.add('foo?'),
     m(
-      'invalid key type for collection "no strings set": "foo?" - Must fail negated pattern: "[match:string]"',
+      // TODO https://github.com/Agoric/agoric-sdk/issues/11605
+      // This is a golden error message test. We're currently in transition
+      // from having pattern error messages quote nested patterns using
+      // `q` to quoting them using `qp`. In order to tolerate both during
+      // this transition at reasonable cost, this golden error message
+      // pattern accepts anything in the position of the quoted nested
+      // pattern.
+      /^invalid key type for collection "no strings set": "foo\?" - Must fail negated pattern: (.*)$/,
     ),
   );
   t.truthy(noStrings.has(47));
