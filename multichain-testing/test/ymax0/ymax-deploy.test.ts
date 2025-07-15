@@ -15,6 +15,12 @@ import {
   type IBCConnectionInfo,
 } from '@agoric/orchestration';
 import type { TestFn } from 'ava';
+import {
+  makeFlowPath,
+  makePositionPath,
+  portfolioIdOfPath,
+  type StatusFor,
+} from '@aglocal/portfolio-contract/src/type-guards.ts';
 
 const { fromEntries, keys, values } = Object;
 
@@ -224,20 +230,26 @@ test('portfolio-opened', async t => {
 
   const chopPub = (key: string) => key.replace(/^published./, '');
   for (const portfolioKey of portfolioKeys) {
-    const portfolioInfo = await vsc.readPublished(chopPub(portfolioKey));
+    const portfolioId = portfolioIdOfPath(portfolioKey);
+    const portfolioInfo = (await vsc.readPublished(
+      chopPub(portfolioKey),
+    )) as StatusFor['portfolio'];
     t.log(portfolioKey, portfolioInfo);
-    // XXX static type for vstorage schema
-    const { positionCount, flowCount } = portfolioInfo as Record<
-      string,
-      number
-    >;
-    for (const positionNum of range(positionCount).map(x => x + 1)) {
-      const positionKey = `${portfolioKey}.positions.position${positionNum}`; // XXX reuse func for this
-      const positionInfo = await vsc.readPublished(chopPub(positionKey));
+    const { positionKeys, flowCount } = portfolioInfo;
+    for (const poolKey of positionKeys) {
+      // XXX this makePositionPath API is kinda messy
+      const positionKey = [
+        'ymax0',
+        'portfolios',
+        ...makePositionPath(portfolioId, poolKey),
+      ].join('.');
+      const positionInfo = (await vsc.readPublished(
+        positionKey,
+      )) as StatusFor['position'];
       t.log(positionKey, positionInfo);
     }
     for (const flowNum of range(flowCount).map(x => x + 1)) {
-      const flowKey = `${portfolioKey}.flows.flow${flowNum}`; // XXX reuse func for this
+      const flowKey = makeFlowPath(portfolioId, flowNum).join('.');
       try {
         for await (const { blockHeight, values } of readHistory(flowKey, {
           vstorage: vs,

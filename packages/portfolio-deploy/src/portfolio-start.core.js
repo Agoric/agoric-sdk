@@ -1,4 +1,3 @@
-// import { meta } from '@aglocal/portfolio-contract/src/portfolio.contract.meta.js';
 import { makeTracer } from '@agoric/internal';
 import { M } from '@endo/patterns';
 import {
@@ -15,19 +14,29 @@ import { name, permit } from './portfolio.contract.permit.js';
  * @import { LegibleCapData } from './config-marshal.js';
  * @import { OrchestrationPowersWithStorage } from './orch.start.types.ts';
  * @import {PortfolioBootPowers} from './portfolio-start.type.ts';
+ * @import {AxelarChainConfigMap} from './axelar-configs.js';
+ * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.ts';
+ * @import {TypedPattern} from '@agoric/internal';
  */
-
-// TODO: use assetInfo, chainInfo from config too?
-const deployConfigShape = M.splitRecord({});
 
 const trace = makeTracer(`YMX-Start`, true);
 
 /**
+ * @typedef {{
+ *   axelarConfig: AxelarChainConfigMap;
+ * } & CopyRecord} PortfolioDeployConfig
+ */
+
+/** @type {TypedPattern<PortfolioDeployConfig>} */
+export const portfolioDeployConfigShape = harden({
+  // XXX more precise shape
+  axelarConfig: M.record(),
+});
+
+/**
  * @param {OrchestrationPowersWithStorage} orchestrationPowers
  * @param {Marshaller} marshaller
- * @param {{
- *   axelarConfig: import('./axelar-configs.js').AxelarChainConfigMap;
- * }} config
+ * @param {PortfolioDeployConfig} config
  */
 export const makePrivateArgs = async (
   orchestrationPowers,
@@ -66,7 +75,7 @@ export const makePrivateArgs = async (
     Fantom: axelarConfig.Fantom.axelarId,
   };
 
-  /** @type {import('@aglocal/portfolio-contract/src/type-guards.ts').EVMContractAddressesMap} */
+  /** @type {EVMContractAddressesMap} */
   const contracts = {
     Ethereum: { ...axelarConfig.Ethereum.contracts },
     Avalanche: { ...axelarConfig.Avalanche.contracts },
@@ -92,20 +101,22 @@ harden(makePrivateArgs);
 
 /**
  * @param {BootstrapPowers & PortfolioBootPowers} permitted
- * @param {{ options: LegibleCapData<CopyRecord> }} configStruct
+ * @param {{ options: LegibleCapData<PortfolioDeployConfig> }} configStruct
  * @returns {Promise<void>}
  */
 export const startPortfolio = async (permitted, configStruct) => {
-  trace('startPortfolio');
+  trace('startPortfolio', configStruct);
   const { issuer } = permitted;
-  const [USDC, PoC26] = await Promise.all([
+  const [BLD, USDC, PoC26] = await Promise.all([
+    issuer.consume.BLD,
     issuer.consume.USDC,
     issuer.consume.PoC26,
   ]);
-  const issuerKeywordRecord = { USDC, Access: PoC26 };
+  // Include BLD: BLD for use with assetInfo.brandKey
+  const issuerKeywordRecord = { USDC, Access: PoC26, Fee: BLD, BLD };
   await startOrchContract(
     name,
-    deployConfigShape,
+    portfolioDeployConfigShape,
     permit,
     makePrivateArgs,
     permitted,

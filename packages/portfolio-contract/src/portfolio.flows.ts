@@ -6,9 +6,10 @@
  */
 import type { GuestInterface } from '@agoric/async-flow';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import { type Amount } from '@agoric/ertp';
+import { type Amount, type NatAmount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type {
+  AccountId,
   Denom,
   OrchestrationAccount,
   OrchestrationFlow,
@@ -20,51 +21,73 @@ import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
-import { Fail } from '@endo/errors';
-import { RebalanceStrategy } from './constants.js';
-import type { AxelarId } from './portfolio.contract.ts';
+import { assert, Fail, q } from '@endo/errors';
+import {
+  AxelarChain,
+  RebalanceStrategy,
+  SupportedChain,
+  type YieldProtocol,
+} from './constants.js';
+import type { AxelarId, EVMContractAddresses } from './portfolio.contract.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
-import { changeGMPPosition } from './pos-gmp.flows.ts';
-import { changeUSDCPosition } from './pos-usdn.flows.ts';
+import {
+  AaveProtocol,
+  CCTP,
+  CompoundProtocol,
+  provideEVMAccount,
+  type EVMContext,
+} from './pos-gmp.flows.ts';
+import {
+  agoricToNoble,
+  nobleToAgoric,
+  protocolUSDN,
+} from './pos-usdn.flows.ts';
 import type { Position } from './pos.exo.ts';
-import type {
-  EVMContractAddressesMap,
-  OfferArgsFor,
-  ProposalType,
+import {
+  getChainNameOfPlaceRef,
+  getKeywordOfPlaceRef,
+  type AssetPlaceRef,
+  type MovementDesc,
+  type OfferArgsFor,
+} from './type-guards-steps.ts';
+import {
+  PoolPlaces,
+  type EVMContractAddressesMap,
+  type PoolKey,
+  type ProposalType,
 } from './type-guards.ts';
-// TODO: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
+// XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
 const { keys } = Object;
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
-export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>; // TODO: move to type-guards as external interface?
-
-type PortfolioBootstrapContext = {
-  axelarIds: AxelarId;
-  contracts: EVMContractAddressesMap;
-  usdc: { brand: Brand<'nat'>; denom: Denom };
-  zoeTools: GuestInterface<ZoeTools>;
-  makePortfolioKit: () => GuestInterface<PortfolioKit>;
-  inertSubscriber: GuestInterface<ResolvedPublicTopic<unknown>['subscriber']>;
-};
+export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
 
 export type PortfolioInstanceContext = {
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
   usdc: { brand: Brand<'nat'>; denom: Denom };
+  gmpFeeInfo: { brand: Brand<'nat'>; denom: Denom };
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
+};
+
+type PortfolioBootstrapContext = PortfolioInstanceContext & {
+  makePortfolioKit: () => GuestInterface<PortfolioKit>;
 };
 
 type AssetPlace =
   | { pos: Position }
   | { account: OrchestrationAccount<any> }
+  | { proxy: AccountInfoFor[AxelarChain] }
   | { seat: ZCFSeat; keyword: string };
 
 const placeLabel = (place: AssetPlace) => {
   if ('pos' in place) return place.pos.getPoolKey();
   if ('account' in place) return coerceAccountId(place.account.getAddress());
+  if ('proxy' in place)
+    return `${place.proxy.chainId}:${place.proxy.remoteAddress}`;
   return `seat:${place.keyword}`;
 };
 
@@ -84,17 +107,62 @@ const moveStatus = ({ how, src, dest, amount }: AssetMovement) => ({
 });
 const errmsg = (err: any) => ('message' in err ? err.message : `${err}`);
 
+export type TransportDetail<
+  How extends string,
+  S extends SupportedChain,
+  D extends SupportedChain,
+  CTX = unknown,
+> = {
+  how: How;
+  connections: { src: S; dest: D }[];
+  apply: (
+    ctx: CTX,
+    amount: NatAmount,
+    src: AccountInfoFor[S],
+    dest: AccountInfoFor[D],
+  ) => Promise<void>;
+  recover: (
+    ctx: CTX,
+    amount: NatAmount,
+    src: AccountInfoFor[S],
+    dest: AccountInfoFor[D],
+  ) => Promise<void>;
+};
+
+export type ProtocolDetail<
+  P extends YieldProtocol,
+  C extends SupportedChain,
+  CTX = unknown,
+> = {
+  protocol: P;
+  chains: C[];
+  supply: (
+    ctx: CTX,
+    amount: NatAmount,
+    src: AccountInfoFor[C],
+  ) => Promise<void>;
+  withdraw: (
+    ctx: CTX,
+    amount: NatAmount,
+    dest: AccountInfoFor[C],
+  ) => Promise<void>;
+};
+
 export const trackFlow = async (
   reporter: GuestInterface<PortfolioKit['reporter']>,
-  moves: AssetMovement[],
+  todo: (() => Promise<AssetMovement>)[],
 ) => {
   const flowId = reporter.allocateFlowId();
   let step = 1;
+  const moves: AssetMovement[] = [];
   try {
-    for (const move of moves) {
-      trace(step, moveStatus(move));
+    for (const makeMove of todo) {
+      const move = await makeMove();
+      moves.push(move);
+      trace('trackFlow', step, moveStatus(move));
       reporter.publishFlowStatus(flowId, { step, ...moveStatus(move) });
       await move.apply();
+      trace(step, 'step done');
       const { amount, src, dest } = move;
       if ('pos' in src) {
         src.pos.recordTransferOut(amount);
@@ -104,7 +172,7 @@ export const trackFlow = async (
       }
       step += 1;
     }
-    // TODO: delete the flow storage node
+    // TODO(#NNNN): delete the flow storage node
     // reporter.publishFlowStatus(flowId, { complete: true });
   } catch (err) {
     console.error('⚠️ step', step, ' failed', err);
@@ -178,6 +246,329 @@ export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
   }
 };
 
+const getAssetPlaceRefKind = (
+  ref: AssetPlaceRef,
+): 'pos' | 'accountId' | 'seat' => {
+  if (keys(PoolPlaces).includes(ref)) return 'pos';
+  if (getKeywordOfPlaceRef(ref)) return 'seat';
+  if (getChainNameOfPlaceRef(ref)) return 'accountId';
+  throw Fail`bad ref: ${ref}`;
+};
+
+type Way =
+  | { how: 'localTransfer' }
+  | { how: 'withdrawToSeat' }
+  | { how: 'IBC'; src: 'agoric'; dest: 'noble' }
+  | { how: 'IBC'; src: 'noble'; dest: 'agoric' }
+  | { how: 'CCTP'; dest: AxelarChain }
+  | {
+      how: YieldProtocol;
+      /** pool we're supplying */
+      poolKey: PoolKey;
+      /** chain with account where assets will come from */
+      src: SupportedChain;
+    }
+  | {
+      how: YieldProtocol;
+      /** pool we're withdrawing from */
+      poolKey: PoolKey;
+      /** chain with account where assets will go */
+      dest: SupportedChain;
+    };
+
+export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
+  const { src } = moveDesc;
+  const { dest } = moveDesc;
+
+  const srcKind = getAssetPlaceRefKind(src);
+  switch (srcKind) {
+    case 'pos': {
+      const destName = getChainNameOfPlaceRef(dest);
+      if (!destName)
+        throw Fail`src pos must have account as dest ${q(moveDesc)}`;
+      const poolKey = src as PoolKey;
+      const { protocol } = PoolPlaces[poolKey];
+      const feeRequired = ['Compound', 'Aave'];
+      moveDesc.fee ||
+        !feeRequired.includes(protocol) ||
+        Fail`missing fee ${q(moveDesc)}`;
+      // XXX check that destName is in protocol.chains
+      return { how: protocol, poolKey, dest: destName };
+    }
+
+    case 'seat':
+      getAssetPlaceRefKind(dest) === 'accountId' || // XXX check for agoric
+        Fail`src seat must have account as dest ${q(moveDesc)}`;
+      return { how: 'localTransfer' };
+
+    case 'accountId': {
+      const srcName = getChainNameOfPlaceRef(src);
+      assert(srcName);
+      const destKind = getAssetPlaceRefKind(dest);
+      switch (destKind) {
+        case 'seat':
+          return { how: 'withdrawToSeat' }; // XXX check that src is agoric
+        case 'accountId':
+          const destName = getChainNameOfPlaceRef(dest);
+          assert(destName);
+          if (keys(AxelarChain).includes(destName)) {
+            srcName === 'noble' || Fail`src for ${q(destName)} must be noble`;
+            return { how: 'CCTP', dest: destName as AxelarChain };
+          }
+          if (srcName === 'agoric' && destName === 'noble') {
+            return { how: 'IBC', src: srcName, dest: destName };
+          } else if (srcName === 'noble' && destName === 'agoric') {
+            return { how: 'IBC', src: srcName, dest: destName };
+          } else {
+            throw Fail`no route between chains: ${q(moveDesc)}`;
+          }
+        case 'pos': {
+          const poolKey = dest as PoolKey;
+
+          return { how: PoolPlaces[poolKey].protocol, poolKey, src: srcName };
+        }
+        default:
+          throw Fail`unreachable:${destKind} ${dest}`;
+      }
+    }
+    default:
+      throw Fail`unreachable: ${srcKind} ${src}`;
+  }
+};
+
+const stepFlow = async (
+  orch: Orchestrator,
+  ctx: PortfolioInstanceContext,
+  seat: ZCFSeat,
+  moves: MovementDesc[],
+  kit: GuestInterface<PortfolioKit>,
+) => {
+  const todo: (() => Promise<AssetMovement>)[] = [];
+
+  const provideEVMInfo = async <N extends keyof EVMContractAddresses>(
+    _name: N,
+    chain: AxelarChain,
+    move: MovementDesc,
+  ) => {
+    const axelar = await orch.getChain('axelar');
+    const { denom } = ctx.gmpFeeInfo;
+    const fee = { denom, value: move.fee ? move.fee.value : 0n };
+    const { axelarIds } = ctx;
+    const gmp = { chain: axelar, fee: move.fee?.value || 0n, axelarIds }; // XXX throw if fee missing?
+    const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
+    const gInfo = await provideEVMAccount(chain, gmp, lca, ctx, kit);
+    const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
+
+    const evmCtx: EVMContext<N> = harden({
+      addresses: ctx.contracts[chain],
+      lca,
+      gmpFee: fee,
+      gmpChain: axelar,
+      axelarIds,
+    });
+    return { evmCtx, gInfo, accountId };
+  };
+
+  const makeEVMProtocolStep = async <P extends 'Compound' | 'Aave'>(
+    way: Way & { how: P },
+    move: MovementDesc,
+  ) => {
+    // XXX move this check up to wayFromSrcToDesc
+    const chainName = 'src' in way ? way.src : way.dest;
+    assert(keys(AxelarChain).includes(chainName));
+    const evmChain = chainName as AxelarChain;
+
+    const [contract, pImpl] =
+      way.how === 'Compound'
+        ? ['compound' as const, CompoundProtocol]
+        : ['aavePool' as const, AaveProtocol];
+
+    const { evmCtx, gInfo, accountId } = await provideEVMInfo(
+      contract,
+      evmChain,
+      move,
+    );
+
+    const pos = kit.manager.providePosition(way.poolKey, way.how, accountId);
+
+    const { amount } = move;
+    if ('src' in way) {
+      return {
+        how: way.how,
+        amount,
+        src: { proxy: gInfo },
+        dest: { pos },
+        apply: () => pImpl.supply(evmCtx, amount, gInfo),
+        recover: () => assert.fail('last step. cannot recover'),
+      };
+    } else {
+      return {
+        how: way.how,
+        amount,
+        src: { pos },
+        dest: { proxy: gInfo },
+        apply: () => pImpl.withdraw(evmCtx, amount, gInfo),
+        recover: () => pImpl.supply(evmCtx, amount, gInfo),
+      };
+    }
+  };
+
+  const provideAgoricNoble = () =>
+    Promise.all([
+      provideCosmosAccount(orch, 'agoric', kit),
+      provideCosmosAccount(orch, 'noble', kit),
+    ]);
+
+  for (const move of moves) {
+    trace('move', move);
+    const way = wayFromSrcToDesc(move);
+    const { amount } = move;
+    switch (way.how) {
+      case 'localTransfer': {
+        const { give } = seat.getProposal() as ProposalType['rebalance'];
+        const amounts = harden({
+          Deposit: amount,
+          ...('GmpFee' in give ? { GmpFee: give.GmpFee } : {}),
+        });
+        todo.push(async () => {
+          const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
+          return {
+            how: 'localTransfer',
+            src: { seat, keyword: 'Deposit' },
+            dest: { account: lca },
+            amount, // XXX use amounts.Deposit
+            apply: async () => {
+              await ctx.zoeTools.localTransfer(seat, lca, amounts);
+            },
+            recover: async () => {
+              await ctx.zoeTools.withdrawToSeat(lca, seat, amounts);
+            },
+          };
+        });
+        break;
+      }
+      case 'withdrawToSeat': {
+        const amounts = { Cash: amount };
+        todo.push(async () => {
+          const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
+          return {
+            how: 'withdrawToSeat',
+            src: { account: lca },
+            dest: { seat, keyword: 'Cash' },
+            amount,
+            apply: async () => {
+              await ctx.zoeTools.withdrawToSeat(lca, seat, amounts);
+            },
+            recover: async () => {
+              await ctx.zoeTools.localTransfer(seat, lca, amounts);
+            },
+          };
+        });
+        break;
+      }
+
+      case 'IBC': {
+        if (way.src === 'agoric' && way.dest === 'noble') {
+          const { how, apply, recover } = agoricToNoble;
+          todo.push(async () => {
+            const [aInfo, nInfo] = await provideAgoricNoble();
+            const ctxI = { usdc: ctx.usdc };
+            return {
+              how,
+              amount,
+              src: { account: aInfo.lca },
+              dest: { account: nInfo.ica },
+              apply: () => apply(ctxI, amount, aInfo, nInfo),
+              recover: () => recover(ctxI, amount, aInfo, nInfo),
+            };
+          });
+        } else if (way.src === 'noble' && way.dest === 'agoric') {
+          const { how, apply, recover } = nobleToAgoric;
+          todo.push(async () => {
+            const [aInfo, nInfo] = await provideAgoricNoble();
+            const ctxI = { usdc: ctx.usdc };
+            return {
+              how,
+              amount,
+              src: { account: nInfo.ica },
+              dest: { account: aInfo.lca },
+              apply: () => apply(ctxI, amount, nInfo, aInfo),
+              recover: () => recover(ctxI, amount, nInfo, aInfo),
+            };
+          });
+        }
+        break;
+      }
+
+      case 'CCTP': {
+        todo.push(async () => {
+          const { how, apply, recover } = CCTP;
+          const [{ lca }, nInfo, axelar] = await Promise.all([
+            provideCosmosAccount(orch, 'agoric', kit),
+            provideCosmosAccount(orch, 'noble', kit),
+            orch.getChain('axelar'),
+          ]);
+
+          const { axelarIds } = ctx;
+          const gmp = { chain: axelar, fee: move.fee?.value || 0n, axelarIds };
+          const gInfo = await provideEVMAccount(way.dest, gmp, lca, ctx, kit);
+          return {
+            how,
+            amount,
+            src: { account: nInfo.ica },
+            dest: { proxy: gInfo },
+            apply: () => apply(null, amount, nInfo, gInfo),
+            recover: () => recover(null, amount, nInfo, gInfo),
+          };
+        });
+        break;
+      }
+
+      case 'USDN': {
+        todo.push(async () => {
+          const nInfo = await provideCosmosAccount(orch, 'noble', kit);
+          const acctId = coerceAccountId(nInfo.ica.getAddress());
+          const pos = kit.manager.providePosition('USDN', 'USDN', acctId);
+          const vault = way.poolKey === 'USDNVault' ? 1 : undefined;
+          const ctxU = { usdnOut: move?.detail?.usdnOut, vault };
+
+          if ('src' in way) {
+            const { supply } = protocolUSDN;
+            return {
+              how: way.how,
+              amount,
+              src: { account: nInfo.ica },
+              dest: { pos },
+              apply: () => supply(ctxU, amount, nInfo),
+              recover: () => Fail`no recovery from supply (final step)`,
+            };
+          } else {
+            throw Fail`TODO: withdraw from USDN`;
+          }
+        });
+        break;
+      }
+
+      case 'Compound':
+        todo.push(() =>
+          makeEVMProtocolStep(way as Way & { how: 'Compound' }, move),
+        );
+        break;
+
+      case 'Aave':
+        todo.push(() =>
+          makeEVMProtocolStep(way as Way & { how: 'Aave' }, move),
+        );
+        break;
+
+      default:
+        throw Fail`unreachable: ${way}`;
+    }
+  }
+
+  await trackFlow(kit.reporter, todo);
+};
+
 export const rebalance = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -188,21 +579,10 @@ export const rebalance = async (
   const proposal = seat.getProposal() as ProposalType['rebalance'];
   trace('rebalance proposal', proposal.give, proposal.want, offerArgs);
 
-  if (keys(proposal.want).length > 0) {
-    throw Error('TODO: withdraw');
+  if ('flow' in offerArgs) {
+    await stepFlow(orch, ctx, seat, offerArgs.flow, kit);
   }
-
-  const { give } = proposal;
-  if ('USDN' in give && give.USDN) {
-    await changeUSDCPosition(give, offerArgs, orch, kit, ctx, seat);
-  }
-
-  const { entries } = Object;
-  for (const [keyword, amount] of entries(give)) {
-    if (!['Aave', 'Compound'].includes(keyword)) continue;
-    const protocol = keyword as 'Aave' | 'Compound';
-    await changeGMPPosition(orch, ctx, seat, offerArgs, kit, protocol, give);
-  }
+  seat.exit();
 };
 
 export const rebalanceFromTransfer = (async (
@@ -275,33 +655,18 @@ export const openPortfolio = (async (
   orch: Orchestrator,
   ctx: PortfolioBootstrapContext,
   seat: ZCFSeat,
-  offerArgs: OfferArgsFor['openPortfolio'], // TODO: USDN/USDC ratio
+  offerArgs: OfferArgsFor['openPortfolio'],
 ) => {
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   try {
-    const {
-      makePortfolioKit,
-      zoeTools,
-      axelarIds,
-      contracts,
-      usdc,
-      inertSubscriber,
-    } = ctx;
+    const { makePortfolioKit, ...ctxI } = ctx;
+    const { inertSubscriber } = ctxI;
     const kit = makePortfolioKit();
     await provideCosmosAccount(orch, 'agoric', kit);
 
-    const portfolioCtx = {
-      axelarIds,
-      contracts,
-      usdc,
-      keeper: { ...kit.reader, ...kit.manager },
-      zoeTools,
-      inertSubscriber,
-    };
-
     if (!seat.hasExited()) {
       try {
-        await rebalance(orch, portfolioCtx, seat, offerArgs, kit);
+        await rebalance(orch, ctxI, seat, offerArgs, kit);
       } catch (err) {
         console.error('⚠️ rebalance failed', err);
         seat.fail(err);
