@@ -12,7 +12,7 @@ export const name = /** @type {const} */ ('ymax0');
  */
 export const permit = /** @type {const} */ ({
   produce: { [/** @type {const} */ (`${name}Kit`)]: true },
-  consume: { ...orchPermit },
+  consume: { ...orchPermit, chainInfoPublished: true },
   instance: { produce: { [name]: true } },
   installation: { consume: { [name]: true } },
   brand: {},
