@@ -11,6 +11,7 @@ export type EVMT = {
   address: `0x${string}`;
   bytes32: `0x${string}`;
   'address[]': Array<`0x${string}`>;
+  bool: boolean;
   // ... others from the yellow book would go here.
   // We only use these, so far.
 };

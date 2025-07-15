@@ -244,11 +244,13 @@ export const AaveProtocol = {
 type CompoundI = {
   supply: ['address', 'uint256'];
   withdraw: ['address', 'uint256'];
+  claim: ['address', 'address', 'bool'];
 };
 
 const Compound: CompoundI = {
   supply: ['address', 'uint256'],
   withdraw: ['address', 'uint256'],
+  claim: ['address', 'address', 'bool'],
 };
 
 export const CompoundProtocol = {
@@ -279,6 +281,18 @@ export const CompoundProtocol = {
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
     await sendGMPContractCall(target, calls, fee, lca, gmpChain);
+  },
+  claimRewards: async (ctx, src) => {
+    const { addresses: a, lca, gmpChain, gmpFee } = ctx;
+
+    const session = makeEVMSession();
+    const compound = session.makeContract(a.compound, Compound);
+    compound.claim(a.compound, src.remoteAddress, true);
+    const calls = session.finish();
+
+    const axelarId = ctx.axelarIds[src.chainName];
+    const target = { axelarId, remoteAddress: src.remoteAddress };
+    await sendGMPContractCall(target, calls, gmpFee, lca, gmpChain);
   },
 } as const satisfies ProtocolDetail<
   'Compound',

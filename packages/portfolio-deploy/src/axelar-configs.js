@@ -116,7 +116,6 @@ const usdcAddresses = {
   },
 };
 
-
 /** @type {AddressesMap} */
 const aaveUsdcAddresses = {
   mainnet: {
@@ -138,7 +137,6 @@ const aaveUsdcAddresses = {
     Binance: '0x',
   },
 };
-
 
 /** @type {AddressesMap} */
 const aaveRewardsControllerAddresses = {
@@ -215,6 +213,7 @@ const mainnetContracts = {
   Ethereum: {
     aavePool: aaveAddresses.mainnet.Ethereum,
     compound: '0x', // TODO
+    compoundRewardsController: '0x',
     factory: factoryAddresses.mainnet.Ethereum,
     usdc: usdcAddresses.mainnet.Ethereum,
     tokenMessenger: mainnetTokenMessenger.Ethereum.Address,
@@ -224,6 +223,7 @@ const mainnetContracts = {
   Avalanche: {
     aavePool: aaveAddresses.mainnet.Avalanche,
     compound: '0x', // TODO
+    compoundRewardsController: '0x',
     factory: factoryAddresses.mainnet.Avalanche,
     usdc: usdcAddresses.mainnet.Avalanche,
     tokenMessenger: mainnetTokenMessenger.Avalanche.Address,
@@ -233,6 +233,7 @@ const mainnetContracts = {
   Optimism: {
     aavePool: aaveAddresses.mainnet.Optimism,
     compound: '0x', // TODO
+    compoundRewardsController: '0x',
     factory: factoryAddresses.mainnet.Optimism,
     usdc: usdcAddresses.mainnet.Optimism,
     tokenMessenger: mainnetTokenMessenger['OP Mainnet'].Address,
@@ -242,6 +243,7 @@ const mainnetContracts = {
   Arbitrum: {
     aavePool: aaveAddresses.mainnet.Arbitrum,
     compound: '0x', // TODO
+    compoundRewardsController: '0x',
     factory: factoryAddresses.mainnet.Arbitrum,
     usdc: usdcAddresses.mainnet.Arbitrum,
     tokenMessenger: mainnetTokenMessenger.Arbitrum.Address,
@@ -251,6 +253,7 @@ const mainnetContracts = {
   Polygon: {
     aavePool: aaveAddresses.mainnet.Polygon,
     compound: '0x', // TODO
+    compoundRewardsController: '0x',
     factory: factoryAddresses.mainnet.Polygon,
     usdc: usdcAddresses.mainnet.Polygon,
     tokenMessenger: mainnetTokenMessenger['Polygon PoS'].Address,
@@ -261,6 +264,7 @@ const mainnetContracts = {
     // TODO: aave and compound?
     aavePool: '0x',
     compound: '0x',
+    compoundRewardsController: '0x',
     factory: factoryAddresses.mainnet.Fantom,
     usdc: usdcAddresses.mainnet.Fantom,
     tokenMessenger: '0x', // TODO
@@ -270,6 +274,7 @@ const mainnetContracts = {
   Binance: {
     aavePool: aaveAddresses.mainnet.Binance,
     compound: '0x', // TODO
+    compoundRewardsController: '0x',
     factory: factoryAddresses.mainnet.Binance,
     usdc: usdcAddresses.mainnet.Binance,
     tokenMessenger: '0x', // TODO
@@ -304,6 +309,7 @@ const testnetContracts = {
   Ethereum: {
     aavePool: aaveAddresses.testnet.Ethereum,
     compound: '0x', // TODO
+    compoundRewardsController: '0x',
     factory: factoryAddresses.testnet.Ethereum,
     usdc: usdcAddresses.testnet.Ethereum,
     tokenMessenger: testnetTokenMessenger['Ethereum Sepolia'].Address,
@@ -313,6 +319,7 @@ const testnetContracts = {
   Avalanche: {
     aavePool: aaveAddresses.testnet.Avalanche,
     compound: '0x', // TODO
+    compoundRewardsController: '0x',
     factory: factoryAddresses.testnet.Avalanche,
     usdc: usdcAddresses.testnet.Avalanche,
     tokenMessenger: testnetTokenMessenger['Avalanche Fuji'].Address,
@@ -322,6 +329,7 @@ const testnetContracts = {
   Optimism: {
     aavePool: aaveAddresses.testnet.Optimism,
     compound: '0x', // TODO
+    compoundRewardsController: '0x',
     factory: factoryAddresses.testnet.Optimism,
     usdc: usdcAddresses.testnet.Optimism,
     tokenMessenger: testnetTokenMessenger['OP Sepolia'].Address,
@@ -331,6 +339,7 @@ const testnetContracts = {
   Arbitrum: {
     aavePool: aaveAddresses.testnet.Arbitrum,
     compound: '0x', // TODO
+    compoundRewardsController: '0x',
     factory: factoryAddresses.testnet.Arbitrum,
     usdc: usdcAddresses.testnet.Arbitrum,
     tokenMessenger: testnetTokenMessenger['Arbitrum Sepolia'].Address,
@@ -341,6 +350,7 @@ const testnetContracts = {
     // TODO: AAVE and Compound on polygon testnet?
     aavePool: '0x',
     compound: '0x',
+    compoundRewardsController: '0x',
     factory: factoryAddresses.testnet.Polygon,
     usdc: usdcAddresses.testnet.Polygon,
     tokenMessenger: testnetTokenMessenger['Polygon PoS Amoy'].Address,
@@ -351,6 +361,7 @@ const testnetContracts = {
     // TODO: aave and compound?
     aavePool: '0x',
     compound: '0x',
+    compoundRewardsController: '0x',
     factory: factoryAddresses.testnet.Fantom,
     usdc: usdcAddresses.testnet.Fantom,
     tokenMessenger: '0x', // TODO?
@@ -361,6 +372,7 @@ const testnetContracts = {
     // TODO: AAVE on Binance testnet?
     aavePool: '0x',
     compound: '0x',
+    compoundRewardsController: '0x',
     factory: factoryAddresses.testnet.Binance,
     usdc: usdcAddresses.testnet.Binance,
     tokenMessenger: '0x', // TODO?
