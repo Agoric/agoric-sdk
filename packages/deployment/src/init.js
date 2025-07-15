@@ -1,7 +1,7 @@
 // @ts-check
 
 import { Fail } from '@endo/errors';
-import { isObject } from '@endo/marshal';
+import { isPrimitive } from '@endo/marshal';
 import { PLAYBOOK_WRAPPER, SSH_TYPE } from './setup.js';
 import { shellEscape } from './run.js';
 
@@ -33,7 +33,7 @@ const tfStringify = obj => {
       sep = ',';
     }
     ret += ']';
-  } else if (isObject(obj)) {
+  } else if (!isPrimitive(obj)) {
     ret += '{';
     let sep = '';
     for (const key of Object.keys(obj).sort()) {
