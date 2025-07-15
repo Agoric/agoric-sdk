@@ -28,6 +28,7 @@ import type {
   StartFn,
 } from '../src/portfolio-start.type.ts';
 import { name as contractName } from '../src/portfolio.contract.permit.js';
+import type { ChainInfoPowers } from '../src/chain-info.core.js';
 
 const { entries, keys } = Object;
 
@@ -49,7 +50,8 @@ test('coreEval code without swingset', async t => {
   const log = () => {}; // console.log
   const { produce, consume } = makePromiseSpace({ log });
   const powers = { produce, consume, ...wk } as unknown as BootstrapPowers &
-    PortfolioBootPowers;
+    PortfolioBootPowers &
+    ChainInfoPowers;
   // XXX type of zoe from setUpZoeForTest is any???
   const { zoe: zoeAny, bundleAndInstall } = await setUpZoeForTest();
   const zoe: ZoeService = zoeAny;
@@ -94,6 +96,8 @@ test('coreEval code without swingset', async t => {
     );
     produce.zoe.resolve(zoe);
   }
+
+  produce.chainInfoPublished.resolve(true);
 
   // script from agoric run does this step
   t.log('produce installation using test bundle');

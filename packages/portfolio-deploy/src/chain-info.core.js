@@ -93,9 +93,16 @@ const publishChainInfoToChainStorage = async (
  */
 
 /**
+ * XXX move this into BootstrapPowers
+ * @typedef {PromiseSpaceOf<{
+ *   chainInfoPublished: unknown
+ * }>} ChainInfoPowers
+ */
+
+/**
  * WARNING: prunes any data that was previously published
  *
- * @param {BootstrapPowers & ChainStoragePresent} powers
+ * @param {BootstrapPowers & ChainStoragePresent & ChainInfoPowers} powers
  * @param {{
  *   options: {
  *     chainInfo?: Record<string, ChainInfo>;
@@ -104,7 +111,10 @@ const publishChainInfoToChainStorage = async (
  * }} config
  */
 export const publishChainInfo = async (
-  { consume: { agoricNames, agoricNamesAdmin, chainStorage } },
+  {
+    consume: { agoricNames, agoricNamesAdmin, chainStorage },
+    produce: { chainInfoPublished },
+  },
   config,
 ) => {
   const { keys } = Object;
@@ -150,6 +160,8 @@ export const publishChainInfo = async (
     trace('@@@registered', name, info);
   }
   trace('@@@conn', ...handledConnections);
+
+  chainInfoPublished.resolve(true);
   trace('publishChainInfo done');
 };
 harden(publishChainInfo);
@@ -162,6 +174,7 @@ export const getManifestForChainInfo = (_u, { options }) => ({
         agoricNamesAdmin: true,
         chainStorage: true,
       },
+      produce: { chainInfoPublished: true },
     },
   },
   options,
