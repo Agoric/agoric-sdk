@@ -1,6 +1,6 @@
 import { Fail, X, annotateError, q } from '@endo/errors';
 import { throwLabeled } from '@endo/common/throw-labeled.js';
-import { getTag, isObject, passStyleOf } from '@endo/pass-style';
+import { getTag, isPrimitive, passStyleOf } from '@endo/pass-style';
 import { recordNames } from '@endo/marshal';
 import { isVow } from '@agoric/vow/src/vow-utils.js';
 
@@ -23,7 +23,7 @@ export const makeEquate = bijection => {
   };
 
   const innerEquate = (g, h) => {
-    if (!isObject(g)) {
+    if (isPrimitive(g)) {
       is(g, h) ||
         // separate line so I can set a breakpoint
         Fail`unequal ${g} vs ${h}`;
