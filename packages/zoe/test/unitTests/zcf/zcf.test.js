@@ -399,7 +399,14 @@ test(`zcf.makeZCFMint - not a math kind`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint('A', 'whatever'), {
     message:
-      'In "makeZoeMint" method of (zoeInstanceAdmin): arg 1?: "whatever" - Must match one of ["nat","set","copySet","copyBag"]',
+      // TODO https://github.com/Agoric/agoric-sdk/issues/11605
+      // This is a golden error message test. We're currently in transition
+      // from having pattern error messages quote nested patterns using
+      // `q` to quoting them using `qp`. In order to tolerate both during
+      // this transition at reasonable cost, this golden error message
+      // pattern accepts anything in the position of the quoted nested
+      // pattern.
+      /^In "makeZoeMint" method of \(zoeInstanceAdmin\): arg 1\?: "whatever" - Must match one of (.*)$/,
   });
 });
 
