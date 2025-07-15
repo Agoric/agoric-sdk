@@ -445,9 +445,6 @@ Update the test snapshots.
 ```sh
 # at the repo root
 yarn build
-```
-
-```sh
 cd packages/SwingSet
 yarn test test/xsnap-store.test.js --update-snapshots
 git add test/snapshots/xsnap-store.*
@@ -466,6 +463,7 @@ while read lock; do \
   echo $dir; \
   (cd $dir; ~/endo/scripts/sync-versions.sh ~/endo; yarn); \
 done
+git commit -am 'chore: Sync the other locks'
 ```
 
 Push this branch and create a pull request.
