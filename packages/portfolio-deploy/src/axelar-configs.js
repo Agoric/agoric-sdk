@@ -142,7 +142,6 @@ const factoryAddresses = {
 /**
  * TODO:
  * - Add USDC addresses for Fantom and Binance (mainnet and testnet)
- * - Find a way to pass testnet and mainnet config seperately
  */
 
 /**
