@@ -17,6 +17,7 @@ import { name, permit } from './portfolio.contract.permit.js';
  * @import {AxelarChainConfigMap} from './axelar-configs.js';
  * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.ts';
  * @import {TypedPattern} from '@agoric/internal';
+ * @import { ChainInfoPowers } from './chain-info.core.js';
  */
 
 const trace = makeTracer(`YMX-Start`, true);
@@ -100,12 +101,15 @@ export const makePrivateArgs = async (
 harden(makePrivateArgs);
 
 /**
- * @param {BootstrapPowers & PortfolioBootPowers} permitted
+ * @param {BootstrapPowers & PortfolioBootPowers & ChainInfoPowers} permitted
  * @param {{ options: LegibleCapData<PortfolioDeployConfig> }} configStruct
  * @returns {Promise<void>}
  */
 export const startPortfolio = async (permitted, configStruct) => {
   trace('startPortfolio', configStruct);
+
+  await permitted.consume.chainInfoPublished;
+
   const { issuer } = permitted;
   const [BLD, USDC, PoC26] = await Promise.all([
     issuer.consume.BLD,

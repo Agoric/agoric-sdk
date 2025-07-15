@@ -8,6 +8,7 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { mustMatch } from '@agoric/internal';
 import { ChainInfoShape, IBCConnectionInfoShape } from '@agoric/orchestration';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { M } from '@endo/patterns';
 import { parseArgs } from 'node:util';
 
@@ -28,14 +29,14 @@ const sourceSpec = '@aglocal/portfolio-deploy/src/chain-info.core.js';
 /** @type {ParseArgsConfig['options'] } */
 const options = {
   baseName: { type: 'string', default: 'eval-chain-info' },
-  chainInfo: { type: 'string', default: '{}' },
+  chainInfo: { type: 'string' },
   net: { type: 'string' },
   peer: { type: 'string', multiple: true },
 };
 /**
  * @typedef {{
  *   baseName: string;
- *   chainInfo: string;
+ *   chainInfo?: string;
  *   net?: string;
  *   peer?: string[];
  * }} FlagValues
@@ -201,14 +202,29 @@ const getPeerChainInfo = async (chainId, peers, { agd }) => {
   return harden(chainDetails);
 };
 
+const { entries, fromEntries } = Object;
+/** @type {<T extends Record<any, any>, W extends keyof T>(obj: T, wanted: W[])=>Pick<T,W> } */
+const pickKeys = (obj, wanted) =>
+  // @ts-expect-error entries / fromEntries lose type info
+  fromEntries(entries(obj).filter(([k]) => wanted.includes(k)));
+
+/** @param {Array<keyof typeof fetchedChainInfo>} chains */
+const getMainnetChainInfo = (chains = ['agoric', 'noble', 'axelar']) => {
+  console.log('using static mainnet config');
+  return harden(pickKeys(fetchedChainInfo, chains));
+};
+
 /** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
   /** @type {FlagValues} */
   // @ts-expect-error guaranteed by options config
   const { values: flags } = parseArgs({ args: scriptArgs, options });
-  const { chainInfo: chainJSON, baseName } = flags;
-  let chainInfo = harden(JSON.parse(chainJSON));
+  const { baseName } = flags;
+  let chainInfo =
+    'chainInfo' in flags
+      ? harden(JSON.parse(flags.chainInfo))
+      : getMainnetChainInfo();
 
   await null;
   if (flags.net) {
