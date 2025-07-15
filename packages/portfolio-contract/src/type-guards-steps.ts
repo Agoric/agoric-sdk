@@ -85,7 +85,7 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
     openPortfolio: M.splitRecord(
       {},
       {
-        flow: M.arrayOf(movementDescShape),
+        flow: M.arrayOf(movementDescShape, { arrayLengthLimit: 12 }),
         destinationEVMChain: M.or(...keys(AxelarChain)),
       },
     ) as TypedPattern<OfferArgsFor['openPortfolio']>,
