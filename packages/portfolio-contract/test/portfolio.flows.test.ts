@@ -42,7 +42,10 @@ import {
   wayFromSrcToDesc,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
-import { makeSwapLockMessages } from '../src/pos-usdn.flows.ts';
+import {
+  makeSwapLockMessages,
+  makeUnlockSwapMessages,
+} from '../src/pos-usdn.flows.ts';
 import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
 import { axelarIdsMock, contractsMock } from './mocks.ts';
@@ -363,41 +366,32 @@ test('open portfolio with no positions', async t => {
 test('Noble Dollar Swap, Lock messages', t => {
   const signer =
     'noble1reheu4ym85k9gktyf9vzhzt0zvqym9txwejsj4vaxdrw98wm4emsddarrd' as const;
+  {
+    const actual = makeSwapLockMessages(
+      { value: signer, chainId: 'grand-1', encoding: 'bech32' },
+      1200000n,
+      { usdnOut: 1188000n, vault: 1 },
+    );
+    t.snapshot(actual, 'swap 1.2USDC for 1.188USDN');
+  }
 
-  const actual = makeSwapLockMessages(
-    { value: signer, chainId: 'grand-1', encoding: 'bech32' },
-    1200000n,
-    { usdnOut: 1188000n, vault: 1 },
-  );
-  const bigintStringifier = (_p, v) => (typeof v === 'bigint' ? `${v}` : v);
-  t.log(JSON.stringify(actual, bigintStringifier));
-  t.deepEqual(actual, {
-    msgSwap: {
-      signer:
-        'noble1reheu4ym85k9gktyf9vzhzt0zvqym9txwejsj4vaxdrw98wm4emsddarrd',
-      amount: { denom: 'uusdc', amount: '1200000' },
-      routes: [{ poolId: 0n, denomTo: 'uusdn' }],
-      min: { denom: 'uusdn', amount: '1188000' },
-    },
-    msgLock: {
-      signer:
-        'noble1reheu4ym85k9gktyf9vzhzt0zvqym9txwejsj4vaxdrw98wm4emsddarrd',
-      vault: 1,
-      amount: '1188000',
-    },
-    protoMessages: [
-      {
-        typeUrl: '/noble.swap.v1.MsgSwap',
-        value:
-          'CkBub2JsZTFyZWhldTR5bTg1azlna3R5Zjl2emh6dDB6dnF5bTl0eHdlanNqNHZheGRydzk4d200ZW1zZGRhcnJkEhAKBXV1c2RjEgcxMjAwMDAwGgcSBXV1c2RuIhAKBXV1c2RuEgcxMTg4MDAw',
-      },
-      {
-        typeUrl: '/noble.dollar.vaults.v1.MsgLock',
-        value:
-          'CkBub2JsZTFyZWhldTR5bTg1azlna3R5Zjl2emh6dDB6dnF5bTl0eHdlanNqNHZheGRydzk4d200ZW1zZGRhcnJkEAEaBzExODgwMDA=',
-      },
-    ],
-  });
+  {
+    const actual = makeSwapLockMessages(
+      { value: 'cosmos1test', chainId: 'grand-1', encoding: 'bech32' },
+      5_000n * 1_000_000n,
+      { vault: 1 },
+    );
+    t.snapshot(actual, 'swap 5K USDC at parity');
+  }
+
+  {
+    const actual = makeUnlockSwapMessages(
+      { value: 'cosmos1test', chainId: 'grand-1', encoding: 'bech32' },
+      5_000n * 1_000_000n,
+      { vault: 1, usdnOut: 4_900n * 1_000_000n },
+    );
+    t.snapshot(actual, 'un-swap 5K USDN < parity');
+  }
 });
 
 test('makePortfolioSteps for USDN position', t => {

@@ -161,7 +161,7 @@ export const trackFlow = async (
     for (const makeMove of todo) {
       const move = await makeMove();
       moves.push(move);
-      trace('trackFlow', step, moveStatus(move));
+      trace(step, 'step starting', moveStatus(move));
       reporter.publishFlowStatus(flowId, { step, ...moveStatus(move) });
       await move.apply();
       trace(step, 'step done');
@@ -427,7 +427,7 @@ const stepFlow = async (
     ]);
 
   for (const move of moves) {
-    trace('move', move);
+    trace('wayFromSrcToDesc?', move);
     const way = wayFromSrcToDesc(move);
     const { amount } = move;
     switch (way.how) {
@@ -565,7 +565,15 @@ const stepFlow = async (
               recover: () => Fail`no recovery from supply (final step)`,
             };
           } else {
-            throw Fail`TODO: withdraw from USDN`;
+            const { withdraw, supply } = protocolUSDN;
+            return {
+              how: way.how,
+              amount,
+              src: { pos },
+              dest: { account: nInfo.ica },
+              apply: () => withdraw(ctxU, amount, nInfo),
+              recover: () => supply(ctxU, amount, nInfo),
+            };
           }
         });
         break;
@@ -589,6 +597,7 @@ const stepFlow = async (
   }
 
   await trackFlow(kit.reporter, todo);
+  trace('stepFlow done');
 };
 
 export const rebalance = async (

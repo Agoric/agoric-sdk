@@ -160,28 +160,47 @@ export const makeTestFeeConfig = (usdc: Omit<AmountUtils, 'mint'>): FeeConfig =>
 export const makeUSDNIBCTraffic = (
   signer = 'cosmos1test',
   money = `${3_333.33 * 1000000}`,
+  { denom = 'uusdc', denomTo = 'uusdn' } = {},
 ) => ({
   swap: {
     msg: buildTxPacketString([
       MsgSwap.toProtoMsg({
         signer,
-        amount: { denom: 'uusdc', amount: money },
-        routes: [{ poolId: 0n, denomTo: 'uusdn' }],
-        min: { denom: 'uusdn', amount: money },
+        amount: { denom, amount: money },
+        routes: [{ poolId: 0n, denomTo }],
+        min: { denom: denomTo, amount: money },
       }),
     ]),
-    ack: buildMsgResponseString(MsgSwapResponse, {}),
+    ack: buildTxResponseString([{ encoder: MsgSwapResponse, message: {} }]),
   },
-  lock: {
+  swapLock: {
     msg: buildTxPacketString([
+      MsgSwap.toProtoMsg({
+        signer,
+        amount: { denom, amount: money },
+        routes: [{ poolId: 0n, denomTo }],
+        min: { denom: denomTo, amount: money },
+      }),
       MsgLock.toProtoMsg({ signer, vault: 1, amount: money }),
     ]),
-    ack: buildMsgResponseString(MsgLockResponse, {}),
+    ack: buildTxResponseString([
+      { encoder: MsgSwapResponse, message: {} },
+      { encoder: MsgLockResponse, message: {} },
+    ]),
   },
-  lockWorkaround: {
-    // XXX { ..., vault: 1n } ???
-    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xvS0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUUFvTFkyOXpiVzl6TVhSbGMzUVNFd29GZFhWelpHTVNDak16TXpNd01EQXdNREFhQnhJRmRYVnpaRzRpRXdvRmRYVnpaRzRTQ2pNek16TXdNREF3TURBS1Bnb2ZMMjV2WW14bExtUnZiR3hoY2k1MllYVnNkSE11ZGpFdVRYTm5URzlqYXhJYkNndGpiM050YjNNeGRHVnpkQkFCR2dvek16TXpNREF3TURBdyIsIm1lbW8iOiIifQ==',
-    ack: buildMsgResponseString(MsgLockResponse, {}),
+  swapLockWorkaround: {
+    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xvS0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUUFvTFkyOXpiVzl6TVhSbGMzUVNFd29GZFhWelpHTVNDalV3TURBd01EQXdNREFhQnhJRmRYVnpaRzRpRXdvRmRYVnpaRzRTQ2pVd01EQXdNREF3TURBPSIsIm1lbW8iOiIifQ==',
+    ack: buildTxResponseString([
+      { encoder: MsgSwapResponse, message: {} },
+      { encoder: MsgLockResponse, message: {} },
+    ]),
+  },
+  swap2: {
+    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xnS0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUGdvTFkyOXpiVzl6TVhSbGMzUVNFZ29GZFhWelpHTVNDVFV3TURBd01EQXdNQm9IRWdWMWRYTmtiaUlTQ2dWMWRYTmtiaElKTlRBd01EQXdNREF3IiwibWVtbyI6IiJ9',
+    ack: buildTxResponseString([
+      { encoder: MsgSwapResponse, message: {} },
+      { encoder: MsgLockResponse, message: {} },
+    ]),
   },
   transferBackFromNoble: {
     msg: buildTxPacketString([
