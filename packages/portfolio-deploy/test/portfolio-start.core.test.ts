@@ -110,7 +110,9 @@ test('coreEval code without swingset', async t => {
   await t.notThrowsAsync(startPortfolio(powers, { options }));
 
   // TODO:  common.mocks.ibcBridge.setAddressPrefix('noble');
-  for (const { msg, ack } of Object.values(makeUSDNIBCTraffic())) {
+  for (const { msg, ack } of Object.values(
+    makeUSDNIBCTraffic(undefined, `${3333 * 1_000_000}`),
+  )) {
     common.mocks.ibcBridge.addMockAck(msg, ack);
   }
 
