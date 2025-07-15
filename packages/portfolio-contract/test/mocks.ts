@@ -25,7 +25,6 @@ import type {
 } from '@agoric/orchestration';
 import { leftPadEthAddressTo32Bytes } from '@agoric/orchestration/src/utils/address.js';
 import {
-  buildMsgResponseString,
   buildTxPacketString,
   buildTxResponseString,
 } from '@agoric/orchestration/tools/ibc-mocks.ts';
@@ -162,13 +161,24 @@ export const makeUSDNIBCTraffic = (
   money = `${3_333.33 * 1000000}`,
   { denom = 'uusdc', denomTo = 'uusdn' } = {},
 ) => ({
-  swap: {
+  swapIn: {
     msg: buildTxPacketString([
       MsgSwap.toProtoMsg({
         signer,
         amount: { denom, amount: money },
         routes: [{ poolId: 0n, denomTo }],
         min: { denom: denomTo, amount: money },
+      }),
+    ]),
+    ack: buildTxResponseString([{ encoder: MsgSwapResponse, message: {} }]),
+  },
+  swapOut: {
+    msg: buildTxPacketString([
+      MsgSwap.toProtoMsg({
+        signer,
+        amount: { denom: denomTo, amount: money },
+        routes: [{ poolId: 0n, denomTo: denom }],
+        min: { denom, amount: money },
       }),
     ]),
     ack: buildTxResponseString([{ encoder: MsgSwapResponse, message: {} }]),
@@ -183,20 +193,6 @@ export const makeUSDNIBCTraffic = (
       }),
       MsgLock.toProtoMsg({ signer, vault: 1, amount: money }),
     ]),
-    ack: buildTxResponseString([
-      { encoder: MsgSwapResponse, message: {} },
-      { encoder: MsgLockResponse, message: {} },
-    ]),
-  },
-  swapLockWorkaround: {
-    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xvS0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUUFvTFkyOXpiVzl6TVhSbGMzUVNFd29GZFhWelpHTVNDalV3TURBd01EQXdNREFhQnhJRmRYVnpaRzRpRXdvRmRYVnpaRzRTQ2pVd01EQXdNREF3TURBPSIsIm1lbW8iOiIifQ==',
-    ack: buildTxResponseString([
-      { encoder: MsgSwapResponse, message: {} },
-      { encoder: MsgLockResponse, message: {} },
-    ]),
-  },
-  swap2: {
-    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xnS0ZpOXViMkpzWlM1emQyRndMbll4TGsxeloxTjNZWEFTUGdvTFkyOXpiVzl6TVhSbGMzUVNFZ29GZFhWelpHTVNDVFV3TURBd01EQXdNQm9IRWdWMWRYTmtiaUlTQ2dWMWRYTmtiaElKTlRBd01EQXdNREF3IiwibWVtbyI6IiJ9',
     ack: buildTxResponseString([
       { encoder: MsgSwapResponse, message: {} },
       { encoder: MsgLockResponse, message: {} },
