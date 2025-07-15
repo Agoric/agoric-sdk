@@ -579,8 +579,10 @@ export const rebalance = async (
   const proposal = seat.getProposal() as ProposalType['rebalance'];
   trace('rebalance proposal', proposal.give, proposal.want, offerArgs);
 
-  if ('flow' in offerArgs)
-    return stepFlow(orch, ctx, seat, offerArgs.flow, kit);
+  if ('flow' in offerArgs) {
+    await stepFlow(orch, ctx, seat, offerArgs.flow, kit);
+  }
+  seat.exit();
 };
 
 export const rebalanceFromTransfer = (async (
