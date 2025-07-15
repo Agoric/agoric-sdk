@@ -7,12 +7,18 @@ import { AssetKind } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
+import { produceAttenuatedDeposit } from './attenuated-deposit.core.js';
+
+export { produceAttenuatedDeposit };
 
 const { Fail } = assert;
 
 const trace = makeTracer('PoC-CE', true);
 
-/** @import {Board} from '@agoric/vats'; */
+/**
+ * @import {Board} from '@agoric/vats';
+ * @import {AttenuatedDepositPowers} from './attenuated-deposit.core.js';
+ */
 
 const PoCInfo = /** @type {const} */ ({
   issuerName: 'PoC26',
@@ -56,7 +62,7 @@ const publishBrandInfo = async (chainStorage, board, brand) => {
 };
 
 /**
- * @param {BootstrapPowers} powers
+ * @param {BootstrapPowers & AttenuatedDepositPowers} powers
  * @param {{ options: { qty: number, beneficiary: string } }} config
  */
 export const createPoCAsset = async (
@@ -67,7 +73,7 @@ export const createPoCAsset = async (
       board,
       chainStorage,
       startUpgradable,
-      namesByAddress,
+      getDepositFacet,
     },
     brand: { produce: produceBrands },
     issuer: { produce: produceIssuers },
@@ -94,13 +100,6 @@ export const createPoCAsset = async (
     proposedName,
   });
   trace('config', { qty, beneficiary });
-
-  // look up *before* starting the mintHolder
-  /** @type {import('@agoric/ertp').DepositFacet} */
-  const depositFacet = await E(namesByAddress).lookup(
-    beneficiary,
-    'depositFacet',
-  );
 
   const terms = {
     keyword: issuerName, // "keyword" is a misnomer in mintHolder terms
@@ -143,8 +142,6 @@ export const createPoCAsset = async (
     brand: await E(board).getId(brand),
   };
   trace(issuerName, slots, 'for', { brand, issuer });
-  await E(depositFacet).receive(supply);
-  trace('sent', amt, 'to', beneficiary);
 
   // publish brands and issuers to Bootstrap space for use in proposals
   produceBrands[issuerName].reset();
@@ -161,6 +158,13 @@ export const createPoCAsset = async (
     brand,
   );
 
+  // Complete CoreEval without waiting for smartWallet
+  void (async () => {
+    const dfP = E(getDepositFacet)(beneficiary, 'beneficiary');
+    await E(dfP).receive(supply);
+    trace(amt, 'received by', beneficiary);
+  })();
+
   trace(`${createPoCAsset.name} complete`);
 };
 
@@ -174,7 +178,7 @@ export const getManifestCall = (_powers, options) => {
       [createPoCAsset.name]: {
         consume: {
           agoricNamesAdmin: true,
-          namesByAddress: true,
+          getDepositFacet: true,
           bankManager: true,
           board: true,
           chainStorage: true,
@@ -185,6 +189,10 @@ export const getManifestCall = (_powers, options) => {
         installation: {
           consume: { mintHolder: true },
         },
+      },
+      [produceAttenuatedDeposit.name]: {
+        consume: { namesByAddress: true, namesByAddressAdmin: true },
+        produce: { getDepositFacet: true },
       },
     },
     options,
