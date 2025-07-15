@@ -111,7 +111,7 @@ export const protocolUSDN = {
 
     trace('executing', [msgSwap, msgLock].filter(Boolean));
     const result = await ica.executeEncodedTx(protoMessages);
-    trace('XXX: decode Swap, Lock result; detect errors', result);
+    trace('supply result', result);
   },
   withdraw: async (ctx, amount, dest) => {
     const { usdnOut } = ctx;
@@ -124,7 +124,7 @@ export const protocolUSDN = {
     );
     trace('executing', [msgUnlock, msgSwap].filter(Boolean));
     const result = await ica.executeEncodedTx(protoMessages);
-    trace('XXX: decode Swap, Lock result; detect errors', result);
+    trace('withdraw result', result);
   },
 } as const satisfies ProtocolDetail<
   'USDN',

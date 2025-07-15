@@ -13,20 +13,39 @@ import {
   withBrand,
 } from '../tools/rebalance-grok.ts';
 import { setupTrader, simulateUpcallFromAxelar } from './contract-setup.ts';
-import { localAccount0 } from './mocks.ts';
+import { localAccount0, makeCCTPTraffic, makeUSDNIBCTraffic } from './mocks.ts';
+import { Fail } from '@endo/errors';
 
 // Again, use an EVM chain whose axelar ID differs from its chain name
 const sourceChain = 'arbitrum';
 
+const { values } = Object;
+
 const rebalanceScenarioMacro = test.macro({
   async exec(t, description: string) {
     const { trader1, myBalance, common } = await setupTrader(t);
-    const scenario = (await scenariosP)[description];
+    const scenarios = await scenariosP;
+    const scenario = scenarios[description];
     if (!scenario) return t.fail(`Scenario "${description}" not found`);
     t.log('start', description, 'with', myBalance);
 
+    const { ibcBridge } = common.mocks;
+    for (const money of [
+      300, 500, 1_500, 2_000, 3_000, 3_333.33, 5_000, 6_666.67, 10_000,
+    ]) {
+      for (const { msg, ack } of values({
+        ...makeUSDNIBCTraffic(undefined, `${money * 1_000_000}`),
+        ...makeCCTPTraffic(undefined, `${money * 1_000_000}`),
+      })) {
+        ibcBridge.addMockAck(msg, ack);
+      }
+    }
+
     const { usdc } = common.brands;
     const sceneB = withBrand(scenario, usdc.brand);
+    const sceneBP = scenario.previous
+      ? withBrand(scenarios[scenario.previous], usdc.brand)
+      : undefined;
 
     if (description.includes('Recover')) {
       // simulate arrival of funds in the LCA via IBC from Noble
@@ -37,16 +56,22 @@ const rebalanceScenarioMacro = test.macro({
       await E(purse).deposit(funds);
     }
 
+    const upcallDone = new Set();
+
     const ackSteps = async (offerArgs: OfferArgsFor['openPortfolio']) => {
-      const { flow: moves = [] } = { flow: [], ...offerArgs };
+      const { flow: moves } = { flow: [], ...offerArgs };
       const { transmitVTransferEvent } = common.utils;
       for (const { dest } of moves) {
         await eventLoopIteration();
         if (dest === '@Arbitrum') {
-          await simulateUpcallFromAxelar(
-            common.mocks.transferBridge,
-            sourceChain,
-          );
+          if (!upcallDone.has(dest)) {
+            upcallDone.add(dest);
+            await simulateUpcallFromAxelar(
+              common.mocks.transferBridge,
+              sourceChain,
+            );
+            continue;
+          }
         }
         try {
           await transmitVTransferEvent('acknowledgementPacket', -1);
@@ -67,10 +92,10 @@ const rebalanceScenarioMacro = test.macro({
     };
 
     const openOnly = Object.keys(sceneB.before).length === 0;
-    const openResult = await openPortfolioAndAck(
-      openOnly ? sceneB.proposal.give : {},
-      openOnly ? sceneB.offerArgs : {},
-    );
+    openOnly || sceneBP || Fail`no previous scenario for ${description}`;
+    const openResult = await (openOnly
+      ? openPortfolioAndAck(sceneB.proposal.give, sceneB.offerArgs)
+      : openPortfolioAndAck(sceneBP!.proposal.give, sceneBP!.offerArgs));
 
     const { result, payouts } = await (async () => {
       if (openOnly) return openResult;
@@ -105,10 +130,22 @@ const rebalanceScenarioMacro = test.macro({
 
 test('scenario:', rebalanceScenarioMacro, 'Open empty portfolio');
 test('scenario:', rebalanceScenarioMacro, 'Open portfolio with USDN position');
+test('scenario:', rebalanceScenarioMacro, 'Open portfolio with Aave position');
 test('scenario:', rebalanceScenarioMacro, 'Recover funds from Noble ICA');
 test('scenario:', rebalanceScenarioMacro, 'Open with 3 positions');
-
-test.skip('scenario:', rebalanceScenarioMacro, 'Aave -> USDN');
+test('scenario:', rebalanceScenarioMacro, 'Consolidate to USDN');
+test('scenario:', rebalanceScenarioMacro, 'Withdraw some from Compound');
+test('scenario:', rebalanceScenarioMacro, 'Aave -> USDN');
+// awkward: remote EVM account would exist prior
+test.skip('scenario:', rebalanceScenarioMacro, 'remote cash -> Aave');
+test('scenario:', rebalanceScenarioMacro, 'Aave -> Compound');
+test('scenario:', rebalanceScenarioMacro, 'USDN -> Aave');
+test('scenario:', rebalanceScenarioMacro, 'A,C -> U');
+test('scenario:', rebalanceScenarioMacro, 'Close out portfolio');
+// grok isn't working on this one
+test.skip('scenario:', rebalanceScenarioMacro, 'Receive via hook');
+// requires internal planner
+test.skip('scenario:', rebalanceScenarioMacro, 'Deploy via hook');
 
 const scenariosP = importCSV('./move-cases.csv', import.meta.url).then(data =>
   grokRebalanceScenarios(data),
@@ -118,8 +155,16 @@ test('list scenarios', async t => {
   const tested = [
     'Open empty portfolio',
     'Open portfolio with USDN position',
+    'Open portfolio with Aave position',
     'Recover funds from Noble ICA',
     'Open with 3 positions',
+    'Consolidate to USDN',
+    'Withdraw some from Compound',
+    'Aave -> USDN',
+    'Aave -> Compound',
+    'USDN -> Aave',
+    'A,C -> U',
+    'Close out portfolio',
   ];
   const scenarios = await scenariosP;
   const names = Object.keys(scenarios);

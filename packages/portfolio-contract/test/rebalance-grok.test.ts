@@ -9,7 +9,6 @@ import {
   withBrand,
   type Dollars,
 } from '../tools/rebalance-grok.ts';
-import type { MovementDesc } from '../src/type-guards-steps.ts';
 
 test('parseCSV test utility', async t => {
   const text = await importText('./move-cases.csv', import.meta.url);
@@ -31,25 +30,32 @@ test('grok description', async t => {
   t.is(scenarios[description].operationNet, '$0.00');
 });
 
+test('grok link to previous scenario', async t => {
+  const text = await importText('./move-cases.csv', import.meta.url);
+  const scenarios = grokRebalanceScenarios(parseCSV(text));
+  const s1 = scenarios['Withdraw some from Compound'];
+  t.is(s1.previous, 'Open with 3 positions');
+});
+
 test('grok moves proposal', async t => {
   const text = await importText('./move-cases.csv', import.meta.url);
   const scenarios = grokRebalanceScenarios(parseCSV(text));
   const { 'Open portfolio with USDN position': scenario } = scenarios;
   t.log(scenario.proposal);
-  t.deepEqual(scenario.proposal, { give: { Deposit: '$3,333.33' }, want: {} });
+  t.deepEqual(scenario.proposal, { give: { Deposit: '$5,000.00' }, want: {} });
   t.deepEqual(scenario.offerArgs?.flow, [
     {
-      amount: '$3,333.33',
+      amount: '$5,000.00',
       dest: '@agoric',
       src: '<Deposit>',
     },
     {
-      amount: '$3,333.33',
+      amount: '$5,000.00',
       dest: '@noble',
       src: '@agoric',
     },
     {
-      amount: '$3,333.33',
+      amount: '$5,000.00',
       dest: 'USDN',
       src: '@noble',
     },
@@ -72,20 +78,37 @@ test('withBrand handles USDN scenario', async t => {
     {
       src: '<Deposit>',
       dest: '@agoric',
-      amount: $('$3,333.33'),
+      amount: $('$5,000.00'),
     },
     {
       src: '@agoric',
       dest: '@noble',
-      amount: $('$3,333.33'),
+      amount: $('$5,000.00'),
     },
     {
       src: '@noble',
       dest: 'USDN',
-      amount: $('$3,333.33'),
+      amount: $('$5,000.00'),
     },
   ]);
   t.deepEqual(scenarioB.payouts, { Deposit: $('$0.00') });
+});
+
+test('withBrand adds fees for Compound', async t => {
+  const brand = Far('USDC') as unknown as Brand<'nat'>;
+
+  const text = await importText('./move-cases.csv', import.meta.url);
+  const scenarios = grokRebalanceScenarios(parseCSV(text));
+  const { 'Aave -> Compound': scenario } = scenarios;
+
+  const feeBrand = Far('BLD') as unknown as Brand<'nat'>;
+  const { offerArgs } = withBrand(scenario, brand, feeBrand);
+  assert('flow' in offerArgs);
+
+  const step =
+    offerArgs.flow.find(step => step.dest.startsWith('Compound')) ||
+    assert.fail();
+  t.truthy(step.fee);
 });
 
 test.skip('grok give', async t => {
@@ -108,7 +131,7 @@ test('grok flow of 3 moves', async t => {
   const text = await importText('./move-cases.csv', import.meta.url);
   const scenarios = grokRebalanceScenarios(parseCSV(text));
   const { 'Open portfolio with USDN position': scenario } = scenarios;
-  t.deepEqual(scenario.proposal.give, { Deposit: '$3,333.33' });
+  t.deepEqual(scenario.proposal.give, { Deposit: '$5,000.00' });
   assert(
     'offerArgs' in scenario &&
       scenario.offerArgs &&
@@ -117,7 +140,7 @@ test('grok flow of 3 moves', async t => {
   t.log('flow', scenario.offerArgs.flow);
   t.is(scenario.offerArgs.flow.length, 3);
   t.deepEqual(scenario.offerArgs.flow.at(-1), {
-    amount: '$3,333.33',
+    amount: '$5,000.00',
     dest: 'USDN',
     src: '@noble',
   });
