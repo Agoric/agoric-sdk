@@ -1,13 +1,12 @@
 import { makeTracer } from '@agoric/internal';
 import { M } from '@endo/patterns';
-import { localchainContracts } from './axelar-configs.js';
-import { E } from '@endo/far';
 import {
   lookupInterchainInfo,
   makeGetManifest,
   startOrchContract,
 } from './orch.start.js';
 import { name, permit } from './portfolio.contract.permit.js';
+import { E } from '@endo/far';
 
 /**
  * @import { AxelarId, start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
@@ -108,7 +107,10 @@ harden(makePrivateArgs);
  * @returns {Promise<void>}
  */
 export const startPortfolio = async (permitted, configStruct) => {
-  trace('startPortfolio');
+  trace('startPortfolio', configStruct);
+
+  await permitted.consume.chainInfoPublished;
+
   const {
     issuer,
     consume: { agoricNames },
@@ -116,13 +118,18 @@ export const startPortfolio = async (permitted, configStruct) => {
 
   const PoC26 = await issuer.consume.PoC26;
   trace('startPortfolio: settled PoC26');
-  const USDCissuer = await E(agoricNames).lookup('issuer', 'USDC');
-  // const USDC = await issuer.consume.USDC;
+  const USDC = await E(agoricNames).lookup('issuer', 'USDC');
   trace('startPortfolio: settled USDC');
+  const BLD = await E(agoricNames).lookup('issuer', 'BLD');
+  trace('startPortfolio: settled BLD');
 
-  const issuerKeywordRecord = { USDC: USDCissuer, Access: PoC26 };
-  // const issuerKeywordRecord = {  Access: PoC26 };
-  trace('startPortfolio: issuerKeywordRecord', issuerKeywordRecord);
+  // Include BLD: BLD for use with assetInfo.brandKey
+  const issuerKeywordRecord = {
+    USDC,
+    Access: PoC26,
+    Fee: BLD,
+    BLD,
+  };
   await startOrchContract(
     name,
     portfolioDeployConfigShape,

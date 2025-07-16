@@ -6,11 +6,7 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { AckBehavior } from '@aglocal/boot/tools/supports.js';
 import { configurations } from '../src/utils/deploy-config.js'; //TODO this will be removed
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeWallet } from '../../../packages/portfolio-contract/test/wallet-offer-tools.ts';
-import { makeFakeBankManagerKit } from '../../../packages/vats/tools/bank-utils.js';
-import { E } from '@endo/far';
 
-import type { WalletTool } from '../../../packages/portfolio-contract/test/wallet-offer-tools.ts';
 import type { IBCChannelID } from '@agoric/vats';
 import type { CosmosChainAddress, ChainInfo } from '@agoric/orchestration';
 // The simulation context type is based on WalletFactoryTestContext
@@ -347,7 +343,6 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
       // await E(purse).deposit(USDCPmt);
       // trace('purse after deposit', purse);
 
-
       // const brand = await E(issuer).getBrand();
       // const purse = E(issuer).makeEmptyPurse();
       // const pmt = await pourPayment(make(brand, value));
@@ -365,7 +360,7 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
         USDN: { brand: usdcBrand, value: 1_300_000n },
       };
       // const give = {};
-      toNoble.ack('agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht');
+      // toNoble.ack('agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht');
       await eventLoopIteration();
 
       await trader.openPortfolio(t, give, {});
