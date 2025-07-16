@@ -1,15 +1,15 @@
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
-import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import { makeWalletFactoryContext } from '@aglocal/fast-usdc-deploy/test/walletFactory.js';
 import { BridgeId } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import type { ContinuingInvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
-import type { ExecutionContext, TestFn } from 'ava';
-import { makeWalletFactoryContext } from '@aglocal/fast-usdc-deploy/test/walletFactory.js';
 import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import type { ContinuingInvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import type { ExecutionContext, TestFn } from 'ava';
 import { encodeAbiParameters } from 'viem';
-import { makeWalletFactoryDriver } from '../../tools/drivers.js';
 import { makeReceiveUpCallPayload } from '../../tools/axelar-supports.js';
+import { makeWalletFactoryDriver } from '../../tools/drivers.js';
 
 export type WalletFactoryDriver = Awaited<
   ReturnType<typeof makeWalletFactoryDriver>
@@ -139,6 +139,9 @@ test.serial('makeAccount via axelarGmp', async t => {
     proposal: {
       // @ts-expect-error
       give: { BLD: { brand: BLD, value: 1n } },
+    },
+    offerArgs: {
+      gasAmount: 2000n,
     },
   });
 
