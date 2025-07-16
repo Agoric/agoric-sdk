@@ -176,21 +176,29 @@ export type EVMContext<CN extends string> = {
   lca: LocalAccount;
   gmpFee: DenomAmount;
   gmpChain: Chain<{ chainId: string }>;
-  addresses: Record<CN | 'usdc', EVMT['address']>;
+  addresses: Record<CN | 'usdc' | 'aaveRewardsController' | 'aaveUSDC', EVMT['address']>;
   axelarIds: AxelarId;
 };
 
 type AaveI = {
   supply: ['address', 'uint256', 'address', 'uint16'];
   withdraw: ['address', 'uint256', 'address'];
-  claimAllRewardsToSelf: ['address[]'];
 };
 
 const Aave: AaveI = {
   supply: ['address', 'uint256', 'address', 'uint16'],
   withdraw: ['address', 'uint256', 'address'],
+};
+
+
+type AaveRewardsControllerI = {
+  claimAllRewardsToSelf: ['address[]'];
+};
+
+const AaveRewardsController: AaveRewardsControllerI = {
   claimAllRewardsToSelf: ['address[]'],
 };
+
 
 export const AaveProtocol = {
   protocol: 'Aave',
@@ -227,8 +235,8 @@ export const AaveProtocol = {
     const { addresses: a, lca, gmpChain, gmpFee } = ctx;
 
     const session = makeEVMSession();
-    const aave = session.makeContract(a.aaveRewardsController, Aave);
-    aave.claimAllRewardsToSelf([a.aaveUSDC]);
+    const aaveRewardsController = session.makeContract(a.aaveRewardsController, AaveRewardsController);
+    aaveRewardsController.claimAllRewardsToSelf([a.aaveUSDC]);
     const calls = session.finish();
 
     const axelarId = ctx.axelarIds[src.chainName];
@@ -238,7 +246,7 @@ export const AaveProtocol = {
 } as const satisfies ProtocolDetail<
   'Aave',
   AxelarChain,
-  EVMContext<'aavePool' | 'aaveRewardsController' | 'aaveUSDC'>
+  EVMContext<'aavePool'>
 >;
 
 type CompoundI = {
