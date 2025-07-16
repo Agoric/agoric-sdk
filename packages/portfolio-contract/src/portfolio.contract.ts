@@ -6,6 +6,7 @@
 import {
   makeTracer,
   mustMatch,
+  NonNullish,
   type Remote,
   type TypedPattern,
 } from '@agoric/internal';
@@ -34,9 +35,9 @@ import { M } from '@endo/patterns';
 import { AxelarChain, YieldProtocol } from './constants.js';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
+import { makeOfferArgsShapes } from './type-guards-steps.ts';
 import {
   makeProposalShapes,
-  OfferArgsShapeFor,
   type EVMContractAddressesMap,
   type OfferArgsFor,
   type ProposalType,
@@ -47,13 +48,6 @@ const { fromEntries, keys } = Object;
 
 const interfaceTODO = undefined;
 
-export type EVMContractAddresses = {
-  aavePool: `0x${string}`;
-  compound: `0x${string}`;
-  factory: `0x${string}`;
-  usdc: `0x${string}`;
-};
-
 const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
   M.splitRecord({
     aavePool: M.string(),
@@ -62,6 +56,41 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
     usdc: M.string(),
   });
 
+export type AxelarConfig = {
+  [chain in AxelarChain]: {
+    /**
+     * Axelar chain IDs differ between mainnet and testnet.
+     * See [supported-chains-list.ts](https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts)
+     */
+    axelarId: string;
+    contracts: EVMContractAddresses;
+  };
+};
+
+const AxelarConfigPattern = M.splitRecord({
+  axelarId: M.string(),
+  chainInfo: ChainInfoShape,
+  contracts: EVMContractAddressesShape,
+});
+
+export const AxelarConfigShape: TypedPattern<AxelarConfig> = M.splitRecord(
+  fromEntries(
+    keys(AxelarChain).map(chain => [chain, AxelarConfigPattern]),
+  ) as Record<AxelarChain, typeof AxelarConfigPattern>,
+);
+
+export type EVMContractAddresses = {
+  aavePool: `0x${string}`;
+  compound: `0x${string}`;
+  factory: `0x${string}`;
+  usdc: `0x${string}`;
+  tokenMessenger: `0x${string}`;
+};
+
+export type AxelarId = {
+  [chain in AxelarChain]: string;
+};
+
 const EVMContractAddressesMap: TypedPattern<EVMContractAddressesMap> =
   M.splitRecord(
     fromEntries(
@@ -69,12 +98,19 @@ const EVMContractAddressesMap: TypedPattern<EVMContractAddressesMap> =
     ) as Record<AxelarChain, typeof EVMContractAddressesShape>,
   );
 
+const AxelarIdsPattern = M.string();
+
+const AxelarIdShape: TypedPattern<AxelarId> = M.splitRecord(
+  fromEntries(keys(AxelarChain).map(chain => [chain, AxelarIdsPattern])),
+);
+
 type PortfolioPrivateArgs = OrchestrationPowers & {
   // XXX document required assets, chains
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
   chainInfo: Record<string, ChainInfo>;
   marshaller: Marshaller;
   storageNode: Remote<StorageNode>;
+  axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
 };
 
@@ -82,10 +118,12 @@ const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   ...(OrchestrationPowersShape as CopyRecord),
   marshaller: M.remotable('marshaller'),
   storageNode: M.remotable('storageNode'),
-  // XXX use shape to validate required chains / assets?
-  chainInfo: M.recordOf(M.string(), ChainInfoShape),
+  chainInfo: M.and(
+    M.recordOf(M.string(), ChainInfoShape),
+    M.splitRecord({ agoric: M.any(), noble: M.any() }),
+  ),
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
-  // TODO: Handle the scenario where the map contains only testnet or only mainnet chains
+  axelarIds: AxelarIdShape,
   contracts: EVMContractAddressesMap,
 };
 
@@ -127,6 +165,7 @@ export const contract = async (
   const {
     chainInfo,
     assetInfo,
+    axelarIds,
     contracts,
     timerService,
     marshaller,
@@ -136,13 +175,22 @@ export const contract = async (
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
 
   assert(brands.USDC, 'USDC missing from brands in terms');
+  assert(brands.Fee, 'Fee missing from brands in terms');
 
+  if (!('axelar' in chainInfo)) {
+    trace('⚠️ no axelar chainInfo; GMP not available', Object.keys(chainInfo));
+  }
   // TODO: only on 1st incarnation
   registerChainsAndAssets(chainHub, brands, chainInfo, assetInfo, {
     log: trace,
   });
 
-  const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
+  const proposalShapes = makeProposalShapes(
+    brands.USDC,
+    brands.Fee,
+    brands.Access,
+  );
+  const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
 
   // Until we find a need for on-chain subscribers, this stop-gap will do.
   const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
@@ -154,11 +202,23 @@ export const contract = async (
     },
   };
 
-  const denom = chainHub.getDenom(brands.USDC);
-  assert(denom, 'no denom for USDC brand');
   const ctx1 = {
     zoeTools,
-    usdc: { brand: brands.USDC, denom },
+    usdc: {
+      brand: brands.USDC,
+      denom: NonNullish(
+        chainHub.getDenom(brands.USDC),
+        'no denom for USDC brand',
+      ),
+    },
+    gmpFeeInfo: {
+      brand: brands.Fee,
+      denom: NonNullish(
+        chainHub.getDenom(brands.Fee),
+        'no denom for Fee brand',
+      ),
+    },
+    axelarIds,
     contracts,
   };
 
@@ -174,9 +234,11 @@ export const contract = async (
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
     vowTools,
+    axelarIds,
     rebalance,
     rebalanceFromTransfer,
     proposalShapes,
+    offerArgsShapes,
     timer: timerService,
     chainHubTools: { getChainInfo: chainHub.getChainInfo.bind(chainHub) },
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
@@ -203,7 +265,7 @@ export const contract = async (
     },
   );
 
-  trace('TODO: baggage test');
+  trace('XXX NEEDSTEST: baggage test');
 
   const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
     /**
@@ -225,7 +287,7 @@ export const contract = async (
       trace('makeOpenPortfolioInvitation');
       return zcf.makeInvitation(
         (seat, offerArgs) => {
-          mustMatch(offerArgs, OfferArgsShapeFor.openPortfolio);
+          mustMatch(offerArgs, offerArgsShapes.openPortfolio);
           return openPortfolio(seat, offerArgs);
         },
         'openPortfolio',
@@ -241,7 +303,6 @@ harden(contract);
 
 const keepDocsTypesImported:
   | undefined
-  // | SupportedEVMChains // XXX change to SupportedChain
   | YieldProtocol
   | OfferArgsFor
   | PortfolioKit

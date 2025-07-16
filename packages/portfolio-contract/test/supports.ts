@@ -19,9 +19,13 @@ import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import { encodeAbiParameters } from 'viem';
 
-export const makeIncomingEVMEvent = (
-  address: `0x${string}` = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-) => {
+export const makeIncomingEVMEvent = ({
+  address = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+  sourceChain,
+}: {
+  address?: `0x${string}`;
+  sourceChain: string;
+}) => {
   const encodedAddress = encodeAbiParameters([{ type: 'address' }], [address]);
 
   const axelarConnections =
@@ -35,7 +39,7 @@ export const makeIncomingEVMEvent = (
     sourceChannel: axelarToAgoricChannel,
     destinationChannel: agoricToAxelarChannel,
     memo: JSON.stringify({
-      source_chain: 'Ethereum',
+      source_chain: sourceChain,
       source_address: '0x19e71e7eE5c2b13eF6bd52b9E3b437bdCc7d43c8',
       payload: makeReceiveUpCallPayload({
         isContractCallResult: false,
@@ -107,12 +111,12 @@ export const axelarCCTPConfig = {
     reference: '43114',
     cctpDestinationDomain: 1,
   },
-  optimism: {
+  Optimism: {
     namespace: 'eip155',
     reference: '10',
     cctpDestinationDomain: 2,
   },
-  arbitrum: {
+  Arbitrum: {
     namespace: 'eip155',
     reference: '42161',
     cctpDestinationDomain: 3,
@@ -126,91 +130,15 @@ export const axelarCCTPConfig = {
     namespace: 'eip155',
     reference: '250',
   },
-  binance: {
+  Binance: {
     namespace: 'eip155',
     reference: '56',
   },
 };
 
-/**
- * Testnet chains only.
- *
- * Sourced from:
- *
- * - https://developers.circle.com/stablecoins/supported-domains
- * - https://chainlist.org/
- * - https://docs.simplehash.com/reference/supported-chains-testnets (accessed on
- *   4 July 2025)
- *
- * @satisfies {Record<string, import('./orchestration-api').BaseChainInfo>}
- */
-const axelarCCTPConfigTestnet = {
-  'ethereum-sepolia': {
-    namespace: 'eip155',
-    reference: '11155111',
-    cctpDestinationDomain: 0,
-  },
-  Avalanche: {
-    namespace: 'eip155',
-    reference: '43113',
-    cctpDestinationDomain: 1,
-  },
-  'optimism-sepolia': {
-    namespace: 'eip155',
-    reference: '11155420',
-    cctpDestinationDomain: 2,
-  },
-  'arbitrum-sepolia': {
-    namespace: 'eip155',
-    reference: '421614',
-    cctpDestinationDomain: 3,
-  },
-  'polygon-sepolia': {
-    namespace: 'eip155',
-    reference: '80002',
-    cctpDestinationDomain: 7,
-  },
-  Fantom: {
-    namespace: 'eip155',
-    reference: '4002', // XXX: confirm this ID
-  },
-  binance: {
-    namespace: 'eip155',
-    reference: '97',
-  },
-};
-
-const ccptConfig = { ...axelarCCTPConfig, ...axelarCCTPConfigTestnet };
-
-/** TODO: how to address this in production? route thru Osmosis? */
-export const chainInfoFantasyTODO = {
+export const chainInfoWithCCTP = {
   ...withChainCapabilities(fetchedChainInfo),
-  noble: {
-    ...withChainCapabilities(fetchedChainInfo).noble,
-    connections: {
-      ...fetchedChainInfo.noble.connections,
-      // Patch noble.connections to add axelar-dojo-1 for test
-      'axelar-dojo-1': {
-        id: 'connection-1' as const,
-        client_id: '07-tendermint-mock',
-        counterparty: {
-          client_id: '07-tendermint-mock',
-          connection_id: 'connection-1' as const,
-        },
-        state: 3,
-        transferChannel: {
-          channelId: 'channel-1' as const,
-          portId: 'transfer',
-          counterPartyChannelId: 'channel-1' as const,
-          counterPartyPortId: 'transfer',
-          ordering: 0,
-          state: 3,
-          version: 'ics20-1',
-        },
-      },
-    },
-  },
-  ...ccptConfig,
+  ...axelarCCTPConfig,
 };
 
 const assetOn = (
@@ -248,9 +176,12 @@ export const setupPortfolioTest = async ({
 }: {
   log: ExecutionContext<any>['log'];
 }) => {
-  const axelarChains = { ...axelarCCTPConfig, ...axelarCCTPConfigTestnet };
+  const axelarChains = axelarCCTPConfig;
+  const essentialChains = Object.fromEntries(
+    ['agoric', 'axelar', 'noble'].map(n => [n, fetchedChainInfo[n]]),
+  );
   const chains = harden({
-    ...withChainCapabilities(fetchedChainInfo),
+    ...withChainCapabilities(essentialChains),
     ...axelarChains,
   }) as Record<string, ChainInfo>;
 
@@ -259,6 +190,7 @@ export const setupPortfolioTest = async ({
     bootstrap: { agoricNamesAdmin, bankManager },
   } = common;
   const usdc = withAmountUtils(makeIssuerKit('USDC'));
+  const bld = withAmountUtils(makeIssuerKit('BLD'));
   const poc26 = withAmountUtils(makeIssuerKit('Poc26'));
   await E(bankManager).addAsset(
     uusdcOnAgoric,
@@ -266,6 +198,7 @@ export const setupPortfolioTest = async ({
     'USD Circle Stablecoin',
     usdc.issuerKit,
   );
+  await E(bankManager).addAsset('ubld', 'BLD', 'BLD', bld.issuerKit);
   await E(bankManager).addAsset(
     'upoc26',
     'Poc26',
@@ -288,9 +221,16 @@ export const setupPortfolioTest = async ({
     }) as AssetInfo,
   );
 
+  const bldDetail = {
+    baseDenom: 'ubld',
+    baseName: 'agoric',
+    chainName: 'agoric',
+    brand: bld.brand,
+  };
   const assetInfo: [Denom, DenomDetail & { brandKey?: string }][] = harden([
     assetOn('uusdc', 'noble'),
     [uusdcOnAgoric, agUSDCDetail],
+    ['ubld', bldDetail],
     assetOn('uusdc', 'noble', 'osmosis', fetchedChainInfo),
   ]);
 
@@ -300,7 +240,7 @@ export const setupPortfolioTest = async ({
 
   return {
     ...common,
-    brands: { usdc: usdcSansMint, poc26 },
+    brands: { usdc: usdcSansMint, poc26, bld },
     commonPrivateArgs: {
       ...commonPrivateArgs,
       assetInfo,

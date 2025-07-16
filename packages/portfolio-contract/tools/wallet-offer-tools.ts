@@ -87,23 +87,19 @@ export interface WalletTool {
   ): Promise<{ result: any; payouts: AmountKeywordRecord }>;
   executeContinuingOffer(
     spec: OfferSpec & { invitationSpec: { source: 'continuing' } },
-    offerArgs?: CopyRecord,
   ): Promise<{ result: any; payouts: AmountKeywordRecord }>;
   deposit(p: Payment<'nat'>): Promise<Amount<'nat'>>;
 }
 
 export const makeWallet = (
   assets: Record<
-    'USDC' | 'Access',
+    'USDC' | 'BLD' | 'Access',
     Omit<ReturnType<typeof withAmountUtils>, 'mint'>
   >,
   zoe: ZoeService,
   when,
 ): WalletTool => {
-  const purses = {
-    USDC: assets.USDC.issuer.makeEmptyPurse(),
-    Access: assets.Access.issuer.makeEmptyPurse(),
-  };
+  const purses = objectMap(assets, a => a.issuer.makeEmptyPurse());
 
   const providePurse = (b: Brand) =>
     purses[
@@ -131,7 +127,7 @@ export const makeWallet = (
 
       return { result, payouts: refund };
     },
-    async executeContinuingOffer(spec, offerArgs = harden({})) {
+    async executeContinuingOffer(spec) {
       const {
         previousOffer,
         invitationMakerName,
@@ -142,7 +138,7 @@ export const makeWallet = (
         Fail`${previousOffer} not found`;
       const invitation = E(makers)[invitationMakerName](...invitationArgs);
 
-      const { proposal } = spec;
+      const { proposal, offerArgs = harden({}) } = spec;
       const payments = await collectPayments(
         proposal.give,
         NonNullish(providePurse, 'providePurse'),

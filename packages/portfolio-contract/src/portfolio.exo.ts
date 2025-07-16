@@ -10,8 +10,8 @@ import type {
 } from '@agoric/internal/src/lib-chainStorage.js';
 import {
   type AccountId,
-  type ActualChainInfo,
   type CaipChainId,
+  type ChainHub,
 } from '@agoric/orchestration';
 import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
@@ -29,17 +29,17 @@ import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { AxelarChain, SupportedChain, YieldProtocol } from './constants.js';
+import type { AxelarId } from './portfolio.contract.js';
 import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
-import type { PoolKey, StatusFor } from './type-guards.js';
+import type { makeProposalShapes, PoolKey, StatusFor } from './type-guards.js';
 import {
   makeFlowPath,
   makePortfolioPath,
-  OfferArgsShapeFor,
   PoolKeyShape,
-  type makeProposalShapes,
   type OfferArgsFor,
 } from './type-guards.js';
+import type { makeOfferArgsShapes } from './type-guards-steps.js';
 
 const trace = makeTracer('PortExo');
 const { values } = Object;
@@ -145,17 +145,20 @@ export type PublishStatusFn = <K extends keyof StatusFor>(
 export const preparePortfolioKit = (
   zone: Zone,
   {
+    axelarIds,
     rebalance,
     rebalanceFromTransfer,
     timer,
     chainHubTools,
     proposalShapes,
+    offerArgsShapes,
     vowTools,
     zcf,
     portfoliosNode,
     marshaller,
     usdcBrand,
   }: {
+    axelarIds: AxelarId;
     rebalance: (
       seat: ZCFSeat,
       offerArgs: OfferArgsFor['rebalance'],
@@ -169,10 +172,9 @@ export const preparePortfolioKit = (
       handled: boolean;
     }>;
     timer: Remote<TimerService>;
-    chainHubTools: {
-      getChainInfo: <K extends string>(chainName: K) => Vow<ActualChainInfo<K>>;
-    };
+    chainHubTools: Pick<ChainHub, 'getChainInfo'>;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
+    offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>;
     vowTools: VowTools;
     zcf: ZCF;
     portfoliosNode: ERef<StorageNode>;
@@ -266,17 +268,18 @@ export const preparePortfolioKit = (
           if (!extra.memo) return;
           const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
 
+          const result = (
+            Object.entries(axelarIds) as [AxelarChain, string][]
+          ).find(([_, chainId]) => chainId === memo.source_chain);
+
           // XXX we must have more than just a (forgeable) memo check here to
           // determine if the source of this packet is the Axelar chain!
-          if (
-            !values(AxelarChain).includes(
-              memo.source_chain as keyof typeof AxelarChain,
-            )
-          ) {
+          if (!result) {
             console.warn('unknown source_chain', memo);
             return;
           }
-          const chainName = memo.source_chain as AxelarChain;
+
+          const [chainName, _] = result;
 
           const payloadBytes = decodeBase64(memo.payload);
           const [{ isContractCallResult, data }] = decodeAbiParameters(
@@ -310,7 +313,7 @@ export const preparePortfolioKit = (
 
             this.facets.manager.resolveAccount({
               namespace: 'eip155',
-              chainName,
+              chainName: chainName,
               chainId: caipId,
               remoteAddress: address,
             });
@@ -378,8 +381,10 @@ export const preparePortfolioKit = (
         reserveAccount<C extends SupportedChain>(
           chainName: C,
         ): undefined | Vow<AccountInfoFor[C]> {
+          trace('reserveAccount', chainName);
           const { accounts, accountsPending } = this.state;
           if (accounts.has(chainName)) {
+            trace('accounts.has', chainName);
             return vowTools.asVow(async () => {
               const infoAny = accounts.get(chainName);
               assert.equal(infoAny.chainName, chainName);
@@ -388,10 +393,13 @@ export const preparePortfolioKit = (
             });
           }
           if (accountsPending.has(chainName)) {
+            trace('accountsPending.has', chainName);
             return accountsPending.get(chainName).vow as Vow<AccountInfoFor[C]>;
           }
           const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
+          trace('accountsPending.init', chainName);
           accountsPending.init(chainName, pending);
+          this.facets.reporter.publishStatus();
           return undefined;
         },
         resolveAccount(info: AccountInfo) {
@@ -433,10 +441,8 @@ export const preparePortfolioKit = (
       },
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
-          const { reader, manager } = this.facets;
-          const keeper = { ...reader, ...manager };
-          mustMatch(offerArgs, OfferArgsShapeFor.rebalance);
-          return rebalance(seat, offerArgs, keeper);
+          mustMatch(offerArgs, offerArgsShapes.rebalance);
+          return rebalance(seat, offerArgs, this.facets);
         },
       },
       invitationMakers: {

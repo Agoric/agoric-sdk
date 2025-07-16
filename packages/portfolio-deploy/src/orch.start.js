@@ -128,6 +128,7 @@ export const startOrchContract = async (
       agoricNames,
     }),
   );
+
   const privateArgs = await makePrivateArgs(
     orchestrationPowers,
     marshaller,

@@ -12,6 +12,9 @@ SSOPTS = --config $(FILE) --name $(NAME) --repoUrl $(HELM_REPO_URL) \
 	--repo $(HELM_REPO) --chart $(HELM_REPO)/$(HELM_CHART)
 STARSHIP = $(SS) $(SSOPTS)
 
+# Test command for YMax-related tests
+TESTYMAX = ava --config ava.ymd.config.js
+
 ###############################################################################
 ###                              All commands                               ###
 ###############################################################################
@@ -141,7 +144,7 @@ sstart:
 # YMax testing for https://github.com/Agoric/agoric-sdk/issues/11536
 
 deploy-ymax: poc-asset agoricNames.chain
-	yarn test:ymd test/ymax0 -m ymax-deployed || \
+	$(TESTYMAX) test/ymax0 -m ymax-deployed || \
 	( 	(cd ../packages/portfolio-deploy; yarn build) && \
 		./scripts/deploy-cli.ts ../packages/portfolio-deploy/src/portfolio.build.js)
 
@@ -162,23 +165,23 @@ TRADER1ag=agoric1yupasge4528pgkszg9v328x4faxtkldsnygwjl
 TRADER1_MNEMONIC = "cause eight cattle slot course mail more aware vapor slab hobby match"
 
 poc-asset: beneficiary-wallet
-	yarn test:ymd test/ymax0 -m poc-asset || \
+	$(TESTYMAX) test/ymax0 -m poc-asset || \
 	./scripts/deploy-cli.ts ../packages/portfolio-deploy/src/access-token-setup.build.js \
 		beneficiary=$(TRADER1ag)
 
 # Calling ./scripts/ymax-tool.ts twice to create a smart wallet so that TRADER1
 # can receive the poc tokens
 beneficiary-wallet: ./scripts/ymax-tool.ts
-	yarn test:ymd test/ymax0 -m beneficiary-wallet || \
+	$(TESTYMAX) test/ymax0 -m beneficiary-wallet || \
 	(make ADDR=$(TRADER1ag) fund-wallet && \
 	MNEMONIC=$(TRADER1_MNEMONIC) ./scripts/ymax-tool.ts 0.1 --exit-success --skip-poll && \
 	MNEMONIC=$(TRADER1_MNEMONIC) ./scripts/ymax-tool.ts 0.1 --exit-success)
 
 
 agoricNames.chain:
-	yarn test:ymd test/ymax0 -m chain-info || \
+	$(TESTYMAX) test/ymax0 -m chain-info || \
 	./scripts/deploy-cli.ts ../packages/portfolio-deploy/src/chain-info.build.js \
-		  net=local peer=noble:connection-0:channel-0:uusdc
+		net=local peer=noble:connection-0:channel-0:uusdc
 
 ##
 # Using ymax
@@ -186,16 +189,16 @@ open-with-usdn: deploy-ymax usdc-available ./scripts/ymax-tool.ts
 	(MNEMONIC=$(TRADER1_MNEMONIC) ./scripts/ymax-tool.ts 1.03)
 
 usdc-available: ./scripts/noble-usdn-lab.ts
-	yarn test:ymd test/ymax0 -m usdc-available || \
+	$(TESTYMAX) test/ymax0 -m usdc-available || \
 	( \
 		FAUCET=trader1 NET=starship ./scripts/noble-usdn-lab.ts && \
 		TXFR=9950000 NET=starship ./scripts/noble-usdn-lab.ts && \
 		( \
-			yarn test:ymd test/ymax0 -m usdc-available || { \
+			$(TESTYMAX) test/ymax0 -m usdc-available || { \
 				sleep 3 && \
-				yarn test:ymd test/ymax0 -m usdc-available || { \
+				$(TESTYMAX) test/ymax0 -m usdc-available || { \
 					sleep 5 && \
-					yarn test:ymd test/ymax0 -m usdc-available; \
+					$(TESTYMAX) test/ymax0 -m usdc-available; \
 				}; \
 			} \
 		) \

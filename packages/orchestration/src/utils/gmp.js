@@ -62,7 +62,7 @@ export const constructContractCall = ({ target, functionSignature, args }) => {
  * Builds a GMP payload from an array of contract calls.
  *
  * @param {ContractCall[]} contractCalls - Array of contract call objects.
- * @returns {number[]} The GMP payload object.
+ * @returns {number[]} The GMP payload array.
  */
 export const buildGMPPayload = contractCalls => {
   const abiEncodedContractCalls = [];
@@ -84,6 +84,19 @@ export const buildGMPPayload = contractCalls => {
       },
     ],
     [abiEncodedContractCalls],
+  );
+
+  return Array.from(hexToBytes(abiEncodedData));
+};
+
+/**
+ * @param {bigint} gasAmount - gas amount for the EVM to Agoric message
+ * @returns {number[]} The payload array.
+ */
+export const buildGasPayload = gasAmount => {
+  const abiEncodedData = encodeAbiParameters(
+    [{ type: 'uint256' }],
+    [gasAmount],
   );
 
   return Array.from(hexToBytes(abiEncodedData));
