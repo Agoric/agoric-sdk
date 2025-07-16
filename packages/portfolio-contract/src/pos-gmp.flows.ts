@@ -176,7 +176,7 @@ export type EVMContext<CN extends string> = {
   lca: LocalAccount;
   gmpFee: DenomAmount;
   gmpChain: Chain<{ chainId: string }>;
-  addresses: Record<CN | 'usdc' | 'aaveRewardsController' | 'aaveUSDC', EVMT['address']>;
+  addresses: Record<CN | 'usdc' | 'aaveRewardsController' | 'aaveUSDC' | 'compoundRewardsController', EVMT['address']>;
   axelarIds: AxelarId;
 };
 
@@ -261,6 +261,14 @@ const Compound: CompoundI = {
   claim: ['address', 'address', 'bool'],
 };
 
+type CompoundRewardsControllerI = {
+  claim: ['address', 'address', 'bool'];
+};
+
+const CompoundRewardsController: CompoundRewardsControllerI = {
+  claim: ['address', 'address', 'bool'],
+};
+
 export const CompoundProtocol = {
   protocol: 'Compound',
   chains: keys(AxelarChain) as AxelarChain[],
@@ -294,8 +302,8 @@ export const CompoundProtocol = {
     const { addresses: a, lca, gmpChain, gmpFee } = ctx;
 
     const session = makeEVMSession();
-    const compound = session.makeContract(a.compound, Compound);
-    compound.claim(a.compound, src.remoteAddress, true);
+    const compoundRewardsController = session.makeContract(a.compoundRewardsController, CompoundRewardsController);
+    compoundRewardsController.claim(a.compound, src.remoteAddress, true);
     const calls = session.finish();
 
     const axelarId = ctx.axelarIds[src.chainName];
