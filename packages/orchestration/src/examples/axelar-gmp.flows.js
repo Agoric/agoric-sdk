@@ -9,11 +9,11 @@
  *   orchestration package.
  */
 
-import { Fail, makeError, q } from '@endo/errors';
 import { makeTracer, NonNullish } from '@agoric/internal';
-import { denomHash } from '../utils/denomHash.js';
-import { gmpAddresses } from '../utils/gmp.js';
+import { Fail, makeError, q } from '@endo/errors';
 import { AxelarGMPMessageType } from '../axelar-types.js';
+import { denomHash } from '../utils/denomHash.js';
+import { buildGasPayload, gmpAddresses } from '../utils/gmp.js';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
@@ -51,11 +51,15 @@ const trace = makeTracer('EvmFlow');
  *   >;
  * }} ctx
  * @param {ZCFSeat} seat
+ * @param {{
+ *   gasAmount: bigint;
+ * }} offerArgs
  */
 export const createAndMonitorLCA = async (
   orch,
   { makeEvmAccountKit, chainHub, log, localTransfer, withdrawToSeat },
   seat,
+  offerArgs,
 ) => {
   void log('Inside createAndMonitorLCA');
   const [agoric, remoteChain] = await Promise.all([
@@ -117,7 +121,7 @@ export const createAndMonitorLCA = async (
   const memo = {
     destination_chain: 'Ethereum',
     destination_address: factoryContractAddress,
-    payload: [],
+    payload: buildGasPayload(offerArgs.gasAmount),
     type: AxelarGMPMessageType.ContractCall,
     fee: {
       amount: '1', // TODO: Get fee amount from api
