@@ -21,8 +21,6 @@ const TITLE = 'ymax0 w/Noble Dollar';
 
 const USAGE = 'deploy-cli <builder> <key=val>... [--net N] [--from K]';
 
-const { fromEntries } = Object;
-
 const options = /** @type {const} */ {
   net: { type: 'string', default: 'devnet' },
   from: { type: 'string', default: 'genesis' },
@@ -69,7 +67,12 @@ const main = async (
   // 1. build
   const pkgRd = makeFileRd(pkg, { fsp, path });
   const agoric = makeCmdRunner('npx', { execFile }).subCommand('agoric');
-  const opts = fromEntries(bindings.map(b => b.split('=', 2)));
+  const opts = bindings
+    .map(b => {
+      const [n, v] = b.split('=', 2);
+      return [`--${n}`, v];
+    })
+    .flat();
   console.log('running', builder);
   const plan = await runBuilder(agoric, pkgRd.join(builder), opts, {
     cwd: pkgRd,

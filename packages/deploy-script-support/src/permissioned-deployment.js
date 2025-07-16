@@ -34,7 +34,7 @@ import { toCLIOptions } from '@agoric/internal/src/cli-utils.js';
  *
  * @param {CmdRunner} agoric
  * @param {FileRd} builder
- * @param {Record<string, string | string[]>} [builderOpts]
+ * @param {string[]} [builderOpts]
  * @param {{cwd?: FileRd}} [io]
  *
  * @returns {Promise<Plan>}
@@ -49,12 +49,10 @@ import { toCLIOptions } from '@agoric/internal/src/cli-utils.js';
 export const runBuilder = async (
   agoric,
   builder,
-  builderOpts = {},
+  builderOpts = [],
   { cwd = builder.join('../../') } = {},
 ) => {
-  const cmd = agoric.withFlags(
-    ...(builderOpts ? toCLIOptions(builderOpts) : []),
-  );
+  const cmd = agoric.withFlags(...builderOpts);
   const { stdout } = await cmd.exec(['run', String(builder)]);
   const match = stdout?.match(/ (?<name>[-\w]+)-permit.json/);
   if (!(match && match.groups)) {
