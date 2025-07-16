@@ -21,8 +21,8 @@
     "@agoric/store": "dev",
     "@agoric/synthetic-chain": "patch:@agoric/synthetic-chain@npm%3A0.5.6#~/.yarn/patches/@agoric-synthetic-chain-npm-0.5.6-c322148be2.patch",
     "@agoric/zoe": "dev",
-    "@cosmjs/stargate": "^0.33.0",
-    "@cosmjs/tendermint-rpc": "^0.33.0",
+    "@cosmjs/stargate": "^0.34.0",
+    "@cosmjs/tendermint-rpc": "^0.34.0",
     "@endo/errors": "^1.2.13",
     "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.12",
@@ -79,7 +79,6 @@
     "@agoric/xsnap-lockdown": "portal:../../agoric-sdk/packages/xsnap-lockdown",
     "@agoric/zoe": "portal:../../agoric-sdk/packages/zoe",
     "@agoric/zone": "portal:../../agoric-sdk/packages/zone",
-    "axios@npm:^1.6.0": "patch:axios@npm%3A1.7.7#~/.yarn/patches/axios-npm-1.7.7-cfbedc233d.patch",
     "protobufjs@npm:^6.8.8": "patch:protobufjs@npm%3A6.11.4#~/.yarn/patches/protobufjs-npm-6.11.4-af11968b80.patch"
   },
   "ava": {
