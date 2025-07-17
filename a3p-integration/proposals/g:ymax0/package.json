@@ -1,0 +1,33 @@
+{
+  "agoricProposal": {
+    "source": "subdir",
+    "sdk-generate": [
+      "../../portfolio-deploy/src/access-token-setup.build.js submission",
+      "../../portfolio-deploy/src/chain-info.build.js submission --net devnet --peer noble:connection-13:channel-11:uusdc --peer axelar:connection-19:channel-315:uaxl",
+      "../../portfolio-deploy/src/portfolio.build.js submission"
+    ],
+    "type": "/agoric.swingset.CoreEvalProposal"
+  },
+  "type": "module",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/client-utils": "dev",
+    "@agoric/fast-usdc": "dev",
+    "@agoric/synthetic-chain": "0.5.5",
+    "@endo/init": "^1.1.9",
+    "agoric": "dev",
+    "ava": "^5.3.1"
+  },
+  "ava": {
+    "concurrency": 1,
+    "timeout": "2m",
+    "files": [
+      "test/**/*.test.*",
+      "!submission"
+    ]
+  },
+  "scripts": {
+    "agops": "yarn --cwd /usr/src/agoric-sdk/ agops"
+  },
+  "packageManager": "yarn@4.9.1"
+}
