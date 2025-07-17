@@ -41,6 +41,7 @@
     "@opentelemetry/semantic-conventions": "~1.28.0",
     "anylogger": "^0.21.0",
     "better-sqlite3": "^10.1.0",
+    "neo4j-driver": "5.28.1",
     "tmp": "^0.2.1"
   },
   "devDependencies": {

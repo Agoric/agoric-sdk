@@ -35,7 +35,11 @@
  *  crankType?: string;
  *  deliveryNum?: bigint;
  *  inboundNum?: string;
+ *  kd?: KernelDeliveryObject;
+ *  ksc?: KernelSyscallObject;
  *  monotime: number;
+ *  name?: string;
+ *  phase?: string;
  *  remainingBeans?: bigint;
  *  replay?: boolean;
  *  runNum?: number;
@@ -45,11 +49,12 @@
  *  syscallNum?: number;
  *  time: number;
  *  type: string;
+ *  usedBeans?: number;
  *  vatID?: string;
  * }} Slog
  */
 
-const SLOG_TYPES = {
+export const SLOG_TYPES = {
   CLIST: 'clist',
   CONSOLE: 'console',
   COSMIC_SWINGSET: {
@@ -60,17 +65,22 @@ const SLOG_TYPES = {
       START: 'cosmic-swingset-bootstrap-block-start',
     },
     COMMIT: {
-      FINISH: 'cosmic-swingset-commit-finish',
-      START: 'cosmic-swingset-commit-start',
+      FINISH: 'cosmic-swingset-commit-block-finish',
+      START: 'cosmic-swingset-commit-block-start',
     },
     END_BLOCK: {
       FINISH: 'cosmic-swingset-end-block-finish',
       START: 'cosmic-swingset-end-block-start',
     },
+    KERNEL_UPGRADE_EVENTS: 'cosmic-swingset-inject-kernel-upgrade-events',
     // eslint-disable-next-line no-restricted-syntax
     RUN: {
       FINISH: 'cosmic-swingset-run-finish',
       START: 'cosmic-swingset-run-start',
+    },
+    UPGRADE: {
+      FINISH: 'cosmic-swingset-upgrade-finish',
+      START: 'cosmic-swingset-upgrade-start',
     },
   },
   COSMIC_SWINGSET_TRIGGERS: {
@@ -79,6 +89,7 @@ const SLOG_TYPES = {
     TIMER_POLL: 'cosmic-swingset-timer-poll',
     INSTALL_BUNDLE: 'cosmic-swingset-install-bundle',
   },
+  CREATE_VAT: 'create-vat',
   CRANK: {
     FINISH: 'crank-finish',
     START: 'crank-start',
@@ -230,7 +241,10 @@ export const makeContextualSlogProcessor = (
       // eslint-disable-next-line no-restricted-syntax
       case SLOG_TYPES.COSMIC_SWINGSET.RUN.START: {
         if (!finalBody.runNum) {
-          assert(!triggerContext);
+          assert(
+            !triggerContext ||
+              triggerContext['run.trigger.type'] === 'bootstrap',
+          );
           triggerContext = restoreContext(); // Restore persisted context if any
         } else if (!triggerContext) {
           assert(!!blockContext);
