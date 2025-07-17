@@ -231,9 +231,6 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLeg
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/vats/upgrade-zcf.js",
 				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-provisionPool-to-BLD.js",
-				),
 				// because of #10794, we need to do at least a null upgrade of
 				// the walletFactory on every software upgrade
 				vm.CoreProposalStepForModules(
@@ -241,51 +238,6 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLeg
 				),
 			)
 
-			// Reserve contract needs to be upgraded for IST wind-down.
-			reserveUpgradeStep, err := buildProposalStepWithArgs(
-				"@agoric/builders/scripts/vats/upgrade-vats.js",
-				"upgradeZoeContractsProposalBuilder",
-				[]struct {
-					KitLookup  []string `json:"kitLookup"`
-					BundleName string   `json:"bundleName"`
-					Entrypoint string   `json:"entrypoint"`
-				}{
-					{
-						KitLookup:  []string{"reserveKit"},
-						BundleName: "reserve",
-						Entrypoint: "@agoric/inter-protocol/src/reserve/assetReserve.js",
-					},
-				},
-			)
-			if err != nil {
-				return module.VersionMap{}, err
-			}
-			CoreProposalSteps = append(CoreProposalSteps,
-				reserveUpgradeStep,
-			)
-
-			// terminationTargets is a slice of "$boardID:$instanceKitLabel" strings.
-			var terminationTargets []string
-			switch getVariantFromUpgradeName(targetUpgrade) {
-			case "MAINNET":
-				// v111 "zcf-b1-4522b-stkATOM-USD_price_feed"
-				terminationTargets = []string{"board052184:stkATOM-USD_price_feed"}
-			case "A3P_INTEGRATION":
-				terminationTargets = []string{"board04091:stATOM-USD_price_feed"}
-			}
-			if len(terminationTargets) > 0 {
-				args := []vm.Jsonable{terminationTargets}
-				terminationStep, err := buildProposalStepWithArgs(
-					"@agoric/vats/src/proposals/terminate-governed-instance.js",
-					// defaultProposalBuilder(powers, targets)
-					"defaultProposalBuilder",
-					args...,
-				)
-				if err != nil {
-					return module.VersionMap{}, err
-				}
-				CoreProposalSteps = append(CoreProposalSteps, terminationStep)
-			}
 		}
 
 		app.upgradeDetails = &upgradeDetails{
