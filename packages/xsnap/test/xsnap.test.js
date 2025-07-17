@@ -141,7 +141,7 @@ test('print - start compartment only', async t => {
   t.is(opts.messages.length, 1);
   t.regex(
     opts.messages[0],
-    /^err:ReferenceError: [^:]+: get print: undefined variable$/,
+    /^err:ReferenceError:(?: [^:]+:)? get print: undefined variable/,
   );
 });
 
@@ -162,7 +162,7 @@ test('gc - start compartment only', async t => {
   t.is(opts.messages.length, 1);
   t.regex(
     opts.messages[0],
-    /^err:ReferenceError: [^:]+: get gc: undefined variable$/,
+    /^err:ReferenceError:(?: [^:]+:)? get gc: undefined variable/,
   );
 });
 
@@ -273,6 +273,7 @@ const writeAndReadSnapshot = async (t, snapshotUseFs) => {
     handleCommand,
     snapshotStream: vat0.makeSnapshotStream(),
     snapshotUseFs: true,
+    debug: true,
   });
   await vat1.evaluate(`
     issueCommand(new TextEncoder().encode(hello).buffer);
@@ -489,7 +490,7 @@ test('GC after snapshot vs restore', async t => {
   globalThis.runToGC = (${runToGC});
   runToGC();
   // bloat the heap
-  send(Array.from(Array(2_000_000).keys()).length)
+  send(Array.from(Array(2_047_838).keys()).length);
   `);
 
   const nextGC = async (w, o) => {

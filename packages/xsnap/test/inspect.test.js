@@ -6,7 +6,7 @@ import * as os from 'os';
 import { tmpName } from 'tmp';
 import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 import { xsnap } from '../src/xsnap.js';
-import { options } from './message-tools.js';
+import { options, filterRepairLogs } from './message-tools.js';
 
 const getBootScript = () =>
   getLockdownBundle().then(bundle => `(${bundle.source}\n)()`.trim());
@@ -96,12 +96,8 @@ test('xsnap inspect', async t => {
   const w = await makeWorker();
   t.teardown(w.close);
 
-  const isLockdownWarning = args => args[0].startsWith('Removing intrinsics.');
-  const x = await w.run(`2+3`);
-  t.deepEqual(
-    x.filter(v => !Array.isArray(v) || !isLockdownWarning(v)),
-    [5],
-  );
+  const x = filterRepairLogs(await w.run(`2+3`));
+  t.deepEqual(x, [5]);
 
   for (const testCase of testCases) {
     const [toEval, toRender] = Array.isArray(testCase)
