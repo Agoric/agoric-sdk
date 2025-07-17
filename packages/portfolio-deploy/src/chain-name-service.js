@@ -1,4 +1,4 @@
-import { denomHash } from '@agoric/orchestration';
+import { denomHash } from '@agoric/orchestration/src/utils/denomHash.js';
 
 /**
  * @import {IBCChannelID, NameAdmin} from '@agoric/vats';
