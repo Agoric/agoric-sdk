@@ -209,9 +209,6 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLeg
 			return nil, err
 		}
 
-		// Migrate Tendermint consensus parameters from x/params module to a dedicated x/consensus module.
-		baseapp.MigrateParams(ctx, baseAppLegacySS, &app.ConsensusParamsKeeper)
-
 		CoreProposalSteps := []vm.CoreProposalStep{}
 
 		// These CoreProposalSteps are not idempotent and should only be executed
