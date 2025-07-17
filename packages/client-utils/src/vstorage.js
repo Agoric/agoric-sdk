@@ -96,6 +96,7 @@ export const makeVStorage = ({ fetch }, config) => {
     const rpc = kindToRpc[kind];
     const codec = codecs[rpc];
 
+    /** @type {Awaited<ReturnType<typeof getVstorageJson>>} */
     let data;
     try {
       data = await getVstorageJson(path, { kind, height });
@@ -167,14 +168,12 @@ export const makeVStorage = ({ fetch }, config) => {
       let blockHeight;
       await null;
       do {
-        // console.debug('READING', { blockHeight });
         let values;
         try {
           ({ blockHeight, values } = await vstorage.readAt(
             path,
             blockHeight === undefined ? undefined : Number(blockHeight) - 1,
           ));
-          // console.debug('readAt returned', { blockHeight });
         } catch (err) {
           if (
             // CosmosSDK ErrInvalidRequest with particular message text;
@@ -190,9 +189,7 @@ export const makeVStorage = ({ fetch }, config) => {
           }
           throw err;
         }
-        parts.push(values);
-        // console.debug('PUSHED', values);
-        // console.debug('NEW', { blockHeight, minHeight });
+        parts.push(values.reverse());
         if (minHeight && Number(blockHeight) <= Number(minHeight)) break;
       } while (Number(blockHeight) > 0);
       return /** @type {string[]} */ (parts.flat());
