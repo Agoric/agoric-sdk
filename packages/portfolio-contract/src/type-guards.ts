@@ -36,6 +36,8 @@ import type { PortfolioKit } from './portfolio.exo.js';
 export type { OfferArgsFor } from './type-guards-steps.js';
 
 // #region preliminaries
+const { keys } = Object;
+
 /**
  * @param brand must be a 'nat' brand, not checked
  */
@@ -93,9 +95,9 @@ export const makeProposalShapes = (
 ) => {
   const $Shape = makeNatAmountShape(usdcBrand);
   const FeeShape = makeNatAmountShape(feeBrand);
-  const accessShape = accessBrand
-    ? { Access: makeNatAmountShape(accessBrand, 1n) }
-    : {};
+  const accessShape = harden({
+    ...(accessBrand && { Access: makeNatAmountShape(accessBrand, 1n) }),
+  });
 
   const openPortfolio = M.splitRecord(
     {
@@ -162,6 +164,20 @@ export type PoolKeyExt = string;
 /** Ext for Extensible: includes PoolKeys in future upgrades */
 export const PoolKeyShapeExt = M.string();
 
+/**
+ * Target allocation mapping from PoolKey to numerator (typically in basis points).
+ * Denominator is implicitly the sum of all numerators.
+ */
+export type TargetAllocation = Partial<Record<PoolKey, NatValue>>;
+
+export const TargetAllocationShape: TypedPattern<TargetAllocation> = M.recordOf(
+  M.or(...keys(PoolPlaces)),
+  M.nat(),
+);
+
+export const TargetAllocationShapeExt: TypedPattern<Record<string, NatValue>> =
+  M.recordOf(PoolKeyShapeExt, M.nat());
+
 // #endregion
 
 // #region ymax0 vstorage keys and values
@@ -210,6 +226,7 @@ export type StatusFor = {
     flowCount: number;
     // XXX: accountIdByChain: Record<ChainAccountKey, AccountId>;
     accountIdByChain: Record<string, AccountId>;
+    targetAllocation?: TargetAllocation;
   };
   position: {
     protocol: YieldProtocol;
@@ -219,18 +236,22 @@ export type StatusFor = {
     totalOut: Amount<'nat'>;
   };
   // XXX refactor using AssetMoveDesc
+  // XXX how many steps? step: 1, last: 3, for example
   flow: FlowStatus | (Omit<FlowStatus, 'dest'> & { where: string }); // recovery failed
 };
 
-export const PortfolioStatusShape: TypedPattern<StatusFor['portfolio']> =
-  M.splitRecord({
-    positionKeys: M.arrayOf(PoolKeyShapeExt),
-    flowCount: M.number(),
-    accountIdByChain: M.recordOf(
-      M.or('agoric', 'noble'), // ChainAccountKey
-      M.string(), // AccountId
-    ),
-  });
+export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
+  M.splitRecord(
+    {
+      positionKeys: M.arrayOf(PoolKeyShapeExt),
+      flowCount: M.number(),
+      accountIdByChain: M.recordOf(
+        M.or('agoric', 'noble'), // ChainAccountKey
+        M.string(), // AccountId
+      ),
+    },
+    { targetAllocation: TargetAllocationShapeExt },
+  );
 
 /**
  * Creates vstorage path for position transfer history.
