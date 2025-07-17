@@ -5,10 +5,10 @@
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/client-utils": "dev",
+    "@agoric/client-utils": "0.1.1-dev-bf2d699.0",
     "@agoric/ertp": "dev",
     "@agoric/internal": "dev",
-    "@agoric/synthetic-chain": "^0.5.6",
+    "@agoric/synthetic-chain": "^0.5.8",
     "@agoric/zoe": "dev",
     "@endo/errors": "^1.2.13",
     "@endo/init": "^1.1.12",
