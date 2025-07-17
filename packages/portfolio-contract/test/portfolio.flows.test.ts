@@ -657,6 +657,43 @@ test('handle failure in recovery from executeEncodedTx', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
+test('rebalance handles stepFlow failure correctly', async t => {
+  const { orch, ctx, offer, storage } = mocks(
+    {
+      // Mock a failure in IBC transfer
+      transfer: Error('IBC transfer failed'),
+    },
+    {
+      Deposit: make(USDC, 500n),
+      GmpFee: make(BLD, 200n),
+    },
+  );
+
+  const { log, seat } = offer;
+
+  const badOfferArgs = {
+    flow: [
+      { src: '<Deposit>', dest: '@agoric', amount: make(USDC, 500n) },
+      { src: '@agoric', dest: '@noble', amount: make(USDC, 500n) },
+      // This will trigger the mocked transfer error
+      { src: '@noble', dest: 'USDN', amount: make(USDC, 500n) },
+    ],
+  };
+
+  await t.throwsAsync(() =>
+    rebalance(orch, ctx, seat, badOfferArgs, ctx.makePortfolioKit()),
+  );
+
+  // Check that seat.fail() was called, not seat.exit()
+  const seatCalls = log.filter(entry => entry._cap === 'seat');
+  const failCall = seatCalls.find(call => call._method === 'fail');
+  const exitCall = seatCalls.find(call => call._method === 'exit');
+
+  t.truthy(failCall, 'seat.fail() should be called on error');
+  t.falsy(exitCall, 'seat.exit() should not be called on error');
+  t.snapshot(log, 'call log');
+});
+
 test.skip('handle failure in sendGmp with Aave position', async t => {
   const { add } = AmountMath;
   const amount = AmountMath.make(USDC, 300n);
