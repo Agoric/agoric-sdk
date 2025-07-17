@@ -8,7 +8,10 @@
     },
     "type": "Software Upgrade Proposal",
     "sdk-generate": [
-      "../../vats/src/proposals/terminate-governed-instance.js test/generated/terminate-price-feed board02963:ATOM-USD_price_feed"
+      "../../vats/src/proposals/terminate-governed-instance.js test/generated/terminate-price-feed board02963:ATOM-USD_price_feed",
+      "../../portfolio-deploy/src/access-token-setup.build.js access-token",
+      "../../portfolio-deploy/src/chain-info.build.js chain-info --net local --peer noble:connection-13:channel-11:uusdc --peer axelar:connection-19:channel-315:uaxl",
+      "../../portfolio-deploy/src/portfolio.build.js portfolio"
     ]
   },
   "type": "module",
