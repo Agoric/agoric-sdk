@@ -41,7 +41,9 @@ import {
   type OfferArgsFor,
   type PoolKey,
   type StatusFor,
+  type TargetAllocation,
 } from './type-guards.js';
+
 const trace = makeTracer('PortExo');
 const { values } = Object;
 
@@ -107,6 +109,7 @@ type PortfolioKitState = {
   accounts: MapStore<SupportedChain, AccountInfo>;
   positions: MapStore<PoolKey, Position>;
   nextFlowId: number;
+  targetAllocation?: TargetAllocation;
 };
 
 /**
@@ -237,6 +240,7 @@ export const preparePortfolioKit = (
           keyShape: PoolKeyShapeExt,
           valueShape: M.remotable('Position'),
         }),
+        targetAllocation: undefined,
       };
     },
     {
@@ -360,11 +364,18 @@ export const preparePortfolioKit = (
       },
       reporter: {
         publishStatus() {
-          const { portfolioId, positions, accounts, nextFlowId } = this.state;
+          const {
+            portfolioId,
+            positions,
+            accounts,
+            nextFlowId,
+            targetAllocation,
+          } = this.state;
           publishStatus(makePortfolioPath(portfolioId), {
             positionKeys: [...positions.keys()],
             flowCount: nextFlowId - 1,
             accountIdByChain: accountIdByChain(accounts),
+            ...(targetAllocation && { targetAllocation }),
           });
         },
         allocateFlowId() {
@@ -438,6 +449,13 @@ export const preparePortfolioKit = (
         /** KLUDGE around lack of synchronization signals for now. TODO: rethink design. */
         waitKLUDGE(val: bigint) {
           return vowTools.watch(E(timer).delay(val));
+        },
+        setTargetAllocation(allocation: TargetAllocation) {
+          this.state.targetAllocation = allocation;
+          this.facets.reporter.publishStatus();
+        },
+        getTargetAllocation() {
+          return this.state.targetAllocation;
         },
       },
       rebalanceHandler: {

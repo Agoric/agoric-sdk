@@ -609,7 +609,6 @@ export const rebalance = async (
 ) => {
   const proposal = seat.getProposal() as ProposalType['rebalance'];
   trace('rebalance proposal', proposal.give, proposal.want, offerArgs);
-
   if ('flow' in offerArgs) {
     await stepFlow(orch, ctx, seat, offerArgs.flow, kit);
   }
@@ -680,7 +679,6 @@ export const rebalanceFromTransfer = (async (
  * ASSUME seat's proposal is guarded as per {@link makeProposalShapes}
  *
  * @returns {*} following continuing invitation pattern, with a topic
- * with a topic for the portfolio.
  */
 export const openPortfolio = (async (
   orch: Orchestrator,
@@ -694,6 +692,11 @@ export const openPortfolio = (async (
     const { inertSubscriber } = ctxI;
     const kit = makePortfolioKit();
     await provideCosmosAccount(orch, 'agoric', kit);
+
+    // Set target allocation if provided
+    if (offerArgs.targetAllocation) {
+      kit.manager.setTargetAllocation(offerArgs.targetAllocation);
+    }
 
     if (!seat.hasExited()) {
       try {
