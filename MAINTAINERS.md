@@ -461,7 +461,7 @@ git ls-tree -r HEAD |
 while read lock; do \
   dir=$(dirname $lock); \
   echo $dir; \
-  (cd $dir; ~/endo/scripts/sync-versions.sh ~/endo; yarn); \
+  (cd $dir; ~/endo/scripts/sync-versions.sh ~/endo; yarn; yarn dedupe); \
 done
 git commit -am 'chore: Sync the other locks'
 ```
