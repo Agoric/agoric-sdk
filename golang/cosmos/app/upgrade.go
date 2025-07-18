@@ -6,7 +6,6 @@ import (
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
@@ -158,8 +157,6 @@ func buildProposalStepFromScript(targetUpgrade string, builderScript string) (vm
 func (app *GaiaApp) RegisterUpgradeHandlers() {
 	// Set param key table for params module migration
 	for _, subspace := range app.ParamsKeeper.GetSubspaces() {
-		subspace := subspace
-
 		var keyTable paramstypes.KeyTable
 		switch subspace.Name() {
 		case authtypes.ModuleName:
@@ -187,18 +184,16 @@ func (app *GaiaApp) RegisterUpgradeHandlers() {
 		}
 	}
 
-	baseAppLegacySS := app.ParamsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramstypes.ConsensusParamsKeyTable())
-
 	for _, name := range upgradeNamesOfThisVersion {
 		app.UpgradeKeeper.SetUpgradeHandler(
 			name,
-			makeUnreleasedUpgradeHandler(app, name, baseAppLegacySS),
+			makeUnreleasedUpgradeHandler(app, name),
 		)
 	}
 }
 
 // makeUnreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
-func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLegacySS paramstypes.Subspace) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	_ = targetUpgrade
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
