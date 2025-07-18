@@ -168,12 +168,14 @@ export const makeVStorage = ({ fetch }, config) => {
       let blockHeight;
       await null;
       do {
+        // console.debug('READING', { blockHeight });
         let values;
         try {
           ({ blockHeight, values } = await vstorage.readAt(
             path,
             blockHeight === undefined ? undefined : Number(blockHeight) - 1,
           ));
+          // console.debug('readAt returned', { blockHeight });
         } catch (err) {
           if (
             // CosmosSDK ErrInvalidRequest with particular message text;
@@ -190,6 +192,8 @@ export const makeVStorage = ({ fetch }, config) => {
           throw err;
         }
         parts.push(values.reverse());
+        // console.debug('PUSHED', values);
+        // console.debug('NEW', { blockHeight, minHeight });
         if (minHeight && Number(blockHeight) <= Number(minHeight)) break;
       } while (Number(blockHeight) > 0);
       return /** @type {string[]} */ (parts.flat());

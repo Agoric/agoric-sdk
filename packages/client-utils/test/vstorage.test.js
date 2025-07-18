@@ -3,16 +3,16 @@
 import test from 'ava';
 import { makeVStorage } from '../src/vstorage.js';
 
-const makeTestConfig = () => ({
+const testConfig = {
   chainName: 'test-chain',
   rpcAddrs: ['http://localhost:26657'],
-});
+};
 
 /** @type {any} */
 const fetch = () => Promise.resolve({});
 
 test('readFully can be used without instance binding', async t => {
-  const vstorage = makeVStorage({ fetch }, makeTestConfig());
+  const vstorage = makeVStorage({ fetch }, testConfig);
   const { readFully } = vstorage;
 
   // Mock implementation to avoid actual network calls
@@ -35,6 +35,8 @@ test('storage history should be in chronological order', async t => {
       ])
       .flat();
 
+  const generateRandomNumber = () => Math.ceil(Math.random() * 10);
+
   /**
    * @param {number} maximumHeight
    * @param {number} minimumHeight
@@ -48,9 +50,10 @@ test('storage history should be in chronological order', async t => {
       ],
     }));
 
-  const maximumHeight = 9; // randomly choosen, could be replaced by Math.rand
-  const minimumHeight = 3; // randomly choosen, could be replaced by Math.rand
+  const minimumHeight = generateRandomNumber();
   const storagePathName = 'published.test';
+
+  const maximumHeight = generateRandomNumber() + minimumHeight;
 
   const responses = generateResponses(maximumHeight, minimumHeight);
 
@@ -62,7 +65,7 @@ test('storage history should be in chronological order', async t => {
     {},
   );
 
-  const vstorageKit = makeVStorage({ fetch }, makeTestConfig());
+  const vstorageKit = makeVStorage({ fetch }, testConfig);
 
   /**
    * @param {string} path
