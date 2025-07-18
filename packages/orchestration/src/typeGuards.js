@@ -245,11 +245,11 @@ export const AnyNatAmountsRecord = M.and(
 
 /** @type {TypedPattern<OrchestrationPowers>} */
 export const OrchestrationPowersShape = {
-  agoricNames: M.remotable(),
-  localchain: M.remotable(),
-  orchestrationService: M.remotable(),
-  storageNode: M.remotable(),
-  timerService: M.remotable(),
+  agoricNames: M.remotable('agoricNames'),
+  localchain: M.remotable('localchain'),
+  orchestrationService: M.remotable('orchestrationService'),
+  storageNode: M.remotable('storageNode'),
+  timerService: M.remotable('timerService'),
 };
 harden(OrchestrationPowersShape);
 
