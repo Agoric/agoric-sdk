@@ -2,7 +2,6 @@
  * @file Test target allocation functionality
  */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { AmountMath } from '@agoric/ertp';
 import { setupTrader } from './contract-setup.js';
 
 test('openPortfolio stores and publishes target allocation', async t => {
@@ -32,24 +31,21 @@ test('setTargetAllocation rejects invalid pool keys', async t => {
   const { usdc } = common.brands;
 
   // Open portfolio first
-  await trader1.openPortfolio(
-    t,
-    { Deposit: usdc.units(1_000) },
-    {}
-  );
+  await trader1.openPortfolio(t, { Deposit: usdc.units(1_000) });
 
   // Try to rebalance with invalid pool key
-  const badTargetAllocation = harden({
+  const badTargetAllocation = {
     USDN: 5000n,
     InvalidProtocol: 5000n, // ← Should be rejected
-  });
+  };
 
   await t.throwsAsync(
-    () => trader1.rebalance(
-      t,
-      { give: {} },
-      { targetAllocation: badTargetAllocation }
-    ),
-    { message: /Invalid pool key: InvalidProtocol/ }
+    () =>
+      trader1.rebalance(
+        t,
+        { give: {}, want: {} },
+        { targetAllocation: badTargetAllocation },
+      ),
+    { message: /targetAllocation\?: InvalidProtocol/ },
   );
 });
