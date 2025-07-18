@@ -46,7 +46,10 @@ import {
   makeSwapLockMessages,
   makeUnlockSwapMessages,
 } from '../src/pos-usdn.flows.ts';
-import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
+import {
+  makeOfferArgsShapes,
+  type OfferArgsFor,
+} from '../src/type-guards-steps.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
 import { axelarIdsMock, contractsMock } from './mocks.ts';
 import { makePortfolioSteps } from '../tools/portfolio-actors.ts';
@@ -671,7 +674,7 @@ test('rebalance handles stepFlow failure correctly', async t => {
 
   const { log, seat } = offer;
 
-  const badOfferArgs = {
+  const badOfferArgs: OfferArgsFor['rebalance'] = {
     flow: [
       { src: '<Deposit>', dest: '@agoric', amount: make(USDC, 500n) },
       { src: '@agoric', dest: '@noble', amount: make(USDC, 500n) },

@@ -241,7 +241,7 @@ export const preparePortfolioKit = (
           keyShape: PoolKeyShapeExt,
           valueShape: M.remotable('Position'),
         }),
-        targetAllocation: {},
+        targetAllocation: harden({}),
       };
     },
     {

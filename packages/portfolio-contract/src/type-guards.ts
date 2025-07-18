@@ -261,7 +261,7 @@ export const PortfolioStatusShape: TypedPattern<StatusFor['portfolio']> =
  * @param key - PoolKey
  * @returns Path segments for vstorage
  */
-export const makePositionPath = (parent: number, key: PoolKey) => [
+export const makePositionPath = (parent: number, key: PoolKeyExt) => [
   `portfolio${parent}`,
   'positions',
   key,
