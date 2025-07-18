@@ -39,10 +39,10 @@ test('setTargetAllocation rejects invalid pool keys', async t => {
   );
 
   // Try to rebalance with invalid pool key
-  const badTargetAllocation = {
+  const badTargetAllocation = harden({
     USDN: 5000n,
     InvalidProtocol: 5000n, // ← Should be rejected
-  };
+  });
 
   await t.throwsAsync(
     () => trader1.rebalance(
