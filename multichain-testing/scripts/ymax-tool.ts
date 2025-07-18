@@ -32,9 +32,10 @@ const getUsage = (
   programName: string,
 ): string => `USAGE: ${programName} <volume> [options]
 Options:
-  --skip-poll       Skip polling for offer result
-  --exit-success    Exit with success code even if errors occur
-  -h, --help        Show this help message`;
+  --skip-poll         Skip polling for offer result
+  --exit-success      Exit with success code even if errors occur
+  --target-allocation JSON string of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
+  -h, --help          Show this help message`;
 
 const toAccAddress = (address: string): Uint8Array => {
   return fromBech32(address).data;
@@ -65,12 +66,14 @@ const openPosition = async (
     walletKit,
     now,
     skipPoll = false,
+    targetAllocationJson,
   }: {
     address: string;
     client: SigningStargateClient;
     walletKit: Awaited<ReturnType<typeof makeSmartWalletKit>>;
     now: () => number;
     skipPoll?: boolean;
+    targetAllocationJson?: string;
   },
 ) => {
   const brand = fromEntries(await walletKit.readPublished('agoricNames.brand'));
@@ -84,8 +87,28 @@ const openPosition = async (
       ...(PoC26 ? { Access: make(PoC26, 1n) } : {}),
     },
   };
+  
+  // Parse target allocation if provided
+  let targetAllocation;
+  if (targetAllocationJson) {
+    try {
+      targetAllocation = JSON.parse(targetAllocationJson);
+      // Convert string values to bigint for proper marshaling
+      targetAllocation = Object.fromEntries(
+        Object.entries(targetAllocation).map(([key, value]) => [
+          key,
+          BigInt(value as string | number),
+        ])
+      );
+      targetAllocation = harden(targetAllocation);
+    } catch (err) {
+      throw Error(`Invalid target allocation JSON: ${err.message}`);
+    }
+  }
+  
   const offerArgs: OfferArgsFor['openPortfolio'] = {
     flow: steps,
+    ...(targetAllocation && { targetAllocation }),
   };
   trace('opening portfolio', proposal.give);
   const action: BridgeAction = harden({
@@ -164,6 +187,7 @@ const main = async (
     options: {
       'skip-poll': { type: 'boolean', default: false },
       'exit-success': { type: 'boolean', default: false },
+      'target-allocation': { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
     allowPositionals: true,
@@ -172,6 +196,7 @@ const main = async (
   // Extract options
   const skipPoll = values['skip-poll'];
   const exitSuccess = values['exit-success'];
+  const targetAllocationJson = values['target-allocation'];
   const [volume] = positionals;
 
   // Show help if requested or if volume is not provided
@@ -197,13 +222,14 @@ const main = async (
   });
 
   try {
-    // Pass the parsed skipPoll option to openPosition
+    // Pass the parsed options to openPosition
     await openPosition(volume, {
       address,
       client,
       walletKit,
       now: Date.now,
       skipPoll,
+      targetAllocationJson,
     });
   } catch (err) {
     // If we should exit with success code, throw a special non-error object
