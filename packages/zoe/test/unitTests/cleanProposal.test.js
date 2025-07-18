@@ -231,15 +231,27 @@ test('cleanProposal - other wrong stuff', t => {
     t,
     { exit: { afterDeadline: 'foo' } },
     'nat',
-    // TODO The outer pattern is here only as a temporary measure to tolerate
-    // the property order being sorted and not.
-    /"foo" - Must be a copyRecord to match a copyRecord pattern: \{("deadline":.*|,|"timer":.*){3}\}/,
+    // TODO https://github.com/Agoric/agoric-sdk/issues/11605
+    // This is a golden error message test. We're currently in transition
+    // from having pattern error messages quote nested patterns using
+    // `q` to quoting them using `qp`. In order to tolerate both during
+    // this transition at reasonable cost, this golden error message
+    // pattern accepts anything in the position of the quoted nested
+    // pattern.
+    /"foo" - Must be a copyRecord to match a copyRecord pattern: (.*)$/,
   );
   proposeBad(
     t,
     { exit: { afterDeadline: { timer: 'foo', deadline: 3n } } },
     'nat',
-    'proposal: exit: afterDeadline?: timer: "foo" - Must match one of ["[match:remotable]","[match:kind]"]',
+    // TODO https://github.com/Agoric/agoric-sdk/issues/11605
+    // This is a golden error message test. We're currently in transition
+    // from having pattern error messages quote nested patterns using
+    // `q` to quoting them using `qp`. In order to tolerate both during
+    // this transition at reasonable cost, this golden error message
+    // pattern accepts anything in the position of the quoted nested
+    // pattern.
+    /^proposal: exit: afterDeadline\?: timer: "foo" - Must match one of (.*)$/,
   );
   proposeBad(
     t,

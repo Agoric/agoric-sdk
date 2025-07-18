@@ -1,7 +1,7 @@
 // @ts-check
 import { X, Fail } from '@endo/errors';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
-import { isObject } from '@endo/pass-style';
+import { isPrimitive } from '@endo/pass-style';
 
 /**
  * @import {Bytes} from './types.js';
@@ -22,7 +22,7 @@ export function coerceToByteSource(specimen) {
     return specimen;
   }
 
-  isObject(specimen) ||
+  !isPrimitive(specimen) ||
     assert.fail(X`non-object ${specimen} is not a ByteSource`, TypeError);
 
   const obj = /** @type {{}} */ (specimen);

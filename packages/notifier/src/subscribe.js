@@ -1,6 +1,6 @@
 import { X, Fail, annotateError } from '@endo/errors';
 import { E, Far } from '@endo/far';
-import { isObject } from '@endo/marshal';
+import { isPrimitive } from '@endo/marshal';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 /**
@@ -46,7 +46,7 @@ const reconnectAsNeeded = async (getter, seed = []) => {
       // if `err` is an (Error) object, we can try to associate it with
       // information about the disconnection that prompted the request
       // for which it is a result.
-      if (isObject(err) && disconnection && disconnection !== err) {
+      if (!isPrimitive(err) && disconnection && disconnection !== err) {
         try {
           annotateError(
             err,
