@@ -1,19 +1,20 @@
+import { createRequire } from 'node:module';
+
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../src/index.js';
 
+const resolve = createRequire(import.meta.url).resolve;
+
 /**
- * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {Installation} from '@agoric/zoe';
  * @import {GovernableStartFn} from '../src/types.js';
  */
 
-const makeBundle = async sourceRoot => {
-  const url = importMetaResolve(sourceRoot, import.meta.url);
-  const path = new URL(url).pathname;
-  const contractBundle = await bundleSource(path);
-  return contractBundle;
-};
+/**
+ * @param {string} sourceRoot
+ */
+const makeBundle = sourceRoot => bundleSource(resolve(sourceRoot));
 
 // makeBundle is a slow step, so we do it once for all the tests.
 const contractGovernorBundleP = makeBundle('./puppetContractGovernor.js');

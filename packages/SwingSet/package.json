@@ -59,7 +59,6 @@
     "ansi-styles": "^6.2.1",
     "anylogger": "^0.21.0",
     "better-sqlite3": "^10.1.0",
-    "import-meta-resolve": "^4.1.0",
     "microtime": "^3.1.0",
     "semver": "^6.3.0",
     "tmp": "^0.2.1",

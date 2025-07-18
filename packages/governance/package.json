@@ -45,8 +45,7 @@
     "@endo/far": "^1.1.11",
     "@endo/marshal": "^1.6.4",
     "@endo/nat": "^5.1.0",
-    "@endo/promise-kit": "^1.1.10",
-    "import-meta-resolve": "^4.1.0"
+    "@endo/promise-kit": "^1.1.10"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "workspace:*",
