@@ -43,7 +43,11 @@
     "typescript": "^5.6.3"
   },
   "resolutions": {
-    "protobufjs@npm:^6.8.8": "patch:protobufjs@npm%3A6.11.4#~/.yarn/patches/protobufjs-npm-6.11.4-af11968b80.patch",
-    "axios@npm:^1.6.0": "patch:axios@npm%3A1.7.7#~/.yarn/patches/axios-npm-1.7.7-cfbedc233d.patch"
+    "@cosmjs/amino@0.32.3": "0.34.0",
+    "@cosmjs/proto-signing@npm:0.32.3": "0.34.0",
+    "@cosmjs/tendermint-rpc@npm:^0.33.0": "0.34.0",
+    "@cosmjs/tendermint-rpc@npm:^0.33.1": "0.34.0",
+    "@cosmjs/stargate@npm:^0.33.1": "npm:0.34.0",
+    "protobufjs@npm:^6.8.8": "patch:protobufjs@npm%3A6.11.4#~/.yarn/patches/protobufjs-npm-6.11.4-af11968b80.patch"
   }
 }
