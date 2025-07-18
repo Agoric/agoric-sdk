@@ -54,6 +54,10 @@ Fast USDC in turn builds on
  - and the Zoe smart contract platform, and
  - the endo distributed computing platform; in particular, `@endo/patterns`
 
+## Testing Zoom Lense
+
+on the spectrum from unit to integration, .contract.test is more integration than .flows.test; does this work as a .flows.test?  
+
 ## `TypedPattern`s
 
 We make extensive use of `@endo/patterns` aka shapes, especially `TypedPattern<T>` for data validation.
@@ -92,3 +96,9 @@ and `.onRejected`.
 ## Offer Safety Limitations in the Orchestration SDK
 
 While support for Offer Safety in the Orchestration SDK is a goal with work-in-progress ([#10504 ERTP face on orch assets](https://github.com/Agoric/agoric-sdk/pull/10504)), currently, the use of basic orchestration features such as `acct.localTransfer(seat, ...)` moves assets out of the Zoe-managed seat before any `want:` might be satisfied.
+
+## Object Hardening
+
+All objects that will be marshaled (serialized across vat boundaries) must be hardened with harden(). This includes test data, offer arguments,  
+▌ contract results, and any objects stored in durable state. The marshal layer will reject unhardened objects with "Cannot pass non-frozen objects like {}. Use      
+▌ harden()".
