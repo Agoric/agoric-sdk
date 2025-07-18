@@ -87,7 +87,7 @@ const openPosition = async (
       ...(PoC26 ? { Access: make(PoC26, 1n) } : {}),
     },
   };
-  
+
   // Parse target allocation if provided
   let targetAllocation;
   if (targetAllocationJson) {
@@ -98,14 +98,14 @@ const openPosition = async (
         Object.entries(targetAllocation).map(([key, value]) => [
           key,
           BigInt(value as string | number),
-        ])
+        ]),
       );
       targetAllocation = harden(targetAllocation);
     } catch (err) {
       throw Error(`Invalid target allocation JSON: ${err.message}`);
     }
   }
-  
+
   const offerArgs: OfferArgsFor['openPortfolio'] = {
     flow: steps,
     ...(targetAllocation && { targetAllocation }),
