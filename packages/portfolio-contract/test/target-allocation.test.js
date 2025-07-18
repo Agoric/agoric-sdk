@@ -26,3 +26,30 @@ test('openPortfolio stores and publishes target allocation', async t => {
   const portfolioStatus = await trader1.getPortfolioStatus();
   t.deepEqual(portfolioStatus.targetAllocation, targetAllocation);
 });
+
+test('setTargetAllocation rejects invalid pool keys', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc } = common.brands;
+
+  // Open portfolio first
+  await trader1.openPortfolio(
+    t,
+    { Deposit: usdc.units(1_000) },
+    {}
+  );
+
+  // Try to rebalance with invalid pool key
+  const badTargetAllocation = {
+    USDN: 5000n,
+    InvalidProtocol: 5000n, // ← Should be rejected
+  };
+
+  await t.throwsAsync(
+    () => trader1.rebalance(
+      t,
+      { give: {} },
+      { targetAllocation: badTargetAllocation }
+    ),
+    { message: /Invalid pool key: InvalidProtocol/ }
+  );
+});
