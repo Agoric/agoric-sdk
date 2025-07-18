@@ -6,27 +6,28 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
+	corestore "cosmossdk.io/core/store"
 	sdkioerrors "cosmossdk.io/errors"
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
+	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/runtime"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdktypeserrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
 	agtypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
 	vibctypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
+	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 var _ porttypes.ICS4Wrapper = (*Keeper)(nil)
@@ -56,8 +57,8 @@ type Keeper struct {
 
 	vibcKeeper vibc.Keeper
 
-	key storetypes.StoreKey
-	cdc codec.Codec
+	storeService corestore.KVStoreService
+	cdc          codec.Codec
 
 	vibcModule porttypes.IBCModule
 
@@ -137,7 +138,7 @@ func NewICS4Wrapper(k Keeper, down porttypes.ICS4Wrapper) *ics4Wrapper {
 // NewKeeper creates a new vtransfer Keeper instance
 func NewKeeper(
 	cdc codec.Codec,
-	key storetypes.StoreKey,
+	storeService corestore.KVStoreService,
 	prototypeVibcKeeper vibc.Keeper,
 	scopedTransferKeeper capabilitykeeper.ScopedKeeper,
 	pushAction vm.ActionPusher,
@@ -150,10 +151,10 @@ func NewKeeper(
 	k := Keeper{
 		ReceiverImpl: vibcKeeper,
 
-		vibcKeeper: vibcKeeper,
-		key:        key,
-		vibcModule: vibc.NewIBCModule(vibcKeeper),
-		cdc:        cdc,
+		vibcKeeper:   vibcKeeper,
+		storeService: storeService,
+		vibcModule:   vibc.NewIBCModule(vibcKeeper),
+		cdc:          cdc,
 
 		debug: &KeeperDebugOptions{
 			OverridePacket: nil,
@@ -208,7 +209,9 @@ func sequencePath(sequence uint64) string {
 func (k Keeper) PacketStore(ctx sdk.Context, ourOrigin agtypes.PacketOrigin, ourPort string, ourChannel string, sequence uint64) (storetypes.KVStore, []byte) {
 	key := fmt.Sprintf("%s/%s/%s", ourOrigin, channelPath(ourPort, ourChannel), sequencePath(sequence))
 	packetKey := []byte(key)
-	return prefix.NewStore(ctx.KVStore(k.key), []byte(packetDataStoreKeyPrefix)), packetKey
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+	return prefix.NewStore(store, []byte(packetDataStoreKeyPrefix)), packetKey
 }
 
 func (k Keeper) PacketStoreFromOrigin(ctx sdk.Context, ourOrigin agtypes.PacketOrigin, packet ibcexported.PacketI) (storetypes.KVStore, []byte) {
@@ -371,19 +374,20 @@ func (k Keeper) InterceptWriteAcknowledgement(ctx sdk.Context, chanCap *capabili
 
 // targetIsWatched checks if a target address has been watched by the VM.
 func (k Keeper) targetIsWatched(ctx sdk.Context, target string) bool {
-	prefixStore := prefix.NewStore(
-		ctx.KVStore(k.key),
-		[]byte(watchedAddressStoreKeyPrefix),
-	)
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+	prefixStore := prefix.NewStore(store, []byte(watchedAddressStoreKeyPrefix))
 	return prefixStore.Has([]byte(target))
 }
 
 // GetWatchedAdresses returns the watched addresses from the keeper as a slice
 // of account addresses.
 func (k Keeper) GetWatchedAddresses(ctx sdk.Context) ([]sdk.AccAddress, error) {
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
 	addresses := make([]sdk.AccAddress, 0)
-	prefixStore := prefix.NewStore(ctx.KVStore(k.key), []byte(watchedAddressStoreKeyPrefix))
-	iterator := sdk.KVStorePrefixIterator(prefixStore, []byte{})
+	prefixStore := prefix.NewStore(store, []byte(watchedAddressStoreKeyPrefix))
+	iterator := storetypes.KVStorePrefixIterator(prefixStore, []byte{})
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		addr, err := sdk.AccAddressFromBech32(string(iterator.Key()))
@@ -398,10 +402,9 @@ func (k Keeper) GetWatchedAddresses(ctx sdk.Context) ([]sdk.AccAddress, error) {
 // SetWatchedAddresses sets the watched addresses in the keeper from a slice of
 // SDK account addresses.
 func (k Keeper) SetWatchedAddresses(ctx sdk.Context, addresses []sdk.AccAddress) {
-	prefixStore := prefix.NewStore(
-		ctx.KVStore(k.key),
-		[]byte(watchedAddressStoreKeyPrefix),
-	)
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+	prefixStore := prefix.NewStore(store, []byte(watchedAddressStoreKeyPrefix))
 	for _, addr := range addresses {
 		prefixStore.Set([]byte(addr.String()), []byte(watchedAddressSentinel))
 	}
@@ -420,10 +423,9 @@ func (k Keeper) Receive(cctx context.Context, jsonRequest string) (jsonReply str
 		return "", err
 	}
 
-	prefixStore := prefix.NewStore(
-		ctx.KVStore(k.key),
-		[]byte(watchedAddressStoreKeyPrefix),
-	)
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+	prefixStore := prefix.NewStore(store, []byte(watchedAddressStoreKeyPrefix))
 	switch msg.Type {
 	case "BRIDGE_TARGET_REGISTER":
 		prefixStore.Set([]byte(msg.Target), []byte(watchedAddressSentinel))

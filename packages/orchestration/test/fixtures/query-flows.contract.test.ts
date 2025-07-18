@@ -142,6 +142,7 @@ test('send query from chain object', async t => {
     '/cosmos.bank.v1beta1.QueryAllBalancesRequest',
     {
       address: LOCALCHAIN_DEFAULT_ADDRESS,
+      resolveDenom: false, // don't resolve the denom, just return the raw data
     },
   );
   {
@@ -256,6 +257,7 @@ test('send query from orch account in an async-flow', async t => {
       buildQueryPacketString([
         QueryAllBalancesRequest.toProtoMsg({
           address: 'osmo1test3',
+          resolveDenom: false, // don't resolve the denom, just return the raw data
         }),
       ]),
       buildQueryResponseString(QueryAllBalancesResponse, {

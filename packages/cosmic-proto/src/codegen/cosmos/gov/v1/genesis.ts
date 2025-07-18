@@ -52,6 +52,15 @@ export interface GenesisState {
    * Since: cosmos-sdk 0.47
    */
   params?: Params;
+  /**
+   * The constitution allows builders to lay a foundation and define purpose.
+   * This is an immutable string set in genesis.
+   * There are no amendments, to go outside of scope, just fork.
+   * constitution is an immutable string in genesis for a chain builder to lay out their vision, ideas and ideals.
+   *
+   * Since: cosmos-sdk 0.50
+   */
+  constitution: string;
 }
 export interface GenesisStateProtoMsg {
   typeUrl: '/cosmos.gov.v1.GenesisState';
@@ -70,6 +79,7 @@ export interface GenesisStateSDKType {
   /** @deprecated */
   tally_params?: TallyParamsSDKType;
   params?: ParamsSDKType;
+  constitution: string;
 }
 function createBaseGenesisState(): GenesisState {
   return {
@@ -81,6 +91,7 @@ function createBaseGenesisState(): GenesisState {
     votingParams: undefined,
     tallyParams: undefined,
     params: undefined,
+    constitution: '',
   };
 }
 export const GenesisState = {
@@ -122,6 +133,9 @@ export const GenesisState = {
     if (message.params !== undefined) {
       Params.encode(message.params, writer.uint32(66).fork()).ldelim();
     }
+    if (message.constitution !== '') {
+      writer.uint32(74).string(message.constitution);
+    }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): GenesisState {
@@ -156,6 +170,9 @@ export const GenesisState = {
         case 8:
           message.params = Params.decode(reader, reader.uint32());
           break;
+        case 9:
+          message.constitution = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -187,6 +204,9 @@ export const GenesisState = {
         ? TallyParams.fromJSON(object.tallyParams)
         : undefined,
       params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
+      constitution: isSet(object.constitution)
+        ? String(object.constitution)
+        : '',
     };
   },
   toJSON(message: GenesisState): JsonSafe<GenesisState> {
@@ -228,6 +248,8 @@ export const GenesisState = {
         : undefined);
     message.params !== undefined &&
       (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    message.constitution !== undefined &&
+      (obj.constitution = message.constitution);
     return obj;
   },
   fromPartial(object: Partial<GenesisState>): GenesisState {
@@ -257,6 +279,7 @@ export const GenesisState = {
       object.params !== undefined && object.params !== null
         ? Params.fromPartial(object.params)
         : undefined;
+    message.constitution = object.constitution ?? '';
     return message;
   },
   fromProtoMsg(message: GenesisStateProtoMsg): GenesisState {
