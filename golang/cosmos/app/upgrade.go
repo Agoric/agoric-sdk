@@ -203,12 +203,6 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLeg
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
 
-		// prune expired tendermint consensus states to save storage space
-		_, err := ibctmmigrations.PruneExpiredConsensusStates(ctx, app.AppCodec(), app.IBCKeeper.ClientKeeper)
-		if err != nil {
-			return nil, err
-		}
-
 		CoreProposalSteps := []vm.CoreProposalStep{}
 
 		// These CoreProposalSteps are not idempotent and should only be executed
@@ -219,6 +213,12 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLeg
 			// primary upgrade name, stores have not been initialized correctly.
 			if !isPrimaryUpgradeName(plan.Name) {
 				return module.VersionMap{}, fmt.Errorf("cannot run %s as first upgrade", plan.Name)
+			}
+
+			// prune expired tendermint consensus states to save storage space.
+			_, err := ibctmmigrations.PruneExpiredConsensusStates(ctx, app.AppCodec(), app.IBCKeeper.ClientKeeper)
+			if err != nil {
+				return nil, err
 			}
 
 			// Each CoreProposalStep runs sequentially, and can be constructed from
