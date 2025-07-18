@@ -11,6 +11,7 @@
     "test:queries": "ava --config ava.queries.config.js",
     "test:staking": "ava --config ava.staking.config.js",
     "test:ymd": "make open-with-usdn && ava --config ava.ymd.config.js",
+    "test:ymax": "ava --config ava.ymd.config.js",
     "test:xcs": "ava --config ava.xcs.config.js"
   },
   "packageManager": "yarn@4.9.1",
