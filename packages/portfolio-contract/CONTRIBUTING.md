@@ -25,6 +25,19 @@ Our [unit testing conventions](https://github.com/Agoric/agoric-sdk/wiki/agoric-
 
 While [tooling to enforce consistent import ordering #7403](https://github.com/Agoric/agoric-sdk/issues/7403) is not yet in place, please use **Organize Imports** regularly.
 
+## Commit Messages w.r.t. Last Release
+
+Note [use of Conventional Commits in agoric-sdk](https://github.com/Agoric/agoric-sdk/wiki/Conventional-Commits). In particular:
+
+ - `feat:` for **user-visible** (or: client-visible) features
+ - `fix:` for **bugs present in [the previous release](./CHANGELOG.md)**
+
+Adding a new function without wiring it all the way out to the contract interface so that it works in a user story is a `chore`, not a `feat`.
+
+If something wonky was added to master _since the last release_, cleaning it up is perhaps a `chore` or `refactor`, but not a `fix`.
+
+Between `docs`, `test`, and `chore`, the distinction has less impact. Salt to taste.
+
 ## Deployment is out of scope
 
 The `@aglocal/portfolio-deploy` package takes care of deployment. It depends on this package.
