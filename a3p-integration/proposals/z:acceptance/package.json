@@ -14,7 +14,7 @@
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/client-utils": "dev",
+    "@agoric/client-utils": "0.1.1-dev-bf2d699.0",
     "@agoric/ertp": "dev",
     "@agoric/inter-protocol": "dev",
     "@agoric/internal": "dev",
@@ -44,7 +44,7 @@
     "@agoric/builders": "portal:../../agoric-sdk/packages/builders",
     "@agoric/cache": "portal:../../agoric-sdk/packages/cache",
     "@agoric/casting": "portal:../../agoric-sdk/packages/casting",
-    "@agoric/client-utils": "portal:../../agoric-sdk/packages/client-utils",
+    "@agoric/client-utils": "0.1.1-dev-bf2d699.0",
     "@agoric/cosmic-proto": "portal:../../agoric-sdk/packages/cosmic-proto",
     "@agoric/cosmic-swingset": "portal:../../agoric-sdk/packages/cosmic-swingset",
     "@agoric/create-dapp": "portal:../../agoric-sdk/packages/create-dapp",
