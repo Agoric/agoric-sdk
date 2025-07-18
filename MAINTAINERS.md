@@ -374,13 +374,6 @@ yarn lerna version --conventional-prerelease --no-git-tag-version
 
 ## Syncing Endo dependency versions
 
-Assuming that the most recent release of the Endo repository has been checked
-out in your home directory:
-
-```sh
-ENDO=~/endo
-```
-
 From `origin/master`, begin a branch for syncing Endo.
 
 ```sh
@@ -394,9 +387,15 @@ Use a helper script from the Endo repository to update the dependency versions
 in all packages in Agoric SDK.
 
 ```sh
-"$ENDO/scripts/sync-versions.sh" "$ENDO"
-git add -u
-git commit -m 'chore: Sync Endo versions'
+git ls-tree -r HEAD |
+  cut -d$'\t' -f2 |
+  grep '.yarn.lock$' |
+while read lock; do \
+  dir=$(dirname $lock); \
+  echo $dir; \
+  (cd $dir; yarn up ses '@endo/*' -R; yarn dedupe); \
+done
+git commit -am 'chore: Sync Endo versions'
 ```
 
 In `patches`, there may be patch files for the previous versions of `@endo/*`
@@ -450,20 +449,6 @@ yarn test test/xsnap-store.test.js --update-snapshots
 git add test/snapshots/xsnap-store.*
 git commit -m 'chore(swingset-vat): Update xsnap store test snapshots'
 cd ../..
-```
-
-Sync other dependency solution locks.
-
-```sh
-git ls-tree -r HEAD |
-  cut -d$'\t' -f2 |
-  grep '.yarn.lock$' |
-while read lock; do \
-  dir=$(dirname $lock); \
-  echo $dir; \
-  (cd $dir; ~/endo/scripts/sync-versions.sh ~/endo; yarn; yarn dedupe); \
-done
-git commit -am 'chore: Sync the other locks'
 ```
 
 Push this branch and create a pull request.
