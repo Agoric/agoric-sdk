@@ -40,8 +40,8 @@ import type {
  */
 export type AnyJson = JsonSafe<Any>;
 
-// TODO codegen this by modifying Telescope
-export type Proto3Shape = {
+// UNTIL(#11596) hand-written code, which should be done via Telescope
+export type TypeUrlProto = {
   '/cosmos.bank.v1beta1.MsgSend': MsgSend;
   '/cosmos.bank.v1beta1.MsgSendResponse': MsgSendResponse;
   '/cosmos.bank.v1beta1.QueryAllBalancesRequest': QueryAllBalancesRequest;
@@ -62,6 +62,73 @@ export type Proto3Shape = {
   '/cosmos.auth.v1beta1.Bech32PrefixResponse': Bech32PrefixResponse;
 };
 
+export type TypeUrlOf<T> = T extends { typeUrl: infer TU } ? TU : string;
+export type ProtoMsgOf<T> = { typeUrl: TypeUrlOf<T>; value: Uint8Array };
+export interface ProtoEncoder<T, TU extends string = string> {
+  typeUrl: TU;
+  fromPartial(message: Partial<T>): T;
+  toProtoMsg(message: T): ProtoMsgOf<T>;
+  toProto(message: T): Uint8Array;
+  toJSON(message: T): JsonSafe<T>;
+}
+
+export interface ProtoDecoder<T, TU extends string = string> {
+  typeUrl: TU;
+  decode(bytes: Uint8Array): T;
+  fromProtoMsg(msg: Any | ProtoMsgOf<T>): T;
+  fromJSON(json: string): T;
+}
+
+export type ProtoCodec<T, TU extends string = string> = ProtoEncoder<T, TU> &
+  ProtoDecoder<T, TU>;
+
+/**
+ * Provides typeful helpers for encoding and decoding messages using a proto
+ * codec object.
+ *
+ * Using this wrapper reduces boilerplate when you already have the codec at
+ * hand.
+ */
+export const proto = Object.freeze({
+  fromPartial: <T, TU extends string = string>(
+    encoder: ProtoEncoder<T, TU>,
+    msg: Partial<T>,
+  ): T & { '@type': TU } => {
+    return {
+      ...encoder.fromPartial(msg),
+      '@type': encoder.typeUrl,
+    };
+  },
+
+  toJSON: <T>(encoder: ProtoEncoder<T>, msg: Partial<T>): JsonSafe<T> => {
+    return encoder.toJSON(proto.fromPartial(encoder, msg));
+  },
+
+  stringifyJSON: <T>(encoder: ProtoEncoder<T>, msg: Partial<T>): string => {
+    return JSON.stringify(proto.toJSON(encoder, msg));
+  },
+
+  toProto: <T>(encoder: ProtoEncoder<T>, msg: Partial<T>): Uint8Array => {
+    return encoder.toProto(proto.fromPartial(encoder, msg));
+  },
+
+  toProtoMsg: <T>(encoder: ProtoEncoder<T>, msg: Partial<T>): ProtoMsgOf<T> => {
+    return encoder.toProtoMsg(proto.fromPartial(encoder, msg));
+  },
+
+  parseJSON: <T>(decoder: ProtoDecoder<T>, json: string): T => {
+    return decoder.fromJSON(json);
+  },
+
+  fromProto: <T>(decoder: ProtoDecoder<T>, bytes: Uint8Array): T => {
+    return decoder.decode(bytes);
+  },
+
+  fromProtoMsg: <T>(decoder: ProtoDecoder<T>, msg: Any): T => {
+    return decoder.fromProtoMsg(msg);
+  },
+});
+
 /**
  * The encoding introduced in Protobuf 3 for Any that can be serialized to JSON.
  *
@@ -69,12 +136,16 @@ export type Proto3Shape = {
  * more accurately "JSON-ifiable" but we don't expect anyone to confuse this
  * type with a string.
  */
-export type TypedJson<T extends unknown | keyof Proto3Shape = unknown> =
-  T extends keyof Proto3Shape
-    ? Proto3Shape[T] & {
-        '@type': T;
-      }
-    : { '@type': string };
+export type TypedJson<T = unknown> =
+  T extends ProtoEncoder<infer M, infer TU>
+    ? M & { '@type': TU }
+    : T extends ProtoDecoder<infer M, infer TU>
+      ? M & { '@type': TU }
+      : T extends keyof TypeUrlProto
+        ? TypeUrlProto[T] & {
+            '@type': T;
+          }
+        : { '@type': string };
 
 /** General pattern for Request that has a corresponding Response */
 type RequestTypeUrl<Base extends string> = `/${Base}Request`;
@@ -91,20 +162,29 @@ export type ResponseTo<T extends TypedJson> =
       ? TypedJson<`/${Package}.Msg${Name}Response`>
       : TypedJson;
 
-export const typedJson = <T extends keyof Proto3Shape>(
-  typeStr: T,
-  obj: Proto3Shape[T],
+export const typedJson = <
+  T extends keyof TypeUrlProto | ProtoEncoder<any, string>,
+>(
+  codecOrTypeStr: T,
+  obj: T extends keyof TypeUrlProto
+    ? TypeUrlProto[T]
+    : T extends ProtoEncoder<infer M>
+      ? M
+      : never,
 ) => {
-  return {
-    '@type': typeStr,
-    ...obj,
-  } as TypedJson<T>;
+  if (typeof codecOrTypeStr === 'string') {
+    return {
+      '@type': codecOrTypeStr,
+      ...obj,
+    } as TypedJson<T>;
+  }
+  return proto.fromPartial(codecOrTypeStr, obj) as TypedJson<T>;
 };
 
 const QUERY_REQ_TYPEURL_RE =
   /^\/(?<serviceName>\w+(?:\.\w+)*)\.Query(?<methodName>\w+)Request$/;
 
-export const typeUrlToGrpcPath = (typeUrl: Any['typeUrl']) => {
+export const typeUrlToGrpcPath = <TU extends string = string>(typeUrl: TU) => {
   const match = typeUrl.match(QUERY_REQ_TYPEURL_RE);
   if (!(match && match.groups)) {
     throw TypeError(`Invalid typeUrl: ${typeUrl}. Must be a Query Request.`);
@@ -119,10 +199,8 @@ export const toRequestQueryJson = (
   msg: Any | QueryBalanceRequestProtoMsg,
   opts: RequestQueryOpts = {},
 ) =>
-  RequestQuery.toJSON(
-    RequestQuery.fromPartial({
-      path: typeUrlToGrpcPath(msg.typeUrl),
-      data: msg.value,
-      ...opts,
-    }),
-  );
+  proto.toJSON(RequestQuery, {
+    path: typeUrlToGrpcPath(msg.typeUrl),
+    data: msg.value,
+    ...opts,
+  });
