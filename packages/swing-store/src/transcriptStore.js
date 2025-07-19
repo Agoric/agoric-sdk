@@ -1,5 +1,7 @@
 // @ts-check
-import { Readable } from 'stream';
+import { Readable } from 'node:stream';
+import { createGzip } from 'node:zlib';
+
 import { Buffer } from 'buffer';
 import { Fail, q } from '@endo/errors';
 import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform.js';
@@ -64,15 +66,16 @@ function insistTranscriptPosition(position) {
  * @param {() => void} ensureTxn
  * @param {(key: string, value: string | undefined ) => void} noteExport
  * @param {object} [options]
- * @param {boolean} [options.keepTranscripts]
  * @param {TranscriptCallback} [options.archiveTranscript]
+ * @param {boolean} [options.compressed]
+ * @param {boolean} [options.keepTranscripts]
  * @returns { TranscriptStore & TranscriptStoreInternal & TranscriptStoreDebug }
  */
 export function makeTranscriptStore(
   db,
   ensureTxn,
   noteExport = () => {},
-  { keepTranscripts = true, archiveTranscript } = {},
+  { archiveTranscript, compressed, keepTranscripts = true } = {},
 ) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS transcriptItems (
@@ -340,9 +343,16 @@ export function makeTranscriptStore(
     const isCurrent = sqlGetSpanIsCurrent.get(vatID, pos);
     isCurrent !== undefined || Fail`transcript span ${q(name)} not available`;
     const startPos = Number(pos);
-    for (const entry of readSpan(vatID, startPos)) {
-      yield Buffer.from(`${entry}\n`);
+
+    async function* preProcess() {
+      for (const entry of readSpan(vatID, startPos))
+        yield Buffer.from(`${entry}\n`);
     }
+
+    if (compressed) {
+      const gzip = createGzip();
+      yield* Readable.from(preProcess()).pipe(gzip).iterator();
+    } else yield* preProcess();
   }
   harden(exportSpan);
 
