@@ -1,7 +1,7 @@
-/* eslint-disable import/no-extraneous-dependencies -- requiring the package itself to check exports map */
-import test from 'ava';
-
+// eslint-disable-next-line import/no-extraneous-dependencies
 import * as index from '@agoric/pola-io';
+
+import test from 'ava';
 
 const { isFrozen } = Object;
 
