@@ -1,55 +1,52 @@
 /** @file Bootstrap test integration vaults with smart-wallet */
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
-import { Fail } from '@endo/errors';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { SECONDS_PER_DAY } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
-import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeMarshal } from '@endo/marshal';
-import {
-  makeAgoricNamesRemotesFromFakeStorage,
-  slotToBoardRemote,
-} from '@agoric/vats/tools/board-utils.js';
 import type { TestFn } from 'ava';
-import type { ParamChangesOfferArgs } from '@agoric/inter-protocol/src/econCommitteeCharter.js';
 
-import { makeSwingsetTestKit } from '../../tools/supports.js';
-import { makeWalletFactoryDriver } from '../../tools/drivers.js';
+import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
+import { makeMockBridgeKit } from '@agoric/cosmic-swingset/tools/test-bridge-utils.ts';
+import { makeCosmicSwingsetTestKit } from '@agoric/cosmic-swingset/tools/test-kit.js';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import type { ParamChangesOfferArgs } from '@agoric/inter-protocol/src/econCommitteeCharter.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { Fail } from '@endo/errors';
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';
 
-const likePayouts = (collateral, minted) => ({
-  Collateral: {
-    value: BigInt(collateral * 1_000_000),
-  },
-  Minted: {
-    value: BigInt(minted * 1_000_000),
-  },
+const likePayouts = (collateral: number, minted: number) => ({
+  Collateral: { value: BigInt(collateral * 1_000_000) },
+  Minted: { value: BigInt(minted * 1_000_000) },
 });
 
-const makeDefaultTestContext = async t => {
+const makeDefaultTestContext = async () => {
   console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t.log);
 
-  const { runUtils, storage } = swingsetTestKit;
+  const storage = makeFakeStorageKit('bootstrapTests');
+
+  const { handleBridgeSend } = makeMockBridgeKit({
+    storageKit: storage,
+  });
+  const swingsetTestKit = await makeCosmicSwingsetTestKit({
+    configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
+    handleBridgeSend,
+  });
+
+  const { EV, queueAndRun } = swingsetTestKit;
+
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
-  const { EV } = runUtils;
 
   // Wait for ATOM to make it into agoricNames
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
   console.timeLog('DefaultTestContext', 'vaultFactoryKit');
 
   // has to be late enough for agoricNames data to have been published
-  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
-    swingsetTestKit.storage,
-  );
+  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
   agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
-    runUtils,
+    { EV, queueAndRun },
     storage,
     agoricNamesRemotes,
   );
@@ -57,7 +54,12 @@ const makeDefaultTestContext = async t => {
 
   console.timeEnd('DefaultTestContext');
 
-  return { ...swingsetTestKit, agoricNamesRemotes, walletFactoryDriver };
+  return {
+    ...swingsetTestKit,
+    agoricNamesRemotes,
+    storage,
+    walletFactoryDriver,
+  };
 };
 
 const test = anyTest as TestFn<
@@ -65,14 +67,12 @@ const test = anyTest as TestFn<
 >;
 
 test.before(async t => {
-  t.context = await makeDefaultTestContext(t);
+  t.context = await makeDefaultTestContext();
 });
-test.after.always(t => {
-  return t.context.shutdown && t.context.shutdown();
-});
+test.after.always(t => t.context.shutdown());
 
-test('metrics path', async t => {
-  const { EV } = t.context.runUtils;
+test.serial('metrics path', async t => {
+  const { EV } = t.context;
   const vaultFactoryKit =
     await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
   const vfTopics = await EV(vaultFactoryKit.publicFacet).getPublicTopics();
@@ -80,7 +80,7 @@ test('metrics path', async t => {
   t.is(vfMetricsPath, 'published.vaultFactory.metrics');
 });
 
-test('open vault', async t => {
+test.serial('open vault', async t => {
   console.time('open vault');
   const { walletFactoryDriver } = t.context;
 
@@ -101,7 +101,7 @@ test('open vault', async t => {
   console.timeEnd('open vault');
 });
 
-test('adjust balances', async t => {
+test.serial('adjust balances', async t => {
   const { walletFactoryDriver } = t.context;
 
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1adjust');
@@ -118,28 +118,19 @@ test('adjust balances', async t => {
     status: { id: 'adjust-open', numWantsSatisfied: 1 },
   });
 
-  t.log('adjust');
+  console.log('adjust');
   await wd.executeOfferMaker(
     Offers.vaults.AdjustBalances,
-    {
-      offerId: 'adjust',
-      collateralBrandKey,
-      giveMinted: 0.0005,
-    },
+    { offerId: 'adjust', collateralBrandKey, giveMinted: 0.0005 },
     'adjust-open',
   );
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
-    status: {
-      id: 'adjust',
-      numWantsSatisfied: 1,
-    },
+    status: { id: 'adjust', numWantsSatisfied: 1 },
   });
 });
 
-// This test isn't marked .serial, but it depends on previous tests.
-
-test('close vault', async t => {
+test.serial('close vault', async t => {
   const { walletFactoryDriver } = t.context;
 
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1toclose');
@@ -157,7 +148,7 @@ test('close vault', async t => {
     status: { id: 'open-vault', result: 'UNPUBLISHED', numWantsSatisfied: 1 },
     error: undefined,
   });
-  t.log('try giving more than is available in the purse/vbank');
+  console.log('try giving more than is available in the purse/vbank');
   await t.throwsAsync(
     wd.executeOfferMaker(
       Offers.vaults.CloseVault,
@@ -168,9 +159,7 @@ test('close vault', async t => {
       },
       'open-vault',
     ),
-    {
-      message: /^Withdrawal .* failed because the purse only contained .*/,
-    },
+    { message: /^Withdrawal .* failed because the purse only contained .*/ },
   );
 
   const message =
@@ -198,14 +187,10 @@ test('close vault', async t => {
     },
   });
 
-  t.log('close correctly');
+  console.log('close correctly');
   await wd.executeOfferMaker(
     Offers.vaults.CloseVault,
-    {
-      offerId: 'close-well',
-      collateralBrandKey,
-      giveMinted: 5.025,
-    },
+    { offerId: 'close-well', collateralBrandKey, giveMinted: 5.025 },
     'open-vault',
   );
 
@@ -222,7 +207,7 @@ test('close vault', async t => {
   });
 });
 
-test('open vault with insufficient funds gives helpful error', async t => {
+test.serial('excessive debt error contains helpful details', async t => {
   const { walletFactoryDriver } = t.context;
 
   const wd = await walletFactoryDriver.provideSmartWallet(
@@ -256,7 +241,7 @@ test('open vault with insufficient funds gives helpful error', async t => {
   });
 });
 
-test('exit bid', async t => {
+test.serial('exit bid', async t => {
   const { walletFactoryDriver } = t.context;
 
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1bid');
@@ -277,7 +262,6 @@ test('exit bid', async t => {
   });
 
   await wd.tryExitOffer('bid');
-  await eventLoopIteration();
 
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
@@ -293,13 +277,13 @@ test('exit bid', async t => {
   });
 });
 
-test('propose change to auction governance param', async t => {
-  const { walletFactoryDriver, agoricNamesRemotes, storage } = t.context;
+test.serial('propose change to auction governance param', async t => {
+  const { agoricNamesRemotes, storage, walletFactoryDriver } = t.context;
 
   const gov1 = 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce';
   const wd = await walletFactoryDriver.provideSmartWallet(gov1);
 
-  t.log('accept charter invitation');
+  console.log('accept charter invitation');
   const charter = agoricNamesRemotes.instance.econCommitteeCharter;
 
   await wd.executeOffer({
@@ -312,18 +296,15 @@ test('propose change to auction governance param', async t => {
     proposal: {},
   });
 
-  await eventLoopIteration();
   t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
 
   const auctioneer = agoricNamesRemotes.instance.auctioneer;
   const timerBrand = agoricNamesRemotes.brand.timer;
   assert(timerBrand);
 
-  t.log('propose param change');
+  console.log('propose param change');
   /* XXX @type {Partial<AuctionParams>} */
-  const params = {
-    StartFrequency: { timerBrand, relValue: 5n * 60n },
-  };
+  const params = { StartFrequency: { timerBrand, relValue: 5n * 60n } };
 
   const offerArgs: ParamChangesOfferArgs = {
     deadline: 1000n,
@@ -343,28 +324,22 @@ test('propose change to auction governance param', async t => {
     proposal: {},
   });
 
-  await eventLoopIteration();
   t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
 
-  const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
-  const key = `published.committees.Economic_Committee.latestQuestion`;
-  const lastQuestion = unmarshalFromVstorage(
-    storage.data,
-    key,
-    fromCapData,
-    -1,
+  const lastQuestion = storage.readLatest(
+    'published.committees.Economic_Committee.latestQuestion',
   );
   const changes = lastQuestion?.issue?.spec?.changes;
-  t.log('check Economic_Committee.latestQuestion against proposal');
+  console.log('check Economic_Committee.latestQuestion against proposal');
   t.like(changes, { StartFrequency: { relValue: 300n } });
 });
 
-test('open vault day later', async t => {
-  const { advanceTimeTo, walletFactoryDriver } = t.context;
+test.serial('open vault day later', async t => {
+  const { advanceTimeBy, walletFactoryDriver } = t.context;
 
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1later');
 
-  await advanceTimeTo(SECONDS_PER_DAY);
+  await advanceTimeBy(1, 'days');
 
   await wd.executeOfferMaker(Offers.vaults.OpenVault, {
     offerId: 'open-vault',
