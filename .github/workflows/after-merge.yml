@@ -70,14 +70,9 @@ jobs:
               TAG=other-dev
               ;;
           esac
-          # Prevent `lerna publish` from failing due to uncommitted changes.
-          git stash || true
-          # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
-          yarn lerna publish --concurrency 1 --conventional-prerelease --canary --exact \
-            --dist-tag=$TAG --preid=$TAG-$(git rev-parse --short=7 HEAD) \
-            --no-push --no-verify-access --yes
-          # restore any stashed changes for caching
-          git stash pop || true
+          # use Yarn to resolve `workspace:*` versions and its "npm" plugin to publish
+          # https://yarnpkg.com/features/workspaces#publishing-workspaces
+          yarn workspaces foreach --all --topological --no-private npm publish --tolerate-republish --tag $TAG
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status
