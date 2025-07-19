@@ -50,7 +50,7 @@ function createBaseMetadata(): Metadata {
   };
 }
 export const Metadata = {
-  typeUrl: '/ibc.applications.interchain_accounts.v1.Metadata',
+  typeUrl: '/ibc.applications.interchain_accounts.v1.Metadata' as const,
   encode(
     message: Metadata,
     writer: BinaryWriter = BinaryWriter.create(),
