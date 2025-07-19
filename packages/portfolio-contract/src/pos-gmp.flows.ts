@@ -176,7 +176,14 @@ export type EVMContext<CN extends string> = {
   lca: LocalAccount;
   gmpFee: DenomAmount;
   gmpChain: Chain<{ chainId: string }>;
-  addresses: Record<CN | 'usdc', EVMT['address']>;
+  addresses: Record<
+    | CN
+    | 'usdc'
+    | 'aaveRewardsController'
+    | 'aaveUSDC'
+    | 'compoundRewardsController',
+    EVMT['address']
+  >;
   axelarIds: AxelarId;
 };
 
@@ -188,6 +195,14 @@ type AaveI = {
 const Aave: AaveI = {
   supply: ['address', 'uint256', 'address', 'uint16'],
   withdraw: ['address', 'uint256', 'address'],
+};
+
+type AaveRewardsControllerI = {
+  claimAllRewardsToSelf: ['address[]'];
+};
+
+const AaveRewardsController: AaveRewardsControllerI = {
+  claimAllRewardsToSelf: ['address[]'],
 };
 
 export const AaveProtocol = {
@@ -221,6 +236,21 @@ export const AaveProtocol = {
     const target = { axelarId, remoteAddress };
     await sendGMPContractCall(target, calls, gmpFee, lca, gmpChain);
   },
+  claimRewards: async (ctx, src) => {
+    const { addresses: a, lca, gmpChain, gmpFee } = ctx;
+
+    const session = makeEVMSession();
+    const aaveRewardsController = session.makeContract(
+      a.aaveRewardsController,
+      AaveRewardsController,
+    );
+    aaveRewardsController.claimAllRewardsToSelf([a.aaveUSDC]);
+    const calls = session.finish();
+
+    const axelarId = ctx.axelarIds[src.chainName];
+    const target = { axelarId, remoteAddress: src.remoteAddress };
+    await sendGMPContractCall(target, calls, gmpFee, lca, gmpChain);
+  },
 } as const satisfies ProtocolDetail<
   'Aave',
   AxelarChain,
@@ -230,11 +260,21 @@ export const AaveProtocol = {
 type CompoundI = {
   supply: ['address', 'uint256'];
   withdraw: ['address', 'uint256'];
+  claim: ['address', 'address', 'bool'];
 };
 
 const Compound: CompoundI = {
   supply: ['address', 'uint256'],
   withdraw: ['address', 'uint256'],
+  claim: ['address', 'address', 'bool'],
+};
+
+type CompoundRewardsControllerI = {
+  claim: ['address', 'address', 'bool'];
+};
+
+const CompoundRewardsController: CompoundRewardsControllerI = {
+  claim: ['address', 'address', 'bool'],
 };
 
 export const CompoundProtocol = {
@@ -265,6 +305,21 @@ export const CompoundProtocol = {
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
     await sendGMPContractCall(target, calls, fee, lca, gmpChain);
+  },
+  claimRewards: async (ctx, src) => {
+    const { addresses: a, lca, gmpChain, gmpFee } = ctx;
+
+    const session = makeEVMSession();
+    const compoundRewardsController = session.makeContract(
+      a.compoundRewardsController,
+      CompoundRewardsController,
+    );
+    compoundRewardsController.claim(a.compound, src.remoteAddress, true);
+    const calls = session.finish();
+
+    const axelarId = ctx.axelarIds[src.chainName];
+    const target = { axelarId, remoteAddress: src.remoteAddress };
+    await sendGMPContractCall(target, calls, gmpFee, lca, gmpChain);
   },
 } as const satisfies ProtocolDetail<
   'Compound',
