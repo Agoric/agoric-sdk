@@ -9,6 +9,7 @@ on:
       - 'release-*'
       - 'dev-*'
   pull_request:
+  workflow_dispatch:
   merge_group:
 permissions:
   contents: read
@@ -49,3 +50,14 @@ jobs:
             echo "Found %w in ./golang/cosmos; please use %s instead."
             exit 1
           fi
+
+  post-golangci-lint:
+    uses: ./.github/workflows/result.yml
+    if: (success() || failure())
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+    with:
+      event: ${{ github.event_name }}
+      needs-json: ${{ toJson(needs) }}
+    needs:
+      - golangci
