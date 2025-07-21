@@ -32,8 +32,6 @@ const options = {
   chainInfo: { type: 'string' },
   net: { type: 'string' },
   peer: { type: 'string', multiple: true },
-  podName: { type: 'string' },
-  container: { type: 'string' },
 };
 /**
  * @typedef {{
@@ -41,8 +39,6 @@ const options = {
  *   chainInfo?: string;
  *   net?: string;
  *   peer?: string[];
- *   podName?: string;
- *   container?: string;
  * }} FlagValues
  */
 
@@ -89,85 +85,19 @@ const parsePeers = strs => {
 };
 
 /**
- * Detect whether to use agd or kubectl for executing commands.
- * Checks:
- *   1. agd binary exists locally
- *   2. kubectl binary exists AND target pod/container has agd
- * @param {{ execFileSync: typeof import('child_process').execFileSync}} io
- * @param {string} podName
- * @param {string} container
- * @returns {'agd' | 'kubectl'}
- * @throws Error if neither agd nor kubectl can be used
- */
-const findAgdOrKubectl = ({ execFileSync }, podName, container) => {
-  try {
-    execFileSync('agd', ['--help'], { stdio: 'ignore' });
-    console.debug('Using local agd binary');
-    return 'agd';
-  } catch {
-    console.debug('Local agd not found, trying kubectl...');
-    try {
-      execFileSync('kubectl', ['version', '--client'], { stdio: 'ignore' });
-
-      // Check if pod is running
-      const pods = execFileSync(
-        'kubectl',
-        ['get', 'pods', podName, '-o', 'jsonpath={.status.phase}'],
-        { encoding: 'utf-8' },
-      ).trim();
-
-      if (pods !== 'Running') {
-        throw new Error(`Pod '${podName}' is not running (status: ${pods})`);
-      }
-
-      // Check if agd exists in pod/container
-      execFileSync(
-        'kubectl',
-        ['exec', podName, '-c', container, '--', 'agd', '--help'],
-        { stdio: 'ignore' },
-      );
-
-      console.debug(`Using kubectl to exec into pod '${podName}'`);
-      return 'kubectl';
-    } catch (err) {
-      console.error('kubectl fallback failed:', err.message);
-    }
-  }
-
-  throw new Error(
-    "Neither 'agd' is installed locally nor is it available in the Kubernetes pod. Please install 'agd' or ensure the pod/container has it.",
-  );
-};
-
-/**
  * @example
  *   const agd = makeAgd({execFileSync})
  *                 .withOpts({rpcAddrs: ['https...]});
  *   const info = await agd.query(['bank', 'balances', 'agoric1...]);
  * @param {{ execFileSync: typeof import('child_process').execFileSync}} io
- * @param {{ podName?: string, container?: string }} [options] - Optional configuration for kubectl
  */
-const makeAgd = (
-  { execFileSync },
-  { podName = 'agoriclocal-genesis-0', container = 'validator' } = {},
-) => {
-  const binary = findAgdOrKubectl({ execFileSync }, podName, container);
-
+const makeAgd = ({ execFileSync }) => {
   const exec = (
     /** @type {string[]} */
     args,
     /** @type {import('node:child_process').ExecFileSyncOptionsWithStringEncoding} */
     opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
-  ) => {
-    if (binary === 'agd') {
-      return execFileSync('agd', args, opts);
-    }
-    return execFileSync(
-      'kubectl',
-      ['exec', podName, '-c', container, '--', 'agd', ...args],
-      opts,
-    );
-  };
+  ) => execFileSync('agd', [...args], opts);
 
   /** @param {{ rpcAddrs?: string[] }} opts */
   const make = ({ rpcAddrs = [] } = {}) => {
@@ -298,7 +228,7 @@ export default async (homeP, endowments) => {
 
   await null;
   if (flags.net) {
-    if (!(flags.peer && flags.peer.length)) throw Error('--peer required');
+    if (!flags.peer) throw Error('--peer required');
     // only import/use net access if asked with --net
     const { execFileSync } = await import('child_process');
     const { chainName: chainId, rpcAddrs } = await getNetConfig(

@@ -130,7 +130,7 @@ const factoryAddresses = {
   },
   testnet: {
     Ethereum: '0x',
-    Avalanche: '0x84E2eFa88324A270b95B062048BD43fb821FDb0f',
+    Avalanche: '0x',
     Arbitrum: '0x',
     Optimism: '0x',
     Polygon: '0x',
