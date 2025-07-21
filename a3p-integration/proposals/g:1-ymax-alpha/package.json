@@ -4,7 +4,6 @@
     "sdk-generate": [
       "../../portfolio-deploy/src/access-token-setup.build.js submission",
       "../../portfolio-deploy/src/chain-info.build.js submission",
-      "../../portfolio-deploy/src/usdc-resolve.build.js submission",
       "../../portfolio-deploy/src/portfolio.build.js submission"
     ],
     "type": "/agoric.swingset.CoreEvalProposal"

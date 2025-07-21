@@ -13,7 +13,7 @@ const getCellValues = ({ value }) => {
   return JSON.parse(value).values;
 };
 
-test('ymax is deployed and appears in vstorage instance', async t => {
+test('ymax deployed incompletely', async t => {
   const instancePath = 'published.agoricNames.instance';
   const instanceRaw = await queryVstorage(instancePath);
   const instance = Object.fromEntries(
@@ -29,7 +29,10 @@ test('ymax is deployed and appears in vstorage instance', async t => {
   t.log(instancePath, Object.keys(instance).join(', '));
   t.log(chainInfoPath, chainInfo);
 
-  t.truthy('ymax0' in instance, 'ymax installation should exist in vstorage');
+  t.falsy(
+    'ymax0' in instance,
+    'ymax installation does not yet exist in vstorage',
+  );
 
   t.truthy(chainInfo, 'axelar chain info should exist in vstorage');
 });

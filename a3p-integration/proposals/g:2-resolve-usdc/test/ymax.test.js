@@ -20,16 +20,7 @@ test('ymax is deployed and appears in vstorage instance', async t => {
     getCapDataStructure(getCellValues(instanceRaw).at(-1)).structure,
   );
 
-  const chainInfoPath = 'published.agoricNames.chain.axelar';
-  const chainInfoRaw = await queryVstorage(chainInfoPath);
-  const chainInfo = getCapDataStructure(
-    getCellValues(chainInfoRaw).at(-1),
-  ).structure;
-
   t.log(instancePath, Object.keys(instance).join(', '));
-  t.log(chainInfoPath, chainInfo);
 
-  t.truthy('ymax0' in instance, 'ymax installation should exist in vstorage');
-
-  t.truthy(chainInfo, 'axelar chain info should exist in vstorage');
+  t.truthy('ymax0' in instance, 'ymax instance is present in vstorage');
 });
