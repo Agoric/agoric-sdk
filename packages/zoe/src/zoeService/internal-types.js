@@ -2,8 +2,9 @@
 /// <reference types="@agoric/zoe/exported" />
 
 /**
+ * @import {VatAdminFacet, } from '@agoric/swingset-vat';
  * @import {FeeMintAccess, GetBrands, GetBundleIDFromInstallation, GetIssuers, InstallBundle, InstallBundleID, SourceBundle} from './types.js';
- * @import {InstanceRecord} from './utils.js';
+ * @import {Instance, InstanceRecord, GetPublicFacet, GetTerms} from './utils.js';
  */
 
 /**
@@ -95,7 +96,7 @@
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
  * @property {() => Issuer} getInvitationIssuer
  * @property {() => object} getRoot of CreateVatResults
- * @property {() => import('@agoric/swingset-vat').VatAdminFacet} getAdminNode of CreateVatResults
+ * @property {() => VatAdminFacet} getAdminNode of CreateVatResults
  */
 
 /**
@@ -129,16 +130,16 @@
  * @property {InstallBundle} installBundle
  * @property {InstallBundleID} installBundleID
  * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation
- * @property {import('./utils.js').GetPublicFacet} getPublicFacet
+ * @property {GetPublicFacet} getPublicFacet
  * @property {GetBrands} getBrands
  * @property {GetIssuers} getIssuers
- * @property {import('./utils.js').GetTerms} getTerms
- * @property {(instance: import('./utils.js').Instance<any>) => string[]} getOfferFilter
+ * @property {GetTerms} getTerms
+ * @property {(instance: Instance<any>) => string[]} getOfferFilter
  * @property {(instance: Instance, strings: string[]) => any} setOfferFilter
- * @property {(instance: import('./utils.js').Instance<any>) => Promise<Installation>} getInstallationForInstance
+ * @property {(instance: Instance<any>) => Promise<Installation>} getInstallationForInstance
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation
- * @property {(invitationHandle: InvitationHandle) => import('@endo/patterns').Pattern | undefined} getProposalShapeForInvitation
+ * @property {(invitationHandle: InvitationHandle) => Pattern | undefined} getProposalShapeForInvitation
  */
 
 /**
