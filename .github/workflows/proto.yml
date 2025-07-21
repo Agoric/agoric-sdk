@@ -49,12 +49,12 @@ jobs:
             status=$?
           fi
           if [ $status -eq 0 ]; then
-            if [ "$EXPECT_BREAKAGE" = "true" ]; then
+            if [ "$EXPECT_BREAKAGE" = true ]; then
               echo "Expected breakage, but got no breakage."
               exit 1
             fi
             echo "As expected, no breakage was detected."
-          elif [ "$EXPECT_BREAKAGE" == "true" ]; then
+          elif [ "$EXPECT_BREAKAGE" = true ]; then
             echo "Expected breakage, and got it."
             exit 0
           else
