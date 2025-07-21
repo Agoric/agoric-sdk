@@ -13,6 +13,7 @@
  * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot';
  * @import {DeployScriptFunction, CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  */
+import { E } from '@endo/far';
 
 const trace = (...args) => console.log('USDC-R', ...args);
 
@@ -26,7 +27,7 @@ const trace = (...args) => console.log('USDC-R', ...args);
  */
 
 /** @param {BootstrapPowers & USDCResolvePowers} permitted */
-const resolveUSDC = async permitted => {
+export const resolveUSDC = async permitted => {
   trace('resolveUSDC...');
   const { agoricNames } = permitted.consume;
 
