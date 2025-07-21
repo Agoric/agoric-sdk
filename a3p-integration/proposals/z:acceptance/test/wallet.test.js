@@ -5,9 +5,9 @@ import test from 'ava';
 import { Fail } from '@endo/errors';
 import {
   retryUntilCondition,
-  VBankAccount,
   waitUntilAccountFunded,
 } from '@agoric/client-utils';
+import { VBankAccount } from '@agoric/internal/src/config.js'; 
 import {
   addUser,
   agoric,
