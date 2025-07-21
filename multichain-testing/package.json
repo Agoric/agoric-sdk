@@ -18,8 +18,8 @@
     "@agoric/cosmic-proto": "dev",
     "@agoric/fast-usdc": "dev",
     "@agoric/internal": "dev",
-    "@cosmjs/amino": "npm:^0.32.4",
-    "@cosmjs/cosmwasm-stargate": "^0.33.1",
+    "@cosmjs/amino": "npm:^0.34.0",
+    "@cosmjs/cosmwasm-stargate": "^0.34.0",
     "@cosmjs/crypto": "^0.34.0",
     "@cosmjs/proto-signing": "^0.34.0",
     "@cosmjs/stargate": "^0.34.0",
@@ -44,9 +44,7 @@
     "typescript": "~5.8.2"
   },
   "resolutions": {
-    "axios": "patch:axios@npm%3A1.6.7#~/.yarn/patches/axios-npm-1.6.7-d7b9974d1b.patch",
-    "axios@npm:^1.6.0": "patch:axios@npm%3A1.6.7#~/.yarn/patches/axios-npm-1.6.7-d7b9974d1b.patch",
-    "node-fetch": "patch:node-fetch@npm%3A2.7.0#~/.yarn/patches/node-fetch-npm-2.7.0-587d57004e.patch",
+    "node-fetch@npm:^2.7.0": "patch:node-fetch@npm%3A2.7.0#~/.yarn/patches/node-fetch-npm-2.7.0-587d57004e.patch",
     "node-fetch@npm:^2.6.9": "patch:node-fetch@npm%3A2.7.0#~/.yarn/patches/node-fetch-npm-2.7.0-587d57004e.patch",
     "node-fetch@npm:^2.6.12": "patch:node-fetch@npm%3A2.7.0#~/.yarn/patches/node-fetch-npm-2.7.0-587d57004e.patch",
     "node-fetch@npm:^2.6.7": "patch:node-fetch@npm%3A2.7.0#~/.yarn/patches/node-fetch-npm-2.7.0-587d57004e.patch",
@@ -100,8 +98,9 @@
     "@agoric/xsnap-lockdown": "portal:../packages/xsnap-lockdown",
     "@agoric/zoe": "portal:../packages/zoe",
     "@agoric/zone": "portal:../packages/zone",
-    "@cosmjs/proto-signing": "0.33.1",
-    "@cosmjs/stargate": "0.33.1"
+    "@cosmjs/tendermint-rpc@npm:0.32.3": "0.34.0",
+    "@cosmjs/proto-signing": "0.34.0",
+    "@cosmjs/stargate": "0.34.0"
   },
   "license": "Apache-2.0"
 }
