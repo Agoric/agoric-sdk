@@ -23,6 +23,12 @@ import { Fail, q as quote } from '@endo/errors';
  * }} JsonRpcResponse;
  */
 
+/**
+ * @template {any} T
+ * @typedef {{latest(height?: Height): Promise<T>;}} Topic<T>
+ */
+
+export const INVALID_HEIGHT_ERROR_MESSAGE = 'Invalid height';
 export const INVALID_RPC_ADDRESS_ERROR_MESSAGE =
   'No valid RPC address found in config';
 
@@ -45,10 +51,27 @@ const codecs = /** @type {const} */ ({
 });
 
 /**
+ * @param {string} errorMessage
+ * @param {Height} height
+ * @param {PATHS[keyof PATHS]} kind
+ * @param {string} path
+ * @param {MinimalNetworkConfig['rpcAddrs'][0]} rpcAddress
+ */
+const createError = (errorMessage, height, kind, path, rpcAddress) =>
+  Error(
+    `Cannot read '${kind}' of '${path}' from '${rpcAddress}' at height '${height}' due to error: ${errorMessage}`,
+  );
+
+/**
  * @param {{fetch: typeof window.fetch}} powers
  * @param {MinimalNetworkConfig} config
  */
 const makeAbciQueryClient = ({ fetch }, config) => {
+  const rpcAddress = config.rpcAddrs.find(Boolean);
+
+  if (!rpcAddress)
+    return Fail`${INVALID_RPC_ADDRESS_ERROR_MESSAGE} ${quote(config)}`;
+
   /**
    * @param {Height} height
    * @param {PATHS[keyof PATHS]} kind
@@ -59,18 +82,6 @@ const makeAbciQueryClient = ({ fetch }, config) => {
       `/abci_query?data=0x${encodeHex(
         codecs[kind].request.toProto({ path }),
       )}&height=${height}&path="${PATH_PREFIX}/${kind}"`,
-    );
-
-  /**
-   * @param {string} errorMessage
-   * @param {Height} height
-   * @param {PATHS[keyof PATHS]} kind
-   * @param {string} path
-   * @param {MinimalNetworkConfig['rpcAddrs'][0]} rpcAddress
-   */
-  const createError = (errorMessage, height, kind, path, rpcAddress) =>
-    Error(
-      `Cannot read '${kind}' of '${path}' from '${rpcAddress}' at height '${height}' due to error: ${errorMessage}`,
     );
 
   /**
@@ -91,11 +102,6 @@ const makeAbciQueryClient = ({ fetch }, config) => {
    */
   const query = async (path, { height = 0n, kind = PATHS.CHILDREN } = {}) => {
     await null;
-
-    const rpcAddress = config.rpcAddrs.find(Boolean);
-
-    if (!rpcAddress)
-      return Fail`${INVALID_RPC_ADDRESS_ERROR_MESSAGE} ${quote(config)}`;
 
     const codec = codecs[kind];
     /** @type {Response|undefined} */
@@ -127,8 +133,33 @@ const makeAbciQueryClient = ({ fetch }, config) => {
     return codec.response.decode(decodeBase64(result.response.value));
   };
 
-  return { query };
+  return { query, rpcAddress };
 };
+
+/**
+ * @template {any} T
+ * @param {{queryClient: ReturnType<typeof makeAbciQueryClient>}} powers
+ * @param {string} path
+ * @returns {Topic<T>}
+ */
+const makeTopic = ({ queryClient }, path) => ({
+  latest: async height => {
+    if (height && height < 0)
+      throw createError(
+        `${INVALID_HEIGHT_ERROR_MESSAGE} ${height}`,
+        height,
+        PATHS.DATA,
+        path,
+        queryClient.rpcAddress,
+      );
+
+    const response = await queryClient.query(path, {
+      height: height && height > 0n ? height - 1n : height,
+      kind: PATHS.DATA,
+    });
+    return /** @type {T} */ (response.value);
+  },
+});
 
 /**
  * @param {{fetch: typeof window.fetch}} powers
@@ -143,6 +174,12 @@ export const makeVStorageClient = ({ fetch }, config) => {
   const queryClient = makeAbciQueryClient({ fetch }, config);
 
   const vStorageClient = {
+    /**
+     * @template {any} T
+     * @param {string} path
+     */
+    fromTextBlock: path =>
+      /** @type {Topic<T>} */ (makeTopic({ queryClient }, path)),
     /**
      * @param {string} path
      */

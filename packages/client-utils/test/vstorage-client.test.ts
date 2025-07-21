@@ -2,12 +2,16 @@ import test from 'ava';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import {
+  INVALID_HEIGHT_ERROR_MESSAGE,
   INVALID_RPC_ADDRESS_ERROR_MESSAGE,
   makeVStorageClient,
   PATH_PREFIX,
   PATHS,
 } from '@agoric/client-utils/src/vstorage-client.js';
-import { QueryChildrenResponse } from '@agoric/cosmic-proto/agoric/vstorage/query.js';
+import {
+  QueryChildrenResponse,
+  QueryDataResponse,
+} from '@agoric/cosmic-proto/agoric/vstorage/query.js';
 import { encodeBase64 } from '@endo/base64';
 
 type AbciResponse = {
@@ -111,4 +115,76 @@ test('should receive the expected keys', async t => {
 
   const keys = await vStorageClient.keys(path);
   t.deepEqual(keys, expectedKeys);
+});
+
+test('should receive the expected topic data', async t => {
+  const expectedData = {
+    hookAccount: {
+      chainId: 'agoric-3',
+      encoding: 'bech32',
+      value:
+        'agoric1m6shs4jk2yxga82rkzr3vt6fhzfs0nqkkw5d8uwq2z50h6j25n9s6xzruc',
+    },
+  };
+  const zeroHeightExpectedData = {
+    ...expectedData,
+    hookAccount: {
+      ...expectedData.hookAccount,
+      value: 'agoric150kwm3g7v9n9m78525ca2h5nzvu9uzkp7qddw9',
+    },
+  };
+  const height = 2n;
+  const invalidHeight = height * -1n;
+  let mockFetch: Window['fetch'];
+  const path = 'published';
+
+  const responses: Array<Response> = [
+    {
+      abciResponse: {
+        code: 0,
+        ok: true,
+        value: encodeBase64(
+          QueryDataResponse.encode({
+            value: JSON.stringify(expectedData),
+          }).finish(),
+        ),
+      },
+      height: height - 1n,
+      kind: PATHS.DATA,
+      path,
+    },
+    {
+      abciResponse: {
+        code: 0,
+        ok: true,
+        value: encodeBase64(
+          QueryDataResponse.encode({
+            value: JSON.stringify(zeroHeightExpectedData),
+          }).finish(),
+        ),
+      },
+      height: 0n,
+      kind: PATHS.DATA,
+      path,
+    },
+  ];
+
+  const vStorageClient = makeVStorageClient(
+    { fetch: (...args) => mockFetch(...args) },
+    testConfig,
+  );
+
+  mockFetch = makeMockFetch(createResponseMap(responses));
+
+  const topic = vStorageClient.fromTextBlock<string>(path);
+
+  let data = await topic.latest(height);
+  t.deepEqual(JSON.parse(data), expectedData);
+
+  await t.throwsAsync(() => topic.latest(invalidHeight), {
+    message: new RegExp(`.*${INVALID_HEIGHT_ERROR_MESSAGE} ${invalidHeight}.*`),
+  });
+
+  data = await topic.latest();
+  t.deepEqual(JSON.parse(data), zeroHeightExpectedData);
 });
