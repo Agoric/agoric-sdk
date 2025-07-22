@@ -21,5 +21,4 @@ test('post-upgrade vat details', async t => {
     actualVatDetails[vatName] = await getVatDetails(vatName);
   }
   t.like(actualVatDetails, expectedVatDetails);
-
 });
