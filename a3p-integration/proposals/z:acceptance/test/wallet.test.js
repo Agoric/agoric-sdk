@@ -7,7 +7,7 @@ import {
   retryUntilCondition,
   waitUntilAccountFunded,
 } from '@agoric/client-utils';
-import { VBankAccount } from '@agoric/internal/src/config.js'; 
+import { VBankAccount } from '@agoric/internal/src/config.js';
 import {
   addUser,
   agoric,
