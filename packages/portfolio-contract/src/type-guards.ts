@@ -155,6 +155,13 @@ harden(PoolPlaces);
  * Names of places where a portfolio may have a position.
  */
 export type PoolKey = keyof typeof PoolPlaces;
+
+/** Ext for Extensible: includes PoolKeys in future upgrades */
+export type PoolKeyExt = string;
+
+/** Ext for Extensible: includes PoolKeys in future upgrades */
+export const PoolKeyShapeExt = M.string();
+
 // #endregion
 
 // #region ymax0 vstorage keys and values
@@ -199,7 +206,7 @@ type FlowStatus = {
 // XXX relate paths to types a la readPublished()
 export type StatusFor = {
   portfolio: {
-    positionKeys: PoolKey[];
+    positionKeys: PoolKeyExt[];
     flowCount: number;
     // XXX: accountIdByChain: Record<ChainAccountKey, AccountId>;
     accountIdByChain: Record<string, AccountId>;
@@ -215,11 +222,10 @@ export type StatusFor = {
   flow: FlowStatus | (Omit<FlowStatus, 'dest'> & { where: string }); // recovery failed
 };
 
-export const PoolKeyShape = M.string(); // prefer string over M.or(...) for extensibility
 export const PortfolioStatusShape: TypedPattern<StatusFor['portfolio']> =
   M.splitRecord({
-    positionKeys: M.arrayOf(PoolKeyShape),
-    flowCount: M.nat(),
+    positionKeys: M.arrayOf(PoolKeyShapeExt),
+    flowCount: M.number(),
     accountIdByChain: M.recordOf(
       M.or('agoric', 'noble'), // ChainAccountKey
       M.string(), // AccountId
@@ -236,7 +242,7 @@ export const PortfolioStatusShape: TypedPattern<StatusFor['portfolio']> =
  * @param key - PoolKey
  * @returns Path segments for vstorage
  */
-export const makePositionPath = (parent: number, key: PoolKey) => [
+export const makePositionPath = (parent: number, key: PoolKeyExt) => [
   `portfolio${parent}`,
   'positions',
   key,

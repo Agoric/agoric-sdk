@@ -32,15 +32,16 @@ import { AxelarChain, SupportedChain, YieldProtocol } from './constants.js';
 import type { AxelarId } from './portfolio.contract.js';
 import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
-import type { makeProposalShapes, PoolKey, StatusFor } from './type-guards.js';
+import type { makeOfferArgsShapes } from './type-guards-steps.js';
 import {
   makeFlowPath,
   makePortfolioPath,
-  PoolKeyShape,
+  PoolKeyShapeExt,
+  type makeProposalShapes,
   type OfferArgsFor,
+  type PoolKey,
+  type StatusFor,
 } from './type-guards.js';
-import type { makeOfferArgsShapes } from './type-guards-steps.js';
-
 const trace = makeTracer('PortExo');
 const { values } = Object;
 
@@ -233,7 +234,7 @@ export const preparePortfolioKit = (
         accountsPending: zone.detached().mapStore('accountsPending'),
         // NEEDSTEST: for forgetting to use detached()
         positions: zone.detached().mapStore('positions', {
-          keyShape: PoolKeyShape,
+          keyShape: PoolKeyShapeExt,
           valueShape: M.remotable('Position'),
         }),
       };
