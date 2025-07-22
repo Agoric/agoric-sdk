@@ -1,6 +1,8 @@
 #! /bin/bash
 set -ueo pipefail
 
+COMMAND=${1:-install}
+
 # cd to the script's directory
 cd "$(dirname -- "$(readlink -f -- "$0")")/.."
 
@@ -22,7 +24,7 @@ find . -name node_modules -prune -o -name yarn.lock -print0 \
     echo "Updating $lockfile"
     (
       cd "$dir"
-      "${COREPACK_SHIMS}yarn" install
+      "${COREPACK_SHIMS}yarn" $COMMAND
     )
   done
 echo "All yarn.lock files updated."
