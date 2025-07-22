@@ -331,6 +331,16 @@ export function makeTranscriptStore(
    * @yields {Uint8Array}
    */
   async function* exportSpan(name) {
+    yield* syncExportSpan(name);
+  }
+  harden(exportSpan);
+
+  /**
+   * @param {string} name  The name of the transcript artifact to be read
+   * @returns {IterableIterator<Uint8Array>}
+   * @yields {Uint8Array}
+   */
+  function* syncExportSpan(name) {
     typeof name === 'string' || Fail`artifact name must be a string`;
     const parts = name.split('.');
     const [type, vatID, pos] = parts;
@@ -344,7 +354,6 @@ export function makeTranscriptStore(
       yield Buffer.from(`${entry}\n`);
     }
   }
-  harden(exportSpan);
 
   const sqlEndCurrentSpan = db.prepare(`
     UPDATE transcriptSpans
@@ -366,8 +375,9 @@ export function makeTranscriptStore(
    *
    * @param {string} vatID
    * @param {ReturnType<getCurrentSpanBounds>} bounds
+   * @returns {{deferredTask: Promise<void>}}
    */
-  async function closeSpan(vatID, bounds) {
+  function closeSpan(vatID, bounds) {
     ensureTxn();
     const { startPos, endPos, hash, incarnation } = bounds;
     const rec = spanRec(vatID, startPos, endPos, hash, false, incarnation);
@@ -378,11 +388,11 @@ export function makeTranscriptStore(
     // and change its DB row to isCurrent=null
     sqlEndCurrentSpan.run(vatID);
 
-    await null;
+    let archiveResult = Promise.resolve();
     if (archiveTranscript) {
       const spanName = spanArtifactName(rec);
-      const entries = exportSpan(spanName);
-      await archiveTranscript(spanName, entries);
+      const entries = [...syncExportSpan(spanName)];
+      archiveResult = archiveTranscript(spanName, entries);
     }
     if (!keepTranscripts) {
       // Delete items of the previously-current span.
@@ -393,15 +403,23 @@ export function makeTranscriptStore(
       // that doesn't include them.
       sqlDeleteOldItems.run(vatID, startPos, endPos);
     }
+
+    return harden({ deferredTask: archiveResult });
   }
 
+  /**
+   * This function guarantees that all store operations are done synchronously.
+   *
+   * @param {string} vatID
+   * @param {boolean} isNewIncarnation
+   */
   async function doSpanRollover(vatID, isNewIncarnation) {
     ensureTxn();
     const bounds = getCurrentSpanBounds(vatID);
     const { endPos, incarnation } = bounds;
 
     // deal with the now-old span
-    await closeSpan(vatID, bounds);
+    const { deferredTask } = closeSpan(vatID, bounds);
 
     // create a new (empty) DB row, with isCurrent=1
     const newSpanIncarnation = isNewIncarnation ? incarnation + 1 : incarnation;
@@ -418,12 +436,16 @@ export function makeTranscriptStore(
     );
     noteExport(spanMetadataKey(rec), JSON.stringify(rec));
 
+    await deferredTask;
+
     return newSpanIncarnation;
   }
 
   /**
    * End the current transcript span for a vat and start a new span in a new
    * incarnation (e.g., after a vat upgrade).
+   *
+   * This function guarantees that all store operations are done synchronously.
    *
    * @param {string} vatID  The vat whose transcript is to rollover to a new
    *    span.
@@ -437,6 +459,8 @@ export function makeTranscriptStore(
   /**
    * End the current transcript span for a vat and start a new span in the
    * current incarnation (e.g., after a heap snapshot event).
+   *
+   * This function guarantees that all store operations are done synchronously.
    *
    * @param {string} vatID  The vat whose transcript is to rollover to a new
    *    span.
@@ -491,6 +515,8 @@ export function makeTranscriptStore(
    * Prepare for vat deletion by marking the isCurrent=1 span as not current.
    * Idempotent.
    *
+   * This function guarantees that all store operations are done synchronously.
+   *
    * @param {string} vatID  The vat being terminated/deleted.
    */
   async function stopUsingTranscript(vatID) {
@@ -499,10 +525,12 @@ export function makeTranscriptStore(
     if (!bounds) return;
 
     // deal with the now-old span
-    await closeSpan(vatID, bounds);
+    const { deferredTask } = closeSpan(vatID, bounds);
 
     // remove the transcript.${vatID}.current record
     noteExport(spanMetadataKey({ vatID, isCurrent: true }), undefined);
+
+    await deferredTask;
   }
 
   /**
