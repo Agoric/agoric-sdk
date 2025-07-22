@@ -15,12 +15,10 @@ export const seatKeywords: SeatKeyword[] = ['Cash', 'Deposit'];
 harden(seatKeywords);
 
 export type AssetPlaceRef = `<${SeatKeyword}>` | `@${SupportedChain}` | PoolKey;
-const PositionRefShape = M.number();
 const AssetPlaceRefShape = M.or(
   ...seatKeywords.map(kw => `<${kw}>`),
   ...values(SupportedChain).map(c => `@${c}`),
   ...keys(PoolPlaces),
-  PositionRefShape,
 );
 
 // XXX NEEDSTEST: check that all SupportedChains match; no `@`s etc.
