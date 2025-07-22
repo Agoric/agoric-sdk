@@ -6,6 +6,7 @@ import {
   startOrchContract,
 } from './orch.start.js';
 import { name, permit } from './portfolio.contract.permit.js';
+import { E } from '@endo/far';
 
 /**
  * @import { AxelarId, start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
@@ -110,14 +111,25 @@ export const startPortfolio = async (permitted, configStruct) => {
 
   await permitted.consume.chainInfoPublished;
 
-  const { issuer } = permitted;
-  const [BLD, USDC, PoC26] = await Promise.all([
-    issuer.consume.BLD,
-    issuer.consume.USDC,
-    issuer.consume.PoC26,
-  ]);
+  const {
+    issuer,
+    consume: { agoricNames },
+  } = permitted;
+
+  const PoC26 = await issuer.consume.PoC26;
+  trace('startPortfolio: settled PoC26');
+  const USDC = await E(agoricNames).lookup('issuer', 'USDC');
+  trace('startPortfolio: settled USDC');
+  const BLD = await E(agoricNames).lookup('issuer', 'BLD');
+  trace('startPortfolio: settled BLD');
+
   // Include BLD: BLD for use with assetInfo.brandKey
-  const issuerKeywordRecord = { USDC, Access: PoC26, Fee: BLD, BLD };
+  const issuerKeywordRecord = {
+    USDC,
+    Access: PoC26,
+    Fee: BLD,
+    BLD,
+  };
   await startOrchContract(
     name,
     portfolioDeployConfigShape,
