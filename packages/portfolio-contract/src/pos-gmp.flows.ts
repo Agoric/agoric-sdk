@@ -178,6 +178,7 @@ export type EVMContext<CN extends string> = {
   gmpChain: Chain<{ chainId: string }>;
   addresses: Record<CN | 'usdc', EVMT['address']>;
   axelarIds: AxelarId;
+  calls?: ContractCall[];
 };
 
 type AaveI = {
@@ -271,3 +272,13 @@ export const CompoundProtocol = {
   AxelarChain,
   EVMContext<'compound'>
 >;
+
+export const SendGmp = {
+  sendGmp: async (ctx, src) => {
+    const { remoteAddress } = src;
+    const { lca, gmpChain, gmpFee, calls } = ctx;
+    const axelarId = ctx.axelarIds[src.chainName];
+    const target = { axelarId, remoteAddress };
+    await sendGMPContractCall(target, calls, gmpFee, lca, gmpChain);
+  },
+};

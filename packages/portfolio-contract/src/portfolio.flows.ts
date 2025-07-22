@@ -37,6 +37,7 @@ import {
   CCTPfromEVM,
   CompoundProtocol,
   provideEVMAccount,
+  SendGmp,
   type EVMContext,
 } from './pos-gmp.flows.ts';
 import {
@@ -58,6 +59,7 @@ import {
   type PoolKey,
   type ProposalType,
 } from './type-guards.ts';
+import type { ContractCall } from '@agoric/orchestration/src/axelar-types.js';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
@@ -69,6 +71,7 @@ export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
 export type PortfolioInstanceContext = {
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
+  calls?: ContractCall[];
   usdc: { brand: Brand<'nat'>; denom: Denom };
   gmpFeeInfo: { brand: Brand<'nat'>; denom: Denom };
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
@@ -264,6 +267,7 @@ type Way =
   | { how: 'IBC'; src: 'noble'; dest: 'agoric' }
   | { how: 'CCTP'; dest: AxelarChain }
   | { how: 'CCTP'; src: AxelarChain }
+  | { how: 'Gmp'; dest: SupportedChain }
   | {
       how: YieldProtocol;
       /** pool we're supplying */
@@ -283,7 +287,7 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
   const { src } = moveDesc;
   const { dest } = moveDesc;
 
-  const srcKind = getAssetPlaceRefKind(src);
+  const srcKind = moveDesc.amount ? getAssetPlaceRefKind(src) : 'gmp';
   switch (srcKind) {
     case 'pos': {
       const destName = getChainNameOfPlaceRef(dest);
@@ -298,7 +302,13 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
       // XXX check that destName is in protocol.chains
       return { how: protocol, poolKey, dest: destName };
     }
-
+    case 'gmp': {
+      const destName = getChainNameOfPlaceRef(dest);
+      if (!destName)
+        throw Fail`src pos must have account as dest ${q(moveDesc)}`;
+      moveDesc.fee || Fail`missing fee ${q(moveDesc)}`;
+      return { how: 'Gmp', dest: destName };
+    }
     case 'seat':
       getAssetPlaceRefKind(dest) === 'accountId' || // XXX check for agoric
         Fail`src seat must have account as dest ${q(moveDesc)}`;
@@ -360,7 +370,7 @@ const stepFlow = async (
     const axelar = await orch.getChain('axelar');
     const { denom } = ctx.gmpFeeInfo;
     const fee = { denom, value: move.fee ? move.fee.value : 0n };
-    const { axelarIds } = ctx;
+    const { axelarIds, calls } = ctx;
     const gmp = { chain: axelar, fee: move.fee?.value || 0n, axelarIds }; // XXX throw if fee missing?
     const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
     const gInfo = await provideEVMAccount(chain, gmp, lca, ctx, kit);
@@ -372,6 +382,7 @@ const stepFlow = async (
       gmpFee: fee,
       gmpChain: axelar,
       axelarIds,
+      calls,
     });
     return { evmCtx, gInfo, accountId };
   };
@@ -418,6 +429,25 @@ const stepFlow = async (
         recover: () => pImpl.supply(evmCtx, amount, gInfo),
       };
     }
+  };
+
+  const makeGmpStep = async (way: Way & { how: 'Gmp' }, move: MovementDesc) => {
+    // XXX move this check up to wayFromSrcToDesc
+    const chainName = way.dest;
+    assert(keys(AxelarChain).includes(chainName));
+    const evmChain = chainName as AxelarChain;
+
+    const [contract, pImpl] = ['factory' as const, SendGmp];
+    const { evmCtx, gInfo } = await provideEVMInfo(contract, evmChain, move);
+
+    return {
+      how: way.how,
+      amount: move.amount,
+      src: { account: evmCtx.lca },
+      dest: { proxy: gInfo },
+      apply: () => pImpl.sendGmp(evmCtx, gInfo),
+      recover: () => assert.fail('gmp call. cannot recover'),
+    };
   };
 
   const provideAgoricNoble = () =>
@@ -578,7 +608,9 @@ const stepFlow = async (
         });
         break;
       }
-
+      case 'Gmp':
+        todo.push(() => makeGmpStep(way as Way & { how: 'Gmp' }, move));
+        break;
       case 'Compound':
         todo.push(() =>
           makeEVMProtocolStep(way as Way & { how: 'Compound' }, move),
