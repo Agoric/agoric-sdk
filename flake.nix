@@ -22,6 +22,7 @@
       ];
       
       imports = [
+        ./golang/cosmos/agd.nix
         ./nix/nodejs.nix
         ./nix/devShell.nix
       ];
