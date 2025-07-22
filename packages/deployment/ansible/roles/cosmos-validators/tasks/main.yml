@@ -50,13 +50,23 @@
   become_user: '{{ service }}'
   become: true
   shell: "\
-    agd tx staking create-validator --keyring-backend=test \
-    --chain-id={{ CHAIN_NAME }} --amount={{ STAKER_SELF_DELEGATION }} \
-    --moniker={{ moniker | default(inventory_hostname) }} --pubkey='{{ valconspub }}' \
-    {{ (website | default(None)) and '--website=' ~ website }} \
-    {{ (identity | default(None)) and '--identity=' ~ identity }} \
-    --commission-rate=0.1 --commission-max-rate=0.2 --commission-max-change-rate=0.01 \
-    --min-self-delegation=1 --broadcast-mode=block --from={{ staker }} --yes"
+    agd tx staking create-validator \
+    --amount={{ STAKER_SELF_DELEGATION }} \
+    --pubkey='{{ valconspub }}' \
+    --moniker='{{ moniker | default(inventory_hostname) }}' \
+    {{ (website | default(None)) and '--website=' ~ website or '' }} \
+    {{ (identity | default(None)) and '--identity=' ~ identity or '' }} \
+    {{ (details | default(None)) and '--details=' ~ details or '' }} \
+    {{ (security_contact | default(None)) and '--security-contact=' ~ security_contact or '' }} \
+    --commission-rate='0.100000000000000000' \
+    --commission-max-rate='0.200000000000000000' \
+    --commission-max-change-rate='0.010000000000000000' \
+    --min-self-delegation='1' \
+    --from={{ staker }} \
+    --chain-id={{ CHAIN_NAME }} \
+    --keyring-backend=test \
+    --broadcast-mode=block \
+    --yes"
   vars:
     staker: '{{ STAKER }}-{{ inventory_hostname }}'
   when: inventory_hostname != STAKER_NODE
