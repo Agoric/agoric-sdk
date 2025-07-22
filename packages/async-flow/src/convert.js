@@ -4,7 +4,7 @@ import { objectMap } from '@endo/common/object-map.js';
 import {
   getErrorConstructor,
   getTag,
-  isObject,
+  isPrimitive,
   makeTagged,
   passStyleOf,
 } from '@endo/pass-style';
@@ -32,7 +32,7 @@ const makeConvert = (convertRemotable, convertPromiseOrVow, convertError) => {
   };
 
   const innerConvert = specimen => {
-    if (!isObject(specimen)) {
+    if (isPrimitive(specimen)) {
       return specimen;
     }
     const passStyle = passStyleOf(specimen);

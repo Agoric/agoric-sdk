@@ -3,7 +3,7 @@
  */
 import { Nat } from '@endo/nat';
 import { assert, q, Fail } from '@endo/errors';
-import { isObject } from '@endo/marshal';
+import { isPrimitive } from '@endo/pass-style';
 import { parseKernelSlot } from '../parseKernelSlots.js';
 import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
 import { insistVatID } from '../../lib/id.js';
@@ -45,8 +45,8 @@ export const DEFAULT_REAP_DIRT_THRESHOLD_KEY =
 
 const isBundleSource = source => {
   return (
-    isObject(source) &&
-    (isObject(source.bundle) ||
+    !isPrimitive(source) &&
+    (!isPrimitive(source.bundle) ||
       typeof source.bundleName === 'string' ||
       typeof source.bundleID === 'string')
   );
@@ -70,7 +70,7 @@ export function initializeVatState(
 ) {
   assert(isBundleSource(source), `vat ${vatID} source has wrong shape`);
   assert(
-    isObject(options) && isObject(options.workerOptions),
+    !isPrimitive(options) && !isPrimitive(options.workerOptions),
     `vat ${vatID} options is missing workerOptions`,
   );
 

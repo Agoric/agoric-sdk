@@ -130,7 +130,7 @@ const factoryAddresses = {
   },
   testnet: {
     Ethereum: '0x',
-    Avalanche: '0x',
+    Avalanche: '0x84E2eFa88324A270b95B062048BD43fb821FDb0f',
     Arbitrum: '0x',
     Optimism: '0x',
     Polygon: '0x',
@@ -142,8 +142,23 @@ const factoryAddresses = {
 /**
  * TODO:
  * - Add USDC addresses for Fantom and Binance (mainnet and testnet)
- * - Find a way to pass testnet and mainnet config seperately
  */
+
+/** @see {@link https://developers.circle.com/cctp/evm-smart-contracts#tokenmessenger-mainnet} */
+const mainnetTokenMessenger = (rows =>
+  Object.fromEntries(
+    rows.map(([Chain, Domain, Address]) => [Chain, { Domain, Address }]),
+  ))(
+  /** @type {[string, number, `0x${string}`][]} */ ([
+    ['Ethereum', 0, '0xBd3fa81B58Ba92a82136038B25aDec7066af3155'],
+    ['Avalanche', 1, '0x6B25532e1060CE10cc3B0A99e5683b91BFDe6982'],
+    ['OP Mainnet', 2, '0x2B4069517957735bE00ceE0fadAE88a26365528f'],
+    ['Arbitrum', 3, '0x19330d10D9Cc8751218eaf51E8885D058642E08A'],
+    ['Base', 6, '0x1682Ae6375C4E4A97e4B583BC394c861A46D8962'],
+    ['Polygon PoS', 7, '0x9daF8c91AEFAE50b9c0E69629D3F6Ca40cA3B3FE'],
+    ['Unichain', 10, '0x4e744b28E787c3aD0e810eD65A24461D4ac5a762'],
+  ]),
+);
 
 /**
  * Mainnet configuration with real contract addresses
@@ -156,30 +171,35 @@ const mainnetContracts = {
     compound: '0x', // TODO
     factory: factoryAddresses.mainnet.Ethereum,
     usdc: usdcAddresses.mainnet.Ethereum,
+    tokenMessenger: mainnetTokenMessenger.Ethereum.Address,
   },
   Avalanche: {
     aavePool: aaveAddresses.mainnet.Avalanche,
     compound: '0x', // TODO
     factory: factoryAddresses.mainnet.Avalanche,
     usdc: usdcAddresses.mainnet.Avalanche,
+    tokenMessenger: mainnetTokenMessenger.Avalanche.Address,
   },
   Optimism: {
     aavePool: aaveAddresses.mainnet.Optimism,
     compound: '0x', // TODO
     factory: factoryAddresses.mainnet.Optimism,
     usdc: usdcAddresses.mainnet.Optimism,
+    tokenMessenger: mainnetTokenMessenger['OP Mainnet'].Address,
   },
   Arbitrum: {
     aavePool: aaveAddresses.mainnet.Arbitrum,
     compound: '0x', // TODO
     factory: factoryAddresses.mainnet.Arbitrum,
     usdc: usdcAddresses.mainnet.Arbitrum,
+    tokenMessenger: mainnetTokenMessenger.Arbitrum.Address,
   },
   Polygon: {
     aavePool: aaveAddresses.mainnet.Polygon,
     compound: '0x', // TODO
     factory: factoryAddresses.mainnet.Polygon,
     usdc: usdcAddresses.mainnet.Polygon,
+    tokenMessenger: mainnetTokenMessenger['Polygon PoS'].Address,
   },
   Fantom: {
     // TODO: aave and compound?
@@ -187,16 +207,35 @@ const mainnetContracts = {
     compound: '0x',
     factory: factoryAddresses.mainnet.Fantom,
     usdc: usdcAddresses.mainnet.Fantom,
+    tokenMessenger: '0x', // TODO
   },
   Binance: {
     aavePool: aaveAddresses.mainnet.Binance,
     compound: '0x', // TODO
     factory: factoryAddresses.mainnet.Binance,
     usdc: usdcAddresses.mainnet.Binance,
+    tokenMessenger: '0x', // TODO
   },
 };
 harden(mainnetContracts);
 
+/** https://developers.circle.com/cctp/evm-smart-contracts#tokenmessenger-testnet */
+const testnetTokenMessenger = (rows =>
+  Object.fromEntries(
+    rows.map(([Chain, Domain, Address]) => [Chain, { Domain, Address }]),
+  ))(
+  /** @type {[string, number, `0x${string}`][]} */ ([
+    ['Ethereum Sepolia', 0, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
+    ['Avalanche Fuji', 1, '0xeb08f243E5d3FCFF26A9E38Ae5520A669f4019d0'],
+    ['OP Sepolia', 2, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
+    ['Arbitrum Sepolia', 3, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
+    ['Base Sepolia', 6, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
+    ['Polygon PoS Amoy', 7, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
+    ['Unichain Sepolia', 10, '0x8ed94B8dAd2Dc5453862ea5e316A8e71AAed9782'],
+  ]),
+);
+
+// XXX turn these inside out? contract.chain.address
 /**
  * Testnet configuration with testnet contract addresses
  * @type {EVMContractAddressesMap}
@@ -207,24 +246,28 @@ const testnetContracts = {
     compound: '0x', // TODO
     factory: factoryAddresses.testnet.Ethereum,
     usdc: usdcAddresses.testnet.Ethereum,
+    tokenMessenger: testnetTokenMessenger['Ethereum Sepolia'].Address,
   },
   Avalanche: {
     aavePool: aaveAddresses.testnet.Avalanche,
     compound: '0x', // TODO
     factory: factoryAddresses.testnet.Avalanche,
     usdc: usdcAddresses.testnet.Avalanche,
+    tokenMessenger: testnetTokenMessenger['Avalanche Fuji'].Address,
   },
   Optimism: {
     aavePool: aaveAddresses.testnet.Optimism,
     compound: '0x', // TODO
     factory: factoryAddresses.testnet.Optimism,
     usdc: usdcAddresses.testnet.Optimism,
+    tokenMessenger: testnetTokenMessenger['OP Sepolia'].Address,
   },
   Arbitrum: {
     aavePool: aaveAddresses.testnet.Arbitrum,
     compound: '0x', // TODO
     factory: factoryAddresses.testnet.Arbitrum,
     usdc: usdcAddresses.testnet.Arbitrum,
+    tokenMessenger: testnetTokenMessenger['Arbitrum Sepolia'].Address,
   },
   Polygon: {
     // TODO: AAVE and Compound on polygon testnet?
@@ -232,6 +275,7 @@ const testnetContracts = {
     compound: '0x',
     factory: factoryAddresses.testnet.Polygon,
     usdc: usdcAddresses.testnet.Polygon,
+    tokenMessenger: testnetTokenMessenger['Polygon PoS Amoy'].Address,
   },
   Fantom: {
     // TODO: aave and compound?
@@ -239,6 +283,7 @@ const testnetContracts = {
     compound: '0x',
     factory: factoryAddresses.testnet.Fantom,
     usdc: usdcAddresses.testnet.Fantom,
+    tokenMessenger: '0x', // TODO?
   },
   Binance: {
     // TODO: AAVE on Binance testnet?
@@ -246,6 +291,7 @@ const testnetContracts = {
     compound: '0x',
     factory: factoryAddresses.testnet.Binance,
     usdc: usdcAddresses.testnet.Binance,
+    tokenMessenger: '0x', // TODO?
   },
 };
 harden(testnetContracts);

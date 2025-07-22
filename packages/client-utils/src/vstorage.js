@@ -96,6 +96,7 @@ export const makeVStorage = ({ fetch }, config) => {
     const rpc = kindToRpc[kind];
     const codec = codecs[rpc];
 
+    /** @type {Awaited<ReturnType<typeof getVstorageJson>>} */
     let data;
     try {
       data = await getVstorageJson(path, { kind, height });
@@ -190,7 +191,7 @@ export const makeVStorage = ({ fetch }, config) => {
           }
           throw err;
         }
-        parts.push(values);
+        parts.push(values.reverse());
         // console.debug('PUSHED', values);
         // console.debug('NEW', { blockHeight, minHeight });
         if (minHeight && Number(blockHeight) <= Number(minHeight)) break;

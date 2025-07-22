@@ -20,7 +20,7 @@
  *
  * For usage examples, see `makeTrader` in {@link ../test/portfolio-actors.ts}.
  */
-import { type Amount, type Brand, type NatValue } from '@agoric/ertp';
+import type { Amount, Brand, NatAmount, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { AnyNatAmountShape, type AccountId } from '@agoric/orchestration';
 import type {
@@ -33,9 +33,9 @@ import { AxelarChain, YieldProtocol } from './constants.js';
 import type { EVMContractAddresses, start } from './portfolio.contract.js';
 import type { PortfolioKit } from './portfolio.exo.js';
 
-// #region preliminaries
-const { fromEntries, keys } = Object;
+export type { OfferArgsFor } from './type-guards-steps.js';
 
+// #region preliminaries
 /**
  * @param brand must be a 'nat' brand, not checked
  */
@@ -66,23 +66,6 @@ export type PortfolioContinuingInvitationMaker =
   keyof PortfolioKit['invitationMakers'];
 
 // #region Proposal Shapes
-export type AaveGive = {
-  AaveGmp: Amount<'nat'>;
-  AaveAccount: Amount<'nat'>;
-  Aave: Amount<'nat'>;
-};
-export type CompoundGive = {
-  CompoundGmp: Amount<'nat'>;
-  CompoundAccount: Amount<'nat'>;
-  Compound: Amount<'nat'>;
-};
-export type GmpGive = {} | AaveGive | CompoundGive | (AaveGive & CompoundGive);
-export type OpenPortfolioGive = {
-  USDN?: Amount<'nat'>;
-  NobleFees?: Amount<'nat'>;
-  Access?: Amount<'nat'>;
-} & ({} | GmpGive);
-
 /**
  * Proposal shapes for portfolio operations.
  *
@@ -90,77 +73,67 @@ export type OpenPortfolioGive = {
  * **rebalance**: Add funds (give) or withdraw funds (want) from protocols
  */
 export type ProposalType = {
-  openPortfolio: { give: OpenPortfolioGive };
+  openPortfolio: {
+    give: {
+      /** required iff the contract was started with an Access issuer */
+      Access?: NatAmount;
+      Deposit?: NatAmount;
+      GmpFee?: NatAmount;
+    };
+  };
   rebalance:
-    | { give: OpenPortfolioGive; want: {} }
-    | { want: Partial<Record<YieldProtocol, Amount<'nat'>>>; give: {} };
+    | { give: { Deposit?: NatAmount; GmpFee?: NatAmount }; want: {} }
+    | { want: { Cash: NatAmount }; give: { GmpFee?: NatAmount } };
 };
-
-const YieldProtocolShape = M.or(...keys(YieldProtocol));
 
 export const makeProposalShapes = (
   usdcBrand: Brand<'nat'>,
+  feeBrand: Brand<'nat'>,
   accessBrand?: Brand<'nat'>,
 ) => {
-  // TODO: Update usdcAmountShape, to include BLD/aUSDC after discussion with Axelar team
-  const usdcAmountShape = makeNatAmountShape(usdcBrand);
-  const AaveGiveShape = harden({
-    Aave: usdcAmountShape,
-    AaveGmp: usdcAmountShape,
-    AaveAccount: usdcAmountShape,
-  });
-  const CompoundGiveShape = harden({
-    Compound: usdcAmountShape,
-    CompoundGmp: usdcAmountShape,
-    CompoundAccount: usdcAmountShape,
-  });
+  const $Shape = makeNatAmountShape(usdcBrand);
+  const FeeShape = makeNatAmountShape(feeBrand);
+  const accessShape = accessBrand
+    ? { Access: makeNatAmountShape(accessBrand, 1n) }
+    : {};
 
-  // The give for openPortfolio and rebalance differ only in required properties
-  const giveWith = x => {
-    return M.splitRecord(
-      x,
-      { USDN: usdcAmountShape, NobleFees: usdcAmountShape },
-      M.or(
-        harden({}),
-        AaveGiveShape,
-        CompoundGiveShape,
-        // TODO: and no others
-        M.and(M.splitRecord(AaveGiveShape), M.splitRecord(CompoundGiveShape)),
-      ),
-    );
-  };
-
-  return {
-    openPortfolio: M.splitRecord(
-      {
-        give: giveWith(
-          accessBrand ? { Access: makeNatAmountShape(accessBrand, 1n) } : {},
-        ),
-      },
-      { want: {}, exit: M.any() },
-      {},
-    ) as TypedPattern<ProposalType['openPortfolio']>,
-    rebalance: M.or(
-      M.splitRecord({ give: giveWith({}) }, { want: {}, exit: M.any() }, {}),
-      M.splitRecord(
-        { want: M.recordOf(YieldProtocolShape, usdcAmountShape) },
-        { give: {}, exit: M.any() },
+  const openPortfolio = M.splitRecord(
+    {
+      give: M.splitRecord(
+        accessShape,
+        { Deposit: $Shape, GmpFee: FeeShape },
         {},
       ),
-    ) as TypedPattern<ProposalType['rebalance']>,
-  };
+    },
+    { want: {}, exit: M.any() },
+    {},
+  ) as TypedPattern<ProposalType['openPortfolio']>;
+  const rebalance = M.or(
+    M.splitRecord(
+      { give: M.splitRecord({}, { Deposit: $Shape, GmpFee: FeeShape }, {}) },
+      { want: {}, exit: M.any() },
+      {},
+    ),
+    M.splitRecord(
+      { want: M.splitRecord({ Cash: $Shape }, {}, {}) },
+      { give: M.splitRecord({}, { GmpFee: FeeShape }, {}), exit: M.any() },
+      {},
+    ),
+  ) as TypedPattern<ProposalType['rebalance']>;
+  return harden({ openPortfolio, rebalance });
 };
+harden(makeProposalShapes);
 // #endregion
 
 // #region Offer Args
 
 type PoolPlaceInfo =
-  | { protocol: 'USDN'; vault: null | 1 }
+  | { protocol: 'USDN'; vault: null | 1; chainName: 'noble' }
   | { protocol: 'Aave' | 'Compound'; chainName: AxelarChain };
 
 export const PoolPlaces = {
-  USDN: { protocol: 'USDN', vault: null }, // MsgSwap only
-  USDNVault: { protocol: 'USDN', vault: 1 }, // MsgSwap, MsgLock
+  USDN: { protocol: 'USDN', vault: null, chainName: 'noble' }, // MsgSwap only
+  USDNVault: { protocol: 'USDN', vault: 1, chainName: 'noble' }, // MsgSwap, MsgLock
   Aave_Ethereum: { protocol: 'Aave', chainName: 'Ethereum' },
   Aave_Avalanche: { protocol: 'Aave', chainName: 'Avalanche' },
   Aave_Optimism: { protocol: 'Aave', chainName: 'Optimism' },
@@ -182,33 +155,10 @@ harden(PoolPlaces);
  * Names of places where a portfolio may have a position.
  */
 export type PoolKey = keyof typeof PoolPlaces;
-
-type OfferArgs1 = {
-  destinationEVMChain?: AxelarChain;
-  usdnOut?: NatValue;
-};
-
-const offerArgsShape: TypedPattern<OfferArgs1> = M.splitRecord(
-  {},
-  {
-    destinationEVMChain: M.or(...keys(AxelarChain)),
-    usdnOut: M.nat(),
-  },
-);
-
-export type OfferArgsFor = {
-  openPortfolio: OfferArgs1;
-  rebalance: OfferArgs1;
-};
-
-export const OfferArgsShapeFor = {
-  openPortfolio: offerArgsShape,
-  rebalance: offerArgsShape,
-};
-harden(OfferArgsShapeFor);
 // #endregion
 
 // #region ymax0 vstorage keys and values
+// XXX the vstorage path API is kinda awkward to use; see ymax-deploy.test.ts
 
 /**
  * Creates vstorage path for portfolio status under published.ymax0.
@@ -228,8 +178,9 @@ export const makePortfolioPath = (id: number) => [`portfolio${id}`];
  */
 export const portfolioIdOfPath = (path: string | string[]) => {
   const segments = typeof path === 'string' ? path.split('.') : path;
-  const [_group, segment] =
-    segments[0] === 'published' ? segments.slice(1) : segments;
+  const where = segments.indexOf('portfolios');
+  where >= 0 || Fail`bad path: ${path}`;
+  const segment = segments[where + 1];
   const id = Number(segment.replace(/^portfolio/, ''));
   Number.isSafeInteger(id) || Fail`bad path: ${path}`;
   return id;
@@ -244,17 +195,13 @@ type FlowStatus = {
   amount: Amount<'nat'>;
   error?: string;
 };
-type GMPStatusTODO = {
-  protocol: YieldProtocol;
-  accountId: AccountId | undefined;
-};
 
 // XXX relate paths to types a la readPublished()
 export type StatusFor = {
   portfolio: {
     positionKeys: PoolKey[];
     flowCount: number;
-    // TODO: accountIdByChain: Record<ChainAccountKey, AccountId>;
+    // XXX: accountIdByChain: Record<ChainAccountKey, AccountId>;
     accountIdByChain: Record<string, AccountId>;
   };
   position: {
@@ -265,10 +212,7 @@ export type StatusFor = {
     totalOut: Amount<'nat'>;
   };
   // XXX refactor using AssetMoveDesc
-  flow:
-    | FlowStatus
-    | (Omit<FlowStatus, 'dest'> & { where: string }) // recovery failed
-    | GMPStatusTODO;
+  flow: FlowStatus | (Omit<FlowStatus, 'dest'> & { where: string }); // recovery failed
 };
 
 export const PoolKeyShape = M.string(); // prefer string over M.or(...) for extensibility

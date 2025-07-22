@@ -69,7 +69,7 @@ export const deepCopyJsonable = value => JSON.parse(JSON.stringify(value));
  * @param {O[K]} value
  * @param {K | undefined} name
  * @param {O | undefined} container
- * @param {(value: O[K], name: K, record: O) => O[K] | M} mapper
+ * @param {(value: O[K], name: string, record: O) => O[K] | M} mapper
  * @returns {O[K] | M | { [K2 in keyof O[K]]: O[K][K2] | M }}
  */
 const deepMapObjectInternal = (value, name, container, mapper) => {

@@ -8,6 +8,7 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { mustMatch } from '@agoric/internal';
 import { ChainInfoShape, IBCConnectionInfoShape } from '@agoric/orchestration';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { M } from '@endo/patterns';
 import { parseArgs } from 'node:util';
 
@@ -28,16 +29,20 @@ const sourceSpec = '@aglocal/portfolio-deploy/src/chain-info.core.js';
 /** @type {ParseArgsConfig['options'] } */
 const options = {
   baseName: { type: 'string', default: 'eval-chain-info' },
-  chainInfo: { type: 'string', default: '{}' },
+  chainInfo: { type: 'string' },
   net: { type: 'string' },
   peer: { type: 'string', multiple: true },
+  podName: { type: 'string' },
+  container: { type: 'string' },
 };
 /**
  * @typedef {{
  *   baseName: string;
- *   chainInfo: string;
+ *   chainInfo?: string;
  *   net?: string;
  *   peer?: string[];
+ *   podName?: string;
+ *   container?: string;
  * }} FlagValues
  */
 
@@ -84,19 +89,85 @@ const parsePeers = strs => {
 };
 
 /**
+ * Detect whether to use agd or kubectl for executing commands.
+ * Checks:
+ *   1. agd binary exists locally
+ *   2. kubectl binary exists AND target pod/container has agd
+ * @param {{ execFileSync: typeof import('child_process').execFileSync}} io
+ * @param {string} podName
+ * @param {string} container
+ * @returns {'agd' | 'kubectl'}
+ * @throws Error if neither agd nor kubectl can be used
+ */
+const findAgdOrKubectl = ({ execFileSync }, podName, container) => {
+  try {
+    execFileSync('agd', ['--help'], { stdio: 'ignore' });
+    console.debug('Using local agd binary');
+    return 'agd';
+  } catch {
+    console.debug('Local agd not found, trying kubectl...');
+    try {
+      execFileSync('kubectl', ['version', '--client'], { stdio: 'ignore' });
+
+      // Check if pod is running
+      const pods = execFileSync(
+        'kubectl',
+        ['get', 'pods', podName, '-o', 'jsonpath={.status.phase}'],
+        { encoding: 'utf-8' },
+      ).trim();
+
+      if (pods !== 'Running') {
+        throw new Error(`Pod '${podName}' is not running (status: ${pods})`);
+      }
+
+      // Check if agd exists in pod/container
+      execFileSync(
+        'kubectl',
+        ['exec', podName, '-c', container, '--', 'agd', '--help'],
+        { stdio: 'ignore' },
+      );
+
+      console.debug(`Using kubectl to exec into pod '${podName}'`);
+      return 'kubectl';
+    } catch (err) {
+      console.error('kubectl fallback failed:', err.message);
+    }
+  }
+
+  throw new Error(
+    "Neither 'agd' is installed locally nor is it available in the Kubernetes pod. Please install 'agd' or ensure the pod/container has it.",
+  );
+};
+
+/**
  * @example
  *   const agd = makeAgd({execFileSync})
  *                 .withOpts({rpcAddrs: ['https...]});
  *   const info = await agd.query(['bank', 'balances', 'agoric1...]);
  * @param {{ execFileSync: typeof import('child_process').execFileSync}} io
+ * @param {{ podName?: string, container?: string }} [options] - Optional configuration for kubectl
  */
-const makeAgd = ({ execFileSync }) => {
+const makeAgd = (
+  { execFileSync },
+  { podName = 'agoriclocal-genesis-0', container = 'validator' } = {},
+) => {
+  const binary = findAgdOrKubectl({ execFileSync }, podName, container);
+
   const exec = (
     /** @type {string[]} */
     args,
     /** @type {import('node:child_process').ExecFileSyncOptionsWithStringEncoding} */
     opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
-  ) => execFileSync('agd', [...args], opts);
+  ) => {
+    if (binary === 'agd') {
+      return execFileSync('agd', args, opts);
+    }
+    return execFileSync(
+      'kubectl',
+      ['exec', podName, '-c', container, '--', 'agd', ...args],
+      opts,
+    );
+  };
 
   /** @param {{ rpcAddrs?: string[] }} opts */
   const make = ({ rpcAddrs = [] } = {}) => {
@@ -201,18 +272,33 @@ const getPeerChainInfo = async (chainId, peers, { agd }) => {
   return harden(chainDetails);
 };
 
+const { entries, fromEntries } = Object;
+/** @type {<T extends Record<any, any>, W extends keyof T>(obj: T, wanted: W[])=>Pick<T,W> } */
+const pickKeys = (obj, wanted) =>
+  // @ts-expect-error entries / fromEntries lose type info
+  fromEntries(entries(obj).filter(([k]) => wanted.includes(k)));
+
+/** @param {Array<keyof typeof fetchedChainInfo>} chains */
+const getMainnetChainInfo = (chains = ['agoric', 'noble', 'axelar']) => {
+  console.log('using static mainnet config');
+  return harden(pickKeys(fetchedChainInfo, chains));
+};
+
 /** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
   /** @type {FlagValues} */
   // @ts-expect-error guaranteed by options config
   const { values: flags } = parseArgs({ args: scriptArgs, options });
-  const { chainInfo: chainJSON, baseName } = flags;
-  let chainInfo = harden(JSON.parse(chainJSON));
+  const { baseName } = flags;
+  let chainInfo =
+    'chainInfo' in flags
+      ? harden(JSON.parse(flags.chainInfo))
+      : getMainnetChainInfo();
 
   await null;
   if (flags.net) {
-    if (!flags.peer) throw Error('--peer required');
+    if (!(flags.peer && flags.peer.length)) throw Error('--peer required');
     // only import/use net access if asked with --net
     const { execFileSync } = await import('child_process');
     const { chainName: chainId, rpcAddrs } = await getNetConfig(

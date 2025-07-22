@@ -1,11 +1,11 @@
-import { M } from '@endo/patterns';
-import { E } from '@endo/far';
 import { makeTracer } from '@agoric/internal';
+import { E } from '@endo/far';
+import { M, mustMatch } from '@endo/patterns';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
-import { withOrchestration } from '../utils/start-helper.js';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
-import * as evmFlows from './axelar-gmp.flows.js';
+import { withOrchestration } from '../utils/start-helper.js';
 import { prepareEvmAccountKit } from './axelar-gmp-account-kit.js';
+import * as evmFlows from './axelar-gmp.flows.js';
 
 /**
  * @import {Remote, Vow} from '@agoric/vow';
@@ -77,7 +77,14 @@ export const contract = async (
     {
       createAndMonitorLCA() {
         return zcf.makeInvitation(
-          createAndMonitorLCA,
+          /**
+           * @param {ZCFSeat} seat
+           * @param {{ gasAmount: bigint }} offerArgs
+           */
+          (seat, offerArgs) => {
+            mustMatch(offerArgs, M.splitRecord({ gasAmount: M.bigint() }));
+            return createAndMonitorLCA(seat, offerArgs);
+          },
           'makeAccount',
           undefined,
         );

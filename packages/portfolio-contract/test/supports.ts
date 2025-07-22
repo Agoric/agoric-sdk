@@ -136,34 +136,8 @@ export const axelarCCTPConfig = {
   },
 };
 
-/** TODO: how to address this in production? route thru Osmosis? */
-export const chainInfoFantasyTODO = {
+export const chainInfoWithCCTP = {
   ...withChainCapabilities(fetchedChainInfo),
-  noble: {
-    ...withChainCapabilities(fetchedChainInfo).noble,
-    connections: {
-      ...fetchedChainInfo.noble.connections,
-      // Patch noble.connections to add axelar-dojo-1 for test
-      'axelar-dojo-1': {
-        id: 'connection-1' as const,
-        client_id: '07-tendermint-mock',
-        counterparty: {
-          client_id: '07-tendermint-mock',
-          connection_id: 'connection-1' as const,
-        },
-        state: 3,
-        transferChannel: {
-          channelId: 'channel-1' as const,
-          portId: 'transfer',
-          counterPartyChannelId: 'channel-1' as const,
-          counterPartyPortId: 'transfer',
-          ordering: 0,
-          state: 3,
-          version: 'ics20-1',
-        },
-      },
-    },
-  },
   ...axelarCCTPConfig,
 };
 
@@ -203,8 +177,11 @@ export const setupPortfolioTest = async ({
   log: ExecutionContext<any>['log'];
 }) => {
   const axelarChains = axelarCCTPConfig;
+  const essentialChains = Object.fromEntries(
+    ['agoric', 'axelar', 'noble'].map(n => [n, fetchedChainInfo[n]]),
+  );
   const chains = harden({
-    ...withChainCapabilities(fetchedChainInfo),
+    ...withChainCapabilities(essentialChains),
     ...axelarChains,
   }) as Record<string, ChainInfo>;
 
@@ -213,6 +190,7 @@ export const setupPortfolioTest = async ({
     bootstrap: { agoricNamesAdmin, bankManager },
   } = common;
   const usdc = withAmountUtils(makeIssuerKit('USDC'));
+  const bld = withAmountUtils(makeIssuerKit('BLD'));
   const poc26 = withAmountUtils(makeIssuerKit('Poc26'));
   await E(bankManager).addAsset(
     uusdcOnAgoric,
@@ -220,6 +198,7 @@ export const setupPortfolioTest = async ({
     'USD Circle Stablecoin',
     usdc.issuerKit,
   );
+  await E(bankManager).addAsset('ubld', 'BLD', 'BLD', bld.issuerKit);
   await E(bankManager).addAsset(
     'upoc26',
     'Poc26',
@@ -242,9 +221,16 @@ export const setupPortfolioTest = async ({
     }) as AssetInfo,
   );
 
+  const bldDetail = {
+    baseDenom: 'ubld',
+    baseName: 'agoric',
+    chainName: 'agoric',
+    brand: bld.brand,
+  };
   const assetInfo: [Denom, DenomDetail & { brandKey?: string }][] = harden([
     assetOn('uusdc', 'noble'),
     [uusdcOnAgoric, agUSDCDetail],
+    ['ubld', bldDetail],
     assetOn('uusdc', 'noble', 'osmosis', fetchedChainInfo),
   ]);
 
@@ -254,7 +240,7 @@ export const setupPortfolioTest = async ({
 
   return {
     ...common,
-    brands: { usdc: usdcSansMint, poc26 },
+    brands: { usdc: usdcSansMint, poc26, bld },
     commonPrivateArgs: {
       ...commonPrivateArgs,
       assetInfo,

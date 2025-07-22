@@ -106,7 +106,14 @@ test('terms, issuerKeywordRecord switched', async t => {
       ),
     {
       message:
-        'In "startInstance" method of (ZoeService): arg 1?: something: [1]: 2 - Must match one of ["[match:remotable]","[match:kind]"]',
+        // TODO https://github.com/Agoric/agoric-sdk/issues/11605
+        // This is a golden error message test. We're currently in transition
+        // from having pattern error messages quote nested patterns using
+        // `q` to quoting them using `qp`. In order to tolerate both during
+        // this transition at reasonable cost, this golden error message
+        // pattern accepts anything in the position of the quoted nested
+        // pattern.
+        /^In "startInstance" method of \(ZoeService\): arg 1\?: something: \[1\]: 2 - Must match one of (.*)$/,
     },
   );
 });

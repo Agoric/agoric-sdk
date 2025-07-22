@@ -4,7 +4,11 @@
  */
 import '@endo/init';
 
-import { parseArgs } from 'node:util';
+import type {
+  OfferArgsFor,
+  ProposalType,
+} from '@aglocal/portfolio-contract/src/type-guards.ts';
+import { makePortfolioSteps } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
 import {
   fetchEnvNetworkConfig,
   makeSmartWalletKit,
@@ -22,6 +26,7 @@ import {
   type GeneratedType,
 } from '@cosmjs/proto-signing';
 import { SigningStargateClient, type StdFee } from '@cosmjs/stargate';
+import { parseArgs } from 'node:util';
 
 const getUsage = (
   programName: string,
@@ -71,13 +76,18 @@ const openPosition = async (
   const brand = fromEntries(await walletKit.readPublished('agoricNames.brand'));
   const { USDC, PoC26 } = brand as Record<string, Brand<'nat'>>;
 
-  const give = {
-    USDN: multiplyBy(make(USDC, 1_000_000n), parseRatio(volume, USDC)),
-    NobleFees: make(USDC, 20_000n),
-    ...(PoC26 ? { Access: make(PoC26, 1n) } : {}),
+  const amount = multiplyBy(make(USDC, 1_000_000n), parseRatio(volume, USDC));
+  const { give, steps } = makePortfolioSteps({ USDN: amount });
+  const proposal: ProposalType['openPortfolio'] = {
+    give: {
+      ...give,
+      ...(PoC26 ? { Access: make(PoC26, 1n) } : {}),
+    },
   };
-
-  trace('opening portfolio', give);
+  const offerArgs: OfferArgsFor['openPortfolio'] = {
+    flow: steps,
+  };
+  trace('opening portfolio', proposal.give);
   const action: BridgeAction = harden({
     method: 'executeOffer',
     offer: {
@@ -87,8 +97,8 @@ const openPosition = async (
         instancePath: ['ymax0'],
         callPipe: [['makeOpenPortfolioInvitation']],
       },
-      proposal: { give },
-      offerArgs: { usdnOut: (give.USDN.value * 99n) / 100n },
+      proposal,
+      offerArgs,
     },
   });
 

@@ -7,11 +7,12 @@ import {
 } from './axelar-configs.js';
 import { toExternalConfig } from './config-marshal.js';
 import { name } from './portfolio.contract.permit.js';
+import { portfolioDeployConfigShape } from './portfolio-start.core.js';
 
 /**
- * @import {CopyRecord} from '@endo/pass-style';
  * @import { CoreEvalBuilder, DeployScriptFunction } from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {ParseArgsConfig} from 'node:util';
+ * @import {PortfolioDeployConfig} from './portfolio-start.core.js';
  */
 
 /** @type {ParseArgsConfig['options'] } */
@@ -21,9 +22,7 @@ const options = {
 
 /**
  * @param {Parameters<CoreEvalBuilder>[0]} tools
- * @param {{
- *   axelarConfig: import('./axelar-configs.js').AxelarChainConfigMap;
- * } & CopyRecord} config
+ * @param {PortfolioDeployConfig} config
  * @satisfies {CoreEvalBuilder}
  */
 const defaultProposalBuilder = async ({ publishRef, install }, config) => {
@@ -32,7 +31,7 @@ const defaultProposalBuilder = async ({ publishRef, install }, config) => {
     getManifestCall: [
       'getManifestForPortfolio', // TODO: unit test agreemnt with getManifestForPortfolio.name
       {
-        options: { config: toExternalConfig(config, {}) },
+        options: toExternalConfig(config, {}, portfolioDeployConfigShape),
         installKeys: {
           [name]: publishRef(install('../dist/portfolio.contract.bundle.js')),
         },

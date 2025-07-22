@@ -6,6 +6,7 @@
 import {
   makeTracer,
   mustMatch,
+  NonNullish,
   type Remote,
   type TypedPattern,
 } from '@agoric/internal';
@@ -34,9 +35,9 @@ import { M } from '@endo/patterns';
 import { AxelarChain, YieldProtocol } from './constants.js';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
+import { makeOfferArgsShapes } from './type-guards-steps.ts';
 import {
   makeProposalShapes,
-  OfferArgsShapeFor,
   type EVMContractAddressesMap,
   type OfferArgsFor,
   type ProposalType,
@@ -83,6 +84,7 @@ export type EVMContractAddresses = {
   compound: `0x${string}`;
   factory: `0x${string}`;
   usdc: `0x${string}`;
+  tokenMessenger: `0x${string}`;
 };
 
 export type AxelarId = {
@@ -99,9 +101,7 @@ const EVMContractAddressesMap: TypedPattern<EVMContractAddressesMap> =
 const AxelarIdsPattern = M.string();
 
 const AxelarIdShape: TypedPattern<AxelarId> = M.splitRecord(
-  fromEntries(
-    keys(AxelarChain).map(chain => [chain, AxelarIdsPattern]),
-  ) as Record<AxelarChain, typeof AxelarIdsPattern>,
+  fromEntries(keys(AxelarChain).map(chain => [chain, AxelarIdsPattern])),
 );
 
 type PortfolioPrivateArgs = OrchestrationPowers & {
@@ -118,8 +118,10 @@ const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   ...(OrchestrationPowersShape as CopyRecord),
   marshaller: M.remotable('marshaller'),
   storageNode: M.remotable('storageNode'),
-  // XXX use shape to validate required chains / assets?
-  chainInfo: M.recordOf(M.string(), ChainInfoShape),
+  chainInfo: M.and(
+    M.recordOf(M.string(), ChainInfoShape),
+    M.splitRecord({ agoric: M.any(), noble: M.any() }),
+  ),
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
   axelarIds: AxelarIdShape,
   contracts: EVMContractAddressesMap,
@@ -173,13 +175,22 @@ export const contract = async (
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
 
   assert(brands.USDC, 'USDC missing from brands in terms');
+  assert(brands.Fee, 'Fee missing from brands in terms');
 
+  if (!('axelar' in chainInfo)) {
+    trace('⚠️ no axelar chainInfo; GMP not available', Object.keys(chainInfo));
+  }
   // TODO: only on 1st incarnation
   registerChainsAndAssets(chainHub, brands, chainInfo, assetInfo, {
     log: trace,
   });
 
-  const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
+  const proposalShapes = makeProposalShapes(
+    brands.USDC,
+    brands.Fee,
+    brands.Access,
+  );
+  const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
 
   // Until we find a need for on-chain subscribers, this stop-gap will do.
   const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
@@ -191,11 +202,22 @@ export const contract = async (
     },
   };
 
-  const denom = chainHub.getDenom(brands.USDC);
-  assert(denom, 'no denom for USDC brand');
   const ctx1 = {
     zoeTools,
-    usdc: { brand: brands.USDC, denom },
+    usdc: {
+      brand: brands.USDC,
+      denom: NonNullish(
+        chainHub.getDenom(brands.USDC),
+        'no denom for USDC brand',
+      ),
+    },
+    gmpFeeInfo: {
+      brand: brands.Fee,
+      denom: NonNullish(
+        chainHub.getDenom(brands.Fee),
+        'no denom for Fee brand',
+      ),
+    },
     axelarIds,
     contracts,
   };
@@ -216,6 +238,7 @@ export const contract = async (
     rebalance,
     rebalanceFromTransfer,
     proposalShapes,
+    offerArgsShapes,
     timer: timerService,
     chainHubTools: { getChainInfo: chainHub.getChainInfo.bind(chainHub) },
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
@@ -242,7 +265,7 @@ export const contract = async (
     },
   );
 
-  trace('TODO: baggage test');
+  trace('XXX NEEDSTEST: baggage test');
 
   const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
     /**
@@ -264,7 +287,7 @@ export const contract = async (
       trace('makeOpenPortfolioInvitation');
       return zcf.makeInvitation(
         (seat, offerArgs) => {
-          mustMatch(offerArgs, OfferArgsShapeFor.openPortfolio);
+          mustMatch(offerArgs, offerArgsShapes.openPortfolio);
           return openPortfolio(seat, offerArgs);
         },
         'openPortfolio',
@@ -280,7 +303,6 @@ harden(contract);
 
 const keepDocsTypesImported:
   | undefined
-  // | SupportedEVMChains // XXX change to SupportedChain
   | YieldProtocol
   | OfferArgsFor
   | PortfolioKit

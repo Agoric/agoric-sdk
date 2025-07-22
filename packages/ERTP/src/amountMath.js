@@ -318,16 +318,18 @@ export const AmountMath = {
    * amount, it usually means including all of the elements from both left and
    * right.
    *
-   * @template {Amount} A
-   * @param {A} leftAmount
-   * @param {A} rightAmount
-   * @param {Brand} [brand]
-   * @returns {A}
+   * @type {{
+   *   <A extends CopyBag, B extends CopyBag>(
+   *     leftAmount: CopyBagAmount<A>,
+   *     rightAmount: CopyBagAmount<B>,
+   *     brand?: Brand,
+   *   ): CopyBagAmount<A | B>;
+   *   <A extends Amount>(leftAmount: A, rightAmount: A, brand?: Brand): A;
+   * }}
    */
   add: (leftAmount, rightAmount, brand = undefined) => {
     const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
     const value = h.doAdd(...coerceLR(h, leftAmount, rightAmount));
-    // @ts-expect-error different subtype
     return harden({ brand: leftAmount.brand, value });
   },
   /**
