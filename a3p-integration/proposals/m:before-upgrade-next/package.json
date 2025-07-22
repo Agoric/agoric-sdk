@@ -5,7 +5,7 @@
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/client-utils": "0.1.1-dev-bf2d699.0",
+    "@agoric/client-utils": "dev",
     "@agoric/ertp": "dev",
     "@agoric/internal": "dev",
     "@agoric/synthetic-chain": "^0.5.8",
@@ -32,5 +32,10 @@
     "eslint": "^8.57.0",
     "npm-run-all": "^4.1.5",
     "typescript": "^5.6.3"
+  },
+  "resolutions": {
+    "@agoric/client-utils": "0.1.1-dev-bf2d699.0",
+    "@cosmjs/stargate": "npm:0.33.1",
+    "@cosmjs/tendermint-rpc": "npm:0.33.1"
   }
 }
