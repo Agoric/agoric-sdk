@@ -150,6 +150,11 @@ export type ProtocolDetail<
   ) => Promise<void>;
 };
 
+/**
+ * **Failure Handling**: Attempts to unwind failed operations, but recovery
+ * itself can fail. In that case, publishes final asset location to vstorage
+ * and gives up. Clients must manually rebalance to recover.
+ */
 export const trackFlow = async (
   reporter: GuestInterface<PortfolioKit['reporter']>,
   todo: (() => Promise<AssetMovement>)[],
@@ -600,6 +605,22 @@ const stepFlow = async (
   trace('stepFlow done');
 };
 
+/**
+ * Rebalance portfolio positions between yield protocols.
+ * More generally: move assets as instructed by client.
+ *
+ * **Non-Atomic Operations**: Cross-chain flows are not atomic. If operations
+ * fail partway through, assets may be left in intermediate accounts.
+ * Recovery is attempted but can also fail, leaving assets "stranded".
+ *
+ * **Client Recovery**: If rebalancing fails, check flow status in vstorage
+ * and call rebalance() again to move assets to desired destinations.
+ *
+ * **Input Validation**: ASSUME caller validates args
+ *
+ * @param seat - proposal guarded as per {@link makeProposalShapes}
+ * @param offerArgs - guarded as per {@link makeOfferArgsShapes}
+ */
 export const rebalance = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -609,10 +630,25 @@ export const rebalance = async (
 ) => {
   const proposal = seat.getProposal() as ProposalType['rebalance'];
   trace('rebalance proposal', proposal.give, proposal.want, offerArgs);
-  if ('flow' in offerArgs) {
-    await stepFlow(orch, ctx, seat, offerArgs.flow, kit);
+
+  try {
+    if (offerArgs.targetAllocation) {
+      kit.manager.setTargetAllocation(offerArgs.targetAllocation);
+    }
+
+    if (offerArgs.flow) {
+      await stepFlow(orch, ctx, seat, offerArgs.flow, kit);
+    }
+
+    if (!seat.hasExited()) {
+      seat.exit();
+    }
+  } catch (err) {
+    if (!seat.hasExited()) {
+      seat.fail(err);
+    }
+    throw err;
   }
-  seat.exit();
 };
 
 export const rebalanceFromTransfer = (async (
@@ -676,9 +712,12 @@ export const rebalanceFromTransfer = (async (
 /**
  * Offer handler to make a portfolio and, optionally, open yield positions.
  *
- * ASSUME seat's proposal is guarded as per {@link makeProposalShapes}
+ * **Input Validation**: ASSUME caller validates args
  *
- * @returns {*} following continuing invitation pattern, with a topic
+ * @param seat - proposal guarded as per {@link makeProposalShapes}
+ * @param offerArgs - guarded as per {@link makeOfferArgsShapes}
+ * @returns {*} following continuing invitation pattern,
+ * with a topic for the portfolio.
  */
 export const openPortfolio = (async (
   orch: Orchestrator,
@@ -703,7 +742,7 @@ export const openPortfolio = (async (
         await rebalance(orch, ctxI, seat, offerArgs, kit);
       } catch (err) {
         console.error('⚠️ rebalance failed', err);
-        seat.fail(err);
+        if (!seat.hasExited()) seat.fail(err);
       }
     }
 
