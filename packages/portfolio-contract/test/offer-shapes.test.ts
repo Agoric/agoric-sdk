@@ -5,7 +5,7 @@ import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { matches, mustMatch } from '@endo/patterns';
 import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
-import { makeProposalShapes } from '../src/type-guards.ts';
+import { makeProposalShapes, PoolKeyShapeExt, PortfolioStatusShape } from '../src/type-guards.ts';
 
 const usdc = withAmountUtils(makeIssuerKit('USDC'));
 const { brand: USDC } = usdc;
@@ -114,4 +114,36 @@ test('offerArgs can carry usdnOut', t => {
     flow: [{ src: '@noble', dest: 'USDN', amount, detail }],
   });
   t.notThrows(() => mustMatch(specimen, shapes.rebalance));
+});
+
+test('PoolKeyExt shapes accept future pool keys', t => {
+  // Future pool keys should match the extensible shape
+  const futureKeys = ['Aave_Base', 'Compound_Solana', 'NewProtocol_Ethereum'];
+  for (const key of futureKeys) {
+    t.true(matches(key, PoolKeyShapeExt), `${key} should match PoolKeyShapeExt`);
+  }
+  
+  // Portfolio status with future keys should match shape
+  const statusWithFutureKeys = harden({
+    positionKeys: ['Aave_Ethereum', 'Aave_Base', 'NewProtocol_Solana'],
+    flowCount: 3,
+    accountIdByChain: { agoric: 'agoric123', noble: 'noble456' },
+    targetAllocation: { Aave_Base: 3333n, NewProtocol_Solana: 6667n }
+  });
+  
+  t.notThrows(() => mustMatch(statusWithFutureKeys, PortfolioStatusShape));
+});
+
+test('numeric position references are rejected', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  const amount = usdc.make(200n);
+  
+  // Numeric position references from old design should be rejected
+  const specimenWithNumber = harden({
+    flow: [{ src: '@noble', dest: 42, amount }],
+  });
+  
+  t.throws(() => mustMatch(specimenWithNumber, shapes.rebalance), {
+    message: /Must match one of/,
+  });
 });
