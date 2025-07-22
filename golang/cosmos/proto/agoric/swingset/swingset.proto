@@ -3,6 +3,7 @@ package agoric.swingset;
 
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
 
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types";
 
@@ -139,10 +140,10 @@ message Egress {
   option (gogoproto.equal) = false;
 
   string nickname = 1 [(gogoproto.jsontag) = "nickname", (gogoproto.moretags) = "yaml:\"nickname\""];
-  bytes  peer     = 2 [
-    (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag)  = "peer",
-    (gogoproto.moretags) = "yaml:\"peer\""
+  string peer     = 2 [
+    (cosmos_proto.scalar) = "cosmos.AddressString",
+    (gogoproto.jsontag)   = "peer",
+    (gogoproto.moretags)  = "yaml:\"peer\""
   ];
   // TODO: Remove these power flags as they are deprecated and have no effect.
   repeated string power_flags = 3 [
