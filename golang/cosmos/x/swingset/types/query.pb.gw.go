@@ -67,7 +67,7 @@ func request_Query_Egress_0(ctx context.Context, marshaler runtime.Marshaler, cl
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "peer")
 	}
 
-	protoReq.Peer, err = runtime.Bytes(val)
+	protoReq.Peer, err = runtime.String(val)
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "peer", err)
@@ -94,7 +94,7 @@ func local_request_Query_Egress_0(ctx context.Context, marshaler runtime.Marshal
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "peer")
 	}
 
-	protoReq.Peer, err = runtime.Bytes(val)
+	protoReq.Peer, err = runtime.String(val)
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "peer", err)
@@ -121,7 +121,7 @@ func request_Query_Mailbox_0(ctx context.Context, marshaler runtime.Marshaler, c
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "peer")
 	}
 
-	protoReq.Peer, err = runtime.Bytes(val)
+	protoReq.Peer, err = runtime.String(val)
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "peer", err)
@@ -148,7 +148,7 @@ func local_request_Query_Mailbox_0(ctx context.Context, marshaler runtime.Marsha
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "peer")
 	}
 
-	protoReq.Peer, err = runtime.Bytes(val)
+	protoReq.Peer, err = runtime.String(val)
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "peer", err)
