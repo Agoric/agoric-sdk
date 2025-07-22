@@ -46,22 +46,34 @@
   delay: 10
   retries: 20 # 200 seconds === 3m20s
 
+- name: 'Create validator JSON config for {{ STAKER }}-*'
+  become_user: '{{ service }}'
+  become: true
+  copy:
+    content: |
+      {
+        "pubkey": {{ valconspub }},
+        "amount": "{{ STAKER_SELF_DELEGATION }}",
+        "moniker": "{{ moniker | default(inventory_hostname) }}",
+        "identity": "{{ identity | default('') }}",
+        "website": "{{ website | default('') }}",
+        "security": "{{ security_contact | default('') }}",
+        "details": "{{ details | default('') }}",
+        "commission-rate": "0.100000000000000000",
+        "commission-max-rate": "0.200000000000000000",
+        "commission-max-change-rate": "0.010000000000000000",
+        "min-self-delegation": "1"
+      }
+    dest: "/tmp/validator-{{ inventory_hostname }}.json"
+  vars:
+    staker: '{{ STAKER }}-{{ inventory_hostname }}'
+  when: inventory_hostname != STAKER_NODE
+
 - name: 'Create validators for {{ STAKER }}-*'
   become_user: '{{ service }}'
   become: true
   shell: "\
-    agd tx staking create-validator \
-    --amount={{ STAKER_SELF_DELEGATION }} \
-    --pubkey='{{ valconspub }}' \
-    --moniker='{{ moniker | default(inventory_hostname) }}' \
-    {{ (website | default(None)) and '--website=' ~ website or '' }} \
-    {{ (identity | default(None)) and '--identity=' ~ identity or '' }} \
-    {{ (details | default(None)) and '--details=' ~ details or '' }} \
-    {{ (security_contact | default(None)) and '--security-contact=' ~ security_contact or '' }} \
-    --commission-rate='0.100000000000000000' \
-    --commission-max-rate='0.200000000000000000' \
-    --commission-max-change-rate='0.010000000000000000' \
-    --min-self-delegation='1' \
+    agd tx staking create-validator /tmp/validator-{{ inventory_hostname }}.json \
     --from={{ staker }} \
     --chain-id={{ CHAIN_NAME }} \
     --keyring-backend=test \
@@ -69,4 +81,12 @@
     --yes"
   vars:
     staker: '{{ STAKER }}-{{ inventory_hostname }}'
+  when: inventory_hostname != STAKER_NODE
+
+- name: 'Clean up validator JSON config'
+  become_user: '{{ service }}'
+  become: true
+  file:
+    path: "/tmp/validator-{{ inventory_hostname }}.json"
+    state: absent
   when: inventory_hostname != STAKER_NODE
