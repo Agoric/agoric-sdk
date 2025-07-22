@@ -140,7 +140,8 @@ import (
 	packetforward "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward"
 	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/keeper"
 	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/types"
-	// FIXME: unnamed import of statik for swagger UI support
+	// unnamed import of statik for swagger UI support
+	// XXX figure out how to build the docs
 	// _ "github.com/cosmos/cosmos-sdk/client/docs/statik"
 )
 
@@ -1307,7 +1308,8 @@ func (app *GaiaApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICo
 	app.BasicModuleManager.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	// register swagger API from root so that other applications can override easily
-	if apiConfig.Swagger {
+	// XXX figure out how to build the docs to make them available from the _ import above
+	if false && apiConfig.Swagger {
 		RegisterSwaggerAPI(apiSvr.Router)
 	}
 }
