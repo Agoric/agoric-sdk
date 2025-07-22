@@ -63,7 +63,7 @@ func chargeAdmission(
 	ctx sdk.Context,
 	keeper SwingSetKeeper,
 	beansPerUnit map[string]sdkmath.Uint,
-	addr sdk.AccAddress,
+	addr string,
 	msgs []string,
 	storageLen uint64,
 ) error {
@@ -91,7 +91,7 @@ func checkSmartWalletProvisioned(
 	ctx sdk.Context,
 	keeper SwingSetKeeper,
 	beansPerUnit map[string]sdkmath.Uint,
-	addr sdk.AccAddress,
+	addr string,
 ) error {
 	walletState := keeper.GetSmartWalletState(ctx, addr)
 
@@ -113,7 +113,7 @@ func checkSmartWalletProvisioned(
 	}
 }
 
-func NewMsgDeliverInbound(msgs *Messages, submitter sdk.AccAddress) *MsgDeliverInbound {
+func NewMsgDeliverInbound(msgs *Messages, submitter string) *MsgDeliverInbound {
 	return &MsgDeliverInbound{
 		Messages:  msgs.Messages,
 		Nums:      msgs.Nums,
@@ -158,7 +158,7 @@ func (msg MsgDeliverInbound) Type() string { return "eventualSend" }
 
 // ValidateBasic runs stateless checks on the message
 func (msg MsgDeliverInbound) ValidateBasic() error {
-	if msg.Submitter.Empty() {
+	if msg.Submitter == "" {
 		return sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
 	}
 	if len(msg.Messages) != len(msg.Nums) {
@@ -184,12 +184,7 @@ func (msg MsgDeliverInbound) GetSignBytes() []byte {
 	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
 }
 
-// GetSigners defines whose signature is required
-func (msg MsgDeliverInbound) GetSigners() []sdk.AccAddress {
-	return []sdk.AccAddress{msg.Submitter}
-}
-
-func NewMsgWalletAction(owner sdk.AccAddress, action string) *MsgWalletAction {
+func NewMsgWalletAction(owner string, action string) *MsgWalletAction {
 	return &MsgWalletAction{
 		Owner:  owner,
 		Action: action,
@@ -222,10 +217,6 @@ func (msg MsgWalletAction) IsHighPriority(ctx sdk.Context, data interface{}) (bo
 	return false, nil
 }
 
-func (msg MsgWalletAction) GetSigners() []sdk.AccAddress {
-	return []sdk.AccAddress{msg.Owner}
-}
-
 // GetSignBytes encodes the message for signing
 func (msg MsgWalletAction) GetSignBytes() []byte {
 	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
@@ -250,7 +241,7 @@ func (msg MsgWalletSpendAction) GetSignBytes() []byte {
 
 // ValidateBasic runs stateless checks on the message
 func (msg MsgWalletAction) ValidateBasic() error {
-	if msg.Owner.Empty() {
+	if msg.Owner == "" {
 		return sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Owner address cannot be empty")
 	}
 	if len(strings.TrimSpace(msg.Action)) == 0 {
@@ -262,7 +253,7 @@ func (msg MsgWalletAction) ValidateBasic() error {
 	return nil
 }
 
-func NewMsgWalletSpendAction(owner sdk.AccAddress, spendAction string) *MsgWalletSpendAction {
+func NewMsgWalletSpendAction(owner string, spendAction string) *MsgWalletSpendAction {
 	return &MsgWalletSpendAction{
 		Owner:       owner,
 		SpendAction: spendAction,
@@ -300,13 +291,9 @@ func (msg MsgWalletSpendAction) IsHighPriority(ctx sdk.Context, data interface{}
 	return keeper.IsHighPriorityAddress(ctx, msg.Owner)
 }
 
-func (msg MsgWalletSpendAction) GetSigners() []sdk.AccAddress {
-	return []sdk.AccAddress{msg.Owner}
-}
-
 // ValidateBasic runs stateless checks on the message
 func (msg MsgWalletSpendAction) ValidateBasic() error {
-	if msg.Owner.Empty() {
+	if msg.Owner == "" {
 		return sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Owner address cannot be empty")
 	}
 	if len(strings.TrimSpace(msg.SpendAction)) == 0 {
@@ -318,7 +305,7 @@ func (msg MsgWalletSpendAction) ValidateBasic() error {
 	return nil
 }
 
-func NewMsgProvision(nickname string, addr sdk.AccAddress, powerFlags []string, submitter sdk.AccAddress) *MsgProvision {
+func NewMsgProvision(nickname string, addr string, powerFlags []string, submitter string) *MsgProvision {
 	return &MsgProvision{
 		Nickname:   nickname,
 		Address:    addr,
@@ -335,10 +322,10 @@ func (msg MsgProvision) Type() string { return "provision" }
 
 // ValidateBasic runs stateless checks on the message
 func (msg MsgProvision) ValidateBasic() error {
-	if msg.Submitter.Empty() {
+	if msg.Submitter == "" {
 		return sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
 	}
-	if msg.Address.Empty() {
+	if msg.Address == "" {
 		return sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Peer address cannot be empty")
 	}
 	if len(msg.Nickname) == 0 {
@@ -376,12 +363,7 @@ func (msg MsgProvision) GetSignBytes() []byte {
 	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
 }
 
-// GetSigners defines whose signature is required
-func (msg MsgProvision) GetSigners() []sdk.AccAddress {
-	return []sdk.AccAddress{msg.Submitter}
-}
-
-func NewMsgInstallBundle(bundleJson string, submitter sdk.AccAddress) *MsgInstallBundle {
+func NewMsgInstallBundle(bundleJson string, submitter string) *MsgInstallBundle {
 	return &MsgInstallBundle{
 		Bundle:    bundleJson,
 		Submitter: submitter,
@@ -416,7 +398,7 @@ func (msg MsgInstallBundle) Type() string { return "installBundle" }
 
 // ValidateBasic runs stateless checks on the message
 func (msg MsgInstallBundle) ValidateBasic() error {
-	if msg.Submitter.Empty() {
+	if msg.Submitter == "" {
 		return sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
 	}
 	if len(msg.Bundle) == 0 && len(msg.CompressedBundle) == 0 {
@@ -437,11 +419,6 @@ func (msg MsgInstallBundle) ValidateBasic() error {
 	}
 	// We don't check the accuracy of the uncompressed size here, since it could comsume significant CPU.
 	return nil
-}
-
-// GetSigners defines whose signature is required
-func (msg MsgInstallBundle) GetSigners() []sdk.AccAddress {
-	return []sdk.AccAddress{msg.Submitter}
 }
 
 // ExpectedUncompressedSize returns the expected uncompressed size of the bundle.

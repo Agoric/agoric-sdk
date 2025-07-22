@@ -12,7 +12,7 @@ const RouterKey = ModuleName // this was defined in your key.go file
 var _ sdk.Msg = &MsgSendPacket{}
 
 // NewMsgSendPacket returns a new send request
-func NewMsgSendPacket(packet chanTypes.Packet, sender sdk.AccAddress) *MsgSendPacket {
+func NewMsgSendPacket(packet chanTypes.Packet, sender string) *MsgSendPacket {
 	return &MsgSendPacket{
 		Packet: packet,
 		Sender: sender,
@@ -22,9 +22,8 @@ func NewMsgSendPacket(packet chanTypes.Packet, sender sdk.AccAddress) *MsgSendPa
 // Route implements sdk.Msg
 func (msg MsgSendPacket) Route() string { return RouterKey }
 
-// ValidateBasic implements sdk.Msg
-func (msg MsgSendPacket) ValidateBasic() error {
-	if msg.Sender.Empty() {
+func (msg MsgSendPacket) Validate() error {
+	if msg.Sender == "" {
 		return sdkerrors.ErrInvalidAddress
 	}
 
@@ -34,11 +33,6 @@ func (msg MsgSendPacket) ValidateBasic() error {
 // GetSignBytes implements sdk.Msg
 func (msg MsgSendPacket) GetSignBytes() []byte {
 	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
-}
-
-// GetSigners implements sdk.Msg
-func (msg MsgSendPacket) GetSigners() []sdk.AccAddress {
-	return []sdk.AccAddress{msg.Sender}
 }
 
 // Type implements sdk.Msg

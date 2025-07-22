@@ -16,6 +16,9 @@ func NewHandler(keeper Keeper, bankKeeper types.BankKeeper) baseapp.MsgServiceHa
 	return func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
 		switch msg := msg.(type) {
 		case *MsgSendPacket:
+			if err := msg.Validate(); err != nil {
+				return nil, sdkioerrors.Wrap(sdkerrors.ErrInvalidRequest, err.Error())
+			}
 			return handleMsgSendPacket(ctx, keeper, bankKeeper, msg)
 
 		default:

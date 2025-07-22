@@ -44,19 +44,11 @@ func (keeper msgServer) routeAction(ctx sdk.Context, msg vm.ControllerAdmissionM
 }
 
 func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeliverInbound) (*types.MsgDeliverInboundResponse, error) {
-	ctx := sdk.UnwrapSDKContext(goCtx)
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, err
+	}
 
-	if msg.Submitter.Empty() {
-		return nil, sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
-	}
-	if len(msg.Messages) != len(msg.Nums) {
-		return nil, sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Messages and Nums must be the same length")
-	}
-	for _, m := range msg.Messages {
-		if len(m) == 0 {
-			return nil, sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Messages cannot be empty")
-		}
-	}
+	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// msg.Nums and msg.Messages must be zipped into an array of [num, message] pairs.
 	messages := make([][]interface{}, len(msg.Messages))
@@ -64,7 +56,7 @@ func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeli
 		messages[i] = []interface{}{msg.Nums[i], message}
 	}
 	action := deliverInboundAction{
-		Peer:     msg.Submitter.String(),
+		Peer:     msg.Submitter,
 		Messages: messages,
 		Ack:      msg.Ack,
 	}
@@ -84,6 +76,10 @@ type walletAction struct {
 }
 
 func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWalletAction) (*types.MsgWalletActionResponse, error) {
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, err
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	err := keeper.provisionIfNeeded(ctx, msg.Owner)
@@ -92,7 +88,7 @@ func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWallet
 	}
 
 	action := walletAction{
-		Owner:  msg.Owner.String(),
+		Owner:  msg.Owner,
 		Action: msg.Action,
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
@@ -112,6 +108,10 @@ type walletSpendAction struct {
 }
 
 func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgWalletSpendAction) (*types.MsgWalletSpendActionResponse, error) {
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, err
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	err := keeper.provisionIfNeeded(ctx, msg.Owner)
@@ -120,7 +120,7 @@ func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgW
 	}
 
 	action := walletSpendAction{
-		Owner:       msg.Owner.String(),
+		Owner:       msg.Owner,
 		SpendAction: msg.SpendAction,
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
@@ -171,6 +171,10 @@ func (keeper msgServer) provisionIfNeeded(ctx sdk.Context, owner sdk.AccAddress)
 }
 
 func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision) (*types.MsgProvisionResponse, error) {
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, err
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	err := keeper.ChargeForProvisioning(ctx, msg.Submitter, msg.PowerFlags)
@@ -204,11 +208,11 @@ type installBundleAction struct {
 }
 
 func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInstallBundle) (*types.MsgInstallBundleResponse, error) {
-	ctx := sdk.UnwrapSDKContext(goCtx)
 	if err := msg.ValidateBasic(); err != nil {
 		return nil, sdkioerrors.Wrap(sdkerrors.ErrInvalidRequest, err.Error())
 	}
 
+	ctx := sdk.UnwrapSDKContext(goCtx)
 	if err := msg.Uncompress(); err != nil {
 		return nil, err
 	}
