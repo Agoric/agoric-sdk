@@ -7,6 +7,7 @@ import { M } from '@endo/patterns';
 import { AxelarChain, SupportedChain } from './constants.js';
 import { makeNatAmountShape, PoolPlaces, type PoolKey } from './type-guards.ts';
 import { AnyNatAmountShape } from '@agoric/orchestration';
+import type { ContractCall } from '@agoric/orchestration/src/axelar-types.js';
 
 const { keys, values } = Object;
 
@@ -67,6 +68,7 @@ export type MovementDesc = {
 export type OfferArgsFor = {
   openPortfolio: {} | { flow: MovementDesc[] };
   rebalance: {} | { flow: MovementDesc[] };
+  gmp: {} | { flow: MovementDesc[]; calls: ContractCall[] };
 };
 
 export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
