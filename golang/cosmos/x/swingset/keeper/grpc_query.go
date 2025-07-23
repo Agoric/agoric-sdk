@@ -36,8 +36,14 @@ func (k Querier) Egress(c context.Context, req *types.QueryEgressRequest) (*type
 	}
 	ctx := sdk.UnwrapSDKContext(c)
 
-	egress := k.GetEgress(ctx, req.Peer)
-	if egress.Peer == nil {
+	peerAddr, err := k.accountKeeper.AddressCodec().StringToBytes(req.Peer)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid address")
+	}
+
+	egress := k.GetEgress(ctx, peerAddr)
+
+	if egress.Peer == "" {
 		return nil, status.Error(codes.NotFound, "egress not found")
 	}
 
@@ -52,7 +58,7 @@ func (k Querier) Mailbox(c context.Context, req *types.QueryMailboxRequest) (*ty
 	}
 	ctx := sdk.UnwrapSDKContext(c)
 
-	value := k.GetMailbox(ctx, req.Peer.String())
+	value := k.GetMailbox(ctx, req.Peer)
 	if value == "" {
 		return nil, status.Error(codes.NotFound, "mailbox not found")
 	}
