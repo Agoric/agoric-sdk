@@ -30,4 +30,5 @@ type SwingSetKeeper interface {
 	IsHighPriorityAddress(ctx sdk.Context, addr sdk.AccAddress) (bool, error)
 	GetSmartWalletState(ctx sdk.Context, addr sdk.AccAddress) SmartWalletState
 	ChargeForSmartWallet(ctx sdk.Context, beansPerUnit map[string]sdkmath.Uint, addr sdk.AccAddress) error
+	GetAccountKeeper() AccountKeeper
 }

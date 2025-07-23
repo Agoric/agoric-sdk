@@ -499,3 +499,7 @@ func (k Keeper) PathToEncodedKey(path string) []byte {
 func (k Keeper) GetStoreName() string {
 	return k.vstorageKeeper.GetStoreName()
 }
+
+func (k Keeper) GetAccountKeeper() types.AccountKeeper {
+	return k.accountKeeper
+}

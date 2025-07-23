@@ -29,16 +29,16 @@ func TestWalletAction(t *testing.T) {
 		},
 		{
 			name: "normal",
-			msg:  NewMsgWalletAction(addr, "null"),
+			msg:  NewMsgWalletAction(addr.String(), "null"),
 		},
 		{
 			name:      "empty action",
-			msg:       NewMsgWalletAction(addr, ""),
+			msg:       NewMsgWalletAction(addr.String(), ""),
 			shouldErr: true,
 		},
 		{
 			name:      "bad json",
-			msg:       NewMsgWalletAction(addr, "foo"),
+			msg:       NewMsgWalletAction(addr.String(), "foo"),
 			shouldErr: true,
 		},
 	} {
@@ -67,16 +67,16 @@ func TestWalletSpendAction(t *testing.T) {
 		},
 		{
 			name: "normal",
-			msg:  NewMsgWalletSpendAction(addr, "null"),
+			msg:  NewMsgWalletSpendAction(addr.String(), "null"),
 		},
 		{
 			name:      "empty action",
-			msg:       NewMsgWalletSpendAction(addr, ""),
+			msg:       NewMsgWalletSpendAction(addr.String(), ""),
 			shouldErr: true,
 		},
 		{
 			name:      "bad json",
-			msg:       NewMsgWalletSpendAction(addr, "foo"),
+			msg:       NewMsgWalletSpendAction(addr.String(), "foo"),
 			shouldErr: true,
 		},
 	} {
@@ -105,17 +105,17 @@ func TestInstallBundle_ValidateBasic(t *testing.T) {
 		},
 		{
 			name:      "no bundle",
-			msg:       NewMsgInstallBundle("", addr),
+			msg:       NewMsgInstallBundle("", addr.String()),
 			shouldErr: true,
 		},
 		{
 			name: "uncompressed",
-			msg:  NewMsgInstallBundle("true", addr),
+			msg:  NewMsgInstallBundle("true", addr.String()),
 		},
 		{
 			name: "compressed",
 			msg: &MsgInstallBundle{
-				Submitter:        addr,
+				Submitter:        addr.String(),
 				CompressedBundle: []byte{1, 2, 3},
 				UncompressedSize: 4,
 			},
@@ -124,7 +124,7 @@ func TestInstallBundle_ValidateBasic(t *testing.T) {
 			name: "both",
 			msg: &MsgInstallBundle{
 				Bundle:           "foo",
-				Submitter:        addr,
+				Submitter:        addr.String(),
 				CompressedBundle: []byte{1},
 			},
 			shouldErr: true,
@@ -132,7 +132,7 @@ func TestInstallBundle_ValidateBasic(t *testing.T) {
 		{
 			name: "zero size",
 			msg: &MsgInstallBundle{
-				Submitter:        addr,
+				Submitter:        addr.String(),
 				CompressedBundle: []byte{1, 2, 3},
 			},
 			shouldErr: true,
@@ -140,7 +140,7 @@ func TestInstallBundle_ValidateBasic(t *testing.T) {
 		{
 			name: "negative size",
 			msg: &MsgInstallBundle{
-				Submitter:        addr,
+				Submitter:        addr.String(),
 				CompressedBundle: []byte{1, 2, 3},
 				UncompressedSize: -4,
 			},
@@ -149,7 +149,7 @@ func TestInstallBundle_ValidateBasic(t *testing.T) {
 		{
 			name: "under limit",
 			msg: &MsgInstallBundle{
-				Submitter:        addr,
+				Submitter:        addr.String(),
 				CompressedBundle: []byte{1, 2, 3},
 				UncompressedSize: bundleUncompressedSizeLimit - 1,
 			},
@@ -158,7 +158,7 @@ func TestInstallBundle_ValidateBasic(t *testing.T) {
 		{
 			name: "limit",
 			msg: &MsgInstallBundle{
-				Submitter:        addr,
+				Submitter:        addr.String(),
 				CompressedBundle: []byte{1, 2, 3},
 				UncompressedSize: bundleUncompressedSizeLimit,
 			},
@@ -167,7 +167,7 @@ func TestInstallBundle_ValidateBasic(t *testing.T) {
 		{
 			name: "max",
 			msg: &MsgInstallBundle{
-				Submitter:        addr,
+				Submitter:        addr.String(),
 				CompressedBundle: []byte{1, 2, 3},
 				UncompressedSize: math.MaxInt64,
 			},
@@ -190,13 +190,13 @@ func TestInstallBundle_Compress(t *testing.T) {
 	// proto.Equal panics because of AccAddress field
 	eq := func(a, b *MsgInstallBundle) bool {
 		return a.Bundle == b.Bundle &&
-			a.Submitter.Equals(b.Submitter) &&
+			a.Submitter == b.Submitter &&
 			bytes.Equal(a.CompressedBundle, b.CompressedBundle) &&
 			a.UncompressedSize == b.UncompressedSize
 	}
 	text := "Lorem ipsum dolor sit amet"
 	size := len(text)
-	msg := NewMsgInstallBundle(text, addr)
+	msg := NewMsgInstallBundle(text, addr.String())
 	origMsg := proto.Clone(msg).(*MsgInstallBundle)
 	err := msg.ValidateBasic()
 	if err != nil {
