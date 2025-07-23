@@ -41,20 +41,23 @@ func handleMsgSendPacket(
 	msg *MsgSendPacket,
 ) (*sdk.Result, error) {
 	onePass := sdk.NewInt64Coin("sendpacketpass", 1)
-	balance := bankKeeper.GetBalance(ctx, msg.Sender, onePass.Denom)
+	senderAddress, err := keeper.GetAddressCodec().StringToBytes(msg.Sender)
+	if err != nil {
+		return nil, err
+	}
+	balance := bankKeeper.GetBalance(ctx, senderAddress, onePass.Denom)
 	if balance.IsLT(onePass) {
 		return nil, sdkioerrors.Wrap(
 			sdkerrors.ErrInsufficientFee,
-			fmt.Sprintf("sender %s needs at least %s", msg.Sender, onePass.String()),
+			fmt.Sprintf("sender %s needs at least %s", senderAddress, onePass.String()),
 		)
 	}
 
 	action := sendPacketAction{
 		MsgSendPacket: msg,
 	}
-	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
 
-	err := keeper.PushAction(ctx, action)
+	err = keeper.PushAction(ctx, action)
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err

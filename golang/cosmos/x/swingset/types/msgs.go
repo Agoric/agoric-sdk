@@ -78,7 +78,7 @@ func chargeAdmission(
 	// A charge for persistent storage.
 	beans = beans.Add(beansPerUnit[BeansPerStorageByte].MulUint64(storageLen))
 
-	addrBytes, err := keeper.GetAccountKeeper().AddressCodec().StringToBytes(addr)
+	addrBytes, err := keeper.GetAddressCodec().StringToBytes(addr)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func checkSmartWalletProvisioned(
 	beansPerUnit map[string]sdkmath.Uint,
 	addr string,
 ) error {
-	addrBytes, err := keeper.GetAccountKeeper().AddressCodec().StringToBytes(addr)
+	addrBytes, err := keeper.GetAddressCodec().StringToBytes(addr)
 	if err != nil {
 		return err
 	}
@@ -297,7 +297,7 @@ func (msg MsgWalletSpendAction) IsHighPriority(ctx sdk.Context, data interface{}
 		return false, sdkioerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
 	}
 
-	ownerAddr, err := keeper.GetAccountKeeper().AddressCodec().StringToBytes(msg.Owner)
+	ownerAddr, err := keeper.GetAddressCodec().StringToBytes(msg.Owner)
 	if err != nil {
 		return false, err
 	}
