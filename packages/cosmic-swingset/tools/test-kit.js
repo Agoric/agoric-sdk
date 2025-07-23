@@ -253,6 +253,7 @@ export const makeCosmicSwingsetTestKit = async (
     env,
     fs,
     path: nativePath,
+    tmp,
     testingOverrides: {
       debugName,
       slogSender,
