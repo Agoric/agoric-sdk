@@ -82,7 +82,12 @@ func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWallet
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := keeper.provisionIfNeeded(ctx, msg.Owner)
+	ownerAddr, err := keeper.accountKeeper.AddressCodec().StringToBytes(msg.Owner)
+	if err != nil {
+		return nil, err
+	}
+
+	err = keeper.provisionIfNeeded(ctx, ownerAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +119,12 @@ func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgW
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := keeper.provisionIfNeeded(ctx, msg.Owner)
+	ownerAddr, err := keeper.accountKeeper.AddressCodec().StringToBytes(msg.Owner)
+	if err != nil {
+		return nil, err
+	}
+
+	err = keeper.provisionIfNeeded(ctx, ownerAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -150,9 +160,14 @@ func (keeper msgServer) provisionIfNeeded(ctx sdk.Context, owner sdk.AccAddress)
 		return nil
 	}
 
+	ownerAddr, err := keeper.accountKeeper.AddressCodec().BytesToString(owner)
+	if err != nil {
+		return err
+	}
+
 	msg := &types.MsgProvision{
-		Address:    owner,
-		Submitter:  owner,
+		Address:    ownerAddr,
+		Submitter:  ownerAddr,
 		PowerFlags: []string{types.PowerFlagSmartWallet},
 	}
 
@@ -161,7 +176,7 @@ func (keeper msgServer) provisionIfNeeded(ctx sdk.Context, owner sdk.AccAddress)
 		AutoProvision: true,
 	}
 
-	err := keeper.routeAction(ctx, msg, action)
+	err = keeper.routeAction(ctx, msg, action)
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return err
@@ -177,7 +192,12 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := keeper.ChargeForProvisioning(ctx, msg.Submitter, msg.PowerFlags)
+	submitterAddr, err := keeper.accountKeeper.AddressCodec().StringToBytes(msg.Submitter)
+	if err != nil {
+		return nil, err
+	}
+
+	err = keeper.ChargeForProvisioning(ctx, submitterAddr, msg.PowerFlags)
 	if err != nil {
 		return nil, err
 	}
@@ -186,8 +206,13 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 		MsgProvision: msg,
 	}
 
+	msgAddr, err := keeper.accountKeeper.AddressCodec().StringToBytes(msg.Address)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create the account, if it doesn't already exist.
-	egress := types.NewEgress(msg.Nickname, msg.Address, msg.PowerFlags)
+	egress := types.NewEgress(msg.Nickname, msgAddr, msg.PowerFlags)
 	err = keeper.SetEgress(ctx, egress)
 	if err != nil {
 		return nil, err

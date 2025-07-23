@@ -29,7 +29,7 @@ func queryEgress(ctx sdk.Context, bech32 string, req abci.RequestQuery, keeper K
 	}
 
 	egress := keeper.GetEgress(ctx, acc)
-	if egress.Peer.Empty() {
+	if egress.Peer == "" {
 		return []byte{}, sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, fmt.Sprintf("egress %s not found", bech32))
 	}
 

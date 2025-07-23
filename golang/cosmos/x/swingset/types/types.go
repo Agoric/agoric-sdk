@@ -19,9 +19,10 @@ func NewMailbox() *vstoragetypes.Data {
 }
 
 func NewEgress(nickname string, peer sdk.AccAddress, powerFlags []string) *Egress {
+
 	return &Egress{
 		Nickname:   nickname,
-		Peer:       peer,
+		Peer:       peer.String(),
 		PowerFlags: powerFlags,
 	}
 }

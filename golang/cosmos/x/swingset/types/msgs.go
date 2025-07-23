@@ -78,7 +78,12 @@ func chargeAdmission(
 	// A charge for persistent storage.
 	beans = beans.Add(beansPerUnit[BeansPerStorageByte].MulUint64(storageLen))
 
-	return keeper.ChargeBeans(ctx, beansPerUnit, addr, beans)
+	addrBytes, err := keeper.GetAccountKeeper().AddressCodec().StringToBytes(addr)
+	if err != nil {
+		return err
+	}
+
+	return keeper.ChargeBeans(ctx, beansPerUnit, addrBytes, beans)
 }
 
 // checkSmartWalletProvisioned verifies if a smart wallet message (MsgWalletAction
@@ -93,7 +98,11 @@ func checkSmartWalletProvisioned(
 	beansPerUnit map[string]sdkmath.Uint,
 	addr string,
 ) error {
-	walletState := keeper.GetSmartWalletState(ctx, addr)
+	addrBytes, err := keeper.GetAccountKeeper().AddressCodec().StringToBytes(addr)
+	if err != nil {
+		return err
+	}
+	walletState := keeper.GetSmartWalletState(ctx, addrBytes)
 
 	switch walletState {
 	case SmartWalletStateProvisioned:
@@ -109,7 +118,7 @@ func checkSmartWalletProvisioned(
 		// This is a separate charge from the smart wallet action which triggered the check
 		// TODO: Currently this call does not mark the smart wallet provisioning as
 		// pending, resulting in multiple provisioning charges for the owner.
-		return keeper.ChargeForSmartWallet(ctx, beansPerUnit, addr)
+		return keeper.ChargeForSmartWallet(ctx, beansPerUnit, addrBytes)
 	}
 }
 
@@ -288,7 +297,12 @@ func (msg MsgWalletSpendAction) IsHighPriority(ctx sdk.Context, data interface{}
 		return false, sdkioerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
 	}
 
-	return keeper.IsHighPriorityAddress(ctx, msg.Owner)
+	ownerAddr, err := keeper.GetAccountKeeper().AddressCodec().StringToBytes(msg.Owner)
+	if err != nil {
+		return false, err
+	}
+
+	return keeper.IsHighPriorityAddress(ctx, ownerAddr)
 }
 
 // ValidateBasic runs stateless checks on the message
