@@ -82,7 +82,7 @@ is an "Ack" integer.`,
 				return err
 			}
 
-			msg := types.NewMsgDeliverInbound(msgs, cctx.GetFromAddress())
+			msg := types.NewMsgDeliverInbound(msgs, cctx.GetFromAddress().String())
 			return tx.GenerateOrBroadcastTxCLI(cctx, cmd.Flags(), msg)
 		},
 	}
@@ -125,7 +125,7 @@ https://github.com/endojs/endo/tree/master/packages/bundle-source`,
 				jsonIn = string(jsonBytes)
 			}
 
-			msg := types.NewMsgInstallBundle(jsonIn, cctx.GetFromAddress())
+			msg := types.NewMsgInstallBundle(jsonIn, cctx.GetFromAddress().String())
 
 			compress, err := cmd.Flags().GetBool(FlagCompress)
 			if err != nil {
@@ -175,7 +175,7 @@ func GetCmdProvisionOne() *cobra.Command {
 				powerFlags = strings.Split(args[2], ",")
 			}
 
-			msg := types.NewMsgProvision(nickname, addr, powerFlags, cctx.GetFromAddress())
+			msg := types.NewMsgProvision(nickname, addr.String(), powerFlags, cctx.GetFromAddress().String())
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
@@ -215,11 +215,11 @@ func GetCmdWalletAction() *cobra.Command {
 			// The MsgWalletSpendAction is a special case that allows the action to spend assets.
 			// The MsgWalletAction is a general action that does not allow spending.
 			if spend {
-				m := types.NewMsgWalletSpendAction(owner, action)
+				m := types.NewMsgWalletSpendAction(owner.String(), action)
 				err = m.ValidateBasic()
 				msg = m
 			} else {
-				m := types.NewMsgWalletAction(owner, action)
+				m := types.NewMsgWalletAction(owner.String(), action)
 				err = m.ValidateBasic()
 				msg = m
 			}

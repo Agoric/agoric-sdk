@@ -69,7 +69,7 @@ func GetCmdGetEgress(queryRoute string) *cobra.Command {
 			}
 
 			res, err := queryClient.Egress(cmd.Context(), &types.QueryEgressRequest{
-				Peer: peer,
+				Peer: peer.String(),
 			})
 			if err != nil {
 				return err
@@ -102,7 +102,7 @@ func GetCmdMailbox(queryRoute string) *cobra.Command {
 			}
 
 			res, err := queryClient.Mailbox(cmd.Context(), &types.QueryMailboxRequest{
-				Peer: peer,
+				Peer: peer.String(),
 			})
 			if err != nil {
 				return err
