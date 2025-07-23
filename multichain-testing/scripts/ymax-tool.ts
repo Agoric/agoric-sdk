@@ -4,9 +4,10 @@
  */
 import '@endo/init';
 
-import type {
-  OfferArgsFor,
-  ProposalType,
+import {
+  TargetAllocationShape,
+  type OfferArgsFor,
+  type ProposalType,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { makePortfolioSteps } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
 import {
@@ -16,7 +17,7 @@ import {
 import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
 import { AmountMath } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, mustMatch, type TypedPattern } from '@agoric/internal';
 import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import { stringToPath } from '@cosmjs/crypto';
 import { fromBech32 } from '@cosmjs/encoding';
@@ -32,9 +33,10 @@ const getUsage = (
   programName: string,
 ): string => `USAGE: ${programName} <volume> [options]
 Options:
-  --skip-poll       Skip polling for offer result
-  --exit-success    Exit with success code even if errors occur
-  -h, --help        Show this help message`;
+  --skip-poll         Skip polling for offer result
+  --exit-success      Exit with success code even if errors occur
+  --target-allocation JSON string of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
+  -h, --help          Show this help message`;
 
 const toAccAddress = (address: string): Uint8Array => {
   return fromBech32(address).data;
@@ -57,6 +59,22 @@ const agoricRegistryTypes: [string, GeneratedType][] = [
   ],
 ];
 
+const parseTypedJSON = <T>(
+  json: string,
+  shape: TypedPattern<T>,
+  reviver?: (k, v) => unknown,
+  makeError: (err) => unknown = err => err,
+): T => {
+  let result: unknown;
+  try {
+    result = JSON.parse(json, reviver);
+  } catch (err) {
+    throw makeError(err);
+  }
+  mustMatch(result, shape);
+  return result;
+};
+
 const openPosition = async (
   volume: number | string,
   {
@@ -65,12 +83,14 @@ const openPosition = async (
     walletKit,
     now,
     skipPoll = false,
+    targetAllocationJson,
   }: {
     address: string;
     client: SigningStargateClient;
     walletKit: Awaited<ReturnType<typeof makeSmartWalletKit>>;
     now: () => number;
     skipPoll?: boolean;
+    targetAllocationJson?: string;
   },
 ) => {
   const brand = fromEntries(await walletKit.readPublished('agoricNames.brand'));
@@ -84,8 +104,21 @@ const openPosition = async (
       ...(PoC26 ? { Access: make(PoC26, 1n) } : {}),
     },
   };
+
+  const parseTargetAllocation = () => {
+    if (!targetAllocationJson) return undefined;
+    const targetAllocation = parseTypedJSON(
+      targetAllocationJson,
+      TargetAllocationShape,
+      (_k, v) => (typeof v === 'number' ? BigInt(v) : v),
+      err => Error(`Invalid target allocation JSON: ${err.message}`),
+    );
+    return harden({ targetAllocation });
+  };
+
   const offerArgs: OfferArgsFor['openPortfolio'] = {
     flow: steps,
+    ...parseTargetAllocation(),
   };
   trace('opening portfolio', proposal.give);
   const action: BridgeAction = harden({
@@ -164,6 +197,7 @@ const main = async (
     options: {
       'skip-poll': { type: 'boolean', default: false },
       'exit-success': { type: 'boolean', default: false },
+      'target-allocation': { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
     allowPositionals: true,
@@ -172,6 +206,7 @@ const main = async (
   // Extract options
   const skipPoll = values['skip-poll'];
   const exitSuccess = values['exit-success'];
+  const targetAllocationJson = values['target-allocation'];
   const [volume] = positionals;
 
   // Show help if requested or if volume is not provided
@@ -197,13 +232,14 @@ const main = async (
   });
 
   try {
-    // Pass the parsed skipPoll option to openPosition
+    // Pass the parsed options to openPosition
     await openPosition(volume, {
       address,
       client,
       walletKit,
       now: Date.now,
       skipPoll,
+      targetAllocationJson,
     });
   } catch (err) {
     // If we should exit with success code, throw a special non-error object
