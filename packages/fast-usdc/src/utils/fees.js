@@ -8,7 +8,7 @@ import { FeeConfigShape } from '../type-guards.js';
 const { add, isGTE, subtract, makeEmpty } = AmountMath;
 
 /**
- * @import {Amount} from '@agoric/ertp';
+ * @import {Amount, Payment} from '@agoric/ertp';
  * @import {AccountId} from '@agoric/orchestration';
  * @import {FeeConfig} from '../types.js';
  */
