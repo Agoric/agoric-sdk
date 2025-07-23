@@ -11,6 +11,7 @@ import {
   type BaseGmpArgs,
   type GmpArgsContractCall,
 } from './types';
+import { getWalletAddress } from './listen';
 
 export const axelarChainsMap = {
   Ethereum: {
@@ -112,6 +113,10 @@ export const sendIbc = async ({ memo, amount }) => {
 
   console.log('Asserting');
   assertIsDeliverTxSuccess(response);
+
+  console.log('Transaction hash:', response.transactionHash);
+
+  await getWalletAddress({ txHash: response.transactionHash });
 };
 
 export const sendGmp = async (gmpArgs: GmpArgsContractCall) => {

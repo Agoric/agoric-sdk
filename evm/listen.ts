@@ -268,7 +268,7 @@ type AxelarQueryParams = {
 
 // Helpful for experimenting with different parameters:
 // Visit https://docs.axelarscan.io/axelarscan
-export const getTx = async (params: AxelarQueryParams) => {
+export const getWalletAddress = async (params: AxelarQueryParams) => {
   const body = JSON.stringify(params);
   console.log(`params: ${body}`);
   const headers = {
@@ -277,7 +277,7 @@ export const getTx = async (params: AxelarQueryParams) => {
   };
 
   const startTime = Date.now();
-  const pollingDurationMs = 3 * 60 * 1000; // 3 minutes
+  const pollingDurationMs = 4 * 60 * 1000; // 4 minutes
   let data: AxelarEventRecord[];
 
   while (Date.now() - startTime < pollingDurationMs) {
@@ -293,45 +293,33 @@ export const getTx = async (params: AxelarQueryParams) => {
 
     const parsed = (await res.json()) as AxelarEventsResponse;
     data = parsed.data;
-    // console.log('Received Data:', data);
 
-    if (Array.isArray(data) && data.length > 0) {
-      break;
+    if (Array.isArray(data) && data?.[0]?.executed) {
+      console.log('✅ contract call executed', data[0].executed);
+      console.log('txHash:', data[0].executed.transactionHash);
+
+      // equivalent of keccak256("SmartWalletCreated(address,string,string,string)")
+      const walletCreatedTopic = ethers.id(
+        'SmartWalletCreated(address,string,string,string)',
+      );
+      const logs = data[0].executed.receipt.logs;
+      const walletCreationLog = logs.find(
+        log => log.topics[0] === walletCreatedTopic,
+      );
+      console.log('wallet creation log', walletCreationLog);
+
+      if (walletCreationLog) {
+        const walletAddress = ethers.getAddress(
+          '0x' + walletCreationLog.topics[1].slice(26),
+        );
+        console.log('wallet created:', walletAddress);
+        process.exit(0);
+      } else {
+        console.log('wallet creation log not found');
+      }
     }
 
     console.log('no data, retrying...');
-    await wait(10); // 10 seconds delay between retries
-  }
-
-  // @ts-expect-error
-  if (!Array.isArray(data) || data.length === 0) {
-    // @ts-expect-error
-    throw new Error(`invalid response: ${data}`);
-  }
-
-  console.log('txHash:', data[0].executed.transactionHash);
-
-  const logs = data[0].executed.receipt.logs;
-  console.log('logs:', data[0].executed.receipt.logs);
-
-  const walletCreatedTopic = ethers.id(
-    'SmartWalletCreated(address,string,string,string)',
-  );
-
-  const walletCreationLog = logs.find(
-    log => log.topics[0] === walletCreatedTopic,
-  );
-
-  console.log('wallet creation log', walletCreationLog);
-
-  if (walletCreationLog) {
-    const walletAddress = ethers.getAddress(
-      '0x' + walletCreationLog.topics[1].slice(26),
-    );
-    console.log('Wallet created:', walletAddress);
+    await wait(20); // 20 seconds delay between retries
   }
 };
-
-getTx({
-  txHash: '1ADFE119AF763C28544437F44E693743C1C508565BB1C7080CE532BAEA9742B3',
-});
