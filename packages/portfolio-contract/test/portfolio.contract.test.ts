@@ -264,3 +264,29 @@ test('contract rejects unknown pool keys', async t => {
     message: /Must match one of|Aave_Base/i,
   });
 });
+
+test('open portfolio with target allocations', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { poc26 } = common.brands;
+
+  const targetAllocation = {
+    USDN: 1n,
+    Aave_Arbitrum: 1n,
+    Compound_Arbitrum: 1n,
+  };
+  const doneP = trader1.openPortfolio(
+    t,
+    { Access: poc26.make(1n) },
+    { targetAllocation },
+  );
+
+  const done = await doneP;
+  const result = done.result as any;
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const info = await trader1.getPortfolioStatus();
+  t.deepEqual(info.targetAllocation, targetAllocation);
+
+  t.snapshot(info, 'portfolio');
+  t.snapshot(done.payouts, 'refund payouts');
+});
