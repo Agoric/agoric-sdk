@@ -1,7 +1,9 @@
 package keeper
 
 import (
+	"cosmossdk.io/core/address"
 	"fmt"
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 
 	corestore "cosmossdk.io/core/store"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -37,6 +39,8 @@ type Keeper struct {
 	scopedKeeper types.ScopedKeeper
 	storeService corestore.KVStoreService
 	pushAction   vm.ActionPusher
+
+	accountKeeper authkeeper.AccountKeeper
 }
 
 // NewKeeper creates a new vibc Keeper instance
@@ -45,6 +49,7 @@ func NewKeeper(
 	channelKeeper types.ChannelKeeper,
 	portKeeper types.PortKeeper,
 	clientKeeper types.ClientKeeper,
+	accountKeeper authkeeper.AccountKeeper,
 ) Keeper {
 
 	return Keeper{
@@ -52,6 +57,7 @@ func NewKeeper(
 		channelKeeper: channelKeeper,
 		portKeeper:    portKeeper,
 		clientKeeper:  clientKeeper,
+		accountKeeper: accountKeeper,
 	}
 }
 
@@ -224,4 +230,8 @@ func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capability.Capability, nam
 // GetCapability allows the vibc module to retrieve a capability.
 func (k Keeper) GetCapability(ctx sdk.Context, name string) (*capability.Capability, bool) {
 	return k.scopedKeeper.GetCapability(ctx, name)
+}
+
+func (k Keeper) GetAddressCodec() address.Codec {
+	return k.accountKeeper.AddressCodec()
 }

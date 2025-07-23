@@ -558,6 +558,7 @@ func NewAgoricApp(
 		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.PortKeeper,
 		app.IBCKeeper.ClientKeeper,
+		app.AccountKeeper,
 	).WithScope(
 		runtime.NewKVStoreService(keys[vibc.StoreKey]),
 		scopedVibcKeeper,

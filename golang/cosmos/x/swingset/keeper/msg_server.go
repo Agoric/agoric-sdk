@@ -192,7 +192,7 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	submitterAddr, err := keeper.accountKeeper.AddressCodec().StringToBytes(msg.Submitter)
+	submitterAddr, err := keeper.GetAddressCodec().StringToBytes(msg.Submitter)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +206,7 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 		MsgProvision: msg,
 	}
 
-	msgAddr, err := keeper.accountKeeper.AddressCodec().StringToBytes(msg.Address)
+	msgAddr, err := keeper.GetAddressCodec().StringToBytes(msg.Address)
 	if err != nil {
 		return nil, err
 	}

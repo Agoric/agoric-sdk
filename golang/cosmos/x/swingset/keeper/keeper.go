@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"cosmossdk.io/core/address"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -500,6 +501,6 @@ func (k Keeper) GetStoreName() string {
 	return k.vstorageKeeper.GetStoreName()
 }
 
-func (k Keeper) GetAccountKeeper() types.AccountKeeper {
-	return k.accountKeeper
+func (k Keeper) GetAddressCodec() address.Codec {
+	return k.accountKeeper.AddressCodec()
 }
