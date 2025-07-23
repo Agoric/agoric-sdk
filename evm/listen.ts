@@ -18,13 +18,354 @@ const contract = new ethers.Contract(contractAddress, contractABI, provider);
 
 console.log('Listening for events on Avalanche Fuji Testnet...');
 
-contract.on(
-  'SmartWalletCreated',
-  (wallet, owner, sourceChain, sourceAddress, event) => {
-    console.log('Smart Wallet Created!');
-    console.log('Wallet address:', wallet);
-    console.log('Owner:', owner);
-    console.log('Source Chain:', sourceChain);
-    console.log('Source Address:', sourceAddress);
-  },
-);
+// contract.on(
+//   'SmartWalletCreated',
+//   (wallet, owner, sourceChain, sourceAddress, event) => {
+//     console.log('Smart Wallet Created!');
+//     console.log('Wallet address:', wallet);
+//     console.log('Owner:', owner);
+//     console.log('Source Chain:', sourceChain);
+//     console.log('Source Address:', sourceAddress);
+//   },
+// );
+
+const wait = async (seconds: number) => {
+  return new Promise(resolve => setTimeout(resolve, seconds * 1000));
+};
+
+type TxReceipt = {
+  gasUsed: string;
+  blockNumber: number;
+  from: string;
+  transactionIndex: number;
+  status: number;
+  transactionHash: string;
+};
+
+type TxMeta = {
+  blockNumber: number;
+  gas: string;
+  from: string;
+  transactionIndex: number;
+  to: string;
+  hash: string;
+  gasPrice: string;
+};
+
+type TimeIndex = {
+  ms: number;
+  hour: number;
+  day: number;
+  week: number;
+  month: number;
+  quarter: number;
+  year: number;
+};
+
+type AxelarCallEvent = {
+  chain: string;
+  _id: string;
+  blockNumber: number;
+  axelarTransactionHash: string;
+  transactionHash: string;
+  logIndex: number;
+  event: string;
+  returnValues: {
+    destinationContractAddress: string;
+    destinationChain: string;
+    messageId: string;
+    payload: string;
+    payloadHash: string;
+    sender: string;
+    sourceChain: string;
+  };
+  block_timestamp: number;
+  receipt: TxReceipt;
+  transaction: TxMeta;
+  id: string;
+  chain_type: string;
+  destination_chain_type: string;
+  created_at: TimeIndex;
+  messageIdIndex: number;
+  messageIdHash: string;
+};
+
+type AxelarGasPaidEvent = {
+  axelarTransactionHash: string;
+  chain: string;
+  chain_type: string;
+  logIndex: number;
+  created_at: TimeIndex;
+  transactionHash: string;
+  returnValues: {
+    amount: string;
+    sourceChain: string;
+    sourceAddress: string;
+    destinationAddress: string;
+    gasFeeAmount: string;
+    gasToken: string;
+    messageId: string;
+    payloadHash: string;
+    refundAddress: string;
+    recipient: string;
+    destinationChain: string;
+    denom: string;
+    asset: string;
+  };
+  blockNumber: number;
+  block_timestamp: number;
+  receipt: TxReceipt;
+  _id: string;
+  id: string;
+  event: string;
+  transaction: TxMeta;
+  destination_chain_type: string;
+};
+
+type AxelarConfirmEvent = {
+  sourceChain: string;
+  confirmation_txhash: string;
+  blockNumber: number;
+  block_timestamp: number;
+  messageId: string;
+  transactionIndex: number;
+  sourceTransactionHash: string;
+  event: string;
+  transactionHash: string;
+};
+
+type AxelarApprovedEvent = {
+  blockHash: string;
+  chain: string;
+  chain_type: string;
+  address: string;
+  logIndex: number;
+  topics: string[];
+  eventSignature: string;
+  created_at: TimeIndex;
+  transactionIndex: number;
+  eventIndex: number;
+  contract_address: string;
+  transactionHash: string;
+  returnValues: {
+    sourceEventIndex: string;
+    sourceChain: string;
+    sourceAddress: string;
+    sourceTxHash: string;
+    contractAddress: string;
+    payloadHash: string;
+    commandId: string;
+  };
+  blockNumber: number;
+  block_timestamp: number;
+  receipt: TxReceipt;
+  id: string;
+  event: string;
+  transaction: TxMeta;
+  _logIndex: number;
+};
+
+type AxelarExecutedEvent = {
+  chain: string;
+  sourceChain: string;
+  chain_type: string;
+  messageId: string;
+  created_at: TimeIndex;
+  sourceTransactionLogIndex: number;
+  transactionIndex: number;
+  contract_address: string;
+  relayerAddress: string;
+  transactionHash: string;
+  blockNumber: number;
+  block_timestamp: number;
+  from: string;
+  receipt: TxReceipt & {
+    cumulativeGasUsed: string;
+    effectiveGasPrice: string;
+    confirmations: number;
+    logs: {
+      logIndex: number;
+      data: string;
+      topics: string[];
+      blockNumber: number;
+      transactionIndex: number;
+    }[];
+  };
+  sourceTransactionHash: string;
+  _id: string;
+  id: string;
+  event: string;
+  transaction: TxMeta & {
+    chainId: number;
+    maxPriorityFeePerGas: string;
+    maxFeePerGas: string;
+    nonce: number;
+  };
+};
+
+type AxelarCallbackEvent = {
+  blockHash: string;
+  chain: string;
+  chain_type: string;
+  address: string;
+  logIndex: number;
+  topics: string[];
+  eventSignature: string;
+  created_at: TimeIndex;
+  transactionIndex: number;
+  eventIndex: number;
+  contract_address: string;
+  transactionHash: string;
+  returnValues: {
+    sender: string;
+    destinationContractAddress: string;
+    payload: string;
+    payloadHash: string;
+    destinationChain: string;
+  };
+  blockNumber: number;
+  block_timestamp: number;
+  receipt: TxReceipt;
+  id: string;
+  event: string;
+  destination_chain_type: string;
+  transaction: TxMeta & {
+    chainId: number;
+    maxPriorityFeePerGas: string;
+    maxFeePerGas: string;
+    nonce: number;
+  };
+  _logIndex: number;
+};
+
+type AxelarEventRecord = {
+  call: AxelarCallEvent;
+  gas_paid: AxelarGasPaidEvent;
+  confirm: AxelarConfirmEvent;
+  approved: AxelarApprovedEvent;
+  executed: AxelarExecutedEvent;
+  callback: AxelarCallbackEvent;
+  // other useful fields
+  message_id: string;
+  status: string;
+  simplified_status: string;
+  is_invalid_call: boolean;
+  is_not_enough_gas: boolean;
+  no_gas_remain: boolean;
+  command_id: string;
+};
+
+type AxelarEventsResponse = {
+  data: AxelarEventRecord[];
+  total: number;
+  time_spent: number;
+};
+
+type EventType = 'ContractCall' | 'ContractCallWithToken';
+
+type StatusType =
+  | 'called'
+  | 'confirming'
+  | 'express_executed'
+  | 'approving'
+  | 'approved'
+  | 'executing'
+  | 'executed'
+  | 'error'
+  | 'waiting_for_route_message'
+  | 'waiting_for_ibc'
+  | 'insufficient_fee';
+
+type AxelarQueryParams = {
+  txHash?: string;
+  txLogIndex?: number;
+  messageId?: string;
+  event?: EventType;
+  commandId?: string;
+  sourceChain?: string;
+  sourceAddress?: string;
+  destinationChain?: string;
+  contractAddress?: string;
+  asset?: string; // use denom or symbol
+  symbol?: string;
+  status?: StatusType;
+  fromTime?: number; // unixtime
+  toTime?: number; // unixtime
+  from?: number; // default: 0
+  size?: number; // default: 25
+};
+
+// Helpful for experimenting with different parameters:
+// Visit https://docs.axelarscan.io/axelarscan
+export const getTx = async (params: AxelarQueryParams) => {
+  const body = JSON.stringify(params);
+  console.log(`params: ${body}`);
+  const headers = {
+    accept: '*/*',
+    'content-type': 'application/json',
+  };
+
+  const startTime = Date.now();
+  const pollingDurationMs = 3 * 60 * 1000; // 3 minutes
+  let data: AxelarEventRecord[];
+
+  while (Date.now() - startTime < pollingDurationMs) {
+    const res = await fetch('https://testnet.api.axelarscan.io/gmp/searchGMP', {
+      method: 'POST',
+      headers,
+      body,
+    });
+
+    if (!res.ok) {
+      throw new Error(`axelar api error: ${res.status} ${res.statusText}`);
+    }
+
+    const parsed = (await res.json()) as AxelarEventsResponse;
+    data = parsed.data;
+    // console.log('Received Data:', data);
+
+    if (Array.isArray(data) && data.length > 0) {
+      break;
+    }
+
+    console.log('no data, retrying...');
+    await wait(10); // 10 seconds delay between retries
+  }
+
+  // @ts-expect-error
+  if (!Array.isArray(data) || data.length === 0) {
+    // @ts-expect-error
+    throw new Error(`invalid response: ${data}`);
+  }
+
+  /** Sorting is not required if getting data based on tx id */
+  // Sort the array by height in descending order (to get the transfer with the highest block height first)
+  // We sort by height because the highest block number represents the most recent transfer.
+  data.sort((a, b) => Number(b.call.blockNumber) - Number(a.call.blockNumber));
+
+  console.log('txHash:', data[0].executed.transactionHash);
+
+  const logs = data[0].executed.receipt.logs;
+  console.log('logs:', data[0].executed.receipt.logs);
+
+  const walletCreatedTopic = ethers.id(
+    'SmartWalletCreated(address,string,string,string)',
+  );
+
+  const walletCreationLog = logs.find(
+    log => log.topics[0] === walletCreatedTopic,
+  );
+
+  console.log('wallet creation log', walletCreationLog);
+
+  if (walletCreationLog) {
+    const walletAddress = ethers.getAddress(
+      '0x' + walletCreationLog.topics[1].slice(26),
+    );
+    console.log('Wallet created:', walletAddress);
+  }
+};
+
+getTx({
+  txHash: '1ADFE119AF763C28544437F44E693743C1C508565BB1C7080CE532BAEA9742B3',
+});
