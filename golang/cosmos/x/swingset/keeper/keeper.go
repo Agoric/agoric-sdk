@@ -444,7 +444,7 @@ func (k Keeper) GetEgress(ctx sdk.Context, addr sdk.AccAddress) types.Egress {
 
 // SetEgress sets the egress struct for a peer, and ensures its account exists
 func (k Keeper) SetEgress(ctx sdk.Context, egress *types.Egress) error {
-	path := StoragePathEgress + "." + egress.Peer.String()
+	path := StoragePathEgress + "." + egress.Peer
 
 	bz, err := json.Marshal(egress)
 	if err != nil {
@@ -454,14 +454,12 @@ func (k Keeper) SetEgress(ctx sdk.Context, egress *types.Egress) error {
 	// FIXME: We should use just SetStorageAndNotify here, but solo needs legacy for now.
 	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, agoric.NewKVEntry(path, string(bz)))
 
-	// Now make sure the corresponding account has been initialised.
-	if acc := k.accountKeeper.GetAccount(ctx, egress.Peer); acc != nil {
-		// Account already exists.
-		return nil
-	}
-
 	// Create an account object with the specified address.
-	acc := k.accountKeeper.NewAccountWithAddress(ctx, egress.Peer)
+	peerAddr, err := k.accountKeeper.AddressCodec().StringToBytes(egress.Peer)
+	if err != nil {
+		return err
+	}
+	acc := k.accountKeeper.NewAccountWithAddress(ctx, peerAddr)
 
 	// Store it in the keeper (panics on error).
 	k.accountKeeper.SetAccount(ctx, acc)
