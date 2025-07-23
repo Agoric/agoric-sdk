@@ -309,11 +309,6 @@ export const getTx = async (params: AxelarQueryParams) => {
     throw new Error(`invalid response: ${data}`);
   }
 
-  /** Sorting is not required if getting data based on tx id */
-  // Sort the array by height in descending order (to get the transfer with the highest block height first)
-  // We sort by height because the highest block number represents the most recent transfer.
-  data.sort((a, b) => Number(b.call.blockNumber) - Number(a.call.blockNumber));
-
   console.log('txHash:', data[0].executed.transactionHash);
 
   const logs = data[0].executed.receipt.logs;
