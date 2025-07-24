@@ -6,14 +6,23 @@ import (
 	"reflect"
 	"testing"
 
+	"cosmossdk.io/core/address"
+
 	sdkmath "cosmossdk.io/math"
 	swingtypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
+	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/gogoproto/proto"
+)
+
+var (
+	testPrivKey = secp256k1.GenPrivKey()
+	testAddress = sdk.AccAddress(testPrivKey.PubKey().Address()).String()
 )
 
 func TestInboundAnteHandle(t *testing.T) {
@@ -59,7 +68,7 @@ func TestInboundAnteHandle(t *testing.T) {
 		},
 		{
 			name:                  "state-lookup-error",
-			tx:                    makeTestTx(&swingtypes.MsgWalletAction{}, &swingtypes.MsgWalletSpendAction{}),
+			tx:                    makeTestTx(&swingtypes.MsgWalletAction{Owner: testAddress}, &swingtypes.MsgWalletSpendAction{Owner: testAddress}),
 			inboundLimit:          10,
 			inboundQueueLengthErr: fmt.Errorf("sunspots"),
 			errMsg:                "sunspots",
@@ -99,31 +108,31 @@ func TestInboundAnteHandle(t *testing.T) {
 		},
 		{
 			name:               "max-per-tx",
-			tx:                 makeTestTx(&swingtypes.MsgWalletAction{}, &swingtypes.MsgWalletSpendAction{}),
+			tx:                 makeTestTx(&swingtypes.MsgWalletAction{Owner: testAddress}, &swingtypes.MsgWalletSpendAction{Owner: testAddress}),
 			inboundLimit:       10,
 			inboundQueueLength: 5,
 			errMsg:             ErrInboundQueueFull.Error(),
 		},
 		{
 			name:                "priority-limit-bypass",
-			tx:                  makeTestTx(&swingtypes.MsgWalletSpendAction{}),
+			tx:                  makeTestTx(&swingtypes.MsgWalletSpendAction{Owner: testAddress}),
 			isHighPriorityOwner: true,
 		},
 		{
 			name:                "priority-multi-bypass",
-			tx:                  makeTestTx(&swingtypes.MsgWalletSpendAction{}, &swingtypes.MsgWalletSpendAction{}),
+			tx:                  makeTestTx(&swingtypes.MsgWalletSpendAction{Owner: testAddress}, &swingtypes.MsgWalletSpendAction{Owner: testAddress}),
 			isHighPriorityOwner: true,
 		},
 		{
 			name:                "mixed-priority-limit-first-fail",
-			tx:                  makeTestTx(&swingtypes.MsgWalletSpendAction{}, &swingtypes.MsgProvision{}),
+			tx:                  makeTestTx(&swingtypes.MsgWalletSpendAction{Owner: testAddress}, &swingtypes.MsgProvision{}),
 			isHighPriorityOwner: true,
 			inboundLimit:        1,
 			errMsg:              ErrInboundQueueFull.Error(),
 		},
 		{
 			name:                "mixed-priority-limit-last-succeed",
-			tx:                  makeTestTx(&swingtypes.MsgProvision{}, &swingtypes.MsgWalletSpendAction{}),
+			tx:                  makeTestTx(&swingtypes.MsgProvision{}, &swingtypes.MsgWalletSpendAction{Owner: testAddress}),
 			isHighPriorityOwner: true,
 			inboundLimit:        1,
 		},
@@ -226,5 +235,9 @@ func (msk mockSwingsetKeeper) GetSmartWalletState(ctx sdk.Context, addr sdk.AccA
 }
 
 func (msk mockSwingsetKeeper) ChargeForSmartWallet(ctx sdk.Context, beansPerUnit map[string]sdkmath.Uint, addr sdk.AccAddress) error {
-	return fmt.Errorf("not implemented")
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (msk mockSwingsetKeeper) GetAddressCodec() address.Codec {
+	return addresscodec.NewBech32Codec(sdk.Bech32MainPrefix)
 }
