@@ -32,14 +32,17 @@ import { AxelarChain, SupportedChain, YieldProtocol } from './constants.js';
 import type { AxelarId } from './portfolio.contract.js';
 import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
-import type { makeProposalShapes, PoolKey, StatusFor } from './type-guards.js';
+import type { makeOfferArgsShapes } from './type-guards-steps.js';
 import {
   makeFlowPath,
   makePortfolioPath,
-  PoolKeyShape,
+  PoolKeyShapeExt,
+  type makeProposalShapes,
   type OfferArgsFor,
+  type PoolKey,
+  type StatusFor,
+  type TargetAllocation,
 } from './type-guards.js';
-import type { makeOfferArgsShapes } from './type-guards-steps.js';
 
 const trace = makeTracer('PortExo');
 const { values } = Object;
@@ -106,6 +109,7 @@ type PortfolioKitState = {
   accounts: MapStore<SupportedChain, AccountInfo>;
   positions: MapStore<PoolKey, Position>;
   nextFlowId: number;
+  targetAllocation?: TargetAllocation;
 };
 
 /**
@@ -233,9 +237,10 @@ export const preparePortfolioKit = (
         accountsPending: zone.detached().mapStore('accountsPending'),
         // NEEDSTEST: for forgetting to use detached()
         positions: zone.detached().mapStore('positions', {
-          keyShape: PoolKeyShape,
+          keyShape: PoolKeyShapeExt,
           valueShape: M.remotable('Position'),
         }),
+        targetAllocation: undefined,
       };
     },
     {
@@ -359,11 +364,18 @@ export const preparePortfolioKit = (
       },
       reporter: {
         publishStatus() {
-          const { portfolioId, positions, accounts, nextFlowId } = this.state;
+          const {
+            portfolioId,
+            positions,
+            accounts,
+            nextFlowId,
+            targetAllocation,
+          } = this.state;
           publishStatus(makePortfolioPath(portfolioId), {
             positionKeys: [...positions.keys()],
             flowCount: nextFlowId - 1,
             accountIdByChain: accountIdByChain(accounts),
+            ...(targetAllocation && { targetAllocation }),
           });
         },
         allocateFlowId() {
@@ -437,6 +449,13 @@ export const preparePortfolioKit = (
         /** KLUDGE around lack of synchronization signals for now. TODO: rethink design. */
         waitKLUDGE(val: bigint) {
           return vowTools.watch(E(timer).delay(val));
+        },
+        setTargetAllocation(allocation: TargetAllocation) {
+          this.state.targetAllocation = allocation;
+          this.facets.reporter.publishStatus();
+        },
+        getTargetAllocation() {
+          return this.state.targetAllocation;
         },
       },
       rebalanceHandler: {

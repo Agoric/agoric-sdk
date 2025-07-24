@@ -239,3 +239,54 @@ test('open portfolio with USDN, Aave positions', async t => {
   t.snapshot(contents, 'vstorage');
   t.snapshot(done.payouts, 'refund payouts');
 });
+
+test('contract rejects unknown pool keys', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, poc26 } = common.brands;
+
+  const amount = usdc.units(1000);
+
+  // Try to open portfolio with unknown pool key
+  const rejectionP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        // @ts-expect-error testing Unknown pool key
+        { src: '@noble', dest: 'Aave_Base', amount },
+      ],
+    },
+  );
+
+  await t.throwsAsync(rejectionP, {
+    message: /Must match one of|Aave_Base/i,
+  });
+});
+
+test('open portfolio with target allocations', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { poc26 } = common.brands;
+
+  const targetAllocation = {
+    USDN: 1n,
+    Aave_Arbitrum: 1n,
+    Compound_Arbitrum: 1n,
+  };
+  const doneP = trader1.openPortfolio(
+    t,
+    { Access: poc26.make(1n) },
+    { targetAllocation },
+  );
+
+  const done = await doneP;
+  const result = done.result as any;
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const info = await trader1.getPortfolioStatus();
+  t.deepEqual(info.targetAllocation, targetAllocation);
+
+  t.snapshot(info, 'portfolio');
+  t.snapshot(done.payouts, 'refund payouts');
+});

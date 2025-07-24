@@ -2,6 +2,8 @@
  * @file openPortfolio flow tests; especially failure modes.
  *
  * @see {@link snapshots/portfolio-open.test.ts.md} for expected call logs.
+ *
+ * To facilitate review of snapshot diffs, add new tests *at the end*.
  */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -46,7 +48,10 @@ import {
   makeSwapLockMessages,
   makeUnlockSwapMessages,
 } from '../src/pos-usdn.flows.ts';
-import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
+import {
+  makeOfferArgsShapes,
+  type OfferArgsFor,
+} from '../src/type-guards-steps.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
 import { axelarIdsMock, contractsMock } from './mocks.ts';
 import { makePortfolioSteps } from '../tools/portfolio-actors.ts';
@@ -710,3 +715,40 @@ test.failing(
     }),
   ],
 );
+
+test('rebalance handles stepFlow failure correctly', async t => {
+  const { orch, ctx, offer, storage } = mocks(
+    {
+      // Mock a failure in IBC transfer
+      transfer: Error('IBC transfer failed'),
+    },
+    {
+      Deposit: make(USDC, 500n),
+      GmpFee: make(BLD, 200n),
+    },
+  );
+
+  const { log, seat } = offer;
+
+  const badOfferArgs: OfferArgsFor['rebalance'] = {
+    flow: [
+      { src: '<Deposit>', dest: '@agoric', amount: make(USDC, 500n) },
+      { src: '@agoric', dest: '@noble', amount: make(USDC, 500n) },
+      // This will trigger the mocked transfer error
+      { src: '@noble', dest: 'USDN', amount: make(USDC, 500n) },
+    ],
+  };
+
+  await t.throwsAsync(() =>
+    rebalance(orch, ctx, seat, badOfferArgs, ctx.makePortfolioKit()),
+  );
+
+  // Check that seat.fail() was called, not seat.exit()
+  const seatCalls = log.filter(entry => entry._cap === 'seat');
+  const failCall = seatCalls.find(call => call._method === 'fail');
+  const exitCall = seatCalls.find(call => call._method === 'exit');
+
+  t.truthy(failCall, 'seat.fail() should be called on error');
+  t.falsy(exitCall, 'seat.exit() should not be called on error');
+  t.snapshot(log, 'call log');
+});
