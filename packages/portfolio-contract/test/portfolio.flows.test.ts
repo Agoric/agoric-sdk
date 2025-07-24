@@ -808,3 +808,48 @@ test('claim rewards on Aave position', async t => {
 
   await documentStorageSchema(t, storage, docOpts);
 });
+
+test('open portfolio with Beefy position', async t => {
+  const { add } = AmountMath;
+  const amount = AmountMath.make(USDC, 300n);
+  const feeAcct = AmountMath.make(BLD, 50n);
+  const feeCall = AmountMath.make(BLD, 100n);
+  const { orch, tapPK, ctx, offer, storage } = mocks(
+    {},
+    { Deposit: amount, GmpFee: add(feeAcct, feeCall) },
+  );
+
+  const [actual] = await Promise.all([
+    openPortfolio(orch, ctx, offer.seat, {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Beefy_RE7_Avalanche', amount, fee: feeCall },
+      ],
+    }),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
+      tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain })),
+    ),
+  ]);
+  const { log } = offer;
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    {
+      _method: 'localTransfer',
+      amounts: {
+        Deposit: { value: 300n },
+        GmpFee: { value: 150n },
+      },
+    },
+    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'depositForBurn' },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'exit', _cap: 'seat' },
+  ]);
+  t.snapshot(log, 'call log'); // see snapshot for remaining arg details
+  t.is(passStyleOf(actual.invitationMakers), 'remotable');
+  await documentStorageSchema(t, storage, docOpts);
+});
