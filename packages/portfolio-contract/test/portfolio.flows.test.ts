@@ -60,6 +60,7 @@ import {
   makeIncomingEVMEvent,
   makeIncomingVTransferEvent,
 } from './supports.ts';
+import { decodeFunctionCall } from './abi-utils.ts';
 
 /**
  * Use Arbitrum or any other EVM chain whose Axelar chain ID (`axelarId`) differs
@@ -751,4 +752,59 @@ test('rebalance handles stepFlow failure correctly', async t => {
   t.truthy(failCall, 'seat.fail() should be called on error');
   t.falsy(exitCall, 'seat.exit() should not be called on error');
   t.snapshot(log, 'call log');
+});
+
+test('claim rewards on Aave position', async t => {
+  const { add } = AmountMath;
+  const amount = AmountMath.make(USDC, 300n);
+  const emptyAmount = AmountMath.make(USDC, 0n);
+  const feeAcct = AmountMath.make(BLD, 50n);
+  const feeCall = AmountMath.make(BLD, 100n);
+  const { orch, tapPK, ctx, offer, storage } = mocks(
+    {},
+    { Deposit: amount, GmpFee: add(feeAcct, feeCall) },
+  );
+
+  const kit = await ctx.makePortfolioKit();
+  await Promise.all([
+    rebalance(
+      orch,
+      ctx,
+      offer.seat,
+      {
+        flow: [
+          {
+            dest: '@Arbitrum',
+            src: 'Aave_Arbitrum',
+            amount: emptyAmount,
+            fee: feeCall,
+            claim: true,
+          },
+        ],
+      },
+      kit,
+    ),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
+      tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain })),
+    ),
+  ]);
+
+  const { log } = offer;
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'exit', _cap: 'seat' },
+  ]);
+  t.snapshot(log, 'call log'); // see snapshot for remaining arg details
+
+  const rawMemo = log[2].opts.memo;
+  const decodedCalls = decodeFunctionCall(rawMemo, [
+    'claimAllRewardsToSelf(address[])',
+    'withdraw(address,uint256,address)',
+  ]);
+  t.snapshot(decodedCalls, 'decoded calls');
+
+  await documentStorageSchema(t, storage, docOpts);
 });

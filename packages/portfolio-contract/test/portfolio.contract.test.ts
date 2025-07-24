@@ -290,3 +290,139 @@ test('open portfolio with target allocations', async t => {
   t.snapshot(info, 'portfolio');
   t.snapshot(done.payouts, 'refund payouts');
 });
+
+test('claim rewards on Aave position successfully', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+      ],
+    },
+  );
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
+  );
+
+  const done = await actualP;
+  const result = done.result as any;
+
+  const { storagePath } = result.publicSubscribers.portfolio;
+  const messagesBefore = common.utils.inspectLocalBridge();
+
+  const rebalanceP = trader1.rebalance(
+    t,
+    { give: { Deposit: amount }, want: {} },
+    {
+      flow: [
+        {
+          dest: '@Arbitrum',
+          src: 'Aave_Arbitrum',
+          amount: usdc.make(100n),
+          fee: feeCall,
+          claim: true,
+        },
+      ],
+    },
+  );
+
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  const rebalanceResult = await rebalanceP;
+  console.log('rebalance done', rebalanceResult);
+
+  const messagesAfter = common.utils.inspectLocalBridge();
+
+  t.deepEqual(messagesAfter.length - messagesBefore.length, 2);
+
+  t.log(storagePath);
+  const { contents, positionPaths, flowPaths } = getPortfolioInfo(
+    storagePath,
+    common.bootstrap.storage,
+  );
+  t.snapshot(contents, 'vstorage');
+
+  t.snapshot(rebalanceResult.payouts, 'rebalance payouts');
+});
+
+test('USDN claim fails currently', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const doneP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: 'USDN', amount },
+      ],
+    },
+  );
+
+  // ack IBC transfer for forward
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
+  const done = await doneP;
+  const result = done.result as any;
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
+  t.like(result.publicSubscribers, {
+    portfolio: {
+      description: 'Portfolio',
+      storagePath: 'orchtest.portfolios.portfolio0',
+    },
+  });
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents, positionPaths } = getPortfolioInfo(
+    storagePath,
+    common.bootstrap.storage,
+  );
+  t.log(
+    'I can see where my money is:',
+    positionPaths.map(p => contents[p].accountId),
+  );
+  t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
+  t.is(
+    contents[storagePath].accountIdByChain['agoric'],
+    `cosmos:agoric-3:${localAccount0}`,
+    'LCA',
+  );
+
+  const rebalanceP = trader1.rebalance(
+    t,
+    { give: {}, want: {} },
+    {
+      flow: [
+        {
+          dest: '@noble',
+          src: 'USDN',
+          amount: usdc.make(100n),
+          claim: true,
+        },
+      ],
+    },
+  );
+
+  await t.throwsAsync(rebalanceP, {
+    message: /claiming USDN is not supported/,
+  });
+});
