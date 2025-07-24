@@ -64,7 +64,7 @@
         "commission-max-change-rate": "0.010000000000000000",
         "min-self-delegation": "1"
       }
-    dest: "/tmp/validator-{{ inventory_hostname }}.json"
+    dest: '/tmp/validator-{{ inventory_hostname }}.json'
   vars:
     staker: '{{ STAKER }}-{{ inventory_hostname }}'
   when: inventory_hostname != STAKER_NODE
@@ -87,6 +87,6 @@
   become_user: '{{ service }}'
   become: true
   file:
-    path: "/tmp/validator-{{ inventory_hostname }}.json"
+    path: '/tmp/validator-{{ inventory_hostname }}.json'
     state: absent
   when: inventory_hostname != STAKER_NODE
