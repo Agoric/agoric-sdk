@@ -81,7 +81,7 @@ export const AxelarConfigShape: TypedPattern<AxelarConfig> = M.splitRecord(
 
 type Beefy = {
   beefy_re7: `0x${string}`;
-} 
+};
 
 export type EVMContractAddresses = {
   aavePool: `0x${string}`;

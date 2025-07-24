@@ -272,22 +272,22 @@ type Way =
   | { how: 'CCTP'; dest: AxelarChain }
   | { how: 'CCTP'; src: AxelarChain }
   | {
-    how: YieldProtocol;
-    vault?: string;
-    /** pool we're supplying */
-    poolKey: PoolKey;
-    /** chain with account where assets will come from */
-    src: SupportedChain;
-  }
+      how: YieldProtocol;
+      vault?: string;
+      /** pool we're supplying */
+      poolKey: PoolKey;
+      /** chain with account where assets will come from */
+      src: SupportedChain;
+    }
   | {
-    how: YieldProtocol;
-    vault?: string;
-    /** pool we're withdrawing from */
-    poolKey: PoolKey;
-    /** chain with account where assets will go */
-    dest: SupportedChain;
-    claim?: boolean;
-  };
+      how: YieldProtocol;
+      vault?: string;
+      /** pool we're withdrawing from */
+      poolKey: PoolKey;
+      /** chain with account where assets will go */
+      dest: SupportedChain;
+      claim?: boolean;
+    };
 
 export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
   const { src } = moveDesc;
@@ -600,10 +600,8 @@ const stepFlow = async (
 
       case 'Beefy':
         todo.push(() =>
-          makeEVMProtocolStep(
-            way as Way & { how: 'Beefy' },
-            move,
-          ));
+          makeEVMProtocolStep(way as Way & { how: 'Beefy' }, move),
+        );
         break;
 
       default:
