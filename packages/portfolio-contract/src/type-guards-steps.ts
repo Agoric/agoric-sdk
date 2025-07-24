@@ -65,6 +65,7 @@ export type MovementDesc = {
   fee?: NatAmount;
   /** for example: { usdnOut: 98n } */
   detail?: Record<string, NatValue>;
+  claim?: boolean;
 };
 
 // XXX strategy: AllocationStrategyInfo;
@@ -81,7 +82,11 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       src: AssetPlaceRefShape,
       dest: AssetPlaceRefShape,
     },
-    { fee: AnyNatAmountShape, detail: M.recordOf(M.string(), M.nat()) },
+    {
+      fee: AnyNatAmountShape,
+      detail: M.recordOf(M.string(), M.nat()),
+      claim: M.boolean(),
+    },
     {},
   );
 
