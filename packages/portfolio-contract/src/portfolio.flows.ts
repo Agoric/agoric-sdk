@@ -147,6 +147,7 @@ export type ProtocolDetail<
     ctx: CTX,
     amount: NatAmount,
     dest: AccountInfoFor[C],
+    claim?: boolean,
   ) => Promise<void>;
 };
 
@@ -282,6 +283,7 @@ type Way =
       poolKey: PoolKey;
       /** chain with account where assets will go */
       dest: SupportedChain;
+      claim?: boolean;
     };
 
 export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
@@ -301,7 +303,12 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
         !feeRequired.includes(protocol) ||
         Fail`missing fee ${q(moveDesc)}`;
       // XXX check that destName is in protocol.chains
-      return { how: protocol, poolKey, dest: destName };
+      return {
+        how: protocol,
+        poolKey,
+        dest: destName,
+        claim: moveDesc.claim,
+      };
     }
 
     case 'seat':
@@ -357,11 +364,7 @@ const stepFlow = async (
 ) => {
   const todo: (() => Promise<AssetMovement>)[] = [];
 
-  const provideEVMInfo = async <N extends keyof EVMContractAddresses>(
-    _name: N,
-    chain: AxelarChain,
-    move: MovementDesc,
-  ) => {
+  const provideEVMInfo = async (chain: AxelarChain, move: MovementDesc) => {
     const axelar = await orch.getChain('axelar');
     const { denom } = ctx.gmpFeeInfo;
     const fee = { denom, value: move.fee ? move.fee.value : 0n };
@@ -371,7 +374,7 @@ const stepFlow = async (
     const gInfo = await provideEVMAccount(chain, gmp, lca, ctx, kit);
     const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
 
-    const evmCtx: EVMContext<N> = harden({
+    const evmCtx: EVMContext = harden({
       addresses: ctx.contracts[chain],
       lca,
       gmpFee: fee,
@@ -390,16 +393,9 @@ const stepFlow = async (
     assert(keys(AxelarChain).includes(chainName));
     const evmChain = chainName as AxelarChain;
 
-    const [contract, pImpl] =
-      way.how === 'Compound'
-        ? ['compound' as const, CompoundProtocol]
-        : ['aavePool' as const, AaveProtocol];
+    const pImpl = way.how === 'Compound' ? CompoundProtocol : AaveProtocol;
 
-    const { evmCtx, gInfo, accountId } = await provideEVMInfo(
-      contract,
-      evmChain,
-      move,
-    );
+    const { evmCtx, gInfo, accountId } = await provideEVMInfo(evmChain, move);
 
     const pos = kit.manager.providePosition(way.poolKey, way.how, accountId);
 
@@ -419,7 +415,7 @@ const stepFlow = async (
         amount,
         src: { pos },
         dest: { proxy: gInfo },
-        apply: () => pImpl.withdraw(evmCtx, amount, gInfo),
+        apply: () => pImpl.withdraw(evmCtx, amount, gInfo, way.claim),
         recover: () => pImpl.supply(evmCtx, amount, gInfo),
       };
     }
@@ -522,11 +518,7 @@ const stepFlow = async (
           ]);
 
           const evmChain = 'dest' in way ? way.dest : way.src;
-          const { evmCtx, gInfo } = await provideEVMInfo(
-            'tokenMessenger',
-            evmChain,
-            move,
-          );
+          const { evmCtx, gInfo } = await provideEVMInfo(evmChain, move);
 
           if ('dest' in way) {
             return {
@@ -576,7 +568,7 @@ const stepFlow = async (
               amount,
               src: { pos },
               dest: { account: nInfo.ica },
-              apply: () => withdraw(ctxU, amount, nInfo),
+              apply: () => withdraw(ctxU, amount, nInfo, way.claim),
               recover: () => supply(ctxU, amount, nInfo),
             };
           }
