@@ -33,6 +33,7 @@ import type { AxelarId, EVMContractAddresses } from './portfolio.contract.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {
   AaveProtocol,
+  BeefyProtocol,
   CCTP,
   CCTPfromEVM,
   CompoundProtocol,
@@ -271,20 +272,22 @@ type Way =
   | { how: 'CCTP'; dest: AxelarChain }
   | { how: 'CCTP'; src: AxelarChain }
   | {
-      how: YieldProtocol;
-      /** pool we're supplying */
-      poolKey: PoolKey;
-      /** chain with account where assets will come from */
-      src: SupportedChain;
-    }
+    how: YieldProtocol;
+    vault?: string;
+    /** pool we're supplying */
+    poolKey: PoolKey;
+    /** chain with account where assets will come from */
+    src: SupportedChain;
+  }
   | {
-      how: YieldProtocol;
-      /** pool we're withdrawing from */
-      poolKey: PoolKey;
-      /** chain with account where assets will go */
-      dest: SupportedChain;
-      claim?: boolean;
-    };
+    how: YieldProtocol;
+    vault?: string;
+    /** pool we're withdrawing from */
+    poolKey: PoolKey;
+    /** chain with account where assets will go */
+    dest: SupportedChain;
+    claim?: boolean;
+  };
 
 export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
   const { src } = moveDesc;
@@ -297,7 +300,7 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
       if (!destName)
         throw Fail`src pos must have account as dest ${q(moveDesc)}`;
       const poolKey = src as PoolKey;
-      const { protocol } = PoolPlaces[poolKey];
+      const { protocol, vaultName } = PoolPlaces[poolKey];
       const feeRequired = ['Compound', 'Aave'];
       moveDesc.fee ||
         !feeRequired.includes(protocol) ||
@@ -305,6 +308,7 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
       // XXX check that destName is in protocol.chains
       return {
         how: protocol,
+        vault: vaultName,
         poolKey,
         dest: destName,
         claim: moveDesc.claim,
@@ -343,8 +347,8 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
           }
         case 'pos': {
           const poolKey = dest as PoolKey;
-
-          return { how: PoolPlaces[poolKey].protocol, poolKey, src: srcName };
+          const { protocol, vaultName } = PoolPlaces[poolKey];
+          return { how: protocol, vault: vaultName, poolKey, src: srcName };
         }
         default:
           throw Fail`unreachable:${destKind} ${dest}`;
@@ -384,7 +388,7 @@ const stepFlow = async (
     return { evmCtx, gInfo, accountId };
   };
 
-  const makeEVMProtocolStep = async <P extends 'Compound' | 'Aave'>(
+  const makeEVMProtocolStep = async <P extends 'Compound' | 'Aave' | 'Beefy'>(
     way: Way & { how: P },
     move: MovementDesc,
   ) => {
@@ -393,7 +397,13 @@ const stepFlow = async (
     assert(keys(AxelarChain).includes(chainName));
     const evmChain = chainName as AxelarChain;
 
-    const pImpl = way.how === 'Compound' ? CompoundProtocol : AaveProtocol;
+    const protocolImplMap = {
+      Compound: CompoundProtocol,
+      Aave: AaveProtocol,
+      Beefy_RE7: BeefyProtocol('re7'),
+    };
+    const h = way.how + (way.vault ? `_${way.vault}` : '');
+    const pImpl = protocolImplMap[h];
 
     const { evmCtx, gInfo, accountId } = await provideEVMInfo(evmChain, move);
 
@@ -586,6 +596,14 @@ const stepFlow = async (
         todo.push(() =>
           makeEVMProtocolStep(way as Way & { how: 'Aave' }, move),
         );
+        break;
+
+      case 'Beefy':
+        todo.push(() =>
+          makeEVMProtocolStep(
+            way as Way & { how: 'Beefy' },
+            move,
+          ));
         break;
 
       default:
