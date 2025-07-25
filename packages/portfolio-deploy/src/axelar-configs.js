@@ -59,6 +59,8 @@ const AxelarChainIdMap = harden({
  * @typedef {`0x${string}`} HexAddress
  * @typedef {Record<string, HexAddress>} EvmAddressesMap
  * @typedef {{ mainnet: EvmAddressesMap, testnet: EvmAddressesMap }} AddressesMap
+ * @typedef {Record<string, Record<string, HexAddress>>} EvmVaultAddressesMap
+ * @typedef {{ mainnet: EvmVaultAddressesMap, testnet: EvmVaultAddressesMap }} VaultAddressesMap
  */
 
 /**
@@ -187,6 +189,15 @@ const factoryAddresses = {
     Binance: '0x',
   },
 };
+/** @type {VaultAddressesMap} */
+const beefyVaults = {
+  mainnet: {
+    Avalanche: {
+      re7: '0xdA640bE4588C469C9DB45D082B36913490924c08', // Beefy Vault for RE7 on Avalanche
+    },
+  },
+  testnet: {},
+};
 
 /**
  * TODO:
@@ -234,6 +245,7 @@ const mainnetContracts = {
     tokenMessenger: mainnetTokenMessenger.Avalanche.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Avalanche,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Avalanche,
+    beefy_re7: beefyVaults.mainnet.Avalanche.re7,
   },
   Optimism: {
     aavePool: aaveAddresses.mainnet.Optimism,

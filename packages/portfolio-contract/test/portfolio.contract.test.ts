@@ -426,3 +426,44 @@ test('USDN claim fails currently', async t => {
     message: /claiming USDN is not supported/,
   });
 });
+
+test('open a portfolio with Beefy position', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Beefy_re7_Avalanche', amount, fee: feeCall },
+      ],
+    },
+  );
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
+  );
+
+  const actual = await actualP;
+  const result = actual.result as any;
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
+
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(actual.payouts, 'refund payouts');
+});
