@@ -824,12 +824,12 @@ test('open portfolio with Beefy position', async t => {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
-        { src: '@Arbitrum', dest: 'Beefy_RE7_Avalanche', amount, fee: feeCall },
+        { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct },
+        { src: '@Avalanche', dest: 'Beefy_RE7_Avalanche', amount, fee: feeCall },
       ],
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
-      tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain })),
+      tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain: 'Avalanche' })),
     ),
   ]);
   const { log } = offer;
