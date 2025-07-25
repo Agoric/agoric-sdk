@@ -321,7 +321,7 @@ export const BeefyProtocol = vaultName =>
       const usdc = session.makeContract(a.usdc, ERC20);
       const vaultAddress = a[`beefy_${vaultName}`];
       const vault = session.makeContract(vaultAddress, BeefyVault);
-      usdc.approve(a.compound, amount.value);
+      usdc.approve(vaultAddress, amount.value);
       vault.deposit(amount.value);
       const calls = session.finish();
 

@@ -151,10 +151,10 @@ export const PoolPlaces = {
   Compound_Polygon: { protocol: 'Compound', chainName: 'Polygon' },
   Compound_Fantom: { protocol: 'Compound', chainName: 'Fantom' },
   Compound_Binance: { protocol: 'Compound', chainName: 'Binance' },
-  Beefy_RE7_Avalanche: {
+  Beefy_re7_Avalanche: {
     protocol: 'Beefy',
     chainName: 'Avalanche',
-    vaultName: 'RE7',
+    vaultName: 're7',
   },
 } as const satisfies Record<string, PoolPlaceInfo>;
 harden(PoolPlaces);

@@ -410,7 +410,7 @@ const stepFlow = async (
     const protocolImplMap = {
       Compound: CompoundProtocol,
       Aave: AaveProtocol,
-      Beefy_RE7: BeefyProtocol('re7'),
+      Beefy_re7: BeefyProtocol('re7'),
     };
     const implName = way.how + (way.vault ? `_${way.vault}` : '');
     const pImpl = protocolImplMap[implName];
