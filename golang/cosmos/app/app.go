@@ -130,6 +130,7 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank"
 	vbanktypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
+	vibctypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer"
@@ -315,16 +316,20 @@ func NewAgoricApp(
 		skipUpgradeHeights[int64(h)] = true
 	}
 
-	interfaceRegistry, _ := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
-		ProtoFiles: proto.HybridResolver,
-		SigningOptions: signing.Options{
-			AddressCodec: address.Bech32Codec{
-				Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix(),
-			},
-			ValidatorAddressCodec: address.Bech32Codec{
-				Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix(),
-			},
+	signingOptions := signing.Options{
+		AddressCodec: address.Bech32Codec{
+			Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix(),
 		},
+		ValidatorAddressCodec: address.Bech32Codec{
+			Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix(),
+		},
+	}
+
+	DefineCustomGetSigners(&signingOptions)
+
+	interfaceRegistry, _ := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
+		ProtoFiles:     proto.HybridResolver,
+		SigningOptions: signingOptions,
 	})
 	appCodec := codec.NewProtoCodec(interfaceRegistry)
 	legacyAmino := codec.NewLegacyAmino()
@@ -1276,6 +1281,11 @@ func (app *GaiaApp) GetTKey(storeKey string) *storetypes.TransientStoreKey {
 // NOTE: This is solely used for testing purposes.
 func (app *GaiaApp) GetMemKey(storeKey string) *storetypes.MemoryStoreKey {
 	return app.memKeys[storeKey]
+}
+
+func DefineCustomGetSigners(signingOptions *signing.Options) {
+	swingsettypes.DefineCustomGetSigners(signingOptions)
+	vibctypes.DefineCustomGetSigners(signingOptions)
 }
 
 // GetSubspace returns a param subspace for a given module name.
