@@ -13,7 +13,7 @@ import { makeTracer, NonNullish } from '@agoric/internal';
 import { Fail, makeError, q } from '@endo/errors';
 import { AxelarGMPMessageType } from '../axelar-types.js';
 import { denomHash } from '../utils/denomHash.js';
-import { buildGasPayload, gmpAddresses } from '../utils/gmp.js';
+import { buildNoncePayload, gmpAddresses } from '../utils/gmp.js';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
@@ -121,7 +121,9 @@ export const createAndMonitorLCA = async (
   const memo = {
     destination_chain: 'Ethereum',
     destination_address: factoryContractAddress,
-    payload: buildGasPayload(offerArgs.gasAmount),
+    // TODO: Temporary workaround to avoid CI errors.
+    // Will be replaced by logic from PR #11660 once it is merged.
+    payload: buildNoncePayload(offerArgs.gasAmount),
     type: AxelarGMPMessageType.ContractCall,
     fee: {
       amount: '1', // TODO: Get fee amount from api

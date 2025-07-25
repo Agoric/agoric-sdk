@@ -219,6 +219,13 @@ type FlowStatus = {
   error?: string;
 };
 
+type EvmAccountStatus = {
+  nonce: bigint;
+  status: 'Pending' | 'Created';
+  lca: `${string}1${string}`;
+  remoteAddress: null | `0x${string}`;
+};
+
 // XXX relate paths to types a la readPublished()
 export type StatusFor = {
   portfolio: {
@@ -238,6 +245,7 @@ export type StatusFor = {
   // XXX refactor using AssetMoveDesc
   // XXX how many steps? step: 1, last: 3, for example
   flow: FlowStatus | (Omit<FlowStatus, 'dest'> & { where: string }); // recovery failed
+  evmAccount: EvmAccountStatus;
 };
 
 export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =

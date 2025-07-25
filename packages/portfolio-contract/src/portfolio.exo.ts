@@ -395,6 +395,10 @@ export const preparePortfolioKit = (
           const { portfolioId } = this.state;
           publishStatus(makeFlowPath(portfolioId, id), status);
         },
+        publishEvmAcctStatus(status: StatusFor['evmAccount']) {
+          const { portfolioId } = this.state;
+          publishStatus([`portfolio${portfolioId}`, 'evmAccount'], status);
+        },
       },
       manager: {
         reserveAccount<C extends SupportedChain>(
