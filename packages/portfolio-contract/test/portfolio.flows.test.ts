@@ -2,6 +2,8 @@
  * @file openPortfolio flow tests; especially failure modes.
  *
  * @see {@link snapshots/portfolio-open.test.ts.md} for expected call logs.
+ *
+ * To facilitate review of snapshot diffs, add new tests *at the end*.
  */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -46,7 +48,10 @@ import {
   makeSwapLockMessages,
   makeUnlockSwapMessages,
 } from '../src/pos-usdn.flows.ts';
-import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
+import {
+  makeOfferArgsShapes,
+  type OfferArgsFor,
+} from '../src/type-guards-steps.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
 import { axelarIdsMock, contractsMock } from './mocks.ts';
 import { makePortfolioSteps } from '../tools/portfolio-actors.ts';
@@ -55,6 +60,7 @@ import {
   makeIncomingEVMEvent,
   makeIncomingVTransferEvent,
 } from './supports.ts';
+import { decodeFunctionCall } from './abi-utils.ts';
 
 /**
  * Use Arbitrum or any other EVM chain whose Axelar chain ID (`axelarId`) differs
@@ -710,3 +716,95 @@ test.failing(
     }),
   ],
 );
+
+test('rebalance handles stepFlow failure correctly', async t => {
+  const { orch, ctx, offer, storage } = mocks(
+    {
+      // Mock a failure in IBC transfer
+      transfer: Error('IBC transfer failed'),
+    },
+    {
+      Deposit: make(USDC, 500n),
+      GmpFee: make(BLD, 200n),
+    },
+  );
+
+  const { log, seat } = offer;
+
+  const badOfferArgs: OfferArgsFor['rebalance'] = {
+    flow: [
+      { src: '<Deposit>', dest: '@agoric', amount: make(USDC, 500n) },
+      { src: '@agoric', dest: '@noble', amount: make(USDC, 500n) },
+      // This will trigger the mocked transfer error
+      { src: '@noble', dest: 'USDN', amount: make(USDC, 500n) },
+    ],
+  };
+
+  await t.throwsAsync(() =>
+    rebalance(orch, ctx, seat, badOfferArgs, ctx.makePortfolioKit()),
+  );
+
+  // Check that seat.fail() was called, not seat.exit()
+  const seatCalls = log.filter(entry => entry._cap === 'seat');
+  const failCall = seatCalls.find(call => call._method === 'fail');
+  const exitCall = seatCalls.find(call => call._method === 'exit');
+
+  t.truthy(failCall, 'seat.fail() should be called on error');
+  t.falsy(exitCall, 'seat.exit() should not be called on error');
+  t.snapshot(log, 'call log');
+});
+
+test('claim rewards on Aave position', async t => {
+  const { add } = AmountMath;
+  const amount = AmountMath.make(USDC, 300n);
+  const emptyAmount = AmountMath.make(USDC, 0n);
+  const feeAcct = AmountMath.make(BLD, 50n);
+  const feeCall = AmountMath.make(BLD, 100n);
+  const { orch, tapPK, ctx, offer, storage } = mocks(
+    {},
+    { Deposit: amount, GmpFee: add(feeAcct, feeCall) },
+  );
+
+  const kit = await ctx.makePortfolioKit();
+  await Promise.all([
+    rebalance(
+      orch,
+      ctx,
+      offer.seat,
+      {
+        flow: [
+          {
+            dest: '@Arbitrum',
+            src: 'Aave_Arbitrum',
+            amount: emptyAmount,
+            fee: feeCall,
+            claim: true,
+          },
+        ],
+      },
+      kit,
+    ),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
+      tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain })),
+    ),
+  ]);
+
+  const { log } = offer;
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'exit', _cap: 'seat' },
+  ]);
+  t.snapshot(log, 'call log'); // see snapshot for remaining arg details
+
+  const rawMemo = log[2].opts.memo;
+  const decodedCalls = decodeFunctionCall(rawMemo, [
+    'claimAllRewardsToSelf(address[])',
+    'withdraw(address,uint256,address)',
+  ]);
+  t.snapshot(decodedCalls, 'decoded calls');
+
+  await documentStorageSchema(t, storage, docOpts);
+});

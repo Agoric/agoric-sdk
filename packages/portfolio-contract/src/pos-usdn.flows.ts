@@ -113,7 +113,10 @@ export const protocolUSDN = {
     const result = await ica.executeEncodedTx(protoMessages);
     trace('supply result', result);
   },
-  withdraw: async (ctx, amount, dest) => {
+  withdraw: async (ctx, amount, dest, claim) => {
+    if (claim) {
+      throw new Error('claiming USDN is not supported');
+    }
     const { usdnOut } = ctx;
     const { ica } = dest;
     const address = ica.getAddress();

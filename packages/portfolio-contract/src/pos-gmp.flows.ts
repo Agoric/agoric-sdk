@@ -38,7 +38,7 @@ import {
   type ProtocolDetail,
   type TransportDetail,
 } from './portfolio.flows.ts';
-import type { AxelarId } from './portfolio.contract.ts';
+import type { AxelarId, EVMContractAddresses } from './portfolio.contract.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 
 const trace = makeTracer('GMPF');
@@ -122,12 +122,7 @@ export const CCTPfromEVM = {
   recover: async (_ctx, amount, src, dest) => {
     return CCTP.apply(null, amount, dest, src);
   },
-} as const satisfies TransportDetail<
-  'CCTP',
-  AxelarChain,
-  'noble',
-  EVMContext<'tokenMessenger'>
->;
+} as const satisfies TransportDetail<'CCTP', AxelarChain, 'noble', EVMContext>;
 harden(CCTPfromEVM);
 
 export const CCTP = {
@@ -172,11 +167,11 @@ export const sendGMPContractCall = async (
   await lca.transfer(gmp, fee, { memo: JSON.stringify(memo) });
 };
 
-export type EVMContext<CN extends string> = {
+export type EVMContext = {
   lca: LocalAccount;
   gmpFee: DenomAmount;
   gmpChain: Chain<{ chainId: string }>;
-  addresses: Record<CN | 'usdc', EVMT['address']>;
+  addresses: EVMContractAddresses;
   axelarIds: AxelarId;
 };
 
@@ -188,6 +183,18 @@ type AaveI = {
 const Aave: AaveI = {
   supply: ['address', 'uint256', 'address', 'uint16'],
   withdraw: ['address', 'uint256', 'address'],
+};
+
+/**
+ * see {@link https://github.com/aave/aave-v3-periphery/blob/master/contracts/rewards/RewardsController.sol }
+ * 8f3380d Aug 2023
+ */
+type AaveRewardsControllerI = {
+  claimAllRewardsToSelf: ['address[]'];
+};
+
+const AaveRewardsController: AaveRewardsControllerI = {
+  claimAllRewardsToSelf: ['address[]'],
 };
 
 export const AaveProtocol = {
@@ -208,11 +215,18 @@ export const AaveProtocol = {
     const target = { axelarId, remoteAddress };
     await sendGMPContractCall(target, calls, gmpFee, lca, gmpChain);
   },
-  withdraw: async (ctx, amount, dest) => {
+  withdraw: async (ctx, amount, dest, claim) => {
     const { remoteAddress } = dest;
     const { addresses: a, lca, gmpChain, gmpFee } = ctx;
 
     const session = makeEVMSession();
+    if (claim) {
+      const aaveRewardsController = session.makeContract(
+        a.aaveRewardsController,
+        AaveRewardsController,
+      );
+      aaveRewardsController.claimAllRewardsToSelf([a.aaveUSDC]);
+    }
     const aave = session.makeContract(a.aavePool, Aave);
     aave.withdraw(a.usdc, amount.value, remoteAddress);
     const calls = session.finish();
@@ -221,11 +235,7 @@ export const AaveProtocol = {
     const target = { axelarId, remoteAddress };
     await sendGMPContractCall(target, calls, gmpFee, lca, gmpChain);
   },
-} as const satisfies ProtocolDetail<
-  'Aave',
-  AxelarChain,
-  EVMContext<'aavePool'>
->;
+} as const satisfies ProtocolDetail<'Aave', AxelarChain, EVMContext>;
 
 type CompoundI = {
   supply: ['address', 'uint256'];
@@ -235,6 +245,18 @@ type CompoundI = {
 const Compound: CompoundI = {
   supply: ['address', 'uint256'],
   withdraw: ['address', 'uint256'],
+};
+
+/**
+ * see {@link https://github.com/compound-finance/comet/blob/main/contracts/CometRewards.sol }
+ * d7b414d May 2023
+ */
+type CompoundRewardsControllerI = {
+  claim: ['address', 'address', 'bool'];
+};
+
+const CompoundRewardsController: CompoundRewardsControllerI = {
+  claim: ['address', 'address', 'bool'],
 };
 
 export const CompoundProtocol = {
@@ -254,9 +276,16 @@ export const CompoundProtocol = {
     const target = { axelarId, remoteAddress };
     await sendGMPContractCall(target, calls, fee, lca, gmpChain);
   },
-  withdraw: async (ctx, amount, dest) => {
+  withdraw: async (ctx, amount, dest, claim) => {
     const { addresses: a, lca, gmpChain, gmpFee: fee } = ctx;
     const session = makeEVMSession();
+    if (claim) {
+      const compoundRewardsController = session.makeContract(
+        a.compoundRewardsController,
+        CompoundRewardsController,
+      );
+      compoundRewardsController.claim(a.compound, dest.remoteAddress, true);
+    }
     const compound = session.makeContract(a.compound, Compound);
     compound.withdraw(a.usdc, amount.value);
     const calls = session.finish();
@@ -266,8 +295,4 @@ export const CompoundProtocol = {
     const target = { axelarId, remoteAddress };
     await sendGMPContractCall(target, calls, fee, lca, gmpChain);
   },
-} as const satisfies ProtocolDetail<
-  'Compound',
-  AxelarChain,
-  EVMContext<'compound'>
->;
+} as const satisfies ProtocolDetail<'Compound', AxelarChain, EVMContext>;

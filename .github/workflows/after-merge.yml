@@ -52,6 +52,7 @@ jobs:
         run: npm whoami
       - name: publish to NPM tag
         run: |
+          set -e
           case $GITHUB_REF_NAME in
             release-*)
               # A pre-release.
