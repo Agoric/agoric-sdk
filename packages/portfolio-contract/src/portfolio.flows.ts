@@ -402,8 +402,8 @@ const stepFlow = async (
       Aave: AaveProtocol,
       Beefy_RE7: BeefyProtocol('re7'),
     };
-    const h = way.how + (way.vault ? `_${way.vault}` : '');
-    const pImpl = protocolImplMap[h];
+    const implName = way.how + (way.vault ? `_${way.vault}` : '');
+    const pImpl = protocolImplMap[implName];
 
     const { evmCtx, gInfo, accountId } = await provideEVMInfo(evmChain, move);
 
