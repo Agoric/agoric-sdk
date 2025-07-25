@@ -281,7 +281,7 @@ type Way =
     }
   | {
       how: YieldProtocol;
-      vault: string | undefined;
+      vault?: string;
       /** pool we're withdrawing from */
       poolKey: PoolKey;
       /** chain with account where assets will go */
