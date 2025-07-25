@@ -2,6 +2,7 @@ name: Test Documentation
 
 on:
   pull_request:
+  workflow_dispatch:
   merge_group:
   schedule:
     - cron: '17 6 * * *'
@@ -70,11 +71,13 @@ jobs:
         run: yarn test
         working-directory: ./dapp
 
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./agoric-sdk/.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+  post-test-documentation:
+    uses: ./.github/workflows/result.yml
+    if: (success() || failure())
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+    with:
+      event: ${{ github.event_name }}
+      needs-json: ${{ toJson(needs) }}
+    needs:
+      - test-dapp

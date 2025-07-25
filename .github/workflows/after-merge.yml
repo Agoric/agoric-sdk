@@ -24,14 +24,6 @@ jobs:
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.node-version}}
-      - name: notify on failure
-        if: failure()
-        uses: ./.github/actions/notify-status
-        with:
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   dev-canary:
     needs: build
@@ -79,14 +71,6 @@ jobs:
             --no-push --no-verify-access --yes
           # restore any stashed changes for caching
           git stash pop || true
-      - name: notify on failure
-        if: failure()
-        uses: ./.github/actions/notify-status
-        with:
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   coverage:
     needs: build
@@ -119,14 +103,6 @@ jobs:
           # github-token: ${{ secrets.GITHUB_TOKEN }}
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-      - name: notify on failure
-        if: failure()
-        uses: ./.github/actions/notify-status
-        with:
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   benchmark:
     needs: build
@@ -146,11 +122,17 @@ jobs:
         with:
           name: benchmarkstats.json
           path: packages/swingset-runner/benchstats*.json
-      - name: notify on failure
-        if: failure()
-        uses: ./.github/actions/notify-status
-        with:
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  post-after-merge:
+    uses: ./.github/workflows/result.yml
+    if: (success() || failure())
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+    with:
+      event: ${{ github.event_name }}
+      needs-json: ${{ toJSON(needs) }}
+    needs:
+      - build
+      - dev-canary
+      - coverage
+      - benchmark

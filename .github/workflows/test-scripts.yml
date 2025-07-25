@@ -2,6 +2,7 @@ name: Run scripts tests
 
 on:
   pull_request:
+  workflow_dispatch:
   merge_group:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -13,3 +14,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: scripts/test/test.sh
+
+  post-test-scripts:
+    uses: ./.github/workflows/result.yml
+    if: (success() || failure())
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+    with:
+      event: ${{ github.event_name }}
+      needs-json: ${{ toJson(needs) }}
+    needs:
+      - run-scripts-tests

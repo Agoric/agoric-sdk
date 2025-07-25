@@ -4,6 +4,7 @@ name: Test all Packages
 
 on:
   pull_request:
+  workflow_dispatch:
   merge_group:
   push:
     branches: [master]
@@ -236,14 +237,6 @@ jobs:
       - name: yarn test (xsnap)
         if: (success() || failure())
         run: cd packages/xsnap && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -297,15 +290,6 @@ jobs:
         run: cd packages/client-utils && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (create-dapp)
         run: cd packages/create-dapp && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (fast-usdc)
-        if: (success() || failure())
-        run: cd packages/fast-usdc && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (fast-usdc-contract)
-        if: (success() || failure())
-        run: cd packages/fast-usdc-contract && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (fast-usdc-deploy)
-        if: (success() || failure())
-        run: cd packages/fast-usdc-deploy && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (internal)
         if: (success() || failure())
         run: cd packages/internal && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -369,14 +353,6 @@ jobs:
         if: (success() || failure())
         run: node ./scripts/check-untested-packages.mjs
 
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -410,14 +386,6 @@ jobs:
       - name: yarn test (governance)
         if: (success() || failure())
         run: cd packages/governance && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -449,14 +417,6 @@ jobs:
       - name: yarn test (solo)
         if: (success() || failure())
         run: cd packages/solo && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -492,14 +452,6 @@ jobs:
       - name: yarn test (cosmic-swingset)
         if: (success() || failure())
         run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -531,14 +483,6 @@ jobs:
       - name: yarn test (inter-protocol)
         if: (success() || failure())
         run: cd packages/inter-protocol && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -575,14 +519,6 @@ jobs:
       - name: yarn test (boot)
         if: (success() || failure())
         run: cd packages/boot && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -590,6 +526,38 @@ jobs:
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+
+  test-fast-usdc:
+    # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 30
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        engine: ['node-new', 'node-old', 'xs']
+    steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.engine }}
+        id: restore-node
+      - run: echo "ENDO_BRANCH=${{ steps.restore-node.outputs.endo-branch }}" >> $GITHUB_ENV
+      # END-TEST-BOILERPLATE
+      - name: yarn test (fast-usdc)
+        if: (success() || failure())
+        run: cd packages/fast-usdc && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (fast-usdc-contract)
+        if: (success() || failure())
+        run: cd packages/fast-usdc-contract && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (fast-usdc-deploy)
+        if: (success() || failure())
+        run: cd packages/fast-usdc-deploy && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
 
   test-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -625,14 +593,6 @@ jobs:
       - name: yarn test (SwingSet XS Worker)
         if: (success() || failure()) && matrix.engine != 'xs'
         run: cd packages/SwingSet && yarn test:xs-worker | $TEST_COLLECT
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -667,14 +627,6 @@ jobs:
         if: (success() || failure())
         timeout-minutes: 30
         run: cd packages/zoe && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -708,14 +660,6 @@ jobs:
         if: (success() || failure())
         timeout-minutes: 30
         run: cd packages/zoe && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -723,3 +667,28 @@ jobs:
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+
+  post-test-all-packages:
+    uses: ./.github/workflows/result.yml
+    if: (success() || failure())
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+    with:
+      event: ${{ github.event_name }}
+      needs-json: ${{ toJSON(needs) }}
+    needs:
+      - build
+      - dependency-graph
+      - lint-primary
+      - lint-rest
+      - test-quick
+      - test-quick2
+      - test-governance
+      - test-solo
+      - test-cosmic-swingset
+      - test-inter-protocol
+      - test-fast-usdc
+      - test-boot
+      - test-swingset
+      - test-zoe-unit
+      - test-zoe-swingset
