@@ -14,18 +14,30 @@ import { Fail, q as quote } from '@endo/errors';
  * @import {AbciQueryResponse} from '@cosmjs/tendermint-rpc';
  *
  * @typedef {bigint} Height;
- * @typedef {{
- *  id: number;
- *  jsonrpc: string;
- *  result: {
- *    response: JsonSafe<AbciQueryResponse>;
+ *
+ * @typedef {JsonRpcResponse<{response: AbciQueryResponse}>} AbciResponse;
+ *
+ * @typedef {JsonRpcResponse<{
+ *  sync_info: {
+ *    catching_up: boolean;
+ *    latest_block_height: string;
  *  }
- * }} JsonRpcResponse;
+ * }>} NodeStatusResponse;
+ *
  *
  * @typedef {{
  *  blockHeight: string;
  *  values: Array<string>;
  * }} StreamCell
+ */
+
+/**
+ * @template {any} T
+ * @typedef {{
+ *  id: number;
+ *  jsonrpc: string;
+ *  result: JsonSafe<T>
+ * }} JsonRpcResponse;
  */
 
 /**
@@ -106,7 +118,7 @@ const isStreamCell = cell =>
  * @param {{fetch: typeof window.fetch}} powers
  * @param {MinimalNetworkConfig} config
  */
-const makeAbciQueryClient = ({ fetch }, config) => {
+const makeQueryClient = ({ fetch }, config) => {
   if (!config.rpcAddrs.length)
     return Fail`${INVALID_RPC_ADDRESS_ERROR_MESSAGE} ${quote(config)}`;
 
@@ -117,12 +129,39 @@ const makeAbciQueryClient = ({ fetch }, config) => {
    * @param {PATHS[keyof PATHS]} kind
    * @param {string} path
    */
-  const createRoute = (height, kind, path) =>
+  const createVstorageAbciRoute = (height, kind, path) =>
     encodeURI(
       `/abci_query?data=0x${encodeHex(
         codecs[kind].request.toProto({ path }),
       )}&height=${height}&path="${PATH_PREFIX}/${kind}"`,
     );
+
+  const getLatestHeight = async () => {
+    await null;
+
+    for (const rpcAddress of config.rpcAddrs) {
+      /** @type {Response|undefined} */
+      let response;
+      try {
+        response = await fetch(`${rpcAddress}/status`);
+      } catch (err) {
+        continue;
+      }
+
+      if (!response.ok) continue;
+      const { result } = /** @type {NodeStatusResponse} */ (
+        await response.json()
+      );
+
+      if (result.sync_info.catching_up) continue;
+
+      return BigInt(result.sync_info.latest_block_height);
+    }
+
+    throw Error(
+      `Couldn't get latest height from any of the rpcs in ${quote(config.rpcAddrs)}`,
+    );
+  };
 
   /**
    * @overload
@@ -140,13 +179,16 @@ const makeAbciQueryClient = ({ fetch }, config) => {
    * @param {Partial<{ height: Height; kind: PATHS['CHILDREN'] | PATHS['DATA'] }>} [opts]
    * @returns {Promise<QueryChildrenResponse | QueryDataResponse>}
    */
-  const query = async (path, { height = 0n, kind = PATHS.CHILDREN } = {}) => {
+  const queryAbci = async (
+    path,
+    { height = 0n, kind = PATHS.CHILDREN } = {},
+  ) => {
     await null;
 
     const codec = codecs[kind];
     /** @type {Response|undefined} */
     let response;
-    const route = createRoute(height, kind, path);
+    const route = createVstorageAbciRoute(height, kind, path);
     const rpcAddress = getRpcAddress();
 
     const url = rpcAddress + route;
@@ -161,7 +203,7 @@ const makeAbciQueryClient = ({ fetch }, config) => {
     if (!response.ok)
       throw createError(await response.text(), height, kind, path, rpcAddress);
 
-    const { result } = /** @type {JsonRpcResponse} */ (await response.json());
+    const { result } = /** @type {AbciResponse} */ (await response.json());
 
     if (result.response?.code !== 0)
       throw createError(
@@ -175,7 +217,7 @@ const makeAbciQueryClient = ({ fetch }, config) => {
     return codec.response.decode(decodeBase64(result.response.value));
   };
 
-  return { query };
+  return { getLatestHeight, queryAbci };
 };
 
 /**
@@ -194,7 +236,7 @@ const makeRoundRobin = values => {
 
 /**
  * @template {any} T
- * @param {{queryClient: ReturnType<typeof makeAbciQueryClient>}} powers
+ * @param {{queryClient: ReturnType<typeof makeQueryClient>}} powers
  * @param {string} path
  * @param {Partial<{ compat: boolean }>} [options]
  * @returns {StreamTopic<T>}
@@ -218,7 +260,9 @@ const makeStreamTopic = ({ queryClient }, path, options) => {
    */
   async function* iterate(minimum, maximum) {
     /** @type {Array<Update<T>>} */
-    const values = await Array.fromAsync(reverseIterate(maximum, minimum));
+    let values = [];
+    for await (const value of reverseIterate(maximum, minimum))
+      values = [value, ...values];
     for (const value of values) yield value;
   }
 
@@ -228,6 +272,8 @@ const makeStreamTopic = ({ queryClient }, path, options) => {
    */
   async function* reverseIterate(maximum, minimum) {
     let blockHeight = maximum;
+    /** @type {string | undefined} */
+    let lastValue;
 
     await null;
 
@@ -236,7 +282,7 @@ const makeStreamTopic = ({ queryClient }, path, options) => {
       let value;
 
       try {
-        ({ value } = await queryClient.query(path, {
+        ({ value } = await queryClient.queryAbci(path, {
           height: blockHeight,
           kind: PATHS.DATA,
         }));
@@ -247,14 +293,35 @@ const makeStreamTopic = ({ queryClient }, path, options) => {
 
       if (!value) break;
 
-      const parsedValue = /** @type {StreamCell} */ (JSON.parse(value));
-      const currentBlockHeight = BigInt(parsedValue.blockHeight);
-      blockHeight = currentBlockHeight - 1n;
+      let parsedValue = parseValue(value);
 
-      if ((minimum && currentBlockHeight < minimum) || !currentBlockHeight)
-        break;
+      if (isStreamCell(parsedValue)) {
+        // eslint-disable-next-line no-self-assign
+        parsedValue = /** @type {StreamCell} */ (parsedValue);
 
-      yield* allValuesFromCell(currentBlockHeight, parsedValue.values);
+        const currentBlockHeight = BigInt(parsedValue.blockHeight);
+        blockHeight = currentBlockHeight - 1n;
+
+        if ((minimum && currentBlockHeight < minimum) || !currentBlockHeight)
+          break;
+
+        yield* allValuesFromCell(currentBlockHeight, parsedValue.values);
+      } else {
+        // eslint-disable-next-line no-lonely-if
+        if (!options?.compat)
+          throw Error(`Expected a stream cell, got ${quote(parsedValue)}`);
+        else {
+          if (!blockHeight) blockHeight = await queryClient.getLatestHeight();
+
+          if ((minimum && blockHeight < minimum) || !blockHeight) break;
+
+          if (lastValue !== value)
+            yield /** @type {Update<T>} */ ({ blockHeight, value });
+
+          blockHeight -= 1n;
+          lastValue = value;
+        }
+      }
     }
   }
 
@@ -267,7 +334,7 @@ const makeStreamTopic = ({ queryClient }, path, options) => {
 
 /**
  * @template {any} T
- * @param {{queryClient: ReturnType<typeof makeAbciQueryClient>}} powers
+ * @param {{queryClient: ReturnType<typeof makeQueryClient>}} powers
  * @param {string} path
  * @param {Partial<{ assertCell: boolean; assertDataString: boolean; }>} [options]
  * @returns {Topic<T>}
@@ -282,7 +349,7 @@ const makeTopic = ({ queryClient }, path, options) => ({
         path,
       );
 
-    const response = await queryClient.query(path, {
+    const response = await queryClient.queryAbci(path, {
       height: height && height > 0n ? height - 1n : height,
       kind: PATHS.DATA,
     });
@@ -305,7 +372,7 @@ export const makeVStorageClient = ({ fetch }, config) => {
   if (!config.rpcAddrs.length)
     return Fail`${INVALID_RPC_ADDRESS_ERROR_MESSAGE} ${quote(config)}`;
 
-  const queryClient = makeAbciQueryClient({ fetch }, config);
+  const queryClient = makeQueryClient({ fetch }, config);
 
   /**
    * @template {any} T
@@ -330,7 +397,9 @@ export const makeVStorageClient = ({ fetch }, config) => {
      * @param {string} path
      */
     keys: async path => {
-      const response = await queryClient.query(path, { kind: PATHS.CHILDREN });
+      const response = await queryClient.queryAbci(path, {
+        kind: PATHS.CHILDREN,
+      });
       return response.children;
     },
     /**
@@ -347,10 +416,15 @@ export const makeVStorageClient = ({ fetch }, config) => {
      * @param {string} path
      * @param {Height} minimumHeight
      */
-    readFully: async (path, minimumHeight) =>
-      /** @type {Promise<Array<Update<T>>>} */ (
-        Array.fromAsync(fromText(path).reverseIterate(minimumHeight))
-      ),
+    readFully: async (path, minimumHeight) => {
+      /** @type {Array<Update<T>>} */
+      const values = [];
+      for await (const value of /** @type {AsyncIterable<Update<T>>} */ (
+        fromText(path).reverseIterate(undefined, minimumHeight)
+      ))
+        values.push(value);
+      return values;
+    },
     /**
      * @deprecated
      * @template {any} T
