@@ -77,6 +77,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     }),
     typedJson('/cosmos.bank.v1beta1.QueryAllBalancesRequest', {
       address: 'agoric1pleab',
+      resolveDenom: false, // don't resolve the denom, just return the raw data
     }),
   ] as const);
   expectType<MsgDelegateResponse>(results[0]);
@@ -212,6 +213,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     }),
     typedJson('/cosmos.bank.v1beta1.QueryAllBalancesRequest', {
       address: 'agoric1pleab',
+      resolveDenom: false, // don't resolve the denom, just return the raw data
     }),
   ] as const);
 
