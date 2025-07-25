@@ -880,7 +880,7 @@ __metadata:
     "@lerna-lite/exec": "npm:^4.6.1"
     "@lerna-lite/publish": "npm:^4.6.1"
     "@lerna-lite/run": "npm:^4.6.1"
-    "@lerna-lite/version": "npm:^4.6.1"
+    "@lerna-lite/version": "patch:@lerna-lite/version@npm%3A4.6.1#~/.yarn/patches/@lerna-lite-version-npm-4.6.1-77cc9b6d7e.patch"
     "@types/express": "npm:^4.17.17"
     "@types/node": "npm:~22.9.0"
     ava: "npm:^5.3.0"
@@ -4679,7 +4679,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lerna-lite/version@npm:4.6.1, @lerna-lite/version@npm:^4.6.1":
+"@lerna-lite/version@npm:4.6.1":
   version: 4.6.1
   resolution: "@lerna-lite/version@npm:4.6.1"
   dependencies:
@@ -4714,6 +4714,44 @@ __metadata:
     write-json-file: "npm:^6.0.0"
     zeptomatch: "npm:^2.0.2"
   checksum: 10c0/01b5a896ba8376af6412b9ca3c35bf6fc0dddc826527e1c8918245b2bd6a800d777bc19077d57c45ee4845a96e1609240bbed4015cb5a3fd8cfda323de466a81
+  languageName: node
+  linkType: hard
+
+"@lerna-lite/version@patch:@lerna-lite/version@npm%3A4.6.1#~/.yarn/patches/@lerna-lite-version-npm-4.6.1-77cc9b6d7e.patch":
+  version: 4.6.1
+  resolution: "@lerna-lite/version@patch:@lerna-lite/version@npm%3A4.6.1#~/.yarn/patches/@lerna-lite-version-npm-4.6.1-77cc9b6d7e.patch::version=4.6.1&hash=916c50"
+  dependencies:
+    "@conventional-changelog/git-client": "npm:^2.5.1"
+    "@lerna-lite/cli": "npm:4.6.1"
+    "@lerna-lite/core": "npm:4.6.1"
+    "@lerna-lite/npmlog": "npm:4.6.0"
+    "@octokit/plugin-enterprise-rest": "npm:^6.0.1"
+    "@octokit/rest": "npm:^22.0.0"
+    conventional-changelog: "npm:^7.1.1"
+    conventional-changelog-angular: "npm:^8.0.0"
+    conventional-changelog-writer: "npm:^8.2.0"
+    conventional-commits-parser: "npm:^6.2.0"
+    conventional-recommended-bump: "npm:^11.2.0"
+    dedent: "npm:^1.6.0"
+    fs-extra: "npm:^11.3.0"
+    git-url-parse: "npm:^16.1.0"
+    graceful-fs: "npm:^4.2.11"
+    is-stream: "npm:^4.0.1"
+    load-json-file: "npm:^7.0.1"
+    new-github-release-url: "npm:^2.0.0"
+    npm-package-arg: "npm:^12.0.2"
+    p-limit: "npm:^6.2.0"
+    p-map: "npm:^7.0.3"
+    p-pipe: "npm:^4.0.0"
+    p-reduce: "npm:^3.0.0"
+    pify: "npm:^6.1.0"
+    semver: "npm:^7.7.2"
+    slash: "npm:^5.1.0"
+    tinyrainbow: "npm:^2.0.0"
+    uuid: "npm:^11.1.0"
+    write-json-file: "npm:^6.0.0"
+    zeptomatch: "npm:^2.0.2"
+  checksum: 10c0/32739eafcb5e38a8de7ee9089919e40e8f318fd7bc969e23cd08224b1155630dd218eea633a4e975a54d4e488184500aec7a7903b07f4ae62f8ddde82cf370eb
   languageName: node
   linkType: hard
 
