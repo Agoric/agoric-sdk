@@ -281,7 +281,7 @@ type Way =
     }
   | {
       how: YieldProtocol;
-      vault?: string;
+      vault: string | undefined;
       /** pool we're withdrawing from */
       poolKey: PoolKey;
       /** chain with account where assets will go */
@@ -300,7 +300,12 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
       if (!destName)
         throw Fail`src pos must have account as dest ${q(moveDesc)}`;
       const poolKey = src as PoolKey;
-      const { protocol, vaultName } = PoolPlaces[poolKey];
+      const { protocol } = PoolPlaces[poolKey];
+      const vaultName = (
+        'vaultName' in PoolPlaces[poolKey]
+          ? PoolPlaces[poolKey].vaultName
+          : undefined
+      ) as string | undefined;
       const feeRequired = ['Compound', 'Aave'];
       moveDesc.fee ||
         !feeRequired.includes(protocol) ||
@@ -347,7 +352,12 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
           }
         case 'pos': {
           const poolKey = dest as PoolKey;
-          const { protocol, vaultName } = PoolPlaces[poolKey];
+          const { protocol } = PoolPlaces[poolKey];
+          const vaultName = (
+            'vaultName' in PoolPlaces[poolKey]
+              ? PoolPlaces[poolKey].vaultName
+              : undefined
+          ) as string | undefined;
           return { how: protocol, vault: vaultName, poolKey, src: srcName };
         }
         default:
