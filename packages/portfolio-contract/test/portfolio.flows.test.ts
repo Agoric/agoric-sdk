@@ -825,7 +825,12 @@ test('open portfolio with Beefy position', async t => {
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
         { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct },
-        { src: '@Avalanche', dest: 'Beefy_RE7_Avalanche', amount, fee: feeCall },
+        {
+          src: '@Avalanche',
+          dest: 'Beefy_RE7_Avalanche',
+          amount,
+          fee: feeCall,
+        },
       ],
     }),
     Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>

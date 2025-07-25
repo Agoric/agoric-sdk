@@ -427,7 +427,6 @@ test('USDN claim fails currently', async t => {
   });
 });
 
-
 test('open a portfolio with Beefy position', async t => {
   const { trader1, common } = await setupTrader(t);
   const { usdc, bld, poc26 } = common.brands;
