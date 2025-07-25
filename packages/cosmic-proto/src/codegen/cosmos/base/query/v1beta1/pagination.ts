@@ -114,7 +114,7 @@ function createBasePageRequest(): PageRequest {
   };
 }
 export const PageRequest = {
-  typeUrl: '/cosmos.base.query.v1beta1.PageRequest',
+  typeUrl: '/cosmos.base.query.v1beta1.PageRequest' as const,
   encode(
     message: PageRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -226,7 +226,7 @@ function createBasePageResponse(): PageResponse {
   };
 }
 export const PageResponse = {
-  typeUrl: '/cosmos.base.query.v1beta1.PageResponse',
+  typeUrl: '/cosmos.base.query.v1beta1.PageResponse' as const,
   encode(
     message: PageResponse,
     writer: BinaryWriter = BinaryWriter.create(),

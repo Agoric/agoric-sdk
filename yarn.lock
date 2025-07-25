@@ -3109,16 +3109,29 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmology/ast@npm:^1.10.1":
-  version: 1.10.1
-  resolution: "@cosmology/ast@npm:1.10.1"
+"@cosmology/ast@npm:1.10.12":
+  version: 1.10.12
+  resolution: "@cosmology/ast@npm:1.10.12"
   dependencies:
     "@babel/types": "npm:7.23.6"
-    "@cosmology/types": "npm:^1.12.0"
-    "@cosmology/utils": "npm:^1.10.0"
+    "@cosmology/types": "npm:^1.12.4"
+    "@cosmology/utils": "npm:^1.10.6"
     case: "npm:1.6.3"
     dotty: "npm:0.1.2"
-  checksum: 10c0/429c0ef415d4e12e863bf19c08db170fa931023c4f600a9791104e9aae61b66cb36650fb213120d0848f90d40f47106ee4eb87dc953964341f9a83ee92431370
+  checksum: 10c0/031510bf850ef90a3d03ea959dc32ba04047ca41ceddcbc5b44b0707689d992d30594bba5afa35739831c67f40dfeb26af62b49d1ccc8ab13ea183c3c45c3a8a
+  languageName: node
+  linkType: hard
+
+"@cosmology/ast@patch:@cosmology/ast@npm%3A1.10.12#~/.yarn/patches/@cosmology-ast-npm-1.10.12-ccbeaa7cd2.patch":
+  version: 1.10.12
+  resolution: "@cosmology/ast@patch:@cosmology/ast@npm%3A1.10.12#~/.yarn/patches/@cosmology-ast-npm-1.10.12-ccbeaa7cd2.patch::version=1.10.12&hash=19ae3b"
+  dependencies:
+    "@babel/types": "npm:7.23.6"
+    "@cosmology/types": "npm:^1.12.4"
+    "@cosmology/utils": "npm:^1.10.6"
+    case: "npm:1.6.3"
+    dotty: "npm:0.1.2"
+  checksum: 10c0/ca27f55fdac6cf4671a2cd12c5c4d88ce32acb220443410c562e6d6aaf928051e2c0f1f657a6620c3f2f60d78046daa4b798d8c6022a78a3a352f1d7b0b42ca4
   languageName: node
   linkType: hard
 
@@ -3237,6 +3250,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@cosmology/types@npm:^1.12.4":
+  version: 1.12.4
+  resolution: "@cosmology/types@npm:1.12.4"
+  dependencies:
+    case: "npm:1.6.3"
+    fast-json-patch: "npm:3.1.1"
+  checksum: 10c0/b63fbbc55f3203fb71bac46b1ba43d0b43c9edeb2ed19e8feeadba6cd4e62ae7cf885c6cca1aee6fc0d727996c101af8ba8b809d80e77ec8e4662d7bd283bc78
+  languageName: node
+  linkType: hard
+
 "@cosmology/utils@npm:^1.10.0":
   version: 1.10.0
   resolution: "@cosmology/utils@npm:1.10.0"
@@ -3244,6 +3267,16 @@ __metadata:
     "@cosmology/types": "npm:^1.12.0"
     dotty: "npm:0.1.2"
   checksum: 10c0/65c637454c8a4700ae6e8c4d81df0cc3b10b0b7424d2501bae5a3bf3f754d974a75116f52669d6f0ab16376a1261e9b878ba0214c14ba7f0d1aa64e652c8986d
+  languageName: node
+  linkType: hard
+
+"@cosmology/utils@npm:^1.10.6":
+  version: 1.10.6
+  resolution: "@cosmology/utils@npm:1.10.6"
+  dependencies:
+    "@cosmology/types": "npm:^1.12.4"
+    dotty: "npm:0.1.2"
+  checksum: 10c0/e8c5253d3508feb21db3213c8ddcb1618f1fedd6628b0523920792b730d5bcba4e647f40f8e60b82cdcb47950963ba09082805e6a2121e207a3a4202b2cde30a
   languageName: node
   linkType: hard
 

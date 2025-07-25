@@ -44,7 +44,8 @@ function createBaseMsgModuleQuerySafe(): MsgModuleQuerySafe {
   };
 }
 export const MsgModuleQuerySafe = {
-  typeUrl: '/ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafe',
+  typeUrl:
+    '/ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafe' as const,
   encode(
     message: MsgModuleQuerySafe,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -130,7 +131,7 @@ function createBaseMsgModuleQuerySafeResponse(): MsgModuleQuerySafeResponse {
 }
 export const MsgModuleQuerySafeResponse = {
   typeUrl:
-    '/ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafeResponse',
+    '/ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafeResponse' as const,
   encode(
     message: MsgModuleQuerySafeResponse,
     writer: BinaryWriter = BinaryWriter.create(),

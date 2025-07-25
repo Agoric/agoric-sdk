@@ -155,7 +155,7 @@ function createBaseConsensusParams(): ConsensusParams {
   };
 }
 export const ConsensusParams = {
-  typeUrl: '/tendermint.types.ConsensusParams',
+  typeUrl: '/tendermint.types.ConsensusParams' as const,
   encode(
     message: ConsensusParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -284,7 +284,7 @@ function createBaseBlockParams(): BlockParams {
   };
 }
 export const BlockParams = {
-  typeUrl: '/tendermint.types.BlockParams',
+  typeUrl: '/tendermint.types.BlockParams' as const,
   encode(
     message: BlockParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -384,7 +384,7 @@ function createBaseEvidenceParams(): EvidenceParams {
   };
 }
 export const EvidenceParams = {
-  typeUrl: '/tendermint.types.EvidenceParams',
+  typeUrl: '/tendermint.types.EvidenceParams' as const,
   encode(
     message: EvidenceParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -487,7 +487,7 @@ function createBaseValidatorParams(): ValidatorParams {
   };
 }
 export const ValidatorParams = {
-  typeUrl: '/tendermint.types.ValidatorParams',
+  typeUrl: '/tendermint.types.ValidatorParams' as const,
   encode(
     message: ValidatorParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -555,7 +555,7 @@ function createBaseVersionParams(): VersionParams {
   };
 }
 export const VersionParams = {
-  typeUrl: '/tendermint.types.VersionParams',
+  typeUrl: '/tendermint.types.VersionParams' as const,
   encode(
     message: VersionParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -624,7 +624,7 @@ function createBaseHashedParams(): HashedParams {
   };
 }
 export const HashedParams = {
-  typeUrl: '/tendermint.types.HashedParams',
+  typeUrl: '/tendermint.types.HashedParams' as const,
   encode(
     message: HashedParams,
     writer: BinaryWriter = BinaryWriter.create(),
