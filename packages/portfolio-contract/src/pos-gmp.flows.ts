@@ -20,11 +20,10 @@ import type {
 import {
   AxelarGMPMessageType,
   type AxelarGmpOutgoingMemo,
-  type ContractCall,
 } from '@agoric/orchestration/src/axelar-types.js';
-import { leftPadEthAddressTo32Bytes } from '@agoric/orchestration/src/utils/address.js';
 import {
   buildGMPPayload,
+  buildNoncePayload,
   gmpAddresses,
 } from '@agoric/orchestration/src/utils/gmp.js';
 import { fromBech32 } from '@cosmjs/encoding';
@@ -63,7 +62,8 @@ export const provideEVMAccount = async (
   const axelarId = gmp.axelarIds[chainName];
   const target = { axelarId, remoteAddress: ctx.contracts[chainName].factory };
   const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
-  await sendGMPContractCall(target, [], fee, lca, gmp.chain);
+  const payload = buildNoncePayload(pk.reader.getNonce());
+  await sendGMPContractCall(target, payload, fee, lca, gmp.chain);
 
   return pk.reader.getGMPInfo(chainName) as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
 };
@@ -117,7 +117,8 @@ export const CCTPfromEVM = {
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
 
-    await sendGMPContractCall(target, calls, gmpFee, lca, gmpChain);
+    const payload = buildGMPPayload(calls);
+    await sendGMPContractCall(target, payload, gmpFee, lca, gmpChain);
   },
   recover: async (_ctx, amount, src, dest) => {
     return CCTP.apply(null, amount, dest, src);
@@ -149,7 +150,7 @@ harden(CCTP);
 
 export const sendGMPContractCall = async (
   dest: { axelarId: string; remoteAddress: EVMT['address'] },
-  calls: ContractCall[],
+  payload: number[],
   fee: DenomAmount,
   lca: LocalAccount,
   gmpChain: Chain<{ chainId: string }>,
@@ -158,7 +159,7 @@ export const sendGMPContractCall = async (
   const memo: AxelarGmpOutgoingMemo = {
     destination_chain: dest.axelarId,
     destination_address: dest.remoteAddress,
-    payload: buildGMPPayload(calls),
+    payload,
     type: AxelarGMPMessageType.ContractCall,
     fee: { amount: String(fee.value), recipient: AXELAR_GAS },
   };
@@ -213,7 +214,8 @@ export const AaveProtocol = {
 
     const axelarId = ctx.axelarIds[src.chainName];
     const target = { axelarId, remoteAddress };
-    await sendGMPContractCall(target, calls, gmpFee, lca, gmpChain);
+    const payload = buildGMPPayload(calls);
+    await sendGMPContractCall(target, payload, gmpFee, lca, gmpChain);
   },
   withdraw: async (ctx, amount, dest, claim) => {
     const { remoteAddress } = dest;
@@ -233,7 +235,8 @@ export const AaveProtocol = {
 
     const axelarId = ctx.axelarIds[dest.chainName];
     const target = { axelarId, remoteAddress };
-    await sendGMPContractCall(target, calls, gmpFee, lca, gmpChain);
+    const payload = buildGMPPayload(calls);
+    await sendGMPContractCall(target, payload, gmpFee, lca, gmpChain);
   },
 } as const satisfies ProtocolDetail<'Aave', AxelarChain, EVMContext>;
 
@@ -274,7 +277,8 @@ export const CompoundProtocol = {
     const { chainName, remoteAddress } = src;
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
-    await sendGMPContractCall(target, calls, fee, lca, gmpChain);
+    const payload = buildGMPPayload(calls);
+    await sendGMPContractCall(target, payload, fee, lca, gmpChain);
   },
   withdraw: async (ctx, amount, dest, claim) => {
     const { addresses: a, lca, gmpChain, gmpFee: fee } = ctx;
@@ -293,6 +297,7 @@ export const CompoundProtocol = {
     const { chainName, remoteAddress } = dest;
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
-    await sendGMPContractCall(target, calls, fee, lca, gmpChain);
+    const payload = buildGMPPayload(calls);
+    await sendGMPContractCall(target, payload, fee, lca, gmpChain);
   },
 } as const satisfies ProtocolDetail<'Compound', AxelarChain, EVMContext>;
