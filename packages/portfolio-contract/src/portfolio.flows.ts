@@ -407,13 +407,18 @@ const stepFlow = async (
     assert(keys(AxelarChain).includes(chainName));
     const evmChain = chainName as AxelarChain;
 
-    const protocolImplMap = {
-      Compound: CompoundProtocol,
-      Aave: AaveProtocol,
-      Beefy_re7: BeefyProtocol('re7'),
+    const getProtocolImpl = (way: Way & { how: P }) => {
+      switch (way.how) {
+        case 'Compound': return CompoundProtocol;
+        case 'Aave': return AaveProtocol;
+        case 'Beefy':
+          if (!way.vault) throw Error('Beefy requires vault name');
+          return BeefyProtocol(way.vault);
+        default: throw Error(`Unknown protocol: ${way.how}`);
+      }
     };
-    const implName = way.how + (way.vault ? `_${way.vault}` : '');
-    const pImpl = protocolImplMap[implName];
+    
+    const pImpl = getProtocolImpl(way);
 
     const { evmCtx, gInfo, accountId } = await provideEVMInfo(evmChain, move);
 
