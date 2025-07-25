@@ -90,15 +90,12 @@ export const buildGMPPayload = contractCalls => {
 };
 
 /**
- * @param {bigint} gasAmount - gas amount for the EVM to Agoric message
+ * @param {bigint} nonce - Identifier (for tracing) to include in the message
+ *   payload.
  * @returns {number[]} The payload array.
  */
-export const buildGasPayload = gasAmount => {
-  const abiEncodedData = encodeAbiParameters(
-    [{ type: 'uint256' }],
-    [gasAmount],
-  );
-
+export const buildNoncePayload = nonce => {
+  const abiEncodedData = encodeAbiParameters([{ type: 'uint256' }], [nonce]);
   return Array.from(hexToBytes(abiEncodedData));
 };
 

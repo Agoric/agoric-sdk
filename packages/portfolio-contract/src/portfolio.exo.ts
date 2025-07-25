@@ -110,6 +110,7 @@ type PortfolioKitState = {
   positions: MapStore<PoolKey, Position>;
   nextFlowId: number;
   targetAllocation?: TargetAllocation;
+  nonce: bigint;
 };
 
 /**
@@ -241,6 +242,7 @@ export const preparePortfolioKit = (
           valueShape: M.remotable('Position'),
         }),
         targetAllocation: undefined,
+        nonce: 1n,
       };
     },
     {
@@ -361,6 +363,11 @@ export const preparePortfolioKit = (
           const { vow } = accountsPending.get(chainName);
           return vow as Vow<GMPAccountInfo>;
         },
+        getNonce() {
+          const currentNonce = this.state.nonce;
+          this.state.nonce = currentNonce + 1n;
+          return currentNonce;
+        },
       },
       reporter: {
         publishStatus() {
@@ -387,6 +394,10 @@ export const preparePortfolioKit = (
         publishFlowStatus(id: number, status: StatusFor['flow']) {
           const { portfolioId } = this.state;
           publishStatus(makeFlowPath(portfolioId, id), status);
+        },
+        publishEvmAcctStatus(status: StatusFor['evmAccount']) {
+          const { portfolioId } = this.state;
+          publishStatus([`portfolio${portfolioId}`, 'evmAccount'], status);
         },
       },
       manager: {

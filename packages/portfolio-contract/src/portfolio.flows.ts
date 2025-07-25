@@ -369,9 +369,16 @@ const stepFlow = async (
     const { denom } = ctx.gmpFeeInfo;
     const fee = { denom, value: move.fee ? move.fee.value : 0n };
     const { axelarIds } = ctx;
-    const gmp = { chain: axelar, fee: move.fee?.value || 0n, axelarIds }; // XXX throw if fee missing?
+    const nonce = kit.reader.getNonce();
+    const gmp = { chain: axelar, fee: move.fee?.value || 0n, axelarIds, nonce }; // XXX throw if fee missing?
     const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
     const gInfo = await provideEVMAccount(chain, gmp, lca, ctx, kit);
+    kit.reporter.publishEvmAcctStatus({
+      nonce,
+      status: 'Created',
+      lca: lca.getAddress().value,
+      remoteAddress: gInfo.remoteAddress,
+    });
     const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
 
     const evmCtx: EVMContext = harden({
