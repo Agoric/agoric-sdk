@@ -26,6 +26,7 @@ import (
 	swingsettypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	vibctypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -123,7 +124,7 @@ func SetupAgoricTestingApp(instance int) TestingAppMaker {
 			return jsonReply, nil
 		}
 		appd := app.NewAgoricApp(mockController, vm.NewAgdServer(), log.TestingLogger(), db, nil,
-			true, sims.EmptyAppOptions{}, interBlockCacheOpt())
+			true, sims.EmptyAppOptions{}, []wasmkeeper.Option{}, interBlockCacheOpt())
 		genesisState := app.NewDefaultGenesisState()
 
 		t := template.Must(template.New("").Parse(`
