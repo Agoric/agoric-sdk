@@ -4,9 +4,13 @@ import { promisify } from 'node:util';
 import { createGzip } from 'node:zlib';
 import { withDeferredCleanup } from '@agoric/internal';
 
+/**
+ * @import {AnyIterable} from './exporter.js';
+ */
+
 const streamFinished = promisify(streamFinishedCallback);
 
-/*
+/**
  * @param {string} dirPath
  * @param {object} powers
  * @param {Pick<import('fs'), 'createWriteStream' | 'mkdirSync' | 'renameSync'>} powers.fs
@@ -16,6 +20,11 @@ const streamFinished = promisify(streamFinishedCallback);
 export const makeArchiveSnapshot = (dirPath, powers) => {
   const { fs, path, tmp } = powers;
   fs.mkdirSync(dirPath, { recursive: true });
+  /**
+   * @param {string} name
+   * @param {AnyIterable<Uint8Array>} gzData
+   * @returns {Promise<void>}
+   */
   const archiveSnapshot = (name, gzData) => {
     const destPath = path.join(dirPath, `${name}.gz`);
     return withDeferredCleanup(async addCleanup => {
@@ -29,7 +38,7 @@ export const makeArchiveSnapshot = (dirPath, powers) => {
         postfix: '.gz.tmp',
         detachDescriptor: true,
       });
-      addCleanup(() => removeCallback());
+      addCleanup(async () => removeCallback());
       const writer = fs.createWriteStream('', { fd, flush: true });
       const reader = Readable.from(gzData);
       const destroyReader = promisify(reader.destroy.bind(reader));
@@ -43,7 +52,7 @@ export const makeArchiveSnapshot = (dirPath, powers) => {
 };
 harden(makeArchiveSnapshot);
 
-/*
+/**
  * @param {string} dirPath
  * @param {object} powers
  * @param {Pick<import('fs'), 'createWriteStream' | 'mkdirSync' | 'renameSync'>} powers.fs
@@ -53,6 +62,11 @@ harden(makeArchiveSnapshot);
 export const makeArchiveTranscript = (dirPath, powers) => {
   const { fs, path, tmp } = powers;
   fs.mkdirSync(dirPath, { recursive: true });
+  /**
+   * @param {string} spanName
+   * @param {AnyIterable<Uint8Array>} entries
+   * @returns {Promise<void>}
+   */
   const archiveTranscript = (spanName, entries) => {
     const destPath = path.join(dirPath, `${spanName}.gz`);
     return withDeferredCleanup(async addCleanup => {
@@ -66,7 +80,7 @@ export const makeArchiveTranscript = (dirPath, powers) => {
         postfix: '.gz.tmp',
         detachDescriptor: true,
       });
-      addCleanup(() => removeCallback());
+      addCleanup(async () => removeCallback());
       await pipeline(
         entries,
         createGzip(),
