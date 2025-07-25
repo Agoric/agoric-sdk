@@ -827,7 +827,7 @@ test('open portfolio with Beefy position', async t => {
         { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct },
         {
           src: '@Avalanche',
-          dest: 'Beefy_RE7_Avalanche',
+          dest: 'Beefy_re7_Avalanche',
           amount,
           fee: feeCall,
         },
@@ -857,4 +857,12 @@ test('open portfolio with Beefy position', async t => {
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
+
+
+  const rawMemo = log[5].opts.memo;
+  const decodedCalls = decodeFunctionCall(rawMemo, [
+    'approve(address,uint256)',
+    'deposit(uint256)',
+  ]);
+  t.snapshot(decodedCalls, 'decoded calls');
 });

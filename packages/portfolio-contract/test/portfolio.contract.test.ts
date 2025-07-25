@@ -442,7 +442,7 @@ test('open a portfolio with Beefy position', async t => {
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
         { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
-        { src: '@Arbitrum', dest: 'Beefy_RE7_Avalanche', amount, fee: feeCall },
+        { src: '@Arbitrum', dest: 'Beefy_re7_Avalanche', amount, fee: feeCall },
       ],
     },
   );
