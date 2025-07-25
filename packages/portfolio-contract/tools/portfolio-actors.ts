@@ -107,13 +107,13 @@ export const makeTrader = (
         proposal,
         offerArgs,
       });
-      doneP.then(({ result }) => {
+      return doneP.then(({ result, payouts }) => {
         const { portfolio: topic } = result.publicSubscribers;
         if (topic.description === 'Portfolio') {
           portfolioPath = topic.storagePath!;
         }
+        return { result, payouts };
       });
-      return doneP;
     },
     /**
      * **Phase 2**: Rebalances portfolio positions between yield protocols.

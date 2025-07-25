@@ -56,6 +56,7 @@ harden(AxelarGMPMessageType);
  * @property {Denom} localDenom
  * @property {any} assets
  * @property {any} remoteChainInfo
+ * @property {bigint} nonce
  */
 
 /**

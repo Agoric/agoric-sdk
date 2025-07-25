@@ -83,7 +83,7 @@ jobs:
   ##################
   # Lint tests
   lint-primary:
-    timeout-minutes: 25 # Since Node 22, it's sometimes longer than 20min
+    timeout-minutes: 45 # Since Node 22, it's sometimes longer than 20min
     needs: build
     runs-on: ubuntu-latest
     steps:

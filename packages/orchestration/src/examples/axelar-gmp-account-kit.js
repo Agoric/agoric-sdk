@@ -25,6 +25,7 @@ const trace = makeTracer('EvmAccountKit');
 const { entries } = Object;
 
 const EVMI = M.interface('holder', {
+  getNonce: M.call().returns(M.bigint()),
   getLocalAddress: M.call().returns(M.any()),
   getRemoteAddress: M.call().returns(M.any()),
   // TODO: This is currently a placeholder.
@@ -50,6 +51,7 @@ const EvmKitStateShape = {
   localAccount: M.remotable('LocalAccount'),
   assets: M.any(),
   remoteChainInfo: M.any(),
+  nonce: M.bigint(),
 };
 harden(EvmKitStateShape);
 
@@ -101,6 +103,16 @@ export const prepareEvmAccountKit = (
     {
       tap: {
         /**
+         * This function handles incoming packets from the cross-chain
+         * communication.
+         *
+         * NOTE: The implementation here is no longer relevant, as the Factory
+         * contract has been updated. Previously, this function was used to
+         * receive a response back from the Factory contract deployed on the EVM
+         * chain. However, the Factory contract now no longer sends a response
+         * to Agoric. Instead, we now fetch that response off-chain and notify
+         * the Agoric contract through off-chain mechanisms.
+         *
          * @param {VTransferIBCEvent} event
          */
         receiveUpcall(event) {
@@ -165,6 +177,11 @@ export const prepareEvmAccountKit = (
         },
       },
       holder: {
+        getNonce() {
+          const currentNonce = this.state.nonce;
+          this.state.nonce = currentNonce + 1n;
+          return currentNonce;
+        },
         getLocalAddress() {
           return this.state.localAccount.getAddress().value;
         },

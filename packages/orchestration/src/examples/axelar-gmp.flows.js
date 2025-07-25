@@ -13,7 +13,7 @@ import { makeTracer, NonNullish } from '@agoric/internal';
 import { Fail, makeError, q } from '@endo/errors';
 import { AxelarGMPMessageType } from '../axelar-types.js';
 import { denomHash } from '../utils/denomHash.js';
-import { buildGasPayload, gmpAddresses } from '../utils/gmp.js';
+import { buildNoncePayload, gmpAddresses } from '../utils/gmp.js';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
@@ -51,15 +51,11 @@ const trace = makeTracer('EvmFlow');
  *   >;
  * }} ctx
  * @param {ZCFSeat} seat
- * @param {{
- *   gasAmount: bigint;
- * }} offerArgs
  */
 export const createAndMonitorLCA = async (
   orch,
   { makeEvmAccountKit, chainHub, log, localTransfer, withdrawToSeat },
   seat,
-  offerArgs,
 ) => {
   void log('Inside createAndMonitorLCA');
   const [agoric, remoteChain] = await Promise.all([
@@ -96,6 +92,7 @@ export const createAndMonitorLCA = async (
     localDenom,
     assets,
     remoteChainInfo: info,
+    nonce: 1n,
   });
   void log('tap created successfully');
   // XXX consider storing appRegistration, so we can .revoke() or .updateTargetApp()
@@ -121,7 +118,7 @@ export const createAndMonitorLCA = async (
   const memo = {
     destination_chain: 'Ethereum',
     destination_address: factoryContractAddress,
-    payload: buildGasPayload(offerArgs.gasAmount),
+    payload: buildNoncePayload(evmAccountKit.holder.getNonce()),
     type: AxelarGMPMessageType.ContractCall,
     fee: {
       amount: '1', // TODO: Get fee amount from api

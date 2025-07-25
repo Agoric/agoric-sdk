@@ -19,8 +19,10 @@ import {
   makeFlowPath,
   makePositionPath,
   portfolioIdOfPath,
+  PortfolioStatusShapeExt,
   type StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import { mustMatch } from '@agoric/internal';
 
 const { fromEntries, keys, values } = Object;
 
@@ -148,6 +150,36 @@ test('usdc-available', async t => {
   t.true(denom in byDenom);
   t.log('balance', byDenom[denom]);
   t.true(byDenom[denom] >= 1_000_000n);
+});
+
+test('target-allocation-deployed', async t => {
+  const { walletKit: wk, vstorageClient: vsc } = t.context;
+
+  t.log('address', trader1ag);
+  const cur = await wk.getCurrentWalletRecord(trader1ag);
+  const { offerToPublicSubscriberPaths } = cur;
+  const byOfferId = fromEntries(offerToPublicSubscriberPaths);
+  const portfolioKeys = values(byOfferId)
+    .filter(sub => 'portfolio' in sub)
+    .map(sub => sub.portfolio);
+
+  t.true(portfolioKeys.length > 0, 'at least one portfolio exists');
+
+  const chopPub = (key: string) => key.replace(/^published./, '');
+
+  const portfolioKey = portfolioKeys[0];
+  const portfolioInfo = (await vsc.readPublished(
+    chopPub(portfolioKey),
+  )) as StatusFor['portfolio'];
+
+  t.log('Portfolio info:', portfolioInfo);
+
+  t.notThrows(
+    () => mustMatch(portfolioInfo, PortfolioStatusShapeExt),
+    'portfolio status matches expected shape',
+  );
+
+  t.truthy(portfolioInfo.targetAllocation);
 });
 
 /**

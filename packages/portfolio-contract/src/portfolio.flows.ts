@@ -147,9 +147,15 @@ export type ProtocolDetail<
     ctx: CTX,
     amount: NatAmount,
     dest: AccountInfoFor[C],
+    claim?: boolean,
   ) => Promise<void>;
 };
 
+/**
+ * **Failure Handling**: Attempts to unwind failed operations, but recovery
+ * itself can fail. In that case, publishes final asset location to vstorage
+ * and gives up. Clients must manually rebalance to recover.
+ */
 export const trackFlow = async (
   reporter: GuestInterface<PortfolioKit['reporter']>,
   todo: (() => Promise<AssetMovement>)[],
@@ -277,6 +283,7 @@ type Way =
       poolKey: PoolKey;
       /** chain with account where assets will go */
       dest: SupportedChain;
+      claim?: boolean;
     };
 
 export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
@@ -296,7 +303,12 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
         !feeRequired.includes(protocol) ||
         Fail`missing fee ${q(moveDesc)}`;
       // XXX check that destName is in protocol.chains
-      return { how: protocol, poolKey, dest: destName };
+      return {
+        how: protocol,
+        poolKey,
+        dest: destName,
+        claim: moveDesc.claim,
+      };
     }
 
     case 'seat':
@@ -352,11 +364,7 @@ const stepFlow = async (
 ) => {
   const todo: (() => Promise<AssetMovement>)[] = [];
 
-  const provideEVMInfo = async <N extends keyof EVMContractAddresses>(
-    _name: N,
-    chain: AxelarChain,
-    move: MovementDesc,
-  ) => {
+  const provideEVMInfo = async (chain: AxelarChain, move: MovementDesc) => {
     const axelar = await orch.getChain('axelar');
     const { denom } = ctx.gmpFeeInfo;
     const fee = { denom, value: move.fee ? move.fee.value : 0n };
@@ -366,7 +374,7 @@ const stepFlow = async (
     const gInfo = await provideEVMAccount(chain, gmp, lca, ctx, kit);
     const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
 
-    const evmCtx: EVMContext<N> = harden({
+    const evmCtx: EVMContext = harden({
       addresses: ctx.contracts[chain],
       lca,
       gmpFee: fee,
@@ -385,16 +393,9 @@ const stepFlow = async (
     assert(keys(AxelarChain).includes(chainName));
     const evmChain = chainName as AxelarChain;
 
-    const [contract, pImpl] =
-      way.how === 'Compound'
-        ? ['compound' as const, CompoundProtocol]
-        : ['aavePool' as const, AaveProtocol];
+    const pImpl = way.how === 'Compound' ? CompoundProtocol : AaveProtocol;
 
-    const { evmCtx, gInfo, accountId } = await provideEVMInfo(
-      contract,
-      evmChain,
-      move,
-    );
+    const { evmCtx, gInfo, accountId } = await provideEVMInfo(evmChain, move);
 
     const pos = kit.manager.providePosition(way.poolKey, way.how, accountId);
 
@@ -414,7 +415,7 @@ const stepFlow = async (
         amount,
         src: { pos },
         dest: { proxy: gInfo },
-        apply: () => pImpl.withdraw(evmCtx, amount, gInfo),
+        apply: () => pImpl.withdraw(evmCtx, amount, gInfo, way.claim),
         recover: () => pImpl.supply(evmCtx, amount, gInfo),
       };
     }
@@ -517,11 +518,7 @@ const stepFlow = async (
           ]);
 
           const evmChain = 'dest' in way ? way.dest : way.src;
-          const { evmCtx, gInfo } = await provideEVMInfo(
-            'tokenMessenger',
-            evmChain,
-            move,
-          );
+          const { evmCtx, gInfo } = await provideEVMInfo(evmChain, move);
 
           if ('dest' in way) {
             return {
@@ -571,7 +568,7 @@ const stepFlow = async (
               amount,
               src: { pos },
               dest: { account: nInfo.ica },
-              apply: () => withdraw(ctxU, amount, nInfo),
+              apply: () => withdraw(ctxU, amount, nInfo, way.claim),
               recover: () => supply(ctxU, amount, nInfo),
             };
           }
@@ -600,6 +597,22 @@ const stepFlow = async (
   trace('stepFlow done');
 };
 
+/**
+ * Rebalance portfolio positions between yield protocols.
+ * More generally: move assets as instructed by client.
+ *
+ * **Non-Atomic Operations**: Cross-chain flows are not atomic. If operations
+ * fail partway through, assets may be left in intermediate accounts.
+ * Recovery is attempted but can also fail, leaving assets "stranded".
+ *
+ * **Client Recovery**: If rebalancing fails, check flow status in vstorage
+ * and call rebalance() again to move assets to desired destinations.
+ *
+ * **Input Validation**: ASSUME caller validates args
+ *
+ * @param seat - proposal guarded as per {@link makeProposalShapes}
+ * @param offerArgs - guarded as per {@link makeOfferArgsShapes}
+ */
 export const rebalance = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -610,10 +623,24 @@ export const rebalance = async (
   const proposal = seat.getProposal() as ProposalType['rebalance'];
   trace('rebalance proposal', proposal.give, proposal.want, offerArgs);
 
-  if ('flow' in offerArgs) {
-    await stepFlow(orch, ctx, seat, offerArgs.flow, kit);
+  try {
+    if (offerArgs.targetAllocation) {
+      kit.manager.setTargetAllocation(offerArgs.targetAllocation);
+    }
+
+    if (offerArgs.flow) {
+      await stepFlow(orch, ctx, seat, offerArgs.flow, kit);
+    }
+
+    if (!seat.hasExited()) {
+      seat.exit();
+    }
+  } catch (err) {
+    if (!seat.hasExited()) {
+      seat.fail(err);
+    }
+    throw err;
   }
-  seat.exit();
 };
 
 export const rebalanceFromTransfer = (async (
@@ -677,9 +704,11 @@ export const rebalanceFromTransfer = (async (
 /**
  * Offer handler to make a portfolio and, optionally, open yield positions.
  *
- * ASSUME seat's proposal is guarded as per {@link makeProposalShapes}
+ * **Input Validation**: ASSUME caller validates args
  *
- * @returns {*} following continuing invitation pattern, with a topic
+ * @param seat - proposal guarded as per {@link makeProposalShapes}
+ * @param offerArgs - guarded as per {@link makeOfferArgsShapes}
+ * @returns {*} following continuing invitation pattern,
  * with a topic for the portfolio.
  */
 export const openPortfolio = (async (
@@ -695,12 +724,17 @@ export const openPortfolio = (async (
     const kit = makePortfolioKit();
     await provideCosmosAccount(orch, 'agoric', kit);
 
+    // Set target allocation if provided
+    if (offerArgs.targetAllocation) {
+      kit.manager.setTargetAllocation(offerArgs.targetAllocation);
+    }
+
     if (!seat.hasExited()) {
       try {
         await rebalance(orch, ctxI, seat, offerArgs, kit);
       } catch (err) {
         console.error('⚠️ rebalance failed', err);
-        seat.fail(err);
+        if (!seat.hasExited()) seat.fail(err);
       }
     }
 
