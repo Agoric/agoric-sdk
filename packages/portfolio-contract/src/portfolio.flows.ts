@@ -409,15 +409,18 @@ const stepFlow = async (
 
     const getProtocolImpl = (way: Way & { how: P }) => {
       switch (way.how) {
-        case 'Compound': return CompoundProtocol;
-        case 'Aave': return AaveProtocol;
+        case 'Compound':
+          return CompoundProtocol;
+        case 'Aave':
+          return AaveProtocol;
         case 'Beefy':
           if (!way.vault) throw Error('Beefy requires vault name');
           return BeefyProtocol(way.vault);
-        default: throw Error(`Unknown protocol: ${way.how}`);
+        default:
+          throw Error(`Unknown protocol: ${way.how}`);
       }
     };
-    
+
     const pImpl = getProtocolImpl(way);
 
     const { evmCtx, gInfo, accountId } = await provideEVMInfo(evmChain, move);
