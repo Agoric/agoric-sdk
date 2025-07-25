@@ -21,11 +21,34 @@ import { Fail, q as quote } from '@endo/errors';
  *    response: JsonSafe<AbciQueryResponse>;
  *  }
  * }} JsonRpcResponse;
+ *
+ * @typedef {{
+ *  blockHeight: string;
+ *  values: Array<string>;
+ * }} StreamCell
  */
 
 /**
  * @template {any} T
- * @typedef {{latest(height?: Height): Promise<T>;}} Topic<T>
+ * @typedef {{
+ *  latest(height?: Height): Promise<T>;
+ * }} Topic<T>
+ */
+
+/**
+ * @template {any} T
+ * @typedef {Topic<T> & {
+ *  iterate(minimum?: Height, maximum?: Height): AsyncIterable<Update<T>>;
+ *  reverseIterate(maximum?: Height, minimum?: Height): AsyncIterable<Update<T>>;
+ * }} StreamTopic<T>
+ */
+
+/**
+ * @template {any} T
+ * @typedef {{
+ *  blockHeight: Height;
+ *  value: T;
+ * }} Update<T>
  */
 
 export const INVALID_HEIGHT_ERROR_MESSAGE = 'Invalid height';
@@ -55,22 +78,39 @@ const codecs = /** @type {const} */ ({
  * @param {Height} height
  * @param {PATHS[keyof PATHS]} kind
  * @param {string} path
- * @param {MinimalNetworkConfig['rpcAddrs'][0]} rpcAddress
+ * @param {MinimalNetworkConfig['rpcAddrs'][0]} [rpcAddress]
  */
 const createError = (errorMessage, height, kind, path, rpcAddress) =>
   Error(
-    `Cannot read '${kind}' of '${path}' from '${rpcAddress}' at height '${height}' due to error: ${errorMessage}`,
+    `Cannot read '${kind}' of '${path}' ${
+      rpcAddress ? `from '${rpcAddress}'` : ''
+    }  at height '${height}' due to error: ${errorMessage}`,
   );
+
+/**
+ * @param {ReturnType<parseValue>} cell
+ */
+const isDataString = cell => cell && typeof cell === 'string';
+
+/**
+ * @param {ReturnType<typeof parseValue>} cell
+ */
+const isStreamCell = cell =>
+  !!cell &&
+  typeof cell === 'object' &&
+  Array.isArray(cell.values) &&
+  typeof cell.blockHeight === 'string' &&
+  /^0$|^[1-9][0-9]*$/.test(cell.blockHeight);
 
 /**
  * @param {{fetch: typeof window.fetch}} powers
  * @param {MinimalNetworkConfig} config
  */
 const makeAbciQueryClient = ({ fetch }, config) => {
-  const rpcAddress = config.rpcAddrs.find(Boolean);
-
-  if (!rpcAddress)
+  if (!config.rpcAddrs.length)
     return Fail`${INVALID_RPC_ADDRESS_ERROR_MESSAGE} ${quote(config)}`;
+
+  const getRpcAddress = makeRoundRobin(config.rpcAddrs);
 
   /**
    * @param {Height} height
@@ -107,6 +147,8 @@ const makeAbciQueryClient = ({ fetch }, config) => {
     /** @type {Response|undefined} */
     let response;
     const route = createRoute(height, kind, path);
+    const rpcAddress = getRpcAddress();
+
     const url = rpcAddress + route;
 
     try {
@@ -133,16 +175,104 @@ const makeAbciQueryClient = ({ fetch }, config) => {
     return codec.response.decode(decodeBase64(result.response.value));
   };
 
-  return { query, rpcAddress };
+  return { query };
+};
+
+/**
+ * @template {any} T
+ * @param {Array<T>} values
+ */
+const makeRoundRobin = values => {
+  let currentIndex = 0;
+
+  return () => {
+    const element = values[currentIndex];
+    currentIndex = (currentIndex + 1) % values.length;
+    return element;
+  };
 };
 
 /**
  * @template {any} T
  * @param {{queryClient: ReturnType<typeof makeAbciQueryClient>}} powers
  * @param {string} path
+ * @param {Partial<{ compat: boolean }>} [options]
+ * @returns {StreamTopic<T>}
+ */
+const makeStreamTopic = ({ queryClient }, path, options) => {
+  /**
+   * @param {Height} blockHeight
+   * @param {StreamCell['values']} values
+   */
+  function* allValuesFromCell(blockHeight, values) {
+    for (const value of values.reverse())
+      yield /** @type {Update<T>} */ ({
+        blockHeight,
+        value: JSON.parse(value),
+      });
+  }
+
+  /**
+   * @param {Height} [minimum]
+   * @param {Height} [maximum]
+   */
+  async function* iterate(minimum, maximum) {
+    /** @type {Array<Update<T>>} */
+    const values = await Array.fromAsync(reverseIterate(maximum, minimum));
+    for (const value of values) yield value;
+  }
+
+  /**
+   * @param {Height} [maximum]
+   * @param {Height} [minimum]
+   */
+  async function* reverseIterate(maximum, minimum) {
+    let blockHeight = maximum;
+
+    await null;
+
+    while (true) {
+      /** @type {string | undefined} */
+      let value;
+
+      try {
+        ({ value } = await queryClient.query(path, {
+          height: blockHeight,
+          kind: PATHS.DATA,
+        }));
+      } catch (err) {
+        console.error(err);
+        break;
+      }
+
+      if (!value) break;
+
+      const parsedValue = /** @type {StreamCell} */ (JSON.parse(value));
+      const currentBlockHeight = BigInt(parsedValue.blockHeight);
+      blockHeight = currentBlockHeight - 1n;
+
+      if ((minimum && currentBlockHeight < minimum) || !currentBlockHeight)
+        break;
+
+      yield* allValuesFromCell(currentBlockHeight, parsedValue.values);
+    }
+  }
+
+  return {
+    ...makeTopic({ queryClient }, path, { assertCell: !options?.compat }),
+    iterate,
+    reverseIterate,
+  };
+};
+
+/**
+ * @template {any} T
+ * @param {{queryClient: ReturnType<typeof makeAbciQueryClient>}} powers
+ * @param {string} path
+ * @param {Partial<{ assertCell: boolean; assertDataString: boolean; }>} [options]
  * @returns {Topic<T>}
  */
-const makeTopic = ({ queryClient }, path) => ({
+const makeTopic = ({ queryClient }, path, options) => ({
   latest: async height => {
     if (height && height < 0)
       throw createError(
@@ -150,14 +280,20 @@ const makeTopic = ({ queryClient }, path) => ({
         height,
         PATHS.DATA,
         path,
-        queryClient.rpcAddress,
       );
 
     const response = await queryClient.query(path, {
       height: height && height > 0n ? height - 1n : height,
       kind: PATHS.DATA,
     });
-    return /** @type {T} */ (response.value);
+    const parsedValue = parseValue(response.value);
+
+    if (options?.assertCell && !isStreamCell(parsedValue))
+      throw Error(`Expected a stream cell, got ${quote(parsedValue)}`);
+    else if (options?.assertDataString && !isDataString(parsedValue))
+      throw Error(`Expected a data string, got ${quote(parsedValue)}`);
+
+    return /** @type {T} */ (parsedValue);
   },
 });
 
@@ -166,20 +302,30 @@ const makeTopic = ({ queryClient }, path) => ({
  * @param {MinimalNetworkConfig} config
  */
 export const makeVStorageClient = ({ fetch }, config) => {
-  const rpcAddress = config.rpcAddrs.find(Boolean);
-
-  if (!rpcAddress)
+  if (!config.rpcAddrs.length)
     return Fail`${INVALID_RPC_ADDRESS_ERROR_MESSAGE} ${quote(config)}`;
 
   const queryClient = makeAbciQueryClient({ fetch }, config);
 
+  /**
+   * @template {any} T
+   * @param {string} path
+   * @param {Partial<{ compat: boolean }>} [options]
+   */
+  const fromText = (path, options) =>
+    /** @type {StreamTopic<T>} */ (
+      makeStreamTopic({ queryClient }, path, options)
+    );
+
   const vStorageClient = {
+    fromText,
     /**
-     * @template {any} T
      * @param {string} path
      */
     fromTextBlock: path =>
-      /** @type {Topic<T>} */ (makeTopic({ queryClient }, path)),
+      /** @type {Topic<string>} */ (
+        makeTopic({ queryClient }, path, { assertDataString: true })
+      ),
     /**
      * @param {string} path
      */
@@ -187,7 +333,45 @@ export const makeVStorageClient = ({ fetch }, config) => {
       const response = await queryClient.query(path, { kind: PATHS.CHILDREN });
       return response.children;
     },
+    /**
+     * @deprecated
+     * @template {any} T
+     * @param {string} path
+     * @param {Height} height
+     */
+    readAt: (path, height) =>
+      /** @type {Promise<StreamTopic<T>>} */ (fromText(path).latest(height)),
+    /**
+     * @deprecated
+     * @template {any} T
+     * @param {string} path
+     * @param {Height} minimumHeight
+     */
+    readFully: async (path, minimumHeight) =>
+      /** @type {Promise<Array<Update<T>>>} */ (
+        Array.fromAsync(fromText(path).reverseIterate(minimumHeight))
+      ),
+    /**
+     * @deprecated
+     * @template {any} T
+     * @param {string} path
+     */
+    readLatest: path => /** @type {Promise<T>} */ (fromText(path).latest()),
   };
 
   return vStorageClient;
+};
+
+/**
+ * @param {string} value
+ * @returns {StreamCell | string}
+ */
+const parseValue = value => {
+  try {
+    const parsedValue = JSON.parse(value);
+    if (isStreamCell(parsedValue)) return parsedValue;
+    else return value;
+  } catch {
+    return value;
+  }
 };

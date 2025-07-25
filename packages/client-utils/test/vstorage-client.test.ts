@@ -126,14 +126,14 @@ test('should receive the expected topic data', async t => {
         'agoric1m6shs4jk2yxga82rkzr3vt6fhzfs0nqkkw5d8uwq2z50h6j25n9s6xzruc',
     },
   };
-  const zeroHeightExpectedData = {
+  const lowestHeightExpectedData = {
     ...expectedData,
     hookAccount: {
       ...expectedData.hookAccount,
       value: 'agoric150kwm3g7v9n9m78525ca2h5nzvu9uzkp7qddw9',
     },
   };
-  const height = 2n;
+  const height = 3n;
   const invalidHeight = height * -1n;
   let mockFetch: Window['fetch'];
   const path = 'published';
@@ -159,7 +159,24 @@ test('should receive the expected topic data', async t => {
         ok: true,
         value: encodeBase64(
           QueryDataResponse.encode({
-            value: JSON.stringify(zeroHeightExpectedData),
+            value: JSON.stringify(lowestHeightExpectedData),
+          }).finish(),
+        ),
+      },
+      height: height - 2n,
+      kind: PATHS.DATA,
+      path,
+    },
+    {
+      abciResponse: {
+        code: 0,
+        ok: true,
+        value: encodeBase64(
+          QueryDataResponse.encode({
+            value: JSON.stringify({
+              blockHeight: String(height - 2n),
+              values: [],
+            }),
           }).finish(),
         ),
       },
@@ -176,7 +193,7 @@ test('should receive the expected topic data', async t => {
 
   mockFetch = makeMockFetch(createResponseMap(responses));
 
-  const topic = vStorageClient.fromTextBlock<string>(path);
+  const topic = vStorageClient.fromTextBlock(path);
 
   let data = await topic.latest(height);
   t.deepEqual(JSON.parse(data), expectedData);
@@ -185,6 +202,8 @@ test('should receive the expected topic data', async t => {
     message: new RegExp(`.*${INVALID_HEIGHT_ERROR_MESSAGE} ${invalidHeight}.*`),
   });
 
-  data = await topic.latest();
-  t.deepEqual(JSON.parse(data), zeroHeightExpectedData);
+  data = await topic.latest(height - 1n);
+  t.deepEqual(JSON.parse(data), lowestHeightExpectedData);
+
+  await t.throwsAsync(() => topic.latest());
 });
