@@ -5,8 +5,9 @@ import { provideLazy } from '@agoric/store';
 import { makeNotifierKit } from '@agoric/notifier';
 
 /**
- * @import {Purse} from './types.js';
+ * @import {WeakMapStore} from '@agoric/store';
  * @import {NotifierRecord} from '@agoric/notifier';
+ * @import {Purse} from './types.js';
  */
 
 // Note: Virtual for high cardinality, but *not* durable, and so
