@@ -186,15 +186,21 @@ export const preparePortfolioKit = (
     usdcBrand: Brand<'nat'>;
   },
 ) => {
-  const makePathNode = (path: string[]) => {
-    let node = portfoliosNode;
-    for (const segment of path) {
-      node = E(node).makeChildNode(segment);
-    }
+  // Ephemeral node cache
+  // XXX collecting flow nodes is TBD
+  const nodes = new Map<string, ERef<StorageNode>>();
+  const providePathNode = (segments: string[]): ERef<StorageNode> => {
+    if (segments.length === 0) return portfoliosNode;
+    const path = segments.join('.');
+    if (nodes.has(path)) return nodes.get(path)!;
+    let parent = providePathNode(segments.slice(0, -1));
+    const node = E(parent).makeChildNode(segments.at(-1)!);
+    nodes.set(path, node);
     return node;
   };
+
   const publishStatus: PublishStatusFn = (path, status): void => {
-    const node = makePathNode(path);
+    const node = providePathNode(path);
     // Don't await, just writing to vstorage.
     void E.when(E(marshaller).toCapData(status), capData =>
       E(node).setValue(JSON.stringify(capData)),
@@ -345,7 +351,7 @@ export const preparePortfolioKit = (
         },
         getStoragePath() {
           const { portfolioId } = this.state;
-          const node = makePathNode(makePortfolioPath(portfolioId));
+          const node = providePathNode(makePortfolioPath(portfolioId));
           return vowTools.asVow(() => E(node).getPath());
         },
         getPortfolioId() {
@@ -384,6 +390,7 @@ export const preparePortfolioKit = (
           this.facets.reporter.publishStatus();
           return nextFlowId;
         },
+        // XXX collecting flow nodes is TBD
         publishFlowStatus(id: number, status: StatusFor['flow']) {
           const { portfolioId } = this.state;
           publishStatus(makeFlowPath(portfolioId, id), status);
