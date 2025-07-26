@@ -2,6 +2,7 @@ package vm
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 
@@ -20,6 +21,11 @@ type AgdServer struct {
 	// portToName[nameToPort[s]] == s && nameToPort[portToName[i]] == i for all i, s
 	portToName map[int]string
 	nameToPort map[string]int
+}
+
+type HandlerResponse struct {
+	Slogs    []string `json:"slogs"`
+	Response string   `json:"response"`
 }
 
 var wrappedEmptySDKContext = sdk.WrapSDKContext(
@@ -67,11 +73,30 @@ func (s *AgdServer) getContextAndHandler(port int) (context.Context, PortHandler
 // Message.
 func (s *AgdServer) ReceiveMessage(msg *Message, reply *string) error {
 	ctx, handler := s.getContextAndHandler(msg.Port)
+	sloggerOutput := []string{}
+
 	if handler == nil {
 		return fmt.Errorf("unregistered port %d", msg.Port)
 	}
-	resp, err := handler.Receive(ctx, msg.Data)
-	*reply = resp
+
+	resp, err := handler.Receive(
+		GetContextWithSlogger(
+			sdk.UnwrapSDKContext(ctx),
+			&sloggerOutput,
+		),
+		msg.Data,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	handlerResponse := HandlerResponse{
+		Slogs:    sloggerOutput,
+		Response: resp,
+	}
+	response, err := json.Marshal(handlerResponse)
+	*reply = string(response)
 	return err
 }
 
