@@ -382,7 +382,7 @@ jobs:
 
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
+        uses: ./agoric-sdk/.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
