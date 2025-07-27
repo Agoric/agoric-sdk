@@ -163,7 +163,7 @@ export const makeWalletTool = ({ runMake, pspawnAgd, delay, log }) => {
       pipedStdio[0] = opts.stdio?.[0] || 'ignore';
       pipedStdio[2] = opts.stdio?.[2] || 'inherit';
     }
-    const cmd = pspawnAgd(args, { stdio: pipedStdio });
+    const cmd = pspawnAgd([...args, '--output', 'json'], { stdio: pipedStdio });
     const { stdout } = cmd.child;
     assert(stdout);
     stdout.on('data', chunk => parts.push(chunk));
@@ -182,7 +182,7 @@ export const makeWalletTool = ({ runMake, pspawnAgd, delay, log }) => {
    * @param {string} addr
    */
   const queryBalance = addr =>
-    query(['bank', 'balances', addr, '--output', 'json']).then(b => {
+    query(['bank', 'balances', addr]).then(b => {
       console.log(addr, b);
       return b;
     });
