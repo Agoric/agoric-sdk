@@ -199,13 +199,14 @@ export const makeWalletTool = ({ runMake, pspawnAgd, delay, log }) => {
     }
     for (;;) {
       try {
-        const info = await query(['block'], {
+        const block = await query(['block'], {
           stdio: ['ignore', 'pipe', 'ignore'],
         });
-        consensusHeight = BigInt(info?.block?.last_commit?.height);
-        if (!consensusHeight) {
+        const lastCommitHeight = block?.last_commit?.height;
+        if (lastCommitHeight == null) {
           throw Error('no consensus block yet');
         }
+        consensusHeight = BigInt(lastCommitHeight);
 
         if (!firstHeight) {
           firstHeight = consensusHeight + 1n;
@@ -218,7 +219,7 @@ export const makeWalletTool = ({ runMake, pspawnAgd, delay, log }) => {
         }
 
         if (consensusHeight >= targetHeight) {
-          log(info?.block?.header?.time, ' block ', consensusHeight);
+          log(block?.header?.time, ' block ', consensusHeight);
           console.warn(why, ':', consensusHeight, '>=', targetHeight);
           // XXX: For backward compatibility, we dumb the height down to a Number.
           return Number(consensusHeight);
