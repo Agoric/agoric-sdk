@@ -22,13 +22,12 @@ func (app *GaiaApp) ExportAppStateAndValidators(
 	// as if they could withdraw from the start of the next block
 	ctx := app.NewContext(true)
 
-	// We export at last height + 1, because that's the height at which
-	// Tendermint will start InitChain.
-	height := app.LastBlockHeight() + 1
+	height := app.LastBlockHeight()
 	if forZeroHeight {
 		return servertypes.ExportedApp{}, fmt.Errorf("forZeroHeight not supported")
 	}
 
+	ctx = ctx.WithBlockHeight(height)
 	genState, err := app.ModuleManager.ExportGenesis(ctx, app.appCodec)
 	if err != nil {
 		return servertypes.ExportedApp{}, err
@@ -40,10 +39,11 @@ func (app *GaiaApp) ExportAppStateAndValidators(
 	}
 
 	validators, err := staking.WriteValidators(ctx, app.StakingKeeper)
+
 	return servertypes.ExportedApp{
 		AppState:        appState,
 		Validators:      validators,
-		Height:          height,
+		Height:          height + 1,
 		ConsensusParams: app.BaseApp.GetConsensusParams(ctx),
 	}, err
 }

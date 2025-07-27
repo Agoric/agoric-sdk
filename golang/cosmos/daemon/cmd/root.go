@@ -574,7 +574,7 @@ func (ac appCreator) appExport(
 		appOpts,
 	)
 
-	if height != -1 {
+	if !loadLatest {
 		if err := gaiaApp.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
