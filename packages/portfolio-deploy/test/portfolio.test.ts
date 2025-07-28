@@ -212,8 +212,17 @@ test.serial('access token setup', async t => {
   });
 });
 
-// XXX USDC/PoC26 issuer promises aren't resolving somehow
-test.skip('contract starts; appears in agoricNames', async t => {
+test.serial('resolve USDC issuer', async t => {
+  const { buildProposal, evalProposal } = t.context;
+  const materials = buildProposal(
+    '@aglocal/portfolio-deploy/src/usdc-resolve.build.js',
+  );
+
+  await evalProposal(materials);
+  t.pass('not straightforward to test promise space contents');
+});
+
+test.serial('contract starts; appears in agoricNames', async t => {
   const {
     agoricNamesRemotes,
     bridgeUtils,
@@ -255,6 +264,7 @@ test.skip('contract starts; appears in agoricNames', async t => {
 
 const { make } = AmountMath;
 
+// give: ...rest: {"Access":{"brand":"[Alleged: BoardRemotePoC26 brand]","value":"[1n]"}} - Must be: {}
 test.skip('open a USDN position', async t => {
   const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
 
