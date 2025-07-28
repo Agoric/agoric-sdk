@@ -17,12 +17,7 @@ import { encodeBase64 } from '@endo/base64';
 type AbciResponse = {
   code: number;
   ok: boolean;
-  value:
-    | string
-    | {
-        blockHeight: string;
-        values: Array<string>;
-      };
+  value: string | StreamCell;
   text?: string;
 };
 
@@ -32,6 +27,12 @@ type Response = {
   kind: (typeof PATHS)[keyof typeof PATHS];
   path: string;
 };
+
+type StreamCell =
+  import('@agoric/client-utils/src/vstorage-client.js').StreamCell;
+
+type Update<T> =
+  import('@agoric/client-utils/src/vstorage-client.js').Update<T>;
 
 const encodings = Array.from({ length: 256 }, (_, b) =>
   b.toString(16).padStart(2, '0'),
@@ -44,12 +45,28 @@ const testConfig = {
 };
 
 const createResponseMap = (responses: Array<Response>) =>
-  responses.reduce<Record<string, AbciResponse>>(
-    (map, { abciResponse, height, kind, path }) => ({
+  responses.reduce<
+    Record<
+      string,
+      {
+        ok: AbciResponse['ok'];
+        response?: {
+          code: AbciResponse['code'];
+          value: AbciResponse['value'];
+        };
+        sync_info?: {
+          catching_up: boolean;
+          latest_block_height: string;
+        };
+        text?: AbciResponse['text'];
+      }
+    >
+  >(
+    (map, { abciResponse: { ok, text, ...rest }, height, kind, path }) => ({
       ...map,
       [encodeURI(
         `${RPC_ADDRESS}/abci_query?data=0x${encodeHex(path)}&height=${height}&path="${PATH_PREFIX}/${kind}"`,
-      )]: abciResponse,
+      )]: { ok, response: rest, text },
     }),
     {},
   );
@@ -57,11 +74,11 @@ const createResponseMap = (responses: Array<Response>) =>
 const encodeHex = (str: string) =>
   Array.from(`\n\t${str}`, b => encodings[b.charCodeAt(0)]).join('');
 
-const makeMockFetch = (responses: Record<string, AbciResponse>) =>
+const makeMockFetch = (responses: ReturnType<typeof createResponseMap>) =>
   (async (url: string) => {
     const response = responses[url];
     return {
-      json: () => Promise.resolve({ result: { response } }),
+      json: () => Promise.resolve({ result: response }),
       ok: !response ? false : response.ok,
       text: () =>
         Promise.resolve(
@@ -206,4 +223,140 @@ test('should receive the expected topic data', async t => {
   t.deepEqual(JSON.parse(data), lowestHeightExpectedData);
 
   await t.throwsAsync(() => topic.latest());
+});
+
+test('should receive the expected stream data', async t => {
+  const height = 3n;
+  const path = 'published';
+  const streamCell = {
+    blockHeight: String(height),
+    values: [JSON.stringify('value1'), JSON.stringify('value2')],
+  };
+
+  const nonStreamValue = 'some plain data';
+  const oldValue = 'old value';
+
+  const mockResponses = {
+    ...createResponseMap([
+      {
+        abciResponse: {
+          code: 0,
+          ok: true,
+          value: encodeBase64(
+            QueryDataResponse.encode({
+              value: JSON.stringify(streamCell),
+            }).finish(),
+          ),
+        },
+        height: 0n,
+        kind: PATHS.DATA,
+        path,
+      },
+      {
+        abciResponse: {
+          code: 0,
+          ok: true,
+          value: encodeBase64(
+            QueryDataResponse.encode({
+              value: JSON.stringify(streamCell),
+            }).finish(),
+          ),
+        },
+        height,
+        kind: PATHS.DATA,
+        path,
+      },
+      {
+        abciResponse: {
+          code: 0,
+          ok: true,
+          value: encodeBase64(
+            QueryDataResponse.encode({
+              value: oldValue,
+            }).finish(),
+          ),
+        },
+        height: height - 1n,
+        kind: PATHS.DATA,
+        path,
+      },
+      {
+        abciResponse: {
+          code: 0,
+          ok: true,
+          value: encodeBase64(
+            QueryDataResponse.encode({
+              value: nonStreamValue,
+            }).finish(),
+          ),
+        },
+        height: height - 2n,
+        kind: PATHS.DATA,
+        path,
+      },
+    ]),
+    [`${RPC_ADDRESS}/status`]: {
+      sync_info: {
+        catching_up: false,
+        latest_block_height: String(height),
+      },
+      ok: true,
+    },
+  };
+
+  const vStorageClient = makeVStorageClient(
+    { fetch: makeMockFetch(mockResponses) },
+    testConfig,
+  );
+
+  const streamTopic = vStorageClient.fromText<StreamCell>(path);
+  const latestCell = await streamTopic.latest(height);
+  t.deepEqual(latestCell, streamCell);
+
+  const reverseResults: Array<Update<StreamCell>> = [];
+  for await (const value of streamTopic.reverseIterate(height, height))
+    reverseResults.push(value);
+
+  t.deepEqual(
+    reverseResults.map(u => u.value),
+    streamCell.values.map(value => JSON.parse(value)).reverse(),
+  );
+
+  const forwardResults: Array<Update<StreamCell>> = [];
+  for await (const value of streamTopic.iterate()) forwardResults.push(value);
+
+  t.deepEqual(
+    forwardResults.map(u => u.value),
+    [
+      nonStreamValue,
+      oldValue,
+      ...streamCell.values.map(value => JSON.parse(value)),
+    ],
+  );
+
+  const compatTopic = vStorageClient.fromText<StreamCell>(path, {
+    compat: true,
+  });
+  const compatReverseResults: Array<Update<StreamCell>> = [];
+  for await (const value of compatTopic.reverseIterate())
+    compatReverseResults.push(value);
+
+  t.deepEqual(
+    compatReverseResults.map(u => u.value),
+    [
+      ...streamCell.values.map(value => JSON.parse(value)).reverse(),
+      oldValue,
+      nonStreamValue,
+    ],
+  );
+
+  const latestRead = await vStorageClient.readLatest<StreamCell>(path);
+  t.deepEqual(latestRead, streamCell);
+
+  const atRead = await vStorageClient.readAt(path, height);
+  t.deepEqual(atRead, streamCell);
+
+  await t.throwsAsync(() => vStorageClient.readFully(path), {
+    message: /.*Expected a stream cell.*/,
+  });
 });

@@ -67,6 +67,8 @@ export const INVALID_HEIGHT_ERROR_MESSAGE = 'Invalid height';
 export const INVALID_RPC_ADDRESS_ERROR_MESSAGE =
   'No valid RPC address found in config';
 
+const MINIMUM_HEIGHT = 1n;
+
 export const PATH_PREFIX = '/agoric.vstorage.Query';
 
 export const PATHS = /** @type {const} */ ({
@@ -255,27 +257,61 @@ const makeStreamTopic = ({ queryClient }, path, options) => {
   }
 
   /**
+   * @param {boolean} compatMode
+   * @param {ReturnType<typeof parseValue>} value
+   */
+  const assertValueStructure = (compatMode, value) => {
+    if (!(isStreamCell(value) || compatMode))
+      throw Error(`Expected a stream cell, got ${quote(value)}`);
+  };
+
+  /**
    * @param {Height} [minimum]
    * @param {Height} [maximum]
    */
   async function* iterate(minimum, maximum) {
     /** @type {Array<Update<T>>} */
     let values = [];
-    for await (const value of reverseIterate(maximum, minimum))
+
+    for await (const value of reverseIterate(maximum, minimum, true))
       values = [value, ...values];
-    for (const value of values) yield value;
+
+    for (const value of values) {
+      assertValueStructure(!!options?.compat, {
+        blockHeight: String(value.blockHeight),
+        values: [/** @type string */ (value.value)],
+      });
+      yield value;
+    }
   }
 
   /**
    * @param {Height} [maximum]
    * @param {Height} [minimum]
+   * @param {boolean} [compatMode]
    */
-  async function* reverseIterate(maximum, minimum) {
+  async function* reverseIterate(
+    maximum,
+    minimum,
+    compatMode = options?.compat,
+  ) {
     let blockHeight = maximum;
+    /** @type {Height} */
+    let currentBlockHeight;
     /** @type {string | undefined} */
     let lastValue;
 
     await null;
+
+    if (!minimum || minimum < MINIMUM_HEIGHT) minimum = MINIMUM_HEIGHT;
+
+    if (maximum && maximum < minimum)
+      throw createError(
+        `${INVALID_HEIGHT_ERROR_MESSAGE} ${maximum}`,
+        blockHeight || (await queryClient.getLatestHeight()),
+        PATHS.DATA,
+        path,
+      );
 
     while (true) {
       /** @type {string | undefined} */
@@ -294,34 +330,30 @@ const makeStreamTopic = ({ queryClient }, path, options) => {
       if (!value) break;
 
       let parsedValue = parseValue(value);
+      assertValueStructure(!!compatMode, parsedValue);
 
       if (isStreamCell(parsedValue)) {
         // eslint-disable-next-line no-self-assign
         parsedValue = /** @type {StreamCell} */ (parsedValue);
 
-        const currentBlockHeight = BigInt(parsedValue.blockHeight);
-        blockHeight = currentBlockHeight - 1n;
+        currentBlockHeight = BigInt(parsedValue.blockHeight);
 
-        if ((minimum && currentBlockHeight < minimum) || !currentBlockHeight)
-          break;
-
-        yield* allValuesFromCell(currentBlockHeight, parsedValue.values);
+        if (!minimum || currentBlockHeight >= minimum)
+          yield* allValuesFromCell(currentBlockHeight, parsedValue.values);
       } else {
-        // eslint-disable-next-line no-lonely-if
-        if (!options?.compat)
-          throw Error(`Expected a stream cell, got ${quote(parsedValue)}`);
-        else {
-          if (!blockHeight) blockHeight = await queryClient.getLatestHeight();
+        if (blockHeight === undefined)
+          blockHeight = await queryClient.getLatestHeight();
+        currentBlockHeight = blockHeight;
 
-          if ((minimum && blockHeight < minimum) || !blockHeight) break;
+        if (lastValue !== value && (!minimum || currentBlockHeight >= minimum))
+          yield /** @type {Update<T>} */ ({ blockHeight, value });
 
-          if (lastValue !== value)
-            yield /** @type {Update<T>} */ ({ blockHeight, value });
-
-          blockHeight -= 1n;
-          lastValue = value;
-        }
+        lastValue = value;
       }
+
+      if ((minimum && currentBlockHeight <= minimum) || !currentBlockHeight)
+        break;
+      blockHeight = currentBlockHeight - 1n;
     }
   }
 
@@ -336,12 +368,12 @@ const makeStreamTopic = ({ queryClient }, path, options) => {
  * @template {any} T
  * @param {{queryClient: ReturnType<typeof makeQueryClient>}} powers
  * @param {string} path
- * @param {Partial<{ assertCell: boolean; assertDataString: boolean; }>} [options]
+ * @param {Partial<{ assertCell: boolean; assertDataString: boolean; fetchDataAtPreviousHeight: boolean; }>} [options]
  * @returns {Topic<T>}
  */
 const makeTopic = ({ queryClient }, path, options) => ({
   latest: async height => {
-    if (height && height < 0)
+    if (height && height < MINIMUM_HEIGHT)
       throw createError(
         `${INVALID_HEIGHT_ERROR_MESSAGE} ${height}`,
         height,
@@ -350,7 +382,10 @@ const makeTopic = ({ queryClient }, path, options) => ({
       );
 
     const response = await queryClient.queryAbci(path, {
-      height: height && height > 0n ? height - 1n : height,
+      height:
+        height && height > MINIMUM_HEIGHT && options?.fetchDataAtPreviousHeight
+          ? height - 1n
+          : height,
       kind: PATHS.DATA,
     });
     const parsedValue = parseValue(response.value);
@@ -391,7 +426,10 @@ export const makeVStorageClient = ({ fetch }, config) => {
      */
     fromTextBlock: path =>
       /** @type {Topic<string>} */ (
-        makeTopic({ queryClient }, path, { assertDataString: true })
+        makeTopic({ queryClient }, path, {
+          assertDataString: true,
+          fetchDataAtPreviousHeight: true,
+        })
       ),
     /**
      * @param {string} path
@@ -414,7 +452,7 @@ export const makeVStorageClient = ({ fetch }, config) => {
      * @deprecated
      * @template {any} T
      * @param {string} path
-     * @param {Height} minimumHeight
+     * @param {Height} [minimumHeight]
      */
     readFully: async (path, minimumHeight) => {
       /** @type {Array<Update<T>>} */
