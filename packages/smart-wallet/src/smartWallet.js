@@ -51,7 +51,7 @@ import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
  * @import {WeakMapStore, MapStore} from '@agoric/store'
  * @import {InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
  * @import {EReturn} from '@endo/far';
- * @import {OfferId, OfferStatus} from './offers.js';
+ * @import {OfferId, OfferResultStep, OfferStatus} from './offers.js';
  */
 
 const trace = makeTracer('SmrtWlt');
@@ -99,15 +99,16 @@ const trace = makeTracer('SmrtWlt');
 
 /**
  * @typedef {{
- *   method: 'evalExpr';
- *   expr: string;
- * }} EvalExprAction
+ *   method: 'invokeItem';
+ *   name: string;
+ *   steps: OfferResultStep[] & import('@endo/marshal').CopyArray;
+ * }} InvokeAction
  */
 
 // Discriminated union. Possible future messages types:
 // maybe suggestIssuer for https://github.com/Agoric/agoric-sdk/issues/6132
 // setting petnames and adding brands for https://github.com/Agoric/agoric-sdk/issues/6126
-/** @typedef {ExecuteOfferAction | TryExitOfferAction | EvalExprAction} BridgeAction */
+/** @typedef {ExecuteOfferAction | TryExitOfferAction | InvokeAction} BridgeAction */
 
 /**
  * Purses is an array to support a future requirement of multiple purses per
@@ -485,13 +486,23 @@ export const prepareSmartWallet = (baggage, shared) => {
       tryExitOffer: M.call(M.scalar()).returns(M.promise()),
     }),
     invoke: M.interface('invoke', {
-      evalExpr: M.callWhen(M.string()).returns(M.undefined()),
+      invokeItem: M.callWhen(M.string(), shape.OfferResultStep)
+        .rest(M.arrayOf(shape.OfferResultStep, { arrayLengthLimit: 2 }))
+        .returns(),
+    }),
+    resultStepWatcher: M.interface('resultStepWatcher', {
+      onFulfilled: M.call(
+        M.any(),
+        M.arrayOf(shape.OfferResultStep, { arrayLengthLimit: 3 }),
+      ).returns(),
+      onRejected: M.call(M.any(), M.any()).returns(),
     }),
     self: M.interface('selfFacetI', {
       handleBridgeAction: M.call(shape.StringCapData, M.boolean()).returns(
         M.promise(),
       ),
       getDepositFacet: M.call().returns(M.remotable()),
+      getInvokeFacet: M.call().returns(M.remotable()),
       getOffersFacet: M.call().returns(M.remotable()),
       getCurrentSubscriber: M.call().returns(SubscriberShape),
       getUpdatesSubscriber: M.call().returns(SubscriberShape),
@@ -1047,19 +1058,48 @@ export const prepareSmartWallet = (baggage, shared) => {
 
       invoke: {
         /**
-         * @param {string} expr
+         * @param {string} name
+         * @param {OfferResultStep[]} steps
          */
-        async evalExpr(expr) {
-          trace(
-            'TODO: validate Justin syntax; see https://github.com/endojs/Jessie/pull/121#discussion_r1988126110',
-          );
-          trace('evalExpr', expr);
+        async invokeItem(name, ...steps) {
+          trace('invokeItem', name, steps);
           // XXX worth using a nameHub vs. a mapStore?
-          const { nameHub, nameAdmin } = this.state.my;
-          const endowments = { E, harden, assert, nameHub, nameAdmin };
-          const c = new Compartment(endowments);
-          const x = await c.evaluate(expr);
-          trace('eval result', x);
+          const { nameHub } = this.state.my;
+          const { resultStepWatcher } = this.facets;
+
+          nameHub.has(name) || Fail`cannot invoke ${q(name)}: no such item`;
+          const item = nameHub.lookup(name);
+          trace('item', name, item);
+          vowTools.watch(Promise.resolve(item), resultStepWatcher, steps);
+        },
+      },
+
+      resultStepWatcher: {
+        /**
+         * @param {unknown} result
+         * @param {OfferResultStep[]} steps
+         */
+        onFulfilled(result, steps) {
+          trace('resultStepWatcher result', result);
+          if (!steps.length) return;
+          const { nameAdmin } = this.state.my;
+          const [step0, ...step1n] = steps;
+          if ('saveAs' in step0) {
+            trace('saveAs', step0.saveAs, result);
+            nameAdmin.update(step0.saveAs, result);
+          } else {
+            const { resultStepWatcher } = this.facets;
+            const { method, args = [] } = step0;
+            trace('invoke', result, '.', method, '(', args, ')');
+            vowTools.watch(
+              E(result)[method](...args),
+              resultStepWatcher,
+              step1n,
+            );
+          }
+        },
+        onRejected(reason, steps) {
+          trace('rejected', reason, 'remaining', steps);
         },
       },
 
@@ -1103,8 +1143,11 @@ export const prepareSmartWallet = (baggage, shared) => {
                     assert(canSpend, 'tryExitOffer requires spend authority');
                     return offers.tryExitOffer(action.offerId);
                   }
-                  case 'evalExpr': {
-                    return facets.invoke.evalExpr(action.expr);
+                  case 'invokeItem': {
+                    return facets.invoke.invokeItem(
+                      action.name,
+                      ...action.steps,
+                    );
                   }
                   default: {
                     throw Fail`invalid handle bridge action ${q(action)}`;
@@ -1123,6 +1166,9 @@ export const prepareSmartWallet = (baggage, shared) => {
         },
         getDepositFacet() {
           return this.facets.deposit;
+        },
+        getInvokeFacet() {
+          return this.facets.invoke;
         },
         getOffersFacet() {
           return this.facets.offers;

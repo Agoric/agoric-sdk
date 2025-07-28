@@ -278,9 +278,12 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
           const { after } = this.state.status;
           if (after) {
             if (after.saveAs) {
-              walletHelper.saveOfferResult(after.saveAs, result);
+              const { saveAs: name } = after;
+              walletHelper.saveOfferResult(name, result);
+              facets.helper.publishResult(
+                harden({ [name]: { passStyle: passStyleOf(result) } }),
+              );
             }
-            facets.helper.publishResult(passStyleOf(result));
           } else {
             facets.helper.publishResult(result);
           }
