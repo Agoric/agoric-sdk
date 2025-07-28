@@ -5,9 +5,9 @@ import test from 'ava';
 import { Fail } from '@endo/errors';
 import {
   retryUntilCondition,
-  VBankAccount,
   waitUntilAccountFunded,
 } from '@agoric/client-utils';
+import { VBankAccount } from '@agoric/internal/src/config.js';
 import {
   addUser,
   agoric,
@@ -67,7 +67,8 @@ test.serial('manual wallet provisioning', async t => {
   };
   const balancesBefore = await getBalancesRecord();
   t.log('balances before wallet provisioning', balancesBefore);
-  await provisionSmartWallet(user);
+  const provisionFeeAmount = 10e6;
+  await provisionSmartWallet(user, `${provisionFeeAmount}${denom}`);
   const balancesAfter = await getBalancesRecord();
   t.log('balances after wallet provisioning', balancesAfter);
   // 10 BLD fee goes to the reserve, but might be less than the minimum
@@ -76,9 +77,10 @@ test.serial('manual wallet provisioning', async t => {
   t.like(balancesAfter, {
     // 10 BLD initial funding comes from provisionPool
     provisionPool: balancesBefore.provisionPool - BigInt(10e6),
-    // and since the initial funding equals the fee, the user balance should be
-    // unchanged
-    user: balancesBefore.user,
+    // provisionSmartWallet now requires an amount arg
+    // and we send 10 BLD, so the user balance should be
+    // balance before + 10 BLD
+    user: balancesBefore.user + BigInt(provisionFeeAmount),
   });
 });
 

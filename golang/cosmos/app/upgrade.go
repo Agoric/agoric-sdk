@@ -12,6 +12,7 @@ import (
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
 	icahosttypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
@@ -190,12 +191,6 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 		ctx := sdk.UnwrapSDKContext(goCtx)
 		app.CheckControllerInited(false)
 
-		// prune expired tendermint consensus states to save storage space
-		_, err := ibctmmigrations.PruneExpiredConsensusStates(ctx, app.AppCodec(), app.IBCKeeper.ClientKeeper)
-		if err != nil {
-			return nil, err
-		}
-
 		CoreProposalSteps := []vm.CoreProposalStep{}
 
 		// These CoreProposalSteps are not idempotent and should only be executed
@@ -208,15 +203,18 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 				return module.VersionMap{}, fmt.Errorf("cannot run %s as first upgrade", plan.Name)
 			}
 
+			// prune expired tendermint consensus states to save storage space.
+			_, err := ibctmmigrations.PruneExpiredConsensusStates(ctx, app.AppCodec(), app.IBCKeeper.ClientKeeper)
+			if err != nil {
+				return nil, err
+			}
+
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = append(CoreProposalSteps,
 				// Register a new ZCF to be used for all future contract instances and upgrades
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/vats/upgrade-zcf.js",
-				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-provisionPool-to-BLD.js",
 				),
 				// because of #10794, we need to do at least a null upgrade of
 				// the walletFactory on every software upgrade
@@ -225,51 +223,6 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 				),
 			)
 
-			// Reserve contract needs to be upgraded for IST wind-down.
-			reserveUpgradeStep, err := buildProposalStepWithArgs(
-				"@agoric/builders/scripts/vats/upgrade-vats.js",
-				"upgradeZoeContractsProposalBuilder",
-				[]struct {
-					KitLookup  []string `json:"kitLookup"`
-					BundleName string   `json:"bundleName"`
-					Entrypoint string   `json:"entrypoint"`
-				}{
-					{
-						KitLookup:  []string{"reserveKit"},
-						BundleName: "reserve",
-						Entrypoint: "@agoric/inter-protocol/src/reserve/assetReserve.js",
-					},
-				},
-			)
-			if err != nil {
-				return module.VersionMap{}, err
-			}
-			CoreProposalSteps = append(CoreProposalSteps,
-				reserveUpgradeStep,
-			)
-
-			// terminationTargets is a slice of "$boardID:$instanceKitLabel" strings.
-			var terminationTargets []string
-			switch getVariantFromUpgradeName(targetUpgrade) {
-			case "MAINNET":
-				// v111 "zcf-b1-4522b-stkATOM-USD_price_feed"
-				terminationTargets = []string{"board052184:stkATOM-USD_price_feed"}
-			case "A3P_INTEGRATION":
-				terminationTargets = []string{"board04091:stATOM-USD_price_feed"}
-			}
-			if len(terminationTargets) > 0 {
-				args := []vm.Jsonable{terminationTargets}
-				terminationStep, err := buildProposalStepWithArgs(
-					"@agoric/vats/src/proposals/terminate-governed-instance.js",
-					// defaultProposalBuilder(powers, targets)
-					"defaultProposalBuilder",
-					args...,
-				)
-				if err != nil {
-					return module.VersionMap{}, err
-				}
-				CoreProposalSteps = append(CoreProposalSteps, terminationStep)
-			}
 		}
 
 		app.upgradeDetails = &upgradeDetails{
