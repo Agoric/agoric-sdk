@@ -54,7 +54,9 @@ The Release Owner and other appropriate stakeholders must agree on:
       - [ ] Update/verify the `isPrimaryUpgradeName` function to reflect the updated [_**upgrade name**_](#assign-release-parameters) list.
       - [ ] Rename/verify the upgrade handler function to match the release, example: `upgrade8Handler`.
       - [ ] Verify that the upgrade handler function has no logic specific to the previous upgrade (e.g., core proposals).
-    - [ ] In **golang/cosmos/app/app.go**, make sure that the call to `SetUpgradeHandler` uses the renamed upgrade handler function above.
+    - [ ] In **golang/cosmos/app/app.go**
+      - [ ] Make sure that the call to `SetUpgradeHandler` uses the renamed upgrade handler function above.
+      - [ ] Set `storeUpgrades.Added` and `storeUpgrades.Deleted` to be `[]string{}`
     - [ ] Verify that **a3p-integration/package.json** has an object-valued `agoricSyntheticChain` property with `fromTag` set to the [agoric-3-proposals Docker images](https://github.com/Agoric/agoric-3-proposals/pkgs/container/agoric-3-proposals) tag associated with the previous release
       (example: `use-upgrade-7`) or latest core-eval passed on chain (example: `use-vaults-auction`).
     - [ ] Ensure that the first subdirectory in **a3p-integration/proposals** has the following characteristics. This is commonly created by renaming the `n:upgrade-next` directory after verifying no other proposals exist before that, and updating the **package.json** file in it. The `init-release.sh` script takes care of renaming the directory so verify the new proposal directory.
