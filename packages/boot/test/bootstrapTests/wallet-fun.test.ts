@@ -1,6 +1,7 @@
 /** @file use capabilities in smart wallet without offers */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import { start as startPriceContract } from '@agoric/smart-wallet/test/wallet-fun.contract.js';
 import type { NameHub } from '@agoric/vats';
@@ -51,9 +52,6 @@ const startContract = async <SF>(
   return started;
 };
 
-const arrowBody = (f: Function) =>
-  `${f}`.match(/\(\) =>\s*(?<body>[\s\S]*)/m)?.groups?.body || assert.fail();
-
 const showInvitationBalance = (addr: string, r: CurrentWalletRecord) => [
   addr,
   'has invitations',
@@ -100,12 +98,8 @@ test('use offer result without zoe', async t => {
   t.log({ initialPrices });
   t.deepEqual(initialPrices, [0n]);
 
-  const setPriceFn =
-    (nameHub = null as unknown as NameHub, E = <T>(x: Awaited<T>) => x) =>
-    () =>
-      E(nameHub.lookup('priceSetter')).setPrice(100n);
-
-  await wd.evalExpr(arrowBody(setPriceFn));
+  await wd.invokeItem('priceSetter', { method: 'setPrice', args: [100n] });
+  await eventLoopIteration();
   const actual = await EV(started.publicFacet).getPrices();
   t.log('prices after', actual);
   t.deepEqual(actual, [100n]);

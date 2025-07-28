@@ -13,8 +13,12 @@ import {
 } from '@agoric/internal/src/storage-test-utils.js';
 import { Fail } from '@endo/errors';
 
-import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type {
+  OfferResultStep,
+  OfferSpec,
+} from '@agoric/smart-wallet/src/offers.js';
+import type {
+  BridgeAction,
   CurrentWalletRecord,
   SmartWallet,
   UpdateRecord,
@@ -58,13 +62,13 @@ export const makeWalletFactoryDriver = async (
     isNew,
     getAddress: () => walletAddress,
 
-    evalExpr(expr: string): Promise<void> {
-      const offerCapData = marshaller.toCapData(
-        harden({
-          method: 'evalExpr',
-          expr,
-        }),
-      );
+    invokeItem(name: string, ...steps: OfferResultStep[]): Promise<void> {
+      const action: BridgeAction = harden({
+        method: 'invokeItem',
+        name,
+        steps,
+      });
+      const offerCapData = marshaller.toCapData(action);
       return EV(walletPresence).handleBridgeAction(offerCapData, false);
     },
     executeOffer(offer: OfferSpec): Promise<void> {
