@@ -16,11 +16,6 @@
     "agoric": "dev",
     "ava": "^5.3.1"
   },
-  "resolutions": {
-    "@agoric/client-utils": "0.1.1-dev-bf2d699.0",
-    "@cosmjs/stargate": "npm:0.33.1",
-    "@cosmjs/tendermint-rpc": "npm:0.33.1"
-  },
   "ava": {
     "concurrency": 1,
     "timeout": "2m",
