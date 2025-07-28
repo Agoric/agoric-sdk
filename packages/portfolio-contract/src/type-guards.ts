@@ -131,7 +131,14 @@ harden(makeProposalShapes);
 
 type PoolPlaceInfo =
   | { protocol: 'USDN'; vault: null | 1; chainName: 'noble' }
-  | { protocol: 'Aave' | 'Compound'; chainName: AxelarChain };
+  | { protocol: 'Aave' | 'Compound' | 'Beefy'; chainName: AxelarChain };
+
+export const BeefyPoolPlaces = {
+  Beefy_re7_Avalanche: {
+    protocol: 'Beefy',
+    chainName: 'Avalanche',
+  },
+} as const satisfies Record<string, PoolPlaceInfo>;
 
 export const PoolPlaces = {
   USDN: { protocol: 'USDN', vault: null, chainName: 'noble' }, // MsgSwap only
@@ -150,6 +157,7 @@ export const PoolPlaces = {
   Compound_Polygon: { protocol: 'Compound', chainName: 'Polygon' },
   Compound_Fantom: { protocol: 'Compound', chainName: 'Fantom' },
   Compound_Binance: { protocol: 'Compound', chainName: 'Binance' },
+  ...BeefyPoolPlaces,
 } as const satisfies Record<string, PoolPlaceInfo>;
 harden(PoolPlaces);
 
