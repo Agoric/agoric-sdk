@@ -60,47 +60,78 @@ const showInvitationBalance = (addr: string, r: CurrentWalletRecord) => [
 
 test('use offer result without zoe', async t => {
   const { walletFactoryDriver, agoricNamesRemotes } = t.context;
-  const { EV } = t.context.runUtils;
-  const namesByAddress =
-    await EV.vat('bootstrap').consumeItem('namesByAddress');
 
-  const started = await startContract(
-    t,
-    startPriceContract,
-    './wallet-fun.contract.js',
-    'walletFun',
-  );
-  const toSetPrices = await EV(started.creatorFacet).makeAdminInvitation();
+  const makeCoreCtx = (addr: string) => {
+    const start = async () => {
+      const { EV } = t.context.runUtils;
+      const namesByAddress =
+        await EV.vat('bootstrap').consumeItem('namesByAddress');
+
+      const started = await startContract(
+        t,
+        startPriceContract,
+        './wallet-fun.contract.js',
+        'walletFun',
+      );
+      const toSetPrices = await EV(started.creatorFacet).makeAdminInvitation();
+      const df = await EV(namesByAddress).lookup(addr, 'depositFacet');
+      const rxd = EV(df).receive(toSetPrices);
+      const getPrices = async () => {
+        const p = await EV(started.publicFacet).getPrices();
+        return p;
+      };
+      return harden({ getReceived: () => rxd, getPrices });
+    };
+
+    return harden({ start });
+  };
 
   // client-side presence
-  const { walletFun } = agoricNamesRemotes.instance;
-  t.truthy(walletFun);
-
   const addr = 'agoric1admin';
   const wd = await walletFactoryDriver.provideSmartWallet(addr);
-  const df = await EV(namesByAddress).lookup(addr, 'depositFacet');
-  await EV(df).receive(toSetPrices);
-  t.log(...showInvitationBalance(addr, wd.getCurrentWalletRecord()));
 
-  await wd.executeOffer({
-    id: 'redeemInvitation',
-    invitationSpec: {
-      source: 'purse',
-      description: 'admin',
-      instance: walletFun,
-    },
-    proposal: {},
-    after: { saveAs: 'priceSetter' },
-  });
-  t.log('redeemInvitation last update', wd.getLatestUpdateRecord());
+  const makePriceOracle = () => {
+    const redeemInvitation = async () => {
+      const { walletFun } = agoricNamesRemotes.instance;
+      t.truthy(walletFun);
 
-  const initialPrices = await EV(started.publicFacet).getPrices();
+      t.log(...showInvitationBalance(addr, wd.getCurrentWalletRecord()));
+
+      await wd.executeOffer({
+        id: 'redeemInvitation',
+        invitationSpec: {
+          source: 'purse',
+          description: 'admin',
+          instance: walletFun,
+        },
+        proposal: {},
+        after: { saveAs: 'priceSetter' },
+      });
+      t.log('redeemInvitation last update', wd.getLatestUpdateRecord());
+    };
+
+    const useOfferResult = () =>
+      wd.invokeItem('priceSetter', {
+        method: 'setPrice',
+        args: [100n],
+      });
+
+    return harden({ redeemInvitation, useOfferResult });
+  };
+
+  const core = makeCoreCtx(addr);
+  const { getPrices, getReceived } = await core.start();
+
+  const oracle = makePriceOracle();
+  await oracle.redeemInvitation();
+  await getReceived();
+  const initialPrices = await getPrices();
   t.log({ initialPrices });
-  t.deepEqual(initialPrices, [0n]);
+  t.deepEqual(initialPrices, [0n], 'initial price');
 
-  await wd.invokeItem('priceSetter', { method: 'setPrice', args: [100n] });
+  await oracle.useOfferResult();
   await eventLoopIteration();
-  const actual = await EV(started.publicFacet).getPrices();
+  const actual = await getPrices();
   t.log('prices after', actual);
-  t.deepEqual(actual, [100n]);
+  t.deepEqual(actual, [100n], 'updated price');
 });
