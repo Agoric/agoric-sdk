@@ -193,7 +193,7 @@ export const preparePortfolioKit = (
     if (segments.length === 0) return portfoliosNode;
     const path = segments.join('.');
     if (nodes.has(path)) return nodes.get(path)!;
-    let parent = providePathNode(segments.slice(0, -1));
+    const parent = providePathNode(segments.slice(0, -1));
     const node = E(parent).makeChildNode(segments.at(-1)!);
     nodes.set(path, node);
     return node;
