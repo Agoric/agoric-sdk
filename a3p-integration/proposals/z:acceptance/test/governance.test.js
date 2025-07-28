@@ -2,7 +2,8 @@
 
 import test from 'ava';
 
-import { bankSend, GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
+import { GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
+import { bankSend } from './test-lib/psm-lib.js';
 import {
   makeGovernanceDriver,
   runCommitteeElectionParamChange,
