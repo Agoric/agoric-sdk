@@ -9,11 +9,11 @@
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/client-utils": "dev",
-    "@agoric/fast-usdc": "dev",
+    "@agoric/client-utils": "agoric-upgrade-21",
+    "@agoric/fast-usdc": "agoric-upgrade-21",
     "@agoric/synthetic-chain": "file:./agoric-synthetic-chain-0.5.9.tgz",
     "@endo/init": "^1.1.12",
-    "agoric": "dev",
+    "agoric": "agoric-upgrade-21",
     "ava": "^5.3.1"
   },
   "ava": {

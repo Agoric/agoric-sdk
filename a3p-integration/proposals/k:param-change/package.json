@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@agoric/synthetic-chain": "file:./agoric-synthetic-chain-0.5.9.tgz",
-    "agoric": "dev"
+    "agoric": "agoric-upgrade-21"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
