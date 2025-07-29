@@ -31,48 +31,121 @@ architecture-beta
     slippage:L -- R:spectrum
 ```
 
-### User stories
-Each user story below is one smart contract offer
-
+### Operations
 1. new/edit portfolio
 ```mermaid
 sequenceDiagram
-  UI ->> Contract: (not exact offerArgs) 50% USDN, 30% Aave, 20% Compound
-  Contract ->> vstorage: write portfolio
+  UI ->> portfolio: (not exact offerArgs) 50% USDN, 30% Aave, 20% Compound
+
+  box rgb(255,153,153) Agoric
+    participant portfolio
+    participant vstorage
+    participant LCAorch
+    participant LCAin
+  end
+
+  portfolio ->> vstorage: write portfolio
 ```
 2. deposit from Agoric chain into existing portfolio
 ```mermaid
 sequenceDiagram
-  UI ->> Contract: payment in seat
-  Contract ->> LCA: localTransfer
+  UI ->> portfolio: payment in seat
+
+  box rgb(255,153,153) Agoric
+    participant portfolio
+    participant vstorage
+    participant LCAorch
+    participant LCAin
+  end
+
+  portfolio ->> LCAin: localTransfer
 ```
-3. 1 + 2
+3. new/edit portfolio and deposit from Agoric chain
 ```mermaid
 sequenceDiagram
-  UI ->> Contract: (not exact offerArgs) 50% USDN, 30% Aave, 20% Compound AND payment in seat
-  Contract ->> vstorage: write portfolio
-  Contract ->> LCA: localTransfer
+  UI ->> portfolio: (not exact offerArgs) 50% USDN, 30% Aave, 20% Compound AND payment in seat
+
+  box rgb(255,153,153) Agoric
+    participant portfolio
+    participant vstorage
+    participant LCAorch
+    participant LCAin
+  end
+
+  portfolio ->> vstorage: write portfolio
+  portfolio ->> LCAin: localTransfer
 ```
-4. automatic rebalance
+4. deposit-triggered rebalance
 ```mermaid
 sequenceDiagram
-  Contract ->> Planning Engine: notification of funds in LCA
-  Planning Engine ->> Contract: flow sequence
+  autonumber
+
+  box rgb(255,153,153) Agoric
+    participant portfolio
+    participant LCAorch
+    participant LCAin
+  end
+
+  participant EE
+  participant Res as Resolver
+
+  box rgb(163,180,243) Noble
+    participant icaN as icaNoble
+  end
+
+  box rgb(163,180,243) Axelar
+    participant AX as GMP
+  end
+
+  box rgb(163,180,243) Arbitrum
+    participant acctArb
+    participant aavePos
+  end
+
+  %% Notation: ->> for initial message, -->> for consequences
+
+  Note right of LCAin: USDC arriving in LCAin
+  LCAin -->> EE: EE observes USDC arrives
+  EE ->> portfolio: moves
+  portfolio ->> LCAorch: CREATE (lazily)
+  %% Optionally, send to LCAin and have EE do the planning
+  critical CCTP out
+    LCAin ->> LCAorch: $5k
+    LCAorch ->> icaN: $5k
+    icaN ->> LCAorch: ack
+    LCAorch ->> icaN: depositForBurn
+    icaN ->> LCAorch: ack
+    icaN -->> acctArb: $5ku
+    acctArb -->> Res: event?
+    Res ->> portfolio: ack
+  option call `supply`
+    LCAorch ->> AX: supply $5k acctArb
+    AX -->> acctArb: supply $5k
+    acctArb ->> aavePos: $5k
+    aavePos -->> Res: Mint event
+    Res ->> portfolio: ack
+  end
 ```
-5. deposit from Fast USDC source chains into existing portfolio via address hook
-```mermaid
-sequenceDiagram
-  Non-agoric Chain ->> LCA: send USDC via IBC, CCTP, or Fast USDC
-  LCA ->> Contract: receive upcall
-  Contract ->> Planning Engine: notification of funds in LCA
-  Planning Engine ->> Contract: flow sequence
-```
-6. claim bonus
-```mermaid
-sequenceDiagram
-  UI ->> Contract: claim rewards intent
-  Contract ->> Contract: claim rewards at applicable positions
-```
+
+### User stories
+
+1. tiger would like to open a portfolio with allocations in percentages
+    1. operation 1: new/edit portfolio
+2. tiger would like to edit their existing portfolio to different allocations
+    1. operation 1: new/edit portfolio
+3. tiger would like to open a portfolio and deposit USDC to it
+    1. operation 3: new/edit portfolio and deposit from Agoric chain
+    2. operation 4: deposit triggered rebalance
+4. tiger would like to edit their existing portfolio and deposit USDC to it
+    1. operation 3: new/edit portfolio and deposit from Agoric chain
+    2. operation 4: deposit triggered rebalance
+
+#### NOT in scope for now
+1. deposit from Fast USDC source chains and create a new portfolio via address hook
+2. connect with existing positions on Aave, Compound, etc
+3. automatic/scheduled rebalance or claim rewards
+
+# DEPRECATED BELOW
 
 #### Planning Engine
 
@@ -131,12 +204,3 @@ sequenceDiagram
       - moves to rearrange user's balances to their desired portfolio allocation
   - [executor]
     - take steps produced by planner and send to portfolio contract
-
-#### NOT in scope for MVP
-1. deposit from Fast USDC source chains and create a new portfolio via address hook
-2. connect with existing positions on Aave, Compound, etc
-
-#### changelog
-1. add claim rewards user story
-1. make it so deposit = intent to rebalance
-1. add an example for planning engine and break down eng tasks further
