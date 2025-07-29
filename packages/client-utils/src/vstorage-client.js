@@ -6,7 +6,7 @@ import {
 } from '@agoric/cosmic-proto/agoric/vstorage/query.js';
 import { encodeHex } from '@agoric/internal/src/hex.js';
 import { decodeBase64 } from '@endo/base64';
-import { Fail, q as quote } from '@endo/errors';
+import { Fail, makeError, q as quote } from '@endo/errors';
 
 /**
  * @import {MinimalNetworkConfig} from '@agoric/client-utils/src/network-config';
@@ -94,8 +94,8 @@ const codecs = /** @type {const} */ ({
  * @param {string} path
  * @param {MinimalNetworkConfig['rpcAddrs'][0]} [rpcAddress]
  */
-const createError = (errorMessage, height, kind, path, rpcAddress) =>
-  Error(
+const makeVstorageError = (errorMessage, height, kind, path, rpcAddress) =>
+  makeError(
     `Cannot read '${kind}' of '${path}' ${
       rpcAddress ? `from '${rpcAddress}'` : ''
     }  at height '${height}' due to error: ${errorMessage}`,
@@ -131,7 +131,7 @@ const makeQueryClient = ({ fetch }, config) => {
    * @param {PATHS[keyof PATHS]} kind
    * @param {string} path
    */
-  const createVstorageAbciRoute = (height, kind, path) =>
+  const computeVstorageAbciRoute = (height, kind, path) =>
     encodeURI(
       `/abci_query?data=0x${encodeHex(
         codecs[kind].request.toProto({ path }),
@@ -190,7 +190,7 @@ const makeQueryClient = ({ fetch }, config) => {
     const codec = codecs[kind];
     /** @type {Response|undefined} */
     let response;
-    const route = createVstorageAbciRoute(height, kind, path);
+    const route = computeVstorageAbciRoute(height, kind, path);
     const rpcAddress = getRpcAddress();
 
     const url = rpcAddress + route;
@@ -199,16 +199,22 @@ const makeQueryClient = ({ fetch }, config) => {
       response = await fetch(url, { keepalive: true });
     } catch (err) {
       console.error(err);
-      throw createError(err.message, height, kind, path, rpcAddress);
+      throw makeVstorageError(err.message, height, kind, path, rpcAddress);
     }
 
     if (!response.ok)
-      throw createError(await response.text(), height, kind, path, rpcAddress);
+      throw makeVstorageError(
+        await response.text(),
+        height,
+        kind,
+        path,
+        rpcAddress,
+      );
 
     const { result } = /** @type {AbciResponse} */ (await response.json());
 
     if (result.response?.code !== 0)
-      throw createError(
+      throw makeVstorageError(
         `Error code '${result.response.code}', Error message: '${result.response.log}'`,
         height,
         kind,
@@ -306,7 +312,7 @@ const makeStreamTopic = ({ queryClient }, path, options) => {
     if (!minimum || minimum < MINIMUM_HEIGHT) minimum = MINIMUM_HEIGHT;
 
     if (maximum && maximum < minimum)
-      throw createError(
+      throw makeVstorageError(
         `${INVALID_HEIGHT_ERROR_MESSAGE} ${maximum}`,
         blockHeight || (await queryClient.getLatestHeight()),
         PATHS.DATA,
@@ -374,7 +380,7 @@ const makeStreamTopic = ({ queryClient }, path, options) => {
 const makeTopic = ({ queryClient }, path, options) => ({
   latest: async height => {
     if (height && height < MINIMUM_HEIGHT)
-      throw createError(
+      throw makeVstorageError(
         `${INVALID_HEIGHT_ERROR_MESSAGE} ${height}`,
         height,
         PATHS.DATA,
