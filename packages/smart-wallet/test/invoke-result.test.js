@@ -302,4 +302,41 @@ test('start price contract; make offer', async t => {
   );
 
   t.deepEqual(await tools.getPrices(), [100n]); // 1 admin w/100 price
+
+  await t.notThrowsAsync(
+    E(invokeP).invokeItem(
+      'priceSetter',
+      { method: 'setPrice', args: [200n] },
+      { saveAs: 'thing2' },
+    ),
+    'save result of method call',
+  );
+
+  await t.notThrowsAsync(
+    E(invokeP).invokeItem(
+      'priceSetter',
+      { method: 'setPrice', args: ['notBigInt', 123] },
+      { method: 'doMore' },
+    ),
+    'failure in method execution is reported ONLY in logs',
+  );
+
+  await t.throwsAsync(E(invokeP).invokeItem('priceSetter'), {
+    message: /Expected at least 2/,
+  });
+  await t.throwsAsync(
+    E(invokeP).invokeItem(
+      'priceSetter',
+      { method: 'm1' },
+      { method: 'm2' },
+      { method: 'm3' },
+      { method: 'm4' },
+    ),
+    { message: /limit 2/ },
+    'too many steps',
+  );
+  await t.throwsAsync(
+    E(invokeP).invokeItem('item3', { method: '?', args: [] }),
+    { message: /no such item/ },
+  );
 });
