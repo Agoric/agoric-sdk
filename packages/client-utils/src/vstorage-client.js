@@ -254,8 +254,8 @@ const makeStreamTopic = ({ queryClient }, path, options) => {
    * @param {Height} blockHeight
    * @param {StreamCell['values']} values
    */
-  function* allValuesFromCell(blockHeight, values) {
-    for (const value of values.reverse())
+  function* allUpdatesFromCell(blockHeight, values) {
+    for (const value of values)
       yield /** @type {Update<T>} */ ({
         blockHeight,
         value: JSON.parse(value),
@@ -267,7 +267,7 @@ const makeStreamTopic = ({ queryClient }, path, options) => {
    * @param {ReturnType<typeof parseValue>} value
    */
   const assertValueStructure = (compatMode, value) => {
-    if (!(isStreamCell(value) || compatMode))
+    if (!compatMode && !isStreamCell(value))
       throw Error(`Expected a stream cell, got ${quote(value)}`);
   };
 
@@ -294,14 +294,15 @@ const makeStreamTopic = ({ queryClient }, path, options) => {
   /**
    * @param {Height} [maximum]
    * @param {Height} [minimum]
-   * @param {boolean} [compatMode]
+   * @param {boolean} [compatModeOption]
    */
   async function* reverseIterate(
     maximum,
     minimum,
-    compatMode = options?.compat,
+    compatModeOption = options?.compat,
   ) {
     let blockHeight = maximum;
+    const compatMode = !!compatModeOption;
     /** @type {Height} */
     let currentBlockHeight;
     /** @type {string | undefined} */
@@ -336,7 +337,7 @@ const makeStreamTopic = ({ queryClient }, path, options) => {
       if (!value) break;
 
       let parsedValue = parseValue(value);
-      assertValueStructure(!!compatMode, parsedValue);
+      assertValueStructure(compatMode, parsedValue);
 
       if (isStreamCell(parsedValue)) {
         // eslint-disable-next-line no-self-assign
@@ -345,7 +346,10 @@ const makeStreamTopic = ({ queryClient }, path, options) => {
         currentBlockHeight = BigInt(parsedValue.blockHeight);
 
         if (!minimum || currentBlockHeight >= minimum)
-          yield* allValuesFromCell(currentBlockHeight, parsedValue.values);
+          yield* allUpdatesFromCell(
+            currentBlockHeight,
+            parsedValue.values.reverse(),
+          );
       } else {
         if (blockHeight === undefined)
           blockHeight = await queryClient.getLatestHeight();
