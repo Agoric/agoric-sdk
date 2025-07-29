@@ -41,6 +41,7 @@
     "@endo/far": "^1.1.14",
     "@endo/marshal": "^1.8.0",
     "@endo/nat": "^5.1.3",
+    "@endo/patterns": "^1.7.0",
     "@endo/promise-kit": "^1.1.13"
   },
   "files": [
