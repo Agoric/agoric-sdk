@@ -142,7 +142,6 @@ export const BeefyPoolPlaces = {
 
 export const PoolPlaces = {
   USDN: { protocol: 'USDN', vault: null, chainName: 'noble' }, // MsgSwap only
-  USDNVault: { protocol: 'USDN', vault: 1, chainName: 'noble' }, // MsgSwap, MsgLock
   Aave_Ethereum: { protocol: 'Aave', chainName: 'Ethereum' },
   Aave_Avalanche: { protocol: 'Aave', chainName: 'Avalanche' },
   Aave_Optimism: { protocol: 'Aave', chainName: 'Optimism' },

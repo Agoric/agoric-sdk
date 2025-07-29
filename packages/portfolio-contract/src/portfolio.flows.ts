@@ -555,8 +555,7 @@ const stepFlow = async (
           const nInfo = await provideCosmosAccount(orch, 'noble', kit);
           const acctId = coerceAccountId(nInfo.ica.getAddress());
           const pos = kit.manager.providePosition('USDN', 'USDN', acctId);
-          const vault = way.poolKey === 'USDNVault' ? 1 : undefined;
-          const ctxU = { usdnOut: move?.detail?.usdnOut, vault };
+          const ctxU = { usdnOut: move?.detail?.usdnOut };
 
           if ('src' in way) {
             const { supply } = protocolUSDN;
