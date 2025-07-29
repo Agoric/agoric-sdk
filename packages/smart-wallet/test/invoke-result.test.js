@@ -31,6 +31,8 @@ const makeBootstrap = async () => {
   const board = makeFakeBoard();
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
     makeNameHubKit();
+  const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
+    makeNameHubKit();
 
   const bankBridgeMessages = [];
   const { bankManager, pourPayment } = await makeFakeBankManagerKit({
@@ -38,11 +40,13 @@ const makeBootstrap = async () => {
   });
 
   return {
-    storage,
-    board,
-    bankManager,
     agoricNames,
     agoricNamesAdmin,
+    board,
+    bankManager,
+    namesByAddress,
+    namesByAddressAdmin,
+    storage,
     utils: { pourPayment },
   };
 };
@@ -74,11 +78,21 @@ const deploy = async t => {
     },
     { storageNode },
   );
-  return started;
+
+  const { creatorFacet } = started;
+  const { namesByAddressAdmin } = bootstrap;
+
+  /** @param {string} addr */
+  const provisionSmartWallet = async addr => {
+    const bank = bankManager.getBankForAddress(addr);
+    return E(creatorFacet).provideSmartWallet(addr, bank, namesByAddressAdmin);
+  };
+
+  return { started, bootstrap, provisionSmartWallet };
 };
 
 test(`deploy ${contractName}`, async t => {
-  const started = await deploy(t);
+  const { started } = await deploy(t);
 
   t.deepEqual(objectMap(started, passStyleOf), {
     adminFacet: 'remotable',
@@ -87,4 +101,12 @@ test(`deploy ${contractName}`, async t => {
     instance: 'remotable',
     publicFacet: 'remotable',
   });
+});
+
+test(`provision smartWallet`, async t => {
+  const { provisionSmartWallet } = await deploy(t);
+  const addr = 'agoric1admin';
+  const [wallet, isNew] = await provisionSmartWallet(addr);
+  t.is(passStyleOf(wallet), 'remotable');
+  t.true(isNew);
 });
