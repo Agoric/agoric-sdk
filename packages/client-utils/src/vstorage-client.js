@@ -440,35 +440,6 @@ export const makeVStorageClient = ({ fetch }, config) => {
       });
       return response.children;
     },
-    /**
-     * @deprecated
-     * @template {any} T
-     * @param {string} path
-     * @param {Height} height
-     */
-    readAt: (path, height) =>
-      /** @type {Promise<StreamTopic<T>>} */ (fromText(path).latest(height)),
-    /**
-     * @deprecated
-     * @template {any} T
-     * @param {string} path
-     * @param {Height} [minimumHeight]
-     */
-    readFully: async (path, minimumHeight) => {
-      /** @type {Array<Update<T>>} */
-      const values = [];
-      for await (const value of /** @type {AsyncIterable<Update<T>>} */ (
-        fromText(path).reverseIterate(undefined, minimumHeight)
-      ))
-        values.push(value);
-      return values;
-    },
-    /**
-     * @deprecated
-     * @template {any} T
-     * @param {string} path
-     */
-    readLatest: path => /** @type {Promise<T>} */ (fromText(path).latest()),
   };
 
   return vStorageClient;

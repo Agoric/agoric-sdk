@@ -349,14 +349,4 @@ test('should receive the expected stream data', async t => {
       nonStreamValue,
     ],
   );
-
-  const latestRead = await vStorageClient.readLatest<StreamCell>(path);
-  t.deepEqual(latestRead, streamCell);
-
-  const atRead = await vStorageClient.readAt(path, height);
-  t.deepEqual(atRead, streamCell);
-
-  await t.throwsAsync(() => vStorageClient.readFully(path), {
-    message: /.*Expected a stream cell.*/,
-  });
 });
