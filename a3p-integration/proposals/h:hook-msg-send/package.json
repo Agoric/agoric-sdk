@@ -9,10 +9,10 @@
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/client-utils": "dev",
+    "@agoric/client-utils": "UNRELEASED_A3P_INTEGRATION",
     "@agoric/synthetic-chain": "file:./agoric-synthetic-chain-0.5.9.tgz",
     "@endo/init": "^1.1.12",
-    "agoric": "dev",
+    "agoric": "UNRELEASED_A3P_INTEGRATION",
     "ava": "^5.3.1"
   },
   "resolutions": {
@@ -46,6 +46,13 @@
     "@agoric/zone": "portal:../../agoric-sdk/packages/zone",
     "@agoric/zoe": "portal:../../agoric-sdk/packages/zoe",
     "agoric": "portal:../../agoric-sdk/packages/agoric-cli",
+    "@aglocal/deployment": "portal:../../agoric-sdk/packages/deployment",
+    "@aglocal/boot": "portal:../../agoric-sdk/packages/boot",
+    "@aglocal/benchmark": "portal:../../agoric-sdk/packages/benchmark",
+    "@aglocal/fast-usdc-deploy": "portal:../../agoric-sdk/packages/fast-usdc-deploy",
+    "@aglocal/fast-usdc-contract": "portal:../../agoric-sdk/packages/fast-usdc-contract",
+    "@aglocal/portfolio-contract": "portal:../../agoric-sdk/packages/portfolio-contract",
+    "@aglocal/portfolio-deploy": "portal:../../agoric-sdk/packages/portfolio-deploy",
     "better-sqlite3": "^10.1.0",
     "@cosmjs/amino": "npm:~0.34.0",
     "@cosmjs/crypto": "npm:~0.34.0",

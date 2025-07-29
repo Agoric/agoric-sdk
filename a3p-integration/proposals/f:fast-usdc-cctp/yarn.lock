@@ -4125,11 +4125,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@agoric/client-utils": "npm:dev"
-    "@agoric/fast-usdc": "npm:dev"
+    "@agoric/client-utils": "npm:UNRELEASED_A3P_INTEGRATION"
+    "@agoric/fast-usdc": "npm:UNRELEASED_A3P_INTEGRATION"
     "@agoric/synthetic-chain": "file:./agoric-synthetic-chain-0.5.9.tgz"
     "@endo/init": "npm:^1.1.12"
-    agoric: "npm:dev"
+    agoric: "npm:UNRELEASED_A3P_INTEGRATION"
     ava: "npm:^5.3.1"
   languageName: unknown
   linkType: soft
