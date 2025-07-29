@@ -541,3 +541,118 @@ test('Withdraw from a Beefy position', async t => {
   t.snapshot(contents, 'vstorage');
   t.snapshot(withdraw.payouts, 'refund payouts');
 });
+
+test('open a portfolio with Yearn position', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Yearn_usdc_Ethereum', amount, fee: feeCall },
+      ],
+    },
+  );
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
+  );
+
+  const actual = await actualP;
+  const result = actual.result as any;
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
+
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(actual.payouts, 'refund payouts');
+});
+
+test('Withdraw from a Yearn position', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Yearn_usdc_Ethereum', amount, fee: feeCall },
+      ],
+    },
+  );
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
+  );
+
+  const actual = await actualP;
+  const result = actual.result as any;
+
+  const withdrawP = trader1.rebalance(
+    t,
+    { give: {}, want: {} },
+    {
+      flow: [
+        {
+          src: 'Yearn_usdc_Ethereum',
+          dest: '@Arbitrum',
+          amount: amount,
+          fee: feeCall,
+        },
+        {
+          src: '@Arbitrum',
+          dest: '@noble',
+          amount: amount,
+        },
+        {
+          src: '@noble',
+          dest: '@agoric',
+          amount: amount,
+        },
+        {
+          src: '@agoric',
+          dest: '<Cash>',
+          amount,
+        },
+      ],
+    },
+  );
+
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await simulateCCTPAck(common.utils).finally(() =>
+    simulateAckTransferToAxelar(common.utils),
+  );
+  const withdraw = await withdrawP;
+
+  const { storagePath } = result.publicSubscribers.portfolio;
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(withdraw.payouts, 'refund payouts');
+});

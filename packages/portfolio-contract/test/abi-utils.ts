@@ -31,16 +31,19 @@ export const decodeFunctionCall = (
     const { data } = call;
     const [name, paramsRaw] = functionSignature.split('(');
     const params = paramsRaw.replace(')', '').split(',').filter(Boolean);
-    return decodeFunctionData({
-      abi: [
-        {
-          type: 'function',
-          name,
-          inputs: params.map((type, i) => ({ type, name: `arg${i}` })),
-        },
-      ],
-      data,
-    });
+    return {
+      target: call.target,
+      data: decodeFunctionData({
+        abi: [
+          {
+            type: 'function',
+            name,
+            inputs: params.map((type, i) => ({ type, name: `arg${i}` })),
+          },
+        ],
+        data,
+      }),
+    };
   });
 
   return decodedCalls;
