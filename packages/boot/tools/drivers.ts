@@ -58,6 +58,15 @@ export const makeWalletFactoryDriver = async (
     isNew,
     getAddress: () => walletAddress,
 
+    evalExpr(expr: string): Promise<void> {
+      const offerCapData = marshaller.toCapData(
+        harden({
+          method: 'evalExpr',
+          expr,
+        }),
+      );
+      return EV(walletPresence).handleBridgeAction(offerCapData, false);
+    },
     executeOffer(offer: OfferSpec): Promise<void> {
       const offerCapData = myMarshaller.toCapData(
         harden({
