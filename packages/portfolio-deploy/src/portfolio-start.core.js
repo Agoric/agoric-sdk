@@ -1,7 +1,5 @@
-// import { meta } from '@aglocal/portfolio-contract/src/portfolio.contract.meta.js';
 import { makeTracer } from '@agoric/internal';
 import { M } from '@endo/patterns';
-import { getAxelarChainsMap } from './axelar-configs.js';
 import {
   lookupInterchainInfo,
   makeGetManifest,
@@ -10,57 +8,84 @@ import {
 import { name, permit } from './portfolio.contract.permit.js';
 
 /**
- * @import { start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
+ * @import { AxelarId, start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
  * @import { Marshaller } from '@agoric/internal/src/lib-chainStorage.js';
  * @import { CopyRecord } from '@endo/pass-style';
  * @import { LegibleCapData } from './config-marshal.js';
  * @import { OrchestrationPowersWithStorage } from './orch.start.types.ts';
  * @import {PortfolioBootPowers} from './portfolio-start.type.ts';
+ * @import {AxelarChainConfigMap} from './axelar-configs.js';
+ * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.ts';
+ * @import {TypedPattern} from '@agoric/internal';
+ * @import { ChainInfoPowers } from './chain-info.core.js';
  */
-
-// TODO: use assetInfo, chainInfo from config too?
-const deployConfigShape = M.splitRecord({});
 
 const trace = makeTracer(`YMX-Start`, true);
 
-const isValidEVMAddress = address => {
-  return /^0x[a-fA-F0-9]{40}$/.test(address);
-};
+/**
+ * @typedef {{
+ *   axelarConfig: AxelarChainConfigMap;
+ * } & CopyRecord} PortfolioDeployConfig
+ */
+
+/** @type {TypedPattern<PortfolioDeployConfig>} */
+export const portfolioDeployConfigShape = harden({
+  // XXX more precise shape
+  axelarConfig: M.record(),
+});
 
 /**
  * @param {OrchestrationPowersWithStorage} orchestrationPowers
  * @param {Marshaller} marshaller
- * @param {CopyRecord} config
+ * @param {PortfolioDeployConfig} config
  */
 export const makePrivateArgs = async (
   orchestrationPowers,
   marshaller,
   config,
 ) => {
+  const { axelarConfig } = config;
   const { agoricNames } = orchestrationPowers;
-  const { chainInfo, assetInfo } = await lookupInterchainInfo(agoricNames, {
-    agoric: ['ubld'],
-    noble: ['uusdc'],
-    axelar: ['uaxl'],
-  });
-  trace('@@@@assetInfo', JSON.stringify(assetInfo, null, 2));
+  const { chainInfo: cosmosChainInfo, assetInfo } = await lookupInterchainInfo(
+    agoricNames,
+    {
+      agoric: ['ubld'],
+      noble: ['uusdc'],
+      axelar: ['uaxl'],
+    },
+  );
 
-  const axelarChainsMap = getAxelarChainsMap(config.net);
-  if (!axelarChainsMap) {
-    throw new Error(
-      `axelarChainsMap is undefined for environment: ${config.net}`,
-    );
-  }
+  const chainInfo = {
+    ...cosmosChainInfo,
+    ...Object.fromEntries(
+      Object.entries(axelarConfig).map(([chain, info]) => [
+        chain,
+        info.chainInfo,
+      ]),
+    ),
+  };
 
-  for (const [_chain, { contractAddresses }] of Object.entries(
-    axelarChainsMap,
-  )) {
-    for (const [_name, address] of Object.entries(contractAddresses)) {
-      if (!isValidEVMAddress(address)) {
-        throw new Error(`Invalid EVM address: ${address}`);
-      }
-    }
-  }
+  /** @type {AxelarId} */
+  const axelarIds = {
+    Ethereum: axelarConfig.Ethereum.axelarId,
+    Avalanche: axelarConfig.Avalanche.axelarId,
+    Arbitrum: axelarConfig.Arbitrum.axelarId,
+    Optimism: axelarConfig.Optimism.axelarId,
+    Binance: axelarConfig.Binance.axelarId,
+    Polygon: axelarConfig.Polygon.axelarId,
+    Fantom: axelarConfig.Fantom.axelarId,
+  };
+
+  /** @type {EVMContractAddressesMap} */
+  const contracts = {
+    Ethereum: { ...axelarConfig.Ethereum.contracts },
+    Avalanche: { ...axelarConfig.Avalanche.contracts },
+    Arbitrum: { ...axelarConfig.Arbitrum.contracts },
+    Optimism: { ...axelarConfig.Optimism.contracts },
+    Binance: { ...axelarConfig.Binance.contracts },
+    Polygon: { ...axelarConfig.Polygon.contracts },
+    Fantom: { ...axelarConfig.Fantom.contracts },
+  };
 
   /** @type {Parameters<typeof start>[1]} */
   const it = harden({
@@ -68,28 +93,34 @@ export const makePrivateArgs = async (
     marshaller,
     chainInfo,
     assetInfo,
-    axelarChainsMap,
+    axelarIds,
+    contracts,
   });
   return it;
 };
 harden(makePrivateArgs);
 
 /**
- * @param {BootstrapPowers & PortfolioBootPowers} permitted
- * @param {{ options: LegibleCapData<CopyRecord> }} configStruct
+ * @param {BootstrapPowers & PortfolioBootPowers & ChainInfoPowers} permitted
+ * @param {{ options: LegibleCapData<PortfolioDeployConfig> }} configStruct
  * @returns {Promise<void>}
  */
 export const startPortfolio = async (permitted, configStruct) => {
-  trace('startPortfolio');
+  trace('startPortfolio', configStruct);
+
+  await permitted.consume.chainInfoPublished;
+
   const { issuer } = permitted;
-  const [USDC, PoC26] = await Promise.all([
+  const [BLD, USDC, PoC26] = await Promise.all([
+    issuer.consume.BLD,
     issuer.consume.USDC,
     issuer.consume.PoC26,
   ]);
-  const issuerKeywordRecord = { USDC, Access: PoC26 };
+  // Include BLD: BLD for use with assetInfo.brandKey
+  const issuerKeywordRecord = { USDC, Access: PoC26, Fee: BLD, BLD };
   await startOrchContract(
     name,
-    deployConfigShape,
+    portfolioDeployConfigShape,
     permit,
     makePrivateArgs,
     permitted,

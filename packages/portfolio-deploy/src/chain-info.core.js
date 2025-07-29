@@ -7,7 +7,7 @@ import { makeMarshal } from '@endo/marshal';
 // TODO: refactor overlap with init-chain-info.js in orch pkg
 
 /**
- * @import {ChainInfo, CosmosChainInfo, Denom} from '@agoric/orchestration';
+ * @import {ChainInfo} from '@agoric/orchestration';
  * @import {NameHub, NameAdmin} from '@agoric/vats';
  */
 
@@ -93,21 +93,32 @@ const publishChainInfoToChainStorage = async (
  */
 
 /**
+ * XXX move this into BootstrapPowers
+ * @typedef {PromiseSpaceOf<{
+ *   chainInfoPublished: unknown
+ * }>} ChainInfoPowers
+ */
+
+/**
  * WARNING: prunes any data that was previously published
  *
- * @param {BootstrapPowers & ChainStoragePresent} powers
+ * @param {BootstrapPowers & ChainStoragePresent & ChainInfoPowers} powers
  * @param {{
- *   options?: {
+ *   options: {
  *     chainInfo?: Record<string, ChainInfo>;
+ *     axelarConfig: import('./axelar-configs.js').AxelarChainConfigMap;
  *   };
- * }} [config]
+ * }} config
  */
 export const publishChainInfo = async (
-  { consume: { agoricNames, agoricNamesAdmin, chainStorage } },
-  config = {},
+  {
+    consume: { agoricNames, agoricNamesAdmin, chainStorage },
+    produce: { chainInfoPublished },
+  },
+  config,
 ) => {
   const { keys } = Object;
-  const { chainInfo = {} } = config?.options || {};
+  const { chainInfo = {} } = config.options;
   trace('publishChainInfo', keys(chainInfo));
 
   const agoricNamesNode = E(chainStorage).makeChildNode('agoricNames');
@@ -149,6 +160,8 @@ export const publishChainInfo = async (
     trace('@@@registered', name, info);
   }
   trace('@@@conn', ...handledConnections);
+
+  chainInfoPublished.resolve(true);
   trace('publishChainInfo done');
 };
 harden(publishChainInfo);
@@ -161,6 +174,7 @@ export const getManifestForChainInfo = (_u, { options }) => ({
         agoricNamesAdmin: true,
         chainStorage: true,
       },
+      produce: { chainInfoPublished: true },
     },
   },
   options,

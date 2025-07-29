@@ -15,6 +15,14 @@ import {
   type IBCConnectionInfo,
 } from '@agoric/orchestration';
 import type { TestFn } from 'ava';
+import {
+  makeFlowPath,
+  makePositionPath,
+  portfolioIdOfPath,
+  PortfolioStatusShapeExt,
+  type StatusFor,
+} from '@aglocal/portfolio-contract/src/type-guards.ts';
+import { mustMatch } from '@agoric/internal';
 
 const { fromEntries, keys, values } = Object;
 
@@ -144,6 +152,36 @@ test('usdc-available', async t => {
   t.true(byDenom[denom] >= 1_000_000n);
 });
 
+test('target-allocation-deployed', async t => {
+  const { walletKit: wk, vstorageClient: vsc } = t.context;
+
+  t.log('address', trader1ag);
+  const cur = await wk.getCurrentWalletRecord(trader1ag);
+  const { offerToPublicSubscriberPaths } = cur;
+  const byOfferId = fromEntries(offerToPublicSubscriberPaths);
+  const portfolioKeys = values(byOfferId)
+    .filter(sub => 'portfolio' in sub)
+    .map(sub => sub.portfolio);
+
+  t.true(portfolioKeys.length > 0, 'at least one portfolio exists');
+
+  const chopPub = (key: string) => key.replace(/^published./, '');
+
+  const portfolioKey = portfolioKeys[0];
+  const portfolioInfo = (await vsc.readPublished(
+    chopPub(portfolioKey),
+  )) as StatusFor['portfolio'];
+
+  t.log('Portfolio info:', portfolioInfo);
+
+  t.notThrows(
+    () => mustMatch(portfolioInfo, PortfolioStatusShapeExt),
+    'portfolio status matches expected shape',
+  );
+
+  t.truthy(portfolioInfo.targetAllocation);
+});
+
 /**
  * Read values going back as far as available
  */
@@ -224,20 +262,26 @@ test('portfolio-opened', async t => {
 
   const chopPub = (key: string) => key.replace(/^published./, '');
   for (const portfolioKey of portfolioKeys) {
-    const portfolioInfo = await vsc.readPublished(chopPub(portfolioKey));
+    const portfolioId = portfolioIdOfPath(portfolioKey);
+    const portfolioInfo = (await vsc.readPublished(
+      chopPub(portfolioKey),
+    )) as StatusFor['portfolio'];
     t.log(portfolioKey, portfolioInfo);
-    // XXX static type for vstorage schema
-    const { positionCount, flowCount } = portfolioInfo as Record<
-      string,
-      number
-    >;
-    for (const positionNum of range(positionCount).map(x => x + 1)) {
-      const positionKey = `${portfolioKey}.positions.position${positionNum}`; // XXX reuse func for this
-      const positionInfo = await vsc.readPublished(chopPub(positionKey));
+    const { positionKeys, flowCount } = portfolioInfo;
+    for (const poolKey of positionKeys) {
+      // XXX this makePositionPath API is kinda messy
+      const positionKey = [
+        'ymax0',
+        'portfolios',
+        ...makePositionPath(portfolioId, poolKey),
+      ].join('.');
+      const positionInfo = (await vsc.readPublished(
+        positionKey,
+      )) as StatusFor['position'];
       t.log(positionKey, positionInfo);
     }
     for (const flowNum of range(flowCount).map(x => x + 1)) {
-      const flowKey = `${portfolioKey}.flows.flow${flowNum}`; // XXX reuse func for this
+      const flowKey = makeFlowPath(portfolioId, flowNum).join('.');
       try {
         for await (const { blockHeight, values } of readHistory(flowKey, {
           vstorage: vs,

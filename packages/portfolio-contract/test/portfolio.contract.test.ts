@@ -1,165 +1,36 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { gmpAddresses } from '@agoric/orchestration/src/utils/gmp.js';
-import { q } from '@endo/errors';
 import { passStyleOf } from '@endo/far';
-import { matches, mustMatch } from '@endo/patterns';
-import { makeAxelarMemo } from '../src/pos-gmp.flows.ts';
-import { makeProposalShapes } from '../src/type-guards.ts';
-import { type GmpArgsContractCall } from '../src/pos-gmp.flows.ts';
+import type { AxelarChain } from '../src/constants.js';
 import {
   setupTrader,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
-import { axelarChainsMapMock, localAccount0 } from './mocks.ts';
+import { localAccount0 } from './mocks.ts';
 
 const { fromEntries, keys } = Object;
 
-test('ProposalShapes', t => {
-  const { brand: USDC } = makeIssuerKit('USDC');
-  const { brand: Poc26 } = makeIssuerKit('Poc26');
-  const shapes = makeProposalShapes(USDC, Poc26);
-
-  const usdc = (value: bigint) => AmountMath.make(USDC, value);
-  const poc26 = (value: bigint) => AmountMath.make(Poc26, value);
-  const cases = harden({
-    openPortfolio: {
-      pass: {
-        noPositions: { give: { Access: poc26(1n) } },
-        openUSDN: { give: { USDN: usdc(123n), Access: poc26(1n) } },
-        aaveNeedsGMPFee: {
-          give: {
-            AaveGmp: usdc(123n),
-            Aave: usdc(3000n),
-            AaveAccount: usdc(3000n),
-            Access: poc26(1n),
-          },
-        },
-        open3: {
-          give: {
-            USDN: usdc(123n),
-            Aave: usdc(3000n),
-            AaveGmp: usdc(123n),
-            AaveAccount: usdc(3000n),
-            Compound: usdc(1000n),
-            CompoundGmp: usdc(3000n),
-            CompoundAccount: usdc(3000n),
-            Access: poc26(1n),
-          },
-        },
-      },
-      fail: {
-        noGive: {},
-        missingGMPFee: { give: { Aave: usdc(3000n) } },
-        noPayouts: { want: { USDN: usdc(123n) } },
-        strayKW: { give: { X: usdc(1n) } },
-        // New negative cases for openPortfolio
-        accessWrongBrand: { give: { Access: usdc(1n) } },
-        accessZeroValue: { give: { Access: poc26(0n) } },
-        usdnWrongBrandWithAccess: {
-          give: { USDN: poc26(123n), Access: poc26(1n) },
-        },
-        aaveIncompleteAndAccessOk: {
-          give: { Aave: usdc(100n), AaveGmp: usdc(100n), Access: poc26(1n) },
-        },
-        compoundIncompleteAndAccessOk: {
-          give: {
-            Compound: usdc(100n),
-            CompoundGmp: usdc(100n),
-            Access: poc26(1n),
-          },
-        },
-        openTopLevelStray: { give: { Access: poc26(1n) }, extra: 'property' },
-      },
-    },
-    rebalance: {
-      pass: {
-        deposit: { give: { USDN: usdc(123n) } },
-        withdraw: { want: { USDN: usdc(123n) } },
-      },
-      fail: {
-        both: { give: { USDN: usdc(123n) }, want: { USDN: usdc(123n) } },
-        // New negative cases for rebalance
-        rebalGiveHasAccess: { give: { Access: poc26(1n) } },
-        rebalGiveUsdnBadBrand: { give: { USDN: poc26(1n) } },
-        rebalGiveAaveIncomplete: { give: { Aave: usdc(100n) } },
-        rebalWantBadKey: { want: { BogusProtocol: usdc(1n) } },
-        rebalWantUsdnBadBrand: { want: { USDN: poc26(1n) } },
-        rebalEmpty: {},
-        rebalGiveTopLevelStray: {
-          give: { USDN: usdc(1n) },
-          extra: 'property',
-        },
-        rebalWantTopLevelStray: {
-          want: { USDN: usdc(1n) },
-          extra: 'property',
-        },
-      },
-    },
-  });
-  const { entries } = Object;
-  for (const [desc, { pass, fail }] of entries(cases)) {
-    for (const [name, proposal] of entries(pass)) {
-      t.log(`${desc} ${name}: ${q(proposal)}`);
-      // mustMatch() gives better diagnostics than matches()
-      t.notThrows(() => mustMatch(proposal, shapes[desc]), name);
-    }
-    for (const [name, proposal] of entries(fail)) {
-      t.log(`!${desc} ${name}: ${q(proposal)}`);
-      t.false(matches(proposal, shapes[desc]), name);
-    }
-  }
-});
-
-test('makeAxelarMemo constructs correct memo JSON', t => {
-  const { brand } = makeIssuerKit('USDC');
-
-  const type = 1; // contract call
-  const destinationEVMChain = 'Avalanche';
-  const destinationAddress = '0x58E0bd49520364A115CeE4B03DffC1C08A2D1D09';
-  const keyword = 'Gas';
-  const amounts = {
-    Gas: {
-      brand,
-      value: 2000000n,
-    },
-  };
-
-  const gmpArgs: GmpArgsContractCall = {
-    type,
-    contractInvocationData: [],
-    destinationEVMChain,
-    destinationAddress,
-    keyword,
-    amounts,
-  };
-
-  // From a valid transaction from AxelarScan: https://testnet.axelarscan.io/tx/CA5A2E8CA6770B0FBBC1789DE5FB14F5955BD62CD0C1F975C88DE3DA657025F2
-  const expectedPayload = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  ];
-
-  const result = makeAxelarMemo(axelarChainsMapMock, gmpArgs);
-  const parsed = JSON.parse(result);
-
-  t.deepEqual(parsed, {
-    type,
-    destination_chain: destinationEVMChain,
-    destination_address: destinationAddress,
-    payload: expectedPayload,
-    fee: {
-      amount: String(amounts[keyword].value),
-      recipient: gmpAddresses.AXELAR_GAS,
-    },
-  });
-});
+/**
+ * Use Arbitrum or any other EVM chain whose Axelar chain ID (`axelarId`) differs
+ * from the chain name. For example, Arbitrum's `axelarId` is "arbitrum", while
+ * Ethereum’s is "Ethereum" (case-sensitive). The challenge is that if a mismatch
+ * occurs, it may go undetected since the `axelarId` is passed via the IBC memo
+ * and not validated automatically.
+ *
+ * To ensure proper testing, it's best to use a chain where the `chainName` and
+ * `axelarId` are not identical. This increases the likelihood of catching issues
+ * with misconfigured or incorrectly passed `axelarId` values.
+ *
+ * To see the `axelarId` for a given chain, refer to:
+ * @see {@link https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts | supported-chains-list.ts}
+ */
+const destinationEVMChain: AxelarChain = 'Arbitrum';
+const sourceChain = 'arbitrum';
 
 const range = (n: number) => [...Array(n).keys()];
 
@@ -182,14 +53,17 @@ test('open portfolio with USDN position', async t => {
   const { trader1, common } = await setupTrader(t);
   const { usdc, poc26 } = common.brands;
 
+  const amount = usdc.units(3_333.33);
   const doneP = trader1.openPortfolio(
     t,
+    { Deposit: amount, Access: poc26.make(1n) },
     {
-      USDN: usdc.units(3_333),
-      NobleFees: usdc.make(100n),
-      Access: poc26.make(1n),
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: 'USDN', amount },
+      ],
     },
-    { destinationEVMChain: 'Ethereum' },
   );
 
   // ack IBC transfer for forward
@@ -225,31 +99,33 @@ test('open portfolio with USDN position', async t => {
   t.snapshot(done.payouts, 'refund payouts');
 });
 
-// TODO: depositForBurn is throwing
 test('open a portfolio with Aave position', async t => {
   const { trader1, common } = await setupTrader(t);
-  const { usdc, poc26 } = common.brands;
+  const { usdc, bld, poc26 } = common.brands;
 
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
   const actualP = trader1.openPortfolio(
     t,
+    { Deposit: amount, Access: poc26.make(1n) },
     {
-      Access: poc26.make(1n),
-      AaveAccount: usdc.make(100n), // fee
-      AaveGmp: usdc.make(100n), // fee
-      Aave: usdc.units(3_333),
-    },
-    {
-      destinationEVMChain: 'Base',
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+      ],
     },
   );
-  await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   console.log('ackd send to Axelar to create account');
 
-  await simulateUpcallFromAxelar(common.mocks.transferBridge).then(() =>
-    simulateCCTPAck(common.utils).finally(() =>
-      simulateAckTransferToAxelar(common.utils),
-    ),
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
   );
 
   const actual = await actualP;
@@ -264,31 +140,38 @@ test('open a portfolio with Aave position', async t => {
   t.snapshot(actual.payouts, 'refund payouts');
 });
 
-// TODO: to deal with bridge coordination, move this to a bootstrap test
 test('open a portfolio with Compound position', async t => {
   const { trader1, common } = await setupTrader(t);
-  const { usdc, poc26 } = common.brands;
+  const { bld, usdc, poc26 } = common.brands;
 
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
   const actualP = trader1.openPortfolio(
     t,
     {
       Access: poc26.make(1n),
-      CompoundAccount: usdc.make(100n), // fee
-      CompoundGmp: usdc.make(100n), // fee
-      Compound: usdc.units(3_333),
+      Deposit: amount,
+      GmpFee: AmountMath.add(feeAcct, feeCall),
     },
     {
-      destinationEVMChain: 'Base',
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Compound_Arbitrum', amount, fee: feeCall },
+      ],
     },
   );
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   console.log('ackd send to Axelar to create account');
 
-  await simulateUpcallFromAxelar(common.mocks.transferBridge).then(() =>
-    simulateCCTPAck(common.utils).finally(() =>
-      simulateAckTransferToAxelar(common.utils),
-    ),
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
   );
 
   const actual = await actualP;
@@ -303,21 +186,30 @@ test('open a portfolio with Compound position', async t => {
   t.snapshot(actual.payouts, 'refund payouts');
 });
 
-// TODO: to deal with bridge coordination, move this to a bootstrap test
 test('open portfolio with USDN, Aave positions', async t => {
   const { trader1, common } = await setupTrader(t);
-  const { usdc, poc26 } = common.brands;
+  const { bld, usdc, poc26 } = common.brands;
+
+  const { add } = AmountMath;
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
 
   const doneP = trader1.openPortfolio(
     t,
     {
       Access: poc26.make(1n),
-      AaveAccount: usdc.make(100n), // fee
-      AaveGmp: usdc.make(100n), // fee
-      Aave: usdc.units(3_333),
+      Deposit: add(amount, amount),
     },
     {
-      destinationEVMChain: 'Base',
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount: add(amount, amount) },
+        { src: '@agoric', dest: '@noble', amount: add(amount, amount) },
+        { src: '@noble', dest: 'USDN', amount },
+
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+      ],
     },
   );
   await eventLoopIteration(); // let outgoing IBC happen
@@ -327,6 +219,7 @@ test('open portfolio with USDN, Aave positions', async t => {
 
   const ackNP = await simulateUpcallFromAxelar(
     common.mocks.transferBridge,
+    sourceChain,
   ).then(() =>
     simulateCCTPAck(common.utils).finally(() =>
       simulateAckTransferToAxelar(common.utils),
@@ -345,4 +238,306 @@ test('open portfolio with USDN, Aave positions', async t => {
   const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
   t.snapshot(contents, 'vstorage');
   t.snapshot(done.payouts, 'refund payouts');
+});
+
+test('contract rejects unknown pool keys', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, poc26 } = common.brands;
+
+  const amount = usdc.units(1000);
+
+  // Try to open portfolio with unknown pool key
+  const rejectionP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        // @ts-expect-error testing Unknown pool key
+        { src: '@noble', dest: 'Aave_Base', amount },
+      ],
+    },
+  );
+
+  await t.throwsAsync(rejectionP, {
+    message: /Must match one of|Aave_Base/i,
+  });
+});
+
+test('open portfolio with target allocations', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { poc26 } = common.brands;
+
+  const targetAllocation = {
+    USDN: 1n,
+    Aave_Arbitrum: 1n,
+    Compound_Arbitrum: 1n,
+  };
+  const doneP = trader1.openPortfolio(
+    t,
+    { Access: poc26.make(1n) },
+    { targetAllocation },
+  );
+
+  const done = await doneP;
+  const result = done.result as any;
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const info = await trader1.getPortfolioStatus();
+  t.deepEqual(info.targetAllocation, targetAllocation);
+
+  t.snapshot(info, 'portfolio');
+  t.snapshot(done.payouts, 'refund payouts');
+});
+
+test('claim rewards on Aave position successfully', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+      ],
+    },
+  );
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
+  );
+
+  const done = await actualP;
+  const result = done.result as any;
+
+  const { storagePath } = result.publicSubscribers.portfolio;
+  const messagesBefore = common.utils.inspectLocalBridge();
+
+  const rebalanceP = trader1.rebalance(
+    t,
+    { give: { Deposit: amount }, want: {} },
+    {
+      flow: [
+        {
+          dest: '@Arbitrum',
+          src: 'Aave_Arbitrum',
+          amount: usdc.make(100n),
+          fee: feeCall,
+          claim: true,
+        },
+      ],
+    },
+  );
+
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  const rebalanceResult = await rebalanceP;
+  console.log('rebalance done', rebalanceResult);
+
+  const messagesAfter = common.utils.inspectLocalBridge();
+
+  t.deepEqual(messagesAfter.length - messagesBefore.length, 2);
+
+  t.log(storagePath);
+  const { contents, positionPaths, flowPaths } = getPortfolioInfo(
+    storagePath,
+    common.bootstrap.storage,
+  );
+  t.snapshot(contents, 'vstorage');
+
+  t.snapshot(rebalanceResult.payouts, 'rebalance payouts');
+});
+
+test('USDN claim fails currently', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const doneP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: 'USDN', amount },
+      ],
+    },
+  );
+
+  // ack IBC transfer for forward
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
+  const done = await doneP;
+  const result = done.result as any;
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
+  t.like(result.publicSubscribers, {
+    portfolio: {
+      description: 'Portfolio',
+      storagePath: 'orchtest.portfolios.portfolio0',
+    },
+  });
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents, positionPaths } = getPortfolioInfo(
+    storagePath,
+    common.bootstrap.storage,
+  );
+  t.log(
+    'I can see where my money is:',
+    positionPaths.map(p => contents[p].accountId),
+  );
+  t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
+  t.is(
+    contents[storagePath].accountIdByChain['agoric'],
+    `cosmos:agoric-3:${localAccount0}`,
+    'LCA',
+  );
+
+  const rebalanceP = trader1.rebalance(
+    t,
+    { give: {}, want: {} },
+    {
+      flow: [
+        {
+          dest: '@noble',
+          src: 'USDN',
+          amount: usdc.make(100n),
+          claim: true,
+        },
+      ],
+    },
+  );
+
+  await t.throwsAsync(rebalanceP, {
+    message: /claiming USDN is not supported/,
+  });
+});
+
+test('open a portfolio with Beefy position', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Beefy_re7_Avalanche', amount, fee: feeCall },
+      ],
+    },
+  );
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
+  );
+
+  const actual = await actualP;
+  const result = actual.result as any;
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
+
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(actual.payouts, 'refund payouts');
+});
+
+test('Withdraw from a Beefy position', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Beefy_re7_Avalanche', amount, fee: feeCall },
+      ],
+    },
+  );
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
+  );
+
+  const actual = await actualP;
+  const result = actual.result as any;
+
+  const withdrawP = trader1.rebalance(
+    t,
+    { give: {}, want: {} },
+    {
+      flow: [
+        {
+          src: 'Beefy_re7_Avalanche',
+          dest: '@Arbitrum',
+          amount: amount,
+          fee: feeCall,
+        },
+        {
+          src: '@Arbitrum',
+          dest: '@noble',
+          amount: amount,
+        },
+        {
+          src: '@noble',
+          dest: '@agoric',
+          amount: amount,
+        },
+        {
+          src: '@agoric',
+          dest: '<Cash>',
+          amount,
+        },
+      ],
+    },
+  );
+
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await simulateCCTPAck(common.utils).finally(() =>
+    simulateAckTransferToAxelar(common.utils),
+  );
+  const withdraw = await withdrawP;
+
+  const { storagePath } = result.publicSubscribers.portfolio;
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(withdraw.payouts, 'refund payouts');
 });

@@ -1,0 +1,152 @@
+,Seat: Deposit,Seat: Cash,LCA.Agoric,ICA.Noble,GMP.Arbitrum,Aave,Compound,USDN,,,
+Description,,,,,,,,,Open empty portfolio,,
+Before,,,,,,no portfolio,,,,,
+Offer: Give,,,,,,,,,,,
+offerArgs,,,,,,,,,,,
+Offer: Want,,,,,,,,,,,operation net
+After,,,,,,empty portfolio,,,positions net:,$0.00,
+Payouts,,,,,,,,,offer net:,$0.00,$0.00
+,,,,,,,,,,,
+Description,,,,,,,,,Open portfolio with USDN position,,
+Before,,,,,,no portfolio,,,,,
+Offer: Give,"$5,000.00",,,,,,,,,,
+flow move,src,,dest,,,,,,,"$5,000.00",
+flow move,,,src,dest,,,,,,"$5,000.00",
+flow move,,,,src,,,,dest,,"$5,000.00",
+Offer: Want,,,,,,,,,,,operation net
+After,,,,,,,,"$5,000.00",positions net:,"$5,000.00",
+Payouts,$0.00,,,,,$0.00,$0.00,$0.00,offer net:,"-$5,000.00",$0.00
+,,,,,,,,,,,
+Description,,,,,,,,,Open portfolio with Aave position,,
+Before,,,,,,no portfolio,,,,,
+Offer: Give,"$5,000.00",,,,,,,,,,
+flow move,src,,dest,,,,,,,"$5,000.00",
+flow move,,,src,dest,,,,,,"$5,000.00",
+flow move,,,,src,dest,,,,,"$5,000.00",
+flow move,,,,,src,dest,,,,"$5,000.00",
+Offer: Want,,,,,,,,,,,operation net
+After,,,,,,"$5,000.00",,,positions net:,"$5,000.00",
+Payouts,$0.00,,,,,$0.00,$0.00,$0.00,offer net:,"-$5,000.00",$0.00
+,,,,,,,,,,,
+Description,,,,,,,,,Recover funds from Noble ICA,,
+Before,,,,$300.00,,,,,,,
+Offer: Give,,,,,,,,,,,
+flow move,,,dest,src,,,,,,$300.00,
+flow move,,dest,src,,,,,,,$300.00,
+Offer: Want,,$300.00,,$0.00,,,,,,,operation net
+After,,,,,,,,,positions net:,-$300.00,
+Payouts,,$300.00,,,,,,,offer net:,$300.00,$0.00
+,,,,,,,,,,,
+Description,,,,,,,,,Open with 3 positions,,
+Before,,,,,,no portfolio,,,,,
+Offer: Give,"$10,000.00",,,,,,,,,,
+flow move,src,,dest,,,,,,,"$10,000.00",
+flow move,,,src,dest,,,,,,"$10,000.00",
+flow move,,,,src,,,,dest,,"$3,333.33",
+flow move,,,,src,dest,,,,,"$6,666.67",
+flow move,,,,,src,,dest,,,"$3,333.33",
+flow move,,,,,src,dest,,,,"$3,333.33",
+Offer: Want,,,,,,,,,,,operation net
+After,,,,,,"$3,333.33","$3,333.33","$3,333.33",positions net:,"$10,000.00",
+Payouts,$0.00,,,,,$0.00,$0.00,$0.00,offer net:,"-$10,000.00",$0.00
+,,,,,,,,,,,
+Description,,,,,,,,,Consolidate to USDN,,
+Before,,,,,,"$3,333.33","$3,333.33","$3,333.33",Open with 3 positions,,
+Offer: Give,,,,,,,,,,,
+flow move,,,,,dest,src,,,,"$3,333.33",
+flow move,,,,,dest,,src,,,"$3,333.33",
+flow move,,,,dest,src,,,,,"$6,666.67",
+flow move,,,,src,,,,dest,,"$6,666.67",
+Offer: Want,,,,,,,,,,,operation net
+After,,,,,,$0.00,$0.00,"$10,000.00",positions net:,$0.00,
+Payouts,,,,,,,,,offer net:,$0.00,$0.00
+,,,,,,,,,,,
+Description,,,,,,,,,Withdraw some from Compound,,
+Before,,,,,,"$3,333.33","$3,333.33","$3,333.33",Open with 3 positions,,
+Offer: Give,,,,,,,,,,,
+flow move,,,,,dest,,src,,,"$2,000.00",
+flow move,,,,dest,src,,,,,"$2,000.00",
+flow move,,,dest,src,,,,,,"$2,000.00",
+flow move,,dest,src,,,,,,,"$2,000.00",
+Offer: Want,,"$2,000.00",,,,,,,,,operation net
+After,,,,,,"$3,333.33","$1,333.33","$3,333.33",positions net:,"-$2,000.00",
+Payouts,,"$2,000.00",,,,,,,offer net:,"$2,000.00",$0.00
+,,,,,,,,,,,
+Description,,,,,,,,,Aave -> USDN,,
+Before,,,,,,"$5,000.00",,,Open portfolio with Aave position,,
+Offer: Give,,,,,,,,,,,
+flow move,,,,,dest,src,,,,"$1,500.00",
+flow move,,,,dest,src,,,,,"$1,500.00",
+flow move,,,,src,,,,dest,,"$1,500.00",
+Offer: Want,,,,,,,,,,,operation net
+After,,,,,,"$3,500.00",,"$1,500.00",positions net:,$0.00,
+Payouts,,,,,,,,,offer net:,$0.00,$0.00
+,,,,,,,,,,,
+Description,,,,,,,,,remote cash -> Aave,,
+Before,,,,,"$5,000.00",,,,,,
+Offer: Give,,,,,,,,,,,
+flow move,,,,,src,dest,,,,"$5,000.00",
+Offer: Want,,,,,,,,,,,operation net
+After,,,,,,"$5,000.00",,,positions net:,"$5,000.00",
+Payouts,,,,,,,,,accounts net:,"-$5,000.00",$0.00
+,,,,,,,,,,,
+Description,,,,,,,,,Aave -> Compound,,
+Before,,,,,,"$5,000.00",,,Open portfolio with Aave position,,
+Offer: Give,,,,,,,,,,,
+flow move,,,,,dest,src,,,,"$1,500.00",
+flow move,,,,,src,,dest,,,"$1,500.00",
+Offer: Want,,,,,,,,,,,operation net
+After,,,,,,"$3,500.00","$1,500.00",,positions net:,$0.00,
+Payouts,,,,,,,,,offer net:,$0.00,$0.00
+,,,,,,,,,,,
+Description,,,,,,,,,USDN -> Aave,,
+Before,,,,,,,,"$5,000.00",Open portfolio with USDN position,,
+Offer: Give,,,,,,,,,,,
+flow move,,,,dest,,,,src,,$500.00,
+flow move,,,,src,dest,,,,,$500.00,
+flow move,,,,,src,dest,,,,$500.00,
+Offer: Want,,,,,,,,,,,operation net
+After,,,,,,$500.00,,"$4,500.00",positions net:,$0.00,
+Payouts,,,,,,,,,offer net:,$0.00,$0.00
+,,,,,,,,,,,
+Description,,,,,,,,,"A,C -> U",,
+Before,,,,,,"$3,333.33","$3,333.33","$3,333.33",Open with 3 positions,,
+Offer: Give,,,,,,,,,,,
+flow move,,,,,dest,src,,,,"$3,333.33",
+flow move,,,,,dest,,src,,,"$3,333.33",
+flow move,,,,dest,src,,,,,"$6,666.67",
+flow move,,,,src,,,,dest,,"$6,666.67",
+Offer: Want,,,,,,,,,,,operation net
+After,,,,,,$0.00,$0.00,"$10,000.00",positions net:,$0.00,
+Payouts,,,,,,,,,offer net:,$0.00,$0.00
+,,,,,,,,,,,
+Description,,,,,,,,,Close out portfolio,,
+Before,,,,,,"$3,333.33","$3,333.33","$3,333.33",Open with 3 positions,,
+Offer: Give,,,,,,,,,,,
+flow move,,,,,dest,src,,,,"$3,333.33",
+flow move,,,,,dest,,src,,,"$3,333.33",
+flow move,,,,dest,src,,,,,"$6,666.67",
+flow move,,,,dest,,,,src,,"$3,333.33",
+flow move,,,dest,src,,,,,,"$10,000.00",
+flow move,,dest,src,,,,,,,"$10,000.00",
+Offer: Want,,"$10,000.00",,,,,,,,,operation net
+offerArgs,,,,,,,,,,,
+After,,,,,,$0.00,$0.00,$0.00,positions net:,"-$10,000.00",
+Payouts,,"$10,000.00",,,,,,,offer net,"$10,000.00",$0.00
+,,,,,,,,,,,
+Description,,,,,,,,,Receive via hook,,
+Before,,,,,,"$1,000.00","$2,000.00","$3,000.00",,,
+IBC Receive,,,$100.00,,,,,,,,operation net
+After,,,$100.00,,,"$1,000.00","$2,000.00","$3,000.00",positions+accounts net:,$100.00,
+Payouts,,,,,,,,,net deposit,-$100.00,$0.00
+,,,,,,,,,,,
+Description,,,,,,,,,Deploy via hook,,
+Before,,,,,,"$1,000.00","$2,000.00","$3,000.00",,,
+IBC Deposit,,,$100.00,,,,,,,Strategy: %,operation net
+flow move,,,src,dest,,,,,,$100.00,
+flow move,,,,src,,,,dest,,$50.00,50%
+flow move,,,,src,dest,,,,,$50.00,
+flow move,,,,,src,dest,,,,$33.33,33%
+flow move,,,,,src,,dest,,,$16.67,17%
+After,,,,,,"$1,033.33","$2,016.67","$3,050.00",positions net:,$100.00,
+Payouts,,,,,,,,,net deposit,-$100.00,$0.00

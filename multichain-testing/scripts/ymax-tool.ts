@@ -4,7 +4,12 @@
  */
 import '@endo/init';
 
-import { parseArgs } from 'node:util';
+import {
+  TargetAllocationShape,
+  type OfferArgsFor,
+  type ProposalType,
+} from '@aglocal/portfolio-contract/src/type-guards.ts';
+import { makePortfolioSteps } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
 import {
   fetchEnvNetworkConfig,
   makeSmartWalletKit,
@@ -12,7 +17,7 @@ import {
 import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
 import { AmountMath } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, mustMatch, type TypedPattern } from '@agoric/internal';
 import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import { stringToPath } from '@cosmjs/crypto';
 import { fromBech32 } from '@cosmjs/encoding';
@@ -22,14 +27,16 @@ import {
   type GeneratedType,
 } from '@cosmjs/proto-signing';
 import { SigningStargateClient, type StdFee } from '@cosmjs/stargate';
+import { parseArgs } from 'node:util';
 
 const getUsage = (
   programName: string,
-): string => `USAGE: ${programName} <volume> [options]
+): string => `USAGE: ${programName} [Deposit] [options]
 Options:
-  --skip-poll       Skip polling for offer result
-  --exit-success    Exit with success code even if errors occur
-  -h, --help        Show this help message`;
+  --skip-poll         Skip polling for offer result
+  --exit-success      Exit with success code even if errors occur
+  --target-allocation JSON string of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
+  -h, --help          Show this help message`;
 
 const toAccAddress = (address: string): Uint8Array => {
   return fromBech32(address).data;
@@ -52,32 +59,77 @@ const agoricRegistryTypes: [string, GeneratedType][] = [
   ],
 ];
 
+const parseTypedJSON = <T>(
+  json: string,
+  shape: TypedPattern<T>,
+  reviver?: (k, v) => unknown,
+  makeError: (err) => unknown = err => err,
+): T => {
+  let result: unknown;
+  try {
+    result = harden(JSON.parse(json, reviver));
+  } catch (err) {
+    throw makeError(err);
+  }
+  mustMatch(result, shape);
+  return result;
+};
+
 const openPosition = async (
-  volume: number | string,
+  volume: number | string | undefined,
   {
     address,
     client,
     walletKit,
     now,
     skipPoll = false,
+    targetAllocationJson,
   }: {
     address: string;
     client: SigningStargateClient;
     walletKit: Awaited<ReturnType<typeof makeSmartWalletKit>>;
     now: () => number;
     skipPoll?: boolean;
+    targetAllocationJson?: string;
   },
 ) => {
-  const brand = fromEntries(await walletKit.readPublished('agoricNames.brand'));
+  // XXX PoC26 in devnet published.agoricNames.brand doesn't match vbank
+  const brand = fromEntries(
+    (await walletKit.readPublished('agoricNames.vbankAsset')).map(([_d, a]) => [
+      a.issuerName,
+      a.brand,
+    ]),
+  );
   const { USDC, PoC26 } = brand as Record<string, Brand<'nat'>>;
 
-  const give = {
-    USDN: multiplyBy(make(USDC, 1_000_000n), parseRatio(volume, USDC)),
-    NobleFees: make(USDC, 20_000n),
-    ...(PoC26 ? { Access: make(PoC26, 1n) } : {}),
+  const amount =
+    volume && multiplyBy(make(USDC, 1_000_000n), parseRatio(volume, USDC));
+  const { give, steps } = amount
+    ? makePortfolioSteps({ USDN: amount })
+    : { give: {}, steps: [] };
+  const proposal: ProposalType['openPortfolio'] = {
+    give: {
+      ...give,
+      ...(PoC26 && { Access: make(PoC26, 1n) }),
+    },
   };
 
-  trace('opening portfolio', give);
+  const parseTargetAllocation = () => {
+    if (!targetAllocationJson) return undefined;
+    const targetAllocation = parseTypedJSON(
+      targetAllocationJson,
+      TargetAllocationShape,
+      (_k, v) => (typeof v === 'number' ? BigInt(v) : v),
+      err => Error(`Invalid target allocation JSON: ${err.message}`),
+    );
+    return harden({ targetAllocation });
+  };
+
+  const offerArgs: OfferArgsFor['openPortfolio'] = {
+    flow: steps,
+    ...parseTargetAllocation(),
+  };
+  trace('opening portfolio', proposal.give);
   const action: BridgeAction = harden({
     method: 'executeOffer',
     offer: {
@@ -87,8 +139,8 @@ const openPosition = async (
         instancePath: ['ymax0'],
         callPipe: [['makeOpenPortfolioInvitation']],
       },
-      proposal: { give },
-      offerArgs: { usdnOut: (give.USDN.value * 99n) / 100n },
+      proposal,
+      offerArgs,
     },
   });
 
@@ -154,6 +206,7 @@ const main = async (
     options: {
       'skip-poll': { type: 'boolean', default: false },
       'exit-success': { type: 'boolean', default: false },
+      'target-allocation': { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
     allowPositionals: true,
@@ -162,10 +215,11 @@ const main = async (
   // Extract options
   const skipPoll = values['skip-poll'];
   const exitSuccess = values['exit-success'];
+  const targetAllocationJson = values['target-allocation'];
   const [volume] = positionals;
 
-  // Show help if requested or if volume is not provided
-  if (values.help || !volume) {
+  // Show help if requested
+  if (values.help) {
     console.log(getUsage(argv[1]));
     process.exit(values.help ? 0 : 1);
   }
@@ -187,13 +241,14 @@ const main = async (
   });
 
   try {
-    // Pass the parsed skipPoll option to openPosition
+    // Pass the parsed options to openPosition
     await openPosition(volume, {
       address,
       client,
       walletKit,
       now: Date.now,
       skipPoll,
+      targetAllocationJson,
     });
   } catch (err) {
     // If we should exit with success code, throw a special non-error object

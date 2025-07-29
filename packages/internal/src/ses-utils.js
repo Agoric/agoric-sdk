@@ -9,7 +9,7 @@ import { objectMap } from '@endo/common/object-map.js';
 import { objectMetaMap } from '@endo/common/object-meta-map.js';
 import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
 import { q, Fail, makeError, annotateError, X } from '@endo/errors';
-import { deeplyFulfilled, isObject } from '@endo/marshal';
+import { deeplyFulfilled, isPrimitive } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -71,7 +71,7 @@ harden(makeLimitedConsole);
  * @type {<T extends {}>(unfulfilledTerms: T) => Promise<DeeplyAwaited<T>>}
  */
 export const deeplyFulfilledObject = async obj => {
-  isObject(obj) || Fail`param must be an object`;
+  !isPrimitive(obj) || Fail`param must be an object`;
   return deeplyFulfilled(obj);
 };
 

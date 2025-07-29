@@ -9,6 +9,7 @@ export const YieldProtocol = /** @type {const} */ ({
   Aave: 'Aave',
   Compound: 'Compound',
   USDN: 'USDN',
+  Beefy: 'Beefy',
 });
 harden(YieldProtocol);
 
@@ -18,7 +19,11 @@ harden(YieldProtocol);
 export const AxelarChain = /** @type {const} */ ({
   Ethereum: 'Ethereum',
   Avalanche: 'Avalanche',
-  Base: 'Base',
+  Arbitrum: 'Arbitrum',
+  Optimism: 'Optimism',
+  Polygon: 'Polygon',
+  Fantom: 'Fantom',
+  Binance: 'Binance',
 });
 harden(AxelarChain);
 
@@ -29,7 +34,7 @@ export const SupportedChain = /** @type {const} */ ({
   ...AxelarChain,
   agoric: 'agoric',
   noble: 'noble',
-  // TODO: check privateArgs for chainInfo for all of these
+  // XXX: check privateArgs for chainInfo for all of these
 });
 harden(SupportedChain);
 

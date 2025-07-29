@@ -11,22 +11,26 @@
  * @see type-guards.ts for the authoritative interface specification
  */
 import { type VstorageKit } from '@agoric/client-utils';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, type NatAmount, type NatValue } from '@agoric/ertp';
 import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
 import type { Instance } from '@agoric/zoe';
+import { Fail } from '@endo/errors';
+import { objectMap } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
-import { type start } from '../src/portfolio.contract.ts';
+import type { AxelarChain, YieldProtocol } from '../src/constants.js';
+import { type start } from '../src/portfolio.contract.js';
+import type { MovementDesc } from '../src/type-guards-steps.js';
 import {
   makePositionPath,
   portfolioIdOfPath,
   type OfferArgsFor,
-  type OpenPortfolioGive,
   type PortfolioContinuingInvitationMaker,
   type PortfolioInvitationMaker,
-  type StatusFor,
   type ProposalType,
-} from '../src/type-guards.ts';
-import type { WalletTool } from './wallet-offer-tools.ts';
+  type StatusFor,
+} from '../src/type-guards.js';
+import type { WalletTool } from './wallet-offer-tools.js';
+import { NonNullish } from '@agoric/internal';
 
 const { fromEntries } = Object;
 const range = (n: number) => [...Array(n).keys()];
@@ -80,7 +84,7 @@ export const makeTrader = (
      */
     async openPortfolio(
       t: ExecutionContext,
-      give: OpenPortfolioGive,
+      give: ProposalType['openPortfolio']['give'],
       offerArgs: OfferArgsFor['openPortfolio'] = {},
     ) {
       if (portfolioPath !== undefined) throw Error('already opened');
@@ -103,13 +107,13 @@ export const makeTrader = (
         proposal,
         offerArgs,
       });
-      doneP.then(({ result }) => {
+      return doneP.then(({ result, payouts }) => {
         const { portfolio: topic } = result.publicSubscribers;
         if (topic.description === 'Portfolio') {
           portfolioPath = topic.storagePath!;
         }
+        return { result, payouts };
       });
-      return doneP;
     },
     /**
      * **Phase 2**: Rebalances portfolio positions between yield protocols.
@@ -153,11 +157,14 @@ export const makeTrader = (
     getPositionPaths: async () => {
       const { positionKeys } = await self.getPortfolioStatus();
 
+      // XXX why do we have to add 'portfolios'?
       return positionKeys.map(key =>
-        makePositionPath(self.getPortfolioId(), key).join('.'),
+        ['portfolios', ...makePositionPath(self.getPortfolioId(), key)].join(
+          '.',
+        ),
       );
     },
-    netTransfersByProtocol: async () => {
+    netTransfersByPosition: async () => {
       const paths = await self.getPositionPaths();
       const positionStatuses = await Promise.all(
         paths.map(
@@ -170,4 +177,77 @@ export const makeTrader = (
     },
   });
   return self;
+};
+
+const { entries, values } = Object;
+const { add, make } = AmountMath;
+const amountSum = <A extends Amount>(amounts: A[]) =>
+  amounts.reduce((acc, v) => add(acc, v));
+
+export const makePortfolioSteps = <
+  G extends Partial<Record<YieldProtocol, NatAmount>>,
+>(
+  goal: G,
+  opts: {
+    /** XXX assume same chain for Aave and Compound */
+    evm?: AxelarChain;
+    feeBrand?: Brand<'nat'>;
+    fees?: Record<keyof G, { Account: NatAmount; Call: NatAmount }>;
+    detail?: { usdnOut: NatValue };
+  } = {},
+) => {
+  values(goal).length > 0 || Fail`empty goal`;
+  const { USDN: _1, ...evmGoal } = goal;
+  const {
+    evm = 'Arbitrum',
+    feeBrand,
+    fees = objectMap(evmGoal, _ => ({
+      Account: make(NonNullish(feeBrand), 150n),
+      Call: make(NonNullish(feeBrand), 100n),
+    })),
+    detail = 'USDN' in goal
+      ? { usdnOut: ((goal.USDN?.value || 0n) * 99n) / 100n }
+      : undefined,
+  } = opts;
+  const steps: MovementDesc[] = [];
+
+  const Deposit = amountSum(values(goal));
+  const GmpFee =
+    values(fees).length > 0
+      ? amountSum(
+          values(fees)
+            .map(f => [f.Account, f.Call])
+            .flat(),
+        )
+      : undefined;
+  const give = { Deposit, ...(GmpFee ? { GmpFee } : {}) };
+  steps.push({ src: '<Deposit>', dest: '@agoric', amount: Deposit });
+  steps.push({ src: '@agoric', dest: '@noble', amount: Deposit });
+  for (const [p, amount] of entries(goal)) {
+    switch (p) {
+      case 'USDN':
+        steps.push({ src: '@noble', dest: 'USDNVault', amount, detail });
+        break;
+      case 'Aave':
+      case 'Compound':
+        // XXX optimize: combine noble->evm steps
+        steps.push({
+          src: '@noble',
+          dest: `@${evm}`,
+          amount,
+          fee: fees[p].Account,
+        });
+        steps.push({
+          src: `@${evm}`,
+          dest: `${p}_${evm}`,
+          amount,
+          fee: fees[p].Call,
+        });
+        break;
+      default:
+        throw Error('unreachable');
+    }
+  }
+
+  return harden({ give, steps });
 };

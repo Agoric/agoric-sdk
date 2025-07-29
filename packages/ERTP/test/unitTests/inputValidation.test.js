@@ -88,7 +88,14 @@ test('makeIssuerKit bad displayInfo.assetKind', async t => {
       ),
     {
       message:
-        'displayInfo: assetKind?: "something" - Must match one of ["nat","set","copySet","copyBag"]',
+        // TODO https://github.com/Agoric/agoric-sdk/issues/11605
+        // This is a golden error message test. We're currently in transition
+        // from having pattern error messages quote nested patterns using
+        // `q` to quoting them using `qp`. In order to tolerate both during
+        // this transition at reasonable cost, this golden error message
+        // pattern accepts anything in the position of the quoted nested
+        // pattern.
+        /^displayInfo: assetKind\?: "something" - Must match one of (.*)$/,
     },
   );
 });

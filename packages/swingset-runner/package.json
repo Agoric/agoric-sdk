@@ -31,12 +31,12 @@
     "@agoric/telemetry": "workspace:*",
     "@agoric/vat-data": "workspace:*",
     "@agoric/zoe": "workspace:*",
-    "@endo/bundle-source": "^4.0.0",
-    "@endo/errors": "^1.2.10",
-    "@endo/eventual-send": "^1.3.1",
-    "@endo/init": "^1.1.9",
-    "@endo/marshal": "^1.6.4",
-    "@endo/nat": "^5.1.0",
+    "@endo/bundle-source": "^4.1.2",
+    "@endo/errors": "^1.2.13",
+    "@endo/eventual-send": "^1.3.4",
+    "@endo/init": "^1.1.12",
+    "@endo/marshal": "^1.8.0",
+    "@endo/nat": "^5.1.3",
     "expose-gc": "^1.0.0",
     "n-readlines": "^1.0.1",
     "yargs": "^16.1.0"
@@ -59,6 +59,6 @@
     "timeout": "2m"
   },
   "typeCoverage": {
-    "atLeast": 55.56
+    "atLeast": 56.13
   }
 }

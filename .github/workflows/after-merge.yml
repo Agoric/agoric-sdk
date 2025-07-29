@@ -52,6 +52,7 @@ jobs:
         run: npm whoami
       - name: publish to NPM tag
         run: |
+          set -e
           case $GITHUB_REF_NAME in
             release-*)
               # A pre-release.
@@ -97,7 +98,9 @@ jobs:
         with:
           node-version: 'node-new'
 
-      - name: generate test coverage report
+      - env:
+          NODE_MEMORY_SIZE: '8192'
+        name: generate test coverage report
         run: ./scripts/ci/generate-test-coverage-report.sh
       - uses: actions/upload-artifact@v4
         with:

@@ -9,11 +9,11 @@
  *   orchestration package.
  */
 
-import { Fail, makeError, q } from '@endo/errors';
 import { makeTracer, NonNullish } from '@agoric/internal';
-import { denomHash } from '../utils/denomHash.js';
-import { gmpAddresses } from '../utils/gmp.js';
+import { Fail, makeError, q } from '@endo/errors';
 import { AxelarGMPMessageType } from '../axelar-types.js';
+import { denomHash } from '../utils/denomHash.js';
+import { buildNoncePayload, gmpAddresses } from '../utils/gmp.js';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
@@ -92,6 +92,7 @@ export const createAndMonitorLCA = async (
     localDenom,
     assets,
     remoteChainInfo: info,
+    nonce: 1n,
   });
   void log('tap created successfully');
   // XXX consider storing appRegistration, so we can .revoke() or .updateTargetApp()
@@ -117,7 +118,7 @@ export const createAndMonitorLCA = async (
   const memo = {
     destination_chain: 'Ethereum',
     destination_address: factoryContractAddress,
-    payload: [],
+    payload: buildNoncePayload(evmAccountKit.holder.getNonce()),
     type: AxelarGMPMessageType.ContractCall,
     fee: {
       amount: '1', // TODO: Get fee amount from api
