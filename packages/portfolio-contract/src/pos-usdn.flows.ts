@@ -99,14 +99,14 @@ export const protocolUSDN = {
   protocol: 'USDN',
   chains: ['noble'],
   supply: async (ctx, amount, src) => {
-    const { usdnOut, vault } = ctx;
+    const { usdnOut } = ctx;
     const { ica } = src;
     const nobleAddr = ica.getAddress();
 
     const { msgSwap, msgLock, protoMessages } = makeSwapLockMessages(
       nobleAddr,
       amount.value,
-      { usdnOut, vault },
+      { usdnOut },
     );
 
     trace('executing', [msgSwap, msgLock].filter(Boolean));
@@ -129,11 +129,7 @@ export const protocolUSDN = {
     const result = await ica.executeEncodedTx(protoMessages);
     trace('withdraw result', result);
   },
-} as const satisfies ProtocolDetail<
-  'USDN',
-  'noble',
-  { usdnOut?: NatValue; vault?: number }
->;
+} as const satisfies ProtocolDetail<'USDN', 'noble', { usdnOut?: NatValue }>;
 harden(protocolUSDN);
 
 export const agoricToNoble = {
