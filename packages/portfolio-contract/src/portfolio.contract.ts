@@ -38,6 +38,7 @@ import * as flows from './portfolio.flows.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
 import {
   BeefyPoolPlaces,
+  YearnPoolPlaces,
   makeProposalShapes,
   type EVMContractAddressesMap,
   type OfferArgsFor,
@@ -80,8 +81,12 @@ export const AxelarConfigShape: TypedPattern<AxelarConfig> = M.splitRecord(
   ) as Record<AxelarChain, typeof AxelarConfigPattern>,
 );
 
-export type BeefyContracts = {
+type BeefyContracts = {
   [K in keyof typeof BeefyPoolPlaces]: `0x${string}`;
+};
+
+type YearnContracts = {
+  [K in keyof typeof YearnPoolPlaces]: `0x${string}`;
 };
 
 export type EVMContractAddresses = {
@@ -93,7 +98,8 @@ export type EVMContractAddresses = {
   aaveUSDC: `0x${string}`;
   aaveRewardsController: `0x${string}`;
   compoundRewardsController: `0x${string}`;
-} & Partial<BeefyContracts>;
+} & Partial<BeefyContracts> &
+  Partial<YearnContracts>;
 
 export type AxelarId = {
   [chain in AxelarChain]: string;

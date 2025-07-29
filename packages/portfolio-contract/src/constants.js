@@ -10,6 +10,7 @@ export const YieldProtocol = /** @type {const} */ ({
   Compound: 'Compound',
   USDN: 'USDN',
   Beefy: 'Beefy',
+  Yearn: 'Yearn',
 });
 harden(YieldProtocol);
 

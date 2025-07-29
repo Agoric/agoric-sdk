@@ -6,6 +6,7 @@
  */
 
 import { beefyVaults } from './beefy-configs.js';
+import { yearnVaults } from './yearn-configs.js';
 
 /**
  * @typedef {object} AxelarChainIdEntry
@@ -226,6 +227,7 @@ const mainnetContracts = {
     tokenMessenger: mainnetTokenMessenger.Ethereum.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Ethereum,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Ethereum,
+    Yearn_usdc_Ethereum: yearnVaults.mainnet.Ethereum.usdc,
   },
   Avalanche: {
     aavePool: aaveAddresses.mainnet.Avalanche,

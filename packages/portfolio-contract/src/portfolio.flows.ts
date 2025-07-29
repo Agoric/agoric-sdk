@@ -34,6 +34,7 @@ import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {
   AaveProtocol,
   BeefyProtocol,
+  YearnProtocol,
   CCTP,
   CCTPfromEVM,
   CompoundProtocol,
@@ -299,7 +300,7 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
         throw Fail`src pos must have account as dest ${q(moveDesc)}`;
       const poolKey = src as PoolKey;
       const { protocol } = PoolPlaces[poolKey];
-      const feeRequired = ['Compound', 'Aave', 'Beefy'];
+      const feeRequired = ['Compound', 'Aave', 'Beefy', 'Yearn'];
       moveDesc.fee ||
         !feeRequired.includes(protocol) ||
         Fail`missing fee ${q(moveDesc)}`;
@@ -385,7 +386,9 @@ const stepFlow = async (
     return { evmCtx, gInfo, accountId };
   };
 
-  const makeEVMProtocolStep = async <P extends 'Compound' | 'Aave' | 'Beefy'>(
+  const makeEVMProtocolStep = async <
+    P extends 'Compound' | 'Aave' | 'Beefy' | 'Yearn',
+  >(
     way: Way & { how: P },
     move: MovementDesc,
   ) => {
@@ -398,6 +401,7 @@ const stepFlow = async (
       Compound: CompoundProtocol,
       Aave: AaveProtocol,
       Beefy: BeefyProtocol,
+      Yearn: YearnProtocol,
     };
     const pImpl = protocolImplMap[way.how];
 
@@ -598,6 +602,12 @@ const stepFlow = async (
       case 'Beefy':
         todo.push(() =>
           makeEVMProtocolStep(way as Way & { how: 'Beefy' }, move),
+        );
+        break;
+
+      case 'Yearn':
+        todo.push(() =>
+          makeEVMProtocolStep(way as Way & { how: 'Yearn' }, move),
         );
         break;
 
