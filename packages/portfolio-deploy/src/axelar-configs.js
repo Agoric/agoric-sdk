@@ -5,6 +5,8 @@
  * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.ts';
  */
 
+import { beefyVaults } from './beefy-configs.js';
+
 /**
  * @typedef {object} AxelarChainIdEntry
  * @property {string} testnet - The Axelar chain ID used in testnet.
@@ -234,6 +236,7 @@ const mainnetContracts = {
     tokenMessenger: mainnetTokenMessenger.Avalanche.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Avalanche,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Avalanche,
+    Beefy_re7_Avalanche: beefyVaults.mainnet.Avalanche.re7,
   },
   Optimism: {
     aavePool: aaveAddresses.mainnet.Optimism,
