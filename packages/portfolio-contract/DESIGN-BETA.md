@@ -35,7 +35,7 @@ architecture-beta
 1. new/edit portfolio
 ```mermaid
 sequenceDiagram
-  UI ->> portfolio: (not exact offerArgs) 50% USDN, 30% Aave, 20% Compound
+  UI ->> portfolio: openPortfolio in type-guards.ts
 
   box rgb(255,153,153) Agoric
     participant portfolio
@@ -49,7 +49,7 @@ sequenceDiagram
 2. deposit from Agoric chain into existing portfolio
 ```mermaid
 sequenceDiagram
-  UI ->> portfolio: payment in seat
+  UI ->> portfolio: rebalance in type-guards.ts
 
   box rgb(255,153,153) Agoric
     participant portfolio
@@ -63,7 +63,7 @@ sequenceDiagram
 3. new/edit portfolio and deposit from Agoric chain
 ```mermaid
 sequenceDiagram
-  UI ->> portfolio: (not exact offerArgs) 50% USDN, 30% Aave, 20% Compound AND payment in seat
+  UI ->> portfolio: openPortfolio AND rebalance in type-guards.ts
 
   box rgb(255,153,153) Agoric
     participant portfolio
