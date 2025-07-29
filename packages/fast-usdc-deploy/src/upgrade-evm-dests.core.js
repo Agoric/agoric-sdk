@@ -134,12 +134,12 @@ export const upgradeEvmDests = async (
    */
   for (const [chainName, info] of Object.entries(fuKit.privateArgs.chainInfo)) {
     // note: connections in privateArgs is stale, but we're not using them here
-    const { connections: _, ...chainInfoBase } =
+    const { connections: _, ...chainInfo } =
       /** @type {Omit<CosmosChainInfo, 'reference' | 'namespace'>} */ (info);
-    const chainInfo = {
-      ...chainInfoBase,
+    const chainInfoExt = {
+      ...chainInfo,
       namespace: 'cosmos',
-      reference: chainInfoBase.chainId,
+      reference: chainInfo.chainId,
       // does not affect runtime logic, but best to include for consistency
       ...(chainName === 'noble' && {
         cctpDestinationDomain: cctpChainInfo.noble.cctpDestinationDomain,
@@ -147,11 +147,11 @@ export const upgradeEvmDests = async (
     };
     try {
       // @ts-expect-error
-      await E(creatorFacet).updateChain(chainName, chainInfo);
+      await E(creatorFacet).updateChain(chainName, chainInfoExt);
     } catch (error) {
       console.error(`Failed to update chain ${chainName}:`, error);
       // @ts-expect-error
-      await E(creatorFacet).registerChain(chainName, chainInfo);
+      await E(creatorFacet).registerChain(chainName, chainInfoExt);
     }
   }
   // XXX consider updating fuKit with new privateArgs.chainInfo
