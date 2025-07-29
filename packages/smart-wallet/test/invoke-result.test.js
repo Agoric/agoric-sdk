@@ -1,17 +1,25 @@
+/** @file test {@link InvokeAction} */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { AmountMath } from '@agoric/ertp';
+import { objectMap, VBankAccount } from '@agoric/internal';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeCopyBag } from '@agoric/store';
+import { makeNameHubKit } from '@agoric/vats';
+import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
+import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
-import { objectMap, VBankAccount } from '@agoric/internal';
-import { makeNameHubKit } from '@agoric/vats';
-import * as contractExports from '../src/walletFactory.js';
+import * as wfExports from '../src/walletFactory.js';
+import * as gameExports from './gameAssetContract.js';
 
 /**
  * @import {TestFn, ExecutionContext} from 'ava'
  * @import {start as StartFn} from '../src/walletFactory.js';
+ * @import {OfferSpec} from '../src/offers.js';
+ * @import {InvokeAction} from '../src/smartWallet.js';
  */
 
 /**
@@ -20,17 +28,30 @@ import * as contractExports from '../src/walletFactory.js';
 
 const contractName = 'walletFactory';
 const ROOT_STORAGE_PATH = 'ROOT';
+const { make } = AmountMath;
 
 /** @type {TestFn<WTestCtx>} */
 const test = anyTest;
 
-const makeTestContext = async t => {};
+const getCellValues = ({ value }) => {
+  return JSON.parse(value).values;
+};
+
+const getCapDataStructure = cell => {
+  const { body, slots } = JSON.parse(cell);
+  const structure = JSON.parse(body.replace(/^#/, ''));
+  return { structure, slots };
+};
 
 const makeBootstrap = async () => {
+  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+
   const storage = makeFakeStorageKit(ROOT_STORAGE_PATH);
   const board = makeFakeBoard();
+
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
     makeNameHubKit();
+  await makeWellKnownSpaces(agoricNamesAdmin);
   const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
     makeNameHubKit();
 
@@ -38,6 +59,22 @@ const makeBootstrap = async () => {
   const { bankManager, pourPayment } = await makeFakeBankManagerKit({
     onToBridge: obj => bankBridgeMessages.push(obj),
   });
+
+  const feeIssuer = await E(zoe).getFeeIssuer();
+  const feeBrand = await E(feeIssuer).getBrand();
+  await E(bankManager).addAsset('uist', 'IST', 'IST', {
+    issuer: feeIssuer,
+    brand: feeBrand,
+  });
+  await E(E(agoricNamesAdmin).lookupAdmin('issuer')).update('IST', feeIssuer);
+  await E(E(agoricNamesAdmin).lookupAdmin('brand')).update('IST', feeBrand);
+  board.getId(feeBrand);
+
+  /** @param {string} path */
+  const readLatest = async path => {
+    await eventLoopIteration();
+    return getCapDataStructure(storage.getValues(path).at(-1));
+  };
 
   return {
     agoricNames,
@@ -47,28 +84,26 @@ const makeBootstrap = async () => {
     namesByAddress,
     namesByAddressAdmin,
     storage,
-    utils: { pourPayment },
+    zoe,
+    utils: { pourPayment, bundleAndInstall, readLatest },
   };
 };
 
-/** @param {ExecutionContext<WTestCtx>} t */
-const deploy = async t => {
+const deploy = async () => {
   const bootstrap = await makeBootstrap();
-
-  const { zoe, bundleAndInstall } = await setUpZoeForTest();
-  t.log('contract deployment', contractName);
+  const { zoe, utils } = bootstrap;
 
   /** @type {Installation<StartFn>} */
-  const installation = await bundleAndInstall(contractExports);
-  t.is(passStyleOf(installation), 'remotable');
+  const installation = await utils.bundleAndInstall(wfExports);
+  assert.equal(passStyleOf(installation), 'remotable');
 
   const { agoricNames, board, bankManager, storage } = bootstrap;
-  const storageNode = storage.rootNode.makeChildNode('walletFactory');
+  const storageNode = storage.rootNode.makeChildNode('wallet');
 
   const assetPublisher = await bankManager.getBankForAddress(
     VBankAccount.provision.address,
   );
-  const started = await E(zoe).startInstance(
+  const walletFactoryFacets = await E(zoe).startInstance(
     installation,
     {},
     {
@@ -79,7 +114,7 @@ const deploy = async t => {
     { storageNode },
   );
 
-  const { creatorFacet } = started;
+  const { creatorFacet } = walletFactoryFacets;
   const { namesByAddressAdmin } = bootstrap;
 
   /** @param {string} addr */
@@ -88,13 +123,21 @@ const deploy = async t => {
     return E(creatorFacet).provideSmartWallet(addr, bank, namesByAddressAdmin);
   };
 
-  return { started, bootstrap, provisionSmartWallet };
+  return { walletFactoryFacets, bootstrap, provisionSmartWallet };
 };
 
-test(`deploy ${contractName}`, async t => {
-  const { started } = await deploy(t);
+const makeTestContext = async t => {
+  t.log('contract deployment', contractName);
+  const deployed = await deploy();
+  return deployed;
+};
 
-  t.deepEqual(objectMap(started, passStyleOf), {
+test.before(async t => (t.context = await makeTestContext(t)));
+
+test(`deploy ${contractName}`, async t => {
+  const { walletFactoryFacets } = t.context;
+
+  t.deepEqual(objectMap(walletFactoryFacets, passStyleOf), {
     adminFacet: 'remotable',
     creatorFacet: 'remotable',
     creatorInvitation: 'undefined',
@@ -104,9 +147,81 @@ test(`deploy ${contractName}`, async t => {
 });
 
 test(`provision smartWallet`, async t => {
-  const { provisionSmartWallet } = await deploy(t);
+  const { provisionSmartWallet } = t.context;
   const addr = 'agoric1admin';
   const [wallet, isNew] = await provisionSmartWallet(addr);
   t.is(passStyleOf(wallet), 'remotable');
   t.true(isNew);
+});
+
+test('start game contract; make offer', async t => {
+  const startGameContract = async () => {
+    const { board, zoe, utils } = t.context.bootstrap;
+
+    t.log('start game contract');
+    const installation = utils.bundleAndInstall(gameExports);
+    const feeIssuer = await E(zoe).getFeeIssuer();
+    const feeBrand = await E(feeIssuer).getBrand();
+    const terms = { joinPrice: make(feeBrand, 0n) };
+    const { instance } = await E(zoe).startInstance(installation, {}, terms);
+    const { brands, issuers } = await E(zoe).getTerms(instance);
+
+    const gameAsset = { issuer: issuers.Place, brand: brands.Place };
+    t.log('authorize game asset for use by walletFactory', gameAsset);
+    const { agoricNamesAdmin } = t.context.bootstrap;
+    const { entries } = Object;
+    for (const [kind, thing] of entries(gameAsset)) {
+      await E(E(agoricNamesAdmin).lookupAdmin(kind)).update('Place', thing);
+    }
+
+    // the client can see objects via the board
+    board.getId(instance);
+    board.getId(gameAsset.brand);
+    return { instance, issuers, brands };
+  };
+
+  const { instance, brands } = await startGameContract();
+
+  const { provisionSmartWallet } = t.context;
+  const { readLatest } = t.context.bootstrap.utils;
+
+  const addr = 'agoric1player';
+  const [wallet] = await provisionSmartWallet(addr);
+  const { Place, Price } = brands;
+  const proposal = {
+    want: { Places: make(Place, makeCopyBag([['scroll', 1n]])) },
+    give: { Price: make(Price, 0n) },
+  };
+  /** @type {OfferSpec} */
+  const spec = {
+    id: 'join-1',
+    invitationSpec: {
+      source: 'contract',
+      instance,
+      publicInvitationMaker: 'makeJoinInvitation',
+    },
+    proposal,
+  };
+
+  const offersP = E(wallet).getOffersFacet();
+  await t.notThrowsAsync(E(offersP).executeOffer(spec));
+
+  const { structure, slots } = await readLatest(`ROOT.wallet.${addr}`);
+  t.log('last wallet update', structure);
+  t.log('payouts', structure.status.payouts);
+  t.is(structure.status.result, 'welcome to the game');
+  t.deepEqual(structure.status.payouts, {
+    Places: {
+      brand: '$1.Alleged: Place brand',
+      value: {
+        '#tag': 'copyBag',
+        payload: [['scroll', '+1']],
+      },
+    },
+    Price: {
+      brand: '$2.Alleged: ZDEFAULT brand',
+      value: '+0',
+    },
+  });
+  t.deepEqual(slots, ['board0592', 'board0223', 'board0371']);
 });
