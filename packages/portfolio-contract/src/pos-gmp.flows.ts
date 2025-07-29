@@ -354,3 +354,58 @@ export const BeefyProtocol = {
   AxelarChain,
   EVMContext & { poolKey: PoolKey }
 >;
+
+/**
+ * see {@link https://github.com/yearn/yearn-vaults/blob/master/contracts/Vault.vy }
+ * 97ca1b2 Jan 2023
+ */
+type YearnVaultI = {
+  deposit: ['uint256', 'address'];
+  withdraw: ['uint256'];
+};
+
+const YearnVault: YearnVaultI = {
+  deposit: ['uint256', 'address'],
+  withdraw: ['uint256'],
+};
+
+export const YearnProtocol = {
+  protocol: 'Yearn',
+  chains: keys(AxelarChain) as AxelarChain[],
+  supply: async (ctx, amount, src) => {
+    const { addresses: a, lca, gmpChain, gmpFee: fee, poolKey } = ctx;
+    const session = makeEVMSession();
+    const usdc = session.makeContract(a.usdc, ERC20);
+    const vaultAddress =
+      a[poolKey] ||
+      assert.fail(X`Yearn pool key ${q(poolKey)} not found in addresses`);
+    const vault = session.makeContract(vaultAddress, YearnVault);
+    usdc.approve(vaultAddress, amount.value);
+    vault.deposit(amount.value, src.remoteAddress);
+    const calls = session.finish();
+
+    const { chainName, remoteAddress } = src;
+    const axelarId = ctx.axelarIds[chainName];
+    const target = { axelarId, remoteAddress };
+    await sendGMPContractCall(target, calls, fee, lca, gmpChain);
+  },
+  withdraw: async (ctx, amount, dest) => {
+    const { addresses: a, lca, gmpChain, gmpFee: fee, poolKey } = ctx;
+    const session = makeEVMSession();
+    const vaultAddress =
+      a[poolKey] ||
+      assert.fail(X`Yearn pool key ${q(poolKey)} not found in addresses`);
+    const vault = session.makeContract(vaultAddress, YearnVault);
+    vault.withdraw(amount.value);
+    const calls = session.finish();
+
+    const { chainName, remoteAddress } = dest;
+    const axelarId = ctx.axelarIds[chainName];
+    const target = { axelarId, remoteAddress };
+    await sendGMPContractCall(target, calls, fee, lca, gmpChain);
+  },
+} as const satisfies ProtocolDetail<
+  'Yearn',
+  AxelarChain,
+  EVMContext & { poolKey: PoolKey }
+>;

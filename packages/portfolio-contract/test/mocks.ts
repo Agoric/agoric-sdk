@@ -276,6 +276,7 @@ export const contractsMock: EVMContractAddressesMap = {
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    Yearn_usdc_Ethereum: '0xa354F35829Ae975e850e23e9615b11Da1B3dC4DE',
   },
   Avalanche: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
@@ -308,6 +309,7 @@ export const contractsMock: EVMContractAddressesMap = {
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     Beefy_re7_Avalanche: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    Yearn_usdc_Ethereum: '0xa354F35829Ae975e850e23e9615b11Da1B3dC4DE',
   },
   Polygon: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
