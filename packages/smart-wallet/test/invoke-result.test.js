@@ -12,6 +12,7 @@ import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
+import * as priceExports from './wallet-fun.contract.js';
 import * as wfExports from '../src/walletFactory.js';
 import * as gameExports from './gameAssetContract.js';
 
@@ -175,12 +176,14 @@ test('start game contract; make offer', async t => {
     }
 
     // the client can see objects via the board
-    board.getId(instance);
-    board.getId(gameAsset.brand);
-    return { instance, issuers, brands };
+    const ids = {
+      instance: board.getId(instance),
+      brand: board.getId(gameAsset.brand),
+    };
+    return { instance, issuers, brands, ids };
   };
 
-  const { instance, brands } = await startGameContract();
+  const { instance, brands, ids } = await startGameContract();
 
   const { provisionSmartWallet } = t.context;
   const { readLatest } = t.context.bootstrap.utils;
@@ -223,5 +226,80 @@ test('start game contract; make offer', async t => {
       value: '+0',
     },
   });
-  t.deepEqual(slots, ['board0592', 'board0223', 'board0371']);
+  t.deepEqual(slots, [ids.instance, ids.brand, 'board0371']);
+});
+
+test('start price contract; make offer', async t => {
+  /** @param {string} addr */
+  const startPriceContract = async addr => {
+    const { board, zoe, namesByAddress, utils } = t.context.bootstrap;
+
+    t.log('start price contract');
+    const installation = utils.bundleAndInstall(priceExports);
+    const { instance, creatorFacet, publicFacet } =
+      await E(zoe).startInstance(installation);
+
+    const toSetPrices = await E(creatorFacet).makeAdminInvitation();
+    const df = await E(namesByAddress).lookup(addr, 'depositFacet');
+    const rxd = E(df).receive(toSetPrices);
+    const getPrices = async () => {
+      const p = await E(publicFacet).getPrices();
+      return p;
+    };
+
+    // the client can see objects via the board
+    const ids = {
+      instance: board.getId(instance),
+    };
+
+    return harden({
+      instance,
+      ids,
+      tools: { getReceived: () => rxd, getPrices },
+    });
+  };
+
+  const { provisionSmartWallet } = t.context;
+  const addr = 'agoric1price-oracle';
+  const [wallet] = await provisionSmartWallet(addr);
+  const { instance, ids, tools } = await startPriceContract(addr);
+  t.deepEqual(await tools.getPrices(), []); // no admins
+
+  const { readLatest } = t.context.bootstrap.utils;
+
+  t.log('redeem price admin invitation');
+  /** @type {OfferSpec} */
+  const redeemSpec = {
+    id: 'redeem-1',
+    invitationSpec: {
+      source: 'purse',
+      instance,
+      description: 'admin',
+    },
+    proposal: {},
+    after: { saveAs: 'priceSetter' },
+  };
+
+  const offersP = E(wallet).getOffersFacet();
+  await tools.getReceived();
+  await t.notThrowsAsync(E(offersP).executeOffer(redeemSpec));
+
+  const { structure, slots } = await readLatest(`ROOT.wallet.${addr}`);
+  t.log('last wallet update', structure);
+  t.log('payouts', structure.status.payouts);
+  t.is(structure.status.result, 'UNPUBLISHED');
+  t.deepEqual(structure.status.payouts, {});
+  t.deepEqual(slots, [ids.instance]);
+
+  t.deepEqual(await tools.getPrices(), [0n]); // 1 admin w/0 price
+
+  const invokeP = E(wallet).getInvokeFacet();
+  await t.notThrowsAsync(
+    E(invokeP).invokeItem('priceSetter', {
+      method: 'setPrice',
+      args: [100n],
+    }),
+  );
+
+  t.deepEqual(await tools.getPrices(), [100n]); // 1 admin w/100 price
 });
