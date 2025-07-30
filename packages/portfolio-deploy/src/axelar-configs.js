@@ -113,7 +113,7 @@ const usdcAddresses = {
     Optimism: '0x5fd84259d66Cd46123540766Be93DFE6D43130D7', // https://sepolia-optimism.etherscan.io/token/0x5fd84259d66Cd46123540766Be93DFE6D43130D7
     Polygon: '0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582', // https://amoy.polygonscan.com/token/0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582
     Fantom: '0x',
-    Binance: '0x64544969ed7EBf5f083679233325356EbE738930', // https://testnet.bscscan.com/token/0x64544969ed7EBf5f083679233325356EbE738930
+    Binance: '0x64544969ed7EBf5f083679233325356EbE738930', // https://developers.circle.com/stablecoins/usdc-contract-addresses#testnet
   },
 };
 
@@ -147,6 +147,47 @@ const aaveRewardsControllerAddresses = {
     Arbitrum: '0x', // Arbitrum Sepolia
     Optimism: '0x', // OP Sepolia
   },
+};
+
+/** @type {AddressesMap} */
+const compoundAddresses = {
+  mainnet: {
+    Ethereum: '0xc3d688B66703497DAA19211EEdff47f25384cdc3', // Ethereum Mainnet - USDC Base cUSDCv3
+    Polygon: '0xF25212E676D1F7F89Cd72fFEe66158f541246445', // Polygon Mainnet - USDC Base
+    Arbitrum: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf', // Arbitrum - USDC Base (Native)
+    Optimism: '0x2e44e174f7D53F0212823acC11C01A11d58c5bCB', // Optimism - USDC Base
+  },
+  testnet: {
+    Ethereum: '0xAec1F48e02Cfb822Be958B68C7957156EB3F0b6e', // Ethereum Sepolia Testnet - USDC Base
+    Polygon: '0xF09F0369aB0a875254fB565E52226c88f10Bc839', // Polygon Mumbai Testnet - USDC Base
+    Arbitrum: '0x',
+    Optimism: '0x',
+  },
+};
+
+/** @type {AddressesMap} */
+const compoundRewardsControllerAddresses = {
+  mainnet: {
+    Ethereum: '0x1B0e765F6224C21223AeA2af16c1C46E38885a40', // Ethereum Mainnet - USDC Base cUSDCv3
+    Polygon: '0x45939657d1CA34A8FA39A924B71D28Fe8431e581', // Polygon Mainnet - USDC Base
+    Arbitrum: '0x88730d254A2f7e6AC8388c3198aFd694bA9f7fae', // Arbitrum - USDC Base (Native)
+    Optimism: '0x443EA0340cb75a160F31A440722dec7b5bc3C2E9', // Optimism - USDC Base
+  },
+  testnet: {
+    Ethereum: '0x8bF5b658bdF0388E8b482ED51B14aef58f90abfD', // Ethereum Sepolia Testnet - USDC Base
+    Polygon: '0x0785f2AC0dCBEDEE4b8D62c25A34098E9A0dF4bB', // Polygon Mumbai Testnet - USDC Base
+    Arbitrum: '0x',
+    Optimism: '0x',
+  },
+};
+
+/** @type {AddressesMap} */
+const beefyre7Addresses = {
+  mainnet: {
+    Avalanche: '0xdA640bE4588C469C9DB45D082B36913490924c08', // Beefy re7 vault on Avalanche
+  },
+  // No testnet beefy vaults available as yet
+  testnet: {},
 };
 
 // TODO: deploy the factory in mainnet/testnet and fill these addresses
@@ -201,8 +242,9 @@ const mainnetTokenMessenger = (rows =>
 const mainnetContracts = {
   Ethereum: {
     aavePool: aaveAddresses.mainnet.Ethereum,
-    compound: '0x', // TODO
-    compoundRewardsController: '0x',
+    compound: compoundAddresses.mainnet.Ethereum,
+    compoundRewardsController:
+      compoundRewardsControllerAddresses.mainnet.Ethereum,
     factory: factoryAddresses.mainnet.Ethereum,
     usdc: usdcAddresses.mainnet.Ethereum,
     tokenMessenger: mainnetTokenMessenger.Ethereum.Address,
@@ -212,18 +254,19 @@ const mainnetContracts = {
   Avalanche: {
     aavePool: aaveAddresses.mainnet.Avalanche,
     compound: '0x', // TODO
-    compoundRewardsController: '0x',
+    compoundRewardsController: '0x', // TODO
     factory: factoryAddresses.mainnet.Avalanche,
     usdc: usdcAddresses.mainnet.Avalanche,
     tokenMessenger: mainnetTokenMessenger.Avalanche.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Avalanche,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Avalanche,
-    Beefy_re7_Avalanche: beefyVaults.mainnet.Avalanche.re7,
+    Beefy_re7_Avalanche: beefyre7Addresses.mainnet.Avalanche,
   },
   Optimism: {
     aavePool: aaveAddresses.mainnet.Optimism,
-    compound: '0x', // TODO
-    compoundRewardsController: '0x',
+    compound: compoundAddresses.mainnet.Optimism,
+    compoundRewardsController:
+      compoundRewardsControllerAddresses.mainnet.Optimism,
     factory: factoryAddresses.mainnet.Optimism,
     usdc: usdcAddresses.mainnet.Optimism,
     tokenMessenger: mainnetTokenMessenger['OP Mainnet'].Address,
@@ -232,8 +275,9 @@ const mainnetContracts = {
   },
   Arbitrum: {
     aavePool: aaveAddresses.mainnet.Arbitrum,
-    compound: '0x', // TODO
-    compoundRewardsController: '0x',
+    compound: compoundAddresses.mainnet.Arbitrum,
+    compoundRewardsController:
+      compoundRewardsControllerAddresses.mainnet.Arbitrum,
     factory: factoryAddresses.mainnet.Arbitrum,
     usdc: usdcAddresses.mainnet.Arbitrum,
     tokenMessenger: mainnetTokenMessenger.Arbitrum.Address,
@@ -242,8 +286,9 @@ const mainnetContracts = {
   },
   Polygon: {
     aavePool: aaveAddresses.mainnet.Polygon,
-    compound: '0x', // TODO
-    compoundRewardsController: '0x',
+    compound: compoundAddresses.mainnet.Polygon,
+    compoundRewardsController:
+      compoundRewardsControllerAddresses.mainnet.Polygon,
     factory: factoryAddresses.mainnet.Polygon,
     usdc: usdcAddresses.mainnet.Polygon,
     tokenMessenger: mainnetTokenMessenger['Polygon PoS'].Address,
