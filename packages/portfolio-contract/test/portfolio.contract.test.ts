@@ -3,9 +3,11 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
+import type { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
 import { passStyleOf } from '@endo/far';
+import type { StatusFor } from '../src/type-guards.ts';
 import {
   setupTrader,
   simulateAckTransferToAxelar,
@@ -21,19 +23,35 @@ const { sourceChain } = evmNamingDistinction;
 
 const range = (n: number) => [...Array(n).keys()];
 
-const getPortfolioInfo = (key, storage) => {
-  const info = storage.getDeserialized(key).at(-1);
+type FakeStorage = ReturnType<typeof makeFakeStorageKit>;
+
+const getFlowHistory = (
+  portfolioKey: string,
+  flowCount: number,
+  storage: FakeStorage,
+) => {
+  const flowPaths = range(flowCount).map(
+    ix => `${portfolioKey}.flows.flow${ix + 1}`,
+  );
+  const flowEntries = flowPaths.map(p => [p, storage.getDeserialized(p)]);
+  return {
+    flowPaths,
+    byFlow: fromEntries(flowEntries) as Record<string, StatusFor['flow']>,
+  };
+};
+
+/** current vstorage for portfolio, positions; full history for flows */
+const getPortfolioInfo = (key: string, storage: FakeStorage) => {
+  const info: StatusFor['portfolio'] = storage.getDeserialized(key).at(-1);
   const { positionKeys, flowCount } = info;
-  const positionPaths = positionKeys.map(k => `${key}.positions.${k}`);
-  const toPaths = (kind, count) =>
-    range(count).map(ix => `${key}.${kind}s.${kind}${ix + 1}`);
-  const flowPaths = toPaths('flow', flowCount);
-  const contents = fromEntries([
-    [key, info],
-    ...positionPaths.map(p => [p, storage.getDeserialized(p).at(-1)]),
-    ...flowPaths.map(p => [p, storage.getDeserialized(p)]),
-  ]);
-  return { contents, positionPaths, flowPaths };
+  const posPaths = positionKeys.map(k => `${key}.positions.${k}`);
+  const posEntries = posPaths.map(p => [p, storage.getDeserialized(p).at(-1)]);
+  const { flowPaths, byFlow } = getFlowHistory(key, flowCount, storage);
+  const contents = {
+    ...fromEntries([[key, info], ...posEntries]),
+    ...byFlow,
+  };
+  return { contents, positionPaths: posPaths, flowPaths: flowPaths };
 };
 
 test('open portfolio with USDN position', async t => {
