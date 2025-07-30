@@ -144,17 +144,17 @@ export const PoolPlaces = {
   USDN: { protocol: 'USDN', vault: null, chainName: 'noble' }, // MsgSwap only
   USDNVault: { protocol: 'USDN', vault: 1, chainName: 'noble' }, // MsgSwap, MsgLock
   Aave_Ethereum: { protocol: 'Aave', chainName: 'Ethereum' },
-  Aave_Avalanche: { protocol: 'Aave', chainName: 'Avalanche' },
-  Aave_Optimism: { protocol: 'Aave', chainName: 'Optimism' },
-  Aave_Arbitrum: { protocol: 'Aave', chainName: 'Arbitrum' },
-  Aave_Polygon: { protocol: 'Aave', chainName: 'Polygon' },
+  Aave_Avalanche: { protocol: 'Aave', chainName: 'Avalanche' }, // testing as part of alpha 1.2
+  Aave_Optimism: { protocol: 'Aave', chainName: 'Optimism' }, // testing as part of alpha 1.2
+  Aave_Arbitrum: { protocol: 'Aave', chainName: 'Arbitrum' }, // testing as part of alpha 1.2
+  Aave_Polygon: { protocol: 'Aave', chainName: 'Polygon' }, // testing as part of alpha 1.2
   Aave_Fantom: { protocol: 'Aave', chainName: 'Fantom' },
   Aave_Binance: { protocol: 'Aave', chainName: 'Binance' },
   Compound_Ethereum: { protocol: 'Compound', chainName: 'Ethereum' },
-  Compound_Avalanche: { protocol: 'Compound', chainName: 'Avalanche' },
-  Compound_Optimism: { protocol: 'Compound', chainName: 'Optimism' },
-  Compound_Arbitrum: { protocol: 'Compound', chainName: 'Arbitrum' },
-  Compound_Polygon: { protocol: 'Compound', chainName: 'Polygon' },
+  Compound_Avalanche: { protocol: 'Compound', chainName: 'Avalanche' }, // testing as part of alpha 1.2
+  Compound_Optimism: { protocol: 'Compound', chainName: 'Optimism' }, // testing as part of alpha 1.2
+  Compound_Arbitrum: { protocol: 'Compound', chainName: 'Arbitrum' }, // testing as part of alpha 1.2
+  Compound_Polygon: { protocol: 'Compound', chainName: 'Polygon' }, // testing as part of alpha 1.2
   Compound_Fantom: { protocol: 'Compound', chainName: 'Fantom' },
   Compound_Binance: { protocol: 'Compound', chainName: 'Binance' },
   ...BeefyPoolPlaces,
