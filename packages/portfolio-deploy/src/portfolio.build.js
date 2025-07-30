@@ -22,6 +22,7 @@ const isValidAddr = addr => {
 /** @type {ParseArgsConfig['options'] } */
 const options = {
   net: { type: 'string' },
+  replace: { type: 'string' },
 };
 
 /**
@@ -50,6 +51,7 @@ const defaultProposalBuilder = async ({ publishRef, install }, config) => {
  *   chainInfo: string;
  *   net?: string;
  *   peer?: string[];
+ *   replace?: string;
  * }} FlagValues
  */
 /** @type {DeployScriptFunction} */ 0;
@@ -62,10 +64,16 @@ const build = async (homeP, endowments) => {
   const axelarConfig = isMainnet
     ? harden({ ...axelarMainnetConfig })
     : harden({ ...axelarConfigTestnet });
+  const oldBoardId = flags.replace;
+
+  const config = { axelarConfig };
+  if (oldBoardId) {
+    config.oldBoardId = oldBoardId;
+  }
 
   if (isMainnet) {
-    for (const [chain, config] of Object.entries(axelarConfig)) {
-      const addr = config.contracts.factory;
+    for (const [chain, chainConfig] of Object.entries(axelarConfig)) {
+      const addr = chainConfig.contracts.factory;
 
       if (!addr || !isValidAddr(addr)) {
         throw new Error(`Invalid address for ${chain}: ${addr}`);
@@ -76,7 +84,7 @@ const build = async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   // TODO: unit test agreement with startPortfolio.name
   await writeCoreEval('eval-ymax0', utils =>
-    defaultProposalBuilder(utils, harden({ axelarConfig })),
+    defaultProposalBuilder(utils, harden(config)),
   );
 };
 
