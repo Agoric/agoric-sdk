@@ -5,6 +5,7 @@ import {
   QueryDataResponse,
 } from '@agoric/cosmic-proto/agoric/vstorage/query.js';
 import { encodeHex } from '@agoric/internal/src/hex.js';
+import { isStreamCell } from '@agoric/internal/src/lib-chainStorage.js';
 import { decodeBase64 } from '@endo/base64';
 import { Fail, makeError, q as quote } from '@endo/errors';
 
@@ -107,16 +108,6 @@ const makeVstorageError = ({ errorMessage, height, kind, path, rpcAddress }) =>
  * @param {ReturnType<parseValue>} cell
  */
 const isDataString = cell => cell && typeof cell === 'string';
-
-/**
- * @param {ReturnType<typeof parseValue>} cell
- */
-const isStreamCell = cell =>
-  !!cell &&
-  typeof cell === 'object' &&
-  Array.isArray(cell.values) &&
-  typeof cell.blockHeight === 'string' &&
-  /^0$|^[1-9][0-9]*$/.test(cell.blockHeight);
 
 /**
  * @template {any} T
@@ -417,14 +408,14 @@ export const makeVStorageClient = ({ fetch }, config) => {
 
 /**
  * @param {string} value
- * @returns {StreamCell | string}
  */
 const parseValue = value => {
   try {
     const parsedValue = JSON.parse(value);
-    if (isStreamCell(parsedValue)) return parsedValue;
-    else return value;
-  } catch {
-    return value;
-  }
+    if (isStreamCell(parsedValue))
+      return /** @type {StreamCell} */ (parsedValue);
+    // eslint-disable-next-line no-empty
+  } catch {}
+
+  return value;
 };
