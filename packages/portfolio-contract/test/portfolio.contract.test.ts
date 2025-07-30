@@ -4,33 +4,18 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { passStyleOf } from '@endo/far';
-import type { AxelarChain } from '../src/constants.js';
 import {
   setupTrader,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
-import { localAccount0 } from './mocks.ts';
+import { evmNamingDistinction, localAccount0 } from './mocks.ts';
 
 const { fromEntries, keys } = Object;
 
-/**
- * Use Arbitrum or any other EVM chain whose Axelar chain ID (`axelarId`) differs
- * from the chain name. For example, Arbitrum's `axelarId` is "arbitrum", while
- * Ethereum’s is "Ethereum" (case-sensitive). The challenge is that if a mismatch
- * occurs, it may go undetected since the `axelarId` is passed via the IBC memo
- * and not validated automatically.
- *
- * To ensure proper testing, it's best to use a chain where the `chainName` and
- * `axelarId` are not identical. This increases the likelihood of catching issues
- * with misconfigured or incorrectly passed `axelarId` values.
- *
- * To see the `axelarId` for a given chain, refer to:
- * @see {@link https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts | supported-chains-list.ts}
- */
-const destinationEVMChain: AxelarChain = 'Arbitrum';
-const sourceChain = 'arbitrum';
+// Use an EVM chain whose axelar ID differs from its chain name
+const { sourceChain } = evmNamingDistinction;
 
 const range = (n: number) => [...Array(n).keys()];
 

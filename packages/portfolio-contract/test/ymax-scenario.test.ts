@@ -5,6 +5,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import type { OfferArgsFor, ProposalType } from '../src/type-guards.ts';
 import {
@@ -13,11 +14,15 @@ import {
   withBrand,
 } from '../tools/rebalance-grok.ts';
 import { setupTrader, simulateUpcallFromAxelar } from './contract-setup.ts';
-import { localAccount0, makeCCTPTraffic, makeUSDNIBCTraffic } from './mocks.ts';
-import { Fail } from '@endo/errors';
+import {
+  evmNamingDistinction,
+  localAccount0,
+  makeCCTPTraffic,
+  makeUSDNIBCTraffic,
+} from './mocks.ts';
 
-// Again, use an EVM chain whose axelar ID differs from its chain name
-const sourceChain = 'arbitrum';
+// Use an EVM chain whose axelar ID differs from its chain name
+const { sourceChain } = evmNamingDistinction;
 
 const { values } = Object;
 
