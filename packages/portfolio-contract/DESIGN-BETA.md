@@ -75,7 +75,7 @@ sequenceDiagram
   portfolio ->> vstorage: write portfolio
   portfolio ->> LCAin: localTransfer
 ```
-4. deposit-triggered rebalance
+4. deposit-triggered distribution
 ```mermaid
 sequenceDiagram
   autonumber
@@ -133,12 +133,14 @@ sequenceDiagram
     1. operation 1: new/edit portfolio
 2. tiger would like to edit their existing portfolio to different allocations
     1. operation 1: new/edit portfolio
+3. tiger already has an existing portfolio, and tiger sign a txn to deposit USDC into their portfolio
+    1. operation 4: deposit triggered distribution
 3. tiger would like to open a portfolio and deposit USDC to it
     1. operation 3: new/edit portfolio and deposit from Agoric chain
-    2. operation 4: deposit triggered rebalance
+    2. operation 4: deposit triggered distribution
 4. tiger would like to edit their existing portfolio and deposit USDC to it
     1. operation 3: new/edit portfolio and deposit from Agoric chain
-    2. operation 4: deposit triggered rebalance
+    2. operation 4: deposit triggered distribution
 
 #### NOT in scope for now
 1. deposit from Fast USDC source chains and create a new portfolio via address hook
