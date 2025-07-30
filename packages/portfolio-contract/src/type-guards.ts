@@ -148,15 +148,11 @@ export const PoolPlaces = {
   Aave_Optimism: { protocol: 'Aave', chainName: 'Optimism' },
   Aave_Arbitrum: { protocol: 'Aave', chainName: 'Arbitrum' },
   Aave_Polygon: { protocol: 'Aave', chainName: 'Polygon' },
-  Aave_Fantom: { protocol: 'Aave', chainName: 'Fantom' },
-  Aave_Binance: { protocol: 'Aave', chainName: 'Binance' },
   Compound_Ethereum: { protocol: 'Compound', chainName: 'Ethereum' },
   Compound_Avalanche: { protocol: 'Compound', chainName: 'Avalanche' },
   Compound_Optimism: { protocol: 'Compound', chainName: 'Optimism' },
   Compound_Arbitrum: { protocol: 'Compound', chainName: 'Arbitrum' },
   Compound_Polygon: { protocol: 'Compound', chainName: 'Polygon' },
-  Compound_Fantom: { protocol: 'Compound', chainName: 'Fantom' },
-  Compound_Binance: { protocol: 'Compound', chainName: 'Binance' },
   ...BeefyPoolPlaces,
 } as const satisfies Record<string, PoolPlaceInfo>;
 harden(PoolPlaces);
