@@ -226,7 +226,7 @@ export const makePortfolioSteps = <
   for (const [p, amount] of entries(goal)) {
     switch (p) {
       case 'USDN':
-        steps.push({ src: '@noble', dest: 'USDNVault', amount, detail });
+        steps.push({ src: '@noble', dest: 'USDN', amount, detail });
         break;
       case 'Aave':
       case 'Compound':

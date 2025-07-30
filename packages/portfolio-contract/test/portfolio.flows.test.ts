@@ -410,7 +410,7 @@ test('makePortfolioSteps for USDN position', t => {
     steps: [
       { src: '<Deposit>', dest: '@agoric', amount },
       { src: '@agoric', dest: '@noble', amount },
-      { src: '@noble', dest: 'USDNVault', amount, detail },
+      { src: '@noble', dest: 'USDN', amount, detail },
     ],
   });
 });
@@ -646,7 +646,7 @@ test('handle failure in recovery from executeEncodedTx', async t => {
     flow: [
       { src: '<Deposit>', dest: '@agoric', amount },
       { src: '@agoric', dest: '@noble', amount },
-      { src: '@noble', dest: 'USDNVault', amount, detail },
+      { src: '@noble', dest: 'USDN', amount, detail },
     ],
   });
   t.log(log.map(msg => msg._method).join(', '));
