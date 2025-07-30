@@ -56,7 +56,7 @@ export const getManifestForInviteWithdrawer = async (
       [inviteReserveWithdrawer.name]: /** @type {const} */ ({
         consume: {
           namesByAddressAdmin: true,
-          economicCommitteeCreatorFacet: true,
+          reserveKit: true,
         },
       }),
     },
