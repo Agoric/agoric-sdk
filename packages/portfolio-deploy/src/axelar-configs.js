@@ -86,40 +86,34 @@ const aaveAddresses = {
     Avalanche: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
     Arbitrum: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
     Optimism: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
-    Polygon: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
-    Fantom: '0x', // TODO: does Fantom have AAVE?
-    Binance: '0x6807dc923806fE8Fd134338EABCA509979a7e0cB',
   },
   testnet: {
     Ethereum: '0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951',
     Avalanche: '0x8B9b2AF4afB389b4a70A474dfD4AdCD4a302bb40',
     Arbitrum: '0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff',
     Optimism: '0xb50201558B00496A145fE76f7424749556E326D8',
-    Polygon: '0x', // TODO: find polygon testnet addresses for testing aave with polygon
-    Fantom: '0x', // TODO: does Fantom have AAVE?
-    Binance: '0x', // TODO: find Binance testnet addresses for testing aave with Binance
   },
 };
 
 /** @type {AddressesMap} */
 const usdcAddresses = {
   mainnet: {
-    Ethereum: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-    Avalanche: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E',
-    Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
-    Optimism: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
-    Polygon: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
-    Fantom: '0x',
-    Binance: '0x',
+    Ethereum: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // https://developers.circle.com/stablecoins/usdc-contract-addresses
+    Avalanche: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', // https://developers.circle.com/stablecoins/usdc-contract-addresses
+    Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // https://developers.circle.com/stablecoins/usdc-contract-addresses
+    Optimism: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85', // https://developers.circle.com/stablecoins/usdc-contract-addresses
+    Polygon: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', // https://developers.circle.com/stablecoins/usdc-contract-addresses
+    Fantom: '0x04068DA6C83AFCFA0e13ba15A6696662335D5B75', // https://ftmscout.com/address/0x04068DA6C83AFCFA0e13ba15A6696662335D5B75
+    Binance: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // https://bscscan.com/token/0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d
   },
   testnet: {
-    Ethereum: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238', // Sepolia
-    Avalanche: '0x5425890298aed601595a70AB815c96711a31Bc65', // Fuji
-    Arbitrum: '0x2f3A40A3db8a7e3D09B0adfEfbCe4f6F81927557', // Arbitrum Sepolia
-    Optimism: '0x4200000000000000000000000000000000000042', // OP Sepolia
-    Polygon: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', // Amoy
+    Ethereum: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238', // https://sepolia.etherscan.io/token/0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238
+    Avalanche: '0x5425890298aed601595a70AB815c96711a31Bc65', // https://testnet.snowtrace.io/token/0x5425890298aed601595a70AB815c96711a31Bc65
+    Arbitrum: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d', // https://sepolia.arbiscan.io/token/0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d
+    Optimism: '0x5fd84259d66Cd46123540766Be93DFE6D43130D7', // https://sepolia-optimism.etherscan.io/token/0x5fd84259d66Cd46123540766Be93DFE6D43130D7
+    Polygon: '0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582', // https://amoy.polygonscan.com/token/0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582
     Fantom: '0x',
-    Binance: '0x',
+    Binance: '0x64544969ed7EBf5f083679233325356EbE738930', // https://testnet.bscscan.com/token/0x64544969ed7EBf5f083679233325356EbE738930
   },
 };
 
@@ -130,40 +124,28 @@ const aaveUsdcAddresses = {
     Avalanche: '0x',
     Arbitrum: '0x',
     Optimism: '0x',
-    Polygon: '0x',
-    Fantom: '0x',
-    Binance: '0x',
   },
   testnet: {
     Ethereum: '0x', // Sepolia
     Avalanche: '0xb1c85310a1b809C70fA6806d27Da425C1261F801', // Fuji
     Arbitrum: '0x', // Arbitrum Sepolia
     Optimism: '0x', // OP Sepolia
-    Polygon: '0x', // Amoy
-    Fantom: '0x',
-    Binance: '0x',
   },
 };
 
 /** @type {AddressesMap} */
 const aaveRewardsControllerAddresses = {
   mainnet: {
-    Ethereum: '0x',
-    Avalanche: '0x',
-    Arbitrum: '0x',
-    Optimism: '0x',
-    Polygon: '0x',
-    Fantom: '0x',
-    Binance: '0x',
+    Ethereum: '0x8164Cc65827dcFe994AB23944CBC90e0aa80bFcb', // https://aave.com/docs/resources/addresses
+    Avalanche: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses
+    Arbitrum: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses
+    Optimism: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses
   },
   testnet: {
-    Ethereum: '0x', // Sepolia
-    Avalanche: '0x03aFC1Dfb53eae8eB7BE0E8CB6524aa79C3F8578', // Fuji
+    Ethereum: '0x4DA5c4da71C5a167171cC839487536d86e083483', // Sepolia https://aave.com/docs/resources/addresses
+    Avalanche: '0x03aFC1Dfb53eae8eB7BE0E8CB6524aa79C3F8578', // Fuji https://testnet.snowtrace.io/address/0x03aFC1Dfb53eae8eB7BE0E8CB6524aa79C3F8578
     Arbitrum: '0x', // Arbitrum Sepolia
     Optimism: '0x', // OP Sepolia
-    Polygon: '0x', // Amoy
-    Fantom: '0x',
-    Binance: '0x',
   },
 };
 
