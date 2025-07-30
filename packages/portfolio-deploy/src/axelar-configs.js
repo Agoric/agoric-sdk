@@ -212,7 +212,7 @@ const factoryAddresses = {
   mainnet: {
     Ethereum: '0x',
     Avalanche: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://snowtrace.io/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
-    Arbitrum: '0x',
+    Arbitrum: '0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc', // https://arbiscan.io/address/0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc
     Optimism: '0x',
     Polygon: '0x',
     Fantom: '0x',
