@@ -154,7 +154,7 @@ const aaveRewardsControllerAddresses = {
 const factoryAddresses = {
   mainnet: {
     Ethereum: '0x',
-    Avalanche: '0x',
+    Avalanche: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://snowtrace.io/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
     Arbitrum: '0x',
     Optimism: '0x',
     Polygon: '0x',
@@ -163,7 +163,7 @@ const factoryAddresses = {
   },
   testnet: {
     Ethereum: '0x',
-    Avalanche: '0x84E2eFa88324A270b95B062048BD43fb821FDb0f',
+    Avalanche: '0xe4Bf676E956AF5f30876b9af9E93D3CCC4D2ECfF', // https://testnet.snowtrace.io/address/0xe4Bf676E956AF5f30876b9af9E93D3CCC4D2ECfF
     Arbitrum: '0x',
     Optimism: '0x',
     Polygon: '0x',
