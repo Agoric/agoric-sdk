@@ -226,15 +226,16 @@ test('should receive the expected topic data', async t => {
 });
 
 test('should receive the expected stream data', async t => {
-  const height = 3n;
+  const height = 2n;
   const path = 'published';
-  const streamCell = {
+  const latestStreamCell = {
     blockHeight: String(height),
+    values: [JSON.stringify('value3'), JSON.stringify('value4')],
+  };
+  const streamCell = {
+    blockHeight: String(height - 1n),
     values: [JSON.stringify('value1'), JSON.stringify('value2')],
   };
-
-  const nonStreamValue = 'some plain data';
-  const oldValue = 'old value';
 
   const mockResponses = {
     ...createResponseMap([
@@ -244,7 +245,7 @@ test('should receive the expected stream data', async t => {
           ok: true,
           value: encodeBase64(
             QueryDataResponse.encode({
-              value: JSON.stringify(streamCell),
+              value: JSON.stringify(latestStreamCell),
             }).finish(),
           ),
         },
@@ -258,7 +259,7 @@ test('should receive the expected stream data', async t => {
           ok: true,
           value: encodeBase64(
             QueryDataResponse.encode({
-              value: JSON.stringify(streamCell),
+              value: JSON.stringify(latestStreamCell),
             }).finish(),
           ),
         },
@@ -272,7 +273,7 @@ test('should receive the expected stream data', async t => {
           ok: true,
           value: encodeBase64(
             QueryDataResponse.encode({
-              value: oldValue,
+              value: JSON.stringify(streamCell),
             }).finish(),
           ),
         },
@@ -280,28 +281,7 @@ test('should receive the expected stream data', async t => {
         kind: PATHS.DATA,
         path,
       },
-      {
-        abciResponse: {
-          code: 0,
-          ok: true,
-          value: encodeBase64(
-            QueryDataResponse.encode({
-              value: nonStreamValue,
-            }).finish(),
-          ),
-        },
-        height: height - 2n,
-        kind: PATHS.DATA,
-        path,
-      },
     ]),
-    [`${RPC_ADDRESS}/status`]: {
-      sync_info: {
-        catching_up: false,
-        latest_block_height: String(height),
-      },
-      ok: true,
-    },
   };
 
   const vStorageClient = makeVStorageClient(
@@ -309,44 +289,34 @@ test('should receive the expected stream data', async t => {
     testConfig,
   );
 
-  const streamTopic = vStorageClient.fromText<StreamCell>(path);
+  const streamTopic = vStorageClient.fromText<string>(path);
   const latestCell = await streamTopic.latest(height);
-  t.deepEqual(latestCell, streamCell);
 
-  const reverseResults: Array<Update<StreamCell>> = [];
-  for await (const value of streamTopic.reverseIterate(height, height))
+  t.is(latestCell.blockHeight, BigInt(latestStreamCell.blockHeight));
+  t.is(
+    latestCell.value,
+    String([...latestStreamCell.values].reverse().find(Boolean)),
+  );
+
+  const reverseResults: Array<Update<string>> = [];
+  for await (const value of streamTopic.reverseIterate())
     reverseResults.push(value);
 
   t.deepEqual(
     reverseResults.map(u => u.value),
-    streamCell.values.map(value => JSON.parse(value)).reverse(),
+    [
+      ...[...latestStreamCell.values].reverse(),
+      ...[...streamCell.values].reverse(),
+    ].map(value => JSON.parse(value)),
   );
 
-  const forwardResults: Array<Update<StreamCell>> = [];
+  const forwardResults: Array<Update<string>> = [];
   for await (const value of streamTopic.iterate()) forwardResults.push(value);
 
   t.deepEqual(
     forwardResults.map(u => u.value),
-    [
-      nonStreamValue,
-      oldValue,
-      ...streamCell.values.map(value => JSON.parse(value)),
-    ],
-  );
-
-  const compatTopic = vStorageClient.fromText<StreamCell>(path, {
-    compat: true,
-  });
-  const compatReverseResults: Array<Update<StreamCell>> = [];
-  for await (const value of compatTopic.reverseIterate())
-    compatReverseResults.push(value);
-
-  t.deepEqual(
-    compatReverseResults.map(u => u.value),
-    [
-      ...streamCell.values.map(value => JSON.parse(value)).reverse(),
-      oldValue,
-      nonStreamValue,
-    ],
+    [...streamCell.values, ...latestStreamCell.values].map(value =>
+      JSON.parse(value),
+    ),
   );
 });
