@@ -16,9 +16,9 @@
   },
   "packageManager": "yarn@4.9.3",
   "devDependencies": {
-    "@agoric/cosmic-proto": "dev",
-    "@agoric/fast-usdc": "dev",
-    "@agoric/internal": "dev",
+    "@agoric/cosmic-proto": "MULTICHAIN_TESTING",
+    "@agoric/fast-usdc": "MULTICHAIN_TESTING",
+    "@agoric/internal": "MULTICHAIN_TESTING",
     "@cosmjs/amino": "^0.36.0",
     "@cosmjs/cosmwasm-stargate": "^0.36.0",
     "@cosmjs/crypto": "^0.36.0",

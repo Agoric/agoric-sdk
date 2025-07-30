@@ -4619,9 +4619,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@agoric/cosmic-proto": "npm:dev"
-    "@agoric/fast-usdc": "npm:dev"
-    "@agoric/internal": "npm:dev"
+    "@agoric/cosmic-proto": "npm:MULTICHAIN_TESTING"
+    "@agoric/fast-usdc": "npm:MULTICHAIN_TESTING"
+    "@agoric/internal": "npm:MULTICHAIN_TESTING"
     "@cosmjs/amino": "npm:^0.36.0"
     "@cosmjs/cosmwasm-stargate": "npm:^0.36.0"
     "@cosmjs/crypto": "npm:^0.36.0"
