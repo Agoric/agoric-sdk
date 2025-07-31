@@ -1,0 +1,23 @@
+services:
+  redis:
+    image: redis:latest
+    ports:
+      - '6379:6379'
+
+  serverless-redis-http:
+    ports:
+      - '8079:80'
+    image: hiett/serverless-redis-http:latest
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: ${REDIS_REST_TOKEN:-example_planner_token}
+      SRH_CONNECTION_STRING: 'redis://redis:6379'
+
+  app:
+    image: ghcr.io/agoric/portfolio-engine:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      AGORIC_RPC_URL: ${AGORIC_RPC_URL:-http://host.docker.internal:26657}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}

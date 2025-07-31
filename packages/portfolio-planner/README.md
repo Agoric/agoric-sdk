@@ -50,6 +50,10 @@ sequenceDiagram
 ```bash
 yarn install
 ```
+2. Optionally run a local Docker version of the planner's dependencies:
+```bash
+npm run start:deps
+```
 
 ### Local Development
 
@@ -58,12 +62,6 @@ npm run dev
 ```
 
 This starts the development server with hot reloading.
-
-### Deployment
-
-```bash
-npm run deploy
-```
 
 ### Testing
 
@@ -75,10 +73,15 @@ npm test
 
 Environment variables:
 
-- `HD_SEED`: BIP39 Seed/mnemonic to use for generating keys
-- `HD_PATH`: Default BIP44 path (default: `m/44'/118'/0'/0/0`)
+- TODO: `HD_SEED`: BIP39 Seed/mnemonic to use for generating keys
+- TODO: `HD_PATH`: Default BIP44 path (`m/44'/118'/0'/0/0`)
+- `AGORIC_RPC_URL`: URL for the Agoric chain's RPC node (`http://localhost:26657`)
+- `REDIS_REST_URL`: URL for `@upstash/redis` (including explicit port number)
+- `REDIS_REST_TOKEN`: API token for `REDIS_REST_URL`
 
 ## Architecture
+
+
 
 ## License
 

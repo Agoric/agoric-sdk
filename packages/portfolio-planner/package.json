@@ -6,8 +6,11 @@
   "main": "src/main.ts",
   "type": "module",
   "scripts": {
-    "start": "./src/entrypoint.js",
+    "start": "node ./src/entrypoint.js",
     "dev": "nodemon ./src/entrypoint.js",
+    "debug": "node --inspect ./src/entrypoint.js",
+    "start:docker": "docker compose up --build",
+    "start:deps": "docker compose up --scale app=0",
     "build": "exit 0",
     "prepack": "yarn run -T tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
@@ -26,11 +29,18 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "@types/ws": "^8",
     "nodemon": "^3.1.10",
     "ts-blank-space": "^0.6.1",
     "typescript": "^5.7.2"
   },
   "dependencies": {
-    "json-rpc-2.0": "^1.7.1"
+    "@endo/errors": "^1.2.13",
+    "@endo/init": "^1.1.12",
+    "@endo/promise-kit": "^1.1.13",
+    "dotenv": "^17.2.1",
+    "ioredis": "^5.6.1",
+    "json-rpc-2.0": "^1.7.1",
+    "ws": "^8.18.3"
   }
 }
