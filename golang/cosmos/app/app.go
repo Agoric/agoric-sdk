@@ -533,7 +533,7 @@ func NewAgoricApp(
 		app.BankKeeper,
 	)
 	// TODO: Set enabled tokens this based on our needs
-	enabledTokens := []int32{0, 1}
+	enabledTokens := []int32{int32(hyperlanewarptypes.HYP_TOKEN_TYPE_COLLATERAL), int32(hyperlanewarptypes.HYP_TOKEN_TYPE_SYNTHETIC)}
 
 	app.HyperlaneWarpKeeper = hyperlanewarpkeeper.NewKeeper(
 		appCodec,
