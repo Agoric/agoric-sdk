@@ -239,12 +239,14 @@ export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
     case 'agoric': {
       const agoricChain = await orch.getChain('agoric');
       const lca = await agoricChain.makeAccount();
+      const lcaIn = await agoricChain.makeAccount();
       const reg = await lca.monitorTransfers(kit.tap);
       trace('Monitoring transfers for', lca.getAddress().value);
       const info: AccountInfoFor['agoric'] = {
         namespace: 'cosmos',
         chainName,
         lca,
+        lcaIn,
         reg,
       };
       kit.manager.resolveAccount(info);
