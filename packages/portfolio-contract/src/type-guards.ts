@@ -193,7 +193,9 @@ export const TargetAllocationShapeExt: TypedPattern<Record<string, NatValue>> =
  * @param id - Portfolio ID number
  * @returns Path segments for vstorage
  */
-export const makePortfolioPath = (id: number) => [`portfolio${id}`];
+export const makePortfolioPath = (id: number): [`portfolio${number}`] => [
+  `portfolio${id}`,
+];
 
 /**
  * Extracts portfolio ID from a vstorage path.
@@ -223,6 +225,9 @@ type FlowStatus = {
 
 // XXX relate paths to types a la readPublished()
 export type StatusFor = {
+  portfolios: {
+    latestChild: `portfolio${number}`;
+  };
   portfolio: {
     positionKeys: PoolKeyExt[];
     flowCount: number;

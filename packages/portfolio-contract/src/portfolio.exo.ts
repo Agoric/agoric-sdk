@@ -484,8 +484,11 @@ export const preparePortfolioKit = (
       },
     },
     {
-      finish({ facets }) {
+      finish({ facets, state }) {
         facets.reporter.publishStatus();
+        const { portfolioId } = state;
+        const [latestChild] = makePortfolioPath(portfolioId);
+        publishStatus([], { latestChild });
       },
     },
   );

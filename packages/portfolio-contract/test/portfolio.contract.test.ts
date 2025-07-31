@@ -7,6 +7,8 @@ import type { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
 import { passStyleOf } from '@endo/far';
+import type { ExecutionContext } from 'ava';
+import type { MovementDesc } from '../src/type-guards-steps.ts';
 import type { StatusFor } from '../src/type-guards.ts';
 import {
   setupTrader,
@@ -545,4 +547,64 @@ test('Withdraw from a Beefy position', async t => {
   const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
   t.snapshot(contents, 'vstorage');
   t.snapshot(withdraw.payouts, 'refund payouts');
+});
+
+test('portfolios node updates for each new portfolio', async t => {
+  const { makeFundedTrader, common } = await setupTrader(t);
+  const { poc26 } = common.brands;
+  const { storage } = common.bootstrap;
+
+  const give = { Access: poc26.make(1n) };
+  {
+    const trader = await makeFundedTrader();
+    await trader.openPortfolio(t, give);
+    const x = storage.getDeserialized(`${ROOT_STORAGE_PATH}.portfolios`).at(-1);
+    t.deepEqual(x, { latestChild: `portfolio0` });
+  }
+  {
+    const trader = await makeFundedTrader();
+    await trader.openPortfolio(t, give);
+    const x = storage.getDeserialized(`${ROOT_STORAGE_PATH}.portfolios`).at(-1);
+    t.deepEqual(x, { latestChild: `portfolio1` });
+  }
+});
+
+const checkKeys = (
+  t: ExecutionContext<unknown>,
+  x: string[],
+  y: string[],
+  message?: string,
+) => {
+  const xx = fromEntries(x.map(k => [k, true]));
+  const yy = fromEntries(y.map(k => [k, true]));
+  t.deepEqual(xx, yy, message);
+};
+
+/**
+ * See also deposit-triggered distribution in DESIGN-BETA.md
+ */
+test.skip('deposit more to same allocations', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { poc26, usdc } = common.brands;
+
+  const targetAllocation = { USDN: 60n, Aave_Arbitrum: 40n };
+  t.log('open with target', targetAllocation);
+  const give = { Access: poc26.make(1n) };
+  const { result } = await trader1.openPortfolio(t, give, { targetAllocation });
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+
+  const amount = usdc.units(100);
+  const giveDeposit = { give: { Deposit: amount }, want: {} };
+  const move1: MovementDesc = { src: '<Deposit>', dest: '@agoric', amount };
+  const dep = await trader1.rebalance(t, giveDeposit, { flow: [move1] });
+
+  t.log('TODO: EE stuff');
+
+  const ps = await trader1.getPortfolioStatus();
+  checkKeys(t, ps.positionKeys, keys(targetAllocation), 'WIP');
+
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(dep.payouts, 'refund payouts from deposit');
 });
