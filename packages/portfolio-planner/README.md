@@ -10,30 +10,30 @@ sequenceDiagram
   actor trader as trader<br/>webUI<br/>wallet
 
   box rgb(255,153,153) Agoric
-    participant portfolio as portfolio<br/>manager
-    participant LCAin as trader<br/>portfolio
+    participant manager as portfolio<br/>manager
+    participant portfolio as trader<br/>portfolio
   end
 
   participant EE
+  EE -->> manager: rpc.subscribe(all block events)
+  loop recover by polling balances
+    EE -->> portfolio: rpc.queryBalances(portfolio$N)
+  end
 
   %% Notation: ->> for initial message, -->> for consequences
 
-  trader ->> portfolio: open($5000, <br />1/3 A 1/2 C, no-steps)
+  trader ->> manager: open($5000, default-goal)
   par initial funds
-    portfolio -->> EE: event(portfolioOpen, LCAin, 1/3 A 1/2 C, no-steps)
-    portfolio ->> LCAin: bank.Send(LCAin, $5000)
-    EE -->> LCAin: subscribe
+    manager -->> EE: vstorageAppend(portfolios, "portfolio1")
+    EE -->> portfolio: vstorageGet(portfolio1 address)
+    EE -->> EE: add portfolio1 address to event filter
+    manager ->> portfolio: bank.Send(portfolio1, $5000)
   end
   loop inbound funds trigger rebalance
-    alt poll queryBalances
-      EE -->> LCAin: queryBalances
-      LCAin -->> EE: balancesResult(LCAin, $5000)
-    end
-    alt subscribe reported an event
-      LCAin -->> EE: event(bank.Send, LCAin, $5000)
-    end
-    EE -->> portfolio: rebalanceTx(trader,<br/> [[LCAin, LCAorch, $5000], ...steps])
-    portfolio -->> LCAin: rebalance(steps)
+    portfolio -->> EE: event(bank.Send, portfolio1, $5000)
+    EE -->> portfolio: vstorageGet(portfolio1, goals)
+    EE -->> manager: rebalanceTx(portfolio1, next-goal<br/> [[portfolio1, LCAorch, $5000], ...goal-steps])
+    manager -->> portfolio: rebalance(steps)
   end
 ```
 
