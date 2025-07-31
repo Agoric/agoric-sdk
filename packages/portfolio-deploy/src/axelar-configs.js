@@ -25,10 +25,6 @@
  * @see {@link https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts | supported-chains-list.ts}
  */
 const AxelarChainIdMap = harden({
-  Ethereum: {
-    testnet: 'ethereum-sepolia',
-    mainnet: 'Ethereum',
-  },
   Avalanche: {
     testnet: 'Avalanche',
     mainnet: 'Avalanche',
@@ -44,14 +40,6 @@ const AxelarChainIdMap = harden({
   Polygon: {
     testnet: 'polygon-sepolia',
     mainnet: 'Polygon',
-  },
-  Fantom: {
-    testnet: 'Fantom',
-    mainnet: 'Fantom',
-  },
-  Binance: {
-    testnet: 'binance',
-    mainnet: 'binance',
   },
 });
 
@@ -116,7 +104,7 @@ const usdcAddresses = {
     Arbitrum: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d', // https://sepolia.arbiscan.io/token/0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d
     Optimism: '0x5fd84259d66Cd46123540766Be93DFE6D43130D7', // https://sepolia-optimism.etherscan.io/token/0x5fd84259d66Cd46123540766Be93DFE6D43130D7
     Polygon: '0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582', // https://amoy.polygonscan.com/token/0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582
-    Fantom: '0x',
+    Fantom: '0x', // TODO
     Binance: '0x64544969ed7EBf5f083679233325356EbE738930', // https://developers.circle.com/stablecoins/usdc-contract-addresses#testnet
   },
 };
@@ -210,25 +198,18 @@ const beefyre7Addresses = {
 /** @type {AddressesMap} */
 const factoryAddresses = {
   mainnet: {
-    Ethereum: '0x',
     Avalanche: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://snowtrace.io/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
     Arbitrum: '0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc', // https://arbiscan.io/address/0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc
     Optimism: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://optimistic.etherscan.io/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
     Polygon: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://polygonscan.com/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
   },
   testnet: {
-    Ethereum: '0x',
     Avalanche: '0xe4Bf676E956AF5f30876b9af9E93D3CCC4D2ECfF', // https://testnet.snowtrace.io/address/0xe4Bf676E956AF5f30876b9af9E93D3CCC4D2ECfF
     Arbitrum: '0x',
     Optimism: '0x',
     Polygon: '0x',
   },
 };
-
-/**
- * TODO:
- * - Add USDC addresses for Fantom and Binance (mainnet and testnet)
- */
 
 /** @see {@link https://developers.circle.com/cctp/evm-smart-contracts#tokenmessenger-mainnet} */
 const mainnetTokenMessenger = (rows =>
@@ -252,17 +233,6 @@ const mainnetTokenMessenger = (rows =>
  
  */
 const mainnetContracts = {
-  Ethereum: {
-    aavePool: aaveAddresses.mainnet.Ethereum,
-    compound: compoundAddresses.mainnet.Ethereum,
-    compoundRewardsController:
-      compoundRewardsControllerAddresses.mainnet.Ethereum,
-    factory: factoryAddresses.mainnet.Ethereum,
-    usdc: usdcAddresses.mainnet.Ethereum,
-    tokenMessenger: mainnetTokenMessenger.Ethereum.Address,
-    aaveUSDC: aaveUsdcAddresses.mainnet.Ethereum,
-    aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Ethereum,
-  },
   Avalanche: {
     aavePool: aaveAddresses.mainnet.Avalanche,
     compound: '0x', // TODO
@@ -332,16 +302,6 @@ const testnetTokenMessenger = (rows =>
  * @type {EVMContractAddressesMap}
  */
 const testnetContracts = {
-  Ethereum: {
-    aavePool: aaveAddresses.testnet.Ethereum,
-    compound: '0x', // TODO
-    compoundRewardsController: '0x',
-    factory: factoryAddresses.testnet.Ethereum,
-    usdc: usdcAddresses.testnet.Ethereum,
-    tokenMessenger: testnetTokenMessenger['Ethereum Sepolia'].Address,
-    aaveUSDC: aaveUsdcAddresses.testnet.Ethereum,
-    aaveRewardsController: aaveRewardsControllerAddresses.testnet.Ethereum,
-  },
   Avalanche: {
     aavePool: aaveAddresses.testnet.Avalanche,
     compound: '0x', // TODO
@@ -398,15 +358,6 @@ harden(testnetContracts);
  *  @satisfies {AxelarChainConfigMap}
  */
 export const axelarConfig = {
-  Ethereum: {
-    axelarId: AxelarChainIdMap.Ethereum.mainnet,
-    chainInfo: {
-      namespace: 'eip155',
-      reference: '1',
-      cctpDestinationDomain: 0,
-    },
-    contracts: { ...mainnetContracts.Ethereum },
-  },
   Avalanche: {
     axelarId: AxelarChainIdMap.Avalanche.mainnet,
     chainInfo: {
@@ -457,15 +408,6 @@ export const axelarConfig = {
  *  @satisfies {AxelarChainConfigMap}
  */
 export const axelarConfigTestnet = {
-  Ethereum: {
-    axelarId: AxelarChainIdMap.Ethereum.testnet,
-    chainInfo: {
-      namespace: 'eip155',
-      reference: '11155111',
-      cctpDestinationDomain: 0,
-    },
-    contracts: { ...testnetContracts.Ethereum },
-  },
   Avalanche: {
     axelarId: AxelarChainIdMap.Avalanche.testnet,
     chainInfo: {

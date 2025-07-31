@@ -67,7 +67,6 @@ export const makePrivateArgs = async (
 
   /** @type {AxelarId} */
   const axelarIds = {
-    Ethereum: axelarConfig.Ethereum.axelarId,
     Avalanche: axelarConfig.Avalanche.axelarId,
     Arbitrum: axelarConfig.Arbitrum.axelarId,
     Optimism: axelarConfig.Optimism.axelarId,
@@ -76,7 +75,6 @@ export const makePrivateArgs = async (
 
   /** @type {EVMContractAddressesMap} */
   const contracts = {
-    Ethereum: { ...axelarConfig.Ethereum.contracts },
     Avalanche: { ...axelarConfig.Avalanche.contracts },
     Arbitrum: { ...axelarConfig.Arbitrum.contracts },
     Optimism: { ...axelarConfig.Optimism.contracts },
