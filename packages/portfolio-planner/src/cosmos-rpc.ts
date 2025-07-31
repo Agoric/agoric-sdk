@@ -158,3 +158,4 @@ export class CosmosRPCClient extends JSONRPCClient {
     }
   }
 }
+harden(CosmosRPCClient);

@@ -15,6 +15,7 @@ const trySomeExamples = async ({ rpc, redis }) => {
   await rpc.opened();
   console.log('RPC status:', await rpc.request('status', {}));
 };
+harden(trySomeExamples);
 
 export const startEngine = async ({
   rpc,
@@ -49,3 +50,4 @@ export const startEngine = async ({
     rpc.close();
   }
 };
+harden(startEngine);

@@ -21,10 +21,11 @@ export interface AgoricRedis {
 
 export class AgoricRedis extends Redis {
   constructor(url: string) {
-    console.log('Creating AgoricRedis client with options:', { url });
+    // console.log('Creating AgoricRedis client with options:', { url });
     super(url);
 
-    // Define custom commands here.
+    // Define custom Lua commands here, but declare them in the `interface
+    // AgoricRedis` above.
     this.defineCommand('hsetIfGreater', {
       numberOfKeys: 1,
       lua: `\
@@ -38,3 +39,4 @@ return nil;
     });
   }
 }
+harden(AgoricRedis);

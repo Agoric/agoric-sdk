@@ -10,3 +10,4 @@ export const main = async (argv, { env }) => {
 
   await startEngine({ rpc, redis });
 };
+harden(main);
