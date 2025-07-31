@@ -15,6 +15,10 @@ import { portfolioDeployConfigShape } from './portfolio-start.core.js';
  * @import {PortfolioDeployConfig} from './portfolio-start.core.js';
  */
 
+const isValidAddr = addr => {
+  return /^0x[a-fA-F0-9]{40}$/.test(addr);
+};
+
 /** @type {ParseArgsConfig['options'] } */
 const options = {
   net: { type: 'string' },
@@ -59,7 +63,15 @@ const build = async (homeP, endowments) => {
     ? harden({ ...axelarMainnetConfig })
     : harden({ ...axelarConfigTestnet });
 
-  // mustMatch(axelarConfig, AxelarConfigShape);
+  if (isMainnet) {
+    for (const [chain, config] of Object.entries(axelarConfig)) {
+      const addr = config.contracts.factory;
+
+      if (!addr || !isValidAddr(addr)) {
+        throw new Error(`Invalid address for ${chain}: ${addr}`);
+      }
+    }
+  }
 
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   // TODO: unit test agreement with startPortfolio.name
