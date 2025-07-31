@@ -86,7 +86,7 @@ const usdcAddresses = {
     Avalanche: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', // https://developers.circle.com/stablecoins/usdc-contract-addresses
     Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // https://developers.circle.com/stablecoins/usdc-contract-addresses
     Optimism: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85', // https://developers.circle.com/stablecoins/usdc-contract-addresses
-    Polygon: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', // https://developers.circle.com/stablecoins/usdc-contract-addresses
+    Polygon: '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359', // https://developers.circle.com/stablecoins/usdc-contract-addresses
   },
   testnet: {
     Avalanche: '0x5425890298aed601595a70AB815c96711a31Bc65', // https://testnet.snowtrace.io/token/0x5425890298aed601595a70AB815c96711a31Bc65
