@@ -143,12 +143,10 @@ export const BeefyPoolPlaces = {
 export const PoolPlaces = {
   USDN: { protocol: 'USDN', vault: null, chainName: 'noble' }, // MsgSwap only
   USDNVault: { protocol: 'USDN', vault: 1, chainName: 'noble' }, // MsgSwap, MsgLock
-  Aave_Ethereum: { protocol: 'Aave', chainName: 'Ethereum' },
   Aave_Avalanche: { protocol: 'Aave', chainName: 'Avalanche' },
   Aave_Optimism: { protocol: 'Aave', chainName: 'Optimism' },
   Aave_Arbitrum: { protocol: 'Aave', chainName: 'Arbitrum' },
   Aave_Polygon: { protocol: 'Aave', chainName: 'Polygon' },
-  Compound_Ethereum: { protocol: 'Compound', chainName: 'Ethereum' },
   Compound_Avalanche: { protocol: 'Compound', chainName: 'Avalanche' },
   Compound_Optimism: { protocol: 'Compound', chainName: 'Optimism' },
   Compound_Arbitrum: { protocol: 'Compound', chainName: 'Arbitrum' },

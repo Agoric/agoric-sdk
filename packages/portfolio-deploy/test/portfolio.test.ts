@@ -243,6 +243,7 @@ test.serial('contract starts; appears in agoricNames', async t => {
 
   const materials = buildProposal(
     '@aglocal/portfolio-deploy/src/portfolio.build.js',
+    ['--net', 'mainnet'],
   );
   await evalProposal(materials);
 
