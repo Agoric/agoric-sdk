@@ -5,8 +5,6 @@
  * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.ts';
  */
 
-import { beefyVaults } from './beefy-configs.js';
-
 /**
  * @typedef {object} AxelarChainIdEntry
  * @property {string} testnet - The Axelar chain ID used in testnet.
@@ -86,40 +84,40 @@ const aaveAddresses = {
     Avalanche: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
     Arbitrum: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
     Optimism: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
-    Polygon: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
-    Fantom: '0x', // TODO: does Fantom have AAVE?
-    Binance: '0x6807dc923806fE8Fd134338EABCA509979a7e0cB',
+    // TODO: Temporary placeholder — AAVE support on Polygon is not intended.
+    // Find a cleaner strategy to handle unsupported chains.
+    Polygon: '0x',
   },
   testnet: {
     Ethereum: '0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951',
     Avalanche: '0x8B9b2AF4afB389b4a70A474dfD4AdCD4a302bb40',
     Arbitrum: '0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff',
     Optimism: '0xb50201558B00496A145fE76f7424749556E326D8',
-    Polygon: '0x', // TODO: find polygon testnet addresses for testing aave with polygon
-    Fantom: '0x', // TODO: does Fantom have AAVE?
-    Binance: '0x', // TODO: find Binance testnet addresses for testing aave with Binance
+    // TODO: Temporary placeholder — AAVE support on Polygon is not intended.
+    // Find a cleaner strategy to handle unsupported chains.
+    Polygon: '0x',
   },
 };
 
 /** @type {AddressesMap} */
 const usdcAddresses = {
   mainnet: {
-    Ethereum: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-    Avalanche: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E',
-    Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
-    Optimism: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
-    Polygon: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
-    Fantom: '0x',
-    Binance: '0x',
+    Ethereum: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // https://developers.circle.com/stablecoins/usdc-contract-addresses
+    Avalanche: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', // https://developers.circle.com/stablecoins/usdc-contract-addresses
+    Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // https://developers.circle.com/stablecoins/usdc-contract-addresses
+    Optimism: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85', // https://developers.circle.com/stablecoins/usdc-contract-addresses
+    Polygon: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', // https://developers.circle.com/stablecoins/usdc-contract-addresses
+    Fantom: '0x04068DA6C83AFCFA0e13ba15A6696662335D5B75', // https://ftmscout.com/address/0x04068DA6C83AFCFA0e13ba15A6696662335D5B75
+    Binance: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // https://bscscan.com/token/0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d
   },
   testnet: {
-    Ethereum: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238', // Sepolia
-    Avalanche: '0x5425890298aed601595a70AB815c96711a31Bc65', // Fuji
-    Arbitrum: '0x2f3A40A3db8a7e3D09B0adfEfbCe4f6F81927557', // Arbitrum Sepolia
-    Optimism: '0x4200000000000000000000000000000000000042', // OP Sepolia
-    Polygon: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', // Amoy
+    Ethereum: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238', // https://sepolia.etherscan.io/token/0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238
+    Avalanche: '0x5425890298aed601595a70AB815c96711a31Bc65', // https://testnet.snowtrace.io/token/0x5425890298aed601595a70AB815c96711a31Bc65
+    Arbitrum: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d', // https://sepolia.arbiscan.io/token/0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d
+    Optimism: '0x5fd84259d66Cd46123540766Be93DFE6D43130D7', // https://sepolia-optimism.etherscan.io/token/0x5fd84259d66Cd46123540766Be93DFE6D43130D7
+    Polygon: '0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582', // https://amoy.polygonscan.com/token/0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582
     Fantom: '0x',
-    Binance: '0x',
+    Binance: '0x64544969ed7EBf5f083679233325356EbE738930', // https://developers.circle.com/stablecoins/usdc-contract-addresses#testnet
   },
 };
 
@@ -130,41 +128,82 @@ const aaveUsdcAddresses = {
     Avalanche: '0x',
     Arbitrum: '0x',
     Optimism: '0x',
+    // TODO: Temporary placeholder — AAVE support on Polygon is not intended.
+    // Find a cleaner strategy to handle unsupported chains.
     Polygon: '0x',
-    Fantom: '0x',
-    Binance: '0x',
   },
   testnet: {
     Ethereum: '0x', // Sepolia
     Avalanche: '0xb1c85310a1b809C70fA6806d27Da425C1261F801', // Fuji
     Arbitrum: '0x', // Arbitrum Sepolia
     Optimism: '0x', // OP Sepolia
-    Polygon: '0x', // Amoy
-    Fantom: '0x',
-    Binance: '0x',
+    // TODO: Temporary placeholder — AAVE support on Polygon is not intended.
+    // Find a cleaner strategy to handle unsupported chains.
+    Polygon: '0x',
   },
 };
 
 /** @type {AddressesMap} */
 const aaveRewardsControllerAddresses = {
   mainnet: {
-    Ethereum: '0x',
-    Avalanche: '0x',
-    Arbitrum: '0x',
-    Optimism: '0x',
+    Ethereum: '0x8164Cc65827dcFe994AB23944CBC90e0aa80bFcb', // https://aave.com/docs/resources/addresses
+    Avalanche: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses
+    Arbitrum: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses
+    Optimism: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses
+    // TODO: Temporary placeholder — AAVE support on Polygon is not intended.
+    // Find a cleaner strategy to handle unsupported chains.
     Polygon: '0x',
-    Fantom: '0x',
-    Binance: '0x',
   },
   testnet: {
-    Ethereum: '0x', // Sepolia
-    Avalanche: '0x03aFC1Dfb53eae8eB7BE0E8CB6524aa79C3F8578', // Fuji
+    Ethereum: '0x4DA5c4da71C5a167171cC839487536d86e083483', // Sepolia https://aave.com/docs/resources/addresses
+    Avalanche: '0x03aFC1Dfb53eae8eB7BE0E8CB6524aa79C3F8578', // Fuji https://testnet.snowtrace.io/address/0x03aFC1Dfb53eae8eB7BE0E8CB6524aa79C3F8578
     Arbitrum: '0x', // Arbitrum Sepolia
     Optimism: '0x', // OP Sepolia
-    Polygon: '0x', // Amoy
-    Fantom: '0x',
-    Binance: '0x',
+    // TODO: Temporary placeholder — AAVE support on Polygon is not intended.
+    // Find a cleaner strategy to handle unsupported chains.
+    Polygon: '0x',
   },
+};
+
+/** @type {AddressesMap} */
+const compoundAddresses = {
+  mainnet: {
+    Ethereum: '0xc3d688B66703497DAA19211EEdff47f25384cdc3', // Ethereum Mainnet - USDC Base cUSDCv3
+    Polygon: '0xF25212E676D1F7F89Cd72fFEe66158f541246445', // Polygon Mainnet - USDC Base
+    Arbitrum: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf', // Arbitrum - USDC Base (Native)
+    Optimism: '0x2e44e174f7D53F0212823acC11C01A11d58c5bCB', // Optimism - USDC Base
+  },
+  testnet: {
+    Ethereum: '0xAec1F48e02Cfb822Be958B68C7957156EB3F0b6e', // Ethereum Sepolia Testnet - USDC Base
+    Polygon: '0xF09F0369aB0a875254fB565E52226c88f10Bc839', // Polygon Mumbai Testnet - USDC Base
+    Arbitrum: '0x',
+    Optimism: '0x',
+  },
+};
+
+/** @type {AddressesMap} */
+const compoundRewardsControllerAddresses = {
+  mainnet: {
+    Ethereum: '0x1B0e765F6224C21223AeA2af16c1C46E38885a40', // Ethereum Mainnet - USDC Base cUSDCv3
+    Polygon: '0x45939657d1CA34A8FA39A924B71D28Fe8431e581', // Polygon Mainnet - USDC Base
+    Arbitrum: '0x88730d254A2f7e6AC8388c3198aFd694bA9f7fae', // Arbitrum - USDC Base (Native)
+    Optimism: '0x443EA0340cb75a160F31A440722dec7b5bc3C2E9', // Optimism - USDC Base
+  },
+  testnet: {
+    Ethereum: '0x8bF5b658bdF0388E8b482ED51B14aef58f90abfD', // Ethereum Sepolia Testnet - USDC Base
+    Polygon: '0x0785f2AC0dCBEDEE4b8D62c25A34098E9A0dF4bB', // Polygon Mumbai Testnet - USDC Base
+    Arbitrum: '0x',
+    Optimism: '0x',
+  },
+};
+
+/** @type {AddressesMap} */
+const beefyre7Addresses = {
+  mainnet: {
+    Avalanche: '0xdA640bE4588C469C9DB45D082B36913490924c08', // Beefy re7 vault on Avalanche
+  },
+  // No testnet beefy vaults available as yet
+  testnet: {},
 };
 
 // TODO: deploy the factory in mainnet/testnet and fill these addresses
@@ -172,8 +211,8 @@ const aaveRewardsControllerAddresses = {
 const factoryAddresses = {
   mainnet: {
     Ethereum: '0x',
-    Avalanche: '0x',
-    Arbitrum: '0x',
+    Avalanche: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://snowtrace.io/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
+    Arbitrum: '0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc', // https://arbiscan.io/address/0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc
     Optimism: '0x',
     Polygon: '0x',
     Fantom: '0x',
@@ -181,7 +220,7 @@ const factoryAddresses = {
   },
   testnet: {
     Ethereum: '0x',
-    Avalanche: '0x84E2eFa88324A270b95B062048BD43fb821FDb0f',
+    Avalanche: '0xe4Bf676E956AF5f30876b9af9E93D3CCC4D2ECfF', // https://testnet.snowtrace.io/address/0xe4Bf676E956AF5f30876b9af9E93D3CCC4D2ECfF
     Arbitrum: '0x',
     Optimism: '0x',
     Polygon: '0x',
@@ -219,8 +258,9 @@ const mainnetTokenMessenger = (rows =>
 const mainnetContracts = {
   Ethereum: {
     aavePool: aaveAddresses.mainnet.Ethereum,
-    compound: '0x', // TODO
-    compoundRewardsController: '0x',
+    compound: compoundAddresses.mainnet.Ethereum,
+    compoundRewardsController:
+      compoundRewardsControllerAddresses.mainnet.Ethereum,
     factory: factoryAddresses.mainnet.Ethereum,
     usdc: usdcAddresses.mainnet.Ethereum,
     tokenMessenger: mainnetTokenMessenger.Ethereum.Address,
@@ -230,18 +270,19 @@ const mainnetContracts = {
   Avalanche: {
     aavePool: aaveAddresses.mainnet.Avalanche,
     compound: '0x', // TODO
-    compoundRewardsController: '0x',
+    compoundRewardsController: '0x', // TODO
     factory: factoryAddresses.mainnet.Avalanche,
     usdc: usdcAddresses.mainnet.Avalanche,
     tokenMessenger: mainnetTokenMessenger.Avalanche.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Avalanche,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Avalanche,
-    Beefy_re7_Avalanche: beefyVaults.mainnet.Avalanche.re7,
+    Beefy_re7_Avalanche: beefyre7Addresses.mainnet.Avalanche,
   },
   Optimism: {
     aavePool: aaveAddresses.mainnet.Optimism,
-    compound: '0x', // TODO
-    compoundRewardsController: '0x',
+    compound: compoundAddresses.mainnet.Optimism,
+    compoundRewardsController:
+      compoundRewardsControllerAddresses.mainnet.Optimism,
     factory: factoryAddresses.mainnet.Optimism,
     usdc: usdcAddresses.mainnet.Optimism,
     tokenMessenger: mainnetTokenMessenger['OP Mainnet'].Address,
@@ -250,8 +291,9 @@ const mainnetContracts = {
   },
   Arbitrum: {
     aavePool: aaveAddresses.mainnet.Arbitrum,
-    compound: '0x', // TODO
-    compoundRewardsController: '0x',
+    compound: compoundAddresses.mainnet.Arbitrum,
+    compoundRewardsController:
+      compoundRewardsControllerAddresses.mainnet.Arbitrum,
     factory: factoryAddresses.mainnet.Arbitrum,
     usdc: usdcAddresses.mainnet.Arbitrum,
     tokenMessenger: mainnetTokenMessenger.Arbitrum.Address,
@@ -260,34 +302,14 @@ const mainnetContracts = {
   },
   Polygon: {
     aavePool: aaveAddresses.mainnet.Polygon,
-    compound: '0x', // TODO
-    compoundRewardsController: '0x',
+    compound: compoundAddresses.mainnet.Polygon,
+    compoundRewardsController:
+      compoundRewardsControllerAddresses.mainnet.Polygon,
     factory: factoryAddresses.mainnet.Polygon,
     usdc: usdcAddresses.mainnet.Polygon,
     tokenMessenger: mainnetTokenMessenger['Polygon PoS'].Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Polygon,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Polygon,
-  },
-  Fantom: {
-    // TODO: aave and compound?
-    aavePool: '0x',
-    compound: '0x',
-    compoundRewardsController: '0x',
-    factory: factoryAddresses.mainnet.Fantom,
-    usdc: usdcAddresses.mainnet.Fantom,
-    tokenMessenger: '0x', // TODO
-    aaveUSDC: '0x',
-    aaveRewardsController: '0x',
-  },
-  Binance: {
-    aavePool: aaveAddresses.mainnet.Binance,
-    compound: '0x', // TODO
-    compoundRewardsController: '0x',
-    factory: factoryAddresses.mainnet.Binance,
-    usdc: usdcAddresses.mainnet.Binance,
-    tokenMessenger: '0x', // TODO
-    aaveUSDC: aaveUsdcAddresses.mainnet.Binance,
-    aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Binance,
   },
 };
 harden(mainnetContracts);
@@ -365,28 +387,6 @@ const testnetContracts = {
     aaveUSDC: '0x',
     aaveRewardsController: '0x',
   },
-  Fantom: {
-    // TODO: aave and compound?
-    aavePool: '0x',
-    compound: '0x',
-    compoundRewardsController: '0x',
-    factory: factoryAddresses.testnet.Fantom,
-    usdc: usdcAddresses.testnet.Fantom,
-    tokenMessenger: '0x', // TODO?
-    aaveUSDC: '0x',
-    aaveRewardsController: '0x',
-  },
-  Binance: {
-    // TODO: AAVE on Binance testnet?
-    aavePool: '0x',
-    compound: '0x',
-    compoundRewardsController: '0x',
-    factory: factoryAddresses.testnet.Binance,
-    usdc: usdcAddresses.testnet.Binance,
-    tokenMessenger: '0x', // TODO?
-    aaveUSDC: '0x',
-    aaveRewardsController: '0x',
-  },
 };
 harden(testnetContracts);
 
@@ -447,22 +447,6 @@ export const axelarConfig = {
     },
     contracts: { ...mainnetContracts.Polygon },
   },
-  Fantom: {
-    axelarId: AxelarChainIdMap.Fantom.mainnet,
-    chainInfo: {
-      namespace: 'eip155',
-      reference: '250',
-    },
-    contracts: { ...mainnetContracts.Fantom },
-  },
-  Binance: {
-    axelarId: AxelarChainIdMap.Binance.mainnet,
-    chainInfo: {
-      namespace: 'eip155',
-      reference: '56',
-    },
-    contracts: { ...mainnetContracts.Binance },
-  },
 };
 
 /**
@@ -521,21 +505,5 @@ export const axelarConfigTestnet = {
       cctpDestinationDomain: 7,
     },
     contracts: { ...testnetContracts.Polygon },
-  },
-  Fantom: {
-    axelarId: AxelarChainIdMap.Fantom.testnet,
-    chainInfo: {
-      namespace: 'eip155',
-      reference: '4002', // XXX: confirm this ID
-    },
-    contracts: { ...testnetContracts.Fantom },
-  },
-  Binance: {
-    axelarId: AxelarChainIdMap.Binance.testnet,
-    chainInfo: {
-      namespace: 'eip155',
-      reference: '97',
-    },
-    contracts: { ...testnetContracts.Binance },
   },
 };
