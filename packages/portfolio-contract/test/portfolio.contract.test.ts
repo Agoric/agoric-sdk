@@ -51,7 +51,7 @@ const getPortfolioInfo = (key: string, storage: FakeStorage) => {
     ...fromEntries([[key, info], ...posEntries]),
     ...byFlow,
   };
-  return { contents, positionPaths: posPaths, flowPaths: flowPaths };
+  return { contents, positionPaths: posPaths, flowPaths };
 };
 
 test('open portfolio with USDN position', async t => {
@@ -545,4 +545,24 @@ test('Withdraw from a Beefy position', async t => {
   const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
   t.snapshot(contents, 'vstorage');
   t.snapshot(withdraw.payouts, 'refund payouts');
+});
+
+test('portfolios node updates for each new portfolio', async t => {
+  const { makeFundedTrader, common } = await setupTrader(t);
+  const { poc26 } = common.brands;
+  const { storage } = common.bootstrap;
+
+  const give = { Access: poc26.make(1n) };
+  {
+    const trader = await makeFundedTrader();
+    await trader.openPortfolio(t, give);
+    const x = storage.getDeserialized(`${ROOT_STORAGE_PATH}.portfolios`).at(-1);
+    t.deepEqual(x, { addPortfolio: `portfolio0` });
+  }
+  {
+    const trader = await makeFundedTrader();
+    await trader.openPortfolio(t, give);
+    const x = storage.getDeserialized(`${ROOT_STORAGE_PATH}.portfolios`).at(-1);
+    t.deepEqual(x, { addPortfolio: `portfolio1` });
+  }
 });
