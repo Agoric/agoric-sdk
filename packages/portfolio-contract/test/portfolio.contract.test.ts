@@ -2,15 +2,18 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { type VStorage } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
+import type { StreamCell } from '@agoric/internal/src/lib-chainStorage.js';
 import type { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
+import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
-import {
-  deploy,
-  deploy as deployWalletFactory,
-} from '@agoric/smart-wallet/tools/wf-tools.js';
-import type { AxelarChain } from '../src/constants.js';
+import type { ExecutionContext } from 'ava';
+import type { MovementDesc } from '../src/type-guards-steps.ts';
+import type { StatusFor } from '../src/type-guards.ts';
+import { fakePlanner } from '../tools/agents-mock.ts';
 import {
   setupTrader,
   simulateAckTransferToAxelar,
@@ -18,13 +21,6 @@ import {
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
 import { evmNamingDistinction, localAccount0 } from './mocks.ts';
-import { fakePlanner } from '../tools/agents-mock.ts';
-import { makeVstorageKit, type VStorage } from '@agoric/client-utils';
-import type { StreamCell } from '@agoric/internal/src/lib-chainStorage.js';
-import type { StatusFor } from '../src/type-guards.ts';
-import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
-import type { ExecutionContext } from 'ava';
-import type { MovementDesc } from '../src/type-guards-steps.ts';
 
 const { fromEntries, keys } = Object;
 
