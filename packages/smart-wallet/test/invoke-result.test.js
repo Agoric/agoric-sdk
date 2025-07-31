@@ -2,23 +2,15 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
-import { objectMap, VBankAccount } from '@agoric/internal';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { objectMap } from '@agoric/internal';
 import { makeCopyBag } from '@agoric/store';
-import { makeNameHubKit } from '@agoric/vats';
-import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
-import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
-import * as priceExports from './wallet-fun.contract.js';
-import * as wfExports from '../src/walletFactory.js';
+import { deploy } from '../tools/wf-tools.js';
 import * as gameExports from './gameAssetContract.js';
+import * as priceExports from './wallet-fun.contract.js';
 
 /**
  * @import {TestFn, ExecutionContext} from 'ava'
- * @import {start as StartFn} from '../src/walletFactory.js';
  * @import {OfferSpec} from '../src/offers.js';
  * @import {InvokeAction} from '../src/smartWallet.js';
  */
@@ -28,104 +20,10 @@ import * as gameExports from './gameAssetContract.js';
  */
 
 const contractName = 'walletFactory';
-const ROOT_STORAGE_PATH = 'ROOT';
 const { make } = AmountMath;
 
 /** @type {TestFn<WTestCtx>} */
 const test = anyTest;
-
-const getCellValues = ({ value }) => {
-  return JSON.parse(value).values;
-};
-
-const getCapDataStructure = cell => {
-  const { body, slots } = JSON.parse(cell);
-  const structure = JSON.parse(body.replace(/^#/, ''));
-  return { structure, slots };
-};
-
-const makeBootstrap = async () => {
-  const { zoe, bundleAndInstall } = await setUpZoeForTest();
-
-  const storage = makeFakeStorageKit(ROOT_STORAGE_PATH);
-  const board = makeFakeBoard();
-
-  const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
-    makeNameHubKit();
-  await makeWellKnownSpaces(agoricNamesAdmin);
-  const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
-    makeNameHubKit();
-
-  const bankBridgeMessages = [];
-  const { bankManager, pourPayment } = await makeFakeBankManagerKit({
-    onToBridge: obj => bankBridgeMessages.push(obj),
-  });
-
-  const feeIssuer = await E(zoe).getFeeIssuer();
-  const feeBrand = await E(feeIssuer).getBrand();
-  await E(bankManager).addAsset('uist', 'IST', 'IST', {
-    issuer: feeIssuer,
-    brand: feeBrand,
-  });
-  await E(E(agoricNamesAdmin).lookupAdmin('issuer')).update('IST', feeIssuer);
-  await E(E(agoricNamesAdmin).lookupAdmin('brand')).update('IST', feeBrand);
-  board.getId(feeBrand);
-
-  /** @param {string} path */
-  const readLatest = async path => {
-    await eventLoopIteration();
-    return getCapDataStructure(storage.getValues(path).at(-1));
-  };
-
-  return {
-    agoricNames,
-    agoricNamesAdmin,
-    board,
-    bankManager,
-    namesByAddress,
-    namesByAddressAdmin,
-    storage,
-    zoe,
-    utils: { pourPayment, bundleAndInstall, readLatest },
-  };
-};
-
-const deploy = async () => {
-  const bootstrap = await makeBootstrap();
-  const { zoe, utils } = bootstrap;
-
-  /** @type {Installation<StartFn>} */
-  const installation = await utils.bundleAndInstall(wfExports);
-  assert.equal(passStyleOf(installation), 'remotable');
-
-  const { agoricNames, board, bankManager, storage } = bootstrap;
-  const storageNode = storage.rootNode.makeChildNode('wallet');
-
-  const assetPublisher = await bankManager.getBankForAddress(
-    VBankAccount.provision.address,
-  );
-  const walletFactoryFacets = await E(zoe).startInstance(
-    installation,
-    {},
-    {
-      agoricNames,
-      board,
-      assetPublisher,
-    },
-    { storageNode },
-  );
-
-  const { creatorFacet } = walletFactoryFacets;
-  const { namesByAddressAdmin } = bootstrap;
-
-  /** @param {string} addr */
-  const provisionSmartWallet = async addr => {
-    const bank = bankManager.getBankForAddress(addr);
-    return E(creatorFacet).provideSmartWallet(addr, bank, namesByAddressAdmin);
-  };
-
-  return { walletFactoryFacets, bootstrap, provisionSmartWallet };
-};
 
 const makeTestContext = async t => {
   t.log('contract deployment', contractName);
@@ -186,7 +84,7 @@ test('start game contract; make offer', async t => {
   const { instance, brands, ids } = await startGameContract();
 
   const { provisionSmartWallet } = t.context;
-  const { readLatest } = t.context.bootstrap.utils;
+  const { readLegible } = t.context.bootstrap.utils;
 
   const addr = 'agoric1player';
   const [wallet] = await provisionSmartWallet(addr);
@@ -209,7 +107,7 @@ test('start game contract; make offer', async t => {
   const offersP = E(wallet).getOffersFacet();
   await t.notThrowsAsync(E(offersP).executeOffer(spec));
 
-  const { structure, slots } = await readLatest(`ROOT.wallet.${addr}`);
+  const { structure, slots } = await readLegible(`ROOT.wallet.${addr}`);
   t.log('last wallet update', structure);
   t.log('payouts', structure.status.payouts);
   t.is(structure.status.result, 'welcome to the game');
@@ -265,7 +163,7 @@ test('start price contract; make offer', async t => {
   const { instance, ids, tools } = await startPriceContract(addr);
   t.deepEqual(await tools.getPrices(), []); // no admins
 
-  const { readLatest } = t.context.bootstrap.utils;
+  const { readLegible } = t.context.bootstrap.utils;
 
   t.log('redeem price admin invitation');
   /** @type {OfferSpec} */
@@ -284,7 +182,7 @@ test('start price contract; make offer', async t => {
   await tools.getReceived();
   await t.notThrowsAsync(E(offersP).executeOffer(redeemSpec));
 
-  const { structure, slots } = await readLatest(`ROOT.wallet.${addr}`);
+  const { structure, slots } = await readLegible(`ROOT.wallet.${addr}`);
   t.log('last wallet update', structure);
   t.log('payouts', structure.status.payouts);
   t.is(structure.status.result, 'UNPUBLISHED');
