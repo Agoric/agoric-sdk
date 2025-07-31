@@ -102,20 +102,23 @@ export const setupTrader = async (t, initial = 10_000) => {
       .at(-1);
     return val;
   }) as unknown as VstorageKit['readPublished'];
-  const myBalance = usdc.units(initial);
-  const funds = await common.utils.pourPayment(myBalance);
-  const { mint: _, ...poc26SansMint } = poc26;
-  const { mint: _b, ...bldSansMint } = bld;
-  const myWallet = makeWallet(
-    { USDC: usdc, BLD: bldSansMint, Access: poc26SansMint },
-    zoe,
-    when,
-  );
-  await E(myWallet).deposit(funds);
-  await E(myWallet).deposit(poc26.mint.mintPayment(poc26.make(1n)));
-  await E(myWallet).deposit(bld.mint.mintPayment(bld.make(10_000n)));
-  const trader1 = makeTrader(myWallet, started.instance, readPublished);
 
+  const makeFundedTrader = async () => {
+    const myBalance = usdc.units(initial);
+    const funds = await common.utils.pourPayment(myBalance);
+    const { mint: _, ...poc26SansMint } = poc26;
+    const { mint: _b, ...bldSansMint } = bld;
+    const myWallet = makeWallet(
+      { USDC: usdc, BLD: bldSansMint, Access: poc26SansMint },
+      zoe,
+      when,
+    );
+    await E(myWallet).deposit(funds);
+    await E(myWallet).deposit(poc26.mint.mintPayment(poc26.make(1n)));
+    await E(myWallet).deposit(bld.mint.mintPayment(bld.make(10_000n)));
+    return makeTrader(myWallet, started.instance, readPublished);
+  };
+  const trader1 = await makeFundedTrader();
   const { ibcBridge } = common.mocks;
   for (const { msg, ack } of values(makeUSDNIBCTraffic())) {
     ibcBridge.addMockAck(msg, ack);
@@ -124,7 +127,7 @@ export const setupTrader = async (t, initial = 10_000) => {
     ibcBridge.addMockAck(msg, ack);
   }
 
-  return { common, zoe, started, myBalance, myWallet, trader1, timerService };
+  return { common, zoe, started, makeFundedTrader, trader1, timerService };
 };
 
 export const simulateUpcallFromAxelar = async (

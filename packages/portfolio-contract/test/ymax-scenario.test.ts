@@ -28,11 +28,11 @@ const { values } = Object;
 
 const rebalanceScenarioMacro = test.macro({
   async exec(t, description: string) {
-    const { trader1, myBalance, common } = await setupTrader(t);
+    const { trader1, common } = await setupTrader(t);
     const scenarios = await scenariosP;
     const scenario = scenarios[description];
     if (!scenario) return t.fail(`Scenario "${description}" not found`);
-    t.log('start', description, 'with', myBalance);
+    t.log('start', description);
 
     const { ibcBridge } = common.mocks;
     for (const money of [
