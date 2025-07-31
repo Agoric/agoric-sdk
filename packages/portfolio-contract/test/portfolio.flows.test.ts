@@ -430,7 +430,7 @@ test('open portfolio with USDN position', async t => {
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11028' },
+    { _method: 'executeEncodedTx', _cap: 'noble11042' },
     { _method: 'exit' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -620,7 +620,7 @@ test('handle failure in executeEncodedTx', async t => {
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11028' }, // fail
+    { _method: 'executeEncodedTx', _cap: 'noble11042' }, // fail
     { _method: 'transfer', address: { chainId: 'agoric-6' } }, // unwind
     { _method: 'withdrawToSeat' }, // unwind
     { _method: 'fail' },
@@ -654,7 +654,7 @@ test('handle failure in recovery from executeEncodedTx', async t => {
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11028' }, // fail
+    { _method: 'executeEncodedTx', _cap: 'noble11042' }, // fail
     { _method: 'transfer', address: { chainId: 'agoric-6' } }, // fail to recover
     { _method: 'fail' },
   ]);
