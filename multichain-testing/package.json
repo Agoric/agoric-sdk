@@ -16,9 +16,9 @@
   },
   "packageManager": "yarn@4.9.1",
   "devDependencies": {
-    "@agoric/cosmic-proto": "dev",
-    "@agoric/fast-usdc": "dev",
-    "@agoric/internal": "dev",
+    "@agoric/cosmic-proto": "agoric-upgrade-21",
+    "@agoric/fast-usdc": "agoric-upgrade-21",
+    "@agoric/internal": "agoric-upgrade-21",
     "@cosmjs/amino": "npm:^0.34.0",
     "@cosmjs/cosmwasm-stargate": "^0.34.0",
     "@cosmjs/crypto": "^0.34.0",

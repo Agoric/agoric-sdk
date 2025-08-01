@@ -63,16 +63,16 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/client-utils@npm:dev":
-  version: 0.1.1-dev-69b365d.0.69b365d
-  resolution: "@agoric/client-utils@npm:0.1.1-dev-69b365d.0.69b365d"
+"@agoric/client-utils@portal:../../agoric-sdk/packages/client-utils::locator=root-workspace-0b6124%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@agoric/client-utils@portal:../../agoric-sdk/packages/client-utils::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
-    "@agoric/casting": "npm:0.4.3-dev-69b365d.0.69b365d"
-    "@agoric/cosmic-proto": "npm:0.4.1-dev-69b365d.0.69b365d"
-    "@agoric/ertp": "npm:0.16.3-dev-69b365d.0.69b365d"
-    "@agoric/internal": "npm:0.3.3-dev-69b365d.0.69b365d"
-    "@agoric/smart-wallet": "npm:0.5.4-dev-69b365d.0.69b365d"
-    "@agoric/vats": "npm:0.15.2-dev-69b365d.0.69b365d"
+    "@agoric/casting": "workspace:*"
+    "@agoric/cosmic-proto": "workspace:*"
+    "@agoric/ertp": "workspace:*"
+    "@agoric/internal": "workspace:*"
+    "@agoric/smart-wallet": "workspace:*"
+    "@agoric/vats": "workspace:*"
     "@cosmjs/stargate": "npm:^0.34.0"
     "@cosmjs/tendermint-rpc": "npm:^0.34.0"
     "@endo/base64": "npm:^1.0.12"
@@ -82,9 +82,8 @@ __metadata:
     "@endo/pass-style": "npm:^1.6.3"
     "@endo/patterns": "npm:^1.7.0"
     "@endo/promise-kit": "npm:^1.1.13"
-  checksum: 10c0/a9aeff0f62c64cf993ef47cbcb3e4a76b15e726e2d27314d84037dfcc80a7a0c55dbcae08cdb8a644c9e269299c68a0564d7ba5bf9548463d38f431ea19331b2
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "@agoric/cosmic-proto@portal:../../agoric-sdk/packages/cosmic-proto::locator=root-workspace-0b6124%40workspace%3A.":
   version: 0.0.0-use.local
@@ -352,9 +351,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/synthetic-chain@npm:^0.5.8":
-  version: 0.5.8
-  resolution: "@agoric/synthetic-chain@npm:0.5.8"
+"@agoric/synthetic-chain@file:./agoric-synthetic-chain-0.5.9.tgz::locator=root-workspace-0b6124%40workspace%3A.":
+  version: 0.5.9
+  resolution: "@agoric/synthetic-chain@file:./agoric-synthetic-chain-0.5.9.tgz#./agoric-synthetic-chain-0.5.9.tgz::hash=497f02&locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
     "@agoric/client-utils": "npm:0.1.1-dev-f9483e7.0"
     "@endo/zip": "npm:^1.0.9"
@@ -366,7 +365,7 @@ __metadata:
     tmp: "npm:0.2.3"
   bin:
     synthetic-chain: dist/cli/cli.js
-  checksum: 10c0/cb9c4afdcc4501aa4af3104de9880503ce05285c4de6bb1de55a90dc4f7ed26067622e3bfeb514216b919088a991d8746a8422df335282bfa36809eae6112bf1
+  checksum: 10c0/e6a0aeefc231e591fa104e422c67c80d49dee6ea1ee783c63dd8932ad91b1840f69ffdd8b8a36f91e9e35e25de8cabc48892e6e2566c03418f0834ddac2f5bc7
   languageName: node
   linkType: hard
 
@@ -595,7 +594,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmjs/amino@npm:^0.34.0":
+"@cosmjs/amino@npm:~0.34.0":
   version: 0.34.0
   resolution: "@cosmjs/amino@npm:0.34.0"
   dependencies:
@@ -607,7 +606,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmjs/crypto@npm:^0.34.0":
+"@cosmjs/crypto@npm:~0.34.0":
   version: 0.34.0
   resolution: "@cosmjs/crypto@npm:0.34.0"
   dependencies:
@@ -622,7 +621,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmjs/encoding@npm:^0.34.0":
+"@cosmjs/encoding@npm:~0.34.0":
   version: 0.34.0
   resolution: "@cosmjs/encoding@npm:0.34.0"
   dependencies:
@@ -633,7 +632,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmjs/json-rpc@npm:^0.34.0":
+"@cosmjs/json-rpc@npm:~0.34.0":
   version: 0.34.0
   resolution: "@cosmjs/json-rpc@npm:0.34.0"
   dependencies:
@@ -643,7 +642,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmjs/math@npm:^0.34.0":
+"@cosmjs/math@npm:~0.34.0":
   version: 0.34.0
   resolution: "@cosmjs/math@npm:0.34.0"
   dependencies:
@@ -652,7 +651,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmjs/proto-signing@npm:^0.34.0":
+"@cosmjs/proto-signing@npm:~0.34.0":
   version: 0.34.0
   resolution: "@cosmjs/proto-signing@npm:0.34.0"
   dependencies:
@@ -666,7 +665,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmjs/socket@npm:^0.34.0":
+"@cosmjs/socket@npm:~0.34.0":
   version: 0.34.0
   resolution: "@cosmjs/socket@npm:0.34.0"
   dependencies:
@@ -678,7 +677,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmjs/stargate@npm:^0.34.0":
+"@cosmjs/stargate@npm:~0.34.0":
   version: 0.34.0
   resolution: "@cosmjs/stargate@npm:0.34.0"
   dependencies:
@@ -694,7 +693,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmjs/stream@npm:^0.34.0":
+"@cosmjs/stream@npm:~0.34.0":
   version: 0.34.0
   resolution: "@cosmjs/stream@npm:0.34.0"
   dependencies:
@@ -703,7 +702,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmjs/tendermint-rpc@npm:^0.34.0":
+"@cosmjs/tendermint-rpc@npm:~0.34.0":
   version: 0.34.0
   resolution: "@cosmjs/tendermint-rpc@npm:0.34.0"
   dependencies:
@@ -721,7 +720,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmjs/utils@npm:^0.34.0":
+"@cosmjs/utils@npm:~0.34.0":
   version: 0.34.0
   resolution: "@cosmjs/utils@npm:0.34.0"
   checksum: 10c0/a55ab727f4d4930545b80676d0056dedc22e0c1d4788670b0613e0798dd7fd8baea2a4ef7ccd0d9facb08fa4938cc6edec415463b811b2ad1e2aa13e72dace89
@@ -1724,17 +1723,6 @@ __metadata:
     node-gyp: "npm:latest"
     prebuild-install: "npm:^7.1.1"
   checksum: 10c0/3c858214b8b6f0c3f536759a863dfc79b11c52cecd6061525fb7707d950ea2ef369280276d8cc62d504119514b7d32ea4aab134d260f6b5a0419a8119d613a67
-  languageName: node
-  linkType: hard
-
-"better-sqlite3@npm:^11.10.0":
-  version: 11.10.0
-  resolution: "better-sqlite3@npm:11.10.0"
-  dependencies:
-    bindings: "npm:^1.5.0"
-    node-gyp: "npm:latest"
-    prebuild-install: "npm:^7.1.1"
-  checksum: 10c0/1fffbf9e5fc9d24847a3ecf09491bceab1c294b46ba41df1c449dc20b6f5c5d9d94ff24becd0b1632ee282bd21278b7fea53a5a6215bb99209ded0ae05eda3b0
   languageName: node
   linkType: hard
 
@@ -4948,20 +4936,20 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@agoric/client-utils": "npm:dev"
-    "@agoric/ertp": "npm:dev"
-    "@agoric/inter-protocol": "npm:dev"
-    "@agoric/internal": "npm:dev"
-    "@agoric/store": "npm:dev"
-    "@agoric/synthetic-chain": "npm:^0.5.8"
-    "@agoric/zoe": "npm:dev"
+    "@agoric/client-utils": "npm:UNRELEASED_A3P_INTEGRATION"
+    "@agoric/ertp": "npm:UNRELEASED_A3P_INTEGRATION"
+    "@agoric/inter-protocol": "npm:UNRELEASED_A3P_INTEGRATION"
+    "@agoric/internal": "npm:UNRELEASED_A3P_INTEGRATION"
+    "@agoric/store": "npm:UNRELEASED_A3P_INTEGRATION"
+    "@agoric/synthetic-chain": "file:./agoric-synthetic-chain-0.5.9.tgz"
+    "@agoric/zoe": "npm:UNRELEASED_A3P_INTEGRATION"
     "@cosmjs/stargate": "npm:^0.34.0"
     "@cosmjs/tendermint-rpc": "npm:^0.34.0"
     "@endo/errors": "npm:^1.2.13"
     "@endo/far": "npm:^1.1.14"
     "@endo/init": "npm:^1.1.12"
     "@endo/marshal": "npm:^1.8.0"
-    agoric: "npm:dev"
+    agoric: "npm:UNRELEASED_A3P_INTEGRATION"
     ava: "npm:^6.1.2"
     eslint: "npm:^8.57.0"
     execa: "npm:9.1.0"

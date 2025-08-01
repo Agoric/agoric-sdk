@@ -136,7 +136,7 @@ export const upgradeEvmDests = async (
     // note: connections in privateArgs is stale, but we're not using them here
     const { connections: _, ...chainInfo } =
       /** @type {Omit<CosmosChainInfo, 'reference' | 'namespace'>} */ (info);
-    await E(creatorFacet).updateChain(chainName, {
+    const chainInfoExt = {
       ...chainInfo,
       namespace: 'cosmos',
       reference: chainInfo.chainId,
@@ -144,7 +144,15 @@ export const upgradeEvmDests = async (
       ...(chainName === 'noble' && {
         cctpDestinationDomain: cctpChainInfo.noble.cctpDestinationDomain,
       }),
-    });
+    };
+    try {
+      // @ts-expect-error
+      await E(creatorFacet).updateChain(chainName, chainInfoExt);
+    } catch (error) {
+      console.error(`Failed to update chain ${chainName}:`, error);
+      // @ts-expect-error
+      await E(creatorFacet).registerChain(chainName, chainInfoExt);
+    }
   }
   // XXX consider updating fuKit with new privateArgs.chainInfo
   trace('chainHub repaired');
@@ -154,12 +162,17 @@ export const upgradeEvmDests = async (
    */
   for (const [chainName, info] of Object.entries(cctpChainInfo)) {
     if (info.namespace !== 'eip155') continue; // exclude solana, noble
-    await E(creatorFacet).registerChain(chainName, {
+    const chainInfo = {
       ...info,
       // for backwards compatibility with `CosmosChainInfoShapeV1` which expects a `chainId`
-      // @ts-expect-error no longer expected
       chainId: `${info.namespace}:${info.reference}`,
-    });
+    };
+    try {
+      await E(creatorFacet).updateChain(chainName, chainInfo);
+    } catch (error) {
+      console.error(`Failed to update chain ${chainName}:`, error);
+      await E(creatorFacet).registerChain(chainName, chainInfo);
+    }
   }
 
   const { agoric, noble } = fuKit.privateArgs.chainInfo;

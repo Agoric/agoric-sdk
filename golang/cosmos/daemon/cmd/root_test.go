@@ -10,8 +10,8 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
 
-	dbm "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
@@ -39,10 +39,8 @@ func TestCLIFlags(t *testing.T) {
 	// handling should not be added in the Agoric app (most likely in root.go)
 	expectedFlagNames := map[string]interface{}{
 		"abci":                  "",
-		"abci-client-type":      "",
 		"address":               "",
 		"app-db-backend":        "",
-		"block_sync":            "",
 		"cpu-profile":           "",
 		"db_backend":            "",
 		"db_dir":                "",
@@ -53,7 +51,6 @@ func TestCLIFlags(t *testing.T) {
 		"home":                  "",
 		"iavl-cache-size":       "",
 		"iavl-disable-fastnode": "",
-		"iavl-lazy-loading":     "",
 		"index-events":          "",
 		"inter-block-cache":     "",
 		"inv-check-period":      "",
@@ -65,11 +62,13 @@ func TestCLIFlags(t *testing.T) {
 		"pruning":               "default",
 		"pruning-interval":      "",
 		"pruning-keep-recent":   "",
+		"query-gas-limit":       "",
+		"shutdown-grace":        "",
 		"trace":                 "",
 		"trace-store":           "",
 		"transport":             "",
 		"unsafe-skip-upgrades":  "",
-		"with-tendermint":       "",
+		"with-comet":            "",
 
 		"api.address":              "",
 		"api.enable":               "",
@@ -84,9 +83,7 @@ func TestCLIFlags(t *testing.T) {
 		"consensus.create_empty_blocks_interval": "",
 		"consensus.double_sign_check_height":     "",
 
-		"grpc-web.address":            "",
-		"grpc-web.enable":             "",
-		"grpc-web.enable-unsafe-cors": "",
+		"grpc-web.enable": "",
 
 		"grpc.address":           "",
 		"grpc.enable":            "",
@@ -109,27 +106,12 @@ func TestCLIFlags(t *testing.T) {
 		"rpc.pprof_laddr": "",
 		"rpc.unsafe":      "",
 
-		"rosetta.address":               "",
-		"rosetta.blockchain":            "",
-		"rosetta.denom-to-suggest":      "",
-		"rosetta.enable-fee-suggestion": "",
-		"rosetta.enable":                "",
-		"rosetta.gas-to-suggest":        "",
-		"rosetta.network":               "",
-		"rosetta.offline":               "",
-		"rosetta.retries":               "",
-
 		"state-sync.snapshot-interval":    "",
 		"state-sync.snapshot-keep-recent": "",
 
-		"store.streamers": "",
-
-		"streamers.file.fsync":              "",
-		"streamers.file.keys":               "",
-		"streamers.file.output-metadata":    "",
-		"streamers.file.prefix":             "",
-		"streamers.file.stop-node-on-error": "",
-		"streamers.file.write_dir":          "",
+		"streaming.abci.plugin":           "",
+		"streaming.abci.keys":             "",
+		"streaming.abci.stop-node-on-err": "",
 
 		"telemetry.enable-hostname-label":     "",
 		"telemetry.enable-hostname":           "",
@@ -138,6 +120,9 @@ func TestCLIFlags(t *testing.T) {
 		"telemetry.global-labels":             "",
 		"telemetry.prometheus-retention-time": "",
 		"telemetry.service-name":              "",
+		"telemetry.metrics-sink":              "",
+		"telemetry.datadog-hostname":          "",
+		"telemetry.statsd-addr":               "",
 	}
 	unknownFlagNames := []string{}
 	missingFlagNames := map[string]bool{}
