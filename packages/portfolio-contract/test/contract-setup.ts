@@ -1,6 +1,7 @@
 import type { VstorageKit } from '@agoric/client-utils';
 import { mustMatch } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
 import type { ScopedBridgeManager } from '@agoric/vats';
 import { heapVowE as VE } from '@agoric/vow';
 import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
@@ -10,6 +11,8 @@ import { passStyleOf } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import * as contractExports from '../src/portfolio.contract.ts';
+import { makeTrader } from '../tools/portfolio-actors.ts';
+import { makeWallet } from '../tools/wallet-offer-tools.ts';
 import {
   axelarIdsMock,
   contractsMock,
@@ -17,13 +20,11 @@ import {
   makeCCTPTraffic,
   makeUSDNIBCTraffic,
 } from './mocks.ts';
-import { makeTrader } from '../tools/portfolio-actors.ts';
 import {
   chainInfoWithCCTP,
   makeIncomingEVMEvent,
   setupPortfolioTest,
 } from './supports.ts';
-import { makeWallet } from '../tools/wallet-offer-tools.ts';
 
 const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
@@ -96,7 +97,9 @@ export const setupTrader = async (t, initial = 10_000) => {
   const { storage } = common.bootstrap;
   const readPublished = (async subpath => {
     await eventLoopIteration();
-    const val = storage.getDeserialized(`orchtest.${subpath}`).at(-1);
+    const val = storage
+      .getDeserialized(`${ROOT_STORAGE_PATH}.${subpath}`)
+      .at(-1);
     return val;
   }) as unknown as VstorageKit['readPublished'];
   const myBalance = usdc.units(initial);
