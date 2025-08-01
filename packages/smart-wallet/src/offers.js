@@ -7,11 +7,18 @@
  */
 
 /**
+ * @typedef {{ method: string; args?: unknown[] } | { saveAs: string }} OfferResultStep
+ */
+
+/**
  * @typedef {{
  *   id: OfferId;
  *   invitationSpec: import('./invitations.js').InvitationSpec;
  *   proposal: Proposal;
  *   offerArgs?: any;
+ *   after?: {
+ *     saveAs?: string;
+ *   };
  * }} OfferSpec
  */
 
