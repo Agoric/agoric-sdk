@@ -13,9 +13,9 @@ import * as cmd from '../cmd.js';
  * TODO? .withPath('/opt') or .withEnv({PATH: `${env.PATH}:/opt`})
  *
  * @param {string} file
- * @param {{ execFile: any }} io
+ * @param {{ execFile?: any, defaultEnv?: import('../cmd.js').Environment }} [io]
  */
 export const makeCmdRunner = (
   file,
-  { execFile = promisify(execFileAmbient) },
-) => cmd.makeCmdRunner(file, { execFile });
+  { execFile = promisify(execFileAmbient), defaultEnv = process.env } = {},
+) => cmd.makeCmdRunner(file, { execFile, defaultEnv });
