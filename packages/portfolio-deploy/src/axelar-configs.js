@@ -86,7 +86,7 @@ const usdcAddresses = {
     Avalanche: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', // https://developers.circle.com/stablecoins/usdc-contract-addresses
     Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // https://developers.circle.com/stablecoins/usdc-contract-addresses
     Optimism: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85', // https://developers.circle.com/stablecoins/usdc-contract-addresses
-    Polygon: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', // https://developers.circle.com/stablecoins/usdc-contract-addresses
+    Polygon: '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359', // https://developers.circle.com/stablecoins/usdc-contract-addresses
   },
   testnet: {
     Avalanche: '0x5425890298aed601595a70AB815c96711a31Bc65', // https://testnet.snowtrace.io/token/0x5425890298aed601595a70AB815c96711a31Bc65
@@ -99,20 +99,15 @@ const usdcAddresses = {
 /** @type {AddressesMap} */
 const aaveUsdcAddresses = {
   mainnet: {
-    Avalanche: '0x',
-    Arbitrum: '0x',
-    Optimism: '0x',
-    // TODO: Temporary placeholder — AAVE support on Polygon is not intended.
-    // Find a cleaner strategy to handle unsupported chains.
-    Polygon: '0x',
+    Ethereum: '0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c', // https://etherscan.io/token/0x98c23e9d8f34fefb1b7bd6a91b7ff122f4e16f5c
+    Avalanche: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://subnets.avax.network/c-chain/address/0x625E7708f30cA75bfd92586e17077590C60eb4cD
+    Arbitrum: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://arbiscan.io/token/0x625e7708f30ca75bfd92586e17077590c60eb4cd
+    Optimism: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://optimistic.etherscan.io/token/0x625e7708f30ca75bfd92586e17077590c60eb4cd
+    Polygon: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://polygonscan.com/token/0x625e7708f30ca75bfd92586e17077590c60eb4cd
   },
   testnet: {
-    Avalanche: '0xb1c85310a1b809C70fA6806d27Da425C1261F801', // Fuji
-    Arbitrum: '0x', // Arbitrum Sepolia
-    Optimism: '0x', // OP Sepolia
-    // TODO: Temporary placeholder — AAVE support on Polygon is not intended.
-    // Find a cleaner strategy to handle unsupported chains.
-    Polygon: '0x',
+    Ethereum: '0x16dA4541aD1807f4443d92D26044C1147406EB80', // https://sepolia.etherscan.io/token/0x16da4541ad1807f4443d92d26044c1147406eb80
+    Avalanche: '0xb1c85310a1b809C70fA6806d27Da425C1261F801', // Fuji https://testnet.snowtrace.io/token/0xb1c85310a1b809C70fA6806d27Da425C1261F801?chainid=43113
   },
 };
 
