@@ -1,8 +1,6 @@
 // @jessie-check
 
-/// <reference types="@agoric/store/exported.js" />
-
-import { q, Fail, annotateError, X } from '@endo/errors';
+import { X, q, Fail, annotateError } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
 import { mustMatch, M, keyEQ } from '@endo/patterns';
 import { AmountMath } from './amountMath.js';
@@ -11,7 +9,8 @@ import { preparePurseKind } from './purse.js';
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 
 /**
- * @import {Key, Pattern} from '@endo/patterns';
+ * @import {Pattern} from '@endo/patterns';
+ * @import {WeakMapStore, SetStore} from '@agoric/store';
  * @import {Zone} from '@agoric/base-zone';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
