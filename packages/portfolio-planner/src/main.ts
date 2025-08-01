@@ -5,6 +5,7 @@ import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { startEngine } from './engine.ts';
 
 const DEFAULT_AGD = 'agd';
+const DEFAULT_ENV_PREFIX = 'AGD_';
 const DEFAULT_FROM = 'planner';
 
 const getChainIdFromRpc = async (rpc: CosmosRPCClient) => {
@@ -26,6 +27,7 @@ export const main = async (argv, { env }) => {
 
   const {
     AGD = DEFAULT_AGD,
+    ENV_PREFIX = DEFAULT_ENV_PREFIX,
     CHAIN_ID = await getChainIdFromRpc(rpc),
     FROM = DEFAULT_FROM,
     REDIS_URL,
@@ -34,12 +36,13 @@ export const main = async (argv, { env }) => {
   console.warn(`Using:`, { AGD, CHAIN_ID, FROM });
 
   const agd = makeCosmosCommand([AGD], {
+    envPrefix: ENV_PREFIX,
     node: AGORIC_RPC_URL,
     from: FROM,
     chainId: CHAIN_ID,
   });
 
-  const { stdout: plannerAddress } = await agd.exec([
+  const { stdout: plannerAddress } = await agd.rawOutput.exec([
     'keys',
     'show',
     '-a',
