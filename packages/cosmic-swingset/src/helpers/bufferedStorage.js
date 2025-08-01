@@ -302,8 +302,8 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
 export const makeReadCachingStorage = kvStore => {
   // In addition to the wrapping write buffer, keep a simple cache of
   // read values for has and get.
-  const deleted = Symbol('deleted');
-  const undef = Symbol('undefined');
+  const deleted = unpassableSymbolForName('deleted');
+  const undef = unpassableSymbolForName('undefined');
   /** @typedef {(typeof deleted) | (typeof undef)} ReadCacheSentinel */
   /** @type {Map<string, T | ReadCacheSentinel>} */
   let cache;
