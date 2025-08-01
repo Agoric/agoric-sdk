@@ -1,10 +1,9 @@
 {
   "agoricProposal": {
     "source": "subdir",
+    "$comment": "board013515 originates from mainnet proposal 100",
     "sdk-generate": [
-      "../../portfolio-deploy/src/access-token-setup.build.js submission",
-      "../../portfolio-deploy/src/chain-info.build.js submission",
-      "../../portfolio-deploy/src/portfolio.build.js submission"
+      "../../portfolio-deploy/src/portfolio.build.js submission --replace board013515"
     ],
     "type": "/agoric.swingset.CoreEvalProposal"
   },
@@ -14,7 +13,9 @@
     "@agoric/client-utils": "dev",
     "@agoric/fast-usdc": "dev",
     "@agoric/synthetic-chain": "0.5.5",
+    "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.12",
+    "@endo/pass-style": "^1.6.3",
     "agoric": "dev",
     "ava": "^5.3.1"
   },
