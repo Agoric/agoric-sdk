@@ -94,10 +94,11 @@ export const checkExportDataMode = (mode, isImport = false) => {
  * For more details, see packages/swing-store/docs/data-export.md
  *
  * @typedef {object} StateSyncManifest
- * @property {number} blockHeight the block height corresponding to this export
  * @property {SwingStoreArtifactMode} [artifactMode]
- * @property {string} [data] file name containing the swingStore "export data"
  * @property {Array<[artifactName: string, fileName: string]>} artifacts
+ * @property {number} blockHeight the block height corresponding to this export
+ * @property {boolean} compressed wether the generated artifacts are compressed or not
+ * @property {string} [data] file name containing the swingStore "export data"
  *   List of swingStore export artifacts which can be validated by the export data
  */
 
@@ -179,6 +180,7 @@ export const initiateSwingStoreExport = (
 
     const swingStoreExporter = makeExporter(stateDir, {
       artifactMode: effectiveArtifactMode,
+      compressed: true,
     });
     cleanup.push(async () => swingStoreExporter.close());
 
@@ -200,9 +202,10 @@ export const initiateSwingStoreExport = (
 
     /** @type {StateSyncManifest} */
     const manifest = {
-      blockHeight: savedBlockHeight,
       artifactMode: artifactMode || effectiveArtifactMode,
       artifacts: [],
+      blockHeight: savedBlockHeight,
+      compressed: true,
     };
 
     if (exportDataMode === 'all') {
