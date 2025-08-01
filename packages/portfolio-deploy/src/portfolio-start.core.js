@@ -1,5 +1,6 @@
 import { makeTracer } from '@agoric/internal';
 import { M } from '@endo/patterns';
+import { E } from '@endo/far';
 import {
   lookupInterchainInfo,
   makeGetManifest,
@@ -25,14 +26,20 @@ const trace = makeTracer(`YMX-Start`, true);
 /**
  * @typedef {{
  *   axelarConfig: AxelarChainConfigMap;
+ *   oldBoardId?: string;
  * } & CopyRecord} PortfolioDeployConfig
  */
 
 /** @type {TypedPattern<PortfolioDeployConfig>} */
-export const portfolioDeployConfigShape = harden({
-  // XXX more precise shape
-  axelarConfig: M.record(),
-});
+export const portfolioDeployConfigShape = M.splitRecord(
+  {
+    // XXX more precise shape
+    axelarConfig: M.record(),
+  },
+  {
+    oldBoardId: M.string(),
+  },
+);
 
 /**
  * @param {OrchestrationPowersWithStorage} orchestrationPowers
@@ -67,24 +74,18 @@ export const makePrivateArgs = async (
 
   /** @type {AxelarId} */
   const axelarIds = {
-    Ethereum: axelarConfig.Ethereum.axelarId,
     Avalanche: axelarConfig.Avalanche.axelarId,
     Arbitrum: axelarConfig.Arbitrum.axelarId,
     Optimism: axelarConfig.Optimism.axelarId,
-    Binance: axelarConfig.Binance.axelarId,
     Polygon: axelarConfig.Polygon.axelarId,
-    Fantom: axelarConfig.Fantom.axelarId,
   };
 
   /** @type {EVMContractAddressesMap} */
   const contracts = {
-    Ethereum: { ...axelarConfig.Ethereum.contracts },
     Avalanche: { ...axelarConfig.Avalanche.contracts },
     Arbitrum: { ...axelarConfig.Arbitrum.contracts },
     Optimism: { ...axelarConfig.Optimism.contracts },
-    Binance: { ...axelarConfig.Binance.contracts },
     Polygon: { ...axelarConfig.Polygon.contracts },
-    Fantom: { ...axelarConfig.Fantom.contracts },
   };
 
   /** @type {Parameters<typeof start>[1]} */
@@ -106,7 +107,20 @@ harden(makePrivateArgs);
  * @returns {Promise<void>}
  */
 export const startPortfolio = async (permitted, configStruct) => {
+  await null;
   trace('startPortfolio', configStruct);
+  /** @type {{ structure: { oldBoardId?: string } }} */
+  const options = /** @type any */ (configStruct.options);
+  const oldBoardId = options?.structure?.oldBoardId;
+
+  if (oldBoardId) {
+    const instance = await E(permitted.consume.board).getValue(oldBoardId);
+    const kit = await permitted.consume.ymax0Kit;
+    assert.equal(instance, kit.instance);
+    await E(kit.adminFacet).terminateContract(
+      Error('shutting down for replacement'),
+    );
+  }
 
   await permitted.consume.chainInfoPublished;
 

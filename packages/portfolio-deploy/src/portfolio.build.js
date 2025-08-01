@@ -15,9 +15,14 @@ import { portfolioDeployConfigShape } from './portfolio-start.core.js';
  * @import {PortfolioDeployConfig} from './portfolio-start.core.js';
  */
 
+const isValidAddr = addr => {
+  return /^0x[a-fA-F0-9]{40}$/.test(addr);
+};
+
 /** @type {ParseArgsConfig['options'] } */
 const options = {
   net: { type: 'string' },
+  replace: { type: 'string' },
 };
 
 /**
@@ -46,6 +51,7 @@ const defaultProposalBuilder = async ({ publishRef, install }, config) => {
  *   chainInfo: string;
  *   net?: string;
  *   peer?: string[];
+ *   replace?: string;
  * }} FlagValues
  */
 /** @type {DeployScriptFunction} */ 0;
@@ -58,13 +64,27 @@ const build = async (homeP, endowments) => {
   const axelarConfig = isMainnet
     ? harden({ ...axelarMainnetConfig })
     : harden({ ...axelarConfigTestnet });
+  const oldBoardId = flags.replace;
 
-  // mustMatch(axelarConfig, AxelarConfigShape);
+  const config = { axelarConfig };
+  if (oldBoardId) {
+    config.oldBoardId = oldBoardId;
+  }
+
+  if (isMainnet) {
+    for (const [chain, chainConfig] of Object.entries(axelarConfig)) {
+      const addr = chainConfig.contracts.factory;
+
+      if (!addr || !isValidAddr(addr)) {
+        throw new Error(`Invalid address for ${chain}: ${addr}`);
+      }
+    }
+  }
 
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   // TODO: unit test agreement with startPortfolio.name
   await writeCoreEval('eval-ymax0', utils =>
-    defaultProposalBuilder(utils, harden({ axelarConfig })),
+    defaultProposalBuilder(utils, harden(config)),
   );
 };
 
