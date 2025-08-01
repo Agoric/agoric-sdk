@@ -16,6 +16,7 @@
   },
   "packageManager": "yarn@4.9.1",
   "devDependencies": {
+    "@aglocal/portfolio-planner": "dev",
     "@agoric/cosmic-proto": "dev",
     "@agoric/fast-usdc": "dev",
     "@agoric/internal": "dev",
@@ -52,6 +53,7 @@
     "js-yaml": "patch:js-yaml@npm%3A4.1.0#~/.yarn/patches/js-yaml-npm-4.1.0-3606f32312.patch",
     "js-yaml@npm:^4.1.0": "patch:js-yaml@npm%3A4.1.0#~/.yarn/patches/js-yaml-npm-4.1.0-3606f32312.patch",
     "js-yaml@npm:^3.14.1": "patch:js-yaml@npm%3A4.1.0#~/.yarn/patches/js-yaml-npm-4.1.0-3606f32312.patch",
+    "@aglocal/portfolio-planner": "portal:../packages/portfolio-planner",
     "@agoric/cosmos": "portal:../golang/cosmos",
     "@agoric/ertp": "portal:../packages/ERTP",
     "@agoric/swingset-vat": "portal:../packages/SwingSet",

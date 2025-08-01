@@ -8,6 +8,7 @@ export default [
   "@aglocal/fast-usdc-deploy",
   "@aglocal/portfolio-contract",
   "@aglocal/portfolio-deploy",
+  "@aglocal/portfolio-planner",
   "@aglocal/swingset-runner",
   "@agoric/access-token",
   "@agoric/async-flow",
