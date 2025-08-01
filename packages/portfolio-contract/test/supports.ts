@@ -13,6 +13,7 @@ import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { setupOrchestrationTest } from '@agoric/orchestration/tools/contract-tests.ts';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import { makeNameHubKit } from '@agoric/vats';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
@@ -238,8 +239,16 @@ export const setupPortfolioTest = async ({
   const { poolMetricsNode: _p, ...commonPrivateArgs } =
     common.commonPrivateArgs;
 
+  const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
+    makeNameHubKit();
+  const bootstrap = {
+    ...common.bootstrap,
+    namesByAddress,
+    namesByAddressAdmin,
+  };
   return {
     ...common,
+    bootstrap,
     brands: { usdc: usdcSansMint, poc26, bld },
     commonPrivateArgs: {
       ...commonPrivateArgs,

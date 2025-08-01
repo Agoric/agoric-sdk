@@ -43,6 +43,7 @@ import {
   type OfferArgsFor,
   type ProposalType,
 } from './type-guards.ts';
+import { preparePlanner } from './planner.exo.ts';
 
 const trace = makeTracer('PortC');
 const { fromEntries, keys } = Object;
@@ -305,7 +306,22 @@ export const contract = async (
     },
   });
 
-  return { publicFacet };
+  const makePlanner = preparePlanner(zone.subZone('planner'));
+
+  const creatorFacet = zone.exo('PortfolioAdmin', interfaceTODO, {
+    makePlannerInvitation() {
+      return zcf.makeInvitation(
+        seat => {
+          seat.exit();
+          return makePlanner();
+        },
+        'planner',
+        undefined,
+      );
+    },
+  });
+
+  return { creatorFacet, publicFacet };
 };
 harden(contract);
 
