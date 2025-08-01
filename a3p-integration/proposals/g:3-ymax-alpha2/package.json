@@ -1,10 +1,9 @@
 {
   "agoricProposal": {
     "source": "subdir",
+    "$comment": "board013515 originates from mainnet proposal 100",
     "sdk-generate": [
-      "../../portfolio-deploy/src/access-token-setup.build.js submission",
-      "../../portfolio-deploy/src/chain-info.build.js submission",
-      "../../portfolio-deploy/src/portfolio.build.js submission"
+      "../../portfolio-deploy/src/portfolio.build.js submission --replace board013515"
     ],
     "type": "/agoric.swingset.CoreEvalProposal"
   },
