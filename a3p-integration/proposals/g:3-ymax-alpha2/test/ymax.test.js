@@ -1,38 +1,37 @@
 // @ts-check
+import '@endo/init/legacy.js'; // axios compat
 import test from 'ava';
-import '@endo/init/debug.js';
 import { queryVstorage } from '@agoric/synthetic-chain';
+import { boardSlottingMarshaller } from '@agoric/client-utils';
+import { Far } from '@endo/far';
+import { passStyleOf } from '@endo/pass-style';
 
-const getCapDataStructure = cell => {
-  const { body, slots } = JSON.parse(cell);
-  const structure = JSON.parse(body.replace(/^#/, ''));
-  return { structure, slots };
-};
+const oldBoardId = 'board013515'; // from mainnet proposal 100
 
 const getCellValues = ({ value }) => {
   return JSON.parse(value).values;
 };
 
-test('ymax deployed incompletely', async t => {
+test('ymax is in vstorage instance with a new boardId', async t => {
   const instancePath = 'published.agoricNames.instance';
   const instanceRaw = await queryVstorage(instancePath);
-  const instance = Object.fromEntries(
-    getCapDataStructure(getCellValues(instanceRaw).at(-1)).structure,
-  );
+  const capData = JSON.parse(getCellValues(instanceRaw).at(-1));
 
-  const chainInfoPath = 'published.agoricNames.chain.axelar';
-  const chainInfoRaw = await queryVstorage(chainInfoPath);
-  const chainInfo = getCapDataStructure(
-    getCellValues(chainInfoRaw).at(-1),
-  ).structure;
+  const m = boardSlottingMarshaller((slot, iface) => {
+    return Far('SlotReference', {
+      getDetails: () => ({ slot, iface }),
+    });
+  });
+  const instances = Object.fromEntries(m.fromCapData(capData));
+  const { ymax0 } = instances;
 
-  t.log(instancePath, Object.keys(instance).join(', '));
-  t.log(chainInfoPath, chainInfo);
-
-  t.falsy(
-    'ymax0' in instance,
-    'ymax installation does not yet exist in vstorage',
-  );
-
-  t.truthy(chainInfo, 'axelar chain info should exist in vstorage');
+  t.is(passStyleOf(ymax0), 'remotable');
+  const { slot, iface } = ymax0.getDetails();
+  t.log({ oldBoardId, newReference: { slot, iface } });
+  t.regex(slot, /^board0[0-9]+$/);
+  t.not(slot, oldBoardId);
+  if (iface !== undefined) {
+    t.is(typeof iface, 'string');
+    t.is(iface.replace(/^Alleged: /, ''), 'InstanceHandle');
+  }
 });
