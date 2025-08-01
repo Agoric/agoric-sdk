@@ -32,7 +32,11 @@ const { values } = Object;
 
 const deploy = async (t: ExecutionContext) => {
   const common = await setupPortfolioTest(t);
-  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+  let contractBaggage;
+  const setJig = ({ baggage }) => {
+    contractBaggage = baggage;
+  };
+  const { zoe, bundleAndInstall } = await setUpZoeForTest({ setJig });
   t.log('contract deployment', contractName);
 
   const installation: Installation<StartFn> =
@@ -83,11 +87,12 @@ const deploy = async (t: ExecutionContext) => {
       }),
     ),
   );
-  return { common, zoe, started, timerService };
+  return { common, zoe, started, contractBaggage, timerService };
 };
 
 export const setupTrader = async (t, initial = 10_000) => {
-  const { common, zoe, started, timerService } = await deploy(t);
+  const deployed = await deploy(t);
+  const { common, zoe, started } = deployed;
   const { usdc, bld, poc26 } = common.brands;
   const { when } = common.utils.vowTools;
 
@@ -124,7 +129,7 @@ export const setupTrader = async (t, initial = 10_000) => {
     ibcBridge.addMockAck(msg, ack);
   }
 
-  return { common, zoe, started, makeFundedTrader, trader1, timerService };
+  return { ...deployed, makeFundedTrader, trader1 };
 };
 
 export const simulateUpcallFromAxelar = async (
