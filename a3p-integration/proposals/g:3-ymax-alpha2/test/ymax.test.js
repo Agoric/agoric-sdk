@@ -1,6 +1,6 @@
 // @ts-check
+import '@endo/init/legacy.js'; // axios compat
 import test from 'ava';
-import '@endo/init/debug.js';
 import { queryVstorage } from '@agoric/synthetic-chain';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
 import { Far } from '@endo/far';
