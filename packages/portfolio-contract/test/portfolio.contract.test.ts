@@ -1,8 +1,10 @@
+/** @file YMax portfolio contract tests - user stories */
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
 import { passStyleOf } from '@endo/far';
 import {
   setupTrader,
@@ -60,7 +62,7 @@ test('open portfolio with USDN position', async t => {
   t.like(result.publicSubscribers, {
     portfolio: {
       description: 'Portfolio',
-      storagePath: 'orchtest.portfolios.portfolio0',
+      storagePath: `${ROOT_STORAGE_PATH}.portfolios.portfolio0`,
     },
   });
   t.is(keys(result.publicSubscribers).length, 1);
