@@ -103,12 +103,13 @@ The KindHandle is a durable virtual object of a special internal Kind. This is t
 
 # Kind Metadata
 
-For each virtual object kind that is defined, we store a metadata record for purposes of scanning directly through the defined kinds when a vat is stopped or upgraded. For durable kinds this record is stored in `vom.dkind.${kindID}`; for non-durable kinds it is stored in `vom.vkind.${kindID}`. Currently this metadata takes the form of a JSON-serialized record with the following properties:
+For each virtual object kind that is defined, we store a metadata record for purposes of scanning directly through the defined kinds when a vat is stopped or upgraded. For durable kinds this record is stored in `vom.dkind.${kindID}.descriptor`; for non-durable kinds it is stored in `vom.vkind.${kindID}.descriptor`. Currently this metadata takes the form of a JSON-serialized record with the following properties:
 * `kindID`, the kind ID as a numeric string (redundantly with the storage key)
 * `tag`, the tag string as provided in the `defineKind` or `makeKindHandle` call
 * `nextInstanceID`, an integer that is present only for durable kinds. It ensures that all versions share a single sequence of unique instance IDs. `nextInstanceID` is added to the metadata record upon allocation of the first instance of the kind and updated after each subsequent allocation.
 * `unfaceted`, a property with boolean value `true` that is present only for single-facet durable kinds.
 * `facets`, an array that is present only for multi-facet durable kinds. Its elements are the names of the kind's facets, in the same order as the assignment of facet indices within the cohort record.
+* `stateShapeCapData`, a property with a `{ body, slots }` CapData record that decodes into a [Pattern](https://www.npmjs.com/package/@endo/patterns) for constraining instance `state` records.
 
 `unfaceted` and `facets` are required so that kind definitions in upgraded versions of the containing vat are maintained in a backwards compatible manner over time.
 
