@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "start": "node ./src/entrypoint.js",
-    "dev": "nodemon ./src/entrypoint.js",
+    "dev": "nodemon --ext .js,.ts ./src/entrypoint.js",
     "debug": "node --inspect ./src/entrypoint.js",
     "start:docker": "docker compose up --build",
     "start:deps": "docker compose up --scale app=0",
@@ -35,6 +35,7 @@
     "typescript": "^5.7.2"
   },
   "dependencies": {
+    "@agoric/pola-io": "^0.1.0",
     "@endo/errors": "^1.2.13",
     "@endo/init": "^1.1.12",
     "@endo/promise-kit": "^1.1.13",

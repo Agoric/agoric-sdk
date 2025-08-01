@@ -29,10 +29,11 @@ sequenceDiagram
     EE -->> EE: add portfolio1 address to event filter
     manager ->> portfolio: bank.Send(portfolio1, $5000)
   end
-  loop inbound funds trigger rebalance
-    portfolio -->> EE: event(bank.Send, portfolio1, $5000)
-    EE -->> portfolio: vstorageGet(portfolio1, goals)
-    EE -->> manager: rebalanceTx(portfolio1, next-goal<br/> [[portfolio1, LCAorch, $5000], ...goal-steps])
+  loop inbound funds on portfolio$N trigger rebalance
+    portfolio -->> EE: event(bank.Send, portfolio$N, $unknown)
+    EE -->> portfolio: rpc.queryBalances(portfolio$N)
+    EE -->> portfolio: vstorageGet(portfolio$N, goals)
+    EE -->> manager: rebalanceTx(portfolio$N, next-goal<br/>[{src: portfolio$N, dst: LCAorch$N, amt: $5000},<br/> ...goal-steps])
     manager -->> portfolio: rebalance(steps)
   end
 ```
@@ -73,11 +74,13 @@ npm test
 
 Environment variables:
 
-- TODO: `HD_SEED`: BIP39 Seed/mnemonic to use for generating keys
-- TODO: `HD_PATH`: Default BIP44 path (`m/44'/118'/0'/0/0`)
+- `AGD`: Executable for the Cosmos command-line interface (`agd`)
 - `AGORIC_RPC_URL`: URL for the Agoric chain's RPC node (`http://localhost:26657`)
-- `REDIS_REST_URL`: URL for `@upstash/redis` (including explicit port number)
-- `REDIS_REST_TOKEN`: API token for `REDIS_REST_URL`
+- `CHAIN_ID`: Chain ID for transactions to the Agoric chain (autodetect via RPC)
+- `FROM`: Existing AGD key for sending transactions to Agoric (`planner`)
+- `HOME`: Where AGD state is kept, namely `$HOME/.agoric`
+- `REDIS_URL`: URL for Redis service
+- `DOTENV`: Path to environment file containing defaults of above (`.env`)
 
 ## Architecture
 

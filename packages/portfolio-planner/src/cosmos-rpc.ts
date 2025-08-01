@@ -1,11 +1,5 @@
 import { JSONRPCClient, type JSONRPCResponse } from 'json-rpc-2.0';
 
-// UNTIL Node.js 22 has Promise.withResolvers.
-import { makePromiseKit } from '@endo/promise-kit';
-
-// UNTIL Node.js 22 supports WebSocket natively.
-import { WebSocket } from 'ws';
-
 const MAX_SUBSCRIPTIONS = 5;
 
 export class CosmosRPCClient extends JSONRPCClient {
@@ -17,16 +11,20 @@ export class CosmosRPCClient extends JSONRPCClient {
       unsubscribe: () => void;
     }
   >;
+
   #openedPK: PromiseWithResolvers<void>;
+
   #closedPK: PromiseWithResolvers<void>;
+
   #lastSentId: number;
+
   #ws: WebSocket;
 
   constructor(url) {
     const wsUrl = new URL('/websocket', url);
     wsUrl.protocol = wsUrl.protocol.replace(/^http/, 'ws');
     wsUrl.pathname = '/websocket';
-    const ws = new WebSocket(wsUrl, {});
+    const ws = new WebSocket(wsUrl);
     super(payload => {
       this.#lastSentId = payload.id;
       // console.log('sending payload:', payload);
@@ -34,8 +32,8 @@ export class CosmosRPCClient extends JSONRPCClient {
     });
     this.#ws = ws;
     this.#subscriptions = new Map();
-    this.#openedPK = makePromiseKit<void>();
-    this.#closedPK = makePromiseKit<void>();
+    this.#openedPK = Promise.withResolvers<void>();
+    this.#closedPK = Promise.withResolvers<void>();
     this.#lastSentId = -1;
 
     ws.addEventListener('close', () => {
@@ -89,7 +87,7 @@ export class CosmosRPCClient extends JSONRPCClient {
 
   async *subscribeAll(queries: string[]) {
     type Cell = { head: JSONRPCResponse; tail: Promise<Cell> };
-    let lastPK = makePromiseKit<Cell>();
+    let lastPK = Promise.withResolvers<Cell>();
     let firstCell: Promise<Cell> = lastPK.promise;
 
     const newQueriesSet = new Set(queries);
@@ -124,7 +122,7 @@ export class CosmosRPCClient extends JSONRPCClient {
           }
           // console.log('notified for query:', query, response);
           const thisPK = lastPK;
-          lastPK = makePromiseKit<Cell>();
+          lastPK = Promise.withResolvers<Cell>();
           thisPK.resolve({ head: response, tail: lastPK.promise });
         },
         unsubscribe,
@@ -158,4 +156,3 @@ export class CosmosRPCClient extends JSONRPCClient {
     }
   }
 }
-harden(CosmosRPCClient);

@@ -1,13 +1,58 @@
+import { Fail } from '@endo/errors';
 import { AgoricRedis } from './redis.ts';
+import { makeCosmosCommand } from './cosmos-cmd.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { startEngine } from './engine.ts';
 
+const DEFAULT_AGD = 'agd';
+const DEFAULT_FROM = 'planner';
+
+const getChainIdFromRpc = async (rpc: CosmosRPCClient) => {
+  await rpc.opened();
+  const status = await rpc.request('status', {});
+  const chainId = status?.node_info?.network;
+  chainId || Fail`Chain ID not found in RPC status: ${status}`;
+  return chainId;
+};
+
 export const main = async (argv, { env }) => {
-  console.log('Hello, world!', { argv });
+  await null;
+  // console.log('Hello, world!', { argv });
 
-  const redis = new AgoricRedis(env.REDIS_URL);
-  const rpc = new CosmosRPCClient(env.AGORIC_RPC_URL);
+  const { AGORIC_RPC_URL } = env;
 
-  await startEngine({ rpc, redis });
+  console.warn(`Initializing planner watching`, { AGORIC_RPC_URL });
+  const rpc = new CosmosRPCClient(AGORIC_RPC_URL);
+
+  const {
+    AGD = DEFAULT_AGD,
+    CHAIN_ID = await getChainIdFromRpc(rpc),
+    FROM = DEFAULT_FROM,
+    REDIS_URL,
+  } = env;
+
+  console.warn(`Using:`, { AGD, CHAIN_ID, FROM });
+
+  const agd = makeCosmosCommand([AGD], {
+    node: AGORIC_RPC_URL,
+    from: FROM,
+    chainId: CHAIN_ID,
+  });
+
+  const { stdout: plannerAddress } = await agd.exec([
+    'keys',
+    'show',
+    '-a',
+    FROM,
+  ]);
+  console.log('Planner address:', plannerAddress);
+
+  let redis: AgoricRedis | undefined;
+  if (REDIS_URL) {
+    console.log('Connecting to Redis');
+    redis = new AgoricRedis(REDIS_URL);
+  }
+
+  await startEngine({ agd, rpc, redis });
 };
 harden(main);

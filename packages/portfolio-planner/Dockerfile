@@ -15,6 +15,7 @@ RUN mkdir -p /data/portfolio-planner && \
 
 # Drop privileges.
 USER appuser
+ENV HOME=/data/portfolio-planner
 WORKDIR /data/portfolio-planner
 
 ENTRYPOINT [ "node", "/usr/src/agoric-sdk/packages/portfolio-planner/src/entrypoint.js" ]
