@@ -36,14 +36,12 @@ export const inviteReserveWithdrawer = async (
 
   // Deposit the invitations, but don't block in case the address does not yet
   // have a smart wallet.
-  for (const invitation of invitations) {
-    void reserveThenDeposit(
-      `reserve withdrawer ${address}`,
-      namesByAddressAdmin,
-      address,
-      [invitation],
-    );
-  }
+  void reserveThenDeposit(
+    `reserve withdrawer ${address}`,
+    namesByAddressAdmin,
+    address,
+    invitations,
+  );
 };
 harden(inviteReserveWithdrawer);
 
