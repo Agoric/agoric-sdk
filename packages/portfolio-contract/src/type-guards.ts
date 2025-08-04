@@ -148,6 +148,10 @@ export const YearnPoolPlaces = {
     protocol: 'Yearn',
     chainName: 'Ethereum',
   },
+  Yearn_usdc_Polygon: {
+    protocol: 'Yearn',
+    chainName: 'Polygon',
+  },
 } as const satisfies Record<string, PoolPlaceInfo>;
 
 export const PoolPlaces = {

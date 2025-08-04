@@ -320,6 +320,7 @@ export const contractsMock: EVMContractAddressesMap = {
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    Yearn_usdc_Polygon: '0xA013Fbd4b711f9ded6fB09C1c0d358E2FbC2EAA0',
   },
   Fantom: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',

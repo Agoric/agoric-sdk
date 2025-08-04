@@ -269,6 +269,7 @@ const mainnetContracts = {
     tokenMessenger: mainnetTokenMessenger['Polygon PoS'].Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Polygon,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Polygon,
+    Yearn_usdc_Polygon: yearnVaults.mainnet.Polygon.usdc,
   },
   Fantom: {
     // TODO: aave and compound?
@@ -366,6 +367,7 @@ const testnetContracts = {
     tokenMessenger: testnetTokenMessenger['Polygon PoS Amoy'].Address,
     aaveUSDC: '0x',
     aaveRewardsController: '0x',
+    Yearn_usdc_Polygon: yearnVaults.mainnet.Polygon.usdc,
   },
   Fantom: {
     // TODO: aave and compound?

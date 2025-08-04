@@ -556,15 +556,15 @@ test('open a portfolio with Yearn position', async t => {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
-        { src: '@Arbitrum', dest: 'Yearn_usdc_Ethereum', amount, fee: feeCall },
+        { src: '@noble', dest: '@Polygon', amount, fee: feeAcct },
+        { src: '@Polygon', dest: 'Yearn_usdc_Polygon', amount, fee: feeCall },
       ],
     },
   );
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   console.log('ackd send to Axelar to create account');
 
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, 'Polygon').then(
     () =>
       simulateCCTPAck(common.utils).finally(() =>
         simulateAckTransferToAxelar(common.utils),
