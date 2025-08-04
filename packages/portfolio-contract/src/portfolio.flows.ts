@@ -33,6 +33,7 @@ import type { AxelarId, EVMContractAddresses } from './portfolio.contract.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {
   AaveProtocol,
+  BeefyProtocol,
   CCTP,
   CCTPfromEVM,
   CompoundProtocol,
@@ -298,7 +299,7 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
         throw Fail`src pos must have account as dest ${q(moveDesc)}`;
       const poolKey = src as PoolKey;
       const { protocol } = PoolPlaces[poolKey];
-      const feeRequired = ['Compound', 'Aave'];
+      const feeRequired = ['Compound', 'Aave', 'Beefy'];
       moveDesc.fee ||
         !feeRequired.includes(protocol) ||
         Fail`missing fee ${q(moveDesc)}`;
@@ -343,8 +344,8 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
           }
         case 'pos': {
           const poolKey = dest as PoolKey;
-
-          return { how: PoolPlaces[poolKey].protocol, poolKey, src: srcName };
+          const { protocol } = PoolPlaces[poolKey];
+          return { how: protocol, poolKey, src: srcName };
         }
         default:
           throw Fail`unreachable:${destKind} ${dest}`;
@@ -391,7 +392,7 @@ const stepFlow = async (
     return { evmCtx, gInfo, accountId };
   };
 
-  const makeEVMProtocolStep = async <P extends 'Compound' | 'Aave'>(
+  const makeEVMProtocolStep = async <P extends 'Compound' | 'Aave' | 'Beefy'>(
     way: Way & { how: P },
     move: MovementDesc,
   ) => {
@@ -400,20 +401,26 @@ const stepFlow = async (
     assert(keys(AxelarChain).includes(chainName));
     const evmChain = chainName as AxelarChain;
 
-    const pImpl = way.how === 'Compound' ? CompoundProtocol : AaveProtocol;
+    const protocolImplMap = {
+      Compound: CompoundProtocol,
+      Aave: AaveProtocol,
+      Beefy: BeefyProtocol,
+    };
+    const pImpl = protocolImplMap[way.how];
 
     const { evmCtx, gInfo, accountId } = await provideEVMInfo(evmChain, move);
 
     const pos = kit.manager.providePosition(way.poolKey, way.how, accountId);
 
     const { amount } = move;
+    const ctx = { ...evmCtx, poolKey: way.poolKey };
     if ('src' in way) {
       return {
         how: way.how,
         amount,
         src: { proxy: gInfo },
         dest: { pos },
-        apply: () => pImpl.supply(evmCtx, amount, gInfo),
+        apply: () => pImpl.supply(ctx, amount, gInfo),
         recover: () => assert.fail('last step. cannot recover'),
       };
     } else {
@@ -422,8 +429,8 @@ const stepFlow = async (
         amount,
         src: { pos },
         dest: { proxy: gInfo },
-        apply: () => pImpl.withdraw(evmCtx, amount, gInfo, way.claim),
-        recover: () => pImpl.supply(evmCtx, amount, gInfo),
+        apply: () => pImpl.withdraw(ctx, amount, gInfo, way.claim),
+        recover: () => pImpl.supply(ctx, amount, gInfo),
       };
     }
   };
@@ -592,6 +599,12 @@ const stepFlow = async (
       case 'Aave':
         todo.push(() =>
           makeEVMProtocolStep(way as Way & { how: 'Aave' }, move),
+        );
+        break;
+
+      case 'Beefy':
+        todo.push(() =>
+          makeEVMProtocolStep(way as Way & { how: 'Beefy' }, move),
         );
         break;
 

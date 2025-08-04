@@ -24,7 +24,6 @@ import {
 import {
   buildGMPPayload,
   buildNoncePayload,
-  gmpAddresses,
 } from '@agoric/orchestration/src/utils/gmp.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import type { GuestInterface } from '../../async-flow/src/types.ts';
@@ -39,9 +38,20 @@ import {
 } from './portfolio.flows.ts';
 import type { AxelarId, EVMContractAddresses } from './portfolio.contract.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import type { PoolKey } from './type-guards.ts';
+import { q, X } from '@endo/errors';
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
+
+const gmpAddresses: {
+  AXELAR_GMP: Bech32Address;
+  AXELAR_GAS: Bech32Address;
+} = {
+  AXELAR_GMP:
+    'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
+  AXELAR_GAS: 'axelar1aythygn6z5thymj6tmzfwekzh05ewg3l7d6y89',
+};
 
 export const provideEVMAccount = async (
   chainName: AxelarChain,
@@ -181,6 +191,7 @@ export type EVMContext = {
   gmpChain: Chain<{ chainId: string }>;
   addresses: EVMContractAddresses;
   axelarIds: AxelarId;
+  poolKey?: PoolKey;
 };
 
 type AaveI = {
@@ -308,3 +319,60 @@ export const CompoundProtocol = {
     await sendGMPContractCall(target, payload, fee, lca, gmpChain);
   },
 } as const satisfies ProtocolDetail<'Compound', AxelarChain, EVMContext>;
+
+/**
+ * see {@link https://github.com/beefyfinance/beefy-contracts/blob/master/contracts/BIFI/vaults/BeefyVaultV7.sol }
+ * 0878a68 Nov 2022
+ */
+type BeefyVaultI = {
+  deposit: ['uint256'];
+  withdraw: ['uint256'];
+};
+
+const BeefyVault: BeefyVaultI = {
+  deposit: ['uint256'],
+  withdraw: ['uint256'],
+};
+
+export const BeefyProtocol = {
+  protocol: 'Beefy',
+  chains: keys(AxelarChain) as AxelarChain[],
+  supply: async (ctx, amount, src) => {
+    const { addresses: a, lca, gmpChain, gmpFee: fee, poolKey } = ctx;
+    const session = makeEVMSession();
+    const usdc = session.makeContract(a.usdc, ERC20);
+    const vaultAddress =
+      a[poolKey] ||
+      assert.fail(X`Beefy pool key ${q(poolKey)} not found in addresses`);
+    const vault = session.makeContract(vaultAddress, BeefyVault);
+    usdc.approve(vaultAddress, amount.value);
+    vault.deposit(amount.value);
+    const calls = session.finish();
+
+    const { chainName, remoteAddress } = src;
+    const axelarId = ctx.axelarIds[chainName];
+    const target = { axelarId, remoteAddress };
+    const payload = buildGMPPayload(calls);
+    await sendGMPContractCall(target, payload, fee, lca, gmpChain);
+  },
+  withdraw: async (ctx, amount, dest) => {
+    const { addresses: a, lca, gmpChain, gmpFee: fee, poolKey } = ctx;
+    const session = makeEVMSession();
+    const vaultAddress =
+      a[poolKey] ||
+      assert.fail(X`Beefy pool key ${q(poolKey)} not found in addresses`);
+    const vault = session.makeContract(vaultAddress, BeefyVault);
+    vault.withdraw(amount.value);
+    const calls = session.finish();
+
+    const { chainName, remoteAddress } = dest;
+    const axelarId = ctx.axelarIds[chainName];
+    const target = { axelarId, remoteAddress };
+    const payload = buildGMPPayload(calls);
+    await sendGMPContractCall(target, payload, fee, lca, gmpChain);
+  },
+} as const satisfies ProtocolDetail<
+  'Beefy',
+  AxelarChain,
+  EVMContext & { poolKey: PoolKey }
+>;

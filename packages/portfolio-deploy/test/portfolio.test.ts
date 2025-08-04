@@ -212,8 +212,17 @@ test.serial('access token setup', async t => {
   });
 });
 
-// XXX USDC/PoC26 issuer promises aren't resolving somehow
-test.skip('contract starts; appears in agoricNames', async t => {
+test.serial('resolve USDC issuer', async t => {
+  const { buildProposal, evalProposal } = t.context;
+  const materials = buildProposal(
+    '@aglocal/portfolio-deploy/src/usdc-resolve.build.js',
+  );
+
+  await evalProposal(materials);
+  t.pass('not straightforward to test promise space contents');
+});
+
+test.serial('contract starts; appears in agoricNames', async t => {
   const {
     agoricNamesRemotes,
     bridgeUtils,
@@ -234,6 +243,7 @@ test.skip('contract starts; appears in agoricNames', async t => {
 
   const materials = buildProposal(
     '@aglocal/portfolio-deploy/src/portfolio.build.js',
+    ['--net', 'mainnet'],
   );
   await evalProposal(materials);
 
@@ -253,8 +263,43 @@ test.skip('contract starts; appears in agoricNames', async t => {
   });
 });
 
+test.serial('remove old contract; start new contract', async t => {
+  const {
+    agoricNamesRemotes,
+    buildProposal,
+    evalProposal,
+    refreshAgoricNamesRemotes,
+    storage,
+  } = t.context;
+
+  const instancePre = agoricNamesRemotes.instance.ymax0;
+  const oldBoardId = (instancePre as any).getBoardId();
+  const materials = buildProposal(
+    '@aglocal/portfolio-deploy/src/portfolio.build.js',
+    ['--replace', oldBoardId],
+  );
+  await evalProposal(materials);
+
+  refreshAgoricNamesRemotes();
+  const instancePost = agoricNamesRemotes.instance.ymax0;
+  t.truthy(instancePost);
+  t.not(instancePre, instancePost);
+
+  await documentStorageSchema(t, storage, {
+    node: 'agoricNames.instance',
+    owner: 'chain governance',
+    showValue,
+  });
+  await documentStorageSchema(t, storage, {
+    node: 'ymax0',
+    owner: 'ymax0',
+    showValue,
+  });
+});
+
 const { make } = AmountMath;
 
+// give: ...rest: {"Access":{"brand":"[Alleged: BoardRemotePoC26 brand]","value":"[1n]"}} - Must be: {}
 test.skip('open a USDN position', async t => {
   const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
 
