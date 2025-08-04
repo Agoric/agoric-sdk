@@ -41,7 +41,7 @@
     "typedoc": "^0.26.7",
     "typedoc-plugin-markdown": "^4.2.1",
     "typescript": "~5.9.2",
-    "typescript-eslint": "^8.31.0"
+    "typescript-eslint": "^8.39.0"
   },
   "resolutions": {
     "@agoric/wallet-ui@0.1.3-solo.0": "patch:@agoric/wallet-ui@npm%3A0.1.3-solo.0#~/.yarn/patches/@agoric-wallet-ui-npm-0.1.3-solo.0-00666f4b09.patch",
