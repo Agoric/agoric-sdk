@@ -219,13 +219,14 @@ export const makeCCTPTraffic = (
   from = 'cosmos1test',
   money = `${3_333.33 * 1000000}`,
   dest = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+  destinationDomain = 3, // Default to Arbitrum for backward compatibility
 ) => ({
   depositForBurn: {
     msg: buildTxPacketString([
       MsgDepositForBurn.toProtoMsg({
         amount: money,
         burnToken: 'uusdc',
-        destinationDomain: 3,
+        destinationDomain,
         from,
         mintRecipient: leftPadEthAddressTo32Bytes(dest),
       }),
@@ -240,7 +241,7 @@ export const makeCCTPTraffic = (
       MsgDepositForBurn.toProtoMsg({
         amount: `${6_666.67 * 1000000}`,
         burnToken: 'uusdc',
-        destinationDomain: 3,
+        destinationDomain,
         from,
         mintRecipient: leftPadEthAddressTo32Bytes(dest),
       }),

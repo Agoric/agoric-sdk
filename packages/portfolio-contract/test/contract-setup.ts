@@ -115,8 +115,27 @@ export const setupTrader = async (t, initial = 10_000) => {
   for (const { msg, ack } of values(makeUSDNIBCTraffic())) {
     ibcBridge.addMockAck(msg, ack);
   }
-  for (const { msg, ack } of values(makeCCTPTraffic())) {
-    ibcBridge.addMockAck(msg, ack);
+  
+  // Register CCTP mocks for all supported destination domains
+  const cctpDestinationDomains = [
+    0, // Ethereum Sepolia
+    1, // Avalanche Fuji
+    2, // OP Sepolia
+    3, // Arbitrum Sepolia
+    6, // Base Sepolia
+    7, // Polygon PoS Amoy
+    10, // Unichain Sepolia
+  ];
+  
+  for (const domain of cctpDestinationDomains) {
+    for (const { msg, ack } of values(makeCCTPTraffic(
+      'cosmos1test',
+      `${3_333.33 * 1000000}`,
+      '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+      domain
+    ))) {
+      ibcBridge.addMockAck(msg, ack);
+    }
   }
 
   return { common, zoe, started, myBalance, myWallet, trader1, timerService };
