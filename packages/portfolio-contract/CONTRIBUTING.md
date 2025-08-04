@@ -2,17 +2,17 @@
 
 Thanks for your interest in improving YMax! This package is in a proof-of-concept stage, iterating rapidly.
 
- - `README.md` - user-level description of the contract.
- - `src/`
-  - `constants.js` - enumerated constants
-  - `type-guards.ts` - external interface types and validation patterns
-  - `portfolio.contract.ts` - contract entry point and public facet
-  - `portfolio.{flows,exo}.ts` - orchestration flows and durable state
-  - `pos-{usdn,gmp,}.{flows,exo}.ts` - position management for different protocols
- - `test/` - unit tests etc.; note:
-   - `portfolio.flows.test.ts` is good for getting coverage (incl. branches) of flows
-   - `portfolio.contract.test/ts` is more for testing user stories
- - `tools/` - utilities exported for use in other packages
+- `README.md` - user-level description of the contract.
+- `src/`
+- `constants.js` - enumerated constants
+- `type-guards.ts` - external interface types and validation patterns
+- `portfolio.contract.ts` - contract entry point and public facet
+- `portfolio.{flows,exo}.ts` - orchestration flows and durable state
+- `pos-{usdn,gmp,}.{flows,exo}.ts` - position management for different protocols
+- `test/` - unit tests etc.; note:
+  - `portfolio.flows.test.ts` is good for getting coverage (incl. branches) of flows
+  - `portfolio.contract.test/ts` is more for testing user stories
+- `tools/` - utilities exported for use in other packages
 
 ## Code Quality & Testing
 
@@ -31,8 +31,8 @@ While [tooling to enforce consistent import ordering #7403](https://github.com/A
 
 Note [use of Conventional Commits in agoric-sdk](https://github.com/Agoric/agoric-sdk/wiki/Conventional-Commits). In particular:
 
- - `feat:` for **user-visible** (or: client-visible) features
- - `fix:` for **bugs present in [the previous release](./CHANGELOG.md)**
+- `feat:` for **user-visible** (or: client-visible) features
+- `fix:` for **bugs present in [the previous release](./CHANGELOG.md)**
 
 Adding a new function without wiring it all the way out to the contract interface so that it works in a user story is a `chore`, not a `feat`.
 
@@ -43,7 +43,7 @@ Between `docs`, `test`, and `chore`, the distinction has less impact. Salt to ta
 ## Deployment is out of scope
 
 The `@aglocal/portfolio-deploy` package takes care of deployment. It depends on this package.
-This package does *not* depend on it.
+This package does _not_ depend on it.
 
 ## Based on experience building Fast USDC
 
@@ -52,9 +52,10 @@ Building `@aglocal/fast-usdc-contract` provided lots of experience that's useful
 For example, this package takes advantage of emerging support for typescript that was pioneered in Fast USDC. With the exception of `constants.js`, there's no need for [putting types in JSDoc](https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html).
 
 Fast USDC in turn builds on
- - the Agoric Orchestration SDK (aka API),
- - and the Zoe smart contract platform, and
- - the endo distributed computing platform; in particular, `@endo/patterns`
+
+- the Agoric Orchestration SDK (aka API),
+- and the Zoe smart contract platform, and
+- the endo distributed computing platform; in particular, `@endo/patterns`
 
 ## `TypedPattern`s
 
@@ -66,15 +67,18 @@ import {
   type TypedPattern,
 } from '@agoric/internal';
 
-type GoodStuff = { type: 'good', size: NatValue };
+type GoodStuff = { type: 'good'; size: NatValue };
 // Take care to keep the shape/pattern in sync with the type!
-const GoodStuffShape: TypedPattern<GoodStuff> = M.splitRecord({ type: 'good', size: M.nat() });
+const GoodStuffShape: TypedPattern<GoodStuff> = M.splitRecord({
+  type: 'good',
+  size: M.nat(),
+});
 
 const workWithExternalData = (data: unknown) => {
   mustMatch(data, GoodStuffShape);
   // now we know data is of type GoodStuff
   const { size } = data;
-}
+};
 ```
 
 Note that while the `GoodStuffShape` pattern/shape is a value, we use an initial uppercase letter like the type, `GoodStuff`.

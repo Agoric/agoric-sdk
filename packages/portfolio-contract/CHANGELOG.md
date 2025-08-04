@@ -17,6 +17,7 @@ See [Conventional Commits](https://conventionalcommits.org/) for commit guidelin
 - Access token setup for portfolio permissions
 
 ### Notes
+
 - This is a proof-of-concept alpha release
 - Contract name: `ymax0`
 - Commit: [`f741807`](https://github.com/Agoric/agoric-sdk/commit/f741807aff5929acabc007380c4a057882a35147)
