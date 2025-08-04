@@ -239,3 +239,305 @@ test('open portfolio with USDN, Aave positions', async t => {
   t.snapshot(contents, 'vstorage');
   t.snapshot(done.payouts, 'refund payouts');
 });
+
+test('contract rejects unknown pool keys', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, poc26 } = common.brands;
+
+  const amount = usdc.units(1000);
+
+  // Try to open portfolio with unknown pool key
+  const rejectionP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        // @ts-expect-error testing Unknown pool key
+        { src: '@noble', dest: 'Aave_Base', amount },
+      ],
+    },
+  );
+
+  await t.throwsAsync(rejectionP, {
+    message: /Must match one of|Aave_Base/i,
+  });
+});
+
+test('open portfolio with target allocations', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { poc26 } = common.brands;
+
+  const targetAllocation = {
+    USDN: 1n,
+    Aave_Arbitrum: 1n,
+    Compound_Arbitrum: 1n,
+  };
+  const doneP = trader1.openPortfolio(
+    t,
+    { Access: poc26.make(1n) },
+    { targetAllocation },
+  );
+
+  const done = await doneP;
+  const result = done.result as any;
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const info = await trader1.getPortfolioStatus();
+  t.deepEqual(info.targetAllocation, targetAllocation);
+
+  t.snapshot(info, 'portfolio');
+  t.snapshot(done.payouts, 'refund payouts');
+});
+
+test('claim rewards on Aave position successfully', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+      ],
+    },
+  );
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
+  );
+
+  const done = await actualP;
+  const result = done.result as any;
+
+  const { storagePath } = result.publicSubscribers.portfolio;
+  const messagesBefore = common.utils.inspectLocalBridge();
+
+  const rebalanceP = trader1.rebalance(
+    t,
+    { give: { Deposit: amount }, want: {} },
+    {
+      flow: [
+        {
+          dest: '@Arbitrum',
+          src: 'Aave_Arbitrum',
+          amount: usdc.make(100n),
+          fee: feeCall,
+          claim: true,
+        },
+      ],
+    },
+  );
+
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  const rebalanceResult = await rebalanceP;
+  console.log('rebalance done', rebalanceResult);
+
+  const messagesAfter = common.utils.inspectLocalBridge();
+
+  t.deepEqual(messagesAfter.length - messagesBefore.length, 2);
+
+  t.log(storagePath);
+  const { contents, positionPaths, flowPaths } = getPortfolioInfo(
+    storagePath,
+    common.bootstrap.storage,
+  );
+  t.snapshot(contents, 'vstorage');
+
+  t.snapshot(rebalanceResult.payouts, 'rebalance payouts');
+});
+
+test('USDN claim fails currently', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const doneP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: 'USDN', amount },
+      ],
+    },
+  );
+
+  // ack IBC transfer for forward
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
+  const done = await doneP;
+  const result = done.result as any;
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
+  t.like(result.publicSubscribers, {
+    portfolio: {
+      description: 'Portfolio',
+      storagePath: 'orchtest.portfolios.portfolio0',
+    },
+  });
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents, positionPaths } = getPortfolioInfo(
+    storagePath,
+    common.bootstrap.storage,
+  );
+  t.log(
+    'I can see where my money is:',
+    positionPaths.map(p => contents[p].accountId),
+  );
+  t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
+  t.is(
+    contents[storagePath].accountIdByChain['agoric'],
+    `cosmos:agoric-3:${localAccount0}`,
+    'LCA',
+  );
+
+  const rebalanceP = trader1.rebalance(
+    t,
+    { give: {}, want: {} },
+    {
+      flow: [
+        {
+          dest: '@noble',
+          src: 'USDN',
+          amount: usdc.make(100n),
+          claim: true,
+        },
+      ],
+    },
+  );
+
+  await t.throwsAsync(rebalanceP, {
+    message: /claiming USDN is not supported/,
+  });
+});
+
+test('open a portfolio with Beefy position', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Beefy_re7_Avalanche', amount, fee: feeCall },
+      ],
+    },
+  );
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
+  );
+
+  const actual = await actualP;
+  const result = actual.result as any;
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
+
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(actual.payouts, 'refund payouts');
+});
+
+test('Withdraw from a Beefy position', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Beefy_re7_Avalanche', amount, fee: feeCall },
+      ],
+    },
+  );
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
+  );
+
+  const actual = await actualP;
+  const result = actual.result as any;
+
+  const withdrawP = trader1.rebalance(
+    t,
+    { give: {}, want: {} },
+    {
+      flow: [
+        {
+          src: 'Beefy_re7_Avalanche',
+          dest: '@Arbitrum',
+          amount: amount,
+          fee: feeCall,
+        },
+        {
+          src: '@Arbitrum',
+          dest: '@noble',
+          amount: amount,
+        },
+        {
+          src: '@noble',
+          dest: '@agoric',
+          amount: amount,
+        },
+        {
+          src: '@agoric',
+          dest: '<Cash>',
+          amount,
+        },
+      ],
+    },
+  );
+
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await simulateCCTPAck(common.utils).finally(() =>
+    simulateAckTransferToAxelar(common.utils),
+  );
+  const withdraw = await withdrawP;
+
+  const { storagePath } = result.publicSubscribers.portfolio;
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(withdraw.payouts, 'refund payouts');
+});
