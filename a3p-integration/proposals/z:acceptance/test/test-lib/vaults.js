@@ -114,6 +114,7 @@ export const calculateMintFee = async (toMintValue, vaultManager) => {
   const expectedMintFee = ceilMultiplyBy(toMintAmount, mintFeeRatio);
   const adjustedToMintAmount = AmountMath.add(toMintAmount, expectedMintFee);
 
+  // @ts-expect-error XXX ERef type confusion
   return { mintFee, adjustedToMintAmount };
 };
 
