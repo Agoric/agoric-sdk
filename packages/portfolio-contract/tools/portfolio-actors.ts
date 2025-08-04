@@ -244,6 +244,38 @@ export const makePortfolioSteps = <
           fee: fees[p].Call,
         });
         break;
+      case 'Beefy':
+        // For Beefy, we need to specify the chain (e.g., Avalanche)
+        const beefyChain = 'Avalanche'; // Default to Avalanche for Beefy
+        steps.push({
+          src: '@noble',
+          dest: `@${beefyChain}`,
+          amount,
+          fee: fees[p].Account,
+        });
+        steps.push({
+          src: `@${beefyChain}`,
+          dest: `${p}_re7_${beefyChain}`,
+          amount,
+          fee: fees[p].Call,
+        });
+        break;
+      case 'Yearn':
+        // For Yearn, we can use either Ethereum or Polygon
+        const yearnChain = 'Polygon'; // Default to Polygon for this test
+        steps.push({
+          src: '@noble',
+          dest: `@${yearnChain}`,
+          amount,
+          fee: fees[p].Account,
+        });
+        steps.push({
+          src: `@${yearnChain}`,
+          dest: `${p}_usdc_${yearnChain}`,
+          amount,
+          fee: fees[p].Call,
+        });
+        break;
       default:
         throw Error('unreachable');
     }
