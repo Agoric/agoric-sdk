@@ -200,18 +200,16 @@ export async function connectToChain(
 
   let goodRpcHref = rpcHrefs[0];
   const runHelper = (args, stdin = undefined) => {
-    const fullArgs = [
-      ...args,
-      `--chain-id=${chainID}`,
-      `--node=${goodRpcHref}`,
-      `--home=${helperDir}`,
-    ];
+    const fullArgs = [...args, `--node=${goodRpcHref}`, `--home=${helperDir}`];
     console.debug(HELPER, ...fullArgs);
     return new Promise(resolve => {
       const proc = execFile(
         HELPER,
         fullArgs,
-        { maxBuffer: MAX_BUFFER_SIZE },
+        {
+          maxBuffer: MAX_BUFFER_SIZE,
+          env: { ...process.env, AGD_CHAIN_ID: chainID },
+        },
         (_error, stdout, stderr) => {
           resolve({ stdout, stderr });
         },
