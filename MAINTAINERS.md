@@ -54,7 +54,9 @@ The Release Owner and other appropriate stakeholders must agree on:
       - [ ] Update/verify the `isPrimaryUpgradeName` function to reflect the updated [_**upgrade name**_](#assign-release-parameters) list.
       - [ ] Rename/verify the upgrade handler function to match the release, example: `upgrade8Handler`.
       - [ ] Verify that the upgrade handler function has no logic specific to the previous upgrade (e.g., core proposals).
-    - [ ] In **golang/cosmos/app/app.go**, make sure that the call to `SetUpgradeHandler` uses the renamed upgrade handler function above.
+    - [ ] In **golang/cosmos/app/app.go**
+      - [ ] Make sure that the call to `SetUpgradeHandler` uses the renamed upgrade handler function above.
+      - [ ] Set `storeUpgrades.Added` and `storeUpgrades.Deleted` to be `[]string{}`
     - [ ] Verify that **a3p-integration/package.json** has an object-valued `agoricSyntheticChain` property with `fromTag` set to the [agoric-3-proposals Docker images](https://github.com/Agoric/agoric-3-proposals/pkgs/container/agoric-3-proposals) tag associated with the previous release
       (example: `use-upgrade-7`) or latest core-eval passed on chain (example: `use-vaults-auction`).
     - [ ] Ensure that the first subdirectory in **a3p-integration/proposals** has the following characteristics. This is commonly created by renaming the `n:upgrade-next` directory after verifying no other proposals exist before that, and updating the **package.json** file in it. The `init-release.sh` script takes care of renaming the directory so verify the new proposal directory.
@@ -374,28 +376,28 @@ yarn lerna version --conventional-prerelease --no-git-tag-version
 
 ## Syncing Endo dependency versions
 
-Assuming that the most recent release of the Endo repository has been checked
-out in your home directory:
-
-```sh
-ENDO=~/endo
-```
-
 From `origin/master`, begin a branch for syncing Endo.
 
 ```sh
 NOW=`date -u +%Y-%m-%d-%H-%M-%S`
 git checkout -b "$USER-sync-endo-$NOW"
-git rebase origin/integration-endo-master
+git merge origin/integration-endo-master
+git rebase origin/master
 ```
 
 Use a helper script from the Endo repository to update the dependency versions
 in all packages in Agoric SDK.
 
 ```sh
-"$ENDO/scripts/sync-versions.sh" "$ENDO"
-git add -u
-git commit -m 'chore: Sync Endo versions'
+git ls-tree -r HEAD |
+  cut -d$'\t' -f2 |
+  grep '.yarn.lock$' |
+while read lock; do \
+  dir=$(dirname $lock); \
+  echo $dir; \
+  (cd $dir; yarn up ses '@endo/*' -R; yarn dedupe); \
+done
+git commit -am 'chore: Sync Endo versions'
 ```
 
 In `patches`, there may be patch files for the previous versions of `@endo/*`
@@ -444,27 +446,11 @@ Update the test snapshots.
 ```sh
 # at the repo root
 yarn build
-```
-
-```sh
 cd packages/SwingSet
 yarn test test/xsnap-store.test.js --update-snapshots
 git add test/snapshots/xsnap-store.*
 git commit -m 'chore(swingset-vat): Update xsnap store test snapshots'
 cd ../..
-```
-
-Sync other dependency solution locks.
-
-```sh
-git ls-tree -r HEAD |
-  cut -d$'\t' -f2 |
-  grep '.yarn.lock$' |
-while read lock; do \
-  dir=$(dirname $lock); \
-  echo $dir; \
-  (cd $dir; ~/endo/scripts/sync-versions.sh ~/endo; yarn); \
-done
 ```
 
 Push this branch and create a pull request.

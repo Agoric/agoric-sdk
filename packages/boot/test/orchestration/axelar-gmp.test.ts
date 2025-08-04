@@ -140,9 +140,6 @@ test.serial('makeAccount via axelarGmp', async t => {
       // @ts-expect-error
       give: { BLD: { brand: BLD, value: 1n } },
     },
-    offerArgs: {
-      gasAmount: 2000n,
-    },
   });
 
   const getLogged = () =>

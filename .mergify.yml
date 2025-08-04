@@ -39,6 +39,9 @@ shared:
       - base=master
       - label=automerge:squash
 
+merge_queue:
+  max_parallel_checks: 1
+
 priority_rules:
   - name: high_priority
     conditions:

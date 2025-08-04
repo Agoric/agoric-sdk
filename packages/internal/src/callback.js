@@ -1,7 +1,7 @@
 // @ts-check
 import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
-import { isObject, isPassableSymbol } from '@endo/marshal';
+import { isPrimitive, isPassableSymbol } from '@endo/pass-style';
 import { getInterfaceMethodKeys } from '@endo/patterns';
 
 /** @import {ERef} from '@endo/far' */
@@ -102,7 +102,7 @@ harden(makeSyncFunctionCallback);
  * @returns {Callback<I>}
  */
 export const makeFunctionCallback = (target, ...bound) => {
-  isObject(target) ||
+  !isPrimitive(target) ||
     Fail`function callback target must be a function presence: ${target}`;
   /** @type {unknown} */
   const cb = harden({ target, bound });
@@ -125,7 +125,7 @@ harden(makeFunctionCallback);
  * @returns {SyncCallback<I>}
  */
 export const makeSyncMethodCallback = (target, methodName, ...bound) => {
-  isObject(target) ||
+  !isPrimitive(target) ||
     Fail`sync method callback target must be an object: ${target}`;
   typeof methodName === 'string' ||
     isPassableSymbol(methodName) ||
@@ -151,7 +151,8 @@ harden(makeSyncMethodCallback);
  * @returns {Callback<I>}
  */
 export const makeMethodCallback = (target, methodName, ...bound) => {
-  isObject(target) || Fail`method callback target must be an object: ${target}`;
+  !isPrimitive(target) ||
+    Fail`method callback target must be an object: ${target}`;
   typeof methodName === 'string' ||
     isPassableSymbol(methodName) ||
     Fail`method name must be a string or passable symbol: ${methodName}`;
@@ -166,12 +167,12 @@ harden(makeMethodCallback);
  * @returns {callback is Callback<any>}
  */
 export const isCallback = callback => {
-  if (!isObject(callback)) {
+  if (isPrimitive(callback)) {
     return false;
   }
   const { target, methodName, bound } = callback;
   return (
-    isObject(target) &&
+    !isPrimitive(target) &&
     (methodName === undefined ||
       typeof methodName === 'string' ||
       isPassableSymbol(methodName)) &&

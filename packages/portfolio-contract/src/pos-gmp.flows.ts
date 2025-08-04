@@ -22,11 +22,7 @@ import {
   type AxelarGmpOutgoingMemo,
   type ContractCall,
 } from '@agoric/orchestration/src/axelar-types.js';
-import { leftPadEthAddressTo32Bytes } from '@agoric/orchestration/src/utils/address.js';
-import {
-  buildGMPPayload,
-  gmpAddresses,
-} from '@agoric/orchestration/src/utils/gmp.js';
+import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import type { GuestInterface } from '../../async-flow/src/types.ts';
 import { AxelarChain } from './constants.js';
@@ -38,11 +34,22 @@ import {
   type ProtocolDetail,
   type TransportDetail,
 } from './portfolio.flows.ts';
-import type { AxelarId } from './portfolio.contract.ts';
+import type { AxelarId, EVMContractAddresses } from './portfolio.contract.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import type { PoolKey } from './type-guards.ts';
+import { q, X } from '@endo/errors';
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
+
+const gmpAddresses: {
+  AXELAR_GMP: Bech32Address;
+  AXELAR_GAS: Bech32Address;
+} = {
+  AXELAR_GMP:
+    'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
+  AXELAR_GAS: 'axelar1aythygn6z5thymj6tmzfwekzh05ewg3l7d6y89',
+};
 
 export const provideEVMAccount = async (
   chainName: AxelarChain,
@@ -122,12 +129,7 @@ export const CCTPfromEVM = {
   recover: async (_ctx, amount, src, dest) => {
     return CCTP.apply(null, amount, dest, src);
   },
-} as const satisfies TransportDetail<
-  'CCTP',
-  AxelarChain,
-  'noble',
-  EVMContext<'tokenMessenger'>
->;
+} as const satisfies TransportDetail<'CCTP', AxelarChain, 'noble', EVMContext>;
 harden(CCTPfromEVM);
 
 export const CCTP = {
@@ -172,12 +174,13 @@ export const sendGMPContractCall = async (
   await lca.transfer(gmp, fee, { memo: JSON.stringify(memo) });
 };
 
-export type EVMContext<CN extends string> = {
+export type EVMContext = {
   lca: LocalAccount;
   gmpFee: DenomAmount;
   gmpChain: Chain<{ chainId: string }>;
-  addresses: Record<CN | 'usdc', EVMT['address']>;
+  addresses: EVMContractAddresses;
   axelarIds: AxelarId;
+  poolKey?: PoolKey;
 };
 
 type AaveI = {
@@ -188,6 +191,18 @@ type AaveI = {
 const Aave: AaveI = {
   supply: ['address', 'uint256', 'address', 'uint16'],
   withdraw: ['address', 'uint256', 'address'],
+};
+
+/**
+ * see {@link https://github.com/aave/aave-v3-periphery/blob/master/contracts/rewards/RewardsController.sol }
+ * 8f3380d Aug 2023
+ */
+type AaveRewardsControllerI = {
+  claimAllRewardsToSelf: ['address[]'];
+};
+
+const AaveRewardsController: AaveRewardsControllerI = {
+  claimAllRewardsToSelf: ['address[]'],
 };
 
 export const AaveProtocol = {
@@ -208,11 +223,18 @@ export const AaveProtocol = {
     const target = { axelarId, remoteAddress };
     await sendGMPContractCall(target, calls, gmpFee, lca, gmpChain);
   },
-  withdraw: async (ctx, amount, dest) => {
+  withdraw: async (ctx, amount, dest, claim) => {
     const { remoteAddress } = dest;
     const { addresses: a, lca, gmpChain, gmpFee } = ctx;
 
     const session = makeEVMSession();
+    if (claim) {
+      const aaveRewardsController = session.makeContract(
+        a.aaveRewardsController,
+        AaveRewardsController,
+      );
+      aaveRewardsController.claimAllRewardsToSelf([a.aaveUSDC]);
+    }
     const aave = session.makeContract(a.aavePool, Aave);
     aave.withdraw(a.usdc, amount.value, remoteAddress);
     const calls = session.finish();
@@ -221,11 +243,7 @@ export const AaveProtocol = {
     const target = { axelarId, remoteAddress };
     await sendGMPContractCall(target, calls, gmpFee, lca, gmpChain);
   },
-} as const satisfies ProtocolDetail<
-  'Aave',
-  AxelarChain,
-  EVMContext<'aavePool'>
->;
+} as const satisfies ProtocolDetail<'Aave', AxelarChain, EVMContext>;
 
 type CompoundI = {
   supply: ['address', 'uint256'];
@@ -235,6 +253,18 @@ type CompoundI = {
 const Compound: CompoundI = {
   supply: ['address', 'uint256'],
   withdraw: ['address', 'uint256'],
+};
+
+/**
+ * see {@link https://github.com/compound-finance/comet/blob/main/contracts/CometRewards.sol }
+ * d7b414d May 2023
+ */
+type CompoundRewardsControllerI = {
+  claim: ['address', 'address', 'bool'];
+};
+
+const CompoundRewardsController: CompoundRewardsControllerI = {
+  claim: ['address', 'address', 'bool'],
 };
 
 export const CompoundProtocol = {
@@ -254,9 +284,16 @@ export const CompoundProtocol = {
     const target = { axelarId, remoteAddress };
     await sendGMPContractCall(target, calls, fee, lca, gmpChain);
   },
-  withdraw: async (ctx, amount, dest) => {
+  withdraw: async (ctx, amount, dest, claim) => {
     const { addresses: a, lca, gmpChain, gmpFee: fee } = ctx;
     const session = makeEVMSession();
+    if (claim) {
+      const compoundRewardsController = session.makeContract(
+        a.compoundRewardsController,
+        CompoundRewardsController,
+      );
+      compoundRewardsController.claim(a.compound, dest.remoteAddress, true);
+    }
     const compound = session.makeContract(a.compound, Compound);
     compound.withdraw(a.usdc, amount.value);
     const calls = session.finish();
@@ -266,8 +303,59 @@ export const CompoundProtocol = {
     const target = { axelarId, remoteAddress };
     await sendGMPContractCall(target, calls, fee, lca, gmpChain);
   },
+} as const satisfies ProtocolDetail<'Compound', AxelarChain, EVMContext>;
+
+/**
+ * see {@link https://github.com/beefyfinance/beefy-contracts/blob/master/contracts/BIFI/vaults/BeefyVaultV7.sol }
+ * 0878a68 Nov 2022
+ */
+type BeefyVaultI = {
+  deposit: ['uint256'];
+  withdraw: ['uint256'];
+};
+
+const BeefyVault: BeefyVaultI = {
+  deposit: ['uint256'],
+  withdraw: ['uint256'],
+};
+
+export const BeefyProtocol = {
+  protocol: 'Beefy',
+  chains: keys(AxelarChain) as AxelarChain[],
+  supply: async (ctx, amount, src) => {
+    const { addresses: a, lca, gmpChain, gmpFee: fee, poolKey } = ctx;
+    const session = makeEVMSession();
+    const usdc = session.makeContract(a.usdc, ERC20);
+    const vaultAddress =
+      a[poolKey] ||
+      assert.fail(X`Beefy pool key ${q(poolKey)} not found in addresses`);
+    const vault = session.makeContract(vaultAddress, BeefyVault);
+    usdc.approve(vaultAddress, amount.value);
+    vault.deposit(amount.value);
+    const calls = session.finish();
+
+    const { chainName, remoteAddress } = src;
+    const axelarId = ctx.axelarIds[chainName];
+    const target = { axelarId, remoteAddress };
+    await sendGMPContractCall(target, calls, fee, lca, gmpChain);
+  },
+  withdraw: async (ctx, amount, dest) => {
+    const { addresses: a, lca, gmpChain, gmpFee: fee, poolKey } = ctx;
+    const session = makeEVMSession();
+    const vaultAddress =
+      a[poolKey] ||
+      assert.fail(X`Beefy pool key ${q(poolKey)} not found in addresses`);
+    const vault = session.makeContract(vaultAddress, BeefyVault);
+    vault.withdraw(amount.value);
+    const calls = session.finish();
+
+    const { chainName, remoteAddress } = dest;
+    const axelarId = ctx.axelarIds[chainName];
+    const target = { axelarId, remoteAddress };
+    await sendGMPContractCall(target, calls, fee, lca, gmpChain);
+  },
 } as const satisfies ProtocolDetail<
-  'Compound',
+  'Beefy',
   AxelarChain,
-  EVMContext<'compound'>
+  EVMContext & { poolKey: PoolKey }
 >;
