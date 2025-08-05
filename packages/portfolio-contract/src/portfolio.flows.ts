@@ -11,7 +11,6 @@ import { makeTracer } from '@agoric/internal';
 import type {
   AccountId,
   Denom,
-  DenomAmount,
   OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,

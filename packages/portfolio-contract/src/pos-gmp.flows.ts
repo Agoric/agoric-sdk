@@ -20,9 +20,11 @@ import type {
 import {
   AxelarGMPMessageType,
   type AxelarGmpOutgoingMemo,
-  type ContractCall,
 } from '@agoric/orchestration/src/axelar-types.js';
-import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
+import {
+  buildGMPPayload,
+  buildNoncePayload,
+} from '@agoric/orchestration/src/utils/gmp.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import type { GuestInterface } from '../../async-flow/src/types.ts';
 import { AxelarChain } from './constants.js';
@@ -62,10 +64,28 @@ export const provideEVMAccount = async (
     return found as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
   }
 
+  // Get nonce from accountsPending (set by reserveAccount above)
+  const nonce = pk.reader.getNonceForChain(chainName);
+
   const axelarId = gmp.axelarIds[chainName];
   const target = { axelarId, remoteAddress: ctx.contracts[chainName].factory };
   const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
-  await sendGMPContractCall(target, [], fee, lca, gmp.chain, ctx.gmpAddresses);
+
+  pk.reporter.publishChainAccountStatus(chainName, {
+    nonce,
+    lca: lca.getAddress().value,
+    status: 'Pending',
+  });
+
+  const payload = buildNoncePayload(nonce);
+  await sendGMPContractCall(
+    target,
+    payload,
+    fee,
+    lca,
+    gmp.chain,
+    ctx.gmpAddresses,
+  );
 
   return pk.reader.getGMPInfo(chainName) as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
 };
@@ -119,9 +139,10 @@ export const CCTPfromEVM = {
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
 
+    const payload = buildGMPPayload(calls);
     await sendGMPContractCall(
       target,
-      calls,
+      payload,
       gmpFee,
       lca,
       gmpChain,
@@ -158,7 +179,7 @@ harden(CCTP);
 
 export const sendGMPContractCall = async (
   dest: { axelarId: string; remoteAddress: EVMT['address'] },
-  calls: ContractCall[],
+  payload: number[],
   fee: DenomAmount,
   lca: LocalAccount,
   gmpChain: Chain<{ chainId: string }>,
@@ -168,7 +189,7 @@ export const sendGMPContractCall = async (
   const memo: AxelarGmpOutgoingMemo = {
     destination_chain: dest.axelarId,
     destination_address: dest.remoteAddress,
-    payload: buildGMPPayload(calls),
+    payload,
     type: AxelarGMPMessageType.ContractCall,
     fee: { amount: String(fee.value), recipient: AXELAR_GAS },
   };
@@ -225,9 +246,10 @@ export const AaveProtocol = {
 
     const axelarId = ctx.axelarIds[src.chainName];
     const target = { axelarId, remoteAddress };
+    const payload = buildGMPPayload(calls);
     await sendGMPContractCall(
       target,
-      calls,
+      payload,
       gmpFee,
       lca,
       gmpChain,
@@ -252,9 +274,10 @@ export const AaveProtocol = {
 
     const axelarId = ctx.axelarIds[dest.chainName];
     const target = { axelarId, remoteAddress };
+    const payload = buildGMPPayload(calls);
     await sendGMPContractCall(
       target,
-      calls,
+      payload,
       gmpFee,
       lca,
       gmpChain,
@@ -300,7 +323,15 @@ export const CompoundProtocol = {
     const { chainName, remoteAddress } = src;
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
-    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
+    const payload = buildGMPPayload(calls);
+    await sendGMPContractCall(
+      target,
+      payload,
+      fee,
+      lca,
+      gmpChain,
+      gmpAddresses,
+    );
   },
   withdraw: async (ctx, amount, dest, claim) => {
     const { addresses: a, lca, gmpChain, gmpFee: fee, gmpAddresses } = ctx;
@@ -319,7 +350,15 @@ export const CompoundProtocol = {
     const { chainName, remoteAddress } = dest;
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
-    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
+    const payload = buildGMPPayload(calls);
+    await sendGMPContractCall(
+      target,
+      payload,
+      fee,
+      lca,
+      gmpChain,
+      gmpAddresses,
+    );
   },
 } as const satisfies ProtocolDetail<'Compound', AxelarChain, EVMContext>;
 
@@ -362,7 +401,15 @@ export const BeefyProtocol = {
     const { chainName, remoteAddress } = src;
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
-    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
+    const payload = buildGMPPayload(calls);
+    await sendGMPContractCall(
+      target,
+      payload,
+      fee,
+      lca,
+      gmpChain,
+      gmpAddresses,
+    );
   },
   withdraw: async (ctx, amount, dest) => {
     const {
@@ -384,7 +431,15 @@ export const BeefyProtocol = {
     const { chainName, remoteAddress } = dest;
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
-    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
+    const payload = buildGMPPayload(calls);
+    await sendGMPContractCall(
+      target,
+      payload,
+      fee,
+      lca,
+      gmpChain,
+      gmpAddresses,
+    );
   },
 } as const satisfies ProtocolDetail<
   'Beefy',

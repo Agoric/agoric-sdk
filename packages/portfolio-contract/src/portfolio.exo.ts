@@ -20,7 +20,7 @@ import type { MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
-import { VowShape, type Vow, type VowKit, type VowTools } from '@agoric/vow';
+import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { decodeBase64 } from '@endo/base64';
@@ -45,7 +45,7 @@ import {
 } from './type-guards.js';
 
 const trace = makeTracer('PortExo');
-const { values } = Object;
+const { entries, fromEntries, keys } = Object;
 
 export const DECODE_CONTRACT_CALL_RESULT_ABI = [
   {
@@ -64,20 +64,6 @@ export const DECODE_CONTRACT_CALL_RESULT_ABI = [
   },
 ] as const;
 harden(DECODE_CONTRACT_CALL_RESULT_ABI);
-
-const OrchestrationAccountShape = M.remotable('OrchestrationAccount');
-const ReaderI = M.interface('reader', {
-  getGMPAddress: M.call().returns(M.any()),
-  getLCA: M.call().returns(OrchestrationAccountShape),
-  getPositions: M.call().returns(M.arrayOf(M.string())),
-  getUSDNICA: M.call().returns(OrchestrationAccountShape),
-});
-
-const ManagerI = M.interface('manager', {
-  initAave: M.call(M.string()).returns(),
-  initCompound: M.call(M.string()).returns(),
-  wait: M.call(M.bigint()).returns(VowShape),
-});
 
 export type AccountInfo = GMPAccountInfo | AgoricAccountInfo | NobleAccountInfo;
 export type GMPAccountInfo = {
@@ -110,6 +96,23 @@ type PortfolioKitState = {
   positions: MapStore<PoolKey, Position>;
   nextFlowId: number;
   targetAllocation?: TargetAllocation;
+  axelarChainNonces: MapStore<AxelarChain, number>;
+};
+
+const getAccountId = (info: AccountInfo): AccountId => {
+  switch (info.namespace) {
+    case 'cosmos':
+      switch (info.chainName) {
+        case 'agoric':
+          return coerceAccountId(info.lca.getAddress());
+        case 'noble':
+          return coerceAccountId(info.ica.getAddress());
+      }
+    case 'eip155':
+      return `${info.chainId}:${info.remoteAddress}`;
+    default:
+      assert.fail(X`no such type: ${info}`);
+  }
 };
 
 /**
@@ -119,24 +122,8 @@ const accountIdByChain = (
   accounts: PortfolioKitState['accounts'],
 ): Partial<Record<SupportedChain, AccountId>> => {
   const byChain = {};
-  for (const [n, info] of accounts.entries()) {
-    switch (info.namespace) {
-      case 'cosmos':
-        switch (info.chainName) {
-          case 'agoric':
-            byChain[n] = coerceAccountId(info.lca.getAddress());
-            break;
-          case 'noble':
-            byChain[n] = coerceAccountId(info.ica.getAddress());
-            break;
-        }
-        break;
-      case 'eip155':
-        byChain[n] = `${info.chainId}:${info.remoteAddress}`;
-        break;
-      default:
-        assert.fail(X`no such type: ${info}`);
-    }
+  for (const [chainName, info] of accounts.entries()) {
+    byChain[chainName] = getAccountId(info);
   }
   return harden(byChain);
 };
@@ -247,6 +234,7 @@ export const preparePortfolioKit = (
           valueShape: M.remotable('Position'),
         }),
         targetAllocation: undefined,
+        axelarChainNonces: zone.detached().mapStore('axelarChainNonces'),
       };
     },
     {
@@ -279,9 +267,9 @@ export const preparePortfolioKit = (
           if (!extra.memo) return;
           const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
 
-          const result = (
-            Object.entries(axelarIds) as [AxelarChain, string][]
-          ).find(([_, chainId]) => chainId === memo.source_chain);
+          const result = (entries(axelarIds) as [AxelarChain, string][]).find(
+            ([_, chainId]) => chainId === memo.source_chain,
+          );
 
           // XXX we must have more than just a (forgeable) memo check here to
           // determine if the source of this packet is the Axelar chain!
@@ -367,6 +355,10 @@ export const preparePortfolioKit = (
           const { vow } = accountsPending.get(chainName);
           return vow as Vow<GMPAccountInfo>;
         },
+        getNonceForChain(chainName: AxelarChain): number {
+          const { axelarChainNonces } = this.state;
+          return axelarChainNonces.get(chainName);
+        },
       },
       reporter: {
         publishStatus() {
@@ -374,14 +366,28 @@ export const preparePortfolioKit = (
             portfolioId,
             positions,
             accounts,
+            accountsPending,
             nextFlowId,
             targetAllocation,
           } = this.state;
+
+          const pendingByChain = fromEntries(
+            [...accountsPending.entries()]
+              .filter(([chain]) => keys(AxelarChain).includes(chain))
+              .map(([chain]) => [
+                chain,
+                this.facets.reader.getNonceForChain(chain as AxelarChain),
+              ]),
+          );
+
           publishStatus(makePortfolioPath(portfolioId), {
             positionKeys: [...positions.keys()],
             flowCount: nextFlowId - 1,
             accountIdByChain: accountIdByChain(accounts),
             ...(targetAllocation && { targetAllocation }),
+            ...(keys(pendingByChain).length > 0 && {
+              accountsPending: pendingByChain,
+            }),
           });
         },
         allocateFlowId() {
@@ -394,6 +400,13 @@ export const preparePortfolioKit = (
         publishFlowStatus(id: number, status: StatusFor['flow']) {
           const { portfolioId } = this.state;
           publishStatus(makeFlowPath(portfolioId, id), status);
+        },
+        publishChainAccountStatus(
+          chain: AxelarChain,
+          status: StatusFor['chainAccount'],
+        ) {
+          const { portfolioId } = this.state;
+          publishStatus([`portfolio${portfolioId}`, 'chains', chain], status);
         },
       },
       manager: {
@@ -415,6 +428,13 @@ export const preparePortfolioKit = (
             trace('accountsPending.has', chainName);
             return accountsPending.get(chainName).vow as Vow<AccountInfoFor[C]>;
           }
+
+          if (keys(AxelarChain).includes(chainName)) {
+            this.facets.manager.incrementNonceForChain(
+              chainName as AxelarChain,
+            );
+          }
+
           const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
           trace('accountsPending.init', chainName);
           accountsPending.init(chainName, pending);
@@ -428,6 +448,29 @@ export const preparePortfolioKit = (
             // NEEDSTEST - why did all tests pass without .resolve()?
             vow.resolver.resolve(info);
             accountsPending.delete(info.chainName);
+
+            // Publish final chain account status only for AxelarChains
+            if (keys(AxelarChain).includes(info.chainName)) {
+              const { accounts } = this.state;
+              const agoricInfo = accounts.get('agoric');
+              const lca =
+                agoricInfo.chainName === 'agoric'
+                  ? agoricInfo.lca.getAddress().value
+                  : undefined;
+
+              const nonce = this.facets.reader.getNonceForChain(
+                info.chainName as AxelarChain,
+              );
+              this.facets.reporter.publishChainAccountStatus(
+                info.chainName as AxelarChain,
+                {
+                  nonce,
+                  accountId: getAccountId(info),
+                  lca,
+                  status: 'Created',
+                },
+              );
+            }
           }
           accounts.init(info.chainName, info);
           this.facets.reporter.publishStatus();
@@ -463,6 +506,18 @@ export const preparePortfolioKit = (
         },
         getTargetAllocation() {
           return this.state.targetAllocation;
+        },
+        incrementNonceForChain(chainName: AxelarChain) {
+          const { axelarChainNonces } = this.state;
+          const currentNonce = axelarChainNonces.has(chainName)
+            ? axelarChainNonces.get(chainName) + 1
+            : 1;
+
+          if (axelarChainNonces.has(chainName)) {
+            axelarChainNonces.set(chainName, currentNonce);
+          } else {
+            axelarChainNonces.init(chainName, currentNonce);
+          }
         },
       },
       rebalanceHandler: {

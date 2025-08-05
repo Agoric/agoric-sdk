@@ -221,6 +221,13 @@ type FlowStatus = {
   error?: string;
 };
 
+type ChainAccountStatus = {
+  nonce?: number;
+  accountId?: AccountId;
+  lca?: string;
+  status: 'Pending' | 'Created' | 'Failed';
+};
+
 // XXX relate paths to types a la readPublished()
 export type StatusFor = {
   portfolio: {
@@ -229,6 +236,7 @@ export type StatusFor = {
     // XXX: accountIdByChain: Record<ChainAccountKey, AccountId>;
     accountIdByChain: Record<string, AccountId>;
     targetAllocation?: TargetAllocation;
+    accountsPending?: Record<string, number>; // Track pending account creation by chain
   };
   position: {
     protocol: YieldProtocol;
@@ -240,6 +248,7 @@ export type StatusFor = {
   // XXX refactor using AssetMoveDesc
   // XXX how many steps? step: 1, last: 3, for example
   flow: FlowStatus | (Omit<FlowStatus, 'dest'> & { where: string }); // recovery failed
+  chainAccount: ChainAccountStatus; // Per-chain account status
 };
 
 export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
