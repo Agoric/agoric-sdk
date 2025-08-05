@@ -90,6 +90,7 @@ type AgoricAccountInfo = {
   namespace: 'cosmos';
   chainName: 'agoric';
   lca: LocalAccount;
+  lcaIn: LocalAccount;
   reg: TargetRegistration;
 };
 type NobleAccountInfo = {
@@ -378,10 +379,17 @@ export const preparePortfolioKit = (
             nextFlowId,
             targetAllocation,
           } = this.state;
+
+          const deposit = () => {
+            const { lcaIn } = accounts.get('agoric') as AgoricAccountInfo;
+            return { deposit: lcaIn.getAddress().value };
+          };
+
           publishStatus(makePortfolioPath(portfolioId), {
             positionKeys: [...positions.keys()],
             flowCount: nextFlowId - 1,
             accountIdByChain: accountIdByChain(accounts),
+            ...(accounts.has('agoric') ? deposit() : {}),
             ...(targetAllocation && { targetAllocation }),
           });
         },

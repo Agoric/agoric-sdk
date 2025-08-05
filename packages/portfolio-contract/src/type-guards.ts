@@ -22,7 +22,11 @@
  */
 import type { Amount, Brand, NatAmount, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
-import { AnyNatAmountShape, type AccountId } from '@agoric/orchestration';
+import {
+  AnyNatAmountShape,
+  type AccountId,
+  type Bech32Address,
+} from '@agoric/orchestration';
 import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
@@ -223,6 +227,10 @@ type FlowStatus = {
   error?: string;
 };
 
+/** ChainNames including those in future upgrades */
+type ChainNameExt = string;
+const ChainNameExtShape: TypedPattern<ChainNameExt> = M.string();
+
 // XXX relate paths to types a la readPublished()
 export type StatusFor = {
   portfolios: {
@@ -231,8 +239,8 @@ export type StatusFor = {
   portfolio: {
     positionKeys: PoolKeyExt[];
     flowCount: number;
-    // XXX: accountIdByChain: Record<ChainAccountKey, AccountId>;
-    accountIdByChain: Record<string, AccountId>;
+    accountIdByChain: Record<ChainNameExt, AccountId>;
+    deposit?: Bech32Address;
     targetAllocation?: TargetAllocation;
   };
   position: {
@@ -253,11 +261,14 @@ export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
       positionKeys: M.arrayOf(PoolKeyShapeExt),
       flowCount: M.number(),
       accountIdByChain: M.recordOf(
-        M.or('agoric', 'noble'), // ChainAccountKey
-        M.string(), // AccountId
+        ChainNameExtShape,
+        M.string(), // XXX no runtime validation of AccountId
       ),
     },
-    { targetAllocation: TargetAllocationShapeExt },
+    {
+      deposit: M.string(), // XXX no runtime validation of Bech32Address
+      targetAllocation: TargetAllocationShapeExt,
+    },
   );
 
 /**
