@@ -260,16 +260,18 @@ export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
 
 const getAssetPlaceRefKind = (
   ref: AssetPlaceRef,
-): 'pos' | 'accountId' | 'seat' => {
+): 'pos' | 'accountId' | 'depositAddr' | 'seat' => {
   if (keys(PoolPlaces).includes(ref)) return 'pos';
   if (getKeywordOfPlaceRef(ref)) return 'seat';
   if (getChainNameOfPlaceRef(ref)) return 'accountId';
+  if (ref === '+agoric') return 'depositAddr';
   throw Fail`bad ref: ${ref}`;
 };
 
 type Way =
   | { how: 'localTransfer' }
   | { how: 'withdrawToSeat' }
+  | { how: 'send' }
   | { how: 'IBC'; src: 'agoric'; dest: 'noble' }
   | { how: 'IBC'; src: 'noble'; dest: 'agoric' }
   | { how: 'CCTP'; dest: AxelarChain }
@@ -319,6 +321,10 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
       getAssetPlaceRefKind(dest) === 'accountId' || // XXX check for agoric
         Fail`src seat must have account as dest ${q(moveDesc)}`;
       return { how: 'localTransfer' };
+
+    case 'depositAddr':
+      dest === '@agoric' || Fail`src +agoric must have dest @agoric`;
+      return { how: 'send' };
 
     case 'accountId': {
       const srcName = getChainNameOfPlaceRef(src);
@@ -485,6 +491,24 @@ const stepFlow = async (
         });
         break;
       }
+
+      case 'send':
+        todo.push(async () => {
+          const { lca, lcaIn } = await provideCosmosAccount(
+            orch,
+            'agoric',
+            kit,
+          );
+          return {
+            how: 'send',
+            amount,
+            src: { account: lcaIn },
+            dest: { account: lca },
+            apply: () => lcaIn.send(lca.getAddress(), amount),
+            recover: () => lca.send(lcaIn.getAddress(), amount),
+          };
+        });
+        break;
 
       case 'IBC': {
         if (way.src === 'agoric' && way.dest === 'noble') {
