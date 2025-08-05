@@ -4,6 +4,8 @@ import { q, Fail } from '@endo/errors';
 import { fromUniqueEntries } from '@agoric/internal';
 import type { CosmosCommand } from './cosmos-cmd.js';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
+import type { AgoricRedis } from './redis.ts';
+import type { SpectrumClient } from './spectrum-client.ts';
 
 type CosmosEvent = {
   type: string;
@@ -31,9 +33,13 @@ const encodedKeyToPath = (key: string) => {
 export const startEngine = async ({
   agd,
   rpc,
+  redis,
+  spectrum,
 }: {
   agd: CosmosCommand;
   rpc: CosmosRPCClient;
+  redis?: AgoricRedis;
+  spectrum: SpectrumClient;
 }) => {
   await null;
   let status = await (await agd.exec(['status'])).stdout;
@@ -45,6 +51,28 @@ export const startEngine = async ({
   }
   console.warn('agd status', status);
 
+  console.log('Appd status:', (await agd.exec([`status`])).stdout);
+
+  try {
+    console.log('[Engine] Initializing Spectrum API connection...');
+    const healthCheck = await spectrum.getApr('ethereum', 'aave');
+    console.log(`[Engine] Spectrum API initialized successfully. Current Ethereum Aave APR: ${healthCheck.apr.toFixed(2)}%`);
+  } catch (error) {
+    if (error instanceof Error && error.name === 'SpectrumApiError') {
+      console.error('[Engine] Spectrum API initialization failed. Portfolio monitoring will be limited:', error.message);
+    } else {
+      console.error('[Engine] Unexpected error during Spectrum API initialization:', error);
+    }
+    // Consider: Should we exit here or continue with limited functionality?
+  }
+
+  // XXX Fire off some simple requests to test the RPC and Redis clients.
+  false &&
+    trySomeExamples({ rpc, redis }).catch(error =>
+      console.error('@@@ Error in trySomeExamples:', error),
+    );
+
+  // TODO: This is a more expected way to use the RPC client.
   await rpc.opened();
   try {
     // console.warn('RPC client opened:', rpc);

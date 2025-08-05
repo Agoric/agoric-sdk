@@ -1,6 +1,7 @@
 import { Fail } from '@endo/errors';
 import { makeCosmosCommand } from './cosmos-cmd.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
+import { SpectrumClient } from './spectrum-client.ts';
 import { startEngine } from './engine.ts';
 
 const DEFAULT_AGD = 'agd';
@@ -29,6 +30,10 @@ export const main = async (argv, { env }) => {
     ENV_PREFIX = DEFAULT_ENV_PREFIX,
     CHAIN_ID = await getChainIdFromRpc(rpc),
     FROM = DEFAULT_FROM,
+    REDIS_URL,
+    SPECTRUM_API_URL,
+    SPECTRUM_API_TIMEOUT,
+    SPECTRUM_API_RETRIES,
   } = env;
 
   console.warn(`Using:`, { AGD, CHAIN_ID, FROM });
@@ -48,6 +53,18 @@ export const main = async (argv, { env }) => {
   ]);
   console.log('Planner address:', plannerAddress);
 
-  await startEngine({ agd, rpc });
+  let redis: AgoricRedis | undefined;
+  if (REDIS_URL) {
+    console.log('Connecting to Redis');
+    redis = new AgoricRedis(REDIS_URL);
+  }
+
+  const spectrum = new SpectrumClient({
+    baseUrl: SPECTRUM_API_URL,
+    timeout: SPECTRUM_API_TIMEOUT ? parseInt(SPECTRUM_API_TIMEOUT, 10) : undefined,
+    retries: SPECTRUM_API_RETRIES ? parseInt(SPECTRUM_API_RETRIES, 10) : undefined,
+  });
+
+  await startEngine({ agd, rpc, redis, spectrum });
 };
 harden(main);
