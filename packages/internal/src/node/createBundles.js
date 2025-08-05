@@ -11,8 +11,6 @@ const BUNDLE_SOURCE_PROGRAM = 'bundle-source';
 const req = createRequire(import.meta.url);
 
 export const createBundlesFromAbsolute = async sourceBundles => {
-  const prog = req.resolve(`.bin/${BUNDLE_SOURCE_PROGRAM}`);
-
   const cacheToArgs = new Map();
   for (const [srcPath, bundlePath] of sourceBundles) {
     const cache = path.dirname(bundlePath);
@@ -38,7 +36,11 @@ export const createBundlesFromAbsolute = async sourceBundles => {
         LOCKDOWN_OVERRIDE_TAMING: 'severe',
       })
     );
-    const { status } = spawnSync(prog, args, { stdio: 'inherit', env });
+    const { status } = spawnSync(
+      'yarn',
+      ['exec', BUNDLE_SOURCE_PROGRAM, ...args],
+      { stdio: 'inherit', env },
+    );
     status === 0 ||
       Fail`${q(BUNDLE_SOURCE_PROGRAM)} failed with status ${q(status)}`;
   }
