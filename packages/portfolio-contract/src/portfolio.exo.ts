@@ -45,7 +45,7 @@ import {
 } from './type-guards.js';
 
 const trace = makeTracer('PortExo');
-const { keys } = Object;
+const { entries, fromEntries, keys } = Object;
 
 export const DECODE_CONTRACT_CALL_RESULT_ABI = [
   {
@@ -267,9 +267,9 @@ export const preparePortfolioKit = (
           if (!extra.memo) return;
           const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
 
-          const result = (
-            Object.entries(axelarIds) as [AxelarChain, string][]
-          ).find(([_, chainId]) => chainId === memo.source_chain);
+          const result = (entries(axelarIds) as [AxelarChain, string][]).find(
+            ([_, chainId]) => chainId === memo.source_chain,
+          );
 
           // XXX we must have more than just a (forgeable) memo check here to
           // determine if the source of this packet is the Axelar chain!
@@ -371,7 +371,7 @@ export const preparePortfolioKit = (
             targetAllocation,
           } = this.state;
 
-          const pendingByChain = Object.fromEntries(
+          const pendingByChain = fromEntries(
             [...accountsPending.entries()]
               .filter(([chain]) => keys(AxelarChain).includes(chain))
               .map(([chain]) => [
@@ -430,16 +430,9 @@ export const preparePortfolioKit = (
           }
 
           if (keys(AxelarChain).includes(chainName)) {
-            const { axelarChainNonces } = this.state;
-            const currentNonce = axelarChainNonces.has(chainName as AxelarChain)
-              ? axelarChainNonces.get(chainName as AxelarChain) + 1n
-              : 1n;
-
-            if (axelarChainNonces.has(chainName as AxelarChain)) {
-              axelarChainNonces.set(chainName as AxelarChain, currentNonce);
-            } else {
-              axelarChainNonces.init(chainName as AxelarChain, currentNonce);
-            }
+            this.facets.manager.incrementNonceForChain(
+              chainName as AxelarChain,
+            );
           }
 
           const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
@@ -513,6 +506,18 @@ export const preparePortfolioKit = (
         },
         getTargetAllocation() {
           return this.state.targetAllocation;
+        },
+        incrementNonceForChain(chainName: AxelarChain) {
+          const { axelarChainNonces } = this.state;
+          const currentNonce = axelarChainNonces.has(chainName)
+            ? axelarChainNonces.get(chainName) + 1n
+            : 1n;
+
+          if (axelarChainNonces.has(chainName)) {
+            axelarChainNonces.set(chainName, currentNonce);
+          } else {
+            axelarChainNonces.init(chainName, currentNonce);
+          }
         },
       },
       rebalanceHandler: {
