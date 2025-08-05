@@ -25,6 +25,7 @@
     "lint:types": "yarn run -T tsc"
   },
   "devDependencies": {
+    "@agoric/client-utils": "workspace:*",
     "@agoric/zoe": "workspace:*",
     "@cosmology/telescope": "^1.12.21",
     "ava": "^5.3.0",
