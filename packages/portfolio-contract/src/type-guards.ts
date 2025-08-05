@@ -266,7 +266,7 @@ export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
       ),
     },
     {
-      deposit: M.string(), // XXX no runtime validation of Bech32Address
+      depositAddress: M.string(), // XXX no runtime validation of Bech32Address
       targetAllocation: TargetAllocationShapeExt,
     },
   );
