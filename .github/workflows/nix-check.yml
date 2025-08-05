@@ -25,15 +25,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Provide cache@v1 proxy for magic-nix-cache's benefit
-        if: ${{ env.USE_MAGIC_NIX_CACHE }}
-        uses: jashandeep-sohi/action-cache-api-shim@master
-
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
-      - name: Enable Nix cache via GitHub's cache@v1
-        if: ${{ env.USE_MAGIC_NIX_CACHE }}
+      - name: Enable Nix cache via GitHub's cache-action
         uses: DeterminateSystems/magic-nix-cache-action@v8
         with:
           use-flakehub: false

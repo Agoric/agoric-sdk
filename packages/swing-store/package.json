@@ -31,6 +31,8 @@
   },
   "devDependencies": {
     "@endo/init": "^1.1.12",
+    "@endo/promise-kit": "^1.1.13",
+    "@endo/stream": "^1.2.13",
     "@types/better-sqlite3": "^7.6.13",
     "ava": "^5.3.0",
     "c8": "^10.1.3",

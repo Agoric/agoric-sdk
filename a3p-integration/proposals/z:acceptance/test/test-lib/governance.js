@@ -72,7 +72,9 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
         address,
       ));
 
-    return executeOffer(address, generateVoteOffer(offerId), { verbose: true });
+    return executeOffer(address, generateVoteOffer(offerId), {
+      verbose: 'short',
+    });
   };
 
   /**
@@ -164,7 +166,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     return executeOffer(
       address,
       generateParamChange(offerId, votingDuration, params, path, instanceName),
-      { verbose: true },
+      { verbose: 'short' },
     );
   };
 
@@ -301,6 +303,7 @@ export const runCommitteeElectionParamChange = async (
     t.log('questionUpdate:', questionUpdate);
   } else {
     // Break out fields for more visibility into this deep structure.
+    // @ts-expect-error not all UpdateRecord have 'status' field
     const { status, ...rest } = questionUpdate;
     t.log(rest);
     t.log(status);

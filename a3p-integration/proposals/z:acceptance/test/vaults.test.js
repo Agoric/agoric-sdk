@@ -62,6 +62,7 @@ const exec = {
       });
       return agdWalletUtils.broadcastBridgeAction(from, {
         method: 'executeOffer',
+        // @ts-expect-error XXX ERef type confusion
         offer,
       });
     },

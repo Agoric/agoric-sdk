@@ -182,7 +182,7 @@
     "rimraf": "^5.0.0",
     "terser": "^5.39.0",
     "tsd": "^0.31.1",
-    "typescript": "5.9.0-beta"
+    "typescript": "~5.9.2"
   },
   "dependencies": {
     "@endo/base64": "^1.0.12",

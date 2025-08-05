@@ -22,11 +22,7 @@ import {
   type AxelarGmpOutgoingMemo,
   type ContractCall,
 } from '@agoric/orchestration/src/axelar-types.js';
-import { leftPadEthAddressTo32Bytes } from '@agoric/orchestration/src/utils/address.js';
-import {
-  buildGMPPayload,
-  gmpAddresses,
-} from '@agoric/orchestration/src/utils/gmp.js';
+import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import type { GuestInterface } from '../../async-flow/src/types.ts';
 import { AxelarChain } from './constants.js';
@@ -45,6 +41,15 @@ import { q, X } from '@endo/errors';
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
+
+const gmpAddresses: {
+  AXELAR_GMP: Bech32Address;
+  AXELAR_GAS: Bech32Address;
+} = {
+  AXELAR_GMP:
+    'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
+  AXELAR_GAS: 'axelar1aythygn6z5thymj6tmzfwekzh05ewg3l7d6y89',
+};
 
 export const provideEVMAccount = async (
   chainName: AxelarChain,

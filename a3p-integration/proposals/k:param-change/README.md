@@ -4,10 +4,10 @@
 setting the following values while preserving others from mainnet:
 * `fee_unit_price` to 1e6 ubld (i.e., 1 BLD)
 * `beans_per_unit` "feeUnit" to 2e10 (making each fee "bean" equal
-  1e6 ubld ÷ 2e10 = 50 picoBLD, approximating 50 picoUSD under a
+  1e6 ubld ÷ 2e10 = 50 picoBLD, each approximating 1 picoUSD under a
   [May 2025 exchange rate of $0.018 per BLD](
   https://web.archive.org/web/20250513143420/https://coinmarketcap.com/currencies/agoric/
-  ))
+  ) such that 1e12 beans ≈ $1 and 1e10 beans ≈ 1¢)
 * `beans_per_unit` "smartWalletProvision" to 2e11 (setting the fee for smart
   wallet provisioning at 2e11 beans = 10 BLD)
 

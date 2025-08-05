@@ -99,7 +99,7 @@ test('multiple portfolios have independent allocations', async t => {
 
   const allocation2 = harden({
     USDN: 3000n, // 30%
-    Compound_Ethereum: 7000n, // 70%
+    Compound_Optimism: 7000n, // 70%
   });
 
   // Open portfolios with different allocations
