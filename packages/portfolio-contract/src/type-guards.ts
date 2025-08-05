@@ -240,7 +240,7 @@ export type StatusFor = {
     positionKeys: PoolKeyExt[];
     flowCount: number;
     accountIdByChain: Record<ChainNameExt, AccountId>;
-    deposit?: Bech32Address;
+    depositAddress?: Bech32Address;
     targetAllocation?: TargetAllocation;
   };
   position: {

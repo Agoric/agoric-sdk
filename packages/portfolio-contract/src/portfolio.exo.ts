@@ -382,7 +382,7 @@ export const preparePortfolioKit = (
 
           const deposit = () => {
             const { lcaIn } = accounts.get('agoric') as AgoricAccountInfo;
-            return { deposit: lcaIn.getAddress().value };
+            return { depositAddress: lcaIn.getAddress().value };
           };
 
           publishStatus(makePortfolioPath(portfolioId), {
