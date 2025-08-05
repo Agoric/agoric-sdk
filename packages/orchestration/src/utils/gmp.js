@@ -90,8 +90,7 @@ export const buildGMPPayload = contractCalls => {
 };
 
 /**
- * @param {bigint} nonce - Identifier (for tracing) to include in the message
- *   payload.
+ * @param {bigint} nonce - Identifier for tracing a tx on the EVM chain.
  * @returns {number[]} The payload array.
  */
 export const buildNoncePayload = nonce => {

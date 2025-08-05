@@ -45,7 +45,7 @@ import {
 } from './type-guards.js';
 
 const trace = makeTracer('PortExo');
-const { values } = Object;
+const { keys } = Object;
 
 export const DECODE_CONTRACT_CALL_RESULT_ABI = [
   {
@@ -91,15 +91,12 @@ export type AccountInfoFor = Record<AxelarChain, GMPAccountInfo> & {
 
 type PortfolioKitState = {
   portfolioId: number;
-  accountsPending: MapStore<
-    SupportedChain,
-    { vow: VowKit<AccountInfo>; nonce: bigint }
-  >;
+  accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
   accounts: MapStore<SupportedChain, AccountInfo>;
   positions: MapStore<PoolKey, Position>;
   nextFlowId: number;
   targetAllocation?: TargetAllocation;
-  nonce: bigint;
+  axelarChainNonces: MapStore<AxelarChain, bigint>;
 };
 
 const getAccountId = (info: AccountInfo): AccountId => {
@@ -237,7 +234,7 @@ export const preparePortfolioKit = (
           valueShape: M.remotable('Position'),
         }),
         targetAllocation: undefined,
-        nonce: 1n,
+        axelarChainNonces: zone.detached().mapStore('axelarChainNonces'),
       };
     },
     {
@@ -356,14 +353,11 @@ export const preparePortfolioKit = (
             );
           }
           const { vow } = accountsPending.get(chainName);
-          return vow.vow as Vow<GMPAccountInfo>;
+          return vow as Vow<GMPAccountInfo>;
         },
         getNonceForChain(chainName: AxelarChain): bigint {
-          const { accountsPending } = this.state;
-          if (!accountsPending.has(chainName)) {
-            throw new Error(`No pending account for chain: ${chainName}`);
-          }
-          return accountsPending.get(chainName).nonce;
+          const { axelarChainNonces } = this.state;
+          return axelarChainNonces.get(chainName);
         },
       },
       reporter: {
@@ -378,10 +372,12 @@ export const preparePortfolioKit = (
           } = this.state;
 
           const pendingByChain = Object.fromEntries(
-            [...accountsPending.entries()].map(([chain, { nonce }]) => [
-              chain,
-              nonce,
-            ]),
+            [...accountsPending.entries()]
+              .filter(([chain]) => keys(AxelarChain).includes(chain))
+              .map(([chain]) => [
+                chain,
+                this.facets.reader.getNonceForChain(chain as AxelarChain),
+              ]),
           );
 
           publishStatus(makePortfolioPath(portfolioId), {
@@ -389,7 +385,7 @@ export const preparePortfolioKit = (
             flowCount: nextFlowId - 1,
             accountIdByChain: accountIdByChain(accounts),
             ...(targetAllocation && { targetAllocation }),
-            ...(Object.keys(pendingByChain).length > 0 && {
+            ...(keys(pendingByChain).length > 0 && {
               accountsPending: pendingByChain,
             }),
           });
@@ -430,34 +426,38 @@ export const preparePortfolioKit = (
           }
           if (accountsPending.has(chainName)) {
             trace('accountsPending.has', chainName);
-            return accountsPending.get(chainName).vow.vow as Vow<
-              AccountInfoFor[C]
-            >;
+            return accountsPending.get(chainName).vow as Vow<AccountInfoFor[C]>;
           }
-          const currentNonce = this.state.nonce;
-          this.state.nonce = currentNonce + 1n;
+
+          if (keys(AxelarChain).includes(chainName)) {
+            const { axelarChainNonces } = this.state;
+            const currentNonce = axelarChainNonces.has(chainName as AxelarChain)
+              ? axelarChainNonces.get(chainName as AxelarChain) + 1n
+              : 1n;
+
+            if (axelarChainNonces.has(chainName as AxelarChain)) {
+              axelarChainNonces.set(chainName as AxelarChain, currentNonce);
+            } else {
+              axelarChainNonces.init(chainName as AxelarChain, currentNonce);
+            }
+          }
+
           const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
           trace('accountsPending.init', chainName);
-          accountsPending.init(
-            chainName,
-            harden({
-              vow: pending,
-              nonce: currentNonce,
-            }),
-          );
+          accountsPending.init(chainName, pending);
           this.facets.reporter.publishStatus();
           return undefined;
         },
         resolveAccount(info: AccountInfo) {
           const { accounts, accountsPending } = this.state;
           if (accountsPending.has(info.chainName)) {
-            const { vow, nonce } = accountsPending.get(info.chainName);
+            const vow = accountsPending.get(info.chainName);
             // NEEDSTEST - why did all tests pass without .resolve()?
             vow.resolver.resolve(info);
             accountsPending.delete(info.chainName);
 
             // Publish final chain account status only for AxelarChains
-            if (Object.keys(AxelarChain).includes(info.chainName)) {
+            if (keys(AxelarChain).includes(info.chainName)) {
               const { accounts } = this.state;
               const agoricInfo = accounts.get('agoric');
               const lca =
@@ -465,6 +465,9 @@ export const preparePortfolioKit = (
                   ? agoricInfo.lca.getAddress().value
                   : undefined;
 
+              const nonce = this.facets.reader.getNonceForChain(
+                info.chainName as AxelarChain,
+              );
               this.facets.reporter.publishChainAccountStatus(
                 info.chainName as AxelarChain,
                 {

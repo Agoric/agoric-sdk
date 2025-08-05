@@ -4,6 +4,7 @@ import { parseArgs } from 'node:util';
 import {
   axelarConfigTestnet,
   axelarConfig as axelarMainnetConfig,
+  gmpAddresses,
 } from './axelar-configs.js';
 import { toExternalConfig } from './config-marshal.js';
 import { name } from './portfolio.contract.permit.js';
@@ -60,19 +61,31 @@ const build = async (homeP, endowments) => {
   /** @type {FlagValues} */
   // @ts-expect-error guaranteed by options config
   const { values: flags } = parseArgs({ args: scriptArgs, options });
-  const isMainnet = flags.net === 'mainnet';
-  const axelarConfig = isMainnet
-    ? harden({ ...axelarMainnetConfig })
-    : harden({ ...axelarConfigTestnet });
-  const oldBoardId = flags.replace;
+  const boardId = flags.replace;
 
-  const config = { axelarConfig };
-  if (oldBoardId) {
-    config.oldBoardId = oldBoardId;
-  }
+  /** @type {{ mainnet: PortfolioDeployConfig, testnet: PortfolioDeployConfig }} */
+  const configs = harden({
+    mainnet: {
+      axelarConfig: { ...axelarMainnetConfig },
+      gmpAddresses: {
+        ...gmpAddresses.mainnet,
+      },
+      oldBoardId: boardId || '',
+    },
+    testnet: {
+      axelarConfig: { ...axelarConfigTestnet },
+      gmpAddresses: {
+        ...gmpAddresses.testnet,
+      },
+      oldBoardId: boardId || '',
+    },
+  });
+
+  const isMainnet = flags.net === 'devnet';
+  const config = configs[isMainnet ? 'mainnet' : 'testnet'];
 
   if (isMainnet) {
-    for (const [chain, chainConfig] of Object.entries(axelarConfig)) {
+    for (const [chain, chainConfig] of Object.entries(config.axelarConfig)) {
       const addr = chainConfig.contracts.factory;
 
       if (!addr || !isValidAddr(addr)) {
