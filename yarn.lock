@@ -418,6 +418,7 @@ __metadata:
   resolution: "@agoric/client-utils@workspace:packages/client-utils"
   dependencies:
     "@agoric/casting": "workspace:*"
+    "@agoric/client-utils": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/internal": "workspace:*"
@@ -442,6 +443,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/cosmic-proto@workspace:packages/cosmic-proto"
   dependencies:
+    "@agoric/cosmic-proto": "workspace:*"
     "@agoric/cosmos": "workspace:*"
     "@ava/typescript": "npm:^5.0.0"
     "@cosmology/telescope": "npm:^1.12.8"
@@ -677,6 +679,7 @@ __metadata:
     "@agoric/base-zone": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/governance": "workspace:*"
+    "@agoric/inter-protocol": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/notifier": "workspace:*"
     "@agoric/smart-wallet": "workspace:*"
@@ -712,6 +715,7 @@ __metadata:
   dependencies:
     "@agoric/base-zone": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
+    "@agoric/internal": "workspace:*"
     "@endo/common": "npm:^1.2.13"
     "@endo/compartment-mapper": "npm:^1.6.3"
     "@endo/errors": "npm:^1.2.13"
@@ -800,6 +804,7 @@ __metadata:
     "@agoric/internal": "workspace:*"
     "@agoric/network": "workspace:*"
     "@agoric/notifier": "workspace:*"
+    "@agoric/orchestration": "workspace:*"
     "@agoric/store": "workspace:*"
     "@agoric/swingset-liveslots": "workspace:*"
     "@agoric/time": "workspace:*"
@@ -867,6 +872,7 @@ __metadata:
   resolution: "@agoric/pola-io@workspace:packages/pola-io"
   dependencies:
     "@agoric/internal": "workspace:*"
+    "@agoric/pola-io": "workspace:*"
     ava: "npm:^5.3.0"
   languageName: unknown
   linkType: soft
@@ -919,6 +925,7 @@ __metadata:
     "@agoric/ertp": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/notifier": "workspace:*"
+    "@agoric/smart-wallet": "workspace:*"
     "@agoric/store": "workspace:*"
     "@agoric/swingset-vat": "workspace:*"
     "@agoric/vat-data": "workspace:*"
@@ -1235,6 +1242,7 @@ __metadata:
     "@agoric/swingset-vat": "workspace:*"
     "@agoric/time": "workspace:*"
     "@agoric/vat-data": "workspace:*"
+    "@agoric/vats": "workspace:*"
     "@agoric/vow": "workspace:*"
     "@agoric/zoe": "workspace:*"
     "@agoric/zone": "workspace:*"
@@ -1271,6 +1279,7 @@ __metadata:
     "@agoric/base-zone": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/swingset-vat": "workspace:*"
+    "@agoric/vow": "workspace:*"
     "@agoric/zone": "workspace:*"
     "@endo/env-options": "npm:^1.1.11"
     "@endo/errors": "npm:^1.2.13"
@@ -1393,6 +1402,7 @@ __metadata:
     "@agoric/vat-data": "workspace:*"
     "@agoric/vow": "workspace:*"
     "@agoric/xsnap": "workspace:*"
+    "@agoric/zoe": "workspace:*"
     "@agoric/zone": "workspace:*"
     "@endo/bundle-source": "npm:^4.1.2"
     "@endo/captp": "npm:^4.4.8"

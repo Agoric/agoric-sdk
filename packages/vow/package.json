@@ -32,6 +32,7 @@
   "devDependencies": {
     "@agoric/internal": "workspace:*",
     "@agoric/swingset-vat": "workspace:*",
+    "@agoric/vow": "workspace:*",
     "@agoric/zone": "workspace:*",
     "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.12",

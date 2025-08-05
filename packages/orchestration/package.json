@@ -60,6 +60,7 @@
     "esbuild": "^0.25.2"
   },
   "devDependencies": {
+    "@agoric/orchestration": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
     "@chain-registry/client": "^1.47.4",
     "@cosmjs/amino": "^0.34.0",
