@@ -184,6 +184,7 @@
     "access": "public"
   },
   "devDependencies": {
+    "@agoric/cosmic-proto": "workspace:*",
     "@agoric/cosmos": "workspace:*",
     "@ava/typescript": "^6.0.0",
     "@cosmology/telescope": "^1.12.21",

@@ -68,6 +68,7 @@
   },
   "devDependencies": {
     "@agoric/kmarshal": "workspace:*",
+    "@agoric/zoe": "workspace:*",
     "@endo/init": "^1.1.12",
     "ava": "^6.4.1",
     "c8": "^10.1.3",

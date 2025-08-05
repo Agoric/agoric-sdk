@@ -25,6 +25,7 @@
     "lint:types": "yarn run -T tsc"
   },
   "devDependencies": {
+    "@agoric/client-utils": "workspace:*",
     "@agoric/smart-wallet": "workspace:*",
     "@agoric/vats": "workspace:*",
     "@agoric/zoe": "workspace:*",
