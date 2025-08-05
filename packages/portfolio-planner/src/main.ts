@@ -2,6 +2,7 @@ import { Fail } from '@endo/errors';
 import { makeCosmosCommand } from './cosmos-cmd.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { SpectrumClient } from './spectrum-client.ts';
+import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { startEngine } from './engine.ts';
 
 const DEFAULT_AGD = 'agd';
@@ -65,6 +66,11 @@ export const main = async (argv, { env }) => {
     retries: SPECTRUM_API_RETRIES ? parseInt(SPECTRUM_API_RETRIES, 10) : undefined,
   });
 
-  await startEngine({ agd, rpc, redis, spectrum });
+  const cosmosRest = new CosmosRestClient({
+    timeout: 15000, // 15s timeout for REST calls
+    retries: 3,
+  });
+
+  await startEngine({ agd, rpc, redis, spectrum, cosmosRest });
 };
 harden(main);
