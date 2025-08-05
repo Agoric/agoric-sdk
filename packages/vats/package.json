@@ -47,6 +47,7 @@
     "jessie.js": "^0.3.4"
   },
   "devDependencies": {
+    "@agoric/inter-protocol": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
     "@agoric/vats": "workspace:*",
     "@endo/bundle-source": "^4.1.2",
