@@ -222,7 +222,7 @@ type FlowStatus = {
 };
 
 type ChainAccountStatus = {
-  nonce?: bigint;
+  nonce?: number;
   accountId?: AccountId;
   lca?: string;
   status: 'Pending' | 'Created' | 'Failed';
@@ -236,7 +236,7 @@ export type StatusFor = {
     // XXX: accountIdByChain: Record<ChainAccountKey, AccountId>;
     accountIdByChain: Record<string, AccountId>;
     targetAllocation?: TargetAllocation;
-    accountsPending?: Record<string, bigint>; // Track pending account creation by chain
+    accountsPending?: Record<string, number>; // Track pending account creation by chain
   };
   position: {
     protocol: YieldProtocol;

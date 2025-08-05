@@ -90,11 +90,11 @@ export const buildGMPPayload = contractCalls => {
 };
 
 /**
- * @param {bigint} nonce - Identifier for tracing a tx on the EVM chain.
+ * @param {number} nonce - Identifier for tracing a tx on the EVM chain.
  * @returns {number[]} The payload array.
  */
 export const buildNoncePayload = nonce => {
-  const abiEncodedData = encodeAbiParameters([{ type: 'uint256' }], [nonce]);
+  const abiEncodedData = encodeAbiParameters([{ type: 'uint32' }], [nonce]);
   return Array.from(hexToBytes(abiEncodedData));
 };
 

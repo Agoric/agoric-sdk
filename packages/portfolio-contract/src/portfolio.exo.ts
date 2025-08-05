@@ -96,7 +96,7 @@ type PortfolioKitState = {
   positions: MapStore<PoolKey, Position>;
   nextFlowId: number;
   targetAllocation?: TargetAllocation;
-  axelarChainNonces: MapStore<AxelarChain, bigint>;
+  axelarChainNonces: MapStore<AxelarChain, number>;
 };
 
 const getAccountId = (info: AccountInfo): AccountId => {
@@ -355,7 +355,7 @@ export const preparePortfolioKit = (
           const { vow } = accountsPending.get(chainName);
           return vow as Vow<GMPAccountInfo>;
         },
-        getNonceForChain(chainName: AxelarChain): bigint {
+        getNonceForChain(chainName: AxelarChain): number {
           const { axelarChainNonces } = this.state;
           return axelarChainNonces.get(chainName);
         },
@@ -510,8 +510,8 @@ export const preparePortfolioKit = (
         incrementNonceForChain(chainName: AxelarChain) {
           const { axelarChainNonces } = this.state;
           const currentNonce = axelarChainNonces.has(chainName)
-            ? axelarChainNonces.get(chainName) + 1n
-            : 1n;
+            ? axelarChainNonces.get(chainName) + 1
+            : 1;
 
           if (axelarChainNonces.has(chainName)) {
             axelarChainNonces.set(chainName, currentNonce);
