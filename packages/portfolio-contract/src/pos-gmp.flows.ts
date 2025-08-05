@@ -59,7 +59,6 @@ export const provideEVMAccount = async (
     chain: Chain<{ chainId: string }>;
     fee: NatValue;
     axelarIds: AxelarId;
-    nonce: bigint;
   },
   lca: LocalAccount,
   ctx: PortfolioInstanceContext,
@@ -70,16 +69,20 @@ export const provideEVMAccount = async (
     return found as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
   }
 
+  // Get nonce from accountsPending (set by reserveAccount above)
+  const nonce = pk.reader.getNonceForChain(chainName);
+
   const axelarId = gmp.axelarIds[chainName];
   const target = { axelarId, remoteAddress: ctx.contracts[chainName].factory };
   const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
-  pk.reporter.publishEvmAcctStatus({
-    nonce: gmp.nonce,
-    status: 'Pending',
+
+  pk.reporter.publishChainAccountStatus(chainName, {
+    nonce,
     lca: lca.getAddress().value,
-    remoteAddress: null,
+    status: 'Pending',
   });
-  const payload = buildNoncePayload(gmp.nonce);
+
+  const payload = buildNoncePayload(nonce);
   await sendGMPContractCall(target, payload, fee, lca, gmp.chain);
 
   return pk.reader.getGMPInfo(chainName) as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
