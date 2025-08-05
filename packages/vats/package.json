@@ -46,6 +46,7 @@
   },
   "devDependencies": {
     "@agoric/swingset-liveslots": "workspace:*",
+    "@agoric/vats": "workspace:*",
     "@endo/bundle-source": "^4.1.2",
     "@endo/init": "^1.1.12",
     "ava": "^6.4.1",
