@@ -30,6 +30,8 @@ import {
   type PortfolioInvitationMaker,
   type ProposalType,
   type StatusFor,
+  type PoolKey,
+  type TargetAllocation,
 } from '../src/type-guards.js';
 import type { WalletTool } from './wallet-offer-tools.js';
 
@@ -252,4 +254,17 @@ export const makePortfolioSteps = <
   }
 
   return harden({ give, steps });
+};
+
+/**
+ * Compute a breakdown of `deposit` into amounts
+ * to send to positions so that the resulting position balances are as close
+ * to targetAllocation as possible.
+ */
+const planDepositTransfers = (
+  deposit: NatAmount,
+  currentBalances: Partial<Record<PoolKey, NatAmount>>,
+  targetAllocation: TargetAllocation,
+): Partial<Record<PoolKey, NatAmount>> => {
+  // implement this AI!
 };
