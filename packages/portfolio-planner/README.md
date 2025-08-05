@@ -79,7 +79,6 @@ Environment variables:
 - `CHAIN_ID`: Chain ID for transactions to the Agoric chain (autodetect via RPC)
 - `FROM`: Existing AGD key for sending transactions to Agoric (`planner`)
 - `HOME`: Where AGD state is kept, namely `$HOME/.agoric`
-- `REDIS_URL`: URL for Redis service
 - `DOTENV`: Path to environment file containing defaults of above (`.env`)
 
 ## Architecture

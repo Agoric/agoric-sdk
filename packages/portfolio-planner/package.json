@@ -40,7 +40,6 @@
     "@endo/init": "^1.1.12",
     "@endo/promise-kit": "^1.1.13",
     "dotenv": "^17.2.1",
-    "ioredis": "^5.6.1",
     "json-rpc-2.0": "^1.7.1",
     "ws": "^8.18.3"
   }

@@ -1,5 +1,4 @@
 import { Fail } from '@endo/errors';
-import { AgoricRedis } from './redis.ts';
 import { makeCosmosCommand } from './cosmos-cmd.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { startEngine } from './engine.ts';
@@ -30,7 +29,6 @@ export const main = async (argv, { env }) => {
     ENV_PREFIX = DEFAULT_ENV_PREFIX,
     CHAIN_ID = await getChainIdFromRpc(rpc),
     FROM = DEFAULT_FROM,
-    REDIS_URL,
   } = env;
 
   console.warn(`Using:`, { AGD, CHAIN_ID, FROM });
@@ -50,12 +48,6 @@ export const main = async (argv, { env }) => {
   ]);
   console.log('Planner address:', plannerAddress);
 
-  let redis: AgoricRedis | undefined;
-  if (REDIS_URL) {
-    console.log('Connecting to Redis');
-    redis = new AgoricRedis(REDIS_URL);
-  }
-
-  await startEngine({ agd, rpc, redis });
+  await startEngine({ agd, rpc });
 };
 harden(main);
