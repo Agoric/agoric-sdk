@@ -13,6 +13,7 @@ import * as contractExports from '../src/portfolio.contract.ts';
 import {
   axelarIdsMock,
   contractsMock,
+  gmpAddresses,
   makeCCTPTraffic,
   makeUSDNIBCTraffic,
 } from './mocks.ts';
@@ -68,6 +69,7 @@ const deploy = async (t: ExecutionContext) => {
       ...common.commonPrivateArgs,
       axelarIds: axelarIdsMock,
       contracts: contractsMock,
+      gmpAddresses,
       timerService,
       chainInfo,
     }, // privateArgs

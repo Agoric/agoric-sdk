@@ -29,7 +29,7 @@ import {
   SupportedChain,
   type YieldProtocol,
 } from './constants.js';
-import type { AxelarId, EVMContractAddresses } from './portfolio.contract.ts';
+import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {
   AaveProtocol,
@@ -70,6 +70,7 @@ export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
 export type PortfolioInstanceContext = {
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
+  gmpAddresses: GmpAddresses;
   usdc: { brand: Brand<'nat'>; denom: Denom };
   gmpFeeInfo: { brand: Brand<'nat'>; denom: Denom };
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
@@ -369,7 +370,7 @@ const stepFlow = async (
     const axelar = await orch.getChain('axelar');
     const { denom } = ctx.gmpFeeInfo;
     const fee = { denom, value: move.fee ? move.fee.value : 0n };
-    const { axelarIds } = ctx;
+    const { axelarIds, gmpAddresses } = ctx;
     const gmp = { chain: axelar, fee: move.fee?.value || 0n, axelarIds }; // XXX throw if fee missing?
     const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
     const gInfo = await provideEVMAccount(chain, gmp, lca, ctx, kit);
@@ -381,6 +382,7 @@ const stepFlow = async (
       gmpFee: fee,
       gmpChain: axelar,
       axelarIds,
+      gmpAddresses,
     });
     return { evmCtx, gInfo, accountId };
   };

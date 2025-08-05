@@ -1,7 +1,7 @@
 /**
  * @import {AxelarChain} from '@aglocal/portfolio-contract/src/constants.js';
  * @import {EVMContractAddresses} from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
- * @import {BaseChainInfo} from '@agoric/orchestration'
+ * @import {BaseChainInfo, Bech32Address} from '@agoric/orchestration'
  * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.ts';
  */
 
@@ -413,5 +413,58 @@ export const axelarConfigTestnet = {
       cctpDestinationDomain: 7,
     },
     contracts: { ...testnetContracts.Polygon },
+  },
+};
+
+/**
+ * @typedef {{
+ *   mainnet: {
+ *     AXELAR_GMP: Bech32Address,
+ *     AXELAR_GAS: Bech32Address,
+ *   },
+ *   testnet: {
+ *     AXELAR_GMP: Bech32Address,
+ *     AXELAR_GAS: Bech32Address,
+ *   },
+ * }} GMPAddresses
+ */
+
+/**
+ * These addresses are canonical per Axelar.
+ *
+ * **AXELAR_GMP:**
+ * The Axelar GMP account address is documented in various places.
+ * One reference: {@link https://docs.axelar.dev/dev/general-message-passing/cosmos-gmp/overview/#messages-from-cosmwasm}
+ *
+ * **AXELAR_GAS:**
+ * The GAS service address is not directly cited in the docs,
+ * but appears in the AxelarJS source:
+ * {@link https://github.com/axelarnetwork/axelarjs/blob/fae808d4a2a1e34f386d6486f5f3708dd7a25cf5/packages/core/src/index.ts#L9-L13}
+ *
+ * Both addresses were also confirmed directly with the Axelar team via Slack.
+ * @type {GMPAddresses}
+ */
+export const gmpAddresses = {
+  mainnet: {
+    /**
+     * GMP address on mainnet.
+      @see https://axelarscan.io/account/axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5 */
+    AXELAR_GMP:
+      'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
+    /**
+     * GAS receiver address on mainnet.
+      @see https://axelarscan.io/account/axelar1aythygn6z5thymj6tmzfwekzh05ewg3l7d6y89 */
+    AXELAR_GAS: 'axelar1aythygn6z5thymj6tmzfwekzh05ewg3l7d6y89',
+  },
+  testnet: {
+    /**
+     * GMP address on testnet.
+      @see https://testnet.axelarscan.io/account/axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5 */
+    AXELAR_GMP:
+      'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
+    /**
+     * GAS receiver address on testnet.
+      @see https://testnet.axelarscan.io/account/axelar1zl3rxpp70lmte2xr6c4lgske2fyuj3hupcsvcd */
+    AXELAR_GAS: 'axelar1zl3rxpp70lmte2xr6c4lgske2fyuj3hupcsvcd',
   },
 };

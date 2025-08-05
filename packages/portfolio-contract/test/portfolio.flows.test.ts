@@ -53,7 +53,7 @@ import {
   type OfferArgsFor,
 } from '../src/type-guards-steps.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
-import { axelarIdsMock, contractsMock } from './mocks.ts';
+import { axelarIdsMock, contractsMock, gmpAddresses } from './mocks.ts';
 import { makePortfolioSteps } from '../tools/portfolio-actors.ts';
 import {
   axelarCCTPConfig,
@@ -61,6 +61,7 @@ import {
   makeIncomingVTransferEvent,
 } from './supports.ts';
 import { decodeFunctionCall } from './abi-utils.ts';
+import type { GmpAddresses } from '../src/portfolio.contract.ts';
 
 /**
  * Use Arbitrum or any other EVM chain whose Axelar chain ID (`axelarId`) differs
@@ -275,6 +276,7 @@ const mocks = (
   const denom = `ibc/${denomHash({ channelId: 'channel-123', denom: 'uusdc' })}`;
 
   const inertSubscriber = {} as ResolvedPublicTopic<never>['subscriber'];
+
   const ctx1: PortfolioInstanceContext = {
     zoeTools,
     usdc: { denom, brand: USDC },
@@ -282,6 +284,7 @@ const mocks = (
     contracts: contractsMock,
     gmpFeeInfo: { brand: BLD, denom: 'ubld' },
     inertSubscriber,
+    gmpAddresses,
   };
 
   const chainHubTools = harden({

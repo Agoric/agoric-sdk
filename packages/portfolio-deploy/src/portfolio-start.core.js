@@ -19,6 +19,7 @@ import { name, permit } from './portfolio.contract.permit.js';
  * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.ts';
  * @import {TypedPattern} from '@agoric/internal';
  * @import { ChainInfoPowers } from './chain-info.core.js';
+ * @import { Bech32Address } from '@agoric/orchestration';
  */
 
 const trace = makeTracer(`YMX-Start`, true);
@@ -26,6 +27,10 @@ const trace = makeTracer(`YMX-Start`, true);
 /**
  * @typedef {{
  *   axelarConfig: AxelarChainConfigMap;
+ *   gmpAddresses: {
+ *     AXELAR_GMP: Bech32Address;
+ *     AXELAR_GAS: Bech32Address;
+ *   };
  *   oldBoardId?: string;
  * } & CopyRecord} PortfolioDeployConfig
  */
@@ -35,6 +40,10 @@ export const portfolioDeployConfigShape = M.splitRecord(
   {
     // XXX more precise shape
     axelarConfig: M.record(),
+    gmpAddresses: M.splitRecord({
+      AXELAR_GMP: M.string(),
+      AXELAR_GAS: M.string(),
+    }),
   },
   {
     oldBoardId: M.string(),
@@ -51,7 +60,7 @@ export const makePrivateArgs = async (
   marshaller,
   config,
 ) => {
-  const { axelarConfig } = config;
+  const { axelarConfig, gmpAddresses } = config;
   const { agoricNames } = orchestrationPowers;
   const { chainInfo: cosmosChainInfo, assetInfo } = await lookupInterchainInfo(
     agoricNames,
@@ -96,6 +105,7 @@ export const makePrivateArgs = async (
     assetInfo,
     axelarIds,
     contracts,
+    gmpAddresses,
   });
   return it;
 };

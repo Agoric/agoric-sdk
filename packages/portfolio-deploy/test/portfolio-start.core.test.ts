@@ -3,7 +3,10 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import * as contractExports from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
-import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.js';
+import {
+  gmpAddresses,
+  makeUSDNIBCTraffic,
+} from '@aglocal/portfolio-contract/test/mocks.js';
 import { setupPortfolioTest } from '@aglocal/portfolio-contract/test/supports.ts';
 import { makeTrader } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
 import { makeWallet } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.ts';
@@ -106,7 +109,7 @@ test('coreEval code without swingset', async t => {
   );
 
   const options = toExternalConfig(
-    harden({ axelarConfig } as PortfolioDeployConfig),
+    harden({ axelarConfig, gmpAddresses } as PortfolioDeployConfig),
     {},
     portfolioDeployConfigShape,
   );

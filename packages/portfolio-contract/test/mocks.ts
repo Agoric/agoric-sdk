@@ -32,7 +32,7 @@ import type { VowTools } from '@agoric/vow';
 import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { Zone } from '@agoric/zone';
 import { makePromiseKit } from '@endo/promise-kit';
-import type { AxelarId } from '../src/portfolio.contract.ts';
+import type { AxelarId, GmpAddresses } from '../src/portfolio.contract.ts';
 import type { EVMContractAddressesMap } from '../src/type-guards.ts';
 
 export const localAccount0 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
@@ -346,3 +346,9 @@ export const explored = [
   },
 ];
 harden(explored);
+
+export const gmpAddresses: GmpAddresses = harden({
+  AXELAR_GMP:
+    'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
+  AXELAR_GAS: 'axelar1aythygn6z5thymj6tmzfwekzh05ewg3l7d6y89',
+});
