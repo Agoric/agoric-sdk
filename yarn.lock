@@ -873,6 +873,7 @@ __metadata:
   dependencies:
     "@agoric/internal": "workspace:*"
     "@agoric/kmarshal": "workspace:*"
+    "@agoric/notifier": "workspace:*"
     "@agoric/swing-store": "workspace:*"
     "@agoric/swingset-liveslots": "workspace:*"
     "@agoric/swingset-vat": "workspace:*"
