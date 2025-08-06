@@ -318,8 +318,8 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
     }
 
     case 'seat':
-      getAssetPlaceRefKind(dest) === 'accountId' || // XXX check for agoric
-        Fail`src seat must have account as dest ${q(moveDesc)}`;
+      ['@agoric', '+agoric'].includes(dest) ||
+        Fail`src seat must have agoric account as dest ${q(moveDesc)}`;
       return { how: 'localTransfer' };
 
     case 'depositAddr':
@@ -456,11 +456,15 @@ const stepFlow = async (
           ...('GmpFee' in give ? { GmpFee: give.GmpFee } : {}),
         });
         todo.push(async () => {
-          const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
+          const { lca, lcaIn } = await provideCosmosAccount(
+            orch,
+            'agoric',
+            kit,
+          );
           return {
             how: 'localTransfer',
             src: { seat, keyword: 'Deposit' },
-            dest: { account: lca },
+            dest: { account: move.dest === '+agoric' ? lcaIn : lca },
             amount, // XXX use amounts.Deposit
             apply: async () => {
               await ctx.zoeTools.localTransfer(seat, lca, amounts);
