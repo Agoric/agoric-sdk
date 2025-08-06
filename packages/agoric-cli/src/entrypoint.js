@@ -21,7 +21,11 @@ const log = anylogger('agoric');
 const progname = path.basename(process.argv[1]);
 
 const stdout = str => process.stdout.write(str);
-const makeWebSocket = (...args) => new WebSocket(...args);
+const makeWebSocket = (...args) =>
+  new WebSocket(
+    // @ts-expect-error spread?
+    ...args,
+  );
 
 const rawArgs = process.argv.slice(2);
 main(progname, rawArgs, {
