@@ -2,14 +2,15 @@
 
 const BASE_URL = 'https://pools-api.spectrumnodes.com';
 
-type Chain =
+// XXX refactor using portfolio-contract/type-guards.ts?
+export type Chain =
   | 'ethereum'
   | 'optimism'
   | 'polygon'
   | 'arbitrum'
   | 'base'
   | 'avalanche';
-type Pool = 'aave' | 'compound';
+export type Pool = 'aave' | 'compound';
 
 interface AprResponse {
   pool: Pool;
@@ -46,7 +47,7 @@ export class SpectrumClient {
 
   async getApr(chain: Chain, pool: Pool): Promise<AprResponse> {
     const url = `${this.config.baseUrl}/apr?chain=${chain}&pool=${pool}`;
-    console.log(`[SpectrumClient] Fetching APR: ${url}`);
+    console.warn(`[SpectrumClient] Fetching APR: ${url}`);
 
     return this.makeRequest<AprResponse>(url, `APR for ${chain}/${pool}`);
   }
@@ -57,7 +58,7 @@ export class SpectrumClient {
     address: string,
   ): Promise<PoolBalanceResponse> {
     const url = `${this.config.baseUrl}/pool-balance?pool=${pool}&chain=${chain}&address=${address}`;
-    console.log(`[SpectrumClient] Fetching pool balance: ${url}`);
+    console.warn(`[SpectrumClient] Fetching pool balance: ${url}`);
 
     return this.makeRequest<PoolBalanceResponse>(
       url,
@@ -97,7 +98,7 @@ export class SpectrumClient {
         }
 
         const data = await response.json();
-        console.log(`[SpectrumClient] Success: ${context}`);
+        console.warn(`[SpectrumClient] Success: ${context}`);
         return data;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
