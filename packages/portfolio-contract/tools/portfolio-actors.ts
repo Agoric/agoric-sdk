@@ -264,7 +264,7 @@ export const makePortfolioSteps = <
  */
 export const planDepositTransfers = (
   deposit: NatAmount,
-  currentBalances: Partial<Record<PoolKey, NatAmount>>, // expand to allow any AssetPlaceRef AI!
+  currentBalances: Partial<Record<string, NatAmount>>,
   targetAllocation: TargetAllocation,
 ): Partial<Record<PoolKey, NatAmount>> => {
   const { brand } = deposit;
