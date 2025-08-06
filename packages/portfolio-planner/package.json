@@ -15,7 +15,7 @@
     "prepack": "yarn run -T tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "lint": "npm run lint:types",
-    "test": "exit 0",
+    "test": "ava",
     "test:vite": "vitest",
     "lint:types": "yarn run -T tsc"
   },
@@ -30,6 +30,7 @@
   "devDependencies": {
     "@types/node": "^22.10.2",
     "@types/ws": "^8",
+    "ava": "^5.3.0",
     "nodemon": "^3.1.10",
     "ts-blank-space": "^0.6.1",
     "typescript": "^5.7.2"

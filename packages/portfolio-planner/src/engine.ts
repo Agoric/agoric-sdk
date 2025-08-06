@@ -27,8 +27,10 @@ const PathSeparator = '.';
 /**
  * TODO: Promote elsewhere, maybe @agoric/internal?
  * cf. golang/cosmos/x/vstorage/types/path_keys.go
+ * 
+ * NOTE: Exported for testing purposes only
  */
-const encodedKeyToPath = (key: string) => {
+export const encodedKeyToPath = (key: string) => {
   const split = key.split(EncodedKeySeparator);
   split.length > 1 || Fail`invalid encoded key ${q(key)}`;
   const encodedPath = split.slice(1).join(EncodedKeySeparator);
