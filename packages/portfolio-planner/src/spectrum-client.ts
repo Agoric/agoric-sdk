@@ -1,7 +1,15 @@
-const BASE_URL = "https://pools-api.spectrumnodes.com";
+/* eslint-disable max-classes-per-file */
 
-type Chain = "ethereum" | "optimism" | "polygon" | "arbitrum" | "base" | "avalanche";
-type Pool = "aave" | "compound";
+const BASE_URL = 'https://pools-api.spectrumnodes.com';
+
+type Chain =
+  | 'ethereum'
+  | 'optimism'
+  | 'polygon'
+  | 'arbitrum'
+  | 'base'
+  | 'avalanche';
+type Pool = 'aave' | 'compound';
 
 interface AprResponse {
   pool: Pool;
@@ -39,77 +47,93 @@ export class SpectrumClient {
   async getApr(chain: Chain, pool: Pool): Promise<AprResponse> {
     const url = `${this.config.baseUrl}/apr?chain=${chain}&pool=${pool}`;
     console.log(`[SpectrumClient] Fetching APR: ${url}`);
-    
+
     return this.makeRequest<AprResponse>(url, `APR for ${chain}/${pool}`);
   }
 
-  async getPoolBalance(chain: Chain, pool: Pool, address: string): Promise<PoolBalanceResponse> {
+  async getPoolBalance(
+    chain: Chain,
+    pool: Pool,
+    address: string,
+  ): Promise<PoolBalanceResponse> {
     const url = `${this.config.baseUrl}/pool-balance?pool=${pool}&chain=${chain}&address=${address}`;
     console.log(`[SpectrumClient] Fetching pool balance: ${url}`);
-    
-    return this.makeRequest<PoolBalanceResponse>(url, `Pool balance for ${address} on ${chain}/${pool}`);
+
+    return this.makeRequest<PoolBalanceResponse>(
+      url,
+      `Pool balance for ${address} on ${chain}/${pool}`,
+    );
   }
 
   private async makeRequest<T>(url: string, context: string): Promise<T> {
+    await null;
+
     let lastError: Error | null = null;
-    
-    for (let attempt = 1; attempt <= this.config.retries; attempt++) {
+
+    for (let attempt = 1; attempt <= this.config.retries; attempt += 1) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
-        
+        const timeoutId = setTimeout(
+          () => controller.abort(),
+          this.config.timeout,
+        );
+
         const response = await fetch(url, {
           signal: controller.signal,
           headers: {
-            'Accept': 'application/json',
+            Accept: 'application/json',
             'User-Agent': 'Agoric-Portfolio-Planner/1.0.0',
           },
         });
-        
+
         clearTimeout(timeoutId);
-        
+
         if (!response.ok) {
           throw new SpectrumApiError(
             `HTTP ${response.status}: ${response.statusText}`,
             response.status,
-            context
+            context,
           );
         }
-        
+
         const data = await response.json();
         console.log(`[SpectrumClient] Success: ${context}`);
         return data;
-        
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        
+
         if (attempt < this.config.retries) {
-          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff, max 5s
-          console.warn(`[SpectrumClient] Attempt ${attempt} failed for ${context}, retrying in ${delay}ms:`, lastError.message);
+          const delay = Math.min(1000 * 2 ** (attempt - 1), 5000); // Exponential backoff, max 5s
+          console.warn(
+            `[SpectrumClient] Attempt ${attempt} failed for ${context}, retrying in ${delay}ms:`,
+            lastError.message,
+          );
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
-    
+
     throw new SpectrumApiError(
       `Failed to fetch ${context} after ${this.config.retries} attempts: ${lastError?.message}`,
       0,
       context,
-      lastError || undefined
+      lastError || undefined,
     );
   }
 }
 
 class SpectrumApiError extends Error {
   public readonly statusCode: number;
+
   public readonly context: string;
+
   public readonly cause?: Error;
 
   constructor(
     message: string,
     statusCode: number,
     context: string,
-    cause?: Error
+    cause?: Error,
   ) {
     super(message);
     this.name = 'SpectrumApiError';

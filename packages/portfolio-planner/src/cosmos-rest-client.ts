@@ -39,6 +39,7 @@ const CHAIN_CONFIGS: Record<string, ChainConfig> = {
 
 export class CosmosRestClient {
   private readonly config: Required<CosmosRestClientConfig>;
+
   private readonly chainConfigs: Map<string, ChainConfig>;
 
   constructor(config: CosmosRestClientConfig = {}) {
@@ -46,7 +47,7 @@ export class CosmosRestClient {
       timeout: config.timeout ?? 10000, // 10s timeout
       retries: config.retries ?? 3,
     };
-    
+
     // Initialize with predefined chains
     this.chainConfigs = new Map(Object.entries(CHAIN_CONFIGS));
   }
@@ -61,7 +62,7 @@ export class CosmosRestClient {
   /**
    * Get available chain configurations
    */
-  getAvailableChains(): Array<{key: string; config: ChainConfig}> {
+  getAvailableChains(): Array<{ key: string; config: ChainConfig }> {
     return Array.from(this.chainConfigs.entries()).map(([key, config]) => ({
       key,
       config,
@@ -74,15 +75,17 @@ export class CosmosRestClient {
   async getAccountBalances(
     chainKey: string,
     address: string,
-    pagination?: { limit?: number; offset?: number }
+    pagination?: { limit?: number; offset?: number },
   ): Promise<BalanceResponse> {
     const chainConfig = this.chainConfigs.get(chainKey);
     if (!chainConfig) {
-      throw new Error(`Chain configuration not found for: ${chainKey}. Available: ${Array.from(this.chainConfigs.keys()).join(', ')}`);
+      throw new Error(
+        `Chain configuration not found for: ${chainKey}. Available: ${Array.from(this.chainConfigs.keys()).join(', ')}`,
+      );
     }
 
     let url = `${chainConfig.restEndpoint}/cosmos/bank/v1beta1/balances/${address}`;
-    
+
     // Add pagination parameters if provided
     const params = new URLSearchParams();
     if (pagination?.limit) {
@@ -95,12 +98,14 @@ export class CosmosRestClient {
       url += `?${params.toString()}`;
     }
 
-    console.log(`[CosmosRestClient] Fetching balances for ${address} on ${chainConfig.name}: ${url}`);
-    
+    console.warn(
+      `[CosmosRestClient] Fetching balances for ${address} on ${chainConfig.name}: ${url}`,
+    );
+
     return this.makeRequest<BalanceResponse>(
-      url, 
+      url,
       chainConfig,
-      `Account balances for ${address} on ${chainConfig.name}`
+      `Account balances for ${address} on ${chainConfig.name}`,
     );
   }
 
@@ -110,7 +115,7 @@ export class CosmosRestClient {
   async getAccountBalance(
     chainKey: string,
     address: string,
-    denom: string
+    denom: string,
   ): Promise<Coin> {
     const chainConfig = this.chainConfigs.get(chainKey);
     if (!chainConfig) {
@@ -118,15 +123,17 @@ export class CosmosRestClient {
     }
 
     const url = `${chainConfig.restEndpoint}/cosmos/bank/v1beta1/balances/${address}/by_denom?denom=${encodeURIComponent(denom)}`;
-    
-    console.log(`[CosmosRestClient] Fetching ${denom} balance for ${address} on ${chainConfig.name}: ${url}`);
-    
-    const response = await this.makeRequest<{balance: Coin}>(
-      url,
-      chainConfig, 
-      `${denom} balance for ${address} on ${chainConfig.name}`
+
+    console.warn(
+      `[CosmosRestClient] Fetching ${denom} balance for ${address} on ${chainConfig.name}: ${url}`,
     );
-    
+
+    const response = await this.makeRequest<{ balance: Coin }>(
+      url,
+      chainConfig,
+      `${denom} balance for ${address} on ${chainConfig.name}`,
+    );
+
     return response.balance;
   }
 
@@ -140,66 +147,75 @@ export class CosmosRestClient {
     }
 
     const url = `${chainConfig.restEndpoint}/cosmos/base/tendermint/v1beta1/node_info`;
-    
-    console.log(`[CosmosRestClient] Fetching chain info for ${chainConfig.name}: ${url}`);
-    
+
+    console.warn(
+      `[CosmosRestClient] Fetching chain info for ${chainConfig.name}: ${url}`,
+    );
+
     return this.makeRequest(
       url,
       chainConfig,
-      `Chain info for ${chainConfig.name}`
+      `Chain info for ${chainConfig.name}`,
     );
   }
 
   private async makeRequest<T>(
-    url: string, 
+    url: string,
     chainConfig: ChainConfig,
-    context: string
+    context: string,
   ): Promise<T> {
+    await null;
+
     let lastError: Error | null = null;
-    
-    for (let attempt = 1; attempt <= this.config.retries; attempt++) {
+
+    for (let attempt = 1; attempt <= this.config.retries; attempt += 1) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
-        
+        const timeoutId = setTimeout(
+          () => controller.abort(),
+          this.config.timeout,
+        );
+
         const response = await fetch(url, {
           signal: controller.signal,
           headers: {
-            'Accept': 'application/json',
+            Accept: 'application/json',
             'User-Agent': 'Agoric-Portfolio-Planner/1.0.0',
           },
         });
-        
+
         clearTimeout(timeoutId);
-        
+
         if (!response.ok) {
           const errorBody = await response.text().catch(() => 'Unknown error');
           const error = new Error(
-            `HTTP ${response.status}: ${response.statusText} - ${errorBody}`
+            `HTTP ${response.status}: ${response.statusText} - ${errorBody}`,
           ) as CosmosApiError;
           error.statusCode = response.status;
           error.chainId = chainConfig.chainId;
           error.endpoint = url;
           throw error;
         }
-        
+
         const data = await response.json();
-        console.log(`[CosmosRestClient] Success: ${context}`);
+        console.warn(`[CosmosRestClient] Success: ${context}`);
         return data;
-        
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        
+
         if (attempt < this.config.retries) {
-          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff, max 5s
-          console.warn(`[CosmosRestClient] Attempt ${attempt} failed for ${context}, retrying in ${delay}ms:`, lastError.message);
+          const delay = Math.min(1000 * 2 ** (attempt - 1), 5000); // Exponential backoff, max 5s
+          console.warn(
+            `[CosmosRestClient] Attempt ${attempt} failed for ${context}, retrying in ${delay}ms:`,
+            lastError.message,
+          );
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
-    
+
     const finalError = new Error(
-      `Failed to fetch ${context} after ${this.config.retries} attempts: ${lastError?.message}`
+      `Failed to fetch ${context} after ${this.config.retries} attempts: ${lastError?.message}`,
     ) as CosmosApiError;
     finalError.statusCode = 0;
     finalError.chainId = chainConfig.chainId;

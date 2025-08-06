@@ -4,7 +4,6 @@ import { q, Fail } from '@endo/errors';
 import { fromUniqueEntries } from '@agoric/internal';
 import type { CosmosCommand } from './cosmos-cmd.js';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
-import type { AgoricRedis } from './redis.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 
@@ -34,13 +33,11 @@ const encodedKeyToPath = (key: string) => {
 export const startEngine = async ({
   agd,
   rpc,
-  redis,
   spectrum,
   cosmosRest,
 }: {
   agd: CosmosCommand;
   rpc: CosmosRPCClient;
-  redis?: AgoricRedis;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
 }) => {
@@ -54,29 +51,33 @@ export const startEngine = async ({
   }
   console.warn('agd status', status);
 
-  console.log('Appd status:', (await agd.exec([`status`])).stdout);
-
   // Test Spectrum API with real pool balance data
   try {
-    console.log('\n[Engine] Testing Spectrum pool balance API...');
+    console.warn('\n[Engine] Testing Spectrum pool balance API...');
     const testEthAddress = '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2'; // Example ETH address
-    
-    const testCases = [
-      { chain: 'ethereum', pool: 'aave' },
-    ];
+
+    const testCases = [{ chain: 'ethereum', pool: 'aave' }];
 
     for (const testCase of testCases) {
       try {
-        console.log(`\n[Engine] Testing ${testCase.chain}/${testCase.pool} pool balance for ${testEthAddress}`);
-        const poolBalance = await spectrum.getPoolBalance(testCase.chain as any, testCase.pool as any, testEthAddress);
-        console.log(`[Engine] ✅ Pool balance found:`, {
+        console.warn(
+          `\n[Engine] Testing ${testCase.chain}/${testCase.pool} pool balance for ${testEthAddress}`,
+        );
+        const poolBalance = await spectrum.getPoolBalance(
+          testCase.chain as any,
+          testCase.pool as any,
+          testEthAddress,
+        );
+        console.warn(`[Engine] ✅ Pool balance found:`, {
           supplyBalance: poolBalance.balance.supplyBalance.toLocaleString(),
           borrowAmount: poolBalance.balance.borrowAmount.toLocaleString(),
           chain: poolBalance.chain,
-          pool: poolBalance.pool
+          pool: poolBalance.pool,
         });
       } catch (specError) {
-        console.log(`[Engine] Pool balance test (${testCase.chain}/${testCase.pool}): ${specError instanceof Error ? specError.message : specError}`);
+        console.warn(
+          `[Engine] Pool balance test (${testCase.chain}/${testCase.pool}): ${specError instanceof Error ? specError.message : specError}`,
+        );
       }
     }
   } catch (error) {
@@ -85,37 +86,43 @@ export const startEngine = async ({
 
   // Test Cosmos REST API client with Noble chain
   try {
-    console.log('[Engine] Testing Cosmos REST API client...');
+    console.warn('[Engine] Testing Cosmos REST API client...');
     const availableChains = cosmosRest.getAvailableChains();
-    console.log(`[Engine] Available chains: ${availableChains.map(c => c.config.name).join(', ')}`);
-    
+    console.warn(
+      `[Engine] Available chains: ${availableChains.map(c => c.config.name).join(', ')}`,
+    );
+
     // Test chain info for Noble
     const nobleInfo = await cosmosRest.getChainInfo('noble');
-    console.log(`[Engine] Noble chain info retrieved successfully. Chain ID: ${(nobleInfo as any)?.default_node_info?.network || 'unknown'}`);
-    
+    console.warn(
+      `[Engine] Noble chain info retrieved successfully. Chain ID: ${(nobleInfo as any)?.default_node_info?.network || 'unknown'}`,
+    );
+
     // Test balance fetching for a known address (this will fail gracefully if address doesn't exist)
     // Using a placeholder address - in real usage, this would be a user's address
     const testAddress = 'noble1xw2j23rcwrkg02yxdn5ha2d2x868cuk6370s9y'; // This is just for testing the API structure
     try {
-      const balances = await cosmosRest.getAccountBalances('noble', testAddress);
-      console.log(`[Engine] Noble balance API test successful. Response structure verified. Found ${balances.balances.length} balance(s):`, 
-        balances.balances.map(coin => `${coin.amount} ${coin.denom}`).join(', ') || 'No balances');
+      const balances = await cosmosRest.getAccountBalances(
+        'noble',
+        testAddress,
+      );
+      console.warn(
+        `[Engine] Noble balance API test successful. Response structure verified. Found ${balances.balances.length} balance(s):`,
+        balances.balances
+          .map(coin => `${coin.amount} ${coin.denom}`)
+          .join(', ') || 'No balances',
+      );
     } catch (balanceError) {
       // This is expected to fail with the test address, but shows the API is working
-      console.log(`[Engine] Noble balance API responding (expected error for test address): ${balanceError instanceof Error ? balanceError.message : balanceError}`);
+      console.warn(
+        `[Engine] Noble balance API responding (expected error for test address): ${balanceError instanceof Error ? balanceError.message : balanceError}`,
+      );
     }
   } catch (error) {
     console.error('[Engine] Cosmos REST API initialization failed:', error);
     // Continue with limited functionality
   }
 
-  // XXX Fire off some simple requests to test the RPC and Redis clients.
-  false &&
-    trySomeExamples({ rpc, redis }).catch(error =>
-      console.error('@@@ Error in trySomeExamples:', error),
-    );
-
-  // TODO: This is a more expected way to use the RPC client.
   await rpc.opened();
   try {
     // console.warn('RPC client opened:', rpc);

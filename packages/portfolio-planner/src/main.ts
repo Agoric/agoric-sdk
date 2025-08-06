@@ -31,7 +31,6 @@ export const main = async (argv, { env }) => {
     ENV_PREFIX = DEFAULT_ENV_PREFIX,
     CHAIN_ID = await getChainIdFromRpc(rpc),
     FROM = DEFAULT_FROM,
-    REDIS_URL,
     SPECTRUM_API_URL,
     SPECTRUM_API_TIMEOUT,
     SPECTRUM_API_RETRIES,
@@ -54,16 +53,14 @@ export const main = async (argv, { env }) => {
   ]);
   console.log('Planner address:', plannerAddress);
 
-  let redis: AgoricRedis | undefined;
-  if (REDIS_URL) {
-    console.log('Connecting to Redis');
-    redis = new AgoricRedis(REDIS_URL);
-  }
-
   const spectrum = new SpectrumClient({
     baseUrl: SPECTRUM_API_URL,
-    timeout: SPECTRUM_API_TIMEOUT ? parseInt(SPECTRUM_API_TIMEOUT, 10) : undefined,
-    retries: SPECTRUM_API_RETRIES ? parseInt(SPECTRUM_API_RETRIES, 10) : undefined,
+    timeout: SPECTRUM_API_TIMEOUT
+      ? parseInt(SPECTRUM_API_TIMEOUT, 10)
+      : undefined,
+    retries: SPECTRUM_API_RETRIES
+      ? parseInt(SPECTRUM_API_RETRIES, 10)
+      : undefined,
   });
 
   const cosmosRest = new CosmosRestClient({
@@ -71,6 +68,6 @@ export const main = async (argv, { env }) => {
     retries: 3,
   });
 
-  await startEngine({ agd, rpc, redis, spectrum, cosmosRest });
+  await startEngine({ agd, rpc, spectrum, cosmosRest });
 };
 harden(main);
