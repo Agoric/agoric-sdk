@@ -32,6 +32,7 @@ const trace = makeTracer(`YMX-Start`, true);
  *     AXELAR_GAS: Bech32Address;
  *   };
  *   oldBoardId?: string;
+ *   plannerAddress: Bech32Address;
  * } & CopyRecord} PortfolioDeployConfig
  */
 
@@ -44,6 +45,7 @@ export const portfolioDeployConfigShape = M.splitRecord(
       AXELAR_GMP: M.string(),
       AXELAR_GAS: M.string(),
     }),
+    plannerAddress: M.string(),
   },
   {
     oldBoardId: M.string(),
@@ -142,7 +144,9 @@ export const startPortfolio = async (permitted, configStruct) => {
   ]);
   // Include BLD: BLD for use with assetInfo.brandKey
   const issuerKeywordRecord = { USDC, Access: PoC26, Fee: BLD, BLD };
-  await startOrchContract(
+  const {
+    kit: { creatorFacet },
+  } = await startOrchContract(
     name,
     portfolioDeployConfigShape,
     permit,
@@ -152,6 +156,21 @@ export const startPortfolio = async (permitted, configStruct) => {
     issuerKeywordRecord,
   );
 
+  // @ts-expect-error possibly infinite
+  const { plannerAddress } = configStruct?.options?.structure || {};
+  if (plannerAddress) {
+    const { namesByAddress } = permitted.consume;
+    trace('getting depositFacet for planner', plannerAddress);
+    const depositFacet = await E(namesByAddress).lookup(
+      plannerAddress,
+      'depositFacet',
+    );
+    trace('getting planner invitation');
+    const toSubmit = await E(creatorFacet).makePlannerInvitation();
+    trace('sending invitation');
+    const amt = await E(depositFacet).receive(toSubmit);
+    trace('planner invitation received', amt);
+  }
   trace('startPortfolio done');
 };
 

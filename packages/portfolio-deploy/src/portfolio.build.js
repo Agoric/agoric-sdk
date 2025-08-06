@@ -24,6 +24,7 @@ const isValidAddr = addr => {
 const options = {
   net: { type: 'string' },
   replace: { type: 'string' },
+  planner: { type: 'string', default: 'agoric1TODOmainnetplannerAddress' },
 };
 
 /**
@@ -70,6 +71,7 @@ const build = async (homeP, endowments) => {
       gmpAddresses: {
         ...gmpAddresses.mainnet,
       },
+      plannerAddress: flags.planner,
       oldBoardId: boardId || '',
     },
     testnet: {
@@ -77,6 +79,7 @@ const build = async (homeP, endowments) => {
       gmpAddresses: {
         ...gmpAddresses.testnet,
       },
+      plannerAddress: flags.planner,
       oldBoardId: boardId || '',
     },
   });

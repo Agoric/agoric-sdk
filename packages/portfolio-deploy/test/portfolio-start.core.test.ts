@@ -108,8 +108,13 @@ test('coreEval code without swingset', async t => {
     await bundleAndInstall(contractExports),
   );
 
+  const plannerAddress = 'agoric1planner';
   const options = toExternalConfig(
-    harden({ axelarConfig, gmpAddresses } as PortfolioDeployConfig),
+    harden({
+      axelarConfig,
+      gmpAddresses,
+      plannerAddress,
+    } as PortfolioDeployConfig),
     {},
     portfolioDeployConfigShape,
   );
