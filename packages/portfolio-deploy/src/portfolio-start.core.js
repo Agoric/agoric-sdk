@@ -1,5 +1,6 @@
 import { makeTracer } from '@agoric/internal';
 import { M } from '@endo/patterns';
+import { E } from '@endo/far';
 import {
   lookupInterchainInfo,
   makeGetManifest,
@@ -18,6 +19,7 @@ import { name, permit } from './portfolio.contract.permit.js';
  * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.ts';
  * @import {TypedPattern} from '@agoric/internal';
  * @import { ChainInfoPowers } from './chain-info.core.js';
+ * @import { Bech32Address } from '@agoric/orchestration';
  */
 
 const trace = makeTracer(`YMX-Start`, true);
@@ -25,14 +27,28 @@ const trace = makeTracer(`YMX-Start`, true);
 /**
  * @typedef {{
  *   axelarConfig: AxelarChainConfigMap;
+ *   gmpAddresses: {
+ *     AXELAR_GMP: Bech32Address;
+ *     AXELAR_GAS: Bech32Address;
+ *   };
+ *   oldBoardId?: string;
  * } & CopyRecord} PortfolioDeployConfig
  */
 
 /** @type {TypedPattern<PortfolioDeployConfig>} */
-export const portfolioDeployConfigShape = harden({
-  // XXX more precise shape
-  axelarConfig: M.record(),
-});
+export const portfolioDeployConfigShape = M.splitRecord(
+  {
+    // XXX more precise shape
+    axelarConfig: M.record(),
+    gmpAddresses: M.splitRecord({
+      AXELAR_GMP: M.string(),
+      AXELAR_GAS: M.string(),
+    }),
+  },
+  {
+    oldBoardId: M.string(),
+  },
+);
 
 /**
  * @param {OrchestrationPowersWithStorage} orchestrationPowers
@@ -44,7 +60,7 @@ export const makePrivateArgs = async (
   marshaller,
   config,
 ) => {
-  const { axelarConfig } = config;
+  const { axelarConfig, gmpAddresses } = config;
   const { agoricNames } = orchestrationPowers;
   const { chainInfo: cosmosChainInfo, assetInfo } = await lookupInterchainInfo(
     agoricNames,
@@ -89,6 +105,7 @@ export const makePrivateArgs = async (
     assetInfo,
     axelarIds,
     contracts,
+    gmpAddresses,
   });
   return it;
 };
@@ -100,7 +117,20 @@ harden(makePrivateArgs);
  * @returns {Promise<void>}
  */
 export const startPortfolio = async (permitted, configStruct) => {
+  await null;
   trace('startPortfolio', configStruct);
+  /** @type {{ structure: { oldBoardId?: string } }} */
+  const options = /** @type any */ (configStruct.options);
+  const oldBoardId = options?.structure?.oldBoardId;
+
+  if (oldBoardId) {
+    const instance = await E(permitted.consume.board).getValue(oldBoardId);
+    const kit = await permitted.consume.ymax0Kit;
+    assert.equal(instance, kit.instance);
+    await E(kit.adminFacet).terminateContract(
+      Error('shutting down for replacement'),
+    );
+  }
 
   await permitted.consume.chainInfoPublished;
 

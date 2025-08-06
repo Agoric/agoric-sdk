@@ -12,6 +12,12 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aglocal/portfolio-planner@portal:../packages/portfolio-planner::locator=root-workspace-0b6124%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@aglocal/portfolio-planner@portal:../packages/portfolio-planner::locator=root-workspace-0b6124%40workspace%3A."
+  languageName: node
+  linkType: soft
+
 "@agoric/async-flow@portal:../packages/async-flow::locator=root-workspace-0b6124%40workspace%3A.":
   version: 0.0.0-use.local
   resolution: "@agoric/async-flow@portal:../packages/async-flow::locator=root-workspace-0b6124%40workspace%3A."
@@ -257,7 +263,7 @@ __metadata:
     "@endo/far": "npm:^1.1.14"
     "@endo/marshal": "npm:^1.8.0"
     "@endo/patterns": "npm:^1.7.0"
-    "@noble/hashes": "npm:^1.5.0"
+    "@noble/hashes": "npm:~1.5.0"
     bs58: "npm:^6.0.0"
     esbuild: "npm:^0.25.2"
   languageName: node
@@ -1629,10 +1635,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@noble/hashes@npm:1.8.0, @noble/hashes@npm:^1, @noble/hashes@npm:^1.2.0, @noble/hashes@npm:^1.5.0":
+"@noble/hashes@npm:1.8.0, @noble/hashes@npm:^1, @noble/hashes@npm:^1.2.0":
   version: 1.8.0
   resolution: "@noble/hashes@npm:1.8.0"
   checksum: 10c0/06a0b52c81a6fa7f04d67762e08b2c476a00285858150caeaaff4037356dd5e119f45b2a530f638b77a5eeca013168ec1b655db41bae3236cb2e9d511484fc77
+  languageName: node
+  linkType: hard
+
+"@noble/hashes@npm:~1.5.0":
+  version: 1.5.0
+  resolution: "@noble/hashes@npm:1.5.0"
+  checksum: 10c0/1b46539695fbfe4477c0822d90c881a04d4fa2921c08c552375b444a48cac9930cb1ee68de0a3c7859e676554d0f3771999716606dc4d8f826e414c11692cdd9
   languageName: node
   linkType: hard
 
@@ -4768,6 +4781,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
+    "@aglocal/portfolio-planner": "npm:dev"
     "@agoric/cosmic-proto": "npm:dev"
     "@agoric/fast-usdc": "npm:dev"
     "@agoric/internal": "npm:dev"

@@ -1,0 +1,47 @@
+{
+  "name": "@aglocal/portfolio-planner",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Portfolio contract off-chain planner",
+  "main": "src/main.ts",
+  "type": "module",
+  "scripts": {
+    "start": "node ./src/entrypoint.js",
+    "dev": "nodemon --ext .js,.ts ./src/entrypoint.js",
+    "debug": "node --inspect ./src/entrypoint.js",
+    "start:docker": "docker compose up --build",
+    "start:deps": "docker compose up --scale app=0",
+    "build": "exit 0",
+    "prepack": "yarn run -T tsc --build tsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
+    "lint": "npm run lint:types",
+    "test": "exit 0",
+    "test:vite": "vitest",
+    "lint:types": "yarn run -T tsc"
+  },
+  "keywords": [
+    "agoric",
+    "portfolio",
+    "planner",
+    "ymax"
+  ],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8",
+    "nodemon": "^3.1.10",
+    "ts-blank-space": "^0.6.1",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@agoric/internal": "workspace:*",
+    "@agoric/pola-io": "workspace:*",
+    "@endo/errors": "^1.2.13",
+    "@endo/init": "^1.1.12",
+    "@endo/promise-kit": "^1.1.13",
+    "dotenv": "^17.2.1",
+    "json-rpc-2.0": "^1.7.1",
+    "ws": "^8.18.3"
+  }
+}

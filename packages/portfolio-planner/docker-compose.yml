@@ -1,0 +1,14 @@
+services:
+  app:
+    image: ghcr.io/agoric/portfolio-engine:latest
+    # entrypoint: ['/bin/sleep', '864000'] # 24 hours
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - planner_home:/data/portfolio-planner
+    environment:
+      AGORIC_RPC_URL: ${AGORIC_RPC_URL:-http://host.docker.internal:26657}
+
+volumes:
+  planner_home:

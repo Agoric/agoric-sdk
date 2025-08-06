@@ -90,6 +90,7 @@ type AgoricAccountInfo = {
   namespace: 'cosmos';
   chainName: 'agoric';
   lca: LocalAccount;
+  lcaIn: LocalAccount;
   reg: TargetRegistration;
 };
 type NobleAccountInfo = {
@@ -199,6 +200,7 @@ export const preparePortfolioKit = (
     return node;
   };
 
+  // TODO: cache slotIds from the board #11688
   const publishStatus: PublishStatusFn = (path, status): void => {
     const node = providePathNode(path);
     // Don't await, just writing to vstorage.
@@ -377,10 +379,17 @@ export const preparePortfolioKit = (
             nextFlowId,
             targetAllocation,
           } = this.state;
+
+          const deposit = () => {
+            const { lcaIn } = accounts.get('agoric') as AgoricAccountInfo;
+            return { depositAddress: lcaIn.getAddress().value };
+          };
+
           publishStatus(makePortfolioPath(portfolioId), {
             positionKeys: [...positions.keys()],
             flowCount: nextFlowId - 1,
             accountIdByChain: accountIdByChain(accounts),
+            ...(accounts.has('agoric') ? deposit() : {}),
             ...(targetAllocation && { targetAllocation }),
           });
         },
@@ -484,8 +493,11 @@ export const preparePortfolioKit = (
       },
     },
     {
-      finish({ facets }) {
+      finish({ facets, state }) {
         facets.reporter.publishStatus();
+        const { portfolioId } = state;
+        const [addPortfolio] = makePortfolioPath(portfolioId);
+        publishStatus([], { addPortfolio });
       },
     },
   );

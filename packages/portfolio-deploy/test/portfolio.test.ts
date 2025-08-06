@@ -263,6 +263,40 @@ test.serial('contract starts; appears in agoricNames', async t => {
   });
 });
 
+test.serial('remove old contract; start new contract', async t => {
+  const {
+    agoricNamesRemotes,
+    buildProposal,
+    evalProposal,
+    refreshAgoricNamesRemotes,
+    storage,
+  } = t.context;
+
+  const instancePre = agoricNamesRemotes.instance.ymax0;
+  const oldBoardId = (instancePre as any).getBoardId();
+  const materials = buildProposal(
+    '@aglocal/portfolio-deploy/src/portfolio.build.js',
+    ['--replace', oldBoardId],
+  );
+  await evalProposal(materials);
+
+  refreshAgoricNamesRemotes();
+  const instancePost = agoricNamesRemotes.instance.ymax0;
+  t.truthy(instancePost);
+  t.not(instancePre, instancePost);
+
+  await documentStorageSchema(t, storage, {
+    node: 'agoricNames.instance',
+    owner: 'chain governance',
+    showValue,
+  });
+  await documentStorageSchema(t, storage, {
+    node: 'ymax0',
+    owner: 'ymax0',
+    showValue,
+  });
+});
+
 const { make } = AmountMath;
 
 // give: ...rest: {"Access":{"brand":"[Alleged: BoardRemotePoC26 brand]","value":"[1n]"}} - Must be: {}
