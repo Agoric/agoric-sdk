@@ -9,7 +9,8 @@ export interface CCTPStatusResult {
 }
 
 const domainToRpc = {
-  0: 'https://eth-sepolia.g.alchemy.com/v2/demo', // Ethereum Sepolia
+  // TODO: will it work in prod or we need to use some paid service
+  0: 'https://ethereum-sepolia-rpc.publicnode.com', // Ethereum Sepolia (free public RPC)
   1: 'https://api.avax-test.network/ext/bc/C/rpc', // Avalanche Fuji
 };
 

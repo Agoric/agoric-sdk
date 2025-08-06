@@ -30,9 +30,35 @@ const addressToBytes32 = (addr: string) => {
 /**
  * Mock vstorage implementation
  */
+import * as fs from 'fs';
+import * as path from 'path';
+
+const DATA_FILE = path.join(__dirname, 'vstorage-data.json');
+
 export class VStorageMock {
-  private data = new Map<string, any>();
   private subscriptions = new Map<string, Set<(data: any) => void>>();
+
+  private loadData(): Map<string, any> {
+    try {
+      if (fs.existsSync(DATA_FILE)) {
+        const jsonData = fs.readFileSync(DATA_FILE, 'utf8');
+        const obj = JSON.parse(jsonData);
+        return new Map(Object.entries(obj));
+      }
+    } catch (error) {
+      console.warn('Failed to load vstorage data:', error);
+    }
+    return new Map();
+  }
+
+  private saveData(data: Map<string, any>): void {
+    try {
+      const obj = Object.fromEntries(data);
+      fs.writeFileSync(DATA_FILE, JSON.stringify(obj, null, 2));
+    } catch (error) {
+      console.error('Failed to save vstorage data:', error);
+    }
+  }
 
   /**
    * Simulate publishing data to vstorage path
@@ -42,7 +68,10 @@ export class VStorageMock {
       `[VStorageMock] Setting ${path}:`,
       JSON.stringify(data, null, 2),
     );
-    this.data.set(path, data);
+    
+    const allData = this.loadData();
+    allData.set(path, data);
+    this.saveData(allData);
 
     // Notify subscribers
     const subs = this.subscriptions.get(path);
@@ -55,11 +84,8 @@ export class VStorageMock {
    * Read latest data from vstorage path
    */
   readLatest(path: string): any {
-    const data = this.data.get(path);
-    console.log(
-      `[VStorageMock] Reading ${path}:`,
-      JSON.stringify(data, null, 2),
-    );
+    const allData = this.loadData();
+    const data = allData.get(path);
     return data;
   }
 
@@ -157,7 +183,13 @@ export class VStorageMock {
    * Clear all data (for test cleanup)
    */
   clear(): void {
-    this.data.clear();
+    try {
+      if (fs.existsSync(DATA_FILE)) {
+        fs.unlinkSync(DATA_FILE);
+      }
+    } catch (error) {
+      console.warn('Failed to clear vstorage data:', error);
+    }
     this.subscriptions.clear();
   }
 }
