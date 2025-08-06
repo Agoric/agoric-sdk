@@ -1,4 +1,6 @@
 import { Fail } from '@endo/errors';
+import { makeVstorageKit } from '@agoric/client-utils';
+import type { MinimalNetworkConfig } from '@agoric/client-utils';
 import { makeCosmosCommand } from './cosmos-cmd.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { SpectrumClient } from './spectrum-client.ts';
@@ -25,6 +27,9 @@ export const main = async (argv, { env }) => {
 
   console.warn(`Initializing planner watching`, { AGORIC_RPC_URL });
   const rpc = new CosmosRPCClient(AGORIC_RPC_URL);
+  const vstorageKit = makeVstorageKit({ fetch }, {
+    rpcAddrs: [AGORIC_RPC_URL],
+  } as MinimalNetworkConfig);
 
   const {
     AGD = DEFAULT_AGD,
@@ -68,6 +73,6 @@ export const main = async (argv, { env }) => {
     retries: 3,
   });
 
-  await startEngine({ agd, rpc, spectrum, cosmosRest });
+  await startEngine({ agd, rpc, vstorageKit, spectrum, cosmosRest });
 };
 harden(main);

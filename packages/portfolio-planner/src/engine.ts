@@ -3,10 +3,9 @@
 import { inspect } from 'node:util';
 import { q, Fail } from '@endo/errors';
 import { PortfolioStatusShapeExt } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { makeClientMarshaller } from '@agoric/client-utils';
 import { mustMatch } from '@agoric/internal';
-import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
+import type { VstorageKit } from '@agoric/client-utils';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { CosmosCommand } from './cosmos-cmd.js';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
@@ -36,14 +35,26 @@ const encodedKeyToPath = (key: string) => {
   return path;
 };
 
+const stripPrefix = (prefix: string, str: string) => {
+  str.startsWith(prefix) || Fail`${str} is missing prefix ${prefix}`;
+  return str.slice(prefix.length);
+};
+
 type IO = {
   agd: CosmosCommand;
   rpc: CosmosRPCClient;
+  vstorageKit: VstorageKit;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
 };
 
-export const startEngine = async ({ agd, rpc, spectrum, cosmosRest }: IO) => {
+export const startEngine = async ({
+  agd,
+  rpc,
+  vstorageKit,
+  spectrum,
+  cosmosRest,
+}: IO) => {
   await null;
   let chainStatus = await (await agd.exec(['status'])).stdout;
   try {
@@ -134,41 +145,21 @@ export const startEngine = async ({ agd, rpc, spectrum, cosmosRest }: IO) => {
   await rpc.opened();
   // console.warn('RPC client opened:', rpc);
 
-  const { fromCapData } = makeClientMarshaller();
-
-  // TODO: replace agd here and handle paginated responses.
-  const portfoliosResp = (
-    await agd.exec(['query', 'vstorage', 'children', VSTORAGE_PATH_PREFIX])
-  ).stdout;
-  const portfolioKeys = JSON.parse(portfoliosResp).children as string[];
-  const portfolioStatusTextMap = new Map(
-    await Promise.all(
-      portfolioKeys.map(async key => {
-        const agdArgs = [
-          'query',
-          'vstorage',
-          'data',
-          `${VSTORAGE_PATH_PREFIX}.${key}`,
-        ];
-        const resp = await agd.exec(agdArgs).then(r => r.stdout);
-        const streamCellText = JSON.parse(resp).value;
-        return [key, streamCellText] as [string, string];
-      }),
-    ),
-  );
-  const depositAddresses = new Map(
-    portfolioKeys.flatMap(key => {
-      const status = unmarshalFromVstorage(
-        portfolioStatusTextMap,
-        key,
-        fromCapData,
-        -1,
+  // TODO: verify consumption of paginated data.
+  const portfolioKeys = await vstorageKit.vstorage.keys(VSTORAGE_PATH_PREFIX);
+  const portfolioAddressEntries = await Promise.all(
+    portfolioKeys.map(async key => {
+      const status = await vstorageKit.readPublished(
+        `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${key}`,
       );
       mustMatch(status, PortfolioStatusShapeExt, key);
       const { depositAddress } = status;
-      if (!depositAddress) return [];
-      return [[key, depositAddress as Bech32Address]];
+      if (!depositAddress) return undefined;
+      return [key, depositAddress] as [string, Bech32Address];
     }),
+  );
+  const depositAddresses = new Map(
+    portfolioAddressEntries.filter(entry => entry) as [string, Bech32Address][],
   );
 
   try {
