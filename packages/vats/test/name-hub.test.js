@@ -18,9 +18,9 @@ test('makeNameHubKit - lookup paths', async t => {
   t.deepEqual(nh3.values(), []);
   t.deepEqual(nh3.entries(), []);
 
-  t.is(await na1.readonly(), nh1);
-  t.is(await na2.readonly(), nh2);
-  t.is(await na3.readonly(), nh3);
+  t.is(na1.readonly(), nh1);
+  t.is(na2.readonly(), nh2);
+  t.is(na3.readonly(), nh3);
 
   na1.update('path1', nh2, na2);
   t.is(await nh1.lookup('path1'), nh2);
@@ -55,7 +55,7 @@ test('makeNameHubKit - lookup paths', async t => {
 test('makeNameHubKit - reserve and update', async t => {
   const { nameAdmin, nameHub } = makeNameHubKit();
 
-  t.is(await nameAdmin.readonly(), nameHub);
+  t.is(nameAdmin.readonly(), nameHub);
 
   await t.throwsAsync(() => nameHub.lookup('hello'), {
     message: /"nameKey" not found: .*/,
@@ -93,7 +93,7 @@ test('makeNameHubKit - reserve and update', async t => {
 test('makeNameHubKit - reserve and delete', async t => {
   const { nameAdmin, nameHub } = makeNameHubKit();
 
-  t.is(await nameAdmin.readonly(), nameHub);
+  t.is(nameAdmin.readonly(), nameHub);
 
   await t.throwsAsync(() => nameHub.lookup('goodbye'), {
     message: /"nameKey" not found: .*/,
@@ -132,15 +132,15 @@ test('makeNameHubKit - reserve and delete', async t => {
 test('makeNameHubKit - default and set', async t => {
   const { nameAdmin, nameHub } = makeNameHubKit();
 
-  t.is(await nameAdmin.readonly(), nameHub);
+  t.is(nameAdmin.readonly(), nameHub);
 
   t.is(nameAdmin.default('defaulted', 'defaultValue'), 'defaultValue');
   nameAdmin.update('already set', 'initial');
-  t.is(await nameHub.lookup('already set'), 'initial');
+  t.is(await nameAdmin.readonly().lookup('already set'), 'initial');
   // @ts-expect-error
   t.is(nameAdmin.default('already set'), 'initial');
   nameAdmin.set('already set', 'new');
-  t.is(await nameHub.lookup('already set'), 'new');
+  t.is(await nameAdmin.readonly().lookup('already set'), 'new');
   // @ts-expect-error
   t.is(nameAdmin.default('already set'), 'new');
   t.throws(() => nameAdmin.set('not set', 'irrelevant'), {
