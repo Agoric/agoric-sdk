@@ -2,12 +2,19 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { type VStorage } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
+import type { StreamCell } from '@agoric/internal/src/lib-chainStorage.js';
 import type { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
-import { passStyleOf } from '@endo/far';
+import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
+import { E, passStyleOf } from '@endo/far';
+import type { AxelarChain } from '../src/constants.js';
+import type { ExecutionContext } from 'ava';
+import type { MovementDesc } from '../src/type-guards-steps.ts';
 import type { StatusFor } from '../src/type-guards.ts';
+import { fakePlanner } from '../tools/agents-mock.ts';
 import {
   setupTrader,
   simulateAckTransferToAxelar,
@@ -598,4 +605,85 @@ test('start deposit more to same', async t => {
     info.depositAddress,
     'agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g',
   );
+});
+
+const checkKeys = (
+  t: ExecutionContext<unknown>,
+  x: string[],
+  y: string[],
+  message?: string,
+) => {
+  const xx = fromEntries(x.map(k => [k, true]));
+  const yy = fromEntries(y.map(k => [k, true]));
+  t.deepEqual(xx, yy, message);
+};
+
+/**
+ * See also deposit-triggered distribution in DESIGN-BETA.md
+ */
+test.skip('deposit more to same allocations', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { poc26, usdc } = common.brands;
+
+  const targetAllocation = { USDN: 60n, Aave_Arbitrum: 40n };
+  t.log('open with target', targetAllocation);
+  const give = { Access: poc26.make(1n) };
+  const { result } = await trader1.openPortfolio(t, give, { targetAllocation });
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+
+  const amount = usdc.units(100);
+  const giveDeposit = { give: { Deposit: amount }, want: {} };
+  const move1: MovementDesc = { src: '<Deposit>', dest: '@agoric', amount };
+  const dep = await trader1.rebalance(t, giveDeposit, { flow: [move1] });
+
+  t.log('TODO: EE stuff');
+
+  const ps = await trader1.getPortfolioStatus();
+  checkKeys(t, ps.positionKeys, keys(targetAllocation), 'WIP');
+
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(dep.payouts, 'refund payouts from deposit');
+});
+
+const getCapDataStructure = cell => {
+  const { body, slots } = JSON.parse(cell);
+  const structure = JSON.parse(body.replace(/^#/, ''));
+  return { structure, slots };
+};
+
+test('redeem planner invitation', async t => {
+  const { common, zoe, started, timerService } = await setupTrader(t);
+
+  const { storage } = common.bootstrap;
+  const readAt: VStorage['readAt'] = async (path: string, _h?: number) => {
+    await eventLoopIteration();
+    const cell: StreamCell = {
+      blockHeight: '0',
+      values: storage.getValues(path),
+    };
+    return cell;
+  };
+  const readLegible = async (path: string) => {
+    await eventLoopIteration();
+    return getCapDataStructure(storage.getValues(path).at(-1));
+  };
+
+  const boot = async () => {
+    return {
+      ...common.bootstrap,
+      zoe,
+      utils: { ...common.utils, readLegible },
+    };
+  };
+
+  const { provisionSmartWallet } = await deployWalletFactory({ boot });
+  const [walletPlanner] = await provisionSmartWallet('agoric1planner');
+  const toPlan = await E(started.creatorFacet).makePlannerInvitation();
+  await E(E(walletPlanner).getDepositFacet()).receive(toPlan);
+
+  const planner1 = fakePlanner(walletPlanner, started.instance, readAt);
+  await planner1.redeem();
+  await planner1.submit1();
 });
