@@ -15,7 +15,7 @@ import { Readable, finished as finishedCallback } from 'stream';
 import { performance } from 'perf_hooks';
 import { tmpName, dirSync as tmpDirSync } from 'tmp';
 import sqlite3 from 'better-sqlite3';
-import yargsParser from 'yargs-parser';
+import { parseArgs } from 'node:util';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeSnapStore } from '@agoric/swing-store';

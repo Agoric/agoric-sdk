@@ -1,9 +1,10 @@
 /* global clearTimeout setTimeout */
 import path from 'path';
 import fs from 'fs';
+import { mkdtemp, writeFile, unlink } from 'fs/promises';
+import { tmpdir } from 'os';
 import url from 'url';
 import { execFile } from 'child_process';
-import { open as tempOpen } from 'temp';
 
 import WebSocket from 'ws';
 
@@ -69,35 +70,24 @@ const randomizeDelay = delay =>
   Math.ceil(delay + delay * RANDOM_SCALE * Math.random());
 
 const makeTempFile = async (prefix, contents) => {
-  const tmpInfo = await new Promise((resolve, reject) => {
-    tempOpen({ prefix }, (err, info) => {
-      if (err) {
-        return reject(err);
+  // Create temporary directory with Node native fs.mkdtemp
+  const tempDir = await mkdtemp(path.join(tmpdir(), prefix));
+  const tempPath = path.join(tempDir, 'tempfile');
+  
+  // Write contents to file
+  await writeFile(tempPath, contents);
+  
+  return {
+    path: tempPath,
+    async cleanup() {
+      try {
+        await unlink(tempPath);
+        await fs.promises.rmdir(tempDir);
+      } catch (err) {
+        // Ignore cleanup errors
       }
-      return resolve(info);
-    });
-  });
-
-  try {
-    await new Promise((resolve, reject) => {
-      fs.write(tmpInfo.fd, contents, err => {
-        if (err) {
-          return reject(err);
-        }
-        return resolve();
-      });
-    });
-  } finally {
-    await new Promise((resolve, reject) => {
-      fs.close(tmpInfo.fd, e => {
-        if (e) {
-          return reject(e);
-        }
-        return resolve();
-      });
-    });
-  }
-  return tmpInfo;
+    }
+  };
 };
 
 export async function connectToChain(
@@ -720,7 +710,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
       }
     };
 
-    await tryBody().finally(() => tmpInfo && fs.promises.unlink(tmpInfo.path));
+    await tryBody().finally(() => tmpInfo && tmpInfo.cleanup());
   };
 
   /**
