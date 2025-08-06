@@ -4,6 +4,17 @@ import {
   ProposalShape,
 } from '@agoric/zoe/src/typeGuards.js';
 
+/**
+ * @import {TypedPattern} from '@agoric/internal';
+ * @import {OfferResultStep} from './offers';
+ */
+
+/** @type {TypedPattern<OfferResultStep>} */
+const OfferResultStepShape = M.or(
+  M.splitRecord({ method: M.string(), args: M.array() }),
+  { saveAs: M.string() },
+);
+
 export const shape = {
   // smartWallet
   StringCapData: {
@@ -51,8 +62,17 @@ export const shape = {
       invitationSpec: M.any(),
       proposal: ProposalShape,
     },
-    { offerArgs: M.any() },
+    {
+      offerArgs: M.any(),
+      after: M.splitRecord(
+        {},
+        {
+          saveAs: M.string(),
+        },
+      ),
+    },
   ),
+  OfferResultStep: OfferResultStepShape,
 
   // walletFactory
   /**

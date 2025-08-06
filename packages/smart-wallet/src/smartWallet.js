@@ -40,6 +40,7 @@ import {
 import { prepareVowTools } from '@agoric/vow';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
+import { prepareNameHubKit } from '@agoric/vats';
 import { makeInvitationsHelper } from './invitations.js';
 import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
@@ -50,7 +51,7 @@ import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
  * @import {WeakMapStore, MapStore} from '@agoric/store'
  * @import {InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
  * @import {EReturn} from '@endo/far';
- * @import {OfferId, OfferStatus} from './offers.js';
+ * @import {OfferId, OfferResultStep, OfferStatus, OfferSpec} from './offers.js';
  */
 
 const trace = makeTracer('SmrtWlt');
@@ -58,17 +59,6 @@ const trace = makeTracer('SmrtWlt');
 /**
  * @file Smart wallet module
  * @see {@link ../README.md} }
- */
-
-/** @typedef {number | string} OfferId */
-
-/**
- * @typedef {{
- *   id: OfferId;
- *   invitationSpec: import('./invitations').InvitationSpec;
- *   proposal: Proposal;
- *   offerArgs?: any;
- * }} OfferSpec
  */
 
 /**
@@ -96,10 +86,20 @@ const trace = makeTracer('SmrtWlt');
  * }} TryExitOfferAction
  */
 
+// TODO: single step only, collapse name into a single invoke desc
+
+/**
+ * @typedef {{
+ *   method: 'invokeItem';
+ *   name: string;
+ *   steps: OfferResultStep[] & import('@endo/marshal').CopyArray;
+ * }} InvokeAction
+ */
+
 // Discriminated union. Possible future messages types:
 // maybe suggestIssuer for https://github.com/Agoric/agoric-sdk/issues/6132
 // setting petnames and adding brands for https://github.com/Agoric/agoric-sdk/issues/6126
-/** @typedef {ExecuteOfferAction | TryExitOfferAction} BridgeAction */
+/** @typedef {ExecuteOfferAction | TryExitOfferAction | InvokeAction} BridgeAction */
 
 /**
  * Purses is an array to support a future requirement of multiple purses per
@@ -211,6 +211,7 @@ const trace = makeTracer('SmrtWlt');
  *     liveOffers: MapStore<OfferId, OfferStatus>;
  *     liveOfferSeats: MapStore<OfferId, UserSeat<unknown>>;
  *     liveOfferPayments: MapStore<OfferId, MapStore<Brand, Payment>>;
+ *     my: import('@agoric/vats').NameHubKit;
  *   }
  * >} ImmutableState
  *
@@ -302,6 +303,7 @@ export const prepareSmartWallet = (baggage, shared) => {
 
   const makeOfferWatcher = prepareOfferWatcher(baggage, vowTools);
   const watchOfferOutcomes = makeWatchOfferOutcomes(vowTools);
+  const makeNameHubKit = prepareNameHubKit(zone.subZone('names'));
 
   const updateShape = {
     value: AmountShape,
@@ -400,6 +402,9 @@ export const prepareSmartWallet = (baggage, shared) => {
           durable: true,
         },
       ),
+      // TODO: state migration. Add a provide mechanism to lazy allocation in
+      // a side WeakMapStore for wallets missing state
+      my: makeNameHubKit(),
     };
 
     /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>} */
@@ -453,6 +458,7 @@ export const prepareSmartWallet = (baggage, shared) => {
       logWalletInfo: M.call().rest(M.arrayOf(M.any())).returns(),
       logWalletError: M.call().rest(M.arrayOf(M.any())).returns(),
       getLiveOfferPayments: M.call().returns(M.remotable('mapStore')),
+      saveOfferResult: M.call(M.string(), M.any()).returns(),
     }),
 
     deposit: M.interface('depositFacetI', {
@@ -471,11 +477,24 @@ export const prepareSmartWallet = (baggage, shared) => {
       executeOffer: M.call(shape.OfferSpec).returns(M.promise()),
       tryExitOffer: M.call(M.scalar()).returns(M.promise()),
     }),
+    invoke: M.interface('invoke', {
+      invokeItem: M.callWhen(M.string(), shape.OfferResultStep)
+        .rest(M.arrayOf(shape.OfferResultStep, { arrayLengthLimit: 1 }))
+        .returns(),
+    }),
+    resultStepWatcher: M.interface('resultStepWatcher', {
+      onFulfilled: M.call(
+        M.any(),
+        M.arrayOf(shape.OfferResultStep, { arrayLengthLimit: 2 }),
+      ).returns(),
+      onRejected: M.call(M.any(), M.any()).returns(),
+    }),
     self: M.interface('selfFacetI', {
       handleBridgeAction: M.call(shape.StringCapData, M.boolean()).returns(
         M.promise(),
       ),
       getDepositFacet: M.call().returns(M.remotable()),
+      getInvokeFacet: M.call().returns(M.remotable()),
       getOffersFacet: M.call().returns(M.remotable()),
       getCurrentSubscriber: M.call().returns(SubscriberShape),
       getUpdatesSubscriber: M.call().returns(SubscriberShape),
@@ -744,6 +763,16 @@ export const prepareSmartWallet = (baggage, shared) => {
             );
           }
           return baggage.get(state.address);
+        },
+        /**
+         * @param {string} name
+         * @param {unknown} result
+         */
+        saveOfferResult(name, result) {
+          const { my } = this.state;
+          // TODO: Require explicit opt-in for overrides, maybe an extra flag in the invoke
+          my.nameAdmin.update(name, result);
+          trace('saved', name, '=', result);
         },
       },
       /**
@@ -1019,6 +1048,54 @@ export const prepareSmartWallet = (baggage, shared) => {
           await E(seatRef).tryExit();
         },
       },
+
+      invoke: {
+        /**
+         * @param {string} name
+         * @param {OfferResultStep[]} steps
+         */
+        async invokeItem(name, ...steps) {
+          trace('invokeItem', name, steps);
+          // XXX worth using a nameHub vs. a mapStore?
+          const { nameHub } = this.state.my;
+          const { resultStepWatcher } = this.facets;
+
+          nameHub.has(name) || Fail`cannot invoke ${q(name)}: no such item`;
+          const item = nameHub.lookup(name);
+          trace('item', name, item);
+          vowTools.watch(Promise.resolve(item), resultStepWatcher, steps);
+        },
+      },
+
+      resultStepWatcher: {
+        /**
+         * @param {unknown} result
+         * @param {OfferResultStep[]} steps
+         */
+        onFulfilled(result, steps) {
+          trace('resultStepWatcher result', result);
+          if (!steps.length) return;
+          const { nameAdmin } = this.state.my;
+          const [step0, ...step1n] = steps;
+          if ('saveAs' in step0) {
+            trace('saveAs', step0.saveAs, result);
+            nameAdmin.update(step0.saveAs, result);
+          } else {
+            const { resultStepWatcher } = this.facets;
+            const { method, args = [] } = step0;
+            trace('invoke', result, '.', method, '(', args, ')');
+            vowTools.watch(
+              E(result)[method](...args),
+              resultStepWatcher,
+              step1n,
+            );
+          }
+        },
+        onRejected(reason, steps) {
+          trace('rejected', reason, 'remaining', steps);
+        },
+      },
+
       self: {
         /**
          * Umarshals the actionCapData and delegates to the appropriate action
@@ -1030,8 +1107,8 @@ export const prepareSmartWallet = (baggage, shared) => {
          * @returns {Promise<void>}
          */
         handleBridgeAction(actionCapData, canSpend = false) {
-          const { facets } = this;
-          const { offers } = facets;
+          const { facets, state } = this;
+          const { offers, invoke } = facets;
           const { publicMarshaller } = shared;
 
           /** @param {Error} err */
@@ -1044,6 +1121,8 @@ export const prepareSmartWallet = (baggage, shared) => {
             });
           };
 
+          const walletHasNameHub = 'my' in state && state.my != null;
+
           // use E.when to retain distributed stack trace
           return E.when(
             E(publicMarshaller).fromCapData(actionCapData),
@@ -1053,11 +1132,23 @@ export const prepareSmartWallet = (baggage, shared) => {
                 switch (action.method) {
                   case 'executeOffer': {
                     canSpend || Fail`executeOffer requires spend authority`;
+                    if (
+                      action.offer.after?.saveAs != null &&
+                      !walletHasNameHub
+                    ) {
+                      Fail`executeOffer saveAs requires a new smart wallet with namehub`;
+                    }
+
                     return offers.executeOffer(action.offer);
                   }
                   case 'tryExitOffer': {
                     assert(canSpend, 'tryExitOffer requires spend authority');
                     return offers.tryExitOffer(action.offerId);
+                  }
+                  case 'invokeItem': {
+                    walletHasNameHub ||
+                      Fail`invokeItem requires a new smart wallet with namehub`;
+                    return invoke.invokeItem(action.name, ...action.steps);
                   }
                   default: {
                     throw Fail`invalid handle bridge action ${q(action)}`;
@@ -1076,6 +1167,9 @@ export const prepareSmartWallet = (baggage, shared) => {
         },
         getDepositFacet() {
           return this.facets.deposit;
+        },
+        getInvokeFacet() {
+          return this.facets.invoke;
         },
         getOffersFacet() {
           return this.facets.offers;

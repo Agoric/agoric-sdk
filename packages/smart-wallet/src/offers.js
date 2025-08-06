@@ -6,12 +6,23 @@
  * @typedef {number | string} OfferId
  */
 
+// TODO: change saveAs to be direct part of step / offerSpec
+// TODO: accept missing/undefined method name for function invocation
+// TODO: change from multi step to a single InvokeSpec
+
+/**
+ * @typedef {{ method: string; args: unknown[] } | { saveAs: string }} OfferResultStep
+ */
+
 /**
  * @typedef {{
  *   id: OfferId;
  *   invitationSpec: import('./invitations.js').InvitationSpec;
  *   proposal: Proposal;
  *   offerArgs?: any;
+ *   after?: {
+ *     saveAs?: string;
+ *   };
  * }} OfferSpec
  */
 
