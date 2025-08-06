@@ -9,6 +9,10 @@ chains:
     env:
       - name: DEBUG
         value: SwingSet:vat,SwingSet:ls
+      - name: START_FROM_SNAPSHOT
+        value: true
+      - name: SNAPSHOT_URL
+        value: https://storage.googleapis.com/agoric-snapshots-public/starship-agoric/agoric-snapshot.tar.gz
     genesis:
       app_state:
         staking:
