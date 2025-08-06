@@ -355,6 +355,9 @@ export const preparePortfolioKit = (
           const { vow } = accountsPending.get(chainName);
           return vow as Vow<GMPAccountInfo>;
         },
+        getTargetAllocation() {
+          return this.state.targetAllocation;
+        },
       },
       reporter: {
         publishStatus() {
@@ -455,9 +458,6 @@ export const preparePortfolioKit = (
         setTargetAllocation(allocation: TargetAllocation) {
           this.state.targetAllocation = allocation;
           this.facets.reporter.publishStatus();
-        },
-        getTargetAllocation() {
-          return this.state.targetAllocation;
         },
       },
       rebalanceHandler: {
