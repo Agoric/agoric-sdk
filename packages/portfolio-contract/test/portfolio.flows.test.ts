@@ -21,7 +21,7 @@ import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import type { VowTools } from '@agoric/vow';
+import { prepareVowTools, type VowTools } from '@agoric/vow';
 import type { Proposal, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
@@ -36,6 +36,7 @@ import {
   preparePortfolioKit,
   type PortfolioKit,
 } from '../src/portfolio.exo.ts';
+import { prepareResolverKit } from '../src/resolver/resolver.exo.js';
 import {
   openPortfolio,
   rebalance,
@@ -269,6 +270,15 @@ const mocks = (
 
   const inertSubscriber = {} as ResolvedPublicTopic<never>['subscriber'];
 
+  const resolverZone = zone.subZone('CCTPResolver');
+  // Use actual vow tools for the resolver to create proper vows, not promises
+  const resolverVowTools = prepareVowTools(zone.subZone('vowTools'));
+  const { client: cctpClient } = prepareResolverKit(
+    resolverZone,
+    mockZCF,
+    resolverVowTools,
+  )();
+
   const ctx1: PortfolioInstanceContext = {
     zoeTools,
     usdc: { denom, brand: USDC },
@@ -277,6 +287,9 @@ const mocks = (
     gmpFeeInfo: { brand: BLD, denom: 'ubld' },
     inertSubscriber,
     gmpAddresses,
+    cctpClient: cctpClient as unknown as GuestInterface<
+      PortfolioInstanceContext['cctpClient']
+    >,
   };
 
   const chainHubTools = harden({

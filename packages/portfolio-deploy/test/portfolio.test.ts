@@ -4,6 +4,7 @@ import { protoMsgMockMap } from '@aglocal/boot/tools/ibc/mocks.ts';
 import { AckBehavior } from '@aglocal/boot/tools/supports.ts';
 import { makeProposalShapes } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.ts';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeClientMarshaller } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
 import { BridgeId } from '@agoric/internal';
@@ -24,6 +25,7 @@ import {
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 
 const beneficiary = 'agoric126sd64qkuag2fva3vy3syavggvw44ca2zfrzyy';
+const controllerAddr = 'agoric1ymax0-admin';
 
 /** maps between on-chain identites and boardIDs */
 const showValue = (v: string) => defaultMarshaller.fromCapData(JSON.parse(v));
@@ -257,15 +259,14 @@ test.serial('contract starts; appears in agoricNames', async t => {
 test.serial('delegate control', async t => {
   const { buildProposal, evalProposal, refreshAgoricNamesRemotes } = t.context;
 
-  const addr = 'agoric1ymax0-admin';
   const materials = buildProposal(
     '@aglocal/portfolio-deploy/src/portfolio-control.build.js',
-    ['--ymaxControlAddress', addr],
+    ['--ymaxControlAddress', controllerAddr],
   );
 
   const { agoricNamesRemotes, walletFactoryDriver: wfd } = t.context;
 
-  const wallet = await wfd.provideSmartWallet(addr);
+  const wallet = await wfd.provideSmartWallet(controllerAddr);
 
   await evalProposal(materials);
   await refreshAgoricNamesRemotes();
@@ -291,98 +292,87 @@ test.serial('delegate control', async t => {
   t.pass('ymaxControl is invocable');
 });
 
-test.serial('remove old contract; start new contract', async t => {
-  const {
-    agoricNamesRemotes,
-    buildProposal,
-    evalProposal,
-    refreshAgoricNamesRemotes,
-    storage,
-  } = t.context;
-
-  const instancePre = agoricNamesRemotes.instance.ymax0;
-  const oldBoardId = (instancePre as any).getBoardId();
-  const materials = buildProposal(
-    '@aglocal/portfolio-deploy/src/portfolio.build.js',
-    ['--replace', oldBoardId],
-  );
-  await evalProposal(materials);
-
-  refreshAgoricNamesRemotes();
-  const instancePost = agoricNamesRemotes.instance.ymax0;
-  t.truthy(instancePost);
-  t.not(instancePre, instancePost);
-
-  await documentStorageSchema(t, storage, {
-    node: 'agoricNames.instance',
-    owner: 'chain governance',
-    showValue,
-  });
-  await documentStorageSchema(t, storage, {
-    node: 'ymax0',
-    owner: 'ymax0',
-    showValue,
-  });
-});
-
-const { make } = AmountMath;
-
-// give: ...rest: {"Access":{"brand":"[Alleged: BoardRemotePoC26 brand]","value":"[1n]"}} - Must be: {}
-test.skip('open a USDN position', async t => {
+// XXX this needs a CCTP tx setup to work which is not available atm
+test.skip('CCTP settlement works', async t => {
   const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
+  const marshaller = makeClientMarshaller(v => (v as any).getBoardId());
 
-  for (const { msg, ack } of Object.values(
-    makeUSDNIBCTraffic('agoric1trader1', `${3_333 * 1_000_000}`),
-  )) {
-    protoMsgMockMap[msg] = ack; // XXX static mutable state
-  }
+  const wallet = await wfd.provideSmartWallet(beneficiary, marshaller);
+  const controllerWallet = await wfd.provideSmartWallet(controllerAddr);
 
-  const myMarshaller = makeClientMarshaller(v => (v as any).getBoardId());
-  // XXX: should have 10K USDC
-  const wallet = await wfd.provideSmartWallet(beneficiary, myMarshaller);
-
-  const { USDC, PoC26 } = agoricNamesRemotes.brand as unknown as Record<
-    string,
-    Brand<'nat'>
-  >;
-  t.log({ USDC, PoC26 });
-  t.truthy(PoC26);
-  const give = harden({
-    USDN: make(USDC, 3_333n * 1_000_000n),
-    Access: make(PoC26, 1n),
+  t.log('Getting creator facet of ymax0');
+  await controllerWallet.invokeEntry({
+    id: Date.now().toString(),
+    targetName: 'ymaxControl',
+    method: 'getCreatorFacet',
+    args: [],
+    saveResult: { name: 'ymax0.creatorFacet' },
   });
 
-  const ps = makeProposalShapes(USDC, PoC26);
-  mustMatch(harden({ give, want: {} }), ps.openPortfolio);
+  const postalService = agoricNamesRemotes.instance.postalService;
+  const inviteId = Date.now().toString();
 
-  t.log('opening portfolio', myMarshaller.toCapData(give));
-  await wallet.sendOffer({
-    id: `open-1`,
+  t.log('Delivering resolver invitation');
+  await controllerWallet.invokeEntry({
+    id: inviteId,
+    targetName: 'ymax0.creatorFacet',
+    method: 'deliverResolverInvitation',
+    args: [beneficiary, postalService],
+  });
+
+  const currentWalletRecord = await wallet.getCurrentWalletRecord();
+
+  t.log('Using resolver invitation to get invitationMaker');
+  await wallet.executeOffer({
+    id: 'settle-cctp',
     invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['ymax0'],
-      callPipe: [['makeOpenPortfolioInvitation']],
+      source: 'purse',
+      instance: currentWalletRecord.purses[0].balance.value[0].instance,
+      description: 'resolver',
     },
-    proposal: { give },
-    offerArgs: {},
+    proposal: { give: {}, want: {} },
   });
-  const update = wallet.getLatestUpdateRecord(); // XXX remote should be async
-  t.log('update', update);
-  const current = wallet.getCurrentWalletRecord(); // XXX remote should be async
-  t.log('trader1 current', current);
-  t.truthy(current);
-  t.snapshot(myMarshaller.toCapData(current as CopyRecord), 'wallet.current');
 
-  const { storage } = t.context;
-  await documentStorageSchema(t, storage, {
-    node: 'wallet',
-    owner: 'walletFactory',
-    showValue,
+  await eventLoopIteration();
+
+  t.log('Executing CCTP settlement offer');
+  await wallet.executeOffer({
+    id: '123',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'settle-cctp',
+      invitationMakerName: 'SettleCCTPTransaction',
+    },
+    proposal: { give: {}, want: {} },
+    offerArgs: {
+      txDetails: {
+        amount: 10_000n,
+        remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+        status: 'confirmed',
+      },
+      remoteAxelarChain: 'eip155:42161',
+    },
   });
-  await documentStorageSchema(t, storage, {
-    node: 'ymax0',
-    owner: 'ymax0',
-    showValue,
+  const latestWalletRecord = wallet.getLatestUpdateRecord();
+
+  t.like(latestWalletRecord, {
+    status: {
+      id: '123',
+      invitationSpec: {
+        invitationMakerName: 'SettleCCTPTransaction',
+        source: 'continuing',
+        previousOffer: 'settle-cctp',
+      },
+      numWantsSatisfied: 1,
+      offerArgs: {
+        remoteAxelarChain: 'eip155:42161',
+        txDetails: {
+          amount: 10000n,
+          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+          status: 'confirmed',
+        },
+      },
+    },
   });
 });
 
@@ -464,6 +454,284 @@ test.serial('restart contract', async t => {
     portfolioCountBefore + 1,
     'Should have exactly one additional portfolio after opening',
   );
+});
+
+// XXX this needs a CCTP tx setup to work which is not available atm
+test.skip('CCTP settlement works across contract restarts', async t => {
+  const { walletFactoryDriver: wfd } = t.context;
+
+  const myMarshaller = makeClientMarshaller(v => (v as any).getBoardId());
+  const wallet = await wfd.provideSmartWallet(beneficiary, myMarshaller);
+
+  await wallet.executeOffer({
+    id: '456',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'settle-cctp',
+      invitationMakerName: 'SettleCCTPTransaction',
+    },
+    proposal: { give: {}, want: {} },
+    offerArgs: {
+      txDetails: {
+        amount: 40_000n,
+        remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+        status: 'confirmed',
+      },
+      remoteAxelarChain: 'eip155:42161',
+    },
+  });
+
+  const finalUpdate = wallet.getLatestUpdateRecord();
+  t.log('Final wallet update:', finalUpdate);
+
+  t.like(finalUpdate, {
+    status: {
+      id: '456',
+      invitationSpec: {
+        invitationMakerName: 'SettleCCTPTransaction',
+        source: 'continuing',
+        previousOffer: 'settle-cctp',
+      },
+      numWantsSatisfied: 1,
+      offerArgs: {
+        remoteAxelarChain: 'eip155:42161',
+        txDetails: {
+          amount: 40000n,
+          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+          status: 'confirmed',
+        },
+      },
+    },
+  });
+
+  t.log('Test completed: CCTP settlement works across contract restarts');
+});
+
+test.serial('remove old contract; start new contract', async t => {
+  const {
+    agoricNamesRemotes,
+    refreshAgoricNamesRemotes,
+    walletFactoryDriver: wfd,
+    storage,
+  } = t.context;
+
+  const instancePre = agoricNamesRemotes.instance.ymax0;
+  const installation = agoricNamesRemotes.installation.ymax0;
+  const issuers = {
+    Access: agoricNamesRemotes.issuer.PoC26,
+    USDC: agoricNamesRemotes.issuer.USDC,
+    BLD: agoricNamesRemotes.issuer.BLD,
+    Fee: agoricNamesRemotes.issuer.BLD,
+  };
+
+  const oldBoardId = (instancePre as any).getBoardId();
+  const wallet = await wfd.provideSmartWallet(controllerAddr);
+
+  t.log('Invoking ymaxControl to remove old contract');
+  await wallet.invokeEntry({
+    id: Date.now().toString(),
+    targetName: 'ymaxControl',
+    method: 'terminate',
+    args: [{ message: 'restarting contract', target: oldBoardId }],
+  });
+
+  t.log('Invoking ymaxControl to start new contract');
+  await wallet.invokeEntry({
+    id: Date.now().toString(),
+    targetName: 'ymaxControl',
+    method: 'start',
+    args: [{ installation, issuers }],
+  });
+
+  refreshAgoricNamesRemotes();
+  const instancePost = agoricNamesRemotes.instance.ymax0;
+  t.truthy(instancePost);
+  t.not(instancePre, instancePost);
+
+  await documentStorageSchema(t, storage, {
+    node: 'agoricNames.instance',
+    owner: 'chain governance',
+    showValue,
+  });
+  await documentStorageSchema(t, storage, {
+    node: 'ymax0',
+    owner: 'ymax0',
+    showValue,
+  });
+});
+
+test.serial(
+  'CCTP settlement with old invitation doesnt work with new contract instance',
+  async t => {
+    const { walletFactoryDriver: wfd } = t.context;
+    const marshaller = makeClientMarshaller(v => (v as any).getBoardId());
+
+    const wallet = await wfd.provideSmartWallet(beneficiary, marshaller);
+
+    const id = Date.now().toString();
+    await t.throwsAsync(
+      wallet.executeOffer({
+        id,
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: 'settle-cctp',
+          invitationMakerName: 'SettleCCTPTransaction',
+        },
+        proposal: { give: {}, want: {} },
+        offerArgs: {
+          txDetails: {
+            amount: 10_000n,
+            remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+            status: 'confirmed',
+          },
+          remoteAxelarChain: 'eip155:42161',
+        },
+      }),
+    );
+  },
+);
+
+// XXX this needs a CCTP tx setup to work which is not available atm
+test.skip('CCTP settlement works with new invitation after contract remove and start', async t => {
+  const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
+  const marshaller = makeClientMarshaller(v => (v as any).getBoardId());
+
+  const wallet = await wfd.provideSmartWallet(beneficiary, marshaller);
+  const controllerWallet = await wfd.provideSmartWallet(controllerAddr);
+  const postalService = agoricNamesRemotes.instance.postalService;
+  const inviteId = Date.now().toString();
+
+  t.log('Getting new creator facet of ymax0');
+  await controllerWallet.invokeEntry({
+    id: Date.now().toString(),
+    targetName: 'ymaxControl',
+    method: 'getCreatorFacet',
+    args: [],
+    saveResult: { name: 'ymax0.creatorFacet-new' },
+  });
+
+  t.log('Delivering resolver invitation for new contract');
+  await controllerWallet.invokeEntry({
+    id: inviteId,
+    targetName: 'ymax0.creatorFacet-new',
+    method: 'deliverResolverInvitation',
+    args: [beneficiary, postalService],
+  });
+
+  const currentWalletRecord = await wallet.getCurrentWalletRecord();
+
+  await wallet.executeOffer({
+    id: 'settle-cctp-new',
+    invitationSpec: {
+      source: 'purse',
+      instance: currentWalletRecord.purses[0].balance.value[0].instance,
+      description: 'resolver',
+    },
+    proposal: { give: {}, want: {} },
+  });
+
+  await eventLoopIteration();
+
+  const id = Date.now().toString();
+  await wallet.executeOffer({
+    id,
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'settle-cctp-new',
+      invitationMakerName: 'SettleCCTPTransaction',
+    },
+    proposal: { give: {}, want: {} },
+    offerArgs: {
+      txDetails: {
+        amount: 10_000n,
+        remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+        status: 'confirmed',
+      },
+      remoteAxelarChain: 'eip155:42161',
+    },
+  });
+  const latestWalletRecord = wallet.getLatestUpdateRecord();
+
+  t.like(latestWalletRecord, {
+    status: {
+      id,
+      invitationSpec: {
+        invitationMakerName: 'SettleCCTPTransaction',
+        source: 'continuing',
+        previousOffer: 'settle-cctp-new',
+      },
+      numWantsSatisfied: 1,
+      offerArgs: {
+        remoteAxelarChain: 'eip155:42161',
+        txDetails: {
+          amount: 10000n,
+          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+          status: 'confirmed',
+        },
+      },
+    },
+  });
+});
+
+const { make } = AmountMath;
+
+// give: ...rest: {"Access":{"brand":"[Alleged: BoardRemotePoC26 brand]","value":"[1n]"}} - Must be: {}
+test.skip('open a USDN position', async t => {
+  const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
+
+  for (const { msg, ack } of Object.values(
+    makeUSDNIBCTraffic('agoric1trader1', `${3_333 * 1_000_000}`),
+  )) {
+    protoMsgMockMap[msg] = ack; // XXX static mutable state
+  }
+
+  const myMarshaller = makeClientMarshaller(v => (v as any).getBoardId());
+  // XXX: should have 10K USDC
+  const wallet = await wfd.provideSmartWallet(beneficiary, myMarshaller);
+
+  const { USDC, PoC26 } = agoricNamesRemotes.brand as unknown as Record<
+    string,
+    Brand<'nat'>
+  >;
+  t.log({ USDC, PoC26 });
+  t.truthy(PoC26);
+  const give = harden({
+    USDN: make(USDC, 3_333n * 1_000_000n),
+    Access: make(PoC26, 1n),
+  });
+
+  const ps = makeProposalShapes(USDC, PoC26);
+  mustMatch(harden({ give, want: {} }), ps.openPortfolio);
+
+  t.log('opening portfolio', myMarshaller.toCapData(give));
+  await wallet.sendOffer({
+    id: `open-1`,
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['ymax0'],
+      callPipe: [['makeOpenPortfolioInvitation']],
+    },
+    proposal: { give },
+    offerArgs: {},
+  });
+  const update = wallet.getLatestUpdateRecord(); // XXX remote should be async
+  t.log('update', update);
+  const current = wallet.getCurrentWalletRecord(); // XXX remote should be async
+  t.log('trader1 current', current);
+  t.truthy(current);
+  t.snapshot(myMarshaller.toCapData(current as CopyRecord), 'wallet.current');
+
+  const { storage } = t.context;
+  await documentStorageSchema(t, storage, {
+    node: 'wallet',
+    owner: 'walletFactory',
+    showValue,
+  });
+  await documentStorageSchema(t, storage, {
+    node: 'ymax0',
+    owner: 'ymax0',
+    showValue,
+  });
 });
 
 test.todo("won't a contract upgrade override the older positions in vstorage?");
