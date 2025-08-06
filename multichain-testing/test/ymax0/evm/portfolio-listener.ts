@@ -90,6 +90,7 @@ export class PortfolioListener {
         console.log(
           `✅ Complete: ${transfer.destinationAddr}, Balance: ${result.balance}`,
         );
+        // TODO: make offer to the contract to resolve the tx
         break;
       } else if (result.error) {
         console.log(`❌ Error: ${result.error}`);

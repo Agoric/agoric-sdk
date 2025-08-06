@@ -20,8 +20,11 @@ const usdcAddresses = {
 };
 
 export class CCTPStatusChecker {
+  private initialBalances = new Map<string, string>(); // destinationAddr -> initial balance
+
   async checkTransferStatus(
     transfer: PendingCCTPTransfer,
+    isFirstCheck: boolean = false,
   ): Promise<CCTPStatusResult> {
     try {
       const rpcUrl = domainToRpc[transfer.destinationDomain];
@@ -33,20 +36,43 @@ export class CCTPStatusChecker {
         };
       }
 
-      const balance = await this.checkUSDCBalance(
+      const currentBalance = await this.checkUSDCBalance(
         rpcUrl,
         transfer.destinationAddr,
         transfer.destinationDomain,
       );
 
+      const addr = transfer.destinationAddr;
+      
+      // Store initial balance on first check
+      if (isFirstCheck || !this.initialBalances.has(addr)) {
+        this.initialBalances.set(addr, currentBalance);
+        console.log(`Initial balance for ${addr}: ${currentBalance}`);
+        
+        return {
+          transfer,
+          isComplete: false,
+          balance: currentBalance,
+        };
+      }
+
+      // Check if balance increased by expected amount
+      const initialBalance = BigInt(this.initialBalances.get(addr)!);
+      const current = BigInt(currentBalance);
       const expectedAmount = BigInt(transfer.amount);
-      const currentBalance = BigInt(balance);
-      const isComplete = currentBalance >= expectedAmount;
+      
+      const balanceIncrease = current - initialBalance;
+      const isComplete = balanceIncrease >= expectedAmount;
+
+      if (isComplete) {
+        // Clean up tracking when complete
+        this.initialBalances.delete(addr);
+      }
 
       return {
         transfer,
         isComplete,
-        balance: balance,
+        balance: `${currentBalance} (increased by ${balanceIncrease})`,
       };
     } catch (error) {
       return {
