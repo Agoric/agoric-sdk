@@ -74,10 +74,12 @@ test('planDepositTransfers works in a handful of cases', t => {
   // Total after deposit: 750 + 300 = 1050
   // Targets: USDN=525, Aave=315, Compound=210
   // USDN is already over target (600 > 525), so no transfer
-  // Only transfer to under-allocated positions
+  // Need transfers: Aave=215, Compound=160, total=375
+  // But deposit is only 300, so scale down proportionally:
+  // Aave: 215 * (300/375) = 172, Compound: 160 * (300/375) = 128
   t.deepEqual(result3, {
-    Aave_Arbitrum: make(215n),
-    Compound_Arbitrum: make(160n),
+    Aave_Arbitrum: make(172n),
+    Compound_Arbitrum: make(128n),
   });
 
   // Test case 4: Transfer amounts exceed deposit (scaling needed)
