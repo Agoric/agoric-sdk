@@ -168,7 +168,7 @@ const baseConfig = harden({
 export const makeCosmicSwingsetTestKit = async (
   {
     // Options for the SwingSet controller/kernel.
-    bundleDir = 'bundles',
+    bundleDir = `bundles-${Date.now()}`,
     bundles,
     configSpecifier,
     debugName,
