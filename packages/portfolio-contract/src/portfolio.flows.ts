@@ -75,6 +75,7 @@ export type PortfolioInstanceContext = {
   gmpFeeInfo: { brand: Brand<'nat'>; denom: Denom };
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
+  publishCctpTransactionStatus: Function;
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
@@ -561,7 +562,7 @@ const stepFlow = async (
               amount,
               src: { account: nInfo.ica },
               dest: { proxy: gInfo },
-              apply: () => CCTP.apply(null, amount, nInfo, gInfo),
+              apply: () => CCTP.apply(ctx, amount, nInfo, gInfo),
               recover: () => CCTP.recover(null, amount, nInfo, gInfo),
             };
           } else {
@@ -772,7 +773,17 @@ export const openPortfolio = (async (
 
     if (!seat.hasExited()) {
       try {
-        await rebalance(orch, ctxI, seat, offerArgs, kit);
+        await rebalance(
+          orch,
+          {
+            ...ctxI,
+            publishCctpTransactionStatus:
+              kit.reporter.publishCctpTransactionStatus,
+          },
+          seat,
+          offerArgs,
+          kit,
+        );
       } catch (err) {
         console.error('⚠️ rebalance failed', err);
         if (!seat.hasExited()) seat.fail(err);
