@@ -200,7 +200,7 @@ export const pollBlocks = opts => async lookup => {
  * }} opts
  */
 export const pollTx = async (txhash, opts) => {
-  const { execFileSync, rpcAddrs, chainName } = opts;
+  const { execFileSync, rpcAddrs } = opts;
 
   const nodeArgs = [`--node=${rpcAddrs[0]}`];
   const outJson = ['--output', 'json'];
@@ -208,14 +208,7 @@ export const pollTx = async (txhash, opts) => {
   const lookup = async () => {
     const out = execFileSync(
       agdBinary,
-      [
-        'query',
-        'tx',
-        txhash,
-        `--chain-id=${chainName}`,
-        ...nodeArgs,
-        ...outJson,
-      ],
+      ['query', 'tx', txhash, ...nodeArgs, ...outJson],
       { stdio: ['ignore', 'pipe', 'pipe'] },
     );
     // XXX this type is defined in a .proto file somewhere
