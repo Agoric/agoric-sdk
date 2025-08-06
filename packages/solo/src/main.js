@@ -1,8 +1,8 @@
-import fs from 'fs';
-import path from 'path';
-import parseArgs from 'minimist';
-import process from 'process';
-import { spawnSync } from 'child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import { parseArgs } from 'node:util';
+import process from 'node:process';
+import { spawnSync } from 'node:child_process';
 import { assert } from '@endo/errors';
 
 import anylogger from 'anylogger';
@@ -39,9 +39,14 @@ function insistIsBasedir() {
 
 export default async function solo(progname, rawArgv) {
   log.debug('solo', rawArgv);
-  const { _: argv, ...opts } = parseArgs(rawArgv, {
-    stopEarly: true,
-    boolean: ['help', 'version'],
+  const { values: opts, positionals: argv } = parseArgs({
+    args: rawArgv,
+    options: {
+      help: { type: 'boolean' },
+      version: { type: 'boolean' },
+    },
+    allowPositionals: true,
+    strict: false,
   });
 
   if (opts.help) {
@@ -57,7 +62,15 @@ start
   await null;
   switch (argv[0]) {
     case 'setup': {
-      const { netconfig } = parseArgs(argv.slice(1));
+      const { values: setupOpts } = parseArgs({
+        args: argv.slice(1),
+        options: {
+          netconfig: { type: 'string' },
+        },
+        allowPositionals: true,
+        strict: false,
+      });
+      const { netconfig } = setupOpts;
       if (!AG_SOLO_BASEDIR) {
         console.error(`setup: you must set $AG_SOLO_BASEDIR`);
         return 1;
@@ -71,13 +84,19 @@ start
       break;
     }
     case 'init': {
-      const { _: subArgs, ...subOpts } = parseArgs(argv.slice(1), {
-        default: {
-          webport: '8000',
-          webhost: '127.0.0.1',
-          egresses: DEFAULT_EGRESSES,
-          defaultManagerType: process.env.SWINGSET_WORKER_TYPE || 'xs-worker',
+      const { values: subOpts, positionals: subArgs } = parseArgs({
+        args: argv.slice(1),
+        options: {
+          webport: { type: 'string', default: '8000' },
+          webhost: { type: 'string', default: '127.0.0.1' },
+          egresses: { type: 'string', default: DEFAULT_EGRESSES },
+          defaultManagerType: {
+            type: 'string',
+            default: process.env.SWINGSET_WORKER_TYPE || 'xs-worker',
+          },
         },
+        allowPositionals: true,
+        strict: false,
       });
       const webport = Number(subOpts.webport);
       const { webhost, egresses } = subOpts;
@@ -103,8 +122,13 @@ start
     }
     case 'add-chain': {
       const basedir = insistIsBasedir();
-      const { _: subArgs, ...subOpts } = parseArgs(argv.slice(1), {
-        boolean: ['reset'],
+      const { values: subOpts, positionals: subArgs } = parseArgs({
+        args: argv.slice(1),
+        options: {
+          reset: { type: 'boolean' },
+        },
+        allowPositionals: true,
+        strict: false,
       });
       const [chainConfig] = subArgs;
       await addChain(basedir, chainConfig, subOpts.reset);
@@ -112,7 +136,14 @@ start
     }
     case 'set-gci-ingress': {
       const basedir = insistIsBasedir();
-      const { _: subArgs, ...subOpts } = parseArgs(argv.slice(1), {});
+      const { values: subOpts, positionals: subArgs } = parseArgs({
+        args: argv.slice(1),
+        options: {
+          chainID: { type: 'string' },
+        },
+        allowPositionals: true,
+        strict: false,
+      });
       const GCI = subArgs[0];
       const chainID = subOpts.chainID || 'agoric';
       const rpcAddresses = subArgs.slice(1);

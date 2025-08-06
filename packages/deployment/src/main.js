@@ -3,7 +3,7 @@
 import djson from 'deterministic-json';
 import { createHash } from 'node:crypto';
 import chalk from 'chalk';
-import parseArgs from 'minimist';
+import { parseArgs } from 'node:util';
 import { Fail } from '@endo/errors';
 import { doInit } from './init.js';
 import { shellMetaRegexp, shellEscape } from './run.js';
@@ -93,9 +93,14 @@ const provisionOutput = async ({ rd, wr, running }) => {
 
 const main = async (progname, rawArgs, powers) => {
   const { env, rd, wr, setup, running, inquirer, fetch } = powers;
-  const { _: args, ...opts } = parseArgs(rawArgs, {
-    boolean: ['version', 'help'],
-    stopEarly: true,
+  const { values: opts, positionals: args } = parseArgs({
+    args: rawArgs,
+    options: {
+      version: { type: 'boolean' },
+      help: { type: 'boolean' },
+    },
+    allowPositionals: true,
+    strict: false,
   });
 
   // This is needed for hyphenated group names not to trigger Ansible.
@@ -185,17 +190,19 @@ show-config      display the client connection parameters
       break;
     }
     case 'bootstrap': {
-      const {
-        _: subArgs,
-        'boot-tokens': bootTokens,
-        ...subOpts
-      } = parseArgs(args.slice(1), {
-        default: {
-          'boot-tokens': DEFAULT_BOOT_TOKENS,
+      const { values: subOptsValues, positionals: subArgs } = parseArgs({
+        args: args.slice(1),
+        options: {
+          'boot-tokens': { type: 'string', default: DEFAULT_BOOT_TOKENS },
+          bump: { type: 'string' },
+          'import-from': { type: 'string' },
+          genesis: { type: 'string' },
         },
-        string: ['bump', 'import-from', 'genesis'],
-        stopEarly: true,
+        allowPositionals: true,
+        strict: false,
       });
+      const bootTokens = subOptsValues['boot-tokens'];
+      const subOpts = subOptsValues;
 
       const dir = setup.SETUP_HOME;
       if (await rd.exists(`${dir}/network.txt`)) {
@@ -298,9 +305,15 @@ show-config      display the client connection parameters
     case 'bootstrap-cosmos': {
       await inited();
       // eslint-disable-next-line no-unused-vars
-      const { _: subArgs, ...subOpts } = parseArgs(args.slice(1), {
-        string: ['bump', 'import-from', 'genesis'],
-        stopEarly: true,
+      const { values: subOpts, positionals: subArgs } = parseArgs({
+        args: args.slice(1),
+        options: {
+          bump: { type: 'string' },
+          'import-from': { type: 'string' },
+          genesis: { type: 'string' },
+        },
+        allowPositionals: true,
+        strict: false,
       });
 
       // See where we're importing the chain state from.
