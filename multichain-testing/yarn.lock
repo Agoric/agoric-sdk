@@ -12,6 +12,12 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aglocal/portfolio-planner@portal:../packages/portfolio-planner::locator=root-workspace-0b6124%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@aglocal/portfolio-planner@portal:../packages/portfolio-planner::locator=root-workspace-0b6124%40workspace%3A."
+  languageName: node
+  linkType: soft
+
 "@agoric/async-flow@portal:../packages/async-flow::locator=root-workspace-0b6124%40workspace%3A.":
   version: 0.0.0-use.local
   resolution: "@agoric/async-flow@portal:../packages/async-flow::locator=root-workspace-0b6124%40workspace%3A."
@@ -4775,6 +4781,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
+    "@aglocal/portfolio-planner": "npm:dev"
     "@agoric/cosmic-proto": "npm:dev"
     "@agoric/fast-usdc": "npm:dev"
     "@agoric/internal": "npm:dev"

@@ -1,0 +1,123 @@
+/// <reference types="ses" />
+/* eslint-env node */
+import { q, Fail } from '@endo/errors';
+import { fromUniqueEntries } from '@agoric/internal';
+import type { CosmosCommand } from './cosmos-cmd.js';
+import type { CosmosRPCClient } from './cosmos-rpc.ts';
+
+type CosmosEvent = {
+  type: string;
+  attributes?: Array<{ key: string; value: string }>;
+};
+
+const VSTORAGE_PATH_PREFIX = 'published.ymax0.portfolios';
+
+/** cf. golang/cosmos/x/vstorage/types/path_keys.go */
+const EncodedKeySeparator = '\x00';
+const PathSeparator = '.';
+
+/**
+ * TODO: Promote elsewhere, maybe @agoric/internal?
+ * cf. golang/cosmos/x/vstorage/types/path_keys.go
+ */
+const encodedKeyToPath = (key: string) => {
+  const split = key.split(EncodedKeySeparator);
+  split.length > 1 || Fail`invalid encoded key ${q(key)}`;
+  const encodedPath = split.slice(1).join(EncodedKeySeparator);
+  const path = encodedPath.replaceAll(EncodedKeySeparator, PathSeparator);
+  return path;
+};
+
+export const startEngine = async ({
+  agd,
+  rpc,
+}: {
+  agd: CosmosCommand;
+  rpc: CosmosRPCClient;
+}) => {
+  await null;
+  let status = await (await agd.exec(['status'])).stdout;
+  try {
+    const statusObj = JSON.parse(status);
+    if (JSON.stringify(statusObj) === status.trim()) status = statusObj;
+  } catch (_err) {
+    // ignore
+  }
+  console.warn('agd status', status);
+
+  await rpc.opened();
+  try {
+    // console.warn('RPC client opened:', rpc);
+
+    // console.warn('consuming events');
+    const responses = rpc.subscribeAll([
+      // vstorage events are in BEGIN_BLOCK/END_BLOCK activity
+      "tm.event = 'NewBlockHeader'",
+      // transactions
+      "tm.event = 'Tx'",
+    ]);
+    for await (const {
+      query: _query,
+      data: resp,
+      events: respEvents,
+    } of responses) {
+      const { type, value: respData } = resp;
+      if (!respEvents) {
+        console.warn('missing events', type);
+        continue;
+      }
+      const addrsWithActivity = [
+        ...new Set([
+          ...(respEvents['coin_received.receiver'] || []),
+          ...(respEvents['coin_spent.spender'] || []),
+          ...(respEvents['transfer.recipient'] || []),
+          ...(respEvents['transfer.sender'] || []),
+        ]),
+      ];
+      const eventRecords = Object.entries(respData).flatMap(
+        ([key, value]: [string, any]) => {
+          // We care about result_begin_block/result_end_block/etc.
+          if (!key.startsWith('result_')) return [];
+          if (!value?.events) {
+            console.warn('missing events', type, key);
+            return [];
+          }
+          return value.events as CosmosEvent[];
+        },
+      );
+      const portfolioVstorageEvents = eventRecords.flatMap(eventRecord => {
+        const { type: eventType, attributes: attrRecords } = eventRecord;
+        // Filter for vstorage state_change events.
+        // cf. golang/cosmos/types/events.go
+        if (eventType !== 'state_change') return [];
+        const attributes = fromUniqueEntries(
+          attrRecords?.map(({ key, value }) => [key, value]) || [],
+        );
+        if (attributes.store !== 'vstorage') return [];
+
+        // Require attributes "key" and "value".
+        if (attributes.key === undefined || attributes.value === undefined) {
+          console.error('vstorage state_change missing "key" and/or "value"');
+          return [];
+        }
+
+        // Filter for ymax portfolio paths.
+        const path = encodedKeyToPath(attributes.key);
+        if (
+          path !== VSTORAGE_PATH_PREFIX &&
+          !path.startsWith(`${VSTORAGE_PATH_PREFIX}.`)
+        ) {
+          return [];
+        }
+
+        return [{ path, value: attributes.value }];
+      });
+
+      console.log({ addrsWithActivity, portfolioVstorageEvents });
+    }
+  } finally {
+    console.warn('Terminating...');
+    rpc.close();
+  }
+};
+harden(startEngine);
