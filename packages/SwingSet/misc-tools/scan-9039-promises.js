@@ -10,11 +10,16 @@
 import process from 'node:process';
 import fs from 'fs';
 import sqlite3 from 'better-sqlite3';
-import yargsParser from 'yargs-parser';
+import { parseArgs } from 'node:util';
 import '@endo/init/debug.js';
 
 const main = rawArgv => {
-  const { _: args, ...options } = yargsParser(rawArgv.slice(2));
+  const { values: options, positionals: args } = parseArgs({
+    args: rawArgv.slice(2),
+    options: {},
+    allowPositionals: true,
+    strict: false,
+  });
   // console.log(args, options);
   if (Reflect.ownKeys(options).length > 0 || args.length !== 1) {
     console.error(

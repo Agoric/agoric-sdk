@@ -38,8 +38,7 @@
     "@endo/marshal": "^1.8.0",
     "@endo/nat": "^5.1.3",
     "expose-gc": "^1.0.0",
-    "n-readlines": "^1.0.1",
-    "yargs": "^16.1.0"
+    "n-readlines": "^1.0.1"
   },
   "devDependencies": {
     "ava": "^6.4.1",

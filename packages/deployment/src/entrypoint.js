@@ -4,7 +4,8 @@ import '@endo/init';
 
 import fs from 'fs';
 import path from 'path';
-import temp from 'temp';
+import { mkdtemp } from 'fs/promises';
+import { tmpdir } from 'os';
 import process from 'process';
 import { exec, spawn } from 'child_process';
 import inquirer from 'inquirer';
@@ -18,7 +19,7 @@ process.on('SIGINT', () => process.exit(-1));
 deploy(process.argv[1], process.argv.splice(2), {
   env: process.env,
   rd: files.reading(fs, path),
-  wr: files.writing(fs, path, temp),
+  wr: files.writing(fs, path),
   setup: setup({ resolve: path.resolve, env: process.env, setInterval }),
   running: running(process, { exec, spawn }),
   inquirer,
