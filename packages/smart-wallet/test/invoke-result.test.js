@@ -228,9 +228,8 @@ test('start price contract; make offer', async t => {
       { method: 'm1', args: [] },
       { method: 'm2', args: [] },
       { method: 'm3', args: [] },
-      { method: 'm4', args: [] },
     ),
-    { message: /limit 2/ },
+    { message: /limit 1/ },
     'too many steps',
   );
   await t.throwsAsync(
