@@ -35,6 +35,8 @@
     "typescript": "^5.7.2"
   },
   "dependencies": {
+    "@aglocal/portfolio-contract": "workspace:*",
+    "@agoric/client-utils": "workspace:*",
     "@agoric/internal": "workspace:*",
     "@agoric/pola-io": "workspace:*",
     "@endo/errors": "^1.2.13",

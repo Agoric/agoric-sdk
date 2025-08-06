@@ -2,7 +2,12 @@
 /* eslint-env node */
 import { inspect } from 'node:util';
 import { q, Fail } from '@endo/errors';
-import { fromUniqueEntries } from '@agoric/internal';
+import { PortfolioStatusShapeExt } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import { makeClientMarshaller } from '@agoric/client-utils';
+import { mustMatch } from '@agoric/internal';
+import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
+import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
+import type { Bech32Address } from '@agoric/orchestration';
 import type { CosmosCommand } from './cosmos-cmd.js';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
@@ -31,26 +36,24 @@ const encodedKeyToPath = (key: string) => {
   return path;
 };
 
-export const startEngine = async ({
-  agd,
-  rpc,
-  spectrum,
-  cosmosRest,
-}: {
+type IO = {
   agd: CosmosCommand;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
-}) => {
+};
+
+export const startEngine = async ({ agd, rpc, spectrum, cosmosRest }: IO) => {
   await null;
-  let status = await (await agd.exec(['status'])).stdout;
+  let chainStatus = await (await agd.exec(['status'])).stdout;
   try {
-    const statusObj = JSON.parse(status);
-    if (JSON.stringify(statusObj) === status.trim()) status = statusObj;
+    const statusObj = JSON.parse(chainStatus);
+    if (JSON.stringify(statusObj) === chainStatus.trim())
+      chainStatus = statusObj;
   } catch (_err) {
     // ignore
   }
-  console.warn('agd status', status);
+  console.warn('agd status', chainStatus);
 
   // Test Spectrum API with real pool balance data
   try {
@@ -129,9 +132,46 @@ export const startEngine = async ({
   console.warn('Retrieved info for Agoric chain', agoricChainId);
 
   await rpc.opened();
-  try {
-    // console.warn('RPC client opened:', rpc);
+  // console.warn('RPC client opened:', rpc);
 
+  const { fromCapData } = makeClientMarshaller();
+
+  // TODO: replace agd here and handle paginated responses.
+  const portfoliosResp = (
+    await agd.exec(['query', 'vstorage', 'children', VSTORAGE_PATH_PREFIX])
+  ).stdout;
+  const portfolioKeys = JSON.parse(portfoliosResp).children as string[];
+  const portfolioStatusTextMap = new Map(
+    await Promise.all(
+      portfolioKeys.map(async key => {
+        const agdArgs = [
+          'query',
+          'vstorage',
+          'data',
+          `${VSTORAGE_PATH_PREFIX}.${key}`,
+        ];
+        const resp = await agd.exec(agdArgs).then(r => r.stdout);
+        const streamCellText = JSON.parse(resp).value;
+        return [key, streamCellText] as [string, string];
+      }),
+    ),
+  );
+  const depositAddresses = new Map(
+    portfolioKeys.flatMap(key => {
+      const status = unmarshalFromVstorage(
+        portfolioStatusTextMap,
+        key,
+        fromCapData,
+        -1,
+      );
+      mustMatch(status, PortfolioStatusShapeExt, key);
+      const { depositAddress } = status;
+      if (!depositAddress) return [];
+      return [[key, depositAddress as Bech32Address]];
+    }),
+  );
+
+  try {
     // console.warn('consuming events');
     const responses = rpc.subscribeAll([
       // vstorage events are in BEGIN_BLOCK/END_BLOCK activity
@@ -157,6 +197,9 @@ export const startEngine = async ({
           ...(respEvents['transfer.sender'] || []),
         ]),
       ];
+      const depositAddrsWithActivity = [...addrsWithActivity].filter(addr =>
+        depositAddresses.has(addr),
+      );
 
       const eventRecords = Object.entries(respData).flatMap(
         ([key, value]: [string, any]) => {
@@ -211,7 +254,12 @@ export const startEngine = async ({
 
       console.log(
         inspect(
-          { addrsWithActivity, addrBalances, portfolioVstorageEvents },
+          {
+            addrsWithActivity,
+            addrBalances,
+            depositAddrsWithActivity,
+            portfolioVstorageEvents,
+          },
           { depth: 10 },
         ),
       );

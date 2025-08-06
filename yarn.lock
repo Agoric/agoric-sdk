@@ -252,6 +252,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aglocal/portfolio-planner@workspace:packages/portfolio-planner"
   dependencies:
+    "@aglocal/portfolio-contract": "workspace:*"
+    "@agoric/client-utils": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/pola-io": "workspace:*"
     "@endo/errors": "npm:^1.2.13"
