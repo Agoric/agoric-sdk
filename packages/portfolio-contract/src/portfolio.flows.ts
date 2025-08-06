@@ -29,7 +29,7 @@ import {
   SupportedChain,
   type YieldProtocol,
 } from './constants.js';
-import type { AxelarId, EVMContractAddresses } from './portfolio.contract.ts';
+import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {
   AaveProtocol,
@@ -70,6 +70,7 @@ export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
 export type PortfolioInstanceContext = {
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
+  gmpAddresses: GmpAddresses;
   usdc: { brand: Brand<'nat'>; denom: Denom };
   gmpFeeInfo: { brand: Brand<'nat'>; denom: Denom };
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
@@ -239,12 +240,14 @@ export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
     case 'agoric': {
       const agoricChain = await orch.getChain('agoric');
       const lca = await agoricChain.makeAccount();
+      const lcaIn = await agoricChain.makeAccount();
       const reg = await lca.monitorTransfers(kit.tap);
       trace('Monitoring transfers for', lca.getAddress().value);
       const info: AccountInfoFor['agoric'] = {
         namespace: 'cosmos',
         chainName,
         lca,
+        lcaIn,
         reg,
       };
       kit.manager.resolveAccount(info);
@@ -257,16 +260,18 @@ export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
 
 const getAssetPlaceRefKind = (
   ref: AssetPlaceRef,
-): 'pos' | 'accountId' | 'seat' => {
+): 'pos' | 'accountId' | 'depositAddr' | 'seat' => {
   if (keys(PoolPlaces).includes(ref)) return 'pos';
   if (getKeywordOfPlaceRef(ref)) return 'seat';
   if (getChainNameOfPlaceRef(ref)) return 'accountId';
+  if (ref === '+agoric') return 'depositAddr';
   throw Fail`bad ref: ${ref}`;
 };
 
 type Way =
   | { how: 'localTransfer' }
   | { how: 'withdrawToSeat' }
+  | { how: 'send' }
   | { how: 'IBC'; src: 'agoric'; dest: 'noble' }
   | { how: 'IBC'; src: 'noble'; dest: 'agoric' }
   | { how: 'CCTP'; dest: AxelarChain }
@@ -316,6 +321,10 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
       getAssetPlaceRefKind(dest) === 'accountId' || // XXX check for agoric
         Fail`src seat must have account as dest ${q(moveDesc)}`;
       return { how: 'localTransfer' };
+
+    case 'depositAddr':
+      dest === '@agoric' || Fail`src +agoric must have dest @agoric`;
+      return { how: 'send' };
 
     case 'accountId': {
       const srcName = getChainNameOfPlaceRef(src);
@@ -369,7 +378,7 @@ const stepFlow = async (
     const axelar = await orch.getChain('axelar');
     const { denom } = ctx.gmpFeeInfo;
     const fee = { denom, value: move.fee ? move.fee.value : 0n };
-    const { axelarIds } = ctx;
+    const { axelarIds, gmpAddresses } = ctx;
     const gmp = { chain: axelar, fee: move.fee?.value || 0n, axelarIds }; // XXX throw if fee missing?
     const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
     const gInfo = await provideEVMAccount(chain, gmp, lca, ctx, kit);
@@ -381,6 +390,7 @@ const stepFlow = async (
       gmpFee: fee,
       gmpChain: axelar,
       axelarIds,
+      gmpAddresses,
     });
     return { evmCtx, gInfo, accountId };
   };
@@ -481,6 +491,24 @@ const stepFlow = async (
         });
         break;
       }
+
+      case 'send':
+        todo.push(async () => {
+          const { lca, lcaIn } = await provideCosmosAccount(
+            orch,
+            'agoric',
+            kit,
+          );
+          return {
+            how: 'send',
+            amount,
+            src: { account: lcaIn },
+            dest: { account: lca },
+            apply: () => lcaIn.send(lca.getAddress(), amount),
+            recover: () => lca.send(lcaIn.getAddress(), amount),
+          };
+        });
+        break;
 
       case 'IBC': {
         if (way.src === 'agoric' && way.dest === 'noble') {
