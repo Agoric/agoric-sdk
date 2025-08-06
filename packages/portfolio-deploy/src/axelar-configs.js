@@ -63,9 +63,9 @@ const AxelarChainIdMap = harden({
 /** @type {AddressesMap} */
 const aaveAddresses = {
   mainnet: {
-    Avalanche: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
-    Arbitrum: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
-    Optimism: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
+    Avalanche: '0x794a61358D6845594F94dc1DB02A252b5b4814aD', // https://aave.com/docs/resources/addresses -> Avalanche V3 Market -> Pool contract
+    Arbitrum: '0x794a61358D6845594F94dc1DB02A252b5b4814aD', // https://aave.com/docs/resources/addresses -> Arbitrum V3 Market -> Pool contract
+    Optimism: '0x794a61358D6845594F94dc1DB02A252b5b4814aD', // https://aave.com/docs/resources/addresses -> Optimism V3 Market -> Pool contract
     // TODO: Temporary placeholder — AAVE support on Polygon is not intended.
     // Find a cleaner strategy to handle unsupported chains.
     Polygon: '0x',
@@ -114,9 +114,9 @@ const aaveUsdcAddresses = {
 /** @type {AddressesMap} */
 const aaveRewardsControllerAddresses = {
   mainnet: {
-    Avalanche: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses
-    Arbitrum: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses
-    Optimism: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses
+    Avalanche: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses -> Avalanche V3 Market -> DefaultIncentivesController contract
+    Arbitrum: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses -> Arbitrum V3 Market -> DefaultIncentivesController contract
+    Optimism: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses -> Optimism V3 Market -> DefaultIncentivesController contract
     // TODO: Temporary placeholder — AAVE support on Polygon is not intended.
     // Find a cleaner strategy to handle unsupported chains.
     Polygon: '0x',
@@ -134,9 +134,9 @@ const aaveRewardsControllerAddresses = {
 /** @type {AddressesMap} */
 const compoundAddresses = {
   mainnet: {
-    Polygon: '0xF25212E676D1F7F89Cd72fFEe66158f541246445', // Polygon Mainnet - USDC Base
-    Arbitrum: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf', // Arbitrum - USDC Base (Native)
-    Optimism: '0x2e44e174f7D53F0212823acC11C01A11d58c5bCB', // Optimism - USDC Base
+    Polygon: '0xF25212E676D1F7F89Cd72fFEe66158f541246445', // https://docs.compound.finance/#networks -> Polygon USDC -> cUSDCv3 contract
+    Arbitrum: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf', // https://docs.compound.finance/#networks -> Arbitrum USDC -> cUSDCv3 contract
+    Optimism: '0x2e44e174f7D53F0212823acC11C01A11d58c5bCB', // https://docs.compound.finance/#networks -> Optimism USDC -> cUSDCv3 contract
   },
   testnet: {
     Polygon: '0xF09F0369aB0a875254fB565E52226c88f10Bc839', // Polygon Mumbai Testnet - USDC Base
@@ -148,9 +148,9 @@ const compoundAddresses = {
 /** @type {AddressesMap} */
 const compoundRewardsControllerAddresses = {
   mainnet: {
-    Polygon: '0x45939657d1CA34A8FA39A924B71D28Fe8431e581', // Polygon Mainnet - USDC Base
-    Arbitrum: '0x88730d254A2f7e6AC8388c3198aFd694bA9f7fae', // Arbitrum - USDC Base (Native)
-    Optimism: '0x443EA0340cb75a160F31A440722dec7b5bc3C2E9', // Optimism - USDC Base
+    Polygon: '0x45939657d1CA34A8FA39A924B71D28Fe8431e581', // https://docs.compound.finance/#networks -> Polygon USDC -> Rewards contract
+    Arbitrum: '0x88730d254A2f7e6AC8388c3198aFd694bA9f7fae', // https://docs.compound.finance/#networks -> Polygon USDC -> Rewards contract
+    Optimism: '0x443EA0340cb75a160F31A440722dec7b5bc3C2E9', // https://docs.compound.finance/#networks -> Polygon USDC -> Rewards contract
   },
   testnet: {
     Polygon: '0x0785f2AC0dCBEDEE4b8D62c25A34098E9A0dF4bB', // Polygon Mumbai Testnet - USDC Base
@@ -202,7 +202,7 @@ const mainnetTokenMessenger = (rows =>
 /**
  * Mainnet configuration with real contract addresses
  * @type {EVMContractAddressesMap}
- 
+
  */
 const mainnetContracts = {
   Avalanche: {
