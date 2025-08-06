@@ -18,6 +18,8 @@ function fail(message, printUsage) {
 }
 
 export function main() {
+  // Keep yargs and its yargs-parser dependency here because Node's
+  // util.parseArgs does not support generated usage text or option descriptions.
   const argv = yargs(process.argv.slice(2))
     .string('out')
     .default('out', undefined, '<STDOUT>')
@@ -67,7 +69,7 @@ export function main() {
       'bigwidth',
       'Length above which long value strings display as "<BIG>"',
     )
-    .strict()
+    .strictOptions()
     .usage('$0 [OPTIONS...] SLOGFILE')
     .version(false)
     .parse();
@@ -129,6 +131,12 @@ export function main() {
   };
 
   const slogFile = argv._[0];
+  if (!slogFile) {
+    fail('missing slog file', true);
+  }
+  if (argv._.length > 1) {
+    fail('too many arguments', true);
+  }
   let lines;
   try {
     lines = new Readlines(slogFile);
