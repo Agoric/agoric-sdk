@@ -88,6 +88,9 @@ export default [
     // Include both .js and .ts files for cache package
     files: ['packages/cache/**/*.{js,ts,mjs,cjs}'],
   },
+  // Use legacy config via FlatCompat for backward compatibility
+  // Alternative: import agoricConfig from '@agoric/eslint-config/flat';
+  // then spread: ...agoricConfig,
   ...fixupConfigRules(
     compat.extends(
       '@agoric',
