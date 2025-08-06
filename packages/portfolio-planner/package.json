@@ -35,6 +35,7 @@
     "typescript": "^5.7.2"
   },
   "dependencies": {
+    "@agoric/internal": "workspace:*",
     "@agoric/pola-io": "workspace:*",
     "@endo/errors": "^1.2.13",
     "@endo/init": "^1.1.12",
