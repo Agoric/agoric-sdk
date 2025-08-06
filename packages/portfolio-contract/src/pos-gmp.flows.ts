@@ -129,10 +129,16 @@ export const CCTPfromEVM = {
       gmpAddresses,
     );
   },
-  recover: async (_ctx, amount, src, dest) => {
-    return CCTP.apply(null, amount, dest, src);
+  recover: async (ctx, amount, src, dest) => {
+    return CCTP.apply(ctx, amount, dest, src);
   },
-} as const satisfies TransportDetail<'CCTP', AxelarChain, 'noble', EVMContext>;
+} as const satisfies TransportDetail<
+  'CCTP',
+  AxelarChain,
+  'noble',
+  EVMContext,
+  PortfolioInstanceContext
+>;
 harden(CCTPfromEVM);
 
 export const CCTP = {
@@ -141,13 +147,26 @@ export const CCTP = {
     src: 'noble',
     dest,
   })),
-  apply: async (_ctx, amount, src, dest) => {
+  apply: async (ctx: PortfolioInstanceContext, amount, src, dest) => {
     const denomAmount: DenomAmount = { denom: 'uusdc', value: amount.value };
     const { chainId, remoteAddress } = dest;
     const destinationAddress: AccountId = `${chainId}:${remoteAddress}`;
     trace(`CCTP destinationAddress: ${destinationAddress}`);
     const { ica } = src;
+
+    // Execute the depositForBurn first
     await ica.depositForBurn(destinationAddress, denomAmount);
+
+    // Register for manual confirmation and wait
+    if (ctx?.registerCCTPTransaction) {
+      trace(`CCTP transaction initiated, waiting for confirmation...`);
+      await ctx.registerCCTPTransaction(chainId, remoteAddress, amount.value);
+      trace(`CCTP transaction completed after confirmation`);
+    } else {
+      trace(
+        `CCTP registry not available, proceeding without confirmation tracking`,
+      );
+    }
   },
   recover: async (_ctx, amount, src, dest) => {
     // XXX evmCtx needs a GMP fee

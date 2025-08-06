@@ -21,6 +21,7 @@ import {
   registerChainsAndAssets,
   withOrchestration,
   type Bech32Address,
+  type CaipChainId,
   type ChainInfo,
   type Denom,
   type DenomDetail,
@@ -40,6 +41,7 @@ import {
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
+import { prepareCCTPResolver } from './resolver.exo.ts';
 import {
   BeefyPoolPlaces,
   makeProposalShapes,
@@ -232,6 +234,10 @@ export const contract = async (
     },
   };
 
+  // CCTP Resolver - handles transaction confirmations
+  const makeCCTPResolver = prepareCCTPResolver(zone, vowTools);
+  const cctpResolver = makeCCTPResolver();
+
   const ctx1 = {
     zoeTools,
     usdc: {
@@ -251,6 +257,12 @@ export const contract = async (
     axelarIds,
     contracts,
     gmpAddresses,
+    registerCCTPTransaction: (
+      chainId: CaipChainId,
+      remoteAddress: `0x${string}`,
+      amount: bigint,
+    ) => cctpResolver.registerCCTPTransaction(chainId, remoteAddress, amount),
+    inertSubscriber,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
@@ -296,6 +308,72 @@ export const contract = async (
     },
   );
 
+  trace('XXX NEEDSTEST: baggage test');
+
+  const cctpConfirmationMethod = {
+    /**
+     * Make an invitation to confirm a CCTP transaction.
+     *
+     * Resolver (or anyone) can confirm that a CCTP transaction
+     * has completed by providing transaction details including the
+     * amount, receiver address, and status.
+     *
+     * **Transaction Statuses**:
+     * - `confirmed`: Transaction completed successfully - resolves pending CCTP operation
+     * - `failed`: Transaction failed - rejects pending operation and initiates recovery
+     * - `pending`: Transaction still in progress - updates tracking status
+     *
+     * **Flow Actions**:
+     * - For confirmed transactions: Resolves pending promise, allowing flow to continue
+     * - For failed transactions: Rejects pending promise, triggering error handling
+     * - For pending transactions: Updates status tracking, maintains monitoring
+     *
+     * @see {@link ProposalType.confirmCCTPTransaction} for proposal structure
+     * @see {@link OfferArgsFor.confirmCCTPTransaction} for offer arguments
+     * @see {@link CCTPTransactionDetails} for transaction detail structure
+     * @see {@link CCTP} and {@link CCTPfromEVM} for the underlying CCTP flows
+     */
+    makeConfirmCCTPTransactionInvitation() {
+      trace('makeConfirmCCTPTransactionInvitation');
+      return zcf.makeInvitation(
+        async (seat, offerArgs: OfferArgsFor['confirmCCTPTransaction']) => {
+          mustMatch(offerArgs, offerArgsShapes.confirmCCTPTransaction);
+          const { txDetails, remoteAxelarChain } = offerArgs;
+
+          trace('CCTP transaction confirmation:', {
+            amount: txDetails.amount,
+            remoteAddress: txDetails.remoteAddress,
+            status: txDetails.status,
+            remoteAxelarChain,
+          });
+
+          seat.exit();
+
+          // Use the resolver to confirm the transaction
+          const result = cctpResolver.confirmCCTPTransaction(
+            remoteAxelarChain,
+            txDetails.remoteAddress,
+            txDetails.amount,
+            txDetails.status,
+          );
+
+          return harden({
+            ...result,
+            txDetails,
+            remoteAxelarChain,
+          });
+        },
+        'confirmCCTPTransaction',
+        undefined,
+        proposalShapes.confirmCCTPTransaction,
+      );
+    },
+  };
+
+  const creatorFacet = zone.exo('PortfolioCreator', interfaceTODO, {
+    ...cctpConfirmationMethod,
+  });
+
   const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
     /**
      * Make an invitation to open a new portfolio.
@@ -326,7 +404,7 @@ export const contract = async (
     },
   });
 
-  return { publicFacet };
+  return { publicFacet, creatorFacet };
 };
 harden(contract);
 

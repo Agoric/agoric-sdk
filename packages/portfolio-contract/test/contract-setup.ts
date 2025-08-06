@@ -90,6 +90,67 @@ const deploy = async (t: ExecutionContext) => {
   return { common, zoe, started, contractBaggage, timerService };
 };
 
+export const setupTraderWithCCTP = async (t, initial = 10_000) => {
+  const common = await setupPortfolioTest(t);
+  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+  t.log('contract deployment', contractName);
+
+  const installation: Installation<StartFn> =
+    await bundleAndInstall(contractExports);
+
+  const { usdc, bld, poc26 } = common.brands;
+  const timerService = buildZoeManualTimer();
+
+  const selectedChains = [
+    'agoric',
+    'noble',
+    'axelar',
+    'osmosis',
+    'Polygon',
+    'Optimism',
+    'Fantom',
+    'Binance',
+    'Avalanche',
+    'Arbitrum',
+    'Ethereum',
+  ];
+
+  const chainInfo = Object.fromEntries(
+    selectedChains.map(name => [name, chainInfoWithCCTP[name]]),
+  );
+
+  const cctpStarted = await E(zoe).startInstance(
+    installation,
+    { USDC: usdc.issuer, Fee: bld.issuer, Access: poc26.issuer },
+    {}, // terms
+    {
+      ...common.commonPrivateArgs,
+      axelarIds: axelarIdsMock,
+      contracts: contractsMock,
+      gmpAddresses,
+      timerService,
+      chainInfo,
+    }, // privateArgs
+  );
+
+  const { storage } = common.bootstrap;
+  const readPublished = (async subpath => {
+    await eventLoopIteration();
+    const val = storage
+      .getDeserialized(`${ROOT_STORAGE_PATH}.${subpath}`)
+      .at(-1);
+    return val;
+  }) as unknown as VstorageKit['readPublished'];
+
+  return {
+    common,
+    zoe,
+    started: cctpStarted,
+    timerService,
+    readPublished,
+  };
+};
+
 export const setupTrader = async (t, initial = 10_000) => {
   const deployed = await deploy(t);
   const { common, zoe, started } = deployed;
