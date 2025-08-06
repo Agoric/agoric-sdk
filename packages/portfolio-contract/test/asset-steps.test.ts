@@ -11,156 +11,155 @@ const makeIssuerKit = (name: string) => {
   return { brand: Far(name) as Brand };
 };
 
-/**
- * Helper to create amounts with the given brand
- */
-const makeAmount = (brand: Brand, value: bigint) => AmountMath.make(brand, value);
+// Module-level brand constants
+const USDC_BRAND = makeIssuerKit('USDC').brand;
+const FEE_BRAND = makeIssuerKit('BLD').brand;
 
 /**
- * Constant for empty amounts
+ * Helper to create USDC amounts
  */
-const EMPTY_AMOUNT = (brand: Brand) => AmountMath.makeEmpty(brand);
+const usdc = (value: bigint) => AmountMath.make(USDC_BRAND, value);
+
+/**
+ * Helper to create fee amounts
+ */
+const fee = (value: bigint) => AmountMath.make(FEE_BRAND, value);
+
+/**
+ * Empty amount constants
+ */
+const EMPTY_USDC = AmountMath.makeEmpty(USDC_BRAND);
+const EMPTY_FEE = AmountMath.makeEmpty(FEE_BRAND);
 
 test('makeAssetSteps: simple Agoric allocation', t => {
-  const { brand } = makeIssuerKit('USDC');
   const goal = {
-    Agoric: makeAmount(brand, 100n),
+    Agoric: usdc(100n),
   } as const;
 
   const result = makeAssetSteps(goal);
 
   t.deepEqual(result.give, {
-    Deposit: makeAmount(brand, 100n),
+    Deposit: usdc(100n),
   });
 
   t.deepEqual(result.steps, [
-    { src: '<Deposit>', dest: '@agoric', amount: makeAmount(brand, 100n) },
-    { src: '@agoric', dest: '@noble', amount: makeAmount(brand, 100n) },
-    { src: '@noble', dest: 'AgoricVault', amount: makeAmount(brand, 100n), detail: undefined },
+    { src: '<Deposit>', dest: '@agoric', amount: usdc(100n) },
+    { src: '@agoric', dest: '@noble', amount: usdc(100n) },
+    { src: '@noble', dest: 'AgoricVault', amount: usdc(100n), detail: undefined },
   ]);
 });
 
 test('makeAssetSteps: Noble allocation (no additional steps)', t => {
-  const { brand } = makeIssuerKit('USDC');
   const goal = {
-    Noble: makeAmount(brand, 50n),
+    Noble: usdc(50n),
   } as const;
 
   const result = makeAssetSteps(goal);
 
   t.deepEqual(result.give, {
-    Deposit: makeAmount(brand, 50n),
+    Deposit: usdc(50n),
   });
 
   t.deepEqual(result.steps, [
-    { src: '<Deposit>', dest: '@agoric', amount: makeAmount(brand, 50n) },
-    { src: '@agoric', dest: '@noble', amount: makeAmount(brand, 50n) },
+    { src: '<Deposit>', dest: '@agoric', amount: usdc(50n) },
+    { src: '@agoric', dest: '@noble', amount: usdc(50n) },
   ]);
 });
 
 test('makeAssetSteps: EVM-based asset place', t => {
-  const { brand: usdcBrand } = makeIssuerKit('USDC');
-  const { brand: feeBrand } = makeIssuerKit('BLD');
-  
   const goal = {
-    CompoundArbitrum: makeAmount(usdcBrand, 200n),
+    CompoundArbitrum: usdc(200n),
   } as const;
 
   const result = makeAssetSteps(goal, {
     evm: 'Arbitrum',
-    feeBrand,
+    feeBrand: FEE_BRAND,
   });
 
-  const expectedAccountFee = makeAmount(feeBrand, 150n);
-  const expectedCallFee = makeAmount(feeBrand, 100n);
+  const expectedAccountFee = fee(150n);
+  const expectedCallFee = fee(100n);
   const expectedGmpFee = AmountMath.add(expectedAccountFee, expectedCallFee);
 
   t.deepEqual(result.give, {
-    Deposit: makeAmount(usdcBrand, 200n),
+    Deposit: usdc(200n),
     GmpFee: expectedGmpFee,
   });
 
   t.deepEqual(result.steps, [
-    { src: '<Deposit>', dest: '@agoric', amount: makeAmount(usdcBrand, 200n) },
-    { src: '@agoric', dest: '@noble', amount: makeAmount(usdcBrand, 200n) },
-    { src: '@noble', dest: '@Arbitrum', amount: makeAmount(usdcBrand, 200n), fee: expectedAccountFee },
-    { src: '@Arbitrum', dest: 'CompoundArbitrum_Arbitrum', amount: makeAmount(usdcBrand, 200n), fee: expectedCallFee },
+    { src: '<Deposit>', dest: '@agoric', amount: usdc(200n) },
+    { src: '@agoric', dest: '@noble', amount: usdc(200n) },
+    { src: '@noble', dest: '@Arbitrum', amount: usdc(200n), fee: expectedAccountFee },
+    { src: '@Arbitrum', dest: 'CompoundArbitrum_Arbitrum', amount: usdc(200n), fee: expectedCallFee },
   ]);
 });
 
 test('makeAssetSteps: mixed allocation with custom details', t => {
-  const { brand: usdcBrand } = makeIssuerKit('USDC');
-  const { brand: feeBrand } = makeIssuerKit('BLD');
-  
   const goal = {
-    Agoric: makeAmount(usdcBrand, 60n),
-    AavePolygon: makeAmount(usdcBrand, 40n),
+    Agoric: usdc(60n),
+    AavePolygon: usdc(40n),
   } as const;
 
   const result = makeAssetSteps(goal, {
     evm: 'Polygon',
-    feeBrand,
+    feeBrand: FEE_BRAND,
     detail: {
       Agoric: 59n, // 99% of 60
     },
   });
 
-  const expectedAccountFee = makeAmount(feeBrand, 150n);
-  const expectedCallFee = makeAmount(feeBrand, 100n);
+  const expectedAccountFee = fee(150n);
+  const expectedCallFee = fee(100n);
   const expectedGmpFee = AmountMath.add(expectedAccountFee, expectedCallFee);
 
   t.deepEqual(result.give, {
-    Deposit: makeAmount(usdcBrand, 100n),
+    Deposit: usdc(100n),
     GmpFee: expectedGmpFee,
   });
 
   t.deepEqual(result.steps, [
-    { src: '<Deposit>', dest: '@agoric', amount: makeAmount(usdcBrand, 100n) },
-    { src: '@agoric', dest: '@noble', amount: makeAmount(usdcBrand, 100n) },
-    { src: '@noble', dest: 'AgoricVault', amount: makeAmount(usdcBrand, 60n), detail: { assetOut: 59n } },
-    { src: '@noble', dest: '@Polygon', amount: makeAmount(usdcBrand, 40n), fee: expectedAccountFee },
-    { src: '@Polygon', dest: 'AavePolygon_Polygon', amount: makeAmount(usdcBrand, 40n), fee: expectedCallFee },
+    { src: '<Deposit>', dest: '@agoric', amount: usdc(100n) },
+    { src: '@agoric', dest: '@noble', amount: usdc(100n) },
+    { src: '@noble', dest: 'AgoricVault', amount: usdc(60n), detail: { assetOut: 59n } },
+    { src: '@noble', dest: '@Polygon', amount: usdc(40n), fee: expectedAccountFee },
+    { src: '@Polygon', dest: 'AavePolygon_Polygon', amount: usdc(40n), fee: expectedCallFee },
   ]);
 });
 
 test('makeAssetSteps: custom fees per asset place', t => {
-  const { brand: usdcBrand } = makeIssuerKit('USDC');
-  const { brand: feeBrand } = makeIssuerKit('BLD');
-  
   const goal = {
-    CompoundArbitrum: makeAmount(usdcBrand, 100n),
-    AavePolygon: makeAmount(usdcBrand, 100n),
+    CompoundArbitrum: usdc(100n),
+    AavePolygon: usdc(100n),
   } as const;
 
   const customFees = {
     CompoundArbitrum: {
-      Account: makeAmount(feeBrand, 200n),
-      Call: makeAmount(feeBrand, 150n),
+      Account: fee(200n),
+      Call: fee(150n),
     },
     AavePolygon: {
-      Account: makeAmount(feeBrand, 100n),
-      Call: makeAmount(feeBrand, 75n),
+      Account: fee(100n),
+      Call: fee(75n),
     },
   };
 
   const result = makeAssetSteps(goal, {
-    feeBrand,
+    feeBrand: FEE_BRAND,
     fees: customFees,
   });
 
-  const expectedGmpFee = makeAmount(feeBrand, 525n); // 200+150+100+75
+  const expectedGmpFee = fee(525n); // 200+150+100+75
 
   t.deepEqual(result.give, {
-    Deposit: makeAmount(usdcBrand, 200n),
+    Deposit: usdc(200n),
     GmpFee: expectedGmpFee,
   });
 
   t.is(result.steps.length, 6);
   // Check that custom fees are used
-  t.deepEqual(result.steps[2].fee, makeAmount(feeBrand, 200n));
-  t.deepEqual(result.steps[3].fee, makeAmount(feeBrand, 150n));
-  t.deepEqual(result.steps[4].fee, makeAmount(feeBrand, 100n));
-  t.deepEqual(result.steps[5].fee, makeAmount(feeBrand, 75n));
+  t.deepEqual(result.steps[2].fee, fee(200n));
+  t.deepEqual(result.steps[3].fee, fee(150n));
+  t.deepEqual(result.steps[4].fee, fee(100n));
+  t.deepEqual(result.steps[5].fee, fee(75n));
 });
 
 test('makeAssetSteps: empty goal throws', t => {
@@ -172,110 +171,102 @@ test('makeAssetSteps: empty goal throws', t => {
 });
 
 test('makeWithdrawalSteps: simple Agoric withdrawal', t => {
-  const { brand } = makeIssuerKit('USDC');
   const sources = {
-    Agoric: makeAmount(brand, 100n),
+    Agoric: usdc(100n),
   } as const;
 
   const result = makeWithdrawalSteps(sources);
 
   t.deepEqual(result.give, {});
   t.deepEqual(result.want, {
-    Cash: makeAmount(brand, 100n),
+    Cash: usdc(100n),
   });
 
   t.deepEqual(result.steps, [
-    { src: 'AgoricVault', dest: '@noble', amount: makeAmount(brand, 100n), detail: undefined },
-    { src: '@noble', dest: '@agoric', amount: makeAmount(brand, 100n) },
-    { src: '@agoric', dest: '<Cash>', amount: makeAmount(brand, 100n) },
+    { src: 'AgoricVault', dest: '@noble', amount: usdc(100n), detail: undefined },
+    { src: '@noble', dest: '@agoric', amount: usdc(100n) },
+    { src: '@agoric', dest: '<Cash>', amount: usdc(100n) },
   ]);
 });
 
 test('makeWithdrawalSteps: Noble withdrawal (no additional steps)', t => {
-  const { brand } = makeIssuerKit('USDC');
   const sources = {
-    Noble: makeAmount(brand, 50n),
+    Noble: usdc(50n),
   } as const;
 
   const result = makeWithdrawalSteps(sources);
 
   t.deepEqual(result.give, {});
   t.deepEqual(result.want, {
-    Cash: makeAmount(brand, 50n),
+    Cash: usdc(50n),
   });
 
   t.deepEqual(result.steps, [
-    { src: '@noble', dest: '@agoric', amount: makeAmount(brand, 50n) },
-    { src: '@agoric', dest: '<Cash>', amount: makeAmount(brand, 50n) },
+    { src: '@noble', dest: '@agoric', amount: usdc(50n) },
+    { src: '@agoric', dest: '<Cash>', amount: usdc(50n) },
   ]);
 });
 
 test('makeWithdrawalSteps: EVM-based asset place withdrawal', t => {
-  const { brand: usdcBrand } = makeIssuerKit('USDC');
-  const { brand: feeBrand } = makeIssuerKit('BLD');
-  
   const sources = {
-    CompoundArbitrum: makeAmount(usdcBrand, 200n),
+    CompoundArbitrum: usdc(200n),
   } as const;
 
   const result = makeWithdrawalSteps(sources, {
     evm: 'Arbitrum',
-    feeBrand,
+    feeBrand: FEE_BRAND,
   });
 
-  const expectedAccountFee = makeAmount(feeBrand, 150n);
-  const expectedCallFee = makeAmount(feeBrand, 100n);
+  const expectedAccountFee = fee(150n);
+  const expectedCallFee = fee(100n);
   const expectedGmpFee = AmountMath.add(expectedAccountFee, expectedCallFee);
 
   t.deepEqual(result.give, {
     GmpFee: expectedGmpFee,
   });
   t.deepEqual(result.want, {
-    Cash: makeAmount(usdcBrand, 200n),
+    Cash: usdc(200n),
   });
 
   t.deepEqual(result.steps, [
-    { src: 'CompoundArbitrum_Arbitrum', dest: '@Arbitrum', amount: makeAmount(usdcBrand, 200n), fee: expectedCallFee },
-    { src: '@Arbitrum', dest: '@noble', amount: makeAmount(usdcBrand, 200n), fee: expectedAccountFee },
-    { src: '@noble', dest: '@agoric', amount: makeAmount(usdcBrand, 200n) },
-    { src: '@agoric', dest: '<Cash>', amount: makeAmount(usdcBrand, 200n) },
+    { src: 'CompoundArbitrum_Arbitrum', dest: '@Arbitrum', amount: usdc(200n), fee: expectedCallFee },
+    { src: '@Arbitrum', dest: '@noble', amount: usdc(200n), fee: expectedAccountFee },
+    { src: '@noble', dest: '@agoric', amount: usdc(200n) },
+    { src: '@agoric', dest: '<Cash>', amount: usdc(200n) },
   ]);
 });
 
 test('makeWithdrawalSteps: mixed withdrawal with custom details', t => {
-  const { brand: usdcBrand } = makeIssuerKit('USDC');
-  const { brand: feeBrand } = makeIssuerKit('BLD');
-  
   const sources = {
-    Agoric: makeAmount(usdcBrand, 60n),
-    AavePolygon: makeAmount(usdcBrand, 40n),
+    Agoric: usdc(60n),
+    AavePolygon: usdc(40n),
   } as const;
 
   const result = makeWithdrawalSteps(sources, {
     evm: 'Polygon',
-    feeBrand,
+    feeBrand: FEE_BRAND,
     detail: {
       Agoric: 59n, // 99% of 60
     },
   });
 
-  const expectedAccountFee = makeAmount(feeBrand, 150n);
-  const expectedCallFee = makeAmount(feeBrand, 100n);
+  const expectedAccountFee = fee(150n);
+  const expectedCallFee = fee(100n);
   const expectedGmpFee = AmountMath.add(expectedAccountFee, expectedCallFee);
 
   t.deepEqual(result.give, {
     GmpFee: expectedGmpFee,
   });
   t.deepEqual(result.want, {
-    Cash: makeAmount(usdcBrand, 100n),
+    Cash: usdc(100n),
   });
 
   t.deepEqual(result.steps, [
-    { src: 'AgoricVault', dest: '@noble', amount: makeAmount(usdcBrand, 60n), detail: { assetOut: 59n } },
-    { src: 'AavePolygon_Polygon', dest: '@Polygon', amount: makeAmount(usdcBrand, 40n), fee: expectedCallFee },
-    { src: '@Polygon', dest: '@noble', amount: makeAmount(usdcBrand, 40n), fee: expectedAccountFee },
-    { src: '@noble', dest: '@agoric', amount: makeAmount(usdcBrand, 100n) },
-    { src: '@agoric', dest: '<Cash>', amount: makeAmount(usdcBrand, 100n) },
+    { src: 'AgoricVault', dest: '@noble', amount: usdc(60n), detail: { assetOut: 59n } },
+    { src: 'AavePolygon_Polygon', dest: '@Polygon', amount: usdc(40n), fee: expectedCallFee },
+    { src: '@Polygon', dest: '@noble', amount: usdc(40n), fee: expectedAccountFee },
+    { src: '@noble', dest: '@agoric', amount: usdc(100n) },
+    { src: '@agoric', dest: '<Cash>', amount: usdc(100n) },
   ]);
 });
 
@@ -288,16 +279,14 @@ test('makeWithdrawalSteps: empty sources throws', t => {
 });
 
 test('AssetPlace type compatibility', t => {
-  const { brand } = makeIssuerKit('USDC');
-  
   // Test that various AssetPlace values work
   const validAssetPlaces: Record<AssetPlace, any> = {
-    'Agoric': makeAmount(brand, 100n),
-    'Noble': makeAmount(brand, 50n),
-    'Arbitrum': makeAmount(brand, 75n),
-    'USDNVault': makeAmount(brand, 25n),
-    'AgoricVault': makeAmount(brand, 30n),
-    'CustomPlace': makeAmount(brand, 10n),
+    'Agoric': usdc(100n),
+    'Noble': usdc(50n),
+    'Arbitrum': usdc(75n),
+    'USDNVault': usdc(25n),
+    'AgoricVault': usdc(30n),
+    'CustomPlace': usdc(10n),
   };
 
   // Should not throw
