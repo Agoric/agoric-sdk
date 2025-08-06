@@ -1,11 +1,13 @@
 /** @file test for deposit tools */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
-import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { planDepositTransfers } from '../tools/portfolio-actors.js';
 
 test('planDepositTransfers works in a handful of cases', t => {
-  const { brand, make } = withAmountUtils({ symbol: 'USDC' });
+  const board = makeFakeBoard();
+  const brand = board.getId({ getBoardId: () => 'board0123' });
+  const make = (value) => AmountMath.make(brand, value);
 
   // Test case 1: Empty current balances, equal target allocation
   const deposit1 = make(1000n);
