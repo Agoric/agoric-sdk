@@ -321,7 +321,12 @@ export const contract = async (
     },
   });
 
-  const makePlanner = preparePlanner(zone.subZone('planner'));
+  const getPortfolio = (id: number) => portfolios.get(id);
+  const makePlanner = preparePlanner(zone.subZone('planner'), {
+    zcf,
+    rebalance,
+    getPortfolio,
+  });
 
   const creatorFacet = zone.exo('PortfolioAdmin', interfaceTODO, {
     makePlannerInvitation() {
