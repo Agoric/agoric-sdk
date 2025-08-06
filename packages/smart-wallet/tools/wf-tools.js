@@ -16,12 +16,56 @@ import * as wfExports from '../src/walletFactory.js';
 
 const ROOT_STORAGE_PATH = 'ROOT';
 
+/**
+ * @typedef {{
+ *   structure: any;
+ *   slots: any[];
+ * }} CapDataStructure
+ */
+
+/**
+ * @param {string} cell
+ * @returns {CapDataStructure}
+ */
 const getCapDataStructure = cell => {
   const { body, slots } = JSON.parse(cell);
   const structure = JSON.parse(body.replace(/^#/, ''));
   return { structure, slots };
 };
 
+/**
+ * @typedef {{
+ *   pourPayment: Awaited<
+ *     ReturnType<typeof makeFakeBankManagerKit>
+ *   >['pourPayment'];
+ *   bundleAndInstall: Awaited<
+ *     ReturnType<typeof setUpZoeForTest>
+ *   >['bundleAndInstall'];
+ *   readLegible: (path: string) => Promise<CapDataStructure>;
+ * }} BootstrapToolsUtils
+ */
+
+/**
+ * @typedef {Pick<
+ *   ChainBootstrapSpaceT,
+ *   | 'agoricNames'
+ *   | 'agoricNamesAdmin'
+ *   | 'board'
+ *   | 'bankManager'
+ *   | 'namesByAddress'
+ *   | 'zoe'
+ * > & {
+ *   namesByAddressAdmin: import('@agoric/vats').NameAdmin;
+ *   storage: import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit;
+ *   utils: BootstrapToolsUtils;
+ * }} BootstrapTools
+ */
+
+/**
+ * @param {object} [options]
+ * @param {string} [options.root]
+ * @returns {Promise<BootstrapTools>}
+ */
 export const makeBootstrap = async ({ root = ROOT_STORAGE_PATH } = {}) => {
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
 
@@ -52,7 +96,10 @@ export const makeBootstrap = async ({ root = ROOT_STORAGE_PATH } = {}) => {
   /** @param {string} path */
   const readLegible = async path => {
     await eventLoopIteration();
-    return getCapDataStructure(storage.getValues(path).at(-1));
+    return getCapDataStructure(
+      // @ts-expect-error defined
+      storage.getValues(path).at(-1),
+    );
   };
 
   return {
@@ -68,6 +115,19 @@ export const makeBootstrap = async ({ root = ROOT_STORAGE_PATH } = {}) => {
   };
 };
 
+/**
+ * @param {object} [options]
+ * @param {typeof makeBootstrap} [options.boot]
+ * @returns {Promise<{
+ *   bootstrap: BootstrapTools;
+ *   walletFactoryFacets: Awaited<ReturnType<StartFn>>;
+ *   provisionSmartWallet: (
+ *     addr: string,
+ *   ) => Promise<
+ *     [wallet: import('../src/smartWallet.js').SmartWallet, isNew: boolean]
+ *   >;
+ * }>}
+ */
 export const deploy = async ({ boot = makeBootstrap } = {}) => {
   const bootstrap = await boot();
   const { zoe, utils } = bootstrap;
