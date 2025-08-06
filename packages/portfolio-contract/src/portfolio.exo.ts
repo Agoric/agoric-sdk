@@ -20,7 +20,7 @@ import type { MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
-import { VowShape, type Vow, type VowKit, type VowTools } from '@agoric/vow';
+import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { decodeBase64 } from '@endo/base64';
@@ -64,20 +64,6 @@ export const DECODE_CONTRACT_CALL_RESULT_ABI = [
   },
 ] as const;
 harden(DECODE_CONTRACT_CALL_RESULT_ABI);
-
-const OrchestrationAccountShape = M.remotable('OrchestrationAccount');
-const ReaderI = M.interface('reader', {
-  getGMPAddress: M.call().returns(M.any()),
-  getLCA: M.call().returns(OrchestrationAccountShape),
-  getPositions: M.call().returns(M.arrayOf(M.string())),
-  getUSDNICA: M.call().returns(OrchestrationAccountShape),
-});
-
-const ManagerI = M.interface('manager', {
-  initAave: M.call(M.string()).returns(),
-  initCompound: M.call(M.string()).returns(),
-  wait: M.call(M.bigint()).returns(VowShape),
-});
 
 export type AccountInfo = GMPAccountInfo | AgoricAccountInfo | NobleAccountInfo;
 export type GMPAccountInfo = {
@@ -369,6 +355,9 @@ export const preparePortfolioKit = (
           const { vow } = accountsPending.get(chainName);
           return vow as Vow<GMPAccountInfo>;
         },
+        getTargetAllocation() {
+          return this.state.targetAllocation;
+        },
       },
       reporter: {
         publishStatus() {
@@ -469,9 +458,6 @@ export const preparePortfolioKit = (
         setTargetAllocation(allocation: TargetAllocation) {
           this.state.targetAllocation = allocation;
           this.facets.reporter.publishStatus();
-        },
-        getTargetAllocation() {
-          return this.state.targetAllocation;
         },
       },
       rebalanceHandler: {
