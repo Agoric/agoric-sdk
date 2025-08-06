@@ -4,7 +4,6 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import { start as startPriceContract } from '@agoric/smart-wallet/test/wallet-fun.contract.js';
-import type { NameHub } from '@agoric/vats';
 import type { IssuerKeywordRecord } from '@agoric/zoe';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils';
 import bundleSource from '@endo/bundle-source';

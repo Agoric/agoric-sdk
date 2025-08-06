@@ -36,7 +36,9 @@ export const fsStreamReady = stream =>
       stream.off('error', onError);
     };
 
+    // @ts-expect-error event name
     stream.on('ready', onReady);
+    // @ts-expect-error event name
     stream.on('error', onError);
   });
 
@@ -89,7 +91,10 @@ export const makeFsStreamWriter = async filePath => {
     updateFlushed(written);
     const waitForDrain = await written;
     if (waitForDrain) {
-      await new Promise(resolve => stream.once('drain', resolve));
+      await new Promise(resolve =>
+        // @ts-expect-error event name and listener arity
+        stream.once('drain', resolve),
+      );
     }
   };
 

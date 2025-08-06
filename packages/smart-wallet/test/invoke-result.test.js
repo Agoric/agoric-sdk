@@ -214,7 +214,7 @@ test('start price contract; make offer', async t => {
     E(invokeP).invokeItem(
       'priceSetter',
       { method: 'setPrice', args: ['notBigInt', 123] },
-      { method: 'doMore' },
+      { method: 'doMore', args: [] },
     ),
     'failure in method execution is reported ONLY in logs',
   );
@@ -225,10 +225,10 @@ test('start price contract; make offer', async t => {
   await t.throwsAsync(
     E(invokeP).invokeItem(
       'priceSetter',
-      { method: 'm1' },
-      { method: 'm2' },
-      { method: 'm3' },
-      { method: 'm4' },
+      { method: 'm1', args: [] },
+      { method: 'm2', args: [] },
+      { method: 'm3', args: [] },
+      { method: 'm4', args: [] },
     ),
     { message: /limit 2/ },
     'too many steps',

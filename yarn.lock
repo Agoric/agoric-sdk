@@ -52,6 +52,7 @@ __metadata:
     "@agoric/network": "workspace:*"
     "@agoric/notifier": "workspace:*"
     "@agoric/orchestration": "workspace:*"
+    "@agoric/smart-wallet": "workspace:*"
     "@agoric/store": "workspace:*"
     "@agoric/swing-store": "workspace:*"
     "@agoric/swingset-liveslots": "workspace:*"
@@ -254,6 +255,7 @@ __metadata:
   dependencies:
     "@aglocal/portfolio-contract": "workspace:*"
     "@agoric/client-utils": "workspace:*"
+    "@agoric/ertp": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/pola-io": "workspace:*"
     "@endo/errors": "npm:^1.2.13"

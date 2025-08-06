@@ -61,6 +61,7 @@
     "@aglocal/fast-usdc-deploy": "^0.1.0",
     "@agoric/deploy-script-support": "workspace:*",
     "@agoric/governance": "workspace:*",
+    "@agoric/smart-wallet": "workspace:*",
     "@agoric/store": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
     "@endo/base64": "^1.0.12",
