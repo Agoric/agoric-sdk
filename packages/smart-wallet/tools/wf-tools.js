@@ -12,6 +12,7 @@ import * as wfExports from '../src/walletFactory.js';
 
 /**
  * @import {start as StartFn} from '../src/walletFactory.js';
+ * @import {ChainBootstrapSpaceT} from '@agoric/vats';
  */
 
 const ROOT_STORAGE_PATH = 'ROOT';
@@ -46,16 +47,14 @@ const getCapDataStructure = cell => {
  */
 
 /**
- * @typedef {Pick<
- *   ChainBootstrapSpaceT,
- *   | 'agoricNames'
- *   | 'agoricNamesAdmin'
- *   | 'board'
- *   | 'bankManager'
- *   | 'namesByAddress'
- *   | 'zoe'
- * > & {
+ * @typedef {{
+ *   agoricNames: import('@agoric/vats').NameHub;
+ *   agoricNamesAdmin: import('@agoric/vats').NameAdmin;
+ *   bankManager: import('@agoric/vats/src/vat-bank.js').BankManager;
+ *   board: import('@agoric/vats').Board;
+ *   namesByAddress: import('@agoric/vats').NameHub;
  *   namesByAddressAdmin: import('@agoric/vats').NameAdmin;
+ *   zoe: import('@agoric/zoe').ZoeService;
  *   storage: import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit;
  *   utils: BootstrapToolsUtils;
  * }} BootstrapTools
