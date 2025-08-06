@@ -17,7 +17,8 @@ const createDefaultRegistry = (): Registry => {
   return new Registry(cctpTypes);
 };
 
-const main = async () => {
+export const depositForBurn = async () => {
+  console.log('*****depositForBurn*****');
   const NOBLE_RPC = 'https://rpc.testnet.noble.xyz/';
   const amountToSend = '1000000'; // uusdc (1 USDC)
   const gasAmount = '400000'; // Gas amount in uusdc for the transaction
@@ -28,11 +29,13 @@ const main = async () => {
   if (!mnemonic) {
     throw Error('mnemonic is not defined');
   }
+  console.log('*****Setup Wallet*****');
   const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
     prefix: 'noble',
   });
 
   const [account] = await wallet.getAccounts();
+  console.log('ADDR:', account.address);
 
   const client = await SigningStargateClient.connectWithSigner(
     NOBLE_RPC,
@@ -41,12 +44,14 @@ const main = async () => {
       registry: createDefaultRegistry(),
     },
   );
+  console.log('*****Connected with Signer*****');
 
   // Left pad the mint recipient address with 0's to 32 bytes
   const rawMintRecipient = process.env.MINT_RECIPIENT;
   if (!rawMintRecipient) {
     throw Error('rawMintRecipient is not defined');
   }
+  console.log('rawMintRecipient:', rawMintRecipient);
   const cleanedMintRecipient = rawMintRecipient.replace(/^0x/, '');
   const zeroesNeeded = 64 - cleanedMintRecipient.length;
   const mintRecipient = '0'.repeat(zeroesNeeded) + cleanedMintRecipient;
@@ -75,6 +80,7 @@ const main = async () => {
     gas: gasAmount,
   };
   const memo = '';
+  console.log('Broadcasting....');
   const result = await client.signAndBroadcast(
     account.address,
     [msg],
@@ -89,5 +95,3 @@ const main = async () => {
     `Minting on Ethereum to https://sepolia.etherscan.io/address/${rawMintRecipient}`,
   );
 };
-
-main();

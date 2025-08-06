@@ -13,7 +13,7 @@
     "test:ymd": "make open-with-usdn && ava --config ava.ymd.config.js",
     "test:ymax": "ava --config ava.ymd.config.js",
     "test:xcs": "ava --config ava.xcs.config.js",
-    "cctp": "vite-node test/ymax0/evm/depositForBurn.ts",
+    "cctp": "vite-node test/ymax0/evm/mock-contract-call.ts",
     "listen": "vite-node test/ymax0/evm/listen.ts",
     "balance": "vite-node test/ymax0/evm/balance.ts"
   },
