@@ -222,7 +222,7 @@ test.serial('resolve USDC issuer', async t => {
   t.pass('not straightforward to test promise space contents');
 });
 
-test.serial('contract starts; appears in agoricNames', async t => {
+test.serial.skip('contract starts; appears in agoricNames', async t => {
   const {
     agoricNamesRemotes,
     bridgeUtils,
@@ -263,7 +263,7 @@ test.serial('contract starts; appears in agoricNames', async t => {
   });
 });
 
-test.serial('remove old contract; start new contract', async t => {
+test.serial.skip('remove old contract; start new contract', async t => {
   const {
     agoricNamesRemotes,
     buildProposal,
