@@ -14,6 +14,7 @@ export const permit = /** @type {const} */ ({
   produce: { [/** @type {const} */ (`${name}Kit`)]: true },
   consume: {
     ...orchPermit,
+    namesByAddress: true,
     chainInfoPublished: true,
     [/** @type {const} */ (`${name}Kit`)]: true,
   },
