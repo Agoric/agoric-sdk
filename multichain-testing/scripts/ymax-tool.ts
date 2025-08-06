@@ -4,6 +4,7 @@
  */
 import '@endo/init';
 
+import { makePortfolioSteps } from '@aglocal/portfolio-contract/src/plan-transfers.ts';
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.ts';
@@ -13,11 +14,10 @@ import {
   type ProposalType,
   type TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { makePortfolioSteps } from '@aglocal/portfolio-contract/src/plan-transfers.ts';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
 import {
-  axelarConfigTestnet,
   axelarConfig as axelarConfigMainnet,
+  axelarConfigTestnet,
   gmpAddresses as gmpConfigs,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import type { ContractControl } from '@aglocal/portfolio-deploy/src/contract-control.js';
