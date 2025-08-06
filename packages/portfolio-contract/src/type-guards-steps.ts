@@ -20,9 +20,14 @@ export type SeatKeyword = 'Cash' | 'Deposit';
 export const seatKeywords: SeatKeyword[] = ['Cash', 'Deposit'];
 harden(seatKeywords);
 
-export type AssetPlaceRef = `<${SeatKeyword}>` | `@${SupportedChain}` | PoolKey;
+export type AssetPlaceRef =
+  | `<${SeatKeyword}>`
+  | '+agoric' // deposit LCA
+  | `@${SupportedChain}`
+  | PoolKey;
 const AssetPlaceRefShape = M.or(
   ...seatKeywords.map(kw => `<${kw}>`),
+  '+agoric',
   ...values(SupportedChain).map(c => `@${c}`),
   ...keys(PoolPlaces),
 );

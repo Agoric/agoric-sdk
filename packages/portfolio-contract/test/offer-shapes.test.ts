@@ -106,7 +106,7 @@ test('offerArgs can carry fee', t => {
   const shapes = makeOfferArgsShapes(USDC);
   const [amount, fee] = [usdc.make(200n), bld.make(100n)];
   const specimen = harden({
-    flow: [{ src: '@noble', dest: '@Ethereum', amount, fee }],
+    flow: [{ src: '@noble', dest: '@Arbitrum', amount, fee }],
   });
   t.notThrows(() => mustMatch(specimen, shapes.rebalance));
 });

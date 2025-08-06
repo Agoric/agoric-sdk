@@ -28,11 +28,7 @@ import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
-import {
-  AxelarChain,
-  RebalanceStrategy,
-  YieldProtocol,
-} from '../src/constants.js';
+import { RebalanceStrategy, YieldProtocol } from '../src/constants.js';
 import {
   preparePortfolioKit,
   type PortfolioKit,
@@ -53,32 +49,22 @@ import {
   type OfferArgsFor,
 } from '../src/type-guards-steps.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
-import { axelarIdsMock, contractsMock } from './mocks.ts';
 import { makePortfolioSteps } from '../tools/portfolio-actors.ts';
+import { decodeFunctionCall } from './abi-utils.ts';
+import {
+  axelarIdsMock,
+  contractsMock,
+  evmNamingDistinction,
+  gmpAddresses,
+} from './mocks.ts';
 import {
   axelarCCTPConfig,
   makeIncomingEVMEvent,
   makeIncomingVTransferEvent,
 } from './supports.ts';
-import { decodeFunctionCall } from './abi-utils.ts';
 
-/**
- * Use Arbitrum or any other EVM chain whose Axelar chain ID (`axelarId`) differs
- * from the chain name. For example, Arbitrum's `axelarId` is "arbitrum", while
- * Ethereum’s is "Ethereum" (case-sensitive). The challenge is that if a mismatch
- * occurs, it may go undetected since the `axelarId` is passed via the IBC memo
- * and not validated automatically.
- *
- * To ensure proper testing, it's best to use a chain where the `chainName` and
- * `axelarId` are not identical. This increases the likelihood of catching issues
- * with misconfigured or incorrectly passed `axelarId` values.
- *
- * To see the `axelarId` for a given chain, refer to:
- * @see {@link https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts | supported-chains-list.ts}
- */
-const destinationEVMChain: AxelarChain = 'Arbitrum';
-// Must be axelarId of destinationEVMChain
-const sourceChain = 'arbitrum';
+// Use an EVM chain whose axelar ID differs from its chain name
+const { sourceChain } = evmNamingDistinction;
 
 const theExit = harden(() => {}); // for ava comparison
 // @ts-expect-error mock
@@ -158,6 +144,10 @@ const mocks = (
           const account = {
             getAddress() {
               return addr;
+            },
+            async send(toAccount, amount) {
+              // XXX simulate errors?
+              log({ _cap: addr.value, _method: 'send', toAccount, amount });
             },
             async transfer(address, amount, opts) {
               if (!('denom' in amount)) throw Error('#10449');
@@ -275,6 +265,7 @@ const mocks = (
   const denom = `ibc/${denomHash({ channelId: 'channel-123', denom: 'uusdc' })}`;
 
   const inertSubscriber = {} as ResolvedPublicTopic<never>['subscriber'];
+
   const ctx1: PortfolioInstanceContext = {
     zoeTools,
     usdc: { denom, brand: USDC },
@@ -282,6 +273,7 @@ const mocks = (
     contracts: contractsMock,
     gmpFeeInfo: { brand: BLD, denom: 'ubld' },
     inertSubscriber,
+    gmpAddresses,
   };
 
   const chainHubTools = harden({
@@ -430,7 +422,7 @@ test('open portfolio with USDN position', async t => {
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11028' },
+    { _method: 'executeEncodedTx', _cap: 'noble11042' },
     { _method: 'exit' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -620,7 +612,7 @@ test('handle failure in executeEncodedTx', async t => {
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11028' }, // fail
+    { _method: 'executeEncodedTx', _cap: 'noble11042' }, // fail
     { _method: 'transfer', address: { chainId: 'agoric-6' } }, // unwind
     { _method: 'withdrawToSeat' }, // unwind
     { _method: 'fail' },
@@ -654,7 +646,7 @@ test('handle failure in recovery from executeEncodedTx', async t => {
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11028' }, // fail
+    { _method: 'executeEncodedTx', _cap: 'noble11042' }, // fail
     { _method: 'transfer', address: { chainId: 'agoric-6' } }, // fail to recover
     { _method: 'fail' },
   ]);
@@ -865,3 +857,39 @@ test('open portfolio with Beefy position', async t => {
   ]);
   t.snapshot(decodedCalls, 'decoded calls');
 });
+
+test('wayFromSrcToDesc handles +agoric -> @agoric', t => {
+  const amount = AmountMath.make(USDC, 300n);
+  const actual = wayFromSrcToDesc({ src: '+agoric', dest: '@agoric', amount });
+  t.deepEqual(actual, { how: 'send' });
+});
+
+test('Engine can move deposits +agoric -> @agoric', async t => {
+  const { orch, ctx, offer, storage } = mocks({}, {});
+  const { log, seat } = offer;
+
+  const amount = AmountMath.make(USDC, 300n);
+  const kit = await ctx.makePortfolioKit();
+
+  await rebalance(
+    orch,
+    ctx,
+    offer.seat,
+    { flow: [{ src: '+agoric', dest: '@agoric', amount }] },
+    kit,
+  );
+
+  t.log(log.map(msg => msg._method).join(', '));
+
+  const lca = kit.reader.getLocalAccount();
+  t.is(lca.getAddress().value, 'agoric11014');
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'send', toAccount: { value: 'agoric11014' } },
+  ]);
+
+  t.snapshot(log, 'call log'); // see snapshot for remaining arg details
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test.todo('recover from send step');

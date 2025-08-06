@@ -243,12 +243,47 @@ test.serial('contract starts; appears in agoricNames', async t => {
 
   const materials = buildProposal(
     '@aglocal/portfolio-deploy/src/portfolio.build.js',
+    ['--net', 'mainnet'],
   );
   await evalProposal(materials);
 
   // update now that contract is instantiated
   refreshAgoricNamesRemotes();
   t.truthy(agoricNamesRemotes.instance.ymax0);
+
+  await documentStorageSchema(t, storage, {
+    node: 'agoricNames.instance',
+    owner: 'chain governance',
+    showValue,
+  });
+  await documentStorageSchema(t, storage, {
+    node: 'ymax0',
+    owner: 'ymax0',
+    showValue,
+  });
+});
+
+test.serial('remove old contract; start new contract', async t => {
+  const {
+    agoricNamesRemotes,
+    buildProposal,
+    evalProposal,
+    refreshAgoricNamesRemotes,
+    storage,
+  } = t.context;
+
+  const instancePre = agoricNamesRemotes.instance.ymax0;
+  const oldBoardId = (instancePre as any).getBoardId();
+  const materials = buildProposal(
+    '@aglocal/portfolio-deploy/src/portfolio.build.js',
+    ['--replace', oldBoardId],
+  );
+  await evalProposal(materials);
+
+  refreshAgoricNamesRemotes();
+  const instancePost = agoricNamesRemotes.instance.ymax0;
+  t.truthy(instancePost);
+  t.not(instancePre, instancePost);
 
   await documentStorageSchema(t, storage, {
     node: 'agoricNames.instance',

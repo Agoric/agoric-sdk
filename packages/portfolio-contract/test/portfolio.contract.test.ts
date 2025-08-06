@@ -1,52 +1,57 @@
+/** @file YMax portfolio contract tests - user stories */
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
+import type { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
 import { passStyleOf } from '@endo/far';
-import type { AxelarChain } from '../src/constants.js';
+import type { StatusFor } from '../src/type-guards.ts';
 import {
   setupTrader,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
-import { localAccount0 } from './mocks.ts';
+import { evmNamingDistinction, localAccount0 } from './mocks.ts';
 
 const { fromEntries, keys } = Object;
 
-/**
- * Use Arbitrum or any other EVM chain whose Axelar chain ID (`axelarId`) differs
- * from the chain name. For example, Arbitrum's `axelarId` is "arbitrum", while
- * Ethereum’s is "Ethereum" (case-sensitive). The challenge is that if a mismatch
- * occurs, it may go undetected since the `axelarId` is passed via the IBC memo
- * and not validated automatically.
- *
- * To ensure proper testing, it's best to use a chain where the `chainName` and
- * `axelarId` are not identical. This increases the likelihood of catching issues
- * with misconfigured or incorrectly passed `axelarId` values.
- *
- * To see the `axelarId` for a given chain, refer to:
- * @see {@link https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts | supported-chains-list.ts}
- */
-const destinationEVMChain: AxelarChain = 'Arbitrum';
-const sourceChain = 'arbitrum';
+// Use an EVM chain whose axelar ID differs from its chain name
+const { sourceChain } = evmNamingDistinction;
 
 const range = (n: number) => [...Array(n).keys()];
 
-const getPortfolioInfo = (key, storage) => {
-  const info = storage.getDeserialized(key).at(-1);
+type FakeStorage = ReturnType<typeof makeFakeStorageKit>;
+
+const getFlowHistory = (
+  portfolioKey: string,
+  flowCount: number,
+  storage: FakeStorage,
+) => {
+  const flowPaths = range(flowCount).map(
+    ix => `${portfolioKey}.flows.flow${ix + 1}`,
+  );
+  const flowEntries = flowPaths.map(p => [p, storage.getDeserialized(p)]);
+  return {
+    flowPaths,
+    byFlow: fromEntries(flowEntries) as Record<string, StatusFor['flow']>,
+  };
+};
+
+/** current vstorage for portfolio, positions; full history for flows */
+const getPortfolioInfo = (key: string, storage: FakeStorage) => {
+  const info: StatusFor['portfolio'] = storage.getDeserialized(key).at(-1);
   const { positionKeys, flowCount } = info;
-  const positionPaths = positionKeys.map(k => `${key}.positions.${k}`);
-  const toPaths = (kind, count) =>
-    range(count).map(ix => `${key}.${kind}s.${kind}${ix + 1}`);
-  const flowPaths = toPaths('flow', flowCount);
-  const contents = fromEntries([
-    [key, info],
-    ...positionPaths.map(p => [p, storage.getDeserialized(p).at(-1)]),
-    ...flowPaths.map(p => [p, storage.getDeserialized(p)]),
-  ]);
-  return { contents, positionPaths, flowPaths };
+  const posPaths = positionKeys.map(k => `${key}.positions.${k}`);
+  const posEntries = posPaths.map(p => [p, storage.getDeserialized(p).at(-1)]);
+  const { flowPaths, byFlow } = getFlowHistory(key, flowCount, storage);
+  const contents = {
+    ...fromEntries([[key, info], ...posEntries]),
+    ...byFlow,
+  };
+  return { contents, positionPaths: posPaths, flowPaths };
 };
 
 test('open portfolio with USDN position', async t => {
@@ -75,7 +80,7 @@ test('open portfolio with USDN position', async t => {
   t.like(result.publicSubscribers, {
     portfolio: {
       description: 'Portfolio',
-      storagePath: 'orchtest.portfolios.portfolio0',
+      storagePath: `${ROOT_STORAGE_PATH}.portfolios.portfolio0`,
     },
   });
   t.is(keys(result.publicSubscribers).length, 1);
@@ -540,4 +545,24 @@ test('Withdraw from a Beefy position', async t => {
   const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
   t.snapshot(contents, 'vstorage');
   t.snapshot(withdraw.payouts, 'refund payouts');
+});
+
+test('portfolios node updates for each new portfolio', async t => {
+  const { makeFundedTrader, common } = await setupTrader(t);
+  const { poc26 } = common.brands;
+  const { storage } = common.bootstrap;
+
+  const give = { Access: poc26.make(1n) };
+  {
+    const trader = await makeFundedTrader();
+    await trader.openPortfolio(t, give);
+    const x = storage.getDeserialized(`${ROOT_STORAGE_PATH}.portfolios`).at(-1);
+    t.deepEqual(x, { addPortfolio: `portfolio0` });
+  }
+  {
+    const trader = await makeFundedTrader();
+    await trader.openPortfolio(t, give);
+    const x = storage.getDeserialized(`${ROOT_STORAGE_PATH}.portfolios`).at(-1);
+    t.deepEqual(x, { addPortfolio: `portfolio1` });
+  }
 });
