@@ -1,5 +1,6 @@
 /// <reference types="ses" />
 /* eslint-env node */
+import { inspect } from 'node:util';
 import { q, Fail } from '@endo/errors';
 import { fromUniqueEntries } from '@agoric/internal';
 import type { CosmosCommand } from './cosmos-cmd.js';
@@ -123,6 +124,10 @@ export const startEngine = async ({
     // Continue with limited functionality
   }
 
+  const agoricInfo = await cosmosRest.getChainInfo('agoric');
+  const agoricChainId = (agoricInfo as any)?.default_node_info?.network;
+  console.warn('Retrieved info for Agoric chain', agoricChainId);
+
   await rpc.opened();
   try {
     // console.warn('RPC client opened:', rpc);
@@ -152,6 +157,7 @@ export const startEngine = async ({
           ...(respEvents['transfer.sender'] || []),
         ]),
       ];
+
       const eventRecords = Object.entries(respData).flatMap(
         ([key, value]: [string, any]) => {
           // We care about result_begin_block/result_end_block/etc.
@@ -191,7 +197,24 @@ export const startEngine = async ({
         return [{ path, value: attributes.value }];
       });
 
-      console.log({ addrsWithActivity, portfolioVstorageEvents });
+      const addrBalances = Object.fromEntries(
+        await Promise.all(
+          addrsWithActivity.map(async addr => {
+            const balancesResp = await cosmosRest.getAccountBalances(
+              'agoric',
+              addr,
+            );
+            return [addr, balancesResp?.balances];
+          }),
+        ),
+      );
+
+      console.log(
+        inspect(
+          { addrsWithActivity, addrBalances, portfolioVstorageEvents },
+          { depth: 10 },
+        ),
+      );
     }
   } finally {
     console.warn('Terminating...');

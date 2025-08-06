@@ -35,6 +35,11 @@ const CHAIN_CONFIGS: Record<string, ChainConfig> = {
     restEndpoint: 'https://noble-api.polkachu.com',
     name: 'Noble',
   },
+  agoric: {
+    chainId: 'agoric-3',
+    restEndpoint: 'https://main.api.agoric.net',
+    name: 'Agoric',
+  },
 };
 
 export class CosmosRestClient {
