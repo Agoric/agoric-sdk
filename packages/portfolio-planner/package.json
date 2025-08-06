@@ -16,6 +16,7 @@
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "lint": "npm run lint:types",
     "test": "exit 0",
+    "test:xs": "exit 0",
     "test:vite": "vitest",
     "lint:types": "yarn run -T tsc"
   },
