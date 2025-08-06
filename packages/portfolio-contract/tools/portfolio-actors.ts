@@ -299,12 +299,11 @@ export const planDepositTransfers = (
 
   if (totalTransfers > depositValue) {
     // Scale down proportionally if we exceed the deposit
-    const scaleFactor = depositValue / totalTransfers;
     for (const [poolKey, amount] of Object.entries(transfers)) {
       if (amount) {
         transfers[poolKey as PoolKey] = make(
           brand,
-          ((amount.value * scaleFactor) / 100n) * 100n,
+          (amount.value * depositValue) / totalTransfers,
         );
       }
     }
