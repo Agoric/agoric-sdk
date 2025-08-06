@@ -69,7 +69,7 @@ test('use offer result without zoe', async t => {
       const started = await startContract(
         t,
         startPriceContract,
-        './wallet-fun.contract.js',
+        '@agoric/smart-wallet/test/wallet-fun.contract.js',
         'walletFun',
       );
       const toSetPrices = await EV(started.creatorFacet).makeAdminInvitation();
