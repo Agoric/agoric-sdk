@@ -51,7 +51,7 @@ import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
  * @import {WeakMapStore, MapStore} from '@agoric/store'
  * @import {InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
  * @import {EReturn} from '@endo/far';
- * @import {OfferId, OfferResultStep, OfferStatus} from './offers.js';
+ * @import {OfferId, OfferResultStep, OfferStatus, OfferSpec} from './offers.js';
  */
 
 const trace = makeTracer('SmrtWlt');
@@ -59,17 +59,6 @@ const trace = makeTracer('SmrtWlt');
 /**
  * @file Smart wallet module
  * @see {@link ../README.md} }
- */
-
-/** @typedef {number | string} OfferId */
-
-/**
- * @typedef {{
- *   id: OfferId;
- *   invitationSpec: import('./invitations').InvitationSpec;
- *   proposal: Proposal;
- *   offerArgs?: any;
- * }} OfferSpec
  */
 
 /**
@@ -96,6 +85,8 @@ const trace = makeTracer('SmrtWlt');
  *   offerId: OfferId;
  * }} TryExitOfferAction
  */
+
+// TODO: single step only, collapse name into a single invoke desc
 
 /**
  * @typedef {{
@@ -411,7 +402,8 @@ export const prepareSmartWallet = (baggage, shared) => {
           durable: true,
         },
       ),
-      // TODO: state migration
+      // TODO: state migration. Add a provide mechanism to lazy allocation in
+      // a side WeakMapStore for wallets missing state
       my: makeNameHubKit(),
     };
 
@@ -487,13 +479,13 @@ export const prepareSmartWallet = (baggage, shared) => {
     }),
     invoke: M.interface('invoke', {
       invokeItem: M.callWhen(M.string(), shape.OfferResultStep)
-        .rest(M.arrayOf(shape.OfferResultStep, { arrayLengthLimit: 2 }))
+        .rest(M.arrayOf(shape.OfferResultStep, { arrayLengthLimit: 1 }))
         .returns(),
     }),
     resultStepWatcher: M.interface('resultStepWatcher', {
       onFulfilled: M.call(
         M.any(),
-        M.arrayOf(shape.OfferResultStep, { arrayLengthLimit: 3 }),
+        M.arrayOf(shape.OfferResultStep, { arrayLengthLimit: 2 }),
       ).returns(),
       onRejected: M.call(M.any(), M.any()).returns(),
     }),
@@ -778,6 +770,7 @@ export const prepareSmartWallet = (baggage, shared) => {
          */
         saveOfferResult(name, result) {
           const { my } = this.state;
+          // TODO: Require explicit opt-in for overrides, maybe an extra flag in the invoke
           my.nameAdmin.update(name, result);
           trace('saved', name, '=', result);
         },
@@ -1114,8 +1107,8 @@ export const prepareSmartWallet = (baggage, shared) => {
          * @returns {Promise<void>}
          */
         handleBridgeAction(actionCapData, canSpend = false) {
-          const { facets } = this;
-          const { offers } = facets;
+          const { facets, state } = this;
+          const { offers, invoke } = facets;
           const { publicMarshaller } = shared;
 
           /** @param {Error} err */
@@ -1128,6 +1121,8 @@ export const prepareSmartWallet = (baggage, shared) => {
             });
           };
 
+          const walletHasNameHub = 'my' in state && state.my != null;
+
           // use E.when to retain distributed stack trace
           return E.when(
             E(publicMarshaller).fromCapData(actionCapData),
@@ -1137,6 +1132,13 @@ export const prepareSmartWallet = (baggage, shared) => {
                 switch (action.method) {
                   case 'executeOffer': {
                     canSpend || Fail`executeOffer requires spend authority`;
+                    if (
+                      action.offer.after?.saveAs != null &&
+                      !walletHasNameHub
+                    ) {
+                      Fail`executeOffer saveAs requires a new smart wallet with namehub`;
+                    }
+
                     return offers.executeOffer(action.offer);
                   }
                   case 'tryExitOffer': {
@@ -1144,10 +1146,9 @@ export const prepareSmartWallet = (baggage, shared) => {
                     return offers.tryExitOffer(action.offerId);
                   }
                   case 'invokeItem': {
-                    return facets.invoke.invokeItem(
-                      action.name,
-                      ...action.steps,
-                    );
+                    walletHasNameHub ||
+                      Fail`invokeItem requires a new smart wallet with namehub`;
+                    return invoke.invokeItem(action.name, ...action.steps);
                   }
                   default: {
                     throw Fail`invalid handle bridge action ${q(action)}`;

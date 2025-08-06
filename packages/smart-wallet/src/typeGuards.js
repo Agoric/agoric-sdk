@@ -11,7 +11,7 @@ import {
 
 /** @type {TypedPattern<OfferResultStep>} */
 const OfferResultStepShape = M.or(
-  M.splitRecord({ method: M.string() }, { args: M.array() }),
+  M.splitRecord({ method: M.string(), args: M.array() }),
   { saveAs: M.string() },
 );
 
@@ -64,7 +64,6 @@ export const shape = {
     },
     {
       offerArgs: M.any(),
-      // TODO: upgrade impact of typeGuard change?
       after: M.splitRecord(
         {},
         {
