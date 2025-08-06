@@ -229,7 +229,7 @@ const redeemPlannerInvitation = async ({
 }) => {
   const { ymax0: instance } = walletKit.agoricNames.instance;
   // console.error('ymax instance', instance.getBoardId());
-  const action: BridgeAction = {
+  const action: BridgeAction = harden({
     method: 'executeOffer',
     offer: {
       id: `redeem-${new Date(now()).toISOString()}`,
@@ -241,7 +241,7 @@ const redeemPlannerInvitation = async ({
       proposal: {},
       after: { saveAs: 'planner' },
     },
-  };
+  });
 
   console.error('redeem action', action);
   await signAndBroadcastAction(action, { address, walletKit, client });
