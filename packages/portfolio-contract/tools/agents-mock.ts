@@ -32,9 +32,10 @@ export const fakePlanner = (
   };
 
   const invokeP = E(wallet).getInvokeFacet();
-  const submit1 = async () => {
-    const portfolioId = 1;
-    const plan: MovementDesc[] = [];
+  const submit1 = async (
+    portfolioId: number = 1,
+    plan: MovementDesc[] = [],
+  ) => {
     await E(invokeP).invokeItem('planner', {
       method: 'submit',
       args: [portfolioId, plan],

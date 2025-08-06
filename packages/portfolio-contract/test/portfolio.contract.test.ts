@@ -12,7 +12,7 @@ import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-too
 import { E, passStyleOf } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import type { MovementDesc } from '../src/type-guards-steps.ts';
-import type { StatusFor } from '../src/type-guards.ts';
+import type { PoolKey, StatusFor } from '../src/type-guards.ts';
 import { fakePlanner } from '../tools/agents-mock.ts';
 import {
   setupTrader,
@@ -21,6 +21,13 @@ import {
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
 import { evmNamingDistinction, localAccount0 } from './mocks.ts';
+import { rebalanceMinCostFlow } from '../src/rebalance.ts';
+import { objectMap } from '@endo/patterns';
+import type { NatAmount } from '@agoric/ertp/src/types.ts';
+import {
+  planDepositTransfers,
+  planTransfer,
+} from '../tools/portfolio-actors.ts';
 
 const { fromEntries, keys } = Object;
 
@@ -587,7 +594,7 @@ const checkKeys = (
 /**
  * See also deposit-triggered distribution in DESIGN-BETA.md
  */
-test.skip('deposit more to same allocations', async t => {
+test('deposit more to same allocations', async t => {
   const { trader1, common } = await setupTrader(t);
   const { poc26, usdc } = common.brands;
 
@@ -603,7 +610,53 @@ test.skip('deposit more to same allocations', async t => {
   const move1: MovementDesc = { src: '<Deposit>', dest: '@agoric', amount };
   const dep = await trader1.rebalance(t, giveDeposit, { flow: [move1] });
 
-  t.log('TODO: EE stuff');
+  const currentBalances: Partial<Record<PoolKey | 'Deposit', NatAmount>> = {
+    Aave_Arbitrum: usdc.units(1028),
+    Compound_Arbitrum: usdc.units(27522),
+    USDN: usdc.units(7085),
+    Deposit: usdc.make(amount.value),
+  };
+
+  const txfrs = planDepositTransfers(amount, currentBalances, targetAllocation);
+  t.log('TODO: EE stuff', txfrs);
+  const steps = [
+    { src: '<Deposit>', dest: '@agoric', amount },
+    { src: '@agoric', dest: '@noble', amount },
+    ...Object.entries(txfrs)
+      // XXX Object.entries() type is goofy
+      .map(([dest, amt]) => planTransfer(dest as PoolKey, amt))
+      .flat(),
+  ];
+  t.log('steps', steps);
+
+  t.deepEqual(steps, [
+    {
+      amount: usdc.make(100000000n),
+
+      dest: '@agoric',
+      src: '<Deposit>',
+    },
+    {
+      amount: usdc.make(100000000n),
+      dest: '@noble',
+      src: '@agoric',
+    },
+    {
+      amount: usdc.make(52002020n),
+      dest: 'USDNVault',
+      src: '@noble',
+    },
+    {
+      amount: usdc.make(47997979n),
+      dest: '@Arbitrum',
+      src: '@noble',
+    },
+    {
+      amount: usdc.make(47997979n),
+      dest: 'Aave_Arbitrum',
+      src: '@Arbitrum',
+    },
+  ]);
 
   const ps = await trader1.getPortfolioStatus();
   checkKeys(t, ps.positionKeys, keys(targetAllocation), 'WIP');
@@ -621,6 +674,7 @@ const getCapDataStructure = cell => {
 
 test('redeem planner invitation', async t => {
   const { common, zoe, started, timerService } = await setupTrader(t);
+  const { usdc } = common.brands;
 
   const { storage } = common.bootstrap;
   const readAt: VStorage['readAt'] = async (path: string, _h?: number) => {
@@ -651,5 +705,32 @@ test('redeem planner invitation', async t => {
 
   const planner1 = fakePlanner(walletPlanner, started.instance, readAt);
   await planner1.redeem();
-  await planner1.submit1();
+  await planner1.submit1(1, [
+    {
+      amount: usdc.make(100000000n),
+
+      dest: '@agoric',
+      src: '<Deposit>',
+    },
+    {
+      amount: usdc.make(100000000n),
+      dest: '@noble',
+      src: '@agoric',
+    },
+    {
+      amount: usdc.make(52002020n),
+      dest: 'USDNVault',
+      src: '@noble',
+    },
+    {
+      amount: usdc.make(47997979n),
+      dest: '@Arbitrum',
+      src: '@noble',
+    },
+    {
+      amount: usdc.make(47997979n),
+      dest: 'Aave_Arbitrum',
+      src: '@Arbitrum',
+    },
+  ]);
 });

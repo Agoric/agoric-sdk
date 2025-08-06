@@ -1,4 +1,6 @@
-type Pool = string;
+import type { PoolKey } from './type-guards.ts';
+
+type Pool = PoolKey;
 
 export interface Transfer {
   from: Pool;
@@ -7,8 +9,8 @@ export interface Transfer {
 }
 
 export function rebalanceMinCostFlow(
-  currentBalances: Record<Pool, number>,
-  targetAllocations: Record<Pool, number>,
+  currentBalances: Partial<Record<Pool, number>>,
+  targetAllocations: Partial<Record<Pool, number>>,
 ): Transfer[] {
   const epsilon = 1e-6;
 
@@ -17,11 +19,11 @@ export function rebalanceMinCostFlow(
     0,
   );
 
-  const targetBalances: Record<Pool, number> = Object.fromEntries(
+  const targetBalances: Partial<Record<Pool, number>> = Object.fromEntries(
     Object.entries(targetAllocations).map(([pool, pct]) => [pool, pct * total]),
   );
 
-  const deltas: Record<Pool, number> = Object.fromEntries(
+  const deltas: Partial<Record<Pool, number>> = Object.fromEntries(
     Object.keys(targetAllocations).map(pool => [
       pool,
       (currentBalances[pool] ?? 0) - targetBalances[pool],
@@ -32,11 +34,11 @@ export function rebalanceMinCostFlow(
 
   const surplus: PoolDelta[] = Object.entries(deltas)
     .filter(([, delta]) => delta > epsilon)
-    .map(([pool, amount]) => ({ pool, amount }));
+    .map(([pool, amount]) => ({ pool: pool as Pool, amount }));
 
   const deficit: PoolDelta[] = Object.entries(deltas)
     .filter(([, delta]) => delta < -epsilon)
-    .map(([pool, delta]) => ({ pool, amount: -delta }));
+    .map(([pool, delta]) => ({ pool: pool as Pool, amount: -delta }));
 
   const transfers: Transfer[] = [];
 

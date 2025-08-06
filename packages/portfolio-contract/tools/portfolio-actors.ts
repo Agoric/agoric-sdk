@@ -32,6 +32,7 @@ import {
   type StatusFor,
   type PoolKey,
   type TargetAllocation,
+  PoolPlaces,
 } from '../src/type-guards.js';
 import type { WalletTool } from './wallet-offer-tools.js';
 
@@ -310,4 +311,39 @@ export const planDepositTransfers = (
   }
 
   return transfers;
+};
+
+export const planTransfer = (
+  dest: PoolKey,
+  amount: NatAmount,
+): MovementDesc[] => {
+  const { protocol: p, chainName: evm } = PoolPlaces[dest];
+  const steps: MovementDesc[] = [];
+
+  switch (p) {
+    case 'USDN':
+      console.warn('TODO: detail');
+      steps.push({ src: '@noble', dest: 'USDNVault', amount });
+      break;
+    case 'Aave':
+    case 'Compound':
+      // XXX optimize: combine noble->evm steps
+      steps.push({
+        src: '@noble',
+        dest: `@${evm}`,
+        amount,
+        // XXXfee: fees[p].Account,
+      });
+      console.warn('TODO: fees');
+      steps.push({
+        src: `@${evm}`,
+        dest: `${p}_${evm}`,
+        amount,
+        // TODO fee: fees[p].Call,
+      });
+      break;
+    default:
+      throw Error('unreachable');
+  }
+  return harden(steps);
 };
