@@ -7,11 +7,10 @@ import {
   planDepositTransfers,
   planTransfer,
 } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
-import { VstorageKit } from '@agoric/client-utils';
+import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.ts';
-import { assert } from '@endo/errors';
-import { X, q } from '@endo/errors';
+import { X, q, assert } from '@endo/errors';
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.ts';
 
@@ -32,7 +31,7 @@ export const getCurrentBalances = async (
   cosmosRest: CosmosRestClient,
   brand: Brand<'nat'>,
 ) => {
-  const pq = makePortfolioQuery(portfolioKey, readPublished);
+  const pq = makePortfolioQuery(readPublished, portfolioKey);
   const status = await pq.getPortfolioStatus();
   const balances: Partial<Record<PoolKey, NatAmount>> = {};
 
@@ -48,7 +47,7 @@ export const getCurrentBalances = async (
           addr,
           denom,
         );
-        balances[posKey] = make(brand, amount);
+        balances[posKey] = make(brand, BigInt(amount));
         break;
       }
       case 'Aave':
@@ -84,7 +83,7 @@ export const handleDeposit = async (
     cosmosRest,
     amount.brand,
   );
-  const pq = makePortfolioQuery(portfolioKey, readPublished);
+  const pq = makePortfolioQuery(readPublished, portfolioKey);
   const { targetAllocation } = await pq.getPortfolioStatus();
   if (!targetAllocation) {
     // XXX warn?
@@ -92,7 +91,6 @@ export const handleDeposit = async (
   }
   const txfrs = planDepositTransfers(amount, currentBalances, targetAllocation);
   const steps = [
-    { src: '<Deposit>', dest: '@agoric', amount },
     { src: '@agoric', dest: '@noble', amount },
     ...Object.entries(txfrs)
       // XXX Object.entries() type is goofy
