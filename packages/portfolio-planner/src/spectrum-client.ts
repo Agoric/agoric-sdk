@@ -2,14 +2,15 @@
 
 const BASE_URL = 'https://pools-api.spectrumnodes.com';
 
-type Chain =
+// XXX refactor using portfolio-contract/type-guards.ts?
+export type Chain =
   | 'ethereum'
   | 'optimism'
   | 'polygon'
   | 'arbitrum'
   | 'base'
   | 'avalanche';
-type Pool = 'aave' | 'compound';
+export type Pool = 'aave' | 'compound';
 
 interface AprResponse {
   pool: Pool;
