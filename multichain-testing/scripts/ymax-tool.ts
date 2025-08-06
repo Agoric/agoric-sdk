@@ -18,7 +18,10 @@ import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.
 import { AmountMath } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { makeTracer, mustMatch, type TypedPattern } from '@agoric/internal';
-import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
+import type {
+  BridgeAction,
+  SmartWallet,
+} from '@agoric/smart-wallet/src/smartWallet.js';
 import { stringToPath } from '@cosmjs/crypto';
 import { fromBech32 } from '@cosmjs/encoding';
 import {
@@ -36,6 +39,7 @@ Options:
   --skip-poll         Skip polling for offer result
   --exit-success      Exit with success code even if errors occur
   --target-allocation JSON string of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
+  --redeem            redeem planner invitation
   -h, --help          Show this help message`;
 
 const toAccAddress = (address: string): Uint8Array => {
@@ -144,23 +148,13 @@ const openPosition = async (
     },
   });
 
-  const msgSpend = MsgWalletSpendAction.fromPartial({
-    owner: toAccAddress(address),
-    spendAction: JSON.stringify(walletKit.marshaller.toCapData(action)),
-  });
-
-  const fee: StdFee = {
-    amount: [{ denom: 'ubld', amount: '30000' }], // XXX enough?
-    gas: '197000',
-  };
   const before = await client.getBlock();
-  console.log('signAndBroadcast', address, msgSpend, fee);
-  const actual = await client.signAndBroadcast(
+
+  const actual = await signAndBroadcastAction(action, {
     address,
-    [{ typeUrl: MsgWalletSpendAction.typeUrl, value: msgSpend }],
-    fee,
-  );
-  trace('tx', actual);
+    client,
+    walletKit,
+  });
 
   if (skipPoll) {
     trace('skipping poll as per skipPoll flag');
@@ -191,6 +185,68 @@ const openPosition = async (
   return status;
 };
 
+const signAndBroadcastAction = async (
+  action: BridgeAction,
+  {
+    address,
+    walletKit,
+    client,
+  }: {
+    address: string;
+    client: SigningStargateClient;
+    walletKit: Awaited<ReturnType<typeof makeSmartWalletKit>>;
+  },
+) => {
+  const msgSpend = MsgWalletSpendAction.fromPartial({
+    owner: toAccAddress(address),
+    spendAction: JSON.stringify(walletKit.marshaller.toCapData(action)),
+  });
+
+  const fee: StdFee = {
+    amount: [{ denom: 'ubld', amount: '30000' }], // XXX enough?
+    gas: '197000',
+  };
+  console.log('signAndBroadcast', address, msgSpend, fee);
+  const actual = await client.signAndBroadcast(
+    address,
+    [{ typeUrl: MsgWalletSpendAction.typeUrl, value: msgSpend }],
+    fee,
+  );
+  trace('tx', actual);
+  return actual;
+};
+
+const redeemPlannerInvitation = async ({
+  address,
+  client,
+  walletKit,
+  now,
+}: {
+  address: string;
+  client: SigningStargateClient;
+  walletKit: Awaited<ReturnType<typeof makeSmartWalletKit>>;
+  now: () => number;
+}) => {
+  const { ymax0: instance } = walletKit.agoricNames.instance;
+  // console.error('ymax instance', instance.getBoardId());
+  const action: BridgeAction = {
+    method: 'executeOffer',
+    offer: {
+      id: `redeem-${new Date(now()).toISOString()}`,
+      invitationSpec: {
+        source: 'purse',
+        instance,
+        description: 'planner',
+      },
+      proposal: {},
+      after: { saveAs: 'planner' },
+    },
+  };
+
+  console.error('redeem action', action);
+  await signAndBroadcastAction(action, { address, walletKit, client });
+};
+
 const main = async (
   argv = process.argv,
   env = process.env,
@@ -207,6 +263,7 @@ const main = async (
       'skip-poll': { type: 'boolean', default: false },
       'exit-success': { type: 'boolean', default: false },
       'target-allocation': { type: 'string' },
+      redeem: { type: 'boolean', default: false },
       help: { type: 'boolean', short: 'h', default: false },
     },
     allowPositionals: true,
@@ -239,6 +296,15 @@ const main = async (
   const client = await connectWithSigner(networkConfig.rpcAddrs[0], signer, {
     registry: new Registry(agoricRegistryTypes),
   });
+
+  if (values.redeem) {
+    await redeemPlannerInvitation({
+      address,
+      walletKit,
+      client,
+      now: Date.now,
+    });
+  }
 
   try {
     // Pass the parsed options to openPosition
