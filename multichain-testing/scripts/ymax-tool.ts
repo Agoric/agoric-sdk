@@ -16,8 +16,8 @@ import {
 import { makePortfolioSteps } from '@aglocal/portfolio-contract/tools/plan-transfers.ts';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
 import {
-  axelarConfigTestnet,
   axelarConfig as axelarConfigMainnet,
+  axelarConfigTestnet,
   gmpAddresses as gmpConfigs,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import type { ContractControl } from '@aglocal/portfolio-deploy/src/contract-control.js';
