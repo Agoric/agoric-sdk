@@ -64,7 +64,7 @@ export type NameAdmin = {
   /** Delete a value and reject an outstanding reserved promise (if any). */
   delete: (key: string) => void;
   /** get the NameHub corresponding to the current NameAdmin */
-  readonly: () => NameHub;
+  readonly: () => Promise<NameHub>;
   /**
    * Set a function to be called whenever an update or deletion is made, with all the entries as of that point.
    *
