@@ -145,6 +145,10 @@ const mocks = (
             getAddress() {
               return addr;
             },
+            async send(toAccount, amount) {
+              // XXX simulate errors?
+              log({ _cap: addr.value, _method: 'send', toAccount, amount });
+            },
             async transfer(address, amount, opts) {
               if (!('denom' in amount)) throw Error('#10449');
               log({
@@ -418,7 +422,7 @@ test('open portfolio with USDN position', async t => {
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11028' },
+    { _method: 'executeEncodedTx', _cap: 'noble11042' },
     { _method: 'exit' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -608,7 +612,7 @@ test('handle failure in executeEncodedTx', async t => {
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11028' }, // fail
+    { _method: 'executeEncodedTx', _cap: 'noble11042' }, // fail
     { _method: 'transfer', address: { chainId: 'agoric-6' } }, // unwind
     { _method: 'withdrawToSeat' }, // unwind
     { _method: 'fail' },
@@ -642,7 +646,7 @@ test('handle failure in recovery from executeEncodedTx', async t => {
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11028' }, // fail
+    { _method: 'executeEncodedTx', _cap: 'noble11042' }, // fail
     { _method: 'transfer', address: { chainId: 'agoric-6' } }, // fail to recover
     { _method: 'fail' },
   ]);
@@ -853,3 +857,39 @@ test('open portfolio with Beefy position', async t => {
   ]);
   t.snapshot(decodedCalls, 'decoded calls');
 });
+
+test('wayFromSrcToDesc handles +agoric -> @agoric', t => {
+  const amount = AmountMath.make(USDC, 300n);
+  const actual = wayFromSrcToDesc({ src: '+agoric', dest: '@agoric', amount });
+  t.deepEqual(actual, { how: 'send' });
+});
+
+test('Engine can move deposits +agoric -> @agoric', async t => {
+  const { orch, ctx, offer, storage } = mocks({}, {});
+  const { log, seat } = offer;
+
+  const amount = AmountMath.make(USDC, 300n);
+  const kit = await ctx.makePortfolioKit();
+
+  await rebalance(
+    orch,
+    ctx,
+    offer.seat,
+    { flow: [{ src: '+agoric', dest: '@agoric', amount }] },
+    kit,
+  );
+
+  t.log(log.map(msg => msg._method).join(', '));
+
+  const lca = kit.reader.getLocalAccount();
+  t.is(lca.getAddress().value, 'agoric11014');
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'send', toAccount: { value: 'agoric11014' } },
+  ]);
+
+  t.snapshot(log, 'call log'); // see snapshot for remaining arg details
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test.todo('recover from send step');
