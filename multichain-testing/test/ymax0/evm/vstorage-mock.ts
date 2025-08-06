@@ -8,7 +8,6 @@ export type PendingCCTPTransfer = {
   destinationDomain: number; // CCTP domain ID (0 for Ethereum, etc.)
   mintRecipient: string; // bytes32 representation of destination address
   burnToken: string; // token denom (e.g., "uusdc")
-  timestamp: number; // when the transfer was initiated
   status: 'pending' | 'completed' | 'failed';
 };
 
@@ -110,7 +109,6 @@ export class VStorageMock {
       destinationDomain: transfer.destinationDomain,
       mintRecipient: addressToBytes32(transfer.destinationAddr),
       burnToken: transfer.burnToken,
-      timestamp: Date.now(),
       status: 'pending',
     };
 

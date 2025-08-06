@@ -14,8 +14,7 @@
     "test:ymax": "ava --config ava.ymd.config.js",
     "test:xcs": "ava --config ava.xcs.config.js",
     "cctp": "vite-node test/ymax0/evm/mock-contract-call.ts",
-    "listen": "vite-node test/ymax0/evm/listen.ts",
-    "balance": "vite-node test/ymax0/evm/balance.ts"
+    "listen": "vite-node test/ymax0/evm/listen.ts"
   },
   "packageManager": "yarn@4.9.1",
   "devDependencies": {

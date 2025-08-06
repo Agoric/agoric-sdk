@@ -1,8 +1,9 @@
-import { ethers } from 'ethers';
+import { vstorageKit } from './vstorage-mock';
+import { PortfolioListener } from './portfolio-listener';
 
-// - Do a NOBLE CCTP transfer
-// - Inspect the logs of the wallet
-
-const wait = async (seconds: number) => {
-  return new Promise(resolve => setTimeout(resolve, seconds * 1000));
+const startListener = async () => {
+  const listener = new PortfolioListener(vstorageKit);
+  await listener.start();
 };
+
+startListener().catch(console.error);
