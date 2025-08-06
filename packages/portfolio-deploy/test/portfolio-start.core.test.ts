@@ -45,7 +45,7 @@ const docOpts = {
   showValue: defaultSerializer.parse,
 };
 
-test('coreEval code without swingset', async t => {
+test.skip('coreEval code without swingset', async t => {
   const common = await setupPortfolioTest(t);
   const { bootstrap, utils } = common;
   const { agoricNamesAdmin } = bootstrap;

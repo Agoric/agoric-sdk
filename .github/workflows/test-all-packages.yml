@@ -209,6 +209,9 @@ jobs:
       - name: yarn test (portfolio-deploy)
         if: (success() || failure())
         run: cd packages/portfolio-deploy && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (portfolio-planner)
+        if: (success() || failure())
+        run: cd packages/portfolio-planner && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sparse-ints)
         if: (success() || failure())
         run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT

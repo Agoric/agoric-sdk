@@ -1,18 +1,18 @@
 import {
   PoolPlaces,
   type PoolKey,
-} from '@aglocal/portfolio-contract/src/type-guards.ts';
+} from '@aglocal/portfolio-contract/src/type-guards.js';
 import {
   makePortfolioQuery,
   planDepositTransfers,
   planTransfer,
-} from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
+} from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
 import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
-import type { Brand, NatAmount } from '@agoric/ertp/src/types.ts';
+import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import { X, q, assert } from '@endo/errors';
-import type { CosmosRestClient } from './cosmos-rest-client.ts';
-import type { Chain, Pool, SpectrumClient } from './spectrum-client.ts';
+import type { CosmosRestClient } from './cosmos-rest-client.js';
+import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 
 // XXX add to PoolPlaces info?
 const USDNconfig = {
