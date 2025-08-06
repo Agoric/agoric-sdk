@@ -20,6 +20,7 @@ import {
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
+  type Bech32Address,
   type ChainInfo,
   type Denom,
   type DenomDetail,
@@ -37,6 +38,7 @@ import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
 import {
+  BeefyPoolPlaces,
   makeProposalShapes,
   type EVMContractAddressesMap,
   type OfferArgsFor,
@@ -79,13 +81,20 @@ export const AxelarConfigShape: TypedPattern<AxelarConfig> = M.splitRecord(
   ) as Record<AxelarChain, typeof AxelarConfigPattern>,
 );
 
+export type BeefyContracts = {
+  [K in keyof typeof BeefyPoolPlaces]: `0x${string}`;
+};
+
 export type EVMContractAddresses = {
   aavePool: `0x${string}`;
   compound: `0x${string}`;
   factory: `0x${string}`;
   usdc: `0x${string}`;
   tokenMessenger: `0x${string}`;
-};
+  aaveUSDC: `0x${string}`;
+  aaveRewardsController: `0x${string}`;
+  compoundRewardsController: `0x${string}`;
+} & Partial<BeefyContracts>;
 
 export type AxelarId = {
   [chain in AxelarChain]: string;
@@ -104,6 +113,16 @@ const AxelarIdShape: TypedPattern<AxelarId> = M.splitRecord(
   fromEntries(keys(AxelarChain).map(chain => [chain, AxelarIdsPattern])),
 );
 
+export type GmpAddresses = {
+  AXELAR_GMP: Bech32Address;
+  AXELAR_GAS: Bech32Address;
+};
+
+const GmpAddressesShape: TypedPattern<GmpAddresses> = M.splitRecord({
+  AXELAR_GMP: M.string(),
+  AXELAR_GAS: M.string(),
+});
+
 type PortfolioPrivateArgs = OrchestrationPowers & {
   // XXX document required assets, chains
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
@@ -112,6 +131,7 @@ type PortfolioPrivateArgs = OrchestrationPowers & {
   storageNode: Remote<StorageNode>;
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
+  gmpAddresses: GmpAddresses;
 };
 
 const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
@@ -125,6 +145,7 @@ const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
   axelarIds: AxelarIdShape,
   contracts: EVMContractAddressesMap,
+  gmpAddresses: GmpAddressesShape,
 };
 
 export const meta: ContractMeta = {
@@ -170,6 +191,7 @@ export const contract = async (
     timerService,
     marshaller,
     storageNode,
+    gmpAddresses,
   } = privateArgs;
   const { brands } = zcf.getTerms();
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
@@ -220,6 +242,7 @@ export const contract = async (
     },
     axelarIds,
     contracts,
+    gmpAddresses,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit

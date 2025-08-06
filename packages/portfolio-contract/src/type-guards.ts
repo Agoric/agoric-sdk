@@ -22,7 +22,11 @@
  */
 import type { Amount, Brand, NatAmount, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
-import { AnyNatAmountShape, type AccountId } from '@agoric/orchestration';
+import {
+  AnyNatAmountShape,
+  type AccountId,
+  type Bech32Address,
+} from '@agoric/orchestration';
 import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
@@ -36,6 +40,8 @@ import type { PortfolioKit } from './portfolio.exo.js';
 export type { OfferArgsFor } from './type-guards-steps.js';
 
 // #region preliminaries
+const { keys } = Object;
+
 /**
  * @param brand must be a 'nat' brand, not checked
  */
@@ -93,9 +99,9 @@ export const makeProposalShapes = (
 ) => {
   const $Shape = makeNatAmountShape(usdcBrand);
   const FeeShape = makeNatAmountShape(feeBrand);
-  const accessShape = accessBrand
-    ? { Access: makeNatAmountShape(accessBrand, 1n) }
-    : {};
+  const accessShape = harden({
+    ...(accessBrand && { Access: makeNatAmountShape(accessBrand, 1n) }),
+  });
 
   const openPortfolio = M.splitRecord(
     {
@@ -129,25 +135,27 @@ harden(makeProposalShapes);
 
 type PoolPlaceInfo =
   | { protocol: 'USDN'; vault: null | 1; chainName: 'noble' }
-  | { protocol: 'Aave' | 'Compound'; chainName: AxelarChain };
+  | { protocol: 'Aave' | 'Compound' | 'Beefy'; chainName: AxelarChain };
+
+export const BeefyPoolPlaces = {
+  Beefy_re7_Avalanche: {
+    protocol: 'Beefy',
+    chainName: 'Avalanche',
+  },
+} as const satisfies Record<string, PoolPlaceInfo>;
 
 export const PoolPlaces = {
   USDN: { protocol: 'USDN', vault: null, chainName: 'noble' }, // MsgSwap only
   USDNVault: { protocol: 'USDN', vault: 1, chainName: 'noble' }, // MsgSwap, MsgLock
-  Aave_Ethereum: { protocol: 'Aave', chainName: 'Ethereum' },
   Aave_Avalanche: { protocol: 'Aave', chainName: 'Avalanche' },
   Aave_Optimism: { protocol: 'Aave', chainName: 'Optimism' },
   Aave_Arbitrum: { protocol: 'Aave', chainName: 'Arbitrum' },
   Aave_Polygon: { protocol: 'Aave', chainName: 'Polygon' },
-  Aave_Fantom: { protocol: 'Aave', chainName: 'Fantom' },
-  Aave_Binance: { protocol: 'Aave', chainName: 'Binance' },
-  Compound_Ethereum: { protocol: 'Compound', chainName: 'Ethereum' },
   Compound_Avalanche: { protocol: 'Compound', chainName: 'Avalanche' },
   Compound_Optimism: { protocol: 'Compound', chainName: 'Optimism' },
   Compound_Arbitrum: { protocol: 'Compound', chainName: 'Arbitrum' },
   Compound_Polygon: { protocol: 'Compound', chainName: 'Polygon' },
-  Compound_Fantom: { protocol: 'Compound', chainName: 'Fantom' },
-  Compound_Binance: { protocol: 'Compound', chainName: 'Binance' },
+  ...BeefyPoolPlaces,
 } as const satisfies Record<string, PoolPlaceInfo>;
 harden(PoolPlaces);
 
@@ -155,6 +163,27 @@ harden(PoolPlaces);
  * Names of places where a portfolio may have a position.
  */
 export type PoolKey = keyof typeof PoolPlaces;
+
+/** Ext for Extensible: includes PoolKeys in future upgrades */
+export type PoolKeyExt = string;
+
+/** Ext for Extensible: includes PoolKeys in future upgrades */
+export const PoolKeyShapeExt = M.string();
+
+/**
+ * Target allocation mapping from PoolKey to numerator (typically in basis points).
+ * Denominator is implicitly the sum of all numerators.
+ */
+export type TargetAllocation = Partial<Record<PoolKey, NatValue>>;
+
+export const TargetAllocationShape: TypedPattern<TargetAllocation> = M.recordOf(
+  M.or(...keys(PoolPlaces)),
+  M.nat(),
+);
+
+export const TargetAllocationShapeExt: TypedPattern<Record<string, NatValue>> =
+  M.recordOf(PoolKeyShapeExt, M.nat());
+
 // #endregion
 
 // #region ymax0 vstorage keys and values
@@ -168,7 +197,9 @@ export type PoolKey = keyof typeof PoolPlaces;
  * @param id - Portfolio ID number
  * @returns Path segments for vstorage
  */
-export const makePortfolioPath = (id: number) => [`portfolio${id}`];
+export const makePortfolioPath = (id: number): [`portfolio${number}`] => [
+  `portfolio${id}`,
+];
 
 /**
  * Extracts portfolio ID from a vstorage path.
@@ -196,13 +227,21 @@ type FlowStatus = {
   error?: string;
 };
 
+/** ChainNames including those in future upgrades */
+type ChainNameExt = string;
+const ChainNameExtShape: TypedPattern<ChainNameExt> = M.string();
+
 // XXX relate paths to types a la readPublished()
 export type StatusFor = {
+  portfolios: {
+    addPortfolio: `portfolio${number}`;
+  };
   portfolio: {
-    positionKeys: PoolKey[];
+    positionKeys: PoolKeyExt[];
     flowCount: number;
-    // XXX: accountIdByChain: Record<ChainAccountKey, AccountId>;
-    accountIdByChain: Record<string, AccountId>;
+    accountIdByChain: Record<ChainNameExt, AccountId>;
+    depositAddress?: Bech32Address;
+    targetAllocation?: TargetAllocation;
   };
   position: {
     protocol: YieldProtocol;
@@ -212,19 +251,25 @@ export type StatusFor = {
     totalOut: Amount<'nat'>;
   };
   // XXX refactor using AssetMoveDesc
+  // XXX how many steps? step: 1, last: 3, for example
   flow: FlowStatus | (Omit<FlowStatus, 'dest'> & { where: string }); // recovery failed
 };
 
-export const PoolKeyShape = M.string(); // prefer string over M.or(...) for extensibility
-export const PortfolioStatusShape: TypedPattern<StatusFor['portfolio']> =
-  M.splitRecord({
-    positionKeys: M.arrayOf(PoolKeyShape),
-    flowCount: M.nat(),
-    accountIdByChain: M.recordOf(
-      M.or('agoric', 'noble'), // ChainAccountKey
-      M.string(), // AccountId
-    ),
-  });
+export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
+  M.splitRecord(
+    {
+      positionKeys: M.arrayOf(PoolKeyShapeExt),
+      flowCount: M.number(),
+      accountIdByChain: M.recordOf(
+        ChainNameExtShape,
+        M.string(), // XXX no runtime validation of AccountId
+      ),
+    },
+    {
+      depositAddress: M.string(), // XXX no runtime validation of Bech32Address
+      targetAllocation: TargetAllocationShapeExt,
+    },
+  );
 
 /**
  * Creates vstorage path for position transfer history.
@@ -236,7 +281,7 @@ export const PortfolioStatusShape: TypedPattern<StatusFor['portfolio']> =
  * @param key - PoolKey
  * @returns Path segments for vstorage
  */
-export const makePositionPath = (parent: number, key: PoolKey) => [
+export const makePositionPath = (parent: number, key: PoolKeyExt) => [
   `portfolio${parent}`,
   'positions',
   key,

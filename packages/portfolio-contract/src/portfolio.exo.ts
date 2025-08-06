@@ -32,14 +32,17 @@ import { AxelarChain, SupportedChain, YieldProtocol } from './constants.js';
 import type { AxelarId } from './portfolio.contract.js';
 import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
-import type { makeProposalShapes, PoolKey, StatusFor } from './type-guards.js';
+import type { makeOfferArgsShapes } from './type-guards-steps.js';
 import {
   makeFlowPath,
   makePortfolioPath,
-  PoolKeyShape,
+  PoolKeyShapeExt,
+  type makeProposalShapes,
   type OfferArgsFor,
+  type PoolKey,
+  type StatusFor,
+  type TargetAllocation,
 } from './type-guards.js';
-import type { makeOfferArgsShapes } from './type-guards-steps.js';
 
 const trace = makeTracer('PortExo');
 const { values } = Object;
@@ -87,6 +90,7 @@ type AgoricAccountInfo = {
   namespace: 'cosmos';
   chainName: 'agoric';
   lca: LocalAccount;
+  lcaIn: LocalAccount;
   reg: TargetRegistration;
 };
 type NobleAccountInfo = {
@@ -106,6 +110,7 @@ type PortfolioKitState = {
   accounts: MapStore<SupportedChain, AccountInfo>;
   positions: MapStore<PoolKey, Position>;
   nextFlowId: number;
+  targetAllocation?: TargetAllocation;
 };
 
 /**
@@ -182,15 +187,22 @@ export const preparePortfolioKit = (
     usdcBrand: Brand<'nat'>;
   },
 ) => {
-  const makePathNode = (path: string[]) => {
-    let node = portfoliosNode;
-    for (const segment of path) {
-      node = E(node).makeChildNode(segment);
-    }
+  // Ephemeral node cache
+  // XXX collecting flow nodes is TBD
+  const nodes = new Map<string, ERef<StorageNode>>();
+  const providePathNode = (segments: string[]): ERef<StorageNode> => {
+    if (segments.length === 0) return portfoliosNode;
+    const path = segments.join('.');
+    if (nodes.has(path)) return nodes.get(path)!;
+    const parent = providePathNode(segments.slice(0, -1));
+    const node = E(parent).makeChildNode(segments.at(-1)!);
+    nodes.set(path, node);
     return node;
   };
+
+  // TODO: cache slotIds from the board #11688
   const publishStatus: PublishStatusFn = (path, status): void => {
-    const node = makePathNode(path);
+    const node = providePathNode(path);
     // Don't await, just writing to vstorage.
     void E.when(E(marshaller).toCapData(status), capData =>
       E(node).setValue(JSON.stringify(capData)),
@@ -233,9 +245,10 @@ export const preparePortfolioKit = (
         accountsPending: zone.detached().mapStore('accountsPending'),
         // NEEDSTEST: for forgetting to use detached()
         positions: zone.detached().mapStore('positions', {
-          keyShape: PoolKeyShape,
+          keyShape: PoolKeyShapeExt,
           valueShape: M.remotable('Position'),
         }),
+        targetAllocation: undefined,
       };
     },
     {
@@ -340,7 +353,7 @@ export const preparePortfolioKit = (
         },
         getStoragePath() {
           const { portfolioId } = this.state;
-          const node = makePathNode(makePortfolioPath(portfolioId));
+          const node = providePathNode(makePortfolioPath(portfolioId));
           return vowTools.asVow(() => E(node).getPath());
         },
         getPortfolioId() {
@@ -359,11 +372,25 @@ export const preparePortfolioKit = (
       },
       reporter: {
         publishStatus() {
-          const { portfolioId, positions, accounts, nextFlowId } = this.state;
+          const {
+            portfolioId,
+            positions,
+            accounts,
+            nextFlowId,
+            targetAllocation,
+          } = this.state;
+
+          const deposit = () => {
+            const { lcaIn } = accounts.get('agoric') as AgoricAccountInfo;
+            return { depositAddress: lcaIn.getAddress().value };
+          };
+
           publishStatus(makePortfolioPath(portfolioId), {
             positionKeys: [...positions.keys()],
             flowCount: nextFlowId - 1,
             accountIdByChain: accountIdByChain(accounts),
+            ...(accounts.has('agoric') ? deposit() : {}),
+            ...(targetAllocation && { targetAllocation }),
           });
         },
         allocateFlowId() {
@@ -372,6 +399,7 @@ export const preparePortfolioKit = (
           this.facets.reporter.publishStatus();
           return nextFlowId;
         },
+        // XXX collecting flow nodes is TBD
         publishFlowStatus(id: number, status: StatusFor['flow']) {
           const { portfolioId } = this.state;
           publishStatus(makeFlowPath(portfolioId, id), status);
@@ -438,6 +466,13 @@ export const preparePortfolioKit = (
         waitKLUDGE(val: bigint) {
           return vowTools.watch(E(timer).delay(val));
         },
+        setTargetAllocation(allocation: TargetAllocation) {
+          this.state.targetAllocation = allocation;
+          this.facets.reporter.publishStatus();
+        },
+        getTargetAllocation() {
+          return this.state.targetAllocation;
+        },
       },
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
@@ -458,8 +493,11 @@ export const preparePortfolioKit = (
       },
     },
     {
-      finish({ facets }) {
+      finish({ facets, state }) {
         facets.reporter.publishStatus();
+        const { portfolioId } = state;
+        const [addPortfolio] = makePortfolioPath(portfolioId);
+        publishStatus([], { addPortfolio });
       },
     },
   );

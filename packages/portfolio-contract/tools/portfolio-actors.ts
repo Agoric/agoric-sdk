@@ -12,6 +12,8 @@
  */
 import { type VstorageKit } from '@agoric/client-utils';
 import { AmountMath, type NatAmount, type NatValue } from '@agoric/ertp';
+import { NonNullish } from '@agoric/internal';
+import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
 import type { Instance } from '@agoric/zoe';
 import { Fail } from '@endo/errors';
@@ -30,10 +32,11 @@ import {
   type StatusFor,
 } from '../src/type-guards.js';
 import type { WalletTool } from './wallet-offer-tools.js';
-import { NonNullish } from '@agoric/internal';
 
 const { fromEntries } = Object;
-const range = (n: number) => [...Array(n).keys()];
+
+assert.equal(ROOT_STORAGE_PATH, 'orchtest');
+const stripRoot = (path: string) => path.replace(/^orchtest\./, '');
 
 /**
  * Creates a trader object for testing portfolio contract interactions.
@@ -107,13 +110,13 @@ export const makeTrader = (
         proposal,
         offerArgs,
       });
-      doneP.then(({ result }) => {
+      return doneP.then(({ result, payouts }) => {
         const { portfolio: topic } = result.publicSubscribers;
         if (topic.description === 'Portfolio') {
           portfolioPath = topic.storagePath!;
         }
+        return { result, payouts };
       });
-      return doneP;
     },
     /**
      * **Phase 2**: Rebalances portfolio positions between yield protocols.
@@ -147,13 +150,12 @@ export const makeTrader = (
         offerArgs,
       });
     },
-    getPortfolioId: () =>
-      portfolioIdOfPath(self.getPortfolioPath().replace(/^orchtest\./, '')),
+    getPortfolioId: () => portfolioIdOfPath(stripRoot(self.getPortfolioPath())),
     getPortfolioPath: () => portfolioPath || assert.fail('no portfolio'),
     getPortfolioStatus: () =>
-      readPublished(
-        self.getPortfolioPath().replace(/^orchtest\./, ''),
-      ) as Promise<StatusFor['portfolio']>,
+      readPublished(stripRoot(self.getPortfolioPath())) as Promise<
+        StatusFor['portfolio']
+      >,
     getPositionPaths: async () => {
       const { positionKeys } = await self.getPortfolioStatus();
 

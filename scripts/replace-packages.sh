@@ -13,6 +13,7 @@ DSTDIR=${2-$PWD/node_modules}
 # Install and build the source directory.
 pushd "$SRCDIR"
 yarn install
+yarn postinstall
 npm run build
 
 npm query .workspace | jq -r '.[].location' | while read -r dir; do
@@ -23,9 +24,10 @@ npm query .workspace | jq -r '.[].location' | while read -r dir; do
   pushd "$dir"
   name=$(jq -r .name < package.json)
   stem=$(echo "$name" | sed -e 's!^@!!; s!/!-!g;')
-  rm -f "${stem}"-*.tgz
-  npm pack
-  tar -xvf "${stem}"-*.tgz
+  tarball="${stem}-replace.tgz"
+  rm -f "$tarball"
+  yarn pack --out "$tarball"
+  tar -xvf "$tarball"
 
   # Replace the destination package.
   rm -rf "${DSTDIR:?}/$name"

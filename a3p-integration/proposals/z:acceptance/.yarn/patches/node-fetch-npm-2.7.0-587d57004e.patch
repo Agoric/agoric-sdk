@@ -1,0 +1,48 @@
+diff --git a/lib/index.js b/lib/index.js
+index 567ff5da58e83683bec0ea9e86221041ddf9435f..f1e1684ea9497c00f0cbf125e2ca82547dde9e09 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -1,3 +1,4 @@
++// @ts-nocheck
+ 'use strict';
+ 
+ Object.defineProperty(exports, '__esModule', { value: true });
+@@ -154,9 +155,23 @@ function FetchError(message, type, systemError) {
+   Error.captureStackTrace(this, this.constructor);
+ }
+ 
+-FetchError.prototype = Object.create(Error.prototype);
+-FetchError.prototype.constructor = FetchError;
+-FetchError.prototype.name = 'FetchError';
++function makeErrorish(errorConstructor, name) {
++  errorConstructor.prototype = Object.create(Error.prototype, {
++    constructor: {
++      value: errorConstructor,
++      writable: true,
++      enumerable: true,
++      configurable: true
++    },
++    name: {
++      value: name,
++      writable: true,
++      enumerable: true,
++      configurable: true
++    },
++  });
++}
++makeErrorish(FetchError, 'FetchError');
+ 
+ let convert;
+ try {
+@@ -1396,10 +1411,7 @@ function AbortError(message) {
+   // hide custom error implementation details from end-users
+   Error.captureStackTrace(this, this.constructor);
+ }
+-
+-AbortError.prototype = Object.create(Error.prototype);
+-AbortError.prototype.constructor = AbortError;
+-AbortError.prototype.name = 'AbortError';
++makeErrorish(AbortError, 'AbortError');
+ 
+ const URL$1 = Url.URL || whatwgUrl.URL;
+ 

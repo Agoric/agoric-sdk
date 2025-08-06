@@ -4,12 +4,14 @@ Thanks for your interest in improving YMax! This package is in a proof-of-concep
 
  - `README.md` - user-level description of the contract.
  - `src/`
-  - `portfolio.contract.ts` - contract entry point and public facet
-  - `portfolio.{flows,exo}.ts` - orchestration flows and durable state
-  - `pos-{usdn,gmp}.{flows,exo}.ts` - position management for different protocols
-  - `type-guards.ts` - external interface types and validation patterns
-  - `constants.js` - enumerated constants
- - `test/` - tests for contract, flows, etc.
+   - `constants.js` - enumerated constants
+   - `type-guards.ts` - external interface types and validation patterns
+   - `portfolio.contract.ts` - contract entry point and public facet
+   - `portfolio.{flows,exo}.ts` - orchestration flows and durable state
+   - `pos-{usdn,gmp,}.{flows,exo}.ts` - position management for different protocols
+ - `test/` - unit tests etc.; note:
+   - `portfolio.flows.test.ts` is good for getting coverage (incl. branches) of flows
+   - `portfolio.contract.test.ts` is more for testing user stories
  - `tools/` - utilities exported for use in other packages
 
 ## Code Quality & Testing
@@ -56,7 +58,7 @@ Fast USDC in turn builds on
 
 ## `TypedPattern`s
 
-We make extensive use of `@endo/patterns` aka shapes, especially `TypedPattern<T>` for data validation.
+We make extensive use of [@endo/patterns](https://www.npmjs.com/package/@endo/patterns) aka shapes, especially `TypedPattern<T>` for data validation.
 
 ```ts
 import {
@@ -76,6 +78,19 @@ const workWithExternalData = (data: unknown) => {
 ```
 
 Note that while the `GoodStuffShape` pattern/shape is a value, we use an initial uppercase letter like the type, `GoodStuff`.
+
+## Hardening at API boundaries
+
+If you get:
+
+```
+Error: Cannot pass non-frozen objects like {...}. Use harden()
+```
+
+look for data that's being marshalled but wasn't hardened: durable (exo) state property values, offer arguments, for example.
+
+The [Jessie rule](https://github.com/endojs/Jessie#must-freeze-api-surface-before-use) is that objects made from literals (`[]` arrays, `{}` objects, functions) are hardened before they can be aliased or escape from their static context of origin. Until we have
+tooling to enforce this, we encourage but don't require it.
 
 ## OrchestrationFlow API is convenient though a bit rough
 

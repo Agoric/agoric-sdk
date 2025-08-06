@@ -223,7 +223,7 @@ export const makeQueueStorage = (call, queuePath) => {
  * @param {typeof process.env} [options.env]
  * @param {Pick<import('fs'), 'createWriteStream' | 'mkdirSync' | 'renameSync'>} options.fs
  * @param {Pick<import('path'), 'join' | 'resolve'>} options.path
- * @param {import('tmp')} [options.tmp] required to support vatSnapshotArchiveDir/vatTranscriptArchiveDir
+ * @param {import('tmp')} options.tmp required to support vatSnapshotArchiveDir/vatTranscriptArchiveDir
  * @param {ReturnType<typeof makeProcessValue>} [options.processValue]
  * @param {() => Promise<void>} [options.readyForCommit]
  * @param {{

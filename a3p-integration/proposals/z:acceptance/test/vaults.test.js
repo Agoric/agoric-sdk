@@ -5,7 +5,6 @@ import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import {
   adjustVault,
   ATOM_DENOM,
-  bankSend,
   closeVault,
   generateOracleMap,
   getISTBalance,
@@ -22,7 +21,7 @@ import {
   getPriceFeedRoundId,
   verifyPushedPrice,
 } from './test-lib/price-feed.js';
-import { bankSend as sendIST, tryISTBalances } from './test-lib/psm-lib.js';
+import { bankSend, tryISTBalances } from './test-lib/psm-lib.js';
 import { getBalances, listVaults } from './test-lib/utils.js';
 import {
   calculateMintFee,
@@ -63,6 +62,7 @@ const exec = {
       });
       return agdWalletUtils.broadcastBridgeAction(from, {
         method: 'executeOffer',
+        // @ts-expect-error XXX ERef type confusion
         offer,
       });
     },
@@ -389,7 +389,7 @@ test.serial(
       await getAvailableDebtForMint(VAULT_MANAGER);
 
     // provision governance wallet to cover transaction fees
-    await sendIST(GOV2ADDR, `1000000uist`, GOV1ADDR);
+    await bankSend(GOV2ADDR, `10000000ubld`, GOV1ADDR);
 
     const limit = (totalDebtBefore - 10_000_000n) / 1_000_000n;
     await setDebtLimit(GOV1ADDR, limit);

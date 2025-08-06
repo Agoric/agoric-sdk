@@ -4,6 +4,7 @@ import { parseArgs } from 'node:util';
 import {
   axelarConfigTestnet,
   axelarConfig as axelarMainnetConfig,
+  gmpAddresses,
 } from './axelar-configs.js';
 import { toExternalConfig } from './config-marshal.js';
 import { name } from './portfolio.contract.permit.js';
@@ -15,9 +16,14 @@ import { portfolioDeployConfigShape } from './portfolio-start.core.js';
  * @import {PortfolioDeployConfig} from './portfolio-start.core.js';
  */
 
+const isValidAddr = addr => {
+  return /^0x[a-fA-F0-9]{40}$/.test(addr);
+};
+
 /** @type {ParseArgsConfig['options'] } */
 const options = {
   net: { type: 'string' },
+  replace: { type: 'string' },
 };
 
 /**
@@ -46,6 +52,7 @@ const defaultProposalBuilder = async ({ publishRef, install }, config) => {
  *   chainInfo: string;
  *   net?: string;
  *   peer?: string[];
+ *   replace?: string;
  * }} FlagValues
  */
 /** @type {DeployScriptFunction} */ 0;
@@ -54,17 +61,43 @@ const build = async (homeP, endowments) => {
   /** @type {FlagValues} */
   // @ts-expect-error guaranteed by options config
   const { values: flags } = parseArgs({ args: scriptArgs, options });
-  const isMainnet = flags.net === 'mainnet';
-  const axelarConfig = isMainnet
-    ? harden({ ...axelarMainnetConfig })
-    : harden({ ...axelarConfigTestnet });
+  const boardId = flags.replace;
 
-  // mustMatch(axelarConfig, AxelarConfigShape);
+  /** @type {{ mainnet: PortfolioDeployConfig, testnet: PortfolioDeployConfig }} */
+  const configs = harden({
+    mainnet: {
+      axelarConfig: { ...axelarMainnetConfig },
+      gmpAddresses: {
+        ...gmpAddresses.mainnet,
+      },
+      oldBoardId: boardId || '',
+    },
+    testnet: {
+      axelarConfig: { ...axelarConfigTestnet },
+      gmpAddresses: {
+        ...gmpAddresses.testnet,
+      },
+      oldBoardId: boardId || '',
+    },
+  });
+
+  const isMainnet = flags.net === 'devnet';
+  const config = configs[isMainnet ? 'mainnet' : 'testnet'];
+
+  if (isMainnet) {
+    for (const [chain, chainConfig] of Object.entries(config.axelarConfig)) {
+      const addr = chainConfig.contracts.factory;
+
+      if (!addr || !isValidAddr(addr)) {
+        throw new Error(`Invalid address for ${chain}: ${addr}`);
+      }
+    }
+  }
 
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   // TODO: unit test agreement with startPortfolio.name
   await writeCoreEval('eval-ymax0', utils =>
-    defaultProposalBuilder(utils, harden({ axelarConfig })),
+    defaultProposalBuilder(utils, harden(config)),
   );
 };
 

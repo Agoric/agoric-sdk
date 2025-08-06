@@ -3,10 +3,16 @@
  */
 import type { NatAmount } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
+import { AnyNatAmountShape } from '@agoric/orchestration';
 import { M } from '@endo/patterns';
 import { AxelarChain, SupportedChain } from './constants.js';
-import { makeNatAmountShape, PoolPlaces, type PoolKey } from './type-guards.ts';
-import { AnyNatAmountShape } from '@agoric/orchestration';
+import {
+  makeNatAmountShape,
+  PoolPlaces,
+  TargetAllocationShape,
+  type PoolKey,
+  type TargetAllocation,
+} from './type-guards.ts';
 
 const { keys, values } = Object;
 
@@ -14,13 +20,16 @@ export type SeatKeyword = 'Cash' | 'Deposit';
 export const seatKeywords: SeatKeyword[] = ['Cash', 'Deposit'];
 harden(seatKeywords);
 
-export type AssetPlaceRef = `<${SeatKeyword}>` | `@${SupportedChain}` | PoolKey;
-const PositionRefShape = M.number();
+export type AssetPlaceRef =
+  | `<${SeatKeyword}>`
+  | '+agoric' // deposit LCA
+  | `@${SupportedChain}`
+  | PoolKey;
 const AssetPlaceRefShape = M.or(
   ...seatKeywords.map(kw => `<${kw}>`),
+  '+agoric',
   ...values(SupportedChain).map(c => `@${c}`),
   ...keys(PoolPlaces),
-  PositionRefShape,
 );
 
 // XXX NEEDSTEST: check that all SupportedChains match; no `@`s etc.
@@ -61,12 +70,13 @@ export type MovementDesc = {
   fee?: NatAmount;
   /** for example: { usdnOut: 98n } */
   detail?: Record<string, NatValue>;
+  claim?: boolean;
 };
 
 // XXX strategy: AllocationStrategyInfo;
 export type OfferArgsFor = {
-  openPortfolio: {} | { flow: MovementDesc[] };
-  rebalance: {} | { flow: MovementDesc[] };
+  openPortfolio: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
+  rebalance: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
 };
 
 export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
@@ -77,7 +87,11 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       src: AssetPlaceRefShape,
       dest: AssetPlaceRefShape,
     },
-    { fee: AnyNatAmountShape, detail: M.recordOf(M.string(), M.nat()) },
+    {
+      fee: AnyNatAmountShape,
+      detail: M.recordOf(M.string(), M.nat()),
+      claim: M.boolean(),
+    },
     {},
   );
 
@@ -87,11 +101,16 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       {
         flow: M.arrayOf(movementDescShape, { arrayLengthLimit: 12 }),
         destinationEVMChain: M.or(...keys(AxelarChain)),
+        targetAllocation: TargetAllocationShape,
       },
+      {},
     ) as TypedPattern<OfferArgsFor['openPortfolio']>,
     rebalance: M.splitRecord(
       {},
-      { flow: M.arrayOf(movementDescShape) },
+      {
+        flow: M.arrayOf(movementDescShape),
+        targetAllocation: TargetAllocationShape,
+      },
       {},
     ) as TypedPattern<OfferArgsFor['rebalance']>,
   };
