@@ -10,6 +10,7 @@ import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type {
   AccountId,
+  CaipChainId,
   Denom,
   DenomAmount,
   OrchestrationAccount,
@@ -20,6 +21,7 @@ import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { VTransferIBCEvent } from '@agoric/vats';
+import type { Vow } from '@agoric/vow';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { assert, Fail, q } from '@endo/errors';
@@ -59,6 +61,7 @@ import {
   type PoolKey,
   type ProposalType,
 } from './type-guards.ts';
+import type { ResolverKit } from './resolver/resolver.exo.js';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
@@ -75,6 +78,7 @@ export type PortfolioInstanceContext = {
   gmpFeeInfo: { brand: Brand<'nat'>; denom: Denom };
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
+  cctpClient: GuestInterface<ResolverKit['client']>;
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
@@ -116,6 +120,7 @@ export type TransportDetail<
   S extends SupportedChain,
   D extends SupportedChain,
   CTX = unknown,
+  RecoverCTX = CTX,
 > = {
   how: How;
   connections: { src: S; dest: D }[];
@@ -126,7 +131,7 @@ export type TransportDetail<
     dest: AccountInfoFor[D],
   ) => Promise<void>;
   recover: (
-    ctx: CTX,
+    ctx: RecoverCTX,
     amount: NatAmount,
     src: AccountInfoFor[S],
     dest: AccountInfoFor[D],
@@ -561,8 +566,8 @@ const stepFlow = async (
               amount,
               src: { account: nInfo.ica },
               dest: { proxy: gInfo },
-              apply: () => CCTP.apply(null, amount, nInfo, gInfo),
-              recover: () => CCTP.recover(null, amount, nInfo, gInfo),
+              apply: () => CCTP.apply(ctx, amount, nInfo, gInfo),
+              recover: () => CCTP.recover(ctx, amount, nInfo, gInfo),
             };
           } else {
             return {
@@ -571,7 +576,7 @@ const stepFlow = async (
               src: { proxy: gInfo },
               dest: { account: nInfo.ica },
               apply: () => CCTPfromEVM.apply(evmCtx, amount, gInfo, nInfo),
-              recover: () => CCTPfromEVM.recover(evmCtx, amount, gInfo, nInfo),
+              recover: () => CCTPfromEVM.recover(ctx, amount, gInfo, nInfo),
             };
           }
         });
