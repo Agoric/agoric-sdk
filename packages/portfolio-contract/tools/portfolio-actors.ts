@@ -41,6 +41,25 @@ const { fromEntries } = Object;
 assert.equal(ROOT_STORAGE_PATH, 'orchtest');
 const stripRoot = (path: string) => path.replace(/^orchtest\./, '');
 
+export const makePortfolioQuery = (
+  readPublished: VstorageKit['readPublished'],
+  portfolioKey: `${string}.portfolios.portfolio${number}`,
+) => {
+  const self = harden({
+    getPortfolioStatus: () =>
+      readPublished(portfolioKey) as Promise<StatusFor['portfolio']>,
+    getPositionPaths: async () => {
+      const { positionKeys } = await self.getPortfolioStatus();
+      return positionKeys.map(key => `${portfolioKey}.positions.${key}`);
+    },
+    getPositionStatus: (key: PoolKey) =>
+      readPublished(`${portfolioKey}.positions.${key}`) as Promise<
+        StatusFor['position']
+      >,
+  });
+  return self;
+};
+
 /**
  * Creates a trader object for testing portfolio contract interactions.
  *
