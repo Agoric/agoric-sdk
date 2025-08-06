@@ -4,18 +4,38 @@ import { CCTPStatusChecker } from './cctp-status-checker';
 export class PortfolioListener {
   private vstorageKit: VStorageMock;
   private cctpChecker: CCTPStatusChecker;
+  private isRunning = false;
+  private monitoredTransfers = new Set<string>();
 
   constructor(vstorageKit: VStorageMock) {
     this.vstorageKit = vstorageKit;
     this.cctpChecker = new CCTPStatusChecker();
   }
 
-  async start(): Promise<void> {
-    console.log('[PortfolioListener] Starting CCTP monitoring...');
+  start(): void {
+    if (this.isRunning) return;
 
-    // Get all pending transfers
+    console.log('[PortfolioListener] Starting continuous CCTP monitoring...');
+    this.isRunning = true;
+
+    this.continuousMonitor();
+  }
+
+  stop(): void {
+    console.log('[PortfolioListener] Stopping CCTP monitoring...');
+    this.isRunning = false;
+  }
+
+  private async continuousMonitor(): Promise<void> {
+    while (this.isRunning) {
+      await this.scanForNewTransfers();
+      // Check every 10 seconds for new transfers
+      await new Promise(resolve => setTimeout(resolve, 10000));
+    }
+  }
+
+  private async scanForNewTransfers(): Promise<void> {
     const portfolioIds = ['portfolio1', 'portfolio2', 'portfolio3'];
-    const pendingTransfers: PendingCCTPTransfer[] = [];
 
     for (const portfolioId of portfolioIds) {
       const path = `published.ymax0.portfolios.${portfolioId}`;
@@ -24,20 +44,23 @@ export class PortfolioListener {
       if (portfolioStatus?.pendingCCTP) {
         for (const transfer of portfolioStatus.pendingCCTP) {
           if (transfer.status === 'pending') {
-            pendingTransfers.push(transfer);
+            // TODO: too fragile. Use a better transfer ID
+            const transferId = transfer.destinationAddr;
+
+            // Only start monitoring if we haven't seen this transfer before
+            if (!this.monitoredTransfers.has(transferId)) {
+              console.log(`New pending transfer detected: ${transferId}`);
+              this.monitoredTransfers.add(transferId);
+
+              // Start monitoring this transfer in background
+              this.monitorTransfer(transfer).finally(() => {
+                this.monitoredTransfers.delete(transferId);
+              });
+            }
           }
         }
       }
     }
-
-    console.log(`Found ${pendingTransfers.length} pending transfers`);
-
-    const promises = pendingTransfers.map(transfer =>
-      this.monitorTransfer(transfer),
-    );
-
-    await Promise.all(promises);
-    console.log('[PortfolioListener] All transfers finished monitoring');
   }
 
   private async monitorTransfer(transfer: PendingCCTPTransfer): Promise<void> {
