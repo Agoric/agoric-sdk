@@ -99,11 +99,11 @@ const usdcAddresses = {
 /** @type {AddressesMap} */
 const aaveUsdcAddresses = {
   mainnet: {
-    Ethereum: '0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c', // https://etherscan.io/token/0x98c23e9d8f34fefb1b7bd6a91b7ff122f4e16f5c
-    Avalanche: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://subnets.avax.network/c-chain/address/0x625E7708f30cA75bfd92586e17077590C60eb4cD
-    Arbitrum: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://arbiscan.io/token/0x625e7708f30ca75bfd92586e17077590c60eb4cd
-    Optimism: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://optimistic.etherscan.io/token/0x625e7708f30ca75bfd92586e17077590c60eb4cd
-    Polygon: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://polygonscan.com/token/0x625e7708f30ca75bfd92586e17077590c60eb4cd
+    Ethereum: '0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c', // https://search.onaave.com/?q=atoken%20usdc%20aavev3ethereum
+    Avalanche: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://search.onaave.com/?q=atoken%20usdc%20aavev3avalanche
+    Arbitrum: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://search.onaave.com/?q=atoken%20usdc%20aavev3arbitrum
+    Optimism: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://search.onaave.com/?q=atoken%20usdc%20aavev3optimism
+    Polygon: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://search.onaave.com/?q=atoken%20usdc%20aavev3polygon
   },
   testnet: {
     Ethereum: '0x16dA4541aD1807f4443d92D26044C1147406EB80', // https://sepolia.etherscan.io/token/0x16da4541ad1807f4443d92d26044c1147406eb80
@@ -202,7 +202,6 @@ const mainnetTokenMessenger = (rows =>
 /**
  * Mainnet configuration with real contract addresses
  * @type {EVMContractAddressesMap}
-
  */
 const mainnetContracts = {
   Avalanche: {
