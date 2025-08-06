@@ -87,7 +87,7 @@ export const txFlags = ({
 export const waitForBlock = async (agd, n = 1) => {
   const getHeight = async () => {
     const { stdout } = await agd.exec(['status']);
-    const { latest_block_height: height } = JSON.parse(stdout).SyncInfo;
+    const { latest_block_height: height } = JSON.parse(stdout).sync_info;
     return height;
   };
   const initialHeight = await getHeight();
