@@ -1,50 +1,51 @@
 {
-  "name": "@aglocal/portfolio-contract",
-  "private": true,
+  "name": "@agoric/portfolio-api",
   "version": "0.1.0",
-  "description": "portfolio-contract aka ymax0 or YMax Proof of Concept (PoC)",
+  "description": "API for Portfolio management",
   "type": "module",
   "files": [
     "src",
     "tools"
   ],
+  "main": "src/main.js",
+  "bin": "./src/cli/bin.js",
   "scripts": {
-    "build": "echo see ../portfolio-deploy; exit 0",
+    "build": "exit 0",
     "test": "ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
-    "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint-fix": "yarn lint:eslint --fix",
+    "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:eslint": "yarn run -T eslint .",
     "lint:types": "yarn run -T tsc"
   },
   "devDependencies": {
-    "@agoric/ertp": "workspace:*",
-    "@agoric/fast-usdc": "workspace:*",
-    "@agoric/portfolio-api": "workspace:*",
-    "@agoric/swingset-liveslots": "workspace:*",
-    "@agoric/zoe": "workspace:*",
-    "@agoric/zone": "workspace:*",
-    "@endo/init": "^1.1.12",
-    "@endo/nat": "^5.1.3",
-    "@endo/promise-kit": "^1.1.13",
     "@fast-check/ava": "^2.0.1",
     "ava": "^5.3.0",
     "c8": "^10.1.3",
     "ts-blank-space": "^0.6.1"
   },
   "dependencies": {
+    "@agoric/client-utils": "workspace:*",
     "@agoric/cosmic-proto": "workspace:*",
+    "@agoric/ertp": "workspace:*",
     "@agoric/internal": "workspace:*",
+    "@agoric/notifier": "workspace:*",
     "@agoric/orchestration": "workspace:*",
-    "@agoric/time": "workspace:*",
-    "@agoric/vats": "workspace:*",
-    "@agoric/vow": "workspace:*",
+    "@agoric/zoe": "workspace:*",
+    "@cosmjs/proto-signing": "^0.36.0",
+    "@cosmjs/stargate": "^0.36.0",
     "@endo/base64": "^1.0.12",
+    "@endo/common": "^1.2.13",
     "@endo/errors": "^1.2.13",
+    "@endo/eventual-send": "^1.3.4",
     "@endo/far": "^1.1.14",
+    "@endo/init": "^1.1.12",
+    "@endo/marshal": "^1.8.0",
+    "@endo/nat": "^5.1.3",
     "@endo/pass-style": "^1.6.3",
-    "@endo/patterns": "^1.7.0"
+    "@endo/patterns": "^1.7.0",
+    "@endo/promise-kit": "^1.1.13"
   },
   "ava": {
     "extensions": {
@@ -63,7 +64,8 @@
     ],
     "timeout": "20m"
   },
-  "typeCoverage": {
-    "atLeast": 96.54
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
   }
 }

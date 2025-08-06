@@ -203,6 +203,9 @@ jobs:
       - name: yarn test (orchestration)
         if: (success() || failure())
         run: cd packages/orchestration && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (portfolio-api)
+        if: (success() || failure())
+        run: cd packages/portfolio-api && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (portfolio-contract)
         if: (success() || failure())
         run: cd packages/portfolio-contract && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT

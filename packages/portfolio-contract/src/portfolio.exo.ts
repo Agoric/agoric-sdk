@@ -28,7 +28,11 @@ import { X } from '@endo/errors';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { AxelarChain, SupportedChain, YieldProtocol } from './constants.js';
+import {
+  AxelarChain,
+  SupportedChain,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
 import type { AxelarId } from './portfolio.contract.js';
 import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';

@@ -28,7 +28,7 @@ import {
   RebalanceStrategy,
   SupportedChain,
   type YieldProtocol,
-} from './constants.js';
+} from '@agoric/portfolio-api/src/constants.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {

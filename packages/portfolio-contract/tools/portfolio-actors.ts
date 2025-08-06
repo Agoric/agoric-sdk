@@ -19,7 +19,10 @@ import type { Instance } from '@agoric/zoe';
 import { Fail } from '@endo/errors';
 import { objectMap } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
-import type { AxelarChain, YieldProtocol } from '../src/constants.js';
+import type {
+  AxelarChain,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
 import { type start } from '../src/portfolio.contract.js';
 import type { MovementDesc } from '../src/type-guards-steps.js';
 import {

@@ -28,7 +28,10 @@ import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
-import { RebalanceStrategy, YieldProtocol } from '../src/constants.js';
+import {
+  RebalanceStrategy,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
 import {
   preparePortfolioKit,
   type PortfolioKit,

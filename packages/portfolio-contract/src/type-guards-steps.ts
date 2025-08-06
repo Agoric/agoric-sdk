@@ -5,7 +5,10 @@ import type { NatAmount } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { AnyNatAmountShape } from '@agoric/orchestration';
 import { M } from '@endo/patterns';
-import { AxelarChain, SupportedChain } from './constants.js';
+import {
+  AxelarChain,
+  SupportedChain,
+} from '@agoric/portfolio-api/src/constants.js';
 import {
   makeNatAmountShape,
   PoolPlaces,
