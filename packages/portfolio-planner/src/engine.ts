@@ -185,22 +185,8 @@ export const startEngine = async ({
         console.warn('missing events', type);
         continue;
       }
-      const addrsWithActivity: Bech32Address[] = [
-        ...new Set([
-          ...(respEvents['coin_received.receiver'] || []),
-          ...(respEvents['coin_spent.spender'] || []),
-          ...(respEvents['transfer.recipient'] || []),
-          ...(respEvents['transfer.sender'] || []),
-        ]),
-      ];
-      const depositAddrsWithActivity = new Map(
-        [...addrsWithActivity].flatMap(addr => {
-          const portfolioKey = portfolioKeyForDepositAddr.get(addr);
-          if (!portfolioKey) return [];
-          return [[addr, portfolioKey]] as [[Bech32Address, string]];
-        }),
-      );
 
+      // Capture vstorage updates.
       const eventRecords = Object.entries(respData).flatMap(
         ([key, value]: [string, any]) => {
           // We care about result_begin_block/result_end_block/etc.
@@ -239,6 +225,22 @@ export const startEngine = async ({
 
         return [{ path, value: attributes.value }];
       });
+
+      const addrsWithActivity: Bech32Address[] = [
+        ...new Set([
+          ...(respEvents['coin_received.receiver'] || []),
+          ...(respEvents['coin_spent.spender'] || []),
+          ...(respEvents['transfer.recipient'] || []),
+          ...(respEvents['transfer.sender'] || []),
+        ]),
+      ];
+      const depositAddrsWithActivity = new Map(
+        [...addrsWithActivity].flatMap(addr => {
+          const portfolioKey = portfolioKeyForDepositAddr.get(addr);
+          if (!portfolioKey) return [];
+          return [[addr, portfolioKey]] as [[Bech32Address, string]];
+        }),
+      );
 
       const addrBalances = Object.fromEntries(
         await Promise.all(
