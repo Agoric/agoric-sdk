@@ -40,6 +40,7 @@ Options:
   --exit-success      Exit with success code even if errors occur
   --target-allocation JSON string of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
   --redeem            redeem planner invitation
+  --submit-for <id>   submit (empty) plan for portfolio <id>
   -h, --help          Show this help message`;
 
 const toAccAddress = (address: string): Uint8Array => {
@@ -247,6 +248,31 @@ const redeemPlannerInvitation = async ({
   await signAndBroadcastAction(action, { address, walletKit, client });
 };
 
+const submitSteps = async (
+  portfolioId: number,
+  {
+    address,
+    client,
+    walletKit,
+  }: {
+    address: string;
+    client: SigningStargateClient;
+    walletKit: Awaited<ReturnType<typeof makeSmartWalletKit>>;
+  },
+) => {
+  const { ymax0: instance } = walletKit.agoricNames.instance;
+  // console.error('ymax instance', instance.getBoardId());
+  const steps = [];
+  const action: BridgeAction = harden({
+    method: 'invokeItem',
+    name: 'planner',
+    steps: [{ method: 'submit', args: [portfolioId, steps] }],
+  });
+
+  console.error('submit action', action);
+  await signAndBroadcastAction(action, { address, walletKit, client });
+};
+
 const main = async (
   argv = process.argv,
   env = process.env,
@@ -264,6 +290,7 @@ const main = async (
       'exit-success': { type: 'boolean', default: false },
       'target-allocation': { type: 'string' },
       redeem: { type: 'boolean', default: false },
+      'submit-for': { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
     allowPositionals: true,
@@ -304,6 +331,13 @@ const main = async (
       client,
       now: Date.now,
     });
+    return;
+  }
+
+  const { 'submit-for': portfolioId } = values;
+  if (portfolioId) {
+    await submitSteps(Number(portfolioId), { address, walletKit, client });
+    return;
   }
 
   try {
