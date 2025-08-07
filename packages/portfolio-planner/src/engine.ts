@@ -303,7 +303,10 @@ export const startEngine = async ({
             );
 
             // TODO: consolidate with portfolioIdOfPath
-            const portfolioId = stripPrefix(`portfolio`, portfolioKey);
+            const portfolioId = parseInt(
+              stripPrefix(`portfolio`, portfolioKey),
+              10,
+            );
 
             return { portfolioId, steps };
           },
