@@ -257,6 +257,7 @@ export const startEngine = async ({
             const portfoliosData = vstorageKit.marshaller.fromCapData(value);
             if (portfoliosData.addPortfolio) {
               const key = portfoliosData.addPortfolio;
+              console.warn('Detected new portfolio', key);
               // XXX we should probably read at streamCell.blockHeight.
               const status = await vstorageKit.readPublished(
                 `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${key}`,
@@ -265,6 +266,7 @@ export const startEngine = async ({
               const { depositAddress } = status;
               if (depositAddress) {
                 portfolioKeyForDepositAddr.set(depositAddress, key);
+                console.warn('Added new portfolio', key, depositAddress);
               }
             }
           }
