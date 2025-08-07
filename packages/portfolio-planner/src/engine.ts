@@ -302,10 +302,8 @@ export const startEngine = async ({
               cosmosRest,
             );
 
-            const portfolioId = stripPrefix(
-              `${VSTORAGE_PATH_PREFIX}.`,
-              portfolioKey,
-            );
+            // TODO: consolidate with portfolioIdOfPath
+            const portfolioId = stripPrefix(`portfolio`, portfolioKey);
 
             return { portfolioId, steps };
           },
