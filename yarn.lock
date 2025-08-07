@@ -6393,7 +6393,6 @@ __metadata:
     anylogger: "npm:^0.21.0"
     ava: "npm:^5.3.0"
     c8: "npm:^10.1.2"
-    cac: "npm:^6.7.14"
     chalk: "npm:^5.2.0"
     commander: "npm:^12.1.0"
     deterministic-json: "npm:^1.0.5"
