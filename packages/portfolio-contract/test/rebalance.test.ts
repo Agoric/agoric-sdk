@@ -154,6 +154,47 @@ test('rebalanceMinCostFlow: collect from multiple pools to one', t => {
   t.is(final.C.value, 0n);
 });
 
-test('planTransferPath happy path test', t=>{
-    // a handful of happy-path tests AI!
-}
+test('planTransferPath happy path test', t => {
+  const { brand } = makeIssuerKit('USDC');
+  const make = (value: bigint) => AmountMath.make(brand, value);
+
+  // Test 1: USDN to Aave_Arbitrum
+  const amount1 = make(1000n);
+  const path1 = planTransferPath('USDN', 'Aave_Arbitrum', amount1);
+  
+  t.deepEqual(path1, [
+    { dest: '@noble', src: 'USDNVault', amount: amount1 },
+    { src: '@noble', dest: '@Arbitrum', amount: amount1 },
+    { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount: amount1 },
+  ]);
+
+  // Test 2: Aave_Arbitrum to USDN
+  const amount2 = make(500n);
+  const path2 = planTransferPath('Aave_Arbitrum', 'USDN', amount2);
+  
+  t.deepEqual(path2, [
+    { src: 'Aave_Arbitrum', dest: '@Arbitrum', amount: amount2 },
+    { src: '@Arbitrum', dest: '@noble', amount: amount2 },
+    { src: '@noble', dest: 'USDNVault', amount: amount2, detail: { usdnOut: (amount2.value * 99n) / 100n } },
+  ]);
+
+  // Test 3: Compound_Arbitrum to Aave_Arbitrum (both on same chain)
+  const amount3 = make(750n);
+  const path3 = planTransferPath('Compound_Arbitrum', 'Aave_Arbitrum', amount3);
+  
+  t.deepEqual(path3, [
+    { src: 'Compound_Arbitrum', dest: '@Arbitrum', amount: amount3 },
+    { src: '@Arbitrum', dest: '@noble', amount: amount3 },
+    { src: '@noble', dest: '@Arbitrum', amount: amount3 },
+    { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount: amount3 },
+  ]);
+
+  // Test 4: USDN to USDN (should still go through the vault)
+  const amount4 = make(200n);
+  const path4 = planTransferPath('USDN', 'USDN', amount4);
+  
+  t.deepEqual(path4, [
+    { dest: '@noble', src: 'USDNVault', amount: amount4 },
+    { src: '@noble', dest: 'USDNVault', amount: amount4, detail: { usdnOut: (amount4.value * 99n) / 100n } },
+  ]);
+});
