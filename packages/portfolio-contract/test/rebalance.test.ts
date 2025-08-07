@@ -1,7 +1,7 @@
 import test from 'ava';
 import { AmountMath } from '@agoric/ertp';
-import { rebalanceMinCostFlow } from '../src/rebalance.js';
-import type { Transfer } from '../src/rebalance.js';
+import { rebalanceMinCostFlow } from '../tools/rebalance.ts';
+import type { Transfer } from '../tools/rebalance.ts';
 import type { Amount, Brand } from '@agoric/ertp/src/types.js';
 import { Far } from '@endo/marshal';
 
