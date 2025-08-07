@@ -1,5 +1,5 @@
 import { AmountMath } from '@agoric/ertp';
-import type { Amount, Brand, NatAmount } from '@agoric/ertp/src/types.js';
+import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import type { PoolKey } from '../src/type-guards.ts';
 
 type Pool = PoolKey;
@@ -29,7 +29,7 @@ export function rebalanceMinCostFlow(
     ]),
   );
 
-  type PoolDelta = { pool: Pool; amount: Amount };
+  type PoolDelta = { pool: Pool; amount: NatAmount };
 
   const surplus: PoolDelta[] = [];
   const deficit: PoolDelta[] = [];
@@ -54,8 +54,20 @@ export function rebalanceMinCostFlow(
   const transfers: Transfer[] = [];
 
   while (surplus.length > 0 && deficit.length > 0) {
-    surplus.sort((a, b) => b.amount.value > a.amount.value ? 1 : b.amount.value < a.amount.value ? -1 : 0);
-    deficit.sort((a, b) => b.amount.value > a.amount.value ? 1 : b.amount.value < a.amount.value ? -1 : 0);
+    surplus.sort((a, b) =>
+      b.amount.value > a.amount.value
+        ? 1
+        : b.amount.value < a.amount.value
+          ? -1
+          : 0,
+    );
+    deficit.sort((a, b) =>
+      b.amount.value > a.amount.value
+        ? 1
+        : b.amount.value < a.amount.value
+          ? -1
+          : 0,
+    );
 
     const from = surplus[0];
     const to = deficit[0];
