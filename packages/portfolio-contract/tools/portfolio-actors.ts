@@ -226,8 +226,8 @@ export const makePortfolioSteps = <
     evm = 'Arbitrum',
     feeBrand,
     fees = objectMap(evmGoal, _ => ({
-      Account: make(NonNullish(feeBrand), 150n),
-      Call: make(NonNullish(feeBrand), 100n),
+      Account: make(NonNullish(feeBrand), 10000000n),
+      Call: make(NonNullish(feeBrand), 10000000n),
     })),
     detail = 'USDN' in goal
       ? { usdnOut: ((goal.USDN?.value || 0n) * 99n) / 100n }
@@ -303,6 +303,7 @@ export const planDepositTransfers = (
 
   for (const [poolKey, targetPercent] of Object.entries(targetAllocation)) {
     const currentAmount = currentBalances[poolKey as PoolKey]?.value || 0n;
+    // TODO: higher resolution; at least BP
     const targetAmount = (totalAfterDeposit * BigInt(targetPercent)) / 100n;
     const transferAmount = targetAmount - currentAmount;
 
@@ -313,6 +314,7 @@ export const planDepositTransfers = (
 
   // Ensure we don't exceed the deposit amount
   const totalTransfers = Object.values(transfers).reduce(
+    // TODO: use AmountMath.add
     (sum, amount) => sum + (amount?.value || 0n),
     0n,
   );
