@@ -1,15 +1,17 @@
 import { Fail } from '@endo/errors';
-import { makeVstorageKit } from '@agoric/client-utils';
-import type { MinimalNetworkConfig } from '@agoric/client-utils';
-import { makeCosmosCommand } from './cosmos-cmd.ts';
+import {
+  fetchEnvNetworkConfig,
+  makeSmartWalletKit,
+  makeVstorageKit,
+} from '@agoric/client-utils';
+
+import { SigningStargateClient } from '@cosmjs/stargate';
+
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { startEngine } from './engine.ts';
-
-const DEFAULT_AGD = 'agd';
-const DEFAULT_ENV_PREFIX = 'AGD_';
-const DEFAULT_FROM = 'planner';
+import { makeStargateClientKit } from './swingset-tx.ts';
 
 const getChainIdFromRpc = async (rpc: CosmosRPCClient) => {
   await rpc.opened();
@@ -19,45 +21,47 @@ const getChainIdFromRpc = async (rpc: CosmosRPCClient) => {
   return chainId;
 };
 
-export const main = async (argv, { env }) => {
+export const main = async (
+  argv,
+  {
+    env = process.env,
+    fetch = globalThis.fetch,
+    setTimeout = globalThis.setTimeout,
+    connectWithSigner = SigningStargateClient.connectWithSigner,
+  } = {},
+) => {
   await null;
   // console.log('Hello, world!', { argv });
 
-  const { AGORIC_RPC_URL } = env;
+  const { MNEMONIC } = env;
+  if (!MNEMONIC) throw Error(`MNEMONIC not set`);
 
-  console.warn(`Initializing planner watching`, { AGORIC_RPC_URL });
-  const rpc = new CosmosRPCClient(AGORIC_RPC_URL);
-  const vstorageKit = makeVstorageKit({ fetch }, {
-    rpcAddrs: [AGORIC_RPC_URL],
-  } as MinimalNetworkConfig);
+  const delay = ms =>
+    new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
+  const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
+  const agoricRpcAddr = networkConfig.rpcAddrs[0];
 
-  const {
-    AGD = DEFAULT_AGD,
-    ENV_PREFIX = DEFAULT_ENV_PREFIX,
-    CHAIN_ID = await getChainIdFromRpc(rpc),
-    FROM = DEFAULT_FROM,
-    SPECTRUM_API_URL,
-    SPECTRUM_API_TIMEOUT,
-    SPECTRUM_API_RETRIES,
-  } = env;
+  console.warn(`Initializing planner watching`, { agoricRpcAddr });
+  const rpc = new CosmosRPCClient(agoricRpcAddr);
 
-  console.warn(`Using:`, { AGD, CHAIN_ID, FROM });
+  const rpcChainId = await getChainIdFromRpc(rpc);
 
-  const agd = makeCosmosCommand([AGD], {
-    envPrefix: ENV_PREFIX,
-    node: AGORIC_RPC_URL,
-    from: FROM,
-    chainId: CHAIN_ID,
-  });
+  if (rpcChainId !== networkConfig.chainName) {
+    Fail`Mismatching chainId. config=${networkConfig.chainName}, rpc=${rpcChainId}`;
+  }
 
-  const { stdout: plannerAddress } = await agd.rawOutput.exec([
-    'keys',
-    'show',
-    '-a',
-    FROM,
-  ]);
-  console.log('Planner address:', plannerAddress);
+  const walletKit = await makeSmartWalletKit({ fetch, delay }, networkConfig);
+  const vstorageKit = makeVstorageKit({ fetch }, networkConfig);
 
+  const { address: plannerAddress, client: stargateClient } =
+    await makeStargateClientKit(MNEMONIC, {
+      connectWithSigner,
+      rpcAddr: networkConfig.rpcAddrs[0],
+    });
+
+  console.warn(`Using:`, { networkConfig, plannerAddress });
+
+  const { SPECTRUM_API_URL, SPECTRUM_API_TIMEOUT, SPECTRUM_API_RETRIES } = env;
   const spectrum = new SpectrumClient({
     baseUrl: SPECTRUM_API_URL,
     timeout: SPECTRUM_API_TIMEOUT
@@ -71,8 +75,17 @@ export const main = async (argv, { env }) => {
   const cosmosRest = new CosmosRestClient({
     timeout: 15000, // 15s timeout for REST calls
     retries: 3,
+    variant: env.AGORIC_NET || 'local',
   });
 
-  await startEngine({ agd, rpc, vstorageKit, spectrum, cosmosRest });
+  await startEngine({
+    rpc,
+    vstorageKit,
+    spectrum,
+    cosmosRest,
+    stargateClient,
+    walletKit,
+    plannerAddress,
+  });
 };
 harden(main);

@@ -1,6 +1,7 @@
 interface CosmosRestClientConfig {
   timeout?: number;
   retries?: number;
+  variant: string;
 }
 
 interface ChainConfig {
@@ -29,16 +30,30 @@ interface CosmosApiError extends Error {
 }
 
 // Predefined chain configurations
-const CHAIN_CONFIGS: Record<string, ChainConfig> = {
-  noble: {
-    chainId: 'noble-1',
-    restEndpoint: 'https://noble-api.polkachu.com',
-    name: 'Noble',
+const CHAIN_CONFIGS: Record<string, Record<string, ChainConfig>> = {
+  main: {
+    noble: {
+      chainId: 'noble-1',
+      restEndpoint: 'https://noble-api.polkachu.com',
+      name: 'Noble',
+    },
+    agoric: {
+      chainId: 'agoric-3',
+      restEndpoint: 'https://main.api.agoric.net',
+      name: 'Agoric',
+    },
   },
-  agoric: {
-    chainId: 'agoric-3',
-    restEndpoint: 'https://main.api.agoric.net',
-    name: 'Agoric',
+  devnet: {
+    noble: {
+      chainId: 'grand-1',
+      restEndpoint: 'https://noble-testnet-api.polkachu.com:443',
+      name: 'Noble',
+    },
+    agoric: {
+      chainId: 'agoricdev-25',
+      restEndpoint: 'https://devnet.api.agoric.net',
+      name: 'Agoric',
+    },
   },
 };
 
@@ -47,14 +62,21 @@ export class CosmosRestClient {
 
   private readonly chainConfigs: Map<string, ChainConfig>;
 
-  constructor(config: CosmosRestClientConfig = {}) {
+  constructor(config: CosmosRestClientConfig) {
     this.config = {
       timeout: config.timeout ?? 10000, // 10s timeout
       retries: config.retries ?? 3,
+      variant: config.variant,
     };
 
+    const chainConfig = CHAIN_CONFIGS[config.variant];
+
+    if (!chainConfig) {
+      throw new Error(`Unknown chain config ${this.config.variant}`);
+    }
+
     // Initialize with predefined chains
-    this.chainConfigs = new Map(Object.entries(CHAIN_CONFIGS));
+    this.chainConfigs = new Map(Object.entries(chainConfig));
   }
 
   /**
