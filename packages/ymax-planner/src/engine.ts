@@ -10,6 +10,7 @@ import type { InvokeStoreEntryAction } from '@agoric/smart-wallet/src/smartWalle
 import { mustMatch } from '@agoric/internal';
 import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
+import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type { VstorageKit, SmartWalletKit } from '@agoric/client-utils';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
@@ -41,19 +42,50 @@ const encodedKeyToPath = (key: string) => {
   return path;
 };
 
+/**
+ * Determine whether a dot-separated path starts with a sequence of path
+ * components.
+ */
+const vstoragePathStartsWith = (path: string, prefix: string) =>
+  path === prefix ||
+  path.startsWith(prefix.endsWith('.') ? prefix : `${prefix}.`);
+
 const stripPrefix = (prefix: string, str: string) => {
-  str.startsWith(prefix) || Fail`${str} is missing prefix ${prefix}`;
+  str.startsWith(prefix) || Fail`${str} is missing prefix ${q(prefix)}`;
   return str.slice(prefix.length);
 };
 
+/**
+ * Parse input as JSON, or handle an error (for e.g. substituting a default or
+ * applying a more specific message).
+ */
 const tryJsonParse = (json: string, replaceErr?: (err?: Error) => unknown) => {
   try {
     return JSON.parse(json);
   } catch (err) {
     if (!replaceErr) throw err;
-    return replaceErr(err);
+    try {
+      return replaceErr(err);
+    } catch (newErr) {
+      if (!newErr.cause) assert.note(newErr, err.message);
+      throw newErr;
+    }
   }
 };
+
+/**
+ * Map the elements of an array to new values, skipping elements for which the
+ * mapping results in either `undefined` or `false`.
+ */
+const partialMap = <T, U>(
+  arr: T[],
+  mapOrDrop: (value: T, index?: number, arr?: T[]) => U | undefined | false,
+): U[] =>
+  arr.flatMap((el, i, arrArg) => {
+    const result = mapOrDrop(el, i, arrArg);
+    if (result === undefined || result === false) return [];
+    return [result];
+  });
 
 type IO = {
   rpc: CosmosRPCClient;
@@ -132,21 +164,22 @@ export const startEngine = async ({
 
   // TODO: verify consumption of paginated data.
   const portfolioKeys = await vstorageKit.vstorage.keys(VSTORAGE_PATH_PREFIX);
-  const portfolioAddressEntries = await Promise.all(
-    portfolioKeys.map(async key => {
+  const portfolioAddressRecords = await Promise.all(
+    portfolioKeys.map(async portfolioKey => {
       const status = await vstorageKit.readPublished(
-        `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${key}`,
+        `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${portfolioKey}`,
       );
-      mustMatch(status, PortfolioStatusShapeExt, key);
+      mustMatch(status, PortfolioStatusShapeExt, portfolioKey);
       const { depositAddress } = status;
-      if (!depositAddress) return undefined;
-      return [key, depositAddress] as [string, Bech32Address];
+      if (!depositAddress) return;
+      return { portfolioKey, depositAddress };
     }),
   );
   const portfolioKeyForDepositAddr = new Map(
-    portfolioAddressEntries.flatMap(entry =>
-      entry ? [entry.toReversed()] : [],
-    ) as [Bech32Address, string][],
+    partialMap(
+      portfolioAddressRecords,
+      record => record && [record.depositAddress, record.portfolioKey],
+    ),
   );
 
   try {
@@ -169,43 +202,34 @@ export const startEngine = async ({
       }
 
       // Capture vstorage updates.
-      const eventRecords = Object.entries(respData).flatMap(
-        ([key, value]: [string, any]) => {
-          // We care about result_begin_block/result_end_block/etc.
-          if (!key.startsWith('result_')) return [];
-          if (!value?.events) {
-            console.warn('missing events', type, key);
-            return [];
-          }
-          return value.events as CosmosEvent[];
-        },
-      );
-      const portfolioVstorageEvents = eventRecords.flatMap(eventRecord => {
+      const eventRecords = Object.entries(respData).flatMap(([key, value]) => {
+        // We care about result_begin_block/result_end_block/etc.
+        if (!key.startsWith('result_')) return [];
+        const events = (value as any)?.events;
+        if (!events) console.warn('missing events', type, key);
+        return events ?? [];
+      }) as CosmosEvent[];
+      const portfolioVstorageEvents = partialMap(eventRecords, eventRecord => {
         const { type: eventType, attributes: attrRecords } = eventRecord;
         // Filter for vstorage state_change events.
         // cf. golang/cosmos/types/events.go
-        if (eventType !== 'state_change') return [];
+        if (eventType !== 'state_change') return;
         const attributes = fromUniqueEntries(
           attrRecords?.map(({ key, value }) => [key, value]) || [],
         );
-        if (attributes.store !== 'vstorage') return [];
+        if (attributes.store !== 'vstorage') return;
 
         // Require attributes "key" and "value".
         if (attributes.key === undefined || attributes.value === undefined) {
           console.error('vstorage state_change missing "key" and/or "value"');
-          return [];
+          return;
         }
 
         // Filter for ymax portfolio paths.
         const path = encodedKeyToPath(attributes.key);
-        if (
-          path !== VSTORAGE_PATH_PREFIX &&
-          !path.startsWith(`${VSTORAGE_PATH_PREFIX}.`)
-        ) {
-          return [];
-        }
+        if (!vstoragePathStartsWith(path, VSTORAGE_PATH_PREFIX)) return;
 
-        return [{ path, value: attributes.value }];
+        return { path, value: attributes.value };
       });
 
       // Detect new portfolios.
@@ -215,18 +239,19 @@ export const startEngine = async ({
           _err =>
             Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
         );
-        harden(streamCell);
-        mustMatch(streamCell, StreamCellShape);
+        mustMatch(harden(streamCell), StreamCellShape);
         if (path === VSTORAGE_PATH_PREFIX) {
           for (let i = 0; i < streamCell.values.length; i += 1) {
-            const strValue = streamCell.values[i] as string;
+            const strValue = streamCell.values[i];
             const value = tryJsonParse(
               // @ts-expect-error use `undefined` to force an error for non-string input
               typeof strValue === 'string' ? strValue : undefined,
               _err =>
                 Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
             );
-            const portfoliosData = vstorageKit.marshaller.fromCapData(value);
+            const portfoliosData = vstorageKit.marshaller.fromCapData(
+              value,
+            ) as StatusFor['portfolios'];
             if (portfoliosData.addPortfolio) {
               const key = portfoliosData.addPortfolio;
               console.warn('Detected new portfolio', key);
@@ -236,10 +261,9 @@ export const startEngine = async ({
               );
               mustMatch(status, PortfolioStatusShapeExt, key);
               const { depositAddress } = status;
-              if (depositAddress) {
-                portfolioKeyForDepositAddr.set(depositAddress, key);
-                console.warn('Added new portfolio', key, depositAddress);
-              }
+              if (!depositAddress) continue;
+              portfolioKeyForDepositAddr.set(depositAddress, key);
+              console.warn('Added new portfolio', key, depositAddress);
             }
           }
         }
@@ -256,10 +280,9 @@ export const startEngine = async ({
         ]),
       ];
       const depositAddrsWithActivity = new Map(
-        [...addrsWithActivity].flatMap(addr => {
+        partialMap(addrsWithActivity, addr => {
           const portfolioKey = portfolioKeyForDepositAddr.get(addr);
-          if (!portfolioKey) return [];
-          return [[addr, portfolioKey]] as [[Bech32Address, string]];
+          return portfolioKey ? [addr, portfolioKey] : undefined;
         }),
       );
 
@@ -336,11 +359,7 @@ export const startEngine = async ({
         ),
       );
 
-      for await (const portfolioOp of portfolioOps) {
-        if (!portfolioOp) continue;
-
-        const { portfolioId, steps } = portfolioOp;
-
+      for (const { portfolioId, steps } of portfolioOps.filter(x => !!x)) {
         const action: InvokeStoreEntryAction = harden({
           method: 'invokeEntry',
           message: {
@@ -351,14 +370,12 @@ export const startEngine = async ({
         });
 
         console.log('submitting action', action);
-
         const result = await submitAction(action, {
           stargateClient,
           walletKit,
           skipPoll: true,
           address: plannerAddress,
         });
-
         console.log('result', result);
       }
     }
