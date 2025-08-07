@@ -309,6 +309,12 @@ export const startEngine = async ({
         ),
       );
 
+      const vbankAssets = new Map(
+        depositAddrsWithActivity.size
+          ? await vstorageKit.readPublished('agoricNames.vbankAsset')
+          : undefined,
+      );
+
       // Respond to deposits.
       const portfolioOps = await Promise.all(
         [...depositAddrsWithActivity.entries()].map(
@@ -325,11 +331,7 @@ export const startEngine = async ({
             }
             const { denom, amount: balanceValue } = balances[0];
 
-            // TODO: Cache brands as they are mapped.
-            const vbankAssets = await vstorageKit.readPublished(
-              'agoricNames.vbankAsset',
-            );
-            const brand = new Map(vbankAssets).get(denom)?.brand as
+            const brand = vbankAssets.get(denom)?.brand as
               | undefined
               | Brand<'nat'>;
             if (!brand) throw Fail`no brand found for denom ${q(denom)}`;
