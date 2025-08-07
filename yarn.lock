@@ -266,6 +266,7 @@ __metadata:
     "@endo/errors": "npm:^1.2.13"
     "@endo/init": "npm:^1.1.12"
     "@endo/nat": "npm:^5.1.3"
+    "@endo/pass-style": "npm:^1.6.3"
     "@endo/promise-kit": "npm:^1.1.13"
     "@types/node": "npm:^22.10.2"
     "@types/ws": "npm:^8"

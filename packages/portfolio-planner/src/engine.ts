@@ -2,10 +2,12 @@
 /* eslint-env node */
 import { inspect } from 'node:util';
 import { q, Fail } from '@endo/errors';
+import { isPrimitive } from '@endo/pass-style';
+import { makePromiseKit, type PromiseKit } from '@endo/promise-kit';
 import { Nat } from '@endo/nat';
 import { PortfolioStatusShapeExt } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { AmountMath } from '@agoric/ertp';
-import type { SigningStargateClient } from '@cosmjs/stargate';
+import type { Coin, SigningStargateClient } from '@cosmjs/stargate';
 import type { InvokeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import { mustMatch } from '@agoric/internal';
 import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
@@ -18,6 +20,10 @@ import type { SpectrumClient } from './spectrum-client.ts';
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import { handleDeposit } from './plan-deposit.ts';
 import { submitAction } from './swingset-tx.ts';
+
+const { isInteger } = Number;
+
+const sink = () => {};
 
 type CosmosEvent = {
   type: string;
@@ -86,6 +92,177 @@ const partialMap = <T, U>(
     if (result === undefined || result === false) return [];
     return [result];
   });
+
+/**
+ * Consume an async iterable with at most `capacity` unsettled results at any
+ * given time, passing each input through `processInput` and providing
+ * [result, index] pairs in settlement order.
+ * Source order can be recovered with consumer code like:
+ * ```
+ * const results = [];
+ * for (const [result, i] of makeWorkPool(...)) results[i] = result;
+ * ```
+ * or something more sophisticated to eagerly detect complete subsequences
+ * immediately following a previous high-water mark for contiguous results.
+ *
+ * To support cases in which `processInput` is used only for side effects rather
+ * than its return value, the returned AsyncGenerator has a promise-valued
+ * `done` property that fulfills when all input has been processed (to `true` if
+ * the source was exhausted or to `false` if iteration was aborted early),
+ * regardless of how many final iteration results have been consumed:
+ * ```
+ * await makeWorkPool(...).done;
+ * ```
+ */
+const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
+  source: AsyncIterable<T> | Iterable<T>,
+  config: undefined | [capacity: number][0] | { capacity?: number; mode?: M },
+  processInput: (
+    input: Awaited<T>,
+    index?: number,
+  ) => Promise<Awaited<U>> | Awaited<U> = x => x as any,
+): AsyncGenerator<
+  [
+    M extends 'allSettled' ? PromiseSettledResult<Awaited<U>> : Awaited<U>,
+    number,
+  ]
+> & { done: Promise<boolean> } => {
+  // Validate arguments.
+  if (isPrimitive(config)) config = { capacity: config, mode: undefined };
+  const { capacity = 10, mode = 'all' } = config;
+  if (!(capacity === Infinity || (isInteger(capacity) && capacity > 0))) {
+    throw RangeError('capacity must be a positive integer');
+  }
+  if (mode !== 'all' && mode !== 'allSettled') {
+    throw RangeError('mode must be "all" or "allSettled"');
+  }
+
+  // Normalize source into an `inputs` iterator.
+  const makeInputs = source[Symbol.asyncIterator] || source[Symbol.iterator];
+  const inputs = Reflect.apply(makeInputs, source, []) as
+    | AsyncIterator<Awaited<T>>
+    | Iterator<Awaited<T>>;
+  let inputsExhausted = false;
+  let terminated = false;
+  const doneKit = makePromiseKit() as PromiseKit<boolean>;
+
+  // Concurrently consume up to `capacity` inputs, pushing the result of
+  // processing each into a linked chain of promises before consuming more.
+  let nextIndex = 0;
+  type ResultNode = {
+    nextP: Promise<ResultNode>;
+    index: number;
+    result: M extends 'allSettled'
+      ? PromiseSettledResult<Awaited<U>>
+      : Awaited<U>;
+  };
+  const { promise: headP, ...headResolvers } =
+    makePromiseKit() as PromiseKit<ResultNode>;
+  let { resolve: resolveCurrent, reject } = headResolvers;
+  let inFlight = 0;
+  const takeMoreInput = async () => {
+    await null;
+    while (inFlight < capacity && !inputsExhausted && !terminated) {
+      inFlight += 1;
+      const index = nextIndex;
+      nextIndex += 1;
+      let iterResultP: Promise<IteratorResult<Awaited<T>>>;
+      try {
+        iterResultP = Promise.resolve(inputs.next());
+      } catch (err) {
+        iterResultP = Promise.reject(err);
+      }
+      void iterResultP
+        .then(async iterResult => {
+          if (terminated) return;
+
+          if (iterResult.done) {
+            inFlight -= 1;
+            inputsExhausted = true;
+            void takeMoreInput();
+            return;
+          }
+
+          // Process the input, propagating errors if mode is not "allSettled".
+          await null;
+          let settlementDesc: PromiseSettledResult<Awaited<U>> = {
+            status: 'rejected',
+            reason: undefined,
+          };
+          try {
+            const fulfillment = await processInput(iterResult.value, index);
+            if (terminated) return;
+            settlementDesc = { status: 'fulfilled', value: fulfillment };
+          } catch (err) {
+            if (terminated) return;
+            if (mode !== 'allSettled') throw err;
+            (settlementDesc as PromiseRejectedResult).reason = err;
+          }
+
+          // Fulfill the current tail promise with a record that includes the
+          // source index to which it corresponds and a reference to a new
+          // [unsettled] successor (thereby extending the chain), then try to
+          // consume more input.
+          const { promise: nextP, ...nextResolvers } =
+            makePromiseKit() as PromiseKit<ResultNode>;
+          // Analogous to `Promise.allSettled`, mode "allSettled" produces
+          // { status, value, reason } PromiseSettledResult records.
+          const result =
+            mode === 'allSettled'
+              ? settlementDesc
+              : (settlementDesc as PromiseFulfilledResult<Awaited<U>>).value;
+          inFlight -= 1;
+          void takeMoreInput();
+          resolveCurrent({ nextP, index, result: result as any });
+          ({ resolve: resolveCurrent, reject } = nextResolvers);
+        })
+        .catch(err => {
+          // End the chain with this rejection.
+          terminated = true;
+          reject(err);
+          doneKit.reject(err);
+          void (async () => inputs.throw?.(err))().catch(sink);
+        });
+    }
+    if (inFlight <= 0 && inputsExhausted) {
+      // @ts-expect-error This dummy signaling record conveys no result.
+      resolveCurrent({ nextP: undefined, index: -1, result: undefined });
+      doneKit.resolve(true);
+    }
+  };
+
+  const results = (async function* generateResults(nextP) {
+    await null;
+    let exhausted = false;
+    try {
+      for (;;) {
+        const { nextP: successor, index, result } = await nextP;
+        nextP = successor;
+        if (!successor) break;
+        yield Object.freeze([result, index]) as [typeof result, number];
+      }
+      exhausted = true;
+    } catch (err) {
+      terminated = true;
+      doneKit.reject(err);
+      void (async () => inputs.throw?.(err))().catch(sink);
+      throw err;
+    } finally {
+      const interrupted = !exhausted && !terminated;
+      terminated = true;
+      doneKit.resolve(false);
+      if (interrupted) void (async () => inputs.return?.())().catch(sink);
+    }
+  })(headP);
+  Object.defineProperty(results, 'done', {
+    value: doneKit.promise,
+    enumerable: true,
+  });
+
+  void takeMoreInput();
+
+  return harden(results as typeof results & { done: Promise<boolean> });
+};
 
 type IO = {
   rpc: CosmosRPCClient;
@@ -192,23 +369,16 @@ export const startEngine = async ({
 
   // TODO: verify consumption of paginated data.
   const portfolioKeys = await vstorageKit.vstorage.keys(VSTORAGE_PATH_PREFIX);
-  const portfolioAddressRecords = await Promise.all(
-    portfolioKeys.map(async portfolioKey => {
-      const status = await vstorageKit.readPublished(
-        `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${portfolioKey}`,
-      );
-      mustMatch(status, PortfolioStatusShapeExt, portfolioKey);
-      const { depositAddress } = status;
-      if (!depositAddress) return;
-      return { portfolioKey, depositAddress };
-    }),
-  );
-  const portfolioKeyForDepositAddr = new Map(
-    partialMap(
-      portfolioAddressRecords,
-      record => record && [record.depositAddress, record.portfolioKey],
-    ),
-  );
+  const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
+  await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
+    const status = await vstorageKit.readPublished(
+      `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${portfolioKey}`,
+    );
+    mustMatch(status, PortfolioStatusShapeExt, portfolioKey);
+    const { depositAddress } = status;
+    if (!depositAddress) return;
+    portfolioKeyForDepositAddr.set(depositAddress, portfolioKey);
+  }).done;
 
   try {
     // console.warn('consuming events');
@@ -314,17 +484,14 @@ export const startEngine = async ({
         }),
       );
 
-      const addrBalances = Object.fromEntries(
-        await Promise.all(
-          addrsWithActivity.map(async addr => {
-            const balancesResp = await cosmosRest.getAccountBalances(
-              'agoric',
-              addr,
-            );
-            return [addr, balancesResp?.balances];
-          }),
-        ),
-      );
+      const addrBalances = new Map() as Map<Bech32Address, Coin[]>;
+      await makeWorkPool(addrsWithActivity, undefined, async addr => {
+        const balancesResp = await cosmosRest.getAccountBalances(
+          'agoric',
+          addr,
+        );
+        addrBalances.set(addr, balancesResp.balances);
+      }).done;
       console.log(
         inspect(
           {
@@ -349,11 +516,11 @@ export const startEngine = async ({
           async ([addr, portfolioKey]) => {
             // TODO: maybe snapshot initial balances for deposit amount determination?
             // For now, require a single denom and assume that the full amount is a new deposit.
-            const balances = addrBalances[addr];
-            if (balances.length !== 1) {
+            const balances = addrBalances.get(addr);
+            if (balances?.length !== 1) {
               console.error(
                 `Unclear which denom to handle for ${addr}`,
-                balances.map(amount => amount.denom),
+                balances?.map(amount => amount.denom),
               );
               return;
             }
