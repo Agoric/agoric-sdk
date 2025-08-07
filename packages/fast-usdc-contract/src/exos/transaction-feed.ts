@@ -203,7 +203,7 @@ export const prepareTransactionFeedKit = (zone: Zone, zcf: ZCF) => {
           );
 
           {
-            let lastEvidence;
+            let lastEvidence: CctpTxEvidence | undefined;
             for (const store of found) {
               const next = store.get(txHash);
               if (lastEvidence && !keyEQ(lastEvidence, next)) {
