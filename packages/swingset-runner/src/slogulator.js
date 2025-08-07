@@ -216,16 +216,16 @@ export async function main() {
   if (argv.crankbreaks) {
     p('// startup');
   }
-  
+
   // Use Node native readline interface
   const rl = createInterface({
     input: fileStream,
-    crlfDelay: Infinity
+    crlfDelay: Infinity,
   });
-  
+
   let lineNumber = 0;
   let skipCrank = -1;
-  
+
   for await (const line of rl) {
     lineNumber += 1;
     let entry;

@@ -189,16 +189,13 @@ show-config      display the client connection parameters
       break;
     }
     case 'bootstrap': {
-      const {
-        values: subOptsValues,
-        positionals: subArgs
-      } = parseArgs({
+      const { values: subOptsValues, positionals: subArgs } = parseArgs({
         args: args.slice(1),
         options: {
           'boot-tokens': { type: 'string', default: DEFAULT_BOOT_TOKENS },
-          'bump': { type: 'string' },
+          bump: { type: 'string' },
           'import-from': { type: 'string' },
-          'genesis': { type: 'string' },
+          genesis: { type: 'string' },
         },
         allowPositionals: true,
         strict: false,
@@ -310,9 +307,9 @@ show-config      display the client connection parameters
       const { values: subOpts, positionals: subArgs } = parseArgs({
         args: args.slice(1),
         options: {
-          'bump': { type: 'string' },
+          bump: { type: 'string' },
           'import-from': { type: 'string' },
-          'genesis': { type: 'string' },
+          genesis: { type: 'string' },
         },
         allowPositionals: true,
         strict: false,

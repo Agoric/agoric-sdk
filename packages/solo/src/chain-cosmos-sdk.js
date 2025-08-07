@@ -73,10 +73,10 @@ const makeTempFile = async (prefix, contents) => {
   // Create temporary directory with Node native fs.mkdtemp
   const tempDir = await mkdtemp(path.join(tmpdir(), prefix));
   const tempPath = path.join(tempDir, 'tempfile');
-  
+
   // Write contents to file
   await writeFile(tempPath, contents);
-  
+
   return {
     path: tempPath,
     async cleanup() {
@@ -86,7 +86,7 @@ const makeTempFile = async (prefix, contents) => {
       } catch (err) {
         // Ignore cleanup errors
       }
-    }
+    },
   };
 };
 

@@ -199,9 +199,9 @@ async function makeJSONStore(
         const fileStream = createReadStream(storeFile);
         const rl = createInterface({
           input: fileStream,
-          crlfDelay: Infinity
+          crlfDelay: Infinity,
         });
-        
+
         for await (const line of rl) {
           if (line.trim()) {
             const [key, value] = JSON.parse(line);

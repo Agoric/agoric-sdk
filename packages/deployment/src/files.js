@@ -43,13 +43,13 @@ export const writing = (
 
     createFile: async (filePath, contents) => {
       console.error(chalk.yellow(`Creating ${chalk.underline(filePath)}`));
-      
+
       // Create temp file with Node native fs.mkdtemp
       const dir = dirname(filePath);
       const name = basename(filePath);
       const tempDir = await mkdtemp(path.join(tmpdir(), `${name}.`));
       const tempPath = path.join(tempDir, name);
-      
+
       try {
         // Write the contents and rename
         await writeFile(tempPath, contents);
@@ -64,7 +64,7 @@ export const writing = (
         }
         throw e;
       }
-      
+
       // Clean up temp directory
       try {
         await fs.promises.rmdir(tempDir);

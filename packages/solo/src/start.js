@@ -59,11 +59,11 @@ const rename = promisify(fs.rename);
 const atomicReplaceFile = async (filename, contents) => {
   const dir = path.dirname(filename);
   const basename = path.basename(filename);
-  
+
   // Create temp file with Node native fs.mkdtemp
   const tempDir = await mkdtemp(path.join(tmpdir(), `${basename}.`));
   const tempPath = path.join(tempDir, basename);
-  
+
   try {
     // Write the contents and rename
     await writeFile(tempPath, contents);
@@ -78,7 +78,7 @@ const atomicReplaceFile = async (filename, contents) => {
     }
     throw e;
   }
-  
+
   // Clean up temp directory
   try {
     await fs.promises.rmdir(tempDir);

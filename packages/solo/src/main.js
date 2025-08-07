@@ -90,7 +90,10 @@ start
           webport: { type: 'string', default: '8000' },
           webhost: { type: 'string', default: '127.0.0.1' },
           egresses: { type: 'string', default: DEFAULT_EGRESSES },
-          defaultManagerType: { type: 'string', default: process.env.SWINGSET_WORKER_TYPE || 'xs-worker' },
+          defaultManagerType: {
+            type: 'string',
+            default: process.env.SWINGSET_WORKER_TYPE || 'xs-worker',
+          },
         },
         allowPositionals: true,
         strict: false,
