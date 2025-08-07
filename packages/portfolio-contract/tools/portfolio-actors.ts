@@ -381,6 +381,11 @@ export const planTransferPath = (
   dest: PoolKey,
   amount: NatAmount,
 ): MovementDesc[] => {
+  // if the assets are already there, an empty path is in order
+  if (src === dest) {
+    return harden([]);
+  }
+
   const tail = planTransfer(dest, amount, []);
   const { protocol: p, chainName: evm } = PoolPlaces[src];
   const steps: MovementDesc[] = [];
