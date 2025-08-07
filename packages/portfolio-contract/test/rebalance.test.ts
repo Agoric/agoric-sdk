@@ -34,7 +34,7 @@ test('rebalanceMinCostFlow: simple 2-pool case', t => {
     A: AmountMath.make(brand, 80n),
     B: AmountMath.make(brand, 20n),
   };
-  const target = { A: 0.5, B: 0.5 };
+  const target = { A: 5000n, B: 5000n };
   const transfers = rebalanceMinCostFlow(current, target, brand);
 
   t.deepEqual(transfers, [
@@ -53,7 +53,7 @@ test('rebalanceMinCostFlow: 3-pool rounding', t => {
     B: AmountMath.makeEmpty(brand),
     C: AmountMath.makeEmpty(brand),
   };
-  const target = { A: 0.34, B: 0.33, C: 0.33 };
+  const target = { A: 3400n, B: 3300n, C: 3300n };
   const transfers = rebalanceMinCostFlow(current, target, brand);
 
   t.deepEqual(transfers, [
@@ -81,7 +81,7 @@ test('rebalanceMinCostFlow: already balanced', t => {
     A: AmountMath.make(brand, 50n),
     B: AmountMath.make(brand, 50n),
   };
-  const target = { A: 0.5, B: 0.5 };
+  const target = { A: 5000n, B: 5000n };
   const transfers = rebalanceMinCostFlow(current, target, brand);
 
   t.deepEqual(transfers, []);
@@ -94,7 +94,7 @@ test('rebalanceMinCostFlow: all to one', t => {
     B: AmountMath.make(brand, 20n),
     C: AmountMath.make(brand, 70n),
   };
-  const target = { A: 1, B: 0, C: 0 };
+  const target = { A: 10000n, B: 0n, C: 0n };
   const transfers = rebalanceMinCostFlow(current, target, brand);
 
   t.deepEqual(transfers, [
@@ -116,7 +116,7 @@ test('rebalanceMinCostFlow: distribute from one pool to others', t => {
     B: AmountMath.makeEmpty(brand),
     C: AmountMath.makeEmpty(brand),
   };
-  const target = { A: 0, B: 0.6, C: 0.4 };
+  const target = { A: 0n, B: 6000n, C: 4000n };
   const transfers = rebalanceMinCostFlow(current, target, brand);
 
   t.deepEqual(transfers, [
@@ -138,7 +138,7 @@ test('rebalanceMinCostFlow: collect from multiple pools to one', t => {
     B: AmountMath.make(brand, 30n),
     C: AmountMath.make(brand, 70n),
   };
-  const target = { A: 1, B: 0, C: 0 };
+  const target = { A: 10000n, B: 0n, C: 0n };
   const transfers = rebalanceMinCostFlow(current, target, brand);
 
   t.deepEqual(transfers, [
