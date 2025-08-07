@@ -19,11 +19,11 @@
     "@agoric/cosmic-proto": "dev",
     "@agoric/fast-usdc": "dev",
     "@agoric/internal": "dev",
-    "@cosmjs/amino": "npm:^0.34.0",
-    "@cosmjs/cosmwasm-stargate": "^0.34.0",
-    "@cosmjs/crypto": "^0.34.0",
-    "@cosmjs/proto-signing": "^0.34.0",
-    "@cosmjs/stargate": "^0.34.0",
+    "@cosmjs/amino": "^0.35.0-rc",
+    "@cosmjs/cosmwasm-stargate": "^0.35.0-rc",
+    "@cosmjs/crypto": "^0.35.0-rc",
+    "@cosmjs/proto-signing": "^0.35.0-rc",
+    "@cosmjs/stargate": "^0.35.0-rc",
     "@endo/errors": "^1.2.13",
     "@endo/far": "^1.1.14",
     "@endo/nat": "^5.1.3",
@@ -99,9 +99,9 @@
     "@agoric/xsnap-lockdown": "portal:../packages/xsnap-lockdown",
     "@agoric/zoe": "portal:../packages/zoe",
     "@agoric/zone": "portal:../packages/zone",
-    "@cosmjs/tendermint-rpc@npm:0.32.3": "0.34.0",
-    "@cosmjs/proto-signing": "0.34.0",
-    "@cosmjs/stargate": "0.34.0"
+    "@cosmjs/tendermint-rpc@npm:0.32.3": "npm:^0.35.0-rc",
+    "@cosmjs/proto-signing": "npm:^0.35.0-rc",
+    "@cosmjs/stargate": "npm:^0.35.0-rc"
   },
   "license": "Apache-2.0"
 }
