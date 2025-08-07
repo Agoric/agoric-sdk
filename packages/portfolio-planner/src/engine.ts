@@ -2,7 +2,9 @@
 /* eslint-env node */
 import { inspect } from 'node:util';
 import { q, Fail } from '@endo/errors';
+import { Nat } from '@endo/nat';
 import { PortfolioStatusShapeExt } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import { AmountMath } from '@agoric/ertp';
 import { mustMatch } from '@agoric/internal';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import type { VstorageKit } from '@agoric/client-utils';
@@ -11,6 +13,7 @@ import type { CosmosCommand } from './cosmos-cmd.js';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
+import { handleDeposit } from './plan-deposit.ts';
 
 type CosmosEvent = {
   type: string;
@@ -158,8 +161,10 @@ export const startEngine = async ({
       return [key, depositAddress] as [string, Bech32Address];
     }),
   );
-  const depositAddresses = new Map(
-    portfolioAddressEntries.filter(entry => entry) as [string, Bech32Address][],
+  const portfolioKeyForDepositAddr = new Map(
+    portfolioAddressEntries.flatMap(entry =>
+      entry ? [entry.toReversed()] : [],
+    ) as [Bech32Address, string][],
   );
 
   try {
@@ -180,7 +185,7 @@ export const startEngine = async ({
         console.warn('missing events', type);
         continue;
       }
-      const addrsWithActivity = [
+      const addrsWithActivity: Bech32Address[] = [
         ...new Set([
           ...(respEvents['coin_received.receiver'] || []),
           ...(respEvents['coin_spent.spender'] || []),
@@ -188,8 +193,12 @@ export const startEngine = async ({
           ...(respEvents['transfer.sender'] || []),
         ]),
       ];
-      const depositAddrsWithActivity = [...addrsWithActivity].filter(addr =>
-        depositAddresses.has(addr),
+      const depositAddrsWithActivity = new Map(
+        [...addrsWithActivity].flatMap(addr => {
+          const portfolioKey = portfolioKeyForDepositAddr.get(addr);
+          if (!portfolioKey) return [];
+          return [[addr, portfolioKey]] as [[Bech32Address, string]];
+        }),
       );
 
       const eventRecords = Object.entries(respData).flatMap(
@@ -242,7 +251,6 @@ export const startEngine = async ({
           }),
         ),
       );
-
       console.log(
         inspect(
           {
@@ -252,6 +260,48 @@ export const startEngine = async ({
             portfolioVstorageEvents,
           },
           { depth: 10 },
+        ),
+      );
+
+      // Respond to changes.
+      await Promise.all(
+        [...depositAddrsWithActivity.entries()].map(
+          async ([addr, portfolioKey]) => {
+            // TODO: maybe snapshot initial balances for deposit amount determination?
+            // For now, require a single denom and assume that the full amount is a new deposit.
+            const balances = addrBalances[addr];
+            if (balances.length !== 1) {
+              console.error(
+                `Unclear which denom to handle for ${addr}`,
+                balances.map(amount => amount.denom),
+              );
+              return;
+            }
+            const { denom, amount: balanceValue } = balances[0];
+
+            // TODO: Cache brands as they are mapped.
+            const vbankAssets = await vstorageKit.readPublished(
+              'agoricNames.vbankAsset',
+            );
+            const brand = new Map(vbankAssets).get(denom)?.brand as
+              | undefined
+              | Brand<'nat'>;
+            if (!brand) throw Fail`no brand found for denom ${q(denom)}`;
+            const amount = AmountMath.make(brand, Nat(BigInt(balanceValue)));
+
+            const unprefixedPortfolioPath = stripPrefix(
+              'published.',
+              `${VSTORAGE_PATH_PREFIX}.${portfolioKey}`,
+            );
+
+            await handleDeposit(
+              amount,
+              unprefixedPortfolioPath as any,
+              vstorageKit.readPublished,
+              spectrum,
+              cosmosRest,
+            );
+          },
         ),
       );
     }
