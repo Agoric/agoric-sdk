@@ -510,7 +510,9 @@ const stepFlow = async (
             src: { account: lcaIn },
             dest: { account: lca },
             apply: () => lcaIn.send(lca.getAddress(), amount),
-            recover: () => lca.send(lcaIn.getAddress(), amount),
+            recover: async () => {
+              trace('recover send is noop; not sending back to deposit LCA');
+            },
           };
         });
         break;
