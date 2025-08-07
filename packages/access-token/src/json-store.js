@@ -3,7 +3,6 @@ import fs from 'fs';
 import path from 'path';
 import process from 'process';
 import lockfile from 'proper-lockfile';
-import Readlines from 'n-readlines';
 
 // TODO: Update this when we make a breaking change.
 // const DATA_FILE = 'data.jsonlines';
@@ -193,22 +192,20 @@ async function makeJSONStore(
     if (forceReset) {
       safeUnlink(storeFile);
     } else {
-      let lines;
       try {
-        lines = new Readlines(storeFile);
+        // Read file and split into lines (Node native replacement for n-readlines)
+        const fileContents = fs.readFileSync(storeFile, 'utf8');
+        const lines = fileContents.split('\n').filter(line => line.trim());
+        
+        for (const line of lines) {
+          const [key, value] = JSON.parse(line);
+          storage.set(key, value);
+        }
       } catch (e) {
         // storeFile will be missing the first time we try to use it.  That's OK;
         // commit will create it.
         if (e.code !== 'ENOENT') {
           throw e;
-        }
-      }
-      if (lines) {
-        let line = lines.next();
-        while (line) {
-          const [key, value] = JSON.parse(line.toString());
-          storage.set(key, value);
-          line = lines.next();
         }
       }
     }
