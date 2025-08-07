@@ -217,7 +217,6 @@ test('planTransferPath edge cases: same pool transfer', t => {
   const amount = make(1000n);
   const path = planTransferPath('USDN', 'USDN', amount);
 
-  // if the assets are already there, an empty path is in order. AI!
   t.deepEqual(path, []);
 });
 
