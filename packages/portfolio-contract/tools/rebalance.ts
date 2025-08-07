@@ -1,5 +1,5 @@
 import { AmountMath } from '@agoric/ertp';
-import type { Amount, Brand } from '@agoric/ertp/src/types.js';
+import type { Amount, Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import type { PoolKey } from '../src/type-guards.ts';
 
 type Pool = PoolKey;
@@ -7,11 +7,11 @@ type Pool = PoolKey;
 export interface Transfer {
   from: Pool;
   to: Pool;
-  amount: Amount;
+  amount: NatAmount;
 }
 
 export function rebalanceMinCostFlow(
-  currentBalances: Record<Pool, Amount>,
+  currentBalances: Record<Pool, NatAmount>,
   targetAllocations: Record<Pool, bigint>,
   brand: Brand,
 ): Transfer[] {
@@ -22,7 +22,7 @@ export function rebalanceMinCostFlow(
     AmountMath.makeEmpty(brand),
   );
 
-  const targetBalances: Record<Pool, Amount> = Object.fromEntries(
+  const targetBalances: Record<Pool, NatAmount> = Object.fromEntries(
     Object.entries(targetAllocations).map(([pool, basisPoints]) => [
       pool,
       AmountMath.make(brand, (total.value * basisPoints) / 10000n),
@@ -54,7 +54,7 @@ export function rebalanceMinCostFlow(
   const transfers: Transfer[] = [];
 
   while (surplus.length > 0 && deficit.length > 0) {
-    surplus.sort((a, b) => Number(b.amount.value) - Number(a.amount.value));
+    surplus.sort((a, b) => Number(b.amount.value) - Number(a.amount.value)); // no conversion to number/float! use bigint always AI!
     deficit.sort((a, b) => Number(b.amount.value) - Number(a.amount.value));
 
     const from = surplus[0];
