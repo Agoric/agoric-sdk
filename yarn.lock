@@ -295,7 +295,6 @@ __metadata:
     c8: "npm:^10.1.3"
     expose-gc: "npm:^1.0.0"
     import-meta-resolve: "npm:^4.1.0"
-    n-readlines: "npm:^1.0.1"
   languageName: unknown
   linkType: soft
 
@@ -353,11 +352,9 @@ __metadata:
   resolution: "@agoric/access-token@workspace:packages/access-token"
   dependencies:
     "@agoric/internal": "workspace:*"
-    "@types/n-readlines": "npm:^1.0.3"
     "@types/proper-lockfile": "npm:^4.1.2"
     ava: "npm:^6.4.1"
     c8: "npm:^10.1.3"
-    n-readlines: "npm:^1.0.0"
     proper-lockfile: "npm:^4.1.2"
     tmp: "npm:^0.2.1"
   languageName: unknown
@@ -8025,15 +8022,6 @@ __metadata:
   version: 0.7.31
   resolution: "@types/ms@npm:0.7.31"
   checksum: 10c0/19fae4f587651e8761c76a0c72ba8af1700d37054476878d164b758edcc926f4420ed06037a1a7fdddc1dbea25265895d743c8b2ea44f3f3f7ac06c449b9221e
-  languageName: node
-  linkType: hard
-
-"@types/n-readlines@npm:^1.0.3":
-  version: 1.0.6
-  resolution: "@types/n-readlines@npm:1.0.6"
-  dependencies:
-    "@types/node": "npm:*"
-  checksum: 10c0/da9515bd93b3112c049602f525dd8584adbe737dd5b3632d1acc21f6fcb354e9d9803841f75320d0c80ea869642e3a13a89f9a255993b0fbe84d5d06627d51c5
   languageName: node
   linkType: hard
 
@@ -15834,13 +15822,6 @@ __metadata:
     object-assign: "npm:^4.0.1"
     thenify-all: "npm:^1.0.0"
   checksum: 10c0/103114e93f87362f0b56ab5b2e7245051ad0276b646e3902c98397d18bb8f4a77f2ea4a2c9d3ad516034ea3a56553b60d3f5f78220001ca4c404bd711bd0af39
-  languageName: node
-  linkType: hard
-
-"n-readlines@npm:^1.0.0, n-readlines@npm:^1.0.1":
-  version: 1.0.1
-  resolution: "n-readlines@npm:1.0.1"
-  checksum: 10c0/a2ba1c74e365ac5b8b2dde03301ddcb193c81edb0d3691dd71b3d9a1c71b3dde30b86c32483578efbc3161d295b272123668de11533b02a99bd93704d637f83e
   languageName: node
   linkType: hard
 

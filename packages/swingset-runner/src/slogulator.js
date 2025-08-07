@@ -1,6 +1,7 @@
-import fs from 'fs';
-import process from 'process';
-import Readlines from 'n-readlines';
+import fs from 'node:fs';
+import process from 'node:process';
+import { createReadStream } from 'node:fs';
+import { createInterface } from 'node:readline';
 import { parseArgs } from 'node:util';
 
 import { Fail } from '@endo/errors';
@@ -17,7 +18,7 @@ function fail(message, printUsage) {
   process.exit(1);
 }
 
-export function main() {
+export async function main() {
   const { values: argv, positionals } = parseArgs({
     args: process.argv.slice(2),
     options: {
@@ -104,9 +105,9 @@ export function main() {
   };
 
   const slogFile = positionals[0];
-  let lines;
+  let fileStream;
   try {
-    lines = new Readlines(slogFile);
+    fileStream = createReadStream(slogFile);
   } catch (e) {
     fail(`unable to open slog file ${slogFile}`);
   }
@@ -215,10 +216,17 @@ export function main() {
   if (argv.crankbreaks) {
     p('// startup');
   }
-  let line = lines.next();
+
+  // Use Node native readline interface
+  const rl = createInterface({
+    input: fileStream,
+    crlfDelay: Infinity,
+  });
+
   let lineNumber = 0;
   let skipCrank = -1;
-  while (line) {
+
+  for await (const line of rl) {
     lineNumber += 1;
     let entry;
     try {
@@ -248,7 +256,6 @@ export function main() {
         throw err;
       }
     }
-    line = lines.next();
   }
   if (argv.crankbreaks) {
     p('');
