@@ -1,13 +1,13 @@
 /* global globalThis, WeakRef, FinalizationRegistry */
 
-import process from 'process';
-import crypto from 'crypto';
-import { performance } from 'perf_hooks';
-import { spawn as ambientSpawn } from 'child_process';
-import fs from 'fs';
+import process from 'node:process';
+import crypto from 'node:crypto';
+import { performance } from 'node:perf_hooks';
+import { spawn as ambientSpawn } from 'node:child_process';
+import fs from 'node:fs';
 import { tmpName } from 'tmp';
 import anylogger from 'anylogger';
-// microtime replaced with Node native functionality
+import microtime from 'microtime';
 
 import { assert, q, Fail } from '@endo/errors';
 import { importBundle } from '@endo/import-bundle';
@@ -173,8 +173,8 @@ export async function makeSwingsetController(
 
     const { type, seconds, ...props } = obj;
     const timings = {
-      // Node native equivalent of microtime.nowDouble() - POSIX gettimeofday() with microsecond resolution
-      time: Date.now() / 1000,
+      // microtime gives POSIX gettimeofday() with microsecond resolution
+      time: microtime.nowDouble(),
       // this is CLOCK_MONOTONIC, seconds since process start
       monotime: performance.now() / 1000,
       ...(seconds === undefined ? undefined : { seconds }),

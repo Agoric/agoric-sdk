@@ -1,7 +1,7 @@
-import fs from 'fs';
-import process from 'process';
-import { createReadStream } from 'fs';
-import { createInterface } from 'readline';
+import fs from 'node:fs';
+import process from 'node:process';
+import { createReadStream } from 'node:fs';
+import { createInterface } from 'node:readline';
 import { parseArgs } from 'node:util';
 
 import { Fail } from '@endo/errors';

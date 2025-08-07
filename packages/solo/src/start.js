@@ -1,12 +1,12 @@
 // @ts-check
 /* eslint-env node */
-import fs from 'fs';
-import url from 'url';
-import path from 'path';
-import { mkdtemp, writeFile, unlink } from 'fs/promises';
-import { tmpdir } from 'os';
-import { fork } from 'child_process';
-import { promisify } from 'util';
+import fs from 'node:fs';
+import url from 'node:url';
+import path from 'node:path';
+import { mkdtemp, writeFile, unlink } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { fork } from 'node:child_process';
+import { promisify } from 'node:util';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 // import { createHash } from 'crypto';
 

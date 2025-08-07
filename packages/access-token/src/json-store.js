@@ -1,7 +1,9 @@
 // @ts-check
-import fs from 'fs';
-import path from 'path';
-import process from 'process';
+import fs from 'node:fs';
+import path from 'node:path';
+import process from 'node:process';
+import { createInterface } from 'node:readline';
+import { createReadStream } from 'node:fs';
 import lockfile from 'proper-lockfile';
 
 // TODO: Update this when we make a breaking change.
@@ -193,13 +195,18 @@ async function makeJSONStore(
       safeUnlink(storeFile);
     } else {
       try {
-        // Read file and split into lines (Node native replacement for n-readlines)
-        const fileContents = fs.readFileSync(storeFile, 'utf8');
-        const lines = fileContents.split('\n').filter(line => line.trim());
+        // Read file line by line using node:readline (replacement for .split('\n'))
+        const fileStream = createReadStream(storeFile);
+        const rl = createInterface({
+          input: fileStream,
+          crlfDelay: Infinity
+        });
         
-        for (const line of lines) {
-          const [key, value] = JSON.parse(line);
-          storage.set(key, value);
+        for await (const line of rl) {
+          if (line.trim()) {
+            const [key, value] = JSON.parse(line);
+            storage.set(key, value);
+          }
         }
       } catch (e) {
         // storeFile will be missing the first time we try to use it.  That's OK;

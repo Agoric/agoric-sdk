@@ -1,9 +1,9 @@
-import { promisify } from 'util';
-import { Readable } from 'stream';
-import { mkdtemp, writeFile, unlink } from 'fs/promises';
-import fs from 'fs';
-import { tmpdir } from 'os';
-import path from 'path';
+import { promisify } from 'node:util';
+import { Readable } from 'node:stream';
+import { mkdtemp, writeFile, unlink } from 'node:fs/promises';
+import fs from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import chalk from 'chalk';
 
 import { Fail } from '@endo/errors';

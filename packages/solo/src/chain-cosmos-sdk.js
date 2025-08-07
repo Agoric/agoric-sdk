@@ -1,10 +1,10 @@
 /* global clearTimeout setTimeout */
-import path from 'path';
-import fs from 'fs';
-import { mkdtemp, writeFile, unlink } from 'fs/promises';
-import { tmpdir } from 'os';
-import url from 'url';
-import { execFile } from 'child_process';
+import path from 'node:path';
+import fs from 'node:fs';
+import { mkdtemp, writeFile, unlink } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import url from 'node:url';
+import { execFile } from 'node:child_process';
 
 import WebSocket from 'ws';
 
