@@ -1,7 +1,8 @@
 import { AmountMath } from '@agoric/ertp';
 import type { Amount, Brand } from '@agoric/ertp/src/types.js';
+import type { PoolKey } from '../src/type-guards.ts';
 
-type Pool = string;
+type Pool = PoolKey;
 
 export interface Transfer {
   from: Pool;
@@ -11,7 +12,7 @@ export interface Transfer {
 
 export function rebalanceMinCostFlow(
   currentBalances: Record<Pool, Amount>,
-  targetAllocations: Record<Pool, number>,
+  targetAllocations: Record<Pool, number>, // use bigint math throughout; basis points AI!
   brand: Brand,
 ): Transfer[] {
   const epsilon = AmountMath.make(brand, 1n);
@@ -40,7 +41,7 @@ export function rebalanceMinCostFlow(
     if (AmountMath.isGTE(current, target)) {
       const surplusAmount = AmountMath.subtract(current, target);
       if (AmountMath.isGTE(surplusAmount, epsilon)) {
-        surplus.push({ pool, amount: surplusAmount });
+        surplus.push({ pool: pool as PoolKey, amount: surplusAmount });
       }
     } else {
       const deficitAmount = AmountMath.subtract(target, current);
