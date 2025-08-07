@@ -346,9 +346,14 @@ export const planDepositTransfers = (
   return transfers;
 };
 
+/** outbound only. XXX rename. presumes assets are in @noble */
 export const planTransfer = (
   dest: PoolKey,
   amount: NatAmount,
+  preface: MovementDesc[] = [
+    { src: '+agoric', dest: '@agoric', amount },
+    { src: '@agoric', dest: '@noble', amount },
+  ],
 ): MovementDesc[] => {
   const { protocol: p, chainName: evm } = PoolPlaces[dest];
   const steps: MovementDesc[] = [];
@@ -379,5 +384,42 @@ export const planTransfer = (
     default:
       throw Error('unreachable');
   }
-  return harden(steps);
+  return harden([...preface, ...steps]);
+};
+
+/** uses @noble as the sync point */
+export const planTransferPath = (
+  src: PoolKey,
+  dest: PoolKey,
+  amount: NatAmount,
+): MovementDesc[] => {
+  const tail = planTransfer(dest, amount, []);
+  const { protocol: p, chainName: evm } = PoolPlaces[src];
+  const steps: MovementDesc[] = [];
+
+  switch (p) {
+    case 'USDN':
+      steps.push({ dest: '@noble', src: 'USDNVault', amount });
+      break;
+    case 'Aave':
+    case 'Compound':
+      console.warn('TODO: fees');
+      steps.push({
+        src: `${p}_${evm}`,
+        dest: `@${evm}`,
+        amount,
+        // TODO fee: fees[p].Call,
+      });
+      // XXX optimize: combine noble->evm steps
+      steps.push({
+        src: `@${evm}`,
+        dest: '@noble',
+        amount,
+        // XXXfee: fees[p].Account,
+      });
+      break;
+    default:
+      throw Error('unreachable');
+  }
+  return harden([...steps, ...tail]);
 };

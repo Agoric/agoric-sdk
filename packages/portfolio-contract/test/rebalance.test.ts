@@ -216,11 +216,9 @@ test('planTransferPath edge cases: same pool transfer', t => {
   // Test: USDN to USDN (round trip through vault)
   const amount = make(1000n);
   const path = planTransferPath('USDN', 'USDN', amount);
-  
-  t.deepEqual(path, [
-    { dest: '@noble', src: 'USDNVault', amount },
-    { src: '@noble', dest: 'USDNVault', amount, detail: { usdnOut: (amount.value * 99n) / 100n } },
-  ]);
+
+  // if the assets are already there, an empty path is in order. AI!
+  t.deepEqual(path, []);
 });
 
 test('planTransferPath edge cases: cross-chain EVM transfers', t => {
@@ -230,7 +228,7 @@ test('planTransferPath edge cases: cross-chain EVM transfers', t => {
   // Test: Aave_Arbitrum to Compound_Arbitrum (same chain)
   const amount1 = make(500n);
   const path1 = planTransferPath('Aave_Arbitrum', 'Compound_Arbitrum', amount1);
-  
+
   t.deepEqual(path1, [
     { src: 'Aave_Arbitrum', dest: '@Arbitrum', amount: amount1 },
     { src: '@Arbitrum', dest: '@noble', amount: amount1 },
@@ -241,7 +239,7 @@ test('planTransferPath edge cases: cross-chain EVM transfers', t => {
   // Test: Different chains - Aave_Arbitrum to Compound_Polygon
   const amount2 = make(750n);
   const path2 = planTransferPath('Aave_Arbitrum', 'Compound_Polygon', amount2);
-  
+
   t.deepEqual(path2, [
     { src: 'Aave_Arbitrum', dest: '@Arbitrum', amount: amount2 },
     { src: '@Arbitrum', dest: '@noble', amount: amount2 },
@@ -257,7 +255,7 @@ test('planTransferPath edge cases: zero amounts', t => {
   // Test: Zero amount transfer
   const zeroAmount = make(0n);
   const path = planTransferPath('USDN', 'Aave_Arbitrum', zeroAmount);
-  
+
   t.deepEqual(path, [
     { dest: '@noble', src: 'USDNVault', amount: zeroAmount },
     { src: '@noble', dest: '@Arbitrum', amount: zeroAmount },
@@ -272,11 +270,16 @@ test('planTransferPath edge cases: large amounts', t => {
   // Test: Very large amount
   const largeAmount = make(1000000000000n); // 1 trillion
   const path = planTransferPath('Compound_Arbitrum', 'USDN', largeAmount);
-  
+
   t.deepEqual(path, [
     { src: 'Compound_Arbitrum', dest: '@Arbitrum', amount: largeAmount },
     { src: '@Arbitrum', dest: '@noble', amount: largeAmount },
-    { src: '@noble', dest: 'USDNVault', amount: largeAmount, detail: { usdnOut: (largeAmount.value * 99n) / 100n } },
+    {
+      src: '@noble',
+      dest: 'USDNVault',
+      amount: largeAmount,
+      detail: { usdnOut: (largeAmount.value * 99n) / 100n },
+    },
   ]);
 });
 
@@ -287,30 +290,45 @@ test('planTransferPath edge cases: all protocol combinations', t => {
 
   // Test all possible source-destination combinations
   const protocols = ['USDN', 'Aave_Arbitrum', 'Compound_Arbitrum'] as const;
-  
+
   for (const src of protocols) {
     for (const dest of protocols) {
       if (src === dest) continue; // Skip same-to-same (tested separately)
-      
+
       const path = planTransferPath(src, dest, amount);
-      
+
       // Verify path structure
-      t.true(Array.isArray(path), `Path for ${src} -> ${dest} should be an array`);
+      t.true(
+        Array.isArray(path),
+        `Path for ${src} -> ${dest} should be an array`,
+      );
       t.true(path.length > 0, `Path for ${src} -> ${dest} should not be empty`);
-      
+
       // Verify all steps have required properties
       for (const step of path) {
         t.true('amount' in step, 'Each step should have amount');
-        t.true(('src' in step && 'dest' in step) || ('dest' in step && 'src' in step), 'Each step should have src/dest');
-        t.deepEqual(step.amount, amount, 'Amount should be preserved through all steps');
+        t.true(
+          ('src' in step && 'dest' in step) ||
+            ('dest' in step && 'src' in step),
+          'Each step should have src/dest',
+        );
+        t.deepEqual(
+          step.amount,
+          amount,
+          'Amount should be preserved through all steps',
+        );
       }
-      
+
       // Verify path continuity (each step's dest should match next step's src)
       for (let i = 0; i < path.length - 1; i++) {
         const currentStep = path[i];
         const nextStep = path[i + 1];
         if ('dest' in currentStep && 'src' in nextStep) {
-          t.is(currentStep.dest, nextStep.src, `Step ${i} dest should match step ${i+1} src`);
+          t.is(
+            currentStep.dest,
+            nextStep.src,
+            `Step ${i} dest should match step ${i + 1} src`,
+          );
         }
       }
     }
@@ -323,18 +341,24 @@ test('planTransferPath edge cases: USDN exchange rate calculation', t => {
 
   // Test various amounts to verify 99% exchange rate
   const testAmounts = [1n, 100n, 1000n, 999n, 1001n];
-  
+
   for (const value of testAmounts) {
     const amount = make(value);
     const path = planTransferPath('Aave_Arbitrum', 'USDN', amount);
-    
-    const usdnStep = path.find(step => 'dest' in step && step.dest === 'USDNVault');
+
+    const usdnStep = path.find(
+      step => 'dest' in step && step.dest === 'USDNVault',
+    );
     t.truthy(usdnStep, 'Should have USDN vault step');
     t.truthy(usdnStep?.detail, 'USDN step should have detail');
-    
+
     if (usdnStep?.detail && 'usdnOut' in usdnStep.detail) {
       const expectedOut = (value * 99n) / 100n;
-      t.is(usdnStep.detail.usdnOut, expectedOut, `USDN output should be 99% of ${value}`);
+      t.is(
+        usdnStep.detail.usdnOut,
+        expectedOut,
+        `USDN output should be 99% of ${value}`,
+      );
     }
   }
 });
@@ -345,15 +369,20 @@ test('planTransferPath edge cases: path optimization opportunities', t => {
   const amount = make(1000n);
 
   // Test that same-chain transfers still go through Noble (not optimized)
-  const samechainPath = planTransferPath('Aave_Arbitrum', 'Compound_Arbitrum', amount);
-  
+  const samechainPath = planTransferPath(
+    'Aave_Arbitrum',
+    'Compound_Arbitrum',
+    amount,
+  );
+
   // Should include Noble as intermediary even though both are on Arbitrum
-  const hasNobleStep = samechainPath.some(step => 
-    ('src' in step && step.src === '@noble') || 
-    ('dest' in step && step.dest === '@noble')
+  const hasNobleStep = samechainPath.some(
+    step =>
+      ('src' in step && step.src === '@noble') ||
+      ('dest' in step && step.dest === '@noble'),
   );
   t.true(hasNobleStep, 'Same-chain transfers should still route through Noble');
-  
+
   // Should have exactly 4 steps: pool->chain, chain->noble, noble->chain, chain->pool
   t.is(samechainPath.length, 4, 'Same-chain transfer should have 4 steps');
 });
@@ -365,23 +394,23 @@ test('planTransferPath edge cases: step ordering and structure', t => {
 
   // Test USDN -> EVM path structure
   const usdnToEvmPath = planTransferPath('USDN', 'Aave_Arbitrum', amount);
-  
+
   // First step should be from USDN vault
   t.is(usdnToEvmPath[0].src, 'USDNVault');
   t.is(usdnToEvmPath[0].dest, '@noble');
-  
+
   // Last step should be to Aave pool
   const lastStep = usdnToEvmPath[usdnToEvmPath.length - 1];
   t.is(lastStep.dest, 'Aave_Arbitrum');
   t.is(lastStep.src, '@Arbitrum');
 
-  // Test EVM -> USDN path structure  
+  // Test EVM -> USDN path structure
   const evmToUsdnPath = planTransferPath('Compound_Arbitrum', 'USDN', amount);
-  
+
   // First step should be from Compound pool
   t.is(evmToUsdnPath[0].src, 'Compound_Arbitrum');
   t.is(evmToUsdnPath[0].dest, '@Arbitrum');
-  
+
   // Last step should be to USDN vault with detail
   const lastUsdnStep = evmToUsdnPath[evmToUsdnPath.length - 1];
   t.is(lastUsdnStep.dest, 'USDNVault');
