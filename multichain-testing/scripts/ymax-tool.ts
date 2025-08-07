@@ -17,8 +17,18 @@ import {
 import { CodecHelper } from '@agoric/cosmic-proto';
 import { MsgWalletSpendAction as MsgWalletSpendActionType } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
 import { AmountMath } from '@agoric/ertp';
-import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
-import { makeTracer, mustMatch, type TypedPattern } from '@agoric/internal';
+import {
+  multiplyBy,
+  parseRatio,
+  type ParsableNumber,
+} from '@agoric/ertp/src/ratio.js';
+import {
+  makeTracer,
+  mustMatch,
+  objectMap,
+  type TypedPattern,
+} from '@agoric/internal';
+import { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';
 import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import { stringToPath } from '@cosmjs/crypto';
 import { fromBech32 } from '@cosmjs/encoding';
@@ -28,16 +38,18 @@ import {
   type GeneratedType,
 } from '@cosmjs/proto-signing';
 import { SigningStargateClient, type StdFee } from '@cosmjs/stargate';
+import { M } from '@endo/patterns';
 import { parseArgs } from 'node:util';
 
 const MsgWalletSpendAction = CodecHelper(MsgWalletSpendActionType);
 
 const getUsage = (
   programName: string,
-): string => `USAGE: ${programName} [Deposit] [options]
+): string => `USAGE: ${programName} [options]
 Options:
   --skip-poll         Skip polling for offer result
   --exit-success      Exit with success code even if errors occur
+  --goal              JSON string of opening positions (e.g. '{"USDN":6000,"Aave":4000}')
   --target-allocation JSON string of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
   -h, --help          Show this help message`;
 
@@ -78,8 +90,16 @@ const parseTypedJSON = <T>(
   return result;
 };
 
+type GoalData = Partial<Record<YieldProtocol, ParsableNumber>>;
+const YieldProtocolShape = M.or(...Object.keys(YieldProtocol));
+const ParseableNumberShape = M.or(M.number(), M.string());
+const GoalDataShape: TypedPattern<GoalData> = M.recordOf(
+  YieldProtocolShape,
+  ParseableNumberShape,
+);
+
 const openPosition = async (
-  volume: number | string | undefined,
+  goalData: GoalData,
   {
     address,
     client,
@@ -103,13 +123,14 @@ const openPosition = async (
       a.brand,
     ]),
   );
-  const { USDC, PoC26 } = brand as Record<string, Brand<'nat'>>;
+  const { USDC, BLD, PoC26 } = brand as Record<string, Brand<'nat'>>;
 
-  const amount =
-    volume && multiplyBy(make(USDC, 1_000_000n), parseRatio(volume, USDC));
-  const { give, steps } = amount
-    ? makePortfolioSteps({ USDN: amount })
-    : { give: {}, steps: [] };
+  const toAmt = (num: ParsableNumber) =>
+    multiplyBy(make(USDC, 1_000_000n), parseRatio(num, USDC));
+  const goal = objectMap(goalData, toAmt);
+  console.debug('TODO: address Arbitrum-only limitation');
+  const evm = 'Arbitrum';
+  const { give, steps } = makePortfolioSteps(goal, { evm, feeBrand: BLD });
   const proposal: ProposalType['openPortfolio'] = {
     give: {
       ...give,
@@ -207,19 +228,19 @@ const main = async (
   const { values, positionals } = parseArgs({
     args: argv.slice(2),
     options: {
+      positions: { type: 'string', default: '{}' },
       'skip-poll': { type: 'boolean', default: false },
       'exit-success': { type: 'boolean', default: false },
       'target-allocation': { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
-    allowPositionals: true,
+    allowPositionals: false,
   });
 
   // Extract options
   const skipPoll = values['skip-poll'];
   const exitSuccess = values['exit-success'];
   const targetAllocationJson = values['target-allocation'];
-  const [volume] = positionals;
 
   // Show help if requested
   if (values.help) {
@@ -243,9 +264,11 @@ const main = async (
     registry: new Registry(agoricRegistryTypes),
   });
 
+  const positionData = parseTypedJSON(values.positions, GoalDataShape);
+  console.debug({ positionData });
   try {
     // Pass the parsed options to openPosition
-    await openPosition(volume, {
+    await openPosition(positionData, {
       address,
       client,
       walletKit,
