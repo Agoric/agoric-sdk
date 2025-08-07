@@ -98,6 +98,5 @@ export const handleDeposit = async (
       .map(([dest, amt]) => planTransfer(dest as PoolKey, amt))
       .flat(),
   ];
-  console.log('TODO: submit steps', steps);
-  throw Error('moar TODO');
+  return steps;
 };

@@ -5,15 +5,17 @@ import { q, Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
 import { PortfolioStatusShapeExt } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { AmountMath } from '@agoric/ertp';
+import type { SigningStargateClient } from '@cosmjs/stargate';
+import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import { mustMatch } from '@agoric/internal';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
-import type { VstorageKit } from '@agoric/client-utils';
+import type { VstorageKit, SmartWalletKit } from '@agoric/client-utils';
 import type { Bech32Address } from '@agoric/orchestration';
-import type { CosmosCommand } from './cosmos-cmd.js';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import { handleDeposit } from './plan-deposit.ts';
+import { submitAction } from './swingset-tx.ts';
 
 type CosmosEvent = {
   type: string;
@@ -44,29 +46,27 @@ const stripPrefix = (prefix: string, str: string) => {
 };
 
 type IO = {
-  agd: CosmosCommand;
   rpc: CosmosRPCClient;
   vstorageKit: VstorageKit;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
+  stargateClient: SigningStargateClient;
+  walletKit: SmartWalletKit;
+  plannerAddress: string;
 };
 
 export const startEngine = async ({
-  agd,
   rpc,
   vstorageKit,
   spectrum,
   cosmosRest,
+  stargateClient,
+  walletKit,
+  plannerAddress,
 }: IO) => {
   await null;
-  let chainStatus = await (await agd.exec(['status'])).stdout;
-  try {
-    const statusObj = JSON.parse(chainStatus);
-    if (JSON.stringify(statusObj) === chainStatus.trim())
-      chainStatus = statusObj;
-  } catch (_err) {
-    // ignore
-  }
+
+  const chainStatus = await rpc.request('status', {});
   console.warn('agd status', chainStatus);
 
   // Test Spectrum API with real pool balance data
@@ -264,7 +264,7 @@ export const startEngine = async ({
       );
 
       // Respond to changes.
-      await Promise.all(
+      const portfolioOps = await Promise.all(
         [...depositAddrsWithActivity.entries()].map(
           async ([addr, portfolioKey]) => {
             // TODO: maybe snapshot initial balances for deposit amount determination?
@@ -294,16 +294,46 @@ export const startEngine = async ({
               `${VSTORAGE_PATH_PREFIX}.${portfolioKey}`,
             );
 
-            await handleDeposit(
+            const steps = await handleDeposit(
               amount,
               unprefixedPortfolioPath as any,
               vstorageKit.readPublished,
               spectrum,
               cosmosRest,
             );
+
+            const portfolioId = stripPrefix(
+              `${VSTORAGE_PATH_PREFIX}.`,
+              portfolioKey,
+            );
+
+            return { portfolioId, steps };
           },
         ),
       );
+
+      for await (const portfolioOp of portfolioOps) {
+        if (!portfolioOp) continue;
+
+        const { portfolioId, steps } = portfolioOp;
+
+        const action: BridgeAction = harden({
+          method: 'invokeItem',
+          name: 'planner',
+          steps: [{ method: 'submit', args: [portfolioId, steps] }],
+        });
+
+        console.log('submitting action', action);
+
+        const result = await submitAction(action, {
+          stargateClient,
+          walletKit,
+          skipPoll: true,
+          address: plannerAddress,
+        });
+
+        console.log('result', result);
+      }
     }
   } finally {
     console.warn('Terminating...');
