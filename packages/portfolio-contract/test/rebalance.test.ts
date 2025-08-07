@@ -193,20 +193,6 @@ test('planTransferPath happy path test', t => {
     { src: '@noble', dest: '@Arbitrum', amount: amount3 },
     { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount: amount3 },
   ]);
-
-  // Test 4: USDN to USDN (should still go through the vault)
-  const amount4 = make(200n);
-  const path4 = planTransferPath('USDN', 'USDN', amount4);
-
-  t.deepEqual(path4, [
-    { dest: '@noble', src: 'USDNVault', amount: amount4 },
-    {
-      src: '@noble',
-      dest: 'USDNVault',
-      amount: amount4,
-      detail: { usdnOut: (amount4.value * 99n) / 100n },
-    },
-  ]);
 });
 
 test('planTransferPath edge cases: same pool transfer', t => {
