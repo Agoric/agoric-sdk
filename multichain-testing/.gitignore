@@ -12,3 +12,4 @@ logs/
 *-pool-config.json
 wasm-artifacts/
 xcs-contracts-info.json
+vstorage-data.json
