@@ -4,6 +4,7 @@ import { rebalanceMinCostFlow } from '../tools/rebalance.ts';
 import type { Transfer } from '../tools/rebalance.ts';
 import type { Amount, Brand } from '@agoric/ertp/src/types.js';
 import { Far } from '@endo/marshal';
+import { planTransferPath } from '../tools/portfolio-actors.ts';
 
 /**
  * Fake for testing
@@ -152,3 +153,7 @@ test('rebalanceMinCostFlow: collect from multiple pools to one', t => {
   t.is(final.B.value, 0n);
   t.is(final.C.value, 0n);
 });
+
+test('planTransferPath happy path test', t=>{
+    // a handful of happy-path tests AI!
+}
