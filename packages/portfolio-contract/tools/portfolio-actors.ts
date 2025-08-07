@@ -341,8 +341,9 @@ export const planTransfer = (
 
   switch (p) {
     case 'USDN':
-      console.warn('TODO: detail');
-      steps.push({ src: '@noble', dest: 'USDNVault', amount });
+      const detail = { usdnOut: ((amount.value || 0n) * 99n) / 100n };
+      console.warn('TODO: client should query exchange rate');
+      steps.push({ src: '@noble', dest: 'USDNVault', amount, detail });
       break;
     case 'Aave':
     case 'Compound':
