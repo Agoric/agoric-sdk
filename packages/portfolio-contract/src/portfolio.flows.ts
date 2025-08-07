@@ -461,16 +461,17 @@ const stepFlow = async (
             'agoric',
             kit,
           );
+          const account = move.dest === '+agoric' ? lcaIn : lca;
           return {
             how: 'localTransfer',
             src: { seat, keyword: 'Deposit' },
-            dest: { account: move.dest === '+agoric' ? lcaIn : lca },
+            dest: { account },
             amount, // XXX use amounts.Deposit
             apply: async () => {
-              await ctx.zoeTools.localTransfer(seat, lca, amounts);
+              await ctx.zoeTools.localTransfer(seat, account, amounts);
             },
             recover: async () => {
-              await ctx.zoeTools.withdrawToSeat(lca, seat, amounts);
+              await ctx.zoeTools.withdrawToSeat(account, seat, amounts);
             },
           };
         });
