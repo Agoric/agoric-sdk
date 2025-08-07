@@ -54,8 +54,8 @@ export function rebalanceMinCostFlow(
   const transfers: Transfer[] = [];
 
   while (surplus.length > 0 && deficit.length > 0) {
-    surplus.sort((a, b) => Number(b.amount.value) - Number(a.amount.value)); // no conversion to number/float! use bigint always AI!
-    deficit.sort((a, b) => Number(b.amount.value) - Number(a.amount.value));
+    surplus.sort((a, b) => b.amount.value > a.amount.value ? 1 : b.amount.value < a.amount.value ? -1 : 0);
+    deficit.sort((a, b) => b.amount.value > a.amount.value ? 1 : b.amount.value < a.amount.value ? -1 : 0);
 
     const from = surplus[0];
     const to = deficit[0];
