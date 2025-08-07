@@ -8,6 +8,7 @@ import { AmountMath } from '@agoric/ertp';
 import type { SigningStargateClient } from '@cosmjs/stargate';
 import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import { mustMatch } from '@agoric/internal';
+import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import type { VstorageKit, SmartWalletKit } from '@agoric/client-utils';
 import type { Bech32Address } from '@agoric/orchestration';
@@ -43,6 +44,15 @@ const encodedKeyToPath = (key: string) => {
 const stripPrefix = (prefix: string, str: string) => {
   str.startsWith(prefix) || Fail`${str} is missing prefix ${prefix}`;
   return str.slice(prefix.length);
+};
+
+const tryJsonParse = (json: string, replaceErr?: (err?: Error) => unknown) => {
+  try {
+    return JSON.parse(json);
+  } catch (err) {
+    if (!replaceErr) throw err;
+    return replaceErr(err);
+  }
 };
 
 type IO = {
@@ -185,22 +195,8 @@ export const startEngine = async ({
         console.warn('missing events', type);
         continue;
       }
-      const addrsWithActivity: Bech32Address[] = [
-        ...new Set([
-          ...(respEvents['coin_received.receiver'] || []),
-          ...(respEvents['coin_spent.spender'] || []),
-          ...(respEvents['transfer.recipient'] || []),
-          ...(respEvents['transfer.sender'] || []),
-        ]),
-      ];
-      const depositAddrsWithActivity = new Map(
-        [...addrsWithActivity].flatMap(addr => {
-          const portfolioKey = portfolioKeyForDepositAddr.get(addr);
-          if (!portfolioKey) return [];
-          return [[addr, portfolioKey]] as [[Bech32Address, string]];
-        }),
-      );
 
+      // Capture vstorage updates.
       const eventRecords = Object.entries(respData).flatMap(
         ([key, value]: [string, any]) => {
           // We care about result_begin_block/result_end_block/etc.
@@ -240,6 +236,61 @@ export const startEngine = async ({
         return [{ path, value: attributes.value }];
       });
 
+      // Detect new portfolios.
+      for (const { path, value: vstorageValue } of portfolioVstorageEvents) {
+        const streamCell = tryJsonParse(
+          vstorageValue,
+          _err =>
+            Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
+        );
+        harden(streamCell);
+        mustMatch(streamCell, StreamCellShape);
+        if (path === VSTORAGE_PATH_PREFIX) {
+          for (let i = 0; i < streamCell.values.length; i += 1) {
+            const strValue = streamCell.values[i] as string;
+            const value = tryJsonParse(
+              // @ts-expect-error use `undefined` to force an error for non-string input
+              typeof strValue === 'string' ? strValue : undefined,
+              _err =>
+                Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
+            );
+            const portfoliosData = vstorageKit.marshaller.fromCapData(value);
+            if (portfoliosData.addPortfolio) {
+              const key = portfoliosData.addPortfolio;
+              console.warn('Detected new portfolio', key);
+              // XXX we should probably read at streamCell.blockHeight.
+              const status = await vstorageKit.readPublished(
+                `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${key}`,
+              );
+              mustMatch(status, PortfolioStatusShapeExt, key);
+              const { depositAddress } = status;
+              if (depositAddress) {
+                portfolioKeyForDepositAddr.set(depositAddress, key);
+                console.warn('Added new portfolio', key, depositAddress);
+              }
+            }
+          }
+        }
+        // TODO: Handle portfolio-level path `${VSTORAGE_PATH_PREFIX}.${portfolioKey}` for addition/update of depositAddress.
+      }
+
+      // Detect activity against portfolio deposit addresses.
+      const addrsWithActivity: Bech32Address[] = [
+        ...new Set([
+          ...(respEvents['coin_received.receiver'] || []),
+          ...(respEvents['coin_spent.spender'] || []),
+          ...(respEvents['transfer.recipient'] || []),
+          ...(respEvents['transfer.sender'] || []),
+        ]),
+      ];
+      const depositAddrsWithActivity = new Map(
+        [...addrsWithActivity].flatMap(addr => {
+          const portfolioKey = portfolioKeyForDepositAddr.get(addr);
+          if (!portfolioKey) return [];
+          return [[addr, portfolioKey]] as [[Bech32Address, string]];
+        }),
+      );
+
       const addrBalances = Object.fromEntries(
         await Promise.all(
           addrsWithActivity.map(async addr => {
@@ -263,7 +314,7 @@ export const startEngine = async ({
         ),
       );
 
-      // Respond to changes.
+      // Respond to deposits.
       const portfolioOps = await Promise.all(
         [...depositAddrsWithActivity.entries()].map(
           async ([addr, portfolioKey]) => {
