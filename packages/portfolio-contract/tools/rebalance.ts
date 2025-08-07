@@ -12,7 +12,7 @@ export interface Transfer {
 
 export function rebalanceMinCostFlow(
   currentBalances: Record<Pool, Amount>,
-  targetAllocations: Record<Pool, number>, // use bigint math throughout; basis points AI!
+  targetAllocations: Record<Pool, bigint>,
   brand: Brand,
 ): Transfer[] {
   const epsilon = AmountMath.make(brand, 1n);
@@ -23,9 +23,9 @@ export function rebalanceMinCostFlow(
   );
 
   const targetBalances: Record<Pool, Amount> = Object.fromEntries(
-    Object.entries(targetAllocations).map(([pool, pct]) => [
+    Object.entries(targetAllocations).map(([pool, basisPoints]) => [
       pool,
-      AmountMath.make(brand, BigInt(Math.floor(Number(total.value) * pct))),
+      AmountMath.make(brand, (total.value * basisPoints) / 10000n),
     ]),
   );
 
