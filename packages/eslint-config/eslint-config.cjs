@@ -65,9 +65,14 @@ module.exports = {
 
     'github/array-foreach': 'warn',
 
-    // it doesn't support exports maps https://github.com/import-js/eslint-plugin-import/issues/1810
-    // and most of our code is covered by tsc which does
-    'import/no-unresolved': 'off',
+    // Covered faster by TS
+    // https://typescript-eslint.io/troubleshooting/typed-linting/performance/#eslint-plugin-import
+    'import/named': 'off',
+    'import/namespace': 'off',
+    'import/default': 'off',
+    'import/no-named-as-default-member': 'off',
+    'import/no-unresolved': 'off', // Plus no-unresolved doesn't support exports maps https://github.com/import-js/eslint-plugin-import/issues/1810
+
     'import/prefer-default-export': 'off',
 
     'jsdoc/no-multi-asterisks': ['warn', { allowWhitespace: true }],
