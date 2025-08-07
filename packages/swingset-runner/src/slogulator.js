@@ -1,6 +1,6 @@
-import fs from 'node:fs';
+import fs, { createReadStream } from 'node:fs';
 import process from 'node:process';
-import Readlines from 'n-readlines';
+import { createInterface } from 'node:readline';
 import yargs from 'yargs';
 
 import { Fail } from '@endo/errors';
@@ -17,7 +17,7 @@ function fail(message, printUsage) {
   process.exit(1);
 }
 
-export function main() {
+export async function main() {
   // Keep yargs and its yargs-parser dependency here because Node's
   // util.parseArgs does not support generated usage text or option descriptions.
   const argv = yargs(process.argv.slice(2))
@@ -137,12 +137,16 @@ export function main() {
   if (argv._.length > 1) {
     fail('too many arguments', true);
   }
-  let lines;
+  await null;
   try {
-    lines = new Readlines(slogFile);
+    await fs.promises.access(slogFile, fs.constants.R_OK);
   } catch (e) {
-    fail(`unable to open slog file ${slogFile}`);
+    fail(`unable to open slog file ${slogFile}: ${e.message}`);
   }
+  const fileStream = createReadStream(slogFile);
+  fileStream.once('error', e => {
+    fail(`unable to read slog file ${slogFile}: ${e.message}`);
+  });
 
   const summary = {};
   let inCrank = false;
@@ -205,7 +209,7 @@ export function main() {
   if (argv.annotations) {
     let annotations;
     try {
-      annotations = JSON.parse(fs.readFileSync(argv.annotations));
+      annotations = JSON.parse(fs.readFileSync(argv.annotations, 'utf8'));
     } catch (e) {
       fail(`unable to read annotations file ${argv.annotations}: ${e.message}`);
     }
@@ -248,10 +252,17 @@ export function main() {
   if (argv.crankbreaks) {
     p('// startup');
   }
-  let line = lines.next();
+
+  // Use Node native readline interface
+  const rl = createInterface({
+    input: fileStream,
+    crlfDelay: Infinity,
+  });
+
   let lineNumber = 0;
   let skipCrank = -1;
-  while (line) {
+
+  for await (const line of rl) {
     lineNumber += 1;
     let entry;
     try {
@@ -281,7 +292,6 @@ export function main() {
         throw err;
       }
     }
-    line = lines.next();
   }
   if (argv.crankbreaks) {
     p('');
