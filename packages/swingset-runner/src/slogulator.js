@@ -1,7 +1,8 @@
-import fs from 'fs';
-import process from 'process';
-import Readlines from 'n-readlines';
-import yargs from 'yargs';
+import fs from 'node:fs';
+import process from 'node:process';
+import { createReadStream } from 'node:fs';
+import { createInterface } from 'node:readline';
+import { parseArgs } from 'node:util';
 
 import { Fail } from '@endo/errors';
 
@@ -17,60 +18,35 @@ function fail(message, printUsage) {
   process.exit(1);
 }
 
-export function main() {
-  const argv = yargs(process.argv.slice(2))
-    .string('out')
-    .default('out', undefined, '<STDOUT>')
-    .describe('out', 'File to output to')
-    .string('annotations')
-    .alias('annotations', 'annot')
-    .describe('annotations', 'Annotations file')
-    .boolean('summarize')
-    .describe('summarize', 'Output summary report at end')
-    .boolean('vatspace')
-    .describe('vatspace', "Show object refs in their vat's namespace")
-    .boolean('kernelspace')
-    .describe(
-      'kernelspace',
-      'Show object refs in the kernel namespace (default)',
-    )
-    .conflicts('vatspace', 'kernelspace')
-    .boolean('crankbreaks')
-    .default('crankbreaks', true)
-    .describe('crankbreaks', 'Output labeled breaks between cranks')
-    .boolean('clist')
-    .default('clist', true)
-    .describe('clist', 'Show C-list change events')
-    .boolean('usesloggertags')
-    .describe(
-      'usesloggertags',
-      'Display slogger events using full slogger tags',
-    )
-    .boolean('timing')
-    .describe(
-      'timing',
-      'Show execution time information in crank and syscall summaries',
-    )
-    .boolean('nonoise')
-    .describe(
-      'nonoise',
-      `Skip displaying lines not normally useful for debugging`,
-    )
-    .boolean('novatstore')
-    .describe(
-      'novatstore',
-      'Skip displaying lines describing vatstore operations',
-    )
-    .number('bigwidth')
-    .default('bigwidth', 200)
-    .describe(
-      'bigwidth',
-      'Length above which long value strings display as "<BIG>"',
-    )
-    .strict()
-    .usage('$0 [OPTIONS...] SLOGFILE')
-    .version(false)
-    .parse();
+export async function main() {
+  const { values: argv, positionals } = parseArgs({
+    args: process.argv.slice(2),
+    options: {
+      out: { type: 'string' },
+      annotations: { type: 'string', short: 'a' },
+      summarize: { type: 'boolean' },
+      vatspace: { type: 'boolean' },
+      kernelspace: { type: 'boolean' },
+      crankbreaks: { type: 'boolean', default: true },
+      clist: { type: 'boolean', default: true },
+      usesloggertags: { type: 'boolean' },
+      timing: { type: 'boolean' },
+      nonoise: { type: 'boolean' },
+      novatstore: { type: 'boolean' },
+      bigwidth: { type: 'string', default: '200' },
+    },
+    allowPositionals: true,
+    strict: false,
+  });
+
+  // Handle conflicts: vatspace and kernelspace conflict
+  if (argv.vatspace && argv.kernelspace) {
+    console.error('Error: Options --vatspace and --kernelspace conflict');
+    process.exit(1);
+  }
+
+  // Convert bigwidth to number
+  argv.bigwidth = Number(argv.bigwidth);
 
   const terse = !argv.usesloggertags;
   const kernelSpace = argv.kernelspace || !argv.vatspace;
@@ -128,10 +104,10 @@ export function main() {
     'vat-startup-start': handleVatStartupStart,
   };
 
-  const slogFile = argv._[0];
-  let lines;
+  const slogFile = positionals[0];
+  let fileStream;
   try {
-    lines = new Readlines(slogFile);
+    fileStream = createReadStream(slogFile);
   } catch (e) {
     fail(`unable to open slog file ${slogFile}`);
   }
@@ -240,10 +216,17 @@ export function main() {
   if (argv.crankbreaks) {
     p('// startup');
   }
-  let line = lines.next();
+
+  // Use Node native readline interface
+  const rl = createInterface({
+    input: fileStream,
+    crlfDelay: Infinity,
+  });
+
   let lineNumber = 0;
   let skipCrank = -1;
-  while (line) {
+
+  for await (const line of rl) {
     lineNumber += 1;
     let entry;
     try {
@@ -273,7 +256,6 @@ export function main() {
         throw err;
       }
     }
-    line = lines.next();
   }
   if (argv.crankbreaks) {
     p('');
