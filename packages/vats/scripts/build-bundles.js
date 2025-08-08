@@ -11,6 +11,7 @@ const sourceToBundle = [
   ['@agoric/vats/src/centralSupply.js', '../bundles/bundle-centralSupply.js'],
   ['@agoric/vats/src/mintHolder.js', '../bundles/bundle-mintHolder.js'],
   [
+    // XXX creates cyclic dependency
     '@agoric/inter-protocol/src/provisionPool.js',
     '../bundles/bundle-provisionPool.js',
   ],
