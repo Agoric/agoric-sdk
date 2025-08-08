@@ -132,8 +132,8 @@ const openPosition = async (
   const toAmt = (num: ParsableNumber) =>
     multiplyBy(make(USDC, 1_000_000n), parseRatio(num, USDC));
   const goal = objectMap(goalData, toAmt);
-  console.debug('TODO: address Arbitrum-only limitation');
-  const evm = 'Arbitrum';
+  console.debug('TODO: address Avalanche-only limitation');
+  const evm = 'Avalanche';
   const { give, steps } = makePortfolioSteps(goal, {
     evm,
     gmpFee: make(BLD, 15_000_000n),
