@@ -1,8 +1,14 @@
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
 import { config } from 'dotenv';
 import { stringToPath } from '@cosmjs/crypto';
-import { StargateClient } from '@cosmjs/stargate';
-import { JsonRpcProvider, Contract, formatEther, formatUnits } from 'ethers';
+import { boardSlottingMarshaller } from '@agoric/internal/src/marshal.js';
+import { execa } from 'execa';
+import fs from 'fs/promises';
+import {
+  makeAgoricNames,
+  makeFromBoard,
+  makeVStorage,
+} from '@agoric/client-utils';
 
 config();
 
@@ -36,61 +42,118 @@ export const getSignerWallet = async ({ prefix }) => {
     prefix,
   });
 };
-export const wait = async seconds => {
-  return new Promise(resolve => setTimeout(resolve, seconds * 1000));
+
+const writeOfferToFile = async ({ OFFER_FILE, offer }) => {
+  await fs.writeFile(OFFER_FILE, JSON.stringify(offer, null, 2));
+  console.log(`Written ${OFFER_FILE}`);
 };
 
-export const checkBalance = async ({ walletAddress, rpcUrl }) => {
+const runCommand = async (command: string, { captureOutput = false } = {}) => {
   try {
-    const client = await StargateClient.connect(rpcUrl);
-    const balances = await client.getAllBalances(walletAddress);
+    const result = await execa(`docker exec agoric ${command}`, {
+      shell: true,
+      stdio: captureOutput ? 'pipe' : 'inherit',
+    });
 
-    if (balances.length != 0) {
-      console.log(`Balance for ${walletAddress}:`);
-      balances.forEach(balance => {
-        const tokenName = balance.denom;
-        console.log(`${Number(balance.amount) / 1000_000} ${tokenName}`);
-      });
-    } else {
-      console.log('Account does not exist.');
-    }
-
-    client.disconnect();
-  } catch (error) {
-    console.error(`Failed to fetch balance: ${error.message}`);
+    return captureOutput
+      ? { stdout: result.stdout, stderr: result.stderr }
+      : undefined;
+  } catch (err) {
+    console.error('❌ ERROR:', err);
+    process.exit(1);
   }
 };
 
-const ERC20_ABI = [
-  'function name() view returns (string)',
-  'function symbol() view returns (string)',
-  'function decimals() view returns (uint8)',
-  'function balanceOf(address) view returns (uint256)',
-];
+const executeWalletAction = async ({ OFFER_FILE, FROM_ADDRESS }) => {
+  const cmd = `agd tx swingset wallet-action "$(cat ${OFFER_FILE})" \
+    --allow-spend \
+    --from=${FROM_ADDRESS} \
+    --keyring-backend=test \
+    --chain-id=agoricdev-25 --node=https://devnet.rpc.agoric.net:443 -y`;
+  return runCommand(cmd);
+};
 
-export const checkBalanceEVM = async ({ walletAddress, rpcUrl, tokens }) => {
-  try {
-    const provider = new JsonRpcProvider(rpcUrl);
+export const makeOffer = async ({
+  offer,
+  OFFER_FILE,
+  CONTAINER_PATH,
+  FROM_ADDRESS,
+}) => {
+  console.log('Writing offer to file...');
+  await writeOfferToFile({ offer, OFFER_FILE });
 
-    // Get native AVAX balance
-    const balanceWei = await provider.getBalance(walletAddress);
-    const balanceAvax = formatEther(balanceWei);
-    console.log(`Native AVAX: ${balanceAvax}`);
+  console.log('Copy offer file in container');
+  await execa(`docker cp ${OFFER_FILE} agoric:${CONTAINER_PATH}`, {
+    shell: true,
+    stdio: 'inherit',
+  });
 
-    // Loop over token contracts
-    for (const token of tokens) {
-      const contract = new Contract(token, ERC20_ABI, provider);
-      const [name, symbol, decimals, rawBalance] = await Promise.all([
-        contract.name(),
-        contract.symbol(),
-        contract.decimals(),
-        contract.balanceOf(walletAddress),
-      ]);
+  console.log('Executing wallet action...');
+  await executeWalletAction({ OFFER_FILE, FROM_ADDRESS });
+};
 
-      const balance = formatUnits(rawBalance, decimals);
-      console.log(`${name} (${symbol}): ${balance}`);
-    }
-  } catch (error) {
-    console.error('Error fetching balances:', error);
-  }
+type PrepareOfferParams = {
+  instanceName: string;
+  source: string;
+  publicInvitationMaker: string;
+  brandName?: string;
+  amount?: BigInt;
+  offerArgs: Object;
+  emptyProposal?: boolean;
+};
+
+export const prepareOffer = async ({
+  instanceName,
+  source,
+  publicInvitationMaker,
+  brandName,
+  amount,
+  offerArgs = {},
+  emptyProposal = false,
+}: PrepareOfferParams) => {
+  if (!instanceName) throw new Error('instanceName is required');
+  if (!source) throw new Error('source is required');
+
+  const LOCAL_CONFIG = {
+    rpcAddrs: ['https://devnet.rpc.agoric.net:443'],
+    chainName: 'agoricdev-25',
+  };
+
+  const vstorage = makeVStorage({ fetch }, LOCAL_CONFIG);
+  const fromBoard = makeFromBoard();
+  const { brand, instance } = await makeAgoricNames(fromBoard, vstorage);
+
+  const offerId = `offer-${Date.now()}`;
+
+  const invitationSpec = {
+    ...(publicInvitationMaker && { publicInvitationMaker }),
+    source,
+    instance: instance[instanceName],
+  };
+
+  const proposal =
+    emptyProposal || !amount || !brandName
+      ? {}
+      : {
+          give: {
+            [brandName]: {
+              brand: brand[brandName],
+              value: amount,
+            },
+          },
+        };
+
+  const body = {
+    method: 'executeOffer',
+    offer: {
+      id: offerId,
+      invitationSpec,
+      offerArgs: { ...offerArgs },
+      proposal,
+    },
+  };
+
+  const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
+  // @ts-expect-error
+  return marshaller.toCapData(harden(body));
 };

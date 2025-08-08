@@ -21,8 +21,7 @@
     "@agoric/cosmic-proto": "dev",
     "@agoric/fast-usdc": "dev",
     "@agoric/internal": "dev",
-    "@axelar-network/axelar-gmp-sdk-solidity": "^5.6.2",
-    "@axelar-network/axelarjs-sdk": "^0.17.4",
+    "@agoric/rpc": "^0.10.0",
     "@cosmjs/amino": "npm:^0.34.0",
     "@cosmjs/cosmwasm-stargate": "^0.34.0",
     "@cosmjs/crypto": "^0.34.0",
@@ -48,7 +47,6 @@
     "starshipjs": "^3.3.0",
     "ts-blank-space": "^0.4.4",
     "typescript": "~5.8.2",
-    "viem": "^2.33.0",
     "vite-node": "^3.1.4"
   },
   "resolutions": {
