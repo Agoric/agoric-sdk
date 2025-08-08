@@ -101,11 +101,6 @@ export {
  * @satisfies {Record<string, import('./orchestration-api').BaseChainInfo>}
  */
 export const axelarCCTPConfig = {
-  Ethereum: {
-    namespace: 'eip155',
-    reference: '1',
-    cctpDestinationDomain: 0,
-  },
   Avalanche: {
     namespace: 'eip155',
     reference: '43114',
@@ -125,14 +120,6 @@ export const axelarCCTPConfig = {
     namespace: 'eip155',
     reference: '137',
     cctpDestinationDomain: 7,
-  },
-  Fantom: {
-    namespace: 'eip155',
-    reference: '250',
-  },
-  Binance: {
-    namespace: 'eip155',
-    reference: '56',
   },
 };
 
