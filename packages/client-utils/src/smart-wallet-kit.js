@@ -26,7 +26,7 @@ export const makeSmartWalletKit = async (
 ) => {
   const vsk = makeVstorageKit({ fetch }, networkConfig);
 
-  const client = await makeStargateClient(networkConfig, { fetch });
+  const client = makeStargateClient(networkConfig, { fetch });
 
   const agoricNames = await (names
     ? makeAgoricNames(vsk.fromBoard, vsk.vstorage)
