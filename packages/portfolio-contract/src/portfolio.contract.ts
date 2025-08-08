@@ -243,6 +243,8 @@ export const contract = async (
     axelarIds,
     contracts,
     gmpAddresses,
+    publishCctpTransactionStatus: () => null,
+    inertSubscriber,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit

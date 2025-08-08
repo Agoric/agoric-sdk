@@ -140,12 +140,17 @@ export const CCTP = {
     src: 'noble',
     dest,
   })),
-  apply: async (_ctx, amount, src, dest) => {
+  apply: async (ctx: PortfolioInstanceContext, amount, src, dest) => {
     const denomAmount: DenomAmount = { denom: 'uusdc', value: amount.value };
     const { chainId, remoteAddress } = dest;
     const destinationAddress: AccountId = `${chainId}:${remoteAddress}`;
     trace(`CCTP destinationAddress: ${destinationAddress}`);
     const { ica } = src;
+    ctx.publishCctpTransactionStatus({
+      chainId,
+      remoteAddress,
+      amount,
+    });
     await ica.depositForBurn(destinationAddress, denomAmount);
   },
   recover: async (_ctx, amount, src, dest) => {

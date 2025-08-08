@@ -54,6 +54,12 @@ const getPortfolioInfo = (key: string, storage: FakeStorage) => {
   return { contents, positionPaths: posPaths, flowPaths };
 };
 
+const getCctpStatus = (portfolioId: string, storage: FakeStorage) => {
+  const info: StatusFor['portfolio'] = storage
+    .getDeserialized(`orchtest.portfolios.${portfolioId}.cctpStatus`)
+    .at(-1);
+  return info;
+};
 test('open portfolio with USDN position', async t => {
   const { trader1, common } = await setupTrader(t);
   const { usdc, poc26 } = common.brands;
@@ -464,7 +470,12 @@ test('open a portfolio with Beefy position', async t => {
   const actual = await actualP;
   const result = actual.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
-
+  const cctpStatus = getCctpStatus('portfolio0', common.bootstrap.storage);
+  t.like(cctpStatus, {
+    amount: { value: amount.value, brand: usdc.brand },
+    chainId: 'eip155:42161',
+    remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+  });
   t.is(keys(result.publicSubscribers).length, 1);
   const { storagePath } = result.publicSubscribers.portfolio;
   t.log(storagePath);

@@ -393,6 +393,13 @@ export const preparePortfolioKit = (
           const { portfolioId } = this.state;
           publishStatus(makeFlowPath(portfolioId, id), status);
         },
+        publishCctpTransactionStatus(data) {
+          const { portfolioId } = this.state;
+          publishStatus(
+            [`${makePortfolioPath(portfolioId)}`, 'cctpStatus'],
+            data,
+          );
+        },
       },
       manager: {
         reserveAccount<C extends SupportedChain>(
