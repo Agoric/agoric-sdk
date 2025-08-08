@@ -4,6 +4,7 @@ import {
   type JsonSafe,
   toRequestQueryJson,
   typedJson,
+  proto,
 } from '@agoric/cosmic-proto';
 import {
   QueryAllBalancesRequest,
@@ -78,7 +79,7 @@ test('send query from chain object', async t => {
   } = t.context;
   const publicFacet = await E(zoe).getPublicFacet(instance);
   const balanceQuery = toRequestQueryJson(
-    QueryBalanceRequest.toProtoMsg({
+    proto.toProtoMsg(QueryBalanceRequest, {
       address: 'cosmos1test',
       denom: 'uatom',
     }),
@@ -138,12 +139,9 @@ test('send query from chain object', async t => {
     );
     t.is(sendPacketCalls.length, 2, 'sent two queries');
   }
-  const proto3JsonQuery = typedJson(
-    '/cosmos.bank.v1beta1.QueryAllBalancesRequest',
-    {
-      address: LOCALCHAIN_DEFAULT_ADDRESS,
-    },
-  );
+  const proto3JsonQuery = typedJson(QueryAllBalancesRequest, {
+    address: LOCALCHAIN_DEFAULT_ADDRESS,
+  });
   {
     t.log('send a query from the localchain');
     const inv = E(publicFacet).makeSendLocalQueryInvitation();
@@ -254,7 +252,7 @@ test('send query from orch account in an async-flow', async t => {
     );
     const [query, ack] = [
       buildQueryPacketString([
-        QueryAllBalancesRequest.toProtoMsg({
+        proto.toProtoMsg(QueryAllBalancesRequest, {
           address: 'osmo1test3',
         }),
       ]),
