@@ -91,8 +91,6 @@ export const handleDeposit = async (
   }
   const txfrs = planDepositTransfers(amount, currentBalances, targetAllocation);
   const steps = [
-    { src: '+agoric', dest: '@agoric', amount },
-    { src: '@agoric', dest: '@noble', amount },
     ...Object.entries(txfrs)
       // XXX Object.entries() type is goofy
       .map(([dest, amt]) => planTransfer(dest as PoolKey, amt))
