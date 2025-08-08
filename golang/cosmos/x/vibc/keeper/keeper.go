@@ -3,17 +3,17 @@ package keeper
 import (
 	"fmt"
 
+	corestore "cosmossdk.io/core/store"
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	sdkioerrors "cosmossdk.io/errors"
-	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
+	capability "github.com/cosmos/ibc-go/modules/capability/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
+	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
@@ -35,7 +35,7 @@ type Keeper struct {
 
 	// Filled out by `WithScope`
 	scopedKeeper types.ScopedKeeper
-	storeKey     storetypes.StoreKey
+	storeService corestore.KVStoreService
 	pushAction   vm.ActionPusher
 }
 
@@ -57,8 +57,8 @@ func NewKeeper(
 
 // WithScope returns a new Keeper copied from the receiver, but with the given
 // store key, scoped keeper, and push action.
-func (k Keeper) WithScope(storeKey storetypes.StoreKey, scopedKeeper types.ScopedKeeper, pushAction vm.ActionPusher) Keeper {
-	k.storeKey = storeKey
+func (k Keeper) WithScope(storeService corestore.KVStoreService, scopedKeeper types.ScopedKeeper, pushAction vm.ActionPusher) Keeper {
+	k.storeService = storeService
 	k.scopedKeeper = scopedKeeper
 	k.pushAction = pushAction
 	return k

@@ -91,9 +91,11 @@ const queryICQChain = test.macro({
       }),
     );
     const allBalanceQuery = toRequestQueryJson(
-      QueryAllBalancesRequest.toProtoMsg({
-        address,
-      }),
+      QueryAllBalancesRequest.toProtoMsg(
+        QueryAllBalancesRequest.fromPartial({
+          address,
+        }),
+      ),
     );
 
     await doOffer({
@@ -244,6 +246,7 @@ test.serial('Send Local Query from chain object', async t => {
     '/cosmos.bank.v1beta1.QueryAllBalancesRequest',
     {
       address: agoricAddr,
+      resolveDenom: false,
     },
   );
   const balanceProto3JsonQuery = typedJson(
