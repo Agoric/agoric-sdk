@@ -31,7 +31,7 @@ jobs:
         # https://github.com/golangci/golangci-lint/issues/3862#issuecomment-1572973588
       - run: echo "GOROOT=$(go env GOROOT)" >> $GITHUB_ENV
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v8
         with:
           version: latest
           args: --timeout=3m
