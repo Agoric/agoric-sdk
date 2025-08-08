@@ -4,9 +4,9 @@
   "description": "Persistent storage for SwingSet",
   "type": "module",
   "main": "./src/index.js",
-  "exports": {
-    ".": "./src/index.js"
-  },
+  "files": [
+    "src"
+  ],
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
   "license": "Apache-2.0",
