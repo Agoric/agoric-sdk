@@ -134,7 +134,10 @@ const openPosition = async (
   const goal = objectMap(goalData, toAmt);
   console.debug('TODO: address Arbitrum-only limitation');
   const evm = 'Arbitrum';
-  const { give, steps } = makePortfolioSteps(goal, { evm, feeBrand: BLD });
+  const { give, steps } = makePortfolioSteps(goal, {
+    evm,
+    gmpFee: make(BLD, 15_000_000n),
+  });
   const proposal: ProposalType['openPortfolio'] = {
     give: {
       ...give,
