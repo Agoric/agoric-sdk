@@ -86,8 +86,10 @@ sequenceDiagram
     participant LCAin
   end
 
-  participant EE
-  participant Res as Resolver
+  box  rgb(255,165,0) Agoric off-chain
+    participant EE
+    participant Res as Resolver
+  end
 
   box rgb(163,180,243) Noble
     participant icaN as icaNoble
@@ -104,9 +106,15 @@ sequenceDiagram
 
   %% Notation: ->> for initial message, -->> for consequences
 
-  Note right of LCAin: USDC arriving in LCAin
+  Note over EE: long-running process starts and monitors all portfolios
+  Note over LCAin: USDC arriving in LCAin
   LCAin -->> EE: EE observes USDC arrives
-  EE ->> portfolio: moves
+  EE ->> LCAin: query bank balance
+  EE ->> portfolio: read portfolio allocations
+  EE ->> icaN: read balance
+  EE ->> AavePos: read balance
+  Note over EE: think and generate steps
+  EE ->> portfolio: send moves
   portfolio ->> LCAorch: CREATE (lazily)
   %% Optionally, send to LCAin and have EE do the planning
   critical CCTP out
