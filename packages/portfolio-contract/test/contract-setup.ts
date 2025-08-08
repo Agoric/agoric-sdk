@@ -51,11 +51,8 @@ const deploy = async (t: ExecutionContext) => {
     'osmosis',
     'Polygon',
     'Optimism',
-    'Fantom',
-    'Binance',
     'Avalanche',
     'Arbitrum',
-    'Ethereum',
   ];
 
   const chainInfo = Object.fromEntries(
