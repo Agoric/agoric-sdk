@@ -215,7 +215,7 @@ export const makePortfolioSteps = <
   opts: {
     /** XXX assume same chain for Aave and Compound */
     evm?: AxelarChain;
-    feeBrand?: Brand<'nat'>;
+    gmpFee?: NatAmount;
     fees?: Record<keyof G, { Account: NatAmount; Call: NatAmount }>;
     detail?: { usdnOut: NatValue };
   } = {},
@@ -224,10 +224,10 @@ export const makePortfolioSteps = <
   const { USDN: _1, ...evmGoal } = goal;
   const {
     evm = 'Arbitrum',
-    feeBrand,
+    gmpFee,
     fees = objectMap(evmGoal, _ => ({
-      Account: make(NonNullish(feeBrand), 10000000n),
-      Call: make(NonNullish(feeBrand), 10000000n),
+      Account: NonNullish(gmpFee),
+      Call: NonNullish(gmpFee),
     })),
     detail = 'USDN' in goal
       ? { usdnOut: ((goal.USDN?.value || 0n) * 99n) / 100n }
