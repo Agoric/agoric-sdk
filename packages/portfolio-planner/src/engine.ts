@@ -20,6 +20,7 @@ import type { SpectrumClient } from './spectrum-client.ts';
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import { handleDeposit } from './plan-deposit.ts';
 import { submitAction } from './swingset-tx.ts';
+import { watchCCTPMint, type EVMChain } from './watch-cctp.ts';
 
 const { isInteger } = Number;
 
@@ -28,6 +29,24 @@ const sink = () => {};
 type CosmosEvent = {
   type: string;
   attributes?: Array<{ key: string; value: string }>;
+};
+
+type CCTPTransfer = {
+  amount: number;
+  caip: string;
+  receiver: string;
+};
+
+// Extended portfolio status type that includes CCTP transfers
+type PortfolioStatusWithCCTP = {
+  positionKeys: string[];
+  flowCount: number;
+  accountIdByChain: Record<string, `${string}:${string}:${string}`>;
+  depositAddress?: `${string}1${string}`;
+  targetAllocation?: Partial<Record<string, bigint>>;
+  pendingCCTPTransfers?: {
+    [chain: string]: CCTPTransfer;
+  };
 };
 
 const VSTORAGE_PATH_PREFIX = 'published.ymax0.portfolios';
@@ -61,10 +80,72 @@ const stripPrefix = (prefix: string, str: string) => {
   return str.slice(prefix.length);
 };
 
-/**
- * Parse input as JSON, or handle an error (for e.g. substituting a default or
- * applying a more specific message).
- */
+// Track active CCTP watchers to avoid duplicates
+type CCTPWatcherKey = `${string}-${string}`; // portfolioKey-chain
+const activeCCTPWatchers = new Set<CCTPWatcherKey>();
+
+const launchCCTPWatchers = async (
+  portfolioKey: string,
+  pendingTransfers: { [chain: string]: CCTPTransfer },
+) => {
+  for (const [chainName, transfer] of Object.entries(pendingTransfers)) {
+    const evmChain = chainName as EVMChain;
+    if (!evmChain) {
+      console.warn(
+        `[CCTP] Unsupported chain for CCTP monitoring: ${chainName}`,
+      );
+      continue;
+    }
+
+    // TODO: What if there are more than 1 pending CCTP transfers for a portfolio
+    const watcherKey: CCTPWatcherKey = `${portfolioKey}-${chainName}`;
+    if (activeCCTPWatchers.has(watcherKey)) {
+      console.log(
+        `[CCTP] Watcher already active for portfolio ${portfolioKey} on ${chainName}`,
+      );
+      continue;
+    }
+
+    console.log(
+      `[CCTP] Starting watcher for portfolio ${portfolioKey} on ${chainName}`,
+      {
+        receiver: transfer.receiver,
+        amount: transfer.amount,
+        caip: transfer.caip,
+      },
+    );
+
+    activeCCTPWatchers.add(watcherKey);
+
+    watchCCTPMint({
+      chain: evmChain,
+      recipient: transfer.receiver,
+      expectedAmount: BigInt(transfer.amount),
+    })
+      .then(success => {
+        activeCCTPWatchers.delete(watcherKey);
+        if (success) {
+          console.log(
+            `✅ [CCTP] Transfer confirmed for portfolio ${portfolioKey} on ${chainName}`,
+          );
+          // TODO: Update portfolio state to remove completed transfer
+          // This would require calling a contract method to update pendingCCTPTransfers
+        } else {
+          console.warn(
+            `[CCTP] Transfer timed out for portfolio ${portfolioKey} on ${chainName}`,
+          );
+        }
+      })
+      .catch(error => {
+        activeCCTPWatchers.delete(watcherKey);
+        console.error(
+          `❌ [CCTP] Watcher failed for portfolio ${portfolioKey} on ${chainName}:`,
+          error,
+        );
+      });
+  }
+};
+
 const tryJsonParse = (json: string, replaceErr?: (err?: Error) => unknown) => {
   try {
     return JSON.parse(json);
@@ -375,7 +456,16 @@ export const startEngine = async ({
       `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${portfolioKey}`,
     );
     mustMatch(status, PortfolioStatusShapeExt, portfolioKey);
-    const { depositAddress } = status;
+    const { depositAddress, pendingCCTPTransfers } = status as PortfolioStatusWithCCTP;
+
+    if (pendingCCTPTransfers) {
+      console.log(
+        `[CCTP] Found pending transfers for existing portfolio ${portfolioKey}`,
+        pendingCCTPTransfers,
+      );
+      await launchCCTPWatchers(portfolioKey, pendingCCTPTransfers);
+    }
+
     if (!depositAddress) return;
     portfolioKeyForDepositAddr.set(depositAddress, portfolioKey);
   }).done;
@@ -458,14 +548,46 @@ export const startEngine = async ({
                 `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${key}`,
               );
               mustMatch(status, PortfolioStatusShapeExt, key);
-              const { depositAddress } = status;
+              const { depositAddress, pendingCCTPTransfers } = status as PortfolioStatusWithCCTP;
+
+              if (pendingCCTPTransfers) {
+                console.log(
+                  `[CCTP] Found pending transfers for new portfolio ${key}`,
+                  pendingCCTPTransfers,
+                );
+                await launchCCTPWatchers(key, pendingCCTPTransfers);
+              }
+
               if (!depositAddress) continue;
               portfolioKeyForDepositAddr.set(depositAddress, key);
               console.warn('Added new portfolio', key, depositAddress);
             }
           }
+        } else if (path.startsWith(`${VSTORAGE_PATH_PREFIX}.`)) {
+          const portfolioKey = path.slice(`${VSTORAGE_PATH_PREFIX}.`.length);
+          console.log(`[CCTP] Portfolio update detected for ${portfolioKey}`);
+
+          try {
+            const status = await vstorageKit.readPublished(
+              `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${portfolioKey}`,
+            );
+            mustMatch(status, PortfolioStatusShapeExt, portfolioKey);
+            const { pendingCCTPTransfers } = status as PortfolioStatusWithCCTP;
+
+            if (pendingCCTPTransfers) {
+              console.log(
+                `[CCTP] Found updated pending transfers for portfolio ${portfolioKey}`,
+                pendingCCTPTransfers,
+              );
+              await launchCCTPWatchers(portfolioKey, pendingCCTPTransfers);
+            }
+          } catch (error) {
+            console.error(
+              `[CCTP] Failed to read portfolio status for ${portfolioKey}:`,
+              error,
+            );
+          }
         }
-        // TODO: Handle portfolio-level path `${VSTORAGE_PATH_PREFIX}.${portfolioKey}` for addition/update of depositAddress.
       }
 
       // Detect activity against portfolio deposit addresses.
