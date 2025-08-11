@@ -49,7 +49,6 @@
     "@cosmjs/proto-signing@0.32.3": "npm:^0.35.0-rc",
     "@cosmjs/stargate@npm:0.32.3": "npm:^0.35.0-rc",
     "@cosmology/telescope@npm:^1.12.8": "patch:@cosmology/telescope@npm%3A1.12.8#~/.yarn/patches/@cosmology-telescope-npm-1.12.8-7446d2080c.patch",
-    "@endo/import-bundle@npm:^1.4.0": "patch:@endo/import-bundle@npm%3A1.4.0#~/.yarn/patches/@endo+import-bundle+1.4.0.patch",
     "@types/glob@npm:8.1.0": "patch:@types/glob@npm%3A8.1.0#~/.yarn/patches/@types-glob-npm-8.1.0-bdb9d0520c.patch",
     "ava@npm:^5.3.0": "patch:ava@npm%3A5.3.1#~/.yarn/patches/ava-npm-5.3.1-d83c0bdc77.patch",
     "ava@npm:5.3.1": "patch:ava@npm%3A5.3.1#~/.yarn/patches/ava-npm-5.3.1-e4c2e237f7.patch",
