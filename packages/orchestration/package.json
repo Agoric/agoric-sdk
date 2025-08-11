@@ -6,7 +6,7 @@
   "main": "index.js",
   "types": "index.js",
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^20.9 || ^22.11"
   },
   "scripts": {
     "esbuild:axelar": "esbuild ./src/examples/axelar-gmp.contract.js --platform=node --format=esm --bundle --outfile=dist/axelar-gmp.contract.bundle.js",
@@ -16,7 +16,7 @@
     "prepack": "yarn run -T tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava",
-    "test:c8": "c8 --all $C8_OPTIONS ava",
+    "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
@@ -103,6 +103,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 97.46
+    "atLeast": 97.49
   }
 }

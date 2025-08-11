@@ -16,7 +16,7 @@
     "prepack": "yarn run -T tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava",
-    "test:c8": "c8 --all $C8_OPTIONS ava",
+    "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
@@ -61,5 +61,8 @@
       "@endo/init/legacy.js"
     ],
     "timeout": "20m"
+  },
+  "typeCoverage": {
+    "atLeast": 93.39
   }
 }

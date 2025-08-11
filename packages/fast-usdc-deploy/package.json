@@ -11,7 +11,7 @@
   "scripts": {
     "build": "esbuild ../fast-usdc-contract/src/fast-usdc.contract.ts --bundle --platform=neutral --main-fields=main --outfile=dist/fast-usdc.contract.bundle.js --metafile=dist/fast-usdc.contract.meta.json",
     "test": "yarn build && ava",
-    "test:c8": "c8 --all $C8_OPTIONS ava",
+    "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "$scripts-note": "fast-usdc skipped in test:xs pending #10847",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
@@ -69,5 +69,8 @@
       "@endo/init/debug.js"
     ],
     "timeout": "20m"
+  },
+  "typeCoverage": {
+    "atLeast": 97.55
   }
 }
