@@ -23,6 +23,7 @@ export const makeAgdWalletKit = async (
    */
   const broadcastBridgeAction = async (from, bridgeAction) => {
     console.log('broadcastBridgeAction', inspect(bridgeAction, { depth: 10 }));
+    // @ts-expect-error XXX ERef type confusion
     return sendAction(bridgeAction, {
       ...networkConfig,
       delay,

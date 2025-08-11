@@ -93,11 +93,6 @@ const exampleDynamicChainInfo = {
       },
     },
   },
-  Ethereum: {
-    namespace: 'eip155',
-    reference: '1',
-    cctpDestinationDomain: 0,
-  },
   Avalanche: {
     namespace: 'eip155',
     reference: '43114',
@@ -117,14 +112,6 @@ const exampleDynamicChainInfo = {
     namespace: 'eip155',
     reference: '137',
     cctpDestinationDomain: 7,
-  },
-  Fantom: {
-    namespace: 'eip155',
-    reference: '250',
-  },
-  Binance: {
-    namespace: 'eip155',
-    reference: '56',
   },
 } satisfies Record<string, ChainInfo>;
 
@@ -149,13 +136,10 @@ test.serial('publish chainInfo etc.', async t => {
   for (const chain of [
     'agoric',
     'noble',
-    'Ethereum',
     'Avalanche',
     'Optimism',
     'Arbitrum',
     'Polygon',
-    'Fantom',
-    'Binance',
   ]) {
     const info = await EV(agoricNames).lookup('chain', chain);
     t.log(info);
@@ -243,12 +227,47 @@ test.serial('contract starts; appears in agoricNames', async t => {
 
   const materials = buildProposal(
     '@aglocal/portfolio-deploy/src/portfolio.build.js',
+    ['--net', 'mainnet'],
   );
   await evalProposal(materials);
 
   // update now that contract is instantiated
   refreshAgoricNamesRemotes();
   t.truthy(agoricNamesRemotes.instance.ymax0);
+
+  await documentStorageSchema(t, storage, {
+    node: 'agoricNames.instance',
+    owner: 'chain governance',
+    showValue,
+  });
+  await documentStorageSchema(t, storage, {
+    node: 'ymax0',
+    owner: 'ymax0',
+    showValue,
+  });
+});
+
+test.serial('remove old contract; start new contract', async t => {
+  const {
+    agoricNamesRemotes,
+    buildProposal,
+    evalProposal,
+    refreshAgoricNamesRemotes,
+    storage,
+  } = t.context;
+
+  const instancePre = agoricNamesRemotes.instance.ymax0;
+  const oldBoardId = (instancePre as any).getBoardId();
+  const materials = buildProposal(
+    '@aglocal/portfolio-deploy/src/portfolio.build.js',
+    ['--replace', oldBoardId],
+  );
+  await evalProposal(materials);
+
+  refreshAgoricNamesRemotes();
+  const instancePost = agoricNamesRemotes.instance.ymax0;
+  t.truthy(instancePost);
+  t.not(instancePre, instancePost);
 
   await documentStorageSchema(t, storage, {
     node: 'agoricNames.instance',
