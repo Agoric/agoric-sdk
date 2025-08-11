@@ -6,7 +6,7 @@
   "main": "index.js",
   "types": "index.js",
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^20.9 || ^22.11"
   },
   "scripts": {
     "esbuild:axelar": "esbuild ./src/examples/axelar-gmp.contract.js --platform=node --format=esm --bundle --outfile=dist/axelar-gmp.contract.bundle.js",
