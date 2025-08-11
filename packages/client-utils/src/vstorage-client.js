@@ -112,7 +112,8 @@ const isDataString = cell => !!cell && typeof cell === 'string';
  */
 const makeVstorageError = ({ errorMessage, height, kind, path, rpcAddress }) =>
   makeError(
-    `Cannot read '${kind}' of '${path}' ${rpcAddress ? `from '${rpcAddress}'` : ''
+    `Cannot read '${kind}' of '${path}' ${
+      rpcAddress ? `from '${rpcAddress}'` : ''
     } ${height ? `at height '${height}'` : ''} due to error: ${errorMessage}`,
   );
 
@@ -139,10 +140,11 @@ const makeBlockTopic = ({ queryClient }, path, options) => ({
     });
     const parsedValue = parseValue(response.value);
 
-    if (isDataString(parsedValue)) return /** @type {Update<T>} */ ({
-      blockHeight: height,
-      value: parsedValue,
-    });
+    if (isDataString(parsedValue))
+      return /** @type {Update<T>} */ ({
+        blockHeight: height,
+        value: parsedValue,
+      });
 
     if (options?.compat) {
       assertValueStructure(parsedValue);
@@ -150,11 +152,11 @@ const makeBlockTopic = ({ queryClient }, path, options) => ({
       const blockHeight = BigInt(data.blockHeight);
       return /** @type {Update<T>} */ ({
         blockHeight,
-        value: data.values.reverse().find(Boolean)
-      })
+        value: data.values.reverse().find(Boolean),
+      });
     }
 
-    throw Error(`Expected a data cell, got ${quote(parsedValue)}`)
+    throw Error(`Expected a data cell, got ${quote(parsedValue)}`);
   },
 });
 
@@ -354,8 +356,7 @@ const makeStreamTopic = ({ queryClient }, path) => {
           parsedValue.values.reverse(),
         );
 
-      if (currentBlockHeight <= minimum)
-        break;
+      if (currentBlockHeight <= minimum) break;
 
       blockHeight = currentBlockHeight - 1n;
     }
@@ -384,15 +385,15 @@ export const makeVStorageClient = ({ fetch }, config) => {
      * @param {string} path
      */
     fromText: path =>
-      /** @type {StreamTopic<T>} */(makeStreamTopic({ queryClient }, path)),
+      /** @type {StreamTopic<T>} */ (makeStreamTopic({ queryClient }, path)),
     /**
      * @param {string} path
      * @param {Partial<{ compat: boolean }>} [options]
      */
     fromTextBlock: (path, options) =>
-      /** @type {Topic<string>} */(
-      makeBlockTopic({ queryClient }, path, options)
-    ),
+      /** @type {Topic<string>} */ (
+        makeBlockTopic({ queryClient }, path, options)
+      ),
     /**
      * @param {string} path
      */
@@ -416,7 +417,7 @@ const parseValue = value => {
     if (isStreamCell(parsedValue))
       return /** @type {StreamCell} */ (parsedValue);
     // eslint-disable-next-line no-empty
-  } catch { }
+  } catch {}
 
   return value;
 };
