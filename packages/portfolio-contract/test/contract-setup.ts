@@ -108,11 +108,8 @@ export const setupTraderWithCCTP = async (t, initial = 10_000) => {
     'osmosis',
     'Polygon',
     'Optimism',
-    'Fantom',
-    'Binance',
     'Avalanche',
     'Arbitrum',
-    'Ethereum',
   ];
 
   const chainInfo = Object.fromEntries(

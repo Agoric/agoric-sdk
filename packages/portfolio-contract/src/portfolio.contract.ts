@@ -28,7 +28,7 @@ import {
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
-import type { ContractMeta, ZCF } from '@agoric/zoe';
+import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
@@ -335,34 +335,41 @@ export const contract = async (
      */
     makeConfirmCCTPTransactionInvitation() {
       trace('makeConfirmCCTPTransactionInvitation');
+
+      const confirmHandler = async (
+        seat: ZCFSeat,
+        offerArgs: OfferArgsFor['confirmCCTPTransaction'],
+      ) => {
+        mustMatch(offerArgs, offerArgsShapes.confirmCCTPTransaction);
+        const { txDetails, remoteAxelarChain } = offerArgs;
+
+        trace('CCTP transaction confirmation:', {
+          amount: txDetails.amount,
+          remoteAddress: txDetails.remoteAddress,
+          status: txDetails.status,
+          remoteAxelarChain,
+        });
+
+        seat.exit();
+
+        // Use the resolver to confirm the transaction
+        const result = cctpResolver.confirmCCTPTransaction(
+          remoteAxelarChain,
+          txDetails.remoteAddress,
+          txDetails.amount,
+          txDetails.status,
+        );
+
+        return harden({
+          ...result,
+          txDetails,
+          remoteAxelarChain,
+          invitationMakers: cctpInvitationMakers,
+        });
+      };
+
       return zcf.makeInvitation(
-        async (seat, offerArgs: OfferArgsFor['confirmCCTPTransaction']) => {
-          mustMatch(offerArgs, offerArgsShapes.confirmCCTPTransaction);
-          const { txDetails, remoteAxelarChain } = offerArgs;
-
-          trace('CCTP transaction confirmation:', {
-            amount: txDetails.amount,
-            remoteAddress: txDetails.remoteAddress,
-            status: txDetails.status,
-            remoteAxelarChain,
-          });
-
-          seat.exit();
-
-          // Use the resolver to confirm the transaction
-          const result = cctpResolver.confirmCCTPTransaction(
-            remoteAxelarChain,
-            txDetails.remoteAddress,
-            txDetails.amount,
-            txDetails.status,
-          );
-
-          return harden({
-            ...result,
-            txDetails,
-            remoteAxelarChain,
-          });
-        },
+        confirmHandler,
         'confirmCCTPTransaction',
         undefined,
         proposalShapes.confirmCCTPTransaction,
@@ -370,7 +377,19 @@ export const contract = async (
     },
   };
 
-  const creatorFacet = zone.exo('PortfolioCreator', interfaceTODO, {
+  const cctpInvitationMakers = zone.exo(
+    'CCTP Invitation Makers',
+    M.interface('CCTPInvitationMakers', {
+      makeConfirmCCTPTransactionInvitation: M.call().returns(M.promise()),
+    }),
+    {
+      makeConfirmCCTPTransactionInvitation() {
+        return cctpConfirmationMethod.makeConfirmCCTPTransactionInvitation();
+      },
+    },
+  );
+
+  const creatorFacet = zone.exo('CCTPResolver', interfaceTODO, {
     ...cctpConfirmationMethod,
   });
 

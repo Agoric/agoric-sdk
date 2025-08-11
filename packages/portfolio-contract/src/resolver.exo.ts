@@ -72,9 +72,11 @@ export type ResolverKit = {
  * @returns A function to create resolver instances
  */
 export const prepareCCTPResolver = (zone: Zone, vowTools: VowTools) => {
-  const cctpTransactionRegistry = zone.mapStore<string, CCTPTransactionEntry>(
-    'cctpTransactionRegistry',
-  );
+  const resolverZone = zone.subZone('CCTPResolver');
+  const cctpTransactionRegistry = resolverZone.mapStore<
+    string,
+    CCTPTransactionEntry
+  >('cctpTransactionRegistry');
 
   const ResolverI = M.interface('CCTPResolver', {
     registerCCTPTransaction: M.call(M.string(), M.string(), M.bigint()).returns(
@@ -89,7 +91,7 @@ export const prepareCCTPResolver = (zone: Zone, vowTools: VowTools) => {
     getPendingTransactions: M.call().returns(M.arrayOf(M.string())),
   });
 
-  return zone.exoClass('CCTPResolver', ResolverI, () => ({}), {
+  return resolverZone.exoClass('CCTPResolver', ResolverI, () => ({}), {
     registerCCTPTransaction(
       chainId: CaipChainId,
       remoteAddress: `0x${string}`,
