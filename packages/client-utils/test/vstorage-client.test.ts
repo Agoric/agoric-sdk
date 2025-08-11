@@ -213,14 +213,16 @@ test('should receive the expected topic data', async t => {
   const topic = vStorageClient.fromTextBlock(path);
 
   let data = await topic.latest(height);
-  t.deepEqual(JSON.parse(data), expectedData);
+  t.is(data.blockHeight, height);
+  t.deepEqual(JSON.parse(data.value), expectedData);
 
   await t.throwsAsync(() => topic.latest(invalidHeight), {
     message: new RegExp(`.*${INVALID_HEIGHT_ERROR_MESSAGE} ${invalidHeight}.*`),
   });
 
   data = await topic.latest(height - 1n);
-  t.deepEqual(JSON.parse(data), lowestHeightExpectedData);
+  t.is(data.blockHeight, height - 1n);
+  t.deepEqual(JSON.parse(data.value), lowestHeightExpectedData);
 
   await t.throwsAsync(() => topic.latest());
 });
@@ -307,7 +309,7 @@ test('should receive the expected stream data', async t => {
     [
       ...[...latestStreamCell.values].reverse(),
       ...[...streamCell.values].reverse(),
-    ].map(value => JSON.parse(value)),
+    ],
   );
 
   const forwardResults: Array<Update<string>> = [];
@@ -315,8 +317,6 @@ test('should receive the expected stream data', async t => {
 
   t.deepEqual(
     forwardResults.map(u => u.value),
-    [...streamCell.values, ...latestStreamCell.values].map(value =>
-      JSON.parse(value),
-    ),
+    [...streamCell.values, ...latestStreamCell.values],
   );
 });

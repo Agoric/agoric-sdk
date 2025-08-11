@@ -44,13 +44,13 @@ import { Fail, makeError, q as quote } from '@endo/errors';
 /**
  * @template {any} T
  * @typedef {{
- *  latest(height?: Height): Promise<T>;
+ *  latest(height?: Height): Promise<Update<T>>;
  * }} Topic<T>
  */
 
 /**
  * @template {any} T
- * @typedef {Topic<Update<T>> & {
+ * @typedef {Topic<T> & {
  *  iterate(minimum?: Height, maximum?: Height): AsyncIterable<Update<T>>;
  *  reverseIterate(maximum?: Height, minimum?: Height): AsyncIterable<Update<T>>;
  * }} StreamTopic<T>
@@ -89,6 +89,19 @@ const codecs = /** @type {const} */ ({
 });
 
 /**
+ * @param {ReturnType<typeof parseValue>} value
+ */
+const assertValueStructure = value => {
+  if (!isStreamCell(value))
+    throw Error(`Expected a stream cell, got ${quote(value)}`);
+};
+
+/**
+ * @param {ReturnType<parseValue>} cell
+ */
+const isDataString = cell => !!cell && typeof cell === 'string';
+
+/**
  * @param {{
  *  errorMessage: string;
  *  height?: Height;
@@ -99,15 +112,9 @@ const codecs = /** @type {const} */ ({
  */
 const makeVstorageError = ({ errorMessage, height, kind, path, rpcAddress }) =>
   makeError(
-    `Cannot read '${kind}' of '${path}' ${
-      rpcAddress ? `from '${rpcAddress}'` : ''
+    `Cannot read '${kind}' of '${path}' ${rpcAddress ? `from '${rpcAddress}'` : ''
     } ${height ? `at height '${height}'` : ''} due to error: ${errorMessage}`,
   );
-
-/**
- * @param {ReturnType<parseValue>} cell
- */
-const isDataString = cell => cell && typeof cell === 'string';
 
 /**
  * @template {any} T
@@ -132,17 +139,22 @@ const makeBlockTopic = ({ queryClient }, path, options) => ({
     });
     const parsedValue = parseValue(response.value);
 
-    if (isDataString(parsedValue)) return /** @type {T} */ (parsedValue);
-    else if (options?.compat)
-      if (!isStreamCell(parsedValue))
-        throw Error(
-          `Expected a data or stream cell, got ${quote(parsedValue)}`,
-        );
-      else
-        return /** @type {T} */ (
-          /** @type {StreamCell} */ (parsedValue).values.reverse().find(Boolean)
-        );
-    else throw Error(`Expected a data cell, got ${quote(parsedValue)}`);
+    if (isDataString(parsedValue)) return /** @type {Update<T>} */ ({
+      blockHeight: height,
+      value: parsedValue,
+    });
+
+    if (options?.compat) {
+      assertValueStructure(parsedValue);
+      const data = /** @type {StreamCell} */ (parsedValue);
+      const blockHeight = BigInt(data.blockHeight);
+      return /** @type {Update<T>} */ ({
+        blockHeight,
+        value: data.values.reverse().find(Boolean)
+      })
+    }
+
+    throw Error(`Expected a data cell, got ${quote(parsedValue)}`)
   },
 });
 
@@ -252,17 +264,9 @@ const makeStreamTopic = ({ queryClient }, path) => {
     for (const value of values)
       yield /** @type {Update<T>} */ ({
         blockHeight,
-        value: JSON.parse(value),
+        value,
       });
   }
-
-  /**
-   * @param {ReturnType<typeof parseValue>} value
-   */
-  const assertValueStructure = value => {
-    if (!isStreamCell(value))
-      throw Error(`Expected a stream cell, got ${quote(value)}`);
-  };
 
   /**
    * @param {Height} [minimum]
@@ -294,10 +298,9 @@ const makeStreamTopic = ({ queryClient }, path) => {
       height,
       kind: PATHS.DATA,
     });
-    const parsedValue = /** @type {StreamCell} */ (parseValue(response.value));
 
-    if (!isStreamCell(parsedValue))
-      throw Error(`Expected a stream cell, got ${quote(parsedValue)}`);
+    const parsedValue = /** @type {StreamCell} */ (parseValue(response.value));
+    assertValueStructure(parsedValue);
 
     return /** @type {Update<T>} */ ({
       blockHeight: BigInt(parsedValue.blockHeight),
@@ -345,17 +348,15 @@ const makeStreamTopic = ({ queryClient }, path) => {
 
       const currentBlockHeight = BigInt(parsedValue.blockHeight);
 
-      if (!minimum || currentBlockHeight >= minimum)
+      if (currentBlockHeight >= minimum)
         yield* allUpdatesFromCell(
           currentBlockHeight,
           parsedValue.values.reverse(),
         );
 
-      if (
-        (minimum && currentBlockHeight <= minimum) ||
-        currentBlockHeight <= MINIMUM_HEIGHT
-      )
+      if (currentBlockHeight <= minimum)
         break;
+
       blockHeight = currentBlockHeight - 1n;
     }
   }
@@ -383,15 +384,15 @@ export const makeVStorageClient = ({ fetch }, config) => {
      * @param {string} path
      */
     fromText: path =>
-      /** @type {StreamTopic<T>} */ (makeStreamTopic({ queryClient }, path)),
+      /** @type {StreamTopic<T>} */(makeStreamTopic({ queryClient }, path)),
     /**
      * @param {string} path
      * @param {Partial<{ compat: boolean }>} [options]
      */
     fromTextBlock: (path, options) =>
-      /** @type {Topic<string>} */ (
-        makeBlockTopic({ queryClient }, path, options)
-      ),
+      /** @type {Topic<string>} */(
+      makeBlockTopic({ queryClient }, path, options)
+    ),
     /**
      * @param {string} path
      */
@@ -415,7 +416,7 @@ const parseValue = value => {
     if (isStreamCell(parsedValue))
       return /** @type {StreamCell} */ (parsedValue);
     // eslint-disable-next-line no-empty
-  } catch {}
+  } catch { }
 
   return value;
 };
