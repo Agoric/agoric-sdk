@@ -52,6 +52,7 @@ __metadata:
     "@agoric/network": "workspace:*"
     "@agoric/notifier": "workspace:*"
     "@agoric/orchestration": "workspace:*"
+    "@agoric/smart-wallet": "workspace:*"
     "@agoric/store": "workspace:*"
     "@agoric/swing-store": "workspace:*"
     "@agoric/swingset-liveslots": "workspace:*"
