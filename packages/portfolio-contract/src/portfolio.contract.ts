@@ -202,10 +202,15 @@ export const contract = async (
   if (!('axelar' in chainInfo)) {
     trace('⚠️ no axelar chainInfo; GMP not available', Object.keys(chainInfo));
   }
-  // TODO: only on 1st incarnation
-  registerChainsAndAssets(chainHub, brands, chainInfo, assetInfo, {
-    log: trace,
-  });
+
+  // Only register chains and assets if chainHub is empty to avoid conflicts on restart
+  if (chainHub.isEmpty()) {
+    registerChainsAndAssets(chainHub, brands, chainInfo, assetInfo, {
+      log: trace,
+    });
+  } else {
+    trace('chainHub already populated, using existing entries');
+  }
 
   const proposalShapes = makeProposalShapes(
     brands.USDC,

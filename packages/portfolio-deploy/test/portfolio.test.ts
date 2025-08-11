@@ -15,6 +15,7 @@ import type { ChainInfo } from '@agoric/orchestration';
 import type { CopyRecord } from '@endo/pass-style';
 import { mustMatch } from '@endo/patterns';
 import type { TestFn } from 'ava';
+import type { PortfolioBootPowers } from '../src/portfolio-start.type.ts';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -25,7 +26,13 @@ const test: TestFn<WalletFactoryTestContext> = anyTest;
 const beneficiary = 'agoric126sd64qkuag2fva3vy3syavggvw44ca2zfrzyy';
 
 /** maps between on-chain identites and boardIDs */
-const showValue = v => defaultMarshaller.fromCapData(JSON.parse(v));
+const showValue = (v: string) => defaultMarshaller.fromCapData(JSON.parse(v));
+
+type ConsumeBootstrapItem = <N extends string>(
+  name: N,
+) => N extends keyof PortfolioBootPowers['consume']
+  ? PortfolioBootPowers['consume'][N]
+  : unknown;
 
 /**
  * To facilitate deployment to environments other than devnet,
@@ -340,6 +347,86 @@ test.skip('open a USDN position', async t => {
     owner: 'ymax0',
     showValue,
   });
+});
+
+// Expect it fail when run independently
+test.serial('restart contract', async t => {
+  const {
+    runUtils: { EV },
+    agoricNamesRemotes,
+    walletFactoryDriver: wfd,
+  } = t.context;
+
+  t.truthy(agoricNamesRemotes.instance.ymax0);
+
+  const kit = await (EV.vat('bootstrap').consumeItem as ConsumeBootstrapItem)(
+    'ymax0Kit',
+  );
+  const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
+
+  // Expect incarnation 1: first restart from initial deployment
+  // (The "remove old contract; start new contract" test creates a new contract
+  // instance, not an incarnation)
+  t.deepEqual(actual, { incarnationNumber: 1 });
+
+  // Test opening a portfolio after restart
+  for (const { msg, ack } of Object.values(
+    makeUSDNIBCTraffic('agoric1trader1', `${3_333 * 1_000_000}`),
+  )) {
+    protoMsgMockMap[msg] = ack;
+  }
+
+  const myMarshaller = makeClientMarshaller(v => (v as any).getBoardId());
+  const wallet = await wfd.provideSmartWallet(beneficiary, myMarshaller);
+
+  const { USDC, PoC26, BLD } = agoricNamesRemotes.brand as unknown as Record<
+    string,
+    Brand<'nat'>
+  >;
+  const give = harden({
+    Deposit: make(USDC, 3_333n * 1_000_000n),
+    Access: make(PoC26, 1n),
+    GmpFee: make(BLD, 1000n),
+  });
+
+  const ps = makeProposalShapes(USDC, BLD, PoC26);
+  mustMatch(harden({ give, want: {} }), ps.openPortfolio);
+
+  // XXX There is got to be a cleaner way to do this
+  const getPortfolioCount = () => {
+    try {
+      const portfolioData = t.context.readPublished('ymax0.portfolios');
+      const match = portfolioData.addPortfolio.match(/^portfolio(\d+)$/);
+      return parseInt(match![1], 10) + 1;
+    } catch (e) {
+      // If no portfolios exist yet, return 0
+      t.log(e);
+      return 0;
+    }
+  };
+
+  const portfolioCountBefore = getPortfolioCount();
+  t.log('Portfolios before offer:', portfolioCountBefore);
+
+  await wallet.sendOffer({
+    id: `open-after-restart`,
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['ymax0'],
+      callPipe: [['makeOpenPortfolioInvitation']],
+    },
+    proposal: { give },
+    offerArgs: {},
+  });
+
+  const portfolioCountAfter = getPortfolioCount();
+  t.log('Portfolios after offer:', portfolioCountAfter);
+
+  t.is(
+    portfolioCountAfter,
+    portfolioCountBefore + 1,
+    'Should have exactly one additional portfolio after opening',
+  );
 });
 
 test.todo("won't a contract upgrade override the older positions in vstorage?");
