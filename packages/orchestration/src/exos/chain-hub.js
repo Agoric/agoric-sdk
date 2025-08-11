@@ -239,6 +239,7 @@ const ChainHubI = M.interface('ChainHub', {
   makeTransferRoute: M.call(AccountIdArgShape, DenomAmountShape, M.string())
     .optional(ForwardOptsShape)
     .returns(M.or(M.undefined(), TransferRouteShape)),
+  isEmpty: M.call().returns(M.boolean()),
 });
 
 /**
@@ -849,6 +850,20 @@ export const makeChainHub = (
         receiver: intermediateRecipient?.value || PFM_RECEIVER,
         forwardInfo,
       });
+    },
+
+    /**
+     * Check if the ChainHub is empty (no chains, connections, or assets
+     * registered)
+     *
+     * @returns {boolean}
+     */
+    isEmpty() {
+      return (
+        chainInfos.getSize() === 0 &&
+        connectionInfos.getSize() === 0 &&
+        denomDetails.getSize() === 0
+      );
     },
   });
 
