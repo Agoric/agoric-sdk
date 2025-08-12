@@ -45,9 +45,9 @@ const docOpts = {
   showValue: defaultSerializer.parse,
 };
 
-test('coreEval code without swingset', async t => {
+const makeBootstrap = async t => {
   const common = await setupPortfolioTest(t);
-  const { bootstrap, utils } = common;
+  const { bootstrap } = common;
   const { agoricNamesAdmin } = bootstrap;
   const wk = await makeWellKnownSpaces(agoricNamesAdmin);
   const log = () => {}; // console.log
@@ -101,6 +101,13 @@ test('coreEval code without swingset', async t => {
   }
 
   produce.chainInfoPublished.resolve(true);
+  return { common, powers, zoe, bundleAndInstall };
+};
+
+test('coreEval code without swingset', async t => {
+  const { common, powers, zoe, bundleAndInstall } = await makeBootstrap(t);
+  const { bootstrap, utils } = common;
+  const { usdc, bld, poc26 } = common.brands;
 
   // script from agoric run does this step
   t.log('produce installation using test bundle');
