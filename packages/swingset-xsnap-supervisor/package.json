@@ -19,7 +19,7 @@
     "lint:types": "yarn run -T tsc",
     "lint-fix": "eslint --fix 'lib/**/*.js' 'src/**/*.js' 'scripts/**/*.js' 'test/**/*.js'",
     "test": "ava",
-    "test:c8": "c8 --all $C8_OPTIONS ava",
+    "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "test:xs": "exit 0"
   },
   "peerDependencies": {

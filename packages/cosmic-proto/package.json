@@ -178,11 +178,11 @@
     "@endo/bundle-source": "^4.1.2",
     "@endo/import-bundle": "^1.5.2",
     "ava": "^6.3.0",
-    "glob": "^4.5.3",
+    "glob": "^11.0.3",
     "rimraf": "^5.0.0",
     "terser": "^5.39.0",
     "tsd": "^0.31.1",
-    "typescript": "5.9.0-beta"
+    "typescript": "~5.9.2"
   },
   "dependencies": {
     "@endo/base64": "^1.0.12",

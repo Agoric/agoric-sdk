@@ -16,7 +16,7 @@
     "prepack": "yarn run -T tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava",
-    "test:c8": "c8 --all $C8_OPTIONS ava",
+    "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
@@ -35,8 +35,8 @@
     "@agoric/internal": "workspace:*",
     "@agoric/smart-wallet": "workspace:*",
     "@agoric/vats": "workspace:*",
-    "@cosmjs/stargate": "^0.34.0",
-    "@cosmjs/tendermint-rpc": "^0.34.0",
+    "@cosmjs/stargate": "^0.35.0-rc",
+    "@cosmjs/tendermint-rpc": "^0.35.0-rc",
     "@endo/base64": "^1.0.12",
     "@endo/common": "^1.2.13",
     "@endo/errors": "^1.2.13",
@@ -61,5 +61,8 @@
       "@endo/init/legacy.js"
     ],
     "timeout": "20m"
+  },
+  "typeCoverage": {
+    "atLeast": 93.39
   }
 }

@@ -20,6 +20,7 @@ import {
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
+  type Bech32Address,
   type ChainInfo,
   type Denom,
   type DenomDetail,
@@ -112,6 +113,16 @@ const AxelarIdShape: TypedPattern<AxelarId> = M.splitRecord(
   fromEntries(keys(AxelarChain).map(chain => [chain, AxelarIdsPattern])),
 );
 
+export type GmpAddresses = {
+  AXELAR_GMP: Bech32Address;
+  AXELAR_GAS: Bech32Address;
+};
+
+const GmpAddressesShape: TypedPattern<GmpAddresses> = M.splitRecord({
+  AXELAR_GMP: M.string(),
+  AXELAR_GAS: M.string(),
+});
+
 type PortfolioPrivateArgs = OrchestrationPowers & {
   // XXX document required assets, chains
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
@@ -120,6 +131,7 @@ type PortfolioPrivateArgs = OrchestrationPowers & {
   storageNode: Remote<StorageNode>;
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
+  gmpAddresses: GmpAddresses;
 };
 
 const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
@@ -133,6 +145,7 @@ const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
   axelarIds: AxelarIdShape,
   contracts: EVMContractAddressesMap,
+  gmpAddresses: GmpAddressesShape,
 };
 
 export const meta: ContractMeta = {
@@ -178,6 +191,7 @@ export const contract = async (
     timerService,
     marshaller,
     storageNode,
+    gmpAddresses,
   } = privateArgs;
   const { brands } = zcf.getTerms();
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
@@ -228,6 +242,7 @@ export const contract = async (
     },
     axelarIds,
     contracts,
+    gmpAddresses,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
@@ -272,8 +287,6 @@ export const contract = async (
       inertSubscriber,
     },
   );
-
-  trace('XXX NEEDSTEST: baggage test');
 
   const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
     /**

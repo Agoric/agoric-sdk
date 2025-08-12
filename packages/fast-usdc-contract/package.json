@@ -11,7 +11,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
-    "test:c8": "c8 --all $C8_OPTIONS ava",
+    "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
@@ -41,8 +41,8 @@
     "@agoric/vat-data": "workspace:*",
     "@agoric/vow": "workspace:*",
     "@agoric/zoe": "workspace:*",
-    "@cosmjs/proto-signing": "^0.34.0",
-    "@cosmjs/stargate": "^0.34.0",
+    "@cosmjs/proto-signing": "^0.35.0-rc",
+    "@cosmjs/stargate": "^0.35.0-rc",
     "@endo/base64": "^1.0.12",
     "@endo/common": "^1.2.13",
     "@endo/errors": "^1.2.13",
@@ -75,5 +75,8 @@
       "@endo/init/debug.js"
     ],
     "timeout": "20m"
+  },
+  "typeCoverage": {
+    "atLeast": 98.43
   }
 }
