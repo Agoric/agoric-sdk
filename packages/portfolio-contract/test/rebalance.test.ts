@@ -12,6 +12,10 @@ const makeIssuerKit = (name: string) => {
   return { brand: Far(name) as Brand };
 };
 
+const { brand } = makeIssuerKit('TestToken');
+const tokens = (value: bigint): Amount => AmountMath.make(brand, value);
+const zero = AmountMath.makeEmpty(brand);
+
 /**
  * Helper to sum balances after transfers.
  */
@@ -29,17 +33,14 @@ function applyTransfers(
 }
 
 test('rebalanceMinCostFlow: simple 2-pool case', t => {
-  const { brand } = makeIssuerKit('TestToken');
   const current = {
     A: AmountMath.make(brand, 80n),
-    B: AmountMath.make(brand, 20n),
+    B: tokens(20n),
   };
   const target = { A: 0.5, B: 0.5 };
   const transfers = rebalanceMinCostFlow(current, target, brand);
 
-  t.deepEqual(transfers, [
-    { from: 'A', to: 'B', amount: AmountMath.make(brand, 30n) }
-  ]);
+  t.deepEqual(transfers, [{ from: 'A', to: 'B', amount: tokens(30n) }]);
 
   const final = applyTransfers(current, transfers, brand);
   t.is(final.A.value, 50n);
@@ -47,59 +48,56 @@ test('rebalanceMinCostFlow: simple 2-pool case', t => {
 });
 
 test('rebalanceMinCostFlow: 3-pool rounding', t => {
-  const { brand } = makeIssuerKit('TestToken');
   const current = {
-    A: AmountMath.make(brand, 100n),
-    B: AmountMath.makeEmpty(brand),
-    C: AmountMath.makeEmpty(brand),
+    A: tokens(100n),
+    B: zero,
+    C: zero,
   };
   const target = { A: 0.34, B: 0.33, C: 0.33 };
   const transfers = rebalanceMinCostFlow(current, target, brand);
 
   t.deepEqual(transfers, [
-    { from: 'A', to: 'B', amount: AmountMath.make(brand, 33n) },
-    { from: 'A', to: 'C', amount: AmountMath.make(brand, 33n) }
+    { from: 'A', to: 'B', amount: tokens(33n) },
+    { from: 'A', to: 'C', amount: tokens(33n) },
   ]);
 
   const final = applyTransfers(current, transfers, brand);
 
   const total = Object.values(final).reduce(
     (sum, amount) => AmountMath.add(sum, amount),
-    AmountMath.makeEmpty(brand),
+    zero,
   );
   t.is(total.value, 100n);
 
-  // All pools should be close to their targets
+  // All pools should be close to their targ`q  `ets
   t.true(Math.abs(Number(final.A.value) - 34) <= 1);
   t.true(Math.abs(Number(final.B.value) - 33) <= 1);
   t.true(Math.abs(Number(final.C.value) - 33) <= 1);
 });
 
 test('rebalanceMinCostFlow: already balanced', t => {
-  const { brand } = makeIssuerKit('TestToken');
   const current = {
-    A: AmountMath.make(brand, 50n),
-    B: AmountMath.make(brand, 50n),
+    A: tokens(50n),
+    B: tokens(50n),
   };
   const target = { A: 0.5, B: 0.5 };
   const transfers = rebalanceMinCostFlow(current, target, brand);
-  
+
   t.deepEqual(transfers, []);
 });
 
 test('rebalanceMinCostFlow: all to one', t => {
-  const { brand } = makeIssuerKit('TestToken');
   const current = {
-    A: AmountMath.make(brand, 10n),
-    B: AmountMath.make(brand, 20n),
-    C: AmountMath.make(brand, 70n),
+    A: tokens(10n),
+    B: tokens(20n),
+    C: tokens(70n),
   };
   const target = { A: 1, B: 0, C: 0 };
   const transfers = rebalanceMinCostFlow(current, target, brand);
 
   t.deepEqual(transfers, [
-    { from: 'C', to: 'A', amount: AmountMath.make(brand, 70n) },
-    { from: 'B', to: 'A', amount: AmountMath.make(brand, 20n) }
+    { from: 'C', to: 'A', amount: tokens(70n) },
+    { from: 'B', to: 'A', amount: tokens(20n) },
   ]);
 
   const final = applyTransfers(current, transfers, brand);
@@ -110,18 +108,17 @@ test('rebalanceMinCostFlow: all to one', t => {
 });
 
 test('rebalanceMinCostFlow: distribute from one pool to others', t => {
-  const { brand } = makeIssuerKit('TestToken');
   const current = {
-    A: AmountMath.make(brand, 100n),
-    B: AmountMath.makeEmpty(brand),
-    C: AmountMath.makeEmpty(brand),
+    A: tokens(100n),
+    B: zero,
+    C: zero,
   };
   const target = { A: 0, B: 0.6, C: 0.4 };
   const transfers = rebalanceMinCostFlow(current, target, brand);
 
   t.deepEqual(transfers, [
-    { from: 'A', to: 'B', amount: AmountMath.make(brand, 60n) },
-    { from: 'A', to: 'C', amount: AmountMath.make(brand, 40n) }
+    { from: 'A', to: 'B', amount: tokens(60n) },
+    { from: 'A', to: 'C', amount: tokens(40n) },
   ]);
 
   const final = applyTransfers(current, transfers, brand);
@@ -132,18 +129,17 @@ test('rebalanceMinCostFlow: distribute from one pool to others', t => {
 });
 
 test('rebalanceMinCostFlow: collect from multiple pools to one', t => {
-  const { brand } = makeIssuerKit('TestToken');
   const current = {
-    A: AmountMath.makeEmpty(brand),
-    B: AmountMath.make(brand, 30n),
-    C: AmountMath.make(brand, 70n),
+    A: zero,
+    B: tokens(30n),
+    C: tokens(70n),
   };
   const target = { A: 1, B: 0, C: 0 };
   const transfers = rebalanceMinCostFlow(current, target, brand);
 
   t.deepEqual(transfers, [
-    { from: 'C', to: 'A', amount: AmountMath.make(brand, 70n) },
-    { from: 'B', to: 'A', amount: AmountMath.make(brand, 30n) }
+    { from: 'C', to: 'A', amount: tokens(70n) },
+    { from: 'B', to: 'A', amount: tokens(30n) },
   ]);
 
   const final = applyTransfers(current, transfers, brand);
