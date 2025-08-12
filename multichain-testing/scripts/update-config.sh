@@ -6,6 +6,8 @@ CHAIN_ID="${CHAIN_ID:=osmosis}"
 CHAIN_DIR="${CHAIN_DIR:=$HOME/.osmosisd}"
 KEYS_CONFIG="${KEYS_CONFIG:=configs/keys.json}"
 SNAPSHOT_URL="${SNAPSHOT_URL:-}"
+HALT_HEIGHT="${HALT_HEIGHT:-}"
+SNAPSHOT_URL=""
 
 set -eux
 
@@ -41,6 +43,12 @@ function setup_default_configuration() {
   echo "Update app.toml file"
   sed -i -e "s#minimum-gas-prices = \".*\"#minimum-gas-prices = \"0$DENOM\"#g" $CHAIN_DIR/config/app.toml
   sed -i -e "s#pruning = \".*\"#pruning = \"default\"#g" $CHAIN_DIR/config/app.toml
+  
+
+  if [[ -n "$HALT_HEIGHT" ]]; then
+  sed -i -e "s#halt-height = 0#halt-height = $HALT_HEIGHT#g" $CHAIN_DIR/config/app.toml
+  fi
+
   sed -i -e 's#enabled-unsafe-cors = false#enabled-unsafe-cors = true#g' $CHAIN_DIR/config/app.toml
   sed -i -e 's#swagger = false#swagger = true#g' $CHAIN_DIR/config/app.toml
   sed -i -e 's/enable-unsafe-cors = false/enable-unsafe-cors = true/g' $CHAIN_DIR/config/app.toml
