@@ -109,7 +109,7 @@ For each virtual object kind that is defined, we store a metadata record for pur
 * `nextInstanceID`, an integer that is present only for durable kinds. It ensures that all versions share a single sequence of unique instance IDs. `nextInstanceID` is added to the metadata record upon allocation of the first instance of the kind and updated after each subsequent allocation.
 * `unfaceted`, a property with boolean value `true` that is present only for single-facet durable kinds.
 * `facets`, an array that is present only for multi-facet durable kinds. Its elements are the names of the kind's facets, in the same order as the assignment of facet indices within the cohort record.
-* `stateShapeCapData`, a property with a `{ body, slots }` CapData record that decodes into a [Pattern](https://www.npmjs.com/package/@endo/patterns) for constraining instance `state` records.
+* `stateShapeCapData`, a property with a `{ body, slots }` CapData record that decodes into `undefined`, or else into a CopyRecord [Pattern](https://www.npmjs.com/package/@endo/patterns) for constraining instance `state` records.
 
 `unfaceted` and `facets` are required so that kind definitions in upgraded versions of the containing vat are maintained in a backwards compatible manner over time.
 
