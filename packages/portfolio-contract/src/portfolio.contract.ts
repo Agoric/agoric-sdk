@@ -288,8 +288,6 @@ export const contract = async (
     },
   );
 
-  trace('XXX NEEDSTEST: baggage test');
-
   const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
     /**
      * Make an invitation to open a new portfolio.
