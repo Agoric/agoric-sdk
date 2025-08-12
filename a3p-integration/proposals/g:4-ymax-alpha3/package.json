@@ -3,7 +3,7 @@
     "source": "subdir",
     "$comment": "board013515 originates from mainnet proposal 100",
     "sdk-generate": [
-      "../../portfolio-deploy/src/portfolio.build.js submission --replace board013515"
+      "../../builders/scripts/smart-wallet/build-walletFactory-upgrade.js submission"
     ],
     "type": "/agoric.swingset.CoreEvalProposal"
   },
@@ -11,7 +11,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/client-utils": "dev",
-    "@agoric/synthetic-chain": "0.5.8",
+    "@agoric/synthetic-chain": "^0.5.8",
     "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.12",
     "@endo/pass-style": "^1.6.3",
