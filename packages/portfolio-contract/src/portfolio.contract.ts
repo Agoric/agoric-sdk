@@ -41,7 +41,10 @@ import {
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
-import { prepareCCTPResolver } from './resolver.exo.ts';
+import {
+  prepareCCTPResolver,
+  prepareResolverInvitationMakers,
+} from './resolver.exo.ts';
 import {
   BeefyPoolPlaces,
   makeProposalShapes,
@@ -238,6 +241,15 @@ export const contract = async (
   const makeCCTPResolver = prepareCCTPResolver(zone, vowTools);
   const cctpResolver = makeCCTPResolver();
 
+  // CCTP Resolver Invitation Makers
+  const makeResolverInvitationMakers = prepareResolverInvitationMakers(
+    zone,
+    zcf,
+    cctpResolver,
+    proposalShapes,
+    offerArgsShapes,
+  );
+
   const ctx1 = {
     zoeTools,
     usdc: {
@@ -310,87 +322,17 @@ export const contract = async (
 
   trace('XXX NEEDSTEST: baggage test');
 
-  const cctpConfirmationMethod = {
-    /**
-     * Make an invitation to confirm a CCTP transaction.
-     *
-     * Resolver (or anyone) can confirm that a CCTP transaction
-     * has completed by providing transaction details including the
-     * amount, receiver address, and status.
-     *
-     * **Transaction Statuses**:
-     * - `confirmed`: Transaction completed successfully - resolves pending CCTP operation
-     * - `failed`: Transaction failed - rejects pending operation and initiates recovery
-     * - `pending`: Transaction still in progress - updates tracking status
-     *
-     * **Flow Actions**:
-     * - For confirmed transactions: Resolves pending promise, allowing flow to continue
-     * - For failed transactions: Rejects pending promise, triggering error handling
-     * - For pending transactions: Updates status tracking, maintains monitoring
-     *
-     * @see {@link ProposalType.confirmCCTPTransaction} for proposal structure
-     * @see {@link OfferArgsFor.confirmCCTPTransaction} for offer arguments
-     * @see {@link CCTPTransactionDetails} for transaction detail structure
-     * @see {@link CCTP} and {@link CCTPfromEVM} for the underlying CCTP flows
-     */
-    makeConfirmCCTPTransactionInvitation() {
-      trace('makeConfirmCCTPTransactionInvitation');
+  const creatorFacet = zone.exo('PortfolioCreator', interfaceTODO, {
+    makeResolverInvitation() {
+      trace('makeResolverInvitation');
 
-      const confirmHandler = async (
-        seat: ZCFSeat,
-        offerArgs: OfferArgsFor['confirmCCTPTransaction'],
-      ) => {
-        mustMatch(offerArgs, offerArgsShapes.confirmCCTPTransaction);
-        const { txDetails, remoteAxelarChain } = offerArgs;
-
-        trace('CCTP transaction confirmation:', {
-          amount: txDetails.amount,
-          remoteAddress: txDetails.remoteAddress,
-          status: txDetails.status,
-          remoteAxelarChain,
-        });
-
+      const resolverHandler = (seat: ZCFSeat) => {
         seat.exit();
-
-        // Use the resolver to confirm the transaction
-        const result = cctpResolver.confirmCCTPTransaction(
-          remoteAxelarChain,
-          txDetails.remoteAddress,
-          txDetails.amount,
-          txDetails.status,
-        );
-
-        return harden({
-          ...result,
-          txDetails,
-          remoteAxelarChain,
-          invitationMakers: cctpInvitationMakers,
-        });
+        return makeResolverInvitationMakers();
       };
 
-      return zcf.makeInvitation(
-        confirmHandler,
-        'confirmCCTPTransaction',
-        undefined,
-        proposalShapes.confirmCCTPTransaction,
-      );
+      return zcf.makeInvitation(resolverHandler, 'resolver', undefined);
     },
-  };
-
-  const cctpInvitationMakers = zone.exo(
-    'CCTP Invitation Makers',
-    M.interface('CCTPInvitationMakers', {
-      makeConfirmCCTPTransactionInvitation: M.call().returns(M.promise()),
-    }),
-    {
-      makeConfirmCCTPTransactionInvitation() {
-        return cctpConfirmationMethod.makeConfirmCCTPTransactionInvitation();
-      },
-    },
-  );
-
-  const creatorFacet = zone.exo('CCTPResolver', interfaceTODO, {
-    ...cctpConfirmationMethod,
   });
 
   const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {

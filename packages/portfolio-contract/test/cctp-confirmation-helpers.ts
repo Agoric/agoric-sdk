@@ -4,6 +4,10 @@ import { E } from '@endo/far';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { ZoeService } from '@agoric/zoe';
 import type { CaipChainId } from '@agoric/orchestration';
+import type {
+  CCTPConfirmationResult,
+  ResolverInvitationMakers,
+} from '../src/resolver.exo.ts';
 
 /**
  * Helper to manually confirm a CCTP transaction in tests.
@@ -24,16 +28,25 @@ export const confirmCCTPTransaction = async (
     status: 'confirmed' | 'failed' | 'pending';
   },
   remoteAxelarChain: CaipChainId,
-) => {
+): Promise<CCTPConfirmationResult> => {
   // Wait a bit longer for the CCTP registration to happen
   await eventLoopIteration();
   await eventLoopIteration();
 
   try {
-    console.log('Getting confirmation invitation...');
+    console.log('Getting resolver invitation...');
+    const resolverInvitation = await E(creatorFacet).makeResolverInvitation();
+    console.log('Got resolver invitation, making offer...');
+
+    const resolverSeat = await E(zoe).offer(resolverInvitation);
+    const resolverMakers = (await E(
+      resolverSeat,
+    ).getOfferResult()) as ResolverInvitationMakers;
+    console.log('Got resolver makers, creating confirmation invitation...');
+
     const confirmInvitation =
-      await E(creatorFacet).makeConfirmCCTPTransactionInvitation();
-    console.log('Got invitation, making offer...');
+      await E(resolverMakers).makeConfirmCCTPTransactionInvitation();
+    console.log('Got confirmation invitation, making offer...');
 
     const confirmationSeat = await E(zoe).offer(
       confirmInvitation,
@@ -45,7 +58,9 @@ export const confirmCCTPTransaction = async (
       },
     );
 
-    const result = await E(confirmationSeat).getOfferResult();
+    const result = (await E(
+      confirmationSeat,
+    ).getOfferResult()) as CCTPConfirmationResult;
     console.log(`CCTP confirmation got result:`, result);
     return result;
   } catch (error) {
@@ -57,6 +72,9 @@ export const confirmCCTPTransaction = async (
     return {
       success: false,
       message: 'Confirmation failed but transaction may have completed',
+      key: 'unknown',
+      txDetails,
+      remoteAxelarChain,
     };
   }
 };
@@ -72,21 +90,12 @@ export const confirmCCTPWithMockReceiver = async (
   amount: bigint,
   remoteAxelarChain: CaipChainId,
   status: 'confirmed' | 'failed' | 'pending' = 'confirmed',
-) => {
+): Promise<CCTPConfirmationResult> => {
   // Use the standard mock EVM address from the test suite
   const mockRemoteAddress = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092';
 
-  console.log(`\n=== CCTP CONFIRMATION STARTED ===`);
-  console.log(
-    `Confirming CCTP transaction for ${amount} to ${mockRemoteAddress} on ${remoteAxelarChain}`,
-  );
-  console.log(`Amount value:`, amount);
-  console.log(`Will retry until pending transaction is found...`);
-
   // Retry up to 5 times with 100ms intervals (500ms total) to fail faster during resolver issues
   for (let attempt = 1; attempt <= 5; attempt++) {
-    console.log(`=== CCTP CONFIRMATION ATTEMPT ${attempt} ===`);
-
     const result = await confirmCCTPTransaction(
       zoe,
       creatorFacet,
@@ -97,8 +106,6 @@ export const confirmCCTPWithMockReceiver = async (
       },
       remoteAxelarChain,
     );
-
-    console.log(`Attempt ${attempt} result:`, result);
 
     if ((result as any).success) {
       console.log(`=== CCTP CONFIRMATION SUCCEEDED ON ATTEMPT ${attempt} ===`);
@@ -127,5 +134,12 @@ export const confirmCCTPWithMockReceiver = async (
   return {
     success: false,
     message: 'Failed to find pending CCTP transaction after 5 attempts',
+    key: 'unknown',
+    txDetails: {
+      amount,
+      remoteAddress: mockRemoteAddress,
+      status,
+    },
+    remoteAxelarChain,
   };
 };

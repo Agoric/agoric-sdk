@@ -13,14 +13,12 @@ import { passStyleOf } from '@endo/far';
 import type { StatusFor } from '../src/type-guards.ts';
 import {
   setupTrader,
-  setupTraderWithCCTP,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
 import { confirmCCTPWithMockReceiver } from './cctp-confirmation-helpers.ts';
 import { evmNamingDistinction, localAccount0 } from './mocks.ts';
-import { E } from '@endo/far';
 
 const { fromEntries, keys } = Object;
 
@@ -118,7 +116,6 @@ test.serial('open a portfolio with Aave position', async t => {
   const feeAcct = bld.make(100n);
   const feeCall = bld.make(100n);
 
-  t.log('=== Starting portfolio creation ===');
   const actualP = trader1.openPortfolio(
     t,
     { Deposit: amount, Access: poc26.make(1n) },
@@ -132,16 +129,12 @@ test.serial('open a portfolio with Aave position', async t => {
     },
   );
 
-  t.log('=== Processing first IBC acknowledgements ===');
-  await eventLoopIteration(); // let IBC message go out
+  await eventLoopIteration();
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   t.log('ackd send to Axelar to create account');
 
-  t.log('=== Simulating Axelar interactions ===');
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
-  t.log('=== Starting CCTP confirmation in background ===');
 
-  // Start CCTP confirmation AFTER Axelar upcall but before CCTP ack
   const cctpConfirmationPromise = confirmCCTPWithMockReceiver(
     zoe,
     started.creatorFacet,
@@ -149,14 +142,10 @@ test.serial('open a portfolio with Aave position', async t => {
     'eip155:42161',
   );
 
-  // Complete the CCTP acknowledgment first, then the Axelar transfer
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
-  t.log('=== All acknowledgments completed ===');
 
-  // Wait for both the portfolio opening and CCTP confirmation
-  t.log('=== Waiting for portfolio completion and CCTP confirmation ===');
   const [actual, cctpResult] = await Promise.all([
     actualP,
     cctpConfirmationPromise,
@@ -182,7 +171,6 @@ test('open a portfolio with Compound position', async t => {
   const feeAcct = bld.make(100n);
   const feeCall = bld.make(100n);
 
-  t.log('=== Starting portfolio creation with Compound position ===');
   const actualP = trader1.openPortfolio(
     t,
     {
@@ -200,16 +188,12 @@ test('open a portfolio with Compound position', async t => {
     },
   );
 
-  t.log('=== Processing first IBC acknowledgements ===');
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   t.log('ackd send to Axelar to create account');
 
-  t.log('=== Simulating Axelar interactions ===');
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
-  t.log('=== Starting CCTP confirmation in background ===');
 
-  // Start CCTP confirmation AFTER Axelar upcall but before CCTP ack
   const cctpConfirmationPromise = confirmCCTPWithMockReceiver(
     zoe,
     started.creatorFacet,
@@ -217,13 +201,10 @@ test('open a portfolio with Compound position', async t => {
     'eip155:42161',
   );
 
-  // Complete the CCTP acknowledgment first, then the Axelar transfer
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
-  t.log('=== All acknowledgments completed ===');
 
-  // Wait for both the portfolio opening and CCTP confirmation
   t.log('=== Waiting for portfolio completion and CCTP confirmation ===');
   const [actual, cctpResult] = await Promise.all([
     actualP,
@@ -252,7 +233,6 @@ test('open portfolio with USDN, Aave positions', async t => {
   const feeAcct = bld.make(100n);
   const feeCall = bld.make(100n);
 
-  t.log('=== Starting portfolio creation with USDN and Aave positions ===');
   const doneP = trader1.openPortfolio(
     t,
     {
@@ -271,15 +251,12 @@ test('open portfolio with USDN, Aave positions', async t => {
     },
   );
 
-  t.log('=== Processing first IBC acknowledgements ===');
   await eventLoopIteration(); // let outgoing IBC happen
   t.log('openPortfolio, eventloop');
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   t.log('ackd send to noble');
 
-  t.log('=== Simulating Axelar interactions ===');
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
-  t.log('=== Starting CCTP confirmation in background ===');
 
   // Start CCTP confirmation for the Aave portion (amount goes to Arbitrum)
   const cctpConfirmationPromise = confirmCCTPWithMockReceiver(
@@ -289,16 +266,12 @@ test('open portfolio with USDN, Aave positions', async t => {
     'eip155:42161',
   );
 
-  // Complete the CCTP acknowledgment first, then the Axelar transfer
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
-  t.log('=== All acknowledgments completed ===');
 
   await eventLoopIteration(); // let bridge I/O happen
 
-  // Wait for both the portfolio opening and CCTP confirmation
-  t.log('=== Waiting for portfolio completion and CCTP confirmation ===');
   const [done, cctpResult] = await Promise.all([
     doneP,
     cctpConfirmationPromise,
@@ -385,7 +358,6 @@ test('claim rewards on Aave position successfully', async t => {
   const feeAcct = bld.make(100n);
   const feeCall = bld.make(100n);
 
-  t.log('=== Starting portfolio creation for Aave rewards claiming ===');
   const actualP = trader1.openPortfolio(
     t,
     { Deposit: amount, Access: poc26.make(1n) },
@@ -399,16 +371,12 @@ test('claim rewards on Aave position successfully', async t => {
     },
   );
 
-  t.log('=== Processing first IBC acknowledgements ===');
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   t.log('ackd send to Axelar to create account');
 
-  t.log('=== Simulating Axelar interactions ===');
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
-  t.log('=== Starting CCTP confirmation in background ===');
 
-  // Start CCTP confirmation AFTER Axelar upcall but before CCTP ack
   const cctpConfirmationPromise = confirmCCTPWithMockReceiver(
     zoe,
     started.creatorFacet,
@@ -416,14 +384,10 @@ test('claim rewards on Aave position successfully', async t => {
     'eip155:42161',
   );
 
-  // Complete the CCTP acknowledgment first, then the Axelar transfer
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
-  t.log('=== All acknowledgments completed ===');
 
-  // Wait for both the portfolio opening and CCTP confirmation
-  t.log('=== Waiting for portfolio completion and CCTP confirmation ===');
   const [done, cctpResult] = await Promise.all([
     actualP,
     cctpConfirmationPromise,
@@ -435,7 +399,6 @@ test('claim rewards on Aave position successfully', async t => {
   const { storagePath } = result.publicSubscribers.portfolio;
   const messagesBefore = common.utils.inspectLocalBridge();
 
-  t.log('=== Starting rebalance to claim Aave rewards ===');
   const rebalanceP = trader1.rebalance(
     t,
     { give: { Deposit: amount }, want: {} },
@@ -542,7 +505,6 @@ test('open a portfolio with Beefy position', async t => {
   const feeAcct = bld.make(100n);
   const feeCall = bld.make(100n);
 
-  t.log('=== Starting portfolio creation with Beefy position ===');
   const actualP = trader1.openPortfolio(
     t,
     { Deposit: amount, Access: poc26.make(1n) },
@@ -556,16 +518,12 @@ test('open a portfolio with Beefy position', async t => {
     },
   );
 
-  t.log('=== Processing first IBC acknowledgements ===');
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   t.log('ackd send to Axelar to create account');
 
-  t.log('=== Simulating Axelar interactions ===');
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
-  t.log('=== Starting CCTP confirmation in background ===');
 
-  // Start CCTP confirmation AFTER Axelar upcall but before CCTP ack
   const cctpConfirmationPromise = confirmCCTPWithMockReceiver(
     zoe,
     started.creatorFacet,
@@ -573,14 +531,9 @@ test('open a portfolio with Beefy position', async t => {
     'eip155:42161',
   );
 
-  // Complete the CCTP acknowledgment first, then the Axelar transfer
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
-  t.log('=== All acknowledgments completed ===');
-
-  // Wait for both the portfolio opening and CCTP confirmation
-  t.log('=== Waiting for portfolio completion and CCTP confirmation ===');
   const [actual, cctpResult] = await Promise.all([
     actualP,
     cctpConfirmationPromise,
@@ -606,7 +559,6 @@ test('Withdraw from a Beefy position', async t => {
   const feeAcct = bld.make(100n);
   const feeCall = bld.make(100n);
 
-  t.log('=== Starting portfolio creation with Beefy position ===');
   const actualP = trader1.openPortfolio(
     t,
     { Deposit: amount, Access: poc26.make(1n) },
@@ -620,16 +572,12 @@ test('Withdraw from a Beefy position', async t => {
     },
   );
 
-  t.log('=== Processing first IBC acknowledgements ===');
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   t.log('ackd send to Axelar to create account');
 
-  t.log('=== Simulating Axelar interactions ===');
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
-  t.log('=== Starting CCTP confirmation in background ===');
 
-  // Start CCTP confirmation AFTER Axelar upcall but before CCTP ack
   const cctpConfirmationPromise = confirmCCTPWithMockReceiver(
     zoe,
     started.creatorFacet,
@@ -637,23 +585,16 @@ test('Withdraw from a Beefy position', async t => {
     'eip155:42161',
   );
 
-  // Complete the CCTP acknowledgment first, then the Axelar transfer
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
-  t.log('=== All acknowledgments completed ===');
-
-  // Wait for both the portfolio opening and CCTP confirmation
-  t.log('=== Waiting for portfolio completion and CCTP confirmation ===');
   const [actual, cctpResult] = await Promise.all([
     actualP,
     cctpConfirmationPromise,
   ]);
 
-  t.log('=== Portfolio completed, CCTP result:', cctpResult);
   const result = actual.result as any;
 
-  t.log('=== Starting withdrawal from Beefy position ===');
   const withdrawP = trader1.rebalance(
     t,
     { give: {}, want: {} },
@@ -690,7 +631,6 @@ test('Withdraw from a Beefy position', async t => {
   );
 
   const withdraw = await withdrawP;
-  t.log('=== Withdrawal completed ===');
 
   const { storagePath } = result.publicSubscribers.portfolio;
   const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);

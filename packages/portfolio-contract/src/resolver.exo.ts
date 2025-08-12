@@ -6,11 +6,12 @@
  * The portfolio contract acts as a client, requesting notifications for specific transaction events.
  */
 
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, mustMatch } from '@agoric/internal';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { Zone } from '@agoric/zone';
 import { type VowTools, type VowKit, type Vow, VowShape } from '@agoric/vow';
 import { M } from '@endo/patterns';
+import type { Invitation } from '@agoric/zoe';
 
 const trace = makeTracer('Resolver');
 
@@ -62,6 +63,28 @@ export type ResolverKit = {
      */
     getPendingTransactions: () => string[];
   };
+};
+
+export type CCTPConfirmationResult = {
+  success: boolean;
+  message: string;
+  key: string;
+  txDetails: {
+    amount: bigint;
+    remoteAddress: `0x${string}`;
+    status: 'confirmed' | 'failed' | 'pending';
+  };
+  remoteAxelarChain: CaipChainId;
+};
+
+export type ResolverInvitationMakers = {
+  /**
+   * Make an invitation to confirm a CCTP transaction.
+   *
+   * This invitation allows anyone with the proper transaction details
+   * to confirm the completion of a CCTP transaction.
+   */
+  makeConfirmCCTPTransactionInvitation: () => Promise<Invitation>;
 };
 
 /**
@@ -173,3 +196,74 @@ export const prepareCCTPResolver = (zone: Zone, vowTools: VowTools) => {
 };
 
 harden(prepareCCTPResolver);
+
+/**
+ * Prepare CCTP Resolver Invitation Makers.
+ *
+ * @param zone - Durable storage zone
+ * @param zcf - Zoe Contract Facet for creating invitations
+ * @param resolver - The resolver instance to use
+ * @param proposalShapes - Proposal validation shapes
+ * @param offerArgsShapes - Offer arguments validation shapes
+ * @returns A function to create resolver invitation makers
+ */
+export const prepareResolverInvitationMakers = (
+  zone: Zone,
+  zcf: any, // ZCF type
+  resolver: any, // Resolver instance
+  proposalShapes: any,
+  offerArgsShapes: any,
+) => {
+  const resolverInvitationMakersZone = zone.subZone('ResolverInvitationMakers');
+
+  const ResolverInvitationMakersI = M.interface('ResolverInvitationMakers', {
+    makeConfirmCCTPTransactionInvitation: M.call().returns(M.promise()),
+  });
+
+  return resolverInvitationMakersZone.exoClass(
+    'ResolverInvitationMakers',
+    ResolverInvitationMakersI,
+    () => ({}),
+    {
+      makeConfirmCCTPTransactionInvitation() {
+        trace('makeConfirmCCTPTransactionInvitation');
+
+        const confirmHandler = async (seat: any, offerArgs: any) => {
+          mustMatch(offerArgs, offerArgsShapes.confirmCCTPTransaction);
+          const { txDetails, remoteAxelarChain } = offerArgs as any;
+
+          trace('CCTP transaction confirmation:', {
+            amount: txDetails.amount,
+            remoteAddress: txDetails.remoteAddress,
+            status: txDetails.status,
+            remoteAxelarChain,
+          });
+
+          seat.exit();
+
+          const result = resolver.confirmCCTPTransaction(
+            remoteAxelarChain,
+            txDetails.remoteAddress,
+            txDetails.amount,
+            txDetails.status,
+          );
+
+          return harden({
+            ...result,
+            txDetails,
+            remoteAxelarChain,
+          });
+        };
+
+        return zcf.makeInvitation(
+          confirmHandler,
+          'confirmCCTPTransaction',
+          undefined,
+          proposalShapes.confirmCCTPTransaction,
+        );
+      },
+    },
+  );
+};
+
+harden(prepareResolverInvitationMakers);
