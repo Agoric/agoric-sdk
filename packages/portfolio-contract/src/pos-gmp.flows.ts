@@ -153,13 +153,15 @@ export const CCTP = {
     trace(`CCTP destinationAddress: ${destinationAddress}`);
     const { ica } = src;
 
-    // Execute the depositForBurn first
     await ica.depositForBurn(destinationAddress, denomAmount);
 
-    // Register for manual confirmation and wait
-    if (ctx?.registerCCTPTransaction) {
+    // Register for confirmation and wait
+    if (ctx?.cctpClient) {
       trace(`CCTP transaction initiated, waiting for confirmation...`);
-      await ctx.registerCCTPTransaction(chainId, remoteAddress, amount.value);
+      await ctx.cctpClient.registerCCTPTransaction(
+        destinationAddress,
+        amount.value,
+      );
       trace(`CCTP transaction completed after confirmation`);
     } else {
       trace(

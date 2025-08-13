@@ -77,7 +77,6 @@ export type PortfolioContinuingInvitationMaker =
  *
  * **openPortfolio**: Create portfolio with initial funding across protocols
  * **rebalance**: Add funds (give) or withdraw funds (want) from protocols
- * **confirmCCTPTransaction**: Confirm completion of a CCTP transaction
  */
 export type ProposalType = {
   openPortfolio: {
@@ -91,10 +90,6 @@ export type ProposalType = {
   rebalance:
     | { give: { Deposit?: NatAmount; GmpFee?: NatAmount }; want: {} }
     | { want: { Cash: NatAmount }; give: { GmpFee?: NatAmount } };
-  confirmCCTPTransaction: {
-    give: {};
-    want: {};
-  };
 };
 
 export const makeProposalShapes = (
@@ -131,12 +126,7 @@ export const makeProposalShapes = (
       {},
     ),
   ) as TypedPattern<ProposalType['rebalance']>;
-  const confirmCCTPTransaction = M.splitRecord(
-    { give: {}, want: {} },
-    { exit: M.any() },
-    {},
-  ) as TypedPattern<ProposalType['confirmCCTPTransaction']>;
-  return harden({ openPortfolio, rebalance, confirmCCTPTransaction });
+  return harden({ openPortfolio, rebalance });
 };
 harden(makeProposalShapes);
 // #endregion

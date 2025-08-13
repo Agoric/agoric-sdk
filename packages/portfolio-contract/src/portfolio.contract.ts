@@ -21,7 +21,6 @@ import {
   registerChainsAndAssets,
   withOrchestration,
   type Bech32Address,
-  type CaipChainId,
   type ChainInfo,
   type Denom,
   type DenomDetail,
@@ -41,7 +40,7 @@ import { makeOfferArgsShapes } from './type-guards-steps.ts';
 import {
   prepareCCTPResolver,
   prepareResolverInvitationMakers,
-} from './resolver.exo.ts';
+} from './resolver/resolver.exo.js';
 import {
   BeefyPoolPlaces,
   makeProposalShapes,
@@ -234,17 +233,13 @@ export const contract = async (
     },
   };
 
-  // CCTP Resolver - handles transaction confirmations
   const makeCCTPResolver = prepareCCTPResolver(zone, vowTools);
   const cctpResolver = makeCCTPResolver();
 
-  // CCTP Resolver Invitation Makers
   const makeResolverInvitationMakers = prepareResolverInvitationMakers(
     zone,
     zcf,
-    cctpResolver,
-    proposalShapes,
-    offerArgsShapes,
+    cctpResolver.service,
   );
 
   const ctx1 = {
@@ -266,11 +261,7 @@ export const contract = async (
     axelarIds,
     contracts,
     gmpAddresses,
-    registerCCTPTransaction: (
-      chainId: CaipChainId,
-      remoteAddress: `0x${string}`,
-      amount: bigint,
-    ) => cctpResolver.registerCCTPTransaction(chainId, remoteAddress, amount),
+    cctpClient: cctpResolver.client,
     inertSubscriber,
   };
 
