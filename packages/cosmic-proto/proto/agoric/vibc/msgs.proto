@@ -1,6 +1,7 @@
 syntax = "proto3";
 package agoric.vibc;
 
+import "amino/amino.proto";
 import "gogoproto/gogo.proto";
 import "ibc/core/channel/v1/channel.proto";
 
@@ -15,10 +16,13 @@ service Msg {
 // MsgSendPacket is an SDK message for sending an outgoing IBC packet
 message MsgSendPacket {
   option (gogoproto.equal) = false;
+  option (amino.name)      = "vibc/SendPacket";
 
   ibc.core.channel.v1.Packet packet = 1
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "packet", (gogoproto.moretags) = "yaml:\"packet\""];
   bytes sender = 2 [
+    (amino.encoding)     = "legacy_address",
+    (amino.field_name)   = "submitter",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
     (gogoproto.jsontag)  = "submitter",
     (gogoproto.moretags) = "yaml:\"submitter\""
