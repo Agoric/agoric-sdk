@@ -1,7 +1,6 @@
 {
   "agoricProposal": {
     "source": "subdir",
-    "$comment": "board013515 originates from mainnet proposal 100",
     "sdk-generate": [
       "../../builders/scripts/smart-wallet/build-walletFactory-upgrade.js submission"
     ],
