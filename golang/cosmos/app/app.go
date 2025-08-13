@@ -25,6 +25,7 @@ import (
 	feegrantkeeper "cosmossdk.io/x/feegrant/keeper"
 	feegrantmodule "cosmossdk.io/x/feegrant/module"
 	"cosmossdk.io/x/tx/signing"
+	"cosmossdk.io/x/tx/signing/aminojson"
 	"cosmossdk.io/x/upgrade"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
@@ -333,7 +334,27 @@ func NewAgoricApp(
 	})
 	appCodec := codec.NewProtoCodec(interfaceRegistry)
 	legacyAmino := codec.NewLegacyAmino()
+
 	txConfig := authtx.NewTxConfig(appCodec, authtx.DefaultSignModes)
+	customAminoEncoder := aminojson.NewEncoder(aminojson.EncoderOptions{FileResolver: interfaceRegistry})
+
+	customAminoEncoder.DefineFieldEncoding("legacy_address", swingsettypes.LegacyAddressEncoder)
+	// customAminoEncoder.DefineScalarEncoding("legacy_address", swingsettypes.LegacyAddressEncoder)
+
+	customAminoHandler := aminojson.NewSignModeHandler(aminojson.SignModeHandlerOptions{
+		FileResolver: interfaceRegistry,
+		Encoder:      &customAminoEncoder,
+	})
+	txConfig, err := authtx.NewTxConfigWithOptions(appCodec, authtx.ConfigOptions{
+		EnabledSignModes: authtx.DefaultSignModes,
+		SigningOptions:   &signingOptions,
+		CustomSignModes: []signing.SignModeHandler{
+			customAminoHandler,
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
 
 	if err := interfaceRegistry.SigningContext().Validate(); err != nil {
 		panic(err)
