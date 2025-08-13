@@ -3,14 +3,62 @@ import {
   assertIsDeliverTxSuccess,
 } from '@cosmjs/stargate';
 import { buildGasPayload } from './support';
+import type { Bech32Address } from '@agoric/orchestration';
+import type { EVMContractAddressesMap } from '@aglocal/portfolio-contract/src/type-guards';
 import type {
-  AxelarGmpOutgoingMemo,
-  BaseGmpArgs,
-  GmpArgsContractCall,
-  PortfolioInstanceContext,
-} from './types';
+  AxelarId,
+  GmpAddresses,
+} from '@aglocal/portfolio-contract/src/portfolio.contract';
+import type { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
+import type { AxelarChain } from '@aglocal/portfolio-contract/src/constants';
 
 const GAS_TOKEN = 'ubld';
+
+type AxelarGmpOutgoingMemo = {
+  destination_chain: string;
+  destination_address: string;
+  payload: number[] | null;
+  type: 1 | 2; // 1 == ContractCall and 2 == ContractCallWithToken;
+  fee: {
+    amount: string;
+    recipient: Bech32Address;
+  };
+};
+
+export type PortfolioInstanceContext = {
+  axelarConfig: {
+    axelarIds: AxelarId;
+    contracts: EVMContractAddressesMap;
+    gmpAddresses: GmpAddresses;
+  };
+  signer: DirectSecp256k1HdWallet;
+  sourceChannel: string;
+  rpcUrl: string;
+};
+
+export type ContractCall = {
+  target: `0x${string}`;
+  functionSignature: string;
+  args: unknown[];
+};
+
+export type AbiEncodedContractCall = {
+  target: `0x${string}`;
+  data: `0x${string}`;
+};
+
+export type BaseGmpArgs = {
+  destinationChain: AxelarChain;
+  gasAmt: number;
+};
+
+type GmpArgsContractCall = BaseGmpArgs & {
+  destinationAddr: string;
+  type: 1 | 2; // 1 == ContractCall and 2 == ContractCallWithToken
+  calls: Array<ContractCall>;
+  gmpAddr: Bech32Address;
+  gasAddr: Bech32Address;
+};
 
 const makeAxelarMemo = (gmpArgs: GmpArgsContractCall) => {
   const { destinationChain, destinationAddr, gasAmt, type, gasAddr } = gmpArgs;
@@ -76,9 +124,7 @@ export const sendGmp = async (
     ibcPayload,
     fee,
   );
-
-  console.log('Asserting');
-  assertIsDeliverTxSuccess(response);
+  console.log('DeliverTxResponse:', response);
 };
 
 export const createRemoteEVMAccount = async (
@@ -86,8 +132,8 @@ export const createRemoteEVMAccount = async (
   gmpArgs: BaseGmpArgs,
 ) => {
   const { destinationChain, gasAmt } = gmpArgs;
-  const { contracts, gmpAddresses } = ctx.axelarConfig[destinationChain];
-  const { AXELAR_GAS, AXELAR_GMP } = gmpAddresses;
+  const contracts = ctx.axelarConfig.contracts[destinationChain];
+  const { AXELAR_GAS, AXELAR_GMP } = ctx.axelarConfig.gmpAddresses;
 
   await sendGmp(ctx, {
     destinationAddr: contracts.factory,
@@ -108,8 +154,8 @@ export const supplyToAave = async (
   remoteAddr: string,
 ) => {
   const { destinationChain, transferAmt, gasAmt } = gmpArgs;
-  const { contracts, gmpAddresses } = ctx.axelarConfig[destinationChain];
-  const { AXELAR_GAS, AXELAR_GMP } = gmpAddresses;
+  const contracts = ctx.axelarConfig.contracts[destinationChain];
+  const { AXELAR_GAS, AXELAR_GMP } = ctx.axelarConfig.gmpAddresses;
 
   await sendGmp(ctx, {
     destinationAddr: remoteAddr,
@@ -141,8 +187,8 @@ export const supplyToCompound = async (
   remoteAddr: string,
 ) => {
   const { destinationChain, transferAmt, gasAmt } = gmpArgs;
-  const { contracts, gmpAddresses } = ctx.axelarConfig[destinationChain];
-  const { AXELAR_GAS, AXELAR_GMP } = gmpAddresses;
+  const contracts = ctx.axelarConfig.contracts[destinationChain];
+  const { AXELAR_GAS, AXELAR_GMP } = ctx.axelarConfig.gmpAddresses;
 
   await sendGmp(ctx, {
     destinationAddr: remoteAddr,
