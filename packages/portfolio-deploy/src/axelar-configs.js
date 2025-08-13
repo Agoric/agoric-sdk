@@ -178,7 +178,7 @@ const factoryAddresses = {
     Polygon: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://polygonscan.com/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
   },
   testnet: {
-    Avalanche: '0xe4Bf676E956AF5f30876b9af9E93D3CCC4D2ECfF', // https://testnet.snowtrace.io/address/0xe4Bf676E956AF5f30876b9af9E93D3CCC4D2ECfF
+    Avalanche: '0x13cA288486f2bb6B3619c5fd6A2917Ec98a41E7f', // https://testnet.snowtrace.io/address/0x13cA288486f2bb6B3619c5fd6A2917Ec98a41E7f
     Arbitrum: '0x',
     Optimism: '0x',
     Polygon: '0x',

@@ -5,12 +5,12 @@ import {
   axelarConfig as axelarConfigMainnet,
   axelarConfigTestnet,
   gmpAddresses,
-} from './axelar-configs.js';
+} from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import type {
   ContractCall,
   AbiEncodedContractCall,
   PortfolioInstanceContext,
-} from './gmp.js';
+} from './gmp.ts';
 
 export const channels = {
   mainnet: 'channel-9',

@@ -1,10 +1,10 @@
 import '../lockdown.ts';
-import { createContext } from './support.js';
-import { handleGmp, type ArgsMap } from './handle-gmp.js';
+import { createContext } from './support.ts';
+import { handleGmp, type ArgsMap } from './handle-gmp.ts';
 
 const printUsage = () => {
   console.log(`
-Usage: node axelar-cli.js <command> [options]
+Usage: yarn axelar -- <command> [options]
 
 Commands:
   createRemoteAccount <chain> <gasAmount>
