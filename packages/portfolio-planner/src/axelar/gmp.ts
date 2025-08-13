@@ -1,7 +1,4 @@
-import {
-  SigningStargateClient,
-  assertIsDeliverTxSuccess,
-} from '@cosmjs/stargate';
+import { SigningStargateClient } from '@cosmjs/stargate';
 import { buildGasPayload } from './support';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { EVMContractAddressesMap } from '@aglocal/portfolio-contract/src/type-guards';
@@ -11,6 +8,7 @@ import type {
 } from '@aglocal/portfolio-contract/src/portfolio.contract';
 import type { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
 import type { AxelarChain } from '@aglocal/portfolio-contract/src/constants';
+import { getWalletAddress } from './get-remote-address';
 
 const GAS_TOKEN = 'ubld';
 
@@ -30,6 +28,7 @@ export type PortfolioInstanceContext = {
     axelarIds: AxelarId;
     contracts: EVMContractAddressesMap;
     gmpAddresses: GmpAddresses;
+    queryApi: string;
   };
   signer: DirectSecp256k1HdWallet;
   sourceChannel: string;
@@ -125,6 +124,8 @@ export const sendGmp = async (
     fee,
   );
   console.log('DeliverTxResponse:', response);
+
+  return response.transactionHash;
 };
 
 export const createRemoteEVMAccount = async (
@@ -135,7 +136,7 @@ export const createRemoteEVMAccount = async (
   const contracts = ctx.axelarConfig.contracts[destinationChain];
   const { AXELAR_GAS, AXELAR_GMP } = ctx.axelarConfig.gmpAddresses;
 
-  await sendGmp(ctx, {
+  const txHash = await sendGmp(ctx, {
     destinationAddr: contracts.factory,
     destinationChain,
     gmpAddr: AXELAR_GMP,
@@ -144,6 +145,13 @@ export const createRemoteEVMAccount = async (
     gasAmt,
     calls: [],
   });
+
+  console.log('Waiting for wallet creation...');
+  const addr = await getWalletAddress(ctx.axelarConfig.queryApi, fetch, {
+    txHash,
+  });
+  console.log('Remote EVM Addr:', addr);
+  console.log('TODO: make offer to the contract to resolve the pending vow');
 };
 
 export const supplyToAave = async (

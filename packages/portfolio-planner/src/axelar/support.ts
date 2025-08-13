@@ -22,6 +22,11 @@ export const urls = {
   testnet: 'https://devnet.rpc.agoric.net/',
 };
 
+export const axelarQueryAPI = {
+  mainnet: 'https://api.axelarscan.io/gmp/searchGMP',
+  testnet: 'https://testnet.api.axelarscan.io/gmp/searchGMP',
+};
+
 export const constructContractCall = ({
   target,
   functionSignature,
@@ -106,13 +111,19 @@ export const createContext = async (
 
   const configs = {
     mainnet: {
-      axelarConfig: { ...axelarConfigMainnet },
+      axelarConfig: {
+        ...axelarConfigMainnet,
+        queryApi: axelarQueryAPI.mainnet,
+      },
       gmpAddresses: {
         ...gmpAddresses.mainnet,
       },
     },
     testnet: {
-      axelarConfig: { ...axelarConfigTestnet },
+      axelarConfig: {
+        ...axelarConfigTestnet,
+        queryApi: axelarQueryAPI.testnet,
+      },
       gmpAddresses: {
         ...gmpAddresses.testnet,
       },
@@ -141,6 +152,7 @@ export const createContext = async (
       axelarIds,
       contracts,
       gmpAddresses: config.gmpAddresses,
+      queryApi: axelarConfig.queryApi,
     },
     signer,
     sourceChannel: channels[net],
