@@ -229,8 +229,8 @@ github.com/adlio/schema v1.3.6/go.mod h1:qkxwLgPBd1FgLRHYVCmQT/rrBr3JH38J9LjmVzW
 github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5/go.mod h1:SkGFH1ia65gfNATL8TAiHDNxPzPdmEL5uirI2Uyuz6c=
 github.com/agoric-labs/cometbft v0.38.17-alpha.agoric.1 h1:NmKLLSctK9CXt0X92b2N+kh790o0jwaADSTsuv4ADRA=
 github.com/agoric-labs/cometbft v0.38.17-alpha.agoric.1/go.mod h1:5l0SkgeLRXi6bBfQuevXjKqML1jjfJJlvI1Ulp02/o4=
-github.com/agoric-labs/cosmos-sdk v0.50.14-alpha.agoric.2 h1:CMWV7xzygaHKfFs1tmq17H6rAY72YCxUjp/9pZ4ECH4=
-github.com/agoric-labs/cosmos-sdk v0.50.14-alpha.agoric.2/go.mod h1:xEBva4dbDLcZcPQx3/yuSz3272k9XJKxl7O1J5oagsw=
+github.com/agoric-labs/cosmos-sdk v0.50.14-alpha.agoric.3 h1:sDVooA9+hDskJv2XHTCN6J5FT5AuvfRFkP5FXoznGeg=
+github.com/agoric-labs/cosmos-sdk v0.50.14-alpha.agoric.3/go.mod h1:xEBva4dbDLcZcPQx3/yuSz3272k9XJKxl7O1J5oagsw=
 github.com/agoric-labs/cosmos-sdk/client/v2 v2.0.0-v0.50.14-alpha.agoric.2 h1:6nR9bQSscriuHcj6nTtDFGjsMuoOeaGT+nDL/q83pdE=
 github.com/agoric-labs/cosmos-sdk/client/v2 v2.0.0-v0.50.14-alpha.agoric.2/go.mod h1:x+E2eji+ToMtUIqKzoJ5mJIhat+Zak47xZ8jOYjJQBA=
 github.com/agoric-labs/cosmos-sdk/core v0.50.14-alpha.agoric.2 h1:Sgv3p2nV437qdY1ozakRvTyWFxww24jbDUI6Aixi3Qo=
@@ -251,8 +251,8 @@ github.com/agoric-labs/cosmos-sdk/x/evidence v0.50.14-alpha.agoric.2 h1:7ESnIMIw
 github.com/agoric-labs/cosmos-sdk/x/evidence v0.50.14-alpha.agoric.2/go.mod h1:xa/Yd8nYr19cawsEby/hvyqKY1JwgTADkpeLoiQCp/M=
 github.com/agoric-labs/cosmos-sdk/x/feegrant v0.50.14-alpha.agoric.2 h1:MNelYV/KYuMP6eCR3TIyt4UxQIWBh+t0giftbn/Pyzk=
 github.com/agoric-labs/cosmos-sdk/x/feegrant v0.50.14-alpha.agoric.2/go.mod h1:v0vW27eq2imPHdC6m615AfTwSHuEaQjMUrpN0NQ1euk=
-github.com/agoric-labs/cosmos-sdk/x/tx v0.50.14-alpha.agoric.2 h1:KFMja73SZkRvDgZGrecXUicxVynbYNipB+/bBkjZr7Y=
-github.com/agoric-labs/cosmos-sdk/x/tx v0.50.14-alpha.agoric.2/go.mod h1:V6DImnwJMTq5qFjeGWpXNiT/fjgE4HtmclRmTqRVM3w=
+github.com/agoric-labs/cosmos-sdk/x/tx v0.50.14-alpha.agoric.3 h1:x2L2MLMCZrD+8ca4+d8OLuxthsoSInJegAyXmU+Bvog=
+github.com/agoric-labs/cosmos-sdk/x/tx v0.50.14-alpha.agoric.3/go.mod h1:V6DImnwJMTq5qFjeGWpXNiT/fjgE4HtmclRmTqRVM3w=
 github.com/agoric-labs/cosmos-sdk/x/upgrade v0.50.14-alpha.agoric.2 h1:TNZlNQF32JMkQP8UDPOrDs/1OkU0BEJt5u3jicdZOxc=
 github.com/agoric-labs/cosmos-sdk/x/upgrade v0.50.14-alpha.agoric.2/go.mod h1:oKKey6LoyUysXhmojn082a+pT+o/WK6KmtqQZH2lSxA=
 github.com/agoric-labs/ibc-go/modules/capability v1.0.1-v8.7.0-alpha.agoric.1 h1:3DJB6QsBFsq4oOVxPEeOM/DRztNWtzQzdGc98UBQIhc=

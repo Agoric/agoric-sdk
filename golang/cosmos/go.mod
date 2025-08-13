@@ -20,6 +20,7 @@ require (
 	cosmossdk.io/x/upgrade v0.1.4
 	github.com/cometbft/cometbft v0.38.13
 	github.com/cosmos/cosmos-db v1.1.1
+	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.50.12
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8 v8.2.0
@@ -81,7 +82,6 @@ require (
 	github.com/coinbase/rosetta-sdk-go/types v1.0.0 // indirect
 	github.com/cometbft/cometbft-db v0.14.1 // indirect
 	github.com/cosmos/btcutil v1.0.5 // indirect
-	github.com/cosmos/cosmos-proto v1.0.0-beta.5 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/cosmos/gogogateway v1.2.0 // indirect
 	github.com/cosmos/iavl v1.2.2 // indirect
@@ -257,14 +257,14 @@ replace (
 	cosmossdk.io/x/circuit => github.com/agoric-labs/cosmos-sdk/x/circuit v0.50.14-alpha.agoric.2
 	cosmossdk.io/x/evidence => github.com/agoric-labs/cosmos-sdk/x/evidence v0.50.14-alpha.agoric.2
 	cosmossdk.io/x/feegrant => github.com/agoric-labs/cosmos-sdk/x/feegrant v0.50.14-alpha.agoric.2
-	cosmossdk.io/x/tx => github.com/agoric-labs/cosmos-sdk/x/tx v0.50.14-alpha.agoric.2
+	cosmossdk.io/x/tx => github.com/agoric-labs/cosmos-sdk/x/tx v0.50.14-alpha.agoric.3
 	cosmossdk.io/x/upgrade => github.com/agoric-labs/cosmos-sdk/x/upgrade v0.50.14-alpha.agoric.2
 
 	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with
 	// https://github.com/cometbft/cometbft/issue/6899 resolved.
 	github.com/cometbft/cometbft => github.com/agoric-labs/cometbft v0.38.17-alpha.agoric.1
-	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.50.14-alpha.agoric.2
+	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.50.14-alpha.agoric.3
 	github.com/cosmos/ibc-go/modules/capability => github.com/agoric-labs/ibc-go/modules/capability v1.0.1-v8.7.0-alpha.agoric.1
 
 	github.com/cosmos/ibc-go/v8 => github.com/agoric-labs/ibc-go/v8 v8.7.0-alpha.agoric.1
