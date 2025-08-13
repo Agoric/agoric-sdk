@@ -48,6 +48,7 @@ import (
 	authtxconfig "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/app/txconfig"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingset "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
@@ -144,7 +145,7 @@ func NewRootCmd(sender vm.Sender) (*cobra.Command, params.EncodingConfig) {
 					EnabledSignModes:           enabledSignModes,
 					TextualCoinMetadataQueryFn: authtxconfig.NewGRPCCoinMetadataQueryFn(initClientCtx),
 				}
-				txConfig, err := tx.NewTxConfigWithOptions(
+				txConfig, err := txconfig.NewTxConfigWithOptionsWithCustomEncoders(
 					initClientCtx.Codec,
 					txConfigOpts,
 				)
