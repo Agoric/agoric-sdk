@@ -1,26 +1,33 @@
 #! /usr/bin/env node
+/* global globalThis */
 
-// We need the shims...
-import '@endo/init/pre.js';
+// We need some pre-lockdown shimming.
+import '@endo/init/pre-remoting.js';
 import './shims.cjs';
+import '@endo/lockdown/commit.js';
 
-// UNTIL(https://github.com/nodejs/node/pull/58315)
-// (Also tracked in https://github.com/endojs/endo/issues/2037#issuecomment-3142004849)
-//
-// The WebSocket shim uses Node.js EventEmitter, which fails after:
+import 'ts-blank-space/register';
+
+// ...but the WebSocket shim must be loaded *after* lockdown, seemingly because
+// of a dependency upon EventEmitter that is otherwise broken:
 // TypeError#1: Cannot assign to read only property '_events' of object '[object Object]'
 //  at EventEmitter.init (node:events:345:18)
 //  at new EventEmitter (node:events:220:21)
 //  at new CosmosRPCClient (packages/portfolio-planner/src/cosmos-rpc.ts:27:16)
 //
-// The read only property appears to be `Promise.prototype`.
+// The read only property appears to be on `Promise.prototype`.
 //
-// Not safe, but we need to do this for now instead of using `import '@endo/init'`:
-import '@endo/init/unsafe-fast.js';
+// See also https://github.com/nodejs/node/pull/58315 and
+// https://github.com/endojs/endo/issues/2037#issuecomment-3142004849
+const shimmedP = (async () => {
+  if (typeof WebSocket !== 'undefined') return;
+  const ws = await import('ws');
+  // @ts-expect-error
+  globalThis.WebSocket = ws.WebSocket;
+})();
 
-import 'ts-blank-space/register';
-
-import('./main.ts')
+shimmedP
+  .then(() => import('./main.ts'))
   .then(async ({ main }) => {
     const dotEnvFile = process.env.DOTENV || '.env';
 
