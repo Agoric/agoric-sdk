@@ -16,6 +16,13 @@ import * as basicBehaviorsNamespace from '../src/core/basic-behaviors.js';
 import * as chainBehaviorsNamespace from '../src/core/chain-behaviors.js';
 import * as utils from '../src/core/utils.js';
 
+/**
+ * @typedef {'BASIC_BOOTSTRAP'
+ *   | 'CHAIN_BOOTSTRAP'
+ *   | 'SHARED_CHAIN_BOOTSTRAP'
+ *   | 'MINIMAL'} BootstrapManifestName
+ */
+
 // Gather up all defined bootstrap behaviors.
 const { BASIC_BOOTSTRAP_PERMITS: BASIC_BOOTSTRAP, ...basicBehaviors } =
   basicBehaviorsNamespace;
@@ -24,7 +31,18 @@ const {
   SHARED_CHAIN_BOOTSTRAP_MANIFEST: SHARED_CHAIN_BOOTSTRAP,
   ...chainBehaviors
 } = chainBehaviorsNamespace;
-const manifests = { BASIC_BOOTSTRAP, CHAIN_BOOTSTRAP, SHARED_CHAIN_BOOTSTRAP };
+/**
+ * @type {Record<
+ *   BootstrapManifestName,
+ *   import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest
+ * >}
+ */
+const manifests = {
+  BASIC_BOOTSTRAP,
+  CHAIN_BOOTSTRAP,
+  MINIMAL: {},
+  SHARED_CHAIN_BOOTSTRAP,
+};
 const allBehaviors = { ...basicBehaviors, ...chainBehaviors };
 export const modules = {
   behaviors: { ...allBehaviors },
@@ -39,7 +57,8 @@ const allPermits = Object.fromEntries(
     .flat(),
 );
 const makeManifestForBehaviors = behaviors => {
-  const manifest = {};
+  const manifest =
+    /** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest} */ ({});
   for (const behavior of behaviors) {
     const { name } = behavior;
     Object.hasOwn(allPermits, name) || Fail`missing permit for ${name}`;
@@ -60,7 +79,7 @@ manifests.MINIMAL = makeManifestForBehaviors([
 /**
  * @param {VatPowers & { D: DProxy; testLog: typeof console.log }} vatPowers
  * @param {{
- *   baseManifest?: string;
+ *   baseManifest?: BootstrapManifestName;
  *   addBehaviors?: string[];
  *   coreProposalCodeSteps?: string[];
  * }} bootstrapParameters
