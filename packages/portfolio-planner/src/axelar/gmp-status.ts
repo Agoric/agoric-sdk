@@ -136,7 +136,7 @@ type AxelarApprovedEvent = {
   _logIndex: number;
 };
 
-type AxelarExecutedEvent = {
+export type AxelarExecutedEvent = {
   chain: string;
   sourceChain: string;
   chain_type: string;
@@ -268,7 +268,7 @@ type AxelarQueryParams = {
 
 // Helpful for experimenting with different parameters:
 // Visit https://docs.axelarscan.io/axelarscan
-export const getWalletAddress = async (
+export const getTxStatus = async (
   url: string,
   fetch,
   params: AxelarQueryParams,
@@ -298,32 +298,37 @@ export const getWalletAddress = async (
     const parsed = (await res.json()) as AxelarEventsResponse;
     data = parsed.data;
 
-    if (Array.isArray(data) && data?.[0]?.executed) {
+    if (
+      Array.isArray(data) &&
+      data?.[0]?.executed &&
+      data?.[0]?.executed.sourceTransactionHash === params.txHash
+    ) {
       console.log('✅ contract call executed', data[0].executed);
-      console.log('txHash:', data[0].executed.transactionHash);
+      console.log('txHash on EVM:', data[0].executed.transactionHash);
 
-      // equivalent of keccak256("SmartWalletCreated(address,string,string,string)")
-      const walletCreatedTopic = ethers.id(
-        'SmartWalletCreated(address,string,string,string)',
-      );
-      const logs = data[0].executed.receipt.logs;
-      const walletCreationLog = logs.find(
-        log => log.topics[0] === walletCreatedTopic,
-      );
-      console.log('wallet creation log', walletCreationLog);
-
-      if (walletCreationLog) {
-        const walletAddress = ethers.getAddress(
-          '0x' + walletCreationLog.topics[1].slice(26),
-        );
-        console.log('wallet created:', walletAddress);
-        return walletAddress;
-      } else {
-        console.log('wallet creation log not found');
-      }
+      return { logs: data[0].executed, success: true };
     }
 
     console.log('no data, retrying...');
     await wait(20);
   }
+  return { logs: null, success: false };
+};
+
+export const extractWalletAddress = (
+  executedEvent: AxelarExecutedEvent,
+): string | null => {
+  // equivalent of keccak256("SmartWalletCreated(address,string,string,string)")
+  const walletCreatedTopic = ethers.id(
+    'SmartWalletCreated(address,string,string,string)',
+  );
+  const logs = executedEvent.receipt.logs;
+  const walletCreationLog = logs.find(
+    log => log.topics[0] === walletCreatedTopic,
+  );
+
+  if (walletCreationLog) {
+    return ethers.getAddress('0x' + walletCreationLog.topics[1].slice(26));
+  }
+  return null;
 };

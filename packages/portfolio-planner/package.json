@@ -11,6 +11,7 @@
     "debug": "node --inspect ./src/entrypoint.js",
     "start:docker": "docker compose up --build",
     "start:deps": "docker compose up --scale app=0",
+    "axelar": "vite-node ./src/axelar/axelar-cli.ts",
     "build": "exit 0",
     "prepack": "yarn run -T tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
@@ -33,10 +34,12 @@
     "@types/ws": "^8",
     "nodemon": "^3.1.10",
     "ts-blank-space": "^0.6.1",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vite-node": "^3.2.4"
   },
   "dependencies": {
     "@aglocal/portfolio-contract": "workspace:*",
+    "@aglocal/portfolio-deploy": "workspace:*",
     "@agoric/client-utils": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/internal": "workspace:*",

@@ -8,7 +8,11 @@ import type {
 } from '@aglocal/portfolio-contract/src/portfolio.contract';
 import type { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
 import type { AxelarChain } from '@aglocal/portfolio-contract/src/constants';
-import { getWalletAddress } from './get-remote-address';
+import {
+  extractWalletAddress,
+  getTxStatus,
+  type AxelarExecutedEvent,
+} from './gmp-status.ts';
 
 const GAS_TOKEN = 'ubld';
 
@@ -147,9 +151,15 @@ export const createRemoteEVMAccount = async (
   });
 
   console.log('Waiting for wallet creation...');
-  const addr = await getWalletAddress(ctx.axelarConfig.queryApi, fetch, {
+  const res = await getTxStatus(ctx.axelarConfig.queryApi, fetch, {
     txHash,
   });
+  if (!res.success) {
+    throw Error(
+      'TODO: if logs not defined after 4min polling, maybe some tx failure/delay?',
+    );
+  }
+  const addr = await extractWalletAddress(res.logs as AxelarExecutedEvent);
   console.log('Remote EVM Addr:', addr);
   console.log('TODO: make offer to the contract to resolve the pending vow');
 };
@@ -165,7 +175,7 @@ export const supplyToAave = async (
   const contracts = ctx.axelarConfig.contracts[destinationChain];
   const { AXELAR_GAS, AXELAR_GMP } = ctx.axelarConfig.gmpAddresses;
 
-  await sendGmp(ctx, {
+  const txHash = await sendGmp(ctx, {
     destinationAddr: remoteAddr,
     destinationChain,
     gmpAddr: AXELAR_GMP,
@@ -185,6 +195,14 @@ export const supplyToAave = async (
       },
     ],
   });
+
+  const res = await getTxStatus(ctx.axelarConfig.queryApi, fetch, {
+    txHash,
+  });
+  if (!res.success) {
+    throw Error('deployment of funds not successful');
+  }
+  // TODO: notify the contract about success
 };
 
 export const supplyToCompound = async (
@@ -198,7 +216,7 @@ export const supplyToCompound = async (
   const contracts = ctx.axelarConfig.contracts[destinationChain];
   const { AXELAR_GAS, AXELAR_GMP } = ctx.axelarConfig.gmpAddresses;
 
-  await sendGmp(ctx, {
+  const txHash = await sendGmp(ctx, {
     destinationAddr: remoteAddr,
     destinationChain,
     gmpAddr: AXELAR_GMP,
@@ -218,4 +236,12 @@ export const supplyToCompound = async (
       },
     ],
   });
+
+  const res = await getTxStatus(ctx.axelarConfig.queryApi, fetch, {
+    txHash,
+  });
+  if (!res.success) {
+    throw Error('deployment of funds not successful');
+  }
+  // TODO: notify the contract about success
 };

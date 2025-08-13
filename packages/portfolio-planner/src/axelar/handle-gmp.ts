@@ -4,7 +4,7 @@ import {
   supplyToAave,
   supplyToCompound,
   type PortfolioInstanceContext,
-} from './gmp';
+} from './gmp.ts';
 
 const { keys } = Object;
 
