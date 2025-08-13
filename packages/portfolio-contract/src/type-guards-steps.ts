@@ -3,7 +3,7 @@
  */
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
-import { AnyNatAmountShape, type CaipChainId } from '@agoric/orchestration';
+import { AnyNatAmountShape } from '@agoric/orchestration';
 import { M } from '@endo/patterns';
 import {
   AxelarChain,
@@ -16,27 +16,6 @@ import {
   type PoolKey,
   type TargetAllocation,
 } from './type-guards.ts';
-
-/**
- * Details of a CCTP transaction
- */
-export type CCTPTransactionDetails = {
-  amount: bigint;
-  /** the remoteAddress on EVM chain - maybe we should call it that? */
-  remoteAddress: `0x${string}`;
-  status: 'pending' | 'confirmed' | 'failed';
-};
-
-export const CCTPTransactionDetailsShape: TypedPattern<CCTPTransactionDetails> =
-  M.splitRecord(
-    {
-      amount: M.bigint(),
-      remoteAddress: M.string(),
-      status: M.or('pending', 'confirmed', 'failed'),
-    },
-    {},
-    {},
-  );
 
 const { keys, values } = Object;
 
@@ -101,10 +80,6 @@ export type MovementDesc = {
 export type OfferArgsFor = {
   openPortfolio: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
   rebalance: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
-  confirmCCTPTransaction: {
-    txDetails: CCTPTransactionDetails;
-    remoteAxelarChain: CaipChainId;
-  };
 };
 
 export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
@@ -141,14 +116,6 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       },
       {},
     ) as TypedPattern<OfferArgsFor['rebalance']>,
-    confirmCCTPTransaction: M.splitRecord(
-      {
-        txDetails: CCTPTransactionDetailsShape,
-        remoteAxelarChain: M.string(), // CaipChainId format: ${namespace}:${reference}
-      },
-      {},
-      {},
-    ) as TypedPattern<OfferArgsFor['confirmCCTPTransaction']>,
   };
 };
 harden(makeOfferArgsShapes);

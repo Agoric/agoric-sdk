@@ -77,11 +77,12 @@ export type PortfolioInstanceContext = {
   gmpFeeInfo: { brand: Brand<'nat'>; denom: Denom };
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
-  registerCCTPTransaction?: (
-    chainId: CaipChainId,
-    remoteAddress: `0x${string}`,
-    amount: bigint,
-  ) => Vow<void> | Promise<void>;
+  cctpClient?: {
+    registerCCTPTransaction: (
+      destinationAddress: AccountId,
+      amount: bigint,
+    ) => Vow<void> | Promise<void>;
+  };
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {

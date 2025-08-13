@@ -17,7 +17,7 @@ import {
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
-import { confirmCCTPWithMockReceiver } from './cctp-confirmation-helpers.ts';
+import { settleCCTPWithMockReceiver } from './resolver-helpers.ts';
 import { evmNamingDistinction, localAccount0 } from './mocks.ts';
 
 const { fromEntries, keys } = Object;
@@ -135,7 +135,7 @@ test.serial('open a portfolio with Aave position', async t => {
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
-  const cctpConfirmationPromise = confirmCCTPWithMockReceiver(
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(
     zoe,
     started.creatorFacet,
     amount.value,
@@ -148,7 +148,7 @@ test.serial('open a portfolio with Aave position', async t => {
 
   const [actual, cctpResult] = await Promise.all([
     actualP,
-    cctpConfirmationPromise,
+    cctpSettlementPromise,
   ]);
 
   t.log('=== Portfolio completed, CCTP result:', cctpResult);
@@ -194,7 +194,7 @@ test('open a portfolio with Compound position', async t => {
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
-  const cctpConfirmationPromise = confirmCCTPWithMockReceiver(
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(
     zoe,
     started.creatorFacet,
     amount.value,
@@ -208,7 +208,7 @@ test('open a portfolio with Compound position', async t => {
   t.log('=== Waiting for portfolio completion and CCTP confirmation ===');
   const [actual, cctpResult] = await Promise.all([
     actualP,
-    cctpConfirmationPromise,
+    cctpSettlementPromise,
   ]);
 
   t.log('=== Portfolio completed, CCTP result:', cctpResult);
@@ -259,7 +259,7 @@ test('open portfolio with USDN, Aave positions', async t => {
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   // Start CCTP confirmation for the Aave portion (amount goes to Arbitrum)
-  const cctpConfirmationPromise = confirmCCTPWithMockReceiver(
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(
     zoe,
     started.creatorFacet,
     amount.value, // Only the amount going to Arbitrum needs CCTP confirmation
@@ -272,10 +272,7 @@ test('open portfolio with USDN, Aave positions', async t => {
 
   await eventLoopIteration(); // let bridge I/O happen
 
-  const [done, cctpResult] = await Promise.all([
-    doneP,
-    cctpConfirmationPromise,
-  ]);
+  const [done, cctpResult] = await Promise.all([doneP, cctpSettlementPromise]);
 
   t.log('=== Portfolio completed, CCTP result:', cctpResult);
   const result = done.result as any;
@@ -377,7 +374,7 @@ test('claim rewards on Aave position successfully', async t => {
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
-  const cctpConfirmationPromise = confirmCCTPWithMockReceiver(
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(
     zoe,
     started.creatorFacet,
     amount.value,
@@ -390,7 +387,7 @@ test('claim rewards on Aave position successfully', async t => {
 
   const [done, cctpResult] = await Promise.all([
     actualP,
-    cctpConfirmationPromise,
+    cctpSettlementPromise,
   ]);
 
   t.log('=== Portfolio completed, CCTP result:', cctpResult);
@@ -524,7 +521,7 @@ test('open a portfolio with Beefy position', async t => {
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
-  const cctpConfirmationPromise = confirmCCTPWithMockReceiver(
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(
     zoe,
     started.creatorFacet,
     amount.value,
@@ -536,7 +533,7 @@ test('open a portfolio with Beefy position', async t => {
   );
   const [actual, cctpResult] = await Promise.all([
     actualP,
-    cctpConfirmationPromise,
+    cctpSettlementPromise,
   ]);
 
   t.log('=== Portfolio completed, CCTP result:', cctpResult);
@@ -578,7 +575,7 @@ test('Withdraw from a Beefy position', async t => {
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
-  const cctpConfirmationPromise = confirmCCTPWithMockReceiver(
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(
     zoe,
     started.creatorFacet,
     amount.value,
@@ -590,7 +587,7 @@ test('Withdraw from a Beefy position', async t => {
   );
   const [actual, cctpResult] = await Promise.all([
     actualP,
-    cctpConfirmationPromise,
+    cctpSettlementPromise,
   ]);
 
   const result = actual.result as any;
@@ -665,100 +662,4 @@ test('initial baggage', async t => {
   const tree = inspectMapStore(contractBaggage);
   t.snapshot(tree, 'contract baggage after start');
   // CCTP Confirmation Tests
-});
-
-test('CCTP confirmation invitation - no pending transaction found', async t => {
-  const { started, zoe, common } = await setupTraderWithCCTP(t);
-  const { creatorFacet } = started;
-  const { usdc } = common.brands;
-
-  const amount = usdc.units(1000);
-
-  // Try to confirm a transaction that was never initiated
-  const confirmInvitation =
-    await E(creatorFacet).makeConfirmCCTPTransactionInvitation();
-
-  const confirmationSeat = await E(zoe).offer(
-    confirmInvitation,
-    {},
-    undefined,
-    {
-      txDetails: {
-        amount: amount.value,
-        remoteAddress: '0x999999999999999999999999999999999999999',
-        status: 'confirmed' as const,
-      },
-      remoteAxelarChain: 'eip155:42161' as const,
-    },
-  );
-
-  const confirmResult = await E(confirmationSeat).getOfferResult();
-  t.truthy(confirmResult, 'Confirmation result should not be undefined');
-  t.is(confirmResult.success, false);
-  t.truthy(confirmResult.message, 'Confirmation result should have a message');
-  t.regex(confirmResult.message as string, /No pending CCTP transaction found/);
-  t.is(confirmResult.txDetails.amount, amount.value);
-  t.is(confirmResult.remoteAxelarChain, 'eip155:42161');
-});
-
-test('CCTP confirmation invitation - invalid status throws', async t => {
-  const { started, zoe, common } = await setupTraderWithCCTP(t);
-  const { creatorFacet } = started;
-  const { usdc } = common.brands;
-
-  const amount = usdc.units(1000);
-
-  const confirmInvitation =
-    await E(creatorFacet).makeConfirmCCTPTransactionInvitation();
-
-  const confirmationSeat = await E(zoe).offer(
-    confirmInvitation,
-    {},
-    undefined,
-    {
-      txDetails: {
-        amount: amount.value,
-        remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-        status: 'invalid' as any, // Invalid status
-      },
-      remoteAxelarChain: 'eip155:42161' as const,
-    },
-  );
-
-  // The validation error happens during offer result processing
-  await t.throwsAsync(E(confirmationSeat).getOfferResult(), {
-    message: /Must match one of/,
-  });
-});
-
-test('CCTP confirmation invitation exits seat properly', async t => {
-  const { started, zoe, common } = await setupTraderWithCCTP(t);
-  const { creatorFacet } = started;
-  const { usdc } = common.brands;
-
-  const amount = usdc.units(1000);
-
-  const confirmInvitation =
-    await E(creatorFacet).makeConfirmCCTPTransactionInvitation();
-
-  const confirmationSeat = await E(zoe).offer(
-    confirmInvitation,
-    {},
-    undefined,
-    {
-      txDetails: {
-        amount: amount.value,
-        remoteAddress: '0x999999999999999999999999999999999999999',
-        status: 'pending' as const,
-      },
-      remoteAxelarChain: 'eip155:42161' as const,
-    },
-  );
-
-  const confirmResult = await E(confirmationSeat).getOfferResult();
-  t.truthy(confirmResult);
-
-  // Verify seat has exited
-  const hasExited = await E(confirmationSeat).hasExited();
-  t.is(hasExited, true, 'Confirmation seat should exit after processing');
 });
