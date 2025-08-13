@@ -1,0 +1,75 @@
+{
+  "name": "@aglocal/ymax-planner",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Portfolio contract off-chain engine",
+  "main": "src/main.ts",
+  "type": "module",
+  "scripts": {
+    "start": "node ./src/entrypoint.js",
+    "dev": "nodemon --ext .js,.ts ./src/entrypoint.js",
+    "debug": "node --inspect ./src/entrypoint.js",
+    "start:docker": "docker compose up --build",
+    "start:deps": "docker compose up --scale app=0",
+    "build": "exit 0",
+    "prepack": "yarn run -T tsc --build tsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
+    "lint": "npm run lint:types",
+    "test": "ava",
+    "test:xs": "exit 0",
+    "test:vite": "vitest",
+    "lint:types": "yarn run -T tsc"
+  },
+  "keywords": [
+    "agoric",
+    "portfolio",
+    "engine",
+    "ymax"
+  ],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8",
+    "ava": "^6.3.0",
+    "nodemon": "^3.1.10",
+    "ts-blank-space": "^0.6.1",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@aglocal/portfolio-contract": "workspace:*",
+    "@agoric/client-utils": "workspace:*",
+    "@agoric/ertp": "workspace:*",
+    "@agoric/internal": "workspace:*",
+    "@agoric/pola-io": "workspace:*",
+    "@cosmjs/amino": "^0.36.0",
+    "@cosmjs/crypto": "^0.36.0",
+    "@cosmjs/encoding": "^0.36.0",
+    "@cosmjs/proto-signing": "^0.36.0",
+    "@cosmjs/stargate": "^0.36.0",
+    "@endo/errors": "^1.2.13",
+    "@endo/init": "^1.1.12",
+    "@endo/nat": "^5.1.3",
+    "@endo/patterns": "^1.7.0",
+    "@endo/promise-kit": "^1.1.13",
+    "dotenv": "^17.2.1",
+    "json-rpc-2.0": "^1.7.1",
+    "ws": "^8.18.3"
+  },
+  "ava": {
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
+    "files": [
+      "test/**/*.test.*"
+    ],
+    "nodeArguments": [
+      "--import=ts-blank-space/register",
+      "--no-warnings"
+    ],
+    "require": [
+      "@endo/init/debug.js"
+    ]
+  }
+}
