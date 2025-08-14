@@ -1,23 +1,3 @@
-diff --git a/main/generators/customize-utils.js b/main/generators/customize-utils.js
-index 39b65d5e80fe28f4295d229f7daa1c6923db8aaf..5553874955b0a4e6b1fb0bf442add6dd425aaf39 100644
---- a/main/generators/customize-utils.js
-+++ b/main/generators/customize-utils.js
-@@ -32,13 +32,13 @@ const plugin = (builder) => {
-         utils_1.UTILS.base64FromBytes = {
-             type: 'import',
-             path: '@endo/base64',
--            name: 'decodeBase64',
-+            name: 'encodeBase64',
-             importAs: 'base64FromBytes',
-         };
-         utils_1.UTILS.bytesFromBase64 = {
-             type: 'import',
-             path: '@endo/base64',
--            name: 'encodeBase64',
-+            name: 'decodeBase64',
-             importAs: 'bytesFromBase64',
-         };
-     }
 diff --git a/main/helpers/internal-for-bigint.js b/main/helpers/internal-for-bigint.js
 index b90267f01cebfc3f23d4623e7e4065d5d150b08a..0740b1ecd7087f5c87dc8e37f497727e5c6194df 100644
 --- a/main/helpers/internal-for-bigint.js
@@ -112,14 +92,13 @@ index 9df193598d12e194e7e00af400be4994f2235ae2..3e1c3a2a11c8fd4cbda97ab56029f69a
  
  export interface AminoHeight {
      readonly revision_number?: string;
-diff --git a/main/helpers/internalForBigInt.js b/main/helpers/internalForBigInt.js
-index 07b6e47289a7e96b6835eef4857b18008d267343..6a02c01c0a31bb388ee11a300790ea785e417f03 100644
---- a/main/helpers/internalForBigInt.js
-+++ b/main/helpers/internalForBigInt.js
-@@ -2,41 +2,8 @@
- Object.defineProperty(exports, "__esModule", { value: true });
- exports.internalForBigInt = void 0;
- exports.internalForBigInt = `
+diff --git a/module/helpers/internal-for-bigint.js b/module/helpers/internal-for-bigint.js
+index 2225ab304e38a66c9cebfbd6e600f397a24b12e3..c3c8e71a4a3b70d32af179bb6ad82ac92d7a07ec 100644
+--- a/module/helpers/internal-for-bigint.js
++++ b/module/helpers/internal-for-bigint.js
+@@ -1,40 +1,7 @@
+ export const getHelperForBigint = (options) => {
+     return `
 -declare var self: any | undefined;
 -declare var window: any | undefined;
 -declare var global: any | undefined;
@@ -160,26 +139,6 @@ index 07b6e47289a7e96b6835eef4857b18008d267343..6a02c01c0a31bb388ee11a300790ea78
  
  export interface AminoHeight {
    readonly revision_number?: string;
-diff --git a/module/generators/customize-utils.js b/module/generators/customize-utils.js
-index d6a50e021e313c26a01efaf26f4d65e332df24ac..92714e18033fc3edf0433660ce511efde2aa283d 100644
---- a/module/generators/customize-utils.js
-+++ b/module/generators/customize-utils.js
-@@ -29,13 +29,13 @@ export const plugin = (builder) => {
-         UTILS.base64FromBytes = {
-             type: 'import',
-             path: '@endo/base64',
--            name: 'decodeBase64',
-+            name: 'encodeBase64',
-             importAs: 'base64FromBytes',
-         };
-         UTILS.bytesFromBase64 = {
-             type: 'import',
-             path: '@endo/base64',
--            name: 'encodeBase64',
-+            name: 'decodeBase64',
-             importAs: 'bytesFromBase64',
-         };
-     }
 diff --git a/module/helpers/internal.js b/module/helpers/internal.js
 index d24ec7055da9fa30441986a382faab7186ce3cdc..2fb7cc4167b45537ae145bda146f779bc09174bb 100644
 --- a/module/helpers/internal.js
@@ -226,26 +185,18 @@ index d24ec7055da9fa30441986a382faab7186ce3cdc..2fb7cc4167b45537ae145bda146f779b
  
  export interface AminoHeight {
      readonly revision_number?: string;
-diff --git a/src/generators/customize-utils.ts b/src/generators/customize-utils.ts
-index 5373663e63ee9e99ee995f3858065aab27008f41..bb8728372b5824c03297afe5859760d6e6d1cee4 100644
---- a/src/generators/customize-utils.ts
-+++ b/src/generators/customize-utils.ts
-@@ -38,13 +38,13 @@ export const plugin = (builder: TelescopeBuilder) => {
-     UTILS.base64FromBytes = {
-       type: 'import',
-       path: '@endo/base64',
--      name: 'decodeBase64',
-+      name: 'encodeBase64',
-       importAs: 'base64FromBytes',
-     };
-     UTILS.bytesFromBase64 = {
-       type: 'import',
-       path: '@endo/base64',
--      name: 'encodeBase64',
-+      name: 'decodeBase64',
-       importAs: 'bytesFromBase64',
-     };
-   } else {
+diff --git a/package.json b/package.json
+index 97899bd604de68624bcbb761d0cd0903a5de5ac4..e53f999dbc7538974e3d1aa29ea93f700b7d6618 100644
+--- a/package.json
++++ b/package.json
+@@ -111,5 +111,6 @@
+     "rimraf": "5.0.0",
+     "yaml": "^2.3.4"
+   },
+-  "gitHead": "06fc709e02c19d990979dd016c9a14290422f254"
++  "gitHead": "06fc709e02c19d990979dd016c9a14290422f254",
++  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+ }
 diff --git a/src/helpers/internal-for-bigint.ts b/src/helpers/internal-for-bigint.ts
 index 9308f4083739a4cfb9826b0e265a3a6338755dfe..425b6171e137f35c92c21ef8b505e6427c5b7959 100644
 --- a/src/helpers/internal-for-bigint.ts
@@ -295,7 +246,7 @@ index 9308f4083739a4cfb9826b0e265a3a6338755dfe..425b6171e137f35c92c21ef8b505e642
  export interface AminoHeight {
    readonly revision_number?: string;
 diff --git a/src/helpers/internal.ts b/src/helpers/internal.ts
-index ff08a4f1dbb035054dc8f308ba1adba3c51c2427..df2b8b6fc99d10fcc463b55b045f8cad4c430199 100644
+index ff08a4f1dbb035054dc8f308ba1adba3c51c2427..85908efa02b218464a1619be77a9b9e1403fbfe1 100644
 --- a/src/helpers/internal.ts
 +++ b/src/helpers/internal.ts
 @@ -13,39 +13,8 @@ if (_m0.util.Long !== Long) {
