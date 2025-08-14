@@ -32,7 +32,6 @@ export const main = async (
   } = {},
 ) => {
   await null;
-  // console.log('Hello, world!', { argv });
 
   const { MNEMONIC } = env;
   if (!MNEMONIC) throw Error(`MNEMONIC not set`);
@@ -80,8 +79,7 @@ export const main = async (
   });
 
   const network = env.AGORIC_NET == 'mainnet' ? 'mainnet' : 'testnet';
-  // TODO: use stargate client instead?
-  const ctx = await createContext(MNEMONIC, network);
+  const ctx = await createContext(network, stargateClient, plannerAddress);
   await startEngine({
     ctx,
     rpc,

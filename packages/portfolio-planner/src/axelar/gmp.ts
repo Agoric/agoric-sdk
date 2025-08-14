@@ -1,12 +1,11 @@
 import { SigningStargateClient } from '@cosmjs/stargate';
-import { buildGasPayload, buildGMPPayload } from './support';
+import { buildGMPPayload } from './support';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { EVMContractAddressesMap } from '@aglocal/portfolio-contract/src/type-guards';
 import type {
   AxelarId,
   GmpAddresses,
 } from '@aglocal/portfolio-contract/src/portfolio.contract';
-import type { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
 import type { AxelarChain } from '@aglocal/portfolio-contract/src/constants';
 import {
   extractWalletAddress,
@@ -34,9 +33,10 @@ export type PortfolioInstanceContext = {
     gmpAddresses: GmpAddresses;
     queryApi: string;
   };
-  signer: DirectSecp256k1HdWallet;
   sourceChannel: string;
   rpcUrl: string;
+  stargateClient: SigningStargateClient;
+  plannerAddress: string;
 };
 
 export type ContractCall = {
@@ -86,18 +86,15 @@ export const sendGmp = async (
   ctx: PortfolioInstanceContext,
   gmpArgs: GmpArgsContractCall,
 ) => {
-  const { signer, sourceChannel, rpcUrl } = ctx;
+  const { stargateClient, sourceChannel, plannerAddress } = ctx;
   const memo = makeAxelarMemo(gmpArgs);
 
-  const accounts = await signer.getAccounts();
-  const senderAddress = accounts[0].address;
-  console.log('Sender Address:', senderAddress);
-
+  console.log('Sender Address:', plannerAddress);
   const ibcPayload = [
     {
       typeUrl: '/ibc.applications.transfer.v1.MsgTransfer',
       value: {
-        sender: senderAddress,
+        sender: plannerAddress,
         receiver: gmpArgs.gmpAddr,
         token: {
           denom: GAS_TOKEN,
@@ -111,20 +108,14 @@ export const sendGmp = async (
     },
   ];
 
-  console.log('Connecting with Signer...');
-  const signingClient = await SigningStargateClient.connectWithSigner(
-    rpcUrl,
-    signer,
-  );
-
   const fee = {
     gas: '1000000',
     amount: [{ denom: GAS_TOKEN, amount: '1000000' }],
   };
 
   console.log('Sign and Broadcast transaction...');
-  const response = await signingClient.signAndBroadcast(
-    senderAddress,
+  const response = await stargateClient.signAndBroadcast(
+    plannerAddress,
     ibcPayload,
     fee,
   );
@@ -152,8 +143,10 @@ export const createRemoteEVMAccount = async (
   });
 
   console.log('Waiting for wallet creation...');
-  const res = await getTxStatus(ctx.axelarConfig.queryApi, fetch, {
-    txHash,
+  const res = await getTxStatus({
+    url: ctx.axelarConfig.queryApi,
+    fetch,
+    params: { txHash },
   });
   if (!res.success) {
     throw Error(
@@ -197,8 +190,10 @@ export const supplyToAave = async (
     ],
   });
 
-  const res = await getTxStatus(ctx.axelarConfig.queryApi, fetch, {
-    txHash,
+  const res = await getTxStatus({
+    url: ctx.axelarConfig.queryApi,
+    fetch,
+    params: { txHash },
   });
   if (!res.success) {
     throw Error('deployment of funds not successful');
@@ -238,8 +233,10 @@ export const supplyToCompound = async (
     ],
   });
 
-  const res = await getTxStatus(ctx.axelarConfig.queryApi, fetch, {
-    txHash,
+  const res = await getTxStatus({
+    url: ctx.axelarConfig.queryApi,
+    fetch,
+    params: { txHash },
   });
   if (!res.success) {
     throw Error('deployment of funds not successful');

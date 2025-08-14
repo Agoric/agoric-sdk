@@ -1,6 +1,4 @@
 import { encodeFunctionData, encodeAbiParameters, hexToBytes } from 'viem';
-import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
-import { stringToPath } from '@cosmjs/crypto';
 import {
   axelarConfig as axelarConfigMainnet,
   axelarConfigTestnet,
@@ -11,6 +9,7 @@ import type {
   AbiEncodedContractCall,
   PortfolioInstanceContext,
 } from './gmp.ts';
+import type { SigningStargateClient } from '@cosmjs/stargate';
 
 export const channels = {
   mainnet: 'channel-9',
@@ -93,22 +92,10 @@ export const buildGasPayload = gasAmount => {
 };
 
 export const createContext = async (
-  mnemonic: string,
   net: 'mainnet' | 'testnet' = 'testnet',
+  stargateClient: SigningStargateClient,
+  plannerAddress: string,
 ): Promise<PortfolioInstanceContext> => {
-  const Agoric = {
-    Bech32MainPrefix: 'agoric',
-    CoinType: 564,
-  };
-  const hdPath = (coinType = 118, account = 0) =>
-    stringToPath(`m/44'/${coinType}'/${account}'/0/0`);
-
-  // TODO: pass a signer to the createContext function call
-  const signer = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
-    prefix: Agoric.Bech32MainPrefix,
-    hdPaths: [hdPath(Agoric.CoinType, 0), hdPath(Agoric.CoinType, 1)],
-  });
-
   const configs = {
     mainnet: {
       axelarConfig: {
@@ -154,8 +141,9 @@ export const createContext = async (
       gmpAddresses: config.gmpAddresses,
       queryApi: axelarConfig.queryApi,
     },
-    signer,
     sourceChannel: channels[net],
     rpcUrl: urls[net],
+    stargateClient,
+    plannerAddress,
   };
 };

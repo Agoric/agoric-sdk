@@ -268,11 +268,15 @@ type AxelarQueryParams = {
 
 // Helpful for experimenting with different parameters:
 // Visit https://docs.axelarscan.io/axelarscan
-export const getTxStatus = async (
-  url: string,
-  fetch,
-  params: AxelarQueryParams,
-) => {
+export const getTxStatus = async ({
+  url,
+  fetch = globalThis.fetch,
+  params,
+}: {
+  url: string;
+  fetch: typeof globalThis.fetch;
+  params: AxelarQueryParams;
+}) => {
   const body = JSON.stringify(params);
   console.log(`params: ${body}`);
   const headers = {
