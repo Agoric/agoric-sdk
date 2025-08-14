@@ -481,7 +481,7 @@ __metadata:
   dependencies:
     "@agoric/cosmos": "workspace:*"
     "@ava/typescript": "npm:^5.0.0"
-    "@cosmology/telescope": "npm:^1.12.8"
+    "@cosmology/telescope": "npm:^1.12.21"
     "@endo/base64": "npm:^1.0.12"
     "@endo/bundle-source": "npm:^4.1.2"
     "@endo/import-bundle": "npm:^1.5.2"
@@ -3200,32 +3200,32 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmology/ast@npm:^1.10.1":
-  version: 1.10.1
-  resolution: "@cosmology/ast@npm:1.10.1"
+"@cosmology/ast@npm:^1.10.13":
+  version: 1.12.0
+  resolution: "@cosmology/ast@npm:1.12.0"
   dependencies:
     "@babel/types": "npm:7.23.6"
-    "@cosmology/types": "npm:^1.12.0"
-    "@cosmology/utils": "npm:^1.10.0"
+    "@cosmology/types": "npm:^1.13.0"
+    "@cosmology/utils": "npm:^1.11.0"
     case: "npm:1.6.3"
     dotty: "npm:0.1.2"
-  checksum: 10c0/429c0ef415d4e12e863bf19c08db170fa931023c4f600a9791104e9aae61b66cb36650fb213120d0848f90d40f47106ee4eb87dc953964341f9a83ee92431370
+  checksum: 10c0/587c4f8cbddf905f61ffc6c95b0b4fdd975ba9f4966aece9d5643f764c4a71f94becbfcae14f2c6766bf276fbbcf176dbddf78973a4f0b2bf60f220d4381b9a6
   languageName: node
   linkType: hard
 
-"@cosmology/proto-parser@npm:^1.10.1":
-  version: 1.10.1
-  resolution: "@cosmology/proto-parser@npm:1.10.1"
+"@cosmology/proto-parser@npm:^1.10.9":
+  version: 1.11.0
+  resolution: "@cosmology/proto-parser@npm:1.11.0"
   dependencies:
     "@cosmology/protobufjs": "npm:7.3.2"
-    "@cosmology/types": "npm:^1.12.0"
-    "@cosmology/utils": "npm:^1.10.0"
+    "@cosmology/types": "npm:^1.13.0"
+    "@cosmology/utils": "npm:^1.11.0"
     dotty: "npm:0.1.2"
     fast-json-patch: "npm:3.1.1"
     glob: "npm:8.0.3"
     minimatch: "npm:5.1.0"
     mkdirp: "npm:3.0.0"
-  checksum: 10c0/42e40427849d51ebbf8c8a60d56f705a088cc3266e763fd656e50821152e3209eb4f2ad0998eecfd2f499340dfaed01d4cdbf4ed27893e5b93bcf1c61dd3c0ae
+  checksum: 10c0/c477820b5934bde49e989cd51b79d9532983ee5ff13e424b7b452f8a00ee668e14ae3686c3f75ceb5eff040e1530e9437d8e9a68d4125bfbbde2cbda5479f642
   languageName: node
   linkType: hard
 
@@ -3250,18 +3250,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmology/telescope@npm:1.12.8":
-  version: 1.12.8
-  resolution: "@cosmology/telescope@npm:1.12.8"
+"@cosmology/telescope@npm:1.12.21":
+  version: 1.12.21
+  resolution: "@cosmology/telescope@npm:1.12.21"
   dependencies:
     "@babel/generator": "npm:^7.23.6"
     "@babel/parser": "npm:^7.23.6"
     "@babel/traverse": "npm:7.23.6"
     "@babel/types": "npm:7.23.6"
-    "@cosmology/ast": "npm:^1.10.1"
-    "@cosmology/proto-parser": "npm:^1.10.1"
-    "@cosmology/types": "npm:^1.12.0"
-    "@cosmology/utils": "npm:^1.10.0"
+    "@cosmology/ast": "npm:^1.10.13"
+    "@cosmology/proto-parser": "npm:^1.10.9"
+    "@cosmology/types": "npm:^1.12.5"
+    "@cosmology/utils": "npm:^1.10.7"
     "@cosmwasm/ts-codegen": "npm:0.35.7"
     "@types/parse-package-name": "npm:0.1.0"
     case: "npm:1.6.3"
@@ -3280,22 +3280,22 @@ __metadata:
     yaml: "npm:^2.3.4"
   bin:
     telescope: main/telescope.js
-  checksum: 10c0/f9b110266b5f39a133769d05a6908d981f6262e15c2120ec87096e54a4afff0df9ccf39e1b61159cdab527fbc949de5cf552f5d5d24c43c2ca4135ca48eb2acb
+  checksum: 10c0/fe46ee83e15b7c12b08917bd457bc97975c70a8a7c8bd15b13c1edbad387a52481aba7510166fd5d559e02666028d5192e79f5476d8fb3ad146ecd54008a26da
   languageName: node
   linkType: hard
 
-"@cosmology/telescope@patch:@cosmology/telescope@npm%3A1.12.8#~/.yarn/patches/@cosmology-telescope-npm-1.12.8-7446d2080c.patch":
-  version: 1.12.8
-  resolution: "@cosmology/telescope@patch:@cosmology/telescope@npm%3A1.12.8#~/.yarn/patches/@cosmology-telescope-npm-1.12.8-7446d2080c.patch::version=1.12.8&hash=1c6d77"
+"@cosmology/telescope@patch:@cosmology/telescope@npm%3A1.12.21#~/.yarn/patches/@cosmology-telescope-npm-1.12.21-6ca5e89f7e.patch":
+  version: 1.12.21
+  resolution: "@cosmology/telescope@patch:@cosmology/telescope@npm%3A1.12.21#~/.yarn/patches/@cosmology-telescope-npm-1.12.21-6ca5e89f7e.patch::version=1.12.21&hash=bc5bc4"
   dependencies:
     "@babel/generator": "npm:^7.23.6"
     "@babel/parser": "npm:^7.23.6"
     "@babel/traverse": "npm:7.23.6"
     "@babel/types": "npm:7.23.6"
-    "@cosmology/ast": "npm:^1.10.1"
-    "@cosmology/proto-parser": "npm:^1.10.1"
-    "@cosmology/types": "npm:^1.12.0"
-    "@cosmology/utils": "npm:^1.10.0"
+    "@cosmology/ast": "npm:^1.10.13"
+    "@cosmology/proto-parser": "npm:^1.10.9"
+    "@cosmology/types": "npm:^1.12.5"
+    "@cosmology/utils": "npm:^1.10.7"
     "@cosmwasm/ts-codegen": "npm:0.35.7"
     "@types/parse-package-name": "npm:0.1.0"
     case: "npm:1.6.3"
@@ -3314,27 +3314,27 @@ __metadata:
     yaml: "npm:^2.3.4"
   bin:
     telescope: main/telescope.js
-  checksum: 10c0/712df790989ed52de5a50946bfa0d895d415e14fc10ed1873023883bc6a53d8477606dd287ce798bf4474529da3810d78c847594f66e154abfaad9321f9f5028
+  checksum: 10c0/1e1ac8b5412a9d57626e4f0a0dfc35bb6fd96a670689a5cf357bd4521e4394e1b03530b53781e8461f7f0d903b4d4b6a8d2129420dc2c0010e106eac63000bc0
   languageName: node
   linkType: hard
 
-"@cosmology/types@npm:^1.12.0":
-  version: 1.12.0
-  resolution: "@cosmology/types@npm:1.12.0"
+"@cosmology/types@npm:^1.12.5, @cosmology/types@npm:^1.13.0":
+  version: 1.13.0
+  resolution: "@cosmology/types@npm:1.13.0"
   dependencies:
     case: "npm:1.6.3"
     fast-json-patch: "npm:3.1.1"
-  checksum: 10c0/06b32aec1dc9f84d1cd46b01eefe689d594be3a51386589c7a3392e9b1a910128c51db2d587ae8f487a9bd6b449e16575dee6a127160f790ef7c8d0011bc5f2b
+  checksum: 10c0/ab436c9e05d5bb5dfe3c1c91507989ff2d895892505cb82caa25b60c91d0a7ae466e8601f5489f94eb16ea08e9b3faf90af3b75308f2815e41e5de5477dcc628
   languageName: node
   linkType: hard
 
-"@cosmology/utils@npm:^1.10.0":
-  version: 1.10.0
-  resolution: "@cosmology/utils@npm:1.10.0"
+"@cosmology/utils@npm:^1.10.7, @cosmology/utils@npm:^1.11.0":
+  version: 1.11.0
+  resolution: "@cosmology/utils@npm:1.11.0"
   dependencies:
-    "@cosmology/types": "npm:^1.12.0"
+    "@cosmology/types": "npm:^1.13.0"
     dotty: "npm:0.1.2"
-  checksum: 10c0/65c637454c8a4700ae6e8c4d81df0cc3b10b0b7424d2501bae5a3bf3f754d974a75116f52669d6f0ab16376a1261e9b878ba0214c14ba7f0d1aa64e652c8986d
+  checksum: 10c0/9a924a6636a26df4f31a2461144848f1767a28371db0d045cdb5979c4f2e5b3aafe4a5862d83e9fcf1ba12d58123d49742643feadf0f3d4ea2fa8b718aff7969
   languageName: node
   linkType: hard
 
