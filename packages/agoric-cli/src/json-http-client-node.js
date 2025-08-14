@@ -12,7 +12,7 @@ export const makeJsonHttpClient = ({ http }) => {
   /**
    * @param {object} request
    * @param {string} request.hostname
-   * @param {number} request.port
+   * @param {string | number} request.port
    * @param {string} [request.method]
    * @param {string} [request.path]
    * @param {Record<string, string>} [request.headers]
