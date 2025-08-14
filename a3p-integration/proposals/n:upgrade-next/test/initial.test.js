@@ -11,7 +11,7 @@ const expectedVatDetails = {
   orchestration: { incarnation: 2 },
   provisionPool: { incarnation: 2 },
   transfer: { incarnation: 4 },
-  walletFactory: { incarnation: 10 },
+  walletFactory: { incarnation: 9 },
   zoe: { incarnation: 3 },
 };
 
