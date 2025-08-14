@@ -1,6 +1,9 @@
 import '../lockdown.ts';
 import { createContext } from './support.ts';
 import { handleGmp, type GmpArgsMap } from './handle-gmp.ts';
+import { makeStargateClientKit } from '../swingset-tx.ts';
+import { SigningStargateClient } from '@cosmjs/stargate';
+import { fetchEnvNetworkConfig } from '@agoric/client-utils';
 
 const printUsage = () => {
   console.log(`
@@ -43,14 +46,27 @@ const COMMANDS = [
 function isCommand(x: string): x is Command {
   return (COMMANDS as readonly string[]).includes(x);
 }
-export const main = async (argv: string[]) => {
+export const main = async (
+  argv: string[],
+  {
+    env = process.env,
+    fetch = globalThis.fetch,
+    connectWithSigner = SigningStargateClient.connectWithSigner,
+  } = {},
+) => {
   const [rawCommand, ...args] = argv.slice(2);
 
-  const mnemonic = process.env.MNEMONIC;
-  if (!mnemonic) {
+  const MNEMONIC = process.env.MNEMONIC;
+  if (!MNEMONIC) {
     console.error('Error: MNEMONIC environment variable is required');
     process.exit(1);
   }
+  const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
+  const { address: plannerAddress, client: stargateClient } =
+    await makeStargateClientKit(MNEMONIC, {
+      connectWithSigner,
+      rpcAddr: networkConfig.rpcAddrs[0],
+    });
 
   const network = (process.env.NETWORK as 'mainnet' | 'testnet') || 'testnet';
 
@@ -67,7 +83,7 @@ export const main = async (argv: string[]) => {
   }
 
   try {
-    const ctx = await createContext(mnemonic, network);
+    const ctx = await createContext(network, stargateClient, plannerAddress);
     const command: Command = rawCommand;
     await handleGmp(ctx, command, args as GmpArgsMap[typeof command]);
   } catch (error) {
