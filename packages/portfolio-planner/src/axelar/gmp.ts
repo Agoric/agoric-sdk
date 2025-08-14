@@ -1,5 +1,5 @@
 import { SigningStargateClient } from '@cosmjs/stargate';
-import { buildGasPayload } from './support';
+import { buildGasPayload, buildGMPPayload } from './support';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { EVMContractAddressesMap } from '@aglocal/portfolio-contract/src/type-guards';
 import type {
@@ -64,9 +64,10 @@ type GmpArgsContractCall = BaseGmpArgs & {
 };
 
 const makeAxelarMemo = (gmpArgs: GmpArgsContractCall) => {
-  const { destinationChain, destinationAddr, gasAmt, type, gasAddr } = gmpArgs;
+  const { calls, destinationChain, destinationAddr, gasAmt, type, gasAddr } =
+    gmpArgs;
 
-  const payload = buildGasPayload(0n);
+  const payload = buildGMPPayload(calls);
   const memo: AxelarGmpOutgoingMemo = {
     destination_chain: destinationChain,
     destination_address: destinationAddr,
