@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@agoric/casting": "workspace:*",
+    "@agoric/client-utils": "workspace:*",
     "@agoric/cosmic-proto": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/internal": "workspace:*",
