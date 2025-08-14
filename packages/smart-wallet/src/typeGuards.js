@@ -22,7 +22,7 @@ const InvokeEntryMessageShape = M.splitRecord(
     method: M.string(),
     args: M.array(),
   },
-  { saveResult: ResultPlanShape },
+  { saveResult: ResultPlanShape, id: M.or(M.number(), M.string()) },
   {},
 );
 

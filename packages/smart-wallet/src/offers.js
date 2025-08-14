@@ -21,6 +21,7 @@
  *   method: string;
  *   args: Passable[];
  *   saveResult?: ResultPlan;
+ *   id?: number | string;
  * }} InvokeEntryMessage
  */
 
