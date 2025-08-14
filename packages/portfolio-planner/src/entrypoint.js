@@ -1,4 +1,4 @@
-#! /usr/bin/env node
+#!/usr/bin/env -S node --import ts-blank-space/register
 /* global globalThis */
 
 // We need some pre-lockdown shimming.
