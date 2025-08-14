@@ -1,7 +1,7 @@
 interface CosmosRestClientConfig {
   timeout?: number;
   retries?: number;
-  variant: string;
+  variant?: string;
 }
 
 interface ChainConfig {
@@ -58,21 +58,23 @@ const CHAIN_CONFIGS: Record<string, Record<string, ChainConfig>> = {
 };
 
 export class CosmosRestClient {
-  private readonly config: Required<CosmosRestClientConfig>;
+  private readonly timeout: number;
+
+  private readonly retries: number;
+
+  private readonly variant: string;
 
   private readonly chainConfigs: Map<string, ChainConfig>;
 
-  constructor(config: CosmosRestClientConfig) {
-    this.config = {
-      timeout: config.timeout ?? 10000, // 10s timeout
-      retries: config.retries ?? 3,
-      variant: config.variant,
-    };
+  constructor(config: CosmosRestClientConfig = {}) {
+    this.timeout = config.timeout ?? 10000; // 10s timeout
+    this.retries = config.retries ?? 3;
+    this.variant = config.variant ?? 'devnet';
 
-    const chainConfig = CHAIN_CONFIGS[config.variant];
+    const chainConfig = CHAIN_CONFIGS[this.variant];
 
     if (!chainConfig) {
-      throw new Error(`Unknown chain config ${this.config.variant}`);
+      throw new Error(`Unknown chain config ${this.variant}`);
     }
 
     // Initialize with predefined chains
@@ -195,13 +197,10 @@ export class CosmosRestClient {
 
     let lastError: Error | null = null;
 
-    for (let attempt = 1; attempt <= this.config.retries; attempt += 1) {
+    for (let attempt = 1; attempt <= this.retries; attempt += 1) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(
-          () => controller.abort(),
-          this.config.timeout,
-        );
+        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
         const response = await fetch(url, {
           signal: controller.signal,
@@ -230,7 +229,7 @@ export class CosmosRestClient {
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
 
-        if (attempt < this.config.retries) {
+        if (attempt < this.retries) {
           const delay = Math.min(1000 * 2 ** (attempt - 1), 5000); // Exponential backoff, max 5s
           console.warn(
             `[CosmosRestClient] Attempt ${attempt} failed for ${context}, retrying in ${delay}ms:`,
@@ -242,7 +241,7 @@ export class CosmosRestClient {
     }
 
     const finalError = new Error(
-      `Failed to fetch ${context} after ${this.config.retries} attempts: ${lastError?.message}`,
+      `Failed to fetch ${context} after ${this.retries} attempts: ${lastError?.message}`,
     ) as CosmosApiError;
     finalError.statusCode = 0;
     finalError.chainId = chainConfig.chainId;

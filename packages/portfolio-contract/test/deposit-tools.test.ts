@@ -208,18 +208,14 @@ test('handleDeposit works with mocked dependencies', async t => {
     readPublished: mockReadPublished,
   } as VstorageKit;
 
-  try {
-    await handleDeposit(
-      deposit,
-      portfolioKey,
-      mockVstorageKit.readPublished,
-      mockSpectrumClient,
-      mockCosmosRestClient,
-    );
-    t.fail('Expected handleDeposit to throw Error with "moar TODO"');
-  } catch (error) {
-    t.is(error.message, 'moar TODO');
-  }
+  const steps = await handleDeposit(
+    deposit,
+    portfolioKey,
+    mockVstorageKit.readPublished,
+    mockSpectrumClient,
+    mockCosmosRestClient,
+  );
+  t.snapshot(steps);
 });
 
 test('handleDeposit handles missing targetAllocation gracefully', async t => {
@@ -357,16 +353,12 @@ test('handleDeposit handles different position types correctly', async t => {
     readPublished: mockReadPublished,
   } as VstorageKit;
 
-  try {
-    await handleDeposit(
-      deposit,
-      portfolioKey,
-      mockVstorageKit.readPublished,
-      mockSpectrumClient,
-      mockCosmosRestClient,
-    );
-    t.fail('Expected handleDeposit to throw Error with "moar TODO"');
-  } catch (error) {
-    t.is(error.message, 'moar TODO');
-  }
+  const steps = await handleDeposit(
+    deposit,
+    portfolioKey,
+    mockVstorageKit.readPublished,
+    mockSpectrumClient,
+    mockCosmosRestClient,
+  );
+  t.snapshot(steps);
 });
