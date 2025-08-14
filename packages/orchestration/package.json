@@ -14,7 +14,7 @@
     "build": "yarn esbuild:axelar",
     "codegen": "scripts/fetch-chain-info.ts",
     "prepack": "yarn run -T tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
+    "postpack": "git clean -f '*.d.*ts*' '*.tsbuildinfo'",
     "test": "ava",
     "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "test:xs": "exit 0",

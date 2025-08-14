@@ -13,7 +13,7 @@
     "start:deps": "docker compose up --scale app=0",
     "build": "exit 0",
     "prepack": "yarn run -T tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
+    "postpack": "git clean -f '*.d.*ts*' '*.tsbuildinfo'",
     "lint": "npm run lint:types",
     "test": "ava",
     "test:xs": "exit 0",

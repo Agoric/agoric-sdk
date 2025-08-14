@@ -10,7 +10,7 @@
   "scripts": {
     "build": "exit 0",
     "prepack": "yarn run -T tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
+    "postpack": "git clean -f '*.d.*ts*' '*.tsbuildinfo'",
     "test": "ava",
     "test:nyc": "exit 0",
     "test:xs": "exit 0",

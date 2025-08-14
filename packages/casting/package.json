@@ -8,7 +8,7 @@
   "scripts": {
     "build": "exit 0",
     "prepack": "yarn run -T tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
+    "postpack": "git clean -f '*.d.*ts*' '*.tsbuildinfo'",
     "demo": "node -e 'import(\"./test/fake-rpc-server.js\").then(ns => ns.develop())'",
     "test": "ava",
     "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
