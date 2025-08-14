@@ -11,7 +11,13 @@
  * @see type-guards.ts for the authoritative interface specification
  */
 import { type VstorageKit } from '@agoric/client-utils';
-import { AmountMath, type NatAmount, type NatValue } from '@agoric/ertp';
+import {
+  AmountMath,
+  type Amount,
+  type Brand,
+  type NatAmount,
+  type NatValue,
+} from '@agoric/ertp';
 import { NonNullish } from '@agoric/internal';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';

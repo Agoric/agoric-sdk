@@ -42,6 +42,7 @@ import type {
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { PoolKey } from './type-guards.ts';
 import { q, X } from '@endo/errors';
+import type { NatValue } from '@agoric/ertp';
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;

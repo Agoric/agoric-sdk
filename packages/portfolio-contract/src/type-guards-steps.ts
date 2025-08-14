@@ -1,7 +1,7 @@
 /**
  * @file offerArgs types / shapes - temporarily separate from type-guards.ts
  */
-import type { NatAmount } from '@agoric/ertp';
+import type { Brand, NatAmount, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { AnyNatAmountShape } from '@agoric/orchestration';
 import { M } from '@endo/patterns';

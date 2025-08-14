@@ -4,7 +4,7 @@
  * @see {@link preparePosition}
  * @see {@link Position}
  */
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, type Amount } from '@agoric/ertp';
 import type { AccountId } from '@agoric/orchestration';
 import type { Zone } from '@agoric/zone';
 import type { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';

@@ -4,7 +4,7 @@ import { inspect } from 'node:util';
 import { q, Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
 import { PortfolioStatusShapeExt } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, type Brand } from '@agoric/ertp';
 import type { SigningStargateClient } from '@cosmjs/stargate';
 import type {
   BridgeAction,

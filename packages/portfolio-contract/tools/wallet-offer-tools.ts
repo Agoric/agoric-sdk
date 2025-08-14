@@ -9,7 +9,10 @@ import type {
   PaymentKeywordRecord,
   ZoeService,
 } from '@agoric/zoe';
-import type { ContractStartFunction } from '@agoric/zoe/src/zoeService/utils.js';
+import type {
+  ContractStartFunction,
+  StartedInstanceKit,
+} from '@agoric/zoe/src/zoeService/utils.js';
 import type { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';

@@ -4,7 +4,7 @@ import test from 'ava';
 
 import type { TargetAllocation } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { VstorageKit } from '@agoric/client-utils';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, type Brand } from '@agoric/ertp';
 import { Far } from '@endo/pass-style';
 import { planDepositTransfers } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
 import { CosmosRestClient } from '../src/cosmos-rest-client.ts';

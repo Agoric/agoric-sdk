@@ -2,7 +2,7 @@
  * NOTE: This is host side code; can't use await.
  */
 import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, type Brand } from '@agoric/ertp';
 import { makeTracer, mustMatch, type Remote } from '@agoric/internal';
 import type {
   Marshaller,
@@ -21,7 +21,7 @@ import type { TimerService } from '@agoric/time';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
-import type { ZCF } from '@agoric/zoe';
+import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { decodeBase64 } from '@endo/base64';
 import { X } from '@endo/errors';
