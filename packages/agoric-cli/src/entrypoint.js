@@ -21,6 +21,7 @@ const log = anylogger('agoric');
 const progname = path.basename(process.argv[1]);
 
 const stdout = str => process.stdout.write(str);
+/** @type {(...args: ConstructorParameters<typeof WebSocket>) => WebSocket} */
 const makeWebSocket = (...args) => new WebSocket(...args);
 
 const rawArgs = process.argv.slice(2);
