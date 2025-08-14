@@ -12,6 +12,8 @@ import {
   getTxStatus,
   type AxelarExecutedEvent,
 } from './gmp-status.ts';
+import type { SmartWalletKit, VstorageKit } from '@agoric/client-utils';
+import { resolveSubscription } from '../resolver.ts';
 
 const GAS_TOKEN = 'ubld';
 
@@ -37,6 +39,8 @@ export type PortfolioInstanceContext = {
   rpcUrl: string;
   stargateClient: SigningStargateClient;
   plannerAddress: string;
+  vstorageKit: VstorageKit;
+  walletKit: SmartWalletKit;
 };
 
 export type ContractCall = {
@@ -155,7 +159,21 @@ export const createRemoteEVMAccount = async (
   }
   const addr = await extractWalletAddress(res.logs as AxelarExecutedEvent);
   console.log('Remote EVM Addr:', addr);
-  console.log('TODO: make offer to the contract to resolve the pending vow');
+  // TODO: Resolve the actual subscription id based on implementation in https://github.com/Agoric/agoric-sdk/issues/11709
+  await resolveSubscription({
+    walletKit: ctx.walletKit,
+    vstorageKit: ctx.vstorageKit,
+    stargateClient: ctx.stargateClient,
+    address: ctx.plannerAddress,
+    offerArgs: {
+      vPath: 'portfolio1',
+      vData: {
+        pendingCCTPTransfers: {
+          status: 'completed',
+        },
+      },
+    },
+  });
 };
 
 export const supplyToAave = async (

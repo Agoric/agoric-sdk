@@ -7,7 +7,8 @@ export type EVMChain = keyof typeof AxelarChain | 'Ethereum';
 
 const TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
-const RPC: Partial<Record<EVMChain, string>> = {
+// TODO: populate this for all the chains we support
+export const EVM_RPC: Partial<Record<EVMChain, string>> = {
   Ethereum: 'https://ethereum-sepolia-rpc.publicnode.com',
 } as const;
 
@@ -32,20 +33,20 @@ export const watchCCTPMint = async ({
   chain,
   recipient,
   expectedAmount,
+  provider,
 }: {
   chain: EVMChain;
   recipient: string;
   expectedAmount: bigint;
+  provider: JsonRpcProvider;
 }): Promise<boolean> => {
-  const rpc = RPC[chain];
   const tokenMessenger = TOKEN_MESSENGER[chain];
   const messageTransmitter = MESSAGE_TRANSMITTER[chain];
 
-  if (!rpc || !tokenMessenger || !messageTransmitter) {
+  if (!tokenMessenger || !messageTransmitter) {
     throw new Error(`Missing RPC or contract address for chain ${chain}`);
   }
 
-  const provider = new JsonRpcProvider(rpc);
   const mintIface = new Interface(MINT_ABI);
   const msgIface = new Interface(MSG_ABI);
 

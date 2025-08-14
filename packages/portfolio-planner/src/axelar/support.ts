@@ -10,6 +10,7 @@ import type {
   PortfolioInstanceContext,
 } from './gmp.ts';
 import type { SigningStargateClient } from '@cosmjs/stargate';
+import type { SmartWalletKit, VstorageKit } from '@agoric/client-utils';
 
 export const channels = {
   mainnet: 'channel-9',
@@ -91,11 +92,21 @@ export const buildGasPayload = gasAmount => {
   return Array.from(hexToBytes(abiEncodedData));
 };
 
-export const createContext = async (
-  net: 'mainnet' | 'testnet' = 'testnet',
-  stargateClient: SigningStargateClient,
-  plannerAddress: string,
-): Promise<PortfolioInstanceContext> => {
+type CreateContextParams = {
+  net?: 'mainnet' | 'testnet';
+  stargateClient: SigningStargateClient;
+  plannerAddress: string;
+  vstorageKit: VstorageKit;
+  walletKit: SmartWalletKit;
+};
+
+export const createContext = async ({
+  net = 'testnet',
+  stargateClient,
+  plannerAddress,
+  vstorageKit,
+  walletKit,
+}: CreateContextParams): Promise<PortfolioInstanceContext> => {
   const configs = {
     mainnet: {
       axelarConfig: {
@@ -145,5 +156,7 @@ export const createContext = async (
     rpcUrl: urls[net],
     stargateClient,
     plannerAddress,
+    vstorageKit,
+    walletKit,
   };
 };

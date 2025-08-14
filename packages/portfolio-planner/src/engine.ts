@@ -270,26 +270,13 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
 type IO = {
   ctx: PortfolioInstanceContext;
   rpc: CosmosRPCClient;
-  vstorageKit: VstorageKit;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
-  stargateClient: SigningStargateClient;
-  walletKit: SmartWalletKit;
-  plannerAddress: string;
 };
 
-export const startEngine = async ({
-  ctx,
-  rpc,
-  vstorageKit,
-  spectrum,
-  cosmosRest,
-  stargateClient,
-  walletKit,
-  plannerAddress,
-}: IO) => {
+export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
   await null;
-
+  const { walletKit, vstorageKit, plannerAddress, stargateClient } = ctx;
   const chainStatus = await rpc.request('status', {});
   console.warn('agd status', chainStatus);
 
