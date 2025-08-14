@@ -20,7 +20,11 @@ import type { SpectrumClient } from './spectrum-client.ts';
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import { handleDeposit } from './plan-deposit.ts';
 import { submitAction } from './swingset-tx.ts';
-import { watchCCTPMint, type EVMChain } from './watch-cctp.ts';
+import {
+  handleSubscription,
+  type Subscription,
+} from './subscription-manager.ts';
+import type { PortfolioInstanceContext } from './axelar/gmp.ts';
 
 const { isInteger } = Number;
 
@@ -31,25 +35,9 @@ type CosmosEvent = {
   attributes?: Array<{ key: string; value: string }>;
 };
 
-type CCTPTransfer = {
-  amount: number;
-  caip: string;
-  receiver: string;
-};
-
-// Extended portfolio status type that includes CCTP transfers
-type PortfolioStatusWithCCTP = {
-  positionKeys: string[];
-  flowCount: number;
-  accountIdByChain: Record<string, `${string}:${string}:${string}`>;
-  depositAddress?: `${string}1${string}`;
-  targetAllocation?: Partial<Record<string, bigint>>;
-  pendingCCTPTransfers?: {
-    [chain: string]: CCTPTransfer;
-  };
-};
-
 const VSTORAGE_PATH_PREFIX = 'published.ymax0.portfolios';
+const ORCHESTRATION_SUBSCRIPTIONS_PREFIX =
+  'published.orchestration.subscriptions';
 
 /** cf. golang/cosmos/x/vstorage/types/path_keys.go */
 const EncodedKeySeparator = '\x00';
@@ -78,72 +66,6 @@ const vstoragePathStartsWith = (path: string, prefix: string) =>
 const stripPrefix = (prefix: string, str: string) => {
   str.startsWith(prefix) || Fail`${str} is missing prefix ${q(prefix)}`;
   return str.slice(prefix.length);
-};
-
-// Track active CCTP watchers to avoid duplicates
-type CCTPWatcherKey = `${string}-${string}`; // portfolioKey-chain
-const activeCCTPWatchers = new Set<CCTPWatcherKey>();
-
-const launchCCTPWatchers = async (
-  portfolioKey: string,
-  pendingTransfers: { [chain: string]: CCTPTransfer },
-) => {
-  for (const [chainName, transfer] of Object.entries(pendingTransfers)) {
-    const evmChain = chainName as EVMChain;
-    if (!evmChain) {
-      console.warn(
-        `[CCTP] Unsupported chain for CCTP monitoring: ${chainName}`,
-      );
-      continue;
-    }
-
-    // TODO: What if there are more than 1 pending CCTP transfers for a portfolio
-    const watcherKey: CCTPWatcherKey = `${portfolioKey}-${chainName}`;
-    if (activeCCTPWatchers.has(watcherKey)) {
-      console.log(
-        `[CCTP] Watcher already active for portfolio ${portfolioKey} on ${chainName}`,
-      );
-      continue;
-    }
-
-    console.log(
-      `[CCTP] Starting watcher for portfolio ${portfolioKey} on ${chainName}`,
-      {
-        receiver: transfer.receiver,
-        amount: transfer.amount,
-        caip: transfer.caip,
-      },
-    );
-
-    activeCCTPWatchers.add(watcherKey);
-
-    watchCCTPMint({
-      chain: evmChain,
-      recipient: transfer.receiver,
-      expectedAmount: BigInt(transfer.amount),
-    })
-      .then(success => {
-        activeCCTPWatchers.delete(watcherKey);
-        if (success) {
-          console.log(
-            `✅ [CCTP] Transfer confirmed for portfolio ${portfolioKey} on ${chainName}`,
-          );
-          // TODO: Update portfolio state to remove completed transfer
-          // This would require calling a contract method to update pendingCCTPTransfers
-        } else {
-          console.warn(
-            `[CCTP] Transfer timed out for portfolio ${portfolioKey} on ${chainName}`,
-          );
-        }
-      })
-      .catch(error => {
-        activeCCTPWatchers.delete(watcherKey);
-        console.error(
-          `❌ [CCTP] Watcher failed for portfolio ${portfolioKey} on ${chainName}:`,
-          error,
-        );
-      });
-  }
 };
 
 const tryJsonParse = (json: string, replaceErr?: (err?: Error) => unknown) => {
@@ -346,6 +268,7 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
 };
 
 type IO = {
+  ctx: PortfolioInstanceContext;
   rpc: CosmosRPCClient;
   vstorageKit: VstorageKit;
   spectrum: SpectrumClient;
@@ -356,6 +279,7 @@ type IO = {
 };
 
 export const startEngine = async ({
+  ctx,
   rpc,
   vstorageKit,
   spectrum,
@@ -451,24 +375,65 @@ export const startEngine = async ({
   // TODO: verify consumption of paginated data.
   const portfolioKeys = await vstorageKit.vstorage.keys(VSTORAGE_PATH_PREFIX);
   const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
+
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
     const status = await vstorageKit.readPublished(
       `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${portfolioKey}`,
     );
     mustMatch(status, PortfolioStatusShapeExt, portfolioKey);
-    const { depositAddress, pendingCCTPTransfers } = status as PortfolioStatusWithCCTP;
-
-    if (pendingCCTPTransfers) {
-      console.log(
-        `[CCTP] Found pending transfers for existing portfolio ${portfolioKey}`,
-        pendingCCTPTransfers,
-      );
-      await launchCCTPWatchers(portfolioKey, pendingCCTPTransfers);
-    }
-
+    const { depositAddress } = status;
     if (!depositAddress) return;
     portfolioKeyForDepositAddr.set(depositAddress, portfolioKey);
   }).done;
+
+  console.warn('Initializing subscription tracking...');
+  try {
+    const subscriptionKeys = await vstorageKit.vstorage.keys(
+      ORCHESTRATION_SUBSCRIPTIONS_PREFIX,
+    );
+    console.warn(
+      `Found ${subscriptionKeys.length} existing subscriptions to monitor`,
+    );
+
+    // Process existing pending subscriptions on startup
+    await makeWorkPool(subscriptionKeys, undefined, async subscriptionKey => {
+      try {
+        const subscriptionData = await vstorageKit.readPublished(
+          `${stripPrefix('published.', ORCHESTRATION_SUBSCRIPTIONS_PREFIX)}.${subscriptionKey}`,
+        );
+        const subscription = subscriptionData as Subscription;
+        console.warn(`Found existing subscription: ${subscriptionKey}`, {
+          type: subscription.type,
+          status: subscription.status,
+        });
+
+        if (subscription.status === 'pending') {
+          console.warn(
+            `Processing existing pending subscription: ${subscriptionKey}`,
+          );
+          try {
+            subscription.subscriptionId = subscriptionKey;
+            await handleSubscription(ctx, subscription);
+          } catch (error) {
+            console.error(
+              `Failed to process existing subscription ${subscriptionKey}:`,
+              error,
+            );
+          }
+        }
+      } catch (error) {
+        console.warn(
+          `Could not read subscription ${subscriptionKey}:`,
+          error.message,
+        );
+      }
+    }).done;
+  } catch (error) {
+    console.warn(
+      'No existing subscriptions found or error reading subscriptions:',
+      error.message,
+    );
+  }
 
   try {
     // console.warn('consuming events');
@@ -497,7 +462,7 @@ export const startEngine = async ({
         if (!events) console.warn('missing events', type, key);
         return events ?? [];
       }) as CosmosEvent[];
-      const portfolioVstorageEvents = partialMap(eventRecords, eventRecord => {
+      const vstorageEvents = partialMap(eventRecords, eventRecord => {
         const { type: eventType, attributes: attrRecords } = eventRecord;
         // Filter for vstorage state_change events.
         // cf. golang/cosmos/types/events.go
@@ -513,15 +478,32 @@ export const startEngine = async ({
           return;
         }
 
-        // Filter for ymax portfolio paths.
+        // Filter for paths we care about (portfolios or subscriptions).
         const path = encodedKeyToPath(attributes.key);
-        if (!vstoragePathStartsWith(path, VSTORAGE_PATH_PREFIX)) return;
+        if (
+          !vstoragePathStartsWith(path, VSTORAGE_PATH_PREFIX) &&
+          !vstoragePathStartsWith(path, ORCHESTRATION_SUBSCRIPTIONS_PREFIX)
+        )
+          return;
 
-        return { path, value: attributes.value };
+        return {
+          path,
+          value: attributes.value,
+          pathType: vstoragePathStartsWith(path, VSTORAGE_PATH_PREFIX)
+            ? 'portfolio'
+            : 'subscription',
+        };
       });
 
+      const portfolioEvents = vstorageEvents.filter(
+        event => event.pathType === 'portfolio',
+      );
+      const subscriptionEvents = vstorageEvents.filter(
+        event => event.pathType === 'subscription',
+      );
+
       // Detect new portfolios.
-      for (const { path, value: vstorageValue } of portfolioVstorageEvents) {
+      for (const { path, value: vstorageValue } of portfolioEvents) {
         const streamCell = tryJsonParse(
           vstorageValue,
           _err =>
@@ -548,42 +530,68 @@ export const startEngine = async ({
                 `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${key}`,
               );
               mustMatch(status, PortfolioStatusShapeExt, key);
-              const { depositAddress, pendingCCTPTransfers } = status as PortfolioStatusWithCCTP;
-
-              if (pendingCCTPTransfers) {
-                console.log(
-                  `[CCTP] Found pending transfers for new portfolio ${key}`,
-                  pendingCCTPTransfers,
-                );
-                await launchCCTPWatchers(key, pendingCCTPTransfers);
-              }
-
+              const { depositAddress } = status;
               if (!depositAddress) continue;
               portfolioKeyForDepositAddr.set(depositAddress, key);
               console.warn('Added new portfolio', key, depositAddress);
             }
           }
-        } else if (path.startsWith(`${VSTORAGE_PATH_PREFIX}.`)) {
-          const portfolioKey = path.slice(`${VSTORAGE_PATH_PREFIX}.`.length);
-          console.log(`[CCTP] Portfolio update detected for ${portfolioKey}`);
+        } else {
+        }
+      }
+
+      // Handle orchestration subscriptions.
+      for (const { path, value: vstorageValue } of subscriptionEvents) {
+        const streamCell = tryJsonParse(
+          vstorageValue,
+          _err =>
+            Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
+        );
+        mustMatch(harden(streamCell), StreamCellShape);
+
+        // Extract subscription ID from path (e.g., "published.orchestration.subscriptions.subscription1234")
+        const subscriptionId = stripPrefix(
+          `${ORCHESTRATION_SUBSCRIPTIONS_PREFIX}.`,
+          path,
+        );
+        console.warn('Processing subscription event', subscriptionId, path);
+
+        for (let i = 0; i < streamCell.values.length; i += 1) {
+          const strValue = streamCell.values[i];
+          const value = tryJsonParse(
+            // @ts-expect-error use `undefined` to force an error for non-string input
+            typeof strValue === 'string' ? strValue : undefined,
+            _err =>
+              Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
+          );
 
           try {
-            const status = await vstorageKit.readPublished(
-              `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${portfolioKey}`,
-            );
-            mustMatch(status, PortfolioStatusShapeExt, portfolioKey);
-            const { pendingCCTPTransfers } = status as PortfolioStatusWithCCTP;
+            const subscriptionData = vstorageKit.marshaller.fromCapData(
+              value,
+            ) as Subscription;
+            console.warn('Handling subscription:', {
+              subscriptionId,
+              type: subscriptionData.type,
+            });
 
-            if (pendingCCTPTransfers) {
-              console.log(
-                `[CCTP] Found updated pending transfers for portfolio ${portfolioKey}`,
-                pendingCCTPTransfers,
+            if (subscriptionData.status !== 'pending') {
+              console.warn(
+                `Skipping non-pending subscription ${subscriptionId} with status: ${subscriptionData.status}`,
               );
-              await launchCCTPWatchers(portfolioKey, pendingCCTPTransfers);
+              continue;
             }
+
+            console.warn('Processing pending subscription', {
+              subscriptionId,
+              type: subscriptionData.type,
+              status: subscriptionData.status,
+            });
+
+            subscriptionData.subscriptionId = subscriptionId;
+            await handleSubscription(ctx, subscriptionData);
           } catch (error) {
             console.error(
-              `[CCTP] Failed to read portfolio status for ${portfolioKey}:`,
+              `Failed to process subscription ${subscriptionId}:`,
               error,
             );
           }
@@ -620,7 +628,8 @@ export const startEngine = async ({
             addrsWithActivity,
             addrBalances,
             depositAddrsWithActivity,
-            portfolioVstorageEvents,
+            portfolioEvents,
+            subscriptionEvents,
           },
           { depth: 10 },
         ),

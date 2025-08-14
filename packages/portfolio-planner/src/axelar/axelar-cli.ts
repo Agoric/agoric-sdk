@@ -1,6 +1,6 @@
 import '../lockdown.ts';
 import { createContext } from './support.ts';
-import { handleGmp, type ArgsMap } from './handle-gmp.ts';
+import { handleGmp, type GmpArgsMap } from './handle-gmp.ts';
 
 const printUsage = () => {
   console.log(`
@@ -33,7 +33,7 @@ Examples:
 `);
 };
 
-type Command = keyof ArgsMap;
+type Command = keyof GmpArgsMap;
 
 const COMMANDS = [
   'createRemoteAccount',
@@ -69,7 +69,7 @@ export const main = async (argv: string[]) => {
   try {
     const ctx = await createContext(mnemonic, network);
     const command: Command = rawCommand;
-    await handleGmp(ctx, command, args as ArgsMap[typeof command]);
+    await handleGmp(ctx, command, args as GmpArgsMap[typeof command]);
   } catch (error) {
     console.error('Error executing command:', error);
     process.exit(1);
