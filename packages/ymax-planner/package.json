@@ -71,5 +71,8 @@
     "require": [
       "@endo/init/debug.js"
     ]
+  },
+  "typeCoverage": {
+    "atLeast": 93.19
   }
 }
