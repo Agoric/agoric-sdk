@@ -9,7 +9,7 @@ sequenceDiagram
 
   actor trader as trader<br/>webUI<br/>wallet
 
-  box rgb(255,153,153) Agoric
+  box rgb(187, 45, 64) Agoric
     participant manager as portfolio<br/>manager
     participant portfolio as trader<br/>portfolio
   end
