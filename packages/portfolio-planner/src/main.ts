@@ -12,6 +12,7 @@ import { SpectrumClient } from './spectrum-client.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { startEngine } from './engine.ts';
 import { makeStargateClientKit } from './swingset-tx.ts';
+import { createContext } from './axelar/support.ts';
 
 const getChainIdFromRpc = async (rpc: CosmosRPCClient) => {
   await rpc.opened();
@@ -78,7 +79,11 @@ export const main = async (
     variant: env.AGORIC_NET || 'local',
   });
 
+  const network = env.AGORIC_NET == 'mainnet' ? 'mainnet' : 'testnet';
+  // TODO: use stargate client instead?
+  const ctx = await createContext(MNEMONIC, network);
   await startEngine({
+    ctx,
     rpc,
     vstorageKit,
     spectrum,

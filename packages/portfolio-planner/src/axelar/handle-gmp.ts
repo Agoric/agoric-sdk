@@ -8,28 +8,28 @@ import {
 
 const { keys } = Object;
 
-export type ArgsMap = {
-  createRemoteAccount: [chain: string, gasAmt: string];
+export type GmpArgsMap = {
+  createRemoteAccount: [chain: AxelarChain, gasAmt: string];
   supplyToAave: [
-    chain: string,
+    chain: AxelarChain,
     gasAmt: string,
     transferAmt: string,
     remoteAddr: string,
   ];
   supplyToCompound: [
-    chain: string,
+    chain: AxelarChain,
     gasAmt: string,
     transferAmt: string,
     remoteAddr: string,
   ];
 };
 
-type ArgsForCommand<C extends keyof ArgsMap> = ArgsMap[C];
+export type GmpArgsForCommand<C extends keyof GmpArgsMap> = GmpArgsMap[C];
 
-export const handleGmp = async <C extends keyof ArgsMap>(
+export const handleGmp = async <C extends keyof GmpArgsMap>(
   ctx: PortfolioInstanceContext,
   command: C,
-  args: ArgsForCommand<C>,
+  args: GmpArgsForCommand<C>,
 ) => {
   const { axelarIds } = ctx.axelarConfig;
   switch (command) {
