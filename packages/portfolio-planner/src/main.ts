@@ -12,6 +12,7 @@ import { SpectrumClient } from './spectrum-client.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { startEngine } from './engine.ts';
 import { makeStargateClientKit } from './swingset-tx.ts';
+import { createContext } from './axelar/support.ts';
 
 const getChainIdFromRpc = async (rpc: CosmosRPCClient) => {
   await rpc.opened();
@@ -31,7 +32,6 @@ export const main = async (
   } = {},
 ) => {
   await null;
-  // console.log('Hello, world!', { argv });
 
   const { MNEMONIC } = env;
   if (!MNEMONIC) throw Error(`MNEMONIC not set`);
@@ -78,14 +78,19 @@ export const main = async (
     variant: env.AGORIC_NET || 'local',
   });
 
-  await startEngine({
-    rpc,
+  const net = env.AGORIC_NET == 'mainnet' ? 'mainnet' : 'testnet';
+  const ctx = await createContext({
+    net,
+    stargateClient,
+    plannerAddress,
     vstorageKit,
+    walletKit,
+  });
+  await startEngine({
+    ctx,
+    rpc,
     spectrum,
     cosmosRest,
-    stargateClient,
-    walletKit,
-    plannerAddress,
   });
 };
 harden(main);

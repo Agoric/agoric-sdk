@@ -15,6 +15,7 @@ import {
   type Block,
   type StdFee,
 } from '@cosmjs/stargate';
+import { MsgTransfer } from 'cosmjs-types/ibc/applications/transfer/v1/tx';
 import { Fail } from '@endo/errors';
 
 const toAccAddress = (address: string): Uint8Array => {
@@ -34,6 +35,7 @@ const agoricRegistryTypes: [string, GeneratedType][] = [
     AgoricMsgs.MsgWalletSpendAction.typeUrl,
     MsgWalletSpendAction as GeneratedType,
   ],
+  ['/ibc.applications.transfer.v1.MsgTransfer', MsgTransfer as GeneratedType],
 ];
 
 export const pollOffer = async (
