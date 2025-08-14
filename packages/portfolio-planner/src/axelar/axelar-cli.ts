@@ -3,7 +3,11 @@ import { createContext } from './support.ts';
 import { handleGmp, type GmpArgsMap } from './handle-gmp.ts';
 import { makeStargateClientKit } from '../swingset-tx.ts';
 import { SigningStargateClient } from '@cosmjs/stargate';
-import { fetchEnvNetworkConfig } from '@agoric/client-utils';
+import {
+  fetchEnvNetworkConfig,
+  makeSmartWalletKit,
+  makeVstorageKit,
+} from '@agoric/client-utils';
 
 const printUsage = () => {
   console.log(`
@@ -55,6 +59,8 @@ export const main = async (
   } = {},
 ) => {
   const [rawCommand, ...args] = argv.slice(2);
+  const delay = ms =>
+    new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
 
   const MNEMONIC = process.env.MNEMONIC;
   if (!MNEMONIC) {
@@ -67,8 +73,9 @@ export const main = async (
       connectWithSigner,
       rpcAddr: networkConfig.rpcAddrs[0],
     });
-
-  const network = (process.env.NETWORK as 'mainnet' | 'testnet') || 'testnet';
+  const walletKit = await makeSmartWalletKit({ fetch, delay }, networkConfig);
+  const vstorageKit = makeVstorageKit({ fetch }, networkConfig);
+  const net = (process.env.NETWORK as 'mainnet' | 'testnet') || 'testnet';
 
   if (!rawCommand) {
     printUsage();
@@ -83,7 +90,13 @@ export const main = async (
   }
 
   try {
-    const ctx = await createContext(network, stargateClient, plannerAddress);
+    const ctx = await createContext({
+      net,
+      vstorageKit,
+      stargateClient,
+      plannerAddress,
+      walletKit,
+    });
     const command: Command = rawCommand;
     await handleGmp(ctx, command, args as GmpArgsMap[typeof command]);
   } catch (error) {

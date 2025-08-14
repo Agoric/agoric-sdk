@@ -78,17 +78,19 @@ export const main = async (
     variant: env.AGORIC_NET || 'local',
   });
 
-  const network = env.AGORIC_NET == 'mainnet' ? 'mainnet' : 'testnet';
-  const ctx = await createContext(network, stargateClient, plannerAddress);
+  const net = env.AGORIC_NET == 'mainnet' ? 'mainnet' : 'testnet';
+  const ctx = await createContext({
+    net,
+    stargateClient,
+    plannerAddress,
+    vstorageKit,
+    walletKit,
+  });
   await startEngine({
     ctx,
     rpc,
-    vstorageKit,
     spectrum,
     cosmosRest,
-    stargateClient,
-    walletKit,
-    plannerAddress,
   });
 };
 harden(main);

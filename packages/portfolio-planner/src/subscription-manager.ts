@@ -1,11 +1,12 @@
 import type { AxelarChain } from '@aglocal/portfolio-contract/src/constants';
-import { watchCCTPMint } from './watch-cctp';
+import { EVM_RPC, watchCCTPMint } from './watch-cctp';
 import {
   handleGmp,
   type GmpArgsForCommand,
   type GmpArgsMap,
 } from './axelar/handle-gmp';
 import type { PortfolioInstanceContext } from './axelar/gmp';
+import { JsonRpcProvider } from 'ethers';
 
 type CCTPTransfer = {
   amount: number;
@@ -42,10 +43,13 @@ export const handleSubscription = async (
   switch (subscription.type) {
     case 'cctp': {
       const { data, subscriptionId } = subscription;
+      const rpc = EVM_RPC[data.chain];
+      const provider = new JsonRpcProvider(rpc);
       const status = await watchCCTPMint({
         chain: data.chain,
         recipient: data.receiver,
         expectedAmount: BigInt(data.amount),
+        provider,
       });
 
       if (status) {
