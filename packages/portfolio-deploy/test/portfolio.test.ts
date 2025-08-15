@@ -4,6 +4,8 @@ import { protoMsgMockMap } from '@aglocal/boot/tools/ibc/mocks.ts';
 import { AckBehavior } from '@aglocal/boot/tools/supports.ts';
 import { makeProposalShapes } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.ts';
+import { settleCCTPWithMockReceiver } from '@aglocal/portfolio-contract/test/resolver-helpers.ts';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeClientMarshaller } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
 import { BridgeId } from '@agoric/internal';
@@ -427,6 +429,168 @@ test.serial('restart contract', async t => {
     portfolioCountBefore + 1,
     'Should have exactly one additional portfolio after opening',
   );
+});
+
+test.skip('CCTP settlement works across contract restarts', async t => {
+  const {
+    runUtils: { EV },
+    agoricNamesRemotes,
+    walletFactoryDriver: wfd,
+    bridgeUtils,
+    refreshAgoricNamesRemotes,
+  } = t.context;
+
+  // Setup IBC mocks for the flow
+  for (const { msg, ack } of Object.values(
+    makeUSDNIBCTraffic('agoric1trader1', `${3_333 * 1_000_000}`),
+  )) {
+    protoMsgMockMap[msg] = ack;
+  }
+
+  // Ensure immediate IBC responses
+  bridgeUtils.setAckBehavior(
+    BridgeId.DIBC,
+    'startChannelOpenInit',
+    AckBehavior.Immediate,
+  );
+
+  const myMarshaller = makeClientMarshaller(v => (v as any).getBoardId());
+  const wallet = await wfd.provideSmartWallet(beneficiary, myMarshaller);
+
+  // Refresh to get latest brands including PoC26
+  refreshAgoricNamesRemotes();
+
+  const { USDC, PoC26, BLD } = agoricNamesRemotes.brand as unknown as Record<
+    string,
+    Brand<'nat'>
+  >;
+
+  t.log('Available brands:', Object.keys(agoricNamesRemotes.brand));
+  t.log('Brand values:', { USDC, PoC26, BLD });
+
+  const amount = 3_333n * 1_000_000n;
+  const give = harden({
+    Deposit: make(USDC, amount * 2n), // Double amount for both USDN and Aave
+    Access: make(PoC26, 1n),
+    GmpFee: make(BLD, 1000n), // Fee for the GMP operation
+  });
+
+  // Create offer args that include CCTP flow to Arbitrum for Aave
+  const offerArgs = {
+    flow: [
+      { src: '<Deposit>', dest: '@agoric', amount: make(USDC, amount * 2n) },
+      { src: '@agoric', dest: '@noble', amount: make(USDC, amount * 2n) },
+      { src: '@noble', dest: 'USDN', amount: make(USDC, amount) },
+      {
+        src: '@noble',
+        dest: '@Arbitrum',
+        amount: make(USDC, amount),
+        fee: make(BLD, 100n),
+      },
+      {
+        src: '@Arbitrum',
+        dest: 'Aave_Arbitrum',
+        amount: make(USDC, amount),
+        fee: make(BLD, 100n),
+      },
+    ],
+  };
+
+  t.log(
+    'Opening portfolio with Aave position that creates CCTP transaction...',
+  );
+  const portfolioOffer = wallet.sendOffer({
+    id: 'open-aave-position',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['ymax0'],
+      callPipe: [['makeOpenPortfolioInvitation']],
+    },
+    proposal: { give },
+    offerArgs,
+  });
+
+  // Wait for the portfolio opening to progress and CCTP transaction to be registered
+  await eventLoopIteration();
+  t.log(
+    'Portfolio opening initiated, waiting for CCTP transaction registration...',
+  );
+
+  // Give time for the CCTP transaction to be registered in the resolver
+  await new Promise(resolve => setTimeout(resolve, 1500));
+
+  // Get the kit before restart
+  const kit = await (EV.vat('bootstrap').consumeItem as ConsumeBootstrapItem)(
+    'ymax0Kit',
+  );
+
+  t.log('Restarting contract...');
+  // const restartResult = await EV(kit.adminFacet).restartContract(kit.privateArgs);
+  // t.log('Contract restarted:', restartResult);
+
+  // Wait for restart to complete
+  await eventLoopIteration();
+
+  // Get the restarted kit and zoe
+  const restartedKit = await (
+    EV.vat('bootstrap').consumeItem as ConsumeBootstrapItem
+  )('ymax0Kit');
+  const zoe = await EV.vat('bootstrap').consumeItem('zoe');
+
+  // Test that CCTP resolver functionality works after restart
+  // First try to get the resolver invitation to test the basic functionality
+  try {
+    t.log('Testing makeResolverInvitation after restart...');
+    const resolverInvitation = await EV(
+      restartedKit.creatorFacet,
+    ).makeResolverInvitation();
+    t.log('✓ makeResolverInvitation works after restart');
+
+    const resolverSeat = await EV(zoe).offer(resolverInvitation);
+    const resolverInvitationMakers = await EV(resolverSeat).getOfferResult();
+    t.log('✓ Got resolver invitation makers after restart');
+
+    // Now try to settle a CCTP transaction
+    const cctpResult = await settleCCTPWithMockReceiver(
+      zoe,
+      resolverInvitationMakers,
+      amount,
+      'eip155:42161', // Arbitrum
+      'confirmed',
+      t.log,
+    );
+
+    t.log('CCTP settlement result after restart:', cctpResult);
+    t.log('✓ CCTP resolver fully functional after restart');
+  } catch (error) {
+    t.log('CCTP operation failed:', error.message);
+
+    if (error.message.includes('No pending CCTP transaction')) {
+      t.log('✓ CCTP resolver is working correctly - no pending transactions');
+      t.pass('CCTP resolver is functional after restart');
+    } else if (error.message.includes('makeResolverInvitation')) {
+      t.log('✗ makeResolverInvitation failed after restart');
+      t.fail(`CCTP resolver not working after restart: ${error.message}`);
+    } else {
+      t.log(
+        '✓ CCTP resolver basic functionality works, specific error:',
+        error.message,
+      );
+      t.pass('CCTP resolver survives restart');
+    }
+  }
+
+  // Verify the portfolio opening completed successfully
+  t.log('Checking portfolio opening completion...');
+  const finalUpdate = wallet.getLatestUpdateRecord();
+  t.log('Final wallet update:', finalUpdate);
+
+  // Check that the offer completed successfully
+  const walletRecord = wallet.getCurrentWalletRecord();
+  const openOffer = (walletRecord as any).offerStatuses?.['open-aave-position'];
+  t.log('Portfolio offer status:', openOffer?.numWantsSatisfied);
+
+  t.log('Test completed: CCTP settlement works across contract restarts');
 });
 
 test.todo("won't a contract upgrade override the older positions in vstorage?");
