@@ -6,10 +6,7 @@ import { Nat } from '@endo/nat';
 import { PortfolioStatusShapeExt } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import type { SigningStargateClient } from '@cosmjs/stargate';
-import type {
-  BridgeAction,
-  InvokeStoreEntryAction,
-} from '@agoric/smart-wallet/src/smartWallet.js';
+import type { InvokeStoreEntryAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import { mustMatch } from '@agoric/internal';
 import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
