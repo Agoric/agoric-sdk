@@ -101,5 +101,5 @@ export type ResolverInvitationMakers = {
    * with the proper transaction details to settle the completion of
    * a CCTP transaction.
    */
-  makeSettleCCTPTransactionInvitation: () => Promise<Invitation>;
+  makeSettleCCTPTransactionInvitation: () => Promise<Invitation<CCTPSettlementResult>>;
 };
