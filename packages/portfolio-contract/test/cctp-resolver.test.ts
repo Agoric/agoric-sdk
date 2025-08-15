@@ -2,22 +2,11 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/far';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { passStyleOf } from '@endo/pass-style';
 import type {
   CCTPSettlementResult,
   ResolverInvitationMakers,
 } from '../src/resolver/types.ts';
-import { deploy, setupTrader } from './contract-setup.ts';
-import {
-  simulateUpcallFromAxelar,
-  simulateCCTPAck,
-  simulateAckTransferToAxelar,
-} from './contract-setup.ts';
-import { settleCCTPWithMockReceiver, getResolverMakers } from './resolver-helpers.ts';
-import { evmNamingDistinction } from './mocks.ts';
-
-const { sourceChain } = evmNamingDistinction;
+import { deploy } from './contract-setup.ts';
 
 test('CCTP settlement invitation - no pending transaction found', async t => {
   const { started, zoe, common } = await deploy(t);

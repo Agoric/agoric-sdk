@@ -20,7 +20,10 @@ import {
   makeCCTPTraffic,
   makeUSDNIBCTraffic,
 } from './mocks.ts';
-import { settleCCTPWithMockReceiver, getResolverMakers } from './resolver-helpers.ts';
+import {
+  settleCCTPWithMockReceiver,
+  getResolverMakers,
+} from './resolver-helpers.ts';
 
 // Use an EVM chain whose axelar ID differs from its chain name
 const { sourceChain } = evmNamingDistinction;
@@ -79,7 +82,10 @@ const rebalanceScenarioMacro = test.macro({
             );
             // Also confirm CCTP transaction for flows to Arbitrum
 
-            const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+            const resolverMakers = await getResolverMakers(
+              zoe,
+              started.creatorFacet,
+            );
             await settleCCTPWithMockReceiver(
               zoe,
               resolverMakers,

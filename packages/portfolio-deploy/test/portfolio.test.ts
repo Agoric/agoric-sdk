@@ -499,7 +499,7 @@ test.skip('CCTP settlement works across contract restarts', async t => {
   t.log(
     'Opening portfolio with Aave position that creates CCTP transaction...',
   );
-  const portfolioOffer = wallet.sendOffer({
+  await wallet.sendOffer({
     id: 'open-aave-position',
     invitationSpec: {
       source: 'agoricContract',
@@ -525,8 +525,10 @@ test.skip('CCTP settlement works across contract restarts', async t => {
   );
 
   t.log('Restarting contract...');
-  // const restartResult = await EV(kit.adminFacet).restartContract(kit.privateArgs);
-  // t.log('Contract restarted:', restartResult);
+  const restartResult = await EV(kit.adminFacet).restartContract(
+    kit.privateArgs,
+  );
+  t.log('Contract restarted:', restartResult);
 
   // Wait for restart to complete
   await eventLoopIteration();

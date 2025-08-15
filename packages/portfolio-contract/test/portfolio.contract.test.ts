@@ -17,7 +17,10 @@ import {
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
-import { settleCCTPWithMockReceiver, getResolverMakers } from './resolver-helpers.ts';
+import {
+  settleCCTPWithMockReceiver,
+  getResolverMakers,
+} from './resolver-helpers.ts';
 import { evmNamingDistinction, localAccount0 } from './mocks.ts';
 
 const { fromEntries, keys } = Object;

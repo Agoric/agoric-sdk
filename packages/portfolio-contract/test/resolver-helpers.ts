@@ -13,7 +13,7 @@ import type {
  * Helper to get resolver makers from a creator facet.
  * Encapsulates the common pattern of making a resolver invitation,
  * offering it to zoe, and getting the resolver makers from the result.
- * 
+ *
  * @param zoe - Zoe service instance
  * @param creatorFacet - The creator facet that has makeResolverInvitation
  * @returns Promise<ResolverInvitationMakers>
