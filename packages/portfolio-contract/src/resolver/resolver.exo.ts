@@ -19,6 +19,9 @@ import type {
   CCTPSettlementOfferArgs,
 } from './types.js';
 import { CCTPTransactionDetailsShape } from './types.js';
+import { E } from '@endo/far';
+import type { ERef } from '@endo/far';
+import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 
 const trace = makeTracer('Resolver');
 
@@ -32,7 +35,18 @@ const trace = makeTracer('Resolver');
  * @param vowTools - Vow tools for creating promises
  * @returns A function to create resolver instances with separate facets
  */
-export const prepareCCTPResolver = (zone: Zone, vowTools: VowTools) => {
+export const prepareCCTPResolver = (
+  zone: Zone,
+  {
+    vowTools,
+    portfoliosNode,
+    marshaller,
+  }: {
+    vowTools: VowTools;
+    portfoliosNode: ERef<StorageNode>;
+    marshaller: Marshaller;
+  },
+) => {
   const resolverZone = zone.subZone('CCTPResolver');
   const cctpTransactionRegistry = resolverZone.mapStore<
     CCTPTransactionKey,
@@ -54,7 +68,10 @@ export const prepareCCTPResolver = (zone: Zone, vowTools: VowTools) => {
 
   const DebugFacetI = M.interface('CCTPResolverDebug', {
     getPendingTransactions: M.call().returns(M.arrayOf(M.string())),
+    publishCctpTransactionStatus: M.call().returns(),
   });
+
+  const cctpStatusNode = E(portfoliosNode).makeChildNode('PendingTxStatus');
 
   return resolverZone.exoClassKit(
     'CCTPResolver',
@@ -84,6 +101,8 @@ export const prepareCCTPResolver = (zone: Zone, vowTools: VowTools) => {
               vowKit,
             }),
           );
+
+          this.facets.debug.publishCctpTransactionStatus();
 
           trace(`Registered pending CCTP transaction: ${key}`);
           return vowKit.vow;
@@ -117,6 +136,7 @@ export const prepareCCTPResolver = (zone: Zone, vowTools: VowTools) => {
               trace(`CCTP transaction confirmed - resolving pending operation`);
               registryEntry.vowKit.resolver.resolve();
               cctpTransactionRegistry.delete(key);
+              this.facets.debug.publishCctpTransactionStatus();
               return;
 
             case 'failed':
@@ -125,6 +145,7 @@ export const prepareCCTPResolver = (zone: Zone, vowTools: VowTools) => {
                 Error('CCTP transaction failed'),
               );
               cctpTransactionRegistry.delete(key);
+              this.facets.debug.publishCctpTransactionStatus();
               return;
 
             case 'pending':
@@ -136,6 +157,25 @@ export const prepareCCTPResolver = (zone: Zone, vowTools: VowTools) => {
       debug: {
         getPendingTransactions() {
           return [...cctpTransactionRegistry.keys()];
+        },
+        publishCctpTransactionStatus() {
+          const publishStatus = (status): void => {
+            void E.when(E(marshaller).toCapData(status), capData =>
+              E(cctpStatusNode).setValue(JSON.stringify(capData)),
+            );
+          };
+
+          const cctpTransactions = Array.from(
+            cctpTransactionRegistry.entries(),
+          ).reduce((acc, [key, entry]) => {
+            acc[key] = {
+              destinationAddress: entry.destinationAddress,
+              amountValue: entry.amountValue,
+            };
+            return acc;
+          }, {});
+
+          publishStatus(cctpTransactions);
         },
       },
     },
