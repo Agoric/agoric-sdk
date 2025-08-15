@@ -52,11 +52,11 @@
     "@agoric/vats": "workspace:*",
     "@agoric/zoe": "workspace:*",
     "@agoric/zone": "workspace:*",
-    "@cosmjs/crypto": "^0.35.0-rc",
-    "@cosmjs/encoding": "^0.35.0-rc",
-    "@cosmjs/math": "^0.35.0-rc",
-    "@cosmjs/proto-signing": "^0.35.0-rc",
-    "@cosmjs/stargate": "^0.35.0-rc",
+    "@cosmjs/crypto": "^0.36.0",
+    "@cosmjs/encoding": "^0.36.0",
+    "@cosmjs/math": "^0.36.0",
+    "@cosmjs/proto-signing": "^0.36.0",
+    "@cosmjs/stargate": "^0.36.0",
     "@endo/base64": "^1.0.12",
     "@endo/bundle-source": "^4.1.2",
     "@endo/captp": "^4.4.8",
@@ -99,6 +99,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 79.11
+    "atLeast": 79.88
   }
 }

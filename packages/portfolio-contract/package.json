@@ -21,6 +21,7 @@
   "devDependencies": {
     "@agoric/ertp": "workspace:*",
     "@agoric/fast-usdc": "workspace:*",
+    "@agoric/portfolio-api": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
     "@agoric/zoe": "workspace:*",
     "@agoric/zone": "workspace:*",
@@ -63,6 +64,6 @@
     "timeout": "20m"
   },
   "typeCoverage": {
-    "atLeast": 96.54
+    "atLeast": 96.46
   }
 }

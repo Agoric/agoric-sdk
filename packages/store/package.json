@@ -16,7 +16,7 @@
     "lint:types": "yarn run -T tsc",
     "lint:eslint": "yarn run -T eslint .",
     "prepack": "yarn run -T tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'"
+    "postpack": "git clean -f '*.d.*ts*' '*.tsbuildinfo'"
   },
   "repository": {
     "type": "git",

@@ -11,7 +11,7 @@
     "build": "yarn build:bundles",
     "build:bundles": "node scripts/build-bundles.js",
     "prepack": "yarn run -T tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
+    "postpack": "git clean -f '*.d.*ts*' '*.tsbuildinfo'",
     "test": "ava --verbose",
     "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "test:unit": "ava 'test/unitTests' -T 1m --verbose",

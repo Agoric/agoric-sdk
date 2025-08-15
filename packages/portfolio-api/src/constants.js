@@ -1,5 +1,7 @@
 // .js because the @enum idiom doesn't work in erasable typescript
 
+/// <reference types="ses" />
+
 /**
  * Yield protocols for Proof of Concept.
  *

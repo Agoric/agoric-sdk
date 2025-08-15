@@ -3,7 +3,7 @@ import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { mustMatch, objectMap } from '@agoric/internal';
 import { createRequire } from 'module';
 import { readFile } from 'node:fs/promises';
-import { YieldProtocol } from '../src/constants.js';
+import { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';
 import {
   makeOfferArgsShapes,
   type AssetPlaceRef,
