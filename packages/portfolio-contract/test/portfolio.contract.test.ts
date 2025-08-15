@@ -58,6 +58,13 @@ const getPortfolioInfo = (key: string, storage: FakeStorage) => {
   return { contents, positionPaths: posPaths, flowPaths };
 };
 
+const getCctpStatus = (storage: FakeStorage) => {
+  const info: StatusFor['portfolio'] = storage
+    .getDeserialized(`orchtest.portfolios.cctpStatus`)
+    .at(-1);
+  return info;
+};
+
 test('open portfolio with USDN position', async t => {
   const { trader1, common } = await setupTrader(t);
   const { usdc, poc26 } = common.brands;
@@ -521,6 +528,13 @@ test('open a portfolio with Beefy position', async t => {
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
+  await simulateCCTPAck(common.utils).finally(() =>
+    simulateAckTransferToAxelar(common.utils),
+  );
+
+  const cctpStatusRegistered = getCctpStatus(common.bootstrap.storage);
+  t.snapshot(cctpStatusRegistered, 'CCTP Status Registered');
+
   const cctpSettlementPromise = settleCCTPWithMockReceiver(
     zoe,
     started.creatorFacet,
@@ -539,6 +553,9 @@ test('open a portfolio with Beefy position', async t => {
   t.log('=== Portfolio completed, CCTP result:', cctpResult);
   const result = actual.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
+
+  const cctpStatusDeleted = getCctpStatus(common.bootstrap.storage);
+  t.snapshot(cctpStatusDeleted, 'CCTP Status Deleted');
 
   t.is(keys(result.publicSubscribers).length, 1);
   const { storagePath } = result.publicSubscribers.portfolio;

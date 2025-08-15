@@ -232,8 +232,14 @@ export const contract = async (
       assert.fail('use off-chain queries');
     },
   };
+  const portfoliosNode = E(storageNode).makeChildNode('portfolios');
 
-  const makeCCTPResolver = prepareCCTPResolver(zone, vowTools);
+  // CCTP Resolver - handles transaction confirmations
+  const makeCCTPResolver = prepareCCTPResolver(zone, {
+    vowTools,
+    portfoliosNode,
+    marshaller,
+  });
   const cctpResolver = makeCCTPResolver();
 
   const makeResolverInvitationMakers = prepareResolverInvitationMakers(
@@ -284,7 +290,7 @@ export const contract = async (
     offerArgsShapes,
     timer: timerService,
     chainHubTools: { getChainInfo: chainHub.getChainInfo.bind(chainHub) },
-    portfoliosNode: E(storageNode).makeChildNode('portfolios'),
+    portfoliosNode,
     marshaller,
     usdcBrand: brands.USDC,
   });
