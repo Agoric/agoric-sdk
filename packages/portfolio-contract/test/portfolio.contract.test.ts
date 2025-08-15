@@ -17,7 +17,7 @@ import {
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
-import { settleCCTPWithMockReceiver } from './resolver-helpers.ts';
+import { settleCCTPWithMockReceiver, getResolverMakers } from './resolver-helpers.ts';
 import { evmNamingDistinction, localAccount0 } from './mocks.ts';
 
 const { fromEntries, keys } = Object;
@@ -135,9 +135,10 @@ test.serial('open a portfolio with Aave position', async t => {
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
+  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
   const cctpSettlementPromise = settleCCTPWithMockReceiver(
     zoe,
-    started.creatorFacet,
+    resolverMakers,
     amount.value,
     'eip155:42161',
   );
@@ -194,9 +195,10 @@ test('open a portfolio with Compound position', async t => {
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
+  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
   const cctpSettlementPromise = settleCCTPWithMockReceiver(
     zoe,
-    started.creatorFacet,
+    resolverMakers,
     amount.value,
     'eip155:42161',
   );
@@ -259,9 +261,10 @@ test('open portfolio with USDN, Aave positions', async t => {
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   // Start CCTP confirmation for the Aave portion (amount goes to Arbitrum)
+  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
   const cctpSettlementPromise = settleCCTPWithMockReceiver(
     zoe,
-    started.creatorFacet,
+    resolverMakers,
     amount.value, // Only the amount going to Arbitrum needs CCTP confirmation
     'eip155:42161',
   );
@@ -374,9 +377,10 @@ test('claim rewards on Aave position successfully', async t => {
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
+  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
   const cctpSettlementPromise = settleCCTPWithMockReceiver(
     zoe,
-    started.creatorFacet,
+    resolverMakers,
     amount.value,
     'eip155:42161',
   );
@@ -521,9 +525,10 @@ test('open a portfolio with Beefy position', async t => {
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
+  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
   const cctpSettlementPromise = settleCCTPWithMockReceiver(
     zoe,
-    started.creatorFacet,
+    resolverMakers,
     amount.value,
     'eip155:42161',
   );
@@ -575,9 +580,10 @@ test('Withdraw from a Beefy position', async t => {
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
+  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
   const cctpSettlementPromise = settleCCTPWithMockReceiver(
     zoe,
-    started.creatorFacet,
+    resolverMakers,
     amount.value,
     'eip155:42161',
   );

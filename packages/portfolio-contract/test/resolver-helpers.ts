@@ -10,23 +10,37 @@ import type {
 } from '../src/resolver/types.js';
 
 /**
+ * Helper to get resolver makers from a creator facet.
+ * Encapsulates the common pattern of making a resolver invitation,
+ * offering it to zoe, and getting the resolver makers from the result.
+ * 
+ * @param zoe - Zoe service instance
+ * @param creatorFacet - The creator facet that has makeResolverInvitation
+ * @returns Promise<ResolverInvitationMakers>
+ */
+export const getResolverMakers = async (
+  zoe: ZoeService,
+  creatorFacet: any,
+): Promise<ResolverInvitationMakers> => {
+  const resolverInvitation = await E(creatorFacet).makeResolverInvitation();
+  const resolverSeat = await E(zoe).offer(resolverInvitation);
+  return (await E(resolverSeat).getOfferResult()) as ResolverInvitationMakers;
+};
+
+/**
  * Helper to manually settle a CCTP transaction in tests.
  * This should be called when a test flow includes a CCTP operation
  * (e.g., @noble to @Arbitrum) to resolve the waiting promise.
  *
- * Supports two usage patterns:
- * 1. With resolverMakers (preferred for realistic testing)
- * 2. With creatorFacet (backward compatibility)
- *
  * @param zoe - Zoe service instance
- * @param resolverSource - Either ResolverInvitationMakers or creatorFacet
+ * @param resolverMakers - ResolverInvitationMakers instance
  * @param txDetails - Transaction details matching the CCTP operation
  * @param remoteAxelarChain - The destination chain for the CCTP operation
  * @param log - Optional logging function (defaults to console.log, pass () => {} to disable)
  */
 export const settleCCTPTransaction = async (
   zoe: ZoeService,
-  resolverSource: ResolverInvitationMakers | any, // creatorFacet for backward compatibility
+  resolverMakers: ResolverInvitationMakers,
   txDetails: {
     amount: bigint;
     remoteAddress: `0x${string}`;
@@ -37,23 +51,6 @@ export const settleCCTPTransaction = async (
 ): Promise<CCTPSettlementResult> => {
   await eventLoopIteration();
   await eventLoopIteration(); // XXX for some reason we need two iterations here to pass the tests
-
-  let resolverMakers: ResolverInvitationMakers;
-
-  if ('makeSettleCCTPTransactionInvitation' in resolverSource) {
-    resolverMakers = resolverSource;
-    log('Using provided resolver makers...');
-  } else {
-    log('Getting resolver invitation from creator facet...');
-    const resolverInvitation = await E(resolverSource).makeResolverInvitation();
-    log('Got resolver invitation, making offer...');
-
-    const resolverSeat = await E(zoe).offer(resolverInvitation);
-    resolverMakers = (await E(
-      resolverSeat,
-    ).getOfferResult()) as ResolverInvitationMakers;
-    log('Got resolver makers from creator facet...');
-  }
 
   log('Creating CCTP settlement invitation...');
   const settleInvitation =
@@ -77,12 +74,8 @@ export const settleCCTPTransaction = async (
  * Uses the same mock address that's used throughout the test suite.
  * Will retry until a pending transaction is found and settled.
  *
- * Supports two usage patterns:
- * 1. With resolverMakers (preferred for realistic testing)
- * 2. With creatorFacet (backward compatibility)
- *
  * @param zoe - Zoe service instance
- * @param resolverSource - Either ResolverInvitationMakers or creatorFacet
+ * @param resolverMakers - ResolverInvitationMakers instance
  * @param amount - Transaction amount
  * @param remoteAxelarChain - The destination chain
  * @param status - Transaction status to settle
@@ -90,7 +83,7 @@ export const settleCCTPTransaction = async (
  */
 export const settleCCTPWithMockReceiver = async (
   zoe: ZoeService,
-  resolverSource: ResolverInvitationMakers | any, // creatorFacet for backward compatibility
+  resolverMakers: ResolverInvitationMakers,
   amount: bigint,
   remoteAxelarChain: CaipChainId,
   status: 'confirmed' | 'failed' | 'pending' = 'confirmed',
@@ -103,7 +96,7 @@ export const settleCCTPWithMockReceiver = async (
   for (let attempt = 1; attempt <= 5; attempt++) {
     const result = await settleCCTPTransaction(
       zoe,
-      resolverSource,
+      resolverMakers,
       {
         amount,
         remoteAddress: mockRemoteAddress,
