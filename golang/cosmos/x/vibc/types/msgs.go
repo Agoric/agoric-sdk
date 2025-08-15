@@ -59,12 +59,6 @@ func (msg MsgSendPacket) ValidateBasic() error {
 	return msg.Packet.ValidateBasic()
 }
 
-// GetSignBytes implements sdk.Msg
-// func (msg MsgSendPacket) GetSignBytes() []byte {
-// 	fmt.Println("DEBUG MsgSendPacket.GetSignBytes: called")
-// 	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(&msg))
-// }
-
 // GetSigners implements sdk.Msg
 func (msg MsgSendPacket) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Sender}
