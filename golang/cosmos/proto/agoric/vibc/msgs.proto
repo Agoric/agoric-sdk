@@ -1,6 +1,7 @@
 syntax = "proto3";
 package agoric.vibc;
 
+import "amino/amino.proto";
 import "gogoproto/gogo.proto";
 import "ibc/core/channel/v1/channel.proto";
 
@@ -16,11 +17,15 @@ service Msg {
 message MsgSendPacket {
   option (gogoproto.equal) = false;
 
-  ibc.core.channel.v1.Packet packet = 1
-      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "packet", (gogoproto.moretags) = "yaml:\"packet\""];
+  ibc.core.channel.v1.Packet packet = 1 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "packet",
+    (gogoproto.moretags) = "yaml:\"packet\""
+  ];
   bytes sender = 2 [
+    (amino.encoding) = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag)  = "submitter",
+    (gogoproto.jsontag) = "submitter",
     (gogoproto.moretags) = "yaml:\"submitter\""
   ];
 }

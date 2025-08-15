@@ -25,6 +25,7 @@ import (
 	feegrantkeeper "cosmossdk.io/x/feegrant/keeper"
 	feegrantmodule "cosmossdk.io/x/feegrant/module"
 	"cosmossdk.io/x/tx/signing"
+	"cosmossdk.io/x/tx/signing/aminojson"
 	"cosmossdk.io/x/upgrade"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
@@ -333,7 +334,17 @@ func NewAgoricApp(
 	})
 	appCodec := codec.NewProtoCodec(interfaceRegistry)
 	legacyAmino := codec.NewLegacyAmino()
-	txConfig := authtx.NewTxConfig(appCodec, authtx.DefaultSignModes)
+
+	txConfig, err := authtx.NewTxConfigWithOptions(appCodec, authtx.ConfigOptions{
+		EnabledSignModes: authtx.DefaultSignModes,
+		CustomSignModes:  []signing.SignModeHandler{},
+		CustomAminoFieldEncoder: map[string]aminojson.FieldEncoder{
+			"legacy_address": agorictypes.LegacyAddressEncoder,
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
 
 	if err := interfaceRegistry.SigningContext().Validate(); err != nil {
 		panic(err)

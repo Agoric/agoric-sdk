@@ -87,6 +87,7 @@ type ActionContext struct {
 	// actionContext unique. (for example a counter per block and source module).
 	MsgIdx int `json:"msgIdx"`
 }
+
 type InboundQueueRecord struct {
 	Action  vm.Jsonable   `json:"action"`
 	Context ActionContext `json:"context"`
@@ -213,18 +214,6 @@ func (msg MsgDeliverInbound) ValidateBasic() error {
 	return nil
 }
 
-// GetSignBytes encodes the message for signing
-func (msg MsgDeliverInbound) GetSignBytes() []byte {
-	// FIXME: This compensates for Amino maybe returning nil instead of empty slices.
-	if msg.Messages == nil {
-		msg.Messages = []string{}
-	}
-	if msg.Nums == nil {
-		msg.Nums = []uint64{}
-	}
-	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
-}
-
 // GetSigners defines whose signature is required
 func (msg MsgDeliverInbound) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Submitter}
@@ -263,31 +252,11 @@ func (msg MsgWalletAction) IsHighPriority(ctx sdk.Context, data interface{}) (bo
 	return false, nil
 }
 
-func (msg MsgWalletAction) GetSigners() []sdk.AccAddress {
-	return []sdk.AccAddress{msg.Owner}
-}
-
-// GetSignBytes encodes the message for signing
-func (msg MsgWalletAction) GetSignBytes() []byte {
-	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
-}
-
 // Route should return the name of the module
 func (msg MsgWalletAction) Route() string { return RouterKey }
 
 // Type should return the action
 func (msg MsgWalletAction) Type() string { return "wallet_action" }
-
-// Route should return the name of the module
-func (msg MsgWalletSpendAction) Route() string { return RouterKey }
-
-// Type should return the action
-func (msg MsgWalletSpendAction) Type() string { return "wallet_spend_action" }
-
-// GetSignBytes encodes the message for signing
-func (msg MsgWalletSpendAction) GetSignBytes() []byte {
-	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
-}
 
 // ValidateBasic runs stateless checks on the message
 func (msg MsgWalletAction) ValidateBasic() error {
@@ -301,6 +270,11 @@ func (msg MsgWalletAction) ValidateBasic() error {
 		return sdkioerrors.Wrap(sdkerrors.ErrJSONUnmarshal, "Wallet action must be valid JSON")
 	}
 	return nil
+}
+
+// GetSigners defines whose signature is required
+func (msg MsgWalletAction) GetSigners() []sdk.AccAddress {
+	return []sdk.AccAddress{msg.Owner}
 }
 
 func NewMsgWalletSpendAction(owner sdk.AccAddress, spendAction string) *MsgWalletSpendAction {
@@ -341,9 +315,11 @@ func (msg MsgWalletSpendAction) IsHighPriority(ctx sdk.Context, data interface{}
 	return keeper.IsHighPriorityAddress(ctx, msg.Owner)
 }
 
-func (msg MsgWalletSpendAction) GetSigners() []sdk.AccAddress {
-	return []sdk.AccAddress{msg.Owner}
-}
+// Route should return the name of the module
+func (msg MsgWalletSpendAction) Route() string { return RouterKey }
+
+// Type should return the action
+func (msg MsgWalletSpendAction) Type() string { return "wallet_spend_action" }
 
 // ValidateBasic runs stateless checks on the message
 func (msg MsgWalletSpendAction) ValidateBasic() error {
@@ -357,6 +333,11 @@ func (msg MsgWalletSpendAction) ValidateBasic() error {
 		return sdkioerrors.Wrap(sdkerrors.ErrJSONUnmarshal, "Wallet spend action must be valid JSON")
 	}
 	return nil
+}
+
+// GetSigners defines whose signature is required
+func (msg MsgWalletSpendAction) GetSigners() []sdk.AccAddress {
+	return []sdk.AccAddress{msg.Owner}
 }
 
 func NewMsgProvision(nickname string, addr sdk.AccAddress, powerFlags []string, submitter sdk.AccAddress) *MsgProvision {
@@ -407,14 +388,6 @@ func (msg MsgProvision) GetInboundMsgCount() int32 {
 // IsHighPriority implements the vm.ControllerAdmissionMsg interface.
 func (msg MsgProvision) IsHighPriority(ctx sdk.Context, data interface{}) (bool, error) {
 	return false, nil
-}
-
-// GetSignBytes encodes the message for signing
-func (msg MsgProvision) GetSignBytes() []byte {
-	if msg.PowerFlags == nil {
-		msg.PowerFlags = []string{}
-	}
-	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
 }
 
 // GetSigners defines whose signature is required
