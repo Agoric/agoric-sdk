@@ -71,7 +71,7 @@ export const prepareCCTPResolver = (
     publishCctpTransactionStatus: M.call().returns(),
   });
 
-  const cctpStatusNode = E(portfoliosNode).makeChildNode('cctpStatus');
+  const cctpStatusNode = E(portfoliosNode).makeChildNode('PendingTxStatus');
 
   return resolverZone.exoClassKit(
     'CCTPResolver',

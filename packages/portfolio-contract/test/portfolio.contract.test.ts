@@ -60,7 +60,7 @@ const getPortfolioInfo = (key: string, storage: FakeStorage) => {
 
 const getCctpStatus = (storage: FakeStorage) => {
   const info: StatusFor['portfolio'] = storage
-    .getDeserialized(`orchtest.portfolios.cctpStatus`)
+    .getDeserialized(`orchtest.portfolios.PendingTxStatus`)
     .at(-1);
   return info;
 };
