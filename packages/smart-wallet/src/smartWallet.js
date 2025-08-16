@@ -1,5 +1,5 @@
 import { Fail, q } from '@endo/errors';
-import { E } from '@endo/far';
+import { E, passStyleOf } from '@endo/far';
 import {
   AmountShape,
   BrandShape,
@@ -134,7 +134,13 @@ const trace = makeTracer('SmrtWlt');
 /**
  * @typedef {{ updated: 'offerStatus'; status: OfferStatus }
  *   | { updated: 'balance'; currentAmount: Amount }
- *   | { updated: 'walletAction'; status: { error: string } }} UpdateRecord
+ *   | { updated: 'walletAction'; status: { error: string } }
+ *   | {
+ *       updated: 'invocation';
+ *       id: string | number;
+ *       error?: string;
+ *       result?: { name?: string; passStyle: string };
+ *     }} UpdateRecord
  *   Record of an update to the state of this wallet.
  *
  *   Client is responsible for coalescing updates into a current state. See
@@ -432,6 +438,11 @@ export const prepareSmartWallet = (baggage, shared) => {
     };
   };
 
+  const invocationResultShape = M.splitRecord(
+    {},
+    { id: M.or(M.string(), M.number()), saveResult: shape.ResultPlan },
+  );
+
   const behaviorGuards = {
     helper: M.interface('helperFacetI', {
       assertUniqueOfferId: M.call(M.string()).returns(),
@@ -477,8 +488,8 @@ export const prepareSmartWallet = (baggage, shared) => {
       invokeEntry: M.callWhen(shape.InvokeEntryMessage).returns(),
     }),
     resultStepWatcher: M.interface('resultStepWatcher', {
-      onFulfilled: M.call(M.any(), shape.ResultPlan).returns(),
-      onRejected: M.call(M.any(), M.any()).returns(),
+      onFulfilled: M.call(M.any(), invocationResultShape).returns(),
+      onRejected: M.call(M.any(), invocationResultShape).returns(),
     }),
     self: M.interface('selfFacetI', {
       handleBridgeAction: M.call(shape.StringCapData, M.boolean()).returns(
@@ -1068,14 +1079,21 @@ export const prepareSmartWallet = (baggage, shared) => {
           const { myStore } = this.state;
           const { resultStepWatcher } = this.facets;
 
-          const { targetName: name, method, args, saveResult } = message;
+          const { targetName: name, method, args, saveResult, id } = message;
           myStore.has(name) || Fail`cannot invoke ${q(name)}: no such item`;
           const value = myStore.get(name);
           trace('entry', name, value);
           trace('invoke', value, '.', method, '(', args, ')');
+          if (id) {
+            const { updateRecorderKit } = this.state;
+            void updateRecorderKit.recorder.write({
+              updated: 'invocation',
+              id,
+            });
+          }
           const callP = E(value)[method](...args);
-          if (saveResult) {
-            vowTools.watch(callP, resultStepWatcher, saveResult);
+          if (id || saveResult) {
+            vowTools.watch(callP, resultStepWatcher, { id, saveResult });
           } else {
             void callP;
           }
@@ -1085,14 +1103,41 @@ export const prepareSmartWallet = (baggage, shared) => {
       resultStepWatcher: {
         /**
          * @param {unknown} result
-         * @param {ResultPlan} saveResult
+         * @param {{ id?: string | number; saveResult?: ResultPlan }} opts
          */
-        onFulfilled(result, saveResult) {
-          trace('resultStepWatcher result', result);
-          this.facets.helper.saveEntry(saveResult, result);
+        onFulfilled(result, opts) {
+          trace('resultStepWatcher opts', opts);
+          const { id, saveResult } = opts;
+          if (saveResult) {
+            this.facets.helper.saveEntry(saveResult, result);
+          }
+          const passStyle = passStyleOf(result);
+          const { updateRecorderKit } = this.state;
+          if (id) {
+            void updateRecorderKit.recorder.write({
+              updated: 'invocation',
+              id,
+              result: {
+                ...(saveResult?.name ? { name: saveResult.name } : {}),
+                passStyle,
+              },
+            });
+          }
         },
-        onRejected(reason, saveResult) {
-          trace('rejected', reason, 'saveResult', saveResult);
+        /**
+         * @param {unknown} reason
+         * @param {{ id: string | number; saveResult?: ResultPlan }} opts
+         */
+        onRejected(reason, opts) {
+          trace('rejected', reason, opts);
+          if (opts.id) {
+            const { updateRecorderKit } = this.state;
+            void updateRecorderKit.recorder.write({
+              updated: 'invocation',
+              id: opts.id,
+              error: String(reason),
+            });
+          }
         },
       },
 

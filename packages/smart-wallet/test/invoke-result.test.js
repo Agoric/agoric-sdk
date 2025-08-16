@@ -201,6 +201,7 @@ test('start price contract; set prices', async t => {
   const invokeP = E(wallet).getInvokeFacet();
   await t.notThrowsAsync(
     E(invokeP).invokeEntry({
+      id: 123,
       targetName: 'priceSetter',
       method: 'setPrice',
       args: [100n],
@@ -208,6 +209,33 @@ test('start price contract; set prices', async t => {
   );
 
   t.deepEqual(await tools.getPrices(), [100n]); // 1 admin w/100 price
+
+  {
+    const tracked = await readLegible(`ROOT.wallet.${addr}`);
+    t.log('tracked invocation ', tracked);
+    t.like(tracked.structure, {
+      updated: 'invocation',
+      id: 123,
+      result: { passStyle: 'undefined' },
+    });
+  }
+
+  await E(invokeP).invokeEntry({
+    id: 1234,
+    targetName: 'priceSetter',
+    method: 'setPrice',
+    args: ['bogus'],
+  });
+  {
+    const tracked = await readLegible(`ROOT.wallet.${addr}`);
+    t.log('tracked invocation ', tracked);
+    t.like(tracked.structure, {
+      updated: 'invocation',
+      id: 1234,
+      error:
+        'Error: In "setPrice" method of (Admin): arg 0: string "bogus" - Must be a bigint',
+    });
+  }
 });
 
 test('save result of method call - overwrite cases', async t => {

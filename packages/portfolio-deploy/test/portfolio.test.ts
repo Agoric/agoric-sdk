@@ -254,6 +254,43 @@ test.serial('contract starts; appears in agoricNames', async t => {
   });
 });
 
+test.serial('delegate control', async t => {
+  const { buildProposal, evalProposal, refreshAgoricNamesRemotes } = t.context;
+
+  const addr = 'agoric1ymax0-admin';
+  const materials = buildProposal(
+    '@aglocal/portfolio-deploy/src/portfolio-control.build.js',
+    ['--ymaxControlAddress', addr],
+  );
+
+  const { agoricNamesRemotes, walletFactoryDriver: wfd } = t.context;
+
+  const wallet = await wfd.provideSmartWallet(addr);
+
+  await evalProposal(materials);
+  await refreshAgoricNamesRemotes();
+  assert(agoricNamesRemotes.instance.postalService);
+
+  t.log('redeeming controller invitation');
+  await wallet.executeOffer({
+    id: `controller-1`,
+    invitationSpec: {
+      source: 'purse',
+      instance: agoricNamesRemotes.instance.postalService,
+      description: 'deliver ymaxControl',
+    },
+    proposal: {},
+    saveResult: { name: 'ymaxControl' },
+  });
+
+  await wallet.invokeEntry({
+    targetName: 'ymaxControl',
+    method: 'pruneChainStorage',
+    args: [{}],
+  });
+  t.pass('ymaxControl is invocable');
+});
+
 test.serial('remove old contract; start new contract', async t => {
   const {
     agoricNamesRemotes,

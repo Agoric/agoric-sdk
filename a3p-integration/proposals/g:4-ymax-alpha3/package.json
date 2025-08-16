@@ -1,9 +1,9 @@
 {
   "agoricProposal": {
     "source": "subdir",
-    "$comment": "board013515 originates from mainnet proposal 100",
     "sdk-generate": [
-      "../../builders/scripts/smart-wallet/build-walletFactory-upgrade.js submission"
+      "../../builders/scripts/smart-wallet/build-walletFactory-upgrade.js submission",
+      "../../portfolio-deploy/src/portfolio-control.build.js submission --ymaxControlAddress=agoric15u29seyj3c9rdwg7gwkc97uttrk6j9fl4jkuyh"
     ],
     "type": "/agoric.swingset.CoreEvalProposal"
   },
