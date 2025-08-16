@@ -30,7 +30,7 @@ const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
 const { values } = Object;
 
-const deploy = async (t: ExecutionContext) => {
+export const deploy = async (t: ExecutionContext) => {
   const common = await setupPortfolioTest(t);
   let contractBaggage;
   const setJig = ({ baggage }) => {

@@ -27,7 +27,7 @@ import {
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
-import type { ContractMeta, ZCF } from '@agoric/zoe';
+import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
@@ -40,6 +40,10 @@ import {
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
+import {
+  prepareCCTPResolver,
+  prepareResolverInvitationMakers,
+} from './resolver/resolver.exo.js';
 import {
   BeefyPoolPlaces,
   makeProposalShapes,
@@ -232,6 +236,15 @@ export const contract = async (
     },
   };
 
+  const makeCCTPResolver = prepareCCTPResolver(zone, vowTools);
+  const cctpResolver = makeCCTPResolver();
+
+  const makeResolverInvitationMakers = prepareResolverInvitationMakers(
+    zone,
+    zcf,
+    cctpResolver.service,
+  );
+
   const ctx1 = {
     zoeTools,
     usdc: {
@@ -251,6 +264,8 @@ export const contract = async (
     axelarIds,
     contracts,
     gmpAddresses,
+    cctpClient: cctpResolver.client,
+    inertSubscriber,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
@@ -296,6 +311,21 @@ export const contract = async (
     },
   );
 
+  trace('XXX NEEDSTEST: baggage test');
+
+  const creatorFacet = zone.exo('PortfolioCreator', interfaceTODO, {
+    makeResolverInvitation() {
+      trace('makeResolverInvitation');
+
+      const resolverHandler = (seat: ZCFSeat) => {
+        seat.exit();
+        return makeResolverInvitationMakers();
+      };
+
+      return zcf.makeInvitation(resolverHandler, 'resolver', undefined);
+    },
+  });
+
   const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
     /**
      * Make an invitation to open a new portfolio.
@@ -326,7 +356,7 @@ export const contract = async (
     },
   });
 
-  return { publicFacet };
+  return { publicFacet, creatorFacet };
 };
 harden(contract);
 
