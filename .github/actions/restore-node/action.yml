@@ -55,7 +55,7 @@ runs:
 
         echo "NODE_VERSION=$OUTPUT_NODE_VERSION" >> "$GITHUB_OUTPUT"
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         clean: false
         submodules: 'true'
@@ -105,7 +105,7 @@ runs:
     - name: check out Endo if necessary
       id: endo-checkout
       if: steps.endo-branch.outputs.result != 'NOPE'
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         repository: endojs/endo
         path: ./replacement-endo
