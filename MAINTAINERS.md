@@ -395,7 +395,7 @@ git ls-tree -r HEAD |
 while read lock; do \
   dir=$(dirname $lock); \
   echo $dir; \
-  (cd $dir; yarn up ses '@endo/*' -R; yarn dedupe); \
+  (cd $dir; $ENDO/scripts/sync-versions.sh $ENDO; yarn up ses '@endo/*' -R; yarn dedupe); \
 done
 git commit -am 'chore: Sync Endo versions'
 ```
@@ -467,7 +467,7 @@ in `agoric-sdk/documentation`:
 ```sh
 # in agoric/documentation
 git checkout --branch "$USER-sync-endo-$NOW"
-$ENDO/scripts/sync-verions.sh ~/endo
+$ENDO/scripts/sync-versions.sh $ENDO
 git commit -am 'chore: Sync Endo versions'
 yarn
 git commit -am 'chore: Update yarn.lock'
