@@ -3,6 +3,7 @@
  * @see {@link contract}
  * @see {@link start}
  */
+import type { Payment } from '@agoric/ertp';
 import {
   makeTracer,
   mustMatch,
@@ -27,16 +28,17 @@ import {
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
+import {
+  AxelarChain,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
 import type { ContractMeta, ZCF } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
-import {
-  AxelarChain,
-  YieldProtocol,
-} from '@agoric/portfolio-api/src/constants.js';
+import { preparePlanner } from './planner.exo.ts';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
@@ -47,6 +49,7 @@ import {
   type OfferArgsFor,
   type ProposalType,
 } from './type-guards.ts';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 
 const trace = makeTracer('PortC');
 const { fromEntries, keys } = Object;
@@ -155,6 +158,10 @@ export const meta: ContractMeta = {
   privateArgsShape,
 };
 harden(meta);
+
+type PostalServiceI = {
+  deliverPayment(addr: string, pmt: Payment): Promise<void>;
+};
 
 /**
  * Portfolio contract implementation. Creates and manages diversified stablecoin portfolios
@@ -326,7 +333,56 @@ export const contract = async (
     },
   });
 
-  return { publicFacet };
+  const getPortfolio = (id: number) => portfolios.get(id);
+  const makePlanner = preparePlanner(zone.subZone('planner'), {
+    zcf,
+    rebalance,
+    getPortfolio,
+    shapes: offerArgsShapes,
+  });
+
+  const makePlannerInvitation = () =>
+    zcf.makeInvitation(seat => {
+      seat.exit();
+      return makePlanner();
+    }, 'planner');
+
+  const creatorFacet = zone.exo(
+    'PortfolioAdmin',
+    M.interface('PortfolioAdmin', {
+      makePlannerInvitation: M.callWhen().returns(InvitationShape),
+      deliverPlannerInvitation: M.callWhen(
+        M.string(),
+        M.remotable('Instance'),
+      ).returns(),
+    }),
+    {
+      makePlannerInvitation() {
+        return makePlannerInvitation();
+      },
+      /**
+       * Make and deliver a planner invitation
+       * using only public arguments (data, well-known objects).
+       *
+       * @param address where to deliver invitation
+       * @param instancePS postal service instance
+       */
+      async deliverPlannerInvitation(
+        address: string,
+        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+      ) {
+        trace('deliverPlannerInvitation', address, instancePS);
+        const zoe = zcf.getZoeService();
+        const pfP = E(zoe).getPublicFacet(instancePS);
+        const invitation = await makePlannerInvitation();
+        trace('made planner invitation', invitation);
+        await E(pfP).deliverPayment(address, invitation);
+        trace('delivered planner invitation');
+      },
+    },
+  );
+
+  return { creatorFacet, publicFacet };
 };
 harden(contract);
 

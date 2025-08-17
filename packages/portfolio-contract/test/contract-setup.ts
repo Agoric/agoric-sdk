@@ -87,7 +87,13 @@ const deploy = async (t: ExecutionContext) => {
       }),
     ),
   );
-  return { common, zoe, started, contractBaggage, timerService };
+  return {
+    common: { ...common, utils: { ...common.utils, bundleAndInstall } },
+    zoe,
+    contractBaggage,
+    started,
+    timerService,
+  };
 };
 
 export const setupTrader = async (t, initial = 10_000) => {
