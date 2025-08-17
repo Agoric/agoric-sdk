@@ -2,13 +2,16 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { VStorage } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
+import type { StreamCell } from '@agoric/internal/src/lib-chainStorage.js';
 import type { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
 import {
   eventLoopIteration,
   inspectMapStore,
 } from '@agoric/internal/src/testing-utils.js';
+import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
+import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
 import type { StatusFor } from '../src/type-guards.ts';
 import {
@@ -22,6 +25,7 @@ import {
   getResolverMakers,
 } from './resolver-helpers.ts';
 import { evmNamingDistinction, localAccount0 } from './mocks.ts';
+import { plannerClientMock } from '../tools/agents-mock.ts';
 
 const { fromEntries, keys } = Object;
 
@@ -894,3 +898,46 @@ test.serial(
     t.snapshot(actual.payouts, 'refund payouts');
   },
 );
+const getCapDataStructure = cell => {
+  const { body, slots } = JSON.parse(cell);
+  const structure = JSON.parse(body.replace(/^#/, ''));
+  return { structure, slots };
+};
+
+test('redeem planner invitation', async t => {
+  const { common, zoe, started, trader1 } = await setupTrader(t);
+
+  const { storage } = common.bootstrap;
+  const readAt: VStorage['readAt'] = async (path: string, _h?: number) => {
+    await eventLoopIteration();
+    const cell: StreamCell = {
+      blockHeight: '0',
+      values: storage.getValues(path),
+    };
+    return cell;
+  };
+  const readLegible = async (path: string) => {
+    await eventLoopIteration();
+    return getCapDataStructure(storage.getValues(path).at(-1));
+  };
+
+  const boot = async () => {
+    return {
+      ...common.bootstrap,
+      zoe,
+      utils: { ...common.utils, readLegible },
+    };
+  };
+
+  const { provisionSmartWallet } = await deployWalletFactory({ boot });
+  const [walletPlanner] = await provisionSmartWallet('agoric1planner');
+  const toPlan = await E(started.creatorFacet).makePlannerInvitation();
+  await E(E(walletPlanner).getDepositFacet()).receive(toPlan);
+
+  const planner1 = plannerClientMock(walletPlanner, started.instance, readAt);
+  await planner1.redeem();
+
+  await trader1.openPortfolio(t, {}, {});
+
+  await planner1.submit1();
+});
