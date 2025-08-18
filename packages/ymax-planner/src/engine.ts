@@ -6,20 +6,24 @@ import { isPrimitive } from '@endo/pass-style';
 import { makePromiseKit, type PromiseKit } from '@endo/promise-kit';
 import { Nat } from '@endo/nat';
 import { PortfolioStatusShapeExt } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { AmountMath, type Brand } from '@agoric/ertp';
-import type { Coin, SigningStargateClient } from '@cosmjs/stargate';
+import { AmountMath } from '@agoric/ertp';
+import type { Coin } from '@cosmjs/stargate';
 import type { InvokeStoreEntryAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import { mustMatch } from '@agoric/internal';
 import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import type { VstorageKit, SmartWalletKit } from '@agoric/client-utils';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import { handleDeposit } from './plan-deposit.ts';
 import { submitAction } from './swingset-tx.ts';
+import {
+  handleSubscription,
+  type PortfolioInstanceContext,
+  type Subscription,
+} from './subscription-manager.ts';
 
 const { isInteger } = Number;
 
@@ -31,6 +35,8 @@ type CosmosEvent = {
 };
 
 const VSTORAGE_PATH_PREFIX = 'published.ymax0.portfolios';
+const ORCHESTRATION_SUBSCRIPTIONS_PREFIX =
+  'published.orchestration.subscriptions';
 
 /** cf. golang/cosmos/x/vstorage/types/path_keys.go */
 const EncodedKeySeparator = '\x00';
@@ -265,26 +271,15 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
 };
 
 type IO = {
+  ctx: PortfolioInstanceContext;
   rpc: CosmosRPCClient;
-  vstorageKit: VstorageKit;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
-  stargateClient: SigningStargateClient;
-  walletKit: SmartWalletKit;
-  plannerAddress: string;
 };
 
-export const startEngine = async ({
-  rpc,
-  vstorageKit,
-  spectrum,
-  cosmosRest,
-  stargateClient,
-  walletKit,
-  plannerAddress,
-}: IO) => {
+export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
   await null;
-
+  const { walletKit, vstorageKit, plannerAddress, stargateClient } = ctx;
   const chainStatus = await rpc.request('status', {});
   console.warn('agoric chain status', chainStatus);
 
@@ -352,6 +347,55 @@ export const startEngine = async ({
     portfolioKeyForDepositAddr.set(depositAddress, portfolioKey);
   }).done;
 
+  console.warn('Initializing subscription tracking...');
+  try {
+    const subscriptionKeys = await vstorageKit.vstorage.keys(
+      ORCHESTRATION_SUBSCRIPTIONS_PREFIX,
+    );
+    console.warn(
+      `Found ${subscriptionKeys.length} existing subscriptions to monitor`,
+    );
+
+    // Process existing pending subscriptions on startup
+    await makeWorkPool(subscriptionKeys, undefined, async subscriptionKey => {
+      try {
+        const subscriptionData = await vstorageKit.readPublished(
+          `${stripPrefix('published.', ORCHESTRATION_SUBSCRIPTIONS_PREFIX)}.${subscriptionKey}`,
+        );
+        const subscription = subscriptionData as Subscription;
+        console.warn(`Found existing subscription: ${subscriptionKey}`, {
+          type: subscription.type,
+          status: subscription.status,
+        });
+
+        if (subscription.status === 'pending') {
+          console.warn(
+            `Processing existing pending subscription: ${subscriptionKey}`,
+          );
+          try {
+            subscription.subscriptionId = subscriptionKey;
+            await handleSubscription(ctx, subscription);
+          } catch (error) {
+            console.error(
+              `Failed to process existing subscription ${subscriptionKey}:`,
+              error,
+            );
+          }
+        }
+      } catch (error) {
+        console.warn(
+          `Could not read subscription ${subscriptionKey}:`,
+          error.message,
+        );
+      }
+    }).done;
+  } catch (error) {
+    console.warn(
+      'No existing subscriptions found or error reading subscriptions:',
+      error.message,
+    );
+  }
+
   try {
     // console.warn('consuming events');
     const responses = rpc.subscribeAll([
@@ -379,7 +423,7 @@ export const startEngine = async ({
         if (!events) console.warn('missing events', type, key);
         return events ?? [];
       }) as CosmosEvent[];
-      const portfolioVstorageEvents = partialMap(eventRecords, eventRecord => {
+      const vstorageEvents = partialMap(eventRecords, eventRecord => {
         const { type: eventType, attributes: attrRecords } = eventRecord;
         // Filter for vstorage state_change events.
         // cf. golang/cosmos/types/events.go
@@ -395,15 +439,32 @@ export const startEngine = async ({
           return;
         }
 
-        // Filter for ymax portfolio paths.
+        // Filter for paths we care about (portfolios or subscriptions).
         const path = encodedKeyToPath(attributes.key);
-        if (!vstoragePathStartsWith(path, VSTORAGE_PATH_PREFIX)) return;
+        if (
+          !vstoragePathStartsWith(path, VSTORAGE_PATH_PREFIX) &&
+          !vstoragePathStartsWith(path, ORCHESTRATION_SUBSCRIPTIONS_PREFIX)
+        )
+          return;
 
-        return { path, value: attributes.value };
+        return {
+          path,
+          value: attributes.value,
+          pathType: vstoragePathStartsWith(path, VSTORAGE_PATH_PREFIX)
+            ? 'portfolio'
+            : 'subscription',
+        };
       });
 
+      const portfolioEvents = vstorageEvents.filter(
+        event => event.pathType === 'portfolio',
+      );
+      const subscriptionEvents = vstorageEvents.filter(
+        event => event.pathType === 'subscription',
+      );
+
       // Detect new portfolios.
-      for (const { path, value: vstorageValue } of portfolioVstorageEvents) {
+      for (const { path, value: vstorageValue } of portfolioEvents) {
         const streamCell = tryJsonParse(
           vstorageValue,
           _err =>
@@ -436,8 +497,66 @@ export const startEngine = async ({
               console.warn('Added new portfolio', key, depositAddress);
             }
           }
+        } else {
         }
-        // TODO: Handle portfolio-level path `${VSTORAGE_PATH_PREFIX}.${portfolioKey}` for addition/update of depositAddress.
+      }
+
+      // Handle orchestration subscriptions.
+      for (const { path, value: vstorageValue } of subscriptionEvents) {
+        const streamCell = tryJsonParse(
+          vstorageValue,
+          _err =>
+            Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
+        );
+        mustMatch(harden(streamCell), StreamCellShape);
+
+        // Extract subscription ID from path (e.g., "published.orchestration.subscriptions.subscription1234")
+        const subscriptionId = stripPrefix(
+          `${ORCHESTRATION_SUBSCRIPTIONS_PREFIX}.`,
+          path,
+        );
+        console.warn('Processing subscription event', subscriptionId, path);
+
+        for (let i = 0; i < streamCell.values.length; i += 1) {
+          const strValue = streamCell.values[i];
+          const value = tryJsonParse(
+            // @ts-expect-error use `undefined` to force an error for non-string input
+            typeof strValue === 'string' ? strValue : undefined,
+            _err =>
+              Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
+          );
+
+          try {
+            const subscriptionData = vstorageKit.marshaller.fromCapData(
+              value,
+            ) as Subscription;
+            console.warn('Handling subscription:', {
+              subscriptionId,
+              type: subscriptionData.type,
+            });
+
+            if (subscriptionData.status !== 'pending') {
+              console.warn(
+                `Skipping non-pending subscription ${subscriptionId} with status: ${subscriptionData.status}`,
+              );
+              continue;
+            }
+
+            console.warn('Processing pending subscription', {
+              subscriptionId,
+              type: subscriptionData.type,
+              status: subscriptionData.status,
+            });
+
+            subscriptionData.subscriptionId = subscriptionId;
+            await handleSubscription(ctx, subscriptionData);
+          } catch (error) {
+            console.error(
+              `Failed to process subscription ${subscriptionId}:`,
+              error,
+            );
+          }
+        }
       }
 
       // Detect activity against portfolio deposit addresses.
@@ -470,7 +589,8 @@ export const startEngine = async ({
             addrsWithActivity,
             addrBalances,
             depositAddrsWithActivity,
-            portfolioVstorageEvents,
+            portfolioEvents,
+            subscriptionEvents,
           },
           { depth: 10 },
         ),

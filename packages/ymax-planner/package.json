@@ -38,6 +38,7 @@
   },
   "dependencies": {
     "@aglocal/portfolio-contract": "workspace:*",
+    "@aglocal/portfolio-deploy": "workspace:*",
     "@agoric/client-utils": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/internal": "workspace:*",

@@ -1,3 +1,4 @@
+import { ethers } from 'ethers';
 const wait = async (seconds: number) => {
   return new Promise(resolve => setTimeout(resolve, seconds * 1000));
 };
@@ -270,10 +271,12 @@ export const getTxStatus = async ({
   url,
   fetch = globalThis.fetch,
   params,
+  subscriptionId,
 }: {
   url: string;
   fetch: typeof globalThis.fetch;
   params: AxelarQueryParams;
+  subscriptionId: string;
 }) => {
   const body = JSON.stringify(params);
   console.log(`params: ${body}`);
@@ -304,7 +307,24 @@ export const getTxStatus = async ({
       console.log('✅ contract call executed', data[0].executed);
       console.log('txHash on EVM:', data[0].executed.transactionHash);
 
-      return { logs: data[0].executed, success: true };
+      const subscriptionTopic = ethers.id('SubscriptionResolved(string)');
+      const logs = data[0].executed.receipt.logs;
+      const subscriptionLog = logs.find(
+        log => log.topics[0] === subscriptionTopic,
+      );
+
+      if (subscriptionLog) {
+        const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+        const [decodedSubscriptionId] = abiCoder.decode(
+          ['string'],
+          subscriptionLog.data,
+        );
+
+        console.log('decodedSubscriptionId:', decodedSubscriptionId);
+        if (decodedSubscriptionId === subscriptionId) {
+          return { logs: data[0].executed, success: true };
+        }
+      }
     }
 
     console.log('no data, retrying...');

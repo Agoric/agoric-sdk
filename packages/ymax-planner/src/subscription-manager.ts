@@ -1,8 +1,7 @@
-import type { AxelarChain } from '@aglocal/portfolio-contract/src/constants';
-import { EVM_RPC, watchCCTPMint } from './watch-cctp';
+import { EVM_RPC, watchCCTPMint } from './watch-cctp.ts';
 import { JsonRpcProvider } from 'ethers';
-import { getTxStatus } from './axelar/gmp-status';
-import { resolveSubscription } from './resolver';
+import { getTxStatus } from './axelar/gmp-status.ts';
+import { resolveSubscription } from './resolver.ts';
 import type {
   AxelarId,
   GmpAddresses,
@@ -10,6 +9,7 @@ import type {
 import type { EVMContractAddressesMap } from '@aglocal/portfolio-contract/src/type-guards';
 import type { VstorageKit, SmartWalletKit } from '@agoric/client-utils';
 import type { SigningStargateClient } from '@cosmjs/stargate';
+import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 
 export type PortfolioInstanceContext = {
   axelarConfig: {
@@ -93,6 +93,7 @@ export const handleSubscription = async (
           destinationChain: data.destinationChain as unknown as string,
           contractAddress: data.contractAddress,
         },
+        subscriptionId,
       });
       if (!res.success) {
         throw Error('deployment of funds not successful');

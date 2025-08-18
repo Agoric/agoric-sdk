@@ -1,5 +1,5 @@
+import type { AxelarChain } from '@agoric/portfolio-api/src/constants';
 import { Interface, JsonRpcProvider, Log } from 'ethers';
-import type { AxelarChain } from '@aglocal/portfolio-contract/src/constants';
 
 // Using only 'Ethereum' for now because CCTP transfers to it work reliably off-chain.
 // Other testnet chains currently have issues, so we're excluding them for the time being.
@@ -44,7 +44,7 @@ export const watchCCTPMint = async ({
   const messageTransmitter = MESSAGE_TRANSMITTER[chain];
 
   if (!tokenMessenger || !messageTransmitter) {
-    throw new Error(`Missing RPC or contract address for chain ${chain}`);
+    throw Error(`Missing RPC or contract address for chain ${chain}`);
   }
 
   const mintIface = new Interface(MINT_ABI);

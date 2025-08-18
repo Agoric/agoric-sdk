@@ -4,13 +4,9 @@ import {
   axelarConfigTestnet,
   gmpAddresses,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
-import type {
-  ContractCall,
-  AbiEncodedContractCall,
-  PortfolioInstanceContext,
-} from './gmp.ts';
 import type { SigningStargateClient } from '@cosmjs/stargate';
 import type { SmartWalletKit, VstorageKit } from '@agoric/client-utils';
+import type { PortfolioInstanceContext } from '../subscription-manager';
 
 export const channels = {
   mainnet: 'channel-9',
@@ -25,58 +21,6 @@ export const urls = {
 export const axelarQueryAPI = {
   mainnet: 'https://api.axelarscan.io/gmp/searchGMP',
   testnet: 'https://testnet.api.axelarscan.io/gmp/searchGMP',
-};
-
-export const constructContractCall = ({
-  target,
-  functionSignature,
-  args,
-}: ContractCall): AbiEncodedContractCall => {
-  const [name, paramsRaw] = functionSignature.split('(');
-  const params = paramsRaw.replace(')', '').split(',').filter(Boolean);
-
-  return {
-    target,
-    data: encodeFunctionData({
-      abi: [
-        {
-          type: 'function',
-          name,
-          inputs: params.map((type, i) => ({ type, name: `arg${i}` })),
-        },
-      ],
-      functionName: name,
-      args,
-    }),
-  };
-};
-
-/**
- * Builds a GMP payload from an array of contract calls.
- */
-export const buildGMPPayload = (contractCalls: ContractCall[]): number[] => {
-  const abiEncodedContractCalls: AbiEncodedContractCall[] = [];
-  for (const call of contractCalls) {
-    const { target, functionSignature, args } = call;
-    abiEncodedContractCalls.push(
-      constructContractCall({ target, functionSignature, args }),
-    );
-  }
-
-  const abiEncodedData = encodeAbiParameters(
-    [
-      {
-        type: 'tuple[]',
-        components: [
-          { name: 'target', type: 'address' },
-          { name: 'data', type: 'bytes' },
-        ],
-      },
-    ],
-    [abiEncodedContractCalls],
-  );
-
-  return Array.from(hexToBytes(abiEncodedData));
 };
 
 /**
@@ -152,7 +96,6 @@ export const createContext = async ({
       gmpAddresses: config.gmpAddresses,
       queryApi: axelarConfig.queryApi,
     },
-    sourceChannel: channels[net],
     rpcUrl: urls[net],
     stargateClient,
     plannerAddress,
