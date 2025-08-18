@@ -1,4 +1,5 @@
 /* eslint-disable max-classes-per-file */
+import ky, { HTTPError, type KyInstance } from 'ky';
 
 interface CosmosRestClientConfig {
   fetch: typeof fetch;
@@ -73,6 +74,8 @@ export class CosmosRestClient {
 
   private readonly chainConfigs: Map<string, ChainConfig>;
 
+  private readonly http: KyInstance;
+
   constructor(config: CosmosRestClientConfig = {} as any) {
     this.fetch = config.fetch;
     this.setTimeout = config.setTimeout;
@@ -92,6 +95,20 @@ export class CosmosRestClient {
 
     // Initialize with predefined chains
     this.chainConfigs = new Map(Object.entries(chainConfig));
+
+    // Create ky instance using provided fetch, retry, and timeout settings.
+    this.http = ky.create({
+      fetch: this.fetch,
+      retry: {
+        limit: this.retries,
+        methods: ['get'],
+      },
+      timeout: this.timeout,
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'Agoric-YMax-Planner/1.0.0',
+      },
+    });
   }
 
   /**
@@ -190,56 +207,29 @@ export class CosmosRestClient {
     context: string,
   ): Promise<T> {
     await null;
-
-    let lastError: Error | null = null;
-
-    for (let attempt = 1; attempt <= this.retries + 1; attempt += 1) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = this.setTimeout(
-          () => controller.abort(),
-          this.timeout,
+    try {
+      const data = await this.http.get(url).json<T>();
+      this.log(`[CosmosRestClient] Success: ${context}`);
+      return data;
+    } catch (err) {
+      if (err instanceof HTTPError) {
+        const { response } = err;
+        let errorBody = '';
+        try {
+          errorBody = await response.text();
+        } catch {
+          errorBody = 'Unknown error';
+        }
+        throw new CosmosApiError(
+          `HTTP ${response.status}: ${response.statusText} - ${errorBody}`,
+          { statusCode: response.status, chainId: chainConfig.chainId, url },
         );
-
-        const response = await this.fetch(url, {
-          signal: controller.signal,
-          headers: {
-            Accept: 'application/json',
-            'User-Agent': 'Agoric-YMax-Planner/1.0.0',
-          },
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorBody = await response.text().catch(() => 'Unknown error');
-          throw new CosmosApiError(
-            `HTTP ${response.status}: ${response.statusText} - ${errorBody}`,
-            { statusCode: response.status, chainId: chainConfig.chainId, url },
-          );
-        }
-
-        const data = await response.json();
-        this.log(`[CosmosRestClient] Success: ${context}`);
-        return data;
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-
-        if (attempt < this.retries + 1) {
-          const delay = Math.min(1000 * 2 ** (attempt - 1), 5000); // Exponential backoff, max 5s
-          this.log(
-            `[CosmosRestClient] Attempt ${attempt} failed for ${context}, retrying in ${delay}ms:`,
-            lastError.message,
-          );
-          await new Promise(resolve => this.setTimeout(resolve, delay));
-        }
       }
+      const e = err as Error;
+      throw new CosmosApiError(`Failed to fetch ${context}: ${e.message}`,
+        { statusCode: 0, chainId: chainConfig.chainId, url },
+      );
     }
-
-    throw new CosmosApiError(
-      `Failed to fetch ${context} after ${this.retries} attempts: ${lastError?.message}`,
-      { statusCode: 0, chainId: chainConfig.chainId, url },
-    );
   }
 }
 

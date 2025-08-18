@@ -309,6 +309,7 @@ __metadata:
     ava: "npm:^6.3.0"
     dotenv: "npm:^17.2.1"
     json-rpc-2.0: "npm:^1.7.1"
+    ky: "npm:^1.4.0"
     nodemon: "npm:^3.1.10"
     ts-blank-space: "npm:^0.6.1"
     typescript: "npm:^5.7.2"
@@ -12248,6 +12249,13 @@ __metadata:
   version: 6.0.3
   resolution: "kind-of@npm:6.0.3"
   checksum: 10c0/61cdff9623dabf3568b6445e93e31376bee1cdb93f8ba7033d86022c2a9b1791a1d9510e026e6465ebd701a6dd2f7b0808483ad8838341ac52f003f512e0b4c4
+  languageName: node
+  linkType: hard
+
+"ky@npm:^1.4.0":
+  version: 1.8.2
+  resolution: "ky@npm:1.8.2"
+  checksum: 10c0/81edb33f4397b4a23a085ab0c54c0efd7baad0c8eeaabbbec4e7147202627a20d80114595d03647fc1ae465d682de30e2e04805e6888e5650e5a93684cf86e93
   languageName: node
   linkType: hard
 
