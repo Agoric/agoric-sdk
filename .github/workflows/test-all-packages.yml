@@ -83,7 +83,7 @@ jobs:
   ##################
   # Lint tests
   lint-primary:
-    timeout-minutes: 25 # Since Node 22, it's sometimes longer than 20min
+    timeout-minutes: 45 # Since Node 22, it's sometimes longer than 20min
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -203,9 +203,15 @@ jobs:
       - name: yarn test (orchestration)
         if: (success() || failure())
         run: cd packages/orchestration && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (portfolio-api)
+        if: (success() || failure())
+        run: cd packages/portfolio-api && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (portfolio-contract)
         if: (success() || failure())
         run: cd packages/portfolio-contract && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (portfolio-deploy)
+        if: (success() || failure())
+        run: cd packages/portfolio-deploy && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sparse-ints)
         if: (success() || failure())
         run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -233,6 +239,9 @@ jobs:
       - name: yarn test (xsnap)
         if: (success() || failure())
         run: cd packages/xsnap && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (ymax-planner)
+        if: (success() || failure())
+        run: cd packages/ymax-planner && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
@@ -300,9 +309,6 @@ jobs:
       - name: yarn test (fast-usdc-contract)
         if: (success() || failure())
         run: cd packages/fast-usdc-contract && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (fast-usdc-deploy)
-        if: (success() || failure())
-        run: cd packages/fast-usdc-deploy && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (internal)
         if: (success() || failure())
         run: cd packages/internal && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -315,6 +321,9 @@ jobs:
       - name: yarn test (pegasus)
         if: (success() || failure())
         run: cd packages/pegasus && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (pola-io)
+        if: (success() || failure())
+        run: cd packages/pola-io && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (smart-wallet)
         if: (success() || failure())
         run: cd packages/smart-wallet && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -381,6 +390,45 @@ jobs:
 
   ##############
   # Long-running tests are executed individually.
+  test-fast-usdc-deploy:
+    # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 30
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # test:xs is noop in governance/package.json
+        engine: ['node-new', 'node-old']
+    steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.engine }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (fast-usdc-deploy)
+        if: (success() || failure())
+        run: cd packages/fast-usdc-deploy && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: notify on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+      - uses: ./.github/actions/post-test
+        if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+
   test-governance:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30

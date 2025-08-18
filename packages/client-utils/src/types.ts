@@ -1,7 +1,7 @@
 // @file types for the client-utils package
 // NB: this doesn't follow best practices for TS in JS because this package will likely soon be written in TS
 
-import type { Brand } from '@agoric/ertp';
+import type { Brand, Issuer } from '@agoric/ertp';
 import type {
   ContractRecord,
   FeeConfig,
@@ -20,6 +20,8 @@ import type {
   CurrentWalletRecord,
   UpdateRecord,
 } from '@agoric/smart-wallet/src/smartWallet.js';
+import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
+import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 
 // For static string key types. String template matching has to be in the ternary below.
@@ -29,9 +31,12 @@ type PublishedTypeMap = {
   'vaultFactory.metrics': VaultDirectorMetrics;
   'agoricNames.instance': Array<[string, Instance]>;
   'agoricNames.brand': Array<[string, Brand]>;
+  'agoricNames.issuer': Array<[string, Issuer]>;
+  'agoricNames.vbankAsset': Array<[string, AssetInfo]>;
   fastUsdc: ContractRecord;
   'fastUsdc.feeConfig': FeeConfig;
   'fastUsdc.poolMetrics': PoolMetrics;
+  'ymax0.portfolios': StatusFor['portfolios'];
 };
 
 /**

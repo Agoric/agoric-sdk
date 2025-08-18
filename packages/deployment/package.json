@@ -19,9 +19,9 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@endo/errors": "^1.2.10",
-    "@endo/init": "^1.1.9",
-    "@endo/marshal": "^1.6.4",
+    "@endo/errors": "^1.2.13",
+    "@endo/init": "^1.1.12",
+    "@endo/marshal": "^1.8.0",
     "chalk": "^5.2.0",
     "deterministic-json": "^1.0.5",
     "inquirer": "^8.2.2",
@@ -32,6 +32,6 @@
     "readline-transform": "^1.0.0"
   },
   "typeCoverage": {
-    "atLeast": 50.83
+    "atLeast": 50.91
   }
 }

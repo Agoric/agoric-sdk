@@ -1,5 +1,10 @@
 {
   "extends": "../../tsconfig.json",
+  "exclude": [
+    "tsup.config.ts",
+    "src/stubs/",
+    "src/vendor/",
+  ],
   "include": [
     "build",
     "index.js",

@@ -68,3 +68,19 @@ RELAYER_TYPE=go-relayer yarn test:fast-usdc
 ```sh
 make stop
 ```
+
+
+## Helpful Queries
+`kubectl exec -i gaialocal-genesis-0 -c validator --tty=false -- gaiad query txs --query "message.action='/ibc.core.channel.v1.MsgRecvPacket'" | jq`
+
+`MsgAcknowledgement`
+
+`kubectl exec -i agoriclocal-genesis-0 -c validator --tty=false -- agd query txs --events message.action=/ibc.core.channel.v1.MsgRecvPacket`
+
+
+`kubectl exec -i agoriclocal-genesis-0 -c validator --tty=false -- agd query txs --events write_acknowledgement.packet_src_port=transfer`
+
+`kubectl exec -i agoriclocal-genesis-0 -c validator --tty=false -- agd query txs --events recv_packet.packet_src_port=transfer`
+
+
+`kubectl exec -i agoriclocal-genesis-0 -c validator --tty=false -- agd query txs --events send_packet.packet_src_port=transfer`

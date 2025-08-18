@@ -4,6 +4,28 @@ import {
   ProposalShape,
 } from '@agoric/zoe/src/typeGuards.js';
 
+/**
+ * @import {TypedPattern} from '@agoric/internal';
+ * @import {InvokeEntryMessage, ResultPlan} from './offers';
+ */
+
+/** @type {TypedPattern<ResultPlan>} */
+const ResultPlanShape = M.splitRecord(
+  { name: M.string() },
+  { overwrite: M.boolean() },
+  {},
+);
+/** @type {TypedPattern<InvokeEntryMessage>} */
+const InvokeEntryMessageShape = M.splitRecord(
+  {
+    targetName: M.string(),
+    method: M.string(),
+    args: M.array(),
+  },
+  { saveResult: ResultPlanShape, id: M.or(M.number(), M.string()) },
+  {},
+);
+
 export const shape = {
   // smartWallet
   StringCapData: {
@@ -51,8 +73,14 @@ export const shape = {
       invitationSpec: M.any(),
       proposal: ProposalShape,
     },
-    { offerArgs: M.any() },
+    {
+      offerArgs: M.any(),
+      saveResult: ResultPlanShape,
+    },
+    {},
   ),
+  ResultPlan: ResultPlanShape,
+  InvokeEntryMessage: InvokeEntryMessageShape,
 
   // walletFactory
   /**

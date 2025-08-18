@@ -15,8 +15,8 @@ test('accounts', async t => {
   const swk = await makeSmartWalletKit(io, LOCAL_CONFIG);
 
   // XXX readPublished once it can handle plain JSON
-  const nodeStr = await swk.vstorage.readLatest('published.fastUsdc');
-  const { values } = JSON.parse(JSON.parse(nodeStr).value);
+  const nodeObj = await swk.vstorage.readLatest('published.fastUsdc');
+  const { values } = JSON.parse(nodeObj.value);
   const { poolAccount, settlementAccount } = JSON.parse(values[0]);
 
   // exact addresses are not available at design time

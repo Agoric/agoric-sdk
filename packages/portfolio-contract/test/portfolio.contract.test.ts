@@ -1,106 +1,78 @@
+/** @file YMax portfolio contract tests - user stories */
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
-import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
-import type { Installation } from '@agoric/zoe';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E, passStyleOf } from '@endo/far';
-import { M, mustMatch } from '@endo/patterns';
-import type { ExecutionContext } from 'ava';
-import { createRequire } from 'module';
-import { makeUSDNIBCTraffic } from './mocks.ts';
-import { makeTrader } from './portfolio-actors.ts';
-import { setupPortfolioTest } from './supports.ts';
-import { makeWallet } from './wallet-offer-tools.ts';
+import { AmountMath } from '@agoric/ertp';
+import type { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
+import {
+  eventLoopIteration,
+  inspectMapStore,
+} from '@agoric/internal/src/testing-utils.js';
+import { passStyleOf } from '@endo/far';
+import type { StatusFor } from '../src/type-guards.ts';
+import {
+  setupTrader,
+  simulateAckTransferToAxelar,
+  simulateCCTPAck,
+  simulateUpcallFromAxelar,
+} from './contract-setup.ts';
+import { evmNamingDistinction, localAccount0 } from './mocks.ts';
 
-const nodeRequire = createRequire(import.meta.url);
+const { fromEntries, keys } = Object;
 
-const contractName = 'ymax0';
-const contractFile = nodeRequire.resolve('../src/portfolio.contract.ts');
-type StartFn = typeof import('../src/portfolio.contract.ts').start;
+// Use an EVM chain whose axelar ID differs from its chain name
+const { sourceChain } = evmNamingDistinction;
 
-/** from https://www.mintscan.io/noble explorer */
-const explored = [
-  {
-    txhash: '50D671D1D56CF5041CBE7C3483EF461765196ECD7D7571CCEF0A612B46FC7A3B',
-    messages: [
-      {
-        '@type': '/noble.swap.v1.MsgSwap',
-        signer: 'noble1wtwydxverrrc673anqddyg3cmq3vhpu7yxy838',
-        amount: { denom: 'uusdc', amount: '111000000' },
-        // routes: [{ pool_id: '0', denom_to: 'uusdn' }],
-        routes: [{ poolId: 0n, denomTo: 'uusdn' }],
-        min: { denom: 'uusdn', amount: '110858936' },
-      } satisfies MsgSwap & { '@type': string },
-    ],
-  },
-  {
-    txhash: 'BD97D42915C9185B11B14FEDC2EF6BCE0677E6720472DC6E1B51CCD504534237',
-    messages: [
-      {
-        '@type': '/noble.dollar.vaults.v1.MsgLock',
-        signer: 'noble1wtwydxverrrc673anqddyg3cmq3vhpu7yxy838',
-        vault: 1, // 'STAKED',
-        amount: '110818936',
-      } satisfies MsgLock & { '@type': string },
-    ],
-  },
-];
-harden(explored);
+const range = (n: number) => [...Array(n).keys()];
 
-const deploy = async (t: ExecutionContext) => {
-  const common = await setupPortfolioTest(t);
-  const { zoe, bundleAndInstall } = await setUpZoeForTest();
-  t.log('contract deployment', contractName);
+type FakeStorage = ReturnType<typeof makeFakeStorageKit>;
 
-  const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
-  t.is(passStyleOf(installation), 'remotable');
-
-  const { usdc } = common.brands;
-  const started = await E(zoe).startInstance(
-    installation,
-    { USDC: usdc.issuer },
-    {}, // terms
-    common.commonPrivateArgs,
+const getFlowHistory = (
+  portfolioKey: string,
+  flowCount: number,
+  storage: FakeStorage,
+) => {
+  const flowPaths = range(flowCount).map(
+    ix => `${portfolioKey}.flows.flow${ix + 1}`,
   );
-  t.notThrows(() =>
-    mustMatch(
-      started,
-      M.splitRecord({
-        instance: M.remotable(),
-        publicFacet: M.remotable(),
-        creatorFacet: M.remotable(),
-        // ...others are not relevant here
-      }),
-    ),
-  );
-  return { common, zoe, started };
+  const flowEntries = flowPaths.map(p => [p, storage.getDeserialized(p)]);
+  return {
+    flowPaths,
+    byFlow: fromEntries(flowEntries) as Record<string, StatusFor['flow']>,
+  };
+};
+
+/** current vstorage for portfolio, positions; full history for flows */
+const getPortfolioInfo = (key: string, storage: FakeStorage) => {
+  const info: StatusFor['portfolio'] = storage.getDeserialized(key).at(-1);
+  const { positionKeys, flowCount } = info;
+  const posPaths = positionKeys.map(k => `${key}.positions.${k}`);
+  const posEntries = posPaths.map(p => [p, storage.getDeserialized(p).at(-1)]);
+  const { flowPaths, byFlow } = getFlowHistory(key, flowCount, storage);
+  const contents = {
+    ...fromEntries([[key, info], ...posEntries]),
+    ...byFlow,
+  };
+  return { contents, positionPaths: posPaths, flowPaths };
 };
 
 test('open portfolio with USDN position', async t => {
-  const { common, zoe, started } = await deploy(t);
-  const { usdc } = common.brands;
-  const { when } = common.utils.vowTools;
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, poc26 } = common.brands;
 
-  const myBalance = usdc.units(10_000);
-  const funds = await common.utils.pourPayment(myBalance);
-  const myWallet = makeWallet({ USDC: usdc }, zoe, when);
-  await E(myWallet).deposit(funds);
-  const trader1 = makeTrader(myWallet, started.instance);
-  t.log('I am a power user with', myBalance, 'on Agoric');
-
-  const { ibcBridge } = common.mocks;
-  for (const { msg, ack } of Object.values(makeUSDNIBCTraffic())) {
-    ibcBridge.addMockAck(msg, ack);
-  }
-
-  const doneP = trader1.openPortfolio(t, {
-    USDN: usdc.units(3_333),
-    Aave: usdc.units(3_333),
-    Compound: usdc.units(3_333),
-  });
+  const amount = usdc.units(3_333.33);
+  const doneP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: 'USDN', amount },
+      ],
+    },
+  );
 
   // ack IBC transfer for forward
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
@@ -108,14 +80,510 @@ test('open portfolio with USDN position', async t => {
   const done = await doneP;
   const result = done.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
-  t.like(result.publicTopics, [
-    { description: 'USDN ICA', storagePath: 'cosmos:noble-1:cosmos1test' },
-  ]);
-  const [{ storagePath: myUSDNAddress }] = result.publicTopics;
-  t.log('I can see where my money is:', myUSDNAddress);
-  t.log('refund', done.payouts);
+  t.like(result.publicSubscribers, {
+    portfolio: {
+      description: 'Portfolio',
+      storagePath: `${ROOT_STORAGE_PATH}.portfolios.portfolio0`,
+    },
+  });
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents, positionPaths, flowPaths } = getPortfolioInfo(
+    storagePath,
+    common.bootstrap.storage,
+  );
+  t.snapshot(contents, 'vstorage');
+  t.log(
+    'I can see where my money is:',
+    positionPaths.map(p => contents[p].accountId),
+  );
+  t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
+  t.is(
+    contents[storagePath].accountIdByChain['agoric'],
+    `cosmos:agoric-3:${localAccount0}`,
+    'LCA',
+  );
+  t.snapshot(done.payouts, 'refund payouts');
 });
 
-test.todo('User can see transfer in progress');
-test.todo('Pools SHOULD include Aave');
-test.todo('Pools SHOULD include Compound');
+test('open a portfolio with Aave position', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+      ],
+    },
+  );
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
+  );
+
+  const actual = await actualP;
+  const result = actual.result as any;
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
+
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(actual.payouts, 'refund payouts');
+});
+
+test('open a portfolio with Compound position', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { bld, usdc, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+  const actualP = trader1.openPortfolio(
+    t,
+    {
+      Access: poc26.make(1n),
+      Deposit: amount,
+      GmpFee: AmountMath.add(feeAcct, feeCall),
+    },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Compound_Arbitrum', amount, fee: feeCall },
+      ],
+    },
+  );
+  await eventLoopIteration(); // let IBC message go out
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
+  );
+
+  const actual = await actualP;
+  const result = actual.result as any;
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
+
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(actual.payouts, 'refund payouts');
+});
+
+test('open portfolio with USDN, Aave positions', async t => {
+  const { trader1, common, contractBaggage } = await setupTrader(t);
+  const { bld, usdc, poc26 } = common.brands;
+
+  const { add } = AmountMath;
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+
+  const doneP = trader1.openPortfolio(
+    t,
+    {
+      Access: poc26.make(1n),
+      Deposit: add(amount, amount),
+    },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount: add(amount, amount) },
+        { src: '@agoric', dest: '@noble', amount: add(amount, amount) },
+        { src: '@noble', dest: 'USDN', amount },
+
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+      ],
+    },
+  );
+  await eventLoopIteration(); // let outgoing IBC happen
+  console.log('openPortfolio, eventloop');
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to noble');
+
+  const ackNP = await simulateUpcallFromAxelar(
+    common.mocks.transferBridge,
+    sourceChain,
+  ).then(() =>
+    simulateCCTPAck(common.utils).finally(() =>
+      simulateAckTransferToAxelar(common.utils),
+    ),
+  );
+
+  await eventLoopIteration(); // let bridge I/O happen
+
+  const [done] = await Promise.all([doneP, ackNP]);
+  const result = done.result as any;
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
+
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(done.payouts, 'refund payouts');
+
+  const tree = inspectMapStore(contractBaggage);
+  delete tree['chainHub']; // 'initial baggage' test captures this
+  // XXX portfolio exo state not included UNTIL https://github.com/Agoric/agoric-sdk/issues/10950
+  t.snapshot(tree, 'baggage after open with positions');
+});
+
+test('contract rejects unknown pool keys', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, poc26 } = common.brands;
+
+  const amount = usdc.units(1000);
+
+  // Try to open portfolio with unknown pool key
+  const rejectionP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        // @ts-expect-error testing Unknown pool key
+        { src: '@noble', dest: 'Aave_Base', amount },
+      ],
+    },
+  );
+
+  await t.throwsAsync(rejectionP, {
+    message: /Must match one of|Aave_Base/i,
+  });
+});
+
+test('open portfolio with target allocations', async t => {
+  const { trader1, common, contractBaggage } = await setupTrader(t);
+  const { poc26 } = common.brands;
+
+  const targetAllocation = {
+    USDN: 1n,
+    Aave_Arbitrum: 1n,
+    Compound_Arbitrum: 1n,
+  };
+  const doneP = trader1.openPortfolio(
+    t,
+    { Access: poc26.make(1n) },
+    { targetAllocation },
+  );
+
+  const done = await doneP;
+  const result = done.result as any;
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const info = await trader1.getPortfolioStatus();
+  t.deepEqual(info.targetAllocation, targetAllocation);
+
+  t.snapshot(info, 'portfolio');
+  t.snapshot(done.payouts, 'refund payouts');
+
+  const tree = inspectMapStore(contractBaggage);
+  delete tree['chainHub']; // 'initial baggage' test captures this
+  // XXX portfolio exo state not included UNTIL https://github.com/Agoric/agoric-sdk/issues/10950
+  t.snapshot(tree, 'baggage after open with target allocations');
+});
+
+test('claim rewards on Aave position successfully', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+      ],
+    },
+  );
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
+  );
+
+  const done = await actualP;
+  const result = done.result as any;
+
+  const { storagePath } = result.publicSubscribers.portfolio;
+  const messagesBefore = common.utils.inspectLocalBridge();
+
+  const rebalanceP = trader1.rebalance(
+    t,
+    { give: { Deposit: amount }, want: {} },
+    {
+      flow: [
+        {
+          dest: '@Arbitrum',
+          src: 'Aave_Arbitrum',
+          amount: usdc.make(100n),
+          fee: feeCall,
+          claim: true,
+        },
+      ],
+    },
+  );
+
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  const rebalanceResult = await rebalanceP;
+  console.log('rebalance done', rebalanceResult);
+
+  const messagesAfter = common.utils.inspectLocalBridge();
+
+  t.deepEqual(messagesAfter.length - messagesBefore.length, 2);
+
+  t.log(storagePath);
+  const { contents, positionPaths, flowPaths } = getPortfolioInfo(
+    storagePath,
+    common.bootstrap.storage,
+  );
+  t.snapshot(contents, 'vstorage');
+
+  t.snapshot(rebalanceResult.payouts, 'rebalance payouts');
+});
+
+test('USDN claim fails currently', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const doneP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: 'USDN', amount },
+      ],
+    },
+  );
+
+  // ack IBC transfer for forward
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
+  const done = await doneP;
+  const result = done.result as any;
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
+  t.like(result.publicSubscribers, {
+    portfolio: {
+      description: 'Portfolio',
+      storagePath: 'orchtest.portfolios.portfolio0',
+    },
+  });
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents, positionPaths } = getPortfolioInfo(
+    storagePath,
+    common.bootstrap.storage,
+  );
+  t.log(
+    'I can see where my money is:',
+    positionPaths.map(p => contents[p].accountId),
+  );
+  t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
+  t.is(
+    contents[storagePath].accountIdByChain['agoric'],
+    `cosmos:agoric-3:${localAccount0}`,
+    'LCA',
+  );
+
+  const rebalanceP = trader1.rebalance(
+    t,
+    { give: {}, want: {} },
+    {
+      flow: [
+        {
+          dest: '@noble',
+          src: 'USDN',
+          amount: usdc.make(100n),
+          claim: true,
+        },
+      ],
+    },
+  );
+
+  await t.throwsAsync(rebalanceP, {
+    message: /claiming USDN is not supported/,
+  });
+});
+
+test('open a portfolio with Beefy position', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Beefy_re7_Avalanche', amount, fee: feeCall },
+      ],
+    },
+  );
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
+  );
+
+  const actual = await actualP;
+  const result = actual.result as any;
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
+
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(actual.payouts, 'refund payouts');
+});
+
+test('Withdraw from a Beefy position', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Beefy_re7_Avalanche', amount, fee: feeCall },
+      ],
+    },
+  );
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  console.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
+    () =>
+      simulateCCTPAck(common.utils).finally(() =>
+        simulateAckTransferToAxelar(common.utils),
+      ),
+  );
+
+  const actual = await actualP;
+  const result = actual.result as any;
+
+  const withdrawP = trader1.rebalance(
+    t,
+    { give: {}, want: {} },
+    {
+      flow: [
+        {
+          src: 'Beefy_re7_Avalanche',
+          dest: '@Arbitrum',
+          amount: amount,
+          fee: feeCall,
+        },
+        {
+          src: '@Arbitrum',
+          dest: '@noble',
+          amount: amount,
+        },
+        {
+          src: '@noble',
+          dest: '@agoric',
+          amount: amount,
+        },
+        {
+          src: '@agoric',
+          dest: '<Cash>',
+          amount,
+        },
+      ],
+    },
+  );
+
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await simulateCCTPAck(common.utils).finally(() =>
+    simulateAckTransferToAxelar(common.utils),
+  );
+  const withdraw = await withdrawP;
+
+  const { storagePath } = result.publicSubscribers.portfolio;
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(withdraw.payouts, 'refund payouts');
+});
+
+test('portfolios node updates for each new portfolio', async t => {
+  const { makeFundedTrader, common } = await setupTrader(t);
+  const { poc26 } = common.brands;
+  const { storage } = common.bootstrap;
+
+  const give = { Access: poc26.make(1n) };
+  {
+    const trader = await makeFundedTrader();
+    await trader.openPortfolio(t, give);
+    const x = storage.getDeserialized(`${ROOT_STORAGE_PATH}.portfolios`).at(-1);
+    t.deepEqual(x, { addPortfolio: `portfolio0` });
+  }
+  {
+    const trader = await makeFundedTrader();
+    await trader.openPortfolio(t, give);
+    const x = storage.getDeserialized(`${ROOT_STORAGE_PATH}.portfolios`).at(-1);
+    t.deepEqual(x, { addPortfolio: `portfolio1` });
+  }
+});
+
+// baggage after a simple startInstance, without any other startup logic
+test('initial baggage', async t => {
+  const { contractBaggage } = await setupTrader(t);
+
+  const tree = inspectMapStore(contractBaggage);
+  t.snapshot(tree, 'contract baggage after start');
+});

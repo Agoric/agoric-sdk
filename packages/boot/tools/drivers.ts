@@ -3,15 +3,22 @@ import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { SECONDS_PER_MINUTE } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
 import { NonNullish } from '@agoric/internal';
-import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import {
-  type FakeStorageKit,
+  boardSlottingMarshaller,
+  unmarshalFromVstorage,
+} from '@agoric/internal/src/marshal.js';
+import {
   slotToRemotable,
+  type FakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { Fail } from '@endo/errors';
 
-import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type {
+  InvokeEntryMessage,
+  OfferSpec,
+} from '@agoric/smart-wallet/src/offers.js';
+import type {
+  BridgeAction,
   CurrentWalletRecord,
   SmartWallet,
   UpdateRecord,
@@ -20,12 +27,12 @@ import type { OfferMaker } from '@agoric/smart-wallet/src/types.js';
 import type { RunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { TimerService } from '@agoric/time';
 import type { WalletFactoryStartResult } from '@agoric/vats/src/core/startWalletFactory.js';
-import {
-  type AgoricNamesRemotes,
-  boardSlottingMarshaller,
-} from '@agoric/vats/tools/board-utils.js';
+import { type AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
 import type { InvitationDetails } from '@agoric/zoe';
+import type { Marshal } from '@endo/marshal';
 import type { SwingsetTestKit } from './supports.js';
+
+type Marshaller = Omit<Marshal<string | null>, 'serialize' | 'unserialize'>;
 
 // XXX SwingsetTestKit would simplify this
 export const makeWalletFactoryDriver = async (
@@ -50,12 +57,21 @@ export const makeWalletFactoryDriver = async (
     walletAddress: string,
     walletPresence: SmartWallet,
     isNew: boolean,
+    myMarshaller = marshaller,
   ) => ({
     isNew,
     getAddress: () => walletAddress,
 
+    invokeEntry(message: InvokeEntryMessage): Promise<void> {
+      const action: BridgeAction = harden({
+        method: 'invokeEntry',
+        message,
+      });
+      const offerCapData = marshaller.toCapData(action);
+      return EV(walletPresence).handleBridgeAction(offerCapData, false);
+    },
     executeOffer(offer: OfferSpec): Promise<void> {
-      const offerCapData = marshaller.toCapData(
+      const offerCapData = myMarshaller.toCapData(
         harden({
           method: 'executeOffer',
           offer,
@@ -64,7 +80,7 @@ export const makeWalletFactoryDriver = async (
       return EV(walletPresence).handleBridgeAction(offerCapData, true);
     },
     sendOffer(offer: OfferSpec): Promise<void> {
-      const offerCapData = marshaller.toCapData(
+      const offerCapData = myMarshaller.toCapData(
         harden({
           method: 'executeOffer',
           offer,
@@ -74,7 +90,7 @@ export const makeWalletFactoryDriver = async (
       return EV.sendOnly(walletPresence).handleBridgeAction(offerCapData, true);
     },
     tryExitOffer(offerId: string) {
-      const capData = marshaller.toCapData(
+      const capData = myMarshaller.toCapData(
         harden({
           method: 'tryExitOffer',
           offerId,
@@ -103,7 +119,8 @@ export const makeWalletFactoryDriver = async (
       return unmarshalFromVstorage(
         storage.data,
         `published.wallet.${walletAddress}.current`,
-        (...args) => Reflect.apply(marshaller.fromCapData, marshaller, args),
+        (...args) =>
+          Reflect.apply(myMarshaller.fromCapData, myMarshaller, args),
         -1,
       ) as any;
     },
@@ -112,7 +129,8 @@ export const makeWalletFactoryDriver = async (
       return unmarshalFromVstorage(
         storage.data,
         `published.wallet.${walletAddress}`,
-        (...args) => Reflect.apply(marshaller.fromCapData, marshaller, args),
+        (...args) =>
+          Reflect.apply(myMarshaller.fromCapData, myMarshaller, args),
         -1,
       ) as any;
     },
@@ -124,12 +142,13 @@ export const makeWalletFactoryDriver = async (
      */
     async provideSmartWallet(
       walletAddress: string,
+      myMarshaller?: Marshaller,
     ): Promise<ReturnType<typeof makeWalletDriver>> {
       const bank = await EV(bankManager).getBankForAddress(walletAddress);
       return EV(walletFactoryStartResult.creatorFacet)
         .provideSmartWallet(walletAddress, bank, namesByAddressAdmin)
         .then(([walletPresence, isNew]) =>
-          makeWalletDriver(walletAddress, walletPresence, isNew),
+          makeWalletDriver(walletAddress, walletPresence, isNew, myMarshaller),
         );
     },
   };

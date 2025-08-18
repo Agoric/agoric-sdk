@@ -2,8 +2,7 @@
 import { createRequire } from 'module';
 import type { AgdTools } from './agd-tools.js';
 import type { CoreEvalPlan } from '@agoric/deploy-script-support/src/writeCoreEvalParts.js';
-import { flags } from './chaind-lib.js';
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, toCLIOptions } from '@agoric/internal';
 
 const nodeRequire = createRequire(import.meta.url);
 
@@ -21,7 +20,7 @@ export const makeDeployBuilder = (
     trace(`building plan: ${builder}`);
     const args = ['run', builder];
     if (builderOpts) {
-      args.push(...flags(builderOpts));
+      args.push(...toCLIOptions(builderOpts));
     }
     const npx = (file: string, args: string[]) =>
       execa('npx', ['--no-install', file, ...args]);

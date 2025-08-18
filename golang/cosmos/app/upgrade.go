@@ -6,7 +6,6 @@ import (
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
@@ -158,8 +157,6 @@ func buildProposalStepFromScript(targetUpgrade string, builderScript string) (vm
 func (app *GaiaApp) RegisterUpgradeHandlers() {
 	// Set param key table for params module migration
 	for _, subspace := range app.ParamsKeeper.GetSubspaces() {
-		subspace := subspace
-
 		var keyTable paramstypes.KeyTable
 		switch subspace.Name() {
 		case authtypes.ModuleName:
@@ -187,30 +184,19 @@ func (app *GaiaApp) RegisterUpgradeHandlers() {
 		}
 	}
 
-	baseAppLegacySS := app.ParamsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramstypes.ConsensusParamsKeyTable())
-
 	for _, name := range upgradeNamesOfThisVersion {
 		app.UpgradeKeeper.SetUpgradeHandler(
 			name,
-			makeUnreleasedUpgradeHandler(app, name, baseAppLegacySS),
+			makeUnreleasedUpgradeHandler(app, name),
 		)
 	}
 }
 
 // makeUnreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
-func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLegacySS paramstypes.Subspace) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	_ = targetUpgrade
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
-
-		// prune expired tendermint consensus states to save storage space
-		_, err := ibctmmigrations.PruneExpiredConsensusStates(ctx, app.AppCodec(), app.IBCKeeper.ClientKeeper)
-		if err != nil {
-			return nil, err
-		}
-
-		// Migrate Tendermint consensus parameters from x/params module to a dedicated x/consensus module.
-		baseapp.MigrateParams(ctx, baseAppLegacySS, &app.ConsensusParamsKeeper)
 
 		CoreProposalSteps := []vm.CoreProposalStep{}
 
@@ -224,42 +210,12 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string, baseAppLeg
 				return module.VersionMap{}, fmt.Errorf("cannot run %s as first upgrade", plan.Name)
 			}
 
-			// Each CoreProposalStep runs sequentially, and can be constructed from
-			// one or more modules executing in parallel within the step.
-			CoreProposalSteps = append(CoreProposalSteps,
-				// Register a new ZCF to be used for all future contract instances and upgrades
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-zcf.js",
-				),
-				// because of #10794, we need to do at least a null upgrade of
-				// the walletFactory on every software upgrade
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
-				),
-			)
+			// prune expired tendermint consensus states to save storage space.
+			_, err := ibctmmigrations.PruneExpiredConsensusStates(ctx, app.AppCodec(), app.IBCKeeper.ClientKeeper)
+			if err != nil {
+				return nil, err
+			}
 
-			// terminationTargets is a slice of "$boardID:$instanceKitLabel" strings.
-			var terminationTargets []string
-			switch getVariantFromUpgradeName(targetUpgrade) {
-			case "MAINNET":
-				// v111 "zcf-b1-4522b-stkATOM-USD_price_feed"
-				terminationTargets = []string{"board052184:stkATOM-USD_price_feed"}
-			case "A3P_INTEGRATION":
-				terminationTargets = []string{"board04091:stATOM-USD_price_feed"}
-			}
-			if len(terminationTargets) > 0 {
-				args := []vm.Jsonable{terminationTargets}
-				terminationStep, err := buildProposalStepWithArgs(
-					"@agoric/vats/src/proposals/terminate-governed-instance.js",
-					// defaultProposalBuilder(powers, targets)
-					"defaultProposalBuilder",
-					args...,
-				)
-				if err != nil {
-					return module.VersionMap{}, err
-				}
-				CoreProposalSteps = append(CoreProposalSteps, terminationStep)
-			}
 		}
 
 		app.upgradeDetails = &upgradeDetails{

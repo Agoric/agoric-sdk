@@ -177,7 +177,7 @@ test.serial('pendingTxs in various states settled by one mint', async t => {
   });
 
   // acknowledge the new Forward attempt for sent2, ADVANCE_SKIPPED
-  const [forwardFromSkip] = inspectLocalBridge().at(-1).messages;
+  const [forwardFromSkip] = inspectLocalBridge().at(-1)!.messages;
   t.is(forwardFromSkip.token.amount, String(sent2.tx.amount));
   t.is(forwardFromSkip.sender, settlementAccount);
   await transmitVTransferEvent('acknowledgementPacket', -1);
@@ -188,7 +188,7 @@ test.serial('pendingTxs in various states settled by one mint', async t => {
   ]);
 
   // acknowledge the new Forward attempt for sent3, ADVANCE_FAILED
-  const [forwardFromFail] = inspectLocalBridge().at(-2).messages;
+  const [forwardFromFail] = inspectLocalBridge().at(-2)!.messages;
   t.is(forwardFromFail.token.amount, String(sent3.tx.amount));
   t.is(forwardFromFail.sender, settlementAccount);
   await transmitVTransferEvent('acknowledgementPacket', -2);
@@ -200,7 +200,7 @@ test.serial('pendingTxs in various states settled by one mint', async t => {
   ]);
 
   // acknowledge the Advance attempt for sent4, ADVANCING
-  const [expectedAdvancing] = inspectLocalBridge().at(-3).messages;
+  const [expectedAdvancing] = inspectLocalBridge().at(-3)!.messages;
   const split = splitFromEvidence(sent4);
   t.is(expectedAdvancing.token.amount, String(split.Principal.value));
   t.is(expectedAdvancing.sender, poolAccount);

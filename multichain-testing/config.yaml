@@ -134,7 +134,9 @@ relayers:
       - cosmoshublocal
 
 explorer:
-  enabled: false
+  enabled: true
+  ports:
+    rest: 8080
 
 registry:
   enabled: true

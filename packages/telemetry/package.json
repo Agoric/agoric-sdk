@@ -8,7 +8,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
-    "test:c8": "c8 --all $C8_OPTIONS ava",
+    "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
@@ -24,11 +24,11 @@
   "dependencies": {
     "@agoric/internal": "workspace:*",
     "@agoric/store": "workspace:*",
-    "@endo/errors": "^1.2.10",
-    "@endo/init": "^1.1.9",
-    "@endo/marshal": "^1.6.4",
-    "@endo/promise-kit": "^1.1.10",
-    "@endo/stream": "^1.2.10",
+    "@endo/errors": "^1.2.13",
+    "@endo/init": "^1.1.12",
+    "@endo/marshal": "^1.8.0",
+    "@endo/promise-kit": "^1.1.13",
+    "@endo/stream": "^1.2.13",
     "@opentelemetry/api": "~1.9.0",
     "@opentelemetry/api-logs": "0.57.1",
     "@opentelemetry/exporter-logs-otlp-http": "0.57.1",
@@ -44,8 +44,8 @@
     "tmp": "^0.2.1"
   },
   "devDependencies": {
-    "@endo/lockdown": "^1.0.15",
-    "@endo/ses-ava": "^1.2.10",
+    "@endo/lockdown": "^1.0.18",
+    "@endo/ses-ava": "^1.3.2",
     "ava": "^5.3.0",
     "c8": "^10.1.3",
     "tmp": "^0.2.1"
@@ -67,6 +67,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 88.83
+    "atLeast": 89.28
   }
 }

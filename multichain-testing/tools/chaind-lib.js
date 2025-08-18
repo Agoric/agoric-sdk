@@ -1,6 +1,11 @@
 // @ts-check
 // import { makeTracer } from '@agoric/internal';
 import assert from 'node:assert';
+import { toCLIOptions } from '@agoric/internal/src/cli-utils.js';
+
+/**Add commentMore actions
+ * @typedef {{ event: string, condition?: '=', value: string }} EventQuery
+ */
 
 // const trace = makeTracer('Agd', false);
 // Was disabled in https://github.com/Agoric/agoric-sdk/commit/b6b7c2b850e4af84fb65366b5d12196e012c41e1 so commented out the usage.
@@ -17,6 +22,10 @@ const chainToBinary = {
   noble: 'nobled',
 };
 
+/**
+ * @param {string} chainName
+ * @returns {string[]} - e.g. ['exec', '-i', 'agoriclocal-genesis-0', '-c', 'validator', '--tty=false', '--', 'agd']
+ */
 const binaryArgs = (chainName = 'agoric') => [
   'exec',
   '-i',
@@ -27,24 +36,6 @@ const binaryArgs = (chainName = 'agoric') => [
   '--',
   chainToBinary[chainName],
 ];
-
-/**
- * @param {Record<string, string | string[] | undefined>} record - e.g. { color: 'blue' }
- * @returns {string[]} - e.g. ['--color', 'blue']
- */
-export const flags = record => {
-  // TODO? support --yes with boolean?
-
-  /** @type {[string, string][]} */
-  // @ts-expect-error undefined is filtered out
-  const skipUndef = Object.entries(record).filter(([_k, v]) => v !== undefined);
-  return skipUndef.flatMap(([key, value]) => {
-    if (Array.isArray(value)) {
-      return value.flatMap(v => [`--${key}`, v]);
-    }
-    return [`--${key}`, value];
-  });
-};
 
 /**
  * @callback ExecSync
@@ -74,7 +65,10 @@ export const makeAgd = ({ execFileSync }) => {
     chainName = 'agoric',
     broadcastMode = 'block',
   } = {}) => {
-    const keyringArgs = flags({ home, 'keyring-backend': keyringBackend });
+    const keyringArgs = toCLIOptions({
+      home,
+      'keyring-backend': keyringBackend,
+    });
     if (rpcAddrs) {
       assert.equal(
         rpcAddrs.length,
@@ -82,7 +76,7 @@ export const makeAgd = ({ execFileSync }) => {
         'XXX rpcAddrs must contain only one entry',
       );
     }
-    const nodeArgs = flags({ node: rpcAddrs && rpcAddrs[0] });
+    const nodeArgs = toCLIOptions({ node: rpcAddrs && rpcAddrs[0] });
 
     /**
      * @param {string[]} args
@@ -93,18 +87,125 @@ export const makeAgd = ({ execFileSync }) => {
       opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
     ) => execFileSync(kubectlBinary, [...binaryArgs(chainName), ...args], opts);
 
-    const outJson = flags({ output: 'json' });
+    const outJson = toCLIOptions({ output: 'json' });
+
+    /** @type {Record<string, any> | undefined} */
+    let version;
+
+    /** @type {((ev: EventQuery | EventQuery[]) => string[]) | undefined} */
+    let buildEventQueryArgs;
 
     const ro = freeze({
       status: async () => JSON.parse(exec([...nodeArgs, 'status'])),
+      version: async () => {
+        if (version) {
+          return version;
+        }
+
+        // This hack (2>&1) is because some appds write version to stderr!
+        // TODO: Instead figure out reading version from chain's RPC endpoint instead of stderr (https://github.com/Agoric/agoric-sdk/issues/11496).
+        const kubectlArgs = binaryArgs(chainName);
+        const appd = kubectlArgs.pop();
+        const args = [
+          `/bin/sh`,
+          `-c`,
+          `exec ${appd} version --long --output json 2>&1`,
+        ];
+
+        console.log(`$$$`, ...args);
+        const out = execFileSync(kubectlBinary, [...kubectlArgs, ...args], {
+          encoding: 'utf-8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        const splitOutput = out.split('\n');
+        const lastLine = splitOutput.at(-1) || splitOutput.at(-2);
+
+        try {
+          assert(lastLine, 'no last line');
+          version = JSON.parse(lastLine);
+          return version;
+        } catch (e) {
+          console.error(chainName, 'version failed:', e);
+          console.info('output:', out);
+          throw e;
+        }
+      },
+      /**
+       *
+       * @param {[EventQuery, ...EventQuery[]]} eventQueries
+       * @returns {Promise<any>}
+       */
+      queryTxsByEvents: async (...eventQueries) => {
+        const doQuery = () => {
+          assert(buildEventQueryArgs, 'buildEventQueryArgs not set');
+          return ro.query([
+            'txs',
+            ...eventQueries.flatMap(buildEventQueryArgs),
+          ]);
+        };
+
+        if (buildEventQueryArgs) {
+          return doQuery();
+        }
+
+        // Default to v0.50: chaind txs --query "<QUERY>"
+        buildEventQueryArgs = evs => {
+          const evqArr = Array.isArray(evs) ? evs : [evs];
+          return [
+            '--query',
+            evqArr
+              .map(({ event, condition, value }) => {
+                if (condition !== undefined) {
+                  assert.equal(
+                    condition,
+                    '=',
+                    `condition: ${condition} unimplemented; only "=" supported`,
+                  );
+                }
+                return `${event}='${value}'`;
+              })
+              .join(' AND '),
+          ];
+        };
+
+        // Extract version from: chaind version --long -ojson
+        const version = await ro.version();
+        assert(version, `no ${chainName} version`);
+        if (version.cosmos_sdk_version.match(/^v0\.[0-4]?[0-9]\./)) {
+          // Pre v0.50.0.
+          buildEventQueryArgs = evs => {
+            const evqArr = Array.isArray(evs) ? evs : [evs];
+            return [
+              '--events',
+              evqArr
+                .map(({ event, condition, value }) => {
+                  if (condition !== undefined) {
+                    assert.equal(
+                      condition,
+                      '=',
+                      `condition: ${condition} unimplemented; only "=" supported`,
+                    );
+                  }
+                  return `${event}=${value}`;
+                })
+                .join('&'),
+            ];
+          };
+        }
+
+        return doQuery();
+      },
       /**
        * @param {| [kind: 'gov', domain: string, ...rest: any]
        *         | [kind: 'tx', txhash: string]
        *         | [mod: 'vstorage', kind: 'data' | 'children', path: string]
+       *         | [kind: 'txs', ...rest: any]
        * } qArgs
        */
       query: async qArgs => {
-        const out = exec(['query', ...qArgs, ...nodeArgs, ...outJson], {
+        const args = ['query', ...qArgs, ...nodeArgs, ...outJson];
+        console.log(`$$$ ${chainToBinary[chainName]}`, ...args);
+        const out = exec(args, {
           encoding: 'utf-8',
           stdio: ['ignore', 'pipe', 'pipe'],
         });
@@ -148,8 +249,8 @@ export const makeAgd = ({ execFileSync }) => {
           ...txArgs,
           ...nodeArgs,
           ...keyringArgs,
-          ...flags({ 'chain-id': chainId, from }),
-          ...flags({
+          ...toCLIOptions({ 'chain-id': chainId, from }),
+          ...toCLIOptions({
             'broadcast-mode': broadcastMode,
             gas: 'auto',
             'gas-adjustment': '1.4',

@@ -1,6 +1,5 @@
 import { fixupConfigRules, fixupPluginRules } from '@eslint/compat';
 import typescriptEslint from '@typescript-eslint/eslint-plugin';
-import prettier from 'eslint-plugin-prettier';
 import tsParser from '@typescript-eslint/parser';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -59,10 +58,13 @@ export default [
       '**/bundles/',
       '**/bundle-*',
       'examples/',
+      'packages/orchestration/src/vendor/',
+      'packages/orchestration/src/stubs/',
       'test262/',
       '**/*.html',
       '**/ava*.config.js',
       '**/.ava*.config.js',
+      '**/tsup.config.ts',
       'packages/cosmic-proto/proto/',
       'packages/cosmic-proto/src/codegen/',
       'packages/cosmic-proto/scripts/',
@@ -91,7 +93,6 @@ export default [
   {
     plugins: {
       '@typescript-eslint': typescriptEslint,
-      prettier,
       'require-extensions': fixupPluginRules(requireExtensions),
     },
 
@@ -173,7 +174,6 @@ export default [
         },
       ],
 
-      'prettier/prettier': 'warn',
       'no-use-before-define': 'off',
     },
   },

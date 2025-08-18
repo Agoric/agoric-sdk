@@ -8,9 +8,9 @@
   "scripts": {
     "build": "exit 0",
     "prepack": "yarn run -T tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
+    "postpack": "git clean -f '*.d.*ts*' '*.tsbuildinfo'",
     "test": "ava",
-    "test:c8": "c8 --all $C8_OPTIONS ava",
+    "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
@@ -29,13 +29,13 @@
   "dependencies": {
     "@agoric/base-zone": "workspace:*",
     "@agoric/vat-data": "workspace:*",
-    "@endo/errors": "^1.2.10",
-    "@endo/far": "^1.1.11",
-    "@endo/pass-style": "^1.5.0"
+    "@endo/errors": "^1.2.13",
+    "@endo/far": "^1.1.14",
+    "@endo/pass-style": "^1.6.3"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "workspace:*",
-    "@endo/patterns": "^1.5.0",
+    "@endo/patterns": "^1.7.0",
     "ava": "^5.3.0"
   },
   "publishConfig": {

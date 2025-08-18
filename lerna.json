@@ -8,12 +8,7 @@
       "includeMergedTags": true
     }
   },
-  "packages": [
-    "golang/cosmos",
-    "packages/*",
-    "packages/wallet/*"
-  ],
   "rejectCycles": true,
-  "useWorkspaces": true,
+  "npmClient": "yarn",
   "version": "independent"
 }

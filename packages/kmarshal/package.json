@@ -13,7 +13,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
-    "test:c8": "c8 --all $C8_OPTIONS ava",
+    "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
@@ -21,9 +21,9 @@
     "lint:eslint": "yarn run -T eslint ."
   },
   "dependencies": {
-    "@endo/errors": "^1.2.10",
-    "@endo/far": "^1.1.11",
-    "@endo/marshal": "^1.6.4"
+    "@endo/errors": "^1.2.13",
+    "@endo/far": "^1.1.14",
+    "@endo/marshal": "^1.8.0"
   },
   "devDependencies": {
     "ava": "^5.3.0"

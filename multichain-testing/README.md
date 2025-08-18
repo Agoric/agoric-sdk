@@ -43,6 +43,8 @@ You can start everything with a single command:
 make start
 # or for testing with Fast USDC
 make start FILE=config.fusdc.yaml
+# or for testing with Ymax Setup
+make start FILE=config.ymax.yaml
 ```
 
 This command will:

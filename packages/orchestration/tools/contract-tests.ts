@@ -14,7 +14,10 @@ import {
 } from '@agoric/vats';
 import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
-import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
+import {
+  prepareLocalChainTools,
+  type AdditionalTransferPowers,
+} from '@agoric/vats/src/localchain.js';
 import { prepareTransferTools } from '@agoric/vats/src/transfer.js';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
@@ -28,7 +31,7 @@ import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import { objectMap } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
-import { withChainCapabilities } from '../index.js';
+import { withChainCapabilities, type ChainInfo } from '../index.js';
 import cctpChainInfo from '../src/cctp-chain-info.js';
 import { registerKnownChains } from '../src/chain-info.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';
@@ -38,13 +41,20 @@ import { makeTestAddress } from './make-test-address.js';
 
 export const ROOT_STORAGE_PATH = 'orchtest'; // Orchetration Contract Test
 
+export interface BridgeObject {
+  type: string;
+  messages: any[];
+}
+
 /**
  * Common setup for contract tests, without any specific asset configuration.
  */
 export const setupOrchestrationTest = async ({
   log,
+  chains,
 }: {
   log: ExecutionContext<any>['log'];
+  chains?: Record<string, ChainInfo>;
 }) => {
   // The common setup cannot support a durable zone because many of the fakes are not durable.
   // They were made before we had durable kinds (and thus don't take a zone or baggage).
@@ -61,7 +71,11 @@ export const setupOrchestrationTest = async ({
   });
   // XXX real bankManager does this. fake should too?
   // TODO https://github.com/Agoric/agoric-sdk/issues/9966
-  await makeWellKnownSpaces(agoricNamesAdmin, log, ['vbankAsset']);
+  await makeWellKnownSpaces(agoricNamesAdmin, log, [
+    'installation',
+    'instance',
+    'vbankAsset',
+  ]);
 
   const vowTools = prepareSwingsetVowTools(rootZone.subZone('vows'));
 
@@ -84,26 +98,39 @@ export const setupOrchestrationTest = async ({
   finisher.useRegistry(bridgeTargetKit.targetRegistry);
   await E(transferBridge).initHandler(bridgeTargetKit.bridgeHandler);
 
-  const localBridgeLog: { obj: any; result: any }[] = [];
+  const localBridgeLog: { obj: BridgeObject; result: any }[] = [];
   const localchainBridge = makeFakeLocalchainBridge(
     rootZone,
-    (obj, result) => localBridgeLog.push({ obj, result }),
+    (obj: BridgeObject, result) => localBridgeLog.push({ obj, result }),
     makeTestAddress,
   );
   /** @returns {ReadonlyArray<any>} the input messages sent to the localchain bridge */
   const inspectLocalBridge = () =>
     harden(localBridgeLog.map(entry => entry.obj));
 
-  const localchain = prepareLocalChainTools(
+  const powersForTransfer = rootZone.weakMapStore(
+    'powersForTransfer',
+  ) as AdditionalTransferPowers;
+  const makeLocalChain = prepareLocalChainTools(
     rootZone.subZone('localchain'),
-    vowTools,
-  ).makeLocalChain({
+    {
+      ...vowTools,
+      powersForTransfer,
+    },
+  );
+  const localchain = makeLocalChain({
     bankManager,
     system: localchainBridge,
     transfer: transferMiddleware,
   });
+  powersForTransfer.init(
+    transferMiddleware,
+    harden({ transferBridgeManager: transferBridge }),
+  );
+
   const timer = buildZoeManualTimer(log);
-  const marshaller = makeFakeBoard().getPublishingMarshaller();
+  const board = makeFakeBoard();
+  const marshaller = board.getPublishingMarshaller();
   const storage = makeFakeStorageKit(ROOT_STORAGE_PATH);
 
   const { portAllocator, setupIBCProtocol, ibcBridge } = setupFakeNetwork(
@@ -120,17 +147,21 @@ export const setupOrchestrationTest = async ({
     portAllocator,
   });
 
-  await registerKnownChains(agoricNamesAdmin, () => {});
+  const chainsToRegister = chains || undefined;
+  await registerKnownChains(agoricNamesAdmin, () => {}, chainsToRegister);
 
+  type TransferMessageInfo = {
+    message: MsgTransfer;
+    sequence: bigint;
+  };
   /**
    * Find the Nth outgoing MsgTransfer and its sequence number from the localchain bridge log.
    * @param index 0-based index from the start, or negative index from the end.
-   * @returns The MsgTransfer message and its sequence number.
+   * @returns {TransferMessageInfo} The MsgTransfer message and its sequence number.
    * @throws If index is out of bounds or sequence is not found in the log result.
    */
   const outgoingTransferAt = (index: number) => {
-    const transferMessagesInfo: { message: MsgTransfer; sequence: bigint }[] =
-      [];
+    const transferMessagesInfo: TransferMessageInfo[] = [];
     const isRelevant = ({ obj, result }) =>
       obj.type === 'VLOCALCHAIN_EXECUTE_TX' &&
       obj.messages &&
@@ -242,6 +273,7 @@ export const setupOrchestrationTest = async ({
       agoricNames,
       agoricNamesAdmin,
       bankManager,
+      board,
       timer,
       localchain,
       cosmosInterchainService,

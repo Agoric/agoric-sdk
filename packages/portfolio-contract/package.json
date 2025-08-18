@@ -2,14 +2,14 @@
   "name": "@aglocal/portfolio-contract",
   "private": true,
   "version": "0.1.0",
-  "description": "Dapp to manage a portfolio of stables",
+  "description": "portfolio-contract aka ymax0 or YMax Proof of Concept (PoC)",
   "type": "module",
   "files": [
     "src",
     "tools"
   ],
   "scripts": {
-    "build": "exit 0",
+    "build": "echo see ../portfolio-deploy; exit 0",
     "test": "ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
@@ -21,13 +21,13 @@
   "devDependencies": {
     "@agoric/ertp": "workspace:*",
     "@agoric/fast-usdc": "workspace:*",
+    "@agoric/portfolio-api": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
-    "@agoric/vow": "workspace:*",
     "@agoric/zoe": "workspace:*",
     "@agoric/zone": "workspace:*",
-    "@endo/init": "^1.1.9",
-    "@endo/nat": "^5.1.0",
-    "@endo/promise-kit": "^1.1.10",
+    "@endo/init": "^1.1.12",
+    "@endo/nat": "^5.1.3",
+    "@endo/promise-kit": "^1.1.13",
     "@fast-check/ava": "^2.0.1",
     "ava": "^5.3.0",
     "c8": "^10.1.3",
@@ -37,11 +37,14 @@
     "@agoric/cosmic-proto": "workspace:*",
     "@agoric/internal": "workspace:*",
     "@agoric/orchestration": "workspace:*",
+    "@agoric/time": "workspace:*",
     "@agoric/vats": "workspace:*",
-    "@endo/errors": "^1.2.10",
-    "@endo/far": "^1.1.11",
-    "@endo/pass-style": "^1.5.0",
-    "@endo/patterns": "^1.5.0"
+    "@agoric/vow": "workspace:*",
+    "@endo/base64": "^1.0.12",
+    "@endo/errors": "^1.2.13",
+    "@endo/far": "^1.1.14",
+    "@endo/pass-style": "^1.6.3",
+    "@endo/patterns": "^1.7.0"
   },
   "ava": {
     "extensions": {
@@ -59,5 +62,8 @@
       "@endo/init/debug.js"
     ],
     "timeout": "20m"
+  },
+  "typeCoverage": {
+    "atLeast": 96.46
   }
 }

@@ -2,7 +2,8 @@
 
 import test from 'ava';
 
-import { bankSend, GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
+import { GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
+import { bankSend } from './test-lib/psm-lib.js';
 import {
   makeGovernanceDriver,
   runCommitteeElectionParamChange,
@@ -136,7 +137,7 @@ test.serial(
     const brands = Object.fromEntries(brand);
 
     const params = {
-      PerAccountInitialAmount: { brand: brands.IST, value: 100_000n },
+      PerAccountInitialAmount: { brand: brands.BLD, value: 100_000n },
     };
     const instanceName = 'provisionPool';
 
@@ -191,7 +192,7 @@ test.serial(
     const brands = Object.fromEntries(brand);
 
     const params = {
-      PerAccountInitialAmount: { brand: brands.IST, value: 300_000n },
+      PerAccountInitialAmount: { brand: brands.BLD, value: 300_000n },
     };
     const instanceName = 'provisionPool';
 
@@ -216,48 +217,53 @@ test.serial(
 );
 
 test.serial('Governance proposals history is visible', async t => {
-  /*
-   * List ordered from most recent to earliest of Economic Committee
-   * parameter changes proposed prior to the execution of this test.
+  /**
+   * Chronologically ascending parameters changed by Economic Committee
+   * governance prior to execution of this test.
    *
    * XXX a dynamic solution should replace this hardcoded list to ensure
    * the acceptance tests scalability
    */
   const expectedParametersChanges = [
-    ['PerAccountInitialAmount'], // z:acceptance/governance.test.js
-    ['ChargingPeriod'], // z:acceptance/governance.test.js
-    ['DebtLimit'], // z:acceptance/vaults.test.js
-    ['GiveMintedFee', 'MintLimit', 'WantMintedFee'], // z:acceptance/psm.test.js
-    ['DebtLimit'], // z:acceptance/scripts/test-vaults.mts
-    ['ClockStep', 'PriceLockPeriod', 'StartFrequency'], // z:acceptance/scripts/test-vaults.mts
-    ['DebtLimit'], // agoric-3-proposals/proposals/34:upgrade-10/performActions.js
     ['ClockStep', 'PriceLockPeriod', 'StartFrequency'], // agoric-3-proposals/proposals/34:upgrade-10/performActions.js
+    ['DebtLimit'], // agoric-3-proposals/proposals/34:upgrade-10/performActions.js
+    ['MintLimit'], // agoric-3-proposals/proposals/92:reset-psm-mintlimit/submission/psm-gov-reset.js
+    ['ClockStep', 'PriceLockPeriod', 'StartFrequency'], // z:acceptance/scripts/test-vaults.mts
+    ['DebtLimit'], // z:acceptance/scripts/test-vaults.mts
+    ['GiveMintedFee', 'MintLimit', 'WantMintedFee'], // z:acceptance/psm.test.js
+    ['DebtLimit'], // z:acceptance/vaults.test.js
+    ['ChargingPeriod'], // z:acceptance/governance.test.js
+    ['PerAccountInitialAmount'], // z:acceptance/governance.test.js
+    ['PerAccountInitialAmount'], // z:acceptance/governance.test.js
   ];
 
   // history of Economic Committee parameters changes proposed since block height 0
-  const history = await governanceDriver.getLatestQuestionHistory();
+  const history = (await governanceDriver.getLatestQuestionHistory()).reverse();
   t.true(
     history.length > 0,
     'published.committees.Economic_Committee.latestQuestion node should not be empty',
   );
 
-  const changedParameters = history.map(changes => Object.keys(changes));
+  const actualParametersChanges = history.map(changes => Object.keys(changes));
 
-  /*
-   * In case you see the error message bellow and you
-   * executed an VoteOnParamChange offer prior to this test,
-   * please make sure to update the expectedParametersChanges list.
-   */
   if (
-    !(
-      JSON.stringify(changedParameters) ===
-      JSON.stringify(expectedParametersChanges)
-    )
+    JSON.stringify(actualParametersChanges) ===
+    JSON.stringify(expectedParametersChanges)
   ) {
-    console.error(
-      `ERROR: Economic_Committee parameters changes history does not match with the expected list`,
-    );
-    t.log('Economic_Committee parameters changes history: ', changedParameters);
-    t.log('Expected parameters changes history: ', expectedParametersChanges);
+    return;
   }
+
+  t.log(
+    'Economic_Committee parameters changes actual history:',
+    actualParametersChanges.map(params => params.join(', ')),
+  );
+  t.log(
+    'Economic_Committee parameters changes expected history:',
+    expectedParametersChanges.map(params => params.join(', ')),
+  );
+  // If you see the below message and executed a contract governance parameter
+  // change prior to this test, update expectedParametersChanges accordingly.
+  t.fail(
+    'Economic_Committee parameters changes history must match expectations',
+  );
 });

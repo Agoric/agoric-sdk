@@ -13,10 +13,10 @@
   ],
   "scripts": {
     "build": "exit 0",
-    "prepack": "tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
+    "prepack": "yarn run -T tsc --build tsconfig.build.json",
+    "postpack": "git clean -f '*.d.*ts*' '*.tsbuildinfo'",
     "test": "ava",
-    "test:c8": "c8 --all $C8_OPTIONS ava",
+    "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
@@ -35,15 +35,15 @@
     "@agoric/internal": "workspace:*",
     "@agoric/smart-wallet": "workspace:*",
     "@agoric/vats": "workspace:*",
-    "@cosmjs/stargate": "^0.33.0",
-    "@cosmjs/tendermint-rpc": "^0.33.0",
-    "@endo/base64": "^1.0.9",
-    "@endo/common": "^1.2.10",
-    "@endo/errors": "^1.2.10",
-    "@endo/marshal": "^1.6.4",
-    "@endo/pass-style": "^1.5.0",
-    "@endo/patterns": "^1.5.0",
-    "@endo/promise-kit": "^1.1.10"
+    "@cosmjs/stargate": "^0.36.0",
+    "@cosmjs/tendermint-rpc": "^0.36.0",
+    "@endo/base64": "^1.0.12",
+    "@endo/common": "^1.2.13",
+    "@endo/errors": "^1.2.13",
+    "@endo/marshal": "^1.8.0",
+    "@endo/pass-style": "^1.6.3",
+    "@endo/patterns": "^1.7.0",
+    "@endo/promise-kit": "^1.1.13"
   },
   "ava": {
     "extensions": {
@@ -61,5 +61,8 @@
       "@endo/init/legacy.js"
     ],
     "timeout": "20m"
+  },
+  "typeCoverage": {
+    "atLeast": 93.39
   }
 }
