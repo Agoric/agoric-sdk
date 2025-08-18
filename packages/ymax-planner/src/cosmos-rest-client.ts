@@ -3,6 +3,11 @@ import type { QueryAllBalancesResponse } from '@agoric/cosmic-proto/cosmos/bank/
 import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import ky, { HTTPError, type KyInstance } from 'ky';
 
+import { chain as nobleMain } from 'chain-registry/mainnet/noble/index.js';
+import { chain as agoricMain } from 'chain-registry/mainnet/agoric/index.js';
+import { chain as nobleTest } from 'chain-registry/testnet/nobletestnet/index.js';
+import { chain as agoricTest } from 'chain-registry/testnet/agoricdevnet/index.js'; // agoricdev was named before testnets were a thing
+
 interface CosmosRestClientConfig {
   agoricNetwork?: string;
   timeout?: number;
@@ -21,31 +26,30 @@ interface ChainConfig {
   name: string;
 }
 
-// TODO get from an SDK package
-// Predefined chain configurations
+// transformation of subset of chain-registry
 const CHAIN_CONFIGS: Record<string, Record<string, ChainConfig>> = {
   main: {
     noble: {
-      chainId: 'noble-1',
-      restEndpoint: 'https://noble-api.polkachu.com',
-      name: 'Noble',
+      chainId: nobleMain.chainId!,
+      restEndpoint: nobleMain.apis!.rest![0].address,
+      name: nobleMain.prettyName!,
     },
     agoric: {
-      chainId: 'agoric-3',
-      restEndpoint: 'https://main.api.agoric.net',
-      name: 'Agoric',
+      chainId: agoricMain.chainId!,
+      restEndpoint: agoricMain.apis!.rest![0].address,
+      name: agoricMain.prettyName!,
     },
   },
-  devnet: {
+  testnet: {
     noble: {
-      chainId: 'grand-1',
-      restEndpoint: 'https://noble-testnet-api.polkachu.com:443',
-      name: 'Noble',
+      chainId: nobleTest.chainId!,
+      restEndpoint: nobleTest.apis!.rest![0].address,
+      name: nobleTest.prettyName!,
     },
     agoric: {
-      chainId: 'agoricdev-25',
-      restEndpoint: 'https://devnet.api.agoric.net',
-      name: 'Agoric',
+      chainId: agoricTest.chainId!,
+      restEndpoint: agoricTest.apis!.rest![0].address,
+      name: agoricTest.prettyName!,
     },
   },
 };
@@ -74,7 +78,7 @@ export class CosmosRestClient {
       throw new Error('`fetch` and `setTimeout` are required');
     }
 
-    this.agoricNetwork = config.agoricNetwork ?? 'devnet';
+    this.agoricNetwork = config.agoricNetwork ?? 'testnet';
     this.log = io.log ?? (() => {});
     this.timeout = config.timeout ?? 10000; // 10s timeout
     this.retries = config.retries ?? 3;

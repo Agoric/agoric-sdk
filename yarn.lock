@@ -307,6 +307,7 @@ __metadata:
     "@types/node": "npm:^22.10.2"
     "@types/ws": "npm:^8"
     ava: "npm:^6.3.0"
+    chain-registry: "npm:^2.0.44"
     dotenv: "npm:^17.2.1"
     json-rpc-2.0: "npm:^1.7.1"
     ky: "npm:^1.4.0"
@@ -3030,6 +3031,13 @@ __metadata:
   version: 0.50.194
   resolution: "@chain-registry/types@npm:0.50.194"
   checksum: 10c0/dab4f8762ca4280f7447820a9a02c088aa24cda3466675e99ea5c8564873cb0ab59beebecb526bd16ac38e57e8cca5f77d96d10ee52f9abc1ce70bba48e089b0
+  languageName: node
+  linkType: hard
+
+"@chain-registry/types@npm:^2.0.44":
+  version: 2.0.44
+  resolution: "@chain-registry/types@npm:2.0.44"
+  checksum: 10c0/3e84fe0730af01a727e955486628c3b0fdca85b582af023baeed376d16302dfdc2cea3edd2294a287fc475fe7a267f43fc7d6b59f3b680d694764edbdc3c8cca
   languageName: node
   linkType: hard
 
@@ -7733,6 +7741,15 @@ __metadata:
   dependencies:
     nofilter: "npm:^3.1.0"
   checksum: 10c0/a836e2e7ea0efb1b9c4e5a4be906c57113d730cc42293a34072e0164ed110bb8ac035dc7dca2e3ebb641bd4b37e00fdbbf09c951aa864b3d4888a6ed8c6243f7
+  languageName: node
+  linkType: hard
+
+"chain-registry@npm:^2.0.44":
+  version: 2.0.44
+  resolution: "chain-registry@npm:2.0.44"
+  dependencies:
+    "@chain-registry/types": "npm:^2.0.44"
+  checksum: 10c0/15e45386b8a314150f2e66294f9493232e858bbcc667ec59d0a389d983e349351670d7c08171205e33a97d0e3a6edc93784ee014dd8791478b83e5d2371249ea
   languageName: node
   linkType: hard
 

@@ -54,6 +54,7 @@
     "@endo/pass-style": "^1.6.3",
     "@endo/patterns": "^1.7.0",
     "@endo/promise-kit": "^1.1.13",
+    "chain-registry": "^2.0.44",
     "dotenv": "^17.2.1",
     "json-rpc-2.0": "^1.7.1",
     "ky": "^1.4.0",
