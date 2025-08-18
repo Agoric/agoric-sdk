@@ -97,7 +97,7 @@
     "lint:scripts": "yarn eslint scripts/*js",
     "test": "yarn lerna run --no-bail test",
     "test:xs": "yarn workspaces foreach --all run test:xs",
-    "build": "yarn workspaces foreach --all run build && scripts/agd-builder.sh stamp yarn-built",
+    "build": "yarn workspaces foreach --all --topological run build && scripts/agd-builder.sh stamp yarn-built",
     "postinstall": "scripts/agd-builder.sh stamp yarn-installed",
     "build-lockfiles": "./scripts/update-package-locks.sh",
     "build-ts": "tsc --build tsconfig.build.json",
