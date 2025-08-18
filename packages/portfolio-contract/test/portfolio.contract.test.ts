@@ -904,6 +904,39 @@ const getCapDataStructure = cell => {
   return { structure, slots };
 };
 
+test('start deposit more to same', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const targetAllocation = {
+    USDN: 60n,
+    Aave_Arbitrum: 40n,
+  };
+  await trader1.openPortfolio(
+    t,
+    { Access: poc26.make(1n) },
+    { targetAllocation },
+  );
+
+  const amount = usdc.units(3_333.33);
+  const actualP = trader1.rebalance(
+    t,
+    { give: { Deposit: amount }, want: {} },
+    {
+      flow: [{ src: '<Deposit>', dest: '+agoric', amount }],
+    },
+  );
+
+  const actual = await actualP;
+  const result = actual.result as any;
+
+  const info = await trader1.getPortfolioStatus();
+  t.deepEqual(
+    info.depositAddress,
+    'agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g',
+  );
+});
+
 test('redeem planner invitation', async t => {
   const { common, zoe, started, trader1 } = await setupTrader(t);
 
