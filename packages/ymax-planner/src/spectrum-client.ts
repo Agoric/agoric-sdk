@@ -1,6 +1,8 @@
 /* eslint-disable max-classes-per-file */
 import ky, { HTTPError, type KyInstance } from 'ky';
 
+// XXX undocumented REST API
+// TODO use the documented GraphQL API https://spectrumnodes.gitbook.io/docs/developer-guides/apis/pools-api
 const BASE_URL = 'https://pools-api.spectrumnodes.com';
 
 // XXX refactor using portfolio-contract/type-guards.ts?
