@@ -93,7 +93,11 @@ export class CosmosRPCClient extends JSONRPCClient {
    * Query syntax: https://pkg.go.dev/github.com/cometbft/cometbft@v1.0.1/libs/pubsub/query/syntax
    * List of events: https://pkg.go.dev/github.com/cometbft/cometbft/types#pkg-constants
    */
-  async *subscribeAll(queries: string[]) {
+  async *subscribeAll(queries: string[]): AsyncGenerator<{
+    query: string;
+    data: { type: string; value: Record<string, unknown> };
+    events?: Record<string, unknown>;
+  }> {
     const newQueries = new Set(queries);
     if (newQueries.size < 1) {
       throw new Error(`No new subscriptions: ${queries.join(', ')}`);
@@ -107,7 +111,7 @@ export class CosmosRPCClient extends JSONRPCClient {
 
     type Cell = { head: JSONRPCResponse; tail: Promise<Cell> };
     let lastPK = Promise.withResolvers<Cell>();
-    let nextCell: Promise<Cell> = lastPK.promise;
+    let nextCell = lastPK.promise;
 
     const subscriptionKits = [...newQueries.keys()].map(query => {
       const subP = this.request('subscribe', { query });
@@ -117,31 +121,38 @@ export class CosmosRPCClient extends JSONRPCClient {
         this.#subscriptions.delete(subId);
         void this.request('unsubscribe', { query });
       };
-      let isFirstResponse = true;
+      const readyKit = {
+        isSettled: false,
+        ...Promise.withResolvers<undefined>(),
+      };
       this.#subscriptions.set(subId, {
         query,
         notified: (response: JSONRPCResponse) => {
           // Ignore an initial empty-result response.
-          if (isFirstResponse) {
-            isFirstResponse = false;
+          if (!readyKit.isSettled) {
+            readyKit.isSettled = true;
             if (response.error) {
+              readyKit.reject(response.error);
               lastPK.reject(response.error);
               return;
             }
+            readyKit.resolve(undefined);
             if (!hasOwnProperties(response.result)) return;
           }
           // console.log('notified for query:', query, response);
           const thisPK = lastPK;
-          lastPK = Promise.withResolvers<Cell>();
+          lastPK = Promise.withResolvers();
           thisPK.resolve({ head: response, tail: lastPK.promise });
         },
         unsubscribe,
       });
-      return { promise: subP, unsubscribe };
+      return { promise: Promise.all([subP, readyKit.promise]), unsubscribe };
     });
 
     // console.log(`Awaiting subscription responses for queries:`, subscriptionKits);
     await Promise.all(subscriptionKits.map(kit => kit.promise));
+    // @ts-expect-error indicate readiness with an initial `undefined` result
+    yield undefined;
 
     // console.log('wait forever?');
     try {

@@ -340,6 +340,19 @@ export const startEngine = async ({
     agoricInfo,
   );
 
+  // To avoid data gaps, establish subscriptions before gathering initial state.
+  const eventFilters = [
+    // vstorage events are in BEGIN_BLOCK/END_BLOCK activity
+    "tm.event = 'NewBlockHeader'",
+    // transactions
+    "tm.event = 'Tx'",
+  ];
+  const eventResponses = rpc.subscribeAll(eventFilters);
+  const firstResult = await eventResponses.next();
+  (firstResult.done === false && firstResult.value === undefined) ||
+    Fail`Unexpected ready signal ${firstResult}`;
+  // console.log('subscribed to events', eventFilters);
+
   // TODO: verify consumption of paginated data.
   const portfolioKeys = await vstorageKit.vstorage.keys(VSTORAGE_PATH_PREFIX);
   const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
@@ -355,17 +368,8 @@ export const startEngine = async ({
 
   try {
     // console.warn('consuming events');
-    const responses = rpc.subscribeAll([
-      // vstorage events are in BEGIN_BLOCK/END_BLOCK activity
-      "tm.event = 'NewBlockHeader'",
-      // transactions
-      "tm.event = 'Tx'",
-    ]);
-    for await (const {
-      query: _query,
-      data: resp,
-      events: respEvents,
-    } of responses) {
+    for await (const respContainer of eventResponses) {
+      const { query: _query, data: resp, events: respEvents } = respContainer;
       const { type, value: respData } = resp;
       if (!respEvents) {
         console.warn('missing events', type);
@@ -444,10 +448,10 @@ export const startEngine = async ({
       // Detect activity against portfolio deposit addresses.
       const addrsWithActivity: Bech32Address[] = [
         ...new Set([
-          ...(respEvents['coin_received.receiver'] || []),
-          ...(respEvents['coin_spent.spender'] || []),
-          ...(respEvents['transfer.recipient'] || []),
-          ...(respEvents['transfer.sender'] || []),
+          ...((respEvents['coin_received.receiver'] as Bech32Address[]) || []),
+          ...((respEvents['coin_spent.spender'] as Bech32Address[]) || []),
+          ...((respEvents['transfer.recipient'] as Bech32Address[]) || []),
+          ...((respEvents['transfer.sender'] as Bech32Address[]) || []),
         ]),
       ];
       const depositAddrsWithActivity = new Map(
