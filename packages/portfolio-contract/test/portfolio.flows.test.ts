@@ -909,4 +909,23 @@ test('Engine can move deposits +agoric -> @agoric', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
+test('client can move to deposit LCA', async t => {
+  const { orch, ctx, offer, storage } = mocks({}, {});
+  const { log, seat } = offer;
+
+  const amount = AmountMath.make(USDC, 300n);
+  const kit = await ctx.makePortfolioKit();
+
+  await rebalance(
+    orch,
+    ctx,
+    offer.seat,
+    { flow: [{ src: '<Deposit>', dest: '+agoric', amount }] },
+    kit,
+  );
+  t.like(log, [{ _method: 'monitorTransfers' }, { _method: 'localTransfer' }]);
+  t.snapshot(log, 'call log'); // see snapshot for remaining arg details
+  await documentStorageSchema(t, storage, docOpts);
+});
+
 test.todo('recover from send step');
