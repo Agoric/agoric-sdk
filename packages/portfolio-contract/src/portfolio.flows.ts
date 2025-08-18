@@ -318,8 +318,8 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
     }
 
     case 'seat':
-      getAssetPlaceRefKind(dest) === 'accountId' || // XXX check for agoric
-        Fail`src seat must have account as dest ${q(moveDesc)}`;
+      ['@agoric', '+agoric'].includes(dest) ||
+        Fail`src seat must have agoric account as dest ${q(moveDesc)}`;
       return { how: 'localTransfer' };
 
     case 'depositAddr':
@@ -456,17 +456,22 @@ const stepFlow = async (
           ...('GmpFee' in give ? { GmpFee: give.GmpFee } : {}),
         });
         todo.push(async () => {
-          const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
+          const { lca, lcaIn } = await provideCosmosAccount(
+            orch,
+            'agoric',
+            kit,
+          );
+          const account = move.dest === '+agoric' ? lcaIn : lca;
           return {
             how: 'localTransfer',
             src: { seat, keyword: 'Deposit' },
-            dest: { account: lca },
+            dest: { account },
             amount, // XXX use amounts.Deposit
             apply: async () => {
-              await ctx.zoeTools.localTransfer(seat, lca, amounts);
+              await ctx.zoeTools.localTransfer(seat, account, amounts);
             },
             recover: async () => {
-              await ctx.zoeTools.withdrawToSeat(lca, seat, amounts);
+              await ctx.zoeTools.withdrawToSeat(account, seat, amounts);
             },
           };
         });
@@ -505,7 +510,9 @@ const stepFlow = async (
             src: { account: lcaIn },
             dest: { account: lca },
             apply: () => lcaIn.send(lca.getAddress(), amount),
-            recover: () => lca.send(lcaIn.getAddress(), amount),
+            recover: async () => {
+              trace('recover send is noop; not sending back to deposit LCA');
+            },
           };
         });
         break;
