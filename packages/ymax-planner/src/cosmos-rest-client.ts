@@ -1,4 +1,6 @@
 /* eslint-disable max-classes-per-file */
+import type { QueryAllBalancesResponse } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import ky, { HTTPError, type KyInstance } from 'ky';
 
 interface CosmosRestClientConfig {
@@ -17,19 +19,6 @@ interface ChainConfig {
   chainId: string;
   restEndpoint: string;
   name: string;
-}
-
-interface Coin {
-  denom: string;
-  amount: string;
-}
-
-interface BalanceResponse {
-  balances: Coin[];
-  pagination?: {
-    next_key: string | null;
-    total: string;
-  };
 }
 
 // TODO get from an SDK package
@@ -120,7 +109,7 @@ export class CosmosRestClient {
     chainKey: string,
     address: string,
     pagination?: { limit?: number; offset?: number },
-  ): Promise<BalanceResponse> {
+  ): Promise<QueryAllBalancesResponse> {
     const chainConfig = this.chainConfigs.get(chainKey);
     if (!chainConfig) {
       throw new Error(
@@ -146,7 +135,7 @@ export class CosmosRestClient {
       `[CosmosRestClient] Fetching balances for ${address} on ${chainConfig.name}: ${url}`,
     );
 
-    return this.makeRequest<BalanceResponse>(
+    return this.makeRequest<QueryAllBalancesResponse>(
       url,
       chainConfig,
       `Account balances for ${address} on ${chainConfig.name}`,
