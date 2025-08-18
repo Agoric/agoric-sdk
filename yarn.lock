@@ -849,7 +849,7 @@ __metadata:
     "@agoric/vow": "workspace:*"
     "@agoric/zoe": "workspace:*"
     "@agoric/zone": "workspace:*"
-    "@chain-registry/client": "npm:^1.47.4"
+    "@chain-registry/client": "npm:^1.53.194"
     "@cosmjs/amino": "npm:^0.36.0"
     "@cosmjs/encoding": "npm:^0.36.0"
     "@cosmjs/proto-signing": "npm:^0.36.0"
@@ -3020,20 +3020,27 @@ __metadata:
   linkType: hard
 
 "@chain-registry/types@npm:^0.44.4":
-  version: 0.44.4
-  resolution: "@chain-registry/types@npm:0.44.4"
-  checksum: 10c0/9ea3cd0232271c695ea148c1ee80e2a4ce7764e1696de69bc15ea2d1fb7e432c67441eedbdd3ceaac84ad933fcb23d8d1916185e40adfc518b31102aa62f51c1
+  version: 0.44.11
+  resolution: "@chain-registry/types@npm:0.44.11"
+  checksum: 10c0/55c9d5dd570fc390c30c467e109f3bdfe4e2e997651d33c768feeeee29432f2827a918003bcbbf3ae4b97d85248e6b65110f6e3a2bb62405fda563b067a933d3
+  languageName: node
+  linkType: hard
+
+"@chain-registry/types@npm:^0.50.194":
+  version: 0.50.194
+  resolution: "@chain-registry/types@npm:0.50.194"
+  checksum: 10c0/dab4f8762ca4280f7447820a9a02c088aa24cda3466675e99ea5c8564873cb0ab59beebecb526bd16ac38e57e8cca5f77d96d10ee52f9abc1ce70bba48e089b0
   languageName: node
   linkType: hard
 
 "@chain-registry/utils@npm:^1.45.4":
-  version: 1.45.4
-  resolution: "@chain-registry/utils@npm:1.45.4"
+  version: 1.51.194
+  resolution: "@chain-registry/utils@npm:1.51.194"
   dependencies:
-    "@chain-registry/types": "npm:^0.44.4"
+    "@chain-registry/types": "npm:^0.50.194"
     bignumber.js: "npm:9.1.2"
     sha.js: "npm:^2.4.11"
-  checksum: 10c0/c28e5ab6ce893108600cab5d7a758c40cf9cbfe68359d6eb93f3ebf201336c5eca13746df8700952021e44547f88679964e98ea664ee6330939c14eb78dafd85
+  checksum: 10c0/731ac26948b317c20a2a3e5cb1a86f446b5cd2327d53f0e74de3113134fd80166e3ea9b36161c41de4e0ec5370d12a62c8270aefeb21a27ef1987623d7507b47
   languageName: node
   linkType: hard
 
