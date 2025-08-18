@@ -1,5 +1,3 @@
-import { ethers } from 'ethers';
-
 const wait = async (seconds: number) => {
   return new Promise(resolve => setTimeout(resolve, seconds * 1000));
 };
@@ -302,11 +300,7 @@ export const getTxStatus = async ({
     const parsed = (await res.json()) as AxelarEventsResponse;
     data = parsed.data;
 
-    if (
-      Array.isArray(data) &&
-      data?.[0]?.executed &&
-      data?.[0]?.executed.sourceTransactionHash === params.txHash
-    ) {
+    if (Array.isArray(data) && data?.[0]?.executed) {
       console.log('✅ contract call executed', data[0].executed);
       console.log('txHash on EVM:', data[0].executed.transactionHash);
 
@@ -317,22 +311,4 @@ export const getTxStatus = async ({
     await wait(20);
   }
   return { logs: null, success: false };
-};
-
-export const extractWalletAddress = (
-  executedEvent: AxelarExecutedEvent,
-): string | null => {
-  // equivalent of keccak256("SmartWalletCreated(address,string,string,string)")
-  const walletCreatedTopic = ethers.id(
-    'SmartWalletCreated(address,string,string,string)',
-  );
-  const logs = executedEvent.receipt.logs;
-  const walletCreationLog = logs.find(
-    log => log.topics[0] === walletCreatedTopic,
-  );
-
-  if (walletCreationLog) {
-    return ethers.getAddress('0x' + walletCreationLog.topics[1].slice(26));
-  }
-  return null;
 };

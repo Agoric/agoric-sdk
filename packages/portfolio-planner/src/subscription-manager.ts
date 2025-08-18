@@ -1,12 +1,29 @@
 import type { AxelarChain } from '@aglocal/portfolio-contract/src/constants';
 import { EVM_RPC, watchCCTPMint } from './watch-cctp';
-import {
-  handleGmp,
-  type GmpArgsForCommand,
-  type GmpArgsMap,
-} from './axelar/handle-gmp';
-import type { PortfolioInstanceContext } from './axelar/gmp';
 import { JsonRpcProvider } from 'ethers';
+import { getTxStatus } from './axelar/gmp-status';
+import { resolveSubscription } from './resolver';
+import type {
+  AxelarId,
+  GmpAddresses,
+} from '@aglocal/portfolio-contract/src/portfolio.contract';
+import type { EVMContractAddressesMap } from '@aglocal/portfolio-contract/src/type-guards';
+import type { VstorageKit, SmartWalletKit } from '@agoric/client-utils';
+import type { SigningStargateClient } from '@cosmjs/stargate';
+
+export type PortfolioInstanceContext = {
+  axelarConfig: {
+    axelarIds: AxelarId;
+    contracts: EVMContractAddressesMap;
+    gmpAddresses: GmpAddresses;
+    queryApi: string;
+  };
+  rpcUrl: string;
+  stargateClient: SigningStargateClient;
+  plannerAddress: string;
+  vstorageKit: VstorageKit;
+  walletKit: SmartWalletKit;
+};
 
 type CCTPTransfer = {
   amount: number;
@@ -14,9 +31,10 @@ type CCTPTransfer = {
   receiver: string;
 };
 
-export type GmpTransfer<C extends keyof GmpArgsMap = keyof GmpArgsMap> = {
-  command: C;
-  args: GmpArgsForCommand<C>;
+export type GmpTransfer = {
+  lcaAddr: string;
+  destinationChain: AxelarId;
+  contractAddress: string;
 };
 
 type BaseSubscription = {
@@ -67,9 +85,33 @@ export const handleSubscription = async (
 
     case 'gmp': {
       const { data, subscriptionId } = subscription;
-      await handleGmp(ctx, data.command, data.args);
-      console.log(`TODO: resolve ${subscriptionId}`);
-      break;
+      const res = await getTxStatus({
+        url: ctx.axelarConfig.queryApi,
+        fetch,
+        params: {
+          sourceChain: 'agoric',
+          destinationChain: data.destinationChain as unknown as string,
+          contractAddress: data.contractAddress,
+        },
+      });
+      if (!res.success) {
+        throw Error('deployment of funds not successful');
+      }
+      // TODO: Resolve the actual subscription id based on implementation in https://github.com/Agoric/agoric-sdk/issues/11709
+      await resolveSubscription({
+        walletKit: ctx.walletKit,
+        vstorageKit: ctx.vstorageKit,
+        stargateClient: ctx.stargateClient,
+        address: ctx.plannerAddress,
+        offerArgs: {
+          vPath: 'portfolio1',
+          vData: {
+            pendingCCTPTransfers: {
+              status: 'completed',
+            },
+          },
+        },
+      });
     }
     default: {
       throw Error('invalid subscription type');
