@@ -29,6 +29,7 @@ interface BalanceResponse {
   };
 }
 
+// TODO get from an SDK package
 // Predefined chain configurations
 const CHAIN_CONFIGS: Record<string, Record<string, ChainConfig>> = {
   main: {
