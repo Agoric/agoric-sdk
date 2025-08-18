@@ -89,24 +89,22 @@ export class CosmosRPCClient extends JSONRPCClient {
   }
 
   async *subscribeAll(queries: string[]) {
+    const newQueries = new Set(queries);
+    if (newQueries.size < 1) {
+      throw new Error(`No new subscriptions: ${queries.join(', ')}`);
+    }
+    const currentQueriesCount = this.#subscriptions.size;
+    if (currentQueriesCount + newQueries.size > MAX_SUBSCRIPTIONS) {
+      throw new Error(
+        `Too many subscriptions: existing ${currentQueriesCount} + new ${newQueries.size} exceeds RPC client limit of ${MAX_SUBSCRIPTIONS}`,
+      );
+    }
+
     type Cell = { head: JSONRPCResponse; tail: Promise<Cell> };
     let lastPK = Promise.withResolvers<Cell>();
     let nextCell: Promise<Cell> = lastPK.promise;
 
-    const newQueriesSet = new Set(queries);
-    if (newQueriesSet.size === 0) {
-      throw new Error(`No new queries to subscribe to: ${queries.join(', ')}`);
-    }
-
-    const currentQueriesCount = this.#subscriptions.size;
-    const totalQueries = newQueriesSet.size + currentQueriesCount;
-    if (totalQueries > MAX_SUBSCRIPTIONS) {
-      throw new Error(
-        `Too many subscriptions: new ${newQueriesSet.size} + existing ${currentQueriesCount} exceeds RPC client limit of ${MAX_SUBSCRIPTIONS}`,
-      );
-    }
-
-    const qs = [...newQueriesSet.keys()].map(query => {
+    const qs = [...newQueries.keys()].map(query => {
       const subP = this.request('subscribe', { query });
       const subId = this.#lastSentId;
       // console.log(`Subscribing to query "${query}" with ID ${subId}`);
