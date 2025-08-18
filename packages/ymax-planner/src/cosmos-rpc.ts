@@ -88,6 +88,11 @@ export class CosmosRPCClient extends JSONRPCClient {
     return this.subscribeAll([query]);
   }
 
+  /**
+   * Websocket documentation: https://docs.cometbft.com/v1.0/explanation/core/subscription
+   * Query syntax: https://pkg.go.dev/github.com/cometbft/cometbft@v1.0.1/libs/pubsub/query/syntax
+   * List of events: https://pkg.go.dev/github.com/cometbft/cometbft/types#pkg-constants
+   */
   async *subscribeAll(queries: string[]) {
     const newQueries = new Set(queries);
     if (newQueries.size < 1) {
@@ -104,10 +109,10 @@ export class CosmosRPCClient extends JSONRPCClient {
     let lastPK = Promise.withResolvers<Cell>();
     let nextCell: Promise<Cell> = lastPK.promise;
 
-    const qs = [...newQueries.keys()].map(query => {
+    const subscriptionKits = [...newQueries.keys()].map(query => {
       const subP = this.request('subscribe', { query });
       const subId = this.#lastSentId;
-      // console.log(`Subscribing to query "${query}" with ID ${subId}`);
+      // console.log(`Subscribing to query ${JSON.stringify(query)} with ID ${subId}`);
       const unsubscribe = () => {
         this.#subscriptions.delete(subId);
         void this.request('unsubscribe', { query });
@@ -132,11 +137,11 @@ export class CosmosRPCClient extends JSONRPCClient {
         },
         unsubscribe,
       });
-      return { subP, unsubscribe };
+      return { promise: subP, unsubscribe };
     });
 
-    // console.log(`Awaiting subscription responses for queries:`, qs);
-    await Promise.all(qs.map(({ subP }) => subP));
+    // console.log(`Awaiting subscription responses for queries:`, subscriptionKits);
+    await Promise.all(subscriptionKits.map(kit => kit.promise));
 
     // console.log('wait forever?');
     try {
@@ -155,7 +160,7 @@ export class CosmosRPCClient extends JSONRPCClient {
       console.error('Subscription error:', error);
       lastPK.reject(error);
     } finally {
-      for (const { unsubscribe } of qs) {
+      for (const { unsubscribe } of subscriptionKits) {
         unsubscribe();
       }
     }
