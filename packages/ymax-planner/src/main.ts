@@ -62,25 +62,30 @@ export const main = async (
   console.warn(`Using:`, { networkConfig, plannerAddress });
 
   const { SPECTRUM_API_URL, SPECTRUM_API_TIMEOUT, SPECTRUM_API_RETRIES } = env;
-  const spectrum = new SpectrumClient({
-    fetch,
-    setTimeout,
-    baseUrl: SPECTRUM_API_URL,
-    timeout: SPECTRUM_API_TIMEOUT
-      ? parseInt(SPECTRUM_API_TIMEOUT, 10)
-      : undefined,
-    retries: SPECTRUM_API_RETRIES
-      ? parseInt(SPECTRUM_API_RETRIES, 10)
-      : undefined,
-  });
+  const spectrum = new SpectrumClient(
+    { fetch, setTimeout },
+    {
+      baseUrl: SPECTRUM_API_URL,
+      timeout: SPECTRUM_API_TIMEOUT
+        ? parseInt(SPECTRUM_API_TIMEOUT, 10)
+        : undefined,
+      retries: SPECTRUM_API_RETRIES
+        ? parseInt(SPECTRUM_API_RETRIES, 10)
+        : undefined,
+    },
+  );
 
-  const cosmosRest = new CosmosRestClient({
-    fetch,
-    setTimeout,
-    agoricNetwork: env.AGORIC_NET || 'local',
-    timeout: 15000, // 15s timeout for REST calls
-    retries: 3,
-  });
+  const cosmosRest = new CosmosRestClient(
+    {
+      fetch,
+      setTimeout,
+    },
+    {
+      agoricNetwork: env.AGORIC_NET || 'local',
+      timeout: 15000, // 15s timeout for REST calls
+      retries: 3,
+    },
+  );
 
   await startEngine({
     rpc,

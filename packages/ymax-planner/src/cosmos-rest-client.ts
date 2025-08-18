@@ -2,13 +2,15 @@
 import ky, { HTTPError, type KyInstance } from 'ky';
 
 interface CosmosRestClientConfig {
-  fetch: typeof fetch;
-  setTimeout: typeof setTimeout;
-
   agoricNetwork?: string;
-  log?: (...args: unknown[]) => void;
   timeout?: number;
   retries?: number;
+}
+
+interface CosmosRestClientPowers {
+  fetch: typeof fetch;
+  log?: (...args: unknown[]) => void;
+  setTimeout: typeof setTimeout;
 }
 
 interface ChainConfig {
@@ -76,15 +78,15 @@ export class CosmosRestClient {
 
   private readonly http: KyInstance;
 
-  constructor(config: CosmosRestClientConfig = {} as any) {
-    this.fetch = config.fetch;
-    this.setTimeout = config.setTimeout;
+  constructor(io: CosmosRestClientPowers, config: CosmosRestClientConfig = {}) {
+    this.fetch = io.fetch;
+    this.setTimeout = io.setTimeout;
     if (!this.fetch || !this.setTimeout) {
       throw new Error('`fetch` and `setTimeout` are required');
     }
 
     this.agoricNetwork = config.agoricNetwork ?? 'devnet';
-    this.log = config.log ?? (() => {});
+    this.log = io.log ?? (() => {});
     this.timeout = config.timeout ?? 10000; // 10s timeout
     this.retries = config.retries ?? 3;
 
@@ -226,9 +228,11 @@ export class CosmosRestClient {
         );
       }
       const e = err as Error;
-      throw new CosmosApiError(`Failed to fetch ${context}: ${e.message}`,
-        { statusCode: 0, chainId: chainConfig.chainId, url },
-      );
+      throw new CosmosApiError(`Failed to fetch ${context}: ${e.message}`, {
+        statusCode: 0,
+        chainId: chainConfig.chainId,
+        url,
+      });
     }
   }
 }

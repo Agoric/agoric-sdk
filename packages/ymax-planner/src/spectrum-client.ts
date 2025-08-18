@@ -30,13 +30,15 @@ interface PoolBalanceResponse {
 }
 
 interface SpectrumClientConfig {
-  fetch: typeof fetch;
-  setTimeout: typeof setTimeout;
-
   baseUrl?: string;
-  log?: (...args: unknown[]) => void;
   timeout?: number;
   retries?: number;
+}
+
+interface SpectrumClientPowers {
+  fetch: typeof fetch;
+  setTimeout: typeof setTimeout;
+  log?: (...args: unknown[]) => void;
 }
 
 export class SpectrumClient {
@@ -52,14 +54,14 @@ export class SpectrumClient {
 
   private readonly http: KyInstance;
 
-  constructor(config: SpectrumClientConfig = {} as any) {
-    this.fetch = config.fetch;
-    this.setTimeout = config.setTimeout;
+  constructor(io: SpectrumClientPowers, config: SpectrumClientConfig = {}) {
+    this.fetch = io.fetch;
+    this.setTimeout = io.setTimeout;
     if (!this.fetch || !this.setTimeout) {
       throw new Error('`fetch` and `setTimeout` are required');
     }
 
-    this.log = config.log ?? (() => {});
+    this.log = io.log ?? (() => {});
     this.config = {
       baseUrl: config.baseUrl ?? BASE_URL,
       timeout: config.timeout ?? 10000, // 10s timeout
