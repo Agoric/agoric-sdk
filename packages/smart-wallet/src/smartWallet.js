@@ -40,6 +40,7 @@ import {
 import { prepareVowTools } from '@agoric/vow';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
+import { prepareNameHubKit } from '@agoric/vats';
 import { makeInvitationsHelper } from './invitations.js';
 import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
@@ -305,6 +306,9 @@ export const prepareSmartWallet = (baggage, shared) => {
 
   const makeOfferWatcher = prepareOfferWatcher(baggage, vowTools);
   const watchOfferOutcomes = makeWatchOfferOutcomes(vowTools);
+
+  // avoid devnet upgrade failure. cf 1f44419 from #11672
+  prepareNameHubKit(zone.subZone('names'));
 
   const updateShape = {
     value: AmountShape,
