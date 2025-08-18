@@ -1,0 +1,9 @@
+{
+    "consume": {
+        "namesByAddress": true,
+        "namesByAddressAdmin": true
+    },
+    "produce": {
+        "getDepositFacet": true
+    }
+}
