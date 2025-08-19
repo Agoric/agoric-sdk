@@ -3,6 +3,7 @@
  * @see {@link contract}
  * @see {@link start}
  */
+import type { Payment } from '@agoric/ertp/src/types.js';
 import {
   makeTracer,
   mustMatch,
@@ -27,22 +28,22 @@ import {
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
-import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
-import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
-import type { Zone } from '@agoric/zone';
-import type { Payment } from '@agoric/ertp/src/types.js';
-import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
-import { E } from '@endo/far';
-import type { CopyRecord } from '@endo/pass-style';
-import { M } from '@endo/patterns';
 import {
   AxelarChain,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
+import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
+import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
+import type { Zone } from '@agoric/zone';
+import { E } from '@endo/far';
+import type { CopyRecord } from '@endo/pass-style';
+import { M } from '@endo/patterns';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
-import { makeOfferArgsShapes } from './type-guards-steps.ts';
 import { prepareResolverKit } from './resolver/resolver.exo.js';
+import { PENDING_TXS_NODE_KEY } from './resolver/types.ts';
+import { makeOfferArgsShapes } from './type-guards-steps.ts';
 import {
   BeefyPoolPlaces,
   makeProposalShapes,
@@ -243,7 +244,11 @@ export const contract = async (
   const {
     client: resolverClient,
     invitationMakers: makeResolverInvitationMakers,
-  } = prepareResolverKit(resolverZone, zcf, vowTools)();
+  } = prepareResolverKit(resolverZone, zcf, {
+    vowTools,
+    pendingTxsNode: E(storageNode).makeChildNode(PENDING_TXS_NODE_KEY),
+    marshaller,
+  })();
 
   const ctx1 = {
     zoeTools,

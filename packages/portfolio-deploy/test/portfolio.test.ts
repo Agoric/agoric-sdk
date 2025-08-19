@@ -351,6 +351,7 @@ test.skip('CCTP settlement works', async t => {
         status: 'confirmed',
       },
       remoteAxelarChain: 'eip155:42161',
+      txId: 'tx0',
     },
   });
   const latestWalletRecord = wallet.getLatestUpdateRecord();
@@ -371,6 +372,7 @@ test.skip('CCTP settlement works', async t => {
           remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
           status: 'confirmed',
         },
+        txId: 'tx0',
       },
     },
   });
@@ -478,6 +480,7 @@ test.skip('CCTP settlement works across contract restarts', async t => {
         status: 'confirmed',
       },
       remoteAxelarChain: 'eip155:42161',
+      txId: 'tx0',
     },
   });
 
@@ -500,6 +503,7 @@ test.skip('CCTP settlement works across contract restarts', async t => {
           remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
           status: 'confirmed',
         },
+        txId: 'tx0',
       },
     },
   });
@@ -584,6 +588,7 @@ test.serial(
             remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
             status: 'confirmed',
           },
+          txId: 'tx0',
           remoteAxelarChain: 'eip155:42161',
         },
       }),
@@ -668,6 +673,28 @@ test.skip('CCTP settlement works with new invitation after contract remove and s
           remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
           status: 'confirmed',
         },
+        txId: 'tx0',
+      },
+    },
+  });
+
+  t.like(latestWalletRecord, {
+    status: {
+      id,
+      invitationSpec: {
+        invitationMakerName: 'SettleCCTPTransaction',
+        source: 'continuing',
+        previousOffer: 'settle-cctp-new',
+      },
+      numWantsSatisfied: 1,
+      offerArgs: {
+        remoteAxelarChain: 'eip155:42161',
+        txDetails: {
+          amount: 10000n,
+          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+          status: 'confirmed',
+        },
+        txId: 'tx0',
       },
     },
   });

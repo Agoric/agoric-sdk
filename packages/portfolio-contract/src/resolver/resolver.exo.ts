@@ -6,20 +6,28 @@
  * This is an orchestration component that can be used independently of portfolio logic.
  */
 
-import { makeTracer, mustMatch } from '@agoric/internal';
-import type { AccountId } from '@agoric/orchestration';
-import type { Zone } from '@agoric/zone';
-import { type VowTools, type VowKit, VowShape } from '@agoric/vow';
-import type { ZCF, ZCFSeat } from '@agoric/zoe';
-import { M } from '@endo/patterns';
 import type { NatValue } from '@agoric/ertp/src/types.ts';
+import { makeTracer, mustMatch } from '@agoric/internal';
 import type {
-  CCTPTransactionKey,
-  CCTPSettlementOfferArgs,
-  CCTPSettlementArgs,
-} from './types.js';
-import { ResolverOfferArgsShapes, CCTPSettlementArgsShape } from './types.js';
+  Marshaller,
+  StorageNode,
+} from '@agoric/internal/src/lib-chainStorage.js';
+import type { AccountId } from '@agoric/orchestration';
+import { type VowKit, VowShape, type VowTools } from '@agoric/vow';
+import type { ZCF, ZCFSeat } from '@agoric/zoe';
+import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
+import type { ERef } from '@endo/far';
+import { E } from '@endo/far';
+import { M } from '@endo/patterns';
+import { TxStatus, TxType } from './constants.js';
+import type {
+  CCTPSettlementArgs,
+  CCTPSettlementOfferArgs,
+  CCTPTransactionKey,
+  PublishedTx,
+} from './types.js';
+import { CCTPSettlementArgsShape, ResolverOfferArgsShapes } from './types.js';
 
 type CCTPTransactionEntry = {
   destinationAddress: AccountId;
@@ -31,6 +39,11 @@ const trace = makeTracer('Resolver');
 
 const ClientFacetI = M.interface('CCTPResolverClient', {
   registerCCTPTransaction: M.call(M.string(), M.nat()).returns(VowShape),
+});
+
+const ReporterI = M.interface('Reporter', {
+  insertPendingTransaction: M.call(M.bigint(), M.string()).returns(),
+  completePendingTransaction: M.call(M.string(), M.string()).returns(),
 });
 
 const ServiceFacetI = M.interface('CCTPResolverService', {
@@ -50,7 +63,6 @@ const proposalShape = M.splitRecord(
   { exit: M.any() },
   {},
 );
-
 /**
  * Prepare CCTP Resolver Kit.
  *
@@ -65,8 +77,21 @@ const proposalShape = M.splitRecord(
 export const prepareResolverKit = (
   resolverZone: Zone,
   zcf: ZCF,
-  vowTools: VowTools,
+  {
+    vowTools,
+    pendingTxsNode,
+    marshaller,
+  }: {
+    vowTools: VowTools;
+    pendingTxsNode: ERef<StorageNode>;
+    marshaller: Marshaller;
+  },
 ) => {
+  const writeToNode = (node: ERef<StorageNode>, value: PublishedTx): void => {
+    void E.when(E(marshaller).toCapData(value), capData =>
+      E(node).setValue(JSON.stringify(capData)),
+    );
+  };
   return resolverZone.exoClassKit(
     'CCTPResolver',
     {
@@ -74,6 +99,7 @@ export const prepareResolverKit = (
       service: ServiceFacetI,
       invitationMakers: InvitationMakersFacetI,
       settlementHandler: SettlementHandlerFacetI,
+      reporter: ReporterI,
     },
     () => ({
       cctpTransactionRegistry: resolverZone
@@ -82,6 +108,7 @@ export const prepareResolverKit = (
           CCTPTransactionKey,
           CCTPTransactionEntry
         >('cctpTransactionRegistry'),
+      index: 0,
     }),
     {
       client: {
@@ -108,8 +135,44 @@ export const prepareResolverKit = (
             key,
             harden({ destinationAddress, amountValue, vowKit }),
           );
+          this.facets.reporter.insertPendingTransaction(
+            amountValue,
+            destinationAddress,
+          );
+
           trace(`Registered pending CCTP transaction: ${key}`);
           return vowKit.vow;
+        },
+      },
+      reporter: {
+        insertPendingTransaction(
+          amount: bigint,
+          destinationAddress: AccountId,
+        ) {
+          const value: PublishedTx = {
+            type: TxType.CCTP,
+            amount,
+            destinationAddress,
+            status: TxStatus.PENDING,
+          };
+          const node = E(pendingTxsNode).makeChildNode(`tx${this.state.index}`);
+          this.state.index += 1;
+          writeToNode(node, value);
+        },
+        completePendingTransaction(
+          vstorageId: `tx${number}`,
+          transactionKey: CCTPTransactionKey,
+        ) {
+          const node = E(pendingTxsNode).makeChildNode(vstorageId);
+          const txEntry =
+            this.state.cctpTransactionRegistry.get(transactionKey);
+          const value: PublishedTx = {
+            type: TxType.CCTP,
+            amount: txEntry.amountValue,
+            destinationAddress: txEntry.destinationAddress,
+            status: TxStatus.SUCCESS,
+          };
+          writeToNode(node, value);
         },
       },
       service: {
@@ -121,6 +184,7 @@ export const prepareResolverKit = (
             amountValue,
             status,
             rejectionReason,
+            txId,
           } = args;
           const key =
             `${chainId}:${remoteAddress}:${amountValue}` as CCTPTransactionKey;
@@ -138,6 +202,7 @@ export const prepareResolverKit = (
                 key,
               );
               registryEntry.vowKit.resolver.resolve();
+              this.facets.reporter.completePendingTransaction(txId, key);
               cctpTransactionRegistry.delete(key);
               return;
             case 'failed':
@@ -148,6 +213,7 @@ export const prepareResolverKit = (
               registryEntry.vowKit.resolver.reject(
                 Error(rejectionReason || 'CCTP transaction failed'),
               );
+              this.facets.reporter.completePendingTransaction(txId, key);
               cctpTransactionRegistry.delete(key);
               return;
             default:
@@ -158,7 +224,8 @@ export const prepareResolverKit = (
       settlementHandler: {
         async handle(seat: ZCFSeat, offerArgs: CCTPSettlementOfferArgs) {
           mustMatch(offerArgs, ResolverOfferArgsShapes.SettleCCTPTransaction);
-          const { txDetails, remoteAxelarChain } = offerArgs;
+          const { txDetails, remoteAxelarChain, txId } = offerArgs;
+
           trace('CCTP transaction settlement:', {
             amount: txDetails.amount,
             remoteAddress: txDetails.remoteAddress,
@@ -171,6 +238,7 @@ export const prepareResolverKit = (
             remoteAddress: txDetails.remoteAddress,
             amountValue: txDetails.amount,
             status: txDetails.status,
+            txId,
           });
           return 'CCTP transaction settlement processed';
         },
