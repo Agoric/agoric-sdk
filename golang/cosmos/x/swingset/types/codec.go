@@ -2,6 +2,7 @@ package types
 
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/legacy"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -29,11 +30,11 @@ func init() {
 
 // RegisterCodec registers concrete types on the Amino codec
 func RegisterCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&MsgDeliverInbound{}, ModuleName+"/DeliverInbound", nil)
-	cdc.RegisterConcrete(&MsgProvision{}, ModuleName+"/Provision", nil)
-	cdc.RegisterConcrete(&MsgWalletAction{}, ModuleName+"/WalletAction", nil)
-	cdc.RegisterConcrete(&MsgWalletSpendAction{}, ModuleName+"/WalletSpendAction", nil)
-	cdc.RegisterConcrete(&MsgInstallBundle{}, ModuleName+"/InstallBundle", nil)
+	legacy.RegisterAminoMsg(cdc, &MsgDeliverInbound{}, ModuleName+"/DeliverInbound")
+	legacy.RegisterAminoMsg(cdc, &MsgProvision{}, ModuleName+"/Provision")
+	legacy.RegisterAminoMsg(cdc, &MsgWalletAction{}, ModuleName+"/WalletAction")
+	legacy.RegisterAminoMsg(cdc, &MsgWalletSpendAction{}, ModuleName+"/WalletSpendAction")
+	legacy.RegisterAminoMsg(cdc, &MsgInstallBundle{}, ModuleName+"/InstallBundle")
 }
 
 // RegisterInterfaces registers the x/swingset interfaces types with the interface registry
