@@ -204,7 +204,7 @@ func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInsta
 	for i, chunk := range bc.Chunks {
 		ci := *chunk
 		if ci.State != types.ChunkState_CHUNK_STATE_UNSPECIFIED {
-			return nil, fmt.Errorf("chunk %d state is not unspecified for pending Id %d", i, msg.PendingId)
+			return nil, fmt.Errorf("chunk %d state is not unspecified", i)
 		}
 		ci.State = types.ChunkState_CHUNK_STATE_IN_FLIGHT
 		bc.Chunks[i] = &ci
