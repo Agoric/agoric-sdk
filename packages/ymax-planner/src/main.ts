@@ -3,6 +3,7 @@ import {
   fetchEnvNetworkConfig,
   makeSmartWalletKit,
   makeVstorageKit,
+  makeStargateClientKit,
 } from '@agoric/client-utils';
 
 import { SigningStargateClient } from '@cosmjs/stargate';
@@ -11,7 +12,6 @@ import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { startEngine } from './engine.ts';
-import { makeStargateClientKit } from './swingset-tx.ts';
 
 const getChainIdFromRpc = async (rpc: CosmosRPCClient) => {
   await rpc.opened();
