@@ -11,6 +11,7 @@ import { encodeBase64 as base64FromBytes } from '@endo/base64';
  * See `bridgeCoreEval` in agoric-sdk packages/vats/src/core/chain-behaviors.js.
  */
 export interface CoreEvalProposal {
+  $typeUrl?: '/agoric.swingset.CoreEvalProposal';
   title: string;
   description: string;
   /**
@@ -29,6 +30,7 @@ export interface CoreEvalProposalProtoMsg {
  * See `bridgeCoreEval` in agoric-sdk packages/vats/src/core/chain-behaviors.js.
  */
 export interface CoreEvalProposalSDKType {
+  $typeUrl?: '/agoric.swingset.CoreEvalProposal';
   title: string;
   description: string;
   evals: CoreEvalSDKType[];
@@ -263,6 +265,7 @@ export interface SwingStoreArtifactSDKType {
 }
 function createBaseCoreEvalProposal(): CoreEvalProposal {
   return {
+    $typeUrl: '/agoric.swingset.CoreEvalProposal',
     title: '',
     description: '',
     evals: [],
