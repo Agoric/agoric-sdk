@@ -1,7 +1,7 @@
 import {
   fetchEnvNetworkConfig,
+  makeSigningSmartWalletKit,
   makeSmartWalletKit,
-  makeStargateClientKit,
 } from '@agoric/client-utils';
 import { Fail } from '@endo/errors';
 
@@ -49,15 +49,17 @@ export const main = async (
     Fail`Mismatching chainId. config=${networkConfig.chainName}, rpc=${rpcChainId}`;
   }
 
-  const walletKit = await makeSmartWalletKit({ fetch, delay }, networkConfig);
+  const walletUtils = await makeSmartWalletKit({ fetch, delay }, networkConfig);
 
-  const { address: plannerAddress, client: stargateClient } =
-    await makeStargateClientKit(MNEMONIC, {
-      connectWithSigner,
-      rpcAddr: networkConfig.rpcAddrs[0],
-    });
+  const signingSmartWalletKit = await makeSigningSmartWalletKit(
+    { connectWithSigner, walletUtils },
+    MNEMONIC,
+  );
 
-  console.warn(`Using:`, { networkConfig, plannerAddress });
+  console.warn(`Using:`, {
+    networkConfig,
+    plannerAddress: signingSmartWalletKit.address,
+  });
 
   const { SPECTRUM_API_URL, SPECTRUM_API_TIMEOUT, SPECTRUM_API_RETRIES } = env;
   const spectrum = new SpectrumClient(
@@ -89,9 +91,7 @@ export const main = async (
     rpc,
     spectrum,
     cosmosRest,
-    stargateClient,
-    walletKit,
-    plannerAddress,
+    signingSmartWalletKit,
   });
 };
 harden(main);
