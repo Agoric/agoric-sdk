@@ -1,3 +1,5 @@
+// TODO move these into client-utils, not specific to ymax
+
 import type { SmartWalletKit } from '@agoric/client-utils';
 import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
 import { makeTracer } from '@agoric/internal';

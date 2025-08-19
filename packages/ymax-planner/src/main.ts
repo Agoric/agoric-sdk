@@ -1,17 +1,16 @@
-import { Fail } from '@endo/errors';
 import {
   fetchEnvNetworkConfig,
   makeSmartWalletKit,
-  makeVstorageKit,
   makeStargateClientKit,
 } from '@agoric/client-utils';
+import { Fail } from '@endo/errors';
 
 import { SigningStargateClient } from '@cosmjs/stargate';
 
-import { CosmosRPCClient } from './cosmos-rpc.ts';
-import { SpectrumClient } from './spectrum-client.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
+import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { startEngine } from './engine.ts';
+import { SpectrumClient } from './spectrum-client.ts';
 
 const getChainIdFromRpc = async (rpc: CosmosRPCClient) => {
   await rpc.opened();
@@ -51,7 +50,6 @@ export const main = async (
   }
 
   const walletKit = await makeSmartWalletKit({ fetch, delay }, networkConfig);
-  const vstorageKit = makeVstorageKit({ fetch }, networkConfig);
 
   const { address: plannerAddress, client: stargateClient } =
     await makeStargateClientKit(MNEMONIC, {
@@ -89,7 +87,6 @@ export const main = async (
 
   await startEngine({
     rpc,
-    vstorageKit,
     spectrum,
     cosmosRest,
     stargateClient,
