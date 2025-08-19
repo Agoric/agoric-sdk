@@ -5,6 +5,7 @@ export * from './marshalTables.js';
 export * from './network-config.js';
 export * from './rpc.js';
 export * from './signing-client.js';
+export * from './signing-smart-wallet-kit.js';
 export * from './smart-wallet-kit.js';
 export * from './sync-tools.js';
 export * from './vstorage-kit.js';
