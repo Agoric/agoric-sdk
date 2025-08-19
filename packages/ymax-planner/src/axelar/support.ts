@@ -1,39 +1,35 @@
-import { encodeFunctionData, encodeAbiParameters, hexToBytes } from 'viem';
 import {
   axelarConfig as axelarConfigMainnet,
   axelarConfigTestnet,
-  gmpAddresses,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import type { SigningStargateClient } from '@cosmjs/stargate';
 import type { SmartWalletKit, VstorageKit } from '@agoric/client-utils';
-import type { PortfolioInstanceContext } from '../subscription-manager';
-
-export const channels = {
-  mainnet: 'channel-9',
-  testnet: 'channel-315',
-};
-
-export const urls = {
-  mainnet: 'https://main.rpc.agoric.net:443',
-  testnet: 'https://devnet.rpc.agoric.net/',
-};
+import type { PlannerContext } from '../subscription-manager';
 
 export const axelarQueryAPI = {
   mainnet: 'https://api.axelarscan.io/gmp/searchGMP',
   testnet: 'https://testnet.api.axelarscan.io/gmp/searchGMP',
 };
 
-/**
- * @param {bigint} gasAmount - gas amount for the EVM to Agoric message
- * @returns {number[]} The payload array.
- */
-export const buildGasPayload = gasAmount => {
-  const abiEncodedData = encodeAbiParameters(
-    [{ type: 'uint256' }],
-    [gasAmount],
-  );
-
-  return Array.from(hexToBytes(abiEncodedData));
+export const evmRpcUrls = {
+  mainnet: {
+    Ethereum: 'https://ethereum-rpc.publicnode.com',
+    // Source: https://build.avax.network/docs/tooling/rpc-providers#http
+    Avalanche: 'https://api.avax.network/ext/bc/C/rpc',
+    // Source: https://docs.arbitrum.io/build-decentralized-apps/reference/node-providers
+    Arbitrum: 'https://arb1.arbitrum.io/rpc',
+    // Source: https://docs.optimism.io/superchain/networks
+    Optimism: 'https://mainnet.optimism.io',
+    // Source: https://docs.polygon.technology/pos/reference/rpc-endpoints/#amoy
+    Polygon: 'https://polygon-rpc.com/',
+  },
+  testnet: {
+    Ethereum: 'https://ethereum-sepolia-rpc.publicnode.com',
+    Avalanche: 'https://api.avax-test.network/ext/bc/C/rpc',
+    Arbitrum: 'https://arbitrum-sepolia-rpc.publicnode.com',
+    Optimism: 'https://optimism-sepolia-rpc.publicnode.com',
+    Polygon: 'https://polygon-amoy-bor-rpc.publicnode.com',
+  },
 };
 
 type CreateContextParams = {
@@ -50,15 +46,12 @@ export const createContext = async ({
   plannerAddress,
   vstorageKit,
   walletKit,
-}: CreateContextParams): Promise<PortfolioInstanceContext> => {
+}: CreateContextParams): Promise<PlannerContext> => {
   const configs = {
     mainnet: {
       axelarConfig: {
         ...axelarConfigMainnet,
         queryApi: axelarQueryAPI.mainnet,
-      },
-      gmpAddresses: {
-        ...gmpAddresses.mainnet,
       },
     },
     testnet: {
@@ -66,37 +59,15 @@ export const createContext = async ({
         ...axelarConfigTestnet,
         queryApi: axelarQueryAPI.testnet,
       },
-      gmpAddresses: {
-        ...gmpAddresses.testnet,
-      },
     },
   };
 
   const config = configs[net];
   const axelarConfig = config.axelarConfig;
 
-  const axelarIds = {
-    Avalanche: axelarConfig.Avalanche.axelarId,
-    Arbitrum: axelarConfig.Arbitrum.axelarId,
-    Optimism: axelarConfig.Optimism.axelarId,
-    Polygon: axelarConfig.Polygon.axelarId,
-  };
-
-  const contracts = {
-    Avalanche: { ...axelarConfig.Avalanche.contracts },
-    Arbitrum: { ...axelarConfig.Arbitrum.contracts },
-    Optimism: { ...axelarConfig.Optimism.contracts },
-    Polygon: { ...axelarConfig.Polygon.contracts },
-  };
-
   return {
-    axelarConfig: {
-      axelarIds,
-      contracts,
-      gmpAddresses: config.gmpAddresses,
-      queryApi: axelarConfig.queryApi,
-    },
-    rpcUrl: urls[net],
+    axelarQueryApi: axelarConfig.queryApi,
+    evmRpcUrls: evmRpcUrls[net],
     stargateClient,
     plannerAddress,
     vstorageKit,

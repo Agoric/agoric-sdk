@@ -1,114 +1,91 @@
-import type { AxelarChain } from '@agoric/portfolio-api/src/constants';
-import { Interface, JsonRpcProvider, Log } from 'ethers';
+import { id, zeroPadValue, getAddress, type Provider } from 'ethers';
 
-// Using only 'Ethereum' for now because CCTP transfers to it work reliably off-chain.
-// Other testnet chains currently have issues, so we're excluding them for the time being.
-export type EVMChain = keyof typeof AxelarChain | 'Ethereum';
+const TRANSFER = id('Transfer(address,address,uint256)');
 
-const TIMEOUT = 5 * 60 * 1000; // 5 minutes
-
-// TODO: populate this for all the chains we support
-export const EVM_RPC: Partial<Record<EVMChain, string>> = {
-  Ethereum: 'https://ethereum-sepolia-rpc.publicnode.com',
-} as const;
-
-// CCTP Contracts (Testnet sources)
-const TOKEN_MESSENGER: Partial<Record<EVMChain, string>> = {
-  Ethereum: '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5',
-} as const;
-
-const MESSAGE_TRANSMITTER: Partial<Record<EVMChain, string>> = {
-  Ethereum: '0x7865fAfC2db2093669d92c0F33AeEF291086BEFD',
-} as const;
-
-const MINT_ABI = [
-  'event MintAndWithdraw(address indexed mintRecipient, uint256 amount, address indexed mintToken)',
-];
-
-const MSG_ABI = [
-  'event MessageReceived(address indexed caller, uint32 sourceDomain, uint64 nonce, bytes32 sender, bytes messageBody)',
-];
-
-export const watchCCTPMint = async ({
-  chain,
-  recipient,
-  expectedAmount,
-  provider,
-}: {
-  chain: EVMChain;
-  recipient: string;
+type WatchTransferOptions = {
+  provider: Provider;
+  watchAddress: string;
   expectedAmount: bigint;
-  provider: JsonRpcProvider;
-}): Promise<boolean> => {
-  const tokenMessenger = TOKEN_MESSENGER[chain];
-  const messageTransmitter = MESSAGE_TRANSMITTER[chain];
+  timeoutMinutes?: number;
+};
 
-  if (!tokenMessenger || !messageTransmitter) {
-    throw Error(`Missing RPC or contract address for chain ${chain}`);
-  }
+export const watchCCTPTransfer = ({
+  provider,
+  watchAddress,
+  expectedAmount,
+  timeoutMinutes = 5,
+}: WatchTransferOptions): Promise<boolean> => {
+  return new Promise(resolve => {
+    const TO_TOPIC = zeroPadValue(watchAddress.toLowerCase(), 32);
+    const filter = {
+      topics: [TRANSFER, null, TO_TOPIC],
+    };
 
-  const mintIface = new Interface(MINT_ABI);
-  const msgIface = new Interface(MSG_ABI);
+    console.log(
+      `Watching for ERC-20 transfers to: ${watchAddress} with amount: ${expectedAmount}`,
+    );
 
-  const filter = {
-    address: tokenMessenger,
-    topics: [mintIface.getEvent('MintAndWithdraw')!.topicHash],
-  };
+    let transferFound = false;
+    let timeoutId: NodeJS.Timeout;
+    let listeners: Array<{ event: any; listener: any }> = [];
 
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      provider.off(filter); // Clean up
-      console.log('❌ Timed out waiting for mint');
-      resolve(false);
-    }, TIMEOUT);
+    const cleanup = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      listeners.forEach(({ event, listener }) => {
+        provider.off(event, listener);
+      });
+      listeners = [];
+    };
 
-    provider.on(filter, async (log: Log) => {
+    const transferListener = (log: any) => {
       try {
-        const parsed = mintIface.parseLog(log);
+        if (transferFound) return;
 
-        if (!parsed) return;
-
-        const { mintRecipient, amount } = parsed.args;
-        console.log({ mintRecipient, amount });
-
-        if (
-          mintRecipient.toLowerCase() !== recipient.toLowerCase() &&
-          amount !== expectedAmount
-        ) {
+        if (!log.topics || log.topics.length < 3 || !log.data) {
+          console.warn('Malformed log received, skipping:', log);
           return;
         }
 
-        const receipt = await provider.getTransactionReceipt(
-          log.transactionHash,
-        );
-        console.log({ receipt });
-        if (!receipt) return;
+        const from = getAddress('0x' + log.topics[1].slice(-40));
+        const to = getAddress('0x' + log.topics[2].slice(-40));
+        const amount = BigInt(log.data);
 
-        // TODO: what if MessageReceived is delayed
-        // Go theough the MessageTrasnmitter Contract
-        for (const txLog of receipt.logs) {
-          if (
-            txLog.address.toLowerCase() === messageTransmitter.toLowerCase()
-          ) {
-            try {
-              const parsedMsg = msgIface.parseLog(txLog);
-              if (parsedMsg?.name === 'MessageReceived') {
-                clearTimeout(timeout);
-                provider.off(filter);
-                console.log(`✅ CCTP Mint confirmed!`);
-                return resolve(true);
-              }
-            } catch {
-              continue;
-            }
-          }
+        console.log(
+          `Transfer detected: token=${log.address} from=${from} to=${to} amount=${amount} tx=${log.transactionHash}`,
+        );
+
+        if (amount === expectedAmount) {
+          console.log(
+            `✓ Amount matches! Expected: ${expectedAmount}, Received: ${amount}`,
+          );
+          transferFound = true;
+          cleanup();
+          resolve(true);
+        } else {
+          console.log(
+            `Amount mismatch. Expected: ${expectedAmount}, Received: ${amount}`,
+          );
+          return; // Continue watching
         }
-      } catch (err) {
-        console.error('❌ Failed to parse log:', err);
-        clearTimeout(timeout);
-        provider.off(filter);
-        reject(err);
+      } catch (error: any) {
+        console.log('Log parsing error:', error.message);
       }
-    });
+    };
+
+    provider.on(filter, transferListener);
+    listeners.push({ event: filter, listener: transferListener });
+
+    timeoutId = setTimeout(
+      () => {
+        if (!transferFound) {
+          console.log(
+            `✗ No matching transfer found within ${timeoutMinutes} minutes`,
+          );
+          cleanup();
+          resolve(false);
+        }
+      },
+      timeoutMinutes * 60 * 1000,
+    );
   });
 };

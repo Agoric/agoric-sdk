@@ -21,7 +21,7 @@ import { handleDeposit } from './plan-deposit.ts';
 import { submitAction } from './swingset-tx.ts';
 import {
   handleSubscription,
-  type PortfolioInstanceContext,
+  type PlannerContext,
   type Subscription,
 } from './subscription-manager.ts';
 
@@ -271,7 +271,7 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
 };
 
 type IO = {
-  ctx: PortfolioInstanceContext;
+  ctx: PlannerContext;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
