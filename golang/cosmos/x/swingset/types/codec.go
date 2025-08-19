@@ -33,6 +33,7 @@ func RegisterCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgProvision{}, ModuleName+"/Provision", nil)
 	cdc.RegisterConcrete(&MsgWalletAction{}, ModuleName+"/WalletAction", nil)
 	cdc.RegisterConcrete(&MsgWalletSpendAction{}, ModuleName+"/WalletSpendAction", nil)
+	cdc.RegisterConcrete(&MsgInstallBundle{}, ModuleName+"/InstallBundle", nil)
 }
 
 // RegisterInterfaces registers the x/swingset interfaces types with the interface registry
@@ -42,6 +43,7 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 		&MsgProvision{},
 		&MsgWalletAction{},
 		&MsgWalletSpendAction{},
+		&MsgInstallBundle{},
 	)
 	registry.RegisterImplementations(
 		(*govv1beta1.Content)(nil),
