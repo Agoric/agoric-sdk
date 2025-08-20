@@ -100,6 +100,7 @@ sequenceDiagram
   end
 
   box rgb(163,180,243) Arbitrum
+    participant factory as Factory Contract
     participant acctArb
     participant aavePos
   end
@@ -113,9 +114,16 @@ sequenceDiagram
   YP ->> portfolio: read portfolio allocations
   YP ->> icaN: read balance
   YP ->> aavePos: read balance
+  YP ->> AX: figure out how much to pay for GMP(agoric, arbitrum) and GMP(arbitrum, agoric) ticket TBD
   Note over YP: think and generate steps
-  YP ->> portfolio: send moves
-  portfolio ->> LCAorch: CREATE (lazily)
+  YP ->> portfolio: send moves and X BLD for GMP(agoric, arbitrum) and Y ARB for GMP(arbitrum, agoric)
+  Note over portfolio, acctArb: Make Account if Needed
+  portfolio ->> LCAorch: seat pays X BLD ticket TBD
+  LCAorch ->> AX: makeAccount(Y ARB for postage)
+  AX ->> factory: invoke makeAccount
+  factory ->> acctArb: makeAccount
+  factory ->> AX: return acctArb.accountID, Y ARB for postage
+  AX ->> LCAorch: return acctArb.accountID
 
   Note over LCAorch, acctArb: CCTP Out
   LCAin ->> LCAorch: $5k
@@ -171,7 +179,7 @@ sequenceDiagram
 
   %% get plan
   UI ->> portfolio: rebalance
-  portfolio ->> YP: YP observes portfolio allocation change
+  portfolio ->> YP: YP observes signal for rebalance
   Note over YP: think and generate steps
 
   Note over portfolio, aavePos: CCTP back
