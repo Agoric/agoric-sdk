@@ -62,26 +62,26 @@ func (k Querier) Mailbox(c context.Context, req *types.QueryMailboxRequest) (*ty
 	}, nil
 }
 
-func (k Querier) PendingInstall(c context.Context, req *types.QueryPendingInstallRequest) (*types.QueryPendingInstallResponse, error) {
+func (k Querier) ChunkedArtifact(c context.Context, req *types.QueryChunkedArtifactRequest) (*types.QueryChunkedArtifactResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 	ctx := sdk.UnwrapSDKContext(c)
 
-	msg := k.GetPendingBundleInstall(ctx, req.PendingId)
+	msg := k.GetPendingBundleInstall(ctx, req.ChunkedArtifactId)
 	if msg == nil {
-		return nil, status.Error(codes.NotFound, "pending install not found")
+		return nil, status.Error(codes.NotFound, "pending chunked artifact not found")
 	}
 
-	pin := k.GetPendingInstallNode(ctx, req.PendingId)
+	pin := k.GetChunkedArtifactNode(ctx, req.ChunkedArtifactId)
 	if pin == nil {
-		return nil, status.Error(codes.NotFound, "pending install node not found")
+		return nil, status.Error(codes.NotFound, "pending chunked artifact node not found")
 	}
 
-	return &types.QueryPendingInstallResponse{
-		PendingId:       req.PendingId,
-		ChunkedArtifact: msg.ChunkedArtifact,
-		StartTime:       pin.StartTime,
-		StartBlock:      pin.StartBlock,
+	return &types.QueryChunkedArtifactResponse{
+		ChunkedArtifactId: req.ChunkedArtifactId,
+		ChunkedArtifact:   msg.ChunkedArtifact,
+		StartTime:         pin.StartTime,
+		StartBlock:        pin.StartBlock,
 	}, nil
 }

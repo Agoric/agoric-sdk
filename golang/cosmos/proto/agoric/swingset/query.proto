@@ -25,8 +25,8 @@ service Query {
   }
 
   // Return the state of a pending installation.
-  rpc PendingInstall(QueryPendingInstallRequest) returns (QueryPendingInstallResponse) {
-    option (google.api.http).get = "/agoric/swingset/bundle/pending/{pending_id}";
+  rpc ChunkedArtifact(QueryChunkedArtifactRequest) returns (QueryChunkedArtifactResponse) {
+    option (google.api.http).get = "/agoric/swingset/chunked-artifact/{chunked_artifact_id}";
   }
 }
 
@@ -67,14 +67,14 @@ message QueryMailboxResponse {
   string value = 1 [(gogoproto.jsontag) = "value", (gogoproto.moretags) = "yaml:\"value\""];
 }
 
-// QueryPendingInstallRequest is the request type for the Query/PendingInstall RPC method.
-message QueryPendingInstallRequest {
-  uint64 pending_id = 1 [(gogoproto.jsontag) = "pending_id", (gogoproto.moretags) = "yaml:\"pending_id\""];
+// QueryChunkedArtifactRequest is the request type for the Query/ChunkedArtifact RPC method.
+message QueryChunkedArtifactRequest {
+  uint64 chunked_artifact_id = 1 [(gogoproto.jsontag) = "chunkedArtifactId", (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""];
 }
 
-// QueryPendingInstalllResponse is the response type for the Query/PendingInstall RPC method.
-message QueryPendingInstallResponse {
-  uint64 pending_id = 1 [(gogoproto.jsontag) = "pending_id", (gogoproto.moretags) = "yaml:\"pending_id\""];
+// QueryChunkedArtifactlResponse is the response type for the Query/ChunkedArtifact RPC method.
+message QueryChunkedArtifactResponse {
+  uint64 chunked_artifact_id = 1 [(gogoproto.jsontag) = "chunkedArtifactId", (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""];
 
   ChunkedArtifact chunked_artifact = 2
       [(gogoproto.jsontag) = "chunkedArtifact", (gogoproto.moretags) = "yaml:\"chunkedArtifact\""];
