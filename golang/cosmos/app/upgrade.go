@@ -198,6 +198,33 @@ func upgrade22Handler(app *GaiaApp, targetUpgrade string) upgradetypes.UpgradeHa
 				return nil, err
 			}
 
+			// terminationTargets is a slice of "$boardID:$instanceKitLabel" strings.
+			var terminationTargets []string
+			switch getVariantFromUpgradeName(targetUpgrade) {
+			case "MAINNET":
+				terminationTargets = []string{
+					// v29 "zcf-b1-4522b-ATOM-USD_price_feed"
+					"board02963:ATOM-USD_price_feed",
+					// v68 "zcf-b1-4522b-stATOM-USD_price_feed"
+					"board012113:stATOM-USD_price_feed",
+					// v98 "zcf-b1-4522b-stOSMO-USD_price_feed"
+					"board002164:stOSMO-USD_price_feed",
+					// v104 "zcf-b1-4522b-stTIA-USD_price_feed"
+					"board043173:stTIA-USD_price_feed",
+				}
+			}
+			if len(terminationTargets) > 0 {
+				terminationStep, err := buildProposalStepWithArgs(
+					"@agoric/vats/src/proposals/terminate-governed-instance.js",
+					// defaultProposalBuilder(powers, targets)
+					"defaultProposalBuilder",
+					terminationTargets,
+				)
+				if err != nil {
+					return module.VersionMap{}, err
+				}
+				CoreProposalSteps = append(CoreProposalSteps, terminationStep)
+			}
 		}
 
 		app.upgradeDetails = &upgradeDetails{
