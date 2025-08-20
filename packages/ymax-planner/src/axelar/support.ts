@@ -1,19 +1,19 @@
-import {
-  axelarConfig as axelarConfigMainnet,
-  axelarConfigTestnet,
-} from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import type { SigningStargateClient } from '@cosmjs/stargate';
 import type { SmartWalletKit, VstorageKit } from '@agoric/client-utils';
-import type { PlannerContext } from '../subscription-manager';
+import { JsonRpcProvider } from 'ethers';
+import type { PlannerContext, EVMChain } from '../subscription-manager';
 
 export const axelarQueryAPI = {
   mainnet: 'https://api.axelarscan.io/gmp/searchGMP',
   testnet: 'https://testnet.api.axelarscan.io/gmp/searchGMP',
 };
 
+const { ALCHEMY_KEY } = process.env;
+if (!ALCHEMY_KEY) throw Error(`ALCHEMY_KEY not set`);
+
 export const evmRpcUrls = {
   mainnet: {
-    Ethereum: 'https://ethereum-rpc.publicnode.com',
+    Ethereum: `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`,
     // Source: https://build.avax.network/docs/tooling/rpc-providers#http
     Avalanche: 'https://api.avax.network/ext/bc/C/rpc',
     // Source: https://docs.arbitrum.io/build-decentralized-apps/reference/node-providers
@@ -24,7 +24,7 @@ export const evmRpcUrls = {
     Polygon: 'https://polygon-rpc.com/',
   },
   testnet: {
-    Ethereum: 'https://ethereum-sepolia-rpc.publicnode.com',
+    Ethereum: `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}`,
     Avalanche: 'https://api.avax-test.network/ext/bc/C/rpc',
     Arbitrum: 'https://arbitrum-sepolia-rpc.publicnode.com',
     Optimism: 'https://optimism-sepolia-rpc.publicnode.com',
@@ -38,6 +38,7 @@ type CreateContextParams = {
   plannerAddress: string;
   vstorageKit: VstorageKit;
   walletKit: SmartWalletKit;
+  fetch?: typeof fetch;
 };
 
 export const createContext = async ({
@@ -46,31 +47,24 @@ export const createContext = async ({
   plannerAddress,
   vstorageKit,
   walletKit,
+  fetch = globalThis.fetch,
 }: CreateContextParams): Promise<PlannerContext> => {
-  const configs = {
-    mainnet: {
-      axelarConfig: {
-        ...axelarConfigMainnet,
-        queryApi: axelarQueryAPI.mainnet,
-      },
-    },
-    testnet: {
-      axelarConfig: {
-        ...axelarConfigTestnet,
-        queryApi: axelarQueryAPI.testnet,
-      },
-    },
-  };
+  const axelarQueryApi = axelarQueryAPI[net];
 
-  const config = configs[net];
-  const axelarConfig = config.axelarConfig;
+  const rpcUrls = evmRpcUrls[net];
+  const evmProviders: Partial<Record<EVMChain, JsonRpcProvider>> = {};
+
+  for (const [chain, rpcUrl] of Object.entries(rpcUrls)) {
+    evmProviders[chain as EVMChain] = new JsonRpcProvider(rpcUrl);
+  }
 
   return {
-    axelarQueryApi: axelarConfig.queryApi,
-    evmRpcUrls: evmRpcUrls[net],
+    axelarQueryApi,
+    evmProviders,
     stargateClient,
     plannerAddress,
     vstorageKit,
     walletKit,
+    fetch,
   };
 };

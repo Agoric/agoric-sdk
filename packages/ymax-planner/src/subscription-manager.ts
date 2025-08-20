@@ -9,11 +9,12 @@ import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contrac
 
 export type PlannerContext = {
   axelarQueryApi: string;
-  evmRpcUrls: Partial<Record<EVMChain, string>>;
+  evmProviders: Partial<Record<EVMChain, JsonRpcProvider>>;
   stargateClient: SigningStargateClient;
   plannerAddress: string;
   vstorageKit: VstorageKit;
   walletKit: SmartWalletKit;
+  fetch: typeof fetch;
 };
 
 type CCTPTransfer = {
@@ -53,8 +54,12 @@ export const handleSubscription = async (
   switch (subscription.type) {
     case 'cctp': {
       const { type, chain, receiver, amount, subscriptionId } = subscription;
-      const rpc = ctx.evmRpcUrls[chain];
-      const provider = new JsonRpcProvider(rpc);
+      const provider = ctx.evmProviders[chain];
+      if (!provider) {
+        throw Error(
+          `${logPrefix} No EVM provider configured for chain: ${chain}`,
+        );
+      }
       console.warn(`${logPrefix} handling cctp subscription`);
       const status = await watchCCTPTransfer({
         watchAddress: receiver,
@@ -93,7 +98,7 @@ export const handleSubscription = async (
       console.warn(`${logPrefix} handling gmp subscription`);
       const res = await getTxStatus({
         url: ctx.axelarQueryApi,
-        fetch,
+        fetch: ctx.fetch,
         params: {
           sourceChain: 'agoric',
           destinationChain: destinationChain as unknown as string,

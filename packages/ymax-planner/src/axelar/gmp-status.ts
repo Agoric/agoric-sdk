@@ -307,7 +307,10 @@ export const getTxStatus = async ({
 
     if (Array.isArray(data) && data?.[0]?.executed) {
       console.log(`${logPrefix} ✅ contract call executed`, data[0].executed);
-      console.log(`${logPrefix} txHash on EVM:`, data[0].executed.transactionHash);
+      console.log(
+        `${logPrefix} txHash on EVM:`,
+        data[0].executed.transactionHash,
+      );
 
       const subscriptionTopic = ethers.id('SubscriptionResolved(string)');
       const logs = data[0].executed.receipt.logs;
@@ -322,7 +325,10 @@ export const getTxStatus = async ({
           subscriptionLog.data,
         );
 
-        console.log(`${logPrefix} decodedSubscriptionId:`, decodedSubscriptionId);
+        console.log(
+          `${logPrefix} decodedSubscriptionId:`,
+          decodedSubscriptionId,
+        );
         if (decodedSubscriptionId === subscriptionId) {
           return { logs: data[0].executed, success: true };
         }

@@ -6,7 +6,7 @@ import { isPrimitive } from '@endo/pass-style';
 import { makePromiseKit, type PromiseKit } from '@endo/promise-kit';
 import { Nat } from '@endo/nat';
 import { PortfolioStatusShapeExt } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, type Brand } from '@agoric/ertp';
 import type { Coin } from '@cosmjs/stargate';
 import type { InvokeStoreEntryAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import { mustMatch } from '@agoric/internal';
@@ -379,7 +379,10 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
             } as Subscription;
             // Process subscription concurrently without blocking other subscriptions
             void handleSubscription(ctx, subscription).catch(error => {
-              console.error(`[${subscriptionKey}] Failed to process existing subscription:`, error);
+              console.error(
+                `[${subscriptionKey}] Failed to process existing subscription:`,
+                error,
+              );
             });
           } catch (error) {
             console.error(
@@ -560,7 +563,10 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
             } as Subscription;
             // Process subscription concurrently without blocking event processing
             void handleSubscription(ctx, subscription).catch(error => {
-              console.error(`[${subscriptionId}] Failed to process subscription:`, error);
+              console.error(
+                `[${subscriptionId}] Failed to process subscription:`,
+                error,
+              );
             });
           } catch (error) {
             console.error(
