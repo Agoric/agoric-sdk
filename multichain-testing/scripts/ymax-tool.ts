@@ -51,7 +51,7 @@ const getUsage = (
 Options:
   --skip-poll         Skip polling for offer result
   --exit-success      Exit with success code even if errors occur
-  --goal              JSON string of opening positions (e.g. '{"USDN":6000,"Aave":4000}')
+  --positions         JSON string of opening positions (e.g. '{"USDN":6000,"Aave":4000}')
   --target-allocation JSON string of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
   --redeem            redeem planner invitation
   --submit-for <id>   submit (empty) plan for portfolio <id>
@@ -132,9 +132,12 @@ const openPosition = async (
   const toAmt = (num: ParsableNumber) =>
     multiplyBy(make(USDC, 1_000_000n), parseRatio(num, USDC));
   const goal = objectMap(goalData, toAmt);
-  console.debug('TODO: address Arbitrum-only limitation');
-  const evm = 'Arbitrum';
-  const { give, steps } = makePortfolioSteps(goal, { evm, feeBrand: BLD });
+  console.debug('TODO: address Avalanche-only limitation');
+  const evm = 'Avalanche';
+  const { give, steps } = makePortfolioSteps(goal, {
+    evm,
+    gmpFee: make(BLD, 15_000_000n),
+  });
   const proposal: ProposalType['openPortfolio'] = {
     give: {
       ...give,

@@ -215,7 +215,7 @@ export const makePortfolioSteps = <
   opts: {
     /** XXX assume same chain for Aave and Compound */
     evm?: AxelarChain;
-    feeBrand?: Brand<'nat'>;
+    gmpFee?: NatAmount;
     fees?: Record<keyof G, { Account: NatAmount; Call: NatAmount }>;
     detail?: { usdnOut: NatValue };
   } = {},
@@ -224,10 +224,10 @@ export const makePortfolioSteps = <
   const { USDN: _1, ...evmGoal } = goal;
   const {
     evm = 'Arbitrum',
-    feeBrand,
+    gmpFee,
     fees = objectMap(evmGoal, _ => ({
-      Account: make(NonNullish(feeBrand), 150n),
-      Call: make(NonNullish(feeBrand), 100n),
+      Account: NonNullish(gmpFee),
+      Call: NonNullish(gmpFee),
     })),
     detail = 'USDN' in goal
       ? { usdnOut: ((goal.USDN?.value || 0n) * 99n) / 100n }
@@ -303,6 +303,7 @@ export const planDepositTransfers = (
 
   for (const [poolKey, targetPercent] of Object.entries(targetAllocation)) {
     const currentAmount = currentBalances[poolKey as PoolKey]?.value || 0n;
+    // TODO: higher resolution; at least BP
     const targetAmount = (totalAfterDeposit * BigInt(targetPercent)) / 100n;
     const transferAmount = targetAmount - currentAmount;
 
@@ -313,6 +314,7 @@ export const planDepositTransfers = (
 
   // Ensure we don't exceed the deposit amount
   const totalTransfers = Object.values(transfers).reduce(
+    // TODO: use AmountMath.add
     (sum, amount) => sum + (amount?.value || 0n),
     0n,
   );
@@ -332,9 +334,14 @@ export const planDepositTransfers = (
   return transfers;
 };
 
+/** outbound only. XXX rename. presumes assets are in @noble */
 export const planTransfer = (
   dest: PoolKey,
   amount: NatAmount,
+  preface: MovementDesc[] = [
+    { src: '+agoric', dest: '@agoric', amount },
+    { src: '@agoric', dest: '@noble', amount },
+  ],
 ): MovementDesc[] => {
   const { protocol: p, chainName: evm } = PoolPlaces[dest];
   const steps: MovementDesc[] = [];
@@ -365,5 +372,47 @@ export const planTransfer = (
     default:
       throw Error('unreachable');
   }
-  return harden(steps);
+  return harden([...preface, ...steps]);
+};
+
+/** uses @noble as the sync point */
+export const planTransferPath = (
+  src: PoolKey,
+  dest: PoolKey,
+  amount: NatAmount,
+): MovementDesc[] => {
+  // if the assets are already there, an empty path is in order
+  if (src === dest) {
+    return harden([]);
+  }
+
+  const tail = planTransfer(dest, amount, []);
+  const { protocol: p, chainName: evm } = PoolPlaces[src];
+  const steps: MovementDesc[] = [];
+
+  switch (p) {
+    case 'USDN':
+      steps.push({ dest: '@noble', src: 'USDNVault', amount });
+      break;
+    case 'Aave':
+    case 'Compound':
+      console.warn('TODO: fees');
+      steps.push({
+        src: `${p}_${evm}`,
+        dest: `@${evm}`,
+        amount,
+        // TODO fee: fees[p].Call,
+      });
+      // XXX optimize: combine noble->evm steps
+      steps.push({
+        src: `@${evm}`,
+        dest: '@noble',
+        amount,
+        // XXXfee: fees[p].Account,
+      });
+      break;
+    default:
+      throw Error('unreachable');
+  }
+  return harden([...steps, ...tail]);
 };
