@@ -488,22 +488,22 @@ func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
 	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, agoric.NewKVEntry(path, mailbox))
 }
 
-func (k Keeper) GetPendingChunkData(ctx sdk.Context, pendingId uint64, chunkIndex uint64) []byte {
+func (k Keeper) GetPendingChunkData(ctx sdk.Context, chunkedArtifactId uint64, chunkIndex uint64) []byte {
 	store := ctx.KVStore(k.storeKey)
 	pendingChunkData := prefix.NewStore(store, []byte(pendingChunkDataKeyPrefix))
 
-	key := append(sdk.Uint64ToBigEndian(pendingId), sdk.Uint64ToBigEndian(chunkIndex)...)
+	key := append(sdk.Uint64ToBigEndian(chunkedArtifactId), sdk.Uint64ToBigEndian(chunkIndex)...)
 	if !pendingChunkData.Has(key) {
 		return nil
 	}
 	return pendingChunkData.Get(key)
 }
 
-func (k Keeper) SetPendingChunkData(ctx sdk.Context, pendingId uint64, chunkIndex uint64, data []byte) {
+func (k Keeper) SetPendingChunkData(ctx sdk.Context, chunkedArtifactId uint64, chunkIndex uint64, data []byte) {
 	store := ctx.KVStore(k.storeKey)
 	pendingChunkData := prefix.NewStore(store, []byte(pendingChunkDataKeyPrefix))
 
-	key := append(sdk.Uint64ToBigEndian(pendingId), sdk.Uint64ToBigEndian(chunkIndex)...)
+	key := append(sdk.Uint64ToBigEndian(chunkedArtifactId), sdk.Uint64ToBigEndian(chunkIndex)...)
 	if len(data) == 0 {
 		pendingChunkData.Delete(key)
 		return
@@ -511,10 +511,10 @@ func (k Keeper) SetPendingChunkData(ctx sdk.Context, pendingId uint64, chunkInde
 	pendingChunkData.Set(key, data)
 }
 
-func (k Keeper) GetPendingBundleInstall(ctx sdk.Context, pendingId uint64) *types.MsgInstallBundle {
+func (k Keeper) GetPendingBundleInstall(ctx sdk.Context, chunkedArtifactId uint64) *types.MsgInstallBundle {
 	store := ctx.KVStore(k.storeKey)
 	pendingStore := prefix.NewStore(store, []byte(pendingBundleInstallKeyPrefix))
-	key := sdk.Uint64ToBigEndian(pendingId)
+	key := sdk.Uint64ToBigEndian(chunkedArtifactId)
 	if !pendingStore.Has(key) {
 		return nil
 	}
@@ -526,25 +526,25 @@ func (k Keeper) GetPendingBundleInstall(ctx sdk.Context, pendingId uint64) *type
 
 func (k Keeper) AddPendingBundleInstall(ctx sdk.Context, msg *types.MsgInstallBundle) uint64 {
 	state := k.GetState(ctx)
-	state.LastPendingId++
+	state.LastChunkedArtifactId++
 	k.SetState(ctx, state)
 
-	pendingId := state.LastPendingId
-	k.SetPendingBundleInstall(ctx, pendingId, msg)
+	chunkedArtifactId := state.LastChunkedArtifactId
+	k.SetPendingBundleInstall(ctx, chunkedArtifactId, msg)
 
 	// Attach the pending install node to the linked list.
-	node := &types.PendingInstallNode{
-		PendingId:  pendingId,
+	node := &types.ChunkedArtifactNode{
+		ChunkedArtifactId:  chunkedArtifactId,
 		StartTime:  ctx.BlockTime().Unix(),
 		StartBlock: ctx.BlockHeight(),
 	}
 	store := ctx.KVStore(k.storeKey)
-	key := sdk.Uint64ToBigEndian(pendingId)
+	key := sdk.Uint64ToBigEndian(chunkedArtifactId)
 	startStore := prefix.NewStore(store, []byte(pendingNodeKeyPrefix))
 	bz := k.cdc.MustMarshal(node)
 	startStore.Set(key, bz)
 
-	return pendingId
+	return chunkedArtifactId
 }
 
 // PruneExpiredBundleInstalls removes pending bundle installs that have passed
@@ -560,11 +560,11 @@ func (k Keeper) PruneExpiredBundleInstalls(ctx sdk.Context) {
 	startStore := prefix.NewStore(store, []byte(pendingNodeKeyPrefix))
 
 	state := k.GetState(ctx)
-	for state.FirstPendingId != 0 {
-		pendingId := state.FirstPendingId
-		key := sdk.Uint64ToBigEndian(pendingId)
+	for state.FirstChunkedArtifactId != 0 {
+		chunkedArtifactId := state.FirstChunkedArtifactId
+		key := sdk.Uint64ToBigEndian(chunkedArtifactId)
 		bz := startStore.Get(key)
-		node := &types.PendingInstallNode{}
+		node := &types.ChunkedArtifactNode{}
 		k.cdc.MustUnmarshal(bz, node)
 
 		if deadlineSeconds < 0 || currentSeconds-node.StartTime < deadlineSeconds {
@@ -575,10 +575,10 @@ func (k Keeper) PruneExpiredBundleInstalls(ctx sdk.Context) {
 		}
 
 		// This pending bundle install is dead.  Remove it.
-		k.SetPendingBundleInstall(ctx, pendingId, nil)
+		k.SetPendingBundleInstall(ctx, chunkedArtifactId, nil)
 
 		// Advance to the next node.
-		state.FirstPendingId = node.NextId
+		state.FirstChunkedArtifactId = node.NextId
 	}
 
 	k.SetState(ctx, state)
@@ -590,11 +590,11 @@ func (k Keeper) makeListTools(ctx sdk.Context) *types.ListTools {
 	return types.NewListTools(ctx, listStore, k.cdc)
 }
 
-func (k Keeper) SetPendingBundleInstall(ctx sdk.Context, pendingId uint64, newMsg *types.MsgInstallBundle) {
+func (k Keeper) SetPendingBundleInstall(ctx sdk.Context, chunkedArtifactId uint64, newMsg *types.MsgInstallBundle) {
 	store := ctx.KVStore(k.storeKey)
 	pendingStore := prefix.NewStore(store, []byte(pendingBundleInstallKeyPrefix))
 
-	key := sdk.Uint64ToBigEndian(pendingId)
+	key := sdk.Uint64ToBigEndian(chunkedArtifactId)
 	if newMsg != nil {
 		bz := k.cdc.MustMarshal(newMsg)
 		pendingStore.Set(key, bz)
@@ -606,31 +606,31 @@ func (k Keeper) SetPendingBundleInstall(ctx sdk.Context, pendingId uint64, newMs
 	if msg.ChunkedArtifact != nil && len(msg.ChunkedArtifact.Chunks) > 0 {
 		// Remove the chunks.
 		for i := range msg.ChunkedArtifact.Chunks {
-			k.SetPendingChunkData(ctx, pendingId, uint64(i), nil)
+			k.SetPendingChunkData(ctx, chunkedArtifactId, uint64(i), nil)
 		}
 	}
 	pendingStore.Delete(key)
 
 	// Remove auxilliary data structure entries.
-	k.RemovePendingInstallNode(ctx, pendingId)
+	k.RemoveChunkedArtifactNode(ctx, chunkedArtifactId)
 }
 
-// RemovePendingInstallNode removes this pending install from the keeper's
+// RemoveChunkedArtifactNode removes this pending install from the keeper's
 // ordered linked list structures, and deletes it from the store.
-func (k Keeper) RemovePendingInstallNode(ctx sdk.Context, pendingId uint64) {
+func (k Keeper) RemoveChunkedArtifactNode(ctx sdk.Context, chunkedArtifactId uint64) {
 	lt := k.makeListTools(ctx)
 
-	victimKey := lt.Key(pendingId)
+	victimKey := lt.Key(chunkedArtifactId)
 	victimNode := lt.Fetch(victimKey)
 
 	// Remove the victim from the linked list, keeping the structure intact.
 	lt.Unlink(victimNode, func(firstp, lastp *uint64) {
 		state := k.GetState(ctx)
 		if firstp != nil {
-			state.FirstPendingId = *firstp
+			state.FirstChunkedArtifactId = *firstp
 		}
 		if lastp != nil {
-			state.LastPendingId = *lastp
+			state.LastChunkedArtifactId = *lastp
 		}
 		k.SetState(ctx, state)
 	})
@@ -639,9 +639,9 @@ func (k Keeper) RemovePendingInstallNode(ctx sdk.Context, pendingId uint64) {
 	lt.Delete(victimKey)
 }
 
-func (k Keeper) GetPendingInstallNode(ctx sdk.Context, pendingId uint64) *types.PendingInstallNode {
+func (k Keeper) GetChunkedArtifactNode(ctx sdk.Context, chunkedArtifactId uint64) *types.ChunkedArtifactNode {
 	lt := k.makeListTools(ctx)
-	return lt.Fetch(lt.Key(pendingId))
+	return lt.Fetch(lt.Key(chunkedArtifactId))
 }
 
 func (k Keeper) GetSwingStore(ctx sdk.Context) sdk.KVStore {

@@ -107,12 +107,12 @@ message State {
   repeated QueueSize queue_allowed = 1 [(gogoproto.nullable) = false];
 
   // Doubly-linked list in order of start block and time.
-  uint64 first_pending_id = 2
-      [(gogoproto.jsontag) = "first_pending_id", (gogoproto.moretags) = "yaml:\"first_pending_id\""];
+  uint64 first_chunked_artifact_id = 2
+      [(gogoproto.jsontag) = "first_chunked_artifact_id", (gogoproto.moretags) = "yaml:\"first_chunked_artifact_id\""];
 
-  // The last pending id that has not expired or completed.
-  uint64 last_pending_id = 3
-      [(gogoproto.jsontag) = "last_pending_id", (gogoproto.moretags) = "yaml:\"last_pending_id\""];
+  // The last chunked artifact id that has not expired or completed.
+  uint64 last_chunked_artifact_id = 3
+      [(gogoproto.jsontag) = "lastChunkedArtifactId", (gogoproto.moretags) = "yaml:\"lastChunkedArtifactId\""];
 }
 
 // Map element of a string key to a Nat bean count.
@@ -239,18 +239,18 @@ message ChunkInfo {
 // The pending installation node in the doubly-linked list of pending
 // installations in descending order of age.  This is used to track the state of
 // a pending installation and to expire them efficiently.
-message PendingInstallNode {
+message ChunkedArtifactNode {
   // The id of the pending bundle installation.
-  uint64 pending_id = 1 [(gogoproto.jsontag) = "pending_id", (gogoproto.moretags) = "yaml:\"pending_id\""];
+  uint64 chunked_artifact_id = 1 [(gogoproto.jsontag) = "chunkedArtifactId", (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""];
 
   // Doubly-linked list.
-  uint64 next_id = 2 [(gogoproto.jsontag) = "next_id", (gogoproto.moretags) = "yaml:\"next_id\""];
+  uint64 next_id = 2 [(gogoproto.jsontag) = "nextId", (gogoproto.moretags) = "yaml:\"nextId\""];
 
-  uint64 prior_id = 3 [(gogoproto.jsontag) = "prior_id", (gogoproto.moretags) = "yaml:\"prior_id\""];
+  uint64 prev_id = 3 [(gogoproto.jsontag) = "prevId", (gogoproto.moretags) = "yaml:\"prevId\""];
 
   // The time at which the pending installation began.
-  int64 start_time = 4 [(gogoproto.jsontag) = "start_time", (gogoproto.moretags) = "yaml:\"start_time\""];
+  int64 start_time = 4 [(gogoproto.jsontag) = "startTime", (gogoproto.moretags) = "yaml:\"startTime\""];
 
   // The block at which the pending installation began.
-  int64 start_block = 5 [(gogoproto.jsontag) = "start_block", (gogoproto.moretags) = "yaml:\"start_block\""];
+  int64 start_block = 5 [(gogoproto.jsontag) = "startBlock", (gogoproto.moretags) = "yaml:\"startBlock\""];
 }

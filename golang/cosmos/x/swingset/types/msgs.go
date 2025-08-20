@@ -564,12 +564,12 @@ func (bc ChunkedArtifact) ValidateBasic() error {
 	return nil
 }
 
-func NewMsgSendChunk(pendingId uint64, submitter sdk.AccAddress, chunkIndex uint64, chunkData []byte) *MsgSendChunk {
+func NewMsgSendChunk(chunkedArtifactId uint64, submitter sdk.AccAddress, chunkIndex uint64, chunkData []byte) *MsgSendChunk {
 	return &MsgSendChunk{
-		PendingId:  pendingId,
-		Submitter:  submitter,
-		ChunkIndex: chunkIndex,
-		ChunkData:  chunkData,
+		ChunkedArtifactId: chunkedArtifactId,
+		Submitter:         submitter,
+		ChunkIndex:        chunkIndex,
+		ChunkData:         chunkData,
 	}
 }
 
@@ -601,8 +601,8 @@ func (msg MsgSendChunk) Type() string { return "SendChunk" }
 
 // ValidateBasic runs stateless checks on the message
 func (msg MsgSendChunk) ValidateBasic() error {
-	if msg.PendingId <= 0 {
-		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Pending id must be positive")
+	if msg.ChunkedArtifactId <= 0 {
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Chunked artifact id must be positive")
 	}
 	if msg.Submitter.Empty() {
 		return sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")

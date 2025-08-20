@@ -124,14 +124,14 @@ message MsgInstallBundle {
 // message has been queued for the SwingSet kernel's consideration.
 message MsgInstallBundleResponse {
   // The assigned pending installation, if chunks were specified.
-  uint64 pending_id = 1 [(gogoproto.jsontag) = "pending_id", (gogoproto.moretags) = "yaml:\"pending_id\""];
+  uint64 chunked_artifact_id = 1 [(gogoproto.jsontag) = "chunkedArtifactId", (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""];
 }
 
-// MsgSendChunk carries a chunk of a bundle through RPC to the chain.  The chunk
-// is identified by the pending_id of the bundle install message, and the
-// chunk_index of MsgSendChunk.
+// MsgSendChunk carries a chunk of a bundle through RPC to the chain.
+// The chunk is identified by the chunked artifact id of the bundle install
+// message, and the chunk_index of MsgSendChunk.
 message MsgSendChunk {
-  uint64 pending_id = 1 [(gogoproto.jsontag) = "pending_id", (gogoproto.moretags) = "yaml:\"pending_id\""];
+  uint64 chunked_artifact_id = 1 [(gogoproto.jsontag) = "chunkedArtifactId", (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""];
   bytes  submitter  = 2 [
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
     (gogoproto.jsontag)  = "submitter",
@@ -144,7 +144,7 @@ message MsgSendChunk {
 // MsgSendChunkResponse is an acknowledgement that a chunk has been received by
 // the chain.
 message MsgSendChunkResponse {
-  uint64 pending_id = 1 [(gogoproto.jsontag) = "pending_id", (gogoproto.moretags) = "yaml:\"pending_id\""];
+  uint64 chunked_artifact_id = 1 [(gogoproto.jsontag) = "chunkedArtifactId", (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""];
   // The current state of the chunk.
   ChunkInfo chunk = 2 [
     (gogoproto.jsontag)    = "chunk",
