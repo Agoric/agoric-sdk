@@ -273,12 +273,16 @@ export const getTxStatus = async ({
   params,
   subscriptionId,
   logPrefix = '',
+  timeoutMinutes = 5,
+  waitingPeriod = 20,
 }: {
   url: string;
   fetch: typeof globalThis.fetch;
   params: AxelarQueryParams;
   subscriptionId: string;
   logPrefix?: string;
+  timeoutMinutes?: number;
+  waitingPeriod?: number;
 }) => {
   const body = JSON.stringify(params);
   console.log(`${logPrefix} params: ${body}`);
@@ -288,7 +292,7 @@ export const getTxStatus = async ({
   };
 
   const startTime = Date.now();
-  const pollingDurationMs = 4 * 60 * 1000; // 4 minutes
+  const pollingDurationMs = timeoutMinutes * 60 * 1000;
   let data: AxelarEventRecord[];
 
   while (Date.now() - startTime < pollingDurationMs) {
@@ -336,7 +340,7 @@ export const getTxStatus = async ({
     }
 
     console.log(`${logPrefix} no data, retrying...`);
-    await wait(20);
+    await wait(waitingPeriod);
   }
   return { logs: null, success: false };
 };

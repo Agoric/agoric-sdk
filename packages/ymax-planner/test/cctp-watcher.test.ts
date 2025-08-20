@@ -1,4 +1,3 @@
-/** @file Integration tests for CCTP transfer watching */
 import test from 'ava';
 import { JsonRpcProvider, id, toBeHex, zeroPadValue } from 'ethers';
 import { watchCCTPTransfer } from '../src/watch-cctp.ts';
