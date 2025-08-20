@@ -174,7 +174,7 @@
   "devDependencies": {
     "@agoric/cosmos": "workspace:*",
     "@ava/typescript": "^5.0.0",
-    "@cosmology/telescope": "^1.12.8",
+    "@cosmology/telescope": "^1.12.21",
     "@endo/bundle-source": "^4.1.2",
     "@endo/import-bundle": "^1.5.2",
     "ava": "^6.3.0",

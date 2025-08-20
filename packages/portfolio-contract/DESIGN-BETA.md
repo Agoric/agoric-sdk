@@ -11,7 +11,7 @@ architecture-beta
     ymaxui:R -- L:PE
 
   group offchain(cloud)[Agoric Off Chain]
-    service PE(server)[Planning Engine] in offchain
+    service PE(server)[Ymax Planner] in offchain
 
     PE:R -- L:spectrum
 
@@ -87,7 +87,7 @@ sequenceDiagram
   end
 
   box  rgb(255,165,0) Agoric off-chain
-    participant EE
+    participant YP as Ymax Planner
     participant Res as Resolver
   end
 
@@ -106,33 +106,92 @@ sequenceDiagram
 
   %% Notation: ->> for initial message, -->> for consequences
 
-  Note over EE: long-running process starts and monitors all portfolios
+  Note over YP: long-running process starts and monitors all portfolios
   Note over LCAin: USDC arriving in LCAin
-  LCAin -->> EE: EE observes USDC arrives
-  EE ->> LCAin: query bank balance
-  EE ->> portfolio: read portfolio allocations
-  EE ->> icaN: read balance
-  EE ->> AavePos: read balance
-  Note over EE: think and generate steps
-  EE ->> portfolio: send moves
+  LCAin -->> YP: YP observes USDC arrives
+  YP ->> LCAin: query bank balance
+  YP ->> portfolio: read portfolio allocations
+  YP ->> icaN: read balance
+  YP ->> aavePos: read balance
+  Note over YP: think and generate steps
+  YP ->> portfolio: send moves
   portfolio ->> LCAorch: CREATE (lazily)
-  %% Optionally, send to LCAin and have EE do the planning
-  critical CCTP out
-    LCAin ->> LCAorch: $5k
-    LCAorch ->> icaN: $5k
-    icaN ->> LCAorch: ack
-    LCAorch ->> icaN: depositForBurn
-    icaN ->> LCAorch: ack
-    icaN -->> acctArb: $5ku
-    acctArb -->> Res: event?
-    Res ->> portfolio: ack
-  option call `supply`
-    LCAorch ->> AX: supply $5k acctArb
-    AX -->> acctArb: supply $5k
-    acctArb ->> aavePos: $5k
-    aavePos -->> Res: Mint event
-    Res ->> portfolio: ack
+
+  Note over LCAorch, acctArb: CCTP Out
+  LCAin ->> LCAorch: $5k
+  LCAorch ->> icaN: $5k
+  icaN ->> LCAorch: ack
+  LCAorch ->> icaN: depositForBurn
+  icaN ->> LCAorch: ack
+  icaN -->> acctArb: $5ku
+  acctArb -->> Res: event?
+  Res ->> portfolio: ack
+
+  Note over LCAorch, aavePos: Supply to Aave
+  LCAorch ->> AX: supply $5k acctArb
+  AX -->> acctArb: supply $5k
+  acctArb ->> aavePos: $5k
+  aavePos -->> Res: Mint event
+  Res ->> portfolio: ack
+```
+
+5. manually-triggered rebalance
+```mermaid
+sequenceDiagram
+  autonumber
+
+  actor UI
+
+  box rgb(255,153,153) Agoric
+    participant portfolio
+    participant vstorage
+    participant LCAorch
+    participant LCAin
   end
+
+  box  rgb(255,165,0) Agoric off-chain
+    participant YP as Ymax Planner
+    participant Res as Resolver
+  end
+
+  box rgb(163,180,243) Noble
+      participant icaN as icaN*
+  end
+  box rgb(163,180,243) Axelar
+      participant AX as GMP
+  end
+  box rgb(163,180,243) Arbitrum
+      participant acctArb as acctArb*
+      participant aavePos as aavePos*
+  end
+  box rgb(163,180,243) Base
+      participant acctBase as acctBase*
+      participant compPos as compPos*
+  end
+
+  %% get plan
+  UI ->> portfolio: rebalance
+  portfolio ->> YP: YP observes portfolio allocation change
+  Note over YP: think and generate steps
+
+  Note over portfolio, aavePos: CCTP back
+  portfolio ->> AX: withdraw $2k acctArb
+  AX -->> acctArb: withdraw $2k
+  acctArb ->> aavePos: withdraw $2k
+  aavePos ->> acctArb: $2k
+  acctArb -->> icaN: $2k via CCTP
+
+  Note over portfolio, compPos: CCTP Out and Supply to Compound
+  portfolio ->> portfolio: provideAccount on Base
+
+  %% Note over portfolio, acctArb: Send USDC
+  icaN -->> acctBase: $2k via CCTP
+  acctBase -->> portfolio: ack
+
+  portfolio ->> AX: supply $2k acctBase
+  AX -->> acctBase: supply $2k
+  acctBase ->> compPos: $2k
+  compPos -->> portfolio: ack
 ```
 
 ### User stories
@@ -149,6 +208,8 @@ sequenceDiagram
 4. tiger would like to edit their existing portfolio and deposit USDC to it
     1. operation 3: new/edit portfolio and deposit from Agoric chain
     2. operation 4: deposit triggered distribution
+5. tiger would like to manually trigger a rebalance
+    1. operation 5: manually-triggered rebalance
 
 #### NOT in scope for now
 1. deposit from Fast USDC source chains and create a new portfolio via address hook

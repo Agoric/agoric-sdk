@@ -15,6 +15,7 @@ import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type { VstorageKit, SmartWalletKit } from '@agoric/client-utils';
 import type { Bech32Address } from '@agoric/orchestration';
+import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
@@ -476,7 +477,7 @@ export const startEngine = async ({
         ),
       );
 
-      const vbankAssets = new Map(
+      const vbankAssets = new Map<string, AssetInfo>(
         depositAddrsWithActivity.size
           ? await vstorageKit.readPublished('agoricNames.vbankAsset')
           : undefined,
