@@ -79,9 +79,9 @@ func (k Querier) PendingInstall(c context.Context, req *types.QueryPendingInstal
 	}
 
 	return &types.QueryPendingInstallResponse{
-		PendingId:    req.PendingId,
-		BundleChunks: msg.BundleChunks,
-		StartTime:    pin.StartTime,
-		StartBlock:   pin.StartBlock,
+		PendingId:       req.PendingId,
+		ChunkedArtifact: msg.ChunkedArtifact,
+		StartTime:       pin.StartTime,
+		StartBlock:      pin.StartBlock,
 	}, nil
 }

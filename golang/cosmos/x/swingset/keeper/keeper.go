@@ -603,9 +603,9 @@ func (k Keeper) SetPendingBundleInstall(ctx sdk.Context, pendingId uint64, newMs
 
 	var msg types.MsgInstallBundle
 	k.cdc.MustUnmarshal(pendingStore.Get(key), &msg)
-	if msg.BundleChunks != nil && len(msg.BundleChunks.Chunks) > 0 {
+	if msg.ChunkedArtifact != nil && len(msg.ChunkedArtifact.Chunks) > 0 {
 		// Remove the chunks.
-		for i := range msg.BundleChunks.Chunks {
+		for i := range msg.ChunkedArtifact.Chunks {
 			k.SetPendingChunkData(ctx, pendingId, uint64(i), nil)
 		}
 	}

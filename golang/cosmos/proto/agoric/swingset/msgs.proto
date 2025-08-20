@@ -110,14 +110,14 @@ message MsgInstallBundle {
     (gogoproto.jsontag)  = "submitter",
     (gogoproto.moretags) = "yaml:\"submitter\""
   ];
-  // Either bundle, compressed_bundle, or bundle_chunks will be set.
+  // Either bundle, compressed_bundle, or chunked_artifact will be set.
   // Default compression algorithm is gzip.
   bytes compressed_bundle = 3
       [(gogoproto.jsontag) = "compressedBundle", (gogoproto.moretags) = "yaml:\"compressedBundle\""];
   // Total size in bytes of the bundle artifact.
   int64 uncompressed_size = 4 [(gogoproto.jsontag) = "uncompressedSize"];
   // Declaration of a chunked bundle.
-  BundleChunks bundle_chunks = 5 [(gogoproto.jsontag) = "bundleChunks", (gogoproto.moretags) = "yaml:\"bundleChunks\""];
+  ChunkedArtifact chunked_artifact = 5 [(gogoproto.jsontag) = "chunkedArtifact", (gogoproto.moretags) = "yaml:\"chunkedArtifact\""];
 }
 
 // MsgInstallBundleResponse is an empty acknowledgement that an install bundle
