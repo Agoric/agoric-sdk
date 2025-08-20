@@ -362,6 +362,7 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
         const subscriptionData = (await vstorageKit.readPublished(
           `${stripPrefix('published.', ORCHESTRATION_SUBSCRIPTIONS_PREFIX)}.${subscriptionKey}`,
         )) as Omit<Subscription, 'subscriptionId'>;
+        console.log('subscription data', subscriptionData);
         console.warn(`Found existing subscription: ${subscriptionKey}`, {
           type: subscriptionData.type,
           status: subscriptionData.status,
@@ -376,7 +377,8 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
               subscriptionId: subscriptionKey,
               ...subscriptionData,
             } as Subscription;
-            await handleSubscription(ctx, subscription);
+            // Process subscription concurrently without blocking other subscriptions
+            void handleSubscription(ctx, subscription);
           } catch (error) {
             console.error(
               `Failed to process existing subscription ${subscriptionKey}:`,
@@ -554,7 +556,8 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
               subscriptionId,
               ...subscriptionData,
             } as Subscription;
-            await handleSubscription(ctx, subscription);
+            // Process subscription concurrently without blocking event processing
+            void handleSubscription(ctx, subscription);
           } catch (error) {
             console.error(
               `Failed to process subscription ${subscriptionId}:`,
