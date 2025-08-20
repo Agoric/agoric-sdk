@@ -229,7 +229,7 @@ t1-provision-one-with-powers: wait-for-cosmos
 	@addrfile=t1/$(BASE_PORT)/cosmos-client-account; \
 		test -f $$addrfile || addrfile=t1/$(BASE_PORT)/ag-cosmos-helper-address; \
 		addr=$$(cat $$addrfile); \
-	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
+	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr || \
 		{ while ! $(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
 		  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
 			bootstrap $$addr $(SOLO_COINS); do sleep 2; done && \
@@ -285,7 +285,7 @@ t1-provision-one: wait-for-cosmos
 	@addrfile=t1/$(BASE_PORT)/cosmos-client-account; \
 		test -f $$addrfile || addrfile=t1/$(BASE_PORT)/ag-cosmos-helper-address; \
 		addr=$$(cat $$addrfile); \
-	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr --chain-id=$(CHAIN_ID) || \
+	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr || \
 		{ $(AGCH) --home=t1/bootstrap tx bank send --keyring-backend=test --from=bootstrap \
 		  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes --chain-id=$(CHAIN_ID) \
 			bootstrap $$addr $(SOLO_COINS) && \
