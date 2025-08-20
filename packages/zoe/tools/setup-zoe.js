@@ -89,15 +89,16 @@ export const setUpZoeForTest = async ({
    * upon in tests of this variety.
    *
    * @param {object} pathOrExports
+   * @param {string} [bundleId]
    * @returns {Promise<Installation>}
    */
-  const bundleAndInstall = async pathOrExports => {
+  const bundleAndInstall = async (pathOrExports, bundleId) => {
     const bundle = await bundleModule(pathOrExports);
     assert(
       vatAdminState,
       'bundleAndInstall called before vatAdminState defined',
     );
-    const id = `b1-zoe-test-${Math.random()}`;
+    const id = bundleId || `b1-zoe-test-${Math.random()}`;
     vatAdminState.installBundle(id, bundle);
     return E(zoeService).installBundleID(id);
   };

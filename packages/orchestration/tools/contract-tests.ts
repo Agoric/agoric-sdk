@@ -41,6 +41,11 @@ import { makeTestAddress } from './make-test-address.js';
 
 export const ROOT_STORAGE_PATH = 'orchtest'; // Orchetration Contract Test
 
+export interface BridgeObject {
+  type: string;
+  messages: any[];
+}
+
 /**
  * Common setup for contract tests, without any specific asset configuration.
  */
@@ -66,7 +71,11 @@ export const setupOrchestrationTest = async ({
   });
   // XXX real bankManager does this. fake should too?
   // TODO https://github.com/Agoric/agoric-sdk/issues/9966
-  await makeWellKnownSpaces(agoricNamesAdmin, log, ['vbankAsset']);
+  await makeWellKnownSpaces(agoricNamesAdmin, log, [
+    'installation',
+    'instance',
+    'vbankAsset',
+  ]);
 
   const vowTools = prepareSwingsetVowTools(rootZone.subZone('vows'));
 
@@ -89,10 +98,10 @@ export const setupOrchestrationTest = async ({
   finisher.useRegistry(bridgeTargetKit.targetRegistry);
   await E(transferBridge).initHandler(bridgeTargetKit.bridgeHandler);
 
-  const localBridgeLog: { obj: any; result: any }[] = [];
+  const localBridgeLog: { obj: BridgeObject; result: any }[] = [];
   const localchainBridge = makeFakeLocalchainBridge(
     rootZone,
-    (obj, result) => localBridgeLog.push({ obj, result }),
+    (obj: BridgeObject, result) => localBridgeLog.push({ obj, result }),
     makeTestAddress,
   );
   /** @returns {ReadonlyArray<any>} the input messages sent to the localchain bridge */

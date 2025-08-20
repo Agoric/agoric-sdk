@@ -21,6 +21,7 @@
   "devDependencies": {
     "@agoric/ertp": "workspace:*",
     "@agoric/fast-usdc": "workspace:*",
+    "@agoric/portfolio-api": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
     "@agoric/zoe": "workspace:*",
     "@agoric/zone": "workspace:*",
@@ -61,5 +62,8 @@
       "@endo/init/debug.js"
     ],
     "timeout": "20m"
+  },
+  "typeCoverage": {
+    "atLeast": 96.46
   }
 }

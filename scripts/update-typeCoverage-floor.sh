@@ -12,5 +12,8 @@ for package in packages/*/package.json; do
     # but this gives us more flexibility. Reviewers should evaluate whether
     # lowering is warranted.
     yarn run --top-level --silent type-coverage --update
+  else
+    # This scripts only updates. If you want to set a flor, add a `typeCoverage` property in the package.
+    echo "No typeCoverage found in $package"
   fi
 done

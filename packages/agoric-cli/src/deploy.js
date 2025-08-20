@@ -190,6 +190,12 @@ const connectAndRun = async (
   return retryWebsocket().then(() => exit.promise);
 };
 
+/**
+ * @param {string} progname
+ * @param {string[]} rawArgs
+ * @param {{ makeWebSocket?: (...args: ConstructorParameters<typeof WebSocket>) => WebSocket; anylogger: (name: string) => Console; now?: () => number; fs?: any; }} powers
+ * @param {{ allowUnsafePlugins: any; provide: string; sdk: any; need: string; hostport: string; target: string | number | undefined; scriptArgs: any; }} opts
+ */
 export default async function deployMain(progname, rawArgs, powers, opts) {
   const { anylogger, now, fs } = powers;
   const console = anylogger('agoric:deploy');
@@ -238,7 +244,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
 
   const match = opts.hostport.match(/^(.*):(\d+)$/);
   const host = match ? match[1] : 'localhost';
-  const port = match ? match[2] : '8000';
+  const port = match ? +match[2] : 8000;
 
   const wsurl = opts.hostport.includes('//')
     ? new URL(opts.hostport, 'ws://localhost:8000')

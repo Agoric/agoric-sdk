@@ -34,7 +34,7 @@ import type { Zone } from '@agoric/zone';
 import { makePromiseKit } from '@endo/promise-kit';
 import type { AxelarId, GmpAddresses } from '../src/portfolio.contract.ts';
 import type { EVMContractAddressesMap } from '../src/type-guards.ts';
-import type { AxelarChain } from '../src/constants.js';
+import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 
 export const localAccount0 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
 

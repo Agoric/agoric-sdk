@@ -25,7 +25,7 @@ import {
 import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import type { GuestInterface } from '../../async-flow/src/types.ts';
-import { AxelarChain } from './constants.js';
+import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { ERC20, makeEVMSession, type EVMT } from './evm-facade.ts';
 import type { GMPAccountInfo, PortfolioKit } from './portfolio.exo.ts';
 import {
@@ -42,6 +42,7 @@ import type {
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { PoolKey } from './type-guards.ts';
 import { q, X } from '@endo/errors';
+import type { NatValue } from '@agoric/ertp';
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;

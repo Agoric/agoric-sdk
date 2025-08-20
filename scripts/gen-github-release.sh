@@ -179,6 +179,10 @@ The agd service is not using the same version of Node.js as the one used when bu
 
 Unlike typical cosmos-sdk chains where the daemon is a single executable file, Agoric's use of cosmos-sdk depends on many components of `agoric-sdk` at runtime. Copying `agd` to `/usr/local/bin` or the like is unlikely to produce a working installation. For more detail, see: https://github.com/Agoric/agoric-sdk/issues/7825
 
+### Troubleshooting `yarn: command not found` or `error This project's package.json defines "packageManager": "yarn@4.9.x". However the current global version of Yarn is 1.22.22`
+
+Generally, running `corepack enable` before running `yarn install` will resolve this issue. But if the issue persists, following `corepack enable` with `corepack prepare yarn@4.9.x --activate` helps resolve the issue. Replace `4.9.x` with the actual version.
+
 ### Troubleshooting `Cannot find dependency ...` in systemd
 
 If you have `LimitNOFILE=4096` in your systemd unit file, change it to `LimitNOFILE=65536`. For more detail, see https://github.com/Agoric/agoric-sdk/issues/7817

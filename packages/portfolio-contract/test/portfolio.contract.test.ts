@@ -4,8 +4,11 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
 import type { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
+import {
+  eventLoopIteration,
+  inspectMapStore,
+} from '@agoric/internal/src/testing-utils.js';
 import { passStyleOf } from '@endo/far';
 import type { StatusFor } from '../src/type-guards.ts';
 import {
@@ -192,7 +195,7 @@ test('open a portfolio with Compound position', async t => {
 });
 
 test('open portfolio with USDN, Aave positions', async t => {
-  const { trader1, common } = await setupTrader(t);
+  const { trader1, common, contractBaggage } = await setupTrader(t);
   const { bld, usdc, poc26 } = common.brands;
 
   const { add } = AmountMath;
@@ -243,6 +246,11 @@ test('open portfolio with USDN, Aave positions', async t => {
   const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
   t.snapshot(contents, 'vstorage');
   t.snapshot(done.payouts, 'refund payouts');
+
+  const tree = inspectMapStore(contractBaggage);
+  delete tree['chainHub']; // 'initial baggage' test captures this
+  // XXX portfolio exo state not included UNTIL https://github.com/Agoric/agoric-sdk/issues/10950
+  t.snapshot(tree, 'baggage after open with positions');
 });
 
 test('contract rejects unknown pool keys', async t => {
@@ -271,7 +279,7 @@ test('contract rejects unknown pool keys', async t => {
 });
 
 test('open portfolio with target allocations', async t => {
-  const { trader1, common } = await setupTrader(t);
+  const { trader1, common, contractBaggage } = await setupTrader(t);
   const { poc26 } = common.brands;
 
   const targetAllocation = {
@@ -294,6 +302,11 @@ test('open portfolio with target allocations', async t => {
 
   t.snapshot(info, 'portfolio');
   t.snapshot(done.payouts, 'refund payouts');
+
+  const tree = inspectMapStore(contractBaggage);
+  delete tree['chainHub']; // 'initial baggage' test captures this
+  // XXX portfolio exo state not included UNTIL https://github.com/Agoric/agoric-sdk/issues/10950
+  t.snapshot(tree, 'baggage after open with target allocations');
 });
 
 test('claim rewards on Aave position successfully', async t => {
@@ -565,4 +578,12 @@ test('portfolios node updates for each new portfolio', async t => {
     const x = storage.getDeserialized(`${ROOT_STORAGE_PATH}.portfolios`).at(-1);
     t.deepEqual(x, { addPortfolio: `portfolio1` });
   }
+});
+
+// baggage after a simple startInstance, without any other startup logic
+test('initial baggage', async t => {
+  const { contractBaggage } = await setupTrader(t);
+
+  const tree = inspectMapStore(contractBaggage);
+  t.snapshot(tree, 'contract baggage after start');
 });

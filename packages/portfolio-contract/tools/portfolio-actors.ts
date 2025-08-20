@@ -11,7 +11,13 @@
  * @see type-guards.ts for the authoritative interface specification
  */
 import { type VstorageKit } from '@agoric/client-utils';
-import { AmountMath, type NatAmount, type NatValue } from '@agoric/ertp';
+import {
+  AmountMath,
+  type Amount,
+  type Brand,
+  type NatAmount,
+  type NatValue,
+} from '@agoric/ertp';
 import { NonNullish } from '@agoric/internal';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
@@ -19,9 +25,15 @@ import type { Instance } from '@agoric/zoe';
 import { Fail } from '@endo/errors';
 import { objectMap } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
-import type { AxelarChain, YieldProtocol } from '../src/constants.js';
-import { type start } from '../src/portfolio.contract.js';
-import type { MovementDesc } from '../src/type-guards-steps.js';
+import type {
+  AxelarChain,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
+import { type start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
+import type {
+  AssetPlaceRef,
+  MovementDesc,
+} from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import {
   makePositionPath,
   portfolioIdOfPath,
@@ -30,13 +42,35 @@ import {
   type PortfolioInvitationMaker,
   type ProposalType,
   type StatusFor,
-} from '../src/type-guards.js';
-import type { WalletTool } from './wallet-offer-tools.js';
+  type PoolKey,
+  type TargetAllocation,
+  PoolPlaces,
+} from '@aglocal/portfolio-contract/src/type-guards.js';
+import type { WalletTool } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.js';
 
 const { fromEntries } = Object;
 
 assert.equal(ROOT_STORAGE_PATH, 'orchtest');
 const stripRoot = (path: string) => path.replace(/^orchtest\./, '');
+
+export const makePortfolioQuery = (
+  readPublished: VstorageKit['readPublished'],
+  portfolioKey: `${string}.portfolios.portfolio${number}`,
+) => {
+  const self = harden({
+    getPortfolioStatus: () =>
+      readPublished(portfolioKey) as Promise<StatusFor['portfolio']>,
+    getPositionPaths: async () => {
+      const { positionKeys } = await self.getPortfolioStatus();
+      return positionKeys.map(key => `${portfolioKey}.positions.${key}`);
+    },
+    getPositionStatus: (key: PoolKey) =>
+      readPublished(`${portfolioKey}.positions.${key}`) as Promise<
+        StatusFor['position']
+      >,
+  });
+  return self;
+};
 
 /**
  * Creates a trader object for testing portfolio contract interactions.
@@ -68,8 +102,8 @@ export const makeTrader = (
     assert.fail('no vstorage access'),
 ) => {
   let nonce = 0;
-  let openId: string | undefined = undefined;
-  let portfolioPath: string | undefined = undefined;
+  let openId: string | undefined;
+  let portfolioPath: string | undefined;
 
   const { brand: accessBrand } = wallet.getAssets().Access;
   const Access = AmountMath.make(accessBrand, 1n);
@@ -252,4 +286,96 @@ export const makePortfolioSteps = <
   }
 
   return harden({ give, steps });
+};
+
+/**
+ * Compute a breakdown of `deposit` into amounts
+ * to send to positions so that the resulting position balances are as close
+ * to targetAllocation as possible.
+ */
+export const planDepositTransfers = (
+  deposit: NatAmount,
+  currentBalances: Partial<Record<AssetPlaceRef, NatAmount>>,
+  targetAllocation: TargetAllocation,
+): Partial<Record<PoolKey, NatAmount>> => {
+  const { brand } = deposit;
+  const depositValue = deposit.value;
+
+  // Calculate total current value across all positions
+  const totalCurrent = Object.values(currentBalances).reduce(
+    (sum, amount) => sum + (amount?.value || 0n),
+    0n,
+  );
+
+  // Total value after deposit
+  const totalAfterDeposit = totalCurrent + depositValue;
+
+  // Calculate target amounts for each position
+  const transfers: Partial<Record<PoolKey, NatAmount>> = {};
+
+  for (const [poolKey, targetPercent] of Object.entries(targetAllocation)) {
+    const currentAmount = currentBalances[poolKey as PoolKey]?.value || 0n;
+    const targetAmount = (totalAfterDeposit * BigInt(targetPercent)) / 100n;
+    const transferAmount = targetAmount - currentAmount;
+
+    if (transferAmount > 0n) {
+      transfers[poolKey as PoolKey] = make(brand, transferAmount);
+    }
+  }
+
+  // Ensure we don't exceed the deposit amount
+  const totalTransfers = Object.values(transfers).reduce(
+    (sum, amount) => sum + (amount?.value || 0n),
+    0n,
+  );
+
+  if (totalTransfers > depositValue) {
+    // Scale down proportionally if we exceed the deposit
+    for (const [poolKey, amount] of Object.entries(transfers)) {
+      if (amount) {
+        transfers[poolKey as PoolKey] = make(
+          brand,
+          (amount.value * depositValue) / totalTransfers,
+        );
+      }
+    }
+  }
+
+  return transfers;
+};
+
+export const planTransfer = (
+  dest: PoolKey,
+  amount: NatAmount,
+): MovementDesc[] => {
+  const { protocol: p, chainName: evm } = PoolPlaces[dest];
+  const steps: MovementDesc[] = [];
+
+  switch (p) {
+    case 'USDN':
+      const detail = { usdnOut: ((amount.value || 0n) * 99n) / 100n };
+      console.warn('TODO: client should query exchange rate');
+      steps.push({ src: '@noble', dest: 'USDNVault', amount, detail });
+      break;
+    case 'Aave':
+    case 'Compound':
+      // XXX optimize: combine noble->evm steps
+      steps.push({
+        src: '@noble',
+        dest: `@${evm}`,
+        amount,
+        // XXXfee: fees[p].Account,
+      });
+      console.warn('TODO: fees');
+      steps.push({
+        src: `@${evm}`,
+        dest: `${p}_${evm}`,
+        amount,
+        // TODO fee: fees[p].Call,
+      });
+      break;
+    default:
+      throw Error('unreachable');
+  }
+  return harden(steps);
 };

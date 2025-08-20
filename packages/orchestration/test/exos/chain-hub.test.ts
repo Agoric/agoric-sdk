@@ -560,3 +560,61 @@ test('cctp, non-cosmos chains', async t => {
     cctpDestinationDomain: 0,
   });
 });
+
+test('isEmpty', t => {
+  const { chainHub } = setup();
+
+  // Initially empty
+  t.true(chainHub.isEmpty(), 'ChainHub is initially empty');
+
+  // Register a chain
+  chainHub.registerChain('testchain', {
+    chainId: 'test-1',
+    namespace: 'cosmos',
+    reference: 'test-1',
+    bech32Prefix: 'test',
+  });
+  t.false(chainHub.isEmpty(), 'ChainHub is not empty after registering chain');
+
+  // Test with fresh hub and connection
+  const { chainHub: chainHub2 } = setup();
+  t.true(chainHub2.isEmpty(), 'Fresh ChainHub is empty');
+
+  chainHub2.registerConnection('chain1', 'chain2', {
+    id: 'connection-0',
+    client_id: '07-tendermint-test',
+    counterparty: {
+      client_id: '07-tendermint-test',
+      connection_id: 'connection-1',
+    },
+    state: 3,
+    transferChannel: {
+      channelId: 'channel-0',
+      portId: 'transfer',
+      counterPartyChannelId: 'channel-1',
+      counterPartyPortId: 'transfer',
+      version: 'ics20-1',
+      state: 3,
+      ordering: 0,
+    },
+  });
+  t.false(
+    chainHub2.isEmpty(),
+    'ChainHub is not empty after registering connection',
+  );
+
+  // Test with fresh hub and asset
+  const { chainHub: chainHub3 } = setup();
+  chainHub3.registerChain('agoric', {
+    chainId: 'agoric-3',
+    bech32Prefix: 'agoric',
+    namespace: 'cosmos',
+    reference: 'agoric-3',
+  });
+  chainHub3.registerAsset('utok', {
+    chainName: 'agoric',
+    baseName: 'agoric',
+    baseDenom: 'utok',
+  });
+  t.false(chainHub3.isEmpty(), 'ChainHub is not empty after registering asset');
+});

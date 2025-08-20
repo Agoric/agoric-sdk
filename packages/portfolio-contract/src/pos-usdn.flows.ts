@@ -14,7 +14,7 @@ import {
   MsgUnlock,
 } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, type NatValue } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type { CosmosChainAddress, Denom } from '@agoric/orchestration';
 import {

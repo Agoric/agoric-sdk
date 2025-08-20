@@ -3,6 +3,7 @@
  * @see {@link makeEVMSession} for creating contract call batches
  */
 import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
+import type { NatValue } from '@agoric/ertp';
 
 export type EVMT = {
   uint16: number;
