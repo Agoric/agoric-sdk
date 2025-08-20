@@ -429,7 +429,6 @@ export const startEngine = async ({
           if (portfoliosData.addPortfolio) {
             const key = portfoliosData.addPortfolio;
             console.warn('Detected new portfolio', key);
-            // XXX we should probably read at streamCell.blockHeight.
             const status = await vstorageKit.readPublished(
               `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${key}`,
             );
