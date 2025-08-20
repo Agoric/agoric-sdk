@@ -7,6 +7,7 @@ type WatchTransferOptions = {
   watchAddress: string;
   expectedAmount: bigint;
   timeoutMinutes?: number;
+  logPrefix?: string;
 };
 
 export const watchCCTPTransfer = ({
@@ -14,6 +15,7 @@ export const watchCCTPTransfer = ({
   watchAddress,
   expectedAmount,
   timeoutMinutes = 5,
+  logPrefix = '',
 }: WatchTransferOptions): Promise<boolean> => {
   return new Promise(resolve => {
     const TO_TOPIC = zeroPadValue(watchAddress.toLowerCase(), 32);
@@ -22,7 +24,7 @@ export const watchCCTPTransfer = ({
     };
 
     console.log(
-      `Watching for ERC-20 transfers to: ${watchAddress} with amount: ${expectedAmount}`,
+      `${logPrefix} Watching for ERC-20 transfers to: ${watchAddress} with amount: ${expectedAmount}`,
     );
 
     let transferFound = false;
@@ -42,7 +44,7 @@ export const watchCCTPTransfer = ({
         if (transferFound) return;
 
         if (!log.topics || log.topics.length < 3 || !log.data) {
-          console.warn('Malformed log received, skipping:', log);
+          console.warn(`${logPrefix} Malformed log received, skipping:`, log);
           return;
         }
 
@@ -51,24 +53,24 @@ export const watchCCTPTransfer = ({
         const amount = BigInt(log.data);
 
         console.log(
-          `Transfer detected: token=${log.address} from=${from} to=${to} amount=${amount} tx=${log.transactionHash}`,
+          `${logPrefix} Transfer detected: token=${log.address} from=${from} to=${to} amount=${amount} tx=${log.transactionHash}`,
         );
 
         if (amount === expectedAmount) {
           console.log(
-            `✓ Amount matches! Expected: ${expectedAmount}, Received: ${amount}`,
+            `${logPrefix} ✓ Amount matches! Expected: ${expectedAmount}, Received: ${amount}`,
           );
           transferFound = true;
           cleanup();
           resolve(true);
         } else {
           console.log(
-            `Amount mismatch. Expected: ${expectedAmount}, Received: ${amount}`,
+            `${logPrefix} Amount mismatch. Expected: ${expectedAmount}, Received: ${amount}`,
           );
           return; // Continue watching
         }
       } catch (error: any) {
-        console.log('Log parsing error:', error.message);
+        console.log(`${logPrefix} Log parsing error:`, error.message);
       }
     };
 
@@ -79,7 +81,7 @@ export const watchCCTPTransfer = ({
       () => {
         if (!transferFound) {
           console.log(
-            `✗ No matching transfer found within ${timeoutMinutes} minutes`,
+            `${logPrefix} ✗ No matching transfer found within ${timeoutMinutes} minutes`,
           );
           cleanup();
           resolve(false);

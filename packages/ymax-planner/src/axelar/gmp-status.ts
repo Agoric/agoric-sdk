@@ -272,14 +272,16 @@ export const getTxStatus = async ({
   fetch = globalThis.fetch,
   params,
   subscriptionId,
+  logPrefix = '',
 }: {
   url: string;
   fetch: typeof globalThis.fetch;
   params: AxelarQueryParams;
   subscriptionId: string;
+  logPrefix?: string;
 }) => {
   const body = JSON.stringify(params);
-  console.log(`params: ${body}`);
+  console.log(`${logPrefix} params: ${body}`);
   const headers = {
     accept: '*/*',
     'content-type': 'application/json',
@@ -304,8 +306,8 @@ export const getTxStatus = async ({
     data = parsed.data;
 
     if (Array.isArray(data) && data?.[0]?.executed) {
-      console.log('✅ contract call executed', data[0].executed);
-      console.log('txHash on EVM:', data[0].executed.transactionHash);
+      console.log(`${logPrefix} ✅ contract call executed`, data[0].executed);
+      console.log(`${logPrefix} txHash on EVM:`, data[0].executed.transactionHash);
 
       const subscriptionTopic = ethers.id('SubscriptionResolved(string)');
       const logs = data[0].executed.receipt.logs;
@@ -320,14 +322,14 @@ export const getTxStatus = async ({
           subscriptionLog.data,
         );
 
-        console.log('decodedSubscriptionId:', decodedSubscriptionId);
+        console.log(`${logPrefix} decodedSubscriptionId:`, decodedSubscriptionId);
         if (decodedSubscriptionId === subscriptionId) {
           return { logs: data[0].executed, success: true };
         }
       }
     }
 
-    console.log('no data, retrying...');
+    console.log(`${logPrefix} no data, retrying...`);
     await wait(20);
   }
   return { logs: null, success: false };

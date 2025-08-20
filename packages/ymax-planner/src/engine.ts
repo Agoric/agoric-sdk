@@ -378,7 +378,9 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
               ...subscriptionData,
             } as Subscription;
             // Process subscription concurrently without blocking other subscriptions
-            void handleSubscription(ctx, subscription);
+            void handleSubscription(ctx, subscription).catch(error => {
+              console.error(`[${subscriptionKey}] Failed to process existing subscription:`, error);
+            });
           } catch (error) {
             console.error(
               `Failed to process existing subscription ${subscriptionKey}:`,
@@ -557,7 +559,9 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
               ...subscriptionData,
             } as Subscription;
             // Process subscription concurrently without blocking event processing
-            void handleSubscription(ctx, subscription);
+            void handleSubscription(ctx, subscription).catch(error => {
+              console.error(`[${subscriptionId}] Failed to process subscription:`, error);
+            });
           } catch (error) {
             console.error(
               `Failed to process subscription ${subscriptionId}:`,
