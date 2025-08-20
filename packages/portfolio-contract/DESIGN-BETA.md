@@ -193,6 +193,83 @@ sequenceDiagram
   acctBase ->> compPos: $2k
   compPos -->> portfolio: ack
 ```
+## Planner and Resolver resolving a subscription
+
+```mermaid
+sequenceDiagram
+  box rgb(255,153,153) Agoric
+    participant ymax as ymax Contract
+  end
+
+  box  rgb(255,165,0) Agoric off-chain
+    participant Planner as ymax Planner
+    participant SM as Subscription Manager
+    participant VS as Vstorage
+    participant GMP as GMP Handler
+    participant CCTP as CCTP Handler
+  end
+
+  box rgb(163,180,243) External Networks
+    participant Axelar as Axelar Network
+    participant EVM as EVM Chain
+  end
+
+        Note over Planner: ymax Planner starts up
+        Planner->>VS: Read existing portfolios
+        Planner->>VS: Read existing subscriptions
+
+        Note over ymax,SM: Subscription Creation
+        ymax->>VS: Create subscription (GMP/CCTP)
+        Planner-->>VS: get subscription data
+        Planner->>SM: handleSubscription()
+
+        alt GMP Subscription
+            Note over SM,EVM: GMP Flow
+            SM->>GMP: getTxStatus()
+            loop Poll for execution
+                GMP->>Axelar: POST "/gmp/searchGMP"
+                GMP->>Axelar: Query with "sourceChain", "destinationChain", "contractAddress"
+                Axelar-->>GMP: Return transaction status
+                alt Transaction executed
+                    GMP->>GMP: Decode logs
+                    GMP->>GMP: Validate subscriptionId matches
+                    break success
+                        GMP-->>SM: Return {success: true, logs}
+                    end
+                else Still pending/confirming
+                    GMP->>GMP: Wait waitingPeriod (20s)
+                end
+            end
+            SM->>ymax: resolveSubscription() - update status
+
+        else CCTP Subscription
+            Note over SM,CCTP: CCTP Flow
+            SM->>CCTP: watchCCTPTransfer()
+            CCTP->>EVM: provider.on(filter, transferListener) - Listen ERC20 transfers to remote wallet
+
+            loop Listen for transfers
+                EVM-->>CCTP: Transfer event log
+                CCTP->>CCTP: Parse "from", "to", "amount" from log
+                alt Amount matches "expectedAmount"
+                    CCTP->>CCTP: transferFound = true
+                    CCTP->>CCTP: cleanup() - remove listeners
+                    break success
+                        CCTP-->>SM: Return true
+                    end
+                else Amount mismatch
+                    CCTP->>CCTP: Continue watching
+                end
+            end
+
+            alt Timeout reached
+                CCTP->>CCTP: cleanup() - remove listeners
+                CCTP-->>SM: Return false
+            end
+
+            SM->>ymax: resolveSubscription() - update status
+        end
+```
+
 
 ### User stories
 
@@ -215,3 +292,4 @@ sequenceDiagram
 1. deposit from Fast USDC source chains and create a new portfolio via address hook
 2. connect with existing positions on Aave, Compound, etc
 3. automatic/scheduled rebalance or claim rewards
+
