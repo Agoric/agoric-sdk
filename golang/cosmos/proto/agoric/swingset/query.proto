@@ -76,8 +76,8 @@ message QueryPendingInstallRequest {
 message QueryPendingInstallResponse {
   uint64 pending_id = 1 [(gogoproto.jsontag) = "pending_id", (gogoproto.moretags) = "yaml:\"pending_id\""];
 
-  BundleChunks bundle_chunks = 2
-      [(gogoproto.jsontag) = "bundle_chunks", (gogoproto.moretags) = "yaml:\"bundle_chunks\""];
+  ChunkedArtifact chunked_artifact = 2
+      [(gogoproto.jsontag) = "chunkedArtifact", (gogoproto.moretags) = "yaml:\"chunkedArtifact\""];
 
   int64 start_time = 3 [(gogoproto.jsontag) = "start_time", (gogoproto.moretags) = "yaml:\"start_time\""];
 

@@ -194,12 +194,12 @@ type installBundleAction struct {
 
 func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInstallBundle) (*types.MsgInstallBundleResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	if msg.BundleChunks == nil || len(msg.BundleChunks.Chunks) == 0 {
+	if msg.ChunkedArtifact == nil || len(msg.ChunkedArtifact.Chunks) == 0 {
 		return keeper.InstallFinishedBundle(goCtx, msg)
 	}
 
 	// Mark all the chunks as in-flight.
-	bc := *msg.BundleChunks
+	bc := *msg.ChunkedArtifact
 	bc.Chunks = make([]*types.ChunkInfo, len(bc.Chunks))
 	for i, chunk := range bc.Chunks {
 		ci := *chunk
@@ -209,7 +209,7 @@ func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInsta
 		ci.State = types.ChunkState_CHUNK_STATE_IN_FLIGHT
 		bc.Chunks[i] = &ci
 	}
-	msg.BundleChunks = &bc
+	msg.ChunkedArtifact = &bc
 
 	pendingId := keeper.AddPendingBundleInstall(ctx, msg)
 	return &types.MsgInstallBundleResponse{PendingId: pendingId}, nil
@@ -243,7 +243,7 @@ func (keeper msgServer) SendChunk(goCtx context.Context, msg *types.MsgSendChunk
 		return nil, fmt.Errorf("no upload in progress for pending Id %d", msg.PendingId)
 	}
 
-	bc := inst.BundleChunks
+	bc := inst.ChunkedArtifact
 
 	if msg.ChunkIndex < 0 || msg.ChunkIndex >= uint64(len(bc.Chunks)) {
 		return nil, fmt.Errorf("chunk index %d out of range for pending Id %d", msg.ChunkIndex, msg.PendingId)
@@ -293,7 +293,7 @@ func (keeper msgServer) MaybeFinalizeBundle(ctx sdk.Context, pendingId uint64) (
 	}
 
 	// If any chunks are not received, then bail (without error).
-	bc := msg.BundleChunks
+	bc := msg.ChunkedArtifact
 	totalChunkSize := uint64(0)
 	for _, chunk := range bc.Chunks {
 		if chunk.State != types.ChunkState_CHUNK_STATE_RECEIVED {
@@ -327,7 +327,7 @@ func (keeper msgServer) MaybeFinalizeBundle(ctx sdk.Context, pendingId uint64) (
 	}
 
 	// Clean up the pending installation state.
-	msg.BundleChunks = nil
+	msg.ChunkedArtifact = nil
 	keeper.SetPendingBundleInstall(ctx, pendingId, nil)
 
 	// Install the bundle now that all the chunks are processed.

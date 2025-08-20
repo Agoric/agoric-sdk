@@ -429,7 +429,7 @@ func (msg MsgInstallBundle) ValidateBasic() error {
 	if msg.Submitter.Empty() {
 		return sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
 	}
-	hasBundle, hasCompressed, hasChunks := len(msg.Bundle) > 0, len(msg.CompressedBundle) > 0, msg.BundleChunks != nil && len(msg.BundleChunks.Chunks) > 0
+	hasBundle, hasCompressed, hasChunks := len(msg.Bundle) > 0, len(msg.CompressedBundle) > 0, msg.ChunkedArtifact != nil && len(msg.ChunkedArtifact.Chunks) > 0
 	switch {
 	case hasBundle && hasCompressed, hasBundle && hasChunks, hasCompressed && hasChunks:
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Cannot submit more than one of bundle, compressed bundle, or chunks")
@@ -451,7 +451,7 @@ func (msg MsgInstallBundle) ValidateBasic() error {
 	}
 
 	// Check that the chunks are valid.
-	return msg.BundleChunks.ValidateBasic()
+	return msg.ChunkedArtifact.ValidateBasic()
 }
 
 // GetSigners defines whose signature is required
@@ -519,7 +519,7 @@ func (msg *MsgInstallBundle) Uncompress() error {
 	return nil
 }
 
-func (bc BundleChunks) ValidateBasic() error {
+func (bc ChunkedArtifact) ValidateBasic() error {
 	if len(bc.Chunks) == 0 {
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Bundle chunks cannot be empty")
 	}

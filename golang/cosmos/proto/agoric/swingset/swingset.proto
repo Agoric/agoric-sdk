@@ -185,9 +185,10 @@ message SwingStoreArtifact {
   bytes data = 2 [(gogoproto.jsontag) = "data", (gogoproto.moretags) = "yaml:\"data\""];
 }
 
-// FIXME: mhofman: ChunkedArtifact?
-// BundleChunks is the manifest for a chunked InstallBundle.
-message BundleChunks {
+// ChunkedArtifact is the manifest for an artifact that is submitted across
+// multiple transactions, in chunks, as when using InstallBundle to submit
+// chunks.
+message ChunkedArtifact {
   // The hash of the complete bundle.
   string bundle_hash = 1 [
     (gogoproto.jsontag) = "bundle_hash",
