@@ -33,15 +33,10 @@ type BaseSubscription = {
   status: 'pending' | 'success' | 'timeout';
 };
 
-type CctpSubscription = BaseSubscription & {
-  type: 'cctp';
-  data: CCTPTransfer; // Required to check cctp tx status off-chain
-};
+type SubscriptionOf<T, K extends string> = BaseSubscription & T & { type: K };
 
-type GmpSubscription = BaseSubscription & {
-  type: 'gmp';
-  data: GmpTransfer;
-};
+type CctpSubscription = SubscriptionOf<CCTPTransfer, 'cctp'>;
+type GmpSubscription = SubscriptionOf<GmpTransfer, 'gmp'>;
 
 export type Subscription = CctpSubscription | GmpSubscription;
 
@@ -53,14 +48,16 @@ export const handleSubscription = async (
   ctx: PlannerContext,
   subscription: Subscription,
 ) => {
+  console.log('[handleSubscription]: handling cctp subscription');
   switch (subscription.type) {
     case 'cctp': {
-      const { data, subscriptionId } = subscription;
-      const rpc = ctx.evmRpcUrls[data.chain];
+      const { type, chain, receiver, amount, subscriptionId } = subscription;
+      const rpc = ctx.evmRpcUrls[chain];
       const provider = new JsonRpcProvider(rpc);
+      console.warn('[handleSubscription]: handling cctp subscription');
       const status = await watchCCTPTransfer({
-        watchAddress: data.receiver,
-        expectedAmount: BigInt(data.amount),
+        watchAddress: receiver,
+        expectedAmount: BigInt(amount),
         provider,
       });
 
@@ -72,11 +69,13 @@ export const handleSubscription = async (
           stargateClient: ctx.stargateClient,
           address: ctx.plannerAddress,
           offerArgs: {
-            vPath: 'portfolio1',
+            vPath: subscriptionId,
             vData: {
-              pendingCCTPTransfers: {
-                status: 'completed',
-              },
+              status: 'success',
+              chain,
+              receiver,
+              amount,
+              type,
             },
           },
         });
@@ -89,14 +88,16 @@ export const handleSubscription = async (
     }
 
     case 'gmp': {
-      const { data, subscriptionId } = subscription;
+      const { type, destinationChain, contractAddress, subscriptionId } =
+        subscription;
+      console.warn('[handleSubscription]: handling gmp subscription');
       const res = await getTxStatus({
         url: ctx.axelarQueryApi,
         fetch,
         params: {
           sourceChain: 'agoric',
-          destinationChain: data.destinationChain as unknown as string,
-          contractAddress: data.contractAddress,
+          destinationChain: destinationChain as unknown as string,
+          contractAddress: contractAddress,
         },
         subscriptionId,
       });
@@ -110,11 +111,12 @@ export const handleSubscription = async (
         stargateClient: ctx.stargateClient,
         address: ctx.plannerAddress,
         offerArgs: {
-          vPath: 'portfolio1',
+          vPath: subscriptionId,
           vData: {
-            pendingCCTPTransfers: {
-              status: 'completed',
-            },
+            status: 'success',
+            destinationChain,
+            contractAddress,
+            type,
           },
         },
       });

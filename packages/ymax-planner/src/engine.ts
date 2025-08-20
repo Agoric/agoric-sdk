@@ -359,21 +359,23 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
     // Process existing pending subscriptions on startup
     await makeWorkPool(subscriptionKeys, undefined, async subscriptionKey => {
       try {
-        const subscriptionData = await vstorageKit.readPublished(
+        const subscriptionData = (await vstorageKit.readPublished(
           `${stripPrefix('published.', ORCHESTRATION_SUBSCRIPTIONS_PREFIX)}.${subscriptionKey}`,
-        );
-        const subscription = subscriptionData as Subscription;
+        )) as Omit<Subscription, 'subscriptionId'>;
         console.warn(`Found existing subscription: ${subscriptionKey}`, {
-          type: subscription.type,
-          status: subscription.status,
+          type: subscriptionData.type,
+          status: subscriptionData.status,
         });
 
-        if (subscription.status === 'pending') {
+        if (subscriptionData.status === 'pending') {
           console.warn(
             `Processing existing pending subscription: ${subscriptionKey}`,
           );
           try {
-            subscription.subscriptionId = subscriptionKey;
+            const subscription = {
+              subscriptionId: subscriptionKey,
+              ...subscriptionData,
+            } as Subscription;
             await handleSubscription(ctx, subscription);
           } catch (error) {
             console.error(
@@ -529,7 +531,7 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
           try {
             const subscriptionData = vstorageKit.marshaller.fromCapData(
               value,
-            ) as Subscription;
+            ) as Omit<Subscription, 'subscriptionId'>;
             console.warn('Handling subscription:', {
               subscriptionId,
               type: subscriptionData.type,
@@ -548,8 +550,11 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
               status: subscriptionData.status,
             });
 
-            subscriptionData.subscriptionId = subscriptionId;
-            await handleSubscription(ctx, subscriptionData);
+            const subscription = {
+              subscriptionId,
+              ...subscriptionData,
+            } as Subscription;
+            await handleSubscription(ctx, subscription);
           } catch (error) {
             console.error(
               `Failed to process subscription ${subscriptionId}:`,
