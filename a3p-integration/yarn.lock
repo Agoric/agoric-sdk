@@ -318,8 +318,8 @@ __metadata:
   linkType: hard
 
 "@agoric/synthetic-chain@file:./agoric-synthetic-chain-0.5.9.tgz::locator=root-workspace-0b6124%40workspace%3A.":
-  version: 0.5.9
-  resolution: "@agoric/synthetic-chain@file:./agoric-synthetic-chain-0.5.9.tgz#./agoric-synthetic-chain-0.5.9.tgz::hash=497f02&locator=root-workspace-0b6124%40workspace%3A."
+  version: 0.5.8
+  resolution: "@agoric/synthetic-chain@file:./agoric-synthetic-chain-0.5.9.tgz#./agoric-synthetic-chain-0.5.9.tgz::hash=3a11ca&locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
     "@agoric/client-utils": "npm:0.1.1-dev-f9483e7.0"
     "@endo/zip": "npm:^1.0.9"
@@ -331,7 +331,7 @@ __metadata:
     tmp: "npm:0.2.3"
   bin:
     synthetic-chain: dist/cli/cli.js
-  checksum: 10c0/e6a0aeefc231e591fa104e422c67c80d49dee6ea1ee783c63dd8932ad91b1840f69ffdd8b8a36f91e9e35e25de8cabc48892e6e2566c03418f0834ddac2f5bc7
+  checksum: 10c0/c1865b8f091d3ac051c7e7b097bff544ed51f0acb9e483c2ac8291c1fc4ef038071ac8d94f866bc61b23be97b15d5268b5038d26a2f128afeb03632a9335cecf
   languageName: node
   linkType: hard
 
