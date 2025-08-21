@@ -22,7 +22,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@aglocal/boot": "^0.1.0",
+    "@aglocal/boot": "workspace:*",
     "@agoric/cosmic-swingset": "workspace:*",
     "@agoric/inter-protocol": "workspace:*",
     "@agoric/internal": "workspace:*",

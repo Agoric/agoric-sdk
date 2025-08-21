@@ -23,7 +23,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aglocal/benchmark@workspace:packages/benchmark"
   dependencies:
-    "@aglocal/boot": "npm:^0.1.0"
+    "@aglocal/boot": "workspace:*"
     "@agoric/cosmic-swingset": "workspace:*"
     "@agoric/inter-protocol": "workspace:*"
     "@agoric/internal": "workspace:*"
@@ -34,7 +34,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@aglocal/boot@npm:^0.1.0, @aglocal/boot@workspace:*, @aglocal/boot@workspace:packages/boot":
+"@aglocal/boot@workspace:*, @aglocal/boot@workspace:packages/boot":
   version: 0.0.0-use.local
   resolution: "@aglocal/boot@workspace:packages/boot"
   dependencies:
