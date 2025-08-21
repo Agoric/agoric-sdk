@@ -163,9 +163,8 @@ export const pollBlocks = opts => async lookup => {
   for (;;) {
     const sTxt = execFileSync(agdBinary, ['status', ...nodeArgs]);
     const status = JSON.parse(sTxt.toString());
-    const {
-      SyncInfo: { latest_block_time: time, latest_block_height: height },
-    } = status;
+    const { latest_block_time: time, latest_block_height: height } =
+      status.sync_info || status.SyncInfo;
     try {
       // see await null above
       const result = await lookup({ time, height });
