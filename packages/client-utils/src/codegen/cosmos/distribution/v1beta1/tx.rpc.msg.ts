@@ -14,6 +14,8 @@ import {
   MsgUpdateParamsResponse,
   MsgCommunityPoolSpend,
   MsgCommunityPoolSpendResponse,
+  MsgDepositValidatorRewardsPool,
+  MsgDepositValidatorRewardsPoolResponse,
 } from './tx.js';
 /** Msg defines the distribution Msg service. */
 export interface Msg {
@@ -63,6 +65,15 @@ export interface Msg {
   communityPoolSpend(
     request: MsgCommunityPoolSpend,
   ): Promise<MsgCommunityPoolSpendResponse>;
+  /**
+   * DepositValidatorRewardsPool defines a method to provide additional rewards
+   * to delegators to a specific validator.
+   *
+   * Since: cosmos-sdk 0.50
+   */
+  depositValidatorRewardsPool(
+    request: MsgDepositValidatorRewardsPool,
+  ): Promise<MsgDepositValidatorRewardsPoolResponse>;
 }
 export class MsgClientImpl implements Msg {
   private readonly rpc: Rpc;
@@ -75,6 +86,8 @@ export class MsgClientImpl implements Msg {
     this.fundCommunityPool = this.fundCommunityPool.bind(this);
     this.updateParams = this.updateParams.bind(this);
     this.communityPoolSpend = this.communityPoolSpend.bind(this);
+    this.depositValidatorRewardsPool =
+      this.depositValidatorRewardsPool.bind(this);
   }
   setWithdrawAddress(
     request: MsgSetWithdrawAddress,
@@ -150,6 +163,19 @@ export class MsgClientImpl implements Msg {
     );
     return promise.then(data =>
       MsgCommunityPoolSpendResponse.decode(new BinaryReader(data)),
+    );
+  }
+  depositValidatorRewardsPool(
+    request: MsgDepositValidatorRewardsPool,
+  ): Promise<MsgDepositValidatorRewardsPoolResponse> {
+    const data = MsgDepositValidatorRewardsPool.encode(request).finish();
+    const promise = this.rpc.request(
+      'cosmos.distribution.v1beta1.Msg',
+      'DepositValidatorRewardsPool',
+      data,
+    );
+    return promise.then(data =>
+      MsgDepositValidatorRewardsPoolResponse.decode(new BinaryReader(data)),
     );
   }
 }
