@@ -38,9 +38,8 @@ shimmedP
     /**
      * Object that dotenv.config() will mutate to add variables from the
      * dotEnvFile.
-     * @type {{ [key: string]: string }}
      */
-    const dotEnvAdditions = {};
+    const dotEnvAdditions = {} as { [key: string]: string };
     dotenv.config({ path: dotEnvFile, processEnv: dotEnvAdditions });
     // console.log('Loaded .env variables:', dotEnv);
 
