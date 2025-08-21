@@ -307,8 +307,10 @@ __metadata:
     "@types/node": "npm:^22.10.2"
     "@types/ws": "npm:^8"
     ava: "npm:^6.3.0"
+    chain-registry: "npm:^2.0.44"
     dotenv: "npm:^17.2.1"
     json-rpc-2.0: "npm:^1.7.1"
+    ky: "npm:^1.4.0"
     nodemon: "npm:^3.1.10"
     ts-blank-space: "npm:^0.6.1"
     typescript: "npm:^5.7.2"
@@ -375,6 +377,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/builders@workspace:packages/builders"
   dependencies:
+    "@agoric/client-utils": "workspace:*"
     "@agoric/deploy-script-support": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/governance": "workspace:*"
@@ -847,7 +850,7 @@ __metadata:
     "@agoric/vow": "workspace:*"
     "@agoric/zoe": "workspace:*"
     "@agoric/zone": "workspace:*"
-    "@chain-registry/client": "npm:^1.47.4"
+    "@chain-registry/client": "npm:^1.53.194"
     "@cosmjs/amino": "npm:^0.36.0"
     "@cosmjs/encoding": "npm:^0.36.0"
     "@cosmjs/proto-signing": "npm:^0.36.0"
@@ -3018,20 +3021,34 @@ __metadata:
   linkType: hard
 
 "@chain-registry/types@npm:^0.44.4":
-  version: 0.44.4
-  resolution: "@chain-registry/types@npm:0.44.4"
-  checksum: 10c0/9ea3cd0232271c695ea148c1ee80e2a4ce7764e1696de69bc15ea2d1fb7e432c67441eedbdd3ceaac84ad933fcb23d8d1916185e40adfc518b31102aa62f51c1
+  version: 0.44.11
+  resolution: "@chain-registry/types@npm:0.44.11"
+  checksum: 10c0/55c9d5dd570fc390c30c467e109f3bdfe4e2e997651d33c768feeeee29432f2827a918003bcbbf3ae4b97d85248e6b65110f6e3a2bb62405fda563b067a933d3
+  languageName: node
+  linkType: hard
+
+"@chain-registry/types@npm:^0.50.194":
+  version: 0.50.194
+  resolution: "@chain-registry/types@npm:0.50.194"
+  checksum: 10c0/dab4f8762ca4280f7447820a9a02c088aa24cda3466675e99ea5c8564873cb0ab59beebecb526bd16ac38e57e8cca5f77d96d10ee52f9abc1ce70bba48e089b0
+  languageName: node
+  linkType: hard
+
+"@chain-registry/types@npm:^2.0.44":
+  version: 2.0.44
+  resolution: "@chain-registry/types@npm:2.0.44"
+  checksum: 10c0/3e84fe0730af01a727e955486628c3b0fdca85b582af023baeed376d16302dfdc2cea3edd2294a287fc475fe7a267f43fc7d6b59f3b680d694764edbdc3c8cca
   languageName: node
   linkType: hard
 
 "@chain-registry/utils@npm:^1.45.4":
-  version: 1.45.4
-  resolution: "@chain-registry/utils@npm:1.45.4"
+  version: 1.51.194
+  resolution: "@chain-registry/utils@npm:1.51.194"
   dependencies:
-    "@chain-registry/types": "npm:^0.44.4"
+    "@chain-registry/types": "npm:^0.50.194"
     bignumber.js: "npm:9.1.2"
     sha.js: "npm:^2.4.11"
-  checksum: 10c0/c28e5ab6ce893108600cab5d7a758c40cf9cbfe68359d6eb93f3ebf201336c5eca13746df8700952021e44547f88679964e98ea664ee6330939c14eb78dafd85
+  checksum: 10c0/731ac26948b317c20a2a3e5cb1a86f446b5cd2327d53f0e74de3113134fd80166e3ea9b36161c41de4e0ec5370d12a62c8270aefeb21a27ef1987623d7507b47
   languageName: node
   linkType: hard
 
@@ -7727,6 +7744,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"chain-registry@npm:^2.0.44":
+  version: 2.0.44
+  resolution: "chain-registry@npm:2.0.44"
+  dependencies:
+    "@chain-registry/types": "npm:^2.0.44"
+  checksum: 10c0/15e45386b8a314150f2e66294f9493232e858bbcc667ec59d0a389d983e349351670d7c08171205e33a97d0e3a6edc93784ee014dd8791478b83e5d2371249ea
+  languageName: node
+  linkType: hard
+
 "chalk@npm:4.1.2, chalk@npm:^4.0.0, chalk@npm:^4.1.0, chalk@npm:^4.1.1":
   version: 4.1.2
   resolution: "chalk@npm:4.1.2"
@@ -12247,6 +12273,13 @@ __metadata:
   version: 6.0.3
   resolution: "kind-of@npm:6.0.3"
   checksum: 10c0/61cdff9623dabf3568b6445e93e31376bee1cdb93f8ba7033d86022c2a9b1791a1d9510e026e6465ebd701a6dd2f7b0808483ad8838341ac52f003f512e0b4c4
+  languageName: node
+  linkType: hard
+
+"ky@npm:^1.4.0":
+  version: 1.8.2
+  resolution: "ky@npm:1.8.2"
+  checksum: 10c0/81edb33f4397b4a23a085ab0c54c0efd7baad0c8eeaabbbec4e7147202627a20d80114595d03647fc1ae465d682de30e2e04805e6888e5650e5a93684cf86e93
   languageName: node
   linkType: hard
 

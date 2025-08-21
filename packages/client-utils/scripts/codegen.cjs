@@ -121,7 +121,8 @@ telescope({
       },
     },
     aminoEncoding: {
-      // Necessary for getSigningAgoricClient
+      // Necessary for getSigningAgoricClient but that's future work
+      // UNTIL https://github.com/Agoric/agoric-sdk/issues/5912
       enabled: false,
     },
     lcdClients: {

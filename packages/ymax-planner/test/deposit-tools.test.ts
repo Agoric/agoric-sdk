@@ -13,6 +13,8 @@ import { SpectrumClient } from '../src/spectrum-client.ts';
 
 const brand = Far('mock brand') as Brand<'nat'>;
 
+const powers = { fetch, setTimeout };
+
 test('planDepositTransfers works in a handful of cases', t => {
   const make = value => AmountMath.make(brand, value);
 
@@ -166,7 +168,7 @@ test('handleDeposit works with mocked dependencies', async t => {
   // Mock SpectrumClient
   class MockSpectrumClient extends SpectrumClient {
     constructor() {
-      super({ fetch, setTimeout });
+      super(powers);
     }
 
     async getPoolBalance(chain: any, pool: any, addr: any) {
@@ -200,7 +202,7 @@ test('handleDeposit works with mocked dependencies', async t => {
   // Mock CosmosRestClient
   class MockCosmosRestClient extends CosmosRestClient {
     constructor() {
-      super({ fetch, setTimeout });
+      super(powers);
     }
 
     async getAccountBalance(chainName: string, addr: string, denom: string) {
@@ -251,7 +253,7 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
   // Mock SpectrumClient
   class MockSpectrumClient2 extends SpectrumClient {
     constructor() {
-      super({ fetch, setTimeout });
+      super(powers);
     }
 
     async getPoolBalance(chain: any, pool: any, addr: any) {
@@ -268,7 +270,7 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
   // Mock CosmosRestClient
   class MockCosmosRestClient2 extends CosmosRestClient {
     constructor() {
-      super({ fetch, setTimeout });
+      super(powers);
     }
 
     async getAccountBalance(chainName: string, addr: string, denom: string) {
@@ -328,7 +330,7 @@ test('handleDeposit handles different position types correctly', async t => {
   // Mock SpectrumClient with different chain responses
   class MockSpectrumClient3 extends SpectrumClient {
     constructor() {
-      super({ fetch, setTimeout });
+      super(powers);
     }
 
     async getPoolBalance(chain: any, pool: any, addr: any) {
@@ -361,7 +363,7 @@ test('handleDeposit handles different position types correctly', async t => {
   // Mock CosmosRestClient
   class MockCosmosRestClient3 extends CosmosRestClient {
     constructor() {
-      super({ fetch, setTimeout });
+      super(powers);
     }
 
     async getAccountBalance(chainName: string, addr: string, denom: string) {

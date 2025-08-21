@@ -1,26 +1,24 @@
 /// <reference types="ses" />
 /* eslint-env node */
-import { inspect } from 'node:util';
-import { q, Fail } from '@endo/errors';
-import { isPrimitive } from '@endo/pass-style';
-import { makePromiseKit, type PromiseKit } from '@endo/promise-kit';
-import { Nat } from '@endo/nat';
+import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { PortfolioStatusShapeExt } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import { AmountMath, type Brand } from '@agoric/ertp';
-import type { Coin, SigningStargateClient } from '@cosmjs/stargate';
-import type { InvokeStoreEntryAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import { mustMatch } from '@agoric/internal';
 import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
-import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import type { VstorageKit, SmartWalletKit } from '@agoric/client-utils';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
-import type { CosmosRPCClient } from './cosmos-rpc.ts';
-import type { SpectrumClient } from './spectrum-client.ts';
+import type { Coin } from '@cosmjs/stargate';
+import { Fail, q } from '@endo/errors';
+import { Nat } from '@endo/nat';
+import { isPrimitive } from '@endo/pass-style';
+import { makePromiseKit, type PromiseKit } from '@endo/promise-kit';
+import { inspect } from 'node:util';
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
+import type { CosmosRPCClient } from './cosmos-rpc.ts';
 import { handleDeposit } from './plan-deposit.ts';
-import { submitAction } from './swingset-tx.ts';
+import type { SpectrumClient } from './spectrum-client.ts';
 
 const { isInteger } = Number;
 
@@ -267,22 +265,16 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
 
 type IO = {
   rpc: CosmosRPCClient;
-  vstorageKit: VstorageKit;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
-  stargateClient: SigningStargateClient;
-  walletKit: SmartWalletKit;
-  plannerAddress: string;
+  signingSmartWalletKit: SigningSmartWalletKit;
 };
 
 export const startEngine = async ({
   rpc,
-  vstorageKit,
   spectrum,
   cosmosRest,
-  stargateClient,
-  walletKit,
-  plannerAddress,
+  signingSmartWalletKit,
 }: IO) => {
   await null;
 
@@ -354,10 +346,11 @@ export const startEngine = async ({
   // console.log('subscribed to events', eventFilters);
 
   // TODO: verify consumption of paginated data.
-  const portfolioKeys = await vstorageKit.vstorage.keys(VSTORAGE_PATH_PREFIX);
+  const { query } = signingSmartWalletKit;
+  const portfolioKeys = await query.vstorage.keys(VSTORAGE_PATH_PREFIX);
   const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
-    const status = await vstorageKit.readPublished(
+    const status = await query.readPublished(
       `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${portfolioKey}`,
     );
     mustMatch(status, PortfolioStatusShapeExt, portfolioKey);
@@ -407,6 +400,7 @@ export const startEngine = async ({
     });
 
     // Detect new portfolios.
+    const { marshaller } = signingSmartWalletKit;
     for (const { path, value: vstorageValue } of portfolioVstorageEvents) {
       const streamCell = tryJsonParse(
         vstorageValue,
@@ -423,13 +417,13 @@ export const startEngine = async ({
             _err =>
               Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
           );
-          const portfoliosData = vstorageKit.marshaller.fromCapData(
+          const portfoliosData = marshaller.fromCapData(
             value,
           ) as StatusFor['portfolios'];
           if (portfoliosData.addPortfolio) {
             const key = portfoliosData.addPortfolio;
             console.warn('Detected new portfolio', key);
-            const status = await vstorageKit.readPublished(
+            const status = await query.readPublished(
               `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${key}`,
             );
             mustMatch(status, PortfolioStatusShapeExt, key);
@@ -478,7 +472,7 @@ export const startEngine = async ({
 
     const vbankAssets = new Map<string, AssetInfo>(
       depositAddrsWithActivity.size
-        ? await vstorageKit.readPublished('agoricNames.vbankAsset')
+        ? await query.readPublished('agoricNames.vbankAsset')
         : undefined,
     );
 
@@ -512,7 +506,7 @@ export const startEngine = async ({
           const steps = await handleDeposit(
             amount,
             unprefixedPortfolioPath as any,
-            vstorageKit.readPublished,
+            query.readPublished,
             spectrum,
             cosmosRest,
           );
@@ -529,21 +523,10 @@ export const startEngine = async ({
     );
 
     for (const { portfolioId, steps } of portfolioOps.filter(x => !!x)) {
-      const action: InvokeStoreEntryAction = harden({
-        method: 'invokeEntry',
-        message: {
-          targetName: 'planner',
-          method: 'submit',
-          args: [portfolioId, steps],
-        },
-      });
-
-      console.log('submitting action', action);
-      const result = await submitAction(action, {
-        stargateClient,
-        walletKit,
-        skipPoll: true,
-        address: plannerAddress,
+      const result = await signingSmartWalletKit.invokeEntry({
+        targetName: 'planner',
+        method: 'submit',
+        args: [portfolioId, steps],
       });
       console.log('result', result);
     }

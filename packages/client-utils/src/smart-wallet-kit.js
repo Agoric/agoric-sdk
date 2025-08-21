@@ -12,7 +12,9 @@ import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
 
 /**
  * Augment VstorageKit with addtional convenience methods for working with
- * Agoric smart wallets.
+ * Agoric smart wallets. This use of "kit" is unfortunate because it does not
+ * pertain to a single smart wallet. (Whereas VstorageKit pertains to a single
+ * vstorage tree.) It was once called WalletUtils, which is more accurate.
  *
  * @param {object} root0
  * @param {typeof globalThis.fetch} root0.fetch

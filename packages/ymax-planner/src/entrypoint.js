@@ -7,8 +7,6 @@ import '@endo/init/pre-remoting.js';
 import './shims.cjs';
 import '@endo/lockdown/commit.js';
 
-import 'ts-blank-space/register';
-
 // ...but the WebSocket shim must be loaded *after* lockdown, seemingly because
 // of a dependency upon EventEmitter that is otherwise broken:
 // TypeError#1: Cannot assign to read only property '_events' of object '[object Object]'
