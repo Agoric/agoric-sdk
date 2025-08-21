@@ -99,6 +99,19 @@ export const buildNoncePayload = nonce => {
   return Array.from(hexToBytes(abiEncodedData));
 };
 
+/**
+ * @param {bigint} gasAmount - gas amount for the EVM to Agoric message
+ * @returns {number[]} The payload array.
+ */
+export const buildGasPayload = gasAmount => {
+  const abiEncodedData = encodeAbiParameters(
+    [{ type: 'uint256' }],
+    [gasAmount],
+  );
+
+  return Array.from(hexToBytes(abiEncodedData));
+};
+
 export const networkConfigs = {
   devnet: {
     label: 'Agoric Devnet',
