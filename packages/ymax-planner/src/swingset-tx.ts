@@ -3,13 +3,7 @@ import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.
 import { makeTracer } from '@agoric/internal';
 import type { OfferId } from '@agoric/smart-wallet/src/offers';
 import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
-import { stringToPath } from '@cosmjs/crypto';
 import { fromBech32 } from '@cosmjs/encoding';
-import {
-  DirectSecp256k1HdWallet,
-  Registry,
-  type GeneratedType,
-} from '@cosmjs/proto-signing';
 import {
   SigningStargateClient,
   type Block,
@@ -23,20 +17,7 @@ const toAccAddress = (address: string): Uint8Array => {
 
 const trace = makeTracer('Swingset Tx Tools');
 
-const AgoricMsgs = {
-  MsgWalletSpendAction: {
-    typeUrl: '/agoric.swingset.MsgWalletSpendAction',
-    aminoType: 'swingset/WalletSpendAction',
-  },
-};
-const agoricRegistryTypes: [string, GeneratedType][] = [
-  [
-    AgoricMsgs.MsgWalletSpendAction.typeUrl,
-    MsgWalletSpendAction as GeneratedType,
-  ],
-];
-
-export const pollOffer = async (
+const pollOffer = async (
   offerId: OfferId,
   before: Block,
   {
@@ -116,30 +97,4 @@ export const submitAction = async (
     default:
       throw Fail`Unable to poll status for offer type ${action.method}`;
   }
-};
-
-export const makeStargateClientKit = async (
-  mnemonic: string,
-  {
-    prefix = 'agoric',
-    hdPath = `m/44'/564'/0'/0/0`,
-    rpcAddr,
-    connectWithSigner,
-  }: {
-    prefix?: string;
-    hdPath?: string;
-    rpcAddr: string;
-    connectWithSigner: typeof SigningStargateClient.connectWithSigner;
-  },
-) => {
-  const signer = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
-    prefix,
-    hdPaths: [stringToPath(hdPath)],
-  });
-  const [{ address }] = await signer.getAccounts();
-  const client = await connectWithSigner(rpcAddr, signer, {
-    registry: new Registry(agoricRegistryTypes),
-  });
-
-  return { address, client };
 };

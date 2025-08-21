@@ -110,7 +110,6 @@ export const makeSmartWalletKit = async (
     // pass along all of VstorageKit
     ...vsk,
     agoricNames,
-    networkConfig,
     getLastUpdate,
     getCurrentWalletRecord,
     storedWalletState,

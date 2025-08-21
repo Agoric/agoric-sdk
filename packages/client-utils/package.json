@@ -38,6 +38,8 @@
     "@agoric/internal": "workspace:*",
     "@agoric/smart-wallet": "workspace:*",
     "@agoric/vats": "workspace:*",
+    "@cosmjs/crypto": "^0.36.0",
+    "@cosmjs/proto-signing": "^0.36.0",
     "@cosmjs/stargate": "^0.36.0",
     "@cosmjs/tendermint-rpc": "^0.36.0",
     "@endo/base64": "^1.0.12",
