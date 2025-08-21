@@ -125,7 +125,7 @@ export const createAndMonitorLCA = async (
     payload: buildGasPayload(0n),
     type: AxelarGMPMessageType.ContractCall,
     fee: {
-      amount: '1', // TODO: Get fee amount from api
+      amount: String(amt.value), // TODO: Get fee amount from api
       recipient: gmpAddresses.AXELAR_GAS,
     },
   };
