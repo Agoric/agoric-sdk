@@ -18,15 +18,13 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { makePromiseSpace } from '@agoric/vats';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
-import type { Instance, Invitation, ZoeService } from '@agoric/zoe';
+import type { Instance, ZoeService } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E, Far, passStyleOf } from '@endo/far';
-import { makePromiseKit, type PromiseKit } from '@endo/promise-kit';
+import { E, passStyleOf } from '@endo/far';
 import { produceAttenuatedDeposit } from '../src/attenuated-deposit.core.js';
 import { axelarConfig } from '../src/axelar-configs.js';
 import type { ChainInfoPowers } from '../src/chain-info.core.js';
 import { toExternalConfig } from '../src/config-marshal.js';
-import type { ContractControl } from '../src/contract-control.js';
 import { delegatePortfolioContract } from '../src/portfolio-control.core.js';
 import {
   portfolioDeployConfigShape,
