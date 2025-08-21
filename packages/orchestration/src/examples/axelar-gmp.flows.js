@@ -13,7 +13,7 @@ import { makeTracer, NonNullish } from '@agoric/internal';
 import { Fail, makeError, q } from '@endo/errors';
 import { AxelarGMPMessageType } from '../axelar-types.js';
 import { denomHash } from '../utils/denomHash.js';
-import { buildNoncePayload, gmpAddresses } from '../utils/gmp.js';
+import { buildGasPayload, gmpAddresses } from '../utils/gmp.js';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
@@ -118,7 +118,11 @@ export const createAndMonitorLCA = async (
   const memo = {
     destination_chain: 'Ethereum',
     destination_address: factoryContractAddress,
-    payload: buildNoncePayload(evmAccountKit.holder.getNonce()),
+    // XXX: Ideally, the gas amount should be provided via offerArgs.
+    // For now, this approach ensures that the workflow at
+    // https://github.com/agoric-labs/agoric-to-axelar-local/actions/workflows/agoric-integration.yml
+    // runs successfully.
+    payload: buildGasPayload(0n),
     type: AxelarGMPMessageType.ContractCall,
     fee: {
       amount: '1', // TODO: Get fee amount from api
