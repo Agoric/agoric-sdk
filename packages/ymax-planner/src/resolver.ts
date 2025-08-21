@@ -1,4 +1,3 @@
-import { config } from 'dotenv';
 import {
   makeAgoricNames,
   type SmartWalletKit,
@@ -7,8 +6,6 @@ import {
 import type { SigningStargateClient } from '@cosmjs/stargate';
 import type { ExecuteOfferAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import { submitAction } from './swingset-tx.ts';
-
-config();
 
 type SubmitOfferParams = {
   walletKit: SmartWalletKit;

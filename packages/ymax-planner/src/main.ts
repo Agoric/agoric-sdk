@@ -82,9 +82,9 @@ export const main = async (
     retries: 3,
   });
 
-  const net = env.AGORIC_NET == 'mainnet' ? 'mainnet' : 'testnet';
   const ctx = await createContext({
-    net,
+    // Any non-mainnet Agoric chain would be connected to Axelar testnet.
+    net: env.AGORIC_NET == 'mainnet' ? 'mainnet' : 'testnet',
     stargateClient,
     plannerAddress,
     vstorageKit,

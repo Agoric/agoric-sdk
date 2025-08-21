@@ -491,6 +491,7 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
             }
           }
         }
+        // TODO: Handle portfolio-level path `${VSTORAGE_PATH_PREFIX}.${portfolioKey}` for addition/update of depositAddress.
       }
 
       // Handle orchestration subscriptions.
@@ -544,7 +545,7 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
             // Process subscription concurrently without blocking event processing
             void handleSubscription(ctx, subscription).catch(error => {
               console.error(
-                `[${subscriptionId}] Failed to process subscription:`,
+                `Failed to process subscription: ${subscriptionId}`,
                 error,
               );
             });
