@@ -118,8 +118,8 @@ sequenceDiagram
   Note over YP: think and generate steps
   YP ->> portfolio: send moves and X BLD for GMP(agoric, arbitrum) and Y ARB for GMP(arbitrum, agoric)
   Note over portfolio, acctArb: Make Account if Needed
-  portfolio ->> LCAorch: seat pays X BLD ticket TBD
-  LCAorch ->> AX: makeAccount(Y ARB for postage)
+  portfolio ->> LCAorch: LCAgas pays X BLD (#11781)
+  LCAorch ->> AX: makeAccount("Y ARB" for postage)
   AX ->> factory: invoke makeAccount
   factory ->> acctArb: makeAccount
   factory ->> AX: return acctArb.accountID, Y ARB for postage
