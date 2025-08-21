@@ -34,9 +34,8 @@ type CosmosEvent = {
   attributes?: Array<{ key: string; value: string }>;
 };
 
-const VSTORAGE_PATH_PREFIX = 'published.ymax0.portfolios';
-const ORCHESTRATION_SUBSCRIPTIONS_PREFIX =
-  'published.orchestration.subscriptions';
+const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
+const PENDING_TXS_PATH_PREFIX = 'published.ymax0.PendingTxs';
 
 /** cf. golang/cosmos/x/vstorage/types/path_keys.go */
 const EncodedKeySeparator = '\x00';
@@ -335,11 +334,11 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
   );
 
   // TODO: verify consumption of paginated data.
-  const portfolioKeys = await vstorageKit.vstorage.keys(VSTORAGE_PATH_PREFIX);
+  const portfolioKeys = await vstorageKit.vstorage.keys(PORTFOLIOS_PATH_PREFIX);
   const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
     const status = await vstorageKit.readPublished(
-      `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${portfolioKey}`,
+      `${stripPrefix('published.', PORTFOLIOS_PATH_PREFIX)}.${portfolioKey}`,
     );
     mustMatch(status, PortfolioStatusShapeExt, portfolioKey);
     const { depositAddress } = status;
@@ -347,10 +346,9 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
     portfolioKeyForDepositAddr.set(depositAddress, portfolioKey);
   }).done;
 
-  console.warn('Initializing subscription tracking...');
   try {
     const subscriptionKeys = await vstorageKit.vstorage.keys(
-      ORCHESTRATION_SUBSCRIPTIONS_PREFIX,
+      PENDING_TXS_PATH_PREFIX,
     );
     console.warn(
       `Found ${subscriptionKeys.length} existing subscriptions to monitor`,
@@ -358,45 +356,37 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
 
     // Process existing pending subscriptions on startup
     await makeWorkPool(subscriptionKeys, undefined, async subscriptionKey => {
-      try {
-        const subscriptionData = (await vstorageKit.readPublished(
-          `${stripPrefix('published.', ORCHESTRATION_SUBSCRIPTIONS_PREFIX)}.${subscriptionKey}`,
-        )) as Omit<Subscription, 'subscriptionId'>;
-        console.log('subscription data', subscriptionData);
-        console.warn(`Found existing subscription: ${subscriptionKey}`, {
-          type: subscriptionData.type,
-          status: subscriptionData.status,
-        });
+      const logIgnoredError = err => {
+        const msg = `Failed to process existing subscription: ${subscriptionKey}`;
+        console.error(msg, err);
+      };
 
-        if (subscriptionData.status === 'pending') {
-          console.warn(
-            `Processing existing pending subscription: ${subscriptionKey}`,
-          );
-          try {
-            const subscription = {
-              subscriptionId: subscriptionKey,
-              ...subscriptionData,
-            } as Subscription;
-            // Process subscription concurrently without blocking other subscriptions
-            void handleSubscription(ctx, subscription).catch(error => {
-              console.error(
-                `[${subscriptionKey}] Failed to process existing subscription:`,
-                error,
-              );
-            });
-          } catch (error) {
-            console.error(
-              `Failed to process existing subscription ${subscriptionKey}:`,
-              error,
-            );
-          }
-        }
-      } catch (error) {
-        console.warn(
-          `Could not read subscription ${subscriptionKey}:`,
-          error.message,
-        );
+      const [vstorageSettlement] = await Promise.allSettled([
+        vstorageKit.readPublished(
+          stripPrefix(
+            'published.',
+            `${PENDING_TXS_PATH_PREFIX}.${subscriptionKey}`,
+          ),
+        ),
+      ]);
+      if (vstorageSettlement.status === 'rejected') {
+        logIgnoredError(vstorageSettlement.reason);
+        return;
       }
+
+      const subscription = {
+        subscriptionId: subscriptionKey,
+        ...(vstorageSettlement.value as any),
+      } as Subscription;
+      console.warn(`Found existing subscription: ${subscriptionKey}`, {
+        type: subscription.type,
+        status: subscription.status,
+      });
+
+      if (subscription.status !== 'pending') return;
+
+      // Process subscription without blocking other progress.
+      void handleSubscription(ctx, subscription).catch(logIgnoredError);
     }).done;
   } catch (error) {
     console.warn(
@@ -450,26 +440,20 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
 
         // Filter for paths we care about (portfolios or subscriptions).
         const path = encodedKeyToPath(attributes.key);
-        if (
-          !vstoragePathStartsWith(path, VSTORAGE_PATH_PREFIX) &&
-          !vstoragePathStartsWith(path, ORCHESTRATION_SUBSCRIPTIONS_PREFIX)
-        )
-          return;
 
-        return {
-          path,
-          value: attributes.value,
-          pathType: vstoragePathStartsWith(path, VSTORAGE_PATH_PREFIX)
-            ? 'portfolio'
-            : 'subscription',
-        };
+        if (vstoragePathStartsWith(path, PORTFOLIOS_PATH_PREFIX)) {
+          return { type: 'portfolio', path, value: attributes.value };
+        }
+        if (vstoragePathStartsWith(path, PENDING_TXS_PATH_PREFIX)) {
+          return { type: 'subscription', path, value: attributes.value };
+        }
       });
 
       const portfolioEvents = vstorageEvents.filter(
-        event => event.pathType === 'portfolio',
+        event => event.type === 'portfolio',
       );
       const subscriptionEvents = vstorageEvents.filter(
-        event => event.pathType === 'subscription',
+        event => event.type === 'subscription',
       );
 
       // Detect new portfolios.
@@ -480,7 +464,7 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
             Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
         );
         mustMatch(harden(streamCell), StreamCellShape);
-        if (path === VSTORAGE_PATH_PREFIX) {
+        if (path === PORTFOLIOS_PATH_PREFIX) {
           for (let i = 0; i < streamCell.values.length; i += 1) {
             const strValue = streamCell.values[i];
             const value = tryJsonParse(
@@ -497,7 +481,7 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
               console.warn('Detected new portfolio', key);
               // XXX we should probably read at streamCell.blockHeight.
               const status = await vstorageKit.readPublished(
-                `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${key}`,
+                `${stripPrefix('published.', PORTFOLIOS_PATH_PREFIX)}.${key}`,
               );
               mustMatch(status, PortfolioStatusShapeExt, key);
               const { depositAddress } = status;
@@ -506,7 +490,6 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
               console.warn('Added new portfolio', key, depositAddress);
             }
           }
-        } else {
         }
       }
 
@@ -520,10 +503,7 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
         mustMatch(harden(streamCell), StreamCellShape);
 
         // Extract subscription ID from path (e.g., "published.orchestration.subscriptions.subscription1234")
-        const subscriptionId = stripPrefix(
-          `${ORCHESTRATION_SUBSCRIPTIONS_PREFIX}.`,
-          path,
-        );
+        const subscriptionId = stripPrefix(`${PENDING_TXS_PATH_PREFIX}.`, path);
         console.warn('Processing subscription event', subscriptionId, path);
 
         for (let i = 0; i < streamCell.values.length; i += 1) {
@@ -644,7 +624,7 @@ export const startEngine = async ({ ctx, rpc, spectrum, cosmosRest }: IO) => {
 
             const unprefixedPortfolioPath = stripPrefix(
               'published.',
-              `${VSTORAGE_PATH_PREFIX}.${portfolioKey}`,
+              `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}`,
             );
 
             const steps = await handleDeposit(
