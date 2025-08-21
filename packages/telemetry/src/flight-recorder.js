@@ -205,7 +205,7 @@ export const makeSimpleCircularBuffer = async ({
 
   const file = await fsp.open(filename, 'r+');
 
-  const headerBuffer = Buffer.alloc(I_ARENA_START);
+  const headerBuffer = new Uint8Array(I_ARENA_START);
 
   await file.read({
     buffer: headerBuffer,
