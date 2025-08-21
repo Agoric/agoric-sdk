@@ -179,7 +179,7 @@ sequenceDiagram
 
   %% get plan
   UI ->> portfolio: rebalance
-  portfolio ->> YP: YP observes signal for rebalance
+  portfolio ->> YP: YP observes policyVersion signal for rebalance
   Note over YP: think and generate steps
 
   Note over portfolio, aavePos: CCTP back
