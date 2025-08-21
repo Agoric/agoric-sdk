@@ -242,7 +242,7 @@ jobs:
         run: cd packages/xsnap && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (ymax-planner)
         if: (success() || failure())
-        run: cd packages/ymax-planner && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+        run: cd services/ymax-planner && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
