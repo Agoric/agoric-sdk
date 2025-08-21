@@ -66,3 +66,5 @@ export const preparePlanner = (
     },
   });
 };
+
+export type PortfolioPlanner = ReturnType<ReturnType<typeof preparePlanner>>;
