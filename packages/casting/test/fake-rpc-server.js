@@ -1,4 +1,3 @@
-import { Buffer } from 'buffer';
 import './lockdown.js';
 
 import { makeMarshal } from '@endo/marshal';
@@ -182,9 +181,9 @@ export const startFakeServer = (t, fakeValues, options = {}) => {
               log: '',
               info: '',
               index: '0',
-              key: Buffer.from(
-                'swingset/data:mailbox.agoric1foobarbaz',
-              ).toString('base64'),
+              key: toBase64(
+                new TextEncoder().encode('swingset/data:mailbox.agoric1foobarbaz'),
+              ),
               value: responseValueBase64,
               proofOps: null,
               height: String(blockHeight),

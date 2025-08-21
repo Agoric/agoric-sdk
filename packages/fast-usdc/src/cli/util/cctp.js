@@ -1,4 +1,3 @@
-import { Buffer } from 'node:buffer';
 import { bech32 } from 'bech32';
 import { ethers } from 'ethers';
 
@@ -10,12 +9,12 @@ import { ethers } from 'ethers';
  */
 export const encodeBech32Address = address => {
   const decoded = bech32.decode(address);
-  const rawBytes = Buffer.from(bech32.fromWords(decoded.words));
+  const rawBytes = new Uint8Array(bech32.fromWords(decoded.words));
 
-  const padded = Buffer.alloc(32);
-  rawBytes.copy(padded, 32 - rawBytes.length);
+  const padded = new Uint8Array(32);
+  padded.set(rawBytes, 32 - rawBytes.length);
 
-  return `0x${padded.toString('hex')}`;
+  return `0x${Array.from(padded, byte => byte.toString(16).padStart(2, '0')).join('')}`;
 };
 
 const tokenAbi = ['function approve(address spender, uint256 value) external'];

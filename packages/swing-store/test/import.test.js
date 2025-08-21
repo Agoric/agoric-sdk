@@ -3,7 +3,6 @@
 import path from 'path';
 import { createGunzip } from 'zlib';
 import { Readable } from 'stream';
-import { Buffer } from 'buffer';
 
 import sqlite3 from 'better-sqlite3';
 import test from 'ava';
@@ -133,7 +132,7 @@ const importTest = test.macro(async (t, mode) => {
 
   const expectedTranscript = convertTranscript(ts, tsStart);
   t.deepEqual(data.transcripts, { v1: expectedTranscript });
-  const uncompressedSnapshot = Buffer.from(snapshotData);
+  const uncompressedSnapshot = new TextEncoder().encode(snapshotData);
   const expectedSnapshots = [];
   if (artifactMode === 'debug') {
     expectedSnapshots.push({

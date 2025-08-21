@@ -1,7 +1,6 @@
 // @ts-check
 import { createHash } from 'crypto';
 import { Readable } from 'stream';
-import { Buffer } from 'buffer';
 import { Fail, q } from '@endo/errors';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 import { checkBundle } from '@endo/check-bundle/lite.js';
@@ -266,7 +265,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     const row =
       sqlGetBundle.get(bundleID) || Fail`bundle ${q(bundleID)} not found`;
     const rawBundle = row.bundle || Fail`bundle ${q(bundleID)} pruned`;
-    yield* Readable.from(Buffer.from(rawBundle));
+    yield* Readable.from([new TextEncoder().encode(rawBundle)]);
   }
   harden(exportBundle);
 
@@ -317,7 +316,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     const data = await dataProvider();
     if (bundleID.startsWith('b0-')) {
       // we dissect and reassemble the bundle, to exclude unexpected properties
-      const { moduleFormat, source, sourceMap } = JSON.parse(data.toString());
+      const { moduleFormat, source, sourceMap } = JSON.parse(new TextDecoder().decode(data));
       /** @type {NestedEvaluateBundle} */
       const bundle = harden({ moduleFormat, source, sourceMap });
       const serialized = JSON.stringify(bundle);
@@ -353,7 +352,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     const dump = {};
     for (const row of sql.iterate()) {
       const { bundleID, bundle } = row;
-      dump[bundleID] = encodeBase64(Buffer.from(bundle, 'utf-8'));
+      dump[bundleID] = encodeBase64(new TextEncoder().encode(bundle));
     }
     return dump;
   }

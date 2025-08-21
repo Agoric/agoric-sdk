@@ -90,7 +90,7 @@ test('b0 export', async t => {
   const names = await collectArray(exporter.getArtifactNames());
   t.deepEqual(names, [`bundle.${idA}`]);
   const artifact = await buffer(exporter.getArtifact(names[0]));
-  t.is(artifact.toString(), JSON.stringify(b0A));
+  t.is(new TextDecoder().decode(artifact), JSON.stringify(b0A));
 });
 
 test('b0 import', async t => {
