@@ -284,9 +284,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@aglocal/ymax-planner@workspace:packages/ymax-planner":
+"@aglocal/ymax-planner@workspace:services/ymax-planner-service":
   version: 0.0.0-use.local
-  resolution: "@aglocal/ymax-planner@workspace:packages/ymax-planner"
+  resolution: "@aglocal/ymax-planner@workspace:services/ymax-planner-service"
   dependencies:
     "@aglocal/portfolio-contract": "workspace:*"
     "@agoric/client-utils": "workspace:*"
