@@ -405,11 +405,13 @@ export const contract = async (
         return makePlannerInvitation();
       },
       /**
-       * Make and deliver a planner invitation
-       * using only public arguments (data, well-known objects).
+       * Make and deliver a planner invitation to the specified address.
        *
-       * @param address where to deliver invitation
-       * @param instancePS postal service instance
+       * Note: Contract handles delivery due to wallet DSL limitations - see CONTRIBUTING.md
+       * section "Invitation Delivery Limitations in the Wallet Action DSL" for architectural context.
+       *
+       * @param address - Agoric address where to deliver the planner invitation
+       * @param instancePS - Postal service instance for delivery
        */
       async deliverPlannerInvitation(
         address: string,
