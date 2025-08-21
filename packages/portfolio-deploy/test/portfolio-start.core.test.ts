@@ -2,6 +2,7 @@
 // see also https://github.com/endojs/endo/issues/1467
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import * as contractExports from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import {
   gmpAddresses,
@@ -15,10 +16,13 @@ import {
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { SmartWallet } from '@agoric/smart-wallet/src/smartWallet.js';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { makePromiseSpace } from '@agoric/vats';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
+import type { EMethods } from '@agoric/vow/src/E.js';
 import type { Instance, ZoeService } from '@agoric/zoe';
+import type { ContractStartFunction } from '@agoric/zoe/src/zoeService/utils';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
 import { produceAttenuatedDeposit } from '../src/attenuated-deposit.core.js';
@@ -209,94 +213,145 @@ test('coreEval code without swingset', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
+/**
+ * Reflect wallet store, supporting type-safe invokeEntry
+ *
+ * @param wallet
+ */
+const reflectWalletStore = (wallet: SmartWallet) => {
+  let nonce = 0;
+
+  // XXX should check `published.wallet.${addr}` for updated: 'invocation'
+  const watchInvocation = (id: string | number): Promise<void> =>
+    eventLoopIteration();
+  // XXX should check `published.wallet.${addr}` for updated: 'offerStatus'
+  const watchOffer = (id: string | number): Promise<void> =>
+    eventLoopIteration();
+
+  let resultName: string | undefined = undefined;
+  const savingResult = async <T>(name: string, thunk: () => Promise<T>) => {
+    assert(!resultName, 'already saving');
+    resultName = name;
+    const result = await thunk();
+    resultName = undefined;
+    return result;
+  };
+  const makeEntryProxy = (targetName: string) =>
+    new Proxy(harden({}), {
+      get(_t, method, _rx) {
+        assert.typeof(method, 'string');
+        if (method === 'then') return undefined;
+        const boundMethod = async (...args) => {
+          const id = `${method}.${(nonce += 1)}`;
+          await E(E(wallet).getInvokeFacet()).invokeEntry({
+            id,
+            targetName,
+            method,
+            args,
+            ...(resultName ? { saveResult: { name: resultName } } : {}),
+          });
+          await watchInvocation(id);
+          return resultName ? makeEntryProxy(resultName) : undefined;
+        };
+        return harden(boundMethod);
+      },
+    });
+
+  const saveOfferResult = async <T = unknown>(
+    { instance, description }: { instance: Instance; description: string },
+    name: string = description,
+  ) => {
+    const id = `${description}.${(nonce += 1)}`;
+    await E(E(wallet).getOffersFacet()).executeOffer({
+      id,
+      invitationSpec: { source: 'purse', description, instance },
+      proposal: {},
+      saveResult: { name, overwrite: true },
+    });
+    await watchOffer(id);
+    return makeEntryProxy(name) as EMethods<T>;
+  };
+
+  const get = <T>(name: string) => makeEntryProxy(name) as EMethods<T>;
+
+  return harden({ get, saveOfferResult, savingResult });
+};
+
+type YMaxStartFn = typeof contractExports.start;
+
+// XXX ContractControl isn't quite parameterized right, but it's already deployed
+interface ContractControl<SF extends ContractStartFunction> {
+  getCreatorFacet(): StartedInstanceKit<SF>['creatorFacet'];
+}
+
 test('delegate ymax control; invite planner; submit plan', async t => {
-  const { common, powers, zoe, bundleAndInstall, provisionSmartWallet } =
+  const { common, powers, bundleAndInstall, provisionSmartWallet } =
     await makeBootstrap(t);
   const { rootZone } = common.utils;
 
-  t.log('produce getDepositFacet');
-  await produceAttenuatedDeposit(powers as any);
+  // script from agoric run does this step
+  const coreEvalPreamble = (
+    installations: Record<string, ERef<Installation>>,
+  ) => {
+    for (const [name, installationP] of Object.entries(installations)) {
+      powers.installation.produce[name].resolve(installationP);
+    }
+  };
 
   t.log('start ymax0');
-  powers.installation.produce[contractName].resolve(
-    await bundleAndInstall(contractExports),
-  );
-  await startPortfolio(powers, { options: ymaxOptions });
-
-  // script from agoric run does this step
-  const pContractName = 'postalService';
   {
-    t.log('produce postalService installation using test bundle');
-    const postalInstall = await bundleAndInstall(postalServiceExports);
-    powers.installation.produce[pContractName].resolve(postalInstall);
-    const { agoricNamesAdmin } = common.bootstrap;
-    await E(E(agoricNamesAdmin).lookupAdmin('installation')).update(
-      pContractName,
-      postalInstall,
-    );
+    coreEvalPreamble({ [contractName]: bundleAndInstall(contractExports) });
+    await Promise.all([
+      startPortfolio(powers, { options: ymaxOptions }),
+      // produce getDepositFacet as in usdc-resolve core eval
+      produceAttenuatedDeposit(powers as any),
+    ]);
   }
 
-  console.log('awaited namesByAddress');
-  await deployPostalService(powers as any);
-  t.log('deployPostalService done');
-  const { agoricNames } = common.bootstrap;
-  const pInst = await E(agoricNames).lookup('instance', pContractName);
-  t.is(passStyleOf(pInst), 'remotable');
-  const pPub = await E(zoe).getPublicFacet(pInst);
-  t.is(passStyleOf(pPub), 'remotable');
+  t.log('deploy postalService');
+  {
+    coreEvalPreamble({ postalService: bundleAndInstall(postalServiceExports) });
+    await deployPostalService(powers as any);
+  }
 
+  t.log('delegate control of ymax');
   const addrCtrl = 'agoric1ymaxcontrol';
-  const [walletCtrl] = await provisionSmartWallet(addrCtrl);
-
-  const zone = rootZone.subZone('bootstrap vat');
-  await delegatePortfolioContract(
-    // @ts-expect-error mock
-    { ...powers, zone },
-    { options: { ymaxControlAddress: addrCtrl } },
-  );
-  await eventLoopIteration(); // core eval doesn't block on delivery
+  const [_d, [walletCtrl]] = await Promise.all([
+    // XXX wan't supposed to await smartWallet but does
+    delegatePortfolioContract(
+      // @ts-expect-error mock
+      { ...powers, zone: rootZone.subZone('bootstrap vat') },
+      { options: { ymaxControlAddress: addrCtrl } },
+    ),
+    // has to happen after walletFactory upgrade
+    provisionSmartWallet(addrCtrl),
+  ]);
+  await eventLoopIteration(); // delegatePortfolioContract doesn't block on delivery
 
   t.log('redeem ymaxControl invitation');
-  await E(E(walletCtrl).getOffersFacet()).executeOffer({
-    id: 0,
-    invitationSpec: {
-      source: 'purse',
-      description: 'deliver ymaxControl',
-      instance: pInst,
-    },
-    proposal: {},
-    saveResult: { name: 'ymaxControl' },
-  });
+  const storeCtrl = reflectWalletStore(walletCtrl);
+  const { agoricNames } = common.bootstrap;
+  const pInst = await E(agoricNames).lookup('instance', 'postalService');
+  const ymaxControl = await storeCtrl.saveOfferResult<
+    ContractControl<YMaxStartFn>
+  >({ description: 'deliver ymaxControl', instance: pInst }, 'ymaxControl');
 
-  t.log('getDepositFacet');
-  await E(E(walletCtrl).getInvokeFacet()).invokeEntry({
-    targetName: 'ymaxControl',
-    method: 'getCreatorFacet',
-    args: [],
-    saveResult: { name: 'ymax0.creatorFacet' },
-  });
+  t.log('getCreatorFacet');
+  const creatorFacet = await storeCtrl.savingResult('creatorFacet', () =>
+    ymaxControl.getCreatorFacet(),
+  );
 
   t.log('invite planner');
   const addrPl = 'agoric1planner';
   const [walletPl] = await provisionSmartWallet(addrPl);
-  await E(E(walletCtrl).getInvokeFacet()).invokeEntry({
-    targetName: 'ymax0.creatorFacet',
-    method: 'deliverPlannerInvitation',
-    args: [addrPl, pInst],
-  });
-  await eventLoopIteration(); // wait for vow to settle
+  await creatorFacet.deliverPlannerInvitation(addrPl, pInst);
 
   t.log('redeem planner invitation');
   const yInst = await E(agoricNames).lookup('instance', contractName);
-  await E(E(walletPl).getOffersFacet()).executeOffer({
-    id: 0,
-    invitationSpec: {
-      source: 'purse',
-      description: 'planner',
-      instance: yInst,
-    },
-    proposal: {},
-    saveResult: { name: 'planner' },
+  const storePl = reflectWalletStore(walletPl);
+  const planner = await storePl.saveOfferResult<PortfolioPlanner>({
+    description: 'planner',
+    instance: yInst,
   });
 
   t.log('make a portfolio');
@@ -314,11 +369,10 @@ test('delegate ymax control; invite planner; submit plan', async t => {
     proposal: { give: { Access: poc26.make(1n) } },
     offerArgs: {},
   });
+  await eventLoopIteration(); // wait for offer result to settle
 
   t.log('invoke planner');
-  await E(E(walletPl).getInvokeFacet()).invokeEntry({
-    targetName: 'planner',
-    method: 'submit',
-    args: [0, []],
-  });
+  await planner.submit(0, []);
+
+  t.pass('happy path complete');
 });
