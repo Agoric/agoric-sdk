@@ -2,10 +2,7 @@ import type {
   InvokeEntryMessage,
   OfferSpec,
 } from '@agoric/smart-wallet/src/offers.js';
-import type {
-  ExecuteOfferAction,
-  InvokeStoreEntryAction,
-} from '@agoric/smart-wallet/src/smartWallet.js';
+import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { SigningStargateClient, StdFee } from '@cosmjs/stargate';
 import { toAccAddress } from '@cosmjs/stargate/build/queryclient/utils.js';
 import type { EReturn } from '@endo/far';
@@ -53,46 +50,38 @@ export const makeSigningSmartWalletKit = async (
     ) => walletUtils.pollOffer(address, ...args),
   };
 
-  const executeOffer = async (offer: OfferSpec) => {
-    const action: ExecuteOfferAction = harden({
-      method: 'executeOffer',
-      offer,
-    });
-
+  const sendBridgeAction = (action: BridgeAction) => {
     const msgSpend = MsgWalletSpendAction.fromPartial({
       owner: toAccAddress(address),
       spendAction: JSON.stringify(walletUtils.marshaller.toCapData(action)),
     });
 
-    const before = await client.getBlock();
-    await client.signAndBroadcast(
+    return client.signAndBroadcast(
       address,
       [{ typeUrl: MsgWalletSpendAction.typeUrl, value: msgSpend }],
       defaultFee,
-    );
-
-    return walletUtils.pollOffer(
-      address,
-      action.offer.id,
-      before.header.height,
     );
   };
 
+  const executeOffer = async (offer: OfferSpec) => {
+    const before = await client.getBlock();
+
+    await sendBridgeAction(
+      harden({
+        method: 'executeOffer',
+        offer,
+      }),
+    );
+
+    return walletUtils.pollOffer(address, offer.id, before.header.height);
+  };
+
   const invokeEntry = async (message: InvokeEntryMessage) => {
-    const action: InvokeStoreEntryAction = harden({
-      method: 'invokeEntry',
-      message,
-    });
-
-    const msgSpend = MsgWalletSpendAction.fromPartial({
-      owner: toAccAddress(address),
-      spendAction: JSON.stringify(walletUtils.marshaller.toCapData(action)),
-    });
-
-    const transaction = await client.signAndBroadcast(
-      address,
-      [{ typeUrl: MsgWalletSpendAction.typeUrl, value: msgSpend }],
-      defaultFee,
+    const transaction = await sendBridgeAction(
+      harden({
+        method: 'invokeEntry',
+        message,
+      }),
     );
 
     return { result: { transaction } };
@@ -105,6 +94,7 @@ export const makeSigningSmartWalletKit = async (
     address,
     executeOffer,
     invokeEntry,
+    sendBridgeAction,
   });
 };
 export type SigningSmartWalletKit = EReturn<typeof makeSigningSmartWalletKit>;
