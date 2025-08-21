@@ -605,7 +605,6 @@ __metadata:
     "@agoric/store": "workspace:*"
     "@agoric/swingset-vat": "workspace:*"
     "@agoric/vat-data": "workspace:*"
-    "@agoric/xsnap": "workspace:*"
     "@agoric/zone": "workspace:*"
     "@endo/bundle-source": "npm:^4.1.2"
     "@endo/errors": "npm:^1.2.13"
@@ -1427,7 +1426,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/xsnap@workspace:*, @agoric/xsnap@workspace:packages/xsnap":
+"@agoric/xsnap@workspace:packages/xsnap":
   version: 0.0.0-use.local
   resolution: "@agoric/xsnap@workspace:packages/xsnap"
   dependencies:
@@ -1469,7 +1468,6 @@ __metadata:
     "@agoric/time": "workspace:*"
     "@agoric/vat-data": "workspace:*"
     "@agoric/vow": "workspace:*"
-    "@agoric/xsnap": "workspace:*"
     "@agoric/zone": "workspace:*"
     "@endo/bundle-source": "npm:^4.1.2"
     "@endo/captp": "npm:^4.4.8"
