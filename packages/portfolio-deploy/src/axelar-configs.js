@@ -29,6 +29,10 @@ const AxelarChainIdMap = harden({
     testnet: 'Avalanche',
     mainnet: 'Avalanche',
   },
+  Ethereum: {
+    testnet: 'Ethereum',
+    mainnet: 'ethereum-sepolia',
+  },
   Arbitrum: {
     testnet: 'arbitrum-sepolia',
     mainnet: 'arbitrum',
@@ -43,6 +47,8 @@ const AxelarChainIdMap = harden({
   },
 });
 
+// XXX: Ideally this should be Record<keyof typeof AxelarChain, HexAddress>.
+// Currently using a looser type to work around compile-time errors.
 /**
  * @typedef {`0x${string}`} HexAddress
  * @typedef {Record<string, HexAddress>} EvmAddressesMap
@@ -85,12 +91,14 @@ const usdcAddresses = {
   mainnet: {
     Avalanche: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', // https://developers.circle.com/stablecoins/usdc-contract-addresses
     Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // https://developers.circle.com/stablecoins/usdc-contract-addresses
+    Ethereum: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // https://developers.circle.com/stablecoins/usdc-contract-addresses
     Optimism: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85', // https://developers.circle.com/stablecoins/usdc-contract-addresses
     Polygon: '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359', // https://developers.circle.com/stablecoins/usdc-contract-addresses
   },
   testnet: {
     Avalanche: '0x5425890298aed601595a70AB815c96711a31Bc65', // https://testnet.snowtrace.io/token/0x5425890298aed601595a70AB815c96711a31Bc65
     Arbitrum: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d', // https://sepolia.arbiscan.io/token/0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d
+    Ethereum: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238', // https://developers.circle.com/stablecoins/usdc-contract-addresses
     Optimism: '0x5fd84259d66Cd46123540766Be93DFE6D43130D7', // https://sepolia-optimism.etherscan.io/token/0x5fd84259d66Cd46123540766Be93DFE6D43130D7
     Polygon: '0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582', // https://amoy.polygonscan.com/token/0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582
   },
@@ -174,12 +182,15 @@ const factoryAddresses = {
   mainnet: {
     Avalanche: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://snowtrace.io/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
     Arbitrum: '0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc', // https://arbiscan.io/address/0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc
+    // TODO: Deploy and replace with correct Factory address on Ethereum mainnet
+    Ethereum: '0x3bF3056835f7C25b1f71aff99B734Ad07d644577',
     Optimism: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://optimistic.etherscan.io/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
     Polygon: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://polygonscan.com/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
   },
   testnet: {
-    Avalanche: '0xe4Bf676E956AF5f30876b9af9E93D3CCC4D2ECfF', // https://testnet.snowtrace.io/address/0xe4Bf676E956AF5f30876b9af9E93D3CCC4D2ECfF
+    Avalanche: '0xFCA9d35442724854aa1e41144f37ACDcaEC14336', // https://testnet.snowtrace.io/address/0xFCA9d35442724854aa1e41144f37ACDcaEC14336
     Arbitrum: '0x',
+    Ethereum: '0x3bF3056835f7C25b1f71aff99B734Ad07d644577', // https://sepolia.etherscan.io/address/0x3bF3056835f7C25b1f71aff99B734Ad07d644577
     Optimism: '0x',
     Polygon: '0x',
   },
@@ -214,6 +225,18 @@ const mainnetContracts = {
     aaveUSDC: aaveUsdcAddresses.mainnet.Avalanche,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Avalanche,
     Beefy_re7_Avalanche: beefyre7Addresses.mainnet.Avalanche,
+  },
+  // TODO: All addresses are placeholders except for factory and USDC
+  Ethereum: {
+    aavePool: '0x000000000000000000000000000000000000dEaD',
+    compound: '0x000000000000000000000000000000000000dEaD',
+    compoundRewardsController: '0x000000000000000000000000000000000000dEaD',
+    factory: factoryAddresses.mainnet.Ethereum,
+    usdc: usdcAddresses.mainnet.Ethereum,
+    tokenMessenger: '0x000000000000000000000000000000000000dEaD',
+    aaveUSDC: '0x000000000000000000000000000000000000dEaD',
+    aaveRewardsController: '0x000000000000000000000000000000000000dEaD',
+    Beefy_re7_Avalanche: '0x000000000000000000000000000000000000dEaD',
   },
   Optimism: {
     aavePool: aaveAddresses.mainnet.Optimism,
@@ -281,6 +304,18 @@ const testnetContracts = {
     aaveUSDC: aaveUsdcAddresses.testnet.Avalanche,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Avalanche,
   },
+  // TODO: All addresses are placeholders except for factory and USDC
+  Ethereum: {
+    aavePool: '0x000000000000000000000000000000000000dEaD',
+    compound: '0x000000000000000000000000000000000000dEaD',
+    compoundRewardsController: '0x000000000000000000000000000000000000dEaD',
+    factory: factoryAddresses.testnet.Ethereum,
+    usdc: usdcAddresses.testnet.Ethereum,
+    tokenMessenger: '0x000000000000000000000000000000000000dEaD',
+    aaveUSDC: '0x000000000000000000000000000000000000dEaD',
+    aaveRewardsController: '0x000000000000000000000000000000000000dEaD',
+    Beefy_re7_Avalanche: '0x000000000000000000000000000000000000dEaD',
+  },
   Optimism: {
     aavePool: aaveAddresses.testnet.Optimism,
     compound: '0x', // TODO
@@ -336,6 +371,15 @@ export const axelarConfig = {
     },
     contracts: { ...mainnetContracts.Avalanche },
   },
+  Ethereum: {
+    axelarId: AxelarChainIdMap.Ethereum.mainnet,
+    chainInfo: {
+      namespace: 'eip155',
+      reference: '1',
+      cctpDestinationDomain: 0,
+    },
+    contracts: { ...mainnetContracts.Ethereum },
+  },
   Optimism: {
     axelarId: AxelarChainIdMap.Optimism.mainnet,
     chainInfo: {
@@ -385,6 +429,15 @@ export const axelarConfigTestnet = {
       cctpDestinationDomain: 1,
     },
     contracts: { ...testnetContracts.Avalanche },
+  },
+  Ethereum: {
+    axelarId: AxelarChainIdMap.Ethereum.testnet,
+    chainInfo: {
+      namespace: 'eip155',
+      reference: '11155111',
+      cctpDestinationDomain: 0,
+    },
+    contracts: { ...testnetContracts.Ethereum },
   },
   Optimism: {
     axelarId: AxelarChainIdMap.Optimism.testnet,
