@@ -12,11 +12,15 @@ import { setupPortfolioTest } from '@aglocal/portfolio-contract/test/supports.ts
 import { makeTrader } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
 import { makeWallet } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.ts';
 import {
+  defaultMarshaller,
   defaultSerializer,
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import type { SmartWallet } from '@agoric/smart-wallet/src/smartWallet.js';
+import type {
+  SmartWallet,
+  UpdateRecord,
+} from '@agoric/smart-wallet/src/smartWallet.js';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { makePromiseSpace } from '@agoric/vats';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
@@ -42,6 +46,8 @@ import type {
 import { name as contractName } from '../src/portfolio.contract.permit.js';
 import * as postalServiceExports from '../src/postal-service.contract.js';
 import { deployPostalService } from '../src/postal-service.core.js';
+import { Fail, q } from '@endo/errors';
+import type { ExecutionContext } from 'ava';
 
 const { entries, keys } = Object;
 
@@ -218,15 +224,42 @@ test('coreEval code without swingset', async t => {
  *
  * @param wallet
  */
-const reflectWalletStore = (wallet: SmartWallet) => {
+const reflectWalletStore = (
+  t: ExecutionContext,
+  wallet: SmartWallet,
+  addr: string,
+  storage,
+) => {
   let nonce = 0;
 
   // XXX should check `published.wallet.${addr}` for updated: 'invocation'
-  const watchInvocation = (id: string | number): Promise<void> =>
-    eventLoopIteration();
+  const watchInvocation = async (id: string | number): Promise<void> => {
+    await eventLoopIteration();
+    const update = storage
+      .getDeserialized(`orchtest.wallet.${addr}`)
+      .at(-1) as UpdateRecord;
+    assert.equal(update.updated, 'invocation');
+    t.is(update.id, id);
+    if (update.error) throw t.fail(update.error);
+    update.result || Fail`no result for ${id}`;
+  };
   // XXX should check `published.wallet.${addr}` for updated: 'offerStatus'
-  const watchOffer = (id: string | number): Promise<void> =>
-    eventLoopIteration();
+  const watchOffer = async (id: string | number): Promise<void> => {
+    await eventLoopIteration();
+    for (const update of storage.getDeserialized(
+      `orchtest.wallet.${addr}`,
+    ) as UpdateRecord[]) {
+      if (!(update.updated === 'offerStatus' && update.status.id === id))
+        continue;
+      const { status } = update;
+      if (status.error) throw t.fail(status.error);
+      if (status.result) {
+        t.pass(`${status.id}`);
+        return;
+      }
+    }
+    Fail`offerStatus for ${id} not found`;
+  };
 
   let resultName: string | undefined = undefined;
   const savingResult = async <T>(name: string, thunk: () => Promise<T>) => {
@@ -329,7 +362,8 @@ test('delegate ymax control; invite planner; submit plan', async t => {
   await eventLoopIteration(); // delegatePortfolioContract doesn't block on delivery
 
   t.log('redeem ymaxControl invitation');
-  const storeCtrl = reflectWalletStore(walletCtrl);
+  const { storage } = common.bootstrap;
+  const storeCtrl = reflectWalletStore(t, walletCtrl, addrCtrl, storage);
   const { agoricNames } = common.bootstrap;
   const pInst = await E(agoricNames).lookup('instance', 'postalService');
   const ymaxControl = await storeCtrl.saveOfferResult<
@@ -348,7 +382,7 @@ test('delegate ymax control; invite planner; submit plan', async t => {
 
   t.log('redeem planner invitation');
   const yInst = await E(agoricNames).lookup('instance', contractName);
-  const storePl = reflectWalletStore(walletPl);
+  const storePl = reflectWalletStore(t, walletPl, addrPl, storage);
   const planner = await storePl.saveOfferResult<PortfolioPlanner>({
     description: 'planner',
     instance: yInst,
