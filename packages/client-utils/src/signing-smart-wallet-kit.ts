@@ -25,18 +25,33 @@ const defaultFee: StdFee = {
 export const makeSigningSmartWalletKit = async (
   {
     connectWithSigner,
-    query,
+    walletUtils,
   }: {
     connectWithSigner: typeof SigningStargateClient.connectWithSigner;
-    query: SmartWalletKit;
+    walletUtils: SmartWalletKit;
   },
   MNEMONIC: string,
 ) => {
   const { address, client } = await makeStargateClientKit(MNEMONIC, {
     connectWithSigner,
     // XXX always the first
-    rpcAddr: query.networkConfig.rpcAddrs[0],
+    rpcAddr: walletUtils.networkConfig.rpcAddrs[0],
   });
+
+  const query = {
+    readPublished: walletUtils.readPublished,
+    vstorage: walletUtils.vstorage,
+    getLastUpdate: () => walletUtils.getLastUpdate(address),
+    getCurrentWalletRecord: () => walletUtils.getCurrentWalletRecord(address),
+    pollOffer: (
+      ...args: Parameters<SmartWalletKit['pollOffer']> extends [
+        any,
+        ...infer Rest,
+      ]
+        ? Rest
+        : never
+    ) => walletUtils.pollOffer(address, ...args),
+  };
 
   const executeOffer = async (offer: OfferSpec) => {
     const action: ExecuteOfferAction = harden({
@@ -46,7 +61,7 @@ export const makeSigningSmartWalletKit = async (
 
     const msgSpend = MsgWalletSpendAction.fromPartial({
       owner: toAccAddress(address),
-      spendAction: JSON.stringify(query.marshaller.toCapData(action)),
+      spendAction: JSON.stringify(walletUtils.marshaller.toCapData(action)),
     });
 
     const before = await client.getBlock();
@@ -56,7 +71,11 @@ export const makeSigningSmartWalletKit = async (
       defaultFee,
     );
 
-    return query.pollOffer(address, action.offer.id, before.header.height);
+    return walletUtils.pollOffer(
+      address,
+      action.offer.id,
+      before.header.height,
+    );
   };
 
   const invokeEntry = async (message: InvokeEntryMessage) => {
@@ -67,7 +86,7 @@ export const makeSigningSmartWalletKit = async (
 
     const msgSpend = MsgWalletSpendAction.fromPartial({
       owner: toAccAddress(address),
-      spendAction: JSON.stringify(query.marshaller.toCapData(action)),
+      spendAction: JSON.stringify(walletUtils.marshaller.toCapData(action)),
     });
 
     const transaction = await client.signAndBroadcast(
@@ -80,6 +99,8 @@ export const makeSigningSmartWalletKit = async (
   };
 
   return Object.freeze({
+    networkConfig: walletUtils.networkConfig,
+    marshaller: walletUtils.marshaller,
     query,
     address,
     executeOffer,
