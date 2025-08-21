@@ -28,7 +28,7 @@
     "esbuild": "^0.25.2",
     "execa": "^9.5.2",
     "tmp": "^0.2.1",
-    "ts-blank-space": "^0.4.1"
+    "ts-blank-space": "^0.6.2"
   },
   "dependencies": {
     "@agoric/client-utils": "workspace:*",
