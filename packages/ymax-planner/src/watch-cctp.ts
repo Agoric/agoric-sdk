@@ -10,6 +10,27 @@ type WatchTransferOptions = {
   logPrefix?: string;
 };
 
+const parseTransferLog = log => {
+  if (!log.topics || log.topics.length < 3 || !log.data) {
+    throw new Error('Malformed ERC-20 Transfer log');
+  }
+  return {
+    from: extractAddress(log.topics[1]),
+    to: extractAddress(log.topics[2]),
+    amount: parseAmount(log.data),
+  };
+};
+
+const extractAddress = topic => {
+  // Topics are 32 bytes; Ethereum addresses are last 20 bytes.
+  return getAddress('0x' + topic.slice(-40));
+};
+
+const parseAmount = data => {
+  // ERC-20 value is stored as a 32-byte hex number.
+  return BigInt(data);
+};
+
 export const watchCCTPTransfer = ({
   provider,
   watchAddress,
@@ -48,9 +69,7 @@ export const watchCCTPTransfer = ({
           return;
         }
 
-        const from = getAddress('0x' + log.topics[1].slice(-40));
-        const to = getAddress('0x' + log.topics[2].slice(-40));
-        const amount = BigInt(log.data);
+        const { from, to, amount } = parseTransferLog(log);
 
         console.log(
           `${logPrefix} Transfer detected: token=${log.address} from=${from} to=${to} amount=${amount} tx=${log.transactionHash}`,
