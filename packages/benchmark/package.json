@@ -39,5 +39,8 @@
     "*.json",
     "globals.d.ts",
     "exported.js"
-  ]
+  ],
+  "engines": {
+    "node": "^20.9 || ^22.11"
+  }
 }
