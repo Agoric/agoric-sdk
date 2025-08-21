@@ -30,5 +30,9 @@ ENV HOME=/data/ymax-planner \
 WORKDIR /data/ymax-planner
 USER appuser:appgroup
 
-# Keep ENTRYPOINT overridable via `docker run ... -- <args>` if needed.
-ENTRYPOINT [ "node", "/usr/src/agoric-sdk/services/ymax-planner-service/src/entrypoint.js" ]
+# (Optional) HEALTHCHECK if your app exposes /healthz
+# HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
+#   CMD node -e "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+# Start the TS entrypoint directly with ts-blank-space
+ENTRYPOINT ["node", "services/ymax-planner-service/src/entrypoint.ts"]
