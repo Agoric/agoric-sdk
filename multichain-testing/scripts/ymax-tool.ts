@@ -43,6 +43,7 @@ import {
 import { SigningStargateClient, type StdFee } from '@cosmjs/stargate';
 import { M } from '@endo/patterns';
 import { parseArgs } from 'node:util';
+import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.ts';
 
 const getUsage = (
   programName: string,
@@ -132,8 +133,8 @@ const openPosition = async (
     multiplyBy(make(USDC, 1_000_000n), parseRatio(num, USDC));
   const goal = objectMap(goalData, toAmt);
   console.debug('TODO: address Arbitrum-only limitation');
-  const { give, steps } = makePortfolioSteps(goal, { evm, feeBrand: BLD });
   const evm = 'Ethereum';
+  const { give } = makePortfolioSteps(goal, { evm, feeBrand: BLD });
   const proposal: ProposalType['openPortfolio'] = {
     give: {
       ...give,
@@ -152,6 +153,10 @@ const openPosition = async (
     return harden({ targetAllocation });
   };
 
+  // planner will supply remaining steps
+  const steps: MovementDesc[] = [
+    { src: '<Deposit>', dest: '+agoric', amount: give.Deposit },
+  ];
   const offerArgs: OfferArgsFor['openPortfolio'] = {
     flow: steps,
     ...parseTargetAllocation(),
