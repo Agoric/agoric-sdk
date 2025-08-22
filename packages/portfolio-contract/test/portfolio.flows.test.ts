@@ -18,6 +18,10 @@ import {
 } from '@agoric/internal/src/storage-test-utils.js';
 import { denomHash, type Orchestrator } from '@agoric/orchestration';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import {
+  RebalanceStrategy,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
@@ -29,14 +33,9 @@ import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
 import {
-  RebalanceStrategy,
-  YieldProtocol,
-} from '@agoric/portfolio-api/src/constants.js';
-import {
   preparePortfolioKit,
   type PortfolioKit,
 } from '../src/portfolio.exo.ts';
-import { prepareResolverKit } from '../src/resolver/resolver.exo.js';
 import {
   openPortfolio,
   rebalance,
@@ -48,6 +47,8 @@ import {
   makeSwapLockMessages,
   makeUnlockSwapMessages,
 } from '../src/pos-usdn.flows.ts';
+import { prepareResolverKit } from '../src/resolver/resolver.exo.js';
+import { PENDING_TXS_NODE_KEY } from '../src/resolver/types.ts';
 import {
   makeOfferArgsShapes,
   type OfferArgsFor,
@@ -261,9 +262,9 @@ const mocks = (
   const marshaller = board.getReadonlyMarshaller();
 
   const storage = makeFakeStorageKit('published', { sequence: true });
-  const portfoliosNode = storage.rootNode
-    .makeChildNode('ymax0')
-    .makeChildNode('portfolios');
+  const ymaxNode = storage.rootNode.makeChildNode('ymax0');
+  const pendingTxsNode = ymaxNode.makeChildNode(PENDING_TXS_NODE_KEY);
+  const portfoliosNode = ymaxNode.makeChildNode('portfolios');
   const timer = buildZoeManualTimer();
 
   const denom = `ibc/${denomHash({ channelId: 'channel-123', denom: 'uusdc' })}`;
@@ -273,11 +274,11 @@ const mocks = (
   const resolverZone = zone.subZone('CCTPResolver');
   // Use actual vow tools for the resolver to create proper vows, not promises
   const resolverVowTools = prepareVowTools(zone.subZone('vowTools'));
-  const { client: cctpClient } = prepareResolverKit(
-    resolverZone,
-    mockZCF,
-    resolverVowTools,
-  )();
+  const { client: cctpClient } = prepareResolverKit(resolverZone, mockZCF, {
+    vowTools: resolverVowTools,
+    pendingTxsNode,
+    marshaller,
+  })();
 
   const ctx1: PortfolioInstanceContext = {
     zoeTools,
@@ -355,7 +356,7 @@ const mocks = (
 /* We use _method to get it to sort before other properties. */
 
 const docOpts = {
-  node: 'ymax0.portfolios',
+  node: 'ymax0',
   owner: 'ymax',
   showValue: defaultSerializer.parse,
 };

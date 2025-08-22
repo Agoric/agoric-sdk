@@ -26,6 +26,7 @@ test('CCTP settlement invitation - no pending transaction found', async t => {
       remoteAddress: '0x999999999999999999999999999999999999999',
       status: 'confirmed' as const,
     },
+    txId: 'tx0',
     remoteAxelarChain: 'eip155:42161' as const,
   };
   const confirmationSeat = await E(zoe).offer(
@@ -49,6 +50,7 @@ test('CCTP confirmation invitation - invalid status throws', async t => {
       remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
       status: 'invalid' as any,
     },
+    txId: 'tx0',
     remoteAxelarChain: 'eip155:42161' as const,
   });
   t.throws(() =>
@@ -75,6 +77,7 @@ test('CCTP confirmation invitation exits seat properly', async t => {
       remoteAddress: '0x999999999999999999999999999999999999999',
       status: 'failed' as const,
     },
+    txId: 'tx0',
     remoteAxelarChain: 'eip155:42161' as const,
   };
   const confirmationSeat = await E(zoe).offer(

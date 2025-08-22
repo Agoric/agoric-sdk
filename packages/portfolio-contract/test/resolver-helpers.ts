@@ -45,6 +45,7 @@ export const settleCCTPTransaction = async (
     remoteAddress: `0x${string}`;
     status: 'confirmed' | 'failed';
   },
+  txNumber: number = 0,
   remoteAxelarChain: CaipChainId,
   log: (message: string, ...args: any[]) => void = console.log,
 ): Promise<string> => {
@@ -58,6 +59,7 @@ export const settleCCTPTransaction = async (
   const settlementSeat = await E(zoe).offer(settleInvitation, {}, undefined, {
     txDetails,
     remoteAxelarChain,
+    txId: `tx${txNumber}`,
   });
 
   const result = (await E(settlementSeat).getOfferResult()) as string;
@@ -82,6 +84,7 @@ export const settleCCTPWithMockReceiver = async (
   resolverMakers: ResolverInvitationMakers,
   amount: bigint,
   remoteAxelarChain: CaipChainId,
+  txNumber: number = 0,
   status: 'confirmed' | 'failed' = 'confirmed',
   log: (message: string, ...args: any[]) => void = console.log,
   mockRemoteAddress: `0x${string}` = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
@@ -95,6 +98,7 @@ export const settleCCTPWithMockReceiver = async (
       remoteAddress: mockRemoteAddress,
       status,
     },
+    txNumber,
     remoteAxelarChain,
     log,
   );

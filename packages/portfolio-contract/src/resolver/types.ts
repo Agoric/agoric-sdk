@@ -5,10 +5,10 @@
  * orchestration component that can be used independently of the portfolio contract.
  */
 
-import type { CaipChainId, AccountId } from '@agoric/orchestration';
-
-import { M } from '@endo/patterns';
 import type { TypedPattern } from '@agoric/internal';
+import type { AccountId, CaipChainId } from '@agoric/orchestration';
+import { M } from '@endo/patterns';
+import { TxStatus, TxType } from './constants.js';
 
 export type CCTPTransactionKey = `${AccountId}:${bigint}`;
 
@@ -35,6 +35,7 @@ export type CCTPSettlementArgs = {
   amountValue: bigint;
   status: 'confirmed' | 'failed';
   rejectionReason?: string;
+  txId: `tx${number}`;
 };
 
 export const CCTPSettlementArgsShape: TypedPattern<CCTPSettlementArgs> =
@@ -44,6 +45,7 @@ export const CCTPSettlementArgsShape: TypedPattern<CCTPSettlementArgs> =
       remoteAddress: M.string(),
       amountValue: M.nat(),
       status: M.or('confirmed', 'failed'),
+      txId: M.string(), // `tx${number}` format
     },
     {
       rejectionReason: M.string(),
@@ -54,6 +56,7 @@ export const CCTPSettlementArgsShape: TypedPattern<CCTPSettlementArgs> =
 export type CCTPSettlementOfferArgs = {
   txDetails: CCTPTransactionDetails;
   remoteAxelarChain: CaipChainId;
+  txId: `tx${number}`;
 };
 
 export const CCTPSettlementOfferArgsShape: TypedPattern<CCTPSettlementOfferArgs> =
@@ -61,6 +64,7 @@ export const CCTPSettlementOfferArgsShape: TypedPattern<CCTPSettlementOfferArgs>
     {
       txDetails: CCTPTransactionDetailsShape,
       remoteAxelarChain: M.string(), // CaipChainId format
+      txId: M.string(), // `tx${number}` format
     },
     {},
     {},
@@ -74,3 +78,25 @@ export const ResolverOfferArgsShapes = {
 } as const;
 
 harden(ResolverOfferArgsShapes);
+
+export const PENDING_TXS_NODE_KEY = 'pendingTxs';
+
+export type PublishedTx = {
+  type: TxType;
+  amount: bigint;
+  destinationAddress: `${string}:${string}:${string}`;
+  status: TxStatus;
+};
+
+export const PublishedTxShape: TypedPattern<PublishedTx> = M.splitRecord(
+  {
+    type: M.or(...Object.keys(TxType)),
+    amount: M.nat(),
+    destinationAddress: M.string(), // Format: `${chainId}:${chainId}:${remotAddess}`
+    status: M.or(...Object.keys(TxStatus)),
+  },
+  {},
+  {},
+);
+
+export type * from './constants.js';
