@@ -992,9 +992,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/synthetic-chain@npm:^0.5.8":
-  version: 0.5.8
-  resolution: "@agoric/synthetic-chain@npm:0.5.8"
+"@agoric/synthetic-chain@npm:^0.6.1":
+  version: 0.6.1
+  resolution: "@agoric/synthetic-chain@npm:0.6.1"
   dependencies:
     "@agoric/client-utils": "npm:0.1.1-dev-f9483e7.0"
     "@endo/zip": "npm:^1.0.9"
@@ -1006,7 +1006,7 @@ __metadata:
     tmp: "npm:0.2.3"
   bin:
     synthetic-chain: dist/cli/cli.js
-  checksum: 10c0/cb9c4afdcc4501aa4af3104de9880503ce05285c4de6bb1de55a90dc4f7ed26067622e3bfeb514216b919088a991d8746a8422df335282bfa36809eae6112bf1
+  checksum: 10c0/a53b0b96a43429f9633642e9c51401e08f027afa83fa5735a6100ff8c0ef1a355d19bab289fd7e4fa23f7fdff37ac3d5ca264d814ed7b3d3c1f99394681fafce
   languageName: node
   linkType: hard
 
@@ -6419,7 +6419,7 @@ __metadata:
     "@agoric/client-utils": "npm:dev"
     "@agoric/ertp": "npm:dev"
     "@agoric/internal": "npm:dev"
-    "@agoric/synthetic-chain": "npm:^0.5.8"
+    "@agoric/synthetic-chain": "npm:^0.6.1"
     "@agoric/zoe": "npm:dev"
     "@endo/errors": "npm:^1.2.13"
     "@endo/init": "npm:^1.1.12"
