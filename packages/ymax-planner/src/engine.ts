@@ -277,9 +277,8 @@ const BaseSubscriptionShape = M.splitRecord(
   },
   {
     // CCTP-specific fields
-    amount: M.number(),
-    chain: M.string(),
-    receiver: M.string(),
+    amount: M.bigint(),
+    destinationAddress: M.string(),
     // GMP-specific fields
     lcaAddr: M.string(),
     destinationChain: M.string(),
@@ -550,7 +549,7 @@ export const startEngine = async ({
             Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
         );
 
-        const subscriptionData = query.marshaller.fromCapData(value);
+        const subscriptionData = marshaller.fromCapData(value);
         mustMatch(
           subscriptionData,
           BaseSubscriptionShape,

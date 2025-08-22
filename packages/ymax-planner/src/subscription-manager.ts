@@ -17,9 +17,8 @@ export type EVMContext = {
 };
 
 type CCTPTransfer = {
-  amount: number;
-  chain: AxelarChain;
-  receiver: string;
+  amount: bigint;
+  destinationAddress: string;
 };
 
 export type GmpTransfer = {
@@ -44,6 +43,21 @@ export type Subscription = CctpSubscription | GmpSubscription;
 // Other testnet chains currently have issues, so we're excluding them for the time being.
 export type EVMChain = keyof typeof AxelarChain | 'Ethereum';
 
+const chainIdToEVMChain: Record<string, EVMChain> = {
+  // Mainnets
+  '1': 'Ethereum',
+  '42161': 'Arbitrum',
+  '43114': 'Avalanche',
+  '137': 'Polygon',
+  '10': 'Optimism',
+  // Testnets
+  '11155111': 'Ethereum',
+  '421614': 'Arbitrum',
+  '43113': 'Avalanche',
+  '80002': 'Polygon',
+  '11155420': 'Optimism',
+};
+
 export const handleSubscription = async (
   ctx: EVMContext,
   subscription: Subscription,
@@ -52,7 +66,10 @@ export const handleSubscription = async (
   trace(`${logPrefix} handling ${subscription.type} subscription`);
   switch (subscription.type) {
     case 'cctp': {
-      const { type, chain, receiver, amount, subscriptionId } = subscription;
+      const { type, destinationAddress, amount, subscriptionId } = subscription;
+      // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
+      const [, chainId, receiver] = destinationAddress.split(':');
+      const chain = chainIdToEVMChain[chainId];
       const provider = ctx.evmProviders[chain];
       if (!provider) {
         throw Error(
@@ -62,7 +79,7 @@ export const handleSubscription = async (
       trace(`${logPrefix} handling cctp subscription`);
       const transferStatus = await watchCCTPTransfer({
         watchAddress: receiver,
-        expectedAmount: BigInt(amount),
+        expectedAmount: amount,
         provider,
         logPrefix,
       });
@@ -72,7 +89,7 @@ export const handleSubscription = async (
         signingSmartWalletKit: ctx.signingSmartWalletKit,
         subscriptionId,
         status: transferStatus ? 'success' : 'timeout',
-        subscriptionData: { chain, receiver, amount, type },
+        subscriptionData: { destinationAddress, amount, type },
       });
       break;
     }
