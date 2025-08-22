@@ -231,7 +231,7 @@ const signAndBroadcastAction = async (
 
   const fee: StdFee = {
     amount: [{ denom: 'ubld', amount: '30000' }], // XXX enough?
-    gas: '197000',
+    gas: '19700000', // need more when msgSpend.spendAction is large
   };
   console.log('signAndBroadcast', address, msgSpend, fee);
   const actual = await client.signAndBroadcast(
