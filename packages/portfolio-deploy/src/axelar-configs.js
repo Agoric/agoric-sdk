@@ -222,11 +222,11 @@ const factoryAddresses = harden({
     Optimism: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1',
   },
   testnet: {
+    Arbitrum: '0xaf84964745bd4edcea4b8c474cbe423e3d2f27d9', // https://sepolia.arbiscan.io/address/0xaf84964745bd4edcea4b8c474cbe423e3d2f27d9
     Avalanche: '0xcD58949D815d25A06560AFa539972bB5B4B28902', // https://testnet.snowtrace.io/address/0xcD58949D815d25A06560AFa539972bB5B4B28902
-    Arbitrum: '0x',
+    Base: '0xaf84964745bd4edcea4b8c474cbe423e3d2f27d9', // https://sepolia.basescan.org/address/0xaf84964745bd4edcea4b8c474cbe423e3d2f27d9
     Ethereum: '0x6b124C850407e857B7fBB9fD61cC91f379066063', // https://sepolia.etherscan.io/address/0x6b124C850407e857B7fBB9fD61cC91f379066063
     Optimism: '0x',
-    Base: '0x',
   },
 });
 
