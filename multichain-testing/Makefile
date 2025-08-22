@@ -203,3 +203,22 @@ usdc-available: ./scripts/noble-usdn-lab.ts
 			} \
 		) \
 	)
+
+REASON=whatever
+
+DEPLOY=../packages/portfolio-deploy
+
+,ymax0-bundle-id: $(DEPLOY)/dist/bundle-ymax0.json
+	(echo -n b1-; jq -r .endoZipBase64Sha512 $(DEPLOY)/dist/bundle-ymax0.json) >$@
+
+$(DEPLOY)/dist/bundle-ymax0.json: $(DEPLOY)/dist/portfolio.contract.bundle.js
+	(cd $(DEPLOY); \
+	 npx bundle-source --cache-json dist/ ./dist/portfolio.contract.bundle.js ymax0)
+
+$(DEPLOY)/dist/portfolio.contract.bundle.js:
+	(cd $(DEPLOY); yarn build)
+
+yctrl-redeploy: $(DEPLOY)/dist/bundle-ymax0.json ,ymax0-bundle-id
+	[ -n "$$MNEMONIC" ] || (echo "ymaxControl MNEMONIC not set; see gov keys sheet"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --terminate "$(REASON)"
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --installAndStart $$(cat ,ymax0-bundle-id)
