@@ -50,6 +50,7 @@ const deprecatedTerminology = Object.fromEntries(
 export default [
   {
     ignores: [
+      '**/codegen',
       '**/coverage/',
       '**/node_modules/',
       '**/dist/',
@@ -65,8 +66,9 @@ export default [
       '**/ava*.config.js',
       '**/.ava*.config.js',
       '**/tsup.config.ts',
+      'yarn.config.cjs',
+      'packages/client-utils/scripts/',
       'packages/cosmic-proto/proto/',
-      'packages/cosmic-proto/src/codegen/',
       'packages/cosmic-proto/scripts/',
       // Cosmic-swingset specific ignores
       'packages/cosmic-swingset/t[0-9]/',

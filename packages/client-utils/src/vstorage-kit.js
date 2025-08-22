@@ -9,7 +9,7 @@ export { boardSlottingMarshaller };
 
 /**
  * @import {MinimalNetworkConfig} from './network-config.js';
- * @import {TypedPublished} from './types-index.js';
+ * @import {TypedPublished} from './types.js';
  * @import {VStorage} from './vstorage.js';
  */
 
@@ -95,11 +95,11 @@ export const makeAgoricNames = async (ctx, vstorage) => {
 
 /**
  * @param {{ fetch: typeof window.fetch }} io
- * @param {MinimalNetworkConfig} config
+ * @param {MinimalNetworkConfig} networkConfig
  */
-export const makeVstorageKit = ({ fetch }, config) => {
+export const makeVstorageKit = ({ fetch }, networkConfig) => {
   try {
-    const vstorage = makeVStorage({ fetch }, config);
+    const vstorage = makeVStorage({ fetch }, networkConfig);
     const fromBoard = makeFromBoard();
 
     const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
@@ -132,13 +132,14 @@ export const makeVstorageKit = ({ fetch }, config) => {
     return {
       fromBoard,
       marshaller,
+      networkConfig,
       readLatestHead,
       readPublished,
       unserializeHead,
       vstorage,
     };
   } catch (err) {
-    throw Error(`RPC failure (${config.rpcAddrs}): ${err.message}`);
+    throw Error(`RPC failure (${networkConfig.rpcAddrs}): ${err.message}`);
   }
 };
 /** @typedef {ReturnType<typeof makeVstorageKit>} VstorageKit */

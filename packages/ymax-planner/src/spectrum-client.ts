@@ -1,5 +1,8 @@
 /* eslint-disable max-classes-per-file */
+import ky, { HTTPError, type KyInstance } from 'ky';
 
+// XXX undocumented REST API
+// TODO use the documented GraphQL API https://spectrumnodes.gitbook.io/docs/developer-guides/apis/pools-api
 const BASE_URL = 'https://pools-api.spectrumnodes.com';
 
 // XXX refactor using portfolio-contract/type-guards.ts?
@@ -29,13 +32,15 @@ interface PoolBalanceResponse {
 }
 
 interface SpectrumClientConfig {
-  fetch: typeof fetch;
-  setTimeout: typeof setTimeout;
-
   baseUrl?: string;
-  log?: (...args: unknown[]) => void;
   timeout?: number;
   retries?: number;
+}
+
+interface SpectrumClientPowers {
+  fetch: typeof fetch;
+  setTimeout: typeof setTimeout;
+  log?: (...args: unknown[]) => void;
 }
 
 export class SpectrumClient {
@@ -49,19 +54,36 @@ export class SpectrumClient {
     Pick<SpectrumClientConfig, 'baseUrl' | 'timeout' | 'retries'>
   >;
 
-  constructor(config: SpectrumClientConfig = {} as any) {
-    this.fetch = config.fetch;
-    this.setTimeout = config.setTimeout;
+  private readonly http: KyInstance;
+
+  constructor(io: SpectrumClientPowers, config: SpectrumClientConfig = {}) {
+    this.fetch = io.fetch;
+    this.setTimeout = io.setTimeout;
     if (!this.fetch || !this.setTimeout) {
       throw new Error('`fetch` and `setTimeout` are required');
     }
 
-    this.log = config.log ?? (() => {});
+    this.log = io.log ?? (() => {});
     this.config = {
       baseUrl: config.baseUrl ?? BASE_URL,
       timeout: config.timeout ?? 10000, // 10s timeout
       retries: config.retries ?? 3,
     };
+
+    // Create ky instance with retries and timeout; use provided fetch.
+    this.http = ky.create({
+      fetch: this.fetch,
+      retry: {
+        // ky's limit is the number of retries after the initial request
+        limit: this.config.retries,
+        methods: ['get'],
+      },
+      timeout: this.config.timeout,
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'Agoric-Portfolio-Planner/1.0.0',
+      },
+    });
   }
 
   async getApr(chain: Chain, pool: Pool): Promise<AprResponse> {
@@ -87,60 +109,29 @@ export class SpectrumClient {
 
   private async makeRequest<T>(url: string, context: string): Promise<T> {
     await null;
-
-    let lastError: Error | null = null;
-
-    for (let attempt = 1; attempt <= this.config.retries + 1; attempt += 1) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = this.setTimeout(
-          () => controller.abort(),
-          this.config.timeout,
-        );
-
-        const response = await this.fetch(url, {
-          signal: controller.signal,
-          headers: {
-            Accept: 'application/json',
-            'User-Agent': 'Agoric-Portfolio-Planner/1.0.0',
-          },
+    try {
+      const data = await this.http.get(url).json<T>();
+      this.log(`[SpectrumClient] Success: ${context}`);
+      return data;
+    } catch (err) {
+      if (err instanceof HTTPError) {
+        const { response } = err;
+        const msg = `HTTP ${response.status}: ${response.statusText}`;
+        throw new SpectrumApiError(msg, {
+          statusCode: response.status,
+          url,
+          context,
+          cause: err,
         });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          throw new SpectrumApiError(
-            `HTTP ${response.status}: ${response.statusText}`,
-            { statusCode: response.status, url, context },
-          );
-        }
-
-        const data = await response.json();
-        this.log(`[SpectrumClient] Success: ${context}`);
-        return data;
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-
-        if (attempt < this.config.retries + 1) {
-          const delay = Math.min(1000 * 2 ** (attempt - 1), 5000); // Exponential backoff, max 5s
-          this.log(
-            `[SpectrumClient] Attempt ${attempt} failed for ${context}, retrying in ${delay}ms:`,
-            lastError.message,
-          );
-          await new Promise(resolve => this.setTimeout(resolve, delay));
-        }
       }
-    }
-
-    throw new SpectrumApiError(
-      `Failed to fetch ${context} after ${this.config.retries} attempts: ${lastError?.message}`,
-      {
+      const e = err as Error;
+      throw new SpectrumApiError(`Failed to fetch ${context}: ${e.message}`, {
         statusCode: 0,
         url,
         context,
-        cause: lastError || undefined,
-      },
-    );
+        cause: e,
+      });
+    }
   }
 }
 

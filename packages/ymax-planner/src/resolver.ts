@@ -1,17 +1,8 @@
-import {
-  makeAgoricNames,
-  type SmartWalletKit,
-  type VstorageKit,
-} from '@agoric/client-utils';
-import type { SigningStargateClient } from '@cosmjs/stargate';
-import type { ExecuteOfferAction } from '@agoric/smart-wallet/src/smartWallet.js';
-import { submitAction } from './swingset-tx.ts';
+import { type SigningSmartWalletKit } from '@agoric/client-utils';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
 
 type SubmitOfferParams = {
-  walletKit: SmartWalletKit;
-  stargateClient: SigningStargateClient;
-  address: string;
-  vstorageKit: VstorageKit;
+  signingSmartWalletKit: SigningSmartWalletKit;
   offerArgs?: object;
   proposal?: object;
 };
@@ -19,37 +10,22 @@ type SubmitOfferParams = {
 export const resolveSubscription = async ({
   offerArgs = {},
   proposal = {},
-  walletKit,
-  stargateClient,
-  address,
-  vstorageKit,
+  signingSmartWalletKit,
 }: SubmitOfferParams) => {
-  const { fromBoard, vstorage } = vstorageKit;
-  const { instance } = await makeAgoricNames(fromBoard, vstorage);
-
-  const action: ExecuteOfferAction = harden({
-    method: 'executeOffer',
-    offer: {
-      id: `offer-${Date.now()}`,
-      invitationSpec: {
-        // TODO: UNTIL https://github.com/Agoric/agoric-sdk/issues/11709
-        // Updates vstorage on the chain by making an offer to the `resolverMock` contract on devnet.
-        publicInvitationMaker: 'vPusherInvitation',
-        source: 'contract',
-        // TODO: UNTIL https://github.com/Agoric/agoric-sdk/issues/11709
-        instance: instance['resolverMock'],
-      },
-      offerArgs: { ...offerArgs },
-      proposal,
+  const action: OfferSpec = harden({
+    id: `offer-${Date.now()}`,
+    invitationSpec: {
+      source: 'agoricContract',
+      // TODO: UNTIL https://github.com/Agoric/agoric-sdk/issues/11709
+      instancePath: ['resolverMock'],
+      // TODO: UNTIL https://github.com/Agoric/agoric-sdk/issues/11709
+      // Updates vstorage on the chain by making an offer to the `resolverMock` contract on devnet.
+      callPipe: [['vPusherInvitation']],
     },
+    offerArgs: { ...offerArgs },
+    proposal,
   });
 
-  const result = await submitAction(action, {
-    address,
-    stargateClient,
-    walletKit,
-    skipPoll: true,
-  });
-
+  const result = await signingSmartWalletKit.executeOffer(action);
   return result;
 };

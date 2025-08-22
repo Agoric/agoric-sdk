@@ -2,18 +2,14 @@ import { watchCCTPTransfer } from './watch-cctp.ts';
 import { JsonRpcProvider } from 'ethers';
 import { getTxStatus } from './axelar/gmp-status.ts';
 import { resolveSubscription } from './resolver.ts';
-import type { VstorageKit, SmartWalletKit } from '@agoric/client-utils';
-import type { SigningStargateClient } from '@cosmjs/stargate';
+import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 
 export type PlannerContext = {
   axelarQueryApi: string;
   evmProviders: Partial<Record<EVMChain, JsonRpcProvider>>;
-  stargateClient: SigningStargateClient;
-  plannerAddress: string;
-  vstorageKit: VstorageKit;
-  walletKit: SmartWalletKit;
+  signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
 };
 
@@ -71,10 +67,7 @@ export const handleSubscription = async (
       if (status) {
         // TODO: Resolve the actual subscription id based on implementation in https://github.com/Agoric/agoric-sdk/issues/11709
         await resolveSubscription({
-          walletKit: ctx.walletKit,
-          vstorageKit: ctx.vstorageKit,
-          stargateClient: ctx.stargateClient,
-          address: ctx.plannerAddress,
+          signingSmartWalletKit: ctx.signingSmartWalletKit,
           offerArgs: {
             vPath: subscriptionId,
             vData: {
@@ -112,10 +105,7 @@ export const handleSubscription = async (
       }
       // TODO: Resolve the actual subscription id based on implementation in https://github.com/Agoric/agoric-sdk/issues/11709
       await resolveSubscription({
-        walletKit: ctx.walletKit,
-        vstorageKit: ctx.vstorageKit,
-        stargateClient: ctx.stargateClient,
-        address: ctx.plannerAddress,
+        signingSmartWalletKit: ctx.signingSmartWalletKit,
         offerArgs: {
           vPath: subscriptionId,
           vData: {

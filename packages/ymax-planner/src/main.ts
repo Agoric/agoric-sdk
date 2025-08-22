@@ -1,18 +1,17 @@
-import { Fail } from '@endo/errors';
 import {
   fetchEnvNetworkConfig,
+  makeSigningSmartWalletKit,
   makeSmartWalletKit,
-  makeVstorageKit,
 } from '@agoric/client-utils';
+import { Fail } from '@endo/errors';
 
 import { SigningStargateClient } from '@cosmjs/stargate';
 
-import { CosmosRPCClient } from './cosmos-rpc.ts';
-import { SpectrumClient } from './spectrum-client.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
+import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { startEngine } from './engine.ts';
-import { makeStargateClientKit } from './swingset-tx.ts';
-import { createContext } from './axelar/support.ts';
+import { createEVMContext } from './axelar/support.ts';
+import { SpectrumClient } from './spectrum-client.ts';
 
 const getChainIdFromRpc = async (rpc: CosmosRPCClient) => {
   await rpc.opened();
@@ -50,51 +49,55 @@ export const main = async (
     Fail`Mismatching chainId. config=${networkConfig.chainName}, rpc=${rpcChainId}`;
   }
 
-  const walletKit = await makeSmartWalletKit({ fetch, delay }, networkConfig);
-  const vstorageKit = makeVstorageKit({ fetch }, networkConfig);
+  const walletUtils = await makeSmartWalletKit({ fetch, delay }, networkConfig);
 
-  const { address: plannerAddress, client: stargateClient } =
-    await makeStargateClientKit(MNEMONIC, {
-      connectWithSigner,
-      rpcAddr: networkConfig.rpcAddrs[0],
-    });
+  const signingSmartWalletKit = await makeSigningSmartWalletKit(
+    { connectWithSigner, walletUtils },
+    MNEMONIC,
+  );
 
-  console.warn(`Using:`, { networkConfig, plannerAddress });
+  console.warn(`Using:`, {
+    networkConfig,
+    plannerAddress: signingSmartWalletKit.address,
+  });
 
   const { SPECTRUM_API_URL, SPECTRUM_API_TIMEOUT, SPECTRUM_API_RETRIES } = env;
-  const spectrum = new SpectrumClient({
-    fetch,
-    setTimeout,
-    baseUrl: SPECTRUM_API_URL,
-    timeout: SPECTRUM_API_TIMEOUT
-      ? parseInt(SPECTRUM_API_TIMEOUT, 10)
-      : undefined,
-    retries: SPECTRUM_API_RETRIES
-      ? parseInt(SPECTRUM_API_RETRIES, 10)
-      : undefined,
-  });
+  const spectrum = new SpectrumClient(
+    { fetch, setTimeout },
+    {
+      baseUrl: SPECTRUM_API_URL,
+      timeout: SPECTRUM_API_TIMEOUT
+        ? parseInt(SPECTRUM_API_TIMEOUT, 10)
+        : undefined,
+      retries: SPECTRUM_API_RETRIES
+        ? parseInt(SPECTRUM_API_RETRIES, 10)
+        : undefined,
+    },
+  );
 
-  const cosmosRest = new CosmosRestClient({
-    fetch,
-    setTimeout,
-    agoricNetwork: env.AGORIC_NET || 'local',
-    timeout: 15000, // 15s timeout for REST calls
-    retries: 3,
-  });
+  const cosmosRest = new CosmosRestClient(
+    {
+      fetch,
+      setTimeout,
+    },
+    {
+      agoricNetwork: env.AGORIC_NET || 'local',
+      timeout: 15000, // 15s timeout for REST calls
+      retries: 3,
+    },
+  );
 
-  const ctx = await createContext({
+  const ctx = await createEVMContext({
     // Any non-mainnet Agoric chain would be connected to Axelar testnet.
     net: env.AGORIC_NET == 'mainnet' ? 'mainnet' : 'testnet',
-    stargateClient,
-    plannerAddress,
-    vstorageKit,
-    walletKit,
   });
+
   await startEngine({
     ctx,
     rpc,
     spectrum,
     cosmosRest,
+    signingSmartWalletKit,
   });
 };
 harden(main);

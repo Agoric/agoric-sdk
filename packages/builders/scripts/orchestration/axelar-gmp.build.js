@@ -55,8 +55,15 @@ export default async (homeP, endowments) => {
   if (!flags.net) throw Error('--net required');
   if (!flags.peer) throw Error('--peer required');
 
+  const validNets = ['bootstrap', 'devnet', 'emerynet', 'local'];
+  if (!validNets.includes(flags.net)) {
+    throw Error(`--net must be one of: ${validNets.join(', ')}`);
+  }
+
   const chainDetails = await getChainConfig({
-    net: flags.net,
+    net: /** @type {'bootstrap' | 'devnet' | 'emerynet' | 'local'} */ (
+      flags.net
+    ),
     peers: flags.peer,
     execFileSync,
   });

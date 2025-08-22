@@ -1,13 +1,23 @@
 /* eslint-disable max-classes-per-file */
+import type { QueryAllBalancesResponse } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
+import ky, { HTTPError, type KyInstance } from 'ky';
+
+import { chain as nobleMain } from 'chain-registry/mainnet/noble/index.js';
+import { chain as agoricMain } from 'chain-registry/mainnet/agoric/index.js';
+import { chain as nobleTest } from 'chain-registry/testnet/nobletestnet/index.js';
+import { chain as agoricTest } from 'chain-registry/testnet/agoricdevnet/index.js'; // agoricdev was named before testnets were a thing
 
 interface CosmosRestClientConfig {
-  fetch: typeof fetch;
-  setTimeout: typeof setTimeout;
-
   agoricNetwork?: string;
-  log?: (...args: unknown[]) => void;
   timeout?: number;
   retries?: number;
+}
+
+interface CosmosRestClientPowers {
+  fetch: typeof fetch;
+  log?: (...args: unknown[]) => void;
+  setTimeout: typeof setTimeout;
 }
 
 interface ChainConfig {
@@ -16,43 +26,30 @@ interface ChainConfig {
   name: string;
 }
 
-interface Coin {
-  denom: string;
-  amount: string;
-}
-
-interface BalanceResponse {
-  balances: Coin[];
-  pagination?: {
-    next_key: string | null;
-    total: string;
-  };
-}
-
-// Predefined chain configurations
+// transformation of subset of chain-registry
 const CHAIN_CONFIGS: Record<string, Record<string, ChainConfig>> = {
   main: {
     noble: {
-      chainId: 'noble-1',
-      restEndpoint: 'https://noble-api.polkachu.com',
-      name: 'Noble',
+      chainId: nobleMain.chainId!,
+      restEndpoint: nobleMain.apis!.rest![0].address,
+      name: nobleMain.prettyName!,
     },
     agoric: {
-      chainId: 'agoric-3',
-      restEndpoint: 'https://main.api.agoric.net',
-      name: 'Agoric',
+      chainId: agoricMain.chainId!,
+      restEndpoint: agoricMain.apis!.rest![0].address,
+      name: agoricMain.prettyName!,
     },
   },
-  devnet: {
+  testnet: {
     noble: {
-      chainId: 'grand-1',
-      restEndpoint: 'https://noble-testnet-api.polkachu.com:443',
-      name: 'Noble',
+      chainId: nobleTest.chainId!,
+      restEndpoint: nobleTest.apis!.rest![0].address,
+      name: nobleTest.prettyName!,
     },
     agoric: {
-      chainId: 'agoricdev-25',
-      restEndpoint: 'https://devnet.api.agoric.net',
-      name: 'Agoric',
+      chainId: agoricTest.chainId!,
+      restEndpoint: agoricTest.apis!.rest![0].address,
+      name: agoricTest.prettyName!,
     },
   },
 };
@@ -72,15 +69,17 @@ export class CosmosRestClient {
 
   private readonly chainConfigs: Map<string, ChainConfig>;
 
-  constructor(config: CosmosRestClientConfig = {} as any) {
-    this.fetch = config.fetch;
-    this.setTimeout = config.setTimeout;
+  private readonly http: KyInstance;
+
+  constructor(io: CosmosRestClientPowers, config: CosmosRestClientConfig = {}) {
+    this.fetch = io.fetch;
+    this.setTimeout = io.setTimeout;
     if (!this.fetch || !this.setTimeout) {
       throw new Error('`fetch` and `setTimeout` are required');
     }
 
-    this.agoricNetwork = config.agoricNetwork ?? 'devnet';
-    this.log = config.log ?? (() => {});
+    this.agoricNetwork = config.agoricNetwork ?? 'testnet';
+    this.log = io.log ?? (() => {});
     this.timeout = config.timeout ?? 10000; // 10s timeout
     this.retries = config.retries ?? 3;
 
@@ -91,6 +90,20 @@ export class CosmosRestClient {
 
     // Initialize with predefined chains
     this.chainConfigs = new Map(Object.entries(chainConfig));
+
+    // Create ky instance using provided fetch, retry, and timeout settings.
+    this.http = ky.create({
+      fetch: this.fetch,
+      retry: {
+        limit: this.retries,
+        methods: ['get'],
+      },
+      timeout: this.timeout,
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'Agoric-YMax-Planner/1.0.0',
+      },
+    });
   }
 
   /**
@@ -100,7 +113,7 @@ export class CosmosRestClient {
     chainKey: string,
     address: string,
     pagination?: { limit?: number; offset?: number },
-  ): Promise<BalanceResponse> {
+  ): Promise<QueryAllBalancesResponse> {
     const chainConfig = this.chainConfigs.get(chainKey);
     if (!chainConfig) {
       throw new Error(
@@ -126,7 +139,7 @@ export class CosmosRestClient {
       `[CosmosRestClient] Fetching balances for ${address} on ${chainConfig.name}: ${url}`,
     );
 
-    return this.makeRequest<BalanceResponse>(
+    return this.makeRequest<QueryAllBalancesResponse>(
       url,
       chainConfig,
       `Account balances for ${address} on ${chainConfig.name}`,
@@ -189,56 +202,31 @@ export class CosmosRestClient {
     context: string,
   ): Promise<T> {
     await null;
-
-    let lastError: Error | null = null;
-
-    for (let attempt = 1; attempt <= this.retries + 1; attempt += 1) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = this.setTimeout(
-          () => controller.abort(),
-          this.timeout,
+    try {
+      const data = await this.http.get(url).json<T>();
+      this.log(`[CosmosRestClient] Success: ${context}`);
+      return data;
+    } catch (err) {
+      if (err instanceof HTTPError) {
+        const { response } = err;
+        let errorBody = '';
+        try {
+          errorBody = await response.text();
+        } catch {
+          errorBody = 'Unknown error';
+        }
+        throw new CosmosApiError(
+          `HTTP ${response.status}: ${response.statusText} - ${errorBody}`,
+          { statusCode: response.status, chainId: chainConfig.chainId, url },
         );
-
-        const response = await this.fetch(url, {
-          signal: controller.signal,
-          headers: {
-            Accept: 'application/json',
-            'User-Agent': 'Agoric-YMax-Planner/1.0.0',
-          },
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          const errorBody = await response.text().catch(() => 'Unknown error');
-          throw new CosmosApiError(
-            `HTTP ${response.status}: ${response.statusText} - ${errorBody}`,
-            { statusCode: response.status, chainId: chainConfig.chainId, url },
-          );
-        }
-
-        const data = await response.json();
-        this.log(`[CosmosRestClient] Success: ${context}`);
-        return data;
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-
-        if (attempt < this.retries + 1) {
-          const delay = Math.min(1000 * 2 ** (attempt - 1), 5000); // Exponential backoff, max 5s
-          this.log(
-            `[CosmosRestClient] Attempt ${attempt} failed for ${context}, retrying in ${delay}ms:`,
-            lastError.message,
-          );
-          await new Promise(resolve => this.setTimeout(resolve, delay));
-        }
       }
+      const e = err as Error;
+      throw new CosmosApiError(`Failed to fetch ${context}: ${e.message}`, {
+        statusCode: 0,
+        chainId: chainConfig.chainId,
+        url,
+      });
     }
-
-    throw new CosmosApiError(
-      `Failed to fetch ${context} after ${this.retries} attempts: ${lastError?.message}`,
-      { statusCode: 0, chainId: chainConfig.chainId, url },
-    );
   }
 }
 

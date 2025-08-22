@@ -1,5 +1,3 @@
-import type { SigningStargateClient } from '@cosmjs/stargate';
-import type { SmartWalletKit, VstorageKit } from '@agoric/client-utils';
 import { JsonRpcProvider } from 'ethers';
 import type { PlannerContext, EVMChain } from '../subscription-manager';
 
@@ -34,21 +32,15 @@ export const evmRpcUrls = {
 
 type CreateContextParams = {
   net?: 'mainnet' | 'testnet';
-  stargateClient: SigningStargateClient;
-  plannerAddress: string;
-  vstorageKit: VstorageKit;
-  walletKit: SmartWalletKit;
   fetch?: typeof fetch;
 };
 
-export const createContext = async ({
+export const createEVMContext = async ({
   net = 'testnet',
-  stargateClient,
-  plannerAddress,
-  vstorageKit,
-  walletKit,
   fetch = globalThis.fetch,
-}: CreateContextParams): Promise<PlannerContext> => {
+}: CreateContextParams): Promise<
+  Pick<PlannerContext, 'axelarQueryApi' | 'evmProviders' | 'fetch'>
+> => {
   const axelarQueryApi = axelarQueryAPI[net];
 
   const rpcUrls = evmRpcUrls[net];
@@ -61,10 +53,6 @@ export const createContext = async ({
   return {
     axelarQueryApi,
     evmProviders,
-    stargateClient,
-    plannerAddress,
-    vstorageKit,
-    walletKit,
     fetch,
   };
 };
