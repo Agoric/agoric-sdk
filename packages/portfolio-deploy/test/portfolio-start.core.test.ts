@@ -10,6 +10,7 @@ import {
 import { setupPortfolioTest } from '@aglocal/portfolio-contract/test/supports.ts';
 import { makeTrader } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
 import { makeWallet } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.ts';
+import type { VstorageKit } from '@agoric/client-utils';
 import {
   defaultSerializer,
   documentStorageSchema,
@@ -19,12 +20,16 @@ import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-too
 import { makePromiseSpace } from '@agoric/vats';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import type { Instance, ZoeService } from '@agoric/zoe';
+import type { ContractStartFunction } from '@agoric/zoe/src/zoeService/utils';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
+import { objectMap } from '@endo/patterns';
 import { produceAttenuatedDeposit } from '../src/attenuated-deposit.core.js';
 import { axelarConfig } from '../src/axelar-configs.js';
 import type { ChainInfoPowers } from '../src/chain-info.core.js';
 import { toExternalConfig } from '../src/config-marshal.js';
+import type { ContractControl } from '../src/contract-control.js';
+import { lookupInterchainInfo } from '../src/orch.start.js';
 import { delegatePortfolioContract } from '../src/portfolio-control.core.js';
 import {
   portfolioDeployConfigShape,
@@ -38,6 +43,7 @@ import type {
 import { name as contractName } from '../src/portfolio.contract.permit.js';
 import * as postalServiceExports from '../src/postal-service.contract.js';
 import { deployPostalService } from '../src/postal-service.core.js';
+import { reflectWalletStore } from './wallet-store-reflect.ts';
 
 const { entries, keys } = Object;
 
@@ -321,4 +327,160 @@ test('delegate ymax control; invite planner; submit plan', async t => {
     method: 'submit',
     args: [0, []],
   });
+});
+
+test('Avery aims for Aave on Ethereum, w/planner', async t => {
+  const { common, powers, zoe, bundleAndInstall, provisionSmartWallet } =
+    await makeBootstrap(t);
+  const { agoricNames, agoricNamesAdmin } = common.bootstrap;
+
+  const targetAllocation = { Aave_Ethereum: 100n };
+
+  // build privateArgsOverrides
+  const { chainInfo: cosmosChainInfo } = await lookupInterchainInfo(
+    agoricNames,
+    { agoric: ['ubld'], noble: ['uusdc'], axelar: ['uaxl'] },
+  );
+  const chainInfo = {
+    ...cosmosChainInfo,
+    ...Object.fromEntries(
+      Object.entries(axelarConfig).map(([chain, info]) => [
+        chain,
+        info.chainInfo,
+      ]),
+    ),
+  };
+
+  const privateArgsOverrides: Pick<
+    Parameters<YMaxStartFn>[1],
+    'axelarIds' | 'chainInfo' | 'contracts' | 'gmpAddresses'
+  > = harden({
+    axelarIds: objectMap(axelarConfig, c => c.axelarId),
+    contracts: objectMap(axelarConfig, c => c.contracts),
+    chainInfo,
+    gmpAddresses,
+  });
+  t.log('privateArgsOverrides', JSON.stringify(privateArgsOverrides));
+
+  const { rootZone } = common.utils;
+
+  t.log('produce getDepositFacet');
+  await produceAttenuatedDeposit(powers as any);
+
+  t.log('start ymax0');
+  const bundleId = 'b1-ymax0-xyz123';
+  powers.installation.produce[contractName].resolve(
+    await bundleAndInstall(contractExports, bundleId),
+  );
+  await startPortfolio(powers, { options: ymaxOptions });
+
+  // script from agoric run does this step
+  const pContractName = 'postalService';
+  {
+    t.log('produce postalService installation using test bundle');
+    const postalInstall = await bundleAndInstall(postalServiceExports);
+    powers.installation.produce[pContractName].resolve(postalInstall);
+    await E(E(agoricNamesAdmin).lookupAdmin('installation')).update(
+      pContractName,
+      postalInstall,
+    );
+  }
+
+  console.log('awaited namesByAddress');
+  await deployPostalService(powers as any);
+  t.log('deployPostalService done');
+  const pInst = await E(agoricNames).lookup('instance', pContractName);
+  t.is(passStyleOf(pInst), 'remotable');
+  const pPub = await E(zoe).getPublicFacet(pInst);
+  t.is(passStyleOf(pPub), 'remotable');
+
+  const addrCtrl = 'agoric1ymaxcontrol';
+  const [walletCtrl] = await provisionSmartWallet(addrCtrl);
+
+  const zone = rootZone.subZone('bootstrap vat');
+  await delegatePortfolioContract(
+    // @ts-expect-error mock
+    { ...powers, zone },
+    { options: { ymaxControlAddress: addrCtrl } },
+  );
+  await eventLoopIteration(); // core eval doesn't block on delivery
+
+  type YMaxStartFn = typeof contractExports.start;
+
+  // XXX ContractControl isn't quite parameterized right, but it's already deployed
+  type ContractControl2<SF extends ContractStartFunction> =
+    ContractControl<any> & {
+      getCreatorFacet(): StartedInstanceKit<SF>['creatorFacet'];
+    };
+
+  const { storage } = common.bootstrap;
+  const storeCtrl = reflectWalletStore(t, walletCtrl, addrCtrl, storage);
+
+  const ymaxControl = await storeCtrl.saveOfferResult<
+    ContractControl2<YMaxStartFn>
+  >({ description: 'deliver ymaxControl', instance: pInst }, 'ymaxControl');
+
+  await ymaxControl.terminate({ message: 'lacks eth' });
+
+  const { usdc, bld, poc26 } = common.brands;
+
+  const issuers = {
+    USDC: usdc.issuer,
+    BLD: bld.issuer,
+    Fee: bld.issuer,
+    Access: poc26.issuer,
+  };
+
+  await ymaxControl.installAndStart({
+    bundleId,
+    issuers,
+    privateArgsOverrides,
+  });
+
+  {
+    const { vowTools, pourPayment } = common.utils;
+    const { mint: _, ...poc26sansMint } = poc26;
+    const { mint: _2, ...bldSansMint } = bld;
+    const wallet = makeWallet(
+      { USDC: usdc, BLD: bldSansMint, Access: poc26sansMint },
+      zoe,
+      vowTools.when,
+    );
+    await wallet.deposit(await pourPayment(usdc.units(10_000)));
+    await wallet.deposit(poc26.mint.mintPayment(poc26.make(100n)));
+    const { agoricNames } = common.bootstrap;
+    const instance = (await E(agoricNames).lookup(
+      'instance',
+      'ymax0',
+    )) as Instance<StartFn>;
+
+    const { storage } = common.bootstrap;
+    const readPublished = (async subpath => {
+      await eventLoopIteration();
+      const val = storage.getDeserialized(`orchtest.${subpath}`).at(-1);
+      return val;
+    }) as unknown as VstorageKit['readPublished'];
+    const avery = makeTrader(wallet, instance, readPublished);
+
+    await avery.openPortfolio(
+      t,
+      { Access: poc26.make(1n) },
+      { targetAllocation },
+    );
+
+    const amount = usdc.units(3_333.33);
+    await avery.rebalance(
+      t,
+      { give: { Deposit: amount }, want: {} },
+      { flow: [{ src: '<Deposit>', dest: '+agoric', amount }] },
+    );
+
+    const info = await avery.getPortfolioStatus();
+    t.deepEqual(
+      info.depositAddress,
+      'agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g',
+    );
+
+    t.log('avery portfolio status', await avery.getPortfolioStatus());
+  }
 });
