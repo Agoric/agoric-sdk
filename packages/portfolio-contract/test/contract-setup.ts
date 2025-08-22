@@ -57,6 +57,7 @@ export const deploy = async (t: ExecutionContext) => {
     'Optimism',
     'Avalanche',
     'Arbitrum',
+    'Ethereum',
   ];
 
   const chainInfo = Object.fromEntries(
