@@ -111,6 +111,8 @@ jobs:
 
       - run: yarn lint:package-names
 
+      - run: yarn constraints
+
       # Check some of a3p-integration in this job that runs on PRs instead of
       # waiting for the slow integration test that by default only runs in the
       # master merge check

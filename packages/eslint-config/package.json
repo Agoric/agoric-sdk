@@ -36,5 +36,8 @@
     "eslint-plugin-jsdoc": "^46.4.3",
     "prettier": "^3.4.2",
     "typescript-eslint": "^8.17.0"
+  },
+  "engines": {
+    "node": "^20.9 || ^22.11"
   }
 }

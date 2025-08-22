@@ -23,7 +23,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aglocal/benchmark@workspace:packages/benchmark"
   dependencies:
-    "@aglocal/boot": "npm:^0.1.0"
+    "@aglocal/boot": "workspace:*"
     "@agoric/cosmic-swingset": "workspace:*"
     "@agoric/inter-protocol": "workspace:*"
     "@agoric/internal": "workspace:*"
@@ -34,7 +34,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@aglocal/boot@npm:^0.1.0, @aglocal/boot@workspace:*, @aglocal/boot@workspace:packages/boot":
+"@aglocal/boot@workspace:*, @aglocal/boot@workspace:packages/boot":
   version: 0.0.0-use.local
   resolution: "@aglocal/boot@workspace:packages/boot"
   dependencies:
@@ -960,6 +960,7 @@ __metadata:
     "@lerna-lite/version": "patch:@lerna-lite/version@npm%3A4.6.1#~/.yarn/patches/@lerna-lite-version-npm-4.6.1-77cc9b6d7e.patch"
     "@types/express": "npm:^4.17.17"
     "@types/node": "npm:~22.9.0"
+    "@yarnpkg/types": "npm:^4.0.1"
     ava: "npm:^5.3.0"
     c8: "npm:^10.1.3"
     conventional-changelog-conventionalcommits: "npm:^4.6.0"
@@ -6523,6 +6524,15 @@ __metadata:
   bin:
     nft: out/cli.js
   checksum: 10c0/05e5e5fcd3fcf9129406e4feda81debc0373cc1efe3e7d8f7aee1be7df523128d9e676024e2bc4ae189a0f880a3f13e510ae6547c2e8786889d5a15222b22a26
+  languageName: node
+  linkType: hard
+
+"@yarnpkg/types@npm:^4.0.1":
+  version: 4.0.1
+  resolution: "@yarnpkg/types@npm:4.0.1"
+  dependencies:
+    tslib: "npm:^2.4.0"
+  checksum: 10c0/90226789475680ba599833571dd76c0718dd5b4c5022481263ef309d6a628f6246671cd6ca86e49c966ddefa7aca6ccef82240dc1476d2cea702ea5bee2a6b72
   languageName: node
   linkType: hard
 
@@ -16845,7 +16855,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:1 || 2, tslib@npm:^2.1.0, tslib@npm:^2.8.1":
+"tslib@npm:1 || 2, tslib@npm:^2.1.0, tslib@npm:^2.4.0, tslib@npm:^2.8.1":
   version: 2.8.1
   resolution: "tslib@npm:2.8.1"
   checksum: 10c0/9c4759110a19c53f992d9aae23aac5ced636e99887b51b9e61def52611732872ff7668757d4e4c61f19691e36f4da981cd9485e869b4a7408d689f6bf1f14e62
