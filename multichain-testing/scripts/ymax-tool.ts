@@ -363,17 +363,8 @@ const noPoll = (wk: SmartWalletKit): SmartWalletKit => ({
   },
 });
 
-const main = async (
-  argv = process.argv,
-  env = process.env,
-  {
-    fetch = globalThis.fetch,
-    setTimeout = globalThis.setTimeout,
-    connectWithSigner = SigningStargateClient.connectWithSigner,
-  } = {},
-) => {
-  // Parse command line arguments using node:util's parseArgs
-  const { values, positionals } = parseArgs({
+const parseToolArgs = (argv: string[]) =>
+  parseArgs({
     args: argv.slice(2),
     options: {
       positions: { type: 'string', default: '{}' },
@@ -394,11 +385,19 @@ const main = async (
     allowPositionals: false,
   });
 
-  // Extract options
+const main = async (
+  argv = process.argv,
+  env = process.env,
+  {
+    fetch = globalThis.fetch,
+    setTimeout = globalThis.setTimeout,
+    connectWithSigner = SigningStargateClient.connectWithSigner,
+  } = {},
+) => {
+  const { values } = parseToolArgs(argv);
   const exitSuccess = values['exit-success'];
   const targetAllocationJson = values['target-allocation'];
 
-  // Show help if requested
   if (values.help) {
     console.log(getUsage(argv[1]));
     process.exit(values.help ? 0 : 1);
