@@ -279,6 +279,17 @@ export const contractsMock: EVMContractAddressesMap = {
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     Beefy_re7_Avalanche: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
   },
+  Ethereum: {
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+    tokenMessenger: testnetTokenMessenger['Ethereum Sepolia'].Address,
+    aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    Beefy_re7_Avalanche: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+  },
   Optimism: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
@@ -317,6 +328,7 @@ export const axelarIdsMock: AxelarId = {
   Optimism: 'optimism',
   Arbitrum: 'arbitrum',
   Polygon: 'Polygon',
+  Ethereum: 'ethereum-sepolia',
 } as const;
 
 /**
