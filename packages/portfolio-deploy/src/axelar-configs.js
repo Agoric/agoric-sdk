@@ -239,7 +239,8 @@ const mainnetContracts = {
   Ethereum: {
     aavePool: aaveAddresses.mainnet.Ethereum,
     compound: compoundAddresses.mainnet.Ethereum,
-    compoundRewardsController: compoundRewardsControllerAddresses.mainnet.Ethereum,
+    compoundRewardsController:
+      compoundRewardsControllerAddresses.mainnet.Ethereum,
     factory: factoryAddresses.mainnet.Ethereum,
     usdc: usdcAddresses.mainnet.Ethereum,
     tokenMessenger: mainnetTokenMessenger.Ethereum.Address,
@@ -317,7 +318,8 @@ const testnetContracts = {
   Ethereum: {
     aavePool: aaveAddresses.testnet.Ethereum,
     compound: compoundAddresses.testnet.Ethereum,
-    compoundRewardsController: compoundRewardsControllerAddresses.testnet.Ethereum,
+    compoundRewardsController:
+      compoundRewardsControllerAddresses.testnet.Ethereum,
     factory: factoryAddresses.testnet.Ethereum,
     usdc: usdcAddresses.testnet.Ethereum,
     tokenMessenger: testnetTokenMessenger['Ethereum Sepolia'].Address,
