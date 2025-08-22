@@ -44,6 +44,13 @@ import { SigningStargateClient, type StdFee } from '@cosmjs/stargate';
 import { M } from '@endo/patterns';
 import { parseArgs } from 'node:util';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.ts';
+import { lookupInterchainInfo } from '@aglocal/portfolio-deploy/src/orch.start.js';
+import {
+  axelarConfigTestnet,
+  gmpAddresses as gmpConfigs,
+} from '@aglocal/portfolio-deploy/src/axelar-configs.js';
+import type { NameHub } from '@agoric/vats';
+import { Fail, q } from '@endo/errors';
 
 const getUsage = (
   programName: string,
@@ -294,6 +301,131 @@ const redeemInvitation = async ({
   return { tx, actionUpdate };
 };
 
+const buildPrivateArgsOverrides = async (
+  walletKit: SmartWalletKit,
+  axelarConfig = axelarConfigTestnet,
+  gmpAddresses = gmpConfigs.testnet,
+) => {
+  const byChainId = {};
+
+  const agoricNames: NameHub = harden({
+    lookup: async kind => {
+      switch (kind) {
+        case 'chain':
+        case 'chainConnection':
+          return harden({
+            entries: async () => {
+              const out: [string, any][] = [];
+              const { vstorage } = walletKit;
+              const children = await vstorage.keys(
+                `published.agoricNames.${kind}`,
+              );
+              for (const child of children) {
+                // console.debug(kind, child);
+                const value = (await walletKit.readPublished(
+                  `agoricNames.${kind}.${child}`,
+                )) as {};
+                console.debug(kind, child, value);
+                if (kind === 'chain') {
+                  const { chainId, namespace } = value as any;
+                  if (namespace !== 'cosmos') {
+                    console.warn('namespace?? skipping', kind, child, value);
+                    continue;
+                  }
+                  if (typeof chainId === 'string') {
+                    if (chainId in byChainId)
+                      throw Error(`oops! ${child} ${chainId}`);
+                    byChainId[chainId] = value;
+                  }
+                }
+                out.push([child, value]);
+              }
+              if (kind === 'chainConnection') {
+                return out.filter(([key, _val]) => {
+                  const [c1, c2] = key.split('_'); // XXX incomplete
+                  return c1 in byChainId && c2 in byChainId;
+                });
+              }
+              return harden(out);
+            },
+          });
+        default:
+          return harden({
+            entries: async () => {
+              // console.debug(kind, 'entries');
+              return walletKit.readPublished(`agoricNames.${kind}`) as Promise<
+                [[string, any]]
+              >;
+            },
+          });
+      }
+    },
+    entries: () => Fail`not supported`,
+    has: () => Fail`not supported`,
+    keys: () => Fail`not supported`,
+    values: () => Fail`not supported`,
+  });
+  // build privateArgsOverrides
+  const { chainInfo: cosmosChainInfo } = await lookupInterchainInfo(
+    agoricNames,
+    { agoric: ['ubld'], noble: ['uusdc'], axelar: ['uaxl'] },
+  );
+  const chainInfo = {
+    ...cosmosChainInfo,
+    ...Object.fromEntries(
+      Object.entries(axelarConfig).map(([chain, info]) => [
+        chain,
+        info.chainInfo,
+      ]),
+    ),
+  };
+
+  const privateArgsOverrides: Pick<
+    Parameters<typeof YMaxStart>[1],
+    'axelarIds' | 'chainInfo' | 'contracts' | 'gmpAddresses'
+  > = harden({
+    axelarIds: objectMap(axelarConfig, c => c.axelarId),
+    contracts: objectMap(axelarConfig, c => c.contracts),
+    chainInfo,
+    gmpAddresses,
+  });
+  console.log(
+    'privateArgsOverrides',
+    JSON.stringify(privateArgsOverrides, null, 2),
+  );
+  return privateArgsOverrides;
+};
+
+const installAndStart = async (
+  bundleId,
+  {
+    walletKit,
+    ymaxControl,
+  }: {
+    // TODO: refactor to use reifyWalletStore
+    ymaxControl: any;
+    walletKit: SmartWalletKit;
+  },
+) => {
+  const issuer = fromEntries(
+    await walletKit.readPublished('agoricNames.issuer'),
+  );
+  const { USDC, BLD } = issuer;
+
+  // work around goofy devnet PoC token
+  const vbankAsset = fromEntries(
+    await walletKit.readPublished('agoricNames.vbankAsset'),
+  );
+  const { issuer: Access } = vbankAsset.upoc26;
+
+  const privateArgsOverrides = await buildPrivateArgsOverrides(walletKit);
+  await ymaxControl.target.installAndStart({
+    bundleId,
+    issuers: { USDC, BLD, Fee: BLD, Access },
+    privateArgsOverrides,
+  });
+};
+
 const reifyWalletEntry = <T>(
   targetName: string,
   {
@@ -460,22 +592,9 @@ const main = async (
   }
 
   if (values.installAndStart) {
-    const issuer = fromEntries(
-      await walletKit.readPublished('agoricNames.issuer'),
-    );
-
-    // work around goofy devnet PoC token
-    const vbankAsset = fromEntries(
-      await walletKit.readPublished('agoricNames.vbankAsset'),
-    );
-    const { issuer: Access } = vbankAsset.upoc26;
-
-    const { USDC, BLD } = issuer;
     const { installAndStart: bundleId } = values;
-    await yc.target.installAndStart({
-      bundleId,
-      issuers: { USDC, BLD, Fee: BLD, Access },
-    });
+
+    await installAndStart(bundleId, { ymaxControl: yc, walletKit });
     return;
   }
 
