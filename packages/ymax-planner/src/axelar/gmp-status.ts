@@ -265,6 +265,8 @@ type AxelarQueryParams = {
   size?: number; // default: 25
 };
 
+const MILLIS_PER_MINUTE = 60 * 1000;
+
 // Helpful for experimenting with different parameters:
 // Visit https://docs.axelarscan.io/axelarscan
 export const getTxStatus = async ({
@@ -292,7 +294,7 @@ export const getTxStatus = async ({
   };
 
   const startTime = Date.now();
-  const pollingDurationMs = timeoutMinutes * 60 * 1000;
+  const pollingDurationMs = timeoutMinutes * MILLIS_PER_MINUTE;
   let data: AxelarEventRecord[];
 
   while (Date.now() - startTime < pollingDurationMs) {

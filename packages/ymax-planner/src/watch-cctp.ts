@@ -8,6 +8,7 @@ type WatchTransferOptions = {
   expectedAmount: bigint;
   timeoutMinutes?: number;
   logPrefix?: string;
+  setTimeout?: typeof globalThis.setTimeout;
 };
 
 const parseTransferLog = log => {
@@ -37,6 +38,7 @@ export const watchCCTPTransfer = ({
   expectedAmount,
   timeoutMinutes = 5,
   logPrefix = '',
+  setTimeout = globalThis.setTimeout,
 }: WatchTransferOptions): Promise<boolean> => {
   return new Promise(resolve => {
     const TO_TOPIC = zeroPadValue(watchAddress.toLowerCase(), 32);
@@ -60,7 +62,7 @@ export const watchCCTPTransfer = ({
       listeners = [];
     };
 
-    const transferListener = (log: any) => {
+    const listenForTransfer = (log: any) => {
       try {
         if (transferFound) return;
 
@@ -93,8 +95,8 @@ export const watchCCTPTransfer = ({
       }
     };
 
-    provider.on(filter, transferListener);
-    listeners.push({ event: filter, listener: transferListener });
+    provider.on(filter, listenForTransfer);
+    listeners.push({ event: filter, listener: listenForTransfer });
 
     timeoutId = setTimeout(
       () => {

@@ -21,7 +21,7 @@ import { handleDeposit } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import {
   handleSubscription,
-  type PlannerContext,
+  type EVMContext,
   type Subscription,
 } from './subscription-manager.ts';
 
@@ -270,7 +270,7 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
 };
 
 type IO = {
-  ctx: Pick<PlannerContext, 'axelarQueryApi' | 'evmProviders' | 'fetch'>;
+  evmCtx: Pick<EVMContext, 'axelarQueryApi' | 'evmProviders'>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
@@ -278,7 +278,7 @@ type IO = {
 };
 
 export const startEngine = async ({
-  ctx,
+  evmCtx,
   rpc,
   spectrum,
   cosmosRest,
@@ -406,8 +406,9 @@ export const startEngine = async ({
     // Process subscription without blocking other progress.
     void handleSubscription(
       {
-        ...ctx,
+        ...evmCtx,
         signingSmartWalletKit,
+        fetch,
       },
       subscription,
     ).catch(logIgnoredError);
@@ -540,8 +541,9 @@ export const startEngine = async ({
         // Process subscription concurrently without blocking event processing
         void handleSubscription(
           {
-            ...ctx,
+            ...evmCtx,
             signingSmartWalletKit,
+            fetch,
           },
           subscription,
         ).catch(error => {

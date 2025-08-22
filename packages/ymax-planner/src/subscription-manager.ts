@@ -6,7 +6,7 @@ import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 
-export type PlannerContext = {
+export type EVMContext = {
   axelarQueryApi: string;
   evmProviders: Partial<Record<EVMChain, JsonRpcProvider>>;
   signingSmartWalletKit: SigningSmartWalletKit;
@@ -42,7 +42,7 @@ export type Subscription = CctpSubscription | GmpSubscription;
 export type EVMChain = keyof typeof AxelarChain | 'Ethereum';
 
 export const handleSubscription = async (
-  ctx: PlannerContext,
+  ctx: EVMContext,
   subscription: Subscription,
 ) => {
   const logPrefix = `[${subscription.subscriptionId}]`;
