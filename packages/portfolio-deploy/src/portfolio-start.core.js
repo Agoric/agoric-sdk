@@ -88,6 +88,8 @@ export const makePrivateArgs = async (
     Arbitrum: axelarConfig.Arbitrum.axelarId,
     Optimism: axelarConfig.Optimism.axelarId,
     Polygon: axelarConfig.Polygon.axelarId,
+    Base: axelarConfig.Base.axelarId,
+    BNB: axelarConfig.BNB.axelarId,
   };
 
   /** @type {EVMContractAddressesMap} */
@@ -97,6 +99,8 @@ export const makePrivateArgs = async (
     Arbitrum: { ...axelarConfig.Arbitrum.contracts },
     Optimism: { ...axelarConfig.Optimism.contracts },
     Polygon: { ...axelarConfig.Polygon.contracts },
+    Base: { ...axelarConfig.Base.contracts },
+    BNB: { ...axelarConfig.BNB.contracts },
   };
 
   /** @type {Parameters<typeof start>[1]} */

@@ -19,11 +19,13 @@ harden(YieldProtocol);
  * @enum {(typeof AxelarChain)[keyof typeof AxelarChain]}
  */
 export const AxelarChain = /** @type {const} */ ({
-  Avalanche: 'Avalanche',
   Arbitrum: 'Arbitrum',
+  Avalanche: 'Avalanche',
+  Base: 'Base',
+  BNB: 'BNB',
+  Ethereum: 'Ethereum',
   Optimism: 'Optimism',
   Polygon: 'Polygon',
-  Ethereum: 'Ethereum',
 });
 harden(AxelarChain);
 
