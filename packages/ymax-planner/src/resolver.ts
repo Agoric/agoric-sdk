@@ -1,37 +1,58 @@
 import { type SigningSmartWalletKit } from '@agoric/client-utils';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
+import type { CctpSubscription, GmpSubscription,  } from './subscription-manager.js';
 
-type ResolveSubscriptionParams = {
+type ResolveCCTPSubscriptionParams = {
   signingSmartWalletKit: SigningSmartWalletKit;
   subscriptionId: string;
   status: 'success' | 'timeout';
-  subscriptionData: object;
+  subscriptionData: CctpSubscription;
+  previousOfferId: string;
   proposal?: object;
 };
 
-export const resolveSubscription = async ({
+type ResolveGMPSubscriptionParams = {
+  signingSmartWalletKit: SigningSmartWalletKit;
+  subscriptionId: string;
+  status: 'success' | 'timeout';
+  subscriptionData: GmpSubscription;
+  previousOfferId: string;
+  proposal?: object;
+};
+
+export const resolveCCTPSubscription = async ({
   signingSmartWalletKit,
   subscriptionId,
   status,
   subscriptionData,
+  previousOfferId,
   proposal = {},
-}: ResolveSubscriptionParams) => {
+}: ResolveCCTPSubscriptionParams) => {
+
+  if (status === 'timeout') {
+    console.log('timeout is not implemented yet in contract');
+    return;
+  }
+
+  if (subscriptionData.type !== 'cctp') {
+    throw new Error(`Expected subscription type to be 'cctp', got ${subscriptionData.type}`);
+  }
+  const [chainId, chainName, contractAddress] = subscriptionData.destinationAddress.split(':');
   const action: OfferSpec = harden({
     id: `offer-${Date.now()}`,
-    invitationSpec: {
-      source: 'agoricContract',
-      // TODO: UNTIL https://github.com/Agoric/agoric-sdk/issues/11709
-      instancePath: ['resolverMock'],
-      // TODO: UNTIL https://github.com/Agoric/agoric-sdk/issues/11709
-      // Updates vstorage on the chain by making an offer to the `resolverMock` contract on devnet.
-      callPipe: [['vPusherInvitation']],
+    invitationSpec: {      
+      source: 'continuing',
+      previousOffer: previousOfferId,
+      invitationMakerName: 'SettleCCTPTransaction',
     },
     offerArgs: {
-      vPath: subscriptionId,
-      vData: {
+      txDetails: {
+        amount: subscriptionData.amount,
+        remoteAddress: contractAddress,
         status,
-        ...subscriptionData,
       },
+      remoteAxelarChain: `${chainId}:${chainName}`,
+      txId: subscriptionId,
     },
     proposal,
   });
@@ -39,3 +60,16 @@ export const resolveSubscription = async ({
   const result = await signingSmartWalletKit.executeOffer(action);
   return result;
 };
+
+export const resolveGMPSubscription = async ({
+  signingSmartWalletKit,
+  subscriptionId,
+  status,
+  subscriptionData,
+  previousOfferId,
+  proposal = {},
+}: ResolveGMPSubscriptionParams) => {
+
+  throw new Error('GMP subscription resolution is not implemented yet');
+};
+

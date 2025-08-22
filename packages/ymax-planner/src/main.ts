@@ -89,7 +89,7 @@ export const main = async (
 
   const evmCtx = await createEVMContext({
     // Any non-mainnet Agoric chain would be connected to Axelar testnet.
-    net: env.AGORIC_NET == 'mainnet' ? 'mainnet' : 'testnet',
+    net: env.AGORIC_NET === 'mainnet' ? 'mainnet' : 'testnet',
   });
 
   await startEngine({

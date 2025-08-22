@@ -1,11 +1,11 @@
+import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import { makeTracer } from '@agoric/internal';
-import { watchCCTPTransfer } from './watch-cctp.ts';
+import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { JsonRpcProvider } from 'ethers';
 import { getTxStatus } from './axelar/gmp-status.ts';
-import { resolveSubscription } from './resolver.ts';
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
-import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import { resolveCCTPSubscription, resolveGMPSubscription } from './resolver.ts';
+import { watchCCTPTransfer } from './watch-cctp.ts';
 
 const trace = makeTracer('SM');
 
@@ -34,8 +34,8 @@ type BaseSubscription = {
 
 type SubscriptionOf<T, K extends string> = BaseSubscription & T & { type: K };
 
-type CctpSubscription = SubscriptionOf<CCTPTransfer, 'cctp'>;
-type GmpSubscription = SubscriptionOf<GmpTransfer, 'gmp'>;
+export type CctpSubscription = SubscriptionOf<CCTPTransfer, 'cctp'>;
+export type GmpSubscription = SubscriptionOf<GmpTransfer, 'gmp'>;
 
 export type Subscription = CctpSubscription | GmpSubscription;
 
@@ -61,12 +61,14 @@ const chainIdToEVMChain: Record<string, EVMChain> = {
 export const handleSubscription = async (
   ctx: EVMContext,
   subscription: Subscription,
+  previousOfferId: string,
 ) => {
+  await null;
   const logPrefix = `[${subscription.subscriptionId}]`;
   trace(`${logPrefix} handling ${subscription.type} subscription`);
   switch (subscription.type) {
     case 'cctp': {
-      const { type, destinationAddress, amount, subscriptionId } = subscription;
+      const { destinationAddress, amount, subscriptionId } = subscription;
       // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
       const [, chainId, receiver] = destinationAddress.split(':');
       const chain = chainIdToEVMChain[chainId];
@@ -85,17 +87,18 @@ export const handleSubscription = async (
       });
 
       // TODO: Resolve the actual subscription id based on implementation in https://github.com/Agoric/agoric-sdk/issues/11709
-      await resolveSubscription({
+      await resolveCCTPSubscription({
         signingSmartWalletKit: ctx.signingSmartWalletKit,
         subscriptionId,
         status: transferStatus ? 'success' : 'timeout',
-        subscriptionData: { destinationAddress, amount, type },
+        subscriptionData: subscription,
+        previousOfferId,
       });
       break;
     }
 
     case 'gmp': {
-      const { type, destinationChain, contractAddress, subscriptionId } =
+      const { destinationChain, contractAddress, subscriptionId } =
         subscription;
       trace(`${logPrefix} handling gmp subscription`);
       const res = await getTxStatus({
@@ -104,18 +107,19 @@ export const handleSubscription = async (
         params: {
           sourceChain: 'agoric',
           destinationChain: destinationChain as unknown as string,
-          contractAddress: contractAddress,
+          contractAddress,
         },
         subscriptionId,
         logPrefix,
       });
 
       // TODO: Resolve the actual subscription id based on implementation in https://github.com/Agoric/agoric-sdk/issues/11709
-      await resolveSubscription({
+      await resolveGMPSubscription({
         signingSmartWalletKit: ctx.signingSmartWalletKit,
         subscriptionId,
         status: res.success ? 'success' : 'timeout',
-        subscriptionData: { destinationChain, contractAddress, type },
+        subscriptionData: subscription,
+        previousOfferId,
       });
       break;
     }
