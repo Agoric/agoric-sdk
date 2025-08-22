@@ -7,7 +7,9 @@ TEMP_FILE = config-temp.yaml
 HELM_REPO_URL = https://agoric-labs.github.io/starship
 HELM_REPO = starship
 HELM_CHART = devnet
-NAMESPACE = starship-testing
+NAMESPACE := $(shell kubectl config view -o jsonpath='{.contexts[?(@.name=="starship")].context.user}' \
+	| tr '[:upper:]' '[:lower:]' \
+	| sed -E 's/@/-/g; s/[.]+/-/g; s/[^a-z0-9-]+/-/g; s/^-+|-+$$//g')
 RESTART_THRESHOLD = 3
 
 SS = yarn starship
