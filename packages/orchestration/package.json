@@ -61,7 +61,7 @@
   },
   "devDependencies": {
     "@agoric/swingset-liveslots": "workspace:*",
-    "@chain-registry/client": "^1.47.4",
+    "@chain-registry/client": "^1.53.194",
     "@cosmjs/amino": "^0.36.0",
     "@cosmjs/proto-signing": "^0.36.0",
     "@endo/bundle-source": "^4.1.2",

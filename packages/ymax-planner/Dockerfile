@@ -5,8 +5,9 @@ RUN corepack enable
 
 # Build the latest ymax-planner package.
 COPY . /usr/src/agoric-sdk/packages/ymax-planner/
-RUN cd /usr/src/agoric-sdk/packages/ymax-planner && \
-    yarn && npm run build
+# refresh installation
+RUN yarn install
+RUN cd /usr/src/agoric-sdk/packages/ymax-planner && npm run build
 
 # Prepare for running as a non-root user.
 RUN addgroup --system appgroup && adduser --system appuser --ingroup appgroup

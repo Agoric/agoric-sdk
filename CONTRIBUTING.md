@@ -2,6 +2,8 @@
 
 Thanks for getting involved!
 
+The below is written for people. [AGENTS](./AGENTS.md) has guidelines for robots, which you may also find useful.
+
 ## Platforms, Dev Tools and Testing
 
 We support MacOS, Linux, and Windows Subsystem for Linux (WSL).
