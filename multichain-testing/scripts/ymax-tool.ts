@@ -132,8 +132,8 @@ const openPosition = async (
     multiplyBy(make(USDC, 1_000_000n), parseRatio(num, USDC));
   const goal = objectMap(goalData, toAmt);
   console.debug('TODO: address Arbitrum-only limitation');
-  const evm = 'Arbitrum';
   const { give, steps } = makePortfolioSteps(goal, { evm, feeBrand: BLD });
+  const evm = 'Ethereum';
   const proposal: ProposalType['openPortfolio'] = {
     give: {
       ...give,
