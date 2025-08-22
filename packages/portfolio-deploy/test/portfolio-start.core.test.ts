@@ -38,6 +38,7 @@ import type {
 import { name as contractName } from '../src/portfolio.contract.permit.js';
 import * as postalServiceExports from '../src/postal-service.contract.js';
 import { deployPostalService } from '../src/postal-service.core.js';
+import type { VstorageKit } from '@agoric/client-utils';
 
 const { entries, keys } = Object;
 
@@ -321,4 +322,63 @@ test('delegate ymax control; invite planner; submit plan', async t => {
     method: 'submit',
     args: [0, []],
   });
+});
+
+test('Aave on eth in planner style', async t => {
+  const { common, powers, zoe, bundleAndInstall } = await makeBootstrap(t);
+
+  t.log('produce getDepositFacet');
+  await produceAttenuatedDeposit(powers as any);
+
+  t.log('start ymax0');
+  powers.installation.produce[contractName].resolve(
+    await bundleAndInstall(contractExports),
+  );
+  await startPortfolio(powers, { options: ymaxOptions });
+
+  const { usdc, bld, poc26 } = common.brands;
+
+  const { vowTools, pourPayment } = common.utils;
+  const { mint: _, ...poc26sansMint } = poc26;
+  const { mint: _2, ...bldSansMint } = bld;
+  const wallet = makeWallet(
+    { USDC: usdc, BLD: bldSansMint, Access: poc26sansMint },
+    zoe,
+    vowTools.when,
+  );
+  await wallet.deposit(await pourPayment(usdc.units(10_000)));
+  await wallet.deposit(poc26.mint.mintPayment(poc26.make(100n)));
+  const { agoricNames } = common.bootstrap;
+  const instance = (await E(agoricNames).lookup(
+    'instance',
+    'ymax0',
+  )) as Instance<StartFn>;
+
+  const { storage } = common.bootstrap;
+  const readPublished = (async subpath => {
+    await eventLoopIteration();
+    const val = storage.getDeserialized(`orchtest.${subpath}`).at(-1);
+    return val;
+  }) as unknown as VstorageKit['readPublished'];
+  const avery = makeTrader(wallet, instance, readPublished);
+
+  const targetAllocation = { Aave_Ethereum: 100n };
+  await avery.openPortfolio(
+    t,
+    { Access: poc26.make(1n) },
+    { targetAllocation },
+  );
+
+  const amount = usdc.units(3_333.33);
+  await avery.rebalance(
+    t,
+    { give: { Deposit: amount }, want: {} },
+    { flow: [{ src: '<Deposit>', dest: '+agoric', amount }] },
+  );
+
+  const info = await avery.getPortfolioStatus();
+  t.deepEqual(
+    info.depositAddress,
+    'agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g',
+  );
 });
