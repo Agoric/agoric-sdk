@@ -50,7 +50,7 @@ const getUsage = (
 Options:
   --skip-poll         Skip polling for offer result
   --exit-success      Exit with success code even if errors occur
-  --goal              JSON string of opening positions (e.g. '{"USDN":6000,"Aave":4000}')
+  --positions         JSON string of opening positions (e.g. '{"USDN":6000,"Aave":4000}')
   --target-allocation JSON string of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
   --redeem            redeem invitation
   --contract=[ymax0]  agoricNames.instance name of contract that issued invitation
