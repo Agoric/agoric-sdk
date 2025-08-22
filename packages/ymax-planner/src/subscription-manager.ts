@@ -1,3 +1,4 @@
+import { makeTracer } from '@agoric/internal';
 import { watchCCTPTransfer } from './watch-cctp.ts';
 import { JsonRpcProvider } from 'ethers';
 import { getTxStatus } from './axelar/gmp-status.ts';
@@ -5,6 +6,8 @@ import { resolveSubscription } from './resolver.ts';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+
+const trace = makeTracer('SM');
 
 export type EVMContext = {
   axelarQueryApi: string;
@@ -46,7 +49,7 @@ export const handleSubscription = async (
   subscription: Subscription,
 ) => {
   const logPrefix = `[${subscription.subscriptionId}]`;
-  console.log(`${logPrefix} handling ${subscription.type} subscription`);
+  trace(`${logPrefix} handling ${subscription.type} subscription`);
   switch (subscription.type) {
     case 'cctp': {
       const { type, chain, receiver, amount, subscriptionId } = subscription;
@@ -56,39 +59,28 @@ export const handleSubscription = async (
           `${logPrefix} No EVM provider configured for chain: ${chain}`,
         );
       }
-      console.warn(`${logPrefix} handling cctp subscription`);
-      const status = await watchCCTPTransfer({
+      trace(`${logPrefix} handling cctp subscription`);
+      const transferStatus = await watchCCTPTransfer({
         watchAddress: receiver,
         expectedAmount: BigInt(amount),
         provider,
         logPrefix,
       });
 
-      if (status) {
-        // TODO: Resolve the actual subscription id based on implementation in https://github.com/Agoric/agoric-sdk/issues/11709
-        await resolveSubscription({
-          signingSmartWalletKit: ctx.signingSmartWalletKit,
-          offerArgs: {
-            vPath: subscriptionId,
-            vData: {
-              status: 'success',
-              chain,
-              receiver,
-              amount,
-              type,
-            },
-          },
-        });
-      } else {
-        console.warn(`${logPrefix} CCTP transfer timed out`);
-      }
+      // TODO: Resolve the actual subscription id based on implementation in https://github.com/Agoric/agoric-sdk/issues/11709
+      await resolveSubscription({
+        signingSmartWalletKit: ctx.signingSmartWalletKit,
+        subscriptionId,
+        status: transferStatus ? 'success' : 'timeout',
+        subscriptionData: { chain, receiver, amount, type },
+      });
       break;
     }
 
     case 'gmp': {
       const { type, destinationChain, contractAddress, subscriptionId } =
         subscription;
-      console.warn(`${logPrefix} handling gmp subscription`);
+      trace(`${logPrefix} handling gmp subscription`);
       const res = await getTxStatus({
         url: ctx.axelarQueryApi,
         fetch: ctx.fetch,
@@ -100,21 +92,13 @@ export const handleSubscription = async (
         subscriptionId,
         logPrefix,
       });
-      if (!res.success) {
-        throw Error(`${logPrefix} deployment of funds not successful`);
-      }
+
       // TODO: Resolve the actual subscription id based on implementation in https://github.com/Agoric/agoric-sdk/issues/11709
       await resolveSubscription({
         signingSmartWalletKit: ctx.signingSmartWalletKit,
-        offerArgs: {
-          vPath: subscriptionId,
-          vData: {
-            status: 'success',
-            destinationChain,
-            contractAddress,
-            type,
-          },
-        },
+        subscriptionId,
+        status: res.success ? 'success' : 'timeout',
+        subscriptionData: { destinationChain, contractAddress, type },
       });
       break;
     }

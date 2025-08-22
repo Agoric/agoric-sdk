@@ -11,6 +11,7 @@ import type { Bech32Address } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import type { Coin } from '@cosmjs/stargate';
 import { Fail, q } from '@endo/errors';
+import { M } from '@endo/patterns';
 import { Nat } from '@endo/nat';
 import { isPrimitive } from '@endo/pass-style';
 import { makePromiseKit, type PromiseKit } from '@endo/promise-kit';
@@ -269,6 +270,23 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
   return harden(results as typeof results & { done: Promise<boolean> });
 };
 
+const BaseSubscriptionShape = M.splitRecord(
+  {
+    status: M.or('pending', 'success', 'timeout'),
+    type: M.string(),
+  },
+  {
+    // CCTP-specific fields
+    amount: M.number(),
+    chain: M.string(),
+    receiver: M.string(),
+    // GMP-specific fields
+    lcaAddr: M.string(),
+    destinationChain: M.string(),
+    contractAddress: M.string(),
+  },
+);
+
 type IO = {
   evmCtx: Pick<EVMContext, 'axelarQueryApi' | 'evmProviders'>;
   rpc: CosmosRPCClient;
@@ -392,9 +410,16 @@ export const startEngine = async ({
       return;
     }
 
+    const subscriptionData = vstorageSettlement.value;
+    mustMatch(
+      subscriptionData,
+      BaseSubscriptionShape,
+      `subscription ${subscriptionKey}`,
+    );
+
     const subscription = {
       subscriptionId: subscriptionKey,
-      ...(vstorageSettlement.value as any),
+      ...(subscriptionData as any),
     } as Subscription;
     console.warn(`Found existing subscription: ${subscriptionKey}`, {
       type: subscription.type,
@@ -525,9 +550,16 @@ export const startEngine = async ({
             Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
         );
 
+        const subscriptionData = query.marshaller.fromCapData(value);
+        mustMatch(
+          subscriptionData,
+          BaseSubscriptionShape,
+          `subscription ${subscriptionId}`,
+        );
+
         const subscription = {
           subscriptionId,
-          ...(query.marshaller.fromCapData(value) as any),
+          ...(subscriptionData as any),
         } as Subscription;
 
         console.warn('Handling subscription:', {

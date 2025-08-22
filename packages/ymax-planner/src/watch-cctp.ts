@@ -1,4 +1,7 @@
+import { makeTracer } from '@agoric/internal';
 import { id, zeroPadValue, getAddress, type Provider } from 'ethers';
+
+const trace = makeTracer('WatchCCTP');
 
 const TRANSFER = id('Transfer(address,address,uint256)');
 
@@ -6,6 +9,7 @@ type WatchTransferOptions = {
   provider: Provider;
   watchAddress: string;
   expectedAmount: bigint;
+  // TODO: Add tokenAddress and decimals to support different ERC-20 tokens
   timeoutMinutes?: number;
   logPrefix?: string;
   setTimeout?: typeof globalThis.setTimeout;
@@ -46,7 +50,7 @@ export const watchCCTPTransfer = ({
       topics: [TRANSFER, null, TO_TOPIC],
     };
 
-    console.log(
+    trace(
       `${logPrefix} Watching for ERC-20 transfers to: ${watchAddress} with amount: ${expectedAmount}`,
     );
 
@@ -63,35 +67,32 @@ export const watchCCTPTransfer = ({
     };
 
     const listenForTransfer = (log: any) => {
+      let transferData;
       try {
-        if (transferFound) return;
-
-        if (!log.topics || log.topics.length < 3 || !log.data) {
-          console.warn(`${logPrefix} Malformed log received, skipping:`, log);
-          return;
-        }
-
-        const { from, to, amount } = parseTransferLog(log);
-
-        console.log(
-          `${logPrefix} Transfer detected: token=${log.address} from=${from} to=${to} amount=${amount} tx=${log.transactionHash}`,
-        );
-
-        if (amount === expectedAmount) {
-          console.log(
-            `${logPrefix} ✓ Amount matches! Expected: ${expectedAmount}, Received: ${amount}`,
-          );
-          transferFound = true;
-          cleanup();
-          resolve(true);
-        } else {
-          console.log(
-            `${logPrefix} Amount mismatch. Expected: ${expectedAmount}, Received: ${amount}`,
-          );
-          return; // Continue watching
-        }
+        transferData = parseTransferLog(log);
       } catch (error: any) {
-        console.log(`${logPrefix} Log parsing error:`, error.message);
+        trace(`${logPrefix} Log parsing error:`, error.message);
+        return;
+      }
+
+      const { from, to, amount } = transferData;
+
+      trace(
+        `${logPrefix} Transfer detected: token=${log.address} from=${from} to=${to} amount=${amount} tx=${log.transactionHash}`,
+      );
+
+      if (amount === expectedAmount) {
+        trace(
+          `${logPrefix} ✓ Amount matches! Expected: ${expectedAmount}, Received: ${amount}`,
+        );
+        transferFound = true;
+        cleanup();
+        resolve(true);
+      } else {
+        trace(
+          `${logPrefix} Amount mismatch. Expected: ${expectedAmount}, Received: ${amount}`,
+        );
+        return; // Continue watching
       }
     };
 
@@ -101,7 +102,7 @@ export const watchCCTPTransfer = ({
     timeoutId = setTimeout(
       () => {
         if (!transferFound) {
-          console.log(
+          trace(
             `${logPrefix} ✗ No matching transfer found within ${timeoutMinutes} minutes`,
           );
           cleanup();

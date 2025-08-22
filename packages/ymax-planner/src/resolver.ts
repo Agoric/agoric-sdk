@@ -1,17 +1,21 @@
 import { type SigningSmartWalletKit } from '@agoric/client-utils';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
 
-type SubmitOfferParams = {
+type ResolveSubscriptionParams = {
   signingSmartWalletKit: SigningSmartWalletKit;
-  offerArgs?: object;
+  subscriptionId: string;
+  status: 'success' | 'timeout';
+  subscriptionData: object;
   proposal?: object;
 };
 
 export const resolveSubscription = async ({
-  offerArgs = {},
-  proposal = {},
   signingSmartWalletKit,
-}: SubmitOfferParams) => {
+  subscriptionId,
+  status,
+  subscriptionData,
+  proposal = {},
+}: ResolveSubscriptionParams) => {
   const action: OfferSpec = harden({
     id: `offer-${Date.now()}`,
     invitationSpec: {
@@ -22,7 +26,13 @@ export const resolveSubscription = async ({
       // Updates vstorage on the chain by making an offer to the `resolverMock` contract on devnet.
       callPipe: [['vPusherInvitation']],
     },
-    offerArgs: { ...offerArgs },
+    offerArgs: {
+      vPath: subscriptionId,
+      vData: {
+        status,
+        ...subscriptionData,
+      },
+    },
     proposal,
   });
 

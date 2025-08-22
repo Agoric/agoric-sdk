@@ -1,4 +1,8 @@
+// eslint-disable-next-line -- Types in this file match external Axelar API schema
+import { makeTracer } from '@agoric/internal';
 import { ethers } from 'ethers';
+
+const trace = makeTracer('GMPStatus');
 const wait = async (seconds: number) => {
   return new Promise(resolve => setTimeout(resolve, seconds * 1000));
 };
@@ -287,7 +291,7 @@ export const getTxStatus = async ({
   waitingPeriod?: number;
 }) => {
   const body = JSON.stringify(params);
-  console.log(`${logPrefix} params: ${body}`);
+  trace(`${logPrefix} params: ${body}`);
   const headers = {
     accept: '*/*',
     'content-type': 'application/json',
@@ -312,11 +316,8 @@ export const getTxStatus = async ({
     data = parsed.data;
 
     if (Array.isArray(data) && data?.[0]?.executed) {
-      console.log(`${logPrefix} ✅ contract call executed`, data[0].executed);
-      console.log(
-        `${logPrefix} txHash on EVM:`,
-        data[0].executed.transactionHash,
-      );
+      trace(`${logPrefix} ✅ contract call executed`, data[0].executed);
+      trace(`${logPrefix} txHash on EVM:`, data[0].executed.transactionHash);
 
       const subscriptionTopic = ethers.id('SubscriptionResolved(string)');
       const logs = data[0].executed.receipt.logs;
@@ -331,17 +332,14 @@ export const getTxStatus = async ({
           subscriptionLog.data,
         );
 
-        console.log(
-          `${logPrefix} decodedSubscriptionId:`,
-          decodedSubscriptionId,
-        );
+        trace(`${logPrefix} decodedSubscriptionId:`, decodedSubscriptionId);
         if (decodedSubscriptionId === subscriptionId) {
           return { logs: data[0].executed, success: true };
         }
       }
     }
 
-    console.log(`${logPrefix} no data, retrying...`);
+    trace(`${logPrefix} no data, retrying...`);
     await wait(waitingPeriod);
   }
   return { logs: null, success: false };
