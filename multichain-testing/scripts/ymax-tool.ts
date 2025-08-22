@@ -239,6 +239,9 @@ const signAndBroadcastAction = async (
     [{ typeUrl: MsgWalletSpendAction.typeUrl, value: msgSpend }],
     fee,
   );
+  if (actual.code !== 0) {
+    throw Error(actual.rawLog);
+  }
   trace('tx', actual);
   return actual;
 };
@@ -466,11 +469,16 @@ const reifyWalletEntry = <T>(
           const actionUpdate = await retryUntilCondition(
             () => walletKit.readPublished(`wallet.${address}`),
             update =>
-              (update.updated === 'invocation' && update.id === id) ||
+              (update.updated === 'invocation' &&
+                update.id === id &&
+                (!!update.error || !!update.result)) ||
               update.updated === 'walletAction',
             `invoke ${targetName}`,
             { setTimeout },
           );
+          if (actionUpdate.updated === 'invocation' && actionUpdate.error) {
+            throw Error(actionUpdate.error);
+          }
           trace('invoke:', actionUpdate);
         };
         return impl;
