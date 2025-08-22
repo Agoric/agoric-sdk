@@ -119,6 +119,7 @@ import (
 	"github.com/spf13/cast"
 
 	appante "github.com/Agoric/agoric-sdk/golang/cosmos/ante"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/app/txconfig"
 	agorictypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 
 	// conv "github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
@@ -333,7 +334,14 @@ func NewAgoricApp(
 	})
 	appCodec := codec.NewProtoCodec(interfaceRegistry)
 	legacyAmino := codec.NewLegacyAmino()
-	txConfig := authtx.NewTxConfig(appCodec, authtx.DefaultSignModes)
+
+	txConfig, err := txconfig.NewTxConfigWithOptionsWithCustomEncoders(appCodec, authtx.ConfigOptions{
+		EnabledSignModes: authtx.DefaultSignModes,
+		CustomSignModes:  []signing.SignModeHandler{},
+	})
+	if err != nil {
+		panic(err)
+	}
 
 	if err := interfaceRegistry.SigningContext().Validate(); err != nil {
 		panic(err)

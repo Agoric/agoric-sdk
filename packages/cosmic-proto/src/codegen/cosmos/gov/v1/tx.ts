@@ -15,6 +15,10 @@ import {
   type TimestampSDKType,
 } from '../../../google/protobuf/timestamp.js';
 import {
+  CoreEvalProposal,
+  type CoreEvalProposalSDKType,
+} from '../../../agoric/swingset/swingset.js';
+import {
   CommunityPoolSpendProposal,
   type CommunityPoolSpendProposalSDKType,
   CommunityPoolSpendProposalWithDeposit,
@@ -109,7 +113,8 @@ export interface MsgSubmitProposalResponseSDKType {
 export interface MsgExecLegacyContent {
   /** content is the proposal's content. */
   content?:
-    | (CommunityPoolSpendProposal &
+    | (CoreEvalProposal &
+        CommunityPoolSpendProposal &
         CommunityPoolSpendProposalWithDeposit &
         TextProposal &
         ParameterChangeProposal &
@@ -132,6 +137,7 @@ export interface MsgExecLegacyContentProtoMsg {
  */
 export interface MsgExecLegacyContentSDKType {
   content?:
+    | CoreEvalProposalSDKType
     | CommunityPoolSpendProposalSDKType
     | CommunityPoolSpendProposalWithDepositSDKType
     | TextProposalSDKType
@@ -1483,6 +1489,7 @@ export const MsgCancelProposalResponse = {
 export const Cosmos_govv1beta1Content_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
 ):
+  | CoreEvalProposal
   | CommunityPoolSpendProposal
   | CommunityPoolSpendProposalWithDeposit
   | TextProposal
@@ -1496,6 +1503,8 @@ export const Cosmos_govv1beta1Content_InterfaceDecoder = (
     input instanceof BinaryReader ? input : new BinaryReader(input);
   const data = Any.decode(reader, reader.uint32());
   switch (data.typeUrl) {
+    case '/agoric.swingset.CoreEvalProposal':
+      return CoreEvalProposal.decode(data.value);
     case '/cosmos.distribution.v1beta1.CommunityPoolSpendProposal':
       return CommunityPoolSpendProposal.decode(data.value);
     case '/cosmos.distribution.v1beta1.CommunityPoolSpendProposalWithDeposit':
