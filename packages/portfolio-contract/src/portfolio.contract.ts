@@ -27,9 +27,11 @@ import {
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
-import type { ContractMeta, ZCF } from '@agoric/zoe';
+import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Zone } from '@agoric/zone';
+import type { Payment } from '@agoric/ertp/src/types.js';
+import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import { E } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
@@ -40,6 +42,7 @@ import {
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
+import { prepareResolverKit } from './resolver/resolver.exo.js';
 import {
   BeefyPoolPlaces,
   makeProposalShapes,
@@ -71,6 +74,10 @@ export type AxelarConfig = {
     contracts: EVMContractAddresses;
   };
 };
+
+interface PostalServiceI {
+  deliverPayment(addr: string, pmt: Payment): Promise<void>;
+}
 
 const AxelarConfigPattern = M.splitRecord({
   axelarId: M.string(),
@@ -232,6 +239,12 @@ export const contract = async (
     },
   };
 
+  const resolverZone = zone.subZone('CCTPResolver');
+  const {
+    client: resolverClient,
+    invitationMakers: makeResolverInvitationMakers,
+  } = prepareResolverKit(resolverZone, zcf, vowTools)();
+
   const ctx1 = {
     zoeTools,
     usdc: {
@@ -251,6 +264,7 @@ export const contract = async (
     axelarIds,
     contracts,
     gmpAddresses,
+    cctpClient: resolverClient,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
@@ -296,6 +310,31 @@ export const contract = async (
     },
   );
 
+  const makeResolverInvitation = () => {
+    trace('makeResolverInvitation');
+
+    const resolverHandler = (seat: ZCFSeat) => {
+      seat.exit();
+      return harden({ invitationMakers: makeResolverInvitationMakers });
+    };
+
+    return zcf.makeInvitation(resolverHandler, 'resolver', undefined);
+  };
+  const creatorFacet = zone.exo('PortfolioCreator', interfaceTODO, {
+    makeResolverInvitation() {
+      return makeResolverInvitation();
+    },
+    async deliverResolverInvitation(
+      address: string,
+      instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+    ) {
+      const zoe = zcf.getZoeService();
+      const pfP = E(zoe).getPublicFacet(instancePS);
+      const invitation = await makeResolverInvitation();
+      await E(pfP).deliverPayment(address, invitation);
+    },
+  });
+
   const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
     /**
      * Make an invitation to open a new portfolio.
@@ -326,7 +365,7 @@ export const contract = async (
     },
   });
 
-  return { publicFacet };
+  return { publicFacet, creatorFacet };
 };
 harden(contract);
 

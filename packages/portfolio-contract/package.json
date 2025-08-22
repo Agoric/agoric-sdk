@@ -19,6 +19,7 @@
     "lint:types": "yarn run -T tsc"
   },
   "devDependencies": {
+    "@agoric/client-utils": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/fast-usdc": "workspace:*",
     "@agoric/portfolio-api": "workspace:*",
