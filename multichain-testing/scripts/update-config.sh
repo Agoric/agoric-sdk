@@ -7,7 +7,6 @@ CHAIN_DIR="${CHAIN_DIR:=$HOME/.osmosisd}"
 KEYS_CONFIG="${KEYS_CONFIG:=configs/keys.json}"
 SNAPSHOT_URL="${SNAPSHOT_URL:-}"
 HALT_HEIGHT="${HALT_HEIGHT:-}"
-SNAPSHOT_URL=""
 
 set -eux
 
