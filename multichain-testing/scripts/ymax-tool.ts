@@ -459,7 +459,14 @@ const main = async (
     const issuer = fromEntries(
       await walletKit.readPublished('agoricNames.issuer'),
     );
-    const { USDC, BLD, PoC26: Access } = issuer;
+
+    // work around goofy devnet PoC token
+    const vbankAsset = fromEntries(
+      await walletKit.readPublished('agoricNames.vbankAsset'),
+    );
+    const { issuer: Access } = vbankAsset.upoc26;
+
+    const { USDC, BLD } = issuer;
     const { installAndStart: bundleId } = values;
     await yc.target.installAndStart({
       bundleId,
