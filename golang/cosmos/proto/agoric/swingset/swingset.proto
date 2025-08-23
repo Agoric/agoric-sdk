@@ -189,16 +189,16 @@ message SwingStoreArtifact {
 // multiple transactions, in chunks, as when using InstallBundle to submit
 // chunks.
 message ChunkedArtifact {
-  // The hash of the complete bundle.
-  string bundle_hash = 1 [
-    (gogoproto.jsontag) = "bundle_hash",
-    (gogoproto.moretags) = "yaml:\"bundle_hash\""
+  // The SHA-512 hash of the compartment-map.json file inside the bundle.
+  string sha512 = 1 [
+    (gogoproto.jsontag) = "sha512",
+    (gogoproto.moretags) = "yaml:\"sha512\""
   ];
 
   // The size of the final bundle artifact in bytes.
-  uint64 bundle_size = 2 [
-    (gogoproto.jsontag) = "bundle_size",
-    (gogoproto.moretags) = "yaml:\"bundle_size\""
+  uint64 size_bytes = 2 [
+    (gogoproto.jsontag) = "size_bytes",
+    (gogoproto.moretags) = "yaml:\"size_bytes\""
   ];
 
   // Information about the chunks that will be concatenated to form this
@@ -206,6 +206,14 @@ message ChunkedArtifact {
   repeated ChunkInfo chunks = 3 [
     (gogoproto.jsontag) = "chunks",
     (gogoproto.moretags) = "yaml:\"chunks\""
+  ];
+
+  // Addresses beyond the original submitter that are also authorized to
+  // provide chunks.
+  repeated bytes submitters = 4 [
+      (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+      (gogoproto.jsontag)    = "submitters",
+      (gogoproto.moretags)   = "yaml:\"submitters\""
   ];
 }
 
@@ -226,19 +234,19 @@ enum ChunkState {
 
 // Information about a chunk of a bundle.
 message ChunkInfo {
-  // The hash of the chunk contents.
-  string hash = 1 [(gogoproto.jsontag) = "hash", (gogoproto.moretags) = "yaml:\"hash\""];
+  // The SHA-512 hash of the chunk contents.
+  string sha512 = 1 [(gogoproto.jsontag) = "sha512", (gogoproto.moretags) = "yaml:\"sha512\""];
 
   // The chunk size in bytes.
-  uint64 chunk_size = 2 [(gogoproto.jsontag) = "chunk_size", (gogoproto.moretags) = "yaml:\"chunk_size\""];
+  uint64 size_bytes = 2 [(gogoproto.jsontag) = "size_bytes", (gogoproto.moretags) = "yaml:\"size_bytes\""];
 
   // The current state of the chunk.
   ChunkState state = 3 [(gogoproto.jsontag) = "state", (gogoproto.moretags) = "yaml:\"state\""];
 }
 
-// The pending installation node in the doubly-linked list of pending
-// installations in descending order of age.  This is used to track the state of
-// a pending installation and to expire them efficiently.
+// A node in a doubly-linked-list of chunks of a chunked artifact, as used for
+// chunked bundle installation, in order of ascending block time.
+// The keeper uses this to expediently expire stale chunks.
 message ChunkedArtifactNode {
   // The id of the pending bundle installation.
   uint64 chunked_artifact_id = 1 [(gogoproto.jsontag) = "chunkedArtifactId", (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""];
@@ -248,9 +256,9 @@ message ChunkedArtifactNode {
 
   uint64 prev_id = 3 [(gogoproto.jsontag) = "prevId", (gogoproto.moretags) = "yaml:\"prevId\""];
 
-  // The time at which the pending installation began.
-  int64 start_time = 4 [(gogoproto.jsontag) = "startTime", (gogoproto.moretags) = "yaml:\"startTime\""];
+  // The time at which the pending installation began, in UNIX epoch seconds.
+  int64 start_time_unix = 4 [(gogoproto.jsontag) = "startTimeUnix", (gogoproto.moretags) = "yaml:\"startTimeUnix\""];
 
   // The block at which the pending installation began.
-  int64 start_block = 5 [(gogoproto.jsontag) = "startBlock", (gogoproto.moretags) = "yaml:\"startBlock\""];
+  int64 start_block_height = 5 [(gogoproto.jsontag) = "startBlockHeight", (gogoproto.moretags) = "yaml:\"startBlockHeight\""];
 }
