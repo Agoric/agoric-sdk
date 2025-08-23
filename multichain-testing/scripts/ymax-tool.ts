@@ -13,7 +13,10 @@ import {
   type ProposalType,
   type TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { makePortfolioSteps } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
+import {
+  makePortfolioQuery,
+  makePortfolioSteps,
+} from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
 import {
   axelarConfigTestnet,
   gmpAddresses as gmpConfigs,
@@ -193,9 +196,11 @@ const openPositions = async (
 
   const { offerToPublicSubscriberPaths } =
     await sig.query.getCurrentWalletRecord();
+  const path = fromEntries(offerToPublicSubscriberPaths)[id]
+    .portfolio as `${string}.portfolios.portfolio${number}`;
   return {
     id,
-    paths: fromEntries(offerToPublicSubscriberPaths)[id],
+    path,
     tx: { hash: tx.transactionHash, height: tx.height },
   };
 };
@@ -421,12 +426,17 @@ const main = async (
     : undefined;
   console.debug({ positionData, targetAllocation });
   try {
-    const subs = await openPositions(positionData, {
+    const opened = await openPositions(positionData, {
       sig,
       when: now(),
       targetAllocation,
     });
-    trace('opened', subs);
+    trace('opened', opened);
+    const { path } = opened;
+    // XXX would be nice if readPublished allowed ^published.
+    const subPath = path.replace(/^published./, '') as typeof path;
+    const pq = makePortfolioQuery(walletKit.readPublished, subPath);
+    trace('status', await pq.getPortfolioStatus());
   } catch (err) {
     // If we should exit with success code, throw a special non-error object
     if (values['exit-success']) {
