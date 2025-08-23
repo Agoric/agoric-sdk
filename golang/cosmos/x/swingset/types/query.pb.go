@@ -293,6 +293,121 @@ func (m *QueryMailboxResponse) GetValue() string {
 	return ""
 }
 
+// QueryChunkedArtifactStatusRequest is the request type for the Query/ChunkedArtifact RPC method.
+type QueryChunkedArtifactStatusRequest struct {
+	ChunkedArtifactId uint64 `protobuf:"varint,1,opt,name=chunked_artifact_id,json=chunkedArtifactId,proto3" json:"chunkedArtifactId" yaml:"chunkedArtifactId"`
+}
+
+func (m *QueryChunkedArtifactStatusRequest) Reset()         { *m = QueryChunkedArtifactStatusRequest{} }
+func (m *QueryChunkedArtifactStatusRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryChunkedArtifactStatusRequest) ProtoMessage()    {}
+func (*QueryChunkedArtifactStatusRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_76266f656a1a9971, []int{6}
+}
+func (m *QueryChunkedArtifactStatusRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryChunkedArtifactStatusRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryChunkedArtifactStatusRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryChunkedArtifactStatusRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryChunkedArtifactStatusRequest.Merge(m, src)
+}
+func (m *QueryChunkedArtifactStatusRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryChunkedArtifactStatusRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryChunkedArtifactStatusRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryChunkedArtifactStatusRequest proto.InternalMessageInfo
+
+func (m *QueryChunkedArtifactStatusRequest) GetChunkedArtifactId() uint64 {
+	if m != nil {
+		return m.ChunkedArtifactId
+	}
+	return 0
+}
+
+// QueryChunkedArtifactStatuslResponse is the response type for the Query/ChunkedArtifact RPC method.
+type QueryChunkedArtifactStatusResponse struct {
+	ChunkedArtifactId uint64           `protobuf:"varint,1,opt,name=chunked_artifact_id,json=chunkedArtifactId,proto3" json:"chunkedArtifactId" yaml:"chunkedArtifactId"`
+	ChunkedArtifact   *ChunkedArtifact `protobuf:"bytes,2,opt,name=chunked_artifact,json=chunkedArtifact,proto3" json:"chunkedArtifact" yaml:"chunkedArtifact"`
+	// Start time in UNIX epoch seconds.
+	StartTimeUnix    int64 `protobuf:"varint,3,opt,name=start_time_unix,json=startTimeUnix,proto3" json:"startTimeUnix" yaml:"startTimeUnix"`
+	StartBlockHeight int64 `protobuf:"varint,4,opt,name=start_block_height,json=startBlockHeight,proto3" json:"startBlockHeight" yaml:"startBlockHeight"`
+}
+
+func (m *QueryChunkedArtifactStatusResponse) Reset()         { *m = QueryChunkedArtifactStatusResponse{} }
+func (m *QueryChunkedArtifactStatusResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryChunkedArtifactStatusResponse) ProtoMessage()    {}
+func (*QueryChunkedArtifactStatusResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_76266f656a1a9971, []int{7}
+}
+func (m *QueryChunkedArtifactStatusResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryChunkedArtifactStatusResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryChunkedArtifactStatusResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryChunkedArtifactStatusResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryChunkedArtifactStatusResponse.Merge(m, src)
+}
+func (m *QueryChunkedArtifactStatusResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryChunkedArtifactStatusResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryChunkedArtifactStatusResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryChunkedArtifactStatusResponse proto.InternalMessageInfo
+
+func (m *QueryChunkedArtifactStatusResponse) GetChunkedArtifactId() uint64 {
+	if m != nil {
+		return m.ChunkedArtifactId
+	}
+	return 0
+}
+
+func (m *QueryChunkedArtifactStatusResponse) GetChunkedArtifact() *ChunkedArtifact {
+	if m != nil {
+		return m.ChunkedArtifact
+	}
+	return nil
+}
+
+func (m *QueryChunkedArtifactStatusResponse) GetStartTimeUnix() int64 {
+	if m != nil {
+		return m.StartTimeUnix
+	}
+	return 0
+}
+
+func (m *QueryChunkedArtifactStatusResponse) GetStartBlockHeight() int64 {
+	if m != nil {
+		return m.StartBlockHeight
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "agoric.swingset.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "agoric.swingset.QueryParamsResponse")
@@ -300,43 +415,60 @@ func init() {
 	proto.RegisterType((*QueryEgressResponse)(nil), "agoric.swingset.QueryEgressResponse")
 	proto.RegisterType((*QueryMailboxRequest)(nil), "agoric.swingset.QueryMailboxRequest")
 	proto.RegisterType((*QueryMailboxResponse)(nil), "agoric.swingset.QueryMailboxResponse")
+	proto.RegisterType((*QueryChunkedArtifactStatusRequest)(nil), "agoric.swingset.QueryChunkedArtifactStatusRequest")
+	proto.RegisterType((*QueryChunkedArtifactStatusResponse)(nil), "agoric.swingset.QueryChunkedArtifactStatusResponse")
 }
 
 func init() { proto.RegisterFile("agoric/swingset/query.proto", fileDescriptor_76266f656a1a9971) }
 
 var fileDescriptor_76266f656a1a9971 = []byte{
-	// 484 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x93, 0xcf, 0x8b, 0xd4, 0x30,
-	0x14, 0xc7, 0xa7, 0xcb, 0x6e, 0xc5, 0xec, 0x82, 0x10, 0x07, 0xd6, 0x1d, 0x25, 0x59, 0xe3, 0xcf,
-	0xcb, 0x36, 0xb0, 0xe2, 0x45, 0x4f, 0x33, 0xe0, 0x8f, 0x83, 0x82, 0x0e, 0x78, 0x11, 0x2f, 0x99,
-	0x4e, 0x88, 0xc5, 0xb6, 0xe9, 0x36, 0xa9, 0xee, 0xb0, 0x88, 0xe0, 0x5f, 0x20, 0xf8, 0x4f, 0xed,
-	0x71, 0xc1, 0x8b, 0xa7, 0x22, 0x33, 0x9e, 0xf6, 0x38, 0x47, 0xbd, 0x48, 0x93, 0x54, 0xed, 0x94,
-	0xea, 0x6d, 0x4f, 0xd3, 0xbc, 0xf7, 0xf2, 0xfd, 0xbc, 0x97, 0xf7, 0x1d, 0x70, 0x99, 0x09, 0x99,
-	0x47, 0x21, 0x55, 0xef, 0xa2, 0x54, 0x28, 0xae, 0xe9, 0x41, 0xc1, 0xf3, 0x59, 0x90, 0xe5, 0x52,
-	0x4b, 0x78, 0xc1, 0x26, 0x83, 0x3a, 0x39, 0xe8, 0x0b, 0x29, 0xa4, 0xc9, 0xd1, 0xea, 0xcb, 0x96,
-	0x0d, 0xd0, 0xaa, 0x46, 0xfd, 0xe1, 0xf2, 0x57, 0x84, 0x94, 0x22, 0xe6, 0x94, 0x65, 0x11, 0x65,
-	0x69, 0x2a, 0x35, 0xd3, 0x91, 0x4c, 0x95, 0xcd, 0x92, 0x3e, 0x80, 0xcf, 0x2b, 0xe6, 0x33, 0x96,
-	0xb3, 0x44, 0x8d, 0xf9, 0x41, 0xc1, 0x95, 0x26, 0x4f, 0xc0, 0xc5, 0x46, 0x54, 0x65, 0x32, 0x55,
-	0x1c, 0xde, 0x05, 0x7e, 0x66, 0x22, 0x97, 0xbc, 0x5d, 0xef, 0xf6, 0xe6, 0xfe, 0x76, 0xb0, 0xd2,
-	0x62, 0x60, 0x2f, 0x8c, 0xd6, 0x8f, 0x4b, 0xdc, 0x1b, 0xbb, 0x62, 0x92, 0x3b, 0xc6, 0x03, 0x91,
-	0x73, 0x55, 0x33, 0xe0, 0x2b, 0xb0, 0x9e, 0x71, 0x9e, 0x1b, 0xa9, 0xad, 0xd1, 0xe3, 0xd3, 0x12,
-	0x9b, 0xf3, 0xb2, 0xc4, 0x9b, 0x33, 0x96, 0xc4, 0xf7, 0x48, 0x75, 0x22, 0x3f, 0x4a, 0xbc, 0x27,
-	0x22, 0xfd, 0xba, 0x98, 0x04, 0xa1, 0x4c, 0x68, 0x28, 0x55, 0x22, 0x95, 0xfb, 0xd9, 0x53, 0xd3,
-	0x37, 0x54, 0xcf, 0x32, 0xae, 0x82, 0x61, 0x18, 0x0e, 0xa7, 0x53, 0x23, 0x6f, 0x54, 0xc8, 0x43,
-	0x37, 0x41, 0xcd, 0x74, 0x13, 0x50, 0xe0, 0x73, 0x13, 0xe9, 0x9c, 0xc0, 0x5d, 0x70, 0x65, 0x44,
-	0x39, 0x9d, 0xa7, 0x2c, 0x8a, 0x27, 0xf2, 0xf0, 0x6c, 0x9a, 0x7f, 0x04, 0xfa, 0x4d, 0xe8, 0xef,
-	0xee, 0x37, 0xde, 0xb2, 0xb8, 0xe0, 0x06, 0x7b, 0x7e, 0xb4, 0x73, 0x5a, 0x62, 0x1b, 0x58, 0x96,
-	0x78, 0xcb, 0x72, 0xcd, 0x91, 0x8c, 0x6d, 0x78, 0xff, 0xe7, 0x1a, 0xd8, 0x30, 0x4a, 0x50, 0x03,
-	0xdf, 0xee, 0x06, 0x5e, 0x6b, 0x8d, 0xdc, 0x36, 0xc0, 0xe0, 0xfa, 0xbf, 0x8b, 0x6c, 0x3f, 0x04,
-	0x7f, 0xfc, 0xf2, 0xfd, 0xf3, 0xda, 0x0e, 0xdc, 0xa6, 0xab, 0x1e, 0xb4, 0x9b, 0x87, 0x47, 0xc0,
-	0xb7, 0xef, 0xd9, 0x45, 0x6d, 0x58, 0xa2, 0x8b, 0xda, 0xdc, 0x21, 0xb9, 0x69, 0xa8, 0xbb, 0x10,
-	0xb5, 0xa8, 0x76, 0x67, 0xf4, 0xa8, 0x7a, 0xc4, 0xf7, 0xf0, 0x03, 0x38, 0xe7, 0x1e, 0x10, 0x76,
-	0x08, 0x37, 0x97, 0x3a, 0xb8, 0xf1, 0x9f, 0x2a, 0xc7, 0xbf, 0x65, 0xf8, 0x57, 0x21, 0x6e, 0xf1,
-	0x13, 0x5b, 0xe9, 0x1a, 0x18, 0xbd, 0x38, 0x9e, 0x23, 0xef, 0x64, 0x8e, 0xbc, 0x6f, 0x73, 0xe4,
-	0x7d, 0x5a, 0xa0, 0xde, 0xc9, 0x02, 0xf5, 0xbe, 0x2e, 0x50, 0xef, 0xe5, 0xfd, 0xbf, 0x5c, 0x31,
-	0xb4, 0x22, 0x56, 0xcb, 0xb8, 0x42, 0xc8, 0x98, 0xa5, 0xa2, 0xb6, 0xcb, 0xe1, 0x1f, 0x7d, 0x63,
-	0x97, 0x89, 0x6f, 0xfe, 0xb9, 0x77, 0x7e, 0x05, 0x00, 0x00, 0xff, 0xff, 0x53, 0xc2, 0x07, 0xc5,
-	0x3d, 0x04, 0x00, 0x00,
+	// 723 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x95, 0xcf, 0x4f, 0x13, 0x4d,
+	0x18, 0xc7, 0xbb, 0x50, 0xfa, 0xe6, 0x1d, 0x78, 0x03, 0xef, 0x50, 0xa5, 0x54, 0xb3, 0x53, 0xc6,
+	0x5f, 0x78, 0x68, 0x37, 0x42, 0xbc, 0x68, 0x62, 0xec, 0x1a, 0x11, 0x13, 0x4d, 0xa4, 0xca, 0xc5,
+	0x68, 0x9a, 0xe9, 0x76, 0xdc, 0x6e, 0x68, 0x77, 0xca, 0xce, 0x54, 0x8b, 0x84, 0x98, 0x78, 0xf0,
+	0x6c, 0xe2, 0xdf, 0xe2, 0xbf, 0x60, 0x38, 0x92, 0x78, 0xf1, 0xb4, 0x31, 0xe0, 0xa9, 0xc7, 0x1e,
+	0x3d, 0x99, 0xce, 0x4c, 0x91, 0xdd, 0x6d, 0x31, 0x1e, 0xf4, 0xc4, 0xce, 0xf3, 0x7d, 0xe6, 0xfb,
+	0x79, 0x86, 0x99, 0xe7, 0x29, 0x38, 0x47, 0x5c, 0x16, 0x78, 0x8e, 0xc5, 0x5f, 0x79, 0xbe, 0xcb,
+	0xa9, 0xb0, 0xb6, 0x3b, 0x34, 0xd8, 0x29, 0xb5, 0x03, 0x26, 0x18, 0x9c, 0x55, 0x62, 0x69, 0x28,
+	0xe6, 0xb3, 0x2e, 0x73, 0x99, 0xd4, 0xac, 0xc1, 0x97, 0x4a, 0xcb, 0x9b, 0x71, 0x8f, 0xe1, 0x87,
+	0xd6, 0xcf, 0xbb, 0x8c, 0xb9, 0x4d, 0x6a, 0x91, 0xb6, 0x67, 0x11, 0xdf, 0x67, 0x82, 0x08, 0x8f,
+	0xf9, 0x5c, 0xa9, 0x38, 0x0b, 0xe0, 0xc6, 0x80, 0xf9, 0x88, 0x04, 0xa4, 0xc5, 0x2b, 0x74, 0xbb,
+	0x43, 0xb9, 0xc0, 0x0f, 0xc0, 0x7c, 0x24, 0xca, 0xdb, 0xcc, 0xe7, 0x14, 0x5e, 0x07, 0x99, 0xb6,
+	0x8c, 0xe4, 0x8c, 0x82, 0xb1, 0x3c, 0xbd, 0xb2, 0x50, 0x8a, 0x95, 0x58, 0x52, 0x1b, 0xec, 0xf4,
+	0x7e, 0x88, 0x52, 0x15, 0x9d, 0x8c, 0x03, 0xcd, 0xb8, 0xeb, 0x06, 0x94, 0x0f, 0x19, 0xf0, 0x19,
+	0x48, 0xb7, 0x29, 0x0d, 0xa4, 0xd5, 0x8c, 0xbd, 0xde, 0x0b, 0x91, 0x5c, 0xf7, 0x43, 0x34, 0xbd,
+	0x43, 0x5a, 0xcd, 0x1b, 0x78, 0xb0, 0xc2, 0xdf, 0x43, 0x54, 0x74, 0x3d, 0xd1, 0xe8, 0xd4, 0x4a,
+	0x0e, 0x6b, 0x59, 0x0e, 0xe3, 0x2d, 0xc6, 0xf5, 0x9f, 0x22, 0xaf, 0x6f, 0x59, 0x62, 0xa7, 0x4d,
+	0x79, 0xa9, 0xec, 0x38, 0xe5, 0x7a, 0x5d, 0xda, 0x4b, 0x17, 0xbc, 0xa6, 0x4f, 0x30, 0x64, 0xea,
+	0x13, 0x58, 0x20, 0x43, 0x65, 0x64, 0xec, 0x09, 0xf4, 0x06, 0x9d, 0x86, 0xb9, 0xf6, 0x79, 0x48,
+	0xbc, 0x66, 0x8d, 0x75, 0xff, 0x4e, 0xf1, 0xf7, 0x40, 0x36, 0x0a, 0x3d, 0xae, 0x7e, 0xea, 0x25,
+	0x69, 0x76, 0xa8, 0xc4, 0xfe, 0x6b, 0x2f, 0xf6, 0x42, 0xa4, 0x02, 0xfd, 0x10, 0xcd, 0x28, 0xae,
+	0x5c, 0xe2, 0x8a, 0x0a, 0xe3, 0x77, 0x06, 0x58, 0x92, 0x4e, 0x77, 0x1a, 0x1d, 0x7f, 0x8b, 0xd6,
+	0xcb, 0x81, 0xf0, 0x5e, 0x10, 0x47, 0x3c, 0x16, 0x44, 0x74, 0x8e, 0x6f, 0x82, 0x80, 0x79, 0x47,
+	0xe9, 0x55, 0xa2, 0x13, 0xaa, 0x5e, 0x5d, 0x42, 0xd2, 0xf6, 0xb5, 0x5e, 0x88, 0xfe, 0x77, 0xa2,
+	0xdb, 0xef, 0xd7, 0xfb, 0x21, 0xca, 0x29, 0x60, 0x42, 0xc2, 0x95, 0x64, 0x3a, 0xfe, 0x38, 0x09,
+	0xf0, 0x69, 0x85, 0xe8, 0x03, 0xfe, 0xf9, 0x4a, 0xe0, 0x6b, 0x30, 0x17, 0x47, 0xe4, 0x26, 0xe4,
+	0x5b, 0x28, 0x24, 0xde, 0x42, 0xac, 0x58, 0xbb, 0xd8, 0x0b, 0xd1, 0x6c, 0xcc, 0xb2, 0x1f, 0xa2,
+	0xb3, 0x23, 0xf9, 0xb8, 0x12, 0x4f, 0x85, 0x1b, 0x60, 0x96, 0x0b, 0x12, 0x88, 0xaa, 0xf0, 0x5a,
+	0xb4, 0xda, 0xf1, 0xbd, 0x6e, 0x6e, 0xb2, 0x60, 0x2c, 0x4f, 0xda, 0x57, 0x7b, 0x21, 0xfa, 0x4f,
+	0x4a, 0x4f, 0xbc, 0x16, 0xdd, 0xf4, 0xbd, 0x6e, 0x3f, 0x44, 0x59, 0x65, 0x1b, 0x09, 0xe3, 0x4a,
+	0x34, 0x0d, 0x3e, 0x07, 0x50, 0x59, 0xd6, 0x9a, 0xcc, 0xd9, 0xaa, 0x36, 0xa8, 0xe7, 0x36, 0x44,
+	0x2e, 0x2d, 0x5d, 0xad, 0x5e, 0x88, 0xe6, 0xa4, 0x6a, 0x0f, 0xc4, 0x75, 0xa9, 0xf5, 0x43, 0xb4,
+	0x70, 0xc2, 0xf8, 0x84, 0x82, 0x2b, 0x89, 0xe4, 0x95, 0x4f, 0x69, 0x30, 0x25, 0xef, 0x0d, 0x0a,
+	0x90, 0x51, 0xcd, 0x0d, 0x2f, 0x24, 0xfe, 0x4f, 0xc9, 0x09, 0x92, 0xbf, 0x78, 0x7a, 0x92, 0xba,
+	0x6f, 0x8c, 0xde, 0x7e, 0xfe, 0xf6, 0x61, 0x62, 0x11, 0x2e, 0x58, 0xf1, 0x21, 0xa6, 0x46, 0x07,
+	0xdc, 0x05, 0x19, 0xd5, 0x90, 0xe3, 0xa8, 0x91, 0x99, 0x32, 0x8e, 0x1a, 0x1d, 0x02, 0xf8, 0xb2,
+	0xa4, 0x16, 0xa0, 0x99, 0xa0, 0xaa, 0xa6, 0xb7, 0x76, 0x07, 0x5d, 0xb8, 0x07, 0xdf, 0x80, 0x7f,
+	0x74, 0x07, 0xc2, 0x31, 0xc6, 0xd1, 0xa9, 0x90, 0xbf, 0xf4, 0x8b, 0x2c, 0xcd, 0xbf, 0x22, 0xf9,
+	0x4b, 0x10, 0x25, 0xf8, 0x2d, 0x95, 0x39, 0x2c, 0x60, 0xdf, 0x00, 0x67, 0x46, 0x36, 0x0c, 0x5c,
+	0x19, 0x4d, 0x3a, 0xad, 0xcd, 0xf3, 0xab, 0xbf, 0xb5, 0x47, 0xd7, 0xba, 0x26, 0x6b, 0xbd, 0x0d,
+	0x6f, 0x25, 0x6a, 0xd5, 0x8f, 0xbb, 0x38, 0xec, 0xa2, 0x22, 0x97, 0x3b, 0xad, 0xdd, 0x11, 0x1d,
+	0xbc, 0x67, 0x6f, 0xee, 0x1f, 0x9a, 0xc6, 0xc1, 0xa1, 0x69, 0x7c, 0x3d, 0x34, 0x8d, 0xf7, 0x47,
+	0x66, 0xea, 0xe0, 0xc8, 0x4c, 0x7d, 0x39, 0x32, 0x53, 0x4f, 0x6f, 0x9e, 0x98, 0x90, 0x65, 0xc5,
+	0x50, 0x28, 0x39, 0x21, 0x5d, 0xd6, 0x24, 0xbe, 0x3b, 0x1c, 0x9d, 0xdd, 0x9f, 0x78, 0x39, 0x3a,
+	0x6b, 0x19, 0xf9, 0x2b, 0xb6, 0xfa, 0x23, 0x00, 0x00, 0xff, 0xff, 0xe8, 0x38, 0x2e, 0x91, 0x49,
+	0x07, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -357,6 +489,8 @@ type QueryClient interface {
 	Egress(ctx context.Context, in *QueryEgressRequest, opts ...grpc.CallOption) (*QueryEgressResponse, error)
 	// Return the contents of a peer's outbound mailbox.
 	Mailbox(ctx context.Context, in *QueryMailboxRequest, opts ...grpc.CallOption) (*QueryMailboxResponse, error)
+	// Return the state of a pending installation.
+	ChunkedArtifactStatus(ctx context.Context, in *QueryChunkedArtifactStatusRequest, opts ...grpc.CallOption) (*QueryChunkedArtifactStatusResponse, error)
 }
 
 type queryClient struct {
@@ -394,6 +528,15 @@ func (c *queryClient) Mailbox(ctx context.Context, in *QueryMailboxRequest, opts
 	return out, nil
 }
 
+func (c *queryClient) ChunkedArtifactStatus(ctx context.Context, in *QueryChunkedArtifactStatusRequest, opts ...grpc.CallOption) (*QueryChunkedArtifactStatusResponse, error) {
+	out := new(QueryChunkedArtifactStatusResponse)
+	err := c.cc.Invoke(ctx, "/agoric.swingset.Query/ChunkedArtifactStatus", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// Params queries params of the swingset module.
@@ -402,6 +545,8 @@ type QueryServer interface {
 	Egress(context.Context, *QueryEgressRequest) (*QueryEgressResponse, error)
 	// Return the contents of a peer's outbound mailbox.
 	Mailbox(context.Context, *QueryMailboxRequest) (*QueryMailboxResponse, error)
+	// Return the state of a pending installation.
+	ChunkedArtifactStatus(context.Context, *QueryChunkedArtifactStatusRequest) (*QueryChunkedArtifactStatusResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -416,6 +561,9 @@ func (*UnimplementedQueryServer) Egress(ctx context.Context, req *QueryEgressReq
 }
 func (*UnimplementedQueryServer) Mailbox(ctx context.Context, req *QueryMailboxRequest) (*QueryMailboxResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Mailbox not implemented")
+}
+func (*UnimplementedQueryServer) ChunkedArtifactStatus(ctx context.Context, req *QueryChunkedArtifactStatusRequest) (*QueryChunkedArtifactStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChunkedArtifactStatus not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -476,6 +624,24 @@ func _Query_Mailbox_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_ChunkedArtifactStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryChunkedArtifactStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).ChunkedArtifactStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/agoric.swingset.Query/ChunkedArtifactStatus",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).ChunkedArtifactStatus(ctx, req.(*QueryChunkedArtifactStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var Query_serviceDesc = _Query_serviceDesc
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "agoric.swingset.Query",
@@ -492,6 +658,10 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Mailbox",
 			Handler:    _Query_Mailbox_Handler,
+		},
+		{
+			MethodName: "ChunkedArtifactStatus",
+			Handler:    _Query_ChunkedArtifactStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -679,6 +849,84 @@ func (m *QueryMailboxResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryChunkedArtifactStatusRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryChunkedArtifactStatusRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryChunkedArtifactStatusRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ChunkedArtifactId != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.ChunkedArtifactId))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryChunkedArtifactStatusResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryChunkedArtifactStatusResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryChunkedArtifactStatusResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.StartBlockHeight != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.StartBlockHeight))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.StartTimeUnix != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.StartTimeUnix))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.ChunkedArtifact != nil {
+		{
+			size, err := m.ChunkedArtifact.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.ChunkedArtifactId != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.ChunkedArtifactId))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -758,6 +1006,40 @@ func (m *QueryMailboxResponse) Size() (n int) {
 	l = len(m.Value)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryChunkedArtifactStatusRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ChunkedArtifactId != 0 {
+		n += 1 + sovQuery(uint64(m.ChunkedArtifactId))
+	}
+	return n
+}
+
+func (m *QueryChunkedArtifactStatusResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ChunkedArtifactId != 0 {
+		n += 1 + sovQuery(uint64(m.ChunkedArtifactId))
+	}
+	if m.ChunkedArtifact != nil {
+		l = m.ChunkedArtifact.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if m.StartTimeUnix != 0 {
+		n += 1 + sovQuery(uint64(m.StartTimeUnix))
+	}
+	if m.StartBlockHeight != 0 {
+		n += 1 + sovQuery(uint64(m.StartBlockHeight))
 	}
 	return n
 }
@@ -1216,6 +1498,218 @@ func (m *QueryMailboxResponse) Unmarshal(dAtA []byte) error {
 			}
 			m.Value = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryChunkedArtifactStatusRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryChunkedArtifactStatusRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryChunkedArtifactStatusRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChunkedArtifactId", wireType)
+			}
+			m.ChunkedArtifactId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ChunkedArtifactId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryChunkedArtifactStatusResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryChunkedArtifactStatusResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryChunkedArtifactStatusResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChunkedArtifactId", wireType)
+			}
+			m.ChunkedArtifactId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ChunkedArtifactId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChunkedArtifact", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ChunkedArtifact == nil {
+				m.ChunkedArtifact = &ChunkedArtifact{}
+			}
+			if err := m.ChunkedArtifact.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StartTimeUnix", wireType)
+			}
+			m.StartTimeUnix = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.StartTimeUnix |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StartBlockHeight", wireType)
+			}
+			m.StartBlockHeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.StartBlockHeight |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
