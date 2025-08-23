@@ -12,7 +12,7 @@ import '@endo/lockdown/commit.js';
 // TypeError#1: Cannot assign to read only property '_events' of object '[object Object]'
 //  at EventEmitter.init (node:events:345:18)
 //  at new EventEmitter (node:events:220:21)
-//  at new CosmosRPCClient (packages/ymax-planner/src/cosmos-rpc.ts:27:16)
+//  at new CosmosRPCClient (services/ymax-planner-service/src/cosmos-rpc.ts:27:16)
 //
 // The read only property appears to be on `Promise.prototype`.
 //
@@ -38,9 +38,8 @@ shimmedP
     /**
      * Object that dotenv.config() will mutate to add variables from the
      * dotEnvFile.
-     * @type {{ [key: string]: string }}
      */
-    const dotEnvAdditions = {};
+    const dotEnvAdditions = {} as { [key: string]: string };
     dotenv.config({ path: dotEnvFile, processEnv: dotEnvAdditions });
     // console.log('Loaded .env variables:', dotEnv);
 
