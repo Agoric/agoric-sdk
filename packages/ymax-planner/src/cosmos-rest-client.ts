@@ -40,7 +40,7 @@ const CHAIN_CONFIGS: Record<string, Record<string, ChainConfig>> = {
       name: agoricMain.prettyName!,
     },
   },
-  testnet: {
+  devnet: {
     noble: {
       chainId: nobleTest.chainId!,
       restEndpoint: nobleTest.apis!.rest![0].address,
