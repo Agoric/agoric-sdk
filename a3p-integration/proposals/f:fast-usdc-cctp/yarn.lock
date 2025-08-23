@@ -1089,9 +1089,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/synthetic-chain@npm:0.5.8":
-  version: 0.5.8
-  resolution: "@agoric/synthetic-chain@npm:0.5.8"
+"@agoric/synthetic-chain@npm:0.6.0":
+  version: 0.6.0
+  resolution: "@agoric/synthetic-chain@npm:0.6.0"
   dependencies:
     "@agoric/client-utils": "npm:0.1.1-dev-f9483e7.0"
     "@endo/zip": "npm:^1.0.9"
@@ -1103,7 +1103,7 @@ __metadata:
     tmp: "npm:0.2.3"
   bin:
     synthetic-chain: dist/cli/cli.js
-  checksum: 10c0/cb9c4afdcc4501aa4af3104de9880503ce05285c4de6bb1de55a90dc4f7ed26067622e3bfeb514216b919088a991d8746a8422df335282bfa36809eae6112bf1
+  checksum: 10c0/fc0734d96e10a73515a6ebd91d70272c5b1ca3d23b368e916652d49310f73b65346d9f8e6a5122fc162042c0fad0e5ceffa1a5b9e16b47c74948fad4077f29af
   languageName: node
   linkType: hard
 
@@ -6385,7 +6385,7 @@ __metadata:
   dependencies:
     "@agoric/client-utils": "npm:dev"
     "@agoric/fast-usdc": "npm:dev"
-    "@agoric/synthetic-chain": "npm:0.5.8"
+    "@agoric/synthetic-chain": "npm:0.6.0"
     "@endo/init": "npm:^1.1.12"
     agoric: "npm:dev"
     ava: "npm:^5.3.1"
