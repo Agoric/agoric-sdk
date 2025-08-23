@@ -4,20 +4,31 @@
  */
 import '@endo/init';
 
-import { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
+import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.ts';
 import {
   TargetAllocationShape,
   type OfferArgsFor,
   type ProposalType,
+  type TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { makePortfolioSteps } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
+import {
+  axelarConfigTestnet,
+  gmpAddresses as gmpConfigs,
+} from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import type { ContractControl } from '@aglocal/portfolio-deploy/src/contract-control.js';
+import { lookupInterchainInfo } from '@aglocal/portfolio-deploy/src/orch.start.js';
 import {
   fetchEnvNetworkConfig,
+  makeSigningSmartWalletKit,
   makeSmartWalletKit,
-  retryUntilCondition,
+  reflectWalletStore,
+  walletUpdates,
+  type SigningSmartWalletKit,
+  type VstorageKit,
 } from '@agoric/client-utils';
-import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
 import { AmountMath } from '@agoric/ertp';
 import {
   multiplyBy,
@@ -31,26 +42,14 @@ import {
   type TypedPattern,
 } from '@agoric/internal';
 import { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';
-import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
-import type { StartedInstanceKit } from '@agoric/zoe/src/zoeService/utils';
-import { stringToPath } from '@cosmjs/crypto';
-import { fromBech32 } from '@cosmjs/encoding';
-import {
-  DirectSecp256k1HdWallet,
-  Registry,
-  type GeneratedType,
-} from '@cosmjs/proto-signing';
-import { SigningStargateClient, type StdFee } from '@cosmjs/stargate';
+import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
+import type { NameHub } from '@agoric/vats';
+import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils';
+import { SigningStargateClient } from '@cosmjs/stargate';
 import { M } from '@endo/patterns';
 import { parseArgs } from 'node:util';
-import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.ts';
-import { lookupInterchainInfo } from '@aglocal/portfolio-deploy/src/orch.start.js';
-import {
-  axelarConfigTestnet,
-  gmpAddresses as gmpConfigs,
-} from '@aglocal/portfolio-deploy/src/axelar-configs.js';
-import type { NameHub } from '@agoric/vats';
-import { Fail, q } from '@endo/errors';
+
+type YMaxStartFn = typeof YMaxStart;
 
 const getUsage = (
   programName: string,
@@ -66,26 +65,38 @@ Options:
   --submit-for <id>   submit (empty) plan for portfolio <id>
   -h, --help          Show this help message`;
 
-const toAccAddress = (address: string): Uint8Array => {
-  return fromBech32(address).data;
-};
+const parseToolArgs = (argv: string[]) =>
+  parseArgs({
+    args: argv.slice(2),
+    options: {
+      positions: { type: 'string', default: '{}' },
+      'skip-poll': { type: 'boolean', default: false },
+      'exit-success': { type: 'boolean', default: false },
+      'target-allocation': { type: 'string' },
+      redeem: { type: 'boolean', default: false },
+      contract: { type: 'string', default: 'ymax0' },
+      description: { type: 'string', default: 'planner' },
+      getCreatorFacet: { type: 'boolean', default: false },
+      terminate: { type: 'string' },
+      installAndStart: { type: 'string' },
+      invitePlanner: { type: 'string' },
+      'submit-for': { type: 'string' },
+      help: { type: 'boolean', short: 'h', default: false },
+    },
+    allowPositionals: false,
+  });
+
+type GoalData = Partial<Record<YieldProtocol, ParsableNumber>>;
+const YieldProtocolShape = M.or(...Object.keys(YieldProtocol));
+const ParseableNumberShape = M.or(M.number(), M.string());
+const GoalDataShape: TypedPattern<GoalData> = M.recordOf(
+  YieldProtocolShape,
+  ParseableNumberShape,
+);
 
 const trace = makeTracer('YMXTool');
 const { fromEntries } = Object;
 const { make } = AmountMath;
-
-const AgoricMsgs = {
-  MsgWalletSpendAction: {
-    typeUrl: '/agoric.swingset.MsgWalletSpendAction',
-    aminoType: 'swingset/WalletSpendAction',
-  },
-};
-const agoricRegistryTypes: [string, GeneratedType][] = [
-  [
-    AgoricMsgs.MsgWalletSpendAction.typeUrl,
-    MsgWalletSpendAction as GeneratedType,
-  ],
-];
 
 const parseTypedJSON = <T>(
   json: string,
@@ -96,68 +107,55 @@ const parseTypedJSON = <T>(
   let result: unknown;
   try {
     result = harden(JSON.parse(json, reviver));
+    mustMatch(result, shape);
   } catch (err) {
     throw makeError(err);
   }
-  mustMatch(result, shape);
   return result;
 };
 
-type GoalData = Partial<Record<YieldProtocol, ParsableNumber>>;
-const YieldProtocolShape = M.or(...Object.keys(YieldProtocol));
-const ParseableNumberShape = M.or(M.number(), M.string());
-const GoalDataShape: TypedPattern<GoalData> = M.recordOf(
-  YieldProtocolShape,
-  ParseableNumberShape,
-);
+type SmartWalletKit = Awaited<ReturnType<typeof makeSmartWalletKit>>;
 
-const openPosition = async (
+const noPoll = (wk: SmartWalletKit): SmartWalletKit => ({
+  ...wk,
+  pollOffer: async () => {
+    trace('polling skippped');
+    return harden({ status: 'polling skipped' } as unknown as OfferStatus);
+  },
+});
+
+const openPositions = async (
   goalData: GoalData,
   {
-    address,
-    client,
-    walletKit,
-    now,
-    targetAllocationJson,
+    sig,
+    when,
+    targetAllocation,
+    id = `open-${new Date(when).toISOString()}`,
   }: {
-    address: string;
-    client: SigningStargateClient;
-    walletKit: Awaited<ReturnType<typeof makeSmartWalletKit>>;
-    now: () => number;
-    targetAllocationJson?: string;
+    sig: SigningSmartWalletKit;
+    when: number;
+    targetAllocation?: TargetAllocation;
+    id?: string;
   },
 ) => {
+  const { readPublished } = sig.query;
+  const { USDC, BLD } = fromEntries(
+    await readPublished('agoricNames.brand'),
+  ) as Record<string, Brand<'nat'>>;
   // XXX PoC26 in devnet published.agoricNames.brand doesn't match vbank
-  const brand = fromEntries(
-    (await walletKit.readPublished('agoricNames.vbankAsset')).map(([_d, a]) => [
-      a.issuerName,
-      a.brand,
-    ]),
-  );
-  const { USDC, BLD, PoC26 } = brand as Record<string, Brand<'nat'>>;
+  const { upoc26 } = fromEntries(await readPublished('agoricNames.vbankAsset'));
 
   const toAmt = (num: ParsableNumber) =>
     multiplyBy(make(USDC, 1_000_000n), parseRatio(num, USDC));
   const goal = objectMap(goalData, toAmt);
-  console.debug('TODO: address Arbitrum-only limitation');
+  console.debug('TODO: address Ethereum-only limitation');
   const evm = 'Ethereum';
   const { give } = makePortfolioSteps(goal, { evm, feeBrand: BLD });
   const proposal: ProposalType['openPortfolio'] = {
     give: {
       ...give,
-      ...(PoC26 && { Access: make(PoC26, 1n) }),
+      ...(upoc26 && { Access: make(upoc26.brand, 1n) }),
     },
-  };
-
-  const parseTargetAllocation = () => {
-    if (!targetAllocationJson) return undefined;
-    const targetAllocation = parseTypedJSON(
-      targetAllocationJson,
-      TargetAllocationShape,
-      (_k, v) => (typeof v === 'number' ? BigInt(v) : v),
-      err => Error(`Invalid target allocation JSON: ${err.message}`),
-    );
-    return harden({ targetAllocation });
   };
 
   // planner will supply remaining steps
@@ -166,225 +164,141 @@ const openPosition = async (
   ];
   const offerArgs: OfferArgsFor['openPortfolio'] = {
     flow: steps,
-    ...parseTargetAllocation(),
+    ...(targetAllocation && { targetAllocation }),
   };
-  trace('opening portfolio', proposal.give);
-  const action: BridgeAction = harden({
-    method: 'executeOffer',
-    offer: {
-      id: `open-${new Date(now()).toISOString()}`,
-      invitationSpec: {
-        source: 'agoricContract',
-        instancePath: ['ymax0'],
-        callPipe: [['makeOpenPortfolioInvitation']],
+
+  trace(id, 'opening portfolio', proposal.give);
+  const tx = await sig.sendBridgeAction(
+    harden({
+      method: 'executeOffer',
+      offer: {
+        id,
+        invitationSpec: {
+          source: 'agoricContract',
+          instancePath: ['ymax0'],
+          callPipe: [['makeOpenPortfolioInvitation']],
+        },
+        proposal,
+        offerArgs,
       },
-      proposal,
-      offerArgs,
-    },
-  });
-
-  const before = await client.getBlock();
-
-  const actual = await signAndBroadcastAction(action, {
-    address,
-    client,
-    walletKit,
-  });
-  trace('broadcasted tx', actual);
-
-  trace('height', before.header.height, 'looking for offer', action.offer.id);
-  const status = await walletKit.pollOffer(
-    address,
-    action.offer.id,
-    before.header.height,
+    }),
   );
+  if (tx.code !== 0) throw Error(tx.rawLog);
 
-  trace('final offer status', status);
-  if ('error' in status) {
-    trace('offer failed with error', status.error);
-    throw Error(status.error);
-  }
-  trace('offer completed successfully', {
-    statusType: 'success',
-    result: status.result,
-  });
+  // result is UNPUBLISHED
+  await walletUpdates(sig.query.getLastUpdate, {
+    log: trace,
+    setTimeout,
+  }).offerResult(id);
 
-  return status;
-};
-
-const signAndBroadcastAction = async (
-  action: BridgeAction,
-  {
-    address,
-    walletKit,
-    client,
-  }: {
-    address: string;
-    client: SigningStargateClient;
-    walletKit: Awaited<ReturnType<typeof makeSmartWalletKit>>;
-  },
-) => {
-  const msgSpend = MsgWalletSpendAction.fromPartial({
-    owner: toAccAddress(address),
-    spendAction: JSON.stringify(walletKit.marshaller.toCapData(action)),
-  });
-
-  const fee: StdFee = {
-    amount: [{ denom: 'ubld', amount: '30000' }], // XXX enough?
-    gas: '19700000', // need more when msgSpend.spendAction is large
+  const { offerToPublicSubscriberPaths } =
+    await sig.query.getCurrentWalletRecord();
+  return {
+    id,
+    paths: fromEntries(offerToPublicSubscriberPaths)[id],
+    tx: { hash: tx.transactionHash, height: tx.height },
   };
-  console.log('signAndBroadcast', address, msgSpend, fee);
-  const actual = await client.signAndBroadcast(
-    address,
-    [{ typeUrl: MsgWalletSpendAction.typeUrl, value: msgSpend }],
-    fee,
-  );
-  if (actual.code !== 0) {
-    throw Error(actual.rawLog);
-  }
-  trace('tx', actual);
-  return actual;
 };
 
-const redeemInvitation = async ({
-  address,
-  client,
-  walletKit,
-  now,
-  contract = 'ymax0',
-  description = 'planner',
-  saveAs = description.replace(/^deliver /, ''),
-}: {
-  address: string;
-  client: SigningStargateClient;
-  walletKit: Awaited<ReturnType<typeof makeSmartWalletKit>>;
-  now: () => number;
-  contract?: string;
-  description?: string;
-  saveAs?: string;
-}) => {
-  const { [contract]: instance } = walletKit.agoricNames.instance;
-  // console.error('ymax instance', instance.getBoardId());
-  const action: BridgeAction = harden({
-    method: 'executeOffer',
-    offer: {
-      id: `redeem-${new Date(now()).toISOString()}`,
-      invitationSpec: {
-        source: 'purse',
-        instance,
-        description,
-      },
-      proposal: {},
-      saveResult: { name: saveAs },
-    },
+/**
+ * Build a NameHub suitable for use by lookupInterchainInfo,
+ * filtering odd stuff found in devnet.
+ *
+ * @param vsk
+ */
+const agoricNamesForChainInfo = (vsk: VstorageKit) => {
+  const { vstorage } = vsk;
+  const { readPublished } = vsk;
+
+  const byChainId = {};
+
+  const chainEntries = async (kind: string) => {
+    const out: [string, unknown][] = [];
+    const children = await vstorage.keys(`published.agoricNames.${kind}`);
+    for (const child of children) {
+      console.debug('readPublished', kind, child);
+      const value = await readPublished(`agoricNames.${kind}.${child}`);
+      // console.debug(kind, child, value);
+      if (kind === 'chain') {
+        const { chainId, namespace } = value as Record<string, string>;
+        if (namespace !== 'cosmos') {
+          console.warn('namespace?? skipping', kind, child, value);
+          continue;
+        }
+        if (typeof chainId === 'string') {
+          if (chainId in byChainId) throw Error(`oops! ${child} ${chainId}`);
+          byChainId[chainId] = value;
+        }
+      }
+      out.push([child, value]);
+    }
+    if (kind === 'chainConnection') {
+      const relevantConnections = out.filter(([key, _val]) => {
+        const [c1, c2] = key.split('_'); // XXX incomplete
+        return c1 in byChainId && c2 in byChainId;
+      });
+      return harden(relevantConnections);
+    }
+    return harden(out);
+  };
+
+  const lookup = async (kind: string) => {
+    switch (kind) {
+      case 'chain':
+      case 'chainConnection':
+        return harden({
+          entries: () => chainEntries(kind),
+        });
+      default:
+        return harden({
+          entries: async () => {
+            // console.debug(kind, 'entries');
+            return readPublished(`agoricNames.${kind}`) as Promise<
+              [[string, unknown]]
+            >;
+          },
+        });
+    }
+  };
+
+  const refuse = () => {
+    throw Error('access denied');
+  };
+
+  const agoricNames: NameHub = harden({
+    lookup,
+    entries: refuse,
+    has: refuse,
+    keys: refuse,
+    values: refuse,
   });
 
-  const before = await client.getBlock();
-  console.error('redeem action', action);
-  const tx = await signAndBroadcastAction(action, {
-    address,
-    walletKit,
-    client,
-  });
-
-  trace('broadcasted tx', tx);
-
-  trace('height', before.header.height, 'looking for offer', action.offer.id);
-
-  const actionUpdate = await retryUntilCondition(
-    () => walletKit.readPublished(`wallet.${address}`),
-    update =>
-      (update.updated === 'offerStatus' &&
-        !!(update.status.result || update.status.error)) ||
-      update.updated === 'walletAction',
-    'redeem offer',
-    { setTimeout },
-  );
-
-  return { tx, actionUpdate };
+  return agoricNames;
 };
 
-const buildPrivateArgsOverrides = async (
-  walletKit: SmartWalletKit,
+/**
+ * Build privateArgsOverrides sufficient to add new EVM chains.
+ *
+ * @param vsk
+ * @param axelarConfig
+ * @param gmpAddresses
+ */
+const overridesForEthChainInfo = async (
+  vsk: VstorageKit,
   axelarConfig = axelarConfigTestnet,
   gmpAddresses = gmpConfigs.testnet,
 ) => {
-  const byChainId = {};
-
-  const agoricNames: NameHub = harden({
-    lookup: async kind => {
-      switch (kind) {
-        case 'chain':
-        case 'chainConnection':
-          return harden({
-            entries: async () => {
-              const out: [string, any][] = [];
-              const { vstorage } = walletKit;
-              const children = await vstorage.keys(
-                `published.agoricNames.${kind}`,
-              );
-              for (const child of children) {
-                // console.debug(kind, child);
-                const value = (await walletKit.readPublished(
-                  `agoricNames.${kind}.${child}`,
-                )) as {};
-                console.debug(kind, child, value);
-                if (kind === 'chain') {
-                  const { chainId, namespace } = value as any;
-                  if (namespace !== 'cosmos') {
-                    console.warn('namespace?? skipping', kind, child, value);
-                    continue;
-                  }
-                  if (typeof chainId === 'string') {
-                    if (chainId in byChainId)
-                      throw Error(`oops! ${child} ${chainId}`);
-                    byChainId[chainId] = value;
-                  }
-                }
-                out.push([child, value]);
-              }
-              if (kind === 'chainConnection') {
-                return out.filter(([key, _val]) => {
-                  const [c1, c2] = key.split('_'); // XXX incomplete
-                  return c1 in byChainId && c2 in byChainId;
-                });
-              }
-              return harden(out);
-            },
-          });
-        default:
-          return harden({
-            entries: async () => {
-              // console.debug(kind, 'entries');
-              return walletKit.readPublished(`agoricNames.${kind}`) as Promise<
-                [[string, any]]
-              >;
-            },
-          });
-      }
-    },
-    entries: () => Fail`not supported`,
-    has: () => Fail`not supported`,
-    keys: () => Fail`not supported`,
-    values: () => Fail`not supported`,
-  });
-  // build privateArgsOverrides
   const { chainInfo: cosmosChainInfo } = await lookupInterchainInfo(
-    agoricNames,
+    agoricNamesForChainInfo(vsk),
     { agoric: ['ubld'], noble: ['uusdc'], axelar: ['uaxl'] },
   );
   const chainInfo = {
     ...cosmosChainInfo,
-    ...Object.fromEntries(
-      Object.entries(axelarConfig).map(([chain, info]) => [
-        chain,
-        info.chainInfo,
-      ]),
-    ),
+    ...objectMap(axelarConfig, info => info.chainInfo),
   };
 
   const privateArgsOverrides: Pick<
-    Parameters<typeof YMaxStart>[1],
+    Parameters<YMaxStartFn>[1],
     'axelarIds' | 'chainInfo' | 'contracts' | 'gmpAddresses'
   > = harden({
     axelarIds: objectMap(axelarConfig, c => c.axelarId),
@@ -399,132 +313,6 @@ const buildPrivateArgsOverrides = async (
   return privateArgsOverrides;
 };
 
-const installAndStart = async (
-  bundleId,
-  {
-    walletKit,
-    ymaxControl,
-  }: {
-    // TODO: refactor to use reifyWalletStore
-    ymaxControl: any;
-    walletKit: SmartWalletKit;
-  },
-) => {
-  const issuer = fromEntries(
-    await walletKit.readPublished('agoricNames.issuer'),
-  );
-  const { USDC, BLD } = issuer;
-
-  // work around goofy devnet PoC token
-  const vbankAsset = fromEntries(
-    await walletKit.readPublished('agoricNames.vbankAsset'),
-  );
-  const { issuer: Access } = vbankAsset.upoc26;
-
-  const privateArgsOverrides = await buildPrivateArgsOverrides(walletKit);
-  await ymaxControl.target.installAndStart({
-    bundleId,
-    issuers: { USDC, BLD, Fee: BLD, Access },
-    privateArgsOverrides,
-  });
-};
-
-const reifyWalletEntry = <T>(
-  targetName: string,
-  {
-    address,
-    client,
-    walletKit,
-    now,
-  }: {
-    address: string;
-    client: SigningStargateClient;
-    walletKit: Awaited<ReturnType<typeof makeSmartWalletKit>>;
-    now: () => number;
-  },
-) => {
-  let saveResult;
-  const target = new Proxy(
-    {},
-    {
-      get(_target, method, _rx) {
-        const impl = async (...args) => {
-          const id = now();
-
-          assert.typeof(method, 'string');
-          const action: BridgeAction = harden({
-            method: 'invokeEntry',
-            message: {
-              id,
-              targetName,
-              method,
-              args,
-              saveResult,
-            },
-          });
-
-          console.error('submit action', action);
-          await signAndBroadcastAction(action, { address, walletKit, client });
-
-          const actionUpdate = await retryUntilCondition(
-            () => walletKit.readPublished(`wallet.${address}`),
-            update =>
-              (update.updated === 'invocation' &&
-                update.id === id &&
-                (!!update.error || !!update.result)) ||
-              update.updated === 'walletAction',
-            `invoke ${targetName}`,
-            { setTimeout },
-          );
-          if (actionUpdate.updated === 'invocation' && actionUpdate.error) {
-            throw Error(actionUpdate.error);
-          }
-          trace('invoke:', actionUpdate);
-        };
-        return impl;
-      },
-    },
-  ) as T;
-  const tools = harden({
-    setName(name: string, overwrite = false) {
-      saveResult = harden({ name, overwrite });
-    },
-  });
-  return { target, tools };
-};
-
-type SmartWalletKit = Awaited<ReturnType<typeof makeSmartWalletKit>>;
-
-const noPoll = (wk: SmartWalletKit): SmartWalletKit => ({
-  ...wk,
-  pollOffer: async () => {
-    trace('polling skippped');
-    return harden({ status: 'polling skipped' } as any);
-  },
-});
-
-const parseToolArgs = (argv: string[]) =>
-  parseArgs({
-    args: argv.slice(2),
-    options: {
-      positions: { type: 'string', default: '{}' },
-      'skip-poll': { type: 'boolean', default: false },
-      'exit-success': { type: 'boolean', default: false },
-      'target-allocation': { type: 'string' },
-      redeem: { type: 'boolean', default: false },
-      contract: { type: 'string', default: 'ymax0' },
-      description: { type: 'string', default: 'planner' },
-      ping: { type: 'boolean', default: false },
-      getCreatorFacet: { type: 'boolean', default: false },
-      terminate: { type: 'string' },
-      installAndStart: { type: 'string' },
-      invitePlanner: { type: 'string' },
-      'submit-for': { type: 'string' },
-      help: { type: 'boolean', short: 'h', default: false },
-    },
-    allowPositionals: false,
-  });
-
 const main = async (
   argv = process.argv,
   env = process.env,
@@ -532,15 +320,14 @@ const main = async (
     fetch = globalThis.fetch,
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
+    now = Date.now,
   } = {},
 ) => {
   const { values } = parseToolArgs(argv);
-  const exitSuccess = values['exit-success'];
-  const targetAllocationJson = values['target-allocation'];
 
   if (values.help) {
-    console.log(getUsage(argv[1]));
-    process.exit(values.help ? 0 : 1);
+    console.error(getUsage(argv[1]));
+    return;
   }
 
   const { MNEMONIC } = env;
@@ -548,106 +335,101 @@ const main = async (
 
   const delay = ms =>
     new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
-  const now = Date.now;
   const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
   const walletKit0 = await makeSmartWalletKit({ fetch, delay }, networkConfig);
   const walletKit = values['skip-poll'] ? noPoll(walletKit0) : walletKit0;
-  const signer = await DirectSecp256k1HdWallet.fromMnemonic(MNEMONIC, {
-    prefix: 'agoric',
-    hdPaths: [stringToPath(`m/44'/564'/0'/0/0`)],
-  });
-  const [{ address }] = await signer.getAccounts();
-  const client = await connectWithSigner(networkConfig.rpcAddrs[0], signer, {
-    registry: new Registry(agoricRegistryTypes),
-  });
+  const sig = await makeSigningSmartWalletKit(
+    { connectWithSigner, walletUtils: walletKit },
+    MNEMONIC,
+  );
+  trace('address', sig.address);
+  const walletStore = reflectWalletStore(sig, { setTimeout, log: trace });
 
   if (values.redeem) {
-    await redeemInvitation({
-      address,
-      walletKit,
-      client,
-      now,
-      contract: values.contract,
-      description: values.description,
-    });
+    const { contract, description } = values;
+    trace('getting instance', contract);
+    const { [contract]: instance } = fromEntries(
+      await walletKit.readPublished('agoricNames.instance'),
+    );
+    fromEntries(await sig.query.readPublished('agoricNames.instance'));
+    const result = await walletStore.saveOfferResult(
+      { instance, description },
+      description.replace(/^deliver /, ''),
+    );
+    trace('redeem result', result);
     return;
   }
 
-  const yc = reifyWalletEntry<ContractControl<typeof YMaxStart>>(
-    'ymaxControl',
-    {
-      address,
-      client,
-      walletKit,
-      now,
-    },
-  );
-
-  if (values.ping) {
-    await yc.target.pruneChainStorage({});
-    return;
-  }
+  const yc = walletStore.get<ContractControl<YMaxStartFn>>('ymaxControl');
 
   if (values.getCreatorFacet) {
-    yc.tools.setName('creatorFacet', true);
-    await yc.target.getCreatorFacet();
+    await walletStore.savingResult('creatorFacet', () => yc.getCreatorFacet());
     return;
   }
 
   if (values.terminate) {
-    await yc.target.terminate({ message: values.terminate });
+    const { terminate: message } = values;
+    await yc.terminate({ message });
     return;
   }
 
   if (values.installAndStart) {
     const { installAndStart: bundleId } = values;
+    const { BLD, USDC } = fromEntries(
+      await walletKit.readPublished('agoricNames.issuer'),
+    );
 
-    await installAndStart(bundleId, { ymaxControl: yc, walletKit });
+    // work around goofy devnet PoC token
+    const { upoc26 } = fromEntries(
+      await walletKit.readPublished('agoricNames.vbankAsset'),
+    );
+
+    await yc.installAndStart({
+      bundleId,
+      issuers: { USDC, BLD, Fee: BLD, Access: upoc26.issuer },
+      privateArgsOverrides: await overridesForEthChainInfo(walletKit),
+    });
     return;
   }
 
   if (values.invitePlanner) {
     const { invitePlanner: planner } = values;
-    const cf = reifyWalletEntry<
-      StartedInstanceKit<typeof YMaxStart>['creatorFacet']
-    >('creatorFacet', {
-      address,
-      client,
-      walletKit,
-      now,
-    });
-    const { postalService } = walletKit.agoricNames.instance;
-
-    await cf.target.deliverPlannerInvitation(planner, postalService);
+    const cf =
+      walletStore.get<ZStarted<YMaxStartFn>['creatorFacet']>('creatorFacet');
+    const { postalService } = fromEntries(
+      await walletKit.readPublished('agoricNames.instance'),
+    );
+    await cf.deliverPlannerInvitation(planner, postalService);
     return;
   }
 
-  const { 'submit-for': portfolioId } = values;
-  if (portfolioId) {
-    const planner = reifyWalletEntry<any>('planner', {
-      address,
-      client,
-      walletKit,
-      now,
-    });
-    await planner.target.submit(portfolioId, []);
+  if (values['submit-for']) {
+    const portfolioId = Number(values['submit-for']);
+    const planner = walletStore.get<PortfolioPlanner>('planner');
+    await planner.submit(portfolioId, []);
     return;
   }
 
   const positionData = parseTypedJSON(values.positions, GoalDataShape);
-  console.debug({ positionData });
+  const targetAllocation = values['target-allocation']
+    ? parseTypedJSON(
+        values['target-allocation'],
+        TargetAllocationShape,
+        (_k, v) => (typeof v === 'number' ? BigInt(v) : v),
+        err => Error(`Invalid target allocation JSON: ${err.message}`),
+      )
+    : undefined;
+  console.debug({ positionData, targetAllocation });
   try {
-    // Pass the parsed options to openPosition
-    await openPosition(positionData, {
-      address,
-      client,
-      walletKit,
-      now: Date.now,
-      targetAllocationJson,
+    const subs = await openPositions(positionData, {
+      sig,
+      when: now(),
+      targetAllocation,
     });
+    trace('opened', subs);
   } catch (err) {
     // If we should exit with success code, throw a special non-error object
-    if (exitSuccess) {
+    if (values['exit-success']) {
       throw { exitSuccess: true, originalError: err };
     }
     throw err;
