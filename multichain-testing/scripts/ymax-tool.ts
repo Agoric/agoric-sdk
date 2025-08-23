@@ -153,7 +153,9 @@ const openPositions = async (
   const goal = objectMap(goalData, toAmt);
   console.debug('TODO: address Ethereum-only limitation');
   const evm = 'Ethereum';
-  const { give } = makePortfolioSteps(goal, { evm, feeBrand: BLD });
+  const { give: giveWFees } = makePortfolioSteps(goal, { evm, feeBrand: BLD });
+  // XXX WIP: contract is to pay BLD fee
+  const { GmpFee: _gf, ...give } = giveWFees;
   const proposal: ProposalType['openPortfolio'] = {
     give: {
       ...give,
@@ -170,7 +172,7 @@ const openPositions = async (
     ...(targetAllocation && { targetAllocation }),
   };
 
-  trace(id, 'opening portfolio', proposal.give);
+  trace(id, 'opening portfolio', proposal.give, steps);
   const tx = await sig.sendBridgeAction(
     harden({
       method: 'executeOffer',
@@ -436,7 +438,19 @@ const main = async (
     // XXX would be nice if readPublished allowed ^published.
     const subPath = path.replace(/^published./, '') as typeof path;
     const pq = makePortfolioQuery(walletKit.readPublished, subPath);
-    trace('status', await pq.getPortfolioStatus());
+    const status = await pq.getPortfolioStatus();
+    trace('status', status);
+    if (status.depositAddress && env.AGORIC_NET === 'devnet') {
+      // XXX devnet explorer seems to support this query
+      const apiAddr = 'https://devnet.explorer.agoric.net';
+      const url = `${apiAddr}/api/cosmos/bank/v1beta1/balances/${status.depositAddress}`;
+      const result = await fetch(url).then(r => r.json());
+      if (result.balances) {
+        console.log(status.depositAddress, result.balances);
+      } else {
+        console.error(url, 'failed', result);
+      }
+    }
   } catch (err) {
     // If we should exit with success code, throw a special non-error object
     if (values['exit-success']) {
