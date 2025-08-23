@@ -241,7 +241,7 @@ NETCONFIG=https://devnet.agoric.net/network-config
 # see gov keys sheet
 PLANNER=agoric140yw0u2qrvmrgp33ejpddgnrwpm74vpfpx5v7n
 ,invitePlanner: ,creatorFacet
-	AGORIC_NET=devnet ./scripts/ymax-tool.ts --invitePlanner $(PLANNER)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --pruneStorage --invitePlanner $(PLANNER)
 	touch $@
 	@echo now use planner MNEMONIC: ymax-tool.ts --redeem
 
