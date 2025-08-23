@@ -163,7 +163,7 @@ export const CCTPfromEVM = {
     const target = { axelarId, remoteAddress };
 
     trace('contract paying GMP fee', gmpFee);
-    await ctx.feePayer.send(lca.getAddress(), gmpFee);
+    await ctx.feePayer.send(lca.getAddress(), fixFee(gmpFee));
 
     await sendGMPContractCall(
       target,
@@ -334,7 +334,7 @@ export const AaveProtocol = {
     const target = { axelarId, remoteAddress };
 
     trace('contract paying GMP fee', gmpFee);
-    await ctx.feePayer.send(lca.getAddress(), gmpFee);
+    await ctx.feePayer.send(lca.getAddress(), fixFee(gmpFee));
     // XXX since some of the fee might have been spent,
     // don't bother trying to recover it
 
@@ -368,7 +368,7 @@ export const AaveProtocol = {
     const target = { axelarId, remoteAddress };
 
     trace('contract paying GMP fee', gmpFee);
-    await ctx.feePayer.send(lca.getAddress(), gmpFee);
+    await ctx.feePayer.send(lca.getAddress(), fixFee(gmpFee));
 
     await sendGMPContractCall(
       target,
@@ -420,7 +420,7 @@ export const CompoundProtocol = {
     const target = { axelarId, remoteAddress };
 
     trace('contract paying GMP fee', fee);
-    await ctx.feePayer.send(lca.getAddress(), fee);
+    await ctx.feePayer.send(lca.getAddress(), fixFee(fee));
 
     await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
   },
@@ -443,7 +443,7 @@ export const CompoundProtocol = {
     const target = { axelarId, remoteAddress };
 
     trace('contract paying GMP fee', fee);
-    await ctx.feePayer.send(lca.getAddress(), fee);
+    await ctx.feePayer.send(lca.getAddress(), fixFee(fee));
 
     await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
   },
@@ -490,7 +490,7 @@ export const BeefyProtocol = {
     const target = { axelarId, remoteAddress };
 
     trace('contract paying GMP fee', fee);
-    await ctx.feePayer.send(lca.getAddress(), fee);
+    await ctx.feePayer.send(lca.getAddress(), fixFee(fee));
 
     await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
   },
@@ -516,7 +516,7 @@ export const BeefyProtocol = {
     const target = { axelarId, remoteAddress };
 
     trace('contract paying GMP fee', fee);
-    await ctx.feePayer.send(lca.getAddress(), fee);
+    await ctx.feePayer.send(lca.getAddress(), fixFee(fee));
 
     await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
   },
