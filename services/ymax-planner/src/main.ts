@@ -86,12 +86,15 @@ export const main = async (
     alchemy: config.alchemy,
   });
 
-  await startEngine({
+  const powers = {
     evmCtx,
     rpc,
     spectrum,
     cosmosRest,
     signingSmartWalletKit,
+  };
+  await startEngine(powers, {
+    depositIbcDenom: env.DEPOSIT_IBC_DENOM || 'USDC',
   });
 };
 harden(main);

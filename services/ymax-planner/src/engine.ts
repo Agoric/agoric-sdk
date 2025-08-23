@@ -272,7 +272,7 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
   return harden(results as typeof results & { done: Promise<boolean> });
 };
 
-type IO = {
+type Powers = {
   evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch'>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
@@ -286,6 +286,7 @@ const processPortfolioEvents = async (
   query: SigningSmartWalletKit['query'],
   portfolioKeyForDepositAddr: Map<Bech32Address, string>,
 ) => {
+  await null;
   for (const { path, value: vstorageValue } of portfolioEvents) {
     const streamCell = tryJsonParse(
       vstorageValue,
@@ -319,7 +320,7 @@ const processPortfolioEvents = async (
         }
       }
     }
-    // TODO: Handle portfolio-level path `${VSTORAGE_PATH_PREFIX}.${portfolioKey}` for addition/update of depositAddress.
+    // TODO: Handle portfolio-level path `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}` for addition/update of depositAddress.
   }
 };
 
@@ -407,14 +408,12 @@ export const processPendingTxEvents = async (
   }
 };
 
-export const startEngine = async ({
-  evmCtx,
-  rpc,
-  spectrum,
-  cosmosRest,
-  signingSmartWalletKit,
-}: IO) => {
+export const startEngine = async (
+  { evmCtx, rpc, spectrum, cosmosRest, signingSmartWalletKit }: Powers,
+  { depositIbcDenom }: { depositIbcDenom: string },
+) => {
   await null;
+  const { query, marshaller } = signingSmartWalletKit;
 
   const chainStatus = await rpc.request('status', {});
   console.warn('agoric chain status', chainStatus);
@@ -470,6 +469,18 @@ export const startEngine = async ({
     agoricInfo,
   );
 
+  const vbankAssets = new Map<string, AssetInfo>(
+    await query.readPublished('agoricNames.vbankAsset'),
+  );
+  const depositAsset = depositIbcDenom.startsWith('ibc/')
+    ? vbankAssets.get(depositIbcDenom)
+    : [...vbankAssets.values()].find(
+        assetInfo => assetInfo.issuerName === depositIbcDenom,
+      );
+  if (!depositAsset) {
+    throw Fail`Could not find vbankAsset for ${q(depositIbcDenom)}`;
+  }
+
   // To avoid data gaps, establish subscriptions before gathering initial state.
   const eventFilters = [
     // vstorage events are in BEGIN_BLOCK/END_BLOCK activity
@@ -484,7 +495,6 @@ export const startEngine = async ({
   // console.log('subscribed to events', eventFilters);
 
   // TODO: verify consumption of paginated data.
-  const { query } = signingSmartWalletKit;
   const portfolioKeys = await query.vstorage.keys(PORTFOLIOS_PATH_PREFIX);
   const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
@@ -587,7 +597,6 @@ export const startEngine = async ({
     );
 
     // Detect new portfolios.
-    const { marshaller } = signingSmartWalletKit;
     await processPortfolioEvents(
       portfolioEvents,
       marshaller,
@@ -635,33 +644,23 @@ export const startEngine = async ({
       ),
     );
 
-    const vbankAssets = new Map<string, AssetInfo>(
-      depositAddrsWithActivity.size
-        ? await query.readPublished('agoricNames.vbankAsset')
-        : undefined,
-    );
-
     // Respond to deposits.
     const portfolioOps = await Promise.all(
       [...depositAddrsWithActivity.entries()].map(
         async ([addr, portfolioKey]) => {
-          // TODO: maybe snapshot initial balances for deposit amount determination?
-          // For now, require a single denom and assume that the full amount is a new deposit.
           const balances = addrBalances.get(addr);
-          if (balances?.length !== 1) {
-            console.error(
-              `Unclear which denom to handle for ${addr}`,
-              balances?.map(amount => amount.denom),
-            );
+          const deposited = balances?.find(
+            ({ denom }) => denom === depositAsset.denom,
+          );
+          if (!deposited) {
+            console.warn(`No ${q(depositAsset.issuerName)} at ${addr}`);
             return;
           }
-          const { denom, amount: balanceValue } = balances[0];
 
-          const brand = vbankAssets.get(denom)?.brand as
-            | undefined
-            | Brand<'nat'>;
-          if (!brand) throw Fail`no brand found for denom ${q(denom)}`;
-          const amount = AmountMath.make(brand, Nat(BigInt(balanceValue)));
+          const amount = AmountMath.make(
+            depositAsset.brand as Brand<'nat'>,
+            Nat(BigInt(deposited.amount)),
+          );
 
           const unprefixedPortfolioPath = stripPrefix(
             'published.',
