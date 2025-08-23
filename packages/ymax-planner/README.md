@@ -73,12 +73,12 @@ yarn test
 
 Environment variables:
 
-- `AGORIC_NET`: agoric.net subdomain for requesting URL path `/network-config` to identify `chainName`/`rpcAddrs`/etc. (`main`)
-- `MNEMONIC`: For the private key used to sign transactions
-- `SPECTRUM_API_URL`: URL for the [Spectrum](https://spectrumnodes.com/) API (`https://pools-api.spectrumnodes.com`)
-- `SPECTRUM_API_TIMEOUT`: Milliseconds to wait for each Spectrum request (`10000` = 10 seconds)
-- `SPECTRUM_API_RETRIES`: Retry count for Spectrum requests (`3`)
-- `DOTENV`: Path to environment file containing defaults of above (`.env`)
+- `AGORIC_NET`: agoric.net subdomain for requesting URL path `/network-config` to identify `chainName`/`rpcAddrs`/etc. (default `main`)
+- `MNEMONIC`: For the private key used to sign transactions (required)
+- `SPECTRUM_API_URL`: URL for the [Spectrum](https://spectrumnodes.com/) API (default `https://pools-api.spectrumnodes.com`)
+- `SPECTRUM_API_TIMEOUT`: Milliseconds to wait for each Spectrum request (default `10000` = 10 seconds)
+- `SPECTRUM_API_RETRIES`: Retry count for Spectrum requests (default `3`)
+- `DOTENV`: Path to environment file containing defaults of above (default `.env`)
 
 ## Architecture
 
