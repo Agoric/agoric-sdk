@@ -850,14 +850,15 @@ test('open portfolio with Beefy position', async t => {
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'send' },
     {
       _method: 'localTransfer',
       amounts: { Deposit: { value: 300n } },
     },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'depositForBurn' },
+    { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'exit', _cap: 'seat' },
   ]);

@@ -392,6 +392,7 @@ const stepFlow = async (
 
     const evmCtx: EVMContext = harden({
       addresses: ctx.contracts[chain],
+      feePayer: await ctx.contractAccount,
       lca,
       gmpFee: fee,
       gmpChain: axelar,
@@ -471,16 +472,9 @@ const stepFlow = async (
             dest: { account },
             amount,
             apply: async () => {
-              if (give.GmpFee) {
-                trace('contract paying GmpFee', give.GmpFee);
-                const acct = await ctx.contractAccount;
-                await acct.send(account.getAddress(), give.GmpFee);
-              }
               await ctx.zoeTools.localTransfer(seat, account, amounts);
             },
             recover: async () => {
-              // since some of the fee might have been spent,
-              // don't bother trying to recover it
               await ctx.zoeTools.withdrawToSeat(account, seat, amounts);
             },
           };

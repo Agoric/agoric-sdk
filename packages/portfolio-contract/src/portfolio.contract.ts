@@ -260,7 +260,9 @@ export const contract = async (
   const contractAccountV = zone.makeOnce('contractAccountV', () => makeLCA());
   void vowTools.when(contractAccountV, acct => {
     const addr = acct.getAddress();
-    const capData = marshalData.toCapData({ contractAccount: addr.value });
+    const capData = marshalData.toCapData(
+      harden({ contractAccount: addr.value }),
+    );
     void E(storageNode).setValue(JSON.stringify(capData));
   });
 
