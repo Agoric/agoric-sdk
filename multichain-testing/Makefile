@@ -218,9 +218,9 @@ $(DEPLOY)/dist/portfolio.contract.bundle.js:
 	(cd $(DEPLOY); yarn build)
 
 PUBLISHER=gov2.devnet
-publish-ymax0: ,ymax0-published
+publish-ymax0: ,ymax0-installed
 
-,ymax0-published: $(DEPLOY)/dist/bundle-ymax0.json
+,ymax0-installed: $(DEPLOY)/dist/bundle-ymax0.json
 	agd keys --keyring-backend=test show $(PUBLISHER)
 	AGORIC_NET=devnet ./scripts/install-bundle.ts $< >$@ || rm $@
 
@@ -228,7 +228,7 @@ yctrl-redeploy: ,ymax0-deployed
 
 REASON=
 NETCONFIG=https://devnet.agoric.net/network-config
-,ymax0-deployed: $(DEPLOY)/dist/bundle-ymax0.json ,ymax0-bundle-id ,ymax0-published
+,ymax0-deployed: $(DEPLOY)/dist/bundle-ymax0.json ,ymax0-bundle-id ,ymax0-installed
 	@[ -n "$$MNEMONIC" ] || (echo "ymaxControl MNEMONIC not set; see gov keys sheet"; false)
 	if [ -n "$$REASON" ]; then AGORIC_NET=devnet ./scripts/ymax-tool.ts --terminate "$(REASON)"; else true; fi
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --installAndStart $$(cat ,ymax0-bundle-id)
