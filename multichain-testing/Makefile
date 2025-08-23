@@ -224,11 +224,26 @@ publish-ymax0: ,ymax0-published
 	agd keys --keyring-backend=test show $(PUBLISHER)
 	AGORIC_NET=devnet ./scripts/install-bundle.ts $< >$@ || rm $@
 
+yctrl-redeploy: ,ymax0-deployed
+
 REASON=
-yctrl-redeploy: $(DEPLOY)/dist/bundle-ymax0.json ,ymax0-bundle-id ,ymax0-published
+NETCONFIG=https://devnet.agoric.net/network-config
+,ymax0-deployed: $(DEPLOY)/dist/bundle-ymax0.json ,ymax0-bundle-id ,ymax0-published
 	@[ -n "$$MNEMONIC" ] || (echo "ymaxControl MNEMONIC not set; see gov keys sheet"; false)
 	if [ -n "$$REASON" ]; then AGORIC_NET=devnet ./scripts/ymax-tool.ts --terminate "$(REASON)"; else true; fi
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --installAndStart $$(cat ,ymax0-bundle-id)
+	agoric follow -B $(NETCONFIG) -lF :published.agoricNames.instance >$@ || rm $@
+
+,creatorFacet: ,ymax0-deployed
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --getCreatorFacet
+	touch $@
+
+# see gov keys sheet
+PLANNER=agoric140yw0u2qrvmrgp33ejpddgnrwpm74vpfpx5v7n
+,invitePlanner: ,creatorFacet
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --invitePlanner $(PLANNER)
+	touch $@
+	@echo now use planner MNEMONIC: ymax-tool.ts --redeem
 
 aave-e2e:
 	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
