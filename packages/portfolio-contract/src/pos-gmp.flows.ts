@@ -51,6 +51,12 @@ import type { NatValue } from '@agoric/ertp';
 const trace = makeTracer('GMPF');
 const { keys } = Object;
 
+const fixFee = (lo: DenomAmount, min = 12_000_000n) =>
+  harden({
+    ...lo,
+    value: lo.value > min ? lo.value : min,
+  });
+
 export const provideEVMAccount = async (
   chainName: AxelarChain,
   gmp: {
@@ -72,8 +78,8 @@ export const provideEVMAccount = async (
   const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
 
   const feeAcct = await ctx.contractAccount;
-  trace('contract paying GmpFee', fee);
-  await feeAcct.send(lca.getAddress(), fee);
+  trace('contract paying GmpFee', fixFee(fee));
+  await feeAcct.send(lca.getAddress(), fixFee(fee));
   // XXX since some of the fee might have been spent,
   // don't bother trying to recover it
 
