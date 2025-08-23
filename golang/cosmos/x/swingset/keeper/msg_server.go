@@ -3,7 +3,7 @@ package keeper
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 
@@ -255,19 +255,19 @@ func (keeper msgServer) SendChunk(goCtx context.Context, msg *types.MsgSendChunk
 
 	// Verify the chunk data.
 	ci := bc.Chunks[msg.ChunkIndex]
-	if ci.ChunkSize != uint64(len(msg.ChunkData)) {
+	if ci.SizeBytes != uint64(len(msg.ChunkData)) {
 		return nil, fmt.Errorf("chunk %d size mismatch for chunked artifact id %d", msg.ChunkIndex, msg.ChunkedArtifactId)
 	}
 
-	sha256Hash, err := hex.DecodeString(ci.Hash)
+	sha512Hash, err := hex.DecodeString(ci.Sha512)
 	if err != nil {
-		return nil, fmt.Errorf("chunk %d cannot decode hash %s: %s", msg.ChunkIndex, ci.Hash, err)
+		return nil, fmt.Errorf("chunk %d cannot decode hash %s: %s", msg.ChunkIndex, ci.Sha512, err)
 	}
 
-	hasher := sha256.New()
+	hasher := sha512.New()
 	sum := hasher.Sum(msg.ChunkData)
-	if !bytes.Equal(sum, sha256Hash) {
-		return nil, fmt.Errorf("chunk %d hash mismatch; expected %x, got %x", msg.ChunkIndex, sha256Hash, sum)
+	if !bytes.Equal(sum, sha512Hash) {
+		return nil, fmt.Errorf("chunk %d hash mismatch; expected %x, got %x", msg.ChunkIndex, sha512Hash, sum)
 	}
 
 	// Data is valid, so store it.
@@ -277,46 +277,48 @@ func (keeper msgServer) SendChunk(goCtx context.Context, msg *types.MsgSendChunk
 	ci.State = types.ChunkState_CHUNK_STATE_RECEIVED
 	keeper.SetPendingBundleInstall(ctx, msg.ChunkedArtifactId, inst)
 
-	res, err := keeper.MaybeFinalizeBundle(ctx, msg.ChunkedArtifactId)
+	err = keeper.MaybeFinalizeBundle(ctx, msg.ChunkedArtifactId)
+	if err != nil {
+		return nil, err
+	}
 
 	return &types.MsgSendChunkResponse{
 		ChunkedArtifactId: msg.ChunkedArtifactId,
 		Chunk:             ci,
-		InstallResponse:   res,
 	}, err
 }
 
-func (keeper msgServer) MaybeFinalizeBundle(ctx sdk.Context, chunkedArtifactId uint64) (*types.MsgInstallBundleResponse, error) {
+func (keeper msgServer) MaybeFinalizeBundle(ctx sdk.Context, chunkedArtifactId uint64) error {
 	msg := keeper.GetPendingBundleInstall(ctx, chunkedArtifactId)
 	if msg == nil {
-		return nil, nil
+		return nil
 	}
 
 	// If any chunks are not received, then bail (without error).
 	bc := msg.ChunkedArtifact
-	totalChunkSize := uint64(0)
+	var totalSize uint64
 	for _, chunk := range bc.Chunks {
 		if chunk.State != types.ChunkState_CHUNK_STATE_RECEIVED {
-			return nil, nil
+			return nil
 		}
-		totalChunkSize += chunk.ChunkSize
+		totalSize += chunk.SizeBytes
 	}
 
-	chunkData := make([]byte, 0, totalChunkSize)
+	chunkData := make([]byte, 0, totalSize)
 	for i := range bc.Chunks {
 		bz := keeper.GetPendingChunkData(ctx, chunkedArtifactId, uint64(i))
 		chunkData = append(chunkData, bz...)
 	}
 
 	// Verify the hash of the concatenated chunks.
-	hasher := sha256.New()
+	hasher := sha512.New()
 	sum := hasher.Sum(chunkData)
-	sha256Hash, err := hex.DecodeString(bc.BundleHash)
+	sha512Hash, err := hex.DecodeString(bc.Sha512)
 	if err != nil {
-		return nil, fmt.Errorf("cannot decode hash %s: %s", bc.BundleHash, err)
+		return fmt.Errorf("cannot decode hash %s: %s", bc.Sha512, err)
 	}
-	if !bytes.Equal(sum, sha256Hash) {
-		return nil, fmt.Errorf("bundle hash mismatch; expected %x, got %x", sha256Hash, sum)
+	if !bytes.Equal(sum, sha512Hash) {
+		return fmt.Errorf("bundle hash mismatch; expected %x, got %x", sha512Hash, sum)
 	}
 
 	// Is it compressed or not?
@@ -331,5 +333,6 @@ func (keeper msgServer) MaybeFinalizeBundle(ctx sdk.Context, chunkedArtifactId u
 	keeper.SetPendingBundleInstall(ctx, chunkedArtifactId, nil)
 
 	// Install the bundle now that all the chunks are processed.
-	return keeper.InstallFinishedBundle(ctx, msg)
+	_, err = keeper.InstallFinishedBundle(ctx, msg)
+	return err
 }

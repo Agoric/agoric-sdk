@@ -62,7 +62,7 @@ func (k Querier) Mailbox(c context.Context, req *types.QueryMailboxRequest) (*ty
 	}, nil
 }
 
-func (k Querier) ChunkedArtifact(c context.Context, req *types.QueryChunkedArtifactRequest) (*types.QueryChunkedArtifactResponse, error) {
+func (k Querier) ChunkedArtifactStatus(c context.Context, req *types.QueryChunkedArtifactStatusRequest) (*types.QueryChunkedArtifactStatusResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -73,15 +73,15 @@ func (k Querier) ChunkedArtifact(c context.Context, req *types.QueryChunkedArtif
 		return nil, status.Error(codes.NotFound, "pending chunked artifact not found")
 	}
 
-	pin := k.GetChunkedArtifactNode(ctx, req.ChunkedArtifactId)
-	if pin == nil {
+	can := k.GetChunkedArtifactNode(ctx, req.ChunkedArtifactId)
+	if can == nil {
 		return nil, status.Error(codes.NotFound, "pending chunked artifact node not found")
 	}
 
-	return &types.QueryChunkedArtifactResponse{
+	return &types.QueryChunkedArtifactStatusResponse{
 		ChunkedArtifactId: req.ChunkedArtifactId,
 		ChunkedArtifact:   msg.ChunkedArtifact,
-		StartTime:         pin.StartTime,
-		StartBlock:        pin.StartBlock,
+		StartTimeUnix:     can.StartTimeUnix,
+		StartBlockHeight:  can.StartBlockHeight,
 	}, nil
 }

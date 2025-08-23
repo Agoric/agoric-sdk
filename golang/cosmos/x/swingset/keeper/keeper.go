@@ -534,9 +534,9 @@ func (k Keeper) AddPendingBundleInstall(ctx sdk.Context, msg *types.MsgInstallBu
 
 	// Attach the pending install node to the linked list.
 	node := &types.ChunkedArtifactNode{
-		ChunkedArtifactId:  chunkedArtifactId,
-		StartTime:  ctx.BlockTime().Unix(),
-		StartBlock: ctx.BlockHeight(),
+		ChunkedArtifactId: chunkedArtifactId,
+		StartTimeUnix:     ctx.BlockTime().Unix(),
+		StartBlockHeight:  ctx.BlockHeight(),
 	}
 	store := ctx.KVStore(k.storeKey)
 	key := sdk.Uint64ToBigEndian(chunkedArtifactId)
@@ -567,8 +567,8 @@ func (k Keeper) PruneExpiredBundleInstalls(ctx sdk.Context) {
 		node := &types.ChunkedArtifactNode{}
 		k.cdc.MustUnmarshal(bz, node)
 
-		if deadlineSeconds < 0 || currentSeconds-node.StartTime < deadlineSeconds {
-			if deadlineBlocks < 0 || currentBlocks-node.StartBlock < deadlineBlocks {
+		if deadlineSeconds < 0 || currentSeconds-node.StartTimeUnix < deadlineSeconds {
+			if deadlineBlocks < 0 || currentBlocks-node.StartBlockHeight < deadlineBlocks {
 				// Still alive.  Stop the search.
 				break
 			}

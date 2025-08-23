@@ -3,6 +3,7 @@ package types
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/sha512"
 	"encoding/json"
 	"io"
 	"regexp"
@@ -64,7 +65,6 @@ const (
 	BundleUncompressedSizeLimit uint64 = 10 * 1024 * 1024 // 10MB
 	ChunkSizeLimit              uint64 = 512 * 1024       // 512KB
 	ChunkIndexLimit             uint64 = (BundleUncompressedSizeLimit + ChunkSizeLimit - 1) / ChunkSizeLimit
-	HashSize                    int    = 256 / 8 * 2
 )
 
 // Charge an account address for the beans associated with given messages and storage.
@@ -526,25 +526,25 @@ func (bc ChunkedArtifact) ValidateBasic() error {
 	if uint64(len(bc.Chunks)) >= ChunkIndexLimit {
 		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Number of bundle chunks must be less than %d", ChunkIndexLimit)
 	}
-	if len(bc.BundleHash) != HashSize {
-		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Bundle hash must be %d characters", HashSize)
+	if len(bc.Sha512) != sha512.Size {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Bundle hash must be %d characters", sha512.Size)
 	}
-	if !IsHexBytes(bc.BundleHash) {
+	if !IsHexBytes(bc.Sha512) {
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Bundle hash must be a hex byte string")
 	}
-	if bc.BundleSize <= 0 || bc.BundleSize >= BundleUncompressedSizeLimit {
+	if bc.SizeBytes <= 0 || bc.SizeBytes >= BundleUncompressedSizeLimit {
 		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Bundle size out of range")
 	}
-	totalChunkSize := uint64(0)
+	var totalSize uint64
 	for i, chunk := range bc.Chunks {
-		if chunk.ChunkSize <= 0 || chunk.ChunkSize >= ChunkSizeLimit {
+		if chunk.SizeBytes <= 0 || chunk.SizeBytes >= ChunkSizeLimit {
 			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d size out of range", i)
 		}
-		totalChunkSize += chunk.ChunkSize
-		if len(chunk.Hash) != HashSize {
-			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d hash must be %d characters", i, HashSize)
+		totalSize += chunk.SizeBytes
+		if len(chunk.Sha512) != sha512.Size {
+			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d hash must be %d characters", i, sha512.Size)
 		}
-		if !IsHexBytes(chunk.Hash) {
+		if !IsHexBytes(chunk.Sha512) {
 			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d hash must be a hex byte string", i)
 		}
 		switch chunk.State {
@@ -558,8 +558,8 @@ func (bc ChunkedArtifact) ValidateBasic() error {
 		}
 	}
 
-	if bc.BundleSize != totalChunkSize {
-		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "bundle size %d does not match total chunk sizes %d", bc.BundleSize, totalChunkSize)
+	if bc.SizeBytes != totalSize {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "bundle size %d does not match total chunk sizes %d", bc.SizeBytes, totalSize)
 	}
 	return nil
 }
