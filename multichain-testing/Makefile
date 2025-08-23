@@ -222,7 +222,7 @@ publish-ymax0: ,ymax0-installed
 
 ,ymax0-installed: $(DEPLOY)/dist/bundle-ymax0.json
 	agd keys --keyring-backend=test show $(PUBLISHER)
-	AGORIC_NET=devnet ./scripts/install-bundle.ts $< >$@ || rm $@
+	AGORIC_NET=devnet ./scripts/install-bundle.ts $< >$@ || (rm $@; false)
 
 yctrl-redeploy: ,ymax0-deployed
 
@@ -232,7 +232,7 @@ NETCONFIG=https://devnet.agoric.net/network-config
 	@[ -n "$$MNEMONIC" ] || (echo "ymaxControl MNEMONIC not set; see gov keys sheet"; false)
 	if [ -n "$$REASON" ]; then AGORIC_NET=devnet ./scripts/ymax-tool.ts --terminate "$(REASON)"; else true; fi
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --installAndStart $$(cat ,ymax0-bundle-id)
-	agoric follow -B $(NETCONFIG) -lF :published.agoricNames.instance >$@ || rm $@
+	agoric follow -B $(NETCONFIG) -lF :published.agoricNames.instance >$@ || (rm $@; false)
 
 ,creatorFacet: ,ymax0-deployed
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --getCreatorFacet
@@ -246,7 +246,7 @@ PLANNER=agoric140yw0u2qrvmrgp33ejpddgnrwpm74vpfpx5v7n
 	@echo now use planner MNEMONIC: ymax-tool.ts --redeem
 
 # TODO: get from vstorage
-FEE_ACCT=agoric10h3u50pxa8shne533ppap9atsqyql8qpqn7rw9gzhpn0wcdt4mps8k9q2e
+FEE_ACCT=agoric1rqqy9r0s4ahl8agr89f200gch78hnef3jckf4vntqe4p67rsxegs9qpzjw
 DEV_NODE=https://devnet.rpc.agoric.net:443
 SIG_OPTS=--chain-id=agoricdev-25 --gas-adjustment=1.5 --gas=auto
 fund-fee-acct:
