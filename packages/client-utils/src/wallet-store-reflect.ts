@@ -13,11 +13,11 @@ export const walletUpdates = (
   return harden({
     invocation: async (id: string | number) => {
       const done = (await retryUntilCondition(
-        () => getLastUpdate(),
+        getLastUpdate,
         update =>
           update.updated === 'invocation' &&
           update.id === id &&
-          (!!update.result || !!update.error),
+          !!(update.result || update.error),
         `${id}`,
         retryOpts,
       )) as UpdateRecord & { updated: 'invocation' };
@@ -26,7 +26,7 @@ export const walletUpdates = (
     },
     offerResult: async (id: string | number) => {
       const done = (await retryUntilCondition(
-        () => getLastUpdate(),
+        getLastUpdate,
         update =>
           update.updated === 'offerStatus' &&
           update.status.id === id &&
@@ -51,38 +51,45 @@ export const reflectWalletStore = (
   retryOpts: RetryOptions & {
     log: (...args: any[]) => void;
     setTimeout: typeof globalThis.setTimeout;
+    fresh: () => number | string;
   },
 ) => {
-  let nonce = 0;
-
   const up = walletUpdates(sig.query.getLastUpdate, retryOpts);
 
-  let resultName: string | undefined = undefined;
+  let saveResult: { name: string; overwrite?: boolean } | undefined = undefined;
   const savingResult = async <T>(name: string, thunk: () => Promise<T>) => {
-    assert(!resultName, 'already saving');
-    resultName = name;
+    assert(!saveResult, 'already saving');
+    saveResult = { name, overwrite: true };
     const result = await thunk();
-    resultName = undefined;
+    saveResult = undefined;
     return result;
   };
   let lastTx;
+  const logged = (l, x) => {
+    retryOpts.log(l, x);
+    return x;
+  };
   const makeEntryProxy = (targetName: string) =>
     new Proxy(harden({}), {
       get(_t, method, _rx) {
         assert.typeof(method, 'string');
         if (method === 'then') return undefined;
         const boundMethod = async (...args) => {
-          const id = `${method}.${(nonce += 1)}`;
-          let tx = await sig.invokeEntry({
-            id,
-            targetName,
-            method,
-            args,
-            ...(resultName ? { saveResult: { name: resultName } } : {}),
-          });
+          const id = `${method}.${retryOpts.fresh()}`;
+          let tx = await sig.invokeEntry(
+            logged('invoke', {
+              id,
+              targetName,
+              method,
+              args,
+              ...(saveResult ? { saveResult } : {}),
+            }),
+          );
+          if (tx.result.transaction.code !== 0)
+            throw Error(tx.result.transaction.rawLog);
           lastTx = tx.result.transaction;
           await up.invocation(id);
-          return resultName ? makeEntryProxy(resultName) : undefined;
+          return saveResult ? makeEntryProxy(saveResult.name) : undefined;
         };
         return harden(boundMethod);
       },
@@ -92,7 +99,8 @@ export const reflectWalletStore = (
     { instance, description }: { instance: Instance; description: string },
     name: string = description,
   ) => {
-    const id = `${description}.${(nonce += 1)}`;
+    const id = `${description}.${retryOpts.fresh()}`;
+    // XXX return / expose tx info
     await sig.sendBridgeAction(
       harden({
         method: 'executeOffer',
