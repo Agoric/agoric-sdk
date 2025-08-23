@@ -11,6 +11,7 @@ export * from './sync-tools.js';
 export * from './vstorage-kit.js';
 export * from './vstorage.js';
 export * from './wallet-utils.js';
+export * from './wallet-store-reflect.js';
 
 // Does not use types-index because this is built to a dist folder
 export * from './types.js';
