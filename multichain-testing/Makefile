@@ -245,6 +245,13 @@ PLANNER=agoric140yw0u2qrvmrgp33ejpddgnrwpm74vpfpx5v7n
 	touch $@
 	@echo now use planner MNEMONIC: ymax-tool.ts --redeem
 
+# TODO: get from vstorage
+FEE_ACCT=agoric10h3u50pxa8shne533ppap9atsqyql8qpqn7rw9gzhpn0wcdt4mps8k9q2e
+DEV_NODE=https://devnet.rpc.agoric.net:443
+SIG_OPTS=--chain-id=agoricdev-25 --gas-adjustment=1.5 --gas=auto
+fund-fee-acct:
+	agd tx bank send $(PUBLISHER) $(FEE_ACCT) 15000000ubld -y -b block --node=$(DEV_NODE) $(SIG_OPTS)
+
 aave-e2e:
 	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Aave":0.1}' --target-allocation '{"Aave_Ethereum":100}'
