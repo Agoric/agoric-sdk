@@ -53,6 +53,8 @@ import {
   type ProposalType,
 } from './type-guards.ts';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
+import { makeMarshal } from '@endo/marshal';
+import { Fail } from '@endo/errors';
 
 const trace = makeTracer('PortC');
 const { fromEntries, keys } = Object;
@@ -166,6 +168,8 @@ export const meta: ContractMeta = {
 };
 harden(meta);
 
+const marshalData = makeMarshal(_ => Fail`data only`);
+
 /**
  * Portfolio contract implementation. Creates and manages diversified stablecoin portfolios
  * that can be rebalanced across different yield protocols.
@@ -252,6 +256,14 @@ export const contract = async (
     marshaller,
   })();
 
+  const { makeLCA } = orchestrateAll({ makeLCA: flows.makeLCA }, {});
+  const contractAccountV = zone.makeOnce('contractAccountV', () => makeLCA());
+  void vowTools.when(contractAccountV, acct => {
+    const addr = acct.getAddress();
+    const capData = marshalData.toCapData({ contractAccount: addr.value });
+    void E(storageNode).setValue(JSON.stringify(capData));
+  });
+
   const ctx1 = {
     zoeTools,
     usdc: {
@@ -272,7 +284,8 @@ export const contract = async (
     contracts,
     gmpAddresses,
     cctpClient: resolverClient,
-  };
+    contractAccount: contractAccountV,
+  } as unknown as flows.PortfolioInstanceContext; // XXX hm.
 
   // Create rebalance flow first - needed by preparePortfolioKit
   const { rebalance, rebalanceFromTransfer } = orchestrateAll(

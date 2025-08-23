@@ -79,6 +79,7 @@ export type PortfolioInstanceContext = {
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
   cctpClient: GuestInterface<ResolverKit['client']>;
+  contractAccount: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>;
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
@@ -456,10 +457,7 @@ const stepFlow = async (
     switch (way.how) {
       case 'localTransfer': {
         const { give } = seat.getProposal() as ProposalType['rebalance'];
-        const amounts = harden({
-          Deposit: amount,
-          ...('GmpFee' in give ? { GmpFee: give.GmpFee } : {}),
-        });
+        const amounts = harden({ Deposit: amount });
         todo.push(async () => {
           const { lca, lcaIn } = await provideCosmosAccount(
             orch,
@@ -471,11 +469,18 @@ const stepFlow = async (
             how: 'localTransfer',
             src: { seat, keyword: 'Deposit' },
             dest: { account },
-            amount, // XXX use amounts.Deposit
+            amount,
             apply: async () => {
+              if (give.GmpFee) {
+                trace('contract paying GmpFee', give.GmpFee);
+                const acct = await ctx.contractAccount;
+                await acct.send(account.getAddress(), give.GmpFee);
+              }
               await ctx.zoeTools.localTransfer(seat, account, amounts);
             },
             recover: async () => {
+              // since some of the fee might have been spent,
+              // don't bother trying to recover it
               await ctx.zoeTools.withdrawToSeat(account, seat, amounts);
             },
           };
@@ -813,3 +818,9 @@ export const openPortfolio = (async (
   /* c8 ignore end */
 }) satisfies OrchestrationFlow;
 harden(openPortfolio);
+
+export const makeLCA = (async (orch: Orchestrator) => {
+  const agoricChain = await orch.getChain('agoric');
+  const lca = await agoricChain.makeAccount();
+  return lca;
+}) satisfies OrchestrationFlow;
