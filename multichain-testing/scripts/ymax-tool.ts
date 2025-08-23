@@ -23,6 +23,7 @@ import {
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import type { ContractControl } from '@aglocal/portfolio-deploy/src/contract-control.js';
 import { lookupInterchainInfo } from '@aglocal/portfolio-deploy/src/orch.start.js';
+import { findOutdated } from '@aglocal/portfolio-deploy/src/vstorage-outdated.js';
 import {
   fetchEnvNetworkConfig,
   makeSigningSmartWalletKit,
@@ -83,6 +84,7 @@ const parseToolArgs = (argv: string[]) =>
       terminate: { type: 'string' },
       installAndStart: { type: 'string' },
       invitePlanner: { type: 'string' },
+      pruneStorage: { type: 'boolean', default: false },
       'submit-for': { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
@@ -401,6 +403,13 @@ const main = async (
       privateArgsOverrides: await overridesForEthChainInfo(walletKit),
     });
     return;
+  }
+
+  if (values.pruneStorage) {
+    console.error('finding outdated vstorage...');
+    const toPrune = await findOutdated(walletKit.vstorage);
+    console.log('toPrune', toPrune);
+    await yc.pruneChainStorage(toPrune);
   }
 
   if (values.invitePlanner) {
