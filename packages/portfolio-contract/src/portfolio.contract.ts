@@ -3,7 +3,7 @@
  * @see {@link contract}
  * @see {@link start}
  */
-import type { Payment } from '@agoric/ertp/src/types.js';
+import type { Payment } from '@agoric/ertp';
 import {
   makeTracer,
   mustMatch,
@@ -39,6 +39,7 @@ import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
+import { preparePlanner } from './planner.exo.ts';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import { prepareResolverKit } from './resolver/resolver.exo.js';
@@ -51,6 +52,7 @@ import {
   type OfferArgsFor,
   type ProposalType,
 } from './type-guards.ts';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 
 const trace = makeTracer('PortC');
 const { fromEntries, keys } = Object;
@@ -315,31 +317,6 @@ export const contract = async (
     },
   );
 
-  const makeResolverInvitation = () => {
-    trace('makeResolverInvitation');
-
-    const resolverHandler = (seat: ZCFSeat) => {
-      seat.exit();
-      return harden({ invitationMakers: makeResolverInvitationMakers });
-    };
-
-    return zcf.makeInvitation(resolverHandler, 'resolver', undefined);
-  };
-  const creatorFacet = zone.exo('PortfolioCreator', interfaceTODO, {
-    makeResolverInvitation() {
-      return makeResolverInvitation();
-    },
-    async deliverResolverInvitation(
-      address: string,
-      instancePS: Instance<() => { publicFacet: PostalServiceI }>,
-    ) {
-      const zoe = zcf.getZoeService();
-      const pfP = E(zoe).getPublicFacet(instancePS);
-      const invitation = await makeResolverInvitation();
-      await E(pfP).deliverPayment(address, invitation);
-    },
-  });
-
   const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
     /**
      * Make an invitation to open a new portfolio.
@@ -370,7 +347,88 @@ export const contract = async (
     },
   });
 
-  return { publicFacet, creatorFacet };
+  const makeResolverInvitation = () => {
+    trace('makeResolverInvitation');
+
+    const resolverHandler = (seat: ZCFSeat) => {
+      seat.exit();
+      return harden({ invitationMakers: makeResolverInvitationMakers });
+    };
+
+    return zcf.makeInvitation(resolverHandler, 'resolver', undefined);
+  };
+
+  const getPortfolio = (id: number) => portfolios.get(id);
+  const makePlanner = preparePlanner(zone.subZone('planner'), {
+    zcf,
+    rebalance,
+    getPortfolio,
+    shapes: offerArgsShapes,
+  });
+
+  const makePlannerInvitation = () =>
+    zcf.makeInvitation(seat => {
+      seat.exit();
+      return makePlanner();
+    }, 'planner');
+
+  const creatorFacet = zone.exo(
+    'PortfolioAdmin',
+    M.interface('PortfolioAdmin', {
+      makeResolverInvitation: M.callWhen().returns(InvitationShape),
+      deliverResolverInvitation: M.callWhen(
+        M.string(),
+        M.remotable('Instance'),
+      ).returns(),
+      makePlannerInvitation: M.callWhen().returns(InvitationShape),
+      deliverPlannerInvitation: M.callWhen(
+        M.string(),
+        M.remotable('Instance'),
+      ).returns(),
+    }),
+    {
+      makeResolverInvitation() {
+        return makeResolverInvitation();
+      },
+      async deliverResolverInvitation(
+        address: string,
+        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+      ) {
+        const zoe = zcf.getZoeService();
+        const pfP = E(zoe).getPublicFacet(instancePS);
+        const invitation = await makeResolverInvitation();
+        trace('made resolver invitation', invitation);
+        await E(pfP).deliverPayment(address, invitation);
+        trace('delivered resolver invitation');
+      },
+      makePlannerInvitation() {
+        return makePlannerInvitation();
+      },
+      /**
+       * Make and deliver a planner invitation to the specified address.
+       *
+       * Note: Contract handles delivery due to wallet DSL limitations - see CONTRIBUTING.md
+       * section "Invitation Delivery Limitations in the Wallet Action DSL" for architectural context.
+       *
+       * @param address - Agoric address where to deliver the planner invitation
+       * @param instancePS - Postal service instance for delivery
+       */
+      async deliverPlannerInvitation(
+        address: string,
+        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+      ) {
+        trace('deliverPlannerInvitation', address, instancePS);
+        const zoe = zcf.getZoeService();
+        const pfP = E(zoe).getPublicFacet(instancePS);
+        const invitation = await makePlannerInvitation();
+        trace('made planner invitation', invitation);
+        await E(pfP).deliverPayment(address, invitation);
+        trace('delivered planner invitation');
+      },
+    },
+  );
+
+  return { creatorFacet, publicFacet };
 };
 harden(contract);
 
