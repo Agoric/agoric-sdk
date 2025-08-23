@@ -10,6 +10,7 @@ import (
 	"io"
 	"strings"
 
+	storetypes "cosmossdk.io/store/types"
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
@@ -204,7 +205,7 @@ func ExportGenesis(
 type swingStoreGenesisEventHandler struct {
 	exportDir      string
 	snapshotHeight uint64
-	swingStore     sdk.KVStore
+	swingStore     storetypes.KVStore
 	hasher         hash.Hash
 	exportMode     string
 }

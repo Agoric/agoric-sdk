@@ -1,165 +1,183 @@
 //@ts-nocheck
-import * as _130 from './applications/interchain_accounts/controller/v1/controller.js';
-import * as _131 from './applications/interchain_accounts/controller/v1/query.js';
-import * as _132 from './applications/interchain_accounts/controller/v1/tx.js';
-import * as _133 from './applications/interchain_accounts/genesis/v1/genesis.js';
-import * as _134 from './applications/interchain_accounts/host/v1/host.js';
-import * as _135 from './applications/interchain_accounts/host/v1/query.js';
-import * as _136 from './applications/interchain_accounts/host/v1/tx.js';
-import * as _137 from './applications/interchain_accounts/v1/account.js';
-import * as _138 from './applications/interchain_accounts/v1/metadata.js';
-import * as _139 from './applications/interchain_accounts/v1/packet.js';
-import * as _140 from './applications/transfer/v1/authz.js';
-import * as _141 from './applications/transfer/v1/genesis.js';
-import * as _142 from './applications/transfer/v1/query.js';
-import * as _143 from './applications/transfer/v1/transfer.js';
-import * as _144 from './applications/transfer/v1/tx.js';
-import * as _145 from './applications/transfer/v2/packet.js';
-import * as _146 from './core/channel/v1/channel.js';
-import * as _147 from './core/channel/v1/genesis.js';
-import * as _148 from './core/channel/v1/query.js';
-import * as _149 from './core/channel/v1/tx.js';
-import * as _150 from './core/client/v1/client.js';
-import * as _151 from './core/client/v1/genesis.js';
-import * as _152 from './core/client/v1/query.js';
-import * as _153 from './core/client/v1/tx.js';
-import * as _154 from './core/commitment/v1/commitment.js';
-import * as _155 from './core/connection/v1/connection.js';
-import * as _156 from './core/connection/v1/genesis.js';
-import * as _157 from './core/connection/v1/query.js';
-import * as _158 from './core/connection/v1/tx.js';
-import * as _159 from './lightclients/localhost/v1/localhost.js';
-import * as _160 from './lightclients/localhost/v2/localhost.js';
-import * as _161 from './lightclients/solomachine/v1/solomachine.js';
-import * as _162 from './lightclients/solomachine/v2/solomachine.js';
-import * as _163 from './lightclients/solomachine/v3/solomachine.js';
-import * as _164 from './lightclients/tendermint/v1/tendermint.js';
-import * as _249 from './applications/interchain_accounts/controller/v1/query.rpc.Query.js';
-import * as _250 from './applications/interchain_accounts/host/v1/query.rpc.Query.js';
-import * as _251 from './applications/transfer/v1/query.rpc.Query.js';
-import * as _252 from './core/channel/v1/query.rpc.Query.js';
-import * as _253 from './core/client/v1/query.rpc.Query.js';
-import * as _254 from './core/connection/v1/query.rpc.Query.js';
-import * as _255 from './applications/interchain_accounts/controller/v1/tx.rpc.msg.js';
-import * as _256 from './applications/interchain_accounts/host/v1/tx.rpc.msg.js';
-import * as _257 from './applications/transfer/v1/tx.rpc.msg.js';
-import * as _258 from './core/channel/v1/tx.rpc.msg.js';
-import * as _259 from './core/client/v1/tx.rpc.msg.js';
-import * as _260 from './core/connection/v1/tx.rpc.msg.js';
-import * as _279 from './rpc.query.js';
-import * as _280 from './rpc.tx.js';
+import * as _140 from './applications/interchain_accounts/controller/v1/controller.js';
+import * as _141 from './applications/interchain_accounts/controller/v1/query.js';
+import * as _142 from './applications/interchain_accounts/controller/v1/tx.js';
+import * as _143 from './applications/interchain_accounts/genesis/v1/genesis.js';
+import * as _144 from './applications/interchain_accounts/host/v1/host.js';
+import * as _145 from './applications/interchain_accounts/host/v1/query.js';
+import * as _146 from './applications/interchain_accounts/host/v1/tx.js';
+import * as _147 from './applications/interchain_accounts/v1/account.js';
+import * as _148 from './applications/interchain_accounts/v1/metadata.js';
+import * as _149 from './applications/interchain_accounts/v1/packet.js';
+import * as _150 from './applications/transfer/v1/authz.js';
+import * as _151 from './applications/transfer/v1/genesis.js';
+import * as _152 from './applications/transfer/v1/query.js';
+import * as _153 from './applications/transfer/v1/transfer.js';
+import * as _154 from './applications/transfer/v1/tx.js';
+import * as _155 from './applications/transfer/v2/packet.js';
+import * as _156 from './core/channel/v1/channel.js';
+import * as _157 from './core/channel/v1/genesis.js';
+import * as _158 from './core/channel/v1/query.js';
+import * as _159 from './core/channel/v1/tx.js';
+import * as _160 from './core/channel/v1/upgrade.js';
+import * as _161 from './core/client/v1/client.js';
+import * as _162 from './core/client/v1/genesis.js';
+import * as _163 from './core/client/v1/query.js';
+import * as _164 from './core/client/v1/tx.js';
+import * as _165 from './core/commitment/v1/commitment.js';
+import * as _166 from './core/connection/v1/connection.js';
+import * as _167 from './core/connection/v1/genesis.js';
+import * as _168 from './core/connection/v1/query.js';
+import * as _169 from './core/connection/v1/tx.js';
+import * as _170 from './lightclients/localhost/v1/localhost.js';
+import * as _171 from './lightclients/localhost/v2/localhost.js';
+import * as _172 from './lightclients/solomachine/v1/solomachine.js';
+import * as _173 from './lightclients/solomachine/v2/solomachine.js';
+import * as _174 from './lightclients/solomachine/v3/solomachine.js';
+import * as _175 from './lightclients/tendermint/v1/tendermint.js';
+import * as _176 from './lightclients/wasm/v1/genesis.js';
+import * as _177 from './lightclients/wasm/v1/query.js';
+import * as _178 from './lightclients/wasm/v1/tx.js';
+import * as _179 from './lightclients/wasm/v1/wasm.js';
+import * as _266 from './applications/interchain_accounts/controller/v1/query.rpc.Query.js';
+import * as _267 from './applications/interchain_accounts/host/v1/query.rpc.Query.js';
+import * as _268 from './applications/transfer/v1/query.rpc.Query.js';
+import * as _269 from './core/channel/v1/query.rpc.Query.js';
+import * as _270 from './core/client/v1/query.rpc.Query.js';
+import * as _271 from './core/connection/v1/query.rpc.Query.js';
+import * as _272 from './lightclients/wasm/v1/query.rpc.Query.js';
+import * as _273 from './applications/interchain_accounts/controller/v1/tx.rpc.msg.js';
+import * as _274 from './applications/interchain_accounts/host/v1/tx.rpc.msg.js';
+import * as _275 from './applications/transfer/v1/tx.rpc.msg.js';
+import * as _276 from './core/channel/v1/tx.rpc.msg.js';
+import * as _277 from './core/client/v1/tx.rpc.msg.js';
+import * as _278 from './core/connection/v1/tx.rpc.msg.js';
+import * as _279 from './lightclients/wasm/v1/tx.rpc.msg.js';
+import * as _298 from './rpc.query.js';
+import * as _299 from './rpc.tx.js';
 export namespace ibc {
   export namespace applications {
     export namespace interchain_accounts {
       export namespace controller {
         export const v1 = {
-          ..._130,
-          ..._131,
-          ..._132,
-          ..._249,
-          ..._255,
+          ..._140,
+          ..._141,
+          ..._142,
+          ..._266,
+          ..._273,
         };
       }
       export namespace genesis {
         export const v1 = {
-          ..._133,
+          ..._143,
         };
       }
       export namespace host {
         export const v1 = {
-          ..._134,
-          ..._135,
-          ..._136,
-          ..._250,
-          ..._256,
+          ..._144,
+          ..._145,
+          ..._146,
+          ..._267,
+          ..._274,
         };
       }
       export const v1 = {
-        ..._137,
-        ..._138,
-        ..._139,
+        ..._147,
+        ..._148,
+        ..._149,
       };
     }
     export namespace transfer {
       export const v1 = {
-        ..._140,
-        ..._141,
-        ..._142,
-        ..._143,
-        ..._144,
-        ..._251,
-        ..._257,
+        ..._150,
+        ..._151,
+        ..._152,
+        ..._153,
+        ..._154,
+        ..._268,
+        ..._275,
       };
       export const v2 = {
-        ..._145,
+        ..._155,
       };
     }
   }
   export namespace core {
     export namespace channel {
       export const v1 = {
-        ..._146,
-        ..._147,
-        ..._148,
-        ..._149,
-        ..._252,
-        ..._258,
+        ..._156,
+        ..._157,
+        ..._158,
+        ..._159,
+        ..._160,
+        ..._269,
+        ..._276,
       };
     }
     export namespace client {
       export const v1 = {
-        ..._150,
-        ..._151,
-        ..._152,
-        ..._153,
-        ..._253,
-        ..._259,
+        ..._161,
+        ..._162,
+        ..._163,
+        ..._164,
+        ..._270,
+        ..._277,
       };
     }
     export namespace commitment {
       export const v1 = {
-        ..._154,
+        ..._165,
       };
     }
     export namespace connection {
       export const v1 = {
-        ..._155,
-        ..._156,
-        ..._157,
-        ..._158,
-        ..._254,
-        ..._260,
+        ..._166,
+        ..._167,
+        ..._168,
+        ..._169,
+        ..._271,
+        ..._278,
       };
     }
   }
   export namespace lightclients {
     export namespace localhost {
       export const v1 = {
-        ..._159,
+        ..._170,
       };
       export const v2 = {
-        ..._160,
+        ..._171,
       };
     }
     export namespace solomachine {
       export const v1 = {
-        ..._161,
+        ..._172,
       };
       export const v2 = {
-        ..._162,
+        ..._173,
       };
       export const v3 = {
-        ..._163,
+        ..._174,
       };
     }
     export namespace tendermint {
       export const v1 = {
-        ..._164,
+        ..._175,
+      };
+    }
+    export namespace wasm {
+      export const v1 = {
+        ..._176,
+        ..._177,
+        ..._178,
+        ..._179,
+        ..._272,
+        ..._279,
       };
     }
   }
   export const ClientFactory = {
-    ..._279,
-    ..._280,
+    ..._298,
+    ..._299,
   };
 }

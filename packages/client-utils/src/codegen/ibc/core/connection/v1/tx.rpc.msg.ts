@@ -10,6 +10,8 @@ import {
   MsgConnectionOpenAckResponse,
   MsgConnectionOpenConfirm,
   MsgConnectionOpenConfirmResponse,
+  MsgUpdateParams,
+  MsgUpdateParamsResponse,
 } from './tx.js';
 /** Msg defines the ibc/connection Msg service. */
 export interface Msg {
@@ -32,6 +34,13 @@ export interface Msg {
   connectionOpenConfirm(
     request: MsgConnectionOpenConfirm,
   ): Promise<MsgConnectionOpenConfirmResponse>;
+  /**
+   * UpdateConnectionParams defines a rpc handler method for
+   * MsgUpdateParams.
+   */
+  updateConnectionParams(
+    request: MsgUpdateParams,
+  ): Promise<MsgUpdateParamsResponse>;
 }
 export class MsgClientImpl implements Msg {
   private readonly rpc: Rpc;
@@ -41,6 +50,7 @@ export class MsgClientImpl implements Msg {
     this.connectionOpenTry = this.connectionOpenTry.bind(this);
     this.connectionOpenAck = this.connectionOpenAck.bind(this);
     this.connectionOpenConfirm = this.connectionOpenConfirm.bind(this);
+    this.updateConnectionParams = this.updateConnectionParams.bind(this);
   }
   connectionOpenInit(
     request: MsgConnectionOpenInit,
@@ -92,6 +102,19 @@ export class MsgClientImpl implements Msg {
     );
     return promise.then(data =>
       MsgConnectionOpenConfirmResponse.decode(new BinaryReader(data)),
+    );
+  }
+  updateConnectionParams(
+    request: MsgUpdateParams,
+  ): Promise<MsgUpdateParamsResponse> {
+    const data = MsgUpdateParams.encode(request).finish();
+    const promise = this.rpc.request(
+      'ibc.core.connection.v1.Msg',
+      'UpdateConnectionParams',
+      data,
+    );
+    return promise.then(data =>
+      MsgUpdateParamsResponse.decode(new BinaryReader(data)),
     );
   }
 }

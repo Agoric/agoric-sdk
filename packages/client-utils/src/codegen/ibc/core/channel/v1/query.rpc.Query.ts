@@ -29,6 +29,14 @@ import {
   QueryUnreceivedAcksResponse,
   QueryNextSequenceReceiveRequest,
   QueryNextSequenceReceiveResponse,
+  QueryNextSequenceSendRequest,
+  QueryNextSequenceSendResponse,
+  QueryUpgradeErrorRequest,
+  QueryUpgradeErrorResponse,
+  QueryUpgradeRequest,
+  QueryUpgradeResponse,
+  QueryChannelParamsRequest,
+  QueryChannelParamsResponse,
 } from './query.js';
 /** Query provides defines the gRPC querier service */
 export interface Query {
@@ -104,6 +112,20 @@ export interface Query {
   nextSequenceReceive(
     request: QueryNextSequenceReceiveRequest,
   ): Promise<QueryNextSequenceReceiveResponse>;
+  /** NextSequenceSend returns the next send sequence for a given channel. */
+  nextSequenceSend(
+    request: QueryNextSequenceSendRequest,
+  ): Promise<QueryNextSequenceSendResponse>;
+  /** UpgradeError returns the error receipt if the upgrade handshake failed. */
+  upgradeError(
+    request: QueryUpgradeErrorRequest,
+  ): Promise<QueryUpgradeErrorResponse>;
+  /** Upgrade returns the upgrade for a given port and channel id. */
+  upgrade(request: QueryUpgradeRequest): Promise<QueryUpgradeResponse>;
+  /** ChannelParams queries all parameters of the ibc channel submodule. */
+  channelParams(
+    request?: QueryChannelParamsRequest,
+  ): Promise<QueryChannelParamsResponse>;
 }
 export class QueryClientImpl implements Query {
   private readonly rpc: Rpc;
@@ -122,6 +144,10 @@ export class QueryClientImpl implements Query {
     this.unreceivedPackets = this.unreceivedPackets.bind(this);
     this.unreceivedAcks = this.unreceivedAcks.bind(this);
     this.nextSequenceReceive = this.nextSequenceReceive.bind(this);
+    this.nextSequenceSend = this.nextSequenceSend.bind(this);
+    this.upgradeError = this.upgradeError.bind(this);
+    this.upgrade = this.upgrade.bind(this);
+    this.channelParams = this.channelParams.bind(this);
   }
   channel(request: QueryChannelRequest): Promise<QueryChannelResponse> {
     const data = QueryChannelRequest.encode(request).finish();
@@ -292,6 +318,56 @@ export class QueryClientImpl implements Query {
       QueryNextSequenceReceiveResponse.decode(new BinaryReader(data)),
     );
   }
+  nextSequenceSend(
+    request: QueryNextSequenceSendRequest,
+  ): Promise<QueryNextSequenceSendResponse> {
+    const data = QueryNextSequenceSendRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      'ibc.core.channel.v1.Query',
+      'NextSequenceSend',
+      data,
+    );
+    return promise.then(data =>
+      QueryNextSequenceSendResponse.decode(new BinaryReader(data)),
+    );
+  }
+  upgradeError(
+    request: QueryUpgradeErrorRequest,
+  ): Promise<QueryUpgradeErrorResponse> {
+    const data = QueryUpgradeErrorRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      'ibc.core.channel.v1.Query',
+      'UpgradeError',
+      data,
+    );
+    return promise.then(data =>
+      QueryUpgradeErrorResponse.decode(new BinaryReader(data)),
+    );
+  }
+  upgrade(request: QueryUpgradeRequest): Promise<QueryUpgradeResponse> {
+    const data = QueryUpgradeRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      'ibc.core.channel.v1.Query',
+      'Upgrade',
+      data,
+    );
+    return promise.then(data =>
+      QueryUpgradeResponse.decode(new BinaryReader(data)),
+    );
+  }
+  channelParams(
+    request: QueryChannelParamsRequest = {},
+  ): Promise<QueryChannelParamsResponse> {
+    const data = QueryChannelParamsRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      'ibc.core.channel.v1.Query',
+      'ChannelParams',
+      data,
+    );
+    return promise.then(data =>
+      QueryChannelParamsResponse.decode(new BinaryReader(data)),
+    );
+  }
 }
 export const createRpcQueryExtension = (base: QueryClient) => {
   const rpc = createProtobufRpcClient(base);
@@ -357,6 +433,24 @@ export const createRpcQueryExtension = (base: QueryClient) => {
       request: QueryNextSequenceReceiveRequest,
     ): Promise<QueryNextSequenceReceiveResponse> {
       return queryService.nextSequenceReceive(request);
+    },
+    nextSequenceSend(
+      request: QueryNextSequenceSendRequest,
+    ): Promise<QueryNextSequenceSendResponse> {
+      return queryService.nextSequenceSend(request);
+    },
+    upgradeError(
+      request: QueryUpgradeErrorRequest,
+    ): Promise<QueryUpgradeErrorResponse> {
+      return queryService.upgradeError(request);
+    },
+    upgrade(request: QueryUpgradeRequest): Promise<QueryUpgradeResponse> {
+      return queryService.upgrade(request);
+    },
+    channelParams(
+      request?: QueryChannelParamsRequest,
+    ): Promise<QueryChannelParamsResponse> {
+      return queryService.channelParams(request);
     },
   };
 };

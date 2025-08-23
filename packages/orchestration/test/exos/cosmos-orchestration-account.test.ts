@@ -464,6 +464,7 @@ test('getBalance and getBalances', async t => {
       buildQueryPacketString([
         QueryAllBalancesRequest.toProtoMsg({
           address,
+          resolveDenom: false,
         }),
       ]);
     const makeBalanceResp = (
