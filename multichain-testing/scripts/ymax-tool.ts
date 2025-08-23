@@ -350,7 +350,11 @@ const main = async (
     MNEMONIC,
   );
   trace('address', sig.address);
-  const walletStore = reflectWalletStore(sig, { setTimeout, log: trace });
+  const walletStore = reflectWalletStore(sig, {
+    setTimeout,
+    log: trace,
+    fresh: () => new Date(now()).toISOString(),
+  });
 
   if (values.redeem) {
     const { contract, description } = values;
