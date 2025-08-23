@@ -85,12 +85,15 @@ export const main = async (
     net: env.AGORIC_NET === 'mainnet' ? 'mainnet' : 'testnet',
   });
 
-  await startEngine({
+  const powers = {
     evmCtx,
     rpc,
     spectrum,
     cosmosRest,
     signingSmartWalletKit,
+  };
+  await startEngine(powers, {
+    depositIbcDenom: env.DEPOSIT_IBC_DENOM || 'USDC',
   });
 };
 harden(main);
