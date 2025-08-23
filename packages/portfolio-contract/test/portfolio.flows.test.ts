@@ -291,6 +291,7 @@ const mocks = (
     cctpClient: cctpClient as unknown as GuestInterface<
       PortfolioInstanceContext['cctpClient']
     >,
+    contractAccount: orch.getChain('agoric').then(ch => ch.makeAccount()),
   };
 
   const chainHubTools = harden({
@@ -439,7 +440,7 @@ test('open portfolio with USDN position', async t => {
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11042' },
+    { _method: 'executeEncodedTx', _cap: 'noble11056' },
     { _method: 'exit' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -510,12 +511,10 @@ test('open portfolio with Aave position', async t => {
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
+    { _method: 'send', amount: { value: 150n } },
     {
       _method: 'localTransfer',
-      amounts: {
-        Deposit: { value: 300n },
-        GmpFee: { value: 150n },
-      },
+      amounts: { Deposit: { value: 300n } },
     },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
@@ -554,7 +553,8 @@ test('open portfolio with Compound position', async t => {
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'localTransfer', amounts: { GmpFee: { value: 400n } } },
+    { _method: 'send', amount: { value: 400n } },
+    { _method: 'localTransfer', amounts: { Deposit: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'depositForBurn' },
@@ -629,7 +629,7 @@ test('handle failure in executeEncodedTx', async t => {
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11042' }, // fail
+    { _method: 'executeEncodedTx', _cap: 'noble11056' }, // fail
     { _method: 'transfer', address: { chainId: 'agoric-6' } }, // unwind
     { _method: 'withdrawToSeat' }, // unwind
     { _method: 'fail' },
@@ -663,7 +663,7 @@ test('handle failure in recovery from executeEncodedTx', async t => {
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11042' }, // fail
+    { _method: 'executeEncodedTx', _cap: 'noble11056' }, // fail
     { _method: 'transfer', address: { chainId: 'agoric-6' } }, // fail to recover
     { _method: 'fail' },
   ]);
@@ -852,14 +852,13 @@ test('open portfolio with Beefy position', async t => {
     { _method: 'monitorTransfers' },
     {
       _method: 'localTransfer',
-      amounts: {
-        Deposit: { value: 300n },
-        GmpFee: { value: 150n },
-      },
+      amounts: { Deposit: { value: 300n } },
     },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'depositForBurn' },
+    { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
@@ -867,7 +866,7 @@ test('open portfolio with Beefy position', async t => {
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
 
-  const rawMemo = log[5].opts.memo;
+  const rawMemo = log[6].opts.memo;
   const decodedCalls = decodeFunctionCall(rawMemo, [
     'approve(address,uint256)',
     'deposit(uint256)',
@@ -899,10 +898,10 @@ test('Engine can move deposits +agoric -> @agoric', async t => {
   t.log(log.map(msg => msg._method).join(', '));
 
   const lca = kit.reader.getLocalAccount();
-  t.is(lca.getAddress().value, 'agoric11014');
+  t.is(lca.getAddress().value, 'agoric11028');
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'send', toAccount: { value: 'agoric11014' } },
+    { _method: 'send', toAccount: { value: 'agoric11028' } },
   ]);
 
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details

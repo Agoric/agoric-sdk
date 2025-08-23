@@ -16,6 +16,7 @@ import type {
   Bech32Address,
   Chain,
   DenomAmount,
+  OrchestrationAccount,
 } from '@agoric/orchestration';
 import {
   AxelarGMPMessageType,
@@ -50,6 +51,12 @@ import type { NatValue } from '@agoric/ertp';
 const trace = makeTracer('GMPF');
 const { keys } = Object;
 
+const fixFee = (lo: DenomAmount, min = 12_000_000n) =>
+  harden({
+    ...lo,
+    value: lo.value > min ? lo.value : min,
+  });
+
 export const provideEVMAccount = async (
   chainName: AxelarChain,
   gmp: {
@@ -69,9 +76,16 @@ export const provideEVMAccount = async (
   const axelarId = gmp.axelarIds[chainName];
   const target = { axelarId, remoteAddress: ctx.contracts[chainName].factory };
   const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
+
+  const feeAcct = await ctx.contractAccount;
+  trace('contract paying account fee', fixFee(fee));
+  await feeAcct.send(lca.getAddress(), fixFee(fee));
+  // XXX since some of the fee might have been spent,
+  // don't bother trying to recover it
+
   await sendMakeAccountCall(
     target,
-    fee,
+    fixFee(fee),
     lca,
     gmp.chain,
     ctx.gmpAddresses,
@@ -147,6 +161,9 @@ export const CCTPfromEVM = {
 
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
+
+    trace('contract paying CCTPfromEVM fee', fixFee(gmpFee));
+    await ctx.feePayer.send(lca.getAddress(), fixFee(gmpFee));
 
     await sendGMPContractCall(
       target,
@@ -267,6 +284,7 @@ export const sendGMPContractCall = async (
 };
 
 export type EVMContext = {
+  feePayer: LocalAccount;
   lca: LocalAccount;
   gmpFee: DenomAmount;
   gmpChain: Chain<{ chainId: string }>;
@@ -314,10 +332,17 @@ export const AaveProtocol = {
 
     const axelarId = ctx.axelarIds[src.chainName];
     const target = { axelarId, remoteAddress };
+
+    trace('contract paying AaveProtocol supply fee', fixFee(gmpFee));
+    await ctx.feePayer.send(lca.getAddress(), fixFee(gmpFee));
+    // XXX since some of the fee might have been spent,
+    // don't bother trying to recover it
+
+    // XXX pass the whole ctx in?
     await sendGMPContractCall(
       target,
       calls,
-      gmpFee,
+      fixFee(gmpFee),
       lca,
       gmpChain,
       gmpAddresses,
@@ -341,10 +366,14 @@ export const AaveProtocol = {
 
     const axelarId = ctx.axelarIds[dest.chainName];
     const target = { axelarId, remoteAddress };
+
+    trace('contract paying Aave withdraw fee', fixFee(gmpFee));
+    await ctx.feePayer.send(lca.getAddress(), fixFee(gmpFee));
+
     await sendGMPContractCall(
       target,
       calls,
-      gmpFee,
+      fixFee(gmpFee),
       lca,
       gmpChain,
       gmpAddresses,
@@ -389,6 +418,10 @@ export const CompoundProtocol = {
     const { chainName, remoteAddress } = src;
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
+
+    trace('contract paying CompoundProtocol supply fee', fixFee(fee));
+    await ctx.feePayer.send(lca.getAddress(), fixFee(fee));
+
     await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
   },
   withdraw: async (ctx, amount, dest, claim) => {
@@ -408,6 +441,10 @@ export const CompoundProtocol = {
     const { chainName, remoteAddress } = dest;
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
+
+    trace('contract paying CompoundProtocol withdraw fee', fee);
+    await ctx.feePayer.send(lca.getAddress(), fixFee(fee));
+
     await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
   },
 } as const satisfies ProtocolDetail<'Compound', AxelarChain, EVMContext>;
@@ -451,6 +488,9 @@ export const BeefyProtocol = {
     const { chainName, remoteAddress } = src;
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
+
+    // TODO await ctx.feePayer.send(lca.getAddress(), fixFee(fee));
+
     await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
   },
   withdraw: async (ctx, amount, dest) => {
@@ -473,6 +513,9 @@ export const BeefyProtocol = {
     const { chainName, remoteAddress } = dest;
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
+
+    // TODO await ctx.feePayer.send(lca.getAddress(), fixFee(fee));
+
     await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
   },
 } as const satisfies ProtocolDetail<

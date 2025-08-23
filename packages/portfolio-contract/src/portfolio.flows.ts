@@ -79,6 +79,7 @@ export type PortfolioInstanceContext = {
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
   cctpClient: GuestInterface<ResolverKit['client']>;
+  contractAccount: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>;
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
@@ -391,6 +392,7 @@ const stepFlow = async (
 
     const evmCtx: EVMContext = harden({
       addresses: ctx.contracts[chain],
+      feePayer: await ctx.contractAccount,
       lca,
       gmpFee: fee,
       gmpChain: axelar,
@@ -456,10 +458,7 @@ const stepFlow = async (
     switch (way.how) {
       case 'localTransfer': {
         const { give } = seat.getProposal() as ProposalType['rebalance'];
-        const amounts = harden({
-          Deposit: amount,
-          ...('GmpFee' in give ? { GmpFee: give.GmpFee } : {}),
-        });
+        const amounts = harden({ Deposit: amount });
         todo.push(async () => {
           const { lca, lcaIn } = await provideCosmosAccount(
             orch,
@@ -471,7 +470,7 @@ const stepFlow = async (
             how: 'localTransfer',
             src: { seat, keyword: 'Deposit' },
             dest: { account },
-            amount, // XXX use amounts.Deposit
+            amount,
             apply: async () => {
               await ctx.zoeTools.localTransfer(seat, account, amounts);
             },
@@ -813,3 +812,9 @@ export const openPortfolio = (async (
   /* c8 ignore end */
 }) satisfies OrchestrationFlow;
 harden(openPortfolio);
+
+export const makeLCA = (async (orch: Orchestrator) => {
+  const agoricChain = await orch.getChain('agoric');
+  const lca = await agoricChain.makeAccount();
+  return lca;
+}) satisfies OrchestrationFlow;
