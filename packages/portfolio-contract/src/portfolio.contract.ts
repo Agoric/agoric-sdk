@@ -247,6 +247,16 @@ export const contract = async (
     vowTools,
     pendingTxsNode: E(storageNode).makeChildNode(PENDING_TXS_NODE_KEY),
     marshaller,
+  })();
+
+  const { makeLCA } = orchestrateAll({ makeLCA: flows.makeLCA }, {});
+  const contractAccountV = zone.makeOnce('contractAccountV', () => makeLCA());
+  void vowTools.when(contractAccountV, acct => {
+    const addr = acct.getAddress();
+    const capData = marshalData.toCapData(
+      harden({ contractAccount: addr.value }),
+    );
+    void E(storageNode).setValue(JSON.stringify(capData));
   });
   const {
     client: resolverClient,

@@ -391,6 +391,7 @@ const stepFlow = async (
 
     const evmCtx: EVMContext = harden({
       addresses: ctx.contracts[chain],
+      feePayer: await ctx.contractAccount,
       lca,
       gmpFee: fee,
       gmpChain: axelar,

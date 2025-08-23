@@ -17,6 +17,7 @@ import type {
   Bech32Address,
   Chain,
   DenomAmount,
+  OrchestrationAccount,
 } from '@agoric/orchestration';
 import {
   AxelarGMPMessageType,
@@ -71,6 +72,13 @@ export const provideEVMAccount = async (
   const axelarId = gmp.axelarIds[chainName];
   const target = { axelarId, remoteAddress: ctx.contracts[chainName].factory };
   const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
+
+  const feeAcct = await ctx.contractAccount;
+  trace('contract paying GmpFee', fee);
+  await feeAcct.send(lca.getAddress(), fee);
+  // XXX since some of the fee might have been spent,
+  // don't bother trying to recover it
+
   await sendMakeAccountCall(
     target,
     fee,
@@ -146,7 +154,20 @@ export const CCTPfromEVM = {
     tm.depositForBurn(amount.value, nobleDomain, mintRecipient, a.usdc);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, src, calls);
+    const axelarId = ctx.axelarIds[chainName];
+    const target = { axelarId, remoteAddress };
+
+    trace('contract paying GMP fee', gmpFee);
+    await ctx.feePayer.send(lca.getAddress(), gmpFee);
+
+    await sendGMPContractCall(
+      target,
+      calls,
+      gmpFee,
+      lca,
+      gmpChain,
+      gmpAddresses,
+    );
   },
   recover: async (ctx, amount, src, dest) => {
     return CCTP.apply(ctx, amount, dest, src);
@@ -279,6 +300,7 @@ export const sendGMPContractCall = async (
 };
 
 export type EVMContext = {
+  feePayer: LocalAccount;
   lca: LocalAccount;
   gmpFee: DenomAmount;
   gmpChain: Chain<{ chainId: string }>;
@@ -325,7 +347,23 @@ export const AaveProtocol = {
     aave.supply(a.usdc, amount.value, remoteAddress, 0);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, src, calls);
+    const axelarId = ctx.axelarIds[src.chainName];
+    const target = { axelarId, remoteAddress };
+
+    trace('contract paying GMP fee', gmpFee);
+    await ctx.feePayer.send(lca.getAddress(), gmpFee);
+    // XXX since some of the fee might have been spent,
+    // don't bother trying to recover it
+
+    // XXX pass the whole ctx in?
+    await sendGMPContractCall(
+      target,
+      calls,
+      gmpFee,
+      lca,
+      gmpChain,
+      gmpAddresses,
+    );
   },
   withdraw: async (ctx, amount, dest, claim) => {
     const { remoteAddress } = dest;
@@ -343,7 +381,20 @@ export const AaveProtocol = {
     aave.withdraw(a.usdc, amount.value, remoteAddress);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, dest, calls);
+    const axelarId = ctx.axelarIds[dest.chainName];
+    const target = { axelarId, remoteAddress };
+
+    trace('contract paying GMP fee', gmpFee);
+    await ctx.feePayer.send(lca.getAddress(), gmpFee);
+
+    await sendGMPContractCall(
+      target,
+      calls,
+      gmpFee,
+      lca,
+      gmpChain,
+      gmpAddresses,
+    );
   },
 } as const satisfies ProtocolDetail<'Aave', AxelarChain, EVMContext>;
 
@@ -381,7 +432,14 @@ export const CompoundProtocol = {
     compound.supply(a.usdc, amount.value);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, src, calls);
+    const { chainName, remoteAddress } = src;
+    const axelarId = ctx.axelarIds[chainName];
+    const target = { axelarId, remoteAddress };
+
+    trace('contract paying GMP fee', fee);
+    await ctx.feePayer.send(lca.getAddress(), fee);
+
+    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
   },
   withdraw: async (ctx, amount, dest, claim) => {
     const { addresses: a } = ctx;
@@ -397,7 +455,14 @@ export const CompoundProtocol = {
     compound.withdraw(a.usdc, amount.value);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, dest, calls);
+    const { chainName, remoteAddress } = dest;
+    const axelarId = ctx.axelarIds[chainName];
+    const target = { axelarId, remoteAddress };
+
+    trace('contract paying GMP fee', fee);
+    await ctx.feePayer.send(lca.getAddress(), fee);
+
+    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
   },
 } as const satisfies ProtocolDetail<'Compound', AxelarChain, EVMContext>;
 
@@ -430,7 +495,14 @@ export const BeefyProtocol = {
     vault.deposit(amount.value);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, src, calls);
+    const { chainName, remoteAddress } = src;
+    const axelarId = ctx.axelarIds[chainName];
+    const target = { axelarId, remoteAddress };
+
+    trace('contract paying GMP fee', fee);
+    await ctx.feePayer.send(lca.getAddress(), fee);
+
+    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
   },
   withdraw: async (ctx, amount, dest) => {
     const { addresses: a, poolKey } = ctx;
@@ -442,7 +514,14 @@ export const BeefyProtocol = {
     vault.withdraw(amount.value);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, dest, calls);
+    const { chainName, remoteAddress } = dest;
+    const axelarId = ctx.axelarIds[chainName];
+    const target = { axelarId, remoteAddress };
+
+    trace('contract paying GMP fee', fee);
+    await ctx.feePayer.send(lca.getAddress(), fee);
+
+    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
   },
 } as const satisfies ProtocolDetail<
   'Beefy',

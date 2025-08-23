@@ -858,8 +858,10 @@ test('open portfolio with Beefy position', async t => {
       },
     },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'depositForBurn' },
+    { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
