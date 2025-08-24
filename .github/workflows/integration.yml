@@ -76,7 +76,7 @@ jobs:
         cli: [link-cli/yarn, registry/npm, registry/npx]
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
       - name: Reconfigure git to use HTTP authentication
@@ -150,7 +150,7 @@ jobs:
 
     runs-on: 'depot-ubuntu-22.04-4'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: 'true'
           path: ./agoric-sdk
@@ -246,7 +246,7 @@ jobs:
           echo "=== After cleanup:"
           df -h
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ./agoric-sdk
 
@@ -319,7 +319,7 @@ jobs:
 
       - id: checkout-loadgen
         name: Check out loadgen
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: ./${{ env.LOADGEN_REPO_NAME }}
           ref: ${{ steps.get-loadgen-branch.outputs.result }}
@@ -420,7 +420,7 @@ jobs:
       )
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Final integration-test-result
         if: always()
         uses: actions/github-script@v7

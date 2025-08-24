@@ -48,7 +48,7 @@ jobs:
       tag: '${{ steps.docker-tags.outputs.tags }}'
       tags: '${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: depot/setup-action@v1
         with:
           oidc: true # to set DEPOT_TOKEN for later steps
@@ -168,7 +168,7 @@ jobs:
       # to push the resulting images
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Save SDK_TAG
         run: echo "SDK_TAG=${{ needs.snapshot.outputs.tag }}" >> $GITHUB_ENV
       - name: Prefix tags
