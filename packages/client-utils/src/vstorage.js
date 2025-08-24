@@ -36,6 +36,18 @@ const codecs = {
 };
 
 /**
+ * @param specimen
+ * @returns {StreamCell<string>}
+ */
+const coerceStringStreamCell = specimen => {
+  mustMatch(specimen, StreamCellShape);
+  if (!specimen.values.every(v => typeof v === 'string')) {
+    throw Error('non-string value in specimen');
+  }
+  return /** @type {StreamCell<string>} */ (specimen);
+};
+
+/**
  * @template {'data' | 'children'} T
  * @param {string} [path]
  * @param {object} [opts]
@@ -143,16 +155,17 @@ export const makeVStorage = ({ fetch }, config) => {
       return response.children;
     },
     /**
+     * @deprecated use chainStorage.readCell
+     *
      * @param {string} path
      * @param {number} [height] default is highest
-     * @returns {Promise<StreamCell<unknown>>}
+     * @returns {Promise<StreamCell<string>>}
      */
     async readAt(path, height = undefined) {
       const response = await readStorage(path, { kind: 'data', height });
       /** @type {unknown} */
       const cell = harden(JSON.parse(response.value));
-      mustMatch(cell, StreamCellShape);
-      return cell;
+      return coerceStringStreamCell(cell);
     },
     /**
      * Read values going back as far as available

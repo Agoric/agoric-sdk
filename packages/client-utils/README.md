@@ -19,9 +19,10 @@ As such the modules cannot assume they're running in Node. There are some ambien
 
 1. HTTP (fetch)
 2. RPC (fetch + cosmic-proto)
-3. vstorage - layer at which protobuf is involved (vstorage.js)
-4. marshalling (vstorage-kit.js)
-5. agoricNames / board (smart-wallet-kit.js)
+3. vstorage - corresponding to x/vstorage
+4. chainStorage - involves lib-chainStorage and StreamCell
+4. marshalling (vstorage-kit.js) - involves board and agoricNames
+5. smart wallet (smart-wallet-kit.js) - involves smart wallet state and Zoe offers
 
 ## Related packages
 

@@ -3,21 +3,21 @@
 
 import {
   fetchEnvNetworkConfig,
-  makeVStorage,
+  makeChainStorageClient,
   pickEndpoint,
 } from '@agoric/client-utils';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { queryFastUSDCLocalChainAccount } from './util/agoric.js';
+import { queryUSDCBalance } from './util/bank.js';
 import { depositForBurn, makeProvider } from './util/cctp.js';
 import {
   makeSigner,
   queryForwardingAccount,
   registerFwdAccount,
 } from './util/noble.js';
-import { queryUSDCBalance } from './util/bank.js';
 
 /** @import { File } from './util/file.js' */
-/** @import { VStorage } from '@agoric/client-utils' */
+/** @import { ChainStorageClient } from '@agoric/client-utils' */
 /** @import { SigningStargateClient } from '@cosmjs/stargate' */
 /** @import { JsonRpcProvider as ethProvider } from 'ethers' */
 
@@ -27,7 +27,7 @@ import { queryUSDCBalance } from './util/bank.js';
  * @param {string} EUD
  * @param {typeof globalThis.console} [out]
  * @param {typeof globalThis.fetch} [fetch]
- * @param {VStorage} [vstorage]
+ * @param {ChainStorageClient} [chainStorage]
  * @param {{signer: SigningStargateClient, address: string}} [nobleSigner]
  * @param {ethProvider} [ethProvider]
  * @param {typeof process.env} [env]
@@ -39,7 +39,7 @@ export const transfer = async (
   EUD,
   out = console,
   fetch = globalThis.fetch,
-  vstorage,
+  chainStorage,
   nobleSigner,
   ethProvider,
   env = process.env,
@@ -49,11 +49,11 @@ export const transfer = async (
     /** @type {import('./config.js').ConfigOpts} */ config,
   ) => {
     const netConfig = await fetchEnvNetworkConfig({ env, fetch });
-    vstorage ||= makeVStorage(
+    chainStorage ||= makeChainStorageClient(
       { fetch },
       { chainName: 'agoric', rpcAddrs: [pickEndpoint(netConfig)] },
     );
-    const agoricAddr = await queryFastUSDCLocalChainAccount(vstorage, out);
+    const agoricAddr = await queryFastUSDCLocalChainAccount(chainStorage, out);
     const encodedAddr = encodeAddressHook(agoricAddr, { EUD });
     out.log(`forwarding destination ${encodedAddr}`);
 
