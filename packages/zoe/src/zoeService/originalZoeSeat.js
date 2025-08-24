@@ -1,18 +1,18 @@
 import { Fail } from '@endo/errors';
-import { SubscriberShape } from '@agoric/notifier';
-import { E } from '@endo/eventual-send';
-import { M, prepareExoClassKit } from '@agoric/vat-data';
-import { deeplyFulfilled } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
+import { E } from '@endo/eventual-send';
+import { deeplyFulfilled } from '@endo/marshal';
+import { SubscriberShape } from '@agoric/notifier';
+import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { NonNullish } from '@agoric/internal';
 
-import { satisfiesWant } from '../contractFacet/offerSafety.js';
 import {
   AmountKeywordRecordShape,
   ExitObjectShape,
   KeywordShape,
   PaymentPKeywordRecordShape,
 } from '../typeGuards.js';
+import { numWantsSatisfied } from '../contractFacet/offerSafety.js';
 
 export const coreUserSeatMethods = harden({
   getProposal: M.call().returns(M.promise()),
@@ -330,8 +330,8 @@ export const declareOldZoeSeatAdminKind = (baggage, makeDurablePublishKit) => {
           const { state } = this;
           return E.when(
             state.subscriber.subscribeAfter(),
-            () => satisfiesWant(state.proposal, state.currentAllocation),
-            () => satisfiesWant(state.proposal, state.currentAllocation),
+            () => numWantsSatisfied(state.proposal, state.currentAllocation),
+            () => numWantsSatisfied(state.proposal, state.currentAllocation),
           );
         },
         getExitSubscriber() {

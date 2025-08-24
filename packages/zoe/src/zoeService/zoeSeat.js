@@ -1,13 +1,12 @@
 import { Fail } from '@endo/errors';
-import { prepareDurablePublishKit } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
+import { prepareDurablePublishKit } from '@agoric/notifier';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { NonNullish } from '@agoric/internal';
 
-import { satisfiesWant } from '../contractFacet/offerSafety.js';
-
+import { numWantsSatisfied } from '../contractFacet/offerSafety.js';
 import {
   declareOldZoeSeatAdminKind,
   OriginalZoeSeatIKit,
@@ -177,8 +176,8 @@ export const makeZoeSeatAdminFactory = baggage => {
           const { state } = this;
           return E.when(
             state.subscriber.subscribeAfter(),
-            () => satisfiesWant(state.proposal, state.currentAllocation),
-            () => satisfiesWant(state.proposal, state.currentAllocation),
+            () => numWantsSatisfied(state.proposal, state.currentAllocation),
+            () => numWantsSatisfied(state.proposal, state.currentAllocation),
           );
         },
         getExitSubscriber() {
