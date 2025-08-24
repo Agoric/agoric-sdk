@@ -182,7 +182,7 @@ export const makeOsmosisSwapTools = async t => {
     const txRes = await issuingClient.signAndBroadcast(...transferArgs);
     if (txRes && txRes.code !== 0) {
       console.error(txRes);
-      throw Error(`failed to ibc transfer funds to ${destinationAddress}`);
+      throw new Error(`failed to ibc transfer funds to ${destinationAddress}`);
     }
     t.is(txRes.code, 0, `Transaction succeeded`);
 
@@ -246,7 +246,7 @@ export const makeOsmosisSwapTools = async t => {
 
     if (txRes && txRes.code !== 0) {
       console.error(txRes);
-      throw Error(
+      throw new Error(
         `Failed to execute osmosis contract with message ${JSON.stringify(message)}`,
       );
     }
@@ -279,7 +279,7 @@ export const makeOsmosisSwapTools = async t => {
     try {
       await $`${scriptPath} osmosis-labs osmosis ${branch} tests/ibc-hooks/bytecode ${artifactsPath} ${wasmFiles}`;
     } catch (error) {
-      throw Error(`Failed to download XCS artifacts`, { cause: error });
+      throw new Error(`Failed to download XCS artifacts: ${error}`);
     }
   };
 
@@ -323,7 +323,7 @@ export const makeOsmosisSwapTools = async t => {
 
     if (storeResult.msgResponses[0] && storeResult.code !== 0) {
       console.error(storeResult);
-      throw Error(`Failed to store ${contractLabel} contract`);
+      throw new Error(`Failed to store ${contractLabel} contract`);
     }
     t.is(storeResult.code, 0, `Transaction succeeded`);
 
@@ -352,7 +352,7 @@ export const makeOsmosisSwapTools = async t => {
 
     if (instantiateResult.msgResponses[0] && instantiateResult.code !== 0) {
       console.error(instantiateResult);
-      throw Error(`Failed to instantiate ${contractLabel} contract`);
+      throw new Error(`Failed to instantiate ${contractLabel} contract`);
     }
     t.is(instantiateResult.code, 0, `Transaction succeeded`);
 
@@ -375,7 +375,7 @@ export const makeOsmosisSwapTools = async t => {
 
       await $`kubectl cp ./test/xcs-swap-anything/xcs-contracts-info.json osmosislocal-genesis-0:/`;
     } catch (error) {
-      throw Error(`Failed to store XCS info`, { cause: error });
+      throw new Error(`Failed to store XCS info: ${error}`);
     }
   };
 
@@ -459,7 +459,7 @@ export const makeOsmosisSwapTools = async t => {
   };
 
   /**
-   * TODO: Consider funding if insufficient balance
+   * Setup PFM (Packet Forwarding Middleware) for a chain with automatic funding if needed
    */
   const setupPfmEnabled = async ({ chain, denom, amount }: SwapParty) => {
     const registryAddress = xcsContracts.crosschain_registry.address;
@@ -470,7 +470,43 @@ export const makeOsmosisSwapTools = async t => {
       denom,
     );
     console.log('OsmosisClient balance', { proposeBalance });
-    t.true(BigInt(proposeBalance.amount) >= BigInt(amount as string));
+    
+    // Check if we have sufficient balance, if not, try to fund the wallet
+    if (BigInt(proposeBalance.amount) < BigInt(amount as string)) {
+      console.log(`Insufficient balance for ${denom}. Current: ${proposeBalance.amount}, Required: ${amount}. Attempting to fund...`);
+      
+      try {
+        // Try to get funding from faucet for the specific denom
+        const { creditFromFaucet } = useChain('osmosis');
+        await creditFromFaucet(osmosisAddress);
+        
+        // Wait a bit for the transaction to be processed
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Check balance again after funding
+        const updatedBalance = await osmosisClient.getBalance(
+          osmosisAddress,
+          denom,
+        );
+        console.log('Balance after funding attempt:', { updatedBalance });
+        
+        // If still insufficient, throw error with helpful message
+        if (BigInt(updatedBalance.amount) < BigInt(amount as string)) {
+          throw new Error(
+            `Insufficient balance for ${denom} even after funding attempt. ` +
+            `Current: ${updatedBalance.amount}, Required: ${amount}. ` +
+            `Please ensure the faucet has sufficient funds or manually fund the wallet.`
+          );
+        }
+      } catch (fundingError) {
+        console.error('Failed to fund wallet:', fundingError);
+        throw new Error(
+          `Insufficient balance for ${denom} and failed to fund wallet. ` +
+          `Current: ${proposeBalance.amount}, Required: ${amount}. ` +
+          `Funding error: ${fundingError instanceof Error ? fundingError.message : 'Unknown error'}`
+        );
+      }
+    }
 
     const txMsg = {
       propose_pfm: {
@@ -565,7 +601,7 @@ export const makeOsmosisSwapTools = async t => {
     );
     if (result && result.code !== 0) {
       console.error(result);
-      throw Error(`Failed to create new pool`);
+      throw new Error(`Failed to create new pool`);
     }
     t.is(result.code, 0, `Transaction succeeded`);
 
@@ -635,7 +671,7 @@ export const makeOsmosisSwapTools = async t => {
     );
 
     if (!hash) {
-      throw Error(`Hash not found for ${issuingDenom} on ${currentChain}`);
+      throw new Error(`Hash not found for ${issuingDenom} on ${currentChain}`);
     }
 
     return hash;
