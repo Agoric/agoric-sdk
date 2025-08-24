@@ -137,6 +137,15 @@ import (
 	vtransferkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer/keeper"
 	testtypes "github.com/cosmos/ibc-go/v8/testing/types"
 
+	// Hyperlane imports
+	hyperlanecore "github.com/bcp-innovations/hyperlane-cosmos/x/core"
+	hyperlanecorekeeper "github.com/bcp-innovations/hyperlane-cosmos/x/core/keeper"
+	hyperlanecoretypes "github.com/bcp-innovations/hyperlane-cosmos/x/core/types"
+
+	hyperlanewarp "github.com/bcp-innovations/hyperlane-cosmos/x/warp"
+	hyperlanewarpkeeper "github.com/bcp-innovations/hyperlane-cosmos/x/warp/keeper"
+	hyperlanewarptypes "github.com/bcp-innovations/hyperlane-cosmos/x/warp/types"
+
 	// Import the packet forward middleware
 	packetforward "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward"
 	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/keeper"
@@ -183,6 +192,8 @@ var (
 		vbanktypes.ReservePoolName:     nil,
 		vbanktypes.ProvisionPoolName:   nil,
 		vbanktypes.GiveawayPoolName:    nil,
+		hyperlanecoretypes.ModuleName:  nil,
+		hyperlanewarptypes.ModuleName:  {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -259,6 +270,10 @@ type GaiaApp struct { // nolint: golint
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
 	ScopedICAHostKeeper  capabilitykeeper.ScopedKeeper
 	ScopedVibcKeeper     capabilitykeeper.ScopedKeeper
+
+	// Hyperlane
+	HyperlaneCoreKeeper hyperlanecorekeeper.Keeper
+	HyperlaneWarpKeeper hyperlanewarpkeeper.Keeper
 
 	// the module managers
 	ModuleManager      *module.Manager
@@ -356,6 +371,7 @@ func NewAgoricApp(
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey, icahosttypes.StoreKey,
 		swingset.StoreKey, vstorage.StoreKey, vibc.StoreKey,
 		vlocalchain.StoreKey, vtransfer.StoreKey, vbank.StoreKey, consensusparamstypes.StoreKey,
+		hyperlanecoretypes.ModuleName, hyperlanewarptypes.ModuleName,
 	)
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey, vbanktypes.TStoreKey)
 	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -498,6 +514,27 @@ func NewAgoricApp(
 		app.UpgradeKeeper,
 		scopedIBCKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+
+	// Hyperlane
+	app.HyperlaneCoreKeeper = hyperlanecorekeeper.NewKeeper(
+		appCodec,
+		app.AccountKeeper.AddressCodec(),
+		runtime.NewKVStoreService(keys[hyperlanecoretypes.ModuleName]),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.BankKeeper,
+	)
+	// TODO: Set enabled tokens this based on our needs
+	enabledTokens := []int32{int32(hyperlanewarptypes.HYP_TOKEN_TYPE_COLLATERAL), int32(hyperlanewarptypes.HYP_TOKEN_TYPE_SYNTHETIC)}
+
+	app.HyperlaneWarpKeeper = hyperlanewarpkeeper.NewKeeper(
+		appCodec,
+		app.AccountKeeper.AddressCodec(),
+		runtime.NewKVStoreService(keys[hyperlanewarptypes.ModuleName]),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.BankKeeper,
+		&app.HyperlaneCoreKeeper,
+		enabledTokens,
 	)
 
 	// This function is tricky to get right, so we build it ourselves.
@@ -768,6 +805,8 @@ func NewAgoricApp(
 		vibcModule,
 		vbankModule,
 		vtransferModule,
+		hyperlanecore.NewAppModule(appCodec, &app.HyperlaneCoreKeeper),
+		hyperlanewarp.NewAppModule(appCodec, app.HyperlaneWarpKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager is in charge of setting up basic,
@@ -829,6 +868,8 @@ func NewAgoricApp(
 		vibc.ModuleName,
 		vbank.ModuleName,
 		vtransfer.ModuleName,
+		hyperlanecoretypes.ModuleName,
+		hyperlanewarptypes.ModuleName,
 	)
 	app.ModuleManager.SetOrderEndBlockers(
 		// Cosmos-SDK modules appear roughly in the order used by simapp and gaiad.
@@ -862,6 +903,8 @@ func NewAgoricApp(
 		swingset.ModuleName,
 		// And then vstorage, to produce SwingSet-induced events.
 		vstorage.ModuleName,
+		hyperlanecoretypes.ModuleName,
+		hyperlanewarptypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -899,6 +942,8 @@ func NewAgoricApp(
 		vibc.ModuleName,
 		vtransfer.ModuleName,
 		swingset.ModuleName,
+		hyperlanecoretypes.ModuleName,
+		hyperlanewarptypes.ModuleName,
 	}
 
 	app.ModuleManager.SetOrderInitGenesis(moduleOrderForGenesisAndUpgrade...)
@@ -970,6 +1015,8 @@ func NewAgoricApp(
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{
 				capabilitytypes.MemStoreKey,
+				hyperlanecoretypes.ModuleName,
+				hyperlanewarptypes.ModuleName,
 			},
 			Deleted: []string{},
 		}
