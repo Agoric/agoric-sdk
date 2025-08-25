@@ -36,7 +36,7 @@ type CosmosEvent = {
 };
 
 const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
-const PENDING_TXS_PATH_PREFIX = 'published.ymax0.PendingTxs';
+const TX_SUBSCRIPTIONS_PATH_PREFIX = 'published.ymax0.PendingTxs';
 
 /** cf. golang/cosmos/x/vstorage/types/path_keys.go */
 const EncodedKeySeparator = '\x00';
@@ -296,12 +296,14 @@ type IO = {
 
 const getInvitationMakers = async (wallet: SigningSmartWalletKit) => {
   const getCurrentWalletRecord = await wallet.query.getCurrentWalletRecord();
-  const invitation = getCurrentWalletRecord.offerToUsedInvitation.find(inv => inv[1].value[0].description === 'resolver');
+  const invitation = getCurrentWalletRecord.offerToUsedInvitation.find(
+    inv => inv[1].value[0].description === 'resolver',
+  );
   if (!invitation) {
     throw new Error('No invitation makers found');
   }
   return invitation;
-}
+};
 
 export const startEngine = async ({
   evmCtx,
@@ -393,16 +395,20 @@ export const startEngine = async ({
     portfolioKeyForDepositAddr.set(depositAddress, portfolioKey);
   }).done;
 
-  const subscriptionKeys = await query.vstorage.keys(PENDING_TXS_PATH_PREFIX);
+  const subscriptionKeys = await query.vstorage.keys(
+    TX_SUBSCRIPTIONS_PATH_PREFIX,
+  );
   console.warn(
     `Found ${subscriptionKeys.length} existing subscriptions to monitor`,
   );
 
-  const invitationMakersOffer = await getInvitationMakers(signingSmartWalletKit);
+  const invitationMakersOffer = await getInvitationMakers(
+    signingSmartWalletKit,
+  );
   // Process existing pending subscriptions on startup
   await makeWorkPool(subscriptionKeys, undefined, async subscriptionKey => {
     const logIgnoredError = err => {
-      const msg = `Failed to process existing subscription: ${subscriptionKey}`;
+      const msg = `⚠️ Failed to process existing subscription: ${subscriptionKey}`;
       console.error(msg, err);
     };
 
@@ -410,10 +416,11 @@ export const startEngine = async ({
       query.readPublished(
         stripPrefix(
           'published.',
-          `${PENDING_TXS_PATH_PREFIX}.${subscriptionKey}`,
+          `${TX_SUBSCRIPTIONS_PATH_PREFIX}.${subscriptionKey}`,
         ),
       ),
     ]);
+
     if (vstorageSettlement.status === 'rejected') {
       logIgnoredError(vstorageSettlement.reason);
       return;
@@ -445,7 +452,7 @@ export const startEngine = async ({
         fetch,
       },
       subscription,
-      invitationMakersOffer[0]
+      invitationMakersOffer[0],
     ).catch(logIgnoredError);
   }).done;
 
@@ -486,11 +493,13 @@ export const startEngine = async ({
       const path = encodedKeyToPath(attributes.key);
 
       if (vstoragePathStartsWith(path, PORTFOLIOS_PATH_PREFIX)) {
-        return { type: 'portfolio', path, value: attributes.value };
+        return { type: 'portfolio' as const, path, value: attributes.value };
       }
-      if (vstoragePathStartsWith(path, PENDING_TXS_PATH_PREFIX)) {
-        return { type: 'subscription', path, value: attributes.value };
+      if (vstoragePathStartsWith(path, TX_SUBSCRIPTIONS_PATH_PREFIX)) {
+        return { type: 'subscription' as const, path, value: attributes.value };
       }
+
+      return;
     });
 
     const portfolioEvents = vstorageEvents.filter(
@@ -548,7 +557,10 @@ export const startEngine = async ({
       mustMatch(harden(streamCell), StreamCellShape);
 
       // Extract subscription ID from path (e.g., "published.orchestration.subscriptions.subscription1234")
-      const subscriptionId = stripPrefix(`${PENDING_TXS_PATH_PREFIX}.`, path);
+      const subscriptionId = stripPrefix(
+        `${TX_SUBSCRIPTIONS_PATH_PREFIX}.`,
+        path,
+      );
       console.warn('Processing subscription event', subscriptionId, path);
 
       for (let i = 0; i < streamCell.values.length; i += 1) {
@@ -591,7 +603,7 @@ export const startEngine = async ({
           invitationMakersOffer[0],
         ).catch(error => {
           console.error(
-            `Failed to process subscription: ${subscriptionId}`,
+            `⚠️ Failed to process subscription: ${subscriptionId}`,
             error,
           );
         });

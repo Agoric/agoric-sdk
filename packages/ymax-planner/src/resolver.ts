@@ -1,6 +1,9 @@
 import { type SigningSmartWalletKit } from '@agoric/client-utils';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
-import type { CctpSubscription, GmpSubscription,  } from './subscription-manager.js';
+import type {
+  CctpSubscription,
+  GmpSubscription,
+} from './subscription-manager.js';
 
 type ResolveCCTPSubscriptionParams = {
   signingSmartWalletKit: SigningSmartWalletKit;
@@ -28,19 +31,21 @@ export const resolveCCTPSubscription = async ({
   previousOfferId,
   proposal = {},
 }: ResolveCCTPSubscriptionParams) => {
-
   if (status === 'timeout') {
     console.log('timeout is not implemented yet in contract');
     return;
   }
 
   if (subscriptionData.type !== 'cctp') {
-    throw new Error(`Expected subscription type to be 'cctp', got ${subscriptionData.type}`);
+    throw new Error(
+      `Expected subscription type to be 'cctp', got ${subscriptionData.type}`,
+    );
   }
-  const [chainId, chainName, contractAddress] = subscriptionData.destinationAddress.split(':');
+  const [chainId, chainName, contractAddress] =
+    subscriptionData.destinationAddress.split(':');
   const action: OfferSpec = harden({
     id: `offer-${Date.now()}`,
-    invitationSpec: {      
+    invitationSpec: {
       source: 'continuing',
       previousOffer: previousOfferId,
       invitationMakerName: 'SettleCCTPTransaction',
@@ -69,7 +74,5 @@ export const resolveGMPSubscription = async ({
   previousOfferId,
   proposal = {},
 }: ResolveGMPSubscriptionParams) => {
-
   throw new Error('GMP subscription resolution is not implemented yet');
 };
-

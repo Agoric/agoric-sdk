@@ -6,12 +6,12 @@ export const axelarQueryAPI = {
   testnet: 'https://testnet.api.axelarscan.io/gmp/searchGMP',
 };
 
-const { ALCHEMY_KEY } = process.env;
-if (!ALCHEMY_KEY) throw Error(`ALCHEMY_KEY not set`);
+const { ALCHEMY_API_KEY } = process.env;
+if (!ALCHEMY_API_KEY) throw Error(`ALCHEMY_API_KEY not set`);
 
 export const evmRpcUrls = {
   mainnet: {
-    Ethereum: `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`,
+    Ethereum: `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
     // Source: https://build.avax.network/docs/tooling/rpc-providers#http
     Avalanche: 'https://api.avax.network/ext/bc/C/rpc',
     // Source: https://docs.arbitrum.io/build-decentralized-apps/reference/node-providers
@@ -22,7 +22,7 @@ export const evmRpcUrls = {
     Polygon: 'https://polygon-rpc.com/',
   },
   testnet: {
-    Ethereum: `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}`,
+    Ethereum: `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
     Avalanche: 'https://api.avax-test.network/ext/bc/C/rpc',
     Arbitrum: 'https://arbitrum-sepolia-rpc.publicnode.com',
     Optimism: 'https://optimism-sepolia-rpc.publicnode.com',
@@ -42,11 +42,11 @@ export const createEVMContext = async ({
   const axelarQueryApi = axelarQueryAPI[net];
 
   const rpcUrls = evmRpcUrls[net];
-  const evmProviders: Partial<Record<EVMChain, JsonRpcProvider>> = {};
-
-  for (const [chain, rpcUrl] of Object.entries(rpcUrls)) {
-    evmProviders[chain as EVMChain] = new JsonRpcProvider(rpcUrl);
-  }
+  const evmProviders = Object.fromEntries(
+    Object.entries(rpcUrls).map(([chain, rpcUrl]) => {
+      return [chain as EVMChain, new JsonRpcProvider(rpcUrl)];
+    }),
+  );
 
   return {
     axelarQueryApi,
