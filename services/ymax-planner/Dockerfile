@@ -19,5 +19,5 @@ USER appuser
 ENV HOME=/data/ymax-planner
 WORKDIR /data/ymax-planner
 
-# Start the TS entrypoint directly with ts-blank-space
-ENTRYPOINT [ "node", "/usr/src/agoric-sdk/services/ymax-planner/src/entrypoint.ts" ]
+# Run the bundled single-file distribution
+ENTRYPOINT [ "node", "/usr/src/agoric-sdk/services/ymax-planner/dist/entrypoint.js" ]
