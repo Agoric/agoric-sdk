@@ -385,7 +385,6 @@ const main = async (
     const { [contract]: instance } = fromEntries(
       await walletKit.readPublished('agoricNames.instance'),
     );
-    fromEntries(await sig.query.readPublished('agoricNames.instance'));
     const result = await walletStore.saveOfferResult(
       { instance, description },
       description.replace(/^deliver /, ''),
