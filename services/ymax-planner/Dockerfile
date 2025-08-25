@@ -15,12 +15,19 @@ COPY . ./
 # `focus` does not support immutability https://github.com/yarnpkg/berry/issues/1803
 # We could use `yarn install --mode=skip-build --immutable` to get immutability but that
 # hits up against the root .dockerignore excluding some packages which forces yarn.lock changes.
+# We could use `yarn workspaces focus @aglocal/ymax-planner` but there is a ghost dependency
+# of `@agoric/vats` on provisionPool.js in inter-protocol.
+# So for now we just build everything and don't expect immutability.
 # `yarn config` shows `enableGlobalCache: true` and `cacheFolder: '/root/.yarn/berry/cache'`
-RUN --mount=type=cache,target=/root/.yarn/berry/cache yarn workspaces focus --production @aglocal/ymax-planner
+RUN --mount=type=cache,target=/root/.yarn/berry/cache yarn install --mode=skip-build
 
 # Build the service and its dependencies
-# XXX cannot `npm run build` the repo because it assumes Git environment
-RUN yarn workspaces foreach --topological --recursive --from ymax-planner-service run build
+# XXX manual list of dependencies is brittle
+# Cannot `npm run build` the repo because it assumes Git environment.
+# This should work but we have sloppy package dependencies: yarn workspaces foreach --topological --recursive --from @aglocal/ymax-planner run build
+RUN cd packages/cosmic-proto && yarn build
+RUN cd packages/client-utils && yarn build
+RUN cd services/ymax-planner && yarn build
 
 # Production stage
 FROM node:22-alpine AS production
