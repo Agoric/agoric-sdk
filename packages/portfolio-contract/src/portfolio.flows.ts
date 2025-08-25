@@ -6,10 +6,11 @@
  */
 import type { GuestInterface } from '@agoric/async-flow';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import { type Amount, type NatAmount } from '@agoric/ertp';
+import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type {
   AccountId,
+  CaipChainId,
   Denom,
   DenomAmount,
   OrchestrationAccount,
@@ -20,6 +21,7 @@ import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { VTransferIBCEvent } from '@agoric/vats';
+import type { Vow } from '@agoric/vow';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { assert, Fail, q } from '@endo/errors';
@@ -28,7 +30,7 @@ import {
   RebalanceStrategy,
   SupportedChain,
   type YieldProtocol,
-} from './constants.js';
+} from '@agoric/portfolio-api/src/constants.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {
@@ -59,6 +61,7 @@ import {
   type PoolKey,
   type ProposalType,
 } from './type-guards.ts';
+import type { ResolverKit } from './resolver/resolver.exo.js';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
@@ -75,6 +78,7 @@ export type PortfolioInstanceContext = {
   gmpFeeInfo: { brand: Brand<'nat'>; denom: Denom };
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
+  cctpClient: GuestInterface<ResolverKit['client']>;
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
@@ -116,6 +120,7 @@ export type TransportDetail<
   S extends SupportedChain,
   D extends SupportedChain,
   CTX = unknown,
+  RecoverCTX = CTX,
 > = {
   how: How;
   connections: { src: S; dest: D }[];
@@ -126,7 +131,7 @@ export type TransportDetail<
     dest: AccountInfoFor[D],
   ) => Promise<void>;
   recover: (
-    ctx: CTX,
+    ctx: RecoverCTX,
     amount: NatAmount,
     src: AccountInfoFor[S],
     dest: AccountInfoFor[D],
@@ -318,8 +323,8 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
     }
 
     case 'seat':
-      getAssetPlaceRefKind(dest) === 'accountId' || // XXX check for agoric
-        Fail`src seat must have account as dest ${q(moveDesc)}`;
+      ['@agoric', '+agoric'].includes(dest) ||
+        Fail`src seat must have agoric account as dest ${q(moveDesc)}`;
       return { how: 'localTransfer' };
 
     case 'depositAddr':
@@ -456,17 +461,22 @@ const stepFlow = async (
           ...('GmpFee' in give ? { GmpFee: give.GmpFee } : {}),
         });
         todo.push(async () => {
-          const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
+          const { lca, lcaIn } = await provideCosmosAccount(
+            orch,
+            'agoric',
+            kit,
+          );
+          const account = move.dest === '+agoric' ? lcaIn : lca;
           return {
             how: 'localTransfer',
             src: { seat, keyword: 'Deposit' },
-            dest: { account: lca },
+            dest: { account },
             amount, // XXX use amounts.Deposit
             apply: async () => {
-              await ctx.zoeTools.localTransfer(seat, lca, amounts);
+              await ctx.zoeTools.localTransfer(seat, account, amounts);
             },
             recover: async () => {
-              await ctx.zoeTools.withdrawToSeat(lca, seat, amounts);
+              await ctx.zoeTools.withdrawToSeat(account, seat, amounts);
             },
           };
         });
@@ -505,7 +515,9 @@ const stepFlow = async (
             src: { account: lcaIn },
             dest: { account: lca },
             apply: () => lcaIn.send(lca.getAddress(), amount),
-            recover: () => lca.send(lcaIn.getAddress(), amount),
+            recover: async () => {
+              trace('recover send is noop; not sending back to deposit LCA');
+            },
           };
         });
         break;
@@ -561,8 +573,8 @@ const stepFlow = async (
               amount,
               src: { account: nInfo.ica },
               dest: { proxy: gInfo },
-              apply: () => CCTP.apply(null, amount, nInfo, gInfo),
-              recover: () => CCTP.recover(null, amount, nInfo, gInfo),
+              apply: () => CCTP.apply(ctx, amount, nInfo, gInfo),
+              recover: () => CCTP.recover(ctx, amount, nInfo, gInfo),
             };
           } else {
             return {
@@ -571,7 +583,7 @@ const stepFlow = async (
               src: { proxy: gInfo },
               dest: { account: nInfo.ica },
               apply: () => CCTPfromEVM.apply(evmCtx, amount, gInfo, nInfo),
-              recover: () => CCTPfromEVM.recover(evmCtx, amount, gInfo, nInfo),
+              recover: () => CCTPfromEVM.recover(ctx, amount, gInfo, nInfo),
             };
           }
         });

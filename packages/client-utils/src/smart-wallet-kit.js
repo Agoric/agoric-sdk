@@ -12,7 +12,9 @@ import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
 
 /**
  * Augment VstorageKit with addtional convenience methods for working with
- * Agoric smart wallets.
+ * Agoric smart wallets. This use of "kit" is unfortunate because it does not
+ * pertain to a single smart wallet. (Whereas VstorageKit pertains to a single
+ * vstorage tree.) It was once called WalletUtils, which is more accurate.
  *
  * @param {object} root0
  * @param {typeof globalThis.fetch} root0.fetch
@@ -26,7 +28,7 @@ export const makeSmartWalletKit = async (
 ) => {
   const vsk = makeVstorageKit({ fetch }, networkConfig);
 
-  const client = await makeStargateClient(networkConfig, { fetch });
+  const client = makeStargateClient(networkConfig, { fetch });
 
   const agoricNames = await (names
     ? makeAgoricNames(vsk.fromBoard, vsk.vstorage)
@@ -110,7 +112,6 @@ export const makeSmartWalletKit = async (
     // pass along all of VstorageKit
     ...vsk,
     agoricNames,
-    networkConfig,
     getLastUpdate,
     getCurrentWalletRecord,
     storedWalletState,

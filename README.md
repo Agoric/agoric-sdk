@@ -36,16 +36,16 @@ any necessary compatibility fixes to our `package.json` files.
 
 ### Building on Apple Silicon and Newer Architectures
 
-Some dependencies may not be prebuilt for Apple Silicon and other newer 
-architectures, so it may be necessary to build these dependencies from source 
+Some dependencies may not be prebuilt for Apple Silicon and other newer
+architectures, so it may be necessary to build these dependencies from source
 and install that package’s native dependencies with your package manager (e.g. Homebrew).
 
 Currently these dependencies are:
 
 * [Canvas](https://github.com/Automattic/node-canvas#compiling)
 
-Additionally, if your package manager utilizes a non-standard include path, you may 
-also need to export the following environment variable before running the commands 
+Additionally, if your package manager utilizes a non-standard include path, you may
+also need to export the following environment variable before running the commands
 in the Build section.
 
 ```sh
@@ -63,6 +63,7 @@ xcode-select --install
 From a new checkout of this repository, run:
 
 ```sh
+corepack enable
 yarn install
 yarn build
 ```

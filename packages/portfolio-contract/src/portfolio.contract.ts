@@ -3,6 +3,7 @@
  * @see {@link contract}
  * @see {@link start}
  */
+import type { Payment } from '@agoric/ertp';
 import {
   makeTracer,
   mustMatch,
@@ -27,15 +28,22 @@ import {
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
-import type { ContractMeta, ZCF } from '@agoric/zoe';
+import {
+  AxelarChain,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
+import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
-import { AxelarChain, YieldProtocol } from './constants.js';
+import { preparePlanner } from './planner.exo.ts';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
+import { prepareResolverKit } from './resolver/resolver.exo.js';
+import { PENDING_TXS_NODE_KEY } from './resolver/types.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
 import {
   BeefyPoolPlaces,
@@ -44,6 +52,7 @@ import {
   type OfferArgsFor,
   type ProposalType,
 } from './type-guards.ts';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 
 const trace = makeTracer('PortC');
 const { fromEntries, keys } = Object;
@@ -68,6 +77,10 @@ export type AxelarConfig = {
     contracts: EVMContractAddresses;
   };
 };
+
+interface PostalServiceI {
+  deliverPayment(addr: string, pmt: Payment): Promise<void>;
+}
 
 const AxelarConfigPattern = M.splitRecord({
   axelarId: M.string(),
@@ -202,10 +215,15 @@ export const contract = async (
   if (!('axelar' in chainInfo)) {
     trace('⚠️ no axelar chainInfo; GMP not available', Object.keys(chainInfo));
   }
-  // TODO: only on 1st incarnation
-  registerChainsAndAssets(chainHub, brands, chainInfo, assetInfo, {
-    log: trace,
-  });
+
+  // Only register chains and assets if chainHub is empty to avoid conflicts on restart
+  if (chainHub.isEmpty()) {
+    registerChainsAndAssets(chainHub, brands, chainInfo, assetInfo, {
+      log: trace,
+    });
+  } else {
+    trace('chainHub already populated, using existing entries');
+  }
 
   const proposalShapes = makeProposalShapes(
     brands.USDC,
@@ -223,6 +241,16 @@ export const contract = async (
       assert.fail('use off-chain queries');
     },
   };
+
+  const resolverZone = zone.subZone('CCTPResolver');
+  const {
+    client: resolverClient,
+    invitationMakers: makeResolverInvitationMakers,
+  } = prepareResolverKit(resolverZone, zcf, {
+    vowTools,
+    pendingTxsNode: E(storageNode).makeChildNode(PENDING_TXS_NODE_KEY),
+    marshaller,
+  })();
 
   const ctx1 = {
     zoeTools,
@@ -243,6 +271,7 @@ export const contract = async (
     axelarIds,
     contracts,
     gmpAddresses,
+    cctpClient: resolverClient,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
@@ -288,8 +317,6 @@ export const contract = async (
     },
   );
 
-  trace('XXX NEEDSTEST: baggage test');
-
   const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
     /**
      * Make an invitation to open a new portfolio.
@@ -320,7 +347,88 @@ export const contract = async (
     },
   });
 
-  return { publicFacet };
+  const makeResolverInvitation = () => {
+    trace('makeResolverInvitation');
+
+    const resolverHandler = (seat: ZCFSeat) => {
+      seat.exit();
+      return harden({ invitationMakers: makeResolverInvitationMakers });
+    };
+
+    return zcf.makeInvitation(resolverHandler, 'resolver', undefined);
+  };
+
+  const getPortfolio = (id: number) => portfolios.get(id);
+  const makePlanner = preparePlanner(zone.subZone('planner'), {
+    zcf,
+    rebalance,
+    getPortfolio,
+    shapes: offerArgsShapes,
+  });
+
+  const makePlannerInvitation = () =>
+    zcf.makeInvitation(seat => {
+      seat.exit();
+      return makePlanner();
+    }, 'planner');
+
+  const creatorFacet = zone.exo(
+    'PortfolioAdmin',
+    M.interface('PortfolioAdmin', {
+      makeResolverInvitation: M.callWhen().returns(InvitationShape),
+      deliverResolverInvitation: M.callWhen(
+        M.string(),
+        M.remotable('Instance'),
+      ).returns(),
+      makePlannerInvitation: M.callWhen().returns(InvitationShape),
+      deliverPlannerInvitation: M.callWhen(
+        M.string(),
+        M.remotable('Instance'),
+      ).returns(),
+    }),
+    {
+      makeResolverInvitation() {
+        return makeResolverInvitation();
+      },
+      async deliverResolverInvitation(
+        address: string,
+        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+      ) {
+        const zoe = zcf.getZoeService();
+        const pfP = E(zoe).getPublicFacet(instancePS);
+        const invitation = await makeResolverInvitation();
+        trace('made resolver invitation', invitation);
+        await E(pfP).deliverPayment(address, invitation);
+        trace('delivered resolver invitation');
+      },
+      makePlannerInvitation() {
+        return makePlannerInvitation();
+      },
+      /**
+       * Make and deliver a planner invitation to the specified address.
+       *
+       * Note: Contract handles delivery due to wallet DSL limitations - see CONTRIBUTING.md
+       * section "Invitation Delivery Limitations in the Wallet Action DSL" for architectural context.
+       *
+       * @param address - Agoric address where to deliver the planner invitation
+       * @param instancePS - Postal service instance for delivery
+       */
+      async deliverPlannerInvitation(
+        address: string,
+        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+      ) {
+        trace('deliverPlannerInvitation', address, instancePS);
+        const zoe = zcf.getZoeService();
+        const pfP = E(zoe).getPublicFacet(instancePS);
+        const invitation = await makePlannerInvitation();
+        trace('made planner invitation', invitation);
+        await E(pfP).deliverPayment(address, invitation);
+        trace('delivered planner invitation');
+      },
+    },
+  );
+
+  return { creatorFacet, publicFacet };
 };
 harden(contract);
 

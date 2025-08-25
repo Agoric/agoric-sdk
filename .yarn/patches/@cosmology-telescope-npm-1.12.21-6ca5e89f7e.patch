@@ -1,0 +1,293 @@
+diff --git a/main/helpers/internal-for-bigint.js b/main/helpers/internal-for-bigint.js
+index b90267f01cebfc3f23d4623e7e4065d5d150b08a..0740b1ecd7087f5c87dc8e37f497727e5c6194df 100644
+--- a/main/helpers/internal-for-bigint.js
++++ b/main/helpers/internal-for-bigint.js
+@@ -3,41 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.getHelperForBigint = void 0;
+ const getHelperForBigint = (options) => {
+     return `
+-declare var self: any | undefined;
+-declare var window: any | undefined;
+-declare var global: any | undefined;
+-var globalThis: any = (() => {
+-  if (typeof globalThis !== 'undefined') return globalThis;
+-  if (typeof self !== 'undefined') return self;
+-  if (typeof window !== 'undefined') return window;
+-  if (typeof global !== 'undefined') return global;
+-  throw 'Unable to locate global object';
+-})();
+-
+-const atob: (b64: string) => string =
+-  globalThis.atob ||
+-  ((b64) => globalThis.Buffer.from(b64, 'base64').toString('binary'));
+-
+-export function bytesFromBase64(b64: string): Uint8Array {
+-  const bin = atob(b64);
+-  const arr = new Uint8Array(bin.length);
+-  for (let i = 0; i < bin.length; ++i) {
+-    arr[i] = bin.charCodeAt(i);
+-  }
+-  return arr;
+-}
+-
+-const btoa: (bin: string) => string =
+-  globalThis.btoa ||
+-  ((bin) => globalThis.Buffer.from(bin, 'binary').toString('base64'));
+-
+-export function base64FromBytes(arr: Uint8Array): string {
+-  const bin: string[] = [];
+-  arr.forEach((byte) => {
+-    bin.push(String.fromCharCode(byte));
+-  });
+-  return btoa(bin.join(''));
+-}
++// PATCH: Use base64Lib: 'endo' instead for bytesFromBase64 and base64FromBytes
++// TODO update Telescope to put these helpers in a separate module so 'helpers' doesn't entail ambient authority
+ 
+ export interface AminoHeight {
+   readonly revision_number?: string;
+diff --git a/main/helpers/internal.js b/main/helpers/internal.js
+index 9df193598d12e194e7e00af400be4994f2235ae2..3e1c3a2a11c8fd4cbda97ab56029f69a794743bd 100644
+--- a/main/helpers/internal.js
++++ b/main/helpers/internal.js
+@@ -14,39 +14,8 @@ if (_m0.util.Long !== Long) {
+ 
+ export { Long };
+ 
+-declare var self: any | undefined;
+-declare var window: any | undefined;
+-declare var global: any | undefined;
+-var globalThis: any = (() => {
+-    if (typeof globalThis !== 'undefined') return globalThis;
+-    if (typeof self !== 'undefined') return self;
+-    if (typeof window !== 'undefined') return window;
+-    if (typeof global !== 'undefined') return global;
+-    throw 'Unable to locate global object';
+-})();
+-
+-const atob: (b64: string) => string =
+-    globalThis.atob || ((b64) => globalThis.Buffer.from(b64, 'base64').toString('binary'));
+-
+-export function bytesFromBase64(b64: string): Uint8Array {
+-    const bin = atob(b64);
+-    const arr = new Uint8Array(bin.length);
+-    for (let i = 0; i < bin.length; ++i) {
+-        arr[i] = bin.charCodeAt(i);
+-    }
+-    return arr;
+-}
+-
+-const btoa: (bin: string) => string =
+-    globalThis.btoa || ((bin) => globalThis.Buffer.from(bin, 'binary').toString('base64'));
+-
+-export function base64FromBytes(arr: Uint8Array): string {
+-    const bin: string[] = [];
+-    arr.forEach((byte) => {
+-        bin.push(String.fromCharCode(byte));
+-    });
+-    return btoa(bin.join(''));
+-}
++// PATCH: Use base64Lib: 'endo' instead for bytesFromBase64 and base64FromBytes
++// TODO update Telescope to put these helpers in a separate module so 'helpers' doesn't entail ambient authority
+ 
+ export interface AminoHeight {
+     readonly revision_number?: string;
+diff --git a/module/helpers/internal-for-bigint.js b/module/helpers/internal-for-bigint.js
+index 2225ab304e38a66c9cebfbd6e600f397a24b12e3..c3c8e71a4a3b70d32af179bb6ad82ac92d7a07ec 100644
+--- a/module/helpers/internal-for-bigint.js
++++ b/module/helpers/internal-for-bigint.js
+@@ -1,40 +1,7 @@
+ export const getHelperForBigint = (options) => {
+     return `
+-declare var self: any | undefined;
+-declare var window: any | undefined;
+-declare var global: any | undefined;
+-var globalThis: any = (() => {
+-  if (typeof globalThis !== 'undefined') return globalThis;
+-  if (typeof self !== 'undefined') return self;
+-  if (typeof window !== 'undefined') return window;
+-  if (typeof global !== 'undefined') return global;
+-  throw 'Unable to locate global object';
+-})();
+-
+-const atob: (b64: string) => string =
+-  globalThis.atob ||
+-  ((b64) => globalThis.Buffer.from(b64, 'base64').toString('binary'));
+-
+-export function bytesFromBase64(b64: string): Uint8Array {
+-  const bin = atob(b64);
+-  const arr = new Uint8Array(bin.length);
+-  for (let i = 0; i < bin.length; ++i) {
+-    arr[i] = bin.charCodeAt(i);
+-  }
+-  return arr;
+-}
+-
+-const btoa: (bin: string) => string =
+-  globalThis.btoa ||
+-  ((bin) => globalThis.Buffer.from(bin, 'binary').toString('base64'));
+-
+-export function base64FromBytes(arr: Uint8Array): string {
+-  const bin: string[] = [];
+-  arr.forEach((byte) => {
+-    bin.push(String.fromCharCode(byte));
+-  });
+-  return btoa(bin.join(''));
+-}
++// PATCH: Use base64Lib: 'endo' instead for bytesFromBase64 and base64FromBytes
++// TODO update Telescope to put these helpers in a separate module so 'helpers' doesn't entail ambient authority
+ 
+ export interface AminoHeight {
+   readonly revision_number?: string;
+diff --git a/module/helpers/internal.js b/module/helpers/internal.js
+index d24ec7055da9fa30441986a382faab7186ce3cdc..2fb7cc4167b45537ae145bda146f779bc09174bb 100644
+--- a/module/helpers/internal.js
++++ b/module/helpers/internal.js
+@@ -11,39 +11,8 @@ if (_m0.util.Long !== Long) {
+ 
+ export { Long };
+ 
+-declare var self: any | undefined;
+-declare var window: any | undefined;
+-declare var global: any | undefined;
+-var globalThis: any = (() => {
+-    if (typeof globalThis !== 'undefined') return globalThis;
+-    if (typeof self !== 'undefined') return self;
+-    if (typeof window !== 'undefined') return window;
+-    if (typeof global !== 'undefined') return global;
+-    throw 'Unable to locate global object';
+-})();
+-
+-const atob: (b64: string) => string =
+-    globalThis.atob || ((b64) => globalThis.Buffer.from(b64, 'base64').toString('binary'));
+-
+-export function bytesFromBase64(b64: string): Uint8Array {
+-    const bin = atob(b64);
+-    const arr = new Uint8Array(bin.length);
+-    for (let i = 0; i < bin.length; ++i) {
+-        arr[i] = bin.charCodeAt(i);
+-    }
+-    return arr;
+-}
+-
+-const btoa: (bin: string) => string =
+-    globalThis.btoa || ((bin) => globalThis.Buffer.from(bin, 'binary').toString('base64'));
+-
+-export function base64FromBytes(arr: Uint8Array): string {
+-    const bin: string[] = [];
+-    arr.forEach((byte) => {
+-        bin.push(String.fromCharCode(byte));
+-    });
+-    return btoa(bin.join(''));
+-}
++// PATCH: Use base64Lib: 'endo' instead for bytesFromBase64 and base64FromBytes
++// TODO update Telescope to put these helpers in a separate module so 'helpers' doesn't entail ambient authority
+ 
+ export interface AminoHeight {
+     readonly revision_number?: string;
+diff --git a/package.json b/package.json
+index 97899bd604de68624bcbb761d0cd0903a5de5ac4..e53f999dbc7538974e3d1aa29ea93f700b7d6618 100644
+--- a/package.json
++++ b/package.json
+@@ -111,5 +111,6 @@
+     "rimraf": "5.0.0",
+     "yaml": "^2.3.4"
+   },
+-  "gitHead": "06fc709e02c19d990979dd016c9a14290422f254"
++  "gitHead": "06fc709e02c19d990979dd016c9a14290422f254",
++  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+ }
+diff --git a/src/helpers/internal-for-bigint.ts b/src/helpers/internal-for-bigint.ts
+index 9308f4083739a4cfb9826b0e265a3a6338755dfe..425b6171e137f35c92c21ef8b505e6427c5b7959 100644
+--- a/src/helpers/internal-for-bigint.ts
++++ b/src/helpers/internal-for-bigint.ts
+@@ -2,41 +2,8 @@ import { TelescopeOptions } from "@cosmology/types";
+ 
+ export const getHelperForBigint = (options: TelescopeOptions) => {
+   return `
+-declare var self: any | undefined;
+-declare var window: any | undefined;
+-declare var global: any | undefined;
+-var globalThis: any = (() => {
+-  if (typeof globalThis !== 'undefined') return globalThis;
+-  if (typeof self !== 'undefined') return self;
+-  if (typeof window !== 'undefined') return window;
+-  if (typeof global !== 'undefined') return global;
+-  throw 'Unable to locate global object';
+-})();
+-
+-const atob: (b64: string) => string =
+-  globalThis.atob ||
+-  ((b64) => globalThis.Buffer.from(b64, 'base64').toString('binary'));
+-
+-export function bytesFromBase64(b64: string): Uint8Array {
+-  const bin = atob(b64);
+-  const arr = new Uint8Array(bin.length);
+-  for (let i = 0; i < bin.length; ++i) {
+-    arr[i] = bin.charCodeAt(i);
+-  }
+-  return arr;
+-}
+-
+-const btoa: (bin: string) => string =
+-  globalThis.btoa ||
+-  ((bin) => globalThis.Buffer.from(bin, 'binary').toString('base64'));
+-
+-export function base64FromBytes(arr: Uint8Array): string {
+-  const bin: string[] = [];
+-  arr.forEach((byte) => {
+-    bin.push(String.fromCharCode(byte));
+-  });
+-  return btoa(bin.join(''));
+-}
++// PATCH: Use base64Lib: 'endo' instead for bytesFromBase64 and base64FromBytes
++// TODO update Telescope to put these helpers in a separate module so 'helpers' doesn't entail ambient authority
+ 
+ export interface AminoHeight {
+   readonly revision_number?: string;
+diff --git a/src/helpers/internal.ts b/src/helpers/internal.ts
+index ff08a4f1dbb035054dc8f308ba1adba3c51c2427..85908efa02b218464a1619be77a9b9e1403fbfe1 100644
+--- a/src/helpers/internal.ts
++++ b/src/helpers/internal.ts
+@@ -13,39 +13,8 @@ if (_m0.util.Long !== Long) {
+ 
+ export { Long };
+ 
+-declare var self: any | undefined;
+-declare var window: any | undefined;
+-declare var global: any | undefined;
+-var globalThis: any = (() => {
+-    if (typeof globalThis !== 'undefined') return globalThis;
+-    if (typeof self !== 'undefined') return self;
+-    if (typeof window !== 'undefined') return window;
+-    if (typeof global !== 'undefined') return global;
+-    throw 'Unable to locate global object';
+-})();
+-
+-const atob: (b64: string) => string =
+-    globalThis.atob || ((b64) => globalThis.Buffer.from(b64, 'base64').toString('binary'));
+-
+-export function bytesFromBase64(b64: string): Uint8Array {
+-    const bin = atob(b64);
+-    const arr = new Uint8Array(bin.length);
+-    for (let i = 0; i < bin.length; ++i) {
+-        arr[i] = bin.charCodeAt(i);
+-    }
+-    return arr;
+-}
+-
+-const btoa: (bin: string) => string =
+-    globalThis.btoa || ((bin) => globalThis.Buffer.from(bin, 'binary').toString('base64'));
+-
+-export function base64FromBytes(arr: Uint8Array): string {
+-    const bin: string[] = [];
+-    arr.forEach((byte) => {
+-        bin.push(String.fromCharCode(byte));
+-    });
+-    return btoa(bin.join(''));
+-}
++// PATCH: Use base64Lib: 'endo' instead for bytesFromBase64 and base64FromBytes
++// TODO update Telescope to put these helpers in a separate module so 'helpers' doesn't entail ambient authority
+ 
+ export interface AminoHeight {
+     readonly revision_number?: string;

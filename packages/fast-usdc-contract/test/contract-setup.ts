@@ -14,6 +14,7 @@ import { divideBy, multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { AddressHookShape } from '@agoric/fast-usdc/src/type-guards.js';
 import type {
   CctpTxEvidence,
+  FastUsdcTerms,
   FeeConfig,
   PoolMetrics,
 } from '@agoric/fast-usdc/src/types.ts';
@@ -36,7 +37,7 @@ import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { heapVowE as VE } from '@agoric/vow';
-import type { Invitation, ZoeService } from '@agoric/zoe';
+import type { Invitation, StandardTerms, ZoeService } from '@agoric/zoe';
 import type {
   Installation,
   Instance,
@@ -108,7 +109,9 @@ const startContract = async (
     commonPrivateArgs,
   );
 
-  const terms = await E(zoe).getTerms(startKit.instance);
+  const terms: FastUsdcTerms & StandardTerms = await E(zoe).getTerms(
+    startKit.instance,
+  );
 
   const { subscriber: metricsSub } = E.get(
     E.get(E(startKit.publicFacet).getPublicTopics()).poolMetrics,
@@ -298,7 +301,8 @@ export const makeLP = async (
   const { subscriber } = E.get(
     E.get(E(publicFacet).getPublicTopics()).poolMetrics,
   );
-  const terms = await E(zoe).getTerms(instance);
+  // XXX this type annotation shouldn't be necessary
+  const terms: FastUsdcTerms & StandardTerms = await E(zoe).getTerms(instance);
   const { USDC } = terms.brands;
   const sharePurse = E(terms.issuers.PoolShares).makeEmptyPurse();
   let investment = AmountMath.makeEmpty(USDC);

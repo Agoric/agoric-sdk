@@ -11,7 +11,7 @@
     "build:restart-vats-proposal": "echo This command has been deprecated. Please run this instead: agoric run scripts/vats/restart-vats.js",
     "build:zcf-proposal": "echo This command has been deprecated. Please run this instead: agoric run scripts/vats/replace-zoe.js",
     "prepack": "yarn run -T tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
+    "postpack": "git clean -f '*.d.*ts*' '*.tsbuildinfo'",
     "test": "ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
@@ -23,6 +23,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
+    "@agoric/client-utils": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/internal": "workspace:*",
     "@agoric/notifier": "workspace:*",

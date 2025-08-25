@@ -27,7 +27,6 @@ defaults:
   run:
     shell: bash
 
-# set ESM_DISABLE_CACHE=true (will be JSON parsed)
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -110,6 +109,8 @@ jobs:
         run: yarn lint:format
 
       - run: yarn lint:package-names
+
+      - run: yarn constraints
 
       # Check some of a3p-integration in this job that runs on PRs instead of
       # waiting for the slow integration test that by default only runs in the
@@ -203,6 +204,9 @@ jobs:
       - name: yarn test (orchestration)
         if: (success() || failure())
         run: cd packages/orchestration && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (portfolio-api)
+        if: (success() || failure())
+        run: cd packages/portfolio-api && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (portfolio-contract)
         if: (success() || failure())
         run: cd packages/portfolio-contract && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -236,6 +240,9 @@ jobs:
       - name: yarn test (xsnap)
         if: (success() || failure())
         run: cd packages/xsnap && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (ymax-planner)
+        if: (success() || failure())
+        run: cd packages/ymax-planner && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status

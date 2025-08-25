@@ -21,6 +21,7 @@ import type {
   UpdateRecord,
 } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
+import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 
 // For static string key types. String template matching has to be in the ternary below.
@@ -35,6 +36,7 @@ type PublishedTypeMap = {
   fastUsdc: ContractRecord;
   'fastUsdc.feeConfig': FeeConfig;
   'fastUsdc.poolMetrics': PoolMetrics;
+  'ymax0.portfolios': StatusFor['portfolios'];
 };
 
 /**

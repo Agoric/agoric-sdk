@@ -107,3 +107,25 @@ and `.onRejected`.
 ## Offer Safety Limitations in the Orchestration SDK
 
 While support for Offer Safety in the Orchestration SDK is a goal with work-in-progress ([#10504 ERTP face on orch assets](https://github.com/Agoric/agoric-sdk/pull/10504)), currently, the use of basic orchestration features such as `acct.localTransfer(seat, ...)` moves assets out of the Zoe-managed seat before any `want:` might be satisfied.
+
+## Invitation Delivery Limitations in the Wallet Action DSL
+
+The portfolio contract includes `deliverPlannerInvitation()` which creates and delivers planner invitations via a postal service. While this violates separation of concerns by making the contract aware of delivery logistics, it's necessary due to limitations in the current wallet action DSL.
+
+### The Problem
+
+Ideally, an admin would:
+1. Call `makePlannerInvitation()` via wallet `invokeEntry`
+2. Receive the invitation as a saved result  
+3. Use standard wallet operations to deliver it via postal service
+
+However, the current wallet action DSL ([`InvokeEntryMessage`](../../smart-wallet/src/offers.js)) cannot:
+- Pass results from one invocation as arguments to another
+- Access external services not already saved in the wallet's `myStore`
+- Chain operations requiring intermediate payment handling
+
+### Current Workaround
+
+Until wallet action chaining is supported, contracts must handle their own invitation delivery, requiring them to know about postal service interfaces. This is the lesser evil compared to forcing manual coordination of multiple wallet actions with payment passing between them.
+
+See the deployment test in `packages/portfolio-deploy/test/portfolio-start.core.test.ts` for usage examples.

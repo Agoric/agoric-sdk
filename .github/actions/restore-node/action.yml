@@ -30,10 +30,6 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: set default environment variables
-      shell: bash
-      run: echo ESM_DISABLE_CACHE=true >> $GITHUB_ENV
-
     - id: set-node-version
       name: Set correct node version
       shell: bash

@@ -33,7 +33,10 @@ import type {
 } from '@agoric/smart-wallet/src/invitations.js';
 import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
-import { AxelarChain, YieldProtocol } from './constants.js';
+import {
+  AxelarChain,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
 import type { EVMContractAddresses, start } from './portfolio.contract.js';
 import type { PortfolioKit } from './portfolio.exo.js';
 
@@ -148,10 +151,12 @@ export const PoolPlaces = {
   USDN: { protocol: 'USDN', vault: null, chainName: 'noble' }, // MsgSwap only
   USDNVault: { protocol: 'USDN', vault: 1, chainName: 'noble' }, // MsgSwap, MsgLock
   Aave_Avalanche: { protocol: 'Aave', chainName: 'Avalanche' },
+  Aave_Ethereum: { protocol: 'Aave', chainName: 'Ethereum' },
   Aave_Optimism: { protocol: 'Aave', chainName: 'Optimism' },
   Aave_Arbitrum: { protocol: 'Aave', chainName: 'Arbitrum' },
   Aave_Polygon: { protocol: 'Aave', chainName: 'Polygon' },
   Compound_Avalanche: { protocol: 'Compound', chainName: 'Avalanche' },
+  Compound_Ethereum: { protocol: 'Compound', chainName: 'Ethereum' },
   Compound_Optimism: { protocol: 'Compound', chainName: 'Optimism' },
   Compound_Arbitrum: { protocol: 'Compound', chainName: 'Arbitrum' },
   Compound_Polygon: { protocol: 'Compound', chainName: 'Polygon' },

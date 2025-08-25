@@ -10,7 +10,7 @@
   "scripts": {
     "build": "exit 0",
     "prepack": "yarn run -T tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
+    "postpack": "git clean -f '*.d.*ts*' '*.tsbuildinfo'",
     "test": "ava",
     "test:nyc": "exit 0",
     "test:xs": "exit 0",
@@ -42,7 +42,7 @@
     "@endo/init": "^1.1.12",
     "@fast-check/ava": "^2.0.1",
     "ava": "^5.3.0",
-    "tsd": "^0.31.1"
+    "tsd": "^0.33.0"
   },
   "ava": {
     "require": [
@@ -62,6 +62,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 92.99
+    "atLeast": 93.02
   }
 }

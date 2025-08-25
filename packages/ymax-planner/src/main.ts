@@ -1,0 +1,97 @@
+import {
+  fetchEnvNetworkConfig,
+  makeSigningSmartWalletKit,
+  makeSmartWalletKit,
+} from '@agoric/client-utils';
+import { Fail } from '@endo/errors';
+
+import { SigningStargateClient } from '@cosmjs/stargate';
+
+import { CosmosRestClient } from './cosmos-rest-client.ts';
+import { CosmosRPCClient } from './cosmos-rpc.ts';
+import { startEngine } from './engine.ts';
+import { SpectrumClient } from './spectrum-client.ts';
+
+const getChainIdFromRpc = async (rpc: CosmosRPCClient) => {
+  await rpc.opened();
+  const status = await rpc.request('status', {});
+  const chainId = status?.node_info?.network;
+  chainId || Fail`Chain ID not found in RPC status: ${status}`;
+  return chainId;
+};
+
+export const main = async (
+  argv,
+  {
+    env = process.env,
+    fetch = globalThis.fetch,
+    setTimeout = globalThis.setTimeout,
+    connectWithSigner = SigningStargateClient.connectWithSigner,
+  } = {},
+) => {
+  await null;
+  // console.log('Hello, world!', { argv });
+
+  const { MNEMONIC } = env;
+  if (!MNEMONIC) throw Error(`MNEMONIC not set`);
+
+  const delay = ms =>
+    new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
+  const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
+  const agoricRpcAddr = networkConfig.rpcAddrs[0];
+
+  console.warn(`Initializing planner watching`, { agoricRpcAddr });
+  const rpc = new CosmosRPCClient(agoricRpcAddr);
+
+  const rpcChainId = await getChainIdFromRpc(rpc);
+
+  if (rpcChainId !== networkConfig.chainName) {
+    Fail`Mismatching chainId. config=${networkConfig.chainName}, rpc=${rpcChainId}`;
+  }
+
+  const walletUtils = await makeSmartWalletKit({ fetch, delay }, networkConfig);
+
+  const signingSmartWalletKit = await makeSigningSmartWalletKit(
+    { connectWithSigner, walletUtils },
+    MNEMONIC,
+  );
+
+  console.warn(`Using:`, {
+    networkConfig,
+    plannerAddress: signingSmartWalletKit.address,
+  });
+
+  const { SPECTRUM_API_URL, SPECTRUM_API_TIMEOUT, SPECTRUM_API_RETRIES } = env;
+  const spectrum = new SpectrumClient(
+    { fetch, setTimeout },
+    {
+      baseUrl: SPECTRUM_API_URL,
+      timeout: SPECTRUM_API_TIMEOUT
+        ? parseInt(SPECTRUM_API_TIMEOUT, 10)
+        : undefined,
+      retries: SPECTRUM_API_RETRIES
+        ? parseInt(SPECTRUM_API_RETRIES, 10)
+        : undefined,
+    },
+  );
+
+  const cosmosRest = new CosmosRestClient(
+    {
+      fetch,
+      setTimeout,
+    },
+    {
+      agoricNetwork: env.AGORIC_NET || 'local',
+      timeout: 15000, // 15s timeout for REST calls
+      retries: 3,
+    },
+  );
+
+  await startEngine({
+    rpc,
+    spectrum,
+    cosmosRest,
+    signingSmartWalletKit,
+  });
+};
+harden(main);

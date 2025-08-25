@@ -14,16 +14,16 @@
     "test:ymax": "ava --config ava.ymd.config.js",
     "test:xcs": "ava --config ava.xcs.config.js"
   },
-  "packageManager": "yarn@4.9.1",
+  "packageManager": "yarn@4.9.3",
   "devDependencies": {
     "@agoric/cosmic-proto": "dev",
     "@agoric/fast-usdc": "dev",
     "@agoric/internal": "dev",
-    "@cosmjs/amino": "npm:^0.34.0",
-    "@cosmjs/cosmwasm-stargate": "^0.34.0",
-    "@cosmjs/crypto": "^0.34.0",
-    "@cosmjs/proto-signing": "^0.34.0",
-    "@cosmjs/stargate": "^0.34.0",
+    "@cosmjs/amino": "^0.36.0",
+    "@cosmjs/cosmwasm-stargate": "^0.36.0",
+    "@cosmjs/crypto": "^0.36.0",
+    "@cosmjs/proto-signing": "^0.36.0",
+    "@cosmjs/stargate": "^0.36.0",
     "@endo/errors": "^1.2.13",
     "@endo/far": "^1.1.14",
     "@endo/nat": "^5.1.3",
@@ -99,9 +99,9 @@
     "@agoric/xsnap-lockdown": "portal:../packages/xsnap-lockdown",
     "@agoric/zoe": "portal:../packages/zoe",
     "@agoric/zone": "portal:../packages/zone",
-    "@cosmjs/tendermint-rpc@npm:0.32.3": "0.34.0",
-    "@cosmjs/proto-signing": "0.34.0",
-    "@cosmjs/stargate": "0.34.0"
+    "@cosmjs/tendermint-rpc@npm:0.32.3": "^0.36.0",
+    "@cosmjs/proto-signing": "^0.36.0",
+    "@cosmjs/stargate": "^0.36.0"
   },
   "license": "Apache-2.0"
 }

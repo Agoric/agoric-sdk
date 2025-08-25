@@ -32,6 +32,9 @@
     "readline-transform": "^1.0.0"
   },
   "typeCoverage": {
-    "atLeast": 50.83
+    "atLeast": 50.91
+  },
+  "engines": {
+    "node": "^20.9 || ^22.11"
   }
 }

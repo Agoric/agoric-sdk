@@ -12,7 +12,7 @@ export const pickEndpoint = ({ rpcAddrs }) => rpcAddrs[0];
 /**
  * @param {string} endpoint
  * @param {{ fetch: typeof window.fetch }} io
- * @returns {Promise<Tendermint34Client>}
+ * @returns {Tendermint34Client}
  */
 export const makeTendermint34Client = (endpoint, { fetch }) => {
   const rpcClient = makeTendermintRpcClient(endpoint, fetch);
@@ -22,10 +22,10 @@ export const makeTendermint34Client = (endpoint, { fetch }) => {
 /**
  * @param {MinimalNetworkConfig} config
  * @param {{ fetch: typeof window.fetch }} io
- * @returns {Promise<StargateClient>}
+ * @returns {StargateClient}
  */
-export const makeStargateClient = async (config, { fetch }) => {
+export const makeStargateClient = (config, { fetch }) => {
   const url = pickEndpoint(config);
-  const tm = await makeTendermint34Client(url, { fetch });
+  const tm = makeTendermint34Client(url, { fetch });
   return StargateClient.create(tm);
 };

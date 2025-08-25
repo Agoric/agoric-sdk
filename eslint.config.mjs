@@ -1,6 +1,5 @@
 import { fixupConfigRules, fixupPluginRules } from '@eslint/compat';
 import typescriptEslint from '@typescript-eslint/eslint-plugin';
-import prettier from 'eslint-plugin-prettier';
 import tsParser from '@typescript-eslint/parser';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -51,6 +50,7 @@ const deprecatedTerminology = Object.fromEntries(
 export default [
   {
     ignores: [
+      '**/codegen',
       '**/coverage/',
       '**/node_modules/',
       '**/dist/',
@@ -66,8 +66,9 @@ export default [
       '**/ava*.config.js',
       '**/.ava*.config.js',
       '**/tsup.config.ts',
+      'yarn.config.cjs',
+      'packages/client-utils/scripts/',
       'packages/cosmic-proto/proto/',
-      'packages/cosmic-proto/src/codegen/',
       'packages/cosmic-proto/scripts/',
       // Cosmic-swingset specific ignores
       'packages/cosmic-swingset/t[0-9]/',
@@ -94,7 +95,6 @@ export default [
   {
     plugins: {
       '@typescript-eslint': typescriptEslint,
-      prettier,
       'require-extensions': fixupPluginRules(requireExtensions),
     },
 
@@ -176,7 +176,6 @@ export default [
         },
       ],
 
-      'prettier/prettier': 'warn',
       'no-use-before-define': 'off',
     },
   },

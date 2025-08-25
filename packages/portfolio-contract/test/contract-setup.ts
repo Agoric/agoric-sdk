@@ -30,9 +30,13 @@ const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
 const { values } = Object;
 
-const deploy = async (t: ExecutionContext) => {
+export const deploy = async (t: ExecutionContext) => {
   const common = await setupPortfolioTest(t);
-  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+  let contractBaggage;
+  const setJig = ({ baggage }) => {
+    contractBaggage = baggage;
+  };
+  const { zoe, bundleAndInstall } = await setUpZoeForTest({ setJig });
   t.log('contract deployment', contractName);
 
   const installation: Installation<StartFn> =
@@ -51,8 +55,6 @@ const deploy = async (t: ExecutionContext) => {
     'osmosis',
     'Polygon',
     'Optimism',
-    'Fantom',
-    'Binance',
     'Avalanche',
     'Arbitrum',
     'Ethereum',
@@ -86,11 +88,18 @@ const deploy = async (t: ExecutionContext) => {
       }),
     ),
   );
-  return { common, zoe, started, timerService };
+  return {
+    common: { ...common, utils: { ...common.utils, bundleAndInstall } },
+    zoe,
+    contractBaggage,
+    started,
+    timerService,
+  };
 };
 
 export const setupTrader = async (t, initial = 10_000) => {
-  const { common, zoe, started, timerService } = await deploy(t);
+  const deployed = await deploy(t);
+  const { common, zoe, started } = deployed;
   const { usdc, bld, poc26 } = common.brands;
   const { when } = common.utils.vowTools;
 
@@ -119,6 +128,7 @@ export const setupTrader = async (t, initial = 10_000) => {
     return makeTrader(myWallet, started.instance, readPublished);
   };
   const trader1 = await makeFundedTrader();
+  const trader2 = await makeFundedTrader();
   const { ibcBridge } = common.mocks;
   for (const { msg, ack } of values(makeUSDNIBCTraffic())) {
     ibcBridge.addMockAck(msg, ack);
@@ -127,14 +137,16 @@ export const setupTrader = async (t, initial = 10_000) => {
     ibcBridge.addMockAck(msg, ack);
   }
 
-  return { common, zoe, started, makeFundedTrader, trader1, timerService };
+  return { ...deployed, makeFundedTrader, trader1, trader2 };
 };
 
 export const simulateUpcallFromAxelar = async (
   transferBridge: ScopedBridgeManager<'vtransfer'>,
   sourceChain: string,
+  address: `0x${string}` = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+  target = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
 ) => {
-  const event = makeIncomingEVMEvent({ sourceChain });
+  const event = makeIncomingEVMEvent({ address, sourceChain, target });
   return (
     VE(transferBridge)
       .fromBridge(event)

@@ -4,6 +4,10 @@
 const { freeze } = Object;
 
 /**
+ * @typedef {Record<string, string | undefined>} Environment
+ */
+
+/**
  * Access to run a command with flags appended.
  *
  * @example
@@ -16,31 +20,64 @@ const { freeze } = Object;
  *
  * XXX use a different name from execFile since the meaning is different
  * @param {string} file
- * @param {{ execFile: any }} io XXX expects promisify
+ * @param {{ execFile?: any, defaultEnv?: Environment }} [io] XXX expects promisify
  */
-export const makeCmdRunner = (file, { execFile }) => {
-  /** @param {{ preArgs?: string[], postArgs?: string[] }} [opts] */
-  const make = ({ preArgs = [], postArgs = [] } = {}) => {
+export const makeCmdRunner = (file, { execFile, defaultEnv } = {}) => {
+  /**
+   * @param {{
+   *   preArgs: string[],
+   *   postArgs: string[],
+   *   postEnv: Environment }} opts
+   */
+  const make = ({ preArgs, postArgs, postEnv }) => {
     return freeze({
       /**
        * @param {string[]} args
-       * @param {*} [opts]
+       * @param {object} [opts]
+       * @param {Record<string, string | undefined>} [opts.env]
+       * @param {string} [opts.encoding]
+       * @param {*} [opts.stdio]
        */
       exec: (
         args,
-        opts = { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
-      ) => execFile(file, [...preArgs, ...args, ...postArgs], opts),
+        {
+          env = { ...defaultEnv },
+          encoding = 'utf8',
+          stdio = ['ignore', 'pipe', 'ignore'],
+          ...opts
+        } = {},
+      ) =>
+        execFile(file, [...preArgs, ...args, ...postArgs], {
+          ...opts,
+          env: { ...env, ...postEnv },
+          encoding,
+          stdio,
+        }),
       /**
        * @param {string} name
-        @param {string[]} [opts] */
+       * @param {string[]} [opts]
+       */
       subCommand: (name, opts = []) =>
-        make({ preArgs: [...preArgs, name, ...opts], postArgs }),
+        make({ preArgs: [...preArgs, name, ...opts], postArgs, postEnv }),
+      /**
+       * @param {string[]} args
+       */
+      withArgs: (...args) =>
+        make({ preArgs: [...preArgs, ...args], postArgs, postEnv }),
+      /**
+       * @param {Environment} env
+       */
+      withEnv: env =>
+        make({ preArgs, postArgs, postEnv: { ...env, ...postEnv } }),
+      /**
+       *
+       */
       /** @param {string[]} tailFlags */
       withFlags: (...tailFlags) =>
-        make({ preArgs, postArgs: [...postArgs, ...tailFlags] }),
+        make({ preArgs, postArgs: [...postArgs, ...tailFlags], postEnv }),
     });
   };
-  return make();
+  return make({ preArgs: [], postArgs: [], postEnv: {} });
 };
 freeze(makeCmdRunner);
 /** @typedef {ReturnType<makeCmdRunner>} CmdRunner */

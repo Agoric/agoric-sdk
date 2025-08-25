@@ -13,6 +13,7 @@ import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { setupOrchestrationTest } from '@agoric/orchestration/tools/contract-tests.ts';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import { makeNameHubKit } from '@agoric/vats';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
@@ -22,9 +23,11 @@ import { encodeAbiParameters } from 'viem';
 export const makeIncomingEVMEvent = ({
   address = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
   sourceChain,
+  target = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
 }: {
   address?: `0x${string}`;
   sourceChain: string;
+  target?: string;
 }) => {
   const encodedAddress = encodeAbiParameters([{ type: 'address' }], [address]);
 
@@ -38,6 +41,7 @@ export const makeIncomingEVMEvent = ({
   return makeIncomingVTransferEvent({
     sourceChannel: axelarToAgoricChannel,
     destinationChannel: agoricToAxelarChannel,
+    target,
     memo: JSON.stringify({
       source_chain: sourceChain,
       source_address: '0x19e71e7eE5c2b13eF6bd52b9E3b437bdCc7d43c8',
@@ -125,14 +129,6 @@ export const axelarCCTPConfig = {
     namespace: 'eip155',
     reference: '137',
     cctpDestinationDomain: 7,
-  },
-  Fantom: {
-    namespace: 'eip155',
-    reference: '250',
-  },
-  Binance: {
-    namespace: 'eip155',
-    reference: '56',
   },
 };
 
@@ -238,8 +234,16 @@ export const setupPortfolioTest = async ({
   const { poolMetricsNode: _p, ...commonPrivateArgs } =
     common.commonPrivateArgs;
 
+  const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
+    makeNameHubKit();
+  const bootstrap = {
+    ...common.bootstrap,
+    namesByAddress,
+    namesByAddressAdmin,
+  };
   return {
     ...common,
+    bootstrap,
     brands: { usdc: usdcSansMint, poc26, bld },
     commonPrivateArgs: {
       ...commonPrivateArgs,

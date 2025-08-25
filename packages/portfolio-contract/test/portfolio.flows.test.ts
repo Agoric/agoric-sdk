@@ -18,17 +18,20 @@ import {
 } from '@agoric/internal/src/storage-test-utils.js';
 import { denomHash, type Orchestrator } from '@agoric/orchestration';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import {
+  RebalanceStrategy,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import type { VowTools } from '@agoric/vow';
+import { prepareVowTools, type VowTools } from '@agoric/vow';
 import type { Proposal, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
-import { RebalanceStrategy, YieldProtocol } from '../src/constants.js';
 import {
   preparePortfolioKit,
   type PortfolioKit,
@@ -44,6 +47,8 @@ import {
   makeSwapLockMessages,
   makeUnlockSwapMessages,
 } from '../src/pos-usdn.flows.ts';
+import { prepareResolverKit } from '../src/resolver/resolver.exo.js';
+import { PENDING_TXS_NODE_KEY } from '../src/resolver/types.ts';
 import {
   makeOfferArgsShapes,
   type OfferArgsFor,
@@ -257,14 +262,23 @@ const mocks = (
   const marshaller = board.getReadonlyMarshaller();
 
   const storage = makeFakeStorageKit('published', { sequence: true });
-  const portfoliosNode = storage.rootNode
-    .makeChildNode('ymax0')
-    .makeChildNode('portfolios');
+  const ymaxNode = storage.rootNode.makeChildNode('ymax0');
+  const pendingTxsNode = ymaxNode.makeChildNode(PENDING_TXS_NODE_KEY);
+  const portfoliosNode = ymaxNode.makeChildNode('portfolios');
   const timer = buildZoeManualTimer();
 
   const denom = `ibc/${denomHash({ channelId: 'channel-123', denom: 'uusdc' })}`;
 
   const inertSubscriber = {} as ResolvedPublicTopic<never>['subscriber'];
+
+  const resolverZone = zone.subZone('CCTPResolver');
+  // Use actual vow tools for the resolver to create proper vows, not promises
+  const resolverVowTools = prepareVowTools(zone.subZone('vowTools'));
+  const { client: cctpClient } = prepareResolverKit(resolverZone, mockZCF, {
+    vowTools: resolverVowTools,
+    pendingTxsNode,
+    marshaller,
+  })();
 
   const ctx1: PortfolioInstanceContext = {
     zoeTools,
@@ -274,6 +288,9 @@ const mocks = (
     gmpFeeInfo: { brand: BLD, denom: 'ubld' },
     inertSubscriber,
     gmpAddresses,
+    cctpClient: cctpClient as unknown as GuestInterface<
+      PortfolioInstanceContext['cctpClient']
+    >,
   };
 
   const chainHubTools = harden({
@@ -339,7 +356,7 @@ const mocks = (
 /* We use _method to get it to sort before other properties. */
 
 const docOpts = {
-  node: 'ymax0.portfolios',
+  node: 'ymax0',
   owner: 'ymax',
   showValue: defaultSerializer.parse,
 };
@@ -888,6 +905,25 @@ test('Engine can move deposits +agoric -> @agoric', async t => {
     { _method: 'send', toAccount: { value: 'agoric11014' } },
   ]);
 
+  t.snapshot(log, 'call log'); // see snapshot for remaining arg details
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test('client can move to deposit LCA', async t => {
+  const { orch, ctx, offer, storage } = mocks({}, {});
+  const { log, seat } = offer;
+
+  const amount = AmountMath.make(USDC, 300n);
+  const kit = await ctx.makePortfolioKit();
+
+  await rebalance(
+    orch,
+    ctx,
+    offer.seat,
+    { flow: [{ src: '<Deposit>', dest: '+agoric', amount }] },
+    kit,
+  );
+  t.like(log, [{ _method: 'monitorTransfers' }, { _method: 'localTransfer' }]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   await documentStorageSchema(t, storage, docOpts);
 });

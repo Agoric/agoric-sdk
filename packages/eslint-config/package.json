@@ -34,8 +34,10 @@
     "eslint-plugin-github": "^5.1.4",
     "eslint-plugin-import": "^2.25.3",
     "eslint-plugin-jsdoc": "^46.4.3",
-    "eslint-plugin-prettier": "^5.0.0",
     "prettier": "^3.4.2",
     "typescript-eslint": "^8.17.0"
+  },
+  "engines": {
+    "node": "^20.9 || ^22.11"
   }
 }
