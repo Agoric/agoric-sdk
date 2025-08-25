@@ -1,7 +1,7 @@
 import test from 'ava';
 import { ethers } from 'ethers';
 import { getTxStatus } from '../src/axelar/gmp-status.ts';
-import type { AxelarExecutedEvent } from '../src/axelar/gmp-status.ts';
+import type { AxelarExecutedEvent } from '../src/types/index.ts';
 
 const createMockAxelarResponse = (
   status: 'executed' | 'pending' | 'error',
@@ -158,7 +158,7 @@ test('getTxStatus detects successful execution with matching subscription ID', a
       contractAddress: '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
     },
     subscriptionId,
-    logPrefix: '[TEST]',
+    log: console.log,
   });
 
   t.true(result.success, 'Should return success for executed transaction');
@@ -187,8 +187,9 @@ test('getTxStatus rejects execution with mismatched subscription ID', async t =>
     },
     subscriptionId: expectedSubscriptionId,
     logPrefix: '[TEST]',
-    timeoutMinutes: 0.1, // 6 seconds
-    waitingPeriod: 0.05, // 3 seconds
+    timeoutMinutes: 0.05, // 3 seconds timeout for test
+    retryDelaySeconds: 0.05,
+    log: console.log,
   });
 
   t.false(

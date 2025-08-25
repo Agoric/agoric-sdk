@@ -10,7 +10,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# set ESM_DISABLE_CACHE=true (will be JSON parsed)
 jobs:
   gotest:
     runs-on: ubuntu-latest

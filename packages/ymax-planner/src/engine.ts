@@ -25,6 +25,7 @@ import {
   type EVMContext,
   type Subscription,
 } from './subscription-manager.ts';
+import { log } from 'node:console';
 
 const { isInteger } = Number;
 
@@ -294,17 +295,6 @@ type IO = {
   signingSmartWalletKit: SigningSmartWalletKit;
 };
 
-const getInvitationMakers = async (wallet: SigningSmartWalletKit) => {
-  const getCurrentWalletRecord = await wallet.query.getCurrentWalletRecord();
-  const invitation = getCurrentWalletRecord.offerToUsedInvitation.find(
-    inv => inv[1].value[0].description === 'resolver',
-  );
-  if (!invitation) {
-    throw new Error('No invitation makers found');
-  }
-  return invitation;
-};
-
 export const startEngine = async ({
   evmCtx,
   rpc,
@@ -402,9 +392,6 @@ export const startEngine = async ({
     `Found ${subscriptionKeys.length} existing subscriptions to monitor`,
   );
 
-  const invitationMakersOffer = await getInvitationMakers(
-    signingSmartWalletKit,
-  );
   // Process existing pending subscriptions on startup
   await makeWorkPool(subscriptionKeys, undefined, async subscriptionKey => {
     const logIgnoredError = err => {
@@ -452,7 +439,7 @@ export const startEngine = async ({
         fetch,
       },
       subscription,
-      invitationMakersOffer[0],
+      log,
     ).catch(logIgnoredError);
   }).done;
 
@@ -600,7 +587,7 @@ export const startEngine = async ({
             fetch,
           },
           subscription,
-          invitationMakersOffer[0],
+          log,
         ).catch(error => {
           console.error(
             `⚠️ Failed to process subscription: ${subscriptionId}`,

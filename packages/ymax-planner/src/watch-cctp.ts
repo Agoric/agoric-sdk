@@ -64,10 +64,10 @@ export const watchCCTPTransfer = ({
       listeners = [];
     };
 
-    const listenForTransfer = (log: any) => {
+    const listenForTransfer = (eventLog: any) => {
       let transferData;
       try {
-        transferData = parseTransferLog(log);
+        transferData = parseTransferLog(eventLog);
       } catch (error: any) {
         log(`Log parsing error:`, error.message);
         return;
@@ -76,7 +76,7 @@ export const watchCCTPTransfer = ({
       const { from, to, amount } = transferData;
 
       log(
-        `Transfer detected: token=${log.address} from=${from} to=${to} amount=${amount} tx=${log.transactionHash}`,
+        `Transfer detected: token=${eventLog.address} from=${from} to=${to} amount=${amount} tx=${eventLog.transactionHash}`,
       );
 
       if (amount === expectedAmount) {

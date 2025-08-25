@@ -2,14 +2,17 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { VStorage } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
+import type { StreamCell } from '@agoric/internal/src/lib-chainStorage.js';
 import type { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
 import {
   eventLoopIteration,
   inspectMapStore,
 } from '@agoric/internal/src/testing-utils.js';
-import { passStyleOf } from '@endo/far';
+import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
+import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
+import { E, passStyleOf } from '@endo/far';
 import type { StatusFor } from '../src/type-guards.ts';
 import {
   setupTrader,
@@ -17,7 +20,12 @@ import {
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
+import {
+  settleCCTPWithMockReceiver,
+  getResolverMakers,
+} from './resolver-helpers.ts';
 import { evmNamingDistinction, localAccount0 } from './mocks.ts';
+import { plannerClientMock } from '../tools/agents-mock.ts';
 
 const { fromEntries, keys } = Object;
 
@@ -107,13 +115,14 @@ test('open portfolio with USDN position', async t => {
   t.snapshot(done.payouts, 'refund payouts');
 });
 
-test('open a portfolio with Aave position', async t => {
-  const { trader1, common } = await setupTrader(t);
+test.serial('open a portfolio with Aave position', async t => {
+  const { trader1, common, started, zoe } = await setupTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
   const feeAcct = bld.make(100n);
   const feeCall = bld.make(100n);
+
   const actualP = trader1.openPortfolio(
     t,
     { Deposit: amount, Access: poc26.make(1n) },
@@ -126,17 +135,31 @@ test('open a portfolio with Aave position', async t => {
       ],
     },
   );
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  console.log('ackd send to Axelar to create account');
 
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
-    () =>
-      simulateCCTPAck(common.utils).finally(() =>
-        simulateAckTransferToAxelar(common.utils),
-      ),
+  await eventLoopIteration();
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  t.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
+
+  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(
+    zoe,
+    resolverMakers,
+    amount.value,
+    'eip155:42161',
   );
 
-  const actual = await actualP;
+  await simulateCCTPAck(common.utils).finally(() =>
+    simulateAckTransferToAxelar(common.utils),
+  );
+
+  const [actual, cctpResult] = await Promise.all([
+    actualP,
+    cctpSettlementPromise,
+  ]);
+
+  t.log('=== Portfolio completed, CCTP result:', cctpResult);
   const result = actual.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
 
@@ -149,12 +172,13 @@ test('open a portfolio with Aave position', async t => {
 });
 
 test('open a portfolio with Compound position', async t => {
-  const { trader1, common } = await setupTrader(t);
+  const { trader1, common, started, zoe } = await setupTrader(t);
   const { bld, usdc, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
   const feeAcct = bld.make(100n);
   const feeCall = bld.make(100n);
+
   const actualP = trader1.openPortfolio(
     t,
     {
@@ -171,18 +195,32 @@ test('open a portfolio with Compound position', async t => {
       ],
     },
   );
+
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  console.log('ackd send to Axelar to create account');
+  t.log('ackd send to Axelar to create account');
 
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
-    () =>
-      simulateCCTPAck(common.utils).finally(() =>
-        simulateAckTransferToAxelar(common.utils),
-      ),
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
+
+  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(
+    zoe,
+    resolverMakers,
+    amount.value,
+    'eip155:42161',
   );
 
-  const actual = await actualP;
+  await simulateCCTPAck(common.utils).finally(() =>
+    simulateAckTransferToAxelar(common.utils),
+  );
+
+  t.log('=== Waiting for portfolio completion and CCTP confirmation ===');
+  const [actual, cctpResult] = await Promise.all([
+    actualP,
+    cctpSettlementPromise,
+  ]);
+
+  t.log('=== Portfolio completed, CCTP result:', cctpResult);
   const result = actual.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
 
@@ -195,7 +233,8 @@ test('open a portfolio with Compound position', async t => {
 });
 
 test('open portfolio with USDN, Aave positions', async t => {
-  const { trader1, common, contractBaggage } = await setupTrader(t);
+  const { trader1, common, contractBaggage, started, zoe } =
+    await setupTrader(t);
   const { bld, usdc, poc26 } = common.brands;
 
   const { add } = AmountMath;
@@ -220,23 +259,32 @@ test('open portfolio with USDN, Aave positions', async t => {
       ],
     },
   );
-  await eventLoopIteration(); // let outgoing IBC happen
-  console.log('openPortfolio, eventloop');
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  console.log('ackd send to noble');
 
-  const ackNP = await simulateUpcallFromAxelar(
-    common.mocks.transferBridge,
-    sourceChain,
-  ).then(() =>
-    simulateCCTPAck(common.utils).finally(() =>
-      simulateAckTransferToAxelar(common.utils),
-    ),
+  await eventLoopIteration(); // let outgoing IBC happen
+  t.log('openPortfolio, eventloop');
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  t.log('ackd send to noble');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
+
+  // Start CCTP confirmation for the Aave portion (amount goes to Arbitrum)
+  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(
+    zoe,
+    resolverMakers,
+    amount.value, // Only the amount going to Arbitrum needs CCTP confirmation
+    'eip155:42161',
+  );
+
+  await simulateCCTPAck(common.utils).finally(() =>
+    simulateAckTransferToAxelar(common.utils),
   );
 
   await eventLoopIteration(); // let bridge I/O happen
 
-  const [done] = await Promise.all([doneP, ackNP]);
+  const [done, cctpResult] = await Promise.all([doneP, cctpSettlementPromise]);
+
+  t.log('=== Portfolio completed, CCTP result:', cctpResult);
   const result = done.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
 
@@ -310,12 +358,13 @@ test('open portfolio with target allocations', async t => {
 });
 
 test('claim rewards on Aave position successfully', async t => {
-  const { trader1, common } = await setupTrader(t);
+  const { trader1, common, started, zoe } = await setupTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
   const feeAcct = bld.make(100n);
   const feeCall = bld.make(100n);
+
   const actualP = trader1.openPortfolio(
     t,
     { Deposit: amount, Access: poc26.make(1n) },
@@ -328,17 +377,31 @@ test('claim rewards on Aave position successfully', async t => {
       ],
     },
   );
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  console.log('ackd send to Axelar to create account');
 
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
-    () =>
-      simulateCCTPAck(common.utils).finally(() =>
-        simulateAckTransferToAxelar(common.utils),
-      ),
+  await eventLoopIteration(); // let IBC message go out
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  t.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
+
+  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(
+    zoe,
+    resolverMakers,
+    amount.value,
+    'eip155:42161',
   );
 
-  const done = await actualP;
+  await simulateCCTPAck(common.utils).finally(() =>
+    simulateAckTransferToAxelar(common.utils),
+  );
+
+  const [done, cctpResult] = await Promise.all([
+    actualP,
+    cctpSettlementPromise,
+  ]);
+
+  t.log('=== Portfolio completed, CCTP result:', cctpResult);
   const result = done.result as any;
 
   const { storagePath } = result.publicSubscribers.portfolio;
@@ -362,17 +425,14 @@ test('claim rewards on Aave position successfully', async t => {
 
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   const rebalanceResult = await rebalanceP;
-  console.log('rebalance done', rebalanceResult);
+  t.log('rebalance done', rebalanceResult);
 
   const messagesAfter = common.utils.inspectLocalBridge();
 
   t.deepEqual(messagesAfter.length - messagesBefore.length, 2);
 
   t.log(storagePath);
-  const { contents, positionPaths, flowPaths } = getPortfolioInfo(
-    storagePath,
-    common.bootstrap.storage,
-  );
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
   t.snapshot(contents, 'vstorage');
 
   t.snapshot(rebalanceResult.payouts, 'rebalance payouts');
@@ -446,12 +506,13 @@ test('USDN claim fails currently', async t => {
 });
 
 test('open a portfolio with Beefy position', async t => {
-  const { trader1, common } = await setupTrader(t);
+  const { trader1, common, started, zoe } = await setupTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
   const feeAcct = bld.make(100n);
   const feeCall = bld.make(100n);
+
   const actualP = trader1.openPortfolio(
     t,
     { Deposit: amount, Access: poc26.make(1n) },
@@ -464,17 +525,30 @@ test('open a portfolio with Beefy position', async t => {
       ],
     },
   );
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  console.log('ackd send to Axelar to create account');
 
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
-    () =>
-      simulateCCTPAck(common.utils).finally(() =>
-        simulateAckTransferToAxelar(common.utils),
-      ),
+  await eventLoopIteration(); // let IBC message go out
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  t.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
+
+  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(
+    zoe,
+    resolverMakers,
+    amount.value,
+    'eip155:42161',
   );
 
-  const actual = await actualP;
+  await simulateCCTPAck(common.utils).finally(() =>
+    simulateAckTransferToAxelar(common.utils),
+  );
+  const [actual, cctpResult] = await Promise.all([
+    actualP,
+    cctpSettlementPromise,
+  ]);
+
+  t.log('=== Portfolio completed, CCTP result:', cctpResult);
   const result = actual.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
 
@@ -487,12 +561,13 @@ test('open a portfolio with Beefy position', async t => {
 });
 
 test('Withdraw from a Beefy position', async t => {
-  const { trader1, common } = await setupTrader(t);
+  const { trader1, common, started, zoe } = await setupTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
   const feeAcct = bld.make(100n);
   const feeCall = bld.make(100n);
+
   const actualP = trader1.openPortfolio(
     t,
     { Deposit: amount, Access: poc26.make(1n) },
@@ -505,17 +580,29 @@ test('Withdraw from a Beefy position', async t => {
       ],
     },
   );
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  console.log('ackd send to Axelar to create account');
 
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain).then(
-    () =>
-      simulateCCTPAck(common.utils).finally(() =>
-        simulateAckTransferToAxelar(common.utils),
-      ),
+  await eventLoopIteration(); // let IBC message go out
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  t.log('ackd send to Axelar to create account');
+
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
+
+  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(
+    zoe,
+    resolverMakers,
+    amount.value,
+    'eip155:42161',
   );
 
-  const actual = await actualP;
+  await simulateCCTPAck(common.utils).finally(() =>
+    simulateAckTransferToAxelar(common.utils),
+  );
+  const [actual, cctpResult] = await Promise.all([
+    actualP,
+    cctpSettlementPromise,
+  ]);
+
   const result = actual.result as any;
 
   const withdrawP = trader1.rebalance(
@@ -552,6 +639,7 @@ test('Withdraw from a Beefy position', async t => {
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
+
   const withdraw = await withdrawP;
 
   const { storagePath } = result.publicSubscribers.portfolio;
@@ -586,4 +674,303 @@ test('initial baggage', async t => {
 
   const tree = inspectMapStore(contractBaggage);
   t.snapshot(tree, 'contract baggage after start');
+  // CCTP Confirmation Tests
+});
+
+test.serial(
+  'open 2 positions on an EVM chain, with a CCTP confirmation for each',
+  async t => {
+    const { trader1, common, started, zoe } = await setupTrader(t);
+    const { usdc, bld, poc26 } = common.brands;
+
+    const amount = usdc.units(6_666.66);
+    const amount_half = usdc.units(3_333.33);
+    const feeAcct = bld.make(100n);
+    const feeCall = bld.make(100n);
+
+    const actualP = trader1.openPortfolio(
+      t,
+      { Deposit: amount, Access: poc26.make(1n) },
+      {
+        flow: [
+          { src: '<Deposit>', dest: '@agoric', amount },
+          { src: '@agoric', dest: '@noble', amount },
+          {
+            src: '@noble',
+            dest: '@Arbitrum',
+            amount: amount_half,
+            fee: feeAcct,
+          },
+          {
+            src: '@noble',
+            dest: '@Arbitrum',
+            amount: amount_half,
+            fee: feeAcct,
+          },
+          { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+        ],
+      },
+    );
+
+    await eventLoopIteration();
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    t.log('ackd send to Axelar to create account');
+
+    await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
+
+    await common.utils
+      .transmitVTransferEvent('acknowledgementPacket', -1)
+      .then(() => eventLoopIteration());
+    await eventLoopIteration();
+
+    const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+    const cctpSettlementPromise = settleCCTPWithMockReceiver(
+      zoe,
+      resolverMakers,
+      amount_half.value,
+      'eip155:42161',
+    );
+
+    await simulateCCTPAck(common.utils).finally(() =>
+      simulateAckTransferToAxelar(common.utils),
+    );
+
+    await common.utils
+      .transmitVTransferEvent('acknowledgementPacket', -1)
+      .then(() => eventLoopIteration());
+    await eventLoopIteration();
+
+    const cctpSettlementPromise2 = settleCCTPWithMockReceiver(
+      zoe,
+      resolverMakers,
+      amount_half.value,
+      'eip155:42161',
+    );
+
+    await simulateCCTPAck(common.utils).finally(() =>
+      simulateAckTransferToAxelar(common.utils),
+    );
+
+    const cctpResult = await cctpSettlementPromise;
+    const cctpResult2 = await cctpSettlementPromise2;
+    const actual = await actualP;
+
+    const result = actual.result as any;
+    t.is(passStyleOf(result.invitationMakers), 'remotable');
+
+    t.is(keys(result.publicSubscribers).length, 1);
+    const { storagePath } = result.publicSubscribers.portfolio;
+    t.log(storagePath);
+    const { contents } = getPortfolioInfo(
+      storagePath,
+      common.bootstrap.storage,
+    );
+    t.snapshot(contents, 'vstorage');
+    t.snapshot(actual.payouts, 'refund payouts');
+  },
+);
+
+test.serial(
+  'open 2 positions on an EVM chain, each from a seperate portfolio, with CCTP confirmation running in parallel',
+  async t => {
+    const { trader1, common, started, zoe, trader2 } = await setupTrader(t);
+    const { usdc, bld, poc26 } = common.brands;
+
+    // XXX: values found from reverse engineering.
+    const stringToBase64 = str => Buffer.from(str).toString('base64');
+    const msgDataPayload = Buffer.concat([
+      Buffer.from(
+        '\nj\n!/circle.cctp.v1.MsgDepositForBurn\x12E\n\fcosmos1test1\x12\n3333330000',
+      ),
+      Buffer.from(
+        'GAMiIAAAAAAAAAAAAAAAAPu4nMBP+3ELH2RbLL7aDOfZMpT0KgU=',
+        'base64',
+      ),
+      Buffer.from('uusdc'),
+    ]);
+    const msgData = {
+      type: 1,
+      data: msgDataPayload.toString('base64'),
+      memo: '',
+    };
+    const ackData = {
+      result: stringToBase64(
+        '\x12+\n)/circle.cctp.v1.MsgDepositForBurnResponse',
+      ),
+    };
+    common.mocks.ibcBridge.addMockAck(
+      stringToBase64(JSON.stringify(msgData)),
+      stringToBase64(JSON.stringify(ackData)),
+    );
+
+    const amount = usdc.units(3_333.33);
+    const feeAcct = bld.make(100n);
+    const feeCall = bld.make(100n);
+
+    const actualP = trader1.openPortfolio(
+      t,
+      { Deposit: amount, Access: poc26.make(1n) },
+      {
+        flow: [
+          { src: '<Deposit>', dest: '@agoric', amount },
+          { src: '@agoric', dest: '@noble', amount },
+          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+          { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+        ],
+      },
+    );
+
+    await simulateCCTPAck(common.utils).finally(() =>
+      simulateAckTransferToAxelar(common.utils),
+    );
+    await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
+
+    const actualP2 = trader2.openPortfolio(
+      t,
+      { Deposit: amount, Access: poc26.make(1n) },
+      {
+        flow: [
+          { src: '<Deposit>', dest: '@agoric', amount },
+          { src: '@agoric', dest: '@noble', amount },
+          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+          { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+        ],
+      },
+    );
+    const mockEVMAddress = '0xFbb89cC04ffb710b1f645b2cbEda0CE7D93294F4';
+    const secondAccountAddress =
+      'agoric1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq64vywd';
+
+    await simulateCCTPAck(common.utils).finally(() =>
+      simulateAckTransferToAxelar(common.utils),
+    );
+    await simulateUpcallFromAxelar(
+      common.mocks.transferBridge,
+      sourceChain,
+      mockEVMAddress,
+      secondAccountAddress,
+    );
+
+    const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+    const cctpSettlementPromise = settleCCTPWithMockReceiver(
+      zoe,
+      resolverMakers,
+      amount.value,
+      'eip155:42161',
+    );
+
+    const cctpSettlementPromise2 = settleCCTPWithMockReceiver(
+      zoe,
+      resolverMakers,
+      amount.value,
+      'eip155:42161',
+      0,
+      'confirmed',
+      console.log,
+      mockEVMAddress,
+    );
+
+    const [cctpResult, cctpResult2] = await Promise.all([
+      cctpSettlementPromise,
+      cctpSettlementPromise2,
+    ]);
+
+    await eventLoopIteration(); // let IBC message go out
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+
+    await eventLoopIteration(); // let IBC message go out
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
+    const actual = await actualP;
+    const actual2 = await actualP2;
+
+    const result = actual.result as any;
+    t.is(passStyleOf(result.invitationMakers), 'remotable');
+
+    t.is(keys(result.publicSubscribers).length, 1);
+    const { storagePath } = result.publicSubscribers.portfolio;
+    t.log(storagePath);
+    const { contents } = getPortfolioInfo(
+      storagePath,
+      common.bootstrap.storage,
+    );
+    t.snapshot(contents, 'vstorage');
+    t.snapshot(actual.payouts, 'refund payouts');
+  },
+);
+const getCapDataStructure = cell => {
+  const { body, slots } = JSON.parse(cell);
+  const structure = JSON.parse(body.replace(/^#/, ''));
+  return { structure, slots };
+};
+
+test('start deposit more to same', async t => {
+  const { trader1, common } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const targetAllocation = {
+    USDN: 60n,
+    Aave_Arbitrum: 40n,
+  };
+  await trader1.openPortfolio(
+    t,
+    { Access: poc26.make(1n) },
+    { targetAllocation },
+  );
+
+  const amount = usdc.units(3_333.33);
+  const actualP = trader1.rebalance(
+    t,
+    { give: { Deposit: amount }, want: {} },
+    {
+      flow: [{ src: '<Deposit>', dest: '+agoric', amount }],
+    },
+  );
+
+  const actual = await actualP;
+  const result = actual.result as any;
+
+  const info = await trader1.getPortfolioStatus();
+  t.deepEqual(
+    info.depositAddress,
+    'agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g',
+  );
+});
+
+test('redeem planner invitation', async t => {
+  const { common, zoe, started, trader1 } = await setupTrader(t);
+
+  const { storage } = common.bootstrap;
+  const readAt: VStorage['readAt'] = async (path: string, _h?: number) => {
+    await eventLoopIteration();
+    const cell: StreamCell = {
+      blockHeight: '0',
+      values: storage.getValues(path),
+    };
+    return cell;
+  };
+  const readLegible = async (path: string) => {
+    await eventLoopIteration();
+    return getCapDataStructure(storage.getValues(path).at(-1));
+  };
+
+  const boot = async () => {
+    return {
+      ...common.bootstrap,
+      zoe,
+      utils: { ...common.utils, readLegible },
+    };
+  };
+
+  const { provisionSmartWallet } = await deployWalletFactory({ boot });
+  const [walletPlanner] = await provisionSmartWallet('agoric1planner');
+  const toPlan = await E(started.creatorFacet).makePlannerInvitation();
+  await E(E(walletPlanner).getDepositFacet()).receive(toPlan);
+
+  const planner1 = plannerClientMock(walletPlanner, started.instance, readAt);
+  await planner1.redeem();
+
+  await trader1.openPortfolio(t, {}, {});
+
+  await planner1.submit1();
 });

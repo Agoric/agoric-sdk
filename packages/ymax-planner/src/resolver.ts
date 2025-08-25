@@ -5,22 +5,23 @@ import type {
   GmpSubscription,
 } from './subscription-manager.js';
 
-type ResolveCCTPSubscriptionParams = {
+type ResolveSubscriptionParams = {
   signingSmartWalletKit: SigningSmartWalletKit;
   subscriptionId: string;
   status: 'success' | 'timeout';
-  subscriptionData: CctpSubscription;
-  previousOfferId: string;
+  subscriptionData: CctpSubscription | GmpSubscription;
   proposal?: object;
 };
 
-type ResolveGMPSubscriptionParams = {
-  signingSmartWalletKit: SigningSmartWalletKit;
-  subscriptionId: string;
-  status: 'success' | 'timeout';
-  subscriptionData: GmpSubscription;
-  previousOfferId: string;
-  proposal?: object;
+const getInvitationMakers = async (wallet: SigningSmartWalletKit) => {
+  const getCurrentWalletRecord = await wallet.query.getCurrentWalletRecord();
+  const invitation = getCurrentWalletRecord.offerToUsedInvitation.find(
+    inv => inv[1].value[0].description === 'resolver',
+  );
+  if (!invitation) {
+    throw new Error('No invitation makers found');
+  }
+  return invitation;
 };
 
 export const resolveCCTPSubscription = async ({
@@ -28,9 +29,8 @@ export const resolveCCTPSubscription = async ({
   subscriptionId,
   status,
   subscriptionData,
-  previousOfferId,
   proposal = {},
-}: ResolveCCTPSubscriptionParams) => {
+}: ResolveSubscriptionParams) => {
   if (status === 'timeout') {
     console.log('timeout is not implemented yet in contract');
     return;
@@ -41,13 +41,18 @@ export const resolveCCTPSubscription = async ({
       `Expected subscription type to be 'cctp', got ${subscriptionData.type}`,
     );
   }
+
+  const invitationMakersOffer = await getInvitationMakers(
+    signingSmartWalletKit,
+  );
+
   const [chainId, chainName, contractAddress] =
     subscriptionData.destinationAddress.split(':');
   const action: OfferSpec = harden({
     id: `offer-${Date.now()}`,
     invitationSpec: {
       source: 'continuing',
-      previousOffer: previousOfferId,
+      previousOffer: invitationMakersOffer[0],
       invitationMakerName: 'SettleCCTPTransaction',
     },
     offerArgs: {
@@ -71,8 +76,7 @@ export const resolveGMPSubscription = async ({
   subscriptionId,
   status,
   subscriptionData,
-  previousOfferId,
   proposal = {},
-}: ResolveGMPSubscriptionParams) => {
-  throw new Error('GMP subscription resolution is not implemented yet');
+}: ResolveSubscriptionParams) => {
+  throw new Error('TODO: GMP subscription resolution is not implemented yet');
 };

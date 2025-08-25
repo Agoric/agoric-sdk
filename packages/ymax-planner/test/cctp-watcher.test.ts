@@ -49,7 +49,7 @@ test('watchCCTPTransfer detects exact amount match', async t => {
     watchAddress,
     expectedAmount,
     timeoutMinutes: 0.05, // 3 seconds for test
-    logPrefix: '[TEST]',
+    log: console.log,
   });
 
   // Simulate a matching transfer event after short delay
@@ -90,7 +90,7 @@ test('watchCCTPTransfer ignores amount mismatch', async t => {
     watchAddress,
     expectedAmount,
     timeoutMinutes: 0.05,
-    logPrefix: '[TEST]',
+    log: console.log,
   });
 
   setTimeout(() => {
@@ -130,7 +130,7 @@ test('watchCCTPTransfer detects multiple transfers but only matches exact amount
     watchAddress,
     expectedAmount,
     timeoutMinutes: 0.1, // 6 seconds
-    logPrefix: '[TEST]',
+    log: console.log,
   });
 
   const transfers = [
