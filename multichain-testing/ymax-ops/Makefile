@@ -30,6 +30,12 @@ list-items:
 check-id:
 	@$(BW) get username $(YMAX_ITEM_ID)
 
+add-key:
+	$(BW) get password $(YMAX_ITEM_ID) | agd keys add ymaxControl
+
+provision-ymaxControl:
+	agd tx swingset provision-one yc $(YMAX_CONTROL_ADDR) SMART_WALLET --node $(NODE) --from $(YMAX_CONTROL_ADDR) $(SIG_OPTS)
+
 check-vstorage: ,vstorage-outdated-$(AGORIC_NET).json
 
 ,vstorage-outdated-$(AGORIC_NET).json:
