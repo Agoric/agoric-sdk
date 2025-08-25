@@ -25,8 +25,8 @@ service Query {
   }
 
   // Return the state of a pending installation.
-  rpc PendingInstall(QueryPendingInstallRequest) returns (QueryPendingInstallResponse) {
-    option (google.api.http).get = "/agoric/swingset/bundle/pending/{pending_id}";
+  rpc ChunkedArtifactStatus(QueryChunkedArtifactStatusRequest) returns (QueryChunkedArtifactStatusResponse) {
+    option (google.api.http).get = "/agoric/swingset/chunked-artifact-status/{chunked_artifact_id}";
   }
 }
 
@@ -67,19 +67,20 @@ message QueryMailboxResponse {
   string value = 1 [(gogoproto.jsontag) = "value", (gogoproto.moretags) = "yaml:\"value\""];
 }
 
-// QueryPendingInstallRequest is the request type for the Query/PendingInstall RPC method.
-message QueryPendingInstallRequest {
-  uint64 pending_id = 1 [(gogoproto.jsontag) = "pending_id", (gogoproto.moretags) = "yaml:\"pending_id\""];
+// QueryChunkedArtifactStatusRequest is the request type for the Query/ChunkedArtifact RPC method.
+message QueryChunkedArtifactStatusRequest {
+  uint64 chunked_artifact_id = 1 [(gogoproto.jsontag) = "chunkedArtifactId", (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""];
 }
 
-// QueryPendingInstalllResponse is the response type for the Query/PendingInstall RPC method.
-message QueryPendingInstallResponse {
-  uint64 pending_id = 1 [(gogoproto.jsontag) = "pending_id", (gogoproto.moretags) = "yaml:\"pending_id\""];
+// QueryChunkedArtifactStatuslResponse is the response type for the Query/ChunkedArtifact RPC method.
+message QueryChunkedArtifactStatusResponse {
+  uint64 chunked_artifact_id = 1 [(gogoproto.jsontag) = "chunkedArtifactId", (gogoproto.moretags) = "yaml:\"chunkedArtifactId\""];
 
-  BundleChunks bundle_chunks = 2
-      [(gogoproto.jsontag) = "bundle_chunks", (gogoproto.moretags) = "yaml:\"bundle_chunks\""];
+  ChunkedArtifact chunked_artifact = 2
+      [(gogoproto.jsontag) = "chunkedArtifact", (gogoproto.moretags) = "yaml:\"chunkedArtifact\""];
 
-  int64 start_time = 3 [(gogoproto.jsontag) = "start_time", (gogoproto.moretags) = "yaml:\"start_time\""];
+  // Start time in UNIX epoch seconds.
+  int64 start_time_unix = 3 [(gogoproto.jsontag) = "startTimeUnix", (gogoproto.moretags) = "yaml:\"startTimeUnix\""];
 
-  int64 start_block = 4 [(gogoproto.jsontag) = "start_block", (gogoproto.moretags) = "yaml:\"start_block\""];
+  int64 start_block_height = 4 [(gogoproto.jsontag) = "startBlockHeight", (gogoproto.moretags) = "yaml:\"startBlockHeight\""];
 }
