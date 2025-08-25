@@ -6,10 +6,11 @@ FILE = config.yaml
 HELM_REPO_URL = https://agoric-labs.github.io/starship
 HELM_REPO = starship
 HELM_CHART = devnet
+RESTART_THRESHOLD = 3
 
 SS = yarn starship
 SSOPTS = --config $(FILE) --name $(NAME) --repoUrl $(HELM_REPO_URL) \
-	--repo $(HELM_REPO) --chart $(HELM_REPO)/$(HELM_CHART)
+	--repo $(HELM_REPO) --chart $(HELM_REPO)/$(HELM_CHART) --restartThreshold $(RESTART_THRESHOLD)
 STARSHIP = $(SS) $(SSOPTS)
 
 # Test command for YMax-related tests
@@ -203,3 +204,20 @@ usdc-available: ./scripts/noble-usdn-lab.ts
 			} \
 		) \
 	)
+
+
+###############################################################################
+###                          Agoric Starship Snapshot creation               ###
+###############################################################################
+
+wait-for-agoric-chain-halt:
+	kubectl logs -f agoriclocal-genesis-0 -c validator -n $(NAMESPACE) | grep -m 1 "panic: halt application"
+
+.PHONY: create-agoric-snapshot
+create-agoric-snapshot:
+	# Updating config yaml to only include the Agoric chain
+
+	yq '{"name": .name, "version": .version, "chains": (.chains | map(select(.id == "agoriclocal") | .env += [{"name": "HALT_HEIGHT", "value": "5"}]))}' $(FILE) > $(TEMP_FILE)
+	-$(MAKE) sstart FILE=$(TEMP_FILE)
+	$(MAKE) wait-for-agoric-chain-halt
+	./scripts/create-agoric-snapshot.ts
