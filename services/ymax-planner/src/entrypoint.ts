@@ -7,6 +7,8 @@ import '@endo/init/pre-remoting.js';
 import './shims.cjs';
 import '@endo/lockdown/commit.js';
 
+import { getConfig } from './config.ts';
+
 // ...but the WebSocket shim must be loaded *after* lockdown, seemingly because
 // of a dependency upon EventEmitter that is otherwise broken:
 // TypeError#1: Cannot assign to read only property '_events' of object '[object Object]'
@@ -26,8 +28,9 @@ const shimmedP = (async () => {
 })();
 
 shimmedP
-  .then(() => import('./main.ts'))
-  .then(async ({ main }) => {
+  .then(async () => {
+    const [{ main }] = await Promise.all([import('./main.ts')]);
+
     const dotEnvFile = process.env.DOTENV || '.env';
 
     // Capture our current env so that we can use them to override dotenv.
@@ -43,9 +46,12 @@ shimmedP
     dotenv.config({ path: dotEnvFile, processEnv: dotEnvAdditions });
     // console.log('Loaded .env variables:', dotEnv);
 
-    return main(process.argv.slice(1), {
-      env: harden({ ...dotEnvAdditions, ...processEnv }),
-    });
+    const env = harden({ ...dotEnvAdditions, ...processEnv });
+
+    // Validate configuration early to provide clear error messages
+    getConfig(env);
+
+    return main(process.argv.slice(1), { env });
   })
   .then(() => process.exit())
   .catch(err => {

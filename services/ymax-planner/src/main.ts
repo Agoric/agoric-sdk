@@ -7,6 +7,7 @@ import { Fail } from '@endo/errors';
 
 import { SigningStargateClient } from '@cosmjs/stargate';
 
+import { getConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { startEngine } from './engine.ts';
@@ -30,10 +31,7 @@ export const main = async (
     connectWithSigner = SigningStargateClient.connectWithSigner,
   } = {},
 ) => {
-  await null;
-
-  const { MNEMONIC } = env;
-  if (!MNEMONIC) throw Error(`MNEMONIC not set`);
+  const config = getConfig(env);
 
   const delay = ms =>
     new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
@@ -53,7 +51,7 @@ export const main = async (
 
   const signingSmartWalletKit = await makeSigningSmartWalletKit(
     { connectWithSigner, walletUtils },
-    MNEMONIC,
+    config.mnemonic,
   );
 
   console.warn(`Using:`, {
@@ -61,17 +59,12 @@ export const main = async (
     plannerAddress: signingSmartWalletKit.address,
   });
 
-  const { SPECTRUM_API_URL, SPECTRUM_API_TIMEOUT, SPECTRUM_API_RETRIES } = env;
   const spectrum = new SpectrumClient(
     { fetch, setTimeout },
     {
-      baseUrl: SPECTRUM_API_URL,
-      timeout: SPECTRUM_API_TIMEOUT
-        ? parseInt(SPECTRUM_API_TIMEOUT, 10)
-        : undefined,
-      retries: SPECTRUM_API_RETRIES
-        ? parseInt(SPECTRUM_API_RETRIES, 10)
-        : undefined,
+      baseUrl: config.spectrum.apiUrl,
+      timeout: config.spectrum.timeout,
+      retries: config.spectrum.retries,
     },
   );
 
@@ -81,9 +74,9 @@ export const main = async (
       setTimeout,
     },
     {
-      agoricNetwork: env.AGORIC_NET || 'local',
-      timeout: 15000, // 15s timeout for REST calls
-      retries: 3,
+      agoricNetwork: config.cosmosRest.agoricNetwork,
+      timeout: config.cosmosRest.timeout,
+      retries: config.cosmosRest.retries,
     },
   );
 
