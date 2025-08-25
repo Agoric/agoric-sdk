@@ -401,6 +401,15 @@ jobs:
     if: needs.pre_check.outputs.should_run == 'true'
     uses: ./.github/workflows/multichain-e2e.yml
 
+  test-ymax-planner-build:
+    needs: pre_check
+    if: needs.pre_check.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ymax-planner Docker image
+        run: docker build --file services/ymax-planner/Dockerfile --tag ymax-planner:ci .
+
   finalize-integration-result:
     needs:
       - pre_check
