@@ -31,7 +31,7 @@
   "devDependencies": {
     "@types/node": "^22.10.2",
     "@types/ws": "^8",
-    "ava": "^6.3.0",
+    "ava": "^6.4.1",
     "nodemon": "^3.1.10",
     "ts-blank-space": "^0.6.2",
     "typescript": "^5.9.2"
