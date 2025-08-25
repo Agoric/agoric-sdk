@@ -177,7 +177,7 @@
     "@cosmology/telescope": "^1.12.8",
     "@endo/bundle-source": "^4.0.0",
     "@endo/import-bundle": "^1.4.0",
-    "ava": "^6.3.0",
+    "ava": "^6.4.0",
     "glob": "^4.5.3",
     "rimraf": "^5.0.0",
     "terser": "^5.39.0",

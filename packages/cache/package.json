@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@agoric/zoe": "workspace:*",
-    "ava": "^5.3.0",
+    "ava": "^6.4.0",
     "c8": "^10.1.3"
   },
   "publishConfig": {

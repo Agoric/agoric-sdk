@@ -40,7 +40,7 @@
     "@agoric/swingset-vat": "workspace:*",
     "@agoric/zone": "workspace:*",
     "@endo/env-options": "^1.1.8",
-    "ava": "^5.3.0",
+    "ava": "^6.4.0",
     "tsd": "^0.31.1"
   },
   "publishConfig": {
