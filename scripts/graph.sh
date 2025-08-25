@@ -10,7 +10,7 @@ DIR=$(dirname -- "${BASH_SOURCE[0]}")
   echo 'digraph {'
   # Left is depended upon the least and right the most.
   echo 'rankdir=LR'
-  cat "$DIR"/../packages/*/package.json | jq -r --slurp '
+  cat "$DIR"/../{packages,services}/*/package.json | jq -r --slurp '
         . as $all |
         [.[] | {(.name): true}] | add as $locals |
 
