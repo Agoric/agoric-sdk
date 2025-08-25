@@ -1,11 +1,9 @@
 import centralSupply from '../bundles/bundle-centralSupply.js';
 import mintHolder from '../bundles/bundle-mintHolder.js';
-import provisionPool from '../bundles/bundle-provisionPool.js';
 
 export const bundles = {
   centralSupply,
   mintHolder,
-  provisionPool,
 };
 
 export const devices = {
