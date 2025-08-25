@@ -10,8 +10,8 @@ import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import type { Coin } from '@cosmjs/stargate';
-import { Fail, q } from '@endo/errors';
-import { M } from '@endo/patterns';
+import { Fail, q, X } from '@endo/errors';
+import { M, matches } from '@endo/patterns';
 import { Nat } from '@endo/nat';
 import { isPrimitive } from '@endo/pass-style';
 import { makePromiseKit, type PromiseKit } from '@endo/promise-kit';
@@ -414,11 +414,13 @@ export const startEngine = async ({
     }
 
     const subscriptionData = vstorageSettlement.value;
-    mustMatch(
-      subscriptionData,
-      BaseSubscriptionShape,
-      `subscription ${subscriptionKey}`,
-    );
+    if (!matches(subscriptionData, BaseSubscriptionShape)) {
+      const err = assert.error(
+        X`expected data ${subscriptionData} to match ${q(BaseSubscriptionShape)}`,
+      );
+      console.error(err);
+      return;
+    }
 
     const subscription = {
       subscriptionId: subscriptionKey,
@@ -559,12 +561,15 @@ export const startEngine = async ({
             Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
         );
 
+        // TODO: DRY out this code (for handling existing vs. new subscriptions)
         const subscriptionData = marshaller.fromCapData(value);
-        mustMatch(
-          subscriptionData,
-          BaseSubscriptionShape,
-          `subscription ${subscriptionId}`,
-        );
+        if (!matches(subscriptionData, BaseSubscriptionShape)) {
+          const err = assert.error(
+            X`expected data ${subscriptionData} to match ${q(BaseSubscriptionShape)}`,
+          );
+          console.error(err);
+          return;
+        }
 
         const subscription = {
           subscriptionId,

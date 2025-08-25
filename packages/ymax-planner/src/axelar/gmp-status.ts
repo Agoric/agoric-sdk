@@ -27,6 +27,7 @@ export const getTxStatus = async ({
   log = () => {},
   timeoutMinutes = 5,
   retryDelaySeconds = 20,
+  now = () => performance.now(),
 }: {
   url: string;
   fetch: typeof globalThis.fetch;
@@ -36,15 +37,16 @@ export const getTxStatus = async ({
   log: (...args: unknown[]) => void;
   timeoutMinutes?: number;
   retryDelaySeconds?: number;
+  now?: () => number;
 }) => {
   const body = JSON.stringify(params);
   log(`params: ${body}`);
 
-  const startTime = Date.now();
+  const startTime = now();
   const pollingDurationMs = timeoutMinutes * MILLIS_PER_MINUTE;
   let data: AxelarEventRecord[];
 
-  while (Date.now() - startTime < pollingDurationMs) {
+  while (now() - startTime < pollingDurationMs) {
     const res = await fetch(url, {
       method: 'POST',
       headers: fetchRequestHeaders,

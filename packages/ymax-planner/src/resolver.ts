@@ -31,15 +31,13 @@ export const resolveCCTPSubscription = async ({
   subscriptionData,
   proposal = {},
 }: ResolveSubscriptionParams) => {
-  if (status === 'timeout') {
-    console.log('timeout is not implemented yet in contract');
-    return;
-  }
-
   if (subscriptionData.type !== 'cctp') {
     throw new Error(
       `Expected subscription type to be 'cctp', got ${subscriptionData.type}`,
     );
+  }
+  if (status === 'timeout') {
+    throw new Error('TODO: timeout is not implemented yet in contract');
   }
 
   const invitationMakersOffer = await getInvitationMakers(
