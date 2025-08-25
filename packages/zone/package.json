@@ -36,7 +36,7 @@
   "devDependencies": {
     "@agoric/swingset-vat": "workspace:*",
     "@endo/patterns": "^1.7.0",
-    "ava": "^5.3.0"
+    "ava": "^6.4.1"
   },
   "publishConfig": {
     "access": "public"

@@ -57,7 +57,12 @@ export const makeExpectUnhandledRejection = ({ test, importMetaUrl }) => {
           });
 
           ps.on('close', code => {
-            t.is(code, 0, `got exit code ${code}, expected 0 for ${name}`);
+            const expectedCode = expectedUnhandled === 0 ? 0 : 1;
+            t.is(
+              code,
+              expectedCode,
+              `got exit code ${code}, expected ${expectedCode} for ${name}`,
+            );
             resolve();
           });
           ps.on('error', reject);
