@@ -250,7 +250,7 @@ FEE_ACCT=agoric1rqqy9r0s4ahl8agr89f200gch78hnef3jckf4vntqe4p67rsxegs9qpzjw
 DEV_NODE=https://devnet.rpc.agoric.net:443
 SIG_OPTS=--chain-id=agoricdev-25 --gas-adjustment=1.5 --gas=auto
 fund-fee-acct:
-	agd tx bank send $(PUBLISHER) $(FEE_ACCT) 15000000ubld -y -b block --node=$(DEV_NODE) $(SIG_OPTS)
+	agd tx bank send gov1.devnet $(FEE_ACCT) 120000000ubld -y -b block --node=$(DEV_NODE) $(SIG_OPTS)
 
 aave-e2e:
 	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
