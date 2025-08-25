@@ -85,7 +85,7 @@ export const provideEVMAccount = async (
 
   await sendMakeAccountCall(
     target,
-    fee,
+    fixFee(fee),
     lca,
     gmp.chain,
     ctx.gmpAddresses,
@@ -342,7 +342,7 @@ export const AaveProtocol = {
     await sendGMPContractCall(
       target,
       calls,
-      gmpFee,
+      fixFee(gmpFee),
       lca,
       gmpChain,
       gmpAddresses,
@@ -373,7 +373,7 @@ export const AaveProtocol = {
     await sendGMPContractCall(
       target,
       calls,
-      gmpFee,
+      fixFee(gmpFee),
       lca,
       gmpChain,
       gmpAddresses,
