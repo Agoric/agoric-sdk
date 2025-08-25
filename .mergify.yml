@@ -55,6 +55,7 @@ queue_rules:
     merge_conditions: *merge-conditions
     merge_method: merge
     update_method: rebase
+    autosquash: true
 
   - name: merge
     commit_message_template: *commit-message-template
