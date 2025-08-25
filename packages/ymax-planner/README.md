@@ -74,6 +74,7 @@ yarn test
 Environment variables:
 
 - `AGORIC_NET`: agoric.net subdomain for requesting URL path `/network-config` to identify `chainName`/`rpcAddrs`/etc. (`main`)
+- `ALCHEMY_API_KEY`: API key for accessing Alchemy’s Ethereum RPC endpoint. Required if you want to connect to Ethereum through Alchemy’s RPC service.
 - `MNEMONIC`: For the private key used to sign transactions
 - `SPECTRUM_API_URL`: URL for the [Spectrum](https://spectrumnodes.com/) API (`https://pools-api.spectrumnodes.com`)
 - `SPECTRUM_API_TIMEOUT`: Milliseconds to wait for each Spectrum request (`10000` = 10 seconds)
