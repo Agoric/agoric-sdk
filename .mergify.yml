@@ -1,43 +1,43 @@
 # Linear queue for the main branch.
 shared:
-    commit_message_template: &commit-message-template |-
-      {{ title }} (#{{ number }})
+  commit_message_template: &commit-message-template |-
+    {{ title }} (#{{ number }})
 
-      {{ body | trim }}
-    queue_conditions: &queue-conditions
-      - base=master
-      - or:
-          - check-pending=integration-test-result
-          - check-success=integration-test-result
-          - label=bypass:integration
-      - check-success=breakage
-    merge_conditions: &merge-conditions
-      - base=master
-      # Rebase PRs with fixup commits are allowed to enter the merge queue but 
-      # should not be allowed to merge if there are leftover fixup commits after rebase
-      - or:
-          - label=bypass:linear-history
-          - check-success=no-fixup-commits
-          - check-skipped=no-fixup-commits
-      # Require integration tests before merging only
-      - or:
-          - label=bypass:integration
-          - check-success=integration-test-result
-    pr_queue_merge_conditions: &pr-queue-merge-conditions
-      - base=master
-      - label=automerge:no-update
-      - or:
-          - '#commits-behind=0'
-          - label=bypass:linear-history
-    pr_queue_rebase_conditions: &pr-queue-rebase-conditions
-      - base=master
-      - label=automerge:rebase
-      - or:
-          - '#commits-behind>0'
-          - linear-history
-    pr_queue_squash_conditions: &pr-queue-squash-conditions
-      - base=master
-      - label=automerge:squash
+    {{ body | trim }}
+  queue_conditions: &queue-conditions
+    - base=master
+    - or:
+        - check-pending=integration-test-result
+        - check-success=integration-test-result
+        - label=bypass:integration
+    - check-success=breakage
+  merge_conditions: &merge-conditions
+    - base=master
+    # Rebase PRs with fixup commits are allowed to enter the merge queue but
+    # should not be allowed to merge if there are leftover fixup commits after rebase
+    - or:
+        - label=bypass:linear-history
+        - check-success=no-fixup-commits
+        - check-skipped=no-fixup-commits
+    # Require integration tests before merging only
+    - or:
+        - label=bypass:integration
+        - check-success=integration-test-result
+  pr_queue_merge_conditions: &pr-queue-merge-conditions
+    - base=master
+    - label=automerge:no-update
+    - or:
+        - '#commits-behind=0'
+        - label=bypass:linear-history
+  pr_queue_rebase_conditions: &pr-queue-rebase-conditions
+    - base=master
+    - label=automerge:rebase
+    - or:
+        - '#commits-behind>0'
+        - linear-history
+  pr_queue_squash_conditions: &pr-queue-squash-conditions
+    - base=master
+    - label=automerge:squash
 
 merge_queue:
   max_parallel_checks: 1
@@ -90,8 +90,8 @@ pull_request_rules:
       - label=automerge:rebase
       - '#commits-behind=0'
       - or:
-        - -linear-history
-        - check-failure=no-fixup-commits
+          - -linear-history
+          - check-failure=no-fixup-commits
       - -draft
     actions:
       rebase:
