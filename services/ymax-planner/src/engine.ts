@@ -287,11 +287,10 @@ const processPortfolioEvents = async (
   portfolioKeyForDepositAddr: Map<Bech32Address, string>,
 ) => {
   await null;
-  for (const { path, value: vstorageValue } of portfolioEvents) {
+  for (const { path, value: cellJson } of portfolioEvents) {
     const streamCell = tryJsonParse(
-      vstorageValue,
-      _err =>
-        Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
+      cellJson,
+      _err => Fail`non-JSON value at vstorage path ${q(path)}: ${cellJson}`,
     );
     mustMatch(harden(streamCell), StreamCellShape);
     if (path === PORTFOLIOS_PATH_PREFIX) {
@@ -369,11 +368,10 @@ export const processPendingTxEvents = async (
   handlePendingTxFn = handlePendingTx,
   logFn = log,
 ) => {
-  for (const { path, value: vstorageValue } of events) {
+  for (const { path, value: cellJson } of events) {
     const streamCell = tryJsonParse(
-      vstorageValue,
-      _err =>
-        Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
+      cellJson,
+      _err => Fail`non-JSON value at vstorage path ${q(path)}: ${cellJson}`,
     );
     mustMatch(harden(streamCell), StreamCellShape);
 
@@ -497,17 +495,17 @@ export const startEngine = async (
   }
 
   // To avoid data gaps, establish subscriptions before gathering initial state.
-  const eventFilters = [
+  const subscriptionFilters = [
     // vstorage events are in BEGIN_BLOCK/END_BLOCK activity
     "tm.event = 'NewBlockHeader'",
     // transactions
     "tm.event = 'Tx'",
   ];
-  const eventResponses = rpc.subscribeAll(eventFilters);
-  const firstResult = await eventResponses.next();
+  const responses = rpc.subscribeAll(subscriptionFilters);
+  const firstResult = await responses.next();
   (firstResult.done === false && firstResult.value === undefined) ||
     Fail`Unexpected ready signal ${firstResult}`;
-  // console.log('subscribed to events', eventFilters);
+  // console.log('subscribed to events', subscriptionFilters);
 
   // TODO: verify consumption of paginated data.
   const portfolioKeys = await query.vstorage.keys(PORTFOLIOS_PATH_PREFIX);
@@ -559,11 +557,11 @@ export const startEngine = async (
   }).done;
 
   // console.warn('consuming events');
-  for await (const respContainer of eventResponses) {
-    const { query: _query, data: resp, events: respEvents } = respContainer;
-    const { type, value: respData } = resp;
-    if (!respEvents) {
-      console.warn('missing events', type);
+  for await (const respContainer of responses) {
+    const { query: _query, data: resp, events: eventRollups } = respContainer;
+    const { type: respType, value: respData } = resp;
+    if (!eventRollups) {
+      console.warn('missing event rollups', respType);
       continue;
     }
 
@@ -572,7 +570,7 @@ export const startEngine = async (
       // We care about result_begin_block/result_end_block/etc.
       if (!key.startsWith('result_')) return [];
       const events = (value as any)?.events;
-      if (!events) console.warn('missing events', type, key);
+      if (!events) console.warn('missing events', respType, key);
       return events ?? [];
     }) as CosmosEvent[];
     const vstorageEvents = partialMap(eventRecords, eventRecord => {
@@ -628,10 +626,10 @@ export const startEngine = async (
     // Detect activity against portfolio deposit addresses.
     const addrsWithActivity: Bech32Address[] = [
       ...new Set([
-        ...((respEvents['coin_received.receiver'] as Bech32Address[]) || []),
-        ...((respEvents['coin_spent.spender'] as Bech32Address[]) || []),
-        ...((respEvents['transfer.recipient'] as Bech32Address[]) || []),
-        ...((respEvents['transfer.sender'] as Bech32Address[]) || []),
+        ...((eventRollups['coin_received.receiver'] as Bech32Address[]) || []),
+        ...((eventRollups['coin_spent.spender'] as Bech32Address[]) || []),
+        ...((eventRollups['transfer.recipient'] as Bech32Address[]) || []),
+        ...((eventRollups['transfer.sender'] as Bech32Address[]) || []),
       ]),
     ];
     const depositAddrsWithActivity = new Map(
