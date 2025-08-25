@@ -391,7 +391,7 @@ function createBaseQueryAccountsRequest(): QueryAccountsRequest {
   };
 }
 export const QueryAccountsRequest = {
-  typeUrl: '/cosmos.auth.v1beta1.QueryAccountsRequest',
+  typeUrl: '/cosmos.auth.v1beta1.QueryAccountsRequest' as const,
   encode(
     message: QueryAccountsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -465,7 +465,7 @@ function createBaseQueryAccountsResponse(): QueryAccountsResponse {
   };
 }
 export const QueryAccountsResponse = {
-  typeUrl: '/cosmos.auth.v1beta1.QueryAccountsResponse',
+  typeUrl: '/cosmos.auth.v1beta1.QueryAccountsResponse' as const,
   encode(
     message: QueryAccountsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -556,7 +556,7 @@ function createBaseQueryAccountRequest(): QueryAccountRequest {
   };
 }
 export const QueryAccountRequest = {
-  typeUrl: '/cosmos.auth.v1beta1.QueryAccountRequest',
+  typeUrl: '/cosmos.auth.v1beta1.QueryAccountRequest' as const,
   encode(
     message: QueryAccountRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -621,7 +621,7 @@ function createBaseQueryAccountResponse(): QueryAccountResponse {
   };
 }
 export const QueryAccountResponse = {
-  typeUrl: '/cosmos.auth.v1beta1.QueryAccountResponse',
+  typeUrl: '/cosmos.auth.v1beta1.QueryAccountResponse' as const,
   encode(
     message: QueryAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -690,7 +690,7 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
 export const QueryParamsRequest = {
-  typeUrl: '/cosmos.auth.v1beta1.QueryParamsRequest',
+  typeUrl: '/cosmos.auth.v1beta1.QueryParamsRequest' as const,
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -745,7 +745,7 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
   };
 }
 export const QueryParamsResponse = {
-  typeUrl: '/cosmos.auth.v1beta1.QueryParamsResponse',
+  typeUrl: '/cosmos.auth.v1beta1.QueryParamsResponse' as const,
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -812,7 +812,7 @@ function createBaseQueryModuleAccountsRequest(): QueryModuleAccountsRequest {
   return {};
 }
 export const QueryModuleAccountsRequest = {
-  typeUrl: '/cosmos.auth.v1beta1.QueryModuleAccountsRequest',
+  typeUrl: '/cosmos.auth.v1beta1.QueryModuleAccountsRequest' as const,
   encode(
     _: QueryModuleAccountsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -873,7 +873,7 @@ function createBaseQueryModuleAccountsResponse(): QueryModuleAccountsResponse {
   };
 }
 export const QueryModuleAccountsResponse = {
-  typeUrl: '/cosmos.auth.v1beta1.QueryModuleAccountsResponse',
+  typeUrl: '/cosmos.auth.v1beta1.QueryModuleAccountsResponse' as const,
   encode(
     message: QueryModuleAccountsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -952,7 +952,7 @@ function createBaseQueryModuleAccountByNameRequest(): QueryModuleAccountByNameRe
   };
 }
 export const QueryModuleAccountByNameRequest = {
-  typeUrl: '/cosmos.auth.v1beta1.QueryModuleAccountByNameRequest',
+  typeUrl: '/cosmos.auth.v1beta1.QueryModuleAccountByNameRequest' as const,
   encode(
     message: QueryModuleAccountByNameRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1025,7 +1025,7 @@ function createBaseQueryModuleAccountByNameResponse(): QueryModuleAccountByNameR
   };
 }
 export const QueryModuleAccountByNameResponse = {
-  typeUrl: '/cosmos.auth.v1beta1.QueryModuleAccountByNameResponse',
+  typeUrl: '/cosmos.auth.v1beta1.QueryModuleAccountByNameResponse' as const,
   encode(
     message: QueryModuleAccountByNameResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1102,7 +1102,7 @@ function createBaseBech32PrefixRequest(): Bech32PrefixRequest {
   return {};
 }
 export const Bech32PrefixRequest = {
-  typeUrl: '/cosmos.auth.v1beta1.Bech32PrefixRequest',
+  typeUrl: '/cosmos.auth.v1beta1.Bech32PrefixRequest' as const,
   encode(
     _: Bech32PrefixRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1157,7 +1157,7 @@ function createBaseBech32PrefixResponse(): Bech32PrefixResponse {
   };
 }
 export const Bech32PrefixResponse = {
-  typeUrl: '/cosmos.auth.v1beta1.Bech32PrefixResponse',
+  typeUrl: '/cosmos.auth.v1beta1.Bech32PrefixResponse' as const,
   encode(
     message: Bech32PrefixResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1225,7 +1225,7 @@ function createBaseAddressBytesToStringRequest(): AddressBytesToStringRequest {
   };
 }
 export const AddressBytesToStringRequest = {
-  typeUrl: '/cosmos.auth.v1beta1.AddressBytesToStringRequest',
+  typeUrl: '/cosmos.auth.v1beta1.AddressBytesToStringRequest' as const,
   encode(
     message: AddressBytesToStringRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1305,7 +1305,7 @@ function createBaseAddressBytesToStringResponse(): AddressBytesToStringResponse 
   };
 }
 export const AddressBytesToStringResponse = {
-  typeUrl: '/cosmos.auth.v1beta1.AddressBytesToStringResponse',
+  typeUrl: '/cosmos.auth.v1beta1.AddressBytesToStringResponse' as const,
   encode(
     message: AddressBytesToStringResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1381,7 +1381,7 @@ function createBaseAddressStringToBytesRequest(): AddressStringToBytesRequest {
   };
 }
 export const AddressStringToBytesRequest = {
-  typeUrl: '/cosmos.auth.v1beta1.AddressStringToBytesRequest',
+  typeUrl: '/cosmos.auth.v1beta1.AddressStringToBytesRequest' as const,
   encode(
     message: AddressStringToBytesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1457,7 +1457,7 @@ function createBaseAddressStringToBytesResponse(): AddressStringToBytesResponse 
   };
 }
 export const AddressStringToBytesResponse = {
-  typeUrl: '/cosmos.auth.v1beta1.AddressStringToBytesResponse',
+  typeUrl: '/cosmos.auth.v1beta1.AddressStringToBytesResponse' as const,
   encode(
     message: AddressStringToBytesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1538,7 +1538,7 @@ function createBaseQueryAccountAddressByIDRequest(): QueryAccountAddressByIDRequ
   };
 }
 export const QueryAccountAddressByIDRequest = {
-  typeUrl: '/cosmos.auth.v1beta1.QueryAccountAddressByIDRequest',
+  typeUrl: '/cosmos.auth.v1beta1.QueryAccountAddressByIDRequest' as const,
   encode(
     message: QueryAccountAddressByIDRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1629,7 +1629,7 @@ function createBaseQueryAccountAddressByIDResponse(): QueryAccountAddressByIDRes
   };
 }
 export const QueryAccountAddressByIDResponse = {
-  typeUrl: '/cosmos.auth.v1beta1.QueryAccountAddressByIDResponse',
+  typeUrl: '/cosmos.auth.v1beta1.QueryAccountAddressByIDResponse' as const,
   encode(
     message: QueryAccountAddressByIDResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1705,7 +1705,7 @@ function createBaseQueryAccountInfoRequest(): QueryAccountInfoRequest {
   };
 }
 export const QueryAccountInfoRequest = {
-  typeUrl: '/cosmos.auth.v1beta1.QueryAccountInfoRequest',
+  typeUrl: '/cosmos.auth.v1beta1.QueryAccountInfoRequest' as const,
   encode(
     message: QueryAccountInfoRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1776,7 +1776,7 @@ function createBaseQueryAccountInfoResponse(): QueryAccountInfoResponse {
   };
 }
 export const QueryAccountInfoResponse = {
-  typeUrl: '/cosmos.auth.v1beta1.QueryAccountInfoResponse',
+  typeUrl: '/cosmos.auth.v1beta1.QueryAccountInfoResponse' as const,
   encode(
     message: QueryAccountInfoResponse,
     writer: BinaryWriter = BinaryWriter.create(),

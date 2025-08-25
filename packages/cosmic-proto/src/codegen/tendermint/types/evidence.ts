@@ -82,7 +82,7 @@ function createBaseEvidence(): Evidence {
   };
 }
 export const Evidence = {
-  typeUrl: '/tendermint.types.Evidence',
+  typeUrl: '/tendermint.types.Evidence' as const,
   encode(
     message: Evidence,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -189,7 +189,7 @@ function createBaseDuplicateVoteEvidence(): DuplicateVoteEvidence {
   };
 }
 export const DuplicateVoteEvidence = {
-  typeUrl: '/tendermint.types.DuplicateVoteEvidence',
+  typeUrl: '/tendermint.types.DuplicateVoteEvidence' as const,
   encode(
     message: DuplicateVoteEvidence,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -322,7 +322,7 @@ function createBaseLightClientAttackEvidence(): LightClientAttackEvidence {
   };
 }
 export const LightClientAttackEvidence = {
-  typeUrl: '/tendermint.types.LightClientAttackEvidence',
+  typeUrl: '/tendermint.types.LightClientAttackEvidence' as const,
   encode(
     message: LightClientAttackEvidence,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -473,7 +473,7 @@ function createBaseEvidenceList(): EvidenceList {
   };
 }
 export const EvidenceList = {
-  typeUrl: '/tendermint.types.EvidenceList',
+  typeUrl: '/tendermint.types.EvidenceList' as const,
   encode(
     message: EvidenceList,
     writer: BinaryWriter = BinaryWriter.create(),

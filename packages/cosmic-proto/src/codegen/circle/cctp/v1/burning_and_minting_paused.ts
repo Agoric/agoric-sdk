@@ -26,7 +26,7 @@ function createBaseBurningAndMintingPaused(): BurningAndMintingPaused {
   };
 }
 export const BurningAndMintingPaused = {
-  typeUrl: '/circle.cctp.v1.BurningAndMintingPaused',
+  typeUrl: '/circle.cctp.v1.BurningAndMintingPaused' as const,
   encode(
     message: BurningAndMintingPaused,
     writer: BinaryWriter = BinaryWriter.create(),

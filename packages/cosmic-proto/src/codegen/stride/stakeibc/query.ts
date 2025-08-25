@@ -259,7 +259,7 @@ function createBaseQueryInterchainAccountFromAddressRequest(): QueryInterchainAc
   };
 }
 export const QueryInterchainAccountFromAddressRequest = {
-  typeUrl: '/stride.stakeibc.QueryInterchainAccountFromAddressRequest',
+  typeUrl: '/stride.stakeibc.QueryInterchainAccountFromAddressRequest' as const,
   encode(
     message: QueryInterchainAccountFromAddressRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -344,7 +344,8 @@ function createBaseQueryInterchainAccountFromAddressResponse(): QueryInterchainA
   };
 }
 export const QueryInterchainAccountFromAddressResponse = {
-  typeUrl: '/stride.stakeibc.QueryInterchainAccountFromAddressResponse',
+  typeUrl:
+    '/stride.stakeibc.QueryInterchainAccountFromAddressResponse' as const,
   encode(
     message: QueryInterchainAccountFromAddressResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -418,7 +419,7 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
 export const QueryParamsRequest = {
-  typeUrl: '/stride.stakeibc.QueryParamsRequest',
+  typeUrl: '/stride.stakeibc.QueryParamsRequest' as const,
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -473,7 +474,7 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
   };
 }
 export const QueryParamsResponse = {
-  typeUrl: '/stride.stakeibc.QueryParamsResponse',
+  typeUrl: '/stride.stakeibc.QueryParamsResponse' as const,
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -542,7 +543,7 @@ function createBaseQueryGetValidatorsRequest(): QueryGetValidatorsRequest {
   };
 }
 export const QueryGetValidatorsRequest = {
-  typeUrl: '/stride.stakeibc.QueryGetValidatorsRequest',
+  typeUrl: '/stride.stakeibc.QueryGetValidatorsRequest' as const,
   encode(
     message: QueryGetValidatorsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -615,7 +616,7 @@ function createBaseQueryGetValidatorsResponse(): QueryGetValidatorsResponse {
   };
 }
 export const QueryGetValidatorsResponse = {
-  typeUrl: '/stride.stakeibc.QueryGetValidatorsResponse',
+  typeUrl: '/stride.stakeibc.QueryGetValidatorsResponse' as const,
   encode(
     message: QueryGetValidatorsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -697,7 +698,7 @@ function createBaseQueryGetHostZoneRequest(): QueryGetHostZoneRequest {
   };
 }
 export const QueryGetHostZoneRequest = {
-  typeUrl: '/stride.stakeibc.QueryGetHostZoneRequest',
+  typeUrl: '/stride.stakeibc.QueryGetHostZoneRequest' as const,
   encode(
     message: QueryGetHostZoneRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -768,7 +769,7 @@ function createBaseQueryGetHostZoneResponse(): QueryGetHostZoneResponse {
   };
 }
 export const QueryGetHostZoneResponse = {
-  typeUrl: '/stride.stakeibc.QueryGetHostZoneResponse',
+  typeUrl: '/stride.stakeibc.QueryGetHostZoneResponse' as const,
   encode(
     message: QueryGetHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -849,7 +850,7 @@ function createBaseQueryAllHostZoneRequest(): QueryAllHostZoneRequest {
   };
 }
 export const QueryAllHostZoneRequest = {
-  typeUrl: '/stride.stakeibc.QueryAllHostZoneRequest',
+  typeUrl: '/stride.stakeibc.QueryAllHostZoneRequest' as const,
   encode(
     message: QueryAllHostZoneRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -929,7 +930,7 @@ function createBaseQueryAllHostZoneResponse(): QueryAllHostZoneResponse {
   };
 }
 export const QueryAllHostZoneResponse = {
-  typeUrl: '/stride.stakeibc.QueryAllHostZoneResponse',
+  typeUrl: '/stride.stakeibc.QueryAllHostZoneResponse' as const,
   encode(
     message: QueryAllHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1030,7 +1031,7 @@ function createBaseQueryModuleAddressRequest(): QueryModuleAddressRequest {
   };
 }
 export const QueryModuleAddressRequest = {
-  typeUrl: '/stride.stakeibc.QueryModuleAddressRequest',
+  typeUrl: '/stride.stakeibc.QueryModuleAddressRequest' as const,
   encode(
     message: QueryModuleAddressRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1103,7 +1104,7 @@ function createBaseQueryModuleAddressResponse(): QueryModuleAddressResponse {
   };
 }
 export const QueryModuleAddressResponse = {
-  typeUrl: '/stride.stakeibc.QueryModuleAddressResponse',
+  typeUrl: '/stride.stakeibc.QueryModuleAddressResponse' as const,
   encode(
     message: QueryModuleAddressResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1176,7 +1177,7 @@ function createBaseQueryGetEpochTrackerRequest(): QueryGetEpochTrackerRequest {
   };
 }
 export const QueryGetEpochTrackerRequest = {
-  typeUrl: '/stride.stakeibc.QueryGetEpochTrackerRequest',
+  typeUrl: '/stride.stakeibc.QueryGetEpochTrackerRequest' as const,
   encode(
     message: QueryGetEpochTrackerRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1252,7 +1253,7 @@ function createBaseQueryGetEpochTrackerResponse(): QueryGetEpochTrackerResponse 
   };
 }
 export const QueryGetEpochTrackerResponse = {
-  typeUrl: '/stride.stakeibc.QueryGetEpochTrackerResponse',
+  typeUrl: '/stride.stakeibc.QueryGetEpochTrackerResponse' as const,
   encode(
     message: QueryGetEpochTrackerResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1334,7 +1335,7 @@ function createBaseQueryAllEpochTrackerRequest(): QueryAllEpochTrackerRequest {
   return {};
 }
 export const QueryAllEpochTrackerRequest = {
-  typeUrl: '/stride.stakeibc.QueryAllEpochTrackerRequest',
+  typeUrl: '/stride.stakeibc.QueryAllEpochTrackerRequest' as const,
   encode(
     _: QueryAllEpochTrackerRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1397,7 +1398,7 @@ function createBaseQueryAllEpochTrackerResponse(): QueryAllEpochTrackerResponse 
   };
 }
 export const QueryAllEpochTrackerResponse = {
-  typeUrl: '/stride.stakeibc.QueryAllEpochTrackerResponse',
+  typeUrl: '/stride.stakeibc.QueryAllEpochTrackerResponse' as const,
   encode(
     message: QueryAllEpochTrackerResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1482,7 +1483,7 @@ function createBaseQueryGetNextPacketSequenceRequest(): QueryGetNextPacketSequen
   };
 }
 export const QueryGetNextPacketSequenceRequest = {
-  typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceRequest',
+  typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceRequest' as const,
   encode(
     message: QueryGetNextPacketSequenceRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1564,7 +1565,7 @@ function createBaseQueryGetNextPacketSequenceResponse(): QueryGetNextPacketSeque
   };
 }
 export const QueryGetNextPacketSequenceResponse = {
-  typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceResponse',
+  typeUrl: '/stride.stakeibc.QueryGetNextPacketSequenceResponse' as const,
   encode(
     message: QueryGetNextPacketSequenceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1643,7 +1644,7 @@ function createBaseQueryAddressUnbondings(): QueryAddressUnbondings {
   };
 }
 export const QueryAddressUnbondings = {
-  typeUrl: '/stride.stakeibc.QueryAddressUnbondings',
+  typeUrl: '/stride.stakeibc.QueryAddressUnbondings' as const,
   encode(
     message: QueryAddressUnbondings,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1710,7 +1711,7 @@ function createBaseQueryAddressUnbondingsResponse(): QueryAddressUnbondingsRespo
   };
 }
 export const QueryAddressUnbondingsResponse = {
-  typeUrl: '/stride.stakeibc.QueryAddressUnbondingsResponse',
+  typeUrl: '/stride.stakeibc.QueryAddressUnbondingsResponse' as const,
   encode(
     message: QueryAddressUnbondingsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1792,7 +1793,7 @@ function createBaseQueryAllTradeRoutes(): QueryAllTradeRoutes {
   return {};
 }
 export const QueryAllTradeRoutes = {
-  typeUrl: '/stride.stakeibc.QueryAllTradeRoutes',
+  typeUrl: '/stride.stakeibc.QueryAllTradeRoutes' as const,
   encode(
     _: QueryAllTradeRoutes,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1847,7 +1848,7 @@ function createBaseQueryAllTradeRoutesResponse(): QueryAllTradeRoutesResponse {
   };
 }
 export const QueryAllTradeRoutesResponse = {
-  typeUrl: '/stride.stakeibc.QueryAllTradeRoutesResponse',
+  typeUrl: '/stride.stakeibc.QueryAllTradeRoutesResponse' as const,
   encode(
     message: QueryAllTradeRoutesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
