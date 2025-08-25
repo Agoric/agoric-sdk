@@ -36,6 +36,12 @@ add-key:
 provision-ymaxControl:
 	agd tx swingset provision-one yc $(YMAX_CONTROL_ADDR) SMART_WALLET --node $(NODE) --from $(YMAX_CONTROL_ADDR) $(SIG_OPTS)
 
+redeem-ymaxControl:
+	@echo "Using AGORIC_NET=$(AGORIC_NET)"
+	@MNEMONIC="$$($(BW) get password $(YMAX_ITEM_ID))" \
+		AGORIC_NET=$(AGORIC_NET) \
+		$(YMAX_TOOL) --redeem --contract 'postalService' --description 'deliver ymaxControl'
+
 check-vstorage: ,vstorage-outdated-$(AGORIC_NET).json
 
 ,vstorage-outdated-$(AGORIC_NET).json:
