@@ -772,7 +772,7 @@ __metadata:
     "@endo/stream": "npm:^1.2.13"
     "@fast-check/ava": "npm:^2.0.1"
     anylogger: "npm:^0.21.0"
-    ava: "npm:^5.3.0"
+    ava: "npm:^6.4.1"
     jessie.js: "npm:^0.3.4"
     tsd: "npm:^0.33.0"
   languageName: unknown
@@ -6338,6 +6338,28 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@vercel/nft@npm:^0.29.4":
+  version: 0.29.4
+  resolution: "@vercel/nft@npm:0.29.4"
+  dependencies:
+    "@mapbox/node-pre-gyp": "npm:^2.0.0"
+    "@rollup/pluginutils": "npm:^5.1.3"
+    acorn: "npm:^8.6.0"
+    acorn-import-attributes: "npm:^1.9.5"
+    async-sema: "npm:^3.1.1"
+    bindings: "npm:^1.4.0"
+    estree-walker: "npm:2.0.2"
+    glob: "npm:^10.4.5"
+    graceful-fs: "npm:^4.2.9"
+    node-gyp-build: "npm:^4.2.2"
+    picomatch: "npm:^4.0.2"
+    resolve-from: "npm:^5.0.0"
+  bin:
+    nft: out/cli.js
+  checksum: 10c0/84ba32c685f9d7c2c849b1e8c963d3b7eb09d122e666143ed97c3776f5b04a4745605e1d29fd81383f72b1d1c0d7d58e39f06dc92f021b5de079dfa4e8523574
+  languageName: node
+  linkType: hard
+
 "@yarnpkg/types@npm:^4.0.1":
   version: 4.0.1
   resolution: "@yarnpkg/types@npm:4.0.1"
@@ -6970,6 +6992,61 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ava@npm:^6.4.1":
+  version: 6.4.1
+  resolution: "ava@npm:6.4.1"
+  dependencies:
+    "@vercel/nft": "npm:^0.29.4"
+    acorn: "npm:^8.15.0"
+    acorn-walk: "npm:^8.3.4"
+    ansi-styles: "npm:^6.2.1"
+    arrgv: "npm:^1.0.2"
+    arrify: "npm:^3.0.0"
+    callsites: "npm:^4.2.0"
+    cbor: "npm:^10.0.9"
+    chalk: "npm:^5.4.1"
+    chunkd: "npm:^2.0.1"
+    ci-info: "npm:^4.3.0"
+    ci-parallel-vars: "npm:^1.0.1"
+    cli-truncate: "npm:^4.0.0"
+    code-excerpt: "npm:^4.0.0"
+    common-path-prefix: "npm:^3.0.0"
+    concordance: "npm:^5.0.4"
+    currently-unhandled: "npm:^0.4.1"
+    debug: "npm:^4.4.1"
+    emittery: "npm:^1.2.0"
+    figures: "npm:^6.1.0"
+    globby: "npm:^14.1.0"
+    ignore-by-default: "npm:^2.1.0"
+    indent-string: "npm:^5.0.0"
+    is-plain-object: "npm:^5.0.0"
+    is-promise: "npm:^4.0.0"
+    matcher: "npm:^5.0.0"
+    memoize: "npm:^10.1.0"
+    ms: "npm:^2.1.3"
+    p-map: "npm:^7.0.3"
+    package-config: "npm:^5.0.0"
+    picomatch: "npm:^4.0.2"
+    plur: "npm:^5.1.0"
+    pretty-ms: "npm:^9.2.0"
+    resolve-cwd: "npm:^3.0.0"
+    stack-utils: "npm:^2.0.6"
+    strip-ansi: "npm:^7.1.0"
+    supertap: "npm:^3.0.1"
+    temp-dir: "npm:^3.0.0"
+    write-file-atomic: "npm:^6.0.0"
+    yargs: "npm:^17.7.2"
+  peerDependencies:
+    "@ava/typescript": "*"
+  peerDependenciesMeta:
+    "@ava/typescript":
+      optional: true
+  bin:
+    ava: entrypoints/cli.mjs
+  checksum: 10c0/21972df1031ef46533ea1b7daa132a5fc66841c8a221b6901163d12d2a1cac39bfd8a6d3459da7eb9344fa90fc02f237f2fe2aac8785d04bf5894fa43625be28
+  languageName: node
+  linkType: hard
+
 "ava@patch:ava@npm%3A5.3.1#~/.yarn/patches/ava-npm-5.3.1-d83c0bdc77.patch":
   version: 5.3.1
   resolution: "ava@patch:ava@npm%3A5.3.1#~/.yarn/patches/ava-npm-5.3.1-d83c0bdc77.patch::version=5.3.1&hash=07eaec"
@@ -7544,6 +7621,15 @@ __metadata:
   dependencies:
     nofilter: "npm:^3.0.2"
   checksum: 10c0/d1657a24799ab35cb262aef91205431100def90c0200917e42eec4580726880c090d5a0a77620b665248447a36db8cc5ea6b7fd6eac8e083a64098c7179ea2d1
+  languageName: node
+  linkType: hard
+
+"cbor@npm:^10.0.9":
+  version: 10.0.10
+  resolution: "cbor@npm:10.0.10"
+  dependencies:
+    nofilter: "npm:^3.0.2"
+  checksum: 10c0/baa91b2e960863ebd51f8fdd0893f9d400d0adec692782f9572d6911ea3b5d7555e0a2ebecc41eee6c3026ed9414fc241fd6ae2a10eb4a9afd412e5a8ebc5dc6
   languageName: node
   linkType: hard
 
@@ -8679,6 +8765,13 @@ __metadata:
   version: 1.1.0
   resolution: "emittery@npm:1.1.0"
   checksum: 10c0/645d4d7307b52c81bb2d2f9f320aa6a3c0225f53a4bfef2d337be8086df975746f7dd619f1dd7b2ffd4f2288103f28019e7b8567718677600e47507496d3af5f
+  languageName: node
+  linkType: hard
+
+"emittery@npm:^1.2.0":
+  version: 1.2.0
+  resolution: "emittery@npm:1.2.0"
+  checksum: 10c0/3b16d67b2cbbc19d44fa124684039956dc94c376cefa8c7b29f4c934d9d370e6819f642cddaa343b83b1fc03fda554a1498e12f5861caf9d6f6394ff4b6e808a
   languageName: node
   linkType: hard
 
