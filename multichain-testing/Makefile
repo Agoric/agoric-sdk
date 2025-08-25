@@ -7,6 +7,7 @@ HELM_REPO_URL = https://agoric-labs.github.io/starship
 HELM_REPO = starship
 HELM_CHART = devnet
 RESTART_THRESHOLD = 3
+TEMP_FILE = config-temp.yaml
 
 SS = yarn starship
 SSOPTS = --config $(FILE) --name $(NAME) --repoUrl $(HELM_REPO_URL) \
