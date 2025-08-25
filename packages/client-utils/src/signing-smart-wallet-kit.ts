@@ -12,7 +12,7 @@ import { type SmartWalletKit } from './smart-wallet-kit.js';
 
 // TODO parameterize as part of https://github.com/Agoric/agoric-sdk/issues/5912
 const defaultFee: StdFee = {
-  amount: [{ denom: 'ubld', amount: '30000' }], // XXX enough?
+  amount: [{ denom: 'ubld', amount: '500000' }], // XXX enough?
   gas: '19700000',
 };
 
