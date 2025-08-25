@@ -1,6 +1,6 @@
 /**
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
- * @import {DisplayInfo} from '@agoric/ertp';
+ * @import {DisplayInfo, Issuer} from '@agoric/ertp';
  */
 
 /**
@@ -20,6 +20,8 @@
  *     import('@agoric/internal/src/marshal.js').BoardRemote
  *   >;
  *   instance: Record<string, Instance>;
+ *   installation: Record<string, Installation>;
+ *   issuer: Record<string, Issuer>;
  *   vbankAsset: Record<string, VBankAssetDetail>;
  *   reverse: Record<string, string>;
  * }} AgoricNamesRemotes
@@ -47,7 +49,7 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
 
   const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
   const reverse = {};
-  const entries = ['brand', 'instance'].map(kind => {
+  const entries = ['brand', 'instance', 'installation', 'issuer'].map(kind => {
     /**
      * @type {[
      *   string,

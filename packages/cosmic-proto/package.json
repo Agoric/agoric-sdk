@@ -181,7 +181,7 @@
     "glob": "^11.0.3",
     "rimraf": "^5.0.0",
     "terser": "^5.39.0",
-    "tsd": "^0.31.1",
+    "tsd": "^0.33.0",
     "typescript": "~5.9.2"
   },
   "dependencies": {

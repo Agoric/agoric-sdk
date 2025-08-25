@@ -27,5 +27,5 @@
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ agops"
   },
-  "packageManager": "yarn@4.9.1"
+  "packageManager": "yarn@4.9.3"
 }

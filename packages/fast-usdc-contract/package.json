@@ -27,7 +27,7 @@
     "c8": "^10.1.3",
     "execa": "^9.5.2",
     "tinyspy": "^4.0.3",
-    "ts-blank-space": "^0.6.1"
+    "ts-blank-space": "^0.6.2"
   },
   "dependencies": {
     "@agoric/client-utils": "workspace:*",
