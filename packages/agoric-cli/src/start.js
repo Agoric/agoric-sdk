@@ -597,7 +597,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
           'swingset',
           'egress',
           soloAddr,
-          `--chain-id=${CHAIN_ID}`,
           `--node=tcp://${rpcAddr}`,
         ]);
         if (exitStatus) {
