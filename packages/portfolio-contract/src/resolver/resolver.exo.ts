@@ -196,7 +196,7 @@ export const prepareResolverKit = (
           }
           const registryEntry = cctpTransactionRegistry.get(key);
           switch (status) {
-            case 'confirmed':
+            case 'success':
               trace(
                 'CCTP transaction confirmed - resolving pending operation for key:',
                 key,
