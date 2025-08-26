@@ -26,7 +26,7 @@ function createBaseSendingAndReceivingMessagesPaused(): SendingAndReceivingMessa
   };
 }
 export const SendingAndReceivingMessagesPaused = {
-  typeUrl: '/circle.cctp.v1.SendingAndReceivingMessagesPaused',
+  typeUrl: '/circle.cctp.v1.SendingAndReceivingMessagesPaused' as const,
   encode(
     message: SendingAndReceivingMessagesPaused,
     writer: BinaryWriter = BinaryWriter.create(),

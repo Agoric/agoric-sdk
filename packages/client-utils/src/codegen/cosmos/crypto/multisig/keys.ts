@@ -32,7 +32,7 @@ function createBaseLegacyAminoPubKey(): LegacyAminoPubKey {
   };
 }
 export const LegacyAminoPubKey = {
-  typeUrl: '/cosmos.crypto.multisig.LegacyAminoPubKey',
+  typeUrl: '/cosmos.crypto.multisig.LegacyAminoPubKey' as const,
   encode(
     message: LegacyAminoPubKey,
     writer: BinaryWriter = BinaryWriter.create(),

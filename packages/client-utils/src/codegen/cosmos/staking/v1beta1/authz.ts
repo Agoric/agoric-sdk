@@ -112,7 +112,7 @@ function createBaseStakeAuthorization(): StakeAuthorization {
   };
 }
 export const StakeAuthorization = {
-  typeUrl: '/cosmos.staking.v1beta1.StakeAuthorization',
+  typeUrl: '/cosmos.staking.v1beta1.StakeAuthorization' as const,
   encode(
     message: StakeAuthorization,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -245,7 +245,7 @@ function createBaseStakeAuthorization_Validators(): StakeAuthorization_Validator
   };
 }
 export const StakeAuthorization_Validators = {
-  typeUrl: '/cosmos.staking.v1beta1.Validators',
+  typeUrl: '/cosmos.staking.v1beta1.Validators' as const,
   encode(
     message: StakeAuthorization_Validators,
     writer: BinaryWriter = BinaryWriter.create(),

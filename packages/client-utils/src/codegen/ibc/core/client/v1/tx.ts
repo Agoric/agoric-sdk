@@ -168,7 +168,7 @@ function createBaseMsgCreateClient(): MsgCreateClient {
   };
 }
 export const MsgCreateClient = {
-  typeUrl: '/ibc.core.client.v1.MsgCreateClient',
+  typeUrl: '/ibc.core.client.v1.MsgCreateClient' as const,
   encode(
     message: MsgCreateClient,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -262,7 +262,7 @@ function createBaseMsgCreateClientResponse(): MsgCreateClientResponse {
   return {};
 }
 export const MsgCreateClientResponse = {
-  typeUrl: '/ibc.core.client.v1.MsgCreateClientResponse',
+  typeUrl: '/ibc.core.client.v1.MsgCreateClientResponse' as const,
   encode(
     _: MsgCreateClientResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -323,7 +323,7 @@ function createBaseMsgUpdateClient(): MsgUpdateClient {
   };
 }
 export const MsgUpdateClient = {
-  typeUrl: '/ibc.core.client.v1.MsgUpdateClient',
+  typeUrl: '/ibc.core.client.v1.MsgUpdateClient' as const,
   encode(
     message: MsgUpdateClient,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -409,7 +409,7 @@ function createBaseMsgUpdateClientResponse(): MsgUpdateClientResponse {
   return {};
 }
 export const MsgUpdateClientResponse = {
-  typeUrl: '/ibc.core.client.v1.MsgUpdateClientResponse',
+  typeUrl: '/ibc.core.client.v1.MsgUpdateClientResponse' as const,
   encode(
     _: MsgUpdateClientResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -473,7 +473,7 @@ function createBaseMsgUpgradeClient(): MsgUpgradeClient {
   };
 }
 export const MsgUpgradeClient = {
-  typeUrl: '/ibc.core.client.v1.MsgUpgradeClient',
+  typeUrl: '/ibc.core.client.v1.MsgUpgradeClient' as const,
   encode(
     message: MsgUpgradeClient,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -609,7 +609,7 @@ function createBaseMsgUpgradeClientResponse(): MsgUpgradeClientResponse {
   return {};
 }
 export const MsgUpgradeClientResponse = {
-  typeUrl: '/ibc.core.client.v1.MsgUpgradeClientResponse',
+  typeUrl: '/ibc.core.client.v1.MsgUpgradeClientResponse' as const,
   encode(
     _: MsgUpgradeClientResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -670,7 +670,7 @@ function createBaseMsgSubmitMisbehaviour(): MsgSubmitMisbehaviour {
   };
 }
 export const MsgSubmitMisbehaviour = {
-  typeUrl: '/ibc.core.client.v1.MsgSubmitMisbehaviour',
+  typeUrl: '/ibc.core.client.v1.MsgSubmitMisbehaviour' as const,
   encode(
     message: MsgSubmitMisbehaviour,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -759,7 +759,7 @@ function createBaseMsgSubmitMisbehaviourResponse(): MsgSubmitMisbehaviourRespons
   return {};
 }
 export const MsgSubmitMisbehaviourResponse = {
-  typeUrl: '/ibc.core.client.v1.MsgSubmitMisbehaviourResponse',
+  typeUrl: '/ibc.core.client.v1.MsgSubmitMisbehaviourResponse' as const,
   encode(
     _: MsgSubmitMisbehaviourResponse,
     writer: BinaryWriter = BinaryWriter.create(),

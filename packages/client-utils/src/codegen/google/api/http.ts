@@ -677,7 +677,7 @@ function createBaseHttp(): Http {
   };
 }
 export const Http = {
-  typeUrl: '/google.api.Http',
+  typeUrl: '/google.api.Http' as const,
   encode(
     message: Http,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -767,7 +767,7 @@ function createBaseHttpRule(): HttpRule {
   };
 }
 export const HttpRule = {
-  typeUrl: '/google.api.HttpRule',
+  typeUrl: '/google.api.HttpRule' as const,
   encode(
     message: HttpRule,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -936,7 +936,7 @@ function createBaseCustomHttpPattern(): CustomHttpPattern {
   };
 }
 export const CustomHttpPattern = {
-  typeUrl: '/google.api.CustomHttpPattern',
+  typeUrl: '/google.api.CustomHttpPattern' as const,
   encode(
     message: CustomHttpPattern,
     writer: BinaryWriter = BinaryWriter.create(),

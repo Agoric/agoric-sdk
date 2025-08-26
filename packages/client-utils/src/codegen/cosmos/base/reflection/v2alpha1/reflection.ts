@@ -424,7 +424,7 @@ function createBaseAppDescriptor(): AppDescriptor {
   };
 }
 export const AppDescriptor = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.AppDescriptor',
+  typeUrl: '/cosmos.base.reflection.v2alpha1.AppDescriptor' as const,
   encode(
     message: AppDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -588,7 +588,7 @@ function createBaseTxDescriptor(): TxDescriptor {
   };
 }
 export const TxDescriptor = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.TxDescriptor',
+  typeUrl: '/cosmos.base.reflection.v2alpha1.TxDescriptor' as const,
   encode(
     message: TxDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -667,7 +667,7 @@ function createBaseAuthnDescriptor(): AuthnDescriptor {
   };
 }
 export const AuthnDescriptor = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.AuthnDescriptor',
+  typeUrl: '/cosmos.base.reflection.v2alpha1.AuthnDescriptor' as const,
   encode(
     message: AuthnDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -742,7 +742,7 @@ function createBaseSigningModeDescriptor(): SigningModeDescriptor {
   };
 }
 export const SigningModeDescriptor = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.SigningModeDescriptor',
+  typeUrl: '/cosmos.base.reflection.v2alpha1.SigningModeDescriptor' as const,
   encode(
     message: SigningModeDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -832,7 +832,7 @@ function createBaseChainDescriptor(): ChainDescriptor {
   };
 }
 export const ChainDescriptor = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.ChainDescriptor',
+  typeUrl: '/cosmos.base.reflection.v2alpha1.ChainDescriptor' as const,
   encode(
     message: ChainDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -894,7 +894,7 @@ function createBaseCodecDescriptor(): CodecDescriptor {
   };
 }
 export const CodecDescriptor = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.CodecDescriptor',
+  typeUrl: '/cosmos.base.reflection.v2alpha1.CodecDescriptor' as const,
   encode(
     message: CodecDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -969,7 +969,7 @@ function createBaseInterfaceDescriptor(): InterfaceDescriptor {
   };
 }
 export const InterfaceDescriptor = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.InterfaceDescriptor',
+  typeUrl: '/cosmos.base.reflection.v2alpha1.InterfaceDescriptor' as const,
   encode(
     message: InterfaceDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1091,7 +1091,8 @@ function createBaseInterfaceImplementerDescriptor(): InterfaceImplementerDescrip
   };
 }
 export const InterfaceImplementerDescriptor = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.InterfaceImplementerDescriptor',
+  typeUrl:
+    '/cosmos.base.reflection.v2alpha1.InterfaceImplementerDescriptor' as const,
   encode(
     message: InterfaceImplementerDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1176,7 +1177,7 @@ function createBaseInterfaceAcceptingMessageDescriptor(): InterfaceAcceptingMess
 }
 export const InterfaceAcceptingMessageDescriptor = {
   typeUrl:
-    '/cosmos.base.reflection.v2alpha1.InterfaceAcceptingMessageDescriptor',
+    '/cosmos.base.reflection.v2alpha1.InterfaceAcceptingMessageDescriptor' as const,
   encode(
     message: InterfaceAcceptingMessageDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1266,7 +1267,7 @@ function createBaseConfigurationDescriptor(): ConfigurationDescriptor {
   };
 }
 export const ConfigurationDescriptor = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.ConfigurationDescriptor',
+  typeUrl: '/cosmos.base.reflection.v2alpha1.ConfigurationDescriptor' as const,
   encode(
     message: ConfigurationDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1341,7 +1342,7 @@ function createBaseMsgDescriptor(): MsgDescriptor {
   };
 }
 export const MsgDescriptor = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.MsgDescriptor',
+  typeUrl: '/cosmos.base.reflection.v2alpha1.MsgDescriptor' as const,
   encode(
     message: MsgDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1401,7 +1402,8 @@ function createBaseGetAuthnDescriptorRequest(): GetAuthnDescriptorRequest {
   return {};
 }
 export const GetAuthnDescriptorRequest = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.GetAuthnDescriptorRequest',
+  typeUrl:
+    '/cosmos.base.reflection.v2alpha1.GetAuthnDescriptorRequest' as const,
   encode(
     _: GetAuthnDescriptorRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1462,7 +1464,8 @@ function createBaseGetAuthnDescriptorResponse(): GetAuthnDescriptorResponse {
   };
 }
 export const GetAuthnDescriptorResponse = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.GetAuthnDescriptorResponse',
+  typeUrl:
+    '/cosmos.base.reflection.v2alpha1.GetAuthnDescriptorResponse' as const,
   encode(
     message: GetAuthnDescriptorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1541,7 +1544,8 @@ function createBaseGetChainDescriptorRequest(): GetChainDescriptorRequest {
   return {};
 }
 export const GetChainDescriptorRequest = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.GetChainDescriptorRequest',
+  typeUrl:
+    '/cosmos.base.reflection.v2alpha1.GetChainDescriptorRequest' as const,
   encode(
     _: GetChainDescriptorRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1602,7 +1606,8 @@ function createBaseGetChainDescriptorResponse(): GetChainDescriptorResponse {
   };
 }
 export const GetChainDescriptorResponse = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.GetChainDescriptorResponse',
+  typeUrl:
+    '/cosmos.base.reflection.v2alpha1.GetChainDescriptorResponse' as const,
   encode(
     message: GetChainDescriptorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1681,7 +1686,8 @@ function createBaseGetCodecDescriptorRequest(): GetCodecDescriptorRequest {
   return {};
 }
 export const GetCodecDescriptorRequest = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.GetCodecDescriptorRequest',
+  typeUrl:
+    '/cosmos.base.reflection.v2alpha1.GetCodecDescriptorRequest' as const,
   encode(
     _: GetCodecDescriptorRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1742,7 +1748,8 @@ function createBaseGetCodecDescriptorResponse(): GetCodecDescriptorResponse {
   };
 }
 export const GetCodecDescriptorResponse = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.GetCodecDescriptorResponse',
+  typeUrl:
+    '/cosmos.base.reflection.v2alpha1.GetCodecDescriptorResponse' as const,
   encode(
     message: GetCodecDescriptorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1821,7 +1828,8 @@ function createBaseGetConfigurationDescriptorRequest(): GetConfigurationDescript
   return {};
 }
 export const GetConfigurationDescriptorRequest = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.GetConfigurationDescriptorRequest',
+  typeUrl:
+    '/cosmos.base.reflection.v2alpha1.GetConfigurationDescriptorRequest' as const,
   encode(
     _: GetConfigurationDescriptorRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1886,7 +1894,7 @@ function createBaseGetConfigurationDescriptorResponse(): GetConfigurationDescrip
 }
 export const GetConfigurationDescriptorResponse = {
   typeUrl:
-    '/cosmos.base.reflection.v2alpha1.GetConfigurationDescriptorResponse',
+    '/cosmos.base.reflection.v2alpha1.GetConfigurationDescriptorResponse' as const,
   encode(
     message: GetConfigurationDescriptorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1972,7 +1980,8 @@ function createBaseGetQueryServicesDescriptorRequest(): GetQueryServicesDescript
   return {};
 }
 export const GetQueryServicesDescriptorRequest = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.GetQueryServicesDescriptorRequest',
+  typeUrl:
+    '/cosmos.base.reflection.v2alpha1.GetQueryServicesDescriptorRequest' as const,
   encode(
     _: GetQueryServicesDescriptorRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2037,7 +2046,7 @@ function createBaseGetQueryServicesDescriptorResponse(): GetQueryServicesDescrip
 }
 export const GetQueryServicesDescriptorResponse = {
   typeUrl:
-    '/cosmos.base.reflection.v2alpha1.GetQueryServicesDescriptorResponse',
+    '/cosmos.base.reflection.v2alpha1.GetQueryServicesDescriptorResponse' as const,
   encode(
     message: GetQueryServicesDescriptorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2123,7 +2132,7 @@ function createBaseGetTxDescriptorRequest(): GetTxDescriptorRequest {
   return {};
 }
 export const GetTxDescriptorRequest = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.GetTxDescriptorRequest',
+  typeUrl: '/cosmos.base.reflection.v2alpha1.GetTxDescriptorRequest' as const,
   encode(
     _: GetTxDescriptorRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2180,7 +2189,7 @@ function createBaseGetTxDescriptorResponse(): GetTxDescriptorResponse {
   };
 }
 export const GetTxDescriptorResponse = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.GetTxDescriptorResponse',
+  typeUrl: '/cosmos.base.reflection.v2alpha1.GetTxDescriptorResponse' as const,
   encode(
     message: GetTxDescriptorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2255,7 +2264,7 @@ function createBaseQueryServicesDescriptor(): QueryServicesDescriptor {
   };
 }
 export const QueryServicesDescriptor = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.QueryServicesDescriptor',
+  typeUrl: '/cosmos.base.reflection.v2alpha1.QueryServicesDescriptor' as const,
   encode(
     message: QueryServicesDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2342,7 +2351,7 @@ function createBaseQueryServiceDescriptor(): QueryServiceDescriptor {
   };
 }
 export const QueryServiceDescriptor = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.QueryServiceDescriptor',
+  typeUrl: '/cosmos.base.reflection.v2alpha1.QueryServiceDescriptor' as const,
   encode(
     message: QueryServiceDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2439,7 +2448,7 @@ function createBaseQueryMethodDescriptor(): QueryMethodDescriptor {
   };
 }
 export const QueryMethodDescriptor = {
-  typeUrl: '/cosmos.base.reflection.v2alpha1.QueryMethodDescriptor',
+  typeUrl: '/cosmos.base.reflection.v2alpha1.QueryMethodDescriptor' as const,
   encode(
     message: QueryMethodDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),

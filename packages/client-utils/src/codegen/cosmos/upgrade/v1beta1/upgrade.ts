@@ -148,7 +148,7 @@ function createBasePlan(): Plan {
   };
 }
 export const Plan = {
-  typeUrl: '/cosmos.upgrade.v1beta1.Plan',
+  typeUrl: '/cosmos.upgrade.v1beta1.Plan' as const,
   encode(
     message: Plan,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -270,7 +270,7 @@ function createBaseSoftwareUpgradeProposal(): SoftwareUpgradeProposal {
   };
 }
 export const SoftwareUpgradeProposal = {
-  typeUrl: '/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal',
+  typeUrl: '/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal' as const,
   encode(
     message: SoftwareUpgradeProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -365,7 +365,7 @@ function createBaseCancelSoftwareUpgradeProposal(): CancelSoftwareUpgradeProposa
   };
 }
 export const CancelSoftwareUpgradeProposal = {
-  typeUrl: '/cosmos.upgrade.v1beta1.CancelSoftwareUpgradeProposal',
+  typeUrl: '/cosmos.upgrade.v1beta1.CancelSoftwareUpgradeProposal' as const,
   encode(
     message: CancelSoftwareUpgradeProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -449,7 +449,7 @@ function createBaseModuleVersion(): ModuleVersion {
   };
 }
 export const ModuleVersion = {
-  typeUrl: '/cosmos.upgrade.v1beta1.ModuleVersion',
+  typeUrl: '/cosmos.upgrade.v1beta1.ModuleVersion' as const,
   encode(
     message: ModuleVersion,
     writer: BinaryWriter = BinaryWriter.create(),
