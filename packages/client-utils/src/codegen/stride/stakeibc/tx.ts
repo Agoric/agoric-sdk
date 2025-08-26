@@ -712,7 +712,7 @@ function createBaseMsgUpdateInnerRedemptionRateBounds(): MsgUpdateInnerRedemptio
   };
 }
 export const MsgUpdateInnerRedemptionRateBounds = {
-  typeUrl: '/stride.stakeibc.MsgUpdateInnerRedemptionRateBounds',
+  typeUrl: '/stride.stakeibc.MsgUpdateInnerRedemptionRateBounds' as const,
   encode(
     message: MsgUpdateInnerRedemptionRateBounds,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -830,7 +830,8 @@ function createBaseMsgUpdateInnerRedemptionRateBoundsResponse(): MsgUpdateInnerR
   return {};
 }
 export const MsgUpdateInnerRedemptionRateBoundsResponse = {
-  typeUrl: '/stride.stakeibc.MsgUpdateInnerRedemptionRateBoundsResponse',
+  typeUrl:
+    '/stride.stakeibc.MsgUpdateInnerRedemptionRateBoundsResponse' as const,
   encode(
     _: MsgUpdateInnerRedemptionRateBoundsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -896,7 +897,7 @@ function createBaseMsgLiquidStake(): MsgLiquidStake {
   };
 }
 export const MsgLiquidStake = {
-  typeUrl: '/stride.stakeibc.MsgLiquidStake',
+  typeUrl: '/stride.stakeibc.MsgLiquidStake' as const,
   encode(
     message: MsgLiquidStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -976,7 +977,7 @@ function createBaseMsgLiquidStakeResponse(): MsgLiquidStakeResponse {
   };
 }
 export const MsgLiquidStakeResponse = {
-  typeUrl: '/stride.stakeibc.MsgLiquidStakeResponse',
+  typeUrl: '/stride.stakeibc.MsgLiquidStakeResponse' as const,
   encode(
     message: MsgLiquidStakeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1053,7 +1054,7 @@ function createBaseMsgLSMLiquidStake(): MsgLSMLiquidStake {
   };
 }
 export const MsgLSMLiquidStake = {
-  typeUrl: '/stride.stakeibc.MsgLSMLiquidStake',
+  typeUrl: '/stride.stakeibc.MsgLSMLiquidStake' as const,
   encode(
     message: MsgLSMLiquidStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1136,7 +1137,7 @@ function createBaseMsgLSMLiquidStakeResponse(): MsgLSMLiquidStakeResponse {
   };
 }
 export const MsgLSMLiquidStakeResponse = {
-  typeUrl: '/stride.stakeibc.MsgLSMLiquidStakeResponse',
+  typeUrl: '/stride.stakeibc.MsgLSMLiquidStakeResponse' as const,
   encode(
     message: MsgLSMLiquidStakeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1215,7 +1216,7 @@ function createBaseMsgClearBalance(): MsgClearBalance {
   };
 }
 export const MsgClearBalance = {
-  typeUrl: '/stride.stakeibc.MsgClearBalance',
+  typeUrl: '/stride.stakeibc.MsgClearBalance' as const,
   encode(
     message: MsgClearBalance,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1302,7 +1303,7 @@ function createBaseMsgClearBalanceResponse(): MsgClearBalanceResponse {
   return {};
 }
 export const MsgClearBalanceResponse = {
-  typeUrl: '/stride.stakeibc.MsgClearBalanceResponse',
+  typeUrl: '/stride.stakeibc.MsgClearBalanceResponse' as const,
   encode(
     _: MsgClearBalanceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1364,7 +1365,7 @@ function createBaseMsgRedeemStake(): MsgRedeemStake {
   };
 }
 export const MsgRedeemStake = {
-  typeUrl: '/stride.stakeibc.MsgRedeemStake',
+  typeUrl: '/stride.stakeibc.MsgRedeemStake' as const,
   encode(
     message: MsgRedeemStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1451,7 +1452,7 @@ function createBaseMsgRedeemStakeResponse(): MsgRedeemStakeResponse {
   return {};
 }
 export const MsgRedeemStakeResponse = {
-  typeUrl: '/stride.stakeibc.MsgRedeemStakeResponse',
+  typeUrl: '/stride.stakeibc.MsgRedeemStakeResponse' as const,
   encode(
     _: MsgRedeemStakeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1519,7 +1520,7 @@ function createBaseMsgRegisterHostZone(): MsgRegisterHostZone {
   };
 }
 export const MsgRegisterHostZone = {
-  typeUrl: '/stride.stakeibc.MsgRegisterHostZone',
+  typeUrl: '/stride.stakeibc.MsgRegisterHostZone' as const,
   encode(
     message: MsgRegisterHostZone,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1728,7 +1729,7 @@ function createBaseMsgRegisterHostZoneResponse(): MsgRegisterHostZoneResponse {
   return {};
 }
 export const MsgRegisterHostZoneResponse = {
-  typeUrl: '/stride.stakeibc.MsgRegisterHostZoneResponse',
+  typeUrl: '/stride.stakeibc.MsgRegisterHostZoneResponse' as const,
   encode(
     _: MsgRegisterHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1794,7 +1795,7 @@ function createBaseMsgClaimUndelegatedTokens(): MsgClaimUndelegatedTokens {
   };
 }
 export const MsgClaimUndelegatedTokens = {
-  typeUrl: '/stride.stakeibc.MsgClaimUndelegatedTokens',
+  typeUrl: '/stride.stakeibc.MsgClaimUndelegatedTokens' as const,
   encode(
     message: MsgClaimUndelegatedTokens,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1896,7 +1897,7 @@ function createBaseMsgClaimUndelegatedTokensResponse(): MsgClaimUndelegatedToken
   return {};
 }
 export const MsgClaimUndelegatedTokensResponse = {
-  typeUrl: '/stride.stakeibc.MsgClaimUndelegatedTokensResponse',
+  typeUrl: '/stride.stakeibc.MsgClaimUndelegatedTokensResponse' as const,
   encode(
     _: MsgClaimUndelegatedTokensResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1961,7 +1962,7 @@ function createBaseMsgRebalanceValidators(): MsgRebalanceValidators {
   };
 }
 export const MsgRebalanceValidators = {
-  typeUrl: '/stride.stakeibc.MsgRebalanceValidators',
+  typeUrl: '/stride.stakeibc.MsgRebalanceValidators' as const,
   encode(
     message: MsgRebalanceValidators,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2050,7 +2051,7 @@ function createBaseMsgRebalanceValidatorsResponse(): MsgRebalanceValidatorsRespo
   return {};
 }
 export const MsgRebalanceValidatorsResponse = {
-  typeUrl: '/stride.stakeibc.MsgRebalanceValidatorsResponse',
+  typeUrl: '/stride.stakeibc.MsgRebalanceValidatorsResponse' as const,
   encode(
     _: MsgRebalanceValidatorsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2115,7 +2116,7 @@ function createBaseMsgAddValidators(): MsgAddValidators {
   };
 }
 export const MsgAddValidators = {
-  typeUrl: '/stride.stakeibc.MsgAddValidators',
+  typeUrl: '/stride.stakeibc.MsgAddValidators' as const,
   encode(
     message: MsgAddValidators,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2202,7 +2203,7 @@ function createBaseMsgAddValidatorsResponse(): MsgAddValidatorsResponse {
   return {};
 }
 export const MsgAddValidatorsResponse = {
-  typeUrl: '/stride.stakeibc.MsgAddValidatorsResponse',
+  typeUrl: '/stride.stakeibc.MsgAddValidatorsResponse' as const,
   encode(
     _: MsgAddValidatorsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2262,7 +2263,7 @@ function createBaseValidatorWeight(): ValidatorWeight {
   };
 }
 export const ValidatorWeight = {
-  typeUrl: '/stride.stakeibc.ValidatorWeight',
+  typeUrl: '/stride.stakeibc.ValidatorWeight' as const,
   encode(
     message: ValidatorWeight,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2341,7 +2342,7 @@ function createBaseMsgChangeValidatorWeights(): MsgChangeValidatorWeights {
   };
 }
 export const MsgChangeValidatorWeights = {
-  typeUrl: '/stride.stakeibc.MsgChangeValidatorWeights',
+  typeUrl: '/stride.stakeibc.MsgChangeValidatorWeights' as const,
   encode(
     message: MsgChangeValidatorWeights,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2441,7 +2442,7 @@ function createBaseMsgChangeValidatorWeightsResponse(): MsgChangeValidatorWeight
   return {};
 }
 export const MsgChangeValidatorWeightsResponse = {
-  typeUrl: '/stride.stakeibc.MsgChangeValidatorWeightsResponse',
+  typeUrl: '/stride.stakeibc.MsgChangeValidatorWeightsResponse' as const,
   encode(
     _: MsgChangeValidatorWeightsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2506,7 +2507,7 @@ function createBaseMsgDeleteValidator(): MsgDeleteValidator {
   };
 }
 export const MsgDeleteValidator = {
-  typeUrl: '/stride.stakeibc.MsgDeleteValidator',
+  typeUrl: '/stride.stakeibc.MsgDeleteValidator' as const,
   encode(
     message: MsgDeleteValidator,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2587,7 +2588,7 @@ function createBaseMsgDeleteValidatorResponse(): MsgDeleteValidatorResponse {
   return {};
 }
 export const MsgDeleteValidatorResponse = {
-  typeUrl: '/stride.stakeibc.MsgDeleteValidatorResponse',
+  typeUrl: '/stride.stakeibc.MsgDeleteValidatorResponse' as const,
   encode(
     _: MsgDeleteValidatorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2651,7 +2652,7 @@ function createBaseMsgRestoreInterchainAccount(): MsgRestoreInterchainAccount {
   };
 }
 export const MsgRestoreInterchainAccount = {
-  typeUrl: '/stride.stakeibc.MsgRestoreInterchainAccount',
+  typeUrl: '/stride.stakeibc.MsgRestoreInterchainAccount' as const,
   encode(
     message: MsgRestoreInterchainAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2755,7 +2756,7 @@ function createBaseMsgRestoreInterchainAccountResponse(): MsgRestoreInterchainAc
   return {};
 }
 export const MsgRestoreInterchainAccountResponse = {
-  typeUrl: '/stride.stakeibc.MsgRestoreInterchainAccountResponse',
+  typeUrl: '/stride.stakeibc.MsgRestoreInterchainAccountResponse' as const,
   encode(
     _: MsgRestoreInterchainAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2819,7 +2820,7 @@ function createBaseMsgCloseDelegationChannel(): MsgCloseDelegationChannel {
   };
 }
 export const MsgCloseDelegationChannel = {
-  typeUrl: '/stride.stakeibc.MsgCloseDelegationChannel',
+  typeUrl: '/stride.stakeibc.MsgCloseDelegationChannel' as const,
   encode(
     message: MsgCloseDelegationChannel,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2899,7 +2900,7 @@ function createBaseMsgCloseDelegationChannelResponse(): MsgCloseDelegationChanne
   return {};
 }
 export const MsgCloseDelegationChannelResponse = {
-  typeUrl: '/stride.stakeibc.MsgCloseDelegationChannelResponse',
+  typeUrl: '/stride.stakeibc.MsgCloseDelegationChannelResponse' as const,
   encode(
     _: MsgCloseDelegationChannelResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2964,7 +2965,7 @@ function createBaseMsgUpdateValidatorSharesExchRate(): MsgUpdateValidatorSharesE
   };
 }
 export const MsgUpdateValidatorSharesExchRate = {
-  typeUrl: '/stride.stakeibc.MsgUpdateValidatorSharesExchRate',
+  typeUrl: '/stride.stakeibc.MsgUpdateValidatorSharesExchRate' as const,
   encode(
     message: MsgUpdateValidatorSharesExchRate,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3053,7 +3054,7 @@ function createBaseMsgUpdateValidatorSharesExchRateResponse(): MsgUpdateValidato
   return {};
 }
 export const MsgUpdateValidatorSharesExchRateResponse = {
-  typeUrl: '/stride.stakeibc.MsgUpdateValidatorSharesExchRateResponse',
+  typeUrl: '/stride.stakeibc.MsgUpdateValidatorSharesExchRateResponse' as const,
   encode(
     _: MsgUpdateValidatorSharesExchRateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3118,7 +3119,7 @@ function createBaseMsgCalibrateDelegation(): MsgCalibrateDelegation {
   };
 }
 export const MsgCalibrateDelegation = {
-  typeUrl: '/stride.stakeibc.MsgCalibrateDelegation',
+  typeUrl: '/stride.stakeibc.MsgCalibrateDelegation' as const,
   encode(
     message: MsgCalibrateDelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3201,7 +3202,7 @@ function createBaseMsgCalibrateDelegationResponse(): MsgCalibrateDelegationRespo
   return {};
 }
 export const MsgCalibrateDelegationResponse = {
-  typeUrl: '/stride.stakeibc.MsgCalibrateDelegationResponse',
+  typeUrl: '/stride.stakeibc.MsgCalibrateDelegationResponse' as const,
   encode(
     _: MsgCalibrateDelegationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3265,7 +3266,7 @@ function createBaseMsgResumeHostZone(): MsgResumeHostZone {
   };
 }
 export const MsgResumeHostZone = {
-  typeUrl: '/stride.stakeibc.MsgResumeHostZone',
+  typeUrl: '/stride.stakeibc.MsgResumeHostZone' as const,
   encode(
     message: MsgResumeHostZone,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3334,7 +3335,7 @@ function createBaseMsgResumeHostZoneResponse(): MsgResumeHostZoneResponse {
   return {};
 }
 export const MsgResumeHostZoneResponse = {
-  typeUrl: '/stride.stakeibc.MsgResumeHostZoneResponse',
+  typeUrl: '/stride.stakeibc.MsgResumeHostZoneResponse' as const,
   encode(
     _: MsgResumeHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3411,7 +3412,7 @@ function createBaseMsgCreateTradeRoute(): MsgCreateTradeRoute {
   };
 }
 export const MsgCreateTradeRoute = {
-  typeUrl: '/stride.stakeibc.MsgCreateTradeRoute',
+  typeUrl: '/stride.stakeibc.MsgCreateTradeRoute' as const,
   encode(
     message: MsgCreateTradeRoute,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3675,7 +3676,7 @@ function createBaseMsgCreateTradeRouteResponse(): MsgCreateTradeRouteResponse {
   return {};
 }
 export const MsgCreateTradeRouteResponse = {
-  typeUrl: '/stride.stakeibc.MsgCreateTradeRouteResponse',
+  typeUrl: '/stride.stakeibc.MsgCreateTradeRouteResponse' as const,
   encode(
     _: MsgCreateTradeRouteResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3740,7 +3741,7 @@ function createBaseMsgDeleteTradeRoute(): MsgDeleteTradeRoute {
   };
 }
 export const MsgDeleteTradeRoute = {
-  typeUrl: '/stride.stakeibc.MsgDeleteTradeRoute',
+  typeUrl: '/stride.stakeibc.MsgDeleteTradeRoute' as const,
   encode(
     message: MsgDeleteTradeRoute,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3822,7 +3823,7 @@ function createBaseMsgDeleteTradeRouteResponse(): MsgDeleteTradeRouteResponse {
   return {};
 }
 export const MsgDeleteTradeRouteResponse = {
-  typeUrl: '/stride.stakeibc.MsgDeleteTradeRouteResponse',
+  typeUrl: '/stride.stakeibc.MsgDeleteTradeRouteResponse' as const,
   encode(
     _: MsgDeleteTradeRouteResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3892,7 +3893,7 @@ function createBaseMsgUpdateTradeRoute(): MsgUpdateTradeRoute {
   };
 }
 export const MsgUpdateTradeRoute = {
-  typeUrl: '/stride.stakeibc.MsgUpdateTradeRoute',
+  typeUrl: '/stride.stakeibc.MsgUpdateTradeRoute' as const,
   encode(
     message: MsgUpdateTradeRoute,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4037,7 +4038,7 @@ function createBaseMsgUpdateTradeRouteResponse(): MsgUpdateTradeRouteResponse {
   return {};
 }
 export const MsgUpdateTradeRouteResponse = {
-  typeUrl: '/stride.stakeibc.MsgUpdateTradeRouteResponse',
+  typeUrl: '/stride.stakeibc.MsgUpdateTradeRouteResponse' as const,
   encode(
     _: MsgUpdateTradeRouteResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4103,7 +4104,7 @@ function createBaseMsgSetCommunityPoolRebate(): MsgSetCommunityPoolRebate {
   };
 }
 export const MsgSetCommunityPoolRebate = {
-  typeUrl: '/stride.stakeibc.MsgSetCommunityPoolRebate',
+  typeUrl: '/stride.stakeibc.MsgSetCommunityPoolRebate' as const,
   encode(
     message: MsgSetCommunityPoolRebate,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4209,7 +4210,7 @@ function createBaseMsgSetCommunityPoolRebateResponse(): MsgSetCommunityPoolRebat
   return {};
 }
 export const MsgSetCommunityPoolRebateResponse = {
-  typeUrl: '/stride.stakeibc.MsgSetCommunityPoolRebateResponse',
+  typeUrl: '/stride.stakeibc.MsgSetCommunityPoolRebateResponse' as const,
   encode(
     _: MsgSetCommunityPoolRebateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4276,7 +4277,7 @@ function createBaseMsgToggleTradeController(): MsgToggleTradeController {
   };
 }
 export const MsgToggleTradeController = {
-  typeUrl: '/stride.stakeibc.MsgToggleTradeController',
+  typeUrl: '/stride.stakeibc.MsgToggleTradeController' as const,
   encode(
     message: MsgToggleTradeController,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4388,7 +4389,7 @@ function createBaseMsgToggleTradeControllerResponse(): MsgToggleTradeControllerR
   return {};
 }
 export const MsgToggleTradeControllerResponse = {
-  typeUrl: '/stride.stakeibc.MsgToggleTradeControllerResponse',
+  typeUrl: '/stride.stakeibc.MsgToggleTradeControllerResponse' as const,
   encode(
     _: MsgToggleTradeControllerResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4453,7 +4454,7 @@ function createBaseMsgUpdateHostZoneParams(): MsgUpdateHostZoneParams {
   };
 }
 export const MsgUpdateHostZoneParams = {
-  typeUrl: '/stride.stakeibc.MsgUpdateHostZoneParams',
+  typeUrl: '/stride.stakeibc.MsgUpdateHostZoneParams' as const,
   encode(
     message: MsgUpdateHostZoneParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4549,7 +4550,7 @@ function createBaseMsgUpdateHostZoneParamsResponse(): MsgUpdateHostZoneParamsRes
   return {};
 }
 export const MsgUpdateHostZoneParamsResponse = {
-  typeUrl: '/stride.stakeibc.MsgUpdateHostZoneParamsResponse',
+  typeUrl: '/stride.stakeibc.MsgUpdateHostZoneParamsResponse' as const,
   encode(
     _: MsgUpdateHostZoneParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

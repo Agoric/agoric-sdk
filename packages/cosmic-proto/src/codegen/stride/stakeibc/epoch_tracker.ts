@@ -27,7 +27,7 @@ function createBaseEpochTracker(): EpochTracker {
   };
 }
 export const EpochTracker = {
-  typeUrl: '/stride.stakeibc.EpochTracker',
+  typeUrl: '/stride.stakeibc.EpochTracker' as const,
   encode(
     message: EpochTracker,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -350,7 +350,7 @@ function createBaseMsgLiquidStake(): MsgLiquidStake {
   };
 }
 export const MsgLiquidStake = {
-  typeUrl: '/stride.staketia.MsgLiquidStake',
+  typeUrl: '/stride.staketia.MsgLiquidStake' as const,
   encode(
     message: MsgLiquidStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -424,7 +424,7 @@ function createBaseMsgLiquidStakeResponse(): MsgLiquidStakeResponse {
   };
 }
 export const MsgLiquidStakeResponse = {
-  typeUrl: '/stride.staketia.MsgLiquidStakeResponse',
+  typeUrl: '/stride.staketia.MsgLiquidStakeResponse' as const,
   encode(
     message: MsgLiquidStakeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -501,7 +501,7 @@ function createBaseMsgRedeemStake(): MsgRedeemStake {
   };
 }
 export const MsgRedeemStake = {
-  typeUrl: '/stride.staketia.MsgRedeemStake',
+  typeUrl: '/stride.staketia.MsgRedeemStake' as const,
   encode(
     message: MsgRedeemStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -584,7 +584,7 @@ function createBaseMsgRedeemStakeResponse(): MsgRedeemStakeResponse {
   };
 }
 export const MsgRedeemStakeResponse = {
-  typeUrl: '/stride.staketia.MsgRedeemStakeResponse',
+  typeUrl: '/stride.staketia.MsgRedeemStakeResponse' as const,
   encode(
     message: MsgRedeemStakeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -661,7 +661,7 @@ function createBaseMsgConfirmDelegation(): MsgConfirmDelegation {
   };
 }
 export const MsgConfirmDelegation = {
-  typeUrl: '/stride.staketia.MsgConfirmDelegation',
+  typeUrl: '/stride.staketia.MsgConfirmDelegation' as const,
   encode(
     message: MsgConfirmDelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -748,7 +748,7 @@ function createBaseMsgConfirmDelegationResponse(): MsgConfirmDelegationResponse 
   return {};
 }
 export const MsgConfirmDelegationResponse = {
-  typeUrl: '/stride.staketia.MsgConfirmDelegationResponse',
+  typeUrl: '/stride.staketia.MsgConfirmDelegationResponse' as const,
   encode(
     _: MsgConfirmDelegationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -813,7 +813,7 @@ function createBaseMsgConfirmUndelegation(): MsgConfirmUndelegation {
   };
 }
 export const MsgConfirmUndelegation = {
-  typeUrl: '/stride.staketia.MsgConfirmUndelegation',
+  typeUrl: '/stride.staketia.MsgConfirmUndelegation' as const,
   encode(
     message: MsgConfirmUndelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -902,7 +902,7 @@ function createBaseMsgConfirmUndelegationResponse(): MsgConfirmUndelegationRespo
   return {};
 }
 export const MsgConfirmUndelegationResponse = {
-  typeUrl: '/stride.staketia.MsgConfirmUndelegationResponse',
+  typeUrl: '/stride.staketia.MsgConfirmUndelegationResponse' as const,
   encode(
     _: MsgConfirmUndelegationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -967,7 +967,7 @@ function createBaseMsgConfirmUnbondedTokenSweep(): MsgConfirmUnbondedTokenSweep 
   };
 }
 export const MsgConfirmUnbondedTokenSweep = {
-  typeUrl: '/stride.staketia.MsgConfirmUnbondedTokenSweep',
+  typeUrl: '/stride.staketia.MsgConfirmUnbondedTokenSweep' as const,
   encode(
     message: MsgConfirmUnbondedTokenSweep,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1062,7 +1062,7 @@ function createBaseMsgConfirmUnbondedTokenSweepResponse(): MsgConfirmUnbondedTok
   return {};
 }
 export const MsgConfirmUnbondedTokenSweepResponse = {
-  typeUrl: '/stride.staketia.MsgConfirmUnbondedTokenSweepResponse',
+  typeUrl: '/stride.staketia.MsgConfirmUnbondedTokenSweepResponse' as const,
   encode(
     _: MsgConfirmUnbondedTokenSweepResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1127,7 +1127,7 @@ function createBaseMsgAdjustDelegatedBalance(): MsgAdjustDelegatedBalance {
   };
 }
 export const MsgAdjustDelegatedBalance = {
-  typeUrl: '/stride.staketia.MsgAdjustDelegatedBalance',
+  typeUrl: '/stride.staketia.MsgAdjustDelegatedBalance' as const,
   encode(
     message: MsgAdjustDelegatedBalance,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1222,7 +1222,7 @@ function createBaseMsgAdjustDelegatedBalanceResponse(): MsgAdjustDelegatedBalanc
   return {};
 }
 export const MsgAdjustDelegatedBalanceResponse = {
-  typeUrl: '/stride.staketia.MsgAdjustDelegatedBalanceResponse',
+  typeUrl: '/stride.staketia.MsgAdjustDelegatedBalanceResponse' as const,
   encode(
     _: MsgAdjustDelegatedBalanceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1287,7 +1287,7 @@ function createBaseMsgUpdateInnerRedemptionRateBounds(): MsgUpdateInnerRedemptio
   };
 }
 export const MsgUpdateInnerRedemptionRateBounds = {
-  typeUrl: '/stride.staketia.MsgUpdateInnerRedemptionRateBounds',
+  typeUrl: '/stride.staketia.MsgUpdateInnerRedemptionRateBounds' as const,
   encode(
     message: MsgUpdateInnerRedemptionRateBounds,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1396,7 +1396,8 @@ function createBaseMsgUpdateInnerRedemptionRateBoundsResponse(): MsgUpdateInnerR
   return {};
 }
 export const MsgUpdateInnerRedemptionRateBoundsResponse = {
-  typeUrl: '/stride.staketia.MsgUpdateInnerRedemptionRateBoundsResponse',
+  typeUrl:
+    '/stride.staketia.MsgUpdateInnerRedemptionRateBoundsResponse' as const,
   encode(
     _: MsgUpdateInnerRedemptionRateBoundsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1460,7 +1461,7 @@ function createBaseMsgResumeHostZone(): MsgResumeHostZone {
   };
 }
 export const MsgResumeHostZone = {
-  typeUrl: '/stride.staketia.MsgResumeHostZone',
+  typeUrl: '/stride.staketia.MsgResumeHostZone' as const,
   encode(
     message: MsgResumeHostZone,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1520,7 +1521,7 @@ function createBaseMsgResumeHostZoneResponse(): MsgResumeHostZoneResponse {
   return {};
 }
 export const MsgResumeHostZoneResponse = {
-  typeUrl: '/stride.staketia.MsgResumeHostZoneResponse',
+  typeUrl: '/stride.staketia.MsgResumeHostZoneResponse' as const,
   encode(
     _: MsgResumeHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1581,7 +1582,7 @@ function createBaseMsgRefreshRedemptionRate(): MsgRefreshRedemptionRate {
   };
 }
 export const MsgRefreshRedemptionRate = {
-  typeUrl: '/stride.staketia.MsgRefreshRedemptionRate',
+  typeUrl: '/stride.staketia.MsgRefreshRedemptionRate' as const,
   encode(
     message: MsgRefreshRedemptionRate,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1652,7 +1653,7 @@ function createBaseMsgRefreshRedemptionRateResponse(): MsgRefreshRedemptionRateR
   return {};
 }
 export const MsgRefreshRedemptionRateResponse = {
-  typeUrl: '/stride.staketia.MsgRefreshRedemptionRateResponse',
+  typeUrl: '/stride.staketia.MsgRefreshRedemptionRateResponse' as const,
   encode(
     _: MsgRefreshRedemptionRateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1716,7 +1717,7 @@ function createBaseMsgOverwriteDelegationRecord(): MsgOverwriteDelegationRecord 
   };
 }
 export const MsgOverwriteDelegationRecord = {
-  typeUrl: '/stride.staketia.MsgOverwriteDelegationRecord',
+  typeUrl: '/stride.staketia.MsgOverwriteDelegationRecord' as const,
   encode(
     message: MsgOverwriteDelegationRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1810,7 +1811,7 @@ function createBaseMsgOverwriteDelegationRecordResponse(): MsgOverwriteDelegatio
   return {};
 }
 export const MsgOverwriteDelegationRecordResponse = {
-  typeUrl: '/stride.staketia.MsgOverwriteDelegationRecordResponse',
+  typeUrl: '/stride.staketia.MsgOverwriteDelegationRecordResponse' as const,
   encode(
     _: MsgOverwriteDelegationRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1874,7 +1875,7 @@ function createBaseMsgOverwriteUnbondingRecord(): MsgOverwriteUnbondingRecord {
   };
 }
 export const MsgOverwriteUnbondingRecord = {
-  typeUrl: '/stride.staketia.MsgOverwriteUnbondingRecord',
+  typeUrl: '/stride.staketia.MsgOverwriteUnbondingRecord' as const,
   encode(
     message: MsgOverwriteUnbondingRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1968,7 +1969,7 @@ function createBaseMsgOverwriteUnbondingRecordResponse(): MsgOverwriteUnbondingR
   return {};
 }
 export const MsgOverwriteUnbondingRecordResponse = {
-  typeUrl: '/stride.staketia.MsgOverwriteUnbondingRecordResponse',
+  typeUrl: '/stride.staketia.MsgOverwriteUnbondingRecordResponse' as const,
   encode(
     _: MsgOverwriteUnbondingRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2032,7 +2033,7 @@ function createBaseMsgOverwriteRedemptionRecord(): MsgOverwriteRedemptionRecord 
   };
 }
 export const MsgOverwriteRedemptionRecord = {
-  typeUrl: '/stride.staketia.MsgOverwriteRedemptionRecord',
+  typeUrl: '/stride.staketia.MsgOverwriteRedemptionRecord' as const,
   encode(
     message: MsgOverwriteRedemptionRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2126,7 +2127,7 @@ function createBaseMsgOverwriteRedemptionRecordResponse(): MsgOverwriteRedemptio
   return {};
 }
 export const MsgOverwriteRedemptionRecordResponse = {
-  typeUrl: '/stride.staketia.MsgOverwriteRedemptionRecordResponse',
+  typeUrl: '/stride.staketia.MsgOverwriteRedemptionRecordResponse' as const,
   encode(
     _: MsgOverwriteRedemptionRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2190,7 +2191,7 @@ function createBaseMsgSetOperatorAddress(): MsgSetOperatorAddress {
   };
 }
 export const MsgSetOperatorAddress = {
-  typeUrl: '/stride.staketia.MsgSetOperatorAddress',
+  typeUrl: '/stride.staketia.MsgSetOperatorAddress' as const,
   encode(
     message: MsgSetOperatorAddress,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2262,7 +2263,7 @@ function createBaseMsgSetOperatorAddressResponse(): MsgSetOperatorAddressRespons
   return {};
 }
 export const MsgSetOperatorAddressResponse = {
-  typeUrl: '/stride.staketia.MsgSetOperatorAddressResponse',
+  typeUrl: '/stride.staketia.MsgSetOperatorAddressResponse' as const,
   encode(
     _: MsgSetOperatorAddressResponse,
     writer: BinaryWriter = BinaryWriter.create(),

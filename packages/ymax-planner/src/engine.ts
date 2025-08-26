@@ -37,7 +37,7 @@ type CosmosEvent = {
 };
 
 const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
-const TX_SUBSCRIPTIONS_PATH_PREFIX = 'published.ymax0.PendingTxs';
+const TX_SUBSCRIPTIONS_PATH_PREFIX = 'published.ymax0.pendingTxs';
 
 /** cf. golang/cosmos/x/vstorage/types/path_keys.go */
 const EncodedKeySeparator = '\x00';

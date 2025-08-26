@@ -29,7 +29,7 @@ function createBaseModule(): Module {
   };
 }
 export const Module = {
-  typeUrl: '/cosmos.staking.module.v1.Module',
+  typeUrl: '/cosmos.staking.module.v1.Module' as const,
   encode(
     message: Module,
     writer: BinaryWriter = BinaryWriter.create(),

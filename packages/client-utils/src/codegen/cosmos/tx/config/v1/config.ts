@@ -31,7 +31,7 @@ function createBaseConfig(): Config {
   };
 }
 export const Config = {
-  typeUrl: '/cosmos.tx.config.v1.Config',
+  typeUrl: '/cosmos.tx.config.v1.Config' as const,
   encode(
     message: Config,
     writer: BinaryWriter = BinaryWriter.create(),

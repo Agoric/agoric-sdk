@@ -206,7 +206,7 @@ function createBaseIdentifiedClientState(): IdentifiedClientState {
   };
 }
 export const IdentifiedClientState = {
-  typeUrl: '/ibc.core.client.v1.IdentifiedClientState',
+  typeUrl: '/ibc.core.client.v1.IdentifiedClientState' as const,
   encode(
     message: IdentifiedClientState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -289,7 +289,7 @@ function createBaseConsensusStateWithHeight(): ConsensusStateWithHeight {
   };
 }
 export const ConsensusStateWithHeight = {
-  typeUrl: '/ibc.core.client.v1.ConsensusStateWithHeight',
+  typeUrl: '/ibc.core.client.v1.ConsensusStateWithHeight' as const,
   encode(
     message: ConsensusStateWithHeight,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -384,7 +384,7 @@ function createBaseClientConsensusStates(): ClientConsensusStates {
   };
 }
 export const ClientConsensusStates = {
-  typeUrl: '/ibc.core.client.v1.ClientConsensusStates',
+  typeUrl: '/ibc.core.client.v1.ClientConsensusStates' as const,
   encode(
     message: ClientConsensusStates,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -477,7 +477,7 @@ function createBaseClientUpdateProposal(): ClientUpdateProposal {
   };
 }
 export const ClientUpdateProposal = {
-  typeUrl: '/ibc.core.client.v1.ClientUpdateProposal',
+  typeUrl: '/ibc.core.client.v1.ClientUpdateProposal' as const,
   encode(
     message: ClientUpdateProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -580,7 +580,7 @@ function createBaseUpgradeProposal(): UpgradeProposal {
   };
 }
 export const UpgradeProposal = {
-  typeUrl: '/ibc.core.client.v1.UpgradeProposal',
+  typeUrl: '/ibc.core.client.v1.UpgradeProposal' as const,
   encode(
     message: UpgradeProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -687,7 +687,7 @@ function createBaseHeight(): Height {
   };
 }
 export const Height = {
-  typeUrl: '/ibc.core.client.v1.Height',
+  typeUrl: '/ibc.core.client.v1.Height' as const,
   encode(
     message: Height,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -770,7 +770,7 @@ function createBaseParams(): Params {
   };
 }
 export const Params = {
-  typeUrl: '/ibc.core.client.v1.Params',
+  typeUrl: '/ibc.core.client.v1.Params' as const,
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -26,7 +26,7 @@ function createBaseMaxMessageBodySize(): MaxMessageBodySize {
   };
 }
 export const MaxMessageBodySize = {
-  typeUrl: '/circle.cctp.v1.MaxMessageBodySize',
+  typeUrl: '/circle.cctp.v1.MaxMessageBodySize' as const,
   encode(
     message: MaxMessageBodySize,
     writer: BinaryWriter = BinaryWriter.create(),

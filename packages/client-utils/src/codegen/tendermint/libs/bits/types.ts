@@ -21,7 +21,7 @@ function createBaseBitArray(): BitArray {
   };
 }
 export const BitArray = {
-  typeUrl: '/tendermint.libs.bits.BitArray',
+  typeUrl: '/tendermint.libs.bits.BitArray' as const,
   encode(
     message: BitArray,
     writer: BinaryWriter = BinaryWriter.create(),

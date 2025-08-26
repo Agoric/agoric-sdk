@@ -268,7 +268,7 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
 export const QueryParamsRequest = {
-  typeUrl: '/stride.records.QueryParamsRequest',
+  typeUrl: '/stride.records.QueryParamsRequest' as const,
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -323,7 +323,7 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
   };
 }
 export const QueryParamsResponse = {
-  typeUrl: '/stride.records.QueryParamsResponse',
+  typeUrl: '/stride.records.QueryParamsResponse' as const,
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -392,7 +392,7 @@ function createBaseQueryGetDepositRecordRequest(): QueryGetDepositRecordRequest 
   };
 }
 export const QueryGetDepositRecordRequest = {
-  typeUrl: '/stride.records.QueryGetDepositRecordRequest',
+  typeUrl: '/stride.records.QueryGetDepositRecordRequest' as const,
   encode(
     message: QueryGetDepositRecordRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -468,7 +468,7 @@ function createBaseQueryGetDepositRecordResponse(): QueryGetDepositRecordRespons
   };
 }
 export const QueryGetDepositRecordResponse = {
-  typeUrl: '/stride.records.QueryGetDepositRecordResponse',
+  typeUrl: '/stride.records.QueryGetDepositRecordResponse' as const,
   encode(
     message: QueryGetDepositRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -552,7 +552,7 @@ function createBaseQueryAllDepositRecordRequest(): QueryAllDepositRecordRequest 
   };
 }
 export const QueryAllDepositRecordRequest = {
-  typeUrl: '/stride.records.QueryAllDepositRecordRequest',
+  typeUrl: '/stride.records.QueryAllDepositRecordRequest' as const,
   encode(
     message: QueryAllDepositRecordRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -634,7 +634,7 @@ function createBaseQueryAllDepositRecordResponse(): QueryAllDepositRecordRespons
   };
 }
 export const QueryAllDepositRecordResponse = {
-  typeUrl: '/stride.records.QueryAllDepositRecordResponse',
+  typeUrl: '/stride.records.QueryAllDepositRecordResponse' as const,
   encode(
     message: QueryAllDepositRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -738,7 +738,7 @@ function createBaseQueryDepositRecordByHostRequest(): QueryDepositRecordByHostRe
   };
 }
 export const QueryDepositRecordByHostRequest = {
-  typeUrl: '/stride.records.QueryDepositRecordByHostRequest',
+  typeUrl: '/stride.records.QueryDepositRecordByHostRequest' as const,
   encode(
     message: QueryDepositRecordByHostRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -811,7 +811,7 @@ function createBaseQueryDepositRecordByHostResponse(): QueryDepositRecordByHostR
   };
 }
 export const QueryDepositRecordByHostResponse = {
-  typeUrl: '/stride.records.QueryDepositRecordByHostResponse',
+  typeUrl: '/stride.records.QueryDepositRecordByHostResponse' as const,
   encode(
     message: QueryDepositRecordByHostResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -895,7 +895,7 @@ function createBaseQueryGetUserRedemptionRecordRequest(): QueryGetUserRedemption
   };
 }
 export const QueryGetUserRedemptionRecordRequest = {
-  typeUrl: '/stride.records.QueryGetUserRedemptionRecordRequest',
+  typeUrl: '/stride.records.QueryGetUserRedemptionRecordRequest' as const,
   encode(
     message: QueryGetUserRedemptionRecordRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -968,7 +968,7 @@ function createBaseQueryGetUserRedemptionRecordResponse(): QueryGetUserRedemptio
   };
 }
 export const QueryGetUserRedemptionRecordResponse = {
-  typeUrl: '/stride.records.QueryGetUserRedemptionRecordResponse',
+  typeUrl: '/stride.records.QueryGetUserRedemptionRecordResponse' as const,
   encode(
     message: QueryGetUserRedemptionRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1056,7 +1056,7 @@ function createBaseQueryAllUserRedemptionRecordRequest(): QueryAllUserRedemption
   };
 }
 export const QueryAllUserRedemptionRecordRequest = {
-  typeUrl: '/stride.records.QueryAllUserRedemptionRecordRequest',
+  typeUrl: '/stride.records.QueryAllUserRedemptionRecordRequest' as const,
   encode(
     message: QueryAllUserRedemptionRecordRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1138,7 +1138,7 @@ function createBaseQueryAllUserRedemptionRecordResponse(): QueryAllUserRedemptio
   };
 }
 export const QueryAllUserRedemptionRecordResponse = {
-  typeUrl: '/stride.records.QueryAllUserRedemptionRecordResponse',
+  typeUrl: '/stride.records.QueryAllUserRedemptionRecordResponse' as const,
   encode(
     message: QueryAllUserRedemptionRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1250,7 +1250,8 @@ function createBaseQueryAllUserRedemptionRecordForUserRequest(): QueryAllUserRed
   };
 }
 export const QueryAllUserRedemptionRecordForUserRequest = {
-  typeUrl: '/stride.records.QueryAllUserRedemptionRecordForUserRequest',
+  typeUrl:
+    '/stride.records.QueryAllUserRedemptionRecordForUserRequest' as const,
   encode(
     message: QueryAllUserRedemptionRecordForUserRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1377,7 +1378,8 @@ function createBaseQueryAllUserRedemptionRecordForUserResponse(): QueryAllUserRe
   };
 }
 export const QueryAllUserRedemptionRecordForUserResponse = {
-  typeUrl: '/stride.records.QueryAllUserRedemptionRecordForUserResponse',
+  typeUrl:
+    '/stride.records.QueryAllUserRedemptionRecordForUserResponse' as const,
   encode(
     message: QueryAllUserRedemptionRecordForUserResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1486,7 +1488,7 @@ function createBaseQueryGetEpochUnbondingRecordRequest(): QueryGetEpochUnbonding
   };
 }
 export const QueryGetEpochUnbondingRecordRequest = {
-  typeUrl: '/stride.records.QueryGetEpochUnbondingRecordRequest',
+  typeUrl: '/stride.records.QueryGetEpochUnbondingRecordRequest' as const,
   encode(
     message: QueryGetEpochUnbondingRecordRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1565,7 +1567,7 @@ function createBaseQueryGetEpochUnbondingRecordResponse(): QueryGetEpochUnbondin
   };
 }
 export const QueryGetEpochUnbondingRecordResponse = {
-  typeUrl: '/stride.records.QueryGetEpochUnbondingRecordResponse',
+  typeUrl: '/stride.records.QueryGetEpochUnbondingRecordResponse' as const,
   encode(
     message: QueryGetEpochUnbondingRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1653,7 +1655,7 @@ function createBaseQueryAllEpochUnbondingRecordRequest(): QueryAllEpochUnbonding
   };
 }
 export const QueryAllEpochUnbondingRecordRequest = {
-  typeUrl: '/stride.records.QueryAllEpochUnbondingRecordRequest',
+  typeUrl: '/stride.records.QueryAllEpochUnbondingRecordRequest' as const,
   encode(
     message: QueryAllEpochUnbondingRecordRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1735,7 +1737,7 @@ function createBaseQueryAllEpochUnbondingRecordResponse(): QueryAllEpochUnbondin
   };
 }
 export const QueryAllEpochUnbondingRecordResponse = {
-  typeUrl: '/stride.records.QueryAllEpochUnbondingRecordResponse',
+  typeUrl: '/stride.records.QueryAllEpochUnbondingRecordResponse' as const,
   encode(
     message: QueryAllEpochUnbondingRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1844,7 +1846,7 @@ function createBaseQueryLSMDepositRequest(): QueryLSMDepositRequest {
   };
 }
 export const QueryLSMDepositRequest = {
-  typeUrl: '/stride.records.QueryLSMDepositRequest',
+  typeUrl: '/stride.records.QueryLSMDepositRequest' as const,
   encode(
     message: QueryLSMDepositRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1920,7 +1922,7 @@ function createBaseQueryLSMDepositResponse(): QueryLSMDepositResponse {
   };
 }
 export const QueryLSMDepositResponse = {
-  typeUrl: '/stride.records.QueryLSMDepositResponse',
+  typeUrl: '/stride.records.QueryLSMDepositResponse' as const,
   encode(
     message: QueryLSMDepositResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2004,7 +2006,7 @@ function createBaseQueryLSMDepositsRequest(): QueryLSMDepositsRequest {
   };
 }
 export const QueryLSMDepositsRequest = {
-  typeUrl: '/stride.records.QueryLSMDepositsRequest',
+  typeUrl: '/stride.records.QueryLSMDepositsRequest' as const,
   encode(
     message: QueryLSMDepositsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2096,7 +2098,7 @@ function createBaseQueryLSMDepositsResponse(): QueryLSMDepositsResponse {
   };
 }
 export const QueryLSMDepositsResponse = {
-  typeUrl: '/stride.records.QueryLSMDepositsResponse',
+  typeUrl: '/stride.records.QueryLSMDepositsResponse' as const,
   encode(
     message: QueryLSMDepositsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

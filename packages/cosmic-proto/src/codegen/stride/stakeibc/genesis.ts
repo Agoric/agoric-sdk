@@ -36,7 +36,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/stride.stakeibc.GenesisState',
+  typeUrl: '/stride.stakeibc.GenesisState' as const,
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

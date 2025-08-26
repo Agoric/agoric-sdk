@@ -32,7 +32,7 @@ function createBaseClientState(): ClientState {
   };
 }
 export const ClientState = {
-  typeUrl: '/ibc.lightclients.localhost.v1.ClientState',
+  typeUrl: '/ibc.lightclients.localhost.v1.ClientState' as const,
   encode(
     message: ClientState,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -71,7 +71,7 @@ function createBaseCosmosTx(): CosmosTx {
   };
 }
 export const CosmosTx = {
-  typeUrl: '/agoric.vlocalchain.CosmosTx',
+  typeUrl: '/agoric.vlocalchain.CosmosTx' as const,
   encode(
     message: CosmosTx,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -141,7 +141,7 @@ function createBaseQueryRequest(): QueryRequest {
   };
 }
 export const QueryRequest = {
-  typeUrl: '/agoric.vlocalchain.QueryRequest',
+  typeUrl: '/agoric.vlocalchain.QueryRequest' as const,
   encode(
     message: QueryRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -227,7 +227,7 @@ function createBaseQueryResponse(): QueryResponse {
   };
 }
 export const QueryResponse = {
-  typeUrl: '/agoric.vlocalchain.QueryResponse',
+  typeUrl: '/agoric.vlocalchain.QueryResponse' as const,
   encode(
     message: QueryResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -317,7 +317,7 @@ function createBaseQueryResponses(): QueryResponses {
   };
 }
 export const QueryResponses = {
-  typeUrl: '/agoric.vlocalchain.QueryResponses',
+  typeUrl: '/agoric.vlocalchain.QueryResponses' as const,
   encode(
     message: QueryResponses,
     writer: BinaryWriter = BinaryWriter.create(),

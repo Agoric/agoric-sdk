@@ -44,7 +44,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/agoric.vstorage.GenesisState',
+  typeUrl: '/agoric.vstorage.GenesisState' as const,
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -113,7 +113,7 @@ function createBaseDataEntry(): DataEntry {
   };
 }
 export const DataEntry = {
-  typeUrl: '/agoric.vstorage.DataEntry',
+  typeUrl: '/agoric.vstorage.DataEntry' as const,
   encode(
     message: DataEntry,
     writer: BinaryWriter = BinaryWriter.create(),

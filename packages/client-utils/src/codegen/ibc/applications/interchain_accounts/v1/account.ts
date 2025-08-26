@@ -27,7 +27,8 @@ function createBaseInterchainAccount(): InterchainAccount {
   };
 }
 export const InterchainAccount = {
-  typeUrl: '/ibc.applications.interchain_accounts.v1.InterchainAccount',
+  typeUrl:
+    '/ibc.applications.interchain_accounts.v1.InterchainAccount' as const,
   encode(
     message: InterchainAccount,
     writer: BinaryWriter = BinaryWriter.create(),

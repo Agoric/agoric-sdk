@@ -170,7 +170,7 @@ function createBaseCommunityPoolRebate(): CommunityPoolRebate {
   };
 }
 export const CommunityPoolRebate = {
-  typeUrl: '/stride.stakeibc.CommunityPoolRebate',
+  typeUrl: '/stride.stakeibc.CommunityPoolRebate' as const,
   encode(
     message: CommunityPoolRebate,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -281,7 +281,7 @@ function createBaseHostZone(): HostZone {
   };
 }
 export const HostZone = {
-  typeUrl: '/stride.stakeibc.HostZone',
+  typeUrl: '/stride.stakeibc.HostZone' as const,
   encode(
     message: HostZone,
     writer: BinaryWriter = BinaryWriter.create(),

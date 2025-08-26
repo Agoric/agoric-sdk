@@ -383,7 +383,7 @@ function createBaseWeightedVoteOption(): WeightedVoteOption {
   };
 }
 export const WeightedVoteOption = {
-  typeUrl: '/cosmos.gov.v1beta1.WeightedVoteOption',
+  typeUrl: '/cosmos.gov.v1beta1.WeightedVoteOption' as const,
   encode(
     message: WeightedVoteOption,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -461,7 +461,7 @@ function createBaseTextProposal(): TextProposal {
   };
 }
 export const TextProposal = {
-  typeUrl: '/cosmos.gov.v1beta1.TextProposal',
+  typeUrl: '/cosmos.gov.v1beta1.TextProposal' as const,
   encode(
     message: TextProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -535,7 +535,7 @@ function createBaseDeposit(): Deposit {
   };
 }
 export const Deposit = {
-  typeUrl: '/cosmos.gov.v1beta1.Deposit',
+  typeUrl: '/cosmos.gov.v1beta1.Deposit' as const,
   encode(
     message: Deposit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -635,7 +635,7 @@ function createBaseProposal(): Proposal {
   };
 }
 export const Proposal = {
-  typeUrl: '/cosmos.gov.v1beta1.Proposal',
+  typeUrl: '/cosmos.gov.v1beta1.Proposal' as const,
   encode(
     message: Proposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -843,7 +843,7 @@ function createBaseTallyResult(): TallyResult {
   };
 }
 export const TallyResult = {
-  typeUrl: '/cosmos.gov.v1beta1.TallyResult',
+  typeUrl: '/cosmos.gov.v1beta1.TallyResult' as const,
   encode(
     message: TallyResult,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -935,7 +935,7 @@ function createBaseVote(): Vote {
   };
 }
 export const Vote = {
-  typeUrl: '/cosmos.gov.v1beta1.Vote',
+  typeUrl: '/cosmos.gov.v1beta1.Vote' as const,
   encode(
     message: Vote,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1043,7 +1043,7 @@ function createBaseDepositParams(): DepositParams {
   };
 }
 export const DepositParams = {
-  typeUrl: '/cosmos.gov.v1beta1.DepositParams',
+  typeUrl: '/cosmos.gov.v1beta1.DepositParams' as const,
   encode(
     message: DepositParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1133,7 +1133,7 @@ function createBaseVotingParams(): VotingParams {
   };
 }
 export const VotingParams = {
-  typeUrl: '/cosmos.gov.v1beta1.VotingParams',
+  typeUrl: '/cosmos.gov.v1beta1.VotingParams' as const,
   encode(
     message: VotingParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1205,7 +1205,7 @@ function createBaseTallyParams(): TallyParams {
   };
 }
 export const TallyParams = {
-  typeUrl: '/cosmos.gov.v1beta1.TallyParams',
+  typeUrl: '/cosmos.gov.v1beta1.TallyParams' as const,
   encode(
     message: TallyParams,
     writer: BinaryWriter = BinaryWriter.create(),
