@@ -87,11 +87,15 @@ export const main = async (
     },
   );
 
-  await startEngine({
+  const powers = {
     rpc,
     spectrum,
     cosmosRest,
     signingSmartWalletKit,
-  });
+  };
+  const config = {
+    depositIbcDenom: env.DEPOSIT_IBC_DENOM || 'USDC',
+  };
+  await startEngine(powers, config);
 };
 harden(main);
