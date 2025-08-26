@@ -5,6 +5,7 @@ import { JsonRpcProvider } from 'ethers';
 import { getTxStatus } from './axelar/gmp-status.ts';
 import { resolveCCTPSubscription, resolveGMPSubscription } from './resolver.ts';
 import { watchCCTPTransfer } from './watch-cctp.ts';
+import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 
 export type EVMContext = {
   axelarQueryApi: string;
@@ -24,9 +25,16 @@ export type GmpTransfer = {
   contractAddress: string;
 };
 
+/**
+ * Subscription state machine:
+ * pending -> success (when cross-chain operation completes successfully)
+ * pending -> timeout (when operation fails or times out)
+ *
+ * Terminal states: success and timeout never transition to other states.
+ */
 type BaseSubscription = {
   subscriptionId: string;
-  status: 'pending' | 'success' | 'timeout';
+  status: TxStatus;
 };
 
 type SubscriptionOf<T, K extends string> = BaseSubscription & T & { type: K };
@@ -38,6 +46,11 @@ export type Subscription = CctpSubscription | GmpSubscription;
 
 export type EVMChain = keyof typeof AxelarChain;
 
+/* Sourced from:
+ * - https://chainlist.org/
+ * - https://docs.simplehash.com/reference/supported-chains-testnets
+ *   (accessed on 26th August 2025)
+ */
 const chainIdToEVMChain: Record<string, EVMChain> = {
   // Mainnets
   '1': 'Ethereum',
@@ -49,7 +62,7 @@ const chainIdToEVMChain: Record<string, EVMChain> = {
   '11155111': 'Ethereum',
   '421614': 'Arbitrum',
   '43113': 'Avalanche',
-  '80002': 'Polygon',
+  '80002': 'Polygon', // Amoy
   '11155420': 'Optimism',
 };
 
@@ -105,13 +118,7 @@ export const handleSubscription = async (
         subscriptionId,
         log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
       });
-
-      await resolveGMPSubscription({
-        signingSmartWalletKit: ctx.signingSmartWalletKit,
-        subscriptionId,
-        status: res.success ? 'success' : 'timeout',
-        subscriptionData: subscription,
-      });
+      // TODO: resolve subscription
       break;
     }
     default: {

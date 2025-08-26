@@ -295,6 +295,121 @@ type IO = {
   signingSmartWalletKit: SigningSmartWalletKit;
 };
 
+const processPortfolioEvents = async (
+  portfolioEvents: Array<{ path: string; value: string }>,
+  marshaller: SigningSmartWalletKit['marshaller'],
+  query: SigningSmartWalletKit['query'],
+  portfolioKeyForDepositAddr: Map<Bech32Address, string>,
+) => {
+  for (const { path, value: vstorageValue } of portfolioEvents) {
+    const streamCell = tryJsonParse(
+      vstorageValue,
+      _err =>
+        Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
+    );
+    mustMatch(harden(streamCell), StreamCellShape);
+    if (path === PORTFOLIOS_PATH_PREFIX) {
+      for (let i = 0; i < streamCell.values.length; i += 1) {
+        const strValue = streamCell.values[i];
+        const value = tryJsonParse(
+          // @ts-expect-error use `undefined` to force an error for non-string input
+          typeof strValue === 'string' ? strValue : undefined,
+          _err =>
+            Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
+        );
+        const portfoliosData = marshaller.fromCapData(
+          value,
+        ) as StatusFor['portfolios'];
+        if (portfoliosData.addPortfolio) {
+          const key = portfoliosData.addPortfolio;
+          console.warn('Detected new portfolio', key);
+          const status = await query.readPublished(
+            `${stripPrefix('published.', PORTFOLIOS_PATH_PREFIX)}.${key}`,
+          );
+          mustMatch(status, PortfolioStatusShapeExt, key);
+          const { depositAddress } = status;
+          if (!depositAddress) continue;
+          portfolioKeyForDepositAddr.set(depositAddress, key);
+          console.warn('Added new portfolio', key, depositAddress);
+        }
+      }
+    }
+    // TODO: Handle portfolio-level path `${VSTORAGE_PATH_PREFIX}.${portfolioKey}` for addition/update of depositAddress.
+  }
+};
+
+const processSubscriptionEvents = async (
+  subscriptionEvents: Array<{ path: string; value: string }>,
+  marshaller: SigningSmartWalletKit['marshaller'],
+  evmCtx: Pick<EVMContext, 'axelarQueryApi' | 'evmProviders'>,
+  signingSmartWalletKit: SigningSmartWalletKit,
+) => {
+  for (const { path, value: vstorageValue } of subscriptionEvents) {
+    const streamCell = tryJsonParse(
+      vstorageValue,
+      _err =>
+        Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
+    );
+    mustMatch(harden(streamCell), StreamCellShape);
+
+    // Extract subscription ID from path (e.g., "published.orchestration.subscriptions.subscription1234")
+    const subscriptionId = stripPrefix(
+      `${TX_SUBSCRIPTIONS_PATH_PREFIX}.`,
+      path,
+    );
+    console.warn('Processing subscription event', subscriptionId, path);
+
+    for (let i = 0; i < streamCell.values.length; i += 1) {
+      const strValue = streamCell.values[i];
+      const value = tryJsonParse(
+        // @ts-expect-error use `undefined` to force an error for non-string input
+        typeof strValue === 'string' ? strValue : undefined,
+        _err =>
+          Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
+      );
+
+      // TODO: DRY out this code (for handling existing vs. new subscriptions)
+      const subscriptionData = marshaller.fromCapData(value);
+      if (!matches(subscriptionData, BaseSubscriptionShape)) {
+        const err = assert.error(
+          X`expected data ${subscriptionData} to match ${q(BaseSubscriptionShape)}`,
+        );
+        console.error(err);
+        return;
+      }
+
+      const subscription = {
+        subscriptionId,
+        ...(subscriptionData as any),
+      } as Subscription;
+
+      console.warn('Handling subscription:', {
+        subscriptionId,
+        type: subscription.type,
+        status: subscription.status,
+      });
+
+      if (subscription.status !== 'pending') continue;
+
+      // Process subscription concurrently without blocking event processing
+      void handleSubscription(
+        {
+          ...evmCtx,
+          signingSmartWalletKit,
+          fetch,
+        },
+        subscription,
+        log,
+      ).catch(error => {
+        console.error(
+          `⚠️ Failed to process subscription: ${subscriptionId}`,
+          error,
+        );
+      });
+    }
+  }
+};
+
 export const startEngine = async ({
   evmCtx,
   rpc,
@@ -399,21 +514,20 @@ export const startEngine = async ({
       console.error(msg, err);
     };
 
-    const [vstorageSettlement] = await Promise.allSettled([
-      query.readPublished(
+    let subscriptionData;
+    try {
+      // eslint-disable-next-line @jessie.js/safe-await-separator
+      subscriptionData = await query.readPublished(
         stripPrefix(
           'published.',
           `${TX_SUBSCRIPTIONS_PATH_PREFIX}.${subscriptionKey}`,
         ),
-      ),
-    ]);
-
-    if (vstorageSettlement.status === 'rejected') {
-      logIgnoredError(vstorageSettlement.reason);
+      );
+    } catch (err) {
+      logIgnoredError(err);
       return;
     }
 
-    const subscriptionData = vstorageSettlement.value;
     if (!matches(subscriptionData, BaseSubscriptionShape)) {
       const err = assert.error(
         X`expected data ${subscriptionData} to match ${q(BaseSubscriptionShape)}`,
@@ -500,107 +614,19 @@ export const startEngine = async ({
 
     // Detect new portfolios.
     const { marshaller } = signingSmartWalletKit;
-    for (const { path, value: vstorageValue } of portfolioEvents) {
-      const streamCell = tryJsonParse(
-        vstorageValue,
-        _err =>
-          Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
-      );
-      mustMatch(harden(streamCell), StreamCellShape);
-      if (path === PORTFOLIOS_PATH_PREFIX) {
-        for (let i = 0; i < streamCell.values.length; i += 1) {
-          const strValue = streamCell.values[i];
-          const value = tryJsonParse(
-            // @ts-expect-error use `undefined` to force an error for non-string input
-            typeof strValue === 'string' ? strValue : undefined,
-            _err =>
-              Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
-          );
-          const portfoliosData = marshaller.fromCapData(
-            value,
-          ) as StatusFor['portfolios'];
-          if (portfoliosData.addPortfolio) {
-            const key = portfoliosData.addPortfolio;
-            console.warn('Detected new portfolio', key);
-            const status = await query.readPublished(
-              `${stripPrefix('published.', PORTFOLIOS_PATH_PREFIX)}.${key}`,
-            );
-            mustMatch(status, PortfolioStatusShapeExt, key);
-            const { depositAddress } = status;
-            if (!depositAddress) continue;
-            portfolioKeyForDepositAddr.set(depositAddress, key);
-            console.warn('Added new portfolio', key, depositAddress);
-          }
-        }
-      }
-      // TODO: Handle portfolio-level path `${VSTORAGE_PATH_PREFIX}.${portfolioKey}` for addition/update of depositAddress.
-    }
+    await processPortfolioEvents(
+      portfolioEvents,
+      marshaller,
+      query,
+      portfolioKeyForDepositAddr,
+    );
 
-    // Handle subscriptions.
-    for (const { path, value: vstorageValue } of subscriptionEvents) {
-      const streamCell = tryJsonParse(
-        vstorageValue,
-        _err =>
-          Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
-      );
-      mustMatch(harden(streamCell), StreamCellShape);
-
-      // Extract subscription ID from path (e.g., "published.orchestration.subscriptions.subscription1234")
-      const subscriptionId = stripPrefix(
-        `${TX_SUBSCRIPTIONS_PATH_PREFIX}.`,
-        path,
-      );
-      console.warn('Processing subscription event', subscriptionId, path);
-
-      for (let i = 0; i < streamCell.values.length; i += 1) {
-        const strValue = streamCell.values[i];
-        const value = tryJsonParse(
-          // @ts-expect-error use `undefined` to force an error for non-string input
-          typeof strValue === 'string' ? strValue : undefined,
-          _err =>
-            Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
-        );
-
-        // TODO: DRY out this code (for handling existing vs. new subscriptions)
-        const subscriptionData = marshaller.fromCapData(value);
-        if (!matches(subscriptionData, BaseSubscriptionShape)) {
-          const err = assert.error(
-            X`expected data ${subscriptionData} to match ${q(BaseSubscriptionShape)}`,
-          );
-          console.error(err);
-          return;
-        }
-
-        const subscription = {
-          subscriptionId,
-          ...(subscriptionData as any),
-        } as Subscription;
-
-        console.warn('Handling subscription:', {
-          subscriptionId,
-          type: subscription.type,
-          status: subscription.status,
-        });
-
-        if (subscription.status !== 'pending') continue;
-
-        // Process subscription concurrently without blocking event processing
-        void handleSubscription(
-          {
-            ...evmCtx,
-            signingSmartWalletKit,
-            fetch,
-          },
-          subscription,
-          log,
-        ).catch(error => {
-          console.error(
-            `⚠️ Failed to process subscription: ${subscriptionId}`,
-            error,
-          );
-        });
-      }
-    }
+    await processSubscriptionEvents(
+      subscriptionEvents,
+      marshaller,
+      evmCtx,
+      signingSmartWalletKit,
+    );
 
     // Detect activity against portfolio deposit addresses.
     const addrsWithActivity: Bech32Address[] = [

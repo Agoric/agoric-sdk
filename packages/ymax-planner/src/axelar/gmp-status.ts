@@ -39,12 +39,12 @@ export const getTxStatus = async ({
   retryDelaySeconds?: number;
   now?: () => number;
 }) => {
+  await null;
   const body = JSON.stringify(params);
   log(`params: ${body}`);
 
   const startTime = now();
   const pollingDurationMs = timeoutMinutes * MILLIS_PER_MINUTE;
-  let data: AxelarEventRecord[];
 
   while (now() - startTime < pollingDurationMs) {
     const res = await fetch(url, {
@@ -58,7 +58,7 @@ export const getTxStatus = async ({
     }
 
     const parsed = (await res.json()) as AxelarEventsResponse;
-    data = parsed.data;
+    const data: AxelarEventRecord[] = parsed.data;
 
     if (Array.isArray(data) && data?.[0]?.executed) {
       const execution = data[0].executed;

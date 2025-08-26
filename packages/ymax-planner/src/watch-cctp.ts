@@ -1,6 +1,7 @@
 import { id, zeroPadValue, getAddress, type Provider } from 'ethers';
 
 const TRANSFER = id('Transfer(address,address,uint256)');
+const MILLIS_PER_MINUTE = 60 * 1000;
 
 type WatchTransferOptions = {
   provider: Provider;
@@ -97,15 +98,12 @@ export const watchCCTPTransfer = ({
     provider.on(filter, listenForTransfer);
     listeners.push({ event: filter, listener: listenForTransfer });
 
-    timeoutId = setTimeout(
-      () => {
-        if (!transferFound) {
-          log(`✗ No matching transfer found within ${timeoutMinutes} minutes`);
-          cleanup();
-          resolve(false);
-        }
-      },
-      timeoutMinutes * 60 * 1000,
-    );
+    timeoutId = setTimeout(() => {
+      if (!transferFound) {
+        log(`✗ No matching transfer found within ${timeoutMinutes} minutes`);
+        cleanup();
+        resolve(false);
+      }
+    }, timeoutMinutes * MILLIS_PER_MINUTE);
   });
 };
