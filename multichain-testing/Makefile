@@ -12,7 +12,7 @@ NAMESPACE := $(shell kubectl config view -o jsonpath='{.contexts[?(@.name=="star
 
 SS = yarn starship
 SSOPTS = --config $(FILE) --name $(NAME) --repoUrl $(HELM_REPO_URL) \
-	--repo $(HELM_REPO) --chart $(HELM_REPO)/$(HELM_CHART)
+	--repo $(HELM_REPO) --chart $(HELM_REPO)/$(HELM_CHART) --namespace $(NAMESPACE)
 STARSHIP = $(SS) $(SSOPTS)
 
 # Test command for YMax-related tests
