@@ -168,7 +168,7 @@ export const CCTPfromEVM = {
     await sendGMPContractCall(
       target,
       calls,
-      gmpFee,
+      fixFee(gmpFee),
       lca,
       gmpChain,
       gmpAddresses,
@@ -422,7 +422,14 @@ export const CompoundProtocol = {
     trace('contract paying CompoundProtocol supply fee', fixFee(fee));
     await ctx.feePayer.send(lca.getAddress(), fixFee(fee));
 
-    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
+    await sendGMPContractCall(
+      target,
+      calls,
+      fixFee(fee),
+      lca,
+      gmpChain,
+      gmpAddresses,
+    );
   },
   withdraw: async (ctx, amount, dest, claim) => {
     const { addresses: a, lca, gmpChain, gmpFee: fee, gmpAddresses } = ctx;
@@ -445,7 +452,14 @@ export const CompoundProtocol = {
     trace('contract paying CompoundProtocol withdraw fee', fee);
     await ctx.feePayer.send(lca.getAddress(), fixFee(fee));
 
-    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
+    await sendGMPContractCall(
+      target,
+      calls,
+      fixFee(fee),
+      lca,
+      gmpChain,
+      gmpAddresses,
+    );
   },
 } as const satisfies ProtocolDetail<'Compound', AxelarChain, EVMContext>;
 
@@ -490,7 +504,7 @@ export const BeefyProtocol = {
     const target = { axelarId, remoteAddress };
 
     // TODO await ctx.feePayer.send(lca.getAddress(), fixFee(fee));
-
+    // XXX probably we need to change fee -> fixFee(fee)
     await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
   },
   withdraw: async (ctx, amount, dest) => {
@@ -515,7 +529,7 @@ export const BeefyProtocol = {
     const target = { axelarId, remoteAddress };
 
     // TODO await ctx.feePayer.send(lca.getAddress(), fixFee(fee));
-
+    // XXX probably we need to change fee -> fixFee(fee)
     await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
   },
 } as const satisfies ProtocolDetail<
