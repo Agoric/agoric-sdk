@@ -121,7 +121,7 @@ function createBaseBasicAllowance(): BasicAllowance {
   };
 }
 export const BasicAllowance = {
-  typeUrl: '/cosmos.feegrant.v1beta1.BasicAllowance',
+  typeUrl: '/cosmos.feegrant.v1beta1.BasicAllowance' as const,
   encode(
     message: BasicAllowance,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -210,7 +210,7 @@ function createBasePeriodicAllowance(): PeriodicAllowance {
   };
 }
 export const PeriodicAllowance = {
-  typeUrl: '/cosmos.feegrant.v1beta1.PeriodicAllowance',
+  typeUrl: '/cosmos.feegrant.v1beta1.PeriodicAllowance' as const,
   encode(
     message: PeriodicAllowance,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -349,7 +349,7 @@ function createBaseAllowedMsgAllowance(): AllowedMsgAllowance {
   };
 }
 export const AllowedMsgAllowance = {
-  typeUrl: '/cosmos.feegrant.v1beta1.AllowedMsgAllowance',
+  typeUrl: '/cosmos.feegrant.v1beta1.AllowedMsgAllowance' as const,
   encode(
     message: AllowedMsgAllowance,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -439,7 +439,7 @@ function createBaseGrant(): Grant {
   };
 }
 export const Grant = {
-  typeUrl: '/cosmos.feegrant.v1beta1.Grant',
+  typeUrl: '/cosmos.feegrant.v1beta1.Grant' as const,
   encode(
     message: Grant,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -77,7 +77,7 @@ function createBaseQueryEpochsInfoRequest(): QueryEpochsInfoRequest {
   };
 }
 export const QueryEpochsInfoRequest = {
-  typeUrl: '/stride.epochs.QueryEpochsInfoRequest',
+  typeUrl: '/stride.epochs.QueryEpochsInfoRequest' as const,
   encode(
     message: QueryEpochsInfoRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -153,7 +153,7 @@ function createBaseQueryEpochsInfoResponse(): QueryEpochsInfoResponse {
   };
 }
 export const QueryEpochsInfoResponse = {
-  typeUrl: '/stride.epochs.QueryEpochsInfoResponse',
+  typeUrl: '/stride.epochs.QueryEpochsInfoResponse' as const,
   encode(
     message: QueryEpochsInfoResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -252,7 +252,7 @@ function createBaseQueryCurrentEpochRequest(): QueryCurrentEpochRequest {
   };
 }
 export const QueryCurrentEpochRequest = {
-  typeUrl: '/stride.epochs.QueryCurrentEpochRequest',
+  typeUrl: '/stride.epochs.QueryCurrentEpochRequest' as const,
   encode(
     message: QueryCurrentEpochRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -325,7 +325,7 @@ function createBaseQueryCurrentEpochResponse(): QueryCurrentEpochResponse {
   };
 }
 export const QueryCurrentEpochResponse = {
-  typeUrl: '/stride.epochs.QueryCurrentEpochResponse',
+  typeUrl: '/stride.epochs.QueryCurrentEpochResponse' as const,
   encode(
     message: QueryCurrentEpochResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -404,7 +404,7 @@ function createBaseQueryEpochInfoRequest(): QueryEpochInfoRequest {
   };
 }
 export const QueryEpochInfoRequest = {
-  typeUrl: '/stride.epochs.QueryEpochInfoRequest',
+  typeUrl: '/stride.epochs.QueryEpochInfoRequest' as const,
   encode(
     message: QueryEpochInfoRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -469,7 +469,7 @@ function createBaseQueryEpochInfoResponse(): QueryEpochInfoResponse {
   };
 }
 export const QueryEpochInfoResponse = {
-  typeUrl: '/stride.epochs.QueryEpochInfoResponse',
+  typeUrl: '/stride.epochs.QueryEpochInfoResponse' as const,
   encode(
     message: QueryEpochInfoResponse,
     writer: BinaryWriter = BinaryWriter.create(),

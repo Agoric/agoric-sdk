@@ -36,7 +36,7 @@ function createBaseBlock(): Block {
   };
 }
 export const Block = {
-  typeUrl: '/tendermint.types.Block',
+  typeUrl: '/tendermint.types.Block' as const,
   encode(
     message: Block,
     writer: BinaryWriter = BinaryWriter.create(),

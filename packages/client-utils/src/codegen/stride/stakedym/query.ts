@@ -175,7 +175,7 @@ function createBaseQueryHostZoneRequest(): QueryHostZoneRequest {
   return {};
 }
 export const QueryHostZoneRequest = {
-  typeUrl: '/stride.stakedym.QueryHostZoneRequest',
+  typeUrl: '/stride.stakedym.QueryHostZoneRequest' as const,
   encode(
     _: QueryHostZoneRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -230,7 +230,7 @@ function createBaseQueryHostZoneResponse(): QueryHostZoneResponse {
   };
 }
 export const QueryHostZoneResponse = {
-  typeUrl: '/stride.stakedym.QueryHostZoneResponse',
+  typeUrl: '/stride.stakedym.QueryHostZoneResponse' as const,
   encode(
     message: QueryHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -303,7 +303,7 @@ function createBaseQueryDelegationRecordsRequest(): QueryDelegationRecordsReques
   };
 }
 export const QueryDelegationRecordsRequest = {
-  typeUrl: '/stride.stakedym.QueryDelegationRecordsRequest',
+  typeUrl: '/stride.stakedym.QueryDelegationRecordsRequest' as const,
   encode(
     message: QueryDelegationRecordsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -379,7 +379,7 @@ function createBaseQueryDelegationRecordsResponse(): QueryDelegationRecordsRespo
   };
 }
 export const QueryDelegationRecordsResponse = {
-  typeUrl: '/stride.stakedym.QueryDelegationRecordsResponse',
+  typeUrl: '/stride.stakedym.QueryDelegationRecordsResponse' as const,
   encode(
     message: QueryDelegationRecordsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -463,7 +463,7 @@ function createBaseQueryUnbondingRecordsRequest(): QueryUnbondingRecordsRequest 
   };
 }
 export const QueryUnbondingRecordsRequest = {
-  typeUrl: '/stride.stakedym.QueryUnbondingRecordsRequest',
+  typeUrl: '/stride.stakedym.QueryUnbondingRecordsRequest' as const,
   encode(
     message: QueryUnbondingRecordsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -539,7 +539,7 @@ function createBaseQueryUnbondingRecordsResponse(): QueryUnbondingRecordsRespons
   };
 }
 export const QueryUnbondingRecordsResponse = {
-  typeUrl: '/stride.stakedym.QueryUnbondingRecordsResponse',
+  typeUrl: '/stride.stakedym.QueryUnbondingRecordsResponse' as const,
   encode(
     message: QueryUnbondingRecordsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -624,7 +624,7 @@ function createBaseQueryRedemptionRecordRequest(): QueryRedemptionRecordRequest 
   };
 }
 export const QueryRedemptionRecordRequest = {
-  typeUrl: '/stride.stakedym.QueryRedemptionRecordRequest',
+  typeUrl: '/stride.stakedym.QueryRedemptionRecordRequest' as const,
   encode(
     message: QueryRedemptionRecordRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -715,7 +715,7 @@ function createBaseQueryRedemptionRecordResponse(): QueryRedemptionRecordRespons
   };
 }
 export const QueryRedemptionRecordResponse = {
-  typeUrl: '/stride.stakedym.QueryRedemptionRecordResponse',
+  typeUrl: '/stride.stakedym.QueryRedemptionRecordResponse' as const,
   encode(
     message: QueryRedemptionRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -805,7 +805,7 @@ function createBaseQueryRedemptionRecordsRequest(): QueryRedemptionRecordsReques
   };
 }
 export const QueryRedemptionRecordsRequest = {
-  typeUrl: '/stride.stakedym.QueryRedemptionRecordsRequest',
+  typeUrl: '/stride.stakedym.QueryRedemptionRecordsRequest' as const,
   encode(
     message: QueryRedemptionRecordsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -914,7 +914,7 @@ function createBaseQueryRedemptionRecordsResponse(): QueryRedemptionRecordsRespo
   };
 }
 export const QueryRedemptionRecordsResponse = {
-  typeUrl: '/stride.stakedym.QueryRedemptionRecordsResponse',
+  typeUrl: '/stride.stakedym.QueryRedemptionRecordsResponse' as const,
   encode(
     message: QueryRedemptionRecordsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1022,7 +1022,7 @@ function createBaseQuerySlashRecordsRequest(): QuerySlashRecordsRequest {
   return {};
 }
 export const QuerySlashRecordsRequest = {
-  typeUrl: '/stride.stakedym.QuerySlashRecordsRequest',
+  typeUrl: '/stride.stakedym.QuerySlashRecordsRequest' as const,
   encode(
     _: QuerySlashRecordsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1081,7 +1081,7 @@ function createBaseQuerySlashRecordsResponse(): QuerySlashRecordsResponse {
   };
 }
 export const QuerySlashRecordsResponse = {
-  typeUrl: '/stride.stakedym.QuerySlashRecordsResponse',
+  typeUrl: '/stride.stakedym.QuerySlashRecordsResponse' as const,
   encode(
     message: QuerySlashRecordsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1166,7 +1166,7 @@ function createBaseRedemptionRecordResponse(): RedemptionRecordResponse {
   };
 }
 export const RedemptionRecordResponse = {
-  typeUrl: '/stride.stakedym.RedemptionRecordResponse',
+  typeUrl: '/stride.stakedym.RedemptionRecordResponse' as const,
   encode(
     message: RedemptionRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),

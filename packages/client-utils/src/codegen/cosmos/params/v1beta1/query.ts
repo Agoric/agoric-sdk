@@ -103,7 +103,7 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
   };
 }
 export const QueryParamsRequest = {
-  typeUrl: '/cosmos.params.v1beta1.QueryParamsRequest',
+  typeUrl: '/cosmos.params.v1beta1.QueryParamsRequest' as const,
   encode(
     message: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -177,7 +177,7 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
   };
 }
 export const QueryParamsResponse = {
-  typeUrl: '/cosmos.params.v1beta1.QueryParamsResponse',
+  typeUrl: '/cosmos.params.v1beta1.QueryParamsResponse' as const,
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -248,7 +248,7 @@ function createBaseQuerySubspacesRequest(): QuerySubspacesRequest {
   return {};
 }
 export const QuerySubspacesRequest = {
-  typeUrl: '/cosmos.params.v1beta1.QuerySubspacesRequest',
+  typeUrl: '/cosmos.params.v1beta1.QuerySubspacesRequest' as const,
   encode(
     _: QuerySubspacesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -303,7 +303,7 @@ function createBaseQuerySubspacesResponse(): QuerySubspacesResponse {
   };
 }
 export const QuerySubspacesResponse = {
-  typeUrl: '/cosmos.params.v1beta1.QuerySubspacesResponse',
+  typeUrl: '/cosmos.params.v1beta1.QuerySubspacesResponse' as const,
   encode(
     message: QuerySubspacesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -380,7 +380,7 @@ function createBaseSubspace(): Subspace {
   };
 }
 export const Subspace = {
-  typeUrl: '/cosmos.params.v1beta1.Subspace',
+  typeUrl: '/cosmos.params.v1beta1.Subspace' as const,
   encode(
     message: Subspace,
     writer: BinaryWriter = BinaryWriter.create(),
