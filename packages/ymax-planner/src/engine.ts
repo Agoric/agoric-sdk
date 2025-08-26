@@ -551,6 +551,11 @@ export const startEngine = async (
               if (!depositAddress) continue;
               portfolioKeyForDepositAddr.set(depositAddress, key);
               console.warn('Added new portfolio', key, depositAddress);
+              deferrals.push({
+                blockHeight: eventRecord.blockHeight,
+                type: 'transfer' as const,
+                address: depositAddress,
+              });
             } catch (err) {
               if (err.code !== STALE) throw err;
               console.error(
