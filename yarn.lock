@@ -217,7 +217,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@aglocal/portfolio-deploy@workspace:packages/portfolio-deploy":
+"@aglocal/portfolio-deploy@workspace:*, @aglocal/portfolio-deploy@workspace:packages/portfolio-deploy":
   version: 0.0.0-use.local
   resolution: "@aglocal/portfolio-deploy@workspace:packages/portfolio-deploy"
   dependencies:
@@ -290,11 +290,10 @@ __metadata:
   resolution: "@aglocal/ymax-planner@workspace:packages/ymax-planner"
   dependencies:
     "@aglocal/portfolio-contract": "workspace:*"
+    "@aglocal/portfolio-deploy": "workspace:*"
     "@agoric/client-utils": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/internal": "workspace:*"
-    "@agoric/pola-io": "workspace:*"
-    "@cosmjs/amino": "npm:^0.36.0"
     "@cosmjs/crypto": "npm:^0.36.0"
     "@cosmjs/encoding": "npm:^0.36.0"
     "@cosmjs/proto-signing": "npm:^0.36.0"
@@ -304,13 +303,13 @@ __metadata:
     "@endo/lockdown": "npm:^1.0.18"
     "@endo/nat": "npm:^5.1.3"
     "@endo/pass-style": "npm:^1.6.3"
-    "@endo/patterns": "npm:^1.7.0"
     "@endo/promise-kit": "npm:^1.1.13"
     "@types/node": "npm:^22.10.2"
     "@types/ws": "npm:^8"
     ava: "npm:^6.3.0"
     chain-registry: "npm:^2.0.44"
     dotenv: "npm:^17.2.1"
+    ethers: "npm:^6.13.0"
     json-rpc-2.0: "npm:^1.7.1"
     ky: "npm:^1.4.0"
     nodemon: "npm:^3.1.10"
@@ -9867,6 +9866,21 @@ __metadata:
   version: 1.8.1
   resolution: "etag@npm:1.8.1"
   checksum: 10c0/12be11ef62fb9817314d790089a0a49fae4e1b50594135dcb8076312b7d7e470884b5100d249b28c18581b7fd52f8b485689ffae22a11ed9ec17377a33a08f84
+  languageName: node
+  linkType: hard
+
+"ethers@npm:^6.13.0":
+  version: 6.15.0
+  resolution: "ethers@npm:6.15.0"
+  dependencies:
+    "@adraffy/ens-normalize": "npm:1.10.1"
+    "@noble/curves": "npm:1.2.0"
+    "@noble/hashes": "npm:1.3.2"
+    "@types/node": "npm:22.7.5"
+    aes-js: "npm:4.0.0-beta.5"
+    tslib: "npm:2.7.0"
+    ws: "npm:8.17.1"
+  checksum: 10c0/0a4581b662fe46a889a524d3aba43dc6f0ac59b3ae08dce678ee4b5799aab4906109ab24684c9644deedfc9d6e79b59faccecbeda9b6b7ceb085724d596a49e9
   languageName: node
   linkType: hard
 
