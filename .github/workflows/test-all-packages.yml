@@ -281,7 +281,7 @@ jobs:
 
       - name: Verify codegen idempotence
         shell: bash
-        run: bash scripts/verify-codegen-idempotence.sh
+        run: scripts/verify-codegen-idempotence.mjs
 
   test-quick2:
     # BEGIN-TEST-BOILERPLATE
