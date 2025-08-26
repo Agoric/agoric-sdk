@@ -2060,7 +2060,8 @@ function createBaseQueryDenomMetadataByQueryStringRequest(): QueryDenomMetadataB
   };
 }
 export const QueryDenomMetadataByQueryStringRequest = {
-  typeUrl: '/cosmos.bank.v1beta1.QueryDenomMetadataByQueryStringRequest',
+  typeUrl:
+    '/cosmos.bank.v1beta1.QueryDenomMetadataByQueryStringRequest' as const,
   encode(
     message: QueryDenomMetadataByQueryStringRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2133,7 +2134,8 @@ function createBaseQueryDenomMetadataByQueryStringResponse(): QueryDenomMetadata
   };
 }
 export const QueryDenomMetadataByQueryStringResponse = {
-  typeUrl: '/cosmos.bank.v1beta1.QueryDenomMetadataByQueryStringResponse',
+  typeUrl:
+    '/cosmos.bank.v1beta1.QueryDenomMetadataByQueryStringResponse' as const,
   encode(
     message: QueryDenomMetadataByQueryStringResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2487,7 +2489,7 @@ function createBaseQueryDenomOwnersByQueryRequest(): QueryDenomOwnersByQueryRequ
   };
 }
 export const QueryDenomOwnersByQueryRequest = {
-  typeUrl: '/cosmos.bank.v1beta1.QueryDenomOwnersByQueryRequest',
+  typeUrl: '/cosmos.bank.v1beta1.QueryDenomOwnersByQueryRequest' as const,
   encode(
     message: QueryDenomOwnersByQueryRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2578,7 +2580,7 @@ function createBaseQueryDenomOwnersByQueryResponse(): QueryDenomOwnersByQueryRes
   };
 }
 export const QueryDenomOwnersByQueryResponse = {
-  typeUrl: '/cosmos.bank.v1beta1.QueryDenomOwnersByQueryResponse',
+  typeUrl: '/cosmos.bank.v1beta1.QueryDenomOwnersByQueryResponse' as const,
   encode(
     message: QueryDenomOwnersByQueryResponse,
     writer: BinaryWriter = BinaryWriter.create(),

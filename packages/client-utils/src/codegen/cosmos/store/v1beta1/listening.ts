@@ -67,7 +67,7 @@ function createBaseStoreKVPair(): StoreKVPair {
   };
 }
 export const StoreKVPair = {
-  typeUrl: '/cosmos.store.v1beta1.StoreKVPair',
+  typeUrl: '/cosmos.store.v1beta1.StoreKVPair' as const,
   encode(
     message: StoreKVPair,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -164,7 +164,7 @@ function createBaseBlockMetadata(): BlockMetadata {
   };
 }
 export const BlockMetadata = {
-  typeUrl: '/cosmos.store.v1beta1.BlockMetadata',
+  typeUrl: '/cosmos.store.v1beta1.BlockMetadata' as const,
   encode(
     message: BlockMetadata,
     writer: BinaryWriter = BinaryWriter.create(),

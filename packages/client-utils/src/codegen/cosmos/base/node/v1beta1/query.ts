@@ -232,7 +232,7 @@ function createBaseStatusRequest(): StatusRequest {
   return {};
 }
 export const StatusRequest = {
-  typeUrl: '/cosmos.base.node.v1beta1.StatusRequest',
+  typeUrl: '/cosmos.base.node.v1beta1.StatusRequest' as const,
   encode(
     _: StatusRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -288,7 +288,7 @@ function createBaseStatusResponse(): StatusResponse {
   };
 }
 export const StatusResponse = {
-  typeUrl: '/cosmos.base.node.v1beta1.StatusResponse',
+  typeUrl: '/cosmos.base.node.v1beta1.StatusResponse' as const,
   encode(
     message: StatusResponse,
     writer: BinaryWriter = BinaryWriter.create(),

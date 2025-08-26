@@ -85,7 +85,7 @@ function createBaseClientState(): ClientState {
   };
 }
 export const ClientState = {
-  typeUrl: '/ibc.lightclients.wasm.v1.ClientState',
+  typeUrl: '/ibc.lightclients.wasm.v1.ClientState' as const,
   encode(
     message: ClientState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -183,7 +183,7 @@ function createBaseConsensusState(): ConsensusState {
   };
 }
 export const ConsensusState = {
-  typeUrl: '/ibc.lightclients.wasm.v1.ConsensusState',
+  typeUrl: '/ibc.lightclients.wasm.v1.ConsensusState' as const,
   encode(
     message: ConsensusState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -250,7 +250,7 @@ function createBaseClientMessage(): ClientMessage {
   };
 }
 export const ClientMessage = {
-  typeUrl: '/ibc.lightclients.wasm.v1.ClientMessage',
+  typeUrl: '/ibc.lightclients.wasm.v1.ClientMessage' as const,
   encode(
     message: ClientMessage,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -317,7 +317,7 @@ function createBaseChecksums(): Checksums {
   };
 }
 export const Checksums = {
-  typeUrl: '/ibc.lightclients.wasm.v1.Checksums',
+  typeUrl: '/ibc.lightclients.wasm.v1.Checksums' as const,
   encode(
     message: Checksums,
     writer: BinaryWriter = BinaryWriter.create(),

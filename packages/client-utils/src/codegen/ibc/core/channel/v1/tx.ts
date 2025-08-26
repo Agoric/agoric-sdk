@@ -2725,7 +2725,7 @@ function createBaseMsgChannelUpgradeInit(): MsgChannelUpgradeInit {
   };
 }
 export const MsgChannelUpgradeInit = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeInit',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeInit' as const,
   encode(
     message: MsgChannelUpgradeInit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2826,7 +2826,7 @@ function createBaseMsgChannelUpgradeInitResponse(): MsgChannelUpgradeInitRespons
   };
 }
 export const MsgChannelUpgradeInitResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeInitResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeInitResponse' as const,
   encode(
     message: MsgChannelUpgradeInitResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2930,7 +2930,7 @@ function createBaseMsgChannelUpgradeTry(): MsgChannelUpgradeTry {
   };
 }
 export const MsgChannelUpgradeTry = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeTry',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeTry' as const,
   encode(
     message: MsgChannelUpgradeTry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3125,7 +3125,7 @@ function createBaseMsgChannelUpgradeTryResponse(): MsgChannelUpgradeTryResponse 
   };
 }
 export const MsgChannelUpgradeTryResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeTryResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeTryResponse' as const,
   encode(
     message: MsgChannelUpgradeTryResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3239,7 +3239,7 @@ function createBaseMsgChannelUpgradeAck(): MsgChannelUpgradeAck {
   };
 }
 export const MsgChannelUpgradeAck = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeAck',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeAck' as const,
   encode(
     message: MsgChannelUpgradeAck,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3392,7 +3392,7 @@ function createBaseMsgChannelUpgradeAckResponse(): MsgChannelUpgradeAckResponse 
   };
 }
 export const MsgChannelUpgradeAckResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeAckResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeAckResponse' as const,
   encode(
     message: MsgChannelUpgradeAckResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3475,7 +3475,7 @@ function createBaseMsgChannelUpgradeConfirm(): MsgChannelUpgradeConfirm {
   };
 }
 export const MsgChannelUpgradeConfirm = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeConfirm',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeConfirm' as const,
   encode(
     message: MsgChannelUpgradeConfirm,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3650,7 +3650,7 @@ function createBaseMsgChannelUpgradeConfirmResponse(): MsgChannelUpgradeConfirmR
   };
 }
 export const MsgChannelUpgradeConfirmResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeConfirmResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeConfirmResponse' as const,
   encode(
     message: MsgChannelUpgradeConfirmResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3732,7 +3732,7 @@ function createBaseMsgChannelUpgradeOpen(): MsgChannelUpgradeOpen {
   };
 }
 export const MsgChannelUpgradeOpen = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeOpen',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeOpen' as const,
   encode(
     message: MsgChannelUpgradeOpen,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3878,7 +3878,7 @@ function createBaseMsgChannelUpgradeOpenResponse(): MsgChannelUpgradeOpenRespons
   return {};
 }
 export const MsgChannelUpgradeOpenResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeOpenResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeOpenResponse' as const,
   encode(
     _: MsgChannelUpgradeOpenResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3946,7 +3946,7 @@ function createBaseMsgChannelUpgradeTimeout(): MsgChannelUpgradeTimeout {
   };
 }
 export const MsgChannelUpgradeTimeout = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeTimeout',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeTimeout' as const,
   encode(
     message: MsgChannelUpgradeTimeout,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4089,7 +4089,7 @@ function createBaseMsgChannelUpgradeTimeoutResponse(): MsgChannelUpgradeTimeoutR
   return {};
 }
 export const MsgChannelUpgradeTimeoutResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeTimeoutResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeTimeoutResponse' as const,
   encode(
     _: MsgChannelUpgradeTimeoutResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4157,7 +4157,7 @@ function createBaseMsgChannelUpgradeCancel(): MsgChannelUpgradeCancel {
   };
 }
 export const MsgChannelUpgradeCancel = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeCancel',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeCancel' as const,
   encode(
     message: MsgChannelUpgradeCancel,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4297,7 +4297,7 @@ function createBaseMsgChannelUpgradeCancelResponse(): MsgChannelUpgradeCancelRes
   return {};
 }
 export const MsgChannelUpgradeCancelResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeCancelResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelUpgradeCancelResponse' as const,
   encode(
     _: MsgChannelUpgradeCancelResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4361,7 +4361,7 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
   };
 }
 export const MsgUpdateParams = {
-  typeUrl: '/ibc.core.channel.v1.MsgUpdateParams',
+  typeUrl: '/ibc.core.channel.v1.MsgUpdateParams' as const,
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4434,7 +4434,7 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
 }
 export const MsgUpdateParamsResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgUpdateParamsResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgUpdateParamsResponse' as const,
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4496,7 +4496,7 @@ function createBaseMsgPruneAcknowledgements(): MsgPruneAcknowledgements {
   };
 }
 export const MsgPruneAcknowledgements = {
-  typeUrl: '/ibc.core.channel.v1.MsgPruneAcknowledgements',
+  typeUrl: '/ibc.core.channel.v1.MsgPruneAcknowledgements' as const,
   encode(
     message: MsgPruneAcknowledgements,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4601,7 +4601,7 @@ function createBaseMsgPruneAcknowledgementsResponse(): MsgPruneAcknowledgementsR
   };
 }
 export const MsgPruneAcknowledgementsResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgPruneAcknowledgementsResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgPruneAcknowledgementsResponse' as const,
   encode(
     message: MsgPruneAcknowledgementsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -1201,7 +1201,7 @@ function createBaseTimeout(): Timeout {
   };
 }
 export const Timeout = {
-  typeUrl: '/ibc.core.channel.v1.Timeout',
+  typeUrl: '/ibc.core.channel.v1.Timeout' as const,
   encode(
     message: Timeout,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1282,7 +1282,7 @@ function createBaseParams(): Params {
   };
 }
 export const Params = {
-  typeUrl: '/ibc.core.channel.v1.Params',
+  typeUrl: '/ibc.core.channel.v1.Params' as const,
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),

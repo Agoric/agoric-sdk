@@ -94,7 +94,7 @@ function createBaseMsgStoreCode(): MsgStoreCode {
   };
 }
 export const MsgStoreCode = {
-  typeUrl: '/ibc.lightclients.wasm.v1.MsgStoreCode',
+  typeUrl: '/ibc.lightclients.wasm.v1.MsgStoreCode' as const,
   encode(
     message: MsgStoreCode,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -172,7 +172,7 @@ function createBaseMsgStoreCodeResponse(): MsgStoreCodeResponse {
   };
 }
 export const MsgStoreCodeResponse = {
-  typeUrl: '/ibc.lightclients.wasm.v1.MsgStoreCodeResponse',
+  typeUrl: '/ibc.lightclients.wasm.v1.MsgStoreCodeResponse' as const,
   encode(
     message: MsgStoreCodeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -243,7 +243,7 @@ function createBaseMsgRemoveChecksum(): MsgRemoveChecksum {
   };
 }
 export const MsgRemoveChecksum = {
-  typeUrl: '/ibc.lightclients.wasm.v1.MsgRemoveChecksum',
+  typeUrl: '/ibc.lightclients.wasm.v1.MsgRemoveChecksum' as const,
   encode(
     message: MsgRemoveChecksum,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -317,7 +317,7 @@ function createBaseMsgRemoveChecksumResponse(): MsgRemoveChecksumResponse {
   return {};
 }
 export const MsgRemoveChecksumResponse = {
-  typeUrl: '/ibc.lightclients.wasm.v1.MsgRemoveChecksumResponse',
+  typeUrl: '/ibc.lightclients.wasm.v1.MsgRemoveChecksumResponse' as const,
   encode(
     _: MsgRemoveChecksumResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -381,7 +381,7 @@ function createBaseMsgMigrateContract(): MsgMigrateContract {
   };
 }
 export const MsgMigrateContract = {
-  typeUrl: '/ibc.lightclients.wasm.v1.MsgMigrateContract',
+  typeUrl: '/ibc.lightclients.wasm.v1.MsgMigrateContract' as const,
   encode(
     message: MsgMigrateContract,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -479,7 +479,7 @@ function createBaseMsgMigrateContractResponse(): MsgMigrateContractResponse {
   return {};
 }
 export const MsgMigrateContractResponse = {
-  typeUrl: '/ibc.lightclients.wasm.v1.MsgMigrateContractResponse',
+  typeUrl: '/ibc.lightclients.wasm.v1.MsgMigrateContractResponse' as const,
   encode(
     _: MsgMigrateContractResponse,
     writer: BinaryWriter = BinaryWriter.create(),

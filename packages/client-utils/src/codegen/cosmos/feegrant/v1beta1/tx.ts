@@ -386,7 +386,7 @@ function createBaseMsgPruneAllowances(): MsgPruneAllowances {
   };
 }
 export const MsgPruneAllowances = {
-  typeUrl: '/cosmos.feegrant.v1beta1.MsgPruneAllowances',
+  typeUrl: '/cosmos.feegrant.v1beta1.MsgPruneAllowances' as const,
   encode(
     message: MsgPruneAllowances,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -449,7 +449,7 @@ function createBaseMsgPruneAllowancesResponse(): MsgPruneAllowancesResponse {
   return {};
 }
 export const MsgPruneAllowancesResponse = {
-  typeUrl: '/cosmos.feegrant.v1beta1.MsgPruneAllowancesResponse',
+  typeUrl: '/cosmos.feegrant.v1beta1.MsgPruneAllowancesResponse' as const,
   encode(
     _: MsgPruneAllowancesResponse,
     writer: BinaryWriter = BinaryWriter.create(),

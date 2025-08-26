@@ -1186,7 +1186,8 @@ function createBaseMsgDepositValidatorRewardsPool(): MsgDepositValidatorRewardsP
   };
 }
 export const MsgDepositValidatorRewardsPool = {
-  typeUrl: '/cosmos.distribution.v1beta1.MsgDepositValidatorRewardsPool',
+  typeUrl:
+    '/cosmos.distribution.v1beta1.MsgDepositValidatorRewardsPool' as const,
   encode(
     message: MsgDepositValidatorRewardsPool,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1285,7 +1286,7 @@ function createBaseMsgDepositValidatorRewardsPoolResponse(): MsgDepositValidator
 }
 export const MsgDepositValidatorRewardsPoolResponse = {
   typeUrl:
-    '/cosmos.distribution.v1beta1.MsgDepositValidatorRewardsPoolResponse',
+    '/cosmos.distribution.v1beta1.MsgDepositValidatorRewardsPoolResponse' as const,
   encode(
     _: MsgDepositValidatorRewardsPoolResponse,
     writer: BinaryWriter = BinaryWriter.create(),
