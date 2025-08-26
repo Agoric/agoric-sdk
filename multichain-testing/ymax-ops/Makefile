@@ -42,6 +42,20 @@ redeem-ymaxControl:
 		AGORIC_NET=$(AGORIC_NET) \
 		$(YMAX_TOOL) --redeem --contract 'postalService' --description 'deliver ymaxControl'
 
+REASON ?=
+ymax0-terminate:
+	@test -n "$(REASON)" || { echo "REASON not set."; exit 1; }
+	@MNEMONIC="$$($(BW) get password $(YMAX_ITEM_ID))" AGORIC_NET=$(AGORIC_NET) \
+		$(YMAX_TOOL) --terminate "$(REASON)"
+
+NETCONFIG=https://devnet.agoric.net/network-config
+,ymax0-deployed: $(DEPLOY)/dist/bundle-ymax0.json ,ymax0-bundle-id ,ymax0-installed
+	@[ -n "$$MNEMONIC" ] || (echo "ymaxControl MNEMONIC not set; see gov keys sheet"; false)
+	if [ -n "$$REASON" ]; then AGORIC_NET=devnet ./scripts/ymax-tool.ts --terminate "$(REASON)"; else true; fi
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --installAndStart $$(cat ,ymax0-bundle-id)
+	agoric follow -B $(NETCONFIG) -lF :published.agoricNames.instance >$@ || (rm $@; false)
+
+
 check-vstorage: ,vstorage-outdated-$(AGORIC_NET).json
 
 ,vstorage-outdated-$(AGORIC_NET).json:
