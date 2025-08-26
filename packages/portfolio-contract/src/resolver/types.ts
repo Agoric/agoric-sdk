@@ -1,51 +1,30 @@
 /**
- * @file CCTP Resolver types - independent of portfolio-specific logic
+ * @file Transaction Resolver types - independent of transaction-specific logic
  *
- * This file contains types for the CCTP transaction resolver, which is an
+ * This file contains types for the generic transaction resolver, which is an
  * orchestration component that can be used independently of the portfolio contract.
  */
 
 import type { TypedPattern } from '@agoric/internal';
-import type { AccountId, CaipChainId } from '@agoric/orchestration';
+import type { AccountId } from '@agoric/orchestration';
 import { M } from '@endo/patterns';
 import { TxStatus, TxType } from './constants.js';
 
-export type CCTPTransactionKey = `${AccountId}:${bigint}`;
+export type TransactionKey = `${TxType}:${AccountId}:${bigint}`;
 
-export type CCTPTransactionDetails = {
-  amount: bigint;
-  remoteAddress: `0x${string}`;
-  status: TxStatus;
-};
-
-export const CCTPTransactionDetailsShape: TypedPattern<CCTPTransactionDetails> =
-  M.splitRecord(
-    {
-      amount: M.nat(),
-      remoteAddress: M.string(),
-      status: M.or('pending', 'success', 'failed'),
-    },
-    {},
-    {},
-  );
-
-export type CCTPSettlementArgs = {
-  chainId: CaipChainId;
-  remoteAddress: `0x${string}`;
-  amountValue: bigint;
-  status: TxStatus;
-  rejectionReason?: string;
+export type TransactionSettlementOfferArgs = {
+  transactionKey: TransactionKey;
+  status: Exclude<TxStatus, 'pending'>;
   txId: `tx${number}`;
+  rejectionReason?: string;
 };
 
-export const CCTPSettlementArgsShape: TypedPattern<CCTPSettlementArgs> =
+export const TransactionSettlementOfferArgsShape: TypedPattern<TransactionSettlementOfferArgs> =
   M.splitRecord(
     {
-      chainId: M.string(), // CaipChainId format
-      remoteAddress: M.string(),
-      amountValue: M.nat(),
-      status: M.or('pending', 'success', 'failed'),
-      txId: M.string(), // `tx${number}` format
+      transactionKey: M.string(),
+      status: M.or(TxStatus.SUCCESS, TxStatus.FAILED),
+      txId: M.string(),
     },
     {
       rejectionReason: M.string(),
@@ -53,28 +32,11 @@ export const CCTPSettlementArgsShape: TypedPattern<CCTPSettlementArgs> =
     {},
   );
 
-export type CCTPSettlementOfferArgs = {
-  txDetails: CCTPTransactionDetails;
-  remoteAxelarChain: CaipChainId;
-  txId: `tx${number}`;
-};
-
-export const CCTPSettlementOfferArgsShape: TypedPattern<CCTPSettlementOfferArgs> =
-  M.splitRecord(
-    {
-      txDetails: CCTPTransactionDetailsShape,
-      remoteAxelarChain: M.string(), // CaipChainId format
-      txId: M.string(), // `tx${number}` format
-    },
-    {},
-    {},
-  );
-
 /**
  * Collection of all resolver offer argument shapes
  */
 export const ResolverOfferArgsShapes = {
-  SettleCCTPTransaction: CCTPSettlementOfferArgsShape,
+  SettleTransaction: TransactionSettlementOfferArgsShape,
 } as const;
 
 harden(ResolverOfferArgsShapes);
@@ -84,7 +46,7 @@ export const PENDING_TXS_NODE_KEY = 'pendingTxs';
 export type PublishedTx = {
   type: TxType;
   amount: bigint;
-  destinationAddress: `${string}:${string}:${string}`;
+  destinationAddress: AccountId;
   status: TxStatus;
 };
 

@@ -2,10 +2,13 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/far';
-import type { CCTPSettlementOfferArgs } from '../src/resolver/types.ts';
-import { deploy } from './contract-setup.ts';
 import { mustMatch } from '@endo/patterns';
+import type {
+  TransactionKey,
+  TransactionSettlementOfferArgs,
+} from '../src/resolver/types.ts';
 import { ResolverOfferArgsShapes } from '../src/resolver/types.ts';
+import { deploy } from './contract-setup.ts';
 
 test('CCTP settlement invitation - no pending transaction found', async t => {
   const { started, zoe, common } = await deploy(t);
@@ -18,16 +21,13 @@ test('CCTP settlement invitation - no pending transaction found', async t => {
   const resolverSeat = await E(zoe).offer(resolverInvitation);
   const resolverMakers = (await E(resolverSeat).getOfferResult())
     .invitationMakers;
-  const confirmInvitation = await E(resolverMakers).SettleCCTPTransaction();
+  const confirmInvitation = await E(resolverMakers).SettleTransaction();
 
-  const offerArgs: CCTPSettlementOfferArgs = {
-    txDetails: {
-      amount: amount.value,
-      remoteAddress: '0x999999999999999999999999999999999999999',
-      status: 'success' as const,
-    },
+  const transactionKey: TransactionKey = `cctp:eip155:42161:0x999999999999999999999999999999999999999:${amount.value}`;
+  const offerArgs: TransactionSettlementOfferArgs = {
+    transactionKey,
+    status: 'success' as const,
     txId: 'tx0',
-    remoteAxelarChain: 'eip155:42161' as const,
   };
   const confirmationSeat = await E(zoe).offer(
     confirmInvitation,
@@ -44,17 +44,13 @@ test('CCTP confirmation invitation - invalid status throws', async t => {
   const { usdc } = common.brands;
 
   const amount = usdc.units(1000);
-  const invalidOfferArgs: CCTPSettlementOfferArgs = harden({
-    txDetails: {
-      amount: amount.value,
-      remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-      status: 'invalid' as any,
-    },
+  const invalidOfferArgs: TransactionSettlementOfferArgs = harden({
+    transactionKey: `cctp:eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092:${amount.value}`,
+    status: 'invalid' as any,
     txId: 'tx0',
-    remoteAxelarChain: 'eip155:42161' as const,
   });
   t.throws(() =>
-    mustMatch(invalidOfferArgs, ResolverOfferArgsShapes.SettleCCTPTransaction),
+    mustMatch(invalidOfferArgs, ResolverOfferArgsShapes.SettleTransaction),
   );
 });
 
@@ -69,16 +65,13 @@ test('CCTP confirmation invitation exits seat properly', async t => {
   const resolverSeat = await E(zoe).offer(resolverInvitation);
   const resolverMakers = (await E(resolverSeat).getOfferResult())
     .invitationMakers;
-  const confirmInvitation = await E(resolverMakers).SettleCCTPTransaction();
+  const confirmInvitation = await E(resolverMakers).SettleTransaction();
 
-  const offerArgs: CCTPSettlementOfferArgs = {
-    txDetails: {
-      amount: amount.value,
-      remoteAddress: '0x999999999999999999999999999999999999999',
-      status: 'failed' as const,
-    },
+  const transactionKey: TransactionKey = `cctp:eip155:42161:0x999999999999999999999999999999999999999:${amount.value}`;
+  const offerArgs: TransactionSettlementOfferArgs = {
+    transactionKey,
+    status: 'failed' as const,
     txId: 'tx0',
-    remoteAxelarChain: 'eip155:42161' as const,
   };
   const confirmationSeat = await E(zoe).offer(
     confirmInvitation,

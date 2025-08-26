@@ -6,15 +6,15 @@
  * This is an orchestration component that can be used independently of portfolio logic.
  */
 
-import type { NatValue } from '@agoric/ertp/src/types.ts';
-import { makeTracer, mustMatch } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal';
 import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
 import type { AccountId } from '@agoric/orchestration';
-import { type VowKit, VowShape, type VowTools } from '@agoric/vow';
+import { type Vow, type VowKit, VowShape, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import type { ERef } from '@endo/far';
@@ -22,40 +22,53 @@ import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { TxStatus, TxType } from './constants.js';
 import type {
-  CCTPSettlementArgs,
-  CCTPSettlementOfferArgs,
-  CCTPTransactionKey,
   PublishedTx,
+  TransactionKey,
+  TransactionSettlementOfferArgs,
 } from './types.js';
-import { CCTPSettlementArgsShape, ResolverOfferArgsShapes } from './types.js';
+import {
+  ResolverOfferArgsShapes,
+  TransactionSettlementOfferArgsShape,
+} from './types.js';
 
-type CCTPTransactionEntry = {
+type TransactionEntry = {
   destinationAddress: AccountId;
-  amountValue: bigint;
+  amountValue: bigint; // 0 for GMP transactions
   vowKit: VowKit<void>;
 };
 
 const trace = makeTracer('Resolver');
 
-const ClientFacetI = M.interface('CCTPResolverClient', {
-  registerCCTPTransaction: M.call(M.string(), M.nat()).returns(VowShape),
+const ClientFacetI = M.interface('ResolverClient', {
+  registerTransaction: M.call(
+    M.or(...Object.values(TxType)),
+    M.string(),
+    M.nat(),
+  ).returns(VowShape),
 });
 
 const ReporterI = M.interface('Reporter', {
-  insertPendingTransaction: M.call(M.bigint(), M.string()).returns(),
-  completePendingTransaction: M.call(M.string(), M.string()).returns(),
+  insertPendingTransaction: M.call(M.nat(), M.string()).returns(),
+  completePendingTransaction: M.call(
+    M.string(),
+    M.string(),
+    M.string(),
+  ).returns(),
 });
 
-const ServiceFacetI = M.interface('CCTPResolverService', {
-  settleCCTPTransaction: M.call(CCTPSettlementArgsShape).returns(),
+const ServiceFacetI = M.interface('ResolverService', {
+  settleTransaction: M.call(TransactionSettlementOfferArgsShape).returns(),
 });
 
 const InvitationMakersFacetI = M.interface('ResolverInvitationMakers', {
-  SettleCCTPTransaction: M.callWhen().returns(M.remotable()),
+  SettleTransaction: M.callWhen().returns(InvitationShape),
 });
 
 const SettlementHandlerFacetI = M.interface('SettlementHandler', {
-  handle: M.callWhen(M.remotable(), M.any()).returns(M.string()),
+  handle: M.callWhen(
+    M.remotable(),
+    ResolverOfferArgsShapes.SettleTransaction,
+  ).returns(M.string()),
 });
 
 const proposalShape = M.splitRecord(
@@ -64,10 +77,10 @@ const proposalShape = M.splitRecord(
   {},
 );
 /**
- * Prepare CCTP Resolver Kit.
+ * Prepare Transaction Resolver Kit.
  *
- * This prepares a resolver maker with all CCTP functionality including
- * transaction registration, settlement, and invitation makers.
+ * This prepares a resolver maker with generic transaction functionality
+ * that supports multiple transaction types through key-based identification.
  *
  * @param resolverZone - Durable storage zone
  * @param zcf - Zoe Contract Facet for creating invitations
@@ -93,7 +106,7 @@ export const prepareResolverKit = (
     );
   };
   return resolverZone.exoClassKit(
-    'CCTPResolver',
+    'Resolver',
     {
       client: ClientFacetI,
       service: ServiceFacetI,
@@ -102,37 +115,34 @@ export const prepareResolverKit = (
       reporter: ReporterI,
     },
     () => ({
-      cctpTransactionRegistry: resolverZone
+      transactionRegistry: resolverZone
         .detached()
-        .mapStore<
-          CCTPTransactionKey,
-          CCTPTransactionEntry
-        >('cctpTransactionRegistry'),
+        .mapStore<TransactionKey, TransactionEntry>('transactionRegistry'),
       index: 0,
     }),
     {
       client: {
         /**
-         * Note: Attempting to re-register a transaction returns the existing
-         * vow for that transaction.
+         * Register a transaction and return a vow that is fulfilled when the transaction is resolved.
          *
+         * @param type
          * @param destinationAddress
          * @param amountValue
          */
-        registerCCTPTransaction(
+        registerTransaction(
+          type: TxType,
           destinationAddress: AccountId,
           amountValue: NatValue,
-        ) {
-          const { cctpTransactionRegistry } = this.state;
-          const key =
-            `${destinationAddress}:${amountValue}` as CCTPTransactionKey;
-          if (cctpTransactionRegistry.has(key)) {
-            trace(`CCTP transaction already registered: ${key}`);
-            return cctpTransactionRegistry.get(key).vowKit.vow;
+        ): Vow<void> {
+          const transactionKey: TransactionKey = `${type}:${destinationAddress}:${amountValue}`;
+          const { transactionRegistry } = this.state;
+          if (transactionRegistry.has(transactionKey)) {
+            trace(`Transaction already registered: ${transactionKey}`);
+            return transactionRegistry.get(transactionKey).vowKit.vow;
           }
           const vowKit = vowTools.makeVowKit<void>();
-          cctpTransactionRegistry.init(
-            key,
+          transactionRegistry.init(
+            transactionKey,
             harden({ destinationAddress, amountValue, vowKit }),
           );
           this.facets.reporter.insertPendingTransaction(
@@ -140,7 +150,7 @@ export const prepareResolverKit = (
             destinationAddress,
           );
 
-          trace(`Registered pending CCTP transaction: ${key}`);
+          trace(`Registered pending transaction: ${transactionKey}`);
           return vowKit.vow;
         },
       },
@@ -159,98 +169,86 @@ export const prepareResolverKit = (
           this.state.index += 1;
           writeToNode(node, value);
         },
+
         completePendingTransaction(
           vstorageId: `tx${number}`,
-          transactionKey: CCTPTransactionKey,
+          transactionKey: TransactionKey,
+          status: Exclude<TxStatus, 'pending'> = TxStatus.SUCCESS,
         ) {
           const node = E(pendingTxsNode).makeChildNode(vstorageId);
-          const txEntry =
-            this.state.cctpTransactionRegistry.get(transactionKey);
+          const [type, chainName, chainId, destinationAddress, amount] =
+            transactionKey.split(':');
           const value: PublishedTx = {
-            type: TxType.CCTP,
-            amount: txEntry.amountValue,
-            destinationAddress: txEntry.destinationAddress,
-            status: TxStatus.SUCCESS,
+            type: type as TxType,
+            amount: BigInt(amount),
+            destinationAddress: `${chainName}:${chainId}:${destinationAddress as `0x${string}`}`,
+            status,
           };
+          // UNTIL https://github.com/Agoric/agoric-sdk/issues/11791
           writeToNode(node, value);
         },
       },
       service: {
-        settleCCTPTransaction(args: CCTPSettlementArgs) {
-          const { cctpTransactionRegistry } = this.state;
-          const {
-            chainId,
-            remoteAddress,
-            amountValue,
-            status,
-            rejectionReason,
-            txId,
-          } = args;
-          const key =
-            `${chainId}:${remoteAddress}:${amountValue}` as CCTPTransactionKey;
-          if (!cctpTransactionRegistry.has(key)) {
-            trace('No pending CCTP transaction found for key:', key);
-            throw Error(
-              `No pending CCTP transaction found matching provided details: ${q(key)}`,
-            );
-          }
-          const registryEntry = cctpTransactionRegistry.get(key);
+        settleTransaction(args: TransactionSettlementOfferArgs) {
+          const { transactionRegistry } = this.state;
+          const { transactionKey, status, txId, rejectionReason } = args;
+
+          const registryEntry = transactionRegistry.get(transactionKey);
+
           switch (status) {
-            case 'success':
+            case TxStatus.SUCCESS:
               trace(
-                'CCTP transaction confirmed - resolving pending operation for key:',
-                key,
+                'Transaction confirmed - resolving pending operation for key:',
+                transactionKey,
               );
               registryEntry.vowKit.resolver.resolve();
-              this.facets.reporter.completePendingTransaction(txId, key);
-              cctpTransactionRegistry.delete(key);
+              this.facets.reporter.completePendingTransaction(
+                txId,
+                transactionKey,
+                TxStatus.SUCCESS,
+              );
+              transactionRegistry.delete(transactionKey);
               return;
-            case 'failed':
+
+            case TxStatus.FAILED:
               trace(
-                'CCTP transaction failed - rejecting pending operation for key:',
-                key,
+                'Transaction failed - rejecting pending operation for key:',
+                transactionKey,
               );
               registryEntry.vowKit.resolver.reject(
-                Error(rejectionReason || 'CCTP transaction failed'),
+                Error(rejectionReason || 'Transaction failed'),
               );
-              this.facets.reporter.completePendingTransaction(txId, key);
-              cctpTransactionRegistry.delete(key);
+              this.facets.reporter.completePendingTransaction(
+                txId,
+                transactionKey,
+                TxStatus.FAILED,
+              );
+              transactionRegistry.delete(transactionKey);
               return;
+
             default:
-              throw Fail`Unexpected status ${q(status)} for CCTP transaction: ${q(key)}`;
+              throw Fail`Unexpected status ${q(status)} for transaction: ${q(transactionKey)}`;
           }
         },
       },
       settlementHandler: {
-        async handle(seat: ZCFSeat, offerArgs: CCTPSettlementOfferArgs) {
-          mustMatch(offerArgs, ResolverOfferArgsShapes.SettleCCTPTransaction);
-          const { txDetails, remoteAxelarChain, txId } = offerArgs;
+        async handle(seat: ZCFSeat, offerArgs: TransactionSettlementOfferArgs) {
+          trace('Transaction settlement:', offerArgs);
 
-          trace('CCTP transaction settlement:', {
-            amount: txDetails.amount,
-            remoteAddress: txDetails.remoteAddress,
-            status: txDetails.status,
-            remoteAxelarChain,
-          });
           seat.exit();
-          this.facets.service.settleCCTPTransaction({
-            chainId: remoteAxelarChain,
-            remoteAddress: txDetails.remoteAddress,
-            amountValue: txDetails.amount,
-            status: txDetails.status,
-            txId,
-          });
-          return 'CCTP transaction settlement processed';
+          this.facets.service.settleTransaction(offerArgs);
+
+          return 'Transaction settlement processed';
         },
       },
       invitationMakers: {
-        SettleCCTPTransaction() {
-          trace('SettleCCTPTransaction');
+        SettleTransaction() {
+          trace('SettleTransaction');
           const { settlementHandler } = this.facets;
 
           return zcf.makeInvitation(
             settlementHandler,
-            'settleCCTPTransaction',
+            'settleTransaction',
             undefined,
             proposalShape,
           );
