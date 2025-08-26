@@ -22,84 +22,83 @@ import * as _52 from './base/node/v1beta1/query.js';
 import * as _53 from './base/query/v1beta1/pagination.js';
 import * as _54 from './base/reflection/v2alpha1/reflection.js';
 import * as _55 from './base/v1beta1/coin.js';
-import * as _56 from './capability/module/v1/module.js';
-import * as _57 from './circuit/module/v1/module.js';
-import * as _58 from './circuit/v1/query.js';
-import * as _59 from './circuit/v1/tx.js';
-import * as _60 from './circuit/v1/types.js';
-import * as _61 from './consensus/module/v1/module.js';
-import * as _62 from './consensus/v1/query.js';
-import * as _63 from './consensus/v1/tx.js';
-import * as _64 from './crisis/module/v1/module.js';
-import * as _65 from './crypto/ed25519/keys.js';
-import * as _66 from './crypto/hd/v1/hd.js';
-import * as _67 from './crypto/keyring/v1/record.js';
-import * as _68 from './crypto/multisig/keys.js';
-import * as _69 from './crypto/secp256k1/keys.js';
-import * as _70 from './crypto/secp256r1/keys.js';
-import * as _71 from './distribution/module/v1/module.js';
-import * as _72 from './distribution/v1beta1/distribution.js';
-import * as _73 from './distribution/v1beta1/genesis.js';
-import * as _74 from './distribution/v1beta1/query.js';
-import * as _75 from './distribution/v1beta1/tx.js';
-import * as _76 from './evidence/module/v1/module.js';
-import * as _77 from './feegrant/module/v1/module.js';
-import * as _78 from './feegrant/v1beta1/feegrant.js';
-import * as _79 from './feegrant/v1beta1/genesis.js';
-import * as _80 from './feegrant/v1beta1/query.js';
-import * as _81 from './feegrant/v1beta1/tx.js';
-import * as _82 from './genutil/module/v1/module.js';
-import * as _83 from './gov/module/v1/module.js';
-import * as _84 from './gov/v1/genesis.js';
-import * as _85 from './gov/v1/gov.js';
-import * as _86 from './gov/v1/query.js';
-import * as _87 from './gov/v1/tx.js';
-import * as _88 from './gov/v1beta1/genesis.js';
-import * as _89 from './gov/v1beta1/gov.js';
-import * as _90 from './gov/v1beta1/query.js';
-import * as _91 from './gov/v1beta1/tx.js';
-import * as _92 from './group/module/v1/module.js';
-import * as _93 from './group/v1/events.js';
-import * as _94 from './group/v1/genesis.js';
-import * as _95 from './group/v1/query.js';
-import * as _96 from './group/v1/tx.js';
-import * as _97 from './group/v1/types.js';
-import * as _98 from './ics23/v1/proofs.js';
-import * as _99 from './mint/module/v1/module.js';
-import * as _100 from './mint/v1beta1/genesis.js';
-import * as _101 from './mint/v1beta1/mint.js';
-import * as _102 from './mint/v1beta1/query.js';
-import * as _103 from './mint/v1beta1/tx.js';
-import * as _104 from './msg/textual/v1/textual.js';
-import * as _105 from './nft/module/v1/module.js';
-import * as _106 from './params/module/v1/module.js';
-import * as _107 from './params/v1beta1/params.js';
-import * as _108 from './params/v1beta1/query.js';
-import * as _109 from './query/v1/query.js';
-import * as _110 from './reflection/v1/reflection.js';
-import * as _111 from './slashing/module/v1/module.js';
-import * as _112 from './staking/module/v1/module.js';
-import * as _113 from './staking/v1beta1/authz.js';
-import * as _114 from './staking/v1beta1/genesis.js';
-import * as _115 from './staking/v1beta1/query.js';
-import * as _116 from './staking/v1beta1/staking.js';
-import * as _117 from './staking/v1beta1/tx.js';
-import * as _118 from './store/internal/kv/v1beta1/kv.js';
-import * as _119 from './store/snapshots/v1/snapshot.js';
-import * as _120 from './store/streaming/abci/grpc.js';
-import * as _121 from './store/v1beta1/commit_info.js';
-import * as _122 from './store/v1beta1/listening.js';
-import * as _123 from './tx/config/v1/config.js';
-import * as _124 from './tx/signing/v1beta1/signing.js';
-import * as _125 from './tx/v1beta1/service.js';
-import * as _126 from './tx/v1beta1/tx.js';
-import * as _127 from './upgrade/module/v1/module.js';
-import * as _128 from './upgrade/v1beta1/query.js';
-import * as _129 from './upgrade/v1beta1/tx.js';
-import * as _130 from './upgrade/v1beta1/upgrade.js';
-import * as _131 from './vesting/module/v1/module.js';
-import * as _132 from './vesting/v1beta1/tx.js';
-import * as _133 from './vesting/v1beta1/vesting.js';
+import * as _56 from './circuit/module/v1/module.js';
+import * as _57 from './circuit/v1/query.js';
+import * as _58 from './circuit/v1/tx.js';
+import * as _59 from './circuit/v1/types.js';
+import * as _60 from './consensus/module/v1/module.js';
+import * as _61 from './consensus/v1/query.js';
+import * as _62 from './consensus/v1/tx.js';
+import * as _63 from './crisis/module/v1/module.js';
+import * as _64 from './crypto/ed25519/keys.js';
+import * as _65 from './crypto/hd/v1/hd.js';
+import * as _66 from './crypto/keyring/v1/record.js';
+import * as _67 from './crypto/multisig/keys.js';
+import * as _68 from './crypto/secp256k1/keys.js';
+import * as _69 from './crypto/secp256r1/keys.js';
+import * as _70 from './distribution/module/v1/module.js';
+import * as _71 from './distribution/v1beta1/distribution.js';
+import * as _72 from './distribution/v1beta1/genesis.js';
+import * as _73 from './distribution/v1beta1/query.js';
+import * as _74 from './distribution/v1beta1/tx.js';
+import * as _75 from './evidence/module/v1/module.js';
+import * as _76 from './feegrant/module/v1/module.js';
+import * as _77 from './feegrant/v1beta1/feegrant.js';
+import * as _78 from './feegrant/v1beta1/genesis.js';
+import * as _79 from './feegrant/v1beta1/query.js';
+import * as _80 from './feegrant/v1beta1/tx.js';
+import * as _81 from './genutil/module/v1/module.js';
+import * as _82 from './gov/module/v1/module.js';
+import * as _83 from './gov/v1/genesis.js';
+import * as _84 from './gov/v1/gov.js';
+import * as _85 from './gov/v1/query.js';
+import * as _86 from './gov/v1/tx.js';
+import * as _87 from './gov/v1beta1/genesis.js';
+import * as _88 from './gov/v1beta1/gov.js';
+import * as _89 from './gov/v1beta1/query.js';
+import * as _90 from './gov/v1beta1/tx.js';
+import * as _91 from './group/module/v1/module.js';
+import * as _92 from './group/v1/events.js';
+import * as _93 from './group/v1/genesis.js';
+import * as _94 from './group/v1/query.js';
+import * as _95 from './group/v1/tx.js';
+import * as _96 from './group/v1/types.js';
+import * as _97 from './ics23/v1/proofs.js';
+import * as _98 from './mint/module/v1/module.js';
+import * as _99 from './mint/v1beta1/genesis.js';
+import * as _100 from './mint/v1beta1/mint.js';
+import * as _101 from './mint/v1beta1/query.js';
+import * as _102 from './mint/v1beta1/tx.js';
+import * as _103 from './msg/textual/v1/textual.js';
+import * as _104 from './nft/module/v1/module.js';
+import * as _105 from './params/module/v1/module.js';
+import * as _106 from './params/v1beta1/params.js';
+import * as _107 from './params/v1beta1/query.js';
+import * as _108 from './query/v1/query.js';
+import * as _109 from './reflection/v1/reflection.js';
+import * as _110 from './slashing/module/v1/module.js';
+import * as _111 from './staking/module/v1/module.js';
+import * as _112 from './staking/v1beta1/authz.js';
+import * as _113 from './staking/v1beta1/genesis.js';
+import * as _114 from './staking/v1beta1/query.js';
+import * as _115 from './staking/v1beta1/staking.js';
+import * as _116 from './staking/v1beta1/tx.js';
+import * as _117 from './store/internal/kv/v1beta1/kv.js';
+import * as _118 from './store/snapshots/v1/snapshot.js';
+import * as _119 from './store/streaming/abci/grpc.js';
+import * as _120 from './store/v1beta1/commit_info.js';
+import * as _121 from './store/v1beta1/listening.js';
+import * as _122 from './tx/config/v1/config.js';
+import * as _123 from './tx/signing/v1beta1/signing.js';
+import * as _124 from './tx/v1beta1/service.js';
+import * as _125 from './tx/v1beta1/tx.js';
+import * as _126 from './upgrade/module/v1/module.js';
+import * as _127 from './upgrade/v1beta1/query.js';
+import * as _128 from './upgrade/v1beta1/tx.js';
+import * as _129 from './upgrade/v1beta1/upgrade.js';
+import * as _130 from './vesting/module/v1/module.js';
+import * as _131 from './vesting/v1beta1/tx.js';
+import * as _132 from './vesting/v1beta1/vesting.js';
 export namespace cosmos {
   export namespace app {
     export namespace runtime {
@@ -174,274 +173,267 @@ export namespace cosmos {
       ..._55,
     };
   }
-  export namespace capability {
+  export namespace circuit {
     export namespace module {
       export const v1 = {
         ..._56,
       };
     }
-  }
-  export namespace circuit {
-    export namespace module {
-      export const v1 = {
-        ..._57,
-      };
-    }
     export const v1 = {
+      ..._57,
       ..._58,
       ..._59,
-      ..._60,
     };
   }
   export namespace consensus {
     export namespace module {
       export const v1 = {
-        ..._61,
+        ..._60,
       };
     }
     export const v1 = {
+      ..._61,
       ..._62,
-      ..._63,
     };
   }
   export namespace crisis {
     export namespace module {
       export const v1 = {
-        ..._64,
+        ..._63,
       };
     }
   }
   export namespace crypto {
     export const ed25519 = {
-      ..._65,
+      ..._64,
     };
     export namespace hd {
       export const v1 = {
-        ..._66,
+        ..._65,
       };
     }
     export namespace keyring {
       export const v1 = {
-        ..._67,
+        ..._66,
       };
     }
     export const multisig = {
-      ..._68,
+      ..._67,
     };
     export const secp256k1 = {
-      ..._69,
+      ..._68,
     };
     export const secp256r1 = {
-      ..._70,
+      ..._69,
     };
   }
   export namespace distribution {
     export namespace module {
       export const v1 = {
-        ..._71,
+        ..._70,
       };
     }
     export const v1beta1 = {
+      ..._71,
       ..._72,
       ..._73,
       ..._74,
-      ..._75,
     };
   }
   export namespace evidence {
     export namespace module {
       export const v1 = {
-        ..._76,
+        ..._75,
       };
     }
   }
   export namespace feegrant {
     export namespace module {
       export const v1 = {
-        ..._77,
+        ..._76,
       };
     }
     export const v1beta1 = {
+      ..._77,
       ..._78,
       ..._79,
       ..._80,
-      ..._81,
     };
   }
   export namespace genutil {
     export namespace module {
       export const v1 = {
-        ..._82,
+        ..._81,
       };
     }
   }
   export namespace gov {
     export namespace module {
       export const v1 = {
-        ..._83,
+        ..._82,
       };
     }
     export const v1 = {
+      ..._83,
       ..._84,
       ..._85,
       ..._86,
-      ..._87,
     };
     export const v1beta1 = {
+      ..._87,
       ..._88,
       ..._89,
       ..._90,
-      ..._91,
     };
   }
   export namespace group {
     export namespace module {
       export const v1 = {
-        ..._92,
+        ..._91,
       };
     }
     export const v1 = {
+      ..._92,
       ..._93,
       ..._94,
       ..._95,
       ..._96,
-      ..._97,
     };
   }
   export namespace ics23 {
     export const v1 = {
-      ..._98,
+      ..._97,
     };
   }
   export namespace mint {
     export namespace module {
       export const v1 = {
-        ..._99,
+        ..._98,
       };
     }
     export const v1beta1 = {
+      ..._99,
       ..._100,
       ..._101,
       ..._102,
-      ..._103,
     };
   }
   export namespace msg {
     export namespace textual {
       export const v1 = {
-        ..._104,
+        ..._103,
       };
     }
   }
   export namespace nft {
     export namespace module {
       export const v1 = {
-        ..._105,
+        ..._104,
       };
     }
   }
   export namespace params {
     export namespace module {
       export const v1 = {
-        ..._106,
+        ..._105,
       };
     }
     export const v1beta1 = {
+      ..._106,
       ..._107,
-      ..._108,
     };
   }
   export namespace query {
     export const v1 = {
-      ..._109,
+      ..._108,
     };
   }
   export namespace reflection {
     export const v1 = {
-      ..._110,
+      ..._109,
     };
   }
   export namespace slashing {
     export namespace module {
       export const v1 = {
-        ..._111,
+        ..._110,
       };
     }
   }
   export namespace staking {
     export namespace module {
       export const v1 = {
-        ..._112,
+        ..._111,
       };
     }
     export const v1beta1 = {
+      ..._112,
       ..._113,
       ..._114,
       ..._115,
       ..._116,
-      ..._117,
     };
   }
   export namespace store {
     export namespace internal {
       export namespace kv {
         export const v1beta1 = {
-          ..._118,
+          ..._117,
         };
       }
     }
     export namespace snapshots {
       export const v1 = {
-        ..._119,
+        ..._118,
       };
     }
     export namespace streaming {
       export const abci = {
-        ..._120,
+        ..._119,
       };
     }
     export const v1beta1 = {
+      ..._120,
       ..._121,
-      ..._122,
     };
   }
   export namespace tx {
     export namespace config {
       export const v1 = {
-        ..._123,
+        ..._122,
       };
     }
     export namespace signing {
       export const v1beta1 = {
-        ..._124,
+        ..._123,
       };
     }
     export const v1beta1 = {
+      ..._124,
       ..._125,
-      ..._126,
     };
   }
   export namespace upgrade {
     export namespace module {
       export const v1 = {
-        ..._127,
+        ..._126,
       };
     }
     export const v1beta1 = {
+      ..._127,
       ..._128,
       ..._129,
-      ..._130,
     };
   }
   export namespace vesting {
     export namespace module {
       export const v1 = {
-        ..._131,
+        ..._130,
       };
     }
     export const v1beta1 = {
+      ..._131,
       ..._132,
-      ..._133,
     };
   }
 }

@@ -15,13 +15,13 @@ import * as _12 from './vstorage/genesis.js';
 import * as _13 from './vstorage/query.js';
 import * as _14 from './vstorage/vstorage.js';
 import * as _15 from './vtransfer/genesis.js';
-import * as _229 from './swingset/query.rpc.Query.js';
-import * as _230 from './vbank/query.rpc.Query.js';
-import * as _231 from './vstorage/query.rpc.Query.js';
-import * as _232 from './swingset/msgs.rpc.msg.js';
-import * as _233 from './vibc/msgs.rpc.msg.js';
-import * as _292 from './rpc.query.js';
-import * as _293 from './rpc.tx.js';
+import * as _228 from './swingset/query.rpc.Query.js';
+import * as _229 from './vbank/query.rpc.Query.js';
+import * as _230 from './vstorage/query.rpc.Query.js';
+import * as _231 from './swingset/msgs.rpc.msg.js';
+import * as _232 from './vibc/msgs.rpc.msg.js';
+import * as _291 from './rpc.query.js';
+import * as _292 from './rpc.tx.js';
 export namespace agoric {
   export const lien = {
     ..._0,
@@ -32,19 +32,19 @@ export namespace agoric {
     ..._3,
     ..._4,
     ..._5,
-    ..._229,
-    ..._232,
+    ..._228,
+    ..._231,
   };
   export const vbank = {
     ..._6,
     ..._7,
     ..._8,
     ..._9,
-    ..._230,
+    ..._229,
   };
   export const vibc = {
     ..._10,
-    ..._233,
+    ..._232,
   };
   export const vlocalchain = {
     ..._11,
@@ -53,13 +53,13 @@ export namespace agoric {
     ..._12,
     ..._13,
     ..._14,
-    ..._231,
+    ..._230,
   };
   export const vtransfer = {
     ..._15,
   };
   export const ClientFactory = {
+    ..._291,
     ..._292,
-    ..._293,
   };
 }
