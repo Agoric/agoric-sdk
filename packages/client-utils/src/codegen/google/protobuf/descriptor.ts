@@ -1411,7 +1411,7 @@ function createBaseFileDescriptorSet(): FileDescriptorSet {
   };
 }
 export const FileDescriptorSet = {
-  typeUrl: '/google.protobuf.FileDescriptorSet',
+  typeUrl: '/google.protobuf.FileDescriptorSet' as const,
   encode(
     message: FileDescriptorSet,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1495,7 +1495,7 @@ function createBaseFileDescriptorProto(): FileDescriptorProto {
   };
 }
 export const FileDescriptorProto = {
-  typeUrl: '/google.protobuf.FileDescriptorProto',
+  typeUrl: '/google.protobuf.FileDescriptorProto' as const,
   encode(
     message: FileDescriptorProto,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1770,7 +1770,7 @@ function createBaseDescriptorProto(): DescriptorProto {
   };
 }
 export const DescriptorProto = {
-  typeUrl: '/google.protobuf.DescriptorProto',
+  typeUrl: '/google.protobuf.DescriptorProto' as const,
   encode(
     message: DescriptorProto,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2020,7 +2020,7 @@ function createBaseDescriptorProto_ExtensionRange(): DescriptorProto_ExtensionRa
   };
 }
 export const DescriptorProto_ExtensionRange = {
-  typeUrl: '/google.protobuf.ExtensionRange',
+  typeUrl: '/google.protobuf.ExtensionRange' as const,
   encode(
     message: DescriptorProto_ExtensionRange,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2126,7 +2126,7 @@ function createBaseDescriptorProto_ReservedRange(): DescriptorProto_ReservedRang
   };
 }
 export const DescriptorProto_ReservedRange = {
-  typeUrl: '/google.protobuf.ReservedRange',
+  typeUrl: '/google.protobuf.ReservedRange' as const,
   encode(
     message: DescriptorProto_ReservedRange,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2208,7 +2208,7 @@ function createBaseExtensionRangeOptions(): ExtensionRangeOptions {
   };
 }
 export const ExtensionRangeOptions = {
-  typeUrl: '/google.protobuf.ExtensionRangeOptions',
+  typeUrl: '/google.protobuf.ExtensionRangeOptions' as const,
   encode(
     message: ExtensionRangeOptions,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2297,7 +2297,7 @@ function createBaseFieldDescriptorProto(): FieldDescriptorProto {
   };
 }
 export const FieldDescriptorProto = {
-  typeUrl: '/google.protobuf.FieldDescriptorProto',
+  typeUrl: '/google.protobuf.FieldDescriptorProto' as const,
   encode(
     message: FieldDescriptorProto,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2462,7 +2462,7 @@ function createBaseOneofDescriptorProto(): OneofDescriptorProto {
   };
 }
 export const OneofDescriptorProto = {
-  typeUrl: '/google.protobuf.OneofDescriptorProto',
+  typeUrl: '/google.protobuf.OneofDescriptorProto' as const,
   encode(
     message: OneofDescriptorProto,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2548,7 +2548,7 @@ function createBaseEnumDescriptorProto(): EnumDescriptorProto {
   };
 }
 export const EnumDescriptorProto = {
-  typeUrl: '/google.protobuf.EnumDescriptorProto',
+  typeUrl: '/google.protobuf.EnumDescriptorProto' as const,
   encode(
     message: EnumDescriptorProto,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2696,7 +2696,7 @@ function createBaseEnumDescriptorProto_EnumReservedRange(): EnumDescriptorProto_
   };
 }
 export const EnumDescriptorProto_EnumReservedRange = {
-  typeUrl: '/google.protobuf.EnumReservedRange',
+  typeUrl: '/google.protobuf.EnumReservedRange' as const,
   encode(
     message: EnumDescriptorProto_EnumReservedRange,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2780,7 +2780,7 @@ function createBaseEnumValueDescriptorProto(): EnumValueDescriptorProto {
   };
 }
 export const EnumValueDescriptorProto = {
-  typeUrl: '/google.protobuf.EnumValueDescriptorProto',
+  typeUrl: '/google.protobuf.EnumValueDescriptorProto' as const,
   encode(
     message: EnumValueDescriptorProto,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2884,7 +2884,7 @@ function createBaseServiceDescriptorProto(): ServiceDescriptorProto {
   };
 }
 export const ServiceDescriptorProto = {
-  typeUrl: '/google.protobuf.ServiceDescriptorProto',
+  typeUrl: '/google.protobuf.ServiceDescriptorProto' as const,
   encode(
     message: ServiceDescriptorProto,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2993,7 +2993,7 @@ function createBaseMethodDescriptorProto(): MethodDescriptorProto {
   };
 }
 export const MethodDescriptorProto = {
-  typeUrl: '/google.protobuf.MethodDescriptorProto',
+  typeUrl: '/google.protobuf.MethodDescriptorProto' as const,
   encode(
     message: MethodDescriptorProto,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3137,7 +3137,7 @@ function createBaseFileOptions(): FileOptions {
   };
 }
 export const FileOptions = {
-  typeUrl: '/google.protobuf.FileOptions',
+  typeUrl: '/google.protobuf.FileOptions' as const,
   encode(
     message: FileOptions,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3447,7 +3447,7 @@ function createBaseMessageOptions(): MessageOptions {
   };
 }
 export const MessageOptions = {
-  typeUrl: '/google.protobuf.MessageOptions',
+  typeUrl: '/google.protobuf.MessageOptions' as const,
   encode(
     message: MessageOptions,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3573,7 +3573,7 @@ function createBaseFieldOptions(): FieldOptions {
   };
 }
 export const FieldOptions = {
-  typeUrl: '/google.protobuf.FieldOptions',
+  typeUrl: '/google.protobuf.FieldOptions' as const,
   encode(
     message: FieldOptions,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3710,7 +3710,7 @@ function createBaseOneofOptions(): OneofOptions {
   };
 }
 export const OneofOptions = {
-  typeUrl: '/google.protobuf.OneofOptions',
+  typeUrl: '/google.protobuf.OneofOptions' as const,
   encode(
     message: OneofOptions,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3789,7 +3789,7 @@ function createBaseEnumOptions(): EnumOptions {
   };
 }
 export const EnumOptions = {
-  typeUrl: '/google.protobuf.EnumOptions',
+  typeUrl: '/google.protobuf.EnumOptions' as const,
   encode(
     message: EnumOptions,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3885,7 +3885,7 @@ function createBaseEnumValueOptions(): EnumValueOptions {
   };
 }
 export const EnumValueOptions = {
-  typeUrl: '/google.protobuf.EnumValueOptions',
+  typeUrl: '/google.protobuf.EnumValueOptions' as const,
   encode(
     message: EnumValueOptions,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3972,7 +3972,7 @@ function createBaseServiceOptions(): ServiceOptions {
   };
 }
 export const ServiceOptions = {
-  typeUrl: '/google.protobuf.ServiceOptions',
+  typeUrl: '/google.protobuf.ServiceOptions' as const,
   encode(
     message: ServiceOptions,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4060,7 +4060,7 @@ function createBaseMethodOptions(): MethodOptions {
   };
 }
 export const MethodOptions = {
-  typeUrl: '/google.protobuf.MethodOptions',
+  typeUrl: '/google.protobuf.MethodOptions' as const,
   encode(
     message: MethodOptions,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4166,7 +4166,7 @@ function createBaseUninterpretedOption(): UninterpretedOption {
   };
 }
 export const UninterpretedOption = {
-  typeUrl: '/google.protobuf.UninterpretedOption',
+  typeUrl: '/google.protobuf.UninterpretedOption' as const,
   encode(
     message: UninterpretedOption,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4330,7 +4330,7 @@ function createBaseUninterpretedOption_NamePart(): UninterpretedOption_NamePart 
   };
 }
 export const UninterpretedOption_NamePart = {
-  typeUrl: '/google.protobuf.NamePart',
+  typeUrl: '/google.protobuf.NamePart' as const,
   encode(
     message: UninterpretedOption_NamePart,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4415,7 +4415,7 @@ function createBaseSourceCodeInfo(): SourceCodeInfo {
   };
 }
 export const SourceCodeInfo = {
-  typeUrl: '/google.protobuf.SourceCodeInfo',
+  typeUrl: '/google.protobuf.SourceCodeInfo' as const,
   encode(
     message: SourceCodeInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4492,7 +4492,7 @@ function createBaseSourceCodeInfo_Location(): SourceCodeInfo_Location {
   };
 }
 export const SourceCodeInfo_Location = {
-  typeUrl: '/google.protobuf.Location',
+  typeUrl: '/google.protobuf.Location' as const,
   encode(
     message: SourceCodeInfo_Location,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4642,7 +4642,7 @@ function createBaseGeneratedCodeInfo(): GeneratedCodeInfo {
   };
 }
 export const GeneratedCodeInfo = {
-  typeUrl: '/google.protobuf.GeneratedCodeInfo',
+  typeUrl: '/google.protobuf.GeneratedCodeInfo' as const,
   encode(
     message: GeneratedCodeInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4725,7 +4725,7 @@ function createBaseGeneratedCodeInfo_Annotation(): GeneratedCodeInfo_Annotation 
   };
 }
 export const GeneratedCodeInfo_Annotation = {
-  typeUrl: '/google.protobuf.Annotation',
+  typeUrl: '/google.protobuf.Annotation' as const,
   encode(
     message: GeneratedCodeInfo_Annotation,
     writer: BinaryWriter = BinaryWriter.create(),

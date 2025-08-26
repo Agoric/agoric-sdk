@@ -79,7 +79,7 @@ function createBaseInterchainAccountPacketData(): InterchainAccountPacketData {
 }
 export const InterchainAccountPacketData = {
   typeUrl:
-    '/ibc.applications.interchain_accounts.v1.InterchainAccountPacketData',
+    '/ibc.applications.interchain_accounts.v1.InterchainAccountPacketData' as const,
   encode(
     message: InterchainAccountPacketData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -176,7 +176,7 @@ function createBaseCosmosTx(): CosmosTx {
   };
 }
 export const CosmosTx = {
-  typeUrl: '/ibc.applications.interchain_accounts.v1.CosmosTx',
+  typeUrl: '/ibc.applications.interchain_accounts.v1.CosmosTx' as const,
   encode(
     message: CosmosTx,
     writer: BinaryWriter = BinaryWriter.create(),

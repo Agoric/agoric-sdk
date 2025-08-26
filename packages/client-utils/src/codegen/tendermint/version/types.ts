@@ -53,7 +53,7 @@ function createBaseApp(): App {
   };
 }
 export const App = {
-  typeUrl: '/tendermint.version.App',
+  typeUrl: '/tendermint.version.App' as const,
   encode(
     message: App,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -131,7 +131,7 @@ function createBaseConsensus(): Consensus {
   };
 }
 export const Consensus = {
-  typeUrl: '/tendermint.version.Consensus',
+  typeUrl: '/tendermint.version.Consensus' as const,
   encode(
     message: Consensus,
     writer: BinaryWriter = BinaryWriter.create(),

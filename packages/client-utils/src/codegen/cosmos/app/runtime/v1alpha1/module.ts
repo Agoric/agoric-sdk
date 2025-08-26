@@ -106,7 +106,7 @@ function createBaseModule(): Module {
   };
 }
 export const Module = {
-  typeUrl: '/cosmos.app.runtime.v1alpha1.Module',
+  typeUrl: '/cosmos.app.runtime.v1alpha1.Module' as const,
   encode(
     message: Module,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -294,7 +294,7 @@ function createBaseStoreKeyConfig(): StoreKeyConfig {
   };
 }
 export const StoreKeyConfig = {
-  typeUrl: '/cosmos.app.runtime.v1alpha1.StoreKeyConfig',
+  typeUrl: '/cosmos.app.runtime.v1alpha1.StoreKeyConfig' as const,
   encode(
     message: StoreKeyConfig,
     writer: BinaryWriter = BinaryWriter.create(),

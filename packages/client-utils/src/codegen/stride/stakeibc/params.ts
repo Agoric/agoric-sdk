@@ -72,7 +72,7 @@ function createBaseParams(): Params {
   };
 }
 export const Params = {
-  typeUrl: '/stride.stakeibc.Params',
+  typeUrl: '/stride.stakeibc.Params' as const,
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),

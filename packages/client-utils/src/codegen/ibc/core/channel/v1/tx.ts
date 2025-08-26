@@ -767,7 +767,7 @@ function createBaseMsgChannelOpenInit(): MsgChannelOpenInit {
   };
 }
 export const MsgChannelOpenInit = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelOpenInit',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelOpenInit' as const,
   encode(
     message: MsgChannelOpenInit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -859,7 +859,7 @@ function createBaseMsgChannelOpenInitResponse(): MsgChannelOpenInitResponse {
   };
 }
 export const MsgChannelOpenInitResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelOpenInitResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelOpenInitResponse' as const,
   encode(
     message: MsgChannelOpenInitResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -947,7 +947,7 @@ function createBaseMsgChannelOpenTry(): MsgChannelOpenTry {
   };
 }
 export const MsgChannelOpenTry = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelOpenTry',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelOpenTry' as const,
   encode(
     message: MsgChannelOpenTry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1091,7 +1091,7 @@ function createBaseMsgChannelOpenTryResponse(): MsgChannelOpenTryResponse {
   };
 }
 export const MsgChannelOpenTryResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelOpenTryResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelOpenTryResponse' as const,
   encode(
     message: MsgChannelOpenTryResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1179,7 +1179,7 @@ function createBaseMsgChannelOpenAck(): MsgChannelOpenAck {
   };
 }
 export const MsgChannelOpenAck = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelOpenAck',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelOpenAck' as const,
   encode(
     message: MsgChannelOpenAck,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1312,7 +1312,7 @@ function createBaseMsgChannelOpenAckResponse(): MsgChannelOpenAckResponse {
   return {};
 }
 export const MsgChannelOpenAckResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelOpenAckResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelOpenAckResponse' as const,
   encode(
     _: MsgChannelOpenAckResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1377,7 +1377,7 @@ function createBaseMsgChannelOpenConfirm(): MsgChannelOpenConfirm {
   };
 }
 export const MsgChannelOpenConfirm = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelOpenConfirm',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelOpenConfirm' as const,
   encode(
     message: MsgChannelOpenConfirm,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1489,7 +1489,7 @@ function createBaseMsgChannelOpenConfirmResponse(): MsgChannelOpenConfirmRespons
   return {};
 }
 export const MsgChannelOpenConfirmResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelOpenConfirmResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelOpenConfirmResponse' as const,
   encode(
     _: MsgChannelOpenConfirmResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1554,7 +1554,7 @@ function createBaseMsgChannelCloseInit(): MsgChannelCloseInit {
   };
 }
 export const MsgChannelCloseInit = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelCloseInit',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelCloseInit' as const,
   encode(
     message: MsgChannelCloseInit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1635,7 +1635,7 @@ function createBaseMsgChannelCloseInitResponse(): MsgChannelCloseInitResponse {
   return {};
 }
 export const MsgChannelCloseInitResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelCloseInitResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelCloseInitResponse' as const,
   encode(
     _: MsgChannelCloseInitResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1703,7 +1703,7 @@ function createBaseMsgChannelCloseConfirm(): MsgChannelCloseConfirm {
   };
 }
 export const MsgChannelCloseConfirm = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelCloseConfirm',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelCloseConfirm' as const,
   encode(
     message: MsgChannelCloseConfirm,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1835,7 +1835,7 @@ function createBaseMsgChannelCloseConfirmResponse(): MsgChannelCloseConfirmRespo
   return {};
 }
 export const MsgChannelCloseConfirmResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgChannelCloseConfirmResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgChannelCloseConfirmResponse' as const,
   encode(
     _: MsgChannelCloseConfirmResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1901,7 +1901,7 @@ function createBaseMsgRecvPacket(): MsgRecvPacket {
   };
 }
 export const MsgRecvPacket = {
-  typeUrl: '/ibc.core.channel.v1.MsgRecvPacket',
+  typeUrl: '/ibc.core.channel.v1.MsgRecvPacket' as const,
   encode(
     message: MsgRecvPacket,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2009,7 +2009,7 @@ function createBaseMsgRecvPacketResponse(): MsgRecvPacketResponse {
   };
 }
 export const MsgRecvPacketResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgRecvPacketResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgRecvPacketResponse' as const,
   encode(
     message: MsgRecvPacketResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2081,7 +2081,7 @@ function createBaseMsgTimeout(): MsgTimeout {
   };
 }
 export const MsgTimeout = {
-  typeUrl: '/ibc.core.channel.v1.MsgTimeout',
+  typeUrl: '/ibc.core.channel.v1.MsgTimeout' as const,
   encode(
     message: MsgTimeout,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2206,7 +2206,7 @@ function createBaseMsgTimeoutResponse(): MsgTimeoutResponse {
   };
 }
 export const MsgTimeoutResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgTimeoutResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgTimeoutResponse' as const,
   encode(
     message: MsgTimeoutResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2280,7 +2280,7 @@ function createBaseMsgTimeoutOnClose(): MsgTimeoutOnClose {
   };
 }
 export const MsgTimeoutOnClose = {
-  typeUrl: '/ibc.core.channel.v1.MsgTimeoutOnClose',
+  typeUrl: '/ibc.core.channel.v1.MsgTimeoutOnClose' as const,
   encode(
     message: MsgTimeoutOnClose,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2439,7 +2439,7 @@ function createBaseMsgTimeoutOnCloseResponse(): MsgTimeoutOnCloseResponse {
   };
 }
 export const MsgTimeoutOnCloseResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgTimeoutOnCloseResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgTimeoutOnCloseResponse' as const,
   encode(
     message: MsgTimeoutOnCloseResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2519,7 +2519,7 @@ function createBaseMsgAcknowledgement(): MsgAcknowledgement {
   };
 }
 export const MsgAcknowledgement = {
-  typeUrl: '/ibc.core.channel.v1.MsgAcknowledgement',
+  typeUrl: '/ibc.core.channel.v1.MsgAcknowledgement' as const,
   encode(
     message: MsgAcknowledgement,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2646,7 +2646,7 @@ function createBaseMsgAcknowledgementResponse(): MsgAcknowledgementResponse {
   };
 }
 export const MsgAcknowledgementResponse = {
-  typeUrl: '/ibc.core.channel.v1.MsgAcknowledgementResponse',
+  typeUrl: '/ibc.core.channel.v1.MsgAcknowledgementResponse' as const,
   encode(
     message: MsgAcknowledgementResponse,
     writer: BinaryWriter = BinaryWriter.create(),

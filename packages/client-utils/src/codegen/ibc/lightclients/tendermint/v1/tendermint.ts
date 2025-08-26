@@ -221,7 +221,7 @@ function createBaseClientState(): ClientState {
   };
 }
 export const ClientState = {
-  typeUrl: '/ibc.lightclients.tendermint.v1.ClientState',
+  typeUrl: '/ibc.lightclients.tendermint.v1.ClientState' as const,
   encode(
     message: ClientState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -451,7 +451,7 @@ function createBaseConsensusState(): ConsensusState {
   };
 }
 export const ConsensusState = {
-  typeUrl: '/ibc.lightclients.tendermint.v1.ConsensusState',
+  typeUrl: '/ibc.lightclients.tendermint.v1.ConsensusState' as const,
   encode(
     message: ConsensusState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -550,7 +550,7 @@ function createBaseMisbehaviour(): Misbehaviour {
   };
 }
 export const Misbehaviour = {
-  typeUrl: '/ibc.lightclients.tendermint.v1.Misbehaviour',
+  typeUrl: '/ibc.lightclients.tendermint.v1.Misbehaviour' as const,
   encode(
     message: Misbehaviour,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -649,7 +649,7 @@ function createBaseHeader(): Header {
   };
 }
 export const Header = {
-  typeUrl: '/ibc.lightclients.tendermint.v1.Header',
+  typeUrl: '/ibc.lightclients.tendermint.v1.Header' as const,
   encode(
     message: Header,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -784,7 +784,7 @@ function createBaseFraction(): Fraction {
   };
 }
 export const Fraction = {
-  typeUrl: '/ibc.lightclients.tendermint.v1.Fraction',
+  typeUrl: '/ibc.lightclients.tendermint.v1.Fraction' as const,
   encode(
     message: Fraction,
     writer: BinaryWriter = BinaryWriter.create(),

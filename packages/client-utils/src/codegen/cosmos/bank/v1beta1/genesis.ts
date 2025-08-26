@@ -75,7 +75,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/cosmos.bank.v1beta1.GenesisState',
+  typeUrl: '/cosmos.bank.v1beta1.GenesisState' as const,
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -210,7 +210,7 @@ function createBaseBalance(): Balance {
   };
 }
 export const Balance = {
-  typeUrl: '/cosmos.bank.v1beta1.Balance',
+  typeUrl: '/cosmos.bank.v1beta1.Balance' as const,
   encode(
     message: Balance,
     writer: BinaryWriter = BinaryWriter.create(),

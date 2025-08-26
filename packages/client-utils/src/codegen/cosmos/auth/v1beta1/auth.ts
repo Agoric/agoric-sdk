@@ -103,7 +103,7 @@ function createBaseBaseAccount(): BaseAccount {
   };
 }
 export const BaseAccount = {
-  typeUrl: '/cosmos.auth.v1beta1.BaseAccount',
+  typeUrl: '/cosmos.auth.v1beta1.BaseAccount' as const,
   encode(
     message: BaseAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -210,7 +210,7 @@ function createBaseModuleAccount(): ModuleAccount {
   };
 }
 export const ModuleAccount = {
-  typeUrl: '/cosmos.auth.v1beta1.ModuleAccount',
+  typeUrl: '/cosmos.auth.v1beta1.ModuleAccount' as const,
   encode(
     message: ModuleAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -308,7 +308,7 @@ function createBaseModuleCredential(): ModuleCredential {
   };
 }
 export const ModuleCredential = {
-  typeUrl: '/cosmos.auth.v1beta1.ModuleCredential',
+  typeUrl: '/cosmos.auth.v1beta1.ModuleCredential' as const,
   encode(
     message: ModuleCredential,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -391,7 +391,7 @@ function createBaseParams(): Params {
   };
 }
 export const Params = {
-  typeUrl: '/cosmos.auth.v1beta1.Params',
+  typeUrl: '/cosmos.auth.v1beta1.Params' as const,
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),

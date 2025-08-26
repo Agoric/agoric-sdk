@@ -94,7 +94,7 @@ function createBaseCoin(): Coin {
   };
 }
 export const Coin = {
-  typeUrl: '/cosmos.base.v1beta1.Coin',
+  typeUrl: '/cosmos.base.v1beta1.Coin' as const,
   encode(
     message: Coin,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -166,7 +166,7 @@ function createBaseDecCoin(): DecCoin {
   };
 }
 export const DecCoin = {
-  typeUrl: '/cosmos.base.v1beta1.DecCoin',
+  typeUrl: '/cosmos.base.v1beta1.DecCoin' as const,
   encode(
     message: DecCoin,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -239,7 +239,7 @@ function createBaseIntProto(): IntProto {
   };
 }
 export const IntProto = {
-  typeUrl: '/cosmos.base.v1beta1.IntProto',
+  typeUrl: '/cosmos.base.v1beta1.IntProto' as const,
   encode(
     message: IntProto,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -301,7 +301,7 @@ function createBaseDecProto(): DecProto {
   };
 }
 export const DecProto = {
-  typeUrl: '/cosmos.base.v1beta1.DecProto',
+  typeUrl: '/cosmos.base.v1beta1.DecProto' as const,
   encode(
     message: DecProto,
     writer: BinaryWriter = BinaryWriter.create(),
