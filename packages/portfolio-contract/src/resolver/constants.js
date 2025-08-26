@@ -21,5 +21,6 @@ harden(TxStatus);
  */
 export const TxType = /** @type {const} */ ({
   CCTP: 'cctp',
+  GMP: 'gmp',
 });
 harden(TxType);

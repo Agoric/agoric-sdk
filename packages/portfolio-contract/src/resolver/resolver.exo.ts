@@ -25,9 +25,16 @@ import type {
   CCTPSettlementArgs,
   CCTPSettlementOfferArgs,
   CCTPTransactionKey,
+  GMPSettlementArgs,
+  GMPSettlementOfferArgs,
   PublishedTx,
 } from './types.js';
-import { CCTPSettlementArgsShape, ResolverOfferArgsShapes } from './types.js';
+import {
+  CCTPSettlementArgsShape,
+  GMPSettlementArgsShape,
+  ResolverOfferArgsShapes,
+} from './types.js';
+import type { AxelarId } from '../portfolio.contract.js';
 
 type CCTPTransactionEntry = {
   destinationAddress: AccountId;
@@ -35,27 +42,46 @@ type CCTPTransactionEntry = {
   vowKit: VowKit<void>;
 };
 
+type GMPTransactionEntry = {
+  lcaAddr: string;
+  destinationChain: AxelarId;
+  contractAddress: string;
+  vowKit: VowKit<void>;
+};
+
 const trace = makeTracer('Resolver');
 
-const ClientFacetI = M.interface('CCTPResolverClient', {
+const ClientFacetI = M.interface('ResolverClient', {
   registerCCTPTransaction: M.call(M.string(), M.nat()).returns(VowShape),
+  registerGMPTransaction: M.call(M.string(), M.string(), M.string()).returns(
+    VowShape,
+  ),
 });
 
 const ReporterI = M.interface('Reporter', {
   insertPendingTransaction: M.call(M.bigint(), M.string()).returns(),
   completePendingTransaction: M.call(M.string(), M.string()).returns(),
+  insertPendingGMPTransaction: M.call(
+    M.string(),
+    M.string(),
+    M.string(),
+  ).returns(),
+  completePendingGMPTransaction: M.call(M.string()).returns(),
 });
 
-const ServiceFacetI = M.interface('CCTPResolverService', {
+const ServiceFacetI = M.interface('ResolverService', {
   settleCCTPTransaction: M.call(CCTPSettlementArgsShape).returns(),
+  settleGMPTransaction: M.call(GMPSettlementArgsShape).returns(),
 });
 
 const InvitationMakersFacetI = M.interface('ResolverInvitationMakers', {
   SettleCCTPTransaction: M.callWhen().returns(M.remotable()),
+  SettleGMPTransaction: M.callWhen().returns(M.remotable()),
 });
 
 const SettlementHandlerFacetI = M.interface('SettlementHandler', {
   handle: M.callWhen(M.remotable(), M.any()).returns(M.string()),
+  handleGMP: M.callWhen(M.remotable(), M.any()).returns(M.string()),
 });
 
 const proposalShape = M.splitRecord(
@@ -108,6 +134,9 @@ export const prepareResolverKit = (
           CCTPTransactionKey,
           CCTPTransactionEntry
         >('cctpTransactionRegistry'),
+      gmpTransactionRegistry: resolverZone
+        .detached()
+        .mapStore<`tx${number}`, GMPTransactionEntry>('gmpTransactionRegistry'),
       index: 0,
     }),
     {
@@ -143,6 +172,43 @@ export const prepareResolverKit = (
           trace(`Registered pending CCTP transaction: ${key}`);
           return vowKit.vow;
         },
+
+        /**
+         * Register a GMP transaction and return a vow that resolves when settled.
+         *
+         * @param lcaAddr - LCA address
+         * @param destinationChain - Axelar destination chain
+         * @param contractAddress - Contract address on destination chain
+         */
+        registerGMPTransaction(
+          lcaAddr: string,
+          destinationChain: AxelarId,
+          contractAddress: string,
+        ) {
+          const { gmpTransactionRegistry } = this.state;
+          const txId = `tx${this.state.index}` as `tx${number}`;
+          this.state.index += 1;
+
+          const vowKit = vowTools.makeVowKit<void>();
+          gmpTransactionRegistry.init(
+            txId,
+            harden({
+              lcaAddr,
+              destinationChain,
+              contractAddress,
+              vowKit,
+            }),
+          );
+
+          this.facets.reporter.insertPendingGMPTransaction(
+            lcaAddr,
+            destinationChain,
+            contractAddress,
+          );
+
+          trace(`Registered pending GMP transaction: ${txId}`);
+          return vowKit.vow;
+        },
       },
       reporter: {
         insertPendingTransaction(
@@ -170,6 +236,37 @@ export const prepareResolverKit = (
             type: TxType.CCTP,
             amount: txEntry.amountValue,
             destinationAddress: txEntry.destinationAddress,
+            status: TxStatus.SUCCESS,
+          };
+          writeToNode(node, value);
+        },
+
+        insertPendingGMPTransaction(
+          lcaAddr: string,
+          destinationChain: AxelarId,
+          contractAddress: string,
+        ) {
+          const value: PublishedTx = {
+            type: TxType.GMP,
+            lcaAddr,
+            destinationChain,
+            contractAddress,
+            status: TxStatus.PENDING,
+          };
+          const node = E(pendingTxsNode).makeChildNode(
+            `tx${this.state.index - 1}`,
+          );
+          writeToNode(node, value);
+        },
+
+        completePendingGMPTransaction(vstorageId: `tx${number}`) {
+          const node = E(pendingTxsNode).makeChildNode(vstorageId);
+          const txEntry = this.state.gmpTransactionRegistry.get(vstorageId);
+          const value: PublishedTx = {
+            type: TxType.GMP,
+            lcaAddr: txEntry.lcaAddr,
+            destinationChain: txEntry.destinationChain,
+            contractAddress: txEntry.contractAddress,
             status: TxStatus.SUCCESS,
           };
           writeToNode(node, value);
@@ -220,6 +317,69 @@ export const prepareResolverKit = (
               throw Fail`Unexpected status ${q(status)} for CCTP transaction: ${q(key)}`;
           }
         },
+
+        settleGMPTransaction(args: GMPSettlementArgs) {
+          const { gmpTransactionRegistry } = this.state;
+          const {
+            lcaAddr,
+            destinationChain,
+            contractAddress,
+            status,
+            rejectionReason,
+            txId,
+          } = args;
+
+          if (!gmpTransactionRegistry.has(txId)) {
+            trace('No pending GMP transaction found for txId:', txId);
+            throw Error(
+              `No pending GMP transaction found matching: ${q(txId)}`,
+            );
+          }
+
+          const registryEntry = gmpTransactionRegistry.get(txId);
+
+          // Verify the transaction details match
+          if (
+            registryEntry.lcaAddr !== lcaAddr ||
+            registryEntry.destinationChain !== destinationChain ||
+            registryEntry.contractAddress !== contractAddress
+          ) {
+            throw Error(
+              `GMP transaction details mismatch for ${txId}: expected ${q({
+                lcaAddr: registryEntry.lcaAddr,
+                destinationChain: registryEntry.destinationChain,
+                contractAddress: registryEntry.contractAddress,
+              })}, got ${q({ lcaAddr, destinationChain, contractAddress })}`,
+            );
+          }
+
+          switch (status) {
+            case 'success':
+              trace(
+                'GMP transaction confirmed - resolving pending operation for txId:',
+                txId,
+              );
+              registryEntry.vowKit.resolver.resolve();
+              this.facets.reporter.completePendingGMPTransaction(txId);
+              gmpTransactionRegistry.delete(txId);
+              return;
+
+            case 'failed':
+              trace(
+                'GMP transaction failed - rejecting pending operation for txId:',
+                txId,
+              );
+              registryEntry.vowKit.resolver.reject(
+                Error(rejectionReason || 'GMP transaction failed'),
+              );
+              this.facets.reporter.completePendingGMPTransaction(txId);
+              gmpTransactionRegistry.delete(txId);
+              return;
+
+            default:
+              throw Fail`Unexpected status ${q(status)} for GMP transaction: ${q(txId)}`;
+          }
+        },
       },
       settlementHandler: {
         async handle(seat: ZCFSeat, offerArgs: CCTPSettlementOfferArgs) {
@@ -242,6 +402,29 @@ export const prepareResolverKit = (
           });
           return 'CCTP transaction settlement processed';
         },
+
+        async handleGMP(seat: ZCFSeat, offerArgs: GMPSettlementOfferArgs) {
+          mustMatch(offerArgs, ResolverOfferArgsShapes.SettleGMPTransaction);
+          const { txDetails, txId } = offerArgs;
+
+          trace('GMP transaction settlement:', {
+            lcaAddr: txDetails.lcaAddr,
+            destinationChain: txDetails.destinationChain,
+            contractAddress: txDetails.contractAddress,
+            status: txDetails.status,
+          });
+
+          seat.exit();
+          this.facets.service.settleGMPTransaction({
+            lcaAddr: txDetails.lcaAddr,
+            destinationChain: txDetails.destinationChain,
+            contractAddress: txDetails.contractAddress,
+            status: txDetails.status,
+            txId,
+          });
+
+          return 'GMP transaction settlement processed';
+        },
       },
       invitationMakers: {
         SettleCCTPTransaction() {
@@ -251,6 +434,18 @@ export const prepareResolverKit = (
           return zcf.makeInvitation(
             settlementHandler,
             'settleCCTPTransaction',
+            undefined,
+            proposalShape,
+          );
+        },
+
+        SettleGMPTransaction() {
+          trace('SettleGMPTransaction');
+          const { settlementHandler } = this.facets;
+
+          return zcf.makeInvitation(
+            settlementHandler.handleGMP,
+            'settleGMPTransaction',
             undefined,
             proposalShape,
           );
