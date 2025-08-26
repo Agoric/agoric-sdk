@@ -11,6 +11,7 @@ export const TxStatus = /** @type {const} */ ({
   PENDING: 'pending',
   TIMEOUT: 'timeout',
   SUCCESS: 'success',
+  FAILED: 'failed',
 });
 harden(TxStatus);
 
