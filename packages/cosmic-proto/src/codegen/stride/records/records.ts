@@ -349,7 +349,7 @@ function createBaseUserRedemptionRecord(): UserRedemptionRecord {
   };
 }
 export const UserRedemptionRecord = {
-  typeUrl: '/stride.records.UserRedemptionRecord',
+  typeUrl: '/stride.records.UserRedemptionRecord' as const,
   encode(
     message: UserRedemptionRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -499,7 +499,7 @@ function createBaseDepositRecord(): DepositRecord {
   };
 }
 export const DepositRecord = {
-  typeUrl: '/stride.records.DepositRecord',
+  typeUrl: '/stride.records.DepositRecord' as const,
   encode(
     message: DepositRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -661,7 +661,7 @@ function createBaseHostZoneUnbonding(): HostZoneUnbonding {
   };
 }
 export const HostZoneUnbonding = {
-  typeUrl: '/stride.records.HostZoneUnbonding',
+  typeUrl: '/stride.records.HostZoneUnbonding' as const,
   encode(
     message: HostZoneUnbonding,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -854,7 +854,7 @@ function createBaseEpochUnbondingRecord(): EpochUnbondingRecord {
   };
 }
 export const EpochUnbondingRecord = {
-  typeUrl: '/stride.records.EpochUnbondingRecord',
+  typeUrl: '/stride.records.EpochUnbondingRecord' as const,
   encode(
     message: EpochUnbondingRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -956,7 +956,7 @@ function createBaseLSMTokenDeposit(): LSMTokenDeposit {
   };
 }
 export const LSMTokenDeposit = {
-  typeUrl: '/stride.records.LSMTokenDeposit',
+  typeUrl: '/stride.records.LSMTokenDeposit' as const,
   encode(
     message: LSMTokenDeposit,
     writer: BinaryWriter = BinaryWriter.create(),

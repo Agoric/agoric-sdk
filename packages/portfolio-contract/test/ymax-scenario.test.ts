@@ -20,6 +20,10 @@ import {
   makeCCTPTraffic,
   makeUSDNIBCTraffic,
 } from './mocks.ts';
+import {
+  settleCCTPWithMockReceiver,
+  getResolverMakers,
+} from './resolver-helpers.ts';
 
 // Use an EVM chain whose axelar ID differs from its chain name
 const { sourceChain } = evmNamingDistinction;
@@ -28,7 +32,7 @@ const { values } = Object;
 
 const rebalanceScenarioMacro = test.macro({
   async exec(t, description: string) {
-    const { trader1, common } = await setupTrader(t);
+    const { trader1, common, started, zoe } = await setupTrader(t);
     const scenarios = await scenariosP;
     const scenario = scenarios[description];
     if (!scenario) return t.fail(`Scenario "${description}" not found`);
@@ -66,22 +70,38 @@ const rebalanceScenarioMacro = test.macro({
     const ackSteps = async (offerArgs: OfferArgsFor['openPortfolio']) => {
       const { flow: moves } = { flow: [], ...offerArgs };
       const { transmitVTransferEvent } = common.utils;
-      for (const { dest } of moves) {
+
+      for (const move of moves) {
         await eventLoopIteration();
-        if (dest === '@Arbitrum') {
-          if (!upcallDone.has(dest)) {
-            upcallDone.add(dest);
+        if (move.dest === '@Arbitrum') {
+          if (!upcallDone.has(move.dest)) {
+            upcallDone.add(move.dest);
             await simulateUpcallFromAxelar(
               common.mocks.transferBridge,
               sourceChain,
             );
+            // Also confirm CCTP transaction for flows to Arbitrum
+
+            const resolverMakers = await getResolverMakers(
+              zoe,
+              started.creatorFacet,
+            );
+            await settleCCTPWithMockReceiver(
+              zoe,
+              resolverMakers,
+              move.amount.value,
+              'eip155:42161' as const, // Arbitrum chain ID
+              0,
+              'confirmed',
+            );
+
             continue;
           }
         }
         try {
           await transmitVTransferEvent('acknowledgementPacket', -1);
         } catch (oops) {
-          console.error('nothing to ack?', oops);
+          t.log('nothing to ack?', oops);
         }
       }
     };
@@ -104,9 +124,15 @@ const rebalanceScenarioMacro = test.macro({
 
     const { result, payouts } = await (async () => {
       if (openOnly) return openResult;
-      const x = trader1.rebalance(t, sceneB.proposal, sceneB.offerArgs);
+
+      const rebalanceP = trader1.rebalance(
+        t,
+        sceneB.proposal,
+        sceneB.offerArgs,
+      );
       await ackSteps(sceneB.offerArgs);
-      return x;
+      const result = await rebalanceP;
+      return result;
     })();
 
     const portfolioPath = trader1.getPortfolioPath();

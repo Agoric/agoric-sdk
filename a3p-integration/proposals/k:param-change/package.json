@@ -4,12 +4,12 @@
   },
   "type": "module",
   "license": "Apache-2.0",
-  "packageManager": "yarn@4.9.1",
+  "packageManager": "yarn@4.9.3",
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
   },
   "dependencies": {
-    "@agoric/synthetic-chain": "file:./agoric-synthetic-chain-0.5.9.tgz",
+    "@agoric/synthetic-chain": "^0.6.1",
     "agoric": "dev"
   },
   "devDependencies": {

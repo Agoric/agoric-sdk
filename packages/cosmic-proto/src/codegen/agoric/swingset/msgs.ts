@@ -164,7 +164,7 @@ function createBaseMsgDeliverInbound(): MsgDeliverInbound {
   };
 }
 export const MsgDeliverInbound = {
-  typeUrl: '/agoric.swingset.MsgDeliverInbound',
+  typeUrl: '/agoric.swingset.MsgDeliverInbound' as const,
   encode(
     message: MsgDeliverInbound,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -281,7 +281,7 @@ function createBaseMsgDeliverInboundResponse(): MsgDeliverInboundResponse {
   return {};
 }
 export const MsgDeliverInboundResponse = {
-  typeUrl: '/agoric.swingset.MsgDeliverInboundResponse',
+  typeUrl: '/agoric.swingset.MsgDeliverInboundResponse' as const,
   encode(
     _: MsgDeliverInboundResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -343,7 +343,7 @@ function createBaseMsgWalletAction(): MsgWalletAction {
   };
 }
 export const MsgWalletAction = {
-  typeUrl: '/agoric.swingset.MsgWalletAction',
+  typeUrl: '/agoric.swingset.MsgWalletAction' as const,
   encode(
     message: MsgWalletAction,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -417,7 +417,7 @@ function createBaseMsgWalletActionResponse(): MsgWalletActionResponse {
   return {};
 }
 export const MsgWalletActionResponse = {
-  typeUrl: '/agoric.swingset.MsgWalletActionResponse',
+  typeUrl: '/agoric.swingset.MsgWalletActionResponse' as const,
   encode(
     _: MsgWalletActionResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -477,7 +477,7 @@ function createBaseMsgWalletSpendAction(): MsgWalletSpendAction {
   };
 }
 export const MsgWalletSpendAction = {
-  typeUrl: '/agoric.swingset.MsgWalletSpendAction',
+  typeUrl: '/agoric.swingset.MsgWalletSpendAction' as const,
   encode(
     message: MsgWalletSpendAction,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -555,7 +555,7 @@ function createBaseMsgWalletSpendActionResponse(): MsgWalletSpendActionResponse 
   return {};
 }
 export const MsgWalletSpendActionResponse = {
-  typeUrl: '/agoric.swingset.MsgWalletSpendActionResponse',
+  typeUrl: '/agoric.swingset.MsgWalletSpendActionResponse' as const,
   encode(
     _: MsgWalletSpendActionResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -621,7 +621,7 @@ function createBaseMsgProvision(): MsgProvision {
   };
 }
 export const MsgProvision = {
-  typeUrl: '/agoric.swingset.MsgProvision',
+  typeUrl: '/agoric.swingset.MsgProvision' as const,
   encode(
     message: MsgProvision,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -724,7 +724,7 @@ function createBaseMsgProvisionResponse(): MsgProvisionResponse {
   return {};
 }
 export const MsgProvisionResponse = {
-  typeUrl: '/agoric.swingset.MsgProvisionResponse',
+  typeUrl: '/agoric.swingset.MsgProvisionResponse' as const,
   encode(
     _: MsgProvisionResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -782,7 +782,7 @@ function createBaseMsgInstallBundle(): MsgInstallBundle {
   };
 }
 export const MsgInstallBundle = {
-  typeUrl: '/agoric.swingset.MsgInstallBundle',
+  typeUrl: '/agoric.swingset.MsgInstallBundle' as const,
   encode(
     message: MsgInstallBundle,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -889,7 +889,7 @@ function createBaseMsgInstallBundleResponse(): MsgInstallBundleResponse {
   return {};
 }
 export const MsgInstallBundleResponse = {
-  typeUrl: '/agoric.swingset.MsgInstallBundleResponse',
+  typeUrl: '/agoric.swingset.MsgInstallBundleResponse' as const,
   encode(
     _: MsgInstallBundleResponse,
     writer: BinaryWriter = BinaryWriter.create(),

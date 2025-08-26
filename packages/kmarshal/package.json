@@ -39,5 +39,8 @@
       "@endo/init/debug.js"
     ],
     "timeout": "2m"
+  },
+  "engines": {
+    "node": "^20.9 || ^22.11"
   }
 }

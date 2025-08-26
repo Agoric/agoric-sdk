@@ -215,7 +215,7 @@ function createBaseQueryDenomTraceRequest(): QueryDenomTraceRequest {
   };
 }
 export const QueryDenomTraceRequest = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceRequest',
+  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceRequest' as const,
   encode(
     message: QueryDenomTraceRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -282,7 +282,7 @@ function createBaseQueryDenomTraceResponse(): QueryDenomTraceResponse {
   };
 }
 export const QueryDenomTraceResponse = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceResponse',
+  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceResponse' as const,
   encode(
     message: QueryDenomTraceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -361,7 +361,7 @@ function createBaseQueryDenomTracesRequest(): QueryDenomTracesRequest {
   };
 }
 export const QueryDenomTracesRequest = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesRequest',
+  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesRequest' as const,
   encode(
     message: QueryDenomTracesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -441,7 +441,7 @@ function createBaseQueryDenomTracesResponse(): QueryDenomTracesResponse {
   };
 }
 export const QueryDenomTracesResponse = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesResponse',
+  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesResponse' as const,
   encode(
     message: QueryDenomTracesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -541,7 +541,7 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
 export const QueryParamsRequest = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryParamsRequest',
+  typeUrl: '/ibc.applications.transfer.v1.QueryParamsRequest' as const,
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -596,7 +596,7 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
   };
 }
 export const QueryParamsResponse = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryParamsResponse',
+  typeUrl: '/ibc.applications.transfer.v1.QueryParamsResponse' as const,
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -665,7 +665,7 @@ function createBaseQueryDenomHashRequest(): QueryDenomHashRequest {
   };
 }
 export const QueryDenomHashRequest = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomHashRequest',
+  typeUrl: '/ibc.applications.transfer.v1.QueryDenomHashRequest' as const,
   encode(
     message: QueryDenomHashRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -730,7 +730,7 @@ function createBaseQueryDenomHashResponse(): QueryDenomHashResponse {
   };
 }
 export const QueryDenomHashResponse = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomHashResponse',
+  typeUrl: '/ibc.applications.transfer.v1.QueryDenomHashResponse' as const,
   encode(
     message: QueryDenomHashResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -798,7 +798,7 @@ function createBaseQueryEscrowAddressRequest(): QueryEscrowAddressRequest {
   };
 }
 export const QueryEscrowAddressRequest = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryEscrowAddressRequest',
+  typeUrl: '/ibc.applications.transfer.v1.QueryEscrowAddressRequest' as const,
   encode(
     message: QueryEscrowAddressRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -880,7 +880,7 @@ function createBaseQueryEscrowAddressResponse(): QueryEscrowAddressResponse {
   };
 }
 export const QueryEscrowAddressResponse = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryEscrowAddressResponse',
+  typeUrl: '/ibc.applications.transfer.v1.QueryEscrowAddressResponse' as const,
   encode(
     message: QueryEscrowAddressResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -956,7 +956,8 @@ function createBaseQueryTotalEscrowForDenomRequest(): QueryTotalEscrowForDenomRe
   };
 }
 export const QueryTotalEscrowForDenomRequest = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomRequest',
+  typeUrl:
+    '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomRequest' as const,
   encode(
     message: QueryTotalEscrowForDenomRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1029,7 +1030,8 @@ function createBaseQueryTotalEscrowForDenomResponse(): QueryTotalEscrowForDenomR
   };
 }
 export const QueryTotalEscrowForDenomResponse = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse',
+  typeUrl:
+    '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse' as const,
   encode(
     message: QueryTotalEscrowForDenomResponse,
     writer: BinaryWriter = BinaryWriter.create(),

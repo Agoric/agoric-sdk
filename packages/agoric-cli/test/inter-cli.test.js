@@ -159,8 +159,13 @@ const makeProcess = (t, keyring, out) => {
             return addr;
           }
           case 'status': {
+            const syncInfo = {
+              latest_block_time: 123,
+              latest_block_height: 456,
+            };
             return JSON.stringify({
-              SyncInfo: { latest_block_time: 123, latest_block_height: 456 },
+              sync_info: syncInfo,
+              SyncInfo: syncInfo,
             });
           }
           case 'query': {

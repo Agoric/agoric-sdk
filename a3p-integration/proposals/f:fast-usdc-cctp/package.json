@@ -11,7 +11,7 @@
   "dependencies": {
     "@agoric/client-utils": "dev",
     "@agoric/fast-usdc": "dev",
-    "@agoric/synthetic-chain": "file:./agoric-synthetic-chain-0.5.9.tgz",
+    "@agoric/synthetic-chain": "^0.6.1",
     "@endo/init": "^1.1.12",
     "agoric": "dev",
     "ava": "^5.3.1"
@@ -27,5 +27,5 @@
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ agops"
   },
-  "packageManager": "yarn@4.9.1"
+  "packageManager": "yarn@4.9.3"
 }

@@ -350,7 +350,7 @@ function createBaseMsgSubmitProposal(): MsgSubmitProposal {
   };
 }
 export const MsgSubmitProposal = {
-  typeUrl: '/cosmos.gov.v1.MsgSubmitProposal',
+  typeUrl: '/cosmos.gov.v1.MsgSubmitProposal' as const,
   encode(
     message: MsgSubmitProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -481,7 +481,7 @@ function createBaseMsgSubmitProposalResponse(): MsgSubmitProposalResponse {
   };
 }
 export const MsgSubmitProposalResponse = {
-  typeUrl: '/cosmos.gov.v1.MsgSubmitProposalResponse',
+  typeUrl: '/cosmos.gov.v1.MsgSubmitProposalResponse' as const,
   encode(
     message: MsgSubmitProposalResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -561,7 +561,7 @@ function createBaseMsgExecLegacyContent(): MsgExecLegacyContent {
   };
 }
 export const MsgExecLegacyContent = {
-  typeUrl: '/cosmos.gov.v1.MsgExecLegacyContent',
+  typeUrl: '/cosmos.gov.v1.MsgExecLegacyContent' as const,
   encode(
     message: MsgExecLegacyContent,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -639,7 +639,7 @@ function createBaseMsgExecLegacyContentResponse(): MsgExecLegacyContentResponse 
   return {};
 }
 export const MsgExecLegacyContentResponse = {
-  typeUrl: '/cosmos.gov.v1.MsgExecLegacyContentResponse',
+  typeUrl: '/cosmos.gov.v1.MsgExecLegacyContentResponse' as const,
   encode(
     _: MsgExecLegacyContentResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -705,7 +705,7 @@ function createBaseMsgVote(): MsgVote {
   };
 }
 export const MsgVote = {
-  typeUrl: '/cosmos.gov.v1.MsgVote',
+  typeUrl: '/cosmos.gov.v1.MsgVote' as const,
   encode(
     message: MsgVote,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -799,7 +799,7 @@ function createBaseMsgVoteResponse(): MsgVoteResponse {
   return {};
 }
 export const MsgVoteResponse = {
-  typeUrl: '/cosmos.gov.v1.MsgVoteResponse',
+  typeUrl: '/cosmos.gov.v1.MsgVoteResponse' as const,
   encode(
     _: MsgVoteResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -854,7 +854,7 @@ function createBaseMsgVoteWeighted(): MsgVoteWeighted {
   };
 }
 export const MsgVoteWeighted = {
-  typeUrl: '/cosmos.gov.v1.MsgVoteWeighted',
+  typeUrl: '/cosmos.gov.v1.MsgVoteWeighted' as const,
   encode(
     message: MsgVoteWeighted,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -958,7 +958,7 @@ function createBaseMsgVoteWeightedResponse(): MsgVoteWeightedResponse {
   return {};
 }
 export const MsgVoteWeightedResponse = {
-  typeUrl: '/cosmos.gov.v1.MsgVoteWeightedResponse',
+  typeUrl: '/cosmos.gov.v1.MsgVoteWeightedResponse' as const,
   encode(
     _: MsgVoteWeightedResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1019,7 +1019,7 @@ function createBaseMsgDeposit(): MsgDeposit {
   };
 }
 export const MsgDeposit = {
-  typeUrl: '/cosmos.gov.v1.MsgDeposit',
+  typeUrl: '/cosmos.gov.v1.MsgDeposit' as const,
   encode(
     message: MsgDeposit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1109,7 +1109,7 @@ function createBaseMsgDepositResponse(): MsgDepositResponse {
   return {};
 }
 export const MsgDepositResponse = {
-  typeUrl: '/cosmos.gov.v1.MsgDepositResponse',
+  typeUrl: '/cosmos.gov.v1.MsgDepositResponse' as const,
   encode(
     _: MsgDepositResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1165,7 +1165,7 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
   };
 }
 export const MsgUpdateParams = {
-  typeUrl: '/cosmos.gov.v1.MsgUpdateParams',
+  typeUrl: '/cosmos.gov.v1.MsgUpdateParams' as const,
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1238,7 +1238,7 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
 }
 export const MsgUpdateParamsResponse = {
-  typeUrl: '/cosmos.gov.v1.MsgUpdateParamsResponse',
+  typeUrl: '/cosmos.gov.v1.MsgUpdateParamsResponse' as const,
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

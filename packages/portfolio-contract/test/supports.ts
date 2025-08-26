@@ -23,9 +23,11 @@ import { encodeAbiParameters } from 'viem';
 export const makeIncomingEVMEvent = ({
   address = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
   sourceChain,
+  target = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
 }: {
   address?: `0x${string}`;
   sourceChain: string;
+  target?: string;
 }) => {
   const encodedAddress = encodeAbiParameters([{ type: 'address' }], [address]);
 
@@ -39,6 +41,7 @@ export const makeIncomingEVMEvent = ({
   return makeIncomingVTransferEvent({
     sourceChannel: axelarToAgoricChannel,
     destinationChannel: agoricToAxelarChannel,
+    target,
     memo: JSON.stringify({
       source_chain: sourceChain,
       source_address: '0x19e71e7eE5c2b13eF6bd52b9E3b437bdCc7d43c8',
@@ -102,6 +105,11 @@ export {
  * @satisfies {Record<string, import('./orchestration-api').BaseChainInfo>}
  */
 export const axelarCCTPConfig = {
+  Ethereum: {
+    namespace: 'eip155',
+    reference: '1',
+    cctpDestinationDomain: 0,
+  },
   Avalanche: {
     namespace: 'eip155',
     reference: '43114',

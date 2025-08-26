@@ -44,7 +44,7 @@ function createBaseRoute(): Route {
   };
 }
 export const Route = {
-  typeUrl: '/noble.swap.v1.Route',
+  typeUrl: '/noble.swap.v1.Route' as const,
   encode(
     message: Route,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -124,7 +124,7 @@ function createBaseSwap(): Swap {
   };
 }
 export const Swap = {
-  typeUrl: '/noble.swap.v1.Swap',
+  typeUrl: '/noble.swap.v1.Swap' as const,
   encode(
     message: Swap,
     writer: BinaryWriter = BinaryWriter.create(),

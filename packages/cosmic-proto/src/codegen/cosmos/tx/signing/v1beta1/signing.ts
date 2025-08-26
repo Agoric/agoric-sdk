@@ -211,7 +211,7 @@ function createBaseSignatureDescriptors(): SignatureDescriptors {
   };
 }
 export const SignatureDescriptors = {
-  typeUrl: '/cosmos.tx.signing.v1beta1.SignatureDescriptors',
+  typeUrl: '/cosmos.tx.signing.v1beta1.SignatureDescriptors' as const,
   encode(
     message: SignatureDescriptors,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -289,7 +289,7 @@ function createBaseSignatureDescriptor(): SignatureDescriptor {
   };
 }
 export const SignatureDescriptor = {
-  typeUrl: '/cosmos.tx.signing.v1beta1.SignatureDescriptor',
+  typeUrl: '/cosmos.tx.signing.v1beta1.SignatureDescriptor' as const,
   encode(
     message: SignatureDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -401,7 +401,7 @@ function createBaseSignatureDescriptor_Data(): SignatureDescriptor_Data {
   };
 }
 export const SignatureDescriptor_Data = {
-  typeUrl: '/cosmos.tx.signing.v1beta1.Data',
+  typeUrl: '/cosmos.tx.signing.v1beta1.Data' as const,
   encode(
     message: SignatureDescriptor_Data,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -512,7 +512,7 @@ function createBaseSignatureDescriptor_Data_Single(): SignatureDescriptor_Data_S
   };
 }
 export const SignatureDescriptor_Data_Single = {
-  typeUrl: '/cosmos.tx.signing.v1beta1.Single',
+  typeUrl: '/cosmos.tx.signing.v1beta1.Single' as const,
   encode(
     message: SignatureDescriptor_Data_Single,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -600,7 +600,7 @@ function createBaseSignatureDescriptor_Data_Multi(): SignatureDescriptor_Data_Mu
   };
 }
 export const SignatureDescriptor_Data_Multi = {
-  typeUrl: '/cosmos.tx.signing.v1beta1.Multi',
+  typeUrl: '/cosmos.tx.signing.v1beta1.Multi' as const,
   encode(
     message: SignatureDescriptor_Data_Multi,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -38,7 +38,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/ibc.core.connection.v1.GenesisState',
+  typeUrl: '/ibc.core.connection.v1.GenesisState' as const,
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
