@@ -132,6 +132,7 @@ export function finishCosmosApp({
 
   // Optionally enable the rosetta service
   if (enableRosetta) {
+    app.rosetta ||= {};
     app.rosetta.enable = enableRosetta;
     app.rosetta.network = chainId;
     app.rosetta.retries = 30;
