@@ -99,9 +99,19 @@
     "@agoric/xsnap-lockdown": "portal:../packages/xsnap-lockdown",
     "@agoric/zoe": "portal:../packages/zoe",
     "@agoric/zone": "portal:../packages/zone",
-    "@cosmjs/tendermint-rpc@npm:0.32.3": "^0.36.0",
-    "@cosmjs/proto-signing": "^0.36.0",
-    "@cosmjs/stargate": "^0.36.0"
+    "@aglocal/deployment": "portal:../../agoric-sdk/packages/deployment",
+    "@aglocal/boot": "portal:../../agoric-sdk/packages/boot",
+    "@aglocal/benchmark": "portal:../../agoric-sdk/packages/benchmark",
+    "@aglocal/fast-usdc-deploy": "portal:../../agoric-sdk/packages/fast-usdc-deploy",
+    "@aglocal/fast-usdc-contract": "portal:../../agoric-sdk/packages/fast-usdc-contract",
+    "@aglocal/portfolio-contract": "portal:../../agoric-sdk/packages/portfolio-contract",
+    "@aglocal/portfolio-deploy": "portal:../../agoric-sdk/packages/portfolio-deploy",
+    "@cosmjs/amino@npm:0.32.3": "npm:^0.36.0",
+    "@cosmjs/encoding@npm:0.32.3": "npm:^0.36.0",
+    "@cosmjs/math@npm:0.32.3": "npm:^0.36.0",
+    "@cosmjs/proto-signing@npm:0.32.3": "npm:^0.36.0",
+    "@cosmjs/stargate@npm:0.32.3": "npm:^0.36.0",
+    "@cosmjs/tendermint-rpc@npm:0.32.3": "npm:^0.36.0"
   },
   "license": "Apache-2.0"
 }
