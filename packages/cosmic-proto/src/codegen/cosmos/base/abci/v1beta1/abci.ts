@@ -1381,7 +1381,7 @@ function createBaseSearchBlocksResult(): SearchBlocksResult {
   };
 }
 export const SearchBlocksResult = {
-  typeUrl: '/cosmos.base.abci.v1beta1.SearchBlocksResult',
+  typeUrl: '/cosmos.base.abci.v1beta1.SearchBlocksResult' as const,
   encode(
     message: SearchBlocksResult,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -2021,7 +2021,7 @@ function createBaseQueryVerifyMembershipRequest(): QueryVerifyMembershipRequest 
   };
 }
 export const QueryVerifyMembershipRequest = {
-  typeUrl: '/ibc.core.client.v1.QueryVerifyMembershipRequest',
+  typeUrl: '/ibc.core.client.v1.QueryVerifyMembershipRequest' as const,
   encode(
     message: QueryVerifyMembershipRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2186,7 +2186,7 @@ function createBaseQueryVerifyMembershipResponse(): QueryVerifyMembershipRespons
   };
 }
 export const QueryVerifyMembershipResponse = {
-  typeUrl: '/ibc.core.client.v1.QueryVerifyMembershipResponse',
+  typeUrl: '/ibc.core.client.v1.QueryVerifyMembershipResponse' as const,
   encode(
     message: QueryVerifyMembershipResponse,
     writer: BinaryWriter = BinaryWriter.create(),

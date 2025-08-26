@@ -70,7 +70,7 @@ function createBaseQueryChecksumsRequest(): QueryChecksumsRequest {
   };
 }
 export const QueryChecksumsRequest = {
-  typeUrl: '/ibc.lightclients.wasm.v1.QueryChecksumsRequest',
+  typeUrl: '/ibc.lightclients.wasm.v1.QueryChecksumsRequest' as const,
   encode(
     message: QueryChecksumsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -144,7 +144,7 @@ function createBaseQueryChecksumsResponse(): QueryChecksumsResponse {
   };
 }
 export const QueryChecksumsResponse = {
-  typeUrl: '/ibc.lightclients.wasm.v1.QueryChecksumsResponse',
+  typeUrl: '/ibc.lightclients.wasm.v1.QueryChecksumsResponse' as const,
   encode(
     message: QueryChecksumsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -237,7 +237,7 @@ function createBaseQueryCodeRequest(): QueryCodeRequest {
   };
 }
 export const QueryCodeRequest = {
-  typeUrl: '/ibc.lightclients.wasm.v1.QueryCodeRequest',
+  typeUrl: '/ibc.lightclients.wasm.v1.QueryCodeRequest' as const,
   encode(
     message: QueryCodeRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -299,7 +299,7 @@ function createBaseQueryCodeResponse(): QueryCodeResponse {
   };
 }
 export const QueryCodeResponse = {
-  typeUrl: '/ibc.lightclients.wasm.v1.QueryCodeResponse',
+  typeUrl: '/ibc.lightclients.wasm.v1.QueryCodeResponse' as const,
   encode(
     message: QueryCodeResponse,
     writer: BinaryWriter = BinaryWriter.create(),

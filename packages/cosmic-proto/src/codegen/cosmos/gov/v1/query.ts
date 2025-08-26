@@ -328,7 +328,7 @@ function createBaseQueryConstitutionRequest(): QueryConstitutionRequest {
   return {};
 }
 export const QueryConstitutionRequest = {
-  typeUrl: '/cosmos.gov.v1.QueryConstitutionRequest',
+  typeUrl: '/cosmos.gov.v1.QueryConstitutionRequest' as const,
   encode(
     _: QueryConstitutionRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -387,7 +387,7 @@ function createBaseQueryConstitutionResponse(): QueryConstitutionResponse {
   };
 }
 export const QueryConstitutionResponse = {
-  typeUrl: '/cosmos.gov.v1.QueryConstitutionResponse',
+  typeUrl: '/cosmos.gov.v1.QueryConstitutionResponse' as const,
   encode(
     message: QueryConstitutionResponse,
     writer: BinaryWriter = BinaryWriter.create(),

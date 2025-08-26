@@ -115,7 +115,7 @@ function createBaseMsgAuthorizeCircuitBreaker(): MsgAuthorizeCircuitBreaker {
   };
 }
 export const MsgAuthorizeCircuitBreaker = {
-  typeUrl: '/cosmos.circuit.v1.MsgAuthorizeCircuitBreaker',
+  typeUrl: '/cosmos.circuit.v1.MsgAuthorizeCircuitBreaker' as const,
   encode(
     message: MsgAuthorizeCircuitBreaker,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -217,7 +217,7 @@ function createBaseMsgAuthorizeCircuitBreakerResponse(): MsgAuthorizeCircuitBrea
   };
 }
 export const MsgAuthorizeCircuitBreakerResponse = {
-  typeUrl: '/cosmos.circuit.v1.MsgAuthorizeCircuitBreakerResponse',
+  typeUrl: '/cosmos.circuit.v1.MsgAuthorizeCircuitBreakerResponse' as const,
   encode(
     message: MsgAuthorizeCircuitBreakerResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -291,7 +291,7 @@ function createBaseMsgTripCircuitBreaker(): MsgTripCircuitBreaker {
   };
 }
 export const MsgTripCircuitBreaker = {
-  typeUrl: '/cosmos.circuit.v1.MsgTripCircuitBreaker',
+  typeUrl: '/cosmos.circuit.v1.MsgTripCircuitBreaker' as const,
   encode(
     message: MsgTripCircuitBreaker,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -371,7 +371,7 @@ function createBaseMsgTripCircuitBreakerResponse(): MsgTripCircuitBreakerRespons
   };
 }
 export const MsgTripCircuitBreakerResponse = {
-  typeUrl: '/cosmos.circuit.v1.MsgTripCircuitBreakerResponse',
+  typeUrl: '/cosmos.circuit.v1.MsgTripCircuitBreakerResponse' as const,
   encode(
     message: MsgTripCircuitBreakerResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -445,7 +445,7 @@ function createBaseMsgResetCircuitBreaker(): MsgResetCircuitBreaker {
   };
 }
 export const MsgResetCircuitBreaker = {
-  typeUrl: '/cosmos.circuit.v1.MsgResetCircuitBreaker',
+  typeUrl: '/cosmos.circuit.v1.MsgResetCircuitBreaker' as const,
   encode(
     message: MsgResetCircuitBreaker,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -527,7 +527,7 @@ function createBaseMsgResetCircuitBreakerResponse(): MsgResetCircuitBreakerRespo
   };
 }
 export const MsgResetCircuitBreakerResponse = {
-  typeUrl: '/cosmos.circuit.v1.MsgResetCircuitBreakerResponse',
+  typeUrl: '/cosmos.circuit.v1.MsgResetCircuitBreakerResponse' as const,
   encode(
     message: MsgResetCircuitBreakerResponse,
     writer: BinaryWriter = BinaryWriter.create(),

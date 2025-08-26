@@ -1298,7 +1298,7 @@ function createBaseMsgCancelProposal(): MsgCancelProposal {
   };
 }
 export const MsgCancelProposal = {
-  typeUrl: '/cosmos.gov.v1.MsgCancelProposal',
+  typeUrl: '/cosmos.gov.v1.MsgCancelProposal' as const,
   encode(
     message: MsgCancelProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1377,7 +1377,7 @@ function createBaseMsgCancelProposalResponse(): MsgCancelProposalResponse {
   };
 }
 export const MsgCancelProposalResponse = {
-  typeUrl: '/cosmos.gov.v1.MsgCancelProposalResponse',
+  typeUrl: '/cosmos.gov.v1.MsgCancelProposalResponse' as const,
   encode(
     message: MsgCancelProposalResponse,
     writer: BinaryWriter = BinaryWriter.create(),

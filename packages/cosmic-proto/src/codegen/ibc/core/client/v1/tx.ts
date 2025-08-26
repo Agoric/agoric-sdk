@@ -918,7 +918,7 @@ function createBaseMsgRecoverClient(): MsgRecoverClient {
   };
 }
 export const MsgRecoverClient = {
-  typeUrl: '/ibc.core.client.v1.MsgRecoverClient',
+  typeUrl: '/ibc.core.client.v1.MsgRecoverClient' as const,
   encode(
     message: MsgRecoverClient,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1002,7 +1002,7 @@ function createBaseMsgRecoverClientResponse(): MsgRecoverClientResponse {
   return {};
 }
 export const MsgRecoverClientResponse = {
-  typeUrl: '/ibc.core.client.v1.MsgRecoverClientResponse',
+  typeUrl: '/ibc.core.client.v1.MsgRecoverClientResponse' as const,
   encode(
     _: MsgRecoverClientResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1063,7 +1063,7 @@ function createBaseMsgIBCSoftwareUpgrade(): MsgIBCSoftwareUpgrade {
   };
 }
 export const MsgIBCSoftwareUpgrade = {
-  typeUrl: '/ibc.core.client.v1.MsgIBCSoftwareUpgrade',
+  typeUrl: '/ibc.core.client.v1.MsgIBCSoftwareUpgrade' as const,
   encode(
     message: MsgIBCSoftwareUpgrade,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1160,7 +1160,7 @@ function createBaseMsgIBCSoftwareUpgradeResponse(): MsgIBCSoftwareUpgradeRespons
   return {};
 }
 export const MsgIBCSoftwareUpgradeResponse = {
-  typeUrl: '/ibc.core.client.v1.MsgIBCSoftwareUpgradeResponse',
+  typeUrl: '/ibc.core.client.v1.MsgIBCSoftwareUpgradeResponse' as const,
   encode(
     _: MsgIBCSoftwareUpgradeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1224,7 +1224,7 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
   };
 }
 export const MsgUpdateParams = {
-  typeUrl: '/ibc.core.client.v1.MsgUpdateParams',
+  typeUrl: '/ibc.core.client.v1.MsgUpdateParams' as const,
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1297,7 +1297,7 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
 }
 export const MsgUpdateParamsResponse = {
-  typeUrl: '/ibc.core.client.v1.MsgUpdateParamsResponse',
+  typeUrl: '/ibc.core.client.v1.MsgUpdateParamsResponse' as const,
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

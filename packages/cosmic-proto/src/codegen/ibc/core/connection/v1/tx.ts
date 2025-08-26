@@ -1254,7 +1254,7 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
   };
 }
 export const MsgUpdateParams = {
-  typeUrl: '/ibc.core.connection.v1.MsgUpdateParams',
+  typeUrl: '/ibc.core.connection.v1.MsgUpdateParams' as const,
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1327,7 +1327,7 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
 }
 export const MsgUpdateParamsResponse = {
-  typeUrl: '/ibc.core.connection.v1.MsgUpdateParamsResponse',
+  typeUrl: '/ibc.core.connection.v1.MsgUpdateParamsResponse' as const,
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
