@@ -75,6 +75,8 @@ export const stripPrefix = (prefix: string, str: string) => {
  */
 const tryJsonParse = (json: string, replaceErr?: (err?: Error) => unknown) => {
   try {
+    const type = typeof json;
+    if (type !== 'string') throw Error(`input must be a string, not ${type}`);
     return JSON.parse(json);
   } catch (err) {
     if (!replaceErr) throw err;
