@@ -24,7 +24,7 @@ test('CCTP settlement invitation - no pending transaction found', async t => {
     txDetails: {
       amount: amount.value,
       remoteAddress: '0x999999999999999999999999999999999999999',
-      status: 'confirmed' as const,
+      status: 'success' as const,
     },
     txId: 'tx0',
     remoteAxelarChain: 'eip155:42161' as const,
