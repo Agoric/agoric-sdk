@@ -259,6 +259,30 @@ jobs:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
+  # Verify that running `yarn codegen` in any package that defines it
+  # does not produce changes. Only runs on pull requests.
+  test-codegen:
+    if: github.event_name == 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: 'node-new'
+
+      # Some codegen (e.g., cosmic-proto) depends on Go toolchain
+      - uses: ./.github/actions/restore-golang
+        with:
+          go-version: '1.22'
+
+      - name: Verify codegen idempotence
+        shell: bash
+        run: scripts/verify-codegen-idempotence.mjs
+
   test-quick2:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30

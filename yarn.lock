@@ -974,6 +974,7 @@ __metadata:
     eslint-plugin-import: "npm:^2.31.0"
     eslint-plugin-jsdoc: "npm:^52.0.2"
     eslint-plugin-require-extensions: "npm:^0.1.3"
+    execa: "npm:^9.6.0"
     npm-run-all: "npm:^4.1.5"
     prettier: "npm:^3.5.3"
     prettier-plugin-jsdoc: "npm:^1.3.2"
