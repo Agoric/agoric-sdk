@@ -32,6 +32,7 @@ const binaryArgs = (chainName = 'agoric') => [
   `${chainName}local-genesis-0`,
   '-c',
   'validator',
+  '--request-timeout=300s',
   '--tty=false',
   '--',
   chainToBinary[chainName],
@@ -47,7 +48,29 @@ const binaryArgs = (chainName = 'agoric') => [
 
 /**
  * @param {{ execFileSync: typeof import('node:child_process')['execFileSync'] }} io
+ * 
+ * 
  */
+
+// const execFileSyncCustom = (execFileSync, ...args) => {
+
+//   // console.log("Executing execFileSyncCustom", ...args);
+//   // const out = execFileSync('kubectl', ['config', 'view', '--minify', '-o','jsonpath="{.contexts[0].context.namespace}"'], {
+//   //         encoding: 'utf-8',
+//   //         stdio: ['ignore', 'pipe', 'pipe'],
+//   // })
+//   // console.log("OUTPUT: ",out);
+
+//   try {
+//     return execFileSync(...args);
+//   }
+//   catch (err) {
+//     console.error("err", err);
+//     console.error('stderr:', err.stderr?.toString());
+//     console.error('stdout (partial):', err.stdout?.toString());
+//   }
+//   return null
+// }
 export const makeAgd = ({ execFileSync }) => {
   /**
    * @param { {
@@ -81,11 +104,49 @@ export const makeAgd = ({ execFileSync }) => {
     /**
      * @param {string[]} args
      * @param {*} [opts]
+     * @param {boolean} [interactive]
      */
     const exec = (
       args,
       opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
-    ) => execFileSync(kubectlBinary, [...binaryArgs(chainName), ...args], opts);
+      interactive = true,
+    ) => {
+      let _binaryArgs = binaryArgs(chainName);
+      if (!interactive) {
+        _binaryArgs = _binaryArgs.filter(arg => arg !== '-i');
+      }
+
+      return execFileSync(kubectlBinary, [..._binaryArgs, ...args], opts);
+    }
+
+    // replace only this function
+    /**
+     * @param {string[]} args
+     * @param {*} [opts]
+     */
+    const exec2 = (
+  args,
+  opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
+) => {
+  // POSIX-safe single-quote escaping
+  const shEscape = s =>
+    `'${String(s).replace(/'/g, `'\\''`)}'`;
+
+  // Build: kubectl <binaryArgs> <args>  (all escaped)
+  const full = [
+    kubectlBinary,
+    ...binaryArgs(chainName),
+    ...args,
+  ].map(shEscape).join(' ');
+
+  // Run through /bin/sh so we can merge stderr -> stdout
+  // NOTE: we keep your opts (encoding etc.)
+  const out = execFileSync('/bin/sh', ['-c', `${full} 2>&1`], opts);
+
+  // Return combined stdout+stderr as a string (like before)
+  return typeof out === 'string' ? out : out?.toString?.() ?? '';
+};
+
 
     const outJson = toCLIOptions({ output: 'json' });
 
@@ -203,12 +264,19 @@ export const makeAgd = ({ execFileSync }) => {
        * } qArgs
        */
       query: async qArgs => {
-        const args = ['query', ...qArgs, ...nodeArgs, ...outJson];
+        let pipeArgs = [];
+        if (qArgs.includes('--count-total')) {
+          pipeArgs = ['|', 'jq', '-r', "'.pagination.total'"];
+        }
+        const args = ['query', ...qArgs, ...nodeArgs, ...outJson, ...pipeArgs];
         console.log(`$$$ ${chainToBinary[chainName]}`, ...args);
         const out = exec(args, {
           encoding: 'utf-8',
           stdio: ['ignore', 'pipe', 'pipe'],
-        });
+        }, false);
+
+        console.log("QUERY_ARGS", qArgs);
+        console.log("QUERY_OUTPUT", out);
 
         try {
           return JSON.parse(out);
@@ -217,6 +285,99 @@ export const makeAgd = ({ execFileSync }) => {
           console.info('output:', out);
         }
       },
+      // query2: async qArgs => {
+      //   let pipeArgs = [];
+      //   // if (qArgs.includes('--count-total')) {
+      //   //   pipeArgs = ['|', 'jq', '-r', "'.pagination.total'"];
+      //   // }
+      //   const args = ['query', ...qArgs, ...nodeArgs, ...outJson, ...pipeArgs];
+      //   console.log(`$$$ ${chainToBinary[chainName]}`, ...args);
+      //   const out = exec2(args, {
+      //     encoding: 'utf-8',
+      //     stdio: ['ignore', 'pipe', 'pipe'],
+      //   });
+
+      //   console.log("QUERY_ARGS", qArgs);
+      //   console.log("QUERY_OUTPUT", out);
+
+      //   try {
+      //     return JSON.parse(out);
+      //   } catch (e) {
+      //     console.error(e);
+      //     console.info('output:', out);
+      //   }
+      // },
+      query3: async qArgs => {
+  // detect special jq modes
+  const wantLastObj = qArgs.includes('--last-proposal');
+  const wantLastId  = qArgs.includes('--last-proposal-id');
+  const wantCount   = qArgs.includes('--count-total');
+
+  // build the base agd args (no jq here)
+  const baseArgs = ['query', ...qArgs.filter(a => a !== '--last-proposal' && a !== '--last-proposal-id'), ...nodeArgs, ...outJson];
+
+  // If we’re not piping, run normally (no shell)
+  if (!wantLastObj && !wantLastId && !wantCount) {
+    console.log(`$$$ ${chainToBinary[chainName]}`, ...baseArgs);
+    const out = exec(baseArgs, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] });
+    try {
+      return JSON.parse(out);
+    } catch (e) {
+      console.error(e);
+      console.info('output:', out);
+      return undefined;
+    }
+  }
+
+  // We need a shell to support pipes (jq). Build a single command string.
+  const kubectlArgs = binaryArgs(chainName);         // e.g. ['exec','-i','agoriclocal-genesis-0','-c','validator','--tty=false','--','agd']
+  const appd = kubectlArgs.pop();                    // 'agd'
+  const safeJoin = arr => arr.map(x => `'${String(x).replace(/'/g, `'\\''`)}'`).join(' ');
+
+  // jq filters
+  // last proposal object: minimal fields; adjust if you want more
+  const jqLastObj = `.proposals | last | {proposal_id: .proposal_id, status: .status, title: (.content.title // .title // empty)}`
+  const jqLastId  = `.proposals | last | .proposal_id // .id`
+  const jqCount   = `.pagination.total`
+
+  let jqExpr;
+  let rawOutput = false; // -r only when emitting a raw string (id or count)
+  if (wantLastId) {
+    jqExpr = jqLastId;
+    rawOutput = true;
+  } else if (wantCount) {
+    jqExpr = jqCount;
+    rawOutput = true;
+  } else {
+    jqExpr = jqLastObj;
+    rawOutput = false;
+  }
+
+  const jqCmd = rawOutput ? `jq -r '${jqExpr}'` : `jq '${jqExpr}'`;
+
+  // Full shell command string
+  const agdCmdStr = `exec ${appd} ${safeJoin(baseArgs)} | ${jqCmd}`;
+
+  // Execute via /bin/sh -lc so the pipe is honored
+  const shellArgs = [...kubectlArgs, '/bin/sh', '-lc', agdCmdStr];
+  console.log(`$$$ sh -lc`, agdCmdStr);
+
+  const out = exec(shellArgs, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] });
+
+  // If we emitted raw (string/number), just return as-is; else parse JSON
+  console.log("rawOutput", rawOutput)
+  if (rawOutput) {
+    return out.trim();
+  }
+  try {
+    return JSON.parse(out);
+  } catch (e) {
+    console.error(e);
+    console.info('output:', out);
+    return undefined;
+  }
+},
+
     });
     const nameHub = freeze({
       /**
