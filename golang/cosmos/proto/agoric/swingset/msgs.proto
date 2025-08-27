@@ -2,6 +2,8 @@ syntax = "proto3";
 package agoric.swingset;
 
 import "amino/amino.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos_proto/cosmos.proto";
 import "gogoproto/gogo.proto";
 
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types";
@@ -41,7 +43,7 @@ message MsgDeliverInbound {
   bytes  submitter = 4 [
     (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag)  = "submitter",
+    (gogoproto.jsontag) = "submitter",
     (gogoproto.moretags) = "yaml:\"submitter\""
   ];
 }
@@ -59,7 +61,7 @@ message MsgWalletAction {
   bytes owner = 1 [
     (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag)  = "owner",
+    (gogoproto.jsontag) = "owner",
     (gogoproto.moretags) = "yaml:\"owner\""
   ];
 
@@ -80,7 +82,7 @@ message MsgWalletSpendAction {
   bytes owner = 1 [
     (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag)  = "owner",
+    (gogoproto.jsontag) = "owner",
     (gogoproto.moretags) = "yaml:\"owner\""
   ];
 
@@ -100,7 +102,7 @@ message MsgProvision {
   bytes  address  = 2 [
     (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag)  = "address",
+    (gogoproto.jsontag) = "address",
     (gogoproto.moretags) = "yaml:\"address\""
   ];
   repeated string power_flags = 3 [
@@ -108,13 +110,13 @@ message MsgProvision {
     (amino.encoding)       = "null_slice_as_empty",
     (amino.field_name)     = "powerFlags",
     (gogoproto.customname) = "PowerFlags",
-    (gogoproto.jsontag)    = "powerFlags",
-    (gogoproto.moretags)   = "yaml:\"powerFlags\""
+    (gogoproto.jsontag) = "powerFlags",
+    (gogoproto.moretags) = "yaml:\"powerFlags\""
   ];
   bytes submitter = 4 [
     (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag)  = "submitter",
+    (gogoproto.jsontag) = "submitter",
     (gogoproto.moretags) = "yaml:\"submitter\""
   ];
 }
@@ -133,7 +135,7 @@ message MsgInstallBundle {
   bytes submitter = 2 [
     (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag)  = "submitter",
+    (gogoproto.jsontag) = "submitter",
     (gogoproto.moretags) = "yaml:\"submitter\""
   ];
   // Either bundle or compressed_bundle will be set.
@@ -155,3 +157,25 @@ message MsgInstallBundle {
 // MsgInstallBundleResponse is an empty acknowledgement that an install bundle
 // message has been queued for the SwingSet kernel's consideration.
 message MsgInstallBundleResponse {}
+
+// MsgCoreEval defines an SDK message for a core eval.
+message MsgCoreEval {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name) = "cosmos-sdk/x/swingset/MsgCoreEval";
+
+  // authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // The JSON-stringified core bootstrap permits to grant to the jsCode, as the
+  // `powers` endowment.
+  string json_permits = 2 [(gogoproto.moretags) = "yaml:\"json_permits\""];
+
+  // Evaluate this JavaScript code in a Compartment endowed with `powers` as
+  // well as some powerless helpers.
+  string js_code = 3 [(gogoproto.moretags) = "yaml:\"js_code\""];
+}
+
+// MsgCoreEvalResponse is an empty reply.
+message MsgCoreEvalResponse {
+  // The result of the core eval.
+  string result = 1 [(gogoproto.moretags) = "yaml:\"result\""];
+}

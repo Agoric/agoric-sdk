@@ -228,3 +228,29 @@ func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInsta
 
 	return &types.MsgInstallBundleResponse{}, nil
 }
+
+func (k msgServer) CoreEval(goCtx context.Context, msg *types.MsgCoreEval) (*types.MsgCoreEvalResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if msg.Authority != k.authority {
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrUnauthorized, "only governance authority can call CoreEval")
+	}
+
+	action := coreEvalAction{
+		Evals: []types.CoreEval{
+			{
+				JsonPermits: msg.JsonPermits,
+				JsCode:      msg.JsCode,
+			},
+		},
+	}
+
+	err := k.PushCoreEvalAction(ctx, action)
+	if err != nil {
+		return &types.MsgCoreEvalResponse{
+			Result: err.Error(),
+		}, err
+	}
+
+	return &types.MsgCoreEvalResponse{}, nil
+}
