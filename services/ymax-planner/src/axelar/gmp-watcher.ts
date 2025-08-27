@@ -19,7 +19,7 @@ const fetchRequestHeaders = {
 
 // Helpful for experimenting with different parameters:
 // Visit https://docs.axelarscan.io/axelarscan
-export const getTxStatus = async ({
+export const watchGmp = async ({
   url,
   fetch = globalThis.fetch,
   params,

@@ -2,8 +2,8 @@ import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contrac
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { JsonRpcProvider } from 'ethers';
-import { getTxStatus } from './axelar/gmp-status.ts';
-import { resolveCCTPSubscription, resolveGMPSubscription } from './resolver.ts';
+import { watchGmp } from './axelar/gmp-watcher.ts';
+import { resolveCCTPSubscription } from './resolver.ts';
 import { watchCCTPTransfer } from './watch-cctp.ts';
 import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 
@@ -107,7 +107,7 @@ export const handleSubscription = async (
       const { destinationChain, contractAddress, subscriptionId } =
         subscription;
       log(`${logPrefix} handling gmp subscription`);
-      const res = await getTxStatus({
+      const res = await watchGmp({
         url: ctx.axelarQueryApi,
         fetch: ctx.fetch,
         params: {
