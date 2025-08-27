@@ -32,6 +32,7 @@ import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
  * @import {ZCF} from '@agoric/zoe';
  * @import {ERef} from '@endo/far'
  * @import {Bank, BankManager} from '@agoric/vats/src/vat-bank.js'
+ * @import {MapStore, SetStore} from '@agoric/store';
  */
 
 const trace = makeTracer('ProvPool');

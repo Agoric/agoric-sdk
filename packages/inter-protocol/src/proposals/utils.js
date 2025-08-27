@@ -5,7 +5,10 @@ import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 import { assertPathSegment } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
-/** @import {CopyMap} from '@endo/patterns'; */
+/**
+ * @import {CopyMap} from '@endo/patterns';
+ * @import {MapStore, SetStore} from '@agoric/store';
+ */
 
 /**
  * @param {ERef<import('@agoric/vats').NameAdmin>} nameAdmin

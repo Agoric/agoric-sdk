@@ -28,6 +28,7 @@ import { caipIdFromInfo } from '../utils/chain-info.js';
  * @import {AccountId, CosmosChainAddress, ChainInfo, CaipChainId, Denom, DenomAmount, AccountIdArg} from '../orchestration-api.js';
  * @import {Remote, TypedPattern} from '@agoric/internal';
  * @import {Pattern} from '@endo/patterns';
+ * @import {MapStore, SetStore} from '@agoric/store';
  */
 
 /** receiver address value for ibc transfers that involve PFM */

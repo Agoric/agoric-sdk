@@ -19,6 +19,25 @@ const { when } = heapVowTools;
  * @import {Remote} from '@agoric/vow';
  */
 
+/**
+ * @typedef SoloVats
+ * @property {ERef<
+ *   ReturnType<
+ *     typeof import('@agoric/solo/src/vat-spawner.js').buildRootObject
+ *   >
+ * >} spawner
+ * @property {ERef<
+ *   ReturnType<typeof import('@agoric/solo/src/vat-http.js').buildRootObject>
+ * >} http
+ * @property {ERef<
+ *   ReturnType<typeof import('../vat-network.js').buildRootObject>
+ * >} network
+ * @property {ERef<
+ *   ReturnType<
+ *     typeof import('@agoric/solo/src/vat-uploads.js').buildRootObject
+ *   >
+ * >} uploads
+ */
 const NUM_IBC_PORTS_PER_CLIENT = 3;
 
 /**

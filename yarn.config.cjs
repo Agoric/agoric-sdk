@@ -33,9 +33,9 @@ module.exports = defineConfig({
           );
         }
       } else if (workspace.cwd.startsWith('services/')) {
-        if (!workspace.cwd.endsWith('-service')) {
+        if (!workspace.ident?.startsWith('@aglocal/')) {
           workspace.error(
-            'Workspaces in the services directory must end with "-service"',
+            'Workspaces in the services directory must be in the @aglocal scope',
           );
         }
         workspace.set('private', true);

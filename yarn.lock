@@ -285,9 +285,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@aglocal/ymax-planner@workspace:packages/ymax-planner":
+"@aglocal/ymax-planner@workspace:services/ymax-planner":
   version: 0.0.0-use.local
-  resolution: "@aglocal/ymax-planner@workspace:packages/ymax-planner"
+  resolution: "@aglocal/ymax-planner@workspace:services/ymax-planner"
   dependencies:
     "@aglocal/portfolio-contract": "workspace:*"
     "@aglocal/portfolio-deploy": "workspace:*"
@@ -309,6 +309,7 @@ __metadata:
     ava: "npm:^6.3.0"
     chain-registry: "npm:^2.0.44"
     dotenv: "npm:^17.2.1"
+    esbuild: "npm:^0.25.2"
     ethers: "npm:^6.13.0"
     json-rpc-2.0: "npm:^1.7.1"
     ky: "npm:^1.4.0"
@@ -605,7 +606,6 @@ __metadata:
     "@agoric/store": "workspace:*"
     "@agoric/swingset-vat": "workspace:*"
     "@agoric/vat-data": "workspace:*"
-    "@agoric/xsnap": "workspace:*"
     "@agoric/zone": "workspace:*"
     "@endo/bundle-source": "npm:^4.1.2"
     "@endo/errors": "npm:^1.2.13"
@@ -1427,7 +1427,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/xsnap@workspace:*, @agoric/xsnap@workspace:packages/xsnap":
+"@agoric/xsnap@workspace:packages/xsnap":
   version: 0.0.0-use.local
   resolution: "@agoric/xsnap@workspace:packages/xsnap"
   dependencies:
@@ -1469,7 +1469,6 @@ __metadata:
     "@agoric/time": "workspace:*"
     "@agoric/vat-data": "workspace:*"
     "@agoric/vow": "workspace:*"
-    "@agoric/xsnap": "workspace:*"
     "@agoric/zone": "workspace:*"
     "@endo/bundle-source": "npm:^4.1.2"
     "@endo/captp": "npm:^4.4.8"

@@ -12,12 +12,7 @@ import { DenomInfoShape, DenomAmountShape, DenomShape } from '../typeGuards.js';
  * @import {ActualChainInfo, ChainHub} from './chain-hub.js';
  * @import {AsyncFlowTools, HostInterface, HostOf} from '@agoric/async-flow';
  * @import {Vow, VowTools} from '@agoric/vow';
- * @import {TimerService} from '@agoric/time';
- * @import {LocalChain} from '@agoric/vats/src/localchain.js';
- * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
- * @import {Remote} from '@agoric/internal';
- * @import {PickFacet} from '@agoric/swingset-liveslots';
- * @import {CosmosInterchainService} from './exo-interfaces.js';
+ * @import {MapStore, SetStore} from '@agoric/store';
  * @import {MakeLocalChainFacade} from './local-chain-facade.js';
  * @import {MakeRemoteChainFacade} from './remote-chain-facade.js';
  * @import {Chain, ChainInfo, IBCConnectionInfo, KnownChains, Orchestrator} from '../types.js';

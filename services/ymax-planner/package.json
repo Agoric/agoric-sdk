@@ -3,21 +3,18 @@
   "private": true,
   "version": "1.0.0",
   "description": "Portfolio contract off-chain engine",
-  "main": "src/main.ts",
+  "main": "dist/entrypoint.js",
   "type": "module",
   "scripts": {
-    "start": "node ./src/entrypoint.js",
-    "dev": "nodemon --ext .js,.ts ./src/entrypoint.js",
-    "debug": "node --inspect ./src/entrypoint.js",
+    "start": "node ./dist/entrypoint.js",
+    "dev": "nodemon --ext js,ts --exec 'node --import ts-blank-space/register ./src/entrypoint.ts'",
+    "debug": "node --inspect ./dist/entrypoint.js",
     "start:docker": "docker compose up --build",
     "start:deps": "docker compose up --scale app=0",
-    "build": "exit 0",
-    "prepack": "yarn run -T tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.*ts*' '*.tsbuildinfo'",
+    "build": "node ./esbuild.config.mjs",
     "lint": "npm run lint:types",
     "test": "ava",
     "test:xs": "exit 0",
-    "test:vite": "vitest",
     "lint:types": "yarn run -T tsc"
   },
   "keywords": [
@@ -32,6 +29,7 @@
     "@types/node": "^22.10.2",
     "@types/ws": "^8",
     "ava": "^6.3.0",
+    "esbuild": "^0.25.2",
     "nodemon": "^3.1.10",
     "ts-blank-space": "^0.6.2",
     "typescript": "^5.9.2"
@@ -57,6 +55,7 @@
     "ethers": "^6.13.0",
     "json-rpc-2.0": "^1.7.1",
     "ky": "^1.4.0",
+    "ts-blank-space": "^0.6.1",
     "ws": "^8.18.3"
   },
   "ava": {

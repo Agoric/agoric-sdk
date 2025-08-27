@@ -5,6 +5,26 @@ import { deeplyFulfilledObject } from '@agoric/internal';
 import { registerNetworkProtocols } from '../proposals/network-proposal.js';
 import { makeVatsFromBundles } from './basic-behaviors.js';
 
+/**
+ * @typedef SoloVats
+ * @property {ERef<
+ *   ReturnType<
+ *     typeof import('@agoric/solo/src/vat-spawner.js').buildRootObject
+ *   >
+ * >} spawner
+ * @property {ERef<
+ *   ReturnType<typeof import('@agoric/solo/src/vat-http.js').buildRootObject>
+ * >} http
+ * @property {ERef<
+ *   ReturnType<typeof import('../vat-network.js').buildRootObject>
+ * >} network
+ * @property {ERef<
+ *   ReturnType<
+ *     typeof import('@agoric/solo/src/vat-uploads.js').buildRootObject
+ *   >
+ * >} uploads
+ */
+
 const PROVISIONER_INDEX = 1;
 
 function makeVattpFrom(vats) {

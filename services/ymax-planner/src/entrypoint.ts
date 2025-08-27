@@ -1,11 +1,11 @@
-#!/usr/bin/env -S node --import ts-blank-space/register
-/* global globalThis */
 /* eslint-env node */
 
 // We need some pre-lockdown shimming.
 import '@endo/init/pre-remoting.js';
 import './shims.cjs';
 import '@endo/lockdown/commit.js';
+
+import { getConfig } from './config.ts';
 
 // ...but the WebSocket shim must be loaded *after* lockdown, seemingly because
 // of a dependency upon EventEmitter that is otherwise broken:
@@ -26,8 +26,9 @@ const shimmedP = (async () => {
 })();
 
 shimmedP
-  .then(() => import('./main.ts'))
-  .then(async ({ main }) => {
+  .then(async () => {
+    const [{ main }] = await Promise.all([import('./main.ts')]);
+
     const dotEnvFile = process.env.DOTENV || '.env';
 
     // Capture our current env so that we can use them to override dotenv.
@@ -38,15 +39,17 @@ shimmedP
     /**
      * Object that dotenv.config() will mutate to add variables from the
      * dotEnvFile.
-     * @type {{ [key: string]: string }}
      */
-    const dotEnvAdditions = {};
+    const dotEnvAdditions = {} as { [key: string]: string };
     dotenv.config({ path: dotEnvFile, processEnv: dotEnvAdditions });
     // console.log('Loaded .env variables:', dotEnv);
 
-    return main(process.argv.slice(1), {
-      env: harden({ ...dotEnvAdditions, ...processEnv }),
-    });
+    const env = harden({ ...dotEnvAdditions, ...processEnv });
+
+    // Validate configuration early to provide clear error messages
+    getConfig(env);
+
+    return main(process.argv.slice(1), { env });
   })
   .then(() => process.exit())
   .catch(err => {

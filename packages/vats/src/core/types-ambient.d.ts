@@ -510,26 +510,6 @@ type DemoFaucetPowers = PromiseSpaceOf<{
   mints: MintsVat;
 }>;
 
-type SoloVats = {
-  spawner: SpawnerVat;
-  http: HttpVat;
-  network: NetworkVat;
-  uploads: UploadsVat;
-  bootstrap: unknown;
-};
-
-type SpawnerVat = ERef<
-  ReturnType<typeof import('@agoric/solo/src/vat-spawner.js').buildRootObject>
->;
-
-type HttpVat = ERef<
-  ReturnType<typeof import('@agoric/solo/src/vat-http.js').buildRootObject>
->;
-
-type UploadsVat = ERef<
-  ReturnType<typeof import('@agoric/solo/src/vat-uploads.js').buildRootObject>
->;
-
 type WellKnownVats = SwingsetVats & {
   bank: BankVat;
   board: BoardVat;
