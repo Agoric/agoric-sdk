@@ -3,6 +3,8 @@ import { type Rpc } from '../../../helpers.js';
 import { BinaryReader } from '../../../binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
+  QueryConstitutionRequest,
+  QueryConstitutionResponse,
   QueryProposalRequest,
   QueryProposalResponse,
   QueryProposalsRequest,
@@ -22,6 +24,10 @@ import {
 } from './query.js';
 /** Query defines the gRPC querier service for gov module */
 export interface Query {
+  /** Constitution queries the chain's constitution. */
+  constitution(
+    request?: QueryConstitutionRequest,
+  ): Promise<QueryConstitutionResponse>;
   /** Proposal queries proposal details based on ProposalID. */
   proposal(request: QueryProposalRequest): Promise<QueryProposalResponse>;
   /** Proposals queries all proposals based on given status. */
@@ -32,7 +38,7 @@ export interface Query {
   votes(request: QueryVotesRequest): Promise<QueryVotesResponse>;
   /** Params queries all parameters of the gov module. */
   params(request: QueryParamsRequest): Promise<QueryParamsResponse>;
-  /** Deposit queries single deposit information based proposalID, depositAddr. */
+  /** Deposit queries single deposit information based on proposalID, depositAddr. */
   deposit(request: QueryDepositRequest): Promise<QueryDepositResponse>;
   /** Deposits queries all deposits of a single proposal. */
   deposits(request: QueryDepositsRequest): Promise<QueryDepositsResponse>;
@@ -45,6 +51,7 @@ export class QueryClientImpl implements Query {
   private readonly rpc: Rpc;
   constructor(rpc: Rpc) {
     this.rpc = rpc;
+    this.constitution = this.constitution.bind(this);
     this.proposal = this.proposal.bind(this);
     this.proposals = this.proposals.bind(this);
     this.vote = this.vote.bind(this);
@@ -53,6 +60,19 @@ export class QueryClientImpl implements Query {
     this.deposit = this.deposit.bind(this);
     this.deposits = this.deposits.bind(this);
     this.tallyResult = this.tallyResult.bind(this);
+  }
+  constitution(
+    request: QueryConstitutionRequest = {},
+  ): Promise<QueryConstitutionResponse> {
+    const data = QueryConstitutionRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      'cosmos.gov.v1.Query',
+      'Constitution',
+      data,
+    );
+    return promise.then(data =>
+      QueryConstitutionResponse.decode(new BinaryReader(data)),
+    );
   }
   proposal(request: QueryProposalRequest): Promise<QueryProposalResponse> {
     const data = QueryProposalRequest.encode(request).finish();
@@ -121,6 +141,11 @@ export const createRpcQueryExtension = (base: QueryClient) => {
   const rpc = createProtobufRpcClient(base);
   const queryService = new QueryClientImpl(rpc);
   return {
+    constitution(
+      request?: QueryConstitutionRequest,
+    ): Promise<QueryConstitutionResponse> {
+      return queryService.constitution(request);
+    },
     proposal(request: QueryProposalRequest): Promise<QueryProposalResponse> {
       return queryService.proposal(request);
     },

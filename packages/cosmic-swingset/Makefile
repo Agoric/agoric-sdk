@@ -226,7 +226,7 @@ wait-for-rosetta: wait-for-cosmos
 	@echo ' done!'
 
 t1-provision-one-with-powers: wait-for-cosmos
-	@addrfile=t1/$(BASE_PORT)/cosmos-client-account; \
+	addrfile=t1/$(BASE_PORT)/cosmos-client-account; \
 		test -f $$addrfile || addrfile=t1/$(BASE_PORT)/ag-cosmos-helper-address; \
 		addr=$$(cat $$addrfile); \
 	  $(AGCH) --home=t1/bootstrap query swingset egress $$addr || \

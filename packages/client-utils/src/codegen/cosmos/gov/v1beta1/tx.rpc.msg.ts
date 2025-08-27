@@ -11,7 +11,7 @@ import {
   MsgDeposit,
   MsgDepositResponse,
 } from './tx.js';
-/** Msg defines the bank Msg service. */
+/** Msg defines the gov Msg service. */
 export interface Msg {
   /** SubmitProposal defines a method to create new proposal given a content. */
   submitProposal(

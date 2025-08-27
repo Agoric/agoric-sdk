@@ -18,8 +18,16 @@ import {
   type HeightSDKType,
   IdentifiedClientState,
   type IdentifiedClientStateSDKType,
+  Params,
+  type ParamsSDKType,
 } from '../../client/v1/client.js';
 import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
+import {
+  ErrorReceipt,
+  type ErrorReceiptSDKType,
+  Upgrade,
+  type UpgradeSDKType,
+} from './upgrade.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
@@ -624,7 +632,7 @@ export interface QueryNextSequenceReceiveRequestSDKType {
   channel_id: string;
 }
 /**
- * QuerySequenceResponse is the request type for the
+ * QuerySequenceResponse is the response type for the
  * Query/QueryNextSequenceReceiveResponse RPC method
  */
 export interface QueryNextSequenceReceiveResponse {
@@ -640,13 +648,145 @@ export interface QueryNextSequenceReceiveResponseProtoMsg {
   value: Uint8Array;
 }
 /**
- * QuerySequenceResponse is the request type for the
+ * QuerySequenceResponse is the response type for the
  * Query/QueryNextSequenceReceiveResponse RPC method
  */
 export interface QueryNextSequenceReceiveResponseSDKType {
   next_sequence_receive: bigint;
   proof: Uint8Array;
   proof_height: HeightSDKType;
+}
+/**
+ * QueryNextSequenceSendRequest is the request type for the
+ * Query/QueryNextSequenceSend RPC method
+ */
+export interface QueryNextSequenceSendRequest {
+  /** port unique identifier */
+  portId: string;
+  /** channel unique identifier */
+  channelId: string;
+}
+export interface QueryNextSequenceSendRequestProtoMsg {
+  typeUrl: '/ibc.core.channel.v1.QueryNextSequenceSendRequest';
+  value: Uint8Array;
+}
+/**
+ * QueryNextSequenceSendRequest is the request type for the
+ * Query/QueryNextSequenceSend RPC method
+ */
+export interface QueryNextSequenceSendRequestSDKType {
+  port_id: string;
+  channel_id: string;
+}
+/**
+ * QueryNextSequenceSendResponse is the request type for the
+ * Query/QueryNextSequenceSend RPC method
+ */
+export interface QueryNextSequenceSendResponse {
+  /** next sequence send number */
+  nextSequenceSend: bigint;
+  /** merkle proof of existence */
+  proof: Uint8Array;
+  /** height at which the proof was retrieved */
+  proofHeight: Height;
+}
+export interface QueryNextSequenceSendResponseProtoMsg {
+  typeUrl: '/ibc.core.channel.v1.QueryNextSequenceSendResponse';
+  value: Uint8Array;
+}
+/**
+ * QueryNextSequenceSendResponse is the request type for the
+ * Query/QueryNextSequenceSend RPC method
+ */
+export interface QueryNextSequenceSendResponseSDKType {
+  next_sequence_send: bigint;
+  proof: Uint8Array;
+  proof_height: HeightSDKType;
+}
+/** QueryUpgradeErrorRequest is the request type for the Query/QueryUpgradeError RPC method */
+export interface QueryUpgradeErrorRequest {
+  portId: string;
+  channelId: string;
+}
+export interface QueryUpgradeErrorRequestProtoMsg {
+  typeUrl: '/ibc.core.channel.v1.QueryUpgradeErrorRequest';
+  value: Uint8Array;
+}
+/** QueryUpgradeErrorRequest is the request type for the Query/QueryUpgradeError RPC method */
+export interface QueryUpgradeErrorRequestSDKType {
+  port_id: string;
+  channel_id: string;
+}
+/** QueryUpgradeErrorResponse is the response type for the Query/QueryUpgradeError RPC method */
+export interface QueryUpgradeErrorResponse {
+  errorReceipt: ErrorReceipt;
+  /** merkle proof of existence */
+  proof: Uint8Array;
+  /** height at which the proof was retrieved */
+  proofHeight: Height;
+}
+export interface QueryUpgradeErrorResponseProtoMsg {
+  typeUrl: '/ibc.core.channel.v1.QueryUpgradeErrorResponse';
+  value: Uint8Array;
+}
+/** QueryUpgradeErrorResponse is the response type for the Query/QueryUpgradeError RPC method */
+export interface QueryUpgradeErrorResponseSDKType {
+  error_receipt: ErrorReceiptSDKType;
+  proof: Uint8Array;
+  proof_height: HeightSDKType;
+}
+/** QueryUpgradeRequest is the request type for the QueryUpgradeRequest RPC method */
+export interface QueryUpgradeRequest {
+  portId: string;
+  channelId: string;
+}
+export interface QueryUpgradeRequestProtoMsg {
+  typeUrl: '/ibc.core.channel.v1.QueryUpgradeRequest';
+  value: Uint8Array;
+}
+/** QueryUpgradeRequest is the request type for the QueryUpgradeRequest RPC method */
+export interface QueryUpgradeRequestSDKType {
+  port_id: string;
+  channel_id: string;
+}
+/** QueryUpgradeResponse is the response type for the QueryUpgradeResponse RPC method */
+export interface QueryUpgradeResponse {
+  upgrade: Upgrade;
+  /** merkle proof of existence */
+  proof: Uint8Array;
+  /** height at which the proof was retrieved */
+  proofHeight: Height;
+}
+export interface QueryUpgradeResponseProtoMsg {
+  typeUrl: '/ibc.core.channel.v1.QueryUpgradeResponse';
+  value: Uint8Array;
+}
+/** QueryUpgradeResponse is the response type for the QueryUpgradeResponse RPC method */
+export interface QueryUpgradeResponseSDKType {
+  upgrade: UpgradeSDKType;
+  proof: Uint8Array;
+  proof_height: HeightSDKType;
+}
+/** QueryChannelParamsRequest is the request type for the Query/ChannelParams RPC method. */
+export interface QueryChannelParamsRequest {}
+export interface QueryChannelParamsRequestProtoMsg {
+  typeUrl: '/ibc.core.channel.v1.QueryChannelParamsRequest';
+  value: Uint8Array;
+}
+/** QueryChannelParamsRequest is the request type for the Query/ChannelParams RPC method. */
+export interface QueryChannelParamsRequestSDKType {}
+/** QueryChannelParamsResponse is the response type for the Query/ChannelParams RPC method. */
+export interface QueryChannelParamsResponse {
+  /** params defines the parameters of the module. */
+  params?: Params;
+}
+export interface QueryChannelParamsResponseProtoMsg {
+  typeUrl: '/ibc.core.channel.v1.QueryChannelParamsResponse';
+  value: Uint8Array;
+}
+/** QueryChannelParamsResponse is the response type for the Query/ChannelParams RPC method. */
+export interface QueryChannelParamsResponseSDKType {
+  params?: ParamsSDKType;
 }
 function createBaseQueryChannelRequest(): QueryChannelRequest {
   return {
@@ -3386,6 +3526,720 @@ export const QueryNextSequenceReceiveResponse = {
     return {
       typeUrl: '/ibc.core.channel.v1.QueryNextSequenceReceiveResponse',
       value: QueryNextSequenceReceiveResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryNextSequenceSendRequest(): QueryNextSequenceSendRequest {
+  return {
+    portId: '',
+    channelId: '',
+  };
+}
+export const QueryNextSequenceSendRequest = {
+  typeUrl: '/ibc.core.channel.v1.QueryNextSequenceSendRequest' as const,
+  encode(
+    message: QueryNextSequenceSendRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.portId !== '') {
+      writer.uint32(10).string(message.portId);
+    }
+    if (message.channelId !== '') {
+      writer.uint32(18).string(message.channelId);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryNextSequenceSendRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryNextSequenceSendRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.portId = reader.string();
+          break;
+        case 2:
+          message.channelId = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryNextSequenceSendRequest {
+    return {
+      portId: isSet(object.portId) ? String(object.portId) : '',
+      channelId: isSet(object.channelId) ? String(object.channelId) : '',
+    };
+  },
+  toJSON(
+    message: QueryNextSequenceSendRequest,
+  ): JsonSafe<QueryNextSequenceSendRequest> {
+    const obj: any = {};
+    message.portId !== undefined && (obj.portId = message.portId);
+    message.channelId !== undefined && (obj.channelId = message.channelId);
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryNextSequenceSendRequest>,
+  ): QueryNextSequenceSendRequest {
+    const message = createBaseQueryNextSequenceSendRequest();
+    message.portId = object.portId ?? '';
+    message.channelId = object.channelId ?? '';
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryNextSequenceSendRequestProtoMsg,
+  ): QueryNextSequenceSendRequest {
+    return QueryNextSequenceSendRequest.decode(message.value);
+  },
+  toProto(message: QueryNextSequenceSendRequest): Uint8Array {
+    return QueryNextSequenceSendRequest.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryNextSequenceSendRequest,
+  ): QueryNextSequenceSendRequestProtoMsg {
+    return {
+      typeUrl: '/ibc.core.channel.v1.QueryNextSequenceSendRequest',
+      value: QueryNextSequenceSendRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryNextSequenceSendResponse(): QueryNextSequenceSendResponse {
+  return {
+    nextSequenceSend: BigInt(0),
+    proof: new Uint8Array(),
+    proofHeight: Height.fromPartial({}),
+  };
+}
+export const QueryNextSequenceSendResponse = {
+  typeUrl: '/ibc.core.channel.v1.QueryNextSequenceSendResponse' as const,
+  encode(
+    message: QueryNextSequenceSendResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.nextSequenceSend !== BigInt(0)) {
+      writer.uint32(8).uint64(message.nextSequenceSend);
+    }
+    if (message.proof.length !== 0) {
+      writer.uint32(18).bytes(message.proof);
+    }
+    if (message.proofHeight !== undefined) {
+      Height.encode(message.proofHeight, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryNextSequenceSendResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryNextSequenceSendResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.nextSequenceSend = reader.uint64();
+          break;
+        case 2:
+          message.proof = reader.bytes();
+          break;
+        case 3:
+          message.proofHeight = Height.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryNextSequenceSendResponse {
+    return {
+      nextSequenceSend: isSet(object.nextSequenceSend)
+        ? BigInt(object.nextSequenceSend.toString())
+        : BigInt(0),
+      proof: isSet(object.proof)
+        ? bytesFromBase64(object.proof)
+        : new Uint8Array(),
+      proofHeight: isSet(object.proofHeight)
+        ? Height.fromJSON(object.proofHeight)
+        : undefined,
+    };
+  },
+  toJSON(
+    message: QueryNextSequenceSendResponse,
+  ): JsonSafe<QueryNextSequenceSendResponse> {
+    const obj: any = {};
+    message.nextSequenceSend !== undefined &&
+      (obj.nextSequenceSend = (
+        message.nextSequenceSend || BigInt(0)
+      ).toString());
+    message.proof !== undefined &&
+      (obj.proof = base64FromBytes(
+        message.proof !== undefined ? message.proof : new Uint8Array(),
+      ));
+    message.proofHeight !== undefined &&
+      (obj.proofHeight = message.proofHeight
+        ? Height.toJSON(message.proofHeight)
+        : undefined);
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryNextSequenceSendResponse>,
+  ): QueryNextSequenceSendResponse {
+    const message = createBaseQueryNextSequenceSendResponse();
+    message.nextSequenceSend =
+      object.nextSequenceSend !== undefined && object.nextSequenceSend !== null
+        ? BigInt(object.nextSequenceSend.toString())
+        : BigInt(0);
+    message.proof = object.proof ?? new Uint8Array();
+    message.proofHeight =
+      object.proofHeight !== undefined && object.proofHeight !== null
+        ? Height.fromPartial(object.proofHeight)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryNextSequenceSendResponseProtoMsg,
+  ): QueryNextSequenceSendResponse {
+    return QueryNextSequenceSendResponse.decode(message.value);
+  },
+  toProto(message: QueryNextSequenceSendResponse): Uint8Array {
+    return QueryNextSequenceSendResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryNextSequenceSendResponse,
+  ): QueryNextSequenceSendResponseProtoMsg {
+    return {
+      typeUrl: '/ibc.core.channel.v1.QueryNextSequenceSendResponse',
+      value: QueryNextSequenceSendResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryUpgradeErrorRequest(): QueryUpgradeErrorRequest {
+  return {
+    portId: '',
+    channelId: '',
+  };
+}
+export const QueryUpgradeErrorRequest = {
+  typeUrl: '/ibc.core.channel.v1.QueryUpgradeErrorRequest' as const,
+  encode(
+    message: QueryUpgradeErrorRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.portId !== '') {
+      writer.uint32(10).string(message.portId);
+    }
+    if (message.channelId !== '') {
+      writer.uint32(18).string(message.channelId);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryUpgradeErrorRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryUpgradeErrorRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.portId = reader.string();
+          break;
+        case 2:
+          message.channelId = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryUpgradeErrorRequest {
+    return {
+      portId: isSet(object.portId) ? String(object.portId) : '',
+      channelId: isSet(object.channelId) ? String(object.channelId) : '',
+    };
+  },
+  toJSON(
+    message: QueryUpgradeErrorRequest,
+  ): JsonSafe<QueryUpgradeErrorRequest> {
+    const obj: any = {};
+    message.portId !== undefined && (obj.portId = message.portId);
+    message.channelId !== undefined && (obj.channelId = message.channelId);
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryUpgradeErrorRequest>,
+  ): QueryUpgradeErrorRequest {
+    const message = createBaseQueryUpgradeErrorRequest();
+    message.portId = object.portId ?? '';
+    message.channelId = object.channelId ?? '';
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryUpgradeErrorRequestProtoMsg,
+  ): QueryUpgradeErrorRequest {
+    return QueryUpgradeErrorRequest.decode(message.value);
+  },
+  toProto(message: QueryUpgradeErrorRequest): Uint8Array {
+    return QueryUpgradeErrorRequest.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryUpgradeErrorRequest,
+  ): QueryUpgradeErrorRequestProtoMsg {
+    return {
+      typeUrl: '/ibc.core.channel.v1.QueryUpgradeErrorRequest',
+      value: QueryUpgradeErrorRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryUpgradeErrorResponse(): QueryUpgradeErrorResponse {
+  return {
+    errorReceipt: ErrorReceipt.fromPartial({}),
+    proof: new Uint8Array(),
+    proofHeight: Height.fromPartial({}),
+  };
+}
+export const QueryUpgradeErrorResponse = {
+  typeUrl: '/ibc.core.channel.v1.QueryUpgradeErrorResponse' as const,
+  encode(
+    message: QueryUpgradeErrorResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.errorReceipt !== undefined) {
+      ErrorReceipt.encode(
+        message.errorReceipt,
+        writer.uint32(10).fork(),
+      ).ldelim();
+    }
+    if (message.proof.length !== 0) {
+      writer.uint32(18).bytes(message.proof);
+    }
+    if (message.proofHeight !== undefined) {
+      Height.encode(message.proofHeight, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryUpgradeErrorResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryUpgradeErrorResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.errorReceipt = ErrorReceipt.decode(reader, reader.uint32());
+          break;
+        case 2:
+          message.proof = reader.bytes();
+          break;
+        case 3:
+          message.proofHeight = Height.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryUpgradeErrorResponse {
+    return {
+      errorReceipt: isSet(object.errorReceipt)
+        ? ErrorReceipt.fromJSON(object.errorReceipt)
+        : undefined,
+      proof: isSet(object.proof)
+        ? bytesFromBase64(object.proof)
+        : new Uint8Array(),
+      proofHeight: isSet(object.proofHeight)
+        ? Height.fromJSON(object.proofHeight)
+        : undefined,
+    };
+  },
+  toJSON(
+    message: QueryUpgradeErrorResponse,
+  ): JsonSafe<QueryUpgradeErrorResponse> {
+    const obj: any = {};
+    message.errorReceipt !== undefined &&
+      (obj.errorReceipt = message.errorReceipt
+        ? ErrorReceipt.toJSON(message.errorReceipt)
+        : undefined);
+    message.proof !== undefined &&
+      (obj.proof = base64FromBytes(
+        message.proof !== undefined ? message.proof : new Uint8Array(),
+      ));
+    message.proofHeight !== undefined &&
+      (obj.proofHeight = message.proofHeight
+        ? Height.toJSON(message.proofHeight)
+        : undefined);
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryUpgradeErrorResponse>,
+  ): QueryUpgradeErrorResponse {
+    const message = createBaseQueryUpgradeErrorResponse();
+    message.errorReceipt =
+      object.errorReceipt !== undefined && object.errorReceipt !== null
+        ? ErrorReceipt.fromPartial(object.errorReceipt)
+        : undefined;
+    message.proof = object.proof ?? new Uint8Array();
+    message.proofHeight =
+      object.proofHeight !== undefined && object.proofHeight !== null
+        ? Height.fromPartial(object.proofHeight)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryUpgradeErrorResponseProtoMsg,
+  ): QueryUpgradeErrorResponse {
+    return QueryUpgradeErrorResponse.decode(message.value);
+  },
+  toProto(message: QueryUpgradeErrorResponse): Uint8Array {
+    return QueryUpgradeErrorResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryUpgradeErrorResponse,
+  ): QueryUpgradeErrorResponseProtoMsg {
+    return {
+      typeUrl: '/ibc.core.channel.v1.QueryUpgradeErrorResponse',
+      value: QueryUpgradeErrorResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryUpgradeRequest(): QueryUpgradeRequest {
+  return {
+    portId: '',
+    channelId: '',
+  };
+}
+export const QueryUpgradeRequest = {
+  typeUrl: '/ibc.core.channel.v1.QueryUpgradeRequest' as const,
+  encode(
+    message: QueryUpgradeRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.portId !== '') {
+      writer.uint32(10).string(message.portId);
+    }
+    if (message.channelId !== '') {
+      writer.uint32(18).string(message.channelId);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryUpgradeRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryUpgradeRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.portId = reader.string();
+          break;
+        case 2:
+          message.channelId = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryUpgradeRequest {
+    return {
+      portId: isSet(object.portId) ? String(object.portId) : '',
+      channelId: isSet(object.channelId) ? String(object.channelId) : '',
+    };
+  },
+  toJSON(message: QueryUpgradeRequest): JsonSafe<QueryUpgradeRequest> {
+    const obj: any = {};
+    message.portId !== undefined && (obj.portId = message.portId);
+    message.channelId !== undefined && (obj.channelId = message.channelId);
+    return obj;
+  },
+  fromPartial(object: Partial<QueryUpgradeRequest>): QueryUpgradeRequest {
+    const message = createBaseQueryUpgradeRequest();
+    message.portId = object.portId ?? '';
+    message.channelId = object.channelId ?? '';
+    return message;
+  },
+  fromProtoMsg(message: QueryUpgradeRequestProtoMsg): QueryUpgradeRequest {
+    return QueryUpgradeRequest.decode(message.value);
+  },
+  toProto(message: QueryUpgradeRequest): Uint8Array {
+    return QueryUpgradeRequest.encode(message).finish();
+  },
+  toProtoMsg(message: QueryUpgradeRequest): QueryUpgradeRequestProtoMsg {
+    return {
+      typeUrl: '/ibc.core.channel.v1.QueryUpgradeRequest',
+      value: QueryUpgradeRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryUpgradeResponse(): QueryUpgradeResponse {
+  return {
+    upgrade: Upgrade.fromPartial({}),
+    proof: new Uint8Array(),
+    proofHeight: Height.fromPartial({}),
+  };
+}
+export const QueryUpgradeResponse = {
+  typeUrl: '/ibc.core.channel.v1.QueryUpgradeResponse' as const,
+  encode(
+    message: QueryUpgradeResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.upgrade !== undefined) {
+      Upgrade.encode(message.upgrade, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.proof.length !== 0) {
+      writer.uint32(18).bytes(message.proof);
+    }
+    if (message.proofHeight !== undefined) {
+      Height.encode(message.proofHeight, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryUpgradeResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryUpgradeResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.upgrade = Upgrade.decode(reader, reader.uint32());
+          break;
+        case 2:
+          message.proof = reader.bytes();
+          break;
+        case 3:
+          message.proofHeight = Height.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryUpgradeResponse {
+    return {
+      upgrade: isSet(object.upgrade)
+        ? Upgrade.fromJSON(object.upgrade)
+        : undefined,
+      proof: isSet(object.proof)
+        ? bytesFromBase64(object.proof)
+        : new Uint8Array(),
+      proofHeight: isSet(object.proofHeight)
+        ? Height.fromJSON(object.proofHeight)
+        : undefined,
+    };
+  },
+  toJSON(message: QueryUpgradeResponse): JsonSafe<QueryUpgradeResponse> {
+    const obj: any = {};
+    message.upgrade !== undefined &&
+      (obj.upgrade = message.upgrade
+        ? Upgrade.toJSON(message.upgrade)
+        : undefined);
+    message.proof !== undefined &&
+      (obj.proof = base64FromBytes(
+        message.proof !== undefined ? message.proof : new Uint8Array(),
+      ));
+    message.proofHeight !== undefined &&
+      (obj.proofHeight = message.proofHeight
+        ? Height.toJSON(message.proofHeight)
+        : undefined);
+    return obj;
+  },
+  fromPartial(object: Partial<QueryUpgradeResponse>): QueryUpgradeResponse {
+    const message = createBaseQueryUpgradeResponse();
+    message.upgrade =
+      object.upgrade !== undefined && object.upgrade !== null
+        ? Upgrade.fromPartial(object.upgrade)
+        : undefined;
+    message.proof = object.proof ?? new Uint8Array();
+    message.proofHeight =
+      object.proofHeight !== undefined && object.proofHeight !== null
+        ? Height.fromPartial(object.proofHeight)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(message: QueryUpgradeResponseProtoMsg): QueryUpgradeResponse {
+    return QueryUpgradeResponse.decode(message.value);
+  },
+  toProto(message: QueryUpgradeResponse): Uint8Array {
+    return QueryUpgradeResponse.encode(message).finish();
+  },
+  toProtoMsg(message: QueryUpgradeResponse): QueryUpgradeResponseProtoMsg {
+    return {
+      typeUrl: '/ibc.core.channel.v1.QueryUpgradeResponse',
+      value: QueryUpgradeResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryChannelParamsRequest(): QueryChannelParamsRequest {
+  return {};
+}
+export const QueryChannelParamsRequest = {
+  typeUrl: '/ibc.core.channel.v1.QueryChannelParamsRequest' as const,
+  encode(
+    _: QueryChannelParamsRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryChannelParamsRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryChannelParamsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(_: any): QueryChannelParamsRequest {
+    return {};
+  },
+  toJSON(_: QueryChannelParamsRequest): JsonSafe<QueryChannelParamsRequest> {
+    const obj: any = {};
+    return obj;
+  },
+  fromPartial(
+    _: Partial<QueryChannelParamsRequest>,
+  ): QueryChannelParamsRequest {
+    const message = createBaseQueryChannelParamsRequest();
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryChannelParamsRequestProtoMsg,
+  ): QueryChannelParamsRequest {
+    return QueryChannelParamsRequest.decode(message.value);
+  },
+  toProto(message: QueryChannelParamsRequest): Uint8Array {
+    return QueryChannelParamsRequest.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryChannelParamsRequest,
+  ): QueryChannelParamsRequestProtoMsg {
+    return {
+      typeUrl: '/ibc.core.channel.v1.QueryChannelParamsRequest',
+      value: QueryChannelParamsRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryChannelParamsResponse(): QueryChannelParamsResponse {
+  return {
+    params: undefined,
+  };
+}
+export const QueryChannelParamsResponse = {
+  typeUrl: '/ibc.core.channel.v1.QueryChannelParamsResponse' as const,
+  encode(
+    message: QueryChannelParamsResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.params !== undefined) {
+      Params.encode(message.params, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryChannelParamsResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryChannelParamsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.params = Params.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryChannelParamsResponse {
+    return {
+      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
+    };
+  },
+  toJSON(
+    message: QueryChannelParamsResponse,
+  ): JsonSafe<QueryChannelParamsResponse> {
+    const obj: any = {};
+    message.params !== undefined &&
+      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryChannelParamsResponse>,
+  ): QueryChannelParamsResponse {
+    const message = createBaseQueryChannelParamsResponse();
+    message.params =
+      object.params !== undefined && object.params !== null
+        ? Params.fromPartial(object.params)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryChannelParamsResponseProtoMsg,
+  ): QueryChannelParamsResponse {
+    return QueryChannelParamsResponse.decode(message.value);
+  },
+  toProto(message: QueryChannelParamsResponse): Uint8Array {
+    return QueryChannelParamsResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryChannelParamsResponse,
+  ): QueryChannelParamsResponseProtoMsg {
+    return {
+      typeUrl: '/ibc.core.channel.v1.QueryChannelParamsResponse',
+      value: QueryChannelParamsResponse.encode(message).finish(),
     };
   },
 };

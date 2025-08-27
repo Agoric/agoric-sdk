@@ -12,6 +12,10 @@ export interface Module {
   hooksOrder: string[];
   /** authority defines the custom module authority. If not set, defaults to the governance module. */
   authority: string;
+  /** bech32_prefix_validator is the bech32 validator prefix for the app. */
+  bech32PrefixValidator: string;
+  /** bech32_prefix_consensus is the bech32 consensus node prefix for the app. */
+  bech32PrefixConsensus: string;
 }
 export interface ModuleProtoMsg {
   typeUrl: '/cosmos.staking.module.v1.Module';
@@ -21,11 +25,15 @@ export interface ModuleProtoMsg {
 export interface ModuleSDKType {
   hooks_order: string[];
   authority: string;
+  bech32_prefix_validator: string;
+  bech32_prefix_consensus: string;
 }
 function createBaseModule(): Module {
   return {
     hooksOrder: [],
     authority: '',
+    bech32PrefixValidator: '',
+    bech32PrefixConsensus: '',
   };
 }
 export const Module = {
@@ -39,6 +47,12 @@ export const Module = {
     }
     if (message.authority !== '') {
       writer.uint32(18).string(message.authority);
+    }
+    if (message.bech32PrefixValidator !== '') {
+      writer.uint32(26).string(message.bech32PrefixValidator);
+    }
+    if (message.bech32PrefixConsensus !== '') {
+      writer.uint32(34).string(message.bech32PrefixConsensus);
     }
     return writer;
   },
@@ -56,6 +70,12 @@ export const Module = {
         case 2:
           message.authority = reader.string();
           break;
+        case 3:
+          message.bech32PrefixValidator = reader.string();
+          break;
+        case 4:
+          message.bech32PrefixConsensus = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -69,6 +89,12 @@ export const Module = {
         ? object.hooksOrder.map((e: any) => String(e))
         : [],
       authority: isSet(object.authority) ? String(object.authority) : '',
+      bech32PrefixValidator: isSet(object.bech32PrefixValidator)
+        ? String(object.bech32PrefixValidator)
+        : '',
+      bech32PrefixConsensus: isSet(object.bech32PrefixConsensus)
+        ? String(object.bech32PrefixConsensus)
+        : '',
     };
   },
   toJSON(message: Module): JsonSafe<Module> {
@@ -79,12 +105,18 @@ export const Module = {
       obj.hooksOrder = [];
     }
     message.authority !== undefined && (obj.authority = message.authority);
+    message.bech32PrefixValidator !== undefined &&
+      (obj.bech32PrefixValidator = message.bech32PrefixValidator);
+    message.bech32PrefixConsensus !== undefined &&
+      (obj.bech32PrefixConsensus = message.bech32PrefixConsensus);
     return obj;
   },
   fromPartial(object: Partial<Module>): Module {
     const message = createBaseModule();
     message.hooksOrder = object.hooksOrder?.map(e => e) || [];
     message.authority = object.authority ?? '';
+    message.bech32PrefixValidator = object.bech32PrefixValidator ?? '';
+    message.bech32PrefixConsensus = object.bech32PrefixConsensus ?? '';
     return message;
   },
   fromProtoMsg(message: ModuleProtoMsg): Module {

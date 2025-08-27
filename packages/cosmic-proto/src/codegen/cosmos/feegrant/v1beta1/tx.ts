@@ -75,6 +75,43 @@ export interface MsgRevokeAllowanceResponseProtoMsg {
 }
 /** MsgRevokeAllowanceResponse defines the Msg/RevokeAllowanceResponse response type. */
 export interface MsgRevokeAllowanceResponseSDKType {}
+/**
+ * MsgPruneAllowances prunes expired fee allowances.
+ *
+ * Since cosmos-sdk 0.50
+ */
+export interface MsgPruneAllowances {
+  /** pruner is the address of the user pruning expired allowances. */
+  pruner: string;
+}
+export interface MsgPruneAllowancesProtoMsg {
+  typeUrl: '/cosmos.feegrant.v1beta1.MsgPruneAllowances';
+  value: Uint8Array;
+}
+/**
+ * MsgPruneAllowances prunes expired fee allowances.
+ *
+ * Since cosmos-sdk 0.50
+ */
+export interface MsgPruneAllowancesSDKType {
+  pruner: string;
+}
+/**
+ * MsgPruneAllowancesResponse defines the Msg/PruneAllowancesResponse response type.
+ *
+ * Since cosmos-sdk 0.50
+ */
+export interface MsgPruneAllowancesResponse {}
+export interface MsgPruneAllowancesResponseProtoMsg {
+  typeUrl: '/cosmos.feegrant.v1beta1.MsgPruneAllowancesResponse';
+  value: Uint8Array;
+}
+/**
+ * MsgPruneAllowancesResponse defines the Msg/PruneAllowancesResponse response type.
+ *
+ * Since cosmos-sdk 0.50
+ */
+export interface MsgPruneAllowancesResponseSDKType {}
 function createBaseMsgGrantAllowance(): MsgGrantAllowance {
   return {
     granter: '',
@@ -356,6 +393,130 @@ export const MsgRevokeAllowanceResponse = {
     return {
       typeUrl: '/cosmos.feegrant.v1beta1.MsgRevokeAllowanceResponse',
       value: MsgRevokeAllowanceResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgPruneAllowances(): MsgPruneAllowances {
+  return {
+    pruner: '',
+  };
+}
+export const MsgPruneAllowances = {
+  typeUrl: '/cosmos.feegrant.v1beta1.MsgPruneAllowances' as const,
+  encode(
+    message: MsgPruneAllowances,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.pruner !== '') {
+      writer.uint32(10).string(message.pruner);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgPruneAllowances {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgPruneAllowances();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.pruner = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): MsgPruneAllowances {
+    return {
+      pruner: isSet(object.pruner) ? String(object.pruner) : '',
+    };
+  },
+  toJSON(message: MsgPruneAllowances): JsonSafe<MsgPruneAllowances> {
+    const obj: any = {};
+    message.pruner !== undefined && (obj.pruner = message.pruner);
+    return obj;
+  },
+  fromPartial(object: Partial<MsgPruneAllowances>): MsgPruneAllowances {
+    const message = createBaseMsgPruneAllowances();
+    message.pruner = object.pruner ?? '';
+    return message;
+  },
+  fromProtoMsg(message: MsgPruneAllowancesProtoMsg): MsgPruneAllowances {
+    return MsgPruneAllowances.decode(message.value);
+  },
+  toProto(message: MsgPruneAllowances): Uint8Array {
+    return MsgPruneAllowances.encode(message).finish();
+  },
+  toProtoMsg(message: MsgPruneAllowances): MsgPruneAllowancesProtoMsg {
+    return {
+      typeUrl: '/cosmos.feegrant.v1beta1.MsgPruneAllowances',
+      value: MsgPruneAllowances.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgPruneAllowancesResponse(): MsgPruneAllowancesResponse {
+  return {};
+}
+export const MsgPruneAllowancesResponse = {
+  typeUrl: '/cosmos.feegrant.v1beta1.MsgPruneAllowancesResponse' as const,
+  encode(
+    _: MsgPruneAllowancesResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgPruneAllowancesResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgPruneAllowancesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(_: any): MsgPruneAllowancesResponse {
+    return {};
+  },
+  toJSON(_: MsgPruneAllowancesResponse): JsonSafe<MsgPruneAllowancesResponse> {
+    const obj: any = {};
+    return obj;
+  },
+  fromPartial(
+    _: Partial<MsgPruneAllowancesResponse>,
+  ): MsgPruneAllowancesResponse {
+    const message = createBaseMsgPruneAllowancesResponse();
+    return message;
+  },
+  fromProtoMsg(
+    message: MsgPruneAllowancesResponseProtoMsg,
+  ): MsgPruneAllowancesResponse {
+    return MsgPruneAllowancesResponse.decode(message.value);
+  },
+  toProto(message: MsgPruneAllowancesResponse): Uint8Array {
+    return MsgPruneAllowancesResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: MsgPruneAllowancesResponse,
+  ): MsgPruneAllowancesResponseProtoMsg {
+    return {
+      typeUrl: '/cosmos.feegrant.v1beta1.MsgPruneAllowancesResponse',
+      value: MsgPruneAllowancesResponse.encode(message).finish(),
     };
   },
 };

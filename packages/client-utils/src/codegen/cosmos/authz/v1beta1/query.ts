@@ -81,7 +81,7 @@ export interface QueryGranterGrantsResponseSDKType {
   grants: GrantAuthorizationSDKType[];
   pagination?: PageResponseSDKType;
 }
-/** QueryGranteeGrantsRequest is the request type for the Query/IssuedGrants RPC method. */
+/** QueryGranteeGrantsRequest is the request type for the Query/GranteeGrants RPC method. */
 export interface QueryGranteeGrantsRequest {
   grantee: string;
   /** pagination defines an pagination for the request. */
@@ -91,7 +91,7 @@ export interface QueryGranteeGrantsRequestProtoMsg {
   typeUrl: '/cosmos.authz.v1beta1.QueryGranteeGrantsRequest';
   value: Uint8Array;
 }
-/** QueryGranteeGrantsRequest is the request type for the Query/IssuedGrants RPC method. */
+/** QueryGranteeGrantsRequest is the request type for the Query/GranteeGrants RPC method. */
 export interface QueryGranteeGrantsRequestSDKType {
   grantee: string;
   pagination?: PageRequestSDKType;

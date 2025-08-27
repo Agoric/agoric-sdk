@@ -595,6 +595,7 @@ export const prepareLocalOrchestrationAccountKit = (
             E(localchain).query(
               typedJson('/cosmos.bank.v1beta1.QueryAllBalancesRequest', {
                 address: this.state.address.value,
+                resolveDenom: false, // don't resolve the denom, just return the raw data
               }),
             ),
             this.facets.queryBalancesWatcher,

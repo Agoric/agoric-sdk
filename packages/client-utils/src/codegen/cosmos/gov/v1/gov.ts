@@ -209,7 +209,11 @@ export interface Proposal {
   votingStartTime?: Timestamp;
   /** voting_end_time is the end time of voting on a proposal. */
   votingEndTime?: Timestamp;
-  /** metadata is any arbitrary metadata attached to the proposal. */
+  /**
+   * metadata is any arbitrary metadata attached to the proposal.
+   * the recommended format of the metadata is to be found here:
+   * https://docs.cosmos.network/v0.47/modules/gov#proposal-3
+   */
   metadata: string;
   /**
    * title is the title of the proposal
@@ -224,11 +228,23 @@ export interface Proposal {
    */
   summary: string;
   /**
-   * Proposer is the address of the proposal sumbitter
+   * proposer is the address of the proposal sumbitter
    *
    * Since: cosmos-sdk 0.47
    */
   proposer: string;
+  /**
+   * expedited defines if the proposal is expedited
+   *
+   * Since: cosmos-sdk 0.50
+   */
+  expedited: boolean;
+  /**
+   * failed_reason defines the reason why the proposal failed
+   *
+   * Since: cosmos-sdk 0.50
+   */
+  failedReason: string;
 }
 export interface ProposalProtoMsg {
   typeUrl: '/cosmos.gov.v1.Proposal';
@@ -249,6 +265,8 @@ export interface ProposalSDKType {
   title: string;
   summary: string;
   proposer: string;
+  expedited: boolean;
+  failed_reason: string;
 }
 /** TallyResult defines a standard tally for a governance proposal. */
 export interface TallyResult {
@@ -283,7 +301,10 @@ export interface Vote {
   voter: string;
   /** options is the weighted vote options. */
   options: WeightedVoteOption[];
-  /** metadata is any  arbitrary metadata to attached to the vote. */
+  /**
+   * metadata is any arbitrary metadata attached to the vote.
+   * the recommended format of the metadata is to be found here: https://docs.cosmos.network/v0.47/modules/gov#vote-5
+   */
   metadata: string;
 }
 export interface VoteProtoMsg {
@@ -301,6 +322,7 @@ export interface VoteSDKType {
   metadata: string;
 }
 /** DepositParams defines the params for deposits on governance proposals. */
+/** @deprecated */
 export interface DepositParams {
   /** Minimum deposit for a proposal to enter voting period. */
   minDeposit: Coin[];
@@ -315,11 +337,13 @@ export interface DepositParamsProtoMsg {
   value: Uint8Array;
 }
 /** DepositParams defines the params for deposits on governance proposals. */
+/** @deprecated */
 export interface DepositParamsSDKType {
   min_deposit: CoinSDKType[];
   max_deposit_period?: DurationSDKType;
 }
 /** VotingParams defines the params for voting on governance proposals. */
+/** @deprecated */
 export interface VotingParams {
   /** Duration of the voting period. */
   votingPeriod?: Duration;
@@ -329,10 +353,12 @@ export interface VotingParamsProtoMsg {
   value: Uint8Array;
 }
 /** VotingParams defines the params for voting on governance proposals. */
+/** @deprecated */
 export interface VotingParamsSDKType {
   voting_period?: DurationSDKType;
 }
 /** TallyParams defines the params for tallying votes on governance proposals. */
+/** @deprecated */
 export interface TallyParams {
   /**
    * Minimum percentage of total stake needed to vote for a result to be
@@ -352,6 +378,7 @@ export interface TallyParamsProtoMsg {
   value: Uint8Array;
 }
 /** TallyParams defines the params for tallying votes on governance proposals. */
+/** @deprecated */
 export interface TallyParamsSDKType {
   quorum: string;
   threshold: string;
@@ -386,12 +413,47 @@ export interface Params {
   vetoThreshold: string;
   /** The ratio representing the proportion of the deposit value that must be paid at proposal submission. */
   minInitialDepositRatio: string;
+  /**
+   * The cancel ratio which will not be returned back to the depositors when a proposal is cancelled.
+   *
+   * Since: cosmos-sdk 0.50
+   */
+  proposalCancelRatio: string;
+  /**
+   * The address which will receive (proposal_cancel_ratio * deposit) proposal deposits.
+   * If empty, the (proposal_cancel_ratio * deposit) proposal deposits will be burned.
+   *
+   * Since: cosmos-sdk 0.50
+   */
+  proposalCancelDest: string;
+  /**
+   * Duration of the voting period of an expedited proposal.
+   *
+   * Since: cosmos-sdk 0.50
+   */
+  expeditedVotingPeriod?: Duration;
+  /**
+   * Minimum proportion of Yes votes for proposal to pass. Default value: 0.67.
+   *
+   * Since: cosmos-sdk 0.50
+   */
+  expeditedThreshold: string;
+  /** Minimum expedited deposit for a proposal to enter voting period. */
+  expeditedMinDeposit: Coin[];
   /** burn deposits if a proposal does not meet quorum */
   burnVoteQuorum: boolean;
   /** burn deposits if the proposal does not enter voting period */
   burnProposalDepositPrevote: boolean;
   /** burn deposits if quorum with vote type no_veto is met */
   burnVoteVeto: boolean;
+  /**
+   * The ratio representing the proportion of the deposit value minimum that must be met when making a deposit.
+   * Default value: 0.01. Meaning that for a chain with a min_deposit of 100stake, a deposit of 1stake would be
+   * required.
+   *
+   * Since: cosmos-sdk 0.50
+   */
+  minDepositRatio: string;
 }
 export interface ParamsProtoMsg {
   typeUrl: '/cosmos.gov.v1.Params';
@@ -410,9 +472,15 @@ export interface ParamsSDKType {
   threshold: string;
   veto_threshold: string;
   min_initial_deposit_ratio: string;
+  proposal_cancel_ratio: string;
+  proposal_cancel_dest: string;
+  expedited_voting_period?: DurationSDKType;
+  expedited_threshold: string;
+  expedited_min_deposit: CoinSDKType[];
   burn_vote_quorum: boolean;
   burn_proposal_deposit_prevote: boolean;
   burn_vote_veto: boolean;
+  min_deposit_ratio: string;
 }
 function createBaseWeightedVoteOption(): WeightedVoteOption {
   return {
@@ -599,6 +667,8 @@ function createBaseProposal(): Proposal {
     title: '',
     summary: '',
     proposer: '',
+    expedited: false,
+    failedReason: '',
   };
 }
 export const Proposal = {
@@ -658,6 +728,12 @@ export const Proposal = {
     if (message.proposer !== '') {
       writer.uint32(106).string(message.proposer);
     }
+    if (message.expedited === true) {
+      writer.uint32(112).bool(message.expedited);
+    }
+    if (message.failedReason !== '') {
+      writer.uint32(122).string(message.failedReason);
+    }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): Proposal {
@@ -710,6 +786,12 @@ export const Proposal = {
         case 13:
           message.proposer = reader.string();
           break;
+        case 14:
+          message.expedited = reader.bool();
+          break;
+        case 15:
+          message.failedReason = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -746,6 +828,10 @@ export const Proposal = {
       title: isSet(object.title) ? String(object.title) : '',
       summary: isSet(object.summary) ? String(object.summary) : '',
       proposer: isSet(object.proposer) ? String(object.proposer) : '',
+      expedited: isSet(object.expedited) ? Boolean(object.expedited) : false,
+      failedReason: isSet(object.failedReason)
+        ? String(object.failedReason)
+        : '',
     };
   },
   toJSON(message: Proposal): JsonSafe<Proposal> {
@@ -785,6 +871,9 @@ export const Proposal = {
     message.title !== undefined && (obj.title = message.title);
     message.summary !== undefined && (obj.summary = message.summary);
     message.proposer !== undefined && (obj.proposer = message.proposer);
+    message.expedited !== undefined && (obj.expedited = message.expedited);
+    message.failedReason !== undefined &&
+      (obj.failedReason = message.failedReason);
     return obj;
   },
   fromPartial(object: Partial<Proposal>): Proposal {
@@ -821,6 +910,8 @@ export const Proposal = {
     message.title = object.title ?? '';
     message.summary = object.summary ?? '';
     message.proposer = object.proposer ?? '';
+    message.expedited = object.expedited ?? false;
+    message.failedReason = object.failedReason ?? '';
     return message;
   },
   fromProtoMsg(message: ProposalProtoMsg): Proposal {
@@ -1298,9 +1389,15 @@ function createBaseParams(): Params {
     threshold: '',
     vetoThreshold: '',
     minInitialDepositRatio: '',
+    proposalCancelRatio: '',
+    proposalCancelDest: '',
+    expeditedVotingPeriod: undefined,
+    expeditedThreshold: '',
+    expeditedMinDeposit: [],
     burnVoteQuorum: false,
     burnProposalDepositPrevote: false,
     burnVoteVeto: false,
+    minDepositRatio: '',
   };
 }
 export const Params = {
@@ -1333,6 +1430,24 @@ export const Params = {
     if (message.minInitialDepositRatio !== '') {
       writer.uint32(58).string(message.minInitialDepositRatio);
     }
+    if (message.proposalCancelRatio !== '') {
+      writer.uint32(66).string(message.proposalCancelRatio);
+    }
+    if (message.proposalCancelDest !== '') {
+      writer.uint32(74).string(message.proposalCancelDest);
+    }
+    if (message.expeditedVotingPeriod !== undefined) {
+      Duration.encode(
+        message.expeditedVotingPeriod,
+        writer.uint32(82).fork(),
+      ).ldelim();
+    }
+    if (message.expeditedThreshold !== '') {
+      writer.uint32(90).string(message.expeditedThreshold);
+    }
+    for (const v of message.expeditedMinDeposit) {
+      Coin.encode(v!, writer.uint32(98).fork()).ldelim();
+    }
     if (message.burnVoteQuorum === true) {
       writer.uint32(104).bool(message.burnVoteQuorum);
     }
@@ -1341,6 +1456,9 @@ export const Params = {
     }
     if (message.burnVoteVeto === true) {
       writer.uint32(120).bool(message.burnVoteVeto);
+    }
+    if (message.minDepositRatio !== '') {
+      writer.uint32(130).string(message.minDepositRatio);
     }
     return writer;
   },
@@ -1373,6 +1491,26 @@ export const Params = {
         case 7:
           message.minInitialDepositRatio = reader.string();
           break;
+        case 8:
+          message.proposalCancelRatio = reader.string();
+          break;
+        case 9:
+          message.proposalCancelDest = reader.string();
+          break;
+        case 10:
+          message.expeditedVotingPeriod = Duration.decode(
+            reader,
+            reader.uint32(),
+          );
+          break;
+        case 11:
+          message.expeditedThreshold = reader.string();
+          break;
+        case 12:
+          message.expeditedMinDeposit.push(
+            Coin.decode(reader, reader.uint32()),
+          );
+          break;
         case 13:
           message.burnVoteQuorum = reader.bool();
           break;
@@ -1381,6 +1519,9 @@ export const Params = {
           break;
         case 15:
           message.burnVoteVeto = reader.bool();
+          break;
+        case 16:
+          message.minDepositRatio = reader.string();
           break;
         default:
           reader.skipType(tag & 7);
@@ -1408,6 +1549,21 @@ export const Params = {
       minInitialDepositRatio: isSet(object.minInitialDepositRatio)
         ? String(object.minInitialDepositRatio)
         : '',
+      proposalCancelRatio: isSet(object.proposalCancelRatio)
+        ? String(object.proposalCancelRatio)
+        : '',
+      proposalCancelDest: isSet(object.proposalCancelDest)
+        ? String(object.proposalCancelDest)
+        : '',
+      expeditedVotingPeriod: isSet(object.expeditedVotingPeriod)
+        ? Duration.fromJSON(object.expeditedVotingPeriod)
+        : undefined,
+      expeditedThreshold: isSet(object.expeditedThreshold)
+        ? String(object.expeditedThreshold)
+        : '',
+      expeditedMinDeposit: Array.isArray(object?.expeditedMinDeposit)
+        ? object.expeditedMinDeposit.map((e: any) => Coin.fromJSON(e))
+        : [],
       burnVoteQuorum: isSet(object.burnVoteQuorum)
         ? Boolean(object.burnVoteQuorum)
         : false,
@@ -1417,6 +1573,9 @@ export const Params = {
       burnVoteVeto: isSet(object.burnVoteVeto)
         ? Boolean(object.burnVoteVeto)
         : false,
+      minDepositRatio: isSet(object.minDepositRatio)
+        ? String(object.minDepositRatio)
+        : '',
     };
   },
   toJSON(message: Params): JsonSafe<Params> {
@@ -1442,12 +1601,31 @@ export const Params = {
       (obj.vetoThreshold = message.vetoThreshold);
     message.minInitialDepositRatio !== undefined &&
       (obj.minInitialDepositRatio = message.minInitialDepositRatio);
+    message.proposalCancelRatio !== undefined &&
+      (obj.proposalCancelRatio = message.proposalCancelRatio);
+    message.proposalCancelDest !== undefined &&
+      (obj.proposalCancelDest = message.proposalCancelDest);
+    message.expeditedVotingPeriod !== undefined &&
+      (obj.expeditedVotingPeriod = message.expeditedVotingPeriod
+        ? Duration.toJSON(message.expeditedVotingPeriod)
+        : undefined);
+    message.expeditedThreshold !== undefined &&
+      (obj.expeditedThreshold = message.expeditedThreshold);
+    if (message.expeditedMinDeposit) {
+      obj.expeditedMinDeposit = message.expeditedMinDeposit.map(e =>
+        e ? Coin.toJSON(e) : undefined,
+      );
+    } else {
+      obj.expeditedMinDeposit = [];
+    }
     message.burnVoteQuorum !== undefined &&
       (obj.burnVoteQuorum = message.burnVoteQuorum);
     message.burnProposalDepositPrevote !== undefined &&
       (obj.burnProposalDepositPrevote = message.burnProposalDepositPrevote);
     message.burnVoteVeto !== undefined &&
       (obj.burnVoteVeto = message.burnVoteVeto);
+    message.minDepositRatio !== undefined &&
+      (obj.minDepositRatio = message.minDepositRatio);
     return obj;
   },
   fromPartial(object: Partial<Params>): Params {
@@ -1465,10 +1643,21 @@ export const Params = {
     message.threshold = object.threshold ?? '';
     message.vetoThreshold = object.vetoThreshold ?? '';
     message.minInitialDepositRatio = object.minInitialDepositRatio ?? '';
+    message.proposalCancelRatio = object.proposalCancelRatio ?? '';
+    message.proposalCancelDest = object.proposalCancelDest ?? '';
+    message.expeditedVotingPeriod =
+      object.expeditedVotingPeriod !== undefined &&
+      object.expeditedVotingPeriod !== null
+        ? Duration.fromPartial(object.expeditedVotingPeriod)
+        : undefined;
+    message.expeditedThreshold = object.expeditedThreshold ?? '';
+    message.expeditedMinDeposit =
+      object.expeditedMinDeposit?.map(e => Coin.fromPartial(e)) || [];
     message.burnVoteQuorum = object.burnVoteQuorum ?? false;
     message.burnProposalDepositPrevote =
       object.burnProposalDepositPrevote ?? false;
     message.burnVoteVeto = object.burnVoteVeto ?? false;
+    message.minDepositRatio = object.minDepositRatio ?? '';
     return message;
   },
   fromProtoMsg(message: ParamsProtoMsg): Params {

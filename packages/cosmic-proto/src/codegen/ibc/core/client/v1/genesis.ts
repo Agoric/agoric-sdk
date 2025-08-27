@@ -21,7 +21,11 @@ export interface GenesisState {
   /** metadata from each client */
   clientsMetadata: IdentifiedGenesisMetadata[];
   params: Params;
-  /** create localhost on initialization */
+  /**
+   * Deprecated: create_localhost has been deprecated.
+   * The localhost client is automatically created at genesis.
+   */
+  /** @deprecated */
   createLocalhost: boolean;
   /** the sequence for the next generated client identifier */
   nextClientSequence: bigint;
@@ -36,6 +40,7 @@ export interface GenesisStateSDKType {
   clients_consensus: ClientConsensusStatesSDKType[];
   clients_metadata: IdentifiedGenesisMetadataSDKType[];
   params: ParamsSDKType;
+  /** @deprecated */
   create_localhost: boolean;
   next_client_sequence: bigint;
 }

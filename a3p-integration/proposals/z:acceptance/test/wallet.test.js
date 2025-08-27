@@ -148,15 +148,15 @@ test.serial(`ante handler sends fee only to vbank/reserve`, async t => {
     ['fee_collector', 'vbank/reserve'].map(async name => {
       const {
         account: {
-          '@type': moduleAcct,
-          base_account: { address },
+          type: moduleAcct,
+          value: { address },
         },
       } = await agd.query(['auth', 'module-account', name]);
 
       t.is(
         moduleAcct,
         '/cosmos.auth.v1beta1.ModuleAccount',
-        `${name} is a module account`,
+        `${name} is not a module account`,
       );
       return address;
     }),

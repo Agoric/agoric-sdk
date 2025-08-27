@@ -1,6 +1,7 @@
 package types
 
 import (
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -43,15 +44,15 @@ const (
 )
 
 var (
-	DefaultBeansPerXsnapComputron = sdk.NewUint(100)
+	DefaultBeansPerXsnapComputron = sdkmath.NewUint(100)
 
 	// DefaultBeansPerBlockComputeLimit is how many computron beans we allow
 	// before starting a new block.  Some analysis (#3459) suggests this leads to
 	// about 2/3rds utilization, based on 5 sec voting time and up to 10 sec of
 	// computation.
-	DefaultBeansPerBlockComputeLimit = sdk.NewUint(8000000).Mul(DefaultBeansPerXsnapComputron)
+	DefaultBeansPerBlockComputeLimit = sdkmath.NewUint(8000000).Mul(DefaultBeansPerXsnapComputron)
 	// observed: 0.385 sec
-	DefaultBeansPerVatCreation = sdk.NewUint(300000).Mul(DefaultBeansPerXsnapComputron)
+	DefaultBeansPerVatCreation = sdkmath.NewUint(300000).Mul(DefaultBeansPerXsnapComputron)
 
 	// Fees are represented as integer "beans", where each bean is a uniform
 	// fraction of this `fee_unit_price` as controlled by the below
@@ -63,14 +64,14 @@ var (
 	// Larger numbers make for smaller beans, and we expect values to be rather
 	// large for representing fees precisely in beans that each approximate
 	// a "picoUSD"--one trillionth of a USD.
-	DefaultBeansPerFeeUnit = sdk.NewUint(1_000_000_000_000) // 1e12 (assumes $1 per BLD)
+	DefaultBeansPerFeeUnit = sdkmath.NewUint(1_000_000_000_000) // 1e12 (assumes $1 per BLD)
 
-	DefaultBeansPerInboundTx            = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(100))    //  10e09, ~$0.01
-	DefaultBeansPerMessage              = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(1_000))  //   1e09, ~$0.001
-	DefaultBeansPerMessageByte          = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(50_000)) //  20e06, ~$0.00002
-	DefaultBeansPerMinFeeDebit          = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(5))      // 200e09, ~$0.2
-	DefaultBeansPerStorageByte          = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(500))    //   2e09, ~$0.002
-	DefaultBeansPerSmartWalletProvision = DefaultBeansPerFeeUnit                          //   1e12, ~$1
+	DefaultBeansPerInboundTx            = DefaultBeansPerFeeUnit.Quo(sdkmath.NewUint(100))    //  10e09, ~$0.01
+	DefaultBeansPerMessage              = DefaultBeansPerFeeUnit.Quo(sdkmath.NewUint(1_000))  //   1e09, ~$0.001
+	DefaultBeansPerMessageByte          = DefaultBeansPerFeeUnit.Quo(sdkmath.NewUint(50_000)) //  20e06, ~$0.00002
+	DefaultBeansPerMinFeeDebit          = DefaultBeansPerFeeUnit.Quo(sdkmath.NewUint(5))      // 200e09, ~$0.2
+	DefaultBeansPerStorageByte          = DefaultBeansPerFeeUnit.Quo(sdkmath.NewUint(500))    //   2e09, ~$0.002
+	DefaultBeansPerSmartWalletProvision = DefaultBeansPerFeeUnit                              //   1e12, ~$1
 
 	DefaultBootstrapVatConfig = "@agoric/vm-config/decentral-core-config.json"
 
@@ -83,11 +84,11 @@ var (
 		NewQueueSize(QueueInbound, DefaultInboundQueueMax),
 	}
 
-	DefaultVatCleanupDefault = sdk.NewUint(5)
+	DefaultVatCleanupDefault = sdkmath.NewUint(5)
 	// DefaultVatCleanupExports     = DefaultVatCleanupDefault
 	// DefaultVatCleanupImports     = DefaultVatCleanupDefault
 	// DefaultVatCleanupPromises    = DefaultVatCleanupDefault
-	DefaultVatCleanupKv = sdk.NewUint(50)
+	DefaultVatCleanupKv = sdkmath.NewUint(50)
 	// DefaultVatCleanupSnapshots   = DefaultVatCleanupDefault
 	// DefaultVatCleanupTranscripts = DefaultVatCleanupDefault
 	DefaultVatCleanupBudget = []UintMapEntry{
