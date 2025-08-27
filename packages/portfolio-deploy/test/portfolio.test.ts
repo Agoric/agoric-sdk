@@ -354,7 +354,7 @@ test.skip('CCTP settlement works', async t => {
       txDetails: {
         amount: 10_000n,
         remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-        status: 'success',
+        status: 'confirmed',
       },
       remoteAxelarChain: 'eip155:42161',
       txId: 'tx0',
@@ -376,7 +376,7 @@ test.skip('CCTP settlement works', async t => {
         txDetails: {
           amount: 10000n,
           remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-          status: 'success',
+          status: 'confirmed',
         },
         txId: 'tx0',
       },
@@ -483,7 +483,7 @@ test.skip('CCTP settlement works across contract restarts', async t => {
       txDetails: {
         amount: 40_000n,
         remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-        status: 'success',
+        status: 'confirmed',
       },
       remoteAxelarChain: 'eip155:42161',
       txId: 'tx0',
@@ -507,7 +507,7 @@ test.skip('CCTP settlement works across contract restarts', async t => {
         txDetails: {
           amount: 40000n,
           remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-          status: 'success',
+          status: 'confirmed',
         },
         txId: 'tx0',
       },
@@ -592,7 +592,7 @@ test.serial(
           txDetails: {
             amount: 10_000n,
             remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-            status: 'success',
+            status: 'confirmed',
           },
           txId: 'tx0',
           remoteAxelarChain: 'eip155:42161',
@@ -656,7 +656,7 @@ test.skip('CCTP settlement works with new invitation after contract remove and s
       txDetails: {
         amount: 10_000n,
         remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-        status: 'success',
+        status: 'confirmed',
       },
       remoteAxelarChain: 'eip155:42161',
     },
@@ -677,7 +677,7 @@ test.skip('CCTP settlement works with new invitation after contract remove and s
         txDetails: {
           amount: 10000n,
           remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-          status: 'success',
+          status: 'confirmed',
         },
         txId: 'tx0',
       },
@@ -698,7 +698,7 @@ test.skip('CCTP settlement works with new invitation after contract remove and s
         txDetails: {
           amount: 10000n,
           remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-          status: 'success',
+          status: 'confirmed',
         },
         txId: 'tx0',
       },
