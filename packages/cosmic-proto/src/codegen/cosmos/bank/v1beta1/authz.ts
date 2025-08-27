@@ -42,7 +42,7 @@ function createBaseSendAuthorization(): SendAuthorization {
   };
 }
 export const SendAuthorization = {
-  typeUrl: '/cosmos.bank.v1beta1.SendAuthorization',
+  typeUrl: '/cosmos.bank.v1beta1.SendAuthorization' as const,
   encode(
     message: SendAuthorization,
     writer: BinaryWriter = BinaryWriter.create(),

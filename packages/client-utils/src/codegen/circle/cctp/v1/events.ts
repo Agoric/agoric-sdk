@@ -488,7 +488,7 @@ function createBaseAttesterEnabled(): AttesterEnabled {
   };
 }
 export const AttesterEnabled = {
-  typeUrl: '/circle.cctp.v1.AttesterEnabled',
+  typeUrl: '/circle.cctp.v1.AttesterEnabled' as const,
   encode(
     message: AttesterEnabled,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -550,7 +550,7 @@ function createBaseAttesterDisabled(): AttesterDisabled {
   };
 }
 export const AttesterDisabled = {
-  typeUrl: '/circle.cctp.v1.AttesterDisabled',
+  typeUrl: '/circle.cctp.v1.AttesterDisabled' as const,
   encode(
     message: AttesterDisabled,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -613,7 +613,7 @@ function createBaseSignatureThresholdUpdated(): SignatureThresholdUpdated {
   };
 }
 export const SignatureThresholdUpdated = {
-  typeUrl: '/circle.cctp.v1.SignatureThresholdUpdated',
+  typeUrl: '/circle.cctp.v1.SignatureThresholdUpdated' as const,
   encode(
     message: SignatureThresholdUpdated,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -714,7 +714,7 @@ function createBaseOwnerUpdated(): OwnerUpdated {
   };
 }
 export const OwnerUpdated = {
-  typeUrl: '/circle.cctp.v1.OwnerUpdated',
+  typeUrl: '/circle.cctp.v1.OwnerUpdated' as const,
   encode(
     message: OwnerUpdated,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -789,7 +789,7 @@ function createBaseOwnershipTransferStarted(): OwnershipTransferStarted {
   };
 }
 export const OwnershipTransferStarted = {
-  typeUrl: '/circle.cctp.v1.OwnershipTransferStarted',
+  typeUrl: '/circle.cctp.v1.OwnershipTransferStarted' as const,
   encode(
     message: OwnershipTransferStarted,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -875,7 +875,7 @@ function createBasePauserUpdated(): PauserUpdated {
   };
 }
 export const PauserUpdated = {
-  typeUrl: '/circle.cctp.v1.PauserUpdated',
+  typeUrl: '/circle.cctp.v1.PauserUpdated' as const,
   encode(
     message: PauserUpdated,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -950,7 +950,7 @@ function createBaseAttesterManagerUpdated(): AttesterManagerUpdated {
   };
 }
 export const AttesterManagerUpdated = {
-  typeUrl: '/circle.cctp.v1.AttesterManagerUpdated',
+  typeUrl: '/circle.cctp.v1.AttesterManagerUpdated' as const,
   encode(
     message: AttesterManagerUpdated,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1033,7 +1033,7 @@ function createBaseTokenControllerUpdated(): TokenControllerUpdated {
   };
 }
 export const TokenControllerUpdated = {
-  typeUrl: '/circle.cctp.v1.TokenControllerUpdated',
+  typeUrl: '/circle.cctp.v1.TokenControllerUpdated' as const,
   encode(
     message: TokenControllerUpdated,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1113,7 +1113,7 @@ function createBaseBurningAndMintingPausedEvent(): BurningAndMintingPausedEvent 
   return {};
 }
 export const BurningAndMintingPausedEvent = {
-  typeUrl: '/circle.cctp.v1.BurningAndMintingPausedEvent',
+  typeUrl: '/circle.cctp.v1.BurningAndMintingPausedEvent' as const,
   encode(
     _: BurningAndMintingPausedEvent,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1174,7 +1174,7 @@ function createBaseBurningAndMintingUnpausedEvent(): BurningAndMintingUnpausedEv
   return {};
 }
 export const BurningAndMintingUnpausedEvent = {
-  typeUrl: '/circle.cctp.v1.BurningAndMintingUnpausedEvent',
+  typeUrl: '/circle.cctp.v1.BurningAndMintingUnpausedEvent' as const,
   encode(
     _: BurningAndMintingUnpausedEvent,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1235,7 +1235,7 @@ function createBaseSendingAndReceivingPausedEvent(): SendingAndReceivingPausedEv
   return {};
 }
 export const SendingAndReceivingPausedEvent = {
-  typeUrl: '/circle.cctp.v1.SendingAndReceivingPausedEvent',
+  typeUrl: '/circle.cctp.v1.SendingAndReceivingPausedEvent' as const,
   encode(
     _: SendingAndReceivingPausedEvent,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1296,7 +1296,7 @@ function createBaseSendingAndReceivingUnpausedEvent(): SendingAndReceivingUnpaus
   return {};
 }
 export const SendingAndReceivingUnpausedEvent = {
-  typeUrl: '/circle.cctp.v1.SendingAndReceivingUnpausedEvent',
+  typeUrl: '/circle.cctp.v1.SendingAndReceivingUnpausedEvent' as const,
   encode(
     _: SendingAndReceivingUnpausedEvent,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1366,7 +1366,7 @@ function createBaseDepositForBurn(): DepositForBurn {
   };
 }
 export const DepositForBurn = {
-  typeUrl: '/circle.cctp.v1.DepositForBurn',
+  typeUrl: '/circle.cctp.v1.DepositForBurn' as const,
   encode(
     message: DepositForBurn,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1522,7 +1522,7 @@ function createBaseMintAndWithdraw(): MintAndWithdraw {
   };
 }
 export const MintAndWithdraw = {
-  typeUrl: '/circle.cctp.v1.MintAndWithdraw',
+  typeUrl: '/circle.cctp.v1.MintAndWithdraw' as const,
   encode(
     message: MintAndWithdraw,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1611,7 +1611,7 @@ function createBaseTokenPairLinked(): TokenPairLinked {
   };
 }
 export const TokenPairLinked = {
-  typeUrl: '/circle.cctp.v1.TokenPairLinked',
+  typeUrl: '/circle.cctp.v1.TokenPairLinked' as const,
   encode(
     message: TokenPairLinked,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1703,7 +1703,7 @@ function createBaseTokenPairUnlinked(): TokenPairUnlinked {
   };
 }
 export const TokenPairUnlinked = {
-  typeUrl: '/circle.cctp.v1.TokenPairUnlinked',
+  typeUrl: '/circle.cctp.v1.TokenPairUnlinked' as const,
   encode(
     message: TokenPairUnlinked,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1793,7 +1793,7 @@ function createBaseMessageSent(): MessageSent {
   };
 }
 export const MessageSent = {
-  typeUrl: '/circle.cctp.v1.MessageSent',
+  typeUrl: '/circle.cctp.v1.MessageSent' as const,
   encode(
     message: MessageSent,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1864,7 +1864,7 @@ function createBaseMessageReceived(): MessageReceived {
   };
 }
 export const MessageReceived = {
-  typeUrl: '/circle.cctp.v1.MessageReceived',
+  typeUrl: '/circle.cctp.v1.MessageReceived' as const,
   encode(
     message: MessageReceived,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1981,7 +1981,7 @@ function createBaseMaxMessageBodySizeUpdated(): MaxMessageBodySizeUpdated {
   };
 }
 export const MaxMessageBodySizeUpdated = {
-  typeUrl: '/circle.cctp.v1.MaxMessageBodySizeUpdated',
+  typeUrl: '/circle.cctp.v1.MaxMessageBodySizeUpdated' as const,
   encode(
     message: MaxMessageBodySizeUpdated,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2064,7 +2064,7 @@ function createBaseRemoteTokenMessengerAdded(): RemoteTokenMessengerAdded {
   };
 }
 export const RemoteTokenMessengerAdded = {
-  typeUrl: '/circle.cctp.v1.RemoteTokenMessengerAdded',
+  typeUrl: '/circle.cctp.v1.RemoteTokenMessengerAdded' as const,
   encode(
     message: RemoteTokenMessengerAdded,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2155,7 +2155,7 @@ function createBaseRemoteTokenMessengerRemoved(): RemoteTokenMessengerRemoved {
   };
 }
 export const RemoteTokenMessengerRemoved = {
-  typeUrl: '/circle.cctp.v1.RemoteTokenMessengerRemoved',
+  typeUrl: '/circle.cctp.v1.RemoteTokenMessengerRemoved' as const,
   encode(
     message: RemoteTokenMessengerRemoved,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2246,7 +2246,7 @@ function createBaseSetBurnLimitPerMessage(): SetBurnLimitPerMessage {
   };
 }
 export const SetBurnLimitPerMessage = {
-  typeUrl: '/circle.cctp.v1.SetBurnLimitPerMessage',
+  typeUrl: '/circle.cctp.v1.SetBurnLimitPerMessage' as const,
   encode(
     message: SetBurnLimitPerMessage,
     writer: BinaryWriter = BinaryWriter.create(),

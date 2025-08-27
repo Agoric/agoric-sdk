@@ -1,9 +1,9 @@
 import { IBCConnectionInfoShape } from '@agoric/orchestration/src/typeGuards.js';
 import { mustMatch } from '@endo/patterns';
 import { makeAgd } from '@agoric/orchestration/src/utils/agd-lib.js';
-import { networkConfigs } from '@agoric/orchestration/src/utils/gmp.js';
 import * as childProcess from 'node:child_process';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { fetchNetworkConfig } from '@agoric/client-utils';
 
 /**
  * @import {IBCChannelID, IBCConnectionID} from '@agoric/vats';
@@ -24,11 +24,12 @@ const parsePeers = strs => {
   return peerParts;
 };
 
+// TODO: Can these be sourced from chain-registry?
 /**
  * Get the IBC chain configuration based on the provided network and peer inputs.
  *
  * @param {object} args - The arguments object.
- * @param {string} args.net - The network name (e.g., 'emerynet').
+ * @param {'bootstrap' | 'devnet' |'emerynet' | 'local' } args.net - Agoric network shorthand (e.g., 'emerynet').
  * @param {string[]} args.peers - The peers to connect .
  * @param {childProcess.execFileSync} [args.execFileSync] - Optional execFileSync function.
  * @returns {Promise<Record<string, CosmosChainInfo>>} A promise that resolves to the chain configuration details keyed by chain name.
@@ -55,8 +56,11 @@ export const getChainConfig = async ({
   const connections = {};
   const portId = 'transfer';
 
-  const { chainId, rpc } = networkConfigs[net];
-  const agd = makeAgd({ execFileSync }).withOpts({ rpcAddrs: [rpc] });
+  const { chainName: chainId, rpcAddrs } = await fetchNetworkConfig(net, {
+    fetch,
+  });
+  // XXX execFileSync bad POLA; these queries can be made with `fetch`
+  const agd = makeAgd({ execFileSync }).withOpts({ rpcAddrs });
 
   for (const [peerName, myConn, myChan, denom] of parsePeers(peers)) {
     console.debug(peerName, { denom });

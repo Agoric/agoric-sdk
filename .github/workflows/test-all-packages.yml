@@ -27,7 +27,6 @@ defaults:
   run:
     shell: bash
 
-# set ESM_DISABLE_CACHE=true (will be JSON parsed)
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -110,6 +109,8 @@ jobs:
         run: yarn lint:format
 
       - run: yarn lint:package-names
+
+      - run: yarn constraints
 
       # Check some of a3p-integration in this job that runs on PRs instead of
       # waiting for the slow integration test that by default only runs in the
@@ -257,6 +258,30 @@ jobs:
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+
+  # Verify that running `yarn codegen` in any package that defines it
+  # does not produce changes. Only runs on pull requests.
+  test-codegen:
+    if: github.event_name == 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: 'node-new'
+
+      # Some codegen (e.g., cosmic-proto) depends on Go toolchain
+      - uses: ./.github/actions/restore-golang
+        with:
+          go-version: '1.22'
+
+      - name: Verify codegen idempotence
+        shell: bash
+        run: scripts/verify-codegen-idempotence.mjs
 
   test-quick2:
     # BEGIN-TEST-BOILERPLATE

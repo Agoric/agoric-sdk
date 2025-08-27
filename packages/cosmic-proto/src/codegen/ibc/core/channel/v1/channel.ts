@@ -406,7 +406,7 @@ function createBaseChannel(): Channel {
   };
 }
 export const Channel = {
-  typeUrl: '/ibc.core.channel.v1.Channel',
+  typeUrl: '/ibc.core.channel.v1.Channel' as const,
   encode(
     message: Channel,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -544,7 +544,7 @@ function createBaseIdentifiedChannel(): IdentifiedChannel {
   };
 }
 export const IdentifiedChannel = {
-  typeUrl: '/ibc.core.channel.v1.IdentifiedChannel',
+  typeUrl: '/ibc.core.channel.v1.IdentifiedChannel' as const,
   encode(
     message: IdentifiedChannel,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -694,7 +694,7 @@ function createBaseCounterparty(): Counterparty {
   };
 }
 export const Counterparty = {
-  typeUrl: '/ibc.core.channel.v1.Counterparty',
+  typeUrl: '/ibc.core.channel.v1.Counterparty' as const,
   encode(
     message: Counterparty,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -772,7 +772,7 @@ function createBasePacket(): Packet {
   };
 }
 export const Packet = {
-  typeUrl: '/ibc.core.channel.v1.Packet',
+  typeUrl: '/ibc.core.channel.v1.Packet' as const,
   encode(
     message: Packet,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -936,7 +936,7 @@ function createBasePacketState(): PacketState {
   };
 }
 export const PacketState = {
-  typeUrl: '/ibc.core.channel.v1.PacketState',
+  typeUrl: '/ibc.core.channel.v1.PacketState' as const,
   encode(
     message: PacketState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1038,7 +1038,7 @@ function createBasePacketId(): PacketId {
   };
 }
 export const PacketId = {
-  typeUrl: '/ibc.core.channel.v1.PacketId',
+  typeUrl: '/ibc.core.channel.v1.PacketId' as const,
   encode(
     message: PacketId,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1125,7 +1125,7 @@ function createBaseAcknowledgement(): Acknowledgement {
   };
 }
 export const Acknowledgement = {
-  typeUrl: '/ibc.core.channel.v1.Acknowledgement',
+  typeUrl: '/ibc.core.channel.v1.Acknowledgement' as const,
   encode(
     message: Acknowledgement,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1201,7 +1201,7 @@ function createBaseTimeout(): Timeout {
   };
 }
 export const Timeout = {
-  typeUrl: '/ibc.core.channel.v1.Timeout',
+  typeUrl: '/ibc.core.channel.v1.Timeout' as const,
   encode(
     message: Timeout,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1282,7 +1282,7 @@ function createBaseParams(): Params {
   };
 }
 export const Params = {
-  typeUrl: '/ibc.core.channel.v1.Params',
+  typeUrl: '/ibc.core.channel.v1.Params' as const,
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -116,6 +116,7 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       },
       {},
     ) as TypedPattern<OfferArgsFor['rebalance']>,
+    movementDescShape: movementDescShape as TypedPattern<MovementDesc>,
   };
 };
 harden(makeOfferArgsShapes);

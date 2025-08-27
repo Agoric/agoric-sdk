@@ -573,7 +573,7 @@ function createBaseExistenceProof(): ExistenceProof {
   };
 }
 export const ExistenceProof = {
-  typeUrl: '/cosmos.ics23.v1.ExistenceProof',
+  typeUrl: '/cosmos.ics23.v1.ExistenceProof' as const,
   encode(
     message: ExistenceProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -682,7 +682,7 @@ function createBaseNonExistenceProof(): NonExistenceProof {
   };
 }
 export const NonExistenceProof = {
-  typeUrl: '/cosmos.ics23.v1.NonExistenceProof',
+  typeUrl: '/cosmos.ics23.v1.NonExistenceProof' as const,
   encode(
     message: NonExistenceProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -784,7 +784,7 @@ function createBaseCommitmentProof(): CommitmentProof {
   };
 }
 export const CommitmentProof = {
-  typeUrl: '/cosmos.ics23.v1.CommitmentProof',
+  typeUrl: '/cosmos.ics23.v1.CommitmentProof' as const,
   encode(
     message: CommitmentProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -918,7 +918,7 @@ function createBaseLeafOp(): LeafOp {
   };
 }
 export const LeafOp = {
-  typeUrl: '/cosmos.ics23.v1.LeafOp',
+  typeUrl: '/cosmos.ics23.v1.LeafOp' as const,
   encode(
     message: LeafOp,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1030,7 +1030,7 @@ function createBaseInnerOp(): InnerOp {
   };
 }
 export const InnerOp = {
-  typeUrl: '/cosmos.ics23.v1.InnerOp',
+  typeUrl: '/cosmos.ics23.v1.InnerOp' as const,
   encode(
     message: InnerOp,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1124,7 +1124,7 @@ function createBaseProofSpec(): ProofSpec {
   };
 }
 export const ProofSpec = {
-  typeUrl: '/cosmos.ics23.v1.ProofSpec',
+  typeUrl: '/cosmos.ics23.v1.ProofSpec' as const,
   encode(
     message: ProofSpec,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1249,7 +1249,7 @@ function createBaseInnerSpec(): InnerSpec {
   };
 }
 export const InnerSpec = {
-  typeUrl: '/cosmos.ics23.v1.InnerSpec',
+  typeUrl: '/cosmos.ics23.v1.InnerSpec' as const,
   encode(
     message: InnerSpec,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1385,7 +1385,7 @@ function createBaseBatchProof(): BatchProof {
   };
 }
 export const BatchProof = {
-  typeUrl: '/cosmos.ics23.v1.BatchProof',
+  typeUrl: '/cosmos.ics23.v1.BatchProof' as const,
   encode(
     message: BatchProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1456,7 +1456,7 @@ function createBaseBatchEntry(): BatchEntry {
   };
 }
 export const BatchEntry = {
-  typeUrl: '/cosmos.ics23.v1.BatchEntry',
+  typeUrl: '/cosmos.ics23.v1.BatchEntry' as const,
   encode(
     message: BatchEntry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1547,7 +1547,7 @@ function createBaseCompressedBatchProof(): CompressedBatchProof {
   };
 }
 export const CompressedBatchProof = {
-  typeUrl: '/cosmos.ics23.v1.CompressedBatchProof',
+  typeUrl: '/cosmos.ics23.v1.CompressedBatchProof' as const,
   encode(
     message: CompressedBatchProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1642,7 +1642,7 @@ function createBaseCompressedBatchEntry(): CompressedBatchEntry {
   };
 }
 export const CompressedBatchEntry = {
-  typeUrl: '/cosmos.ics23.v1.CompressedBatchEntry',
+  typeUrl: '/cosmos.ics23.v1.CompressedBatchEntry' as const,
   encode(
     message: CompressedBatchEntry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1747,7 +1747,7 @@ function createBaseCompressedExistenceProof(): CompressedExistenceProof {
   };
 }
 export const CompressedExistenceProof = {
-  typeUrl: '/cosmos.ics23.v1.CompressedExistenceProof',
+  typeUrl: '/cosmos.ics23.v1.CompressedExistenceProof' as const,
   encode(
     message: CompressedExistenceProof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1876,7 +1876,7 @@ function createBaseCompressedNonExistenceProof(): CompressedNonExistenceProof {
   };
 }
 export const CompressedNonExistenceProof = {
-  typeUrl: '/cosmos.ics23.v1.CompressedNonExistenceProof',
+  typeUrl: '/cosmos.ics23.v1.CompressedNonExistenceProof' as const,
   encode(
     message: CompressedNonExistenceProof,
     writer: BinaryWriter = BinaryWriter.create(),

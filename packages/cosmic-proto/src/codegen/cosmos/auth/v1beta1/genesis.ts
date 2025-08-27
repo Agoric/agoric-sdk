@@ -27,7 +27,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/cosmos.auth.v1beta1.GenesisState',
+  typeUrl: '/cosmos.auth.v1beta1.GenesisState' as const,
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

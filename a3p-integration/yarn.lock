@@ -317,9 +317,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/synthetic-chain@file:./agoric-synthetic-chain-0.5.9.tgz::locator=root-workspace-0b6124%40workspace%3A.":
-  version: 0.5.8
-  resolution: "@agoric/synthetic-chain@file:./agoric-synthetic-chain-0.5.9.tgz#./agoric-synthetic-chain-0.5.9.tgz::hash=3a11ca&locator=root-workspace-0b6124%40workspace%3A."
+"@agoric/synthetic-chain@npm:^0.6.1":
+  version: 0.6.1
+  resolution: "@agoric/synthetic-chain@npm:0.6.1"
   dependencies:
     "@agoric/client-utils": "npm:0.1.1-dev-f9483e7.0"
     "@endo/zip": "npm:^1.0.9"
@@ -331,7 +331,7 @@ __metadata:
     tmp: "npm:0.2.3"
   bin:
     synthetic-chain: dist/cli/cli.js
-  checksum: 10c0/c1865b8f091d3ac051c7e7b097bff544ed51f0acb9e483c2ac8291c1fc4ef038071ac8d94f866bc61b23be97b15d5268b5038d26a2f128afeb03632a9335cecf
+  checksum: 10c0/a53b0b96a43429f9633642e9c51401e08f027afa83fa5735a6100ff8c0ef1a355d19bab289fd7e4fa23f7fdff37ac3d5ca264d814ed7b3d3c1f99394681fafce
   languageName: node
   linkType: hard
 
@@ -4013,7 +4013,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@agoric/synthetic-chain": "file:./agoric-synthetic-chain-0.5.9.tgz"
+    "@agoric/synthetic-chain": "npm:^0.6.1"
     eslint: "npm:^8.57.1"
     npm-run-all: "npm:^4.1.5"
   languageName: unknown

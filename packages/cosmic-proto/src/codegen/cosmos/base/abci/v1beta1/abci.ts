@@ -335,7 +335,7 @@ function createBaseTxResponse(): TxResponse {
   };
 }
 export const TxResponse = {
-  typeUrl: '/cosmos.base.abci.v1beta1.TxResponse',
+  typeUrl: '/cosmos.base.abci.v1beta1.TxResponse' as const,
   encode(
     message: TxResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -543,7 +543,7 @@ function createBaseABCIMessageLog(): ABCIMessageLog {
   };
 }
 export const ABCIMessageLog = {
-  typeUrl: '/cosmos.base.abci.v1beta1.ABCIMessageLog',
+  typeUrl: '/cosmos.base.abci.v1beta1.ABCIMessageLog' as const,
   encode(
     message: ABCIMessageLog,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -633,7 +633,7 @@ function createBaseStringEvent(): StringEvent {
   };
 }
 export const StringEvent = {
-  typeUrl: '/cosmos.base.abci.v1beta1.StringEvent',
+  typeUrl: '/cosmos.base.abci.v1beta1.StringEvent' as const,
   encode(
     message: StringEvent,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -714,7 +714,7 @@ function createBaseAttribute(): Attribute {
   };
 }
 export const Attribute = {
-  typeUrl: '/cosmos.base.abci.v1beta1.Attribute',
+  typeUrl: '/cosmos.base.abci.v1beta1.Attribute' as const,
   encode(
     message: Attribute,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -786,7 +786,7 @@ function createBaseGasInfo(): GasInfo {
   };
 }
 export const GasInfo = {
-  typeUrl: '/cosmos.base.abci.v1beta1.GasInfo',
+  typeUrl: '/cosmos.base.abci.v1beta1.GasInfo' as const,
   encode(
     message: GasInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -872,7 +872,7 @@ function createBaseResult(): Result {
   };
 }
 export const Result = {
-  typeUrl: '/cosmos.base.abci.v1beta1.Result',
+  typeUrl: '/cosmos.base.abci.v1beta1.Result' as const,
   encode(
     message: Result,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -982,7 +982,7 @@ function createBaseSimulationResponse(): SimulationResponse {
   };
 }
 export const SimulationResponse = {
-  typeUrl: '/cosmos.base.abci.v1beta1.SimulationResponse',
+  typeUrl: '/cosmos.base.abci.v1beta1.SimulationResponse' as const,
   encode(
     message: SimulationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1069,7 +1069,7 @@ function createBaseMsgData(): MsgData {
   };
 }
 export const MsgData = {
-  typeUrl: '/cosmos.base.abci.v1beta1.MsgData',
+  typeUrl: '/cosmos.base.abci.v1beta1.MsgData' as const,
   encode(
     message: MsgData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1146,7 +1146,7 @@ function createBaseTxMsgData(): TxMsgData {
   };
 }
 export const TxMsgData = {
-  typeUrl: '/cosmos.base.abci.v1beta1.TxMsgData',
+  typeUrl: '/cosmos.base.abci.v1beta1.TxMsgData' as const,
   encode(
     message: TxMsgData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1237,7 +1237,7 @@ function createBaseSearchTxsResult(): SearchTxsResult {
   };
 }
 export const SearchTxsResult = {
-  typeUrl: '/cosmos.base.abci.v1beta1.SearchTxsResult',
+  typeUrl: '/cosmos.base.abci.v1beta1.SearchTxsResult' as const,
   encode(
     message: SearchTxsResult,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1381,7 +1381,7 @@ function createBaseSearchBlocksResult(): SearchBlocksResult {
   };
 }
 export const SearchBlocksResult = {
-  typeUrl: '/cosmos.base.abci.v1beta1.SearchBlocksResult',
+  typeUrl: '/cosmos.base.abci.v1beta1.SearchBlocksResult' as const,
   encode(
     message: SearchBlocksResult,
     writer: BinaryWriter = BinaryWriter.create(),

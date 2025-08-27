@@ -93,7 +93,7 @@ function createBaseProof(): Proof {
   };
 }
 export const Proof = {
-  typeUrl: '/tendermint.crypto.Proof',
+  typeUrl: '/tendermint.crypto.Proof' as const,
   encode(
     message: Proof,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -204,7 +204,7 @@ function createBaseValueOp(): ValueOp {
   };
 }
 export const ValueOp = {
-  typeUrl: '/tendermint.crypto.ValueOp',
+  typeUrl: '/tendermint.crypto.ValueOp' as const,
   encode(
     message: ValueOp,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -284,7 +284,7 @@ function createBaseDominoOp(): DominoOp {
   };
 }
 export const DominoOp = {
-  typeUrl: '/tendermint.crypto.DominoOp',
+  typeUrl: '/tendermint.crypto.DominoOp' as const,
   encode(
     message: DominoOp,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -366,7 +366,7 @@ function createBaseProofOp(): ProofOp {
   };
 }
 export const ProofOp = {
-  typeUrl: '/tendermint.crypto.ProofOp',
+  typeUrl: '/tendermint.crypto.ProofOp' as const,
   encode(
     message: ProofOp,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -454,7 +454,7 @@ function createBaseProofOps(): ProofOps {
   };
 }
 export const ProofOps = {
-  typeUrl: '/tendermint.crypto.ProofOps',
+  typeUrl: '/tendermint.crypto.ProofOps' as const,
   encode(
     message: ProofOps,
     writer: BinaryWriter = BinaryWriter.create(),

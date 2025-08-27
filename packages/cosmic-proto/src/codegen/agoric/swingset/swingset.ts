@@ -272,7 +272,7 @@ function createBaseCoreEvalProposal(): CoreEvalProposal {
   };
 }
 export const CoreEvalProposal = {
-  typeUrl: '/agoric.swingset.CoreEvalProposal',
+  typeUrl: '/agoric.swingset.CoreEvalProposal' as const,
   encode(
     message: CoreEvalProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -360,7 +360,7 @@ function createBaseCoreEval(): CoreEval {
   };
 }
 export const CoreEval = {
-  typeUrl: '/agoric.swingset.CoreEval',
+  typeUrl: '/agoric.swingset.CoreEval' as const,
   encode(
     message: CoreEval,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -437,7 +437,7 @@ function createBaseParams(): Params {
   };
 }
 export const Params = {
-  typeUrl: '/agoric.swingset.Params',
+  typeUrl: '/agoric.swingset.Params' as const,
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -598,7 +598,7 @@ function createBaseState(): State {
   };
 }
 export const State = {
-  typeUrl: '/agoric.swingset.State',
+  typeUrl: '/agoric.swingset.State' as const,
   encode(
     message: State,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -670,7 +670,7 @@ function createBaseStringBeans(): StringBeans {
   };
 }
 export const StringBeans = {
-  typeUrl: '/agoric.swingset.StringBeans',
+  typeUrl: '/agoric.swingset.StringBeans' as const,
   encode(
     message: StringBeans,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -742,7 +742,7 @@ function createBasePowerFlagFee(): PowerFlagFee {
   };
 }
 export const PowerFlagFee = {
-  typeUrl: '/agoric.swingset.PowerFlagFee',
+  typeUrl: '/agoric.swingset.PowerFlagFee' as const,
   encode(
     message: PowerFlagFee,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -820,7 +820,7 @@ function createBaseQueueSize(): QueueSize {
   };
 }
 export const QueueSize = {
-  typeUrl: '/agoric.swingset.QueueSize',
+  typeUrl: '/agoric.swingset.QueueSize' as const,
   encode(
     message: QueueSize,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -892,7 +892,7 @@ function createBaseUintMapEntry(): UintMapEntry {
   };
 }
 export const UintMapEntry = {
-  typeUrl: '/agoric.swingset.UintMapEntry',
+  typeUrl: '/agoric.swingset.UintMapEntry' as const,
   encode(
     message: UintMapEntry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -965,7 +965,7 @@ function createBaseEgress(): Egress {
   };
 }
 export const Egress = {
-  typeUrl: '/agoric.swingset.Egress',
+  typeUrl: '/agoric.swingset.Egress' as const,
   encode(
     message: Egress,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1057,7 +1057,7 @@ function createBaseSwingStoreArtifact(): SwingStoreArtifact {
   };
 }
 export const SwingStoreArtifact = {
-  typeUrl: '/agoric.swingset.SwingStoreArtifact',
+  typeUrl: '/agoric.swingset.SwingStoreArtifact' as const,
   encode(
     message: SwingStoreArtifact,
     writer: BinaryWriter = BinaryWriter.create(),

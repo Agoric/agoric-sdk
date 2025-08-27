@@ -48,7 +48,7 @@ function createBaseBurnMessage(): BurnMessage {
   };
 }
 export const BurnMessage = {
-  typeUrl: '/circle.cctp.v1.BurnMessage',
+  typeUrl: '/circle.cctp.v1.BurnMessage' as const,
   encode(
     message: BurnMessage,
     writer: BinaryWriter = BinaryWriter.create(),

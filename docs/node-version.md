@@ -13,6 +13,7 @@ When a new version becomes Active LTS:
 - [ ] update integrations to use it (e.g. `.github/workflows/integration.yml`)
 - [ ] update the .node-version hint to use it
 - [ ] update Node.js test ranges to remove the EOLed version and add the new LTS
-- [ ] update package.json engines to allow the two LTS versions
+- [ ] update package.json engines to allow the two LTS versions (by updating `yarn.config.cjs` then `yarn constraints --fix`)
 - [ ] update README.md to document the new supported versions
+- [ ] update AGENTS.md to document the new supported versions
 - [ ] update repoconfig.sh to verify against the new supported versions

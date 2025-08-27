@@ -97,7 +97,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/ibc.core.client.v1.GenesisState',
+  typeUrl: '/ibc.core.client.v1.GenesisState' as const,
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -261,7 +261,7 @@ function createBaseGenesisMetadata(): GenesisMetadata {
   };
 }
 export const GenesisMetadata = {
-  typeUrl: '/ibc.core.client.v1.GenesisMetadata',
+  typeUrl: '/ibc.core.client.v1.GenesisMetadata' as const,
   encode(
     message: GenesisMetadata,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -341,7 +341,7 @@ function createBaseIdentifiedGenesisMetadata(): IdentifiedGenesisMetadata {
   };
 }
 export const IdentifiedGenesisMetadata = {
-  typeUrl: '/ibc.core.client.v1.IdentifiedGenesisMetadata',
+  typeUrl: '/ibc.core.client.v1.IdentifiedGenesisMetadata' as const,
   encode(
     message: IdentifiedGenesisMetadata,
     writer: BinaryWriter = BinaryWriter.create(),

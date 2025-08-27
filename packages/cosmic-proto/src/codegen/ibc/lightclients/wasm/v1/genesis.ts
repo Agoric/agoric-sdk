@@ -36,7 +36,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/ibc.lightclients.wasm.v1.GenesisState',
+  typeUrl: '/ibc.lightclients.wasm.v1.GenesisState' as const,
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -107,7 +107,7 @@ function createBaseContract(): Contract {
   };
 }
 export const Contract = {
-  typeUrl: '/ibc.lightclients.wasm.v1.Contract',
+  typeUrl: '/ibc.lightclients.wasm.v1.Contract' as const,
   encode(
     message: Contract,
     writer: BinaryWriter = BinaryWriter.create(),

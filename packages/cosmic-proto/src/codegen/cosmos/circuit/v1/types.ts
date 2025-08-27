@@ -125,7 +125,7 @@ function createBasePermissions(): Permissions {
   };
 }
 export const Permissions = {
-  typeUrl: '/cosmos.circuit.v1.Permissions',
+  typeUrl: '/cosmos.circuit.v1.Permissions' as const,
   encode(
     message: Permissions,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -204,7 +204,7 @@ function createBaseGenesisAccountPermissions(): GenesisAccountPermissions {
   };
 }
 export const GenesisAccountPermissions = {
-  typeUrl: '/cosmos.circuit.v1.GenesisAccountPermissions',
+  typeUrl: '/cosmos.circuit.v1.GenesisAccountPermissions' as const,
   encode(
     message: GenesisAccountPermissions,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -298,7 +298,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/cosmos.circuit.v1.GenesisState',
+  typeUrl: '/cosmos.circuit.v1.GenesisState' as const,
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

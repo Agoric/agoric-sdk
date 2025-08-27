@@ -9,6 +9,7 @@
         "outDir": "dist",
         "emitDeclarationOnly": false,
         "declaration": true,
+        "declarationMap": true,
         "target": "es2022",
         "module": "NodeNext",
         "moduleResolution": "NodeNext",

@@ -54,7 +54,7 @@ function createBaseMinter(): Minter {
   };
 }
 export const Minter = {
-  typeUrl: '/cosmos.mint.v1beta1.Minter',
+  typeUrl: '/cosmos.mint.v1beta1.Minter' as const,
   encode(
     message: Minter,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -143,7 +143,7 @@ function createBaseParams(): Params {
   };
 }
 export const Params = {
-  typeUrl: '/cosmos.mint.v1beta1.Params',
+  typeUrl: '/cosmos.mint.v1beta1.Params' as const,
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),

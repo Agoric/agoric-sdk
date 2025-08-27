@@ -116,7 +116,7 @@ function createBaseMsgRegisterInterchainAccount(): MsgRegisterInterchainAccount 
 }
 export const MsgRegisterInterchainAccount = {
   typeUrl:
-    '/ibc.applications.interchain_accounts.controller.v1.MsgRegisterInterchainAccount',
+    '/ibc.applications.interchain_accounts.controller.v1.MsgRegisterInterchainAccount' as const,
   encode(
     message: MsgRegisterInterchainAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -223,7 +223,7 @@ function createBaseMsgRegisterInterchainAccountResponse(): MsgRegisterInterchain
 }
 export const MsgRegisterInterchainAccountResponse = {
   typeUrl:
-    '/ibc.applications.interchain_accounts.controller.v1.MsgRegisterInterchainAccountResponse',
+    '/ibc.applications.interchain_accounts.controller.v1.MsgRegisterInterchainAccountResponse' as const,
   encode(
     message: MsgRegisterInterchainAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -309,7 +309,8 @@ function createBaseMsgSendTx(): MsgSendTx {
   };
 }
 export const MsgSendTx = {
-  typeUrl: '/ibc.applications.interchain_accounts.controller.v1.MsgSendTx',
+  typeUrl:
+    '/ibc.applications.interchain_accounts.controller.v1.MsgSendTx' as const,
   encode(
     message: MsgSendTx,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -422,7 +423,7 @@ function createBaseMsgSendTxResponse(): MsgSendTxResponse {
 }
 export const MsgSendTxResponse = {
   typeUrl:
-    '/ibc.applications.interchain_accounts.controller.v1.MsgSendTxResponse',
+    '/ibc.applications.interchain_accounts.controller.v1.MsgSendTxResponse' as const,
   encode(
     message: MsgSendTxResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -493,7 +494,7 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
 }
 export const MsgUpdateParams = {
   typeUrl:
-    '/ibc.applications.interchain_accounts.controller.v1.MsgUpdateParams',
+    '/ibc.applications.interchain_accounts.controller.v1.MsgUpdateParams' as const,
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -568,7 +569,7 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
 }
 export const MsgUpdateParamsResponse = {
   typeUrl:
-    '/ibc.applications.interchain_accounts.controller.v1.MsgUpdateParamsResponse',
+    '/ibc.applications.interchain_accounts.controller.v1.MsgUpdateParamsResponse' as const,
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

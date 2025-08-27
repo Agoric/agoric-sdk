@@ -120,7 +120,7 @@ function createBaseMsgTransfer(): MsgTransfer {
   };
 }
 export const MsgTransfer = {
-  typeUrl: '/ibc.applications.transfer.v1.MsgTransfer',
+  typeUrl: '/ibc.applications.transfer.v1.MsgTransfer' as const,
   encode(
     message: MsgTransfer,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -268,7 +268,7 @@ function createBaseMsgTransferResponse(): MsgTransferResponse {
   };
 }
 export const MsgTransferResponse = {
-  typeUrl: '/ibc.applications.transfer.v1.MsgTransferResponse',
+  typeUrl: '/ibc.applications.transfer.v1.MsgTransferResponse' as const,
   encode(
     message: MsgTransferResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -340,7 +340,7 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
   };
 }
 export const MsgUpdateParams = {
-  typeUrl: '/ibc.applications.transfer.v1.MsgUpdateParams',
+  typeUrl: '/ibc.applications.transfer.v1.MsgUpdateParams' as const,
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -413,7 +413,7 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
 }
 export const MsgUpdateParamsResponse = {
-  typeUrl: '/ibc.applications.transfer.v1.MsgUpdateParamsResponse',
+  typeUrl: '/ibc.applications.transfer.v1.MsgUpdateParamsResponse' as const,
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

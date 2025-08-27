@@ -83,7 +83,7 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
 export const QueryParamsRequest = {
-  typeUrl: '/agoric.swingset.QueryParamsRequest',
+  typeUrl: '/agoric.swingset.QueryParamsRequest' as const,
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -138,7 +138,7 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
   };
 }
 export const QueryParamsResponse = {
-  typeUrl: '/agoric.swingset.QueryParamsResponse',
+  typeUrl: '/agoric.swingset.QueryParamsResponse' as const,
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -207,7 +207,7 @@ function createBaseQueryEgressRequest(): QueryEgressRequest {
   };
 }
 export const QueryEgressRequest = {
-  typeUrl: '/agoric.swingset.QueryEgressRequest',
+  typeUrl: '/agoric.swingset.QueryEgressRequest' as const,
   encode(
     message: QueryEgressRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -277,7 +277,7 @@ function createBaseQueryEgressResponse(): QueryEgressResponse {
   };
 }
 export const QueryEgressResponse = {
-  typeUrl: '/agoric.swingset.QueryEgressResponse',
+  typeUrl: '/agoric.swingset.QueryEgressResponse' as const,
   encode(
     message: QueryEgressResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -346,7 +346,7 @@ function createBaseQueryMailboxRequest(): QueryMailboxRequest {
   };
 }
 export const QueryMailboxRequest = {
-  typeUrl: '/agoric.swingset.QueryMailboxRequest',
+  typeUrl: '/agoric.swingset.QueryMailboxRequest' as const,
   encode(
     message: QueryMailboxRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -416,7 +416,7 @@ function createBaseQueryMailboxResponse(): QueryMailboxResponse {
   };
 }
 export const QueryMailboxResponse = {
-  typeUrl: '/agoric.swingset.QueryMailboxResponse',
+  typeUrl: '/agoric.swingset.QueryMailboxResponse' as const,
   encode(
     message: QueryMailboxResponse,
     writer: BinaryWriter = BinaryWriter.create(),
