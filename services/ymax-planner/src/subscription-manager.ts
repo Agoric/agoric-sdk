@@ -76,11 +76,19 @@ type CctpConfig = {
   [chainId: string]: CctpChainConfig;
 };
 
-/* Sourced from:
+/**
+ * Sourced from:
  * - https://chainlist.org/
  * - https://docs.simplehash.com/reference/supported-chains-testnets
- *   (accessed on 26th August 2025)
+ *   (accessed on 27th August 2025)
  * - https://developers.circle.com/cctp/evm-smart-contracts
+ * - https://developers.circle.com/stablecoins/usdc-contract-addresses
+ *
+ * Notes:
+ * - This list should conceptually come from an orchestration type
+ *   for supported EVM networks.
+ * - Currently this config mirrors the EVM chains defined in
+ *   packages/orchestration/src/cctp-chain-info.js
  */
 const cctpConfig: CctpConfig = {
   // 1 — Ethereum
@@ -150,6 +158,19 @@ const cctpConfig: CctpConfig = {
     },
   },
 
+  // 8453 — Base
+  '8453': {
+    name: 'Base',
+    domain: 6,
+    contracts: {
+      tokenMessengerV2: '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d',
+      messageTransmitterV2: '0x81D40F21F12A8F0E3252Bccb954D722d4c464B64',
+      tokenMinterV2: '0xfd78EE919681417d192449715b2594ab58f5D002',
+      messageV2: '0xec546b6B005471ECf012e5aF77FBeC07e0FD8f78',
+      usdc: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    },
+  },
+
   // 11155111 — Ethereum Sepolia
   '11155111': {
     name: 'Ethereum',
@@ -212,6 +233,19 @@ const cctpConfig: CctpConfig = {
       tokenMinterV2: '0xb43db544E2c27092c107639Ad201b3dEfAbcF192',
       messageV2: '0xbaC0179bB358A8936169a63408C8481D582390C4',
       usdc: '0x5fd84259d66Cd46123540766Be93DFE6D43130D7',
+    },
+  },
+
+  // 84532 — Base Sepolia
+  '84532': {
+    name: 'Base',
+    domain: 6,
+    contracts: {
+      tokenMessengerV2: '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA',
+      messageTransmitterV2: '0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275',
+      tokenMinterV2: '0xb43db544E2c27092c107639Ad201b3dEfAbcF192',
+      messageV2: '0xbaC0179bB358A8936169a63408C8481D582390C4',
+      usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
     },
   },
 };
