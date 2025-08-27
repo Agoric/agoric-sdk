@@ -514,7 +514,7 @@ function createBaseQueryChunkedArtifactStatusRequest(): QueryChunkedArtifactStat
   };
 }
 export const QueryChunkedArtifactStatusRequest = {
-  typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusRequest',
+  typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusRequest' as const,
   encode(
     message: QueryChunkedArtifactStatusRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -599,7 +599,7 @@ function createBaseQueryChunkedArtifactStatusResponse(): QueryChunkedArtifactSta
   };
 }
 export const QueryChunkedArtifactStatusResponse = {
-  typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusResponse',
+  typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusResponse' as const,
   encode(
     message: QueryChunkedArtifactStatusResponse,
     writer: BinaryWriter = BinaryWriter.create(),

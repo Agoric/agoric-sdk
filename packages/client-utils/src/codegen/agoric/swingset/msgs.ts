@@ -1083,7 +1083,7 @@ function createBaseMsgSendChunk(): MsgSendChunk {
   };
 }
 export const MsgSendChunk = {
-  typeUrl: '/agoric.swingset.MsgSendChunk',
+  typeUrl: '/agoric.swingset.MsgSendChunk' as const,
   encode(
     message: MsgSendChunk,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1198,7 +1198,7 @@ function createBaseMsgSendChunkResponse(): MsgSendChunkResponse {
   };
 }
 export const MsgSendChunkResponse = {
-  typeUrl: '/agoric.swingset.MsgSendChunkResponse',
+  typeUrl: '/agoric.swingset.MsgSendChunkResponse' as const,
   encode(
     message: MsgSendChunkResponse,
     writer: BinaryWriter = BinaryWriter.create(),

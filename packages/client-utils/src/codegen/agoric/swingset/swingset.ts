@@ -1365,7 +1365,7 @@ function createBaseChunkedArtifact(): ChunkedArtifact {
   };
 }
 export const ChunkedArtifact = {
-  typeUrl: '/agoric.swingset.ChunkedArtifact',
+  typeUrl: '/agoric.swingset.ChunkedArtifact' as const,
   encode(
     message: ChunkedArtifact,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1478,7 +1478,7 @@ function createBaseChunkInfo(): ChunkInfo {
   };
 }
 export const ChunkInfo = {
-  typeUrl: '/agoric.swingset.ChunkInfo',
+  typeUrl: '/agoric.swingset.ChunkInfo' as const,
   encode(
     message: ChunkInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1569,7 +1569,7 @@ function createBaseChunkedArtifactNode(): ChunkedArtifactNode {
   };
 }
 export const ChunkedArtifactNode = {
-  typeUrl: '/agoric.swingset.ChunkedArtifactNode',
+  typeUrl: '/agoric.swingset.ChunkedArtifactNode' as const,
   encode(
     message: ChunkedArtifactNode,
     writer: BinaryWriter = BinaryWriter.create(),
