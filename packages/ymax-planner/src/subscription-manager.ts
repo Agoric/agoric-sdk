@@ -5,7 +5,7 @@ import { JsonRpcProvider } from 'ethers';
 import { watchGmp } from './axelar/gmp-watcher.ts';
 import { resolveCctpSubscription } from './resolver.ts';
 import { watchCctpTransfer } from './watch-cctp.ts';
-import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 
 export type EvmChain = keyof typeof AxelarChain;
 
@@ -30,7 +30,7 @@ export type GmpTransfer = {
 /**
  * Subscription state machine:
  * pending -> success (when cross-chain operation completes successfully)
- * pending -> timeout (when operation fails or times out)
+ * pending -> failed (when operation fails or times out)
  *
  * Terminal states: success and timeout never transition to other states.
  */
@@ -97,7 +97,7 @@ export const handleSubscription = async (
       await resolveCctpSubscription({
         signingSmartWalletKit: ctx.signingSmartWalletKit,
         subscriptionId,
-        status: transferStatus ? 'success' : 'timeout',
+        status: transferStatus ? TxStatus.SUCCESS : TxStatus.FAILED,
         subscriptionData: subscription,
       });
       break;

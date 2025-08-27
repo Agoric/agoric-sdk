@@ -2,11 +2,12 @@ import { type SigningSmartWalletKit } from '@agoric/client-utils';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
 import { Fail } from '@endo/errors';
 import type { CctpSubscription } from './subscription-manager.js';
+import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 
 type ResolveSubscriptionParams = {
   signingSmartWalletKit: SigningSmartWalletKit;
   subscriptionId: string;
-  status: 'success' | 'timeout';
+  status: TxStatus;
   subscriptionData: CctpSubscription;
   proposal?: object;
 };
@@ -31,9 +32,6 @@ export const resolveCctpSubscription = async ({
 }: ResolveSubscriptionParams) => {
   subscriptionData.type === 'cctp' ||
     Fail`Expected subscription type to be 'cctp', got ${subscriptionData.type}`;
-  if (status === 'timeout') {
-    throw new Error('TODO: timeout is not implemented yet in contract');
-  }
 
   const invitationMakersOffer = await getInvitationMakers(
     signingSmartWalletKit,
