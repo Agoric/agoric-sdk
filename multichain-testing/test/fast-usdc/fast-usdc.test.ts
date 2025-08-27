@@ -387,19 +387,19 @@ const advanceAndSettleScenario = test.macro({
       );
     }
     console.timeEnd(`UX->${eudChain}`);
-    const blockDur =
-      Number(finalBlock.header.height) - Number(initialBlock.header.height);
-    const MAIN_BLOCK_SECS = 7;
+    const finalBlockTime = new Date(finalBlock.header.time).getTime();
+    const initialBlockTime = new Date(initialBlock.header.time).getTime();
+    const timeDuration = (finalBlockTime - initialBlockTime) / 1000;
     const MAIN_MAX_DUR = 120; // product requirement: 2 min
     const MARGIN_OF_ERROR = 0.2;
-    const mainWallClockEstimate = blockDur * MAIN_BLOCK_SECS;
     t.log({
       initialHeight: initialBlock.header.height,
+      initialBlockTime,
       finalHeight: finalBlock.header.height,
-      blockDur,
-      mainWallClockEstimate,
+      finalBlockTime,
+      timeDuration,
     });
-    t.true(mainWallClockEstimate * (1 + MARGIN_OF_ERROR) <= MAIN_MAX_DUR);
+    t.true(timeDuration <= MAIN_MAX_DUR * (1 + MARGIN_OF_ERROR));
 
     await assertTxStatus(evidence.txHash, 'ADVANCED');
     trace('Advance completed, waiting for mint...');
