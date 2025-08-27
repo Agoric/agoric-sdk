@@ -207,14 +207,6 @@ message ChunkedArtifact {
     (gogoproto.jsontag) = "chunks",
     (gogoproto.moretags) = "yaml:\"chunks\""
   ];
-
-  // Addresses beyond the original submitter that are also authorized to
-  // provide chunks.
-  repeated bytes submitters = 4 [
-      (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-      (gogoproto.jsontag)    = "submitters",
-      (gogoproto.moretags)   = "yaml:\"submitters\""
-  ];
 }
 
 // Current state of this chunk.
