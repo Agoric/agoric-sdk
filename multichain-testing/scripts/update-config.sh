@@ -5,6 +5,7 @@
 CHAIN_ID="${CHAIN_ID:=osmosis}"
 CHAIN_DIR="${CHAIN_DIR:=$HOME/.osmosisd}"
 KEYS_CONFIG="${KEYS_CONFIG:=configs/keys.json}"
+HALT_HEIGHT="${HALT_HEIGHT:-}"
 
 set -eux
 
@@ -28,6 +29,10 @@ sed -i -e 's#enabled-unsafe-cors = false#enabled-unsafe-cors = true#g' $CHAIN_DI
 sed -i -e 's#swagger = false#swagger = true#g' $CHAIN_DIR/config/app.toml
 sed -i -e 's/enable-unsafe-cors = false/enable-unsafe-cors = true/g' $CHAIN_DIR/config/app.toml
 sed -i -e 's/enabled-unsafe-cors = false/enabled-unsafe-cors = true/g' $CHAIN_DIR/config/app.toml
+
+if [[ -n "$HALT_HEIGHT" ]]; then
+  sed -i -e "s#halt-height = 0#halt-height = $HALT_HEIGHT#g" $CHAIN_DIR/config/app.toml
+fi
 
 function get_next_line_number() {
   local txt=$1
