@@ -85,7 +85,17 @@ export const makeAgd = ({ execFileSync }) => {
     const exec = (
       args,
       opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
-    ) => execFileSync(kubectlBinary, [...binaryArgs(chainName), ...args], opts);
+    ) => {
+      let _binaryArgs = binaryArgs(chainName);
+      const shouldBeInteractive = opts.stdio[0] !== 'ignore';
+      if (!shouldBeInteractive) {
+        _binaryArgs = _binaryArgs.filter(
+          arg => !['-i', '--stdin'].some(a => arg.startsWith(a)),
+        );
+      }
+
+      return execFileSync(kubectlBinary, [..._binaryArgs, ...args], opts);
+    };
 
     const outJson = toCLIOptions({ output: 'json' });
 
@@ -209,7 +219,6 @@ export const makeAgd = ({ execFileSync }) => {
           encoding: 'utf-8',
           stdio: ['ignore', 'pipe', 'pipe'],
         });
-
         try {
           return JSON.parse(out);
         } catch (e) {
