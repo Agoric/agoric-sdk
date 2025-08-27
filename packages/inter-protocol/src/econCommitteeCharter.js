@@ -12,6 +12,10 @@ import {
 import { E } from '@endo/far';
 
 /**
+ * @import {MapStore, SetStore} from '@agoric/store';
+ */
+
+/**
  * @file This contract makes it possible for those who govern contracts to call
  *   for votes on changes. A more complete implementation would validate
  *   parameters, constrain deadlines and possibly split the ability to call for

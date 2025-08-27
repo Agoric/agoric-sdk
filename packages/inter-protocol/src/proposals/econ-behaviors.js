@@ -14,6 +14,7 @@ import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params
  * @import {GovernorCreatorFacet, GovernanceFacetKit, GovernorStartedInstallationKit} from '@agoric/governance/src/types.js';
  * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {AdminFacet} from '@agoric/zoe';
+ * @import {MapStore, SetStore} from '@agoric/store';
  */
 
 // Duplicated from vaultFactory/types-ambient.js to solve a CI problem.

@@ -7,6 +7,10 @@ import { mustMatch, makeScalarSetStore, M } from '@agoric/store';
 import { RelativeTimeShape } from '@agoric/time';
 import { KeywordShape } from '@agoric/zoe/src/typeGuards.js';
 
+/**
+ * @import {MapStore, SetStore} from '@agoric/store';
+ */
+
 const KeywordSharesShape = M.recordOf(KeywordShape, M.nat());
 
 /** @type {ContractMeta<typeof start>} */
