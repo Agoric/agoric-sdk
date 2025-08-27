@@ -10,6 +10,10 @@ import {
   type DurationSDKType,
 } from '../../../google/protobuf/duration.js';
 import {
+  CoreEvalProposal,
+  type CoreEvalProposalSDKType,
+} from '../../../agoric/swingset/swingset.js';
+import {
   CommunityPoolSpendProposal,
   type CommunityPoolSpendProposalSDKType,
   CommunityPoolSpendProposalWithDeposit,
@@ -249,6 +253,7 @@ export interface Proposal {
   /** content is the proposal's content. */
   content?:
     | (TextProposal &
+        CoreEvalProposal &
         CommunityPoolSpendProposal &
         CommunityPoolSpendProposalWithDeposit &
         ParameterChangeProposal &
@@ -286,6 +291,7 @@ export interface ProposalSDKType {
   proposal_id: bigint;
   content?:
     | TextProposalSDKType
+    | CoreEvalProposalSDKType
     | CommunityPoolSpendProposalSDKType
     | CommunityPoolSpendProposalWithDepositSDKType
     | ParameterChangeProposalSDKType
@@ -1346,6 +1352,7 @@ export const TallyParams = {
 export const Cosmos_govv1beta1Content_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
 ):
+  | CoreEvalProposal
   | CommunityPoolSpendProposal
   | CommunityPoolSpendProposalWithDeposit
   | TextProposal
@@ -1359,6 +1366,8 @@ export const Cosmos_govv1beta1Content_InterfaceDecoder = (
     input instanceof BinaryReader ? input : new BinaryReader(input);
   const data = Any.decode(reader, reader.uint32());
   switch (data.typeUrl) {
+    case '/agoric.swingset.CoreEvalProposal':
+      return CoreEvalProposal.decode(data.value);
     case '/cosmos.distribution.v1beta1.CommunityPoolSpendProposal':
       return CommunityPoolSpendProposal.decode(data.value);
     case '/cosmos.distribution.v1beta1.CommunityPoolSpendProposalWithDeposit':
