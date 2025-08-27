@@ -81,11 +81,20 @@ export const makeAgd = ({ execFileSync }) => {
     /**
      * @param {string[]} args
      * @param {*} [opts]
+     * * @param {boolean} [interactive]
      */
     const exec = (
       args,
       opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
-    ) => execFileSync(kubectlBinary, [...binaryArgs(chainName), ...args], opts);
+      interactive = true,
+    ) => {
+      let _binaryArgs = binaryArgs(chainName);
+      if (!interactive) {
+        _binaryArgs = _binaryArgs.filter(arg => arg !== '-i');
+      }
+
+      return execFileSync(kubectlBinary, [..._binaryArgs, ...args], opts);
+    };
 
     const outJson = toCLIOptions({ output: 'json' });
 
@@ -205,10 +214,14 @@ export const makeAgd = ({ execFileSync }) => {
       query: async qArgs => {
         const args = ['query', ...qArgs, ...nodeArgs, ...outJson];
         console.log(`$$$ ${chainToBinary[chainName]}`, ...args);
-        const out = exec(args, {
-          encoding: 'utf-8',
-          stdio: ['ignore', 'pipe', 'pipe'],
-        });
+        const out = exec(
+          args,
+          {
+            encoding: 'utf-8',
+            stdio: ['ignore', 'pipe', 'pipe'],
+          },
+          false,
+        );
 
         try {
           return JSON.parse(out);
