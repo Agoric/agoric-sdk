@@ -865,7 +865,7 @@ test.serial(
       amount.value,
       'eip155:42161',
       0,
-      'confirmed',
+      'success',
       console.log,
       mockEVMAddress,
     );

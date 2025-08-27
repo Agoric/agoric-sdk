@@ -5,6 +5,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { UserSeat, ZoeService } from '@agoric/zoe';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ResolverInvitationMakers } from '../src/resolver/resolver.exo.js';
+import type { TxStatus } from '../src/resolver/constants.js';
 
 /**
  * Helper to get resolver makers from a creator facet.
@@ -43,7 +44,7 @@ export const settleCCTPTransaction = async (
   txDetails: {
     amount: bigint;
     remoteAddress: `0x${string}`;
-    status: 'confirmed' | 'failed';
+    status: TxStatus;
   },
   txNumber: number = 0,
   remoteAxelarChain: CaipChainId,
@@ -85,7 +86,7 @@ export const settleCCTPWithMockReceiver = async (
   amount: bigint,
   remoteAxelarChain: CaipChainId,
   txNumber: number = 0,
-  status: 'confirmed' | 'failed' = 'confirmed',
+  status: TxStatus = 'success',
   log: (message: string, ...args: any[]) => void = console.log,
   mockRemoteAddress: `0x${string}` = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
 ): Promise<string> => {

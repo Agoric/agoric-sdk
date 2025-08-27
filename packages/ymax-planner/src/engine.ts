@@ -10,7 +10,8 @@ import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import type { Coin } from '@cosmjs/stargate';
-import { Fail, q } from '@endo/errors';
+import { Fail, q, X } from '@endo/errors';
+import { M, matches } from '@endo/patterns';
 import { Nat } from '@endo/nat';
 import { isPrimitive } from '@endo/pass-style';
 import { makePromiseKit, type PromiseKit } from '@endo/promise-kit';
@@ -19,6 +20,12 @@ import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
 import { handleDeposit } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
+import {
+  handleSubscription,
+  type EVMContext,
+  type Subscription,
+} from './subscription-manager.ts';
+import { log } from 'node:console';
 
 const { isInteger } = Number;
 
@@ -29,7 +36,8 @@ type CosmosEvent = {
   attributes?: Array<{ key: string; value: string }>;
 };
 
-const VSTORAGE_PATH_PREFIX = 'published.ymax0.portfolios';
+const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
+const TX_SUBSCRIPTIONS_PATH_PREFIX = 'published.ymax0.pendingTxs';
 
 /** cf. golang/cosmos/x/vstorage/types/path_keys.go */
 const EncodedKeySeparator = '\x00';
@@ -263,14 +271,147 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
   return harden(results as typeof results & { done: Promise<boolean> });
 };
 
+const BaseSubscriptionShape = M.splitRecord(
+  {
+    status: M.or('pending', 'success', 'timeout'),
+    type: M.string(),
+  },
+  {
+    // CCTP-specific fields
+    amount: M.bigint(),
+    destinationAddress: M.string(),
+    // GMP-specific fields
+    lcaAddr: M.string(),
+    destinationChain: M.string(),
+    contractAddress: M.string(),
+  },
+);
+
 type IO = {
+  evmCtx: Pick<EVMContext, 'axelarQueryApi' | 'evmProviders'>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
   signingSmartWalletKit: SigningSmartWalletKit;
 };
 
+const processPortfolioEvents = async (
+  portfolioEvents: Array<{ path: string; value: string }>,
+  marshaller: SigningSmartWalletKit['marshaller'],
+  query: SigningSmartWalletKit['query'],
+  portfolioKeyForDepositAddr: Map<Bech32Address, string>,
+) => {
+  for (const { path, value: vstorageValue } of portfolioEvents) {
+    const streamCell = tryJsonParse(
+      vstorageValue,
+      _err =>
+        Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
+    );
+    mustMatch(harden(streamCell), StreamCellShape);
+    if (path === PORTFOLIOS_PATH_PREFIX) {
+      for (let i = 0; i < streamCell.values.length; i += 1) {
+        const strValue = streamCell.values[i];
+        const value = tryJsonParse(
+          // @ts-expect-error use `undefined` to force an error for non-string input
+          typeof strValue === 'string' ? strValue : undefined,
+          _err =>
+            Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
+        );
+        const portfoliosData = marshaller.fromCapData(
+          value,
+        ) as StatusFor['portfolios'];
+        if (portfoliosData.addPortfolio) {
+          const key = portfoliosData.addPortfolio;
+          console.warn('Detected new portfolio', key);
+          const status = await query.readPublished(
+            `${stripPrefix('published.', PORTFOLIOS_PATH_PREFIX)}.${key}`,
+          );
+          mustMatch(status, PortfolioStatusShapeExt, key);
+          const { depositAddress } = status;
+          if (!depositAddress) continue;
+          portfolioKeyForDepositAddr.set(depositAddress, key);
+          console.warn('Added new portfolio', key, depositAddress);
+        }
+      }
+    }
+    // TODO: Handle portfolio-level path `${VSTORAGE_PATH_PREFIX}.${portfolioKey}` for addition/update of depositAddress.
+  }
+};
+
+const processSubscriptionEvents = async (
+  subscriptionEvents: Array<{ path: string; value: string }>,
+  marshaller: SigningSmartWalletKit['marshaller'],
+  evmCtx: Pick<EVMContext, 'axelarQueryApi' | 'evmProviders'>,
+  signingSmartWalletKit: SigningSmartWalletKit,
+) => {
+  for (const { path, value: vstorageValue } of subscriptionEvents) {
+    const streamCell = tryJsonParse(
+      vstorageValue,
+      _err =>
+        Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
+    );
+    mustMatch(harden(streamCell), StreamCellShape);
+
+    // Extract subscription ID from path (e.g., "published.orchestration.subscriptions.subscription1234")
+    const subscriptionId = stripPrefix(
+      `${TX_SUBSCRIPTIONS_PATH_PREFIX}.`,
+      path,
+    );
+    console.warn('Processing subscription event', subscriptionId, path);
+
+    for (let i = 0; i < streamCell.values.length; i += 1) {
+      const strValue = streamCell.values[i];
+      const value = tryJsonParse(
+        // @ts-expect-error use `undefined` to force an error for non-string input
+        typeof strValue === 'string' ? strValue : undefined,
+        _err =>
+          Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
+      );
+
+      // TODO: DRY out this code (for handling existing vs. new subscriptions)
+      const subscriptionData = marshaller.fromCapData(value);
+      if (!matches(subscriptionData, BaseSubscriptionShape)) {
+        const err = assert.error(
+          X`expected data ${subscriptionData} to match ${q(BaseSubscriptionShape)}`,
+        );
+        console.error(err);
+        return;
+      }
+
+      const subscription = {
+        subscriptionId,
+        ...(subscriptionData as any),
+      } as Subscription;
+
+      console.warn('Handling subscription:', {
+        subscriptionId,
+        type: subscription.type,
+        status: subscription.status,
+      });
+
+      if (subscription.status !== 'pending') continue;
+
+      // Process subscription concurrently without blocking event processing
+      void handleSubscription(
+        {
+          ...evmCtx,
+          signingSmartWalletKit,
+          fetch,
+        },
+        subscription,
+        log,
+      ).catch(error => {
+        console.error(
+          `⚠️ Failed to process subscription: ${subscriptionId}`,
+          error,
+        );
+      });
+    }
+  }
+};
+
 export const startEngine = async ({
+  evmCtx,
   rpc,
   spectrum,
   cosmosRest,
@@ -347,16 +488,75 @@ export const startEngine = async ({
 
   // TODO: verify consumption of paginated data.
   const { query } = signingSmartWalletKit;
-  const portfolioKeys = await query.vstorage.keys(VSTORAGE_PATH_PREFIX);
+  const portfolioKeys = await query.vstorage.keys(PORTFOLIOS_PATH_PREFIX);
   const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
     const status = await query.readPublished(
-      `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${portfolioKey}`,
+      `${stripPrefix('published.', PORTFOLIOS_PATH_PREFIX)}.${portfolioKey}`,
     );
     mustMatch(status, PortfolioStatusShapeExt, portfolioKey);
     const { depositAddress } = status;
     if (!depositAddress) return;
     portfolioKeyForDepositAddr.set(depositAddress, portfolioKey);
+  }).done;
+
+  const subscriptionKeys = await query.vstorage.keys(
+    TX_SUBSCRIPTIONS_PATH_PREFIX,
+  );
+  console.warn(
+    `Found ${subscriptionKeys.length} existing subscriptions to monitor`,
+  );
+
+  // Process existing pending subscriptions on startup
+  await makeWorkPool(subscriptionKeys, undefined, async subscriptionKey => {
+    const logIgnoredError = err => {
+      const msg = `⚠️ Failed to process existing subscription: ${subscriptionKey}`;
+      console.error(msg, err);
+    };
+
+    let subscriptionData;
+    try {
+      // eslint-disable-next-line @jessie.js/safe-await-separator
+      subscriptionData = await query.readPublished(
+        stripPrefix(
+          'published.',
+          `${TX_SUBSCRIPTIONS_PATH_PREFIX}.${subscriptionKey}`,
+        ),
+      );
+    } catch (err) {
+      logIgnoredError(err);
+      return;
+    }
+
+    if (!matches(subscriptionData, BaseSubscriptionShape)) {
+      const err = assert.error(
+        X`expected data ${subscriptionData} to match ${q(BaseSubscriptionShape)}`,
+      );
+      console.error(err);
+      return;
+    }
+
+    const subscription = {
+      subscriptionId: subscriptionKey,
+      ...(subscriptionData as any),
+    } as Subscription;
+    console.warn(`Found existing subscription: ${subscriptionKey}`, {
+      type: subscription.type,
+      status: subscription.status,
+    });
+
+    if (subscription.status !== 'pending') return;
+
+    // Process subscription without blocking other progress.
+    void handleSubscription(
+      {
+        ...evmCtx,
+        signingSmartWalletKit,
+        fetch,
+      },
+      subscription,
+      log,
+    ).catch(logIgnoredError);
   }).done;
 
   // console.warn('consuming events');
@@ -376,7 +576,7 @@ export const startEngine = async ({
       if (!events) console.warn('missing events', type, key);
       return events ?? [];
     }) as CosmosEvent[];
-    const portfolioVstorageEvents = partialMap(eventRecords, eventRecord => {
+    const vstorageEvents = partialMap(eventRecords, eventRecord => {
       const { type: eventType, attributes: attrRecords } = eventRecord;
       // Filter for vstorage state_change events.
       // cf. golang/cosmos/types/events.go
@@ -392,50 +592,41 @@ export const startEngine = async ({
         return;
       }
 
-      // Filter for ymax portfolio paths.
+      // Filter for paths we care about (portfolios or subscriptions).
       const path = encodedKeyToPath(attributes.key);
-      if (!vstoragePathStartsWith(path, VSTORAGE_PATH_PREFIX)) return;
 
-      return { path, value: attributes.value };
+      if (vstoragePathStartsWith(path, PORTFOLIOS_PATH_PREFIX)) {
+        return { type: 'portfolio' as const, path, value: attributes.value };
+      }
+      if (vstoragePathStartsWith(path, TX_SUBSCRIPTIONS_PATH_PREFIX)) {
+        return { type: 'subscription' as const, path, value: attributes.value };
+      }
+
+      return;
     });
+
+    const portfolioEvents = vstorageEvents.filter(
+      event => event.type === 'portfolio',
+    );
+    const subscriptionEvents = vstorageEvents.filter(
+      event => event.type === 'subscription',
+    );
 
     // Detect new portfolios.
     const { marshaller } = signingSmartWalletKit;
-    for (const { path, value: vstorageValue } of portfolioVstorageEvents) {
-      const streamCell = tryJsonParse(
-        vstorageValue,
-        _err =>
-          Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
-      );
-      mustMatch(harden(streamCell), StreamCellShape);
-      if (path === VSTORAGE_PATH_PREFIX) {
-        for (let i = 0; i < streamCell.values.length; i += 1) {
-          const strValue = streamCell.values[i];
-          const value = tryJsonParse(
-            // @ts-expect-error use `undefined` to force an error for non-string input
-            typeof strValue === 'string' ? strValue : undefined,
-            _err =>
-              Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
-          );
-          const portfoliosData = marshaller.fromCapData(
-            value,
-          ) as StatusFor['portfolios'];
-          if (portfoliosData.addPortfolio) {
-            const key = portfoliosData.addPortfolio;
-            console.warn('Detected new portfolio', key);
-            const status = await query.readPublished(
-              `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${key}`,
-            );
-            mustMatch(status, PortfolioStatusShapeExt, key);
-            const { depositAddress } = status;
-            if (!depositAddress) continue;
-            portfolioKeyForDepositAddr.set(depositAddress, key);
-            console.warn('Added new portfolio', key, depositAddress);
-          }
-        }
-      }
-      // TODO: Handle portfolio-level path `${VSTORAGE_PATH_PREFIX}.${portfolioKey}` for addition/update of depositAddress.
-    }
+    await processPortfolioEvents(
+      portfolioEvents,
+      marshaller,
+      query,
+      portfolioKeyForDepositAddr,
+    );
+
+    await processSubscriptionEvents(
+      subscriptionEvents,
+      marshaller,
+      evmCtx,
+      signingSmartWalletKit,
+    );
 
     // Detect activity against portfolio deposit addresses.
     const addrsWithActivity: Bech32Address[] = [
@@ -464,7 +655,8 @@ export const startEngine = async ({
           addrsWithActivity,
           addrBalances,
           depositAddrsWithActivity,
-          portfolioVstorageEvents,
+          portfolioEvents,
+          subscriptionEvents,
         },
         { depth: 10 },
       ),
@@ -500,7 +692,7 @@ export const startEngine = async ({
 
           const unprefixedPortfolioPath = stripPrefix(
             'published.',
-            `${VSTORAGE_PATH_PREFIX}.${portfolioKey}`,
+            `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}`,
           );
 
           const steps = await handleDeposit(
