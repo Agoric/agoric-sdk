@@ -342,11 +342,6 @@ export interface ChunkedArtifact {
    * bundle.
    */
   chunks: ChunkInfo[];
-  /**
-   * Addresses beyond the original submitter that are also authorized to
-   * provide chunks.
-   */
-  submitters: Uint8Array[];
 }
 export interface ChunkedArtifactProtoMsg {
   typeUrl: '/agoric.swingset.ChunkedArtifact';
@@ -361,7 +356,6 @@ export interface ChunkedArtifactSDKType {
   sha512: string;
   size_bytes: bigint;
   chunks: ChunkInfoSDKType[];
-  submitters: Uint8Array[];
 }
 /** Information about a chunk of a bundle. */
 export interface ChunkInfo {
@@ -1361,7 +1355,6 @@ function createBaseChunkedArtifact(): ChunkedArtifact {
     sha512: '',
     sizeBytes: BigInt(0),
     chunks: [],
-    submitters: [],
   };
 }
 export const ChunkedArtifact = {
@@ -1378,9 +1371,6 @@ export const ChunkedArtifact = {
     }
     for (const v of message.chunks) {
       ChunkInfo.encode(v!, writer.uint32(26).fork()).ldelim();
-    }
-    for (const v of message.submitters) {
-      writer.uint32(34).bytes(v!);
     }
     return writer;
   },
@@ -1401,9 +1391,6 @@ export const ChunkedArtifact = {
         case 3:
           message.chunks.push(ChunkInfo.decode(reader, reader.uint32()));
           break;
-        case 4:
-          message.submitters.push(reader.bytes());
-          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -1420,9 +1407,6 @@ export const ChunkedArtifact = {
       chunks: Array.isArray(object?.chunks)
         ? object.chunks.map((e: any) => ChunkInfo.fromJSON(e))
         : [],
-      submitters: Array.isArray(object?.submitters)
-        ? object.submitters.map((e: any) => bytesFromBase64(e))
-        : [],
     };
   },
   toJSON(message: ChunkedArtifact): JsonSafe<ChunkedArtifact> {
@@ -1437,13 +1421,6 @@ export const ChunkedArtifact = {
     } else {
       obj.chunks = [];
     }
-    if (message.submitters) {
-      obj.submitters = message.submitters.map(e =>
-        base64FromBytes(e !== undefined ? e : new Uint8Array()),
-      );
-    } else {
-      obj.submitters = [];
-    }
     return obj;
   },
   fromPartial(object: Partial<ChunkedArtifact>): ChunkedArtifact {
@@ -1454,7 +1431,6 @@ export const ChunkedArtifact = {
         ? BigInt(object.sizeBytes.toString())
         : BigInt(0);
     message.chunks = object.chunks?.map(e => ChunkInfo.fromPartial(e)) || [];
-    message.submitters = object.submitters?.map(e => e) || [];
     return message;
   },
   fromProtoMsg(message: ChunkedArtifactProtoMsg): ChunkedArtifact {
