@@ -287,6 +287,46 @@ const BaseSubscriptionShape = M.splitRecord(
   },
 );
 
+const parseSubscription = (
+  subscriptionData,
+  subscriptionId: string,
+  marshaller?: SigningSmartWalletKit['marshaller'],
+): Subscription | null => {
+  const data = marshaller
+    ? marshaller.fromCapData(subscriptionData)
+    : subscriptionData;
+
+  if (!matches(data, BaseSubscriptionShape)) {
+    const err = assert.error(
+      X`expected data ${data} to match ${q(BaseSubscriptionShape)}`,
+    );
+    console.error(err);
+    return null;
+  }
+
+  return { subscriptionId, ...(data as any) } as Subscription;
+};
+
+const createSubscriptionContext = (
+  evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>,
+  signingSmartWalletKit: SigningSmartWalletKit,
+): EvmContext => ({
+  ...evmCtx,
+  signingSmartWalletKit,
+  fetch,
+});
+
+const processPendingSubscription = async (
+  subscription: Subscription,
+  context: EvmContext,
+  log: (...args: unknown[]) => void,
+  errorHandler: (error: Error) => void,
+) => {
+  if (subscription.status !== 'pending') return;
+
+  void handleSubscription(context, subscription, log).catch(errorHandler);
+};
+
 type IO = {
   evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>;
   rpc: CosmosRPCClient;
@@ -344,6 +384,8 @@ const processSubscriptionEvents = async (
   evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>,
   signingSmartWalletKit: SigningSmartWalletKit,
 ) => {
+  const context = createSubscriptionContext(evmCtx, signingSmartWalletKit);
+
   for (const { path, value: vstorageValue } of subscriptionEvents) {
     const streamCell = tryJsonParse(
       vstorageValue,
@@ -368,20 +410,8 @@ const processSubscriptionEvents = async (
           Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
       );
 
-      // TODO: DRY out this code (for handling existing vs. new subscriptions)
-      const subscriptionData = marshaller.fromCapData(value);
-      if (!matches(subscriptionData, BaseSubscriptionShape)) {
-        const err = assert.error(
-          X`expected data ${subscriptionData} to match ${q(BaseSubscriptionShape)}`,
-        );
-        console.error(err);
-        return;
-      }
-
-      const subscription = {
-        subscriptionId,
-        ...(subscriptionData as any),
-      } as Subscription;
+      const subscription = parseSubscription(value, subscriptionId, marshaller);
+      if (!subscription) return;
 
       console.warn('Handling subscription:', {
         subscriptionId,
@@ -389,23 +419,19 @@ const processSubscriptionEvents = async (
         status: subscription.status,
       });
 
-      if (subscription.status !== 'pending') continue;
-
-      // Process subscription concurrently without blocking event processing
-      void handleSubscription(
-        {
-          ...evmCtx,
-          signingSmartWalletKit,
-          fetch,
-        },
-        subscription,
-        log,
-      ).catch(error => {
+      const errorHandler = error => {
         console.error(
           `⚠️ Failed to process subscription: ${subscriptionId}`,
           error,
         );
-      });
+      };
+
+      await processPendingSubscription(
+        subscription,
+        context,
+        log,
+        errorHandler,
+      );
     }
   }
 };
@@ -508,6 +534,8 @@ export const startEngine = async ({
   );
 
   // Process existing pending subscriptions on startup
+  const context = createSubscriptionContext(evmCtx, signingSmartWalletKit);
+
   await makeWorkPool(subscriptionKeys, undefined, async subscriptionKey => {
     const logIgnoredError = err => {
       const msg = `⚠️ Failed to process existing subscription: ${subscriptionKey}`;
@@ -528,35 +556,20 @@ export const startEngine = async ({
       return;
     }
 
-    if (!matches(subscriptionData, BaseSubscriptionShape)) {
-      const err = assert.error(
-        X`expected data ${subscriptionData} to match ${q(BaseSubscriptionShape)}`,
-      );
-      console.error(err);
-      return;
-    }
+    const subscription = parseSubscription(subscriptionData, subscriptionKey);
+    if (!subscription) return;
 
-    const subscription = {
-      subscriptionId: subscriptionKey,
-      ...(subscriptionData as any),
-    } as Subscription;
     console.warn(`Found existing subscription: ${subscriptionKey}`, {
       type: subscription.type,
       status: subscription.status,
     });
 
-    if (subscription.status !== 'pending') return;
-
-    // Process subscription without blocking other progress.
-    void handleSubscription(
-      {
-        ...evmCtx,
-        signingSmartWalletKit,
-        fetch,
-      },
+    await processPendingSubscription(
       subscription,
+      context,
       log,
-    ).catch(logIgnoredError);
+      logIgnoredError,
+    );
   }).done;
 
   // console.warn('consuming events');
