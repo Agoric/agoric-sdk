@@ -1,5 +1,5 @@
 import { JsonRpcProvider } from 'ethers';
-import type { EvmContext, EvmChain } from '../subscription-manager';
+import type { EvmContext, EvmChain } from './subscription-manager';
 
 export const axelarQueryAPI = {
   mainnet: 'https://api.axelarscan.io/gmp/searchGMP',

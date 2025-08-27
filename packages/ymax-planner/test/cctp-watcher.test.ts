@@ -1,6 +1,6 @@
 import test from 'ava';
 import { JsonRpcProvider, id, toBeHex, zeroPadValue } from 'ethers';
-import { watchCctpTransfer } from '../src/watch-cctp.ts';
+import { watchCctpTransfer } from '../src/watchers/cctp-watcher.ts';
 
 const watchAddress = '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64';
 

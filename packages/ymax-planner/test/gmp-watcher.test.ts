@@ -1,6 +1,6 @@
 import test from 'ava';
 import { ethers } from 'ethers';
-import { watchGmp } from '../src/axelar/gmp-watcher.ts';
+import { watchGmp } from '../src/watchers/gmp-watcher.ts';
 
 const createMockAxelarResponse = (
   status: 'executed' | 'pending' | 'error',
