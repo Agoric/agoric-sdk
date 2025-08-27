@@ -10,6 +10,8 @@ import assert from 'node:assert';
 import process from 'node:process';
 import { networkConfig, agdWalletUtils } from './test-lib/index.js';
 
+const BLD_COIN_DENOM = 'ubld';
+const BLD_DELEGATION = 10n;
 // XXX not the same as VALIDATOR_ADDRESS, which is actually the delegator
 const VALIDATOR_ADDRESS = process.env.VALIDATOR_ADDRESS;
 assert(VALIDATOR_ADDRESS, 'Missing VALIDATOR_ADDRESS in env');
@@ -45,7 +47,7 @@ test('basic', async t => {
       },
       proposal: {
         give: {
-          In: { brand: BLDBrand, value: 10n },
+          In: { brand: BLDBrand, value: BLD_DELEGATION },
         },
       },
     },
@@ -59,11 +61,14 @@ test('basic', async t => {
         source: 'continuing',
         previousOffer: 'request-stake',
         invitationMakerName: 'Delegate',
-        invitationArgs: [VALIDATOR_ADDRESS, { brand: BLDBrand, value: 10n }],
+        invitationArgs: [
+          VALIDATOR_ADDRESS,
+          { brand: BLDBrand, value: BLD_DELEGATION },
+        ],
       },
       proposal: {
         give: {
-          In: { brand: BLDBrand, value: 10n },
+          In: { brand: BLDBrand, value: BLD_DELEGATION },
         },
       },
     },
@@ -71,10 +76,14 @@ test('basic', async t => {
 
   const afterDelegate = await currentDelegation();
   t.is(afterDelegate.length, 2, 'delegations after delegation');
-  t.like(afterDelegate[1], {
-    balance: { amount: '10', denom: 'ubld' },
-    // omit 'delegation' because it has 'delegatorAddress' which is different every test run
-  });
+  t.truthy(
+    afterDelegate.some(
+      ({ balance }) =>
+        balance.denom === BLD_COIN_DENOM &&
+        balance.amount === String(BLD_DELEGATION),
+    ),
+    `${JSON.stringify(afterDelegate)} doesn't have the required delegation`,
+  );
 
   await agdWalletUtils.broadcastBridgeAction(GOV1ADDR, {
     method: 'executeOffer',
@@ -84,7 +93,10 @@ test('basic', async t => {
         source: 'continuing',
         previousOffer: 'request-stake',
         invitationMakerName: 'Undelegate',
-        invitationArgs: [VALIDATOR_ADDRESS, { brand: brand.BLD, value: 5n }],
+        invitationArgs: [
+          VALIDATOR_ADDRESS,
+          { brand: brand.BLD, value: BLD_DELEGATION / 2n },
+        ],
       },
       proposal: {},
     },
@@ -96,6 +108,6 @@ test('basic', async t => {
   // const afterUndelegate = await currentDelegation();
   // t.is(afterDelegate.length, 1, 'delegations after undelegation');
   // t.like(afterUndelegate[1], {
-  //   balance: { amount: '5', denom: 'ubld' },
+  //   balance: { amount: String(BLD_DELEGATION / 2n), denom: BLD_COIN_DENOM },
   // });
 });
