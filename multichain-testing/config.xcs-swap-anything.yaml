@@ -12,8 +12,8 @@ chains:
       # CONFIG_FILE env is for scripts/update-config.sh
       - name: CONFIG_FILE
         value: 'config.xcs-swap-anything.yaml'
-      - name: SNAPSHOT_URL
-        value: https://storage.googleapis.com/agoric-snapshots-public/starship-agoric/agoric-snapshot.tar.gz
+      # - name: SNAPSHOT_URL
+      #   value: https://storage.googleapis.com/agoric-snapshots-public/starship-agoric/agoric-snapshot.tar.gz
     genesis:
       app_state:
         staking:
