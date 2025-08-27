@@ -387,8 +387,19 @@ const voteLatestProposalAndWait = async ({
   chainId = 'agoriclocal',
   validator = 'genesis',
 }) => {
-  await blockTool.waitForBlock(1, { before: 'get latest proposal' });
+  // await blockTool.waitForBlock(40, { before: 'get latest proposal' });
+  console.log("waiting for 10 seconds");
+  await Promise.resolve(setTimeout(() => {}, 10000));
+  console.log("Done waiting for 10 seconds");
+
+  // const proposalsData = await agd.query2(['gov', 'proposals', '--last-proposal-id']);
+  // console.log('proposalsData', proposalsData)
+  // const proposalsData = await agd.query2(['gov', 'proposals']);
   const proposalsData = await agd.query(['gov', 'proposals']);
+
+  // console.log("PROPOSALS_COUNT", proposalsData1)
+
+  // agd query gov proposals --count-total --output json | jq -r '.pagination.total'
   const lastProposal = proposalsData.proposals.at(-1);
   const lastProposalId = lastProposal.id || lastProposal.proposal_id;
 
@@ -410,8 +421,9 @@ const voteLatestProposalAndWait = async ({
     ;
     info.status !== 'PROPOSAL_STATUS_REJECTED' &&
     info.status !== 'PROPOSAL_STATUS_PASSED';
-    await blockTool.waitForBlock(1, { step: `voting`, on: lastProposalId })
+    await blockTool.waitForBlock(2, { step: `voting`, on: lastProposalId })
   ) {
+    // await Promise.resolve(setTimeout(() => {}, 10000));
     info = await agd.query(['gov', 'proposal', lastProposalId]);
     trace(
       `Waiting for proposal ${lastProposalId} to pass (status=${info.status})`,
