@@ -1,5 +1,5 @@
 import { JsonRpcProvider } from 'ethers';
-import type { EVMContext, EVMChain } from '../subscription-manager';
+import type { EvmContext, EvmChain } from '../subscription-manager';
 
 export const axelarQueryAPI = {
   mainnet: 'https://api.axelarscan.io/gmp/searchGMP',
@@ -37,14 +37,14 @@ type CreateContextParams = {
 export const createEVMContext = async ({
   net = 'testnet',
 }: CreateContextParams): Promise<
-  Pick<EVMContext, 'axelarQueryApi' | 'evmProviders'>
+  Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>
 > => {
   const axelarQueryApi = axelarQueryAPI[net];
 
   const rpcUrls = evmRpcUrls[net];
   const evmProviders = Object.fromEntries(
     Object.entries(rpcUrls).map(([chain, rpcUrl]) => {
-      return [chain as EVMChain, new JsonRpcProvider(rpcUrl)];
+      return [chain as EvmChain, new JsonRpcProvider(rpcUrl)];
     }),
   );
 

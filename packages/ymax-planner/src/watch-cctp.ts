@@ -35,7 +35,7 @@ const parseAmount = data => {
   return BigInt(data);
 };
 
-export const watchCCTPTransfer = ({
+export const watchCctpTransfer = ({
   provider,
   watchAddress,
   expectedAmount,
