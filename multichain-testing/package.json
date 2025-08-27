@@ -106,11 +106,10 @@
     "@aglocal/fast-usdc-contract": "portal:../../agoric-sdk/packages/fast-usdc-contract",
     "@aglocal/portfolio-contract": "portal:../../agoric-sdk/packages/portfolio-contract",
     "@aglocal/portfolio-deploy": "portal:../../agoric-sdk/packages/portfolio-deploy",
-    "better-sqlite3": "^10.1.0",
     "@cosmjs/amino@npm:0.32.3": "npm:^0.36.0",
     "@cosmjs/encoding@npm:0.32.3": "npm:^0.36.0",
-    "@cosmjs/proto-signing@npm:0.32.3": "npm:^0.36.0",
     "@cosmjs/math@npm:0.32.3": "npm:^0.36.0",
+    "@cosmjs/proto-signing@npm:0.32.3": "npm:^0.36.0",
     "@cosmjs/stargate@npm:0.32.3": "npm:^0.36.0",
     "@cosmjs/tendermint-rpc@npm:0.32.3": "npm:^0.36.0"
   },
