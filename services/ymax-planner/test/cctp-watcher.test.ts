@@ -1,6 +1,6 @@
 import test from 'ava';
 import { JsonRpcProvider, id, toBeHex, zeroPadValue } from 'ethers';
-import { watchCCTPTransfer } from '../src/watch-cctp.ts';
+import { watchCctpTransfer } from '../src/watch-cctp.ts';
 
 const watchAddress = '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64';
 
@@ -44,7 +44,7 @@ test('watchCCTPTransfer detects exact amount match', async t => {
   const expectedAmount = 1_000_000n; // 1 USDC
   const amountData = zeroPadValue(toBeHex(expectedAmount), 32);
 
-  const watchPromise = watchCCTPTransfer({
+  const watchPromise = watchCctpTransfer({
     provider,
     watchAddress,
     expectedAmount,
@@ -85,7 +85,7 @@ test('watchCCTPTransfer ignores amount mismatch', async t => {
   const provider = createMockProvider();
   const expectedAmount = 1_000_000n;
 
-  const watchPromise = watchCCTPTransfer({
+  const watchPromise = watchCctpTransfer({
     provider,
     watchAddress,
     expectedAmount,
@@ -125,7 +125,7 @@ test('watchCCTPTransfer detects multiple transfers but only matches exact amount
   const provider = createMockProvider();
   const expectedAmount = 5_000_000n; // 5 USDC
 
-  const watchPromise = watchCCTPTransfer({
+  const watchPromise = watchCctpTransfer({
     provider,
     watchAddress,
     expectedAmount,

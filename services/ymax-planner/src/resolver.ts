@@ -1,10 +1,7 @@
 import { type SigningSmartWalletKit } from '@agoric/client-utils';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
 import { Fail } from '@endo/errors';
-import type {
-  CctpSubscription,
-  GmpSubscription,
-} from './subscription-manager.js';
+import type { CctpSubscription } from './subscription-manager.js';
 
 type ResolveSubscriptionParams = {
   signingSmartWalletKit: SigningSmartWalletKit;
@@ -25,7 +22,7 @@ const getInvitationMakers = async (wallet: SigningSmartWalletKit) => {
   return invitation;
 };
 
-export const resolveCCTPSubscription = async ({
+export const resolveCctpSubscription = async ({
   signingSmartWalletKit,
   subscriptionId,
   status,

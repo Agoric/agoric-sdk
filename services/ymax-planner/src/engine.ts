@@ -22,7 +22,7 @@ import { handleDeposit } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import {
   handleSubscription,
-  type EVMContext,
+  type EvmContext,
   type Subscription,
 } from './subscription-manager.ts';
 import { log } from 'node:console';
@@ -288,7 +288,7 @@ const BaseSubscriptionShape = M.splitRecord(
 );
 
 type IO = {
-  evmCtx: Pick<EVMContext, 'axelarQueryApi' | 'evmProviders'>;
+  evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
@@ -341,7 +341,7 @@ const processPortfolioEvents = async (
 const processSubscriptionEvents = async (
   subscriptionEvents: Array<{ path: string; value: string }>,
   marshaller: SigningSmartWalletKit['marshaller'],
-  evmCtx: Pick<EVMContext, 'axelarQueryApi' | 'evmProviders'>,
+  evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>,
   signingSmartWalletKit: SigningSmartWalletKit,
 ) => {
   for (const { path, value: vstorageValue } of subscriptionEvents) {

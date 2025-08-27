@@ -3,18 +3,20 @@ import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { JsonRpcProvider } from 'ethers';
 import { watchGmp } from './axelar/gmp-watcher.ts';
-import { resolveCCTPSubscription } from './resolver.ts';
-import { watchCCTPTransfer } from './watch-cctp.ts';
+import { resolveCctpSubscription } from './resolver.ts';
+import { watchCctpTransfer } from './watch-cctp.ts';
 import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 
-export type EVMContext = {
+export type EvmChain = keyof typeof AxelarChain;
+
+export type EvmContext = {
   axelarQueryApi: string;
-  evmProviders: Partial<Record<EVMChain, JsonRpcProvider>>;
+  evmProviders: Partial<Record<EvmChain, JsonRpcProvider>>;
   signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
 };
 
-type CCTPTransfer = {
+type CctpTransfer = {
   amount: bigint;
   destinationAddress: string;
 };
@@ -39,19 +41,17 @@ type BaseSubscription = {
 
 type SubscriptionOf<T, K extends string> = BaseSubscription & T & { type: K };
 
-export type CctpSubscription = SubscriptionOf<CCTPTransfer, 'cctp'>;
+export type CctpSubscription = SubscriptionOf<CctpTransfer, 'cctp'>;
 export type GmpSubscription = SubscriptionOf<GmpTransfer, 'gmp'>;
 
 export type Subscription = CctpSubscription | GmpSubscription;
-
-export type EVMChain = keyof typeof AxelarChain;
 
 /* Sourced from:
  * - https://chainlist.org/
  * - https://docs.simplehash.com/reference/supported-chains-testnets
  *   (accessed on 26th August 2025)
  */
-const chainIdToEVMChain: Record<string, EVMChain> = {
+const chainIdToEvmChain: Record<string, EvmChain> = {
   // Mainnets
   '1': 'Ethereum',
   '42161': 'Arbitrum',
@@ -67,7 +67,7 @@ const chainIdToEVMChain: Record<string, EVMChain> = {
 };
 
 export const handleSubscription = async (
-  ctx: EVMContext,
+  ctx: EvmContext,
   subscription: Subscription,
   log: (...args: unknown[]) => void = () => {},
 ) => {
@@ -79,7 +79,7 @@ export const handleSubscription = async (
       const { destinationAddress, amount, subscriptionId } = subscription;
       // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
       const [, chainId, receiver] = destinationAddress.split(':');
-      const chain = chainIdToEVMChain[chainId];
+      const chain = chainIdToEvmChain[chainId];
       const provider = ctx.evmProviders[chain];
       if (!provider) {
         throw Error(
@@ -87,14 +87,14 @@ export const handleSubscription = async (
         );
       }
       log(`${logPrefix} handling cctp subscription`);
-      const transferStatus = await watchCCTPTransfer({
+      const transferStatus = await watchCctpTransfer({
         watchAddress: receiver,
         expectedAmount: amount,
         provider,
         log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
       });
 
-      await resolveCCTPSubscription({
+      await resolveCctpSubscription({
         signingSmartWalletKit: ctx.signingSmartWalletKit,
         subscriptionId,
         status: transferStatus ? 'success' : 'timeout',
