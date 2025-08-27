@@ -33,7 +33,7 @@ function createBaseEmpty(): Empty {
   return {};
 }
 export const Empty = {
-  typeUrl: '/google.protobuf.Empty',
+  typeUrl: '/google.protobuf.Empty' as const,
   encode(_: Empty, writer: BinaryWriter = BinaryWriter.create()): BinaryWriter {
     return writer;
   },

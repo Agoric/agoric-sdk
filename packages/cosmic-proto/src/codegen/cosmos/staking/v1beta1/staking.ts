@@ -625,7 +625,7 @@ function createBaseHistoricalInfo(): HistoricalInfo {
   };
 }
 export const HistoricalInfo = {
-  typeUrl: '/cosmos.staking.v1beta1.HistoricalInfo',
+  typeUrl: '/cosmos.staking.v1beta1.HistoricalInfo' as const,
   encode(
     message: HistoricalInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -710,7 +710,7 @@ function createBaseCommissionRates(): CommissionRates {
   };
 }
 export const CommissionRates = {
-  typeUrl: '/cosmos.staking.v1beta1.CommissionRates',
+  typeUrl: '/cosmos.staking.v1beta1.CommissionRates' as const,
   encode(
     message: CommissionRates,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -801,7 +801,7 @@ function createBaseCommission(): Commission {
   };
 }
 export const Commission = {
-  typeUrl: '/cosmos.staking.v1beta1.Commission',
+  typeUrl: '/cosmos.staking.v1beta1.Commission' as const,
   encode(
     message: Commission,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -896,7 +896,7 @@ function createBaseDescription(): Description {
   };
 }
 export const Description = {
-  typeUrl: '/cosmos.staking.v1beta1.Description',
+  typeUrl: '/cosmos.staking.v1beta1.Description' as const,
   encode(
     message: Description,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1009,7 +1009,7 @@ function createBaseValidator(): Validator {
   };
 }
 export const Validator = {
-  typeUrl: '/cosmos.staking.v1beta1.Validator',
+  typeUrl: '/cosmos.staking.v1beta1.Validator' as const,
   encode(
     message: Validator,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1268,7 +1268,7 @@ function createBaseValAddresses(): ValAddresses {
   };
 }
 export const ValAddresses = {
-  typeUrl: '/cosmos.staking.v1beta1.ValAddresses',
+  typeUrl: '/cosmos.staking.v1beta1.ValAddresses' as const,
   encode(
     message: ValAddresses,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1337,7 +1337,7 @@ function createBaseDVPair(): DVPair {
   };
 }
 export const DVPair = {
-  typeUrl: '/cosmos.staking.v1beta1.DVPair',
+  typeUrl: '/cosmos.staking.v1beta1.DVPair' as const,
   encode(
     message: DVPair,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1414,7 +1414,7 @@ function createBaseDVPairs(): DVPairs {
   };
 }
 export const DVPairs = {
-  typeUrl: '/cosmos.staking.v1beta1.DVPairs',
+  typeUrl: '/cosmos.staking.v1beta1.DVPairs' as const,
   encode(
     message: DVPairs,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1484,7 +1484,7 @@ function createBaseDVVTriplet(): DVVTriplet {
   };
 }
 export const DVVTriplet = {
-  typeUrl: '/cosmos.staking.v1beta1.DVVTriplet',
+  typeUrl: '/cosmos.staking.v1beta1.DVVTriplet' as const,
   encode(
     message: DVVTriplet,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1573,7 +1573,7 @@ function createBaseDVVTriplets(): DVVTriplets {
   };
 }
 export const DVVTriplets = {
-  typeUrl: '/cosmos.staking.v1beta1.DVVTriplets',
+  typeUrl: '/cosmos.staking.v1beta1.DVVTriplets' as const,
   encode(
     message: DVVTriplets,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1646,7 +1646,7 @@ function createBaseDelegation(): Delegation {
   };
 }
 export const Delegation = {
-  typeUrl: '/cosmos.staking.v1beta1.Delegation',
+  typeUrl: '/cosmos.staking.v1beta1.Delegation' as const,
   encode(
     message: Delegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1736,7 +1736,7 @@ function createBaseUnbondingDelegation(): UnbondingDelegation {
   };
 }
 export const UnbondingDelegation = {
-  typeUrl: '/cosmos.staking.v1beta1.UnbondingDelegation',
+  typeUrl: '/cosmos.staking.v1beta1.UnbondingDelegation' as const,
   encode(
     message: UnbondingDelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1841,7 +1841,7 @@ function createBaseUnbondingDelegationEntry(): UnbondingDelegationEntry {
   };
 }
 export const UnbondingDelegationEntry = {
-  typeUrl: '/cosmos.staking.v1beta1.UnbondingDelegationEntry',
+  typeUrl: '/cosmos.staking.v1beta1.UnbondingDelegationEntry' as const,
   encode(
     message: UnbondingDelegationEntry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1999,7 +1999,7 @@ function createBaseRedelegationEntry(): RedelegationEntry {
   };
 }
 export const RedelegationEntry = {
-  typeUrl: '/cosmos.staking.v1beta1.RedelegationEntry',
+  typeUrl: '/cosmos.staking.v1beta1.RedelegationEntry' as const,
   encode(
     message: RedelegationEntry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2149,7 +2149,7 @@ function createBaseRedelegation(): Redelegation {
   };
 }
 export const Redelegation = {
-  typeUrl: '/cosmos.staking.v1beta1.Redelegation',
+  typeUrl: '/cosmos.staking.v1beta1.Redelegation' as const,
   encode(
     message: Redelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2263,7 +2263,7 @@ function createBaseParams(): Params {
   };
 }
 export const Params = {
-  typeUrl: '/cosmos.staking.v1beta1.Params',
+  typeUrl: '/cosmos.staking.v1beta1.Params' as const,
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2394,7 +2394,7 @@ function createBaseDelegationResponse(): DelegationResponse {
   };
 }
 export const DelegationResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.DelegationResponse',
+  typeUrl: '/cosmos.staking.v1beta1.DelegationResponse' as const,
   encode(
     message: DelegationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2485,7 +2485,7 @@ function createBaseRedelegationEntryResponse(): RedelegationEntryResponse {
   };
 }
 export const RedelegationEntryResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.RedelegationEntryResponse',
+  typeUrl: '/cosmos.staking.v1beta1.RedelegationEntryResponse' as const,
   encode(
     message: RedelegationEntryResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2583,7 +2583,7 @@ function createBaseRedelegationResponse(): RedelegationResponse {
   };
 }
 export const RedelegationResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.RedelegationResponse',
+  typeUrl: '/cosmos.staking.v1beta1.RedelegationResponse' as const,
   encode(
     message: RedelegationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2680,7 +2680,7 @@ function createBasePool(): Pool {
   };
 }
 export const Pool = {
-  typeUrl: '/cosmos.staking.v1beta1.Pool',
+  typeUrl: '/cosmos.staking.v1beta1.Pool' as const,
   encode(
     message: Pool,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2757,7 +2757,7 @@ function createBaseValidatorUpdates(): ValidatorUpdates {
   };
 }
 export const ValidatorUpdates = {
-  typeUrl: '/cosmos.staking.v1beta1.ValidatorUpdates',
+  typeUrl: '/cosmos.staking.v1beta1.ValidatorUpdates' as const,
   encode(
     message: ValidatorUpdates,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -216,7 +216,7 @@ function createBaseQueryCurrentPlanRequest(): QueryCurrentPlanRequest {
   return {};
 }
 export const QueryCurrentPlanRequest = {
-  typeUrl: '/cosmos.upgrade.v1beta1.QueryCurrentPlanRequest',
+  typeUrl: '/cosmos.upgrade.v1beta1.QueryCurrentPlanRequest' as const,
   encode(
     _: QueryCurrentPlanRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -275,7 +275,7 @@ function createBaseQueryCurrentPlanResponse(): QueryCurrentPlanResponse {
   };
 }
 export const QueryCurrentPlanResponse = {
-  typeUrl: '/cosmos.upgrade.v1beta1.QueryCurrentPlanResponse',
+  typeUrl: '/cosmos.upgrade.v1beta1.QueryCurrentPlanResponse' as const,
   encode(
     message: QueryCurrentPlanResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -352,7 +352,7 @@ function createBaseQueryAppliedPlanRequest(): QueryAppliedPlanRequest {
   };
 }
 export const QueryAppliedPlanRequest = {
-  typeUrl: '/cosmos.upgrade.v1beta1.QueryAppliedPlanRequest',
+  typeUrl: '/cosmos.upgrade.v1beta1.QueryAppliedPlanRequest' as const,
   encode(
     message: QueryAppliedPlanRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -423,7 +423,7 @@ function createBaseQueryAppliedPlanResponse(): QueryAppliedPlanResponse {
   };
 }
 export const QueryAppliedPlanResponse = {
-  typeUrl: '/cosmos.upgrade.v1beta1.QueryAppliedPlanResponse',
+  typeUrl: '/cosmos.upgrade.v1beta1.QueryAppliedPlanResponse' as const,
   encode(
     message: QueryAppliedPlanResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -502,7 +502,8 @@ function createBaseQueryUpgradedConsensusStateRequest(): QueryUpgradedConsensusS
   };
 }
 export const QueryUpgradedConsensusStateRequest = {
-  typeUrl: '/cosmos.upgrade.v1beta1.QueryUpgradedConsensusStateRequest',
+  typeUrl:
+    '/cosmos.upgrade.v1beta1.QueryUpgradedConsensusStateRequest' as const,
   encode(
     message: QueryUpgradedConsensusStateRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -581,7 +582,8 @@ function createBaseQueryUpgradedConsensusStateResponse(): QueryUpgradedConsensus
   };
 }
 export const QueryUpgradedConsensusStateResponse = {
-  typeUrl: '/cosmos.upgrade.v1beta1.QueryUpgradedConsensusStateResponse',
+  typeUrl:
+    '/cosmos.upgrade.v1beta1.QueryUpgradedConsensusStateResponse' as const,
   encode(
     message: QueryUpgradedConsensusStateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -662,7 +664,7 @@ function createBaseQueryModuleVersionsRequest(): QueryModuleVersionsRequest {
   };
 }
 export const QueryModuleVersionsRequest = {
-  typeUrl: '/cosmos.upgrade.v1beta1.QueryModuleVersionsRequest',
+  typeUrl: '/cosmos.upgrade.v1beta1.QueryModuleVersionsRequest' as const,
   encode(
     message: QueryModuleVersionsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -735,7 +737,7 @@ function createBaseQueryModuleVersionsResponse(): QueryModuleVersionsResponse {
   };
 }
 export const QueryModuleVersionsResponse = {
-  typeUrl: '/cosmos.upgrade.v1beta1.QueryModuleVersionsResponse',
+  typeUrl: '/cosmos.upgrade.v1beta1.QueryModuleVersionsResponse' as const,
   encode(
     message: QueryModuleVersionsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -817,7 +819,7 @@ function createBaseQueryAuthorityRequest(): QueryAuthorityRequest {
   return {};
 }
 export const QueryAuthorityRequest = {
-  typeUrl: '/cosmos.upgrade.v1beta1.QueryAuthorityRequest',
+  typeUrl: '/cosmos.upgrade.v1beta1.QueryAuthorityRequest' as const,
   encode(
     _: QueryAuthorityRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -872,7 +874,7 @@ function createBaseQueryAuthorityResponse(): QueryAuthorityResponse {
   };
 }
 export const QueryAuthorityResponse = {
-  typeUrl: '/cosmos.upgrade.v1beta1.QueryAuthorityResponse',
+  typeUrl: '/cosmos.upgrade.v1beta1.QueryAuthorityResponse' as const,
   encode(
     message: QueryAuthorityResponse,
     writer: BinaryWriter = BinaryWriter.create(),

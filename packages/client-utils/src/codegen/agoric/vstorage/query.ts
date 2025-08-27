@@ -124,7 +124,7 @@ function createBaseQueryDataRequest(): QueryDataRequest {
   };
 }
 export const QueryDataRequest = {
-  typeUrl: '/agoric.vstorage.QueryDataRequest',
+  typeUrl: '/agoric.vstorage.QueryDataRequest' as const,
   encode(
     message: QueryDataRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -186,7 +186,7 @@ function createBaseQueryDataResponse(): QueryDataResponse {
   };
 }
 export const QueryDataResponse = {
-  typeUrl: '/agoric.vstorage.QueryDataResponse',
+  typeUrl: '/agoric.vstorage.QueryDataResponse' as const,
   encode(
     message: QueryDataResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -251,7 +251,7 @@ function createBaseQueryCapDataRequest(): QueryCapDataRequest {
   };
 }
 export const QueryCapDataRequest = {
-  typeUrl: '/agoric.vstorage.QueryCapDataRequest',
+  typeUrl: '/agoric.vstorage.QueryCapDataRequest' as const,
   encode(
     message: QueryCapDataRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -347,7 +347,7 @@ function createBaseQueryCapDataResponse(): QueryCapDataResponse {
   };
 }
 export const QueryCapDataResponse = {
-  typeUrl: '/agoric.vstorage.QueryCapDataResponse',
+  typeUrl: '/agoric.vstorage.QueryCapDataResponse' as const,
   encode(
     message: QueryCapDataResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -423,7 +423,7 @@ function createBaseQueryChildrenRequest(): QueryChildrenRequest {
   };
 }
 export const QueryChildrenRequest = {
-  typeUrl: '/agoric.vstorage.QueryChildrenRequest',
+  typeUrl: '/agoric.vstorage.QueryChildrenRequest' as const,
   encode(
     message: QueryChildrenRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -506,7 +506,7 @@ function createBaseQueryChildrenResponse(): QueryChildrenResponse {
   };
 }
 export const QueryChildrenResponse = {
-  typeUrl: '/agoric.vstorage.QueryChildrenResponse',
+  typeUrl: '/agoric.vstorage.QueryChildrenResponse' as const,
   encode(
     message: QueryChildrenResponse,
     writer: BinaryWriter = BinaryWriter.create(),

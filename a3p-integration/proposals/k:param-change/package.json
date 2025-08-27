@@ -9,7 +9,7 @@
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
   },
   "dependencies": {
-    "@agoric/synthetic-chain": "^0.5.8",
+    "@agoric/synthetic-chain": "^0.6.1",
     "agoric": "dev"
   },
   "devDependencies": {

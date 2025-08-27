@@ -10,6 +10,7 @@ import { SigningStargateClient } from '@cosmjs/stargate';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { startEngine } from './engine.ts';
+import { createEVMContext } from './axelar/support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 
 const getChainIdFromRpc = async (rpc: CosmosRPCClient) => {
@@ -30,7 +31,6 @@ export const main = async (
   } = {},
 ) => {
   await null;
-  // console.log('Hello, world!', { argv });
 
   const { MNEMONIC } = env;
   if (!MNEMONIC) throw Error(`MNEMONIC not set`);
@@ -87,7 +87,13 @@ export const main = async (
     },
   );
 
+  const evmCtx = await createEVMContext({
+    // Any non-mainnet Agoric chain would be connected to Axelar testnet.
+    net: env.AGORIC_NET === 'mainnet' ? 'mainnet' : 'testnet',
+  });
+
   await startEngine({
+    evmCtx,
     rpc,
     spectrum,
     cosmosRest,

@@ -31,7 +31,7 @@ function createBaseRemoteTokenMessenger(): RemoteTokenMessenger {
   };
 }
 export const RemoteTokenMessenger = {
-  typeUrl: '/circle.cctp.v1.RemoteTokenMessenger',
+  typeUrl: '/circle.cctp.v1.RemoteTokenMessenger' as const,
   encode(
     message: RemoteTokenMessenger,
     writer: BinaryWriter = BinaryWriter.create(),

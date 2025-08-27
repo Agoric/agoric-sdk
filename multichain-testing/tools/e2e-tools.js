@@ -413,6 +413,9 @@ const voteLatestProposalAndWait = async ({
     await blockTool.waitForBlock(1, { step: `voting`, on: lastProposalId })
   ) {
     info = await agd.query(['gov', 'proposal', lastProposalId]);
+    if (info.proposal) {
+      info = info.proposal;
+    }
     trace(
       `Waiting for proposal ${lastProposalId} to pass (status=${info.status})`,
     );

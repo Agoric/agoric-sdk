@@ -15,7 +15,7 @@ export type CCTPTransactionKey = `${AccountId}:${bigint}`;
 export type CCTPTransactionDetails = {
   amount: bigint;
   remoteAddress: `0x${string}`;
-  status: 'confirmed' | 'failed';
+  status: TxStatus;
 };
 
 export const CCTPTransactionDetailsShape: TypedPattern<CCTPTransactionDetails> =
@@ -23,7 +23,7 @@ export const CCTPTransactionDetailsShape: TypedPattern<CCTPTransactionDetails> =
     {
       amount: M.nat(),
       remoteAddress: M.string(),
-      status: M.or('confirmed', 'failed'),
+      status: M.or('pending', 'success', 'failed'),
     },
     {},
     {},
@@ -33,7 +33,7 @@ export type CCTPSettlementArgs = {
   chainId: CaipChainId;
   remoteAddress: `0x${string}`;
   amountValue: bigint;
-  status: 'confirmed' | 'failed';
+  status: TxStatus;
   rejectionReason?: string;
   txId: `tx${number}`;
 };
@@ -44,7 +44,7 @@ export const CCTPSettlementArgsShape: TypedPattern<CCTPSettlementArgs> =
       chainId: M.string(), // CaipChainId format
       remoteAddress: M.string(),
       amountValue: M.nat(),
-      status: M.or('confirmed', 'failed'),
+      status: M.or('pending', 'success', 'failed'),
       txId: M.string(), // `tx${number}` format
     },
     {

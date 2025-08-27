@@ -86,7 +86,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/circle.cctp.v1.GenesisState',
+  typeUrl: '/circle.cctp.v1.GenesisState' as const,
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

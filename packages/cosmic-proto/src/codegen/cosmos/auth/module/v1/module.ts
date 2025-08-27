@@ -48,7 +48,7 @@ function createBaseModule(): Module {
   };
 }
 export const Module = {
-  typeUrl: '/cosmos.auth.module.v1.Module',
+  typeUrl: '/cosmos.auth.module.v1.Module' as const,
   encode(
     message: Module,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -147,7 +147,7 @@ function createBaseModuleAccountPermission(): ModuleAccountPermission {
   };
 }
 export const ModuleAccountPermission = {
-  typeUrl: '/cosmos.auth.module.v1.ModuleAccountPermission',
+  typeUrl: '/cosmos.auth.module.v1.ModuleAccountPermission' as const,
   encode(
     message: ModuleAccountPermission,
     writer: BinaryWriter = BinaryWriter.create(),

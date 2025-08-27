@@ -154,7 +154,7 @@ function createBaseDuration(): Duration {
   };
 }
 export const Duration = {
-  typeUrl: '/google.protobuf.Duration',
+  typeUrl: '/google.protobuf.Duration' as const,
   encode(
     message: Duration,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -63,7 +63,7 @@ function createBaseAllocation(): Allocation {
   };
 }
 export const Allocation = {
-  typeUrl: '/ibc.applications.transfer.v1.Allocation',
+  typeUrl: '/ibc.applications.transfer.v1.Allocation' as const,
   encode(
     message: Allocation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -184,7 +184,7 @@ function createBaseTransferAuthorization(): TransferAuthorization {
   };
 }
 export const TransferAuthorization = {
-  typeUrl: '/ibc.applications.transfer.v1.TransferAuthorization',
+  typeUrl: '/ibc.applications.transfer.v1.TransferAuthorization' as const,
   encode(
     message: TransferAuthorization,
     writer: BinaryWriter = BinaryWriter.create(),

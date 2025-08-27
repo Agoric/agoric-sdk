@@ -70,7 +70,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/cosmos.group.v1.GenesisState',
+  typeUrl: '/cosmos.group.v1.GenesisState' as const,
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
