@@ -185,10 +185,8 @@ export const CCTP = {
     await ica.depositForBurn(destinationAddress, denomAmount);
 
     trace(`CCTP transaction initiated, waiting for confirmation...`);
-    await ctx.cctpClient.registerCCTPTransaction(
-      destinationAddress,
-      amount.value,
-    );
+    const transactionKey = `cctp:${destinationAddress}:${amount.value}`;
+    await ctx.cctpClient.registerTransaction(transactionKey);
     trace(`CCTP transaction completed after confirmation`);
   },
   recover: async (_ctx, amount, src, dest) => {
