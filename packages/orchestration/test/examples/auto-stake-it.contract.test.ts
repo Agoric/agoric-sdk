@@ -1,4 +1,5 @@
-import { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { MsgDelegateResponse as MsgDelegateResponseType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { IBCEvent } from '@agoric/vats';
 import { heapVowE } from '@agoric/vow/vat.js';
@@ -12,6 +13,8 @@ import {
 import { commonSetup } from '../supports.js';
 
 import * as contractExports from '../../src/examples/auto-stake-it.contract.js';
+
+const MsgDelegateResponse = CodecHelper(MsgDelegateResponseType);
 
 const contractName = 'auto-stake-it';
 type StartFn = typeof contractExports.start;

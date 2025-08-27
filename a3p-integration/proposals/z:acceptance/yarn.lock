@@ -4922,6 +4922,7 @@ __metadata:
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
     "@agoric/client-utils": "npm:dev"
+    "@agoric/cosmic-proto": "npm:dev"
     "@agoric/ertp": "npm:dev"
     "@agoric/inter-protocol": "npm:dev"
     "@agoric/internal": "npm:dev"

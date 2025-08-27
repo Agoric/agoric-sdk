@@ -11,8 +11,7 @@ import * as flows from './query-flows.flows.js';
  * @import {ZCF} from '@agoric/zoe';
  * @import {Zone} from '@agoric/zone';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
- * @import {OrchestrationPowers} from '..//utils/start-helper.js';
- * @import {OrchestrationTools} from '../utils/start-helper.js';
+ * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  */
 
 /**

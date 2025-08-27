@@ -14,7 +14,8 @@ import {
   fetchEnvNetworkConfig,
   makeSmartWalletKit,
 } from '@agoric/client-utils';
-import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { MsgWalletSpendAction as MsgWalletSpendActionType } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
 import { AmountMath } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { makeTracer, mustMatch, type TypedPattern } from '@agoric/internal';
@@ -28,6 +29,8 @@ import {
 } from '@cosmjs/proto-signing';
 import { SigningStargateClient, type StdFee } from '@cosmjs/stargate';
 import { parseArgs } from 'node:util';
+
+const MsgWalletSpendAction = CodecHelper(MsgWalletSpendActionType);
 
 const getUsage = (
   programName: string,
@@ -55,7 +58,7 @@ const AgoricMsgs = {
 const agoricRegistryTypes: [string, GeneratedType][] = [
   [
     AgoricMsgs.MsgWalletSpendAction.typeUrl,
-    MsgWalletSpendAction as GeneratedType,
+    MsgWalletSpendActionType as GeneratedType,
   ],
 ];
 

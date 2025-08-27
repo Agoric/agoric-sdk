@@ -9,7 +9,8 @@
  */
 import '@endo/init';
 
-import { MsgDepositForBurn } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { MsgDepositForBurn as MsgDepositForBurnType } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import type { NobleAddress } from '@agoric/fast-usdc';
 import {
   accountIdTo32Bytes,
@@ -25,11 +26,13 @@ import {
 import { SigningStargateClient } from '@cosmjs/stargate';
 import type { AccountId } from '@agoric/orchestration';
 
+const MsgDepositForBurn = CodecHelper(MsgDepositForBurnType);
+
 export const cctpTypes: ReadonlyArray<[string, GeneratedType]> = [
   [
     '/circle.cctp.v1.MsgDepositForBurn',
     // @ts-expect-error type of encode doesn't match. not sure why
-    MsgDepositForBurn,
+    MsgDepositForBurnType,
   ],
 ];
 

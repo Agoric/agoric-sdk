@@ -1,9 +1,10 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { CodecHelper } from '@agoric/cosmic-proto';
 import { QueryBalanceResponse } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { QueryDelegatorDelegationsResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
-import { MsgUndelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import { MsgTransferResponse } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import { MsgUndelegateResponse as MsgUndelegateResponseType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { MsgTransferResponse as MsgTransferResponseType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
@@ -13,6 +14,9 @@ import {
   buildQueryResponseString,
 } from '../../tools/ibc-mocks.js';
 import { commonSetup } from '../supports.js';
+
+const MsgUndelegateResponse = CodecHelper(MsgUndelegateResponseType);
+const MsgTransferResponse = CodecHelper(MsgTransferResponseType);
 
 type StartFn = typeof contractExports.start;
 

@@ -21,7 +21,8 @@
  */
 import '@endo/init';
 
-import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import type { StdFee } from '@cosmjs/amino';
 import { stringToPath } from '@cosmjs/crypto';
 import {
@@ -35,9 +36,13 @@ import { ConfigContext, useChain, useRegistry } from 'starshipjs';
 import { DEFAULT_TIMEOUT_NS } from '../tools/ibc-transfer.ts';
 import { makeQueryClient } from '../tools/query.ts';
 import { makeSwapLockMessages } from '@aglocal/portfolio-contract/src/pos-usdn.flows.ts';
-import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
-import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
+import { MsgSwap as MsgSwapType } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
+import { MsgLock as MsgLockType } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import starshipChainInfo from '../starship-chain-info.js';
+
+const MsgTransfer = CodecHelper(MsgTransferType);
+const MsgSwap = CodecHelper(MsgSwapType);
+const MsgLock = CodecHelper(MsgLockType);
 
 const [poolId, denom, denomTo] = [0, 'uusdc' as const, 'uusdn' as const]; // cf. .flows.ts
 

@@ -15,7 +15,10 @@ import { defaultRegistryTypes } from '@cosmjs/stargate';
 import { stringToPath } from '@cosmjs/crypto';
 import { Decimal } from '@cosmjs/math';
 import { fromBech32 } from '@cosmjs/encoding';
-import { MsgInstallBundle } from '@agoric/cosmic-proto/swingset/msgs.js';
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { MsgInstallBundle as MsgInstallBundleType } from '@agoric/cosmic-proto/swingset/msgs.js';
+
+const MsgInstallBundle = CodecHelper(MsgInstallBundleType);
 
 // https://github.com/Agoric/agoric-sdk/blob/master/golang/cosmos/daemon/main.go
 const Agoric = {

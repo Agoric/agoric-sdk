@@ -3,6 +3,18 @@ import type { MessageBody, TypedJson } from './helpers.js';
 
 const { freeze } = Object;
 
+// This is a mapping from typeUrl to the fields that should be non-nullish.
+// TODO: codegen
+const nonNullishFieldsFromTypeUrl: Record<string, string[]> = {
+  '/ibc.applications.transfer.v1.MsgTransfer': ['timeoutHeight'],
+};
+
+// This is a mapping from typeUrl to the fields that are embedded.
+// TODO: codegen
+const embeddedFieldsFromTypeUrl: Record<string, string[]> = {
+  '/cosmos.auth.v1beta1.ModuleAccount': ['base_account'],
+};
+
 export type ProtoMsg<TU = string> = {
   readonly typeUrl: TU;
   readonly value: Uint8Array;
@@ -57,16 +69,22 @@ export interface Proto3Codec<TU = string, MT = MessageBody<TU>, IM = MT> {
  *
  * @template [TU=string]
  * @template [MT=MessageBody<TU>]
- * @param codec The original codec.
+ * @param {Proto3Codec<TU, MT>} codec The original codec.
+ * @param {string[]} [nonNullishFields] The properties that should be replaced with `{}` if nullish.
  * @returns {Proto3Codec<TU, MT, Partial<MT>>} A new codec that can handle partial input messages.
  */
 export const Codec = <TU = string, MT = MessageBody<TU>>(
   codec: Proto3Codec<TU, MT>,
-): Proto3Codec<TU, MT, Partial<MT>> =>
-  freeze({
+  nonNullishFields?: string[],
+): Proto3Codec<TU, MT, Partial<MT>> => {
+  const nonNullish =
+    nonNullishFields ??
+    nonNullishFieldsFromTypeUrl[codec.typeUrl as string] ??
+    [];
+  const cdc = freeze({
     typeUrl: codec.typeUrl,
     encode(message, writer) {
-      return codec.encode(codec.fromPartial(message), writer);
+      return codec.encode(cdc.fromPartial(message), writer);
     },
     decode(reader, length) {
       return codec.decode(reader, length);
@@ -75,22 +93,32 @@ export const Codec = <TU = string, MT = MessageBody<TU>>(
       return codec.fromJSON(object);
     },
     toJSON(message) {
-      return codec.toJSON(codec.fromPartial(message));
+      return codec.toJSON(cdc.fromPartial(message));
     },
     fromPartial(object) {
-      return codec.fromPartial(object);
+      const filled = { ...object };
+      for (const prop of nonNullish) {
+        if (filled[prop] == null) {
+          // XXX We replace them with empty objects, at least until codegen
+          // understands this is how `(gogoproto.nullable = false)` should
+          // behave.
+          filled[prop] = {};
+        }
+      }
+      return codec.fromPartial(filled);
     },
     fromProtoMsg(message) {
       return codec.fromProtoMsg(message);
     },
     toProto(message) {
-      return codec.toProto(codec.fromPartial(message));
+      return codec.toProto(cdc.fromPartial(message));
     },
     toProtoMsg(message) {
-      return codec.toProtoMsg(codec.fromPartial(message));
+      return codec.toProtoMsg(cdc.fromPartial(message));
     },
   });
-
+  return cdc;
+};
 export interface Proto3CodecHelper<TU = string, MT = MessageBody<TU>>
   extends Proto3Codec<TU, MT, Partial<MT>> {
   typedJson(message: Partial<MT>): TypedJson<TU>;
@@ -102,7 +130,7 @@ export interface Proto3CodecHelper<TU = string, MT = MessageBody<TU>>
       | TypedAmino<TU, MT>
       | EncodeObject<TU>
       | ProtoMsg<TU>,
-    embeddedProps?: string[],
+    embeddedFields?: string[],
   ): MT;
 }
 
@@ -112,29 +140,33 @@ export interface Proto3CodecHelper<TU = string, MT = MessageBody<TU>>
  *
  * @template [TU=string]
  * @template [MT=MessageBody<TU>]
+ * @param {Proto3Codec<TU, MT>} codec The original codec.
+ * @param {string[]} [nonNullishFields] The fields that should be replaced with `{}` if nullish.
  * @returns {Proto3CodecHelper<TU, MT>} Codec and helpers that can handle partial input messages.
  */
 export const CodecHelper = <TU = string, MT = MessageBody<TU>>(
   codec: Proto3Codec<TU, MT>,
-): Proto3CodecHelper<TU, MT> =>
-  freeze({
-    ...Codec(codec),
+  nonNullishFields?: string[],
+): Proto3CodecHelper<TU, MT> => {
+  const cdc = Codec(codec, nonNullishFields);
+  const help = freeze({
+    ...cdc,
     typedAmino(message) {
-      return { type: codec.typeUrl, value: codec.fromPartial(message) };
+      return { type: codec.typeUrl, value: cdc.fromPartial(message) };
     },
     typedEncode(message) {
       return {
         typeUrl: codec.typeUrl,
-        value: codec.fromPartial(message),
+        value: cdc.fromPartial(message),
       } as EncodeObject<TU>;
     },
     typedJson(message) {
       return {
         '@type': codec.typeUrl,
-        ...codec.fromPartial(message),
+        ...cdc.fromPartial(message),
       } as TypedJson<TU>;
     },
-    fromTyped(object, embeddedFields = []) {
+    fromTyped(object, embeddedFields) {
       const { typeUrl, value } = extractTypeUrlAndValue(object);
       if (typeUrl !== codec.typeUrl) {
         throw TypeError(
@@ -143,7 +175,7 @@ export const CodecHelper = <TU = string, MT = MessageBody<TU>>(
       }
 
       const embedFields =
-        embeddedFields ?? embeddedFieldsFromTypeUrl[codec.typeUrl] ?? [];
+        embeddedFields ?? embeddedFieldsFromTypeUrl[typeUrl] ?? [];
       const spreadEmbedded = (message: MT) => {
         for (const prop of embedFields) {
           Object.assign(message as any, value[prop], message[prop]);
@@ -159,3 +191,5 @@ export const CodecHelper = <TU = string, MT = MessageBody<TU>>(
       return spreadEmbedded(cdc.fromPartial(value));
     },
   });
+  return help;
+};

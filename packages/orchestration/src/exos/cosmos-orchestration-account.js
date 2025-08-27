@@ -1,46 +1,46 @@
 /** @file Use-object for the owner of a staking account */
-import { toRequestQueryJson } from '@agoric/cosmic-proto';
+import { toRequestQueryJson, CodecHelper } from '@agoric/cosmic-proto';
 import {
-  MsgDepositForBurn,
-  MsgDepositForBurnWithCaller,
+  MsgDepositForBurn as MsgDepositForBurnType,
+  MsgDepositForBurnWithCaller as MsgDepositForBurnWithCallerType,
 } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import {
-  QueryAllBalancesRequest,
-  QueryAllBalancesResponse,
-  QueryBalanceRequest,
-  QueryBalanceResponse,
+  QueryAllBalancesRequest as QueryAllBalancesRequestType,
+  QueryAllBalancesResponse as QueryAllBalancesResponseType,
+  QueryBalanceRequest as QueryBalanceRequestType,
+  QueryBalanceResponse as QueryBalanceResponseType,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import { MsgSend } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+import { MsgSend as MsgSendType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import {
-  QueryDelegationRewardsRequest,
-  QueryDelegationRewardsResponse,
-  QueryDelegationTotalRewardsRequest,
-  QueryDelegationTotalRewardsResponse,
+  QueryDelegationRewardsRequest as QueryDelegationRewardsRequestType,
+  QueryDelegationRewardsResponse as QueryDelegationRewardsResponseType,
+  QueryDelegationTotalRewardsRequest as QueryDelegationTotalRewardsRequestType,
+  QueryDelegationTotalRewardsResponse as QueryDelegationTotalRewardsResponseType,
 } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
 import {
-  MsgWithdrawDelegatorReward,
-  MsgWithdrawDelegatorRewardResponse,
+  MsgWithdrawDelegatorReward as MsgWithdrawDelegatorRewardType,
+  MsgWithdrawDelegatorRewardResponse as MsgWithdrawDelegatorRewardResponseType,
 } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
 import {
-  QueryDelegationRequest,
-  QueryDelegationResponse,
-  QueryDelegatorDelegationsRequest,
-  QueryDelegatorDelegationsResponse,
-  QueryDelegatorUnbondingDelegationsRequest,
-  QueryDelegatorUnbondingDelegationsResponse,
-  QueryRedelegationsRequest,
-  QueryRedelegationsResponse,
-  QueryUnbondingDelegationRequest,
-  QueryUnbondingDelegationResponse,
+  QueryDelegationRequest as QueryDelegationRequestType,
+  QueryDelegationResponse as QueryDelegationResponseType,
+  QueryDelegatorDelegationsRequest as QueryDelegatorDelegationsRequestType,
+  QueryDelegatorDelegationsResponse as QueryDelegatorDelegationsResponseType,
+  QueryDelegatorUnbondingDelegationsRequest as QueryDelegatorUnbondingDelegationsRequestType,
+  QueryDelegatorUnbondingDelegationsResponse as QueryDelegatorUnbondingDelegationsResponseType,
+  QueryRedelegationsRequest as QueryRedelegationsRequestType,
+  QueryRedelegationsResponse as QueryRedelegationsResponseType,
+  QueryUnbondingDelegationRequest as QueryUnbondingDelegationRequestType,
+  QueryUnbondingDelegationResponse as QueryUnbondingDelegationResponseType,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
 import {
-  MsgBeginRedelegate,
-  MsgDelegate,
-  MsgUndelegate,
-  MsgUndelegateResponse,
+  MsgBeginRedelegate as MsgBeginRedelegateType,
+  MsgDelegate as MsgDelegateType,
+  MsgUndelegate as MsgUndelegateType,
+  MsgUndelegateResponse as MsgUndelegateResponseType,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import { Any as AnyType } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
@@ -69,6 +69,60 @@ import {
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
 import { accountIdTo32Bytes, parseAccountId } from '../utils/address.js';
+
+const MsgDepositForBurn = CodecHelper(MsgDepositForBurnType);
+const MsgDepositForBurnWithCaller = CodecHelper(
+  MsgDepositForBurnWithCallerType,
+);
+const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);
+const QueryAllBalancesResponse = CodecHelper(QueryAllBalancesResponseType);
+const QueryBalanceRequest = CodecHelper(QueryBalanceRequestType);
+const QueryBalanceResponse = CodecHelper(QueryBalanceResponseType);
+const MsgSend = CodecHelper(MsgSendType);
+const QueryDelegationRewardsRequest = CodecHelper(
+  QueryDelegationRewardsRequestType,
+);
+const QueryDelegationRewardsResponse = CodecHelper(
+  QueryDelegationRewardsResponseType,
+);
+const QueryDelegationTotalRewardsRequest = CodecHelper(
+  QueryDelegationTotalRewardsRequestType,
+);
+const QueryDelegationTotalRewardsResponse = CodecHelper(
+  QueryDelegationTotalRewardsResponseType,
+);
+const MsgWithdrawDelegatorReward = CodecHelper(MsgWithdrawDelegatorRewardType);
+const MsgWithdrawDelegatorRewardResponse = CodecHelper(
+  MsgWithdrawDelegatorRewardResponseType,
+);
+const QueryDelegationRequest = CodecHelper(QueryDelegationRequestType);
+const QueryDelegationResponse = CodecHelper(QueryDelegationResponseType);
+const QueryDelegatorDelegationsRequest = CodecHelper(
+  QueryDelegatorDelegationsRequestType,
+);
+const QueryDelegatorDelegationsResponse = CodecHelper(
+  QueryDelegatorDelegationsResponseType,
+);
+const QueryDelegatorUnbondingDelegationsRequest = CodecHelper(
+  QueryDelegatorUnbondingDelegationsRequestType,
+);
+const QueryDelegatorUnbondingDelegationsResponse = CodecHelper(
+  QueryDelegatorUnbondingDelegationsResponseType,
+);
+const QueryRedelegationsRequest = CodecHelper(QueryRedelegationsRequestType);
+const QueryRedelegationsResponse = CodecHelper(QueryRedelegationsResponseType);
+const QueryUnbondingDelegationRequest = CodecHelper(
+  QueryUnbondingDelegationRequestType,
+);
+const QueryUnbondingDelegationResponse = CodecHelper(
+  QueryUnbondingDelegationResponseType,
+);
+const MsgBeginRedelegate = CodecHelper(MsgBeginRedelegateType);
+const MsgDelegate = CodecHelper(MsgDelegateType);
+const MsgUndelegate = CodecHelper(MsgUndelegateType);
+const MsgUndelegateResponse = CodecHelper(MsgUndelegateResponseType);
+const Any = CodecHelper(AnyType);
+const MsgTransfer = CodecHelper(MsgTransferType);
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
@@ -611,12 +665,9 @@ export const prepareCosmosOrchestrationAccountKit = (
                 token,
                 sender: this.state.chainAddress.value,
                 receiver: destination.value,
-                timeoutHeight: opts?.timeoutHeight ?? {
-                  revisionHeight: 0n,
-                  revisionNumber: 0n,
-                },
+                timeoutHeight: opts?.timeoutHeight,
                 timeoutTimestamp,
-                memo: opts?.memo ?? '',
+                memo: opts?.memo,
               }),
             ),
           ]);
@@ -1170,7 +1221,7 @@ export const prepareCosmosOrchestrationAccountKit = (
               throw Fail`${q(chainId)} does not have "cctpDestinationDomain" set in ChainInfo`;
             }
 
-            /** @satisfies {MsgDepositForBurn} */
+            /** @satisfies {MsgDepositForBurnType} */
             const depositForBurn = {
               amount: helper.amountToCoin(amount)?.amount,
               from: chainAddress.value,

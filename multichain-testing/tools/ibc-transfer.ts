@@ -12,11 +12,14 @@ import {
   NANOSECONDS_PER_MILLISECOND,
   SECONDS_PER_MINUTE,
 } from '@agoric/orchestration/src/utils/time.js';
-import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { createWallet } from './wallet.js';
 import chainInfo from '../starship-chain-info.js';
 import type { MultichainRegistry } from './registry.js';
 import type { RetryUntilCondition } from './sleep.js';
+
+const MsgTransfer = CodecHelper(MsgTransferType);
 
 interface MakeFeeObjectArgs {
   denom?: string;
