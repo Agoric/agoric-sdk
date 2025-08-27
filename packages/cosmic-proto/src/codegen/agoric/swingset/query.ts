@@ -4,8 +4,8 @@ import {
   type ParamsSDKType,
   Egress,
   type EgressSDKType,
-  BundleChunks,
-  type BundleChunksSDKType,
+  ChunkedArtifact,
+  type ChunkedArtifactSDKType,
 } from './swingset.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
@@ -81,35 +81,36 @@ export interface QueryMailboxResponseProtoMsg {
 export interface QueryMailboxResponseSDKType {
   value: string;
 }
-/** QueryPendingInstallRequest is the request type for the Query/PendingInstall RPC method. */
-export interface QueryPendingInstallRequest {
-  pendingId: bigint;
+/** QueryChunkedArtifactStatusRequest is the request type for the Query/ChunkedArtifact RPC method. */
+export interface QueryChunkedArtifactStatusRequest {
+  chunkedArtifactId: bigint;
 }
-export interface QueryPendingInstallRequestProtoMsg {
-  typeUrl: '/agoric.swingset.QueryPendingInstallRequest';
+export interface QueryChunkedArtifactStatusRequestProtoMsg {
+  typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusRequest';
   value: Uint8Array;
 }
-/** QueryPendingInstallRequest is the request type for the Query/PendingInstall RPC method. */
-export interface QueryPendingInstallRequestSDKType {
-  pending_id: bigint;
+/** QueryChunkedArtifactStatusRequest is the request type for the Query/ChunkedArtifact RPC method. */
+export interface QueryChunkedArtifactStatusRequestSDKType {
+  chunked_artifact_id: bigint;
 }
-/** QueryPendingInstalllResponse is the response type for the Query/PendingInstall RPC method. */
-export interface QueryPendingInstallResponse {
-  pendingId: bigint;
-  bundleChunks?: BundleChunks;
-  startTime: bigint;
-  startBlock: bigint;
+/** QueryChunkedArtifactStatuslResponse is the response type for the Query/ChunkedArtifact RPC method. */
+export interface QueryChunkedArtifactStatusResponse {
+  chunkedArtifactId: bigint;
+  chunkedArtifact?: ChunkedArtifact;
+  /** Start time in UNIX epoch seconds. */
+  startTimeUnix: bigint;
+  startBlockHeight: bigint;
 }
-export interface QueryPendingInstallResponseProtoMsg {
-  typeUrl: '/agoric.swingset.QueryPendingInstallResponse';
+export interface QueryChunkedArtifactStatusResponseProtoMsg {
+  typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusResponse';
   value: Uint8Array;
 }
-/** QueryPendingInstalllResponse is the response type for the Query/PendingInstall RPC method. */
-export interface QueryPendingInstallResponseSDKType {
-  pending_id: bigint;
-  bundle_chunks?: BundleChunksSDKType;
-  start_time: bigint;
-  start_block: bigint;
+/** QueryChunkedArtifactStatuslResponse is the response type for the Query/ChunkedArtifact RPC method. */
+export interface QueryChunkedArtifactStatusResponseSDKType {
+  chunked_artifact_id: bigint;
+  chunked_artifact?: ChunkedArtifactSDKType;
+  start_time_unix: bigint;
+  start_block_height: bigint;
 }
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
@@ -507,35 +508,35 @@ export const QueryMailboxResponse = {
     };
   },
 };
-function createBaseQueryPendingInstallRequest(): QueryPendingInstallRequest {
+function createBaseQueryChunkedArtifactStatusRequest(): QueryChunkedArtifactStatusRequest {
   return {
-    pendingId: BigInt(0),
+    chunkedArtifactId: BigInt(0),
   };
 }
-export const QueryPendingInstallRequest = {
-  typeUrl: '/agoric.swingset.QueryPendingInstallRequest',
+export const QueryChunkedArtifactStatusRequest = {
+  typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusRequest' as const,
   encode(
-    message: QueryPendingInstallRequest,
+    message: QueryChunkedArtifactStatusRequest,
     writer: BinaryWriter = BinaryWriter.create(),
   ): BinaryWriter {
-    if (message.pendingId !== BigInt(0)) {
-      writer.uint32(8).uint64(message.pendingId);
+    if (message.chunkedArtifactId !== BigInt(0)) {
+      writer.uint32(8).uint64(message.chunkedArtifactId);
     }
     return writer;
   },
   decode(
     input: BinaryReader | Uint8Array,
     length?: number,
-  ): QueryPendingInstallRequest {
+  ): QueryChunkedArtifactStatusRequest {
     const reader =
       input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseQueryPendingInstallRequest();
+    const message = createBaseQueryChunkedArtifactStatusRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.pendingId = reader.uint64();
+          message.chunkedArtifactId = reader.uint64();
           break;
         default:
           reader.skipType(tag & 7);
@@ -544,101 +545,107 @@ export const QueryPendingInstallRequest = {
     }
     return message;
   },
-  fromJSON(object: any): QueryPendingInstallRequest {
+  fromJSON(object: any): QueryChunkedArtifactStatusRequest {
     return {
-      pendingId: isSet(object.pendingId)
-        ? BigInt(object.pendingId.toString())
+      chunkedArtifactId: isSet(object.chunkedArtifactId)
+        ? BigInt(object.chunkedArtifactId.toString())
         : BigInt(0),
     };
   },
   toJSON(
-    message: QueryPendingInstallRequest,
-  ): JsonSafe<QueryPendingInstallRequest> {
+    message: QueryChunkedArtifactStatusRequest,
+  ): JsonSafe<QueryChunkedArtifactStatusRequest> {
     const obj: any = {};
-    message.pendingId !== undefined &&
-      (obj.pendingId = (message.pendingId || BigInt(0)).toString());
+    message.chunkedArtifactId !== undefined &&
+      (obj.chunkedArtifactId = (
+        message.chunkedArtifactId || BigInt(0)
+      ).toString());
     return obj;
   },
   fromPartial(
-    object: Partial<QueryPendingInstallRequest>,
-  ): QueryPendingInstallRequest {
-    const message = createBaseQueryPendingInstallRequest();
-    message.pendingId =
-      object.pendingId !== undefined && object.pendingId !== null
-        ? BigInt(object.pendingId.toString())
+    object: Partial<QueryChunkedArtifactStatusRequest>,
+  ): QueryChunkedArtifactStatusRequest {
+    const message = createBaseQueryChunkedArtifactStatusRequest();
+    message.chunkedArtifactId =
+      object.chunkedArtifactId !== undefined &&
+      object.chunkedArtifactId !== null
+        ? BigInt(object.chunkedArtifactId.toString())
         : BigInt(0);
     return message;
   },
   fromProtoMsg(
-    message: QueryPendingInstallRequestProtoMsg,
-  ): QueryPendingInstallRequest {
-    return QueryPendingInstallRequest.decode(message.value);
+    message: QueryChunkedArtifactStatusRequestProtoMsg,
+  ): QueryChunkedArtifactStatusRequest {
+    return QueryChunkedArtifactStatusRequest.decode(message.value);
   },
-  toProto(message: QueryPendingInstallRequest): Uint8Array {
-    return QueryPendingInstallRequest.encode(message).finish();
+  toProto(message: QueryChunkedArtifactStatusRequest): Uint8Array {
+    return QueryChunkedArtifactStatusRequest.encode(message).finish();
   },
   toProtoMsg(
-    message: QueryPendingInstallRequest,
-  ): QueryPendingInstallRequestProtoMsg {
+    message: QueryChunkedArtifactStatusRequest,
+  ): QueryChunkedArtifactStatusRequestProtoMsg {
     return {
-      typeUrl: '/agoric.swingset.QueryPendingInstallRequest',
-      value: QueryPendingInstallRequest.encode(message).finish(),
+      typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusRequest',
+      value: QueryChunkedArtifactStatusRequest.encode(message).finish(),
     };
   },
 };
-function createBaseQueryPendingInstallResponse(): QueryPendingInstallResponse {
+function createBaseQueryChunkedArtifactStatusResponse(): QueryChunkedArtifactStatusResponse {
   return {
-    pendingId: BigInt(0),
-    bundleChunks: undefined,
-    startTime: BigInt(0),
-    startBlock: BigInt(0),
+    chunkedArtifactId: BigInt(0),
+    chunkedArtifact: undefined,
+    startTimeUnix: BigInt(0),
+    startBlockHeight: BigInt(0),
   };
 }
-export const QueryPendingInstallResponse = {
-  typeUrl: '/agoric.swingset.QueryPendingInstallResponse',
+export const QueryChunkedArtifactStatusResponse = {
+  typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusResponse' as const,
   encode(
-    message: QueryPendingInstallResponse,
+    message: QueryChunkedArtifactStatusResponse,
     writer: BinaryWriter = BinaryWriter.create(),
   ): BinaryWriter {
-    if (message.pendingId !== BigInt(0)) {
-      writer.uint32(8).uint64(message.pendingId);
+    if (message.chunkedArtifactId !== BigInt(0)) {
+      writer.uint32(8).uint64(message.chunkedArtifactId);
     }
-    if (message.bundleChunks !== undefined) {
-      BundleChunks.encode(
-        message.bundleChunks,
+    if (message.chunkedArtifact !== undefined) {
+      ChunkedArtifact.encode(
+        message.chunkedArtifact,
         writer.uint32(18).fork(),
       ).ldelim();
     }
-    if (message.startTime !== BigInt(0)) {
-      writer.uint32(24).int64(message.startTime);
+    if (message.startTimeUnix !== BigInt(0)) {
+      writer.uint32(24).int64(message.startTimeUnix);
     }
-    if (message.startBlock !== BigInt(0)) {
-      writer.uint32(32).int64(message.startBlock);
+    if (message.startBlockHeight !== BigInt(0)) {
+      writer.uint32(32).int64(message.startBlockHeight);
     }
     return writer;
   },
   decode(
     input: BinaryReader | Uint8Array,
     length?: number,
-  ): QueryPendingInstallResponse {
+  ): QueryChunkedArtifactStatusResponse {
     const reader =
       input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseQueryPendingInstallResponse();
+    const message = createBaseQueryChunkedArtifactStatusResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.pendingId = reader.uint64();
+          message.chunkedArtifactId = reader.uint64();
           break;
         case 2:
-          message.bundleChunks = BundleChunks.decode(reader, reader.uint32());
+          message.chunkedArtifact = ChunkedArtifact.decode(
+            reader,
+            reader.uint32(),
+          );
           break;
         case 3:
-          message.startTime = reader.int64();
+          message.startTimeUnix = reader.int64();
           break;
         case 4:
-          message.startBlock = reader.int64();
+          message.startBlockHeight = reader.int64();
           break;
         default:
           reader.skipType(tag & 7);
@@ -647,74 +654,79 @@ export const QueryPendingInstallResponse = {
     }
     return message;
   },
-  fromJSON(object: any): QueryPendingInstallResponse {
+  fromJSON(object: any): QueryChunkedArtifactStatusResponse {
     return {
-      pendingId: isSet(object.pendingId)
-        ? BigInt(object.pendingId.toString())
+      chunkedArtifactId: isSet(object.chunkedArtifactId)
+        ? BigInt(object.chunkedArtifactId.toString())
         : BigInt(0),
-      bundleChunks: isSet(object.bundleChunks)
-        ? BundleChunks.fromJSON(object.bundleChunks)
+      chunkedArtifact: isSet(object.chunkedArtifact)
+        ? ChunkedArtifact.fromJSON(object.chunkedArtifact)
         : undefined,
-      startTime: isSet(object.startTime)
-        ? BigInt(object.startTime.toString())
+      startTimeUnix: isSet(object.startTimeUnix)
+        ? BigInt(object.startTimeUnix.toString())
         : BigInt(0),
-      startBlock: isSet(object.startBlock)
-        ? BigInt(object.startBlock.toString())
+      startBlockHeight: isSet(object.startBlockHeight)
+        ? BigInt(object.startBlockHeight.toString())
         : BigInt(0),
     };
   },
   toJSON(
-    message: QueryPendingInstallResponse,
-  ): JsonSafe<QueryPendingInstallResponse> {
+    message: QueryChunkedArtifactStatusResponse,
+  ): JsonSafe<QueryChunkedArtifactStatusResponse> {
     const obj: any = {};
-    message.pendingId !== undefined &&
-      (obj.pendingId = (message.pendingId || BigInt(0)).toString());
-    message.bundleChunks !== undefined &&
-      (obj.bundleChunks = message.bundleChunks
-        ? BundleChunks.toJSON(message.bundleChunks)
+    message.chunkedArtifactId !== undefined &&
+      (obj.chunkedArtifactId = (
+        message.chunkedArtifactId || BigInt(0)
+      ).toString());
+    message.chunkedArtifact !== undefined &&
+      (obj.chunkedArtifact = message.chunkedArtifact
+        ? ChunkedArtifact.toJSON(message.chunkedArtifact)
         : undefined);
-    message.startTime !== undefined &&
-      (obj.startTime = (message.startTime || BigInt(0)).toString());
-    message.startBlock !== undefined &&
-      (obj.startBlock = (message.startBlock || BigInt(0)).toString());
+    message.startTimeUnix !== undefined &&
+      (obj.startTimeUnix = (message.startTimeUnix || BigInt(0)).toString());
+    message.startBlockHeight !== undefined &&
+      (obj.startBlockHeight = (
+        message.startBlockHeight || BigInt(0)
+      ).toString());
     return obj;
   },
   fromPartial(
-    object: Partial<QueryPendingInstallResponse>,
-  ): QueryPendingInstallResponse {
-    const message = createBaseQueryPendingInstallResponse();
-    message.pendingId =
-      object.pendingId !== undefined && object.pendingId !== null
-        ? BigInt(object.pendingId.toString())
+    object: Partial<QueryChunkedArtifactStatusResponse>,
+  ): QueryChunkedArtifactStatusResponse {
+    const message = createBaseQueryChunkedArtifactStatusResponse();
+    message.chunkedArtifactId =
+      object.chunkedArtifactId !== undefined &&
+      object.chunkedArtifactId !== null
+        ? BigInt(object.chunkedArtifactId.toString())
         : BigInt(0);
-    message.bundleChunks =
-      object.bundleChunks !== undefined && object.bundleChunks !== null
-        ? BundleChunks.fromPartial(object.bundleChunks)
+    message.chunkedArtifact =
+      object.chunkedArtifact !== undefined && object.chunkedArtifact !== null
+        ? ChunkedArtifact.fromPartial(object.chunkedArtifact)
         : undefined;
-    message.startTime =
-      object.startTime !== undefined && object.startTime !== null
-        ? BigInt(object.startTime.toString())
+    message.startTimeUnix =
+      object.startTimeUnix !== undefined && object.startTimeUnix !== null
+        ? BigInt(object.startTimeUnix.toString())
         : BigInt(0);
-    message.startBlock =
-      object.startBlock !== undefined && object.startBlock !== null
-        ? BigInt(object.startBlock.toString())
+    message.startBlockHeight =
+      object.startBlockHeight !== undefined && object.startBlockHeight !== null
+        ? BigInt(object.startBlockHeight.toString())
         : BigInt(0);
     return message;
   },
   fromProtoMsg(
-    message: QueryPendingInstallResponseProtoMsg,
-  ): QueryPendingInstallResponse {
-    return QueryPendingInstallResponse.decode(message.value);
+    message: QueryChunkedArtifactStatusResponseProtoMsg,
+  ): QueryChunkedArtifactStatusResponse {
+    return QueryChunkedArtifactStatusResponse.decode(message.value);
   },
-  toProto(message: QueryPendingInstallResponse): Uint8Array {
-    return QueryPendingInstallResponse.encode(message).finish();
+  toProto(message: QueryChunkedArtifactStatusResponse): Uint8Array {
+    return QueryChunkedArtifactStatusResponse.encode(message).finish();
   },
   toProtoMsg(
-    message: QueryPendingInstallResponse,
-  ): QueryPendingInstallResponseProtoMsg {
+    message: QueryChunkedArtifactStatusResponse,
+  ): QueryChunkedArtifactStatusResponseProtoMsg {
     return {
-      typeUrl: '/agoric.swingset.QueryPendingInstallResponse',
-      value: QueryPendingInstallResponse.encode(message).finish(),
+      typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusResponse',
+      value: QueryChunkedArtifactStatusResponse.encode(message).finish(),
     };
   },
 };
