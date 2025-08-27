@@ -24,7 +24,7 @@ type CctpTransfer = {
 export type GmpTransfer = {
   lcaAddr: string;
   destinationChain: AxelarId;
-  contractAddress: string;
+  contractAddress: `0x${string}`;
 };
 
 /**

@@ -1,7 +1,6 @@
 import test from 'ava';
 import { ethers } from 'ethers';
 import { watchGmp } from '../src/axelar/gmp-watcher.ts';
-import type { AxelarExecutedEvent } from '../src/types/index.ts';
 
 const createMockAxelarResponse = (
   status: 'executed' | 'pending' | 'error',
@@ -54,7 +53,7 @@ const createMockAxelarResponse = (
     const abiCoder = ethers.AbiCoder.defaultAbiCoder();
     const encodedSubscriptionId = abiCoder.encode(['string'], [subscriptionId]);
 
-    const executed: AxelarExecutedEvent = {
+    const executed = {
       chain: 'ethereum',
       sourceChain: 'agoric',
       chain_type: 'evm',
