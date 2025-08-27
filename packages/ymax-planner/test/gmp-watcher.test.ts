@@ -1,6 +1,6 @@
 import test from 'ava';
 import { ethers } from 'ethers';
-import { getTxStatus } from '../src/axelar/gmp-status.ts';
+import { getTxStatus } from '../src/axelar/gmp-watcher.ts';
 import type { AxelarExecutedEvent } from '../src/types/index.ts';
 
 const createMockAxelarResponse = (
