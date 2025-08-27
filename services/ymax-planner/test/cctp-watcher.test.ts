@@ -1,5 +1,5 @@
 import test from 'ava';
-import { JsonRpcProvider, id, toBeHex, zeroPadValue } from 'ethers';
+import { type Provider, id, toBeHex, zeroPadValue } from 'ethers';
 import { watchCctpTransfer } from '../src/watchers/cctp-watcher.ts';
 
 const watchAddress = '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64';
@@ -51,7 +51,7 @@ const createMockProvider = () => {
         listeners.forEach(listener => listener(log));
       }
     },
-  } as unknown as JsonRpcProvider;
+  } as Provider;
 };
 
 test('watchCCTPTransfer detects exact amount match', async t => {
@@ -60,7 +60,7 @@ test('watchCCTPTransfer detects exact amount match', async t => {
 
   const watchPromise = watchCctpTransfer({
     config: mockCctpConfig['1'],
-    provider,
+    provider: provider,
     watchAddress,
     expectedAmount,
     timeoutMinutes: 0.05, // 3 seconds for test

@@ -289,7 +289,7 @@ const BaseSubscriptionShape = M.splitRecord(
 
 const parseSubscription = (
   subscriptionData,
-  subscriptionId: string,
+  subscriptionId: `tx${number}`,
   marshaller?: SigningSmartWalletKit['marshaller'],
 ): Subscription | null => {
   const data = marshaller
@@ -317,14 +317,20 @@ const createSubscriptionContext = (
 });
 
 const processPendingSubscription = async (
+  evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>,
+  signingSmartWalletKit: SigningSmartWalletKit,
   subscription: Subscription,
-  context: EvmContext,
   log: (...args: unknown[]) => void,
   errorHandler: (error: Error) => void,
 ) => {
   if (subscription.status !== 'pending') return;
-
-  void handleSubscription(context, subscription, log).catch(errorHandler);
+  const subscriptionCtx = createSubscriptionContext(
+    evmCtx,
+    signingSmartWalletKit,
+  );
+  void handleSubscription(subscriptionCtx, subscription, log).catch(
+    errorHandler,
+  );
 };
 
 type IO = {
@@ -384,8 +390,6 @@ const processSubscriptionEvents = async (
   evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>,
   signingSmartWalletKit: SigningSmartWalletKit,
 ) => {
-  const context = createSubscriptionContext(evmCtx, signingSmartWalletKit);
-
   for (const { path, value: vstorageValue } of subscriptionEvents) {
     const streamCell = tryJsonParse(
       vstorageValue,
@@ -410,7 +414,11 @@ const processSubscriptionEvents = async (
           Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
       );
 
-      const subscription = parseSubscription(value, subscriptionId, marshaller);
+      const subscription = parseSubscription(
+        value,
+        subscriptionId as `tx${number}`,
+        marshaller,
+      );
       if (!subscription) return;
 
       console.warn('Handling subscription:', {
@@ -427,8 +435,9 @@ const processSubscriptionEvents = async (
       };
 
       await processPendingSubscription(
+        evmCtx,
+        signingSmartWalletKit,
         subscription,
-        context,
         log,
         errorHandler,
       );
@@ -533,9 +542,6 @@ export const startEngine = async ({
     `Found ${subscriptionKeys.length} existing subscriptions to monitor`,
   );
 
-  // Process existing pending subscriptions on startup
-  const context = createSubscriptionContext(evmCtx, signingSmartWalletKit);
-
   await makeWorkPool(subscriptionKeys, undefined, async subscriptionKey => {
     const logIgnoredError = err => {
       const msg = `⚠️ Failed to process existing subscription: ${subscriptionKey}`;
@@ -556,7 +562,10 @@ export const startEngine = async ({
       return;
     }
 
-    const subscription = parseSubscription(subscriptionData, subscriptionKey);
+    const subscription = parseSubscription(
+      subscriptionData,
+      subscriptionKey as `tx${number}`,
+    );
     if (!subscription) return;
 
     console.warn(`Found existing subscription: ${subscriptionKey}`, {
@@ -564,9 +573,11 @@ export const startEngine = async ({
       status: subscription.status,
     });
 
+    // Process existing pending subscriptions on startup
     await processPendingSubscription(
+      evmCtx,
+      signingSmartWalletKit,
       subscription,
-      context,
       log,
       logIgnoredError,
     );

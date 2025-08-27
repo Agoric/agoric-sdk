@@ -76,7 +76,7 @@ export const watchGmp = async ({
        * This inconsistency comes from @axelarjs/api types lagging behind the actual API schema.
        */
       // @ts-expect-error -- logs exist at runtime but are not in the SDK types
-      const logs = execution.receipt?.logs;
+      const logs = execution.receipt.logs;
       const subscriptionLog = logs.find(
         log => log.topics[0] === subscriptionTopic,
       );

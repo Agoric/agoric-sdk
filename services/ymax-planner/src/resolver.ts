@@ -7,7 +7,7 @@ import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constant
 type ResolveSubscriptionParams = {
   signingSmartWalletKit: SigningSmartWalletKit;
   subscriptionId: string;
-  status: TxStatus;
+  status: Omit<TxStatus, 'pending'>;
   subscriptionData: CctpSubscription;
   proposal?: object;
 };
