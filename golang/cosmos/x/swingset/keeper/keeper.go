@@ -106,7 +106,13 @@ func populateAction(ctx sdk.Context, action vm.Action) (vm.Action, error) {
 	return action, nil
 }
 
-// pushAction ap/ The inbound queue's format is documented by `makeChainQueue` in
+// pushAction appends an action to the controller's specified inbound queue.
+// The queue is kept in the kvstore so that changes are properly reverted if the
+// kvstore is rolled back.  By the time the block manager runs, it can commit
+// its SwingSet transactions without fear of side-effecting the world with
+// intermediate transaction state.
+//
+// The inbound queue's format is documented by `makeChainQueue` in
 // `packages/cosmic-swingset/src/helpers/make-queue.js`.
 func (k Keeper) pushAction(ctx sdk.Context, inboundQueuePath string, action vm.Action) error {
 	action, err := populateAction(ctx, action)
