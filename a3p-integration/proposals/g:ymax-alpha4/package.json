@@ -2,7 +2,6 @@
   "agoricProposal": {
     "source": "subdir",
     "sdk-generate": [
-      "../../builders/scripts/smart-wallet/build-walletFactory-upgrade.js submission",
       "../../portfolio-deploy/src/portfolio-control.build.js submission --ymaxControlAddress=agoric15u29seyj3c9rdwg7gwkc97uttrk6j9fl4jkuyh"
     ],
     "type": "/agoric.swingset.CoreEvalProposal"
