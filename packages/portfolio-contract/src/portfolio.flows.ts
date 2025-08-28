@@ -6,7 +6,7 @@
  */
 import type { GuestInterface } from '@agoric/async-flow';
 import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, type TraceLogger } from '@agoric/internal';
 import type {
   AccountId,
   Denom,
@@ -59,8 +59,7 @@ import {
 } from './type-guards.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
-const trace = makeTracer('PortF');
-const { keys } = Object;
+const { keys, entries } = Object;
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
@@ -159,21 +158,24 @@ export type ProtocolDetail<
  * itself can fail. In that case, publishes final asset location to vstorage
  * and gives up. Clients must manually rebalance to recover.
  */
-export const trackFlow = async (
+const trackFlow = async (
   reporter: GuestInterface<PortfolioKit['reporter']>,
   todo: (() => Promise<AssetMovement>)[],
+  tracePortfolio: TraceLogger,
 ) => {
   const flowId = reporter.allocateFlowId();
+  const traceFlow = tracePortfolio.sub(`flow${flowId}`);
   let step = 1;
   const moves: AssetMovement[] = [];
   try {
     for (const makeMove of todo) {
+      const traceStep = traceFlow.sub(`step${step}`);
       const move = await makeMove();
       moves.push(move);
-      trace(step, 'step starting', moveStatus(move));
+      traceStep('starting', moveStatus(move));
       reporter.publishFlowStatus(flowId, { step, ...moveStatus(move) });
       await move.apply();
-      trace(step, 'step done');
+      traceStep('done');
       const { amount, src, dest } = move;
       if ('pos' in src) {
         src.pos.recordTransferOut(amount);
@@ -214,12 +216,14 @@ export const trackFlow = async (
   }
 };
 
-export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
+const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
   orch: Orchestrator,
   chainName: C,
   kit: GuestInterface<PortfolioKit>, // Guest<T>?
+  tracePortfolio: TraceLogger,
 ): Promise<AccountInfoFor[C]> => {
   await null;
+  const traceChain = tracePortfolio.sub(chainName);
   let promiseMaybe = kit.manager.reserveAccount(chainName);
   if (promiseMaybe) {
     return promiseMaybe as unknown as Promise<AccountInfoFor[C]>;
@@ -243,7 +247,7 @@ export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
       const lca = await agoricChain.makeAccount();
       const lcaIn = await agoricChain.makeAccount();
       const reg = await lca.monitorTransfers(kit.tap);
-      trace('Monitoring transfers for', lca.getAddress().value);
+      traceChain('Monitoring transfers for', lca.getAddress().value);
       const info: AccountInfoFor['agoric'] = {
         namespace: 'cosmos',
         chainName,
@@ -293,6 +297,9 @@ type Way =
       claim?: boolean;
     };
 
+/**
+ * exported only for testing
+ */
 export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
   const { src } = moveDesc;
   const { dest } = moveDesc;
@@ -372,7 +379,10 @@ const stepFlow = async (
   seat: ZCFSeat,
   moves: MovementDesc[],
   kit: GuestInterface<PortfolioKit>,
+  trace: TraceLogger,
 ) => {
+  const tracePortfolio = trace.sub(`portfolio${kit.reader.getPortfolioId()}`);
+  // TODO make traceFlow too
   const todo: (() => Promise<AssetMovement>)[] = [];
 
   const provideEVMInfo = async (chain: AxelarChain, move: MovementDesc) => {
@@ -386,7 +396,12 @@ const stepFlow = async (
       axelarIds,
       evmGas: move.detail?.evmGas || 0n,
     };
-    const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
+    const { lca } = await provideCosmosAccount(
+      orch,
+      'agoric',
+      kit,
+      tracePortfolio,
+    );
     const gInfo = await provideEVMAccount(chain, gmp, lca, ctx, kit);
     const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
 
@@ -448,12 +463,13 @@ const stepFlow = async (
 
   const provideAgoricNoble = () =>
     Promise.all([
-      provideCosmosAccount(orch, 'agoric', kit),
-      provideCosmosAccount(orch, 'noble', kit),
+      provideCosmosAccount(orch, 'agoric', kit, tracePortfolio),
+      provideCosmosAccount(orch, 'noble', kit, tracePortfolio),
     ]);
 
-  for (const move of moves) {
-    trace('wayFromSrcToDesc?', move);
+  for (const [i, move] of entries(moves)) {
+    const traceMove = tracePortfolio.sub(`move${i}`);
+    traceMove('wayFromSrcToDesc?', move);
     const way = wayFromSrcToDesc(move);
     const { amount } = move;
     switch (way.how) {
@@ -464,6 +480,7 @@ const stepFlow = async (
             orch,
             'agoric',
             kit,
+            traceMove,
           );
           const account = move.dest === '+agoric' ? lcaIn : lca;
           return {
@@ -484,7 +501,12 @@ const stepFlow = async (
       case 'withdrawToSeat': {
         const amounts = { Cash: amount };
         todo.push(async () => {
-          const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
+          const { lca } = await provideCosmosAccount(
+            orch,
+            'agoric',
+            kit,
+            traceMove,
+          );
           return {
             how: 'withdrawToSeat',
             src: { account: lca },
@@ -507,6 +529,7 @@ const stepFlow = async (
             orch,
             'agoric',
             kit,
+            traceMove,
           );
           return {
             how: 'send',
@@ -515,7 +538,9 @@ const stepFlow = async (
             dest: { account: lca },
             apply: () => lcaIn.send(lca.getAddress(), amount),
             recover: async () => {
-              trace('recover send is noop; not sending back to deposit LCA');
+              traceMove(
+                'recover send is noop; not sending back to deposit LCA',
+              );
             },
           };
         });
@@ -558,8 +583,8 @@ const stepFlow = async (
         todo.push(async () => {
           const { how, apply, recover } = CCTP;
           const [{ lca }, nInfo, axelar] = await Promise.all([
-            provideCosmosAccount(orch, 'agoric', kit),
-            provideCosmosAccount(orch, 'noble', kit),
+            provideCosmosAccount(orch, 'agoric', kit, traceMove),
+            provideCosmosAccount(orch, 'noble', kit, traceMove),
             orch.getChain('axelar'),
           ]);
 
@@ -591,7 +616,12 @@ const stepFlow = async (
 
       case 'USDN': {
         todo.push(async () => {
-          const nInfo = await provideCosmosAccount(orch, 'noble', kit);
+          const nInfo = await provideCosmosAccount(
+            orch,
+            'noble',
+            kit,
+            traceMove,
+          );
           const acctId = coerceAccountId(nInfo.ica.getAddress());
           const pos = kit.manager.providePosition('USDN', 'USDN', acctId);
           const vault = way.poolKey === 'USDNVault' ? 1 : undefined;
@@ -645,8 +675,8 @@ const stepFlow = async (
     }
   }
 
-  await trackFlow(kit.reporter, todo);
-  trace('stepFlow done');
+  await trackFlow(kit.reporter, todo, tracePortfolio);
+  tracePortfolio('stepFlow done');
 };
 
 /**
@@ -665,15 +695,16 @@ const stepFlow = async (
  * @param seat - proposal guarded as per {@link makeProposalShapes}
  * @param offerArgs - guarded as per {@link makeOfferArgsShapes}
  */
-export const rebalance = async (
+export const rebalance = (async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['rebalance'],
   kit: GuestInterface<PortfolioKit>,
 ) => {
+  const trace = makeTracer('rebalance');
   const proposal = seat.getProposal() as ProposalType['rebalance'];
-  trace('rebalance proposal', proposal.give, proposal.want, offerArgs);
+  trace('proposal', proposal.give, proposal.want, offerArgs);
 
   try {
     if (offerArgs.targetAllocation) {
@@ -681,7 +712,7 @@ export const rebalance = async (
     }
 
     if (offerArgs.flow) {
-      await stepFlow(orch, ctx, seat, offerArgs.flow, kit);
+      await stepFlow(orch, ctx, seat, offerArgs.flow, kit, trace);
     }
 
     if (!seat.hasExited()) {
@@ -693,11 +724,11 @@ export const rebalance = async (
     }
     throw err;
   }
-};
+}) satisfies OrchestrationFlow;
 
 export const parseInboundTransfer = (async (
-  orch: Orchestrator,
-  ctx: PortfolioInstanceContext,
+  _orch: Orchestrator,
+  _ctx: PortfolioInstanceContext,
   packet: VTransferIBCEvent['packet'],
   kit: PortfolioKit,
 ): Promise<Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>> => {
@@ -726,11 +757,12 @@ export const openPortfolio = (async (
   offerArgs: OfferArgsFor['openPortfolio'],
 ) => {
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
+  const trace = makeTracer('openPortfolio');
   try {
     const { makePortfolioKit, ...ctxI } = ctx;
     const { inertSubscriber } = ctxI;
     const kit = makePortfolioKit();
-    await provideCosmosAccount(orch, 'agoric', kit);
+    await provideCosmosAccount(orch, 'agoric', kit, trace);
 
     // Set target allocation if provided
     if (offerArgs.targetAllocation) {
