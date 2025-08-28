@@ -14,10 +14,8 @@ const io = {
 test('accounts', async t => {
   const swk = await makeSmartWalletKit(io, LOCAL_CONFIG);
 
-  // XXX readPublished once it can handle plain JSON
-  const nodeObj = await swk.vstorage.readLatest('published.fastUsdc');
-  const { values } = JSON.parse(nodeObj.value);
-  const { poolAccount, settlementAccount } = JSON.parse(values[0]);
+  const { poolAccount, settlementAccount } =
+    await swk.readPublished('fastUsdc');
 
   // exact addresses are not available at design time
   t.true(poolAccount.startsWith('agoric1'));

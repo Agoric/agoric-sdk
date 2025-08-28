@@ -83,9 +83,10 @@ export {};
  * @property {number} [height]
  */
 
+// XXX DRY with the def in @agoric/internal
 /**
  * @template T
  * @typedef {object} StreamCell
- * @property {number} blockHeight
+ * @property {number | string} blockHeight
  * @property {Array<T>} values
  */
