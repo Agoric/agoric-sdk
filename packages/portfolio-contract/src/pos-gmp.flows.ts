@@ -9,6 +9,7 @@
  * @see {@link AaveProtocol}
  * @see {@link CompoundProtocol}
  */
+import type { NatValue } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { encodeHex } from '@agoric/internal/src/hex.js';
 import type {
@@ -23,13 +24,20 @@ import {
   type ContractCall,
 } from '@agoric/orchestration/src/axelar-types.js';
 import {
-  buildGMPPayload,
   buildGasPayload,
+  buildGMPPayload,
 } from '@agoric/orchestration/src/utils/gmp.js';
-import { fromBech32 } from '@cosmjs/encoding';
-import type { GuestInterface } from '../../async-flow/src/types.ts';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+import { fromBech32 } from '@cosmjs/encoding';
+import { q, X } from '@endo/errors';
+import type { GuestInterface } from '../../async-flow/src/types.ts';
 import { ERC20, makeEVMSession, type EVMT } from './evm-facade.ts';
+import type {
+  AxelarId,
+  EVMContractAddresses,
+  GmpAddresses,
+} from './portfolio.contract.ts';
 import type { GMPAccountInfo, PortfolioKit } from './portfolio.exo.ts';
 import {
   type LocalAccount,
@@ -37,15 +45,8 @@ import {
   type ProtocolDetail,
   type TransportDetail,
 } from './portfolio.flows.ts';
-import type {
-  AxelarId,
-  EVMContractAddresses,
-  GmpAddresses,
-} from './portfolio.contract.ts';
-import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import { TxType } from './resolver/constants.js';
 import type { PoolKey } from './type-guards.ts';
-import { q, X } from '@endo/errors';
-import type { NatValue } from '@agoric/ertp';
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
@@ -185,8 +186,11 @@ export const CCTP = {
     await ica.depositForBurn(destinationAddress, denomAmount);
 
     trace(`CCTP transaction initiated, waiting for confirmation...`);
-    const transactionKey = `cctp:${destinationAddress}:${amount.value}`;
-    await ctx.cctpClient.registerTransaction(transactionKey);
+    await ctx.cctpClient.registerTransaction(
+      TxType.CCTP,
+      destinationAddress,
+      amount.value,
+    );
     trace(`CCTP transaction completed after confirmation`);
   },
   recover: async (_ctx, amount, src, dest) => {

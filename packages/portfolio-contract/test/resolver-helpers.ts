@@ -6,6 +6,7 @@ import type { UserSeat, ZoeService } from '@agoric/zoe';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ResolverInvitationMakers } from '../src/resolver/resolver.exo.js';
 import type { TxStatus } from '../src/resolver/constants.js';
+import type { TransactionKey } from '../src/resolver/types.js';
 
 /**
  * Helper to get resolver makers from a creator facet.
@@ -42,10 +43,9 @@ export const getResolverMakers = async (
 export const settleTransaction = async (
   zoe: ZoeService,
   resolverMakers: ResolverInvitationMakers,
-  transactionKey: string,
-  status: TxStatus,
+  transactionKey: TransactionKey,
+  status: Exclude<TxStatus, 'pending'>,
   txNumber: number = 0,
-  rejectionReason?: string,
   log: (message: string, ...args: any[]) => void = console.log,
 ): Promise<string> => {
   await eventLoopIteration();
@@ -58,7 +58,6 @@ export const settleTransaction = async (
   const settlementSeat = await E(zoe).offer(settleInvitation, {}, undefined, {
     transactionKey,
     status,
-    rejectionReason,
     txId: `tx${txNumber}`,
   });
 
@@ -77,20 +76,19 @@ export const settleCCTPTransaction = async (
   txDetails: {
     amount: bigint;
     remoteAddress: `0x${string}`;
-    status: TxStatus;
+    status: Exclude<TxStatus, 'pending'>;
   },
   txNumber: number = 0,
   remoteAxelarChain: CaipChainId,
   log: (message: string, ...args: any[]) => void = console.log,
 ): Promise<string> => {
-  const transactionKey = `cctp:${remoteAxelarChain}:${txDetails.remoteAddress}:${txDetails.amount}`;
+  const transactionKey: TransactionKey = `cctp:${remoteAxelarChain}:${txDetails.remoteAddress}:${txDetails.amount}`;
   return settleTransaction(
     zoe,
     resolverMakers,
     transactionKey,
     txDetails.status,
     txNumber,
-    undefined,
     log,
   );
 };
@@ -113,7 +111,7 @@ export const settleCCTPWithMockReceiver = async (
   amount: bigint,
   remoteAxelarChain: CaipChainId,
   txNumber: number = 0,
-  status: TxStatus = 'confirmed',
+  status: Exclude<TxStatus, 'pending'> = 'success',
   log: (message: string, ...args: any[]) => void = console.log,
   mockRemoteAddress: `0x${string}` = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
 ): Promise<string> => {

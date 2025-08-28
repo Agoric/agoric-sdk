@@ -242,7 +242,7 @@ export const contract = async (
     },
   };
 
-  const resolverZone = zone.subZone('CCTPResolver');
+  const resolverZone = zone.subZone('Resolver');
   const {
     client: resolverClient,
     invitationMakers: makeResolverInvitationMakers,

@@ -271,7 +271,7 @@ const mocks = (
 
   const inertSubscriber = {} as ResolvedPublicTopic<never>['subscriber'];
 
-  const resolverZone = zone.subZone('CCTPResolver');
+  const resolverZone = zone.subZone('Resolver');
   // Use actual vow tools for the resolver to create proper vows, not promises
   const resolverVowTools = prepareVowTools(zone.subZone('vowTools'));
   const { client: cctpClient } = prepareResolverKit(resolverZone, mockZCF, {

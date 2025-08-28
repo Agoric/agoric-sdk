@@ -8,8 +8,9 @@
  * @enum {(typeof TxStatus)[keyof typeof TxStatus]}
  */
 export const TxStatus = /** @type {const} */ ({
-  CONFIRMED: 'confirmed',
+  SUCCESS: 'success',
   FAILED: 'failed',
+  PENDING: 'pending',
 });
 harden(TxStatus);
 

@@ -6,13 +6,15 @@
  */
 
 import type { TypedPattern } from '@agoric/internal';
+import type { AccountId } from '@agoric/orchestration';
 import { M } from '@endo/patterns';
-import { TxStatus } from './constants.js';
+import { TxStatus, TxType } from './constants.js';
+
+export type TransactionKey = `${TxType}:${AccountId}:${bigint}`;
 
 export type TransactionSettlementArgs = {
-  transactionKey: string;
+  transactionKey: TransactionKey;
   status: TxStatus;
-  rejectionReason?: string;
   txId: `tx${number}`;
 };
 
@@ -20,19 +22,16 @@ export const TransactionSettlementArgsShape: TypedPattern<TransactionSettlementA
   M.splitRecord(
     {
       transactionKey: M.string(),
-      status: M.or('confirmed', 'failed'),
+      status: M.or(TxStatus.SUCCESS, TxStatus.FAILED),
       txId: M.string(),
     },
-    {
-      rejectionReason: M.string(),
-    },
+    {},
     {},
   );
 
 export type TransactionSettlementOfferArgs = {
-  transactionKey: string;
-  status: TxStatus;
-  rejectionReason?: string;
+  transactionKey: TransactionKey;
+  status: Exclude<TxStatus, 'pending'>;
   txId: `tx${number}`;
 };
 
@@ -40,12 +39,10 @@ export const TransactionSettlementOfferArgsShape: TypedPattern<TransactionSettle
   M.splitRecord(
     {
       transactionKey: M.string(),
-      status: M.or('confirmed', 'failed'),
+      status: M.or(TxStatus.SUCCESS, TxStatus.FAILED),
       txId: M.string(),
     },
-    {
-      rejectionReason: M.string(),
-    },
+    {},
     {},
   );
 
@@ -58,20 +55,24 @@ export const ResolverOfferArgsShapes = {
 
 harden(ResolverOfferArgsShapes);
 
-
 export const PENDING_TXS_NODE_KEY = 'pendingTxs';
 
 export type PublishedTx = {
-  transactionKey: string;
+  type: TxType;
+  amount?: bigint;
+  destinationAddress: AccountId;
   status: TxStatus;
 };
 
 export const PublishedTxShape: TypedPattern<PublishedTx> = M.splitRecord(
   {
-    transactionKey: M.string(),
-    status: M.or('confirmed', 'failed'),
+    type: M.or(...Object.keys(TxType)),
+    destinationAddress: M.string(),
+    status: M.or(...Object.keys(TxStatus)),
   },
-  {},
+  {
+    amount: M.nat(),
+  },
   {},
 );
 

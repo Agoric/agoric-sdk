@@ -11,15 +11,18 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { type VowKit, VowShape, type VowTools } from '@agoric/vow';
+import type { AccountId } from '@agoric/orchestration';
+import { type Vow, type VowKit, VowShape, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { TxStatus, TxType } from './constants.js';
 import type {
   PublishedTx,
+  TransactionKey,
   TransactionSettlementArgs,
   TransactionSettlementOfferArgs,
 } from './types.js';
@@ -35,12 +38,16 @@ type TransactionEntry = {
 const trace = makeTracer('Resolver');
 
 const ClientFacetI = M.interface('ResolverClient', {
-  registerTransaction: M.call(M.string()).returns(VowShape),
+  registerTransaction: M.call(M.string(), M.string(), M.nat()).returns(VowShape),
 });
 
 const ReporterI = M.interface('Reporter', {
-  insertPendingTransaction: M.call(M.string()).returns(),
-  completePendingTransaction: M.call(M.string(), M.string(), M.string()).returns(),
+  insertPendingTransaction: M.call(M.nat(), M.string()).returns(),
+  completePendingTransaction: M.call(
+    M.string(),
+    M.string(),
+    M.string(),
+  ).returns(),
 });
 
 const ServiceFacetI = M.interface('ResolverService', {
@@ -90,7 +97,7 @@ export const prepareResolverKit = (
     );
   };
   return resolverZone.exoClassKit(
-    'CCTPResolver',
+    'Resolver',
     {
       client: ClientFacetI,
       service: ServiceFacetI,
@@ -101,17 +108,22 @@ export const prepareResolverKit = (
     () => ({
       transactionRegistry: resolverZone
         .detached()
-        .mapStore<string, TransactionEntry>('transactionRegistry'),
+        .mapStore<TransactionKey, TransactionEntry>('transactionRegistry'),
       index: 0,
     }),
     {
       client: {
         /**
          * Register a transaction and return a vow that resolves when settled.
-         * 
+         *
          * @param transactionKey - Unique transaction key
          */
-        registerTransaction(transactionKey: string) {
+        registerTransaction(
+          type: TxType,
+          destinationAddress: AccountId,
+          amountValue: bigint,
+        ): Vow<void> {
+          const transactionKey: TransactionKey = `${type}:${destinationAddress}:${amountValue}`;
           const { transactionRegistry } = this.state;
           if (transactionRegistry.has(transactionKey)) {
             trace(`Transaction already registered: ${transactionKey}`);
@@ -120,30 +132,45 @@ export const prepareResolverKit = (
           const vowKit = vowTools.makeVowKit<void>();
           transactionRegistry.init(
             transactionKey,
-            harden({ vowKit }),
+            harden({ destinationAddress, amountValue, vowKit }),
           );
-          this.facets.reporter.insertPendingTransaction(transactionKey);
+          this.facets.reporter.insertPendingTransaction(
+            amountValue,
+            destinationAddress,
+          );
 
           trace(`Registered pending transaction: ${transactionKey}`);
           return vowKit.vow;
         },
-
       },
       reporter: {
-        insertPendingTransaction(transactionKey: string) {
-          // We no longer write pending status to vstorage
-          // Only write when transaction is confirmed or failed
+        insertPendingTransaction(
+          amount: bigint,
+          destinationAddress: AccountId,
+        ) {
+          const value: PublishedTx = {
+            type: TxType.CCTP,
+            amount,
+            destinationAddress,
+            status: TxStatus.PENDING,
+          };
+          const node = E(pendingTxsNode).makeChildNode(`tx${this.state.index}`);
           this.state.index += 1;
+          writeToNode(node, value);
         },
 
         completePendingTransaction(
           vstorageId: `tx${number}`,
           transactionKey: string,
-          status: 'confirmed' | 'failed' = 'confirmed',
+          status: Exclude<TxStatus, 'pending'> = TxStatus.SUCCESS,
         ) {
           const node = E(pendingTxsNode).makeChildNode(vstorageId);
+          const [type, chainName, chainId, destinationAddress, amount] =
+            transactionKey.split(':');
           const value: PublishedTx = {
-            transactionKey,
+            type: type as TxType,
+            amount: BigInt(amount),
+            destinationAddress: `${chainName}:${chainId}:${destinationAddress as `0x${string}`}`,
             status,
           };
           writeToNode(node, value);
@@ -152,8 +179,7 @@ export const prepareResolverKit = (
       service: {
         settleTransaction(args: TransactionSettlementArgs) {
           const { transactionRegistry } = this.state;
-          const { transactionKey, status, rejectionReason, txId } = args;
-
+          const { transactionKey, status, txId } = args;
           if (!transactionRegistry.has(transactionKey)) {
             trace('No pending transaction found for key:', transactionKey);
             throw Error(
@@ -164,25 +190,33 @@ export const prepareResolverKit = (
           const registryEntry = transactionRegistry.get(transactionKey);
 
           switch (status) {
-            case 'confirmed':
+            case TxStatus.SUCCESS:
               trace(
                 'Transaction confirmed - resolving pending operation for key:',
                 transactionKey,
               );
               registryEntry.vowKit.resolver.resolve();
-              this.facets.reporter.completePendingTransaction(txId, transactionKey, 'confirmed');
+              this.facets.reporter.completePendingTransaction(
+                txId,
+                transactionKey,
+                TxStatus.SUCCESS,
+              );
               transactionRegistry.delete(transactionKey);
               return;
 
-            case 'failed':
+            case TxStatus.FAILED:
               trace(
                 'Transaction failed - rejecting pending operation for key:',
                 transactionKey,
               );
               registryEntry.vowKit.resolver.reject(
-                Error(rejectionReason || 'Transaction failed'),
+                Error('Transaction failed'),
               );
-              this.facets.reporter.completePendingTransaction(txId, transactionKey, 'failed');
+              this.facets.reporter.completePendingTransaction(
+                txId,
+                transactionKey,
+                TxStatus.FAILED,
+              );
               transactionRegistry.delete(transactionKey);
               return;
 
@@ -190,12 +224,11 @@ export const prepareResolverKit = (
               throw Fail`Unexpected status ${q(status)} for transaction: ${q(transactionKey)}`;
           }
         },
-
       },
       settlementHandler: {
         async handle(seat: ZCFSeat, offerArgs: TransactionSettlementOfferArgs) {
           mustMatch(offerArgs, ResolverOfferArgsShapes.SettleTransaction);
-          const { transactionKey, status, rejectionReason, txId } = offerArgs;
+          const { transactionKey, status, txId } = offerArgs;
 
           trace('Transaction settlement:', {
             transactionKey,
@@ -206,7 +239,6 @@ export const prepareResolverKit = (
           this.facets.service.settleTransaction({
             transactionKey,
             status,
-            rejectionReason,
             txId,
           });
 
@@ -219,7 +251,7 @@ export const prepareResolverKit = (
           const { settlementHandler } = this.facets;
 
           return zcf.makeInvitation(
-            (seat: ZCFSeat, offerArgs: TransactionSettlementOfferArgs) => settlementHandler.handle(seat, offerArgs),
+            settlementHandler,
             'settleTransaction',
             undefined,
             proposalShape,
