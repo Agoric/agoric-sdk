@@ -14,6 +14,8 @@ func GetActionQueueRecords(t *testing.T, ctx sdk.Context, swingsetKeeper keeper.
 	vstorageKeeper := keeper.GetVstorageKeeper(t, swingsetKeeper)
 	actionQueueName := keeper.StoragePathActionQueue
 	return vstoragetesting.GetQueueItems(ctx, vstorageKeeper, actionQueueName)
+	// TODO: fix this type assertion, vstorage needs interface to be updated
+	// return vstoragetesting.GetQueueItems(ctx, vstorageKeeper.(vstorage.Keeper), actionQueueName)
 }
 
 // ResetActionQueue resets the action queue.
@@ -22,4 +24,6 @@ func ResetActionQueue(t *testing.T, ctx sdk.Context, swingsetKeeper keeper.Keepe
 	vstorageKeeper := keeper.GetVstorageKeeper(t, swingsetKeeper)
 	actionQueueName := keeper.StoragePathActionQueue
 	return vstoragetesting.ResetQueue(ctx, vstorageKeeper, actionQueueName)
+	// TODO: fix this type assertion, vstorage needs interface to be updated
+	// return vstoragetesting.ResetQueue(ctx, vstorageKeeper.(vstorage.Keeper), actionQueueName)
 }
