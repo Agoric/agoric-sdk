@@ -120,7 +120,9 @@ export const prepareResolverKit = (
         /**
          * Register a transaction and return a vow that resolves when settled.
          *
-         * @param transactionKey - Unique transaction key
+         * @param type
+         * @param destinationAddress
+         * @param amountValue
          */
         registerTransaction(
           type: TxType,
