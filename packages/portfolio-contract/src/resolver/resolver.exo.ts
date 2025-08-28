@@ -118,7 +118,7 @@ export const prepareResolverKit = (
     {
       client: {
         /**
-         * Register a transaction and return a vow that resolves when settled.
+         * Register a transaction and return a vow that is fulfilled when the transaction is resolved.
          *
          * @param type
          * @param destinationAddress
@@ -225,7 +225,7 @@ export const prepareResolverKit = (
               return;
 
             default:
-              throw Fail`Unexpected status ${q(status)} for transaction: ${q(transactionKey)}`;
+              throw Fail`Unexpected status ${q(status)} for transaction: ${q(transactionKey)}. expected values are 'success' or 'failed'`;
           }
         },
       },
