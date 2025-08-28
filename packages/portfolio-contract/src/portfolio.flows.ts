@@ -7,7 +7,7 @@
 import type { GuestInterface } from '@agoric/async-flow';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, type TraceLogger } from '@agoric/internal';
 import type {
   AccountId,
   CaipChainId,
@@ -64,7 +64,7 @@ import {
 import type { ResolverKit } from './resolver/resolver.exo.js';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
-const trace = makeTracer('PortF');
+const rootTrace = makeTracer('PortF');
 const { keys } = Object;
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
@@ -166,18 +166,21 @@ export type ProtocolDetail<
 export const trackFlow = async (
   reporter: GuestInterface<PortfolioKit['reporter']>,
   todo: (() => Promise<AssetMovement>)[],
+  portfolioTrace: TraceLogger,
 ) => {
   const flowId = reporter.allocateFlowId();
+  const flowTrace = portfolioTrace.sub(`flow${flowId}`);
   let step = 1;
   const moves: AssetMovement[] = [];
   try {
     for (const makeMove of todo) {
+      const stepTrace = flowTrace.sub(`step${step}`);
       const move = await makeMove();
       moves.push(move);
-      trace(step, 'step starting', moveStatus(move));
+      stepTrace('starting', moveStatus(move));
       reporter.publishFlowStatus(flowId, { step, ...moveStatus(move) });
       await move.apply();
-      trace(step, 'step done');
+      stepTrace('done');
       const { amount, src, dest } = move;
       if ('pos' in src) {
         src.pos.recordTransferOut(amount);
@@ -247,7 +250,7 @@ export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
       const lca = await agoricChain.makeAccount();
       const lcaIn = await agoricChain.makeAccount();
       const reg = await lca.monitorTransfers(kit.tap);
-      trace('Monitoring transfers for', lca.getAddress().value);
+      rootTrace('Monitoring transfers for', lca.getAddress().value);
       const info: AccountInfoFor['agoric'] = {
         namespace: 'cosmos',
         chainName,
@@ -377,6 +380,10 @@ const stepFlow = async (
   moves: MovementDesc[],
   kit: GuestInterface<PortfolioKit>,
 ) => {
+  const portfolioTrace = rootTrace.sub(
+    `portfolio${kit.reader.getPortfolioId()}`,
+  );
+  // TODO make flowTrace too
   const todo: (() => Promise<AssetMovement>)[] = [];
 
   const provideEVMInfo = async (chain: AxelarChain, move: MovementDesc) => {
@@ -450,7 +457,8 @@ const stepFlow = async (
     ]);
 
   for (const move of moves) {
-    trace('wayFromSrcToDesc?', move);
+    // TODO
+    rootTrace('wayFromSrcToDesc?', move);
     const way = wayFromSrcToDesc(move);
     const { amount } = move;
     switch (way.how) {
@@ -516,7 +524,9 @@ const stepFlow = async (
             dest: { account: lca },
             apply: () => lcaIn.send(lca.getAddress(), amount),
             recover: async () => {
-              trace('recover send is noop; not sending back to deposit LCA');
+              rootTrace(
+                'recover send is noop; not sending back to deposit LCA',
+              );
             },
           };
         });
@@ -646,8 +656,8 @@ const stepFlow = async (
     }
   }
 
-  await trackFlow(kit.reporter, todo);
-  trace('stepFlow done');
+  await trackFlow(kit.reporter, todo, portfolioTrace);
+  portfolioTrace('stepFlow done');
 };
 
 /**
@@ -674,7 +684,7 @@ export const rebalance = async (
   kit: GuestInterface<PortfolioKit>,
 ) => {
   const proposal = seat.getProposal() as ProposalType['rebalance'];
-  trace('rebalance proposal', proposal.give, proposal.want, offerArgs);
+  rootTrace('rebalance proposal', proposal.give, proposal.want, offerArgs);
 
   try {
     if (offerArgs.targetAllocation) {
@@ -713,7 +723,7 @@ export const rebalanceFromTransfer = (async (
   if (!parsed) {
     return harden({ parsed: null, handled: false });
   }
-  trace('rebalanceFromTransfer parsed', parsed);
+  rootTrace('rebalanceFromTransfer parsed', parsed);
 
   const {
     amount,
@@ -732,7 +742,7 @@ export const rebalanceFromTransfer = (async (
     case RebalanceStrategy.Preset:
     case RebalanceStrategy.PreserveExistingProportions: {
       // XXX implement PreserveExistingProportions
-      trace(
+      rootTrace(
         'rebalanceFromTransfer PreserveExistingProportions',
         amount,
         query,
