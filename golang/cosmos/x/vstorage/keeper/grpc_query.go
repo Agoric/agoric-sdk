@@ -259,6 +259,6 @@ func (k Querier) Children(c context.Context, req *types.QueryChildrenRequest) (*
 	children := k.GetChildren(ctx, req.Path)
 
 	return &types.QueryChildrenResponse{
-		Children: children.Children,
+		Children: children,
 	}, nil
 }

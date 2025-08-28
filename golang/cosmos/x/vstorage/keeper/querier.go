@@ -44,7 +44,7 @@ func queryData(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keepe
 // nolint: unparam
 func queryChildren(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
 	children := keeper.GetChildren(ctx, path)
-	klist := children.Children
+	klist := children
 
 	if klist == nil {
 		klist = []string{}

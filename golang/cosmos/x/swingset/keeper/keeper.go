@@ -16,14 +16,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/ante"
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	vstoragekeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/keeper"
 )
 
 // Top-level paths for chain storage should remain synchronized with
@@ -58,8 +56,8 @@ type Keeper struct {
 	paramSpace   paramtypes.Subspace
 
 	accountKeeper    types.AccountKeeper
-	bankKeeper       bankkeeper.Keeper
-	vstorageKeeper   vstoragekeeper.Keeper
+	bankKeeper       types.BankKeeper
+	vstorageKeeper   types.VstorageKeeper
 	feeCollectorName string
 
 	authority string
@@ -75,8 +73,8 @@ var _ ante.SwingsetKeeper = &Keeper{}
 func NewKeeper(
 	cdc codec.Codec, storeService corestore.KVStoreService,
 	paramSpace paramtypes.Subspace,
-	accountKeeper types.AccountKeeper, bankKeeper bankkeeper.Keeper,
-	vstorageKeeper vstoragekeeper.Keeper, feeCollectorName string, authority string,
+	accountKeeper types.AccountKeeper, bankKeeper types.BankKeeper,
+	vstorageKeeper types.VstorageKeeper, feeCollectorName string, authority string,
 	callToController func(ctx sdk.Context, str string) (string, error),
 ) Keeper {
 
@@ -108,7 +106,13 @@ func populateAction(ctx sdk.Context, action vm.Action) (vm.Action, error) {
 	return action, nil
 }
 
-// pushAction ap/ The inbound queue's format is documented by `makeChainQueue` in
+// pushAction appends an action to the controller's specified inbound queue.
+// The queue is kept in the kvstore so that changes are properly reverted if the
+// kvstore is rolled back.  By the time the block manager runs, it can commit
+// its SwingSet transactions without fear of side-effecting the world with
+// intermediate transaction state.
+//
+// The inbound queue's format is documented by `makeChainQueue` in
 // `packages/cosmic-swingset/src/helpers/make-queue.js`.
 func (k Keeper) pushAction(ctx sdk.Context, inboundQueuePath string, action vm.Action) error {
 	action, err := populateAction(ctx, action)
