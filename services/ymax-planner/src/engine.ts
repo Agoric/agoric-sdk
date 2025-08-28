@@ -22,7 +22,7 @@ import { handleDeposit } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import {
   handleSubscription,
-  type EVMContext,
+  type EvmContext,
   type Subscription,
 } from './subscription-manager.ts';
 import { log } from 'node:console';
@@ -287,8 +287,54 @@ const BaseSubscriptionShape = M.splitRecord(
   },
 );
 
+const parseSubscription = (
+  subscriptionData,
+  subscriptionId: `tx${number}`,
+  marshaller?: SigningSmartWalletKit['marshaller'],
+): Subscription | null => {
+  const data = marshaller
+    ? marshaller.fromCapData(subscriptionData)
+    : subscriptionData;
+
+  if (!matches(data, BaseSubscriptionShape)) {
+    const err = assert.error(
+      X`expected data ${data} to match ${q(BaseSubscriptionShape)}`,
+    );
+    console.error(err);
+    return null;
+  }
+
+  return { subscriptionId, ...(data as any) } as Subscription;
+};
+
+const createSubscriptionContext = (
+  evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>,
+  signingSmartWalletKit: SigningSmartWalletKit,
+): EvmContext => ({
+  ...evmCtx,
+  signingSmartWalletKit,
+  fetch,
+});
+
+const processPendingSubscription = async (
+  evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>,
+  signingSmartWalletKit: SigningSmartWalletKit,
+  subscription: Subscription,
+  log: (...args: unknown[]) => void,
+  errorHandler: (error: Error) => void,
+) => {
+  if (subscription.status !== 'pending') return;
+  const subscriptionCtx = createSubscriptionContext(
+    evmCtx,
+    signingSmartWalletKit,
+  );
+  void handleSubscription(subscriptionCtx, subscription, log).catch(
+    errorHandler,
+  );
+};
+
 type IO = {
-  evmCtx: Pick<EVMContext, 'axelarQueryApi' | 'evmProviders'>;
+  evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
@@ -341,7 +387,7 @@ const processPortfolioEvents = async (
 const processSubscriptionEvents = async (
   subscriptionEvents: Array<{ path: string; value: string }>,
   marshaller: SigningSmartWalletKit['marshaller'],
-  evmCtx: Pick<EVMContext, 'axelarQueryApi' | 'evmProviders'>,
+  evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>,
   signingSmartWalletKit: SigningSmartWalletKit,
 ) => {
   for (const { path, value: vstorageValue } of subscriptionEvents) {
@@ -368,20 +414,12 @@ const processSubscriptionEvents = async (
           Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
       );
 
-      // TODO: DRY out this code (for handling existing vs. new subscriptions)
-      const subscriptionData = marshaller.fromCapData(value);
-      if (!matches(subscriptionData, BaseSubscriptionShape)) {
-        const err = assert.error(
-          X`expected data ${subscriptionData} to match ${q(BaseSubscriptionShape)}`,
-        );
-        console.error(err);
-        return;
-      }
-
-      const subscription = {
-        subscriptionId,
-        ...(subscriptionData as any),
-      } as Subscription;
+      const subscription = parseSubscription(
+        value,
+        subscriptionId as `tx${number}`,
+        marshaller,
+      );
+      if (!subscription) return;
 
       console.warn('Handling subscription:', {
         subscriptionId,
@@ -389,23 +427,20 @@ const processSubscriptionEvents = async (
         status: subscription.status,
       });
 
-      if (subscription.status !== 'pending') continue;
-
-      // Process subscription concurrently without blocking event processing
-      void handleSubscription(
-        {
-          ...evmCtx,
-          signingSmartWalletKit,
-          fetch,
-        },
-        subscription,
-        log,
-      ).catch(error => {
+      const errorHandler = error => {
         console.error(
           `⚠️ Failed to process subscription: ${subscriptionId}`,
           error,
         );
-      });
+      };
+
+      await processPendingSubscription(
+        evmCtx,
+        signingSmartWalletKit,
+        subscription,
+        log,
+        errorHandler,
+      );
     }
   }
 };
@@ -507,7 +542,6 @@ export const startEngine = async ({
     `Found ${subscriptionKeys.length} existing subscriptions to monitor`,
   );
 
-  // Process existing pending subscriptions on startup
   await makeWorkPool(subscriptionKeys, undefined, async subscriptionKey => {
     const logIgnoredError = err => {
       const msg = `⚠️ Failed to process existing subscription: ${subscriptionKey}`;
@@ -528,35 +562,25 @@ export const startEngine = async ({
       return;
     }
 
-    if (!matches(subscriptionData, BaseSubscriptionShape)) {
-      const err = assert.error(
-        X`expected data ${subscriptionData} to match ${q(BaseSubscriptionShape)}`,
-      );
-      console.error(err);
-      return;
-    }
+    const subscription = parseSubscription(
+      subscriptionData,
+      subscriptionKey as `tx${number}`,
+    );
+    if (!subscription) return;
 
-    const subscription = {
-      subscriptionId: subscriptionKey,
-      ...(subscriptionData as any),
-    } as Subscription;
     console.warn(`Found existing subscription: ${subscriptionKey}`, {
       type: subscription.type,
       status: subscription.status,
     });
 
-    if (subscription.status !== 'pending') return;
-
-    // Process subscription without blocking other progress.
-    void handleSubscription(
-      {
-        ...evmCtx,
-        signingSmartWalletKit,
-        fetch,
-      },
+    // Process existing pending subscriptions on startup
+    await processPendingSubscription(
+      evmCtx,
+      signingSmartWalletKit,
       subscription,
       log,
-    ).catch(logIgnoredError);
+      logIgnoredError,
+    );
   }).done;
 
   // console.warn('consuming events');

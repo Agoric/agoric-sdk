@@ -1,7 +1,6 @@
 import test from 'ava';
 import { ethers } from 'ethers';
-import { getTxStatus } from '../src/axelar/gmp-status.ts';
-import type { AxelarExecutedEvent } from '../src/types/index.ts';
+import { watchGmp } from '../src/watchers/gmp-watcher.ts';
 
 const createMockAxelarResponse = (
   status: 'executed' | 'pending' | 'error',
@@ -54,7 +53,7 @@ const createMockAxelarResponse = (
     const abiCoder = ethers.AbiCoder.defaultAbiCoder();
     const encodedSubscriptionId = abiCoder.encode(['string'], [subscriptionId]);
 
-    const executed: AxelarExecutedEvent = {
+    const executed = {
       chain: 'ethereum',
       sourceChain: 'agoric',
       chain_type: 'evm',
@@ -149,7 +148,7 @@ test('getTxStatus detects successful execution with matching subscription ID', a
     } as Response;
   };
 
-  const result = await getTxStatus({
+  const result = await watchGmp({
     url: 'https://testnet.api.axelarscan.io/gmp/searchGMP',
     fetch: mockFetch,
     params: {
@@ -177,7 +176,7 @@ test('getTxStatus rejects execution with mismatched subscription ID', async t =>
     } as Response;
   };
 
-  const result = await getTxStatus({
+  const result = await watchGmp({
     url: 'https://testnet.api.axelarscan.io/gmp/searchGMP',
     fetch: mockFetch,
     params: {

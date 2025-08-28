@@ -1,13 +1,15 @@
+import type { Log } from 'ethers';
 import { id, zeroPadValue, getAddress, type Provider } from 'ethers';
+import type { CctpChainConfig } from '../subscription-manager';
 
 const TRANSFER = id('Transfer(address,address,uint256)');
 const MILLIS_PER_MINUTE = 60 * 1000;
 
 type WatchTransferOptions = {
+  config: CctpChainConfig;
   provider: Provider;
   watchAddress: string;
   expectedAmount: bigint;
-  // TODO: Add tokenAddress and decimals to support different ERC-20 tokens
   timeoutMinutes?: number;
   log: (...args: unknown[]) => void;
   setTimeout?: typeof globalThis.setTimeout;
@@ -35,7 +37,8 @@ const parseAmount = data => {
   return BigInt(data);
 };
 
-export const watchCCTPTransfer = ({
+export const watchCctpTransfer = ({
+  config,
   provider,
   watchAddress,
   expectedAmount,
@@ -65,7 +68,7 @@ export const watchCCTPTransfer = ({
       listeners = [];
     };
 
-    const listenForTransfer = (eventLog: any) => {
+    const listenForTransfer = (eventLog: Log) => {
       let transferData;
       try {
         transferData = parseTransferLog(eventLog);
@@ -75,12 +78,13 @@ export const watchCCTPTransfer = ({
       }
 
       const { from, to, amount } = transferData;
+      const tokenAddr = eventLog.address; // USDC address
 
       log(
-        `Transfer detected: token=${eventLog.address} from=${from} to=${to} amount=${amount} tx=${eventLog.transactionHash}`,
+        `Transfer detected: token=${tokenAddr} from=${from} to=${to} amount=${amount} tx=${eventLog.transactionHash}`,
       );
 
-      if (amount === expectedAmount) {
+      if (amount === expectedAmount && config.contracts.usdc === tokenAddr) {
         log(
           `✓ Amount matches! Expected: ${expectedAmount}, Received: ${amount}`,
         );

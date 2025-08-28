@@ -11,7 +11,7 @@ import { getConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { startEngine } from './engine.ts';
-import { createEVMContext } from './axelar/support.ts';
+import { createEVMContext } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 
 const getChainIdFromRpc = async (rpc: CosmosRPCClient) => {

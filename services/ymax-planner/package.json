@@ -26,6 +26,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@axelarjs/api": "^0.4.4",
     "@types/node": "^22.10.2",
     "@types/ws": "^8",
     "ava": "^6.3.0",
