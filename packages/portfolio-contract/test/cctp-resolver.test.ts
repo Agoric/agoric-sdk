@@ -2,13 +2,13 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/far';
+import { mustMatch } from '@endo/patterns';
 import type {
   TransactionKey,
   TransactionSettlementOfferArgs,
 } from '../src/resolver/types.ts';
-import { deploy } from './contract-setup.ts';
-import { mustMatch } from '@endo/patterns';
 import { ResolverOfferArgsShapes } from '../src/resolver/types.ts';
+import { deploy } from './contract-setup.ts';
 
 test('CCTP settlement invitation - no pending transaction found', async t => {
   const { started, zoe, common } = await deploy(t);
