@@ -7,6 +7,8 @@ import {
   retryUntilCondition,
   waitUntilAccountFunded,
 } from '@agoric/client-utils';
+import { ModuleAccount } from '@agoric/cosmic-proto/cosmos/auth/v1beta1/auth.js';
+import { Help } from '@agoric/cosmic-proto';
 import { VBankAccount } from '@agoric/internal/src/config.js';
 import {
   addUser,
@@ -144,21 +146,17 @@ test.serial('exitOffer tool reclaims stuck payment', async t => {
 });
 
 test.serial(`ante handler sends fee only to vbank/reserve`, async t => {
+  const codec = Help(ModuleAccount);
   const [feeCollector, vbankReserve] = await Promise.all(
     ['fee_collector', 'vbank/reserve'].map(async name => {
-      const {
-        account: {
-          '@type': moduleAcct,
-          base_account: { address },
-        },
-      } = await agd.query(['auth', 'module-account', name]);
-
+      const { account } = await agd.query(['auth', 'module-account', name]);
+      const value = codec.fromTyped(account, ['base_account']);
       t.is(
-        moduleAcct,
-        '/cosmos.auth.v1beta1.ModuleAccount',
-        `${name} is a module account`,
+        typeof value.address,
+        'string',
+        'module account address is a string',
       );
-      return address;
+      return /** @type {string} */ (value.address);
     }),
   );
 
