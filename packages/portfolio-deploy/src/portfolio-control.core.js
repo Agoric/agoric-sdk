@@ -3,6 +3,8 @@
 import { makeTracer } from '@agoric/internal/src/debug.js';
 import { E } from '@endo/eventual-send';
 import { makeHeapZone } from '@agoric/zone';
+import { objectMap } from '@endo/patterns';
+import { passStyleOf } from '@endo/pass-style';
 import { prepareContractControl } from './contract-control.js';
 import { orchPermit } from './orch.start.js';
 import {
@@ -47,17 +49,16 @@ export const delegatePortfolioContract = async (permitted, config) => {
     startUpgradable: await consume.startUpgradable,
     zoe: await consume.zoe,
   });
-  const ymax0Kit = await consume.ymax0Kit;
-  // XXX ideally, pass in an id to check in config
+  const { privateArgs } = await consume.ymax0Kit;
   trace(
-    'ymax0Kit.instance boardId',
-    await E(consume.board).getId(ymax0Kit.instance),
+    'ymax0Kit.privateArgs',
+    objectMap(privateArgs, v => passStyleOf(v)),
   );
 
   const ymaxControl = makeContractControl({
     name: contractName,
     storageNode: await E(consume.chainStorage).makeChildNode(contractName),
-    kit: ymax0Kit,
+    initialPrivateArgs: privateArgs,
   });
 
   const { getDepositFacet } = consume;
