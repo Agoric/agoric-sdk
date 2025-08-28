@@ -67,33 +67,6 @@ export const settleTransaction = async (
 };
 
 /**
- * Helper to manually settle a CCTP transaction in tests (legacy wrapper).
- * @deprecated Use settleTransaction instead
- */
-export const settleCCTPTransaction = async (
-  zoe: ZoeService,
-  resolverMakers: ResolverInvitationMakers,
-  txDetails: {
-    amount: bigint;
-    remoteAddress: `0x${string}`;
-    status: Exclude<TxStatus, 'pending'>;
-  },
-  txNumber: number = 0,
-  remoteAxelarChain: CaipChainId,
-  log: (message: string, ...args: any[]) => void = console.log,
-): Promise<string> => {
-  const transactionKey: TransactionKey = `cctp:${remoteAxelarChain}:${txDetails.remoteAddress}:${txDetails.amount}`;
-  return settleTransaction(
-    zoe,
-    resolverMakers,
-    transactionKey,
-    txDetails.status,
-    txNumber,
-    log,
-  );
-};
-
-/**
  * Helper to settle CCTP transaction with the standard test EVM address.
  * Uses the same mock address that's used throughout the test suite.
  * Will retry until a pending transaction is found and settled.
@@ -116,16 +89,13 @@ export const settleCCTPWithMockReceiver = async (
   mockRemoteAddress: `0x${string}` = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
 ): Promise<string> => {
   await eventLoopIteration();
-  const result = await settleCCTPTransaction(
+  const transactionKey: TransactionKey = `cctp:${remoteAxelarChain}:${mockRemoteAddress}:${amount}`;
+  const result = await settleTransaction(
     zoe,
     resolverMakers,
-    {
-      amount,
-      remoteAddress: mockRemoteAddress,
-      status,
-    },
+    transactionKey,
+    status,
     txNumber,
-    remoteAxelarChain,
     log,
   );
 

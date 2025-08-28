@@ -59,7 +59,7 @@ export const PENDING_TXS_NODE_KEY = 'pendingTxs';
 
 export type PublishedTx = {
   type: TxType;
-  amount?: bigint;
+  amount: bigint;
   destinationAddress: AccountId;
   status: TxStatus;
 };
@@ -67,12 +67,11 @@ export type PublishedTx = {
 export const PublishedTxShape: TypedPattern<PublishedTx> = M.splitRecord(
   {
     type: M.or(...Object.keys(TxType)),
-    destinationAddress: M.string(),
+    amount: M.nat(),
+    destinationAddress: M.string(), // Format: `${chainId}:${chainId}:${remotAddess}`
     status: M.or(...Object.keys(TxStatus)),
   },
-  {
-    amount: M.nat(),
-  },
+  {},
   {},
 );
 

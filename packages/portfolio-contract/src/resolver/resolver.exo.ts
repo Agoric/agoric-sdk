@@ -32,13 +32,17 @@ import {
 } from './types.js';
 
 type TransactionEntry = {
+  destinationAddress: AccountId;
+  amountValue: bigint;
   vowKit: VowKit<void>;
 };
 
 const trace = makeTracer('Resolver');
 
 const ClientFacetI = M.interface('ResolverClient', {
-  registerTransaction: M.call(M.string(), M.string(), M.nat()).returns(VowShape),
+  registerTransaction: M.call(M.string(), M.string(), M.nat()).returns(
+    VowShape,
+  ),
 });
 
 const ReporterI = M.interface('Reporter', {
@@ -121,7 +125,7 @@ export const prepareResolverKit = (
         registerTransaction(
           type: TxType,
           destinationAddress: AccountId,
-          amountValue: bigint,
+          amountValue: NatValue,
         ): Vow<void> {
           const transactionKey: TransactionKey = `${type}:${destinationAddress}:${amountValue}`;
           const { transactionRegistry } = this.state;
@@ -161,7 +165,7 @@ export const prepareResolverKit = (
 
         completePendingTransaction(
           vstorageId: `tx${number}`,
-          transactionKey: string,
+          transactionKey: TransactionKey,
           status: Exclude<TxStatus, 'pending'> = TxStatus.SUCCESS,
         ) {
           const node = E(pendingTxsNode).makeChildNode(vstorageId);
@@ -209,9 +213,7 @@ export const prepareResolverKit = (
                 'Transaction failed - rejecting pending operation for key:',
                 transactionKey,
               );
-              registryEntry.vowKit.resolver.reject(
-                Error('Transaction failed'),
-              );
+              registryEntry.vowKit.resolver.reject(Error('Transaction failed'));
               this.facets.reporter.completePendingTransaction(
                 txId,
                 transactionKey,
@@ -233,6 +235,7 @@ export const prepareResolverKit = (
           trace('Transaction settlement:', {
             transactionKey,
             status,
+            txId,
           });
 
           seat.exit();

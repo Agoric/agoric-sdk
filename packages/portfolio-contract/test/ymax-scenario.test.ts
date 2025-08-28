@@ -92,7 +92,7 @@ const rebalanceScenarioMacro = test.macro({
               move.amount.value,
               'eip155:42161' as const, // Arbitrum chain ID
               0,
-              'success' as const,
+              'success',
             );
 
             continue;
