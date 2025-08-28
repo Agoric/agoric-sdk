@@ -29,6 +29,7 @@ var (
 	_ sdk.Msg = &MsgInstallBundle{}
 	_ sdk.Msg = &MsgWalletAction{}
 	_ sdk.Msg = &MsgWalletSpendAction{}
+	_ sdk.Msg = &MsgCoreEval{}
 
 	_ vm.ControllerAdmissionMsg = &MsgDeliverInbound{}
 	_ vm.ControllerAdmissionMsg = &MsgInstallBundle{}
