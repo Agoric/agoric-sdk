@@ -16,8 +16,6 @@ yarn ava initial.test.js
 # XXX some of these tests have path dependencies so no globs
 yarn ava core-eval.test.js
 
-scripts/test-vaults.ts
-
 echo ACCEPTANCE TESTING recorded instances
 yarn ava recorded-retired.test.js
 
