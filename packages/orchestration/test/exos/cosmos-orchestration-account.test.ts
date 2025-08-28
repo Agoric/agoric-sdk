@@ -48,6 +48,7 @@ import { decodeBase64 } from '@endo/base64';
 import type { EReturn } from '@endo/far';
 import type { TestFn } from 'ava';
 import { MsgDepositForBurn } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
+import { Help } from '@agoric/cosmic-proto';
 import type { CosmosValidatorAddress } from '../../src/cosmos-api.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type {
@@ -113,7 +114,7 @@ test('send (to addr on same chain)', async t => {
   // register handler for ist bank send
   ibcBridge.addMockAck(
     buildTxPacketString([
-      MsgSend.toProtoMsg({
+      Help(MsgSend).toProtoMsg({
         fromAddress: 'cosmos1test',
         toAddress: 'cosmos1testrecipient',
         amount: [
@@ -226,8 +227,8 @@ test('transfer', async t => {
     memo: '',
   };
   const buildMocks = () => {
-    const toTransferTxPacket = (msg: MsgTransfer) =>
-      buildTxPacketString([MsgTransfer.toProtoMsg(msg)]);
+    const toTransferTxPacket = (msg: Partial<MsgTransfer>) =>
+      buildTxPacketString([Help(MsgTransfer).toProtoMsg(msg)]);
 
     const defaultTransfer = toTransferTxPacket(mockIbcTransfer);
     const customTimeoutHeight = toTransferTxPacket({
@@ -453,7 +454,7 @@ test('getBalance and getBalances', async t => {
       denom: Denom = 'uosmo',
     ) =>
       buildQueryPacketString([
-        QueryBalanceRequest.toProtoMsg({
+        Help(QueryBalanceRequest).toProtoMsg({
           address,
           denom,
         }),
@@ -462,7 +463,7 @@ test('getBalance and getBalances', async t => {
       address: CosmosChainAddress['value'] = 'osmo1test',
     ) =>
       buildQueryPacketString([
-        QueryAllBalancesRequest.toProtoMsg({
+        Help(QueryAllBalancesRequest).toProtoMsg({
           address,
         }),
       ]);
@@ -560,7 +561,7 @@ test('StakingAccountQueries', async t => {
 
     const makeDelegationReq = () =>
       buildQueryPacketString([
-        QueryDelegationRequest.toProtoMsg({
+        Help(QueryDelegationRequest).toProtoMsg({
           delegatorAddr: 'cosmos1test',
           validatorAddr: mockValidator.value,
         }),
@@ -568,14 +569,14 @@ test('StakingAccountQueries', async t => {
 
     const makeDelegationsReq = () =>
       buildQueryPacketString([
-        QueryDelegatorDelegationsRequest.toProtoMsg({
+        Help(QueryDelegatorDelegationsRequest).toProtoMsg({
           delegatorAddr: 'cosmos1test',
         }),
       ]);
 
     const makeUnbondingDelegationReq = () =>
       buildQueryPacketString([
-        QueryUnbondingDelegationRequest.toProtoMsg({
+        Help(QueryUnbondingDelegationRequest).toProtoMsg({
           delegatorAddr: 'cosmos1test',
           validatorAddr: mockValidator.value,
         }),
@@ -583,14 +584,14 @@ test('StakingAccountQueries', async t => {
 
     const makeUnbondingDelegationsReq = () =>
       buildQueryPacketString([
-        QueryDelegatorUnbondingDelegationsRequest.toProtoMsg({
+        Help(QueryDelegatorUnbondingDelegationsRequest).toProtoMsg({
           delegatorAddr: 'cosmos1test',
         }),
       ]);
 
     const makeRedelegationReq = () =>
       buildQueryPacketString([
-        QueryRedelegationsRequest.toProtoMsg({
+        Help(QueryRedelegationsRequest).toProtoMsg({
           delegatorAddr: 'cosmos1test',
           srcValidatorAddr: mockValidator.value,
           // XXX need to provide dstValidatorAddr
@@ -600,7 +601,7 @@ test('StakingAccountQueries', async t => {
 
     const makeRedelegationsReq = () =>
       buildQueryPacketString([
-        QueryRedelegationsRequest.toProtoMsg({
+        Help(QueryRedelegationsRequest).toProtoMsg({
           delegatorAddr: 'cosmos1test',
           // Protobufs require these to be strings but they can be empty
           srcValidatorAddr: '',
@@ -610,7 +611,7 @@ test('StakingAccountQueries', async t => {
 
     const makeRewardReq = () =>
       buildQueryPacketString([
-        QueryDelegationRewardsRequest.toProtoMsg({
+        Help(QueryDelegationRewardsRequest).toProtoMsg({
           delegatorAddress: 'cosmos1test',
           validatorAddress: mockValidator.value,
         }),
@@ -618,7 +619,7 @@ test('StakingAccountQueries', async t => {
 
     const makeRewardsReq = () =>
       buildQueryPacketString([
-        QueryDelegationTotalRewardsRequest.toProtoMsg({
+        Help(QueryDelegationTotalRewardsRequest).toProtoMsg({
           delegatorAddress: 'cosmos1test',
         }),
       ]);
@@ -958,7 +959,7 @@ test('executeEncodedTx', async t => {
   }
 
   const delegateMsgSuccess = Any.toJSON(
-    MsgDelegate.toProtoMsg({
+    Help(MsgDelegate).toProtoMsg({
       delegatorAddress: 'cosmos1test',
       validatorAddress: 'cosmosvaloper1test',
       amount: { denom: 'uatom', amount: '10' },

@@ -1,5 +1,10 @@
 /** @file Tools to support making IBC mocks */
-import { type JsonSafe, toRequestQueryJson } from '@agoric/cosmic-proto';
+import {
+  type JsonSafe,
+  type Proto3Codec,
+  toRequestQueryJson,
+  Help,
+} from '@agoric/cosmic-proto';
 import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { TxMsgData } from '@agoric/cosmic-proto/cosmos/base/abci/v1beta1/abci.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
@@ -25,13 +30,7 @@ import { atob, btoa, decodeBase64, encodeBase64 } from '@endo/base64';
 import type { CosmosChainAddress, Denom } from '../src/orchestration-api.js';
 import { makeQueryPacket, makeTxPacket } from '../src/utils/packet.js';
 
-interface EncoderCommon<T> {
-  encode: (message: T) => {
-    finish: () => Uint8Array;
-  };
-  fromPartial: (partial: Partial<T>) => T;
-  typeUrl: string;
-}
+type EncoderCommon<T> = Proto3Codec<string, T>;
 
 const toPacket = (obj: Record<string, any>): string =>
   btoa(JSON.stringify(obj));
@@ -63,7 +62,7 @@ export function buildTxResponseString<T extends EncoderMessage<any>[]>(
   messages: T,
 ): string {
   const msgResponses = messages.map(({ encoder, message }) => {
-    const encodedMsg = encoder.encode(encoder.fromPartial(message)).finish();
+    const encodedMsg = Help(encoder).toProto(message);
     return Any.fromPartial({
       typeUrl: encoder.typeUrl,
       value: encodedMsg,
@@ -127,7 +126,7 @@ export function buildQueriesResponseString<
   const encodedResp = CosmosResponse.encode(
     CosmosResponse.fromPartial({
       responses: queries.map(({ encoder, query, opts }) => {
-        const key = encoder.encode(encoder.fromPartial(query)).finish();
+        const key = Help(encoder).toProto(query);
         const response = ResponseQuery.fromPartial({ ...opts, key });
         return response;
       }),
