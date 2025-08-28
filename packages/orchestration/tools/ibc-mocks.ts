@@ -1,5 +1,11 @@
 /** @file Tools to support making IBC mocks */
-import { type JsonSafe, toRequestQueryJson } from '@agoric/cosmic-proto';
+import {
+  type JsonSafe,
+  toRequestQueryJson,
+  proto,
+  type ProtoEncoder,
+  type ProtoMsgOf,
+} from '@agoric/cosmic-proto';
 import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { TxMsgData } from '@agoric/cosmic-proto/cosmos/base/abci/v1beta1/abci.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
@@ -25,14 +31,6 @@ import { atob, btoa, decodeBase64, encodeBase64 } from '@endo/base64';
 import type { CosmosChainAddress, Denom } from '../src/orchestration-api.js';
 import { makeQueryPacket, makeTxPacket } from '../src/utils/packet.js';
 
-interface EncoderCommon<T> {
-  encode: (message: T) => {
-    finish: () => Uint8Array;
-  };
-  fromPartial: (partial: Partial<T>) => T;
-  typeUrl: string;
-}
-
 const toPacket = (obj: Record<string, any>): string =>
   btoa(JSON.stringify(obj));
 
@@ -44,37 +42,29 @@ const toPacket = (obj: Record<string, any>): string =>
  * @param encoder
  * @param message
  */
-export function buildMsgResponseString<T>(
-  encoder: EncoderCommon<T>,
+export function buildMsgResponseString<T, TU extends string = string>(
+  encoder: ProtoEncoder<T, TU>,
   message: Partial<T>,
 ): string {
   return buildTxResponseString([{ encoder, message }] as const);
 }
 
-type EncoderMessage<T> = {
-  encoder: EncoderCommon<T>;
+type EncoderMessage<T, TU extends string = string> = {
+  encoder: ProtoEncoder<T, TU>;
   message: Partial<T>;
 };
 
 /**
  * @param messages
  */
-export function buildTxResponseString<T extends EncoderMessage<any>[]>(
+export function buildTxResponseString<T extends EncoderMessage<any, string>[]>(
   messages: T,
 ): string {
-  const msgResponses = messages.map(({ encoder, message }) => {
-    const encodedMsg = encoder.encode(encoder.fromPartial(message)).finish();
-    return Any.fromPartial({
-      typeUrl: encoder.typeUrl,
-      value: encodedMsg,
-    });
-  });
+  const msgResponses = messages.map(({ encoder, message }) =>
+    proto.toProtoMsg(encoder, message),
+  ) as ProtoMsgOf<string>[];
 
-  const txMsgData = TxMsgData.encode(
-    TxMsgData.fromPartial({
-      msgResponses,
-    }),
-  ).finish();
+  const txMsgData = proto.toProto(TxMsgData, { msgResponses });
 
   return toPacket({
     result: encodeBase64(txMsgData),
@@ -103,8 +93,8 @@ export function buildMsgErrorString(
  * @param query
  * @param opts
  */
-export function buildQueryResponseString<T>(
-  encoder: EncoderCommon<T>,
+export function buildQueryResponseString<T, TU extends string = string>(
+  encoder: ProtoEncoder<T, TU>,
   query: Partial<T>,
   opts?: Partial<Omit<ResponseQuery, 'key'>>,
 ): string {
@@ -119,20 +109,16 @@ export function buildQueryResponseString<T>(
  */
 export function buildQueriesResponseString<
   T extends {
-    encoder: EncoderCommon<any>;
+    encoder: ProtoEncoder<any, any>;
     query: Partial<any>;
     opts?: Partial<Omit<ResponseQuery, 'key'>>;
   }[],
 >(queries: T): string {
-  const encodedResp = CosmosResponse.encode(
-    CosmosResponse.fromPartial({
-      responses: queries.map(({ encoder, query, opts }) => {
-        const key = encoder.encode(encoder.fromPartial(query)).finish();
-        const response = ResponseQuery.fromPartial({ ...opts, key });
-        return response;
-      }),
-    }),
-  ).finish();
+  const responses = queries.map(({ encoder, query, opts }) => {
+    const key = proto.toProto(encoder, query);
+    return proto.fromPartial(ResponseQuery, { ...opts, key });
+  });
+  const encodedResp = proto.toProto(CosmosResponse, { responses });
 
   return toPacket({
     result: toPacket({ data: encodeBase64(encodedResp) }),
@@ -147,7 +133,8 @@ export function buildQueriesResponseString<
 export function buildTxPacketString(
   msgs: { value: Uint8Array; typeUrl: string }[],
 ): string {
-  return btoa(makeTxPacket(msgs.map(Any.toJSON)));
+  // Use proto.toJSON to convert to JSON-safe objects
+  return btoa(makeTxPacket(msgs.map(msg => proto.toJSON(Any, msg))));
 }
 
 /**
@@ -157,7 +144,7 @@ export function buildTxPacketString(
  * @param b64 base64 encoded string
  */
 export const parseOutgoingTxPacket = (b64: string) => {
-  return TxBody.decode(decodeBase64(JSON.parse(atob(b64)).data));
+  return proto.fromProto(TxBody, decodeBase64(JSON.parse(atob(b64)).data));
 };
 
 /**
@@ -294,15 +281,13 @@ export function buildVTransferEvent<P extends VTransferParams>(
     target,
     packet: {
       data: btoa(
-        JSON.stringify(
-          FungibleTokenPacketData.fromPartial({
-            amount: String(amount),
-            denom,
-            sender,
-            receiver,
-            memo,
-          }),
-        ),
+        proto.stringifyJSON(FungibleTokenPacketData, {
+          amount: String(amount),
+          denom,
+          sender,
+          receiver,
+          memo,
+        }),
       ),
       destination_channel: destinationChannel as IBCChannelID,
       source_channel: sourceChannel as IBCChannelID,
