@@ -3,7 +3,7 @@ import {
   type JsonSafe,
   type Proto3Codec,
   toRequestQueryJson,
-  Help,
+  CodecHelper,
 } from '@agoric/cosmic-proto';
 import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { TxMsgData } from '@agoric/cosmic-proto/cosmos/base/abci/v1beta1/abci.js';
@@ -62,7 +62,7 @@ export function buildTxResponseString<T extends EncoderMessage<any>[]>(
   messages: T,
 ): string {
   const msgResponses = messages.map(({ encoder, message }) => {
-    const encodedMsg = Help(encoder).toProto(message);
+    const encodedMsg = CodecHelper(encoder).toProto(message);
     return Any.fromPartial({
       typeUrl: encoder.typeUrl,
       value: encodedMsg,
@@ -126,7 +126,7 @@ export function buildQueriesResponseString<
   const encodedResp = CosmosResponse.encode(
     CosmosResponse.fromPartial({
       responses: queries.map(({ encoder, query, opts }) => {
-        const key = Help(encoder).toProto(query);
+        const key = CodecHelper(encoder).toProto(query);
         const response = ResponseQuery.fromPartial({ ...opts, key });
         return response;
       }),

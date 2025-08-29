@@ -6,7 +6,7 @@ import {
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import { toRequestQueryJson, Help } from '@agoric/cosmic-proto';
+import { toRequestQueryJson, CodecHelper } from '@agoric/cosmic-proto';
 import { decodeBase64 } from '@endo/base64';
 import {
   commonSetup,
@@ -85,13 +85,13 @@ const queryICQChain = test.macro({
     const offerId = `${chainName}-sendICQQuery-${Date.now()}`;
 
     const balanceQuery = toRequestQueryJson(
-      Help(QueryBalanceRequest).toProtoMsg({
+      CodecHelper(QueryBalanceRequest).toProtoMsg({
         address,
         denom,
       }),
     );
     const allBalanceQuery = toRequestQueryJson(
-      Help(QueryAllBalancesRequest).toProtoMsg({
+      CodecHelper(QueryAllBalancesRequest).toProtoMsg({
         address,
       }),
     );
@@ -182,7 +182,7 @@ const queryChainWithoutICQ = test.macro({
     const offerId = `${chainName}-sendICQQuery-${Date.now()}`;
 
     const balanceQuery = toRequestQueryJson(
-      Help(QueryBalanceRequest).toProtoMsg({
+      CodecHelper(QueryBalanceRequest).toProtoMsg({
         address: 'cosmos1234',
         denom,
       }),
@@ -240,10 +240,12 @@ test.serial('Send Local Query from chain object', async t => {
   t.log('sendLocalQuery offer');
   const offerId = `agoric-sendLocalQuery-${Date.now()}`;
 
-  const allBalancesProto3JsonQuery = Help(QueryAllBalancesRequest).typedJson({
+  const allBalancesProto3JsonQuery = CodecHelper(
+    QueryAllBalancesRequest,
+  ).typedJson({
     address: agoricAddr,
   });
-  const balanceProto3JsonQuery = Help(QueryBalanceRequest).typedJson({
+  const balanceProto3JsonQuery = CodecHelper(QueryBalanceRequest).typedJson({
     address: agoricAddr,
     denom: 'ubld',
   });

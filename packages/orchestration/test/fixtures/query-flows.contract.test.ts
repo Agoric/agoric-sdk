@@ -1,6 +1,10 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { type JsonSafe, toRequestQueryJson, Help } from '@agoric/cosmic-proto';
+import {
+  type JsonSafe,
+  toRequestQueryJson,
+  CodecHelper,
+} from '@agoric/cosmic-proto';
 import {
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,
@@ -74,7 +78,7 @@ test('send query from chain object', async t => {
   } = t.context;
   const publicFacet = await E(zoe).getPublicFacet(instance);
   const balanceQuery = toRequestQueryJson(
-    Help(QueryBalanceRequest).toProtoMsg({
+    CodecHelper(QueryBalanceRequest).toProtoMsg({
       address: 'cosmos1test',
       denom: 'uatom',
     }),
@@ -134,7 +138,7 @@ test('send query from chain object', async t => {
     );
     t.is(sendPacketCalls.length, 2, 'sent two queries');
   }
-  const proto3JsonQuery = Help(QueryAllBalancesRequest).typedJson({
+  const proto3JsonQuery = CodecHelper(QueryAllBalancesRequest).typedJson({
     address: LOCALCHAIN_DEFAULT_ADDRESS,
   });
   {
@@ -247,7 +251,7 @@ test('send query from orch account in an async-flow', async t => {
     );
     const [query, ack] = [
       buildQueryPacketString([
-        Help(QueryAllBalancesRequest).toProtoMsg({
+        CodecHelper(QueryAllBalancesRequest).toProtoMsg({
           address: 'osmo1test3',
         }),
       ]),

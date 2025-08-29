@@ -8,7 +8,7 @@ import {
   waitUntilAccountFunded,
 } from '@agoric/client-utils';
 import { ModuleAccount } from '@agoric/cosmic-proto/cosmos/auth/v1beta1/auth.js';
-import { Help } from '@agoric/cosmic-proto';
+import { CodecHelper } from '@agoric/cosmic-proto';
 import { VBankAccount } from '@agoric/internal/src/config.js';
 import {
   addUser,
@@ -146,11 +146,12 @@ test.serial('exitOffer tool reclaims stuck payment', async t => {
 });
 
 test.serial(`ante handler sends fee only to vbank/reserve`, async t => {
-  const codec = Help(ModuleAccount);
+  const codec = CodecHelper(ModuleAccount);
   const [feeCollector, vbankReserve] = await Promise.all(
     ['fee_collector', 'vbank/reserve'].map(async name => {
       const { account } = await agd.query(['auth', 'module-account', name]);
       const value = codec.fromTyped(account, ['base_account']);
+      assert('address' in value, 'missing address in module account');
       t.is(
         typeof value.address,
         'string',
