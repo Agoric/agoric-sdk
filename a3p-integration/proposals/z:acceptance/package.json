@@ -15,6 +15,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/client-utils": "dev",
+    "@agoric/cosmic-proto": "dev",
     "@agoric/ertp": "dev",
     "@agoric/inter-protocol": "dev",
     "@agoric/internal": "dev",

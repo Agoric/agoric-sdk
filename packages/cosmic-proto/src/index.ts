@@ -4,3 +4,4 @@
 
 export * from './codegen/json-safe.js';
 export * from './helpers.js';
+export * from './codec-helpers.js';

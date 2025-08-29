@@ -4,8 +4,14 @@ import test from 'ava';
 import { cosmos } from '../dist/codegen/cosmos/bundle.js';
 import { ibc } from '../dist/codegen/ibc/bundle.js';
 import { icq } from '../dist/codegen/icq/bundle.js';
-import { typedJson } from '../dist/index.js';
-import { typeUrlToGrpcPath, toRequestQueryJson } from '../dist/helpers.js';
+import { Codec, CodecHelper } from '../dist/codec-helpers.js';
+import {
+  typeUrlToGrpcPath,
+  toRequestQueryJson,
+  typedJson,
+} from '../dist/helpers.js';
+import { QueryAllBalancesRequest } from '../dist/codegen/cosmos/bank/v1beta1/query.js';
+import { MsgSend } from '../dist/codegen/cosmos/bank/v1beta1/tx.js';
 
 const mockMsgSend = {
   fromAddress: 'agoric1from',
@@ -48,6 +54,99 @@ test('typedJson', t => {
   });
 });
 
+test('CodecHelper', t => {
+  const address = 'addr';
+  const help = CodecHelper(QueryAllBalancesRequest);
+  const qabr = help.typedJson({
+    address,
+    // @ts-expect-error invalid field
+    other: 3,
+  });
+  t.deepEqual(qabr, {
+    '@type': help.typeUrl,
+    address,
+    pagination: undefined,
+  });
+
+  // @ts-expect-error
+  qabr.zingo = { abc: 3 };
+  t.deepEqual(qabr, {
+    '@type': help.typeUrl,
+    address,
+    pagination: undefined,
+    zingo: { abc: 3 },
+  });
+  t.deepEqual(help.fromTyped(qabr), {
+    address,
+    pagination: undefined,
+  });
+  t.deepEqual(
+    help.fromTyped(qabr, ['zingo']),
+    {
+      address,
+      pagination: undefined,
+      abc: 3,
+    },
+    'fromTyped expands embedded zingo',
+  );
+
+  const aminoMessage = help.typedAmino({ address });
+  // @ts-expect-error
+  aminoMessage.value.zongo = { def: 6 };
+  t.deepEqual(aminoMessage, {
+    type: help.typeUrl,
+    value: {
+      address,
+      pagination: undefined,
+      zongo: { def: 6 },
+    },
+  });
+  t.deepEqual(help.fromTyped(aminoMessage), {
+    address,
+    pagination: undefined,
+  });
+  t.deepEqual(help.fromTyped(aminoMessage, ['zongo', 'zon_go']), {
+    address,
+    pagination: undefined,
+    def: 6,
+  });
+
+  const jsonMessage = help.typedEncode({ address });
+  // @ts-expect-error
+  jsonMessage.value.zungo = { ghi: 9 };
+  t.deepEqual(jsonMessage, {
+    typeUrl: '/cosmos.bank.v1beta1.QueryAllBalancesRequest',
+    value: {
+      address,
+      pagination: undefined,
+      zungo: { ghi: 9 },
+    },
+  });
+  t.deepEqual(help.fromTyped(jsonMessage), {
+    address,
+    pagination: undefined,
+  });
+  t.deepEqual(help.fromTyped(jsonMessage, ['zungo', 'zunGo']), {
+    address,
+    pagination: undefined,
+    ghi: 9,
+  });
+
+  const msgSend = CodecHelper(MsgSend).typedJson({
+    fromAddress: address,
+    toAddress: address,
+    amount: [{ denom: 'ucosm', amount: '1' }],
+    // @ts-expect-error invalid field
+    other: 3,
+  });
+  t.deepEqual(msgSend, {
+    '@type': '/cosmos.bank.v1beta1.MsgSend',
+    fromAddress: address,
+    toAddress: address,
+    amount: [{ denom: 'ucosm', amount: '1' }],
+  });
+});
+
 test('typeUrlToGrpcPath', t => {
   t.is(
     typeUrlToGrpcPath(cosmos.bank.v1beta1.QueryBalanceRequest.typeUrl),
@@ -81,7 +180,7 @@ test('typeUrlToGrpcPath', t => {
 test('toRequestQueryJson', t => {
   t.like(
     toRequestQueryJson(
-      cosmos.bank.v1beta1.QueryBalanceRequest.toProtoMsg({
+      Codec(cosmos.bank.v1beta1.QueryBalanceRequest).toProtoMsg({
         address: mockMsgSend.fromAddress,
         denom: mockMsgSend.amount[0].denom,
       }),
@@ -92,7 +191,7 @@ test('toRequestQueryJson', t => {
   );
   t.like(
     toRequestQueryJson(
-      cosmos.bank.v1beta1.QueryBalanceRequest.toProtoMsg({
+      Codec(cosmos.bank.v1beta1.QueryBalanceRequest).toProtoMsg({
         address: mockMsgSend.fromAddress,
         denom: mockMsgSend.amount[0].denom,
       }),

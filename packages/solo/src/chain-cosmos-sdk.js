@@ -16,6 +16,7 @@ import {
   QueryDataRequest,
   QueryDataResponse,
 } from '@agoric/cosmic-proto/vstorage/query.js';
+import { CodecHelper } from '@agoric/cosmic-proto';
 
 import { makeNotifierKit } from '@agoric/notifier';
 import {
@@ -360,7 +361,9 @@ export async function connectToChain(
         const txSubscriptionId = sendRPC('subscribe', { query: txQuery });
         const queryId = sendRPC('abci_query', {
           path: `/agoric.vstorage.Query/Data`,
-          data: encodeHex(QueryDataRequest.toProto({ path: storagePath })),
+          data: encodeHex(
+            CodecHelper(QueryDataRequest).toProto({ path: storagePath }),
+          ),
         });
 
         const cleanup = () => {

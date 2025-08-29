@@ -1,5 +1,5 @@
 /** @file Use-object for the owner of a staking account */
-import { toRequestQueryJson } from '@agoric/cosmic-proto';
+import { toRequestQueryJson, CodecHelper } from '@agoric/cosmic-proto';
 import {
   MsgDepositForBurn,
   MsgDepositForBurnWithCaller,
@@ -605,18 +605,15 @@ export const prepareCosmosOrchestrationAccountKit = (
         ) {
           const results = E(this.facets.helper.owned()).executeEncodedTx([
             Any.toJSON(
-              MsgTransfer.toProtoMsg({
+              CodecHelper(MsgTransfer).toProtoMsg({
                 sourcePort: transferChannel.portId,
                 sourceChannel: transferChannel.channelId,
                 token,
                 sender: this.state.chainAddress.value,
                 receiver: destination.value,
-                timeoutHeight: opts?.timeoutHeight ?? {
-                  revisionHeight: 0n,
-                  revisionNumber: 0n,
-                },
+                timeoutHeight: opts?.timeoutHeight,
                 timeoutTimestamp,
-                memo: opts?.memo ?? '',
+                memo: opts?.memo,
               }),
             ),
           ]);
@@ -794,7 +791,7 @@ export const prepareCosmosOrchestrationAccountKit = (
 
             const results = E(helper.owned()).executeEncodedTx([
               Any.toJSON(
-                MsgDelegate.toProtoMsg({
+                CodecHelper(MsgDelegate).toProtoMsg({
                   delegatorAddress: chainAddress.value,
                   validatorAddress: validator.value,
                   amount: amountAsCoin,
@@ -814,7 +811,7 @@ export const prepareCosmosOrchestrationAccountKit = (
 
             const results = E(helper.owned()).executeEncodedTx([
               Any.toJSON(
-                MsgBeginRedelegate.toProtoMsg({
+                CodecHelper(MsgBeginRedelegate).toProtoMsg({
                   delegatorAddress: chainAddress.value,
                   validatorSrcAddress: srcValidator.value,
                   validatorDstAddress: dstValidator.value,
@@ -836,7 +833,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             trace('withdrawReward', validator);
             const { helper } = this.facets;
             const { chainAddress } = this.state;
-            const msg = MsgWithdrawDelegatorReward.toProtoMsg({
+            const msg = CodecHelper(MsgWithdrawDelegatorReward).toProtoMsg({
               delegatorAddress: chainAddress.value,
               validatorAddress: validator.value,
             });
@@ -855,7 +852,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             }
             const results = E(icqConnection).query([
               toRequestQueryJson(
-                QueryBalanceRequest.toProtoMsg({
+                CodecHelper(QueryBalanceRequest).toProtoMsg({
                   address: chainAddress.value,
                   denom: coerceDenom(chainHub, denom),
                 }),
@@ -874,7 +871,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             }
             const results = E(icqConnection).query([
               toRequestQueryJson(
-                QueryAllBalancesRequest.toProtoMsg({
+                CodecHelper(QueryAllBalancesRequest).toProtoMsg({
                   address: chainAddress.value,
                 }),
               ),
@@ -895,7 +892,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             return watch(
               E(helper.owned()).executeEncodedTx([
                 Any.toJSON(
-                  MsgSend.toProtoMsg({
+                  CodecHelper(MsgSend).toProtoMsg({
                     fromAddress: chainAddress.value,
                     toAddress: cosmosDest.value,
                     amount: [helper.amountToCoin(amount)],
@@ -916,7 +913,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             return watch(
               E(helper.owned()).executeEncodedTx([
                 Any.toJSON(
-                  MsgSend.toProtoMsg({
+                  CodecHelper(MsgSend).toProtoMsg({
                     fromAddress: chainAddress.value,
                     toAddress: toAccount.value,
                     amount: amounts.map(x => helper.amountToCoin(x)),
@@ -989,7 +986,7 @@ export const prepareCosmosOrchestrationAccountKit = (
               E(helper.owned()).executeEncodedTx(
                 delegations.map(({ validator, amount }) =>
                   Any.toJSON(
-                    MsgUndelegate.toProtoMsg({
+                    CodecHelper(MsgUndelegate).toProtoMsg({
                       delegatorAddress: chainAddress.value,
                       validatorAddress: validator.value,
                       amount: coerceCoin(chainHub, amount),
@@ -1021,7 +1018,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             }
             const results = E(icqConnection).query([
               toRequestQueryJson(
-                QueryDelegationRequest.toProtoMsg({
+                CodecHelper(QueryDelegationRequest).toProtoMsg({
                   delegatorAddr: chainAddress.value,
                   validatorAddr: validator.value,
                 }),
@@ -1041,7 +1038,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             }
             const results = E(icqConnection).query([
               toRequestQueryJson(
-                QueryDelegatorDelegationsRequest.toProtoMsg({
+                CodecHelper(QueryDelegatorDelegationsRequest).toProtoMsg({
                   delegatorAddr: chainAddress.value,
                 }),
               ),
@@ -1059,7 +1056,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             }
             const results = E(icqConnection).query([
               toRequestQueryJson(
-                QueryUnbondingDelegationRequest.toProtoMsg({
+                CodecHelper(QueryUnbondingDelegationRequest).toProtoMsg({
                   delegatorAddr: chainAddress.value,
                   validatorAddr: validator.value,
                 }),
@@ -1078,7 +1075,9 @@ export const prepareCosmosOrchestrationAccountKit = (
             }
             const results = E(icqConnection).query([
               toRequestQueryJson(
-                QueryDelegatorUnbondingDelegationsRequest.toProtoMsg({
+                CodecHelper(
+                  QueryDelegatorUnbondingDelegationsRequest,
+                ).toProtoMsg({
                   delegatorAddr: chainAddress.value,
                 }),
               ),
@@ -1096,7 +1095,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             }
             const results = E(icqConnection).query([
               toRequestQueryJson(
-                QueryRedelegationsRequest.toProtoMsg({
+                CodecHelper(QueryRedelegationsRequest).toProtoMsg({
                   delegatorAddr: chainAddress.value,
                   // These are optional but the protobufs require values to be set
                   dstValidatorAddr: '',
@@ -1117,7 +1116,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             }
             const results = E(icqConnection).query([
               toRequestQueryJson(
-                QueryDelegationRewardsRequest.toProtoMsg({
+                CodecHelper(QueryDelegationRewardsRequest).toProtoMsg({
                   delegatorAddress: chainAddress.value,
                   validatorAddress: validator.value,
                 }),
@@ -1137,7 +1136,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             }
             const results = E(icqConnection).query([
               toRequestQueryJson(
-                QueryDelegationTotalRewardsRequest.toProtoMsg({
+                CodecHelper(QueryDelegationTotalRewardsRequest).toProtoMsg({
                   delegatorAddress: chainAddress.value,
                 }),
               ),
@@ -1192,11 +1191,11 @@ export const prepareCosmosOrchestrationAccountKit = (
               E(helper.owned()).executeEncodedTx([
                 Any.toJSON(
                   destinationCaller
-                    ? MsgDepositForBurnWithCaller.toProtoMsg({
+                    ? CodecHelper(MsgDepositForBurnWithCaller).toProtoMsg({
                         ...depositForBurn,
                         destinationCaller,
                       })
-                    : MsgDepositForBurn.toProtoMsg(depositForBurn),
+                    : CodecHelper(MsgDepositForBurn).toProtoMsg(depositForBurn),
                 ),
               ]),
               this.facets.returnVoidWatcher,
