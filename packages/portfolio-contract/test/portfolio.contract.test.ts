@@ -143,12 +143,7 @@ test.serial('open a portfolio with Aave position', async t => {
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleCCTPWithMockReceiver(
-    zoe,
-    resolverMakers,
-    amount.value,
-    'eip155:42161',
-  );
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers);
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
@@ -203,12 +198,7 @@ test('open a portfolio with Compound position', async t => {
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleCCTPWithMockReceiver(
-    zoe,
-    resolverMakers,
-    amount.value,
-    'eip155:42161',
-  );
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers);
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
@@ -269,12 +259,7 @@ test('open portfolio with USDN, Aave positions', async t => {
 
   // Start CCTP confirmation for the Aave portion (amount goes to Arbitrum)
   const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleCCTPWithMockReceiver(
-    zoe,
-    resolverMakers,
-    amount.value, // Only the amount going to Arbitrum needs CCTP confirmation
-    'eip155:42161',
-  );
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers);
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
@@ -385,12 +370,7 @@ test('claim rewards on Aave position successfully', async t => {
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleCCTPWithMockReceiver(
-    zoe,
-    resolverMakers,
-    amount.value,
-    'eip155:42161',
-  );
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers);
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
@@ -533,12 +513,7 @@ test('open a portfolio with Beefy position', async t => {
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleCCTPWithMockReceiver(
-    zoe,
-    resolverMakers,
-    amount.value,
-    'eip155:42161',
-  );
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers);
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
@@ -588,12 +563,7 @@ test('Withdraw from a Beefy position', async t => {
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleCCTPWithMockReceiver(
-    zoe,
-    resolverMakers,
-    amount.value,
-    'eip155:42161',
-  );
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers);
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
@@ -727,8 +697,7 @@ test.serial(
     const cctpSettlementPromise = settleCCTPWithMockReceiver(
       zoe,
       resolverMakers,
-      amount_half.value,
-      'eip155:42161',
+      0,
     );
 
     await simulateCCTPAck(common.utils).finally(() =>
@@ -743,8 +712,7 @@ test.serial(
     const cctpSettlementPromise2 = settleCCTPWithMockReceiver(
       zoe,
       resolverMakers,
-      amount_half.value,
-      'eip155:42161',
+      1,
     );
 
     await simulateCCTPAck(common.utils).finally(() =>
@@ -855,19 +823,14 @@ test.serial(
     const cctpSettlementPromise = settleCCTPWithMockReceiver(
       zoe,
       resolverMakers,
-      amount.value,
-      'eip155:42161',
     );
 
     const cctpSettlementPromise2 = settleCCTPWithMockReceiver(
       zoe,
       resolverMakers,
-      amount.value,
-      'eip155:42161',
-      0,
+      1,
       'success',
       console.log,
-      mockEVMAddress,
     );
 
     const [cctpResult, cctpResult2] = await Promise.all([
