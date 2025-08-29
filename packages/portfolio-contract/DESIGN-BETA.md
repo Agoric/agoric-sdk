@@ -143,7 +143,7 @@ sequenceDiagram
   Res ->> portfolio: ack
 ```
 
-5. manually-triggered rebalance
+5. Withdraw
 ```mermaid
 sequenceDiagram
   autonumber
@@ -158,6 +158,55 @@ sequenceDiagram
   end
 
   box  rgb(255,165,0) Agoric off-chain
+    participant YP as Ymax Planner
+    participant Res as Resolver
+  end
+
+  box rgb(163,180,243) Noble
+      participant icaN as icaNoble
+  end
+  box rgb(163,180,243) Axelar
+      participant AX as GMP
+  end
+  box rgb(163,180,243) Arbitrum
+      participant pc as CCTPProxyContract
+      participant acctArb as acctArb*
+      participant aavePos as aavePos*
+  end
+  box rgb(163,180,243) Base
+      participant acctBase as acctBase*
+      participant compPos as compPos*
+  end
+
+  %% get plan
+  UI ->> portfolio: withdraw with steps, <br>steps also include CCTP fee and proxy contract address
+
+  Note over portfolio, aavePos: CCTP back
+  portfolio ->> AX: GMP (withdraw, $2k USDC, Noble ICA address, CCTP fee, CCTP proxy contract address)
+  AX -->> acctArb: withdraw $2k
+  acctArb ->> aavePos: withdraw $2k
+  aavePos ->> acctArb: $2k
+  acctArb ->> pc: depositForBurn($2k)
+  PC -->> icaN: CCTP mint $2k USDC
+  icaN -->> Res: observe mint
+  Res ->> portfolio: ack
+```
+
+6. manually-triggered rebalance
+```mermaid
+sequenceDiagram
+  autonumber
+
+  actor UI
+
+  box rgb(255,153,153) Agoric
+    participant portfolio
+    participant vstorage
+    participant LCAorch
+    participant LCAin
+  end
+
+  box rgb(255,165,0) Agoric off-chain
     participant YP as Ymax Planner
     participant Res as Resolver
   end
@@ -201,6 +250,24 @@ sequenceDiagram
   acctBase ->> compPos: $2k
   compPos -->> portfolio: ack
 ```
+
+### User stories
+
+1. tiger would like to open a portfolio with allocations in percentages
+    1. operation 1: new/edit portfolio
+2. tiger would like to edit their existing portfolio to different allocations
+    1. operation 1: new/edit portfolio
+3. tiger already has an existing portfolio, and tiger sign a txn to deposit USDC into their portfolio
+    1. operation 4: deposit triggered distribution
+3. tiger would like to open a portfolio and deposit USDC to it
+    1. operation 3: new/edit portfolio and deposit from Agoric chain
+    2. operation 4: deposit triggered distribution
+4. tiger would like to edit their existing portfolio and deposit USDC to it
+    1. operation 3: new/edit portfolio and deposit from Agoric chain
+    2. operation 4: deposit triggered distribution
+5. tiger would like to manually trigger a rebalance
+    1. operation 5: manually-triggered rebalance
+
 ## Planner and Resolver resolving a subscription
 
 ```mermaid
@@ -278,26 +345,7 @@ sequenceDiagram
         end
 ```
 
-
-### User stories
-
-1. tiger would like to open a portfolio with allocations in percentages
-    1. operation 1: new/edit portfolio
-2. tiger would like to edit their existing portfolio to different allocations
-    1. operation 1: new/edit portfolio
-3. tiger already has an existing portfolio, and tiger sign a txn to deposit USDC into their portfolio
-    1. operation 4: deposit triggered distribution
-3. tiger would like to open a portfolio and deposit USDC to it
-    1. operation 3: new/edit portfolio and deposit from Agoric chain
-    2. operation 4: deposit triggered distribution
-4. tiger would like to edit their existing portfolio and deposit USDC to it
-    1. operation 3: new/edit portfolio and deposit from Agoric chain
-    2. operation 4: deposit triggered distribution
-5. tiger would like to manually trigger a rebalance
-    1. operation 5: manually-triggered rebalance
-
 #### NOT in scope for now
 1. deposit from Fast USDC source chains and create a new portfolio via address hook
 2. connect with existing positions on Aave, Compound, etc
 3. automatic/scheduled rebalance or claim rewards
-
