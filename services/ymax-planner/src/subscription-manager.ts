@@ -6,6 +6,10 @@ import { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js'
 import { watchGmp } from './watchers/gmp-watcher.ts';
 import { resolvePendingTx } from './resolver.ts';
 import { watchCctpTransfer } from './watchers/cctp-watcher.ts';
+import type {
+  PublishedTx,
+  TxId,
+} from '@aglocal/portfolio-contract/src/resolver/types.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
 
@@ -14,11 +18,6 @@ export type EvmContext = {
   evmProviders: Partial<Record<EvmChain, JsonRpcProvider>>;
   signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
-};
-
-type CctpTransfer = {
-  amount: bigint;
-  destinationAddress: string;
 };
 
 export type GmpTransfer = {
@@ -34,17 +33,12 @@ export type GmpTransfer = {
  *
  * Terminal states: success and timeout never transition to other states.
  */
-type BaseSubscription = {
-  subscriptionId: string;
-  status: TxStatus;
-};
+export type Subscription = {
+  txId: TxId;
+} & PublishedTx;
 
-type SubscriptionOf<T, K extends string> = BaseSubscription & T & { type: K };
-
-type CctpSubscription = SubscriptionOf<CctpTransfer, 'cctp'>;
-type GmpSubscription = SubscriptionOf<GmpTransfer, 'gmp'>;
-
-export type Subscription = CctpSubscription | GmpSubscription;
+type CctpSubscription = Subscription & { type: 'cctp' };
+type GmpSubscription = Subscription & { type: 'gmp' };
 
 export type SubscriptionMonitor<T extends Subscription = Subscription> = {
   watch: (
@@ -257,8 +251,8 @@ export function getCctpConfig(chainId: string) {
 
 const cctpMonitor: SubscriptionMonitor<CctpSubscription> = {
   watch: async (ctx, subscription, log) => {
-    const { subscriptionId, destinationAddress, amount } = subscription;
-    const logPrefix = `[${subscriptionId}]`;
+    const { txId, destinationAddress, amount } = subscription;
+    const logPrefix = `[${txId}]`;
 
     log(`${logPrefix} handling cctp subscription`);
 
@@ -283,7 +277,7 @@ const cctpMonitor: SubscriptionMonitor<CctpSubscription> = {
 
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
-      subscriptionId,
+      txId,
       status: transferStatus ? TxStatus.SUCCESS : TxStatus.FAILED,
     });
 
@@ -293,8 +287,11 @@ const cctpMonitor: SubscriptionMonitor<CctpSubscription> = {
 
 const gmpMonitor: SubscriptionMonitor<GmpSubscription> = {
   watch: async (ctx, subscription, log) => {
-    const { subscriptionId, destinationChain, contractAddress } = subscription;
-    const logPrefix = `[${subscriptionId}]`;
+    const { txId, destinationAddress } = subscription;
+    const logPrefix = `[${txId}]`;
+
+    // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
+    const [, chainId, addr] = destinationAddress.split(':');
 
     log(`${logPrefix} handling gmp subscription`);
 
@@ -303,16 +300,16 @@ const gmpMonitor: SubscriptionMonitor<GmpSubscription> = {
       fetch: ctx.fetch,
       params: {
         sourceChain: 'agoric',
-        destinationChain: destinationChain as unknown as string,
-        contractAddress,
+        destinationChain: chainId as unknown as string,
+        contractAddress: addr as `0x${string}`,
       },
-      subscriptionId,
+      txId,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
     });
 
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
-      subscriptionId,
+      txId,
       status: res.success ? TxStatus.SUCCESS : TxStatus.FAILED,
     });
 
@@ -332,7 +329,7 @@ export const handleSubscription = async (
   registry: MonitorRegistry = createMonitorRegistry(),
 ) => {
   await null;
-  const logPrefix = `[${subscription.subscriptionId}]`;
+  const logPrefix = `[${subscription.txId}]`;
   log(`${logPrefix} handling ${subscription.type} subscription`);
 
   const monitor = registry[subscription.type] as SubscriptionMonitor;

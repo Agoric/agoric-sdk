@@ -1,6 +1,7 @@
 // eslint-disable-next-line -- Types in this file match external Axelar API schema
 import { ethers } from 'ethers';
 import type { SearchGMPParams, SearchGMPResponse } from '@axelarjs/api';
+import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 
 const wait = async (seconds: number) => {
   return new Promise(resolve => setTimeout(resolve, seconds * 1000));
@@ -19,7 +20,7 @@ export const watchGmp = async ({
   url,
   fetch = globalThis.fetch,
   params,
-  subscriptionId,
+  txId,
   log = () => {},
   timeoutMinutes = 5,
   retryDelaySeconds = 20,
@@ -28,7 +29,7 @@ export const watchGmp = async ({
   url: string;
   fetch: typeof globalThis.fetch;
   params: SearchGMPParams;
-  subscriptionId: string;
+  txId: TxId;
   logPrefix?: string;
   log: (...args: unknown[]) => void;
   timeoutMinutes?: number;
@@ -89,11 +90,11 @@ export const watchGmp = async ({
         );
 
         log(`decodedSubscriptionId:`, decodedSubscriptionId);
-        if (decodedSubscriptionId === subscriptionId) {
+        if (decodedSubscriptionId === txId) {
           return { logs: execution, success: true };
         }
       }
-      log(`no log for subscriptionId ${subscriptionId}, retrying...`);
+      log(`no log for txId ${txId}, retrying...`);
     } else {
       log(`no data, retrying...`);
     }
