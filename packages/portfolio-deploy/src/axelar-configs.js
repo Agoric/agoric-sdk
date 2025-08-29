@@ -30,8 +30,8 @@ const AxelarChainIdMap = harden({
     mainnet: 'Avalanche',
   },
   Ethereum: {
-    testnet: 'Ethereum',
-    mainnet: 'ethereum-sepolia',
+    testnet: 'ethereum-sepolia',
+    mainnet: 'Ethereum',
   },
   Arbitrum: {
     testnet: 'arbitrum-sepolia',

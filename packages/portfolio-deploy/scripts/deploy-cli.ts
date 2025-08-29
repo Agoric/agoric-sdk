@@ -34,12 +34,16 @@ type ParsedArgs = {
   description?: string;
 };
 
+const errOn = opts => ({
+  ...opts,
+  stdio: [...opts.stdio.slice(0, 2), 'inherit'],
+});
 const main = async (
   argv = process.argv,
   {
     fetch = globalThis.fetch,
     execFile = (cmd, args, opts) =>
-      execa({ verbose: 'short' })(cmd, args, opts),
+      execa({ verbose: 'short' })(cmd, args, errOn(opts)),
   } = {},
 ) => {
   const getVersion = () =>
