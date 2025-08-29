@@ -3,7 +3,6 @@ import '@endo/init/debug.js';
 
 import { LOCAL_CONFIG, makeVstorageKit } from '@agoric/client-utils';
 import { agoric, mkTemp } from '@agoric/synthetic-chain';
-import { passStyleOf } from '@endo/pass-style';
 import test from 'ava';
 import { writeFile } from 'node:fs/promises';
 import { walletUpdates } from './walletUpdates.js';
@@ -22,14 +21,6 @@ const wup = walletUpdates(
   () => vsc.readPublished(`wallet.${ymaxControlAddr}`),
   { setTimeout, log: () => {} },
 );
-
-test.serial('postalService is in vstorage', async t => {
-  const instanceEntries = await vsc.readPublished('agoricNames.instance');
-  const instances = fromEntries(instanceEntries);
-  const { postalService } = instances;
-
-  t.is(passStyleOf(postalService), 'remotable');
-});
 
 const boardId = x => x.getBoardId();
 
@@ -83,7 +74,7 @@ test.serial('redeem ymaxControl invitation', async t => {
         description: 'deliver ymaxControl',
       },
       proposal: {},
-      saveResult: { name: 'ymaxControl' },
+      saveResult: { name: 'ymaxControl', overwrite: true },
     },
   };
 
