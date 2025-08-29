@@ -56,7 +56,7 @@ function createBaseEpochInfo(): EpochInfo {
   };
 }
 export const EpochInfo = {
-  typeUrl: '/stride.epochs.EpochInfo' as const,
+  typeUrl: '/stride.epochs.EpochInfo',
   encode(
     message: EpochInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -219,7 +219,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/stride.epochs.GenesisState' as const,
+  typeUrl: '/stride.epochs.GenesisState',
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

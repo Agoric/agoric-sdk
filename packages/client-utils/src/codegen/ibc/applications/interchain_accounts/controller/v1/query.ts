@@ -58,7 +58,7 @@ function createBaseQueryInterchainAccountRequest(): QueryInterchainAccountReques
 }
 export const QueryInterchainAccountRequest = {
   typeUrl:
-    '/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountRequest' as const,
+    '/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountRequest',
   encode(
     message: QueryInterchainAccountRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -145,7 +145,7 @@ function createBaseQueryInterchainAccountResponse(): QueryInterchainAccountRespo
 }
 export const QueryInterchainAccountResponse = {
   typeUrl:
-    '/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse' as const,
+    '/ibc.applications.interchain_accounts.controller.v1.QueryInterchainAccountResponse',
   encode(
     message: QueryInterchainAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -218,7 +218,7 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
 }
 export const QueryParamsRequest = {
   typeUrl:
-    '/ibc.applications.interchain_accounts.controller.v1.QueryParamsRequest' as const,
+    '/ibc.applications.interchain_accounts.controller.v1.QueryParamsRequest',
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -275,7 +275,7 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
 }
 export const QueryParamsResponse = {
   typeUrl:
-    '/ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse' as const,
+    '/ibc.applications.interchain_accounts.controller.v1.QueryParamsResponse',
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

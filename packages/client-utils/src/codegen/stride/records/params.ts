@@ -13,7 +13,7 @@ function createBaseParams(): Params {
   return {};
 }
 export const Params = {
-  typeUrl: '/stride.records.Params' as const,
+  typeUrl: '/stride.records.Params',
   encode(
     _: Params,
     writer: BinaryWriter = BinaryWriter.create(),

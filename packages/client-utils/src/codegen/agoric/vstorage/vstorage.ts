@@ -38,7 +38,7 @@ function createBaseData(): Data {
   };
 }
 export const Data = {
-  typeUrl: '/agoric.vstorage.Data' as const,
+  typeUrl: '/agoric.vstorage.Data',
   encode(
     message: Data,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -100,7 +100,7 @@ function createBaseChildren(): Children {
   };
 }
 export const Children = {
-  typeUrl: '/agoric.vstorage.Children' as const,
+  typeUrl: '/agoric.vstorage.Children',
   encode(
     message: Children,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -29,7 +29,7 @@ function createBaseTransferCallback(): TransferCallback {
   };
 }
 export const TransferCallback = {
-  typeUrl: '/stride.records.TransferCallback' as const,
+  typeUrl: '/stride.records.TransferCallback',
   encode(
     message: TransferCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -97,7 +97,7 @@ function createBaseTransferLSMTokenCallback(): TransferLSMTokenCallback {
   };
 }
 export const TransferLSMTokenCallback = {
-  typeUrl: '/stride.records.TransferLSMTokenCallback' as const,
+  typeUrl: '/stride.records.TransferLSMTokenCallback',
   encode(
     message: TransferLSMTokenCallback,
     writer: BinaryWriter = BinaryWriter.create(),

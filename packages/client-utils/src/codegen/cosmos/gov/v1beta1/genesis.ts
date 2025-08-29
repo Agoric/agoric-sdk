@@ -59,7 +59,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/cosmos.gov.v1beta1.GenesisState' as const,
+  typeUrl: '/cosmos.gov.v1beta1.GenesisState',
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

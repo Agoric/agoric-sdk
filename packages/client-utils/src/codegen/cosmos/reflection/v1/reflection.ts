@@ -30,7 +30,7 @@ function createBaseFileDescriptorsRequest(): FileDescriptorsRequest {
   return {};
 }
 export const FileDescriptorsRequest = {
-  typeUrl: '/cosmos.reflection.v1.FileDescriptorsRequest' as const,
+  typeUrl: '/cosmos.reflection.v1.FileDescriptorsRequest',
   encode(
     _: FileDescriptorsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -87,7 +87,7 @@ function createBaseFileDescriptorsResponse(): FileDescriptorsResponse {
   };
 }
 export const FileDescriptorsResponse = {
-  typeUrl: '/cosmos.reflection.v1.FileDescriptorsResponse' as const,
+  typeUrl: '/cosmos.reflection.v1.FileDescriptorsResponse',
   encode(
     message: FileDescriptorsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

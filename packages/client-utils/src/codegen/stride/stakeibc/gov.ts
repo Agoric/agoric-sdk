@@ -49,7 +49,7 @@ function createBaseAddValidatorsProposal(): AddValidatorsProposal {
   };
 }
 export const AddValidatorsProposal = {
-  typeUrl: '/stride.stakeibc.AddValidatorsProposal' as const,
+  typeUrl: '/stride.stakeibc.AddValidatorsProposal',
   encode(
     message: AddValidatorsProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -164,7 +164,7 @@ function createBaseToggleLSMProposal(): ToggleLSMProposal {
   };
 }
 export const ToggleLSMProposal = {
-  typeUrl: '/stride.stakeibc.ToggleLSMProposal' as const,
+  typeUrl: '/stride.stakeibc.ToggleLSMProposal',
   encode(
     message: ToggleLSMProposal,
     writer: BinaryWriter = BinaryWriter.create(),

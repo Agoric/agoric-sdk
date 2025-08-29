@@ -52,7 +52,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/stride.records.GenesisState' as const,
+  typeUrl: '/stride.records.GenesisState',
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

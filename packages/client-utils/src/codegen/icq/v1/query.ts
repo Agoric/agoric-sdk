@@ -28,7 +28,7 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
 export const QueryParamsRequest = {
-  typeUrl: '/icq.v1.QueryParamsRequest' as const,
+  typeUrl: '/icq.v1.QueryParamsRequest',
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -83,7 +83,7 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
   };
 }
 export const QueryParamsResponse = {
-  typeUrl: '/icq.v1.QueryParamsResponse' as const,
+  typeUrl: '/icq.v1.QueryParamsResponse',
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

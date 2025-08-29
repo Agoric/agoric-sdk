@@ -464,7 +464,7 @@ function createBaseTx(): Tx {
   };
 }
 export const Tx = {
-  typeUrl: '/cosmos.tx.v1beta1.Tx' as const,
+  typeUrl: '/cosmos.tx.v1beta1.Tx',
   encode(
     message: Tx,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -566,7 +566,7 @@ function createBaseTxRaw(): TxRaw {
   };
 }
 export const TxRaw = {
-  typeUrl: '/cosmos.tx.v1beta1.TxRaw' as const,
+  typeUrl: '/cosmos.tx.v1beta1.TxRaw',
   encode(
     message: TxRaw,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -669,7 +669,7 @@ function createBaseSignDoc(): SignDoc {
   };
 }
 export const SignDoc = {
-  typeUrl: '/cosmos.tx.v1beta1.SignDoc' as const,
+  typeUrl: '/cosmos.tx.v1beta1.SignDoc',
   encode(
     message: SignDoc,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -781,7 +781,7 @@ function createBaseSignDocDirectAux(): SignDocDirectAux {
   };
 }
 export const SignDocDirectAux = {
-  typeUrl: '/cosmos.tx.v1beta1.SignDocDirectAux' as const,
+  typeUrl: '/cosmos.tx.v1beta1.SignDocDirectAux',
   encode(
     message: SignDocDirectAux,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -921,7 +921,7 @@ function createBaseTxBody(): TxBody {
   };
 }
 export const TxBody = {
-  typeUrl: '/cosmos.tx.v1beta1.TxBody' as const,
+  typeUrl: '/cosmos.tx.v1beta1.TxBody',
   encode(
     message: TxBody,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1055,7 +1055,7 @@ function createBaseAuthInfo(): AuthInfo {
   };
 }
 export const AuthInfo = {
-  typeUrl: '/cosmos.tx.v1beta1.AuthInfo' as const,
+  typeUrl: '/cosmos.tx.v1beta1.AuthInfo',
   encode(
     message: AuthInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1154,7 +1154,7 @@ function createBaseSignerInfo(): SignerInfo {
   };
 }
 export const SignerInfo = {
-  typeUrl: '/cosmos.tx.v1beta1.SignerInfo' as const,
+  typeUrl: '/cosmos.tx.v1beta1.SignerInfo',
   encode(
     message: SignerInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1257,7 +1257,7 @@ function createBaseModeInfo(): ModeInfo {
   };
 }
 export const ModeInfo = {
-  typeUrl: '/cosmos.tx.v1beta1.ModeInfo' as const,
+  typeUrl: '/cosmos.tx.v1beta1.ModeInfo',
   encode(
     message: ModeInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1344,7 +1344,7 @@ function createBaseModeInfo_Single(): ModeInfo_Single {
   };
 }
 export const ModeInfo_Single = {
-  typeUrl: '/cosmos.tx.v1beta1.Single' as const,
+  typeUrl: '/cosmos.tx.v1beta1.Single',
   encode(
     message: ModeInfo_Single,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1407,7 +1407,7 @@ function createBaseModeInfo_Multi(): ModeInfo_Multi {
   };
 }
 export const ModeInfo_Multi = {
-  typeUrl: '/cosmos.tx.v1beta1.Multi' as const,
+  typeUrl: '/cosmos.tx.v1beta1.Multi',
   encode(
     message: ModeInfo_Multi,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1501,7 +1501,7 @@ function createBaseFee(): Fee {
   };
 }
 export const Fee = {
-  typeUrl: '/cosmos.tx.v1beta1.Fee' as const,
+  typeUrl: '/cosmos.tx.v1beta1.Fee',
   encode(
     message: Fee,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1603,7 +1603,7 @@ function createBaseTip(): Tip {
   };
 }
 export const Tip = {
-  typeUrl: '/cosmos.tx.v1beta1.Tip' as const,
+  typeUrl: '/cosmos.tx.v1beta1.Tip',
   encode(
     message: Tip,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1683,7 +1683,7 @@ function createBaseAuxSignerData(): AuxSignerData {
   };
 }
 export const AuxSignerData = {
-  typeUrl: '/cosmos.tx.v1beta1.AuxSignerData' as const,
+  typeUrl: '/cosmos.tx.v1beta1.AuxSignerData',
   encode(
     message: AuxSignerData,
     writer: BinaryWriter = BinaryWriter.create(),

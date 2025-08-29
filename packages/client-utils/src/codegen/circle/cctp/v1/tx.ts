@@ -72,7 +72,7 @@ function createBaseMsgDepositForBurn(): MsgDepositForBurn {
   };
 }
 export const MsgDepositForBurn = {
-  typeUrl: '/circle.cctp.v1.MsgDepositForBurn' as const,
+  typeUrl: '/circle.cctp.v1.MsgDepositForBurn',
   encode(
     message: MsgDepositForBurn,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -180,7 +180,7 @@ function createBaseMsgDepositForBurnResponse(): MsgDepositForBurnResponse {
   };
 }
 export const MsgDepositForBurnResponse = {
-  typeUrl: '/circle.cctp.v1.MsgDepositForBurnResponse' as const,
+  typeUrl: '/circle.cctp.v1.MsgDepositForBurnResponse',
   encode(
     message: MsgDepositForBurnResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -262,7 +262,7 @@ function createBaseMsgDepositForBurnWithCaller(): MsgDepositForBurnWithCaller {
   };
 }
 export const MsgDepositForBurnWithCaller = {
-  typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCaller' as const,
+  typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCaller',
   encode(
     message: MsgDepositForBurnWithCaller,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -397,7 +397,7 @@ function createBaseMsgDepositForBurnWithCallerResponse(): MsgDepositForBurnWithC
   };
 }
 export const MsgDepositForBurnWithCallerResponse = {
-  typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCallerResponse' as const,
+  typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCallerResponse',
   encode(
     message: MsgDepositForBurnWithCallerResponse,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -56,7 +56,7 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
   };
 }
 export const MsgUpdateParams = {
-  typeUrl: '/icq.v1.MsgUpdateParams' as const,
+  typeUrl: '/icq.v1.MsgUpdateParams',
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -129,7 +129,7 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
 }
 export const MsgUpdateParamsResponse = {
-  typeUrl: '/icq.v1.MsgUpdateParamsResponse' as const,
+  typeUrl: '/icq.v1.MsgUpdateParamsResponse',
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

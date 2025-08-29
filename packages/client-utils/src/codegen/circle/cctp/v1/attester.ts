@@ -26,7 +26,7 @@ function createBaseAttester(): Attester {
   };
 }
 export const Attester = {
-  typeUrl: '/circle.cctp.v1.Attester' as const,
+  typeUrl: '/circle.cctp.v1.Attester',
   encode(
     message: Attester,
     writer: BinaryWriter = BinaryWriter.create(),

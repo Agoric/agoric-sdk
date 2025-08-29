@@ -25,7 +25,7 @@ function createBaseParams(): Params {
   };
 }
 export const Params = {
-  typeUrl: '/icq.v1.Params' as const,
+  typeUrl: '/icq.v1.Params',
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),

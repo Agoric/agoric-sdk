@@ -61,7 +61,7 @@ function createBaseParams(): Params {
   };
 }
 export const Params = {
-  typeUrl: '/ibc.applications.interchain_accounts.host.v1.Params' as const,
+  typeUrl: '/ibc.applications.interchain_accounts.host.v1.Params',
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -142,8 +142,7 @@ function createBaseQueryRequest(): QueryRequest {
   };
 }
 export const QueryRequest = {
-  typeUrl:
-    '/ibc.applications.interchain_accounts.host.v1.QueryRequest' as const,
+  typeUrl: '/ibc.applications.interchain_accounts.host.v1.QueryRequest',
   encode(
     message: QueryRequest,
     writer: BinaryWriter = BinaryWriter.create(),

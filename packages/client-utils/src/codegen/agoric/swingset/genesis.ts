@@ -49,7 +49,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/agoric.swingset.GenesisState' as const,
+  typeUrl: '/agoric.swingset.GenesisState',
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -165,7 +165,7 @@ function createBaseSwingStoreExportDataEntry(): SwingStoreExportDataEntry {
   };
 }
 export const SwingStoreExportDataEntry = {
-  typeUrl: '/agoric.swingset.SwingStoreExportDataEntry' as const,
+  typeUrl: '/agoric.swingset.SwingStoreExportDataEntry',
   encode(
     message: SwingStoreExportDataEntry,
     writer: BinaryWriter = BinaryWriter.create(),

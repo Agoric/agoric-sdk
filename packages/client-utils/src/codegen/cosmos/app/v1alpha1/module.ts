@@ -120,7 +120,7 @@ function createBaseModuleDescriptor(): ModuleDescriptor {
   };
 }
 export const ModuleDescriptor = {
-  typeUrl: '/cosmos.app.v1alpha1.ModuleDescriptor' as const,
+  typeUrl: '/cosmos.app.v1alpha1.ModuleDescriptor',
   encode(
     message: ModuleDescriptor,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -223,7 +223,7 @@ function createBasePackageReference(): PackageReference {
   };
 }
 export const PackageReference = {
-  typeUrl: '/cosmos.app.v1alpha1.PackageReference' as const,
+  typeUrl: '/cosmos.app.v1alpha1.PackageReference',
   encode(
     message: PackageReference,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -295,7 +295,7 @@ function createBaseMigrateFromInfo(): MigrateFromInfo {
   };
 }
 export const MigrateFromInfo = {
-  typeUrl: '/cosmos.app.v1alpha1.MigrateFromInfo' as const,
+  typeUrl: '/cosmos.app.v1alpha1.MigrateFromInfo',
   encode(
     message: MigrateFromInfo,
     writer: BinaryWriter = BinaryWriter.create(),

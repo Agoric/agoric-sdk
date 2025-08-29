@@ -16,14 +16,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/ante"
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	vstoragekeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/keeper"
 )
 
 // Top-level paths for chain storage should remain synchronized with
@@ -58,9 +56,11 @@ type Keeper struct {
 	paramSpace   paramtypes.Subspace
 
 	accountKeeper    types.AccountKeeper
-	bankKeeper       bankkeeper.Keeper
-	vstorageKeeper   vstoragekeeper.Keeper
+	bankKeeper       types.BankKeeper
+	vstorageKeeper   types.VstorageKeeper
 	feeCollectorName string
+
+	authority string
 
 	// CallToController dispatches a message to the controlling process
 	callToController func(ctx sdk.Context, str string) (string, error)
@@ -73,8 +73,8 @@ var _ ante.SwingsetKeeper = &Keeper{}
 func NewKeeper(
 	cdc codec.Codec, storeService corestore.KVStoreService,
 	paramSpace paramtypes.Subspace,
-	accountKeeper types.AccountKeeper, bankKeeper bankkeeper.Keeper,
-	vstorageKeeper vstoragekeeper.Keeper, feeCollectorName string,
+	accountKeeper types.AccountKeeper, bankKeeper types.BankKeeper,
+	vstorageKeeper types.VstorageKeeper, feeCollectorName string, authority string,
 	callToController func(ctx sdk.Context, str string) (string, error),
 ) Keeper {
 
@@ -92,6 +92,7 @@ func NewKeeper(
 		vstorageKeeper:   vstorageKeeper,
 		feeCollectorName: feeCollectorName,
 		callToController: callToController,
+		authority:        authority,
 	}
 }
 

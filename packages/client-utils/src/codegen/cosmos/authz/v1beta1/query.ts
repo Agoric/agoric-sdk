@@ -121,7 +121,7 @@ function createBaseQueryGrantsRequest(): QueryGrantsRequest {
   };
 }
 export const QueryGrantsRequest = {
-  typeUrl: '/cosmos.authz.v1beta1.QueryGrantsRequest' as const,
+  typeUrl: '/cosmos.authz.v1beta1.QueryGrantsRequest',
   encode(
     message: QueryGrantsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -222,7 +222,7 @@ function createBaseQueryGrantsResponse(): QueryGrantsResponse {
   };
 }
 export const QueryGrantsResponse = {
-  typeUrl: '/cosmos.authz.v1beta1.QueryGrantsResponse' as const,
+  typeUrl: '/cosmos.authz.v1beta1.QueryGrantsResponse',
   encode(
     message: QueryGrantsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -314,7 +314,7 @@ function createBaseQueryGranterGrantsRequest(): QueryGranterGrantsRequest {
   };
 }
 export const QueryGranterGrantsRequest = {
-  typeUrl: '/cosmos.authz.v1beta1.QueryGranterGrantsRequest' as const,
+  typeUrl: '/cosmos.authz.v1beta1.QueryGranterGrantsRequest',
   encode(
     message: QueryGranterGrantsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -405,7 +405,7 @@ function createBaseQueryGranterGrantsResponse(): QueryGranterGrantsResponse {
   };
 }
 export const QueryGranterGrantsResponse = {
-  typeUrl: '/cosmos.authz.v1beta1.QueryGranterGrantsResponse' as const,
+  typeUrl: '/cosmos.authz.v1beta1.QueryGranterGrantsResponse',
   encode(
     message: QueryGranterGrantsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -510,7 +510,7 @@ function createBaseQueryGranteeGrantsRequest(): QueryGranteeGrantsRequest {
   };
 }
 export const QueryGranteeGrantsRequest = {
-  typeUrl: '/cosmos.authz.v1beta1.QueryGranteeGrantsRequest' as const,
+  typeUrl: '/cosmos.authz.v1beta1.QueryGranteeGrantsRequest',
   encode(
     message: QueryGranteeGrantsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -601,7 +601,7 @@ function createBaseQueryGranteeGrantsResponse(): QueryGranteeGrantsResponse {
   };
 }
 export const QueryGranteeGrantsResponse = {
-  typeUrl: '/cosmos.authz.v1beta1.QueryGranteeGrantsResponse' as const,
+  typeUrl: '/cosmos.authz.v1beta1.QueryGranteeGrantsResponse',
   encode(
     message: QueryGranteeGrantsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

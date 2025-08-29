@@ -297,7 +297,7 @@ function createBaseMsgCreateValidator(): MsgCreateValidator {
   };
 }
 export const MsgCreateValidator = {
-  typeUrl: '/cosmos.staking.v1beta1.MsgCreateValidator' as const,
+  typeUrl: '/cosmos.staking.v1beta1.MsgCreateValidator',
   encode(
     message: MsgCreateValidator,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -453,7 +453,7 @@ function createBaseMsgCreateValidatorResponse(): MsgCreateValidatorResponse {
   return {};
 }
 export const MsgCreateValidatorResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.MsgCreateValidatorResponse' as const,
+  typeUrl: '/cosmos.staking.v1beta1.MsgCreateValidatorResponse',
   encode(
     _: MsgCreateValidatorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -517,7 +517,7 @@ function createBaseMsgEditValidator(): MsgEditValidator {
   };
 }
 export const MsgEditValidator = {
-  typeUrl: '/cosmos.staking.v1beta1.MsgEditValidator' as const,
+  typeUrl: '/cosmos.staking.v1beta1.MsgEditValidator',
   encode(
     message: MsgEditValidator,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -629,7 +629,7 @@ function createBaseMsgEditValidatorResponse(): MsgEditValidatorResponse {
   return {};
 }
 export const MsgEditValidatorResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.MsgEditValidatorResponse' as const,
+  typeUrl: '/cosmos.staking.v1beta1.MsgEditValidatorResponse',
   encode(
     _: MsgEditValidatorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -690,7 +690,7 @@ function createBaseMsgDelegate(): MsgDelegate {
   };
 }
 export const MsgDelegate = {
-  typeUrl: '/cosmos.staking.v1beta1.MsgDelegate' as const,
+  typeUrl: '/cosmos.staking.v1beta1.MsgDelegate',
   encode(
     message: MsgDelegate,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -778,7 +778,7 @@ function createBaseMsgDelegateResponse(): MsgDelegateResponse {
   return {};
 }
 export const MsgDelegateResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.MsgDelegateResponse' as const,
+  typeUrl: '/cosmos.staking.v1beta1.MsgDelegateResponse',
   encode(
     _: MsgDelegateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -836,7 +836,7 @@ function createBaseMsgBeginRedelegate(): MsgBeginRedelegate {
   };
 }
 export const MsgBeginRedelegate = {
-  typeUrl: '/cosmos.staking.v1beta1.MsgBeginRedelegate' as const,
+  typeUrl: '/cosmos.staking.v1beta1.MsgBeginRedelegate',
   encode(
     message: MsgBeginRedelegate,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -941,7 +941,7 @@ function createBaseMsgBeginRedelegateResponse(): MsgBeginRedelegateResponse {
   };
 }
 export const MsgBeginRedelegateResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.MsgBeginRedelegateResponse' as const,
+  typeUrl: '/cosmos.staking.v1beta1.MsgBeginRedelegateResponse',
   encode(
     message: MsgBeginRedelegateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1027,7 +1027,7 @@ function createBaseMsgUndelegate(): MsgUndelegate {
   };
 }
 export const MsgUndelegate = {
-  typeUrl: '/cosmos.staking.v1beta1.MsgUndelegate' as const,
+  typeUrl: '/cosmos.staking.v1beta1.MsgUndelegate',
   encode(
     message: MsgUndelegate,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1118,7 +1118,7 @@ function createBaseMsgUndelegateResponse(): MsgUndelegateResponse {
   };
 }
 export const MsgUndelegateResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.MsgUndelegateResponse' as const,
+  typeUrl: '/cosmos.staking.v1beta1.MsgUndelegateResponse',
   encode(
     message: MsgUndelegateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1210,7 +1210,7 @@ function createBaseMsgCancelUnbondingDelegation(): MsgCancelUnbondingDelegation 
   };
 }
 export const MsgCancelUnbondingDelegation = {
-  typeUrl: '/cosmos.staking.v1beta1.MsgCancelUnbondingDelegation' as const,
+  typeUrl: '/cosmos.staking.v1beta1.MsgCancelUnbondingDelegation',
   encode(
     message: MsgCancelUnbondingDelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1324,8 +1324,7 @@ function createBaseMsgCancelUnbondingDelegationResponse(): MsgCancelUnbondingDel
   return {};
 }
 export const MsgCancelUnbondingDelegationResponse = {
-  typeUrl:
-    '/cosmos.staking.v1beta1.MsgCancelUnbondingDelegationResponse' as const,
+  typeUrl: '/cosmos.staking.v1beta1.MsgCancelUnbondingDelegationResponse',
   encode(
     _: MsgCancelUnbondingDelegationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1389,7 +1388,7 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
   };
 }
 export const MsgUpdateParams = {
-  typeUrl: '/cosmos.staking.v1beta1.MsgUpdateParams' as const,
+  typeUrl: '/cosmos.staking.v1beta1.MsgUpdateParams',
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1462,7 +1461,7 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
 }
 export const MsgUpdateParamsResponse = {
-  typeUrl: '/cosmos.staking.v1beta1.MsgUpdateParamsResponse' as const,
+  typeUrl: '/cosmos.staking.v1beta1.MsgUpdateParamsResponse',
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

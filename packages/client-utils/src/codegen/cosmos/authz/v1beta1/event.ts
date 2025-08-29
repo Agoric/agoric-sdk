@@ -48,7 +48,7 @@ function createBaseEventGrant(): EventGrant {
   };
 }
 export const EventGrant = {
-  typeUrl: '/cosmos.authz.v1beta1.EventGrant' as const,
+  typeUrl: '/cosmos.authz.v1beta1.EventGrant',
   encode(
     message: EventGrant,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -130,7 +130,7 @@ function createBaseEventRevoke(): EventRevoke {
   };
 }
 export const EventRevoke = {
-  typeUrl: '/cosmos.authz.v1beta1.EventRevoke' as const,
+  typeUrl: '/cosmos.authz.v1beta1.EventRevoke',
   encode(
     message: EventRevoke,
     writer: BinaryWriter = BinaryWriter.create(),

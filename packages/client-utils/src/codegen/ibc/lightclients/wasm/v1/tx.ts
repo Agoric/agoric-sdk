@@ -94,7 +94,7 @@ function createBaseMsgStoreCode(): MsgStoreCode {
   };
 }
 export const MsgStoreCode = {
-  typeUrl: '/ibc.lightclients.wasm.v1.MsgStoreCode' as const,
+  typeUrl: '/ibc.lightclients.wasm.v1.MsgStoreCode',
   encode(
     message: MsgStoreCode,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -172,7 +172,7 @@ function createBaseMsgStoreCodeResponse(): MsgStoreCodeResponse {
   };
 }
 export const MsgStoreCodeResponse = {
-  typeUrl: '/ibc.lightclients.wasm.v1.MsgStoreCodeResponse' as const,
+  typeUrl: '/ibc.lightclients.wasm.v1.MsgStoreCodeResponse',
   encode(
     message: MsgStoreCodeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -243,7 +243,7 @@ function createBaseMsgRemoveChecksum(): MsgRemoveChecksum {
   };
 }
 export const MsgRemoveChecksum = {
-  typeUrl: '/ibc.lightclients.wasm.v1.MsgRemoveChecksum' as const,
+  typeUrl: '/ibc.lightclients.wasm.v1.MsgRemoveChecksum',
   encode(
     message: MsgRemoveChecksum,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -317,7 +317,7 @@ function createBaseMsgRemoveChecksumResponse(): MsgRemoveChecksumResponse {
   return {};
 }
 export const MsgRemoveChecksumResponse = {
-  typeUrl: '/ibc.lightclients.wasm.v1.MsgRemoveChecksumResponse' as const,
+  typeUrl: '/ibc.lightclients.wasm.v1.MsgRemoveChecksumResponse',
   encode(
     _: MsgRemoveChecksumResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -381,7 +381,7 @@ function createBaseMsgMigrateContract(): MsgMigrateContract {
   };
 }
 export const MsgMigrateContract = {
-  typeUrl: '/ibc.lightclients.wasm.v1.MsgMigrateContract' as const,
+  typeUrl: '/ibc.lightclients.wasm.v1.MsgMigrateContract',
   encode(
     message: MsgMigrateContract,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -479,7 +479,7 @@ function createBaseMsgMigrateContractResponse(): MsgMigrateContractResponse {
   return {};
 }
 export const MsgMigrateContractResponse = {
-  typeUrl: '/ibc.lightclients.wasm.v1.MsgMigrateContractResponse' as const,
+  typeUrl: '/ibc.lightclients.wasm.v1.MsgMigrateContractResponse',
   encode(
     _: MsgMigrateContractResponse,
     writer: BinaryWriter = BinaryWriter.create(),

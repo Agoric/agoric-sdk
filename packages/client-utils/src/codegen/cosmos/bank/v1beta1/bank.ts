@@ -194,7 +194,7 @@ function createBaseParams(): Params {
   };
 }
 export const Params = {
-  typeUrl: '/cosmos.bank.v1beta1.Params' as const,
+  typeUrl: '/cosmos.bank.v1beta1.Params',
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -278,7 +278,7 @@ function createBaseSendEnabled(): SendEnabled {
   };
 }
 export const SendEnabled = {
-  typeUrl: '/cosmos.bank.v1beta1.SendEnabled' as const,
+  typeUrl: '/cosmos.bank.v1beta1.SendEnabled',
   encode(
     message: SendEnabled,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -350,7 +350,7 @@ function createBaseInput(): Input {
   };
 }
 export const Input = {
-  typeUrl: '/cosmos.bank.v1beta1.Input' as const,
+  typeUrl: '/cosmos.bank.v1beta1.Input',
   encode(
     message: Input,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -428,7 +428,7 @@ function createBaseOutput(): Output {
   };
 }
 export const Output = {
-  typeUrl: '/cosmos.bank.v1beta1.Output' as const,
+  typeUrl: '/cosmos.bank.v1beta1.Output',
   encode(
     message: Output,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -505,7 +505,7 @@ function createBaseSupply(): Supply {
   };
 }
 export const Supply = {
-  typeUrl: '/cosmos.bank.v1beta1.Supply' as const,
+  typeUrl: '/cosmos.bank.v1beta1.Supply',
   encode(
     message: Supply,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -575,7 +575,7 @@ function createBaseDenomUnit(): DenomUnit {
   };
 }
 export const DenomUnit = {
-  typeUrl: '/cosmos.bank.v1beta1.DenomUnit' as const,
+  typeUrl: '/cosmos.bank.v1beta1.DenomUnit',
   encode(
     message: DenomUnit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -669,7 +669,7 @@ function createBaseMetadata(): Metadata {
   };
 }
 export const Metadata = {
-  typeUrl: '/cosmos.bank.v1beta1.Metadata' as const,
+  typeUrl: '/cosmos.bank.v1beta1.Metadata',
   encode(
     message: Metadata,
     writer: BinaryWriter = BinaryWriter.create(),

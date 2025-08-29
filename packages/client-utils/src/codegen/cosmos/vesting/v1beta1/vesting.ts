@@ -189,7 +189,7 @@ function createBaseBaseVestingAccount(): BaseVestingAccount {
   };
 }
 export const BaseVestingAccount = {
-  typeUrl: '/cosmos.vesting.v1beta1.BaseVestingAccount' as const,
+  typeUrl: '/cosmos.vesting.v1beta1.BaseVestingAccount',
   encode(
     message: BaseVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -335,7 +335,7 @@ function createBaseContinuousVestingAccount(): ContinuousVestingAccount {
   };
 }
 export const ContinuousVestingAccount = {
-  typeUrl: '/cosmos.vesting.v1beta1.ContinuousVestingAccount' as const,
+  typeUrl: '/cosmos.vesting.v1beta1.ContinuousVestingAccount',
   encode(
     message: ContinuousVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -438,7 +438,7 @@ function createBaseDelayedVestingAccount(): DelayedVestingAccount {
   };
 }
 export const DelayedVestingAccount = {
-  typeUrl: '/cosmos.vesting.v1beta1.DelayedVestingAccount' as const,
+  typeUrl: '/cosmos.vesting.v1beta1.DelayedVestingAccount',
   encode(
     message: DelayedVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -519,7 +519,7 @@ function createBasePeriod(): Period {
   };
 }
 export const Period = {
-  typeUrl: '/cosmos.vesting.v1beta1.Period' as const,
+  typeUrl: '/cosmos.vesting.v1beta1.Period',
   encode(
     message: Period,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -604,7 +604,7 @@ function createBasePeriodicVestingAccount(): PeriodicVestingAccount {
   };
 }
 export const PeriodicVestingAccount = {
-  typeUrl: '/cosmos.vesting.v1beta1.PeriodicVestingAccount' as const,
+  typeUrl: '/cosmos.vesting.v1beta1.PeriodicVestingAccount',
   encode(
     message: PeriodicVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -719,7 +719,7 @@ function createBasePermanentLockedAccount(): PermanentLockedAccount {
   };
 }
 export const PermanentLockedAccount = {
-  typeUrl: '/cosmos.vesting.v1beta1.PermanentLockedAccount' as const,
+  typeUrl: '/cosmos.vesting.v1beta1.PermanentLockedAccount',
   encode(
     message: PermanentLockedAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -805,7 +805,7 @@ function createBaseClawbackVestingAccount(): ClawbackVestingAccount {
   };
 }
 export const ClawbackVestingAccount = {
-  typeUrl: '/cosmos.vesting.v1beta1.ClawbackVestingAccount' as const,
+  typeUrl: '/cosmos.vesting.v1beta1.ClawbackVestingAccount',
   encode(
     message: ClawbackVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),

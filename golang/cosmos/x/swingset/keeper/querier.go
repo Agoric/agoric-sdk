@@ -75,7 +75,7 @@ func legacyQueryStorage(ctx sdk.Context, path string, req abci.RequestQuery, kee
 // nolint: unparam
 func legacyQueryKeys(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
 	children := keeper.vstorageKeeper.GetChildren(ctx, path)
-	chlist := children.Children
+	chlist := children
 
 	if chlist == nil {
 		chlist = []string{}

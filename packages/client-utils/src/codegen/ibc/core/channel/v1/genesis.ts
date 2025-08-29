@@ -75,7 +75,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/ibc.core.channel.v1.GenesisState' as const,
+  typeUrl: '/ibc.core.channel.v1.GenesisState',
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -297,7 +297,7 @@ function createBasePacketSequence(): PacketSequence {
   };
 }
 export const PacketSequence = {
-  typeUrl: '/ibc.core.channel.v1.PacketSequence' as const,
+  typeUrl: '/ibc.core.channel.v1.PacketSequence',
   encode(
     message: PacketSequence,
     writer: BinaryWriter = BinaryWriter.create(),

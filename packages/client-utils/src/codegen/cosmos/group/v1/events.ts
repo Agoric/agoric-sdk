@@ -179,7 +179,7 @@ function createBaseEventCreateGroup(): EventCreateGroup {
   };
 }
 export const EventCreateGroup = {
-  typeUrl: '/cosmos.group.v1.EventCreateGroup' as const,
+  typeUrl: '/cosmos.group.v1.EventCreateGroup',
   encode(
     message: EventCreateGroup,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -247,7 +247,7 @@ function createBaseEventUpdateGroup(): EventUpdateGroup {
   };
 }
 export const EventUpdateGroup = {
-  typeUrl: '/cosmos.group.v1.EventUpdateGroup' as const,
+  typeUrl: '/cosmos.group.v1.EventUpdateGroup',
   encode(
     message: EventUpdateGroup,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -315,7 +315,7 @@ function createBaseEventCreateGroupPolicy(): EventCreateGroupPolicy {
   };
 }
 export const EventCreateGroupPolicy = {
-  typeUrl: '/cosmos.group.v1.EventCreateGroupPolicy' as const,
+  typeUrl: '/cosmos.group.v1.EventCreateGroupPolicy',
   encode(
     message: EventCreateGroupPolicy,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -382,7 +382,7 @@ function createBaseEventUpdateGroupPolicy(): EventUpdateGroupPolicy {
   };
 }
 export const EventUpdateGroupPolicy = {
-  typeUrl: '/cosmos.group.v1.EventUpdateGroupPolicy' as const,
+  typeUrl: '/cosmos.group.v1.EventUpdateGroupPolicy',
   encode(
     message: EventUpdateGroupPolicy,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -449,7 +449,7 @@ function createBaseEventSubmitProposal(): EventSubmitProposal {
   };
 }
 export const EventSubmitProposal = {
-  typeUrl: '/cosmos.group.v1.EventSubmitProposal' as const,
+  typeUrl: '/cosmos.group.v1.EventSubmitProposal',
   encode(
     message: EventSubmitProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -520,7 +520,7 @@ function createBaseEventWithdrawProposal(): EventWithdrawProposal {
   };
 }
 export const EventWithdrawProposal = {
-  typeUrl: '/cosmos.group.v1.EventWithdrawProposal' as const,
+  typeUrl: '/cosmos.group.v1.EventWithdrawProposal',
   encode(
     message: EventWithdrawProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -591,7 +591,7 @@ function createBaseEventVote(): EventVote {
   };
 }
 export const EventVote = {
-  typeUrl: '/cosmos.group.v1.EventVote' as const,
+  typeUrl: '/cosmos.group.v1.EventVote',
   encode(
     message: EventVote,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -661,7 +661,7 @@ function createBaseEventExec(): EventExec {
   };
 }
 export const EventExec = {
-  typeUrl: '/cosmos.group.v1.EventExec' as const,
+  typeUrl: '/cosmos.group.v1.EventExec',
   encode(
     message: EventExec,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -751,7 +751,7 @@ function createBaseEventLeaveGroup(): EventLeaveGroup {
   };
 }
 export const EventLeaveGroup = {
-  typeUrl: '/cosmos.group.v1.EventLeaveGroup' as const,
+  typeUrl: '/cosmos.group.v1.EventLeaveGroup',
   encode(
     message: EventLeaveGroup,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -830,7 +830,7 @@ function createBaseEventProposalPruned(): EventProposalPruned {
   };
 }
 export const EventProposalPruned = {
-  typeUrl: '/cosmos.group.v1.EventProposalPruned' as const,
+  typeUrl: '/cosmos.group.v1.EventProposalPruned',
   encode(
     message: EventProposalPruned,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -932,7 +932,7 @@ function createBaseEventTallyError(): EventTallyError {
   };
 }
 export const EventTallyError = {
-  typeUrl: '/cosmos.group.v1.EventTallyError' as const,
+  typeUrl: '/cosmos.group.v1.EventTallyError',
   encode(
     message: EventTallyError,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -103,8 +103,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl:
-    '/ibc.applications.interchain_accounts.genesis.v1.GenesisState' as const,
+  typeUrl: '/ibc.applications.interchain_accounts.genesis.v1.GenesisState',
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -208,7 +207,7 @@ function createBaseControllerGenesisState(): ControllerGenesisState {
 }
 export const ControllerGenesisState = {
   typeUrl:
-    '/ibc.applications.interchain_accounts.genesis.v1.ControllerGenesisState' as const,
+    '/ibc.applications.interchain_accounts.genesis.v1.ControllerGenesisState',
   encode(
     message: ControllerGenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -346,8 +345,7 @@ function createBaseHostGenesisState(): HostGenesisState {
   };
 }
 export const HostGenesisState = {
-  typeUrl:
-    '/ibc.applications.interchain_accounts.genesis.v1.HostGenesisState' as const,
+  typeUrl: '/ibc.applications.interchain_accounts.genesis.v1.HostGenesisState',
   encode(
     message: HostGenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -474,8 +472,7 @@ function createBaseActiveChannel(): ActiveChannel {
   };
 }
 export const ActiveChannel = {
-  typeUrl:
-    '/ibc.applications.interchain_accounts.genesis.v1.ActiveChannel' as const,
+  typeUrl: '/ibc.applications.interchain_accounts.genesis.v1.ActiveChannel',
   encode(
     message: ActiveChannel,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -573,7 +570,7 @@ function createBaseRegisteredInterchainAccount(): RegisteredInterchainAccount {
 }
 export const RegisteredInterchainAccount = {
   typeUrl:
-    '/ibc.applications.interchain_accounts.genesis.v1.RegisteredInterchainAccount' as const,
+    '/ibc.applications.interchain_accounts.genesis.v1.RegisteredInterchainAccount',
   encode(
     message: RegisteredInterchainAccount,
     writer: BinaryWriter = BinaryWriter.create(),

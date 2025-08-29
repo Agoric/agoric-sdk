@@ -163,7 +163,7 @@ function createBaseSnapshot(): Snapshot {
   };
 }
 export const Snapshot = {
-  typeUrl: '/cosmos.store.snapshots.v1.Snapshot' as const,
+  typeUrl: '/cosmos.store.snapshots.v1.Snapshot',
   encode(
     message: Snapshot,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -280,7 +280,7 @@ function createBaseMetadata(): Metadata {
   };
 }
 export const Metadata = {
-  typeUrl: '/cosmos.store.snapshots.v1.Metadata' as const,
+  typeUrl: '/cosmos.store.snapshots.v1.Metadata',
   encode(
     message: Metadata,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -353,7 +353,7 @@ function createBaseSnapshotItem(): SnapshotItem {
   };
 }
 export const SnapshotItem = {
-  typeUrl: '/cosmos.store.snapshots.v1.SnapshotItem' as const,
+  typeUrl: '/cosmos.store.snapshots.v1.SnapshotItem',
   encode(
     message: SnapshotItem,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -489,7 +489,7 @@ function createBaseSnapshotStoreItem(): SnapshotStoreItem {
   };
 }
 export const SnapshotStoreItem = {
-  typeUrl: '/cosmos.store.snapshots.v1.SnapshotStoreItem' as const,
+  typeUrl: '/cosmos.store.snapshots.v1.SnapshotStoreItem',
   encode(
     message: SnapshotStoreItem,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -554,7 +554,7 @@ function createBaseSnapshotIAVLItem(): SnapshotIAVLItem {
   };
 }
 export const SnapshotIAVLItem = {
-  typeUrl: '/cosmos.store.snapshots.v1.SnapshotIAVLItem' as const,
+  typeUrl: '/cosmos.store.snapshots.v1.SnapshotIAVLItem',
   encode(
     message: SnapshotIAVLItem,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -658,7 +658,7 @@ function createBaseSnapshotExtensionMeta(): SnapshotExtensionMeta {
   };
 }
 export const SnapshotExtensionMeta = {
-  typeUrl: '/cosmos.store.snapshots.v1.SnapshotExtensionMeta' as const,
+  typeUrl: '/cosmos.store.snapshots.v1.SnapshotExtensionMeta',
   encode(
     message: SnapshotExtensionMeta,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -732,7 +732,7 @@ function createBaseSnapshotExtensionPayload(): SnapshotExtensionPayload {
   };
 }
 export const SnapshotExtensionPayload = {
-  typeUrl: '/cosmos.store.snapshots.v1.SnapshotExtensionPayload' as const,
+  typeUrl: '/cosmos.store.snapshots.v1.SnapshotExtensionPayload',
   encode(
     message: SnapshotExtensionPayload,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -94,7 +94,7 @@ function createBaseICAAccount(): ICAAccount {
   };
 }
 export const ICAAccount = {
-  typeUrl: '/stride.stakeibc.ICAAccount' as const,
+  typeUrl: '/stride.stakeibc.ICAAccount',
   encode(
     message: ICAAccount,
     writer: BinaryWriter = BinaryWriter.create(),
