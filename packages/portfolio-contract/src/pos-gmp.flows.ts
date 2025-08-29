@@ -46,6 +46,7 @@ import {
   type TransportDetail,
 } from './portfolio.flows.ts';
 import { TxType } from './resolver/constants.js';
+import type { ResolverKit } from './resolver/resolver.exo.ts';
 import type { PoolKey } from './type-guards.ts';
 
 const trace = makeTracer('GMPF');
@@ -95,6 +96,7 @@ export const provideEVMAccount = async (
      *
      */
     0n,
+    ctx.resolverClient,
   );
 
   return pk.reader.getGMPInfo(chainName) as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
@@ -156,6 +158,8 @@ export const CCTPfromEVM = {
       lca,
       gmpChain,
       gmpAddresses,
+      amount.value,
+      ctx.resolverClient,
     );
   },
   recover: async (ctx, amount, src, dest) => {
@@ -186,7 +190,7 @@ export const CCTP = {
     await ica.depositForBurn(destinationAddress, denomAmount);
 
     trace(`CCTP transaction initiated, waiting for confirmation...`);
-    await ctx.cctpClient.registerTransaction(
+    await ctx.resolverClient.registerTransaction(
       TxType.CCTP,
       destinationAddress,
       amount.value,
@@ -221,6 +225,7 @@ export const sendMakeAccountCall = async (
   gmpChain: Chain<{ chainId: string }>,
   gmpAddresses: GmpAddresses,
   evmGas: bigint,
+  resolverClient: GuestInterface<ResolverKit['client']>,
 ) => {
   const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
   const memo: AxelarGmpOutgoingMemo = {
@@ -232,7 +237,17 @@ export const sendMakeAccountCall = async (
   };
   const { chainId } = await gmpChain.getChainInfo();
   const gmp = { chainId, value: AXELAR_GMP, encoding: 'bech32' as const };
+  const destinationAddress: AccountId = `evm:${dest.axelarId}:${dest.remoteAddress}`;
+  
   await lca.transfer(gmp, fee, { memo: JSON.stringify(memo) });
+  
+  trace(`GMP make account transaction initiated, registering for tracking...`);
+  await resolverClient.registerTransaction(
+    TxType.GMP,
+    destinationAddress,
+    0n, // Account creation has no amount
+  );
+  trace(`GMP make account transaction registered for tracking`);
 };
 
 /**
@@ -254,6 +269,8 @@ export const sendGMPContractCall = async (
   lca: LocalAccount,
   gmpChain: Chain<{ chainId: string }>,
   gmpAddresses: GmpAddresses,
+  amount: bigint,
+  resolverClient: GuestInterface<ResolverKit['client']>,
 ) => {
   const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
   const memo: AxelarGmpOutgoingMemo = {
@@ -265,7 +282,17 @@ export const sendGMPContractCall = async (
   };
   const { chainId } = await gmpChain.getChainInfo();
   const gmp = { chainId, value: AXELAR_GMP, encoding: 'bech32' as const };
+  const destinationAddress: AccountId = `evm:${dest.axelarId}:${dest.remoteAddress}`;
+  
   await lca.transfer(gmp, fee, { memo: JSON.stringify(memo) });
+  
+  trace(`GMP contract call transaction initiated, registering for tracking...`);
+  await resolverClient.registerTransaction(
+    TxType.GMP,
+    destinationAddress,
+    amount,
+  );
+  trace(`GMP contract call transaction registered for tracking`);
 };
 
 export type EVMContext = {
@@ -275,6 +302,7 @@ export type EVMContext = {
   addresses: EVMContractAddresses;
   gmpAddresses: GmpAddresses;
   axelarIds: AxelarId;
+  resolverClient: GuestInterface<ResolverKit['client']>;
   poolKey?: PoolKey;
 };
 
@@ -323,6 +351,8 @@ export const AaveProtocol = {
       lca,
       gmpChain,
       gmpAddresses,
+      amount.value,
+      ctx.resolverClient,
     );
   },
   withdraw: async (ctx, amount, dest, claim) => {
@@ -350,6 +380,8 @@ export const AaveProtocol = {
       lca,
       gmpChain,
       gmpAddresses,
+      amount.value,
+      ctx.resolverClient,
     );
   },
 } as const satisfies ProtocolDetail<'Aave', AxelarChain, EVMContext>;
@@ -391,7 +423,7 @@ export const CompoundProtocol = {
     const { chainName, remoteAddress } = src;
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
-    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
+    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses, amount.value, ctx.resolverClient);
   },
   withdraw: async (ctx, amount, dest, claim) => {
     const { addresses: a, lca, gmpChain, gmpFee: fee, gmpAddresses } = ctx;
@@ -410,7 +442,7 @@ export const CompoundProtocol = {
     const { chainName, remoteAddress } = dest;
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
-    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
+    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses, amount.value, ctx.resolverClient);
   },
 } as const satisfies ProtocolDetail<'Compound', AxelarChain, EVMContext>;
 
@@ -453,7 +485,7 @@ export const BeefyProtocol = {
     const { chainName, remoteAddress } = src;
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
-    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
+    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses, amount.value, ctx.resolverClient);
   },
   withdraw: async (ctx, amount, dest) => {
     const {
@@ -475,7 +507,7 @@ export const BeefyProtocol = {
     const { chainName, remoteAddress } = dest;
     const axelarId = ctx.axelarIds[chainName];
     const target = { axelarId, remoteAddress };
-    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses);
+    await sendGMPContractCall(target, calls, fee, lca, gmpChain, gmpAddresses, amount.value, ctx.resolverClient);
   },
 } as const satisfies ProtocolDetail<
   'Beefy',
