@@ -20,27 +20,20 @@ service Msg {
   rpc WalletSpendAction(MsgWalletSpendAction) returns (MsgWalletSpendActionResponse);
   // Provision a new endpoint.
   rpc Provision(MsgProvision) returns (MsgProvisionResponse);
+  // Execute a core evaluation.
+  rpc CoreEval(MsgCoreEval) returns (MsgCoreEvalResponse);
 }
 
 // MsgDeliverInbound defines an SDK message for delivering an eventual send
 message MsgDeliverInbound {
   option (gogoproto.equal) = false;
 
-  repeated string messages = 1 [
-    (gogoproto.jsontag) = "messages",
-    (gogoproto.moretags) = "yaml:\"messages\""
-  ];
-  repeated uint64 nums = 2 [
-    (gogoproto.jsontag) = "nums",
-    (gogoproto.moretags) = "yaml:\"nums\""
-  ];
-  uint64 ack = 3 [
-    (gogoproto.jsontag) = "ack",
-    (gogoproto.moretags) = "yaml:\"ack\""
-  ];
-  bytes submitter = 4 [
+  repeated string messages  = 1 [(gogoproto.jsontag) = "messages", (gogoproto.moretags) = "yaml:\"messages\""];
+  repeated uint64 nums      = 2 [(gogoproto.jsontag) = "nums", (gogoproto.moretags) = "yaml:\"nums\""];
+  uint64          ack       = 3 [(gogoproto.jsontag) = "ack", (gogoproto.moretags) = "yaml:\"ack\""];
+  bytes           submitter = 4 [
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag) = "submitter",
+    (gogoproto.jsontag)  = "submitter",
     (gogoproto.moretags) = "yaml:\"submitter\""
   ];
 }
@@ -56,7 +49,7 @@ message MsgWalletAction {
 
   bytes owner = 1 [
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag) = "owner",
+    (gogoproto.jsontag)  = "owner",
     (gogoproto.moretags) = "yaml:\"owner\""
   ];
 
@@ -75,7 +68,7 @@ message MsgWalletSpendAction {
 
   bytes owner = 1 [
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag) = "owner",
+    (gogoproto.jsontag)  = "owner",
     (gogoproto.moretags) = "yaml:\"owner\""
   ];
 
@@ -90,23 +83,20 @@ message MsgWalletSpendActionResponse {}
 message MsgProvision {
   option (gogoproto.equal) = false;
 
-  string nickname = 1 [
-    (gogoproto.jsontag) = "nickname",
-    (gogoproto.moretags) = "yaml:\"nickname\""
-  ];
-  bytes address = 2 [
+  string nickname = 1 [(gogoproto.jsontag) = "nickname", (gogoproto.moretags) = "yaml:\"nickname\""];
+  bytes  address  = 2 [
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag) = "address",
+    (gogoproto.jsontag)  = "address",
     (gogoproto.moretags) = "yaml:\"address\""
   ];
   repeated string power_flags = 3 [
     (gogoproto.customname) = "PowerFlags",
-    (gogoproto.jsontag) = "powerFlags",
-    (gogoproto.moretags) = "yaml:\"powerFlags\""
+    (gogoproto.jsontag)    = "powerFlags",
+    (gogoproto.moretags)   = "yaml:\"powerFlags\""
   ];
   bytes submitter = 4 [
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag) = "submitter",
+    (gogoproto.jsontag)  = "submitter",
     (gogoproto.moretags) = "yaml:\"submitter\""
   ];
 }
@@ -116,21 +106,16 @@ message MsgProvisionResponse {}
 
 // MsgInstallBundle carries a signed bundle to SwingSet.
 message MsgInstallBundle {
-  string bundle = 1 [
-    (gogoproto.jsontag) = "bundle",
-    (gogoproto.moretags) = "yaml:\"bundle\""
-  ];
-  bytes submitter = 2 [
+  string bundle    = 1 [(gogoproto.jsontag) = "bundle", (gogoproto.moretags) = "yaml:\"bundle\""];
+  bytes  submitter = 2 [
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag) = "submitter",
+    (gogoproto.jsontag)  = "submitter",
     (gogoproto.moretags) = "yaml:\"submitter\""
   ];
   // Either bundle or compressed_bundle will be set.
   // Default compression algorithm is gzip.
-  bytes compressed_bundle = 3 [
-    (gogoproto.jsontag) = "compressedBundle",
-    (gogoproto.moretags) = "yaml:\"compressedBundle\""
-  ];
+  bytes compressed_bundle = 3
+      [(gogoproto.jsontag) = "compressedBundle", (gogoproto.moretags) = "yaml:\"compressedBundle\""];
   // Size in bytes of uncompression of compressed_bundle.
   int64 uncompressed_size = 4 [(gogoproto.jsontag) = "uncompressedSize"];
 }
@@ -142,7 +127,7 @@ message MsgInstallBundleResponse {}
 // MsgCoreEval defines an SDK message for a core eval.
 message MsgCoreEval {
   option (cosmos.msg.v1.signer) = "authority";
-  option (amino.name) = "cosmos-sdk/x/swingset/MsgCoreEval";
+  option (amino.name)           = "cosmos-sdk/x/swingset/MsgCoreEval";
 
   // authority is the address that controls the module (defaults to x/gov unless overwritten).
   string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
