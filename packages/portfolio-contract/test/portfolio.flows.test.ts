@@ -288,8 +288,8 @@ const mocks = (
     gmpFeeInfo: { brand: BLD, denom: 'ubld' },
     inertSubscriber,
     gmpAddresses,
-    cctpClient: cctpClient as unknown as GuestInterface<
-      PortfolioInstanceContext['cctpClient']
+    resolverClient: cctpClient as unknown as GuestInterface<
+      PortfolioInstanceContext['resolverClient']
     >,
   };
 
