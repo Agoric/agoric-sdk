@@ -9,7 +9,11 @@ import type {
   PublishedTx,
   TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import type { EvmProviders, UsdcAddresses } from './support.ts';
+import type {
+  AxelarChainIdMap,
+  EvmProviders,
+  UsdcAddresses,
+} from './support.ts';
 import type { CaipChainId } from '@agoric/orchestration';
 
 export type EvmChain = keyof typeof AxelarChain;
@@ -17,6 +21,7 @@ export type EvmChain = keyof typeof AxelarChain;
 export type EvmContext = {
   axelarQueryApi: string;
   usdcAddresses: UsdcAddresses['mainnet' | 'testnet'];
+  axelarChainIds: AxelarChainIdMap[keyof AxelarChainIdMap];
   evmProviders: EvmProviders;
   signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
@@ -97,7 +102,9 @@ const gmpMonitor: SubscriptionMonitor<GmpSubscription> = {
     const logPrefix = `[${txId}]`;
 
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
-    const [, chainId, addr] = destinationAddress.split(':');
+    const [namespace, chainId, addr] = destinationAddress.split(':');
+    const caipId: CaipChainId = `${namespace}:${chainId}`;
+    const axelarChainId = ctx.axelarChainIds[caipId];
 
     log(`${logPrefix} handling gmp subscription`);
 
@@ -106,7 +113,7 @@ const gmpMonitor: SubscriptionMonitor<GmpSubscription> = {
       fetch: ctx.fetch,
       params: {
         sourceChain: 'agoric',
-        destinationChain: chainId as unknown as string,
+        destinationChain: axelarChainId as unknown as string,
         contractAddress: addr as `0x${string}`,
       },
       txId,
