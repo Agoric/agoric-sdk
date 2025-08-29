@@ -23,8 +23,8 @@ import { M } from '@endo/patterns';
 import { TxStatus, TxType } from './constants.js';
 import type {
   PublishedTx,
-  TransactionKey,
   TransactionSettlementOfferArgs,
+  TxId,
 } from './types.js';
 import {
   ResolverOfferArgsShapes,
@@ -35,6 +35,7 @@ type TransactionEntry = {
   destinationAddress: AccountId;
   amountValue: bigint; // 0 for GMP transactions
   vowKit: VowKit<void>;
+  type: TxType;
 };
 
 const trace = makeTracer('Resolver');
@@ -48,11 +49,10 @@ const ClientFacetI = M.interface('ResolverClient', {
 });
 
 const ReporterI = M.interface('Reporter', {
-  insertPendingTransaction: M.call(M.nat(), M.string()).returns(),
+  insertPendingTransaction: M.call(M.string(), M.string(), M.nat()).returns(),
   completePendingTransaction: M.call(
     M.string(),
-    M.string(),
-    M.string(),
+    M.or(TxStatus.SUCCESS, TxStatus.FAILED),
   ).returns(),
 });
 
@@ -117,7 +117,7 @@ export const prepareResolverKit = (
     () => ({
       transactionRegistry: resolverZone
         .detached()
-        .mapStore<TransactionKey, TransactionEntry>('transactionRegistry'),
+        .mapStore<TxId, TransactionEntry>('transactionRegistry'),
       index: 0,
     }),
     {
@@ -134,30 +134,34 @@ export const prepareResolverKit = (
           destinationAddress: AccountId,
           amountValue: NatValue,
         ): Vow<void> {
-          const transactionKey: TransactionKey = `${type}:${destinationAddress}:${amountValue}`;
+          const txId: TxId = `tx${this.state.index}`;
+          this.state.index += 1;
+
           const { transactionRegistry } = this.state;
-          if (transactionRegistry.has(transactionKey)) {
-            trace(`Transaction already registered: ${transactionKey}`);
-            return transactionRegistry.get(transactionKey).vowKit.vow;
+          if (transactionRegistry.has(txId)) {
+            trace(`Transaction already registered: ${txId}`);
+            return transactionRegistry.get(txId).vowKit.vow;
           }
           const vowKit = vowTools.makeVowKit<void>();
           transactionRegistry.init(
-            transactionKey,
-            harden({ destinationAddress, amountValue, vowKit }),
+            txId,
+            harden({ destinationAddress, amountValue, vowKit, type }),
           );
           this.facets.reporter.insertPendingTransaction(
-            amountValue,
+            txId,
             destinationAddress,
+            amountValue,
           );
 
-          trace(`Registered pending transaction: ${transactionKey}`);
+          trace(`Registered pending transaction: ${txId}`);
           return vowKit.vow;
         },
       },
       reporter: {
         insertPendingTransaction(
-          amount: bigint,
+          txId: TxId,
           destinationAddress: AccountId,
+          amount: bigint,
         ) {
           const value: PublishedTx = {
             type: TxType.CCTP,
@@ -165,23 +169,20 @@ export const prepareResolverKit = (
             destinationAddress,
             status: TxStatus.PENDING,
           };
-          const node = E(pendingTxsNode).makeChildNode(`tx${this.state.index}`);
-          this.state.index += 1;
+          const node = E(pendingTxsNode).makeChildNode(txId);
           writeToNode(node, value);
         },
 
         completePendingTransaction(
-          vstorageId: `tx${number}`,
-          transactionKey: TransactionKey,
+          txId: TxId,
           status: Exclude<TxStatus, 'pending'> = TxStatus.SUCCESS,
         ) {
-          const node = E(pendingTxsNode).makeChildNode(vstorageId);
-          const [type, chainName, chainId, destinationAddress, amount] =
-            transactionKey.split(':');
+          const node = E(pendingTxsNode).makeChildNode(txId);
+          const txEntry = this.state.transactionRegistry.get(txId);
           const value: PublishedTx = {
-            type: type as TxType,
-            amount: BigInt(amount),
-            destinationAddress: `${chainName}:${chainId}:${destinationAddress as `0x${string}`}`,
+            type: txEntry.type,
+            amount: txEntry.amountValue,
+            destinationAddress: txEntry.destinationAddress,
             status,
           };
           // UNTIL https://github.com/Agoric/agoric-sdk/issues/11791
@@ -191,43 +192,41 @@ export const prepareResolverKit = (
       service: {
         settleTransaction(args: TransactionSettlementOfferArgs) {
           const { transactionRegistry } = this.state;
-          const { transactionKey, status, txId, rejectionReason } = args;
+          const { status, txId, rejectionReason } = args;
 
-          const registryEntry = transactionRegistry.get(transactionKey);
+          const registryEntry = transactionRegistry.get(txId);
 
           switch (status) {
             case TxStatus.SUCCESS:
               trace(
                 'Transaction confirmed - resolving pending operation for key:',
-                transactionKey,
+                txId,
               );
               registryEntry.vowKit.resolver.resolve();
               this.facets.reporter.completePendingTransaction(
                 txId,
-                transactionKey,
                 TxStatus.SUCCESS,
               );
-              transactionRegistry.delete(transactionKey);
+              transactionRegistry.delete(txId);
               return;
 
             case TxStatus.FAILED:
               trace(
                 'Transaction failed - rejecting pending operation for key:',
-                transactionKey,
+                txId,
               );
               registryEntry.vowKit.resolver.reject(
                 Error(rejectionReason || 'Transaction failed'),
               );
               this.facets.reporter.completePendingTransaction(
                 txId,
-                transactionKey,
                 TxStatus.FAILED,
               );
-              transactionRegistry.delete(transactionKey);
+              transactionRegistry.delete(txId);
               return;
 
             default:
-              throw Fail`Unexpected status ${q(status)} for transaction: ${q(transactionKey)}`;
+              throw Fail`Unexpected status ${q(status)} for transaction: ${q(txId)}`;
           }
         },
       },

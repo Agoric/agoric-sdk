@@ -3,10 +3,8 @@
 import { E } from '@endo/far';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { UserSeat, ZoeService } from '@agoric/zoe';
-import type { CaipChainId } from '@agoric/orchestration';
 import type { ResolverInvitationMakers } from '../src/resolver/resolver.exo.js';
 import type { TxStatus } from '../src/resolver/constants.js';
-import type { TransactionKey } from '../src/resolver/types.js';
 
 /**
  * Helper to get resolver makers from a creator facet.
@@ -35,7 +33,6 @@ export const getResolverMakers = async (
  *
  * @param zoe - Zoe service instance
  * @param resolverMakers - ResolverInvitationMakers instance
- * @param transactionKey - Unique transaction key
  * @param status - Transaction status
  * @param txNumber - Transaction number for txId
  * @param log - Optional logging function (defaults to console.log, pass () => {} to disable)
@@ -43,7 +40,6 @@ export const getResolverMakers = async (
 export const settleTransaction = async (
   zoe: ZoeService,
   resolverMakers: ResolverInvitationMakers,
-  transactionKey: TransactionKey,
   status: Exclude<TxStatus, 'pending'>,
   txNumber: number = 0,
   log: (message: string, ...args: any[]) => void = console.log,
@@ -56,7 +52,6 @@ export const settleTransaction = async (
   log('Got settlement invitation, making offer...');
 
   const settlementSeat = await E(zoe).offer(settleInvitation, {}, undefined, {
-    transactionKey,
     status,
     txId: `tx${txNumber}`,
   });
@@ -73,27 +68,21 @@ export const settleTransaction = async (
  *
  * @param zoe - Zoe service instance
  * @param resolverMakers - ResolverInvitationMakers instance
- * @param amount - Transaction amount
- * @param remoteAxelarChain - The destination chain
+ * @param txNumber - The Number for the txId (e.g. 0 for 'tx0')
  * @param status - Transaction status to settle
  * @param log - Optional logging function (defaults to console.log, pass () => {} to disable)
  */
 export const settleCCTPWithMockReceiver = async (
   zoe: ZoeService,
   resolverMakers: ResolverInvitationMakers,
-  amount: bigint,
-  remoteAxelarChain: CaipChainId,
   txNumber: number = 0,
   status: Exclude<TxStatus, 'pending'> = 'success',
   log: (message: string, ...args: any[]) => void = console.log,
-  mockRemoteAddress: `0x${string}` = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
 ): Promise<string> => {
   await eventLoopIteration();
-  const transactionKey: TransactionKey = `cctp:${remoteAxelarChain}:${mockRemoteAddress}:${amount}`;
   const result = await settleTransaction(
     zoe,
     resolverMakers,
-    transactionKey,
     status,
     txNumber,
     log,

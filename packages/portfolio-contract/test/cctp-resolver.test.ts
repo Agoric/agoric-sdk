@@ -3,10 +3,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/far';
 import { mustMatch } from '@endo/patterns';
-import type {
-  TransactionKey,
-  TransactionSettlementOfferArgs,
-} from '../src/resolver/types.ts';
+import type { TransactionSettlementOfferArgs } from '../src/resolver/types.ts';
 import { ResolverOfferArgsShapes } from '../src/resolver/types.ts';
 import { deploy } from './contract-setup.ts';
 
@@ -23,9 +20,7 @@ test('CCTP settlement invitation - no pending transaction found', async t => {
     .invitationMakers;
   const confirmInvitation = await E(resolverMakers).SettleTransaction();
 
-  const transactionKey: TransactionKey = `cctp:eip155:42161:0x999999999999999999999999999999999999999:${amount.value}`;
   const offerArgs: TransactionSettlementOfferArgs = {
-    transactionKey,
     status: 'success' as const,
     txId: 'tx0',
   };
@@ -45,7 +40,6 @@ test('CCTP confirmation invitation - invalid status throws', async t => {
 
   const amount = usdc.units(1000);
   const invalidOfferArgs: TransactionSettlementOfferArgs = harden({
-    transactionKey: `cctp:eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092:${amount.value}`,
     status: 'invalid' as any,
     txId: 'tx0',
   });
@@ -67,9 +61,7 @@ test('CCTP confirmation invitation exits seat properly', async t => {
     .invitationMakers;
   const confirmInvitation = await E(resolverMakers).SettleTransaction();
 
-  const transactionKey: TransactionKey = `cctp:eip155:42161:0x999999999999999999999999999999999999999:${amount.value}`;
   const offerArgs: TransactionSettlementOfferArgs = {
-    transactionKey,
     status: 'failed' as const,
     txId: 'tx0',
   };

@@ -10,19 +10,17 @@ import type { AccountId } from '@agoric/orchestration';
 import { M } from '@endo/patterns';
 import { TxStatus, TxType } from './constants.js';
 
-export type TransactionKey = `${TxType}:${AccountId}:${bigint}`;
+export type TxId = `tx${number}`;
 
 export type TransactionSettlementOfferArgs = {
-  transactionKey: TransactionKey;
   status: Exclude<TxStatus, 'pending'>;
-  txId: `tx${number}`;
+  txId: TxId;
   rejectionReason?: string;
 };
 
 export const TransactionSettlementOfferArgsShape: TypedPattern<TransactionSettlementOfferArgs> =
   M.splitRecord(
     {
-      transactionKey: M.string(),
       status: M.or(TxStatus.SUCCESS, TxStatus.FAILED),
       txId: M.string(),
     },
