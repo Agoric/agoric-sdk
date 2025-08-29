@@ -1,26 +1,12 @@
 import test from 'ava';
-import { type Provider, id, toBeHex, zeroPadValue } from 'ethers';
+import { type JsonRpcProvider, id, toBeHex, zeroPadValue } from 'ethers';
 import { watchCctpTransfer } from '../src/watchers/cctp-watcher.ts';
 
 const watchAddress = '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64';
+const usdcAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 
 const encodeAmount = (amount: bigint): string => {
   return zeroPadValue(toBeHex(amount), 32);
-};
-
-const mockCctpConfig = {
-  // 1 — Ethereum
-  '1': {
-    name: 'Ethereum',
-    domain: 0,
-    contracts: {
-      tokenMessengerV2: '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d',
-      messageTransmitterV2: '0x81D40F21F12A8F0E3252Bccb954D722d4c464B64',
-      tokenMinterV2: '0xfd78EE919681417d192449715b2594ab58f5D002',
-      messageV2: '0xec546b6B005471ECf012e5aF77FBeC07e0FD8f78',
-      usdc: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-    },
-  },
 };
 
 const createMockProvider = () => {
@@ -51,7 +37,7 @@ const createMockProvider = () => {
         listeners.forEach(listener => listener(log));
       }
     },
-  } as Provider;
+  } as JsonRpcProvider;
 };
 
 test('watchCCTPTransfer detects exact amount match', async t => {
@@ -59,7 +45,7 @@ test('watchCCTPTransfer detects exact amount match', async t => {
   const expectedAmount = 1_000_000n; // 1 USDC
 
   const watchPromise = watchCctpTransfer({
-    config: mockCctpConfig['1'],
+    usdcAddress,
     provider: provider,
     watchAddress,
     expectedAmount,
@@ -70,7 +56,7 @@ test('watchCCTPTransfer detects exact amount match', async t => {
   // Simulate a matching transfer event after short delay
   setTimeout(() => {
     const mockLog = {
-      address: mockCctpConfig[1].contracts.usdc, // USDC contract
+      address: usdcAddress, // USDC contract
       topics: [
         id('Transfer(address,address,uint256)'), // Transfer event signature
         '0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266', // from
@@ -101,7 +87,7 @@ test('watchCCTPTransfer ignores amount mismatch', async t => {
   const expectedAmount = 1_000_000n;
 
   const watchPromise = watchCctpTransfer({
-    config: mockCctpConfig['1'],
+    usdcAddress,
     provider,
     watchAddress,
     expectedAmount,
@@ -111,7 +97,7 @@ test('watchCCTPTransfer ignores amount mismatch', async t => {
 
   setTimeout(() => {
     const mockLog = {
-      address: mockCctpConfig[1].contracts.usdc,
+      address: usdcAddress,
       topics: [
         id('Transfer(address,address,uint256)'),
         '0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266',
@@ -142,7 +128,7 @@ test('watchCCTPTransfer detects multiple transfers but only matches exact amount
   const expectedAmount = 5_000_000n; // 5 USDC
 
   const watchPromise = watchCctpTransfer({
-    config: mockCctpConfig['1'],
+    usdcAddress,
     provider,
     watchAddress,
     expectedAmount,
@@ -160,7 +146,7 @@ test('watchCCTPTransfer detects multiple transfers but only matches exact amount
   transfers.forEach(({ amount, delay }) => {
     setTimeout(() => {
       const mockLog = {
-        address: mockCctpConfig[1].contracts.usdc,
+        address: usdcAddress,
         topics: [
           id('Transfer(address,address,uint256)'),
           '0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266',
