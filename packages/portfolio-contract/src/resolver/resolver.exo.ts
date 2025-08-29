@@ -41,14 +41,14 @@ type TransactionEntry = {
 const trace = makeTracer('Resolver');
 
 const ClientFacetI = M.interface('ResolverClient', {
-  registerTransaction: M.call(M.string(), M.string(), M.nat()).returns(
+  registerTransaction: M.call(M.or(...Object.values(TxType)), M.string(), M.nat()).returns(
     VowShape,
   ),
 });
 
 const ReporterI = M.interface('Reporter', {
   insertPendingTransaction: M.call(M.string(), M.string(), M.nat()).returns(),
-  completePendingTransaction: M.call(M.string(), M.string()).returns(),
+  completePendingTransaction: M.call(M.string(), M.or(TxStatus.SUCCESS, TxStatus.FAILED)).returns(),
 });
 
 const ServiceFacetI = M.interface('ResolverService', {
@@ -219,25 +219,18 @@ export const prepareResolverKit = (
               return;
 
             default:
-              throw Fail`Unexpected status ${q(status)} for transaction: ${q(txId)}. expected values are 'success' or 'failed'`;
+              throw Fail`Unexpected status ${q(status)} for transaction: ${q(txId)}`;
           }
         },
       },
       settlementHandler: {
         async handle(seat: ZCFSeat, offerArgs: TransactionSettlementOfferArgs) {
           mustMatch(offerArgs, ResolverOfferArgsShapes.SettleTransaction);
-          const { status, txId } = offerArgs;
 
-          trace('Transaction settlement:', {
-            txId,
-            status,
-          });
+          trace('Transaction settlement:', offerArgs);
 
           seat.exit();
-          this.facets.service.settleTransaction({
-            txId,
-            status,
-          });
+          this.facets.service.settleTransaction(offerArgs);
 
           return 'Transaction settlement processed';
         },
