@@ -45,7 +45,7 @@ const ClientFacetI = M.interface('ResolverClient', {
     M.or(...Object.values(TxType)),
     M.string(),
     M.nat(),
-  ).returns(VowShape),
+  ).returns(M.splitRecord({ vow: VowShape, txId: M.string() })),
 });
 
 const ReporterI = M.interface('Reporter', {
@@ -133,14 +133,14 @@ export const prepareResolverKit = (
           type: TxType,
           destinationAddress: AccountId,
           amountValue: NatValue,
-        ): Vow<void> {
+        ): { vow: Vow<void>; txId: TxId } {
           const txId: TxId = `tx${this.state.index}`;
           this.state.index += 1;
 
           const { transactionRegistry } = this.state;
           if (transactionRegistry.has(txId)) {
             trace(`Transaction already registered: ${txId}`);
-            return transactionRegistry.get(txId).vowKit.vow;
+            return { vow: transactionRegistry.get(txId).vowKit.vow, txId };
           }
           const vowKit = vowTools.makeVowKit<void>();
           transactionRegistry.init(
@@ -154,7 +154,7 @@ export const prepareResolverKit = (
           );
 
           trace(`Registered pending transaction: ${txId}`);
-          return vowKit.vow;
+          return { vow: vowKit.vow, txId };
         },
       },
       reporter: {
