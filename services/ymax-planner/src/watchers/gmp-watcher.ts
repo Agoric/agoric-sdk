@@ -1,6 +1,7 @@
 // eslint-disable-next-line -- Types in this file match external Axelar API schema
 import { ethers } from 'ethers';
 import type { SearchGMPParams, SearchGMPResponse } from '@axelarjs/api';
+import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 
 const wait = async (seconds: number) => {
   return new Promise(resolve => setTimeout(resolve, seconds * 1000));
@@ -19,7 +20,7 @@ export const watchGmp = async ({
   url,
   fetch = globalThis.fetch,
   params,
-  subscriptionId,
+  txId,
   log = () => {},
   timeoutMinutes = 5,
   retryDelaySeconds = 20,
@@ -28,7 +29,7 @@ export const watchGmp = async ({
   url: string;
   fetch: typeof globalThis.fetch;
   params: SearchGMPParams;
-  subscriptionId: string;
+  txId: TxId;
   logPrefix?: string;
   log: (...args: unknown[]) => void;
   timeoutMinutes?: number;
@@ -61,7 +62,10 @@ export const watchGmp = async ({
       log(`✅ contract call executed`, execution);
       log(`txHash on EVM:`, execution.transactionHash);
 
-      const subscriptionTopic = ethers.id('SubscriptionResolved(string)');
+      const multicallTopic = ethers.id(
+        'MulticallExecuted(string,(bool,bytes)[])',
+      );
+      const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
 
       /**
        * - For **EVM events** (executed / approved / callback), the Axelar API returns
@@ -77,23 +81,16 @@ export const watchGmp = async ({
        */
       // @ts-expect-error -- logs exist at runtime but are not in the SDK types
       const logs = execution.receipt.logs;
-      const subscriptionLog = logs.find(
-        log => log.topics[0] === subscriptionTopic,
+      const match = logs.find(
+        l =>
+          l.topics?.[0] === multicallTopic && l.topics?.[1] === expectedIdTopic,
       );
 
-      if (subscriptionLog) {
-        const abiCoder = ethers.AbiCoder.defaultAbiCoder();
-        const [decodedSubscriptionId] = abiCoder.decode(
-          ['string'],
-          subscriptionLog.data,
-        );
-
-        log(`decodedSubscriptionId:`, decodedSubscriptionId);
-        if (decodedSubscriptionId === subscriptionId) {
-          return { logs: execution, success: true };
-        }
+      if (match) {
+        log('✅ MulticallExecuted for txId found');
+        return { logs: execution, success: true };
       }
-      log(`no log for subscriptionId ${subscriptionId}, retrying...`);
+      log(`no log for txId ${txId}, retrying...`);
     } else {
       log(`no data, retrying...`);
     }
