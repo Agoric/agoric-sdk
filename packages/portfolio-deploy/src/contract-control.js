@@ -55,12 +55,14 @@ const iface = M.interface('ContractControl', {
   getPublicFacet: M.call().returns(M.remotable('publicFacet')),
   getCreatorFacet: M.call().returns(M.remotable('creatorFacet')),
   upgrade: M.callWhen(BundleIdShape).returns(VatUpgradeResultsShape),
-  terminate: M.callWhen(
-    M.splitRecord(
-      {},
-      { message: M.string(), target: M.string(), revoke: M.boolean() },
-    ),
-  ).returns(),
+  terminate: M.callWhen()
+    .optional(
+      M.splitRecord(
+        {},
+        { message: M.string(), target: M.string(), revoke: M.boolean() },
+      ),
+    )
+    .returns(),
   pruneChainStorage: M.callWhen(
     M.recordOf(M.string(), M.arrayOf(M.string())),
   ).returns(M.number()),
@@ -232,7 +234,7 @@ export const prepareContractControl = (zone, svcs) => {
         const { name, kit, revoked } = this.state;
         trace(name, 'terminate', kit?.adminFacet, opts);
         !revoked || Fail`revoked`;
-        const { target, message, revoke } = opts;
+        const { target, message = 'terminated', revoke } = opts;
         if (!kit) {
           if (revoke) {
             trace(name, 'revoked');
@@ -248,7 +250,11 @@ export const prepareContractControl = (zone, svcs) => {
           assert.equal(current, target);
         }
 
-        await E(kit.adminFacet).terminateContract(Error(message));
+        try {
+          await E(kit.adminFacet).terminateContract(harden(Error(message)));
+        } catch (err) {
+          console.error('terminateContract failed; forgetting kit', err);
+        }
         this.state.kit = undefined;
         if (revoke) {
           trace(name, 'revoked');
