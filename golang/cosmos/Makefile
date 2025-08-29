@@ -187,4 +187,4 @@ test:
 
 mocks:
 	@echo "Generating mocks"
-	@./scripts/mochgen.sh
+	@./scripts/mockgen.sh
