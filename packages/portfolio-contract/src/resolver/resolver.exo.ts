@@ -45,11 +45,16 @@ const ClientFacetI = M.interface('ResolverClient', {
     M.or(...Object.values(TxType)),
     M.string(),
     M.nat(),
-  ).returns(M.splitRecord({ vow: VowShape, txId: M.string() })),
+  ).returns(M.splitRecord({ result: VowShape, txId: M.string() })),
 });
 
 const ReporterI = M.interface('Reporter', {
-  insertPendingTransaction: M.call(M.string(), M.string(), M.nat()).returns(),
+  insertPendingTransaction: M.call(
+    M.string(),
+    M.string(),
+    M.nat(),
+    M.or(...Object.values(TxType)),
+  ).returns(),
   completePendingTransaction: M.call(
     M.string(),
     M.or(TxStatus.SUCCESS, TxStatus.FAILED),
@@ -133,14 +138,14 @@ export const prepareResolverKit = (
           type: TxType,
           destinationAddress: AccountId,
           amountValue: NatValue,
-        ): { vow: Vow<void>; txId: TxId } {
+        ): { result: Vow<void>; txId: TxId } {
           const txId: TxId = `tx${this.state.index}`;
           this.state.index += 1;
 
           const { transactionRegistry } = this.state;
           if (transactionRegistry.has(txId)) {
             trace(`Transaction already registered: ${txId}`);
-            return { vow: transactionRegistry.get(txId).vowKit.vow, txId };
+            return { result: transactionRegistry.get(txId).vowKit.vow, txId };
           }
           const vowKit = vowTools.makeVowKit<void>();
           transactionRegistry.init(
@@ -151,10 +156,11 @@ export const prepareResolverKit = (
             txId,
             destinationAddress,
             amountValue,
+            type,
           );
 
           trace(`Registered pending transaction: ${txId}`);
-          return { vow: vowKit.vow, txId };
+          return { result: vowKit.vow, txId };
         },
       },
       reporter: {
@@ -162,9 +168,10 @@ export const prepareResolverKit = (
           txId: TxId,
           destinationAddress: AccountId,
           amount: bigint,
+          type: TxType,
         ) {
           const value: PublishedTx = {
-            type: TxType.CCTP,
+            type,
             amount,
             destinationAddress,
             status: TxStatus.PENDING,

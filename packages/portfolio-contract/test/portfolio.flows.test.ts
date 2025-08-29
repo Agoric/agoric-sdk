@@ -274,7 +274,7 @@ const mocks = (
   const resolverZone = zone.subZone('Resolver');
   // Use actual vow tools for the resolver to create proper vows, not promises
   const resolverVowTools = prepareVowTools(zone.subZone('vowTools'));
-  const { client: cctpClient } = prepareResolverKit(resolverZone, mockZCF, {
+  const { client: resolverClient } = prepareResolverKit(resolverZone, mockZCF, {
     vowTools: resolverVowTools,
     pendingTxsNode,
     marshaller,
@@ -288,8 +288,8 @@ const mocks = (
     gmpFeeInfo: { brand: BLD, denom: 'ubld' },
     inertSubscriber,
     gmpAddresses,
-    cctpClient: cctpClient as unknown as GuestInterface<
-      PortfolioInstanceContext['cctpClient']
+    resolverClient: resolverClient as unknown as GuestInterface<
+      PortfolioInstanceContext['resolverClient']
     >,
   };
 
