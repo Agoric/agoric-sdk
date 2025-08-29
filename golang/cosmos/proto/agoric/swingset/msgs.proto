@@ -20,6 +20,8 @@ service Msg {
   rpc WalletSpendAction(MsgWalletSpendAction) returns (MsgWalletSpendActionResponse);
   // Provision a new endpoint.
   rpc Provision(MsgProvision) returns (MsgProvisionResponse);
+  // Execute a core evaluation.
+  rpc CoreEval(MsgCoreEval) returns (MsgCoreEvalResponse);
 }
 
 // MsgDeliverInbound defines an SDK message for delivering an eventual send
@@ -43,7 +45,7 @@ message MsgDeliverInbound {
   bytes  submitter = 4 [
     (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag) = "submitter",
+    (gogoproto.jsontag)  = "submitter",
     (gogoproto.moretags) = "yaml:\"submitter\""
   ];
 }
@@ -61,7 +63,7 @@ message MsgWalletAction {
   bytes owner = 1 [
     (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag) = "owner",
+    (gogoproto.jsontag)  = "owner",
     (gogoproto.moretags) = "yaml:\"owner\""
   ];
 
@@ -82,7 +84,7 @@ message MsgWalletSpendAction {
   bytes owner = 1 [
     (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag) = "owner",
+    (gogoproto.jsontag)  = "owner",
     (gogoproto.moretags) = "yaml:\"owner\""
   ];
 
@@ -102,7 +104,7 @@ message MsgProvision {
   bytes  address  = 2 [
     (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag) = "address",
+    (gogoproto.jsontag)  = "address",
     (gogoproto.moretags) = "yaml:\"address\""
   ];
   repeated string power_flags = 3 [
@@ -110,13 +112,13 @@ message MsgProvision {
     (amino.encoding)       = "null_slice_as_empty",
     (amino.field_name)     = "powerFlags",
     (gogoproto.customname) = "PowerFlags",
-    (gogoproto.jsontag) = "powerFlags",
-    (gogoproto.moretags) = "yaml:\"powerFlags\""
+    (gogoproto.jsontag)    = "powerFlags",
+    (gogoproto.moretags)   = "yaml:\"powerFlags\""
   ];
   bytes submitter = 4 [
     (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag) = "submitter",
+    (gogoproto.jsontag)  = "submitter",
     (gogoproto.moretags) = "yaml:\"submitter\""
   ];
 }
@@ -135,7 +137,7 @@ message MsgInstallBundle {
   bytes submitter = 2 [
     (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
-    (gogoproto.jsontag) = "submitter",
+    (gogoproto.jsontag)  = "submitter",
     (gogoproto.moretags) = "yaml:\"submitter\""
   ];
   // Either bundle or compressed_bundle will be set.
@@ -161,7 +163,7 @@ message MsgInstallBundleResponse {}
 // MsgCoreEval defines an SDK message for a core eval.
 message MsgCoreEval {
   option (cosmos.msg.v1.signer) = "authority";
-  option (amino.name) = "cosmos-sdk/x/swingset/MsgCoreEval";
+  option (amino.name)           = "cosmos-sdk/x/swingset/MsgCoreEval";
 
   // authority is the address that controls the module (defaults to x/gov unless overwritten).
   string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
