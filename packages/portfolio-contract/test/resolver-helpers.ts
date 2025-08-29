@@ -3,7 +3,6 @@
 import { E } from '@endo/far';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { UserSeat, ZoeService } from '@agoric/zoe';
-import type { CaipChainId } from '@agoric/orchestration';
 import type { ResolverInvitationMakers } from '../src/resolver/resolver.exo.js';
 import type { TxStatus } from '../src/resolver/constants.js';
 
@@ -28,43 +27,37 @@ export const getResolverMakers = async (
 };
 
 /**
- * Helper to manually settle a CCTP transaction in tests.
- * This should be called when a test flow includes a CCTP operation
- * (e.g., @noble to @Arbitrum) to resolve the waiting promise.
+ * Helper to manually settle a transaction in tests.
+ * This should be called when a test flow includes a transaction operation
+ * to resolve the waiting promise.
  *
  * @param zoe - Zoe service instance
  * @param resolverMakers - ResolverInvitationMakers instance
- * @param txDetails - Transaction details matching the CCTP operation
- * @param remoteAxelarChain - The destination chain for the CCTP operation
+ * @param status - Transaction status
+ * @param txNumber - Transaction number for txId
  * @param log - Optional logging function (defaults to console.log, pass () => {} to disable)
  */
-export const settleCCTPTransaction = async (
+export const settleTransaction = async (
   zoe: ZoeService,
   resolverMakers: ResolverInvitationMakers,
-  txDetails: {
-    amount: bigint;
-    remoteAddress: `0x${string}`;
-    status: TxStatus;
-  },
+  status: Exclude<TxStatus, 'pending'>,
   txNumber: number = 0,
-  remoteAxelarChain: CaipChainId,
   log: (message: string, ...args: any[]) => void = console.log,
 ): Promise<string> => {
   await eventLoopIteration();
   await eventLoopIteration(); // XXX for some reason we need two iterations here to pass the tests
 
-  log('Creating CCTP settlement invitation...');
-  const settleInvitation = await E(resolverMakers).SettleCCTPTransaction();
+  log('Creating transaction settlement invitation...');
+  const settleInvitation = await E(resolverMakers).SettleTransaction();
   log('Got settlement invitation, making offer...');
 
   const settlementSeat = await E(zoe).offer(settleInvitation, {}, undefined, {
-    txDetails,
-    remoteAxelarChain,
+    status,
     txId: `tx${txNumber}`,
   });
 
   const result = (await E(settlementSeat).getOfferResult()) as string;
-  log(`CCTP settlement got result:`, result);
+  log(`Transaction settlement got result:`, result);
   return result;
 };
 
@@ -75,32 +68,23 @@ export const settleCCTPTransaction = async (
  *
  * @param zoe - Zoe service instance
  * @param resolverMakers - ResolverInvitationMakers instance
- * @param amount - Transaction amount
- * @param remoteAxelarChain - The destination chain
+ * @param txNumber - The Number for the txId (e.g. 0 for 'tx0')
  * @param status - Transaction status to settle
  * @param log - Optional logging function (defaults to console.log, pass () => {} to disable)
  */
 export const settleCCTPWithMockReceiver = async (
   zoe: ZoeService,
   resolverMakers: ResolverInvitationMakers,
-  amount: bigint,
-  remoteAxelarChain: CaipChainId,
   txNumber: number = 0,
-  status: TxStatus = 'success',
+  status: Exclude<TxStatus, 'pending'> = 'success',
   log: (message: string, ...args: any[]) => void = console.log,
-  mockRemoteAddress: `0x${string}` = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
 ): Promise<string> => {
   await eventLoopIteration();
-  const result = await settleCCTPTransaction(
+  const result = await settleTransaction(
     zoe,
     resolverMakers,
-    {
-      amount,
-      remoteAddress: mockRemoteAddress,
-      status,
-    },
+    status,
     txNumber,
-    remoteAxelarChain,
     log,
   );
 

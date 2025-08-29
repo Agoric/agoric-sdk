@@ -347,7 +347,7 @@ test.skip('CCTP settlement works', async t => {
     invitationSpec: {
       source: 'continuing',
       previousOffer: 'settle-cctp',
-      invitationMakerName: 'SettleCCTPTransaction',
+      invitationMakerName: 'SettleTransaction',
     },
     proposal: { give: {}, want: {} },
     offerArgs: {
@@ -366,7 +366,7 @@ test.skip('CCTP settlement works', async t => {
     status: {
       id: '123',
       invitationSpec: {
-        invitationMakerName: 'SettleCCTPTransaction',
+        invitationMakerName: 'SettleTransaction',
         source: 'continuing',
         previousOffer: 'settle-cctp',
       },
@@ -476,7 +476,7 @@ test.skip('CCTP settlement works across contract restarts', async t => {
     invitationSpec: {
       source: 'continuing',
       previousOffer: 'settle-cctp',
-      invitationMakerName: 'SettleCCTPTransaction',
+      invitationMakerName: 'SettleTransaction',
     },
     proposal: { give: {}, want: {} },
     offerArgs: {
@@ -497,7 +497,7 @@ test.skip('CCTP settlement works across contract restarts', async t => {
     status: {
       id: '456',
       invitationSpec: {
-        invitationMakerName: 'SettleCCTPTransaction',
+        invitationMakerName: 'SettleTransaction',
         source: 'continuing',
         previousOffer: 'settle-cctp',
       },
@@ -585,7 +585,7 @@ test.serial(
         invitationSpec: {
           source: 'continuing',
           previousOffer: 'settle-cctp',
-          invitationMakerName: 'SettleCCTPTransaction',
+          invitationMakerName: 'SettleTransaction',
         },
         proposal: { give: {}, want: {} },
         offerArgs: {
@@ -649,7 +649,7 @@ test.skip('CCTP settlement works with new invitation after contract remove and s
     invitationSpec: {
       source: 'continuing',
       previousOffer: 'settle-cctp-new',
-      invitationMakerName: 'SettleCCTPTransaction',
+      invitationMakerName: 'SettleTransaction',
     },
     proposal: { give: {}, want: {} },
     offerArgs: {
@@ -667,7 +667,7 @@ test.skip('CCTP settlement works with new invitation after contract remove and s
     status: {
       id,
       invitationSpec: {
-        invitationMakerName: 'SettleCCTPTransaction',
+        invitationMakerName: 'SettleTransaction',
         source: 'continuing',
         previousOffer: 'settle-cctp-new',
       },
@@ -688,7 +688,7 @@ test.skip('CCTP settlement works with new invitation after contract remove and s
     status: {
       id,
       invitationSpec: {
-        invitationMakerName: 'SettleCCTPTransaction',
+        invitationMakerName: 'SettleTransaction',
         source: 'continuing',
         previousOffer: 'settle-cctp-new',
       },

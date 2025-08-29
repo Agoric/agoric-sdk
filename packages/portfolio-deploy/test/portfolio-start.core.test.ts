@@ -217,11 +217,18 @@ test('delegate ymax control; invite planner; submit plan', async t => {
   t.log('produce getDepositFacet');
   await produceAttenuatedDeposit(powers as any);
 
-  t.log('start ymax0');
+  t.log('start ymax0 as in 101');
   powers.installation.produce[contractName].resolve(
-    await bundleAndInstall(contractExports),
+    await bundleAndInstall(contractExports, 'b2-ymax-bundleId'),
   );
   await startPortfolio(powers, { options: ymaxOptions });
+
+  t.log('terminate ymax0 as in 103');
+  {
+    const { adminFacet } = await (powers as PortfolioBootPowers).consume
+      .ymax0Kit;
+    await E(adminFacet).terminateContract(Error('as in 103'));
+  }
 
   // script from agoric run does this step
   const pContractName = 'postalService';
@@ -268,7 +275,24 @@ test('delegate ymax control; invite planner; submit plan', async t => {
     saveResult: { name: 'ymaxControl' },
   });
 
-  t.log('getDepositFacet');
+  t.log('installAndStart');
+  {
+    const { issuer } = powers;
+    const [BLD, USDC, PoC26] = await Promise.all([
+      issuer.consume.BLD,
+      issuer.consume.USDC,
+      issuer.consume.PoC26,
+    ]);
+    const issuers = { USDC, Access: PoC26, Fee: BLD, BLD };
+    await E(E(walletCtrl).getInvokeFacet()).invokeEntry({
+      targetName: 'ymaxControl',
+      method: 'installAndStart',
+      args: [{ bundleId: 'b2-ymax-bundleId', issuers }],
+    });
+    await eventLoopIteration(); // installAndStart is async
+  }
+
+  t.log('getCreatorFacet');
   await E(E(walletCtrl).getInvokeFacet()).invokeEntry({
     targetName: 'ymaxControl',
     method: 'getCreatorFacet',

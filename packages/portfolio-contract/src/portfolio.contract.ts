@@ -34,6 +34,7 @@ import {
 } from '@agoric/portfolio-api/src/constants.js';
 import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import type { Zone } from '@agoric/zone';
 import { E } from '@endo/far';
@@ -52,7 +53,6 @@ import {
   type OfferArgsFor,
   type ProposalType,
 } from './type-guards.ts';
-import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 
 const trace = makeTracer('PortC');
 const { fromEntries, keys } = Object;
@@ -242,7 +242,7 @@ export const contract = async (
     },
   };
 
-  const resolverZone = zone.subZone('CCTPResolver');
+  const resolverZone = zone.subZone('Resolver');
   const {
     client: resolverClient,
     invitationMakers: makeResolverInvitationMakers,

@@ -86,14 +86,7 @@ const rebalanceScenarioMacro = test.macro({
               zoe,
               started.creatorFacet,
             );
-            await settleCCTPWithMockReceiver(
-              zoe,
-              resolverMakers,
-              move.amount.value,
-              'eip155:42161' as const, // Arbitrum chain ID
-              0,
-              'success',
-            );
+            await settleCCTPWithMockReceiver(zoe, resolverMakers, 0, 'success');
 
             continue;
           }
