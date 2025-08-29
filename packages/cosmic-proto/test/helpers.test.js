@@ -4,7 +4,7 @@ import test from 'ava';
 import { cosmos } from '../dist/codegen/cosmos/bundle.js';
 import { ibc } from '../dist/codegen/ibc/bundle.js';
 import { icq } from '../dist/codegen/icq/bundle.js';
-import { Codec, Help } from '../dist/codec-helpers.js';
+import { Codec, CodecHelper } from '../dist/codec-helpers.js';
 import {
   typeUrlToGrpcPath,
   toRequestQueryJson,
@@ -54,9 +54,9 @@ test('typedJson', t => {
   });
 });
 
-test('Help', t => {
+test('CodecHelper', t => {
   const address = 'addr';
-  const help = Help(QueryAllBalancesRequest);
+  const help = CodecHelper(QueryAllBalancesRequest);
   const qabr = help.typedJson({
     address,
     // @ts-expect-error invalid field
@@ -79,14 +79,12 @@ test('Help', t => {
   t.deepEqual(help.fromTyped(qabr), {
     address,
     pagination: undefined,
-    zingo: { abc: 3 },
   });
   t.deepEqual(
     help.fromTyped(qabr, ['zingo']),
     {
       address,
       pagination: undefined,
-      zingo: { abc: 3 },
       abc: 3,
     },
     'fromTyped expands embedded zingo',
@@ -106,12 +104,10 @@ test('Help', t => {
   t.deepEqual(help.fromTyped(aminoMessage), {
     address,
     pagination: undefined,
-    zongo: { def: 6 },
   });
   t.deepEqual(help.fromTyped(aminoMessage, ['zongo', 'zon_go']), {
     address,
     pagination: undefined,
-    zongo: { def: 6 },
     def: 6,
   });
 
@@ -129,16 +125,14 @@ test('Help', t => {
   t.deepEqual(help.fromTyped(jsonMessage), {
     address,
     pagination: undefined,
-    zungo: { ghi: 9 },
   });
   t.deepEqual(help.fromTyped(jsonMessage, ['zungo', 'zunGo']), {
     address,
     pagination: undefined,
-    zungo: { ghi: 9 },
     ghi: 9,
   });
 
-  const msgSend = Help(MsgSend).typedJson({
+  const msgSend = CodecHelper(MsgSend).typedJson({
     fromAddress: address,
     toAddress: address,
     amount: [{ denom: 'ucosm', amount: '1' }],
