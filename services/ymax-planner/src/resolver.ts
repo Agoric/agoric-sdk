@@ -1,14 +1,11 @@
 import { type SigningSmartWalletKit } from '@agoric/client-utils';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
-import { Fail } from '@endo/errors';
-import type { CctpSubscription } from './subscription-manager.js';
 import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 
 type ResolveSubscriptionParams = {
   signingSmartWalletKit: SigningSmartWalletKit;
   subscriptionId: string;
   status: Omit<TxStatus, 'pending'>;
-  subscriptionData: CctpSubscription;
   proposal?: object;
 };
 
@@ -23,36 +20,25 @@ const getInvitationMakers = async (wallet: SigningSmartWalletKit) => {
   return invitation;
 };
 
-export const resolveCctpSubscription = async ({
+export const resolvePendingTx = async ({
   signingSmartWalletKit,
   subscriptionId,
   status,
-  subscriptionData,
   proposal = {},
 }: ResolveSubscriptionParams) => {
-  subscriptionData.type === 'cctp' ||
-    Fail`Expected subscription type to be 'cctp', got ${subscriptionData.type}`;
-
   const invitationMakersOffer = await getInvitationMakers(
     signingSmartWalletKit,
   );
 
-  const [chainId, chainName, contractAddress] =
-    subscriptionData.destinationAddress.split(':');
   const action: OfferSpec = harden({
     id: `offer-${Date.now()}`,
     invitationSpec: {
       source: 'continuing',
       previousOffer: invitationMakersOffer[0],
-      invitationMakerName: 'SettleCCTPTransaction',
+      invitationMakerName: 'SettleTransaction',
     },
     offerArgs: {
-      txDetails: {
-        amount: subscriptionData.amount,
-        remoteAddress: contractAddress,
-        status,
-      },
-      remoteAxelarChain: `${chainId}:${chainName}`,
+      status,
       txId: subscriptionId,
     },
     proposal,
@@ -60,14 +46,4 @@ export const resolveCctpSubscription = async ({
 
   const result = await signingSmartWalletKit.executeOffer(action);
   return result;
-};
-
-export const resolveGMPSubscription = async ({
-  signingSmartWalletKit,
-  subscriptionId,
-  status,
-  subscriptionData,
-  proposal = {},
-}: ResolveSubscriptionParams) => {
-  throw new Error('TODO: GMP subscription resolution is not implemented yet');
 };
