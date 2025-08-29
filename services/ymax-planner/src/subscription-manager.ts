@@ -4,7 +4,7 @@ import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { JsonRpcProvider } from 'ethers';
 import { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { watchGmp } from './watchers/gmp-watcher.ts';
-import { resolveCctpSubscription } from './resolver.ts';
+import { resolvePendingTx } from './resolver.ts';
 import { watchCctpTransfer } from './watchers/cctp-watcher.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
@@ -41,8 +41,8 @@ type BaseSubscription = {
 
 type SubscriptionOf<T, K extends string> = BaseSubscription & T & { type: K };
 
-export type CctpSubscription = SubscriptionOf<CctpTransfer, 'cctp'>;
-export type GmpSubscription = SubscriptionOf<GmpTransfer, 'gmp'>;
+type CctpSubscription = SubscriptionOf<CctpTransfer, 'cctp'>;
+type GmpSubscription = SubscriptionOf<GmpTransfer, 'gmp'>;
 
 export type Subscription = CctpSubscription | GmpSubscription;
 
@@ -281,11 +281,10 @@ const cctpMonitor: SubscriptionMonitor<CctpSubscription> = {
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
     });
 
-    await resolveCctpSubscription({
+    await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
       subscriptionId,
       status: transferStatus ? TxStatus.SUCCESS : TxStatus.FAILED,
-      subscriptionData: subscription,
     });
 
     log(`${logPrefix} CCTP subscription resolved`);
@@ -311,12 +310,13 @@ const gmpMonitor: SubscriptionMonitor<GmpSubscription> = {
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
     });
 
-    if (res.success) {
-      log(`${logPrefix} GMP transaction executed successfully`);
-      // TODO: resolve GMP subscription
-    } else {
-      log(`${logPrefix} GMP transaction failed or timed out`);
-    }
+    await resolvePendingTx({
+      signingSmartWalletKit: ctx.signingSmartWalletKit,
+      subscriptionId,
+      status: res.success ? TxStatus.SUCCESS : TxStatus.FAILED,
+    });
+
+    log(`${logPrefix} GMP subscription resolved`);
   },
 };
 
