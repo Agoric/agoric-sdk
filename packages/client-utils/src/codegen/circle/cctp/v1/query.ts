@@ -692,7 +692,7 @@ function createBaseQueryRolesRequest(): QueryRolesRequest {
   return {};
 }
 export const QueryRolesRequest = {
-  typeUrl: '/circle.cctp.v1.QueryRolesRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryRolesRequest',
   encode(
     _: QueryRolesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -747,7 +747,7 @@ function createBaseQueryRolesResponse(): QueryRolesResponse {
   };
 }
 export const QueryRolesResponse = {
-  typeUrl: '/circle.cctp.v1.QueryRolesResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryRolesResponse',
   encode(
     message: QueryRolesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -845,7 +845,7 @@ function createBaseQueryGetAttesterRequest(): QueryGetAttesterRequest {
   };
 }
 export const QueryGetAttesterRequest = {
-  typeUrl: '/circle.cctp.v1.QueryGetAttesterRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetAttesterRequest',
   encode(
     message: QueryGetAttesterRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -916,7 +916,7 @@ function createBaseQueryGetAttesterResponse(): QueryGetAttesterResponse {
   };
 }
 export const QueryGetAttesterResponse = {
-  typeUrl: '/circle.cctp.v1.QueryGetAttesterResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetAttesterResponse',
   encode(
     message: QueryGetAttesterResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -997,7 +997,7 @@ function createBaseQueryAllAttestersRequest(): QueryAllAttestersRequest {
   };
 }
 export const QueryAllAttestersRequest = {
-  typeUrl: '/circle.cctp.v1.QueryAllAttestersRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryAllAttestersRequest',
   encode(
     message: QueryAllAttestersRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1079,7 +1079,7 @@ function createBaseQueryAllAttestersResponse(): QueryAllAttestersResponse {
   };
 }
 export const QueryAllAttestersResponse = {
-  typeUrl: '/circle.cctp.v1.QueryAllAttestersResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryAllAttestersResponse',
   encode(
     message: QueryAllAttestersResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1181,7 +1181,7 @@ function createBaseQueryGetPerMessageBurnLimitRequest(): QueryGetPerMessageBurnL
   };
 }
 export const QueryGetPerMessageBurnLimitRequest = {
-  typeUrl: '/circle.cctp.v1.QueryGetPerMessageBurnLimitRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetPerMessageBurnLimitRequest',
   encode(
     message: QueryGetPerMessageBurnLimitRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1254,7 +1254,7 @@ function createBaseQueryGetPerMessageBurnLimitResponse(): QueryGetPerMessageBurn
   };
 }
 export const QueryGetPerMessageBurnLimitResponse = {
-  typeUrl: '/circle.cctp.v1.QueryGetPerMessageBurnLimitResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetPerMessageBurnLimitResponse',
   encode(
     message: QueryGetPerMessageBurnLimitResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1341,7 +1341,7 @@ function createBaseQueryAllPerMessageBurnLimitsRequest(): QueryAllPerMessageBurn
   };
 }
 export const QueryAllPerMessageBurnLimitsRequest = {
-  typeUrl: '/circle.cctp.v1.QueryAllPerMessageBurnLimitsRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryAllPerMessageBurnLimitsRequest',
   encode(
     message: QueryAllPerMessageBurnLimitsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1423,7 +1423,7 @@ function createBaseQueryAllPerMessageBurnLimitsResponse(): QueryAllPerMessageBur
   };
 }
 export const QueryAllPerMessageBurnLimitsResponse = {
-  typeUrl: '/circle.cctp.v1.QueryAllPerMessageBurnLimitsResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryAllPerMessageBurnLimitsResponse',
   encode(
     message: QueryAllPerMessageBurnLimitsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1525,7 +1525,7 @@ function createBaseQueryGetBurningAndMintingPausedRequest(): QueryGetBurningAndM
   return {};
 }
 export const QueryGetBurningAndMintingPausedRequest = {
-  typeUrl: '/circle.cctp.v1.QueryGetBurningAndMintingPausedRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetBurningAndMintingPausedRequest',
   encode(
     _: QueryGetBurningAndMintingPausedRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1588,7 +1588,7 @@ function createBaseQueryGetBurningAndMintingPausedResponse(): QueryGetBurningAnd
   };
 }
 export const QueryGetBurningAndMintingPausedResponse = {
-  typeUrl: '/circle.cctp.v1.QueryGetBurningAndMintingPausedResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetBurningAndMintingPausedResponse',
   encode(
     message: QueryGetBurningAndMintingPausedResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1673,8 +1673,7 @@ function createBaseQueryGetSendingAndReceivingMessagesPausedRequest(): QueryGetS
   return {};
 }
 export const QueryGetSendingAndReceivingMessagesPausedRequest = {
-  typeUrl:
-    '/circle.cctp.v1.QueryGetSendingAndReceivingMessagesPausedRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetSendingAndReceivingMessagesPausedRequest',
   encode(
     _: QueryGetSendingAndReceivingMessagesPausedRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1749,8 +1748,7 @@ function createBaseQueryGetSendingAndReceivingMessagesPausedResponse(): QueryGet
   };
 }
 export const QueryGetSendingAndReceivingMessagesPausedResponse = {
-  typeUrl:
-    '/circle.cctp.v1.QueryGetSendingAndReceivingMessagesPausedResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetSendingAndReceivingMessagesPausedResponse',
   encode(
     message: QueryGetSendingAndReceivingMessagesPausedResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1847,7 +1845,7 @@ function createBaseQueryGetMaxMessageBodySizeRequest(): QueryGetMaxMessageBodySi
   return {};
 }
 export const QueryGetMaxMessageBodySizeRequest = {
-  typeUrl: '/circle.cctp.v1.QueryGetMaxMessageBodySizeRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetMaxMessageBodySizeRequest',
   encode(
     _: QueryGetMaxMessageBodySizeRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1910,7 +1908,7 @@ function createBaseQueryGetMaxMessageBodySizeResponse(): QueryGetMaxMessageBodyS
   };
 }
 export const QueryGetMaxMessageBodySizeResponse = {
-  typeUrl: '/circle.cctp.v1.QueryGetMaxMessageBodySizeResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetMaxMessageBodySizeResponse',
   encode(
     message: QueryGetMaxMessageBodySizeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1992,7 +1990,7 @@ function createBaseQueryGetNextAvailableNonceRequest(): QueryGetNextAvailableNon
   return {};
 }
 export const QueryGetNextAvailableNonceRequest = {
-  typeUrl: '/circle.cctp.v1.QueryGetNextAvailableNonceRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetNextAvailableNonceRequest',
   encode(
     _: QueryGetNextAvailableNonceRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2055,7 +2053,7 @@ function createBaseQueryGetNextAvailableNonceResponse(): QueryGetNextAvailableNo
   };
 }
 export const QueryGetNextAvailableNonceResponse = {
-  typeUrl: '/circle.cctp.v1.QueryGetNextAvailableNonceResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetNextAvailableNonceResponse',
   encode(
     message: QueryGetNextAvailableNonceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2130,7 +2128,7 @@ function createBaseQueryGetSignatureThresholdRequest(): QueryGetSignatureThresho
   return {};
 }
 export const QueryGetSignatureThresholdRequest = {
-  typeUrl: '/circle.cctp.v1.QueryGetSignatureThresholdRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetSignatureThresholdRequest',
   encode(
     _: QueryGetSignatureThresholdRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2193,7 +2191,7 @@ function createBaseQueryGetSignatureThresholdResponse(): QueryGetSignatureThresh
   };
 }
 export const QueryGetSignatureThresholdResponse = {
-  typeUrl: '/circle.cctp.v1.QueryGetSignatureThresholdResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetSignatureThresholdResponse',
   encode(
     message: QueryGetSignatureThresholdResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2278,7 +2276,7 @@ function createBaseQueryGetTokenPairRequest(): QueryGetTokenPairRequest {
   };
 }
 export const QueryGetTokenPairRequest = {
-  typeUrl: '/circle.cctp.v1.QueryGetTokenPairRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetTokenPairRequest',
   encode(
     message: QueryGetTokenPairRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2364,7 +2362,7 @@ function createBaseQueryGetTokenPairResponse(): QueryGetTokenPairResponse {
   };
 }
 export const QueryGetTokenPairResponse = {
-  typeUrl: '/circle.cctp.v1.QueryGetTokenPairResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetTokenPairResponse',
   encode(
     message: QueryGetTokenPairResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2441,7 +2439,7 @@ function createBaseQueryAllTokenPairsRequest(): QueryAllTokenPairsRequest {
   };
 }
 export const QueryAllTokenPairsRequest = {
-  typeUrl: '/circle.cctp.v1.QueryAllTokenPairsRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryAllTokenPairsRequest',
   encode(
     message: QueryAllTokenPairsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2523,7 +2521,7 @@ function createBaseQueryAllTokenPairsResponse(): QueryAllTokenPairsResponse {
   };
 }
 export const QueryAllTokenPairsResponse = {
-  typeUrl: '/circle.cctp.v1.QueryAllTokenPairsResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryAllTokenPairsResponse',
   encode(
     message: QueryAllTokenPairsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2626,7 +2624,7 @@ function createBaseQueryGetUsedNonceRequest(): QueryGetUsedNonceRequest {
   };
 }
 export const QueryGetUsedNonceRequest = {
-  typeUrl: '/circle.cctp.v1.QueryGetUsedNonceRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetUsedNonceRequest',
   encode(
     message: QueryGetUsedNonceRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2715,7 +2713,7 @@ function createBaseQueryGetUsedNonceResponse(): QueryGetUsedNonceResponse {
   };
 }
 export const QueryGetUsedNonceResponse = {
-  typeUrl: '/circle.cctp.v1.QueryGetUsedNonceResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryGetUsedNonceResponse',
   encode(
     message: QueryGetUsedNonceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2792,7 +2790,7 @@ function createBaseQueryAllUsedNoncesRequest(): QueryAllUsedNoncesRequest {
   };
 }
 export const QueryAllUsedNoncesRequest = {
-  typeUrl: '/circle.cctp.v1.QueryAllUsedNoncesRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryAllUsedNoncesRequest',
   encode(
     message: QueryAllUsedNoncesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2874,7 +2872,7 @@ function createBaseQueryAllUsedNoncesResponse(): QueryAllUsedNoncesResponse {
   };
 }
 export const QueryAllUsedNoncesResponse = {
-  typeUrl: '/circle.cctp.v1.QueryAllUsedNoncesResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryAllUsedNoncesResponse',
   encode(
     message: QueryAllUsedNoncesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2976,7 +2974,7 @@ function createBaseQueryRemoteTokenMessengerRequest(): QueryRemoteTokenMessenger
   };
 }
 export const QueryRemoteTokenMessengerRequest = {
-  typeUrl: '/circle.cctp.v1.QueryRemoteTokenMessengerRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryRemoteTokenMessengerRequest',
   encode(
     message: QueryRemoteTokenMessengerRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3050,7 +3048,7 @@ function createBaseQueryRemoteTokenMessengerResponse(): QueryRemoteTokenMessenge
   };
 }
 export const QueryRemoteTokenMessengerResponse = {
-  typeUrl: '/circle.cctp.v1.QueryRemoteTokenMessengerResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryRemoteTokenMessengerResponse',
   encode(
     message: QueryRemoteTokenMessengerResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3138,7 +3136,7 @@ function createBaseQueryRemoteTokenMessengersRequest(): QueryRemoteTokenMessenge
   };
 }
 export const QueryRemoteTokenMessengersRequest = {
-  typeUrl: '/circle.cctp.v1.QueryRemoteTokenMessengersRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryRemoteTokenMessengersRequest',
   encode(
     message: QueryRemoteTokenMessengersRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3220,7 +3218,7 @@ function createBaseQueryRemoteTokenMessengersResponse(): QueryRemoteTokenMesseng
   };
 }
 export const QueryRemoteTokenMessengersResponse = {
-  typeUrl: '/circle.cctp.v1.QueryRemoteTokenMessengersResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryRemoteTokenMessengersResponse',
   encode(
     message: QueryRemoteTokenMessengersResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3326,7 +3324,7 @@ function createBaseQueryBurnMessageVersionRequest(): QueryBurnMessageVersionRequ
   return {};
 }
 export const QueryBurnMessageVersionRequest = {
-  typeUrl: '/circle.cctp.v1.QueryBurnMessageVersionRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryBurnMessageVersionRequest',
   encode(
     _: QueryBurnMessageVersionRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3389,7 +3387,7 @@ function createBaseQueryBurnMessageVersionResponse(): QueryBurnMessageVersionRes
   };
 }
 export const QueryBurnMessageVersionResponse = {
-  typeUrl: '/circle.cctp.v1.QueryBurnMessageVersionResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryBurnMessageVersionResponse',
   encode(
     message: QueryBurnMessageVersionResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3461,7 +3459,7 @@ function createBaseQueryLocalMessageVersionRequest(): QueryLocalMessageVersionRe
   return {};
 }
 export const QueryLocalMessageVersionRequest = {
-  typeUrl: '/circle.cctp.v1.QueryLocalMessageVersionRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryLocalMessageVersionRequest',
   encode(
     _: QueryLocalMessageVersionRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3524,7 +3522,7 @@ function createBaseQueryLocalMessageVersionResponse(): QueryLocalMessageVersionR
   };
 }
 export const QueryLocalMessageVersionResponse = {
-  typeUrl: '/circle.cctp.v1.QueryLocalMessageVersionResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryLocalMessageVersionResponse',
   encode(
     message: QueryLocalMessageVersionResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3596,7 +3594,7 @@ function createBaseQueryLocalDomainRequest(): QueryLocalDomainRequest {
   return {};
 }
 export const QueryLocalDomainRequest = {
-  typeUrl: '/circle.cctp.v1.QueryLocalDomainRequest' as const,
+  typeUrl: '/circle.cctp.v1.QueryLocalDomainRequest',
   encode(
     _: QueryLocalDomainRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3655,7 +3653,7 @@ function createBaseQueryLocalDomainResponse(): QueryLocalDomainResponse {
   };
 }
 export const QueryLocalDomainResponse = {
-  typeUrl: '/circle.cctp.v1.QueryLocalDomainResponse' as const,
+  typeUrl: '/circle.cctp.v1.QueryLocalDomainResponse',
   encode(
     message: QueryLocalDomainResponse,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -43,7 +43,7 @@ function createBaseValidator(): Validator {
   };
 }
 export const Validator = {
-  typeUrl: '/stride.stakeibc.Validator' as const,
+  typeUrl: '/stride.stakeibc.Validator',
   encode(
     message: Validator,
     writer: BinaryWriter = BinaryWriter.create(),

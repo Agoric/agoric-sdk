@@ -22,7 +22,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/agoric.vtransfer.GenesisState' as const,
+  typeUrl: '/agoric.vtransfer.GenesisState',
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

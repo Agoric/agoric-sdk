@@ -52,7 +52,7 @@ function createBasePubKey(): PubKey {
   };
 }
 export const PubKey = {
-  typeUrl: '/cosmos.crypto.ed25519.PubKey' as const,
+  typeUrl: '/cosmos.crypto.ed25519.PubKey',
   encode(
     message: PubKey,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -117,7 +117,7 @@ function createBasePrivKey(): PrivKey {
   };
 }
 export const PrivKey = {
-  typeUrl: '/cosmos.crypto.ed25519.PrivKey' as const,
+  typeUrl: '/cosmos.crypto.ed25519.PrivKey',
   encode(
     message: PrivKey,
     writer: BinaryWriter = BinaryWriter.create(),

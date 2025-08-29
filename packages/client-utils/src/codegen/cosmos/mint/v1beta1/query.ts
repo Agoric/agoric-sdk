@@ -90,7 +90,7 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
 export const QueryParamsRequest = {
-  typeUrl: '/cosmos.mint.v1beta1.QueryParamsRequest' as const,
+  typeUrl: '/cosmos.mint.v1beta1.QueryParamsRequest',
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -145,7 +145,7 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
   };
 }
 export const QueryParamsResponse = {
-  typeUrl: '/cosmos.mint.v1beta1.QueryParamsResponse' as const,
+  typeUrl: '/cosmos.mint.v1beta1.QueryParamsResponse',
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -212,7 +212,7 @@ function createBaseQueryInflationRequest(): QueryInflationRequest {
   return {};
 }
 export const QueryInflationRequest = {
-  typeUrl: '/cosmos.mint.v1beta1.QueryInflationRequest' as const,
+  typeUrl: '/cosmos.mint.v1beta1.QueryInflationRequest',
   encode(
     _: QueryInflationRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -267,7 +267,7 @@ function createBaseQueryInflationResponse(): QueryInflationResponse {
   };
 }
 export const QueryInflationResponse = {
-  typeUrl: '/cosmos.mint.v1beta1.QueryInflationResponse' as const,
+  typeUrl: '/cosmos.mint.v1beta1.QueryInflationResponse',
   encode(
     message: QueryInflationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -337,7 +337,7 @@ function createBaseQueryAnnualProvisionsRequest(): QueryAnnualProvisionsRequest 
   return {};
 }
 export const QueryAnnualProvisionsRequest = {
-  typeUrl: '/cosmos.mint.v1beta1.QueryAnnualProvisionsRequest' as const,
+  typeUrl: '/cosmos.mint.v1beta1.QueryAnnualProvisionsRequest',
   encode(
     _: QueryAnnualProvisionsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -400,7 +400,7 @@ function createBaseQueryAnnualProvisionsResponse(): QueryAnnualProvisionsRespons
   };
 }
 export const QueryAnnualProvisionsResponse = {
-  typeUrl: '/cosmos.mint.v1beta1.QueryAnnualProvisionsResponse' as const,
+  typeUrl: '/cosmos.mint.v1beta1.QueryAnnualProvisionsResponse',
   encode(
     message: QueryAnnualProvisionsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

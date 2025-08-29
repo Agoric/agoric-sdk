@@ -21,7 +21,7 @@ function createBaseModule(): Module {
   };
 }
 export const Module = {
-  typeUrl: '/cosmos.slashing.module.v1.Module' as const,
+  typeUrl: '/cosmos.slashing.module.v1.Module',
   encode(
     message: Module,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -38,7 +38,7 @@ function createBaseModule(): Module {
   };
 }
 export const Module = {
-  typeUrl: '/cosmos.bank.module.v1.Module' as const,
+  typeUrl: '/cosmos.bank.module.v1.Module',
   encode(
     message: Module,
     writer: BinaryWriter = BinaryWriter.create(),

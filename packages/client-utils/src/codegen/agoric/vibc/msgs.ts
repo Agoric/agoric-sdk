@@ -37,7 +37,7 @@ function createBaseMsgSendPacket(): MsgSendPacket {
   };
 }
 export const MsgSendPacket = {
-  typeUrl: '/agoric.vibc.MsgSendPacket' as const,
+  typeUrl: '/agoric.vibc.MsgSendPacket',
   encode(
     message: MsgSendPacket,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -115,7 +115,7 @@ function createBaseMsgSendPacketResponse(): MsgSendPacketResponse {
   return {};
 }
 export const MsgSendPacketResponse = {
-  typeUrl: '/agoric.vibc.MsgSendPacketResponse' as const,
+  typeUrl: '/agoric.vibc.MsgSendPacketResponse',
   encode(
     _: MsgSendPacketResponse,
     writer: BinaryWriter = BinaryWriter.create(),

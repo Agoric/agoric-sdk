@@ -91,7 +91,7 @@ function createBaseUpgrade(): Upgrade {
   };
 }
 export const Upgrade = {
-  typeUrl: '/ibc.core.channel.v1.Upgrade' as const,
+  typeUrl: '/ibc.core.channel.v1.Upgrade',
   encode(
     message: Upgrade,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -197,7 +197,7 @@ function createBaseUpgradeFields(): UpgradeFields {
   };
 }
 export const UpgradeFields = {
-  typeUrl: '/ibc.core.channel.v1.UpgradeFields' as const,
+  typeUrl: '/ibc.core.channel.v1.UpgradeFields',
   encode(
     message: UpgradeFields,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -285,7 +285,7 @@ function createBaseErrorReceipt(): ErrorReceipt {
   };
 }
 export const ErrorReceipt = {
-  typeUrl: '/ibc.core.channel.v1.ErrorReceipt' as const,
+  typeUrl: '/ibc.core.channel.v1.ErrorReceipt',
   encode(
     message: ErrorReceipt,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -35,7 +35,7 @@ function createBasePerMessageBurnLimit(): PerMessageBurnLimit {
   };
 }
 export const PerMessageBurnLimit = {
-  typeUrl: '/circle.cctp.v1.PerMessageBurnLimit' as const,
+  typeUrl: '/circle.cctp.v1.PerMessageBurnLimit',
   encode(
     message: PerMessageBurnLimit,
     writer: BinaryWriter = BinaryWriter.create(),

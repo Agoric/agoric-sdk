@@ -333,7 +333,7 @@ function createBaseHostZone(): HostZone {
   };
 }
 export const HostZone = {
-  typeUrl: '/stride.staketia.HostZone' as const,
+  typeUrl: '/stride.staketia.HostZone',
   encode(
     message: HostZone,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -557,7 +557,7 @@ function createBaseDelegationRecord(): DelegationRecord {
   };
 }
 export const DelegationRecord = {
-  typeUrl: '/stride.staketia.DelegationRecord' as const,
+  typeUrl: '/stride.staketia.DelegationRecord',
   encode(
     message: DelegationRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -661,7 +661,7 @@ function createBaseUnbondingRecord(): UnbondingRecord {
   };
 }
 export const UnbondingRecord = {
-  typeUrl: '/stride.staketia.UnbondingRecord' as const,
+  typeUrl: '/stride.staketia.UnbondingRecord',
   encode(
     message: UnbondingRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -809,7 +809,7 @@ function createBaseRedemptionRecord(): RedemptionRecord {
   };
 }
 export const RedemptionRecord = {
-  typeUrl: '/stride.staketia.RedemptionRecord' as const,
+  typeUrl: '/stride.staketia.RedemptionRecord',
   encode(
     message: RedemptionRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -916,7 +916,7 @@ function createBaseSlashRecord(): SlashRecord {
   };
 }
 export const SlashRecord = {
-  typeUrl: '/stride.staketia.SlashRecord' as const,
+  typeUrl: '/stride.staketia.SlashRecord',
   encode(
     message: SlashRecord,
     writer: BinaryWriter = BinaryWriter.create(),

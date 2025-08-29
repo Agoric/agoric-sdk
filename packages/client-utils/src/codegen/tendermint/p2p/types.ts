@@ -76,7 +76,7 @@ function createBaseNetAddress(): NetAddress {
   };
 }
 export const NetAddress = {
-  typeUrl: '/tendermint.p2p.NetAddress' as const,
+  typeUrl: '/tendermint.p2p.NetAddress',
   encode(
     message: NetAddress,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -158,7 +158,7 @@ function createBaseProtocolVersion(): ProtocolVersion {
   };
 }
 export const ProtocolVersion = {
-  typeUrl: '/tendermint.p2p.ProtocolVersion' as const,
+  typeUrl: '/tendermint.p2p.ProtocolVersion',
   encode(
     message: ProtocolVersion,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -257,7 +257,7 @@ function createBaseDefaultNodeInfo(): DefaultNodeInfo {
   };
 }
 export const DefaultNodeInfo = {
-  typeUrl: '/tendermint.p2p.DefaultNodeInfo' as const,
+  typeUrl: '/tendermint.p2p.DefaultNodeInfo',
   encode(
     message: DefaultNodeInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -416,7 +416,7 @@ function createBaseDefaultNodeInfoOther(): DefaultNodeInfoOther {
   };
 }
 export const DefaultNodeInfoOther = {
-  typeUrl: '/tendermint.p2p.DefaultNodeInfoOther' as const,
+  typeUrl: '/tendermint.p2p.DefaultNodeInfoOther',
   encode(
     message: DefaultNodeInfoOther,
     writer: BinaryWriter = BinaryWriter.create(),

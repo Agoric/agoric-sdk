@@ -68,7 +68,7 @@ function createBaseInterchainQueryPacketData(): InterchainQueryPacketData {
   };
 }
 export const InterchainQueryPacketData = {
-  typeUrl: '/icq.v1.InterchainQueryPacketData' as const,
+  typeUrl: '/icq.v1.InterchainQueryPacketData',
   encode(
     message: InterchainQueryPacketData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -155,7 +155,7 @@ function createBaseInterchainQueryPacketAck(): InterchainQueryPacketAck {
   };
 }
 export const InterchainQueryPacketAck = {
-  typeUrl: '/icq.v1.InterchainQueryPacketAck' as const,
+  typeUrl: '/icq.v1.InterchainQueryPacketAck',
   encode(
     message: InterchainQueryPacketAck,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -233,7 +233,7 @@ function createBaseCosmosQuery(): CosmosQuery {
   };
 }
 export const CosmosQuery = {
-  typeUrl: '/icq.v1.CosmosQuery' as const,
+  typeUrl: '/icq.v1.CosmosQuery',
   encode(
     message: CosmosQuery,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -304,7 +304,7 @@ function createBaseCosmosResponse(): CosmosResponse {
   };
 }
 export const CosmosResponse = {
-  typeUrl: '/icq.v1.CosmosResponse' as const,
+  typeUrl: '/icq.v1.CosmosResponse',
   encode(
     message: CosmosResponse,
     writer: BinaryWriter = BinaryWriter.create(),

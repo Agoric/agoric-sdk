@@ -591,7 +591,7 @@ function createBaseGetTxsEventRequest(): GetTxsEventRequest {
   };
 }
 export const GetTxsEventRequest = {
-  typeUrl: '/cosmos.tx.v1beta1.GetTxsEventRequest' as const,
+  typeUrl: '/cosmos.tx.v1beta1.GetTxsEventRequest',
   encode(
     message: GetTxsEventRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -727,7 +727,7 @@ function createBaseGetTxsEventResponse(): GetTxsEventResponse {
   };
 }
 export const GetTxsEventResponse = {
-  typeUrl: '/cosmos.tx.v1beta1.GetTxsEventResponse' as const,
+  typeUrl: '/cosmos.tx.v1beta1.GetTxsEventResponse',
   encode(
     message: GetTxsEventResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -850,7 +850,7 @@ function createBaseBroadcastTxRequest(): BroadcastTxRequest {
   };
 }
 export const BroadcastTxRequest = {
-  typeUrl: '/cosmos.tx.v1beta1.BroadcastTxRequest' as const,
+  typeUrl: '/cosmos.tx.v1beta1.BroadcastTxRequest',
   encode(
     message: BroadcastTxRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -930,7 +930,7 @@ function createBaseBroadcastTxResponse(): BroadcastTxResponse {
   };
 }
 export const BroadcastTxResponse = {
-  typeUrl: '/cosmos.tx.v1beta1.BroadcastTxResponse' as const,
+  typeUrl: '/cosmos.tx.v1beta1.BroadcastTxResponse',
   encode(
     message: BroadcastTxResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1004,7 +1004,7 @@ function createBaseSimulateRequest(): SimulateRequest {
   };
 }
 export const SimulateRequest = {
-  typeUrl: '/cosmos.tx.v1beta1.SimulateRequest' as const,
+  typeUrl: '/cosmos.tx.v1beta1.SimulateRequest',
   encode(
     message: SimulateRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1085,7 +1085,7 @@ function createBaseSimulateResponse(): SimulateResponse {
   };
 }
 export const SimulateResponse = {
-  typeUrl: '/cosmos.tx.v1beta1.SimulateResponse' as const,
+  typeUrl: '/cosmos.tx.v1beta1.SimulateResponse',
   encode(
     message: SimulateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1168,7 +1168,7 @@ function createBaseGetTxRequest(): GetTxRequest {
   };
 }
 export const GetTxRequest = {
-  typeUrl: '/cosmos.tx.v1beta1.GetTxRequest' as const,
+  typeUrl: '/cosmos.tx.v1beta1.GetTxRequest',
   encode(
     message: GetTxRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1231,7 +1231,7 @@ function createBaseGetTxResponse(): GetTxResponse {
   };
 }
 export const GetTxResponse = {
-  typeUrl: '/cosmos.tx.v1beta1.GetTxResponse' as const,
+  typeUrl: '/cosmos.tx.v1beta1.GetTxResponse',
   encode(
     message: GetTxResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1315,7 +1315,7 @@ function createBaseGetBlockWithTxsRequest(): GetBlockWithTxsRequest {
   };
 }
 export const GetBlockWithTxsRequest = {
-  typeUrl: '/cosmos.tx.v1beta1.GetBlockWithTxsRequest' as const,
+  typeUrl: '/cosmos.tx.v1beta1.GetBlockWithTxsRequest',
   encode(
     message: GetBlockWithTxsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1408,7 +1408,7 @@ function createBaseGetBlockWithTxsResponse(): GetBlockWithTxsResponse {
   };
 }
 export const GetBlockWithTxsResponse = {
-  typeUrl: '/cosmos.tx.v1beta1.GetBlockWithTxsResponse' as const,
+  typeUrl: '/cosmos.tx.v1beta1.GetBlockWithTxsResponse',
   encode(
     message: GetBlockWithTxsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1535,7 +1535,7 @@ function createBaseTxDecodeRequest(): TxDecodeRequest {
   };
 }
 export const TxDecodeRequest = {
-  typeUrl: '/cosmos.tx.v1beta1.TxDecodeRequest' as const,
+  typeUrl: '/cosmos.tx.v1beta1.TxDecodeRequest',
   encode(
     message: TxDecodeRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1602,7 +1602,7 @@ function createBaseTxDecodeResponse(): TxDecodeResponse {
   };
 }
 export const TxDecodeResponse = {
-  typeUrl: '/cosmos.tx.v1beta1.TxDecodeResponse' as const,
+  typeUrl: '/cosmos.tx.v1beta1.TxDecodeResponse',
   encode(
     message: TxDecodeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1668,7 +1668,7 @@ function createBaseTxEncodeRequest(): TxEncodeRequest {
   };
 }
 export const TxEncodeRequest = {
-  typeUrl: '/cosmos.tx.v1beta1.TxEncodeRequest' as const,
+  typeUrl: '/cosmos.tx.v1beta1.TxEncodeRequest',
   encode(
     message: TxEncodeRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1734,7 +1734,7 @@ function createBaseTxEncodeResponse(): TxEncodeResponse {
   };
 }
 export const TxEncodeResponse = {
-  typeUrl: '/cosmos.tx.v1beta1.TxEncodeResponse' as const,
+  typeUrl: '/cosmos.tx.v1beta1.TxEncodeResponse',
   encode(
     message: TxEncodeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1801,7 +1801,7 @@ function createBaseTxEncodeAminoRequest(): TxEncodeAminoRequest {
   };
 }
 export const TxEncodeAminoRequest = {
-  typeUrl: '/cosmos.tx.v1beta1.TxEncodeAminoRequest' as const,
+  typeUrl: '/cosmos.tx.v1beta1.TxEncodeAminoRequest',
   encode(
     message: TxEncodeAminoRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1866,7 +1866,7 @@ function createBaseTxEncodeAminoResponse(): TxEncodeAminoResponse {
   };
 }
 export const TxEncodeAminoResponse = {
-  typeUrl: '/cosmos.tx.v1beta1.TxEncodeAminoResponse' as const,
+  typeUrl: '/cosmos.tx.v1beta1.TxEncodeAminoResponse',
   encode(
     message: TxEncodeAminoResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1938,7 +1938,7 @@ function createBaseTxDecodeAminoRequest(): TxDecodeAminoRequest {
   };
 }
 export const TxDecodeAminoRequest = {
-  typeUrl: '/cosmos.tx.v1beta1.TxDecodeAminoRequest' as const,
+  typeUrl: '/cosmos.tx.v1beta1.TxDecodeAminoRequest',
   encode(
     message: TxDecodeAminoRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2010,7 +2010,7 @@ function createBaseTxDecodeAminoResponse(): TxDecodeAminoResponse {
   };
 }
 export const TxDecodeAminoResponse = {
-  typeUrl: '/cosmos.tx.v1beta1.TxDecodeAminoResponse' as const,
+  typeUrl: '/cosmos.tx.v1beta1.TxDecodeAminoResponse',
   encode(
     message: TxDecodeAminoResponse,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -35,7 +35,7 @@ function createBaseNonce(): Nonce {
   };
 }
 export const Nonce = {
-  typeUrl: '/circle.cctp.v1.Nonce' as const,
+  typeUrl: '/circle.cctp.v1.Nonce',
   encode(
     message: Nonce,
     writer: BinaryWriter = BinaryWriter.create(),

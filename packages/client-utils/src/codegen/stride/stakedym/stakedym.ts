@@ -358,7 +358,7 @@ function createBaseHostZone(): HostZone {
   };
 }
 export const HostZone = {
-  typeUrl: '/stride.stakedym.HostZone' as const,
+  typeUrl: '/stride.stakedym.HostZone',
   encode(
     message: HostZone,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -688,7 +688,7 @@ function createBaseDelegationRecord(): DelegationRecord {
   };
 }
 export const DelegationRecord = {
-  typeUrl: '/stride.stakedym.DelegationRecord' as const,
+  typeUrl: '/stride.stakedym.DelegationRecord',
   encode(
     message: DelegationRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -792,7 +792,7 @@ function createBaseUnbondingRecord(): UnbondingRecord {
   };
 }
 export const UnbondingRecord = {
-  typeUrl: '/stride.stakedym.UnbondingRecord' as const,
+  typeUrl: '/stride.stakedym.UnbondingRecord',
   encode(
     message: UnbondingRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -940,7 +940,7 @@ function createBaseRedemptionRecord(): RedemptionRecord {
   };
 }
 export const RedemptionRecord = {
-  typeUrl: '/stride.stakedym.RedemptionRecord' as const,
+  typeUrl: '/stride.stakedym.RedemptionRecord',
   encode(
     message: RedemptionRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1047,7 +1047,7 @@ function createBaseSlashRecord(): SlashRecord {
   };
 }
 export const SlashRecord = {
-  typeUrl: '/stride.stakedym.SlashRecord' as const,
+  typeUrl: '/stride.stakedym.SlashRecord',
   encode(
     message: SlashRecord,
     writer: BinaryWriter = BinaryWriter.create(),

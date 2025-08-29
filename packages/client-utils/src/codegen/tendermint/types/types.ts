@@ -363,7 +363,7 @@ function createBasePartSetHeader(): PartSetHeader {
   };
 }
 export const PartSetHeader = {
-  typeUrl: '/tendermint.types.PartSetHeader' as const,
+  typeUrl: '/tendermint.types.PartSetHeader',
   encode(
     message: PartSetHeader,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -441,7 +441,7 @@ function createBasePart(): Part {
   };
 }
 export const Part = {
-  typeUrl: '/tendermint.types.Part' as const,
+  typeUrl: '/tendermint.types.Part',
   encode(
     message: Part,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -531,7 +531,7 @@ function createBaseBlockID(): BlockID {
   };
 }
 export const BlockID = {
-  typeUrl: '/tendermint.types.BlockID' as const,
+  typeUrl: '/tendermint.types.BlockID',
   encode(
     message: BlockID,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -631,7 +631,7 @@ function createBaseHeader(): Header {
   };
 }
 export const Header = {
-  typeUrl: '/tendermint.types.Header' as const,
+  typeUrl: '/tendermint.types.Header',
   encode(
     message: Header,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -895,7 +895,7 @@ function createBaseData(): Data {
   };
 }
 export const Data = {
-  typeUrl: '/tendermint.types.Data' as const,
+  typeUrl: '/tendermint.types.Data',
   encode(
     message: Data,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -972,7 +972,7 @@ function createBaseVote(): Vote {
   };
 }
 export const Vote = {
-  typeUrl: '/tendermint.types.Vote' as const,
+  typeUrl: '/tendermint.types.Vote',
   encode(
     message: Vote,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1136,7 +1136,7 @@ function createBaseCommit(): Commit {
   };
 }
 export const Commit = {
-  typeUrl: '/tendermint.types.Commit' as const,
+  typeUrl: '/tendermint.types.Commit',
   encode(
     message: Commit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1251,7 +1251,7 @@ function createBaseCommitSig(): CommitSig {
   };
 }
 export const CommitSig = {
-  typeUrl: '/tendermint.types.CommitSig' as const,
+  typeUrl: '/tendermint.types.CommitSig',
   encode(
     message: CommitSig,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1367,7 +1367,7 @@ function createBaseProposal(): Proposal {
   };
 }
 export const Proposal = {
-  typeUrl: '/tendermint.types.Proposal' as const,
+  typeUrl: '/tendermint.types.Proposal',
   encode(
     message: Proposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1511,7 +1511,7 @@ function createBaseSignedHeader(): SignedHeader {
   };
 }
 export const SignedHeader = {
-  typeUrl: '/tendermint.types.SignedHeader' as const,
+  typeUrl: '/tendermint.types.SignedHeader',
   encode(
     message: SignedHeader,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1591,7 +1591,7 @@ function createBaseLightBlock(): LightBlock {
   };
 }
 export const LightBlock = {
-  typeUrl: '/tendermint.types.LightBlock' as const,
+  typeUrl: '/tendermint.types.LightBlock',
   encode(
     message: LightBlock,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1687,7 +1687,7 @@ function createBaseBlockMeta(): BlockMeta {
   };
 }
 export const BlockMeta = {
-  typeUrl: '/tendermint.types.BlockMeta' as const,
+  typeUrl: '/tendermint.types.BlockMeta',
   encode(
     message: BlockMeta,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1802,7 +1802,7 @@ function createBaseTxProof(): TxProof {
   };
 }
 export const TxProof = {
-  typeUrl: '/tendermint.types.TxProof' as const,
+  typeUrl: '/tendermint.types.TxProof',
   encode(
     message: TxProof,
     writer: BinaryWriter = BinaryWriter.create(),

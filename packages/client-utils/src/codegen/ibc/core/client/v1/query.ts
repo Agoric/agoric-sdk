@@ -444,7 +444,7 @@ function createBaseQueryClientStateRequest(): QueryClientStateRequest {
   };
 }
 export const QueryClientStateRequest = {
-  typeUrl: '/ibc.core.client.v1.QueryClientStateRequest' as const,
+  typeUrl: '/ibc.core.client.v1.QueryClientStateRequest',
   encode(
     message: QueryClientStateRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -517,7 +517,7 @@ function createBaseQueryClientStateResponse(): QueryClientStateResponse {
   };
 }
 export const QueryClientStateResponse = {
-  typeUrl: '/ibc.core.client.v1.QueryClientStateResponse' as const,
+  typeUrl: '/ibc.core.client.v1.QueryClientStateResponse',
   encode(
     message: QueryClientStateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -629,7 +629,7 @@ function createBaseQueryClientStatesRequest(): QueryClientStatesRequest {
   };
 }
 export const QueryClientStatesRequest = {
-  typeUrl: '/ibc.core.client.v1.QueryClientStatesRequest' as const,
+  typeUrl: '/ibc.core.client.v1.QueryClientStatesRequest',
   encode(
     message: QueryClientStatesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -711,7 +711,7 @@ function createBaseQueryClientStatesResponse(): QueryClientStatesResponse {
   };
 }
 export const QueryClientStatesResponse = {
-  typeUrl: '/ibc.core.client.v1.QueryClientStatesResponse' as const,
+  typeUrl: '/ibc.core.client.v1.QueryClientStatesResponse',
   encode(
     message: QueryClientStatesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -818,7 +818,7 @@ function createBaseQueryConsensusStateRequest(): QueryConsensusStateRequest {
   };
 }
 export const QueryConsensusStateRequest = {
-  typeUrl: '/ibc.core.client.v1.QueryConsensusStateRequest' as const,
+  typeUrl: '/ibc.core.client.v1.QueryConsensusStateRequest',
   encode(
     message: QueryConsensusStateRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -935,7 +935,7 @@ function createBaseQueryConsensusStateResponse(): QueryConsensusStateResponse {
   };
 }
 export const QueryConsensusStateResponse = {
-  typeUrl: '/ibc.core.client.v1.QueryConsensusStateResponse' as const,
+  typeUrl: '/ibc.core.client.v1.QueryConsensusStateResponse',
   encode(
     message: QueryConsensusStateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1048,7 +1048,7 @@ function createBaseQueryConsensusStatesRequest(): QueryConsensusStatesRequest {
   };
 }
 export const QueryConsensusStatesRequest = {
-  typeUrl: '/ibc.core.client.v1.QueryConsensusStatesRequest' as const,
+  typeUrl: '/ibc.core.client.v1.QueryConsensusStatesRequest',
   encode(
     message: QueryConsensusStatesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1139,7 +1139,7 @@ function createBaseQueryConsensusStatesResponse(): QueryConsensusStatesResponse 
   };
 }
 export const QueryConsensusStatesResponse = {
-  typeUrl: '/ibc.core.client.v1.QueryConsensusStatesResponse' as const,
+  typeUrl: '/ibc.core.client.v1.QueryConsensusStatesResponse',
   encode(
     message: QueryConsensusStatesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1248,7 +1248,7 @@ function createBaseQueryConsensusStateHeightsRequest(): QueryConsensusStateHeigh
   };
 }
 export const QueryConsensusStateHeightsRequest = {
-  typeUrl: '/ibc.core.client.v1.QueryConsensusStateHeightsRequest' as const,
+  typeUrl: '/ibc.core.client.v1.QueryConsensusStateHeightsRequest',
   encode(
     message: QueryConsensusStateHeightsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1339,7 +1339,7 @@ function createBaseQueryConsensusStateHeightsResponse(): QueryConsensusStateHeig
   };
 }
 export const QueryConsensusStateHeightsResponse = {
-  typeUrl: '/ibc.core.client.v1.QueryConsensusStateHeightsResponse' as const,
+  typeUrl: '/ibc.core.client.v1.QueryConsensusStateHeightsResponse',
   encode(
     message: QueryConsensusStateHeightsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1443,7 +1443,7 @@ function createBaseQueryClientStatusRequest(): QueryClientStatusRequest {
   };
 }
 export const QueryClientStatusRequest = {
-  typeUrl: '/ibc.core.client.v1.QueryClientStatusRequest' as const,
+  typeUrl: '/ibc.core.client.v1.QueryClientStatusRequest',
   encode(
     message: QueryClientStatusRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1516,7 +1516,7 @@ function createBaseQueryClientStatusResponse(): QueryClientStatusResponse {
   };
 }
 export const QueryClientStatusResponse = {
-  typeUrl: '/ibc.core.client.v1.QueryClientStatusResponse' as const,
+  typeUrl: '/ibc.core.client.v1.QueryClientStatusResponse',
   encode(
     message: QueryClientStatusResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1587,7 +1587,7 @@ function createBaseQueryClientParamsRequest(): QueryClientParamsRequest {
   return {};
 }
 export const QueryClientParamsRequest = {
-  typeUrl: '/ibc.core.client.v1.QueryClientParamsRequest' as const,
+  typeUrl: '/ibc.core.client.v1.QueryClientParamsRequest',
   encode(
     _: QueryClientParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1646,7 +1646,7 @@ function createBaseQueryClientParamsResponse(): QueryClientParamsResponse {
   };
 }
 export const QueryClientParamsResponse = {
-  typeUrl: '/ibc.core.client.v1.QueryClientParamsResponse' as const,
+  typeUrl: '/ibc.core.client.v1.QueryClientParamsResponse',
   encode(
     message: QueryClientParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1721,7 +1721,7 @@ function createBaseQueryUpgradedClientStateRequest(): QueryUpgradedClientStateRe
   return {};
 }
 export const QueryUpgradedClientStateRequest = {
-  typeUrl: '/ibc.core.client.v1.QueryUpgradedClientStateRequest' as const,
+  typeUrl: '/ibc.core.client.v1.QueryUpgradedClientStateRequest',
   encode(
     _: QueryUpgradedClientStateRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1784,7 +1784,7 @@ function createBaseQueryUpgradedClientStateResponse(): QueryUpgradedClientStateR
   };
 }
 export const QueryUpgradedClientStateResponse = {
-  typeUrl: '/ibc.core.client.v1.QueryUpgradedClientStateResponse' as const,
+  typeUrl: '/ibc.core.client.v1.QueryUpgradedClientStateResponse',
   encode(
     message: QueryUpgradedClientStateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1867,7 +1867,7 @@ function createBaseQueryUpgradedConsensusStateRequest(): QueryUpgradedConsensusS
   return {};
 }
 export const QueryUpgradedConsensusStateRequest = {
-  typeUrl: '/ibc.core.client.v1.QueryUpgradedConsensusStateRequest' as const,
+  typeUrl: '/ibc.core.client.v1.QueryUpgradedConsensusStateRequest',
   encode(
     _: QueryUpgradedConsensusStateRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1930,7 +1930,7 @@ function createBaseQueryUpgradedConsensusStateResponse(): QueryUpgradedConsensus
   };
 }
 export const QueryUpgradedConsensusStateResponse = {
-  typeUrl: '/ibc.core.client.v1.QueryUpgradedConsensusStateResponse' as const,
+  typeUrl: '/ibc.core.client.v1.QueryUpgradedConsensusStateResponse',
   encode(
     message: QueryUpgradedConsensusStateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2021,7 +2021,7 @@ function createBaseQueryVerifyMembershipRequest(): QueryVerifyMembershipRequest 
   };
 }
 export const QueryVerifyMembershipRequest = {
-  typeUrl: '/ibc.core.client.v1.QueryVerifyMembershipRequest' as const,
+  typeUrl: '/ibc.core.client.v1.QueryVerifyMembershipRequest',
   encode(
     message: QueryVerifyMembershipRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2186,7 +2186,7 @@ function createBaseQueryVerifyMembershipResponse(): QueryVerifyMembershipRespons
   };
 }
 export const QueryVerifyMembershipResponse = {
-  typeUrl: '/ibc.core.client.v1.QueryVerifyMembershipResponse' as const,
+  typeUrl: '/ibc.core.client.v1.QueryVerifyMembershipResponse',
   encode(
     message: QueryVerifyMembershipResponse,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -77,8 +77,7 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
   };
 }
 export const MsgUpdateParams = {
-  typeUrl:
-    '/ibc.applications.interchain_accounts.host.v1.MsgUpdateParams' as const,
+  typeUrl: '/ibc.applications.interchain_accounts.host.v1.MsgUpdateParams',
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -152,7 +151,7 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
 }
 export const MsgUpdateParamsResponse = {
   typeUrl:
-    '/ibc.applications.interchain_accounts.host.v1.MsgUpdateParamsResponse' as const,
+    '/ibc.applications.interchain_accounts.host.v1.MsgUpdateParamsResponse',
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -213,8 +212,7 @@ function createBaseMsgModuleQuerySafe(): MsgModuleQuerySafe {
   };
 }
 export const MsgModuleQuerySafe = {
-  typeUrl:
-    '/ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafe' as const,
+  typeUrl: '/ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafe',
   encode(
     message: MsgModuleQuerySafe,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -300,7 +298,7 @@ function createBaseMsgModuleQuerySafeResponse(): MsgModuleQuerySafeResponse {
 }
 export const MsgModuleQuerySafeResponse = {
   typeUrl:
-    '/ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafeResponse' as const,
+    '/ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafeResponse',
   encode(
     message: MsgModuleQuerySafeResponse,
     writer: BinaryWriter = BinaryWriter.create(),

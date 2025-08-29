@@ -96,7 +96,7 @@ function createBaseMerkleRoot(): MerkleRoot {
   };
 }
 export const MerkleRoot = {
-  typeUrl: '/ibc.core.commitment.v1.MerkleRoot' as const,
+  typeUrl: '/ibc.core.commitment.v1.MerkleRoot',
   encode(
     message: MerkleRoot,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -163,7 +163,7 @@ function createBaseMerklePrefix(): MerklePrefix {
   };
 }
 export const MerklePrefix = {
-  typeUrl: '/ibc.core.commitment.v1.MerklePrefix' as const,
+  typeUrl: '/ibc.core.commitment.v1.MerklePrefix',
   encode(
     message: MerklePrefix,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -230,7 +230,7 @@ function createBaseMerklePath(): MerklePath {
   };
 }
 export const MerklePath = {
-  typeUrl: '/ibc.core.commitment.v1.MerklePath' as const,
+  typeUrl: '/ibc.core.commitment.v1.MerklePath',
   encode(
     message: MerklePath,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -298,7 +298,7 @@ function createBaseMerkleProof(): MerkleProof {
   };
 }
 export const MerkleProof = {
-  typeUrl: '/ibc.core.commitment.v1.MerkleProof' as const,
+  typeUrl: '/ibc.core.commitment.v1.MerkleProof',
   encode(
     message: MerkleProof,
     writer: BinaryWriter = BinaryWriter.create(),

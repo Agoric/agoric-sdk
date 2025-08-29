@@ -28,7 +28,7 @@ function createBaseSignatureThreshold(): SignatureThreshold {
   };
 }
 export const SignatureThreshold = {
-  typeUrl: '/circle.cctp.v1.SignatureThreshold' as const,
+  typeUrl: '/circle.cctp.v1.SignatureThreshold',
   encode(
     message: SignatureThreshold,
     writer: BinaryWriter = BinaryWriter.create(),

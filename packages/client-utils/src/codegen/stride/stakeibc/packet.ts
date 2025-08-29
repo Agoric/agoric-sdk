@@ -24,7 +24,7 @@ function createBaseStakeibcPacketData(): StakeibcPacketData {
   };
 }
 export const StakeibcPacketData = {
-  typeUrl: '/stride.stakeibc.StakeibcPacketData' as const,
+  typeUrl: '/stride.stakeibc.StakeibcPacketData',
   encode(
     message: StakeibcPacketData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -91,7 +91,7 @@ function createBaseNoData(): NoData {
   return {};
 }
 export const NoData = {
-  typeUrl: '/stride.stakeibc.NoData' as const,
+  typeUrl: '/stride.stakeibc.NoData',
   encode(
     _: NoData,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -94,7 +94,7 @@ function createBaseGenericAuthorization(): GenericAuthorization {
   };
 }
 export const GenericAuthorization = {
-  typeUrl: '/cosmos.authz.v1beta1.GenericAuthorization' as const,
+  typeUrl: '/cosmos.authz.v1beta1.GenericAuthorization',
   encode(
     message: GenericAuthorization,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -160,7 +160,7 @@ function createBaseGrant(): Grant {
   };
 }
 export const Grant = {
-  typeUrl: '/cosmos.authz.v1beta1.Grant' as const,
+  typeUrl: '/cosmos.authz.v1beta1.Grant',
   encode(
     message: Grant,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -248,7 +248,7 @@ function createBaseGrantAuthorization(): GrantAuthorization {
   };
 }
 export const GrantAuthorization = {
-  typeUrl: '/cosmos.authz.v1beta1.GrantAuthorization' as const,
+  typeUrl: '/cosmos.authz.v1beta1.GrantAuthorization',
   encode(
     message: GrantAuthorization,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -354,7 +354,7 @@ function createBaseGrantQueueItem(): GrantQueueItem {
   };
 }
 export const GrantQueueItem = {
-  typeUrl: '/cosmos.authz.v1beta1.GrantQueueItem' as const,
+  typeUrl: '/cosmos.authz.v1beta1.GrantQueueItem',
   encode(
     message: GrantQueueItem,
     writer: BinaryWriter = BinaryWriter.create(),

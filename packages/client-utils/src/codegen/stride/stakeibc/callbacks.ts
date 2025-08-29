@@ -206,7 +206,7 @@ function createBaseSplitDelegation(): SplitDelegation {
   };
 }
 export const SplitDelegation = {
-  typeUrl: '/stride.stakeibc.SplitDelegation' as const,
+  typeUrl: '/stride.stakeibc.SplitDelegation',
   encode(
     message: SplitDelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -278,7 +278,7 @@ function createBaseSplitUndelegation(): SplitUndelegation {
   };
 }
 export const SplitUndelegation = {
-  typeUrl: '/stride.stakeibc.SplitUndelegation' as const,
+  typeUrl: '/stride.stakeibc.SplitUndelegation',
   encode(
     message: SplitUndelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -354,7 +354,7 @@ function createBaseDelegateCallback(): DelegateCallback {
   };
 }
 export const DelegateCallback = {
-  typeUrl: '/stride.stakeibc.DelegateCallback' as const,
+  typeUrl: '/stride.stakeibc.DelegateCallback',
   encode(
     message: DelegateCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -453,7 +453,7 @@ function createBaseClaimCallback(): ClaimCallback {
   };
 }
 export const ClaimCallback = {
-  typeUrl: '/stride.stakeibc.ClaimCallback' as const,
+  typeUrl: '/stride.stakeibc.ClaimCallback',
   encode(
     message: ClaimCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -543,7 +543,7 @@ function createBaseReinvestCallback(): ReinvestCallback {
   };
 }
 export const ReinvestCallback = {
-  typeUrl: '/stride.stakeibc.ReinvestCallback' as const,
+  typeUrl: '/stride.stakeibc.ReinvestCallback',
   encode(
     message: ReinvestCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -624,7 +624,7 @@ function createBaseUndelegateCallback(): UndelegateCallback {
   };
 }
 export const UndelegateCallback = {
-  typeUrl: '/stride.stakeibc.UndelegateCallback' as const,
+  typeUrl: '/stride.stakeibc.UndelegateCallback',
   encode(
     message: UndelegateCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -740,7 +740,7 @@ function createBaseRedemptionCallback(): RedemptionCallback {
   };
 }
 export const RedemptionCallback = {
-  typeUrl: '/stride.stakeibc.RedemptionCallback' as const,
+  typeUrl: '/stride.stakeibc.RedemptionCallback',
   encode(
     message: RedemptionCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -834,7 +834,7 @@ function createBaseRebalancing(): Rebalancing {
   };
 }
 export const Rebalancing = {
-  typeUrl: '/stride.stakeibc.Rebalancing' as const,
+  typeUrl: '/stride.stakeibc.Rebalancing',
   encode(
     message: Rebalancing,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -921,7 +921,7 @@ function createBaseRebalanceCallback(): RebalanceCallback {
   };
 }
 export const RebalanceCallback = {
-  typeUrl: '/stride.stakeibc.RebalanceCallback' as const,
+  typeUrl: '/stride.stakeibc.RebalanceCallback',
   encode(
     message: RebalanceCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1003,7 +1003,7 @@ function createBaseDetokenizeSharesCallback(): DetokenizeSharesCallback {
   };
 }
 export const DetokenizeSharesCallback = {
-  typeUrl: '/stride.stakeibc.DetokenizeSharesCallback' as const,
+  typeUrl: '/stride.stakeibc.DetokenizeSharesCallback',
   encode(
     message: DetokenizeSharesCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1089,7 +1089,7 @@ function createBaseLSMLiquidStake(): LSMLiquidStake {
   };
 }
 export const LSMLiquidStake = {
-  typeUrl: '/stride.stakeibc.LSMLiquidStake' as const,
+  typeUrl: '/stride.stakeibc.LSMLiquidStake',
   encode(
     message: LSMLiquidStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1196,7 +1196,7 @@ function createBaseValidatorSharesToTokensQueryCallback(): ValidatorSharesToToke
   };
 }
 export const ValidatorSharesToTokensQueryCallback = {
-  typeUrl: '/stride.stakeibc.ValidatorSharesToTokensQueryCallback' as const,
+  typeUrl: '/stride.stakeibc.ValidatorSharesToTokensQueryCallback',
   encode(
     message: ValidatorSharesToTokensQueryCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1283,7 +1283,7 @@ function createBaseDelegatorSharesQueryCallback(): DelegatorSharesQueryCallback 
   };
 }
 export const DelegatorSharesQueryCallback = {
-  typeUrl: '/stride.stakeibc.DelegatorSharesQueryCallback' as const,
+  typeUrl: '/stride.stakeibc.DelegatorSharesQueryCallback',
   encode(
     message: DelegatorSharesQueryCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1361,7 +1361,7 @@ function createBaseCommunityPoolBalanceQueryCallback(): CommunityPoolBalanceQuer
   };
 }
 export const CommunityPoolBalanceQueryCallback = {
-  typeUrl: '/stride.stakeibc.CommunityPoolBalanceQueryCallback' as const,
+  typeUrl: '/stride.stakeibc.CommunityPoolBalanceQueryCallback',
   encode(
     message: CommunityPoolBalanceQueryCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1447,7 +1447,7 @@ function createBaseTradeRouteCallback(): TradeRouteCallback {
   };
 }
 export const TradeRouteCallback = {
-  typeUrl: '/stride.stakeibc.TradeRouteCallback' as const,
+  typeUrl: '/stride.stakeibc.TradeRouteCallback',
   encode(
     message: TradeRouteCallback,
     writer: BinaryWriter = BinaryWriter.create(),

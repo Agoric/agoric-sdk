@@ -188,7 +188,7 @@ function createBaseMsgWithdrawProtocolFees(): MsgWithdrawProtocolFees {
   };
 }
 export const MsgWithdrawProtocolFees = {
-  typeUrl: '/noble.swap.v1.MsgWithdrawProtocolFees' as const,
+  typeUrl: '/noble.swap.v1.MsgWithdrawProtocolFees',
   encode(
     message: MsgWithdrawProtocolFees,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -266,7 +266,7 @@ function createBaseMsgWithdrawProtocolFeesResponse(): MsgWithdrawProtocolFeesRes
   return {};
 }
 export const MsgWithdrawProtocolFeesResponse = {
-  typeUrl: '/noble.swap.v1.MsgWithdrawProtocolFeesResponse' as const,
+  typeUrl: '/noble.swap.v1.MsgWithdrawProtocolFeesResponse',
   encode(
     _: MsgWithdrawProtocolFeesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -329,7 +329,7 @@ function createBaseMsgWithdrawRewards(): MsgWithdrawRewards {
   };
 }
 export const MsgWithdrawRewards = {
-  typeUrl: '/noble.swap.v1.MsgWithdrawRewards' as const,
+  typeUrl: '/noble.swap.v1.MsgWithdrawRewards',
   encode(
     message: MsgWithdrawRewards,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -394,7 +394,7 @@ function createBaseMsgWithdrawRewardsResponse(): MsgWithdrawRewardsResponse {
   };
 }
 export const MsgWithdrawRewardsResponse = {
-  typeUrl: '/noble.swap.v1.MsgWithdrawRewardsResponse' as const,
+  typeUrl: '/noble.swap.v1.MsgWithdrawRewardsResponse',
   encode(
     message: MsgWithdrawRewardsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -476,7 +476,7 @@ function createBaseMsgSwap(): MsgSwap {
   };
 }
 export const MsgSwap = {
-  typeUrl: '/noble.swap.v1.MsgSwap' as const,
+  typeUrl: '/noble.swap.v1.MsgSwap',
   encode(
     message: MsgSwap,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -580,7 +580,7 @@ function createBaseMsgSwapResponse(): MsgSwapResponse {
   };
 }
 export const MsgSwapResponse = {
-  typeUrl: '/noble.swap.v1.MsgSwapResponse' as const,
+  typeUrl: '/noble.swap.v1.MsgSwapResponse',
   encode(
     message: MsgSwapResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -662,7 +662,7 @@ function createBaseMsgPauseByAlgorithm(): MsgPauseByAlgorithm {
   };
 }
 export const MsgPauseByAlgorithm = {
-  typeUrl: '/noble.swap.v1.MsgPauseByAlgorithm' as const,
+  typeUrl: '/noble.swap.v1.MsgPauseByAlgorithm',
   encode(
     message: MsgPauseByAlgorithm,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -739,7 +739,7 @@ function createBaseMsgPauseByAlgorithmResponse(): MsgPauseByAlgorithmResponse {
   };
 }
 export const MsgPauseByAlgorithmResponse = {
-  typeUrl: '/noble.swap.v1.MsgPauseByAlgorithmResponse' as const,
+  typeUrl: '/noble.swap.v1.MsgPauseByAlgorithmResponse',
   encode(
     message: MsgPauseByAlgorithmResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -831,7 +831,7 @@ function createBaseMsgPauseByPoolIds(): MsgPauseByPoolIds {
   };
 }
 export const MsgPauseByPoolIds = {
-  typeUrl: '/noble.swap.v1.MsgPauseByPoolIds' as const,
+  typeUrl: '/noble.swap.v1.MsgPauseByPoolIds',
   encode(
     message: MsgPauseByPoolIds,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -917,7 +917,7 @@ function createBaseMsgPauseByPoolIdsResponse(): MsgPauseByPoolIdsResponse {
   };
 }
 export const MsgPauseByPoolIdsResponse = {
-  typeUrl: '/noble.swap.v1.MsgPauseByPoolIdsResponse' as const,
+  typeUrl: '/noble.swap.v1.MsgPauseByPoolIdsResponse',
   encode(
     message: MsgPauseByPoolIdsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1009,7 +1009,7 @@ function createBaseMsgUnpauseByAlgorithm(): MsgUnpauseByAlgorithm {
   };
 }
 export const MsgUnpauseByAlgorithm = {
-  typeUrl: '/noble.swap.v1.MsgUnpauseByAlgorithm' as const,
+  typeUrl: '/noble.swap.v1.MsgUnpauseByAlgorithm',
   encode(
     message: MsgUnpauseByAlgorithm,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1086,7 +1086,7 @@ function createBaseMsgUnpauseByAlgorithmResponse(): MsgUnpauseByAlgorithmRespons
   };
 }
 export const MsgUnpauseByAlgorithmResponse = {
-  typeUrl: '/noble.swap.v1.MsgUnpauseByAlgorithmResponse' as const,
+  typeUrl: '/noble.swap.v1.MsgUnpauseByAlgorithmResponse',
   encode(
     message: MsgUnpauseByAlgorithmResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1178,7 +1178,7 @@ function createBaseMsgUnpauseByPoolIds(): MsgUnpauseByPoolIds {
   };
 }
 export const MsgUnpauseByPoolIds = {
-  typeUrl: '/noble.swap.v1.MsgUnpauseByPoolIds' as const,
+  typeUrl: '/noble.swap.v1.MsgUnpauseByPoolIds',
   encode(
     message: MsgUnpauseByPoolIds,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1267,7 +1267,7 @@ function createBaseMsgUnpauseByPoolIdsResponse(): MsgUnpauseByPoolIdsResponse {
   };
 }
 export const MsgUnpauseByPoolIdsResponse = {
-  typeUrl: '/noble.swap.v1.MsgUnpauseByPoolIdsResponse' as const,
+  typeUrl: '/noble.swap.v1.MsgUnpauseByPoolIdsResponse',
   encode(
     message: MsgUnpauseByPoolIdsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

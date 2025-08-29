@@ -394,7 +394,7 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
 export const QueryParamsRequest = {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryParamsRequest' as const,
+  typeUrl: '/cosmos.distribution.v1beta1.QueryParamsRequest',
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -449,7 +449,7 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
   };
 }
 export const QueryParamsResponse = {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryParamsResponse' as const,
+  typeUrl: '/cosmos.distribution.v1beta1.QueryParamsResponse',
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -518,8 +518,7 @@ function createBaseQueryValidatorDistributionInfoRequest(): QueryValidatorDistri
   };
 }
 export const QueryValidatorDistributionInfoRequest = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryValidatorDistributionInfoRequest' as const,
+  typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorDistributionInfoRequest',
   encode(
     message: QueryValidatorDistributionInfoRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -599,7 +598,7 @@ function createBaseQueryValidatorDistributionInfoResponse(): QueryValidatorDistr
 }
 export const QueryValidatorDistributionInfoResponse = {
   typeUrl:
-    '/cosmos.distribution.v1beta1.QueryValidatorDistributionInfoResponse' as const,
+    '/cosmos.distribution.v1beta1.QueryValidatorDistributionInfoResponse',
   encode(
     message: QueryValidatorDistributionInfoResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -713,7 +712,7 @@ function createBaseQueryValidatorOutstandingRewardsRequest(): QueryValidatorOuts
 }
 export const QueryValidatorOutstandingRewardsRequest = {
   typeUrl:
-    '/cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsRequest' as const,
+    '/cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsRequest',
   encode(
     message: QueryValidatorOutstandingRewardsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -791,7 +790,7 @@ function createBaseQueryValidatorOutstandingRewardsResponse(): QueryValidatorOut
 }
 export const QueryValidatorOutstandingRewardsResponse = {
   typeUrl:
-    '/cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsResponse' as const,
+    '/cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsResponse',
   encode(
     message: QueryValidatorOutstandingRewardsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -879,8 +878,7 @@ function createBaseQueryValidatorCommissionRequest(): QueryValidatorCommissionRe
   };
 }
 export const QueryValidatorCommissionRequest = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryValidatorCommissionRequest' as const,
+  typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorCommissionRequest',
   encode(
     message: QueryValidatorCommissionRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -956,8 +954,7 @@ function createBaseQueryValidatorCommissionResponse(): QueryValidatorCommissionR
   };
 }
 export const QueryValidatorCommissionResponse = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryValidatorCommissionResponse' as const,
+  typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorCommissionResponse',
   encode(
     message: QueryValidatorCommissionResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1047,7 +1044,7 @@ function createBaseQueryValidatorSlashesRequest(): QueryValidatorSlashesRequest 
   };
 }
 export const QueryValidatorSlashesRequest = {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorSlashesRequest' as const,
+  typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorSlashesRequest',
   encode(
     message: QueryValidatorSlashesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1171,8 +1168,7 @@ function createBaseQueryValidatorSlashesResponse(): QueryValidatorSlashesRespons
   };
 }
 export const QueryValidatorSlashesResponse = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryValidatorSlashesResponse' as const,
+  typeUrl: '/cosmos.distribution.v1beta1.QueryValidatorSlashesResponse',
   encode(
     message: QueryValidatorSlashesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1277,8 +1273,7 @@ function createBaseQueryDelegationRewardsRequest(): QueryDelegationRewardsReques
   };
 }
 export const QueryDelegationRewardsRequest = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryDelegationRewardsRequest' as const,
+  typeUrl: '/cosmos.distribution.v1beta1.QueryDelegationRewardsRequest',
   encode(
     message: QueryDelegationRewardsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1366,8 +1361,7 @@ function createBaseQueryDelegationRewardsResponse(): QueryDelegationRewardsRespo
   };
 }
 export const QueryDelegationRewardsResponse = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryDelegationRewardsResponse' as const,
+  typeUrl: '/cosmos.distribution.v1beta1.QueryDelegationRewardsResponse',
   encode(
     message: QueryDelegationRewardsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1448,8 +1442,7 @@ function createBaseQueryDelegationTotalRewardsRequest(): QueryDelegationTotalRew
   };
 }
 export const QueryDelegationTotalRewardsRequest = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryDelegationTotalRewardsRequest' as const,
+  typeUrl: '/cosmos.distribution.v1beta1.QueryDelegationTotalRewardsRequest',
   encode(
     message: QueryDelegationTotalRewardsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1527,8 +1520,7 @@ function createBaseQueryDelegationTotalRewardsResponse(): QueryDelegationTotalRe
   };
 }
 export const QueryDelegationTotalRewardsResponse = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryDelegationTotalRewardsResponse' as const,
+  typeUrl: '/cosmos.distribution.v1beta1.QueryDelegationTotalRewardsResponse',
   encode(
     message: QueryDelegationTotalRewardsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1628,8 +1620,7 @@ function createBaseQueryDelegatorValidatorsRequest(): QueryDelegatorValidatorsRe
   };
 }
 export const QueryDelegatorValidatorsRequest = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryDelegatorValidatorsRequest' as const,
+  typeUrl: '/cosmos.distribution.v1beta1.QueryDelegatorValidatorsRequest',
   encode(
     message: QueryDelegatorValidatorsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1705,8 +1696,7 @@ function createBaseQueryDelegatorValidatorsResponse(): QueryDelegatorValidatorsR
   };
 }
 export const QueryDelegatorValidatorsResponse = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryDelegatorValidatorsResponse' as const,
+  typeUrl: '/cosmos.distribution.v1beta1.QueryDelegatorValidatorsResponse',
   encode(
     message: QueryDelegatorValidatorsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1785,8 +1775,7 @@ function createBaseQueryDelegatorWithdrawAddressRequest(): QueryDelegatorWithdra
   };
 }
 export const QueryDelegatorWithdrawAddressRequest = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryDelegatorWithdrawAddressRequest' as const,
+  typeUrl: '/cosmos.distribution.v1beta1.QueryDelegatorWithdrawAddressRequest',
   encode(
     message: QueryDelegatorWithdrawAddressRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1863,8 +1852,7 @@ function createBaseQueryDelegatorWithdrawAddressResponse(): QueryDelegatorWithdr
   };
 }
 export const QueryDelegatorWithdrawAddressResponse = {
-  typeUrl:
-    '/cosmos.distribution.v1beta1.QueryDelegatorWithdrawAddressResponse' as const,
+  typeUrl: '/cosmos.distribution.v1beta1.QueryDelegatorWithdrawAddressResponse',
   encode(
     message: QueryDelegatorWithdrawAddressResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1939,7 +1927,7 @@ function createBaseQueryCommunityPoolRequest(): QueryCommunityPoolRequest {
   return {};
 }
 export const QueryCommunityPoolRequest = {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryCommunityPoolRequest' as const,
+  typeUrl: '/cosmos.distribution.v1beta1.QueryCommunityPoolRequest',
   encode(
     _: QueryCommunityPoolRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2000,7 +1988,7 @@ function createBaseQueryCommunityPoolResponse(): QueryCommunityPoolResponse {
   };
 }
 export const QueryCommunityPoolResponse = {
-  typeUrl: '/cosmos.distribution.v1beta1.QueryCommunityPoolResponse' as const,
+  typeUrl: '/cosmos.distribution.v1beta1.QueryCommunityPoolResponse',
   encode(
     message: QueryCommunityPoolResponse,
     writer: BinaryWriter = BinaryWriter.create(),

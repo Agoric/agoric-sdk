@@ -36,7 +36,7 @@ function createBasePairs(): Pairs {
   };
 }
 export const Pairs = {
-  typeUrl: '/cosmos.store.internal.kv.v1beta1.Pairs' as const,
+  typeUrl: '/cosmos.store.internal.kv.v1beta1.Pairs',
   encode(
     message: Pairs,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -105,7 +105,7 @@ function createBasePair(): Pair {
   };
 }
 export const Pair = {
-  typeUrl: '/cosmos.store.internal.kv.v1beta1.Pair' as const,
+  typeUrl: '/cosmos.store.internal.kv.v1beta1.Pair',
   encode(
     message: Pair,
     writer: BinaryWriter = BinaryWriter.create(),

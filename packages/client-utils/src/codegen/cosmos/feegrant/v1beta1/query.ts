@@ -123,7 +123,7 @@ function createBaseQueryAllowanceRequest(): QueryAllowanceRequest {
   };
 }
 export const QueryAllowanceRequest = {
-  typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowanceRequest' as const,
+  typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowanceRequest',
   encode(
     message: QueryAllowanceRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -197,7 +197,7 @@ function createBaseQueryAllowanceResponse(): QueryAllowanceResponse {
   };
 }
 export const QueryAllowanceResponse = {
-  typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowanceResponse' as const,
+  typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowanceResponse',
   encode(
     message: QueryAllowanceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -273,7 +273,7 @@ function createBaseQueryAllowancesRequest(): QueryAllowancesRequest {
   };
 }
 export const QueryAllowancesRequest = {
-  typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowancesRequest' as const,
+  typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowancesRequest',
   encode(
     message: QueryAllowancesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -358,7 +358,7 @@ function createBaseQueryAllowancesResponse(): QueryAllowancesResponse {
   };
 }
 export const QueryAllowancesResponse = {
-  typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowancesResponse' as const,
+  typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowancesResponse',
   encode(
     message: QueryAllowancesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -459,7 +459,7 @@ function createBaseQueryAllowancesByGranterRequest(): QueryAllowancesByGranterRe
   };
 }
 export const QueryAllowancesByGranterRequest = {
-  typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowancesByGranterRequest' as const,
+  typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowancesByGranterRequest',
   encode(
     message: QueryAllowancesByGranterRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -550,7 +550,7 @@ function createBaseQueryAllowancesByGranterResponse(): QueryAllowancesByGranterR
   };
 }
 export const QueryAllowancesByGranterResponse = {
-  typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowancesByGranterResponse' as const,
+  typeUrl: '/cosmos.feegrant.v1beta1.QueryAllowancesByGranterResponse',
   encode(
     message: QueryAllowancesByGranterResponse,
     writer: BinaryWriter = BinaryWriter.create(),

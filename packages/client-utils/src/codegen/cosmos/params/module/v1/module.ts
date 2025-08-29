@@ -13,7 +13,7 @@ function createBaseModule(): Module {
   return {};
 }
 export const Module = {
-  typeUrl: '/cosmos.params.module.v1.Module' as const,
+  typeUrl: '/cosmos.params.module.v1.Module',
   encode(
     _: Module,
     writer: BinaryWriter = BinaryWriter.create(),

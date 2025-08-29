@@ -31,7 +31,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/cosmos.mint.v1beta1.GenesisState' as const,
+  typeUrl: '/cosmos.mint.v1beta1.GenesisState',
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

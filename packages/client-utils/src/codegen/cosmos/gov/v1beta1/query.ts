@@ -285,7 +285,7 @@ function createBaseQueryProposalRequest(): QueryProposalRequest {
   };
 }
 export const QueryProposalRequest = {
-  typeUrl: '/cosmos.gov.v1beta1.QueryProposalRequest' as const,
+  typeUrl: '/cosmos.gov.v1beta1.QueryProposalRequest',
   encode(
     message: QueryProposalRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -356,7 +356,7 @@ function createBaseQueryProposalResponse(): QueryProposalResponse {
   };
 }
 export const QueryProposalResponse = {
-  typeUrl: '/cosmos.gov.v1beta1.QueryProposalResponse' as const,
+  typeUrl: '/cosmos.gov.v1beta1.QueryProposalResponse',
   encode(
     message: QueryProposalResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -432,7 +432,7 @@ function createBaseQueryProposalsRequest(): QueryProposalsRequest {
   };
 }
 export const QueryProposalsRequest = {
-  typeUrl: '/cosmos.gov.v1beta1.QueryProposalsRequest' as const,
+  typeUrl: '/cosmos.gov.v1beta1.QueryProposalsRequest',
   encode(
     message: QueryProposalsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -536,7 +536,7 @@ function createBaseQueryProposalsResponse(): QueryProposalsResponse {
   };
 }
 export const QueryProposalsResponse = {
-  typeUrl: '/cosmos.gov.v1beta1.QueryProposalsResponse' as const,
+  typeUrl: '/cosmos.gov.v1beta1.QueryProposalsResponse',
   encode(
     message: QueryProposalsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -633,7 +633,7 @@ function createBaseQueryVoteRequest(): QueryVoteRequest {
   };
 }
 export const QueryVoteRequest = {
-  typeUrl: '/cosmos.gov.v1beta1.QueryVoteRequest' as const,
+  typeUrl: '/cosmos.gov.v1beta1.QueryVoteRequest',
   encode(
     message: QueryVoteRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -710,7 +710,7 @@ function createBaseQueryVoteResponse(): QueryVoteResponse {
   };
 }
 export const QueryVoteResponse = {
-  typeUrl: '/cosmos.gov.v1beta1.QueryVoteResponse' as const,
+  typeUrl: '/cosmos.gov.v1beta1.QueryVoteResponse',
   encode(
     message: QueryVoteResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -777,7 +777,7 @@ function createBaseQueryVotesRequest(): QueryVotesRequest {
   };
 }
 export const QueryVotesRequest = {
-  typeUrl: '/cosmos.gov.v1beta1.QueryVotesRequest' as const,
+  typeUrl: '/cosmos.gov.v1beta1.QueryVotesRequest',
   encode(
     message: QueryVotesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -863,7 +863,7 @@ function createBaseQueryVotesResponse(): QueryVotesResponse {
   };
 }
 export const QueryVotesResponse = {
-  typeUrl: '/cosmos.gov.v1beta1.QueryVotesResponse' as const,
+  typeUrl: '/cosmos.gov.v1beta1.QueryVotesResponse',
   encode(
     message: QueryVotesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -954,7 +954,7 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
   };
 }
 export const QueryParamsRequest = {
-  typeUrl: '/cosmos.gov.v1beta1.QueryParamsRequest' as const,
+  typeUrl: '/cosmos.gov.v1beta1.QueryParamsRequest',
   encode(
     message: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1021,7 +1021,7 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
   };
 }
 export const QueryParamsResponse = {
-  typeUrl: '/cosmos.gov.v1beta1.QueryParamsResponse' as const,
+  typeUrl: '/cosmos.gov.v1beta1.QueryParamsResponse',
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1138,7 +1138,7 @@ function createBaseQueryDepositRequest(): QueryDepositRequest {
   };
 }
 export const QueryDepositRequest = {
-  typeUrl: '/cosmos.gov.v1beta1.QueryDepositRequest' as const,
+  typeUrl: '/cosmos.gov.v1beta1.QueryDepositRequest',
   encode(
     message: QueryDepositRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1218,7 +1218,7 @@ function createBaseQueryDepositResponse(): QueryDepositResponse {
   };
 }
 export const QueryDepositResponse = {
-  typeUrl: '/cosmos.gov.v1beta1.QueryDepositResponse' as const,
+  typeUrl: '/cosmos.gov.v1beta1.QueryDepositResponse',
   encode(
     message: QueryDepositResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1292,7 +1292,7 @@ function createBaseQueryDepositsRequest(): QueryDepositsRequest {
   };
 }
 export const QueryDepositsRequest = {
-  typeUrl: '/cosmos.gov.v1beta1.QueryDepositsRequest' as const,
+  typeUrl: '/cosmos.gov.v1beta1.QueryDepositsRequest',
   encode(
     message: QueryDepositsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1381,7 +1381,7 @@ function createBaseQueryDepositsResponse(): QueryDepositsResponse {
   };
 }
 export const QueryDepositsResponse = {
-  typeUrl: '/cosmos.gov.v1beta1.QueryDepositsResponse' as const,
+  typeUrl: '/cosmos.gov.v1beta1.QueryDepositsResponse',
   encode(
     message: QueryDepositsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1474,7 +1474,7 @@ function createBaseQueryTallyResultRequest(): QueryTallyResultRequest {
   };
 }
 export const QueryTallyResultRequest = {
-  typeUrl: '/cosmos.gov.v1beta1.QueryTallyResultRequest' as const,
+  typeUrl: '/cosmos.gov.v1beta1.QueryTallyResultRequest',
   encode(
     message: QueryTallyResultRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1551,7 +1551,7 @@ function createBaseQueryTallyResultResponse(): QueryTallyResultResponse {
   };
 }
 export const QueryTallyResultResponse = {
-  typeUrl: '/cosmos.gov.v1beta1.QueryTallyResultResponse' as const,
+  typeUrl: '/cosmos.gov.v1beta1.QueryTallyResultResponse',
   encode(
     message: QueryTallyResultResponse,
     writer: BinaryWriter = BinaryWriter.create(),

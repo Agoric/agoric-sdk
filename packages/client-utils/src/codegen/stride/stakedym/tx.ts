@@ -334,7 +334,7 @@ function createBaseMsgLiquidStake(): MsgLiquidStake {
   };
 }
 export const MsgLiquidStake = {
-  typeUrl: '/stride.stakedym.MsgLiquidStake' as const,
+  typeUrl: '/stride.stakedym.MsgLiquidStake',
   encode(
     message: MsgLiquidStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -408,7 +408,7 @@ function createBaseMsgLiquidStakeResponse(): MsgLiquidStakeResponse {
   };
 }
 export const MsgLiquidStakeResponse = {
-  typeUrl: '/stride.stakedym.MsgLiquidStakeResponse' as const,
+  typeUrl: '/stride.stakedym.MsgLiquidStakeResponse',
   encode(
     message: MsgLiquidStakeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -484,7 +484,7 @@ function createBaseMsgRedeemStake(): MsgRedeemStake {
   };
 }
 export const MsgRedeemStake = {
-  typeUrl: '/stride.stakedym.MsgRedeemStake' as const,
+  typeUrl: '/stride.stakedym.MsgRedeemStake',
   encode(
     message: MsgRedeemStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -558,7 +558,7 @@ function createBaseMsgRedeemStakeResponse(): MsgRedeemStakeResponse {
   };
 }
 export const MsgRedeemStakeResponse = {
-  typeUrl: '/stride.stakedym.MsgRedeemStakeResponse' as const,
+  typeUrl: '/stride.stakedym.MsgRedeemStakeResponse',
   encode(
     message: MsgRedeemStakeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -635,7 +635,7 @@ function createBaseMsgConfirmDelegation(): MsgConfirmDelegation {
   };
 }
 export const MsgConfirmDelegation = {
-  typeUrl: '/stride.stakedym.MsgConfirmDelegation' as const,
+  typeUrl: '/stride.stakedym.MsgConfirmDelegation',
   encode(
     message: MsgConfirmDelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -722,7 +722,7 @@ function createBaseMsgConfirmDelegationResponse(): MsgConfirmDelegationResponse 
   return {};
 }
 export const MsgConfirmDelegationResponse = {
-  typeUrl: '/stride.stakedym.MsgConfirmDelegationResponse' as const,
+  typeUrl: '/stride.stakedym.MsgConfirmDelegationResponse',
   encode(
     _: MsgConfirmDelegationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -787,7 +787,7 @@ function createBaseMsgConfirmUndelegation(): MsgConfirmUndelegation {
   };
 }
 export const MsgConfirmUndelegation = {
-  typeUrl: '/stride.stakedym.MsgConfirmUndelegation' as const,
+  typeUrl: '/stride.stakedym.MsgConfirmUndelegation',
   encode(
     message: MsgConfirmUndelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -876,7 +876,7 @@ function createBaseMsgConfirmUndelegationResponse(): MsgConfirmUndelegationRespo
   return {};
 }
 export const MsgConfirmUndelegationResponse = {
-  typeUrl: '/stride.stakedym.MsgConfirmUndelegationResponse' as const,
+  typeUrl: '/stride.stakedym.MsgConfirmUndelegationResponse',
   encode(
     _: MsgConfirmUndelegationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -941,7 +941,7 @@ function createBaseMsgConfirmUnbondedTokenSweep(): MsgConfirmUnbondedTokenSweep 
   };
 }
 export const MsgConfirmUnbondedTokenSweep = {
-  typeUrl: '/stride.stakedym.MsgConfirmUnbondedTokenSweep' as const,
+  typeUrl: '/stride.stakedym.MsgConfirmUnbondedTokenSweep',
   encode(
     message: MsgConfirmUnbondedTokenSweep,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1036,7 +1036,7 @@ function createBaseMsgConfirmUnbondedTokenSweepResponse(): MsgConfirmUnbondedTok
   return {};
 }
 export const MsgConfirmUnbondedTokenSweepResponse = {
-  typeUrl: '/stride.stakedym.MsgConfirmUnbondedTokenSweepResponse' as const,
+  typeUrl: '/stride.stakedym.MsgConfirmUnbondedTokenSweepResponse',
   encode(
     _: MsgConfirmUnbondedTokenSweepResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1101,7 +1101,7 @@ function createBaseMsgAdjustDelegatedBalance(): MsgAdjustDelegatedBalance {
   };
 }
 export const MsgAdjustDelegatedBalance = {
-  typeUrl: '/stride.stakedym.MsgAdjustDelegatedBalance' as const,
+  typeUrl: '/stride.stakedym.MsgAdjustDelegatedBalance',
   encode(
     message: MsgAdjustDelegatedBalance,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1196,7 +1196,7 @@ function createBaseMsgAdjustDelegatedBalanceResponse(): MsgAdjustDelegatedBalanc
   return {};
 }
 export const MsgAdjustDelegatedBalanceResponse = {
-  typeUrl: '/stride.stakedym.MsgAdjustDelegatedBalanceResponse' as const,
+  typeUrl: '/stride.stakedym.MsgAdjustDelegatedBalanceResponse',
   encode(
     _: MsgAdjustDelegatedBalanceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1261,7 +1261,7 @@ function createBaseMsgUpdateInnerRedemptionRateBounds(): MsgUpdateInnerRedemptio
   };
 }
 export const MsgUpdateInnerRedemptionRateBounds = {
-  typeUrl: '/stride.stakedym.MsgUpdateInnerRedemptionRateBounds' as const,
+  typeUrl: '/stride.stakedym.MsgUpdateInnerRedemptionRateBounds',
   encode(
     message: MsgUpdateInnerRedemptionRateBounds,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1370,8 +1370,7 @@ function createBaseMsgUpdateInnerRedemptionRateBoundsResponse(): MsgUpdateInnerR
   return {};
 }
 export const MsgUpdateInnerRedemptionRateBoundsResponse = {
-  typeUrl:
-    '/stride.stakedym.MsgUpdateInnerRedemptionRateBoundsResponse' as const,
+  typeUrl: '/stride.stakedym.MsgUpdateInnerRedemptionRateBoundsResponse',
   encode(
     _: MsgUpdateInnerRedemptionRateBoundsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1435,7 +1434,7 @@ function createBaseMsgResumeHostZone(): MsgResumeHostZone {
   };
 }
 export const MsgResumeHostZone = {
-  typeUrl: '/stride.stakedym.MsgResumeHostZone' as const,
+  typeUrl: '/stride.stakedym.MsgResumeHostZone',
   encode(
     message: MsgResumeHostZone,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1495,7 +1494,7 @@ function createBaseMsgResumeHostZoneResponse(): MsgResumeHostZoneResponse {
   return {};
 }
 export const MsgResumeHostZoneResponse = {
-  typeUrl: '/stride.stakedym.MsgResumeHostZoneResponse' as const,
+  typeUrl: '/stride.stakedym.MsgResumeHostZoneResponse',
   encode(
     _: MsgResumeHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1556,7 +1555,7 @@ function createBaseMsgRefreshRedemptionRate(): MsgRefreshRedemptionRate {
   };
 }
 export const MsgRefreshRedemptionRate = {
-  typeUrl: '/stride.stakedym.MsgRefreshRedemptionRate' as const,
+  typeUrl: '/stride.stakedym.MsgRefreshRedemptionRate',
   encode(
     message: MsgRefreshRedemptionRate,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1627,7 +1626,7 @@ function createBaseMsgRefreshRedemptionRateResponse(): MsgRefreshRedemptionRateR
   return {};
 }
 export const MsgRefreshRedemptionRateResponse = {
-  typeUrl: '/stride.stakedym.MsgRefreshRedemptionRateResponse' as const,
+  typeUrl: '/stride.stakedym.MsgRefreshRedemptionRateResponse',
   encode(
     _: MsgRefreshRedemptionRateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1691,7 +1690,7 @@ function createBaseMsgOverwriteDelegationRecord(): MsgOverwriteDelegationRecord 
   };
 }
 export const MsgOverwriteDelegationRecord = {
-  typeUrl: '/stride.stakedym.MsgOverwriteDelegationRecord' as const,
+  typeUrl: '/stride.stakedym.MsgOverwriteDelegationRecord',
   encode(
     message: MsgOverwriteDelegationRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1785,7 +1784,7 @@ function createBaseMsgOverwriteDelegationRecordResponse(): MsgOverwriteDelegatio
   return {};
 }
 export const MsgOverwriteDelegationRecordResponse = {
-  typeUrl: '/stride.stakedym.MsgOverwriteDelegationRecordResponse' as const,
+  typeUrl: '/stride.stakedym.MsgOverwriteDelegationRecordResponse',
   encode(
     _: MsgOverwriteDelegationRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1849,7 +1848,7 @@ function createBaseMsgOverwriteUnbondingRecord(): MsgOverwriteUnbondingRecord {
   };
 }
 export const MsgOverwriteUnbondingRecord = {
-  typeUrl: '/stride.stakedym.MsgOverwriteUnbondingRecord' as const,
+  typeUrl: '/stride.stakedym.MsgOverwriteUnbondingRecord',
   encode(
     message: MsgOverwriteUnbondingRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1943,7 +1942,7 @@ function createBaseMsgOverwriteUnbondingRecordResponse(): MsgOverwriteUnbondingR
   return {};
 }
 export const MsgOverwriteUnbondingRecordResponse = {
-  typeUrl: '/stride.stakedym.MsgOverwriteUnbondingRecordResponse' as const,
+  typeUrl: '/stride.stakedym.MsgOverwriteUnbondingRecordResponse',
   encode(
     _: MsgOverwriteUnbondingRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2007,7 +2006,7 @@ function createBaseMsgOverwriteRedemptionRecord(): MsgOverwriteRedemptionRecord 
   };
 }
 export const MsgOverwriteRedemptionRecord = {
-  typeUrl: '/stride.stakedym.MsgOverwriteRedemptionRecord' as const,
+  typeUrl: '/stride.stakedym.MsgOverwriteRedemptionRecord',
   encode(
     message: MsgOverwriteRedemptionRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2101,7 +2100,7 @@ function createBaseMsgOverwriteRedemptionRecordResponse(): MsgOverwriteRedemptio
   return {};
 }
 export const MsgOverwriteRedemptionRecordResponse = {
-  typeUrl: '/stride.stakedym.MsgOverwriteRedemptionRecordResponse' as const,
+  typeUrl: '/stride.stakedym.MsgOverwriteRedemptionRecordResponse',
   encode(
     _: MsgOverwriteRedemptionRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2165,7 +2164,7 @@ function createBaseMsgSetOperatorAddress(): MsgSetOperatorAddress {
   };
 }
 export const MsgSetOperatorAddress = {
-  typeUrl: '/stride.stakedym.MsgSetOperatorAddress' as const,
+  typeUrl: '/stride.stakedym.MsgSetOperatorAddress',
   encode(
     message: MsgSetOperatorAddress,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2237,7 +2236,7 @@ function createBaseMsgSetOperatorAddressResponse(): MsgSetOperatorAddressRespons
   return {};
 }
 export const MsgSetOperatorAddressResponse = {
-  typeUrl: '/stride.stakedym.MsgSetOperatorAddressResponse' as const,
+  typeUrl: '/stride.stakedym.MsgSetOperatorAddressResponse',
   encode(
     _: MsgSetOperatorAddressResponse,
     writer: BinaryWriter = BinaryWriter.create(),

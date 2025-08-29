@@ -267,7 +267,7 @@ function createBaseMsgConnectionOpenInit(): MsgConnectionOpenInit {
   };
 }
 export const MsgConnectionOpenInit = {
-  typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenInit' as const,
+  typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenInit',
   encode(
     message: MsgConnectionOpenInit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -391,7 +391,7 @@ function createBaseMsgConnectionOpenInitResponse(): MsgConnectionOpenInitRespons
   return {};
 }
 export const MsgConnectionOpenInitResponse = {
-  typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenInitResponse' as const,
+  typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenInitResponse',
   encode(
     _: MsgConnectionOpenInitResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -466,7 +466,7 @@ function createBaseMsgConnectionOpenTry(): MsgConnectionOpenTry {
   };
 }
 export const MsgConnectionOpenTry = {
-  typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenTry' as const,
+  typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenTry',
   encode(
     message: MsgConnectionOpenTry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -719,7 +719,7 @@ function createBaseMsgConnectionOpenTryResponse(): MsgConnectionOpenTryResponse 
   return {};
 }
 export const MsgConnectionOpenTryResponse = {
-  typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenTryResponse' as const,
+  typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenTryResponse',
   encode(
     _: MsgConnectionOpenTryResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -792,7 +792,7 @@ function createBaseMsgConnectionOpenAck(): MsgConnectionOpenAck {
   };
 }
 export const MsgConnectionOpenAck = {
-  typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenAck' as const,
+  typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenAck',
   encode(
     message: MsgConnectionOpenAck,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1010,7 +1010,7 @@ function createBaseMsgConnectionOpenAckResponse(): MsgConnectionOpenAckResponse 
   return {};
 }
 export const MsgConnectionOpenAckResponse = {
-  typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenAckResponse' as const,
+  typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenAckResponse',
   encode(
     _: MsgConnectionOpenAckResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1076,7 +1076,7 @@ function createBaseMsgConnectionOpenConfirm(): MsgConnectionOpenConfirm {
   };
 }
 export const MsgConnectionOpenConfirm = {
-  typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenConfirm' as const,
+  typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenConfirm',
   encode(
     message: MsgConnectionOpenConfirm,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1190,7 +1190,7 @@ function createBaseMsgConnectionOpenConfirmResponse(): MsgConnectionOpenConfirmR
   return {};
 }
 export const MsgConnectionOpenConfirmResponse = {
-  typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenConfirmResponse' as const,
+  typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenConfirmResponse',
   encode(
     _: MsgConnectionOpenConfirmResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1254,7 +1254,7 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
   };
 }
 export const MsgUpdateParams = {
-  typeUrl: '/ibc.core.connection.v1.MsgUpdateParams' as const,
+  typeUrl: '/ibc.core.connection.v1.MsgUpdateParams',
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1327,7 +1327,7 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
 }
 export const MsgUpdateParamsResponse = {
-  typeUrl: '/ibc.core.connection.v1.MsgUpdateParamsResponse' as const,
+  typeUrl: '/ibc.core.connection.v1.MsgUpdateParamsResponse',
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

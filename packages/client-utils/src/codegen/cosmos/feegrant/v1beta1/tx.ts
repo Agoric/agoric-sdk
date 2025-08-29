@@ -105,7 +105,7 @@ function createBaseMsgGrantAllowance(): MsgGrantAllowance {
   };
 }
 export const MsgGrantAllowance = {
-  typeUrl: '/cosmos.feegrant.v1beta1.MsgGrantAllowance' as const,
+  typeUrl: '/cosmos.feegrant.v1beta1.MsgGrantAllowance',
   encode(
     message: MsgGrantAllowance,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -191,7 +191,7 @@ function createBaseMsgGrantAllowanceResponse(): MsgGrantAllowanceResponse {
   return {};
 }
 export const MsgGrantAllowanceResponse = {
-  typeUrl: '/cosmos.feegrant.v1beta1.MsgGrantAllowanceResponse' as const,
+  typeUrl: '/cosmos.feegrant.v1beta1.MsgGrantAllowanceResponse',
   encode(
     _: MsgGrantAllowanceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -253,7 +253,7 @@ function createBaseMsgRevokeAllowance(): MsgRevokeAllowance {
   };
 }
 export const MsgRevokeAllowance = {
-  typeUrl: '/cosmos.feegrant.v1beta1.MsgRevokeAllowance' as const,
+  typeUrl: '/cosmos.feegrant.v1beta1.MsgRevokeAllowance',
   encode(
     message: MsgRevokeAllowance,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -325,7 +325,7 @@ function createBaseMsgRevokeAllowanceResponse(): MsgRevokeAllowanceResponse {
   return {};
 }
 export const MsgRevokeAllowanceResponse = {
-  typeUrl: '/cosmos.feegrant.v1beta1.MsgRevokeAllowanceResponse' as const,
+  typeUrl: '/cosmos.feegrant.v1beta1.MsgRevokeAllowanceResponse',
   encode(
     _: MsgRevokeAllowanceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -386,7 +386,7 @@ function createBaseMsgPruneAllowances(): MsgPruneAllowances {
   };
 }
 export const MsgPruneAllowances = {
-  typeUrl: '/cosmos.feegrant.v1beta1.MsgPruneAllowances' as const,
+  typeUrl: '/cosmos.feegrant.v1beta1.MsgPruneAllowances',
   encode(
     message: MsgPruneAllowances,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -449,7 +449,7 @@ function createBaseMsgPruneAllowancesResponse(): MsgPruneAllowancesResponse {
   return {};
 }
 export const MsgPruneAllowancesResponse = {
-  typeUrl: '/cosmos.feegrant.v1beta1.MsgPruneAllowancesResponse' as const,
+  typeUrl: '/cosmos.feegrant.v1beta1.MsgPruneAllowancesResponse',
   encode(
     _: MsgPruneAllowancesResponse,
     writer: BinaryWriter = BinaryWriter.create(),

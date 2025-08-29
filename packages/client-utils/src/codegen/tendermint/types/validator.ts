@@ -55,7 +55,7 @@ function createBaseValidatorSet(): ValidatorSet {
   };
 }
 export const ValidatorSet = {
-  typeUrl: '/tendermint.types.ValidatorSet' as const,
+  typeUrl: '/tendermint.types.ValidatorSet',
   encode(
     message: ValidatorSet,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -163,7 +163,7 @@ function createBaseValidator(): Validator {
   };
 }
 export const Validator = {
-  typeUrl: '/tendermint.types.Validator' as const,
+  typeUrl: '/tendermint.types.Validator',
   encode(
     message: Validator,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -280,7 +280,7 @@ function createBaseSimpleValidator(): SimpleValidator {
   };
 }
 export const SimpleValidator = {
-  typeUrl: '/tendermint.types.SimpleValidator' as const,
+  typeUrl: '/tendermint.types.SimpleValidator',
   encode(
     message: SimpleValidator,
     writer: BinaryWriter = BinaryWriter.create(),

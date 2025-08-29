@@ -75,7 +75,7 @@ function createBaseConfigRequest(): ConfigRequest {
   return {};
 }
 export const ConfigRequest = {
-  typeUrl: '/cosmos.base.node.v1beta1.ConfigRequest' as const,
+  typeUrl: '/cosmos.base.node.v1beta1.ConfigRequest',
   encode(
     _: ConfigRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -130,7 +130,7 @@ function createBaseConfigResponse(): ConfigResponse {
   };
 }
 export const ConfigResponse = {
-  typeUrl: '/cosmos.base.node.v1beta1.ConfigResponse' as const,
+  typeUrl: '/cosmos.base.node.v1beta1.ConfigResponse',
   encode(
     message: ConfigResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -232,7 +232,7 @@ function createBaseStatusRequest(): StatusRequest {
   return {};
 }
 export const StatusRequest = {
-  typeUrl: '/cosmos.base.node.v1beta1.StatusRequest' as const,
+  typeUrl: '/cosmos.base.node.v1beta1.StatusRequest',
   encode(
     _: StatusRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -288,7 +288,7 @@ function createBaseStatusResponse(): StatusResponse {
   };
 }
 export const StatusResponse = {
-  typeUrl: '/cosmos.base.node.v1beta1.StatusResponse' as const,
+  typeUrl: '/cosmos.base.node.v1beta1.StatusResponse',
   encode(
     message: StatusResponse,
     writer: BinaryWriter = BinaryWriter.create(),

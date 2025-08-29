@@ -72,7 +72,7 @@ function createBaseParams(): Params {
   return {};
 }
 export const Params = {
-  typeUrl: '/stride.staketia.Params' as const,
+  typeUrl: '/stride.staketia.Params',
   encode(
     _: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -126,7 +126,7 @@ function createBaseTransferInProgressRecordIds(): TransferInProgressRecordIds {
   };
 }
 export const TransferInProgressRecordIds = {
-  typeUrl: '/stride.staketia.TransferInProgressRecordIds' as const,
+  typeUrl: '/stride.staketia.TransferInProgressRecordIds',
   encode(
     message: TransferInProgressRecordIds,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -235,7 +235,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/stride.staketia.GenesisState' as const,
+  typeUrl: '/stride.staketia.GenesisState',
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

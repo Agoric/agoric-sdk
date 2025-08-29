@@ -92,7 +92,7 @@ function createBaseQueryAccountRequest(): QueryAccountRequest {
   };
 }
 export const QueryAccountRequest = {
-  typeUrl: '/cosmos.circuit.v1.QueryAccountRequest' as const,
+  typeUrl: '/cosmos.circuit.v1.QueryAccountRequest',
   encode(
     message: QueryAccountRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -157,7 +157,7 @@ function createBaseAccountResponse(): AccountResponse {
   };
 }
 export const AccountResponse = {
-  typeUrl: '/cosmos.circuit.v1.AccountResponse' as const,
+  typeUrl: '/cosmos.circuit.v1.AccountResponse',
   encode(
     message: AccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -227,7 +227,7 @@ function createBaseQueryAccountsRequest(): QueryAccountsRequest {
   };
 }
 export const QueryAccountsRequest = {
-  typeUrl: '/cosmos.circuit.v1.QueryAccountsRequest' as const,
+  typeUrl: '/cosmos.circuit.v1.QueryAccountsRequest',
   encode(
     message: QueryAccountsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -301,7 +301,7 @@ function createBaseAccountsResponse(): AccountsResponse {
   };
 }
 export const AccountsResponse = {
-  typeUrl: '/cosmos.circuit.v1.AccountsResponse' as const,
+  typeUrl: '/cosmos.circuit.v1.AccountsResponse',
   encode(
     message: AccountsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -392,7 +392,7 @@ function createBaseQueryDisabledListRequest(): QueryDisabledListRequest {
   return {};
 }
 export const QueryDisabledListRequest = {
-  typeUrl: '/cosmos.circuit.v1.QueryDisabledListRequest' as const,
+  typeUrl: '/cosmos.circuit.v1.QueryDisabledListRequest',
   encode(
     _: QueryDisabledListRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -451,7 +451,7 @@ function createBaseDisabledListResponse(): DisabledListResponse {
   };
 }
 export const DisabledListResponse = {
-  typeUrl: '/cosmos.circuit.v1.DisabledListResponse' as const,
+  typeUrl: '/cosmos.circuit.v1.DisabledListResponse',
   encode(
     message: DisabledListResponse,
     writer: BinaryWriter = BinaryWriter.create(),

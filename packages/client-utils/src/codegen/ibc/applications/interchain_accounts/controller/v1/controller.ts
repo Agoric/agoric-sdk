@@ -27,8 +27,7 @@ function createBaseParams(): Params {
   };
 }
 export const Params = {
-  typeUrl:
-    '/ibc.applications.interchain_accounts.controller.v1.Params' as const,
+  typeUrl: '/ibc.applications.interchain_accounts.controller.v1.Params',
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),

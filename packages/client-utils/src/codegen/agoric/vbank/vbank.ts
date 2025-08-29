@@ -79,7 +79,7 @@ function createBaseParams(): Params {
   };
 }
 export const Params = {
-  typeUrl: '/agoric.vbank.Params' as const,
+  typeUrl: '/agoric.vbank.Params',
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -210,7 +210,7 @@ function createBaseState(): State {
   };
 }
 export const State = {
-  typeUrl: '/agoric.vbank.State' as const,
+  typeUrl: '/agoric.vbank.State',
   encode(
     message: State,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -54,7 +54,7 @@ function createBaseMultiSignature(): MultiSignature {
   };
 }
 export const MultiSignature = {
-  typeUrl: '/cosmos.crypto.multisig.v1beta1.MultiSignature' as const,
+  typeUrl: '/cosmos.crypto.multisig.v1beta1.MultiSignature',
   encode(
     message: MultiSignature,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -125,7 +125,7 @@ function createBaseCompactBitArray(): CompactBitArray {
   };
 }
 export const CompactBitArray = {
-  typeUrl: '/cosmos.crypto.multisig.v1beta1.CompactBitArray' as const,
+  typeUrl: '/cosmos.crypto.multisig.v1beta1.CompactBitArray',
   encode(
     message: CompactBitArray,
     writer: BinaryWriter = BinaryWriter.create(),

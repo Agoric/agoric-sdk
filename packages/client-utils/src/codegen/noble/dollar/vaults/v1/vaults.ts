@@ -184,7 +184,7 @@ function createBaseReward(): Reward {
   };
 }
 export const Reward = {
-  typeUrl: '/noble.dollar.vaults.v1.Reward' as const,
+  typeUrl: '/noble.dollar.vaults.v1.Reward',
   encode(
     message: Reward,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -271,7 +271,7 @@ function createBasePosition(): Position {
   };
 }
 export const Position = {
-  typeUrl: '/noble.dollar.vaults.v1.Position' as const,
+  typeUrl: '/noble.dollar.vaults.v1.Position',
   encode(
     message: Position,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -369,7 +369,7 @@ function createBasePositionRewards(): PositionRewards {
   };
 }
 export const PositionRewards = {
-  typeUrl: '/noble.dollar.vaults.v1.PositionRewards' as const,
+  typeUrl: '/noble.dollar.vaults.v1.PositionRewards',
   encode(
     message: PositionRewards,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -448,7 +448,7 @@ function createBasePositionEntry(): PositionEntry {
   };
 }
 export const PositionEntry = {
-  typeUrl: '/noble.dollar.vaults.v1.PositionEntry' as const,
+  typeUrl: '/noble.dollar.vaults.v1.PositionEntry',
   encode(
     message: PositionEntry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -572,7 +572,7 @@ function createBaseStats(): Stats {
   };
 }
 export const Stats = {
-  typeUrl: '/noble.dollar.vaults.v1.Stats' as const,
+  typeUrl: '/noble.dollar.vaults.v1.Stats',
   encode(
     message: Stats,
     writer: BinaryWriter = BinaryWriter.create(),

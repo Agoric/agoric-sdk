@@ -25,7 +25,7 @@ function createBasePublicKey(): PublicKey {
   };
 }
 export const PublicKey = {
-  typeUrl: '/tendermint.crypto.PublicKey' as const,
+  typeUrl: '/tendermint.crypto.PublicKey',
   encode(
     message: PublicKey,
     writer: BinaryWriter = BinaryWriter.create(),

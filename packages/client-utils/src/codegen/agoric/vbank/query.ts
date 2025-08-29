@@ -54,7 +54,7 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
 export const QueryParamsRequest = {
-  typeUrl: '/agoric.vbank.QueryParamsRequest' as const,
+  typeUrl: '/agoric.vbank.QueryParamsRequest',
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -109,7 +109,7 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
   };
 }
 export const QueryParamsResponse = {
-  typeUrl: '/agoric.vbank.QueryParamsResponse' as const,
+  typeUrl: '/agoric.vbank.QueryParamsResponse',
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -176,7 +176,7 @@ function createBaseQueryStateRequest(): QueryStateRequest {
   return {};
 }
 export const QueryStateRequest = {
-  typeUrl: '/agoric.vbank.QueryStateRequest' as const,
+  typeUrl: '/agoric.vbank.QueryStateRequest',
   encode(
     _: QueryStateRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -228,7 +228,7 @@ function createBaseQueryStateResponse(): QueryStateResponse {
   };
 }
 export const QueryStateResponse = {
-  typeUrl: '/agoric.vbank.QueryStateResponse' as const,
+  typeUrl: '/agoric.vbank.QueryStateResponse',
   encode(
     message: QueryStateResponse,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -242,7 +242,7 @@ function createBaseConnectionEnd(): ConnectionEnd {
   };
 }
 export const ConnectionEnd = {
-  typeUrl: '/ibc.core.connection.v1.ConnectionEnd' as const,
+  typeUrl: '/ibc.core.connection.v1.ConnectionEnd',
   encode(
     message: ConnectionEnd,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -370,7 +370,7 @@ function createBaseIdentifiedConnection(): IdentifiedConnection {
   };
 }
 export const IdentifiedConnection = {
-  typeUrl: '/ibc.core.connection.v1.IdentifiedConnection' as const,
+  typeUrl: '/ibc.core.connection.v1.IdentifiedConnection',
   encode(
     message: IdentifiedConnection,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -507,7 +507,7 @@ function createBaseCounterparty(): Counterparty {
   };
 }
 export const Counterparty = {
-  typeUrl: '/ibc.core.connection.v1.Counterparty' as const,
+  typeUrl: '/ibc.core.connection.v1.Counterparty',
   encode(
     message: Counterparty,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -598,7 +598,7 @@ function createBaseClientPaths(): ClientPaths {
   };
 }
 export const ClientPaths = {
-  typeUrl: '/ibc.core.connection.v1.ClientPaths' as const,
+  typeUrl: '/ibc.core.connection.v1.ClientPaths',
   encode(
     message: ClientPaths,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -667,7 +667,7 @@ function createBaseConnectionPaths(): ConnectionPaths {
   };
 }
 export const ConnectionPaths = {
-  typeUrl: '/ibc.core.connection.v1.ConnectionPaths' as const,
+  typeUrl: '/ibc.core.connection.v1.ConnectionPaths',
   encode(
     message: ConnectionPaths,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -745,7 +745,7 @@ function createBaseVersion(): Version {
   };
 }
 export const Version = {
-  typeUrl: '/ibc.core.connection.v1.Version' as const,
+  typeUrl: '/ibc.core.connection.v1.Version',
   encode(
     message: Version,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -822,7 +822,7 @@ function createBaseParams(): Params {
   };
 }
 export const Params = {
-  typeUrl: '/ibc.core.connection.v1.Params' as const,
+  typeUrl: '/ibc.core.connection.v1.Params',
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),

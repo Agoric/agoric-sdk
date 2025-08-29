@@ -43,7 +43,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/ibc.applications.transfer.v1.GenesisState' as const,
+  typeUrl: '/ibc.applications.transfer.v1.GenesisState',
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

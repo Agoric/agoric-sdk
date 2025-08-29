@@ -20,7 +20,7 @@ function createBaseGenesisState(): GenesisState {
   };
 }
 export const GenesisState = {
-  typeUrl: '/cosmos.feegrant.v1beta1.GenesisState' as const,
+  typeUrl: '/cosmos.feegrant.v1beta1.GenesisState',
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
