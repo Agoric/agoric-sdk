@@ -712,7 +712,7 @@ test.serial(
     const cctpSettlementPromise2 = settleCCTPWithMockReceiver(
       zoe,
       resolverMakers,
-      1
+      1,
     );
 
     await simulateCCTPAck(common.utils).finally(() =>
