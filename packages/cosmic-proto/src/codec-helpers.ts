@@ -26,10 +26,15 @@ const extractTypeUrlAndValue = (input: any) => {
   } else if ('typeUrl' in input) {
     // ProtoMsg (value: Uint8Array) or EncodeObject (value: MessageBody)
     const { typeUrl, value } = input;
-    return { typeUrl, value };
+    return {
+      typeUrl,
+      value: value instanceof Uint8Array ? value : { ...value },
+    };
   } else if ('type' in input) {
     // TypedAmino
     const { type: typeUrl, value } = input;
+    // We assert later that typeUrl matches the Codec's, so we can know
+    // that the value is Proto3Json.
     return { typeUrl, value };
   }
   throw TypeError(`Unrecognized input: ${input}`);
@@ -99,7 +104,7 @@ export interface Proto3CodecHelper<TU = string, MT = MessageBody<TU>>
       | EncodeObject<TU>
       | ProtoMsg<TU>,
     embeddedProps?: string[],
-  ): Record<string, unknown>;
+  ): MT;
 }
 
 /**
@@ -108,7 +113,7 @@ export interface Proto3CodecHelper<TU = string, MT = MessageBody<TU>>
  *
  * @returns {Proto3CodecHelper<TU, MT>} Codec and helpers that can handle partial input messages.
  */
-export const Help = <TU = string, MT = MessageBody<TU>>(
+export const CodecHelper = <TU = string, MT = MessageBody<TU>>(
   codec: Proto3Codec<TU, MT>,
 ): Proto3CodecHelper<TU, MT> =>
   freeze({
@@ -128,7 +133,7 @@ export const Help = <TU = string, MT = MessageBody<TU>>(
         ...codec.fromPartial(message),
       } as TypedJson<TU>;
     },
-    fromTyped(object, embeddedProps) {
+    fromTyped(object, embeddedProps = []) {
       const { typeUrl, value } = extractTypeUrlAndValue(object);
       if (typeUrl !== codec.typeUrl) {
         throw TypeError(
@@ -136,23 +141,18 @@ export const Help = <TU = string, MT = MessageBody<TU>>(
         );
       }
 
-      const message =
-        value instanceof Uint8Array
-          ? // ProtoMsg
-            codec.fromProtoMsg({ typeUrl, value })
-          : value;
-
-      if (!embeddedProps?.length) {
-        return message;
-      }
-
-      // Merge embedded properties into the top-level object.
-      for (const prop of embeddedProps) {
-        Object.assign(message, value[prop]);
-        if (prop in value) {
-          Object.assign(message, value[prop]);
+      const disembed = (message: MT) => {
+        for (const prop of embeddedProps) {
+          Object.assign(message as any, value[prop], message[prop]);
         }
+        return message;
+      };
+
+      if (value instanceof Uint8Array) {
+        // ProtoMsg
+        return disembed(codec.fromProtoMsg({ typeUrl, value }));
       }
-      return message;
+
+      return disembed(codec.fromPartial(value));
     },
   });
