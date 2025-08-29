@@ -12,24 +12,10 @@ import { TxStatus, TxType } from './constants.js';
 
 export type TxId = `tx${number}`;
 
-export type TransactionSettlementArgs = {
-  status: TxStatus;
-  txId: TxId;
-};
-
-export const TransactionSettlementArgsShape: TypedPattern<TransactionSettlementArgs> =
-  M.splitRecord(
-    {
-      status: M.or(TxStatus.SUCCESS, TxStatus.FAILED),
-      txId: M.string(),
-    },
-    {},
-    {},
-  );
-
 export type TransactionSettlementOfferArgs = {
   status: Exclude<TxStatus, 'pending'>;
   txId: TxId;
+  rejectionReason?: string;
 };
 
 export const TransactionSettlementOfferArgsShape: TypedPattern<TransactionSettlementOfferArgs> =
@@ -38,7 +24,9 @@ export const TransactionSettlementOfferArgsShape: TypedPattern<TransactionSettle
       status: M.or(TxStatus.SUCCESS, TxStatus.FAILED),
       txId: M.string(),
     },
-    {},
+    {
+      rejectionReason: M.string(),
+    },
     {},
   );
 

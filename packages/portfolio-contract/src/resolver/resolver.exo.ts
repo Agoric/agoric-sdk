@@ -22,13 +22,12 @@ import { M } from '@endo/patterns';
 import { TxStatus, TxType } from './constants.js';
 import type {
   PublishedTx,
-  TransactionSettlementArgs,
   TransactionSettlementOfferArgs,
   TxId,
 } from './types.js';
 import {
   ResolverOfferArgsShapes,
-  TransactionSettlementArgsShape,
+  TransactionSettlementOfferArgsShape,
 } from './types.js';
 
 type TransactionEntry = {
@@ -41,18 +40,23 @@ type TransactionEntry = {
 const trace = makeTracer('Resolver');
 
 const ClientFacetI = M.interface('ResolverClient', {
-  registerTransaction: M.call(M.or(...Object.values(TxType)), M.string(), M.nat()).returns(
-    VowShape,
-  ),
+  registerTransaction: M.call(
+    M.or(...Object.values(TxType)),
+    M.string(),
+    M.nat(),
+  ).returns(VowShape),
 });
 
 const ReporterI = M.interface('Reporter', {
   insertPendingTransaction: M.call(M.string(), M.string(), M.nat()).returns(),
-  completePendingTransaction: M.call(M.string(), M.or(TxStatus.SUCCESS, TxStatus.FAILED)).returns(),
+  completePendingTransaction: M.call(
+    M.string(),
+    M.or(TxStatus.SUCCESS, TxStatus.FAILED),
+  ).returns(),
 });
 
 const ServiceFacetI = M.interface('ResolverService', {
-  settleTransaction: M.call(TransactionSettlementArgsShape).returns(),
+  settleTransaction: M.call(TransactionSettlementOfferArgsShape).returns(),
 });
 
 const InvitationMakersFacetI = M.interface('ResolverInvitationMakers', {
@@ -181,9 +185,9 @@ export const prepareResolverKit = (
         },
       },
       service: {
-        settleTransaction(args: TransactionSettlementArgs) {
+        settleTransaction(args: TransactionSettlementOfferArgs) {
           const { transactionRegistry } = this.state;
-          const { status, txId } = args;
+          const { status, txId, rejectionReason } = args;
           if (!transactionRegistry.has(txId)) {
             trace('No pending transaction found for key:', txId);
             throw Error(`No pending transaction found matching: ${q(txId)}`);
@@ -210,7 +214,9 @@ export const prepareResolverKit = (
                 'Transaction failed - rejecting pending operation for key:',
                 txId,
               );
-              registryEntry.vowKit.resolver.reject(Error('Transaction failed'));
+              registryEntry.vowKit.resolver.reject(
+                rejectionReason || Error('Transaction failed'),
+              );
               this.facets.reporter.completePendingTransaction(
                 txId,
                 TxStatus.FAILED,
