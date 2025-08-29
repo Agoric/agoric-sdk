@@ -137,11 +137,11 @@ const createMockAxelarResponse = (
 };
 
 test('getTxStatus detects successful execution with matching subscription ID', async t => {
-  const subscriptionId = 'test-subscription-12345';
+  const txId = 'tx0';
 
   // Mock fetch that returns executed status with matching subscription ID
   const mockFetch = async (url: string, options: any) => {
-    const response = createMockAxelarResponse('executed', subscriptionId);
+    const response = createMockAxelarResponse('executed', txId);
     return {
       ok: true,
       json: async () => response,
@@ -156,7 +156,7 @@ test('getTxStatus detects successful execution with matching subscription ID', a
       destinationChain: 'Avalanche',
       contractAddress: '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
     },
-    subscriptionId,
+    txId,
     log: console.log,
   });
 
@@ -165,11 +165,11 @@ test('getTxStatus detects successful execution with matching subscription ID', a
 });
 
 test('getTxStatus rejects execution with mismatched subscription ID', async t => {
-  const expectedSubscriptionId = 'test-subscription-12345';
-  const actualSubscriptionId = 'different-subscription-67890';
+  const expectedTxId = 'tx1';
+  const actualTxId = 'tx-2';
 
   const mockFetch = async (url: string, options: any) => {
-    const response = createMockAxelarResponse('executed', actualSubscriptionId);
+    const response = createMockAxelarResponse('executed', actualTxId);
     return {
       ok: true,
       json: async () => response,
@@ -184,7 +184,7 @@ test('getTxStatus rejects execution with mismatched subscription ID', async t =>
       destinationChain: 'arbitrum',
       contractAddress: '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
     },
-    subscriptionId: expectedSubscriptionId,
+    txId: expectedTxId,
     logPrefix: '[TEST]',
     timeoutMinutes: 0.05, // 3 seconds timeout for test
     retryDelaySeconds: 0.05,

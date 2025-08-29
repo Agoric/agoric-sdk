@@ -308,7 +308,10 @@ const parseSubscription = (
 };
 
 const createSubscriptionContext = (
-  evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>,
+  evmCtx: Pick<
+    EvmContext,
+    'axelarQueryApi' | 'evmProviders' | 'usdcAddresses' | 'axelarChainIds'
+  >,
   signingSmartWalletKit: SigningSmartWalletKit,
 ): EvmContext => ({
   ...evmCtx,
@@ -317,7 +320,10 @@ const createSubscriptionContext = (
 });
 
 const processPendingSubscription = async (
-  evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>,
+  evmCtx: Pick<
+    EvmContext,
+    'axelarQueryApi' | 'evmProviders' | 'usdcAddresses' | 'axelarChainIds'
+  >,
   signingSmartWalletKit: SigningSmartWalletKit,
   subscription: Subscription,
   log: (...args: unknown[]) => void,
@@ -334,7 +340,10 @@ const processPendingSubscription = async (
 };
 
 type IO = {
-  evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>;
+  evmCtx: Pick<
+    EvmContext,
+    'axelarQueryApi' | 'evmProviders' | 'usdcAddresses' | 'axelarChainIds'
+  >;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
@@ -387,7 +396,10 @@ const processPortfolioEvents = async (
 const processSubscriptionEvents = async (
   subscriptionEvents: Array<{ path: string; value: string }>,
   marshaller: SigningSmartWalletKit['marshaller'],
-  evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>,
+  evmCtx: Pick<
+    EvmContext,
+    'axelarQueryApi' | 'evmProviders' | 'usdcAddresses' | 'axelarChainIds'
+  >,
   signingSmartWalletKit: SigningSmartWalletKit,
 ) => {
   for (const { path, value: vstorageValue } of subscriptionEvents) {
