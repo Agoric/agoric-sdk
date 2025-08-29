@@ -78,7 +78,7 @@ export type PortfolioInstanceContext = {
   gmpFeeInfo: { brand: Brand<'nat'>; denom: Denom };
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
-  cctpClient: GuestInterface<ResolverKit['client']>;
+  resolverClient: GuestInterface<ResolverKit['client']>;
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
@@ -396,6 +396,7 @@ const stepFlow = async (
       gmpChain: axelar,
       axelarIds,
       gmpAddresses,
+      resolverClient: ctx.resolverClient,
     });
     return { evmCtx, gInfo, accountId };
   };

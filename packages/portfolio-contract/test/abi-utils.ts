@@ -8,21 +8,29 @@ export const decodeFunctionCall = (
   const decodedPayload = decodeAbiParameters(
     [
       {
-        type: 'tuple[]',
+        type: 'tuple',
+        name: 'callMessage',
         components: [
-          { name: 'target', type: 'address' },
-          { name: 'data', type: 'bytes' },
+          { name: 'id', type: 'string' },
+          {
+            name: 'calls',
+            type: 'tuple[]',
+            components: [
+              { name: 'target', type: 'address' },
+              { name: 'data', type: 'bytes' },
+            ],
+          },
         ],
       },
     ],
     `0x${Buffer.from(parsedMemo.payload, 'base64').toString('hex')}`,
   );
-
+  const { id, calls } = decodedPayload[0];
   assert(
-    decodedPayload[0].length === functionSignatures.length,
+    calls.length === functionSignatures.length,
     'Decoded payload length does not match function signatures length',
   );
-  const pairedCalls = decodedPayload[0].map((call, index) => ({
+  const pairedCalls = calls.map((call, index) => ({
     functionSignature: functionSignatures[index],
     call,
   }));
@@ -43,5 +51,5 @@ export const decodeFunctionCall = (
     });
   });
 
-  return decodedCalls;
+  return { id, calls: decodedCalls };
 };

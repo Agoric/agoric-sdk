@@ -62,9 +62,10 @@ export const constructContractCall = ({ target, functionSignature, args }) => {
  * Builds a GMP payload from an array of contract calls.
  *
  * @param {ContractCall[]} contractCalls - Array of contract call objects.
+ * @param {string} id - Optional message ID for tracing/debugging purposes
  * @returns {number[]} The GMP payload array.
  */
-export const buildGMPPayload = contractCalls => {
+export const buildGMPPayload = (contractCalls, id = '') => {
   const abiEncodedContractCalls = [];
   for (const call of contractCalls) {
     const { target, functionSignature, args } = call;
@@ -76,14 +77,22 @@ export const buildGMPPayload = contractCalls => {
   const abiEncodedData = encodeAbiParameters(
     [
       {
-        type: 'tuple[]',
+        type: 'tuple',
+        name: 'callMessage',
         components: [
-          { name: 'target', type: 'address' },
-          { name: 'data', type: 'bytes' },
+          { name: 'id', type: 'string' },
+          {
+            name: 'calls',
+            type: 'tuple[]',
+            components: [
+              { name: 'target', type: 'address' },
+              { name: 'data', type: 'bytes' },
+            ],
+          },
         ],
       },
     ],
-    [abiEncodedContractCalls],
+    [{ id, calls: abiEncodedContractCalls }],
   );
 
   return Array.from(hexToBytes(abiEncodedData));
