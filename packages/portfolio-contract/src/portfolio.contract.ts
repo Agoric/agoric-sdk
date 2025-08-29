@@ -271,7 +271,7 @@ export const contract = async (
     axelarIds,
     contracts,
     gmpAddresses,
-    cctpClient: resolverClient,
+    resolverClient,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
