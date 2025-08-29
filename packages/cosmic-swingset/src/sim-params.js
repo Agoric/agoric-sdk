@@ -4,6 +4,11 @@
 import { Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
 
+/**
+ * @import { ParamsSDKType, PowerFlagFeeSDKType } from '@agoric/cosmic-proto/swingset/swingset.js'
+ * @import { JsonSafe } from '@agoric/cosmic-proto/json-safe'
+ */
+
 const makeStringBeans = (key, beans) => ({ key, beans: `${Nat(beans)}` });
 const makeCoin = (denom, amount) => ({ denom, amount: `${Nat(amount)}` });
 /**
@@ -71,10 +76,13 @@ export const defaultBeansPerUnit = [
   ),
 ];
 
+export const defaultInstallationDeadlineBlocks = -1n; // no deadline
+export const defaultInstallationDeadlineSeconds = 24n * 60n * 60n; // 24 hours
+
 const defaultBootstrapVatConfig =
   '@agoric/vm-config/decentral-demo-config.json';
 
-/** @type {import('@agoric/cosmic-proto/swingset/swingset.js').PowerFlagFeeSDKType[]} */
+/** @type {PowerFlagFeeSDKType[]} */
 export const defaultPowerFlagFees = [
   { power_flag: 'SMART_WALLET', fee: [makeCoin('ubld', 10_000_000n)] },
 ];
@@ -108,7 +116,7 @@ export const VatCleanupDefaults = {
 
 /**
  * @param {VatCleanupKeywordsRecord} keywordsRecord
- * @returns {import('@agoric/cosmic-proto/swingset/swingset.js').ParamsSDKType['vat_cleanup_budget']}
+ * @returns {JsonSafe<ParamsSDKType>['vat_cleanup_budget']}
  */
 export const makeVatCleanupBudgetFromKeywords = keywordsRecord => {
   return Object.entries(keywordsRecord).map(([keyName, value]) => {
@@ -125,7 +133,7 @@ export const defaultVatCleanupBudget =
   makeVatCleanupBudgetFromKeywords(VatCleanupDefaults);
 
 /**
- * @type {import('@agoric/cosmic-proto/swingset/swingset.js').ParamsSDKType}
+ * @type {JsonSafe<ParamsSDKType>}
  */
 export const DEFAULT_SIM_SWINGSET_PARAMS = {
   beans_per_unit: defaultBeansPerUnit,
@@ -134,4 +142,6 @@ export const DEFAULT_SIM_SWINGSET_PARAMS = {
   power_flag_fees: defaultPowerFlagFees,
   queue_max: defaultQueueMax,
   vat_cleanup_budget: defaultVatCleanupBudget,
+  installation_deadline_blocks: `${defaultInstallationDeadlineBlocks}`,
+  installation_deadline_seconds: `${defaultInstallationDeadlineSeconds}`,
 };
