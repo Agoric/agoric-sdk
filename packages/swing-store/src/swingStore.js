@@ -133,7 +133,7 @@ const IN_MEMORY = ':memory:';
 /**
  * @typedef {object} SwingStoreOptions
  * @property {boolean} [asFile]  For testing, interpret path as a file rather than a swingstore.sqlite parent directory
- * @property {Buffer} [serialized]  Binary data to load in memory
+ * @property {Uint8Array} [serialized]  Binary data to load in memory
  * @property {boolean} [unsafeFastMode]  Disable SQLite safeties for e.g. fast import
  * @property {boolean} [readonly]
  * @property {string} [traceFile]  Path at which to record KVStore set/delete activity
@@ -180,7 +180,7 @@ export function makeSwingStore(path, forceReset, options = {}) {
   } = options;
 
   if (serialized) {
-    Buffer.isBuffer(serialized) || Fail`options.serialized must be Buffer`;
+    serialized instanceof Uint8Array || Fail`options.serialized must be Uint8Array`;
     path === null || Fail`options.serialized makes :memory: DB`;
   }
   exportCallback === undefined ||
