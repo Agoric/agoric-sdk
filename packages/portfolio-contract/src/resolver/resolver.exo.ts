@@ -6,7 +6,7 @@
  * This is an orchestration component that can be used independently of portfolio logic.
  */
 
-import { makeTracer, mustMatch } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal';
 import type {
   Marshaller,
   StorageNode,
@@ -14,6 +14,7 @@ import type {
 import type { AccountId } from '@agoric/orchestration';
 import { type Vow, type VowKit, VowShape, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import type { ERef } from '@endo/far';
@@ -32,7 +33,7 @@ import {
 
 type TransactionEntry = {
   destinationAddress: AccountId;
-  amountValue: bigint;
+  amountValue: bigint; // 0 for GMP transactions
   vowKit: VowKit<void>;
   type: TxType;
 };
@@ -60,11 +61,14 @@ const ServiceFacetI = M.interface('ResolverService', {
 });
 
 const InvitationMakersFacetI = M.interface('ResolverInvitationMakers', {
-  SettleTransaction: M.callWhen().returns(M.remotable()),
+  SettleTransaction: M.callWhen().returns(InvitationShape),
 });
 
 const SettlementHandlerFacetI = M.interface('SettlementHandler', {
-  handle: M.callWhen(M.remotable(), M.any()).returns(M.string()),
+  handle: M.callWhen(
+    M.remotable(),
+    ResolverOfferArgsShapes.SettleTransaction,
+  ).returns(M.string()),
 });
 
 const proposalShape = M.splitRecord(
@@ -181,6 +185,7 @@ export const prepareResolverKit = (
             destinationAddress: txEntry.destinationAddress,
             status,
           };
+          // UNTIL https://github.com/Agoric/agoric-sdk/issues/11791
           writeToNode(node, value);
         },
       },
@@ -188,10 +193,6 @@ export const prepareResolverKit = (
         settleTransaction(args: TransactionSettlementOfferArgs) {
           const { transactionRegistry } = this.state;
           const { status, txId, rejectionReason } = args;
-          if (!transactionRegistry.has(txId)) {
-            trace('No pending transaction found for key:', txId);
-            throw Error(`No pending transaction found matching: ${q(txId)}`);
-          }
 
           const registryEntry = transactionRegistry.get(txId);
 
@@ -231,8 +232,6 @@ export const prepareResolverKit = (
       },
       settlementHandler: {
         async handle(seat: ZCFSeat, offerArgs: TransactionSettlementOfferArgs) {
-          mustMatch(offerArgs, ResolverOfferArgsShapes.SettleTransaction);
-
           trace('Transaction settlement:', offerArgs);
 
           seat.exit();
