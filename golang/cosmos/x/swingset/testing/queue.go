@@ -14,7 +14,7 @@ import (
 func GetActionQueueRecords(t *testing.T, ctx sdk.Context, swingsetKeeper keeper.Keeper) ([]string, error) {
 	vstorageKeeper := keeper.GetVstorageKeeper(t, swingsetKeeper)
 	actionQueueName := keeper.StoragePathActionQueue
-	// TODO: fix this type assertion vstorage needs interface needs to be updated
+	// TODO: fix this type assertion, vstorage needs interface to be updated
 	return vstoragetesting.GetQueueItems(ctx, vstorageKeeper.(vstorage.Keeper), actionQueueName)
 }
 
