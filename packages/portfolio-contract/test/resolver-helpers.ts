@@ -95,3 +95,38 @@ export const settleCCTPWithMockReceiver = async (
   }
   return 'CCTP transaction settlement failed.';
 };
+
+/**
+ * Helper to settle GMP transaction with the standard test EVM address.
+ * Uses the same mock address that's used throughout the test suite.
+ *
+ * @param zoe - Zoe service instance
+ * @param resolverMakers - ResolverInvitationMakers instance
+ * @param txNumber - The Number for the txId (e.g. 0 for 'tx0')
+ * @param status - Transaction status to settle
+ * @param log - Optional logging function (defaults to console.log, pass () => {} to disable)
+ */
+export const settleGMPWithMockReceiver = async (
+  zoe: ZoeService,
+  resolverMakers: ResolverInvitationMakers,
+  txNumber: number = 0,
+  status: Exclude<TxStatus, 'pending'> = 'success',
+  log: (message: string, ...args: any[]) => void = console.log,
+): Promise<string> => {
+  await eventLoopIteration();
+  await eventLoopIteration();
+  const result = await settleTransaction(
+    zoe,
+    resolverMakers,
+    status,
+    txNumber,
+    log,
+  );
+
+  log(result);
+  if (!result.includes('failed')) {
+    log(`=== GMP SETTLEMENT SUCCEEDED ===`);
+    return result;
+  }
+  return 'GMP transaction settlement failed.';
+};

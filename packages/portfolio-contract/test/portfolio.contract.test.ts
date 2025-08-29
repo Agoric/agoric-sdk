@@ -22,6 +22,7 @@ import {
 } from './contract-setup.ts';
 import {
   settleCCTPWithMockReceiver,
+  settleGMPWithMockReceiver,
   getResolverMakers,
 } from './resolver-helpers.ts';
 import { evmNamingDistinction, localAccount0 } from './mocks.ts';
@@ -143,18 +144,34 @@ test.serial('open a portfolio with Aave position', async t => {
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers);
-
+  
+  // Settle tx0 (GMP account creation) early in the flow
+  const gmpAccountSettlementPromise = settleGMPWithMockReceiver(zoe, resolverMakers, 0);
+  
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
 
-  const [actual, cctpResult] = await Promise.all([
+  await eventLoopIteration(); // let bridge I/O happen
+
+  // Settle tx1 (CCTP transaction) after simulation
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers, 1);
+
+  // Wait a bit more for tx2 (GMP contract call for Aave) to be registered
+  await eventLoopIteration();
+  await eventLoopIteration();
+  
+  // Settle tx2 (GMP contract call for Aave supply)
+  const gmpContractCallSettlementPromise = settleGMPWithMockReceiver(zoe, resolverMakers, 2);
+
+  const [actual, gmpAccountResult, cctpResult, gmpContractResult] = await Promise.all([
     actualP,
+    gmpAccountSettlementPromise,
     cctpSettlementPromise,
+    gmpContractCallSettlementPromise,
   ]);
 
-  t.log('=== Portfolio completed, CCTP result:', cctpResult);
+  t.log('=== Portfolio completed, GMP account result:', gmpAccountResult, 'CCTP result:', cctpResult, 'GMP contract result:', gmpContractResult);
   const result = actual.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
 
@@ -198,19 +215,22 @@ test('open a portfolio with Compound position', async t => {
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers);
+  // Settle GMP account creation transaction (tx0)
+  const gmpAccountSettlementPromise = settleGMPWithMockReceiver(zoe, resolverMakers, 0);
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers, 1);
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
 
   t.log('=== Waiting for portfolio completion and CCTP confirmation ===');
-  const [actual, cctpResult] = await Promise.all([
+  const [actual, cctpResult, gmpAccountResult] = await Promise.all([
     actualP,
     cctpSettlementPromise,
+    gmpAccountSettlementPromise,
   ]);
 
-  t.log('=== Portfolio completed, CCTP result:', cctpResult);
+  t.log('=== Portfolio completed, CCTP result:', cctpResult, 'GMP account result:', gmpAccountResult);
   const result = actual.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
 
@@ -259,13 +279,16 @@ test('open portfolio with USDN, Aave positions', async t => {
 
   // Start CCTP confirmation for the Aave portion (amount goes to Arbitrum)
   const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers);
-
+  
+  // With GMP registration disabled, only CCTP should need settlement
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
 
   await eventLoopIteration(); // let bridge I/O happen
+
+  // Only settle CCTP transaction (tx0)
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers, 0);
 
   const [done, cctpResult] = await Promise.all([doneP, cctpSettlementPromise]);
 
@@ -370,18 +393,21 @@ test('claim rewards on Aave position successfully', async t => {
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers);
+  // Settle GMP account creation transaction (tx0)
+  const gmpAccountSettlementPromise = settleGMPWithMockReceiver(zoe, resolverMakers, 0);
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers, 1);
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
 
-  const [done, cctpResult] = await Promise.all([
+  const [done, cctpResult, gmpAccountResult] = await Promise.all([
     actualP,
     cctpSettlementPromise,
+    gmpAccountSettlementPromise,
   ]);
 
-  t.log('=== Portfolio completed, CCTP result:', cctpResult);
+  t.log('=== Portfolio completed, CCTP result:', cctpResult, 'GMP account result:', gmpAccountResult);
   const result = done.result as any;
 
   const { storagePath } = result.publicSubscribers.portfolio;
@@ -513,17 +539,20 @@ test('open a portfolio with Beefy position', async t => {
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers);
+  // Settle GMP account creation transaction (tx0)
+  const gmpAccountSettlementPromise = settleGMPWithMockReceiver(zoe, resolverMakers, 0);
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers, 1);
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
-  const [actual, cctpResult] = await Promise.all([
+  const [actual, cctpResult, gmpAccountResult] = await Promise.all([
     actualP,
     cctpSettlementPromise,
+    gmpAccountSettlementPromise,
   ]);
 
-  t.log('=== Portfolio completed, CCTP result:', cctpResult);
+  t.log('=== Portfolio completed, CCTP result:', cctpResult, 'GMP account result:', gmpAccountResult);
   const result = actual.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
 
@@ -563,14 +592,17 @@ test('Withdraw from a Beefy position', async t => {
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers);
+  // Settle GMP account creation transaction (tx0)
+  const gmpAccountSettlementPromise = settleGMPWithMockReceiver(zoe, resolverMakers, 0);
+  const cctpSettlementPromise = settleCCTPWithMockReceiver(zoe, resolverMakers, 1);
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
-  const [actual, cctpResult] = await Promise.all([
+  const [actual, cctpResult, gmpAccountResult] = await Promise.all([
     actualP,
     cctpSettlementPromise,
+    gmpAccountSettlementPromise,
   ]);
 
   const result = actual.result as any;
