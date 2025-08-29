@@ -49,7 +49,7 @@ const ClientFacetI = M.interface('ResolverClient', {
 });
 
 const ReporterI = M.interface('Reporter', {
-  insertPendingTransaction: M.call(M.string(), M.string(), M.nat()).returns(),
+  insertPendingTransaction: M.call(M.string(), M.string(), M.nat(), M.or(TxType.CCTP, TxType.GMP)).returns(),
   completePendingTransaction: M.call(
     M.string(),
     M.or(TxStatus.SUCCESS, TxStatus.FAILED),
@@ -151,6 +151,7 @@ export const prepareResolverKit = (
             txId,
             destinationAddress,
             amountValue,
+            type,
           );
 
           trace(`Registered pending transaction: ${txId}`);
@@ -162,9 +163,10 @@ export const prepareResolverKit = (
           txId: TxId,
           destinationAddress: AccountId,
           amount: bigint,
+          type: TxType,
         ) {
           const value: PublishedTx = {
-            type: TxType.CCTP,
+            type,
             amount,
             destinationAddress,
             status: TxStatus.PENDING,
