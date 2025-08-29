@@ -182,12 +182,12 @@ sequenceDiagram
   UI ->> portfolio: withdraw with steps, <br>steps also include CCTP fee and proxy contract address
 
   Note over portfolio, aavePos: CCTP back
-  portfolio ->> AX: GMP (withdraw, $2k USDC, Noble ICA address, CCTP fee, CCTP proxy contract address)
+  portfolio ->> AX: GMP (withdraw, $2k USDC, Noble ICA address, CCTP fee optional, CCTP proxy contract address)
   AX -->> acctArb: withdraw $2k
   acctArb ->> aavePos: withdraw $2k
   aavePos ->> acctArb: $2k
-  acctArb ->> pc: depositForBurn($2k)
-  PC -->> icaN: CCTP mint $2k USDC
+  acctArb ->> CCTP TokenMessenger v1: depositForBurn($2k)
+  CCTP TokenMessenger v1 -->> icaN: CCTP mint $2k USDC
   icaN -->> Res: observe mint
   Res ->> portfolio: ack
 ```
