@@ -228,10 +228,7 @@ test.serial('Governance proposals history is visible', async t => {
     ['ClockStep', 'PriceLockPeriod', 'StartFrequency'], // agoric-3-proposals/proposals/34:upgrade-10/performActions.js
     ['DebtLimit'], // agoric-3-proposals/proposals/34:upgrade-10/performActions.js
     ['MintLimit'], // agoric-3-proposals/proposals/92:reset-psm-mintlimit/submission/psm-gov-reset.js
-    ['ClockStep', 'PriceLockPeriod', 'StartFrequency'], // z:acceptance/scripts/test-vaults.mts
-    ['DebtLimit'], // z:acceptance/scripts/test-vaults.mts
     ['GiveMintedFee', 'MintLimit', 'WantMintedFee'], // z:acceptance/psm.test.js
-    ['DebtLimit'], // z:acceptance/vaults.test.js
     ['ChargingPeriod'], // z:acceptance/governance.test.js
     ['PerAccountInitialAmount'], // z:acceptance/governance.test.js
     ['PerAccountInitialAmount'], // z:acceptance/governance.test.js
