@@ -4,7 +4,7 @@ import { watchGmp } from '../src/watchers/gmp-watcher.ts';
 
 const createMockAxelarResponse = (
   status: 'executed' | 'pending' | 'error',
-  subscriptionId: string,
+  txId: string,
 ) => {
   const baseEvent = {
     call: {
@@ -49,9 +49,10 @@ const createMockAxelarResponse = (
   };
 
   if (status === 'executed') {
-    const subscriptionTopic = ethers.id('SubscriptionResolved(string)');
-    const abiCoder = ethers.AbiCoder.defaultAbiCoder();
-    const encodedSubscriptionId = abiCoder.encode(['string'], [subscriptionId]);
+    const multicallTopic = ethers.id(
+      'MulticallExecuted(string,(bool,bytes)[])',
+    );
+    const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
 
     const executed = {
       chain: 'ethereum',
@@ -88,8 +89,8 @@ const createMockAxelarResponse = (
         logs: [
           {
             logIndex: 0,
-            data: encodedSubscriptionId,
-            topics: [subscriptionTopic],
+            data: '0x',
+            topics: [multicallTopic, expectedIdTopic],
             blockNumber: 18500000,
             transactionIndex: 42,
           },
@@ -136,7 +137,7 @@ const createMockAxelarResponse = (
   };
 };
 
-test('getTxStatus detects successful execution with matching subscription ID', async t => {
+test('getTxStatus detects successful execution with matching txId', async t => {
   const txId = 'tx0';
 
   // Mock fetch that returns executed status with matching subscription ID

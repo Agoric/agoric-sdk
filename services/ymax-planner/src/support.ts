@@ -12,14 +12,14 @@ if (!ALCHEMY_API_KEY) throw Error(`ALCHEMY_API_KEY not set`);
 
 const axelarChainIdMap = {
   mainnet: {
-    'eip155:1': 'ethereum-sepolia',
+    'eip155:1': 'Ethereum',
     'eip155:43114': 'Avalanche',
     'eip155:42161': 'arbitrum',
     'eip155:10': 'optimism',
     'eip155:137': 'Polygon',
   },
   testnet: {
-    'eip155:11155111': 'Ethereum',
+    'eip155:11155111': 'ethereum-sepolia',
     'eip155:43113': 'Avalanche',
     'eip155:421614': 'arbitrum-sepolia',
     'eip155:11155420': 'optimism-sepolia',
