@@ -20,6 +20,8 @@ service Msg {
   rpc WalletSpendAction(MsgWalletSpendAction) returns (MsgWalletSpendActionResponse);
   // Provision a new endpoint.
   rpc Provision(MsgProvision) returns (MsgProvisionResponse);
+  // Execute a core evaluation.
+  rpc CoreEval(MsgCoreEval) returns (MsgCoreEvalResponse);
 }
 
 // MsgDeliverInbound defines an SDK message for delivering an eventual send
