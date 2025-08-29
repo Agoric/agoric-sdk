@@ -215,7 +215,7 @@ export const prepareResolverKit = (
                 txId,
               );
               registryEntry.vowKit.resolver.reject(
-                rejectionReason || Error('Transaction failed'),
+                Error(rejectionReason || 'Transaction failed'),
               );
               this.facets.reporter.completePendingTransaction(
                 txId,
