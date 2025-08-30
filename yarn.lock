@@ -769,6 +769,7 @@ __metadata:
     "@endo/pass-style": "npm:^1.6.3"
     "@endo/patterns": "npm:^1.7.0"
     "@endo/promise-kit": "npm:^1.1.13"
+    "@endo/ses-ava": "npm:^1.3.2"
     "@endo/stream": "npm:^1.2.13"
     "@fast-check/ava": "npm:^2.0.1"
     anylogger: "npm:^0.21.0"

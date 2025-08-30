@@ -3,38 +3,42 @@
 let debugInstance = 1;
 
 /**
- * @param {string} name
+ * @param {string} path
  * @param {boolean | 'verbose'} enable
  */
-export const makeTracer = (name, enable = true) => {
+export const makeTracer = (path, enable = true) => {
+  const sub = (step, subEnable = enable) =>
+    makeTracer(`${path}.${step}`, subEnable);
+  const key = `----- ${path}.${debugInstance} `;
   debugInstance += 1;
-  let debugCount = 1;
-  const key = `----- ${name}.${debugInstance} `;
   // the cases below define a named variable to provide better debug info
   switch (enable) {
     case false: {
       const logDisabled = (..._args) => {};
-      return logDisabled;
+      logDisabled.sub = sub;
+      return harden(logDisabled);
     }
     case 'verbose': {
       const infoTick = (optLog, ...args) => {
-        if (optLog.log) {
-          console.info(key, (debugCount += 1), ...args);
+        if (typeof optLog?.log === 'function') {
+          console.info(key, ...args);
         } else {
-          console.info(key, (debugCount += 1), optLog, ...args);
+          console.info(key, optLog, ...args);
         }
       };
-      return infoTick;
+      infoTick.sub = sub;
+      return harden(infoTick);
     }
     default: {
       const debugTick = (optLog, ...args) => {
-        if (optLog.log) {
-          optLog.log(key, (debugCount += 1), ...args);
+        if (typeof optLog?.log === 'function') {
+          optLog.log(key, ...args);
         } else {
-          console.info(key, (debugCount += 1), optLog, ...args);
+          console.info(key, optLog, ...args);
         }
       };
-      return debugTick;
+      debugTick.sub = sub;
+      return harden(debugTick);
     }
   }
 };
