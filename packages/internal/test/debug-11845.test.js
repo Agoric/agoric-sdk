@@ -39,10 +39,10 @@ test('repro #11845 makeTracer isolation breach', t => {
   // `console`, should only enable them to write to the console output,
   // which neither should be able to read.
 
-  const firstCount = bob.read();
-  t.is(bob.read(), firstCount + 1);
-  t.is(bob.read(), firstCount + 2);
+  t.is(bob.read(), 1);
+  t.is(bob.read(), 2);
+  t.is(bob.read(), 3);
   alice.write();
   // Alice causes Bob to skip a count, showing they can still communicate.
-  t.is(bob.read(), firstCount + 4);
+  t.is(bob.read(), 5);
 });

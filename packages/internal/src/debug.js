@@ -7,8 +7,8 @@ let debugInstance = 1;
  * @param {boolean | 'verbose'} enable
  */
 export const makeTracer = (name, enable = true) => {
-  debugInstance += 1;
   const key = `----- ${name}.${debugInstance} `;
+  debugInstance += 1;
   // the cases below define a named variable to provide better debug info
   switch (enable) {
     case false: {
