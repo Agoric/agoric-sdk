@@ -6,7 +6,7 @@ import { makeTracer } from '../src/debug.js';
 // automated regression test as to be something whose console output
 // should be visually and manually inspected.
 //
-// TODO 'makeTracer should somehow be migrated to the endo repo, perhaps as
+// TODO: makeTracer should somehow be migrated to the endo repo, perhaps as
 // an extension of the causalConsole from the `'ses'` package. Once there,
 // it should get a genuine automated test by using the `_throws-and-logs.js`
 // module that supports testing what's sent to the console. Note that
