@@ -8,7 +8,6 @@ let debugInstance = 1;
  */
 export const makeTracer = (name, enable = true) => {
   debugInstance += 1;
-  let debugCount = 1;
   const key = `----- ${name}.${debugInstance} `;
   // the cases below define a named variable to provide better debug info
   switch (enable) {
@@ -19,9 +18,9 @@ export const makeTracer = (name, enable = true) => {
     case 'verbose': {
       const infoTick = (optLog, ...args) => {
         if (optLog.log) {
-          console.info(key, (debugCount += 1), ...args);
+          console.info(key, ...args);
         } else {
-          console.info(key, (debugCount += 1), optLog, ...args);
+          console.info(key, optLog, ...args);
         }
       };
       return harden(infoTick);
@@ -29,9 +28,9 @@ export const makeTracer = (name, enable = true) => {
     default: {
       const debugTick = (optLog, ...args) => {
         if (optLog.log) {
-          optLog.log(key, (debugCount += 1), ...args);
+          optLog.log(key, ...args);
         } else {
-          console.info(key, (debugCount += 1), optLog, ...args);
+          console.info(key, optLog, ...args);
         }
       };
       return harden(debugTick);
