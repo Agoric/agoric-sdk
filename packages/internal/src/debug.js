@@ -14,7 +14,7 @@ export const makeTracer = (name, enable = true) => {
   switch (enable) {
     case false: {
       const logDisabled = (..._args) => {};
-      return logDisabled;
+      return harden(logDisabled);
     }
     case 'verbose': {
       const infoTick = (optLog, ...args) => {
@@ -24,7 +24,7 @@ export const makeTracer = (name, enable = true) => {
           console.info(key, (debugCount += 1), optLog, ...args);
         }
       };
-      return infoTick;
+      return harden(infoTick);
     }
     default: {
       const debugTick = (optLog, ...args) => {
@@ -34,7 +34,7 @@ export const makeTracer = (name, enable = true) => {
           console.info(key, (debugCount += 1), optLog, ...args);
         }
       };
-      return debugTick;
+      return harden(debugTick);
     }
   }
 };
