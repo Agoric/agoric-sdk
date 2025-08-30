@@ -20,21 +20,21 @@ import { makeTracer } from '../src/debug.js';
 // should produce output that looks like
 /*
 
------ defaultTracer.2  foo1 bar1 (URIError#1)
+----- defaultTracer.1  foo1 bar1 (URIError#1)
   ✔ test makeTracer top level
-    ℹ ----- defaultTracer.2  foo5 bar5 (URIError#1)
+    ℹ ----- defaultTracer.1  foo5 bar5 (URIError#1)
     ℹ URIError#1: pretending
     ℹ   at packages/internal/test/debug-demo.test.js:47:13
         at async Promise.all (index 0)
 
-    ℹ ----- trueTracer.4  foo7 bar7 (URIError#1)
+    ℹ ----- trueTracer.3  foo7 bar7 (URIError#1)
 URIError#1: pretending
   at packages/internal/test/debug-demo.test.js:47:13
   at async Promise.all (index 0)
 
------ trueTracer.4  foo3 bar3 (URIError#1)
------ verboseTracer.5  foo4 bar4 (URIError#1)
------ verboseTracer.5  foo8 bar8 (URIError#1)
+----- trueTracer.3  foo3 bar3 (URIError#1)
+----- verboseTracer.4  foo4 bar4 (URIError#1)
+----- verboseTracer.4  foo8 bar8 (URIError#1)
 
 */
 // The lines above prefixed with "ℹ" are the ones sent to `t.log`.
