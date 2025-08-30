@@ -17,7 +17,7 @@ export const makeTracer = (name, enable = true) => {
     }
     case 'verbose': {
       const infoTick = (optLog, ...args) => {
-        if (optLog.log) {
+        if (typeof optLog?.log === 'function') {
           console.info(key, ...args);
         } else {
           console.info(key, optLog, ...args);
@@ -27,7 +27,7 @@ export const makeTracer = (name, enable = true) => {
     }
     default: {
       const debugTick = (optLog, ...args) => {
-        if (optLog.log) {
+        if (typeof optLog?.log === 'function') {
           optLog.log(key, ...args);
         } else {
           console.info(key, optLog, ...args);
