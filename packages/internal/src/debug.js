@@ -43,3 +43,7 @@ export const makeTracer = (path, enable = true) => {
   }
 };
 harden(makeTracer);
+
+/**
+ * @typedef {ReturnType<typeof makeTracer>} TraceLogger
+ */
