@@ -6,7 +6,7 @@ import { makeTracer } from '../src/debug.js';
 // automated regression test as to be something whose console output
 // should be visually and manually inspected.
 //
-// TODO: makeTracer should somehow be migrated to the endo repo, perhaps as
+// TODO makeTracer should somehow be migrated to the endo repo, perhaps as
 // an extension of the causalConsole from the `'ses'` package. Once there,
 // it should get a genuine automated test by using the `_throws-and-logs.js`
 // module that supports testing what's sent to the console. Note that
@@ -20,21 +20,21 @@ import { makeTracer } from '../src/debug.js';
 // should produce output that looks like
 /*
 
------ defaultTracer.1  foo1 bar1 (URIError#1)
+----- defaultTracer,1  foo1 bar1 (URIError#1)
   ✔ test makeTracer top level
-    ℹ ----- defaultTracer.1  foo5 bar5 (URIError#1)
+    ℹ ----- defaultTracer,1  foo5 bar5 (URIError#1)
     ℹ URIError#1: pretending
     ℹ   at packages/internal/test/debug-demo.test.js:47:13
         at async Promise.all (index 0)
 
-    ℹ ----- trueTracer.3  foo7 bar7 (URIError#1)
+    ℹ ----- trueTracer,3  foo7 bar7 (URIError#1)
 URIError#1: pretending
   at packages/internal/test/debug-demo.test.js:47:13
   at async Promise.all (index 0)
 
------ trueTracer.3  foo3 bar3 (URIError#1)
------ verboseTracer.4  foo4 bar4 (URIError#1)
------ verboseTracer.4  foo8 bar8 (URIError#1)
+----- trueTracer,3  foo3 bar3 (URIError#1)
+----- verboseTracer,4  foo4 bar4 (URIError#1)
+----- verboseTracer,4  foo8 bar8 (URIError#1)
 
 */
 // The lines above prefixed with "ℹ" are the ones sent to `t.log`.

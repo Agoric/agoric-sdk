@@ -7,7 +7,7 @@ import { makeTracer } from '../src/debug.js';
 // behavior. We also do not expect to ever fix this bug for `makeTracer` itself.
 // Rather, we won't make this mistake in whatever replaces `makeTracer`.
 test('repro #11845 makeTracer isolation breach', t => {
-  const keyRegexp = harden(/^----- (.*)\.(\d+) $/);
+  const keyRegexp = harden(/^----- (.*),(\d+) $/);
 
   const alice = harden({
     write() {
