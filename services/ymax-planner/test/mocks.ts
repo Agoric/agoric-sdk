@@ -1,6 +1,5 @@
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { EvmContext } from '../src/pending-tx-manager';
-import type { AxelarChainIdMap } from '../src/support.ts';
 import type { AccountId } from '@agoric/orchestration';
 import { PENDING_TX_PATH_PREFIX } from '../src/engine.ts';
 import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
@@ -80,15 +79,10 @@ export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
 };
 
 export const createMockEvmContext = (): EvmContext => ({
-  axelarQueryApi: 'https://testnet.api.axelarscan.io',
   usdcAddresses: {
     'eip155:1': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // Ethereum
     'eip155:42161': '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', // Arbitrum
   },
-  axelarChainIds: {
-    'eip155:42161': 'arbitrum',
-    'eip155:1': 'Ethereum',
-  } as AxelarChainIdMap[keyof AxelarChainIdMap],
   evmProviders: {
     'eip155:42161': createMockProvider(),
     'eip155:1': createMockProvider(),

@@ -2,32 +2,8 @@ import { JsonRpcProvider } from 'ethers';
 import type { EvmContext } from './pending-tx-manager';
 import type { CaipChainId } from '@agoric/orchestration';
 
-export const axelarQueryAPI = {
-  mainnet: 'https://api.axelarscan.io/gmp/searchGMP',
-  testnet: 'https://testnet.api.axelarscan.io/gmp/searchGMP',
-};
-
 const { ALCHEMY_API_KEY } = process.env;
 if (!ALCHEMY_API_KEY) throw Error(`ALCHEMY_API_KEY not set`);
-
-const axelarChainIdMap = {
-  mainnet: {
-    'eip155:1': 'Ethereum',
-    'eip155:43114': 'Avalanche',
-    'eip155:42161': 'arbitrum',
-    'eip155:10': 'optimism',
-    'eip155:137': 'Polygon',
-  },
-  testnet: {
-    'eip155:11155111': 'ethereum-sepolia',
-    'eip155:43113': 'Avalanche',
-    'eip155:421614': 'arbitrum-sepolia',
-    'eip155:11155420': 'optimism-sepolia',
-    'eip155:80002': 'polygon-sepolia',
-  },
-};
-
-export type AxelarChainIdMap = typeof axelarChainIdMap;
 
 type HexAddress = `0x${string}`;
 
@@ -104,13 +80,8 @@ export type EvmProviders = Partial<Record<CaipChainId, JsonRpcProvider>>;
 export const createEVMContext = async ({
   net = 'mainnet',
 }: CreateContextParams): Promise<
-  Pick<
-    EvmContext,
-    'axelarQueryApi' | 'evmProviders' | 'usdcAddresses' | 'axelarChainIds'
-  >
+  Pick<EvmContext, 'evmProviders' | 'usdcAddresses'>
 > => {
-  const axelarQueryApi = axelarQueryAPI[net];
-
   const urls = evmRpcUrls[net];
   const evmProviders = Object.fromEntries(
     Object.entries(urls).map(([caip, rpcUrl]) => [
@@ -120,9 +91,7 @@ export const createEVMContext = async ({
   ) as EvmProviders;
 
   return {
-    axelarQueryApi,
     evmProviders,
     usdcAddresses: usdcAddresses[net],
-    axelarChainIds: axelarChainIdMap[net],
   };
 };

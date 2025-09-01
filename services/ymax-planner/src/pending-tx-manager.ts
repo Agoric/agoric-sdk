@@ -9,19 +9,13 @@ import type {
   PublishedTx,
   TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import type {
-  AxelarChainIdMap,
-  EvmProviders,
-  UsdcAddresses,
-} from './support.ts';
+import type { EvmProviders, UsdcAddresses } from './support.ts';
 import type { CaipChainId } from '@agoric/orchestration';
 
 export type EvmChain = keyof typeof AxelarChain;
 
 export type EvmContext = {
-  axelarQueryApi: string;
   usdcAddresses: UsdcAddresses['mainnet' | 'testnet'];
-  axelarChainIds: AxelarChainIdMap[keyof AxelarChainIdMap];
   evmProviders: EvmProviders;
   signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
@@ -107,16 +101,17 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
     const [namespace, chainId, addr] = destinationAddress.split(':');
     const caipId: CaipChainId = `${namespace}:${chainId}`;
-    const axelarChainId = ctx.axelarChainIds[caipId];
+
+    const provider = ctx.evmProviders[caipId];
+    if (!provider) {
+      throw Error(
+        `${logPrefix} No EVM provider configured for chain: ${caipId}`,
+      );
+    }
 
     const res = await watchGmp({
-      url: ctx.axelarQueryApi,
-      fetch: ctx.fetch,
-      params: {
-        sourceChain: 'agoric',
-        destinationChain: axelarChainId as unknown as string,
-        contractAddress: addr as `0x${string}`,
-      },
+      provider,
+      contractAddress: addr as `0x${string}`,
       txId,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
       timeoutMinutes,
@@ -125,7 +120,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
       txId,
-      status: res.success ? TxStatus.SUCCESS : TxStatus.FAILED,
+      status: res ? TxStatus.SUCCESS : TxStatus.FAILED,
     });
 
     log(`${logPrefix} GMP tx resolved`);

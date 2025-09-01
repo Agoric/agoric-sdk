@@ -96,14 +96,8 @@ test('loadConfig rejects empty required values', t => {
 test('createEVMContext generates valid testnet context', async t => {
   const result = await createEVMContext({ net: 'testnet' });
 
-  t.truthy(result.axelarQueryApi);
   t.truthy(result.evmProviders);
   t.truthy(result.usdcAddresses);
-  t.truthy(result.axelarChainIds);
-  t.is(
-    result.axelarQueryApi,
-    'https://testnet.api.axelarscan.io/gmp/searchGMP',
-  );
 
   // Check that evmProviders contains JsonRpcProvider instances
   const providerEntries = entries(result.evmProviders);
@@ -124,7 +118,6 @@ test('createEVMContext generates valid testnet context', async t => {
   // Check that collections have consistent CAIP IDs
   const providerCaipIds = keys(result.evmProviders);
   const usdcCaipIds = keys(result.usdcAddresses);
-  const chainCaipIds = keys(result.axelarChainIds);
 
   // Each provider should have corresponding USDC address and chain mapping
   for (const caipId of providerCaipIds) {
@@ -132,33 +125,5 @@ test('createEVMContext generates valid testnet context', async t => {
       usdcCaipIds.includes(caipId),
       `USDC address should exist for ${caipId}`,
     );
-    t.true(
-      chainCaipIds.includes(caipId),
-      `Chain mapping should exist for ${caipId}`,
-    );
   }
-});
-
-test('createEVMContext defaults to mainnet', async t => {
-  const result = await createEVMContext({});
-  t.is(result.axelarQueryApi, 'https://api.axelarscan.io/gmp/searchGMP');
-});
-
-test('createEVMContext axelarChainIds contain expected values', async t => {
-  const mainnetResult = await createEVMContext({ net: 'mainnet' });
-  const testnetResult = await createEVMContext({ net: 'testnet' });
-
-  // Check mainnet axelarChainIds
-  t.is(mainnetResult.axelarChainIds['eip155:1'], 'Ethereum');
-  t.is(mainnetResult.axelarChainIds['eip155:42161'], 'arbitrum');
-  t.is(mainnetResult.axelarChainIds['eip155:43114'], 'Avalanche');
-  t.is(mainnetResult.axelarChainIds['eip155:10'], 'optimism');
-  t.is(mainnetResult.axelarChainIds['eip155:137'], 'Polygon');
-
-  // Check testnet axelarChainIds
-  t.is(testnetResult.axelarChainIds['eip155:11155111'], 'ethereum-sepolia');
-  t.is(testnetResult.axelarChainIds['eip155:43113'], 'Avalanche');
-  t.is(testnetResult.axelarChainIds['eip155:421614'], 'arbitrum-sepolia');
-  t.is(testnetResult.axelarChainIds['eip155:11155420'], 'optimism-sepolia');
-  t.is(testnetResult.axelarChainIds['eip155:80002'], 'polygon-sepolia');
 });
