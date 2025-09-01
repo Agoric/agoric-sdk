@@ -36,8 +36,8 @@ type CosmosEvent = {
   attributes?: Array<{ key: string; value: string }>;
 };
 
-const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
-const PENDING_TX_PATH_PREFIX = 'published.ymax0.pendingTxs';
+export const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
+export const PENDING_TX_PATH_PREFIX = 'published.ymax0.pendingTxs';
 
 /** cf. golang/cosmos/x/vstorage/types/path_keys.go */
 const EncodedKeySeparator = '\x00';
@@ -63,7 +63,7 @@ const vstoragePathStartsWith = (path: string, prefix: string) =>
   path === prefix ||
   path.startsWith(prefix.endsWith('.') ? prefix : `${prefix}.`);
 
-const stripPrefix = (prefix: string, str: string) => {
+export const stripPrefix = (prefix: string, str: string) => {
   str.startsWith(prefix) || Fail`${str} is missing prefix ${q(prefix)}`;
   return str.slice(prefix.length);
 };
@@ -322,7 +322,7 @@ const processPortfolioEvents = async (
   }
 };
 
-const PendingTxShape = M.splitRecord({
+export const PendingTxShape = M.splitRecord({
   // resolver only handles pending transactions
   status: M.or('pending'),
   type: M.string(),
@@ -330,7 +330,7 @@ const PendingTxShape = M.splitRecord({
   destinationAddress: M.string(),
 });
 
-const parsePendingTx = (
+export const parsePendingTx = (
   txId: `tx${number}`,
   txData,
   marshaller?: SigningSmartWalletKit['marshaller'],
@@ -348,10 +348,12 @@ const parsePendingTx = (
   return { txId, ...(data as any) } as PendingTx;
 };
 
-const processPendingTxEvents = async (
+export const processPendingTxEvents = async (
   evmCtx: EvmContext,
   events: Array<{ path: string; value: string }>,
   marshaller: SigningSmartWalletKit['marshaller'],
+  handlePendingTxFn = handlePendingTx,
+  logFn = log,
 ) => {
   for (const { path, value: vstorageValue } of events) {
     const streamCell = tryJsonParse(
@@ -375,7 +377,7 @@ const processPendingTxEvents = async (
       );
 
       const tx = parsePendingTx(txId as `tx${number}`, value, marshaller);
-      if (!tx) return;
+      if (!tx) continue;
 
       console.warn('Handling pending tx:', {
         txId,
@@ -387,7 +389,7 @@ const processPendingTxEvents = async (
         console.error(`⚠️ Failed to process pendingTx: ${txId}`, error);
       };
 
-      void handlePendingTx(evmCtx, tx, log).catch(errorHandler);
+      void handlePendingTxFn(evmCtx, tx, logFn).catch(errorHandler);
     }
   }
 };
