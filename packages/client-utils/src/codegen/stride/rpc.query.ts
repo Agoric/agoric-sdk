@@ -32,6 +32,11 @@ export const createRPCQueryClient = async ({
           ).createRpcQueryExtension(client),
         },
       },
+      circuit: {
+        v1: (
+          await import('../cosmos/circuit/v1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
       consensus: {
         v1: (
           await import('../cosmos/consensus/v1/query.rpc.Query.js')

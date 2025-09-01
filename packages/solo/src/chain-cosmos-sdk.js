@@ -299,6 +299,7 @@ export async function connectToChain(
           method,
           params,
         };
+        // console.log('sendRPC', fullObj);
         ws.send(JSON.stringify(fullObj));
         return id;
       };

@@ -1,6 +1,7 @@
 package gaia
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -9,19 +10,15 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
-	ibctmmigrations "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint/migrations"
+	icahosttypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
+	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	ibctmmigrations "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint/migrations"
 )
 
 var upgradeNamesOfThisVersion = []string{
@@ -81,7 +78,11 @@ func isPrimaryUpgradeName(name string) bool {
 // upgrade plan name of this version have previously been applied.
 func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 	for _, name := range upgradeNamesOfThisVersion {
-		if app.UpgradeKeeper.GetDoneHeight(ctx, name) != 0 {
+		height, err := app.UpgradeKeeper.GetDoneHeight(ctx, name)
+		if err != nil {
+			panic(fmt.Errorf("error getting done height: %s", err))
+		}
+		if height != 0 {
 			return false
 		}
 	}
@@ -159,22 +160,13 @@ func (app *GaiaApp) RegisterUpgradeHandlers() {
 	for _, subspace := range app.ParamsKeeper.GetSubspaces() {
 		var keyTable paramstypes.KeyTable
 		switch subspace.Name() {
-		case authtypes.ModuleName:
-			keyTable = authtypes.ParamKeyTable() //nolint:staticcheck
-		case banktypes.ModuleName:
-			keyTable = banktypes.ParamKeyTable() //nolint:staticcheck
-		case stakingtypes.ModuleName:
-			keyTable = stakingtypes.ParamKeyTable() //nolint:staticcheck
-		case minttypes.ModuleName:
-			keyTable = minttypes.ParamKeyTable() //nolint:staticcheck
-		case distrtypes.ModuleName:
-			keyTable = distrtypes.ParamKeyTable() //nolint:staticcheck
-		case slashingtypes.ModuleName:
-			keyTable = slashingtypes.ParamKeyTable() //nolint:staticcheck
-		case govtypes.ModuleName:
-			keyTable = govv1.ParamKeyTable() //nolint:staticcheck
-		case crisistypes.ModuleName:
-			keyTable = crisistypes.ParamKeyTable() //nolint:staticcheck
+		case ibcexported.ModuleName:
+			keyTable = ibcclienttypes.ParamKeyTable() //nolint:staticcheck
+			keyTable.RegisterParamSet(&ibcconnectiontypes.Params{})
+		case icahosttypes.SubModuleName:
+			keyTable = icahosttypes.ParamKeyTable() //nolint:staticcheck
+		case ibctransfertypes.ModuleName:
+			keyTable = ibctransfertypes.ParamKeyTable() //nolint:staticcheck
 		default:
 			continue
 		}
@@ -193,9 +185,10 @@ func (app *GaiaApp) RegisterUpgradeHandlers() {
 }
 
 // makeUnreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
-func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetypes.UpgradeHandler {
 	_ = targetUpgrade
-	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
+	return func(goCtx context.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
+		ctx := sdk.UnwrapSDKContext(goCtx)
 		app.CheckControllerInited(false)
 
 		CoreProposalSteps := []vm.CoreProposalStep{}

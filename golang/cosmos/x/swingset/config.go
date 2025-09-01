@@ -6,10 +6,10 @@ import (
 
 	"github.com/spf13/viper"
 
+	pruningtypes "cosmossdk.io/store/pruning/types"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	pruningtypes "github.com/cosmos/cosmos-sdk/store/pruning/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/util"
 )

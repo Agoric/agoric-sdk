@@ -13,7 +13,7 @@ const ret = spawnSync('agd', [
   'query',
   'staking',
   'validators',
-  '--limit=1000',
+  '--page-limit=1000',
   '-ojson',
 ]);
 if (ret.error) {

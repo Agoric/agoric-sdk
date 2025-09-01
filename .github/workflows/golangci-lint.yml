@@ -34,7 +34,8 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
-          args: --timeout=3m
+          args: --timeout=8m
+            --out-format=colored-line-number
             ${{ matrix.mode == 'no-deprecations' && '--exclude=^SA1019' || '' }}
             ${{ matrix.mode == 'no-failure' && '--issues-exit-code=0' || '' }}
           # for pull requests, show only new issues
