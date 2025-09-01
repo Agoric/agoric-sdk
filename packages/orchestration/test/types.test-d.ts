@@ -3,12 +3,17 @@
  */
 
 import type { HostInterface, HostOf } from '@agoric/async-flow';
-import { type AnyJson, type JsonSafe, typedJson } from '@agoric/cosmic-proto';
-import type {
-  QueryAllBalancesResponse,
-  QueryBalanceResponse,
+import { type AnyJson, CodecHelper, type JsonSafe } from '@agoric/cosmic-proto';
+import {
+  QueryAllBalancesRequest as QueryAllBalancesRequestType,
+  QueryBalanceRequest as QueryBalanceRequestType,
+  type QueryAllBalancesResponse,
+  type QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import type { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import {
+  MsgDelegate as MsgDelegateType,
+  type MsgDelegateResponse,
+} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import type { ResponseQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import type { Vow, VowTools } from '@agoric/vow';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
@@ -40,6 +45,10 @@ import { withChainCapabilities } from '../src/chain-capabilities.js';
 import fetchedChainInfo from '../src/fetched-chain-info.js';
 import cctpChainInfo from '../src/cctp-chain-info.js';
 
+const MsgDelegate = CodecHelper(MsgDelegateType);
+const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);
+const QueryBalanceRequest = CodecHelper(QueryBalanceRequestType);
+
 const anyVal = null as any;
 
 const vt: VowTools = null as any;
@@ -67,7 +76,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 {
   const lcak: LocalOrchestrationAccountKit = null as any;
   const results = await lcak.holder.executeTx([
-    typedJson('/cosmos.staking.v1beta1.MsgDelegate', {
+    MsgDelegate.typedJson({
       amount: {
         amount: '1',
         denom: 'ubld',
@@ -75,7 +84,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
       validatorAddress: 'agoric1valoperhello',
       delegatorAddress: 'agoric1pleab',
     }),
-    typedJson('/cosmos.bank.v1beta1.QueryAllBalancesRequest', {
+    QueryAllBalancesRequest.typedJson({
       address: 'agoric1pleab',
     }),
   ] as const);
@@ -206,11 +215,11 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   type ChainFacade = Chain<{ chainId: 'agoriclocal' }>;
   const localChain: ChainFacade = null as any;
   const results = localChain.query([
-    typedJson('/cosmos.bank.v1beta1.QueryBalanceRequest', {
+    QueryBalanceRequest.typedJson({
       address: 'agoric1pleab',
       denom: 'ubld',
     }),
-    typedJson('/cosmos.bank.v1beta1.QueryAllBalancesRequest', {
+    QueryAllBalancesRequest.typedJson({
       address: 'agoric1pleab',
     }),
   ] as const);

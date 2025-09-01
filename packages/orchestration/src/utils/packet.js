@@ -1,16 +1,24 @@
 import { Fail } from '@endo/errors';
-import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { TxBody as TxBodyType } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
+import { Any as AnyType } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import {
-  RequestQuery,
-  ResponseQuery,
+  RequestQuery as RequestQueryType,
+  ResponseQuery as ResponseQueryType,
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import { atob, decodeBase64, encodeBase64 } from '@endo/base64';
 import {
-  CosmosQuery,
-  CosmosResponse,
+  CosmosQuery as CosmosQueryType,
+  CosmosResponse as CosmosResponseType,
 } from '@agoric/cosmic-proto/icq/v1/packet.js';
+import { CodecHelper } from '@agoric/cosmic-proto';
 import { Type as PacketType } from '@agoric/cosmic-proto/ibc/applications/interchain_accounts/v1/packet.js';
+
+const TxBody = CodecHelper(TxBodyType);
+const Any = CodecHelper(AnyType);
+const RequestQuery = CodecHelper(RequestQueryType);
+const ResponseQuery = CodecHelper(ResponseQueryType);
+const CosmosQuery = CodecHelper(CosmosQueryType);
+const CosmosResponse = CodecHelper(CosmosResponseType);
 
 /**
  * @import {AnyJson, JsonSafe} from '@agoric/cosmic-proto';
@@ -24,18 +32,16 @@ import { Type as PacketType } from '@agoric/cosmic-proto/ibc/applications/interc
  * malformed messages in favor of interface guards.
  *
  * @param {AnyJson[]} msgs
- * @param {Partial<Omit<TxBody, 'messages'>>} [opts]
+ * @param {Partial<Omit<TxBodyType, 'messages'>>} [opts]
  * @returns {string} stringified InterchainAccountPacketData
  * @throws {Error} if malformed messages are provided
  */
 export function makeTxPacket(msgs, opts) {
   const messages = msgs.map(Any.fromJSON);
-  const bytes = TxBody.encode(
-    TxBody.fromPartial({
-      messages,
-      ...opts,
-    }),
-  ).finish();
+  const bytes = TxBody.toProto({
+    messages,
+    ...opts,
+  });
 
   return JSON.stringify(
     /** @type {JsonSafe<InterchainAccountPacketData>} */ ({
@@ -52,7 +58,7 @@ harden(makeTxPacket);
  * of each message to be base64 encoded bytes. Skips checks for malformed
  * messages in favor of interface guards.
  *
- * @param {JsonSafe<RequestQuery>[]} msgs
+ * @param {JsonSafe<RequestQueryType>[]} msgs
  * @returns {string} stringified InterchainQueryPacketData
  * @throws {Error} if malformed messages are provided
  */
@@ -99,7 +105,7 @@ harden(parseTxPacket);
  * seem to be plain text and do not need decoding.
  *
  * @param {string} response
- * @returns {JsonSafe<ResponseQuery>[]}
+ * @returns {JsonSafe<ResponseQueryType>[]}
  * @throws {Error} if error key is detected in response string, or result key is
  *   not found
  */

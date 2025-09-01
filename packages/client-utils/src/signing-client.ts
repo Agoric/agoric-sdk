@@ -1,4 +1,4 @@
-import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
+import { MsgWalletSpendAction as MsgWalletSpendActionType } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
 
 // XXX replace with Hyperweb https://github.com/Agoric/agoric-sdk/issues/11780
 import { stringToPath } from '@cosmjs/crypto';
@@ -20,7 +20,7 @@ const AgoricMsgs = {
 const agoricRegistryTypes: [string, GeneratedType][] = [
   [
     AgoricMsgs.MsgWalletSpendAction.typeUrl,
-    MsgWalletSpendAction as GeneratedType,
+    MsgWalletSpendActionType as GeneratedType,
   ],
 ];
 

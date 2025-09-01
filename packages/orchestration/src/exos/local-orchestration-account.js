@@ -1,5 +1,5 @@
 /** @file Use-object for the owner of a localchain account */
-import { typedJson } from '@agoric/cosmic-proto';
+import { CodecHelper } from '@agoric/cosmic-proto';
 import { AmountShape, PaymentShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
@@ -8,6 +8,17 @@ import { VowShape } from '@agoric/vow';
 import { E } from '@endo/far';
 import { Fail, q } from '@endo/errors';
 
+import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import { QueryDenomHashRequest as QueryDenomHashRequestType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/query.js';
+import {
+  QueryAllBalancesRequest as QueryAllBalancesRequestType,
+  QueryBalanceRequest as QueryBalanceRequestType,
+} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import {
+  MsgDelegate as MsgDelegateType,
+  MsgUndelegate as MsgUndelegateType,
+} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { MsgSend as MsgSendType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import {
   AmountArgShape,
   AnyNatAmountsRecord,
@@ -25,6 +36,14 @@ import { prepareIBCTools } from './ibc-packet.js';
 import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
 import { TransferRouteShape } from './chain-hub.js';
 
+const MsgTransfer = CodecHelper(MsgTransferType);
+const QueryDenomHashRequest = CodecHelper(QueryDenomHashRequestType);
+const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);
+const QueryBalanceRequest = CodecHelper(QueryBalanceRequestType);
+const MsgDelegate = CodecHelper(MsgDelegateType);
+const MsgUndelegate = CodecHelper(MsgUndelegateType);
+const MsgSend = CodecHelper(MsgSendType);
+
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
@@ -33,7 +52,7 @@ import { TransferRouteShape } from './chain-hub.js';
  * @import {IBCEvent} from '@agoric/vats';
  * @import {QueryDenomHashResponse} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/query.js';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
- * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
+ * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
  * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
@@ -387,19 +406,13 @@ export const prepareLocalOrchestrationAccountKit = (
               },
             });
           }
-          const transferMsg = typedJson(
-            '/ibc.applications.transfer.v1.MsgTransfer',
-            {
-              ...transferDetails,
-              sender: this.state.address.value,
-              timeoutHeight: opts?.timeoutHeight ?? {
-                revisionHeight: 0n,
-                revisionNumber: 0n,
-              },
-              timeoutTimestamp,
-              memo: memo ?? '',
-            },
-          );
+          const transferMsg = MsgTransfer.typedJson({
+            ...transferDetails,
+            sender: this.state.address.value,
+            timeoutHeight: opts?.timeoutHeight,
+            timeoutTimestamp,
+            memo,
+          });
 
           const { holder } = this.facets;
           const sender = makeIBCTransferSender(
@@ -580,7 +593,7 @@ export const prepareLocalOrchestrationAccountKit = (
 
             return watch(
               E(localchain).query(
-                typedJson('/cosmos.bank.v1beta1.QueryBalanceRequest', {
+                QueryBalanceRequest.typedJson({
                   address: this.state.address.value,
                   denom,
                 }),
@@ -593,7 +606,7 @@ export const prepareLocalOrchestrationAccountKit = (
         getBalances() {
           return watch(
             E(localchain).query(
-              typedJson('/cosmos.bank.v1beta1.QueryAllBalancesRequest', {
+              QueryAllBalancesRequest.typedJson({
                 address: this.state.address.value,
               }),
             ),
@@ -630,7 +643,7 @@ export const prepareLocalOrchestrationAccountKit = (
 
           return watch(
             E(lca).executeTx([
-              typedJson('/cosmos.staking.v1beta1.MsgDelegate', {
+              MsgDelegate.typedJson({
                 amount,
                 validatorAddress,
                 delegatorAddress: this.state.address.value,
@@ -650,7 +663,7 @@ export const prepareLocalOrchestrationAccountKit = (
           const { account: lca } = this.state;
           return watch(
             E(lca).executeTx([
-              typedJson('/cosmos.staking.v1beta1.MsgUndelegate', {
+              MsgUndelegate.typedJson({
                 amount,
                 validatorAddress,
                 delegatorAddress: this.state.address.value,
@@ -697,7 +710,7 @@ export const prepareLocalOrchestrationAccountKit = (
             const { helper } = this.facets;
             return watch(
               E(this.state.account).executeTx([
-                typedJson('/cosmos.bank.v1beta1.MsgSend', {
+                MsgSend.typedJson({
                   amount: [helper.amountToCoin(amount)],
                   toAddress: cosmosDest.value,
                   fromAddress: this.state.address.value,
@@ -718,7 +731,7 @@ export const prepareLocalOrchestrationAccountKit = (
             const { helper } = this.facets;
             return watch(
               E(this.state.account).executeTx([
-                typedJson('/cosmos.bank.v1beta1.MsgSend', {
+                MsgSend.typedJson({
                   amount: amounts.map(a => helper.amountToCoin(a)),
                   toAddress: toAccount.value,
                   fromAddress: this.state.address.value,
@@ -824,10 +837,9 @@ export const prepareLocalOrchestrationAccountKit = (
             // Find the local denom hash for the transferDenom, if there is one.
             return watch(
               E(localchain).query(
-                typedJson(
-                  '/ibc.applications.transfer.v1.QueryDenomHashRequest',
-                  { trace: denomOrTrace },
-                ),
+                QueryDenomHashRequest.typedJson({
+                  trace: denomOrTrace,
+                }),
               ),
               this.facets.parseInboundTransferWatcher,
               buildReturnValue(denomOrTrace),
