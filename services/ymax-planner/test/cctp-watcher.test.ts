@@ -1,43 +1,13 @@
 import test from 'ava';
-import { type JsonRpcProvider, id, toBeHex, zeroPadValue } from 'ethers';
+import { id, toBeHex, zeroPadValue } from 'ethers';
 import { watchCctpTransfer } from '../src/watchers/cctp-watcher.ts';
+import { createMockProvider } from './mocks.ts';
 
 const watchAddress = '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64';
 const usdcAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 
 const encodeAmount = (amount: bigint): string => {
   return zeroPadValue(toBeHex(amount), 32);
-};
-
-const createMockProvider = () => {
-  const eventListeners = new Map<string, Function[]>();
-
-  return {
-    on: (eventOrFilter: any, listener: Function) => {
-      const key = JSON.stringify(eventOrFilter);
-      if (!eventListeners.has(key)) {
-        eventListeners.set(key, []);
-      }
-      eventListeners.get(key)!.push(listener);
-    },
-    off: (eventOrFilter: any, listener: Function) => {
-      const key = JSON.stringify(eventOrFilter);
-      const listeners = eventListeners.get(key);
-      if (listeners) {
-        const index = listeners.indexOf(listener);
-        if (index > -1) {
-          listeners.splice(index, 1);
-        }
-      }
-    },
-    emit: (eventOrFilter: any, log: any) => {
-      const key = JSON.stringify(eventOrFilter);
-      const listeners = eventListeners.get(key);
-      if (listeners) {
-        listeners.forEach(listener => listener(log));
-      }
-    },
-  } as JsonRpcProvider;
 };
 
 test('watchCCTPTransfer detects exact amount match', async t => {

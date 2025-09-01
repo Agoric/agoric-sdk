@@ -102,7 +102,7 @@ type CreateContextParams = {
 export type EvmProviders = Partial<Record<CaipChainId, JsonRpcProvider>>;
 
 export const createEVMContext = async ({
-  net = 'testnet',
+  net = 'mainnet',
 }: CreateContextParams): Promise<
   Pick<
     EvmContext,
