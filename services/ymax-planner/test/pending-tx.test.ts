@@ -1,6 +1,10 @@
 import test from 'ava';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
-import type { EvmContext, PendingTx } from '../src/pending-tx-manager.ts';
+import {
+  handlePendingTx,
+  type EvmContext,
+  type PendingTx,
+} from '../src/pending-tx-manager.ts';
 import { processPendingTxEvents, parsePendingTx } from '../src/engine.ts';
 import {
   createMockEvmContext,
@@ -45,7 +49,6 @@ test('parsePendingTx returns null for invalid data shape', t => {
 test('processPendingTxEvents handles valid single transaction event', async t => {
   const mockEvmCtx = createMockEvmContext();
   const handledTxs: PendingTx[] = [];
-  const logMessages: any[][] = [];
 
   // Mock handlePendingTx to track calls
   const mockHandlePendingTx = async (
@@ -54,10 +57,6 @@ test('processPendingTxEvents handles valid single transaction event', async t =>
     log: any,
   ) => {
     handledTxs.push(tx);
-  };
-
-  const mockLog = (...args: any[]) => {
-    logMessages.push(args);
   };
 
   const txData = createMockPendingTxData({ type: 'cctp' });
@@ -70,7 +69,6 @@ test('processPendingTxEvents handles valid single transaction event', async t =>
     events,
     marshaller,
     mockHandlePendingTx,
-    mockLog,
   );
 
   t.is(handledTxs.length, 1);
@@ -217,4 +215,23 @@ test('processPendingTxEvents handles only pending transactions', async t => {
 
   t.is(handledTxs.length, 1);
   t.is(handledTxs[0].status, 'pending');
+});
+
+// --- Unit tests for handlePendingTx ---
+test('handlePendingTx throws error for unsupported transaction type', async t => {
+  const mockEvmCtx = createMockEvmContext();
+  const mockLog = () => {};
+
+  const unsupportedTx = {
+    txId: 'tx3' as `tx${number}`,
+    type: 'unsupported',
+    status: 'pending',
+    amount: 1000000n,
+    destinationAddress: 'eip155:1:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
+  } as any;
+
+  await t.throwsAsync(
+    () => handlePendingTx(mockEvmCtx, unsupportedTx, { log: mockLog }),
+    { message: /No monitor registered for tx type: unsupported/ },
+  );
 });

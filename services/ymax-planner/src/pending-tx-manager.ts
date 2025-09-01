@@ -55,6 +55,7 @@ export type PendingTxMonitor<T extends PendingTx = PendingTx> = {
     ctx: EvmContext,
     tx: T,
     log: (...args: unknown[]) => void,
+    timeoutMinutes: number,
   ) => Promise<void>;
 };
 
@@ -64,11 +65,9 @@ type MonitorRegistry = {
 };
 
 const cctpMonitor: PendingTxMonitor<CctpTx> = {
-  watch: async (ctx, tx, log) => {
+  watch: async (ctx, tx, log, timeoutMinutes) => {
     const { txId, destinationAddress, amount } = tx;
     const logPrefix = `[${txId}]`;
-
-    log(`${logPrefix} handling cctp tx`);
 
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
     const [namespace, chainId, receiver] = destinationAddress.split(':');
@@ -87,6 +86,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
       expectedAmount: amount,
       provider,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+      timeoutMinutes,
     });
 
     await resolvePendingTx({
@@ -100,7 +100,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
 };
 
 const gmpMonitor: PendingTxMonitor<GmpTx> = {
-  watch: async (ctx, tx, log) => {
+  watch: async (ctx, tx, log, timeoutMinutes) => {
     const { txId, destinationAddress } = tx;
     const logPrefix = `[${txId}]`;
 
@@ -108,8 +108,6 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
     const [namespace, chainId, addr] = destinationAddress.split(':');
     const caipId: CaipChainId = `${namespace}:${chainId}`;
     const axelarChainId = ctx.axelarChainIds[caipId];
-
-    log(`${logPrefix} handling gmp tx`);
 
     const res = await watchGmp({
       url: ctx.axelarQueryApi,
@@ -121,6 +119,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
       },
       txId,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+      timeoutMinutes,
     });
 
     await resolvePendingTx({
@@ -138,11 +137,20 @@ const createMonitorRegistry = (): MonitorRegistry => ({
   gmp: gmpMonitor,
 });
 
+type HandlePendingTxOptions = {
+  log?: (...args: unknown[]) => void;
+  registry?: MonitorRegistry;
+  timeoutMinutes?: number;
+};
+
 export const handlePendingTx = async (
   ctx: EvmContext,
   tx: PendingTx,
-  log: (...args: unknown[]) => void = () => {},
-  registry: MonitorRegistry = createMonitorRegistry(),
+  {
+    log = () => {},
+    registry = createMonitorRegistry(),
+    timeoutMinutes = 5,
+  }: HandlePendingTxOptions,
 ) => {
   await null;
   const logPrefix = `[${tx.txId}]`;
@@ -154,5 +162,5 @@ export const handlePendingTx = async (
     throw Error(`${logPrefix} No monitor registered for tx type: ${tx.type}`);
   }
 
-  await monitor.watch(ctx, tx, log);
+  await monitor.watch(ctx, tx, log, timeoutMinutes);
 };

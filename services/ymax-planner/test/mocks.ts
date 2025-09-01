@@ -6,6 +6,78 @@ import { PENDING_TX_PATH_PREFIX } from '../src/engine.ts';
 import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { ethers, type JsonRpcProvider } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
+
+export const createMockProvider = () => {
+  const eventListeners = new Map<string, Function[]>();
+
+  return {
+    on: (eventOrFilter: any, listener: Function) => {
+      const key = JSON.stringify(eventOrFilter);
+      if (!eventListeners.has(key)) {
+        eventListeners.set(key, []);
+      }
+      eventListeners.get(key)!.push(listener);
+    },
+    off: (eventOrFilter: any, listener: Function) => {
+      const key = JSON.stringify(eventOrFilter);
+      const listeners = eventListeners.get(key);
+      if (listeners) {
+        const index = listeners.indexOf(listener);
+        if (index > -1) {
+          listeners.splice(index, 1);
+        }
+      }
+    },
+    emit: (eventOrFilter: any, log: any) => {
+      const key = JSON.stringify(eventOrFilter);
+      const listeners = eventListeners.get(key);
+      if (listeners) {
+        listeners.forEach(listener => listener(log));
+      }
+    },
+  } as JsonRpcProvider;
+};
+
+export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
+  const executedOffers: OfferSpec[] = [];
+
+  return {
+    address: 'agoric1mockplanner123456789abcdefghijklmnopqrstuvwxyz',
+
+    query: {
+      getCurrentWalletRecord: async () => ({
+        offerToUsedInvitation: [
+          [
+            'resolver-offer-1',
+            {
+              value: [
+                {
+                  description: 'resolver',
+                  instance: 'mock-instance',
+                  installation: 'mock-installation',
+                },
+              ],
+            },
+          ],
+        ],
+        liveOffers: [],
+        purses: [],
+      }),
+    },
+
+    executeOffer: async (offerSpec: OfferSpec) => {
+      executedOffers.push(offerSpec);
+      return {
+        offerId: offerSpec.id,
+        invitationSpec: offerSpec.invitationSpec,
+        offerArgs: offerSpec.offerArgs,
+        proposal: offerSpec.proposal,
+        status: 'executed',
+      };
+    },
+  } as any;
+};
 
 export const createMockEvmContext = (): EvmContext => ({
   axelarQueryApi: 'https://testnet.api.axelarscan.io',
@@ -14,11 +86,14 @@ export const createMockEvmContext = (): EvmContext => ({
     'eip155:42161': '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', // Arbitrum
   },
   axelarChainIds: {
-    'eip155:42161': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
-    'eip155:1': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    'eip155:42161': 'arbitrum',
+    'eip155:1': 'Ethereum',
   } as AxelarChainIdMap[keyof AxelarChainIdMap],
-  evmProviders: {},
-  signingSmartWalletKit: {} as SigningSmartWalletKit,
+  evmProviders: {
+    'eip155:42161': createMockProvider(),
+    'eip155:1': createMockProvider(),
+  },
+  signingSmartWalletKit: createMockSigningSmartWalletKit(),
   fetch: global.fetch,
 });
 
@@ -52,37 +127,6 @@ export const createMockStreamCell = (values: unknown[]) => ({
   values,
   blockHeight: '1000',
 });
-
-export const createMockProvider = () => {
-  const eventListeners = new Map<string, Function[]>();
-
-  return {
-    on: (eventOrFilter: any, listener: Function) => {
-      const key = JSON.stringify(eventOrFilter);
-      if (!eventListeners.has(key)) {
-        eventListeners.set(key, []);
-      }
-      eventListeners.get(key)!.push(listener);
-    },
-    off: (eventOrFilter: any, listener: Function) => {
-      const key = JSON.stringify(eventOrFilter);
-      const listeners = eventListeners.get(key);
-      if (listeners) {
-        const index = listeners.indexOf(listener);
-        if (index > -1) {
-          listeners.splice(index, 1);
-        }
-      }
-    },
-    emit: (eventOrFilter: any, log: any) => {
-      const key = JSON.stringify(eventOrFilter);
-      const listeners = eventListeners.get(key);
-      if (listeners) {
-        listeners.forEach(listener => listener(log));
-      }
-    },
-  } as JsonRpcProvider;
-};
 
 const createMockAxelarScanResponse = (txId: string, status = 'executed') => {
   const baseEvent = {

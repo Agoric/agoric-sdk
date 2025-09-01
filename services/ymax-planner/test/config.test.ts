@@ -18,6 +18,7 @@ test('loadConfig accepts valid configuration', t => {
     SPECTRUM_API_TIMEOUT: '5000',
     SPECTRUM_API_RETRIES: '2',
     AGORIC_NET: 'devnet',
+    ALCHEMY_API_KEY: 'xWradf',
     COSMOS_REST_TIMEOUT: '10000',
     COSMOS_REST_RETRIES: '5',
   };

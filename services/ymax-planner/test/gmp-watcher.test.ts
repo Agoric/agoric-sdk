@@ -1,8 +1,46 @@
 import test from 'ava';
 import { watchGmp } from '../src/watchers/gmp-watcher.ts';
-import { mockFetch } from './mocks.ts';
+import { createMockEvmContext, mockFetch } from './mocks.ts';
+import { type PendingTx, handlePendingTx } from '../src/pending-tx-manager.ts';
 
-test('getTxStatus detects successful execution with matching txId', async t => {
+test('handlePendingTx processes GMP transaction successfully', async t => {
+  const mockEvmCtx = createMockEvmContext();
+  const txId = 'tx1';
+  mockEvmCtx.fetch = mockFetch({ txId });
+  const chain = 'eip155:1'; // Ethereum
+  const amount = 1_000_000n; // 1 USDC
+  const contractAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const destinationChain = mockEvmCtx.axelarChainIds[chain];
+  const type = 'gmp';
+
+  const logMessages: string[] = [];
+  const logger = (...args: any[]) => logMessages.push(args.join(' '));
+
+  const gmpTx: PendingTx = {
+    txId,
+    type,
+    status: 'pending',
+    amount,
+    destinationAddress: `${chain}:${contractAddress}`,
+  };
+
+  await t.notThrowsAsync(async () => {
+    await handlePendingTx(mockEvmCtx, gmpTx, {
+      log: logger,
+      timeoutMinutes: 0.05, // 3 sec
+    });
+  });
+
+  t.deepEqual(logMessages, [
+    `[${txId}] handling gmp tx`,
+    `[${txId}] params: {"sourceChain":"agoric","destinationChain":"${destinationChain}","contractAddress":"${contractAddress}"}`,
+    `[${txId}] ✅ contract call executed, txHash: 0xexecuted123`,
+    `[${txId}] ✅ MulticallExecuted for txId found`,
+    `[${txId}] GMP tx resolved`,
+  ]);
+});
+
+test('watchGmp detects successful execution with matching txId', async t => {
   const txId = 'tx0';
 
   const result = await watchGmp({
@@ -21,7 +59,7 @@ test('getTxStatus detects successful execution with matching txId', async t => {
   t.truthy(result.logs, 'Should return execution logs');
 });
 
-test('getTxStatus rejects execution with mismatched txId', async t => {
+test('watchGmp rejects execution with mismatched txId', async t => {
   const expectedTxId = 'tx1';
   const actualTxId = 'tx2';
 

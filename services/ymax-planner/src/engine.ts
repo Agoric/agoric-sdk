@@ -389,7 +389,7 @@ export const processPendingTxEvents = async (
         console.error(`⚠️ Failed to process pendingTx: ${txId}`, error);
       };
 
-      void handlePendingTxFn(evmCtx, tx, logFn).catch(errorHandler);
+      void handlePendingTxFn(evmCtx, tx, { log: logFn }).catch(errorHandler);
     }
   }
 };
@@ -515,11 +515,9 @@ export const startEngine = async ({
     });
 
     // Process existing pending transactions on startup
-    void handlePendingTx(
-      { ...evmCtx, signingSmartWalletKit, fetch },
-      tx,
+    void handlePendingTx({ ...evmCtx, signingSmartWalletKit, fetch }, tx, {
       log,
-    ).catch(logIgnoredError);
+    }).catch(logIgnoredError);
   }).done;
 
   // console.warn('consuming events');

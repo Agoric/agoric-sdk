@@ -59,8 +59,7 @@ export const watchGmp = async ({
     if (Array.isArray(data) && data?.[0]?.executed) {
       const execution = data[0].executed;
 
-      log(`✅ contract call executed`, execution);
-      log(`txHash on EVM:`, execution.transactionHash);
+      log(`✅ contract call executed, txHash: ${execution.transactionHash}`);
 
       const multicallTopic = ethers.id(
         'MulticallExecuted(string,(bool,bytes)[])',
