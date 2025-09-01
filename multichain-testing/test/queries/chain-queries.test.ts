@@ -96,11 +96,9 @@ const queryICQChain = test.macro({
       }),
     );
     const allBalanceQuery = toRequestQueryJson(
-      QueryAllBalancesRequest.toProtoMsg(
-        QueryAllBalancesRequest.fromPartial({
-          address,
-        }),
-      ),
+      QueryAllBalancesRequest.toProtoMsg({
+        address,
+      }),
     );
 
     await doOffer({
