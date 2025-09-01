@@ -257,7 +257,6 @@ export const sendGMPContractCall = async (
   const { result, txId } = resolverClient.registerTransaction(
     TxType.GMP,
     `${gmpChainId}:${remoteAddress}`,
-    0n,
   );
 
   const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
