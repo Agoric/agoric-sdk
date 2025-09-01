@@ -34,38 +34,38 @@ export type GmpTransfer = {
 };
 
 /**
- * Subscription state machine:
+ * PendingTx state machine:
  * pending -> success (when cross-chain operation completes successfully)
  * pending -> failed (when operation fails or times out)
  *
  * Terminal states: success and timeout never transition to other states.
  */
-export type Subscription = {
+export type PendingTx = {
   txId: TxId;
 } & PublishedTx;
 
-type CctpSubscription = Subscription & { type: 'cctp' };
-type GmpSubscription = Subscription & { type: 'gmp' };
+type CctpTx = PendingTx & { type: 'cctp' };
+type GmpTx = PendingTx & { type: 'gmp' };
 
-export type SubscriptionMonitor<T extends Subscription = Subscription> = {
+export type PendingTxMonitor<T extends PendingTx = PendingTx> = {
   watch: (
     ctx: EvmContext,
-    subscription: T,
+    tx: T,
     log: (...args: unknown[]) => void,
   ) => Promise<void>;
 };
 
 type MonitorRegistry = {
-  cctp: SubscriptionMonitor<CctpSubscription>;
-  gmp: SubscriptionMonitor<GmpSubscription>;
+  cctp: PendingTxMonitor<CctpTx>;
+  gmp: PendingTxMonitor<GmpTx>;
 };
 
-const cctpMonitor: SubscriptionMonitor<CctpSubscription> = {
-  watch: async (ctx, subscription, log) => {
-    const { txId, destinationAddress, amount } = subscription;
+const cctpMonitor: PendingTxMonitor<CctpTx> = {
+  watch: async (ctx, tx, log) => {
+    const { txId, destinationAddress, amount } = tx;
     const logPrefix = `[${txId}]`;
 
-    log(`${logPrefix} handling cctp subscription`);
+    log(`${logPrefix} handling cctp tx`);
 
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
     const [namespace, chainId, receiver] = destinationAddress.split(':');
@@ -92,13 +92,13 @@ const cctpMonitor: SubscriptionMonitor<CctpSubscription> = {
       status: transferStatus ? TxStatus.SUCCESS : TxStatus.FAILED,
     });
 
-    log(`${logPrefix} CCTP subscription resolved`);
+    log(`${logPrefix} CCTP tx resolved`);
   },
 };
 
-const gmpMonitor: SubscriptionMonitor<GmpSubscription> = {
-  watch: async (ctx, subscription, log) => {
-    const { txId, destinationAddress } = subscription;
+const gmpMonitor: PendingTxMonitor<GmpTx> = {
+  watch: async (ctx, tx, log) => {
+    const { txId, destinationAddress } = tx;
     const logPrefix = `[${txId}]`;
 
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
@@ -106,7 +106,7 @@ const gmpMonitor: SubscriptionMonitor<GmpSubscription> = {
     const caipId: CaipChainId = `${namespace}:${chainId}`;
     const axelarChainId = ctx.axelarChainIds[caipId];
 
-    log(`${logPrefix} handling gmp subscription`);
+    log(`${logPrefix} handling gmp tx`);
 
     const res = await watchGmp({
       url: ctx.axelarQueryApi,
@@ -126,7 +126,7 @@ const gmpMonitor: SubscriptionMonitor<GmpSubscription> = {
       status: res.success ? TxStatus.SUCCESS : TxStatus.FAILED,
     });
 
-    log(`${logPrefix} GMP subscription resolved`);
+    log(`${logPrefix} GMP tx resolved`);
   },
 };
 
@@ -135,23 +135,21 @@ const createMonitorRegistry = (): MonitorRegistry => ({
   gmp: gmpMonitor,
 });
 
-export const handleSubscription = async (
+export const handlePendingTx = async (
   ctx: EvmContext,
-  subscription: Subscription,
+  tx: PendingTx,
   log: (...args: unknown[]) => void = () => {},
   registry: MonitorRegistry = createMonitorRegistry(),
 ) => {
   await null;
-  const logPrefix = `[${subscription.txId}]`;
-  log(`${logPrefix} handling ${subscription.type} subscription`);
+  const logPrefix = `[${tx.txId}]`;
+  log(`${logPrefix} handling ${tx.type} tx`);
 
-  const monitor = registry[subscription.type] as SubscriptionMonitor;
+  const monitor = registry[tx.type] as PendingTxMonitor;
 
   if (!monitor) {
-    throw Error(
-      `${logPrefix} No monitor registered for subscription type: ${subscription.type}`,
-    );
+    throw Error(`${logPrefix} No monitor registered for tx type: ${tx.type}`);
   }
 
-  await monitor.watch(ctx, subscription, log);
+  await monitor.watch(ctx, tx, log);
 };

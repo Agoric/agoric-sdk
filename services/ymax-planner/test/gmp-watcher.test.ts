@@ -140,7 +140,7 @@ const createMockAxelarResponse = (
 test('getTxStatus detects successful execution with matching txId', async t => {
   const txId = 'tx0';
 
-  // Mock fetch that returns executed status with matching subscription ID
+  // Mock fetch that returns executed status with matching txId
   const mockFetch = async (url: string, options: any) => {
     const response = createMockAxelarResponse('executed', txId);
     return {
@@ -165,7 +165,7 @@ test('getTxStatus detects successful execution with matching txId', async t => {
   t.truthy(result.logs, 'Should return execution logs');
 });
 
-test('getTxStatus rejects execution with mismatched subscription ID', async t => {
+test('getTxStatus rejects execution with mismatched txId', async t => {
   const expectedTxId = 'tx1';
   const actualTxId = 'tx-2';
 
@@ -192,9 +192,6 @@ test('getTxStatus rejects execution with mismatched subscription ID', async t =>
     log: console.log,
   });
 
-  t.false(
-    result.success,
-    'Should return failure for mismatched subscription ID',
-  );
-  t.is(result.logs, null, 'Should not return logs for mismatched subscription');
+  t.false(result.success, 'Should return failure for mismatched txId');
+  t.is(result.logs, null, 'Should not return logs for mismatched pendingTx');
 });

@@ -21,13 +21,15 @@ import type { CosmosRPCClient } from './cosmos-rpc.ts';
 import { handleDeposit } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import {
-  handleSubscription,
+  handlePendingTx,
   type EvmContext,
-  type Subscription,
-} from './subscription-manager.ts';
+  type PendingTx,
+} from './pending-tx-manager.ts';
 import { log } from 'node:console';
+import { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 
 const { isInteger } = Number;
+const { values } = Object;
 
 const sink = () => {};
 
@@ -37,7 +39,7 @@ type CosmosEvent = {
 };
 
 const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
-const TX_SUBSCRIPTIONS_PATH_PREFIX = 'published.ymax0.pendingTxs';
+const PENDING_TX_PATH_PREFIX = 'published.ymax0.pendingTxs';
 
 /** cf. golang/cosmos/x/vstorage/types/path_keys.go */
 const EncodedKeySeparator = '\x00';
@@ -271,79 +273,43 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
   return harden(results as typeof results & { done: Promise<boolean> });
 };
 
-const BaseSubscriptionShape = M.splitRecord(
-  {
-    status: M.or('pending', 'success', 'timeout'),
-    type: M.string(),
-  },
-  {
-    // CCTP-specific fields
-    amount: M.bigint(),
-    destinationAddress: M.string(),
-    // GMP-specific fields
-    lcaAddr: M.string(),
-    destinationChain: M.string(),
-    contractAddress: M.string(),
-  },
-);
+const PendingTxShape = M.splitRecord({
+  status: M.or(...values(TxStatus)),
+  type: M.string(),
+  amount: M.bigint(),
+  destinationAddress: M.string(),
+});
 
-const parseSubscription = (
-  subscriptionData,
-  subscriptionId: `tx${number}`,
+const parsePendingTx = (
+  txId: `tx${number}`,
+  txData,
   marshaller?: SigningSmartWalletKit['marshaller'],
-): Subscription | null => {
-  const data = marshaller
-    ? marshaller.fromCapData(subscriptionData)
-    : subscriptionData;
+): PendingTx | null => {
+  const data = marshaller ? marshaller.fromCapData(txData) : txData;
 
-  if (!matches(data, BaseSubscriptionShape)) {
+  if (!matches(data, PendingTxShape)) {
     const err = assert.error(
-      X`expected data ${data} to match ${q(BaseSubscriptionShape)}`,
+      X`expected data ${data} to match ${q(PendingTxShape)}`,
     );
     console.error(err);
     return null;
   }
 
-  return { subscriptionId, ...(data as any) } as Subscription;
+  return { txId, ...(data as any) } as PendingTx;
 };
 
-const createSubscriptionContext = (
-  evmCtx: Pick<
-    EvmContext,
-    'axelarQueryApi' | 'evmProviders' | 'usdcAddresses' | 'axelarChainIds'
-  >,
-  signingSmartWalletKit: SigningSmartWalletKit,
-): EvmContext => ({
-  ...evmCtx,
-  signingSmartWalletKit,
-  fetch,
-});
-
-const processPendingSubscription = async (
-  evmCtx: Pick<
-    EvmContext,
-    'axelarQueryApi' | 'evmProviders' | 'usdcAddresses' | 'axelarChainIds'
-  >,
-  signingSmartWalletKit: SigningSmartWalletKit,
-  subscription: Subscription,
+const processPendingTx = async (
+  evmCtx: EvmContext,
+  tx: PendingTx,
   log: (...args: unknown[]) => void,
   errorHandler: (error: Error) => void,
 ) => {
-  if (subscription.status !== 'pending') return;
-  const subscriptionCtx = createSubscriptionContext(
-    evmCtx,
-    signingSmartWalletKit,
-  );
-  void handleSubscription(subscriptionCtx, subscription, log).catch(
-    errorHandler,
-  );
+  if (tx.status !== 'pending') return;
+  void handlePendingTx(evmCtx, tx, log).catch(errorHandler);
 };
 
 type IO = {
-  evmCtx: Pick<
-    EvmContext,
-    'axelarQueryApi' | 'evmProviders' | 'usdcAddresses' | 'axelarChainIds'
-  >;
+  evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch'>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
@@ -393,16 +359,12 @@ const processPortfolioEvents = async (
   }
 };
 
-const processSubscriptionEvents = async (
-  subscriptionEvents: Array<{ path: string; value: string }>,
+const processPendingTxEvents = async (
+  evmCtx: EvmContext,
+  events: Array<{ path: string; value: string }>,
   marshaller: SigningSmartWalletKit['marshaller'],
-  evmCtx: Pick<
-    EvmContext,
-    'axelarQueryApi' | 'evmProviders' | 'usdcAddresses' | 'axelarChainIds'
-  >,
-  signingSmartWalletKit: SigningSmartWalletKit,
 ) => {
-  for (const { path, value: vstorageValue } of subscriptionEvents) {
+  for (const { path, value: vstorageValue } of events) {
     const streamCell = tryJsonParse(
       vstorageValue,
       _err =>
@@ -410,12 +372,9 @@ const processSubscriptionEvents = async (
     );
     mustMatch(harden(streamCell), StreamCellShape);
 
-    // Extract subscription ID from path (e.g., "published.orchestration.subscriptions.subscription1234")
-    const subscriptionId = stripPrefix(
-      `${TX_SUBSCRIPTIONS_PATH_PREFIX}.`,
-      path,
-    );
-    console.warn('Processing subscription event', subscriptionId, path);
+    // Extract txId from path (e.g., "published.ymax0.pendingTxs.tx1")
+    const txId = stripPrefix(`${PENDING_TX_PATH_PREFIX}.`, path);
+    console.warn('Processing pendingTx event', txId, path);
 
     for (let i = 0; i < streamCell.values.length; i += 1) {
       const strValue = streamCell.values[i];
@@ -426,33 +385,20 @@ const processSubscriptionEvents = async (
           Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
       );
 
-      const subscription = parseSubscription(
-        value,
-        subscriptionId as `tx${number}`,
-        marshaller,
-      );
-      if (!subscription) return;
+      const tx = parsePendingTx(txId as `tx${number}`, value, marshaller);
+      if (!tx) return;
 
-      console.warn('Handling subscription:', {
-        subscriptionId,
-        type: subscription.type,
-        status: subscription.status,
+      console.warn('Handling pending tx:', {
+        txId,
+        type: tx.type,
+        status: tx.status,
       });
 
       const errorHandler = error => {
-        console.error(
-          `⚠️ Failed to process subscription: ${subscriptionId}`,
-          error,
-        );
+        console.error(`⚠️ Failed to process pendingTx: ${txId}`, error);
       };
 
-      await processPendingSubscription(
-        evmCtx,
-        signingSmartWalletKit,
-        subscription,
-        log,
-        errorHandler,
-      );
+      await processPendingTx(evmCtx, tx, log, errorHandler);
     }
   }
 };
@@ -547,49 +493,40 @@ export const startEngine = async ({
     portfolioKeyForDepositAddr.set(depositAddress, portfolioKey);
   }).done;
 
-  const subscriptionKeys = await query.vstorage.keys(
-    TX_SUBSCRIPTIONS_PATH_PREFIX,
-  );
+  const pendingTxKeys = await query.vstorage.keys(PENDING_TX_PATH_PREFIX);
   console.warn(
-    `Found ${subscriptionKeys.length} existing subscriptions to monitor`,
+    `Found ${pendingTxKeys.length} existing pendingTxKeys to monitor`,
   );
 
-  await makeWorkPool(subscriptionKeys, undefined, async subscriptionKey => {
+  await makeWorkPool(pendingTxKeys, undefined, async txId => {
     const logIgnoredError = err => {
-      const msg = `⚠️ Failed to process existing subscription: ${subscriptionKey}`;
+      const msg = `⚠️ Failed to process existing pendingTx: ${txId}`;
       console.error(msg, err);
     };
 
-    let subscriptionData;
+    let data;
     try {
       // eslint-disable-next-line @jessie.js/safe-await-separator
-      subscriptionData = await query.readPublished(
-        stripPrefix(
-          'published.',
-          `${TX_SUBSCRIPTIONS_PATH_PREFIX}.${subscriptionKey}`,
-        ),
+      data = await query.readPublished(
+        stripPrefix('published.', `${PENDING_TX_PATH_PREFIX}.${txId}`),
       );
     } catch (err) {
       logIgnoredError(err);
       return;
     }
 
-    const subscription = parseSubscription(
-      subscriptionData,
-      subscriptionKey as `tx${number}`,
-    );
-    if (!subscription) return;
+    const tx = parsePendingTx(txId as `tx${number}`, data);
+    if (!tx) return;
 
-    console.warn(`Found existing subscription: ${subscriptionKey}`, {
-      type: subscription.type,
-      status: subscription.status,
+    console.warn(`Found existing tx: ${txId}`, {
+      type: tx.type,
+      status: tx.status,
     });
 
-    // Process existing pending subscriptions on startup
-    await processPendingSubscription(
-      evmCtx,
-      signingSmartWalletKit,
-      subscription,
+    // Process existing pending transactions on startup
+    await processPendingTx(
+      { ...evmCtx, signingSmartWalletKit, fetch },
+      tx,
       log,
       logIgnoredError,
     );
@@ -628,14 +565,14 @@ export const startEngine = async ({
         return;
       }
 
-      // Filter for paths we care about (portfolios or subscriptions).
+      // Filter for paths we care about (portfolios or pending transactions).
       const path = encodedKeyToPath(attributes.key);
 
       if (vstoragePathStartsWith(path, PORTFOLIOS_PATH_PREFIX)) {
         return { type: 'portfolio' as const, path, value: attributes.value };
       }
-      if (vstoragePathStartsWith(path, TX_SUBSCRIPTIONS_PATH_PREFIX)) {
-        return { type: 'subscription' as const, path, value: attributes.value };
+      if (vstoragePathStartsWith(path, PENDING_TX_PATH_PREFIX)) {
+        return { type: 'pendingTx' as const, path, value: attributes.value };
       }
 
       return;
@@ -644,8 +581,8 @@ export const startEngine = async ({
     const portfolioEvents = vstorageEvents.filter(
       event => event.type === 'portfolio',
     );
-    const subscriptionEvents = vstorageEvents.filter(
-      event => event.type === 'subscription',
+    const pendingTxEvents = vstorageEvents.filter(
+      event => event.type === 'pendingTx',
     );
 
     // Detect new portfolios.
@@ -657,11 +594,10 @@ export const startEngine = async ({
       portfolioKeyForDepositAddr,
     );
 
-    await processSubscriptionEvents(
-      subscriptionEvents,
+    await processPendingTxEvents(
+      { ...evmCtx, signingSmartWalletKit, fetch },
+      pendingTxEvents,
       marshaller,
-      evmCtx,
-      signingSmartWalletKit,
     );
 
     // Detect activity against portfolio deposit addresses.
@@ -692,7 +628,7 @@ export const startEngine = async ({
           addrBalances,
           depositAddrsWithActivity,
           portfolioEvents,
-          subscriptionEvents,
+          pendingTxEvents,
         },
         { depth: 10 },
       ),

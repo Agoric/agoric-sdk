@@ -1,5 +1,5 @@
 import { JsonRpcProvider } from 'ethers';
-import type { EvmContext } from './subscription-manager';
+import type { EvmContext } from './pending-tx-manager';
 import type { CaipChainId } from '@agoric/orchestration';
 
 export const axelarQueryAPI = {
