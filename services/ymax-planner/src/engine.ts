@@ -26,10 +26,8 @@ import {
   type PendingTx,
 } from './pending-tx-manager.ts';
 import { log } from 'node:console';
-import { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 
 const { isInteger } = Number;
-const { values } = Object;
 
 const sink = () => {};
 
@@ -273,41 +271,6 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
   return harden(results as typeof results & { done: Promise<boolean> });
 };
 
-const PendingTxShape = M.splitRecord({
-  status: M.or(...values(TxStatus)),
-  type: M.string(),
-  amount: M.bigint(),
-  destinationAddress: M.string(),
-});
-
-const parsePendingTx = (
-  txId: `tx${number}`,
-  txData,
-  marshaller?: SigningSmartWalletKit['marshaller'],
-): PendingTx | null => {
-  const data = marshaller ? marshaller.fromCapData(txData) : txData;
-
-  if (!matches(data, PendingTxShape)) {
-    const err = assert.error(
-      X`expected data ${data} to match ${q(PendingTxShape)}`,
-    );
-    console.error(err);
-    return null;
-  }
-
-  return { txId, ...(data as any) } as PendingTx;
-};
-
-const processPendingTx = async (
-  evmCtx: EvmContext,
-  tx: PendingTx,
-  log: (...args: unknown[]) => void,
-  errorHandler: (error: Error) => void,
-) => {
-  if (tx.status !== 'pending') return;
-  void handlePendingTx(evmCtx, tx, log).catch(errorHandler);
-};
-
 type IO = {
   evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch'>;
   rpc: CosmosRPCClient;
@@ -359,6 +322,32 @@ const processPortfolioEvents = async (
   }
 };
 
+const PendingTxShape = M.splitRecord({
+  // resolver only handles pending transactions
+  status: M.or('pending'),
+  type: M.string(),
+  amount: M.bigint(),
+  destinationAddress: M.string(),
+});
+
+const parsePendingTx = (
+  txId: `tx${number}`,
+  txData,
+  marshaller?: SigningSmartWalletKit['marshaller'],
+): PendingTx | null => {
+  const data = marshaller ? marshaller.fromCapData(txData) : txData;
+
+  if (!matches(data, PendingTxShape)) {
+    const err = assert.error(
+      X`expected data ${data} to match ${q(PendingTxShape)}`,
+    );
+    console.error(err);
+    return null;
+  }
+
+  return { txId, ...(data as any) } as PendingTx;
+};
+
 const processPendingTxEvents = async (
   evmCtx: EvmContext,
   events: Array<{ path: string; value: string }>,
@@ -398,7 +387,7 @@ const processPendingTxEvents = async (
         console.error(`⚠️ Failed to process pendingTx: ${txId}`, error);
       };
 
-      await processPendingTx(evmCtx, tx, log, errorHandler);
+      void handlePendingTx(evmCtx, tx, log).catch(errorHandler);
     }
   }
 };
@@ -524,12 +513,11 @@ export const startEngine = async ({
     });
 
     // Process existing pending transactions on startup
-    await processPendingTx(
+    void handlePendingTx(
       { ...evmCtx, signingSmartWalletKit, fetch },
       tx,
       log,
-      logIgnoredError,
-    );
+    ).catch(logIgnoredError);
   }).done;
 
   // console.warn('consuming events');

@@ -39,6 +39,9 @@ export type GmpTransfer = {
  * pending -> failed (when operation fails or times out)
  *
  * Terminal states: success and timeout never transition to other states.
+ *
+ * A PendingTx is a PublishedTx (published by ymax contract) with an additional
+ * txId property used by the resolver to track and manage pending transactions.
  */
 export type PendingTx = {
   txId: TxId;
