@@ -200,8 +200,8 @@ func upgrade22Handler(app *GaiaApp, targetUpgrade string) upgradetypes.UpgradeHa
 
 			// terminationTargets is a slice of "$boardID:$instanceKitLabel" strings.
 			var terminationTargets []string
-			switch getVariantFromUpgradeName(targetUpgrade) {
-			case "MAINNET":
+			switch ctx.ChainID() {
+			case "agoric-3": // MAINNET
 				terminationTargets = []string{
 					// v29 "zcf-b1-4522b-ATOM-USD_price_feed"
 					"board02963:ATOM-USD_price_feed",
