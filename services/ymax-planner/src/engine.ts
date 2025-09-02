@@ -408,6 +408,21 @@ export const processPendingTxEvents = async (
   }
 };
 
+export const pickBalance = (
+  balances: Coin[] | undefined,
+  depositAsset: AssetInfo,
+) => {
+  const deposited = balances?.find(({ denom }) => denom === depositAsset.denom);
+  if (!deposited) {
+    return undefined;
+  }
+
+  return AmountMath.make(
+    depositAsset.brand as Brand<'nat'>,
+    Nat(BigInt(deposited.amount)),
+  );
+};
+
 export const startEngine = async (
   { evmCtx, rpc, spectrum, cosmosRest, signingSmartWalletKit }: Powers,
   { depositIbcDenom }: { depositIbcDenom: string },
@@ -648,19 +663,11 @@ export const startEngine = async (
     const portfolioOps = await Promise.all(
       [...depositAddrsWithActivity.entries()].map(
         async ([addr, portfolioKey]) => {
-          const balances = addrBalances.get(addr);
-          const deposited = balances?.find(
-            ({ denom }) => denom === depositAsset.denom,
-          );
-          if (!deposited) {
+          const amount = pickBalance(addrBalances.get(addr), depositAsset);
+          if (!amount) {
             console.warn(`No ${q(depositAsset.issuerName)} at ${addr}`);
             return;
           }
-
-          const amount = AmountMath.make(
-            depositAsset.brand as Brand<'nat'>,
-            Nat(BigInt(deposited.amount)),
-          );
 
           const unprefixedPortfolioPath = stripPrefix(
             'published.',
