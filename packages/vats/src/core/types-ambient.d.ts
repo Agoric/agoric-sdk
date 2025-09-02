@@ -224,7 +224,7 @@ type WellKnownContracts = {
   feeDistributor: typeof import('@agoric/inter-protocol/src/feeDistributor.js').start;
   mintHolder: typeof import('@agoric/vats/src/mintHolder.js').start;
   psm: typeof import('@agoric/inter-protocol/src/psm/psm.js').start;
-  provisionPool: typeof import('@agoric/inter-protocol/src/provisionPool.js').start;
+  provisionPool: typeof import('@agoric/vats/src/provisionPool.js').start;
   priceAggregator: typeof import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start;
   reserve: typeof import('@agoric/inter-protocol/src/reserve/assetReserve.js').start;
   reserveGovernor: typeof import('@agoric/governance/src/contractGovernor.js').start;
@@ -411,7 +411,7 @@ type ChainBootstrapSpaceT = {
     | undefined;
   walletFactoryStartResult: import('./startWalletFactory.js').WalletFactoryStartResult;
   provisionPoolStartResult: GovernanceFacetKit<
-    typeof import('@agoric/inter-protocol/src/provisionPool.js').start
+    typeof import('@agoric/vats/src/provisionPool.js').start
   >;
   vatStore: import('./utils.js').VatStore;
   vatUpgradeInfo: MapStore;

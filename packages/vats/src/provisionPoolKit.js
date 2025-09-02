@@ -13,11 +13,11 @@ import {
 } from '@agoric/notifier';
 import { makeAtomicProvider, makeScalarMapStore } from '@agoric/store';
 import { M, makeScalarBigSetStore } from '@agoric/vat-data';
-import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
 import {
   PublicTopicShape,
   makeRecorderTopic,
 } from '@agoric/zoe/src/contractSupport/topics.js';
+import { PowerFlags } from './walletFlags.js';
 
 /**
  * @import {EReturn} from '@endo/far';
