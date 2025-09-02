@@ -25,6 +25,7 @@ import {
   type EvmContext,
   type PendingTx,
 } from './pending-tx-manager.ts';
+import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { log } from 'node:console';
 
 const { isInteger } = Number;
@@ -322,13 +323,18 @@ const processPortfolioEvents = async (
   }
 };
 
-export const PendingTxShape = M.splitRecord({
-  // resolver only handles pending transactions
-  status: M.or('pending'),
-  type: M.string(),
-  amount: M.bigint(),
-  destinationAddress: M.string(),
-});
+export const PendingTxShape = M.splitRecord(
+  {
+    // resolver only handles pending transactions
+    status: M.or('pending'),
+    type: M.string(),
+    destinationAddress: M.string(),
+  },
+  {
+    // amount is optional for GMP transactions, required for CCTP
+    amount: M.bigint(),
+  },
+);
 
 export const parsePendingTx = (
   txId: `tx${number}`,
@@ -339,6 +345,14 @@ export const parsePendingTx = (
   if (!matches(data, PendingTxShape)) {
     const err = assert.error(
       X`expected data ${data} to match ${q(PendingTxShape)}`,
+    );
+    console.error(err);
+    return null;
+  }
+
+  if (data.type === TxType.CCTP && data.amount === undefined) {
+    const err = assert.error(
+      X`CCTP transaction ${txId} is missing required amount field`,
     );
     console.error(err);
     return null;
