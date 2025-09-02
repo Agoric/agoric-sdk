@@ -20,7 +20,7 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E, Far } from '@endo/far';
 import path from 'path';
-import { prepareBridgeProvisionTool } from '../src/provisionPoolKit.js';
+import { prepareBridgeProvisionTool } from '@agoric/vats/src/provisionPoolKit.js';
 import {
   makeMockChainStorageRoot,
   setUpZoeForTest,
@@ -36,7 +36,7 @@ import {
 const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
 
-const policyRoot = `${dirname}/../src/provisionPool.js`;
+const policyRoot = `${dirname}/../../vats/src/provisionPool.js`;
 
 const scale6 = x => BigInt(Math.round(x * 1_000_000));
 
@@ -60,7 +60,11 @@ const makeTestContext = async () => {
 
   const committeeInstall = await E(zoe).install(committeeBundle);
   const centralSupply = await E(zoe).install(centralSupplyBundle);
-  /** @type {Installation<import('../src/provisionPool.js')['start']>} */
+  /**
+   * @type {Installation<
+   *   import('@agoric/vats/src/provisionPool.js')['start']
+   * >}
+   */
   const policyInstall = await E(zoe).install(policyBundle);
 
   const mintLimit = AmountMath.make(mintedBrand, MINT_LIMIT);

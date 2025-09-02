@@ -9,7 +9,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
       'getManifestForUpgradingProvisionPool',
       {
         provisionPoolRef: publishRef(
-          install('@agoric/inter-protocol/src/provisionPool.js'),
+          install('@agoric/vats/src/provisionPool.js'),
         ),
       },
     ],
