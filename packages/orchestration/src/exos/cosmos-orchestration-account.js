@@ -925,11 +925,9 @@ export const prepareCosmosOrchestrationAccountKit = (
             }
             const results = E(icqConnection).query([
               toRequestQueryJson(
-                QueryAllBalancesRequest.toProtoMsg(
-                  QueryAllBalancesRequest.fromPartial({
-                    address: chainAddress.value,
-                  }),
-                ),
+                QueryAllBalancesRequest.toProtoMsg({
+                  address: chainAddress.value,
+                }),
               ),
             ]);
             return watch(results, this.facets.allBalancesQueryWatcher);
