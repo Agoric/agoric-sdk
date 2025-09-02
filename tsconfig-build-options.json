@@ -1,5 +1,9 @@
 {
     "compilerOptions": {
+        "composite": true,
+        "incremental": true,
+        "tsBuildInfoFile": "./build/.tsbuildinfo",
+        "outDir": "./build",
         "noEmit": false,
         "declaration": true,
         "emitDeclarationOnly": true,
