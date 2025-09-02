@@ -58,6 +58,17 @@ NETCONFIG=https://main.agoric.net/network-config
 		$(YMAX_TOOL) --installAndStart $$(cat ,ymax0-bundle-id) <,privateArgsOverrides.json
 	agoric follow -B $(NETCONFIG) -lF :published.agoricNames.instance >$@ || (rm $@; false)
 
+,creatorFacet: ,ymax0-deployed
+	@MNEMONIC="$$($(BW) get password $(YMAX_ITEM_ID))" AGORIC_NET=$(AGORIC_NET) \
+		$(YMAX_TOOL) --getCreatorFacet
+	touch $@
+
+PLANNER=agoric1y3e3mlnrkuh6j2qcnlrtap42j8mzw240vwr74j
+,invitePlanner: ,creatorFacet
+	@MNEMONIC="$$($(BW) get password $(YMAX_ITEM_ID))" AGORIC_NET=$(AGORIC_NET) \
+		$(YMAX_TOOL) --invitePlanner $(PLANNER)
+	touch $@
+	@echo now use planner MNEMONIC: ymax-tool.ts --redeem
 
 check-vstorage: ,vstorage-outdated-$(AGORIC_NET).json
 
@@ -69,6 +80,8 @@ check-vstorage: ,vstorage-outdated-$(AGORIC_NET).json
 prune-vstorage: ,vstorage-outdated-$(AGORIC_NET).json
 	@echo "Using AGORIC_NET=$(AGORIC_NET)"
 	@MNEMONIC="$$($(BW) get password $(YMAX_ITEM_ID))" AGORIC_NET=$(AGORIC_NET) $(YMAX_TOOL) --pruneStorage < $<
+
+
 
 clean:
 	rm -rf build
