@@ -29,6 +29,7 @@ import {
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
   makeVStorage,
+  makeVstorageKit,
   reflectWalletStore,
   walletUpdates,
   type SigningSmartWalletKit,
@@ -84,6 +85,7 @@ const parseToolArgs = (argv: string[]) =>
       description: { type: 'string', default: 'planner' },
       getCreatorFacet: { type: 'boolean', default: false },
       terminate: { type: 'string' },
+      buildEthOverrides: { type: 'boolean' },
       installAndStart: { type: 'string' },
       invitePlanner: { type: 'string' },
       checkStorage: { type: 'boolean' },
@@ -361,6 +363,14 @@ const main = async (
     return;
   }
 
+  if (values.buildEthOverrides) {
+    const vsk = makeVstorageKit({ fetch }, networkConfig);
+    const privateArgsOverrides = await overridesForEthChainInfo(vsk);
+    stdout.write(JSON.stringify(privateArgsOverrides, null, 2));
+    stdout.write('\n');
+    return;
+  }
+
   const { MNEMONIC } = env;
   if (!MNEMONIC) throw Error(`MNEMONIC not set`);
 
@@ -408,6 +418,9 @@ const main = async (
 
   if (values.installAndStart) {
     const { installAndStart: bundleId } = values;
+
+    const privateArgsOverrides = JSON.parse(await readText(stdin));
+
     const { BLD, USDC } = fromEntries(
       await walletKit.readPublished('agoricNames.issuer'),
     );
@@ -420,7 +433,7 @@ const main = async (
     await yc.installAndStart({
       bundleId,
       issuers: { USDC, BLD, Fee: BLD, Access: upoc26.issuer },
-      privateArgsOverrides: await overridesForEthChainInfo(walletKit),
+      privateArgsOverrides,
     });
     return;
   }
