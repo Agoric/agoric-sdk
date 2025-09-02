@@ -20,7 +20,7 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E, Far } from '@endo/far';
 import path from 'path';
-import { prepareBridgeProvisionTool } from '../src/provisionPoolKit.js';
+import { prepareBridgeProvisionTool } from '@agoric/vats/src/provisionPoolKit.js';
 import {
   makeMockChainStorageRoot,
   setUpZoeForTest,
@@ -31,16 +31,15 @@ import {
  * @import {EReturn} from '@endo/far';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js'
  * @import {SmartWallet} from '@agoric/smart-wallet/src/smartWallet.js'
- * @import {WalletReviver} from '@agoric/smart-wallet/src/walletFactory.js'
  * @import {TestFn} from 'ava';
  * @import {WalletFactoryStartResult} from '@agoric/vats/src/core/startWalletFactory.js';
- * @import {start as startPP} from '../src/provisionPool.js';
+ * @import {start as startPP} from '@agoric/vats/src/provisionPool.js';
  */
 
 const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
 
-const policyRoot = `${dirname}/../src/provisionPool.js`;
+const policyRoot = `${dirname}/../../vats/src/provisionPool.js`;
 
 const scale6 = x => BigInt(Math.round(x * 1_000_000));
 
