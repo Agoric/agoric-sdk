@@ -15,7 +15,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
         installKeys: {
           provisionPool: publishRef(
             install(
-              '@agoric/inter-protocol/src/provisionPool.js',
+              '@agoric/vats/src/provisionPool.js',
               '../bundles/bundle-provisionPool.js',
             ),
           ),

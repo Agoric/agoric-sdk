@@ -20,7 +20,7 @@ import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { E, Far } from '@endo/far';
 import path from 'path';
 import { makeHeapZone } from '@agoric/zone';
-import { prepareBridgeProvisionTool } from '../src/provisionPoolKit.js';
+import { prepareBridgeProvisionTool } from '@agoric/vats/src/provisionPoolKit.js';
 import {
   makeMockChainStorageRoot,
   setUpZoeForTest,
@@ -31,17 +31,17 @@ import {
  * @import {EReturn} from '@endo/far';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js'
  * @import {SmartWallet} from '@agoric/smart-wallet/src/smartWallet.js'
- * @import {WalletReviver} from '@agoric/smart-wallet/src/walletFactory.js'
  * @import {TestFn} from 'ava';
  * @import {WalletFactoryStartResult} from '@agoric/vats/src/core/startWalletFactory.js';
- * @import {start} from '../src/provisionPool.js';
+ * @import {start as startPP} from '@agoric/vats/src/provisionPool.js';
+ * @import {WalletReviver} from '@agoric/smart-wallet/src/walletFactory.js';
  */
 
 const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
 
 const psmRoot = `${dirname}/../src/psm/psm.js`;
-const policyRoot = `${dirname}/../src/provisionPool.js`;
+const policyRoot = `${dirname}/../../vats/src/provisionPool.js`;
 
 const scale6 = x => BigInt(Math.round(x * 1_000_000));
 
@@ -67,7 +67,7 @@ const makeTestContext = async () => {
   const committeeInstall = await E(zoe).install(committeeBundle);
   const psmInstall = await E(zoe).install(psmBundle);
   const centralSupply = await E(zoe).install(centralSupplyBundle);
-  /** @type {Installation<typeof start>} */
+  /** @type {Installation<typeof startPP>} */
   const policyInstall = await E(zoe).install(policyBundle);
 
   const mintLimit = AmountMath.make(mintedBrand, MINT_LIMIT);
@@ -484,6 +484,7 @@ test('provisionPool revives old wallets', async t => {
   const bridgeHandler = await E(creatorFacet).makeHandler();
 
   // revive the old wallet and verify absence of new starter funds
+  /** @type {WalletReviver} */
   const reviverP = E(creatorFacet).getWalletReviver();
   await setReviver(reviverP);
   const reviveWallet = addr => E(reviverP).reviveWallet(addr);
