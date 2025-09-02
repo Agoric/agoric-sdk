@@ -45,6 +45,40 @@ test('parsePendingTx returns null for invalid data shape', t => {
   t.is(result, null);
 });
 
+test('parsePendingTx returns null when CCTP transaction is missing amount field', t => {
+  const txId = 'tx4' as `tx${number}`;
+  const cctpWithoutAmount = harden({
+    type: TxType.CCTP,
+    status: 'pending',
+    destinationAddress:
+      'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
+  });
+
+  const result = parsePendingTx(txId, cctpWithoutAmount);
+
+  t.is(result, null);
+});
+
+test('parsePendingTx accepts GMP transaction without amount field', t => {
+  const txId = 'tx5' as `tx${number}`;
+  const gmpWithoutAmount = harden({
+    type: TxType.GMP,
+    status: 'pending',
+    destinationAddress:
+      'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
+  });
+
+  const result = parsePendingTx(txId, gmpWithoutAmount);
+
+  t.deepEqual(result, {
+    txId,
+    type: TxType.GMP,
+    status: 'pending',
+    destinationAddress:
+      'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
+  });
+});
+
 // --- Unit tests for processPendingTxEvents ---
 test('processPendingTxEvents handles valid single transaction event', async t => {
   const mockEvmCtx = createMockEvmContext();
