@@ -1,17 +1,31 @@
 import test from 'ava';
-import { loadConfig } from '../src/config.ts';
-import { createEVMContext } from '../src/support.ts';
 import { JsonRpcProvider } from 'ethers';
+import { loadConfig, type SecretManager } from '../src/config.ts';
+import { createEVMContext } from '../src/support.ts';
 
 const { entries, keys } = Object;
 
-test('loadConfig validates required MNEMONIC', t => {
-  const env = {};
+const makeFakeSecretManager = (mnemonic?: string) =>
+  ({
+    accessSecretVersion: async () => [
+      {
+        payload: {
+          data: mnemonic,
+        },
+      },
+    ],
+  }) as SecretManager;
 
-  t.throws(() => loadConfig(env), { message: /"MNEMONIC" is required/ });
+test('loadConfig validates required MNEMONIC', async t => {
+  const env = {};
+  const secretManager = makeFakeSecretManager();
+
+  await t.throwsAsync(() => loadConfig(env, secretManager), {
+    message: /Missing secret payload/,
+  });
 });
 
-test('loadConfig accepts valid configuration', t => {
+test('loadConfig accepts valid configuration', async t => {
   const env = {
     MNEMONIC: 'test mnemonic phrase',
     ALCHEMY_API_KEY: 'test1234',
@@ -22,8 +36,9 @@ test('loadConfig accepts valid configuration', t => {
     COSMOS_REST_TIMEOUT: '10000',
     COSMOS_REST_RETRIES: '5',
   };
+  const secretManager = makeFakeSecretManager();
 
-  const config = loadConfig(env);
+  const config = await loadConfig(env, secretManager);
 
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemy, 'test1234');
@@ -35,13 +50,14 @@ test('loadConfig accepts valid configuration', t => {
   t.is(config.cosmosRest.retries, 5);
 });
 
-test('loadConfig uses default values when optional fields are missing', t => {
+test('loadConfig uses default values when optional fields are missing', async t => {
   const env = {
     MNEMONIC: 'test mnemonic phrase',
     ALCHEMY_API_KEY: 'test1234',
   };
+  const secretManager = makeFakeSecretManager();
 
-  const config = loadConfig(env);
+  const config = await loadConfig(env, secretManager);
 
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemy, 'test1234');
@@ -53,50 +69,57 @@ test('loadConfig uses default values when optional fields are missing', t => {
   t.is(config.cosmosRest.retries, 3);
 });
 
-test('loadConfig validates positive integers', t => {
+test('loadConfig validates positive integers', async t => {
   const env = {
     MNEMONIC: 'test mnemonic phrase',
     ALCHEMY_API_KEY: 'test1234',
     SPECTRUM_API_TIMEOUT: '0',
   };
+  const secretManager = makeFakeSecretManager();
 
-  t.throws(() => loadConfig(env), {
+  await t.throwsAsync(() => loadConfig(env, secretManager), {
     message: /"SPECTRUM_API_TIMEOUT" must be a positive integer/,
   });
 });
 
-test('loadConfig validates URL format', t => {
+test('loadConfig validates URL format', async t => {
   const env = {
     MNEMONIC: 'test mnemonic phrase',
     ALCHEMY_API_KEY: 'test1234',
     SPECTRUM_API_URL: 'not-a-url',
   };
+  const secretManager = makeFakeSecretManager();
 
-  t.throws(() => loadConfig(env), {
+  await t.throwsAsync(() => loadConfig(env, secretManager), {
     message: /"SPECTRUM_API_URL" must be a valid URL/,
   });
 });
 
-test('loadConfig trims whitespace from values', t => {
+test('loadConfig trims whitespace from values', async t => {
   const env = {
     MNEMONIC: '  test mnemonic phrase  ',
     ALCHEMY_API_KEY: '  test1234  ',
     AGORIC_NET: '  devnet  ',
   };
+  const secretManager = makeFakeSecretManager();
 
-  const config = loadConfig(env);
+  const config = await loadConfig(env, secretManager);
 
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemy, 'test1234');
   t.is(config.cosmosRest.agoricNetwork, 'devnet');
 });
 
-test('loadConfig rejects empty required values', t => {
+test('loadConfig rejects empty required values', async t => {
   const env = {
     MNEMONIC: '   ',
+    ALCHEMY_API_KEY: 'test1234',
   };
+  const secretManager = makeFakeSecretManager();
 
-  t.throws(() => loadConfig(env), { message: /"MNEMONIC" is required/ });
+  await t.throwsAsync(() => loadConfig(env, secretManager), {
+    message: /Mnemonic is required/,
+  });
 });
 
 // --- Unit tests for createEVMContext ---

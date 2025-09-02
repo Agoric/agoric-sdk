@@ -1,5 +1,10 @@
+/* eslint-disable @jessie.js/safe-await-separator */
 /// <reference types="ses" />
 import { Fail } from '@endo/errors';
+import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
+
+const GCP_PROJECT_ID = 'simulationlab';
+const GCP_SECRET_NAME = 'YMAX_CONTROL_MNEMONIC';
 
 export interface YmaxPlannerConfig {
   readonly mnemonic: string;
@@ -15,6 +20,24 @@ export interface YmaxPlannerConfig {
     readonly retries: number;
   };
 }
+
+export type SecretManager = Pick<
+  SecretManagerServiceClient,
+  'accessSecretVersion'
+>;
+
+const getMnemonicFromGCP = async (client: SecretManager): Promise<string> => {
+  const name = `projects/${GCP_PROJECT_ID}/secrets/${GCP_SECRET_NAME}/versions/latest`;
+
+  const [version] = await client.accessSecretVersion({ name });
+  const payload = version.payload?.data?.toString();
+
+  if (!payload) {
+    throw new Error('Missing secret payload');
+  }
+
+  return payload;
+};
 
 const parsePositiveInteger = (
   value: string | undefined,
@@ -55,12 +78,20 @@ const validateOptionalUrl = (
   }
 };
 
-export const loadConfig = (
+export const loadConfig = async (
   env: Record<string, string | undefined>,
-): YmaxPlannerConfig => {
+  secretManager: SecretManager,
+): Promise<YmaxPlannerConfig> => {
   try {
+    const mnemonic = env.MNEMONIC
+      ? env.MNEMONIC.trim()
+      : await getMnemonicFromGCP(secretManager);
+    if (!mnemonic) {
+      throw new Error('Mnemonic is required but not provided');
+    }
+
     const config: YmaxPlannerConfig = harden({
-      mnemonic: validateRequired(env.MNEMONIC, 'MNEMONIC'),
+      mnemonic,
       alchemy: validateRequired(env.ALCHEMY_API_KEY, 'ALCHEMY_API_KEY'),
       spectrum: {
         apiUrl: validateOptionalUrl(env.SPECTRUM_API_URL, 'SPECTRUM_API_URL'),
@@ -99,9 +130,14 @@ export const loadConfig = (
 export const getConfig = (() => {
   let cachedConfig: YmaxPlannerConfig | undefined;
 
-  return (env?: Record<string, string | undefined>): YmaxPlannerConfig => {
+  return async (
+    env: Record<string, string | undefined> = process.env,
+    powers: { secretManager?: SecretManager } = {},
+  ): Promise<YmaxPlannerConfig> => {
     if (!cachedConfig) {
-      cachedConfig = loadConfig(env || process.env);
+      const secretManager =
+        powers.secretManager || new SecretManagerServiceClient();
+      cachedConfig = await loadConfig(env, secretManager);
     }
     return cachedConfig;
   };

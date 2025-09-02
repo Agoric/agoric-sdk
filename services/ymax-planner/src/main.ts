@@ -31,7 +31,7 @@ export const main = async (
     connectWithSigner = SigningStargateClient.connectWithSigner,
   } = {},
 ) => {
-  const config = getConfig(env);
+  const config = await getConfig(env);
 
   const delay = ms =>
     new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
