@@ -1,4 +1,3 @@
-import { Far } from '@endo/captp';
 import { E } from '@endo/eventual-send';
 
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
@@ -101,15 +100,6 @@ export const setupPsm = async (
 
   brand.produce.IST.resolve(istBrand);
   issuer.produce.IST.resolve(istIssuer);
-
-  space.produce.provisionPoolStartResult.resolve({
-    // @ts-expect-error mock
-    creatorFacet: Far('dummy', {
-      initPSM: () => {
-        t.log('dummy provisionPool.initPSM');
-      },
-    }),
-  });
 
   await Promise.all([
     produceDiagnostics(space),
