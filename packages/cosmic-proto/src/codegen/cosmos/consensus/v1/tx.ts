@@ -6,6 +6,8 @@ import {
   type EvidenceParamsSDKType,
   ValidatorParams,
   type ValidatorParamsSDKType,
+  ABCIParams,
+  type ABCIParamsSDKType,
 } from '../../../tendermint/types/params.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
@@ -24,6 +26,8 @@ export interface MsgUpdateParams {
   block?: BlockParams;
   evidence?: EvidenceParams;
   validator?: ValidatorParams;
+  /** Since: cosmos-sdk 0.50 */
+  abci?: ABCIParams;
 }
 export interface MsgUpdateParamsProtoMsg {
   typeUrl: '/cosmos.consensus.v1.MsgUpdateParams';
@@ -35,6 +39,7 @@ export interface MsgUpdateParamsSDKType {
   block?: BlockParamsSDKType;
   evidence?: EvidenceParamsSDKType;
   validator?: ValidatorParamsSDKType;
+  abci?: ABCIParamsSDKType;
 }
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
@@ -56,6 +61,7 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
     block: undefined,
     evidence: undefined,
     validator: undefined,
+    abci: undefined,
   };
 }
 export const MsgUpdateParams = {
@@ -82,6 +88,9 @@ export const MsgUpdateParams = {
         writer.uint32(34).fork(),
       ).ldelim();
     }
+    if (message.abci !== undefined) {
+      ABCIParams.encode(message.abci, writer.uint32(42).fork()).ldelim();
+    }
     return writer;
   },
   decode(input: BinaryReader | Uint8Array, length?: number): MsgUpdateParams {
@@ -104,6 +113,9 @@ export const MsgUpdateParams = {
         case 4:
           message.validator = ValidatorParams.decode(reader, reader.uint32());
           break;
+        case 5:
+          message.abci = ABCIParams.decode(reader, reader.uint32());
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -123,6 +135,7 @@ export const MsgUpdateParams = {
       validator: isSet(object.validator)
         ? ValidatorParams.fromJSON(object.validator)
         : undefined,
+      abci: isSet(object.abci) ? ABCIParams.fromJSON(object.abci) : undefined,
     };
   },
   toJSON(message: MsgUpdateParams): JsonSafe<MsgUpdateParams> {
@@ -140,6 +153,8 @@ export const MsgUpdateParams = {
       (obj.validator = message.validator
         ? ValidatorParams.toJSON(message.validator)
         : undefined);
+    message.abci !== undefined &&
+      (obj.abci = message.abci ? ABCIParams.toJSON(message.abci) : undefined);
     return obj;
   },
   fromPartial(object: Partial<MsgUpdateParams>): MsgUpdateParams {
@@ -156,6 +171,10 @@ export const MsgUpdateParams = {
     message.validator =
       object.validator !== undefined && object.validator !== null
         ? ValidatorParams.fromPartial(object.validator)
+        : undefined;
+    message.abci =
+      object.abci !== undefined && object.abci !== null
+        ? ABCIParams.fromPartial(object.abci)
         : undefined;
     return message;
   },

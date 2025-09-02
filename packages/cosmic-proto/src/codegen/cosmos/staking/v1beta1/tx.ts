@@ -22,6 +22,12 @@ export interface MsgCreateValidator {
   description: Description;
   commission: CommissionRates;
   minSelfDelegation: string;
+  /**
+   * Deprecated: Use of Delegator Address in MsgCreateValidator is deprecated.
+   * The validator address bytes and delegator address bytes refer to the same account while creating validator (defer
+   * only in bech32 notation).
+   */
+  /** @deprecated */
   delegatorAddress: string;
   validatorAddress: string;
   pubkey?: Any | undefined;
@@ -36,6 +42,7 @@ export interface MsgCreateValidatorSDKType {
   description: DescriptionSDKType;
   commission: CommissionRatesSDKType;
   min_self_delegation: string;
+  /** @deprecated */
   delegator_address: string;
   validator_address: string;
   pubkey?: AnySDKType | undefined;
@@ -172,6 +179,12 @@ export interface MsgUndelegateSDKType {
 /** MsgUndelegateResponse defines the Msg/Undelegate response type. */
 export interface MsgUndelegateResponse {
   completionTime: Timestamp;
+  /**
+   * amount returns the amount of undelegated coins
+   *
+   * Since: cosmos-sdk 0.50
+   */
+  amount: Coin;
 }
 export interface MsgUndelegateResponseProtoMsg {
   typeUrl: '/cosmos.staking.v1beta1.MsgUndelegateResponse';
@@ -180,6 +193,7 @@ export interface MsgUndelegateResponseProtoMsg {
 /** MsgUndelegateResponse defines the Msg/Undelegate response type. */
 export interface MsgUndelegateResponseSDKType {
   completion_time: TimestampSDKType;
+  amount: CoinSDKType;
 }
 /**
  * MsgCancelUnbondingDelegation defines the SDK message for performing a cancel unbonding delegation for delegator
@@ -1100,6 +1114,7 @@ export const MsgUndelegate = {
 function createBaseMsgUndelegateResponse(): MsgUndelegateResponse {
   return {
     completionTime: Timestamp.fromPartial({}),
+    amount: Coin.fromPartial({}),
   };
 }
 export const MsgUndelegateResponse = {
@@ -1113,6 +1128,9 @@ export const MsgUndelegateResponse = {
         message.completionTime,
         writer.uint32(10).fork(),
       ).ldelim();
+    }
+    if (message.amount !== undefined) {
+      Coin.encode(message.amount, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -1130,6 +1148,9 @@ export const MsgUndelegateResponse = {
         case 1:
           message.completionTime = Timestamp.decode(reader, reader.uint32());
           break;
+        case 2:
+          message.amount = Coin.decode(reader, reader.uint32());
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -1142,6 +1163,7 @@ export const MsgUndelegateResponse = {
       completionTime: isSet(object.completionTime)
         ? fromJsonTimestamp(object.completionTime)
         : undefined,
+      amount: isSet(object.amount) ? Coin.fromJSON(object.amount) : undefined,
     };
   },
   toJSON(message: MsgUndelegateResponse): JsonSafe<MsgUndelegateResponse> {
@@ -1150,6 +1172,8 @@ export const MsgUndelegateResponse = {
       (obj.completionTime = fromTimestamp(
         message.completionTime,
       ).toISOString());
+    message.amount !== undefined &&
+      (obj.amount = message.amount ? Coin.toJSON(message.amount) : undefined);
     return obj;
   },
   fromPartial(object: Partial<MsgUndelegateResponse>): MsgUndelegateResponse {
@@ -1157,6 +1181,10 @@ export const MsgUndelegateResponse = {
     message.completionTime =
       object.completionTime !== undefined && object.completionTime !== null
         ? Timestamp.fromPartial(object.completionTime)
+        : undefined;
+    message.amount =
+      object.amount !== undefined && object.amount !== null
+        ? Coin.fromPartial(object.amount)
         : undefined;
     return message;
   },
