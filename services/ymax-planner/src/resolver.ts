@@ -12,13 +12,17 @@ type ResolveTxParams = {
 
 const getInvitationMakers = async (wallet: SigningSmartWalletKit) => {
   const getCurrentWalletRecord = await wallet.query.getCurrentWalletRecord();
-  const invitation = getCurrentWalletRecord.offerToUsedInvitation.find(
-    inv => inv[1].value[0].description === 'resolver',
-  );
+  const invitation = getCurrentWalletRecord.offerToUsedInvitation
+    .filter(inv => inv[1].value[0].description === 'resolver')
+    .toSorted()
+    .at(-1);
   if (!invitation) {
     throw new Error('No invitation makers found');
   }
-  return invitation;
+  return {
+    id: invitation[0],
+    invitation: invitation[1],
+  };
 };
 
 export const resolvePendingTx = async ({
@@ -35,7 +39,7 @@ export const resolvePendingTx = async ({
     id: `offer-${Date.now()}`,
     invitationSpec: {
       source: 'continuing',
-      previousOffer: invitationMakersOffer[0],
+      previousOffer: invitationMakersOffer.id,
       invitationMakerName: 'SettleTransaction',
     },
     offerArgs: {
