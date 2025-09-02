@@ -50,7 +50,7 @@ export const makeSigningSmartWalletKit = async (
     ) => walletUtils.pollOffer(address, ...args),
   };
 
-  const sendBridgeAction = (action: BridgeAction) => {
+  const sendBridgeAction = (action: BridgeAction, fee: StdFee = defaultFee) => {
     const msgSpend = MsgWalletSpendAction.fromPartial({
       owner: toAccAddress(address),
       spendAction: JSON.stringify(walletUtils.marshaller.toCapData(action)),
@@ -59,7 +59,7 @@ export const makeSigningSmartWalletKit = async (
     return client.signAndBroadcast(
       address,
       [{ typeUrl: MsgWalletSpendAction.typeUrl, value: msgSpend }],
-      defaultFee,
+      fee,
     );
   };
 

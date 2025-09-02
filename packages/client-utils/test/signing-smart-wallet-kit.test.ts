@@ -74,3 +74,31 @@ test('sendBridgeAction handles simple action', async t => {
     fee: { amount: [{ denom: 'ubld', amount: '30000' }], gas: '197000' },
   });
 });
+
+test('sendBridgeAction supports fee param', async t => {
+  const { calls, connectWithSigner } = mockSigner();
+
+  const walletUtils = await makeSmartWalletKit(
+    { fetch: notImplemented, delay: notImplemented, names: false },
+    LOCAL_CONFIG,
+  );
+
+  const signing = await makeSigningSmartWalletKit(
+    { connectWithSigner, walletUtils },
+    mnemonic,
+  );
+
+  const moar: StdFee = {
+    gas: '1234567',
+    amount: [{ denom: 'ubld', amount: '123' }],
+  };
+  const actual = await signing.sendBridgeAction(
+    harden({ method: 'tryExitOffer', offerId: 'bid-1' }),
+    moar,
+  );
+  t.deepEqual(actual, { code: 42 });
+  t.is(calls.length, 1);
+  t.like(calls[0], {
+    fee: { amount: [{ denom: 'ubld', amount: '123' }], gas: '1234567' },
+  });
+});
