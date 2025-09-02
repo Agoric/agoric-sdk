@@ -2,7 +2,10 @@ import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { EvmContext } from '../src/pending-tx-manager';
 import type { AccountId } from '@agoric/orchestration';
 import { PENDING_TX_PATH_PREFIX } from '../src/engine.ts';
-import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import type {
+  TxStatus,
+  TxType,
+} from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { ethers, type JsonRpcProvider } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
@@ -92,12 +95,12 @@ export const createMockEvmContext = (): EvmContext => ({
 });
 
 export const createMockPendingTxData = ({
-  type = 'cctp',
+  type = 'CCTP',
   status = 'pending',
   amount = 100_000n,
   destinationAddress = 'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
 }: {
-  type?: 'cctp' | 'gmp';
+  type?: TxType;
   status?: TxStatus;
   amount?: bigint;
   destinationAddress?: AccountId;

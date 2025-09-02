@@ -19,7 +19,7 @@ const marshaller = boardSlottingMarshaller();
 // --- Unit tests for parsePendingTx ---
 test('parsePendingTx creates valid PendingTx from data', t => {
   const txId = 'tx1' as `tx${number}`;
-  const txData = createMockPendingTxData({ type: 'cctp' });
+  const txData = createMockPendingTxData({ type: TxType.CCTP });
   const capData = marshaller.toCapData(txData);
 
   const result = parsePendingTx(txId, capData, marshaller);
@@ -45,6 +45,40 @@ test('parsePendingTx returns null for invalid data shape', t => {
   t.is(result, null);
 });
 
+test('parsePendingTx returns null when CCTP transaction is missing amount field', t => {
+  const txId = 'tx4' as `tx${number}`;
+  const cctpWithoutAmount = harden({
+    type: TxType.CCTP,
+    status: 'pending',
+    destinationAddress:
+      'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
+  });
+
+  const result = parsePendingTx(txId, cctpWithoutAmount);
+
+  t.is(result, null);
+});
+
+test('parsePendingTx accepts GMP transaction without amount field', t => {
+  const txId = 'tx5' as `tx${number}`;
+  const gmpWithoutAmount = harden({
+    type: TxType.GMP,
+    status: 'pending',
+    destinationAddress:
+      'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
+  });
+
+  const result = parsePendingTx(txId, gmpWithoutAmount);
+
+  t.deepEqual(result, {
+    txId,
+    type: TxType.GMP,
+    status: 'pending',
+    destinationAddress:
+      'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
+  });
+});
+
 // --- Unit tests for processPendingTxEvents ---
 test('processPendingTxEvents handles valid single transaction event', async t => {
   const mockEvmCtx = createMockEvmContext();
@@ -59,7 +93,7 @@ test('processPendingTxEvents handles valid single transaction event', async t =>
     handledTxs.push(tx);
   };
 
-  const txData = createMockPendingTxData({ type: 'cctp' });
+  const txData = createMockPendingTxData({ type: TxType.CCTP });
   const capData = marshaller.toCapData(txData);
   const streamCell = createMockStreamCell([JSON.stringify(capData)]);
   const events = [createMockPendingTxEvent('tx1', JSON.stringify(streamCell))];
@@ -91,8 +125,8 @@ test('processPendingTxEvents handles multiple transaction events', async t => {
     handledTxs.push(tx);
   };
 
-  const originalCctpData = createMockPendingTxData({ type: 'cctp' });
-  const originalGmpData = createMockPendingTxData({ type: 'gmp' });
+  const originalCctpData = createMockPendingTxData({ type: TxType.CCTP });
+  const originalGmpData = createMockPendingTxData({ type: TxType.GMP });
 
   const cctpCapData = marshaller.toCapData(originalCctpData);
   const gmpCapData = marshaller.toCapData(originalGmpData);
@@ -132,8 +166,8 @@ test('processPendingTxEvents processes valid transactions before throwing on inv
     handledTxs.push(tx);
   };
 
-  const validTx1 = createMockPendingTxData({ type: 'cctp' });
-  const validTx2 = createMockPendingTxData({ type: 'gmp' });
+  const validTx1 = createMockPendingTxData({ type: TxType.CCTP });
+  const validTx2 = createMockPendingTxData({ type: TxType.GMP });
   const invalidTxData = harden({
     status: 'pending',
     // Missing: type, amount, destinationAddress
@@ -189,8 +223,8 @@ test('processPendingTxEvents handles only pending transactions', async t => {
     handledTxs.push(tx);
   };
 
-  const tx1 = createMockPendingTxData({ type: 'cctp' });
-  const tx2 = createMockPendingTxData({ type: 'gmp', status: 'success' });
+  const tx1 = createMockPendingTxData({ type: TxType.CCTP });
+  const tx2 = createMockPendingTxData({ type: TxType.GMP, status: 'success' });
 
   const data1 = marshaller.toCapData(tx1);
   const data2 = marshaller.toCapData(tx2);

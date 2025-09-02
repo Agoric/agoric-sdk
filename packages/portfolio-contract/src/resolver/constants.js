@@ -20,7 +20,7 @@ harden(TxStatus);
  * @enum {(typeof TxType)[keyof typeof TxType]}
  */
 export const TxType = /** @type {const} */ ({
-  CCTP: 'cctp',
-  GMP: 'gmp',
+  CCTP: 'CCTP',
+  GMP: 'GMP',
 });
 harden(TxType);

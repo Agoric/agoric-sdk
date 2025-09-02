@@ -40,8 +40,8 @@ export const getResolverMakers = async (
 export const settleTransaction = async (
   zoe: ZoeService,
   resolverMakers: ResolverInvitationMakers,
-  status: Exclude<TxStatus, 'pending'>,
   txNumber: number = 0,
+  status: Exclude<TxStatus, 'pending'> = 'success',
   log: (message: string, ...args: any[]) => void = console.log,
 ): Promise<string> => {
   await eventLoopIteration();
@@ -59,39 +59,4 @@ export const settleTransaction = async (
   const result = (await E(settlementSeat).getOfferResult()) as string;
   log(`Transaction settlement got result:`, result);
   return result;
-};
-
-/**
- * Helper to settle CCTP transaction with the standard test EVM address.
- * Uses the same mock address that's used throughout the test suite.
- * Will retry until a pending transaction is found and settled.
- *
- * @param zoe - Zoe service instance
- * @param resolverMakers - ResolverInvitationMakers instance
- * @param txNumber - The Number for the txId (e.g. 0 for 'tx0')
- * @param status - Transaction status to settle
- * @param log - Optional logging function (defaults to console.log, pass () => {} to disable)
- */
-export const settleCCTPWithMockReceiver = async (
-  zoe: ZoeService,
-  resolverMakers: ResolverInvitationMakers,
-  txNumber: number = 0,
-  status: Exclude<TxStatus, 'pending'> = 'success',
-  log: (message: string, ...args: any[]) => void = console.log,
-): Promise<string> => {
-  await eventLoopIteration();
-  const result = await settleTransaction(
-    zoe,
-    resolverMakers,
-    status,
-    txNumber,
-    log,
-  );
-
-  log(result);
-  if (!result.includes('failed')) {
-    log(`=== CCTP SETTLEMENT SUCCEEDED ===`);
-    return result;
-  }
-  return 'CCTP transaction settlement failed.';
 };

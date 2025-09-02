@@ -33,7 +33,7 @@ import {
 
 type TransactionEntry = {
   destinationAddress: AccountId;
-  amountValue: bigint; // 0 for GMP transactions
+  amountValue?: bigint;
   vowKit: VowKit<void>;
   type: TxType;
 };
@@ -41,15 +41,19 @@ type TransactionEntry = {
 const trace = makeTracer('Resolver');
 
 const ClientFacetI = M.interface('ResolverClient', {
-  registerTransaction: M.call(
-    M.or(...Object.values(TxType)),
-    M.string(),
-    M.nat(),
-  ).returns(M.splitRecord({ vow: VowShape, txId: M.string() })),
+  registerTransaction: M.call(M.or(...Object.values(TxType)), M.string())
+    .optional(M.nat())
+    .returns(M.splitRecord({ result: VowShape, txId: M.string() })),
 });
 
 const ReporterI = M.interface('Reporter', {
-  insertPendingTransaction: M.call(M.string(), M.string(), M.nat()).returns(),
+  insertPendingTransaction: M.call(
+    M.string(),
+    M.string(),
+    M.or(...Object.values(TxType)),
+  )
+    .optional(M.nat())
+    .returns(),
   completePendingTransaction: M.call(
     M.string(),
     M.or(TxStatus.SUCCESS, TxStatus.FAILED),
@@ -132,42 +136,43 @@ export const prepareResolverKit = (
         registerTransaction(
           type: TxType,
           destinationAddress: AccountId,
-          amountValue: NatValue,
-        ): { vow: Vow<void>; txId: TxId } {
+          amountValue?: NatValue,
+        ): { result: Vow<void>; txId: TxId } {
           const txId: TxId = `tx${this.state.index}`;
           this.state.index += 1;
 
           const { transactionRegistry } = this.state;
-          if (transactionRegistry.has(txId)) {
-            trace(`Transaction already registered: ${txId}`);
-            return { vow: transactionRegistry.get(txId).vowKit.vow, txId };
-          }
           const vowKit = vowTools.makeVowKit<void>();
-          transactionRegistry.init(
-            txId,
-            harden({ destinationAddress, amountValue, vowKit, type }),
-          );
+          const txEntry: TransactionEntry = {
+            destinationAddress,
+            vowKit,
+            type,
+            ...(type === TxType.CCTP ? { amountValue } : {}),
+          };
+          transactionRegistry.init(txId, harden(txEntry));
           this.facets.reporter.insertPendingTransaction(
             txId,
             destinationAddress,
+            type,
             amountValue,
           );
 
           trace(`Registered pending transaction: ${txId}`);
-          return { vow: vowKit.vow, txId };
+          return { result: vowKit.vow, txId };
         },
       },
       reporter: {
         insertPendingTransaction(
           txId: TxId,
           destinationAddress: AccountId,
-          amount: bigint,
+          type: TxType,
+          amount?: NatValue,
         ) {
           const value: PublishedTx = {
-            type: TxType.CCTP,
-            amount,
+            type,
             destinationAddress,
             status: TxStatus.PENDING,
+            ...(type === TxType.CCTP ? { amount } : {}),
           };
           const node = E(pendingTxsNode).makeChildNode(txId);
           writeToNode(node, value);
@@ -180,9 +185,7 @@ export const prepareResolverKit = (
           const node = E(pendingTxsNode).makeChildNode(txId);
           const txEntry = this.state.transactionRegistry.get(txId);
           const value: PublishedTx = {
-            type: txEntry.type,
-            amount: txEntry.amountValue,
-            destinationAddress: txEntry.destinationAddress,
+            ...txEntry,
             status,
           };
           // UNTIL https://github.com/Agoric/agoric-sdk/issues/11791

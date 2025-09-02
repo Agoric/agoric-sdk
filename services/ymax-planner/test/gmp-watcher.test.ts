@@ -53,7 +53,7 @@ test('handlePendingTx processes GMP transaction successfully', async t => {
   });
 
   t.deepEqual(logMessages, [
-    `[${txId}] handling gmp tx`,
+    `[${txId}] handling ${type} tx`,
     `[${txId}] Watching for MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
     `[${txId}] MulticallExecuted detected: txId=${txId} contract=${contractAddress} tx=0x123abc`,
     `[${txId}] ✓ MulticallExecuted matches txId: ${txId}`,
@@ -90,7 +90,7 @@ test('handlePendingTx times out GMP transaction with no matching event', async t
   });
 
   t.deepEqual(logMessages, [
-    `[${txId}] handling gmp tx`,
+    `[${txId}] handling ${type} tx`,
     `[${txId}] Watching for MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
     `[${txId}] ✗ No MulticallExecuted found for txId ${txId} within 0.05 minutes`,
     `[${txId}] GMP tx resolved`,

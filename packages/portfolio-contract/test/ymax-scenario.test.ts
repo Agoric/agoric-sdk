@@ -20,10 +20,7 @@ import {
   makeCCTPTraffic,
   makeUSDNIBCTraffic,
 } from './mocks.ts';
-import {
-  settleCCTPWithMockReceiver,
-  getResolverMakers,
-} from './resolver-helpers.ts';
+import { settleTransaction, getResolverMakers } from './resolver-helpers.ts';
 
 // Use an EVM chain whose axelar ID differs from its chain name
 const { sourceChain } = evmNamingDistinction;
@@ -66,11 +63,11 @@ const rebalanceScenarioMacro = test.macro({
     }
 
     const upcallDone = new Set();
+    let index = 0;
 
     const ackSteps = async (offerArgs: OfferArgsFor['openPortfolio']) => {
       const { flow: moves } = { flow: [], ...offerArgs };
       const { transmitVTransferEvent } = common.utils;
-
       for (const move of moves) {
         await eventLoopIteration();
         if (move.dest === '@Arbitrum') {
@@ -80,16 +77,22 @@ const rebalanceScenarioMacro = test.macro({
               common.mocks.transferBridge,
               sourceChain,
             );
-            // Also confirm CCTP transaction for flows to Arbitrum
-
-            const resolverMakers = await getResolverMakers(
-              zoe,
-              started.creatorFacet,
-            );
-            await settleCCTPWithMockReceiver(zoe, resolverMakers, 0, 'success');
-
-            continue;
           }
+          // Also confirm CCTP transaction for flows to Arbitrum
+          const resolverMakers = await getResolverMakers(
+            zoe,
+            started.creatorFacet,
+          );
+          await settleTransaction(zoe, resolverMakers, index, 'success');
+          index += 1;
+        }
+        if (move.src === '@Arbitrum') {
+          const resolverMakers = await getResolverMakers(
+            zoe,
+            started.creatorFacet,
+          );
+          await settleTransaction(zoe, resolverMakers, index, 'success');
+          index += 1;
         }
         try {
           await transmitVTransferEvent('acknowledgementPacket', -1);
