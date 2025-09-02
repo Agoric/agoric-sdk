@@ -2,5 +2,16 @@
     "extends": [
         "./tsconfig.json",
         "../../tsconfig-build-options.json"
+    ],
+    "compilerOptions": {
+        "checkJs": false
+    },
+    "include": [
+        "src"
+    ],
+    "exclude": [
+        "test",
+        "tools",
+        "scripts"
     ]
 }

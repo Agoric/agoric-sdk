@@ -66,6 +66,11 @@ const getWorkspaceProjects = async () => {
     const tsBuild = path.join(dir, 'tsconfig.build.json');
     if (await isFile(pkgJson) && await isFile(tsBuild)) {
       const pkg = await readJSON(pkgJson);
+      // Optional opt-out per package
+      const tsb = await readJSON(tsBuild).catch(() => ({}));
+      if (tsb && (tsb.xSkipInSolution || tsb.excludeFromSolution)) {
+        continue;
+      }
       projects.push({
         name: pkg.name,
         dir,
@@ -126,7 +131,7 @@ const writeSolutionTsconfig = async orderedProjects => {
     references: refs,
   };
   const outPath = path.join(repoRoot, 'tsconfig.refs.json');
-  await fs.writeFile(outPath, JSON.stringify(solution, null, 2) + '\n');
+  await fs.writeFile(outPath, `${JSON.stringify(solution, null, 2)  }\n`);
   return outPath;
 };
 
