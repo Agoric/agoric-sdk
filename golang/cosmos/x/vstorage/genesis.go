@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
-	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -27,18 +26,19 @@ func ValidateGenesis(data *types.GenesisState) error {
 }
 
 func DefaultGenesisState() *types.GenesisState {
-	return &types.GenesisState{
-		Data: []*types.DataEntry{},
+	return NewGenesisState()
+}
+
+func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) error {
+	return keeper.ImportStorage(ctx, data.Data)
+}
+
+func ExportGenesis(ctx sdk.Context, keeper Keeper) (*types.GenesisState, error) {
+	data, err := keeper.ExportStorage(ctx)
+	if err != nil {
+		return nil, err
 	}
-}
-
-func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abci.ValidatorUpdate {
-	keeper.ImportStorage(ctx, data.Data)
-	return []abci.ValidatorUpdate{}
-}
-
-func ExportGenesis(ctx sdk.Context, keeper Keeper) *types.GenesisState {
 	gs := NewGenesisState()
-	gs.Data = keeper.ExportStorage(ctx)
-	return gs
+	gs.Data = data
+	return gs, nil
 }

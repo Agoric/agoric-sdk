@@ -6,13 +6,19 @@ const { freeze } = Object;
 // This is a mapping from typeUrl to the fields that should be non-nullish.
 // TODO: codegen
 const nonNullishFieldsFromTypeUrl: Record<string, string[]> = {
-  '/ibc.applications.transfer.v1.MsgTransfer': ['timeoutHeight'],
+  '/ibc.applications.transfer.v1.MsgTransfer': [
+    'timeout_height',
+    'timeoutHeight',
+  ],
 };
 
 // This is a mapping from typeUrl to the fields that are embedded.
 // TODO: codegen
-const embeddedFieldsFromTypeUrl: Record<string, string[]> = {
-  '/cosmos.auth.v1beta1.ModuleAccount': ['base_account'],
+const embeddedFieldsFromTypeUrl: Record<
+  string,
+  { [valueProp: string]: string }
+> = {
+  '/cosmos.auth.v1beta1.ModuleAccount': { base_account: 'baseAccount' },
 };
 
 export type ProtoMsg<TU = string> = {
@@ -34,6 +40,9 @@ const extractTypeUrlAndValue = (input: any) => {
   if ('@type' in input) {
     // TypedJson
     const { '@type': typeUrl, ...value } = input;
+    return { typeUrl, value };
+  } else if ('$typeUrl' in input) {
+    const { $typeUrl: typeUrl, ...value } = input;
     return { typeUrl, value };
   } else if ('typeUrl' in input) {
     // ProtoMsg (value: Uint8Array) or EncodeObject (value: MessageBody)
@@ -125,12 +134,8 @@ export interface Proto3CodecHelper<TU = string, MT = MessageBody<TU>>
   typedAmino(message: Partial<MT>): TypedAmino<TU, MT>;
   typedEncode(message: Partial<MT>): EncodeObject<TU>;
   fromTyped(
-    object:
-      | TypedJson<TU>
-      | TypedAmino<TU, MT>
-      | EncodeObject<TU>
-      | ProtoMsg<TU>,
-    embeddedFields?: string[],
+    object: unknown,
+    embeddedFields?: { [valueProp: string]: string },
   ): MT;
 }
 
@@ -149,7 +154,7 @@ export const CodecHelper = <TU = string, MT = MessageBody<TU>>(
   nonNullishFields?: string[],
 ): Proto3CodecHelper<TU, MT> => {
   const cdc = Codec(codec, nonNullishFields);
-  const help = freeze({
+  const help: Proto3CodecHelper<TU, MT> = freeze({
     ...cdc,
     typedAmino(message) {
       return { type: codec.typeUrl, value: cdc.fromPartial(message) };
@@ -174,13 +179,30 @@ export const CodecHelper = <TU = string, MT = MessageBody<TU>>(
         );
       }
 
-      const embedFields =
-        embeddedFields ?? embeddedFieldsFromTypeUrl[typeUrl] ?? [];
+      const embedPropMap =
+        embeddedFields ?? embeddedFieldsFromTypeUrl[typeUrl] ?? {};
       const spreadEmbedded = (message: MT) => {
-        for (const prop of embedFields) {
-          Object.assign(message as any, value[prop], message[prop]);
+        for (const [valueProp, messageProp] of Object.entries(embedPropMap)) {
+          if (message[messageProp] == null) {
+            message[messageProp] = value[valueProp] ?? value;
+          }
         }
-        return message;
+
+        const filled = cdc.fromPartial(message);
+
+        // Spread the embeddeds into the filled object.
+        for (const messageProp of Object.values(embedPropMap)) {
+          const embedded = filled[messageProp] ?? filled;
+          if (Object(embedded) === embedded) {
+            for (const [key, val] of Object.entries(embedded)) {
+              if (filled[key] == null) {
+                filled[key] = val;
+              }
+            }
+          }
+        }
+
+        return filled;
       };
 
       if (value instanceof Uint8Array) {

@@ -1,8 +1,12 @@
 import { expectType } from 'tsd';
 import { typedJson } from '../src/helpers.js';
+import { CodecHelper } from '../src/codec-helpers.js';
 import type { ResponseTo, TypedJson } from '../src/helpers.js';
 import type { JsonSafe } from '../src/codegen/json-safe.js';
 import type { Timestamp } from '../src/codegen/google/protobuf/timestamp.js';
+import { QueryAllBalancesRequest as QueryAllBalancesRequestType } from '../src/codegen/cosmos/bank/v1beta1/query.js';
+
+const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);
 
 // MsgSend
 {
@@ -20,7 +24,14 @@ import type { Timestamp } from '../src/codegen/google/protobuf/timestamp.js';
 
 // QueryAllBalances
 {
-  const request = typedJson('/cosmos.bank.v1beta1.QueryAllBalancesRequest', {
+  // @ts-expect-error missing required properties
+  const requestBase = typedJson(QueryAllBalancesRequest.typeUrl, {});
+  requestBase;
+
+  const requestBaseCodec = QueryAllBalancesRequest.typedJson({});
+  expectType<QueryAllBalancesRequestType>(requestBaseCodec);
+
+  const request = QueryAllBalancesRequest.typedJson({
     address: 'agoric1from',
   });
   const response: ResponseTo<typeof request> = null as any;

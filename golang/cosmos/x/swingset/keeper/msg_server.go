@@ -3,6 +3,9 @@ package keeper
 import (
 	"context"
 
+	sdkioerrors "cosmossdk.io/errors"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -42,6 +45,18 @@ func (keeper msgServer) routeAction(ctx sdk.Context, msg vm.ControllerAdmissionM
 
 func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeliverInbound) (*types.MsgDeliverInboundResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if msg.Submitter.Empty() {
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
+	}
+	if len(msg.Messages) != len(msg.Nums) {
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Messages and Nums must be the same length")
+	}
+	for _, m := range msg.Messages {
+		if len(m) == 0 {
+			return nil, sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Messages cannot be empty")
+		}
+	}
 
 	// msg.Nums and msg.Messages must be zipped into an array of [num, message] pairs.
 	messages := make([][]interface{}, len(msg.Messages))
@@ -190,18 +205,24 @@ type installBundleAction struct {
 
 func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInstallBundle) (*types.MsgInstallBundleResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrInvalidRequest, err.Error())
+	}
 
-	err := msg.Uncompress()
-	if err != nil {
+	if err := msg.Uncompress(); err != nil {
 		return nil, err
 	}
+
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrInvalidRequest, err.Error())
+	}
+
 	action := installBundleAction{
 		MsgInstallBundle: msg,
 	}
 
-	err = keeper.routeAction(ctx, msg, action)
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
-	if err != nil {
+	if err := keeper.routeAction(ctx, msg, action); err != nil {
+		// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 		return nil, err
 	}
 

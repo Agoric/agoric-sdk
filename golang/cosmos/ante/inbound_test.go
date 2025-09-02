@@ -11,6 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx"
+	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/gogoproto/proto"
 )
@@ -168,11 +169,12 @@ func makeTestTx(msgs ...proto.Message) sdk.Tx {
 		}
 		wrappedMsgs[i] = any
 	}
-	return &tx.Tx{
+	protoTx := &tx.Tx{
 		Body: &tx.TxBody{
 			Messages: wrappedMsgs,
 		},
 	}
+	return authtx.WrapTx(protoTx).GetTx()
 }
 
 func nilAnteHandler(ctx sdk.Context, tx sdk.Tx, simulate bool) (newCtx sdk.Context, err error) {

@@ -21,6 +21,10 @@ COREPACK_ROOT="${COREPACK_ROOT:-}"
 find . -name node_modules -prune -o -name yarn.lock -print0 \
   | while IFS= read -r -d $'\0' lockfile; do
     dir="$(dirname "$lockfile")"
+    if [ "$dir" = ./packages/create-dapp/demo ]; then
+      echo "Skipping $lockfile"
+      continue
+    fi
     echo "Updating $lockfile"
     (
       cd "$dir"

@@ -3,6 +3,8 @@ package agoric.swingset;
 
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
 
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types";
 
@@ -10,6 +12,9 @@ option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types
 // core.
 // See `bridgeCoreEval` in agoric-sdk packages/vats/src/core/chain-behaviors.js.
 message CoreEvalProposal {
+  option (cosmos_proto.implements_interface) = "cosmos.gov.v1beta1.Content";
+  option (amino.name)                        = "swingset/CoreEvalProposal";
+
   option (gogoproto.goproto_getters) = false;
 
   string title       = 1;
@@ -101,7 +106,7 @@ message StringBeans {
   string key = 1;
 
   // The actual bean value.
-  string beans = 2 [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Uint", (gogoproto.nullable) = false];
+  string beans = 2 [(gogoproto.customtype) = "cosmossdk.io/math.Uint", (gogoproto.nullable) = false];
 }
 
 // Map a provisioning power flag to its corresponding fee.
@@ -131,7 +136,7 @@ message QueueSize {
 message UintMapEntry {
   option (gogoproto.equal) = true;
   string key               = 1;
-  string value = 2 [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Uint", (gogoproto.nullable) = false];
+  string value             = 2 [(gogoproto.customtype) = "cosmossdk.io/math.Uint", (gogoproto.nullable) = false];
 }
 
 // Egress is the format for a swingset egress.

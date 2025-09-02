@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
-	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -29,15 +28,20 @@ func DefaultGenesisState() *types.GenesisState {
 	}
 }
 
-func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abci.ValidatorUpdate {
+func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) {
 	keeper.SetParams(ctx, data.GetParams())
 	keeper.SetState(ctx, data.GetState())
-	return []abci.ValidatorUpdate{}
 }
 
-func ExportGenesis(ctx sdk.Context, k Keeper) *types.GenesisState {
-	var gs types.GenesisState
-	gs.Params = k.GetParams(ctx)
-	gs.State = k.GetState(ctx)
-	return &gs
+func ExportGenesis(ctx sdk.Context, k Keeper) (*types.GenesisState, error) {
+	params := k.GetParams(ctx)
+	state, err := k.GetState(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to export vbank state: %s", err)
+	}
+	gs := &types.GenesisState{
+		Params: params,
+		State:  state,
+	}
+	return gs, nil
 }

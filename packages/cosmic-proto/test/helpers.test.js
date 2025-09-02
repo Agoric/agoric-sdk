@@ -1,6 +1,7 @@
 // @ts-check
 import test from 'ava';
 
+import { ModuleAccount as ModuleAccountType } from '../dist/codegen/cosmos/auth/v1beta1/auth.js';
 import { cosmos } from '../dist/codegen/cosmos/bundle.js';
 import { ibc } from '../dist/codegen/ibc/bundle.js';
 import { icq } from '../dist/codegen/icq/bundle.js';
@@ -12,6 +13,8 @@ import {
 } from '../dist/helpers.js';
 import { QueryAllBalancesRequest } from '../dist/codegen/cosmos/bank/v1beta1/query.js';
 import { MsgSend } from '../dist/codegen/cosmos/bank/v1beta1/tx.js';
+
+const ModuleAccount = CodecHelper(ModuleAccountType);
 
 const mockMsgSend = {
   fromAddress: 'agoric1from',
@@ -62,75 +65,27 @@ test('CodecHelper', t => {
     // @ts-expect-error invalid field
     other: 3,
   });
+  const body = { address, pagination: undefined, resolveDenom: false };
   t.deepEqual(qabr, {
     '@type': help.typeUrl,
-    address,
-    pagination: undefined,
+    ...body,
   });
 
-  // @ts-expect-error
-  qabr.zingo = { abc: 3 };
-  t.deepEqual(qabr, {
-    '@type': help.typeUrl,
-    address,
-    pagination: undefined,
-    zingo: { abc: 3 },
-  });
-  t.deepEqual(help.fromTyped(qabr), {
-    address,
-    pagination: undefined,
-  });
-  t.deepEqual(
-    help.fromTyped(qabr, ['zingo']),
-    {
-      address,
-      pagination: undefined,
-      abc: 3,
-    },
-    'fromTyped expands embedded zingo',
-  );
+  t.deepEqual(help.fromTyped(qabr), body);
 
   const aminoMessage = help.typedAmino({ address });
-  // @ts-expect-error
-  aminoMessage.value.zongo = { def: 6 };
   t.deepEqual(aminoMessage, {
     type: help.typeUrl,
-    value: {
-      address,
-      pagination: undefined,
-      zongo: { def: 6 },
-    },
+    value: body,
   });
-  t.deepEqual(help.fromTyped(aminoMessage), {
-    address,
-    pagination: undefined,
-  });
-  t.deepEqual(help.fromTyped(aminoMessage, ['zongo', 'zon_go']), {
-    address,
-    pagination: undefined,
-    def: 6,
-  });
+  t.deepEqual(help.fromTyped(aminoMessage), body);
 
   const jsonMessage = help.typedEncode({ address });
-  // @ts-expect-error
-  jsonMessage.value.zungo = { ghi: 9 };
   t.deepEqual(jsonMessage, {
     typeUrl: '/cosmos.bank.v1beta1.QueryAllBalancesRequest',
-    value: {
-      address,
-      pagination: undefined,
-      zungo: { ghi: 9 },
-    },
+    value: body,
   });
-  t.deepEqual(help.fromTyped(jsonMessage), {
-    address,
-    pagination: undefined,
-  });
-  t.deepEqual(help.fromTyped(jsonMessage, ['zungo', 'zunGo']), {
-    address,
-    pagination: undefined,
-    ghi: 9,
-  });
+  t.deepEqual(help.fromTyped(jsonMessage), body);
 
   const msgSend = CodecHelper(MsgSend).typedJson({
     fromAddress: address,
@@ -145,6 +100,45 @@ test('CodecHelper', t => {
     toAddress: address,
     amount: [{ denom: 'ucosm', amount: '1' }],
   });
+});
+
+test('CodecHelper agd q auth module-account', t => {
+  const agd47 = {
+    account: {
+      '@type': '/cosmos.auth.v1beta1.ModuleAccount',
+      base_account: {
+        address: 'agoric1ae0lmtzlgrcnla9xjkpaarq5d5dfez63h3nucl',
+        pub_key: null,
+        account_number: '110',
+        sequence: '0',
+      },
+      name: 'vbank/reserve',
+      permissions: [],
+    },
+  };
+  const agd50 = {
+    account: {
+      type: '/cosmos.auth.v1beta1.ModuleAccount',
+      value: {
+        account_number: 110,
+        address: 'agoric1ae0lmtzlgrcnla9xjkpaarq5d5dfez63h3nucl',
+        name: 'vbank/reserve',
+        permissions: null,
+        public_key: '',
+        sequence: 0,
+      },
+    },
+  };
+
+  for (const [key, value] of Object.entries({ agd47, agd50 })) {
+    const { account } = value;
+    const decoded = ModuleAccount.fromTyped(account);
+    t.like(
+      decoded,
+      { address: 'agoric1ae0lmtzlgrcnla9xjkpaarq5d5dfez63h3nucl' },
+      `${key} has correct data`,
+    );
+  }
 });
 
 test('typeUrlToGrpcPath', t => {

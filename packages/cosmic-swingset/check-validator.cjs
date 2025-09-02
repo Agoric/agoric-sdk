@@ -9,13 +9,13 @@ const oper = process.argv[2];
 const { spawnSync } = require('child_process');
 
 console.log('Fetching current validators matching', oper || 'ALL');
-const ret = spawnSync('agd', [
-  'query',
-  'staking',
-  'validators',
-  '--limit=1000',
-  '-ojson',
-]);
+const ret = spawnSync('agd', ['query', 'staking', 'validators', '-ojson'], {
+  env: {
+    ...process.env,
+    AGD_PAGE_LIMIT: '1000',
+    AGD_LIMIT: '1000',
+  },
+});
 if (ret.error) {
   throw ret.error;
 }
