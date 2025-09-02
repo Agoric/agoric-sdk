@@ -28,6 +28,7 @@ import {
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
   makeVStorage,
+  makeVstorageKit,
   type SigningSmartWalletKit,
   type VstorageKit,
 } from '@agoric/client-utils';
@@ -85,6 +86,7 @@ const parseToolArgs = (argv: string[]) =>
       description: { type: 'string', default: 'planner' },
       getCreatorFacet: { type: 'boolean', default: false },
       terminate: { type: 'string' },
+      buildEthOverrides: { type: 'boolean' },
       installAndStart: { type: 'string' },
       invitePlanner: { type: 'string' },
       checkStorage: { type: 'boolean' },
@@ -394,6 +396,21 @@ const main = async (
     return;
   }
 
+  if (values.buildEthOverrides) {
+    const vsk = makeVstorageKit({ fetch }, networkConfig);
+    const { axelarConfig, gmpAddresses } = getNetworkConfig(
+      env.AGORIC_NET as string,
+    );
+    const privateArgsOverrides = await overridesForEthChainInfo(
+      vsk,
+      axelarConfig,
+      gmpAddresses,
+    );
+    stdout.write(JSON.stringify(privateArgsOverrides, null, 2));
+    stdout.write('\n');
+    return;
+  }
+
   const { MNEMONIC } = env;
   if (!MNEMONIC) throw Error(`MNEMONIC not set`);
 
@@ -441,6 +458,9 @@ const main = async (
 
   if (values.installAndStart) {
     const { installAndStart: bundleId } = values;
+
+    const privateArgsOverrides = JSON.parse(await readText(stdin));
+
     const { BLD, USDC } = fromEntries(
       await walletKit.readPublished('agoricNames.issuer'),
     );
@@ -450,17 +470,10 @@ const main = async (
       await walletKit.readPublished('agoricNames.vbankAsset'),
     );
 
-    const { axelarConfig, gmpAddresses } = getNetworkConfig(
-      env.AGORIC_NET as string,
-    );
     await yc.installAndStart({
       bundleId,
       issuers: { USDC, BLD, Fee: BLD, Access: upoc26.issuer },
-      privateArgsOverrides: await overridesForEthChainInfo(
-        walletKit,
-        axelarConfig,
-        gmpAddresses,
-      ),
+      privateArgsOverrides,
     });
     return;
   }
