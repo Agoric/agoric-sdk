@@ -177,6 +177,7 @@ const walletProvisioning: Macro<[verifier?: Verifier], TestContext> =
 
     await verifier?.start(t);
 
+    // FIXME this still deposits IST
     const provisionAcct = scenario2.spawnMake(
       ['provision-acct', `ACCT_ADDR=${freshAddr}`],
       { stdio: fdList },
