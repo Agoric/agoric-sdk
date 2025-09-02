@@ -9,11 +9,16 @@ import (
 
 	sdkioerrors "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
+	"cosmossdk.io/x/tx/signing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/protoadapt"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 const RouterKey = ModuleName // this was defined in your key.go file
@@ -31,6 +36,42 @@ var (
 	_ vm.ControllerAdmissionMsg = &MsgWalletAction{}
 	_ vm.ControllerAdmissionMsg = &MsgWalletSpendAction{}
 )
+
+// Replacing msg.GetSigners() but before we can adopt AddressString.
+// https://github.com/cosmos/cosmos-sdk/issues/20077#issuecomment-2062601533
+func createSignerFieldFunc(fieldName protoreflect.Name) signing.GetSignersFunc {
+	return func(msgIn proto.Message) ([][]byte, error) {
+		msg := msgIn.ProtoReflect()
+		if !msg.Has(msg.Descriptor().Fields().ByName(fieldName)) {
+			return nil, sdkioerrors.Wrapf(sdkerrors.ErrInvalidRequest, "message %T does not have field %s", msgIn, fieldName)
+		}
+		addr := msg.Get(msg.Descriptor().Fields().ByName(fieldName)).Interface().([]byte)
+		return [][]byte{addr}, nil
+	}
+}
+
+func DefineCustomGetSigners(options *signing.Options) {
+	options.DefineCustomGetSigners(
+		proto.MessageName(protoadapt.MessageV2Of(&MsgDeliverInbound{})),
+		createSignerFieldFunc("submitter"),
+	)
+	options.DefineCustomGetSigners(
+		proto.MessageName(protoadapt.MessageV2Of(&MsgProvision{})),
+		createSignerFieldFunc("submitter"),
+	)
+	options.DefineCustomGetSigners(
+		proto.MessageName(protoadapt.MessageV2Of(&MsgInstallBundle{})),
+		createSignerFieldFunc("submitter"),
+	)
+	options.DefineCustomGetSigners(
+		proto.MessageName(protoadapt.MessageV2Of(&MsgWalletAction{})),
+		createSignerFieldFunc("owner"),
+	)
+	options.DefineCustomGetSigners(
+		proto.MessageName(protoadapt.MessageV2Of(&MsgWalletSpendAction{})),
+		createSignerFieldFunc("owner"),
+	)
+}
 
 // Contextual information about the message source of an action on an inbound queue.
 // This context should be unique per inboundQueueRecord.

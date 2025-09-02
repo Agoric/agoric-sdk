@@ -8,16 +8,19 @@ import (
 	"strings"
 	"testing"
 
+	storemetrics "cosmossdk.io/store/metrics"
+
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 
-	"github.com/cosmos/cosmos-sdk/store"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"cosmossdk.io/store"
+	storetypes "cosmossdk.io/store/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"cosmossdk.io/log"
 	agorictypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
-	dbm "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
 )
 
 var (
@@ -32,22 +35,23 @@ type testKit struct {
 	keeper  Keeper
 	handler vstorageHandler
 	ctx     sdk.Context
-	cctx    context.Context
 }
 
 func makeTestKit() testKit {
-	keeper := NewKeeper(storeKey)
+	kvStoreService := runtime.NewKVStoreService(storeKey)
+
+	keeper := NewKeeper(storeKey.Name(), kvStoreService)
 	db := dbm.NewMemDB()
-	ms := store.NewCommitMultiStore(db)
+	logger := log.NewNopLogger()
+	ms := store.NewCommitMultiStore(db, logger, storemetrics.NewNoOpMetrics())
 	ms.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
 	err := ms.LoadLatestVersion()
 	if err != nil {
 		panic(err)
 	}
 	ctx := sdk.NewContext(ms, tmproto.Header{}, false, log.NewNopLogger())
-	cctx := sdk.WrapSDKContext(ctx)
 	handler := vstorageHandler{keeper}
-	return testKit{keeper, handler, ctx, cctx}
+	return testKit{keeper, handler, ctx}
 }
 
 func callReceive(
@@ -68,7 +72,7 @@ func callReceive(
 
 func TestGetAndHas(t *testing.T) {
 	kit := makeTestKit()
-	keeper, handler, ctx, cctx := kit.keeper, kit.handler, kit.ctx, kit.cctx
+	keeper, handler, ctx := kit.keeper, kit.handler, kit.ctx
 
 	keeper.SetStorage(ctx, agorictypes.NewKVEntry("foo", "bar"))
 	keeper.SetStorage(ctx, agorictypes.NewKVEntry("empty", ""))
@@ -92,8 +96,8 @@ func TestGetAndHas(t *testing.T) {
 		{label: "extra args", args: []interface{}{"foo", "bar"}, errContains: ptr(`extra`)},
 	}
 	for _, desc := range cases {
-		got, err := callReceive(handler, cctx, "get", desc.args)
-		has, hasErr := callReceive(handler, cctx, "has", desc.args)
+		got, err := callReceive(handler, ctx, "get", desc.args)
+		has, hasErr := callReceive(handler, ctx, "has", desc.args)
 
 		// Verify get/has error agreement.
 		if (err == nil) != (hasErr == nil) {
@@ -125,7 +129,7 @@ func TestGetAndHas(t *testing.T) {
 
 func doTestSet(t *testing.T, method string, expectNotify bool) {
 	kit := makeTestKit()
-	keeper, handler, ctx, cctx := kit.keeper, kit.handler, kit.ctx, kit.cctx
+	keeper, handler, ctx := kit.keeper, kit.handler, kit.ctx
 
 	type testCase struct {
 		label        string
@@ -183,7 +187,7 @@ func doTestSet(t *testing.T, method string, expectNotify bool) {
 		stateChangeEvent("qux", "A"),
 	}
 	for _, desc := range cases {
-		got, err := callReceive(handler, cctx, method, desc.args)
+		got, err := callReceive(handler, ctx, method, desc.args)
 
 		if desc.errContains == nil {
 			if err != nil {
@@ -208,7 +212,7 @@ func doTestSet(t *testing.T, method string, expectNotify bool) {
 				}
 				wantBackBytes, _ := json.Marshal(value)
 				wantBack := string(wantBackBytes)
-				gotBack, err := callReceive(handler, cctx, "get", []interface{}{path})
+				gotBack, err := callReceive(handler, ctx, "get", []interface{}{path})
 				if err != nil {
 					t.Errorf("%s %s read back %q: got unexpected error %v", method, desc.label, path, err)
 				} else if gotBack != wantBack {
@@ -257,7 +261,7 @@ func TestSetWithoutNotify(t *testing.T) {
 
 func TestEntries(t *testing.T) {
 	kit := makeTestKit()
-	keeper, handler, ctx, cctx := kit.keeper, kit.handler, kit.ctx, kit.cctx
+	keeper, handler, ctx := kit.keeper, kit.handler, kit.ctx
 
 	keeper.SetStorage(ctx, agorictypes.NewKVEntry("key1", "value1"))
 	keeper.SetStorage(ctx, agorictypes.NewKVEntry("key1.child1.grandchild1", "value1grandchild"))
@@ -286,7 +290,7 @@ func TestEntries(t *testing.T) {
 		{path: "nosuchkey", want: `[]`},
 	}
 	for _, desc := range cases {
-		got, err := callReceive(handler, cctx, "entries", []interface{}{desc.path})
+		got, err := callReceive(handler, ctx, "entries", []interface{}{desc.path})
 		if got != desc.want {
 			t.Errorf("%s: got %q; want %q", desc.path, got, desc.want)
 		}
