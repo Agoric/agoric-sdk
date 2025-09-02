@@ -1,199 +1,98 @@
 import test from 'ava';
-import { ethers } from 'ethers';
-import { watchGmp } from '../src/watchers/gmp-watcher.ts';
+import { id, keccak256, toUtf8Bytes } from 'ethers';
+import { createMockEvmContext } from './mocks.ts';
+import { type PendingTx, handlePendingTx } from '../src/pending-tx-manager.ts';
+import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 
-const createMockAxelarResponse = (
-  status: 'executed' | 'pending' | 'error',
-  subscriptionId: string,
-) => {
-  const baseEvent = {
-    call: {
-      chain: 'agoric',
-      blockNumber: 15234567,
-      transactionHash:
-        '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-      returnValues: {
-        destinationContractAddress:
-          '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
-        destinationChain: 'ethereum',
-        messageId: 'msg_12345',
-        payload: '0x',
-        sender: 'agoric1sender123',
-        sourceChain: 'agoric',
-      },
-    },
-    gas_paid: {
-      transactionHash: '0xgaspaid123',
-      returnValues: {
-        amount: '1000000',
-        messageId: 'msg_12345',
-      },
-    },
-    confirm: {
-      sourceChain: 'agoric',
-      messageId: 'msg_12345',
-      transactionHash: '0xconfirm123',
-    },
-    approved: {
-      returnValues: {
-        sourceChain: 'agoric',
-        commandId: 'cmd_12345',
-        payloadHash: '0xhash123',
-      },
-    },
-    message_id: 'msg_12345',
-    status: status === 'executed' ? 'executed' : 'confirming',
-    simplified_status: status,
-    is_invalid_call: false,
-    is_not_enough_gas: false,
+test('handlePendingTx processes GMP transaction successfully', async t => {
+  const mockEvmCtx = createMockEvmContext();
+  const txId = 'tx1';
+  const chain = 'eip155:1'; // Ethereum
+  const amount = 1_000_000n; // 1 USDC
+  const contractAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const provider = mockEvmCtx.evmProviders[chain];
+  const type = TxType.GMP;
+
+  const logMessages: string[] = [];
+  const logger = (...args: any[]) => logMessages.push(args.join(' '));
+
+  const gmpTx: PendingTx = {
+    txId,
+    type,
+    status: 'pending',
+    amount,
+    destinationAddress: `${chain}:${contractAddress}`,
   };
 
-  if (status === 'executed') {
-    const subscriptionTopic = ethers.id('SubscriptionResolved(string)');
-    const abiCoder = ethers.AbiCoder.defaultAbiCoder();
-    const encodedSubscriptionId = abiCoder.encode(['string'], [subscriptionId]);
-
-    const executed = {
-      chain: 'ethereum',
-      sourceChain: 'agoric',
-      chain_type: 'evm',
-      messageId: 'msg_12345',
-      created_at: {
-        ms: Date.now(),
-        hour: 0,
-        day: 0,
-        week: 0,
-        month: 0,
-        quarter: 0,
-        year: 2024,
-      },
-      sourceTransactionLogIndex: 0,
-      transactionIndex: 42,
-      contract_address: '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
-      relayerAddress: '0xrelayer123',
-      transactionHash: '0xexecuted123',
+  setTimeout(() => {
+    const expectedIdTopic = keccak256(toUtf8Bytes(txId));
+    const mockLog = {
+      address: contractAddress,
+      topics: [
+        id('MulticallExecuted(string,(bool,bytes)[])'), // MulticallExecuted event signature
+        expectedIdTopic, // txId as topic
+      ],
+      data: '0x', // No additional data needed for this event
+      transactionHash: '0x123abc',
       blockNumber: 18500000,
-      block_timestamp: Math.floor(Date.now() / 1000),
-      from: '0xrelayer123',
-      receipt: {
-        gasUsed: '150000',
-        blockNumber: 18500000,
-        from: '0xrelayer123',
-        transactionIndex: 42,
-        status: 1,
-        transactionHash: '0xexecuted123',
-        cumulativeGasUsed: '2000000',
-        effectiveGasPrice: '20000000000',
-        confirmations: 12,
-        logs: [
-          {
-            logIndex: 0,
-            data: encodedSubscriptionId,
-            topics: [subscriptionTopic],
-            blockNumber: 18500000,
-            transactionIndex: 42,
-          },
-          {
-            logIndex: 1,
-            data: '0xotherdata',
-            topics: ['0xotherevent'],
-            blockNumber: 18500000,
-            transactionIndex: 42,
-          },
-        ],
-      },
-      sourceTransactionHash:
-        '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-      _id: 'event_123',
-      id: 'event_123',
-      event: 'ContractCallExecuted',
-      transaction: {
-        blockNumber: 18500000,
-        gas: '200000',
-        from: '0xrelayer123',
-        transactionIndex: 42,
-        to: '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
-        hash: '0xexecuted123',
-        gasPrice: '20000000000',
-        chainId: 1,
-        maxPriorityFeePerGas: '2000000000',
-        maxFeePerGas: '25000000000',
-        nonce: 100,
-      },
     };
 
-    return {
-      data: [{ ...baseEvent, executed }],
-      total: 1,
-      time_spent: 123,
+    const filter = {
+      address: contractAddress,
+      topics: [id('MulticallExecuted(string,(bool,bytes)[])'), expectedIdTopic],
     };
-  }
 
-  return {
-    data: [baseEvent],
-    total: 1,
-    time_spent: 100,
-  };
-};
+    (provider as any).emit(filter, mockLog);
+  }, 50);
 
-test('getTxStatus detects successful execution with matching subscription ID', async t => {
-  const subscriptionId = 'test-subscription-12345';
-
-  // Mock fetch that returns executed status with matching subscription ID
-  const mockFetch = async (url: string, options: any) => {
-    const response = createMockAxelarResponse('executed', subscriptionId);
-    return {
-      ok: true,
-      json: async () => response,
-    } as Response;
-  };
-
-  const result = await watchGmp({
-    url: 'https://testnet.api.axelarscan.io/gmp/searchGMP',
-    fetch: mockFetch,
-    params: {
-      sourceChain: 'agoric',
-      destinationChain: 'Avalanche',
-      contractAddress: '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
-    },
-    subscriptionId,
-    log: console.log,
+  await t.notThrowsAsync(async () => {
+    await handlePendingTx(mockEvmCtx, gmpTx, {
+      log: logger,
+      timeoutMinutes: 0.05, // 3 sec
+    });
   });
 
-  t.true(result.success, 'Should return success for executed transaction');
-  t.truthy(result.logs, 'Should return execution logs');
+  t.deepEqual(logMessages, [
+    `[${txId}] handling gmp tx`,
+    `[${txId}] Watching for MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
+    `[${txId}] MulticallExecuted detected: txId=${txId} contract=${contractAddress} tx=0x123abc`,
+    `[${txId}] ✓ MulticallExecuted matches txId: ${txId}`,
+    `[${txId}] GMP tx resolved`,
+  ]);
 });
 
-test('getTxStatus rejects execution with mismatched subscription ID', async t => {
-  const expectedSubscriptionId = 'test-subscription-12345';
-  const actualSubscriptionId = 'different-subscription-67890';
+test('handlePendingTx times out GMP transaction with no matching event', async t => {
+  const mockEvmCtx = createMockEvmContext();
+  const txId = 'tx2';
+  const chain = 'eip155:1'; // Ethereum
+  const amount = 1_000_000n; // 1 USDC
+  const contractAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const type = TxType.GMP;
 
-  const mockFetch = async (url: string, options: any) => {
-    const response = createMockAxelarResponse('executed', actualSubscriptionId);
-    return {
-      ok: true,
-      json: async () => response,
-    } as Response;
+  const logMessages: string[] = [];
+  const logger = (...args: any[]) => logMessages.push(args.join(' '));
+
+  const gmpTx: PendingTx = {
+    txId,
+    type,
+    status: 'pending',
+    amount,
+    destinationAddress: `${chain}:${contractAddress}`,
   };
 
-  const result = await watchGmp({
-    url: 'https://testnet.api.axelarscan.io/gmp/searchGMP',
-    fetch: mockFetch,
-    params: {
-      sourceChain: 'agoric',
-      destinationChain: 'arbitrum',
-      contractAddress: '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
-    },
-    subscriptionId: expectedSubscriptionId,
-    logPrefix: '[TEST]',
-    timeoutMinutes: 0.05, // 3 seconds timeout for test
-    retryDelaySeconds: 0.05,
-    log: console.log,
+  // Don't emit any matching events - let it timeout
+
+  await t.notThrowsAsync(async () => {
+    await handlePendingTx(mockEvmCtx, gmpTx, {
+      log: logger,
+      timeoutMinutes: 0.05, // 3 sec
+    });
   });
 
-  t.false(
-    result.success,
-    'Should return failure for mismatched subscription ID',
-  );
-  t.is(result.logs, null, 'Should not return logs for mismatched subscription');
+  t.deepEqual(logMessages, [
+    `[${txId}] handling gmp tx`,
+    `[${txId}] Watching for MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
+    `[${txId}] ✗ No MulticallExecuted found for txId ${txId} within 0.05 minutes`,
+    `[${txId}] GMP tx resolved`,
+  ]);
 });
