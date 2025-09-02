@@ -50,6 +50,7 @@
     "@endo/nat": "^5.1.3",
     "@endo/pass-style": "^1.6.3",
     "@endo/promise-kit": "^1.1.13",
+    "@google-cloud/secret-manager": "^6.1.0",
     "chain-registry": "^2.0.44",
     "dotenv": "^17.2.1",
     "ethers": "^6.13.0",
