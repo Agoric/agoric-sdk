@@ -100,7 +100,6 @@ export const startPSM = async (
       feeMintAccess: feeMintAccessP,
       economicCommitteeCreatorFacet,
       econCharterKit,
-      provisionPoolStartResult,
       chainStorage,
       chainTimerService,
       psmKit,
@@ -279,10 +278,6 @@ export const startPSM = async (
       psm,
       governorFacets.creatorFacet,
       instanceKey,
-    ),
-    E(E.get(provisionPoolStartResult).creatorFacet).initPSM(
-      anchorBrand,
-      newpsmKit.psm,
     ),
   ]);
 };
