@@ -40,10 +40,11 @@ const getMnemonicFromGCP = async (client: SecretManager): Promise<string> => {
 };
 
 const parsePositiveInteger = (
-  value: string | undefined,
+  env: Record<string, string | undefined>,
   defaultValue: number,
   fieldName: string,
 ): number => {
+  const value = env[fieldName];
   if (value === undefined) return defaultValue;
 
   const parsed = parseInt(value, 10);
@@ -54,9 +55,10 @@ const parsePositiveInteger = (
 };
 
 const validateRequired = (
-  value: string | undefined,
+  env: Record<string, string | undefined>,
   fieldName: string,
 ): string => {
+  const value = env[fieldName];
   if (!value || value.trim() === '') {
     throw Fail`${fieldName} is required but not provided`;
   }
@@ -64,9 +66,10 @@ const validateRequired = (
 };
 
 const validateOptionalUrl = (
-  value: string | undefined,
+  env: Record<string, string | undefined>,
   fieldName: string,
 ): string | undefined => {
+  const value = env[fieldName];
   if (!value || value.trim() === '') return undefined;
 
   const trimmed = value.trim();
@@ -92,32 +95,16 @@ export const loadConfig = async (
 
     const config: YmaxPlannerConfig = harden({
       mnemonic,
-      alchemy: validateRequired(env.ALCHEMY_API_KEY, 'ALCHEMY_API_KEY'),
+      alchemy: validateRequired(env, 'ALCHEMY_API_KEY'),
       spectrum: {
-        apiUrl: validateOptionalUrl(env.SPECTRUM_API_URL, 'SPECTRUM_API_URL'),
-        timeout: parsePositiveInteger(
-          env.SPECTRUM_API_TIMEOUT,
-          30000,
-          'SPECTRUM_API_TIMEOUT',
-        ),
-        retries: parsePositiveInteger(
-          env.SPECTRUM_API_RETRIES,
-          3,
-          'SPECTRUM_API_RETRIES',
-        ),
+        apiUrl: validateOptionalUrl(env, 'SPECTRUM_API_URL'),
+        timeout: parsePositiveInteger(env, 30000, 'SPECTRUM_API_TIMEOUT'),
+        retries: parsePositiveInteger(env, 3, 'SPECTRUM_API_RETRIES'),
       },
       cosmosRest: {
         agoricNetwork: env.AGORIC_NET?.trim() || 'local',
-        timeout: parsePositiveInteger(
-          env.COSMOS_REST_TIMEOUT,
-          15000,
-          'COSMOS_REST_TIMEOUT',
-        ),
-        retries: parsePositiveInteger(
-          env.COSMOS_REST_RETRIES,
-          3,
-          'COSMOS_REST_RETRIES',
-        ),
+        timeout: parsePositiveInteger(env, 15000, 'COSMOS_REST_TIMEOUT'),
+        retries: parsePositiveInteger(env, 3, 'COSMOS_REST_RETRIES'),
       },
     });
 
