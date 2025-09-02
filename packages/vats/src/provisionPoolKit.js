@@ -1,28 +1,28 @@
 // @ts-check
-import { X, q, Fail } from '@endo/errors';
+import { Fail, X, q } from '@endo/errors';
 import { E } from '@endo/far';
 
 import { AmountMath, BrandShape } from '@agoric/ertp';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import {
   observeIteration,
   observeNotifier,
   subscribeEach,
 } from '@agoric/notifier';
+import { makeAtomicProvider, makeScalarMapStore } from '@agoric/store';
 import {
   M,
   makeScalarBigMapStore,
   makeScalarBigSetStore,
 } from '@agoric/vat-data';
-import { makeAtomicProvider, makeScalarMapStore } from '@agoric/store';
-import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
 import {
   PublicTopicShape,
   makeRecorderTopic,
 } from '@agoric/zoe/src/contractSupport/topics.js';
 import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
-import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
+import { PowerFlags } from './walletFlags.js';
 
 /**
  * @import {EReturn} from '@endo/far';

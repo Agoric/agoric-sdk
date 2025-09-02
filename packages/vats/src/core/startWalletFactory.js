@@ -199,7 +199,7 @@ export const startWalletFactory = async (
   // eslint-disable-next-line @agoric/group-jsdoc-imports
   /**
    * XXX the type is being lost without this annotation
-   * @type {Promise<GovernanceFacetKit<typeof import('@agoric/inter-protocol/src/provisionPool.js').start>>}
+   * @type {Promise<GovernanceFacetKit<typeof import('@agoric/vats/src/provisionPool.js').start>>}
    */
   const ppFacetsP = E(startGovernedUpgradable)({
     installation: provisionPool,
