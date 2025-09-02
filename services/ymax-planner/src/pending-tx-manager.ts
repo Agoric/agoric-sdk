@@ -1,7 +1,10 @@
 import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
-import { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import {
+  TxStatus,
+  TxType,
+} from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { watchGmp } from './watchers/gmp-watcher.ts';
 import { resolvePendingTx } from './resolver.ts';
 import { watchCctpTransfer } from './watchers/cctp-watcher.ts';
@@ -11,6 +14,9 @@ import type {
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import type { EvmProviders, UsdcAddresses } from './support.ts';
 import type { CaipChainId } from '@agoric/orchestration';
+import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
+import { Fail } from '@endo/errors';
+import type { JsonRpcProvider } from 'ethers';
 
 export type EvmChain = keyof typeof AxelarChain;
 
@@ -41,8 +47,8 @@ export type PendingTx = {
   txId: TxId;
 } & PublishedTx;
 
-type CctpTx = PendingTx & { type: 'cctp' };
-type GmpTx = PendingTx & { type: 'gmp' };
+type CctpTx = PendingTx & { type: typeof TxType.CCTP };
+type GmpTx = PendingTx & { type: typeof TxType.GMP };
 
 export type PendingTxMonitor<T extends PendingTx = PendingTx> = {
   watch: (
@@ -54,8 +60,8 @@ export type PendingTxMonitor<T extends PendingTx = PendingTx> = {
 };
 
 type MonitorRegistry = {
-  cctp: PendingTxMonitor<CctpTx>;
-  gmp: PendingTxMonitor<GmpTx>;
+  [TxType.CCTP]: PendingTxMonitor<CctpTx>;
+  [TxType.GMP]: PendingTxMonitor<GmpTx>;
 };
 
 const cctpMonitor: PendingTxMonitor<CctpTx> = {
@@ -64,19 +70,21 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
     const logPrefix = `[${txId}]`;
 
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
-    const [namespace, chainId, receiver] = destinationAddress.split(':');
-    const caipId: CaipChainId = `${namespace}:${chainId}`;
+    const { namespace, reference, accountAddress } =
+      parseAccountId(destinationAddress);
+    const caipId: CaipChainId = `${namespace}:${reference}`;
+
+    caipId in ctx.usdcAddresses ||
+      Fail`${logPrefix} Unsupported chain: ${caipId}`;
+    caipId in ctx.evmProviders ||
+      Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
+
     const usdcAddress = ctx.usdcAddresses[caipId];
-    const provider = ctx.evmProviders[caipId];
-    if (!provider) {
-      throw Error(
-        `${logPrefix} No EVM provider configured for chain: ${caipId}`,
-      );
-    }
+    const provider = ctx.evmProviders[caipId] as JsonRpcProvider;
 
     const transferStatus = await watchCctpTransfer({
       usdcAddress,
-      watchAddress: receiver,
+      watchAddress: accountAddress as `0x${string}`,
       expectedAmount: amount,
       provider,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
@@ -99,19 +107,16 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
     const logPrefix = `[${txId}]`;
 
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
-    const [namespace, chainId, addr] = destinationAddress.split(':');
-    const caipId: CaipChainId = `${namespace}:${chainId}`;
+    const { namespace, reference, accountAddress } =
+      parseAccountId(destinationAddress);
+    const caipId: CaipChainId = `${namespace}:${reference}`;
+    caipId in ctx.evmProviders ||
+      Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
-    const provider = ctx.evmProviders[caipId];
-    if (!provider) {
-      throw Error(
-        `${logPrefix} No EVM provider configured for chain: ${caipId}`,
-      );
-    }
-
+    const provider = ctx.evmProviders[caipId] as JsonRpcProvider;
     const res = await watchGmp({
       provider,
-      contractAddress: addr as `0x${string}`,
+      contractAddress: accountAddress as `0x${string}`,
       txId,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
       timeoutMinutes,
@@ -152,10 +157,6 @@ export const handlePendingTx = async (
   log(`${logPrefix} handling ${tx.type} tx`);
 
   const monitor = registry[tx.type] as PendingTxMonitor;
-
-  if (!monitor) {
-    throw Error(`${logPrefix} No monitor registered for tx type: ${tx.type}`);
-  }
-
+  monitor || Fail`${logPrefix} No monitor registered for tx type: ${tx.type}`;
   await monitor.watch(ctx, tx, log, timeoutMinutes);
 };

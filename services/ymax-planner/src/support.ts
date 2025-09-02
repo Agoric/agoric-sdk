@@ -2,9 +2,6 @@ import { JsonRpcProvider } from 'ethers';
 import type { EvmContext } from './pending-tx-manager';
 import type { CaipChainId } from '@agoric/orchestration';
 
-const { ALCHEMY_API_KEY } = process.env;
-if (!ALCHEMY_API_KEY) throw Error(`ALCHEMY_API_KEY not set`);
-
 type HexAddress = `0x${string}`;
 
 export type UsdcAddresses = {
@@ -45,44 +42,48 @@ export const usdcAddresses: UsdcAddresses = {
   },
 };
 
-export type EvmRpc = {
-  mainnet: Record<CaipChainId, string>;
-  testnet: Record<CaipChainId, string>;
-};
+export const getEvmRpcMap = (
+  net: string,
+  alchemy: string,
+): Record<CaipChainId, string> => {
+  if (net === 'mainnet') {
+    return {
+      'eip155:1': `https://eth-mainnet.g.alchemy.com/v2/${alchemy}`,
+      // Source: https://build.avax.network/docs/tooling/rpc-providers#http
+      'eip155:43114': 'https://api.avax.network/ext/bc/C/rpc',
+      // Source: https://docs.arbitrum.io/build-decentralized-apps/reference/node-providers
+      'eip155:42161': 'https://arb1.arbitrum.io/rpc',
+      // Source: https://docs.optimism.io/superchain/networks
+      'eip155:10': 'https://mainnet.optimism.io',
+      // Source: https://docs.polygon.technology/pos/reference/rpc-endpoints/#amoy
+      'eip155:137': 'https://polygon-rpc.com/',
+    };
+  }
 
-export const evmRpcUrls: EvmRpc = {
-  mainnet: {
-    'eip155:1': `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
-    // Source: https://build.avax.network/docs/tooling/rpc-providers#http
-    'eip155:43114': 'https://api.avax.network/ext/bc/C/rpc',
-    // Source: https://docs.arbitrum.io/build-decentralized-apps/reference/node-providers
-    'eip155:42161': 'https://arb1.arbitrum.io/rpc',
-    // Source: https://docs.optimism.io/superchain/networks
-    'eip155:10': 'https://mainnet.optimism.io',
-    // Source: https://docs.polygon.technology/pos/reference/rpc-endpoints/#amoy
-    'eip155:137': 'https://polygon-rpc.com/',
-  },
-  testnet: {
-    'eip155:11155111': `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
+  return {
+    'eip155:11155111': `https://eth-sepolia.g.alchemy.com/v2/${alchemy}`,
     'eip155:43113': 'https://api.avax-test.network/ext/bc/C/rpc',
     'eip155:421614': 'https://arbitrum-sepolia-rpc.publicnode.com',
     'eip155:11155420': 'https://optimism-sepolia-rpc.publicnode.com',
     'eip155:80002': 'https://polygon-amoy-bor-rpc.publicnode.com',
-  },
+  };
 };
-
 type CreateContextParams = {
   net?: 'mainnet' | 'testnet';
+  alchemy: string;
 };
 
 export type EvmProviders = Partial<Record<CaipChainId, JsonRpcProvider>>;
 
 export const createEVMContext = async ({
   net = 'mainnet',
+  alchemy,
 }: CreateContextParams): Promise<
   Pick<EvmContext, 'evmProviders' | 'usdcAddresses'>
 > => {
-  const urls = evmRpcUrls[net];
+  if (!alchemy) throw Error(`alchemy not defined`);
+
+  const urls = getEvmRpcMap(net, alchemy);
   const evmProviders = Object.fromEntries(
     Object.entries(urls).map(([caip, rpcUrl]) => [
       caip,

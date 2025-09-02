@@ -1,6 +1,6 @@
 import type { JsonRpcProvider } from 'ethers';
 import type { Log } from 'ethers';
-import { id, zeroPadValue, getAddress, type Provider } from 'ethers';
+import { id, zeroPadValue, getAddress } from 'ethers';
 
 const TRANSFER = id('Transfer(address,address,uint256)');
 const MILLIS_PER_MINUTE = 60 * 1000;
@@ -8,7 +8,7 @@ const MILLIS_PER_MINUTE = 60 * 1000;
 type WatchTransferOptions = {
   usdcAddress: `0x${string}`;
   provider: JsonRpcProvider;
-  watchAddress: string;
+  watchAddress: `0x${string}`;
   expectedAmount: bigint;
   timeoutMinutes?: number;
   log: (...args: unknown[]) => void;

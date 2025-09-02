@@ -2,6 +2,7 @@ import test from 'ava';
 import { id, keccak256, toUtf8Bytes } from 'ethers';
 import { createMockEvmContext } from './mocks.ts';
 import { type PendingTx, handlePendingTx } from '../src/pending-tx-manager.ts';
+import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 
 test('handlePendingTx processes GMP transaction successfully', async t => {
   const mockEvmCtx = createMockEvmContext();
@@ -10,7 +11,7 @@ test('handlePendingTx processes GMP transaction successfully', async t => {
   const amount = 1_000_000n; // 1 USDC
   const contractAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
   const provider = mockEvmCtx.evmProviders[chain];
-  const type = 'gmp';
+  const type = TxType.GMP;
 
   const logMessages: string[] = [];
   const logger = (...args: any[]) => logMessages.push(args.join(' '));
@@ -66,7 +67,7 @@ test('handlePendingTx times out GMP transaction with no matching event', async t
   const chain = 'eip155:1'; // Ethereum
   const amount = 1_000_000n; // 1 USDC
   const contractAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
-  const type = 'gmp';
+  const type = TxType.GMP;
 
   const logMessages: string[] = [];
   const logger = (...args: any[]) => logMessages.push(args.join(' '));

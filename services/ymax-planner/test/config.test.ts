@@ -14,11 +14,11 @@ test('loadConfig validates required MNEMONIC', t => {
 test('loadConfig accepts valid configuration', t => {
   const env = {
     MNEMONIC: 'test mnemonic phrase',
+    ALCHEMY_API_KEY: 'test1234',
     SPECTRUM_API_URL: 'https://api.spectrum.example.com',
     SPECTRUM_API_TIMEOUT: '5000',
     SPECTRUM_API_RETRIES: '2',
     AGORIC_NET: 'devnet',
-    ALCHEMY_API_KEY: 'xWradf',
     COSMOS_REST_TIMEOUT: '10000',
     COSMOS_REST_RETRIES: '5',
   };
@@ -26,6 +26,7 @@ test('loadConfig accepts valid configuration', t => {
   const config = loadConfig(env);
 
   t.is(config.mnemonic, 'test mnemonic phrase');
+  t.is(config.alchemy, 'test1234');
   t.is(config.spectrum.apiUrl, 'https://api.spectrum.example.com');
   t.is(config.spectrum.timeout, 5000);
   t.is(config.spectrum.retries, 2);
@@ -37,11 +38,13 @@ test('loadConfig accepts valid configuration', t => {
 test('loadConfig uses default values when optional fields are missing', t => {
   const env = {
     MNEMONIC: 'test mnemonic phrase',
+    ALCHEMY_API_KEY: 'test1234',
   };
 
   const config = loadConfig(env);
 
   t.is(config.mnemonic, 'test mnemonic phrase');
+  t.is(config.alchemy, 'test1234');
   t.is(config.spectrum.apiUrl, undefined);
   t.is(config.spectrum.timeout, 30000);
   t.is(config.spectrum.retries, 3);
@@ -53,6 +56,7 @@ test('loadConfig uses default values when optional fields are missing', t => {
 test('loadConfig validates positive integers', t => {
   const env = {
     MNEMONIC: 'test mnemonic phrase',
+    ALCHEMY_API_KEY: 'test1234',
     SPECTRUM_API_TIMEOUT: '0',
   };
 
@@ -64,6 +68,7 @@ test('loadConfig validates positive integers', t => {
 test('loadConfig validates URL format', t => {
   const env = {
     MNEMONIC: 'test mnemonic phrase',
+    ALCHEMY_API_KEY: 'test1234',
     SPECTRUM_API_URL: 'not-a-url',
   };
 
@@ -75,12 +80,14 @@ test('loadConfig validates URL format', t => {
 test('loadConfig trims whitespace from values', t => {
   const env = {
     MNEMONIC: '  test mnemonic phrase  ',
+    ALCHEMY_API_KEY: '  test1234  ',
     AGORIC_NET: '  devnet  ',
   };
 
   const config = loadConfig(env);
 
   t.is(config.mnemonic, 'test mnemonic phrase');
+  t.is(config.alchemy, 'test1234');
   t.is(config.cosmosRest.agoricNetwork, 'devnet');
 });
 
@@ -94,7 +101,10 @@ test('loadConfig rejects empty required values', t => {
 
 // --- Unit tests for createEVMContext ---
 test('createEVMContext generates valid testnet context', async t => {
-  const result = await createEVMContext({ net: 'testnet' });
+  const result = await createEVMContext({
+    net: 'testnet',
+    alchemy: 'test1234',
+  });
 
   t.truthy(result.evmProviders);
   t.truthy(result.usdcAddresses);

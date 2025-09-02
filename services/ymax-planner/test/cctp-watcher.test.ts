@@ -7,6 +7,7 @@ import {
   mockFetch,
 } from './mocks.ts';
 import { handlePendingTx, type PendingTx } from '../src/pending-tx-manager.ts';
+import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 
 const usdcAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 const watchAddress = '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64';
@@ -23,7 +24,7 @@ test('handlePendingTx processes CCTP transaction successfully', async t => {
   const amount = 1_000_000n; // 1 USDC
   const receiver = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
   const provider = mockEvmCtx.evmProviders[chain];
-  const type = 'cctp';
+  const type = TxType.CCTP;
 
   const logMessages: string[] = [];
   const logger = (...args: any[]) => logMessages.push(args.join(' '));
@@ -85,7 +86,7 @@ test('handlePendingTx keeps tx pending on amount mismatch until timeout', async 
   const notExpectedAmt = 1_00_000n;
   const receiver = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
   const provider = mockEvmCtx.evmProviders[chain];
-  const type = 'cctp';
+  const type = TxType.CCTP;
 
   const logMessages: string[] = [];
   const logger = (...args: any[]) => logMessages.push(args.join(' '));

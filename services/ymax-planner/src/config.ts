@@ -3,6 +3,7 @@ import { Fail } from '@endo/errors';
 
 export interface YmaxPlannerConfig {
   readonly mnemonic: string;
+  readonly alchemy: string;
   readonly spectrum: {
     readonly apiUrl?: string;
     readonly timeout: number;
@@ -60,6 +61,7 @@ export const loadConfig = (
   try {
     const config: YmaxPlannerConfig = harden({
       mnemonic: validateRequired(env.MNEMONIC, 'MNEMONIC'),
+      alchemy: validateRequired(env.ALCHEMY_API_KEY, 'ALCHEMY_API_KEY'),
       spectrum: {
         apiUrl: validateOptionalUrl(env.SPECTRUM_API_URL, 'SPECTRUM_API_URL'),
         timeout: parsePositiveInteger(

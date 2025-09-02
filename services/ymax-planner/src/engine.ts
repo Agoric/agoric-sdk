@@ -336,7 +336,6 @@ export const parsePendingTx = (
   marshaller?: SigningSmartWalletKit['marshaller'],
 ): PendingTx | null => {
   const data = marshaller ? marshaller.fromCapData(txData) : txData;
-
   if (!matches(data, PendingTxShape)) {
     const err = assert.error(
       X`expected data ${data} to match ${q(PendingTxShape)}`,

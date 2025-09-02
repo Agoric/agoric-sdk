@@ -12,6 +12,7 @@ import {
   createMockPendingTxEvent,
   createMockStreamCell,
 } from './mocks.ts';
+import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 
 const marshaller = boardSlottingMarshaller();
 
@@ -23,15 +24,14 @@ test('parsePendingTx creates valid PendingTx from data', t => {
 
   const result = parsePendingTx(txId, capData, marshaller);
 
-  t.truthy(result);
-  t.is(result?.txId, txId);
-  t.is(result?.type, 'cctp');
-  t.is(result?.status, 'pending');
-  t.is(result?.amount, 1000_00n);
-  t.is(
-    result?.destinationAddress,
-    'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
-  );
+  t.deepEqual(result, {
+    txId,
+    type: TxType.CCTP,
+    status: 'pending',
+    amount: 1000_00n,
+    destinationAddress:
+      'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
+  });
 });
 
 test('parsePendingTx returns null for invalid data shape', t => {
@@ -72,9 +72,11 @@ test('processPendingTxEvents handles valid single transaction event', async t =>
   );
 
   t.is(handledTxs.length, 1);
-  t.is(handledTxs[0].txId, 'tx1');
-  t.is(handledTxs[0].type, 'cctp');
-  t.is(handledTxs[0].status, 'pending');
+  t.like(handledTxs[0], {
+    txId: 'tx1',
+    type: TxType.CCTP,
+    status: 'pending',
+  });
 });
 
 test('processPendingTxEvents handles multiple transaction events', async t => {
@@ -114,10 +116,8 @@ test('processPendingTxEvents handles multiple transaction events', async t => {
   );
 
   t.is(handledTxs.length, 2);
-  t.is(handledTxs[0].txId, 'tx1');
-  t.is(handledTxs[0].type, 'cctp');
-  t.is(handledTxs[1].txId, 'tx2');
-  t.is(handledTxs[1].type, 'gmp');
+  t.like(handledTxs[0], { txId: 'tx1', type: TxType.CCTP });
+  t.like(handledTxs[1], { txId: 'tx2', type: TxType.GMP });
 });
 
 test('processPendingTxEvents processes valid transactions before throwing on invalid stream cell', async t => {
@@ -224,7 +224,7 @@ test('handlePendingTx throws error for unsupported transaction type', async t =>
 
   const unsupportedTx = {
     txId: 'tx3' as `tx${number}`,
-    type: 'unsupported',
+    type: 'cctpV2',
     status: 'pending',
     amount: 1000000n,
     destinationAddress: 'eip155:1:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
@@ -232,6 +232,6 @@ test('handlePendingTx throws error for unsupported transaction type', async t =>
 
   await t.throwsAsync(
     () => handlePendingTx(mockEvmCtx, unsupportedTx, { log: mockLog }),
-    { message: /No monitor registered for tx type: unsupported/ },
+    { message: /No monitor registered for tx type: "cctpV2"/ },
   );
 });
