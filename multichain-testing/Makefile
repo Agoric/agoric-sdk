@@ -225,7 +225,7 @@ $(DEPLOY)/dist/bundle-ymax0.json: $(DEPLOY)/dist/portfolio.contract.bundle.js
 $(DEPLOY)/dist/portfolio.contract.bundle.js:
 	(cd $(DEPLOY); yarn build)
 
-PUBLISHER=gov2.devnet
+PUBLISHER=mudi
 publish-ymax0: ,ymax0-installed
 
 ,ymax0-installed: $(DEPLOY)/dist/bundle-ymax0.json
@@ -242,7 +242,7 @@ NETCONFIG=https://devnet.agoric.net/network-config
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --installAndStart $$(cat ,ymax0-bundle-id)
 	agoric follow -B $(NETCONFIG) -lF :published.agoricNames.instance >$@ || (rm $@; false)
 
-,creatorFacet: ,ymax0-deployed
+,creatorFacet:
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --getCreatorFacet
 	touch $@
 
