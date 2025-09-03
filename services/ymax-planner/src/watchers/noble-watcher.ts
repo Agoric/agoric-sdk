@@ -9,7 +9,7 @@ type WatchNobleTransferOptions = {
   expectedAmount: bigint;
   expectedDenom: string;
   chainKey?: string;
-  timeoutMinutes?: number;
+  timeoutMs?: number;
   log: (...args: unknown[]) => void;
   setTimeout?: typeof globalThis.setTimeout;
   pollIntervalMs?: number;
@@ -25,7 +25,7 @@ export const watchNobleTransfer = ({
   expectedAmount,
   expectedDenom,
   chainKey = 'noble',
-  timeoutMinutes = 10,
+  timeoutMs = 600000, // 10 min
   log = () => {},
   setTimeout = globalThis.setTimeout,
   pollIntervalMs = 5000, // Poll every 5 seconds
@@ -74,10 +74,6 @@ export const watchNobleTransfer = ({
           transferFound = true;
           cleanup();
           resolve(true);
-        } else if (receivedAmount > 0) {
-          log(
-            `Partial amount received: ${receivedAmount}/${expectedAmount} ${expectedDenom}. Continuing to watch...`,
-          );
         }
       } catch (error) {
         log(`Error checking balance for ${watchAddress}:`, error);
@@ -92,11 +88,11 @@ export const watchNobleTransfer = ({
     timeoutId = setTimeout(() => {
       if (!transferFound) {
         log(
-          `✗ No matching Noble transfer found within ${timeoutMinutes} minutes`,
+          `✗ No matching Noble transfer found within ${timeoutMs / 60000} minutes`,
         );
         cleanup();
         resolve(false);
       }
-    }, timeoutMinutes * MILLIS_PER_MINUTE);
+    }, timeoutMs);
   });
 };

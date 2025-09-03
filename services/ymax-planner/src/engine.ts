@@ -337,12 +337,7 @@ export const PendingTxShape = M.splitRecord(
   },
 );
 
-export const parsePendingTx = (
-  txId: `tx${number}`,
-  txData,
-  marshaller?: SigningSmartWalletKit['marshaller'],
-): PendingTx | null => {
-  const data = marshaller ? marshaller.fromCapData(txData) : txData;
+export const parsePendingTx = (txId: `tx${number}`, data): PendingTx | null => {
   if (!matches(data, PendingTxShape)) {
     const err = assert.error(
       X`expected data ${data} to match ${q(PendingTxShape)}`,
@@ -367,7 +362,7 @@ export const parsePendingTx = (
     return null;
   }
 
-  return { txId, ...(data as any) } as PendingTx;
+  return { txId, ...data } as PendingTx;
 };
 
 export const processPendingTxEvents = async (
@@ -399,7 +394,10 @@ export const processPendingTxEvents = async (
           Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
       );
 
-      const tx = parsePendingTx(txId as `tx${number}`, value, marshaller);
+      const tx = parsePendingTx(
+        txId as `tx${number}`,
+        marshaller.fromCapData(value),
+      );
       if (!tx) continue;
 
       console.warn('Handling pending tx:', {
