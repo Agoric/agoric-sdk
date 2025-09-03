@@ -157,6 +157,7 @@ func initVbankFixtures(t *testing.T) VbankFixtures {
 		bankKeeper,
 		vstorageKeeper,
 		vbanktypes.ReservePoolName,
+		authority.String(),
 		callToController,
 	)
 

@@ -12,6 +12,8 @@ import {
   MsgWalletSpendActionResponse,
   MsgProvision,
   MsgProvisionResponse,
+  MsgCoreEval,
+  MsgCoreEvalResponse,
 } from './msgs.js';
 /** Transactions. */
 export interface Msg {
@@ -29,6 +31,8 @@ export interface Msg {
   ): Promise<MsgWalletSpendActionResponse>;
   /** Provision a new endpoint. */
   provision(request: MsgProvision): Promise<MsgProvisionResponse>;
+  /** Execute a core evaluation. */
+  coreEval(request: MsgCoreEval): Promise<MsgCoreEvalResponse>;
 }
 export class MsgClientImpl implements Msg {
   private readonly rpc: Rpc;
@@ -39,6 +43,7 @@ export class MsgClientImpl implements Msg {
     this.walletAction = this.walletAction.bind(this);
     this.walletSpendAction = this.walletSpendAction.bind(this);
     this.provision = this.provision.bind(this);
+    this.coreEval = this.coreEval.bind(this);
   }
   installBundle(request: MsgInstallBundle): Promise<MsgInstallBundleResponse> {
     const data = MsgInstallBundle.encode(request).finish();
@@ -93,6 +98,13 @@ export class MsgClientImpl implements Msg {
     const promise = this.rpc.request('agoric.swingset.Msg', 'Provision', data);
     return promise.then(data =>
       MsgProvisionResponse.decode(new BinaryReader(data)),
+    );
+  }
+  coreEval(request: MsgCoreEval): Promise<MsgCoreEvalResponse> {
+    const data = MsgCoreEval.encode(request).finish();
+    const promise = this.rpc.request('agoric.swingset.Msg', 'CoreEval', data);
+    return promise.then(data =>
+      MsgCoreEvalResponse.decode(new BinaryReader(data)),
     );
   }
 }

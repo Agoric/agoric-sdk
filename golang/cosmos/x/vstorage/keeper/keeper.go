@@ -314,7 +314,7 @@ func (k Keeper) getKeyIterator(ctx sdk.Context, path string) db.Iterator {
 }
 
 // GetChildren gets all vstorage child children at a given path
-func (k Keeper) GetChildren(ctx sdk.Context, path string) *types.Children {
+func (k Keeper) GetChildren(ctx sdk.Context, path string) []string {
 	iterator := k.getKeyIterator(ctx, path)
 	defer iterator.Close()
 
@@ -325,7 +325,7 @@ func (k Keeper) GetChildren(ctx sdk.Context, path string) *types.Children {
 		childrentr := parts[len(parts)-1]
 		children.Children = append(children.Children, childrentr)
 	}
-	return &children
+	return children.Children
 }
 
 // HasStorage tells if a given path has data.  Some storage nodes have no data
