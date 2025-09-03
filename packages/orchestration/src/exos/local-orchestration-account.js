@@ -9,7 +9,10 @@ import { E } from '@endo/far';
 import { Fail, q } from '@endo/errors';
 
 import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
-import { QueryDenomHashRequest as QueryDenomHashRequestType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/query.js';
+import {
+  QueryDenomHashRequest as QueryDenomHashRequestType,
+  QueryDenomHashResponse as QueryDenomHashResponseType,
+} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/query.js';
 import {
   QueryAllBalancesRequest as QueryAllBalancesRequestType,
   QueryBalanceRequest as QueryBalanceRequestType,
@@ -36,8 +39,11 @@ import { prepareIBCTools } from './ibc-packet.js';
 import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
 import { TransferRouteShape } from './chain-hub.js';
 
+const { details: X } = assert;
+
 const MsgTransfer = CodecHelper(MsgTransferType);
 const QueryDenomHashRequest = CodecHelper(QueryDenomHashRequestType);
+const QueryDenomHashResponse = CodecHelper(QueryDenomHashResponseType);
 const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);
 const QueryBalanceRequest = CodecHelper(QueryBalanceRequestType);
 const MsgDelegate = CodecHelper(MsgDelegateType);
@@ -71,6 +77,22 @@ const trace = makeTracer('LocalOrchAccount');
 const { Vow$ } = NetworkShape; // TODO #9611
 
 const EVow$ = shape => M.or(Vow$(shape), M.promise(/* shape */));
+
+/**
+ * @template {string} TU
+ * @param {{ error?: string; reply: TypedJson<TU> }[] | TypedJson<TU>} result
+ * @returns {{ error?: string; reply: TypedJson<TU> }}
+ */
+const extractFirstQueryResult = result => {
+  if (Array.isArray(result)) {
+    assert(
+      result.length > 0,
+      X`Expected result to be a nonempty array, got ${result}`,
+    );
+    return result[0];
+  }
+  return { reply: result };
+};
 
 /**
  * @typedef {object} LocalChainAccountNotification
@@ -114,6 +136,12 @@ const HolderI = M.interface('holder', {
 const PUBLIC_TOPICS = {
   account: ['Account holder status', M.any()],
 };
+
+/**
+ * @see {@link https://github.com/cosmos/ibc-go/blob/a24a6c6/modules/apps/transfer/types/errors.go#L13}
+ * a24a6c6 Feb 27, 2023
+ */
+const ErrTraceNotFound = 'denomination trace not found';
 
 /**
  * @param {Zone} zone
@@ -198,7 +226,7 @@ export const prepareLocalOrchestrationAccountKit = (
         ),
       }),
       parseInboundTransferWatcher: M.interface('parseInboundTransferWatcher', {
-        onFulfilled: M.call(M.record(), M.record()).returns(M.record()),
+        onFulfilled: M.call(M.any(), M.record()).returns(M.record()),
         onRejected: M.call(M.any(), M.record()).returns(M.record()),
       }),
       invitationMakers: M.interface('invitationMakers', {
@@ -516,12 +544,23 @@ export const prepareLocalOrchestrationAccountKit = (
       },
       parseInboundTransferWatcher: {
         /**
-         * @param {QueryDenomHashResponse} localDenomHash
+         * @param {{ error?: string; reply: TypedJson<string> }[]
+         *   | TypedJson<string>} result
          * @param {Awaited<
          *   ReturnType<LocalAccountMethods['parseInboundTransfer']>
          * >} naiveResult
          */
-        onFulfilled(localDenomHash, naiveResult) {
+        onFulfilled(result, naiveResult) {
+          const { error, reply } = extractFirstQueryResult(result);
+          if (typeof error === 'string') {
+            if (error.includes(ErrTraceNotFound)) {
+              // Looks like the trace was not found; The naive result is good enough.
+              return naiveResult;
+            }
+            throw Error(`IBC denom trace query failed: ${error}`);
+          }
+
+          const localDenomHash = QueryDenomHashResponse.fromTyped(reply);
           const localDenom = `ibc/${localDenomHash.hash}`;
           const { amount, ...rest } = naiveResult;
           const { denom: _, ...amountRest } = amount;
@@ -539,7 +578,7 @@ export const prepareLocalOrchestrationAccountKit = (
         onRejected(reason, naiveResult) {
           if (
             reason instanceof Error &&
-            String(reason.message).includes('denomination trace not found')
+            String(reason.message).includes(ErrTraceNotFound)
           ) {
             // Looks like the trace was not found; The naive result is good enough.
             return naiveResult;
@@ -836,11 +875,11 @@ export const prepareLocalOrchestrationAccountKit = (
 
             // Find the local denom hash for the transferDenom, if there is one.
             return watch(
-              E(localchain).query(
+              E(localchain).queryMany([
                 QueryDenomHashRequest.typedJson({
                   trace: denomOrTrace,
                 }),
-              ),
+              ]),
               this.facets.parseInboundTransferWatcher,
               buildReturnValue(denomOrTrace),
             );
