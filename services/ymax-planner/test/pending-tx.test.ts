@@ -8,12 +8,12 @@ import {
 import { processPendingTxEvents, parsePendingTx } from '../src/engine.ts';
 import {
   createMockEvmContext,
-  createMockCosmosRestClient,
   createMockPendingTxData,
   createMockPendingTxEvent,
   createMockStreamCell,
 } from './mocks.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 
 const marshaller = boardSlottingMarshaller();
 
@@ -23,7 +23,7 @@ test('parsePendingTx creates valid PendingTx from data', t => {
   const txData = createMockPendingTxData({ type: TxType.CCTP_TO_EVM });
   const capData = marshaller.toCapData(txData);
 
-  const result = parsePendingTx(txId, capData, marshaller);
+  const result = parsePendingTx(txId, marshaller.fromCapData(capData));
 
   t.deepEqual(result, {
     txId,
@@ -77,6 +77,41 @@ test('parsePendingTx accepts GMP transaction without amount field', t => {
     status: 'pending',
     destinationAddress:
       'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
+  });
+});
+
+test('parsePendingTx validates Noble withdraw transactions require amount', t => {
+  const txId = 'tx1' as `tx${number}`;
+  const nobleWithdrawData = harden({
+    type: TxType.NOBLE_WITHDRAW,
+    status: 'pending',
+    destinationAddress: 'cosmos:noble:noble1abc123456789',
+  });
+  const capData = marshaller.toCapData(nobleWithdrawData);
+  const unmarshalledData = marshaller.fromCapData(capData);
+
+  const result = parsePendingTx(txId, unmarshalledData);
+
+  t.is(result, null);
+});
+
+test('parsePendingTx creates valid Noble withdraw PendingTx from data', t => {
+  const txId = 'tx1' as `tx${number}`;
+  const nobleWithdrawData = createMockPendingTxData({
+    type: TxType.NOBLE_WITHDRAW,
+    amount: 500_000n,
+    destinationAddress: 'cosmos:noble:noble1abc123456789',
+  });
+  const capData = marshaller.toCapData(nobleWithdrawData);
+
+  const result = parsePendingTx(txId, marshaller.fromCapData(capData));
+
+  t.deepEqual(result, {
+    txId,
+    type: TxType.NOBLE_WITHDRAW,
+    status: 'pending',
+    amount: 500_000n,
+    destinationAddress: 'cosmos:noble:noble1abc123456789',
   });
 });
 
@@ -252,6 +287,45 @@ test('processPendingTxEvents handles only pending transactions', async t => {
 
   t.is(handledTxs.length, 1);
   t.is(handledTxs[0].status, 'pending');
+});
+
+test('processPendingTxEvents handles Noble withdraw transactions', async t => {
+  const mockEvmCtx = createMockEvmContext();
+  const handledTxs: PendingTx[] = [];
+
+  const mockHandlePendingTx = async (
+    ctx: EvmContext,
+    tx: PendingTx,
+    log: any,
+  ) => {
+    handledTxs.push(tx);
+  };
+
+  const nobleWithdrawData = createMockPendingTxData({
+    type: TxType.NOBLE_WITHDRAW,
+    amount: 1_000_000n,
+    destinationAddress: 'cosmos:noble:noble1abc123456789',
+  });
+
+  const capData = marshaller.toCapData(nobleWithdrawData);
+  const streamCell = createMockStreamCell([JSON.stringify(capData)]);
+  const events = [createMockPendingTxEvent('tx1', JSON.stringify(streamCell))];
+
+  await processPendingTxEvents(
+    mockEvmCtx,
+    events,
+    marshaller,
+    mockHandlePendingTx,
+  );
+
+  t.is(handledTxs.length, 1);
+  t.like(handledTxs[0], {
+    txId: 'tx1',
+    type: TxType.NOBLE_WITHDRAW,
+    status: 'pending',
+    amount: 1_000_000n,
+    destinationAddress: 'cosmos:noble:noble1abc123456789',
+  });
 });
 
 // --- Unit tests for handlePendingTx ---

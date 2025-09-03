@@ -82,29 +82,24 @@ export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
   } as any;
 };
 
-export const createMockCosmosRestClient = (): CosmosRestClient =>
-  ({
-    getAccountBalance: async (chainKey, address, denom) => ({
-      denom,
-      amount: '1000000',
-    }),
-    getAccountBalances: async (chainKey, address) => ({
-      balances: [
-        { denom: 'uusdc', amount: '1000000' },
-        { denom: 'uatom', amount: '500000' },
-      ],
-      pagination: {
-        next_key: null,
-        total: '2',
-      },
-    }),
-    getChainInfo: async chainKey => ({
-      default_node_info: {
-        network: chainKey === 'noble' ? 'noble-1' : 'agoric-3',
-        version: '0.34.0',
-      },
-    }),
-  }) as any;
+export const createMockCosmosRestClient = (
+  balanceResponses: Array<{ amount: string; denom: string }>,
+): CosmosRestClient => {
+  let callCount = 0;
+
+  return {
+    getAccountBalance: async (chainKey, address, denom) => {
+      const response =
+        balanceResponses[callCount] ||
+        balanceResponses[balanceResponses.length - 1];
+      callCount += 1;
+      return {
+        denom,
+        amount: response.amount,
+      };
+    },
+  } as any;
+};
 
 export const createMockEvmContext = (): EvmContext => ({
   usdcAddresses: {

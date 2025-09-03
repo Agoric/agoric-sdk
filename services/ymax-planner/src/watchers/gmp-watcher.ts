@@ -2,8 +2,6 @@
 import { ethers, type JsonRpcProvider, type Log } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 
-const MILLIS_PER_MINUTE = 60 * 1000;
-
 const MULTICALL_EXECUTED = ethers.id(
   'MulticallExecuted(string,(bool,bytes)[])',
 );
@@ -12,7 +10,7 @@ type WatchGmpOptions = {
   provider: JsonRpcProvider;
   contractAddress: `0x${string}`;
   txId: TxId;
-  timeoutMinutes?: number;
+  timeoutMs?: number;
   log: (...args: unknown[]) => void;
   setTimeout?: typeof globalThis.setTimeout;
 };
@@ -21,7 +19,7 @@ export const watchGmp = ({
   provider,
   contractAddress,
   txId,
-  timeoutMinutes = 5,
+  timeoutMs = 300000, // 5 min
   log = () => {},
   setTimeout = globalThis.setTimeout,
 }: WatchGmpOptions): Promise<boolean> => {
@@ -70,11 +68,11 @@ export const watchGmp = ({
     timeoutId = setTimeout(() => {
       if (!executionFound) {
         log(
-          `✗ No MulticallExecuted found for txId ${txId} within ${timeoutMinutes} minutes`,
+          `✗ No MulticallExecuted found for txId ${txId} within ${timeoutMs / 60000} minutes`,
         );
         cleanup();
         resolve(false);
       }
-    }, timeoutMinutes * MILLIS_PER_MINUTE);
+    }, timeoutMs);
   });
 };

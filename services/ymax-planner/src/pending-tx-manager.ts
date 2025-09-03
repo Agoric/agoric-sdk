@@ -66,7 +66,7 @@ export type PendingTxMonitor<
     ctx: C,
     tx: T,
     log: (...args: unknown[]) => void,
-    timeoutMinutes: number,
+    timeoutMs: number,
   ) => Promise<void>;
 };
 
@@ -77,7 +77,7 @@ type MonitorRegistry = {
 };
 
 const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
-  watch: async (ctx, tx, log, timeoutMinutes) => {
+  watch: async (ctx, tx, log, timeoutMs) => {
     const { txId, destinationAddress, amount } = tx;
     const logPrefix = `[${txId}]`;
 
@@ -100,7 +100,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       expectedAmount: amount,
       provider,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
-      timeoutMinutes,
+      timeoutMs,
     });
 
     await resolvePendingTx({
@@ -114,7 +114,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
 };
 
 const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
-  watch: async (ctx, tx, log, timeoutMinutes) => {
+  watch: async (ctx, tx, log, timeoutMs) => {
     const { txId, destinationAddress } = tx;
     const logPrefix = `[${txId}]`;
 
@@ -131,7 +131,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       contractAddress: accountAddress as `0x${string}`,
       txId,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
-      timeoutMinutes,
+      timeoutMs,
     });
 
     await resolvePendingTx({
@@ -158,7 +158,7 @@ const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, EvmContext> = {
       Fail`${logPrefix} Expected noble chain, got: ${reference}`;
 
     const nobleAddress = accountAddress as Bech32Address;
-    const expectedDenom = 'uusdc';
+    const expectedDenom = 'uusdc'; // TODO: find the exact denom while e2e testing
 
     log(
       `${logPrefix} Watching Noble withdrawal to ${nobleAddress} for ${amount} ${expectedDenom}`,
@@ -171,7 +171,7 @@ const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, EvmContext> = {
       expectedDenom,
       chainKey: 'noble',
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
-      timeoutMinutes,
+      timeoutMs,
     });
 
     await resolvePendingTx({
@@ -193,7 +193,7 @@ const createMonitorRegistry = (): MonitorRegistry => ({
 type HandlePendingTxOptions = {
   log?: (...args: unknown[]) => void;
   registry?: MonitorRegistry;
-  timeoutMinutes?: number;
+  timeoutMs?: number;
 };
 
 export const handlePendingTx = async (
@@ -202,7 +202,7 @@ export const handlePendingTx = async (
   {
     log = () => {},
     registry = createMonitorRegistry(),
-    timeoutMinutes = 5,
+    timeoutMs = 300000, // 5 min
   }: HandlePendingTxOptions,
 ) => {
   await null;
