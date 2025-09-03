@@ -177,10 +177,14 @@ proto-update-deps:
 	mkdir -p $(COSMOS_SDK_AMINO_TYPES) && \
 	curl -sSL $$url/amino.proto > $(COSMOS_SDK_AMINO_TYPES)/amino.proto
 
-.PHONY: proto-all proto-gen proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps
+.PHONY: proto-all proto-gen proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps mocks
 
 lint:
 	golangci-lint run
 
 test:
 	go test -coverprofile=coverage.txt -covermode=atomic ./...
+
+mocks:
+	@echo "Generating mocks"
+	@./scripts/mockgen.sh

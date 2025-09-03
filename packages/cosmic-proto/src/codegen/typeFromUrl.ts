@@ -227,6 +227,8 @@ import type * as _$tendermint$version$types_js from './tendermint/version/types.
 export type TypeFromUrl = {
   '/agoric.swingset.GenesisState': _$agoric$swingset$genesis_js.GenesisState;
   '/agoric.swingset.SwingStoreExportDataEntry': _$agoric$swingset$genesis_js.SwingStoreExportDataEntry;
+  '/agoric.swingset.MsgCoreEval': _$agoric$swingset$msgs_js.MsgCoreEval;
+  '/agoric.swingset.MsgCoreEvalResponse': _$agoric$swingset$msgs_js.MsgCoreEvalResponse;
   '/agoric.swingset.MsgDeliverInbound': _$agoric$swingset$msgs_js.MsgDeliverInbound;
   '/agoric.swingset.MsgDeliverInboundResponse': _$agoric$swingset$msgs_js.MsgDeliverInboundResponse;
   '/agoric.swingset.MsgInstallBundle': _$agoric$swingset$msgs_js.MsgInstallBundle;
