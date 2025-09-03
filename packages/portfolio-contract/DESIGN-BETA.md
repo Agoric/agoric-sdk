@@ -169,27 +169,30 @@ sequenceDiagram
       participant AX as GMP
   end
   box rgb(163,180,243) Arbitrum
-      participant pc as CCTPProxyContract
-      participant acctArb as acctArb*
-      participant aavePos as aavePos*
-  end
-  box rgb(163,180,243) Base
-      participant acctBase as acctBase*
-      participant compPos as compPos*
+    participant CCTP TokenMessenger v1
+    participant acctArb as acctArb*
+    participant aavePos as aavePos*
   end
 
   %% get plan
-  UI ->> portfolio: withdraw with steps, <br>steps also include CCTP fee and proxy contract address
+  UI ->> portfolio: withdraw with steps, <br>steps also include CCTP fee
 
-  Note over portfolio, aavePos: CCTP back
-  portfolio ->> AX: GMP (withdraw, $2k USDC, Noble ICA address, CCTP fee, CCTP proxy contract address)
+  Note over portfolio, aavePos: Contract collapse steps into one GMP
+  portfolio ->> AX: GMP (withdraw, $2k USDC, Noble ICA address, CCTP fee optional)
   AX -->> acctArb: withdraw $2k
   acctArb ->> aavePos: withdraw $2k
   aavePos ->> acctArb: $2k
-  acctArb ->> pc: depositForBurn($2k)
-  PC -->> icaN: CCTP mint $2k USDC
+  acctArb ->> CCTP TokenMessenger v1: depositForBurn($2k)
+  acctArb -->> Res: observe depositForBurn complete
+  Res ->> portfolio: ack
+  Note over portfolio, aavePos: GMP ack'ed, waiting for CCTP to arrive
+  CCTP TokenMessenger v1 -->> icaN: CCTP mint $2k USDC
   icaN -->> Res: observe mint
   Res ->> portfolio: ack
+  portfolio -->> icaN: IBC transxfer
+  icaN ->> LCAorch: IBC $2k USDC
+  Note over LCAorch: contract has a queue of withdrawals(seats) to resolve <br> matches on amount
+  LCAorch ->> UI: $2k USDC
 ```
 
 6. manually-triggered rebalance
