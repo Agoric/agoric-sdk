@@ -29,7 +29,7 @@ const main = async (
     rpcAddrs: [node],
   } = await fetchEnvNetworkConfig({ env, fetch });
   const agdq = makeCmdRunner('agd', { execFile }).withFlags('--node', node);
-  const from = 'gov2.devnet'; // XXX
+  const from = 'gov2'; // XXX
   const agdTx = agdq.withFlags(
     ...toCLIOptions(txFlags({ node, from, chainId })),
     '--yes',
