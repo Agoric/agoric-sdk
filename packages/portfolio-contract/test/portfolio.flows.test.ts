@@ -39,7 +39,7 @@ import {
 import {
   openPortfolio,
   rebalance,
-  rebalanceFromTransfer,
+  parseInboundTransfer,
   wayFromSrcToDesc,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
@@ -304,8 +304,8 @@ const mocks = (
 
   const rebalanceHost = (seat, offerArgs, kit) =>
     rebalance(orch, ctx1, seat, offerArgs, kit);
-  const rebalanceFromTransferHost = (packet, kit) =>
-    rebalanceFromTransfer(orch, ctx1, packet, kit);
+  const parseInboundTransferHost = (packet, kit) =>
+    parseInboundTransfer(orch, ctx1, packet, kit);
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
     axelarIds: axelarIdsMock,
@@ -313,7 +313,7 @@ const mocks = (
     timer,
     chainHubTools,
     rebalance: rebalanceHost as any,
-    rebalanceFromTransfer: rebalanceFromTransferHost as any,
+    parseInboundTransfer: parseInboundTransferHost as any,
     proposalShapes: makeProposalShapes(USDC, BLD),
     offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
@@ -712,8 +712,8 @@ test.skip('handle failure in sendGmp with Aave position', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
-test.failing(
-  'open portfolio with Compound and USDN positions then rebalanceFromTransfer',
+test(
+  'open portfolio with Compound and USDN positions then rebalance',
   openAndTransfer,
   { Aave: make(USDC, 3_333_000_000n), USDN: make(USDC, 3_333_000_000n) },
   () => [

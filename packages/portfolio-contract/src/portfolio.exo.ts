@@ -142,7 +142,7 @@ export const preparePortfolioKit = (
   {
     axelarIds,
     rebalance,
-    rebalanceFromTransfer,
+    parseInboundTransfer,
     timer,
     chainHubTools,
     proposalShapes,
@@ -159,13 +159,10 @@ export const preparePortfolioKit = (
       offerArgs: OfferArgsFor['rebalance'],
       kit: unknown, // XXX avoid circular reference
     ) => Vow<any>; // XXX HostForGuest???
-    rebalanceFromTransfer: (
+    parseInboundTransfer: (
       packet: VTransferIBCEvent['packet'],
       kit: unknown, // XXX avoid circular reference to this.facets
-    ) => Vow<{
-      parsed: Awaited<ReturnType<LocalAccount['parseInboundTransfer']>> | null;
-      handled: boolean;
-    }>;
+    ) => Vow<Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>>;
     timer: Remote<TimerService>;
     chainHubTools: Pick<ChainHub, 'getChainInfo'>;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
@@ -246,22 +243,17 @@ export const preparePortfolioKit = (
         async receiveUpcall(event: VTransferIBCEvent) {
           trace('receiveUpcall', event);
           return vowTools.watch(
-            rebalanceFromTransfer(event.packet, this.facets),
-            this.facets.rebalanceFromTransferWatcher,
+            parseInboundTransfer(event.packet, this.facets),
+            this.facets.parseInboundTransferWatcher,
           );
         },
       },
-      rebalanceFromTransferWatcher: {
+      parseInboundTransferWatcher: {
         onRejected(reason) {
-          console.warn('⚠️ rebalanceFromTransfer failure', reason);
+          console.warn('⚠️ parseInboundTransfer failure', reason);
           throw reason;
         },
-        async onFulfilled({ parsed, handled }) {
-          if (handled) {
-            trace('rebalanceFromTransfer handled; skipping GMP processing');
-            return;
-          }
-
+        async onFulfilled(parsed) {
           if (!parsed) {
             trace('GMP processing skipped; no parsed inbound transfer');
             return;
