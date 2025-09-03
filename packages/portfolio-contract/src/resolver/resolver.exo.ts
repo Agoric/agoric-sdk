@@ -147,7 +147,7 @@ export const prepareResolverKit = (
             destinationAddress,
             vowKit,
             type,
-            ...(type === TxType.CCTP ? { amountValue } : {}),
+            ...(type !== TxType.GMP ? { amountValue } : {}),
           };
           transactionRegistry.init(txId, harden(txEntry));
           this.facets.reporter.insertPendingTransaction(
@@ -172,7 +172,7 @@ export const prepareResolverKit = (
             type,
             destinationAddress,
             status: TxStatus.PENDING,
-            ...(type === TxType.CCTP ? { amount } : {}),
+            ...(type !== TxType.GMP ? { amount } : {}),
           };
           const node = E(pendingTxsNode).makeChildNode(txId);
           writeToNode(node, value);

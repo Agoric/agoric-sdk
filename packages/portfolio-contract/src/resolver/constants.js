@@ -22,5 +22,6 @@ harden(TxStatus);
 export const TxType = /** @type {const} */ ({
   CCTP: 'CCTP',
   GMP: 'GMP',
+  NOBLE_WITHDRAW: 'NOBLE_WITHDRAW',
 });
 harden(TxType);

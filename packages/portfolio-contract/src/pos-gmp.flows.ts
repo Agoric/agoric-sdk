@@ -23,6 +23,7 @@ import {
   type AxelarGmpOutgoingMemo,
   type ContractCall,
 } from '@agoric/orchestration/src/axelar-types.js';
+import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import {
   buildGasPayload,
   buildGMPPayload,
@@ -46,8 +47,8 @@ import {
   type TransportDetail,
 } from './portfolio.flows.ts';
 import { TxType } from './resolver/constants.js';
-import type { PoolKey } from './type-guards.ts';
 import type { ResolverKit } from './resolver/resolver.exo.ts';
+import type { PoolKey } from './type-guards.ts';
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
@@ -132,6 +133,13 @@ export const CCTPfromEVM = {
     const calls = session.finish();
 
     await sendGMPContractCall(ctx, src, calls);
+
+    const { result } = ctx.resolverClient.registerTransaction(
+      TxType.NOBLE_WITHDRAW,
+      coerceAccountId(dest.ica.getAddress()),
+      amount.value,
+    );
+    await result;
   },
   recover: async (ctx, amount, src, dest) => {
     return CCTP.apply(ctx, amount, dest, src);
