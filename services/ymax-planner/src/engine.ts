@@ -401,6 +401,14 @@ export const parsePendingTx = (
     return null;
   }
 
+  if (data.type === TxType.NOBLE_WITHDRAW && data.amount === undefined) {
+    const err = assert.error(
+      X`Noble withdraw transaction ${txId} is missing required amount field`,
+    );
+    console.error(err);
+    return null;
+  }
+
   return { txId, ...(data as any) } as PendingTx;
 };
 
@@ -444,7 +452,9 @@ export const processPendingTxEvents = async (
         console.error(`⚠️ Failed to process pendingTx: ${txId}`, error);
       };
 
-      void handlePendingTxFn(evmCtx, tx, { log: logFn }).catch(errorHandler);
+      void handlePendingTxFn({ ...evmCtx }, tx, {
+        log: logFn,
+      }).catch(errorHandler);
     }
   }
 };
@@ -674,9 +684,11 @@ export const startEngine = async (
     });
 
     // Process existing pending transactions on startup
-    void handlePendingTx({ ...evmCtx, signingSmartWalletKit, fetch }, tx, {
-      log,
-    }).catch(logIgnoredError);
+    void handlePendingTx(
+      { ...evmCtx, signingSmartWalletKit, fetch, cosmosRest },
+      tx,
+      { log },
+    ).catch(logIgnoredError);
   }).done;
 
   // console.warn('consuming events');
@@ -766,7 +778,7 @@ export const startEngine = async (
     );
 
     await processPendingTxEvents(
-      { ...evmCtx, signingSmartWalletKit, fetch },
+      { ...evmCtx, cosmosRest, signingSmartWalletKit, fetch },
       pendingTxEvents,
       marshaller,
     );

@@ -8,6 +8,7 @@ import {
 import { processPendingTxEvents, parsePendingTx } from '../src/engine.ts';
 import {
   createMockEvmContext,
+  createMockCosmosRestClient,
   createMockPendingTxData,
   createMockPendingTxEvent,
   createMockStreamCell,
@@ -125,7 +126,9 @@ test('processPendingTxEvents handles multiple transaction events', async t => {
     handledTxs.push(tx);
   };
 
-  const originalCctpData = createMockPendingTxData({ type: TxType.CCTP_TO_EVM });
+  const originalCctpData = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+  });
   const originalGmpData = createMockPendingTxData({ type: TxType.GMP });
 
   const cctpCapData = marshaller.toCapData(originalCctpData);

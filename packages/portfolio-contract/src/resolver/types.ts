@@ -46,6 +46,7 @@ export type PublishedTx = {
   amount?: bigint;
   destinationAddress: AccountId;
   status: TxStatus;
+  data?: ['withdraw', 'nobleAddr']
 };
 
 export const PublishedTxShape: TypedPattern<PublishedTx> = M.splitRecord(
