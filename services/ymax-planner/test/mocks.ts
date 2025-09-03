@@ -1,5 +1,6 @@
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { EvmContext } from '../src/pending-tx-manager';
+import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { AccountId } from '@agoric/orchestration';
 import { PENDING_TX_PATH_PREFIX } from '../src/engine.ts';
 import type {
@@ -80,6 +81,30 @@ export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
     },
   } as any;
 };
+
+export const createMockCosmosRestClient = (): CosmosRestClient =>
+  ({
+    getAccountBalance: async (chainKey, address, denom) => ({
+      denom,
+      amount: '1000000',
+    }),
+    getAccountBalances: async (chainKey, address) => ({
+      balances: [
+        { denom: 'uusdc', amount: '1000000' },
+        { denom: 'uatom', amount: '500000' },
+      ],
+      pagination: {
+        next_key: null,
+        total: '2',
+      },
+    }),
+    getChainInfo: async chainKey => ({
+      default_node_info: {
+        network: chainKey === 'noble' ? 'noble-1' : 'agoric-3',
+        version: '0.34.0',
+      },
+    }),
+  }) as any;
 
 export const createMockEvmContext = (): EvmContext => ({
   usdcAddresses: {

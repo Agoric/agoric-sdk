@@ -8,6 +8,7 @@ import {
 import { processPendingTxEvents, parsePendingTx } from '../src/engine.ts';
 import {
   createMockEvmContext,
+  createMockCosmosRestClient,
   createMockPendingTxData,
   createMockPendingTxEvent,
   createMockStreamCell,
@@ -82,6 +83,7 @@ test('parsePendingTx accepts GMP transaction without amount field', t => {
 // --- Unit tests for processPendingTxEvents ---
 test('processPendingTxEvents handles valid single transaction event', async t => {
   const mockEvmCtx = createMockEvmContext();
+  const mockCosmosRest = createMockCosmosRestClient();
   const handledTxs: PendingTx[] = [];
 
   // Mock handlePendingTx to track calls
@@ -100,6 +102,7 @@ test('processPendingTxEvents handles valid single transaction event', async t =>
 
   await processPendingTxEvents(
     mockEvmCtx,
+    mockCosmosRest,
     events,
     marshaller,
     mockHandlePendingTx,
@@ -115,6 +118,7 @@ test('processPendingTxEvents handles valid single transaction event', async t =>
 
 test('processPendingTxEvents handles multiple transaction events', async t => {
   const mockEvmCtx = createMockEvmContext();
+  const mockCosmosRest = createMockCosmosRestClient();
   const handledTxs: PendingTx[] = [];
 
   const mockHandlePendingTx = async (
@@ -144,6 +148,7 @@ test('processPendingTxEvents handles multiple transaction events', async t => {
 
   await processPendingTxEvents(
     mockEvmCtx,
+    mockCosmosRest,
     events,
     marshaller,
     mockHandlePendingTx,
@@ -156,6 +161,7 @@ test('processPendingTxEvents handles multiple transaction events', async t => {
 
 test('processPendingTxEvents processes valid transactions before throwing on invalid stream cell', async t => {
   const mockEvmCtx = createMockEvmContext();
+  const mockCosmosRest = createMockCosmosRestClient();
   const handledTxs: PendingTx[] = [];
 
   const mockHandlePendingTx = async (
@@ -197,6 +203,7 @@ test('processPendingTxEvents processes valid transactions before throwing on inv
     () =>
       processPendingTxEvents(
         mockEvmCtx,
+        mockCosmosRest,
         events,
         marshaller,
         mockHandlePendingTx,
@@ -213,6 +220,7 @@ test('processPendingTxEvents processes valid transactions before throwing on inv
 
 test('processPendingTxEvents handles only pending transactions', async t => {
   const mockEvmCtx = createMockEvmContext();
+  const mockCosmosRest = createMockCosmosRestClient();
   const handledTxs: PendingTx[] = [];
 
   const mockHandlePendingTx = async (
@@ -242,6 +250,7 @@ test('processPendingTxEvents handles only pending transactions', async t => {
 
   await processPendingTxEvents(
     mockEvmCtx,
+    mockCosmosRest,
     events,
     marshaller,
     mockHandlePendingTx,
