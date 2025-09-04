@@ -226,7 +226,7 @@ publish-ymax0: ,ymax0-installed
 
 yctrl-redeploy: ,ymax0-deployed
 
-REASON=
+REASON=newInstance
 NETCONFIG=https://devnet.agoric.net/network-config
 ,ymax0-deployed: $(DEPLOY)/dist/bundle-ymax0.json ,ymax0-bundle-id ,ymax0-installed
 	@[ -n "$$MNEMONIC" ] || (echo "ymaxControl MNEMONIC not set; see gov keys sheet"; false)
@@ -242,6 +242,11 @@ NETCONFIG=https://devnet.agoric.net/network-config
 PLANNER=agoric140yw0u2qrvmrgp33ejpddgnrwpm74vpfpx5v7n
 ,invitePlanner: ,creatorFacet
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --pruneStorage --invitePlanner $(PLANNER)
+	touch $@
+	@echo now use planner MNEMONIC: ymax-tool.ts --redeem
+
+,inviteResolver: ,creatorFacet
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --pruneStorage --inviteResolver $(PLANNER)
 	touch $@
 	@echo now use planner MNEMONIC: ymax-tool.ts --redeem
 

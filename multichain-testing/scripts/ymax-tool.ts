@@ -79,11 +79,12 @@ const parseToolArgs = (argv: string[]) =>
       'target-allocation': { type: 'string' },
       redeem: { type: 'boolean', default: false },
       contract: { type: 'string', default: 'ymax0' },
-      description: { type: 'string', default: 'planner' },
+      description: { type: 'string', default: 'resolver' },
       getCreatorFacet: { type: 'boolean', default: false },
       terminate: { type: 'string' },
       installAndStart: { type: 'string' },
       invitePlanner: { type: 'string' },
+      inviteResolver: { type: 'string' },
       pruneStorage: { type: 'boolean', default: false },
       'submit-for': { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
@@ -420,6 +421,17 @@ const main = async (
       await walletKit.readPublished('agoricNames.instance'),
     );
     await cf.deliverPlannerInvitation(planner, postalService);
+    return;
+  }
+
+  if (values.inviteResolver) {
+    const { inviteResolver: resolver } = values;
+    const cf =
+      walletStore.get<ZStarted<YMaxStartFn>['creatorFacet']>('creatorFacet');
+    const { postalService } = fromEntries(
+      await walletKit.readPublished('agoricNames.instance'),
+    );
+    await cf.deliverResolverInvitation(resolver, postalService);
     return;
   }
 
