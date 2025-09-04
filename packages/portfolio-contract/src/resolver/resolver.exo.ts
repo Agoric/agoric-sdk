@@ -185,7 +185,11 @@ export const prepareResolverKit = (
           const node = E(pendingTxsNode).makeChildNode(txId);
           const txEntry = this.state.transactionRegistry.get(txId);
           const value: PublishedTx = {
-            ...txEntry,
+            destinationAddress: txEntry.destinationAddress,
+            type: txEntry.type,
+            ...(txEntry.type !== TxType.GMP
+              ? { amount: txEntry.amountValue }
+              : {}),
             status,
           };
           // UNTIL https://github.com/Agoric/agoric-sdk/issues/11791
