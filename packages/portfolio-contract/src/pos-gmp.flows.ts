@@ -132,14 +132,15 @@ export const CCTPfromEVM = {
     tm.depositForBurn(amount.value, nobleDomain, mintRecipient, a.usdc);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, src, calls);
-
     const { result } = ctx.resolverClient.registerTransaction(
       TxType.CCTP_TO_NOBLE,
       coerceAccountId(dest.ica.getAddress()),
       amount.value,
     );
-    await result;
+
+    const contractCallP = sendGMPContractCall(ctx, src, calls);
+
+    await Promise.all([result, contractCallP]);
   },
   recover: async (ctx, amount, src, dest) => {
     return CCTP.apply(ctx, amount, dest, src);
