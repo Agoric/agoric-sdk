@@ -1,17 +1,11 @@
-import { Fail } from '@endo/errors';
-import {
-  SECONDS_PER_HOUR,
-  SECONDS_PER_MINUTE,
-} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import type { ManagerType } from '@agoric/swingset-vat';
 import {
   type AgoricNamesRemotes,
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { Fail } from '@endo/errors';
 import type { ExecutionContext } from 'ava';
-import type { ManagerType } from '@agoric/swingset-vat';
-import { insistManagerType, makeSwingsetHarness } from './supports.js';
-import { type SwingsetTestKit, makeSwingsetTestKit } from './supports.js';
 import {
   type GovernanceDriver,
   type PriceFeedDriver,
@@ -20,6 +14,12 @@ import {
   makePriceFeedDriver,
   makeWalletFactoryDriver,
 } from './drivers.js';
+import {
+  type SwingsetTestKit,
+  insistManagerType,
+  makeSwingsetHarness,
+  makeSwingsetTestKit,
+} from './supports.js';
 
 export type LiquidationSetup = {
   vaults: {
@@ -79,6 +79,9 @@ export const likePayouts = ({ Bid, Collateral }) => ({
   },
 });
 
+/**
+ * @deprecated liquidation is no longer supported
+ */
 export const makeLiquidationTestKit = async ({
   swingsetTestKit,
   agoricNamesRemotes,
@@ -178,26 +181,6 @@ export const makeLiquidationTestKit = async ({
           type: 'ratio',
           value: { numerator: { value: 50n }, denominator: { value: 10_000n } },
         },
-      },
-    });
-    t.like(readPublished('auction.governance'), {
-      current: {
-        AuctionStartDelay: { type: 'relativeTime', value: { relValue: 2n } },
-        ClockStep: {
-          type: 'relativeTime',
-          value: { relValue: 3n * SECONDS_PER_MINUTE },
-        },
-        DiscountStep: { type: 'nat', value: 500n }, // 5%
-        LowestRate: { type: 'nat', value: 6500n }, // 65%
-        PriceLockPeriod: {
-          type: 'relativeTime',
-          value: { relValue: SECONDS_PER_HOUR / 2n },
-        },
-        StartFrequency: {
-          type: 'relativeTime',
-          value: { relValue: SECONDS_PER_HOUR },
-        },
-        StartingRate: { type: 'nat', value: 10500n }, // 105%
       },
     });
   };
