@@ -12,7 +12,7 @@ import { isPrimitive } from '@endo/pass-style';
 import { matches } from '@endo/patterns';
 import { makePromiseKit, type PromiseKit } from '@endo/promise-kit';
 
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
+import type { SigningSmartWalletKit, VStorage } from '@agoric/client-utils';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
@@ -23,7 +23,6 @@ import {
   type StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { mustMatch } from '@agoric/internal';
-import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
@@ -35,21 +34,16 @@ import {
   type EvmContext,
   type PendingTx,
 } from './pending-tx-manager.ts';
+import {
+  parseStreamCell,
+  parseStreamCellValue,
+  readStreamCellValue,
+  STALE_RESPONSE,
+} from './vstorage-utils.ts';
 
 const { isInteger } = Number;
 
 const sink = () => {};
-
-const STALE = 'STALE';
-
-const throwErrorCode = <Code extends string = string>(
-  message: string,
-  code: Code,
-): never => {
-  const err = Error(message);
-  Object.defineProperty(err, 'code', { value: code, enumerable: true });
-  throw err;
-};
 
 type CosmosEvent = {
   type: string;
@@ -91,26 +85,6 @@ const vstoragePathStartsWith = (path: string, prefix: string) =>
 export const stripPrefix = (prefix: string, str: string) => {
   str.startsWith(prefix) || Fail`${str} is missing prefix ${q(prefix)}`;
   return str.slice(prefix.length);
-};
-
-/**
- * Parse input as JSON, or handle an error (for e.g. substituting a default or
- * applying a more specific message).
- */
-const tryJsonParse = (json: string, replaceErr?: (err?: Error) => unknown) => {
-  try {
-    const type = typeof json;
-    if (type !== 'string') throw Error(`input must be a string, not ${type}`);
-    return JSON.parse(json);
-  } catch (err) {
-    if (!replaceErr) throw err;
-    try {
-      return replaceErr(err);
-    } catch (newErr) {
-      if (!newErr.cause) assert.note(newErr, err.message);
-      throw newErr;
-    }
-  }
 };
 
 /**
@@ -313,31 +287,24 @@ const processPortfolioEvents = async (
     eventRecord: EventRecord;
   }>,
   blockHeight: bigint,
-  marshaller: SigningSmartWalletKit['marshaller'],
-  readAndDecodeStreamCellValue: (
-    vstoragePath: string,
-    options?: { minBlockHeight?: bigint; retries?: number },
-  ) => any,
-  portfolioKeyForDepositAddr: Map<Bech32Address, string>,
   deferrals: EventRecord[],
+  {
+    marshaller,
+    vstorage,
+    portfolioKeyForDepositAddr,
+  }: {
+    marshaller: SigningSmartWalletKit['marshaller'];
+    vstorage: VStorage;
+    portfolioKeyForDepositAddr: Map<Bech32Address, string>;
+  },
 ) => {
   await null;
   for (const portfolioEvent of portfolioEvents) {
     const { path, value: cellJson, eventRecord } = portfolioEvent;
-    const streamCell = tryJsonParse(
-      cellJson,
-      _err => Fail`non-JSON value at vstorage path ${q(path)}: ${cellJson}`,
-    );
-    mustMatch(harden(streamCell), StreamCellShape);
+    const streamCell = parseStreamCell(cellJson, path);
     if (path === PORTFOLIOS_PATH_PREFIX) {
       for (let i = 0; i < streamCell.values.length; i += 1) {
-        const strValue = streamCell.values[i];
-        const value = tryJsonParse(
-          // @ts-expect-error use `undefined` to force an error for non-string input
-          typeof strValue === 'string' ? strValue : undefined,
-          _err =>
-            Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
-        );
+        const value = parseStreamCellValue(streamCell, i, path);
         const portfoliosData = marshaller.fromCapData(
           value,
         ) as StatusFor['portfolios'];
@@ -345,11 +312,14 @@ const processPortfolioEvents = async (
           const key = portfoliosData.addPortfolio;
           console.warn('Detected new portfolio', key);
           try {
-            const status = await readAndDecodeStreamCellValue(
-              `${PORTFOLIOS_PATH_PREFIX}.${key}`,
+            const portfolioPath = `${PORTFOLIOS_PATH_PREFIX}.${key}`;
+            const statusCapdata = await readStreamCellValue(
+              vstorage,
+              portfolioPath,
               { minBlockHeight: eventRecord.blockHeight, retries: 4 },
             );
-            mustMatch(status, PortfolioStatusShapeExt, key);
+            const status = marshaller.fromCapData(statusCapdata);
+            mustMatch(status, PortfolioStatusShapeExt, portfolioPath);
             const { depositAddress } = status;
             if (!depositAddress) continue;
             portfolioKeyForDepositAddr.set(depositAddress, key);
@@ -360,7 +330,7 @@ const processPortfolioEvents = async (
               address: depositAddress,
             });
           } catch (err) {
-            if (err.code !== STALE) throw err;
+            if (err.code !== STALE_RESPONSE) throw err;
             console.error(
               `Deferring addPortfolio of age ${blockHeight - eventRecord.blockHeight} block(s)`,
               eventRecord,
@@ -394,25 +364,14 @@ export const processPendingTxEvents = async (
   logFn = log,
 ) => {
   for (const { path, value: cellJson } of events) {
-    const streamCell = tryJsonParse(
-      cellJson,
-      _err => Fail`non-JSON value at vstorage path ${q(path)}: ${cellJson}`,
-    );
-    mustMatch(harden(streamCell), StreamCellShape);
+    const streamCell = parseStreamCell(cellJson, path);
 
     // Extract txId from path (e.g., "published.ymax0.pendingTxs.tx1")
     const txId = stripPrefix(`${PENDING_TX_PATH_PREFIX}.`, path);
     console.warn('Processing pendingTx event', txId, path);
 
     for (let i = 0; i < streamCell.values.length; i += 1) {
-      const strValue = streamCell.values[i];
-      const value = tryJsonParse(
-        // @ts-expect-error use `undefined` to force an error for non-string input
-        typeof strValue === 'string' ? strValue : undefined,
-        _err =>
-          Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
-      );
-
+      const value = parseStreamCellValue(streamCell, i, path);
       const tx = parsePendingTx(
         txId as `tx${number}`,
         marshaller.fromCapData(value),
@@ -460,56 +419,6 @@ export const startEngine = async (
 ) => {
   await null;
   const { query, marshaller } = signingSmartWalletKit;
-  /**
-   * Read from a vstorage path, requiring the data to be a StreamCell of
-   * CapData-encoded values and returning the decoding of the final one.
-   * UNTIL https://github.com/Agoric/agoric-sdk/pull/11630
-   */
-  const readAndDecodeStreamCellValue = async (
-    vstoragePath: string,
-    {
-      minBlockHeight = 0n,
-      retries = 0,
-    }: { minBlockHeight?: bigint; retries?: number } = {},
-  ) => {
-    await null;
-    let finalErr: undefined | Error;
-    for (let attempt = 0; attempt <= retries; attempt += 1) {
-      let values: string[];
-      try {
-        const { blockHeight, result } = await query.vstorage.readStorageMeta(
-          vstoragePath,
-          { kind: 'data' } as const,
-        );
-        if (typeof blockHeight !== 'bigint') {
-          throw Fail`blockHeight ${blockHeight} must be a bigint`;
-        }
-        if (blockHeight < minBlockHeight) {
-          throwErrorCode(`old blockHeight ${blockHeight}`, STALE);
-        }
-        const streamCellJson = result.value;
-        const streamCell = tryJsonParse(
-          streamCellJson,
-          _err =>
-            Fail`non-JSON value at vstorage path ${q(vstoragePath)}: ${streamCellJson}`,
-        );
-        mustMatch(harden(streamCell), StreamCellShape);
-        // We have suitably fresh data; any further errors should propagate.
-        values = streamCell.values;
-      } catch (err) {
-        if (err.code || !finalErr) finalErr = err;
-        continue;
-      }
-      const strValue = values.at(-1) as string;
-      const lastValueCapData = tryJsonParse(
-        strValue,
-        _err =>
-          Fail`non-JSON StreamCell value for ${q(vstoragePath)} index ${q(values.length - 1)}: ${strValue}`,
-      );
-      return marshaller.fromCapData(lastValueCapData);
-    }
-    throw finalErr;
-  };
 
   const chainStatus = await rpc.request('status', {});
   console.warn('agoric chain status', chainStatus);
@@ -746,14 +655,11 @@ export const startEngine = async (
     );
 
     // Detect new portfolios.
-    await processPortfolioEvents(
-      portfolioEvents,
-      respHeight,
+    await processPortfolioEvents(portfolioEvents, respHeight, deferrals, {
       marshaller,
-      readAndDecodeStreamCellValue,
+      vstorage: query.vstorage,
       portfolioKeyForDepositAddr,
-      deferrals,
-    );
+    });
 
     await processPendingTxEvents(
       { ...evmCtx, cosmosRest, signingSmartWalletKit, fetch },
