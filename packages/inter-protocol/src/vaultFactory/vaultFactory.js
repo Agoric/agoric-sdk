@@ -29,6 +29,9 @@ import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
 import { provideDirector } from './vaultDirector.js';
 
 /**
+ * @import {ERef} from '@endo/far';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshal} from '@endo/marshal';
  * @import {ContractMeta, FeeMintAccess, HandleOffer, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
  * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
@@ -71,7 +74,7 @@ harden(meta);
  *   initialPoserInvitation: Invitation;
  *   initialShortfallInvitation: Invitation;
  *   storageNode: ERef<StorageNode>;
- *   marshaller: ERef<Marshaller>;
+ *   marshaller: ERef<Marshal<unknown>>;
  *   managerParams: Record<
  *     string,
  *     import('./params.js').VaultManagerParamOverrides

@@ -63,6 +63,9 @@ import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
 
 /**
+ * @import {ERef} from '@endo/far';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshal} from '@endo/marshal';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {EReturn} from '@endo/far';
  * @import {ZCFMint} from '@agoric/zoe';
@@ -215,7 +218,7 @@ const collateralEphemera = makeEphemeraProvider(() => /** @type {any} */ ({}));
  * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {{
  *   zcf: import('./vaultFactory.js').VaultFactoryZCF;
- *   marshaller: ERef<Marshaller>;
+ *   marshaller: ERef<Marshal<unknown>>;
  *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
  *   makeERecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit;
  *   factoryPowers: import('./vaultDirector.js').FactoryPowersFacet;

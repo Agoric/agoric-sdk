@@ -17,6 +17,7 @@ import { prepareVaultKit } from './vaultKit.js';
 const trace = makeTracer('Vault', true);
 
 /**
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {EReturn} from '@endo/far';
  * @import {Brand} from '@agoric/ertp/src/types.js';
  * @import {NormalizedDebt} from './storeUtils.js';

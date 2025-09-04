@@ -36,6 +36,9 @@ import {
 } from './vaultManager.js';
 
 /**
+ * @import {ERef} from '@endo/far';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshal} from '@endo/marshal';
  * @import {MapStore} from '@agoric/store';
  * @import {TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
  * @import {EReturn} from '@endo/far';
@@ -102,7 +105,7 @@ export const makeAllManagersDo = (collateralManagers, vaultManagers) => {
  * @param {ZCFMint<'nat'>} debtMint
  * @param {ERef<import('@agoric/time').TimerService>} timer
  * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERef<Marshal<unknown>>} marshaller
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
  * @param {Record<string, import('./params.js').VaultManagerParamOverrides>} managerParams

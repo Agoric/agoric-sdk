@@ -19,6 +19,7 @@ import {
 } from '@agoric/vat-data';
 
 /**
+ * @import {PromiseKit} from '@endo/promise-kit';
  * @import {VatAdminRootDeviceNode} from '../../devices/vat-admin/device-vat-admin.js';
  * @import {DProxy} from'../../types-external.js';
  * @import {Baggage} from '@agoric/vat-data';

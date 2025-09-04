@@ -24,9 +24,12 @@ import {
   inviteToEconCharter,
 } from './committee-proposal.js';
 
-/** @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js' */
-/** @import {MetricsNotification} from '../psm/psm.js' */
-/** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
+/**
+ * @import {ERef} from '@endo/far'
+ * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
+ * @import {MetricsNotification} from '../psm/psm.js'
+ * @import {EconomyBootstrapPowers} from './econ-behaviors.js'
+ */
 
 const BASIS_POINTS = 10000n;
 

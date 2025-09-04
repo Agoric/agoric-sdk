@@ -36,16 +36,18 @@ import { makeCollectFeesInvitation } from '../collectFees.js';
 import { makeNatAmountShape } from '../contractSupport.js';
 
 /**
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshal} from '@endo/marshal';
+ * @import {EReturn} from '@endo/far';
+ * @import {ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
+ */
+
+/**
  * @file The Parity Stability Module supports efficiently minting/burning a
  *   stable token at a specified fixed ratio to a reference stable token, which
  *   thereby acts as an anchor to provide additional stability. For flexible
  *   economic policies, the fee percentage for trading into and out of the
  *   stable token are specified separately.
- */
-
-/**
- * @import {EReturn} from '@endo/far';
- * @import {ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
  */
 
 /**
@@ -120,7 +122,7 @@ harden(meta);
  *   feeMintAccess: FeeMintAccess;
  *   initialPoserInvitation: Invitation;
  *   storageNode: StorageNode;
- *   marshaller: Marshaller;
+ *   marshaller: Marshal<unknown>;
  * }} privateArgs
  * @param {Baggage} baggage
  */

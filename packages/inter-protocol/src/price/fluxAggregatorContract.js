@@ -15,6 +15,9 @@ const trace = makeTracer('FluxAgg', false);
 /**
  * @import {Baggage} from '@agoric/vat-data'
  * @import {TimerService} from '@agoric/time'
+ * @import {ERef} from '@endo/far'
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
+ * @import {Marshal} from '@endo/marshal'
  */
 
 /** @type {ContractMeta} */
@@ -56,7 +59,7 @@ harden(meta);
  * @param {{
  *   highPrioritySendersManager?: import('@agoric/internal/src/priority-senders.js').PrioritySendersManager;
  *   initialPoserInvitation: Invitation;
- *   marshaller: ERef<Marshaller>;
+ *   marshaller: ERef<Marshal<unknown>>;
  *   namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>;
  *   storageNode: StorageNode;
  * }} privateArgs
