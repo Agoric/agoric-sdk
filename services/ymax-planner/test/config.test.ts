@@ -41,7 +41,7 @@ test('loadConfig accepts valid configuration', async t => {
   const config = await loadConfig(env, secretManager);
 
   t.is(config.mnemonic, 'test mnemonic phrase');
-  t.is(config.alchemy, 'test1234');
+  t.is(config.alchemyApiKey, 'test1234');
   t.is(config.spectrum.apiUrl, 'https://api.spectrum.example.com');
   t.is(config.spectrum.timeout, 5000);
   t.is(config.spectrum.retries, 2);
@@ -60,7 +60,7 @@ test('loadConfig uses default values when optional fields are missing', async t 
   const config = await loadConfig(env, secretManager);
 
   t.is(config.mnemonic, 'test mnemonic phrase');
-  t.is(config.alchemy, 'test1234');
+  t.is(config.alchemyApiKey, 'test1234');
   t.is(config.spectrum.apiUrl, undefined);
   t.is(config.spectrum.timeout, 30000);
   t.is(config.spectrum.retries, 3);
@@ -106,7 +106,7 @@ test('loadConfig trims whitespace from values', async t => {
   const config = await loadConfig(env, secretManager);
 
   t.is(config.mnemonic, 'test mnemonic phrase');
-  t.is(config.alchemy, 'test1234');
+  t.is(config.alchemyApiKey, 'test1234');
   t.is(config.cosmosRest.agoricNetwork, 'devnet');
 });
 
@@ -126,7 +126,7 @@ test('loadConfig rejects empty required values', async t => {
 test('createEVMContext generates valid testnet context', async t => {
   const result = await createEVMContext({
     net: 'testnet',
-    alchemy: 'test1234',
+    alchemyApiKey: 'test1234',
   });
 
   t.truthy(result.evmProviders);
