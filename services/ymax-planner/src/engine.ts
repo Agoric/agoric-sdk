@@ -320,7 +320,7 @@ const processPortfolioEvents = async (
       cellJson,
       _err => Fail`non-JSON value at vstorage path ${q(path)}: ${cellJson}`,
     );
-    mustMatch(harden(streamCell), StreamCellShape);
+    mustMatch(harden(streamCell), StreamCellShape, path);
     if (path === PORTFOLIOS_PATH_PREFIX) {
       for (let i = 0; i < streamCell.values.length; i += 1) {
         const strValue = streamCell.values[i];
@@ -337,11 +337,12 @@ const processPortfolioEvents = async (
           const key = portfoliosData.addPortfolio;
           console.warn('Detected new portfolio', key);
           try {
-            const status = await readAndDecodeStreamCellValue(
-              `${PORTFOLIOS_PATH_PREFIX}.${key}`,
-              { minBlockHeight: eventRecord.blockHeight, retries: 4 },
-            );
-            mustMatch(status, PortfolioStatusShapeExt, key);
+            const portfolioPath = `${PORTFOLIOS_PATH_PREFIX}.${key}`;
+            const status = await readAndDecodeStreamCellValue(portfolioPath, {
+              minBlockHeight: eventRecord.blockHeight,
+              retries: 4,
+            });
+            mustMatch(status, PortfolioStatusShapeExt, portfolioPath);
             const { depositAddress } = status;
             if (!depositAddress) continue;
             portfolioKeyForDepositAddr.set(depositAddress, key);
@@ -416,7 +417,7 @@ export const processPendingTxEvents = async (
       cellJson,
       _err => Fail`non-JSON value at vstorage path ${q(path)}: ${cellJson}`,
     );
-    mustMatch(harden(streamCell), StreamCellShape);
+    mustMatch(harden(streamCell), StreamCellShape, path);
 
     // Extract txId from path (e.g., "published.ymax0.pendingTxs.tx1")
     const txId = stripPrefix(`${PENDING_TX_PATH_PREFIX}.`, path);
@@ -503,7 +504,7 @@ export const startEngine = async (
           _err =>
             Fail`non-JSON value at vstorage path ${q(vstoragePath)}: ${streamCellJson}`,
         );
-        mustMatch(harden(streamCell), StreamCellShape);
+        mustMatch(harden(streamCell), StreamCellShape, vstoragePath);
         // We have suitably fresh data; any further errors should propagate.
         values = streamCell.values;
       } catch (err) {
