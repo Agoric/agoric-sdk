@@ -115,18 +115,17 @@ export const loadConfig = async (
   }
 };
 
-export const getConfig = (() => {
-  let cachedConfig: YmaxPlannerConfig | undefined;
+let cachedConfig: YmaxPlannerConfig | undefined;
 
-  return async (
-    env: Record<string, string | undefined> = process.env,
-    powers: { secretManager?: SecretManager } = {},
-  ): Promise<YmaxPlannerConfig> => {
-    if (!cachedConfig) {
-      const secretManager =
-        powers.secretManager || new SecretManagerServiceClient();
-      cachedConfig = await loadConfig(env, secretManager);
-    }
-    return cachedConfig;
-  };
-})();
+export const getConfig = async (
+  env: Record<string, string | undefined> = process.env,
+  powers: { secretManager?: SecretManager } = {},
+): Promise<YmaxPlannerConfig> => {
+  await null;
+  if (!cachedConfig) {
+    const secretManager =
+      powers.secretManager || new SecretManagerServiceClient();
+    cachedConfig = await loadConfig(env, secretManager);
+  }
+  return cachedConfig;
+};
