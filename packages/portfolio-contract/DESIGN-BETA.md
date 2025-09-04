@@ -144,6 +144,62 @@ sequenceDiagram
 ```
 
 5. Withdraw
+    1. non-pipelined
+```mermaid
+sequenceDiagram
+  autonumber
+
+  actor UI
+
+  box rgb(255,153,153) Agoric
+    participant portfolio
+    participant vstorage
+    participant LCAorch
+    participant LCAin
+  end
+
+  box  rgb(255,165,0) Agoric off-chain
+    participant YP as Ymax Planner
+    participant Res as Resolver
+  end
+
+  box rgb(163,180,243) Noble
+      participant icaN as icaNoble
+  end
+  box rgb(163,180,243) Axelar
+      participant AX as GMP
+  end
+  box rgb(163,180,243) Arbitrum
+    participant CCTP TokenMessenger v1
+    participant acctArb as acctArb*
+    participant aavePos as aavePos*
+  end
+
+  %% get plan
+  UI ->> portfolio: withdraw with steps, <br>steps also include CCTP fee
+
+  Note over portfolio, aavePos: withdraw from Aave
+  portfolio ->> AX: GMP (withdraw, $2k USDC, Noble ICA address, CCTP fee optional)
+  AX -->> acctArb: withdraw $2k
+  acctArb ->> aavePos: withdraw $2k
+  acctArb -->> Res: observe withdraw is complete
+  Res ->> portfolio: ack
+  Note over portfolio, aavePos: depositForBurn
+  portfolio->> AX: GMP (depositForBurn, $2k USDC, Noble ICA address, CCTP fee optional)
+  acctArb ->> CCTP TokenMessenger v1: depositForBurn($2k)
+  acctArb -->> Res: observe depositForBurn complete
+  Res ->> portfolio: ack
+  Note over portfolio, aavePos: GMP ack'ed, waiting for CCTP to arrive
+  CCTP TokenMessenger v1 -->> icaN: CCTP mint $2k USDC
+  icaN -->> Res: observe mint
+  Res ->> portfolio: ack
+  portfolio -->> icaN: IBC transxfer
+  icaN ->> LCAorch: IBC $2k USDC
+  Note over LCAorch: contract has a queue of withdrawals(seats) to resolve <br> matches on amount
+  LCAorch ->> UI: $2k USDC
+```
+
+    2. pipelined (not our focus right now)
 ```mermaid
 sequenceDiagram
   autonumber
