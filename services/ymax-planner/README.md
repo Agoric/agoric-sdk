@@ -73,9 +73,13 @@ yarn test
 
 Environment variables:
 
-- `AGORIC_NET`: agoric.net subdomain for requesting URL path `/network-config` to identify `chainName`/`rpcAddrs`/etc. (default `main`)
-- `ALCHEMY_API_KEY`: API key for accessing Alchemy’s Ethereum RPC endpoint (optional, but necessary for using that service)
-- `MNEMONIC`: For the private key used to sign transactions (required)
+- `AGORIC_NET`: network specifier per
+  [Agoric SDK Environment Variables](../../docs/env.md), limited to "$subdomain"
+  for requesting MinimalNetworkConfig from URL
+  [https://$subdomain.agoric.net/network-config](https://all.agoric.net/)
+  (default `local`)
+- `ALCHEMY_API_KEY`: API key for accessing Alchemy’s Ethereum RPC endpoint (required, but not verified at startup)
+- `MNEMONIC`: For the private key used to sign transactions (optional, but if not provided then it will be retrieved from the Google Cloud Secret Manager with project "simulationlab" and name "YMAX_CONTROL_MNEMONIC")
 - `DEPOSIT_IBC_DENOM`: For identifying funds to manage. Used directly if it starts with "ibc/", otherwise matched against `issuerName` in vstorage data at path "published.agoricNames.vbankAsset" (default `USDC`)
 - `SPECTRUM_API_URL`: URL for the [Spectrum](https://spectrumnodes.com/) API (default `https://pools-api.spectrumnodes.com`)
 - `SPECTRUM_API_TIMEOUT`: Milliseconds to wait for each Spectrum request (default `10000` = 10 seconds)

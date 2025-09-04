@@ -1,5 +1,6 @@
 /* eslint-disable @jessie.js/safe-await-separator */
 /// <reference types="ses" />
+import * as ClientUtils from '@agoric/client-utils';
 import { Fail } from '@endo/errors';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 
@@ -102,7 +103,7 @@ export const loadConfig = async (
         retries: parsePositiveInteger(env, 3, 'SPECTRUM_API_RETRIES'),
       },
       cosmosRest: {
-        agoricNetwork: env.AGORIC_NET?.trim() || 'local',
+        agoricNetwork: env.AGORIC_NET?.trim() || ClientUtils.LOCAL_CONFIG_KEY,
         timeout: parsePositiveInteger(env, 15000, 'COSMOS_REST_TIMEOUT'),
         retries: parsePositiveInteger(env, 3, 'COSMOS_REST_RETRIES'),
       },
