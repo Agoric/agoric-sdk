@@ -452,11 +452,7 @@ const stepFlow = async (
     const { amount } = move;
     switch (way.how) {
       case 'localTransfer': {
-        const { give } = seat.getProposal() as ProposalType['rebalance'];
-        const amounts = harden({
-          Deposit: amount,
-          ...('GmpFee' in give ? { GmpFee: give.GmpFee } : {}),
-        });
+        const amounts = harden({ Deposit: amount });
         todo.push(async () => {
           const { lca, lcaIn } = await provideCosmosAccount(
             orch,
@@ -468,7 +464,7 @@ const stepFlow = async (
             how: 'localTransfer',
             src: { seat, keyword: 'Deposit' },
             dest: { account },
-            amount, // XXX use amounts.Deposit
+            amount,
             apply: async () => {
               await ctx.zoeTools.localTransfer(seat, account, amounts);
             },

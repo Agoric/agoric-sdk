@@ -366,7 +366,7 @@ test('open portfolio with no positions', async t => {
   const { orch, ctx, offer, storage } = mocks();
   const { log, seat } = offer;
 
-  const shapes = makeProposalShapes(USDC, BLD);
+  const shapes = makeProposalShapes(USDC);
   mustMatch(seat.getProposal(), shapes.openPortfolio);
 
   const actual = await openPortfolio(orch, ctx, seat, {});
@@ -430,7 +430,7 @@ test('open portfolio with USDN position', async t => {
   const { orch, ctx, offer, storage } = mocks({}, give);
   const { log, seat } = offer;
 
-  const shapes = makeProposalShapes(USDC, BLD);
+  const shapes = makeProposalShapes(USDC);
   mustMatch(seat.getProposal(), shapes.openPortfolio);
 
   const actual = await openPortfolio(orch, ctx, seat, { flow: steps });
@@ -489,10 +489,7 @@ test('open portfolio with Aave position', async t => {
   const amount = AmountMath.make(USDC, 300n);
   const feeAcct = AmountMath.make(BLD, 50n);
   const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage } = mocks(
-    {},
-    { Deposit: amount, GmpFee: add(feeAcct, feeCall) },
-  );
+  const { orch, tapPK, ctx, offer, storage } = mocks({}, { Deposit: amount });
 
   const [actual] = await Promise.all([
     openPortfolio(orch, ctx, offer.seat, {
@@ -513,10 +510,7 @@ test('open portfolio with Aave position', async t => {
     { _method: 'monitorTransfers' },
     {
       _method: 'localTransfer',
-      amounts: {
-        Deposit: { value: 300n },
-        GmpFee: { value: 150n },
-      },
+      amounts: { Deposit: { value: 300n } },
     },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
@@ -555,7 +549,7 @@ test('open portfolio with Compound position', async t => {
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'localTransfer', amounts: { GmpFee: { value: 400n } } },
+    { _method: 'localTransfer', amounts: { Deposit: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'depositForBurn' },
@@ -674,13 +668,12 @@ test('handle failure in recovery from executeEncodedTx', async t => {
 });
 
 test.skip('handle failure in sendGmp with Aave position', async t => {
-  const { add } = AmountMath;
   const amount = AmountMath.make(USDC, 300n);
   const feeAcct = AmountMath.make(BLD, 300n);
   const feeCall = AmountMath.make(BLD, 100n);
   const { orch, tapPK, ctx, offer, storage } = mocks(
     { transfer: Error('ag->axelar: SOS!') },
-    { Deposit: amount, GmpFee: add(feeAcct, feeCall) },
+    { Deposit: amount },
   );
 
   // Start the openPortfolio flow
@@ -733,10 +726,7 @@ test('rebalance handles stepFlow failure correctly', async t => {
       // Mock a failure in IBC transfer
       transfer: Error('IBC transfer failed'),
     },
-    {
-      Deposit: make(USDC, 500n),
-      GmpFee: make(BLD, 200n),
-    },
+    { Deposit: make(USDC, 500n) },
   );
 
   const { log, seat } = offer;
@@ -765,15 +755,10 @@ test('rebalance handles stepFlow failure correctly', async t => {
 });
 
 test('claim rewards on Aave position', async t => {
-  const { add } = AmountMath;
   const amount = AmountMath.make(USDC, 300n);
   const emptyAmount = AmountMath.make(USDC, 0n);
-  const feeAcct = AmountMath.make(BLD, 50n);
   const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage } = mocks(
-    {},
-    { Deposit: amount, GmpFee: add(feeAcct, feeCall) },
-  );
+  const { orch, tapPK, ctx, offer, storage } = mocks({}, { Deposit: amount });
 
   const kit = await ctx.makePortfolioKit();
   await Promise.all([
@@ -824,10 +809,7 @@ test('open portfolio with Beefy position', async t => {
   const amount = AmountMath.make(USDC, 300n);
   const feeAcct = AmountMath.make(BLD, 50n);
   const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage } = mocks(
-    {},
-    { Deposit: amount, GmpFee: add(feeAcct, feeCall) },
-  );
+  const { orch, tapPK, ctx, offer, storage } = mocks({}, { Deposit: amount });
 
   const [actual] = await Promise.all([
     openPortfolio(orch, ctx, offer.seat, {
@@ -853,10 +835,7 @@ test('open portfolio with Beefy position', async t => {
     { _method: 'monitorTransfers' },
     {
       _method: 'localTransfer',
-      amounts: {
-        Deposit: { value: 300n },
-        GmpFee: { value: 150n },
-      },
+      amounts: { Deposit: { value: 300n } },
     },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },

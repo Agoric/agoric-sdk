@@ -184,7 +184,6 @@ test('open a portfolio with Compound position', async t => {
     {
       Access: poc26.make(1n),
       Deposit: amount,
-      GmpFee: AmountMath.add(feeAcct, feeCall),
     },
     {
       flow: [

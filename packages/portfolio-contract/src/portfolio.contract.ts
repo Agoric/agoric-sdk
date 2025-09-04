@@ -238,11 +238,7 @@ export const contract = async (
     trace('chainHub already populated, using existing entries');
   }
 
-  const proposalShapes = makeProposalShapes(
-    brands.USDC,
-    brands.Fee,
-    brands.Access,
-  );
+  const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
 
   // Until we find a need for on-chain subscribers, this stop-gap will do.
