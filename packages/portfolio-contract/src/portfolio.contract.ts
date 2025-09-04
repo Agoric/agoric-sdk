@@ -260,6 +260,7 @@ export const contract = async (
   const contractAccountV = zone.makeOnce('contractAccountV', () => makeLCA());
   void vowTools.when(contractAccountV, acct => {
     const addr = acct.getAddress();
+    trace('contracti addr is.........', addr.value);
     const capData = marshalData.toCapData(
       harden({ contractAccount: addr.value }),
     );

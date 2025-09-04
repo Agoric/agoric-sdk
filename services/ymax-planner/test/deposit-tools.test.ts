@@ -12,8 +12,16 @@ import { handleDeposit } from '../src/plan-deposit.ts';
 import { SpectrumClient } from '../src/spectrum-client.ts';
 
 const brand = Far('mock brand') as Brand<'nat'>;
+const feeBrand = Far('mock fee brand') as Brand<'nat'>;
 
 const powers = { fetch, setTimeout };
+
+// Mock fee values for testing (minimum 20 BLD = 20_000_000 ubld)
+const mockFees = {
+  feeBrand,
+  feeAccount: AmountMath.make(feeBrand, 20_000_000n),
+  feeCall: AmountMath.make(feeBrand, 20_000_000n),
+};
 
 test('planDepositTransfers works in a handful of cases', t => {
   const make = value => AmountMath.make(brand, value);
@@ -225,6 +233,7 @@ test('handleDeposit works with mocked dependencies', async t => {
     mockVstorageKit.readPublished,
     mockSpectrumClient,
     mockCosmosRestClient,
+    mockFees,
   );
   t.snapshot(steps);
 });
@@ -290,6 +299,7 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
     mockVstorageKit.readPublished,
     mockSpectrumClient,
     mockCosmosRestClient,
+    mockFees,
   );
 
   t.is(result, undefined);
@@ -386,6 +396,7 @@ test('handleDeposit handles different position types correctly', async t => {
     mockVstorageKit.readPublished,
     mockSpectrumClient,
     mockCosmosRestClient,
+    mockFees,
   );
   t.snapshot(steps);
 });

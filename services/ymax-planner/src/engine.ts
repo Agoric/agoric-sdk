@@ -495,6 +495,18 @@ export const startEngine = async (
   if (!depositAsset) {
     throw Fail`Could not find vbankAsset for ${q(depositIbcDenom)}`;
   }
+  
+  // Get BLD asset for fees
+  const bldAsset = vbankAssets.get('ubld');
+  if (!bldAsset) {
+    throw Fail`Could not find BLD asset for fees`;
+  }
+  const feeBrand = bldAsset.brand as Brand<'nat'>;
+  // Ensure fees are at least 20 BLD (20_000_000 ubld, since 1 BLD = 1_000_000 ubld)
+  const minFeeAmount = 20_000_000n;
+  const feeAccount = AmountMath.make(feeBrand, minFeeAmount);
+  const feeCall = AmountMath.make(feeBrand, minFeeAmount);
+  const fees = { feeBrand, feeAccount, feeCall };
 
   // To avoid data gaps, establish subscriptions before gathering initial state.
   const eventFilters = [
@@ -680,6 +692,7 @@ export const startEngine = async (
             query.readPublished,
             spectrum,
             cosmosRest,
+            fees,
           );
 
           // TODO: consolidate with portfolioIdOfPath

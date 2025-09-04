@@ -347,6 +347,11 @@ export const planDepositTransfers = (
 export const planTransfer = (
   dest: PoolKey,
   amount: NatAmount,
+  fees?: {
+    feeBrand: Brand<'nat'>;
+    feeAccount: NatAmount;
+    feeCall: NatAmount;
+  },
 ): MovementDesc[] => {
   const { protocol: p, chainName: evm } = PoolPlaces[dest];
   const steps: MovementDesc[] = [];
@@ -364,14 +369,13 @@ export const planTransfer = (
         src: '@noble',
         dest: `@${evm}`,
         amount,
-        // XXXfee: fees[p].Account,
+        ...(fees && { fee: fees.feeAccount }),
       });
-      console.warn('TODO: fees');
       steps.push({
         src: `@${evm}`,
         dest: `${p}_${evm}`,
         amount,
-        // TODO fee: fees[p].Call,
+        ...(fees && { fee: fees.feeCall }),
       });
       break;
     default:

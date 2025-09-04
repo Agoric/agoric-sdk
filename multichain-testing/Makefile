@@ -226,7 +226,7 @@ publish-ymax0: ,ymax0-installed
 
 yctrl-redeploy: ,ymax0-deployed
 
-REASON=newInstance
+
 NETCONFIG=https://devnet.agoric.net/network-config
 ,ymax0-deployed: $(DEPLOY)/dist/bundle-ymax0.json ,ymax0-bundle-id ,ymax0-installed
 	@[ -n "$$MNEMONIC" ] || (echo "ymaxControl MNEMONIC not set; see gov keys sheet"; false)
