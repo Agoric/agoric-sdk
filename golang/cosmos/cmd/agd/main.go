@@ -85,13 +85,22 @@ func main() {
 		args := []string{"ag-chain-cosmos", "--home", gaia.DefaultNodeHome}
 		args = append(args, os.Args[1:]...)
 
-		binary := cast.ToString(appOpts.Get(daemoncmd.FlagSplitVm))
-		if binary == "" {
-			binary, lookErr := FindCosmicSwingsetBinary()
+		vmSpec := cast.ToString(appOpts.Get(daemoncmd.FlagSplitVm))
+		var binary string
+
+		switch vmSpec {
+		case "embedded", "default":
+			var lookErr error
+			binary, lookErr = FindCosmicSwingsetBinary()
 			if lookErr != nil {
 				return lookErr
 			}
+		default:
+			// The user provided a binary path.
+			binary = vmSpec
+		}
 
+		if vmSpec == "embedded" {
 			// We completely delegate to our default app for running the actual chain.
 			logger.Info("agd delegating to JS executable", "binary", binary, "args", args)
 			return syscall.Exec(binary, args, os.Environ())

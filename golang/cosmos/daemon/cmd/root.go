@@ -319,9 +319,10 @@ func hasVMController(serverCtx *server.Context) bool {
 func addAgoricVMFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().String(
 		FlagSplitVm,
-		"",
+		"embedded",
 		"Specify the external Agoric VM program",
 	)
+	cmd.Flag(FlagSplitVm).NoOptDefVal = "default"
 }
 
 func addStartFlags(startCmd *cobra.Command) {
