@@ -610,49 +610,46 @@ export const startEngine = async (
         event,
       })),
     ];
-    const vstorageEvents = partialMap(eventRecords, eventRecord => {
+    const vstorageEvents = { portfolio: [], pendingTx: [] } as Record<
+      'portfolio' | 'pendingTx',
+      Array<{ path: string; value: string; eventRecord: EventRecord }>
+    >;
+    for (const eventRecord of eventRecords) {
       const { type: eventType, attributes: attrRecords } = eventRecord.event;
       // Filter for vstorage state_change events.
       // cf. golang/cosmos/types/events.go
-      if (eventType !== 'state_change') return;
+      if (eventType !== 'state_change') continue;
       const attributes = fromUniqueEntries(
         attrRecords?.map(({ key, value }) => [key, value]) || [],
       );
-      if (attributes.store !== 'vstorage') return;
+      if (attributes.store !== 'vstorage') continue;
 
       // Require attributes "key" and "value".
       if (attributes.key === undefined || attributes.value === undefined) {
         console.error('vstorage state_change missing "key" and/or "value"');
-        return;
+        continue;
       }
 
       // Filter for paths we care about (portfolios or pending transactions).
       const path = encodedKeyToPath(attributes.key);
 
       if (vstoragePathStartsWith(path, PORTFOLIOS_PATH_PREFIX)) {
-        return {
-          type: 'portfolio' as const,
+        vstorageEvents.portfolio.push({
           path,
           value: attributes.value,
           eventRecord,
-        };
+        });
       }
       if (vstoragePathStartsWith(path, PENDING_TX_PATH_PREFIX)) {
-        return {
-          type: 'pendingTx' as const,
+        vstorageEvents.pendingTx.push({
           path,
           value: attributes.value,
           eventRecord,
-        };
+        });
       }
-    });
-
-    const portfolioEvents = vstorageEvents.filter(
-      event => event.type === 'portfolio',
-    );
-    const pendingTxEvents = vstorageEvents.filter(
-      event => event.type === 'pendingTx',
-    );
+    }
+    const { portfolio: portfolioEvents, pendingTx: pendingTxEvents } =
+      vstorageEvents;
 
     // Detect new portfolios.
     await processPortfolioEvents(portfolioEvents, respHeight, deferrals, {
