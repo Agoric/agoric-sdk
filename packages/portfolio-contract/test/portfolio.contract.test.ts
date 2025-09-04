@@ -14,15 +14,15 @@ import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
 import type { StatusFor } from '../src/type-guards.ts';
+import { plannerClientMock } from '../tools/agents-mock.ts';
 import {
   setupTrader,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
-import { settleTransaction, getResolverMakers } from './resolver-helpers.ts';
 import { evmNamingDistinction, localAccount0 } from './mocks.ts';
-import { plannerClientMock } from '../tools/agents-mock.ts';
+import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
 
 const { fromEntries, keys } = Object;
 

@@ -28,13 +28,13 @@ import {
   buildTxPacketString,
   buildTxResponseString,
 } from '@agoric/orchestration/tools/ibc-mocks.ts';
+import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { VowTools } from '@agoric/vow';
 import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { Zone } from '@agoric/zone';
 import { makePromiseKit } from '@endo/promise-kit';
 import type { AxelarId, GmpAddresses } from '../src/portfolio.contract.ts';
 import type { EVMContractAddressesMap } from '../src/type-guards.ts';
-import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 
 export const localAccount0 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
 
