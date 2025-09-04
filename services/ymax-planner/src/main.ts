@@ -15,7 +15,6 @@ import { createEVMContext } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 
 const getChainIdFromRpc = async (rpc: CosmosRPCClient) => {
-  await rpc.opened();
   const status = await rpc.request('status', {});
   const chainId = status?.node_info?.network;
   chainId || Fail`Chain ID not found in RPC status: ${status}`;
@@ -40,6 +39,7 @@ export const main = async (
 
   console.warn(`Initializing planner watching`, { agoricRpcAddr });
   const rpc = new CosmosRPCClient(agoricRpcAddr);
+  await rpc.opened();
 
   const rpcChainId = await getChainIdFromRpc(rpc);
 
