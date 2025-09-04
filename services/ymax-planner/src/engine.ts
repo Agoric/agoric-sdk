@@ -10,7 +10,8 @@ import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import type { Coin } from '@cosmjs/stargate';
-import { Fail, q } from '@endo/errors';
+import { Fail, q, X } from '@endo/errors';
+import { M, matches } from '@endo/patterns';
 import { Nat } from '@endo/nat';
 import { isPrimitive } from '@endo/pass-style';
 import { makePromiseKit, type PromiseKit } from '@endo/promise-kit';
@@ -19,6 +20,13 @@ import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
 import { handleDeposit } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
+import {
+  handlePendingTx,
+  type EvmContext,
+  type PendingTx,
+} from './pending-tx-manager.ts';
+import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import { log } from 'node:console';
 
 const { isInteger } = Number;
 
@@ -29,7 +37,8 @@ type CosmosEvent = {
   attributes?: Array<{ key: string; value: string }>;
 };
 
-const VSTORAGE_PATH_PREFIX = 'published.ymax0.portfolios';
+export const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
+export const PENDING_TX_PATH_PREFIX = 'published.ymax0.pendingTxs';
 
 /** cf. golang/cosmos/x/vstorage/types/path_keys.go */
 const EncodedKeySeparator = '\x00';
@@ -55,7 +64,7 @@ const vstoragePathStartsWith = (path: string, prefix: string) =>
   path === prefix ||
   path.startsWith(prefix.endsWith('.') ? prefix : `${prefix}.`);
 
-const stripPrefix = (prefix: string, str: string) => {
+export const stripPrefix = (prefix: string, str: string) => {
   str.startsWith(prefix) || Fail`${str} is missing prefix ${q(prefix)}`;
   return str.slice(prefix.length);
 };
@@ -263,20 +272,163 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
   return harden(results as typeof results & { done: Promise<boolean> });
 };
 
-type IO = {
+type Powers = {
+  evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch'>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
   signingSmartWalletKit: SigningSmartWalletKit;
 };
 
-export const startEngine = async ({
-  rpc,
-  spectrum,
-  cosmosRest,
-  signingSmartWalletKit,
-}: IO) => {
+const processPortfolioEvents = async (
+  portfolioEvents: Array<{ path: string; value: string }>,
+  marshaller: SigningSmartWalletKit['marshaller'],
+  query: SigningSmartWalletKit['query'],
+  portfolioKeyForDepositAddr: Map<Bech32Address, string>,
+) => {
   await null;
+  for (const { path, value: vstorageValue } of portfolioEvents) {
+    const streamCell = tryJsonParse(
+      vstorageValue,
+      _err =>
+        Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
+    );
+    mustMatch(harden(streamCell), StreamCellShape);
+    if (path === PORTFOLIOS_PATH_PREFIX) {
+      for (let i = 0; i < streamCell.values.length; i += 1) {
+        const strValue = streamCell.values[i];
+        const value = tryJsonParse(
+          // @ts-expect-error use `undefined` to force an error for non-string input
+          typeof strValue === 'string' ? strValue : undefined,
+          _err =>
+            Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
+        );
+        const portfoliosData = marshaller.fromCapData(
+          value,
+        ) as StatusFor['portfolios'];
+        if (portfoliosData.addPortfolio) {
+          const key = portfoliosData.addPortfolio;
+          console.warn('Detected new portfolio', key);
+          const status = await query.readPublished(
+            `${stripPrefix('published.', PORTFOLIOS_PATH_PREFIX)}.${key}`,
+          );
+          mustMatch(status, PortfolioStatusShapeExt, key);
+          const { depositAddress } = status;
+          if (!depositAddress) continue;
+          portfolioKeyForDepositAddr.set(depositAddress, key);
+          console.warn('Added new portfolio', key, depositAddress);
+        }
+      }
+    }
+    // TODO: Handle portfolio-level path `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}` for addition/update of depositAddress.
+  }
+};
+
+export const PendingTxShape = M.splitRecord(
+  {
+    // resolver only handles pending transactions
+    status: M.or('pending'),
+    type: M.string(),
+    destinationAddress: M.string(),
+  },
+  {
+    // amount is optional for GMP transactions, required for CCTP
+    amount: M.bigint(),
+  },
+);
+
+export const parsePendingTx = (
+  txId: `tx${number}`,
+  txData,
+  marshaller?: SigningSmartWalletKit['marshaller'],
+): PendingTx | null => {
+  const data = marshaller ? marshaller.fromCapData(txData) : txData;
+  if (!matches(data, PendingTxShape)) {
+    const err = assert.error(
+      X`expected data ${data} to match ${q(PendingTxShape)}`,
+    );
+    console.error(err);
+    return null;
+  }
+
+  if (data.type === TxType.CCTP && data.amount === undefined) {
+    const err = assert.error(
+      X`CCTP transaction ${txId} is missing required amount field`,
+    );
+    console.error(err);
+    return null;
+  }
+
+  return { txId, ...(data as any) } as PendingTx;
+};
+
+export const processPendingTxEvents = async (
+  evmCtx: EvmContext,
+  events: Array<{ path: string; value: string }>,
+  marshaller: SigningSmartWalletKit['marshaller'],
+  handlePendingTxFn = handlePendingTx,
+  logFn = log,
+) => {
+  for (const { path, value: vstorageValue } of events) {
+    const streamCell = tryJsonParse(
+      vstorageValue,
+      _err =>
+        Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
+    );
+    mustMatch(harden(streamCell), StreamCellShape);
+
+    // Extract txId from path (e.g., "published.ymax0.pendingTxs.tx1")
+    const txId = stripPrefix(`${PENDING_TX_PATH_PREFIX}.`, path);
+    console.warn('Processing pendingTx event', txId, path);
+
+    for (let i = 0; i < streamCell.values.length; i += 1) {
+      const strValue = streamCell.values[i];
+      const value = tryJsonParse(
+        // @ts-expect-error use `undefined` to force an error for non-string input
+        typeof strValue === 'string' ? strValue : undefined,
+        _err =>
+          Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
+      );
+
+      const tx = parsePendingTx(txId as `tx${number}`, value, marshaller);
+      if (!tx) continue;
+
+      console.warn('Handling pending tx:', {
+        txId,
+        type: tx.type,
+        status: tx.status,
+      });
+
+      const errorHandler = error => {
+        console.error(`⚠️ Failed to process pendingTx: ${txId}`, error);
+      };
+
+      void handlePendingTxFn(evmCtx, tx, { log: logFn }).catch(errorHandler);
+    }
+  }
+};
+
+export const pickBalance = (
+  balances: Coin[] | undefined,
+  depositAsset: AssetInfo,
+) => {
+  const deposited = balances?.find(({ denom }) => denom === depositAsset.denom);
+  if (!deposited) {
+    return undefined;
+  }
+
+  return AmountMath.make(
+    depositAsset.brand as Brand<'nat'>,
+    Nat(BigInt(deposited.amount)),
+  );
+};
+
+export const startEngine = async (
+  { evmCtx, rpc, spectrum, cosmosRest, signingSmartWalletKit }: Powers,
+  { depositIbcDenom }: { depositIbcDenom: string },
+) => {
+  await null;
+  const { query, marshaller } = signingSmartWalletKit;
 
   const chainStatus = await rpc.request('status', {});
   console.warn('agoric chain status', chainStatus);
@@ -332,6 +484,18 @@ export const startEngine = async ({
     agoricInfo,
   );
 
+  const vbankAssets = new Map<string, AssetInfo>(
+    await query.readPublished('agoricNames.vbankAsset'),
+  );
+  const depositAsset = depositIbcDenom.startsWith('ibc/')
+    ? vbankAssets.get(depositIbcDenom)
+    : [...vbankAssets.values()].find(
+        assetInfo => assetInfo.issuerName === depositIbcDenom,
+      );
+  if (!depositAsset) {
+    throw Fail`Could not find vbankAsset for ${q(depositIbcDenom)}`;
+  }
+
   // To avoid data gaps, establish subscriptions before gathering initial state.
   const eventFilters = [
     // vstorage events are in BEGIN_BLOCK/END_BLOCK activity
@@ -346,17 +510,52 @@ export const startEngine = async ({
   // console.log('subscribed to events', eventFilters);
 
   // TODO: verify consumption of paginated data.
-  const { query } = signingSmartWalletKit;
-  const portfolioKeys = await query.vstorage.keys(VSTORAGE_PATH_PREFIX);
+  const portfolioKeys = await query.vstorage.keys(PORTFOLIOS_PATH_PREFIX);
   const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
     const status = await query.readPublished(
-      `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${portfolioKey}`,
+      `${stripPrefix('published.', PORTFOLIOS_PATH_PREFIX)}.${portfolioKey}`,
     );
     mustMatch(status, PortfolioStatusShapeExt, portfolioKey);
     const { depositAddress } = status;
     if (!depositAddress) return;
     portfolioKeyForDepositAddr.set(depositAddress, portfolioKey);
+  }).done;
+
+  const pendingTxKeys = await query.vstorage.keys(PENDING_TX_PATH_PREFIX);
+  console.warn(
+    `Found ${pendingTxKeys.length} existing pendingTxKeys to monitor`,
+  );
+
+  await makeWorkPool(pendingTxKeys, undefined, async txId => {
+    const logIgnoredError = err => {
+      const msg = `⚠️ Failed to process existing pendingTx: ${txId}`;
+      console.error(msg, err);
+    };
+
+    let data;
+    try {
+      // eslint-disable-next-line @jessie.js/safe-await-separator
+      data = await query.readPublished(
+        stripPrefix('published.', `${PENDING_TX_PATH_PREFIX}.${txId}`),
+      );
+    } catch (err) {
+      logIgnoredError(err);
+      return;
+    }
+
+    const tx = parsePendingTx(txId as `tx${number}`, data);
+    if (!tx) return;
+
+    console.warn(`Found existing tx: ${txId}`, {
+      type: tx.type,
+      status: tx.status,
+    });
+
+    // Process existing pending transactions on startup
+    void handlePendingTx({ ...evmCtx, signingSmartWalletKit, fetch }, tx, {
+      log,
+    }).catch(logIgnoredError);
   }).done;
 
   // console.warn('consuming events');
@@ -376,7 +575,7 @@ export const startEngine = async ({
       if (!events) console.warn('missing events', type, key);
       return events ?? [];
     }) as CosmosEvent[];
-    const portfolioVstorageEvents = partialMap(eventRecords, eventRecord => {
+    const vstorageEvents = partialMap(eventRecords, eventRecord => {
       const { type: eventType, attributes: attrRecords } = eventRecord;
       // Filter for vstorage state_change events.
       // cf. golang/cosmos/types/events.go
@@ -392,50 +591,39 @@ export const startEngine = async ({
         return;
       }
 
-      // Filter for ymax portfolio paths.
+      // Filter for paths we care about (portfolios or pending transactions).
       const path = encodedKeyToPath(attributes.key);
-      if (!vstoragePathStartsWith(path, VSTORAGE_PATH_PREFIX)) return;
 
-      return { path, value: attributes.value };
+      if (vstoragePathStartsWith(path, PORTFOLIOS_PATH_PREFIX)) {
+        return { type: 'portfolio' as const, path, value: attributes.value };
+      }
+      if (vstoragePathStartsWith(path, PENDING_TX_PATH_PREFIX)) {
+        return { type: 'pendingTx' as const, path, value: attributes.value };
+      }
+
+      return;
     });
 
+    const portfolioEvents = vstorageEvents.filter(
+      event => event.type === 'portfolio',
+    );
+    const pendingTxEvents = vstorageEvents.filter(
+      event => event.type === 'pendingTx',
+    );
+
     // Detect new portfolios.
-    const { marshaller } = signingSmartWalletKit;
-    for (const { path, value: vstorageValue } of portfolioVstorageEvents) {
-      const streamCell = tryJsonParse(
-        vstorageValue,
-        _err =>
-          Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
-      );
-      mustMatch(harden(streamCell), StreamCellShape);
-      if (path === VSTORAGE_PATH_PREFIX) {
-        for (let i = 0; i < streamCell.values.length; i += 1) {
-          const strValue = streamCell.values[i];
-          const value = tryJsonParse(
-            // @ts-expect-error use `undefined` to force an error for non-string input
-            typeof strValue === 'string' ? strValue : undefined,
-            _err =>
-              Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
-          );
-          const portfoliosData = marshaller.fromCapData(
-            value,
-          ) as StatusFor['portfolios'];
-          if (portfoliosData.addPortfolio) {
-            const key = portfoliosData.addPortfolio;
-            console.warn('Detected new portfolio', key);
-            const status = await query.readPublished(
-              `${stripPrefix('published.', VSTORAGE_PATH_PREFIX)}.${key}`,
-            );
-            mustMatch(status, PortfolioStatusShapeExt, key);
-            const { depositAddress } = status;
-            if (!depositAddress) continue;
-            portfolioKeyForDepositAddr.set(depositAddress, key);
-            console.warn('Added new portfolio', key, depositAddress);
-          }
-        }
-      }
-      // TODO: Handle portfolio-level path `${VSTORAGE_PATH_PREFIX}.${portfolioKey}` for addition/update of depositAddress.
-    }
+    await processPortfolioEvents(
+      portfolioEvents,
+      marshaller,
+      query,
+      portfolioKeyForDepositAddr,
+    );
+
+    await processPendingTxEvents(
+      { ...evmCtx, signingSmartWalletKit, fetch },
+      pendingTxEvents,
+      marshaller,
+    );
 
     // Detect activity against portfolio deposit addresses.
     const addrsWithActivity: Bech32Address[] = [
@@ -464,43 +652,26 @@ export const startEngine = async ({
           addrsWithActivity,
           addrBalances,
           depositAddrsWithActivity,
-          portfolioVstorageEvents,
+          portfolioEvents,
+          pendingTxEvents,
         },
         { depth: 10 },
       ),
-    );
-
-    const vbankAssets = new Map<string, AssetInfo>(
-      depositAddrsWithActivity.size
-        ? await query.readPublished('agoricNames.vbankAsset')
-        : undefined,
     );
 
     // Respond to deposits.
     const portfolioOps = await Promise.all(
       [...depositAddrsWithActivity.entries()].map(
         async ([addr, portfolioKey]) => {
-          // TODO: maybe snapshot initial balances for deposit amount determination?
-          // For now, require a single denom and assume that the full amount is a new deposit.
-          const balances = addrBalances.get(addr);
-          if (balances?.length !== 1) {
-            console.error(
-              `Unclear which denom to handle for ${addr}`,
-              balances?.map(amount => amount.denom),
-            );
+          const amount = pickBalance(addrBalances.get(addr), depositAsset);
+          if (!amount) {
+            console.warn(`No ${q(depositAsset.issuerName)} at ${addr}`);
             return;
           }
-          const { denom, amount: balanceValue } = balances[0];
-
-          const brand = vbankAssets.get(denom)?.brand as
-            | undefined
-            | Brand<'nat'>;
-          if (!brand) throw Fail`no brand found for denom ${q(denom)}`;
-          const amount = AmountMath.make(brand, Nat(BigInt(balanceValue)));
 
           const unprefixedPortfolioPath = stripPrefix(
             'published.',
-            `${VSTORAGE_PATH_PREFIX}.${portfolioKey}`,
+            `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}`,
           );
 
           const steps = await handleDeposit(

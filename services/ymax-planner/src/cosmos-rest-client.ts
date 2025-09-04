@@ -40,7 +40,7 @@ const CHAIN_CONFIGS: Record<string, Record<string, ChainConfig>> = {
       name: agoricMain.prettyName!,
     },
   },
-  devnet: {
+  testnet: {
     noble: {
       chainId: nobleTest.chainId!,
       restEndpoint: nobleTest.apis!.rest![0].address,
@@ -78,7 +78,8 @@ export class CosmosRestClient {
       throw new Error('`fetch` and `setTimeout` are required');
     }
 
-    this.agoricNetwork = config.agoricNetwork ?? 'testnet';
+    this.agoricNetwork =
+      config.agoricNetwork === 'mainnet' ? 'main' : 'testnet';
     this.log = io.log ?? (() => {});
     this.timeout = config.timeout ?? 10000; // 10s timeout
     this.retries = config.retries ?? 3;
