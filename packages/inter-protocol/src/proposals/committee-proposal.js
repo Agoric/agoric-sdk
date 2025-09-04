@@ -96,9 +96,9 @@ harden(startEconCharter);
  * @param {EconomyBootstrapPowers} powers
  */
 export const addGovernorsToEconCharter = async ({
-  consume: { reserveKit, vaultFactoryKit, econCharterKit, auctioneerKit },
+  consume: { reserveKit, vaultFactoryKit, econCharterKit },
   instance: {
-    consume: { reserve, VaultFactory, auctioneer },
+    consume: { reserve, VaultFactory },
   },
 }) => {
   const { creatorFacet } = E.get(econCharterKit);
@@ -114,11 +114,6 @@ export const addGovernorsToEconCharter = async ({
         label: 'VaultFactory',
         instanceP: VaultFactory,
         facetP: E.get(vaultFactoryKit).governorCreatorFacet,
-      },
-      {
-        label: 'auctioneer',
-        instanceP: auctioneer,
-        facetP: E.get(auctioneerKit).governorCreatorFacet,
       },
     ].map(async ({ label, instanceP, facetP }) => {
       const [instance, govFacet] = await Promise.all([instanceP, facetP]);
@@ -180,7 +175,6 @@ export const getManifestForInviteCommittee = async (
       },
       [addGovernorsToEconCharter.name]: {
         consume: {
-          auctioneerKit: t,
           econCharterKit: t,
           zoe: t,
           agoricNames: t,
@@ -193,7 +187,7 @@ export const getManifestForInviteCommittee = async (
           consume: { binaryVoteCounter: t },
         },
         instance: {
-          consume: { auctioneer: t, reserve: t, VaultFactory: t },
+          consume: { reserve: t, VaultFactory: t },
         },
       },
       [inviteToEconCharter.name]: {
