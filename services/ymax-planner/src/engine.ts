@@ -17,7 +17,7 @@ import { isPrimitive } from '@endo/pass-style';
 import { makePromiseKit, type PromiseKit } from '@endo/promise-kit';
 import { inspect } from 'node:util';
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
-import type { CosmosRPCClient } from './cosmos-rpc.ts';
+import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import { handleDeposit } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import {
@@ -32,10 +32,26 @@ const { isInteger } = Number;
 
 const sink = () => {};
 
+const STALE = 'STALE';
+
+const throwErrorCode = <Code extends string = string>(
+  message: string,
+  code: Code,
+): never => {
+  const err = Error(message);
+  Object.defineProperty(err, 'code', { value: code, enumerable: true });
+  throw err;
+};
+
 type CosmosEvent = {
   type: string;
   attributes?: Array<{ key: string; value: string }>;
 };
+
+type EventRecord = { blockHeight: bigint } & (
+  | { type: 'kvstore'; event: CosmosEvent }
+  | { type: 'transfer'; address: Bech32Address }
+);
 
 export const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
 export const PENDING_TX_PATH_PREFIX = 'published.ymax0.pendingTxs';
@@ -75,6 +91,8 @@ export const stripPrefix = (prefix: string, str: string) => {
  */
 const tryJsonParse = (json: string, replaceErr?: (err?: Error) => unknown) => {
   try {
+    const type = typeof json;
+    if (type !== 'string') throw Error(`input must be a string, not ${type}`);
     return JSON.parse(json);
   } catch (err) {
     if (!replaceErr) throw err;
@@ -281,17 +299,26 @@ type Powers = {
 };
 
 const processPortfolioEvents = async (
-  portfolioEvents: Array<{ path: string; value: string }>,
+  portfolioEvents: Array<{
+    path: string;
+    value: string;
+    eventRecord: EventRecord;
+  }>,
+  blockHeight: bigint,
   marshaller: SigningSmartWalletKit['marshaller'],
-  query: SigningSmartWalletKit['query'],
+  readAndDecodeStreamCellValue: (
+    vstoragePath: string,
+    options?: { minBlockHeight?: bigint; retries?: number },
+  ) => any,
   portfolioKeyForDepositAddr: Map<Bech32Address, string>,
+  deferrals: EventRecord[],
 ) => {
   await null;
-  for (const { path, value: vstorageValue } of portfolioEvents) {
+  for (const portfolioEvent of portfolioEvents) {
+    const { path, value: cellJson, eventRecord } = portfolioEvent;
     const streamCell = tryJsonParse(
-      vstorageValue,
-      _err =>
-        Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
+      cellJson,
+      _err => Fail`non-JSON value at vstorage path ${q(path)}: ${cellJson}`,
     );
     mustMatch(harden(streamCell), StreamCellShape);
     if (path === PORTFOLIOS_PATH_PREFIX) {
@@ -309,14 +336,29 @@ const processPortfolioEvents = async (
         if (portfoliosData.addPortfolio) {
           const key = portfoliosData.addPortfolio;
           console.warn('Detected new portfolio', key);
-          const status = await query.readPublished(
-            `${stripPrefix('published.', PORTFOLIOS_PATH_PREFIX)}.${key}`,
-          );
-          mustMatch(status, PortfolioStatusShapeExt, key);
-          const { depositAddress } = status;
-          if (!depositAddress) continue;
-          portfolioKeyForDepositAddr.set(depositAddress, key);
-          console.warn('Added new portfolio', key, depositAddress);
+          try {
+            const status = await readAndDecodeStreamCellValue(
+              `${PORTFOLIOS_PATH_PREFIX}.${key}`,
+              { minBlockHeight: eventRecord.blockHeight, retries: 4 },
+            );
+            mustMatch(status, PortfolioStatusShapeExt, key);
+            const { depositAddress } = status;
+            if (!depositAddress) continue;
+            portfolioKeyForDepositAddr.set(depositAddress, key);
+            console.warn('Added new portfolio', key, depositAddress);
+            deferrals.push({
+              blockHeight: eventRecord.blockHeight,
+              type: 'transfer' as const,
+              address: depositAddress,
+            });
+          } catch (err) {
+            if (err.code !== STALE) throw err;
+            console.error(
+              `Deferring addPortfolio of age ${blockHeight - eventRecord.blockHeight} block(s)`,
+              eventRecord,
+            );
+            deferrals.push(eventRecord);
+          }
         }
       }
     }
@@ -369,11 +411,10 @@ export const processPendingTxEvents = async (
   handlePendingTxFn = handlePendingTx,
   logFn = log,
 ) => {
-  for (const { path, value: vstorageValue } of events) {
+  for (const { path, value: cellJson } of events) {
     const streamCell = tryJsonParse(
-      vstorageValue,
-      _err =>
-        Fail`non-JSON value at vstorage path ${q(path)}: ${vstorageValue}`,
+      cellJson,
+      _err => Fail`non-JSON value at vstorage path ${q(path)}: ${cellJson}`,
     );
     mustMatch(harden(streamCell), StreamCellShape);
 
@@ -429,6 +470,56 @@ export const startEngine = async (
 ) => {
   await null;
   const { query, marshaller } = signingSmartWalletKit;
+  /**
+   * Read from a vstorage path, requiring the data to be a StreamCell of
+   * CapData-encoded values and returning the decoding of the final one.
+   * UNTIL https://github.com/Agoric/agoric-sdk/pull/11630
+   */
+  const readAndDecodeStreamCellValue = async (
+    vstoragePath: string,
+    {
+      minBlockHeight = 0n,
+      retries = 0,
+    }: { minBlockHeight?: bigint; retries?: number } = {},
+  ) => {
+    await null;
+    let finalErr: undefined | Error;
+    for (let attempt = 0; attempt <= retries; attempt += 1) {
+      let values: string[];
+      try {
+        const { blockHeight, result } = await query.vstorage.readStorageMeta(
+          vstoragePath,
+          { kind: 'data' } as const,
+        );
+        if (typeof blockHeight !== 'bigint') {
+          throw Fail`blockHeight ${blockHeight} must be a bigint`;
+        }
+        if (blockHeight < minBlockHeight) {
+          throwErrorCode(`old blockHeight ${blockHeight}`, STALE);
+        }
+        const streamCellJson = result.value;
+        const streamCell = tryJsonParse(
+          streamCellJson,
+          _err =>
+            Fail`non-JSON value at vstorage path ${q(vstoragePath)}: ${streamCellJson}`,
+        );
+        mustMatch(harden(streamCell), StreamCellShape);
+        // We have suitably fresh data; any further errors should propagate.
+        values = streamCell.values;
+      } catch (err) {
+        if (err.code || !finalErr) finalErr = err;
+        continue;
+      }
+      const strValue = values.at(-1) as string;
+      const lastValueCapData = tryJsonParse(
+        strValue,
+        _err =>
+          Fail`non-JSON StreamCell value for ${q(vstoragePath)} index ${q(values.length - 1)}: ${strValue}`,
+      );
+      return marshaller.fromCapData(lastValueCapData);
+    }
+    throw finalErr;
+  };
 
   const chainStatus = await rpc.request('status', {});
   console.warn('agoric chain status', chainStatus);
@@ -496,20 +587,43 @@ export const startEngine = async (
     throw Fail`Could not find vbankAsset for ${q(depositIbcDenom)}`;
   }
 
+  const deferrals = [] as EventRecord[];
+
+  const blockHeightFromSubscriptionResponse = (resp: SubscriptionResponse) => {
+    const { type: respType, value: respData } = resp;
+    switch (respType) {
+      case 'tendermint/event/NewBlockHeader':
+        return BigInt((respData.header as any).height);
+      case 'tendermint/event/Tx':
+        return BigInt((respData.TxResult as any).height);
+      default: {
+        console.error(
+          `Attempting to read block height from unexpected response type ${respType}`,
+          respData,
+        );
+        const obj = Object.values(respData)[0];
+        // @ts-expect-error
+        return BigInt(obj.height ?? obj.blockHeight ?? obj.block_height);
+      }
+    }
+  };
+
   // To avoid data gaps, establish subscriptions before gathering initial state.
-  const eventFilters = [
+  const subscriptionFilters = [
     // vstorage events are in BEGIN_BLOCK/END_BLOCK activity
     "tm.event = 'NewBlockHeader'",
     // transactions
     "tm.event = 'Tx'",
   ];
-  const eventResponses = rpc.subscribeAll(eventFilters);
-  const firstResult = await eventResponses.next();
+  const responses = rpc.subscribeAll(subscriptionFilters);
+  const firstResult = await responses.next();
   (firstResult.done === false && firstResult.value === undefined) ||
     Fail`Unexpected ready signal ${firstResult}`;
-  // console.log('subscribed to events', eventFilters);
+  // console.log('subscribed to events', subscriptionFilters);
 
-  // TODO: verify consumption of paginated data.
+  // TODO: Verify consumption of paginated data.
+  // TODO: Retry when data is associated with a block height lower than that of
+  //       the first result from `responses`.
   const portfolioKeys = await query.vstorage.keys(PORTFOLIOS_PATH_PREFIX);
   const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
@@ -520,6 +634,13 @@ export const startEngine = async (
     const { depositAddress } = status;
     if (!depositAddress) return;
     portfolioKeyForDepositAddr.set(depositAddress, portfolioKey);
+    // TODO: Use the block height associated with portfolioKey.
+    // https://github.com/Agoric/agoric-sdk/pull/11630
+    deferrals.push({
+      blockHeight: 0n,
+      type: 'transfer' as const,
+      address: depositAddress,
+    });
   }).done;
 
   const pendingTxKeys = await query.vstorage.keys(PENDING_TX_PATH_PREFIX);
@@ -559,24 +680,39 @@ export const startEngine = async (
   }).done;
 
   // console.warn('consuming events');
-  for await (const respContainer of eventResponses) {
-    const { query: _query, data: resp, events: respEvents } = respContainer;
-    const { type, value: respData } = resp;
-    if (!respEvents) {
-      console.warn('missing events', type);
+  for await (const respContainer of responses) {
+    const { query: _query, data: resp, events: eventRollups } = respContainer;
+    const { type: respType, value: respData } = resp;
+    if (!eventRollups) {
+      console.warn('missing event rollups', respType);
       continue;
     }
 
+    const respHeight = blockHeightFromSubscriptionResponse(resp);
+
     // Capture vstorage updates.
-    const eventRecords = Object.entries(respData).flatMap(([key, value]) => {
+    const oldEventRecords = deferrals.splice(0).filter(deferral => {
+      if (deferral.type === 'kvstore') return true;
+      deferrals.push(deferral);
+      return false;
+    }) as Array<EventRecord & { type: 'kvstore' }>;
+    const newEvents = Object.entries(respData).flatMap(([key, value]) => {
       // We care about result_begin_block/result_end_block/etc.
       if (!key.startsWith('result_')) return [];
       const events = (value as any)?.events;
-      if (!events) console.warn('missing events', type, key);
+      if (!events) console.warn('missing events', respType, key);
       return events ?? [];
     }) as CosmosEvent[];
+    const eventRecords = [
+      ...oldEventRecords,
+      ...newEvents.map(event => ({
+        blockHeight: respHeight,
+        type: 'kvstore' as const,
+        event,
+      })),
+    ];
     const vstorageEvents = partialMap(eventRecords, eventRecord => {
-      const { type: eventType, attributes: attrRecords } = eventRecord;
+      const { type: eventType, attributes: attrRecords } = eventRecord.event;
       // Filter for vstorage state_change events.
       // cf. golang/cosmos/types/events.go
       if (eventType !== 'state_change') return;
@@ -595,13 +731,21 @@ export const startEngine = async (
       const path = encodedKeyToPath(attributes.key);
 
       if (vstoragePathStartsWith(path, PORTFOLIOS_PATH_PREFIX)) {
-        return { type: 'portfolio' as const, path, value: attributes.value };
+        return {
+          type: 'portfolio' as const,
+          path,
+          value: attributes.value,
+          eventRecord,
+        };
       }
       if (vstoragePathStartsWith(path, PENDING_TX_PATH_PREFIX)) {
-        return { type: 'pendingTx' as const, path, value: attributes.value };
+        return {
+          type: 'pendingTx' as const,
+          path,
+          value: attributes.value,
+          eventRecord,
+        };
       }
-
-      return;
     });
 
     const portfolioEvents = vstorageEvents.filter(
@@ -614,9 +758,11 @@ export const startEngine = async (
     // Detect new portfolios.
     await processPortfolioEvents(
       portfolioEvents,
+      respHeight,
       marshaller,
-      query,
+      readAndDecodeStreamCellValue,
       portfolioKeyForDepositAddr,
+      deferrals,
     );
 
     await processPendingTxEvents(
@@ -626,23 +772,41 @@ export const startEngine = async (
     );
 
     // Detect activity against portfolio deposit addresses.
-    const addrsWithActivity: Bech32Address[] = [
+    const oldAddrActivity = deferrals.splice(0).filter(deferral => {
+      if (deferral.type === 'transfer') return true;
+      deferrals.push(deferral);
+      return false;
+    }) as Array<EventRecord & { type: 'transfer' }>;
+    const newActiveAddresses: Bech32Address[] = [
       ...new Set([
-        ...((respEvents['coin_received.receiver'] as Bech32Address[]) || []),
-        ...((respEvents['coin_spent.spender'] as Bech32Address[]) || []),
-        ...((respEvents['transfer.recipient'] as Bech32Address[]) || []),
-        ...((respEvents['transfer.sender'] as Bech32Address[]) || []),
+        ...((eventRollups['coin_received.receiver'] as Bech32Address[]) || []),
+        ...((eventRollups['coin_spent.spender'] as Bech32Address[]) || []),
+        ...((eventRollups['transfer.recipient'] as Bech32Address[]) || []),
+        ...((eventRollups['transfer.sender'] as Bech32Address[]) || []),
       ]),
     ];
+    const addrsWithActivity = [
+      ...oldAddrActivity,
+      ...newActiveAddresses.map(address => ({
+        blockHeight: respHeight,
+        type: 'transfer' as const,
+        address,
+      })),
+    ];
     const depositAddrsWithActivity = new Map(
-      partialMap(addrsWithActivity, addr => {
+      partialMap(addrsWithActivity, eventRecord => {
+        const { address: addr } = eventRecord;
         const portfolioKey = portfolioKeyForDepositAddr.get(addr);
-        return portfolioKey ? [addr, portfolioKey] : undefined;
+        return portfolioKey ? [addr, { portfolioKey, eventRecord }] : undefined;
       }),
     );
 
     const addrBalances = new Map() as Map<Bech32Address, Coin[]>;
-    await makeWorkPool(addrsWithActivity, undefined, async addr => {
+    await makeWorkPool(addrsWithActivity, undefined, async eventRecord => {
+      const { address: addr } = eventRecord;
+      // TODO: Switch to an API that exposes block height, so we can detect stale
+      // data and push to `deferrals`.
+      // cf. https://github.com/Agoric/agoric-sdk/pull/11630
       const balancesResp = await cosmosRest.getAccountBalances('agoric', addr);
       addrBalances.set(addr, balancesResp.balances);
     }).done;
@@ -662,7 +826,7 @@ export const startEngine = async (
     // Respond to deposits.
     const portfolioOps = await Promise.all(
       [...depositAddrsWithActivity.entries()].map(
-        async ([addr, portfolioKey]) => {
+        async ([addr, { portfolioKey, eventRecord: _eventRecord }]) => {
           const amount = pickBalance(addrBalances.get(addr), depositAsset);
           if (!amount) {
             console.warn(`No ${q(depositAsset.issuerName)} at ${addr}`);
@@ -674,6 +838,8 @@ export const startEngine = async (
             `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}`,
           );
 
+          // TODO: Switch to an API that exposes block height, so we can detect stale
+          // data and push to `deferrals`.
           const steps = await handleDeposit(
             amount,
             unprefixedPortfolioPath as any,

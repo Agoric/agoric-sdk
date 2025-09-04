@@ -80,14 +80,20 @@ export const makeVStorage = ({ fetch }, config) => {
   };
 
   /**
+   * Make a vstorage Children or Data query, returning the decoded result along
+   * with response metadata derived from fields documented at
+   * https://docs.cometbft.com/v1.0/spec/abci/abci++_methods#query (for
+   * successful responses, `log` and `height` [as `blockHeight`], and for error
+   * responses, `codespace` and `code`).
+   *
    * @template {'children' | 'data'} T
    * @param {string} [path]
    * @param {object} [opts]
    * @param {T} [opts.kind]
    * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
-   * @returns {Promise<T extends 'children' ? QueryChildrenResponse :QueryDataResponse >}
+   * @returns {Promise<{ blockHeight?: bigint, log?: string, result: T extends 'children' ? QueryChildrenResponse : QueryDataResponse }>}
    */
-  const readStorage = async (
+  const readStorageMeta = async (
     path = 'published',
     { kind = /** @type {T} */ ('children'), height = 0 } = {},
   ) => {
@@ -118,11 +124,31 @@ export const makeVStorage = ({ fetch }, config) => {
     }
 
     const { value: b64Value } = response;
-    // @ts-expect-error cast
-    return codec.response.decode(decodeBase64(b64Value));
+    const result = codec.response.decode(decodeBase64(b64Value));
+    return {
+      blockHeight:
+        response.height === undefined ? undefined : BigInt(response.height),
+      log: response.log,
+      // @ts-expect-error cast
+      result,
+    };
+  };
+
+  /**
+   * @template {'children' | 'data'} T
+   * @param {string} [path]
+   * @param {object} [opts]
+   * @param {T} [opts.kind]
+   * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
+   * @returns {Promise<T extends 'children' ? QueryChildrenResponse : QueryDataResponse>}
+   */
+  const readStorage = async (path = 'published', opts = {}) => {
+    const respWithMetadata = await readStorageMeta(path, opts);
+    return respWithMetadata.result;
   };
 
   const vstorage = {
+    readStorageMeta,
     readStorage,
     /**
      *

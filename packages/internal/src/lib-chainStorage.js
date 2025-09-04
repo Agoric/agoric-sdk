@@ -28,7 +28,8 @@ import * as cb from './callback.js';
 /**
  * @template [T=unknown]
  * @typedef StreamCell
- * @property {string} blockHeight decimal representation of a natural number
+ * @property {string} blockHeight corresponding with the write of `values`
+ *   (decimal representation of a natural number)
  * @property {T[]} values
  */
 
