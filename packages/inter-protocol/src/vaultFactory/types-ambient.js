@@ -9,7 +9,6 @@
  * @import {CollateralManager} from './vaultManager.js'
  * @import {AssetReserveLimitedCreatorFacet} from '../reserve/assetReserve.js'
  * @import {AssetReservePublicFacet} from '../reserve/assetReserve.js'
- * @import {AuctioneerPublicFacet} from '../auction/auctioneer.js'
  * @import {Timestamp} from '@agoric/time'
  * @import {RelativeTime} from '@agoric/time'
  */
@@ -48,8 +47,6 @@
  * @property {AddVaultType} addVaultType
  * @property {() => import('@agoric/zoe').Allocation} getRewardAllocation
  * @property {() => Promise<Invitation<string, never>>} makeCollectFeesInvitation
- * @property {() => import('@agoric/time').TimerWaker} makeLiquidationWaker
- * @property {() => import('@agoric/time').TimerWaker} makePriceLockWaker
  */
 
 /**
