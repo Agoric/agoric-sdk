@@ -761,6 +761,7 @@ test.serial(
 test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
   const { trader1, common, started, zoe, trader2 } = await setupTrader(t);
   const { usdc, bld, poc26 } = common.brands;
+  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
 
   const addr2 = {
     lca: 'agoric1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq64vywd',
@@ -786,7 +787,7 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
       { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
     ],
   };
-  const actualP = trader1.openPortfolio(
+  const open1P = trader1.openPortfolio(
     t,
     { Deposit: amount, Access: poc26.make(1n) },
     depositToAave,
@@ -797,7 +798,7 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
   );
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
-  const actualP2 = trader2.openPortfolio(
+  const open2P = trader2.openPortfolio(
     t,
     { Deposit: amount, Access: poc26.make(1n) },
     depositToAave,
@@ -813,30 +814,15 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
     addr2.lca,
   );
 
-  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleTransaction(zoe, resolverMakers);
+  await Promise.all([
+    settleTransaction(zoe, resolverMakers),
+    settleTransaction(zoe, resolverMakers, 1),
+  ]);
 
-  const cctpSettlementPromise2 = settleTransaction(
-    zoe,
-    resolverMakers,
-    1,
-    'success',
-    console.log,
-  );
-
-  await Promise.all([cctpSettlementPromise, cctpSettlementPromise2]);
-
-  const gmpSettlementPromise = settleTransaction(zoe, resolverMakers, 2);
-
-  const gmpSettlementPromise2 = settleTransaction(
-    zoe,
-    resolverMakers,
-    3,
-    'success',
-    console.log,
-  );
-
-  await Promise.all([gmpSettlementPromise, gmpSettlementPromise2]);
+  await Promise.all([
+    settleTransaction(zoe, resolverMakers, 2),
+    settleTransaction(zoe, resolverMakers, 3),
+  ]);
 
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
@@ -844,18 +830,14 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
 
-  const actual = await actualP;
-  await actualP2;
-
-  const result = actual.result as any;
-  t.is(passStyleOf(result.invitationMakers), 'remotable');
-
-  t.is(keys(result.publicSubscribers).length, 1);
-  const { storagePath } = result.publicSubscribers.portfolio;
-  t.log(storagePath);
-  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
-  t.snapshot(contents, 'vstorage');
-  t.snapshot(actual.payouts, 'refund payouts');
+  for (const openP of [open1P, open2P]) {
+    const { result, payouts } = await openP;
+    t.deepEqual(payouts.Deposit, { brand: usdc.brand, value: 0n });
+    const { storagePath } = result.publicSubscribers.portfolio;
+    t.log(storagePath);
+    const info = getPortfolioInfo(storagePath, common.bootstrap.storage);
+    t.snapshot(info.contents, storagePath);
+  }
 });
 
 const getCapDataStructure = cell => {
