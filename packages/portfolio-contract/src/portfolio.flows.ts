@@ -74,6 +74,7 @@ export type PortfolioInstanceContext = {
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
   resolverClient: GuestInterface<ResolverKit['client']>;
+  contractAccount: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>;
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
@@ -765,3 +766,9 @@ export const openPortfolio = (async (
   /* c8 ignore end */
 }) satisfies OrchestrationFlow;
 harden(openPortfolio);
+
+export const makeLCA = (async (orch: Orchestrator): Promise<LocalAccount> => {
+  const agoricChain = await orch.getChain('agoric');
+  return agoricChain.makeAccount();
+}) satisfies OrchestrationFlow;
+harden(makeLCA);

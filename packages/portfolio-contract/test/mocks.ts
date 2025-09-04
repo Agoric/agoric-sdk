@@ -28,6 +28,7 @@ import {
   buildTxPacketString,
   buildTxResponseString,
 } from '@agoric/orchestration/tools/ibc-mocks.ts';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { VowTools } from '@agoric/vow';
 import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
@@ -36,7 +37,8 @@ import { makePromiseKit } from '@endo/promise-kit';
 import type { AxelarId, GmpAddresses } from '../src/portfolio.contract.ts';
 import type { EVMContractAddressesMap } from '../src/type-guards.ts';
 
-export const localAccount0 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
+/** address of orch LCA for portfolio0, after contract/fee LCA */
+export const portfolio0lcaOrch = makeTestAddress(1); // agoric1q...c09z0g';
 
 export const prepareMockOrchAccounts = (
   zone: Zone,
@@ -206,7 +208,7 @@ export const makeUSDNIBCTraffic = (
         sourceChannel: 'channel-21',
         token: { denom: 'uusdc', amount: money },
         sender: signer,
-        receiver: 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+        receiver: portfolio0lcaOrch,
         timeoutHeight: { revisionHeight: 0n, revisionNumber: 0n },
         timeoutTimestamp: 300000000000n,
         memo: '',

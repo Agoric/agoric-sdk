@@ -11,11 +11,13 @@ import {
   inspectMapStore,
 } from '@agoric/internal/src/testing-utils.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
 import type { OfferArgsFor, StatusFor } from '../src/type-guards.ts';
 import { plannerClientMock } from '../tools/agents-mock.ts';
 import {
+  deploy,
   setupTrader,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
@@ -23,7 +25,7 @@ import {
 } from './contract-setup.ts';
 import {
   evmNamingDistinction,
-  localAccount0,
+  portfolio0lcaOrch,
   makeCCTPTraffic,
 } from './mocks.ts';
 import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
@@ -110,7 +112,7 @@ test('open portfolio with USDN position', async t => {
   t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
   t.is(
     contents[storagePath].accountIdByChain['agoric'],
-    `cosmos:agoric-3:${localAccount0}`,
+    `cosmos:agoric-3:${portfolio0lcaOrch}`,
     'LCA',
   );
   t.snapshot(done.payouts, 'refund payouts');
@@ -475,7 +477,7 @@ test('USDN claim fails currently', async t => {
   t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
   t.is(
     contents[storagePath].accountIdByChain['agoric'],
-    `cosmos:agoric-3:${localAccount0}`,
+    `cosmos:agoric-3:${portfolio0lcaOrch}`,
     'LCA',
   );
 
@@ -764,7 +766,7 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
   const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
 
   const addr2 = {
-    lca: 'agoric1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq64vywd',
+    lca: makeTestAddress(3), // agoric1q...rytxkw
     nobleICA: 'cosmos1test1',
     evm: '0xFbb89cC04ffb710b1f645b2cbEda0CE7D93294F4',
   } as const;
@@ -875,7 +877,7 @@ test('start deposit more to same', async t => {
   const info = await trader1.getPortfolioStatus();
   t.deepEqual(
     info.depositAddress,
-    'agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g',
+    makeTestAddress(2), // ...64vywd
   );
 });
 
@@ -915,4 +917,13 @@ test('redeem planner invitation', async t => {
   await trader1.openPortfolio(t, {}, {});
 
   await planner1.submit1();
+});
+
+test('address of LCA for fees is published', async t => {
+  const { common } = await deploy(t);
+  const { storage } = common.bootstrap;
+  await eventLoopIteration();
+  const info = storage.getDeserialized(`${ROOT_STORAGE_PATH}`).at(-1);
+  t.log(info);
+  t.deepEqual(info, { contractAccount: makeTestAddress(0) });
 });

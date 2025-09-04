@@ -26,6 +26,7 @@ import {
   AnyNatAmountShape,
   type AccountId,
   type Bech32Address,
+  type CosmosChainAddress,
 } from '@agoric/orchestration';
 import type {
   ContinuingInvitationSpec,
@@ -238,6 +239,9 @@ const ChainNameExtShape: TypedPattern<ChainNameExt> = M.string();
 
 // XXX relate paths to types a la readPublished()
 export type StatusFor = {
+  contract: {
+    contractAccount: CosmosChainAddress['value'];
+  };
   portfolios: {
     addPortfolio: `portfolio${number}`;
   };

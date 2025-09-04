@@ -23,7 +23,7 @@ import { encodeAbiParameters } from 'viem';
 export const makeIncomingEVMEvent = ({
   address = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
   sourceChain,
-  target = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+  target = makeTestAddress(0), // agoric1q...p7zqht
 }: {
   address?: `0x${string}`;
   sourceChain: string;
