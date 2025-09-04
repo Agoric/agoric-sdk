@@ -2,7 +2,12 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { protoMsgMockMap } from '@aglocal/boot/tools/ibc/mocks.ts';
 import { AckBehavior } from '@aglocal/boot/tools/supports.ts';
-import { makeProposalShapes } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import {
+  makeProposalShapes,
+  type OfferArgsFor,
+  type ProposalType,
+  type StatusFor,
+} from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.ts';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeClientMarshaller } from '@agoric/client-utils';
@@ -10,9 +15,10 @@ import { AmountMath } from '@agoric/ertp';
 import { BridgeId } from '@agoric/internal';
 import {
   defaultMarshaller,
+  defaultSerializer,
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
-import type { ChainInfo } from '@agoric/orchestration';
+import type { ChainInfo, IBCConnectionInfo } from '@agoric/orchestration';
 import type { CopyRecord } from '@endo/pass-style';
 import { mustMatch } from '@endo/patterns';
 import type { TestFn } from 'ava';
@@ -21,6 +27,8 @@ import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from './walletFactory.ts';
+import type { TransactionSettlementOfferArgs } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 
@@ -298,92 +306,6 @@ test.serial('delegate control', async t => {
   t.pass('ymaxControl is invocable');
 });
 
-// XXX this needs a CCTP tx setup to work which is not available atm
-test.skip('CCTP settlement works', async t => {
-  const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
-  const marshaller = makeClientMarshaller(v => (v as any).getBoardId());
-
-  const wallet = await wfd.provideSmartWallet(beneficiary, marshaller);
-  const controllerWallet = await wfd.provideSmartWallet(controllerAddr);
-
-  t.log('Getting creator facet of ymax0');
-  await controllerWallet.invokeEntry({
-    id: Date.now().toString(),
-    targetName: 'ymaxControl',
-    method: 'getCreatorFacet',
-    args: [],
-    saveResult: { name: 'ymax0.creatorFacet' },
-  });
-
-  const postalService = agoricNamesRemotes.instance.postalService;
-  const inviteId = Date.now().toString();
-
-  t.log('Delivering resolver invitation');
-  await controllerWallet.invokeEntry({
-    id: inviteId,
-    targetName: 'ymax0.creatorFacet',
-    method: 'deliverResolverInvitation',
-    args: [beneficiary, postalService],
-  });
-
-  const currentWalletRecord = await wallet.getCurrentWalletRecord();
-
-  t.log('Using resolver invitation to get invitationMaker');
-  await wallet.executeOffer({
-    id: 'settle-cctp',
-    invitationSpec: {
-      source: 'purse',
-      instance: currentWalletRecord.purses[0].balance.value[0].instance,
-      description: 'resolver',
-    },
-    proposal: { give: {}, want: {} },
-  });
-
-  await eventLoopIteration();
-
-  t.log('Executing CCTP settlement offer');
-  await wallet.executeOffer({
-    id: '123',
-    invitationSpec: {
-      source: 'continuing',
-      previousOffer: 'settle-cctp',
-      invitationMakerName: 'SettleTransaction',
-    },
-    proposal: { give: {}, want: {} },
-    offerArgs: {
-      txDetails: {
-        amount: 10_000n,
-        remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-        status: 'success',
-      },
-      remoteAxelarChain: 'eip155:42161',
-      txId: 'tx0',
-    },
-  });
-  const latestWalletRecord = wallet.getLatestUpdateRecord();
-
-  t.like(latestWalletRecord, {
-    status: {
-      id: '123',
-      invitationSpec: {
-        invitationMakerName: 'SettleTransaction',
-        source: 'continuing',
-        previousOffer: 'settle-cctp',
-      },
-      numWantsSatisfied: 1,
-      offerArgs: {
-        remoteAxelarChain: 'eip155:42161',
-        txDetails: {
-          amount: 10000n,
-          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-          status: 'success',
-        },
-        txId: 'tx0',
-      },
-    },
-  });
-});
-
 // Expect it fail when run independently
 test.serial('restart contract', async t => {
   const {
@@ -462,59 +384,6 @@ test.serial('restart contract', async t => {
     portfolioCountBefore + 1,
     'Should have exactly one additional portfolio after opening',
   );
-});
-
-// XXX this needs a CCTP tx setup to work which is not available atm
-test.skip('CCTP settlement works across contract restarts', async t => {
-  const { walletFactoryDriver: wfd } = t.context;
-
-  const myMarshaller = makeClientMarshaller(v => (v as any).getBoardId());
-  const wallet = await wfd.provideSmartWallet(beneficiary, myMarshaller);
-
-  await wallet.executeOffer({
-    id: '456',
-    invitationSpec: {
-      source: 'continuing',
-      previousOffer: 'settle-cctp',
-      invitationMakerName: 'SettleTransaction',
-    },
-    proposal: { give: {}, want: {} },
-    offerArgs: {
-      txDetails: {
-        amount: 40_000n,
-        remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-        status: 'success',
-      },
-      remoteAxelarChain: 'eip155:42161',
-      txId: 'tx0',
-    },
-  });
-
-  const finalUpdate = wallet.getLatestUpdateRecord();
-  t.log('Final wallet update:', finalUpdate);
-
-  t.like(finalUpdate, {
-    status: {
-      id: '456',
-      invitationSpec: {
-        invitationMakerName: 'SettleTransaction',
-        source: 'continuing',
-        previousOffer: 'settle-cctp',
-      },
-      numWantsSatisfied: 1,
-      offerArgs: {
-        remoteAxelarChain: 'eip155:42161',
-        txDetails: {
-          amount: 40000n,
-          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-          status: 'success',
-        },
-        txId: 'tx0',
-      },
-    },
-  });
-
-  t.log('Test completed: CCTP settlement works across contract restarts');
 });
 
 test.serial('remove old contract; start new contract', async t => {
@@ -601,6 +470,203 @@ test.serial(
     );
   },
 );
+
+// XXX this needs a CCTP tx setup to work which is not available atm
+test.serial('CCTP settlement works', async t => {
+  const { walletFactoryDriver: wfd, agoricNamesRemotes, storage } = t.context;
+
+  const addrResolver = 'agoric1resolver123';
+  const marshaller = makeClientMarshaller(v => (v as any).getBoardId());
+  const resolverSW = await wfd.provideSmartWallet(addrResolver, marshaller);
+
+  {
+    // kernel side...
+    const { EV } = t.context.runUtils;
+    const ymax0Kit = await (
+      EV.vat('bootstrap').consumeItem as ConsumeBootstrapItem
+    )('ymax0Kit');
+    const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
+
+    const postalService = await EV(agoricNames).lookup(
+      'instance',
+      'postalService',
+    );
+    await EV(ymax0Kit.creatorFacet).deliverResolverInvitation(
+      addrResolver,
+      postalService,
+    );
+  }
+
+  {
+    // Create portfolio that triggers CCTP transaction
+    const traderSW = await wfd.provideSmartWallet('agoric1test');
+    const { USDC, PoC26, BLD } = agoricNamesRemotes.brand as unknown as Record<
+      string,
+      Brand<'nat'>
+    >;
+
+    const offerArgs: OfferArgsFor['openPortfolio'] = {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount: make(USDC, 1000n) },
+        { src: '@agoric', dest: '@noble', amount: make(USDC, 1000n) },
+        { src: '@noble', dest: '@Arbitrum', amount: make(USDC, 1000n) },
+      ],
+    };
+    const proposal: ProposalType['openPortfolio'] = {
+      give: {
+        Deposit: make(USDC, 1000n),
+        Access: make(PoC26, 1n),
+        GmpFee: make(BLD, 100n),
+      },
+    };
+
+    // send only; don't wait for the whole flow
+    await traderSW.sendOffer({
+      id: 'create-pending-tx',
+      invitationSpec: {
+        source: 'agoricContract',
+        instancePath: ['ymax0'],
+        callPipe: [['makeOpenPortfolioInvitation']],
+      },
+      proposal,
+      offerArgs,
+    });
+
+    await eventLoopIteration();
+
+    t.log('@@storage keys', storage.data.keys());
+  }
+
+  t.log('Using resolver invitation to get invitationMaker');
+  const { purses } = await resolverSW.getCurrentWalletRecord();
+  const invitationAmount = purses[0].balance;
+  await resolverSW.executeOffer({
+    id: 'settle-cctp',
+    invitationSpec: {
+      source: 'purse',
+      instance: invitationAmount.value[0].instance,
+      description: 'resolver',
+    },
+    proposal: { give: {}, want: {} },
+  });
+
+  const getData = (path: string) =>
+    storage.getValues(path).map(defaultSerializer.parse).at(-1);
+  const { accountIdByChain } = getData(
+    'published.ymax0.portfolios.portfolio0',
+  ) as StatusFor['portfolio'];
+
+  const { bridgeUtils } = t.context;
+  const { channelId: agoricToNobleChannel } = (
+    getData(
+      'published.agoricNames.chainConnection.agoriclocal_noblelocal',
+    ) as IBCConnectionInfo
+  ).transferChannel;
+
+  // Simulate IBC transfer acknowledgment (agoric -> noble)
+  await bridgeUtils.runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sender: accountIdByChain.agoric,
+      target: accountIdByChain.noble,
+      sourceChannel: agoricToNobleChannel,
+      sequence: '1', // or whatever sequence number
+      amount: 1000n,
+      denom: 'uusdc',
+    }),
+  );
+
+  t.log('Executing CCTP settlement offer');
+  const offerArgs: TransactionSettlementOfferArgs = {
+    txId: 'tx0',
+    status: 'success',
+  };
+  await resolverSW.executeOffer({
+    id: '123',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'settle-cctp',
+      invitationMakerName: 'SettleTransaction',
+    },
+    proposal: { give: {}, want: {} },
+    offerArgs,
+  });
+  const latestWalletRecord = resolverSW.getLatestUpdateRecord();
+
+  t.like(latestWalletRecord, {
+    status: {
+      id: '123',
+      invitationSpec: {
+        invitationMakerName: 'SettleTransaction',
+        source: 'continuing',
+        previousOffer: 'settle-cctp',
+      },
+      numWantsSatisfied: 1,
+      offerArgs: {
+        remoteAxelarChain: 'eip155:42161',
+        txDetails: {
+          amount: 10000n,
+          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+          status: 'success',
+        },
+        txId: 'tx0',
+      },
+    },
+  });
+});
+
+// XXX this needs a CCTP tx setup to work which is not available atm
+test.skip('CCTP settlement works across contract restarts', async t => {
+  const { walletFactoryDriver: wfd } = t.context;
+
+  const myMarshaller = makeClientMarshaller(v => (v as any).getBoardId());
+  const wallet = await wfd.provideSmartWallet(beneficiary, myMarshaller);
+
+  await wallet.executeOffer({
+    id: '456',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'settle-cctp',
+      invitationMakerName: 'SettleTransaction',
+    },
+    proposal: { give: {}, want: {} },
+    offerArgs: {
+      txDetails: {
+        amount: 40_000n,
+        remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+        status: 'success',
+      },
+      remoteAxelarChain: 'eip155:42161',
+      txId: 'tx0',
+    },
+  });
+
+  const finalUpdate = wallet.getLatestUpdateRecord();
+  t.log('Final wallet update:', finalUpdate);
+
+  t.like(finalUpdate, {
+    status: {
+      id: '456',
+      invitationSpec: {
+        invitationMakerName: 'SettleTransaction',
+        source: 'continuing',
+        previousOffer: 'settle-cctp',
+      },
+      numWantsSatisfied: 1,
+      offerArgs: {
+        remoteAxelarChain: 'eip155:42161',
+        txDetails: {
+          amount: 40000n,
+          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+          status: 'success',
+        },
+        txId: 'tx0',
+      },
+    },
+  });
+
+  t.log('Test completed: CCTP settlement works across contract restarts');
+});
 
 // XXX this needs a CCTP tx setup to work which is not available atm
 test.skip('CCTP settlement works with new invitation after contract remove and start', async t => {
