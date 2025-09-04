@@ -32,7 +32,11 @@ import {
   type YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
-import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
+import type {
+  AccountInfoFor,
+  GMPAccountInfo,
+  PortfolioKit,
+} from './portfolio.exo.ts';
 import {
   AaveProtocol,
   BeefyProtocol,
@@ -165,14 +169,15 @@ export type ProtocolDetail<
  */
 export const trackFlow = async (
   reporter: GuestInterface<PortfolioKit['reporter']>,
-  todo: (() => Promise<AssetMovement>)[],
+  todo: (() => AssetMovement)[],
 ) => {
+  await null;
   const flowId = reporter.allocateFlowId();
   let step = 1;
   const moves: AssetMovement[] = [];
   try {
     for (const makeMove of todo) {
-      const move = await makeMove();
+      const move = makeMove();
       moves.push(move);
       trace(step, 'step starting', moveStatus(move));
       reporter.publishFlowStatus(flowId, { step, ...moveStatus(move) });
@@ -218,6 +223,19 @@ export const trackFlow = async (
   }
 };
 
+const cosmosChainInfos = new Map<
+  string,
+  AccountInfoFor['agoric'] | AccountInfoFor['noble']
+>();
+const evmChainInfos = new Map<string, GMPAccountInfo>();
+
+export const getCosmosAccountInfo = <C extends 'agoric' | 'noble'>(
+  chainName: C,
+): AccountInfoFor[C] => cosmosChainInfos.get(chainName) as AccountInfoFor[C];
+export const getEVMAccountInfo = <C extends 'agoric' | 'noble'>(
+  chainName: C,
+): GMPAccountInfo => evmChainInfos.get(chainName) as GMPAccountInfo;
+
 export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
   orch: Orchestrator,
   chainName: C,
@@ -259,7 +277,20 @@ export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
       return info as AccountInfoFor[C];
     }
     default:
+      // TODO add generic support for other cosmos chains
       throw Error('unreachable');
+  }
+};
+
+const requestedCosmosChains = new Set<'agoric' | 'noble'>();
+const initChains = async (
+  orch: Orchestrator,
+  kit: GuestInterface<PortfolioKit>,
+) => {
+  await null;
+  for (const chainName of requestedCosmosChains) {
+    const info = await provideCosmosAccount(orch, chainName, kit);
+    cosmosChainInfos.set(chainName, info);
   }
 };
 
@@ -370,6 +401,10 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
   }
 };
 
+const evmAccounts = new Map();
+const getEVMInfo = (chain: AxelarChain) =>
+  evmAccounts.get(chain) || Fail`no evm info for ${chain}`;
+
 const stepFlow = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -377,31 +412,39 @@ const stepFlow = async (
   moves: MovementDesc[],
   kit: GuestInterface<PortfolioKit>,
 ) => {
-  const todo: (() => Promise<AssetMovement>)[] = [];
+  const todo: (() => AssetMovement)[] = [];
+  const pending: Promise<void>[] = [];
 
-  const provideEVMInfo = async (chain: AxelarChain, move: MovementDesc) => {
+  const provideEVMInfo = async (way: Way, fee?: NatAmount) => {
+    const chain =
+      'dest' in way
+        ? (way.dest as AxelarChain)
+        : 'src' in way
+          ? (way.src as AxelarChain)
+          : Fail`way must have either src or dest: ${q(way)}`;
+    assert(keys(AxelarChain).includes(chain));
     const axelar = await orch.getChain('axelar');
     const { denom } = ctx.gmpFeeInfo;
-    const fee = { denom, value: move.fee ? move.fee.value : 0n };
+    const gmpFee = { denom, value: fee ? fee.value : 0n };
     const { axelarIds, gmpAddresses } = ctx;
-    const gmp = { chain: axelar, fee: move.fee?.value || 0n, axelarIds }; // XXX throw if fee missing?
-    const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
+    const gmp = { chain: axelar, fee: gmpFee.value, axelarIds }; // XXX throw if fee missing?
+    const { lca } = getCosmosAccountInfo('agoric');
     const gInfo = await provideEVMAccount(chain, gmp, lca, ctx, kit);
     const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
 
     const evmCtx: EVMContext = harden({
       addresses: ctx.contracts[chain],
       lca,
-      gmpFee: fee,
+      gmpFee,
       gmpChain: axelar,
       axelarIds,
       gmpAddresses,
       resolverClient: ctx.resolverClient,
     });
-    return { evmCtx, gInfo, accountId };
+    evmAccounts.set(chain, { evmCtx, gInfo, accountId });
   };
 
-  const makeEVMProtocolStep = async <P extends 'Compound' | 'Aave' | 'Beefy'>(
+  const makeEVMProtocolStep = <P extends 'Compound' | 'Aave' | 'Beefy'>(
     way: Way & { how: P },
     move: MovementDesc,
   ) => {
@@ -417,8 +460,7 @@ const stepFlow = async (
     };
     const pImpl = protocolImplMap[way.how];
 
-    const { evmCtx, gInfo, accountId } = await provideEVMInfo(evmChain, move);
-
+    const { evmCtx, gInfo, accountId } = getEVMInfo(evmChain);
     const pos = kit.manager.providePosition(way.poolKey, way.how, accountId);
 
     const { amount } = move;
@@ -444,11 +486,8 @@ const stepFlow = async (
     }
   };
 
-  const provideAgoricNoble = () =>
-    Promise.all([
-      provideCosmosAccount(orch, 'agoric', kit),
-      provideCosmosAccount(orch, 'noble', kit),
-    ]);
+  requestedCosmosChains.add('agoric');
+  requestedCosmosChains.add('noble');
 
   for (const move of moves) {
     trace('wayFromSrcToDesc?', move);
@@ -461,12 +500,8 @@ const stepFlow = async (
           Deposit: amount,
           ...('GmpFee' in give ? { GmpFee: give.GmpFee } : {}),
         });
-        todo.push(async () => {
-          const { lca, lcaIn } = await provideCosmosAccount(
-            orch,
-            'agoric',
-            kit,
-          );
+        todo.push(() => {
+          const { lca, lcaIn } = getCosmosAccountInfo('agoric');
           const account = move.dest === '+agoric' ? lcaIn : lca;
           return {
             how: 'localTransfer',
@@ -474,6 +509,7 @@ const stepFlow = async (
             dest: { account },
             amount, // XXX use amounts.Deposit
             apply: async () => {
+              console.log('HERE', { seat, account, amounts });
               await ctx.zoeTools.localTransfer(seat, account, amounts);
             },
             recover: async () => {
@@ -485,8 +521,8 @@ const stepFlow = async (
       }
       case 'withdrawToSeat': {
         const amounts = { Cash: amount };
-        todo.push(async () => {
-          const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
+        todo.push(() => {
+          const { lca } = getCosmosAccountInfo('agoric');
           return {
             how: 'withdrawToSeat',
             src: { account: lca },
@@ -504,12 +540,8 @@ const stepFlow = async (
       }
 
       case 'send':
-        todo.push(async () => {
-          const { lca, lcaIn } = await provideCosmosAccount(
-            orch,
-            'agoric',
-            kit,
-          );
+        todo.push(() => {
+          const { lca, lcaIn } = getCosmosAccountInfo('agoric');
           return {
             how: 'send',
             amount,
@@ -526,8 +558,9 @@ const stepFlow = async (
       case 'IBC': {
         if (way.src === 'agoric' && way.dest === 'noble') {
           const { how, apply, recover } = agoricToNoble;
-          todo.push(async () => {
-            const [aInfo, nInfo] = await provideAgoricNoble();
+          todo.push(() => {
+            const aInfo = getCosmosAccountInfo('agoric');
+            const nInfo = getCosmosAccountInfo('noble');
             const ctxI = { usdc: ctx.usdc };
             return {
               how,
@@ -540,8 +573,9 @@ const stepFlow = async (
           });
         } else if (way.src === 'noble' && way.dest === 'agoric') {
           const { how, apply, recover } = nobleToAgoric;
-          todo.push(async () => {
-            const [aInfo, nInfo] = await provideAgoricNoble();
+          todo.push(() => {
+            const aInfo = getCosmosAccountInfo('agoric');
+            const nInfo = getCosmosAccountInfo('noble');
             const ctxI = { usdc: ctx.usdc };
             return {
               how,
@@ -557,18 +591,12 @@ const stepFlow = async (
       }
 
       case 'CCTP': {
-        todo.push(async () => {
-          const { how, apply, recover } = CCTP;
-          const [{ lca }, nInfo, axelar] = await Promise.all([
-            provideCosmosAccount(orch, 'agoric', kit),
-            provideCosmosAccount(orch, 'noble', kit),
-            orch.getChain('axelar'),
-          ]);
-
-          const evmChain = 'dest' in way ? way.dest : way.src;
-          const { evmCtx, gInfo } = await provideEVMInfo(evmChain, move);
+        pending.push(provideEVMInfo(way, move.fee));
+        todo.push(() => {
+          const nInfo = getCosmosAccountInfo('noble');
 
           if ('dest' in way) {
+            const { gInfo } = getEVMInfo(way.dest);
             return {
               how: CCTP.how,
               amount,
@@ -578,6 +606,7 @@ const stepFlow = async (
               recover: () => CCTP.recover(ctx, amount, nInfo, gInfo),
             };
           } else {
+            const { evmCtx, gInfo } = getEVMInfo(way.src);
             return {
               how: CCTPfromEVM.how,
               amount,
@@ -592,8 +621,8 @@ const stepFlow = async (
       }
 
       case 'USDN': {
-        todo.push(async () => {
-          const nInfo = await provideCosmosAccount(orch, 'noble', kit);
+        todo.push(() => {
+          const nInfo = getCosmosAccountInfo('noble');
           const acctId = coerceAccountId(nInfo.ica.getAddress());
           const pos = kit.manager.providePosition('USDN', 'USDN', acctId);
           const vault = way.poolKey === 'USDNVault' ? 1 : undefined;
@@ -625,18 +654,21 @@ const stepFlow = async (
       }
 
       case 'Compound':
+        pending.push(provideEVMInfo(way, move.fee));
         todo.push(() =>
           makeEVMProtocolStep(way as Way & { how: 'Compound' }, move),
         );
         break;
 
       case 'Aave':
+        pending.push(provideEVMInfo(way, move.fee));
         todo.push(() =>
           makeEVMProtocolStep(way as Way & { how: 'Aave' }, move),
         );
         break;
 
       case 'Beefy':
+        pending.push(provideEVMInfo(way, move.fee));
         todo.push(() =>
           makeEVMProtocolStep(way as Way & { how: 'Beefy' }, move),
         );
@@ -647,6 +679,8 @@ const stepFlow = async (
     }
   }
 
+  await initChains(orch, kit);
+  await Promise.all(pending);
   await trackFlow(kit.reporter, todo);
   trace('stepFlow done');
 };
