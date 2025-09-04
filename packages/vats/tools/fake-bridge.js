@@ -299,16 +299,24 @@ export const fakeLocalChainBridgeQueryHandler = message => {
       };
     }
     case '/ibc.applications.transfer.v1.QueryDenomHashRequest': {
-      // native agoric assets cause this query throw
+      const respType = '/ibc.applications.transfer.v1.QueryDenomHashResponse';
+
+      // native agoric assets cause this query to error
       if (message.trace === 'ubld') {
-        throw new Error('ubld denomination trace not found');
+        return {
+          error: 'ubld denomination trace not found',
+          height: '1',
+          reply: {
+            '@type': respType,
+            hash: '',
+          },
+        };
       }
 
       return {
-        error: '',
         height: '1',
         reply: {
-          '@type': '/ibc.applications.transfer.v1.QueryDenomHashResponse',
+          '@type': respType,
           hash: LOCALCHAIN_QUERY_DENOM_HASH_DEFAULT_VALUE,
         },
       };

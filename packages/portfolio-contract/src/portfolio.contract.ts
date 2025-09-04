@@ -275,20 +275,21 @@ export const contract = async (
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
-  const { rebalance, rebalanceFromTransfer } = orchestrateAll(
-    {
-      rebalance: flows.rebalance,
-      rebalanceFromTransfer: flows.rebalanceFromTransfer,
-    },
-    ctx1,
-  );
+  const { rebalance, parseInboundTransfer: parseInboundTransfer } =
+    orchestrateAll(
+      {
+        rebalance: flows.rebalance,
+        parseInboundTransfer: flows.parseInboundTransfer,
+      },
+      ctx1,
+    );
 
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
     vowTools,
     axelarIds,
     rebalance,
-    rebalanceFromTransfer,
+    parseInboundTransfer: parseInboundTransfer,
     proposalShapes,
     offerArgsShapes,
     timer: timerService,
