@@ -67,9 +67,6 @@ const ignore = () => {};
 
 const tmpDir = makeTempDirFactory(tmp);
 
-// eslint-disable-next-line no-unused-vars
-let whenHellFreezesOver = null;
-
 const TELEMETRY_SERVICE_NAME = 'agd-cosmos';
 
 const PORT_SUFFIX = 'Port';
@@ -634,9 +631,6 @@ export default async function main(
   // Actually run the main ag-chain-cosmos program.  Before we start the daemon,
   // there will be a call to nodePort/AG_COSMOS_INIT, otherwise exit.
   const nodePort = registerPortHandler(toSwingSet);
-
-  // Need to keep the process alive until Go exits.
-  whenHellFreezesOver = new Promise(() => {});
   agcc.runAgCosmosDaemon(nodePort, fromGo, [progname, ...args]);
 
   /**

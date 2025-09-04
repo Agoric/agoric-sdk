@@ -83,10 +83,11 @@ export const pspawn = (bin, { spawn, cwd }) => {
  * @param {object} io
  * @param {ReturnType<typeof pspawn>} io.pspawnMake promise-style spawn of 'make' with cwd set
  * @param {ReturnType<typeof pspawn>} io.pspawnAgd promise-style spawn of 'agd' with cwd set
+ * @param {import('node:fs/promises')['rm']} io.rm the file remover
  * @param {import('child_process').StdioOptions} [io.stdio]
  * @param {typeof console.log} io.log
  */
-export const makeScenario2 = ({ pspawnMake, pspawnAgd, log, stdio }) => {
+export const makeScenario2 = ({ pspawnMake, pspawnAgd, rm, log, stdio }) => {
   const runMake = (args, opts = { stdio: stdio || onlyStderr }) => {
     // console.debug('make', ...args);
     log('make', ...args);
@@ -129,11 +130,14 @@ export const makeScenario2 = ({ pspawnMake, pspawnAgd, log, stdio }) => {
         stdio: stdio || onlyStderr,
       });
     },
-    export: () =>
-      pspawnAgd(
-        ['export', '--home=t1/n0', '--export-dir=t1/n0/genesis-export'],
+    export: async () => {
+      const exportDir = 't1/n0/genesis-export';
+      await rm(exportDir, { recursive: true, force: true });
+      return pspawnAgd(
+        ['export', '--home=t1/n0', `--export-dir=${exportDir}`],
         { stdio: stdio || onlyStderr },
-      ).exit,
+      ).exit;
+    },
   });
 };
 
