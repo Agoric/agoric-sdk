@@ -3,7 +3,8 @@
 // We need some pre-lockdown shimming.
 import '@endo/init/pre-remoting.js';
 import './shims.cjs';
-import '@endo/lockdown/commit.js';
+// import '@endo/lockdown/commit-debug.js';
+import './lockdown.js';
 
 import { getConfig } from './config.ts';
 
