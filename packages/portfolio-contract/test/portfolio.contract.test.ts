@@ -21,10 +21,14 @@ import {
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
-import { evmNamingDistinction, localAccount0 } from './mocks.ts';
+import {
+  evmNamingDistinction,
+  localAccount0,
+  makeCCTPTraffic,
+} from './mocks.ts';
 import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
 
-const { fromEntries, keys } = Object;
+const { fromEntries, keys, values } = Object;
 
 // Use an EVM chain whose axelar ID differs from its chain name
 const { sourceChain } = evmNamingDistinction;
@@ -760,34 +764,19 @@ test.serial(
     const { trader1, common, started, zoe, trader2 } = await setupTrader(t);
     const { usdc, bld, poc26 } = common.brands;
 
-    // XXX: values found from reverse engineering.
-    const stringToBase64 = str => Buffer.from(str).toString('base64');
-    const msgDataPayload = Buffer.concat([
-      Buffer.from(
-        '\nj\n!/circle.cctp.v1.MsgDepositForBurn\x12E\n\fcosmos1test1\x12\n3333330000',
-      ),
-      Buffer.from(
-        'GAMiIAAAAAAAAAAAAAAAAPu4nMBP+3ELH2RbLL7aDOfZMpT0KgU=',
-        'base64',
-      ),
-      Buffer.from('uusdc'),
-    ]);
-    const msgData = {
-      type: 1,
-      data: msgDataPayload.toString('base64'),
-      memo: '',
-    };
-    const ackData = {
-      result: stringToBase64(
-        '\x12+\n)/circle.cctp.v1.MsgDepositForBurnResponse',
-      ),
-    };
-    common.mocks.ibcBridge.addMockAck(
-      stringToBase64(JSON.stringify(msgData)),
-      stringToBase64(JSON.stringify(ackData)),
-    );
-
+    const addr2 = {
+      lca: 'agoric1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq64vywd',
+      nobleICA: 'cosmos1test1',
+      evm: '0xFbb89cC04ffb710b1f645b2cbEda0CE7D93294F4',
+    } as const;
     const amount = usdc.units(3_333.33);
+
+    for (const { msg, ack } of values(
+      makeCCTPTraffic(addr2.nobleICA, `${amount.value}`, addr2.evm),
+    )) {
+      common.mocks.ibcBridge.addMockAck(msg, ack);
+    }
+
     const feeAcct = bld.make(100n);
     const feeCall = bld.make(100n);
 
@@ -815,9 +804,6 @@ test.serial(
       { Deposit: amount, Access: poc26.make(1n) },
       depositToAave,
     );
-    const mockEVMAddress = '0xFbb89cC04ffb710b1f645b2cbEda0CE7D93294F4';
-    const secondAccountAddress =
-      'agoric1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq64vywd';
 
     await simulateCCTPAck(common.utils).finally(() =>
       simulateAckTransferToAxelar(common.utils),
@@ -825,8 +811,8 @@ test.serial(
     await simulateUpcallFromAxelar(
       common.mocks.transferBridge,
       sourceChain,
-      mockEVMAddress,
-      secondAccountAddress,
+      addr2.evm,
+      addr2.lca,
     );
 
     const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
@@ -840,10 +826,7 @@ test.serial(
       console.log,
     );
 
-    const [cctpResult, cctpResult2] = await Promise.all([
-      cctpSettlementPromise,
-      cctpSettlementPromise2,
-    ]);
+    await Promise.all([cctpSettlementPromise, cctpSettlementPromise2]);
 
     const gmpSettlementPromise = settleTransaction(zoe, resolverMakers, 2);
 
@@ -864,7 +847,7 @@ test.serial(
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
 
     const actual = await actualP;
-    const actual2 = await actualP2;
+    await actualP2;
 
     const result = actual.result as any;
     t.is(passStyleOf(result.invitationMakers), 'remotable');
@@ -880,6 +863,7 @@ test.serial(
     t.snapshot(actual.payouts, 'refund payouts');
   },
 );
+
 const getCapDataStructure = cell => {
   const { body, slots } = JSON.parse(cell);
   const structure = JSON.parse(body.replace(/^#/, ''));
