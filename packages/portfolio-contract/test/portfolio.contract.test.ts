@@ -13,7 +13,7 @@ import {
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
-import type { StatusFor } from '../src/type-guards.ts';
+import type { OfferArgsFor, StatusFor } from '../src/type-guards.ts';
 import { plannerClientMock } from '../tools/agents-mock.ts';
 import {
   setupTrader,
@@ -791,17 +791,18 @@ test.serial(
     const feeAcct = bld.make(100n);
     const feeCall = bld.make(100n);
 
+    const depositToAave: OfferArgsFor['openPortfolio'] = {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+      ],
+    };
     const actualP = trader1.openPortfolio(
       t,
       { Deposit: amount, Access: poc26.make(1n) },
-      {
-        flow: [
-          { src: '<Deposit>', dest: '@agoric', amount },
-          { src: '@agoric', dest: '@noble', amount },
-          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
-          { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
-        ],
-      },
+      depositToAave,
     );
 
     await simulateCCTPAck(common.utils).finally(() =>
@@ -812,14 +813,7 @@ test.serial(
     const actualP2 = trader2.openPortfolio(
       t,
       { Deposit: amount, Access: poc26.make(1n) },
-      {
-        flow: [
-          { src: '<Deposit>', dest: '@agoric', amount },
-          { src: '@agoric', dest: '@noble', amount },
-          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
-          { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
-        ],
-      },
+      depositToAave,
     );
     const mockEVMAddress = '0xFbb89cC04ffb710b1f645b2cbEda0CE7D93294F4';
     const secondAccountAddress =
