@@ -30,11 +30,8 @@ const getMnemonicFromGCP = async (client: SecretManager): Promise<string> => {
   const name = `projects/${GCP_PROJECT_ID}/secrets/${GCP_SECRET_NAME}/versions/latest`;
 
   const [version] = await client.accessSecretVersion({ name });
-  const payload = version.payload?.data?.toString();
-
-  if (!payload) {
-    throw new Error('Missing secret payload');
-  }
+  const payload =
+    version.payload?.data?.toString() || Fail`Missing secret payload`;
 
   return payload;
 };
