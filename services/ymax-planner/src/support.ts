@@ -44,11 +44,12 @@ export const usdcAddresses: UsdcAddresses = {
 
 export const getEvmRpcMap = (
   net: string,
-  alchemy: string,
+  alchemyApiKey: string,
 ): Record<CaipChainId, string> => {
   if (net === 'mainnet') {
     return {
-      'eip155:1': `https://eth-mainnet.g.alchemy.com/v2/${alchemy}`,
+      // Source: https://www.alchemy.com/rpc/ethereum
+      'eip155:1': `https://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
       // Source: https://build.avax.network/docs/tooling/rpc-providers#http
       'eip155:43114': 'https://api.avax.network/ext/bc/C/rpc',
       // Source: https://docs.arbitrum.io/build-decentralized-apps/reference/node-providers
@@ -61,7 +62,7 @@ export const getEvmRpcMap = (
   }
 
   return {
-    'eip155:11155111': `https://eth-sepolia.g.alchemy.com/v2/${alchemy}`,
+    'eip155:11155111': `https://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
     'eip155:43113': 'https://api.avax-test.network/ext/bc/C/rpc',
     'eip155:421614': 'https://arbitrum-sepolia-rpc.publicnode.com',
     'eip155:11155420': 'https://optimism-sepolia-rpc.publicnode.com',
@@ -70,20 +71,20 @@ export const getEvmRpcMap = (
 };
 type CreateContextParams = {
   net?: 'mainnet' | 'testnet';
-  alchemy: string;
+  alchemyApiKey: string;
 };
 
 export type EvmProviders = Partial<Record<CaipChainId, JsonRpcProvider>>;
 
 export const createEVMContext = async ({
   net = 'mainnet',
-  alchemy,
+  alchemyApiKey,
 }: CreateContextParams): Promise<
   Pick<EvmContext, 'evmProviders' | 'usdcAddresses'>
 > => {
-  if (!alchemy) throw Error(`alchemy not defined`);
+  if (!alchemyApiKey) throw Error('missing alchemyApiKey');
 
-  const urls = getEvmRpcMap(net, alchemy);
+  const urls = getEvmRpcMap(net, alchemyApiKey);
   const evmProviders = Object.fromEntries(
     Object.entries(urls).map(([caip, rpcUrl]) => [
       caip,

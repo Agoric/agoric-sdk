@@ -8,7 +8,7 @@ const GCP_SECRET_NAME = 'YMAX_CONTROL_MNEMONIC';
 
 export interface YmaxPlannerConfig {
   readonly mnemonic: string;
-  readonly alchemy: string;
+  readonly alchemyApiKey: string;
   readonly spectrum: {
     readonly apiUrl?: string;
     readonly timeout: number;
@@ -95,7 +95,7 @@ export const loadConfig = async (
 
     const config: YmaxPlannerConfig = harden({
       mnemonic,
-      alchemy: validateRequired(env, 'ALCHEMY_API_KEY'),
+      alchemyApiKey: validateRequired(env, 'ALCHEMY_API_KEY'),
       spectrum: {
         apiUrl: validateOptionalUrl(env, 'SPECTRUM_API_URL'),
         timeout: parsePositiveInteger(env, 30000, 'SPECTRUM_API_TIMEOUT'),
