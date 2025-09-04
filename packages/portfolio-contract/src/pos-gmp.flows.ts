@@ -135,7 +135,7 @@ export const CCTPfromEVM = {
     await sendGMPContractCall(ctx, src, calls);
 
     const { result } = ctx.resolverClient.registerTransaction(
-      TxType.NOBLE_WITHDRAW,
+      TxType.CCTP_TO_NOBLE,
       coerceAccountId(dest.ica.getAddress()),
       amount.value,
     );
@@ -170,7 +170,7 @@ export const CCTP = {
 
     trace(`CCTP transaction initiated, waiting for confirmation...`);
     const { result } = ctx.resolverClient.registerTransaction(
-      TxType.CCTP,
+      TxType.CCTP_TO_EVM,
       destinationAddress,
       amount.value,
     );

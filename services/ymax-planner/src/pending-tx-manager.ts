@@ -47,7 +47,7 @@ export type PendingTx = {
   txId: TxId;
 } & PublishedTx;
 
-type CctpTx = PendingTx & { type: typeof TxType.CCTP; amount: bigint };
+type CctpTx = PendingTx & { type: typeof TxType.CCTP_TO_EVM; amount: bigint };
 type GmpTx = PendingTx & { type: typeof TxType.GMP };
 
 export type PendingTxMonitor<T extends PendingTx = PendingTx> = {
@@ -60,7 +60,7 @@ export type PendingTxMonitor<T extends PendingTx = PendingTx> = {
 };
 
 type MonitorRegistry = {
-  [TxType.CCTP]: PendingTxMonitor<CctpTx>;
+  [TxType.CCTP_TO_EVM]: PendingTxMonitor<CctpTx>;
   [TxType.GMP]: PendingTxMonitor<GmpTx>;
 };
 
@@ -133,7 +133,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
 };
 
 const createMonitorRegistry = (): MonitorRegistry => ({
-  [TxType.CCTP]: cctpMonitor,
+  [TxType.CCTP_TO_EVM]: cctpMonitor,
   [TxType.GMP]: gmpMonitor,
 });
 
