@@ -78,7 +78,7 @@ export type PortfolioInstanceContext = {
   gmpFeeInfo: { brand: Brand<'nat'>; denom: Denom };
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
-  cctpClient: GuestInterface<ResolverKit['client']>;
+  resolverClient: GuestInterface<ResolverKit['client']>;
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
@@ -396,6 +396,7 @@ const stepFlow = async (
       gmpChain: axelar,
       axelarIds,
       gmpAddresses,
+      resolverClient: ctx.resolverClient,
     });
     return { evmCtx, gInfo, accountId };
   };
@@ -696,62 +697,18 @@ export const rebalance = async (
   }
 };
 
-export const rebalanceFromTransfer = (async (
+export const parseInboundTransfer = (async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
   packet: VTransferIBCEvent['packet'],
   kit: PortfolioKit,
-): Promise<{
-  parsed: Awaited<ReturnType<LocalAccount['parseInboundTransfer']>> | null;
-  handled: boolean;
-}> => {
+): Promise<Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>> => {
   await null;
   const { reader } = kit;
 
   const lca = reader.getLocalAccount();
   const parsed = await lca.parseInboundTransfer(packet);
-  if (!parsed) {
-    return harden({ parsed: null, handled: false });
-  }
-  trace('rebalanceFromTransfer parsed', parsed);
-
-  const {
-    amount,
-    extra: { receiver },
-  } = parsed;
-  const { baseAddress, query } = decodeAddressHook(receiver);
-  const { rebalance: strategy } = query;
-  if (strategy === undefined) {
-    return harden({ parsed, handled: false });
-  }
-
-  switch (strategy) {
-    // Preset strategy is currently hardcoded to PreserveExistingProportions
-    // XXX make it more dynamic, such as taking into account any prior
-    // explicit earmarking of inbound transfers.
-    case RebalanceStrategy.Preset:
-    case RebalanceStrategy.PreserveExistingProportions: {
-      // XXX implement PreserveExistingProportions
-      trace(
-        'rebalanceFromTransfer PreserveExistingProportions',
-        amount,
-        query,
-        baseAddress,
-      );
-      throw harden({
-        msg: 'rebalanceFromTransfer unimplemented PreserveExistingProportions strategy',
-        amount,
-        query,
-        baseAddress,
-      });
-    }
-    default: {
-      Fail`unknown rebalance strategy ${strategy} for ${amount} in ${baseAddress}`;
-    }
-  }
-
-  // Don't continue with the transfer, since we handled it.
-  return harden({ parsed, handled: true });
+  return parsed;
 }) satisfies OrchestrationFlow;
 
 /**

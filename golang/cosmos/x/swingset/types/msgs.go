@@ -9,11 +9,16 @@ import (
 
 	sdkioerrors "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
+	"cosmossdk.io/x/tx/signing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/protoadapt"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 const RouterKey = ModuleName // this was defined in your key.go file
@@ -24,6 +29,7 @@ var (
 	_ sdk.Msg = &MsgInstallBundle{}
 	_ sdk.Msg = &MsgWalletAction{}
 	_ sdk.Msg = &MsgWalletSpendAction{}
+	_ sdk.Msg = &MsgCoreEval{}
 
 	_ vm.ControllerAdmissionMsg = &MsgDeliverInbound{}
 	_ vm.ControllerAdmissionMsg = &MsgInstallBundle{}
@@ -31,6 +37,42 @@ var (
 	_ vm.ControllerAdmissionMsg = &MsgWalletAction{}
 	_ vm.ControllerAdmissionMsg = &MsgWalletSpendAction{}
 )
+
+// Replacing msg.GetSigners() but before we can adopt AddressString.
+// https://github.com/cosmos/cosmos-sdk/issues/20077#issuecomment-2062601533
+func createSignerFieldFunc(fieldName protoreflect.Name) signing.GetSignersFunc {
+	return func(msgIn proto.Message) ([][]byte, error) {
+		msg := msgIn.ProtoReflect()
+		if !msg.Has(msg.Descriptor().Fields().ByName(fieldName)) {
+			return nil, sdkioerrors.Wrapf(sdkerrors.ErrInvalidRequest, "message %T does not have field %s", msgIn, fieldName)
+		}
+		addr := msg.Get(msg.Descriptor().Fields().ByName(fieldName)).Interface().([]byte)
+		return [][]byte{addr}, nil
+	}
+}
+
+func DefineCustomGetSigners(options *signing.Options) {
+	options.DefineCustomGetSigners(
+		proto.MessageName(protoadapt.MessageV2Of(&MsgDeliverInbound{})),
+		createSignerFieldFunc("submitter"),
+	)
+	options.DefineCustomGetSigners(
+		proto.MessageName(protoadapt.MessageV2Of(&MsgProvision{})),
+		createSignerFieldFunc("submitter"),
+	)
+	options.DefineCustomGetSigners(
+		proto.MessageName(protoadapt.MessageV2Of(&MsgInstallBundle{})),
+		createSignerFieldFunc("submitter"),
+	)
+	options.DefineCustomGetSigners(
+		proto.MessageName(protoadapt.MessageV2Of(&MsgWalletAction{})),
+		createSignerFieldFunc("owner"),
+	)
+	options.DefineCustomGetSigners(
+		proto.MessageName(protoadapt.MessageV2Of(&MsgWalletSpendAction{})),
+		createSignerFieldFunc("owner"),
+	)
+}
 
 // Contextual information about the message source of an action on an inbound queue.
 // This context should be unique per inboundQueueRecord.
@@ -46,6 +88,7 @@ type ActionContext struct {
 	// actionContext unique. (for example a counter per block and source module).
 	MsgIdx int `json:"msgIdx"`
 }
+
 type InboundQueueRecord struct {
 	Action  vm.Jsonable   `json:"action"`
 	Context ActionContext `json:"context"`
@@ -172,18 +215,6 @@ func (msg MsgDeliverInbound) ValidateBasic() error {
 	return nil
 }
 
-// GetSignBytes encodes the message for signing
-func (msg MsgDeliverInbound) GetSignBytes() []byte {
-	// FIXME: This compensates for Amino maybe returning nil instead of empty slices.
-	if msg.Messages == nil {
-		msg.Messages = []string{}
-	}
-	if msg.Nums == nil {
-		msg.Nums = []uint64{}
-	}
-	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
-}
-
 // GetSigners defines whose signature is required
 func (msg MsgDeliverInbound) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Submitter}
@@ -222,13 +253,9 @@ func (msg MsgWalletAction) IsHighPriority(ctx sdk.Context, data interface{}) (bo
 	return false, nil
 }
 
+// GetSigners defines whose signature is required
 func (msg MsgWalletAction) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Owner}
-}
-
-// GetSignBytes encodes the message for signing
-func (msg MsgWalletAction) GetSignBytes() []byte {
-	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
 }
 
 // Route should return the name of the module
@@ -236,17 +263,6 @@ func (msg MsgWalletAction) Route() string { return RouterKey }
 
 // Type should return the action
 func (msg MsgWalletAction) Type() string { return "wallet_action" }
-
-// Route should return the name of the module
-func (msg MsgWalletSpendAction) Route() string { return RouterKey }
-
-// Type should return the action
-func (msg MsgWalletSpendAction) Type() string { return "wallet_spend_action" }
-
-// GetSignBytes encodes the message for signing
-func (msg MsgWalletSpendAction) GetSignBytes() []byte {
-	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
-}
 
 // ValidateBasic runs stateless checks on the message
 func (msg MsgWalletAction) ValidateBasic() error {
@@ -300,9 +316,16 @@ func (msg MsgWalletSpendAction) IsHighPriority(ctx sdk.Context, data interface{}
 	return keeper.IsHighPriorityAddress(ctx, msg.Owner)
 }
 
+// GetSigners defines whose signature is required
 func (msg MsgWalletSpendAction) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Owner}
 }
+
+// Route should return the name of the module
+func (msg MsgWalletSpendAction) Route() string { return RouterKey }
+
+// Type should return the action
+func (msg MsgWalletSpendAction) Type() string { return "wallet_spend_action" }
 
 // ValidateBasic runs stateless checks on the message
 func (msg MsgWalletSpendAction) ValidateBasic() error {
@@ -366,14 +389,6 @@ func (msg MsgProvision) GetInboundMsgCount() int32 {
 // IsHighPriority implements the vm.ControllerAdmissionMsg interface.
 func (msg MsgProvision) IsHighPriority(ctx sdk.Context, data interface{}) (bool, error) {
 	return false, nil
-}
-
-// GetSignBytes encodes the message for signing
-func (msg MsgProvision) GetSignBytes() []byte {
-	if msg.PowerFlags == nil {
-		msg.PowerFlags = []string{}
-	}
-	return sdk.MustSortJSON(ModuleAminoCdc.MustMarshalJSON(&msg))
 }
 
 // GetSigners defines whose signature is required

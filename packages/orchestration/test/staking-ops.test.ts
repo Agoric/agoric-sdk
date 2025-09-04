@@ -1,16 +1,17 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@endo/errors';
+import { CodecHelper } from '@agoric/cosmic-proto';
 import type { AnyJson } from '@agoric/cosmic-proto';
 import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
-import { MsgWithdrawDelegatorRewardResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
+import { MsgWithdrawDelegatorRewardResponse as MsgWithdrawDelegatorRewardResponseType } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
 import {
-  MsgBeginRedelegateResponse,
-  MsgDelegate,
-  MsgDelegateResponse,
-  MsgUndelegateResponse,
+  MsgBeginRedelegateResponse as MsgBeginRedelegateResponseType,
+  MsgDelegate as MsgDelegateType,
+  MsgDelegateResponse as MsgDelegateResponseType,
+  MsgUndelegateResponse as MsgUndelegateResponseType,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { Any as AnyType } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
@@ -36,6 +37,15 @@ import type {
 } from '../src/types.js';
 import { MILLISECONDS_PER_SECOND } from '../src/utils/time.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';
+
+const Any = CodecHelper(AnyType);
+const MsgBeginRedelegateResponse = CodecHelper(MsgBeginRedelegateResponseType);
+const MsgDelegate = CodecHelper(MsgDelegateType);
+const MsgDelegateResponse = CodecHelper(MsgDelegateResponseType);
+const MsgUndelegateResponse = CodecHelper(MsgUndelegateResponseType);
+const MsgWithdrawDelegatorRewardResponse = CodecHelper(
+  MsgWithdrawDelegatorRewardResponseType,
+);
 
 /**
  * @param {unknown} response
@@ -141,7 +151,7 @@ const makeScenario = () => {
         }));
         const response = {
           amount: rewards,
-        } as MsgWithdrawDelegatorRewardResponse;
+        } as MsgWithdrawDelegatorRewardResponseType;
 
         return encodeTxResponse(
           response,

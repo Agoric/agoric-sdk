@@ -3,12 +3,12 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import {
   type JsonSafe,
   toRequestQueryJson,
-  typedJson,
+  CodecHelper,
 } from '@agoric/cosmic-proto';
 import {
-  QueryAllBalancesRequest,
+  QueryAllBalancesRequest as QueryAllBalancesRequestType,
   QueryAllBalancesResponse,
-  QueryBalanceRequest,
+  QueryBalanceRequest as QueryBalanceRequestType,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import type { ResponseQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
@@ -28,6 +28,9 @@ import {
 } from '../../tools/ibc-mocks.js';
 import { defaultMockAckMap } from '../ibc-mocks.js';
 import { commonSetup } from '../supports.js';
+
+const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);
+const QueryBalanceRequest = CodecHelper(QueryBalanceRequestType);
 
 const contractName = 'query-flows';
 type StartFn = typeof contractExports.start;
@@ -138,12 +141,9 @@ test('send query from chain object', async t => {
     );
     t.is(sendPacketCalls.length, 2, 'sent two queries');
   }
-  const proto3JsonQuery = typedJson(
-    '/cosmos.bank.v1beta1.QueryAllBalancesRequest',
-    {
-      address: LOCALCHAIN_DEFAULT_ADDRESS,
-    },
-  );
+  const proto3JsonQuery = QueryAllBalancesRequest.typedJson({
+    address: LOCALCHAIN_DEFAULT_ADDRESS,
+  });
   {
     t.log('send a query from the localchain');
     const inv = E(publicFacet).makeSendLocalQueryInvitation();

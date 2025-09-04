@@ -1,82 +1,51 @@
 import test from 'ava';
-import { type Provider, id, toBeHex, zeroPadValue } from 'ethers';
+import { id, toBeHex, zeroPadValue } from 'ethers';
 import { watchCctpTransfer } from '../src/watchers/cctp-watcher.ts';
+import {
+  createMockEvmContext,
+  createMockProvider,
+  mockFetch,
+} from './mocks.ts';
+import { handlePendingTx, type PendingTx } from '../src/pending-tx-manager.ts';
+import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 
+const usdcAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 const watchAddress = '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64';
 
 const encodeAmount = (amount: bigint): string => {
   return zeroPadValue(toBeHex(amount), 32);
 };
 
-const mockCctpConfig = {
-  // 1 — Ethereum
-  '1': {
-    name: 'Ethereum',
-    domain: 0,
-    contracts: {
-      tokenMessengerV2: '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d',
-      messageTransmitterV2: '0x81D40F21F12A8F0E3252Bccb954D722d4c464B64',
-      tokenMinterV2: '0xfd78EE919681417d192449715b2594ab58f5D002',
-      messageV2: '0xec546b6B005471ECf012e5aF77FBeC07e0FD8f78',
-      usdc: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-    },
-  },
-};
+test('handlePendingTx processes CCTP transaction successfully', async t => {
+  const mockEvmCtx = createMockEvmContext();
+  const txId = 'tx1';
+  mockEvmCtx.fetch = mockFetch({ txId });
+  const chain = 'eip155:1'; // Ethereum
+  const amount = 1_000_000n; // 1 USDC
+  const receiver = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const provider = mockEvmCtx.evmProviders[chain];
+  const type = TxType.CCTP;
 
-const createMockProvider = () => {
-  const eventListeners = new Map<string, Function[]>();
+  const logMessages: string[] = [];
+  const logger = (...args: any[]) => logMessages.push(args.join(' '));
 
-  return {
-    on: (eventOrFilter: any, listener: Function) => {
-      const key = JSON.stringify(eventOrFilter);
-      if (!eventListeners.has(key)) {
-        eventListeners.set(key, []);
-      }
-      eventListeners.get(key)!.push(listener);
-    },
-    off: (eventOrFilter: any, listener: Function) => {
-      const key = JSON.stringify(eventOrFilter);
-      const listeners = eventListeners.get(key);
-      if (listeners) {
-        const index = listeners.indexOf(listener);
-        if (index > -1) {
-          listeners.splice(index, 1);
-        }
-      }
-    },
-    emit: (eventOrFilter: any, log: any) => {
-      const key = JSON.stringify(eventOrFilter);
-      const listeners = eventListeners.get(key);
-      if (listeners) {
-        listeners.forEach(listener => listener(log));
-      }
-    },
-  } as Provider;
-};
+  const cctpTx: PendingTx = {
+    txId,
+    type,
+    status: 'pending',
+    amount,
+    destinationAddress: `${chain}:${receiver}`,
+  };
 
-test('watchCCTPTransfer detects exact amount match', async t => {
-  const provider = createMockProvider();
-  const expectedAmount = 1_000_000n; // 1 USDC
-
-  const watchPromise = watchCctpTransfer({
-    config: mockCctpConfig['1'],
-    provider: provider,
-    watchAddress,
-    expectedAmount,
-    timeoutMinutes: 0.05, // 3 seconds for test
-    log: console.log,
-  });
-
-  // Simulate a matching transfer event after short delay
   setTimeout(() => {
     const mockLog = {
-      address: mockCctpConfig[1].contracts.usdc, // USDC contract
+      address: usdcAddress, // USDC contract
       topics: [
         id('Transfer(address,address,uint256)'), // Transfer event signature
         '0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266', // from
-        zeroPadValue(watchAddress.toLowerCase(), 32), // to (our watch address)
+        zeroPadValue(receiver.toLowerCase(), 32), // to (our watch address)
       ],
-      data: encodeAmount(expectedAmount),
+      data: encodeAmount(amount),
       transactionHash: '0x123abc',
       blockNumber: 18500000,
     };
@@ -85,39 +54,60 @@ test('watchCCTPTransfer detects exact amount match', async t => {
       topics: [
         id('Transfer(address,address,uint256)'),
         null,
-        zeroPadValue(watchAddress.toLowerCase(), 32),
+        zeroPadValue(receiver.toLowerCase(), 32),
       ],
     };
 
     (provider as any).emit(filter, mockLog);
   }, 50);
 
-  const result = await watchPromise;
-  t.true(result, 'Should detect matching transfer');
+  await t.notThrowsAsync(async () => {
+    await handlePendingTx(mockEvmCtx, cctpTx, {
+      log: logger,
+      timeoutMinutes: 0.05, // 3 sec
+    });
+  });
+
+  t.deepEqual(logMessages, [
+    `[${txId}] handling ${type} tx`,
+    `[${txId}] Watching for ERC-20 transfers to: ${receiver} with amount: ${amount}`,
+    `[${txId}] Transfer detected: token=${usdcAddress} from=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 to=${receiver} amount=${amount} tx=0x123abc`,
+    `[${txId}] ✓ Amount matches! Expected: ${amount}, Received: ${amount}`,
+    `[${txId}] CCTP tx resolved`,
+  ]);
 });
 
-test('watchCCTPTransfer ignores amount mismatch', async t => {
-  const provider = createMockProvider();
-  const expectedAmount = 1_000_000n;
+test('handlePendingTx keeps tx pending on amount mismatch until timeout', async t => {
+  const mockEvmCtx = createMockEvmContext();
+  const txId = 'tx2';
+  mockEvmCtx.fetch = mockFetch({ txId });
+  const chain = 'eip155:1'; // Ethereum
+  const expectedAmount = 1_000_000n; // 1 USDC
+  const notExpectedAmt = 1_00_000n;
+  const receiver = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const provider = mockEvmCtx.evmProviders[chain];
+  const type = TxType.CCTP;
 
-  const watchPromise = watchCctpTransfer({
-    config: mockCctpConfig['1'],
-    provider,
-    watchAddress,
-    expectedAmount,
-    timeoutMinutes: 0.05,
-    log: console.log,
-  });
+  const logMessages: string[] = [];
+  const logger = (...args: any[]) => logMessages.push(args.join(' '));
+
+  const cctpTx: PendingTx = {
+    txId,
+    type,
+    status: 'pending',
+    amount: expectedAmount,
+    destinationAddress: `${chain}:${receiver}`,
+  };
 
   setTimeout(() => {
     const mockLog = {
-      address: mockCctpConfig[1].contracts.usdc,
+      address: usdcAddress, // USDC contract
       topics: [
-        id('Transfer(address,address,uint256)'),
-        '0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266',
-        zeroPadValue(watchAddress.toLowerCase(), 32),
+        id('Transfer(address,address,uint256)'), // Transfer event signature
+        '0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266', // from
+        zeroPadValue(receiver.toLowerCase(), 32), // to (our watch address)
       ],
-      data: encodeAmount(1_000_00n), // 0.1 USDC in hex (wrong amount)
+      data: encodeAmount(notExpectedAmt),
       transactionHash: '0x123abc',
       blockNumber: 18500000,
     };
@@ -126,15 +116,28 @@ test('watchCCTPTransfer ignores amount mismatch', async t => {
       topics: [
         id('Transfer(address,address,uint256)'),
         null,
-        zeroPadValue(watchAddress.toLowerCase(), 32),
+        zeroPadValue(receiver.toLowerCase(), 32),
       ],
     };
 
     (provider as any).emit(filter, mockLog);
   }, 50);
 
-  const result = await watchPromise;
-  t.false(result, 'Should timeout on amount mismatch');
+  await t.notThrowsAsync(async () => {
+    await handlePendingTx(mockEvmCtx, cctpTx, {
+      log: logger,
+      timeoutMinutes: 0.05,
+    });
+  });
+
+  t.deepEqual(logMessages, [
+    `[${txId}] handling ${type} tx`,
+    `[${txId}] Watching for ERC-20 transfers to: ${receiver} with amount: ${expectedAmount}`,
+    `[${txId}] Transfer detected: token=${usdcAddress} from=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 to=${receiver} amount=${notExpectedAmt} tx=0x123abc`,
+    `[${txId}] Amount mismatch. Expected: ${expectedAmount}, Received: ${notExpectedAmt}`,
+    `[${txId}] ✗ No matching transfer found within 0.05 minutes`,
+    `[${txId}] CCTP tx resolved`,
+  ]);
 });
 
 test('watchCCTPTransfer detects multiple transfers but only matches exact amount', async t => {
@@ -142,7 +145,7 @@ test('watchCCTPTransfer detects multiple transfers but only matches exact amount
   const expectedAmount = 5_000_000n; // 5 USDC
 
   const watchPromise = watchCctpTransfer({
-    config: mockCctpConfig['1'],
+    usdcAddress,
     provider,
     watchAddress,
     expectedAmount,
@@ -160,7 +163,7 @@ test('watchCCTPTransfer detects multiple transfers but only matches exact amount
   transfers.forEach(({ amount, delay }) => {
     setTimeout(() => {
       const mockLog = {
-        address: mockCctpConfig[1].contracts.usdc,
+        address: usdcAddress,
         topics: [
           id('Transfer(address,address,uint256)'),
           '0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266',

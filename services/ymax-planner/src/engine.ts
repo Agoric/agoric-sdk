@@ -21,10 +21,11 @@ import type { CosmosRPCClient } from './cosmos-rpc.ts';
 import { handleDeposit } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import {
-  handleSubscription,
+  handlePendingTx,
   type EvmContext,
-  type Subscription,
-} from './subscription-manager.ts';
+  type PendingTx,
+} from './pending-tx-manager.ts';
+import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { log } from 'node:console';
 
 const { isInteger } = Number;
@@ -36,8 +37,8 @@ type CosmosEvent = {
   attributes?: Array<{ key: string; value: string }>;
 };
 
-const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
-const TX_SUBSCRIPTIONS_PATH_PREFIX = 'published.ymax0.pendingTxs';
+export const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
+export const PENDING_TX_PATH_PREFIX = 'published.ymax0.pendingTxs';
 
 /** cf. golang/cosmos/x/vstorage/types/path_keys.go */
 const EncodedKeySeparator = '\x00';
@@ -63,7 +64,7 @@ const vstoragePathStartsWith = (path: string, prefix: string) =>
   path === prefix ||
   path.startsWith(prefix.endsWith('.') ? prefix : `${prefix}.`);
 
-const stripPrefix = (prefix: string, str: string) => {
+export const stripPrefix = (prefix: string, str: string) => {
   str.startsWith(prefix) || Fail`${str} is missing prefix ${q(prefix)}`;
   return str.slice(prefix.length);
 };
@@ -271,70 +272,8 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
   return harden(results as typeof results & { done: Promise<boolean> });
 };
 
-const BaseSubscriptionShape = M.splitRecord(
-  {
-    status: M.or('pending', 'success', 'timeout'),
-    type: M.string(),
-  },
-  {
-    // CCTP-specific fields
-    amount: M.bigint(),
-    destinationAddress: M.string(),
-    // GMP-specific fields
-    lcaAddr: M.string(),
-    destinationChain: M.string(),
-    contractAddress: M.string(),
-  },
-);
-
-const parseSubscription = (
-  subscriptionData,
-  subscriptionId: `tx${number}`,
-  marshaller?: SigningSmartWalletKit['marshaller'],
-): Subscription | null => {
-  const data = marshaller
-    ? marshaller.fromCapData(subscriptionData)
-    : subscriptionData;
-
-  if (!matches(data, BaseSubscriptionShape)) {
-    const err = assert.error(
-      X`expected data ${data} to match ${q(BaseSubscriptionShape)}`,
-    );
-    console.error(err);
-    return null;
-  }
-
-  return { subscriptionId, ...(data as any) } as Subscription;
-};
-
-const createSubscriptionContext = (
-  evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>,
-  signingSmartWalletKit: SigningSmartWalletKit,
-): EvmContext => ({
-  ...evmCtx,
-  signingSmartWalletKit,
-  fetch,
-});
-
-const processPendingSubscription = async (
-  evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>,
-  signingSmartWalletKit: SigningSmartWalletKit,
-  subscription: Subscription,
-  log: (...args: unknown[]) => void,
-  errorHandler: (error: Error) => void,
-) => {
-  if (subscription.status !== 'pending') return;
-  const subscriptionCtx = createSubscriptionContext(
-    evmCtx,
-    signingSmartWalletKit,
-  );
-  void handleSubscription(subscriptionCtx, subscription, log).catch(
-    errorHandler,
-  );
-};
-
-type IO = {
-  evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>;
+type Powers = {
+  evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch'>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
@@ -347,6 +286,7 @@ const processPortfolioEvents = async (
   query: SigningSmartWalletKit['query'],
   portfolioKeyForDepositAddr: Map<Bech32Address, string>,
 ) => {
+  await null;
   for (const { path, value: vstorageValue } of portfolioEvents) {
     const streamCell = tryJsonParse(
       vstorageValue,
@@ -380,17 +320,56 @@ const processPortfolioEvents = async (
         }
       }
     }
-    // TODO: Handle portfolio-level path `${VSTORAGE_PATH_PREFIX}.${portfolioKey}` for addition/update of depositAddress.
+    // TODO: Handle portfolio-level path `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}` for addition/update of depositAddress.
   }
 };
 
-const processSubscriptionEvents = async (
-  subscriptionEvents: Array<{ path: string; value: string }>,
+export const PendingTxShape = M.splitRecord(
+  {
+    // resolver only handles pending transactions
+    status: M.or('pending'),
+    type: M.string(),
+    destinationAddress: M.string(),
+  },
+  {
+    // amount is optional for GMP transactions, required for CCTP
+    amount: M.bigint(),
+  },
+);
+
+export const parsePendingTx = (
+  txId: `tx${number}`,
+  txData,
+  marshaller?: SigningSmartWalletKit['marshaller'],
+): PendingTx | null => {
+  const data = marshaller ? marshaller.fromCapData(txData) : txData;
+  if (!matches(data, PendingTxShape)) {
+    const err = assert.error(
+      X`expected data ${data} to match ${q(PendingTxShape)}`,
+    );
+    console.error(err);
+    return null;
+  }
+
+  if (data.type === TxType.CCTP && data.amount === undefined) {
+    const err = assert.error(
+      X`CCTP transaction ${txId} is missing required amount field`,
+    );
+    console.error(err);
+    return null;
+  }
+
+  return { txId, ...(data as any) } as PendingTx;
+};
+
+export const processPendingTxEvents = async (
+  evmCtx: EvmContext,
+  events: Array<{ path: string; value: string }>,
   marshaller: SigningSmartWalletKit['marshaller'],
-  evmCtx: Pick<EvmContext, 'axelarQueryApi' | 'evmProviders'>,
-  signingSmartWalletKit: SigningSmartWalletKit,
+  handlePendingTxFn = handlePendingTx,
+  logFn = log,
 ) => {
-  for (const { path, value: vstorageValue } of subscriptionEvents) {
+  for (const { path, value: vstorageValue } of events) {
     const streamCell = tryJsonParse(
       vstorageValue,
       _err =>
@@ -398,12 +377,9 @@ const processSubscriptionEvents = async (
     );
     mustMatch(harden(streamCell), StreamCellShape);
 
-    // Extract subscription ID from path (e.g., "published.orchestration.subscriptions.subscription1234")
-    const subscriptionId = stripPrefix(
-      `${TX_SUBSCRIPTIONS_PATH_PREFIX}.`,
-      path,
-    );
-    console.warn('Processing subscription event', subscriptionId, path);
+    // Extract txId from path (e.g., "published.ymax0.pendingTxs.tx1")
+    const txId = stripPrefix(`${PENDING_TX_PATH_PREFIX}.`, path);
+    console.warn('Processing pendingTx event', txId, path);
 
     for (let i = 0; i < streamCell.values.length; i += 1) {
       const strValue = streamCell.values[i];
@@ -414,45 +390,45 @@ const processSubscriptionEvents = async (
           Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
       );
 
-      const subscription = parseSubscription(
-        value,
-        subscriptionId as `tx${number}`,
-        marshaller,
-      );
-      if (!subscription) return;
+      const tx = parsePendingTx(txId as `tx${number}`, value, marshaller);
+      if (!tx) continue;
 
-      console.warn('Handling subscription:', {
-        subscriptionId,
-        type: subscription.type,
-        status: subscription.status,
+      console.warn('Handling pending tx:', {
+        txId,
+        type: tx.type,
+        status: tx.status,
       });
 
       const errorHandler = error => {
-        console.error(
-          `⚠️ Failed to process subscription: ${subscriptionId}`,
-          error,
-        );
+        console.error(`⚠️ Failed to process pendingTx: ${txId}`, error);
       };
 
-      await processPendingSubscription(
-        evmCtx,
-        signingSmartWalletKit,
-        subscription,
-        log,
-        errorHandler,
-      );
+      void handlePendingTxFn(evmCtx, tx, { log: logFn }).catch(errorHandler);
     }
   }
 };
 
-export const startEngine = async ({
-  evmCtx,
-  rpc,
-  spectrum,
-  cosmosRest,
-  signingSmartWalletKit,
-}: IO) => {
+export const pickBalance = (
+  balances: Coin[] | undefined,
+  depositAsset: AssetInfo,
+) => {
+  const deposited = balances?.find(({ denom }) => denom === depositAsset.denom);
+  if (!deposited) {
+    return undefined;
+  }
+
+  return AmountMath.make(
+    depositAsset.brand as Brand<'nat'>,
+    Nat(BigInt(deposited.amount)),
+  );
+};
+
+export const startEngine = async (
+  { evmCtx, rpc, spectrum, cosmosRest, signingSmartWalletKit }: Powers,
+  { depositIbcDenom }: { depositIbcDenom: string },
+) => {
   await null;
+  const { query, marshaller } = signingSmartWalletKit;
 
   const chainStatus = await rpc.request('status', {});
   console.warn('agoric chain status', chainStatus);
@@ -508,6 +484,18 @@ export const startEngine = async ({
     agoricInfo,
   );
 
+  const vbankAssets = new Map<string, AssetInfo>(
+    await query.readPublished('agoricNames.vbankAsset'),
+  );
+  const depositAsset = depositIbcDenom.startsWith('ibc/')
+    ? vbankAssets.get(depositIbcDenom)
+    : [...vbankAssets.values()].find(
+        assetInfo => assetInfo.issuerName === depositIbcDenom,
+      );
+  if (!depositAsset) {
+    throw Fail`Could not find vbankAsset for ${q(depositIbcDenom)}`;
+  }
+
   // To avoid data gaps, establish subscriptions before gathering initial state.
   const eventFilters = [
     // vstorage events are in BEGIN_BLOCK/END_BLOCK activity
@@ -522,7 +510,6 @@ export const startEngine = async ({
   // console.log('subscribed to events', eventFilters);
 
   // TODO: verify consumption of paginated data.
-  const { query } = signingSmartWalletKit;
   const portfolioKeys = await query.vstorage.keys(PORTFOLIOS_PATH_PREFIX);
   const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
@@ -535,52 +522,40 @@ export const startEngine = async ({
     portfolioKeyForDepositAddr.set(depositAddress, portfolioKey);
   }).done;
 
-  const subscriptionKeys = await query.vstorage.keys(
-    TX_SUBSCRIPTIONS_PATH_PREFIX,
-  );
+  const pendingTxKeys = await query.vstorage.keys(PENDING_TX_PATH_PREFIX);
   console.warn(
-    `Found ${subscriptionKeys.length} existing subscriptions to monitor`,
+    `Found ${pendingTxKeys.length} existing pendingTxKeys to monitor`,
   );
 
-  await makeWorkPool(subscriptionKeys, undefined, async subscriptionKey => {
+  await makeWorkPool(pendingTxKeys, undefined, async txId => {
     const logIgnoredError = err => {
-      const msg = `⚠️ Failed to process existing subscription: ${subscriptionKey}`;
+      const msg = `⚠️ Failed to process existing pendingTx: ${txId}`;
       console.error(msg, err);
     };
 
-    let subscriptionData;
+    let data;
     try {
       // eslint-disable-next-line @jessie.js/safe-await-separator
-      subscriptionData = await query.readPublished(
-        stripPrefix(
-          'published.',
-          `${TX_SUBSCRIPTIONS_PATH_PREFIX}.${subscriptionKey}`,
-        ),
+      data = await query.readPublished(
+        stripPrefix('published.', `${PENDING_TX_PATH_PREFIX}.${txId}`),
       );
     } catch (err) {
       logIgnoredError(err);
       return;
     }
 
-    const subscription = parseSubscription(
-      subscriptionData,
-      subscriptionKey as `tx${number}`,
-    );
-    if (!subscription) return;
+    const tx = parsePendingTx(txId as `tx${number}`, data);
+    if (!tx) return;
 
-    console.warn(`Found existing subscription: ${subscriptionKey}`, {
-      type: subscription.type,
-      status: subscription.status,
+    console.warn(`Found existing tx: ${txId}`, {
+      type: tx.type,
+      status: tx.status,
     });
 
-    // Process existing pending subscriptions on startup
-    await processPendingSubscription(
-      evmCtx,
-      signingSmartWalletKit,
-      subscription,
+    // Process existing pending transactions on startup
+    void handlePendingTx({ ...evmCtx, signingSmartWalletKit, fetch }, tx, {
       log,
-      logIgnoredError,
-    );
+    }).catch(logIgnoredError);
   }).done;
 
   // console.warn('consuming events');
@@ -616,14 +591,14 @@ export const startEngine = async ({
         return;
       }
 
-      // Filter for paths we care about (portfolios or subscriptions).
+      // Filter for paths we care about (portfolios or pending transactions).
       const path = encodedKeyToPath(attributes.key);
 
       if (vstoragePathStartsWith(path, PORTFOLIOS_PATH_PREFIX)) {
         return { type: 'portfolio' as const, path, value: attributes.value };
       }
-      if (vstoragePathStartsWith(path, TX_SUBSCRIPTIONS_PATH_PREFIX)) {
-        return { type: 'subscription' as const, path, value: attributes.value };
+      if (vstoragePathStartsWith(path, PENDING_TX_PATH_PREFIX)) {
+        return { type: 'pendingTx' as const, path, value: attributes.value };
       }
 
       return;
@@ -632,12 +607,11 @@ export const startEngine = async ({
     const portfolioEvents = vstorageEvents.filter(
       event => event.type === 'portfolio',
     );
-    const subscriptionEvents = vstorageEvents.filter(
-      event => event.type === 'subscription',
+    const pendingTxEvents = vstorageEvents.filter(
+      event => event.type === 'pendingTx',
     );
 
     // Detect new portfolios.
-    const { marshaller } = signingSmartWalletKit;
     await processPortfolioEvents(
       portfolioEvents,
       marshaller,
@@ -645,11 +619,10 @@ export const startEngine = async ({
       portfolioKeyForDepositAddr,
     );
 
-    await processSubscriptionEvents(
-      subscriptionEvents,
+    await processPendingTxEvents(
+      { ...evmCtx, signingSmartWalletKit, fetch },
+      pendingTxEvents,
       marshaller,
-      evmCtx,
-      signingSmartWalletKit,
     );
 
     // Detect activity against portfolio deposit addresses.
@@ -680,39 +653,21 @@ export const startEngine = async ({
           addrBalances,
           depositAddrsWithActivity,
           portfolioEvents,
-          subscriptionEvents,
+          pendingTxEvents,
         },
         { depth: 10 },
       ),
-    );
-
-    const vbankAssets = new Map<string, AssetInfo>(
-      depositAddrsWithActivity.size
-        ? await query.readPublished('agoricNames.vbankAsset')
-        : undefined,
     );
 
     // Respond to deposits.
     const portfolioOps = await Promise.all(
       [...depositAddrsWithActivity.entries()].map(
         async ([addr, portfolioKey]) => {
-          // TODO: maybe snapshot initial balances for deposit amount determination?
-          // For now, require a single denom and assume that the full amount is a new deposit.
-          const balances = addrBalances.get(addr);
-          if (balances?.length !== 1) {
-            console.error(
-              `Unclear which denom to handle for ${addr}`,
-              balances?.map(amount => amount.denom),
-            );
+          const amount = pickBalance(addrBalances.get(addr), depositAsset);
+          if (!amount) {
+            console.warn(`No ${q(depositAsset.issuerName)} at ${addr}`);
             return;
           }
-          const { denom, amount: balanceValue } = balances[0];
-
-          const brand = vbankAssets.get(denom)?.brand as
-            | undefined
-            | Brand<'nat'>;
-          if (!brand) throw Fail`no brand found for denom ${q(denom)}`;
-          const amount = AmountMath.make(brand, Nat(BigInt(balanceValue)));
 
           const unprefixedPortfolioPath = stripPrefix(
             'published.',

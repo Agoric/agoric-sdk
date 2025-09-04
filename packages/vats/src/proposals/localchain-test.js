@@ -1,7 +1,12 @@
 // @ts-check
 import { Far } from '@endo/far';
 import { heapVowE as E } from '@agoric/vow/vat.js';
-import { typedJson } from '@agoric/cosmic-proto';
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { QueryAllBalancesRequest as QueryAllBalancesRequestType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import { MsgSend as MsgSendType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+
+const MsgSend = CodecHelper(MsgSendType);
+const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);
 
 /**
  * @param {BootstrapPowers & {
@@ -42,7 +47,7 @@ export const testLocalChain = async (
       receiverAddress,
     });
 
-    const queryMsg = typedJson('/cosmos.bank.v1beta1.QueryAllBalancesRequest', {
+    const queryMsg = QueryAllBalancesRequest.typedJson({
       address: receiverAddress,
     });
     const balances = await E(localchain).query(queryMsg);
@@ -50,7 +55,7 @@ export const testLocalChain = async (
 
     await E(lcaReceiver)
       .executeTx([
-        typedJson('/cosmos.bank.v1beta1.MsgSend', {
+        MsgSend.typedJson({
           fromAddress: receiverAddress,
           toAddress: receiverAddress,
           amount: [{ denom: 'ucosm', amount: '1' }],
@@ -92,7 +97,7 @@ export const testLocalChain = async (
         try {
           console.info('=== localchain test sendTo called');
           const execResult = await E(lcaSender).executeTx([
-            typedJson('/cosmos.bank.v1beta1.MsgSend', {
+            MsgSend.typedJson({
               fromAddress: senderAddress,
               toAddress,
               amount,

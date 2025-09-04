@@ -30,8 +30,8 @@ const AxelarChainIdMap = harden({
     mainnet: 'Avalanche',
   },
   Ethereum: {
-    testnet: 'Ethereum',
-    mainnet: 'ethereum-sepolia',
+    testnet: 'ethereum-sepolia',
+    mainnet: 'Ethereum',
   },
   Arbitrum: {
     testnet: 'arbitrum-sepolia',
@@ -196,9 +196,9 @@ const factoryAddresses = {
     Polygon: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://polygonscan.com/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
   },
   testnet: {
-    Avalanche: '0xFCA9d35442724854aa1e41144f37ACDcaEC14336', // https://testnet.snowtrace.io/address/0xFCA9d35442724854aa1e41144f37ACDcaEC14336
+    Avalanche: '0xcD58949D815d25A06560AFa539972bB5B4B28902', // https://testnet.snowtrace.io/address/0xcD58949D815d25A06560AFa539972bB5B4B28902
     Arbitrum: '0x',
-    Ethereum: '0x3bF3056835f7C25b1f71aff99B734Ad07d644577', // https://sepolia.etherscan.io/address/0x3bF3056835f7C25b1f71aff99B734Ad07d644577
+    Ethereum: '0x6b124C850407e857B7fBB9fD61cC91f379066063', // https://sepolia.etherscan.io/address/0x6b124C850407e857B7fBB9fD61cC91f379066063
     Optimism: '0x',
     Polygon: '0x',
   },

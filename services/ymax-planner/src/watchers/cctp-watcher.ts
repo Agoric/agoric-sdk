@@ -1,14 +1,14 @@
+import type { JsonRpcProvider } from 'ethers';
 import type { Log } from 'ethers';
-import { id, zeroPadValue, getAddress, type Provider } from 'ethers';
-import type { CctpChainConfig } from '../subscription-manager';
+import { id, zeroPadValue, getAddress } from 'ethers';
 
 const TRANSFER = id('Transfer(address,address,uint256)');
 const MILLIS_PER_MINUTE = 60 * 1000;
 
 type WatchTransferOptions = {
-  config: CctpChainConfig;
-  provider: Provider;
-  watchAddress: string;
+  usdcAddress: `0x${string}`;
+  provider: JsonRpcProvider;
+  watchAddress: `0x${string}`;
   expectedAmount: bigint;
   timeoutMinutes?: number;
   log: (...args: unknown[]) => void;
@@ -38,7 +38,7 @@ const parseAmount = data => {
 };
 
 export const watchCctpTransfer = ({
-  config,
+  usdcAddress,
   provider,
   watchAddress,
   expectedAmount,
@@ -84,7 +84,7 @@ export const watchCctpTransfer = ({
         `Transfer detected: token=${tokenAddr} from=${from} to=${to} amount=${amount} tx=${eventLog.transactionHash}`,
       );
 
-      if (amount === expectedAmount && config.contracts.usdc === tokenAddr) {
+      if (amount === expectedAmount && usdcAddress === tokenAddr) {
         log(
           `✓ Amount matches! Expected: ${expectedAmount}, Received: ${amount}`,
         );

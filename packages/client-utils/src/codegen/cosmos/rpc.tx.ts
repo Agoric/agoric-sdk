@@ -17,6 +17,9 @@ export const createRPCMsgClient = async ({ rpc }: { rpc: Rpc }) => ({
         rpc,
       ),
     },
+    circuit: {
+      v1: new (await import('./circuit/v1/tx.rpc.msg.js')).MsgClientImpl(rpc),
+    },
     consensus: {
       v1: new (await import('./consensus/v1/tx.rpc.msg.js')).MsgClientImpl(rpc),
     },

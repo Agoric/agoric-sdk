@@ -8,12 +8,13 @@
  * @see {@link agoricToNoble}
  * @see {@link nobleToAgoric}
  */
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { Any as AnyType } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import {
-  MsgLock,
-  MsgUnlock,
+  MsgLock as MsgLockType,
+  MsgUnlock as MsgUnlockType,
 } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
-import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
+import { MsgSwap as MsgSwapType } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import { AmountMath, type NatValue } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type { CosmosChainAddress, Denom } from '@agoric/orchestration';
@@ -22,6 +23,11 @@ import {
   type TransportDetail,
 } from './portfolio.flows.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
+
+const Any = CodecHelper(AnyType);
+const MsgLock = CodecHelper(MsgLockType);
+const MsgUnlock = CodecHelper(MsgUnlockType);
+const MsgSwap = CodecHelper(MsgSwapType);
 
 const { add } = AmountMath;
 const trace = makeTracer('USDNF');

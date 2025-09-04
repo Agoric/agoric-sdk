@@ -2,15 +2,15 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
-import { toRequestQueryJson } from '@agoric/cosmic-proto';
+import { CodecHelper, toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
-  QueryBalanceRequest,
-  QueryBalanceResponse,
+  QueryBalanceRequest as QueryBalanceRequestType,
+  QueryBalanceResponse as QueryBalanceResponseType,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { Any as AnyType } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import {
-  MsgDelegate,
-  MsgDelegateResponse,
+  MsgDelegate as MsgDelegateType,
+  MsgDelegateResponse as MsgDelegateResponseType,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import type { CosmosInterchainService } from '@agoric/orchestration';
 import { decodeBase64 } from '@endo/base64';
@@ -21,6 +21,12 @@ import {
 } from '../bootstrapTests/walletFactory.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
+
+const QueryBalanceRequest = CodecHelper(QueryBalanceRequestType);
+const QueryBalanceResponse = CodecHelper(QueryBalanceResponseType);
+const MsgDelegate = CodecHelper(MsgDelegateType);
+const MsgDelegateResponse = CodecHelper(MsgDelegateResponseType);
+const Any = CodecHelper(AnyType);
 
 /**
  * To update, pass the message into `makeTxPacket` or `makeQueryPacket` from
@@ -157,7 +163,7 @@ test.skip('ICA connection can send msg with proto3', async t => {
   );
   t.deepEqual(
     MsgDelegateResponse.decode(decodeBase64(txSuccess)),
-    {},
+    MsgDelegateResponse.fromPartial({}),
     'success tx',
   );
 
@@ -170,7 +176,7 @@ test.skip('ICA connection can send msg with proto3', async t => {
   );
   t.deepEqual(
     MsgDelegateResponse.decode(decodeBase64(txWithOptions)),
-    {},
+    MsgDelegateResponse.fromPartial({}),
     'txWithOptions',
   );
 
@@ -225,12 +231,15 @@ test.skip('Query connection can send a query', async t => {
     const [result] = await EV(queryConnection).query([balanceQuery]);
     t.is(result.code, 0);
     t.is(result.height, '0'); // bigint
-    t.deepEqual(QueryBalanceResponse.decode(decodeBase64(result.key)), {
-      balance: {
-        amount: '0',
-        denom: 'uatom',
-      },
-    });
+    t.deepEqual(
+      QueryBalanceResponse.decode(decodeBase64(result.key)),
+      QueryBalanceResponse.fromPartial({
+        balance: {
+          amount: '0',
+          denom: 'uatom',
+        },
+      }),
+    );
 
     const results = await EV(queryConnection).query([
       balanceQuery,
@@ -238,12 +247,15 @@ test.skip('Query connection can send a query', async t => {
     ]);
     t.is(results.length, 2);
     for (const { key } of results) {
-      t.deepEqual(QueryBalanceResponse.decode(decodeBase64(key)), {
-        balance: {
-          amount: '0',
-          denom: 'uatom',
-        },
-      });
+      t.deepEqual(
+        QueryBalanceResponse.decode(decodeBase64(key)),
+        QueryBalanceResponse.fromPartial({
+          balance: {
+            amount: '0',
+            denom: 'uatom',
+          },
+        }),
+      );
     }
 
     await t.throwsAsync(

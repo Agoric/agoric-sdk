@@ -1,6 +1,9 @@
 syntax = "proto3";
 package agoric.swingset;
 
+import "amino/amino.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos_proto/cosmos.proto";
 import "gogoproto/gogo.proto";
 
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types";
@@ -17,16 +20,30 @@ service Msg {
   rpc WalletSpendAction(MsgWalletSpendAction) returns (MsgWalletSpendActionResponse);
   // Provision a new endpoint.
   rpc Provision(MsgProvision) returns (MsgProvisionResponse);
+  // Execute a core evaluation.
+  rpc CoreEval(MsgCoreEval) returns (MsgCoreEvalResponse);
 }
 
 // MsgDeliverInbound defines an SDK message for delivering an eventual send
 message MsgDeliverInbound {
   option (gogoproto.equal) = false;
+  option (amino.name)      = "swingset/DeliverInbound";
 
-  repeated string messages  = 1 [(gogoproto.jsontag) = "messages", (gogoproto.moretags) = "yaml:\"messages\""];
-  repeated uint64 nums      = 2 [(gogoproto.jsontag) = "nums", (gogoproto.moretags) = "yaml:\"nums\""];
-  uint64          ack       = 3 [(gogoproto.jsontag) = "ack", (gogoproto.moretags) = "yaml:\"ack\""];
-  bytes           submitter = 4 [
+  repeated string messages = 1 [
+    (amino.dont_omitempty) = true,
+    (amino.encoding)       = "null_slice_as_empty",
+    (gogoproto.jsontag)    = "messages",
+    (gogoproto.moretags)   = "yaml:\"messages\""
+  ];
+  repeated uint64 nums = 2 [
+    (amino.dont_omitempty) = true,
+    (amino.encoding)       = "null_slice_as_empty",
+    (gogoproto.jsontag)    = "nums",
+    (gogoproto.moretags)   = "yaml:\"nums\""
+  ];
+  uint64 ack = 3 [(amino.dont_omitempty) = true, (gogoproto.jsontag) = "ack", (gogoproto.moretags) = "yaml:\"ack\""];
+  bytes  submitter = 4 [
+    (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
     (gogoproto.jsontag)  = "submitter",
     (gogoproto.moretags) = "yaml:\"submitter\""
@@ -41,8 +58,10 @@ message MsgDeliverInboundResponse {}
 // message type is typically protected by feegrant budgets.
 message MsgWalletAction {
   option (gogoproto.equal) = false;
+  option (amino.name)      = "swingset/WalletAction";
 
   bytes owner = 1 [
+    (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
     (gogoproto.jsontag)  = "owner",
     (gogoproto.moretags) = "yaml:\"owner\""
@@ -60,8 +79,10 @@ message MsgWalletActionResponse {}
 // typically protected by explicit confirmation by the user.
 message MsgWalletSpendAction {
   option (gogoproto.equal) = false;
+  option (amino.name)      = "swingset/WalletSpendAction";
 
   bytes owner = 1 [
+    (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
     (gogoproto.jsontag)  = "owner",
     (gogoproto.moretags) = "yaml:\"owner\""
@@ -77,19 +98,25 @@ message MsgWalletSpendActionResponse {}
 // MsgProvision defines an SDK message for provisioning a client to the chain
 message MsgProvision {
   option (gogoproto.equal) = false;
+  option (amino.name)      = "swingset/Provision";
 
   string nickname = 1 [(gogoproto.jsontag) = "nickname", (gogoproto.moretags) = "yaml:\"nickname\""];
   bytes  address  = 2 [
+    (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
     (gogoproto.jsontag)  = "address",
     (gogoproto.moretags) = "yaml:\"address\""
   ];
   repeated string power_flags = 3 [
+    (amino.dont_omitempty) = true,
+    (amino.encoding)       = "null_slice_as_empty",
+    (amino.field_name)     = "powerFlags",
     (gogoproto.customname) = "PowerFlags",
     (gogoproto.jsontag)    = "powerFlags",
     (gogoproto.moretags)   = "yaml:\"powerFlags\""
   ];
   bytes submitter = 4 [
+    (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
     (gogoproto.jsontag)  = "submitter",
     (gogoproto.moretags) = "yaml:\"submitter\""
@@ -101,20 +128,56 @@ message MsgProvisionResponse {}
 
 // MsgInstallBundle carries a signed bundle to SwingSet.
 message MsgInstallBundle {
-  string bundle    = 1 [(gogoproto.jsontag) = "bundle", (gogoproto.moretags) = "yaml:\"bundle\""];
-  bytes  submitter = 2 [
+  // Until agoric-upgrade-22 this message didn't have an amino name
+  // but no clients actually used amino encoding
+  option (amino.name) = "swingset/InstallBundle";
+
+  string bundle = 1
+      [(amino.dont_omitempty) = true, (gogoproto.jsontag) = "bundle", (gogoproto.moretags) = "yaml:\"bundle\""];
+  bytes submitter = 2 [
+    (amino.encoding)     = "legacy_address",
     (gogoproto.casttype) = "github.com/cosmos/cosmos-sdk/types.AccAddress",
     (gogoproto.jsontag)  = "submitter",
     (gogoproto.moretags) = "yaml:\"submitter\""
   ];
   // Either bundle or compressed_bundle will be set.
   // Default compression algorithm is gzip.
-  bytes compressed_bundle = 3
-      [(gogoproto.jsontag) = "compressedBundle", (gogoproto.moretags) = "yaml:\"compressedBundle\""];
+  bytes compressed_bundle = 3 [
+    (amino.dont_omitempty) = true,
+    (amino.field_name)     = "compressedBundle",
+    (gogoproto.jsontag)    = "compressedBundle",
+    (gogoproto.moretags)   = "yaml:\"compressedBundle\""
+  ];
   // Size in bytes of uncompression of compressed_bundle.
-  int64 uncompressed_size = 4 [(gogoproto.jsontag) = "uncompressedSize"];
+  int64 uncompressed_size = 4 [
+    (amino.dont_omitempty) = true,
+    (amino.field_name)     = "uncompressedSize",
+    (gogoproto.jsontag)    = "uncompressedSize"
+  ];
 }
 
 // MsgInstallBundleResponse is an empty acknowledgement that an install bundle
 // message has been queued for the SwingSet kernel's consideration.
 message MsgInstallBundleResponse {}
+
+// MsgCoreEval defines an SDK message for a core eval.
+message MsgCoreEval {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "cosmos-sdk/x/swingset/MsgCoreEval";
+
+  // authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  // The JSON-stringified core bootstrap permits to grant to the jsCode, as the
+  // `powers` endowment.
+  string json_permits = 2 [(gogoproto.moretags) = "yaml:\"json_permits\""];
+
+  // Evaluate this JavaScript code in a Compartment endowed with `powers` as
+  // well as some powerless helpers.
+  string js_code = 3 [(gogoproto.moretags) = "yaml:\"js_code\""];
+}
+
+// MsgCoreEvalResponse is an empty reply.
+message MsgCoreEvalResponse {
+  // The result of the core eval.
+  string result = 1 [(gogoproto.moretags) = "yaml:\"result\""];
+}

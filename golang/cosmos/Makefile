@@ -112,7 +112,7 @@ proto-check-breaking:
 
 GOGO_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/gogoproto)
 # GOOGLE_API_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/googleapis/googleapis)/google/api
-IBC_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v7)/proto/ibc/core
+IBC_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v8)/proto/ibc/core
 COSMOS_PROTO_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-proto)/proto/cosmos_proto
 COSMOS_SDK_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)/proto/cosmos
 COSMOS_SDK_AMINO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)/proto/amino
@@ -177,10 +177,14 @@ proto-update-deps:
 	mkdir -p $(COSMOS_SDK_AMINO_TYPES) && \
 	curl -sSL $$url/amino.proto > $(COSMOS_SDK_AMINO_TYPES)/amino.proto
 
-.PHONY: proto-all proto-format proto-lint proto-gen proto-check-breaking proto-update-deps
+.PHONY: proto-all proto-gen proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps mocks
 
 lint:
 	golangci-lint run
 
 test:
 	go test -coverprofile=coverage.txt -covermode=atomic ./...
+
+mocks:
+	@echo "Generating mocks"
+	@./scripts/mockgen.sh

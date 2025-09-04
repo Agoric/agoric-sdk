@@ -7,23 +7,21 @@ import (
 	stdlog "log"
 	"math"
 
+	corestore "cosmossdk.io/core/store"
+	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
-
-	"github.com/cometbft/cometbft/libs/log"
-
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/ante"
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	vstoragekeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/keeper"
 )
 
 // Top-level paths for chain storage should remain synchronized with
@@ -53,14 +51,16 @@ const (
 
 // Keeper maintains the link to data vstorage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
-	storeKey   storetypes.StoreKey
-	cdc        codec.Codec
-	paramSpace paramtypes.Subspace
+	storeService corestore.KVStoreService
+	cdc          codec.Codec
+	paramSpace   paramtypes.Subspace
 
 	accountKeeper    types.AccountKeeper
-	bankKeeper       bankkeeper.Keeper
-	vstorageKeeper   vstoragekeeper.Keeper
+	bankKeeper       types.BankKeeper
+	vstorageKeeper   types.VstorageKeeper
 	feeCollectorName string
+
+	authority string
 
 	// CallToController dispatches a message to the controlling process
 	callToController func(ctx sdk.Context, str string) (string, error)
@@ -71,9 +71,10 @@ var _ ante.SwingsetKeeper = &Keeper{}
 
 // NewKeeper creates a new IBC transfer Keeper instance
 func NewKeeper(
-	cdc codec.Codec, key storetypes.StoreKey, paramSpace paramtypes.Subspace,
-	accountKeeper types.AccountKeeper, bankKeeper bankkeeper.Keeper,
-	vstorageKeeper vstoragekeeper.Keeper, feeCollectorName string,
+	cdc codec.Codec, storeService corestore.KVStoreService,
+	paramSpace paramtypes.Subspace,
+	accountKeeper types.AccountKeeper, bankKeeper types.BankKeeper,
+	vstorageKeeper types.VstorageKeeper, feeCollectorName string, authority string,
 	callToController func(ctx sdk.Context, str string) (string, error),
 ) Keeper {
 
@@ -83,14 +84,15 @@ func NewKeeper(
 	}
 
 	return Keeper{
-		storeKey:         key,
 		cdc:              cdc,
+		storeService:     storeService,
 		paramSpace:       paramSpace,
 		accountKeeper:    accountKeeper,
 		bankKeeper:       bankKeeper,
 		vstorageKeeper:   vstorageKeeper,
 		feeCollectorName: feeCollectorName,
 		callToController: callToController,
+		authority:        authority,
 	}
 }
 
@@ -171,7 +173,7 @@ func (k Keeper) GetSmartWalletState(ctx sdk.Context, addr sdk.AccAddress) types.
 }
 
 func (k Keeper) InboundQueueLength(ctx sdk.Context) (int32, error) {
-	size := sdk.NewInt(0)
+	size := sdkmath.NewInt(0)
 
 	highPriorityQueueLength, err := k.vstorageKeeper.GetQueueLength(ctx, StoragePathHighPriorityQueue)
 	if err != nil {
@@ -258,7 +260,8 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 }
 
 func (k Keeper) GetState(ctx sdk.Context) types.State {
-	store := ctx.KVStore(k.storeKey)
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
 	bz := store.Get([]byte(stateKey))
 	state := types.State{}
 	k.cdc.MustUnmarshal(bz, &state)
@@ -266,7 +269,8 @@ func (k Keeper) GetState(ctx sdk.Context) types.State {
 }
 
 func (k Keeper) SetState(ctx sdk.Context, state types.State) {
-	store := ctx.KVStore(k.storeKey)
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
 	bz := k.cdc.MustMarshal(&state)
 	store.Set([]byte(stateKey), bz)
 }
@@ -323,8 +327,8 @@ func (k Keeper) ChargeBeans(
 	beansToDebit := nowOwing.Sub(remainderOwing)
 
 	// Convert the debit to coins.
-	beansPerFeeUnitDec := sdk.NewDecFromBigInt(beansPerUnit[types.BeansPerFeeUnit].BigInt())
-	beansToDebitDec := sdk.NewDecFromBigInt(beansToDebit.BigInt())
+	beansPerFeeUnitDec := sdkmath.LegacyNewDecFromBigInt(beansPerUnit[types.BeansPerFeeUnit].BigInt())
+	beansToDebitDec := sdkmath.LegacyNewDecFromBigInt(beansToDebit.BigInt())
 	feeUnitPrice := k.GetParams(ctx).FeeUnitPrice
 	feeDecCoins := sdk.NewDecCoinsFromCoins(feeUnitPrice...).MulDec(beansToDebitDec).QuoDec(beansPerFeeUnitDec)
 
@@ -485,8 +489,9 @@ func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
 	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, agoric.NewKVEntry(path, mailbox))
 }
 
-func (k Keeper) GetSwingStore(ctx sdk.Context) sdk.KVStore {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) GetSwingStore(ctx sdk.Context) storetypes.KVStore {
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
 	return prefix.NewStore(store, []byte(swingStoreKeyPrefix))
 }
 

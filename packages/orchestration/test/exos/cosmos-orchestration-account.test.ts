@@ -1,41 +1,41 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import {
-  QueryAllBalancesRequest,
+  QueryAllBalancesRequest as QueryAllBalancesRequestType,
   QueryAllBalancesResponse,
-  QueryBalanceRequest,
+  QueryBalanceRequest as QueryBalanceRequestType,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import {
-  MsgSend,
+  MsgSend as MsgSendType,
   MsgSendResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
-import { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
+import { type Coin as CoinType } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import {
-  QueryDelegationRewardsRequest,
+  QueryDelegationRewardsRequest as QueryDelegationRewardsRequestType,
   QueryDelegationRewardsResponse,
-  QueryDelegationTotalRewardsRequest,
+  QueryDelegationTotalRewardsRequest as QueryDelegationTotalRewardsRequestType,
   QueryDelegationTotalRewardsResponse,
 } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
 import {
-  QueryDelegationRequest,
+  QueryDelegationRequest as QueryDelegationRequestType,
   QueryDelegationResponse,
-  QueryDelegatorDelegationsRequest,
+  QueryDelegatorDelegationsRequest as QueryDelegatorDelegationsRequestType,
   QueryDelegatorDelegationsResponse,
-  QueryDelegatorUnbondingDelegationsRequest,
+  QueryDelegatorUnbondingDelegationsRequest as QueryDelegatorUnbondingDelegationsRequestType,
   QueryDelegatorUnbondingDelegationsResponse,
-  QueryRedelegationsRequest,
+  QueryRedelegationsRequest as QueryRedelegationsRequestType,
   QueryRedelegationsResponse,
-  QueryUnbondingDelegationRequest,
+  QueryUnbondingDelegationRequest as QueryUnbondingDelegationRequestType,
   QueryUnbondingDelegationResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
 import {
-  MsgDelegate,
+  MsgDelegate as MsgDelegateType,
   MsgDelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { Any as AnyType } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import {
-  MsgTransfer,
+  MsgTransfer as MsgTransferType,
   MsgTransferResponse,
 } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { makeIssuerKit } from '@agoric/ertp';
@@ -47,7 +47,9 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { decodeBase64 } from '@endo/base64';
 import type { EReturn } from '@endo/far';
 import type { TestFn } from 'ava';
-import { MsgDepositForBurn } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
+import { MsgDepositForBurn as MsgDepositForBurnType } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { Height as HeightType } from '@agoric/cosmic-proto/ibc/core/client/v1/client.js';
 import type { CosmosValidatorAddress } from '../../src/cosmos-api.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type {
@@ -67,6 +69,32 @@ import { protoMsgMocks } from '../ibc-mocks.js';
 import { commonSetup } from '../supports.js';
 import { prepareMakeTestCOAKit } from './make-test-coa-kit.js';
 import { leftPadEthAddressTo32Bytes } from '../../src/utils/address.js';
+
+const MsgSend = CodecHelper(MsgSendType);
+const MsgTransfer = CodecHelper(MsgTransferType);
+const QueryBalanceRequest = CodecHelper(QueryBalanceRequestType);
+const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);
+const QueryDelegationRequest = CodecHelper(QueryDelegationRequestType);
+const QueryDelegatorDelegationsRequest = CodecHelper(
+  QueryDelegatorDelegationsRequestType,
+);
+const QueryUnbondingDelegationRequest = CodecHelper(
+  QueryUnbondingDelegationRequestType,
+);
+const QueryDelegatorUnbondingDelegationsRequest = CodecHelper(
+  QueryDelegatorUnbondingDelegationsRequestType,
+);
+const QueryRedelegationsRequest = CodecHelper(QueryRedelegationsRequestType);
+const QueryDelegationRewardsRequest = CodecHelper(
+  QueryDelegationRewardsRequestType,
+);
+const QueryDelegationTotalRewardsRequest = CodecHelper(
+  QueryDelegationTotalRewardsRequestType,
+);
+const MsgDelegate = CodecHelper(MsgDelegateType);
+const Any = CodecHelper(AnyType);
+const MsgDepositForBurn = CodecHelper(MsgDepositForBurnType);
+const Height = CodecHelper(HeightType);
 
 type TestContext = EReturn<typeof commonSetup>;
 
@@ -209,7 +237,7 @@ test('transfer', async t => {
   } = t.context;
   populateChainHub();
 
-  const mockIbcTransfer = {
+  const defaultIbcTransfer = MsgTransfer.fromPartial({
     sourcePort: 'transfer',
     sourceChannel: 'channel-536',
     token: {
@@ -218,32 +246,30 @@ test('transfer', async t => {
     },
     sender: 'cosmos1test',
     receiver: 'noble1test',
-    timeoutHeight: {
-      revisionHeight: 0n,
-      revisionNumber: 0n,
-    },
-    timeoutTimestamp: 300000000000n, // 5 mins in ns
-    memo: '',
+  });
+
+  const basicIbcTransfer = {
+    ...defaultIbcTransfer,
+    timeoutTimestamp: 300000000000n,
   };
   const buildMocks = () => {
-    const toTransferTxPacket = (msg: MsgTransfer) =>
+    const toTransferTxPacket = (msg: Partial<MsgTransferType>) =>
       buildTxPacketString([MsgTransfer.toProtoMsg(msg)]);
 
-    const defaultTransfer = toTransferTxPacket(mockIbcTransfer);
+    const basicTransfer = toTransferTxPacket(basicIbcTransfer);
     const customTimeoutHeight = toTransferTxPacket({
-      ...mockIbcTransfer,
+      ...defaultIbcTransfer,
       timeoutHeight: {
         revisionHeight: 1000n,
         revisionNumber: 1n,
       },
-      timeoutTimestamp: 0n,
     });
     const customTimeoutTimestamp = toTransferTxPacket({
-      ...mockIbcTransfer,
+      ...defaultIbcTransfer,
       timeoutTimestamp: 999n,
     });
     const customTimeout = toTransferTxPacket({
-      ...mockIbcTransfer,
+      ...defaultIbcTransfer,
       timeoutHeight: {
         revisionHeight: 5000n,
         revisionNumber: 5n,
@@ -251,7 +277,7 @@ test('transfer', async t => {
       timeoutTimestamp: 5000n,
     });
     const customMemo = toTransferTxPacket({
-      ...mockIbcTransfer,
+      ...basicIbcTransfer,
       memo: JSON.stringify({ custom: 'pfm memo' }),
     });
 
@@ -260,7 +286,7 @@ test('transfer', async t => {
     });
 
     const uistTransfer = toTransferTxPacket({
-      ...mockIbcTransfer,
+      ...basicIbcTransfer,
       token: {
         denom: 'uist',
         amount: '10',
@@ -268,7 +294,7 @@ test('transfer', async t => {
     });
 
     const umooTransfer = toTransferTxPacket({
-      ...mockIbcTransfer,
+      ...basicIbcTransfer,
       token: {
         denom: 'umoo',
         amount: '10',
@@ -276,7 +302,7 @@ test('transfer', async t => {
     });
 
     return {
-      [defaultTransfer]: transferResp,
+      [basicTransfer]: transferResp,
       [customTimeoutHeight]: transferResp,
       [customTimeoutTimestamp]: transferResp,
       [customTimeout]: transferResp,
@@ -294,7 +320,8 @@ test('transfer', async t => {
       bridgeDowncalls.length - 1
     ] as IBCMethod<'sendPacket'>;
     const { messages } = parseOutgoingTxPacket(latest.packet.data);
-    return MsgTransfer.decode(messages[0].value);
+    const pkt = messages[0];
+    return MsgTransfer.decode(pkt.value);
   };
 
   t.log('Make account on cosmoshub');
@@ -311,9 +338,10 @@ test('transfer', async t => {
   const res = E(account).transfer(mockDestination, mockAmountArg);
   await eventLoopIteration();
 
+  const pkt = await getAndDecodeLatestPacket();
   t.deepEqual(
-    await getAndDecodeLatestPacket(),
-    mockIbcTransfer,
+    pkt,
+    basicIbcTransfer,
     'outgoing transfer msg matches expected default mock',
   );
   t.is(await res, undefined, 'transfer returns undefined');
@@ -357,10 +385,7 @@ test('transfer', async t => {
     await getAndDecodeLatestPacket(),
     {
       timeoutTimestamp: 999n,
-      timeoutHeight: {
-        revisionHeight: 0n,
-        revisionNumber: 0n,
-      },
+      timeoutHeight: Height.fromPartial({}),
     },
     "accepts custom timeoutTimestamp and doesn't set timeoutHeight",
   );
@@ -467,12 +492,12 @@ test('getBalance and getBalances', async t => {
         }),
       ]);
     const makeBalanceResp = (
-      balance: Coin = { denom: 'usomo', amount: '10' },
+      balance: CoinType = { denom: 'usomo', amount: '10' },
     ) =>
       buildQueryResponseString(QueryBalanceResponse, {
         balance,
       });
-    const makeAllBalanceResp = (balances: Coin[] = []) =>
+    const makeAllBalanceResp = (balances: CoinType[] = []) =>
       buildQueryResponseString(QueryAllBalancesResponse, {
         balances,
       });

@@ -1,14 +1,19 @@
 /** @file Tools to support making IBC mocks */
-import { type JsonSafe, toRequestQueryJson } from '@agoric/cosmic-proto';
-import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
-import { TxMsgData } from '@agoric/cosmic-proto/cosmos/base/abci/v1beta1/abci.js';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
-import { CosmosResponse } from '@agoric/cosmic-proto/icq/v1/packet.js';
 import {
-  RequestQuery,
-  ResponseQuery,
+  type JsonSafe,
+  type Proto3Codec,
+  toRequestQueryJson,
+  CodecHelper,
+} from '@agoric/cosmic-proto';
+import { TxBody as TxBodyType } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
+import { TxMsgData as TxMsgDataType } from '@agoric/cosmic-proto/cosmos/base/abci/v1beta1/abci.js';
+import { Any as AnyType } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { FungibleTokenPacketData as FungibleTokenPacketDataType } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
+import { CosmosResponse as CosmosResponseType } from '@agoric/cosmic-proto/icq/v1/packet.js';
+import {
+  type RequestQuery as RequestQueryType,
+  ResponseQuery as ResponseQueryType,
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import {
   IBC_EVENT,
@@ -25,13 +30,14 @@ import { atob, btoa, decodeBase64, encodeBase64 } from '@endo/base64';
 import type { CosmosChainAddress, Denom } from '../src/orchestration-api.js';
 import { makeQueryPacket, makeTxPacket } from '../src/utils/packet.js';
 
-interface EncoderCommon<T> {
-  encode: (message: T) => {
-    finish: () => Uint8Array;
-  };
-  fromPartial: (partial: Partial<T>) => T;
-  typeUrl: string;
-}
+const TxBody = CodecHelper(TxBodyType);
+const TxMsgData = CodecHelper(TxMsgDataType);
+const Any = CodecHelper(AnyType);
+const FungibleTokenPacketData = CodecHelper(FungibleTokenPacketDataType);
+const CosmosResponse = CodecHelper(CosmosResponseType);
+const ResponseQuery = CodecHelper(ResponseQueryType);
+
+type EncoderCommon<T> = Proto3Codec<string, T>;
 
 const toPacket = (obj: Record<string, any>): string =>
   btoa(JSON.stringify(obj));
@@ -63,18 +69,12 @@ export function buildTxResponseString<T extends EncoderMessage<any>[]>(
   messages: T,
 ): string {
   const msgResponses = messages.map(({ encoder, message }) => {
-    const encodedMsg = encoder.encode(encoder.fromPartial(message)).finish();
-    return Any.fromPartial({
-      typeUrl: encoder.typeUrl,
-      value: encodedMsg,
-    });
+    return Any.fromPartial(CodecHelper(encoder).toProtoMsg(message));
   });
 
-  const txMsgData = TxMsgData.encode(
-    TxMsgData.fromPartial({
-      msgResponses,
-    }),
-  ).finish();
+  const txMsgData = TxMsgData.toProto({
+    msgResponses,
+  });
 
   return toPacket({
     result: encodeBase64(txMsgData),
@@ -106,7 +106,7 @@ export function buildMsgErrorString(
 export function buildQueryResponseString<T>(
   encoder: EncoderCommon<T>,
   query: Partial<T>,
-  opts?: Partial<Omit<ResponseQuery, 'key'>>,
+  opts?: Partial<Omit<ResponseQueryType, 'key'>>,
 ): string {
   return buildQueriesResponseString([{ encoder, query, opts }] as const);
 }
@@ -121,18 +121,16 @@ export function buildQueriesResponseString<
   T extends {
     encoder: EncoderCommon<any>;
     query: Partial<any>;
-    opts?: Partial<Omit<ResponseQuery, 'key'>>;
+    opts?: Partial<Omit<ResponseQueryType, 'key'>>;
   }[],
 >(queries: T): string {
-  const encodedResp = CosmosResponse.encode(
-    CosmosResponse.fromPartial({
-      responses: queries.map(({ encoder, query, opts }) => {
-        const key = encoder.encode(encoder.fromPartial(query)).finish();
-        const response = ResponseQuery.fromPartial({ ...opts, key });
-        return response;
-      }),
+  const encodedResp = CosmosResponse.encode({
+    responses: queries.map(({ encoder, query, opts }) => {
+      const key = CodecHelper(encoder).toProto(query);
+      const response = ResponseQuery.fromPartial({ ...opts, key });
+      return response;
     }),
-  ).finish();
+  }).finish();
 
   return toPacket({
     result: toPacket({ data: encodeBase64(encodedResp) }),
@@ -147,7 +145,7 @@ export function buildQueriesResponseString<
 export function buildTxPacketString(
   msgs: { value: Uint8Array; typeUrl: string }[],
 ): string {
-  return btoa(makeTxPacket(msgs.map(Any.toJSON)));
+  return btoa(makeTxPacket(msgs.map(m => Any.toJSON(m))));
 }
 
 /**
@@ -167,8 +165,8 @@ export const parseOutgoingTxPacket = (b64: string) => {
  * @returns {string}
  */
 export function buildQueryPacketString(
-  msgs: Any[],
-  opts: Partial<Omit<RequestQuery, 'path' | 'data'>> = {},
+  msgs: AnyType[],
+  opts: Partial<Omit<RequestQueryType, 'path' | 'data'>> = {},
 ): string {
   return btoa(makeQueryPacket(msgs.map(msg => toRequestQueryJson(msg, opts))));
 }
@@ -295,7 +293,7 @@ export function buildVTransferEvent<P extends VTransferParams>(
     packet: {
       data: btoa(
         JSON.stringify(
-          FungibleTokenPacketData.fromPartial({
+          FungibleTokenPacketData.toJSON({
             amount: String(amount),
             denom,
             sender,

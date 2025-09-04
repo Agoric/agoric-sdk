@@ -26,11 +26,11 @@ export interface GenesisState {
   votes: Vote[];
   /** proposals defines all the proposals present at genesis. */
   proposals: Proposal[];
-  /** params defines all the parameters of related to deposit. */
+  /** deposit_params defines all the parameters related to deposit. */
   depositParams: DepositParams;
-  /** params defines all the parameters of related to voting. */
+  /** voting_params defines all the parameters related to voting. */
   votingParams: VotingParams;
-  /** params defines all the parameters of related to tally. */
+  /** tally_params defines all the parameters related to tally. */
   tallyParams: TallyParams;
 }
 export interface GenesisStateProtoMsg {

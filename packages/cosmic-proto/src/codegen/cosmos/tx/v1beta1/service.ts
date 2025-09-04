@@ -26,7 +26,10 @@ import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /** OrderBy defines the sorting order */
 export enum OrderBy {
-  /** ORDER_BY_UNSPECIFIED - ORDER_BY_UNSPECIFIED specifies an unknown sorting order. OrderBy defaults to ASC in this case. */
+  /**
+   * ORDER_BY_UNSPECIFIED - ORDER_BY_UNSPECIFIED specifies an unknown sorting order. OrderBy defaults
+   * to ASC in this case.
+   */
   ORDER_BY_UNSPECIFIED = 0,
   /** ORDER_BY_ASC - ORDER_BY_ASC defines ascending order */
   ORDER_BY_ASC = 1,
@@ -65,7 +68,10 @@ export function orderByToJSON(object: OrderBy): string {
       return 'UNRECOGNIZED';
   }
 }
-/** BroadcastMode specifies the broadcast mode for the TxService.Broadcast RPC method. */
+/**
+ * BroadcastMode specifies the broadcast mode for the TxService.Broadcast RPC
+ * method.
+ */
 export enum BroadcastMode {
   /** BROADCAST_MODE_UNSPECIFIED - zero-value for mode ordering */
   BROADCAST_MODE_UNSPECIFIED = 0,
@@ -75,13 +81,13 @@ export enum BroadcastMode {
    */
   BROADCAST_MODE_BLOCK = 1,
   /**
-   * BROADCAST_MODE_SYNC - BROADCAST_MODE_SYNC defines a tx broadcasting mode where the client waits for
-   * a CheckTx execution response only.
+   * BROADCAST_MODE_SYNC - BROADCAST_MODE_SYNC defines a tx broadcasting mode where the client waits
+   * for a CheckTx execution response only.
    */
   BROADCAST_MODE_SYNC = 2,
   /**
-   * BROADCAST_MODE_ASYNC - BROADCAST_MODE_ASYNC defines a tx broadcasting mode where the client returns
-   * immediately.
+   * BROADCAST_MODE_ASYNC - BROADCAST_MODE_ASYNC defines a tx broadcasting mode where the client
+   * returns immediately.
    */
   BROADCAST_MODE_ASYNC = 3,
   UNRECOGNIZED = -1,
@@ -127,7 +133,12 @@ export function broadcastModeToJSON(object: BroadcastMode): string {
  * RPC method.
  */
 export interface GetTxsEventRequest {
-  /** events is the list of transaction event type. */
+  /**
+   * events is the list of transaction event type.
+   * Deprecated post v0.47.x: use query instead, which should contain a valid
+   * events query.
+   */
+  /** @deprecated */
   events: string[];
   /**
    * pagination defines a pagination for the request.
@@ -136,13 +147,23 @@ export interface GetTxsEventRequest {
   /** @deprecated */
   pagination?: PageRequest;
   orderBy: OrderBy;
-  /** page is the page number to query, starts at 1. If not provided, will default to first page. */
+  /**
+   * page is the page number to query, starts at 1. If not provided, will
+   * default to first page.
+   */
   page: bigint;
   /**
    * limit is the total number of results to be returned in the result page.
    * If left empty it will default to a value to be set by each app.
    */
   limit: bigint;
+  /**
+   * query defines the transaction event query that is proxied to Tendermint's
+   * TxSearch RPC method. The query must be valid.
+   *
+   * Since cosmos-sdk 0.50
+   */
+  query: string;
 }
 export interface GetTxsEventRequestProtoMsg {
   typeUrl: '/cosmos.tx.v1beta1.GetTxsEventRequest';
@@ -153,12 +174,14 @@ export interface GetTxsEventRequestProtoMsg {
  * RPC method.
  */
 export interface GetTxsEventRequestSDKType {
+  /** @deprecated */
   events: string[];
   /** @deprecated */
   pagination?: PageRequestSDKType;
   order_by: OrderBy;
   page: bigint;
   limit: bigint;
+  query: string;
 }
 /**
  * GetTxsEventResponse is the response type for the Service.TxsByEvents
@@ -348,7 +371,8 @@ export interface GetBlockWithTxsRequestSDKType {
   pagination?: PageRequestSDKType;
 }
 /**
- * GetBlockWithTxsResponse is the response type for the Service.GetBlockWithTxs method.
+ * GetBlockWithTxsResponse is the response type for the Service.GetBlockWithTxs
+ * method.
  *
  * Since: cosmos-sdk 0.45.2
  */
@@ -365,7 +389,8 @@ export interface GetBlockWithTxsResponseProtoMsg {
   value: Uint8Array;
 }
 /**
- * GetBlockWithTxsResponse is the response type for the Service.GetBlockWithTxs method.
+ * GetBlockWithTxsResponse is the response type for the Service.GetBlockWithTxs
+ * method.
  *
  * Since: cosmos-sdk 0.45.2
  */
@@ -562,6 +587,7 @@ function createBaseGetTxsEventRequest(): GetTxsEventRequest {
     orderBy: 0,
     page: BigInt(0),
     limit: BigInt(0),
+    query: '',
   };
 }
 export const GetTxsEventRequest = {
@@ -584,6 +610,9 @@ export const GetTxsEventRequest = {
     }
     if (message.limit !== BigInt(0)) {
       writer.uint32(40).uint64(message.limit);
+    }
+    if (message.query !== '') {
+      writer.uint32(50).string(message.query);
     }
     return writer;
   },
@@ -613,6 +642,9 @@ export const GetTxsEventRequest = {
         case 5:
           message.limit = reader.uint64();
           break;
+        case 6:
+          message.query = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -631,6 +663,7 @@ export const GetTxsEventRequest = {
       orderBy: isSet(object.orderBy) ? orderByFromJSON(object.orderBy) : -1,
       page: isSet(object.page) ? BigInt(object.page.toString()) : BigInt(0),
       limit: isSet(object.limit) ? BigInt(object.limit.toString()) : BigInt(0),
+      query: isSet(object.query) ? String(object.query) : '',
     };
   },
   toJSON(message: GetTxsEventRequest): JsonSafe<GetTxsEventRequest> {
@@ -650,6 +683,7 @@ export const GetTxsEventRequest = {
       (obj.page = (message.page || BigInt(0)).toString());
     message.limit !== undefined &&
       (obj.limit = (message.limit || BigInt(0)).toString());
+    message.query !== undefined && (obj.query = message.query);
     return obj;
   },
   fromPartial(object: Partial<GetTxsEventRequest>): GetTxsEventRequest {
@@ -668,6 +702,7 @@ export const GetTxsEventRequest = {
       object.limit !== undefined && object.limit !== null
         ? BigInt(object.limit.toString())
         : BigInt(0);
+    message.query = object.query ?? '';
     return message;
   },
   fromProtoMsg(message: GetTxsEventRequestProtoMsg): GetTxsEventRequest {

@@ -57,19 +57,19 @@ export declare class SyncCallback<
 }
 
 /**
-Returns a boolean for whether the given type is primitive value or primitive type.
- 
-@example
-```
-IsPrimitive<'string'>
-//=> true
- 
-IsPrimitive<string>
-//=> true
- 
-IsPrimitive<Object>
-//=> false
-```
+ * Returns a boolean for whether the given type is a primitive value or
+ * primitive type.
+ *
+ * @example
+ * ```
+ * IsPrimitive<'string'>
+ * //=> true
+ *
+ * IsPrimitive<string>
+ * //=> true
+ *
+ * IsPrimitive<Object>
+ * //=> false
  */
 export type IsPrimitive<T> = [T] extends [Primitive] ? true : false;
 
@@ -127,3 +127,5 @@ export declare type MustMatch = <P extends Pattern>(
   pattern: P,
   label?: string | number,
 ) => asserts specimen is P extends TypedPattern<any> ? PatternType<P> : unknown;
+
+export type { TraceLogger } from './debug.js';

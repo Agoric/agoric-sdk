@@ -38,7 +38,7 @@ import { agoric } from '@agoric/cosmic-proto/agoric/bundle.js';
 
 const {
     installBundle,
-} = agoric.exchange.v1beta1.MessageComposer.withTypeUrl;
+} = agoric.swingset.MessageComposer.withTypeUrl;
 ```
 
 ## Connecting with Wallets and Signing Messages

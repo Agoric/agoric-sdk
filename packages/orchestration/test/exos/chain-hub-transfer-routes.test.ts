@@ -1,10 +1,11 @@
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 import test from '@endo/ses-ava/prepare-endo.js';
 
-import { typedJson } from '@agoric/cosmic-proto';
+import { CodecHelper } from '@agoric/cosmic-proto';
 import { makeNameHubKit } from '@agoric/vats';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { objectMap } from '@endo/patterns';
+import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { withChainCapabilities } from '../../src/chain-capabilities.js';
 import { makeChainHub } from '../../src/exos/chain-hub.js';
 import knownChains from '../../src/fetched-chain-info.js';
@@ -15,6 +16,8 @@ import type {
 import { assetOn } from '../../src/utils/asset.js';
 import { registerChainsAndAssets } from '../../src/utils/chain-hub-helper.js';
 import { provideFreshRootZone } from '../durability.js';
+
+const MsgTransfer = CodecHelper(MsgTransferType);
 
 // fresh state for each test
 const setup = () => {
@@ -164,16 +167,11 @@ test('through issuing chain', async t => {
   }
 
   const { forwardInfo, ...rest } = route;
-  const transferMsg = typedJson('/ibc.applications.transfer.v1.MsgTransfer', {
+  const transferMsg = MsgTransfer.typedJson({
     ...rest,
     memo: JSON.stringify(forwardInfo),
     // callers of `.makeTransferRoute` will provide these fields themselves:
     sender: 'agoric123',
-    timeoutHeight: {
-      revisionHeight: 0n,
-      revisionNumber: 0n,
-    },
-    timeoutTimestamp: 0n,
   });
   t.like(transferMsg, {
     memo: '{"forward":{"receiver":"osmo1234","port":"transfer","channel":"channel-1","retries":3,"timeout":"10m"}}',

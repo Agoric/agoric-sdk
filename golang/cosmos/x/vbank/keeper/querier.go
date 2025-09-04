@@ -21,7 +21,10 @@ func queryParams(ctx sdk.Context, _ []string, _ abci.RequestQuery, k Keeper, leg
 }
 
 func queryState(ctx sdk.Context, _ []string, _ abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
-	state := k.GetState(ctx)
+	state, err := k.GetState(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	res, err := codec.MarshalJSONIndent(legacyQuerierCdc, state)
 	if err != nil {

@@ -39,7 +39,7 @@ import {
 import {
   openPortfolio,
   rebalance,
-  rebalanceFromTransfer,
+  parseInboundTransfer,
   wayFromSrcToDesc,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
@@ -271,10 +271,10 @@ const mocks = (
 
   const inertSubscriber = {} as ResolvedPublicTopic<never>['subscriber'];
 
-  const resolverZone = zone.subZone('CCTPResolver');
+  const resolverZone = zone.subZone('Resolver');
   // Use actual vow tools for the resolver to create proper vows, not promises
   const resolverVowTools = prepareVowTools(zone.subZone('vowTools'));
-  const { client: cctpClient } = prepareResolverKit(resolverZone, mockZCF, {
+  const { client: resolverClient } = prepareResolverKit(resolverZone, mockZCF, {
     vowTools: resolverVowTools,
     pendingTxsNode,
     marshaller,
@@ -288,8 +288,8 @@ const mocks = (
     gmpFeeInfo: { brand: BLD, denom: 'ubld' },
     inertSubscriber,
     gmpAddresses,
-    cctpClient: cctpClient as unknown as GuestInterface<
-      PortfolioInstanceContext['cctpClient']
+    resolverClient: resolverClient as unknown as GuestInterface<
+      PortfolioInstanceContext['resolverClient']
     >,
   };
 
@@ -304,8 +304,8 @@ const mocks = (
 
   const rebalanceHost = (seat, offerArgs, kit) =>
     rebalance(orch, ctx1, seat, offerArgs, kit);
-  const rebalanceFromTransferHost = (packet, kit) =>
-    rebalanceFromTransfer(orch, ctx1, packet, kit);
+  const parseInboundTransferHost = (packet, kit) =>
+    parseInboundTransfer(orch, ctx1, packet, kit);
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
     axelarIds: axelarIdsMock,
@@ -313,7 +313,7 @@ const mocks = (
     timer,
     chainHubTools,
     rebalance: rebalanceHost as any,
-    rebalanceFromTransfer: rebalanceFromTransferHost as any,
+    parseInboundTransfer: parseInboundTransferHost as any,
     proposalShapes: makeProposalShapes(USDC, BLD),
     offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
@@ -712,8 +712,8 @@ test.skip('handle failure in sendGmp with Aave position', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
-test.failing(
-  'open portfolio with Compound and USDN positions then rebalanceFromTransfer',
+test(
+  'open portfolio with Compound and USDN positions then rebalance',
   openAndTransfer,
   { Aave: make(USDC, 3_333_000_000n), USDN: make(USDC, 3_333_000_000n) },
   () => [

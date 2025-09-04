@@ -31,7 +31,7 @@ export const main = async (
     connectWithSigner = SigningStargateClient.connectWithSigner,
   } = {},
 ) => {
-  const config = getConfig(env);
+  const config = await getConfig(env);
 
   const delay = ms =>
     new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
@@ -83,14 +83,18 @@ export const main = async (
   const evmCtx = await createEVMContext({
     // Any non-mainnet Agoric chain would be connected to Axelar testnet.
     net: env.AGORIC_NET === 'mainnet' ? 'mainnet' : 'testnet',
+    alchemy: config.alchemy,
   });
 
-  await startEngine({
+  const powers = {
     evmCtx,
     rpc,
     spectrum,
     cosmosRest,
     signingSmartWalletKit,
+  };
+  await startEngine(powers, {
+    depositIbcDenom: env.DEPOSIT_IBC_DENOM || 'USDC',
   });
 };
 harden(main);

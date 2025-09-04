@@ -84,6 +84,10 @@
       "types": "./dist/codegen/ibc/applications/transfer/v1/tx.d.ts",
       "default": "./dist/codegen/ibc/applications/transfer/v1/tx.js"
     },
+    "./ibc/applications/transfer/v1/query.js": {
+      "types": "./dist/codegen/ibc/applications/transfer/v1/query.d.ts",
+      "default": "./dist/codegen/ibc/applications/transfer/v1/query.js"
+    },
     "./ibc/core/channel/v1/channel.js": {
       "types": "./dist/codegen/ibc/core/channel/v1/channel.d.ts",
       "default": "./dist/codegen/ibc/core/channel/v1/channel.js"

@@ -31,6 +31,7 @@ const makeTestContext = async t => {
   // XXX type of zoe from setUpZoeForTest is any???
   const { zoe: zoeAny, bundleAndInstall } = await setUpZoeForTest();
   const zoe: ZoeService = zoeAny;
+  const startedKitPK = makePromiseKit<StartedInstanceKit<any>>();
 
   const startUpgradable = (async ({
     label,
@@ -46,6 +47,8 @@ const makeTestContext = async t => {
       privateArgs,
       label,
     );
+
+    startedKitPK.resolve(kit);
     return harden({ ...kit, label });
   }) as StartUpgradable;
 
@@ -66,6 +69,7 @@ const makeTestContext = async t => {
     startUpgradable,
     makeContractControl,
     ymaxControlPK: makePromiseKit<ContractControl<YMaxStartFn>>(), // analog to wallet/purse
+    startedKitP: startedKitPK.promise,
   };
 };
 
@@ -217,6 +221,22 @@ test.serial('starting while already running fails', async t => {
   await t.throwsAsync(E(cc).start({ installation, issuers }), {
     message: '"ymax0" already started',
   });
+});
+
+test.serial('terminate continues after error', async t => {
+  const { common, startedKitP, bundleAndInstall } = t.context;
+  const cc = await t.context.ymaxControlPK.promise;
+
+  const { adminFacet } = await startedKitP;
+  await E(adminFacet).terminateContract(Error('testing early termination'));
+
+  await t.notThrowsAsync(E(cc).terminate());
+
+  // start for next test
+  const installation = await bundleAndInstall(ymaxExports);
+  const { usdc, bld } = common.brands;
+  const issuers = { USDC: usdc.issuer, Fee: bld.issuer, BLD: bld.issuer };
+  await E(cc).start({ installation, issuers });
 });
 
 test.serial('prune ymax0 vstorage', async t => {

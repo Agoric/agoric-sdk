@@ -1,12 +1,12 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
 import {
-  QueryBalanceRequest,
-  QueryBalanceResponse,
-  QueryAllBalancesRequest,
-  QueryAllBalancesResponse,
+  QueryBalanceRequest as QueryBalanceRequestType,
+  QueryBalanceResponse as QueryBalanceResponseType,
+  QueryAllBalancesRequest as QueryAllBalancesRequestType,
+  QueryAllBalancesResponse as QueryAllBalancesResponseType,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import { toRequestQueryJson, typedJson } from '@agoric/cosmic-proto';
+import { toRequestQueryJson, CodecHelper } from '@agoric/cosmic-proto';
 import { decodeBase64 } from '@endo/base64';
 import {
   commonSetup,
@@ -19,6 +19,11 @@ import { createWallet } from '../../tools/wallet.js';
 import { makeQueryClient } from '../../tools/query.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
+
+const QueryBalanceRequest = CodecHelper(QueryBalanceRequestType);
+const QueryBalanceResponse = CodecHelper(QueryBalanceResponseType);
+const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);
+const QueryAllBalancesResponse = CodecHelper(QueryAllBalancesResponseType);
 
 const accounts = ['osmosis', 'cosmoshub', 'agoric'];
 
@@ -240,19 +245,13 @@ test.serial('Send Local Query from chain object', async t => {
   t.log('sendLocalQuery offer');
   const offerId = `agoric-sendLocalQuery-${Date.now()}`;
 
-  const allBalancesProto3JsonQuery = typedJson(
-    '/cosmos.bank.v1beta1.QueryAllBalancesRequest',
-    {
-      address: agoricAddr,
-    },
-  );
-  const balanceProto3JsonQuery = typedJson(
-    '/cosmos.bank.v1beta1.QueryBalanceRequest',
-    {
-      address: agoricAddr,
-      denom: 'ubld',
-    },
-  );
+  const allBalancesProto3JsonQuery = QueryAllBalancesRequest.typedJson({
+    address: agoricAddr,
+  });
+  const balanceProto3JsonQuery = QueryBalanceRequest.typedJson({
+    address: agoricAddr,
+    denom: 'ubld',
+  });
 
   await doOffer({
     id: offerId,

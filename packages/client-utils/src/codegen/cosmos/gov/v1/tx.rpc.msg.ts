@@ -14,6 +14,8 @@ import {
   MsgDepositResponse,
   MsgUpdateParams,
   MsgUpdateParamsResponse,
+  MsgCancelProposal,
+  MsgCancelProposalResponse,
 } from './tx.js';
 /** Msg defines the gov Msg service. */
 export interface Msg {
@@ -41,6 +43,14 @@ export interface Msg {
    * Since: cosmos-sdk 0.47
    */
   updateParams(request: MsgUpdateParams): Promise<MsgUpdateParamsResponse>;
+  /**
+   * CancelProposal defines a method to cancel governance proposal
+   *
+   * Since: cosmos-sdk 0.50
+   */
+  cancelProposal(
+    request: MsgCancelProposal,
+  ): Promise<MsgCancelProposalResponse>;
 }
 export class MsgClientImpl implements Msg {
   private readonly rpc: Rpc;
@@ -52,6 +62,7 @@ export class MsgClientImpl implements Msg {
     this.voteWeighted = this.voteWeighted.bind(this);
     this.deposit = this.deposit.bind(this);
     this.updateParams = this.updateParams.bind(this);
+    this.cancelProposal = this.cancelProposal.bind(this);
   }
   submitProposal(
     request: MsgSubmitProposal,
@@ -103,6 +114,19 @@ export class MsgClientImpl implements Msg {
     const promise = this.rpc.request('cosmos.gov.v1.Msg', 'UpdateParams', data);
     return promise.then(data =>
       MsgUpdateParamsResponse.decode(new BinaryReader(data)),
+    );
+  }
+  cancelProposal(
+    request: MsgCancelProposal,
+  ): Promise<MsgCancelProposalResponse> {
+    const data = MsgCancelProposal.encode(request).finish();
+    const promise = this.rpc.request(
+      'cosmos.gov.v1.Msg',
+      'CancelProposal',
+      data,
+    );
+    return promise.then(data =>
+      MsgCancelProposalResponse.decode(new BinaryReader(data)),
     );
   }
 }

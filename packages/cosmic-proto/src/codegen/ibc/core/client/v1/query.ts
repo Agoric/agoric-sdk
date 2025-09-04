@@ -5,7 +5,6 @@ import {
   PageResponse,
   type PageResponseSDKType,
 } from '../../../../cosmos/base/query/v1beta1/pagination.js';
-import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
 import {
   Height,
   type HeightSDKType,
@@ -16,6 +15,11 @@ import {
   Params,
   type ParamsSDKType,
 } from './client.js';
+import {
+  MerklePath,
+  type MerklePathSDKType,
+} from '../../commitment/v1/commitment.js';
+import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
@@ -389,6 +393,50 @@ export interface QueryUpgradedConsensusStateResponseProtoMsg {
  */
 export interface QueryUpgradedConsensusStateResponseSDKType {
   upgraded_consensus_state?: AnySDKType;
+}
+/** QueryVerifyMembershipRequest is the request type for the Query/VerifyMembership RPC method */
+export interface QueryVerifyMembershipRequest {
+  /** client unique identifier. */
+  clientId: string;
+  /** the proof to be verified by the client. */
+  proof: Uint8Array;
+  /** the height of the commitment root at which the proof is verified. */
+  proofHeight: Height;
+  /** the commitment key path. */
+  merklePath: MerklePath;
+  /** the value which is proven. */
+  value: Uint8Array;
+  /** optional time delay */
+  timeDelay: bigint;
+  /** optional block delay */
+  blockDelay: bigint;
+}
+export interface QueryVerifyMembershipRequestProtoMsg {
+  typeUrl: '/ibc.core.client.v1.QueryVerifyMembershipRequest';
+  value: Uint8Array;
+}
+/** QueryVerifyMembershipRequest is the request type for the Query/VerifyMembership RPC method */
+export interface QueryVerifyMembershipRequestSDKType {
+  client_id: string;
+  proof: Uint8Array;
+  proof_height: HeightSDKType;
+  merkle_path: MerklePathSDKType;
+  value: Uint8Array;
+  time_delay: bigint;
+  block_delay: bigint;
+}
+/** QueryVerifyMembershipResponse is the response type for the Query/VerifyMembership RPC method */
+export interface QueryVerifyMembershipResponse {
+  /** boolean indicating success or failure of proof verification. */
+  success: boolean;
+}
+export interface QueryVerifyMembershipResponseProtoMsg {
+  typeUrl: '/ibc.core.client.v1.QueryVerifyMembershipResponse';
+  value: Uint8Array;
+}
+/** QueryVerifyMembershipResponse is the response type for the Query/VerifyMembership RPC method */
+export interface QueryVerifyMembershipResponseSDKType {
+  success: boolean;
 }
 function createBaseQueryClientStateRequest(): QueryClientStateRequest {
   return {
@@ -1958,6 +2006,250 @@ export const QueryUpgradedConsensusStateResponse = {
     return {
       typeUrl: '/ibc.core.client.v1.QueryUpgradedConsensusStateResponse',
       value: QueryUpgradedConsensusStateResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryVerifyMembershipRequest(): QueryVerifyMembershipRequest {
+  return {
+    clientId: '',
+    proof: new Uint8Array(),
+    proofHeight: Height.fromPartial({}),
+    merklePath: MerklePath.fromPartial({}),
+    value: new Uint8Array(),
+    timeDelay: BigInt(0),
+    blockDelay: BigInt(0),
+  };
+}
+export const QueryVerifyMembershipRequest = {
+  typeUrl: '/ibc.core.client.v1.QueryVerifyMembershipRequest' as const,
+  encode(
+    message: QueryVerifyMembershipRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.clientId !== '') {
+      writer.uint32(10).string(message.clientId);
+    }
+    if (message.proof.length !== 0) {
+      writer.uint32(18).bytes(message.proof);
+    }
+    if (message.proofHeight !== undefined) {
+      Height.encode(message.proofHeight, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.merklePath !== undefined) {
+      MerklePath.encode(message.merklePath, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.value.length !== 0) {
+      writer.uint32(42).bytes(message.value);
+    }
+    if (message.timeDelay !== BigInt(0)) {
+      writer.uint32(48).uint64(message.timeDelay);
+    }
+    if (message.blockDelay !== BigInt(0)) {
+      writer.uint32(56).uint64(message.blockDelay);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryVerifyMembershipRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryVerifyMembershipRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.clientId = reader.string();
+          break;
+        case 2:
+          message.proof = reader.bytes();
+          break;
+        case 3:
+          message.proofHeight = Height.decode(reader, reader.uint32());
+          break;
+        case 4:
+          message.merklePath = MerklePath.decode(reader, reader.uint32());
+          break;
+        case 5:
+          message.value = reader.bytes();
+          break;
+        case 6:
+          message.timeDelay = reader.uint64();
+          break;
+        case 7:
+          message.blockDelay = reader.uint64();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryVerifyMembershipRequest {
+    return {
+      clientId: isSet(object.clientId) ? String(object.clientId) : '',
+      proof: isSet(object.proof)
+        ? bytesFromBase64(object.proof)
+        : new Uint8Array(),
+      proofHeight: isSet(object.proofHeight)
+        ? Height.fromJSON(object.proofHeight)
+        : undefined,
+      merklePath: isSet(object.merklePath)
+        ? MerklePath.fromJSON(object.merklePath)
+        : undefined,
+      value: isSet(object.value)
+        ? bytesFromBase64(object.value)
+        : new Uint8Array(),
+      timeDelay: isSet(object.timeDelay)
+        ? BigInt(object.timeDelay.toString())
+        : BigInt(0),
+      blockDelay: isSet(object.blockDelay)
+        ? BigInt(object.blockDelay.toString())
+        : BigInt(0),
+    };
+  },
+  toJSON(
+    message: QueryVerifyMembershipRequest,
+  ): JsonSafe<QueryVerifyMembershipRequest> {
+    const obj: any = {};
+    message.clientId !== undefined && (obj.clientId = message.clientId);
+    message.proof !== undefined &&
+      (obj.proof = base64FromBytes(
+        message.proof !== undefined ? message.proof : new Uint8Array(),
+      ));
+    message.proofHeight !== undefined &&
+      (obj.proofHeight = message.proofHeight
+        ? Height.toJSON(message.proofHeight)
+        : undefined);
+    message.merklePath !== undefined &&
+      (obj.merklePath = message.merklePath
+        ? MerklePath.toJSON(message.merklePath)
+        : undefined);
+    message.value !== undefined &&
+      (obj.value = base64FromBytes(
+        message.value !== undefined ? message.value : new Uint8Array(),
+      ));
+    message.timeDelay !== undefined &&
+      (obj.timeDelay = (message.timeDelay || BigInt(0)).toString());
+    message.blockDelay !== undefined &&
+      (obj.blockDelay = (message.blockDelay || BigInt(0)).toString());
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryVerifyMembershipRequest>,
+  ): QueryVerifyMembershipRequest {
+    const message = createBaseQueryVerifyMembershipRequest();
+    message.clientId = object.clientId ?? '';
+    message.proof = object.proof ?? new Uint8Array();
+    message.proofHeight =
+      object.proofHeight !== undefined && object.proofHeight !== null
+        ? Height.fromPartial(object.proofHeight)
+        : undefined;
+    message.merklePath =
+      object.merklePath !== undefined && object.merklePath !== null
+        ? MerklePath.fromPartial(object.merklePath)
+        : undefined;
+    message.value = object.value ?? new Uint8Array();
+    message.timeDelay =
+      object.timeDelay !== undefined && object.timeDelay !== null
+        ? BigInt(object.timeDelay.toString())
+        : BigInt(0);
+    message.blockDelay =
+      object.blockDelay !== undefined && object.blockDelay !== null
+        ? BigInt(object.blockDelay.toString())
+        : BigInt(0);
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryVerifyMembershipRequestProtoMsg,
+  ): QueryVerifyMembershipRequest {
+    return QueryVerifyMembershipRequest.decode(message.value);
+  },
+  toProto(message: QueryVerifyMembershipRequest): Uint8Array {
+    return QueryVerifyMembershipRequest.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryVerifyMembershipRequest,
+  ): QueryVerifyMembershipRequestProtoMsg {
+    return {
+      typeUrl: '/ibc.core.client.v1.QueryVerifyMembershipRequest',
+      value: QueryVerifyMembershipRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryVerifyMembershipResponse(): QueryVerifyMembershipResponse {
+  return {
+    success: false,
+  };
+}
+export const QueryVerifyMembershipResponse = {
+  typeUrl: '/ibc.core.client.v1.QueryVerifyMembershipResponse' as const,
+  encode(
+    message: QueryVerifyMembershipResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.success === true) {
+      writer.uint32(8).bool(message.success);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryVerifyMembershipResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryVerifyMembershipResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.success = reader.bool();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryVerifyMembershipResponse {
+    return {
+      success: isSet(object.success) ? Boolean(object.success) : false,
+    };
+  },
+  toJSON(
+    message: QueryVerifyMembershipResponse,
+  ): JsonSafe<QueryVerifyMembershipResponse> {
+    const obj: any = {};
+    message.success !== undefined && (obj.success = message.success);
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryVerifyMembershipResponse>,
+  ): QueryVerifyMembershipResponse {
+    const message = createBaseQueryVerifyMembershipResponse();
+    message.success = object.success ?? false;
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryVerifyMembershipResponseProtoMsg,
+  ): QueryVerifyMembershipResponse {
+    return QueryVerifyMembershipResponse.decode(message.value);
+  },
+  toProto(message: QueryVerifyMembershipResponse): Uint8Array {
+    return QueryVerifyMembershipResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryVerifyMembershipResponse,
+  ): QueryVerifyMembershipResponseProtoMsg {
+    return {
+      typeUrl: '/ibc.core.client.v1.QueryVerifyMembershipResponse',
+      value: QueryVerifyMembershipResponse.encode(message).finish(),
     };
   },
 };
