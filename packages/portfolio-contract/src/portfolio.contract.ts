@@ -243,7 +243,7 @@ export const contract = async (
   };
 
   const resolverZone = zone.subZone('Resolver');
-  const resolverKit = prepareResolverKit(resolverZone, zcf, {
+  const makeResolverKit = prepareResolverKit(resolverZone, zcf, {
     vowTools,
     pendingTxsNode: E(storageNode).makeChildNode(PENDING_TXS_NODE_KEY),
     marshaller,
@@ -251,7 +251,7 @@ export const contract = async (
   const {
     client: resolverClient,
     invitationMakers: makeResolverInvitationMakers,
-  } = resolverZone.makeOnce('resolverKit', () => resolverKit());
+  } = resolverZone.makeOnce('resolverKit', () => makeResolverKit());
 
   const ctx1 = {
     zoeTools,
