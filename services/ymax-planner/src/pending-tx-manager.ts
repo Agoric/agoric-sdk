@@ -89,13 +89,12 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       parseAccountId(destinationAddress);
     const caipId: CaipChainId = `${namespace}:${reference}`;
 
-    caipId in ctx.usdcAddresses ||
-      Fail`${logPrefix} Unsupported chain: ${caipId}`;
-    caipId in ctx.evmProviders ||
+    const usdcAddress =
+      ctx.usdcAddresses[caipId] ||
+      Fail`${logPrefix} No USDC address for chain: ${caipId}`;
+    const provider =
+      ctx.evmProviders[caipId] ||
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
-
-    const usdcAddress = ctx.usdcAddresses[caipId];
-    const provider = ctx.evmProviders[caipId] as JsonRpcProvider;
 
     const transferStatus = await watchCctpTransfer({
       usdcAddress,
