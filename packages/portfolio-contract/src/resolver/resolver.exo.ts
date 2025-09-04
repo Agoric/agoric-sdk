@@ -138,6 +138,7 @@ export const prepareResolverKit = (
           destinationAddress: AccountId,
           amountValue?: NatValue,
         ): { result: Vow<void>; txId: TxId } {
+          debugger;
           const txId: TxId = `tx${this.state.index}`;
           this.state.index += 1;
 
@@ -182,6 +183,7 @@ export const prepareResolverKit = (
           txId: TxId,
           status: Exclude<TxStatus, 'pending'> = TxStatus.SUCCESS,
         ) {
+          debugger;
           const node = E(pendingTxsNode).makeChildNode(txId);
           const txEntry = this.state.transactionRegistry.get(txId);
           const value: PublishedTx = {
@@ -194,6 +196,7 @@ export const prepareResolverKit = (
       },
       service: {
         settleTransaction(args: TransactionSettlementOfferArgs) {
+          debugger;
           const { transactionRegistry } = this.state;
           const { status, txId, rejectionReason } = args;
 

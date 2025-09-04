@@ -167,6 +167,7 @@ export const CCTP = {
     dest,
   })),
   apply: async (ctx: PortfolioInstanceContext, amount, src, dest) => {
+    debugger;
     const denomAmount: DenomAmount = { denom: 'uusdc', value: amount.value };
     const { chainId, remoteAddress } = dest;
     const destinationAddress: AccountId = `${chainId}:${remoteAddress}`;
@@ -243,6 +244,7 @@ export const sendGMPContractCall = async (
   gmpAcct: GMPAccountInfo,
   calls: ContractCall[],
 ) => {
+  debugger;
   const {
     lca,
     gmpChain,

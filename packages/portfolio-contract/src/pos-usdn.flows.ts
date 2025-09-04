@@ -148,6 +148,7 @@ export const agoricToNoble = {
   apply: async (ctx, amount, src, dest) => {
     const { denom } = ctx.usdc;
     const denomAmount = { value: amount.value, denom };
+    debugger;
     await src.lca.transfer(dest.ica.getAddress(), denomAmount);
   },
   recover: async (ctx, amount, src, dest) => {
