@@ -758,111 +758,105 @@ test.serial(
   },
 );
 
-test.serial(
-  'open 2 positions on an EVM chain, each from a seperate portfolio, with CCTP confirmation running in parallel',
-  async t => {
-    const { trader1, common, started, zoe, trader2 } = await setupTrader(t);
-    const { usdc, bld, poc26 } = common.brands;
+test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
+  const { trader1, common, started, zoe, trader2 } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
 
-    const addr2 = {
-      lca: 'agoric1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq64vywd',
-      nobleICA: 'cosmos1test1',
-      evm: '0xFbb89cC04ffb710b1f645b2cbEda0CE7D93294F4',
-    } as const;
-    const amount = usdc.units(3_333.33);
+  const addr2 = {
+    lca: 'agoric1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq64vywd',
+    nobleICA: 'cosmos1test1',
+    evm: '0xFbb89cC04ffb710b1f645b2cbEda0CE7D93294F4',
+  } as const;
+  const amount = usdc.units(3_333.33);
 
-    for (const { msg, ack } of values(
-      makeCCTPTraffic(addr2.nobleICA, `${amount.value}`, addr2.evm),
-    )) {
-      common.mocks.ibcBridge.addMockAck(msg, ack);
-    }
+  for (const { msg, ack } of values(
+    makeCCTPTraffic(addr2.nobleICA, `${amount.value}`, addr2.evm),
+  )) {
+    common.mocks.ibcBridge.addMockAck(msg, ack);
+  }
 
-    const feeAcct = bld.make(100n);
-    const feeCall = bld.make(100n);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
 
-    const depositToAave: OfferArgsFor['openPortfolio'] = {
-      flow: [
-        { src: '<Deposit>', dest: '@agoric', amount },
-        { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
-        { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
-      ],
-    };
-    const actualP = trader1.openPortfolio(
-      t,
-      { Deposit: amount, Access: poc26.make(1n) },
-      depositToAave,
-    );
+  const depositToAave: OfferArgsFor['openPortfolio'] = {
+    flow: [
+      { src: '<Deposit>', dest: '@agoric', amount },
+      { src: '@agoric', dest: '@noble', amount },
+      { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+      { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+    ],
+  };
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    depositToAave,
+  );
 
-    await simulateCCTPAck(common.utils).finally(() =>
-      simulateAckTransferToAxelar(common.utils),
-    );
-    await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
+  await simulateCCTPAck(common.utils).finally(() =>
+    simulateAckTransferToAxelar(common.utils),
+  );
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
-    const actualP2 = trader2.openPortfolio(
-      t,
-      { Deposit: amount, Access: poc26.make(1n) },
-      depositToAave,
-    );
+  const actualP2 = trader2.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    depositToAave,
+  );
 
-    await simulateCCTPAck(common.utils).finally(() =>
-      simulateAckTransferToAxelar(common.utils),
-    );
-    await simulateUpcallFromAxelar(
-      common.mocks.transferBridge,
-      sourceChain,
-      addr2.evm,
-      addr2.lca,
-    );
+  await simulateCCTPAck(common.utils).finally(() =>
+    simulateAckTransferToAxelar(common.utils),
+  );
+  await simulateUpcallFromAxelar(
+    common.mocks.transferBridge,
+    sourceChain,
+    addr2.evm,
+    addr2.lca,
+  );
 
-    const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-    const cctpSettlementPromise = settleTransaction(zoe, resolverMakers);
+  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+  const cctpSettlementPromise = settleTransaction(zoe, resolverMakers);
 
-    const cctpSettlementPromise2 = settleTransaction(
-      zoe,
-      resolverMakers,
-      1,
-      'success',
-      console.log,
-    );
+  const cctpSettlementPromise2 = settleTransaction(
+    zoe,
+    resolverMakers,
+    1,
+    'success',
+    console.log,
+  );
 
-    await Promise.all([cctpSettlementPromise, cctpSettlementPromise2]);
+  await Promise.all([cctpSettlementPromise, cctpSettlementPromise2]);
 
-    const gmpSettlementPromise = settleTransaction(zoe, resolverMakers, 2);
+  const gmpSettlementPromise = settleTransaction(zoe, resolverMakers, 2);
 
-    const gmpSettlementPromise2 = settleTransaction(
-      zoe,
-      resolverMakers,
-      3,
-      'success',
-      console.log,
-    );
+  const gmpSettlementPromise2 = settleTransaction(
+    zoe,
+    resolverMakers,
+    3,
+    'success',
+    console.log,
+  );
 
-    await Promise.all([gmpSettlementPromise, gmpSettlementPromise2]);
+  await Promise.all([gmpSettlementPromise, gmpSettlementPromise2]);
 
-    await eventLoopIteration(); // let IBC message go out
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+  await eventLoopIteration(); // let IBC message go out
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
 
-    await eventLoopIteration(); // let IBC message go out
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  await eventLoopIteration(); // let IBC message go out
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
 
-    const actual = await actualP;
-    await actualP2;
+  const actual = await actualP;
+  await actualP2;
 
-    const result = actual.result as any;
-    t.is(passStyleOf(result.invitationMakers), 'remotable');
+  const result = actual.result as any;
+  t.is(passStyleOf(result.invitationMakers), 'remotable');
 
-    t.is(keys(result.publicSubscribers).length, 1);
-    const { storagePath } = result.publicSubscribers.portfolio;
-    t.log(storagePath);
-    const { contents } = getPortfolioInfo(
-      storagePath,
-      common.bootstrap.storage,
-    );
-    t.snapshot(contents, 'vstorage');
-    t.snapshot(actual.payouts, 'refund payouts');
-  },
-);
+  t.is(keys(result.publicSubscribers).length, 1);
+  const { storagePath } = result.publicSubscribers.portfolio;
+  t.log(storagePath);
+  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.snapshot(contents, 'vstorage');
+  t.snapshot(actual.payouts, 'refund payouts');
+});
 
 const getCapDataStructure = cell => {
   const { body, slots } = JSON.parse(cell);
