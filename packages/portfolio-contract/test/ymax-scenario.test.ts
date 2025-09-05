@@ -16,11 +16,11 @@ import {
 import { setupTrader, simulateUpcallFromAxelar } from './contract-setup.ts';
 import {
   evmNamingDistinction,
-  localAccount0,
+  portfolio0lcaOrch,
   makeCCTPTraffic,
   makeUSDNIBCTraffic,
 } from './mocks.ts';
-import { settleTransaction, getResolverMakers } from './resolver-helpers.ts';
+import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
 
 // Use an EVM chain whose axelar ID differs from its chain name
 const { sourceChain } = evmNamingDistinction;
@@ -57,7 +57,7 @@ const rebalanceScenarioMacro = test.macro({
       // simulate arrival of funds in the LCA via IBC from Noble
       const funds = await common.utils.pourPayment(usdc.units(500));
       const { bankManager } = common.bootstrap;
-      const bank = E(bankManager).getBankForAddress(localAccount0);
+      const bank = E(bankManager).getBankForAddress(portfolio0lcaOrch);
       const purse = E(bank).getPurse(usdc.brand);
       await E(purse).deposit(funds);
     }

@@ -11,20 +11,26 @@ import {
   inspectMapStore,
 } from '@agoric/internal/src/testing-utils.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
-import type { StatusFor } from '../src/type-guards.ts';
+import type { OfferArgsFor, StatusFor } from '../src/type-guards.ts';
+import { plannerClientMock } from '../tools/agents-mock.ts';
 import {
+  deploy,
   setupTrader,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
   simulateUpcallFromAxelar,
 } from './contract-setup.ts';
-import { settleTransaction, getResolverMakers } from './resolver-helpers.ts';
-import { evmNamingDistinction, localAccount0 } from './mocks.ts';
-import { plannerClientMock } from '../tools/agents-mock.ts';
+import {
+  evmNamingDistinction,
+  portfolio0lcaOrch,
+  makeCCTPTraffic,
+} from './mocks.ts';
+import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
 
-const { fromEntries, keys } = Object;
+const { fromEntries, keys, values } = Object;
 
 // Use an EVM chain whose axelar ID differs from its chain name
 const { sourceChain } = evmNamingDistinction;
@@ -106,7 +112,7 @@ test('open portfolio with USDN position', async t => {
   t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
   t.is(
     contents[storagePath].accountIdByChain['agoric'],
-    `cosmos:agoric-3:${localAccount0}`,
+    `cosmos:agoric-3:${portfolio0lcaOrch}`,
     'LCA',
   );
   t.snapshot(done.payouts, 'refund payouts');
@@ -471,7 +477,7 @@ test('USDN claim fails currently', async t => {
   t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
   t.is(
     contents[storagePath].accountIdByChain['agoric'],
-    `cosmos:agoric-3:${localAccount0}`,
+    `cosmos:agoric-3:${portfolio0lcaOrch}`,
     'LCA',
   );
 
@@ -754,138 +760,88 @@ test.serial(
   },
 );
 
-test.serial(
-  'open 2 positions on an EVM chain, each from a seperate portfolio, with CCTP confirmation running in parallel',
-  async t => {
-    const { trader1, common, started, zoe, trader2 } = await setupTrader(t);
-    const { usdc, bld, poc26 } = common.brands;
+test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
+  const { trader1, common, started, zoe, trader2 } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
 
-    // XXX: values found from reverse engineering.
-    const stringToBase64 = str => Buffer.from(str).toString('base64');
-    const msgDataPayload = Buffer.concat([
-      Buffer.from(
-        '\nj\n!/circle.cctp.v1.MsgDepositForBurn\x12E\n\fcosmos1test1\x12\n3333330000',
-      ),
-      Buffer.from(
-        'GAMiIAAAAAAAAAAAAAAAAPu4nMBP+3ELH2RbLL7aDOfZMpT0KgU=',
-        'base64',
-      ),
-      Buffer.from('uusdc'),
-    ]);
-    const msgData = {
-      type: 1,
-      data: msgDataPayload.toString('base64'),
-      memo: '',
-    };
-    const ackData = {
-      result: stringToBase64(
-        '\x12+\n)/circle.cctp.v1.MsgDepositForBurnResponse',
-      ),
-    };
-    common.mocks.ibcBridge.addMockAck(
-      stringToBase64(JSON.stringify(msgData)),
-      stringToBase64(JSON.stringify(ackData)),
-    );
+  const addr2 = {
+    lca: makeTestAddress(3), // agoric1q...rytxkw
+    nobleICA: 'cosmos1test1',
+    evm: '0xFbb89cC04ffb710b1f645b2cbEda0CE7D93294F4',
+  } as const;
+  const amount = usdc.units(3_333.33);
 
-    const amount = usdc.units(3_333.33);
-    const feeAcct = bld.make(100n);
-    const feeCall = bld.make(100n);
+  for (const { msg, ack } of values(
+    makeCCTPTraffic(addr2.nobleICA, `${amount.value}`, addr2.evm),
+  )) {
+    common.mocks.ibcBridge.addMockAck(msg, ack);
+  }
 
-    const actualP = trader1.openPortfolio(
-      t,
-      { Deposit: amount, Access: poc26.make(1n) },
-      {
-        flow: [
-          { src: '<Deposit>', dest: '@agoric', amount },
-          { src: '@agoric', dest: '@noble', amount },
-          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
-          { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
-        ],
-      },
-    );
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
 
-    await simulateCCTPAck(common.utils).finally(() =>
-      simulateAckTransferToAxelar(common.utils),
-    );
-    await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
+  const depositToAave: OfferArgsFor['openPortfolio'] = {
+    flow: [
+      { src: '<Deposit>', dest: '@agoric', amount },
+      { src: '@agoric', dest: '@noble', amount },
+      { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+      { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+    ],
+  };
+  const open1P = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    depositToAave,
+  );
 
-    const actualP2 = trader2.openPortfolio(
-      t,
-      { Deposit: amount, Access: poc26.make(1n) },
-      {
-        flow: [
-          { src: '<Deposit>', dest: '@agoric', amount },
-          { src: '@agoric', dest: '@noble', amount },
-          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
-          { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
-        ],
-      },
-    );
-    const mockEVMAddress = '0xFbb89cC04ffb710b1f645b2cbEda0CE7D93294F4';
-    const secondAccountAddress =
-      'agoric1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq64vywd';
+  await simulateCCTPAck(common.utils).finally(() =>
+    simulateAckTransferToAxelar(common.utils),
+  );
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
-    await simulateCCTPAck(common.utils).finally(() =>
-      simulateAckTransferToAxelar(common.utils),
-    );
-    await simulateUpcallFromAxelar(
-      common.mocks.transferBridge,
-      sourceChain,
-      mockEVMAddress,
-      secondAccountAddress,
-    );
+  const open2P = trader2.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    depositToAave,
+  );
 
-    const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-    const cctpSettlementPromise = settleTransaction(zoe, resolverMakers);
+  await simulateCCTPAck(common.utils).finally(() =>
+    simulateAckTransferToAxelar(common.utils),
+  );
+  await simulateUpcallFromAxelar(
+    common.mocks.transferBridge,
+    sourceChain,
+    addr2.evm,
+    addr2.lca,
+  );
 
-    const cctpSettlementPromise2 = settleTransaction(
-      zoe,
-      resolverMakers,
-      1,
-      'success',
-      console.log,
-    );
+  await Promise.all([
+    settleTransaction(zoe, resolverMakers),
+    settleTransaction(zoe, resolverMakers, 1),
+  ]);
 
-    const [cctpResult, cctpResult2] = await Promise.all([
-      cctpSettlementPromise,
-      cctpSettlementPromise2,
-    ]);
+  await Promise.all([
+    settleTransaction(zoe, resolverMakers, 2),
+    settleTransaction(zoe, resolverMakers, 3),
+  ]);
 
-    const gmpSettlementPromise = settleTransaction(zoe, resolverMakers, 2);
+  await eventLoopIteration(); // let IBC message go out
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
 
-    const gmpSettlementPromise2 = settleTransaction(
-      zoe,
-      resolverMakers,
-      3,
-      'success',
-      console.log,
-    );
+  await eventLoopIteration(); // let IBC message go out
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
 
-    await Promise.all([gmpSettlementPromise, gmpSettlementPromise2]);
-
-    await eventLoopIteration(); // let IBC message go out
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
-
-    await eventLoopIteration(); // let IBC message go out
-    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-
-    const actual = await actualP;
-    const actual2 = await actualP2;
-
-    const result = actual.result as any;
-    t.is(passStyleOf(result.invitationMakers), 'remotable');
-
-    t.is(keys(result.publicSubscribers).length, 1);
+  for (const openP of [open1P, open2P]) {
+    const { result, payouts } = await openP;
+    t.deepEqual(payouts.Deposit, { brand: usdc.brand, value: 0n });
     const { storagePath } = result.publicSubscribers.portfolio;
     t.log(storagePath);
-    const { contents } = getPortfolioInfo(
-      storagePath,
-      common.bootstrap.storage,
-    );
-    t.snapshot(contents, 'vstorage');
-    t.snapshot(actual.payouts, 'refund payouts');
-  },
-);
+    const info = getPortfolioInfo(storagePath, common.bootstrap.storage);
+    t.snapshot(info.contents, storagePath);
+  }
+});
+
 const getCapDataStructure = cell => {
   const { body, slots } = JSON.parse(cell);
   const structure = JSON.parse(body.replace(/^#/, ''));
@@ -921,7 +877,7 @@ test('start deposit more to same', async t => {
   const info = await trader1.getPortfolioStatus();
   t.deepEqual(
     info.depositAddress,
-    'agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g',
+    makeTestAddress(2), // ...64vywd
   );
 });
 
@@ -961,4 +917,13 @@ test('redeem planner invitation', async t => {
   await trader1.openPortfolio(t, {}, {});
 
   await planner1.submit1();
+});
+
+test('address of LCA for fees is published', async t => {
+  const { common } = await deploy(t);
+  const { storage } = common.bootstrap;
+  await eventLoopIteration();
+  const info = storage.getDeserialized(`${ROOT_STORAGE_PATH}`).at(-1);
+  t.log(info);
+  t.deepEqual(info, { contractAccount: makeTestAddress(0) });
 });

@@ -17,6 +17,7 @@ import {
   axelarIdsMock,
   contractsMock,
   gmpAddresses,
+  portfolio0lcaOrch,
   makeCCTPTraffic,
   makeUSDNIBCTraffic,
 } from './mocks.ts';
@@ -144,7 +145,7 @@ export const simulateUpcallFromAxelar = async (
   transferBridge: ScopedBridgeManager<'vtransfer'>,
   sourceChain: string,
   address: `0x${string}` = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-  target = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+  target = portfolio0lcaOrch,
 ) => {
   const event = makeIncomingEVMEvent({ address, sourceChain, target });
   return (

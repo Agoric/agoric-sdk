@@ -291,6 +291,7 @@ const mocks = (
     resolverClient: resolverClient as unknown as GuestInterface<
       PortfolioInstanceContext['resolverClient']
     >,
+    contractAccount: orch.getChain('agoric').then(ch => ch.makeAccount()),
   };
 
   const chainHubTools = harden({
@@ -439,7 +440,7 @@ test('open portfolio with USDN position', async t => {
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11042' },
+    { _method: 'executeEncodedTx', _cap: 'noble11056' },
     { _method: 'exit' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -629,7 +630,7 @@ test('handle failure in executeEncodedTx', async t => {
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11042' }, // fail
+    { _method: 'executeEncodedTx', _cap: 'noble11056' }, // fail
     { _method: 'transfer', address: { chainId: 'agoric-6' } }, // unwind
     { _method: 'withdrawToSeat' }, // unwind
     { _method: 'fail' },
@@ -663,7 +664,7 @@ test('handle failure in recovery from executeEncodedTx', async t => {
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { _method: 'executeEncodedTx', _cap: 'noble11042' }, // fail
+    { _method: 'executeEncodedTx', _cap: 'noble11056' }, // fail
     { _method: 'transfer', address: { chainId: 'agoric-6' } }, // fail to recover
     { _method: 'fail' },
   ]);
@@ -899,10 +900,10 @@ test('Engine can move deposits +agoric -> @agoric', async t => {
   t.log(log.map(msg => msg._method).join(', '));
 
   const lca = kit.reader.getLocalAccount();
-  t.is(lca.getAddress().value, 'agoric11014');
+  t.is(lca.getAddress().value, 'agoric11028');
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'send', toAccount: { value: 'agoric11014' } },
+    { _method: 'send', toAccount: { value: 'agoric11028' } },
   ]);
 
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details

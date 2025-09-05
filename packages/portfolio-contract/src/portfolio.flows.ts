@@ -5,32 +5,27 @@
  * @see {rebalance}
  */
 import type { GuestInterface } from '@agoric/async-flow';
-import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type {
   AccountId,
-  CaipChainId,
   Denom,
-  DenomAmount,
   OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
 } from '@agoric/orchestration';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
-import type { VTransferIBCEvent } from '@agoric/vats';
-import type { Vow } from '@agoric/vow';
-import type { ZCFSeat } from '@agoric/zoe';
-import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
-import { assert, Fail, q } from '@endo/errors';
 import {
   AxelarChain,
-  RebalanceStrategy,
   SupportedChain,
   type YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
+import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
+import type { VTransferIBCEvent } from '@agoric/vats';
+import type { ZCFSeat } from '@agoric/zoe';
+import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import { assert, Fail, q } from '@endo/errors';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {
@@ -48,6 +43,7 @@ import {
   protocolUSDN,
 } from './pos-usdn.flows.ts';
 import type { Position } from './pos.exo.ts';
+import type { ResolverKit } from './resolver/resolver.exo.js';
 import {
   getChainNameOfPlaceRef,
   getKeywordOfPlaceRef,
@@ -61,7 +57,6 @@ import {
   type PoolKey,
   type ProposalType,
 } from './type-guards.ts';
-import type { ResolverKit } from './resolver/resolver.exo.js';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
@@ -79,6 +74,7 @@ export type PortfolioInstanceContext = {
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
   resolverClient: GuestInterface<ResolverKit['client']>;
+  contractAccount: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>;
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
@@ -770,3 +766,9 @@ export const openPortfolio = (async (
   /* c8 ignore end */
 }) satisfies OrchestrationFlow;
 harden(openPortfolio);
+
+export const makeLCA = (async (orch: Orchestrator): Promise<LocalAccount> => {
+  const agoricChain = await orch.getChain('agoric');
+  return agoricChain.makeAccount();
+}) satisfies OrchestrationFlow;
+harden(makeLCA);
