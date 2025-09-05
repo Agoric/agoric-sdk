@@ -320,7 +320,7 @@ const processPortfolioEvents = async (
       cellJson,
       _err => Fail`non-JSON value at vstorage path ${q(path)}: ${cellJson}`,
     );
-    mustMatch(harden(streamCell), StreamCellShape);
+    mustMatch(harden(streamCell), StreamCellShape, path);
     if (path === PORTFOLIOS_PATH_PREFIX) {
       for (let i = 0; i < streamCell.values.length; i += 1) {
         const strValue = streamCell.values[i];
@@ -337,11 +337,12 @@ const processPortfolioEvents = async (
           const key = portfoliosData.addPortfolio;
           console.warn('Detected new portfolio', key);
           try {
-            const status = await readAndDecodeStreamCellValue(
-              `${PORTFOLIOS_PATH_PREFIX}.${key}`,
-              { minBlockHeight: eventRecord.blockHeight, retries: 4 },
-            );
-            mustMatch(status, PortfolioStatusShapeExt, key);
+            const portfolioPath = `${PORTFOLIOS_PATH_PREFIX}.${key}`;
+            const status = await readAndDecodeStreamCellValue(portfolioPath, {
+              minBlockHeight: eventRecord.blockHeight,
+              retries: 4,
+            });
+            mustMatch(status, PortfolioStatusShapeExt, portfolioPath);
             const { depositAddress } = status;
             if (!depositAddress) continue;
             portfolioKeyForDepositAddr.set(depositAddress, key);
@@ -416,7 +417,7 @@ export const processPendingTxEvents = async (
       cellJson,
       _err => Fail`non-JSON value at vstorage path ${q(path)}: ${cellJson}`,
     );
-    mustMatch(harden(streamCell), StreamCellShape);
+    mustMatch(harden(streamCell), StreamCellShape, path);
 
     // Extract txId from path (e.g., "published.ymax0.pendingTxs.tx1")
     const txId = stripPrefix(`${PENDING_TX_PATH_PREFIX}.`, path);
@@ -503,7 +504,7 @@ export const startEngine = async (
           _err =>
             Fail`non-JSON value at vstorage path ${q(vstoragePath)}: ${streamCellJson}`,
         );
-        mustMatch(harden(streamCell), StreamCellShape);
+        mustMatch(harden(streamCell), StreamCellShape, vstoragePath);
         // We have suitably fresh data; any further errors should propagate.
         values = streamCell.values;
       } catch (err) {
@@ -711,49 +712,46 @@ export const startEngine = async (
         event,
       })),
     ];
-    const vstorageEvents = partialMap(eventRecords, eventRecord => {
+    const vstorageEvents = { portfolio: [], pendingTx: [] } as Record<
+      'portfolio' | 'pendingTx',
+      Array<{ path: string; value: string; eventRecord: EventRecord }>
+    >;
+    for (const eventRecord of eventRecords) {
       const { type: eventType, attributes: attrRecords } = eventRecord.event;
       // Filter for vstorage state_change events.
       // cf. golang/cosmos/types/events.go
-      if (eventType !== 'state_change') return;
+      if (eventType !== 'state_change') continue;
       const attributes = fromUniqueEntries(
         attrRecords?.map(({ key, value }) => [key, value]) || [],
       );
-      if (attributes.store !== 'vstorage') return;
+      if (attributes.store !== 'vstorage') continue;
 
       // Require attributes "key" and "value".
       if (attributes.key === undefined || attributes.value === undefined) {
         console.error('vstorage state_change missing "key" and/or "value"');
-        return;
+        continue;
       }
 
       // Filter for paths we care about (portfolios or pending transactions).
       const path = encodedKeyToPath(attributes.key);
 
       if (vstoragePathStartsWith(path, PORTFOLIOS_PATH_PREFIX)) {
-        return {
-          type: 'portfolio' as const,
+        vstorageEvents.portfolio.push({
           path,
           value: attributes.value,
           eventRecord,
-        };
+        });
       }
       if (vstoragePathStartsWith(path, PENDING_TX_PATH_PREFIX)) {
-        return {
-          type: 'pendingTx' as const,
+        vstorageEvents.pendingTx.push({
           path,
           value: attributes.value,
           eventRecord,
-        };
+        });
       }
-    });
-
-    const portfolioEvents = vstorageEvents.filter(
-      event => event.type === 'portfolio',
-    );
-    const pendingTxEvents = vstorageEvents.filter(
-      event => event.type === 'pendingTx',
-    );
+    }
+    const { portfolio: portfolioEvents, pendingTx: pendingTxEvents } =
+      vstorageEvents;
 
     // Detect new portfolios.
     await processPortfolioEvents(

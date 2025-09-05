@@ -8,7 +8,7 @@ const GCP_SECRET_NAME = 'YMAX_CONTROL_MNEMONIC';
 
 export interface YmaxPlannerConfig {
   readonly mnemonic: string;
-  readonly alchemy: string;
+  readonly alchemyApiKey: string;
   readonly spectrum: {
     readonly apiUrl?: string;
     readonly timeout: number;
@@ -30,11 +30,8 @@ const getMnemonicFromGCP = async (client: SecretManager): Promise<string> => {
   const name = `projects/${GCP_PROJECT_ID}/secrets/${GCP_SECRET_NAME}/versions/latest`;
 
   const [version] = await client.accessSecretVersion({ name });
-  const payload = version.payload?.data?.toString();
-
-  if (!payload) {
-    throw new Error('Missing secret payload');
-  }
+  const payload =
+    version.payload?.data?.toString() || Fail`Missing secret payload`;
 
   return payload;
 };
@@ -95,7 +92,7 @@ export const loadConfig = async (
 
     const config: YmaxPlannerConfig = harden({
       mnemonic,
-      alchemy: validateRequired(env, 'ALCHEMY_API_KEY'),
+      alchemyApiKey: validateRequired(env, 'ALCHEMY_API_KEY'),
       spectrum: {
         apiUrl: validateOptionalUrl(env, 'SPECTRUM_API_URL'),
         timeout: parsePositiveInteger(env, 30000, 'SPECTRUM_API_TIMEOUT'),
@@ -114,18 +111,17 @@ export const loadConfig = async (
   }
 };
 
-export const getConfig = (() => {
-  let cachedConfig: YmaxPlannerConfig | undefined;
+let cachedConfig: YmaxPlannerConfig | undefined;
 
-  return async (
-    env: Record<string, string | undefined> = process.env,
-    powers: { secretManager?: SecretManager } = {},
-  ): Promise<YmaxPlannerConfig> => {
-    if (!cachedConfig) {
-      const secretManager =
-        powers.secretManager || new SecretManagerServiceClient();
-      cachedConfig = await loadConfig(env, secretManager);
-    }
-    return cachedConfig;
-  };
-})();
+export const getConfig = async (
+  env: Record<string, string | undefined> = process.env,
+  powers: { secretManager?: SecretManager } = {},
+): Promise<YmaxPlannerConfig> => {
+  await null;
+  if (!cachedConfig) {
+    const secretManager =
+      powers.secretManager || new SecretManagerServiceClient();
+    cachedConfig = await loadConfig(env, secretManager);
+  }
+  return cachedConfig;
+};
