@@ -452,8 +452,7 @@ export const prepareVaultManagerKit = (
             quoteNotifier => {
               // @ts-expect-error XXX quotes
               ephemera.storedQuotesNotifier = makeStoredNotifier(
-                // @ts-expect-error XXX quotes
-                quoteNotifier,
+                /** @type {any} XXX quotes */ (quoteNotifier),
                 E(storageNode).makeChildNode('quotes'),
                 marshaller,
               );
