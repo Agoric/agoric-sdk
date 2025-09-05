@@ -48,7 +48,7 @@ test('handlePendingTx processes GMP transaction successfully', async t => {
   await t.notThrowsAsync(async () => {
     await handlePendingTx(mockEvmCtx, gmpTx, {
       log: logger,
-      timeoutMinutes: 0.05, // 3 sec
+      timeoutMs: 3000,
     });
   });
 
@@ -85,7 +85,7 @@ test('handlePendingTx times out GMP transaction with no matching event', async t
   await t.notThrowsAsync(async () => {
     await handlePendingTx(mockEvmCtx, gmpTx, {
       log: logger,
-      timeoutMinutes: 0.05, // 3 sec
+      timeoutMs: 3000,
     });
   });
 

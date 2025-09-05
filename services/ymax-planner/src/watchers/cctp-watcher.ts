@@ -3,14 +3,13 @@ import type { Log } from 'ethers';
 import { id, zeroPadValue, getAddress } from 'ethers';
 
 const TRANSFER = id('Transfer(address,address,uint256)');
-const MILLIS_PER_MINUTE = 60 * 1000;
 
 type WatchTransferOptions = {
   usdcAddress: `0x${string}`;
   provider: JsonRpcProvider;
   watchAddress: `0x${string}`;
   expectedAmount: bigint;
-  timeoutMinutes?: number;
+  timeoutMs?: number;
   log: (...args: unknown[]) => void;
   setTimeout?: typeof globalThis.setTimeout;
 };
@@ -42,7 +41,7 @@ export const watchCctpTransfer = ({
   provider,
   watchAddress,
   expectedAmount,
-  timeoutMinutes = 5,
+  timeoutMs = 300000, // 5 min
   log = () => {},
   setTimeout = globalThis.setTimeout,
 }: WatchTransferOptions): Promise<boolean> => {
@@ -104,10 +103,10 @@ export const watchCctpTransfer = ({
 
     timeoutId = setTimeout(() => {
       if (!transferFound) {
-        log(`✗ No matching transfer found within ${timeoutMinutes} minutes`);
+        log(`✗ No matching transfer found within ${timeoutMs / 60000} minutes`);
         cleanup();
         resolve(false);
       }
-    }, timeoutMinutes * MILLIS_PER_MINUTE);
+    }, timeoutMs);
   });
 };

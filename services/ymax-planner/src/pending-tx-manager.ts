@@ -8,15 +8,18 @@ import {
 import { watchGmp } from './watchers/gmp-watcher.ts';
 import { resolvePendingTx } from './resolver.ts';
 import { watchCctpTransfer } from './watchers/cctp-watcher.ts';
+import { watchNobleTransfer } from './watchers/noble-watcher.ts';
 import type {
   PublishedTx,
   TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import type { EvmProviders, UsdcAddresses } from './support.ts';
+import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { Fail } from '@endo/errors';
 import type { JsonRpcProvider } from 'ethers';
+import type { Bech32Address } from '@agoric/orchestration';
 
 export type EvmChain = keyof typeof AxelarChain;
 
@@ -25,6 +28,11 @@ export type EvmContext = {
   evmProviders: EvmProviders;
   signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
+};
+
+export type NobleContext = {
+  cosmosRest: CosmosRestClient;
+  signingSmartWalletKit: SigningSmartWalletKit;
 };
 
 export type GmpTransfer = {
@@ -49,23 +57,31 @@ export type PendingTx = {
 
 type CctpTx = PendingTx & { type: typeof TxType.CCTP_TO_EVM; amount: bigint };
 type GmpTx = PendingTx & { type: typeof TxType.GMP };
+type NobleWithdrawTx = PendingTx & {
+  type: typeof TxType.NOBLE_WITHDRAW;
+  amount: bigint;
+};
 
-export type PendingTxMonitor<T extends PendingTx = PendingTx> = {
+export type PendingTxMonitor<
+  T extends PendingTx = PendingTx,
+  C = EvmContext,
+> = {
   watch: (
-    ctx: EvmContext,
+    ctx: C,
     tx: T,
     log: (...args: unknown[]) => void,
-    timeoutMinutes: number,
+    timeoutMs: number,
   ) => Promise<void>;
 };
 
 type MonitorRegistry = {
-  [TxType.CCTP_TO_EVM]: PendingTxMonitor<CctpTx>;
-  [TxType.GMP]: PendingTxMonitor<GmpTx>;
+  [TxType.CCTP_TO_EVM]: PendingTxMonitor<CctpTx, EvmContext>;
+  [TxType.GMP]: PendingTxMonitor<GmpTx, EvmContext>;
+  [TxType.CCTP_TO_NOBLE]: PendingTxMonitor<NobleWithdrawTx, NobleContext>;
 };
 
-const cctpMonitor: PendingTxMonitor<CctpTx> = {
-  watch: async (ctx, tx, log, timeoutMinutes) => {
+const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
+  watch: async (ctx, tx, log, timeoutMs) => {
     const { txId, destinationAddress, amount } = tx;
     const logPrefix = `[${txId}]`;
 
@@ -88,7 +104,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
       expectedAmount: amount,
       provider,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
-      timeoutMinutes,
+      timeoutMs,
     });
 
     await resolvePendingTx({
@@ -101,8 +117,8 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
   },
 };
 
-const gmpMonitor: PendingTxMonitor<GmpTx> = {
-  watch: async (ctx, tx, log, timeoutMinutes) => {
+const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
+  watch: async (ctx, tx, log, timeoutMs) => {
     const { txId, destinationAddress } = tx;
     const logPrefix = `[${txId}]`;
 
@@ -119,7 +135,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
       contractAddress: accountAddress as `0x${string}`,
       txId,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
-      timeoutMinutes,
+      timeoutMs,
     });
 
     await resolvePendingTx({
@@ -132,31 +148,80 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
   },
 };
 
+const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, NobleContext> = {
+  watch: async (ctx, tx, log, timeoutMs) => {
+    const { txId, destinationAddress, amount } = tx;
+    const logPrefix = `[${txId}]`;
+
+    const { namespace, reference, accountAddress } =
+      parseAccountId(destinationAddress);
+
+    namespace === 'cosmos' ||
+      Fail`${logPrefix} Expected cosmos chain, got: ${namespace}`;
+    reference === 'noble' ||
+      Fail`${logPrefix} Expected noble chain, got: ${reference}`;
+
+    const nobleAddress = accountAddress as Bech32Address;
+    const expectedDenom = 'uusdc'; // TODO: find the exact denom while e2e testing
+
+    log(
+      `${logPrefix} Watching Noble withdrawal to ${nobleAddress} for ${amount} ${expectedDenom}`,
+    );
+
+    const transferStatus = await watchNobleTransfer({
+      cosmosRest: ctx.cosmosRest,
+      watchAddress: nobleAddress,
+      expectedAmount: amount,
+      expectedDenom,
+      chainKey: 'noble',
+      log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+      timeoutMs,
+    });
+
+    await resolvePendingTx({
+      signingSmartWalletKit: ctx.signingSmartWalletKit,
+      txId,
+      status: transferStatus ? TxStatus.SUCCESS : TxStatus.FAILED,
+    });
+
+    log(`${logPrefix} Noble withdraw tx resolved`);
+  },
+};
+
 const createMonitorRegistry = (): MonitorRegistry => ({
   [TxType.CCTP_TO_EVM]: cctpMonitor,
   [TxType.GMP]: gmpMonitor,
+  [TxType.CCTP_TO_NOBLE]: nobleWithdrawMonitor,
 });
 
 type HandlePendingTxOptions = {
   log?: (...args: unknown[]) => void;
   registry?: MonitorRegistry;
-  timeoutMinutes?: number;
+  timeoutMs?: number;
 };
 
 export const handlePendingTx = async (
-  ctx: EvmContext,
+  ctx: EvmContext & Partial<NobleContext>,
   tx: PendingTx,
   {
     log = () => {},
     registry = createMonitorRegistry(),
-    timeoutMinutes = 5,
+    timeoutMs = 300000, // 5 min
   }: HandlePendingTxOptions,
 ) => {
   await null;
   const logPrefix = `[${tx.txId}]`;
   log(`${logPrefix} handling ${tx.type} tx`);
 
-  const monitor = registry[tx.type] as PendingTxMonitor;
+  const monitor = registry[tx.type] as PendingTxMonitor<PendingTx, any>;
   monitor || Fail`${logPrefix} No monitor registered for tx type: ${tx.type}`;
-  await monitor.watch(ctx, tx, log, timeoutMinutes);
+
+  // For Noble withdraws, we need the cosmosRest in the context
+  if (tx.type === TxType.NOBLE_WITHDRAW) {
+    !ctx.cosmosRest &&
+      Fail`${logPrefix} cosmosRest required for Noble withdraw`;
+    await monitor.watch(ctx as NobleContext, tx, log, timeoutMs);
+  } else {
+    await monitor.watch(ctx as EvmContext, tx, log, timeoutMs);
+  }
 };

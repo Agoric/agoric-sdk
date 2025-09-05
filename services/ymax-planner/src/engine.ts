@@ -379,12 +379,7 @@ export const PendingTxShape = M.splitRecord(
   },
 );
 
-export const parsePendingTx = (
-  txId: `tx${number}`,
-  txData,
-  marshaller?: SigningSmartWalletKit['marshaller'],
-): PendingTx | null => {
-  const data = marshaller ? marshaller.fromCapData(txData) : txData;
+export const parsePendingTx = (txId: `tx${number}`, data): PendingTx | null => {
   if (!matches(data, PendingTxShape)) {
     const err = assert.error(
       X`expected data ${data} to match ${q(PendingTxShape)}`,
@@ -401,11 +396,20 @@ export const parsePendingTx = (
     return null;
   }
 
-  return { txId, ...(data as any) } as PendingTx;
+  if (data.type === TxType.NOBLE_WITHDRAW && data.amount === undefined) {
+    const err = assert.error(
+      X`Noble withdraw transaction ${txId} is missing required amount field`,
+    );
+    console.error(err);
+    return null;
+  }
+
+  return { txId, ...data } as PendingTx;
 };
 
 export const processPendingTxEvents = async (
   evmCtx: EvmContext,
+  cosmosRest: CosmosRestClient,
   events: Array<{ path: string; value: string }>,
   marshaller: SigningSmartWalletKit['marshaller'],
   handlePendingTxFn = handlePendingTx,
@@ -431,7 +435,10 @@ export const processPendingTxEvents = async (
           Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
       );
 
-      const tx = parsePendingTx(txId as `tx${number}`, value, marshaller);
+      const tx = parsePendingTx(
+        txId as `tx${number}`,
+        marshaller.fromCapData(value),
+      );
       if (!tx) continue;
 
       console.warn('Handling pending tx:', {
@@ -444,7 +451,9 @@ export const processPendingTxEvents = async (
         console.error(`⚠️ Failed to process pendingTx: ${txId}`, error);
       };
 
-      void handlePendingTxFn(evmCtx, tx, { log: logFn }).catch(errorHandler);
+      void handlePendingTxFn({ ...evmCtx, cosmosRest }, tx, {
+        log: logFn,
+      }).catch(errorHandler);
     }
   }
 };
@@ -674,9 +683,11 @@ export const startEngine = async (
     });
 
     // Process existing pending transactions on startup
-    void handlePendingTx({ ...evmCtx, signingSmartWalletKit, fetch }, tx, {
-      log,
-    }).catch(logIgnoredError);
+    void handlePendingTx(
+      { ...evmCtx, signingSmartWalletKit, fetch, cosmosRest },
+      tx,
+      { log },
+    ).catch(logIgnoredError);
   }).done;
 
   // console.warn('consuming events');
@@ -767,6 +778,7 @@ export const startEngine = async (
 
     await processPendingTxEvents(
       { ...evmCtx, signingSmartWalletKit, fetch },
+      cosmosRest,
       pendingTxEvents,
       marshaller,
     );
