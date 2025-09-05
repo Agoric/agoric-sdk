@@ -30,7 +30,12 @@ build_tags_comma_sep := $(subst $(whitespace),$(comma),$(all_build_tags))
 VersionName := $(shell echo "$(NAME)" | sed -e 's/[^A-Za-z0-9]//g')
 
 # Declare that we want a static libwasmvm, based on muslc (not glibc)
+# Use dynamic linking on Darwin (macOS)
+ifeq ($(shell uname -s),Darwin)
+all_build_tags = $(build_tags)
+else
 all_build_tags = $(build_tags) static_wasm muslc
+endif
 
 # process linker flags
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=$(VersionName) \
@@ -41,7 +46,10 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=$(VersionName) \
 
 # We copy the static libwasmvm into the ./build directory, so link it from there.
 # libwasmvm_muslc.x86_64.a needs an explicit libm (-lm).
+# Skip static linking on Darwin (use dynamic linking instead)
+ifneq ($(shell uname -s),Darwin)
 ldflags += -linkmode=external -extldflags "-Wl,-L,$(PWD)/build,-lm"
+endif
 
 gcflags =
 
@@ -74,19 +82,39 @@ node-compile-gyp:
 		npm run build:gyp; \
 	fi
 
+# Skip copy-cosmwasm-vm on Darwin (use dynamic linking)
+ifeq ($(shell uname -s),Darwin)
+compile-agd: go.sum
+else
 compile-agd: go.sum copy-cosmwasm-vm
+endif
 	go build -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=exe -o build/agd ./cmd/agd
 
+# Skip copy-cosmwasm-vm on Darwin (use dynamic linking)
+ifeq ($(shell uname -s),Darwin)
+install-agd: go.sum
+else
 install-agd: go.sum copy-cosmwasm-vm
+endif
 	go install -v $(MOD_READONLY) $(BUILD_FLAGS) -buildmode=exe ./cmd/agd
 
 # Only run from the package.json build:gyp script.
+# Skip copy-cosmwasm-vm on Darwin (use dynamic linking)
+ifeq ($(shell uname -s),Darwin)
+compile-gyp:
+else
 compile-gyp: copy-cosmwasm-vm
+endif
 	cp binding.gyp.in binding.gyp
 	node-gyp configure build $(GYP_DEBUG) || { status=$$?; rm -f binding.gyp; exit $$status; }
 	rm -f binding.gyp
 
+# Skip copy-cosmwasm-vm on Darwin (use dynamic linking)
+ifeq ($(shell uname -s),Darwin)
+compile-libdaemon: go.sum
+else
 compile-libdaemon: go.sum copy-cosmwasm-vm
+endif
 	go build -v $(MOD_READONLY) $(SHARED_BUILD_FLAGS) -buildmode=c-shared \
 		-o build/libagcosmosdaemon.so ./cmd/libdaemon/main.go
 

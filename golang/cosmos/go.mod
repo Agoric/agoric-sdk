@@ -270,9 +270,6 @@ replace (
 	cosmossdk.io/x/tx => github.com/agoric-labs/cosmos-sdk/x/tx v0.50.14-alpha.agoric.3
 	cosmossdk.io/x/upgrade => github.com/agoric-labs/cosmos-sdk/x/upgrade v0.50.14-alpha.agoric.2
 
-	// CosmWasm
-	github.com/CosmWasm/wasmvm => github.com/CosmWasm/wasmvm v1.5.9
-
 	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with
 	// https://github.com/cometbft/cometbft/issue/6899 resolved.
