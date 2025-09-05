@@ -226,7 +226,7 @@ export const withBrand = (
   mustMatch(offerArgs, makeOfferArgsShapes(brand).rebalance);
 
   const proposal = objectMap(scenario.proposal, $$);
-  mustMatch(proposal, makeProposalShapes(brand, brand).rebalance);
+  mustMatch(proposal, makeProposalShapes(brand).rebalance);
   return harden({
     before: $$(scenario.before),
     proposal,

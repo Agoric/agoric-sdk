@@ -37,7 +37,9 @@ import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import type { Zone } from '@agoric/zone';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
+import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import { preparePlanner } from './planner.exo.ts';
@@ -52,6 +54,7 @@ import {
   type EVMContractAddressesMap,
   type OfferArgsFor,
   type ProposalType,
+  type StatusFor,
 } from './type-guards.ts';
 
 const trace = makeTracer('PortC');
@@ -166,6 +169,16 @@ export const meta: ContractMeta = {
 };
 harden(meta);
 
+const marshalData = makeMarshal(_ => Fail`data only`);
+
+const publishStatus = <K extends keyof StatusFor>(
+  node: Remote<StorageNode>,
+  status: StatusFor[K],
+) => {
+  const capData = marshalData.toCapData(status);
+  void E(node).setValue(JSON.stringify(capData));
+};
+
 /**
  * Portfolio contract implementation. Creates and manages diversified stablecoin portfolios
  * that can be rebalanced across different yield protocols.
@@ -225,11 +238,7 @@ export const contract = async (
     trace('chainHub already populated, using existing entries');
   }
 
-  const proposalShapes = makeProposalShapes(
-    brands.USDC,
-    brands.Fee,
-    brands.Access,
-  );
+  const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
 
   // Until we find a need for on-chain subscribers, this stop-gap will do.
@@ -252,8 +261,15 @@ export const contract = async (
     marshaller,
   })();
 
-  const ctx1 = {
-    zoeTools,
+  const { makeLCA } = orchestrateAll({ makeLCA: flows.makeLCA }, {});
+  const contractAccountV = zone.makeOnce('contractAccountV', () => makeLCA());
+  void vowTools.when(contractAccountV, acct => {
+    const addr = acct.getAddress();
+    publishStatus(storageNode, harden({ contractAccount: addr.value }));
+  });
+
+  const ctx1: flows.PortfolioInstanceContext = {
+    zoeTools: zoeTools as any, // XXX Guest...
     usdc: {
       brand: brands.USDC,
       denom: NonNullish(
@@ -272,23 +288,26 @@ export const contract = async (
     contracts,
     gmpAddresses,
     resolverClient,
+    inertSubscriber,
+    contractAccount: contractAccountV as any, // XXX Guest...
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
-  const { rebalance, rebalanceFromTransfer } = orchestrateAll(
-    {
-      rebalance: flows.rebalance,
-      rebalanceFromTransfer: flows.rebalanceFromTransfer,
-    },
-    ctx1,
-  );
+  const { rebalance, parseInboundTransfer: parseInboundTransfer } =
+    orchestrateAll(
+      {
+        rebalance: flows.rebalance,
+        parseInboundTransfer: flows.parseInboundTransfer,
+      },
+      ctx1,
+    );
 
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
     vowTools,
     axelarIds,
     rebalance,
-    rebalanceFromTransfer,
+    parseInboundTransfer: parseInboundTransfer,
     proposalShapes,
     offerArgsShapes,
     timer: timerService,

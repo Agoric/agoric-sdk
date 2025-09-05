@@ -37,7 +37,7 @@ test('portfolio exo caches storage nodes', async t => {
     timer: null as any,
     chainHubTools: null as any,
     rebalance: null as any,
-    rebalanceFromTransfer: null as any,
+    parseInboundTransfer: null as any,
     proposalShapes: null as any,
     offerArgsShapes: null as any,
   });

@@ -5,32 +5,27 @@
  * @see {rebalance}
  */
 import type { GuestInterface } from '@agoric/async-flow';
-import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type {
   AccountId,
-  CaipChainId,
   Denom,
-  DenomAmount,
   OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
 } from '@agoric/orchestration';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
-import type { VTransferIBCEvent } from '@agoric/vats';
-import type { Vow } from '@agoric/vow';
-import type { ZCFSeat } from '@agoric/zoe';
-import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
-import { assert, Fail, q } from '@endo/errors';
 import {
   AxelarChain,
-  RebalanceStrategy,
   SupportedChain,
   type YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
+import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
+import type { VTransferIBCEvent } from '@agoric/vats';
+import type { ZCFSeat } from '@agoric/zoe';
+import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import { assert, Fail, q } from '@endo/errors';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {
@@ -48,6 +43,7 @@ import {
   protocolUSDN,
 } from './pos-usdn.flows.ts';
 import type { Position } from './pos.exo.ts';
+import type { ResolverKit } from './resolver/resolver.exo.js';
 import {
   getChainNameOfPlaceRef,
   getKeywordOfPlaceRef,
@@ -61,7 +57,6 @@ import {
   type PoolKey,
   type ProposalType,
 } from './type-guards.ts';
-import type { ResolverKit } from './resolver/resolver.exo.js';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const trace = makeTracer('PortF');
@@ -79,6 +74,7 @@ export type PortfolioInstanceContext = {
   inertSubscriber: GuestInterface<ResolvedPublicTopic<never>['subscriber']>;
   zoeTools: GuestInterface<ZoeTools>;
   resolverClient: GuestInterface<ResolverKit['client']>;
+  contractAccount: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>;
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
@@ -384,7 +380,12 @@ const stepFlow = async (
     const { denom } = ctx.gmpFeeInfo;
     const fee = { denom, value: move.fee ? move.fee.value : 0n };
     const { axelarIds, gmpAddresses } = ctx;
-    const gmp = { chain: axelar, fee: move.fee?.value || 0n, axelarIds }; // XXX throw if fee missing?
+    const gmp = {
+      chain: axelar,
+      fee: move.fee?.value || 15_000_000n,
+      axelarIds,
+      evmGas: move.detail?.evmGas || 0n,
+    };
     const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
     const gInfo = await provideEVMAccount(chain, gmp, lca, ctx, kit);
     const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
@@ -397,6 +398,7 @@ const stepFlow = async (
       axelarIds,
       gmpAddresses,
       resolverClient: ctx.resolverClient,
+      feeAccount: await ctx.contractAccount,
     });
     return { evmCtx, gInfo, accountId };
   };
@@ -456,11 +458,7 @@ const stepFlow = async (
     const { amount } = move;
     switch (way.how) {
       case 'localTransfer': {
-        const { give } = seat.getProposal() as ProposalType['rebalance'];
-        const amounts = harden({
-          Deposit: amount,
-          ...('GmpFee' in give ? { GmpFee: give.GmpFee } : {}),
-        });
+        const amounts = harden({ Deposit: amount });
         todo.push(async () => {
           const { lca, lcaIn } = await provideCosmosAccount(
             orch,
@@ -472,7 +470,7 @@ const stepFlow = async (
             how: 'localTransfer',
             src: { seat, keyword: 'Deposit' },
             dest: { account },
-            amount, // XXX use amounts.Deposit
+            amount,
             apply: async () => {
               await ctx.zoeTools.localTransfer(seat, account, amounts);
             },
@@ -697,62 +695,18 @@ export const rebalance = async (
   }
 };
 
-export const rebalanceFromTransfer = (async (
+export const parseInboundTransfer = (async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
   packet: VTransferIBCEvent['packet'],
   kit: PortfolioKit,
-): Promise<{
-  parsed: Awaited<ReturnType<LocalAccount['parseInboundTransfer']>> | null;
-  handled: boolean;
-}> => {
+): Promise<Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>> => {
   await null;
   const { reader } = kit;
 
   const lca = reader.getLocalAccount();
   const parsed = await lca.parseInboundTransfer(packet);
-  if (!parsed) {
-    return harden({ parsed: null, handled: false });
-  }
-  trace('rebalanceFromTransfer parsed', parsed);
-
-  const {
-    amount,
-    extra: { receiver },
-  } = parsed;
-  const { baseAddress, query } = decodeAddressHook(receiver);
-  const { rebalance: strategy } = query;
-  if (strategy === undefined) {
-    return harden({ parsed, handled: false });
-  }
-
-  switch (strategy) {
-    // Preset strategy is currently hardcoded to PreserveExistingProportions
-    // XXX make it more dynamic, such as taking into account any prior
-    // explicit earmarking of inbound transfers.
-    case RebalanceStrategy.Preset:
-    case RebalanceStrategy.PreserveExistingProportions: {
-      // XXX implement PreserveExistingProportions
-      trace(
-        'rebalanceFromTransfer PreserveExistingProportions',
-        amount,
-        query,
-        baseAddress,
-      );
-      throw harden({
-        msg: 'rebalanceFromTransfer unimplemented PreserveExistingProportions strategy',
-        amount,
-        query,
-        baseAddress,
-      });
-    }
-    default: {
-      Fail`unknown rebalance strategy ${strategy} for ${amount} in ${baseAddress}`;
-    }
-  }
-
-  // Don't continue with the transfer, since we handled it.
-  return harden({ parsed, handled: true });
+  return parsed;
 }) satisfies OrchestrationFlow;
 
 /**
@@ -814,3 +768,9 @@ export const openPortfolio = (async (
   /* c8 ignore end */
 }) satisfies OrchestrationFlow;
 harden(openPortfolio);
+
+export const makeLCA = (async (orch: Orchestrator): Promise<LocalAccount> => {
+  const agoricChain = await orch.getChain('agoric');
+  return agoricChain.makeAccount();
+}) satisfies OrchestrationFlow;
+harden(makeLCA);

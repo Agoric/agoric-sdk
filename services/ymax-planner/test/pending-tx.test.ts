@@ -20,14 +20,14 @@ const marshaller = boardSlottingMarshaller();
 // --- Unit tests for parsePendingTx ---
 test('parsePendingTx creates valid PendingTx from data', t => {
   const txId = 'tx1' as `tx${number}`;
-  const txData = createMockPendingTxData({ type: TxType.CCTP });
+  const txData = createMockPendingTxData({ type: TxType.CCTP_TO_EVM });
   const capData = marshaller.toCapData(txData);
 
   const result = parsePendingTx(txId, marshaller.fromCapData(capData));
 
   t.deepEqual(result, {
     txId,
-    type: TxType.CCTP,
+    type: TxType.CCTP_TO_EVM,
     status: 'pending',
     amount: 1000_00n,
     destinationAddress:
@@ -49,7 +49,7 @@ test('parsePendingTx returns null for invalid data shape', t => {
 test('parsePendingTx returns null when CCTP transaction is missing amount field', t => {
   const txId = 'tx4' as `tx${number}`;
   const cctpWithoutAmount = harden({
-    type: TxType.CCTP,
+    type: TxType.CCTP_TO_EVM,
     status: 'pending',
     destinationAddress:
       'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
@@ -98,7 +98,7 @@ test('parsePendingTx validates Noble withdraw transactions require amount', t =>
 test('parsePendingTx creates valid Noble withdraw PendingTx from data', t => {
   const txId = 'tx1' as `tx${number}`;
   const nobleWithdrawData = createMockPendingTxData({
-    type: TxType.NOBLE_WITHDRAW,
+    type: TxType.CCTP_TO_NOBLE,
     amount: 500_000n,
     destinationAddress: 'cosmos:noble:noble1abc123456789',
   });
@@ -108,7 +108,7 @@ test('parsePendingTx creates valid Noble withdraw PendingTx from data', t => {
 
   t.deepEqual(result, {
     txId,
-    type: TxType.NOBLE_WITHDRAW,
+    type: TxType.CCTP_TO_NOBLE,
     status: 'pending',
     amount: 500_000n,
     destinationAddress: 'cosmos:noble:noble1abc123456789',
@@ -130,7 +130,7 @@ test('processPendingTxEvents handles valid single transaction event', async t =>
     handledTxs.push(tx);
   };
 
-  const txData = createMockPendingTxData({ type: TxType.CCTP });
+  const txData = createMockPendingTxData({ type: TxType.CCTP_TO_EVM });
   const capData = marshaller.toCapData(txData);
   const streamCell = createMockStreamCell([JSON.stringify(capData)]);
   const events = [createMockPendingTxEvent('tx1', JSON.stringify(streamCell))];
@@ -146,7 +146,7 @@ test('processPendingTxEvents handles valid single transaction event', async t =>
   t.is(handledTxs.length, 1);
   t.like(handledTxs[0], {
     txId: 'tx1',
-    type: TxType.CCTP,
+    type: TxType.CCTP_TO_EVM,
     status: 'pending',
   });
 });
@@ -164,7 +164,9 @@ test('processPendingTxEvents handles multiple transaction events', async t => {
     handledTxs.push(tx);
   };
 
-  const originalCctpData = createMockPendingTxData({ type: TxType.CCTP });
+  const originalCctpData = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+  });
   const originalGmpData = createMockPendingTxData({ type: TxType.GMP });
 
   const cctpCapData = marshaller.toCapData(originalCctpData);
@@ -190,7 +192,7 @@ test('processPendingTxEvents handles multiple transaction events', async t => {
   );
 
   t.is(handledTxs.length, 2);
-  t.like(handledTxs[0], { txId: 'tx1', type: TxType.CCTP });
+  t.like(handledTxs[0], { txId: 'tx1', type: TxType.CCTP_TO_EVM });
   t.like(handledTxs[1], { txId: 'tx2', type: TxType.GMP });
 });
 
@@ -207,7 +209,7 @@ test('processPendingTxEvents processes valid transactions before throwing on inv
     handledTxs.push(tx);
   };
 
-  const validTx1 = createMockPendingTxData({ type: TxType.CCTP });
+  const validTx1 = createMockPendingTxData({ type: TxType.CCTP_TO_EVM });
   const validTx2 = createMockPendingTxData({ type: TxType.GMP });
   const invalidTxData = harden({
     status: 'pending',
@@ -266,7 +268,7 @@ test('processPendingTxEvents handles only pending transactions', async t => {
     handledTxs.push(tx);
   };
 
-  const tx1 = createMockPendingTxData({ type: TxType.CCTP });
+  const tx1 = createMockPendingTxData({ type: TxType.CCTP_TO_EVM });
   const tx2 = createMockPendingTxData({ type: TxType.GMP, status: 'success' });
 
   const data1 = marshaller.toCapData(tx1);
@@ -309,7 +311,7 @@ test('processPendingTxEvents handles Noble withdraw transactions', async t => {
   };
 
   const nobleWithdrawData = createMockPendingTxData({
-    type: TxType.NOBLE_WITHDRAW,
+    type: TxType.CCTP_TO_NOBLE,
     amount: 1_000_000n,
     destinationAddress: 'cosmos:noble:noble1abc123456789',
   });
@@ -329,7 +331,7 @@ test('processPendingTxEvents handles Noble withdraw transactions', async t => {
   t.is(handledTxs.length, 1);
   t.like(handledTxs[0], {
     txId: 'tx1',
-    type: TxType.NOBLE_WITHDRAW,
+    type: TxType.CCTP_TO_NOBLE,
     status: 'pending',
     amount: 1_000_000n,
     destinationAddress: 'cosmos:noble:noble1abc123456789',

@@ -55,7 +55,7 @@ export type PendingTx = {
   txId: TxId;
 } & PublishedTx;
 
-type CctpTx = PendingTx & { type: typeof TxType.CCTP; amount: bigint };
+type CctpTx = PendingTx & { type: typeof TxType.CCTP_TO_EVM; amount: bigint };
 type GmpTx = PendingTx & { type: typeof TxType.GMP };
 type NobleWithdrawTx = PendingTx & {
   type: typeof TxType.NOBLE_WITHDRAW;
@@ -75,9 +75,9 @@ export type PendingTxMonitor<
 };
 
 type MonitorRegistry = {
-  [TxType.CCTP]: PendingTxMonitor<CctpTx, EvmContext>;
+  [TxType.CCTP_TO_EVM]: PendingTxMonitor<CctpTx, EvmContext>;
   [TxType.GMP]: PendingTxMonitor<GmpTx, EvmContext>;
-  [TxType.NOBLE_WITHDRAW]: PendingTxMonitor<NobleWithdrawTx, NobleContext>;
+  [TxType.CCTP_TO_NOBLE]: PendingTxMonitor<NobleWithdrawTx, NobleContext>;
 };
 
 const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
@@ -189,9 +189,9 @@ const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, NobleContext> = {
 };
 
 const createMonitorRegistry = (): MonitorRegistry => ({
-  [TxType.CCTP]: cctpMonitor,
+  [TxType.CCTP_TO_EVM]: cctpMonitor,
   [TxType.GMP]: gmpMonitor,
-  [TxType.NOBLE_WITHDRAW]: nobleWithdrawMonitor,
+  [TxType.CCTP_TO_NOBLE]: nobleWithdrawMonitor,
 });
 
 type HandlePendingTxOptions = {

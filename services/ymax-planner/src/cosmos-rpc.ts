@@ -5,6 +5,12 @@ const MAX_SUBSCRIPTIONS = 5;
 const hasOwnProperties = (obj: unknown) =>
   typeof obj === 'object' && obj !== null && Reflect.ownKeys(obj).length > 0;
 
+/** cf. https://docs.cometbft.com/v1.0/explanation/core/subscription */
+export type SubscriptionResponse = {
+  type: string;
+  value: Record<string, unknown>;
+};
+
 export class CosmosRPCClient extends JSONRPCClient {
   #subscriptions: Map<
     number,
@@ -95,7 +101,7 @@ export class CosmosRPCClient extends JSONRPCClient {
    */
   async *subscribeAll(queries: string[]): AsyncGenerator<{
     query: string;
-    data: { type: string; value: Record<string, unknown> };
+    data: SubscriptionResponse;
     events?: Record<string, unknown>;
   }> {
     const newQueries = new Set(queries);

@@ -23,6 +23,7 @@ import {
   type AxelarGmpOutgoingMemo,
   type ContractCall,
 } from '@agoric/orchestration/src/axelar-types.js';
+import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import {
   buildGasPayload,
   buildGMPPayload,
@@ -46,8 +47,8 @@ import {
   type TransportDetail,
 } from './portfolio.flows.ts';
 import { TxType } from './resolver/constants.js';
-import type { PoolKey } from './type-guards.ts';
 import type { ResolverKit } from './resolver/resolver.exo.ts';
+import type { PoolKey } from './type-guards.ts';
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
@@ -58,6 +59,7 @@ export const provideEVMAccount = async (
     chain: Chain<{ chainId: string }>;
     fee: NatValue;
     axelarIds: AxelarId;
+    evmGas: bigint;
   },
   lca: LocalAccount,
   ctx: PortfolioInstanceContext,
@@ -71,31 +73,15 @@ export const provideEVMAccount = async (
   const axelarId = gmp.axelarIds[chainName];
   const target = { axelarId, remoteAddress: ctx.contracts[chainName].factory };
   const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
+  const feeAccount = await ctx.contractAccount;
+  await feeAccount.send(lca.getAddress(), fee);
   await sendMakeAccountCall(
     target,
     fee,
     lca,
     gmp.chain,
     ctx.gmpAddresses,
-    /**
-     * TODO: Temporary hack — currently passing `0n` as the hardcoded EVM gas amount
-     * for remote account creation.
-     *
-     * Impact:
-     * - Causes EVM-to-Agoric transactions to fail due to insufficient gas.
-     * - Transactions remain stuck until someone manually pays gas via Axelarscan.
-     *
-     * Recovery:
-     * - Users can go to https://axelarscan.io, find their stuck transaction,
-     *   and manually pay the required gas to unblock it.
-     *
-     * Better Solution (to implement):
-     * 1. Compute the correct gas off-chain based on the EVM transaction requirements.
-     * 2. Pass that value into the contract via `offerArgs`.
-     * 3. Use it here instead of the hardcoded `0n`.
-     *
-     */
-    0n,
+    gmp.evmGas,
   );
 
   return pk.reader.getGMPInfo(chainName) as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
@@ -146,7 +132,15 @@ export const CCTPfromEVM = {
     tm.depositForBurn(amount.value, nobleDomain, mintRecipient, a.usdc);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, src, calls);
+    const { result } = ctx.resolverClient.registerTransaction(
+      TxType.CCTP_TO_NOBLE,
+      coerceAccountId(dest.ica.getAddress()),
+      amount.value,
+    );
+
+    const contractCallP = sendGMPContractCall(ctx, src, calls);
+
+    await Promise.all([result, contractCallP]);
   },
   recover: async (ctx, amount, src, dest) => {
     return CCTP.apply(ctx, amount, dest, src);
@@ -177,7 +171,7 @@ export const CCTP = {
 
     trace(`CCTP transaction initiated, waiting for confirmation...`);
     const { result } = ctx.resolverClient.registerTransaction(
-      TxType.CCTP,
+      TxType.CCTP_TO_EVM,
       destinationAddress,
       amount.value,
     );
@@ -273,12 +267,14 @@ export const sendGMPContractCall = async (
     value: AXELAR_GMP,
     encoding: 'bech32' as const,
   };
+  await ctx.feeAccount.send(lca.getAddress(), fee);
   await lca.transfer(gmp, fee, { memo: JSON.stringify(memo) });
 
   await result;
 };
 
 export type EVMContext = {
+  feeAccount: LocalAccount;
   lca: LocalAccount;
   gmpFee: DenomAmount;
   gmpChain: Chain<{ chainId: string }>;

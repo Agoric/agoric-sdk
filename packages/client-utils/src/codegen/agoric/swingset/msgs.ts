@@ -155,6 +155,44 @@ export interface MsgInstallBundleResponseProtoMsg {
  * message has been queued for the SwingSet kernel's consideration.
  */
 export interface MsgInstallBundleResponseSDKType {}
+/** MsgCoreEval defines an SDK message for a core eval. */
+export interface MsgCoreEval {
+  /** authority is the address that controls the module (defaults to x/gov unless overwritten). */
+  authority: string;
+  /**
+   * The JSON-stringified core bootstrap permits to grant to the jsCode, as the
+   * `powers` endowment.
+   */
+  jsonPermits: string;
+  /**
+   * Evaluate this JavaScript code in a Compartment endowed with `powers` as
+   * well as some powerless helpers.
+   */
+  jsCode: string;
+}
+export interface MsgCoreEvalProtoMsg {
+  typeUrl: '/agoric.swingset.MsgCoreEval';
+  value: Uint8Array;
+}
+/** MsgCoreEval defines an SDK message for a core eval. */
+export interface MsgCoreEvalSDKType {
+  authority: string;
+  json_permits: string;
+  js_code: string;
+}
+/** MsgCoreEvalResponse is an empty reply. */
+export interface MsgCoreEvalResponse {
+  /** The result of the core eval. */
+  result: string;
+}
+export interface MsgCoreEvalResponseProtoMsg {
+  typeUrl: '/agoric.swingset.MsgCoreEvalResponse';
+  value: Uint8Array;
+}
+/** MsgCoreEvalResponse is an empty reply. */
+export interface MsgCoreEvalResponseSDKType {
+  result: string;
+}
 function createBaseMsgDeliverInbound(): MsgDeliverInbound {
   return {
     messages: [],
@@ -939,6 +977,154 @@ export const MsgInstallBundleResponse = {
     return {
       typeUrl: '/agoric.swingset.MsgInstallBundleResponse',
       value: MsgInstallBundleResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgCoreEval(): MsgCoreEval {
+  return {
+    authority: '',
+    jsonPermits: '',
+    jsCode: '',
+  };
+}
+export const MsgCoreEval = {
+  typeUrl: '/agoric.swingset.MsgCoreEval' as const,
+  encode(
+    message: MsgCoreEval,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.authority !== '') {
+      writer.uint32(10).string(message.authority);
+    }
+    if (message.jsonPermits !== '') {
+      writer.uint32(18).string(message.jsonPermits);
+    }
+    if (message.jsCode !== '') {
+      writer.uint32(26).string(message.jsCode);
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgCoreEval {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgCoreEval();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.authority = reader.string();
+          break;
+        case 2:
+          message.jsonPermits = reader.string();
+          break;
+        case 3:
+          message.jsCode = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): MsgCoreEval {
+    return {
+      authority: isSet(object.authority) ? String(object.authority) : '',
+      jsonPermits: isSet(object.jsonPermits) ? String(object.jsonPermits) : '',
+      jsCode: isSet(object.jsCode) ? String(object.jsCode) : '',
+    };
+  },
+  toJSON(message: MsgCoreEval): JsonSafe<MsgCoreEval> {
+    const obj: any = {};
+    message.authority !== undefined && (obj.authority = message.authority);
+    message.jsonPermits !== undefined &&
+      (obj.jsonPermits = message.jsonPermits);
+    message.jsCode !== undefined && (obj.jsCode = message.jsCode);
+    return obj;
+  },
+  fromPartial(object: Partial<MsgCoreEval>): MsgCoreEval {
+    const message = createBaseMsgCoreEval();
+    message.authority = object.authority ?? '';
+    message.jsonPermits = object.jsonPermits ?? '';
+    message.jsCode = object.jsCode ?? '';
+    return message;
+  },
+  fromProtoMsg(message: MsgCoreEvalProtoMsg): MsgCoreEval {
+    return MsgCoreEval.decode(message.value);
+  },
+  toProto(message: MsgCoreEval): Uint8Array {
+    return MsgCoreEval.encode(message).finish();
+  },
+  toProtoMsg(message: MsgCoreEval): MsgCoreEvalProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.MsgCoreEval',
+      value: MsgCoreEval.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgCoreEvalResponse(): MsgCoreEvalResponse {
+  return {
+    result: '',
+  };
+}
+export const MsgCoreEvalResponse = {
+  typeUrl: '/agoric.swingset.MsgCoreEvalResponse' as const,
+  encode(
+    message: MsgCoreEvalResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.result !== '') {
+      writer.uint32(10).string(message.result);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgCoreEvalResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgCoreEvalResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.result = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): MsgCoreEvalResponse {
+    return {
+      result: isSet(object.result) ? String(object.result) : '',
+    };
+  },
+  toJSON(message: MsgCoreEvalResponse): JsonSafe<MsgCoreEvalResponse> {
+    const obj: any = {};
+    message.result !== undefined && (obj.result = message.result);
+    return obj;
+  },
+  fromPartial(object: Partial<MsgCoreEvalResponse>): MsgCoreEvalResponse {
+    const message = createBaseMsgCoreEvalResponse();
+    message.result = object.result ?? '';
+    return message;
+  },
+  fromProtoMsg(message: MsgCoreEvalResponseProtoMsg): MsgCoreEvalResponse {
+    return MsgCoreEvalResponse.decode(message.value);
+  },
+  toProto(message: MsgCoreEvalResponse): Uint8Array {
+    return MsgCoreEvalResponse.encode(message).finish();
+  },
+  toProtoMsg(message: MsgCoreEvalResponse): MsgCoreEvalResponseProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.MsgCoreEvalResponse',
+      value: MsgCoreEvalResponse.encode(message).finish(),
     };
   },
 };

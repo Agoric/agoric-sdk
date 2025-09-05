@@ -210,6 +210,7 @@ jobs:
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
   docker-ymax:
+    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     permissions:
       # allow issuing OIDC tokens for this workflow run
       id-token: write
@@ -238,10 +239,6 @@ jobs:
       - name: Save BUILD_TAG
         run: |
           echo "BUILD_TAG=${{ needs.snapshot.outputs.tag }}" >> $GITHUB_ENV
-      - name: Save GIT_REVISION
-        run: echo "GIT_REVISION=$(git rev-parse HEAD)" >> $GITHUB_ENV
-      - name: Save GIT_COMMIT
-        run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
       - name: Build and Push ymax-planner
         uses: depot/build-push-action@v1
         with:
@@ -249,7 +246,9 @@ jobs:
           context: ./
           platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
-          tags: '${{ steps.prefix-tags.outputs.tags }}'
+          tags: |
+            ${{ env.REGISTRY }}/agoric/agoric-sdk:ymax-planner
+            ${{ env.REGISTRY }}/agoric/agoric-sdk:${{ env.BUILD_TAG }}
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status

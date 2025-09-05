@@ -6,8 +6,6 @@ import (
 	"io"
 
 	storetypes "cosmossdk.io/store/types"
-	swingsettypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 )
 
 // These helpers facilitate handling KVEntry streams, in particular for the
@@ -144,28 +142,6 @@ func (reader *kvEntriesReader[T]) Read() (next KVEntry, err error) {
 func (reader *kvEntriesReader[any]) Close() error {
 	reader.entries = nil
 	return nil
-}
-
-// NewVstorageDataEntriesReader creates a KVEntryReader backed by a
-// vstorage DataEntry slice
-func NewVstorageDataEntriesReader(vstorageDataEntries []*vstoragetypes.DataEntry) KVEntryReader {
-	return &kvEntriesReader[*vstoragetypes.DataEntry]{
-		entries: vstorageDataEntries,
-		toKVEntry: func(sourceEntry *vstoragetypes.DataEntry) (KVEntry, error) {
-			return NewKVEntry(sourceEntry.Path, sourceEntry.Value), nil
-		},
-	}
-}
-
-// NewSwingStoreExportDataEntriesReader creates a KVEntryReader backed by
-// a SwingStoreExportDataEntry slice
-func NewSwingStoreExportDataEntriesReader(exportDataEntries []*swingsettypes.SwingStoreExportDataEntry) KVEntryReader {
-	return &kvEntriesReader[*swingsettypes.SwingStoreExportDataEntry]{
-		entries: exportDataEntries,
-		toKVEntry: func(sourceEntry *swingsettypes.SwingStoreExportDataEntry) (KVEntry, error) {
-			return NewKVEntry(sourceEntry.Key, sourceEntry.Value), nil
-		},
-	}
 }
 
 // NewJsonRawMessageKVEntriesReader creates a KVEntryReader backed by

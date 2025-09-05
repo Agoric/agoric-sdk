@@ -532,6 +532,7 @@ func NewAgoricApp(
 		app.GetSubspace(swingset.ModuleName),
 		app.AccountKeeper, app.BankKeeper,
 		app.VstorageKeeper, vbanktypes.ReservePoolName,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		callToController,
 	)
 	app.swingsetPort = app.AgdServer.MustRegisterPortHandler("swingset", swingset.NewPortHandler(app.SwingSetKeeper))

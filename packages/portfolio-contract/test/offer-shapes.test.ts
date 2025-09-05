@@ -18,7 +18,7 @@ const { brand: BLD } = bld;
 
 test('ProposalShapes', t => {
   const { brand: Poc26 } = makeIssuerKit('Poc26');
-  const shapes = makeProposalShapes(USDC, BLD, Poc26);
+  const shapes = makeProposalShapes(USDC, Poc26);
 
   const usdc = (value: bigint) => AmountMath.make(USDC, value);
   const fee = (value: bigint) => AmountMath.make(BLD, value);
@@ -28,17 +28,15 @@ test('ProposalShapes', t => {
       pass: {
         noPositions: { give: { Access: poc26(1n) } },
         withDeposit: { give: { Deposit: usdc(123n), Access: poc26(1n) } },
-        aaveNeedsGMPFee: {
+        aaveGMPFeePaidByContract: {
           give: {
             Deposit: usdc(6123n),
-            GmpFee: fee(123n),
             Access: poc26(1n),
           },
         },
-        withDepositAndFee: {
+        withDepositAndAccess: {
           give: {
             Deposit: usdc(10123n),
-            GmpFee: fee(7123n),
             Access: poc26(1n),
           },
         },
@@ -52,21 +50,13 @@ test('ProposalShapes', t => {
         depositWrongBrand: {
           give: { Deposit: poc26(123n), Access: poc26(1n) },
         },
-        gmpFeeWrongBrand: {
-          give: { GmpFee: usdc(123n), Access: poc26(1n) },
-        },
         openTopLevelStray: { give: { Access: poc26(1n) }, extra: 'property' },
       },
     },
     rebalance: {
       pass: {
         deposit: { give: { Deposit: usdc(123n) } },
-        depositWithFee: { give: { Deposit: usdc(123n), GmpFee: fee(50n) } },
         withdraw: { want: { Cash: usdc(123n) } },
-        withdrawWithFee: {
-          want: { Cash: usdc(123n) },
-          give: { GmpFee: fee(50n) },
-        },
       },
       fail: {
         both: { give: { Deposit: usdc(123n) }, want: { Cash: usdc(123n) } },

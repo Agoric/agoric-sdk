@@ -414,17 +414,16 @@ test.serial('restart contract', async t => {
   const myMarshaller = makeClientMarshaller(v => (v as any).getBoardId());
   const wallet = await wfd.provideSmartWallet(beneficiary, myMarshaller);
 
-  const { USDC, PoC26, BLD } = agoricNamesRemotes.brand as unknown as Record<
+  const { USDC, PoC26 } = agoricNamesRemotes.brand as unknown as Record<
     string,
     Brand<'nat'>
   >;
   const give = harden({
     Deposit: make(USDC, 3_333n * 1_000_000n),
     Access: make(PoC26, 1n),
-    GmpFee: make(BLD, 1000n),
   });
 
-  const ps = makeProposalShapes(USDC, BLD, PoC26);
+  const ps = makeProposalShapes(USDC, PoC26);
   mustMatch(harden({ give, want: {} }), ps.openPortfolio);
 
   // XXX There is got to be a cleaner way to do this

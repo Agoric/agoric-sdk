@@ -24,7 +24,7 @@ test('handlePendingTx processes CCTP transaction successfully', async t => {
   const amount = 1_000_000n; // 1 USDC
   const receiver = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
   const provider = mockEvmCtx.evmProviders[chain];
-  const type = TxType.CCTP;
+  const type = TxType.CCTP_TO_EVM;
 
   const logMessages: string[] = [];
   const logger = (...args: any[]) => logMessages.push(args.join(' '));
@@ -86,7 +86,7 @@ test('handlePendingTx keeps tx pending on amount mismatch until timeout', async 
   const notExpectedAmt = 1_00_000n;
   const receiver = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
   const provider = mockEvmCtx.evmProviders[chain];
-  const type = TxType.CCTP;
+  const type = TxType.CCTP_TO_EVM;
 
   const logMessages: string[] = [];
   const logger = (...args: any[]) => logMessages.push(args.join(' '));
