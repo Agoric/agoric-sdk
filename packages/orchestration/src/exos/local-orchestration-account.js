@@ -552,7 +552,9 @@ export const prepareLocalOrchestrationAccountKit = (
          */
         onFulfilled(result, naiveResult) {
           const { error, reply } = extractFirstQueryResult(result);
-          if (typeof error === 'string') {
+
+          // For the success case, error could be undefined or ''.
+          if (error) {
             if (error.includes(ErrTraceNotFound)) {
               // Looks like the trace was not found; The naive result is good enough.
               return naiveResult;
