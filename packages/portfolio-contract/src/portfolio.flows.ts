@@ -393,6 +393,7 @@ const stepFlow = async (
       axelarIds,
       gmpAddresses,
       resolverClient: ctx.resolverClient,
+      feeAccount: await ctx.contractAccount,
     });
     return { evmCtx, gInfo, accountId };
   };

@@ -71,6 +71,8 @@ export const provideEVMAccount = async (
   const axelarId = gmp.axelarIds[chainName];
   const target = { axelarId, remoteAddress: ctx.contracts[chainName].factory };
   const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
+  const feeAccount = await ctx.contractAccount;
+  await feeAccount.send(lca.getAddress(), fee);
   await sendMakeAccountCall(
     target,
     fee,
@@ -273,12 +275,14 @@ export const sendGMPContractCall = async (
     value: AXELAR_GMP,
     encoding: 'bech32' as const,
   };
+  await ctx.feeAccount.send(lca.getAddress(), fee);
   await lca.transfer(gmp, fee, { memo: JSON.stringify(memo) });
 
   await result;
 };
 
 export type EVMContext = {
+  feeAccount: LocalAccount;
   lca: LocalAccount;
   gmpFee: DenomAmount;
   gmpChain: Chain<{ chainId: string }>;

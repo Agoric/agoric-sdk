@@ -424,7 +424,7 @@ test('claim rewards on Aave position successfully', async t => {
 
   const messagesAfter = common.utils.inspectLocalBridge();
 
-  t.deepEqual(messagesAfter.length - messagesBefore.length, 2);
+  t.deepEqual(messagesAfter.length - messagesBefore.length, 4);
 
   t.log(storagePath);
   const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
