@@ -66,6 +66,7 @@ Options:
   --positions         JSON string of opening positions (e.g. '{"USDN":6000,"Aave":4000}')
   --target-allocation JSON string of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
   --redeem            redeem invitation
+  --redeem-resolver   redeem resolver invitation
   --contract=[ymax0]  agoricNames.instance name of contract that issued invitation
   --description=[planner]
   --submit-for <id>   submit (empty) plan for portfolio <id>
@@ -80,12 +81,14 @@ const parseToolArgs = (argv: string[]) =>
       'exit-success': { type: 'boolean', default: false },
       'target-allocation': { type: 'string' },
       redeem: { type: 'boolean', default: false },
+      'redeem-resolver': { type: 'boolean', default: false },
       contract: { type: 'string', default: 'ymax0' },
       description: { type: 'string', default: 'planner' },
       getCreatorFacet: { type: 'boolean', default: false },
       terminate: { type: 'string' },
       installAndStart: { type: 'string' },
       invitePlanner: { type: 'string' },
+      inviteResolver: { type: 'string' },
       pruneStorage: { type: 'boolean', default: false },
       'submit-for': { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
@@ -374,6 +377,21 @@ const main = async (
     return;
   }
 
+  if (values['redeem-resolver']) {
+    const { contract } = values;
+    const description = 'resolver';
+    trace('getting instance', contract);
+    const { [contract]: instance } = fromEntries(
+      await walletKit.readPublished('agoricNames.instance'),
+    );
+    const result = await walletStore.saveOfferResult(
+      { instance, description },
+      description.replace(/^deliver /, ''),
+    );
+    trace('redeem resolver result', result);
+    return;
+  }
+
   const yc = walletStore.get<ContractControl<YMaxStartFn>>('ymaxControl');
 
   if (values.getCreatorFacet) {
@@ -421,6 +439,17 @@ const main = async (
       await walletKit.readPublished('agoricNames.instance'),
     );
     await cf.deliverPlannerInvitation(planner, postalService);
+    return;
+  }
+
+  if (values.inviteResolver) {
+    const { inviteResolver: resolver } = values;
+    const cf =
+      walletStore.get<ZStarted<YMaxStartFn>['creatorFacet']>('creatorFacet');
+    const { postalService } = fromEntries(
+      await walletKit.readPublished('agoricNames.instance'),
+    );
+    await cf.deliverResolverInvitation(resolver, postalService);
     return;
   }
 
