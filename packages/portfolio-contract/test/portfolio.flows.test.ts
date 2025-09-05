@@ -17,6 +17,7 @@ import {
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { denomHash, type Orchestrator } from '@agoric/orchestration';
+import { buildGasPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
   RebalanceStrategy,
@@ -38,8 +39,8 @@ import {
 } from '../src/portfolio.exo.ts';
 import {
   openPortfolio,
-  rebalance,
   parseInboundTransfer,
+  rebalance,
   wayFromSrcToDesc,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
@@ -485,9 +486,9 @@ test(
 );
 
 test('open portfolio with Aave position', async t => {
-  const { add } = AmountMath;
   const amount = AmountMath.make(USDC, 300n);
   const feeAcct = AmountMath.make(BLD, 50n);
+  const detail = { evmGas: 50n };
   const feeCall = AmountMath.make(BLD, 100n);
   const { orch, tapPK, ctx, offer, storage } = mocks({}, { Deposit: amount });
 
@@ -496,7 +497,7 @@ test('open portfolio with Aave position', async t => {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct, detail },
         { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
       ],
     }),
@@ -520,6 +521,13 @@ test('open portfolio with Aave position', async t => {
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
+
+  t.like(
+    JSON.parse(log[4].opts.memo),
+    { payload: buildGasPayload(50n) },
+    '1st transfer to axelar carries evmGas for return message',
+  );
+
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
@@ -814,6 +822,7 @@ test('open portfolio with Beefy position', async t => {
   const { add } = AmountMath;
   const amount = AmountMath.make(USDC, 300n);
   const feeAcct = AmountMath.make(BLD, 50n);
+  const detail = { evmGas: 50n };
   const feeCall = AmountMath.make(BLD, 100n);
   const { orch, tapPK, ctx, offer, storage } = mocks({}, { Deposit: amount });
 
@@ -822,7 +831,7 @@ test('open portfolio with Beefy position', async t => {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct },
+        { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct, detail },
         {
           src: '@Avalanche',
           dest: 'Beefy_re7_Avalanche',

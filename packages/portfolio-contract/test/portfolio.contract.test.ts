@@ -125,6 +125,7 @@ test.serial('open a portfolio with Aave position', async t => {
   const amount = usdc.units(3_333.33);
   const feeAcct = bld.make(100n);
   const feeCall = bld.make(100n);
+  const detail = { evmGas: 175n };
 
   const actualP = trader1.openPortfolio(
     t,
@@ -133,7 +134,7 @@ test.serial('open a portfolio with Aave position', async t => {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct, detail },
         { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
       ],
     },

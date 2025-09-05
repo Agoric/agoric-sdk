@@ -380,7 +380,12 @@ const stepFlow = async (
     const { denom } = ctx.gmpFeeInfo;
     const fee = { denom, value: move.fee ? move.fee.value : 0n };
     const { axelarIds, gmpAddresses } = ctx;
-    const gmp = { chain: axelar, fee: move.fee?.value || 0n, axelarIds }; // XXX throw if fee missing?
+    const gmp = {
+      chain: axelar,
+      fee: move.fee?.value || 0n,
+      axelarIds,
+      evmGas: move.detail?.evmGas || 0n,
+    };
     const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
     const gInfo = await provideEVMAccount(chain, gmp, lca, ctx, kit);
     const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
