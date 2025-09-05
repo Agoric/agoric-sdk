@@ -2556,14 +2556,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-prettier@npm:^10.1.1":
-  version: 10.1.5
-  resolution: "eslint-config-prettier@npm:10.1.5"
+"eslint-config-prettier@npm:^10.1.8":
+  version: 10.1.8
+  resolution: "eslint-config-prettier@npm:10.1.8"
   peerDependencies:
     eslint: ">=7.0.0"
   bin:
     eslint-config-prettier: bin/cli.js
-  checksum: 10c0/5486255428e4577e8064b40f27db299faf7312b8e43d7b4bc913a6426e6c0f5950cd519cad81ae24e9aecb4002c502bc665c02e3b52efde57af2debcf27dd6e0
+  checksum: 10c0/e1bcfadc9eccd526c240056b1e59c5cd26544fe59feb85f38f4f1f116caed96aea0b3b87868e68b3099e55caaac3f2e5b9f58110f85db893e83a332751192682
   languageName: node
   linkType: hard
 
@@ -2916,14 +2916,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fs-extra@npm:^11.2.0":
-  version: 11.3.0
-  resolution: "fs-extra@npm:11.3.0"
+"fs-extra@npm:^11.3.1":
+  version: 11.3.1
+  resolution: "fs-extra@npm:11.3.1"
   dependencies:
     graceful-fs: "npm:^4.2.0"
     jsonfile: "npm:^6.0.1"
     universalify: "npm:^2.0.0"
-  checksum: 10c0/5f95e996186ff45463059feb115a22fb048bdaf7e487ecee8a8646c78ed8fdca63630e3077d4c16ce677051f5e60d3355a06f3cd61f3ca43f48cc58822a44d0a
+  checksum: 10c0/61e5b7285b1ca72c68dfe1058b2514294a922683afac2a80aa90540f9bd85370763d675e3b408ef500077d355956fece3bd24b546790e261c3d3015967e2b2d9
   languageName: node
   linkType: hard
 
@@ -4225,13 +4225,13 @@ __metadata:
   linkType: hard
 
 "query-string@npm:^9.1.1":
-  version: 9.2.0
-  resolution: "query-string@npm:9.2.0"
+  version: 9.2.2
+  resolution: "query-string@npm:9.2.2"
   dependencies:
     decode-uri-component: "npm:^0.4.1"
     filter-obj: "npm:^5.1.0"
     split-on-first: "npm:^3.0.0"
-  checksum: 10c0/111cdc184c35d75f08c2dcb260c3cb038e7112d888a872dcbafd015d0ee790e57fd5ad8ebcad9c7a964f130c3711fef21ed2c28eb2dbf9c163bc56c144cac926
+  checksum: 10c0/2e3cbee52622ac9dd299237d617c922cb2a238e70d58a08eb3ad0be814642578948f58e85376b10bef1c64df04bdde94ca8aad3f319451ee3aba2f553278ed2b
   languageName: node
   linkType: hard
 
@@ -4377,9 +4377,9 @@ __metadata:
     "@typescript-eslint/parser": "npm:^8.26.1"
     ava: "npm:^6.2.0"
     eslint: "npm:^9.22.0"
-    eslint-config-prettier: "npm:^10.1.1"
+    eslint-config-prettier: "npm:^10.1.8"
     execa: "npm:^9.5.2"
-    fs-extra: "npm:^11.2.0"
+    fs-extra: "npm:^11.3.1"
     osmojs: "npm:^16.15.0"
     starshipjs: "npm:^3.3.0"
     ts-blank-space: "npm:^0.4.4"
@@ -4783,9 +4783,9 @@ __metadata:
   linkType: hard
 
 "tmp@npm:^0.2.1":
-  version: 0.2.3
-  resolution: "tmp@npm:0.2.3"
-  checksum: 10c0/3e809d9c2f46817475b452725c2aaa5d11985cf18d32a7a970ff25b568438e2c076c2e8609224feef3b7923fa9749b74428e3e634f6b8e520c534eef2fd24125
+  version: 0.2.5
+  resolution: "tmp@npm:0.2.5"
+  checksum: 10c0/cee5bb7d674bb4ba3ab3f3841c2ca7e46daeb2109eec395c1ec7329a91d52fcb21032b79ac25161a37b2565c4858fefab927af9735926a113ef7bac9091a6e0e
   languageName: node
   linkType: hard
 
