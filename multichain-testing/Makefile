@@ -234,7 +234,6 @@ publish-ymax0: ,ymax0-installed
 
 yctrl-redeploy: ,ymax0-deployed
 
-REASON=
 NETCONFIG=https://devnet.agoric.net/network-config
 ,ymax0-deployed: $(DEPLOY)/dist/bundle-ymax0.json ,ymax0-bundle-id ,ymax0-installed
 	@[ -n "$$MNEMONIC" ] || (echo "ymaxControl MNEMONIC not set; see gov keys sheet"; false)
@@ -248,18 +247,29 @@ NETCONFIG=https://devnet.agoric.net/network-config
 
 # see gov keys sheet
 PLANNER=agoric140yw0u2qrvmrgp33ejpddgnrwpm74vpfpx5v7n
-,invitePlanner: ,creatorFacet
+,invitePlanners: ,creatorFacet
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --pruneStorage --invitePlanner $(PLANNER)
 	touch $@
 	@echo now use planner MNEMONIC: ymax-tool.ts --redeem
 
+# see gov keys sheet
+RESOLVER=agoric140yw0u2qrvmrgp33ejpddgnrwpm74vpfpx5v7n
+,inviteResolver: ,creatorFacet
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --pruneStorage --inviteResolver $(RESOLVER)
+	touch $@
+	@echo now use resolver MNEMONIC: ymax-tool.ts --redeem-resolver
+
 # TODO: get from vstorage
-FEE_ACCT=agoric1rqqy9r0s4ahl8agr89f200gch78hnef3jckf4vntqe4p67rsxegs9qpzjw
+FEE_ACCT=agoric1w7ycgxwjpezmue4qcfdvgkchr5k0mkrnw88vudn6prkynr4jqhyq2sav5q
 DEV_NODE=https://devnet.rpc.agoric.net:443
 SIG_OPTS=--chain-id=agoricdev-25 --gas-adjustment=1.5 --gas=auto
 fund-fee-acct:
-	agd tx bank send gov1.devnet $(FEE_ACCT) 120000000ubld -y -b block --node=$(DEV_NODE) $(SIG_OPTS)
+	agd tx bank send mudi $(FEE_ACCT) 120000000ubld --keyring-backend test -y -b block --node=$(DEV_NODE) $(SIG_OPTS)
 
 aave-e2e:
 	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Aave":0.1}' --target-allocation '{"Aave_Ethereum":100}'
+
+compound-e2e:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Aave":0.1}' --target-allocation '{"Compound_Ethereum":100}'
