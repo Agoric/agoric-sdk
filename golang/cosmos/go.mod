@@ -47,7 +47,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-require github.com/prometheus/client_golang v1.20.5
+require github.com/prometheus/client_golang v1.20.5 // indirect
 
 require (
 	cloud.google.com/go v0.115.0 // indirect
@@ -177,7 +177,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/petermattis/goid v0.0.0-20240813172612-4fcff4a6cae7 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/client_golang v1.20.5 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
@@ -271,8 +270,8 @@ replace (
 	cosmossdk.io/x/tx => github.com/agoric-labs/cosmos-sdk/x/tx v0.50.14-alpha.agoric.3
 	cosmossdk.io/x/upgrade => github.com/agoric-labs/cosmos-sdk/x/upgrade v0.50.14-alpha.agoric.2
 
-  // CosmWasm
-  github.com/CosmWasm/wasmvm => github.com/CosmWasm/wasmvm v1.5.9
+	// CosmWasm
+	github.com/CosmWasm/wasmvm => github.com/CosmWasm/wasmvm v1.5.9
 
 	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with

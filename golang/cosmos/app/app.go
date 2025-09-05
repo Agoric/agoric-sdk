@@ -99,9 +99,6 @@ import (
 	tmos "github.com/cometbft/cometbft/libs/os"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
-	ibcwasm "github.com/cosmos/ibc-go/modules/light-clients/08-wasm"
-	ibcwasmkeeper "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/keeper"
-	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 	icahost "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host"
 	icahostkeeper "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/keeper"
 	icahosttypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/types"
@@ -111,7 +108,6 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v8/modules/core"
 	ibcclient "github.com/cosmos/ibc-go/v8/modules/core/02-client"
-	ibcclientclient "github.com/cosmos/ibc-go/v8/modules/core/02-client/client"
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcporttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
@@ -150,7 +146,6 @@ import (
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	wasmvm "github.com/CosmWasm/wasmvm"
 	// unnamed import of statik for swagger UI support
 	// XXX figure out how to build the docs
 	// _ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -192,10 +187,6 @@ var (
 		distr.AppModuleBasic{},
 		gov.NewAppModuleBasic([]govclient.ProposalHandler{
 			paramsclient.ProposalHandler,
-			upgradeclient.LegacyProposalHandler,
-			upgradeclient.LegacyCancelProposalHandler,
-			ibcclientclient.UpdateClientProposalHandler,
-			ibcclientclient.UpgradeProposalHandler,
 			swingsetclient.CoreEvalProposalHandler,
 		}),
 		params.AppModuleBasic{},
@@ -204,11 +195,10 @@ var (
 		authzmodule.AppModuleBasic{},
 		ibc.AppModuleBasic{},
 		ibctm.AppModuleBasic{},
-		ibcsolomachine.AppModuleBasic{},
+		ibcsolo.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
 		ibctransfer.AppModuleBasic{},
-		ibcwasm.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		ica.AppModuleBasic{},
 		packetforward.AppModuleBasic{},
@@ -218,7 +208,6 @@ var (
 		vibc.AppModuleBasic{},
 		vbank.AppModuleBasic{},
 		vtransfer.AppModuleBasic{},
-		wasm.AppModuleBasic{},
 	)
 	// module account permissions
 	maccPerms = map[string][]string{
@@ -294,7 +283,6 @@ type GaiaApp struct { // nolint: golint
 	PacketForwardKeeper *packetforwardkeeper.Keeper
 	EvidenceKeeper      evidencekeeper.Keeper
 	TransferKeeper      ibctransferkeeper.Keeper
-	WasmClientKeeper    ibcwasmkeeper.Keeper
 	FeeGrantKeeper      feegrantkeeper.Keeper
 	AuthzKeeper         authzkeeper.Keeper
 
@@ -422,7 +410,7 @@ func NewAgoricApp(
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey, icahosttypes.StoreKey,
 		swingset.StoreKey, vstorage.StoreKey, vibc.StoreKey,
 		vlocalchain.StoreKey, vtransfer.StoreKey, vbank.StoreKey, consensusparamstypes.StoreKey,
-		wasmtypes.StoreKey, ibcwasmtypes.StoreKey,
+		wasmtypes.StoreKey,
 	)
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey, vbanktypes.TStoreKey)
 	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -774,30 +762,6 @@ func NewAgoricApp(
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
-	availableCapabilities := strings.Join(AllCapabilities(), ",")
-
-	wasmVM, err := wasmvm.NewVM(
-		wasmDir,
-		availableCapabilities,
-		ibcwasmtypes.ContractMemoryLimit,
-		wasmConfig.ContractDebugMode,
-		wasmConfig.MemoryCacheSize,
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	wasmOpts = append(wasmOpts, wasmkeeper.WithWasmEngine(wasmVM))
-
-	// Instantiate 08-wasm's keeper
-	app.WasmClientKeeper = ibcwasmkeeper.NewKeeperWithVM(
-		appCodec,
-		keys[wasmtypes.StoreKey],
-		app.IBCKeeper.ClientKeeper,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		wasmVM,
-		app.GRPCQueryRouter(),
-	)
 
 	app.WasmKeeper = wasmkeeper.NewKeeper(
 		appCodec,
@@ -885,7 +849,6 @@ func NewAgoricApp(
 		ibctm.NewAppModule(),
 		ibcsolo.NewAppModule(),
 		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
-		ibcwasm.NewAppModule(app.WasmClientKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		ics20TransferModule,
 		icaModule,
@@ -944,7 +907,6 @@ func NewAgoricApp(
 		// ibc apps are grouped together
 		ibctransfertypes.ModuleName,
 		ibcexported.ModuleName,
-		ibcwasmtypes.ModuleName,
 		icatypes.ModuleName,
 		packetforwardtypes.ModuleName,
 		authtypes.ModuleName,
@@ -976,7 +938,6 @@ func NewAgoricApp(
 		vtransfer.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibcexported.ModuleName,
-		ibcwasmtypes.ModuleName,
 		icatypes.ModuleName,
 		packetforwardtypes.ModuleName,
 		feegrant.ModuleName,
@@ -1026,7 +987,6 @@ func NewAgoricApp(
 		ibcexported.ModuleName,
 		ibcsolo.ModuleName,
 		ibctm.ModuleName,
-		ibcwasmtypes.ModuleName,
 		icatypes.ModuleName,
 		evidencetypes.ModuleName,
 		feegrant.ModuleName,
@@ -1118,7 +1078,6 @@ func NewAgoricApp(
 			Added: []string{
 				capabilitytypes.MemStoreKey,
 				consensusparamstypes.StoreKey,
-				ibcwasmtypes.ModuleName,
 				wasmtypes.ModuleName,
 			},
 			Deleted: []string{},
@@ -1135,9 +1094,6 @@ func NewAgoricApp(
 		ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{})
 
 		// Initialize pinned codes in wasmvm as they are not persisted there
-		if err := ibcwasmkeeper.InitializePinnedCodes(ctx, app.appCodec); err != nil {
-			tmos.Exit(fmt.Sprintf("failed to initialize 08-wasm pinned codes %s", err))
-		}
 		if err := app.WasmKeeper.InitializePinnedCodes(ctx); err != nil {
 			tmos.Exit(fmt.Sprintf("failed to initialize x/wasm pinned codes %s", err))
 		}
@@ -1152,7 +1108,6 @@ func NewAgoricApp(
 	if snapshotManager != nil {
 		if err = snapshotManager.RegisterExtensions(
 			&app.SwingSetSnapshotter,
-			ibcwasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.WasmClientKeeper),
 			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.WasmKeeper),
 		); err != nil {
 			panic(fmt.Errorf("failed to register snapshot extension: %s", err))

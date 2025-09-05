@@ -8,9 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	"github.com/prometheus/client_golang/prometheus"
-
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 
 	rosettaCmd "github.com/cosmos/rosetta/cmd"
@@ -46,6 +43,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtxconfig "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
@@ -55,7 +54,6 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingset "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	rosetta "github.com/cosmos/rosetta"
 )
 
@@ -94,6 +92,7 @@ func appendToPreRunE(cmd *cobra.Command, fn cobraRunE) {
 func NewRootCmd(sender vm.Sender) (*cobra.Command, params.EncodingConfig) {
 	// we "pre"-instantiate the application for getting the injected/configured encoding configuration
 	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
+	var emptyWasmOpts []wasmkeeper.Option
 
 	appOpts := make(simtestutil.AppOptionsMap, 0)
 	tempApp := gaia.NewSimApp(
@@ -102,7 +101,7 @@ func NewRootCmd(sender vm.Sender) (*cobra.Command, params.EncodingConfig) {
 		nil,
 		false, // we don't want to run the app, just get the encoding config
 		appOpts,
-		[]wasmkeeper.Option{},
+		emptyWasmOpts,
 	)
 
 	encodingConfig := params.EncodingConfig{
@@ -403,11 +402,6 @@ func (ac appCreator) newApp(
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
 	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
 
-	var wasmOpts []wasmkeeper.Option
-	if cast.ToBool(appOpts.Get("telemetry.enabled")) {
-		wasmOpts = append(wasmOpts, wasmkeeper.WithVMCacheMetrics(prometheus.DefaultRegisterer))
-	}
-
 	// Set a default value for FlagSwingStoreExportDir based on homePath
 	// in case we need to InitGenesis with swing-store data
 	viper, ok := appOpts.(*viper.Viper)
@@ -415,6 +409,7 @@ func (ac appCreator) newApp(
 		exportDir := filepath.Join(homePath, "config", ExportedSwingStoreDirectoryName)
 		viper.Set(gaia.FlagSwingStoreExportDir, exportDir)
 	}
+	var emptyWasmOpts []wasmkeeper.Option
 
 	return gaia.NewAgoricApp(
 		ac.sender, ac.agdServer,
@@ -436,9 +431,9 @@ func (ac appCreator) newSnapshotsApp(
 			panic(err)
 		}
 	}
+	var emptyWasmOpts []wasmkeeper.Option
 
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
-	var emptyWasmOpts []wasmkeeper.Option
 
 	return gaia.NewAgoricApp(
 		ac.sender, ac.agdServer,
@@ -576,9 +571,10 @@ func (ac appCreator) appExport(
 	if !ok || homePath == "" {
 		return servertypes.ExportedApp{}, errors.New("application home is not set")
 	}
-	var emptyWasmOpts []wasmkeeper.Option
 
 	loadLatest := height == -1
+
+	var emptyWasmOpts []wasmkeeper.Option
 
 	gaiaApp := gaia.NewAgoricApp(
 		ac.sender, ac.agdServer,

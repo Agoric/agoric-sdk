@@ -3,7 +3,6 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ibcwasmtypes "github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
@@ -25,7 +24,7 @@ func (m Migrator) Migrate1to2(ctx sdk.Context) error {
 // explicitly update the IBC 02-client params, adding the localhost and wasm client type
 func (m Migrator) AddLightClientsToParams(ctx sdk.Context) error {
 	params := m.keeper.clientKeeper.GetParams(ctx)
-	toAdd := []string{ibcexported.Localhost, ibcwasmtypes.Wasm}
+	toAdd := []string{ibcexported.Localhost}
 	for _, c := range params.AllowedClients {
 		newToAdd := make([]string, 0, len(toAdd))
 		for _, a := range toAdd {

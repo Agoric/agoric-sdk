@@ -8,8 +8,8 @@ PR_TARGET_REPO = https://github.com/Agoric/agoric-sdk.git
 PR_TARGET_BRANCH = master
 DOCKER := $(shell which docker)
 
-COSM_WASM_PKG = github.com/CosmWasm/wasmvm
-COSM_WASM_VM_VERSION = $(shell go list -m -f '{{ .Replace.Version }}' $(COSM_WASM_PKG))
+COSM_WASM_PKG = github.com/CosmWasm/wasmvm/v2
+COSM_WASM_VM_VERSION = $(shell go list -m -f '{{ .Version }}' $(COSM_WASM_PKG))
 COSM_WASM_VM_RELEASE_URL = https://$(COSM_WASM_PKG)/releases/download/$(COSM_WASM_VM_VERSION)
 
 default: all
