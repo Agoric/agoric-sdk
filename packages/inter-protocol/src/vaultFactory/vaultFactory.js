@@ -25,11 +25,13 @@ import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/eventual-send';
 import { FeeMintAccessShape } from '@agoric/zoe/src/typeGuards.js';
-import { InvitationShape } from '../auction/params.js';
 import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
 import { provideDirector } from './vaultDirector.js';
 
 /**
+ * @import {ERef} from '@endo/far';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshal} from '@endo/marshal';
  * @import {ContractMeta, FeeMintAccess, HandleOffer, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
  * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
@@ -57,8 +59,8 @@ export const meta = {
     {
       // only necessary on first invocation, not subsequent
       feeMintAccess: FeeMintAccessShape,
-      initialPoserInvitation: InvitationShape,
-      initialShortfallInvitation: InvitationShape,
+      initialPoserInvitation: M.any(),
+      initialShortfallInvitation: M.any(),
     },
   ),
   upgradability: 'canUpgrade',
@@ -72,8 +74,7 @@ harden(meta);
  *   initialPoserInvitation: Invitation;
  *   initialShortfallInvitation: Invitation;
  *   storageNode: ERef<StorageNode>;
- *   marshaller: ERef<Marshaller>;
- *   auctioneerInstance: Instance<import('../auction/auctioneer.js').start>;
+ *   marshaller: ERef<Marshal<unknown>>;
  *   managerParams: Record<
  *     string,
  *     import('./params.js').VaultManagerParamOverrides
@@ -89,7 +90,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     initialShortfallInvitation,
     marshaller,
     storageNode,
-    auctioneerInstance,
     managerParams,
     directorParamOverrides,
   } = privateArgs;
@@ -104,9 +104,6 @@ export const start = async (zcf, privateArgs, baggage) => {
   }));
 
   const { timerService } = zcf.getTerms();
-
-  const zoe = zcf.getZoeService();
-  const auctioneerPublicFacet = E(zoe).getPublicFacet(auctioneerInstance);
 
   const { makeRecorderKit, makeERecorderKit } = prepareRecorderKitMakers(
     baggage,
@@ -143,7 +140,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     vaultDirectorParamManager,
     debtMint,
     timerService,
-    auctioneerPublicFacet,
     storageNode,
     // XXX remove Recorder makers; remove once we excise deprecated kits for governance
     marshaller,

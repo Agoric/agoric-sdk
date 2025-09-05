@@ -11,10 +11,7 @@ import {
   type Remote,
   type TypedPattern,
 } from '@agoric/internal';
-import type {
-  Marshaller,
-  StorageNode,
-} from '@agoric/internal/src/lib-chainStorage.js';
+import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import {
   ChainInfoShape,
   DenomDetailShape,
@@ -39,7 +36,7 @@ import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import type { Zone } from '@agoric/zone';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
-import { makeMarshal } from '@endo/marshal';
+import { makeMarshal, type Marshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import { preparePlanner } from './planner.exo.ts';
@@ -143,7 +140,7 @@ type PortfolioPrivateArgs = OrchestrationPowers & {
   // XXX document required assets, chains
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
   chainInfo: Record<string, ChainInfo>;
-  marshaller: Marshaller;
+  marshaller: Marshal<unknown>;
   storageNode: Remote<StorageNode>;
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;

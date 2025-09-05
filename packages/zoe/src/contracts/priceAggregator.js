@@ -29,6 +29,7 @@ import {
 } from '../contractSupport/index.js';
 
 /**
+ * @import {Marshal} from '@endo/marshal';
  * @import {LegacyMap} from '@agoric/store'
  * @import {ContractOf} from '../zoeService/utils.js';
  * @import {PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
@@ -60,7 +61,7 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * unitAmountIn: Amount<'nat'>,
  * }>} zcf
  * @param {{
- * marshaller: Marshaller,
+ * marshaller: Marshal<unknown>,
  * quoteMint?: ERef<Mint<'set', PriceDescription>>,
  * storageNode: ERef<StorageNode>,
  * }} privateArgs

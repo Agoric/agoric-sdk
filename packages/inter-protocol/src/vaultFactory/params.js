@@ -16,6 +16,9 @@ import { makeTracer } from '@agoric/internal/src/index.js';
 import { amountPattern, ratioPattern } from '../contractSupport.js';
 
 /**
+ * @import {ERef} from '@endo/far';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshal} from '@endo/marshal';
  * @import {MapStore} from '@agoric/store';
  * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
  */
@@ -181,7 +184,7 @@ harden(makeGovernedTerms);
  * NB: changes from initial values will be lost upon restart
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERef<Marshal<unknown>>} marshaller
  * @param {Record<string, VaultManagerParamOverrides>} managerParamOverrides
  */
 export const provideVaultParamManagers = (

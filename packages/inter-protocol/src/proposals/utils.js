@@ -6,6 +6,7 @@ import { assertPathSegment } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 /**
+ * @import {ERef} from '@endo/far';
  * @import {CopyMap} from '@endo/patterns';
  * @import {MapStore, SetStore} from '@agoric/store';
  */

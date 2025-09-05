@@ -19,6 +19,7 @@ import { makeZcfTools } from './zcf-tools.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
+ * @import {Marshal} from '@endo/marshal';
  * @import {Pattern} from '@endo/patterns';
  * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
  */
@@ -52,7 +53,7 @@ import { makeZcfTools } from './zcf-tools.js';
  * @param {ZCF} zcf
  * @param {Baggage} baggage
  * @param {OrchestrationPowers} remotePowers
- * @param {Marshaller} marshaller
+ * @param {Marshal<unknown>} marshaller
  * @param {object} [opts]
  * @param {WithOrchestrationOpts['chainInfoValueShape']} [opts.chainInfoValueShape]
  * @internal
@@ -205,7 +206,7 @@ harden(provideOrchestration);
  *
  * @template {Record<string, unknown>} CT
  * @template {OrchestrationPowers & {
- *   marshaller: Marshaller;
+ *   marshaller: Marshal<unknown>;
  * }} PA
  * @template R
  * @param {(

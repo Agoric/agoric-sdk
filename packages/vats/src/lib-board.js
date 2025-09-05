@@ -377,7 +377,7 @@ export const prepareRecorderFactory = zone => {
 
   /**
    * @param {string} label
-   * @param {Marshaller} marshaller
+   * @param {import('@endo/marshal').Marshal<unknown>} marshaller
    */
   const prepareRecorderKit = (label, marshaller) => {
     const myZone = zone.subZone(label);

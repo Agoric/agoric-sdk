@@ -12,6 +12,7 @@ import {
 import * as sharedFlows from './shared.flows.js';
 
 /**
+ * @import {Marshal} from '@endo/marshal';
  * @import {Remote, Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
@@ -37,7 +38,7 @@ harden(SingleNatAmountRecord);
  * @param {OrchestrationPowers & {
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
  *   chainInfo?: Record<string, CosmosChainInfo>;
- *   marshaller: Marshaller;
+ *   marshaller: Marshal<unknown>;
  *   storageNode: Remote<StorageNode>;
  * }} privateArgs
  * @param {Zone} zone

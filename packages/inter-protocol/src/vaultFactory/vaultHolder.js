@@ -7,6 +7,7 @@ import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 
 /**
  * @import {Key, Pattern} from '@endo/patterns';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**

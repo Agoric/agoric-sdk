@@ -6,6 +6,7 @@ import * as flows from './swap.flows.js';
 import { ChainInfoShape, DenomDetailShape } from '../typeGuards.js';
 
 /**
+ * @import {Marshal} from '@endo/marshal';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {Remote} from '@agoric/internal';
@@ -52,7 +53,7 @@ harden(makeNatAmountShape);
  *   orchestrationService: Remote<CosmosInterchainService>;
  *   storageNode: Remote<StorageNode>;
  *   timerService: Remote<TimerService>;
- *   marshaller: Marshaller;
+ *   marshaller: Marshal<unknown>;
  *   chainInfo: Record<string, CosmosChainInfo>;
  *   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
  * }} privateArgs
