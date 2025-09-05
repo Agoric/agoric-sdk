@@ -314,6 +314,7 @@ export const fakeLocalChainBridgeQueryHandler = message => {
       }
 
       return {
+        error: '',
         height: '1',
         reply: {
           '@type': respType,
