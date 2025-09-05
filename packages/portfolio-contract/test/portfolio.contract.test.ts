@@ -125,6 +125,7 @@ test.serial('open a portfolio with Aave position', async t => {
   const amount = usdc.units(3_333.33);
   const feeAcct = bld.make(100n);
   const feeCall = bld.make(100n);
+  const detail = { evmGas: 175n };
 
   const actualP = trader1.openPortfolio(
     t,
@@ -133,7 +134,7 @@ test.serial('open a portfolio with Aave position', async t => {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct, detail },
         { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
       ],
     },
@@ -184,7 +185,6 @@ test('open a portfolio with Compound position', async t => {
     {
       Access: poc26.make(1n),
       Deposit: amount,
-      GmpFee: AmountMath.add(feeAcct, feeCall),
     },
     {
       flow: [
@@ -425,7 +425,7 @@ test('claim rewards on Aave position successfully', async t => {
 
   const messagesAfter = common.utils.inspectLocalBridge();
 
-  t.deepEqual(messagesAfter.length - messagesBefore.length, 2);
+  t.deepEqual(messagesAfter.length - messagesBefore.length, 4);
 
   t.log(storagePath);
   const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);

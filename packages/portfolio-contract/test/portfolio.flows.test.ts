@@ -17,6 +17,7 @@ import {
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { denomHash, type Orchestrator } from '@agoric/orchestration';
+import { buildGasPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
   RebalanceStrategy,
@@ -38,8 +39,8 @@ import {
 } from '../src/portfolio.exo.ts';
 import {
   openPortfolio,
-  rebalance,
   parseInboundTransfer,
+  rebalance,
   wayFromSrcToDesc,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
@@ -366,7 +367,7 @@ test('open portfolio with no positions', async t => {
   const { orch, ctx, offer, storage } = mocks();
   const { log, seat } = offer;
 
-  const shapes = makeProposalShapes(USDC, BLD);
+  const shapes = makeProposalShapes(USDC);
   mustMatch(seat.getProposal(), shapes.openPortfolio);
 
   const actual = await openPortfolio(orch, ctx, seat, {});
@@ -430,7 +431,7 @@ test('open portfolio with USDN position', async t => {
   const { orch, ctx, offer, storage } = mocks({}, give);
   const { log, seat } = offer;
 
-  const shapes = makeProposalShapes(USDC, BLD);
+  const shapes = makeProposalShapes(USDC);
   mustMatch(seat.getProposal(), shapes.openPortfolio);
 
   const actual = await openPortfolio(orch, ctx, seat, { flow: steps });
@@ -485,21 +486,18 @@ test(
 );
 
 test('open portfolio with Aave position', async t => {
-  const { add } = AmountMath;
   const amount = AmountMath.make(USDC, 300n);
   const feeAcct = AmountMath.make(BLD, 50n);
+  const detail = { evmGas: 50n };
   const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage } = mocks(
-    {},
-    { Deposit: amount, GmpFee: add(feeAcct, feeCall) },
-  );
+  const { orch, tapPK, ctx, offer, storage } = mocks({}, { Deposit: amount });
 
   const [actual] = await Promise.all([
     openPortfolio(orch, ctx, offer.seat, {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct, detail },
         { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
       ],
     }),
@@ -513,17 +511,23 @@ test('open portfolio with Aave position', async t => {
     { _method: 'monitorTransfers' },
     {
       _method: 'localTransfer',
-      amounts: {
-        Deposit: { value: 300n },
-        GmpFee: { value: 150n },
-      },
+      amounts: { Deposit: { value: 300n } },
     },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'depositForBurn' },
+    { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
+
+  t.like(
+    JSON.parse(log[4].opts.memo),
+    { payload: buildGasPayload(50n) },
+    '1st transfer to axelar carries evmGas for return message',
+  );
+
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
@@ -555,10 +559,12 @@ test('open portfolio with Compound position', async t => {
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'localTransfer', amounts: { GmpFee: { value: 400n } } },
+    { _method: 'localTransfer', amounts: { Deposit: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'depositForBurn' },
+    { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
@@ -674,13 +680,12 @@ test('handle failure in recovery from executeEncodedTx', async t => {
 });
 
 test.skip('handle failure in sendGmp with Aave position', async t => {
-  const { add } = AmountMath;
   const amount = AmountMath.make(USDC, 300n);
   const feeAcct = AmountMath.make(BLD, 300n);
   const feeCall = AmountMath.make(BLD, 100n);
   const { orch, tapPK, ctx, offer, storage } = mocks(
     { transfer: Error('ag->axelar: SOS!') },
-    { Deposit: amount, GmpFee: add(feeAcct, feeCall) },
+    { Deposit: amount },
   );
 
   // Start the openPortfolio flow
@@ -733,10 +738,7 @@ test('rebalance handles stepFlow failure correctly', async t => {
       // Mock a failure in IBC transfer
       transfer: Error('IBC transfer failed'),
     },
-    {
-      Deposit: make(USDC, 500n),
-      GmpFee: make(BLD, 200n),
-    },
+    { Deposit: make(USDC, 500n) },
   );
 
   const { log, seat } = offer;
@@ -765,15 +767,10 @@ test('rebalance handles stepFlow failure correctly', async t => {
 });
 
 test('claim rewards on Aave position', async t => {
-  const { add } = AmountMath;
   const amount = AmountMath.make(USDC, 300n);
   const emptyAmount = AmountMath.make(USDC, 0n);
-  const feeAcct = AmountMath.make(BLD, 50n);
   const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage } = mocks(
-    {},
-    { Deposit: amount, GmpFee: add(feeAcct, feeCall) },
-  );
+  const { orch, tapPK, ctx, offer, storage } = mocks({}, { Deposit: amount });
 
   const kit = await ctx.makePortfolioKit();
   await Promise.all([
@@ -803,13 +800,15 @@ test('claim rewards on Aave position', async t => {
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
+    { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
 
-  const rawMemo = log[2].opts.memo;
+  const rawMemo = log[4].opts.memo;
   const decodedCalls = decodeFunctionCall(rawMemo, [
     'claimAllRewardsToSelf(address[])',
     'withdraw(address,uint256,address)',
@@ -823,18 +822,16 @@ test('open portfolio with Beefy position', async t => {
   const { add } = AmountMath;
   const amount = AmountMath.make(USDC, 300n);
   const feeAcct = AmountMath.make(BLD, 50n);
+  const detail = { evmGas: 50n };
   const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage } = mocks(
-    {},
-    { Deposit: amount, GmpFee: add(feeAcct, feeCall) },
-  );
+  const { orch, tapPK, ctx, offer, storage } = mocks({}, { Deposit: amount });
 
   const [actual] = await Promise.all([
     openPortfolio(orch, ctx, offer.seat, {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct },
+        { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct, detail },
         {
           src: '@Avalanche',
           dest: 'Beefy_re7_Avalanche',
@@ -853,14 +850,13 @@ test('open portfolio with Beefy position', async t => {
     { _method: 'monitorTransfers' },
     {
       _method: 'localTransfer',
-      amounts: {
-        Deposit: { value: 300n },
-        GmpFee: { value: 150n },
-      },
+      amounts: { Deposit: { value: 300n } },
     },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'depositForBurn' },
+    { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'exit', _cap: 'seat' },
   ]);
@@ -868,7 +864,7 @@ test('open portfolio with Beefy position', async t => {
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
 
-  const rawMemo = log[5].opts.memo;
+  const rawMemo = log[7].opts.memo;
   const decodedCalls = decodeFunctionCall(rawMemo, [
     'approve(address,uint256)',
     'deposit(uint256)',

@@ -58,6 +58,7 @@ export const provideEVMAccount = async (
     chain: Chain<{ chainId: string }>;
     fee: NatValue;
     axelarIds: AxelarId;
+    evmGas: bigint;
   },
   lca: LocalAccount,
   ctx: PortfolioInstanceContext,
@@ -71,31 +72,15 @@ export const provideEVMAccount = async (
   const axelarId = gmp.axelarIds[chainName];
   const target = { axelarId, remoteAddress: ctx.contracts[chainName].factory };
   const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
+  const feeAccount = await ctx.contractAccount;
+  await feeAccount.send(lca.getAddress(), fee);
   await sendMakeAccountCall(
     target,
     fee,
     lca,
     gmp.chain,
     ctx.gmpAddresses,
-    /**
-     * TODO: Temporary hack — currently passing `0n` as the hardcoded EVM gas amount
-     * for remote account creation.
-     *
-     * Impact:
-     * - Causes EVM-to-Agoric transactions to fail due to insufficient gas.
-     * - Transactions remain stuck until someone manually pays gas via Axelarscan.
-     *
-     * Recovery:
-     * - Users can go to https://axelarscan.io, find their stuck transaction,
-     *   and manually pay the required gas to unblock it.
-     *
-     * Better Solution (to implement):
-     * 1. Compute the correct gas off-chain based on the EVM transaction requirements.
-     * 2. Pass that value into the contract via `offerArgs`.
-     * 3. Use it here instead of the hardcoded `0n`.
-     *
-     */
-    0n,
+    gmp.evmGas,
   );
 
   return pk.reader.getGMPInfo(chainName) as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
@@ -273,12 +258,14 @@ export const sendGMPContractCall = async (
     value: AXELAR_GMP,
     encoding: 'bech32' as const,
   };
+  await ctx.feeAccount.send(lca.getAddress(), fee);
   await lca.transfer(gmp, fee, { memo: JSON.stringify(memo) });
 
   await result;
 };
 
 export type EVMContext = {
+  feeAccount: LocalAccount;
   lca: LocalAccount;
   gmpFee: DenomAmount;
   gmpChain: Chain<{ chainId: string }>;

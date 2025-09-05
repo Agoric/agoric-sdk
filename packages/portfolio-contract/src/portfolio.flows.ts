@@ -380,7 +380,12 @@ const stepFlow = async (
     const { denom } = ctx.gmpFeeInfo;
     const fee = { denom, value: move.fee ? move.fee.value : 0n };
     const { axelarIds, gmpAddresses } = ctx;
-    const gmp = { chain: axelar, fee: move.fee?.value || 0n, axelarIds }; // XXX throw if fee missing?
+    const gmp = {
+      chain: axelar,
+      fee: move.fee?.value || 15_000_000n,
+      axelarIds,
+      evmGas: move.detail?.evmGas || 0n,
+    };
     const { lca } = await provideCosmosAccount(orch, 'agoric', kit);
     const gInfo = await provideEVMAccount(chain, gmp, lca, ctx, kit);
     const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
@@ -393,6 +398,7 @@ const stepFlow = async (
       axelarIds,
       gmpAddresses,
       resolverClient: ctx.resolverClient,
+      feeAccount: await ctx.contractAccount,
     });
     return { evmCtx, gInfo, accountId };
   };
@@ -452,11 +458,7 @@ const stepFlow = async (
     const { amount } = move;
     switch (way.how) {
       case 'localTransfer': {
-        const { give } = seat.getProposal() as ProposalType['rebalance'];
-        const amounts = harden({
-          Deposit: amount,
-          ...('GmpFee' in give ? { GmpFee: give.GmpFee } : {}),
-        });
+        const amounts = harden({ Deposit: amount });
         todo.push(async () => {
           const { lca, lcaIn } = await provideCosmosAccount(
             orch,
@@ -468,7 +470,7 @@ const stepFlow = async (
             how: 'localTransfer',
             src: { seat, keyword: 'Deposit' },
             dest: { account },
-            amount, // XXX use amounts.Deposit
+            amount,
             apply: async () => {
               await ctx.zoeTools.localTransfer(seat, account, amounts);
             },
