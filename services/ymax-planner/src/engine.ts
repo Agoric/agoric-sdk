@@ -393,7 +393,7 @@ export const parsePendingTx = (
     return null;
   }
 
-  if (data.type === TxType.CCTP && data.amount === undefined) {
+  if (data.type === TxType.CCTP_TO_EVM && data.amount === undefined) {
     const err = assert.error(
       X`CCTP transaction ${txId} is missing required amount field`,
     );

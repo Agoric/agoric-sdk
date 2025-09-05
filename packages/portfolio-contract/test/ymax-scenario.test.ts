@@ -93,6 +93,12 @@ const rebalanceScenarioMacro = test.macro({
           );
           await settleTransaction(zoe, resolverMakers, index, 'success');
           index += 1;
+          if (move.dest === '@noble') {
+            await transmitVTransferEvent('acknowledgementPacket', -1);
+            // Also confirm Noble transaction for flows to Noble
+            await settleTransaction(zoe, resolverMakers, index, 'success');
+            index += 1;
+          }
         }
         try {
           await transmitVTransferEvent('acknowledgementPacket', -1);

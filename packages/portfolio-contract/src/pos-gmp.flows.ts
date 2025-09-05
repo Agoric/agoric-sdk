@@ -23,6 +23,7 @@ import {
   type AxelarGmpOutgoingMemo,
   type ContractCall,
 } from '@agoric/orchestration/src/axelar-types.js';
+import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import {
   buildGasPayload,
   buildGMPPayload,
@@ -46,8 +47,8 @@ import {
   type TransportDetail,
 } from './portfolio.flows.ts';
 import { TxType } from './resolver/constants.js';
-import type { PoolKey } from './type-guards.ts';
 import type { ResolverKit } from './resolver/resolver.exo.ts';
+import type { PoolKey } from './type-guards.ts';
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
@@ -131,7 +132,15 @@ export const CCTPfromEVM = {
     tm.depositForBurn(amount.value, nobleDomain, mintRecipient, a.usdc);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, src, calls);
+    const { result } = ctx.resolverClient.registerTransaction(
+      TxType.CCTP_TO_NOBLE,
+      coerceAccountId(dest.ica.getAddress()),
+      amount.value,
+    );
+
+    const contractCallP = sendGMPContractCall(ctx, src, calls);
+
+    await Promise.all([result, contractCallP]);
   },
   recover: async (ctx, amount, src, dest) => {
     return CCTP.apply(ctx, amount, dest, src);
@@ -162,7 +171,7 @@ export const CCTP = {
 
     trace(`CCTP transaction initiated, waiting for confirmation...`);
     const { result } = ctx.resolverClient.registerTransaction(
-      TxType.CCTP,
+      TxType.CCTP_TO_EVM,
       destinationAddress,
       amount.value,
     );

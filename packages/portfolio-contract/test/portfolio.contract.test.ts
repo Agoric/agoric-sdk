@@ -635,6 +635,8 @@ test('Withdraw from a Beefy position', async t => {
 
   // CCTP transaction settlement for the withdraw
   await settleTransaction(zoe, resolverMakers, 3);
+  // Transaction settlement on noble for the withdraw
+  await settleTransaction(zoe, resolverMakers, 4);
 
   const withdraw = await withdrawP;
 
