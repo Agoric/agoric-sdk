@@ -46,6 +46,7 @@ import { objectMapStoragePath } from './utils.js';
 import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
 
 /**
+ * @import {Marshal} from '@endo/marshal';
  * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
  * @import {WeakMapStore, MapStore} from '@agoric/store'
  * @import {InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
@@ -184,7 +185,7 @@ const trace = makeTracer('SmrtWlt');
  *   invitationIssuer: Issuer<'set'>;
  *   invitationBrand: Brand<'set'>;
  *   invitationDisplayInfo: DisplayInfo;
- *   publicMarshaller: Marshaller;
+ *   publicMarshaller: Marshal<unknown>;
  *   zoe: ERef<ZoeService>;
  * }} SharedParams
  *

@@ -4,10 +4,7 @@
 import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import { makeTracer, mustMatch, type Remote } from '@agoric/internal';
-import type {
-  Marshaller,
-  StorageNode,
-} from '@agoric/internal/src/lib-chainStorage.js';
+import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import {
   type AccountId,
   type CaipChainId,
@@ -16,6 +13,11 @@ import {
 import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
+import {
+  AxelarChain,
+  SupportedChain,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
 import type { MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import type { VTransferIBCEvent } from '@agoric/vats';
@@ -27,12 +29,8 @@ import { decodeBase64 } from '@endo/base64';
 import { X } from '@endo/errors';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
+import type { Marshal } from '@endo/marshal';
 import { M } from '@endo/patterns';
-import {
-  AxelarChain,
-  SupportedChain,
-  YieldProtocol,
-} from '@agoric/portfolio-api/src/constants.js';
 import type { AxelarId } from './portfolio.contract.js';
 import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
@@ -170,7 +168,7 @@ export const preparePortfolioKit = (
     vowTools: VowTools;
     zcf: ZCF;
     portfoliosNode: ERef<StorageNode>;
-    marshaller: Marshaller;
+    marshaller: Marshal<unknown>;
     usdcBrand: Brand<'nat'>;
   },
 ) => {

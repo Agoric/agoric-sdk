@@ -15,6 +15,7 @@ import fetchedChainInfo from '../fetched-chain-info.js';
 import { makeZoeTools } from '../utils/zoe-tools.js';
 
 /**
+ * @import {Marshal} from '@endo/marshal';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/internal';
  * @import {TimerService} from '@agoric/time';
@@ -29,7 +30,7 @@ const trace = makeTracer('StakeBld');
  * @param {{
  *   agoricNames: Remote<NameHub>;
  *   localchain: Remote<LocalChain>;
- *   marshaller: Marshaller;
+ *   marshaller: Marshal<unknown>;
  *   storageNode: StorageNode;
  *   timerService: TimerService;
  * }} privateArgs

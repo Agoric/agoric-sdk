@@ -28,6 +28,7 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 import { start } from '../../../src/contracts/priceAggregator.js';
 
 /**
+ * @import {Marshal} from '@endo/marshal';
  * @import {FeeIssuerConfig, ZoeService} from '@agoric/zoe';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {ZoeManualTimer} from '../../../tools/manualTimer.js';
@@ -50,7 +51,7 @@ import { start } from '../../../src/contracts/priceAggregator.js';
  * unitAmountIn: Amount<'nat'>,
  * }>} zcf
  * @param {{
- * marshaller: Marshaller,
+ * marshaller: Marshal<unknown>,
  * quoteMint?: ERef<Mint<'set', PriceDescription>>,
  * storageNode: StorageNode,
  * }} privateArgs

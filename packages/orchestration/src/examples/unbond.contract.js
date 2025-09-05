@@ -3,6 +3,7 @@ import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './unbond.flows.js';
 
 /**
+ * @import {Marshal} from '@endo/marshal';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {NameHub} from '@agoric/vats';
@@ -21,7 +22,7 @@ import * as flows from './unbond.flows.js';
  *   localchain: Remote<LocalChain>;
  *   orchestrationService: Remote<CosmosInterchainService>;
  *   storageNode: Remote<StorageNode>;
- *   marshaller: Marshaller;
+ *   marshaller: Marshal<unknown>;
  *   timerService: Remote<TimerService>;
  * }} privateArgs
  * @param {Zone} zone

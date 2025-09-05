@@ -10,6 +10,7 @@ import { expectNotType, expectType } from 'tsd';
 import { M, type Key } from '@endo/patterns';
 // 'prepare' is deprecated but still supported
 import type { Brand } from '@agoric/ertp';
+import type { Marshal } from '@endo/marshal';
 import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scaledPriceAuthority.js';
 import type { Instance } from '../src/zoeService/utils.js';
 import type {
@@ -119,7 +120,7 @@ const mock = null as any;
     zcf: ZCF<{ anchorBrand: Brand<'nat'> }>,
     privateArgs: {
       storageNode: StorageNode;
-      marshaller: Marshaller;
+      marshaller: Marshal<unknown>;
       feeMintAccess?: FeeMintAccess;
     },
   ) => ({});

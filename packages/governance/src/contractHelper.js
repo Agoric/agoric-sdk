@@ -13,6 +13,7 @@ import { GovernorFacetShape } from './typeGuards.js';
 import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
 
 /**
+ * @import {Marshal} from '@endo/marshal';
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, GovernanceSubscriptionState, GovernanceTerms, GovernedApis, GovernedCreatorFacet, GovernedPublicFacet} from './types.js';
  * @import {Baggage} from '@agoric/vat-data';
@@ -253,7 +254,7 @@ const facetHelpers = (zcf, paramManager) => {
  * @param {Invitation} initialPoserInvitation
  * @param {M} paramTypesMap
  * @param {ERef<StorageNode>} [storageNode]
- * @param {ERef<Marshaller>} [marshaller]
+ * @param {ERef<Marshal<unknown>>} [marshaller]
  * @param {object} [overrides]
  */
 const handleParamGovernance = (
