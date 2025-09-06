@@ -1,5 +1,7 @@
 /**
- * @typedef {{ rpcAddrs: string[], chainName: string }} MinimalNetworkConfig
+ * @typedef {object} MinimalNetworkConfig
+ * @property {string} chainName a Cosmos Chain ID (cf. https://evm.cosmos.network/docs/next/documentation/concepts/chain-id and https://github.com/cosmos/chain-registry )
+ * @property {string[]} rpcAddrs endpoints that are expected to respond to cosmos-sdk RPC requests
  */
 
 export const toNetworkConfigUrl = agoricNetSubdomain =>
