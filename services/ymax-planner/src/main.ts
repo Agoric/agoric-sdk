@@ -14,11 +14,12 @@ import { startEngine } from './engine.ts';
 import { createEVMContext } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 
-const getChainIdFromRpc = async (rpc: CosmosRPCClient) => {
+const assertChainId = async (rpc: CosmosRPCClient, chainId: string) => {
   const status = await rpc.request('status', {});
-  const chainId = status?.node_info?.network;
-  chainId || Fail`Chain ID not found in RPC status: ${status}`;
-  return chainId;
+  const actualChainId = status?.node_info?.network;
+  actualChainId || Fail`Chain ID not found in RPC status: ${status}`;
+  actualChainId === chainId ||
+    Fail`Expected chain ID ${q(actualChainId)} to be ${q(chainId)}`;
 };
 
 export const main = async (
@@ -30,72 +31,50 @@ export const main = async (
     connectWithSigner = SigningStargateClient.connectWithSigner,
   } = {},
 ) => {
+  const delay = ms =>
+    new Promise(resolve => setTimeout(resolve, ms)).then(() => {});
+  const simplePowers = { fetch, setTimeout, delay };
+
   const config = await getConfig(env);
   const { clusterName } = config;
 
-  const delay = ms =>
-    new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
   const networkConfig = await fetchEnvNetworkConfig({
     env: { AGORIC_NET: config.cosmosRest.agoricNetworkSpec },
     fetch,
   });
   const agoricRpcAddr = networkConfig.rpcAddrs[0];
 
-  console.warn(`Initializing planner watching`, { agoricRpcAddr });
+  console.warn('Initializing planner watching', { agoricRpcAddr });
   const rpc = new CosmosRPCClient(agoricRpcAddr);
   await rpc.opened();
+  await assertChainId(rpc, networkConfig.chainName);
 
-  const rpcChainId = await getChainIdFromRpc(rpc);
-
-  if (rpcChainId !== networkConfig.chainName) {
-    Fail`Mismatching chainId. config=${networkConfig.chainName}, rpc=${rpcChainId}`;
-  }
-
-  const walletUtils = await makeSmartWalletKit({ fetch, delay }, networkConfig);
-
+  const walletUtils = await makeSmartWalletKit(simplePowers, networkConfig);
   const signingSmartWalletKit = await makeSigningSmartWalletKit(
     { connectWithSigner, walletUtils },
     config.mnemonic,
   );
 
-  console.warn(`Using:`, {
-    networkConfig,
-    plannerAddress: signingSmartWalletKit.address,
+  console.warn('Using:', signingSmartWalletKit.address, networkConfig);
+
+  const spectrum = new SpectrumClient(simplePowers, {
+    baseUrl: config.spectrum.apiUrl,
+    timeout: config.spectrum.timeout,
+    retries: config.spectrum.retries,
   });
 
-  const spectrum = new SpectrumClient(
-    { fetch, setTimeout },
-    {
-      baseUrl: config.spectrum.apiUrl,
-      timeout: config.spectrum.timeout,
-      retries: config.spectrum.retries,
-    },
-  );
-
-  const cosmosRest = new CosmosRestClient(
-    {
-      fetch,
-      setTimeout,
-    },
-    {
-      clusterName,
-      timeout: config.cosmosRest.timeout,
-      retries: config.cosmosRest.retries,
-    },
-  );
+  const cosmosRest = new CosmosRestClient(simplePowers, {
+    clusterName,
+    timeout: config.cosmosRest.timeout,
+    retries: config.cosmosRest.retries,
+  });
 
   const evmCtx = await createEVMContext({
     clusterName,
     alchemyApiKey: config.alchemyApiKey,
   });
 
-  const powers = {
-    evmCtx,
-    rpc,
-    spectrum,
-    cosmosRest,
-    signingSmartWalletKit,
-  };
+  const powers = { evmCtx, rpc, spectrum, cosmosRest, signingSmartWalletKit };
   await startEngine(powers, {
     depositIbcDenom: env.DEPOSIT_IBC_DENOM || 'USDC',
   });
