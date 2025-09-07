@@ -3,7 +3,7 @@ import {
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
 } from '@agoric/client-utils';
-import { Fail } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 
 import { SigningStargateClient } from '@cosmjs/stargate';
 
@@ -31,10 +31,14 @@ export const main = async (
   } = {},
 ) => {
   const config = await getConfig(env);
+  const { clusterName } = config;
 
   const delay = ms =>
     new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
-  const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
+  const networkConfig = await fetchEnvNetworkConfig({
+    env: { AGORIC_NET: config.cosmosRest.agoricNetworkSpec },
+    fetch,
+  });
   const agoricRpcAddr = networkConfig.rpcAddrs[0];
 
   console.warn(`Initializing planner watching`, { agoricRpcAddr });
@@ -74,15 +78,14 @@ export const main = async (
       setTimeout,
     },
     {
-      agoricNetwork: config.cosmosRest.agoricNetwork,
+      clusterName,
       timeout: config.cosmosRest.timeout,
       retries: config.cosmosRest.retries,
     },
   );
 
   const evmCtx = await createEVMContext({
-    // Any non-mainnet Agoric chain would be connected to Axelar testnet.
-    net: env.AGORIC_NET === 'mainnet' ? 'mainnet' : 'testnet',
+    clusterName,
     alchemyApiKey: config.alchemyApiKey,
   });
 

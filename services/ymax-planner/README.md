@@ -73,11 +73,15 @@ yarn test
 
 Environment variables:
 
+- `CLUSTER`: "local", "testnet", or "mainnet" to specify the respective
+  collection of networks to use, in which "local" is currently incomplete and
+  overlaps with "testnet" (default derived from `AGORIC_NET`)
 - `AGORIC_NET`: network specifier per
-  [Agoric SDK Environment Variables](../../docs/env.md), limited to "$subdomain"
-  for requesting MinimalNetworkConfig from URL
-  [https://$subdomain.agoric.net/network-config](https://all.agoric.net/)
-  (default `local`)
+  [Agoric SDK Environment Variables](../../docs/env.md), either "$subdomain" for
+  requesting MinimalNetworkConfig from URL
+  [https://$subdomain.agoric.net/network-config](https://all.agoric.net/) or
+  "$subdomain,$chainId" for sending cosmos-sdk RPC requests to
+  $subdomain.rpc.agoric.net and assuming the chain ID (default derived from `CLUSTER`, falling back to `local`)
 - `ALCHEMY_API_KEY`: API key for accessing Alchemy’s Ethereum RPC endpoint (required, but not verified at startup)
 - `MNEMONIC`: For the private key used to sign transactions (optional, but if not provided then it will be retrieved from the Google Cloud Secret Manager with project "simulationlab" and name "YMAX_CONTROL_MNEMONIC")
 - `DEPOSIT_IBC_DENOM`: For identifying funds to manage. Used directly if it starts with "ibc/", otherwise matched against `issuerName` in vstorage data at path "published.agoricNames.vbankAsset" (default `USDC`)
