@@ -1,6 +1,6 @@
 {
   "name": "@agoric/base-zone",
-  "version": "0.1.0",
+  "version": "0.2.0-u22.0",
   "description": "Allocation zone abstraction library and heap implementation",
   "type": "module",
   "repository": "https://github.com/Agoric/agoric-sdk",

@@ -3,24 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.6.0-u22.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.5.2...@agoric/vat-data@0.6.0-u22.0) (2025-09-08)
+
+### Features
+
+* **liveslots:** virtual exo meta-ops ([#8779](https://github.com/Agoric/agoric-sdk/issues/8779)) ([af3ced9](https://github.com/Agoric/agoric-sdk/commit/af3ced91861731353e10a45e4eae63450f74a0ea))
+* **vow:** make `when` an augmentation of `E.when` ([c2a3179](https://github.com/Agoric/agoric-sdk/commit/c2a31792b7070a44b2ab6c9f95dd845b75b316e8))
+
+### Bug Fixes
+
+* "x" parameter in many tests is optional ([#8750](https://github.com/Agoric/agoric-sdk/issues/8750)) ([00137a3](https://github.com/Agoric/agoric-sdk/commit/00137a3dd689ca6255e11dc171c9b1cc8b8261ba))
+* **types:** board ([c73f4f9](https://github.com/Agoric/agoric-sdk/commit/c73f4f9686215a37e8c5f82ce8dbe4742886a02b))
+* **types:** problems hidden by skipLibCheck ([6a6e595](https://github.com/Agoric/agoric-sdk/commit/6a6e59549e7beeeef94bf90556ed16873c46d285))
+* **vat-data:** methods can be `PropertyKey`s ([b99f499](https://github.com/Agoric/agoric-sdk/commit/b99f4993c0f1caa651b83755f85689f123717f67))
+* **vow:** persistent resolution, settler->resolver ([4d9371c](https://github.com/Agoric/agoric-sdk/commit/4d9371cb7d450e25146787474760b4c00b11e405))
+* **vow:** use `zone.watchPromise` ([b8ddc9d](https://github.com/Agoric/agoric-sdk/commit/b8ddc9d1ddf06fed8b434f36aa86a2a70293fd56))
+
 ### [0.5.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.5.1...@agoric/vat-data@0.5.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/vat-data
-
-
-
-
 
 ### [0.5.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.5.0...@agoric/vat-data@0.5.1) (2023-05-24)
 
 **Note:** Version bump only for package @agoric/vat-data
 
-
-
-
-
 ## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.4.3...@agoric/vat-data@0.5.0) (2023-05-19)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -31,7 +38,6 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * **store:** M.splitArray and M.splitRecord ([#6597](https://github.com/Agoric/agoric-sdk/issues/6597)) ([e7427e3](https://github.com/Agoric/agoric-sdk/commit/e7427e386bcbfbe99312b41342b1fa2e722c57c7))
 * **types:** infer this.state in far classes ([11b35d3](https://github.com/Agoric/agoric-sdk/commit/11b35d38448c9665a6db5a919b37744d2d929a53))
 * **vat-data:** export overlooked `provideDurableWeakSetStore` ([b804736](https://github.com/Agoric/agoric-sdk/commit/b804736497525da3fd8cb96e892d06cd2a68ea25))
-
 
 ### Bug Fixes
 
@@ -44,50 +50,27 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * **types:** far class maker params ([91e8fce](https://github.com/Agoric/agoric-sdk/commit/91e8fcecc9c45d3c8725489656f393704738e32a))
 * **vat-data:** deprecate kinds in favor of Far Classes ([#6106](https://github.com/Agoric/agoric-sdk/issues/6106)) ([b63360b](https://github.com/Agoric/agoric-sdk/commit/b63360b416b06cb654d5fc51428a3252e1f0b34f))
 
-
-
 ### [0.4.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.4.4...@agoric/vat-data@0.4.5) (2023-02-17)
 
 **Note:** Version bump only for package @agoric/vat-data
-
-
-
-
 
 ### [0.4.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.4.3...@agoric/vat-data@0.4.4) (2022-12-14)
 
 **Note:** Version bump only for package @agoric/vat-data
 
-
-
-
-
 ### [0.4.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.4.2...@agoric/vat-data@0.4.3) (2022-10-18)
 
 **Note:** Version bump only for package @agoric/vat-data
-
-
-
-
 
 ### [0.4.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.4.1...@agoric/vat-data@0.4.2) (2022-10-08)
 
 **Note:** Version bump only for package @agoric/vat-data
 
-
-
-
-
 ### [0.4.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.4.0...@agoric/vat-data@0.4.1) (2022-10-05)
 
 **Note:** Version bump only for package @agoric/vat-data
 
-
-
-
-
 ## [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.3.1...@agoric/vat-data@0.4.0) (2022-09-20)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -101,33 +84,22 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * **store:** move some util where they are more reusable ([#5990](https://github.com/Agoric/agoric-sdk/issues/5990)) ([0eb83cd](https://github.com/Agoric/agoric-sdk/commit/0eb83cdf3650f75c70be02e863f341214e0e9a8d))
 * **vat-data:** utility type FunctionsPlusContext ([#5607](https://github.com/Agoric/agoric-sdk/issues/5607)) ([7dbe6c0](https://github.com/Agoric/agoric-sdk/commit/7dbe6c0e948f0686ed77ef3439c69f6af1dc29d2))
 
-
 ### Code Refactoring
 
 * **store:** split `provide` into collision vs no-collision variants ([#6080](https://github.com/Agoric/agoric-sdk/issues/6080)) ([939e25e](https://github.com/Agoric/agoric-sdk/commit/939e25e615ea1fcefff15a032996613031151c0d)), closes [#5875](https://github.com/Agoric/agoric-sdk/issues/5875)
-
-
 
 ### [0.3.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.3.0...@agoric/vat-data@0.3.1) (2022-05-28)
 
 **Note:** Version bump only for package @agoric/vat-data
 
-
-
-
-
 ## [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vat-data@0.2.0...@agoric/vat-data@0.3.0) (2022-05-09)
-
 
 ### Features
 
 * implement durable promise watchers ([ce55851](https://github.com/Agoric/agoric-sdk/commit/ce558515467e869e784260f5478802835c5eb9cf)), closes [#5006](https://github.com/Agoric/agoric-sdk/issues/5006)
 * **vat-data:** partialAssign function ([96a6243](https://github.com/Agoric/agoric-sdk/commit/96a6243915c736f00fffc7d059cf963d9d5a2f8f))
 
-
-
 ## 0.2.0 (2022-04-18)
-
 
 ### Features
 

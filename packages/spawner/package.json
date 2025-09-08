@@ -1,6 +1,6 @@
 {
   "name": "@agoric/spawner",
-  "version": "0.6.8",
+  "version": "0.6.9-u22.0",
   "description": "Wrapper for JavaScript map",
   "type": "module",
   "main": "./src/contractHost.js",

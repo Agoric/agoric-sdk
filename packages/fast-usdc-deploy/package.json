@@ -1,7 +1,7 @@
 {
   "name": "@aglocal/fast-usdc-deploy",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0-u22.0",
   "description": "Deployment facilities of the Fast USDC product",
   "type": "module",
   "files": [

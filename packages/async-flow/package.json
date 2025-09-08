@@ -1,6 +1,6 @@
 {
   "name": "@agoric/async-flow",
-  "version": "0.1.0",
+  "version": "0.2.0-u22.0",
   "description": "Upgrade async functions at await points by replay",
   "type": "module",
   "repository": "https://github.com/Agoric/agoric-sdk",

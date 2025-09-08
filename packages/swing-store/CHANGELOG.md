@@ -3,16 +3,51 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.10.0-u22.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.9.1...@agoric/swing-store@0.10.0-u22.0) (2025-09-08)
+
+### ⚠ BREAKING CHANGES
+
+* **swing-store:** Remove unsafe hostStorage.setExportCallback method
+
+### Features
+
+* Add consensus-independent vat snapshot archiving configuration to AG_COSMOS_INIT ([ffc594f](https://github.com/Agoric/agoric-sdk/commit/ffc594f9441a9374646c43b69d289cc560962f64)), closes [#10036](https://github.com/Agoric/agoric-sdk/issues/10036)
+* Add consensus-independent vat transcript archiving configuration to AG_COSMOS_INIT ([d2d5803](https://github.com/Agoric/agoric-sdk/commit/d2d5803baab6e6379d179723244b2e92aac6319a)), closes [#10036](https://github.com/Agoric/agoric-sdk/issues/10036)
+* add exporter.getHostKV() API ([eb564f9](https://github.com/Agoric/agoric-sdk/commit/eb564f9635397c0706e1f8255b3e125681e2d031)), closes [#8523](https://github.com/Agoric/agoric-sdk/issues/8523)
+* **cosmic-swingset:** Allow `launch` to accept an already-open swingStore ([c65e5b1](https://github.com/Agoric/agoric-sdk/commit/c65e5b1c531c08026f5f11cf5d5dcdbe238b05ee))
+* **cosmic-swingset:** Introduce inquisitor.mjs ([e6d75db](https://github.com/Agoric/agoric-sdk/commit/e6d75db529f0641e49cc893c087fa3192bf05551))
+* **internal:** Generalize single-level `pick` utility to recursive `attenuate` ([6b36d1e](https://github.com/Agoric/agoric-sdk/commit/6b36d1e5e7e10b9fe62db96294e891978b438c35))
+* **swing-store:** Add options for opening swing-stores ([036053c](https://github.com/Agoric/agoric-sdk/commit/036053c4e4df853666e25500a696804bb50a7256))
+* **swing-store:** budget-limited deletion of snapshot and transcripts ([c43bf63](https://github.com/Agoric/agoric-sdk/commit/c43bf63846aedf3493ac6e8f4bc9f2bb48401d66)), closes [#8928](https://github.com/Agoric/agoric-sdk/issues/8928)
+* **swing-store:** faster import of swing-store ([0170568](https://github.com/Agoric/agoric-sdk/commit/0170568d66748af76f0bd24a4acdaa34b9c79cca))
+* **swing-store:** Limit item deletion to the previously-current transcript span ([766c1bb](https://github.com/Agoric/agoric-sdk/commit/766c1bbb082debe9d6fa94e08466d3596c971843)), closes [#9387](https://github.com/Agoric/agoric-sdk/issues/9387)
+* **swing-store:** prevent SwingSet usage of imported swing-store ([6a833eb](https://github.com/Agoric/agoric-sdk/commit/6a833ebda2b2ff0e72040ca8186f93ae91567add))
+* **swingstore:** add repairMetadata() ([33b5c1c](https://github.com/Agoric/agoric-sdk/commit/33b5c1c1fefd5278a24cd5f06630b238439e2891)), closes [#8025](https://github.com/Agoric/agoric-sdk/issues/8025) [#8025](https://github.com/Agoric/agoric-sdk/issues/8025)
+* tool for auditing dangling kindID references ([eeadc46](https://github.com/Agoric/agoric-sdk/commit/eeadc462d8fb09449e4ea6f0118ae8654e0c8e9b)), closes [#7655](https://github.com/Agoric/agoric-sdk/issues/7655)
+
+### Bug Fixes
+
+* misc runtime robustness found by typecheck ([a033f26](https://github.com/Agoric/agoric-sdk/commit/a033f2638f9f11e19d94d7931e4e0614773b1f60))
+* performance.now() binding ([4a3b59b](https://github.com/Agoric/agoric-sdk/commit/4a3b59b486c0cb916e531d5de390fbf90e4421ad))
+* rewrite importSwingStore to preserve metadata properly ([38c9efc](https://github.com/Agoric/agoric-sdk/commit/38c9efce10957e0eb245e25ae5f9f45792eb58ad)), closes [#8025](https://github.com/Agoric/agoric-sdk/issues/8025)
+* **swing-store:** accept budget=Infinity to allow unlimited deletions ([c22b656](https://github.com/Agoric/agoric-sdk/commit/c22b65610007607f13373bc1dcc54007e30e2d60))
+* **swing-store:** add 'replay' artifactMode, make export more strict ([9939ea6](https://github.com/Agoric/agoric-sdk/commit/9939ea699bb1fd0b711f950679b432eef9054fda)), closes [#8105](https://github.com/Agoric/agoric-sdk/issues/8105)
+* **swing-store:** Create archive files with .tmp suffixes in their final directory ([1413af2](https://github.com/Agoric/agoric-sdk/commit/1413af2379c5f78bf8dcd5f2ce9a892b3c22494f)), closes [#10239](https://github.com/Agoric/agoric-sdk/issues/10239)
+* **swing-store:** Delete transcript spans in stopUsingTranscript as in rollover ([2d1e478](https://github.com/Agoric/agoric-sdk/commit/2d1e47844760e0534afb3fe410a9635656949dad)), closes [#10054](https://github.com/Agoric/agoric-sdk/issues/10054)
+* **swing-store:** ensure crank savepoint is wrapped in transaction ([9d2dd3f](https://github.com/Agoric/agoric-sdk/commit/9d2dd3f9966940961a4c21351d256fa3615715d7))
+* **swing-store:** explicitly harden prototypes ([86c128a](https://github.com/Agoric/agoric-sdk/commit/86c128a29b5ed61764a67644c3734b0c05df2993))
+* **swing-store:** guarantee that transcript operations are done synchronously ([62fe63f](https://github.com/Agoric/agoric-sdk/commit/62fe63f7c0f320246dfda1fd835792693862dcaf))
+* **swing-store:** no completeness check when creating exporter ([d4df073](https://github.com/Agoric/agoric-sdk/commit/d4df073ffcc48b0f0e62bac107ee8edf21150ad9))
+* **swing-store:** Remove unsafe hostStorage.setExportCallback method ([c24e990](https://github.com/Agoric/agoric-sdk/commit/c24e99043149d8941c487a037d3c0f40dce5a4bc)), closes [#10062](https://github.com/Agoric/agoric-sdk/issues/10062)
+* **swing-store:** Update archiveTranscript to wait for write stream conclusion ([#11294](https://github.com/Agoric/agoric-sdk/issues/11294)) ([fbea810](https://github.com/Agoric/agoric-sdk/commit/fbea810678db7e06c8409ed9c163dad88a181ad1)), closes [#11293](https://github.com/Agoric/agoric-sdk/issues/11293) [#11293](https://github.com/Agoric/agoric-sdk/issues/11293)
+* **types:** template syntax ([279b903](https://github.com/Agoric/agoric-sdk/commit/279b903a559710511d69f1614badddeab801b90d))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+
 ### [0.9.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.9.0...@agoric/swing-store@0.9.1) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/swing-store
 
-
-
-
-
 ## [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.8.1...@agoric/swing-store@0.9.0) (2023-05-19)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -38,7 +73,6 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * relocate snapshot metadata from kvStore to snapStore ([4e0f679](https://github.com/Agoric/agoric-sdk/commit/4e0f679b5f8249e1e9098731a96cc0fd793d5d9d)), closes [#6742](https://github.com/Agoric/agoric-sdk/issues/6742)
 * use Sqlite save points for crank commit, integrate activity hash into swing-store ([6613d7e](https://github.com/Agoric/agoric-sdk/commit/6613d7eed8b2ee6f6fc06e1dc06747f80b0f44bd))
 
-
 ### Bug Fixes
 
 * **swing-store:** add isCurrent SQLite CHECK ([90bd76c](https://github.com/Agoric/agoric-sdk/commit/90bd76c774810393fc8a1269976fd4d65b7d52ba))
@@ -52,18 +86,11 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * eliminate snapStore `root` parameter ([f06a171](https://github.com/Agoric/agoric-sdk/commit/f06a17117ef391d46604a4bc34b185135396a7c5))
 * incorporate review feedback ([24896ee](https://github.com/Agoric/agoric-sdk/commit/24896ee9271131d68cd2815028f272fefd1818cd))
 
-
-
 ### [0.8.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.8.0...@agoric/swing-store@0.8.1) (2022-10-05)
 
 **Note:** Version bump only for package @agoric/swing-store
 
-
-
-
-
 ## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.7.0...@agoric/swing-store@0.8.0) (2022-09-20)
-
 
 ### Features
 
@@ -73,7 +100,6 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * Write makeSnapshot telemetry to slog ([4cdd2f8](https://github.com/Agoric/agoric-sdk/commit/4cdd2f8a07764046c9310218d45ffa16c4aa9e6b)), closes [#6164](https://github.com/Agoric/agoric-sdk/issues/6164)
 * **swing-store:** Switch to lmdb-js ([89adc87](https://github.com/Agoric/agoric-sdk/commit/89adc87848494e78213d68194357c876b9ae4cf0))
 * **swingstore:** switch to async fs for snapstore ([13d443c](https://github.com/Agoric/agoric-sdk/commit/13d443c0c9df84e2e7a150af034a01b7670e36c8))
-
 
 ### Bug Fixes
 
@@ -92,80 +118,49 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * **swingstore:** avoid conditional await on commit ([67d846d](https://github.com/Agoric/agoric-sdk/commit/67d846d244bf8cea5536611a54a5b9cccdaf2e84))
 * tests use debug settings ([#5567](https://github.com/Agoric/agoric-sdk/issues/5567)) ([83d751f](https://github.com/Agoric/agoric-sdk/commit/83d751fb3dd8d47942fc69cfde863e6b21f1b04e))
 
-
 ### Performance Improvements
 
 * **swing-store:** Improve the efficiency of writing snapshots ([ef78e7d](https://github.com/Agoric/agoric-sdk/commit/ef78e7dfb3edc7c74f4fa86804c9204e977d5680)), closes [#6225](https://github.com/Agoric/agoric-sdk/issues/6225)
 
-
-
 ## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.6.6...@agoric/swing-store@0.7.0) (2022-05-28)
-
 
 ### Features
 
 * Accept path for swingStore trace ([63a209c](https://github.com/Agoric/agoric-sdk/commit/63a209c8c7906f8be07f87aedf1313e607df7b42))
 * **swingset:** Add swing store trace option ([25c7e79](https://github.com/Agoric/agoric-sdk/commit/25c7e79d699e8894a283518490add19f60840f4b))
 
-
 ### Bug Fixes
 
 * **swing-store:** check fs streams are ready ([deaaa13](https://github.com/Agoric/agoric-sdk/commit/deaaa133efb430db83c88631f1b5a95ff7e36a3a))
 * **swingset:** fsync snapshots  ([#5451](https://github.com/Agoric/agoric-sdk/issues/5451)) ([396e4c6](https://github.com/Agoric/agoric-sdk/commit/396e4c62391f39267fd093afb0e37fcacbe79fe8))
 
-
-
 ### [0.6.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.6.5...@agoric/swing-store@0.6.6) (2022-04-18)
 
 **Note:** Version bump only for package @agoric/swing-store
-
-
-
-
 
 ### [0.6.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.6.4...@agoric/swing-store@0.6.5) (2022-02-24)
 
 **Note:** Version bump only for package @agoric/swing-store
 
-
-
-
-
 ### [0.6.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.6.3...@agoric/swing-store@0.6.4) (2022-02-21)
-
 
 ### Features
 
 * **swing-store:** enable `LMDB_MAP_SIZE` and `SOLO_LMDB_MAP_SIZE` ([77f67a8](https://github.com/Agoric/agoric-sdk/commit/77f67a8010d84b4f595e1fbd524b344050ae47d6))
 
-
-
 ### [0.6.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.6.2...@agoric/swing-store@0.6.3) (2021-12-02)
 
 **Note:** Version bump only for package @agoric/swing-store
-
-
-
-
 
 ### [0.6.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.6.1...@agoric/swing-store@0.6.2) (2021-10-13)
 
 **Note:** Version bump only for package @agoric/swing-store
 
-
-
-
-
 ### [0.6.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.6.0...@agoric/swing-store@0.6.1) (2021-09-23)
 
 **Note:** Version bump only for package @agoric/swing-store
 
-
-
-
-
 ## 0.6.0 (2021-09-15)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -175,111 +170,67 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 * **swing-store:** be resilient to Node.js 16.x fs.rmSync ([990f909](https://github.com/Agoric/agoric-sdk/commit/990f909bfb90a1ef34ebba4677d88c9eb5106294))
 
-
 ### Code Refactoring
 
 * clean up organization of swing-store ([3c7e57b](https://github.com/Agoric/agoric-sdk/commit/3c7e57b8f62c0b93660dd57c002ffb96c2cd4137))
-
-
 
 ### [0.5.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.10...@agoric/swing-store-lmdb@0.5.11) (2021-08-18)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 ### [0.5.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.9...@agoric/swing-store-lmdb@0.5.10) (2021-08-17)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 ### [0.5.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.6...@agoric/swing-store-lmdb@0.5.9) (2021-08-15)
-
 
 ### Bug Fixes
 
 * **swingset:** delete unused snapshots ([#3505](https://github.com/Agoric/agoric-sdk/issues/3505)) ([317959d](https://github.com/Agoric/agoric-sdk/commit/317959d77ca669c8e4bbf504d89fe55bdd383253)), closes [#3374](https://github.com/Agoric/agoric-sdk/issues/3374) [#3431](https://github.com/Agoric/agoric-sdk/issues/3431)
 
 ### 0.26.10 (2021-07-28)
-
-
 
 ### [0.5.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.6...@agoric/swing-store-lmdb@0.5.8) (2021-08-14)
 
-
 ### Bug Fixes
 
 * **swingset:** delete unused snapshots ([#3505](https://github.com/Agoric/agoric-sdk/issues/3505)) ([317959d](https://github.com/Agoric/agoric-sdk/commit/317959d77ca669c8e4bbf504d89fe55bdd383253)), closes [#3374](https://github.com/Agoric/agoric-sdk/issues/3374) [#3431](https://github.com/Agoric/agoric-sdk/issues/3431)
 
 ### 0.26.10 (2021-07-28)
-
-
 
 ### [0.5.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.6...@agoric/swing-store-lmdb@0.5.7) (2021-07-28)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 ### [0.5.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.5...@agoric/swing-store-lmdb@0.5.6) (2021-07-01)
-
 
 ### Bug Fixes
 
 * repair stream store self-interference problem ([948d837](https://github.com/Agoric/agoric-sdk/commit/948d837c5eb25e0085480804d9d2d4bab0729818)), closes [#3437](https://github.com/Agoric/agoric-sdk/issues/3437)
 
-
-
 ### [0.5.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.4...@agoric/swing-store-lmdb@0.5.5) (2021-06-28)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
-
-
-
-
 
 ### [0.5.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.3...@agoric/swing-store-lmdb@0.5.4) (2021-06-25)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 ### [0.5.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.2...@agoric/swing-store-lmdb@0.5.3) (2021-06-24)
-
 
 ### Features
 
 * sqlite-based transcript store ([#3402](https://github.com/Agoric/agoric-sdk/issues/3402)) ([960b013](https://github.com/Agoric/agoric-sdk/commit/960b0139ff415a4d3ac0784c2a68e3c513a8efe4)), closes [#3405](https://github.com/Agoric/agoric-sdk/issues/3405)
 
-
-
 ### [0.5.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.1...@agoric/swing-store-lmdb@0.5.2) (2021-06-23)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
-
-
-
-
 
 ### [0.5.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.5.0...@agoric/swing-store-lmdb@0.5.1) (2021-06-16)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 ## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.4.12...@agoric/swing-store-lmdb@0.5.0) (2021-06-15)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -295,272 +246,145 @@ that the different SwingStore constructors are not polymorphic.
 * provide streamStore implementations ([e094914](https://github.com/Agoric/agoric-sdk/commit/e094914ad5ceec3d1131270e5943c6f0df267cac))
 * remove .jsonlines hack from simple swing store ([ef87997](https://github.com/Agoric/agoric-sdk/commit/ef87997a1519b18f23656b57bf38055fea203f9a))
 
-
 ### Bug Fixes
 
 * Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
 * tweaks and cleanup based on review feedback ([ba95e34](https://github.com/Agoric/agoric-sdk/commit/ba95e34622063eaae47335a0260a004a3a159807))
 
-
-
 ## [0.4.12](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.4.11...@agoric/swing-store-lmdb@0.4.12) (2021-05-10)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
-
-
-
-
 
 ## [0.4.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.4.10...@agoric/swing-store-lmdb@0.4.11) (2021-05-05)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 ## [0.4.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.4.9...@agoric/swing-store-lmdb@0.4.10) (2021-05-05)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
-
-
-
-
 
 ## [0.4.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.4.8...@agoric/swing-store-lmdb@0.4.9) (2021-04-22)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 ## [0.4.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.4.7...@agoric/swing-store-lmdb@0.4.8) (2021-04-18)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
-
-
-
-
 
 ## [0.4.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.4.6...@agoric/swing-store-lmdb@0.4.7) (2021-04-16)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 ## [0.4.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.4.5...@agoric/swing-store-lmdb@0.4.6) (2021-04-07)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
-
-
-
-
 
 ## [0.4.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.4.4...@agoric/swing-store-lmdb@0.4.5) (2021-04-06)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 ## [0.4.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.4.3...@agoric/swing-store-lmdb@0.4.4) (2021-03-24)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 ## [0.4.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.4.2...@agoric/swing-store-lmdb@0.4.3) (2021-03-16)
-
 
 ### Bug Fixes
 
 * make separate 'test:xs' target, remove XS from 'test' target ([b9c1a69](https://github.com/Agoric/agoric-sdk/commit/b9c1a6987093fc8e09e8aba7acd2a1618413bac8)), closes [#2647](https://github.com/Agoric/agoric-sdk/issues/2647)
 
-
-
-
-
 ## [0.4.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.4.1...@agoric/swing-store-lmdb@0.4.2) (2021-02-22)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 ## [0.4.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.4.0...@agoric/swing-store-lmdb@0.4.1) (2021-02-16)
-
 
 ### Bug Fixes
 
 * review comments ([17d7df6](https://github.com/Agoric/agoric-sdk/commit/17d7df6ee06eb5c340500bb5582f985c2993ab19))
 * use assert rather than FooError constructors ([f860c5b](https://github.com/Agoric/agoric-sdk/commit/f860c5bf5add165a08cb5bd543502857c3f57998))
 
-
-
-
-
 # [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.3.7...@agoric/swing-store-lmdb@0.4.0) (2020-12-10)
-
 
 ### Features
 
 * **import-bundle:** Preliminary support Endo zip hex bundle format ([#1983](https://github.com/Agoric/agoric-sdk/issues/1983)) ([983681b](https://github.com/Agoric/agoric-sdk/commit/983681bfc4bf512b6bd90806ed9220cd4fefc13c))
 
-
-
-
-
 ## [0.3.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.3.7-dev.0...@agoric/swing-store-lmdb@0.3.7) (2020-11-07)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
-
-
-
-
 
 ## [0.3.7-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.3.6...@agoric/swing-store-lmdb@0.3.7-dev.0) (2020-10-19)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 ## [0.3.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.3.6-dev.2...@agoric/swing-store-lmdb@0.3.6) (2020-10-11)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
-
-
-
-
 
 ## [0.3.6-dev.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.3.6-dev.1...@agoric/swing-store-lmdb@0.3.6-dev.2) (2020-09-18)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 ## [0.3.6-dev.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.3.6-dev.0...@agoric/swing-store-lmdb@0.3.6-dev.1) (2020-09-18)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
-
-
-
-
 
 ## [0.3.6-dev.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.3.5...@agoric/swing-store-lmdb@0.3.6-dev.0) (2020-09-18)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 ## [0.3.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.3.4...@agoric/swing-store-lmdb@0.3.5) (2020-09-16)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 ## [0.3.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.3.3...@agoric/swing-store-lmdb@0.3.4) (2020-08-31)
-
 
 ### Bug Fixes
 
 * reduce inconsistency among our linting rules ([#1492](https://github.com/Agoric/agoric-sdk/issues/1492)) ([b6b675e](https://github.com/Agoric/agoric-sdk/commit/b6b675e2de110e2af19cad784a66220cab21dacf))
 
-
-
-
-
 ## [0.3.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.3.2...@agoric/swing-store-lmdb@0.3.3) (2020-06-30)
-
 
 ### Performance Improvements
 
 * Don't use the useWritemap option if we know we don't need it ([c272e43](https://github.com/Agoric/agoric-sdk/commit/c272e43f270cb9df47619cc95fed938520aec344))
 
-
-
-
-
 ## [0.3.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.3.1...@agoric/swing-store-lmdb@0.3.2) (2020-05-17)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
-
-
-
-
 
 ## [0.3.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.3.0...@agoric/swing-store-lmdb@0.3.1) (2020-05-10)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 # [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.2.2...@agoric/swing-store-lmdb@0.3.0) (2020-05-04)
-
 
 ### Bug Fixes
 
 * stop LMDB from crashing in the WLS environment ([89fb788](https://github.com/Agoric/agoric-sdk/commit/89fb788b12466cfa4da887c3aa8fc159a13f62dc))
 
-
 ### Features
 
 * swing-store-lmdb: add isSwingStore() query ([fce7168](https://github.com/Agoric/agoric-sdk/commit/fce7168d3830e528f6a3464ebaa708cf129a114a)), closes [#953](https://github.com/Agoric/agoric-sdk/issues/953)
-
-
-
-
 
 ## [0.2.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.2.2-alpha.0...@agoric/swing-store-lmdb@0.2.2) (2020-04-13)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 ## [0.2.2-alpha.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.2.1...@agoric/swing-store-lmdb@0.2.2-alpha.0) (2020-04-12)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
-
-
-
-
 
 ## [0.2.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.2.1-alpha.0...@agoric/swing-store-lmdb@0.2.1) (2020-04-02)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 ## [0.2.1-alpha.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store-lmdb@0.2.0...@agoric/swing-store-lmdb@0.2.1-alpha.0) (2020-04-02)
 
 **Note:** Version bump only for package @agoric/swing-store-lmdb
 
-
-
-
-
 # 0.2.0 (2020-03-26)
-
 
 ### Features
 
