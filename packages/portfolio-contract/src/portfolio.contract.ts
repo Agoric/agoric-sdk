@@ -451,6 +451,7 @@ export const contract = async (
     },
   );
 
+  trace('contract initialized');
   return { creatorFacet, publicFacet };
 };
 harden(contract);
