@@ -24,11 +24,15 @@ import type { Bech32Address } from '@agoric/orchestration';
 export type EvmChain = keyof typeof AxelarChain;
 
 export type EvmContext = {
-  cosmosRest: CosmosRestClient;
   usdcAddresses: UsdcAddresses['mainnet' | 'testnet'];
   evmProviders: EvmProviders;
   signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
+};
+
+export type NobleContext = {
+  cosmosRest: CosmosRestClient;
+  signingSmartWalletKit: SigningSmartWalletKit;
 };
 
 export type GmpTransfer = {
@@ -54,7 +58,7 @@ export type PendingTx = {
 type CctpTx = PendingTx & { type: typeof TxType.CCTP_TO_EVM; amount: bigint };
 type GmpTx = PendingTx & { type: typeof TxType.GMP };
 type NobleWithdrawTx = PendingTx & {
-  type: typeof TxType.NOBLE_WITHDRAW;
+  type: typeof TxType.CCTP_TO_NOBLE;
   amount: bigint;
 };
 
@@ -71,9 +75,9 @@ export type PendingTxMonitor<
 };
 
 type MonitorRegistry = {
-  [TxType.CCTP_TO_EVM]: PendingTxMonitor<CctpTx>;
-  [TxType.GMP]: PendingTxMonitor<GmpTx>;
-  [TxType.CCTP_TO_NOBLE]: PendingTxMonitor<NobleWithdrawTx>;
+  [TxType.CCTP_TO_EVM]: PendingTxMonitor<CctpTx, EvmContext>;
+  [TxType.GMP]: PendingTxMonitor<GmpTx, EvmContext>;
+  [TxType.CCTP_TO_NOBLE]: PendingTxMonitor<NobleWithdrawTx, NobleContext>;
 };
 
 const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
@@ -144,8 +148,8 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
   },
 };
 
-const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, EvmContext> = {
-  watch: async (ctx, tx, log, timeoutMinutes) => {
+const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, NobleContext> = {
+  watch: async (ctx, tx, log, timeoutMs) => {
     const { txId, destinationAddress, amount } = tx;
     const logPrefix = `[${txId}]`;
 
@@ -197,7 +201,7 @@ type HandlePendingTxOptions = {
 };
 
 export const handlePendingTx = async (
-  ctx: EvmContext,
+  ctx: EvmContext & Partial<NobleContext>,
   tx: PendingTx,
   {
     log = () => {},
@@ -211,5 +215,13 @@ export const handlePendingTx = async (
 
   const monitor = registry[tx.type] as PendingTxMonitor<PendingTx, any>;
   monitor || Fail`${logPrefix} No monitor registered for tx type: ${tx.type}`;
-  await monitor.watch(ctx, tx, log, timeoutMinutes);
+
+  // For Noble withdraws, we need the cosmosRest in the context
+  if (tx.type === TxType.CCTP_TO_NOBLE) {
+    !ctx.cosmosRest &&
+      Fail`${logPrefix} cosmosRest required for Noble withdraw`;
+    await monitor.watch(ctx as NobleContext, tx, log, timeoutMs);
+  } else {
+    await monitor.watch(ctx as EvmContext, tx, log, timeoutMs);
+  }
 };

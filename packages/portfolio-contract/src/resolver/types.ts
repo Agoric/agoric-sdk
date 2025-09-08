@@ -52,7 +52,7 @@ export const PublishedTxShape: TypedPattern<PublishedTx> = M.splitRecord(
   {
     type: M.or(...Object.keys(TxType)),
     destinationAddress: M.string(), // Format: `${chainId}:${chainId}:${remotAddess}`
-    status: M.or(...Object.keys(TxStatus)),
+    status: M.or('pending'),
   },
   {
     amount: M.nat(),

@@ -27,6 +27,7 @@ import {
 } from './pending-tx-manager.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { log } from 'node:console';
+import { PublishedTxShape } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 
 const { isInteger } = Number;
 
@@ -366,23 +367,10 @@ const processPortfolioEvents = async (
   }
 };
 
-export const PendingTxShape = M.splitRecord(
-  {
-    // resolver only handles pending transactions
-    status: M.or('pending'),
-    type: M.string(),
-    destinationAddress: M.string(),
-  },
-  {
-    // amount is optional for GMP transactions, required for CCTP
-    amount: M.bigint(),
-  },
-);
-
 export const parsePendingTx = (txId: `tx${number}`, data): PendingTx | null => {
-  if (!matches(data, PendingTxShape)) {
+  if (!matches(data, PublishedTxShape)) {
     const err = assert.error(
-      X`expected data ${data} to match ${q(PendingTxShape)}`,
+      X`expected data ${data} to match ${q(PublishedTxShape)}`,
     );
     console.error(err);
     return null;
@@ -396,7 +384,7 @@ export const parsePendingTx = (txId: `tx${number}`, data): PendingTx | null => {
     return null;
   }
 
-  if (data.type === TxType.NOBLE_WITHDRAW && data.amount === undefined) {
+  if (data.type === TxType.CCTP_TO_NOBLE && data.amount === undefined) {
     const err = assert.error(
       X`Noble withdraw transaction ${txId} is missing required amount field`,
     );
@@ -409,6 +397,7 @@ export const parsePendingTx = (txId: `tx${number}`, data): PendingTx | null => {
 
 export const processPendingTxEvents = async (
   evmCtx: EvmContext,
+  cosmosRest: CosmosRestClient,
   events: Array<{ path: string; value: string }>,
   marshaller: SigningSmartWalletKit['marshaller'],
   handlePendingTxFn = handlePendingTx,
@@ -450,7 +439,7 @@ export const processPendingTxEvents = async (
         console.error(`⚠️ Failed to process pendingTx: ${txId}`, error);
       };
 
-      void handlePendingTxFn({ ...evmCtx }, tx, {
+      void handlePendingTxFn({ ...evmCtx, cosmosRest }, tx, {
         log: logFn,
       }).catch(errorHandler);
     }
@@ -776,7 +765,8 @@ export const startEngine = async (
     );
 
     await processPendingTxEvents(
-      { ...evmCtx, cosmosRest, signingSmartWalletKit, fetch },
+      { ...evmCtx, signingSmartWalletKit, fetch },
+      cosmosRest,
       pendingTxEvents,
       marshaller,
     );

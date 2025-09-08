@@ -83,7 +83,7 @@ test('parsePendingTx accepts GMP transaction without amount field', t => {
 test('parsePendingTx validates Noble withdraw transactions require amount', t => {
   const txId = 'tx1' as `tx${number}`;
   const nobleWithdrawData = harden({
-    type: TxType.NOBLE_WITHDRAW,
+    type: TxType.CCTP_TO_NOBLE,
     status: 'pending',
     destinationAddress: 'cosmos:noble:noble1abc123456789',
   });
@@ -98,7 +98,7 @@ test('parsePendingTx validates Noble withdraw transactions require amount', t =>
 test('parsePendingTx creates valid Noble withdraw PendingTx from data', t => {
   const txId = 'tx1' as `tx${number}`;
   const nobleWithdrawData = createMockPendingTxData({
-    type: TxType.NOBLE_WITHDRAW,
+    type: TxType.CCTP_TO_NOBLE,
     amount: 500_000n,
     destinationAddress: 'cosmos:noble:noble1abc123456789',
   });
@@ -108,7 +108,7 @@ test('parsePendingTx creates valid Noble withdraw PendingTx from data', t => {
 
   t.deepEqual(result, {
     txId,
-    type: TxType.NOBLE_WITHDRAW,
+    type: TxType.CCTP_TO_NOBLE,
     status: 'pending',
     amount: 500_000n,
     destinationAddress: 'cosmos:noble:noble1abc123456789',
@@ -118,6 +118,7 @@ test('parsePendingTx creates valid Noble withdraw PendingTx from data', t => {
 // --- Unit tests for processPendingTxEvents ---
 test('processPendingTxEvents handles valid single transaction event', async t => {
   const mockEvmCtx = createMockEvmContext();
+  const mockCosmosRest = {} as unknown as CosmosRestClient;
   const handledTxs: PendingTx[] = [];
 
   // Mock handlePendingTx to track calls
@@ -136,6 +137,7 @@ test('processPendingTxEvents handles valid single transaction event', async t =>
 
   await processPendingTxEvents(
     mockEvmCtx,
+    mockCosmosRest,
     events,
     marshaller,
     mockHandlePendingTx,
@@ -151,6 +153,7 @@ test('processPendingTxEvents handles valid single transaction event', async t =>
 
 test('processPendingTxEvents handles multiple transaction events', async t => {
   const mockEvmCtx = createMockEvmContext();
+  const mockCosmosRest = {} as unknown as CosmosRestClient;
   const handledTxs: PendingTx[] = [];
 
   const mockHandlePendingTx = async (
@@ -182,6 +185,7 @@ test('processPendingTxEvents handles multiple transaction events', async t => {
 
   await processPendingTxEvents(
     mockEvmCtx,
+    mockCosmosRest,
     events,
     marshaller,
     mockHandlePendingTx,
@@ -194,6 +198,7 @@ test('processPendingTxEvents handles multiple transaction events', async t => {
 
 test('processPendingTxEvents processes valid transactions before throwing on invalid stream cell', async t => {
   const mockEvmCtx = createMockEvmContext();
+  const mockCosmosRest = {} as unknown as CosmosRestClient;
   const handledTxs: PendingTx[] = [];
 
   const mockHandlePendingTx = async (
@@ -235,6 +240,7 @@ test('processPendingTxEvents processes valid transactions before throwing on inv
     () =>
       processPendingTxEvents(
         mockEvmCtx,
+        mockCosmosRest,
         events,
         marshaller,
         mockHandlePendingTx,
@@ -251,6 +257,7 @@ test('processPendingTxEvents processes valid transactions before throwing on inv
 
 test('processPendingTxEvents handles only pending transactions', async t => {
   const mockEvmCtx = createMockEvmContext();
+  const mockCosmosRest = {} as unknown as CosmosRestClient;
   const handledTxs: PendingTx[] = [];
 
   const mockHandlePendingTx = async (
@@ -280,6 +287,7 @@ test('processPendingTxEvents handles only pending transactions', async t => {
 
   await processPendingTxEvents(
     mockEvmCtx,
+    mockCosmosRest,
     events,
     marshaller,
     mockHandlePendingTx,
@@ -291,6 +299,7 @@ test('processPendingTxEvents handles only pending transactions', async t => {
 
 test('processPendingTxEvents handles Noble withdraw transactions', async t => {
   const mockEvmCtx = createMockEvmContext();
+  const mockCosmosRest = {} as unknown as CosmosRestClient;
   const handledTxs: PendingTx[] = [];
 
   const mockHandlePendingTx = async (
@@ -302,7 +311,7 @@ test('processPendingTxEvents handles Noble withdraw transactions', async t => {
   };
 
   const nobleWithdrawData = createMockPendingTxData({
-    type: TxType.NOBLE_WITHDRAW,
+    type: TxType.CCTP_TO_NOBLE,
     amount: 1_000_000n,
     destinationAddress: 'cosmos:noble:noble1abc123456789',
   });
@@ -313,6 +322,7 @@ test('processPendingTxEvents handles Noble withdraw transactions', async t => {
 
   await processPendingTxEvents(
     mockEvmCtx,
+    mockCosmosRest,
     events,
     marshaller,
     mockHandlePendingTx,
@@ -321,7 +331,7 @@ test('processPendingTxEvents handles Noble withdraw transactions', async t => {
   t.is(handledTxs.length, 1);
   t.like(handledTxs[0], {
     txId: 'tx1',
-    type: TxType.NOBLE_WITHDRAW,
+    type: TxType.CCTP_TO_NOBLE,
     status: 'pending',
     amount: 1_000_000n,
     destinationAddress: 'cosmos:noble:noble1abc123456789',
