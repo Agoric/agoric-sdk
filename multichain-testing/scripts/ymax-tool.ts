@@ -86,6 +86,7 @@ const parseToolArgs = (argv: string[]) =>
       description: { type: 'string', default: 'planner' },
       getCreatorFacet: { type: 'boolean', default: false },
       terminate: { type: 'string' },
+      upgrade: { type: 'string' },
       installAndStart: { type: 'string' },
       invitePlanner: { type: 'string' },
       inviteResolver: { type: 'string' },
@@ -402,6 +403,12 @@ const main = async (
   if (values.terminate) {
     const { terminate: message } = values;
     await yc.terminate({ message });
+    return;
+  }
+
+  if (values.upgrade) {
+    const { upgrade: bundleId } = values;
+    await yc.upgrade(bundleId);
     return;
   }
 
