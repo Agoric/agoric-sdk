@@ -24,15 +24,11 @@ import type { Bech32Address } from '@agoric/orchestration';
 export type EvmChain = keyof typeof AxelarChain;
 
 export type EvmContext = {
+  cosmosRest: CosmosRestClient;
   usdcAddresses: UsdcAddresses['mainnet' | 'testnet'];
   evmProviders: EvmProviders;
   signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
-};
-
-export type NobleContext = {
-  cosmosRest: CosmosRestClient;
-  signingSmartWalletKit: SigningSmartWalletKit;
 };
 
 export type GmpTransfer = {
@@ -77,7 +73,7 @@ export type PendingTxMonitor<
 type MonitorRegistry = {
   [TxType.CCTP_TO_EVM]: PendingTxMonitor<CctpTx, EvmContext>;
   [TxType.GMP]: PendingTxMonitor<GmpTx, EvmContext>;
-  [TxType.CCTP_TO_NOBLE]: PendingTxMonitor<NobleWithdrawTx, NobleContext>;
+  [TxType.CCTP_TO_NOBLE]: PendingTxMonitor<NobleWithdrawTx, EvmContext>;
 };
 
 const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
@@ -148,7 +144,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
   },
 };
 
-const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, NobleContext> = {
+const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, EvmContext> = {
   watch: async (ctx, tx, log, timeoutMs) => {
     const { txId, destinationAddress, amount } = tx;
     const logPrefix = `[${txId}]`;
@@ -201,7 +197,7 @@ type HandlePendingTxOptions = {
 };
 
 export const handlePendingTx = async (
-  ctx: EvmContext & Partial<NobleContext>,
+  ctx: EvmContext,
   tx: PendingTx,
   {
     log = () => {},
@@ -213,15 +209,8 @@ export const handlePendingTx = async (
   const logPrefix = `[${tx.txId}]`;
   log(`${logPrefix} handling ${tx.type} tx`);
 
-  const monitor = registry[tx.type] as PendingTxMonitor<PendingTx, any>;
+  const monitor = registry[tx.type] as PendingTxMonitor<PendingTx, EvmContext>;
   monitor || Fail`${logPrefix} No monitor registered for tx type: ${tx.type}`;
 
-  // For Noble withdraws, we need the cosmosRest in the context
-  if (tx.type === TxType.CCTP_TO_NOBLE) {
-    !ctx.cosmosRest &&
-      Fail`${logPrefix} cosmosRest required for Noble withdraw`;
-    await monitor.watch(ctx as NobleContext, tx, log, timeoutMs);
-  } else {
-    await monitor.watch(ctx as EvmContext, tx, log, timeoutMs);
-  }
+  await monitor.watch(ctx, tx, log, timeoutMs);
 };

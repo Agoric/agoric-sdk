@@ -291,7 +291,7 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
 };
 
 type Powers = {
-  evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch'>;
+  evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
@@ -380,7 +380,6 @@ export const parsePendingTx = (txId: `tx${number}`, data): PendingTx | null => {
 
 export const processPendingTxEvents = async (
   evmCtx: EvmContext,
-  cosmosRest: CosmosRestClient,
   events: Array<{ path: string; value: string }>,
   marshaller: SigningSmartWalletKit['marshaller'],
   handlePendingTxFn = handlePendingTx,
@@ -422,7 +421,7 @@ export const processPendingTxEvents = async (
         console.error(`⚠️ Failed to process pendingTx: ${txId}`, error);
       };
 
-      void handlePendingTxFn({ ...evmCtx, cosmosRest }, tx, {
+      void handlePendingTxFn({ ...evmCtx }, tx, {
         log: logFn,
       }).catch(errorHandler);
     }
@@ -748,8 +747,7 @@ export const startEngine = async (
     );
 
     await processPendingTxEvents(
-      { ...evmCtx, signingSmartWalletKit, fetch },
-      cosmosRest,
+      { ...evmCtx, cosmosRest, signingSmartWalletKit, fetch },
       pendingTxEvents,
       marshaller,
     );

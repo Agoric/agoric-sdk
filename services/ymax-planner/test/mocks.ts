@@ -112,6 +112,7 @@ export const createMockEvmContext = (): EvmContext => ({
   },
   signingSmartWalletKit: createMockSigningSmartWalletKit(),
   fetch: global.fetch,
+  cosmosRest: {} as unknown as CosmosRestClient,
 });
 
 export const createMockPendingTxData = ({
