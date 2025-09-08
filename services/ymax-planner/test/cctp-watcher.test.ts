@@ -64,7 +64,7 @@ test('handlePendingTx processes CCTP transaction successfully', async t => {
   await t.notThrowsAsync(async () => {
     await handlePendingTx(mockEvmCtx, cctpTx, {
       log: logger,
-      timeoutMinutes: 0.05, // 3 sec
+      timeoutMs: 3000,
     });
   });
 
@@ -126,7 +126,7 @@ test('handlePendingTx keeps tx pending on amount mismatch until timeout', async 
   await t.notThrowsAsync(async () => {
     await handlePendingTx(mockEvmCtx, cctpTx, {
       log: logger,
-      timeoutMinutes: 0.05,
+      timeoutMs: 3000,
     });
   });
 
@@ -149,7 +149,7 @@ test('watchCCTPTransfer detects multiple transfers but only matches exact amount
     provider,
     watchAddress,
     expectedAmount,
-    timeoutMinutes: 0.1, // 6 seconds
+    timeoutMs: 6000,
     log: console.log,
   });
 

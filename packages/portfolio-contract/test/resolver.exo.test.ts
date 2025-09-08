@@ -228,7 +228,7 @@ test('resolver creates correct types for different TxTypes', async t => {
     'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
   );
 
-  // Test NOBLE_WITHDRAW transaction with amount
+  // Test CCTP_TO_NOBLE transaction with amount
   client.registerTransaction(
     TxType.CCTP_TO_NOBLE,
     'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',

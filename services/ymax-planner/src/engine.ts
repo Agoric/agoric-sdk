@@ -25,8 +25,8 @@ import {
   type EvmContext,
   type PendingTx,
 } from './pending-tx-manager.ts';
-import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { log } from 'node:console';
+import { PublishedTxShape } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 
 const { isInteger } = Number;
 
@@ -291,7 +291,7 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
 };
 
 type Powers = {
-  evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch'>;
+  evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
@@ -366,42 +366,16 @@ const processPortfolioEvents = async (
   }
 };
 
-export const PendingTxShape = M.splitRecord(
-  {
-    // resolver only handles pending transactions
-    status: M.or('pending'),
-    type: M.string(),
-    destinationAddress: M.string(),
-  },
-  {
-    // amount is optional for GMP transactions, required for CCTP
-    amount: M.bigint(),
-  },
-);
-
-export const parsePendingTx = (
-  txId: `tx${number}`,
-  txData,
-  marshaller?: SigningSmartWalletKit['marshaller'],
-): PendingTx | null => {
-  const data = marshaller ? marshaller.fromCapData(txData) : txData;
-  if (!matches(data, PendingTxShape)) {
+export const parsePendingTx = (txId: `tx${number}`, data): PendingTx | null => {
+  if (!matches(data, PublishedTxShape)) {
     const err = assert.error(
-      X`expected data ${data} to match ${q(PendingTxShape)}`,
+      X`expected data ${data} to match ${q(PublishedTxShape)}`,
     );
     console.error(err);
     return null;
   }
 
-  if (data.type === TxType.CCTP_TO_EVM && data.amount === undefined) {
-    const err = assert.error(
-      X`CCTP transaction ${txId} is missing required amount field`,
-    );
-    console.error(err);
-    return null;
-  }
-
-  return { txId, ...(data as any) } as PendingTx;
+  return { txId, ...data } as PendingTx;
 };
 
 export const processPendingTxEvents = async (
@@ -431,7 +405,10 @@ export const processPendingTxEvents = async (
           Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
       );
 
-      const tx = parsePendingTx(txId as `tx${number}`, value, marshaller);
+      const tx = parsePendingTx(
+        txId as `tx${number}`,
+        marshaller.fromCapData(value),
+      );
       if (!tx) continue;
 
       console.warn('Handling pending tx:', {
@@ -444,7 +421,9 @@ export const processPendingTxEvents = async (
         console.error(`⚠️ Failed to process pendingTx: ${txId}`, error);
       };
 
-      void handlePendingTxFn(evmCtx, tx, { log: logFn }).catch(errorHandler);
+      void handlePendingTxFn({ ...evmCtx }, tx, {
+        log: logFn,
+      }).catch(errorHandler);
     }
   }
 };
@@ -674,9 +653,11 @@ export const startEngine = async (
     });
 
     // Process existing pending transactions on startup
-    void handlePendingTx({ ...evmCtx, signingSmartWalletKit, fetch }, tx, {
-      log,
-    }).catch(logIgnoredError);
+    void handlePendingTx(
+      { ...evmCtx, signingSmartWalletKit, fetch, cosmosRest },
+      tx,
+      { log },
+    ).catch(logIgnoredError);
   }).done;
 
   // console.warn('consuming events');
@@ -766,7 +747,7 @@ export const startEngine = async (
     );
 
     await processPendingTxEvents(
-      { ...evmCtx, signingSmartWalletKit, fetch },
+      { ...evmCtx, cosmosRest, signingSmartWalletKit, fetch },
       pendingTxEvents,
       marshaller,
     );

@@ -1,10 +1,11 @@
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { EvmContext } from '../src/pending-tx-manager';
+import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { AccountId } from '@agoric/orchestration';
 import { PENDING_TX_PATH_PREFIX } from '../src/engine.ts';
-import type {
-  TxStatus,
+import {
   TxType,
+  type TxStatus,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { ethers, type JsonRpcProvider } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
@@ -81,6 +82,25 @@ export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
   } as any;
 };
 
+export const createMockCosmosRestClient = (
+  balanceResponses: Array<{ amount: string; denom: string }>,
+): CosmosRestClient => {
+  let callCount = 0;
+
+  return {
+    getAccountBalance: async (chainKey, address, denom) => {
+      const response =
+        balanceResponses[callCount] ||
+        balanceResponses[balanceResponses.length - 1];
+      callCount += 1;
+      return {
+        denom,
+        amount: response.amount,
+      };
+    },
+  } as any;
+};
+
 export const createMockEvmContext = (): EvmContext => ({
   usdcAddresses: {
     'eip155:1': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // Ethereum
@@ -92,10 +112,11 @@ export const createMockEvmContext = (): EvmContext => ({
   },
   signingSmartWalletKit: createMockSigningSmartWalletKit(),
   fetch: global.fetch,
+  cosmosRest: {} as unknown as CosmosRestClient,
 });
 
 export const createMockPendingTxData = ({
-  type = 'CCTP',
+  type = TxType.CCTP_TO_EVM,
   status = 'pending',
   amount = 100_000n,
   destinationAddress = 'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
