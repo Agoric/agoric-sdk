@@ -6,6 +6,7 @@ import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { gmpAddresses } from './mocks.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
@@ -33,6 +34,7 @@ test('portfolio exo caches storage nodes', async t => {
     // rest are not used
     zcf: null as any,
     axelarIds: null as any,
+    gmpAddresses,
     vowTools: null as any,
     timer: null as any,
     chainHubTools: null as any,

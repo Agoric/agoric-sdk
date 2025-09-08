@@ -307,6 +307,7 @@ export const contract = async (
     zcf,
     vowTools,
     axelarIds,
+    gmpAddresses,
     rebalance,
     parseInboundTransfer: parseInboundTransfer,
     proposalShapes,

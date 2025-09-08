@@ -19,6 +19,7 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import { encodeAbiParameters } from 'viem';
+import { gmpAddresses } from './mocks.ts';
 
 export const makeIncomingEVMEvent = ({
   address = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
@@ -60,7 +61,7 @@ export const makeIncomingEVMEvent = ({
 };
 
 export const makeIncomingVTransferEvent = ({
-  sender = makeTestAddress(),
+  sender = gmpAddresses.AXELAR_GMP,
   sourcePort = 'transfer',
   sourceChannel = 'channel-1',
   destinationPort = 'transfer',

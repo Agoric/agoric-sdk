@@ -33,7 +33,7 @@ import {
   SupportedChain,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
-import type { AxelarId } from './portfolio.contract.js';
+import type { AxelarId, GmpAddresses } from './portfolio.contract.js';
 import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
 import type { makeOfferArgsShapes } from './type-guards-steps.js';
@@ -141,6 +141,7 @@ export const preparePortfolioKit = (
   zone: Zone,
   {
     axelarIds,
+    gmpAddresses,
     rebalance,
     parseInboundTransfer,
     timer,
@@ -154,6 +155,7 @@ export const preparePortfolioKit = (
     usdcBrand,
   }: {
     axelarIds: AxelarId;
+    gmpAddresses: GmpAddresses;
     rebalance: (
       seat: ZCFSeat,
       offerArgs: OfferArgsFor['rebalance'],
@@ -261,6 +263,11 @@ export const preparePortfolioKit = (
 
           const { extra } = parsed;
           if (!extra.memo) return;
+          if (extra.sender !== gmpAddresses.AXELAR_GMP) {
+            throw Error(
+              `Invalid GMP sender: expected ${gmpAddresses.AXELAR_GMP}, got ${extra.sender}`,
+            );
+          }
           const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
 
           const result = (

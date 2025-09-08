@@ -311,6 +311,7 @@ const mocks = (
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
     axelarIds: axelarIdsMock,
+    gmpAddresses,
     vowTools,
     timer,
     chainHubTools,
