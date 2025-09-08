@@ -1,6 +1,7 @@
 import { JsonRpcProvider } from 'ethers';
-import type { EvmContext } from './pending-tx-manager';
 import type { CaipChainId } from '@agoric/orchestration';
+import type { ClusterName } from './config.ts';
+import type { EvmContext } from './pending-tx-manager.ts';
 
 type HexAddress = `0x${string}`;
 
@@ -43,47 +44,52 @@ export const usdcAddresses: UsdcAddresses = {
 };
 
 export const getEvmRpcMap = (
-  net: string,
-  alchemy: string,
+  clusterName: ClusterName,
+  alchemyApiKey: string,
 ): Record<CaipChainId, string> => {
-  if (net === 'mainnet') {
-    return {
-      'eip155:1': `https://eth-mainnet.g.alchemy.com/v2/${alchemy}`,
-      // Source: https://build.avax.network/docs/tooling/rpc-providers#http
-      'eip155:43114': 'https://api.avax.network/ext/bc/C/rpc',
-      // Source: https://docs.arbitrum.io/build-decentralized-apps/reference/node-providers
-      'eip155:42161': 'https://arb1.arbitrum.io/rpc',
-      // Source: https://docs.optimism.io/superchain/networks
-      'eip155:10': 'https://mainnet.optimism.io',
-      // Source: https://docs.polygon.technology/pos/reference/rpc-endpoints/#amoy
-      'eip155:137': 'https://polygon-rpc.com/',
-    };
+  switch (clusterName) {
+    case 'mainnet':
+      return {
+        // Source: https://www.alchemy.com/rpc/ethereum
+        'eip155:1': `https://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        // Source: https://build.avax.network/docs/tooling/rpc-providers#http
+        'eip155:43114': 'https://api.avax.network/ext/bc/C/rpc',
+        // Source: https://docs.arbitrum.io/build-decentralized-apps/reference/node-providers
+        'eip155:42161': 'https://arb1.arbitrum.io/rpc',
+        // Source: https://docs.optimism.io/superchain/networks
+        'eip155:10': 'https://mainnet.optimism.io',
+        // Source: https://docs.polygon.technology/pos/reference/rpc-endpoints/#amoy
+        'eip155:137': 'https://polygon-rpc.com/',
+      };
+    case 'testnet':
+      return {
+        'eip155:11155111': `https://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:43113': 'https://api.avax-test.network/ext/bc/C/rpc',
+        'eip155:421614': 'https://arbitrum-sepolia-rpc.publicnode.com',
+        'eip155:11155420': 'https://optimism-sepolia-rpc.publicnode.com',
+        'eip155:80002': 'https://polygon-amoy-bor-rpc.publicnode.com',
+      };
+    default:
+      throw Error(`Unsupported cluster name ${clusterName}`);
   }
-
-  return {
-    'eip155:11155111': `https://eth-sepolia.g.alchemy.com/v2/${alchemy}`,
-    'eip155:43113': 'https://api.avax-test.network/ext/bc/C/rpc',
-    'eip155:421614': 'https://arbitrum-sepolia-rpc.publicnode.com',
-    'eip155:11155420': 'https://optimism-sepolia-rpc.publicnode.com',
-    'eip155:80002': 'https://polygon-amoy-bor-rpc.publicnode.com',
-  };
 };
 type CreateContextParams = {
-  net?: 'mainnet' | 'testnet';
-  alchemy: string;
+  clusterName: ClusterName;
+  alchemyApiKey: string;
 };
 
 export type EvmProviders = Partial<Record<CaipChainId, JsonRpcProvider>>;
 
 export const createEVMContext = async ({
-  net = 'mainnet',
-  alchemy,
+  clusterName,
+  alchemyApiKey,
 }: CreateContextParams): Promise<
   Pick<EvmContext, 'evmProviders' | 'usdcAddresses'>
 > => {
-  if (!alchemy) throw Error(`alchemy not defined`);
+  if (clusterName === 'local') clusterName = 'testnet';
+  if (!alchemyApiKey) throw Error('missing alchemyApiKey');
 
-  const urls = getEvmRpcMap(net, alchemy);
+  const urls = getEvmRpcMap(clusterName, alchemyApiKey);
   const evmProviders = Object.fromEntries(
     Object.entries(urls).map(([caip, rpcUrl]) => [
       caip,
@@ -93,6 +99,6 @@ export const createEVMContext = async ({
 
   return {
     evmProviders,
-    usdcAddresses: usdcAddresses[net],
+    usdcAddresses: usdcAddresses[clusterName],
   };
 };

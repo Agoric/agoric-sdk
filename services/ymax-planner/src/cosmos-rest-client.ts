@@ -8,8 +8,10 @@ import { chain as agoricMain } from 'chain-registry/mainnet/agoric/index.js';
 import { chain as nobleTest } from 'chain-registry/testnet/nobletestnet/index.js';
 import { chain as agoricTest } from 'chain-registry/testnet/agoricdevnet/index.js'; // agoricdev was named before testnets were a thing
 
+import type { ClusterName } from './config.ts';
+
 interface CosmosRestClientConfig {
-  agoricNetwork?: string;
+  clusterName: ClusterName;
   timeout?: number;
   retries?: number;
 }
@@ -27,8 +29,11 @@ interface ChainConfig {
 }
 
 // transformation of subset of chain-registry
-const CHAIN_CONFIGS: Record<string, Record<string, ChainConfig>> = {
-  main: {
+const CHAIN_CONFIGS: Record<
+  Exclude<ClusterName, 'local'>,
+  Record<string, ChainConfig>
+> = {
+  mainnet: {
     noble: {
       chainId: nobleMain.chainId!,
       restEndpoint: nobleMain.apis!.rest![0].address,
@@ -59,7 +64,7 @@ export class CosmosRestClient {
 
   private readonly setTimeout: typeof setTimeout;
 
-  private readonly agoricNetwork: string;
+  private readonly clusterName: string;
 
   private readonly log: (...args: unknown[]) => void;
 
@@ -71,22 +76,25 @@ export class CosmosRestClient {
 
   private readonly http: KyInstance;
 
-  constructor(io: CosmosRestClientPowers, config: CosmosRestClientConfig = {}) {
+  constructor(
+    io: CosmosRestClientPowers,
+    config: CosmosRestClientConfig = { clusterName: 'testnet' },
+  ) {
     this.fetch = io.fetch;
     this.setTimeout = io.setTimeout;
     if (!this.fetch || !this.setTimeout) {
       throw new Error('`fetch` and `setTimeout` are required');
     }
 
-    this.agoricNetwork =
-      config.agoricNetwork === 'mainnet' ? 'main' : 'testnet';
+    this.clusterName =
+      config.clusterName === 'local' ? 'testnet' : config.clusterName;
     this.log = io.log ?? (() => {});
     this.timeout = config.timeout ?? 10000; // 10s timeout
     this.retries = config.retries ?? 3;
 
-    const chainConfig = CHAIN_CONFIGS[this.agoricNetwork];
+    const chainConfig = CHAIN_CONFIGS[this.clusterName];
     if (!chainConfig) {
-      throw new Error(`Unknown chain config ${this.agoricNetwork}`);
+      throw new Error(`No chain config for cluster name ${this.clusterName}`);
     }
 
     // Initialize with predefined chains

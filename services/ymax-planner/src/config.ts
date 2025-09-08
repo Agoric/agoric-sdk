@@ -1,21 +1,31 @@
 /* eslint-disable @jessie.js/safe-await-separator */
 /// <reference types="ses" />
-import { Fail } from '@endo/errors';
+import * as AgoricClientUtils from '@agoric/client-utils';
+import { Fail, q } from '@endo/errors';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 
 const GCP_PROJECT_ID = 'simulationlab';
 const GCP_SECRET_NAME = 'YMAX_CONTROL_MNEMONIC';
+export type ClusterName = 'local' | 'testnet' | 'mainnet';
+export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
+  harden({
+    local: AgoricClientUtils.LOCAL_CONFIG_KEY,
+    testnet: 'devnet',
+    mainnet: 'main',
+  });
 
 export interface YmaxPlannerConfig {
+  readonly clusterName: ClusterName;
   readonly mnemonic: string;
-  readonly alchemy: string;
+  readonly alchemyApiKey: string;
   readonly spectrum: {
     readonly apiUrl?: string;
     readonly timeout: number;
     readonly retries: number;
   };
   readonly cosmosRest: {
-    readonly agoricNetwork: string;
+    readonly agoricNetworkSpec: string;
+    readonly agoricNetSubdomain: string;
     readonly timeout: number;
     readonly retries: number;
   };
@@ -86,6 +96,27 @@ export const loadConfig = async (
   secretManager: SecretManager,
 ): Promise<YmaxPlannerConfig> => {
   try {
+    // CLUSTER and AGORIC_NET can each be derived from the other (e.g., CLUSTER
+    // "testnet" implies default AGORIC_NET "devnet", and an AGORIC_NET
+    // subdomain other than "local" or "main" implies default CLUSTER "testnet".
+    let clusterName = env.CLUSTER as ClusterName;
+    !clusterName ||
+      Object.hasOwn(defaultAgoricNetworkSpecForCluster, clusterName) ||
+      Fail`CLUSTER must be one of ${q(Object.keys(defaultAgoricNetworkSpecForCluster))}`;
+    const agoricNetworkSpec =
+      env.AGORIC_NET?.trim() ||
+      defaultAgoricNetworkSpecForCluster[clusterName || 'local'] ||
+      Fail`Could not default AGORIC_NET`;
+    const { subdomain: agoricNetSubdomain } =
+      AgoricClientUtils.parseNetworkSpec(agoricNetworkSpec);
+    if (agoricNetSubdomain === AgoricClientUtils.LOCAL_CONFIG_KEY) {
+      clusterName ||= 'local';
+    } else if (agoricNetSubdomain === 'main') {
+      clusterName ||= 'mainnet';
+    } else {
+      clusterName ||= 'testnet';
+    }
+
     const mnemonic = env.MNEMONIC
       ? env.MNEMONIC.trim()
       : await getMnemonicFromGCP(secretManager);
@@ -94,15 +125,17 @@ export const loadConfig = async (
     }
 
     const config: YmaxPlannerConfig = harden({
+      clusterName,
       mnemonic,
-      alchemy: validateRequired(env, 'ALCHEMY_API_KEY'),
+      alchemyApiKey: validateRequired(env, 'ALCHEMY_API_KEY'),
       spectrum: {
         apiUrl: validateOptionalUrl(env, 'SPECTRUM_API_URL'),
         timeout: parsePositiveInteger(env, 30000, 'SPECTRUM_API_TIMEOUT'),
         retries: parsePositiveInteger(env, 3, 'SPECTRUM_API_RETRIES'),
       },
       cosmosRest: {
-        agoricNetwork: env.AGORIC_NET?.trim() || 'local',
+        agoricNetworkSpec,
+        agoricNetSubdomain,
         timeout: parsePositiveInteger(env, 15000, 'COSMOS_REST_TIMEOUT'),
         retries: parsePositiveInteger(env, 3, 'COSMOS_REST_RETRIES'),
       },
@@ -114,18 +147,17 @@ export const loadConfig = async (
   }
 };
 
-export const getConfig = (() => {
-  let cachedConfig: YmaxPlannerConfig | undefined;
+let cachedConfig: YmaxPlannerConfig | undefined;
 
-  return async (
-    env: Record<string, string | undefined> = process.env,
-    powers: { secretManager?: SecretManager } = {},
-  ): Promise<YmaxPlannerConfig> => {
-    if (!cachedConfig) {
-      const secretManager =
-        powers.secretManager || new SecretManagerServiceClient();
-      cachedConfig = await loadConfig(env, secretManager);
-    }
-    return cachedConfig;
-  };
-})();
+export const getConfig = async (
+  env: Record<string, string | undefined> = process.env,
+  powers: { secretManager?: SecretManager } = {},
+): Promise<YmaxPlannerConfig> => {
+  await null;
+  if (!cachedConfig) {
+    const secretManager =
+      powers.secretManager || new SecretManagerServiceClient();
+    cachedConfig = await loadConfig(env, secretManager);
+  }
+  return cachedConfig;
+};

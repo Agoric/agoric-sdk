@@ -1,6 +1,11 @@
 import test from 'ava';
 import { JsonRpcProvider } from 'ethers';
-import { loadConfig, type SecretManager } from '../src/config.ts';
+import {
+  loadConfig,
+  defaultAgoricNetworkSpecForCluster,
+  type ClusterName,
+  type SecretManager,
+} from '../src/config.ts';
 import { createEVMContext } from '../src/support.ts';
 
 const { entries, keys } = Object;
@@ -27,12 +32,13 @@ test('loadConfig validates required MNEMONIC', async t => {
 
 test('loadConfig accepts valid configuration', async t => {
   const env = {
+    CLUSTER: 'testnet',
     MNEMONIC: 'test mnemonic phrase',
     ALCHEMY_API_KEY: 'test1234',
     SPECTRUM_API_URL: 'https://api.spectrum.example.com',
     SPECTRUM_API_TIMEOUT: '5000',
     SPECTRUM_API_RETRIES: '2',
-    AGORIC_NET: 'devnet',
+    AGORIC_NET: 'devnet,myChainId',
     COSMOS_REST_TIMEOUT: '10000',
     COSMOS_REST_RETRIES: '5',
   };
@@ -40,12 +46,14 @@ test('loadConfig accepts valid configuration', async t => {
 
   const config = await loadConfig(env, secretManager);
 
+  t.is(config.clusterName, 'testnet');
   t.is(config.mnemonic, 'test mnemonic phrase');
-  t.is(config.alchemy, 'test1234');
+  t.is(config.alchemyApiKey, 'test1234');
   t.is(config.spectrum.apiUrl, 'https://api.spectrum.example.com');
   t.is(config.spectrum.timeout, 5000);
   t.is(config.spectrum.retries, 2);
-  t.is(config.cosmosRest.agoricNetwork, 'devnet');
+  t.is(config.cosmosRest.agoricNetworkSpec, 'devnet,myChainId');
+  t.is(config.cosmosRest.agoricNetSubdomain, 'devnet');
   t.is(config.cosmosRest.timeout, 10000);
   t.is(config.cosmosRest.retries, 5);
 });
@@ -59,14 +67,87 @@ test('loadConfig uses default values when optional fields are missing', async t 
 
   const config = await loadConfig(env, secretManager);
 
+  t.is(config.clusterName, 'local');
   t.is(config.mnemonic, 'test mnemonic phrase');
-  t.is(config.alchemy, 'test1234');
+  t.is(config.alchemyApiKey, 'test1234');
   t.is(config.spectrum.apiUrl, undefined);
   t.is(config.spectrum.timeout, 30000);
   t.is(config.spectrum.retries, 3);
-  t.is(config.cosmosRest.agoricNetwork, 'local');
+  t.is(config.cosmosRest.agoricNetworkSpec, 'local');
+  t.is(config.cosmosRest.agoricNetSubdomain, 'local');
   t.is(config.cosmosRest.timeout, 15000);
   t.is(config.cosmosRest.retries, 3);
+});
+
+test('loadConfig defaults AGORIC_NET from CLUSTER', async t => {
+  const envBase = {
+    MNEMONIC: 'test mnemonic phrase',
+    ALCHEMY_API_KEY: 'test1234',
+  };
+  const secretManager = makeFakeSecretManager();
+
+  for (const [clusterName, defaultAgoricNetworkSpec] of Object.entries(
+    defaultAgoricNetworkSpecForCluster,
+  )) {
+    for (const agoricNetworkSpec of [undefined, 'xnet', 'xnet,forceChainId']) {
+      const config = await loadConfig(
+        { ...envBase, CLUSTER: clusterName, AGORIC_NET: agoricNetworkSpec },
+        secretManager,
+      );
+      t.is(config.clusterName, clusterName as any, `CLUSTER=${clusterName}`);
+      t.is(
+        config.cosmosRest.agoricNetworkSpec,
+        agoricNetworkSpec || defaultAgoricNetworkSpec,
+        `CLUSTER=${clusterName} implies AGORIC_NET`,
+      );
+    }
+  }
+});
+
+test('loadConfig defaults CLUSTER from AGORIC_NET', async t => {
+  const envBase = {
+    MNEMONIC: 'test mnemonic phrase',
+    ALCHEMY_API_KEY: 'test1234',
+  };
+  const secretManager = makeFakeSecretManager();
+
+  const defaultClusterNameForAgoricNetwork = new Map<string, ClusterName>([
+    ['local', 'local'],
+    ['devnet', 'testnet'],
+    ['xnet', 'testnet'],
+    ['main', 'mainnet'],
+  ]);
+  for (const [
+    agoricNetSubdomain,
+    defaultClusterName,
+  ] of defaultClusterNameForAgoricNetwork.entries()) {
+    for (const agoricNetworkSpec of [
+      agoricNetSubdomain,
+      `${agoricNetSubdomain},forceChainId`,
+    ]) {
+      for (const clusterName of [undefined, 'mainnet']) {
+        const config = await loadConfig(
+          { ...envBase, AGORIC_NET: agoricNetworkSpec, CLUSTER: clusterName },
+          secretManager,
+        );
+        t.is(
+          config.cosmosRest.agoricNetworkSpec,
+          agoricNetworkSpec,
+          `AGORIC_NET=${agoricNetworkSpec}`,
+        );
+        t.is(
+          config.cosmosRest.agoricNetSubdomain,
+          agoricNetSubdomain,
+          `AGORIC_NET=${agoricNetworkSpec}`,
+        );
+        t.is(
+          config.clusterName,
+          clusterName || (defaultClusterName as any),
+          `AGORIC_NET=${agoricNetworkSpec} implies CLUSTER`,
+        );
+      }
+    }
+  }
 });
 
 test('loadConfig validates positive integers', async t => {
@@ -106,8 +187,8 @@ test('loadConfig trims whitespace from values', async t => {
   const config = await loadConfig(env, secretManager);
 
   t.is(config.mnemonic, 'test mnemonic phrase');
-  t.is(config.alchemy, 'test1234');
-  t.is(config.cosmosRest.agoricNetwork, 'devnet');
+  t.is(config.alchemyApiKey, 'test1234');
+  t.is(config.cosmosRest.agoricNetworkSpec, 'devnet');
 });
 
 test('loadConfig rejects empty required values', async t => {
@@ -125,8 +206,8 @@ test('loadConfig rejects empty required values', async t => {
 // --- Unit tests for createEVMContext ---
 test('createEVMContext generates valid testnet context', async t => {
   const result = await createEVMContext({
-    net: 'testnet',
-    alchemy: 'test1234',
+    clusterName: 'testnet',
+    alchemyApiKey: 'test1234',
   });
 
   t.truthy(result.evmProviders);
