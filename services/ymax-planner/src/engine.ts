@@ -27,6 +27,7 @@ import {
 } from './pending-tx-manager.ts';
 import { log } from 'node:console';
 import { PublishedTxShape } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type { JsonRpcProvider } from 'ethers';
 
 const { isInteger } = Number;
 
@@ -291,7 +292,7 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
 };
 
 type Powers = {
-  evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
+  evmProviders: Partial<Record<`${string}:${string}`, JsonRpcProvider>>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
@@ -444,8 +445,14 @@ export const pickBalance = (
 };
 
 export const startEngine = async (
-  { evmCtx, rpc, spectrum, cosmosRest, signingSmartWalletKit }: Powers,
-  { depositIbcDenom }: { depositIbcDenom: string },
+  { evmProviders, rpc, spectrum, cosmosRest, signingSmartWalletKit }: Powers,
+  {
+    depositIbcDenom,
+    usdcAddresses,
+  }: {
+    depositIbcDenom: string;
+    usdcAddresses: Record<`${string}:${string}`, `0x${string}`>;
+  },
 ) => {
   await null;
   const { query, marshaller } = signingSmartWalletKit;
@@ -627,6 +634,8 @@ export const startEngine = async (
     `Found ${pendingTxKeys.length} existing pendingTxKeys to monitor`,
   );
 
+  const evmContext = { evmProviders, usdcAddresses, signingSmartWalletKit, fetch, cosmosRest };
+
   await makeWorkPool(pendingTxKeys, undefined, async txId => {
     const logIgnoredError = err => {
       const msg = `⚠️ Failed to process existing pendingTx: ${txId}`;
@@ -653,11 +662,7 @@ export const startEngine = async (
     });
 
     // Process existing pending transactions on startup
-    void handlePendingTx(
-      { ...evmCtx, signingSmartWalletKit, fetch, cosmosRest },
-      tx,
-      { log },
-    ).catch(logIgnoredError);
+    void handlePendingTx(evmContext, tx, { log }).catch(logIgnoredError);
   }).done;
 
   // console.warn('consuming events');
@@ -747,7 +752,7 @@ export const startEngine = async (
     );
 
     await processPendingTxEvents(
-      { ...evmCtx, cosmosRest, signingSmartWalletKit, fetch },
+      evmContext,
       pendingTxEvents,
       marshaller,
     );

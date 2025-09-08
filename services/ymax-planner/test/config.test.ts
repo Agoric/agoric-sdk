@@ -6,7 +6,7 @@ import {
   type ClusterName,
   type SecretManager,
 } from '../src/config.ts';
-import { createEVMContext } from '../src/support.ts';
+import { buildEvmDependencies } from '../src/support.ts';
 
 const { entries, keys } = Object;
 
@@ -203,9 +203,9 @@ test('loadConfig rejects empty required values', async t => {
   });
 });
 
-// --- Unit tests for createEVMContext ---
-test('createEVMContext generates valid testnet context', async t => {
-  const result = await createEVMContext({
+// --- Unit tests for buildEvmDependencies ---
+test('buildEvmDependencies generates valid testnet output', async t => {
+  const result = await buildEvmDependencies({
     clusterName: 'testnet',
     alchemyApiKey: 'test1234',
   });
