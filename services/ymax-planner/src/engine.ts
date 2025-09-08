@@ -421,7 +421,7 @@ export const processPendingTxEvents = async (
         console.error(`⚠️ Failed to process pendingTx: ${txId}`, error);
       };
 
-      void handlePendingTxFn({ ...evmCtx }, tx, {
+      void handlePendingTxFn(evmCtx, tx, {
         log: logFn,
       }).catch(errorHandler);
     }

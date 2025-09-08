@@ -48,28 +48,27 @@ export type PublishedTx = {
   status: TxStatus;
 };
 
+const publishedTxRequiredFields = harden({
+  // Format: `${chainId}:${chainId}:${remoteAddess}`
+  destinationAddress: M.string(),
+  status: M.or(TxStatus.PENDING),
+});
+
+// `amount` is optional for GMP but required for CCTP
+const publishedTxCctpRequiredFields = { amount: M.nat() };
 export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
-  // CCTP_TO_EVM and CCTP_TO_NOBLE require amount
   M.splitRecord(
     {
       type: M.or(TxType.CCTP_TO_EVM, TxType.CCTP_TO_NOBLE),
-      destinationAddress: M.string(), // Format: `${chainId}:${chainId}:${remotAddess}`
-      status: M.or(TxStatus.PENDING),
-      amount: M.nat(),
+      ...publishedTxRequiredFields,
+      ...publishedTxCctpRequiredFields,
     },
     {},
     {},
   ),
-  // GMP has optional amount
   M.splitRecord(
-    {
-      type: M.or(TxType.GMP),
-      destinationAddress: M.string(),
-      status: M.or(TxStatus.PENDING),
-    },
-    {
-      amount: M.nat(),
-    },
+    { type: M.or(TxType.GMP), ...publishedTxRequiredFields },
+    publishedTxCctpRequiredFields,
     {},
   ),
 );
