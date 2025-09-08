@@ -48,16 +48,30 @@ export type PublishedTx = {
   status: TxStatus;
 };
 
-export const PublishedTxShape: TypedPattern<PublishedTx> = M.splitRecord(
-  {
-    type: M.or(...Object.keys(TxType)),
-    destinationAddress: M.string(), // Format: `${chainId}:${chainId}:${remotAddess}`
-    status: M.or('pending'),
-  },
-  {
-    amount: M.nat(),
-  },
-  {},
+export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
+  // CCTP_TO_EVM and CCTP_TO_NOBLE require amount
+  M.splitRecord(
+    {
+      type: M.or(TxType.CCTP_TO_EVM, TxType.CCTP_TO_NOBLE),
+      destinationAddress: M.string(), // Format: `${chainId}:${chainId}:${remotAddess}`
+      status: M.or(TxStatus.PENDING),
+      amount: M.nat(),
+    },
+    {},
+    {},
+  ),
+  // GMP has optional amount
+  M.splitRecord(
+    {
+      type: M.or(TxType.GMP),
+      destinationAddress: M.string(),
+      status: M.or(TxStatus.PENDING),
+    },
+    {
+      amount: M.nat(),
+    },
+    {},
+  ),
 );
 
 export type * from './constants.js';

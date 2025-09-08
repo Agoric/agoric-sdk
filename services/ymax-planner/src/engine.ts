@@ -25,7 +25,6 @@ import {
   type EvmContext,
   type PendingTx,
 } from './pending-tx-manager.ts';
-import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { log } from 'node:console';
 import { PublishedTxShape } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 
@@ -371,22 +370,6 @@ export const parsePendingTx = (txId: `tx${number}`, data): PendingTx | null => {
   if (!matches(data, PublishedTxShape)) {
     const err = assert.error(
       X`expected data ${data} to match ${q(PublishedTxShape)}`,
-    );
-    console.error(err);
-    return null;
-  }
-
-  if (data.type === TxType.CCTP_TO_EVM && data.amount === undefined) {
-    const err = assert.error(
-      X`CCTP transaction ${txId} is missing required amount field`,
-    );
-    console.error(err);
-    return null;
-  }
-
-  if (data.type === TxType.CCTP_TO_NOBLE && data.amount === undefined) {
-    const err = assert.error(
-      X`Noble withdraw transaction ${txId} is missing required amount field`,
     );
     console.error(err);
     return null;
