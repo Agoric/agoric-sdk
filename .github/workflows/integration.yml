@@ -292,13 +292,11 @@ jobs:
         run: |
           original=$(docker inspect --format "{{.ID}}" ghcr.io/agoric/agoric-sdk:unreleased)
           docker inspect $original > ../../docker-image-original.json
-          docker buildx imagetools inspect --raw ghcr.io/agoric/agoric-sdk:unreleased > ../../docker-imagetools-original.json
           yarn build:sdk
           new=$(docker inspect --format "{{.ID}}" ghcr.io/agoric/agoric-sdk:unreleased)
           if [ "$original" != "$new" ]; then
             echo "New SDK docker image ($new) changed after restore-node (original $original)" 1>&2
             diff -U5 ../../docker-image-original.json <(docker inspect $new)
-            diff -U5 ../../docker-imagetools-original.json <(docker buildx imagetools inspect --raw ghcr.io/agoric/agoric-sdk:unreleased)
             exit 1
           fi
         working-directory: agoric-sdk/a3p-integration
