@@ -68,6 +68,7 @@ import {
   makeIncomingEVMEvent,
   makeIncomingVTransferEvent,
 } from './supports.ts';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 
 // Use an EVM chain whose axelar ID differs from its chain name
 const { sourceChain } = evmNamingDistinction;
@@ -924,6 +925,30 @@ test('client can move to deposit LCA', async t => {
   t.like(log, [{ _method: 'monitorTransfers' }, { _method: 'localTransfer' }]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   await documentStorageSchema(t, storage, docOpts);
+});
+
+test('receiveUpcall throws if sender is not AXELAR_GMP', async t => {
+  const { give, steps } = makePortfolioSteps(
+    { Compound: make(USDC, 300n) },
+    { fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } } },
+  );
+  const { orch, tapPK, ctx, offer, storage } = mocks({}, give);
+
+  await t.throwsAsync(
+    () =>
+      Promise.all([
+        openPortfolio(orch, { ...ctx }, offer.seat, {
+          flow: steps,
+        }),
+        Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
+          tap.receiveUpcall(
+            makeIncomingEVMEvent({ sourceChain, sender: makeTestAddress() }),
+          ),
+        ),
+      ]),
+    { message: /Invalid GMP sender/ },
+    'Should reject transfers from non-Axelar GMP addresses',
+  );
 });
 
 test.todo('recover from send step');

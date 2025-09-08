@@ -5,6 +5,7 @@ import {
   denomHash,
   withChainCapabilities,
   type ChainInfo,
+  type CosmosChainAddress,
   type CosmosChainInfo,
   type Denom,
 } from '@agoric/orchestration';
@@ -22,10 +23,12 @@ import { encodeAbiParameters } from 'viem';
 import { gmpAddresses } from './mocks.ts';
 
 export const makeIncomingEVMEvent = ({
+  sender = gmpAddresses.AXELAR_GMP,
   address = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
   sourceChain,
   target = makeTestAddress(0), // agoric1q...p7zqht
 }: {
+  sender?: `${string}1${string}`;
   address?: `0x${string}`;
   sourceChain: string;
   target?: string;
@@ -40,6 +43,7 @@ export const makeIncomingEVMEvent = ({
     axelarConnections.transferChannel.counterPartyChannelId;
 
   return makeIncomingVTransferEvent({
+    sender,
     sourceChannel: axelarToAgoricChannel,
     destinationChannel: agoricToAxelarChannel,
     target,
