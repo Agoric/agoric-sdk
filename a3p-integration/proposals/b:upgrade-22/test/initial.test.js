@@ -7,10 +7,10 @@ const expectedVatDetails = {
   bank: { incarnation: 2 },
   network: { incarnation: 3 },
   ibc: { incarnation: 3 },
-  localchain: { incarnation: 4 },
+  localchain: { incarnation: 3 },
   orchestration: { incarnation: 2 },
   provisionPool: { incarnation: 2 },
-  transfer: { incarnation: 4 },
+  transfer: { incarnation: 3 },
   walletFactory: { incarnation: 9 },
   zoe: { incarnation: 3 },
 };
