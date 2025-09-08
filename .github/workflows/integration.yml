@@ -295,6 +295,7 @@ jobs:
           new=$(docker inspect --format "{{.ID}}" ghcr.io/agoric/agoric-sdk:unreleased)
           if [ "$original" != "$new" ]; then
             echo "New SDK docker image ($new) changed after restore-node (original $original)" 1>&2
+            diff -U5 <(docker inspect $original) <(docker inspect $new)
             exit 1
           fi
         working-directory: agoric-sdk/a3p-integration
