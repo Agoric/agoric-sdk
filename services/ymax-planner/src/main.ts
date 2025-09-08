@@ -7,7 +7,7 @@ import { Fail, q } from '@endo/errors';
 
 import { SigningStargateClient } from '@cosmjs/stargate';
 
-import { getConfig } from './config.ts';
+import { loadConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { startEngine } from './engine.ts';
@@ -35,7 +35,7 @@ export const main = async (
     new Promise(resolve => setTimeout(resolve, ms)).then(() => {});
   const simplePowers = { fetch, setTimeout, delay };
 
-  const config = await getConfig(env);
+  const config = await loadConfig(env);
   const { clusterName } = config;
 
   const networkConfig = await fetchEnvNetworkConfig({
