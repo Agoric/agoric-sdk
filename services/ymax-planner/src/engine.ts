@@ -1,21 +1,31 @@
 /// <reference types="ses" />
 /* eslint-env node */
-import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { PortfolioStatusShapeExt } from '@aglocal/portfolio-contract/src/type-guards.ts';
+
+import { log } from 'node:console';
+import { inspect } from 'node:util';
+
+import type { Coin } from '@cosmjs/stargate';
+
+import { Fail, q, X } from '@endo/errors';
+import { Nat } from '@endo/nat';
+import { isPrimitive } from '@endo/pass-style';
+import { matches } from '@endo/patterns';
+import { makePromiseKit, type PromiseKit } from '@endo/promise-kit';
+
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import { AmountMath, type Brand } from '@agoric/ertp';
+import type { Bech32Address } from '@agoric/orchestration';
+import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
+
+import { PublishedTxShape } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import {
+  PortfolioStatusShapeExt,
+  type StatusFor,
+} from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { mustMatch } from '@agoric/internal';
 import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
-import type { Bech32Address } from '@agoric/orchestration';
-import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
-import type { Coin } from '@cosmjs/stargate';
-import { Fail, q, X } from '@endo/errors';
-import { M, matches } from '@endo/patterns';
-import { Nat } from '@endo/nat';
-import { isPrimitive } from '@endo/pass-style';
-import { makePromiseKit, type PromiseKit } from '@endo/promise-kit';
-import { inspect } from 'node:util';
+
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import { handleDeposit } from './plan-deposit.ts';
@@ -25,8 +35,6 @@ import {
   type EvmContext,
   type PendingTx,
 } from './pending-tx-manager.ts';
-import { log } from 'node:console';
-import { PublishedTxShape } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 
 const { isInteger } = Number;
 

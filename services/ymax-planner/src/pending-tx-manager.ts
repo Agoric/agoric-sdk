@@ -1,25 +1,28 @@
-import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import type { JsonRpcProvider } from 'ethers';
+
+import { Fail } from '@endo/errors';
+
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
+import type { Bech32Address, CaipChainId } from '@agoric/orchestration';
+import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+
+import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import {
   TxStatus,
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import { watchGmp } from './watchers/gmp-watcher.ts';
-import { resolvePendingTx } from './resolver.ts';
-import { watchCctpTransfer } from './watchers/cctp-watcher.ts';
-import { watchNobleTransfer } from './watchers/noble-watcher.ts';
 import type {
   PublishedTx,
   TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import type { EvmProviders, UsdcAddresses } from './support.ts';
+
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
-import type { CaipChainId } from '@agoric/orchestration';
-import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
-import { Fail } from '@endo/errors';
-import type { JsonRpcProvider } from 'ethers';
-import type { Bech32Address } from '@agoric/orchestration';
+import { resolvePendingTx } from './resolver.ts';
+import type { EvmProviders, UsdcAddresses } from './support.ts';
+import { watchGmp } from './watchers/gmp-watcher.ts';
+import { watchCctpTransfer } from './watchers/cctp-watcher.ts';
+import { watchNobleTransfer } from './watchers/noble-watcher.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
 

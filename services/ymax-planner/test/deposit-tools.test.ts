@@ -2,11 +2,14 @@
 /* eslint-disable max-classes-per-file, class-methods-use-this */
 import test from 'ava';
 
-import type { TargetAllocation } from '@aglocal/portfolio-contract/src/type-guards.js';
+import { Far } from '@endo/pass-style';
+
 import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath, type Brand } from '@agoric/ertp';
-import { Far } from '@endo/pass-style';
+
+import type { TargetAllocation } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { planDepositTransfers } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
+
 import { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import { handleDeposit } from '../src/plan-deposit.ts';
 import { SpectrumClient } from '../src/spectrum-client.ts';
