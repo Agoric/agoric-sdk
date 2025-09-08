@@ -12,6 +12,9 @@ import { prepareAssetReserveKit } from './assetReserveKit.js';
  * @import {EReturn} from '@endo/far';
  * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {Allocation, ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
+ * @import {ERef} from '@endo/far';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshal} from '@endo/marshal';
  */
 
 const trace = makeTracer('AR', true);
@@ -46,7 +49,7 @@ harden(meta);
  * @param {{
  *   feeMintAccess: FeeMintAccess;
  *   initialPoserInvitation: Invitation;
- *   marshaller: ERef<Marshaller>;
+ *   marshaller: ERef<Marshal<unknown>>;
  *   storageNode: ERef<StorageNode>;
  * }} privateArgs
  * @param {Baggage} baggage

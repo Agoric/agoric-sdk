@@ -1,9 +1,6 @@
 /// <reference types="@agoric/governance/exported" />
 /// <reference types="@agoric/zoe/exported" />
 
-import { Fail, q } from '@endo/errors';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import {
   GovernorFacetShape,
@@ -24,11 +21,10 @@ import {
   TopicsRecordShape,
   unitAmount,
 } from '@agoric/zoe/src/contractSupport/index.js';
+import { Fail, q } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { makeCollectFeesInvitation } from '../collectFees.js';
-import {
-  setWakeupsForNextAuction,
-  watchForGovernanceChange,
-} from './liquidation.js';
 import {
   provideVaultParamManagers,
   SHORTFALL_INVITATION_KEY,
@@ -40,6 +36,9 @@ import {
 } from './vaultManager.js';
 
 /**
+ * @import {ERef} from '@endo/far';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshal} from '@endo/marshal';
  * @import {MapStore} from '@agoric/store';
  * @import {TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
  * @import {EReturn} from '@endo/far';
@@ -105,9 +104,8 @@ export const makeAllManagersDo = (collateralManagers, vaultManagers) => {
  * @param {VaultDirectorParamManager} directorParamManager
  * @param {ZCFMint<'nat'>} debtMint
  * @param {ERef<import('@agoric/time').TimerService>} timer
- * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneer
  * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERef<Marshal<unknown>>} marshaller
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
  * @param {Record<string, import('./params.js').VaultManagerParamOverrides>} managerParams
@@ -118,7 +116,6 @@ const prepareVaultDirector = (
   directorParamManager,
   debtMint,
   timer,
-  auctioneer,
   storageNode,
   marshaller,
   makeRecorderKit,
@@ -280,14 +277,6 @@ const prepareVaultDirector = (
     metrics: makeRecorderTopic('Vault Factory metrics', metricsKit),
   });
 
-  const allManagersDo = makeAllManagersDo(collateralManagers, vaultManagers);
-
-  const makeWaker = (name, func) => {
-    return Far(name, {
-      wake: timestamp => func(timestamp),
-    });
-  };
-
   /** @returns {State} */
   const initState = () => {
     return {};
@@ -313,9 +302,6 @@ const prepareVaultDirector = (
         ),
         makeCollectFeesInvitation: M.call().returns(M.promise()),
         getRewardAllocation: M.call().returns({ Minted: AmountShape }),
-        makePriceLockWaker: M.call().returns(M.remotable('TimerWaker')),
-        makeLiquidationWaker: M.call().returns(M.remotable('TimerWaker')),
-        makeReschedulerWaker: M.call().returns(M.remotable('TimerWaker')),
         setShortfallReporter: M.call(InvitationShape).returns(M.promise()),
       }),
       public: M.interface('public', {
@@ -333,7 +319,6 @@ const prepareVaultDirector = (
         getPublicTopics: M.call().returns(TopicsRecordShape),
       }),
       helper: M.interface('helper', {
-        resetWakeupsForNextAuction: M.call().returns(M.promise()),
         start: M.call().returns(M.promise()),
       }),
     },
@@ -444,23 +429,6 @@ const prepareVaultDirector = (
           return rewardPoolSeat.getCurrentAllocation();
         },
 
-        makeLiquidationWaker() {
-          return makeWaker('liquidationWaker', _timestamp => {
-            // XXX floating promise
-            allManagersDo(vm => vm.liquidateVaults(auctioneer));
-          });
-        },
-        makeReschedulerWaker() {
-          const { facets } = this;
-          return makeWaker('reschedulerWaker', () => {
-            void facets.helper.resetWakeupsForNextAuction();
-          });
-        },
-        makePriceLockWaker() {
-          return makeWaker('priceLockWaker', () => {
-            allManagersDo(vm => vm.lockOraclePrices());
-          });
-        },
         async setShortfallReporter(newInvitation) {
           const zoe = zcf.getZoeService();
           shortfallReporter = await E(
@@ -513,34 +481,14 @@ const prepareVaultDirector = (
         },
       },
       helper: {
-        resetWakeupsForNextAuction() {
-          const { facets } = this;
-
-          const priceLockWaker = facets.machine.makePriceLockWaker();
-          const liquidationWaker = facets.machine.makeLiquidationWaker();
-          const rescheduleWaker = facets.machine.makeReschedulerWaker();
-          return setWakeupsForNextAuction(
-            auctioneer,
-            timer,
-            priceLockWaker,
-            liquidationWaker,
-            rescheduleWaker,
-          );
-        },
         /** Start non-durable processes (or restart if needed after vat restart) */
         async start() {
-          const { helper, machine } = this.facets;
-
-          await helper.resetWakeupsForNextAuction();
           updateShortfallReporter().catch(err =>
             console.error(
               '🛠️ updateShortfallReporter failed during start(); repair by updating governance',
               err,
             ),
           );
-          // independent of the other one which can be canceled
-          const rescheduleWaker = machine.makeReschedulerWaker();
-          void watchForGovernanceChange(auctioneer, timer, rescheduleWaker);
         },
       },
     },

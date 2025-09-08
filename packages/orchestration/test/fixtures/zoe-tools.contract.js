@@ -15,6 +15,7 @@ import fetchedChainInfo from '../../src/fetched-chain-info.js';
 const { values } = Object;
 
 /**
+ * @import {Marshal} from '@endo/marshal';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {NameHub} from '@agoric/vats';
@@ -38,7 +39,7 @@ const { values } = Object;
 /**
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
- *   marshaller: Marshaller;
+ *   marshaller: Marshal<unknown>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools

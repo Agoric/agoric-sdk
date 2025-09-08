@@ -14,7 +14,8 @@ import {
 
 /**
  * @import {EReturn} from '@endo/far';
- * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ * @import {Marshal} from '@endo/marshal';
+ * @import {AdminFacet, InvitationAmount, ZCFMint} from '@agoric/zoe';
  */
 
 const trace = makeTracer('StartWF', 'verbose');
@@ -38,7 +39,7 @@ const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
  * been provisioned.
  *
  * @param {string[]} oldAddresses
- * @param {Marshaller} marshaller
+ * @param {Marshal<unknown>} marshaller
  * @param {StorageNode} walletStorageNode
  */
 const publishRevivableWalletState = async (

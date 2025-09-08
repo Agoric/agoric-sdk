@@ -8,6 +8,7 @@ import { RelativeTimeShape } from '@agoric/time';
 import { KeywordShape } from '@agoric/zoe/src/typeGuards.js';
 
 /**
+ * @import {ERef} from '@endo/far';
  * @import {MapStore, SetStore} from '@agoric/store';
  */
 

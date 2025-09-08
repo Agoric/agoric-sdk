@@ -8,7 +8,6 @@ import {
   PromiseRecord as _PromiseRecord,
 } from '@endo/promise-kit';
 import {
-  Marshaller as _Marshaller,
   StorageNode as _StorageNode,
   Unserializer as _Unserializer,
   VStorageKey as _VStorageKey,
@@ -18,7 +17,6 @@ declare global {
   // @ts-ignore TS2666: Exports and export assignments are not permitted in module augmentations.
   export {
     _ERef as ERef,
-    _Marshaller as Marshaller,
     _PromiseKit as PromiseKit,
     _PromiseRecord as PromiseRecord,
     _StorageNode as StorageNode,

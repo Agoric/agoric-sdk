@@ -23,6 +23,7 @@ import { prepareRoundsManagerKit } from './roundsManager.js';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 const trace = makeTracer('FlxAgg', true);

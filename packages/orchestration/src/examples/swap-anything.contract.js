@@ -13,6 +13,7 @@ import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 const trace = makeTracer('SwapAnything.Contract');
 const interfaceTODO = undefined;
 /**
+ * @import {Marshal} from '@endo/marshal';
  * @import {Remote, Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
@@ -35,7 +36,7 @@ harden(SingleNatAmountRecord);
  * @param {OrchestrationPowers & {
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
  *   chainInfo?: Record<string, CosmosChainInfo>;
- *   marshaller: Marshaller;
+ *   marshaller: Marshal<unknown>;
  *   storageNode: Remote<StorageNode>;
  * }} privateArgs
  * @param {Zone} zone

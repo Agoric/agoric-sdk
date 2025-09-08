@@ -7,10 +7,7 @@
  */
 
 import { makeTracer } from '@agoric/internal';
-import type {
-  Marshaller,
-  StorageNode,
-} from '@agoric/internal/src/lib-chainStorage.js';
+import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { AccountId } from '@agoric/orchestration';
 import { type Vow, type VowKit, VowShape, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
@@ -19,6 +16,7 @@ import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
+import type { Marshal } from '@endo/marshal';
 import { M } from '@endo/patterns';
 import { TxStatus, TxType } from './constants.js';
 import type {
@@ -101,7 +99,7 @@ export const prepareResolverKit = (
   }: {
     vowTools: VowTools;
     pendingTxsNode: ERef<StorageNode>;
-    marshaller: Marshaller;
+    marshaller: Marshal<unknown>;
   },
 ) => {
   const writeToNode = (node: ERef<StorageNode>, value: PublishedTx): void => {

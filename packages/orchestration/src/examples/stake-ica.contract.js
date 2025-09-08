@@ -15,6 +15,7 @@ import { makeChainHub } from '../exos/chain-hub.js';
 
 const trace = makeTracer('StakeIca');
 /**
+ * @import {Marshal} from '@endo/marshal';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Remote} from '@agoric/internal';
  * @import {CosmosChainInfo, CosmosInterchainService, Denom, DenomDetail} from '@agoric/orchestration';
@@ -59,7 +60,7 @@ harden(privateArgsShape);
  *   agoricNames: Remote<NameHub>;
  *   cosmosInterchainService: CosmosInterchainService;
  *   storageNode: StorageNode;
- *   marshaller: Marshaller;
+ *   marshaller: Marshal<unknown>;
  *   timer: TimerService;
  * }} privateArgs
  * @param {Baggage} baggage

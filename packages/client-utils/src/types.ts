@@ -12,9 +12,6 @@ import type {
   OutcomeRecord,
   QuestionDetails,
 } from '@agoric/governance/src/types.js';
-import type { BookDataNotification } from '@agoric/inter-protocol/src/auction/auctionBook.js';
-import type { AuctionParamRecord } from '@agoric/inter-protocol/src/auction/params.js';
-import type { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
 import type { MetricsNotification as VaultDirectorMetrics } from '@agoric/inter-protocol/src/vaultFactory/vaultDirector.js';
 import type {
   CurrentWalletRecord,
@@ -26,8 +23,6 @@ import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 
 // For static string key types. String template matching has to be in the ternary below.
 type PublishedTypeMap = {
-  'auction.governance': { current: AuctionParamRecord };
-  'auction.schedule': ScheduleNotification;
   'vaultFactory.metrics': VaultDirectorMetrics;
   'agoricNames.instance': Array<[string, Instance]>;
   'agoricNames.brand': Array<[string, Brand]>;
@@ -57,7 +52,5 @@ export type TypedPublished<T extends string> = T extends keyof PublishedTypeMap
             ? VaultDirectorMetrics
             : T extends `fastUsdc.txns.${string}`
               ? TransactionRecord
-              : T extends `auction.book${number}`
-                ? BookDataNotification
-                : unknown;
+              : unknown;
 // static string keys are defined in PublishedTypeMap

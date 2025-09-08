@@ -18,6 +18,7 @@ import {
 } from './provisionPoolKit.js';
 
 /**
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {Marshal} from '@endo/marshal';
  * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
  * @import {ContractMeta, Invitation, StandardTerms, ZCF} from '@agoric/zoe';

@@ -8,6 +8,7 @@ import { prepareVaultHolder } from './vaultHolder.js';
 const trace = makeTracer('VK', true);
 
 /**
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {EReturn} from '@endo/far';
  */
 

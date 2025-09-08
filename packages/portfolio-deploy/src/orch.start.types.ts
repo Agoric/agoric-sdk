@@ -1,4 +1,5 @@
 import type { Remote } from '@agoric/internal';
+import type { Marshaller } from '@agoric/internal/src/lib-chainStorage.js';
 import type { OrchestrationPowers } from '@agoric/orchestration';
 import type { BootstrapManifest } from '@agoric/vats/src/core/lib-boot.js';
 import type { ContractStartFunction } from '@agoric/zoe/src/zoeService/utils';

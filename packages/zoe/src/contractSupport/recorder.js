@@ -11,6 +11,7 @@ import { E } from '@endo/eventual-send';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
+ * @import {Marshal} from '@endo/marshal';
  */
 
 /**
@@ -44,7 +45,7 @@ import { E } from '@endo/eventual-send';
  * Wrap a Publisher to record all the values to chain storage.
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERef<Marshal<unknown>>} marshaller
  */
 export const prepareRecorder = (baggage, marshaller) => {
   const makeRecorder = prepareExoClass(
@@ -205,7 +206,7 @@ harden(defineERecorderKit);
  * When there is, prepare the kinds separately and pass to the kit definers.
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERef<Marshal<unknown>>} marshaller
  */
 export const prepareRecorderKit = (baggage, marshaller) => {
   const makeDurablePublishKit = prepareDurablePublishKit(
@@ -225,7 +226,7 @@ export const prepareRecorderKit = (baggage, marshaller) => {
  * `makeERecorderKit` is for closures that must return a `subscriber` synchronously but can defer the `recorder`.
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERef<Marshal<unknown>>} marshaller
  */
 export const prepareRecorderKitMakers = (baggage, marshaller) => {
   const makeDurablePublishKit = prepareDurablePublishKit(

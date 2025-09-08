@@ -8,11 +8,11 @@ import * as cb from './callback.js';
 
 /**
  * @import {ERef} from '@endo/far';
- * @import {PassableCap} from '@endo/marshal';
+ * @import {Marshal, PassableCap} from '@endo/marshal';
  * @import {TypedPattern} from './types.js';
  */
 
-/** @typedef {ReturnType<typeof import('@endo/marshal').makeMarshal>} Marshaller */
+/** @typedef {Marshal<unknown>} Marshaller deprecated use @endo/marshal directly */
 /** @typedef {Pick<Marshaller, 'fromCapData'>} Unserializer */
 
 /**

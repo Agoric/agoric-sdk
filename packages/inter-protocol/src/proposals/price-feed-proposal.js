@@ -18,6 +18,8 @@ export { oracleBrandFeedName as instanceNameFor };
 
 const trace = makeTracer('RunPriceFeed', true);
 
+/** @import {ERef} from '@endo/far' */
+
 /** @type {(name: string) => string} */
 const sanitizePathSegment = name => {
   const candidate = name.replace(/ /g, '_');
