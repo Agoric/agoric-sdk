@@ -313,7 +313,10 @@ export const contract = async (
     proposalShapes,
     offerArgsShapes,
     timer: timerService,
-    chainHubTools: { getChainInfo: chainHub.getChainInfo.bind(chainHub) },
+    chainHubTools: {
+      getChainInfo: chainHub.getChainInfo.bind(chainHub),
+      getChainsAndConnection: chainHub.getChainsAndConnection.bind(chainHub),
+    },
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller,
     usdcBrand: brands.USDC,

@@ -166,7 +166,7 @@ export const preparePortfolioKit = (
       kit: unknown, // XXX avoid circular reference to this.facets
     ) => Vow<Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>>;
     timer: Remote<TimerService>;
-    chainHubTools: Pick<ChainHub, 'getChainInfo'>;
+    chainHubTools: Pick<ChainHub, 'getChainInfo' | 'getChainsAndConnection'>;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>;
     vowTools: VowTools;
@@ -247,6 +247,7 @@ export const preparePortfolioKit = (
           return vowTools.watch(
             parseInboundTransfer(event.packet, this.facets),
             this.facets.parseInboundTransferWatcher,
+            event.packet,
           );
         },
       },
@@ -255,18 +256,34 @@ export const preparePortfolioKit = (
           console.warn('⚠️ parseInboundTransfer failure', reason);
           throw reason;
         },
-        async onFulfilled(parsed) {
+        async onFulfilled(parsed, packet) {
           if (!parsed) {
             trace('GMP processing skipped; no parsed inbound transfer');
-            return;
+            return false;
+          }
+
+          // Validate that this is really from Axelar to Agoric on the expected
+          // channel.  We do this after parseInboundTransfer so that that
+          // function can be simpler and not need to know about Axelar or
+          // channels.
+          const [_agoric, _axelar, connection] = await vowTools.when(
+            chainHubTools.getChainsAndConnection('agoric', 'axelar'),
+          );
+          const agoricTransferChannel = connection.transferChannel.channelId;
+          if (packet.destination_channel !== agoricTransferChannel) {
+            trace(
+              `GMP processing skipped; Axelar chain packet expected on ${agoricTransferChannel}, got ${packet.destination_channel}`,
+            );
+            return false;
           }
 
           const { extra } = parsed;
           if (!extra.memo) return;
           if (extra.sender !== gmpAddresses.AXELAR_GMP) {
-            throw Error(
-              `Invalid GMP sender: expected ${gmpAddresses.AXELAR_GMP}, got ${extra.sender}`,
+            trace(
+              `GMP processing skipped; Axelar GMP sender expected ${gmpAddresses.AXELAR_GMP}, got ${extra.sender}`,
             );
+            return false;
           }
           const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
 
@@ -274,11 +291,9 @@ export const preparePortfolioKit = (
             Object.entries(axelarIds) as [AxelarChain, string][]
           ).find(([_, chainId]) => chainId === memo.source_chain);
 
-          // XXX we must have more than just a (forgeable) memo check here to
-          // determine if the source of this packet is the Axelar chain!
           if (!result) {
             console.warn('unknown source_chain', memo);
-            return;
+            return false;
           }
 
           const [chainName, _] = result;
@@ -323,6 +338,7 @@ export const preparePortfolioKit = (
           }
 
           trace('receiveUpcall completed');
+          return true;
         },
       },
       reader: {

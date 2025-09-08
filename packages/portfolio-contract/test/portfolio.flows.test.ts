@@ -16,7 +16,11 @@ import {
   documentStorageSchema,
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
-import { denomHash, type Orchestrator } from '@agoric/orchestration';
+import {
+  denomHash,
+  type ChainInfo,
+  type Orchestrator,
+} from '@agoric/orchestration';
 import { buildGasPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
@@ -298,10 +302,27 @@ const mocks = (
 
   const chainHubTools = harden({
     getChainInfo: (chainName: string) => {
+      if (chainName === 'agoric' || chainName === 'axelar') {
+        return { chainId: chainName } as Partial<ChainInfo>;
+      }
       if (!(chainName in axelarCCTPConfig)) {
         throw Error(`unable to get chainInfo for ${chainName}`);
       }
       return axelarCCTPConfig[chainName];
+    },
+    getChainsAndConnection: (primaryChainName, secondaryChainName) => {
+      const primaryChain = chainHubTools.getChainInfo(primaryChainName);
+      const secondaryChain = chainHubTools.getChainInfo(secondaryChainName);
+      return [
+        primaryChain,
+        secondaryChain,
+        {
+          transferChannel: {
+            channelId: 'channel-0',
+            counterpartyChannelId: 'channel-1',
+          },
+        },
+      ] as const;
     },
   });
 
@@ -934,21 +955,17 @@ test('receiveUpcall throws if sender is not AXELAR_GMP', async t => {
   );
   const { orch, tapPK, ctx, offer, storage } = mocks({}, give);
 
-  await t.throwsAsync(
-    () =>
-      Promise.all([
-        openPortfolio(orch, { ...ctx }, offer.seat, {
-          flow: steps,
-        }),
-        Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
-          tap.receiveUpcall(
-            makeIncomingEVMEvent({ sourceChain, sender: makeTestAddress() }),
-          ),
-        ),
-      ]),
-    { message: /Invalid GMP sender/ },
-    'Should reject transfers from non-Axelar GMP addresses',
-  );
+  const [upcallProcessed] = await Promise.all([
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
+      tap.receiveUpcall(
+        makeIncomingEVMEvent({ sourceChain, sender: makeTestAddress() }),
+      ),
+    ),
+    openPortfolio(orch, { ...ctx }, offer.seat, {
+      flow: steps,
+    }),
+  ]);
+  t.is(upcallProcessed, false, 'upcall indicates bad GMP sender');
 });
 
 test.todo('recover from send step');
