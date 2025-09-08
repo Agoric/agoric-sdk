@@ -965,7 +965,7 @@ __metadata:
     "@yarnpkg/types": "npm:^4.0.1"
     ava: "npm:^5.3.0"
     c8: "npm:^10.1.3"
-    conventional-changelog-conventionalcommits: "npm:^4.6.0"
+    conventional-changelog-conventionalcommits: "npm:^9.1.0"
     eslint: "npm:^9.32.0"
     eslint-config-airbnb-base: "npm:^15.0.0"
     eslint-config-jessie: "npm:^0.0.6"
@@ -8575,14 +8575,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"conventional-changelog-conventionalcommits@npm:^4.6.0":
-  version: 4.6.0
-  resolution: "conventional-changelog-conventionalcommits@npm:4.6.0"
+"conventional-changelog-conventionalcommits@npm:^9.1.0":
+  version: 9.1.0
+  resolution: "conventional-changelog-conventionalcommits@npm:9.1.0"
   dependencies:
     compare-func: "npm:^2.0.0"
-    lodash: "npm:^4.17.15"
-    q: "npm:^1.5.1"
-  checksum: 10c0/87d4868288d0a03d3f94796bf5245888d326eca75cd3bcef188ed6aa8315150015087cf854a2d6f5ab678ff5294dd81916c40e4f36be4d59113af1b13e845e2d
+  checksum: 10c0/b1dfbb8ce5983bb80837c35f089fb0f9603a1b067f34be680f88fde20871792e461e29d119d468bc293f38a1ca916c1c40a841f8c049a0a1efaa40582f4fecc9
   languageName: node
   linkType: hard
 
@@ -15453,13 +15451,6 @@ __metadata:
   version: 5.0.1
   resolution: "pure-rand@npm:5.0.1"
   checksum: 10c0/56fb43edf336ac939564d60535597a4182a6310627c4c7c54ef22499223a3d967bfa6d05a9c95c45ed5324bb7167de57a25e3fac5495dd4409672c08166d7973
-  languageName: node
-  linkType: hard
-
-"q@npm:^1.5.1":
-  version: 1.5.1
-  resolution: "q@npm:1.5.1"
-  checksum: 10c0/7855fbdba126cb7e92ef3a16b47ba998c0786ec7fface236e3eb0135b65df36429d91a86b1fff3ab0927b4ac4ee88a2c44527c7c3b8e2a37efbec9fe34803df4
   languageName: node
   linkType: hard
 
