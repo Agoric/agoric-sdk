@@ -1,10 +1,10 @@
-import test from 'ava';
 import { AmountMath } from '@agoric/ertp';
-import { rebalanceMinCostFlow } from '../tools/rebalance.ts';
-import type { Transfer } from '../tools/rebalance.ts';
 import type { Amount, Brand } from '@agoric/ertp/src/types.js';
 import { Far } from '@endo/marshal';
+import test from 'ava';
 import { planTransferPath } from '../tools/portfolio-actors.ts';
+import type { Transfer } from '../tools/rebalance.ts';
+import { rebalanceMinCostFlow } from '../tools/rebalance.ts';
 
 /**
  * Fake for testing
