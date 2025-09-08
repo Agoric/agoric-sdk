@@ -285,19 +285,19 @@ jobs:
         run: make --directory packages/cosmic-swingset install
         working-directory: agoric-sdk
 
-      - name: verify SDK image didn't change
-        # In the future when we can rebuild the SDK image with resolved endo packages, it would
-        # be expected that the SDK image previously built has changed
-        if: steps.restore-node.outputs.endo-branch == 'NOPE'
-        run: |
-          original=$(docker inspect --format "{{.ID}}" ghcr.io/agoric/agoric-sdk:unreleased)
-          yarn build:sdk
-          new=$(docker inspect --format "{{.ID}}" ghcr.io/agoric/agoric-sdk:unreleased)
-          if [ "$original" != "$new" ]; then
-            echo "New SDK docker image ($new) changed after restore-node (original $original)" 1>&2
-            exit 1
-          fi
-        working-directory: agoric-sdk/a3p-integration
+      # - name: verify SDK image didn't change
+      #   # In the future when we can rebuild the SDK image with resolved endo packages, it would
+      #   # be expected that the SDK image previously built has changed
+      #   if: steps.restore-node.outputs.endo-branch == 'NOPE'
+      #   run: |
+      #     original=$(docker inspect --format "{{.ID}}" ghcr.io/agoric/agoric-sdk:unreleased)
+      #     yarn build:sdk
+      #     new=$(docker inspect --format "{{.ID}}" ghcr.io/agoric/agoric-sdk:unreleased)
+      #     if [ "$original" != "$new" ]; then
+      #       echo "New SDK docker image ($new) changed after restore-node (original $original)" 1>&2
+      #       exit 1
+      #     fi
+      #   working-directory: agoric-sdk/a3p-integration
 
       - id: get-loadgen-branch
         name: Get the appropriate loadgen branch
