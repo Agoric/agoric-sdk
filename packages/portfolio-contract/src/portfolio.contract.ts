@@ -252,14 +252,15 @@ export const contract = async (
   };
 
   const resolverZone = zone.subZone('Resolver');
-  const {
-    client: resolverClient,
-    invitationMakers: makeResolverInvitationMakers,
-  } = prepareResolverKit(resolverZone, zcf, {
+  const makeResolverKit = prepareResolverKit(resolverZone, zcf, {
     vowTools,
     pendingTxsNode: E(storageNode).makeChildNode(PENDING_TXS_NODE_KEY),
     marshaller,
-  })();
+  });
+  const {
+    client: resolverClient,
+    invitationMakers: makeResolverInvitationMakers,
+  } = resolverZone.makeOnce('resolverKit', () => makeResolverKit());
 
   const { makeLCA } = orchestrateAll({ makeLCA: flows.makeLCA }, {});
   const contractAccountV = zone.makeOnce('contractAccountV', () => makeLCA());
