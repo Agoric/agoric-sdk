@@ -24,77 +24,68 @@ export function planDepositTransfers(
   currentBalances: Record<string, Amount<'nat'>>,
   targetAllocation: TargetAllocation,
 ): Record<string, Amount<'nat'>> {
-  const totalTargetPercentage = Object.values(targetAllocation).reduce(
-    (sum, percentage) => sum + percentage,
-    0n,
-  );
+  // Validate percentages sum to 100
+  const totalPct = Object.values(targetAllocation).reduce((s, p) => s + p, 0n);
+  if (totalPct !== 100n)
+    throw Error('Target allocation percentages must sum to 100');
 
-  if (totalTargetPercentage !== 100n) {
-    throw new Error('Target allocation percentages must sum to 100');
-  }
+  const brand = deposit.brand;
+  const make = (v: bigint) => AmountMath.make(brand, v);
+  const dep = deposit.value;
+  if (dep === 0n) return {};
 
-  const totalCurrentBalance = Object.values(currentBalances).reduce(
-    (sum, balance) => AmountMath.add(sum, balance),
-    AmountMath.makeEmpty(deposit.brand),
-  );
+  // Sum current balances (bigint)
+  let currentTotal = 0n;
+  for (const amt of Object.values(currentBalances)) currentTotal += amt.value;
+  const totalAfter = currentTotal + dep;
 
-  const totalAfterDeposit = AmountMath.add(totalCurrentBalance, deposit);
-
-  const plannedTransfers: Record<string, Amount<'nat'>> = {};
-  for (const [key, targetPercentage] of Object.entries(targetAllocation)) {
-    const targetAmount = AmountMath.make(
-      deposit.brand,
-      (totalAfterDeposit.value * targetPercentage) / 100n,
-    );
-
-    const currentBalance =
-      currentBalances[key] || AmountMath.makeEmpty(deposit.brand);
-
-    if (AmountMath.isGTE(currentBalance, targetAmount)) {
-      plannedTransfers[key] = AmountMath.makeEmpty(deposit.brand);
-    } else {
-      plannedTransfers[key] = AmountMath.subtract(targetAmount, currentBalance);
+  // Compute positive needs only (skip over-target)
+  const needs: Record<string, bigint> = {};
+  let sumNeeds = 0n;
+  for (const [k, pct] of Object.entries(targetAllocation)) {
+    const targetAbs = (totalAfter * pct) / 100n;
+    const cur = currentBalances[k]?.value || 0n;
+    if (cur >= targetAbs) continue;
+    const need = targetAbs - cur;
+    if (need > 0n) {
+      needs[k] = need;
+      sumNeeds += need;
     }
   }
+  if (sumNeeds === 0n) return {};
 
-  const totalPlanned = Object.values(plannedTransfers).reduce(
-    (sum, transfer) => AmountMath.add(sum, transfer),
-    AmountMath.makeEmpty(deposit.brand),
-  );
-
-  if (AmountMath.isGTE(totalPlanned, deposit)) {
-    const scalingFactor = deposit.value / totalPlanned.value;
-    for (const key of Object.keys(plannedTransfers)) {
-      plannedTransfers[key] = AmountMath.make(
-        deposit.brand,
-        (plannedTransfers[key].value * scalingFactor) / 1n,
-      );
-    }
+  // If deposit covers all needs, allocate fully; otherwise scale proportionally
+  const transfers: Record<string, Amount<'nat'>> = {};
+  if (sumNeeds <= dep) {
+    for (const [k, need] of Object.entries(needs)) transfers[k] = make(need);
+    return transfers;
   }
-
-  return plannedTransfers;
+  for (const [k, need] of Object.entries(needs)) {
+    const scaled = (need * dep) / sumNeeds; // floor scaling
+    if (scaled > 0n) transfers[k] = make(scaled);
+  }
+  return transfers;
 }
 
-/** outbound only. XXX rename. presumes assets are in @noble */
+/**
+ * Plan a transfer from the (implicit) @noble hub out to a destination pool.
+ * Assumes assets already at @noble unless a preface path is supplied.
+ */
 export const planTransfer = (
   dest: PoolKey,
   amount: NatAmount,
   feeBrand: Brand<'nat'>,
   preface: MovementDesc[] = [],
-  // preface: MovementDesc[] = [
-  //   { src: '+agoric', dest: '@agoric', amount },
-  //   { src: '@agoric', dest: '@noble', amount },
-  // ],
 ): MovementDesc[] => {
   const { protocol: p, chainName: evm } = PoolPlaces[dest];
   const steps: MovementDesc[] = [];
-
   switch (p) {
-    case 'USDN':
+    case 'USDN': {
       const detail = { usdnOut: ((amount.value || 0n) * 99n) / 100n };
-      console.warn('TODO: client should query exchange rate');
+      // TODO: fetch current exchange rate instead of 99%
       steps.push({ src: '@noble', dest: 'USDNVault', amount, detail });
       break;
+    }
     case 'Aave':
     case 'Compound':
       // XXX optimize: combine noble->evm steps
@@ -104,14 +95,14 @@ export const planTransfer = (
         amount,
         // TODO: Rather than hard-code, derive from Axelar `estimateGasFee`.
         // https://docs.axelar.dev/dev/axelarjs-sdk/axelar-query-api#estimategasfee
-        fee: make(feeBrand, 15_000_000n),
+        fee: AmountMath.make(feeBrand, 15_000_000n),
       });
       console.warn('TODO: fees');
       steps.push({
         src: `@${evm}`,
         dest: `${p}_${evm}`,
         amount,
-        fee: make(feeBrand, 15_000_000n), // KLUDGE.
+        fee: AmountMath.make(feeBrand, 15_000_000n), // KLUDGE.
       });
       break;
     default:
@@ -120,7 +111,10 @@ export const planTransfer = (
   return harden([...preface, ...steps]);
 };
 
-/** uses @noble as the sync point */
+/**
+ * Construct a path moving assets from one pool to another via the @noble hub.
+ * If src === dest returns an empty array.
+ */
 export const planTransferPath = (
   src: PoolKey,
   dest: PoolKey,
@@ -136,127 +130,95 @@ export const planTransferPath = (
   const tail = planTransfer(dest, amount, feeBrand);
   const { protocol: p, chainName: evm } = PoolPlaces[src];
   const steps: MovementDesc[] = [];
-
   switch (p) {
     case 'USDN':
-      steps.push({ dest: '@noble', src: 'USDNVault', amount });
+      steps.push({ src: 'USDNVault', dest: '@noble', amount });
       break;
     case 'Aave':
     case 'Compound':
-      console.warn('TODO: fees');
-      steps.push({
-        src: `${p}_${evm}`,
-        dest: `@${evm}`,
-        amount,
-        // TODO fee: fees[p].Call,
-      });
-      // XXX optimize: combine noble->evm steps
-      steps.push({
-        src: `@${evm}`,
-        dest: '@noble',
-        amount,
-        // XXXfee: fees[p].Account,
-      });
+      steps.push({ src: `${p}_${evm}`, dest: `@${evm}`, amount });
+      steps.push({ src: `@${evm}`, dest: '@noble', amount });
       break;
     default:
       throw Error('unreachable');
   }
   return harden([...steps, ...tail]);
 };
-const { entries, values } = Object;
-const { add, make } = AmountMath;
-const amountSum = <A extends Amount>(amounts: A[]) =>
-  amounts.reduce((acc, v) => add(acc, v));
 
 /**
- * Creates a sequence of movement steps to achieve a portfolio allocation goal.
- *
- * This function generates a list of `MovementDesc` steps to move assets
- * between different positions (e.g., USDN, Aave, Compound) to achieve the
- * desired portfolio allocation. It also calculates the total deposit and
- * optional GMP fees required for the movements.
- *
- * @template G - A partial record of yield protocols and their target amounts.
- * @param {G} goal - The target allocation for each yield protocol.
- * @param {object} opts - Additional options for the portfolio steps.
- * @param {AxelarChain} [opts.evm='Arbitrum'] - The default EVM chain for Aave/Compound.
- * @param {Brand<'nat'>} [opts.feeBrand] - The brand for GMP fees.
- * @param {Record<keyof G, { Account: NatAmount; Call: NatAmount }>} [opts.fees] - Fees for account and contract calls.
- * @param {{ usdnOut: NatValue }} [opts.detail] - Details for USDN transfers.
- * @returns {{ give: Record<string, Amount<'nat'>>; steps: MovementDesc[] }} - The calculated deposit and movement steps.
- *
- * @throws Will throw if the goal is empty or if required parameters are missing.
- *
- * @example
- * const goal = { USDN: AmountMath.make(brand, 1000n), Aave: AmountMath.make(brand, 500n) };
- * const { give, steps } = makePortfolioSteps(goal, { evm: 'Arbitrum', feeBrand });
- * console.log(give); // { Deposit: ..., GmpFee: ... }
- * console.log(steps); // [{ src: '<Deposit>', dest: '@agoric', amount: ... }, ...]
+ * Build deposit (give) and movement steps to achieve goal amounts per protocol.
+ * Aggregates deposit at @noble then fan-outs to chain-specific pools.
  */
 export const makePortfolioSteps = <
   G extends Partial<Record<YieldProtocol, NatAmount>>,
 >(
   goal: G,
   opts: {
-    /** XXX assume same chain for Aave and Compound */
     evm?: AxelarChain;
     feeBrand?: Brand<'nat'>;
     fees?: Record<keyof G, { Account: NatAmount; Call: NatAmount }>;
     detail?: { usdnOut: NatValue };
   } = {},
 ) => {
-  values(goal).length > 0 || Fail`empty goal`;
-  const { USDN: _1, ...evmGoal } = goal;
+  Object.values(goal).length > 0 || Fail`empty goal`;
+  const { USDN: _ignored, ...evmGoal } = goal;
   const {
     evm = 'Arbitrum',
     feeBrand,
     fees = objectMap(evmGoal, _ => ({
-      Account: make(NonNullish(feeBrand), 150n),
-      Call: make(NonNullish(feeBrand), 100n),
+      Account: AmountMath.make(NonNullish(feeBrand), 150n),
+      Call: AmountMath.make(NonNullish(feeBrand), 100n),
     })),
     detail = 'USDN' in goal
       ? { usdnOut: ((goal.USDN?.value || 0n) * 99n) / 100n }
       : undefined,
   } = opts;
-  const steps: MovementDesc[] = [];
 
-  const Deposit = amountSum(values(goal));
-  const GmpFee =
-    values(fees).length > 0
-      ? amountSum(
-          values(fees)
-            .map(f => [f.Account, f.Call])
-            .flat(),
-        )
-      : undefined;
-  const give = { Deposit, ...(GmpFee ? { GmpFee } : {}) };
-  steps.push({ src: '<Deposit>', dest: '@agoric', amount: Deposit });
-  steps.push({ src: '@agoric', dest: '@noble', amount: Deposit });
-  for (const [p, amount] of entries(goal)) {
-    switch (p) {
+  const steps: MovementDesc[] = [];
+  const values = Object.values(goal) as NatAmount[];
+  const deposit = values.reduce((acc, v) => AmountMath.add(acc, v));
+  const feeValues = Object.values(fees) as {
+    Account: NatAmount;
+    Call: NatAmount;
+  }[];
+  const gmpFee = feeValues.length
+    ? feeValues
+        .map(f => [f.Account, f.Call])
+        .flat()
+        .reduce((acc, v) => AmountMath.add(acc, v))
+    : undefined;
+  const give = {
+    Deposit: deposit,
+    ...(gmpFee ? { GmpFee: gmpFee } : {}),
+  } as Record<string, Amount<'nat'>>;
+  steps.push({ src: '<Deposit>', dest: '@agoric', amount: deposit });
+  steps.push({ src: '@agoric', dest: '@noble', amount: deposit });
+  for (const [proto, amount] of Object.entries(goal) as [
+    YieldProtocol,
+    NatAmount,
+  ][]) {
+    switch (proto) {
       case 'USDN':
         steps.push({ src: '@noble', dest: 'USDNVault', amount, detail });
         break;
       case 'Aave':
       case 'Compound':
-        // XXX optimize: combine noble->evm steps
         steps.push({
           src: '@noble',
           dest: `@${evm}`,
           amount,
-          fee: fees[p].Account,
+          fee: fees[proto].Account,
         });
         steps.push({
           src: `@${evm}`,
-          dest: `${p}_${evm}`,
+          dest: `${proto}_${evm}`,
           amount,
-          fee: fees[p].Call,
+          fee: fees[proto].Call,
         });
         break;
       default:
         throw Error('unreachable');
     }
   }
-
   return harden({ give, steps });
 };

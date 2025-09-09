@@ -2,7 +2,7 @@ import test from 'ava';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import { Far } from '@endo/pass-style';
 import type { TargetAllocation } from '@aglocal/portfolio-contract/src/type-guards.js';
-import { planDepositTransfers } from '../src/plan-transfers.js';
+import { planDepositTransfers } from '../src/plan-transfers.ts';
 import { makeTracer } from '@agoric/internal';
 
 const brand = Far('mock brand') as Brand<'nat'>;

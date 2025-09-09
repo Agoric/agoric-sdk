@@ -12,7 +12,7 @@ import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-
 import {
   planDepositTransfers,
   planTransfer,
-} from '@aglocal/portfolio-contract/src/plan-transfers.js';
+} from '@aglocal/portfolio-contract/src/plan-transfers.ts';
 import type { CosmosRestClient } from './cosmos-rest-client.js';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 
