@@ -1187,7 +1187,7 @@ func (app *GaiaApp) Commit() (*abci.ResponseCommit, error) {
 
 	if err != nil {
 		app.Logger().Error("swing-store export failed to start", "err", err)
-		return nil, err
+		// failing to perform a swing-store export is not fatal.
 	}
 
 	// Frontrun the BaseApp's Commit method
@@ -1208,7 +1208,7 @@ func (app *GaiaApp) Commit() (*abci.ResponseCommit, error) {
 
 		if err != nil {
 			app.Logger().Error("failed to initiate swingset snapshot", "err", err)
-			return nil, err
+			// failing to initiate a snapshot is not fatal. It can happen e.g. if a snapshot is already in progress
 		}
 	}
 
