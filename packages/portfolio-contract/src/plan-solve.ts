@@ -8,15 +8,10 @@ import type {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import { Fail } from '@endo/errors';
-import { solve as yalpsSolve } from 'yalps';
-import type {
-  Model as YalpsModel,
-  // Constraint,
-  // Coefficients,
-  // OptimizationDirection,
-  // Options,
-  // Solution,
-} from 'yalps';
+import jsLPSolver from 'javascript-lp-solver';
+import { makeTracer } from '@agoric/internal';
+
+const trace = makeTracer('solve', 'verbose');
 
 const provideRecord = <
   K1 extends PropertyKey,
@@ -110,47 +105,10 @@ export interface LpModel {
  *  - Treat |value| < FLOW_EPS as zero when decoding
  * -----------------------------------------------------------------------------
  */
-const AMOUNT_SCALE = 1e3;
 const FLOW_EPS = 1e-6;
 
-// Added helper for signed bigint delta scaling (distinct from scaleAmountBigInt for clarity)
-const scaleBigInt = (n: bigint): number => {
-  const num = Number(n);
-  if (!Number.isFinite(num)) {
-    throw Fail`BigInt ${n} exceeds numeric range for solver`;
-  }
-  return num / AMOUNT_SCALE; // preserves sign
-};
-const scaleAmountBigInt = (n: bigint): number => {
-  const num = Number(n);
-  if (!Number.isFinite(num)) {
-    throw Fail`BigInt ${n} exceeds numeric range for solver`;
-  }
-  return num / AMOUNT_SCALE;
-};
-const scaleAmount = (a: NatAmount): number => scaleAmountBigInt(a.value);
-const scaleVariableFee = (feeNative: number): number =>
-  feeNative / AMOUNT_SCALE;
-const scaleLatency = (seconds?: number) =>
-  seconds === undefined ? undefined : seconds / 60;
-
-// --------------------------- Helpers ---------------------------
-
-const chainOf = (id: GraphNodeId): string => {
-  if (id.startsWith('@')) return id.slice(1);
-  if (id === '<Cash>' || id === '<Deposit>' || id === '+agoric')
-    return 'agoric';
-  if (id in PoolPlaces) {
-    const pk = id as PoolKey;
-    return PoolPlaces[pk].chainName;
-  }
-  throw Fail`Cannot determine chain for ${id}`;
-};
-
-// Identify if node is chain hub
-const isHub = (id: GraphNodeId): boolean => id.startsWith('@');
-
-// --------------------------- Graph Construction ---------------------------
+// Simplified helpers (identity conversions)
+const scaleBigInt = (n: bigint): number => Number(n);
 
 /**
  * Build base graph with:
@@ -170,7 +128,7 @@ export const buildBaseGraph = (
   current: Partial<Record<GraphNodeId, NatAmount>>,
   target: Partial<Record<GraphNodeId, NatAmount>>,
   brand: Amount['brand'],
-  scale = AMOUNT_SCALE,
+  _scale: number = 1,
 ): RebalanceGraph => {
   const nodes = new Set<GraphNodeId>();
   const edges: FlowEdge[] = [];
@@ -187,21 +145,21 @@ export const buildBaseGraph = (
   for (const node of nodes) {
     const currentVal = current[node]?.value ?? 0n;
     const targetVal = target[node]?.value ?? 0n;
-    const delta = currentVal - targetVal; // signed bigint
+    const delta = currentVal - targetVal;
     if (delta !== 0n) supplies[node] = scaleBigInt(delta);
   }
 
   // Intra-chain edges (leaf <-> hub)
   let eid = 0;
-  const vf = scaleVariableFee(1); // $1 per native unit, scaled
-  const tf = scaleLatency(60); // 1 minute latency
+  const vf = 1; // direct variable fee per unit
+  const tf = 1; // time cost unit (seconds or abstract)
   for (const node of nodes) {
     if (isHub(node)) continue;
     const hub = `@${chainOf(node)}` as GraphNodeId;
     if (node === hub) continue;
 
     const base: Omit<FlowEdge, 'src' | 'dest' | 'id'> = {
-      capacity: Number.MAX_SAFE_INTEGER / 4, // large capacity
+      capacity: (Number.MAX_SAFE_INTEGER + 1) / 4,
       variableFee: vf,
       fixedFee: 0,
       timeFixed: tf,
@@ -214,7 +172,7 @@ export const buildBaseGraph = (
   }
 
   // Return mutable graph (do NOT harden so we can add inter-chain links later)
-  return { nodes, edges, supplies, brand, scale } as RebalanceGraph;
+  return { nodes, edges, supplies, brand, scale: 1 } as RebalanceGraph;
 };
 
 /**
@@ -238,17 +196,15 @@ export const addInterchainLink = (
   if (!graph.nodes.has(src) || !graph.nodes.has(dest)) {
     throw Fail`Chain hubs missing for link ${src}->${dest}`;
   }
-  const cap = scaleAmountBigInt(capacity);
-  const vFeeModel = scaleVariableFee(variableFee);
-  const tFixedModel = scaleLatency(timeFixed);
+  const cap = Number(capacity); // direct, assumes capacity fits JS number
   graph.edges.push({
     id: `e${graph.edges.length}`,
     src,
     dest,
     capacity: cap,
-    variableFee: vFeeModel,
+    variableFee,
     fixedFee,
-    timeFixed: tFixedModel,
+    timeFixed,
     via,
   });
 };
@@ -328,86 +284,84 @@ export const buildModel = (
   return model;
 };
 
-// NEW: translate intermediate LpModel to YALPS model (remove unsupported bounds)
-const toYalpsModel = (lp: LpModel): YalpsModel => {
-  // YALPS model (as used here) supports: objective, constraints, binaries
-  const constraints: YalpsModel['constraints'] = [];
-  const binaries = new Set<string>();
+// NEW: translate intermediate LpModel to js-lp-solver compatible model
+export interface JsSolverModel {
+  optimize: string;
+  opType: 'min' | 'max';
+  constraints: Record<string, { equal?: number; max?: number; min?: number }>;
+  variables: Record<string, Record<string, number>>;
+  binaries?: Record<string, 1>;
+  ints?: Record<string, 1>;
+}
+
+export const toJsSolverModel = (lp: LpModel): JsSolverModel => {
+  const optimizeKey = 'cost';
+  // Extract objective coefficients from synthetic obj variable
   const objectiveTerms: Record<string, number> = {};
-
-  // Extract objective coefficients (skip the synthetic 'obj' key)
-  const objVars = lp.variables.obj;
-  for (const [k, v] of Object.entries(objVars)) {
+  const objVar = lp.variables.obj || {};
+  for (const [k, v] of Object.entries(objVar)) {
     if (k === 'obj') continue;
-    objectiveTerms[k] = v;
+    if (typeof v === 'number') objectiveTerms[k] = v;
   }
-
-  // Translate constraints
-  for (const [, cSpec] of Object.entries(lp.constraints)) {
-    const terms: Record<string, number> = {};
-    let sense: 'eq' | 'leq' = 'leq';
-    let rhs = 0;
-    for (const [v, coeff] of Object.entries(cSpec)) {
-      if (v === 'max' || v === 'equal' || v === 'min') continue;
-      terms[v] = coeff;
-    }
-    if ('equal' in cSpec) {
-      sense = 'eq';
-      rhs = cSpec.equal!;
-    } else if ('max' in cSpec) {
-      sense = 'leq';
-      rhs = cSpec.max!;
-    } else {
-      continue;
-    }
-    constraints.push({ terms, sense, rhs });
-  }
-
-  if (lp.binaries) {
-    for (const b of Object.keys(lp.binaries)) {
-      binaries.add(b);
+  // Build constraints bounds only + accumulate variable coefficients
+  const constraints: JsSolverModel['constraints'] = {};
+  const variables: Record<string, Record<string, number>> = {};
+  for (const [cName, spec] of Object.entries(lp.constraints)) {
+    const bounds: { equal?: number; max?: number; min?: number } = {};
+    if (typeof (spec as any).equal === 'number')
+      bounds.equal = (spec as any).equal;
+    if (typeof (spec as any).max === 'number') bounds.max = (spec as any).max;
+    if (typeof (spec as any).min === 'number') bounds.min = (spec as any).min;
+    constraints[cName] = bounds;
+    for (const [vName, coeff] of Object.entries(spec)) {
+      if (vName === 'equal' || vName === 'max' || vName === 'min') continue;
+      provideRecord(variables, vName)[cName] = coeff as number;
     }
   }
-
-  return {
-    objective: { direction: 'min', terms: objectiveTerms },
+  // Apply objective coefficients under optimizeKey
+  for (const [vName, coeff] of Object.entries(objectiveTerms)) {
+    provideRecord(variables, vName)[optimizeKey] = coeff;
+  }
+  const jsModel: JsSolverModel = {
+    optimize: optimizeKey,
+    opType: 'min',
     constraints,
-    binaries,
+    variables,
   };
+  if (lp.binaries && Object.keys(lp.binaries).length)
+    jsModel.binaries = lp.binaries;
+  if (lp.ints && Object.keys(lp.ints).length) jsModel.ints = lp.ints;
+  return jsModel;
 };
 
-// Adjusted runYalps (no bounds handling)
-type YalpsResult = {
-  status: string;
-  objective: number;
-  values: Record<string, number>;
+const runJsSolver = (model: JsSolverModel) => {
+  const res = (jsLPSolver as any).Solve(model);
+  return res as {
+    result: number;
+    feasible: boolean;
+    bounded: boolean;
+  } & Record<string, number | unknown>;
 };
 
-const runYalps = (model: YalpsModel): YalpsResult => {
-  const res = yalpsSolve(model) as any;
-  return {
-    status: res.status || res.result || 'unknown',
-    objective: res.objective,
-    values: res.variables || res.values || {},
-  };
-};
-
-// REPLACED: solveRebalance now uses YALPS (static import, no dynamic import)
+// UPDATED solveRebalance: use javascript-lp-solver directly
 export const solveRebalance = async (
   model: LpModel,
   graph: RebalanceGraph,
 ): Promise<SolvedEdgeFlow[]> => {
-  const yalpsModel = toYalpsModel(model);
-  const result = runYalps(yalpsModel);
-  if (result.status !== 'optimal') {
-    throw Fail`No feasible solution (status: ${result.status})`;
+  const jsModel = toJsSolverModel(model);
+  trace('Model:', JSON.stringify(model, null, 2));
+  trace('JS Solver Model:', JSON.stringify(jsModel, null, 2));
+  const result = runJsSolver(jsModel);
+  // js-lp-solver returns feasible flag; treat absence as failure
+  if ((result as any).feasible === false) {
+    throw Fail`No feasible solution`;
   }
   const flows: SolvedEdgeFlow[] = [];
   for (const edge of graph.edges) {
     const vName = `f_${edge.id}`;
-    const flowVal = result.values[vName];
-    if (flowVal !== undefined && Math.abs(flowVal) > FLOW_EPS) {
-      const used = result.values[`y_${edge.id}`] === 1 || flowVal > FLOW_EPS;
+    const flowVal = (result as any)[vName];
+    if (typeof flowVal === 'number' && Math.abs(flowVal) > FLOW_EPS) {
+      const used = (result as any)[`y_${edge.id}`] === 1 || flowVal > FLOW_EPS;
       flows.push({ edge, flow: flowVal, used });
     }
   }
@@ -425,17 +379,13 @@ export const rebalanceMinCostFlowSteps = (
   // 0: leaf->hub, 1: hub->hub, 2: hub->leaf
   type Cat = 0 | 1 | 2;
   const catOf = (e: FlowEdge): Cat =>
-    !isHub(e.src) && isHub(e.dest)
-      ? 0
-      : isHub(e.src) && isHub(e.dest)
-        ? 1
-        : 2;
+    !isHub(e.src) && isHub(e.dest) ? 0 : isHub(e.src) && isHub(e.dest) ? 1 : 2;
 
   const active = flows
     .filter(f => f.flow > FLOW_EPS)
     .map(f => ({
       edge: f.edge,
-      amt: BigInt(Math.round(f.flow * graph.scale)),
+      amt: BigInt(Math.round(f.flow)),
       cat: catOf(f.edge),
     }));
 
@@ -472,7 +422,7 @@ export const planRebalanceFlow = async (opts: {
   brand: Amount['brand'];
   links?: InterchainLinkSpec[];
   mode?: RebalanceMode;
-  scale?: number;
+  scale?: number; // ignored (legacy)
 }) => {
   const {
     placeRefs,
@@ -480,11 +430,10 @@ export const planRebalanceFlow = async (opts: {
     target,
     brand,
     links = [],
-    mode = 'cheapest',
-    scale = 1,
+    mode = 'fastest',
   } = opts;
 
-  const graph = buildBaseGraph(placeRefs, current, target, brand, scale);
+  const graph = buildBaseGraph(placeRefs, current, target, brand, 1);
   // Ensure hubs referenced only in links (e.g. noble) are present before adding edges
   for (const { srcChain, destChain } of links) {
     graph.nodes.add(`@${srcChain}` as GraphNodeId);
@@ -498,7 +447,20 @@ export const planRebalanceFlow = async (opts: {
   return harden({ graph, model, flows, steps });
 };
 
-// --------------------------- Example (commented) ---------------------------
+// Helpers reinstated after scaling removal
+const chainOf = (id: GraphNodeId): string => {
+  if (id.startsWith('@')) return id.slice(1);
+  if (id === '<Cash>' || id === '<Deposit>' || id === '+agoric')
+    return 'agoric';
+  if (id in PoolPlaces) {
+    const pk = id as PoolKey;
+    return PoolPlaces[pk].chainName;
+  }
+  throw Fail`Cannot determine chain for ${id}`;
+};
+const isHub = (id: GraphNodeId): boolean => id.startsWith('@');
+
+// ---------------------------- Example (commented) ----------------------------
 /*
 Example usage:
 
