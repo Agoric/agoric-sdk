@@ -71,7 +71,7 @@ test('sendBridgeAction handles simple action', async t => {
         },
       },
     ],
-    fee: { amount: [{ denom: 'ubld', amount: '30000' }], gas: '197000' },
+    fee: { amount: [{ denom: 'ubld', amount: '500000' }], gas: '19700000' },
   });
 });
 
