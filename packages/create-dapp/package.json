@@ -1,6 +1,6 @@
 {
   "name": "@agoric/create-dapp",
-  "version": "0.1.0",
+  "version": "0.2.0-u22.0",
   "description": "Create an Agoric Javascript smart contract application",
   "type": "module",
   "bin": "src/create-dapp.js",

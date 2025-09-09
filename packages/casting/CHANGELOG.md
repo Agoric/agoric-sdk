@@ -3,24 +3,39 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.0-u22.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/casting@0.4.2...@agoric/casting@0.5.0-u22.0) (2025-09-08)
+
+### ⚠ BREAKING CHANGES
+
+* drop support for verified queries
+
+### Features
+
+* **casting:** makeHttpClient for explicit net access with cosmjs ([5bc5138](https://github.com/Agoric/agoric-sdk/commit/5bc513853d144f2967d9c2fc5b21fa2c4e284982))
+* makeTendermintRpcClient ([129516a](https://github.com/Agoric/agoric-sdk/commit/129516a8f3ae58f16d17460f58d2c69ee215a584))
+* **types:** ambient exports from agoric/internal ([71d18c4](https://github.com/Agoric/agoric-sdk/commit/71d18c4221f63f1c0e7c45562b5a0a86a0b4b5c0))
+* **types:** explicit exports from notifier ([0bc72a8](https://github.com/Agoric/agoric-sdk/commit/0bc72a88c7d91ff1b2f00ee5cabeb58c6315598e))
+
+### Bug Fixes
+
+* **casting:** dont crash on bad capdata ([8f4ba3a](https://github.com/Agoric/agoric-sdk/commit/8f4ba3a2f56174161d88f57280513ee5a0f5d4d9))
+* **casting:** explicitly harden prototypes ([833c9b3](https://github.com/Agoric/agoric-sdk/commit/833c9b3f63bb83362789bc1261eabf71a8e88ea2))
+* **casting:** properly follow an unpopulated state entry ([97be818](https://github.com/Agoric/agoric-sdk/commit/97be818c4f5c507830f70392f334fa60dd6d7f94))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+
+### Miscellaneous Chores
+
+* drop support for verified queries ([72715c5](https://github.com/Agoric/agoric-sdk/commit/72715c5de745df1be86accbff7aa915a6c9abfaf))
+
 ### [0.4.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/casting@0.4.1...@agoric/casting@0.4.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/casting
-
-
-
-
 
 ### [0.4.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/casting@0.4.0...@agoric/casting@0.4.1) (2023-05-24)
 
 **Note:** Version bump only for package @agoric/casting
 
-
-
-
-
 ## [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/casting@0.3.2...@agoric/casting@0.4.0) (2023-05-19)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -40,62 +55,38 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * getReverseIterable skip height fetch ([edbc8ec](https://github.com/Agoric/agoric-sdk/commit/edbc8ec2fab4a71e2675f5cc608f25d27b43b524))
 * vstorageKeySpecToPath ([9db1fbb](https://github.com/Agoric/agoric-sdk/commit/9db1fbb1328c28282db972b3e130e2ee3515b87d))
 
-
 ### Bug Fixes
 
 * **casting:** use new subscriber tools ([cb1f739](https://github.com/Agoric/agoric-sdk/commit/cb1f739c36c28befa2ab097bfc9b86686dbe57c3))
 * require chainName ([5c5e661](https://github.com/Agoric/agoric-sdk/commit/5c5e661f444add3e1544c931c475a3a266a080de))
 
-
 ### Miscellaneous Chores
 
 * rename 'fit' to 'mustMatch' ([9fa3232](https://github.com/Agoric/agoric-sdk/commit/9fa32324f84bfb85de9e99e0c9ad277b8017b50e)), closes [#6844](https://github.com/Agoric/agoric-sdk/issues/6844)
-
-
 
 ### [0.3.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/casting@0.3.3...@agoric/casting@0.3.4) (2023-02-17)
 
 **Note:** Version bump only for package @agoric/casting
 
-
-
-
-
 ### [0.3.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/casting@0.3.2...@agoric/casting@0.3.3) (2022-12-14)
 
 **Note:** Version bump only for package @agoric/casting
-
-
-
-
 
 ### [0.3.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/casting@0.3.1...@agoric/casting@0.3.2) (2022-10-18)
 
 **Note:** Version bump only for package @agoric/casting
 
-
-
-
-
 ### [0.3.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/casting@0.3.0...@agoric/casting@0.3.1) (2022-10-08)
 
 **Note:** Version bump only for package @agoric/casting
 
-
-
-
-
 ## [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/casting@0.2.0...@agoric/casting@0.3.0) (2022-10-05)
-
 
 ### Features
 
 * **cli:** show status of invitations ([8506e6d](https://github.com/Agoric/agoric-sdk/commit/8506e6d87ef331e781c9d2e2251fdcf48e784e04))
 
-
-
 ## 0.2.0 (2022-09-20)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -109,7 +100,6 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * **wallet:** some feedback when no smart wallet ([8057c35](https://github.com/Agoric/agoric-sdk/commit/8057c35d2a89b9d80d31c1da10279c248b3c6e68))
 * **wallet-connection:** Connect dapp directly to wallet UI ([#5750](https://github.com/Agoric/agoric-sdk/issues/5750)) ([1dd584b](https://github.com/Agoric/agoric-sdk/commit/1dd584b195212705b1f74a8c89b7f3f121640e41))
 * contract for single on-chain wallet ([0184a89](https://github.com/Agoric/agoric-sdk/commit/0184a89403a3719f21dc61de37865512cdc819ae))
-
 
 ### Bug Fixes
 

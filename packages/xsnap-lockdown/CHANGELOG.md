@@ -3,13 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
-## 0.14.0 (2023-05-19)
+## [0.14.1-u22.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap-lockdown@0.14.0...@agoric/xsnap-lockdown@0.14.1-u22.0) (2025-09-08)
 
+### Bug Fixes
+
+* ensure script main rejections exit with error ([abdab87](https://github.com/Agoric/agoric-sdk/commit/abdab879014a5c3124ebd0e9246995ac6b1ce6e5))
+
+## 0.14.0 (2023-05-19)
 
 ### Features
 
 * create new xsnap-lockdown package ([2af831d](https://github.com/Agoric/agoric-sdk/commit/2af831d9683a4080168ee267e8d57227d2167f37)), closes [#6596](https://github.com/Agoric/agoric-sdk/issues/6596)
-
 
 ### Bug Fixes
 

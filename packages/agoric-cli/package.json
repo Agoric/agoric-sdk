@@ -1,6 +1,6 @@
 {
   "name": "agoric",
-  "version": "0.21.1",
+  "version": "0.22.0-u22.0",
   "description": "Manage the Agoric Javascript smart contract platform",
   "type": "module",
   "main": "src/main.js",

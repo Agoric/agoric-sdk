@@ -1,6 +1,6 @@
 {
   "name": "@agoric/notifier",
-  "version": "0.6.2",
+  "version": "0.7.0-u22.0",
   "description": "Notifier allows services to update clients about state changes using a stream of promises",
   "type": "module",
   "main": "src/index.js",

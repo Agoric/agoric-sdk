@@ -3,16 +3,100 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.0-u22.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.16.1...@agoric/inter-protocol@0.17.0-u22.0) (2025-09-08)
+
+### ⚠ BREAKING CHANGES
+
+* **zone:** use fresh heap and virtual zones
+
+### Features
+
+*  smartWallet verstion 2 with watchedPromises ([5ed5107](https://github.com/Agoric/agoric-sdk/commit/5ed51078d39e643d91b572d9c50fad4a276d7ded))
+* a proposal to upgrade scaledPriceAuthorities ([e5ed0ff](https://github.com/Agoric/agoric-sdk/commit/e5ed0ff6abcb83f52b32d49125e21e6e41923ed0))
+* add an accessor for the vaultDirector's parameters ([32f1398](https://github.com/Agoric/agoric-sdk/commit/32f13984751a5404aad3e9f3dc72b056292a78a3))
+* add null upgrade of vaultFactoryGovernor to upgrade-vaults.js ([6376e16](https://github.com/Agoric/agoric-sdk/commit/6376e1691b119c336496e51a81930a9cdb608f81))
+* add the ability to override param values ([4839907](https://github.com/Agoric/agoric-sdk/commit/4839907f705a663f243aab70857aa2cc1747faa5))
+* addBrand() for issuers that were already in auctions ([6c78f96](https://github.com/Agoric/agoric-sdk/commit/6c78f96c3608d59e14139ad859d2cca9280ec330))
+* auctioneer detects failing priceAuthority; requests new one ([#8691](https://github.com/Agoric/agoric-sdk/issues/8691)) ([8604b01](https://github.com/Agoric/agoric-sdk/commit/8604b011b072d7bef43df59c075bcff9582b8804)), closes [#8696](https://github.com/Agoric/agoric-sdk/issues/8696)
+* **auctions:** observe quote wo/ getDisplayInfo ([fff76f3](https://github.com/Agoric/agoric-sdk/commit/fff76f3954539f7166516df2bed36fd2ab6d9ac8))
+* catch all exceptions in auction wakers ([#8438](https://github.com/Agoric/agoric-sdk/issues/8438)) ([d4b32f1](https://github.com/Agoric/agoric-sdk/commit/d4b32f129868ed2faa32f1bcad51b5d2248d4c14))
+* core eval for replacing charter members ([100acf0](https://github.com/Agoric/agoric-sdk/commit/100acf0a1893f69b94871fb26aa3f368686bac1c))
+* core eval for replacing electorate ([46e49da](https://github.com/Agoric/agoric-sdk/commit/46e49da6a73ab3cf010aa0ac081cf62d3d937a18))
+* coreEval to update priceFeeds, auction, and vaultManager ([fd91f78](https://github.com/Agoric/agoric-sdk/commit/fd91f781ad721033d67485d1732272af0c689ae7))
+* disable recoverSets in priceAuthority and fluxAggregator ([9eb20a4](https://github.com/Agoric/agoric-sdk/commit/9eb20a478f3a59bf7c0fb8ca8923f5825fa82113))
+* getBridgeId on ScopedBridgeManager ([aec4dea](https://github.com/Agoric/agoric-sdk/commit/aec4dea4f4d6baca3ea32c33551ba00658eab31b))
+* **guard:** tighten roundsManager ([990a79d](https://github.com/Agoric/agoric-sdk/commit/990a79deaeaf956ea0076dba1c19305677ec8124))
+* **inter-protocol:** Add core-eval builder for depositing reserve withdrawal invitations ([#11678](https://github.com/Agoric/agoric-sdk/issues/11678)) ([754cd9e](https://github.com/Agoric/agoric-sdk/commit/754cd9e5fe69ad4921eb057140c1384f173bb4be)), closes [#11460](https://github.com/Agoric/agoric-sdk/issues/11460) [TypeError#1](https://github.com/Agoric/TypeError/issues/1) [TypeError#1](https://github.com/Agoric/TypeError/issues/1) [TypeError#1](https://github.com/Agoric/TypeError/issues/1) [v39#70001](https://github.com/Agoric/v39/issues/70001) [v39#70001](https://github.com/Agoric/v39/issues/70001) [#1](https://github.com/Agoric/agoric-sdk/issues/1) [v39#70001](https://github.com/Agoric/v39/issues/70001) [#1](https://github.com/Agoric/agoric-sdk/issues/1)
+* **inter-protocol:** allow creator to withdraw from reserve ([19e3b6e](https://github.com/Agoric/agoric-sdk/commit/19e3b6e22416181d06e32015cf9759979a1acb42))
+* **inter-protocol:** Support replacing the provisionPool brand ([974552d](https://github.com/Agoric/agoric-sdk/commit/974552d391b5ef4e6078916c8f3bdef2a7a93c73))
+* **inter:** remove excess authority in price-feed-proposal.js ([e96245e](https://github.com/Agoric/agoric-sdk/commit/e96245ed608a537b4edd54a63b5f5405b87e0e94))
+* link the auctions and vaults updates so they run sequenctially ([f42adc3](https://github.com/Agoric/agoric-sdk/commit/f42adc31f880dc1d4082b09d761787e193abebdc))
+* narrow types with mustMatch ([685ffac](https://github.com/Agoric/agoric-sdk/commit/685ffacaadb9a643bc770488416dc14a34aa7a44))
+* new 'boot' package with bootstrap configs ([8e3173b](https://github.com/Agoric/agoric-sdk/commit/8e3173b0b86a3dc90b31164bc4272c54e46a6641))
+* notifiers recover when vats upgrade ([ada1db8](https://github.com/Agoric/agoric-sdk/commit/ada1db825a0a8fea4483d582895f4476dec50294))
+* only add one auctioneer instance to charter ([a109395](https://github.com/Agoric/agoric-sdk/commit/a1093950697c04c37bbef727a85b9f2d2d146efa))
+* **proposals:** signal of price feed availability ([10e19d7](https://github.com/Agoric/agoric-sdk/commit/10e19d76e9737e33c5d361f7788b34e92fd094b6))
+* publish scaledPriceAuthority in agoricNames ([083f10e](https://github.com/Agoric/agoric-sdk/commit/083f10e83553f6f664903af49a9fdc6d7651926a))
+* ratio.quantize() shouldn't increase precision unnecessarily ([118e6ad](https://github.com/Agoric/agoric-sdk/commit/118e6ada3b0febfaeec59d2fcef45b05757b83d8))
+* record instances that will be replaced so we can manage them ([c883c39](https://github.com/Agoric/agoric-sdk/commit/c883c39bbe4ec236a758030508fdf9f4fbd3ba9b))
+* robustify allManagersDo ([#9833](https://github.com/Agoric/agoric-sdk/issues/9833)) ([e1baf4e](https://github.com/Agoric/agoric-sdk/commit/e1baf4e7e8efaab527d7eadf7305281dac8656c9)), closes [#9706](https://github.com/Agoric/agoric-sdk/issues/9706)
+* save the outgoing EC Charter instance and kit ([c2c9be3](https://github.com/Agoric/agoric-sdk/commit/c2c9be3785f50e3b2cae3585d0e05d8b0a918283))
+* start a new auction in a3p-integration ([969235b](https://github.com/Agoric/agoric-sdk/commit/969235b18abbd15187e343d5f616f12177d224c4))
+* start fn upgradability by meta ([5ae46e4](https://github.com/Agoric/agoric-sdk/commit/5ae46e485b8f3b643cb57c45abdb75a94657d60c))
+* **types:** ContractMeta ([9d02dfa](https://github.com/Agoric/agoric-sdk/commit/9d02dfab2cc2c24ed9b15a6aa8bc5fba7d6c9fe0))
+* **types:** coreEvalEnv ([3764eee](https://github.com/Agoric/agoric-sdk/commit/3764eeea9a391b5dc6c9c7a21e430f358b8f7476))
+* **types:** generic Instance ([9a0359a](https://github.com/Agoric/agoric-sdk/commit/9a0359a130a14e71780d25cc373fe382a15ddd58))
+* **types:** generic makeDurablePublishKit ([b232f79](https://github.com/Agoric/agoric-sdk/commit/b232f7932476127e9d865099f17c3b64b7c3e32e))
+* **types:** InvitationAmount ([cdf1b7a](https://github.com/Agoric/agoric-sdk/commit/cdf1b7a6ee28293ba5d606705e24a9fee175effe))
+* update auction in agoricNames, test that the boardId changed ([abf2168](https://github.com/Agoric/agoric-sdk/commit/abf21686a833c996e78724839bd712107448b11a))
+* upgrade auction and vaults to use the new governor ([5aeac6d](https://github.com/Agoric/agoric-sdk/commit/5aeac6d2bd3a95357c9a725e01391b3d967530ff))
+* vm-config package ([8b1ecad](https://github.com/Agoric/agoric-sdk/commit/8b1ecad8ab50db777bc11c3ee6fcdb37d6cb38b6))
+* **zone:** use fresh heap and virtual zones ([7a1a411](https://github.com/Agoric/agoric-sdk/commit/7a1a411cf719477e29a2bedeb91794fd633989e9))
+
+### Bug Fixes
+
+* **addAssetToVault:** support issuerName separate from keyword ([a670616](https://github.com/Agoric/agoric-sdk/commit/a67061691e1bf845ef9fd16e33c265bdbd944554))
+* **auction!:** don't reset an auction which is already scheduled ([18a32bc](https://github.com/Agoric/agoric-sdk/commit/18a32bcdf52654d302572a9a94f8ebe8cb035913))
+* await price feed offers ([5e2b328](https://github.com/Agoric/agoric-sdk/commit/5e2b328d116777de04525b31ec2c69db6d8cee14))
+* guard for getGovernedParamsq ([03d2e05](https://github.com/Agoric/agoric-sdk/commit/03d2e0553de61940aaff304e79980b618649b820))
+* **inter-protocol:** brands in CLI need not start with A-Z ([#8258](https://github.com/Agoric/agoric-sdk/issues/8258)) ([2ac22d3](https://github.com/Agoric/agoric-sdk/commit/2ac22d3353281e7319adca67a8580024171a8066))
+* **inter-protocol:** Relax rounds manager interface guards ([ce4cc47](https://github.com/Agoric/agoric-sdk/commit/ce4cc4788b04956994d594af9cf46ad4a7f0604f))
+* **inter-protocol:** Satisfy interface guard in mock ([fe8ff26](https://github.com/Agoric/agoric-sdk/commit/fe8ff260f83bc4f2668f3dd24c3ff922b2532e8a))
+* make tests work again after some (bogus) awaits were removed from bootstrap ([ca0a3aa](https://github.com/Agoric/agoric-sdk/commit/ca0a3aab3f31ac0e97e55cd63709000fbb46f2ca))
+* Make the auction schedule robust when adding collateral types ([#8301](https://github.com/Agoric/agoric-sdk/issues/8301)) ([f36ed85](https://github.com/Agoric/agoric-sdk/commit/f36ed8546ba3eb67692195e22065050a500b9064))
+* makeReserveTerms ([27ce0b0](https://github.com/Agoric/agoric-sdk/commit/27ce0b0c5bc7543dca4d86ef644ce6e87f151d6c))
+* many typing improvements ([777eb21](https://github.com/Agoric/agoric-sdk/commit/777eb21a20fbff3da93d713dc1b95a01fe6ce472))
+* properly exit floating `ZCFSeat` instances ([bb2edbd](https://github.com/Agoric/agoric-sdk/commit/bb2edbd3d6fb256f05bc63acd58a5539efabbecf))
+* **proposals:** await scaledPriceAuthority when in addAssetToVault ([fb940f8](https://github.com/Agoric/agoric-sdk/commit/fb940f84636c4ac9c984a593ec4b5a8ae5150039))
+* remove addInstance call from add-auction.js ([d16781f](https://github.com/Agoric/agoric-sdk/commit/d16781f0100b831638b3032837da28c23beabb7b))
+* remove infelicitous awaits in proposals ([838ed96](https://github.com/Agoric/agoric-sdk/commit/838ed96268cb7cdba627d6512cbcbf53133c3e7a))
+* remove manifest declarations that things are consumed that aren't ([9e0272c](https://github.com/Agoric/agoric-sdk/commit/9e0272c370b63273f56730557898dbeddd773d75))
+* reset lockedQuote even when nothing will be auctioned ([d8ab5a5](https://github.com/Agoric/agoric-sdk/commit/d8ab5a552601fcb80259984ccae861317d41b918))
+* retry upgrade vaults price quote ([ea568a2](https://github.com/Agoric/agoric-sdk/commit/ea568a266541959f87476d0c4f16c0ee0cf9abdc))
+* smartWallet watch ERTP purse balances across zoe upgrades ([3cfe392](https://github.com/Agoric/agoric-sdk/commit/3cfe39245d688509a697a645ae452b92e7136ac1))
+* target collat cannot exceed available ([f482211](https://github.com/Agoric/agoric-sdk/commit/f482211b09789d0b6fe533778ebedc9c702495c5))
+* **time:** Export top-level types ([cffa8c0](https://github.com/Agoric/agoric-sdk/commit/cffa8c0a23726dc3a99802812a461df4e131cfef))
+* to update totalDebt for 1 vault, match old with new ([0e2cb5b](https://github.com/Agoric/agoric-sdk/commit/0e2cb5ba17ab12101116a763b508e90786e2bf3d))
+* tolerate golden error property reorders ([7a32cad](https://github.com/Agoric/agoric-sdk/commit/7a32cad9409c89f0318a88e306473dc51387e17a))
+* **types:** board ([c73f4f9](https://github.com/Agoric/agoric-sdk/commit/c73f4f9686215a37e8c5f82ce8dbe4742886a02b))
+* **types:** board values ([4196da3](https://github.com/Agoric/agoric-sdk/commit/4196da375525fa67382a039a15973810db44ffea))
+* **types:** exports ([b3b16a4](https://github.com/Agoric/agoric-sdk/commit/b3b16a4cb1e9be8989640766f2a3e63170cbc929))
+* **types:** getAmountAllocated ([208eb76](https://github.com/Agoric/agoric-sdk/commit/208eb7656a2f1a02521b119c826bce2ec47e332c))
+* **types:** Invitation parameters ([178dbfd](https://github.com/Agoric/agoric-sdk/commit/178dbfd4838f7cdadba02f2963fd1e90aad310f3))
+* **types:** misc ([b70765c](https://github.com/Agoric/agoric-sdk/commit/b70765cbae25261be5944f5836d8b4b7ae58fca7))
+* **types:** problems hidden by skipLibCheck ([6a6e595](https://github.com/Agoric/agoric-sdk/commit/6a6e59549e7beeeef94bf90556ed16873c46d285))
+* **types:** template syntax ([279b903](https://github.com/Agoric/agoric-sdk/commit/279b903a559710511d69f1614badddeab801b90d))
+* **types:** TypedMatcher --> TypedPattern ([6b41829](https://github.com/Agoric/agoric-sdk/commit/6b4182963cbc87b6eb22b77833e420fa35bb2da6))
+* **types:** ZoeManualTimer ([991bef1](https://github.com/Agoric/agoric-sdk/commit/991bef12cdcc01d318573b6e50b9eac3b1ae9fd9))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+* using auctioneerKit to get auctioneer data ([f406d25](https://github.com/Agoric/agoric-sdk/commit/f406d258d7de77f8f56e7292e6b0c74ef20226fc))
+* **vaultFactory:** don't prevent repayment based on DebtLimit ([1c94ac8](https://github.com/Agoric/agoric-sdk/commit/1c94ac89b9e94d0855a524d5c0adba4212e1bbc5))
+
 ### [0.16.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.16.0...@agoric/inter-protocol@0.16.1) (2023-06-09)
 
 **Note:** Version bump only for package @agoric/inter-protocol
 
-
-
-
-
 ## [0.16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.15.0...@agoric/inter-protocol@0.16.0) (2023-06-02)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -31,7 +115,6 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * **vaults:** don't send empty amounts to reserve ([74a881d](https://github.com/Agoric/agoric-sdk/commit/74a881d9f683212de40e8736235f1009c617fec9))
 * rename EndorsedUI to ReferencedUI ([8e904a9](https://github.com/Agoric/agoric-sdk/commit/8e904a9e379d69aa0c2a633ff2d6b3afb1b8005d))
 
-
 ### Bug Fixes
 
 * **auction:** assets added after auction start don't set IST limit ([7916fcb](https://github.com/Agoric/agoric-sdk/commit/7916fcbe976fa8468400b3822875cfab303367a8))
@@ -44,7 +127,6 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * **vaults!:** distribute all Collateral after liquidation ([d572ddf](https://github.com/Agoric/agoric-sdk/commit/d572ddf256e5405c0318678b00f4ba01eec18b11))
 * **vaults!:** reduce proceeds to vault holders by share of penalty ([0a46a7c](https://github.com/Agoric/agoric-sdk/commit/0a46a7c5ce6d9149ba06742a5917eb4f9c6e415b))
 
-
 ### Miscellaneous Chores
 
 * **price:** rm deprecated getRoundStartNotifier ([10f50aa](https://github.com/Agoric/agoric-sdk/commit/10f50aa42883bf2d0c9a30fc2765b67adeb503ae))
@@ -54,19 +136,13 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * **vaults:** correct getDebtIssuer name ([f624252](https://github.com/Agoric/agoric-sdk/commit/f624252dd9ab6ac59cba606d750400ed7513fe7a))
 * **vaults:** remove unused getCollaterals ([f01ca33](https://github.com/Agoric/agoric-sdk/commit/f01ca3355f9708f68a000bbfc6cb67291198d73e))
 
-
-
 ## [0.15.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.14.0...@agoric/inter-protocol@0.15.0) (2023-05-24)
-
 
 ### Features
 
 * **clientSupport:** Offers.fluxAggregator.PushPrice ([486581c](https://github.com/Agoric/agoric-sdk/commit/486581c8ea07a621f18c0d485c7059fb3e87835a))
 
-
-
 ## [0.14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.13.1...@agoric/inter-protocol@0.14.0) (2023-05-19)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -232,7 +308,6 @@ feat: inter bid by-discount sends; --generate-only; list --all
 * throw recordSubmission errors ([7261b6f](https://github.com/Agoric/agoric-sdk/commit/7261b6f9fae7e12328d80711b97982df97450b3b))
 * UX for `inter bid` ([52d93c3](https://github.com/Agoric/agoric-sdk/commit/52d93c33edbad2bebd54a6eb967853e7292de2e7))
 
-
 ### Bug Fixes
 
 * **agops:** psm swap params ([3a21dd1](https://github.com/Agoric/agoric-sdk/commit/3a21dd1f310036cfcd9f611e5089e41621e692ae))
@@ -333,11 +408,9 @@ feat: inter bid by-discount sends; --generate-only; list --all
 * update types/dependencies for new @agoric/time ([418545a](https://github.com/Agoric/agoric-sdk/commit/418545ae88085de6e7fde415baa7de0a3f3056a4))
 * use atomicTransfers rather than stagings. ([#6577](https://github.com/Agoric/agoric-sdk/issues/6577)) ([65d3f14](https://github.com/Agoric/agoric-sdk/commit/65d3f14c8102993168d2568eed5e6acbcba0c48a))
 
-
 ### Code Refactoring
 
 * move PublicTopic to Zoe contractSupport ([c51ea3d](https://github.com/Agoric/agoric-sdk/commit/c51ea3de22f50e05fcc1aaabd2108e785d51eb2e))
-
 
 ### Miscellaneous Chores
 
@@ -350,58 +423,36 @@ feat: inter bid by-discount sends; --generate-only; list --all
 * remove 'asset' from publicSubscribers ([56d5d86](https://github.com/Agoric/agoric-sdk/commit/56d5d8647f9c6063c9ec1cbdb3e88b761a6c7eda))
 * rename 'fit' to 'mustMatch' ([9fa3232](https://github.com/Agoric/agoric-sdk/commit/9fa32324f84bfb85de9e99e0c9ad277b8017b50e)), closes [#6844](https://github.com/Agoric/agoric-sdk/issues/6844)
 
-
-
 ### [0.13.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.13.2...@agoric/inter-protocol@0.13.3) (2023-02-17)
 
 **Note:** Version bump only for package @agoric/inter-protocol
-
-
-
-
 
 ### [0.13.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.13.1...@agoric/inter-protocol@0.13.2) (2022-12-14)
 
 **Note:** Version bump only for package @agoric/inter-protocol
 
-
-
-
-
 ### [0.13.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.13.0...@agoric/inter-protocol@0.13.1) (2022-10-18)
 
 **Note:** Version bump only for package @agoric/inter-protocol
 
-
-
-
-
 ## [0.13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.12.1...@agoric/inter-protocol@0.13.0) (2022-10-08)
-
 
 ### Features
 
 * script to replace econ-gov in Core Eval ([8bcebf9](https://github.com/Agoric/agoric-sdk/commit/8bcebf95d6f93fe094bdfeab41b4bedec1ac9662))
 * **governance:** replaceElectorate ([12de09e](https://github.com/Agoric/agoric-sdk/commit/12de09e03a6f52c77f2453a006164f151a2c13af))
 
-
 ### Bug Fixes
 
 * strike "Initial" from Economic Committee ([0f3ce16](https://github.com/Agoric/agoric-sdk/commit/0f3ce1695635551b800f04e0e232d25e16c8f562))
 
-
-
 ### [0.12.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.12.0...@agoric/inter-protocol@0.12.1) (2022-10-05)
-
 
 ### Bug Fixes
 
 * make it possible to set decimalPlaces when calling startPSM ([#6348](https://github.com/Agoric/agoric-sdk/issues/6348)) ([46aa80e](https://github.com/Agoric/agoric-sdk/commit/46aa80e1f8d8a73a8a7853ebcd937f5c2df64a42))
 
-
-
 ## 0.12.0 (2022-09-20)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -440,7 +491,6 @@ feat: inter bid by-discount sends; --generate-only; list --all
 * **vaultFactory:** split numVaults to numActiveVaults and numLiquidatingVaults ([#5917](https://github.com/Agoric/agoric-sdk/issues/5917)) ([9b20d03](https://github.com/Agoric/agoric-sdk/commit/9b20d0328dc73a9541492f4f87221b3fe8b6a395))
 * **zoe:** unitAmount helper ([9007f4c](https://github.com/Agoric/agoric-sdk/commit/9007f4c5710f65566842559680f7a0557f57398d))
 
-
 ### Bug Fixes
 
 * **psm:** "mint" limits for IST rather than anchor ([413c104](https://github.com/Agoric/agoric-sdk/commit/413c104436d7a9d725c99463ed7c2fe385c8d2fc))
@@ -466,7 +516,6 @@ feat: inter bid by-discount sends; --generate-only; list --all
 * **vault:** move outerUpdater out of durable state ([3fa2e58](https://github.com/Agoric/agoric-sdk/commit/3fa2e588911c877d9e463cf860215c6f91a32d2f))
 * **vault:** zcf non-durable ([b74cdc6](https://github.com/Agoric/agoric-sdk/commit/b74cdc6220ceaf5f16289898bcde74637eabe8d0))
 
-
 ### Code Refactoring
 
 * **psm:** split PSM invitations to enable pausing separately ([#6030](https://github.com/Agoric/agoric-sdk/issues/6030)) ([45bc8a1](https://github.com/Agoric/agoric-sdk/commit/45bc8a1896c5f51b6fb41863b50fd16c18cfcdff))
@@ -474,10 +523,7 @@ feat: inter bid by-discount sends; --generate-only; list --all
 * **store:** move from Schema to Shape terminology ([#6072](https://github.com/Agoric/agoric-sdk/issues/6072)) ([757b887](https://github.com/Agoric/agoric-sdk/commit/757b887edd2d41960fadc86d4900ebde55729867))
 * **store:** split `provide` into collision vs no-collision variants ([#6080](https://github.com/Agoric/agoric-sdk/issues/6080)) ([939e25e](https://github.com/Agoric/agoric-sdk/commit/939e25e615ea1fcefff15a032996613031151c0d)), closes [#5875](https://github.com/Agoric/agoric-sdk/issues/5875)
 
-
-
 ## [0.11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/run-protocol@0.10.0...@agoric/run-protocol@0.11.0) (2022-05-28)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -509,7 +555,6 @@ feat: inter bid by-discount sends; --generate-only; list --all
 * permissionless interchain AMM pool creation ([5e2a8d0](https://github.com/Agoric/agoric-sdk/commit/5e2a8d09403e237b832ab4a26419e219f3f51969))
 * publish econ stats from AMM ([#5420](https://github.com/Agoric/agoric-sdk/issues/5420)) ([87a9e62](https://github.com/Agoric/agoric-sdk/commit/87a9e628315948fa75e78bf5294178f65bc34b56)), closes [#4648](https://github.com/Agoric/agoric-sdk/issues/4648) [#5377](https://github.com/Agoric/agoric-sdk/issues/5377)
 
-
 ### Bug Fixes
 
 * **addAssetToVault:** dangling promises ([d37dd78](https://github.com/Agoric/agoric-sdk/commit/d37dd7846f1258ffba291b6a9cbc94fb01e95e16))
@@ -523,10 +568,7 @@ feat: inter bid by-discount sends; --generate-only; list --all
 * **run-protocol:** reinstate option to publish interchain asset from bank ([0672139](https://github.com/Agoric/agoric-sdk/commit/0672139619cf9e3ef4007700e9e05c82e742e0c5))
 * vault proposal relies on permissionless IBC AMM pool creation ([4e711b1](https://github.com/Agoric/agoric-sdk/commit/4e711b1e6009e02bd2e4e642d8c39158182336a7))
 
-
-
 ## [0.10.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/run-protocol@0.9.0...@agoric/run-protocol@0.10.0) (2022-05-09)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -548,7 +590,6 @@ feat: inter bid by-discount sends; --generate-only; list --all
 * **vault:** Liquidate incrementally ([#5129](https://github.com/Agoric/agoric-sdk/issues/5129)) ([b641269](https://github.com/Agoric/agoric-sdk/commit/b64126996d4844c07016deadc87269dc387c4aae))
 * virtualize pools for the AMM. ([#5187](https://github.com/Agoric/agoric-sdk/issues/5187)) ([e2338e9](https://github.com/Agoric/agoric-sdk/commit/e2338e98b64b59920a13faeacb29ae7868c3693b))
 
-
 ### Bug Fixes
 
 * **econCommitteeCharter:** missing deadline param ([1669588](https://github.com/Agoric/agoric-sdk/commit/1669588d96929b5b6e427affcf30b51a882f47c4))
@@ -563,10 +604,7 @@ feat: inter bid by-discount sends; --generate-only; list --all
 * reconcile use of path to paramManager vaults with others ([#5151](https://github.com/Agoric/agoric-sdk/issues/5151)) ([b5d1439](https://github.com/Agoric/agoric-sdk/commit/b5d14393d407a7d7dca42ff5e41d374613168cbc))
 * **run-protocol:** vault debt ratio ordering after interest charges ([#5149](https://github.com/Agoric/agoric-sdk/issues/5149)) ([2c9a5d0](https://github.com/Agoric/agoric-sdk/commit/2c9a5d0e07b0886ba6cbfd38ec6d321f1e42a4fb))
 
-
-
 ## [0.9.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/run-protocol@0.8.0...@agoric/run-protocol@0.9.0) (2022-04-18)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -598,7 +636,6 @@ feat: inter bid by-discount sends; --generate-only; list --all
 * add collateral Reserve to hold collateral and add to AMM under governance control ([#4635](https://github.com/Agoric/agoric-sdk/issues/4635)) ([3e3f55f](https://github.com/Agoric/agoric-sdk/commit/3e3f55f48365d614c2215d8f311f973ff54b6cd0)), closes [#4188](https://github.com/Agoric/agoric-sdk/issues/4188) [#4188](https://github.com/Agoric/agoric-sdk/issues/4188)
 * add the ability to invoke an API to contract governance ([#4869](https://github.com/Agoric/agoric-sdk/issues/4869)) ([3123665](https://github.com/Agoric/agoric-sdk/commit/312366518471238430c79313f79e57aee1c551cd)), closes [#4188](https://github.com/Agoric/agoric-sdk/issues/4188)
 
-
 ### Bug Fixes
 
 * **bundleTool:** harden loaded bundles ([d77cea2](https://github.com/Agoric/agoric-sdk/commit/d77cea26f50e46833cd5cbde780f6393e616a4ec))
@@ -617,17 +654,14 @@ feat: inter bid by-discount sends; --generate-only; list --all
 * **vault:** make vault transfer invitation legible ([#4844](https://github.com/Agoric/agoric-sdk/issues/4844)) ([325ef39](https://github.com/Agoric/agoric-sdk/commit/325ef399cc9b65eedca71c2d2d7c42a4c6ec5191))
 * **zoe:** pass brands (not issuers) to priceAggregator ([5800711](https://github.com/Agoric/agoric-sdk/commit/580071189bb60d83ceaa806bf85035173ae9563c))
 
-
 ### Reverts
 
 * Revert "refactor(run-protocol): virtual kind for vault manager (#5052)" ([b08dc58](https://github.com/Agoric/agoric-sdk/commit/b08dc5836e8bea98de4316edc7ac5eef698c7072)), closes [#5052](https://github.com/Agoric/agoric-sdk/issues/5052)
-
 
 ### Miscellaneous Chores
 
 * consistent Node engine requirement (>=14.15.0) ([ddc40fa](https://github.com/Agoric/agoric-sdk/commit/ddc40fa525f845ed900512c38b99f01458a3d131))
 * **run-protocol:** remove liquidated flag from vault notifications ([6456af2](https://github.com/Agoric/agoric-sdk/commit/6456af25e154f01820efbdc1afb343902e385384))
-
 
 ### Code Refactoring
 
@@ -636,10 +670,7 @@ feat: inter bid by-discount sends; --generate-only; list --all
 * **run-protocol:** return assetNotifier instead of notifying on uiNotifier ([35d2d41](https://github.com/Agoric/agoric-sdk/commit/35d2d41f5345f593a647390c6f3dee5ccb44bf15))
 * **run-protocol:** vaults hold liquidation proceeds until closed ([de32be9](https://github.com/Agoric/agoric-sdk/commit/de32be9b27780e75b70f06780872994fce7da02a))
 
-
-
 ## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/run-protocol@0.7.2...@agoric/run-protocol@0.8.0) (2022-02-24)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -650,28 +681,22 @@ feat: inter bid by-discount sends; --generate-only; list --all
 * overhaul the virtual object API ([e40674b](https://github.com/Agoric/agoric-sdk/commit/e40674b0b19f29adde2f5e6a460bafb7340d42b6)), closes [#4606](https://github.com/Agoric/agoric-sdk/issues/4606)
 * **run-protocol:** startRewardDistributor bootstrap behavior ([ad038ff](https://github.com/Agoric/agoric-sdk/commit/ad038ffa831f6be858cb2ebe8a429557e09186c2))
 
-
 ### Bug Fixes
 
 * **run-protocol:** harden results from collection utilities ([5d8b4c1](https://github.com/Agoric/agoric-sdk/commit/5d8b4c14e798be5358530c5b0f7b5b59505431c9))
 * **run-protocol:** produce priceAuthorityVat for fake authorities ([ba1b367](https://github.com/Agoric/agoric-sdk/commit/ba1b36792d45e96a8746e9b62b488cb404a2c72b))
 
-
 ### Miscellaneous Chores
 
 * **run-protocol:** centralSupply contract for bootstrapPayment ([e526a7d](https://github.com/Agoric/agoric-sdk/commit/e526a7d8f01811560804cb48f77fce1347d8836b)), closes [#4021](https://github.com/Agoric/agoric-sdk/issues/4021)
 
-
-
 ### 0.7.2 (2022-02-21)
-
 
 ### Features
 
 * **run-protocol:** interest charging O(1) for all vaults in a manager ([#4527](https://github.com/Agoric/agoric-sdk/issues/4527)) ([58103ac](https://github.com/Agoric/agoric-sdk/commit/58103ac216f4ce28cbbe73494af2ea11b5a110c0))
 * implement persistent stores ([e1050b0](https://github.com/Agoric/agoric-sdk/commit/e1050b010e095b23547a38d48a12e5c8841a7466))
 * **run-protocol:** variable rate vault/loan ([54d509e](https://github.com/Agoric/agoric-sdk/commit/54d509e74517c4385183b13cbf30c2976944ddd0))
-
 
 ### Bug Fixes
 
@@ -682,24 +707,17 @@ feat: inter bid by-discount sends; --generate-only; list --all
 * when trades for zero are requested don't throw ([4516e5b](https://github.com/Agoric/agoric-sdk/commit/4516e5b6a2ab9176033956ee197687b5c6574647))
 * **run-protocol:** update `makeRatio` import ([20965f1](https://github.com/Agoric/agoric-sdk/commit/20965f14c2212024cee9796a2454b5435aa3fcb8))
 
-
-
 ### [0.7.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.7.0...@agoric/treasury@0.7.1) (2021-12-22)
-
 
 ### Features
 
 * refactor parameter governance support to allow for Invitations ([#4121](https://github.com/Agoric/agoric-sdk/issues/4121)) ([159596b](https://github.com/Agoric/agoric-sdk/commit/159596b8d44b8cbdaf6e19513cb3e716febfae7b))
 
-
 ### Bug Fixes
 
 * **treasury:** use liquidationMargin for maxDebt calculation ([#4163](https://github.com/Agoric/agoric-sdk/issues/4163)) ([c749af8](https://github.com/Agoric/agoric-sdk/commit/c749af86232029c0abc8b031366251a05e482930))
 
-
-
 ## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.6.5...@agoric/treasury@0.7.0) (2021-12-02)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -718,55 +736,31 @@ Co-authored-by: mergify[bot] <37929162+mergify[bot]@users.noreply.github.com>
 
 * **zoe:** assert that amountKeywordRecord is a copyRecord ([#4069](https://github.com/Agoric/agoric-sdk/issues/4069)) ([fe9a9ff](https://github.com/Agoric/agoric-sdk/commit/fe9a9ff3de86608a0b1f8f9547059f89d45b948d))
 
-
 ### Miscellaneous Chores
 
 * **ERTP:** additional input validation and clean up ([#3892](https://github.com/Agoric/agoric-sdk/issues/3892)) ([067ea32](https://github.com/Agoric/agoric-sdk/commit/067ea32b069596202d7f8e7c5e09d5ea7821f6b2))
-
-
 
 ### [0.6.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.6.4...@agoric/treasury@0.6.5) (2021-10-13)
 
 **Note:** Version bump only for package @agoric/treasury
 
-
-
-
-
 ### [0.6.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.6.3...@agoric/treasury@0.6.4) (2021-09-23)
 
 **Note:** Version bump only for package @agoric/treasury
-
-
-
-
 
 ### [0.6.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.6.2...@agoric/treasury@0.6.3) (2021-09-15)
 
 **Note:** Version bump only for package @agoric/treasury
 
-
-
-
-
 ### [0.6.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.6.1...@agoric/treasury@0.6.2) (2021-08-21)
 
 **Note:** Version bump only for package @agoric/treasury
-
-
-
-
 
 ### [0.6.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.6.0...@agoric/treasury@0.6.1) (2021-08-18)
 
 **Note:** Version bump only for package @agoric/treasury
 
-
-
-
-
 ## [0.6.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.12...@agoric/treasury@0.6.0) (2021-08-17)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -784,26 +778,17 @@ See https://github.com/Agoric/agoric-sdk/issues/3672 for the issue to fix the ro
 
 * **treasury:** assert getBootstrapPayment amount ([3ed8e69](https://github.com/Agoric/agoric-sdk/commit/3ed8e695deb9a0f6c5d924374e61ceb8d9aaff1c))
 
-
 ### Bug Fixes
 
 * return funds from liquidation via a seat payout ([#3656](https://github.com/Agoric/agoric-sdk/issues/3656)) ([d1a142d](https://github.com/Agoric/agoric-sdk/commit/d1a142d47ae0cf3db6512e85ac2de583193a2fdf))
 
-
 * BREAKING CHANGE: create the RUN Mint within Zoe (#3647) ([48762aa](https://github.com/Agoric/agoric-sdk/commit/48762aa83a30eaa0a14b2fd87777456758594262)), closes [#3647](https://github.com/Agoric/agoric-sdk/issues/3647)
-
-
 
 ### [0.5.12](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.11...@agoric/treasury@0.5.12) (2021-08-16)
 
 **Note:** Version bump only for package @agoric/treasury
 
-
-
-
-
 ### [0.5.11](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.8...@agoric/treasury@0.5.11) (2021-08-15)
-
 
 ### Bug Fixes
 
@@ -811,107 +796,64 @@ See https://github.com/Agoric/agoric-sdk/issues/3672 for the issue to fix the ro
 
 ### 0.26.10 (2021-07-28)
 
-
 ### Bug Fixes
 
 * **treasury:** use xs-worker and metered=true on all swingset tests ([f76405e](https://github.com/Agoric/agoric-sdk/commit/f76405e09a29f4975cda00a33bbde4761dbe958e))
 * some missing Fars ([#3498](https://github.com/Agoric/agoric-sdk/issues/3498)) ([8f77271](https://github.com/Agoric/agoric-sdk/commit/8f77271b41a4589679ad95ff907126778466aba8))
-
-
 
 ### [0.5.10](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.8...@agoric/treasury@0.5.10) (2021-08-14)
 
-
 ### Bug Fixes
 
 * Treasury burn debt repayment before zeroing the amount owed ([#3604](https://github.com/Agoric/agoric-sdk/issues/3604)) ([f0bc4cb](https://github.com/Agoric/agoric-sdk/commit/f0bc4cb0c7e419cafc0105869d287d571202448d)), closes [#3495](https://github.com/Agoric/agoric-sdk/issues/3495)
 
 ### 0.26.10 (2021-07-28)
 
-
 ### Bug Fixes
 
 * **treasury:** use xs-worker and metered=true on all swingset tests ([f76405e](https://github.com/Agoric/agoric-sdk/commit/f76405e09a29f4975cda00a33bbde4761dbe958e))
 * some missing Fars ([#3498](https://github.com/Agoric/agoric-sdk/issues/3498)) ([8f77271](https://github.com/Agoric/agoric-sdk/commit/8f77271b41a4589679ad95ff907126778466aba8))
-
-
 
 ### [0.5.9](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.8...@agoric/treasury@0.5.9) (2021-07-28)
 
-
 ### Bug Fixes
 
 * **treasury:** use xs-worker and metered=true on all swingset tests ([f76405e](https://github.com/Agoric/agoric-sdk/commit/f76405e09a29f4975cda00a33bbde4761dbe958e))
 * some missing Fars ([#3498](https://github.com/Agoric/agoric-sdk/issues/3498)) ([8f77271](https://github.com/Agoric/agoric-sdk/commit/8f77271b41a4589679ad95ff907126778466aba8))
-
-
 
 ### [0.5.8](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.7...@agoric/treasury@0.5.8) (2021-07-01)
 
 **Note:** Version bump only for package @agoric/treasury
 
-
-
-
-
 ### [0.5.7](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.6...@agoric/treasury@0.5.7) (2021-07-01)
 
 **Note:** Version bump only for package @agoric/treasury
-
-
-
-
 
 ### [0.5.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.5...@agoric/treasury@0.5.6) (2021-06-28)
 
 **Note:** Version bump only for package @agoric/treasury
 
-
-
-
-
 ### [0.5.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.4...@agoric/treasury@0.5.5) (2021-06-25)
 
 **Note:** Version bump only for package @agoric/treasury
-
-
-
-
 
 ### [0.5.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.3...@agoric/treasury@0.5.4) (2021-06-24)
 
 **Note:** Version bump only for package @agoric/treasury
 
-
-
-
-
 ### [0.5.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.2...@agoric/treasury@0.5.3) (2021-06-24)
 
 **Note:** Version bump only for package @agoric/treasury
-
-
-
-
 
 ### [0.5.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.1...@agoric/treasury@0.5.2) (2021-06-23)
 
 **Note:** Version bump only for package @agoric/treasury
 
-
-
-
-
 ### [0.5.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.5.0...@agoric/treasury@0.5.1) (2021-06-16)
 
 **Note:** Version bump only for package @agoric/treasury
 
-
-
-
-
 ## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.4.2...@agoric/treasury@0.5.0) (2021-06-15)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -922,31 +864,19 @@ See https://github.com/Agoric/agoric-sdk/issues/3672 for the issue to fix the ro
 * Pin ESM to forked version ([54dbb55](https://github.com/Agoric/agoric-sdk/commit/54dbb55d64d7ff7adb395bc4bd9d1461dd2d3c17))
 * Preinitialize Babel ([bb76808](https://github.com/Agoric/agoric-sdk/commit/bb768089c3588e54612d7c9a4528972b5688f4e6))
 
-
 ### Code Refactoring
 
 * **zoe:** new reallocate API to assist with reviewing conservation of rights ([#3184](https://github.com/Agoric/agoric-sdk/issues/3184)) ([f34e5ea](https://github.com/Agoric/agoric-sdk/commit/f34e5eae0812a9823d40d2d05ba98522c7846f2a))
-
-
 
 ## [0.4.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.4.1...@agoric/treasury@0.4.2) (2021-05-10)
 
 **Note:** Version bump only for package @agoric/treasury
 
-
-
-
-
 ## [0.4.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.4.0...@agoric/treasury@0.4.1) (2021-05-05)
 
 **Note:** Version bump only for package @agoric/treasury
 
-
-
-
-
 # [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.3.4...@agoric/treasury@0.4.0) (2021-05-05)
-
 
 ### Bug Fixes
 
@@ -954,68 +884,37 @@ See https://github.com/Agoric/agoric-sdk/issues/3672 for the issue to fix the ro
 * have the treasury use the newSwap AMM implementation ([ed6b84a](https://github.com/Agoric/agoric-sdk/commit/ed6b84ad02cdf59431aa92d3d1e8c8e669379881))
 * polishing touches ([334a253](https://github.com/Agoric/agoric-sdk/commit/334a253c02dc1c74117237f6ae18b31505e635af))
 
-
 ### Features
 
 * share one instance of liquidation across all vaultManagers ([#2869](https://github.com/Agoric/agoric-sdk/issues/2869)) ([0ae776a](https://github.com/Agoric/agoric-sdk/commit/0ae776a91d0ec77443073f6340e714b8e161e062))
-
-
-
-
 
 ## [0.3.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.3.3...@agoric/treasury@0.3.4) (2021-04-22)
 
 **Note:** Version bump only for package @agoric/treasury
 
-
-
-
-
 ## [0.3.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.3.2...@agoric/treasury@0.3.3) (2021-04-18)
 
 **Note:** Version bump only for package @agoric/treasury
-
-
-
-
 
 ## [0.3.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.3.1...@agoric/treasury@0.3.2) (2021-04-16)
 
 **Note:** Version bump only for package @agoric/treasury
 
-
-
-
-
 ## [0.3.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.3.0...@agoric/treasury@0.3.1) (2021-04-14)
 
 **Note:** Version bump only for package @agoric/treasury
 
-
-
-
-
 # [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.2.1...@agoric/treasury@0.3.0) (2021-04-13)
-
 
 ### Features
 
 * move Pegasus contract to SDK ([d0ca2cc](https://github.com/Agoric/agoric-sdk/commit/d0ca2cc155953c63eef5f56f236fa9280984730a))
 
-
-
-
-
 ## [0.2.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/treasury@0.2.0...@agoric/treasury@0.2.1) (2021-04-07)
 
 **Note:** Version bump only for package @agoric/treasury
 
-
-
-
-
 # 0.2.0 (2021-04-06)
-
 
 ### Bug Fixes
 
@@ -1023,7 +922,6 @@ See https://github.com/Agoric/agoric-sdk/issues/3672 for the issue to fix the ro
 * improve factoring and assertions ([e7b356d](https://github.com/Agoric/agoric-sdk/commit/e7b356d608e7a774fb326e0b8988c7c79b938e72))
 * update install-on-chain to use RUN instead of SCONES ([#2815](https://github.com/Agoric/agoric-sdk/issues/2815)) ([6ba74e9](https://github.com/Agoric/agoric-sdk/commit/6ba74e98e6cea423098646426bb136780f6f8ff4))
 * update to ses 0.12.7, ses-ava 0.1.1 ([#2820](https://github.com/Agoric/agoric-sdk/issues/2820)) ([6d81775](https://github.com/Agoric/agoric-sdk/commit/6d81775715bc80e6033d75cb65edbfb1452b1608))
-
 
 ### Features
 
