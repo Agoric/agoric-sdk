@@ -46,7 +46,7 @@
     "@endo/far": "^1.1.14",
     "@endo/pass-style": "^1.6.3",
     "@endo/patterns": "^1.7.0",
-    "yalps": "^0.5.6"
+    "javascript-lp-solver": "^0.4.24"
   },
   "ava": {
     "extensions": {

@@ -2,8 +2,11 @@ import test from 'ava';
 import { AmountMath } from '@agoric/ertp';
 import type { Brand, Amount } from '@agoric/ertp/src/types.js';
 import { Far } from '@endo/marshal';
-import { planRebalanceFlow } from '../src/plan-solve.js';
-import type { GraphNodeId } from '../src/plan-solve.js';
+import { planRebalanceFlow, type GraphNodeId } from '../src/plan-solve.js';
+
+// Shared Tok brand + helper
+const { brand: TOK_BRAND } = (() => ({ brand: Far('Tok') as Brand<'nat'> }))();
+const token = (v: bigint) => AmountMath.make(TOK_BRAND, v);
 
 /**
  * Graph / network model specification (declarative)
@@ -151,14 +154,9 @@ const C = 'Compound_Ethereum';
 // Common assetRefs now derived from MODEL definition (include pools, hubs, and local leaves)
 const ALL_REFS = MODEL.nodes as unknown as GraphNodeId[];
 
-// Helper to build current map
-const balances = (
-  brand: Brand,
-  rec: Record<string, bigint>,
-): Record<string, Amount<'nat'>> =>
-  Object.fromEntries(
-    Object.entries(rec).map(([k, v]) => [k, AmountMath.make(brand, v)]),
-  );
+// Helper to build current map (use shared token)
+const balances = (rec: Record<string, bigint>): Record<string, Amount<'nat'>> =>
+  Object.fromEntries(Object.entries(rec).map(([k, v]) => [k, token(v)]));
 
 // Links used for all scenarios (directional). We keep simple symmetric links;
 // solver currently produces only leaf->hub and hub->leaf steps (no hub-hub legs in output).
@@ -178,37 +176,35 @@ const LINKS = [
 ];
 
 test('solver simple 2-pool case (A -> B 30)', async t => {
-  const { brand } = makeIssuerKit('Tok');
-  const current = balances(brand, { [A]: 80n, [B]: 20n });
-  const targetBps = { [A]: 5000n, [B]: 5000n }; // total 100
+  const current = balances({ [A]: 80n, [B]: 20n });
+  const targetBps = { [A]: 5000n, [B]: 5000n };
   const { steps } = await planRebalanceFlow({
     assetRefs: ALL_REFS,
     current,
     target: Object.fromEntries(
       Object.entries(targetBps).map(([k, bps]) => [
         k,
-        AmountMath.make(brand, (100n * bps) / 10000n),
+        token((100n * bps) / 10000n),
       ]),
     ),
-    brand,
+    brand: TOK_BRAND,
     links: LINKS,
     mode: 'cheapest',
   });
 
   t.deepEqual(steps, [
     // leaf -> hub
-    { src: A, dest: '@Arbitrum', amount: AmountMath.make(brand, 30n) },
+    { src: A, dest: '@Arbitrum', amount: token(30n) },
     // hub -> hub legs
-    { src: '@Arbitrum', dest: '@noble', amount: AmountMath.make(brand, 30n) },
-    { src: '@noble', dest: '@Avalanche', amount: AmountMath.make(brand, 30n) },
+    { src: '@Arbitrum', dest: '@noble', amount: token(30n) },
+    { src: '@noble', dest: '@Avalanche', amount: token(30n) },
     // hub -> leaf
-    { src: '@Avalanche', dest: B, amount: AmountMath.make(brand, 30n) },
+    { src: '@Avalanche', dest: B, amount: token(30n) },
   ]);
 });
 
 test('solver 3-pool rounding (A -> B 33, A -> C 33)', async t => {
-  const { brand } = makeIssuerKit('Tok');
-  const current = balances(brand, { [A]: 100n, [B]: 0n, [C]: 0n });
+  const current = balances({ [A]: 100n, [B]: 0n, [C]: 0n });
   const targetBps = { [A]: 3400n, [B]: 3300n, [C]: 3300n };
   const { steps } = await planRebalanceFlow({
     assetRefs: ALL_REFS,
@@ -216,16 +212,16 @@ test('solver 3-pool rounding (A -> B 33, A -> C 33)', async t => {
     target: Object.fromEntries(
       Object.entries(targetBps).map(([k, bps]) => [
         k,
-        AmountMath.make(brand, (100n * bps) / 10000n),
+        token((100n * bps) / 10000n),
       ]),
     ),
-    brand,
+    brand: TOK_BRAND,
     links: LINKS,
     mode: 'cheapest',
   });
 
-  const amt66 = AmountMath.make(brand, 66n);
-  const amt33 = AmountMath.make(brand, 33n);
+  const amt66 = token(66n);
+  const amt33 = token(33n);
   t.deepEqual(steps, [
     // leaf -> hub (aggregated outflow from A)
     { src: A, dest: '@Arbitrum', amount: amt66 },
@@ -240,8 +236,7 @@ test('solver 3-pool rounding (A -> B 33, A -> C 33)', async t => {
 });
 
 test('solver already balanced => no steps', async t => {
-  const { brand } = makeIssuerKit('Tok');
-  const current = balances(brand, { [A]: 50n, [B]: 50n });
+  const current = balances({ [A]: 50n, [B]: 50n });
   const targetBps = { [A]: 5000n, [B]: 5000n };
   const { steps } = await planRebalanceFlow({
     assetRefs: ALL_REFS,
@@ -249,10 +244,10 @@ test('solver already balanced => no steps', async t => {
     target: Object.fromEntries(
       Object.entries(targetBps).map(([k, bps]) => [
         k,
-        AmountMath.make(brand, (100n * bps) / 10000n),
+        token((100n * bps) / 10000n),
       ]),
     ),
-    brand,
+    brand: TOK_BRAND,
     links: LINKS,
     mode: 'cheapest',
   });
@@ -260,72 +255,66 @@ test('solver already balanced => no steps', async t => {
 });
 
 test('solver all to one (B + C -> A)', async t => {
-  const { brand } = makeIssuerKit('Tok');
-  const current = balances(brand, { [A]: 10n, [B]: 20n, [C]: 70n });
+  const current = balances({ [A]: 10n, [B]: 20n, [C]: 70n });
   const { steps } = await planRebalanceFlow({
     assetRefs: ALL_REFS,
     current,
-    target: { [A]: AmountMath.make(brand, 100n) },
-    brand,
+    target: { [A]: token(100n) },
+    brand: TOK_BRAND,
     links: LINKS,
     mode: 'cheapest',
   });
 
   t.deepEqual(steps, [
     // leaf -> hub sources
-    { src: B, dest: '@Avalanche', amount: AmountMath.make(brand, 20n) },
-    { src: C, dest: '@Ethereum', amount: AmountMath.make(brand, 70n) },
+    { src: B, dest: '@Avalanche', amount: token(20n) },
+    { src: C, dest: '@Ethereum', amount: token(70n) },
     // hub -> hub legs (order by edge id: noble->Arbitrum may appear after sources if active; include all with non-zero flow)
-    { src: '@noble', dest: '@Arbitrum', amount: AmountMath.make(brand, 90n) },
-    { src: '@Avalanche', dest: '@noble', amount: AmountMath.make(brand, 20n) },
-    { src: '@Ethereum', dest: '@noble', amount: AmountMath.make(brand, 70n) },
+    { src: '@noble', dest: '@Arbitrum', amount: token(90n) },
+    { src: '@Avalanche', dest: '@noble', amount: token(20n) },
+    { src: '@Ethereum', dest: '@noble', amount: token(70n) },
     // hub -> leaf sink
-    { src: '@Arbitrum', dest: A, amount: AmountMath.make(brand, 90n) },
+    { src: '@Arbitrum', dest: A, amount: token(90n) },
   ]);
 });
 
 test('solver distribute from one (A -> B 60, A -> C 40)', async t => {
-  const { brand } = makeIssuerKit('Tok');
-  const current = balances(brand, { [A]: 100n, [B]: 0n, [C]: 0n });
-  const target = {
-    [B]: AmountMath.make(brand, 60n),
-    [C]: AmountMath.make(brand, 40n),
-  };
+  const current = balances({ [A]: 100n, [B]: 0n, [C]: 0n });
+  const target = { [B]: token(60n), [C]: token(40n) };
   const { steps } = await planRebalanceFlow({
     assetRefs: ALL_REFS,
     current,
     target,
-    brand,
+    brand: TOK_BRAND,
     links: LINKS,
     mode: 'cheapest',
   });
   t.deepEqual(steps, [
-    { src: A, dest: '@Arbitrum', amount: AmountMath.make(brand, 100n) },
-    { src: '@Arbitrum', dest: '@noble', amount: AmountMath.make(brand, 100n) },
-    { src: '@noble', dest: '@Avalanche', amount: AmountMath.make(brand, 60n) },
-    { src: '@noble', dest: '@Ethereum', amount: AmountMath.make(brand, 40n) },
-    { src: '@Avalanche', dest: B, amount: AmountMath.make(brand, 60n) },
-    { src: '@Ethereum', dest: C, amount: AmountMath.make(brand, 40n) },
+    { src: A, dest: '@Arbitrum', amount: token(100n) },
+    { src: '@Arbitrum', dest: '@noble', amount: token(100n) },
+    { src: '@noble', dest: '@Avalanche', amount: token(60n) },
+    { src: '@noble', dest: '@Ethereum', amount: token(40n) },
+    { src: '@Avalanche', dest: B, amount: token(60n) },
+    { src: '@Ethereum', dest: C, amount: token(40n) },
   ]);
 });
 
 test('solver collect to one (B 30 + C 70 -> A)', async t => {
-  const { brand } = makeIssuerKit('Tok');
-  const current = balances(brand, { [A]: 0n, [B]: 30n, [C]: 70n });
+  const current = balances({ [A]: 0n, [B]: 30n, [C]: 70n });
   const { steps } = await planRebalanceFlow({
     assetRefs: ALL_REFS,
     current,
-    target: { [A]: AmountMath.make(brand, 100n) },
-    brand,
+    target: { [A]: token(100n) },
+    brand: TOK_BRAND,
     links: LINKS,
     mode: 'cheapest',
   });
   t.deepEqual(steps, [
-    { src: B, dest: '@Avalanche', amount: AmountMath.make(brand, 30n) },
-    { src: C, dest: '@Ethereum', amount: AmountMath.make(brand, 70n) },
-    { src: '@noble', dest: '@Arbitrum', amount: AmountMath.make(brand, 100n) },
-    { src: '@Avalanche', dest: '@noble', amount: AmountMath.make(brand, 30n) },
-    { src: '@Ethereum', dest: '@noble', amount: AmountMath.make(brand, 70n) },
-    { src: '@Arbitrum', dest: A, amount: AmountMath.make(brand, 100n) },
+    { src: B, dest: '@Avalanche', amount: token(30n) },
+    { src: C, dest: '@Ethereum', amount: token(70n) },
+    { src: '@noble', dest: '@Arbitrum', amount: token(100n) },
+    { src: '@Avalanche', dest: '@noble', amount: token(30n) },
+    { src: '@Ethereum', dest: '@noble', amount: token(70n) },
+    { src: '@Arbitrum', dest: A, amount: token(100n) },
   ]);
 });
