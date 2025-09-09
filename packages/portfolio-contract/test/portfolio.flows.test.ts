@@ -66,7 +66,7 @@ import {
   type ProposalType,
   type StatusFor,
 } from '../src/type-guards.ts';
-import { makePortfolioSteps } from '../tools/portfolio-actors.ts';
+import { makePortfolioSteps } from '../src/plan-transfers.ts';
 import { decodeFunctionCall } from './abi-utils.ts';
 import {
   axelarIdsMock,
