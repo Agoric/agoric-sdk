@@ -65,6 +65,8 @@ Options:
   --exit-success      Exit with success code even if errors occur
   --positions         JSON string of opening positions (e.g. '{"USDN":6000,"Aave":4000}')
   --target-allocation JSON string of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
+  --withdraw-from-compound  Withdraw funds from Compound on Ethereum
+  --withdraw-amount   Amount to withdraw (in USDC, default: all available)
   --redeem            redeem invitation
   --redeem-resolver   redeem resolver invitation
   --contract=[ymax0]  agoricNames.instance name of contract that issued invitation
@@ -80,6 +82,8 @@ const parseToolArgs = (argv: string[]) =>
       'skip-poll': { type: 'boolean', default: false },
       'exit-success': { type: 'boolean', default: false },
       'target-allocation': { type: 'string' },
+      'withdraw-from-compound': { type: 'boolean', default: false },
+      'withdraw-amount': { type: 'string' },
       redeem: { type: 'boolean', default: false },
       'redeem-resolver': { type: 'boolean', default: false },
       contract: { type: 'string', default: 'ymax0' },
@@ -196,7 +200,7 @@ const openPositions = async (
       },
     }),
   );
-  if (tx.code !== 0) throw Error(tx.rawLog);
+  if (tx.code !== 0) throw Error('Transaction failed with code ' + tx.code);
 
   // result is UNPUBLISHED
   await walletUpdates(sig.query.getLastUpdate, {
@@ -211,6 +215,74 @@ const openPositions = async (
   return {
     id,
     path,
+    tx: { hash: tx.transactionHash, height: tx.height },
+  };
+};
+
+const withdrawFromCompound = async ({
+  sig,
+  withdrawAmount,
+  portfolioId,
+  when,
+  id = `withdraw-${new Date(when).toISOString()}`,
+}: {
+  sig: SigningSmartWalletKit;
+  withdrawAmount?: ParsableNumber;
+  portfolioId: string;
+  when: number;
+  id?: string;
+}) => {
+  const { readPublished } = sig.query;
+  const { USDC } = fromEntries(
+    await readPublished('agoricNames.brand'),
+  ) as Record<string, Brand<'nat'>>;
+
+  // If no amount specified, we'll try to withdraw all available
+  const toAmt = (num: ParsableNumber) =>
+    multiplyBy(make(USDC, 1_000_000n), parseRatio(num, USDC));
+
+  // Default to withdrawing 1 USDC if no amount specified (user can override)
+  const defaultWithdrawAmount = withdrawAmount || '0.05';
+  const wantAmount = toAmt(defaultWithdrawAmount);
+
+  const proposal: ProposalType['rebalance'] = {
+    want: { Cash: wantAmount },
+    give: {},
+  };
+
+  const steps: MovementDesc[] = [
+    { src: 'Compound_Ethereum', dest: '@Ethereum', amount: wantAmount },
+  ];
+  const offerArgs: OfferArgsFor['openPortfolio'] = {
+    flow: steps,
+  };
+
+  trace(id, 'withdrawing from compound', proposal.want);
+  const tx = await sig.sendBridgeAction(
+    harden({
+      method: 'executeOffer',
+      offer: {
+        id,
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: portfolioId,
+          invitationMakerName: 'Rebalance',
+        },
+        proposal,
+        offerArgs: {},
+      },
+    }),
+  );
+  if (tx.code !== 0) throw Error('Transaction failed with code ' + tx.code);
+
+  // Wait for offer result
+  await walletUpdates(sig.query.getLastUpdate, {
+    log: trace,
+    setTimeout,
+  }).offerResult(id);
+
+  return {
+    id,
     tx: { hash: tx.transactionHash, height: tx.height },
   };
 };
@@ -348,7 +420,7 @@ const main = async (
   const { MNEMONIC } = env;
   if (!MNEMONIC) throw Error(`MNEMONIC not set`);
 
-  const delay = ms =>
+  const delay = (ms: number) =>
     new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
   const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
   const walletKit0 = await makeSmartWalletKit({ fetch, delay }, networkConfig);
@@ -465,6 +537,40 @@ const main = async (
     const planner = walletStore.get<PortfolioPlanner>('planner');
     await planner.submit(portfolioId, []);
     return;
+  }
+
+  if (values['withdraw-from-compound']) {
+    // Find an existing portfolio to withdraw from
+    const { offerToPublicSubscriberPaths } =
+      await sig.query.getCurrentWalletRecord();
+    const portfolioOffers = Object.entries(offerToPublicSubscriberPaths).filter(
+      ([_id, paths]) => 'portfolio' in paths,
+    );
+
+    if (portfolioOffers.length === 0) {
+      throw Error(
+        'No existing portfolio found. Please open a portfolio first.',
+      );
+    }
+
+    // Use the most recent portfolio
+    const [portfolioId] = portfolioOffers[portfolioOffers.length - 1];
+
+    try {
+      const result = await withdrawFromCompound({
+        sig,
+        portfolioId,
+        withdrawAmount: values['withdraw-amount'],
+        when: now(),
+      });
+      trace('withdrawal completed', result);
+      return;
+    } catch (err) {
+      if (values['exit-success']) {
+        throw { exitSuccess: true, originalError: err };
+      }
+      throw err;
+    }
   }
 
   const positionData = parseTypedJSON(values.positions, GoalDataShape);

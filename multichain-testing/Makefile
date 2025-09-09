@@ -261,7 +261,7 @@ PLANNER=agoric140yw0u2qrvmrgp33ejpddgnrwpm74vpfpx5v7n
 # see gov keys sheet
 RESOLVER=agoric140yw0u2qrvmrgp33ejpddgnrwpm74vpfpx5v7n
 ,inviteResolver: ,creatorFacet
-	AGORIC_NET=devnet ./scripts/ymax-tool.ts --pruneStorage --inviteResolver $(RESOLVER)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --inviteResolver $(RESOLVER)
 	touch $@
 	@echo now use resolver MNEMONIC: ymax-tool.ts --redeem-resolver
 
@@ -278,8 +278,13 @@ aave-e2e:
 
 compound-e2e:
 	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
-	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Aave":0.1}' --target-allocation '{"Compound_Ethereum":100}'
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Compound":1.25}' --target-allocation '{"Compound_Ethereum":100}'
+
+compound-withdraw-e2e:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --withdraw-from-compound
 
 aave-ava-e2e:
 	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Aave":0.1}' --target-allocation '{"Aave_Avalanche":100}'
+
