@@ -711,7 +711,7 @@ export const startEngine = async (
     // Respond to deposits.
     const portfolioOps = await Promise.all(
       [...depositAddrsWithActivity.entries()].map(
-        async ([addr, { portfolioKey, eventRecord: _eventRecord }]) => {
+        async ([addr, { portfolioKey, eventRecord }]) => {
           const amount = pickBalance(addrBalances.get(addr), depositAsset);
           if (!amount) {
             console.warn(`No ${q(depositAsset.issuerName)} at ${addr}`);
@@ -723,27 +723,36 @@ export const startEngine = async (
             `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}`,
           );
 
-          // TODO: Switch to an API that exposes block height, so we can detect stale
-          // data and push to `deferrals`.
-          const steps = await handleDeposit(
-            unprefixedPortfolioPath as any,
-            amount,
-            feeAsset.brand as Brand<'nat'>,
-            { readPublished: query.readPublished, spectrum, cosmosRest },
-          );
+          await null;
+          try {
+            // TODO: Use an API that exposes block height to detect stale data.
+            const steps = await handleDeposit(
+              unprefixedPortfolioPath as any,
+              amount,
+              feeAsset.brand as Brand<'nat'>,
+              { readPublished: query.readPublished, spectrum, cosmosRest },
+            );
 
-          // TODO: consolidate with portfolioIdOfPath
-          const portfolioId = parseInt(
-            stripPrefix(`portfolio`, portfolioKey),
-            10,
-          );
+            // TODO: consolidate with portfolioIdOfPath
+            const portfolioId = parseInt(
+              stripPrefix(`portfolio`, portfolioKey),
+              10,
+            );
 
-          return { portfolioId, steps };
+            return { portfolioId, steps };
+          } catch (err) {
+            console.warn(
+              `⚠️ Failed to handle ${portfolioKey} deposit; deferring`,
+              err,
+            );
+            deferrals.push(eventRecord);
+          }
         },
       ),
     );
 
     for (const { portfolioId, steps } of portfolioOps.filter(x => !!x)) {
+      if (!steps) continue;
       const result = await signingSmartWalletKit.invokeEntry({
         targetName: 'planner',
         method: 'submit',
