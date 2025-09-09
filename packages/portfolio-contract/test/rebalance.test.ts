@@ -2,7 +2,8 @@ import test from 'ava';
 import { AmountMath } from '@agoric/ertp';
 import type { Brand, Amount } from '@agoric/ertp/src/types.js';
 import { Far } from '@endo/marshal';
-import { planRebalanceFlow, type GraphNodeId } from '../src/plan-solve.js';
+import { planRebalanceFlow } from '../src/plan-solve.js';
+import type { AssetPlaceRef } from '../src/type-guards-steps.js';
 
 // Shared Tok brand + helper
 const { brand: TOK_BRAND } = (() => ({ brand: Far('Tok') as Brand<'nat'> }))();
@@ -90,26 +91,13 @@ const POOL_TO_CHAIN = (pool: string): string => {
   return parts[parts.length - 1];
 };
 
-const chainHub = (chain: string) => `@${chain}`;
-
-// MovementDesc-like structure for tests (only used fields)
-type MovementStep = {
-  src: string;
-  dest: string;
-  amount: Amount;
-  detail?: Record<string, unknown>;
-};
-
-const makeIssuerKit = (name: string) => ({ brand: Far(name) as Brand<'nat'> });
-const make = (brand: Brand, v: bigint) => AmountMath.make(brand, v);
-
 // Pools
 const A = 'Aave_Arbitrum';
 const B = 'Beefy_re7_Avalanche';
 const C = 'Compound_Ethereum';
 
 // Common placeRefs now derived from MODEL definition (include pools, hubs, and local leaves)
-const ALL_REFS = MODEL.nodes as unknown as GraphNodeId[];
+const ALL_REFS = MODEL.nodes as unknown as AssetPlaceRef[];
 
 // Helper to build current map (use shared token)
 const balances = (rec: Record<string, bigint>): Record<string, Amount<'nat'>> =>
