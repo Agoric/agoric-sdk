@@ -79,18 +79,11 @@ const MODEL = {
     { kind: 'cctpReturn', src: '@noble', dest: '@Arbitrum', timeSec: 20 },
     { kind: 'cctpReturn', src: '@noble', dest: '@Avalanche', timeSec: 20 },
     { kind: 'cctpReturn', src: '@noble', dest: '@Ethereum', timeSec: 20 },
-    // FastUSDC links
+    // FastUSDC unidirectional (EVM -> Noble only)
     {
       kind: 'fast',
       src: '@Arbitrum',
       dest: '@noble',
-      fee: 0.0015,
-      timeSec: 45,
-    },
-    {
-      kind: 'fast',
-      src: '@noble',
-      dest: '@Arbitrum',
       fee: 0.0015,
       timeSec: 45,
     },
@@ -103,22 +96,8 @@ const MODEL = {
     },
     {
       kind: 'fast',
-      src: '@noble',
-      dest: '@Avalanche',
-      fee: 0.0015,
-      timeSec: 45,
-    },
-    {
-      kind: 'fast',
       src: '@Ethereum',
       dest: '@noble',
-      fee: 0.0015,
-      timeSec: 45,
-    },
-    {
-      kind: 'fast',
-      src: '@noble',
-      dest: '@Ethereum',
       fee: 0.0015,
       timeSec: 45,
     },
@@ -161,18 +140,38 @@ const balances = (rec: Record<string, bigint>): Record<string, Amount<'nat'>> =>
 // Links used for all scenarios (directional). We keep simple symmetric links;
 // solver currently produces only leaf->hub and hub->leaf steps (no hub-hub legs in output).
 const LINKS = [
-  // EVM hubs to noble (cost/time not directly asserted in these tests)
+  // EVM hubs to noble (CCTP slow)
   { srcChain: 'Arbitrum', destChain: 'noble', variableFee: 0, timeFixed: 1080 },
-  { srcChain: 'noble', destChain: 'Arbitrum', variableFee: 0, timeFixed: 20 },
   {
     srcChain: 'Avalanche',
     destChain: 'noble',
     variableFee: 0,
     timeFixed: 1080,
   },
-  { srcChain: 'noble', destChain: 'Avalanche', variableFee: 0, timeFixed: 20 },
   { srcChain: 'Ethereum', destChain: 'noble', variableFee: 0, timeFixed: 1080 },
+  // CCTP return (Noble -> EVM)
+  { srcChain: 'noble', destChain: 'Arbitrum', variableFee: 0, timeFixed: 20 },
+  { srcChain: 'noble', destChain: 'Avalanche', variableFee: 0, timeFixed: 20 },
   { srcChain: 'noble', destChain: 'Ethereum', variableFee: 0, timeFixed: 20 },
+  // FastUSDC unidirectional (EVM -> Noble only)
+  {
+    srcChain: 'Arbitrum',
+    destChain: 'noble',
+    variableFee: 0.0015,
+    timeFixed: 45,
+  },
+  {
+    srcChain: 'Avalanche',
+    destChain: 'noble',
+    variableFee: 0.0015,
+    timeFixed: 45,
+  },
+  {
+    srcChain: 'Ethereum',
+    destChain: 'noble',
+    variableFee: 0.0015,
+    timeFixed: 45,
+  },
 ];
 
 test('solver simple 2-pool case (A -> B 30)', async t => {
