@@ -204,13 +204,13 @@ const factoryAddresses = {
   },
 };
 
-/** @see {@link https://developers.circle.com/cctp/evm-smart-contracts#tokenmessenger-mainnet} */
+/** @see {@link https://developers.circle.com/cctp/v1/evm-smart-contracts#mainnet-contract-addresses} */
 const mainnetTokenMessenger = (rows =>
   Object.fromEntries(
     rows.map(([Chain, Domain, Address]) => [Chain, { Domain, Address }]),
   ))(
   /** @type {[string, number, `0x${string}`][]} */ ([
-    ['Ethereum', 0, '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d'],
+    ['Ethereum', 0, '0xBd3fa81B58Ba92a82136038B25aDec7066af3155'],
     ['Avalanche', 1, '0x6B25532e1060CE10cc3B0A99e5683b91BFDe6982'],
     ['OP Mainnet', 2, '0x2B4069517957735bE00ceE0fadAE88a26365528f'],
     ['Arbitrum', 3, '0x19330d10D9Cc8751218eaf51E8885D058642E08A'],
@@ -283,13 +283,13 @@ const mainnetContracts = {
 };
 harden(mainnetContracts);
 
-/** https://developers.circle.com/cctp/evm-smart-contracts#tokenmessenger-testnet */
+/** @see {@link https://developers.circle.com/cctp/v1/evm-smart-contracts#testnet-contract-addresses} */
 const testnetTokenMessenger = (rows =>
   Object.fromEntries(
     rows.map(([Chain, Domain, Address]) => [Chain, { Domain, Address }]),
   ))(
   /** @type {[string, number, `0x${string}`][]} */ ([
-    ['Ethereum Sepolia', 0, '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'],
+    ['Ethereum Sepolia', 0, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
     ['Avalanche Fuji', 1, '0xeb08f243E5d3FCFF26A9E38Ae5520A669f4019d0'],
     ['OP Sepolia', 2, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
     ['Arbitrum Sepolia', 3, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
