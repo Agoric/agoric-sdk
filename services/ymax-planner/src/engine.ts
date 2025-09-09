@@ -19,6 +19,7 @@ import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 
 import { PublishedTxShape } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import {
+  PoolPlaces,
   PortfolioStatusShapeExt,
   type StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
@@ -27,7 +28,7 @@ import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
-import { handleDeposit } from './plan-deposit.ts';
+import { getCurrentBalance, handleDeposit } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import {
   handlePendingTx,
@@ -44,6 +45,8 @@ import {
 const { isInteger } = Number;
 
 const sink = () => {};
+
+const knownErrorProps = harden(['cause', 'errors', 'message', 'name', 'stack']);
 
 type CosmosEvent = {
   type: string;
@@ -423,48 +426,37 @@ export const startEngine = async (
   const chainStatus = await rpc.request('status', {});
   console.warn('agoric chain status', chainStatus);
 
-  // TODO: Test Spectrum API
+  // Test balance querying (using dummy addresses for now).
   {
-    const testCases = [
-      // TODO: { chain: 'ethereum', pool: 'aave', ethAddr: ... },
-    ] as Array<{ chain: any; pool: any; ethAddr: string }>;
-    for (const testCase of testCases) {
-      const { chain, pool, ethAddr } = testCase;
-      try {
-        const poolBalance = await spectrum.getPoolBalance(chain, pool, ethAddr);
-        console.warn('Spectrum pool balance:', {
-          chain: poolBalance.chain,
-          pool: poolBalance.pool,
-          ethAddr,
-          supplyBalance: poolBalance.balance.supplyBalance.toLocaleString(),
-          borrowAmount: poolBalance.balance.borrowAmount.toLocaleString(),
-        });
-      } catch (err) {
-        console.error(`Spectrum getPoolBalance failed for ${q(testCase)}`, err);
-        throw err;
-      }
-    }
-  }
-
-  // Test Cosmos REST API client with Noble chain
-  try {
-    const nobleInfo = await cosmosRest.getChainInfo('noble');
-    console.warn(
-      'Noble chain ID',
-      (nobleInfo as any)?.default_node_info?.network,
-      nobleInfo,
+    const balanceQueryPowers = { spectrum, cosmosRest };
+    const poolPlaceInfoByProtocol = new Map(
+      Object.values(PoolPlaces).map(info => [info.protocol, info]),
     );
-    // Test balance fetching for a known address (this will fail gracefully if
-    // address doesn't exist)
-    const testAddress = 'noble1xw2j23rcwrkg02yxdn5ha2d2x868cuk6370s9y';
-    const balances = await cosmosRest.getAccountBalances('noble', testAddress);
-    console.warn(
-      'Noble balance denoms',
-      balances.balances.map(coin => coin.denom),
+    await Promise.all(
+      [...poolPlaceInfoByProtocol.values()].map(async info => {
+        await null;
+        try {
+          const { chainName } = info;
+          const dummyAddress =
+            chainName === 'noble'
+              ? 'cosmos:testnoble:noble1xw2j23rcwrkg02yxdn5ha2d2x868cuk6370s9y'
+              : (([caipChainId, addr]) => `${caipChainId}:${addr}`)(
+                  Object.entries(evmCtx.usdcAddresses)[0],
+                );
+          const accountIdByChain = { [chainName]: dummyAddress } as any;
+          await getCurrentBalance(info, accountIdByChain, balanceQueryPowers);
+        } catch (err) {
+          const expandos = partialMap(Reflect.ownKeys(err), key =>
+            knownErrorProps.includes(key as any) ? false : [key, err[key]],
+          );
+          console.warn(
+            `⚠️ Could not query ${info.protocol} balance`,
+            err,
+            ...(expandos.length ? [Object.fromEntries(expandos)] : []),
+          );
+        }
+      }),
     );
-  } catch (err) {
-    console.error('Noble getAccountBalances failed', err);
-    throw err;
   }
 
   const agoricInfo = await cosmosRest.getChainInfo('agoric');
