@@ -11,7 +11,7 @@ import { Fail } from '@endo/errors';
 import jsLPSolver from 'javascript-lp-solver';
 import { makeTracer } from '@agoric/internal';
 
-const trace = makeTracer('solve', 'verbose');
+const trace = makeTracer('solve');
 
 // --------------------------- Types ---------------------------
 
@@ -19,13 +19,12 @@ const trace = makeTracer('solve', 'verbose');
  * A chain hub node id looks like '@agoric', '@noble', '@Arbitrum', etc.
  * Leaf nodes: PoolKey, '<Cash>', '<Deposit>', '+agoric'
  */
-export type GraphNodeId = AssetPlaceRef | PoolKey;
 
 /** Internal edge representation */
 export interface FlowEdge {
   id: string;
-  src: GraphNodeId;
-  dest: GraphNodeId;
+  src: AssetPlaceRef;
+  dest: AssetPlaceRef;
   capacity: number; // numeric for LP; derived from bigint
   variableFee: number; // cost coefficient per unit flow
   fixedFee?: number; // optional fixed cost (cheapest mode)
@@ -40,7 +39,7 @@ export interface SupplyMap {
 
 /** Graph structure */
 export interface RebalanceGraph {
-  nodes: Set<GraphNodeId>;
+  nodes: Set<AssetPlaceRef>;
   edges: FlowEdge[];
   supplies: SupplyMap;
   brand: Amount['brand'];
@@ -114,13 +113,13 @@ const scaleBigInt = (n: bigint): number => Number(n);
  * @param scale numeric scaling divisor (default 1)
  */
 export const buildBaseGraph = (
-  assetRefs: GraphNodeId[],
-  current: Partial<Record<GraphNodeId, NatAmount>>,
-  target: Partial<Record<GraphNodeId, NatAmount>>,
+  assetRefs: AssetPlaceRef[],
+  current: Partial<Record<AssetPlaceRef, NatAmount>>,
+  target: Partial<Record<AssetPlaceRef, NatAmount>>,
   brand: Amount['brand'],
   _scale: number = 1,
 ): RebalanceGraph => {
-  const nodes = new Set<GraphNodeId>();
+  const nodes = new Set<AssetPlaceRef>();
   const edges: FlowEdge[] = [];
   const supplies: SupplyMap = {};
 
@@ -128,7 +127,7 @@ export const buildBaseGraph = (
   for (const ref of assetRefs) {
     nodes.add(ref);
     const chain = chainOf(ref);
-    nodes.add(`@${chain}` as GraphNodeId);
+    nodes.add(`@${chain}` as AssetPlaceRef);
   }
 
   // Build supplies (signed deltas)
@@ -145,7 +144,7 @@ export const buildBaseGraph = (
   const tf = 1; // time cost unit (seconds or abstract)
   for (const node of nodes) {
     if (isHub(node)) continue;
-    const hub = `@${chainOf(node)}` as GraphNodeId;
+    const hub = `@${chainOf(node)}` as AssetPlaceRef;
     if (node === hub) continue;
     const base: Omit<FlowEdge, 'src' | 'dest' | 'id'> = {
       capacity: Number.MAX_SAFE_INTEGER / 4,
@@ -178,8 +177,8 @@ export const addInterchainLink = (
     timeFixed,
     via = 'inter-chain',
   } = spec;
-  const src = `@${srcChain}` as GraphNodeId;
-  const dest = `@${destChain}` as GraphNodeId;
+  const src = `@${srcChain}` as AssetPlaceRef;
+  const dest = `@${destChain}` as AssetPlaceRef;
   if (!graph.nodes.has(src) || !graph.nodes.has(dest)) {
     throw Fail`Chain hubs missing for link ${src}->${dest}`;
   }
@@ -274,7 +273,7 @@ export interface JsSolverModel {
   ints?: Record<string, 1>;
 }
 
-export const toJsSolverModel = (lp: LpModel): JsSolverModel => {
+const toJsSolverModel = (lp: LpModel): JsSolverModel => {
   const optimizeKey = 'cost';
   // Extract objective coefficients from synthetic obj variable
   const objectiveTerms: Record<string, number> = {};
@@ -329,8 +328,8 @@ export const solveRebalance = async (
   graph: RebalanceGraph,
 ): Promise<SolvedEdgeFlow[]> => {
   const jsModel = toJsSolverModel(model);
-  trace('Model:', JSON.stringify(model, null, 2));
-  trace('JS Solver Model:', JSON.stringify(jsModel, null, 2));
+  // trace('Model:', JSON.stringify(model, null, 2));
+  // trace('JS Solver Model:', JSON.stringify(jsModel, null, 2));
   const result = runJsSolver(jsModel);
   // js-lp-solver returns feasible flag; treat absence as failure
   if ((result as any).feasible === false) {
@@ -379,7 +378,7 @@ export const rebalanceMinCostFlowSteps = (
         candidates.push({
           edge,
           flow,
-          chain: chainOf(edge.src as GraphNodeId),
+          chain: chainOf(edge.src),
         });
       }
     }
@@ -435,9 +434,9 @@ export const rebalanceMinCostFlowSteps = (
  * 5. rebalanceMinCostFlowSteps
  */
 export const planRebalanceFlow = async (opts: {
-  assetRefs: GraphNodeId[];
-  current: Partial<Record<GraphNodeId, NatAmount>>;
-  target: Partial<Record<GraphNodeId, NatAmount>>;
+  assetRefs: AssetPlaceRef[];
+  current: Partial<Record<AssetPlaceRef, NatAmount>>;
+  target: Partial<Record<AssetPlaceRef, NatAmount>>;
   brand: Amount['brand'];
   links?: InterchainLinkSpec[];
   mode?: RebalanceMode;
@@ -455,8 +454,8 @@ export const planRebalanceFlow = async (opts: {
   const graph = buildBaseGraph(assetRefs, current, target, brand, 1);
   // Ensure hubs referenced only in links (e.g. noble) are present before adding edges
   for (const { srcChain, destChain } of links) {
-    graph.nodes.add(`@${srcChain}` as GraphNodeId);
-    graph.nodes.add(`@${destChain}` as GraphNodeId);
+    graph.nodes.add(`@${srcChain}` as AssetPlaceRef);
+    graph.nodes.add(`@${destChain}` as AssetPlaceRef);
   }
   for (const l of links) addInterchainLink(graph, l);
 
@@ -467,7 +466,7 @@ export const planRebalanceFlow = async (opts: {
 };
 
 // Helpers reinstated after scaling removal
-const chainOf = (id: GraphNodeId): string => {
+const chainOf = (id: AssetPlaceRef): string => {
   if (id.startsWith('@')) return id.slice(1);
   if (id === '<Cash>' || id === '<Deposit>' || id === '+agoric')
     return 'agoric';
@@ -477,7 +476,7 @@ const chainOf = (id: GraphNodeId): string => {
   }
   throw Fail`Cannot determine chain for ${id}`;
 };
-const isHub = (id: GraphNodeId): boolean => id.startsWith('@');
+const isHub = (id: AssetPlaceRef): boolean => id.startsWith('@');
 
 // --------------------------- Example (commented) ---------------------------
 /*
