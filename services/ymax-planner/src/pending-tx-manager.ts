@@ -199,13 +199,13 @@ type HandlePendingTxOptions = {
 };
 
 export const handlePendingTx = async (
-  ctx: EvmContext,
   tx: PendingTx,
   {
     log = () => {},
     registry = createMonitorRegistry(),
     timeoutMs = 300000, // 5 min
-  }: HandlePendingTxOptions,
+    ...evmCtx
+  }: EvmContext & HandlePendingTxOptions,
 ) => {
   await null;
   const logPrefix = `[${tx.txId}]`;
@@ -214,5 +214,5 @@ export const handlePendingTx = async (
   const monitor = registry[tx.type] as PendingTxMonitor<PendingTx, EvmContext>;
   monitor || Fail`${logPrefix} No monitor registered for tx type: ${tx.type}`;
 
-  await monitor.watch(ctx, tx, log, timeoutMs);
+  await monitor.watch(evmCtx, tx, log, timeoutMs);
 };

@@ -1,15 +1,13 @@
 /// <reference types="ses" />
 /* eslint-env node */
 
-import { log } from 'node:console';
 import { inspect } from 'node:util';
 
 import type { Coin } from '@cosmjs/stargate';
 
-import { Fail, q, X } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 import { Nat } from '@endo/nat';
 import { isPrimitive } from '@endo/pass-style';
-import { matches } from '@endo/patterns';
 import { makePromiseKit, type PromiseKit } from '@endo/promise-kit';
 
 import type { SigningSmartWalletKit, VStorage } from '@agoric/client-utils';
@@ -43,6 +41,7 @@ import {
 } from './vstorage-utils.ts';
 
 const { isInteger } = Number;
+const { entries } = Object;
 
 const sink = () => {};
 
@@ -70,11 +69,14 @@ const PathSeparator = '.';
  * cf. golang/cosmos/x/vstorage/types/path_keys.go
  */
 const encodedKeyToPath = (key: string) => {
-  const split = key.split(EncodedKeySeparator);
-  split.length > 1 || Fail`invalid encoded key ${q(key)}`;
-  const encodedPath = split.slice(1).join(EncodedKeySeparator);
-  const path = encodedPath.replaceAll(EncodedKeySeparator, PathSeparator);
+  const encodedParts = key.split(EncodedKeySeparator);
+  encodedParts.length > 1 || Fail`invalid encoded key ${q(key)}`;
+  const path = encodedParts.slice(1).join(PathSeparator);
   return path;
+};
+const pathToEncodedKey = (path: string) => {
+  const segments = path.split(PathSeparator);
+  return `${segments.length}${EncodedKeySeparator}${segments.join(EncodedKeySeparator)}`;
 };
 
 /**
@@ -275,6 +277,28 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
   return harden(results as typeof results & { done: Promise<boolean> });
 };
 
+export const makeVstorageEvent = (
+  blockHeight: bigint,
+  path: string,
+  value: any,
+  marshaller: SigningSmartWalletKit['marshaller'],
+): CosmosEvent => {
+  const streamCellJson = JSON.stringify({
+    blockHeight: String(blockHeight),
+    values: [JSON.stringify(marshaller.toCapData(value))],
+  });
+  const eventAttrs = {
+    store: 'vstorage',
+    key: pathToEncodedKey(path),
+    value: streamCellJson,
+  };
+  const event: CosmosEvent = {
+    type: 'state_change',
+    attributes: entries(eventAttrs).map(([k, v]) => ({ key: k, value: v })),
+  };
+  return event;
+};
+
 type Powers = {
   evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
   rpc: CosmosRPCClient;
@@ -347,53 +371,35 @@ const processPortfolioEvents = async (
   }
 };
 
-export const parsePendingTx = (txId: `tx${number}`, data): PendingTx | null => {
-  if (!matches(data, PublishedTxShape)) {
-    const err = assert.error(
-      X`expected data ${data} to match ${q(PublishedTxShape)}`,
-    );
-    console.error(err);
-    return null;
-  }
-
-  return { txId, ...data } as PendingTx;
-};
-
 export const processPendingTxEvents = async (
-  evmCtx: EvmContext,
   events: Array<{ path: string; value: string }>,
-  marshaller: SigningSmartWalletKit['marshaller'],
-  handlePendingTxFn = handlePendingTx,
-  logFn = log,
+  handlePendingTxFn,
+  powers: EvmContext & {
+    marshaller: SigningSmartWalletKit['marshaller'];
+    log?: typeof console.log;
+    error?: typeof console.error;
+  },
 ) => {
+  const { marshaller, error = () => {}, ...txPowers } = powers;
+  const { log = () => {} } = powers;
   for (const { path, value: cellJson } of events) {
-    const streamCell = parseStreamCell(cellJson, path);
+    const errLabel = `🚨 Failed to process pending tx ${path}`;
+    let data;
+    try {
+      // Extract txId from path (e.g., "published.ymax0.pendingTxs.tx1")
+      const txId = stripPrefix(`${PENDING_TX_PATH_PREFIX}.`, path);
+      log('Processing pendingTx event', path);
 
-    // Extract txId from path (e.g., "published.ymax0.pendingTxs.tx1")
-    const txId = stripPrefix(`${PENDING_TX_PATH_PREFIX}.`, path);
-    console.warn('Processing pendingTx event', txId, path);
-
-    for (let i = 0; i < streamCell.values.length; i += 1) {
-      const value = parseStreamCellValue(streamCell, i, path);
-      const tx = parsePendingTx(
-        txId as `tx${number}`,
-        marshaller.fromCapData(value),
-      );
-      if (!tx) continue;
-
-      console.warn('Handling pending tx:', {
-        txId,
-        type: tx.type,
-        status: tx.status,
-      });
-
-      const errorHandler = error => {
-        console.error(`⚠️ Failed to process pendingTx: ${txId}`, error);
-      };
-
-      void handlePendingTxFn({ ...evmCtx }, tx, {
-        log: logFn,
-      }).catch(errorHandler);
+      const streamCell = parseStreamCell(cellJson, path);
+      const value = parseStreamCellValue(streamCell, -1, path);
+      data = marshaller.fromCapData(value);
+      mustMatch(data, PublishedTxShape, `${path} index -1`);
+      const tx = { txId, ...data } as PendingTx;
+      log('New pending tx', tx);
+      // Tx resolution is non-blocking.
+      void handlePendingTxFn(tx, txPowers).catch(err => error(errLabel, err));
+    } catch (err) {
+      error(errLabel, data, err);
     }
   }
 };
@@ -477,7 +483,7 @@ export const startEngine = async (
         return BigInt((respData.TxResult as any).height);
       default: {
         console.error(
-          `Attempting to read block height from unexpected response type ${respType}`,
+          `🚨 Attempting to read block height from unexpected response type ${respType}`,
           respData,
         );
         const obj = Object.values(respData)[0];
@@ -502,63 +508,74 @@ export const startEngine = async (
   // console.log('subscribed to events', subscriptionFilters);
 
   // TODO: Verify consumption of paginated data.
-  // TODO: Retry when data is associated with a block height lower than that of
-  //       the first result from `responses`.
-  const portfolioKeys = await query.vstorage.keys(PORTFOLIOS_PATH_PREFIX);
-  const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
-  await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
-    const status = await query.readPublished(
-      `${stripPrefix('published.', PORTFOLIOS_PATH_PREFIX)}.${portfolioKey}`,
-    );
-    mustMatch(status, PortfolioStatusShapeExt, portfolioKey);
-    const { depositAddress } = status;
-    if (!depositAddress) return;
-    portfolioKeyForDepositAddr.set(depositAddress, portfolioKey);
-    // TODO: Use the block height associated with portfolioKey.
-    // https://github.com/Agoric/agoric-sdk/pull/11630
-    deferrals.push({
-      blockHeight: 0n,
-      type: 'transfer' as const,
-      address: depositAddress,
-    });
-  }).done;
-
-  const pendingTxKeys = await query.vstorage.keys(PENDING_TX_PATH_PREFIX);
-  console.warn(
-    `Found ${pendingTxKeys.length} existing pendingTxKeys to monitor`,
+  const [pendingTxKeys, portfolioKeys] = await Promise.all(
+    [PENDING_TX_PATH_PREFIX, PORTFOLIOS_PATH_PREFIX].map(vstoragePath =>
+      query.vstorage.keys(vstoragePath),
+    ),
   );
 
-  await makeWorkPool(pendingTxKeys, undefined, async txId => {
-    const logIgnoredError = err => {
-      const msg = `⚠️ Failed to process existing pendingTx: ${txId}`;
-      console.error(msg, err);
-    };
+  // TODO: Retry when data is associated with a block height lower than that of
+  //       the first result from `responses`.
+  const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
+  await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
+    const path = `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}`;
+    await null;
+    let status;
+    try {
+      status = await query.readPublished(stripPrefix('published.', path));
+      mustMatch(status, PortfolioStatusShapeExt, path);
+      const { depositAddress } = status;
+      if (!depositAddress) return;
+      portfolioKeyForDepositAddr.set(depositAddress, portfolioKey);
+      // TODO: Use the block height associated with portfolioKey.
+      // https://github.com/Agoric/agoric-sdk/pull/11630
+      deferrals.push({
+        blockHeight: 0n,
+        type: 'transfer' as const,
+        address: depositAddress,
+      });
+    } catch (err) {
+      const msg = `⚠️  Could not read ${portfolioKey} status; deferring`;
+      console.error(msg, status, err);
+      const blockHeight = 0n;
+      const event = makeVstorageEvent(
+        blockHeight,
+        PORTFOLIOS_PATH_PREFIX,
+        { addPortfolio: portfolioKey } as StatusFor['portfolios'],
+        marshaller,
+      );
+      deferrals.push({ blockHeight, type: 'kvstore', event });
+    }
+  }).done;
 
+  const txPowers = {
+    ...evmCtx,
+    signingSmartWalletKit,
+    fetch,
+    cosmosRest,
+    marshaller,
+    log: console.warn.bind(console),
+    error: console.error.bind(console),
+  };
+  console.warn(`Found ${pendingTxKeys.length} pending transactions`);
+  await makeWorkPool(pendingTxKeys, undefined, async txId => {
+    const path = `${PENDING_TX_PATH_PREFIX}.${txId}`;
+    const errLabel = `🚨 Failed to process old pending tx ${path}`;
+
+    await null;
     let data;
     try {
-      // eslint-disable-next-line @jessie.js/safe-await-separator
-      data = await query.readPublished(
-        stripPrefix('published.', `${PENDING_TX_PATH_PREFIX}.${txId}`),
+      data = await query.readPublished(stripPrefix('published.', path));
+      mustMatch(data, PublishedTxShape, path);
+      const tx = { txId, ...data } as PendingTx;
+      console.warn('Old pending tx', tx);
+      // Tx resolution is non-blocking.
+      void handlePendingTx(tx, txPowers).catch(err =>
+        console.error(errLabel, err),
       );
     } catch (err) {
-      logIgnoredError(err);
-      return;
+      console.error(errLabel, data, err);
     }
-
-    const tx = parsePendingTx(txId as `tx${number}`, data);
-    if (!tx) return;
-
-    console.warn(`Found existing tx: ${txId}`, {
-      type: tx.type,
-      status: tx.status,
-    });
-
-    // Process existing pending transactions on startup
-    void handlePendingTx(
-      { ...evmCtx, signingSmartWalletKit, fetch, cosmosRest },
-      tx,
-      { log },
-    ).catch(logIgnoredError);
   }).done;
 
   // console.warn('consuming events');
@@ -641,11 +658,7 @@ export const startEngine = async (
       portfolioKeyForDepositAddr,
     });
 
-    await processPendingTxEvents(
-      { ...evmCtx, cosmosRest, signingSmartWalletKit, fetch },
-      pendingTxEvents,
-      marshaller,
-    );
+    await processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers);
 
     // Detect activity against portfolio deposit addresses.
     const oldAddrActivity = deferrals.splice(0).filter(deferral => {

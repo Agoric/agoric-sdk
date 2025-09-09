@@ -62,7 +62,8 @@ test('handlePendingTx processes CCTP transaction successfully', async t => {
   }, 50);
 
   await t.notThrowsAsync(async () => {
-    await handlePendingTx(mockEvmCtx, cctpTx, {
+    await handlePendingTx(cctpTx, {
+      ...mockEvmCtx,
       log: logger,
       timeoutMs: 3000,
     });
@@ -124,7 +125,8 @@ test('handlePendingTx keeps tx pending on amount mismatch until timeout', async 
   }, 50);
 
   await t.notThrowsAsync(async () => {
-    await handlePendingTx(mockEvmCtx, cctpTx, {
+    await handlePendingTx(cctpTx, {
+      ...mockEvmCtx,
       log: logger,
       timeoutMs: 3000,
     });
