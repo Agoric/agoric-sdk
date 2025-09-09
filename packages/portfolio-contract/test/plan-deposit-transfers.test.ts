@@ -2,7 +2,6 @@ import test from 'ava';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import { Far } from '@endo/pass-style';
 import type { TargetAllocation } from '@aglocal/portfolio-contract/src/type-guards.js';
-import { planDepositTransfers } from '../src/plan-transfers.js';
 import { makeTracer } from '@agoric/internal';
 import { planDepositTransfers } from '../src/plan-transfers.ts';
 
