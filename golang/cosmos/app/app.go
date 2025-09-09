@@ -1209,7 +1209,7 @@ func (app *GaiaApp) Commit() (*abci.ResponseCommit, error) {
 
 		if err != nil {
 			app.Logger().Error("failed to initiate swingset snapshot", "err", err)
-			return nil, err
+			// failing to initiate a snapshot is not fatal. It can happen e.g. if a snapshot is already in progress
 		}
 	}
 
