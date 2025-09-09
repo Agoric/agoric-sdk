@@ -762,12 +762,6 @@ test('restore PSM: startPSM with previous metrics, params', async t => {
       chainStorage,
     } = t.context;
 
-    const provisionPoolStartResult = harden({
-      creatorFacet: {
-        initPSM: (brand, psm) => t.log('initPSM', { brand, psm }),
-      },
-    });
-
     const econCharterKit = harden({
       creatorFacet: {
         addInstance: (psm, creatorFacet, instance) =>
@@ -783,7 +777,6 @@ test('restore PSM: startPSM with previous metrics, params', async t => {
       feeMintAccess,
       economicCommitteeCreatorFacet,
       econCharterKit,
-      provisionPoolStartResult,
       bankManager: makeMockBankManager(t),
       chainTimerService: null, // not used in this test
     })) {
