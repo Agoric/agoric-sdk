@@ -1,7 +1,7 @@
 {
   "name": "@aglocal/ymax-planner",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1-u22.0",
   "description": "Portfolio contract off-chain engine",
   "main": "dist/entrypoint.js",
   "type": "module",

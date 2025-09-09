@@ -1,6 +1,6 @@
 {
   "name": "@agoric/inter-protocol",
-  "version": "0.17.0-u22.0",
+  "version": "0.17.0-u22.1",
   "description": "Core cryptoeconomy contracts",
   "type": "module",
   "main": "src/index.js",

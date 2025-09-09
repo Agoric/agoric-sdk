@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.0.0-u22.1](https://github.com/Agoric/agoric-sdk/compare/@aglocal/deployment@4.0.0-u22.0...@aglocal/deployment@4.0.0-u22.1) (2025-09-09)
+
+**Note:** Version bump only for package @aglocal/deployment
+
 ## 4.0.0-u22.0 (2025-09-08)
 
 ### ⚠ BREAKING CHANGES

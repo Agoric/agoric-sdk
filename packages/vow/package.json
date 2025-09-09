@@ -1,6 +1,6 @@
 {
   "name": "@agoric/vow",
-  "version": "0.2.0-u22.0",
+  "version": "0.2.0-u22.1",
   "description": "Remote (shortening and disconnection-tolerant) Promise-likes",
   "type": "module",
   "main": "src/index.js",
