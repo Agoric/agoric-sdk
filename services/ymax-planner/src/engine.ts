@@ -423,9 +423,6 @@ export const startEngine = async (
   await null;
   const { query, marshaller } = signingSmartWalletKit;
 
-  const chainStatus = await rpc.request('status', {});
-  console.warn('agoric chain status', chainStatus);
-
   // Test balance querying (using dummy addresses for now).
   {
     const balanceQueryPowers = { spectrum, cosmosRest };
@@ -458,13 +455,6 @@ export const startEngine = async (
       }),
     );
   }
-
-  const agoricInfo = await cosmosRest.getChainInfo('agoric');
-  console.warn(
-    'Agoric chain ID',
-    (agoricInfo as any)?.default_node_info?.network,
-    agoricInfo,
-  );
 
   const vbankAssets: AssetInfo[] = (
     await query.readPublished('agoricNames.vbankAsset')
@@ -505,9 +495,10 @@ export const startEngine = async (
     "tm.event = 'Tx'",
   ];
   const responses = rpc.subscribeAll(subscriptionFilters);
-  const firstResult = await responses.next();
-  (firstResult.done === false && firstResult.value === undefined) ||
-    Fail`Unexpected ready signal ${firstResult}`;
+  const readyResult = await responses.next();
+  if (readyResult.done !== false || readyResult.value !== undefined) {
+    console.error('🚨 Unexpected non-undefined ready signal', readyResult);
+  }
   // console.log('subscribed to events', subscriptionFilters);
 
   // TODO: Verify consumption of paginated data.
