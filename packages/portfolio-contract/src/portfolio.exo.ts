@@ -419,7 +419,7 @@ export const preparePortfolioKit = (
           trace('reserveAccount', chainName);
           const { accounts, accountsPending } = this.state;
           if (accounts.has(chainName)) {
-            trace('accounts.hashad', chainName);
+            trace('accounts.has', chainName);
             return vowTools.asVow(async () => {
               const infoAny = accounts.get(chainName);
               assert.equal(infoAny.chainName, chainName);
