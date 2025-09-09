@@ -1,6 +1,6 @@
 {
   "name": "@aglocal/boot",
-  "version": "0.2.0-u22.1",
+  "version": "0.2.0-u22.2",
   "private": true,
   "description": "Config and utilities to bootstrap an Agoric chain",
   "type": "module",
@@ -59,7 +59,7 @@
     "viem": "^2.31.0"
   },
   "devDependencies": {
-    "@aglocal/fast-usdc-deploy": "^0.2.0-u22.1",
+    "@aglocal/fast-usdc-deploy": "^0.2.0-u22.2",
     "@agoric/deploy-script-support": "workspace:*",
     "@agoric/governance": "workspace:*",
     "@agoric/store": "workspace:*",

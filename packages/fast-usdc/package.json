@@ -1,6 +1,6 @@
 {
   "name": "@agoric/fast-usdc",
-  "version": "0.2.0-u22.1",
+  "version": "0.2.0-u22.2",
   "description": "CLI and library for Fast USDC product",
   "type": "module",
   "files": [

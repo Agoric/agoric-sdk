@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.6.0-u22.2](https://github.com/Agoric/agoric/compare/@agoric/smart-wallet@0.6.0-u22.1...@agoric/smart-wallet@0.6.0-u22.2) (2025-09-09)
+
+**Note:** Version bump only for package @agoric/smart-wallet
+
 ## [0.6.0-u22.1](https://github.com/Agoric/agoric/compare/@agoric/smart-wallet@0.6.0-u22.0...@agoric/smart-wallet@0.6.0-u22.1) (2025-09-09)
 
 **Note:** Version bump only for package @agoric/smart-wallet

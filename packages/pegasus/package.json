@@ -1,6 +1,6 @@
 {
   "name": "@agoric/pegasus",
-  "version": "0.8.0-u22.1",
+  "version": "0.8.0-u22.2",
   "description": "Peg-as-us contract",
   "type": "module",
   "main": "./src/pegasus.js",
