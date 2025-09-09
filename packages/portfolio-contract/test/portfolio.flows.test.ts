@@ -18,7 +18,9 @@ import {
 } from '@agoric/internal/src/storage-test-utils.js';
 import {
   denomHash,
+  type ActualChainInfo,
   type ChainInfo,
+  type IBCConnectionInfo,
   type Orchestrator,
 } from '@agoric/orchestration';
 import { buildGasPayload } from '@agoric/orchestration/src/utils/gmp.js';
@@ -310,20 +312,24 @@ const mocks = (
       }
       return axelarCCTPConfig[chainName];
     },
-    getChainsAndConnection: (primaryChainName, secondaryChainName) => {
-      const primaryChain = chainHubTools.getChainInfo(primaryChainName);
-      const secondaryChain = chainHubTools.getChainInfo(secondaryChainName);
-      return [
-        primaryChain,
-        secondaryChain,
-        {
-          transferChannel: {
-            channelId: 'channel-0',
-            counterpartyChannelId: 'channel-1',
-          },
-        },
-      ] as const;
-    },
+    getChainsAndConnection: <C1 extends string, C2 extends string>(
+      primaryChainName: C1,
+      secondaryChainName: C2,
+    ) =>
+      vowTools.asVow(() => {
+        const primaryChain = chainHubTools.getChainInfo(primaryChainName);
+        const secondaryChain = chainHubTools.getChainInfo(secondaryChainName);
+        return [
+          primaryChain,
+          secondaryChain,
+          {
+            transferChannel: {
+              channelId: 'channel-0',
+              counterpartyChannelId: 'channel-1',
+            },
+          } as unknown,
+        ] as [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo];
+      }),
   });
 
   const rebalanceHost = (seat, offerArgs, kit) =>
