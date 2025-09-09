@@ -53,8 +53,8 @@ export const getCurrentBalances = async (
       case 'Aave':
       case 'Compound': {
         const { chainName } = info;
-        const pool = info.protocol.toLocaleLowerCase() as Pool;
-        const chain = chainName.toLocaleLowerCase() as Chain;
+        const pool = info.protocol.toLowerCase() as Pool;
+        const chain = chainName.toLowerCase() as Chain;
         const addr = addressOfAccountId(status.accountIdByChain[chainName]);
         const { balance } = await spectrum.getPoolBalance(chain, pool, addr);
         assert(Number.isSafeInteger(balance.supplyBalance));
