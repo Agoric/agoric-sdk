@@ -373,33 +373,72 @@ export const rebalanceMinCostFlowSteps = (
   flows: SolvedEdgeFlow[],
   graph: RebalanceGraph,
 ): MovementDesc[] => {
-  const isHub = (n: string) => n.startsWith('@');
+  const available: Record<string, number> = {};
+  for (const [node, sup] of Object.entries(graph.supplies))
+    if (sup > 0) available[node] = sup;
 
-  // Categorize for deterministic ordering
-  // 0: leaf->hub, 1: hub->hub, 2: hub->leaf
-  type Cat = 0 | 1 | 2;
-  const catOf = (e: FlowEdge): Cat =>
-    !isHub(e.src) && isHub(e.dest) ? 0 : isHub(e.src) && isHub(e.dest) ? 1 : 2;
-
-  const active = flows
+  const work = flows
     .filter(f => f.flow > FLOW_EPS)
-    .map(f => ({
-      edge: f.edge,
-      amt: BigInt(Math.round(f.flow)),
-      cat: catOf(f.edge),
-    }));
+    .map(f => ({ edge: f.edge, flow: f.flow }));
 
-  active.sort((a, b) => {
-    if (a.cat !== b.cat) return a.cat - b.cat;
-    const ai = Number(a.edge.id.slice(1));
-    const bi = Number(b.edge.id.slice(1));
-    return ai - bi;
-  });
+  const edgeIdNum = (e: FlowEdge) => Number(e.id.slice(1));
+  const scheduled: { edge: FlowEdge; flow: number }[] = [];
+  const pending = new Set(work.map(w => w.edge.id));
+  const edgeById: Record<string, { edge: FlowEdge; flow: number }> = {};
+  for (const w of work) edgeById[w.edge.id] = w;
 
-  const steps: MovementDesc[] = active.map(({ edge, amt }) => ({
+  // Maintain last chosen originating chain to group sequential operations
+  let lastChain: string | undefined;
+
+  while (pending.size) {
+    const candidates: { edge: FlowEdge; flow: number; chain: string }[] = [];
+    for (const id of pending) {
+      const { edge, flow } = edgeById[id];
+      const avail = available[edge.src] || 0;
+      if (avail + 1e-12 >= flow) {
+        candidates.push({
+          edge,
+          flow,
+          chain: chainOf(edge.src as GraphNodeId),
+        });
+      }
+    }
+    if (!candidates.length) {
+      // Deadlock fallback: schedule by id order regardless of availability
+      const fallback = [...pending]
+        .map(id => edgeById[id])
+        .sort((a, b) => edgeIdNum(a.edge) - edgeIdNum(b.edge));
+      for (const w of fallback) {
+        scheduled.push(w);
+        available[w.edge.src] = (available[w.edge.src] || 0) - w.flow;
+        available[w.edge.dest] = (available[w.edge.dest] || 0) + w.flow;
+        pending.delete(w.edge.id);
+      }
+      break;
+    }
+
+    // Group by chain; prefer continuing with lastChain if present
+    let chosenGroup = candidates;
+    if (lastChain) {
+      const same = candidates.filter(c => c.chain === lastChain);
+      if (same.length) chosenGroup = same;
+    }
+    // Pick deterministic smallest edge id within chosen group
+    chosenGroup.sort((a, b) => edgeIdNum(a.edge) - edgeIdNum(b.edge));
+    const chosen = chosenGroup[0];
+    scheduled.push(chosen);
+    lastChain = chosen.chain; // update grouping chain
+    available[chosen.edge.src] =
+      (available[chosen.edge.src] || 0) - chosen.flow;
+    available[chosen.edge.dest] =
+      (available[chosen.edge.dest] || 0) + chosen.flow;
+    pending.delete(chosen.edge.id);
+  }
+
+  const steps: MovementDesc[] = scheduled.map(({ edge, flow }) => ({
     src: edge.src as AssetPlaceRef,
     dest: edge.dest as AssetPlaceRef,
-    amount: AmountMath.make(graph.brand, amt),
+    amount: AmountMath.make(graph.brand, BigInt(Math.round(flow))),
   }));
 
   return harden(steps);

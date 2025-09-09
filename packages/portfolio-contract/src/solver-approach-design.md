@@ -87,8 +87,24 @@ Reflected as four MovementDescs (one per edge used) with amount 30.
 - Scaling can be reintroduced if future magnitudes exceed safe integer precision.
 - Multi-objective (lexicographic) could wrap two solves (first fastest then cheapest among fastest solutions) if required.
 
+## 9. Execution Ordering (Deterministic Scheduling)
+The emitted MovementDescs follow a dependency-based schedule ensuring every step is feasible with currently available funds:
+1. Initialization: Any node with positive netSupply provides initial available liquidity.
+2. Candidate selection loop:
+   - At each iteration, consider unscheduled positive-flow edges whose source node currently has sufficient available units (>= flow).
+   - If multiple candidates exist, prefer edges whose originating chain (derived from the source node) matches the chain of the previously scheduled edge (chain grouping heuristic). This groups sequential operations per chain, especially helpful for EVM-origin flows.
+   - If still multiple, choose the edge with smallest numeric edge id (stable deterministic tiebreaker).
+3. Availability update: After scheduling an edge (src->dest, flow f), decrease availability at src by f and increase availability at dest by f.
+4. Deadlock fallback: If no edge is currently fundable (e.g. all remaining edges originate at intermediate hubs with zero temporary balance), schedule remaining edges in ascending edge id order, simulating availability updates to break the cycle.
+
+Resulting guarantees:
+- No step requires funds that have not yet been made available by a prior step (except in the explicit deadlock fallback case, which should only occur for purely cyclic zero-supply intermediate structures).
+- Order is fully deterministic given the solved flows.
+- Movements are naturally grouped by chain where possible, improving readability for execution planning.
+
 ---
 
 # Existing Detailed Notes (Legacy / Original Draft)
 
 <!-- The original content follows unchanged for reference -->
+````

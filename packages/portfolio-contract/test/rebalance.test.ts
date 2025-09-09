@@ -17,16 +17,12 @@ const token = (v: bigint) => AmountMath.make(TOK_BRAND, v);
  *   Agoric local leaves: '+agoric', '<Deposit>', '<Cash>'
  *
  * Edges (conceptual attributes):
- *   - Intra-chain (leaf <-> hub): variableFee=1, time=1s
- *   - Noble <-> Agoric: variableFee=2, time=10s
- *   - EVM hub -> Noble (CCTP): time=18 minutes (1080s), cost ~0 (variableFee=0)
- *   - Noble -> EVM hub (CCTP return): time=20s, cost ~0
- *   - FastUSDC EVM hub <-> Noble: variableFee=15bp (0.0015), time=45s
- *
- * For testing path expansion we choose the cheaper/faster multi-step that goes:
- *   Pool -> Hub (intra) -> @noble (FastUSDC from hub) -> DestHub -> DestPool
- * If source and destination are on the same chain, the path simplifies to:
- *   SrcPool -> Hub -> DestPool  (we still route via @noble ONLY IF chains differ)
+ *   - Intra-chain (leaf <-> hub): variableFee=1, time=1 (seconds)
+ *   - Noble <-> Agoric: variableFee=2, time=10 (seconds)
+ *   - EVM hub -> Noble (CCTP): time=1080 (18 minutes), variableFee≈0
+ *   - Noble -> EVM hub (CCTP return): time=20 (seconds), variableFee≈0
+ *   - FastUSDC (unidirectional EVM -> Noble): variableFee=0.0015, time=45 (seconds)
+ * Note: time values are in seconds; fractional (sub-second) values are supported if needed.
  */
 const MODEL = {
   nodes: [
@@ -49,58 +45,40 @@ const MODEL = {
       src: 'Aave_Arbitrum',
       dest: '@Arbitrum',
       fee: 1,
-      timeSec: 1,
+      time: 1,
     },
     {
       kind: 'intra',
       src: 'Beefy_re7_Avalanche',
       dest: '@Avalanche',
       fee: 1,
-      timeSec: 1,
+      time: 1,
     },
     {
       kind: 'intra',
       src: 'Compound_Ethereum',
       dest: '@Ethereum',
       fee: 1,
-      timeSec: 1,
+      time: 1,
     },
-    { kind: 'intra', src: '+agoric', dest: '@agoric', fee: 1, timeSec: 1 },
-    { kind: 'intra', src: '<Deposit>', dest: '@agoric', fee: 1, timeSec: 1 },
-    { kind: 'intra', src: '<Cash>', dest: '@agoric', fee: 1, timeSec: 1 },
+    { kind: 'intra', src: '+agoric', dest: '@agoric', fee: 1, time: 1 },
+    { kind: 'intra', src: '<Deposit>', dest: '@agoric', fee: 1, time: 1 },
+    { kind: 'intra', src: '<Cash>', dest: '@agoric', fee: 1, time: 1 },
     // Noble <-> Agoric
-    { kind: 'ibc', src: '@agoric', dest: '@noble', fee: 2, timeSec: 10 },
-    { kind: 'ibc', src: '@noble', dest: '@agoric', fee: 2, timeSec: 10 },
+    { kind: 'ibc', src: '@agoric', dest: '@noble', fee: 2, time: 10 },
+    { kind: 'ibc', src: '@noble', dest: '@agoric', fee: 2, time: 10 },
     // CCTP (EVM -> Noble slow)
-    { kind: 'cctpSlow', src: '@Arbitrum', dest: '@noble', timeSec: 1080 },
-    { kind: 'cctpSlow', src: '@Avalanche', dest: '@noble', timeSec: 1080 },
-    { kind: 'cctpSlow', src: '@Ethereum', dest: '@noble', timeSec: 1080 },
+    { kind: 'cctpSlow', src: '@Arbitrum', dest: '@noble', time: 1080 },
+    { kind: 'cctpSlow', src: '@Avalanche', dest: '@noble', time: 1080 },
+    { kind: 'cctpSlow', src: '@Ethereum', dest: '@noble', time: 1080 },
     // CCTP return (Noble -> EVM)
-    { kind: 'cctpReturn', src: '@noble', dest: '@Arbitrum', timeSec: 20 },
-    { kind: 'cctpReturn', src: '@noble', dest: '@Avalanche', timeSec: 20 },
-    { kind: 'cctpReturn', src: '@noble', dest: '@Ethereum', timeSec: 20 },
+    { kind: 'cctpReturn', src: '@noble', dest: '@Arbitrum', time: 20 },
+    { kind: 'cctpReturn', src: '@noble', dest: '@Avalanche', time: 20 },
+    { kind: 'cctpReturn', src: '@noble', dest: '@Ethereum', time: 20 },
     // FastUSDC unidirectional (EVM -> Noble only)
-    {
-      kind: 'fast',
-      src: '@Arbitrum',
-      dest: '@noble',
-      fee: 0.0015,
-      timeSec: 45,
-    },
-    {
-      kind: 'fast',
-      src: '@Avalanche',
-      dest: '@noble',
-      fee: 0.0015,
-      timeSec: 45,
-    },
-    {
-      kind: 'fast',
-      src: '@Ethereum',
-      dest: '@noble',
-      fee: 0.0015,
-      timeSec: 45,
-    },
+    { kind: 'fast', src: '@Arbitrum', dest: '@noble', fee: 0.0015, time: 45 },
+    { kind: 'fast', src: '@Avalanche', dest: '@noble', fee: 0.0015, time: 45 },
+    { kind: 'fast', src: '@Ethereum', dest: '@noble', fee: 0.0015, time: 45 },
   ],
 } as const;
 
@@ -215,7 +193,7 @@ test('solver 3-pool rounding (A -> B 33, A -> C 33)', async t => {
       ]),
     ),
     brand: TOK_BRAND,
-    links: LINKS,
+    links: LINKS, // fixed: was a string literal
     mode: 'cheapest',
   });
 
@@ -267,12 +245,10 @@ test('solver all to one (B + C -> A)', async t => {
   t.deepEqual(steps, [
     // leaf -> hub sources
     { src: B, dest: '@Avalanche', amount: token(20n) },
+    { src: '@Avalanche', dest: '@noble', amount: token(20n) }, // move to noble before aggregation
     { src: C, dest: '@Ethereum', amount: token(70n) },
-    // hub -> hub legs (order by edge id: noble->Arbitrum may appear after sources if active; include all with non-zero flow)
-    { src: '@noble', dest: '@Arbitrum', amount: token(90n) },
-    { src: '@Avalanche', dest: '@noble', amount: token(20n) },
     { src: '@Ethereum', dest: '@noble', amount: token(70n) },
-    // hub -> leaf sink
+    { src: '@noble', dest: '@Arbitrum', amount: token(90n) },
     { src: '@Arbitrum', dest: A, amount: token(90n) },
   ]);
 });
@@ -310,10 +286,10 @@ test('solver collect to one (B 30 + C 70 -> A)', async t => {
   });
   t.deepEqual(steps, [
     { src: B, dest: '@Avalanche', amount: token(30n) },
-    { src: C, dest: '@Ethereum', amount: token(70n) },
-    { src: '@noble', dest: '@Arbitrum', amount: token(100n) },
     { src: '@Avalanche', dest: '@noble', amount: token(30n) },
+    { src: C, dest: '@Ethereum', amount: token(70n) },
     { src: '@Ethereum', dest: '@noble', amount: token(70n) },
+    { src: '@noble', dest: '@Arbitrum', amount: token(100n) },
     { src: '@Arbitrum', dest: A, amount: token(100n) },
   ]);
 });
