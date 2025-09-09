@@ -390,7 +390,7 @@ const stepFlow = async (
   const provideEVMInfo = async (chain: AxelarChain, move: MovementDesc) => {
     const axelar = await orch.getChain('axelar');
     const { denom } = ctx.gmpFeeInfo;
-    const fee = { denom, value: move.fee ? move.fee.value : 0n };
+    const fee = { denom, value: move.fee ? move.fee.value : 15_000_000n };
     const { axelarIds, gmpAddresses } = ctx;
     const gmp = {
       chain: axelar,
