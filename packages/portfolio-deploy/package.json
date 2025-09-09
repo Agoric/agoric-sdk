@@ -1,7 +1,7 @@
 {
   "name": "@aglocal/portfolio-deploy",
   "private": true,
-  "version": "0.2.0-u22.1",
+  "version": "0.2.0-u22.2",
   "description": "Deployment facilities for the Portfolio contract",
   "type": "module",
   "files": [

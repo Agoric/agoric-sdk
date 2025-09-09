@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.35.0-u22.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u22.0...@agoric/cosmos@0.35.0-u22.1) (2025-09-09)
+
+### Bug Fixes
+
+* **cosmos:** snapshot init error is not fatal ([#11903](https://github.com/Agoric/agoric-sdk/issues/11903)) ([99e9a22](https://github.com/Agoric/agoric-sdk/commit/99e9a22bfee864f23c032819ea59ea9c1e1267e0))
+
 ## [0.35.0-u22.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.34.1...@agoric/cosmos@0.35.0-u22.0) (2025-09-09)
 
 ### ⚠ BREAKING CHANGES

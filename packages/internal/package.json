@@ -1,6 +1,6 @@
 {
   "name": "@agoric/internal",
-  "version": "0.4.0-u22.1",
+  "version": "0.4.0-u22.2",
   "description": "Externally unsupported utilities internal to agoric-sdk",
   "type": "module",
   "main": "src/index.js",
