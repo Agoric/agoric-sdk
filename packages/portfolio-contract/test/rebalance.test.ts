@@ -8,6 +8,7 @@ import type { AssetPlaceRef } from '../src/type-guards-steps.js';
 // Shared Tok brand + helper
 const { brand: TOK_BRAND } = (() => ({ brand: Far('Tok') as Brand<'nat'> }))();
 const token = (v: bigint) => AmountMath.make(TOK_BRAND, v);
+const ZERO = token(0n);
 
 /**
  * Graph / network model specification (declarative)
@@ -224,16 +225,14 @@ test('solver all to one (B + C -> A)', async t => {
   const { steps } = await planRebalanceFlow({
     assetRefs: ALL_REFS,
     current,
-    target: { [A]: token(100n) },
+    target: { [A]: token(100n), [B]: ZERO, [C]: ZERO },
     brand: TOK_BRAND,
     links: LINKS,
     mode: 'cheapest',
   });
-
   t.deepEqual(steps, [
-    // leaf -> hub sources
     { src: B, dest: '@Avalanche', amount: token(20n) },
-    { src: '@Avalanche', dest: '@noble', amount: token(20n) }, // move to noble before aggregation
+    { src: '@Avalanche', dest: '@noble', amount: token(20n) },
     { src: C, dest: '@Ethereum', amount: token(70n) },
     { src: '@Ethereum', dest: '@noble', amount: token(70n) },
     { src: '@noble', dest: '@Arbitrum', amount: token(90n) },
@@ -243,7 +242,7 @@ test('solver all to one (B + C -> A)', async t => {
 
 test('solver distribute from one (A -> B 60, A -> C 40)', async t => {
   const current = balances({ [A]: 100n, [B]: 0n, [C]: 0n });
-  const target = { [B]: token(60n), [C]: token(40n) };
+  const target = { [A]: ZERO, [B]: token(60n), [C]: token(40n) };
   const { steps } = await planRebalanceFlow({
     assetRefs: ALL_REFS,
     current,
@@ -267,7 +266,7 @@ test('solver collect to one (B 30 + C 70 -> A)', async t => {
   const { steps } = await planRebalanceFlow({
     assetRefs: ALL_REFS,
     current,
-    target: { [A]: token(100n) },
+    target: { [A]: token(100n), [B]: ZERO, [C]: ZERO },
     brand: TOK_BRAND,
     links: LINKS,
     mode: 'cheapest',
