@@ -214,6 +214,7 @@ __metadata:
     ava: "npm:^5.3.0"
     c8: "npm:^10.1.3"
     ts-blank-space: "npm:^0.6.2"
+    yalps: "npm:^0.5.6"
   languageName: unknown
   linkType: soft
 
@@ -11074,6 +11075,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"heap@npm:^0.2.7":
+  version: 0.2.7
+  resolution: "heap@npm:0.2.7"
+  checksum: 10c0/341c5d51ae13dc8346c371a8a69c57c972fcb9a3233090d3dd5ba29d483d6b5b4e75492443cbfeacd46608bb30e6680f646ffb7a6205900221735587d07a79b6
+  languageName: node
+  linkType: hard
+
 "hosted-git-info@npm:^2.1.4":
   version: 2.8.9
   resolution: "hosted-git-info@npm:2.8.9"
@@ -18088,6 +18096,15 @@ __metadata:
   version: 5.0.0
   resolution: "yallist@npm:5.0.0"
   checksum: 10c0/a499c81ce6d4a1d260d4ea0f6d49ab4da09681e32c3f0472dee16667ed69d01dae63a3b81745a24bd78476ec4fcf856114cb4896ace738e01da34b2c42235416
+  languageName: node
+  linkType: hard
+
+"yalps@npm:^0.5.6":
+  version: 0.5.6
+  resolution: "yalps@npm:0.5.6"
+  dependencies:
+    heap: "npm:^0.2.7"
+  checksum: 10c0/1041f096474f1c21bfaa699a309d34657dab5995603147895702fb193a7e244e759b5eb072a812539c72742de6c495c193ea29b3125aa561d4e63518317bbd64
   languageName: node
   linkType: hard
 

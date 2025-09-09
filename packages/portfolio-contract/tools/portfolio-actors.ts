@@ -11,29 +11,13 @@
  * @see type-guards.ts for the authoritative interface specification
  */
 import { type VstorageKit } from '@agoric/client-utils';
-import {
-  AmountMath,
-  type Amount,
-  type Brand,
-  type NatAmount,
-  type NatValue,
-} from '@agoric/ertp';
-import { NonNullish } from '@agoric/internal';
+import { AmountMath } from '@agoric/ertp';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
 import type { Instance } from '@agoric/zoe';
-import { Fail } from '@endo/errors';
-import { objectMap } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
-import type {
-  AxelarChain,
-  YieldProtocol,
-} from '@agoric/portfolio-api/src/constants.js';
 import { type start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
-import type {
-  AssetPlaceRef,
-  MovementDesc,
-} from '@aglocal/portfolio-contract/src/type-guards-steps.js';
+import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import {
   makePositionPath,
   portfolioIdOfPath,
@@ -43,8 +27,6 @@ import {
   type ProposalType,
   type StatusFor,
   type PoolKey,
-  type TargetAllocation,
-  PoolPlaces,
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { WalletTool } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.js';
 
@@ -213,172 +195,4 @@ export const makeTrader = (
     },
   });
   return self;
-};
-
-const { entries, values } = Object;
-const { add, make } = AmountMath;
-const amountSum = <A extends Amount>(amounts: A[]) =>
-  amounts.reduce((acc, v) => add(acc, v));
-
-export const makePortfolioSteps = <
-  G extends Partial<Record<YieldProtocol, NatAmount>>,
->(
-  goal: G,
-  opts: {
-    /** XXX assume same chain for Aave and Compound */
-    evm?: AxelarChain;
-    feeBrand?: Brand<'nat'>;
-    fees?: Record<keyof G, { Account: NatAmount; Call: NatAmount }>;
-    detail?: { usdnOut: NatValue };
-  } = {},
-) => {
-  values(goal).length > 0 || Fail`empty goal`;
-  const { USDN: _1, ...evmGoal } = goal;
-  const {
-    evm = 'Arbitrum',
-    feeBrand,
-    fees = objectMap(evmGoal, _ => ({
-      Account: make(NonNullish(feeBrand), 150n),
-      Call: make(NonNullish(feeBrand), 100n),
-    })),
-    detail = 'USDN' in goal
-      ? { usdnOut: ((goal.USDN?.value || 0n) * 99n) / 100n }
-      : undefined,
-  } = opts;
-  const steps: MovementDesc[] = [];
-
-  const Deposit = amountSum(values(goal));
-  const GmpFee =
-    values(fees).length > 0
-      ? amountSum(
-          values(fees)
-            .map(f => [f.Account, f.Call])
-            .flat(),
-        )
-      : undefined;
-  const give = { Deposit, ...(GmpFee ? { GmpFee } : {}) };
-  steps.push({ src: '<Deposit>', dest: '@agoric', amount: Deposit });
-  steps.push({ src: '@agoric', dest: '@noble', amount: Deposit });
-  for (const [p, amount] of entries(goal)) {
-    switch (p) {
-      case 'USDN':
-        steps.push({ src: '@noble', dest: 'USDNVault', amount, detail });
-        break;
-      case 'Aave':
-      case 'Compound':
-        // XXX optimize: combine noble->evm steps
-        steps.push({
-          src: '@noble',
-          dest: `@${evm}`,
-          amount,
-          fee: fees[p].Account,
-        });
-        steps.push({
-          src: `@${evm}`,
-          dest: `${p}_${evm}`,
-          amount,
-          fee: fees[p].Call,
-        });
-        break;
-      default:
-        throw Error('unreachable');
-    }
-  }
-
-  return harden({ give, steps });
-};
-
-/**
- * Compute a breakdown of `deposit` into amounts
- * to send to positions so that the resulting position balances are as close
- * to targetAllocation as possible.
- */
-export const planDepositTransfers = (
-  deposit: NatAmount,
-  currentBalances: Partial<Record<AssetPlaceRef, NatAmount>>,
-  targetAllocation: TargetAllocation,
-): Partial<Record<PoolKey, NatAmount>> => {
-  const { brand } = deposit;
-  const depositValue = deposit.value;
-
-  // Calculate total current value across all positions
-  const totalCurrent = Object.values(currentBalances).reduce(
-    (sum, amount) => sum + (amount?.value || 0n),
-    0n,
-  );
-
-  // Total value after deposit
-  const totalAfterDeposit = totalCurrent + depositValue;
-
-  // Calculate target amounts for each position
-  const transfers: Partial<Record<PoolKey, NatAmount>> = {};
-
-  for (const [poolKey, targetPercent] of Object.entries(targetAllocation)) {
-    const currentAmount = currentBalances[poolKey as PoolKey]?.value || 0n;
-    const targetAmount = (totalAfterDeposit * BigInt(targetPercent)) / 100n;
-    const transferAmount = targetAmount - currentAmount;
-
-    if (transferAmount > 0n) {
-      transfers[poolKey as PoolKey] = make(brand, transferAmount);
-    }
-  }
-
-  // Ensure we don't exceed the deposit amount
-  const totalTransfers = Object.values(transfers).reduce(
-    (sum, amount) => sum + (amount?.value || 0n),
-    0n,
-  );
-
-  if (totalTransfers > depositValue) {
-    // Scale down proportionally if we exceed the deposit
-    for (const [poolKey, amount] of Object.entries(transfers)) {
-      if (amount) {
-        transfers[poolKey as PoolKey] = make(
-          brand,
-          (amount.value * depositValue) / totalTransfers,
-        );
-      }
-    }
-  }
-
-  return transfers;
-};
-
-export const planTransfer = (
-  dest: PoolKey,
-  amount: NatAmount,
-  feeBrand: Brand<'nat'>,
-): MovementDesc[] => {
-  const { protocol: p, chainName: evm } = PoolPlaces[dest];
-  const steps: MovementDesc[] = [];
-
-  switch (p) {
-    case 'USDN':
-      const detail = { usdnOut: ((amount.value || 0n) * 99n) / 100n };
-      console.warn('TODO: client should query exchange rate');
-      steps.push({ src: '@noble', dest: 'USDNVault', amount, detail });
-      break;
-    case 'Aave':
-    case 'Compound':
-      // XXX optimize: combine noble->evm steps
-      steps.push({
-        src: '@noble',
-        dest: `@${evm}`,
-        amount,
-        // TODO: Rather than hard-code, derive from Axelar `estimateGasFee`.
-        // https://docs.axelar.dev/dev/axelarjs-sdk/axelar-query-api#estimategasfee
-        fee: make(feeBrand, 15_000_000n),
-      });
-      console.warn('TODO: stop hard-coding fees!');
-      steps.push({
-        src: `@${evm}`,
-        dest: `${p}_${evm}`,
-        amount,
-        fee: make(feeBrand, 15_000_000n), // KLUDGE.
-      });
-      break;
-    default:
-      throw Error('unreachable');
-  }
-  return harden(steps);
 };

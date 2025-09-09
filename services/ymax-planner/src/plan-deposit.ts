@@ -6,13 +6,13 @@ import {
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
-import type { NatAmount } from '@agoric/ertp/src/types.js';
+import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import { Fail, q } from '@endo/errors';
+import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
 import {
-  makePortfolioQuery,
   planDepositTransfers,
   planTransfer,
-} from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
+} from '@aglocal/portfolio-contract/src/plan-transfers.js';
 import type { CosmosRestClient } from './cosmos-rest-client.js';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 

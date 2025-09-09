@@ -45,7 +45,8 @@
     "@endo/errors": "^1.2.13",
     "@endo/far": "^1.1.14",
     "@endo/pass-style": "^1.6.3",
-    "@endo/patterns": "^1.7.0"
+    "@endo/patterns": "^1.7.0",
+    "yalps": "^0.5.6"
   },
   "ava": {
     "extensions": {
