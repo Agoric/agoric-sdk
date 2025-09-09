@@ -19,12 +19,15 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import { encodeAbiParameters } from 'viem';
+import { gmpAddresses } from './mocks.ts';
 
 export const makeIncomingEVMEvent = ({
+  sender = gmpAddresses.AXELAR_GMP,
   address = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
   sourceChain,
   target = makeTestAddress(0), // agoric1q...p7zqht
 }: {
+  sender?: `${string}1${string}`;
   address?: `0x${string}`;
   sourceChain: string;
   target?: string;
@@ -34,13 +37,13 @@ export const makeIncomingEVMEvent = ({
   const axelarConnections =
     fetchedChainInfo.agoric.connections['axelar-dojo-1'];
 
-  const axelarToAgoricChannel = axelarConnections.transferChannel.channelId;
-  const agoricToAxelarChannel =
-    axelarConnections.transferChannel.counterPartyChannelId;
+  const agoricChannel = axelarConnections.transferChannel.channelId;
+  const axelarChannel = axelarConnections.transferChannel.counterPartyChannelId;
 
-  return makeIncomingVTransferEvent({
-    sourceChannel: axelarToAgoricChannel,
-    destinationChannel: agoricToAxelarChannel,
+  const result = makeIncomingVTransferEvent({
+    sender,
+    sourceChannel: axelarChannel,
+    destinationChannel: agoricChannel,
     target,
     memo: JSON.stringify({
       source_chain: sourceChain,
@@ -57,14 +60,13 @@ export const makeIncomingEVMEvent = ({
       type: 1,
     }),
   });
+  return result;
 };
 
 export const makeIncomingVTransferEvent = ({
   sender = makeTestAddress(),
-  sourcePort = 'transfer',
-  sourceChannel = 'channel-1',
-  destinationPort = 'transfer',
-  destinationChannel = 'channel-2',
+  sourceChannel = 'channel-1' as `channel-${number}`,
+  destinationChannel = 'channel-2' as `channel-${number}`,
   target = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
   hookQuery = {},
   receiver = encodeAddressHook(target, hookQuery),
@@ -79,10 +81,8 @@ export const makeIncomingVTransferEvent = ({
     sender,
     target: target,
     receiver,
-    source_port: sourcePort,
-    source_channel: sourceChannel,
-    destination_port: destinationPort,
-    destination_channel: destinationChannel,
+    sourceChannel,
+    destinationChannel,
     memo,
   });
 };

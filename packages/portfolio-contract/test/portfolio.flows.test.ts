@@ -16,7 +16,13 @@ import {
   documentStorageSchema,
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
-import { denomHash, type Orchestrator } from '@agoric/orchestration';
+import {
+  denomHash,
+  type ActualChainInfo,
+  type ChainInfo,
+  type IBCConnectionInfo,
+  type Orchestrator,
+} from '@agoric/orchestration';
 import { buildGasPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
@@ -68,6 +74,7 @@ import {
   makeIncomingEVMEvent,
   makeIncomingVTransferEvent,
 } from './supports.ts';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 
 // Use an EVM chain whose axelar ID differs from its chain name
 const { sourceChain } = evmNamingDistinction;
@@ -297,11 +304,32 @@ const mocks = (
 
   const chainHubTools = harden({
     getChainInfo: (chainName: string) => {
+      if (chainName === 'agoric' || chainName === 'axelar') {
+        return { chainId: chainName } as Partial<ChainInfo>;
+      }
       if (!(chainName in axelarCCTPConfig)) {
         throw Error(`unable to get chainInfo for ${chainName}`);
       }
       return axelarCCTPConfig[chainName];
     },
+    getChainsAndConnection: <C1 extends string, C2 extends string>(
+      primaryChainName: C1,
+      secondaryChainName: C2,
+    ) =>
+      vowTools.asVow(() => {
+        const primaryChain = chainHubTools.getChainInfo(primaryChainName);
+        const secondaryChain = chainHubTools.getChainInfo(secondaryChainName);
+        return [
+          primaryChain,
+          secondaryChain,
+          {
+            transferChannel: {
+              channelId: 'channel-9',
+              counterpartyChannelId: 'channel-41',
+            },
+          } as unknown,
+        ] as [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo];
+      }),
   });
 
   const rebalanceHost = (seat, offerArgs, kit) =>
@@ -311,6 +339,7 @@ const mocks = (
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
     axelarIds: axelarIdsMock,
+    gmpAddresses,
     vowTools,
     timer,
     chainHubTools,
@@ -923,6 +952,28 @@ test('client can move to deposit LCA', async t => {
   t.like(log, [{ _method: 'monitorTransfers' }, { _method: 'localTransfer' }]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
   await documentStorageSchema(t, storage, docOpts);
+});
+
+test('receiveUpcall returns false if sender is not AXELAR_GMP', async t => {
+  const { give, steps } = makePortfolioSteps(
+    { Compound: make(USDC, 300n) },
+    { fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } } },
+  );
+  const { orch, tapPK, ctx, offer } = mocks({}, give);
+
+  // The portfolio flow will hang waiting for valid GMP, so we don't await it
+  // This is expected behavior - the test just needs to verify receiveUpcall validation
+  openPortfolio(orch, { ...ctx }, offer.seat, {
+    flow: steps,
+  });
+
+  const tap = await tapPK.promise;
+
+  const upcallProcessed = await tap.receiveUpcall(
+    makeIncomingEVMEvent({ sourceChain, sender: makeTestAddress() }),
+  );
+
+  t.is(upcallProcessed, false, 'upcall indicates bad GMP sender');
 });
 
 test.todo('recover from send step');
