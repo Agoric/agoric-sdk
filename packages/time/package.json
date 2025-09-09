@@ -1,6 +1,6 @@
 {
   "name": "@agoric/time",
-  "version": "0.4.0-u22.0",
+  "version": "0.4.0-u22.1",
   "description": "Timestamps, time math, timer service API definition",
   "type": "module",
   "main": "index.js",

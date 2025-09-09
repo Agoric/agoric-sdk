@@ -1,6 +1,6 @@
 {
   "name": "@aglocal/swingset-runner",
-  "version": "0.23.0-u22.0",
+  "version": "0.23.0-u22.1",
   "private": true,
   "description": "Application to launch SwingSet instances for development and testing",
   "type": "module",

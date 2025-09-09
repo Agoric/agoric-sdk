@@ -8,6 +8,7 @@
       "includeMergedTags": true
     }
   },
+  "useWorkspaces": true,
   "rejectCycles": true,
   "npmClient": "yarn",
   "version": "independent"

@@ -1,6 +1,6 @@
 {
   "name": "@aglocal/benchmark",
-  "version": "0.2.0-u22.0",
+  "version": "0.2.0-u22.1",
   "private": true,
   "description": "Benchmark support",
   "type": "module",

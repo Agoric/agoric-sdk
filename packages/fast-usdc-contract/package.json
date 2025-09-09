@@ -1,7 +1,7 @@
 {
   "name": "@aglocal/fast-usdc-contract",
   "private": true,
-  "version": "0.2.0-u22.0",
+  "version": "0.2.0-u22.1",
   "description": "Smart contract component of the Fast USDC product",
   "type": "module",
   "files": [
