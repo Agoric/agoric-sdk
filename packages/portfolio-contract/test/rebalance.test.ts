@@ -139,6 +139,9 @@ const LINKS = [
     variableFee: 0.0015,
     timeFixed: 45,
   },
+  // Added Agoric <-> Noble IBC for deposit/cash flows
+  { srcChain: 'agoric', destChain: 'noble', variableFee: 2, timeFixed: 10 },
+  { srcChain: 'noble', destChain: 'agoric', variableFee: 2, timeFixed: 10 },
 ];
 
 test('solver simple 2-pool case (A -> B 30)', async t => {
@@ -278,5 +281,77 @@ test('solver collect to one (B 30 + C 70 -> A)', async t => {
     { src: '@Ethereum', dest: '@noble', amount: token(70n) },
     { src: '@noble', dest: '@Arbitrum', amount: token(100n) },
     { src: '@Arbitrum', dest: A, amount: token(100n) },
+  ]);
+});
+
+test('solver deposit redistribution (Deposit 100 -> A 70, B 30)', async t => {
+  const current = balances({ '<Deposit>': 100n, [A]: 0n, [B]: 0n });
+  const { steps } = await planRebalanceFlow({
+    assetRefs: ALL_REFS,
+    current,
+    target: { '<Deposit>': ZERO, [A]: token(70n), [B]: token(30n) },
+    brand: TOK_BRAND,
+    links: LINKS,
+    mode: 'cheapest',
+  });
+  t.deepEqual(steps, [
+    { src: '<Deposit>', dest: '@agoric', amount: token(100n) },
+    { src: '@agoric', dest: '@noble', amount: token(100n) },
+    { src: '@noble', dest: '@Arbitrum', amount: token(70n) },
+    { src: '@noble', dest: '@Avalanche', amount: token(30n) },
+    { src: '@Arbitrum', dest: A, amount: token(70n) },
+    { src: '@Avalanche', dest: B, amount: token(30n) },
+  ]);
+});
+
+test('solver move pools to cash (A 50 + B 30 -> Cash)', async t => {
+  const current = balances({ [A]: 50n, [B]: 30n, '<Cash>': 0n });
+  const { steps } = await planRebalanceFlow({
+    assetRefs: ALL_REFS,
+    current,
+    target: { [A]: ZERO, [B]: ZERO, '<Cash>': token(80n) },
+    brand: TOK_BRAND,
+    links: LINKS,
+    mode: 'cheapest',
+  });
+  t.deepEqual(steps, [
+    { src: A, dest: '@Arbitrum', amount: token(50n) },
+    { src: '@Arbitrum', dest: '@noble', amount: token(50n) },
+    { src: B, dest: '@Avalanche', amount: token(30n) },
+    { src: '@Avalanche', dest: '@noble', amount: token(30n) },
+    { src: '@noble', dest: '@agoric', amount: token(80n) },
+    { src: '@agoric', dest: '<Cash>', amount: token(80n) },
+  ]);
+});
+
+test('solver hub balances into pools (hubs supply -> pool targets)', async t => {
+  const current = balances({
+    [A]: 20n,
+    [B]: 10n,
+    [C]: 0n,
+    '@Arbitrum': 30n,
+    '@Avalanche': 20n,
+    '@noble': 20n,
+  });
+  const { steps } = await planRebalanceFlow({
+    assetRefs: ALL_REFS,
+    current,
+    target: {
+      [A]: token(50n),
+      [B]: token(30n),
+      [C]: token(20n),
+      '@Arbitrum': ZERO,
+      '@Avalanche': ZERO,
+      '@noble': ZERO,
+    },
+    brand: TOK_BRAND,
+    links: LINKS,
+    mode: 'cheapest',
+  });
+  t.deepEqual(steps, [
+    { src: '@Arbitrum', dest: A, amount: token(30n) },
+    { src: '@Avalanche', dest: B, amount: token(20n) },
+    { src: '@noble', dest: '@Ethereum', amount: token(20n) },
+    { src: '@Ethereum', dest: C, amount: token(20n) },
   ]);
 });
