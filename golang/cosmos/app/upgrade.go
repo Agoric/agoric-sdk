@@ -212,7 +212,7 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 			// terminationTargets is a slice of "$boardID:$instanceKitLabel" strings.
 			var terminationTargets []string
 			switch ctx.ChainID() {
-			case "agoric-3": // MAINNET
+			case "agoric-mainfork-1", "agoric-3": // MAINNET
 				terminationTargets = []string{
 					// v29 "zcf-b1-4522b-ATOM-USD_price_feed"
 					"board02963:ATOM-USD_price_feed",
