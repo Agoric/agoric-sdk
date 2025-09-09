@@ -115,13 +115,7 @@ const scaleBigInt = (n: bigint): number => Number(n);
  * - Hub nodes for each chain discovered in placeRefs (auto-added as '@chain')
  * - Leaf nodes for each placeRef (except hubs already formatted)
  * - Intra-chain bidirectional edges leaf <-> hub (variableFee=1, timeFixed=1)
- * - Supplies = current - target (scaled to numbers)
- *
- * @param placeRefs nodes (leaves + any explicit hubs)
- * @param current current balances (NatAmount)
- * @param target target balances (NatAmount)
- * @param brand common brand
- * @param scale numeric scaling divisor (default 1)
+ * - Supplies = current - target; if target missing, assume unchanged (target=current)
  */
 export const buildBaseGraph = (
   placeRefs: AssetPlaceRef[],
@@ -144,7 +138,8 @@ export const buildBaseGraph = (
   // Build supplies (signed deltas)
   for (const node of nodes) {
     const currentVal = current[node]?.value ?? 0n;
-    const targetVal = target[node]?.value ?? 0n;
+    const targetSpecified = Object.prototype.hasOwnProperty.call(target, node);
+    const targetVal = targetSpecified ? target[node]!.value : currentVal; // unchanged if unspecified
     const delta = currentVal - targetVal;
     if (delta !== 0n) supplies[node] = scaleBigInt(delta);
   }
