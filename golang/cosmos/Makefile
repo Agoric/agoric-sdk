@@ -10,7 +10,7 @@ DOCKER := $(shell which docker)
 
 COSM_WASM_PKG = github.com/CosmWasm/wasmvm/v2
 COSM_WASM_VM_VERSION = $(shell go list -m -f '{{ .Version }}' $(COSM_WASM_PKG))
-COSM_WASM_VM_RELEASE_URL = https://$(COSM_WASM_PKG)/releases/download/$(COSM_WASM_VM_VERSION)
+COSM_WASM_VM_RELEASE_URL = https://github.com/CosmWasm/wasmvm/releases/download/$(COSM_WASM_VM_VERSION)
 
 default: all
 
