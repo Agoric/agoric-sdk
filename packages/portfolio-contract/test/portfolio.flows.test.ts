@@ -324,8 +324,8 @@ const mocks = (
           secondaryChain,
           {
             transferChannel: {
-              channelId: 'channel-0',
-              counterpartyChannelId: 'channel-1',
+              channelId: 'channel-9',
+              counterpartyChannelId: 'channel-41',
             },
           } as unknown,
         ] as [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo];
@@ -954,23 +954,25 @@ test('client can move to deposit LCA', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
-test('receiveUpcall throws if sender is not AXELAR_GMP', async t => {
+test('receiveUpcall returns false if sender is not AXELAR_GMP', async t => {
   const { give, steps } = makePortfolioSteps(
     { Compound: make(USDC, 300n) },
     { fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } } },
   );
-  const { orch, tapPK, ctx, offer, storage } = mocks({}, give);
+  const { orch, tapPK, ctx, offer } = mocks({}, give);
 
-  const [upcallProcessed] = await Promise.all([
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
-      tap.receiveUpcall(
-        makeIncomingEVMEvent({ sourceChain, sender: makeTestAddress() }),
-      ),
-    ),
-    openPortfolio(orch, { ...ctx }, offer.seat, {
-      flow: steps,
-    }),
-  ]);
+  // The portfolio flow will hang waiting for valid GMP, so we don't await it
+  // This is expected behavior - the test just needs to verify receiveUpcall validation
+  openPortfolio(orch, { ...ctx }, offer.seat, {
+    flow: steps,
+  });
+
+  const tap = await tapPK.promise;
+
+  const upcallProcessed = await tap.receiveUpcall(
+    makeIncomingEVMEvent({ sourceChain, sender: makeTestAddress() }),
+  );
+
   t.is(upcallProcessed, false, 'upcall indicates bad GMP sender');
 });
 

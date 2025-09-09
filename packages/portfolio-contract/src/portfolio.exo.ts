@@ -263,7 +263,7 @@ export const preparePortfolioKit = (
           }
 
           // Validate that this is really from Axelar to Agoric on the expected
-          // channel.  We do this after parseInboundTransfer so that that
+          // channel. We do this after parseInboundTransfer so that that
           // function can be simpler and not need to know about Axelar or
           // channels.
           const [_agoric, _axelar, connection] = await vowTools.when(

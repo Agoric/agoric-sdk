@@ -5,7 +5,6 @@ import {
   denomHash,
   withChainCapabilities,
   type ChainInfo,
-  type CosmosChainAddress,
   type CosmosChainInfo,
   type Denom,
 } from '@agoric/orchestration';
@@ -38,14 +37,13 @@ export const makeIncomingEVMEvent = ({
   const axelarConnections =
     fetchedChainInfo.agoric.connections['axelar-dojo-1'];
 
-  const axelarToAgoricChannel = axelarConnections.transferChannel.channelId;
-  const agoricToAxelarChannel =
-    axelarConnections.transferChannel.counterPartyChannelId;
+  const agoricChannel = axelarConnections.transferChannel.channelId;
+  const axelarChannel = axelarConnections.transferChannel.counterPartyChannelId;
 
-  return makeIncomingVTransferEvent({
+  const result = makeIncomingVTransferEvent({
     sender,
-    sourceChannel: axelarToAgoricChannel,
-    destinationChannel: agoricToAxelarChannel,
+    sourceChannel: axelarChannel,
+    destinationChannel: agoricChannel,
     target,
     memo: JSON.stringify({
       source_chain: sourceChain,
@@ -62,14 +60,13 @@ export const makeIncomingEVMEvent = ({
       type: 1,
     }),
   });
+  return result;
 };
 
 export const makeIncomingVTransferEvent = ({
-  sender = gmpAddresses.AXELAR_GMP,
-  sourcePort = 'transfer',
-  sourceChannel = 'channel-1',
-  destinationPort = 'transfer',
-  destinationChannel = 'channel-2',
+  sender = makeTestAddress(),
+  sourceChannel = 'channel-1' as `channel-${number}`,
+  destinationChannel = 'channel-2' as `channel-${number}`,
   target = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
   hookQuery = {},
   receiver = encodeAddressHook(target, hookQuery),
@@ -84,10 +81,8 @@ export const makeIncomingVTransferEvent = ({
     sender,
     target: target,
     receiver,
-    source_port: sourcePort,
-    source_channel: sourceChannel,
-    destination_port: destinationPort,
-    destination_channel: destinationChannel,
+    sourceChannel,
+    destinationChannel,
     memo,
   });
 };
