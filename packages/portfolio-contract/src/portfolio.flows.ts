@@ -709,6 +709,9 @@ export const rebalance = (async (
   try {
     if (offerArgs.targetAllocation) {
       kit.manager.setTargetAllocation(offerArgs.targetAllocation);
+    } else if ((offerArgs.flow || []).some(step => step.dest === '+agoric')) {
+      // steps include a deposit that the planner should respond to
+      kit.manager.incrPolicyVersion();
     }
 
     if (offerArgs.flow) {
