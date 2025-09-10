@@ -12,15 +12,15 @@ import { handleDeposit } from '../src/plan-deposit.ts';
 import { SpectrumClient } from '../src/spectrum-client.ts';
 
 const depositBrand = Far('mock brand') as Brand<'nat'>;
+const makeDeposit = value => AmountMath.make(depositBrand, value);
+
 const feeBrand = Far('fee brand') as Brand<'nat'>;
 
 const powers = { fetch, setTimeout };
 
 test('planDepositTransfers works in a handful of cases', t => {
-  const make = value => AmountMath.make(depositBrand, value);
-
   // Test case 1: Empty current balances, equal target allocation
-  const deposit1 = make(1000n);
+  const deposit1 = makeDeposit(1000n);
   const currentBalances1 = {};
   const targetAllocation1: TargetAllocation = {
     USDN: 50n,
@@ -35,17 +35,17 @@ test('planDepositTransfers works in a handful of cases', t => {
   );
 
   t.deepEqual(result1, {
-    USDN: make(500n),
-    Aave_Arbitrum: make(300n),
-    Compound_Arbitrum: make(200n),
+    USDN: makeDeposit(500n),
+    Aave_Arbitrum: makeDeposit(300n),
+    Compound_Arbitrum: makeDeposit(200n),
   });
 
   // Test case 2: Existing balances, need rebalancing
-  const deposit2 = make(500n);
+  const deposit2 = makeDeposit(500n);
   const currentBalances2 = {
-    USDN: make(200n),
-    Aave_Arbitrum: make(100n),
-    Compound_Arbitrum: make(0n),
+    USDN: makeDeposit(200n),
+    Aave_Arbitrum: makeDeposit(100n),
+    Compound_Arbitrum: makeDeposit(0n),
   };
   const targetAllocation2: TargetAllocation = {
     USDN: 40n,
@@ -63,17 +63,17 @@ test('planDepositTransfers works in a handful of cases', t => {
   // Targets: USDN=320, Aave=320, Compound=160
   // Transfers needed: USDN=120, Aave=220, Compound=160
   t.deepEqual(result2, {
-    USDN: make(120n),
-    Aave_Arbitrum: make(220n),
-    Compound_Arbitrum: make(160n),
+    USDN: makeDeposit(120n),
+    Aave_Arbitrum: makeDeposit(220n),
+    Compound_Arbitrum: makeDeposit(160n),
   });
 
   // Test case 3: Some positions already over-allocated
-  const deposit3 = make(300n);
+  const deposit3 = makeDeposit(300n);
   const currentBalances3 = {
-    USDN: make(600n), // already over target
-    Aave_Arbitrum: make(100n),
-    Compound_Arbitrum: make(50n),
+    USDN: makeDeposit(600n), // already over target
+    Aave_Arbitrum: makeDeposit(100n),
+    Compound_Arbitrum: makeDeposit(50n),
   };
   const targetAllocation3: TargetAllocation = {
     USDN: 50n,
@@ -94,16 +94,16 @@ test('planDepositTransfers works in a handful of cases', t => {
   // But deposit is only 300, so scale down proportionally:
   // Aave: 215 * (300/375) = 172, Compound: 160 * (300/375) = 128
   t.deepEqual(result3, {
-    Aave_Arbitrum: make(172n),
-    Compound_Arbitrum: make(128n),
+    Aave_Arbitrum: makeDeposit(172n),
+    Compound_Arbitrum: makeDeposit(128n),
   });
 
   // Test case 4: Transfer amounts exceed deposit (scaling needed)
-  const deposit4 = make(100n);
+  const deposit4 = makeDeposit(100n);
   const currentBalances4 = {
-    USDN: make(0n),
-    Aave_Arbitrum: make(0n),
-    Compound_Arbitrum: make(0n),
+    USDN: makeDeposit(0n),
+    Aave_Arbitrum: makeDeposit(0n),
+    Compound_Arbitrum: makeDeposit(0n),
   };
   const targetAllocation4: TargetAllocation = {
     USDN: 60n,
@@ -119,14 +119,14 @@ test('planDepositTransfers works in a handful of cases', t => {
 
   // Should allocate proportionally to the 100 deposit
   t.deepEqual(result4, {
-    USDN: make(60n),
-    Aave_Arbitrum: make(30n),
-    Compound_Arbitrum: make(10n),
+    USDN: makeDeposit(60n),
+    Aave_Arbitrum: makeDeposit(30n),
+    Compound_Arbitrum: makeDeposit(10n),
   });
 
   // Test case 5: Single position target
-  const deposit5 = make(1000n);
-  const currentBalances5 = { USDN: make(500n) };
+  const deposit5 = makeDeposit(1000n);
+  const currentBalances5 = { USDN: makeDeposit(500n) };
   const targetAllocation5: TargetAllocation = { USDN: 100n };
 
   const result5 = planDepositTransfers(
@@ -137,13 +137,12 @@ test('planDepositTransfers works in a handful of cases', t => {
 
   // Total after: 1500, target: 1500, current: 500, transfer: 1000
   t.deepEqual(result5, {
-    USDN: make(1000n),
+    USDN: makeDeposit(1000n),
   });
 });
 
 test('handleDeposit works with mocked dependencies', async t => {
-  const make = value => AmountMath.make(depositBrand, value);
-  const deposit = make(1000n);
+  const deposit = makeDeposit(1000n);
   const portfolioKey = 'test.portfolios.portfolio1' as const;
 
   // Mock VstorageKit readPublished
@@ -229,8 +228,7 @@ test('handleDeposit works with mocked dependencies', async t => {
 });
 
 test('handleDeposit handles missing targetAllocation gracefully', async t => {
-  const make = value => AmountMath.make(depositBrand, value);
-  const deposit = make(1000n);
+  const deposit = makeDeposit(1000n);
   const portfolioKey = 'test.portfolios.portfolio1' as const;
 
   // Mock VstorageKit readPublished with no targetAllocation
@@ -293,8 +291,7 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
 });
 
 test('handleDeposit handles different position types correctly', async t => {
-  const make = value => AmountMath.make(depositBrand, value);
-  const deposit = make(1000n);
+  const deposit = makeDeposit(1000n);
   const portfolioKey = 'test.portfolios.portfolio1' as const;
 
   // Mock VstorageKit readPublished with various position types
