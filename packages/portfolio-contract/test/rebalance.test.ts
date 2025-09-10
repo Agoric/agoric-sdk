@@ -275,6 +275,25 @@ test('solver collect to one (B 30 + C 70 -> A)', async t => {
   ]);
 });
 
+test('solver deposit redistribution (+agoric 100 -> A 70, B 30)', async t => {
+  const current = balances({ '+agoric': 100n, [A]: 0n, [B]: 0n });
+  const { steps } = await planRebalanceFlow({
+    network: TEST_NETWORK,
+    current,
+    target: { '+agoric': ZERO, [A]: token(70n), [B]: token(30n) },
+    brand: TOK_BRAND,
+    mode: 'cheapest',
+  });
+  t.deepEqual(steps, [
+    { src: '+agoric', dest: '@agoric', amount: token(100n) },
+    { src: '@agoric', dest: '@noble', amount: token(100n) },
+    { src: '@noble', dest: '@Arbitrum', amount: token(70n) },
+    { src: '@noble', dest: '@Avalanche', amount: token(30n) },
+    { src: '@Arbitrum', dest: A, amount: token(70n) },
+    { src: '@Avalanche', dest: B, amount: token(30n) },
+  ]);
+});
+
 test('solver deposit redistribution (Deposit 100 -> A 70, B 30)', async t => {
   const current = balances({ '<Deposit>': 100n, [A]: 0n, [B]: 0n });
   const { steps } = await planRebalanceFlow({
@@ -294,7 +313,7 @@ test('solver deposit redistribution (Deposit 100 -> A 70, B 30)', async t => {
   ]);
 });
 
-test('solver move pools to cash (A 50 + B 30 -> Cash)', async t => {
+test('solver withdraw to cash (A 50 + B 30 -> Cash)', async t => {
   const current = balances({ [A]: 50n, [B]: 30n, '<Cash>': 0n });
   const { steps } = await planRebalanceFlow({
     network: TEST_NETWORK,

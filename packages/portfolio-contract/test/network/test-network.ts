@@ -14,6 +14,7 @@ export const TEST_NETWORK: NetworkDefinition = validateNetworkDefinition({
     'Aave_Arbitrum',
     'Beefy_re7_Avalanche',
     'Compound_Ethereum',
+    'USDN',
   ],
   edges: [
     {
@@ -22,6 +23,13 @@ export const TEST_NETWORK: NetworkDefinition = validateNetworkDefinition({
       variableFee: 0,
       timeSec: 1080,
       tags: ['cctpSlow'],
+    },
+    {
+      src: '@noble',
+      dest: 'USDN',
+      variableFee: 5,
+      timeSec: 0,
+      tags: ['usdn'],
     },
     {
       src: '@noble',
