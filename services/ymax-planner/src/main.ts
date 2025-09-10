@@ -11,7 +11,7 @@ import { getConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { startEngine } from './engine.ts';
-import { createEVMContext } from './support.ts';
+import { buildEvmDependencies } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 
 const assertChainId = async (rpc: CosmosRPCClient, chainId: string) => {
@@ -69,14 +69,21 @@ export const main = async (
     retries: config.cosmosRest.retries,
   });
 
-  const evmCtx = await createEVMContext({
+  const { evmProviders, usdcAddresses } = await buildEvmDependencies({
     clusterName,
     alchemyApiKey: config.alchemyApiKey,
   });
 
-  const powers = { evmCtx, rpc, spectrum, cosmosRest, signingSmartWalletKit };
+  const powers = {
+    evmProviders,
+    rpc,
+    spectrum,
+    cosmosRest,
+    signingSmartWalletKit,
+  };
   await startEngine(powers, {
     depositIbcDenom: env.DEPOSIT_IBC_DENOM || 'USDC',
+    usdcAddresses,
   });
 };
 harden(main);
