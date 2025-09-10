@@ -3,7 +3,9 @@
 /// <reference types="ses" />
 
 /**
- * Tx statuses for published transactions
+ * Tx statuses for published transactions. Exhaustive state machine flows:
+ *   - pending -> success (when cross-chain operation completes successfully)
+ *   - pending -> failed (when operation fails or times out)
  *
  * @enum {(typeof TxStatus)[keyof typeof TxStatus]}
  */

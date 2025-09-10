@@ -1,8 +1,9 @@
 import test from 'ava';
 import { id, keccak256, toUtf8Bytes } from 'ethers';
 import { createMockEvmContext } from './mocks.ts';
-import { type PendingTx, handlePendingTx } from '../src/pending-tx-manager.ts';
+import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 
 test('handlePendingTx processes GMP transaction successfully', async t => {
   const mockEvmCtx = createMockEvmContext();

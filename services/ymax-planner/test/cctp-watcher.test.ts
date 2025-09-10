@@ -6,8 +6,9 @@ import {
   createMockProvider,
   mockFetch,
 } from './mocks.ts';
-import { handlePendingTx, type PendingTx } from '../src/pending-tx-manager.ts';
+import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 
 const usdcAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 const watchAddress = '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64';

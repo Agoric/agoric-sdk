@@ -1,18 +1,15 @@
 import test from 'ava';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
-import {
-  handlePendingTx,
-  type EvmContext,
-  type PendingTx,
-} from '../src/pending-tx-manager.ts';
+import { handlePendingTx, type EvmContext } from '../src/pending-tx-manager.ts';
 import { processPendingTxEvents } from '../src/engine.ts';
 import {
   createMockEvmContext,
-  createMockPendingTxData,
   createMockPendingTxEvent,
   createMockStreamCell,
 } from './mocks.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
 
 const marshaller = boardSlottingMarshaller();
 

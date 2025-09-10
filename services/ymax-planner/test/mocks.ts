@@ -1,15 +1,19 @@
+import { ethers, type JsonRpcProvider } from 'ethers';
+
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import type { EvmContext } from '../src/pending-tx-manager';
-import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { AccountId } from '@agoric/orchestration';
-import { PENDING_TX_PATH_PREFIX } from '../src/engine.ts';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
+
+import type { EvmContext } from '../src/pending-tx-manager';
 import {
   TxType,
   type TxStatus,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import { ethers, type JsonRpcProvider } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
+import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
+
+import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
+import { PENDING_TX_PATH_PREFIX } from '../src/engine.ts';
 
 export const createMockProvider = () => {
   const eventListeners = new Map<string, Function[]>();
@@ -114,24 +118,6 @@ export const createMockEvmContext = (): EvmContext => ({
   fetch: global.fetch,
   cosmosRest: {} as unknown as CosmosRestClient,
 });
-
-export const createMockPendingTxData = ({
-  type = TxType.CCTP_TO_EVM,
-  status = 'pending',
-  amount = 100_000n,
-  destinationAddress = 'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
-}: {
-  type?: TxType;
-  status?: TxStatus;
-  amount?: bigint;
-  destinationAddress?: AccountId;
-} = {}) =>
-  harden({
-    type,
-    status,
-    amount,
-    destinationAddress,
-  });
 
 export const createMockPendingTxEvent = (
   txId: string,

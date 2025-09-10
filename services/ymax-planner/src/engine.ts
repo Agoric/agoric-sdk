@@ -15,7 +15,10 @@ import { AmountMath, type Brand } from '@agoric/ertp';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 
-import { PublishedTxShape } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import {
+  PublishedTxShape,
+  type PendingTx,
+} from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import {
   PoolPlaces,
   PortfolioStatusShapeExt,
@@ -28,11 +31,7 @@ import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import { getCurrentBalance, handleDeposit } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
-import {
-  handlePendingTx,
-  type EvmContext,
-  type PendingTx,
-} from './pending-tx-manager.ts';
+import { handlePendingTx, type EvmContext } from './pending-tx-manager.ts';
 import {
   parseStreamCell,
   parseStreamCellValue,

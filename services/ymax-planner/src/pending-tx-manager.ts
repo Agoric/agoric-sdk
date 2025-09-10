@@ -12,10 +12,7 @@ import {
   TxStatus,
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import type {
-  PublishedTx,
-  TxId,
-} from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import { resolvePendingTx } from './resolver.ts';
@@ -39,20 +36,6 @@ export type GmpTransfer = {
   destinationChain: AxelarId;
   contractAddress: `0x${string}`;
 };
-
-/**
- * PendingTx state machine:
- * pending -> success (when cross-chain operation completes successfully)
- * pending -> failed (when operation fails or times out)
- *
- * Terminal states: success and timeout never transition to other states.
- *
- * A PendingTx is a PublishedTx (published by ymax contract) with an additional
- * txId property used by the resolver to track and manage pending transactions.
- */
-export type PendingTx = {
-  txId: TxId;
-} & PublishedTx;
 
 type CctpTx = PendingTx & { type: typeof TxType.CCTP_TO_EVM; amount: bigint };
 type GmpTx = PendingTx & { type: typeof TxType.GMP };
