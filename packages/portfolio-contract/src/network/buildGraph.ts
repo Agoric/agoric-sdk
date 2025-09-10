@@ -12,14 +12,15 @@ export const makeGraphFromDefinition = (
   target: Partial<Record<AssetPlaceRef, NatAmount>>,
   brand: Amount['brand'],
 ) => {
-  // Use all nodes as assetRefs (buildBaseGraph auto-adds hubs again harmlessly)
-  const graph = buildBaseGraph(
-    def.nodes as AssetPlaceRef[],
-    current,
-    target,
-    brand,
-    1,
-  );
+  // Use union of network nodes and any nodes present in current/target
+  const dynamicNodes = new Set<string>([
+    ...Object.keys(current ?? {}),
+    ...Object.keys(target ?? {}),
+  ]);
+  const assetRefs = Array.from(
+    new Set<string>([...def.nodes, ...dynamicNodes]),
+  ) as AssetPlaceRef[];
+  const graph = buildBaseGraph(assetRefs, current, target, brand, 1);
   // Add inter-chain edges (only hub->hub expected but allow any)
   for (const e of def.edges) {
     // Only treat as inter-chain if both ends look like hubs

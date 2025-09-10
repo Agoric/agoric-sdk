@@ -7,15 +7,12 @@ import {
 import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
-import { Fail, q } from '@endo/errors';
+import { Fail, q, X } from '@endo/errors';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
-import { planDepositTransfers } from '@aglocal/portfolio-contract/src/plan-transfers.ts';
 import { PROD_NETWORK } from '@aglocal/portfolio-contract/src/network/network.prod.js';
-import { makeGraphFromDefinition } from '@aglocal/portfolio-contract/src/network/buildGraph.js';
-import {
-  findPath,
-  pathToSteps,
-} from '@aglocal/portfolio-contract/src/network/path.js';
+import type { NetworkDefinition } from '@aglocal/portfolio-contract/src/network/types.js';
+import { planRebalanceFlow } from '@aglocal/portfolio-contract/src/plan-solve.js';
+import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 import type { CosmosRestClient } from './cosmos-rest-client.js';
 
@@ -62,6 +59,109 @@ export const getCurrentBalance = async (
   }
 };
 
+/**
+ * Compute absolute target balances from an allocation map over PoolKeys.
+ * Ensures sum(target) == sum(current) + deposit; non-allocated pools target to 0.
+ */
+export const computeTargetsFromAllocation = (
+  amount: NatAmount,
+  current: Partial<Record<PoolKey, NatAmount>>,
+  allocation: Record<PoolKey, number>, // weights; not optional
+): Partial<Record<string, NatAmount>> => {
+  const brand = amount.brand;
+  const totalCurrent = Object.values(current).reduce<bigint>((acc, a) => {
+    if (!a) return acc;
+    assert(a.brand === brand);
+    return acc + (a.value as bigint);
+  }, 0n);
+  const total = totalCurrent + (amount.value as bigint);
+  const entries = Object.entries(allocation) as Array<
+    [PoolKey, number | bigint]
+  >;
+  assert(entries.length > 0, X`empty allocation`);
+  const SCALE_NUM = 1_000_000; // 1e6 fixed-point for weights
+  const weights = entries.map(([k, w]) => {
+    const wNum = Number(w as any);
+    assert(Number.isFinite(wNum), X`allocation weight must be a number`);
+    const wScaled = BigInt(Math.round(wNum * SCALE_NUM));
+    return [k, wScaled] as const;
+  });
+  const sumW = weights.reduce<bigint>((acc, [, w]) => acc + w, 0n);
+  assert(sumW > 0n, X`allocation weights must sum > 0`);
+  // Base allocation by floor division
+  const targets: Partial<Record<string, NatAmount>> = {};
+  let assigned = 0n;
+  let maxKey = entries[0][0];
+  let maxW = -1n as unknown as bigint;
+  for (const [key, w] of weights) {
+    if (w > (maxW as bigint)) {
+      maxW = w as bigint;
+      maxKey = key;
+    }
+    const v = (total * (w as bigint)) / (sumW as bigint);
+    assigned += v;
+    targets[key] = AmountMath.make(brand, v);
+  }
+  // Distribute remainder to the largest-weight key to hit exact total
+  const remainder = total - assigned;
+  if (remainder !== 0n) {
+    const cur = targets[maxKey] ?? AmountMath.make(brand, 0n);
+    targets[maxKey] = AmountMath.add(cur, AmountMath.make(brand, remainder));
+  }
+  // Any pools present in current but not in allocation -> target 0
+  for (const key of Object.keys(current) as PoolKey[]) {
+    if (!(key in allocation)) {
+      targets[key] = AmountMath.make(brand, 0n);
+    }
+  }
+  // Deposit seat must end at 0
+  targets['<Deposit>'] = AmountMath.make(brand, 0n);
+  return harden(targets);
+};
+
+/**
+ * Plan deposit to absolute target balances using the LP rebalance solver.
+ * Default mode is 'fastest'.
+ */
+export const planDepositToTargets = async (
+  amount: NatAmount,
+  current: Partial<Record<PoolKey, NatAmount>>,
+  target: Partial<Record<string, NatAmount>>, // includes all pools + '<Deposit>'
+  network: NetworkDefinition,
+): Promise<MovementDesc[]> => {
+  const brand = amount.brand;
+  // Construct current including the deposit seat
+  const currentWithDeposit: Partial<Record<string, NatAmount>> = {
+    ...current,
+  };
+  const existing =
+    currentWithDeposit['<Deposit>'] ?? AmountMath.make(brand, 0n);
+  currentWithDeposit['<Deposit>'] = AmountMath.add(existing, amount);
+  const { steps } = await planRebalanceFlow({
+    network,
+    current: currentWithDeposit as any,
+    target: target as any,
+    brand,
+    // mode not provided -> defaults to 'fastest'
+  });
+  return steps;
+};
+
+/**
+ * Plan deposit driven by target allocation weights.
+ * Computes absolute targets, then calls the amount-based planner above.
+ */
+export const planDepositToAllocations = async (
+  amount: NatAmount,
+  current: Partial<Record<PoolKey, NatAmount>>,
+  allocation: Record<PoolKey, number>,
+  network: NetworkDefinition,
+): Promise<MovementDesc[]> => {
+  const targets = computeTargetsFromAllocation(amount, current, allocation);
+  return planDepositToTargets(amount, current, targets, network);
+};
+
+// Back-compat utility used by CLI or handlers
 export const handleDeposit = async (
   portfolioKey: `${string}.portfolios.portfolio${number}`,
   amount: NatAmount,
@@ -75,7 +175,7 @@ export const handleDeposit = async (
   const querier = makePortfolioQuery(powers.readPublished, portfolioKey);
   const status = await querier.getPortfolioStatus();
   const { targetAllocation, positionKeys, accountIdByChain } = status;
-  if (!targetAllocation) return;
+  if (!targetAllocation) return [];
   const errors = [] as Error[];
   const balanceEntries = await Promise.all(
     positionKeys.map(async (posKey: PoolKey): Promise<[PoolKey, NatAmount]> => {
@@ -100,32 +200,11 @@ export const handleDeposit = async (
     throw AggregateError(errors, 'Could not get balances');
   }
   const currentBalances = Object.fromEntries(balanceEntries);
-  const txfrs = planDepositTransfers(amount, currentBalances, targetAllocation);
-  // Build graph for routing
-  const graph = makeGraphFromDefinition(
+  // Use PROD network by default; callers may wish to parameterize later
+  return planDepositToAllocations(
+    amount,
+    currentBalances,
+    targetAllocation as any,
     PROD_NETWORK,
-    { '<Deposit>': amount, ...currentBalances } as any,
-    {
-      '<Deposit>': AmountMath.make(amount.brand, 0n),
-      ...currentBalances,
-    } as any,
-    amount.brand,
   );
-  const base: any[] = [
-    { src: '+agoric', dest: '@agoric', amount },
-    { src: '@agoric', dest: '@noble', amount },
-    { src: '<Deposit>', dest: '@agoric', amount },
-  ];
-  const routed = Object.entries(txfrs).flatMap(([dest, amt]) => {
-    const leaf = dest as PoolKey;
-    // path from @noble (after ingress) to final pool leaf
-    const poolPlace = leaf as any;
-    try {
-      const path = findPath(graph, '@noble' as any, poolPlace, 'cheapest');
-      return pathToSteps(path.slice(0), amt, amount.brand);
-    } catch {
-      return [];
-    }
-  });
-  return [...base, ...routed];
 };
