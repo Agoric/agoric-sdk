@@ -11,12 +11,13 @@ import { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import { handleDeposit } from '../src/plan-deposit.ts';
 import { SpectrumClient } from '../src/spectrum-client.ts';
 
-const brand = Far('mock brand') as Brand<'nat'>;
+const depositBrand = Far('mock brand') as Brand<'nat'>;
+const feeBrand = Far('fee brand') as Brand<'nat'>;
 
 const powers = { fetch, setTimeout };
 
 test('planDepositTransfers works in a handful of cases', t => {
-  const make = value => AmountMath.make(brand, value);
+  const make = value => AmountMath.make(depositBrand, value);
 
   // Test case 1: Empty current balances, equal target allocation
   const deposit1 = make(1000n);
@@ -141,7 +142,7 @@ test('planDepositTransfers works in a handful of cases', t => {
 });
 
 test('handleDeposit works with mocked dependencies', async t => {
-  const make = value => AmountMath.make(brand, value);
+  const make = value => AmountMath.make(depositBrand, value);
   const deposit = make(1000n);
   const portfolioKey = 'test.portfolios.portfolio1' as const;
 
@@ -219,18 +220,16 @@ test('handleDeposit works with mocked dependencies', async t => {
     readPublished: mockReadPublished,
   } as VstorageKit;
 
-  const steps = await handleDeposit(
-    deposit,
-    portfolioKey,
-    mockVstorageKit.readPublished,
-    mockSpectrumClient,
-    mockCosmosRestClient,
-  );
+  const steps = await handleDeposit(portfolioKey, deposit, feeBrand, {
+    readPublished: mockVstorageKit.readPublished,
+    spectrum: mockSpectrumClient,
+    cosmosRest: mockCosmosRestClient,
+  });
   t.snapshot(steps);
 });
 
 test('handleDeposit handles missing targetAllocation gracefully', async t => {
-  const make = value => AmountMath.make(brand, value);
+  const make = value => AmountMath.make(depositBrand, value);
   const deposit = make(1000n);
   const portfolioKey = 'test.portfolios.portfolio1' as const;
 
@@ -284,19 +283,17 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
     readPublished: mockReadPublished,
   } as VstorageKit;
 
-  const result = await handleDeposit(
-    deposit,
-    portfolioKey,
-    mockVstorageKit.readPublished,
-    mockSpectrumClient,
-    mockCosmosRestClient,
-  );
+  const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
+    readPublished: mockVstorageKit.readPublished,
+    spectrum: mockSpectrumClient,
+    cosmosRest: mockCosmosRestClient,
+  });
 
   t.is(result, undefined);
 });
 
 test('handleDeposit handles different position types correctly', async t => {
-  const make = value => AmountMath.make(brand, value);
+  const make = value => AmountMath.make(depositBrand, value);
   const deposit = make(1000n);
   const portfolioKey = 'test.portfolios.portfolio1' as const;
 
@@ -380,12 +377,10 @@ test('handleDeposit handles different position types correctly', async t => {
     readPublished: mockReadPublished,
   } as VstorageKit;
 
-  const steps = await handleDeposit(
-    deposit,
-    portfolioKey,
-    mockVstorageKit.readPublished,
-    mockSpectrumClient,
-    mockCosmosRestClient,
-  );
+  const steps = await handleDeposit(portfolioKey, deposit, feeBrand, {
+    readPublished: mockVstorageKit.readPublished,
+    spectrum: mockSpectrumClient,
+    cosmosRest: mockCosmosRestClient,
+  });
   t.snapshot(steps);
 });

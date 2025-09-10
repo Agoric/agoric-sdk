@@ -77,6 +77,7 @@ export const main = async (
   const powers = { evmCtx, rpc, spectrum, cosmosRest, signingSmartWalletKit };
   await startEngine(powers, {
     depositIbcDenom: env.DEPOSIT_IBC_DENOM || 'USDC',
+    feeIbcDenom: env.FEE_IBC_DENOM || 'BLD',
   });
 };
 harden(main);

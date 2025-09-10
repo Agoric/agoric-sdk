@@ -70,12 +70,16 @@ export const getCurrentBalances = async (
 };
 
 export const handleDeposit = async (
-  amount: NatAmount,
   portfolioKey: `${string}.portfolios.portfolio${number}`,
-  readPublished: VstorageKit['readPublished'],
-  spectrum: SpectrumClient,
-  cosmosRest: CosmosRestClient,
+  amount: NatAmount,
+  feeBrand: Brand<'nat'>,
+  powers: {
+    readPublished: VstorageKit['readPublished'];
+    spectrum: SpectrumClient;
+    cosmosRest: CosmosRestClient;
+  },
 ) => {
+  const { readPublished, spectrum, cosmosRest } = powers;
   const currentBalances = await getCurrentBalances(
     portfolioKey,
     readPublished,
@@ -95,7 +99,7 @@ export const handleDeposit = async (
     { src: '@agoric', dest: '@noble', amount },
     ...Object.entries(txfrs)
       // XXX Object.entries() type is goofy
-      .map(([dest, amt]) => planTransfer(dest as PoolKey, amt))
+      .map(([dest, amt]) => planTransfer(dest as PoolKey, amt, feeBrand))
       .flat(),
   ];
   return steps;

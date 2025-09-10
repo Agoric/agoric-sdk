@@ -428,6 +428,16 @@ export const processPendingTxEvents = async (
   }
 };
 
+const getAssetInfo = (
+  assets: Map<string, AssetInfo>,
+  denomOrIssuerName: string,
+) =>
+  denomOrIssuerName.startsWith('ibc/')
+    ? assets.get(denomOrIssuerName)
+    : [...assets.values()].find(
+        assetInfo => assetInfo.issuerName === denomOrIssuerName,
+      );
+
 export const pickBalance = (
   balances: Coin[] | undefined,
   depositAsset: AssetInfo,
@@ -445,7 +455,10 @@ export const pickBalance = (
 
 export const startEngine = async (
   { evmCtx, rpc, spectrum, cosmosRest, signingSmartWalletKit }: Powers,
-  { depositIbcDenom }: { depositIbcDenom: string },
+  {
+    depositIbcDenom,
+    feeIbcDenom,
+  }: { depositIbcDenom: string; feeIbcDenom: string },
 ) => {
   await null;
   const { query, marshaller } = signingSmartWalletKit;
@@ -557,14 +570,12 @@ export const startEngine = async (
   const vbankAssets = new Map<string, AssetInfo>(
     await query.readPublished('agoricNames.vbankAsset'),
   );
-  const depositAsset = depositIbcDenom.startsWith('ibc/')
-    ? vbankAssets.get(depositIbcDenom)
-    : [...vbankAssets.values()].find(
-        assetInfo => assetInfo.issuerName === depositIbcDenom,
-      );
-  if (!depositAsset) {
-    throw Fail`Could not find vbankAsset for ${q(depositIbcDenom)}`;
-  }
+  const depositAsset =
+    getAssetInfo(vbankAssets, depositIbcDenom) ||
+    Fail`Could not find vbankAsset for ${q(depositIbcDenom)}`;
+  const feeAsset =
+    getAssetInfo(vbankAssets, feeIbcDenom) ||
+    Fail`Could not find vbankAsset for ${q(feeIbcDenom)}`;
 
   const deferrals = [] as EventRecord[];
 
@@ -822,11 +833,10 @@ export const startEngine = async (
           // TODO: Switch to an API that exposes block height, so we can detect stale
           // data and push to `deferrals`.
           const steps = await handleDeposit(
-            amount,
             unprefixedPortfolioPath as any,
-            query.readPublished,
-            spectrum,
-            cosmosRest,
+            amount,
+            feeAsset.brand as Brand<'nat'>,
+            { readPublished: query.readPublished, spectrum, cosmosRest },
           );
 
           // TODO: consolidate with portfolioIdOfPath
