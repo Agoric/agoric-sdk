@@ -147,7 +147,17 @@ const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, EvmContext> = {
     const { txId, destinationAddress, amount } = tx;
     const logPrefix = `[${txId}]`;
 
+<<<<<<< HEAD
     const { accountAddress } = parseAccountId(destinationAddress);
+=======
+    const { namespace, reference, accountAddress } =
+      parseAccountId(destinationAddress);
+
+    namespace === 'cosmos' ||
+      Fail`${logPrefix} Expected cosmos chain, got: ${namespace}`;
+    reference === 'noble-1' || reference === 'grand-1' ||
+      Fail`${logPrefix} Expected noble chain, got: ${reference}`;
+>>>>>>> e976962040 (chore: planner fixes)
 
     const nobleAddress = accountAddress as Bech32Address;
     const expectedDenom = 'uusdc'; // TODO: find the exact denom while e2e testing
