@@ -4,8 +4,6 @@ import * as AgoricClientUtils from '@agoric/client-utils';
 import { Fail, q } from '@endo/errors';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 
-const GCP_PROJECT_ID = 'simulationlab';
-const GCP_SECRET_NAME = 'YMAX_CONTROL_MNEMONIC';
 export type ClusterName = 'local' | 'testnet' | 'mainnet';
 export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
   harden({
@@ -36,128 +34,109 @@ export type SecretManager = Pick<
   'accessSecretVersion'
 >;
 
-const getMnemonicFromGCP = async (client: SecretManager): Promise<string> => {
-  const name = `projects/${GCP_PROJECT_ID}/secrets/${GCP_SECRET_NAME}/versions/latest`;
+const getMnemonicFromGCP = async (
+  client: SecretManager,
+  projectId: string,
+  secretName: string,
+): Promise<string> => {
+  const name = `projects/${projectId}/secrets/${secretName}/versions/latest`;
 
   const [version] = await client.accessSecretVersion({ name });
-  const payload = version.payload?.data?.toString();
-
-  if (!payload) {
-    throw new Error('Missing secret payload');
-  }
+  const payload =
+    version.payload?.data?.toString() ||
+    Fail`GCP accessSecretVersion response missing payload data`;
 
   return payload;
 };
 
 const parsePositiveInteger = (
   env: Record<string, string | undefined>,
-  defaultValue: number,
   fieldName: string,
+  defaultValue: number,
 ): number => {
   const value = env[fieldName];
   if (value === undefined) return defaultValue;
 
-  const parsed = parseInt(value, 10);
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw Fail`${fieldName} must be a positive integer, got: ${value}`;
+  // TODO: Copy `parseNumber` from @endo/cli into @agoric/internal.
+  const number = /[0-9]/.test(value) ? Number(value) : NaN;
+  if (!Number.isInteger(number) || number <= 0) {
+    throw Fail`${q(fieldName)} must be a positive integer, got: ${value}`;
   }
-  return parsed;
+  return number;
 };
 
 const validateRequired = (
   env: Record<string, string | undefined>,
   fieldName: string,
 ): string => {
-  const value = env[fieldName];
-  if (!value || value.trim() === '') {
-    throw Fail`${fieldName} is required but not provided`;
-  }
-  return value.trim();
+  const value = env[fieldName]?.trim();
+  return value || Fail`${q(fieldName)} is required`;
 };
 
-const validateOptionalUrl = (
+const validateUrl = (
   env: Record<string, string | undefined>,
   fieldName: string,
+  defaultValue: string | undefined,
 ): string | undefined => {
-  const value = env[fieldName];
-  if (!value || value.trim() === '') return undefined;
+  const value = env[fieldName]?.trim();
+  if (!value) return defaultValue;
 
-  const trimmed = value.trim();
   try {
-    void new URL(trimmed);
-    return trimmed;
+    void new URL(value);
+    return value;
   } catch {
-    throw Fail`${fieldName} must be a valid URL, got: ${value}`;
+    throw Fail`${q(fieldName)} must be a valid URL, got: ${value}`;
   }
 };
 
 export const loadConfig = async (
   env: Record<string, string | undefined>,
-  secretManager: SecretManager,
+  secretManager: SecretManager = new SecretManagerServiceClient(),
 ): Promise<YmaxPlannerConfig> => {
-  try {
-    // CLUSTER and AGORIC_NET can each be derived from the other (e.g., CLUSTER
-    // "testnet" implies default AGORIC_NET "devnet", and an AGORIC_NET
-    // subdomain other than "local" or "main" implies default CLUSTER "testnet".
-    let clusterName = env.CLUSTER as ClusterName;
-    !clusterName ||
-      Object.hasOwn(defaultAgoricNetworkSpecForCluster, clusterName) ||
-      Fail`CLUSTER must be one of ${q(Object.keys(defaultAgoricNetworkSpecForCluster))}`;
-    const agoricNetworkSpec =
-      env.AGORIC_NET?.trim() ||
-      defaultAgoricNetworkSpecForCluster[clusterName || 'local'] ||
-      Fail`Could not default AGORIC_NET`;
-    const { subdomain: agoricNetSubdomain } =
-      AgoricClientUtils.parseNetworkSpec(agoricNetworkSpec);
-    if (agoricNetSubdomain === AgoricClientUtils.LOCAL_CONFIG_KEY) {
-      clusterName ||= 'local';
-    } else if (agoricNetSubdomain === 'main') {
-      clusterName ||= 'mainnet';
-    } else {
-      clusterName ||= 'testnet';
-    }
-
-    const mnemonic = env.MNEMONIC
-      ? env.MNEMONIC.trim()
-      : await getMnemonicFromGCP(secretManager);
-    if (!mnemonic) {
-      throw new Error('Mnemonic is required but not provided');
-    }
-
-    const config: YmaxPlannerConfig = harden({
-      clusterName,
-      mnemonic,
-      alchemyApiKey: validateRequired(env, 'ALCHEMY_API_KEY'),
-      spectrum: {
-        apiUrl: validateOptionalUrl(env, 'SPECTRUM_API_URL'),
-        timeout: parsePositiveInteger(env, 30000, 'SPECTRUM_API_TIMEOUT'),
-        retries: parsePositiveInteger(env, 3, 'SPECTRUM_API_RETRIES'),
-      },
-      cosmosRest: {
-        agoricNetworkSpec,
-        agoricNetSubdomain,
-        timeout: parsePositiveInteger(env, 15000, 'COSMOS_REST_TIMEOUT'),
-        retries: parsePositiveInteger(env, 3, 'COSMOS_REST_RETRIES'),
-      },
-    });
-
-    return config;
-  } catch (error) {
-    throw Error(`Configuration validation failed: ${error.message}`);
+  // CLUSTER and AGORIC_NET can each be derived from the other (e.g., CLUSTER
+  // "testnet" implies default AGORIC_NET "devnet", and an AGORIC_NET
+  // subdomain other than "local" or "main" implies default CLUSTER "testnet".
+  let clusterName = env.CLUSTER as ClusterName;
+  !clusterName ||
+    Object.hasOwn(defaultAgoricNetworkSpecForCluster, clusterName) ||
+    Fail`CLUSTER must be one of ${q(Object.keys(defaultAgoricNetworkSpecForCluster))}`;
+  const agoricNetworkSpec =
+    env.AGORIC_NET?.trim() ||
+    defaultAgoricNetworkSpecForCluster[clusterName || 'local'] ||
+    Fail`Could not default AGORIC_NET`;
+  const { subdomain: agoricNetSubdomain } =
+    AgoricClientUtils.parseNetworkSpec(agoricNetworkSpec);
+  if (agoricNetSubdomain === AgoricClientUtils.LOCAL_CONFIG_KEY) {
+    clusterName ||= 'local';
+  } else if (agoricNetSubdomain === 'main') {
+    clusterName ||= 'mainnet';
+  } else {
+    clusterName ||= 'testnet';
   }
-};
 
-let cachedConfig: YmaxPlannerConfig | undefined;
+  const gcpProjectId = env.GCP_PROJECT_ID?.trim() || 'simulationlab';
+  const gcpSecretName = env.GCP_SECRET_NAME?.trim() || 'YMAX_CONTROL_MNEMONIC';
+  const mnemonic =
+    env.MNEMONIC?.trim() ||
+    (await getMnemonicFromGCP(secretManager, gcpProjectId, gcpSecretName)) ||
+    Fail`Mnemonic is required`;
 
-export const getConfig = async (
-  env: Record<string, string | undefined> = process.env,
-  powers: { secretManager?: SecretManager } = {},
-): Promise<YmaxPlannerConfig> => {
-  await null;
-  if (!cachedConfig) {
-    const secretManager =
-      powers.secretManager || new SecretManagerServiceClient();
-    cachedConfig = await loadConfig(env, secretManager);
-  }
-  return cachedConfig;
+  const config: YmaxPlannerConfig = harden({
+    clusterName,
+    mnemonic,
+    alchemyApiKey: validateRequired(env, 'ALCHEMY_API_KEY'),
+    spectrum: {
+      apiUrl: validateUrl(env, 'SPECTRUM_API_URL', undefined),
+      timeout: parsePositiveInteger(env, 'SPECTRUM_API_TIMEOUT', 30000),
+      retries: parsePositiveInteger(env, 'SPECTRUM_API_RETRIES', 3),
+    },
+    cosmosRest: {
+      agoricNetworkSpec,
+      agoricNetSubdomain,
+      timeout: parsePositiveInteger(env, 'COSMOS_REST_TIMEOUT', 15000),
+      retries: parsePositiveInteger(env, 'COSMOS_REST_RETRIES', 3),
+    },
+  });
+
+  return config;
 };

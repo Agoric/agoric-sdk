@@ -130,7 +130,7 @@ harden(makeProposalShapes);
 
 // #region Offer Args
 
-type PoolPlaceInfo =
+export type PoolPlaceInfo =
   | { protocol: 'USDN'; vault: null | 1; chainName: 'noble' }
   | { protocol: 'Aave' | 'Compound' | 'Beefy'; chainName: AxelarChain };
 

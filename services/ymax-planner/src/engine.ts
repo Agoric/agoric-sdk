@@ -1,47 +1,50 @@
 /// <reference types="ses" />
 /* eslint-env node */
-import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { PortfolioStatusShapeExt } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import { AmountMath, type Brand } from '@agoric/ertp';
-import { mustMatch } from '@agoric/internal';
-import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
-import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
-import type { Bech32Address } from '@agoric/orchestration';
-import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
+
+import { inspect } from 'node:util';
+
 import type { Coin } from '@cosmjs/stargate';
-import { Fail, q, X } from '@endo/errors';
-import { M, matches } from '@endo/patterns';
+
+import { Fail, q } from '@endo/errors';
 import { Nat } from '@endo/nat';
 import { isPrimitive } from '@endo/pass-style';
 import { makePromiseKit, type PromiseKit } from '@endo/promise-kit';
-import { inspect } from 'node:util';
+
+import type { SigningSmartWalletKit, VStorage } from '@agoric/client-utils';
+import { AmountMath, type Brand } from '@agoric/ertp';
+import type { Bech32Address } from '@agoric/orchestration';
+import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
+
+import {
+  PublishedTxShape,
+  type PendingTx,
+} from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import {
+  PoolPlaces,
+  PortfolioStatusShapeExt,
+  type StatusFor,
+} from '@aglocal/portfolio-contract/src/type-guards.ts';
+import { mustMatch } from '@agoric/internal';
+import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
+
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
-import { handleDeposit } from './plan-deposit.ts';
+import { getCurrentBalance, handleDeposit } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
+import { handlePendingTx, type EvmContext } from './pending-tx-manager.ts';
 import {
-  handlePendingTx,
-  type EvmContext,
-  type PendingTx,
-} from './pending-tx-manager.ts';
-import { log } from 'node:console';
-import { PublishedTxShape } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+  parseStreamCell,
+  parseStreamCellValue,
+  readStreamCellValue,
+  STALE_RESPONSE,
+} from './vstorage-utils.ts';
 
 const { isInteger } = Number;
+const { entries, fromEntries, values } = Object;
 
 const sink = () => {};
 
-const STALE = 'STALE';
-
-const throwErrorCode = <Code extends string = string>(
-  message: string,
-  code: Code,
-): never => {
-  const err = Error(message);
-  Object.defineProperty(err, 'code', { value: code, enumerable: true });
-  throw err;
-};
+const knownErrorProps = harden(['cause', 'errors', 'message', 'name', 'stack']);
 
 type CosmosEvent = {
   type: string;
@@ -65,11 +68,14 @@ const PathSeparator = '.';
  * cf. golang/cosmos/x/vstorage/types/path_keys.go
  */
 const encodedKeyToPath = (key: string) => {
-  const split = key.split(EncodedKeySeparator);
-  split.length > 1 || Fail`invalid encoded key ${q(key)}`;
-  const encodedPath = split.slice(1).join(EncodedKeySeparator);
-  const path = encodedPath.replaceAll(EncodedKeySeparator, PathSeparator);
+  const encodedParts = key.split(EncodedKeySeparator);
+  encodedParts.length > 1 || Fail`invalid encoded key ${q(key)}`;
+  const path = encodedParts.slice(1).join(PathSeparator);
   return path;
+};
+const pathToEncodedKey = (path: string) => {
+  const segments = path.split(PathSeparator);
+  return `${segments.length}${EncodedKeySeparator}${segments.join(EncodedKeySeparator)}`;
 };
 
 /**
@@ -83,26 +89,6 @@ const vstoragePathStartsWith = (path: string, prefix: string) =>
 export const stripPrefix = (prefix: string, str: string) => {
   str.startsWith(prefix) || Fail`${str} is missing prefix ${q(prefix)}`;
   return str.slice(prefix.length);
-};
-
-/**
- * Parse input as JSON, or handle an error (for e.g. substituting a default or
- * applying a more specific message).
- */
-const tryJsonParse = (json: string, replaceErr?: (err?: Error) => unknown) => {
-  try {
-    const type = typeof json;
-    if (type !== 'string') throw Error(`input must be a string, not ${type}`);
-    return JSON.parse(json);
-  } catch (err) {
-    if (!replaceErr) throw err;
-    try {
-      return replaceErr(err);
-    } catch (newErr) {
-      if (!newErr.cause) assert.note(newErr, err.message);
-      throw newErr;
-    }
-  }
 };
 
 /**
@@ -290,6 +276,28 @@ const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
   return harden(results as typeof results & { done: Promise<boolean> });
 };
 
+export const makeVstorageEvent = (
+  blockHeight: bigint,
+  path: string,
+  value: any,
+  marshaller: SigningSmartWalletKit['marshaller'],
+): CosmosEvent => {
+  const streamCellJson = JSON.stringify({
+    blockHeight: String(blockHeight),
+    values: [JSON.stringify(marshaller.toCapData(value))],
+  });
+  const eventAttrs = {
+    store: 'vstorage',
+    key: pathToEncodedKey(path),
+    value: streamCellJson,
+  };
+  const event: CosmosEvent = {
+    type: 'state_change',
+    attributes: entries(eventAttrs).map(([k, v]) => ({ key: k, value: v })),
+  };
+  return event;
+};
+
 type Powers = {
   evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
   rpc: CosmosRPCClient;
@@ -305,31 +313,24 @@ const processPortfolioEvents = async (
     eventRecord: EventRecord;
   }>,
   blockHeight: bigint,
-  marshaller: SigningSmartWalletKit['marshaller'],
-  readAndDecodeStreamCellValue: (
-    vstoragePath: string,
-    options?: { minBlockHeight?: bigint; retries?: number },
-  ) => any,
-  portfolioKeyForDepositAddr: Map<Bech32Address, string>,
   deferrals: EventRecord[],
+  {
+    marshaller,
+    vstorage,
+    portfolioKeyForDepositAddr,
+  }: {
+    marshaller: SigningSmartWalletKit['marshaller'];
+    vstorage: VStorage;
+    portfolioKeyForDepositAddr: Map<Bech32Address, string>;
+  },
 ) => {
   await null;
   for (const portfolioEvent of portfolioEvents) {
     const { path, value: cellJson, eventRecord } = portfolioEvent;
-    const streamCell = tryJsonParse(
-      cellJson,
-      _err => Fail`non-JSON value at vstorage path ${q(path)}: ${cellJson}`,
-    );
-    mustMatch(harden(streamCell), StreamCellShape);
+    const streamCell = parseStreamCell(cellJson, path);
     if (path === PORTFOLIOS_PATH_PREFIX) {
       for (let i = 0; i < streamCell.values.length; i += 1) {
-        const strValue = streamCell.values[i];
-        const value = tryJsonParse(
-          // @ts-expect-error use `undefined` to force an error for non-string input
-          typeof strValue === 'string' ? strValue : undefined,
-          _err =>
-            Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
-        );
+        const value = parseStreamCellValue(streamCell, i, path);
         const portfoliosData = marshaller.fromCapData(
           value,
         ) as StatusFor['portfolios'];
@@ -337,11 +338,14 @@ const processPortfolioEvents = async (
           const key = portfoliosData.addPortfolio;
           console.warn('Detected new portfolio', key);
           try {
-            const status = await readAndDecodeStreamCellValue(
-              `${PORTFOLIOS_PATH_PREFIX}.${key}`,
+            const portfolioPath = `${PORTFOLIOS_PATH_PREFIX}.${key}`;
+            const statusCapdata = await readStreamCellValue(
+              vstorage,
+              portfolioPath,
               { minBlockHeight: eventRecord.blockHeight, retries: 4 },
             );
-            mustMatch(status, PortfolioStatusShapeExt, key);
+            const status = marshaller.fromCapData(statusCapdata);
+            mustMatch(status, PortfolioStatusShapeExt, portfolioPath);
             const { depositAddress } = status;
             if (!depositAddress) continue;
             portfolioKeyForDepositAddr.set(depositAddress, key);
@@ -352,7 +356,7 @@ const processPortfolioEvents = async (
               address: depositAddress,
             });
           } catch (err) {
-            if (err.code !== STALE) throw err;
+            if (err.code !== STALE_RESPONSE) throw err;
             console.error(
               `Deferring addPortfolio of age ${blockHeight - eventRecord.blockHeight} block(s)`,
               eventRecord,
@@ -366,64 +370,35 @@ const processPortfolioEvents = async (
   }
 };
 
-export const parsePendingTx = (txId: `tx${number}`, data): PendingTx | null => {
-  if (!matches(data, PublishedTxShape)) {
-    const err = assert.error(
-      X`expected data ${data} to match ${q(PublishedTxShape)}`,
-    );
-    console.error(err);
-    return null;
-  }
-
-  return { txId, ...data } as PendingTx;
-};
-
 export const processPendingTxEvents = async (
-  evmCtx: EvmContext,
   events: Array<{ path: string; value: string }>,
-  marshaller: SigningSmartWalletKit['marshaller'],
-  handlePendingTxFn = handlePendingTx,
-  logFn = log,
+  handlePendingTxFn,
+  powers: EvmContext & {
+    marshaller: SigningSmartWalletKit['marshaller'];
+    log?: typeof console.log;
+    error?: typeof console.error;
+  },
 ) => {
+  const { marshaller, error = () => {}, ...txPowers } = powers;
+  const { log = () => {} } = powers;
   for (const { path, value: cellJson } of events) {
-    const streamCell = tryJsonParse(
-      cellJson,
-      _err => Fail`non-JSON value at vstorage path ${q(path)}: ${cellJson}`,
-    );
-    mustMatch(harden(streamCell), StreamCellShape);
+    const errLabel = `🚨 Failed to process pending tx ${path}`;
+    let data;
+    try {
+      // Extract txId from path (e.g., "published.ymax0.pendingTxs.tx1")
+      const txId = stripPrefix(`${PENDING_TX_PATH_PREFIX}.`, path);
+      log('Processing pendingTx event', path);
 
-    // Extract txId from path (e.g., "published.ymax0.pendingTxs.tx1")
-    const txId = stripPrefix(`${PENDING_TX_PATH_PREFIX}.`, path);
-    console.warn('Processing pendingTx event', txId, path);
-
-    for (let i = 0; i < streamCell.values.length; i += 1) {
-      const strValue = streamCell.values[i];
-      const value = tryJsonParse(
-        // @ts-expect-error use `undefined` to force an error for non-string input
-        typeof strValue === 'string' ? strValue : undefined,
-        _err =>
-          Fail`non-JSON StreamCell value for ${q(path)} index ${q(i)}: ${strValue}`,
-      );
-
-      const tx = parsePendingTx(
-        txId as `tx${number}`,
-        marshaller.fromCapData(value),
-      );
-      if (!tx) continue;
-
-      console.warn('Handling pending tx:', {
-        txId,
-        type: tx.type,
-        status: tx.status,
-      });
-
-      const errorHandler = error => {
-        console.error(`⚠️ Failed to process pendingTx: ${txId}`, error);
-      };
-
-      void handlePendingTxFn({ ...evmCtx }, tx, {
-        log: logFn,
-      }).catch(errorHandler);
+      const streamCell = parseStreamCell(cellJson, path);
+      const value = parseStreamCellValue(streamCell, -1, path);
+      data = marshaller.fromCapData(value);
+      mustMatch(data, PublishedTxShape, `${path} index -1`);
+      const tx = { txId, ...data } as PendingTx;
+      log('New pending tx', tx);
+      // Tx resolution is non-blocking.
+      void handlePendingTxFn(tx, txPowers).catch(err => error(errLabel, err));
+    } catch (err) {
+      error(errLabel, data, err);
     }
   }
 };
@@ -452,110 +427,39 @@ export const startEngine = async (
 ) => {
   await null;
   const { query, marshaller } = signingSmartWalletKit;
-  /**
-   * Read from a vstorage path, requiring the data to be a StreamCell of
-   * CapData-encoded values and returning the decoding of the final one.
-   * UNTIL https://github.com/Agoric/agoric-sdk/pull/11630
-   */
-  const readAndDecodeStreamCellValue = async (
-    vstoragePath: string,
-    {
-      minBlockHeight = 0n,
-      retries = 0,
-    }: { minBlockHeight?: bigint; retries?: number } = {},
-  ) => {
-    await null;
-    let finalErr: undefined | Error;
-    for (let attempt = 0; attempt <= retries; attempt += 1) {
-      let values: string[];
-      try {
-        const { blockHeight, result } = await query.vstorage.readStorageMeta(
-          vstoragePath,
-          { kind: 'data' } as const,
-        );
-        if (typeof blockHeight !== 'bigint') {
-          throw Fail`blockHeight ${blockHeight} must be a bigint`;
-        }
-        if (blockHeight < minBlockHeight) {
-          throwErrorCode(`old blockHeight ${blockHeight}`, STALE);
-        }
-        const streamCellJson = result.value;
-        const streamCell = tryJsonParse(
-          streamCellJson,
-          _err =>
-            Fail`non-JSON value at vstorage path ${q(vstoragePath)}: ${streamCellJson}`,
-        );
-        mustMatch(harden(streamCell), StreamCellShape);
-        // We have suitably fresh data; any further errors should propagate.
-        values = streamCell.values;
-      } catch (err) {
-        if (err.code || !finalErr) finalErr = err;
-        continue;
-      }
-      const strValue = values.at(-1) as string;
-      const lastValueCapData = tryJsonParse(
-        strValue,
-        _err =>
-          Fail`non-JSON StreamCell value for ${q(vstoragePath)} index ${q(values.length - 1)}: ${strValue}`,
-      );
-      return marshaller.fromCapData(lastValueCapData);
-    }
-    throw finalErr;
-  };
 
-  const chainStatus = await rpc.request('status', {});
-  console.warn('agoric chain status', chainStatus);
-
-  // TODO: Test Spectrum API
+  // Test balance querying (using dummy addresses for now).
   {
-    const testCases = [
-      // TODO: { chain: 'ethereum', pool: 'aave', ethAddr: ... },
-    ] as Array<{ chain: any; pool: any; ethAddr: string }>;
-    for (const testCase of testCases) {
-      const { chain, pool, ethAddr } = testCase;
-      try {
-        const poolBalance = await spectrum.getPoolBalance(chain, pool, ethAddr);
-        console.warn('Spectrum pool balance:', {
-          chain: poolBalance.chain,
-          pool: poolBalance.pool,
-          ethAddr,
-          supplyBalance: poolBalance.balance.supplyBalance.toLocaleString(),
-          borrowAmount: poolBalance.balance.borrowAmount.toLocaleString(),
-        });
-      } catch (err) {
-        console.error(`Spectrum getPoolBalance failed for ${q(testCase)}`, err);
-        throw err;
-      }
-    }
-  }
-
-  // Test Cosmos REST API client with Noble chain
-  try {
-    const nobleInfo = await cosmosRest.getChainInfo('noble');
-    console.warn(
-      'Noble chain ID',
-      (nobleInfo as any)?.default_node_info?.network,
-      nobleInfo,
+    const balanceQueryPowers = { spectrum, cosmosRest };
+    const poolPlaceInfoByProtocol = new Map(
+      values(PoolPlaces).map(info => [info.protocol, info]),
     );
-    // Test balance fetching for a known address (this will fail gracefully if
-    // address doesn't exist)
-    const testAddress = 'noble1xw2j23rcwrkg02yxdn5ha2d2x868cuk6370s9y';
-    const balances = await cosmosRest.getAccountBalances('noble', testAddress);
-    console.warn(
-      'Noble balance denoms',
-      balances.balances.map(coin => coin.denom),
+    await Promise.all(
+      [...poolPlaceInfoByProtocol.values()].map(async info => {
+        await null;
+        try {
+          const { chainName } = info;
+          const dummyAddress =
+            chainName === 'noble'
+              ? 'cosmos:testnoble:noble1xw2j23rcwrkg02yxdn5ha2d2x868cuk6370s9y'
+              : (([caipChainId, addr]) => `${caipChainId}:${addr}`)(
+                  entries(evmCtx.usdcAddresses)[0],
+                );
+          const accountIdByChain = { [chainName]: dummyAddress } as any;
+          await getCurrentBalance(info, accountIdByChain, balanceQueryPowers);
+        } catch (err) {
+          const expandos = partialMap(Reflect.ownKeys(err), key =>
+            knownErrorProps.includes(key as any) ? false : [key, err[key]],
+          );
+          console.warn(
+            `⚠️ Could not query ${info.protocol} balance`,
+            err,
+            ...(expandos.length ? [fromEntries(expandos)] : []),
+          );
+        }
+      }),
     );
-  } catch (err) {
-    console.error('Noble getAccountBalances failed', err);
-    throw err;
   }
-
-  const agoricInfo = await cosmosRest.getChainInfo('agoric');
-  console.warn(
-    'Agoric chain ID',
-    (agoricInfo as any)?.default_node_info?.network,
-    agoricInfo,
-  );
 
   const vbankAssets: AssetInfo[] = (
     await query.readPublished('agoricNames.vbankAsset')
@@ -578,10 +482,10 @@ export const startEngine = async (
         return BigInt((respData.TxResult as any).height);
       default: {
         console.error(
-          `Attempting to read block height from unexpected response type ${respType}`,
+          `🚨 Attempting to read block height from unexpected response type ${respType}`,
           respData,
         );
-        const obj = Object.values(respData)[0];
+        const obj = values(respData)[0];
         // @ts-expect-error
         return BigInt(obj.height ?? obj.blockHeight ?? obj.block_height);
       }
@@ -596,69 +500,81 @@ export const startEngine = async (
     "tm.event = 'Tx'",
   ];
   const responses = rpc.subscribeAll(subscriptionFilters);
-  const firstResult = await responses.next();
-  (firstResult.done === false && firstResult.value === undefined) ||
-    Fail`Unexpected ready signal ${firstResult}`;
+  const readyResult = await responses.next();
+  if (readyResult.done !== false || readyResult.value !== undefined) {
+    console.error('🚨 Unexpected non-undefined ready signal', readyResult);
+  }
   // console.log('subscribed to events', subscriptionFilters);
 
   // TODO: Verify consumption of paginated data.
-  // TODO: Retry when data is associated with a block height lower than that of
-  //       the first result from `responses`.
-  const portfolioKeys = await query.vstorage.keys(PORTFOLIOS_PATH_PREFIX);
-  const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
-  await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
-    const status = await query.readPublished(
-      `${stripPrefix('published.', PORTFOLIOS_PATH_PREFIX)}.${portfolioKey}`,
-    );
-    mustMatch(status, PortfolioStatusShapeExt, portfolioKey);
-    const { depositAddress } = status;
-    if (!depositAddress) return;
-    portfolioKeyForDepositAddr.set(depositAddress, portfolioKey);
-    // TODO: Use the block height associated with portfolioKey.
-    // https://github.com/Agoric/agoric-sdk/pull/11630
-    deferrals.push({
-      blockHeight: 0n,
-      type: 'transfer' as const,
-      address: depositAddress,
-    });
-  }).done;
-
-  const pendingTxKeys = await query.vstorage.keys(PENDING_TX_PATH_PREFIX);
-  console.warn(
-    `Found ${pendingTxKeys.length} existing pendingTxKeys to monitor`,
+  const [pendingTxKeys, portfolioKeys] = await Promise.all(
+    [PENDING_TX_PATH_PREFIX, PORTFOLIOS_PATH_PREFIX].map(vstoragePath =>
+      query.vstorage.keys(vstoragePath),
+    ),
   );
 
-  await makeWorkPool(pendingTxKeys, undefined, async txId => {
-    const logIgnoredError = err => {
-      const msg = `⚠️ Failed to process existing pendingTx: ${txId}`;
-      console.error(msg, err);
-    };
+  // TODO: Retry when data is associated with a block height lower than that of
+  //       the first result from `responses`.
+  const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
+  await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
+    const path = `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}`;
+    await null;
+    let status;
+    try {
+      status = await query.readPublished(stripPrefix('published.', path));
+      mustMatch(status, PortfolioStatusShapeExt, path);
+      const { depositAddress } = status;
+      if (!depositAddress) return;
+      portfolioKeyForDepositAddr.set(depositAddress, portfolioKey);
+      // TODO: Use the block height associated with portfolioKey.
+      // https://github.com/Agoric/agoric-sdk/pull/11630
+      deferrals.push({
+        blockHeight: 0n,
+        type: 'transfer' as const,
+        address: depositAddress,
+      });
+    } catch (err) {
+      const msg = `⚠️  Could not read ${portfolioKey} status; deferring`;
+      console.error(msg, status, err);
+      const blockHeight = 0n;
+      const event = makeVstorageEvent(
+        blockHeight,
+        PORTFOLIOS_PATH_PREFIX,
+        { addPortfolio: portfolioKey } as StatusFor['portfolios'],
+        marshaller,
+      );
+      deferrals.push({ blockHeight, type: 'kvstore', event });
+    }
+  }).done;
 
+  const txPowers = {
+    ...evmCtx,
+    signingSmartWalletKit,
+    fetch,
+    cosmosRest,
+    marshaller,
+    log: console.warn.bind(console),
+    error: console.error.bind(console),
+  };
+  console.warn(`Found ${pendingTxKeys.length} pending transactions`);
+  await makeWorkPool(pendingTxKeys, undefined, async txId => {
+    const path = `${PENDING_TX_PATH_PREFIX}.${txId}`;
+    const errLabel = `🚨 Failed to process old pending tx ${path}`;
+
+    await null;
     let data;
     try {
-      // eslint-disable-next-line @jessie.js/safe-await-separator
-      data = await query.readPublished(
-        stripPrefix('published.', `${PENDING_TX_PATH_PREFIX}.${txId}`),
+      data = await query.readPublished(stripPrefix('published.', path));
+      mustMatch(data, PublishedTxShape, path);
+      const tx = { txId, ...data } as PendingTx;
+      console.warn('Old pending tx', tx);
+      // Tx resolution is non-blocking.
+      void handlePendingTx(tx, txPowers).catch(err =>
+        console.error(errLabel, err),
       );
     } catch (err) {
-      logIgnoredError(err);
-      return;
+      console.error(errLabel, data, err);
     }
-
-    const tx = parsePendingTx(txId as `tx${number}`, data);
-    if (!tx) return;
-
-    console.warn(`Found existing tx: ${txId}`, {
-      type: tx.type,
-      status: tx.status,
-    });
-
-    // Process existing pending transactions on startup
-    void handlePendingTx(
-      { ...evmCtx, signingSmartWalletKit, fetch, cosmosRest },
-      tx,
-      { log },
-    ).catch(logIgnoredError);
   }).done;
 
   // console.warn('consuming events');
@@ -678,7 +594,7 @@ export const startEngine = async (
       deferrals.push(deferral);
       return false;
     }) as Array<EventRecord & { type: 'kvstore' }>;
-    const newEvents = Object.entries(respData).flatMap(([key, value]) => {
+    const newEvents = entries(respData).flatMap(([key, value]) => {
       // We care about result_begin_block/result_end_block/etc.
       if (!key.startsWith('result_')) return [];
       const events = (value as any)?.events;
@@ -693,65 +609,55 @@ export const startEngine = async (
         event,
       })),
     ];
-    const vstorageEvents = partialMap(eventRecords, eventRecord => {
+    const vstorageEvents = { portfolio: [], pendingTx: [] } as Record<
+      'portfolio' | 'pendingTx',
+      Array<{ path: string; value: string; eventRecord: EventRecord }>
+    >;
+    for (const eventRecord of eventRecords) {
       const { type: eventType, attributes: attrRecords } = eventRecord.event;
       // Filter for vstorage state_change events.
       // cf. golang/cosmos/types/events.go
-      if (eventType !== 'state_change') return;
+      if (eventType !== 'state_change') continue;
       const attributes = fromUniqueEntries(
         attrRecords?.map(({ key, value }) => [key, value]) || [],
       );
-      if (attributes.store !== 'vstorage') return;
+      if (attributes.store !== 'vstorage') continue;
 
       // Require attributes "key" and "value".
       if (attributes.key === undefined || attributes.value === undefined) {
         console.error('vstorage state_change missing "key" and/or "value"');
-        return;
+        continue;
       }
 
       // Filter for paths we care about (portfolios or pending transactions).
       const path = encodedKeyToPath(attributes.key);
 
       if (vstoragePathStartsWith(path, PORTFOLIOS_PATH_PREFIX)) {
-        return {
-          type: 'portfolio' as const,
+        vstorageEvents.portfolio.push({
           path,
           value: attributes.value,
           eventRecord,
-        };
+        });
       }
       if (vstoragePathStartsWith(path, PENDING_TX_PATH_PREFIX)) {
-        return {
-          type: 'pendingTx' as const,
+        vstorageEvents.pendingTx.push({
           path,
           value: attributes.value,
           eventRecord,
-        };
+        });
       }
-    });
-
-    const portfolioEvents = vstorageEvents.filter(
-      event => event.type === 'portfolio',
-    );
-    const pendingTxEvents = vstorageEvents.filter(
-      event => event.type === 'pendingTx',
-    );
+    }
+    const { portfolio: portfolioEvents, pendingTx: pendingTxEvents } =
+      vstorageEvents;
 
     // Detect new portfolios.
-    await processPortfolioEvents(
-      portfolioEvents,
-      respHeight,
+    await processPortfolioEvents(portfolioEvents, respHeight, deferrals, {
       marshaller,
-      readAndDecodeStreamCellValue,
+      vstorage: query.vstorage,
       portfolioKeyForDepositAddr,
-      deferrals,
-    );
+    });
 
-    await processPendingTxEvents(
-      { ...evmCtx, cosmosRest, signingSmartWalletKit, fetch },
-      pendingTxEvents,
-      marshaller,
-    );
+    await processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers);
 
     // Detect activity against portfolio deposit addresses.
     const oldAddrActivity = deferrals.splice(0).filter(deferral => {
@@ -808,7 +714,7 @@ export const startEngine = async (
     // Respond to deposits.
     const portfolioOps = await Promise.all(
       [...depositAddrsWithActivity.entries()].map(
-        async ([addr, { portfolioKey, eventRecord: _eventRecord }]) => {
+        async ([addr, { portfolioKey, eventRecord }]) => {
           const amount = pickBalance(addrBalances.get(addr), depositAsset);
           if (!amount) {
             console.warn(`No ${q(depositAsset.issuerName)} at ${addr}`);
@@ -820,27 +726,36 @@ export const startEngine = async (
             `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}`,
           );
 
-          // TODO: Switch to an API that exposes block height, so we can detect stale
-          // data and push to `deferrals`.
-          const steps = await handleDeposit(
-            unprefixedPortfolioPath as any,
-            amount,
-            feeAsset.brand as Brand<'nat'>,
-            { readPublished: query.readPublished, spectrum, cosmosRest },
-          );
+          await null;
+          try {
+            // TODO: Use an API that exposes block height to detect stale data.
+            const steps = await handleDeposit(
+              unprefixedPortfolioPath as any,
+              amount,
+              feeAsset.brand as Brand<'nat'>,
+              { readPublished: query.readPublished, spectrum, cosmosRest },
+            );
 
-          // TODO: consolidate with portfolioIdOfPath
-          const portfolioId = parseInt(
-            stripPrefix(`portfolio`, portfolioKey),
-            10,
-          );
+            // TODO: consolidate with portfolioIdOfPath
+            const portfolioId = parseInt(
+              stripPrefix(`portfolio`, portfolioKey),
+              10,
+            );
 
-          return { portfolioId, steps };
+            return { portfolioId, steps };
+          } catch (err) {
+            console.warn(
+              `⚠️ Failed to handle ${portfolioKey} deposit; deferring`,
+              err,
+            );
+            deferrals.push(eventRecord);
+          }
         },
       ),
     );
 
     for (const { portfolioId, steps } of portfolioOps.filter(x => !!x)) {
+      if (!steps) continue;
       const result = await signingSmartWalletKit.invokeEntry({
         targetName: 'planner',
         method: 'submit',

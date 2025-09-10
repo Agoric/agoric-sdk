@@ -78,7 +78,7 @@ type CreateContextParams = {
   alchemyApiKey: string;
 };
 
-export type EvmProviders = Partial<Record<CaipChainId, JsonRpcProvider>>;
+export type EvmProviders = Record<CaipChainId, JsonRpcProvider>;
 
 export const createEVMContext = async ({
   clusterName,

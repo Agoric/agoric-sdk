@@ -26,7 +26,7 @@ test('loadConfig validates required MNEMONIC', async t => {
   const secretManager = makeFakeSecretManager();
 
   await t.throwsAsync(() => loadConfig(env, secretManager), {
-    message: /Missing secret payload/,
+    message: 'GCP accessSecretVersion response missing payload data',
   });
 });
 
@@ -193,13 +193,13 @@ test('loadConfig trims whitespace from values', async t => {
 
 test('loadConfig rejects empty required values', async t => {
   const env = {
-    MNEMONIC: '   ',
-    ALCHEMY_API_KEY: 'test1234',
+    MNEMONIC: 'test mnemonic phrase',
+    ALCHEMY_API_KEY: '   ',
   };
   const secretManager = makeFakeSecretManager();
 
   await t.throwsAsync(() => loadConfig(env, secretManager), {
-    message: /Mnemonic is required/,
+    message: '"ALCHEMY_API_KEY" is required',
   });
 });
 

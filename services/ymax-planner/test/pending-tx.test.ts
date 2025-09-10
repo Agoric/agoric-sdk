@@ -1,144 +1,43 @@
 import test from 'ava';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
-import {
-  handlePendingTx,
-  type EvmContext,
-  type PendingTx,
-} from '../src/pending-tx-manager.ts';
-import { processPendingTxEvents, parsePendingTx } from '../src/engine.ts';
+import { handlePendingTx, type EvmContext } from '../src/pending-tx-manager.ts';
+import { processPendingTxEvents } from '../src/engine.ts';
 import {
   createMockEvmContext,
-  createMockPendingTxData,
   createMockPendingTxEvent,
   createMockStreamCell,
 } from './mocks.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
 
 const marshaller = boardSlottingMarshaller();
 
-// --- Unit tests for parsePendingTx ---
-test('parsePendingTx creates valid PendingTx from data', t => {
-  const txId = 'tx1' as `tx${number}`;
-  const txData = createMockPendingTxData({ type: TxType.CCTP_TO_EVM });
-  const capData = marshaller.toCapData(txData);
-
-  const result = parsePendingTx(txId, marshaller.fromCapData(capData));
-
-  t.deepEqual(result, {
-    txId,
-    type: TxType.CCTP_TO_EVM,
-    status: 'pending',
-    amount: 1000_00n,
-    destinationAddress:
-      'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
-  });
-});
-
-test('parsePendingTx returns null for invalid data shape', t => {
-  const txId = 'tx3' as `tx${number}`;
-  const invalidTxData = harden({
-    someOtherField: 'value',
-  });
-
-  const result = parsePendingTx(txId, invalidTxData);
-
-  t.is(result, null);
-});
-
-test('parsePendingTx returns null when CCTP transaction is missing amount field', t => {
-  const txId = 'tx4' as `tx${number}`;
-  const cctpWithoutAmount = harden({
-    type: TxType.CCTP_TO_EVM,
-    status: 'pending',
-    destinationAddress:
-      'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
-  });
-
-  const result = parsePendingTx(txId, cctpWithoutAmount);
-
-  t.is(result, null);
-});
-
-test('parsePendingTx accepts GMP transaction without amount field', t => {
-  const txId = 'tx5' as `tx${number}`;
-  const gmpWithoutAmount = harden({
-    type: TxType.GMP,
-    status: 'pending',
-    destinationAddress:
-      'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
-  });
-
-  const result = parsePendingTx(txId, gmpWithoutAmount);
-
-  t.deepEqual(result, {
-    txId,
-    type: TxType.GMP,
-    status: 'pending',
-    destinationAddress:
-      'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
-  });
-});
-
-test('parsePendingTx validates Noble withdraw transactions require amount', t => {
-  const txId = 'tx1' as `tx${number}`;
-  const nobleWithdrawData = harden({
-    type: TxType.CCTP_TO_NOBLE,
-    status: 'pending',
-    destinationAddress: 'cosmos:noble:noble1abc123456789',
-  });
-  const capData = marshaller.toCapData(nobleWithdrawData);
-  const unmarshalledData = marshaller.fromCapData(capData);
-
-  const result = parsePendingTx(txId, unmarshalledData);
-
-  t.is(result, null);
-});
-
-test('parsePendingTx creates valid Noble withdraw PendingTx from data', t => {
-  const txId = 'tx1' as `tx${number}`;
-  const nobleWithdrawData = createMockPendingTxData({
-    type: TxType.CCTP_TO_NOBLE,
-    amount: 500_000n,
-    destinationAddress: 'cosmos:noble:noble1abc123456789',
-  });
-  const capData = marshaller.toCapData(nobleWithdrawData);
-
-  const result = parsePendingTx(txId, marshaller.fromCapData(capData));
-
-  t.deepEqual(result, {
-    txId,
-    type: TxType.CCTP_TO_NOBLE,
-    status: 'pending',
-    amount: 500_000n,
-    destinationAddress: 'cosmos:noble:noble1abc123456789',
-  });
-});
-
-// --- Unit tests for processPendingTxEvents ---
-test('processPendingTxEvents handles valid single transaction event', async t => {
-  const mockEvmCtx = createMockEvmContext();
+const makeMockHandlePendingTx = () => {
   const handledTxs: PendingTx[] = [];
-
-  // Mock handlePendingTx to track calls
   const mockHandlePendingTx = async (
-    ctx: EvmContext,
     tx: PendingTx,
-    log: any,
+    { log: any, ...evmCtx }: any,
   ) => {
     handledTxs.push(tx);
   };
+  return { mockHandlePendingTx, handledTxs };
+};
+
+// --- Unit tests for processPendingTxEvents ---
+test('processPendingTxEvents handles valid single transaction event', async t => {
+  const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
+  const mockEvmCtx = createMockEvmContext();
 
   const txData = createMockPendingTxData({ type: TxType.CCTP_TO_EVM });
   const capData = marshaller.toCapData(txData);
   const streamCell = createMockStreamCell([JSON.stringify(capData)]);
   const events = [createMockPendingTxEvent('tx1', JSON.stringify(streamCell))];
 
-  await processPendingTxEvents(
-    mockEvmCtx,
-    events,
+  await processPendingTxEvents(events, mockHandlePendingTx, {
+    ...mockEvmCtx,
     marshaller,
-    mockHandlePendingTx,
-  );
+  });
 
   t.is(handledTxs.length, 1);
   t.like(handledTxs[0], {
@@ -149,16 +48,8 @@ test('processPendingTxEvents handles valid single transaction event', async t =>
 });
 
 test('processPendingTxEvents handles multiple transaction events', async t => {
+  const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
   const mockEvmCtx = createMockEvmContext();
-  const handledTxs: PendingTx[] = [];
-
-  const mockHandlePendingTx = async (
-    ctx: EvmContext,
-    tx: PendingTx,
-    log: any,
-  ) => {
-    handledTxs.push(tx);
-  };
 
   const originalCctpData = createMockPendingTxData({
     type: TxType.CCTP_TO_EVM,
@@ -179,29 +70,19 @@ test('processPendingTxEvents handles multiple transaction events', async t => {
     ),
   ];
 
-  await processPendingTxEvents(
-    mockEvmCtx,
-    events,
+  await processPendingTxEvents(events, mockHandlePendingTx, {
+    ...mockEvmCtx,
     marshaller,
-    mockHandlePendingTx,
-  );
+  });
 
   t.is(handledTxs.length, 2);
   t.like(handledTxs[0], { txId: 'tx1', type: TxType.CCTP_TO_EVM });
   t.like(handledTxs[1], { txId: 'tx2', type: TxType.GMP });
 });
 
-test('processPendingTxEvents processes valid transactions before throwing on invalid stream cell', async t => {
+test('processPendingTxEvents errors do not disrupt processing valid transactions', async t => {
+  const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
   const mockEvmCtx = createMockEvmContext();
-  const handledTxs: PendingTx[] = [];
-
-  const mockHandlePendingTx = async (
-    ctx: EvmContext,
-    tx: PendingTx,
-    log: any,
-  ) => {
-    handledTxs.push(tx);
-  };
 
   const validTx1 = createMockPendingTxData({ type: TxType.CCTP_TO_EVM });
   const validTx2 = createMockPendingTxData({ type: TxType.GMP });
@@ -228,37 +109,34 @@ test('processPendingTxEvents processes valid transactions before throwing on inv
       'tx3',
       JSON.stringify({ values: [JSON.stringify(validCapData2)] }),
     ),
+    createMockPendingTxEvent(
+      'tx4',
+      JSON.stringify(createMockStreamCell([JSON.stringify(validCapData2)])),
+    ),
   ];
 
-  await t.throwsAsync(
-    () =>
-      processPendingTxEvents(
-        mockEvmCtx,
-        events,
-        marshaller,
-        mockHandlePendingTx,
-      ),
-    { message: /Must have missing properties.*blockHeight/ },
+  const errorLog = [] as Array<any[]>;
+  await processPendingTxEvents(events, mockHandlePendingTx, {
+    ...mockEvmCtx,
+    marshaller,
+    error: (...args) => errorLog.push(args),
+  });
+  if (errorLog.length !== 2) {
+    t.log(errorLog);
+  }
+  t.is(errorLog.length, 2);
+  t.regex(errorLog[0].at(-1).message, /\btx2\b/);
+  t.regex(
+    errorLog[1].at(-1).message,
+    /\btx3\b.*Must have missing properties.*blockHeight/,
   );
 
-  t.is(
-    handledTxs.length,
-    1,
-    'No transactions should be handled due to invalid tx causing early return',
-  );
+  t.is(handledTxs.length, 2);
 });
 
 test('processPendingTxEvents handles only pending transactions', async t => {
+  const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
   const mockEvmCtx = createMockEvmContext();
-  const handledTxs: PendingTx[] = [];
-
-  const mockHandlePendingTx = async (
-    ctx: EvmContext,
-    tx: PendingTx,
-    log: any,
-  ) => {
-    handledTxs.push(tx);
-  };
 
   const tx1 = createMockPendingTxData({ type: TxType.CCTP_TO_EVM });
   const tx2 = createMockPendingTxData({ type: TxType.GMP, status: 'success' });
@@ -277,28 +155,18 @@ test('processPendingTxEvents handles only pending transactions', async t => {
     ),
   ];
 
-  await processPendingTxEvents(
-    mockEvmCtx,
-    events,
+  await processPendingTxEvents(events, mockHandlePendingTx, {
+    ...mockEvmCtx,
     marshaller,
-    mockHandlePendingTx,
-  );
+  });
 
   t.is(handledTxs.length, 1);
   t.is(handledTxs[0].status, 'pending');
 });
 
 test('processPendingTxEvents handles Noble withdraw transactions', async t => {
+  const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
   const mockEvmCtx = createMockEvmContext();
-  const handledTxs: PendingTx[] = [];
-
-  const mockHandlePendingTx = async (
-    ctx: EvmContext,
-    tx: PendingTx,
-    log: any,
-  ) => {
-    handledTxs.push(tx);
-  };
 
   const nobleWithdrawData = createMockPendingTxData({
     type: TxType.CCTP_TO_NOBLE,
@@ -310,12 +178,10 @@ test('processPendingTxEvents handles Noble withdraw transactions', async t => {
   const streamCell = createMockStreamCell([JSON.stringify(capData)]);
   const events = [createMockPendingTxEvent('tx1', JSON.stringify(streamCell))];
 
-  await processPendingTxEvents(
-    mockEvmCtx,
-    events,
+  await processPendingTxEvents(events, mockHandlePendingTx, {
+    ...mockEvmCtx,
     marshaller,
-    mockHandlePendingTx,
-  );
+  });
 
   t.is(handledTxs.length, 1);
   t.like(handledTxs[0], {
@@ -341,7 +207,7 @@ test('handlePendingTx throws error for unsupported transaction type', async t =>
   } as any;
 
   await t.throwsAsync(
-    () => handlePendingTx(mockEvmCtx, unsupportedTx, { log: mockLog }),
+    () => handlePendingTx(unsupportedTx, { ...mockEvmCtx, log: mockLog }),
     { message: /No monitor registered for tx type: "cctpV2"/ },
   );
 });

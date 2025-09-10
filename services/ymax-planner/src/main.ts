@@ -3,20 +3,27 @@ import {
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
 } from '@agoric/client-utils';
+import { objectMetaMap } from '@agoric/internal';
 import { Fail, q } from '@endo/errors';
+import { isPrimitive } from '@endo/pass-style';
 
 import { SigningStargateClient } from '@cosmjs/stargate';
 
-import { getConfig } from './config.ts';
+import { loadConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { startEngine } from './engine.ts';
 import { createEVMContext } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 
-const assertChainId = async (rpc: CosmosRPCClient, chainId: string) => {
+const assertChainId = async (
+  rpc: CosmosRPCClient,
+  chainId: string,
+  log?: typeof console.log,
+) => {
   const status = await rpc.request('status', {});
   const actualChainId = status?.node_info?.network;
+  log?.(actualChainId, status);
   actualChainId || Fail`Chain ID not found in RPC status: ${status}`;
   actualChainId === chainId ||
     Fail`Expected chain ID ${q(actualChainId)} to be ${q(chainId)}`;
@@ -35,7 +42,7 @@ export const main = async (
     new Promise(resolve => setTimeout(resolve, ms)).then(() => {});
   const simplePowers = { fetch, setTimeout, delay };
 
-  const config = await getConfig(env);
+  const config = await loadConfig(env);
   const { clusterName } = config;
 
   const networkConfig = await fetchEnvNetworkConfig({
@@ -43,30 +50,37 @@ export const main = async (
     fetch,
   });
   const agoricRpcAddr = networkConfig.rpcAddrs[0];
+  console.warn('Initializing planner', networkConfig);
 
-  console.warn('Initializing planner watching', { agoricRpcAddr });
   const rpc = new CosmosRPCClient(agoricRpcAddr);
   await rpc.opened();
-  await assertChainId(rpc, networkConfig.chainName);
+  await assertChainId(rpc, networkConfig.chainName, (...args) =>
+    console.warn('Agoric chain status', ...args),
+  );
+
+  const cosmosRest = new CosmosRestClient(simplePowers, {
+    clusterName,
+    timeout: config.cosmosRest.timeout,
+    retries: config.cosmosRest.retries,
+  });
+  const agoricChainInfo = await cosmosRest.getChainInfo('agoric');
+  const agoricVersions = (agoricChainInfo as any)?.application_version;
+  const agoricSummary = objectMetaMap(agoricVersions || {}, desc =>
+    isPrimitive(desc.value) ? desc : undefined,
+  );
+  console.warn('Agoric chain versions', agoricVersions && agoricSummary);
 
   const walletUtils = await makeSmartWalletKit(simplePowers, networkConfig);
   const signingSmartWalletKit = await makeSigningSmartWalletKit(
     { connectWithSigner, walletUtils },
     config.mnemonic,
   );
-
-  console.warn('Using:', signingSmartWalletKit.address, networkConfig);
+  console.warn('Signer address:', signingSmartWalletKit.address);
 
   const spectrum = new SpectrumClient(simplePowers, {
     baseUrl: config.spectrum.apiUrl,
     timeout: config.spectrum.timeout,
     retries: config.spectrum.retries,
-  });
-
-  const cosmosRest = new CosmosRestClient(simplePowers, {
-    clusterName,
-    timeout: config.cosmosRest.timeout,
-    retries: config.cosmosRest.retries,
   });
 
   const evmCtx = await createEVMContext({

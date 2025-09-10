@@ -1,25 +1,25 @@
-import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import type { JsonRpcProvider } from 'ethers';
+
+import { Fail } from '@endo/errors';
+
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
+import type { Bech32Address, CaipChainId } from '@agoric/orchestration';
+import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+
+import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import {
   TxStatus,
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import { watchGmp } from './watchers/gmp-watcher.ts';
+import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+
+import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import { resolvePendingTx } from './resolver.ts';
+import type { EvmProviders, UsdcAddresses } from './support.ts';
+import { watchGmp } from './watchers/gmp-watcher.ts';
 import { watchCctpTransfer } from './watchers/cctp-watcher.ts';
 import { watchNobleTransfer } from './watchers/noble-watcher.ts';
-import type {
-  PublishedTx,
-  TxId,
-} from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import type { EvmProviders, UsdcAddresses } from './support.ts';
-import type { CosmosRestClient } from './cosmos-rest-client.ts';
-import type { CaipChainId } from '@agoric/orchestration';
-import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
-import { Fail } from '@endo/errors';
-import type { JsonRpcProvider } from 'ethers';
-import type { Bech32Address } from '@agoric/orchestration';
 
 export type EvmChain = keyof typeof AxelarChain;
 
@@ -36,20 +36,6 @@ export type GmpTransfer = {
   destinationChain: AxelarId;
   contractAddress: `0x${string}`;
 };
-
-/**
- * PendingTx state machine:
- * pending -> success (when cross-chain operation completes successfully)
- * pending -> failed (when operation fails or times out)
- *
- * Terminal states: success and timeout never transition to other states.
- *
- * A PendingTx is a PublishedTx (published by ymax contract) with an additional
- * txId property used by the resolver to track and manage pending transactions.
- */
-export type PendingTx = {
-  txId: TxId;
-} & PublishedTx;
 
 type CctpTx = PendingTx & { type: typeof TxType.CCTP_TO_EVM; amount: bigint };
 type GmpTx = PendingTx & { type: typeof TxType.GMP };
@@ -86,13 +72,12 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       parseAccountId(destinationAddress);
     const caipId: CaipChainId = `${namespace}:${reference}`;
 
-    caipId in ctx.usdcAddresses ||
-      Fail`${logPrefix} Unsupported chain: ${caipId}`;
-    caipId in ctx.evmProviders ||
+    const usdcAddress =
+      ctx.usdcAddresses[caipId] ||
+      Fail`${logPrefix} No USDC address for chain: ${caipId}`;
+    const provider =
+      ctx.evmProviders[caipId] ||
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
-
-    const usdcAddress = ctx.usdcAddresses[caipId];
-    const provider = ctx.evmProviders[caipId] as JsonRpcProvider;
 
     const transferStatus = await watchCctpTransfer({
       usdcAddress,
@@ -197,13 +182,13 @@ type HandlePendingTxOptions = {
 };
 
 export const handlePendingTx = async (
-  ctx: EvmContext,
   tx: PendingTx,
   {
     log = () => {},
     registry = createMonitorRegistry(),
     timeoutMs = 300000, // 5 min
-  }: HandlePendingTxOptions,
+    ...evmCtx
+  }: EvmContext & HandlePendingTxOptions,
 ) => {
   await null;
   const logPrefix = `[${tx.txId}]`;
@@ -212,5 +197,5 @@ export const handlePendingTx = async (
   const monitor = registry[tx.type] as PendingTxMonitor<PendingTx, EvmContext>;
   monitor || Fail`${logPrefix} No monitor registered for tx type: ${tx.type}`;
 
-  await monitor.watch(ctx, tx, log, timeoutMs);
+  await monitor.watch(evmCtx, tx, log, timeoutMs);
 };

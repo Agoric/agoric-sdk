@@ -48,6 +48,12 @@ export type PublishedTx = {
   status: TxStatus;
 };
 
+/**
+ * A PendingTx is a PublishedTx (published by ymax contract) with an additional
+ * txId property used by the resolver to track and manage pending transactions.
+ */
+export type PendingTx = { txId: TxId } & PublishedTx;
+
 export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
   // CCTP_TO_EVM and CCTP_TO_NOBLE require amount
   M.splitRecord(

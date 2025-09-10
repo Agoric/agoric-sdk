@@ -3,7 +3,8 @@
 // We need some pre-lockdown shimming.
 import '@endo/init/pre-remoting.js';
 import './shims.cjs';
-import '@endo/lockdown/commit.js';
+// import '@endo/lockdown/commit-debug.js';
+import './lockdown.js';
 
 // ...but the WebSocket shim must be loaded *after* lockdown, seemingly because
 // of a dependency upon EventEmitter that is otherwise broken:
