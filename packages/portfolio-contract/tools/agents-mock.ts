@@ -24,13 +24,13 @@ export const plannerClientMock = (
   };
 
   const invokeP = E(wallet).getInvokeFacet();
-  const submit1 = async () => {
+  const submit1 = async (policyVersion: number) => {
     const portfolioId = 0;
     const plan: MovementDesc[] = [];
     await E(invokeP).invokeEntry({
       targetName: 'planner',
       method: 'submit',
-      args: [portfolioId, plan],
+      args: [portfolioId, plan, policyVersion],
     });
   };
   console.log('TODO: wait for invoke result');
