@@ -40,7 +40,11 @@ export const preparePlanner = (
 ) => {
   const { movementDescShape } = shapes;
   const PlannerI = M.interface('Planner', {
-    submit: M.call(M.number(), M.arrayOf(movementDescShape)).returns(VowShape),
+    submit: M.call(
+      M.number(),
+      M.arrayOf(movementDescShape),
+      M.number(),
+    ).returns(VowShape),
   });
 
   return zone.exoClass('Planner', PlannerI, () => ({}), {
@@ -52,13 +56,20 @@ export const preparePlanner = (
      *
      * @param portfolioId - Target portfolio identifier
      * @param plan - Array of asset movements to execute
+     * @param policyVersion - on which plan is based
      * @returns {Vow<void>} that resolves when all movements complete
-     * @throws If portfolio not found. Rejects if plan validation or execution fails
+     * @throws If portfolio not found or policyVersion is not current.
+     *   Rejects if plan validation or execution fails
      */
-    submit(portfolioId: number, plan: MovementDesc[]): Vow<void> {
+    submit(
+      portfolioId: number,
+      plan: MovementDesc[],
+      policyVersion: number,
+    ): Vow<void> {
       trace('TODO: vet plan', { portfolioId, plan });
       const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
       const pKit = getPortfolio(portfolioId);
+      pKit.manager.ackPolicyVersion(policyVersion);
       return rebalance(emptySeat, { flow: plan }, pKit);
     },
   });

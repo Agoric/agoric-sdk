@@ -274,6 +274,10 @@ export type StatusFor = {
     accountsPending?: SupportedChain[];
     depositAddress?: Bech32Address;
     targetAllocation?: TargetAllocation;
+    /** incremented by the contract every time the user sends a transaction that the planner should respond to */
+    policyVersion: number;
+    /** updated by the contract when accepting transactions from the planner */
+    policyVersionAck: number;
   };
   position: {
     protocol: YieldProtocol;
@@ -295,6 +299,8 @@ export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
         ChainNameExtShape,
         M.string(), // XXX no runtime validation of AccountId
       ),
+      policyVersion: M.number(),
+      policyVersionAck: M.number(),
     },
     {
       depositAddress: M.string(), // XXX no runtime validation of Bech32Address

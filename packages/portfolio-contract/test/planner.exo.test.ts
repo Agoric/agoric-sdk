@@ -8,6 +8,12 @@ import {
   makeOfferArgsShapes,
   type MovementDesc,
 } from '../src/type-guards-steps.ts';
+import { prepareVowTools } from '@agoric/vow';
+import type { ZCF } from '@agoric/zoe';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { preparePortfolioKit } from '../src/portfolio.exo.ts';
 import { preparePlanner } from '../src/planner.exo.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
@@ -17,8 +23,8 @@ test('planner exo submit method', async t => {
 
   const vt = prepareVowTools(zone);
   // Mock dependencies with minimal implementation
-  const mockRebalance = (seat, offerArgs, kit) => {
-    t.log('rebalance called with', { seat, offerArgs, kit });
+  const mockRebalance = (_seat, offerArgs, _kit) => {
+    t.log('rebalance called with', offerArgs);
     return vt.asVow(() => undefined);
   };
 
@@ -28,26 +34,73 @@ test('planner exo submit method', async t => {
     }),
   } as ZCF;
 
-  const mockGetPortfolio = _id => null as any;
+  const board = makeFakeBoard();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const readPublished = async path => {
+    await eventLoopIteration();
+    return marshaller.fromCapData(
+      JSON.parse(storage.getValues(`published.${path}`).at(-1) || ''),
+    );
+  };
+  const marshaller = board.getReadonlyMarshaller();
+  const makePortfolio = preparePortfolioKit(zone, {
+    usdcBrand: USDC,
+    marshaller,
+    portfoliosNode: storage.rootNode.makeChildNode('portfolios'),
+    ...({} as any),
+  });
+  const aPortfolio = makePortfolio({ portfolioId: 1 });
+  const mockGetPortfolio = _id => aPortfolio;
 
-  const shapes = makeOfferArgsShapes(USDC);
   // Create planner exo
   const makePlanner = preparePlanner(zone, {
     rebalance: mockRebalance,
     zcf: mockZcf,
     getPortfolio: mockGetPortfolio,
-    shapes,
+    shapes: makeOfferArgsShapes(USDC),
   });
 
   const planner = makePlanner();
 
   // Test submit method
+  aPortfolio.manager.setTargetAllocation({ USDN: 100n });
+
+  {
+    const { policyVersion, policyVersionAck } = await readPublished(
+      'portfolios.portfolio1',
+    );
+    t.log('targetAllocation', aPortfolio.reader.getTargetAllocation(), {
+      policyVersion,
+      policyVersionAck,
+    });
+    t.deepEqual(
+      { policyVersion, policyVersionAck },
+      { policyVersion: 1, policyVersionAck: 0 },
+    );
+  }
+
   const portfolioId = 0;
+  const amount = { brand: USDC, value: 100n };
   const plan: MovementDesc[] = [
-    { src: '<Deposit>', dest: '@agoric', amount: { brand: USDC, value: 100n } },
+    { src: '+agoric', dest: '@agoric', amount },
+    { src: '@agoric', dest: '@noble', amount },
+    { src: '@noble', dest: 'USDN', amount },
   ];
 
-  const result = await vt.when(planner.submit(portfolioId, plan));
+  t.throws(() => planner.submit(portfolioId, plan, 0), {
+    message: /expected policyVersion 1; got 0/,
+  });
 
-  t.is(result, undefined);
+  await vt.when(planner.submit(portfolioId, plan, 1));
+
+  {
+    const { policyVersion, policyVersionAck } = await readPublished(
+      'portfolios.portfolio1',
+    );
+    t.log({ policyVersion, policyVersionAck });
+    t.deepEqual(
+      { policyVersion, policyVersionAck },
+      { policyVersion: 1, policyVersionAck: 1 },
+    );
+  }
 });

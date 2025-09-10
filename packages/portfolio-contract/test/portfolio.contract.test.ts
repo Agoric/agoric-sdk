@@ -955,7 +955,7 @@ test('redeem planner invitation', async t => {
 
   await trader1.openPortfolio(t, {}, {});
 
-  await planner1.submit1();
+  await planner1.submit1(0);
 });
 
 test('address of LCA for fees is published', async t => {
