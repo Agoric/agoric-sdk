@@ -9,12 +9,15 @@ import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import { Fail, q } from '@endo/errors';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
+import { planDepositTransfers } from '@aglocal/portfolio-contract/src/plan-transfers.ts';
+import { PROD_NETWORK } from '@aglocal/portfolio-contract/src/network/network.prod.js';
+import { makeGraphFromDefinition } from '@aglocal/portfolio-contract/src/network/buildGraph.js';
 import {
-  planDepositTransfers,
-  planTransfer,
-} from '@aglocal/portfolio-contract/src/plan-transfers.ts';
-import type { CosmosRestClient } from './cosmos-rest-client.js';
+  findPath,
+  pathToSteps,
+} from '@aglocal/portfolio-contract/src/network/path.js';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
+import type { CosmosRestClient } from './cosmos-rest-client.js';
 
 const getOwn = <O, K extends PropertyKey>(
   obj: O,
@@ -96,14 +99,33 @@ export const handleDeposit = async (
   if (errors.length) {
     throw AggregateError(errors, 'Could not get balances');
   }
-  const balances = Object.fromEntries(balanceEntries);
-  const transfers = planDepositTransfers(amount, balances, targetAllocation);
-  const steps = [
+  const currentBalances = Object.fromEntries(balanceEntries);
+  const txfrs = planDepositTransfers(amount, currentBalances, targetAllocation);
+  // Build graph for routing
+  const graph = makeGraphFromDefinition(
+    PROD_NETWORK,
+    { '<Deposit>': amount, ...currentBalances } as any,
+    {
+      '<Deposit>': AmountMath.make(amount.brand, 0n),
+      ...currentBalances,
+    } as any,
+    amount.brand,
+  );
+  const base: any[] = [
     { src: '+agoric', dest: '@agoric', amount },
     { src: '@agoric', dest: '@noble', amount },
-    ...Object.entries(transfers).flatMap(([dest, amt]) =>
-      planTransfer(dest as PoolKey, amt, feeBrand),
-    ),
+    { src: '<Deposit>', dest: '@agoric', amount },
   ];
-  return steps;
+  const routed = Object.entries(txfrs).flatMap(([dest, amt]) => {
+    const leaf = dest as PoolKey;
+    // path from @noble (after ingress) to final pool leaf
+    const poolPlace = leaf as any;
+    try {
+      const path = findPath(graph, '@noble' as any, poolPlace, 'cheapest');
+      return pathToSteps(path.slice(0), amt, amount.brand);
+    } catch {
+      return [];
+    }
+  });
+  return [...base, ...routed];
 };

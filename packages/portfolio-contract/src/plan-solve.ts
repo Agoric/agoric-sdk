@@ -10,6 +10,8 @@ import type {
 import { Fail } from '@endo/errors';
 import jsLPSolver from 'javascript-lp-solver';
 import { makeTracer } from '@agoric/internal';
+import type { NetworkDefinition } from './network/types.js';
+import { makeGraphFromDefinition } from './network/buildGraph.js';
 
 const trace = makeTracer('solve');
 
@@ -421,39 +423,21 @@ export const rebalanceMinCostFlowSteps = (
 // --------------------------- Convenience End-to-End ---------------------------
 
 /**
- * Full pipeline:
- * 1. buildBaseGraph
- * 2. add inter-chain links (caller)
- * 3. buildModel
- * 4. solveRebalance
- * 5. rebalanceMinCostFlowSteps
+ * Full pipeline (network required):
+ * 1. build graph from NetworkDefinition
+ * 2. buildModel
+ * 3. solveRebalance
+ * 4. rebalanceMinCostFlowSteps
  */
 export const planRebalanceFlow = async (opts: {
-  assetRefs: AssetPlaceRef[];
+  network: NetworkDefinition;
   current: Partial<Record<AssetPlaceRef, NatAmount>>;
   target: Partial<Record<AssetPlaceRef, NatAmount>>;
   brand: Amount['brand'];
-  links?: InterchainLinkSpec[];
   mode?: RebalanceMode;
-  scale?: number; // ignored (legacy)
 }) => {
-  const {
-    assetRefs,
-    current,
-    target,
-    brand,
-    links = [],
-    mode = 'fastest',
-  } = opts;
-
-  const graph = buildBaseGraph(assetRefs, current, target, brand, 1);
-  // Ensure hubs referenced only in links (e.g. noble) are present before adding edges
-  for (const { srcChain, destChain } of links) {
-    graph.nodes.add(`@${srcChain}` as AssetPlaceRef);
-    graph.nodes.add(`@${destChain}` as AssetPlaceRef);
-  }
-  for (const l of links) addInterchainLink(graph, l);
-
+  const { network, current, target, brand, mode = 'fastest' } = opts;
+  const graph = makeGraphFromDefinition(network, current, target, brand);
   const model = buildModel(graph, mode);
   const flows = await solveRebalance(model, graph);
   const steps = rebalanceMinCostFlowSteps(flows, graph);
