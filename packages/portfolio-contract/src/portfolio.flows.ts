@@ -767,11 +767,6 @@ export const openPortfolio = (async (
     const kit = makePortfolioKit();
     await provideCosmosAccount(orch, 'agoric', kit, trace);
 
-    // Set target allocation if provided
-    if (offerArgs.targetAllocation) {
-      kit.manager.setTargetAllocation(offerArgs.targetAllocation);
-    }
-
     if (!seat.hasExited()) {
       try {
         await rebalance(orch, ctxI, seat, offerArgs, kit);
