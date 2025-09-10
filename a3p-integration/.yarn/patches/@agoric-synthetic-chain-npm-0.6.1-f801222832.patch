@@ -1,0 +1,51 @@
+diff --git a/dist/upgrade-test-scripts/env_setup.sh b/dist/upgrade-test-scripts/env_setup.sh
+index 8e6a82c517c4842aff34e49bb3078aacb3cefe17..98c9ba98715ddc5c01b6ed3bc0af5e10f46f0725 100755
+--- a/dist/upgrade-test-scripts/env_setup.sh
++++ b/dist/upgrade-test-scripts/env_setup.sh
+@@ -217,12 +217,16 @@ export SIGN_BROADCAST_OPTS="--keyring-backend=test --chain-id=$CHAINID \
+ 
+ voteLatestProposalAndWait() {
+   waitForBlock
+-  proposal=$($binary q gov proposals -o json | jq -r '.proposals | last | if .proposal_id == null then .id else .proposal_id end')
+-  echo "voteLatestProposalAndWait latest proposal $proposal"
+-  waitForBlock
+-  # shellcheck disable=SC2086
+-  $binary tx gov deposit "$proposal" 50000000ubld $SIGN_BROADCAST_OPTS
++  json=$($binary q gov proposals -o json | jq -r '.proposals | last')
++  proposal=$(echo "$json" | jq -r '.id // .proposal_id')
++  status=$(echo "$json" | jq -r '.proposal.status // .status')
++  echo "voteLatestProposalAndWait latest proposal $proposal (status=$status)"
+   waitForBlock
++  if [ "$status" = "PROPOSAL_STATUS_DEPOSIT_PERIOD" ]; then
++    # shellcheck disable=SC2086
++    $binary tx gov deposit "$proposal" 50000000ubld $SIGN_BROADCAST_OPTS
++    waitForBlock
++  fi
+   # shellcheck disable=SC2086
+   $binary tx gov vote "$proposal" yes $SIGN_BROADCAST_OPTS
+   waitForBlock
+diff --git a/dist/upgrade-test-scripts/run_prepare.sh b/dist/upgrade-test-scripts/run_prepare.sh
+index 1307294485f8e84d803e7907e6591dcee00d79c6..850dc125f55e63a0cef20caae94c1edc2bc6a4de 100755
+--- a/dist/upgrade-test-scripts/run_prepare.sh
++++ b/dist/upgrade-test-scripts/run_prepare.sh
+@@ -58,10 +58,18 @@ validate_flag=""
+ if [ "$SKIP_PROPOSAL_VALIDATION" = "true" ]; then
+   validate_flag="--no-validate"
+ fi
++if agd tx upgrade | grep -q software-upgrade; then
++  module="upgrade"
++  summary="summary"
++else
++  module="gov submit-proposal"
++  summary="description"
++fi
+ # shellcheck disable=SC2086
+-agd tx gov submit-proposal software-upgrade "$UPGRADE_TO" \
++agd tx $module software-upgrade "$UPGRADE_TO" \
+   --upgrade-height="$height" --upgrade-info="$info" $validate_flag \
+-  --title="Upgrade to ${UPGRADE_TO}" --description="upgrades" \
++  --title="Upgrade to ${UPGRADE_TO}" --$summary="upgrades" \
++  --deposit 50000000ubld \
+   ${SIGN_BROADCAST_OPTS="--missing-env-setup"}
+ waitForBlock
+ 

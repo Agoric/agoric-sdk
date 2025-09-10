@@ -18,11 +18,10 @@ import (
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
-	ibctmmigrations "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint/migrations"
 )
 
 var upgradeNamesOfThisVersion = []string{
-	"agoric-upgrade-22",
+	"agoric-upgrade-22a",
 }
 
 // isUpgradeNameOfThisVersion returns whether the provided plan name is a
@@ -56,7 +55,7 @@ func isPrimaryUpgradeName(name string) bool {
 		return false
 	}
 	switch name {
-	case validUpgradeName("agoric-upgrade-22"):
+	case validUpgradeName("agoric-upgrade-22a"):
 		return true
 	default:
 		panic(fmt.Errorf("unexpected upgrade name %s", validUpgradeName(name)))
@@ -168,13 +167,13 @@ func (app *GaiaApp) RegisterUpgradeHandlers() {
 	for _, name := range upgradeNamesOfThisVersion {
 		app.UpgradeKeeper.SetUpgradeHandler(
 			name,
-			upgrade22Handler(app, name),
+			upgrade22aHandler(app, name),
 		)
 	}
 }
 
-// upgrade22Handler performs standard upgrade actions plus custom actions for upgrade-22.
-func upgrade22Handler(app *GaiaApp, targetUpgrade string) upgradetypes.UpgradeHandler {
+// upgrade22aHandler performs standard upgrade actions plus custom actions for upgrade-22.
+func upgrade22aHandler(app *GaiaApp, targetUpgrade string) upgradetypes.UpgradeHandler {
 	_ = targetUpgrade
 	return func(goCtx context.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		ctx := sdk.UnwrapSDKContext(goCtx)
@@ -192,16 +191,10 @@ func upgrade22Handler(app *GaiaApp, targetUpgrade string) upgradetypes.UpgradeHa
 				return module.VersionMap{}, fmt.Errorf("cannot run %s as first upgrade", plan.Name)
 			}
 
-			// prune expired tendermint consensus states to save storage space.
-			_, err := ibctmmigrations.PruneExpiredConsensusStates(ctx, app.AppCodec(), app.IBCKeeper.ClientKeeper)
-			if err != nil {
-				return nil, err
-			}
-
 			// terminationTargets is a slice of "$boardID:$instanceKitLabel" strings.
 			var terminationTargets []string
 			switch ctx.ChainID() {
-			case "agoric-3": // MAINNET
+			case "agoric-mainfork-1", "agoric-3": // MAINNET
 				terminationTargets = []string{
 					// v29 "zcf-b1-4522b-ATOM-USD_price_feed"
 					"board02963:ATOM-USD_price_feed",

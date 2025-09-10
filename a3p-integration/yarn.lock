@@ -317,7 +317,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/synthetic-chain@npm:^0.6.1":
+"@agoric/synthetic-chain@npm:0.6.1":
   version: 0.6.1
   resolution: "@agoric/synthetic-chain@npm:0.6.1"
   dependencies:
@@ -332,6 +332,24 @@ __metadata:
   bin:
     synthetic-chain: dist/cli/cli.js
   checksum: 10c0/a53b0b96a43429f9633642e9c51401e08f027afa83fa5735a6100ff8c0ef1a355d19bab289fd7e4fa23f7fdff37ac3d5ca264d814ed7b3d3c1f99394681fafce
+  languageName: node
+  linkType: hard
+
+"@agoric/synthetic-chain@patch:@agoric/synthetic-chain@npm%3A0.6.1#~/.yarn/patches/@agoric-synthetic-chain-npm-0.6.1-f801222832.patch":
+  version: 0.6.1
+  resolution: "@agoric/synthetic-chain@patch:@agoric/synthetic-chain@npm%3A0.6.1#~/.yarn/patches/@agoric-synthetic-chain-npm-0.6.1-f801222832.patch::version=0.6.1&hash=13bf9b"
+  dependencies:
+    "@agoric/client-utils": "npm:0.1.1-dev-f9483e7.0"
+    "@endo/zip": "npm:^1.0.9"
+    better-sqlite3: "npm:^11.10.0"
+    chalk: "npm:^5.4.1"
+    cosmjs-types: "npm:^0.9.0"
+    execa: "npm:^9.5.3"
+    glob: "npm:^11.0.2"
+    tmp: "npm:0.2.3"
+  bin:
+    synthetic-chain: dist/cli/cli.js
+  checksum: 10c0/6b7103ef12fb15dc53000e1865941390eafb9e24d9f9be1adb050631d686a8507c43d009f5449249b4c734b7fe7dbe592bcf49e0eec3b0991aa1c508ad106e97
   languageName: node
   linkType: hard
 
@@ -4013,7 +4031,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@agoric/synthetic-chain": "npm:^0.6.1"
+    "@agoric/synthetic-chain": "patch:@agoric/synthetic-chain@npm%3A0.6.1#~/.yarn/patches/@agoric-synthetic-chain-npm-0.6.1-f801222832.patch"
     eslint: "npm:^8.57.1"
     npm-run-all: "npm:^4.1.5"
   languageName: unknown
