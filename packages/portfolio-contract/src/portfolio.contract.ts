@@ -214,7 +214,6 @@ export const contract = async (
     assetInfo,
     axelarIds,
     contracts,
-    timerService,
     marshaller,
     storageNode,
     gmpAddresses,
@@ -311,7 +310,6 @@ export const contract = async (
     parseInboundTransfer,
     proposalShapes,
     offerArgsShapes,
-    timer: timerService,
     chainHubTools: {
       getChainInfo: chainHub.getChainInfo.bind(chainHub),
       getChainsAndConnection: chainHub.getChainsAndConnection.bind(chainHub),
