@@ -199,17 +199,21 @@ func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInsta
 	}
 
 	// Mark all the chunks as in-flight.
-	bc := *msg.ChunkedArtifact
-	bc.Chunks = make([]*types.ChunkInfo, len(bc.Chunks))
-	for i, chunk := range bc.Chunks {
+	ca := *msg.ChunkedArtifact
+	chunks := make([]*types.ChunkInfo, len(ca.Chunks))
+	for i, chunk := range ca.Chunks {
+		if chunk == nil {
+			return nil, fmt.Errorf("chunk %d is nil", i)
+		}
 		ci := *chunk
 		if ci.State != types.ChunkState_CHUNK_STATE_UNSPECIFIED {
 			return nil, fmt.Errorf("chunk %d state is not unspecified", i)
 		}
 		ci.State = types.ChunkState_CHUNK_STATE_IN_FLIGHT
-		bc.Chunks[i] = &ci
+		chunks[i] = &ci
 	}
-	msg.ChunkedArtifact = &bc
+	ca.Chunks = chunks
+	msg.ChunkedArtifact = &ca
 
 	chunkedArtifactId := keeper.AddPendingBundleInstall(ctx, msg)
 	return &types.MsgInstallBundleResponse{ChunkedArtifactId: chunkedArtifactId}, nil
@@ -243,31 +247,34 @@ func (keeper msgServer) SendChunk(goCtx context.Context, msg *types.MsgSendChunk
 		return nil, fmt.Errorf("no upload in progress for chunked artifact identifier %d", msg.ChunkedArtifactId)
 	}
 
-	bc := inst.ChunkedArtifact
+	ca := inst.ChunkedArtifact
 
-	if msg.ChunkIndex < 0 || msg.ChunkIndex >= uint64(len(bc.Chunks)) {
+	if msg.ChunkIndex < 0 || msg.ChunkIndex >= uint64(len(ca.Chunks)) {
 		return nil, fmt.Errorf("chunk index %d out of range for chunked artifact identifier %d", msg.ChunkIndex, msg.ChunkedArtifactId)
 	}
 
-	if bc.Chunks[msg.ChunkIndex].State != types.ChunkState_CHUNK_STATE_IN_FLIGHT {
+	if ca.Chunks[msg.ChunkIndex].State != types.ChunkState_CHUNK_STATE_IN_FLIGHT {
 		return nil, fmt.Errorf("chunk %d is not in flight for chunked artifact id %d", msg.ChunkIndex, msg.ChunkedArtifactId)
 	}
 
 	// Verify the chunk data.
-	ci := bc.Chunks[msg.ChunkIndex]
+	ci := ca.Chunks[msg.ChunkIndex]
 	if ci.SizeBytes != uint64(len(msg.ChunkData)) {
 		return nil, fmt.Errorf("chunk %d size mismatch for chunked artifact id %d", msg.ChunkIndex, msg.ChunkedArtifactId)
 	}
 
-	sha512Hash, err := hex.DecodeString(ci.Sha512)
+	expectedSha512, err := hex.DecodeString(ci.Sha512)
 	if err != nil {
 		return nil, fmt.Errorf("chunk %d cannot decode hash %s: %s", msg.ChunkIndex, ci.Sha512, err)
 	}
 
-	hasher := sha512.New()
-	sum := hasher.Sum(msg.ChunkData)
-	if !bytes.Equal(sum, sha512Hash) {
-		return nil, fmt.Errorf("chunk %d hash mismatch; expected %x, got %x", msg.ChunkIndex, sha512Hash, sum)
+	actualSha512 := sha512.Sum512(msg.ChunkData)
+	// TODO Remove debug case
+	if len(actualSha512) != len(expectedSha512) {
+		return nil, fmt.Errorf("chunk %d hash length mismatch; expected %d, got %d", msg.ChunkIndex, len(expectedSha512), len(actualSha512))
+	}
+	if !bytes.Equal(actualSha512[:], expectedSha512) {
+		return nil, fmt.Errorf("chunk %d hash mismatch; expected %x, got %x", msg.ChunkIndex, expectedSha512, actualSha512)
 	}
 
 	// Data is valid, so store it.
@@ -295,9 +302,9 @@ func (keeper msgServer) MaybeFinalizeBundle(ctx sdk.Context, chunkedArtifactId u
 	}
 
 	// If any chunks are not received, then bail (without error).
-	bc := msg.ChunkedArtifact
+	ca := msg.ChunkedArtifact
 	var totalSize uint64
-	for _, chunk := range bc.Chunks {
+	for _, chunk := range ca.Chunks {
 		if chunk.State != types.ChunkState_CHUNK_STATE_RECEIVED {
 			return nil
 		}
@@ -305,20 +312,19 @@ func (keeper msgServer) MaybeFinalizeBundle(ctx sdk.Context, chunkedArtifactId u
 	}
 
 	chunkData := make([]byte, 0, totalSize)
-	for i := range bc.Chunks {
+	for i := range ca.Chunks {
 		bz := keeper.GetPendingChunkData(ctx, chunkedArtifactId, uint64(i))
 		chunkData = append(chunkData, bz...)
 	}
 
 	// Verify the hash of the concatenated chunks.
-	hasher := sha512.New()
-	sum := hasher.Sum(chunkData)
-	sha512Hash, err := hex.DecodeString(bc.Sha512)
+	actualSha512 := sha512.Sum512(chunkData)
+	expectedSha512, err := hex.DecodeString(ca.Sha512)
 	if err != nil {
-		return fmt.Errorf("cannot decode hash %s: %s", bc.Sha512, err)
+		return fmt.Errorf("cannot decode hash %s: %s", ca.Sha512, err)
 	}
-	if !bytes.Equal(sum, sha512Hash) {
-		return fmt.Errorf("bundle hash mismatch; expected %x, got %x", sha512Hash, sum)
+	if !bytes.Equal(expectedSha512, actualSha512[:]) {
+		return fmt.Errorf("bundle hash mismatch; expected %x, got %x", expectedSha512, actualSha512)
 	}
 
 	// Is it compressed or not?

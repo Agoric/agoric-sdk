@@ -526,23 +526,23 @@ func (bc ChunkedArtifact) ValidateBasic() error {
 	if uint64(len(bc.Chunks)) >= ChunkIndexLimit {
 		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Number of bundle chunks must be less than %d", ChunkIndexLimit)
 	}
-	if len(bc.Sha512) != sha512.Size {
-		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Bundle hash must be %d characters", sha512.Size)
+	if len(bc.Sha512) != sha512.Size*2 {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Bundle hash must be %d characters", sha512.Size*2)
 	}
 	if !IsHexBytes(bc.Sha512) {
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Bundle hash must be a hex byte string")
 	}
-	if bc.SizeBytes <= 0 || bc.SizeBytes >= BundleUncompressedSizeLimit {
+	if bc.SizeBytes == 0 || bc.SizeBytes >= BundleUncompressedSizeLimit {
 		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Bundle size out of range")
 	}
 	var totalSize uint64
 	for i, chunk := range bc.Chunks {
-		if chunk.SizeBytes <= 0 || chunk.SizeBytes >= ChunkSizeLimit {
+		if chunk.SizeBytes == 0 || chunk.SizeBytes > ChunkSizeLimit {
 			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d size out of range", i)
 		}
 		totalSize += chunk.SizeBytes
-		if len(chunk.Sha512) != sha512.Size {
-			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d hash must be %d characters", i, sha512.Size)
+		if len(chunk.Sha512) != sha512.Size*2 {
+			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d hash must be %d characters", i, sha512.Size*2)
 		}
 		if !IsHexBytes(chunk.Sha512) {
 			return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk %d hash must be a hex byte string", i)
@@ -601,7 +601,7 @@ func (msg MsgSendChunk) Type() string { return "SendChunk" }
 
 // ValidateBasic runs stateless checks on the message
 func (msg MsgSendChunk) ValidateBasic() error {
-	if msg.ChunkedArtifactId <= 0 {
+	if msg.ChunkedArtifactId == 0 {
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Chunked artifact id must be positive")
 	}
 	if msg.Submitter.Empty() {
@@ -610,8 +610,8 @@ func (msg MsgSendChunk) ValidateBasic() error {
 	if len(msg.ChunkData) == 0 {
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Chunk data cannot be empty")
 	}
-	if uint64(len(msg.ChunkData)) >= ChunkSizeLimit {
-		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk size must be less than than %d", ChunkSizeLimit)
+	if uint64(len(msg.ChunkData)) > ChunkSizeLimit {
+		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk size must be at most %d", ChunkSizeLimit)
 	}
 	if msg.ChunkIndex >= ChunkIndexLimit {
 		return sdkioerrors.Wrapf(sdkerrors.ErrUnknownRequest, "Chunk index must be less than %d", ChunkIndexLimit)
