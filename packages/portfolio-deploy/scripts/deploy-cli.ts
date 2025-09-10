@@ -34,12 +34,17 @@ type ParsedArgs = {
   description?: string;
 };
 
+const inheritSterr = opts => ({
+  ...opts,
+  stdio: [...opts.stdio.slice(0, 2), 'inherit'],
+});
+
 const main = async (
   argv = process.argv,
   {
     fetch = globalThis.fetch,
     execFile = (cmd, args, opts) =>
-      execa({ verbose: 'short' })(cmd, args, opts),
+      execa({ verbose: 'short' })(cmd, args, inheritSterr(opts)),
   } = {},
 ) => {
   const getVersion = () =>
