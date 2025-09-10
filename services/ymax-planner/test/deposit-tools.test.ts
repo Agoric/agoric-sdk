@@ -14,7 +14,7 @@ import { SpectrumClient } from '../src/spectrum-client.ts';
 const depositBrand = Far('mock brand') as Brand<'nat'>;
 const makeDeposit = value => AmountMath.make(depositBrand, value);
 
-const feeBrand = Far('fee brand') as Brand<'nat'>;
+const feeBrand = Far('fee brand (BLD)') as Brand<'nat'>;
 
 const powers = { fetch, setTimeout };
 
