@@ -139,7 +139,7 @@ const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, EvmContext> = {
 
     namespace === 'cosmos' ||
       Fail`${logPrefix} Expected cosmos chain, got: ${namespace}`;
-    reference === 'noble' ||
+    reference === 'noble-1' || reference === 'grand-1' ||
       Fail`${logPrefix} Expected noble chain, got: ${reference}`;
 
     const nobleAddress = accountAddress as Bech32Address;
