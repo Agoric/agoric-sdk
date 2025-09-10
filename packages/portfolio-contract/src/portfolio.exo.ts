@@ -151,7 +151,6 @@ export const preparePortfolioKit = (
     gmpAddresses,
     rebalance,
     parseInboundTransfer,
-    timer,
     chainHubTools,
     proposalShapes,
     offerArgsShapes,
@@ -172,7 +171,6 @@ export const preparePortfolioKit = (
       packet: VTransferIBCEvent['packet'],
       kit: unknown, // XXX avoid circular reference to this.facets
     ) => Vow<Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>>;
-    timer: Remote<TimerService>;
     chainHubTools: Pick<ChainHub, 'getChainInfo' | 'getChainsAndConnection'>;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>;
@@ -503,10 +501,6 @@ export const preparePortfolioKit = (
           position.publishStatus();
           this.facets.reporter.publishStatus();
           return position;
-        },
-        /** KLUDGE around lack of synchronization signals for now. TODO: rethink design. */
-        waitKLUDGE(val: bigint) {
-          return vowTools.watch(E(timer).delay(val));
         },
         setTargetAllocation(allocation: TargetAllocation) {
           this.state.targetAllocation = allocation;
