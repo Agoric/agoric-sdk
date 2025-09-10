@@ -473,8 +473,10 @@ test('Noble Dollar Swap, Lock messages', t => {
   }
 });
 
-test('makePortfolioSteps for USDN position', t => {
-  const actual = makePortfolioSteps({ USDN: make(USDC, 50n * 1_000_000n) });
+test('makePortfolioSteps for USDN position', async t => {
+  const actual = await makePortfolioSteps({
+    USDN: make(USDC, 50n * 1_000_000n),
+  });
 
   const amount = make(USDC, 50n * 1_000_000n);
   const detail = { usdnOut: 49500000n };
@@ -1015,7 +1017,7 @@ test('handle failure in provideCosmosAccount makeAccount', async t => {
   const amount = make(USDC, 100n);
   const chainToErr = new Map([['noble', Error('timeout creating ICA')]]);
 
-  const { give, steps } = makePortfolioSteps({ USDN: amount });
+  const { give, steps } = await makePortfolioSteps({ USDN: amount });
   const { orch, ctx, offer, storage } = mocks(
     { makeAccount: chainToErr },
     give,
@@ -1080,7 +1082,7 @@ test('handle failure in provideCosmosAccount makeAccount', async t => {
 
 test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
   const unlucky = make(BLD, 13n);
-  const { give, steps } = makePortfolioSteps(
+  const { give, steps } = await makePortfolioSteps(
     { Compound: make(USDC, 300n) },
     {
       fees: { Compound: { Account: unlucky, Call: make(BLD, 100n) } },
@@ -1137,7 +1139,7 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
   }
 
   // Recovery attempt - avoid the unlucky 13n fee using same portfolio
-  const { give: giveGood, steps: stepsGood } = makePortfolioSteps(
+  const { give: giveGood, steps: stepsGood } = await makePortfolioSteps(
     { Compound: make(USDC, 300n) },
     { fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } } },
   );
