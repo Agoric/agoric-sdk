@@ -35,7 +35,6 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools, type VowTools } from '@agoric/vow';
 import type { Proposal, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
-import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -273,7 +272,6 @@ const mocks = (
   const ymaxNode = storage.rootNode.makeChildNode('ymax0');
   const pendingTxsNode = ymaxNode.makeChildNode(PENDING_TXS_NODE_KEY);
   const portfoliosNode = ymaxNode.makeChildNode('portfolios');
-  const timer = buildZoeManualTimer();
 
   const denom = `ibc/${denomHash({ channelId: 'channel-123', denom: 'uusdc' })}`;
 
@@ -341,7 +339,6 @@ const mocks = (
     axelarIds: axelarIdsMock,
     gmpAddresses,
     vowTools,
-    timer,
     chainHubTools,
     rebalance: rebalanceHost as any,
     parseInboundTransfer: parseInboundTransferHost as any,
