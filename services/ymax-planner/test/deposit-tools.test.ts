@@ -164,7 +164,7 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
     cosmosRest: mockCosmosRestClient,
   });
 
-  t.is(result, undefined);
+  t.is(result, []);
 });
 
 test('handleDeposit handles different position types correctly', async t => {
