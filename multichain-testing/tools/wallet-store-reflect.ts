@@ -6,7 +6,7 @@ import type { EMethods } from '@agoric/vow/src/E.js';
 export const walletUpdates = (
   getLastUpdate: () => Promise<UpdateRecord>,
   retryOpts: RetryOptions & {
-    log: (...args: any[]) => void;
+    log: (...args: unknown[]) => void;
     setTimeout: typeof globalThis.setTimeout;
   },
 ) => {
@@ -49,7 +49,7 @@ export const walletUpdates = (
 export const reflectWalletStore = (
   sig: SigningSmartWalletKit,
   retryOpts: RetryOptions & {
-    log: (...args: any[]) => void;
+    log: (...args: unknown[]) => void;
     setTimeout: typeof globalThis.setTimeout;
     fresh: () => number | string;
   },
@@ -76,7 +76,7 @@ export const reflectWalletStore = (
         if (method === 'then') return undefined;
         const boundMethod = async (...args) => {
           const id = `${method}.${retryOpts.fresh()}`;
-          let tx = await sig.invokeEntry(
+          const tx = await sig.invokeEntry(
             logged('invoke', {
               id,
               targetName,
@@ -85,8 +85,9 @@ export const reflectWalletStore = (
               ...(saveResult ? { saveResult } : {}),
             }),
           );
-          if (tx.result.transaction.code !== 0)
+          if (tx.result.transaction.code !== 0) {
             throw Error(tx.result.transaction.rawLog);
+          }
           lastTx = tx.result.transaction;
           await up.invocation(id);
           return saveResult ? makeEntryProxy(saveResult.name) : undefined;
