@@ -445,7 +445,10 @@ export const pickBalance = (
 
 export const startEngine = async (
   { evmCtx, rpc, spectrum, cosmosRest, signingSmartWalletKit }: Powers,
-  { depositIbcDenom }: { depositIbcDenom: string },
+  {
+    depositBrandName,
+    feeBrandName,
+  }: { depositBrandName: string; feeBrandName: string },
 ) => {
   await null;
   const { query, marshaller } = signingSmartWalletKit;
@@ -554,17 +557,15 @@ export const startEngine = async (
     agoricInfo,
   );
 
-  const vbankAssets = new Map<string, AssetInfo>(
-    await query.readPublished('agoricNames.vbankAsset'),
-  );
-  const depositAsset = depositIbcDenom.startsWith('ibc/')
-    ? vbankAssets.get(depositIbcDenom)
-    : [...vbankAssets.values()].find(
-        assetInfo => assetInfo.issuerName === depositIbcDenom,
-      );
-  if (!depositAsset) {
-    throw Fail`Could not find vbankAsset for ${q(depositIbcDenom)}`;
-  }
+  const vbankAssets: AssetInfo[] = (
+    await query.readPublished('agoricNames.vbankAsset')
+  ).map(([_ibcDenom, asset]) => asset);
+  const depositAsset =
+    vbankAssets.find(asset => asset.issuerName === depositBrandName) ||
+    Fail`Could not find vbankAsset for ${q(depositBrandName)}`;
+  const feeAsset =
+    vbankAssets.find(asset => asset.issuerName === feeBrandName) ||
+    Fail`Could not find vbankAsset for ${q(feeBrandName)}`;
 
   const deferrals = [] as EventRecord[];
 
@@ -822,11 +823,10 @@ export const startEngine = async (
           // TODO: Switch to an API that exposes block height, so we can detect stale
           // data and push to `deferrals`.
           const steps = await handleDeposit(
-            amount,
             unprefixedPortfolioPath as any,
-            query.readPublished,
-            spectrum,
-            cosmosRest,
+            amount,
+            feeAsset.brand as Brand<'nat'>,
+            { readPublished: query.readPublished, spectrum, cosmosRest },
           );
 
           // TODO: consolidate with portfolioIdOfPath

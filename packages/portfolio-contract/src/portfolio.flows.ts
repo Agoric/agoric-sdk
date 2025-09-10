@@ -392,7 +392,7 @@ const stepFlow = async (
     const { axelarIds, gmpAddresses } = ctx;
     const gmp = {
       chain: axelar,
-      fee: move.fee?.value || 15_000_000n,
+      fee: move.fee?.value || 0n,
       axelarIds,
       evmGas: move.detail?.evmGas || 0n,
     };
