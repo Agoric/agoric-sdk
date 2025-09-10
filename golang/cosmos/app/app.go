@@ -976,9 +976,7 @@ func NewAgoricApp(
 	// another, which shouldn't re-run store upgrades.
 	if isPrimaryUpgradeName(upgradeInfo.Name) && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
-			Added: []string{
-				capabilitytypes.MemStoreKey,
-			},
+			Added:   []string{},
 			Deleted: []string{},
 		}
 
