@@ -10,6 +10,8 @@ import type {
 import { Fail } from '@endo/errors';
 import jsLPSolver from 'javascript-lp-solver';
 import { makeTracer } from '@agoric/internal';
+import type { NetworkDefinition } from './network/types.js';
+import { makeGraphFromDefinition } from './network/buildGraph.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const trace = makeTracer('solve');
@@ -443,39 +445,21 @@ export const rebalanceMinCostFlowSteps = (
 // -------------------------- Convenience End-to-End ---------------------------
 
 /**
- * Full pipeline:
- * 1. buildBaseGraph
- * 2. add inter-chain links (caller)
- * 3. buildModel
- * 4. solveRebalance
- * 5. rebalanceMinCostFlowSteps
+ * Full pipeline (network required):
+ * 1. build graph from NetworkDefinition
+ * 2. buildModel
+ * 3. solveRebalance
+ * 4. rebalanceMinCostFlowSteps
  */
 export const planRebalanceFlow = async (opts: {
-  placeRefs: AssetPlaceRef[];
+  network: NetworkDefinition;
   current: Partial<Record<AssetPlaceRef, NatAmount>>;
   target: Partial<Record<AssetPlaceRef, NatAmount>>;
   brand: Amount['brand'];
-  links?: InterchainLinkSpec[];
   mode?: RebalanceMode;
-  scale?: number; // ignored (legacy)
 }) => {
-  const {
-    placeRefs,
-    current,
-    target,
-    brand,
-    links = [],
-    mode = 'fastest',
-  } = opts;
-
-  const graph = buildBaseGraph(placeRefs, current, target, brand, 1);
-  // Ensure hubs referenced only in links (e.g. noble) are present before adding edges
-  for (const { srcChain, destChain } of links) {
-    graph.nodes.add(`@${srcChain}` as AssetPlaceRef);
-    graph.nodes.add(`@${destChain}` as AssetPlaceRef);
-  }
-  for (const l of links) addInterchainLink(graph, l);
-
+  const { network, current, target, brand, mode = 'fastest' } = opts;
+  const graph = makeGraphFromDefinition(network, current, target, brand);
   const model = buildModel(graph, mode);
   const flows = await solveRebalance(model, graph);
   const steps = rebalanceMinCostFlowSteps(flows, graph);
@@ -499,22 +483,21 @@ const isHub = (id: AssetPlaceRef): boolean => id.startsWith('@');
 /*
 Example usage:
 
-const { steps } = await planRebalanceFlow({
-  placeRefs: ['Aave_Arbitrum', 'Compound_Arbitrum', 'USDN', '<Deposit>', '@agoric'],
-  current: {
+const { steps } = await planRebalanceFlow(
+  {
+    nodes: ['Aave_Arbitrum', 'Compound_Arbitrum', 'USDN', '<Deposit>', '@agoric'],
+    edges,
+  },
+  {
     Aave_Arbitrum: AmountMath.make(brand, 1_000n),
     Compound_Arbitrum: AmountMath.make(brand, 100n),
   },
-  target: {
+  {
     Aave_Arbitrum: AmountMath.make(brand, 800n),
     Compound_Arbitrum: AmountMath.make(brand, 300n),
   },
   brand,
-  links: [
-    { srcChain: 'agoric', destChain: 'Arbitrum', variableFee: 5, timeFixed: 2 },
-    { srcChain: 'Arbitrum', destChain: 'agoric', variableFee: 5, timeFixed: 2 },
-  ],
-  mode: 'cheapest',
+  'cheapest',
 });
 
 console.log(steps);

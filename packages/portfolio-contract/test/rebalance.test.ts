@@ -3,7 +3,7 @@ import { AmountMath } from '@agoric/ertp';
 import type { Brand, Amount } from '@agoric/ertp/src/types.js';
 import { Far } from '@endo/marshal';
 import { planRebalanceFlow } from '../src/plan-solve.js';
-import type { AssetPlaceRef } from '../src/type-guards-steps.js';
+import { TEST_NETWORK } from './network/test-network.js';
 
 // Shared Tok brand + helper
 const { brand: TOK_BRAND } = (() => ({ brand: Far('Tok') as Brand<'nat'> }))();
@@ -97,9 +97,6 @@ const A = 'Aave_Arbitrum';
 const B = 'Beefy_re7_Avalanche';
 const C = 'Compound_Ethereum';
 
-// Common placeRefs now derived from MODEL definition (include pools, hubs, and local leaves)
-const ALL_REFS = MODEL.nodes as unknown as AssetPlaceRef[];
-
 // Helper to build current map (use shared token)
 const balances = (rec: Record<string, bigint>): Record<string, Amount<'nat'>> =>
   Object.fromEntries(Object.entries(rec).map(([k, v]) => [k, token(v)]));
@@ -148,7 +145,7 @@ test('solver simple 2-pool case (A -> B 30)', async t => {
   const current = balances({ [A]: 80n, [B]: 20n });
   const targetBps = { [A]: 5000n, [B]: 5000n };
   const { steps } = await planRebalanceFlow({
-    placeRefs: ALL_REFS,
+    network: TEST_NETWORK,
     current,
     target: Object.fromEntries(
       Object.entries(targetBps).map(([k, bps]) => [
@@ -157,7 +154,6 @@ test('solver simple 2-pool case (A -> B 30)', async t => {
       ]),
     ),
     brand: TOK_BRAND,
-    links: LINKS,
     mode: 'cheapest',
   });
 
@@ -176,7 +172,7 @@ test('solver 3-pool rounding (A -> B 33, A -> C 33)', async t => {
   const current = balances({ [A]: 100n, [B]: 0n, [C]: 0n });
   const targetBps = { [A]: 3400n, [B]: 3300n, [C]: 3300n };
   const { steps } = await planRebalanceFlow({
-    placeRefs: ALL_REFS,
+    network: TEST_NETWORK,
     current,
     target: Object.fromEntries(
       Object.entries(targetBps).map(([k, bps]) => [
@@ -185,7 +181,6 @@ test('solver 3-pool rounding (A -> B 33, A -> C 33)', async t => {
       ]),
     ),
     brand: TOK_BRAND,
-    links: LINKS, // fixed: was a string literal
     mode: 'cheapest',
   });
 
@@ -208,7 +203,7 @@ test('solver already balanced => no steps', async t => {
   const current = balances({ [A]: 50n, [B]: 50n });
   const targetBps = { [A]: 5000n, [B]: 5000n };
   const { steps } = await planRebalanceFlow({
-    placeRefs: ALL_REFS,
+    network: TEST_NETWORK,
     current,
     target: Object.fromEntries(
       Object.entries(targetBps).map(([k, bps]) => [
@@ -217,7 +212,6 @@ test('solver already balanced => no steps', async t => {
       ]),
     ),
     brand: TOK_BRAND,
-    links: LINKS,
     mode: 'cheapest',
   });
   t.deepEqual(steps, []);
@@ -226,11 +220,10 @@ test('solver already balanced => no steps', async t => {
 test('solver all to one (B + C -> A)', async t => {
   const current = balances({ [A]: 10n, [B]: 20n, [C]: 70n });
   const { steps } = await planRebalanceFlow({
-    placeRefs: ALL_REFS,
+    network: TEST_NETWORK,
     current,
     target: { [A]: token(100n), [B]: ZERO, [C]: ZERO },
     brand: TOK_BRAND,
-    links: LINKS,
     mode: 'cheapest',
   });
   t.deepEqual(steps, [
@@ -247,11 +240,10 @@ test('solver distribute from one (A -> B 60, A -> C 40)', async t => {
   const current = balances({ [A]: 100n, [B]: 0n, [C]: 0n });
   const target = { [A]: ZERO, [B]: token(60n), [C]: token(40n) };
   const { steps } = await planRebalanceFlow({
-    placeRefs: ALL_REFS,
+    network: TEST_NETWORK,
     current,
     target,
     brand: TOK_BRAND,
-    links: LINKS,
     mode: 'cheapest',
   });
   t.deepEqual(steps, [
@@ -267,11 +259,10 @@ test('solver distribute from one (A -> B 60, A -> C 40)', async t => {
 test('solver collect to one (B 30 + C 70 -> A)', async t => {
   const current = balances({ [A]: 0n, [B]: 30n, [C]: 70n });
   const { steps } = await planRebalanceFlow({
-    placeRefs: ALL_REFS,
+    network: TEST_NETWORK,
     current,
     target: { [A]: token(100n), [B]: ZERO, [C]: ZERO },
     brand: TOK_BRAND,
-    links: LINKS,
     mode: 'cheapest',
   });
   t.deepEqual(steps, [
@@ -287,11 +278,10 @@ test('solver collect to one (B 30 + C 70 -> A)', async t => {
 test('solver deposit redistribution (Deposit 100 -> A 70, B 30)', async t => {
   const current = balances({ '<Deposit>': 100n, [A]: 0n, [B]: 0n });
   const { steps } = await planRebalanceFlow({
-    assetRefs: ALL_REFS,
+    network: TEST_NETWORK,
     current,
     target: { '<Deposit>': ZERO, [A]: token(70n), [B]: token(30n) },
     brand: TOK_BRAND,
-    links: LINKS,
     mode: 'cheapest',
   });
   t.deepEqual(steps, [
@@ -307,11 +297,10 @@ test('solver deposit redistribution (Deposit 100 -> A 70, B 30)', async t => {
 test('solver move pools to cash (A 50 + B 30 -> Cash)', async t => {
   const current = balances({ [A]: 50n, [B]: 30n, '<Cash>': 0n });
   const { steps } = await planRebalanceFlow({
-    assetRefs: ALL_REFS,
+    network: TEST_NETWORK,
     current,
     target: { [A]: ZERO, [B]: ZERO, '<Cash>': token(80n) },
     brand: TOK_BRAND,
-    links: LINKS,
     mode: 'cheapest',
   });
   t.deepEqual(steps, [
@@ -334,7 +323,7 @@ test('solver hub balances into pools (hubs supply -> pool targets)', async t => 
     '@noble': 20n,
   });
   const { steps } = await planRebalanceFlow({
-    assetRefs: ALL_REFS,
+    network: TEST_NETWORK,
     current,
     target: {
       [A]: token(50n),
@@ -345,7 +334,6 @@ test('solver hub balances into pools (hubs supply -> pool targets)', async t => 
       '@noble': ZERO,
     },
     brand: TOK_BRAND,
-    links: LINKS,
     mode: 'cheapest',
   });
   t.deepEqual(steps, [
