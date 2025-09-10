@@ -24,39 +24,6 @@ Two classes of directed edges:
 1. Intra-chain (leaf <-> hub)
    - Always present for every non-hub leaf.
    - Attributes: `variableFee=1`, `fixedFee=0`, `timeFixed=1`, very large capacity.
-2. Inter-chain (hub -> hub) links explicitly added via configuration (tests use LINKS):
-   - CCTP slow (EVM -> Noble): high latency (1080s), low / zero variable fee.
-   - CCTP return (Noble -> EVM): low latency (20s).
-   - FastUSDC (bidirectional): `variableFee=0.0015`, `timeFixed=45s`.
-   - Noble <-> Agoric IBC: `variableFee=2`, `timeFixed=10s`.
-Each link is directional; reverse direction added explicitly where needed.
-
-# Rebalance Solver Overview
-
-This document describes the current balance rebalancing solver used in `plan-solve.ts`.
-
-## 1. Domain & Graph Structure
-We model a multi-chain, multi-place asset distribution problem as a directed flow network.
-
-Node (vertex) types (all implement `AssetPlaceRef`):
-- Chain hubs: `@ChainName` (e.g. `@Arbitrum`, `@Avalanche`, `@Ethereum`, `@noble`, `@agoric`). A single hub per chain collects and redistributes flow for that chain.
-- Protocol / pool leaves: `Protocol_Chain` identifiers (e.g. `Aave_Arbitrum`, `Beefy_re7_Avalanche`, `Compound_Ethereum`). Each is attached to exactly one hub (its chain).
-- Local Agoric seats: `'<Cash>'`, `'<Deposit>'`, and `'+agoric'` – all leaves on the `@agoric` hub.
-
-Supply (net position) per node:
-```
-netSupply(node) = current[node] - target[node]
-> 0 : surplus (must send out)
-< 0 : deficit (must receive)
-= 0 : balanced
-```
-Sum of all supplies must be zero for feasibility.
-
-## 2. Edges
-Two classes of directed edges:
-1. Intra-chain (leaf <-> hub)
-   - Always present for every non-hub leaf.
-   - Attributes: `variableFee=1`, `fixedFee=0`, `timeFixed=1`, very large capacity.
 2. Inter-chain (hub -> hub) links added via NetworkDefinition:
    - CCTP slow (EVM -> Noble): high latency (1080s), low / zero variable fee.
    - CCTP return (Noble -> EVM): low latency (20s).
@@ -137,31 +104,7 @@ Resulting guarantees:
 
 ---
 
-## 10. Network Definition Plan (Implementation Roadmap)
-This section tracks the introduction of an explicit NetworkDefinition replacing ad-hoc LINKS arrays.
-
-Status as of 2025-09-09:
-- Phase 1: Complete — types, builder, and prod/test configs added; `planRebalanceFlow` accepts a network.
-- Phase 2: Complete — unit tests migrated to use the test network; legacy LINKS removed in this package.
-- Phase 3: In progress — deposit routing is being refactored to derive paths via the generic graph; downstream services updated incrementally.
-- Phase 4: Pending — finalize docs and remove remaining legacy references elsewhere.
-
-Phases:
-- Phase 1:
-  - Add types: NetworkDefinition, NetworkEdge
-  - Add production network config (static) `network.prod.ts`
-  - Add test network config `test/network/test-network.ts`
-  - Add builder `buildGraph.ts` turning a NetworkDefinition into a RebalanceGraph (auto-adding intra-chain leaf<->hub edges if omitted)
-  - Extend `planRebalanceFlow` to accept a `network` parameter (superseding legacy inputs)
-- Phase 2:
-  - Migrate unit tests to use the test network config directly (remove local LINKS constants)
-  - Remove legacy `links` parameter from internal calls & docs
-- Phase 3:
-  - Refactor deposit routing to derive paths via the generic graph instead of hardcoded hub steps
-  - Deprecate / remove `planTransfer` & `planTransferPath` once all callers switch
-- Phase 4:
-  - Documentation updates: describe NetworkDefinition schema & validation; remove legacy LINKS references
-  - Add validation ensuring no duplicate (src,dest) unless intentionally multi-edge (different tags)
+## 10. Network Definition Schema & Validation
 
 Schema Summary:
 ```
@@ -179,6 +122,7 @@ interface NetworkDefinition {
   edges: NetworkEdge[]; // directed edges
 }
 ```
+
 Edge translation to solver:
 - `timeFixed = timeSec`
 - default `capacity = Number.MAX_SAFE_INTEGER/4` if unspecified
@@ -186,3 +130,52 @@ Edge translation to solver:
 
 Determinism:
 - Edge ids assigned in insertion order `e0..eN`: first intra-chain additions (stable set iteration) then user-specified edges in provided order.
+
+Validation:
+- A simple validator ensures well-formed nodes/edges and guards against duplicate edges unless explicitly intended (e.g., tagged variants).
+
+---
+
+## 11. Todo
+Further items for planner
+- add the method to the move descriptions (CCTP vs. Fast USDC)
+- support additions of dynamic constraints (e.g., when route price changes)
+- add fee information
+- handle "no feasible plan"
+- re-plan after some steps have already happened?
+  - provide the expected balances after each step, then plan form there
+- add minimimums to links
+- add capacity limits to links
+  - test them
+- rename "timeSec" to "time"?
+
+Further non-planner items
+- add withdraw offer handling
+  - is it just "adjust"?
+- support operations without a supplied plan (where planner provides)
+- maintain a shared graph in memory that gets updated on new graph
+
+Future things to try:
+- enable disabling/enabling some links (e.g., if they go down) and replanning 
+- optimize withdraw for "fastest money to <Cash> seat.
+  - accelerate withdraw with a liquidity pool
+- add operation (like `supply`) so that we can have actual gwei estimates associated with them in the graph
+- support multiple currencies explicitly
+- sanity check the step list
+
+## 12. Current Plan
+This last section is the living plan. As details are settled (schemas, invariants, design choices), they should be promoted into the relevant sections above, keeping this section focused on the remaining work and sequencing.
+
+Status as of 2025-09-10:
+- Phase 1: Complete — types, builder, and prod/test configs added; `planRebalanceFlow` accepts a network.
+- Phase 2: Complete — unit tests migrated to use the test network; legacy LINKS removed in this package.
+- Phase 3: In progress — deposit routing is being refactored to derive paths via the generic graph; downstream services updated incrementally.
+- Phase 4: Pending — finalize docs and remove remaining legacy references elsewhere.
+
+Phases:
+- Phase 3 next steps:
+  - Refactor deposit and portfolio open flows to use solver outputs end-to-end (remove hardcoded paths).
+  - Deprecate / remove `planTransfer` & `planTransferPath` after callers migrate.
+- Phase 4:
+  - Documentation updates: ensure this document reflects finalized schema and behavior.
+  - Add/extend validation and tooling as needed; remove remaining legacy references in downstream packages.

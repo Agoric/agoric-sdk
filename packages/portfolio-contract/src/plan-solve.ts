@@ -341,7 +341,8 @@ const runJsSolver = (model: JsSolverModel) => {
   } & Record<string, number | unknown>;
 };
 
-// UPDATED solveRebalance: use javascript-lp-solver directly
+// solveRebalance: use javascript-lp-solver directly
+// This operation is async to allow future use of async solvers if needed
 export const solveRebalance = async (
   model: LpModel,
   graph: RebalanceGraph,
