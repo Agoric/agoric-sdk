@@ -40,7 +40,7 @@ import {
 } from './vstorage-utils.ts';
 
 const { isInteger } = Number;
-const { entries } = Object;
+const { entries, fromEntries, values } = Object;
 
 const sink = () => {};
 
@@ -432,7 +432,7 @@ export const startEngine = async (
   {
     const balanceQueryPowers = { spectrum, cosmosRest };
     const poolPlaceInfoByProtocol = new Map(
-      Object.values(PoolPlaces).map(info => [info.protocol, info]),
+      values(PoolPlaces).map(info => [info.protocol, info]),
     );
     await Promise.all(
       [...poolPlaceInfoByProtocol.values()].map(async info => {
@@ -443,7 +443,7 @@ export const startEngine = async (
             chainName === 'noble'
               ? 'cosmos:testnoble:noble1xw2j23rcwrkg02yxdn5ha2d2x868cuk6370s9y'
               : (([caipChainId, addr]) => `${caipChainId}:${addr}`)(
-                  Object.entries(evmCtx.usdcAddresses)[0],
+                  entries(evmCtx.usdcAddresses)[0],
                 );
           const accountIdByChain = { [chainName]: dummyAddress } as any;
           await getCurrentBalance(info, accountIdByChain, balanceQueryPowers);
@@ -454,7 +454,7 @@ export const startEngine = async (
           console.warn(
             `⚠️ Could not query ${info.protocol} balance`,
             err,
-            ...(expandos.length ? [Object.fromEntries(expandos)] : []),
+            ...(expandos.length ? [fromEntries(expandos)] : []),
           );
         }
       }),
@@ -485,7 +485,7 @@ export const startEngine = async (
           `🚨 Attempting to read block height from unexpected response type ${respType}`,
           respData,
         );
-        const obj = Object.values(respData)[0];
+        const obj = values(respData)[0];
         // @ts-expect-error
         return BigInt(obj.height ?? obj.blockHeight ?? obj.block_height);
       }
@@ -594,7 +594,7 @@ export const startEngine = async (
       deferrals.push(deferral);
       return false;
     }) as Array<EventRecord & { type: 'kvstore' }>;
-    const newEvents = Object.entries(respData).flatMap(([key, value]) => {
+    const newEvents = entries(respData).flatMap(([key, value]) => {
       // We care about result_begin_block/result_end_block/etc.
       if (!key.startsWith('result_')) return [];
       const events = (value as any)?.events;
