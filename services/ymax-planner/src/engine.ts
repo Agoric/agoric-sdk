@@ -428,16 +428,6 @@ export const processPendingTxEvents = async (
   }
 };
 
-const getAssetInfo = (
-  assets: Map<string, AssetInfo>,
-  denomOrIssuerName: string,
-) =>
-  denomOrIssuerName.startsWith('ibc/')
-    ? assets.get(denomOrIssuerName)
-    : [...assets.values()].find(
-        assetInfo => assetInfo.issuerName === denomOrIssuerName,
-      );
-
 export const pickBalance = (
   balances: Coin[] | undefined,
   depositAsset: AssetInfo,
@@ -456,9 +446,9 @@ export const pickBalance = (
 export const startEngine = async (
   { evmCtx, rpc, spectrum, cosmosRest, signingSmartWalletKit }: Powers,
   {
-    depositIbcDenom,
-    feeIbcDenom,
-  }: { depositIbcDenom: string; feeIbcDenom: string },
+    depositBrandName,
+    feeBrandName,
+  }: { depositBrandName: string; feeBrandName: string },
 ) => {
   await null;
   const { query, marshaller } = signingSmartWalletKit;
@@ -567,15 +557,15 @@ export const startEngine = async (
     agoricInfo,
   );
 
-  const vbankAssets = new Map<string, AssetInfo>(
-    await query.readPublished('agoricNames.vbankAsset'),
-  );
+  const vbankAssets: AssetInfo[] = (
+    await query.readPublished('agoricNames.vbankAsset')
+  ).map(([_ibcDenom, asset]) => asset);
   const depositAsset =
-    getAssetInfo(vbankAssets, depositIbcDenom) ||
-    Fail`Could not find vbankAsset for ${q(depositIbcDenom)}`;
+    vbankAssets.find(asset => asset.issuerName === depositBrandName) ||
+    Fail`Could not find vbankAsset for ${q(depositBrandName)}`;
   const feeAsset =
-    getAssetInfo(vbankAssets, feeIbcDenom) ||
-    Fail`Could not find vbankAsset for ${q(feeIbcDenom)}`;
+    vbankAssets.find(asset => asset.issuerName === feeBrandName) ||
+    Fail`Could not find vbankAsset for ${q(feeBrandName)}`;
 
   const deferrals = [] as EventRecord[];
 
