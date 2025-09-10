@@ -137,31 +137,37 @@ Validation:
 ---
 
 ## 11. Todo
-Further items for planner
-- add the method to the move descriptions (CCTP vs. Fast USDC)
+Further items for solver
 - support additions of dynamic constraints (e.g., when route price changes)
-- add fee information
+- add fee information and time to moves
 - handle "no feasible plan"
-- re-plan after some steps have already happened?
-  - provide the expected balances after each step, then plan form there
 - add minimimums to links
 - add capacity limits to links
   - test them
 - rename "timeSec" to "time"?
+- add details.evmGas
 
 Further non-planner items
 - add withdraw offer handling
   - is it just "adjust"?
 - support operations without a supplied plan (where planner provides)
 - maintain a shared graph in memory that gets updated on new graph
+- support multiple assets
+- sanity check the step list
+
+Later
+- add the method to the move operations (CCTP vs. Fast USDC)
+- re-plan after some steps have already happened?
+  - provide the expected balances after each step, then plan form there
+- split transactions under limits
 
 Future things to try:
 - enable disabling/enabling some links (e.g., if they go down) and replanning 
+- add liquidity pool
 - optimize withdraw for "fastest money to <Cash> seat.
   - accelerate withdraw with a liquidity pool
 - add operation (like `supply`) so that we can have actual gwei estimates associated with them in the graph
 - support multiple currencies explicitly
-- sanity check the step list
 
 ## 12. Current Plan
 This last section is the living plan. As details are settled (schemas, invariants, design choices), they should be promoted into the relevant sections above, keeping this section focused on the remaining work and sequencing.

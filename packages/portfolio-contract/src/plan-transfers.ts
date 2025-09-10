@@ -11,6 +11,8 @@ import type {
 } from '@agoric/portfolio-api/src/constants.js';
 import { throwRedacted as Fail } from '@endo/errors';
 import { objectMap } from '@endo/patterns';
+import { planRebalanceFlow } from './plan-solve.js';
+import { PROD_NETWORK } from './network/network.prod.js';
 /**
  * Plan deposit transfers based on the target allocation and current balances.
  *
@@ -149,7 +151,7 @@ export const planTransferPath = (
  * Build deposit (give) and movement steps to achieve goal amounts per protocol.
  * Aggregates deposit at @noble then fan-outs to chain-specific pools.
  */
-export const makePortfolioSteps = <
+export const makePortfolioSteps = async <
   G extends Partial<Record<YieldProtocol, NatAmount>>,
 >(
   goal: G,
@@ -169,15 +171,86 @@ export const makePortfolioSteps = <
       Account: AmountMath.make(NonNullish(feeBrand), 150n),
       Call: AmountMath.make(NonNullish(feeBrand), 100n),
     })),
-    detail = 'USDN' in goal
-      ? { usdnOut: ((goal.USDN?.value || 0n) * 99n) / 100n }
-      : undefined,
   } = opts;
 
-  const steps: MovementDesc[] = [];
+  // Compute total deposit and build current/target for the solver
   const values = Object.values(goal) as NatAmount[];
   const deposit = values.reduce((acc, v) => AmountMath.add(acc, v));
-  const feeValues = Object.values(fees) as {
+  const brand = deposit.brand;
+
+  /** Map protocol goal -> concrete PoolKey target */
+  const target: Partial<Record<string, NatAmount>> = {};
+  for (const [proto, amount] of Object.entries(goal) as [
+    YieldProtocol,
+    NatAmount,
+  ][]) {
+    if (proto === 'USDN') {
+      target['USDNVault'] = amount;
+    } else {
+      target[`${proto}_${evm}`] = amount;
+    }
+  }
+  // Deposit seat must end empty
+  target['<Deposit>'] = AmountMath.make(brand, 0n);
+
+  const current: Partial<Record<string, NatAmount>> = {
+    '<Deposit>': deposit,
+  };
+
+  // Run the solver to compute movement steps
+  const { steps: raw } = await planRebalanceFlow({
+    network: PROD_NETWORK,
+    current: current as any,
+    target: target as any,
+    brand,
+  });
+
+  // Inject USDN detail and EVM fees to match existing behavior/tests
+  const steps: MovementDesc[] = raw.map(s => ({ ...s }));
+
+  // USDN detail: 99% min-out of requested USDN
+  const usdnAmt = (goal as any).USDN as NatAmount | undefined;
+  if (usdnAmt) {
+    const usdnDetail = { usdnOut: ((usdnAmt.value || 0n) * 99n) / 100n } as {
+      usdnOut: NatValue;
+    };
+    for (const s of steps) {
+      if (s.src === '@noble' && s.dest === 'USDNVault') {
+        (s as any).detail = usdnDetail;
+      }
+    }
+  }
+
+  // Add fees on noble->EVM (Account) and EVM->Pool (Call)
+  const feeMap = fees as Record<
+    string,
+    { Account: NatAmount; Call: NatAmount }
+  >;
+  for (let i = 0; i < steps.length - 1; i += 1) {
+    const a = steps[i];
+    const b = steps[i + 1];
+    if (
+      a.src === '@noble' &&
+      typeof a.dest === 'string' &&
+      a.dest.startsWith('@')
+    ) {
+      const hub = a.dest; // e.g., '@Arbitrum'
+      if (b.src === hub && typeof b.dest === 'string') {
+        const m = /^(Aave|Compound)_(.+)$/.exec(b.dest);
+        if (m) {
+          const proto = m[1] as keyof typeof feeMap;
+          const ff = feeMap[proto as string];
+          if (ff) {
+            (a as any).fee = ff.Account;
+            (b as any).fee = ff.Call;
+          }
+        }
+      }
+    }
+  }
+
+  // Build give with optional aggregated GMP fees (if any)
+  const feeValues = Object.values(feeMap ?? {}) as {
     Account: NatAmount;
     Call: NatAmount;
   }[];
@@ -191,34 +264,6 @@ export const makePortfolioSteps = <
     Deposit: deposit,
     ...(gmpFee ? { GmpFee: gmpFee } : {}),
   } as Record<string, Amount<'nat'>>;
-  steps.push({ src: '<Deposit>', dest: '@agoric', amount: deposit });
-  steps.push({ src: '@agoric', dest: '@noble', amount: deposit });
-  for (const [proto, amount] of Object.entries(goal) as [
-    YieldProtocol,
-    NatAmount,
-  ][]) {
-    switch (proto) {
-      case 'USDN':
-        steps.push({ src: '@noble', dest: 'USDNVault', amount, detail });
-        break;
-      case 'Aave':
-      case 'Compound':
-        steps.push({
-          src: '@noble',
-          dest: `@${evm}`,
-          amount,
-          fee: fees[proto].Account,
-        });
-        steps.push({
-          src: `@${evm}`,
-          dest: `${proto}_${evm}`,
-          amount,
-          fee: fees[proto].Call,
-        });
-        break;
-      default:
-        throw Error('unreachable');
-    }
-  }
+
   return harden({ give, steps });
 };

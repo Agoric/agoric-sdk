@@ -440,8 +440,10 @@ test('Noble Dollar Swap, Lock messages', t => {
   }
 });
 
-test('makePortfolioSteps for USDN position', t => {
-  const actual = makePortfolioSteps({ USDN: make(USDC, 50n * 1_000_000n) });
+test('makePortfolioSteps for USDN position', async t => {
+  const actual = await makePortfolioSteps({
+    USDN: make(USDC, 50n * 1_000_000n),
+  });
 
   const amount = make(USDC, 50n * 1_000_000n);
   const detail = { usdnOut: 49500000n };

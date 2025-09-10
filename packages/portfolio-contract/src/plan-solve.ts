@@ -197,7 +197,7 @@ export const addInterchainLink = (
 /**
  * Build LP/MIP model for javascript-lp-solver.
  */
-export const buildModel = (
+export const buildLPModel = (
   graph: RebalanceGraph,
   mode: RebalanceMode,
 ): LpModel => {
@@ -412,11 +412,15 @@ export const rebalanceMinCostFlowSteps = (
     pending.delete(chosen.edge.id);
   }
 
-  const steps: MovementDesc[] = scheduled.map(({ edge, flow }) => ({
-    src: edge.src as AssetPlaceRef,
-    dest: edge.dest as AssetPlaceRef,
-    amount: AmountMath.make(graph.brand, BigInt(Math.round(flow))),
-  }));
+  const steps: MovementDesc[] = scheduled.map(({ edge, flow }) => {
+    // XXX generate tests for this
+    assert(Number.isSafeInteger(flow));
+    return {
+      src: edge.src as AssetPlaceRef,
+      dest: edge.dest as AssetPlaceRef,
+      amount: AmountMath.make(graph.brand, BigInt(flow)),
+    };
+  });
 
   return harden(steps);
 };
@@ -438,8 +442,9 @@ export const planRebalanceFlow = async (opts: {
   mode?: RebalanceMode;
 }) => {
   const { network, current, target, brand, mode = 'fastest' } = opts;
+  // TODO remove "automatic" values that shoudl be static
   const graph = makeGraphFromDefinition(network, current, target, brand);
-  const model = buildModel(graph, mode);
+  const model = buildLPModel(graph, mode);
   const flows = await solveRebalance(model, graph);
   const steps = rebalanceMinCostFlowSteps(flows, graph);
   return harden({ graph, model, flows, steps });
