@@ -343,6 +343,6 @@ test('delegate ymax control; invite planner; submit plan', async t => {
   await E(E(walletPl).getInvokeFacet()).invokeEntry({
     targetName: 'planner',
     method: 'submit',
-    args: [0, []],
+    args: [0, [], 0, 0],
   });
 });
