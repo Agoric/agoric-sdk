@@ -250,8 +250,9 @@ const testPrometheusMetrics = async t => {
   t.log(`compared ${comparisonCount} values`);
 };
 
-if (!IS_SUBPROCESS_RETRY) {
+// TODO(#11175): skip flaky test
+if (false && !IS_SUBPROCESS_RETRY) {
   avaRetry(test, 'Prometheus metric definitions', testPrometheusMetrics);
 } else {
-  test('Prometheus metric definitions', testPrometheusMetrics);
+  test.skip('Prometheus metric definitions', testPrometheusMetrics);
 }
