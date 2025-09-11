@@ -99,9 +99,11 @@ jobs:
 
   orchestration-queries-hermes:
     name: Orchestration Queries - Hermes
+    # Don't run on PRs or call, only on dispatch.
+    # TODO(#11788): reenable conditions once flake is understood.
+    # github.event_name == 'workflow_call' ||
+    # github.event_name == 'pull_request' ||
     if: |
-      github.event_name == 'workflow_call' ||
-      github.event_name == 'pull_request' ||
       (github.event_name == 'workflow_dispatch' && inputs.test_type == 'orchestration-queries-hermes')
     uses: ./.github/workflows/multichain-e2e-template.yml
     with:
