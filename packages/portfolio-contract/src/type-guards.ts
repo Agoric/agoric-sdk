@@ -139,6 +139,22 @@ export const BeefyPoolPlaces = {
     protocol: 'Beefy',
     chainName: 'Avalanche',
   },
+  Beefy_curveUsdcUsdf_Ethereum: {
+    protocol: 'Beefy',
+    chainName: 'Ethereum',
+  },
+  Beefy_convexMim_Ethereum: {
+    protocol: 'Beefy',
+    chainName: 'Ethereum',
+  },
+  Beefy_balancerv3_Ethereum: {
+    protocol: 'Beefy',
+    chainName: 'Ethereum',
+  },
+  Beefy_spellMimCrv_Arbitrum: {
+    protocol: 'Beefy',
+    chainName: 'Arbitrum',
+  },
 } as const satisfies Record<string, PoolPlaceInfo>;
 
 export const PoolPlaces = {
