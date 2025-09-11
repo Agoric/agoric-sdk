@@ -462,6 +462,9 @@ export const startEngine = async (
     error: console.error.bind(console),
   };
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
+
+  const oldestBlockTimeMs = await getOldestBlockTime();
+
   await makeWorkPool(pendingTxKeys, undefined, async txId => {
     const path = `${PENDING_TX_PATH_PREFIX}.${txId}`;
     const errLabel = `🚨 Failed to process old pending tx ${path}`;
@@ -473,7 +476,55 @@ export const startEngine = async (
       mustMatch(data, PublishedTxShape, path);
       const tx = { txId, ...data } as PendingTx;
       console.warn('Old pending tx', tx);
-      // Tx resolution is non-blocking.
+
+      // Try historical resolution first if we have timestamp data
+      if (oldestBlockTimeMs) {
+        const { resolveHistoricalTransaction } = await import(
+          './watchers/loop-back-watcher.ts'
+        );
+
+        try {
+          const wasResolved = await resolveHistoricalTransaction(
+            {
+              cosmosRest,
+              evmProviders: evmCtx.evmProviders,
+              usdcAddresses: evmCtx.usdcAddresses,
+            },
+            {
+              txType: tx.type,
+              destinationAddress: tx.destinationAddress,
+              amount: tx.amount,
+              txId: tx.txId,
+              publishTimeMs: oldestBlockTimeMs,
+            },
+            (...args) => console.warn(`[${txId}] Historical:`, ...args),
+          );
+
+          if (wasResolved) {
+            console.warn(`✅ Historical resolution succeeded for ${txId}`);
+            // Resolve the transaction as successful
+            const { resolvePendingTx } = await import('./resolver.ts');
+            await resolvePendingTx({
+              signingSmartWalletKit,
+              txId: tx.txId,
+              status: 'success' as const,
+            });
+            return;
+          } else {
+            console.warn(
+              `⚠️ Historical resolution failed for ${txId}, falling back to live monitoring`,
+            );
+          }
+        } catch (historicalErr) {
+          console.warn(
+            `⚠️ Historical resolution error for ${txId}:`,
+            historicalErr,
+            'falling back to live monitoring',
+          );
+        }
+      }
+
+      // Fall back to live monitoring (original behavior)
       void handlePendingTx(tx, txPowers).catch(err =>
         console.error(errLabel, err),
       );
