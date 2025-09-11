@@ -1,6 +1,6 @@
 import test from 'ava';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
-import { handlePendingTx, type EvmContext } from '../src/pending-tx-manager.ts';
+import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import { processPendingTxEvents } from '../src/engine.ts';
 import {
   createMockEvmContext,
