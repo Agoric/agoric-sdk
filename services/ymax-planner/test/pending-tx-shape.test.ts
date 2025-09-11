@@ -21,25 +21,35 @@ const powers = {
 const mockHandlePendingTxFn = async () => {};
 
 test('processPendingTxEvents - valid CCTP_TO_EVM shape passes mustMatch', async t => {
-  const txData = createMockPendingTxData({ type: TxType.CCTP_TO_EVM });
+  const txData = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    amount: 5000n,
+  });
   const capData = marshaller.toCapData(txData);
   const streamCell = createMockStreamCell([JSON.stringify(capData)]);
   const events = [createMockPendingTxEvent('tx1', JSON.stringify(streamCell))];
 
-  await t.notThrowsAsync(
-    processPendingTxEvents(events, mockHandlePendingTxFn, powers),
-  );
+  const errorMessages: string[] = [];
+  powers.error = (...args: any[]) => errorMessages.push(args.join(' '));
+
+  await processPendingTxEvents(events, mockHandlePendingTxFn, powers);
+  t.true(errorMessages.length === 0);
 });
 
 test('processPendingTxEvents - valid CCTP_TO_NOBLE shape passes mustMatch', async t => {
-  const txData = createMockPendingTxData({ type: TxType.CCTP_TO_NOBLE });
+  const txData = createMockPendingTxData({
+    type: TxType.CCTP_TO_NOBLE,
+    amount: 5000n,
+  });
   const capData = marshaller.toCapData(txData);
   const streamCell = createMockStreamCell([JSON.stringify(capData)]);
   const events = [createMockPendingTxEvent('tx1', JSON.stringify(streamCell))];
 
-  await t.notThrowsAsync(
-    processPendingTxEvents(events, mockHandlePendingTxFn, powers),
-  );
+  const errorMessages: string[] = [];
+  powers.error = (...args: any[]) => errorMessages.push(args.join(' '));
+
+  await processPendingTxEvents(events, mockHandlePendingTxFn, powers);
+  t.true(errorMessages.length === 0);
 });
 
 test('processPendingTxEvents - valid GMP shape with amount passes mustMatch', async t => {
@@ -48,9 +58,11 @@ test('processPendingTxEvents - valid GMP shape with amount passes mustMatch', as
   const streamCell = createMockStreamCell([JSON.stringify(capData)]);
   const events = [createMockPendingTxEvent('tx1', JSON.stringify(streamCell))];
 
-  await t.notThrowsAsync(
-    processPendingTxEvents(events, mockHandlePendingTxFn, powers),
-  );
+  const errorMessages: string[] = [];
+  powers.error = (...args: any[]) => errorMessages.push(args.join(' '));
+
+  await processPendingTxEvents(events, mockHandlePendingTxFn, powers);
+  t.true(errorMessages.length === 0);
 });
 
 test('processPendingTxEvents - valid GMP shape without amount passes mustMatch', async t => {
@@ -59,9 +71,11 @@ test('processPendingTxEvents - valid GMP shape without amount passes mustMatch',
   const streamCell = createMockStreamCell([JSON.stringify(capData)]);
   const events = [createMockPendingTxEvent('tx1', JSON.stringify(streamCell))];
 
-  await t.notThrowsAsync(
-    processPendingTxEvents(events, mockHandlePendingTxFn, powers),
-  );
+  const errorMessages: string[] = [];
+  powers.error = (...args: any[]) => errorMessages.push(args.join(' '));
+
+  await processPendingTxEvents(events, mockHandlePendingTxFn, powers);
+  t.true(errorMessages.length === 0);
 });
 
 test('processPendingTxEvents - missing required amount field for CCTP_TO_EVM fails mustMatch', async t => {
@@ -73,9 +87,7 @@ test('processPendingTxEvents - missing required amount field for CCTP_TO_EVM fai
   const errorMessages: string[] = [];
   powers.error = (...args: any[]) => errorMessages.push(args.join(' '));
 
-  await t.notThrowsAsync(
-    processPendingTxEvents(events, mockHandlePendingTxFn, powers),
-  );
+  await processPendingTxEvents(events, mockHandlePendingTxFn, powers);
 
   t.true(errorMessages.length > 0);
   t.true(
@@ -92,10 +104,7 @@ test('processPendingTxEvents - missing required amount field for CCTP_TO_NOBLE f
   const errorMessages: string[] = [];
   powers.error = (...args: any[]) => errorMessages.push(args.join(' '));
 
-  await t.notThrowsAsync(
-    processPendingTxEvents(events, mockHandlePendingTxFn, powers),
-  );
-
+  await processPendingTxEvents(events, mockHandlePendingTxFn, powers);
   t.true(errorMessages.length > 0);
   t.true(
     errorMessages.some(msg => msg.includes('Failed to process pending tx')),

@@ -29,7 +29,10 @@ test('processPendingTxEvents handles valid single transaction event', async t =>
   const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
   const mockEvmCtx = createMockEvmContext();
 
-  const txData = createMockPendingTxData({ type: TxType.CCTP_TO_EVM });
+  const txData = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    amount: 5000n,
+  });
   const capData = marshaller.toCapData(txData);
   const streamCell = createMockStreamCell([JSON.stringify(capData)]);
   const events = [createMockPendingTxEvent('tx1', JSON.stringify(streamCell))];
@@ -53,6 +56,7 @@ test('processPendingTxEvents handles multiple transaction events', async t => {
 
   const originalCctpData = createMockPendingTxData({
     type: TxType.CCTP_TO_EVM,
+    amount: 5000n,
   });
   const originalGmpData = createMockPendingTxData({ type: TxType.GMP });
 
@@ -84,7 +88,10 @@ test('processPendingTxEvents errors do not disrupt processing valid transactions
   const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
   const mockEvmCtx = createMockEvmContext();
 
-  const validTx1 = createMockPendingTxData({ type: TxType.CCTP_TO_EVM });
+  const validTx1 = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    amount: 5000n,
+  });
   const validTx2 = createMockPendingTxData({ type: TxType.GMP });
   const invalidTxData = harden({
     status: 'pending',
@@ -138,7 +145,10 @@ test('processPendingTxEvents handles only pending transactions', async t => {
   const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
   const mockEvmCtx = createMockEvmContext();
 
-  const tx1 = createMockPendingTxData({ type: TxType.CCTP_TO_EVM });
+  const tx1 = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    amount: 5000n,
+  });
   const tx2 = createMockPendingTxData({ type: TxType.GMP, status: 'success' });
 
   const data1 = marshaller.toCapData(tx1);
