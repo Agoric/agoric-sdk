@@ -15,6 +15,7 @@ import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import {
   PublishedTxShape,
   type PendingTx,
+  type PublishedTx,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import {
   PoolPlaces,
@@ -271,6 +272,66 @@ export const startEngine = async (
 ) => {
   await null;
   const { query, marshaller } = signingSmartWalletKit;
+
+  type BlockInfo = { height: bigint; timestamp: Date; txId: string };
+
+  const getOldestBlockTime = async (): Promise<number | null> => {
+    // TODO: remove getting keys
+    const keys = await query.vstorage.keys(PENDING_TX_PATH_PREFIX);
+    if (!keys.length) return null;
+
+    const blockTimeByHeight = new Map<bigint, Promise<Date>>();
+    const getBlockTime = (height: bigint) => {
+      let p = blockTimeByHeight.get(height);
+      if (!p) {
+        p = (async () => {
+          const resp = await rpc.request('block', {
+            height: height.toString(),
+          });
+          return new Date(resp.block.header.time);
+        })();
+        blockTimeByHeight.set(height, p);
+      }
+      return p;
+    };
+
+    const pendingLookups = keys.map(async (key): Promise<BlockInfo | null> => {
+      const path = `${PENDING_TX_PATH_PREFIX}.${key}`;
+      // TODO: maybe pass this data via params instead of calling readPublished again
+      const tx = (await query.readPublished(
+        stripPrefix('published.', path),
+      )) as PublishedTx;
+
+      if (tx.status !== 'pending') return null;
+
+      const meta = await query.vstorage.readStorageMeta(path);
+      const height = meta.blockHeight as bigint;
+
+      const timestamp = await getBlockTime(height);
+      return { height, timestamp, txId: key };
+    });
+
+    const results = (await Promise.all(pendingLookups)).filter(
+      (x): x is BlockInfo => x !== null,
+    );
+
+    if (results.length === 0) return null;
+
+    const oldest = results.reduce((min, cur) =>
+      cur.timestamp < min.timestamp ? cur : min,
+    );
+
+    console.warn(
+      'Oldest pending tx:',
+      oldest.txId,
+      'at block',
+      oldest.height.toString(),
+      'timestamp',
+      oldest.timestamp,
+    );
+
+    return oldest.timestamp.getTime();
+  };
 
   // Test balance querying (using dummy addresses for now).
   {
