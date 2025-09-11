@@ -1,19 +1,17 @@
 /// <reference types="ses" />
 import type { AccountId } from '@agoric/orchestration';
 
-import { TxType } from '../src/resolver/constants.js';
-
 export const createMockPendingTxData = ({
-  type = TxType.CCTP_TO_EVM,
+  type,
+  amount,
   status = 'pending',
-  amount = 100_000n,
   destinationAddress = 'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
 }: {
-  type?: string;
+  type: string;
   status?: string;
   amount?: bigint;
   destinationAddress?: AccountId;
-} = {}) =>
+}) =>
   harden({
     type,
     status,
