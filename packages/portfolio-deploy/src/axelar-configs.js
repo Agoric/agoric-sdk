@@ -19,6 +19,7 @@
  * This is used by YMax to dynamically switch between environments when interacting
  * with Axelar-supported chains.
  *
+ * @readonly
  * @type {Record<keyof typeof AxelarChain, AxelarChainIdEntry>}
  *
  * @see {@link https://docs.axelar.dev/resources/contract-addresses/testnet/#evm-contract-addresses}
@@ -74,11 +75,11 @@ const AxelarChainIdMap = harden({
  * @typedef {Record<AxelarChain, AxelarChainConfig>} AxelarChainConfigMap
  */
 
-// NOTE: For unsupported chains (e.g., Polygon for AAVE, BNB for USDC),
+// XXX: For unsupported chains (e.g., Polygon for AAVE, BNB for USDC),
 // we use `0x` until a proper strategy is defined.
 
-/** @type {AddressesMap} */
-const aaveAddresses = {
+/** @readonly @type {AddressesMap} */
+const aaveAddresses = harden({
   mainnet: {
     Ethereum: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2', // https://aave.com/docs/resources/addresses -> Ethereum V3 Market -> Pool contract
     Avalanche: '0x794a61358D6845594F94dc1DB02A252b5b4814aD', // https://aave.com/docs/resources/addresses -> Avalanche V3 Market -> Pool contract
@@ -95,10 +96,10 @@ const aaveAddresses = {
     Optimism: '0xb50201558B00496A145fE76f7424749556E326D8', // not available in aave official docs, OP Sepolia https://sepolia-optimism.etherscan.io/address/0xb50201558B00496A145fE76f7424749556E326D8
     Polygon: '0x',
   },
-};
+});
 
-/** @type {AddressesMap} */
-const usdcAddresses = {
+/** @readonly @type {AddressesMap} */
+const usdcAddresses = harden({
   mainnet: {
     Avalanche: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', // https://developers.circle.com/stablecoins/usdc-contract-addresses
     Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // https://developers.circle.com/stablecoins/usdc-contract-addresses
@@ -117,10 +118,10 @@ const usdcAddresses = {
     Base: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e
     BNB: '0x', // https://developers.circle.com/stablecoins/usdc-contract-addresses
   },
-};
+});
 
-/** @type {AddressesMap} */
-const aaveUsdcAddresses = {
+/** @readonly @type {AddressesMap} */
+const aaveUsdcAddresses = harden({
   mainnet: {
     Ethereum: '0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c', // https://search.onaave.com/?q=atoken%20usdc%20aavev3ethereum
     Avalanche: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://search.onaave.com/?q=atoken%20usdc%20aavev3avalanche
@@ -137,10 +138,10 @@ const aaveUsdcAddresses = {
     Optimism: '0xa818F1B57c201E092C4A2017A91815034326Efd1', // https://sepolia-optimism.etherscan.io/address/0xa818F1B57c201E092C4A2017A91815034326Efd1
     Avalanche: '0x9CFcc1B289E59FBe1E769f020C77315DF8473760', // Fuji https://testnet.snowtrace.io/token/0x9CFcc1B289E59FBe1E769f020C77315DF8473760?chainid=43113
   },
-};
+});
 
-/** @type {AddressesMap} */
-const aaveRewardsControllerAddresses = {
+/** @readonly @type {AddressesMap} */
+const aaveRewardsControllerAddresses = harden({
   mainnet: {
     Ethereum: '0x8164Cc65827dcFe994AB23944CBC90e0aa80bFcb', // https://aave.com/docs/resources/addresses -> Ethereum V3 Market -> DefaultIncentivesController contract
     Avalanche: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses -> Avalanche V3 Market -> DefaultIncentivesController contract
@@ -162,10 +163,10 @@ const aaveRewardsControllerAddresses = {
     BNB: '0x',
     Polygon: '0x',
   },
-};
+});
 
-/** @type {AddressesMap} */
-const compoundAddresses = {
+/** @readonly @type {AddressesMap} */
+const compoundAddresses = harden({
   mainnet: {
     Ethereum: '0xc3d688B66703497DAA19211EEdff47f25384cdc3', // https://docs.compound.finance/#networks -> Ethereum USDC -> cUSDCv3 contract
     Polygon: '0xF25212E676D1F7F89Cd72fFEe66158f541246445', // https://docs.compound.finance/#networks -> Polygon USDC -> cUSDCv3 contract
@@ -181,10 +182,10 @@ const compoundAddresses = {
     Arbitrum: '0x',
     Optimism: '0x',
   },
-};
+});
 
-/** @type {AddressesMap} */
-const compoundRewardsControllerAddresses = {
+/** @readonly @type {AddressesMap} */
+const compoundRewardsControllerAddresses = harden({
   mainnet: {
     Ethereum: '0x1B0e765F6224C21223AeA2af16c1C46E38885a40', // https://docs.compound.finance/#networks -> Ethereum USDC -> Rewards contract
     Polygon: '0x45939657d1CA34A8FA39A924B71D28Fe8431e581', // https://docs.compound.finance/#networks -> Polygon USDC -> Rewards contract
@@ -201,10 +202,10 @@ const compoundRewardsControllerAddresses = {
     BNB: '0x',
     Optimism: '0x',
   },
-};
+});
 
-/** @type {Record<string, AddressesMap>} */
-const beefyVaultAddresses = {
+/** @readonly @type {Record<string, AddressesMap>} */
+const beefyVaultAddresses = harden({
   re7: {
     mainnet: {
       Avalanche: '0xdA640bE4588C469C9DB45D082B36913490924c08', // https://github.com/beefyfinance/beefy-v2/blob/9216cb622aa788668bfc40040b7e17ceb941ecfd/src/config/vault/avax.json#L243
@@ -241,11 +242,11 @@ const beefyVaultAddresses = {
     },
     testnet: {},
   },
-};
+});
 
 // TODO: deploy the factory in testnet and fill these addresses
-/** @type {AddressesMap} */
-const factoryAddresses = {
+/** @readonly @type {AddressesMap} */
+const factoryAddresses = harden({
   mainnet: {
     Avalanche: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://snowtrace.io/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
     Arbitrum: '0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc', // https://arbiscan.io/address/0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc
@@ -261,7 +262,7 @@ const factoryAddresses = {
     Optimism: '0x',
     Polygon: '0x',
   },
-};
+});
 
 /** @see {@link https://developers.circle.com/cctp/v1/evm-smart-contracts#mainnet-contract-addresses} */
 const mainnetTokenMessenger = (rows =>
@@ -284,6 +285,7 @@ const mainnetTokenMessenger = (rows =>
 
 /**
  * Mainnet configuration with real contract addresses
+ * @readonly
  * @type {EVMContractAddressesMap}
  */
 const mainnetContracts = {
@@ -392,6 +394,7 @@ const testnetTokenMessenger = (rows =>
 // XXX turn these inside out? contract.chain.address
 /**
  * Testnet configuration with testnet contract addresses
+ * @readonly
  * @type {EVMContractAddressesMap}
  */
 const testnetContracts = {
@@ -481,7 +484,7 @@ harden(testnetContracts);
  *   4 July 2025)
  *  @satisfies {AxelarChainConfigMap}
  */
-export const axelarConfig = {
+export const axelarConfig = harden({
   Arbitrum: {
     axelarId: AxelarChainIdMap.Arbitrum.mainnet,
     chainInfo: {
@@ -547,7 +550,7 @@ export const axelarConfig = {
     },
     contracts: { ...mainnetContracts.Polygon },
   },
-};
+});
 
 /**
  * Testnet chains only.
@@ -560,7 +563,7 @@ export const axelarConfig = {
  *   4 July 2025)
  *  @satisfies {AxelarChainConfigMap}
  */
-export const axelarConfigTestnet = {
+export const axelarConfigTestnet = harden({
   Arbitrum: {
     axelarId: AxelarChainIdMap.Arbitrum.testnet,
     chainInfo: {
@@ -624,7 +627,7 @@ export const axelarConfigTestnet = {
     },
     contracts: { ...testnetContracts.Polygon },
   },
-};
+});
 
 /**
  * @typedef {{
@@ -652,9 +655,10 @@ export const axelarConfigTestnet = {
  * {@link https://github.com/axelarnetwork/axelarjs/blob/fae808d4a2a1e34f386d6486f5f3708dd7a25cf5/packages/core/src/index.ts#L9-L13}
  *
  * Both addresses were also confirmed directly with the Axelar team via Slack.
+ * @readonly
  * @type {GMPAddresses}
  */
-export const gmpAddresses = {
+export const gmpAddresses = harden({
   mainnet: {
     /**
      * GMP address on mainnet.
@@ -677,4 +681,4 @@ export const gmpAddresses = {
       @see https://testnet.axelarscan.io/account/axelar1zl3rxpp70lmte2xr6c4lgske2fyuj3hupcsvcd */
     AXELAR_GAS: 'axelar1zl3rxpp70lmte2xr6c4lgske2fyuj3hupcsvcd',
   },
-};
+});
