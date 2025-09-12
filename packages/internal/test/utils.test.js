@@ -3,7 +3,11 @@ import test from 'ava';
 
 import { fc, testProp } from '@fast-check/ava';
 import { Far } from '@endo/far';
-import { deepMapObject, makeMeasureSeconds } from '../src/js-utils.js';
+import {
+  deepMapObject,
+  makeMeasureSeconds,
+  partialMap,
+} from '../src/js-utils.js';
 import {
   assertAllDefined,
   attenuate,
@@ -13,6 +17,7 @@ import {
   deeplyFulfilledObject,
   synchronizedTee,
 } from '../src/ses-utils.js';
+import { arrayIsLike } from '../tools/ava-assertions.js';
 
 /** @import {Permit, Attenuated} from '../src/types.js'; */
 /** @import {Arbitrary} from 'fast-check'; */
@@ -526,6 +531,17 @@ test('makeMeasureSeconds', async t => {
   const output = await measureSeconds(async () => unique);
   t.deepEqual(output, { result: unique, duration: 1.0005 });
   t.deepEqual(times, [NaN]);
+});
+
+test('partialMap', t => {
+  // Manually map input to its reverse, expecting absence of false/undefined.
+  const input = [true, false, undefined, null, 0, 0n, '', [], {}, Symbol('')];
+  const expect = [true, ...input.slice(3)].reverse();
+  const output = partialMap(input, (value, idx, arr) => {
+    t.is(arr, input);
+    return arr.at(-(idx + 1));
+  });
+  arrayIsLike(t, output, expect);
 });
 
 test('assertAllDefined', t => {
