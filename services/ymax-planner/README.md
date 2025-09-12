@@ -80,8 +80,9 @@ Environment variables:
   [Agoric SDK Environment Variables](../../docs/env.md), either "$subdomain" for
   requesting MinimalNetworkConfig from URL
   [https://$subdomain.agoric.net/network-config](https://all.agoric.net/) or
-  "$subdomain,$chainId" for sending cosmos-sdk RPC requests to
-  $subdomain.rpc.agoric.net and assuming the chain ID (default derived from `CLUSTER`, falling back to "local")
+  "$subdomain,$chainId" or "$fqdn,$chainId" for sending cosmos-sdk RPC requests
+  to $subdomain.rpc.agoric.net or $fqdn (respectively) and assuming the chain ID
+  (default derived from `CLUSTER`, falling back to "local")
 - `ALCHEMY_API_KEY`: API key for accessing Alchemy’s Ethereum RPC endpoint (required, but not verified at startup)
 - `GCP_PROJECT_ID`: For fetching an unset `MNEMONIC` from the Google Cloud Secret Manager (default "simulationlab")
 - `GCP_SECRET_NAME`: For fetching an unset `MNEMONIC` from the Google Cloud Secret Manager (default "YMAX_CONTROL_MNEMONIC")
