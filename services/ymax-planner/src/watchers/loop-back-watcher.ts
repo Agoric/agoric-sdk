@@ -13,9 +13,6 @@ const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
   'MulticallExecuted(string,(bool,bytes)[])',
 );
 
-const SEARCH_BUFFER_MS = 10 * 1000; // 10 sec before publish time
-const MAX_SEARCH_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours max search window
-
 type LoopbackWatcherPowers = {
   evmProviders: Partial<Record<CaipChainId, JsonRpcProvider>>;
   usdcAddresses: Record<CaipChainId, `0x${string}`>;
@@ -64,31 +61,6 @@ const findBlockByTimestamp = async (provider: JsonRpcProvider, targetMs) => {
   return latest;
 };
 
-const estimateBlockFromTimestamp = (
-  caipId: CaipChainId,
-  timestampMs: number,
-): number => {
-  const blockTimes: Record<CaipChainId, number> = {
-    'eip155:1': 12, // Ethereum mainnet
-    'eip155:42161': 0.25, // Arbitrum
-    'eip155:10': 2, // Optimism
-    'eip155:137': 2, // Polygon
-    'eip155:8453': 2, // Base
-    'eip155:43114': 2, // Avalanche
-    // Testnets
-    'eip155:11155111': 12, // Ethereum Sepolia
-    'eip155:421614': 0.25, // Arbitrum Sepolia
-    'eip155:11155420': 2, // Optimism Sepolia
-    'eip155:80002': 2, // Polygon Amoy
-    'eip155:84532': 2, // Base Sepolia
-    'eip155:43113': 2, // Avalanche Fuji
-  };
-
-  const blockTime = blockTimes[caipId];
-  const targetBlock = Math.floor(timestampMs / 1000 / blockTime);
-  return Math.max(0, targetBlock);
-};
-
 const parseTransferLog = (log: Log) => {
   return {
     from: ethers.getAddress('0x' + log.topics[1].slice(-40)),
@@ -114,24 +86,17 @@ export const searchHistoricalCctpTransfer = async (
     const { namespace, reference, accountAddress } = parseAccountId(
       destinationAddress as AccountId,
     );
-    namespace === 'eip155' ||
-      Fail`${logPrefix} Expected EIP155 address, got: ${namespace}`;
 
     const caipId: CaipChainId = `${namespace}:${reference}`;
     const targetAddress = accountAddress as `0x${string}`;
 
-    const provider = powers.evmProviders[caipId] as JsonRpcProvider;
-    const usdcAddress = powers.usdcAddresses[caipId];
+    const usdcAddress =
+      powers.usdcAddresses[caipId] ||
+      Fail`${logPrefix} No USDC address for chain: ${caipId}`;
 
-    if (!provider) {
-      log(`${logPrefix} No provider for chain: ${caipId}`);
-      return false;
-    }
-
-    if (!usdcAddress) {
-      log(`${logPrefix} No USDC address for chain: ${caipId}`);
-      return false;
-    }
+    const provider =
+      powers.evmProviders[caipId] ||
+      Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
     const currentBlock = await provider.getBlockNumber();
     const fromBlock = await findBlockByTimestamp(provider, publishTimeMs);
@@ -153,7 +118,7 @@ export const searchHistoricalCctpTransfer = async (
     };
 
     // Query historical logs in chunks to handle RPC provider limits
-    const CHUNK_SIZE = 10; // Max blocks per request for free tier
+    const CHUNK_SIZE = 10; // Max blocks per request for free tier of Alchemy
 
     for (let start = fromBlock; start <= currentBlock; start += CHUNK_SIZE) {
       const end = Math.min(start + CHUNK_SIZE - 1, currentBlock);
@@ -212,34 +177,19 @@ export const searchHistoricalGmpExecution = async (
     const { namespace, reference, accountAddress } = parseAccountId(
       destinationAddress as AccountId,
     );
-    namespace === 'eip155' ||
-      Fail`${logPrefix} Expected EIP155 address, got: ${namespace}`;
 
     const caipId: CaipChainId = `${namespace}:${reference}`;
     const contractAddress = accountAddress as `0x${string}`;
 
-    const provider = powers.evmProviders[caipId] as JsonRpcProvider;
+    const provider =
+      powers.evmProviders[caipId] ||
+      Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
-    if (!provider) {
-      log(`${logPrefix} No provider for chain: ${caipId}`);
-      return false;
-    }
-
-    const searchStartMs = publishTimeMs - SEARCH_BUFFER_MS;
-    const searchEndMs = Math.min(
-      publishTimeMs + MAX_SEARCH_WINDOW_MS,
-      Date.now(),
-    );
-
-    const fromBlock = estimateBlockFromTimestamp(caipId, searchStartMs);
+    const fromBlock = findBlockByTimestamp(provider, publishTimeMs);
     const currentBlock = await provider.getBlockNumber();
-    const toBlock = Math.min(
-      estimateBlockFromTimestamp(caipId, searchEndMs),
-      currentBlock,
-    );
 
     log(
-      `${logPrefix} Searching blocks ${fromBlock} to ${toBlock} on ${caipId}`,
+      `${logPrefix} Searching blocks ${fromBlock} to ${currentBlock} on ${caipId}`,
     );
     log(
       `${logPrefix} Looking for MulticallExecuted for txId ${txId} at ${contractAddress}`,
@@ -252,7 +202,7 @@ export const searchHistoricalGmpExecution = async (
       address: contractAddress,
       topics: [MULTICALL_EXECUTED_SIGNATURE, expectedIdTopic],
       fromBlock,
-      toBlock,
+      currentBlock,
     };
 
     const logs = await provider.getLogs(filter);
@@ -283,13 +233,7 @@ export const searchHistoricalNobleTransfer = async (
   const logPrefix = '[LoopbackWatcher:Noble]';
 
   try {
-    const { namespace, reference, accountAddress } = parseAccountId(
-      destinationAddress as AccountId,
-    );
-    namespace === 'cosmos' ||
-      Fail`${logPrefix} Expected cosmos address, got: ${namespace}`;
-    reference === 'noble' ||
-      Fail`${logPrefix} Expected noble chain, got: ${reference}`;
+    const { accountAddress } = parseAccountId(destinationAddress as AccountId);
 
     const nobleAddress = accountAddress as Bech32Address;
     const expectedDenom = 'uusdc';
