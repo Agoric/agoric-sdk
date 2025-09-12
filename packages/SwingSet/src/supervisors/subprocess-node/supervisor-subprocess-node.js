@@ -5,7 +5,6 @@ import '@endo/init';
 
 import anylogger from 'anylogger';
 import fs from 'fs';
-import { Buffer } from 'buffer';
 import process from 'node:process';
 
 import { assert, X, Fail } from '@endo/errors';
@@ -20,6 +19,7 @@ import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { encode, decode } from '@agoric/internal/src/netstring.js';
+import { concatUint8Arrays, fromString, toString } from '@agoric/internal/src/uint8array-utils.js';
 import { makeDummyMeterControl } from '../../kernel/dummyMeterControl.js';
 import {
   makeSupervisorDispatch,
@@ -35,9 +35,9 @@ function workerLog(first, ...args) {
 workerLog(`supervisor started`);
 
 function makeNetstringReader({ fd, encoding }) {
-  const input = Buffer.alloc(32 * 1024);
-  /** @type {Buffer<ArrayBufferLike>} */
-  let buffered = Buffer.alloc(0);
+  const input = new Uint8Array(32 * 1024);
+  /** @type {Uint8Array} */
+  let buffered = new Uint8Array(0);
   let decoded = [];
 
   const readMore = () => {
@@ -50,7 +50,7 @@ function makeNetstringReader({ fd, encoding }) {
       throw Error('read pipe closed');
     }
     const more = input.subarray(0, bytesRead);
-    buffered = Buffer.concat([buffered, more]);
+    buffered = concatUint8Arrays([buffered, more]);
     const { leftover, payloads } = decode(buffered);
     buffered = leftover;
     decoded = payloads;
@@ -61,7 +61,7 @@ function makeNetstringReader({ fd, encoding }) {
       for (;;) {
         if (decoded.length) {
           const ns = decoded.shift();
-          return JSON.parse(ns.toString(encoding));
+          return JSON.parse(toString(ns));
         }
         readMore(); // blocks
       }
@@ -72,7 +72,7 @@ function makeNetstringReader({ fd, encoding }) {
 let dispatch;
 
 function writeToParent(command) {
-  let buf = encode(Buffer.from(JSON.stringify(command)));
+  let buf = encode(fromString(JSON.stringify(command)));
   while (buf.length) {
     const bytesWritten = fs.writeSync(4, buf);
     if (!bytesWritten) {
