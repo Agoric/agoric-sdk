@@ -10,88 +10,6 @@ const { brand: TOK_BRAND } = (() => ({ brand: Far('Tok') as Brand<'nat'> }))();
 const token = (v: bigint) => AmountMath.make(TOK_BRAND, v);
 const ZERO = token(0n);
 
-/**
- * Graph / network model specification (declarative)
- *
- * Nodes:
- *   Pools: 'Aave_Arbitrum', 'Beefy_re7_Avalanche', 'Compound_Ethereum'
- *   Chain hubs: '@Arbitrum', '@Avalanche', '@Ethereum', '@noble', '@agoric'
- *   Agoric local leaves: '+agoric', '<Deposit>', '<Cash>'
- *
- * Edges (conceptual attributes):
- *   - Intra-chain (leaf <-> hub): variableFee=1, time=1 (seconds)
- *   - Noble <-> Agoric: variableFee=2, time=10 (seconds)
- *   - EVM hub -> Noble (CCTP): time=1080 (18 minutes), variableFee≈0
- *   - Noble -> EVM hub (CCTP return): time=20 (seconds), variableFee≈0
- *   - FastUSDC (unidirectional EVM -> Noble): variableFee=0.0015, time=45 (seconds)
- * Note: time values are in seconds; fractional (sub-second) values are supported if needed.
- */
-const MODEL = {
-  nodes: [
-    'Aave_Arbitrum',
-    'Beefy_re7_Avalanche',
-    'Compound_Ethereum',
-    '@Arbitrum',
-    '@Avalanche',
-    '@Ethereum',
-    '@noble',
-    '@agoric',
-    '+agoric',
-    '<Deposit>',
-    '<Cash>',
-  ],
-  edges: [
-    // Intra-chain examples (not enumerating all, conceptual):
-    {
-      kind: 'intra',
-      src: 'Aave_Arbitrum',
-      dest: '@Arbitrum',
-      fee: 1,
-      time: 1,
-    },
-    {
-      kind: 'intra',
-      src: 'Beefy_re7_Avalanche',
-      dest: '@Avalanche',
-      fee: 1,
-      time: 1,
-    },
-    {
-      kind: 'intra',
-      src: 'Compound_Ethereum',
-      dest: '@Ethereum',
-      fee: 1,
-      time: 1,
-    },
-    { kind: 'intra', src: '+agoric', dest: '@agoric', fee: 1, time: 1 },
-    { kind: 'intra', src: '<Deposit>', dest: '@agoric', fee: 1, time: 1 },
-    { kind: 'intra', src: '<Cash>', dest: '@agoric', fee: 1, time: 1 },
-    // Noble <-> Agoric
-    { kind: 'ibc', src: '@agoric', dest: '@noble', fee: 2, time: 10 },
-    { kind: 'ibc', src: '@noble', dest: '@agoric', fee: 2, time: 10 },
-    // CCTP (EVM -> Noble slow)
-    { kind: 'cctpSlow', src: '@Arbitrum', dest: '@noble', time: 1080 },
-    { kind: 'cctpSlow', src: '@Avalanche', dest: '@noble', time: 1080 },
-    { kind: 'cctpSlow', src: '@Ethereum', dest: '@noble', time: 1080 },
-    // CCTP return (Noble -> EVM)
-    { kind: 'cctpReturn', src: '@noble', dest: '@Arbitrum', time: 20 },
-    { kind: 'cctpReturn', src: '@noble', dest: '@Avalanche', time: 20 },
-    { kind: 'cctpReturn', src: '@noble', dest: '@Ethereum', time: 20 },
-    // FastUSDC unidirectional (EVM -> Noble only)
-    { kind: 'fast', src: '@Arbitrum', dest: '@noble', fee: 0.0015, time: 45 },
-    { kind: 'fast', src: '@Avalanche', dest: '@noble', fee: 0.0015, time: 45 },
-    { kind: 'fast', src: '@Ethereum', dest: '@noble', fee: 0.0015, time: 45 },
-  ],
-} as const;
-
-// ---------------- Utilities ----------------
-
-const POOL_TO_CHAIN = (pool: string): string => {
-  // Heuristic: last segment after '_' is chain name (e.g., Aave_Arbitrum -> Arbitrum)
-  const parts = pool.split('_');
-  return parts[parts.length - 1];
-};
-
 // Pools
 const A = 'Aave_Arbitrum';
 const B = 'Beefy_re7_Avalanche';
@@ -100,46 +18,6 @@ const C = 'Compound_Ethereum';
 // Helper to build current map (use shared token)
 const balances = (rec: Record<string, bigint>): Record<string, Amount<'nat'>> =>
   Object.fromEntries(Object.entries(rec).map(([k, v]) => [k, token(v)]));
-
-// Links used for all scenarios (directional). We keep simple symmetric links;
-// solver currently produces only leaf->hub and hub->leaf steps (no hub-hub legs in output).
-const LINKS = [
-  // EVM hubs to noble (CCTP slow)
-  { srcChain: 'Arbitrum', destChain: 'noble', variableFee: 0, timeFixed: 1080 },
-  {
-    srcChain: 'Avalanche',
-    destChain: 'noble',
-    variableFee: 0,
-    timeFixed: 1080,
-  },
-  { srcChain: 'Ethereum', destChain: 'noble', variableFee: 0, timeFixed: 1080 },
-  // CCTP return (Noble -> EVM)
-  { srcChain: 'noble', destChain: 'Arbitrum', variableFee: 0, timeFixed: 20 },
-  { srcChain: 'noble', destChain: 'Avalanche', variableFee: 0, timeFixed: 20 },
-  { srcChain: 'noble', destChain: 'Ethereum', variableFee: 0, timeFixed: 20 },
-  // FastUSDC unidirectional (EVM -> Noble only)
-  {
-    srcChain: 'Arbitrum',
-    destChain: 'noble',
-    variableFee: 0.0015,
-    timeFixed: 45,
-  },
-  {
-    srcChain: 'Avalanche',
-    destChain: 'noble',
-    variableFee: 0.0015,
-    timeFixed: 45,
-  },
-  {
-    srcChain: 'Ethereum',
-    destChain: 'noble',
-    variableFee: 0.0015,
-    timeFixed: 45,
-  },
-  // Added Agoric <-> Noble IBC for deposit/cash flows
-  { srcChain: 'agoric', destChain: 'noble', variableFee: 2, timeFixed: 10 },
-  { srcChain: 'noble', destChain: 'agoric', variableFee: 2, timeFixed: 10 },
-];
 
 test('solver simple 2-pool case (A -> B 30)', async t => {
   const current = balances({ [A]: 80n, [B]: 20n });
