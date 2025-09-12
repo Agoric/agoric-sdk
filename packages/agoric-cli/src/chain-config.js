@@ -123,6 +123,7 @@ export function finishCosmosApp({
 
   const apiPort =
     DEFAULT_API_PORT + Math.ceil((rpcPort - DEFAULT_RPC_PORT) / 100);
+  app.api.swagger = true;
   if (exportMetrics) {
     app.api.laddr = `tcp://0.0.0.0:${apiPort}`;
     app.api.enable = true;

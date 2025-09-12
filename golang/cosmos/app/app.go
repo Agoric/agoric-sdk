@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	stdlog "log"
 	"net/http"
 	"os"
@@ -115,7 +116,6 @@ import (
 	ibcsolo "github.com/cosmos/ibc-go/v8/modules/light-clients/06-solomachine"
 	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/gorilla/mux"
-	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
 
 	appante "github.com/Agoric/agoric-sdk/golang/cosmos/ante"
@@ -142,9 +142,8 @@ import (
 	packetforward "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward"
 	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/keeper"
 	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/types"
-	// unnamed import of statik for swagger UI support
-	// XXX figure out how to build the docs
-	// _ "github.com/cosmos/cosmos-sdk/client/docs/statik"
+
+	"github.com/Agoric/agoric-sdk/golang/cosmos/client/docs"
 )
 
 const appName = "agoric"
@@ -1326,10 +1325,9 @@ func (app *GaiaApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICo
 	// Register grpc-gateway routes for all modules.
 	app.BasicModuleManager.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
-	// register swagger API from root so that other applications can override easily
-	// XXX figure out how to build the docs to make them available from the _ import above
-	if false && apiConfig.Swagger {
-		RegisterSwaggerAPI(apiSvr.Router)
+	// Do our custom swagger.yaml registration.
+	if err := RegisterSwaggerAPI(clientCtx, apiSvr.Router, apiConfig.Swagger); err != nil {
+		panic(err)
 	}
 }
 
@@ -1343,15 +1341,25 @@ func (app *GaiaApp) RegisterTendermintService(clientCtx client.Context) {
 	cmtservice.RegisterTendermintService(clientCtx, app.BaseApp.GRPCQueryRouter(), app.interfaceRegistry, app.Query)
 }
 
-// RegisterSwaggerAPI registers swagger route with API Server
-func RegisterSwaggerAPI(rtr *mux.Router) {
-	statikFS, err := fs.New()
-	if err != nil {
-		panic(err)
+// RegisterSwaggerAPI registers the /swagger/swagger.yaml route with API Server,
+// then adds default routes via server.RegisterSwaggerAPI.
+func RegisterSwaggerAPI(clientCtx client.Context, rtr *mux.Router, swaggerEnabled bool) error {
+	if !swaggerEnabled {
+		return nil
 	}
 
-	staticServer := http.FileServer(statikFS)
-	rtr.PathPrefix("/swagger/").Handler(http.StripPrefix("/swagger/", staticServer))
+	// Mount our swagger.yaml data directory.
+	root, err := fs.Sub(docs.SwaggerYaml, "swagger-yaml")
+	if err != nil {
+		return err
+	}
+
+	// Override Cosmos SDK swagger.yaml with Agoric's.
+	staticServer := http.FileServer(http.FS(root))
+	rtr.Path("/swagger/swagger.yaml").Handler(http.StripPrefix("/swagger/", staticServer))
+
+	// register swagger API from root so that other applications can override easily
+	return server.RegisterSwaggerAPI(clientCtx, rtr, swaggerEnabled)
 }
 
 // GetMaccPerms returns a copy of the module account permissions
