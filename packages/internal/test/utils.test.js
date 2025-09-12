@@ -2,7 +2,7 @@
 import test from 'ava';
 
 import { fc, testProp } from '@fast-check/ava';
-import { Fail } from '@endo/errors';
+import { assert, X, Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import {
   deepMapObject,
@@ -17,6 +17,7 @@ import {
   forever,
   deeplyFulfilledObject,
   synchronizedTee,
+  throwErrorCode,
   tryJsonParse,
   tryNow,
 } from '../src/ses-utils.js';
@@ -577,6 +578,38 @@ test('assertAllDefined', t => {
       // @ts-expect-error key presence not checked
       foo.prop.toFixed,
   );
+});
+
+test('throwErrorCode', t => {
+  t.throws(() => throwErrorCode('foo', 'bar'), { message: 'foo', code: 'bar' });
+
+  class MyError extends Error {}
+  const details = X`bar ${'baz'}`;
+  const code = 'qux';
+  // `makeError` uses a simple call rather than `new`.
+  const constructor = /** @type {ErrorConstructor} */ (
+    function makeMyError(message, opts) {
+      return new MyError(message, opts);
+    }
+  );
+  const cause = /** @type {Error} */ (t.throws(() => assert.fail(details)));
+  const errors = [cause, cause];
+  const err = /** @type {Error} */ (
+    t.throws(
+      () => throwErrorCode(details, code, { constructor, cause, errors }),
+      { code },
+    )
+  );
+  const expect = {
+    message: cause.message,
+    code,
+    constructor: MyError,
+    cause,
+    errors,
+  };
+  const actual = Object.fromEntries(Object.keys(expect).map(k => [k, err[k]]));
+  t.deepEqual(actual, expect);
+  t.true(err instanceof MyError);
 });
 
 test('tryJsonParse with valid JSON', t => {

@@ -91,6 +91,29 @@ const makeAggregateError =
       };
 
 /**
+ * Throw an error with an own "code" data property, supporting identification
+ * without parsing `message`. Note that such errors are not Passable and thus
+ * cannot appear inside a Passable structure, and even at top level the "code"
+ * property will be silently dropped by marshalling.
+ *
+ * @template {string} Code
+ * @param {Parameters<typeof makeError>[0]} details
+ * @param {Code} code
+ * @param {Parameters<typeof makeError>[2] & {
+ *   constructor?: Parameters<typeof makeError>[1];
+ * }} [opts]
+ */
+export const throwErrorCode = (details, code, opts) => {
+  const err = makeError(details, opts?.constructor, {
+    ...opts,
+    sanitize: false,
+  });
+  Object.defineProperty(err, 'code', { value: code, enumerable: true });
+  harden(err);
+  throw err;
+};
+
+/**
  * Synchronusly invoke a function with the opportunity to handle any error
  * similarly to a Promise `catch` callback (e.g., substituting a non-error
  * returned value or throwing a possibly-new error). This is useful for (among
