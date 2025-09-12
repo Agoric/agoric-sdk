@@ -30,7 +30,11 @@ import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import { getCurrentBalance, handleDeposit } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
-import { handlePendingTx, type EvmContext } from './pending-tx-manager.ts';
+import {
+  handlePendingTx,
+  type EvmContext,
+  type HandlePendingTxOpts,
+} from './pending-tx-manager.ts';
 import {
   parseStreamCell,
   parseStreamCellValue,
@@ -452,14 +456,12 @@ export const startEngine = async (
     );
   }).done;
 
-  const txPowers = {
+  const txPowers: HandlePendingTxOpts = {
     ...evmCtx,
     signingSmartWalletKit,
     fetch,
     cosmosRest,
-    marshaller,
     log: console.warn.bind(console),
-    error: console.error.bind(console),
   };
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
 
@@ -479,52 +481,14 @@ export const startEngine = async (
 
       // Try historical resolution first if we have timestamp data
       if (oldestBlockTimeMs) {
-        const { resolveHistoricalTransaction } = await import(
-          './watchers/loop-back-watcher.ts'
+        txPowers.mode = 'history';
+        txPowers.publishTimeMs = oldestBlockTimeMs;
+        void handlePendingTx(tx, txPowers).catch(err =>
+          console.error(errLabel, err),
         );
-
-        try {
-          const wasResolved = await resolveHistoricalTransaction(
-            {
-              cosmosRest,
-              evmProviders: evmCtx.evmProviders,
-              usdcAddresses: evmCtx.usdcAddresses,
-            },
-            {
-              txType: tx.type,
-              destinationAddress: tx.destinationAddress,
-              amount: tx.amount,
-              txId: tx.txId,
-              publishTimeMs: oldestBlockTimeMs,
-            },
-            (...args) => console.warn(`[${txId}] Historical:`, ...args),
-          );
-
-          if (wasResolved) {
-            console.warn(`✅ Historical resolution succeeded for ${txId}`);
-            // Resolve the transaction as successful
-            const { resolvePendingTx } = await import('./resolver.ts');
-            await resolvePendingTx({
-              signingSmartWalletKit,
-              txId: tx.txId,
-              status: 'success' as const,
-            });
-            return;
-          } else {
-            console.warn(
-              `⚠️ Historical resolution failed for ${txId}, falling back to live monitoring`,
-            );
-          }
-        } catch (historicalErr) {
-          console.warn(
-            `⚠️ Historical resolution error for ${txId}:`,
-            historicalErr,
-            'falling back to live monitoring',
-          );
-        }
       }
-
       // Fall back to live monitoring (original behavior)
+      txPowers.mode = 'live';
       void handlePendingTx(tx, txPowers).catch(err =>
         console.error(errLabel, err),
       );
@@ -613,7 +577,11 @@ export const startEngine = async (
       portfolioKeyForDepositAddr,
     });
 
-    await processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers);
+    await processPendingTxEvents(pendingTxEvents, handlePendingTx, {
+      ...txPowers,
+      error: console.error.bind(console),
+      marshaller,
+    });
 
     // Detect activity against portfolio deposit addresses.
     const oldAddrActivity = deferrals.splice(0).filter(deferral => {

@@ -1,17 +1,16 @@
-import type { JsonRpcProvider } from 'ethers';
+import type { Filter, JsonRpcProvider } from 'ethers';
 import type { Log } from 'ethers';
-import { id, zeroPadValue, getAddress } from 'ethers';
+import { id, zeroPadValue, getAddress, ethers } from 'ethers';
+import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
 
-const TRANSFER = id('Transfer(address,address,uint256)');
+const TRANSFER_SIGNATURE = id('Transfer(address,address,uint256)');
 
-type WatchTransferOptions = {
+type CctpWatch = {
   usdcAddress: `0x${string}`;
   provider: JsonRpcProvider;
-  watchAddress: `0x${string}`;
+  toAddress: `0x${string}`;
   expectedAmount: bigint;
-  timeoutMs?: number;
-  log: (...args: unknown[]) => void;
-  setTimeout?: typeof globalThis.setTimeout;
+  log?: (...args: unknown[]) => void;
 };
 
 const parseTransferLog = log => {
@@ -39,20 +38,23 @@ const parseAmount = data => {
 export const watchCctpTransfer = ({
   usdcAddress,
   provider,
-  watchAddress,
+  toAddress,
   expectedAmount,
   timeoutMs = 300000, // 5 min
   log = () => {},
   setTimeout = globalThis.setTimeout,
-}: WatchTransferOptions): Promise<boolean> => {
+}: CctpWatch & {
+  timeoutMs?: number;
+  setTimeout?: typeof globalThis.setTimeout;
+}): Promise<boolean> => {
   return new Promise(resolve => {
-    const TO_TOPIC = zeroPadValue(watchAddress.toLowerCase(), 32);
+    const TO_TOPIC = zeroPadValue(toAddress.toLowerCase(), 32);
     const filter = {
-      topics: [TRANSFER, null, TO_TOPIC],
+      topics: [TRANSFER_SIGNATURE, null, TO_TOPIC],
     };
 
     log(
-      `Watching for ERC-20 transfers to: ${watchAddress} with amount: ${expectedAmount}`,
+      `Watching for ERC-20 transfers to: ${toAddress} with amount: ${expectedAmount}`,
     );
 
     let transferFound = false;
@@ -109,4 +111,51 @@ export const watchCctpTransfer = ({
       }
     }, timeoutMs);
   });
+};
+
+export const watchHistoricalCctp = async ({
+  usdcAddress,
+  provider,
+  toAddress,
+  expectedAmount,
+  publishTimeMs,
+  log = () => {},
+}: CctpWatch & {
+  publishTimeMs: number;
+}): Promise<boolean> => {
+  try {
+    const { fromBlock, toBlock } = await buildTimeWindow(
+      provider,
+      publishTimeMs,
+    );
+
+    log(`Searching blocks ${fromBlock} → ${toBlock}`);
+    log(`Looking for Transfer to ${toAddress} amount ${expectedAmount}`);
+
+    const toTopic = ethers.zeroPadValue(toAddress.toLowerCase(), 32);
+    const baseFilter: Filter = {
+      address: usdcAddress,
+      topics: [TRANSFER_SIGNATURE, null, toTopic],
+    };
+
+    const matched = await scanEvmLogsInChunks(
+      { provider, baseFilter, fromBlock, toBlock, log },
+      ev => {
+        try {
+          const t = parseTransferLog(ev);
+          log(`Check: amount=${t.amount}`);
+          return t.amount === expectedAmount;
+        } catch (e) {
+          log(`Parse error:`, e);
+          return false;
+        }
+      },
+    );
+
+    if (!matched) log(`No matching historical transfer found`);
+    return matched;
+  } catch (error) {
+    log(`Error:`, error);
+    return false;
+  }
 };

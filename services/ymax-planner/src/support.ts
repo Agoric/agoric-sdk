@@ -1,4 +1,4 @@
-import { JsonRpcProvider } from 'ethers';
+import { JsonRpcProvider, Log, type Filter } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from './config.ts';
 import type { EvmContext } from './pending-tx-manager.ts';
@@ -101,4 +101,89 @@ export const createEVMContext = async ({
     evmProviders,
     usdcAddresses: usdcAddresses[clusterName],
   };
+};
+
+const findBlockByTimestamp = async (
+  provider: JsonRpcProvider,
+  targetMs: number,
+) => {
+  const target = Math.floor(targetMs / 1000);
+  let latest = await provider.getBlockNumber();
+  let earliest = 0;
+
+  while (earliest <= latest) {
+    const mid = Math.floor((earliest + latest) / 2);
+    const block = await provider.getBlock(mid);
+    if (!block) break;
+
+    if (block.timestamp === target) return mid;
+    if (block.timestamp < target) earliest = mid + 1;
+    else latest = mid - 1;
+  }
+  // latest is now the greatest block with timestamp <= target
+  return latest;
+};
+
+export const buildTimeWindow = async (
+  provider: JsonRpcProvider,
+  publishTimeMs: number,
+) => {
+  const fromBlock = await findBlockByTimestamp(provider, publishTimeMs);
+  const toBlock = await provider.getBlockNumber();
+  return { fromBlock, toBlock };
+};
+
+type LogPredicate = (log: Log) => boolean | Promise<boolean>;
+
+type ScanOpts = {
+  provider: JsonRpcProvider;
+  baseFilter: Omit<Filter, 'fromBlock' | 'toBlock'> & Partial<Filter>;
+  fromBlock: number;
+  toBlock: number;
+  chunkSize?: number;
+  log?: (...args: unknown[]) => void;
+  onMatch?: (log: Log) => void | Promise<void>;
+};
+
+/**
+ * Generic chunked log scanner: scans [fromBlock, toBlock] in CHUNK_SIZE windows,
+ * runs `predicate` on each log, and returns true on the first match.
+ */
+export const scanEvmLogsInChunks = async (
+  {
+    provider,
+    baseFilter,
+    fromBlock,
+    toBlock,
+    chunkSize = 10,
+    log = () => {},
+    onMatch,
+  }: ScanOpts,
+  predicate: LogPredicate,
+): Promise<boolean> => {
+  for (let start = fromBlock; start <= toBlock; start += chunkSize) {
+    const end = Math.min(start + chunkSize - 1, toBlock);
+    const chunkFilter: Filter = {
+      ...baseFilter,
+      fromBlock: start,
+      toBlock: end,
+    };
+
+    try {
+      log(`[LogScan] Searching chunk ${start} → ${end}`);
+      const logs = await provider.getLogs(chunkFilter);
+
+      for (const ev of logs) {
+        if (await predicate(ev)) {
+          log(`[LogScan] Match in tx=${ev.transactionHash}`);
+          if (onMatch) await onMatch(ev);
+          return true;
+        }
+      }
+    } catch (err) {
+      log(`[LogScan] Error searching chunk ${start}–${end}:`, err);
+      // continue
+    }
+  }
+  return false;
 };
