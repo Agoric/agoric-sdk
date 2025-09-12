@@ -1,4 +1,4 @@
-import type { JsonRpcProvider, Log } from 'ethers';
+import type { JsonRpcProvider, Log, Filter } from 'ethers';
 import { ethers } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
@@ -38,7 +38,10 @@ type NobleLoopbackParams = {
   publishTimeMs: number;
 };
 
-const findBlockByTimestamp = async (provider: JsonRpcProvider, targetMs) => {
+const findBlockByTimestamp = async (
+  provider: JsonRpcProvider,
+  targetMs: number,
+) => {
   const target = Math.floor(targetMs / 1000);
   let latest = await provider.getBlockNumber();
   let earliest = 0;
@@ -46,52 +49,23 @@ const findBlockByTimestamp = async (provider: JsonRpcProvider, targetMs) => {
   while (earliest <= latest) {
     const mid = Math.floor((earliest + latest) / 2);
     const block = await provider.getBlock(mid);
-
     if (!block) break;
 
-    if (block.timestamp === target) {
-      return mid; // exact match
-    } else if (block.timestamp < target) {
-      earliest = mid + 1;
-    } else {
-      latest = mid - 1;
-    }
+    if (block.timestamp === target) return mid;
+    if (block.timestamp < target) earliest = mid + 1;
+    else latest = mid - 1;
   }
-
+  // latest is now the greatest block with timestamp <= target
   return latest;
 };
 
-const searchLog = async ({
-  fromBlock,
-  currentBlock,
-  provider,
-  filter,
-  log,
-  expectedIdTopic,
-}) => {
-  // Query historical logs in chunks to handle RPC provider limits
-  const CHUNK_SIZE = 10; // Max blocks per request for free tier
-
-  for (let start = fromBlock; start <= currentBlock; start += CHUNK_SIZE) {
-    const end = Math.min(start + CHUNK_SIZE - 1, currentBlock);
-
-    try {
-      log(`Searching chunk ${start} to ${end}`);
-      const logs = await provider.getLogs(filter);
-
-      for (const eventLog of logs) {
-        if (eventLog.topics[1] === expectedIdTopic) {
-          log(
-            `Found matching historical MulticallExecuted: tx=${eventLog.transactionHash}`,
-          );
-          return true;
-        }
-      }
-    } catch (error) {
-      log(`Error searching chunk ${start}-${end}:`, error);
-      // Continue with other chunks even if one fails
-    }
-  }
+const buildTimeWindow = async (
+  provider: JsonRpcProvider,
+  publishTimeMs: number,
+) => {
+  const fromBlock = await findBlockByTimestamp(provider, publishTimeMs);
+  const toBlock = await provider.getBlockNumber();
+  return { fromBlock, toBlock };
 };
 
 const parseTransferLog = (log: Log) => {
@@ -102,6 +76,61 @@ const parseTransferLog = (log: Log) => {
     blockNumber: log.blockNumber,
     transactionHash: log.transactionHash,
   };
+};
+
+type LogPredicate = (log: Log) => boolean | Promise<boolean>;
+
+type ScanOpts = {
+  provider: JsonRpcProvider;
+  baseFilter: Omit<Filter, 'fromBlock' | 'toBlock'> & Partial<Filter>;
+  fromBlock: number;
+  toBlock: number;
+  chunkSize?: number;
+  log?: (...args: unknown[]) => void;
+  onMatch?: (log: Log) => void | Promise<void>;
+};
+
+/**
+ * Generic chunked log scanner: scans [fromBlock, toBlock] in CHUNK_SIZE windows,
+ * runs `predicate` on each log, and returns true on the first match.
+ */
+const scanEvmLogsInChunks = async (
+  {
+    provider,
+    baseFilter,
+    fromBlock,
+    toBlock,
+    chunkSize = 10,
+    log = () => {},
+    onMatch,
+  }: ScanOpts,
+  predicate: LogPredicate,
+): Promise<boolean> => {
+  for (let start = fromBlock; start <= toBlock; start += chunkSize) {
+    const end = Math.min(start + chunkSize - 1, toBlock);
+    const chunkFilter: Filter = {
+      ...baseFilter,
+      fromBlock: start,
+      toBlock: end,
+    };
+
+    try {
+      log(`[LogScan] Searching chunk ${start} → ${end}`);
+      const logs = await provider.getLogs(chunkFilter);
+
+      for (const ev of logs) {
+        if (await predicate(ev)) {
+          log(`[LogScan] Match in tx=${ev.transactionHash}`);
+          if (onMatch) await onMatch(ev);
+          return true;
+        }
+      }
+    } catch (err) {
+      log(`[LogScan] Error searching chunk ${start}–${end}:`, err);
+      // continue
+    }
+  }
+  return false;
 };
 
 export const searchHistoricalCctpTransfer = async (
@@ -119,9 +148,8 @@ export const searchHistoricalCctpTransfer = async (
     const { namespace, reference, accountAddress } = parseAccountId(
       destinationAddress as AccountId,
     );
-
     const caipId: CaipChainId = `${namespace}:${reference}`;
-    const targetAddress = accountAddress as `0x${string}`;
+    const toAddress = accountAddress as `0x${string}`;
 
     const usdcAddress =
       powers.usdcAddresses[caipId] ||
@@ -131,70 +159,41 @@ export const searchHistoricalCctpTransfer = async (
       powers.evmProviders[caipId] ||
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
-    const currentBlock = await provider.getBlockNumber();
-    const fromBlock = await findBlockByTimestamp(provider, publishTimeMs);
-
-    log(
-      `${logPrefix} Searching blocks ${fromBlock} to ${currentBlock} on ${caipId}`,
-    );
-    log(
-      `${logPrefix} Looking for transfer to ${targetAddress} amount ${expectedAmount}`,
+    const { fromBlock, toBlock } = await buildTimeWindow(
+      provider,
+      publishTimeMs,
     );
 
-    // Create filter for Transfer events to target address
-    const toTopic = ethers.zeroPadValue(targetAddress.toLowerCase(), 32);
-    const filter = {
+    log(`${logPrefix} Searching blocks ${fromBlock} → ${toBlock} on ${caipId}`);
+    log(
+      `${logPrefix} Looking for Transfer to ${toAddress} amount ${expectedAmount}`,
+    );
+
+    // topics: [Transfer, from?, to]
+    const toTopic = ethers.zeroPadValue(toAddress.toLowerCase(), 32);
+    const baseFilter: Filter = {
       address: usdcAddress,
       topics: [TRANSFER_SIGNATURE, null, toTopic],
-      fromBlock,
-      currentBlock,
     };
 
-    // Query historical logs in chunks to handle RPC provider limits
-    const CHUNK_SIZE = 10; // Max blocks per request for free tier of Alchemy
-
-    for (let start = fromBlock; start <= currentBlock; start += CHUNK_SIZE) {
-      const end = Math.min(start + CHUNK_SIZE - 1, currentBlock);
-
-      const chunkFilter = {
-        ...filter,
-        fromBlock: start,
-        toBlock: end,
-      };
-
-      try {
-        log(`${logPrefix} Searching chunk ${start} to ${end}`);
-        const logs = await provider.getLogs(chunkFilter);
-
-        for (const eventLog of logs) {
-          try {
-            const transferData = parseTransferLog(eventLog);
-
-            log(
-              `${logPrefix} Checking transfer: amount=${transferData.amount} tx=${transferData.transactionHash}`,
-            );
-
-            if (transferData.amount === expectedAmount) {
-              log(
-                `${logPrefix} Found matching historical transfer: tx=${transferData.transactionHash}`,
-              );
-              return true;
-            }
-          } catch (error) {
-            log(`${logPrefix} Error parsing log:`, error);
-            continue;
-          }
+    const matched = await scanEvmLogsInChunks(
+      { provider, baseFilter, fromBlock, toBlock, log },
+      ev => {
+        try {
+          const t = parseTransferLog(ev);
+          log(`${logPrefix} Check: amount=${t.amount} tx=${t.transactionHash}`);
+          return t.amount === expectedAmount;
+        } catch (e) {
+          log(`${logPrefix} Parse error:`, e);
+          return false;
         }
-      } catch (error) {
-        log(`${logPrefix} Error searching chunk ${start}-${end}:`, error);
-        // Continue with other chunks even if one fails
-      }
-    }
+      },
+    );
 
-    log(`${logPrefix} No matching historical transfer found`);
-    return false;
+    if (!matched) log(`${logPrefix} No matching historical transfer found`);
+    return matched;
   } catch (error) {
-    log(`${logPrefix} Error during historical search:`, error);
+    log(`${logPrefix} Error:`, error);
     return false;
   }
 };
@@ -210,7 +209,6 @@ export const searchHistoricalGmpExecution = async (
     const { namespace, reference, accountAddress } = parseAccountId(
       destinationAddress as AccountId,
     );
-
     const caipId: CaipChainId = `${namespace}:${reference}`;
     const contractAddress = accountAddress as `0x${string}`;
 
@@ -218,60 +216,33 @@ export const searchHistoricalGmpExecution = async (
       powers.evmProviders[caipId] ||
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
-    const fromBlock = await findBlockByTimestamp(provider, publishTimeMs);
-    const currentBlock = await provider.getBlockNumber();
-
-    log(
-      `${logPrefix} Searching blocks ${fromBlock} to ${currentBlock} on ${caipId}`,
+    const { fromBlock, toBlock } = await buildTimeWindow(
+      provider,
+      publishTimeMs,
     );
+
+    log(`${logPrefix} Searching blocks ${fromBlock} → ${toBlock} on ${caipId}`);
     log(
       `${logPrefix} Looking for MulticallExecuted for txId ${txId} at ${contractAddress}`,
     );
 
-    // Create topic hash for the specific txId
     const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
 
-    const filter = {
+    const baseFilter: Filter = {
       address: contractAddress,
       topics: [MULTICALL_EXECUTED_SIGNATURE, expectedIdTopic],
-      fromBlock,
-      currentBlock,
     };
 
-    // Query historical logs in chunks to handle RPC provider limits
-    const CHUNK_SIZE = 10; // Max blocks per request for free tier
+    const matched = await scanEvmLogsInChunks(
+      { provider, baseFilter, fromBlock, toBlock, log },
+      ev => ev.topics[1] === expectedIdTopic,
+    );
 
-    for (let start = fromBlock; start <= currentBlock; start += CHUNK_SIZE) {
-      const end = Math.min(start + CHUNK_SIZE - 1, currentBlock);
-
-      const chunkFilter = {
-        ...filter,
-        fromBlock: start,
-        toBlock: end,
-      };
-
-      try {
-        log(`${logPrefix} Searching chunk ${start} to ${end}`);
-        const logs = await provider.getLogs(chunkFilter);
-
-        for (const eventLog of logs) {
-          if (eventLog.topics[1] === expectedIdTopic) {
-            log(
-              `${logPrefix} Found matching historical MulticallExecuted: tx=${eventLog.transactionHash}`,
-            );
-            return true;
-          }
-        }
-      } catch (error) {
-        log(`${logPrefix} Error searching chunk ${start}-${end}:`, error);
-        // Continue with other chunks even if one fails
-      }
-    }
-
-    log(`${logPrefix} No matching historical MulticallExecuted found`);
-    return false;
+    if (!matched)
+      log(`${logPrefix} No matching historical MulticallExecuted found`);
+    return matched;
   } catch (error) {
-    log(`${logPrefix} Error during historical search:`, error);
+    log(`${logPrefix} Error:`, error);
     return false;
   }
 };
@@ -285,7 +256,6 @@ export const searchHistoricalNobleTransfer = async (
 
   try {
     const { accountAddress } = parseAccountId(destinationAddress as AccountId);
-
     const nobleAddress = accountAddress as Bech32Address;
     const expectedDenom = 'uusdc';
 
@@ -299,7 +269,6 @@ export const searchHistoricalNobleTransfer = async (
         nobleAddress,
         expectedDenom,
       );
-
       const currentAmount = BigInt(balance.amount || '0');
 
       // TODO: We can add more granular checks once https://github.com/Agoric/agoric-sdk/issues/11878 is started
