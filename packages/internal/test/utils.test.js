@@ -618,8 +618,7 @@ test('tryJsonParse with valid JSON', t => {
 });
 test('tryJsonParse with non-string', t => {
   t.throws(
-    () =>
-      tryJsonParse(/** @type {any} */ ({ toString: () => '{}' }), 'LABEL'),
+    () => tryJsonParse(/** @type {any} */ ({ toString: () => '{}' }), 'LABEL'),
     {
       message: /^LABEL: Input must be a string, not object\b/,
     },
