@@ -103,32 +103,63 @@ export const createEVMContext = async ({
   };
 };
 
+/**
+ * Generic binary search helper for finding the greatest value that satisfies a predicate.
+ * Assumes a transition from acceptance to rejection somewhere in [start, end].
+ *
+ * @param start - Starting value (inclusive)
+ * @param end - Ending value (inclusive)
+ * @param acceptancePredicate - Function that returns true for accepted values
+ * @param transform - Optional function to transform values before testing
+ * @returns The greatest accepted value in the range
+ */
+export const binarySearch = async <T, U>(
+  start: T,
+  end: T,
+  acceptancePredicate: (x: U) => Promise<boolean> | boolean,
+  transform?: (x: T) => Promise<U> | U,
+): Promise<T> => {
+  let left = start;
+  let right = end as any;
+  let result = left;
+
+  while (left <= right) {
+    const mid = Math.floor((Number(left) + Number(right)) / 2) as T;
+    const value = transform ? await transform(mid) : mid;
+
+    if (await acceptancePredicate(value as any)) {
+      result = mid;
+      left = (mid as any) + 1;
+    } else {
+      right = (mid as any) - 1;
+    }
+  }
+
+  return result;
+};
+
 const findBlockByTimestamp = async (
   provider: JsonRpcProvider,
   targetMs: number,
 ) => {
-  const target = Math.floor(targetMs / 1000);
-  let latest = await provider.getBlockNumber();
-  let earliest = 0;
-
-  while (earliest <= latest) {
-    const mid = Math.floor((earliest + latest) / 2);
-    const block = await provider.getBlock(mid);
-    if (!block) break;
-
-    if (block.timestamp === target) return mid;
-    if (block.timestamp < target) earliest = mid + 1;
-    else latest = mid - 1;
-  }
-  // latest is now the greatest block with timestamp <= target
-  return latest;
+  const posixSeconds = Math.floor(targetMs / 1000);
+  const startBlockNumber = await binarySearch(
+    0,
+    await provider.getBlockNumber(),
+    (block: Awaited<ReturnType<typeof provider.getBlock>>) =>
+      block?.timestamp ? block.timestamp <= posixSeconds : false,
+    blockNumber => provider.getBlock(blockNumber),
+  );
+  return startBlockNumber;
 };
 
 export const buildTimeWindow = async (
   provider: JsonRpcProvider,
   publishTimeMs: number,
+  fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
 ) => {
-  const fromBlock = await findBlockByTimestamp(provider, publishTimeMs);
+  const adjustedTime = publishTimeMs - fudgeFactorMs;
+  const fromBlock = await findBlockByTimestamp(provider, adjustedTime);
   const toBlock = await provider.getBlockNumber();
   return { fromBlock, toBlock };
 };
@@ -163,7 +194,15 @@ export const scanEvmLogsInChunks = async (
 ): Promise<boolean> => {
   for (let start = fromBlock; start <= toBlock; start += chunkSize) {
     const end = Math.min(start + chunkSize - 1, toBlock);
+
+    /**
+     * Generic chunked log scanner: scans [fromBlock, toBlock] (inclusive) in CHUNK_SIZE windows,
+     * runs `predicate` on each log, and returns true on the first match.
+     * @param fromBlock - Starting block number (inclusive)
+     * @param toBlock - Ending block number (inclusive)
+     */
     const chunkFilter: Filter = {
+      // baseFilter represents core filter configuration (address, topics, etc.) without block range
       ...baseFilter,
       fromBlock: start,
       toBlock: end,

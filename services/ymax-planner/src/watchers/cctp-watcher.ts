@@ -3,6 +3,25 @@ import type { Log } from 'ethers';
 import { id, zeroPadValue, getAddress, ethers } from 'ethers';
 import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
 
+/**
+ * The Keccak256 hash (event signature) of the standard ERC-20 `Transfer` event.
+ *
+ * In Ethereum and other EVM-based chains, events are uniquely identified by the
+ * hash of their declaration. When a smart contract emits a `Transfer` event, the
+ * first topic in the log will be this hashed signature.
+ *
+ * `id()` is a helper that computes keccak256 over the given string. Calling
+ * `id('Transfer(address,address,uint256)')` returns the 32-byte hash of the event
+ * signature, which can be used to filter logs for `Transfer` events.
+ *
+ * `TRANSFER_SIGNATURE` is used to detect Transfer events in transaction receipts when parsing logs.
+ *
+ * 📘 Docs:
+ * - Solidity Events
+ *    - https://docs.soliditylang.org/en/latest/contracts.html#events
+ *    - https://docs.soliditylang.org/en/latest/abi-spec.html#events
+ * - ERC-20 Transfer event: https://eips.ethereum.org/EIPS/eip-20#transfer
+ */
 const TRANSFER_SIGNATURE = id('Transfer(address,address,uint256)');
 
 type CctpWatch = {
@@ -113,7 +132,7 @@ export const watchCctpTransfer = ({
   });
 };
 
-export const watchHistoricalCctp = async ({
+export const lookBackCcctp = async ({
   usdcAddress,
   provider,
   toAddress,
@@ -152,7 +171,7 @@ export const watchHistoricalCctp = async ({
       },
     );
 
-    if (!matched) log(`No matching historical transfer found`);
+    if (!matched) log(`No matching transfer found`);
     return matched;
   } catch (error) {
     log(`Error:`, error);

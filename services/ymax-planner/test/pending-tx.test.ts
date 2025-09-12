@@ -214,7 +214,7 @@ test('handlePendingTx throws error for unsupported transaction type', async t =>
   );
 });
 
-test('handlePendingTx resolves historical CCTP transaction successfully', async t => {
+test('handlePendingTx resolves old pending CCTP transaction successfully', async t => {
   const logs: string[] = [];
   const mockLog = (...args: unknown[]) => logs.push(args.join(' '));
 
@@ -252,27 +252,26 @@ test('handlePendingTx resolves historical CCTP transaction successfully', async 
     {
       ...mockEvmCtx,
       log: mockLog,
-      mode: 'history',
-      publishTimeMs: Date.now() - 10000,
+      oldestTimestampMs: Date.now() - 10000,
     },
   );
 
-  // publishTime is ~10 seconds ago, so binary search should find block ~30
-  // (since block 31 is current time and each block is 12 seconds apart)
-  const expectedFromBlock = 30;
+  // publishTime is ~10 seconds ago, with 5 min fudge factor = 5m10s ago
+  // binary search should find block ~5 (since block 31 is current time and each block is 12 seconds apart)
+  const expectedFromBlock = 5;
 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.CCTP_TO_EVM} tx`,
     `[${txId}] Searching blocks ${expectedFromBlock} → 31`,
     `[${txId}] Looking for Transfer to ${recipientAddress} amount ${txAmount}`,
-    `[${txId}] [LogScan] Searching chunk ${expectedFromBlock} → 31`,
+    `[${txId}] [LogScan] Searching chunk ${expectedFromBlock} → 14`,
     `[${txId}] Check: amount=${txAmount}`,
     `[${txId}] [LogScan] Match in tx=${log.transactionHash}`,
     `[${txId}] CCTP tx resolved`,
   ]);
 });
 
-test('handlePendingTx resolves historical GMP transaction successfully', async t => {
+test('handlePendingTx resolves old pending GMP transaction successfully', async t => {
   const logs: string[] = [];
   const mockLog = (...args: unknown[]) => logs.push(args.join(' '));
 
@@ -298,53 +297,55 @@ test('handlePendingTx resolves historical GMP transaction successfully', async t
   const log = createMockGmpExecutionLog(txId);
   mockProvider.getLogs = async () => [log];
 
-  // Mock fetch for Axelar API call
-  mockEvmCtx.fetch = async (url: string) => {
-    return {
-      ok: true,
-      json: async () => ({
-        data: [
-          {
-            status: 'executed',
-            call: {
-              transactionHash: '0xabcdef123456',
-              returnValues: {
-                messageId: `msg_${txId}`,
+  const ctxWithFetch = harden({
+    ...mockEvmCtx,
+    fetch: async (url: string) => {
+      return {
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              status: 'executed',
+              call: {
+                transactionHash: '0xabcdef123456',
+                returnValues: {
+                  messageId: `msg_${txId}`,
+                },
+              },
+              executed: {
+                transactionHash: '0xexecuted123',
+                receipt: {
+                  logs: [createMockGmpExecutionLog(txId)],
+                },
               },
             },
-            executed: {
-              transactionHash: '0xexecuted123',
-              receipt: {
-                logs: [createMockGmpExecutionLog(txId)],
-              },
-            },
-          },
-        ],
-      }),
-    } as Response;
-  };
+          ],
+        }),
+      } as Response;
+    },
+  });
 
   await handlePendingTx(
     { txId, ...gmpTx },
     {
-      ...mockEvmCtx,
+      ...ctxWithFetch,
       log: mockLog,
-      mode: 'history',
-      publishTimeMs: Date.now() - 10000,
+      oldestTimestampMs: Date.now() - 10000,
     },
   );
 
-  // publishTime is ~10 seconds ago, so binary search should find block ~30
-  const expectedFromBlock = 30;
+  // publishTime is ~10 seconds ago, with 5 min fudge factor = 5m10s ago
+  // binary search should find block ~5 (since block 31 is current time and each block is 12 seconds apart)
+  const expectedFromBlock = 5;
 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.GMP} tx`,
     `[${txId}] Searching blocks ${expectedFromBlock} → 31`,
     `[${txId}] Looking for MulticallExecuted for txId ${txId} at ${contractAddress}`,
-    `[${txId}] [LogScan] Searching chunk ${expectedFromBlock} → 31`,
+    `[${txId}] [LogScan] Searching chunk ${expectedFromBlock} → 14`,
     `[${txId}] [LogScan] Match in tx=${log.transactionHash}`,
     `[${txId}] GMP tx resolved`,
   ]);
 });
 
-test.skip('TODO: handlePendingTx resolves historical Noble transfer successfully', async t => {});
+test.skip('TODO: handlePendingTx resolves old pending Noble transfer successfully', async t => {});

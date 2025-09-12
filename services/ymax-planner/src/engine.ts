@@ -16,6 +16,7 @@ import {
   PublishedTxShape,
   type PendingTx,
   type PublishedTx,
+  type TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import {
   PoolPlaces,
@@ -32,6 +33,7 @@ import { getCurrentBalance, handleDeposit } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import {
   handlePendingTx,
+  TX_TIMEOUT_MS,
   type EvmContext,
   type HandlePendingTxOpts,
 } from './pending-tx-manager.ts';
@@ -57,6 +59,8 @@ type EventRecord = { blockHeight: bigint } & (
   | { type: 'kvstore'; event: CosmosEvent }
   | { type: 'transfer'; address: Bech32Address }
 );
+
+type PendingTxRecord = { blockHeight: bigint; tx: PendingTx };
 
 export const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
 export const PENDING_TX_PATH_PREFIX = 'published.ymax0.pendingTxs';
@@ -277,64 +281,6 @@ export const startEngine = async (
   await null;
   const { query, marshaller } = signingSmartWalletKit;
 
-  type BlockInfo = { height: bigint; timestamp: Date; txId: string };
-
-  const getOldestBlockTime = async (keys: string[]): Promise<number | null> => {
-    if (!keys.length) return null;
-
-    const blockTimeByHeight = new Map<bigint, Promise<Date>>();
-    const getBlockTime = (height: bigint) => {
-      let p = blockTimeByHeight.get(height);
-      if (!p) {
-        p = (async () => {
-          const resp = await rpc.request('block', {
-            height: height.toString(),
-          });
-          return new Date(resp.block.header.time);
-        })();
-        blockTimeByHeight.set(height, p);
-      }
-      return p;
-    };
-
-    const pendingLookups = keys.map(async (key): Promise<BlockInfo | null> => {
-      const path = `${PENDING_TX_PATH_PREFIX}.${key}`;
-      // TODO: maybe pass this data via params instead of calling readPublished again
-      const tx = (await query.readPublished(
-        stripPrefix('published.', path),
-      )) as PublishedTx;
-
-      if (tx.status !== 'pending') return null;
-
-      const meta = await query.vstorage.readStorageMeta(path);
-      const height = meta.blockHeight as bigint;
-
-      const timestamp = await getBlockTime(height);
-      return { height, timestamp, txId: key };
-    });
-
-    const results = (await Promise.all(pendingLookups)).filter(
-      (x): x is BlockInfo => x !== null,
-    );
-
-    if (results.length === 0) return null;
-
-    const oldest = results.reduce((min, cur) =>
-      cur.timestamp < min.timestamp ? cur : min,
-    );
-
-    console.warn(
-      'Oldest pending tx:',
-      oldest.txId,
-      'at block',
-      oldest.height.toString(),
-      'timestamp',
-      oldest.timestamp,
-    );
-
-    return oldest.timestamp.getTime();
-  };
-
   // Test balance querying (using dummy addresses for now).
   {
     const balanceQueryPowers = { spectrum, cosmosRest };
@@ -463,7 +409,65 @@ export const startEngine = async (
   };
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
 
-  const oldestBlockTimeMs = await getOldestBlockTime(pendingTxKeys);
+  const initialPendingTxData: PendingTxRecord[] = [];
+  await makeWorkPool(pendingTxKeys, undefined, async (txId: TxId) => {
+    const path = `${PENDING_TX_PATH_PREFIX}.${txId}`;
+    await null;
+    let streamCellJson;
+    let data: unknown;
+    try {
+      streamCellJson = await query.vstorage.readStorage(path, {
+        kind: 'data',
+      });
+      const streamCell = parseStreamCell(streamCellJson, path);
+      data = parseStreamCellValue(streamCell, -1, path);
+      mustMatch(data, PublishedTxShape, path);
+      initialPendingTxData.push({
+        blockHeight: BigInt(streamCell.blockHeight),
+        tx: { txId, ...data },
+      });
+    } catch (err) {
+      const errLabel = ` Failed to process old pending tx ${path}`;
+      console.error(errLabel, data || streamCellJson, err);
+    }
+  }).done;
+
+  // If there is a pending transaction of age greater than or equal to
+  // TX_TIMEOUT_MS, then assume that the planner was restarted or offline and
+  // look for transactions that completed in the gap.
+  const keepOlderTx = (low, rec) =>
+    !low || rec.blockHeight < low.blockHeight ? rec : low;
+  const oldestPendingTxRecord =
+    initialPendingTxData.reduce<PendingTxRecord | null>(keepOlderTx, null);
+
+  if (oldestPendingTxRecord) {
+    console.warn('Oldest pending tx', oldestPendingTxRecord);
+    const resp = await rpc.request('block', {
+      height: `${oldestPendingTxRecord.blockHeight}`,
+    });
+    const { time } = resp.block.header;
+    console.warn('Oldest pending tx block time', time);
+    const oldestTimestampMs = new Date(time).getTime();
+
+    if (Date.now() - oldestTimestampMs >= TX_TIMEOUT_MS) {
+      for (const pendingTxRecord of initialPendingTxData) {
+        void handlePendingTx(pendingTxRecord.tx, {
+          ...txPowers,
+          oldestTimestampMs,
+        }).catch(err => {
+          const msg = ` Failed to process old pending tx ${pendingTxRecord.tx.txId} with lookback`;
+          console.error(msg, pendingTxRecord, err);
+        });
+      }
+    }
+
+    // ...but always look for new completions.
+    for (const { tx } of initialPendingTxData) {
+      void handlePendingTx(tx, txPowers).catch(err =>
+        console.error(` Failed to process old pending tx  ${tx.txId}`, tx, err),
+      );
+    }
+  }
 
   await makeWorkPool(pendingTxKeys, undefined, async txId => {
     const path = `${PENDING_TX_PATH_PREFIX}.${txId}`;
@@ -477,16 +481,6 @@ export const startEngine = async (
       const tx = { txId, ...data } as PendingTx;
       console.warn('Old pending tx', tx);
 
-      // Try historical resolution first if we have timestamp data
-      if (oldestBlockTimeMs) {
-        txPowers.mode = 'history';
-        txPowers.publishTimeMs = oldestBlockTimeMs;
-        void handlePendingTx(tx, txPowers).catch(err =>
-          console.error(errLabel, err),
-        );
-      }
-      // Fall back to live monitoring (original behavior)
-      txPowers.mode = 'live';
       void handlePendingTx(tx, txPowers).catch(err =>
         console.error(errLabel, err),
       );
