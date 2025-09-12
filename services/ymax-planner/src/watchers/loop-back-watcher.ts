@@ -61,6 +61,39 @@ const findBlockByTimestamp = async (provider: JsonRpcProvider, targetMs) => {
   return latest;
 };
 
+const searchLog = async ({
+  fromBlock,
+  currentBlock,
+  provider,
+  filter,
+  log,
+  expectedIdTopic,
+}) => {
+  // Query historical logs in chunks to handle RPC provider limits
+  const CHUNK_SIZE = 10; // Max blocks per request for free tier
+
+  for (let start = fromBlock; start <= currentBlock; start += CHUNK_SIZE) {
+    const end = Math.min(start + CHUNK_SIZE - 1, currentBlock);
+
+    try {
+      log(`Searching chunk ${start} to ${end}`);
+      const logs = await provider.getLogs(filter);
+
+      for (const eventLog of logs) {
+        if (eventLog.topics[1] === expectedIdTopic) {
+          log(
+            `Found matching historical MulticallExecuted: tx=${eventLog.transactionHash}`,
+          );
+          return true;
+        }
+      }
+    } catch (error) {
+      log(`Error searching chunk ${start}-${end}:`, error);
+      // Continue with other chunks even if one fails
+    }
+  }
+};
+
 const parseTransferLog = (log: Log) => {
   return {
     from: ethers.getAddress('0x' + log.topics[1].slice(-40)),
