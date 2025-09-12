@@ -19,7 +19,6 @@
  * This is used by YMax to dynamically switch between environments when interacting
  * with Axelar-supported chains.
  *
- * @readonly
  * @type {Record<keyof typeof AxelarChain, AxelarChainIdEntry>}
  *
  * @see {@link https://docs.axelar.dev/resources/contract-addresses/testnet/#evm-contract-addresses}
@@ -78,7 +77,7 @@ const AxelarChainIdMap = harden({
 // XXX: For unsupported chains (e.g., Polygon for AAVE, BNB for USDC),
 // we use `0x` until a proper strategy is defined.
 
-/** @readonly @type {AddressesMap} */
+/** @type {AddressesMap} */
 const aaveAddresses = harden({
   mainnet: {
     Ethereum: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2', // https://aave.com/docs/resources/addresses -> Ethereum V3 Market -> Pool contract
@@ -99,7 +98,7 @@ const aaveAddresses = harden({
   },
 });
 
-/** @readonly @type {AddressesMap} */
+/** @type {AddressesMap} */
 const usdcAddresses = harden({
   mainnet: {
     Avalanche: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', // https://developers.circle.com/stablecoins/usdc-contract-addresses
@@ -121,7 +120,7 @@ const usdcAddresses = harden({
   },
 });
 
-/** @readonly @type {AddressesMap} */
+/** @type {AddressesMap} */
 const aaveUsdcAddresses = harden({
   mainnet: {
     Ethereum: '0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c', // https://search.onaave.com/?q=atoken%20usdc%20aavev3ethereum
@@ -141,7 +140,7 @@ const aaveUsdcAddresses = harden({
   },
 });
 
-/** @readonly @type {AddressesMap} */
+/** @type {AddressesMap} */
 const aaveRewardsControllerAddresses = harden({
   mainnet: {
     Ethereum: '0x8164Cc65827dcFe994AB23944CBC90e0aa80bFcb', // https://aave.com/docs/resources/addresses -> Ethereum V3 Market -> DefaultIncentivesController contract
@@ -163,7 +162,7 @@ const aaveRewardsControllerAddresses = harden({
   },
 });
 
-/** @readonly @type {AddressesMap} */
+/** @type {AddressesMap} */
 const compoundAddresses = harden({
   mainnet: {
     Ethereum: '0xc3d688B66703497DAA19211EEdff47f25384cdc3', // https://docs.compound.finance/#networks -> Ethereum USDC -> cUSDCv3 contract
@@ -182,7 +181,7 @@ const compoundAddresses = harden({
   },
 });
 
-/** @readonly @type {AddressesMap} */
+/** @type {AddressesMap} */
 const compoundRewardsControllerAddresses = harden({
   mainnet: {
     Ethereum: '0x1B0e765F6224C21223AeA2af16c1C46E38885a40', // https://docs.compound.finance/#networks -> Ethereum USDC -> Rewards contract
@@ -202,7 +201,7 @@ const compoundRewardsControllerAddresses = harden({
   },
 });
 
-/** @readonly @type {Record<string, AddressesMap>} */
+/** @type {Record<string, AddressesMap>} */
 const beefyVaultAddresses = harden({
   re7: {
     mainnet: {
@@ -243,7 +242,7 @@ const beefyVaultAddresses = harden({
 });
 
 // TODO: deploy the factory in testnet and fill these addresses
-/** @readonly @type {AddressesMap} */
+/** @type {AddressesMap} */
 const factoryAddresses = harden({
   mainnet: {
     Avalanche: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://snowtrace.io/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
@@ -282,7 +281,6 @@ const mainnetTokenMessenger = (rows =>
 
 /**
  * Mainnet configuration with real contract addresses
- * @readonly
  * @type {EVMContractAddressesMap}
  */
 const mainnetContracts = {
@@ -391,7 +389,6 @@ const testnetTokenMessenger = (rows =>
 // XXX turn these inside out? contract.chain.address
 /**
  * Testnet configuration with testnet contract addresses
- * @readonly
  * @type {EVMContractAddressesMap}
  */
 const testnetContracts = {
@@ -652,7 +649,6 @@ export const axelarConfigTestnet = harden({
  * {@link https://github.com/axelarnetwork/axelarjs/blob/fae808d4a2a1e34f386d6486f5f3708dd7a25cf5/packages/core/src/index.ts#L9-L13}
  *
  * Both addresses were also confirmed directly with the Axelar team via Slack.
- * @readonly
  * @type {GMPAddresses}
  */
 export const gmpAddresses = harden({
