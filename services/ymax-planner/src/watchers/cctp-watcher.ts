@@ -113,7 +113,7 @@ export const watchCctpTransfer = ({
   });
 };
 
-export const watchHistoricalCctp = async ({
+export const lookBackCcctp = async ({
   usdcAddress,
   provider,
   toAddress,
@@ -152,7 +152,7 @@ export const watchHistoricalCctp = async ({
       },
     );
 
-    if (!matched) log(`No matching historical transfer found`);
+    if (!matched) log(`No matching transfer found`);
     return matched;
   } catch (error) {
     log(`Error:`, error);

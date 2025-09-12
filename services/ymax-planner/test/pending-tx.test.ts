@@ -214,7 +214,7 @@ test('handlePendingTx throws error for unsupported transaction type', async t =>
   );
 });
 
-test('handlePendingTx resolves historical CCTP transaction successfully', async t => {
+test('handlePendingTx resolves old pending CCTP transaction successfully', async t => {
   const logs: string[] = [];
   const mockLog = (...args: unknown[]) => logs.push(args.join(' '));
 
@@ -252,7 +252,7 @@ test('handlePendingTx resolves historical CCTP transaction successfully', async 
     {
       ...mockEvmCtx,
       log: mockLog,
-      mode: 'history',
+      mode: 'lookback',
       publishTimeMs: Date.now() - 10000,
     },
   );
@@ -272,7 +272,7 @@ test('handlePendingTx resolves historical CCTP transaction successfully', async 
   ]);
 });
 
-test('handlePendingTx resolves historical GMP transaction successfully', async t => {
+test('handlePendingTx resolves old pending GMP transaction successfully', async t => {
   const logs: string[] = [];
   const mockLog = (...args: unknown[]) => logs.push(args.join(' '));
 
@@ -329,7 +329,7 @@ test('handlePendingTx resolves historical GMP transaction successfully', async t
     {
       ...mockEvmCtx,
       log: mockLog,
-      mode: 'history',
+      mode: 'lookback',
       publishTimeMs: Date.now() - 10000,
     },
   );
@@ -347,4 +347,4 @@ test('handlePendingTx resolves historical GMP transaction successfully', async t
   ]);
 });
 
-test.skip('TODO: handlePendingTx resolves historical Noble transfer successfully', async t => {});
+test.skip('TODO: handlePendingTx resolves old pending Noble transfer successfully', async t => {});

@@ -17,13 +17,10 @@ import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.t
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import { resolvePendingTx } from './resolver.ts';
 import type { EvmProviders, UsdcAddresses } from './support.ts';
-import { watchGmp, watchHistoicalGmp } from './watchers/gmp-watcher.ts';
+import { watchGmp, lookBackGmp } from './watchers/gmp-watcher.ts';
+import { watchCctpTransfer, lookBackCcctp } from './watchers/cctp-watcher.ts';
 import {
-  watchCctpTransfer,
-  watchHistoricalCctp,
-} from './watchers/cctp-watcher.ts';
-import {
-  watchHistoricalNobleTransfer,
+  lookBackNobleTransfer,
   watchNobleTransfer,
 } from './watchers/noble-watcher.ts';
 
@@ -51,8 +48,8 @@ type NobleWithdrawTx = PendingTx & {
 };
 
 type LiveWatchOpts = { mode: 'live'; timeoutMs: number };
-type HistoryWatchOpts = { mode: 'history'; publishTimeMs: number };
-type WatchOpts = LiveWatchOpts | HistoryWatchOpts;
+type LookBackWatchOpts = { mode: 'lookback'; publishTimeMs: number };
+type WatchOpts = LiveWatchOpts | LookBackWatchOpts;
 
 export type PendingTxMonitor<
   T extends PendingTx = PendingTx,
@@ -100,7 +97,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
         timeoutMs: opts.timeoutMs,
       });
     } else {
-      transferStatus = await watchHistoricalCctp({
+      transferStatus = await lookBackCcctp({
         usdcAddress,
         toAddress: accountAddress as `0x${string}`,
         expectedAmount: amount,
@@ -144,7 +141,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         timeoutMs: opts.timeoutMs,
       });
     } else {
-      transferStatus = await watchHistoicalGmp({
+      transferStatus = await lookBackGmp({
         provider,
         contractAddress: accountAddress as `0x${string}`,
         txId,
@@ -195,7 +192,7 @@ const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, EvmContext> = {
         timeoutMs: opts.timeoutMs,
       });
     } else {
-      transferStatus = await watchHistoricalNobleTransfer({
+      transferStatus = await lookBackNobleTransfer({
         cosmosRest: ctx.cosmosRest,
         watchAddress: nobleAddress,
         expectedAmount: amount,
@@ -225,16 +222,17 @@ export type HandlePendingTxOpts = {
   log?: (...args: unknown[]) => void;
   registry?: MonitorRegistry;
   timeoutMs?: number;
-  mode?: 'live' | 'history';
+  mode?: 'live' | 'lookback';
   publishTimeMs?: number;
 } & EvmContext;
 
+export const TX_TIMEOUT_MS = 10 * 60 * 10000; // 10 min
 export const handlePendingTx = async (
   tx: PendingTx,
   {
     log = () => {},
     registry = createMonitorRegistry(),
-    timeoutMs = 300000, // 5 min
+    timeoutMs = TX_TIMEOUT_MS, // 10 min
     mode = 'live',
     publishTimeMs,
     ...evmCtx
@@ -247,10 +245,10 @@ export const handlePendingTx = async (
   const monitor = registry[tx.type] as PendingTxMonitor<PendingTx, EvmContext>;
   monitor || Fail`${logPrefix} No monitor registered for tx type: ${tx.type}`;
 
-  if (mode === 'history') {
-    publishTimeMs || Fail`${logPrefix} publishTimeMs required in history mode`;
+  if (mode === 'lookback') {
+    publishTimeMs || Fail`${logPrefix} publishTimeMs required in lookback mode`;
     await monitor.watch(evmCtx, tx, log, {
-      mode: 'history',
+      mode: 'lookback',
       publishTimeMs: publishTimeMs as number,
     });
   } else {

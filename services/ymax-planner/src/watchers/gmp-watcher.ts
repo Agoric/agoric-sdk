@@ -79,7 +79,7 @@ export const watchGmp = ({
   });
 };
 
-export const watchHistoicalGmp = async ({
+export const lookBackGmp = async ({
   provider,
   contractAddress,
   txId,
@@ -107,7 +107,7 @@ export const watchHistoicalGmp = async ({
       ev => ev.topics[1] === expectedIdTopic,
     );
 
-    if (!matched) log(`No matching historical MulticallExecuted found`);
+    if (!matched) log(`No matching MulticallExecuted found`);
     return matched;
   } catch (error) {
     log(`Error:`, error);

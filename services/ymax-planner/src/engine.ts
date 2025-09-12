@@ -34,6 +34,7 @@ import { getCurrentBalance, handleDeposit } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import {
   handlePendingTx,
+  TX_TIMEOUT_MS,
   type EvmContext,
   type HandlePendingTxOpts,
 } from './pending-tx-manager.ts';
@@ -620,6 +621,34 @@ export const startEngine = async (
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
 
   const oldestBlockTimeMs = await getOldestBlockTime(pendingTxKeys);
+  // Only use historical mode if the oldest pending transaction is older than 10 minutes.
+  // This implies the planner was restarted/offline, since continuously running planners
+  // would have already processed or timed out transactions after 10 minutes.
+  // Historical mode searches blockchain logs to resolve transactions that may have
+  // completed while the planner was down.
+  if (oldestBlockTimeMs && Date.now() - oldestBlockTimeMs > TX_TIMEOUT_MS) {
+    await makeWorkPool(pendingTxKeys, undefined, async txId => {
+      const path = `${PENDING_TX_PATH_PREFIX}.${txId}`;
+      const errLabel = `🚨 Failed to process old pending tx ${path}`;
+
+      await null;
+      let data;
+      try {
+        data = await query.readPublished(stripPrefix('published.', path));
+        mustMatch(data, PublishedTxShape, path);
+        const tx = { txId, ...data } as PendingTx;
+        console.warn('Old pending tx', tx);
+
+        txPowers.mode = 'lookback';
+        txPowers.publishTimeMs = oldestBlockTimeMs;
+        void handlePendingTx(tx, txPowers).catch(err =>
+          console.error(errLabel, err),
+        );
+      } catch (err) {
+        console.error(errLabel, data, err);
+      }
+    }).done;
+  }
 
   await makeWorkPool(pendingTxKeys, undefined, async txId => {
     const path = `${PENDING_TX_PATH_PREFIX}.${txId}`;
@@ -633,15 +662,6 @@ export const startEngine = async (
       const tx = { txId, ...data } as PendingTx;
       console.warn('Old pending tx', tx);
 
-      // Try historical resolution first if we have timestamp data
-      if (oldestBlockTimeMs) {
-        txPowers.mode = 'history';
-        txPowers.publishTimeMs = oldestBlockTimeMs;
-        void handlePendingTx(tx, txPowers).catch(err =>
-          console.error(errLabel, err),
-        );
-      }
-      // Fall back to live monitoring (original behavior)
       txPowers.mode = 'live';
       void handlePendingTx(tx, txPowers).catch(err =>
         console.error(errLabel, err),
