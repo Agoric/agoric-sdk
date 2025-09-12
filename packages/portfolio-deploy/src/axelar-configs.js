@@ -252,6 +252,8 @@ const factoryAddresses = harden({
     Ethereum: '0x3bF3056835f7C25b1f71aff99B734Ad07d644577',
     Optimism: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://optimistic.etherscan.io/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
     Polygon: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://polygonscan.com/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
+    Base: '0x', // TODO: Deploy and replace with correct Factory address on Base mainnet
+    BNB: '0x', // TODO: Deploy and replace with correct Factory address on BNB mainnet
   },
   testnet: {
     Avalanche: '0xcD58949D815d25A06560AFa539972bB5B4B28902', // https://testnet.snowtrace.io/address/0xcD58949D815d25A06560AFa539972bB5B4B28902
@@ -259,6 +261,8 @@ const factoryAddresses = harden({
     Ethereum: '0x6b124C850407e857B7fBB9fD61cC91f379066063', // https://sepolia.etherscan.io/address/0x6b124C850407e857B7fBB9fD61cC91f379066063
     Optimism: '0x',
     Polygon: '0x',
+    Base: '0x',
+    BNB: '0x',
   },
 });
 
@@ -277,6 +281,7 @@ const mainnetTokenMessenger = (rows =>
     ['Unichain', 10, '0x4e744b28E787c3aD0e810eD65A24461D4ac5a762'],
     // BNB is not supported by Circle CCTP
     // https://developers.circle.com/stablecoins/supported-domains
+    ['BNB', -1, '0x'],
   ]),
 );
 
@@ -364,7 +369,7 @@ const mainnetContracts = {
     compoundRewardsController: compoundRewardsControllerAddresses.mainnet.BNB,
     factory: factoryAddresses.mainnet.BNB,
     usdc: usdcAddresses.mainnet.BNB,
-    tokenMessenger: mainnetTokenMessenger.BNB.Address,
+    tokenMessenger: '0x', // XXX BNB is not supported by Circle CCTP
     aaveUSDC: aaveUsdcAddresses.mainnet.BNB,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.BNB,
   },
