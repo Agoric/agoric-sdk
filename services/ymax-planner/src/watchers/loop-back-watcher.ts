@@ -1,6 +1,6 @@
 import type { JsonRpcProvider, Log } from 'ethers';
 import { ethers } from 'ethers';
-import { type TxId } from '@aglocal/portfolio-contract/src/resolver/types';
+import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { CosmosRestClient } from '../cosmos-rest-client.ts';
 import type { AccountId, Bech32Address } from '@agoric/orchestration';
@@ -39,6 +39,29 @@ type NobleLoopbackParams = {
   destinationAddress: string;
   amount: bigint;
   publishTimeMs: number;
+};
+
+const findBlockByTimestamp = async (provider: JsonRpcProvider, targetMs) => {
+  const target = Math.floor(targetMs / 1000);
+  let latest = await provider.getBlockNumber();
+  let earliest = 0;
+
+  while (earliest <= latest) {
+    const mid = Math.floor((earliest + latest) / 2);
+    const block = await provider.getBlock(mid);
+
+    if (!block) break;
+
+    if (block.timestamp === target) {
+      return mid; // exact match
+    } else if (block.timestamp < target) {
+      earliest = mid + 1;
+    } else {
+      latest = mid - 1;
+    }
+  }
+
+  return latest;
 };
 
 const estimateBlockFromTimestamp = (
@@ -110,21 +133,11 @@ export const searchHistoricalCctpTransfer = async (
       return false;
     }
 
-    const searchStartMs = publishTimeMs - SEARCH_BUFFER_MS;
-    const searchEndMs = Math.min(
-      publishTimeMs + MAX_SEARCH_WINDOW_MS,
-      Date.now(),
-    );
-
-    const fromBlock = estimateBlockFromTimestamp(caipId, searchStartMs);
     const currentBlock = await provider.getBlockNumber();
-    const toBlock = Math.min(
-      estimateBlockFromTimestamp(caipId, searchEndMs),
-      currentBlock,
-    );
+    const fromBlock = await findBlockByTimestamp(provider, publishTimeMs);
 
     log(
-      `${logPrefix} Searching blocks ${fromBlock} to ${toBlock} on ${caipId}`,
+      `${logPrefix} Searching blocks ${fromBlock} to ${currentBlock} on ${caipId}`,
     );
     log(
       `${logPrefix} Looking for transfer to ${targetAddress} amount ${expectedAmount}`,
@@ -136,30 +149,47 @@ export const searchHistoricalCctpTransfer = async (
       address: usdcAddress,
       topics: [TRANSFER_SIGNATURE, null, toTopic],
       fromBlock,
-      toBlock,
+      currentBlock,
     };
 
-    // Query historical logs
-    const logs = await provider.getLogs(filter);
-    log(`${logPrefix} Found ${logs.length} transfer logs`);
+    // Query historical logs in chunks to handle RPC provider limits
+    const CHUNK_SIZE = 10; // Max blocks per request for free tier
 
-    for (const eventLog of logs) {
+    for (let start = fromBlock; start <= currentBlock; start += CHUNK_SIZE) {
+      const end = Math.min(start + CHUNK_SIZE - 1, currentBlock);
+
+      const chunkFilter = {
+        ...filter,
+        fromBlock: start,
+        toBlock: end,
+      };
+
       try {
-        const transferData = parseTransferLog(eventLog);
+        log(`${logPrefix} Searching chunk ${start} to ${end}`);
+        const logs = await provider.getLogs(chunkFilter);
 
-        log(
-          `${logPrefix} Checking transfer: amount=${transferData.amount} tx=${transferData.transactionHash}`,
-        );
+        for (const eventLog of logs) {
+          try {
+            const transferData = parseTransferLog(eventLog);
 
-        if (transferData.amount === expectedAmount) {
-          log(
-            `${logPrefix} Found matching historical transfer: tx=${transferData.transactionHash}`,
-          );
-          return true;
+            log(
+              `${logPrefix} Checking transfer: amount=${transferData.amount} tx=${transferData.transactionHash}`,
+            );
+
+            if (transferData.amount === expectedAmount) {
+              log(
+                `${logPrefix} Found matching historical transfer: tx=${transferData.transactionHash}`,
+              );
+              return true;
+            }
+          } catch (error) {
+            log(`${logPrefix} Error parsing log:`, error);
+            continue;
+          }
         }
       } catch (error) {
-        log(`${logPrefix} Error parsing log:`, error);
-        continue;
+        log(`${logPrefix} Error searching chunk ${start}-${end}:`, error);
+        // Continue with other chunks even if one fails
       }
     }
 
