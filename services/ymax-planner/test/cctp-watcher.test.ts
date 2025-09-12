@@ -11,7 +11,7 @@ import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 
 const usdcAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
-const watchAddress = '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64';
+const toAddress = '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64';
 
 const encodeAmount = (amount: bigint): string => {
   return zeroPadValue(toBeHex(amount), 32);
@@ -150,7 +150,7 @@ test('watchCCTPTransfer detects multiple transfers but only matches exact amount
   const watchPromise = watchCctpTransfer({
     usdcAddress,
     provider,
-    watchAddress,
+    toAddress,
     expectedAmount,
     timeoutMs: 6000,
     log: console.log,
@@ -170,7 +170,7 @@ test('watchCCTPTransfer detects multiple transfers but only matches exact amount
         topics: [
           id('Transfer(address,address,uint256)'),
           '0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266',
-          zeroPadValue(watchAddress.toLowerCase(), 32),
+          zeroPadValue(toAddress.toLowerCase(), 32),
         ],
         data: amount,
         transactionHash: `0x${Math.random().toString(16).slice(2)}`,
@@ -181,7 +181,7 @@ test('watchCCTPTransfer detects multiple transfers but only matches exact amount
         topics: [
           id('Transfer(address,address,uint256)'),
           null,
-          zeroPadValue(watchAddress.toLowerCase(), 32),
+          zeroPadValue(toAddress.toLowerCase(), 32),
         ],
       };
 

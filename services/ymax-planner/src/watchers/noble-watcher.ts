@@ -96,3 +96,42 @@ export const watchNobleTransfer = ({
     }, timeoutMs);
   });
 };
+
+export const watchHistoricalNobleTransfer = async ({
+  cosmosRest,
+  watchAddress,
+  expectedAmount,
+  expectedDenom,
+  chainKey = 'noble',
+  log = () => {},
+}: WatchNobleTransferOptions) => {
+  try {
+    log(`Checking Noble address ${watchAddress} for amount ${expectedAmount}`);
+
+    try {
+      const balance = await cosmosRest.getAccountBalance(
+        chainKey,
+        watchAddress,
+        expectedDenom,
+      );
+      const currentAmount = BigInt(balance.amount || '0');
+
+      // TODO: We can add more granular checks once https://github.com/Agoric/agoric-sdk/issues/11878 is started
+      if (currentAmount >= expectedAmount) {
+        log(
+          `Current balance ${currentAmount} >= expected ${expectedAmount}, assuming historical transfer completed`,
+        );
+        return true;
+      } else {
+        log(`Current balance ${currentAmount} < expected ${expectedAmount}`);
+        return false;
+      }
+    } catch (error) {
+      log(`Error checking Noble balance:`, error);
+      return false;
+    }
+  } catch (error) {
+    log(`Error during Noble historical check:`, error);
+    return false;
+  }
+};
