@@ -8,7 +8,7 @@
 import { objectMap } from '@endo/common/object-map.js';
 import { objectMetaMap } from '@endo/common/object-meta-map.js';
 import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
-import { q, Fail, makeError, annotateError, X } from '@endo/errors';
+import { q, b, Fail, makeError, annotateError, X } from '@endo/errors';
 import { deeplyFulfilled, isPrimitive } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
@@ -89,6 +89,66 @@ const makeAggregateError =
           errors,
         });
       };
+
+/**
+ * Synchronusly invoke a function with the opportunity to handle any error
+ * similarly to a Promise `catch` callback (e.g., substituting a non-error
+ * returned value or throwing a possibly-new error). This is useful for (among
+ * other things) replacing generic error messages with specific ones (as in
+ * {@see tryJsonParse}).
+ *
+ * @template {(...args: any[]) => any} F
+ * @template [U=ReturnType<F>]
+ * @param {F} fn to invoke
+ * @param {(err: Error) => U} transformError callback to receive any error from
+ *   invoking `fn` and either return a substitute value or throw a potentially
+ *   new error
+ * @param {Parameters<F>} args for `fn`
+ * @returns {ReturnType<F> | U}
+ */
+export const tryNow = (fn, transformError, ...args) => {
+  try {
+    return fn(...args);
+  } catch (err) {
+    try {
+      return transformError(err);
+    } catch (newErr) {
+      // Try to associate `err` with `newErr`.
+      if (!newErr.cause) {
+        const desc = {
+          value: err,
+          configurable: true,
+          enumerable: false,
+          writable: true,
+        };
+        if (!Reflect.defineProperty(newErr, 'cause', desc)) {
+          assert.note(newErr, err.message);
+        }
+      }
+      throw newErr;
+    }
+  }
+};
+
+/**
+ * Parse JSON text, or handle an error by e.g. substituting a default value or
+ * replacing it with one bearing a non-generic message.
+ *
+ * @param {string} jsonText
+ * @param {string | ((err: Error) => unknown)} onError an error message or
+ *   callback
+ */
+export const tryJsonParse = (jsonText, onError) => {
+  const transformError =
+    typeof onError === 'function'
+      ? onError
+      : err => Fail([`${onError}: ${err.message} for input `, ''], jsonText);
+  return tryNow(() => {
+    const type = typeof jsonText;
+    type === 'string' || Fail`Input must be a string, not ${b(type)}`;
+    return JSON.parse(jsonText);
+  }, transformError);
+};
 
 /**
  * @template T

@@ -2,6 +2,7 @@
 import test from 'ava';
 
 import { fc, testProp } from '@fast-check/ava';
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import {
   deepMapObject,
@@ -16,6 +17,8 @@ import {
   forever,
   deeplyFulfilledObject,
   synchronizedTee,
+  tryJsonParse,
+  tryNow,
 } from '../src/ses-utils.js';
 import { arrayIsLike } from '../tools/ava-assertions.js';
 
@@ -30,6 +33,12 @@ const defineDataProperty = (obj, key, value) =>
     enumerable: true,
     writable: true,
   });
+
+/** @type {(messageOrErr: string | Error) => () => never} */
+const thrower = messageOrErr => () => {
+  if (typeof messageOrErr === 'string') throw Error(messageOrErr);
+  throw messageOrErr;
+};
 
 /**
  * A predicate for matching non-null non-function objects. Note that this
@@ -568,6 +577,103 @@ test('assertAllDefined', t => {
       // @ts-expect-error key presence not checked
       foo.prop.toFixed,
   );
+});
+
+test('tryJsonParse with valid JSON', t => {
+  const obj = { foo: 'bar', baz: ['qux', 'quux'] };
+  t.deepEqual(tryJsonParse(JSON.stringify(obj), 'unexpected'), obj);
+});
+test('tryJsonParse with non-string', t => {
+  t.throws(
+    () => tryJsonParse(/** @type {any} */ ({ toString: () => '{}' }), 'LABEL'),
+    {
+      message: /^LABEL: Input must be a string, not object\b/,
+    },
+  );
+});
+test('tryJsonParse with invalid JSON', t => {
+  t.throws(() => tryJsonParse('Infinity', _err => Fail`invalid`), {
+    message: 'invalid',
+  });
+});
+test('tryJsonParse(invalidJson, replacer)', t => {
+  t.is(
+    tryJsonParse(/** @type {any} */ (null), _err => undefined),
+    undefined,
+  );
+});
+
+/**
+ * @template {(...args: unknown[]) => any} F
+ * @type {import('ava').Macro<
+ *   [
+ *     F | ((...args: Parameters<F>) => never),
+ *     ((err: Error) => any) | undefined,
+ *     {
+ *       args?: Parameters<F>;
+ *       catches?: import('ava').ThrowsExpectation<Error>;
+ *       returns?: any;
+ *       throws?: import('ava').ThrowsExpectation<Error> & {
+ *         withCause?: boolean;
+ *       };
+ *     },
+ *   ]
+ * >}
+ */
+const testTryNow = test.macro((t, fn, projectError, details) => {
+  const { args = [], catches, returns } = details;
+  const throws = details.throws && { ...details.throws };
+  if (throws) delete throws.withCause;
+
+  /** @type {Error[]} */
+  const caught = [];
+  /** @type {(err: Error) => ReturnType<F>} */
+  const logAndProjectError = err => {
+    caught.push(err);
+    if (projectError) return projectError(err);
+    throw err;
+  };
+
+  const callTryNow = () =>
+    tryNow(fn, logAndProjectError, .../** @type {Parameters<F>} */ (args));
+  const result = throws ? t.throws(callTryNow, throws) : callTryNow();
+
+  if (catches || throws) {
+    t.is(caught.length, 1, 'fn must throw');
+    if (catches) t.throws(thrower(caught[0]), catches);
+  }
+
+  if (!throws) {
+    t.is(result, returns);
+  } else if (details.throws?.withCause) {
+    t.is(
+      /** @type {Error} */ (result).cause,
+      caught[0],
+      'cause must be attached',
+    );
+  }
+});
+
+test(
+  'tryNow(noError, rethrow)',
+  testTryNow,
+  /** @type {any} */ (() => 42),
+  thrower('unexpected'),
+  {
+    returns: 42,
+  },
+);
+test('tryNow(thrower, replace)', testTryNow, thrower('foo'), () => 42, {
+  catches: { message: 'foo' },
+  returns: 42,
+});
+test('tryNow(thrower, thrower)', testTryNow, thrower('foo'), thrower('bar'), {
+  catches: { message: 'foo' },
+  throws: { message: 'bar', withCause: true },
+});
+test('tryNow propagates args', t => {
+  const fn = (...args) => arrayIsLike(t, args, ['foo', 'bar']);
+  tryNow(fn, err => thrower(err)(), 'foo', 'bar');
 });
 
 test('whileTrue', async t => {
