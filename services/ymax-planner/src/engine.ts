@@ -279,9 +279,7 @@ export const startEngine = async (
 
   type BlockInfo = { height: bigint; timestamp: Date; txId: string };
 
-  const getOldestBlockTime = async (): Promise<number | null> => {
-    // TODO: remove getting keys
-    const keys = await query.vstorage.keys(PENDING_TX_PATH_PREFIX);
+  const getOldestBlockTime = async (keys: string[]): Promise<number | null> => {
     if (!keys.length) return null;
 
     const blockTimeByHeight = new Map<bigint, Promise<Date>>();
@@ -465,7 +463,7 @@ export const startEngine = async (
   };
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
 
-  const oldestBlockTimeMs = await getOldestBlockTime();
+  const oldestBlockTimeMs = await getOldestBlockTime(pendingTxKeys);
 
   await makeWorkPool(pendingTxKeys, undefined, async txId => {
     const path = `${PENDING_TX_PATH_PREFIX}.${txId}`;

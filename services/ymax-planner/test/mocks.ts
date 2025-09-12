@@ -1,16 +1,10 @@
 import { ethers, type JsonRpcProvider } from 'ethers';
 
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import type { AccountId } from '@agoric/orchestration';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
 
 import type { EvmContext } from '../src/pending-tx-manager';
-import {
-  TxType,
-  type TxStatus,
-} from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
 
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import { PENDING_TX_PATH_PREFIX } from '../src/engine.ts';
@@ -271,5 +265,39 @@ export const mockFetch = ({ txId }: { txId: TxId }) => {
       ok: true,
       json: async () => response,
     } as Response;
+  };
+};
+
+const erc20Interface = new ethers.Interface([
+  'event Transfer(address indexed from, address indexed to, uint256 value)',
+]);
+export const createMockTransferLog = (
+  address: `0x${string}`,
+  amount: bigint,
+  to: string,
+) => {
+  const transferLog = erc20Interface.encodeEventLog('Transfer', [
+    ethers.ZeroAddress, // from (zero address for minting)
+    to,
+    amount,
+  ]);
+
+  return {
+    address,
+    topics: transferLog.topics,
+    data: transferLog.data,
+    blockNumber: 1000,
+    transactionHash: '0x1234567890abcdef1234567890abcdef12345678',
+  };
+};
+
+export const createMockGmpExecutionLog = (txId: string) => {
+  const MULTICALL_EXECUTED_SIGNATURE = ethers.id('MulticallExecuted(string,(bool,bytes)[])');
+  const txIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
+  
+  return {
+    topics: [MULTICALL_EXECUTED_SIGNATURE, txIdTopic],
+    data: '0x',
+    transactionHash: '0x1234567890abcdef1234567890abcdef12345678',
   };
 };
