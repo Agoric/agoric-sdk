@@ -56,6 +56,7 @@ test('planner exo submit method', async t => {
     zcf: mockZcf,
     getPortfolio: mockGetPortfolio,
     shapes: makeOfferArgsShapes(USDC),
+    vowTools: vt,
   });
 
   const planner = makePlanner();
@@ -85,7 +86,7 @@ test('planner exo submit method', async t => {
     { src: '@noble', dest: 'USDN', amount },
   ];
 
-  t.throws(() => planner.submit(portfolioId, plan, 0), {
+  t.throwsAsync(vt.when(planner.submit(portfolioId, plan, 0)), {
     message: /expected policyVersion 1; got 0/,
   });
 
