@@ -90,10 +90,11 @@ const aaveAddresses = harden({
     Polygon: '0x',
   },
   testnet: {
+    Arbitrum: '0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff', // https://search.onaave.com/?q=pool%20sepolia
+    Avalanche: '0x8B9b2AF4afB389b4a70A474dfD4AdCD4a302bb40', // https://search.onaave.com/?q=pool%20sepolia
+    Base: '0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27', // https://search.onaave.com/?q=pool%20sepolia
     Ethereum: '0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951', // https://aave.com/docs/resources/addresses -> Ethereum Sepolia V3 Market -> Pool contract
-    Avalanche: '0x8B9b2AF4afB389b4a70A474dfD4AdCD4a302bb40', // not available in aave official docs, Fuji https://testnet.snowtrace.io/address/0x8B9b2AF4afB389b4a70A474dfD4AdCD4a302bb40
-    Arbitrum: '0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff', // not available in aave official docs, Arbitrum Sepolia https://sepolia.arbiscan.io/address/0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff
-    Optimism: '0xb50201558B00496A145fE76f7424749556E326D8', // not available in aave official docs, OP Sepolia https://sepolia-optimism.etherscan.io/address/0xb50201558B00496A145fE76f7424749556E326D8
+    Optimism: '0xb50201558B00496A145fE76f7424749556E326D8', // https://search.onaave.com/?q=pool%20sepolia
     Polygon: '0x',
   },
 });
@@ -133,10 +134,10 @@ const aaveUsdcAddresses = harden({
   },
   testnet: {
     Ethereum: '0x16dA4541aD1807f4443d92D26044C1147406EB80', // https://search.onaave.com/?q=atoken%20usdc%20sepolia
-    Arbitrum: '0x460b97BD498E1157530AEb3086301d5225b91216', // https://sepolia.arbiscan.io/address/0x460b97BD498E1157530AEb3086301d5225b91216
-    Base: '0x10F1A9D11CDf50041f3f8cB7191CBE2f31750ACC', // https://sepolia.basescan.org/address/0x10F1A9D11CDf50041f3f8cB7191CBE2f31750ACC
-    Optimism: '0xa818F1B57c201E092C4A2017A91815034326Efd1', // https://sepolia-optimism.etherscan.io/address/0xa818F1B57c201E092C4A2017A91815034326Efd1
-    Avalanche: '0x9CFcc1B289E59FBe1E769f020C77315DF8473760', // Fuji https://testnet.snowtrace.io/token/0x9CFcc1B289E59FBe1E769f020C77315DF8473760?chainid=43113
+    Arbitrum: '0x460b97BD498E1157530AEb3086301d5225b91216', // https://search.onaave.com/?q=AaveV3ArbitrumSepolia
+    Base: '0x10F1A9D11CDf50041f3f8cB7191CBE2f31750ACC', // https://search.onaave.com/?q=AaveV3BaseSepolia
+    Optimism: '0xa818F1B57c201E092C4A2017A91815034326Efd1', // https://search.onaave.com/?q=AaveV3OptimismSepolia
+    Avalanche: '0x9CFcc1B289E59FBe1E769f020C77315DF8473760', // https://search.onaave.com/?q=AaveV3Fuji
   },
 });
 
@@ -147,19 +148,16 @@ const aaveRewardsControllerAddresses = harden({
     Avalanche: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses -> Avalanche V3 Market -> DefaultIncentivesController contract
     Arbitrum: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses -> Arbitrum V3 Market -> DefaultIncentivesController contract
     Optimism: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses -> Optimism V3 Market -> DefaultIncentivesController contract
-    // XXX: Verify this address - there is something funny in the explorer: there are only two transactions
-    // in 2025. https://basescan.org/address/0xf9cc4F0D883F1a1eb2c253bdb46c254Ca51E1F44
     Base: '0xf9cc4F0D883F1a1eb2c253bdb46c254Ca51E1F44', // https://aave.com/docs/resources/addresses -> Base V3 Market -> DefaultIncentivesController contract
-    // XXX: Last tx on BNB happens 530 days ago. https://bscscan.com/address/0xC206C2764A9dBF27d599613b8F9A63ACd1160ab4
     BNB: '0xC206C2764A9dBF27d599613b8F9A63ACd1160ab4', // https://aave.com/docs/resources/addresses -> BNB V3 Market -> DefaultIncentivesController contract
     Polygon: '0x',
   },
   testnet: {
     Ethereum: '0x4DA5c4da71C5a167171cC839487536d86e083483', // https://aave.com/docs/resources/addresses -> Sepolia V3 Market -> DefaultIncentivesController contract
     Avalanche: '0x03aFC1Dfb53eae8eB7BE0E8CB6524aa79C3F8578', // Fuji https://testnet.snowtrace.io/address/0x03aFC1Dfb53eae8eB7BE0E8CB6524aa79C3F8578
-    Arbitrum: '0x',
-    Optimism: '0x',
-    Base: '0x',
+    Arbitrum: '0x3A203B14CF8749a1e3b7314c6c49004B77Ee667A', // https://search.onaave.com/?q=AaveV3ArbitrumSepolia
+    Optimism: '0xaD4F91D26254B6B0C6346b390dDA2991FDE2F20d', // https://search.onaave.com/?q=AaveV3OptimismSepolia
+    Base: '0x71B448405c803A3982aBa448133133D2DEAFBE5F', // https://search.onaave.com/?q=AaveV3BaseSepolia
     BNB: '0x',
     Polygon: '0x',
   },
@@ -270,7 +268,6 @@ const mainnetTokenMessenger = (rows =>
     rows.map(([Chain, Domain, Address]) => [Chain, { Domain, Address }]),
   ))(
   /** @type {[string, number, `0x${string}`][]} */ ([
-    // https://developers.circle.com/cctp/evm-smart-contracts#mainnet-contract-addresses
     ['Ethereum', 0, '0xBd3fa81B58Ba92a82136038B25aDec7066af3155'],
     ['Avalanche', 1, '0x6B25532e1060CE10cc3B0A99e5683b91BFDe6982'],
     ['OP Mainnet', 2, '0x2B4069517957735bE00ceE0fadAE88a26365528f'],
