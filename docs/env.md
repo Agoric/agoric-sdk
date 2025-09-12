@@ -38,9 +38,11 @@ Description: if nonempty, its contents must use one of the following formats:
          and https://github.com/cosmos/chain-registry )
       * `rpcAddrs`: an array of endpoints that are expected to respond to
         cosmos-sdk RPC requests
-  - "$subdomain,$chainId": a subdomain of rpc.agoric.net that is expected to
-    respond to cosmos-sdk RPC requests, and a Cosmos Chain ID to associate with
-    it
+  - "$subdomain,$chainId": a single-word subdomain of rpc.agoric.net that is
+    expected to respond to cosmos-sdk RPC requests, and a Cosmos Chain ID to
+    associate with it
+  - "$fqdn,$chainId": a fully-qualified domain name that is expected to respond
+    to cosmos-sdk RPC requests, and a Cosmos Chain ID to associate with it
 
 The default is usually `'local'`, which uses RPC endpoint http://0.0.0.0:26657
 and chain ID "agoriclocal".

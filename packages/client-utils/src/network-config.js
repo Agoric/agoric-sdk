@@ -23,17 +23,23 @@ export const LOCAL_CONFIG_KEY = 'local';
  *   - "$subdomain": a subdomain of agoric.net that is expected to respond to an
  *     HTTP request for `/network-config` (e.g., "local" or "main" or a network
  *     listed at https://all.agoric.net/ ) with a {@link MinimalNetworkConfig}
- *   - "$subdomain,$chainId": a subdomain of rpc.agoric.net that is expected to
- *     respond to cosmos-sdk RPC requests, and a Cosmos Chain ID (cf.
- *     https://evm.cosmos.network/docs/next/documentation/concepts/chain-id and
- *     https://github.com/cosmos/chain-registry ) to associate with it
+ *   - "$subdomain,$chainId": a single-word subdomain of rpc.agoric.net that is
+ *     expected to respond to cosmos-sdk RPC requests, and a Cosmos Chain ID
+ *     (cf. https://evm.cosmos.network/docs/next/documentation/concepts/chain-id
+ *     and https://github.com/cosmos/chain-registry ) to associate with it
+ *   - "$fqdn,$chainId": a fully-qualified domain name that is expected to
+ *     respond to cosmos-sdk RPC requests, and a Cosmos Chain ID to associate
+ *     with it
  *
  * @param {string} spec
- * @returns {{ subdomain: string, chainId?: string }}
+ * @returns {{ domain: string, subdomain?: string, fqdn?: string, chainId?: string } & ({ domain: string } | { fqdn: string })}
  */
 export const parseNetworkSpec = spec => {
-  const [subdomain, chainId] = spec.split(',');
-  return { subdomain, chainId };
+  const [domain, chainId] = spec.split(',');
+  if (domain.includes('.')) {
+    return { domain, fqdn: domain, chainId };
+  }
+  return { domain, subdomain: domain, chainId };
 };
 
 /**
@@ -44,16 +50,17 @@ export const parseNetworkSpec = spec => {
  * @returns {Promise<MinimalNetworkConfig>}
  */
 export const fetchNetworkConfig = async (spec, { fetch }) => {
-  const { subdomain, chainId } = parseNetworkSpec(spec);
+  const { domain, fqdn, subdomain, chainId } = parseNetworkSpec(spec);
 
-  if (subdomain === LOCAL_CONFIG_KEY) {
+  if (domain === LOCAL_CONFIG_KEY) {
     const config = { ...LOCAL_CONFIG };
     if (chainId) config.chainName = chainId;
     return config;
   }
 
   if (chainId) {
-    return { chainName: chainId, rpcAddrs: [toRpcUrl(subdomain)] };
+    const rpcAddr = subdomain ? toRpcUrl(subdomain) : `https://${fqdn}:443`;
+    return { chainName: chainId, rpcAddrs: [rpcAddr] };
   }
 
   return fetch(toNetworkConfigUrl(subdomain))
