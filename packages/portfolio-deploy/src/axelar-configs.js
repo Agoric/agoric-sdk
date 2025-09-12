@@ -90,7 +90,7 @@ const aaveAddresses = harden({
   },
   testnet: {
     Arbitrum: '0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff', // https://search.onaave.com/?q=pool%20sepolia
-    Avalanche: '0x8B9b2AF4afB389b4a70A474dfD4AdCD4a302bb40', // https://search.onaave.com/?q=pool%20sepolia
+    Avalanche: '0x8B9b2AF4afB389b4a70A474dfD4AdCD4a302bb40', // https://search.onaave.com/?q=pool%20fuji
     Base: '0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27', // https://search.onaave.com/?q=pool%20sepolia
     Ethereum: '0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951', // https://aave.com/docs/resources/addresses -> Ethereum Sepolia V3 Market -> Pool contract
     Optimism: '0xb50201558B00496A145fE76f7424749556E326D8', // https://search.onaave.com/?q=pool%20sepolia
