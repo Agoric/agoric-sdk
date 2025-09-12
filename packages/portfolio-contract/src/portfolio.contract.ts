@@ -385,6 +385,7 @@ export const contract = async (
     rebalance,
     getPortfolio,
     shapes: offerArgsShapes,
+    vowTools,
   });
 
   const makePlannerInvitation = () =>
