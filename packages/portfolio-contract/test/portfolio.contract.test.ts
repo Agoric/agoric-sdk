@@ -2,10 +2,14 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import type { VStorage } from '@agoric/client-utils';
+import type { VStorage, VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
 import type { StreamCell } from '@agoric/internal/src/lib-chainStorage.js';
-import type { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  defaultMarshaller,
+  type FakeStorageKit,
+  type makeFakeStorageKit,
+} from '@agoric/internal/src/storage-test-utils.js';
 import {
   eventLoopIteration,
   inspectMapStore,
@@ -14,7 +18,11 @@ import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
-import type { OfferArgsFor, StatusFor } from '../src/type-guards.ts';
+import type {
+  OfferArgsFor,
+  StatusFor,
+  TargetAllocation,
+} from '../src/type-guards.ts';
 import { plannerClientMock } from '../tools/agents-mock.ts';
 import {
   deploy,
@@ -920,42 +928,61 @@ test('start deposit more to same', async t => {
   );
 });
 
-test('redeem planner invitation', async t => {
-  const { common, zoe, started, trader1 } = await setupTrader(t);
-
-  const { storage } = common.bootstrap;
-  const readAt: VStorage['readAt'] = async (path: string, _h?: number) => {
+const makeStorageTools = (storage: FakeStorageKit) => {
+  const readPublished = (async path => {
     await eventLoopIteration();
-    const cell: StreamCell = {
-      blockHeight: '0',
-      values: storage.getValues(path),
-    };
-    return cell;
-  };
+    return defaultMarshaller.fromCapData(
+      JSON.parse(
+        storage.getValues(`${ROOT_STORAGE_PATH}.${path}`).at(-1) || '',
+      ),
+    );
+  }) as VstorageKit['readPublished'];
+
   const readLegible = async (path: string) => {
     await eventLoopIteration();
     return getCapDataStructure(storage.getValues(path).at(-1));
   };
 
-  const boot = async () => {
-    return {
-      ...common.bootstrap,
-      zoe,
-      utils: { ...common.utils, readLegible },
-    };
-  };
+  return harden({ readPublished, readLegible });
+};
 
+const setupPlanner = async t => {
+  const { common, zoe, started, trader1 } = await setupTrader(t);
+  const { storage } = common.bootstrap;
+  const { readPublished, readLegible } = makeStorageTools(storage);
+  const utils = { ...common.utils, readLegible };
+  const boot = async () => ({ ...common.bootstrap, zoe, utils });
   const { provisionSmartWallet } = await deployWalletFactory({ boot });
+
   const [walletPlanner] = await provisionSmartWallet('agoric1planner');
   const toPlan = await E(started.creatorFacet).makePlannerInvitation();
   await E(E(walletPlanner).getDepositFacet()).receive(toPlan);
+  const planner1 = plannerClientMock(walletPlanner, started.instance, () =>
+    readPublished(`wallet.agoric1planner`),
+  );
+  return { common, zoe, started, trader1, planner1 };
+};
 
-  const planner1 = plannerClientMock(walletPlanner, started.instance, readAt);
+test('redeem, use planner invitation', async t => {
+  const { common, trader1, planner1 } = await setupPlanner(t);
+
   await planner1.redeem();
 
   await trader1.openPortfolio(t, {}, {});
+  const { usdc } = common.brands;
+  const Deposit = usdc.units(3_333.33);
+  await trader1.rebalance(
+    t,
+    { give: { Deposit }, want: {} },
+    { flow: [{ src: '<Deposit>', dest: '+agoric', amount: Deposit }] },
+  );
+  t.like(await trader1.getPortfolioStatus(), {
+    policyVersion: 1,
+    policyVersionAck: 0,
+  });
 
-  await planner1.submit1(0);
+  await planner1.submit(0, [], 1);
+  t.like(await trader1.getPortfolioStatus(), { policyVersionAck: 1 });
 });
 
 test('address of LCA for fees is published', async t => {
@@ -965,4 +992,39 @@ test('address of LCA for fees is published', async t => {
   const info = storage.getDeserialized(`${ROOT_STORAGE_PATH}`).at(-1);
   t.log(info);
   t.deepEqual(info, { contractAccount: makeTestAddress(0) });
+});
+
+test('request rebalance - send same targetAllocation', async t => {
+  const { common, trader1, planner1 } = await setupPlanner(t);
+
+  await planner1.redeem();
+
+  const targetAllocation: TargetAllocation = {
+    Aave_Avalanche: 60n,
+    Compound_Avalanche: 40n,
+  };
+  await trader1.openPortfolio(t, {}, { targetAllocation });
+  t.like(await trader1.getPortfolioStatus(), { policyVersion: 1 });
+  const { usdc } = common.brands;
+  const Deposit = usdc.units(3_333.33);
+  t.log('trader1 deposits', Deposit, targetAllocation);
+  await trader1.rebalance(
+    t,
+    { give: { Deposit }, want: {} },
+    { flow: [{ src: '<Deposit>', dest: '+agoric', amount: Deposit }] },
+  );
+  t.like(await trader1.getPortfolioStatus(), { policyVersion: 2 });
+
+  t.log('planner carries out (empty) deposit plan');
+  const mockPlan = [];
+  await planner1.submit(0, mockPlan, 2);
+  t.like(await trader1.getPortfolioStatus(), { policyVersionAck: 2 });
+
+  t.log('user requests rebalance after yield makes things unbalanced');
+  await trader1.rebalance(t, { give: {}, want: {} }, { targetAllocation });
+  t.like(await trader1.getPortfolioStatus(), { policyVersion: 3 });
+
+  t.log('planner carries out (empty) rebalance plan');
+  await planner1.submit(0, mockPlan, 3);
+  t.like(await trader1.getPortfolioStatus(), { policyVersionAck: 3 });
 });

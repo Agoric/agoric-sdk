@@ -104,4 +104,10 @@ test('planner exo submit method', async t => {
       { policyVersion: 1, policyVersionAck: 1 },
     );
   }
+
+  const mockRebalancePlan = [];
+  await t.notThrowsAsync(
+    vt.when(planner.submit(portfolioId, mockRebalancePlan, 1)),
+    'planner may rebalance >1 times at same policyVersion',
+  );
 });
