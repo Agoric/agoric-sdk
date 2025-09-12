@@ -185,7 +185,7 @@ export const searchHistoricalGmpExecution = async (
       powers.evmProviders[caipId] ||
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
-    const fromBlock = findBlockByTimestamp(provider, publishTimeMs);
+    const fromBlock = await findBlockByTimestamp(provider, publishTimeMs);
     const currentBlock = await provider.getBlockNumber();
 
     log(
@@ -205,15 +205,33 @@ export const searchHistoricalGmpExecution = async (
       currentBlock,
     };
 
-    const logs = await provider.getLogs(filter);
-    log(`${logPrefix} Found ${logs.length} MulticallExecuted logs`);
+    // Query historical logs in chunks to handle RPC provider limits
+    const CHUNK_SIZE = 10; // Max blocks per request for free tier
 
-    for (const eventLog of logs) {
-      if (eventLog.topics[1] === expectedIdTopic) {
-        log(
-          `${logPrefix} Found matching historical MulticallExecuted: tx=${eventLog.transactionHash}`,
-        );
-        return true;
+    for (let start = fromBlock; start <= currentBlock; start += CHUNK_SIZE) {
+      const end = Math.min(start + CHUNK_SIZE - 1, currentBlock);
+
+      const chunkFilter = {
+        ...filter,
+        fromBlock: start,
+        toBlock: end,
+      };
+
+      try {
+        log(`${logPrefix} Searching chunk ${start} to ${end}`);
+        const logs = await provider.getLogs(chunkFilter);
+
+        for (const eventLog of logs) {
+          if (eventLog.topics[1] === expectedIdTopic) {
+            log(
+              `${logPrefix} Found matching historical MulticallExecuted: tx=${eventLog.transactionHash}`,
+            );
+            return true;
+          }
+        }
+      } catch (error) {
+        log(`${logPrefix} Error searching chunk ${start}-${end}:`, error);
+        // Continue with other chunks even if one fails
       }
     }
 
