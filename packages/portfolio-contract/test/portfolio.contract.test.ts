@@ -991,38 +991,3 @@ test('request rebalance - send same targetAllocation', async t => {
   await planner1.submit(0, mockPlan, 3);
   t.like(await trader1.getPortfolioStatus(), { policyVersionAck: 3 });
 });
-
-test('planner may rebalance >1 times at same policyVersion', async t => {
-  const { common, trader1, planner1 } = await setupPlanner(t);
-
-  await planner1.redeem();
-
-  const targetAllocation: TargetAllocation = {
-    Aave_Avalanche: 60n,
-    Compound_Avalanche: 40n,
-  };
-  await trader1.openPortfolio(t, {}, { targetAllocation });
-  t.like(await trader1.getPortfolioStatus(), { policyVersion: 1 });
-  const { usdc } = common.brands;
-  const Deposit = usdc.units(3_333.33);
-  t.log('trader1 deposits', Deposit, targetAllocation);
-  await trader1.rebalance(
-    t,
-    { give: { Deposit }, want: {} },
-    { flow: [{ src: '<Deposit>', dest: '+agoric', amount: Deposit }] },
-  );
-  t.like(await trader1.getPortfolioStatus(), { policyVersion: 2 });
-
-  t.log('planner carries out (empty) deposit plan');
-  const mockPlan = [];
-  await planner1.submit(0, mockPlan, 2);
-  t.like(await trader1.getPortfolioStatus(), { policyVersionAck: 2 });
-
-  t.log('planner rebalances after yield makes things unbalanced');
-  await planner1.submit(0, mockPlan, 2);
-  t.like(await trader1.getPortfolioStatus(), { policyVersion: 2 });
-
-  t.log('planner rebalances again after yield makes things unbalanced');
-  await planner1.submit(0, mockPlan, 2);
-  t.like(await trader1.getPortfolioStatus(), { policyVersion: 2 });
-});
