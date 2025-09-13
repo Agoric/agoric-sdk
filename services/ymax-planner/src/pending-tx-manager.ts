@@ -17,9 +17,12 @@ import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.t
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import { resolvePendingTx } from './resolver.ts';
 import type { EvmProviders, UsdcAddresses } from './support.ts';
-import { watchGmp } from './watchers/gmp-watcher.ts';
-import { watchCctpTransfer } from './watchers/cctp-watcher.ts';
-import { watchNobleTransfer } from './watchers/noble-watcher.ts';
+import { watchGmp, lookBackGmp } from './watchers/gmp-watcher.ts';
+import { watchCctpTransfer, lookBackCcctp } from './watchers/cctp-watcher.ts';
+import {
+  lookBackNobleTransfer,
+  watchNobleTransfer,
+} from './watchers/noble-watcher.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
 
@@ -44,6 +47,10 @@ type NobleWithdrawTx = PendingTx & {
   amount: bigint;
 };
 
+type LiveWatchOpts = { mode: 'live'; timeoutMs: number };
+type LookBackWatchOpts = { mode: 'lookback'; publishTimeMs: number };
+type WatchOpts = LiveWatchOpts | LookBackWatchOpts;
+
 export type PendingTxMonitor<
   T extends PendingTx = PendingTx,
   C = EvmContext,
@@ -52,7 +59,7 @@ export type PendingTxMonitor<
     ctx: C,
     tx: T,
     log: (...args: unknown[]) => void,
-    timeoutMs: number,
+    opts: WatchOpts,
   ) => Promise<void>;
 };
 
@@ -63,7 +70,7 @@ type MonitorRegistry = {
 };
 
 const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
-  watch: async (ctx, tx, log, timeoutMs) => {
+  watch: async (ctx, tx, log, opts) => {
     const { txId, destinationAddress, amount } = tx;
     const logPrefix = `[${txId}]`;
 
@@ -79,14 +86,26 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       ctx.evmProviders[caipId] ||
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
-    const transferStatus = await watchCctpTransfer({
-      usdcAddress,
-      watchAddress: accountAddress as `0x${string}`,
-      expectedAmount: amount,
-      provider,
-      log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
-      timeoutMs,
-    });
+    let transferStatus = false;
+    if (opts.mode === 'live') {
+      transferStatus = await watchCctpTransfer({
+        usdcAddress,
+        toAddress: accountAddress as `0x${string}`,
+        expectedAmount: amount,
+        provider,
+        log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+        timeoutMs: opts.timeoutMs,
+      });
+    } else {
+      transferStatus = await lookBackCcctp({
+        usdcAddress,
+        toAddress: accountAddress as `0x${string}`,
+        expectedAmount: amount,
+        provider,
+        publishTimeMs: opts.publishTimeMs,
+        log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+      });
+    }
 
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
@@ -99,7 +118,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
 };
 
 const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
-  watch: async (ctx, tx, log, timeoutMs) => {
+  watch: async (ctx, tx, log, opts) => {
     const { txId, destinationAddress } = tx;
     const logPrefix = `[${txId}]`;
 
@@ -111,18 +130,30 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
     const provider = ctx.evmProviders[caipId] as JsonRpcProvider;
-    const res = await watchGmp({
-      provider,
-      contractAddress: accountAddress as `0x${string}`,
-      txId,
-      log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
-      timeoutMs,
-    });
+
+    let transferStatus = false;
+    if (opts.mode === 'live') {
+      transferStatus = await watchGmp({
+        provider,
+        contractAddress: accountAddress as `0x${string}`,
+        txId,
+        log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+        timeoutMs: opts.timeoutMs,
+      });
+    } else {
+      transferStatus = await lookBackGmp({
+        provider,
+        contractAddress: accountAddress as `0x${string}`,
+        txId,
+        publishTimeMs: opts.publishTimeMs,
+        log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+      });
+    }
 
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
       txId,
-      status: res ? TxStatus.SUCCESS : TxStatus.FAILED,
+      status: transferStatus ? TxStatus.SUCCESS : TxStatus.FAILED,
     });
 
     log(`${logPrefix} GMP tx resolved`);
@@ -130,7 +161,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
 };
 
 const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, EvmContext> = {
-  watch: async (ctx, tx, log, timeoutMs) => {
+  watch: async (ctx, tx, log, opts) => {
     const { txId, destinationAddress, amount } = tx;
     const logPrefix = `[${txId}]`;
 
@@ -149,15 +180,27 @@ const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, EvmContext> = {
       `${logPrefix} Watching Noble withdrawal to ${nobleAddress} for ${amount} ${expectedDenom}`,
     );
 
-    const transferStatus = await watchNobleTransfer({
-      cosmosRest: ctx.cosmosRest,
-      watchAddress: nobleAddress,
-      expectedAmount: amount,
-      expectedDenom,
-      chainKey: 'noble',
-      log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
-      timeoutMs,
-    });
+    let transferStatus = false;
+    if (opts.mode === 'live') {
+      transferStatus = await watchNobleTransfer({
+        cosmosRest: ctx.cosmosRest,
+        watchAddress: nobleAddress,
+        expectedAmount: amount,
+        expectedDenom,
+        chainKey: 'noble',
+        log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+        timeoutMs: opts.timeoutMs,
+      });
+    } else {
+      transferStatus = await lookBackNobleTransfer({
+        cosmosRest: ctx.cosmosRest,
+        watchAddress: nobleAddress,
+        expectedAmount: amount,
+        expectedDenom,
+        chainKey: 'noble',
+        log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+      });
+    }
 
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
@@ -175,20 +218,25 @@ const createMonitorRegistry = (): MonitorRegistry => ({
   [TxType.CCTP_TO_NOBLE]: nobleWithdrawMonitor,
 });
 
-type HandlePendingTxOptions = {
+export type HandlePendingTxOpts = {
   log?: (...args: unknown[]) => void;
   registry?: MonitorRegistry;
   timeoutMs?: number;
-};
+  mode?: 'live' | 'lookback';
+  publishTimeMs?: number;
+} & EvmContext;
 
+export const TX_TIMEOUT_MS = 10 * 60 * 10000; // 10 min
 export const handlePendingTx = async (
   tx: PendingTx,
   {
     log = () => {},
     registry = createMonitorRegistry(),
-    timeoutMs = 300000, // 5 min
+    timeoutMs = TX_TIMEOUT_MS, // 10 min
+    mode = 'live',
+    publishTimeMs,
     ...evmCtx
-  }: EvmContext & HandlePendingTxOptions,
+  }: HandlePendingTxOpts,
 ) => {
   await null;
   const logPrefix = `[${tx.txId}]`;
@@ -197,5 +245,13 @@ export const handlePendingTx = async (
   const monitor = registry[tx.type] as PendingTxMonitor<PendingTx, EvmContext>;
   monitor || Fail`${logPrefix} No monitor registered for tx type: ${tx.type}`;
 
-  await monitor.watch(evmCtx, tx, log, timeoutMs);
+  if (mode === 'lookback') {
+    publishTimeMs || Fail`${logPrefix} publishTimeMs required in lookback mode`;
+    await monitor.watch(evmCtx, tx, log, {
+      mode: 'lookback',
+      publishTimeMs: publishTimeMs as number,
+    });
+  } else {
+    await monitor.watch(evmCtx, tx, log, { mode: 'live', timeoutMs });
+  }
 };
