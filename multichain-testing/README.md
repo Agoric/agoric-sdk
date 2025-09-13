@@ -35,6 +35,11 @@ The following will install `kubectl`, `kind`, `helm`, and `yq` as needed:
 make clean setup
 ```
 
+Install helm charts, or something:
+```sh
+helm repo add starship https://agoric-labs.github.io/starship
+```
+
 ## Getting Started
 
 You can start everything with a single command:
