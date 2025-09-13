@@ -1,49 +1,16 @@
 /// <reference types="ses" />
 import type { VStorage } from '@agoric/client-utils';
-import { mustMatch } from '@agoric/internal';
+import { mustMatch, throwErrorCode, tryJsonParse } from '@agoric/internal';
 import {
   StreamCellShape,
   type StreamCell,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { Fail, q, b } from '@endo/errors';
-
-const throwErrorCode = <Code extends string = string>(
-  message: string,
-  code: Code,
-): never => {
-  const err = Error(message);
-  Object.defineProperty(err, 'code', { value: code, enumerable: true });
-  throw err;
-};
-
-/**
- * Parse input as JSON, or handle an error (for e.g. substituting a default or
- * applying a more specific message).
- */
-export const tryJsonParse = (
-  json: string,
-  replaceErr?: (err?: Error) => unknown,
-) => {
-  try {
-    const type = typeof json;
-    if (type !== 'string') throw Fail`input must be a string, not ${b(type)}`;
-    return JSON.parse(json);
-  } catch (err) {
-    if (!replaceErr) throw err;
-    try {
-      return replaceErr(err);
-    } catch (newErr) {
-      if (!newErr.cause) assert.note(newErr, err.message);
-      throw newErr;
-    }
-  }
-};
-harden(tryJsonParse);
+import { Fail, q } from '@endo/errors';
 
 export const parseStreamCell = (json: string, vstoragePath: string) => {
   const streamCell = tryJsonParse(
     json,
-    _err => Fail`non-JSON value at vstorage path ${q(vstoragePath)}: ${json}`,
+    `non-JSON value at vstorage path ${q(vstoragePath)}`,
   );
   mustMatch(harden(streamCell), StreamCellShape, vstoragePath);
   return streamCell;
@@ -58,8 +25,7 @@ export const parseStreamCellValue = (
   const strValue = streamCell.values.at(index);
   const value = tryJsonParse(
     strValue as string,
-    _err =>
-      Fail`non-JSON StreamCell value for ${q(vstoragePath)} index ${q(index)}: ${strValue}`,
+    `non-JSON StreamCell value for ${q(vstoragePath)} index ${q(index)}`,
   );
   return value;
 };
