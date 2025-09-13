@@ -3,7 +3,7 @@
  * @see {@link preparePlanner}
  */
 import { makeTracer } from '@agoric/internal';
-import { type Vow, VowShape } from '@agoric/vow';
+import { type Vow, VowShape, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { M } from '@endo/patterns';
@@ -31,6 +31,7 @@ export const preparePlanner = (
     zcf,
     getPortfolio,
     shapes,
+    vowTools,
   }: {
     rebalance: (
       seat: ZCFSeat,
@@ -40,11 +41,16 @@ export const preparePlanner = (
     zcf: ZCF;
     getPortfolio: (id: number) => PortfolioKit;
     shapes: ReturnType<typeof makeOfferArgsShapes>;
+    vowTools: Pick<VowTools, 'asVow'>;
   },
 ) => {
   const { movementDescShape } = shapes;
   const PlannerI = M.interface('Planner', {
-    submit: M.call(M.number(), M.arrayOf(movementDescShape)).returns(VowShape),
+    submit: M.call(
+      M.number(),
+      M.arrayOf(movementDescShape),
+      M.number(),
+    ).returns(VowShape),
   });
 
   return zone.exoClass('Planner', PlannerI, () => ({}), {
@@ -56,14 +62,23 @@ export const preparePlanner = (
      *
      * @param portfolioId - Target portfolio identifier
      * @param plan - Array of asset movements to execute
+     * @param policyVersion - on which plan is based
      * @returns Vow that resolves when all movements complete
-     * @throws If portfolio not found. Rejects if plan validation or execution fails
+     * @throws i.e. Vow rejects if portfolio not found, policyVersion is not current,
+     *   or plan validation or execution fails
      */
-    submit(portfolioId: number, plan: MovementDesc[]): Vow<void> {
-      trace('TODO: vet plan', { portfolioId, plan });
-      const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
-      const pKit = getPortfolio(portfolioId);
-      return rebalance(emptySeat, { flow: plan }, pKit);
+    submit(
+      portfolioId: number,
+      plan: MovementDesc[],
+      policyVersion: number,
+    ): Vow<void> {
+      return vowTools.asVow(async () => {
+        trace('TODO: vet plan', { portfolioId, plan });
+        const pKit = getPortfolio(portfolioId);
+        pKit.manager.ackPolicyVersion(policyVersion);
+        const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
+        return rebalance(emptySeat, { flow: plan }, pKit);
+      });
     },
   });
 };

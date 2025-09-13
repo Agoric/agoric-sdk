@@ -36,7 +36,6 @@ test('portfolio exo caches storage nodes', async t => {
     axelarIds: null as any,
     gmpAddresses,
     vowTools: null as any,
-    timer: null as any,
     chainHubTools: null as any,
     rebalance: null as any,
     parseInboundTransfer: null as any,

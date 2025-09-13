@@ -709,6 +709,9 @@ export const rebalance = (async (
   try {
     if (offerArgs.targetAllocation) {
       kit.manager.setTargetAllocation(offerArgs.targetAllocation);
+    } else if ((offerArgs.flow || []).some(step => step.dest === '+agoric')) {
+      // steps include a deposit that the planner should respond to
+      kit.manager.incrPolicyVersion();
     }
 
     if (offerArgs.flow) {
@@ -763,11 +766,6 @@ export const openPortfolio = (async (
     const { inertSubscriber } = ctxI;
     const kit = makePortfolioKit();
     await provideCosmosAccount(orch, 'agoric', kit, trace);
-
-    // Set target allocation if provided
-    if (offerArgs.targetAllocation) {
-      kit.manager.setTargetAllocation(offerArgs.targetAllocation);
-    }
 
     if (!seat.hasExited()) {
       try {
