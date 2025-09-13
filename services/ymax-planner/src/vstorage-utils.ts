@@ -17,6 +17,44 @@ const throwErrorCode = <Code extends string = string>(
 };
 
 /**
+ * Synchronusly invoke a function with the opportunity to handle any error
+ * similarly to a Promise `catch` callback (e.g., substituting a non-error
+ * returned value or throwing a possibly-new error). This is useful for (among
+ * other things) replacing generic error messages with specific ones (as in
+ * {@see tryJsonParse}).
+ *
+ * @template {(...args: any[]) => any} F
+ * @template [U=ReturnType<F>]
+ * @param {F} fn
+ * @param {(err: Error) => U} projectError
+ * @param {Parameters<F>} args
+ * @returns {ReturnType<F> | U}
+ */
+export const tryNow = (fn, projectError, ...args) => {
+  try {
+    return fn(...args);
+  } catch (err) {
+    try {
+      return projectError(err);
+    } catch (newErr) {
+      // Try to associate `err` with `newErr`.
+      if (!newErr.cause) {
+        const desc = {
+          value: err,
+          configurable: true,
+          enumerable: false,
+          writable: true,
+        };
+        if (!Reflect.defineProperty(newErr, 'cause', desc)) {
+          assert.note(newErr, err.message);
+        }
+      }
+      throw newErr;
+    }
+  }
+};
+
+/**
  * Parse input as JSON, or handle an error (for e.g. substituting a default or
  * applying a more specific message).
  */
