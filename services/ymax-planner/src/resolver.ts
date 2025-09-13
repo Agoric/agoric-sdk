@@ -14,7 +14,7 @@ const getInvitationMakers = async (wallet: SigningSmartWalletKit) => {
   const getCurrentWalletRecord = await wallet.query.getCurrentWalletRecord();
   const invitation = getCurrentWalletRecord.offerToUsedInvitation
     .filter(inv => inv[1].value[0].description === 'resolver')
-    .toSorted()
+    .sort()
     .at(-1);
   if (!invitation) {
     throw new Error('No invitation makers found');

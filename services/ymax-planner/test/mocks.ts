@@ -1,16 +1,10 @@
 import { ethers, type JsonRpcProvider } from 'ethers';
 
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import type { AccountId } from '@agoric/orchestration';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
 
 import type { EvmContext } from '../src/pending-tx-manager';
-import {
-  TxType,
-  type TxStatus,
-} from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
 
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import { PENDING_TX_PATH_PREFIX } from '../src/engine.ts';
