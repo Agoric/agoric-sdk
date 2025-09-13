@@ -85,12 +85,14 @@ import (
 // for the "export data" (described in the godoc for exportDataFilename), and
 // for the opaque artifacts of the export.
 type exportManifest struct {
-	// BlockHeight is the block height of the manifest.
-	BlockHeight uint64 `json:"blockHeight,omitempty"`
-	// Data is the filename of the export data.
-	Data string `json:"data,omitempty"`
 	// Artifacts is the list of [artifact name, file name] pairs.
 	Artifacts [][2]string `json:"artifacts"`
+	// BlockHeight is the block height of the manifest.
+	BlockHeight uint64 `json:"blockHeight,omitempty"`
+	// Indicates wether the manifest has compressed artifacts
+	Compressed bool `json:"compressed,omitempty"`
+	// Data is the filename of the export data.
+	Data string `json:"data,omitempty"`
 }
 
 // ExportManifestFilename is the manifest filename which must be synchronized with the JS export/import tooling
@@ -225,13 +227,14 @@ type SwingStoreRestoreOptions struct {
 }
 
 type swingStoreImportOptions struct {
+	// ArtifactMode is a copy of SwingStoreRestoreOptions.ArtifactMode
+	ArtifactMode string `json:"artifactMode,omitempty"`
+	Compressed   bool   `json:"compressed"`
+	// ExportDataMode is a copy of SwingStoreRestoreOptions.ExportDataMode
+	ExportDataMode string `json:"exportDataMode,omitempty"`
 	// ExportDir is the directory created by RestoreExport that JS swing-store
 	// should import from.
 	ExportDir string `json:"exportDir"`
-	// ArtifactMode is a copy of SwingStoreRestoreOptions.ArtifactMode
-	ArtifactMode string `json:"artifactMode,omitempty"`
-	// ExportDataMode is a copy of SwingStoreRestoreOptions.ExportDataMode
-	ExportDataMode string `json:"exportDataMode,omitempty"`
 }
 
 var disallowedArtifactNameChar = regexp.MustCompile(`[^-_.a-zA-Z0-9]`)
@@ -401,6 +404,8 @@ func checkNotActive() error {
 type SwingStoreExportProvider struct {
 	// BlockHeight is the block height of the SwingStore export.
 	BlockHeight uint64
+	// Indicates wether the provided artifacts will be compressed
+	Compressed bool
 	// GetExportDataReader returns a KVEntryReader for the "export data" of the
 	// SwingStore export, or nil if the "export data" is not part of this export.
 	GetExportDataReader func() (agoric.KVEntryReader, error)
@@ -472,7 +477,11 @@ func NewSwingStoreExportsHandler(logger log.Logger, blockingSend func(action vm.
 // from the goroutine that initiated the export.
 //
 // Must be called by the main goroutine
-func (exportsHandler SwingStoreExportsHandler) InitiateExport(blockHeight uint64, eventHandler SwingStoreExportEventHandler, exportOptions SwingStoreExportOptions) error {
+func (exportsHandler SwingStoreExportsHandler) InitiateExport(
+	blockHeight uint64,
+	eventHandler SwingStoreExportEventHandler,
+	exportOptions SwingStoreExportOptions,
+) error {
 	err := checkNotActive()
 	if err != nil {
 		return err
@@ -712,7 +721,12 @@ func OpenSwingStoreExportDirectory(exportDir string) (SwingStoreExportProvider, 
 		return artifact, err
 	}
 
-	return SwingStoreExportProvider{BlockHeight: manifest.BlockHeight, GetExportDataReader: getExportDataReader, ReadNextArtifact: readNextArtifact}, nil
+	return SwingStoreExportProvider{
+		BlockHeight:         manifest.BlockHeight,
+		Compressed:          manifest.Compressed,
+		GetExportDataReader: getExportDataReader,
+		ReadNextArtifact:    readNextArtifact,
+	}, nil
 }
 
 // RestoreExport restores the JS swing-store using previously exported data and artifacts.
@@ -761,14 +775,15 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 	exportsHandler.logger.Info("restoring swing-store", "exportDir", exportDir, "height", blockHeight)
 
 	action := &swingStoreRestoreExportAction{
-		Type:        swingStoreExportActionType,
+		Args: [1]swingStoreImportOptions{{
+			ArtifactMode:   restoreOptions.ArtifactMode,
+			Compressed:     provider.Compressed,
+			ExportDataMode: restoreOptions.ExportDataMode,
+			ExportDir:      exportDir,
+		}},
 		BlockHeight: blockHeight,
 		Request:     restoreRequest,
-		Args: [1]swingStoreImportOptions{{
-			ExportDir:      exportDir,
-			ArtifactMode:   restoreOptions.ArtifactMode,
-			ExportDataMode: restoreOptions.ExportDataMode,
-		}},
+		Type:        swingStoreExportActionType,
 	}
 
 	_, err = exportsHandler.blockingSend(action, true)
@@ -801,6 +816,7 @@ func WriteSwingStoreExportToDirectory(provider SwingStoreExportProvider, exportD
 
 	manifest := exportManifest{
 		BlockHeight: provider.BlockHeight,
+		Compressed:  provider.Compressed,
 	}
 
 	exportDataReader, err := provider.GetExportDataReader()
@@ -850,8 +866,16 @@ func WriteSwingStoreExportToDirectory(provider SwingStoreExportProvider, exportD
 			// any non letters-digits-hyphen-underscore-dot by a hyphen, and
 			// prefixing with an incremented id.
 			// The filename is not used for any purpose in the import logic.
-			filename := sanitizeArtifactName(artifact.Name)
-			filename = fmt.Sprintf("%d-%s", len(manifest.Artifacts), filename)
+			filename := fmt.Sprintf(
+				"%d-%s",
+				len(manifest.Artifacts),
+				sanitizeArtifactName(artifact.Name),
+			)
+
+			if provider.Compressed {
+				filename = fmt.Sprintf("%s.gz", filename)
+			}
+
 			manifest.Artifacts = append(manifest.Artifacts, [2]string{artifact.Name, filename})
 			err = writeExportFile(filename, artifact.Data)
 		} else {
