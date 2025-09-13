@@ -324,6 +324,15 @@ const processPortfolioEvents = async (
     portfolioKeyForDepositAddr: Map<Bech32Address, string>;
   },
 ) => {
+  const setPortfolioKeyForDepositAddr = (addr: Bech32Address, key: string) => {
+    const oldKey = portfolioKeyForDepositAddr.get(addr);
+    if (oldKey && oldKey !== key) {
+      const msg = `🚨 Overwriting ${addr} portfolioKey from ${oldKey} to ${key}`;
+      console.error(msg);
+    }
+    portfolioKeyForDepositAddr.set(addr, key);
+  };
+
   await null;
   for (const portfolioEvent of portfolioEvents) {
     const { path, value: cellJson, eventRecord } = portfolioEvent;
@@ -365,8 +374,41 @@ const processPortfolioEvents = async (
           }
         }
       }
+    } else if (path.startsWith(`${PORTFOLIOS_PATH_PREFIX}.`)) {
+      const portfolioKey = stripPrefix(`${PORTFOLIOS_PATH_PREFIX}.`, path);
+      try {
+        const statusCapdata = await readStreamCellValue(vstorage, path, {
+          minBlockHeight: eventRecord.blockHeight,
+          retries: 4,
+        });
+        const status = marshaller.fromCapData(statusCapdata);
+        mustMatch(status, PortfolioStatusShapeExt, path);
+        const { depositAddress } = status;
+        if (!depositAddress) continue;
+        setPortfolioKeyForDepositAddr(depositAddress, portfolioKey);
+        // TODO: Detect and address unhandled `status.policyVersion`.
+        // https://github.com/Agoric/agoric-sdk/issues/11805
+        // https://github.com/Agoric/agoric-sdk/pull/11917
+        const needsAction = true;
+        if (needsAction) {
+          deferrals.push({
+            blockHeight: eventRecord.blockHeight,
+            type: 'transfer' as const,
+            address: depositAddress,
+          });
+        }
+      } catch (err) {
+        const age = blockHeight - eventRecord.blockHeight;
+        if (err.code === STALE_RESPONSE) {
+          const msg = `⚠️  Deferring ${path} of age ${age} block(s)`;
+          console.warn(msg, eventRecord);
+        } else {
+          const msg = `🚨 Deferring ${path} of age ${age} block(s)`;
+          console.error(msg, eventRecord, err);
+        }
+        deferrals.push(eventRecord);
+      }
     }
-    // TODO: Handle portfolio-level path `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}` for addition/update of depositAddress.
   }
 };
 
