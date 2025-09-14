@@ -1,133 +1,56 @@
-import type { NetworkDefinition } from '../../src/network/types.js';
-import { validateNetworkDefinition } from '../../src/network/types.js';
+/* eslint-disable camelcase */
 
-export const TEST_NETWORK: NetworkDefinition = validateNetworkDefinition({
+import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
+import type { NetworkSpec } from '../../src/network/network-spec.js';
+import type { PoolKey } from '../../src/type-guards.js';
+
+// @ts-expect-error TS2322: Type '"Polygon"' is not assignable to type 'SupportedChain'.
+const Polygon: SupportedChain = 'Polygon';
+
+// @ts-expect-error TS2322: Type '"Compound_Polygon"' is not assignable to type 'PoolKey'.
+const Compound_Polygon: PoolKey = 'Compound_Polygon';
+
+export const TEST_NETWORK: NetworkSpec = {
   debug: true,
-  nodes: [
-    '@agoric',
-    '@noble',
-    '@Arbitrum',
-    '@Avalanche',
-    '@Polygon',
-    '@Ethereum',
-    '<Deposit>',
-    '<Cash>',
-    '+agoric',
-    'Aave_Arbitrum',
-    'Beefy_re7_Avalanche',
-    'Compound_Ethereum',
-    'Aave_Avalanche',
-    'Compound_Polygon',
-    'USDN',
-    'USDNVault',
+  environment: 'test',
+  chains: [
+    { name: 'agoric', control: 'local' },
+    { name: 'noble', control: 'ibc' },
+    { name: 'Arbitrum', control: 'axelar' },
+    { name: 'Avalanche', control: 'axelar' },
+    { name: Polygon, control: 'axelar' },
+    { name: 'Ethereum', control: 'axelar' },
   ],
-  edges: [
-    {
-      src: '@Polygon',
-      dest: '@noble',
-      variableFee: 0,
-      timeSec: 1080,
-      tags: ['cctpSlow'],
-    },
-    {
-      src: '@Arbitrum',
-      dest: '@noble',
-      variableFee: 0,
-      timeSec: 1080,
-      tags: ['cctpSlow'],
-    },
-    {
-      src: 'USDN',
-      dest: '@noble',
-      variableFee: 0,
-      timeSec: 0,
-      tags: ['usdn'],
-    },
-    {
-      src: '@noble',
-      dest: 'USDN',
-      variableFee: 5,
-      timeSec: 0,
-      tags: ['usdn'],
-    },
-    {
-      src: 'USDN',
-      dest: 'USDNVault',
-      variableFee: 0,
-      timeSec: 0,
-      tags: ['usdn'],
-    },
-    {
-      src: '@noble',
-      dest: 'USDNVault',
-      variableFee: 5,
-      timeSec: 0,
-      tags: ['usdn'],
-    },
-    {
-      src: 'USDNVault',
-      dest: '@noble',
-      variableFee: 0,
-      timeSec: 0,
-      tags: ['usdn'],
-    },
-    {
-      src: '@noble',
-      dest: '@Arbitrum',
-      variableFee: 0,
-      timeSec: 20,
-      tags: ['cctpReturn'],
-    },
-    {
-      src: '@noble',
-      dest: '@Polygon',
-      variableFee: 0,
-      timeSec: 20,
-      tags: ['cctpReturn'],
-    },
-    {
-      src: '@Avalanche',
-      dest: '@noble',
-      variableFee: 0,
-      timeSec: 1080,
-      tags: ['cctpSlow'],
-    },
-    {
-      src: '@noble',
-      dest: '@Avalanche',
-      variableFee: 0,
-      timeSec: 20,
-      tags: ['cctpReturn'],
-    },
-    {
-      src: '@Ethereum',
-      dest: '@noble',
-      variableFee: 0,
-      timeSec: 1080,
-      tags: ['cctpSlow'],
-    },
-    {
-      src: '@noble',
-      dest: '@Ethereum',
-      variableFee: 0,
-      timeSec: 20,
-      tags: ['cctpReturn'],
-    },
-    {
-      src: '@agoric',
-      dest: '@noble',
-      variableFee: 2,
-      timeSec: 10,
-      tags: ['ibc'],
-    },
-    {
-      src: '@noble',
-      dest: '@agoric',
-      variableFee: 2,
-      timeSec: 10,
-      tags: ['ibc'],
-    },
+  pools: [
+    { pool: 'Aave_Arbitrum', chain: 'Arbitrum', protocol: 'Aave' },
+    { pool: 'Beefy_re7_Avalanche', chain: 'Avalanche', protocol: 'Beefy' },
+    { pool: 'Compound_Ethereum', chain: 'Ethereum', protocol: 'Compound' },
+    { pool: 'Aave_Avalanche', chain: 'Avalanche', protocol: 'Aave' },
+    { pool: Compound_Polygon, chain: Polygon, protocol: 'Compound' },
+    { pool: 'USDN', chain: 'noble', protocol: 'USDN' },
+    { pool: 'USDNVault', chain: 'noble', protocol: 'USDN' },
   ],
-});
+  localPlaces: [
+    // Agoric seats/accounts
+    { id: '<Deposit>', chain: 'agoric' },
+    { id: '<Cash>', chain: 'agoric' },
+    { id: '+agoric', chain: 'agoric' },
+  ],
+  links: [
+    // CCTP slow towards noble
+    { src: Polygon, dest: 'noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080 },
+    { src: 'Arbitrum', dest: 'noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080 },
+    { src: 'Avalanche', dest: 'noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080 },
+    { src: 'Ethereum', dest: 'noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080 },
+    // Return path
+    { src: 'noble', dest: 'Arbitrum', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20 },
+    { src: 'noble', dest: Polygon, transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20 },
+    { src: 'noble', dest: 'Avalanche', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20 },
+    { src: 'noble', dest: 'Ethereum', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20 },
+    // IBC agoric<->noble
+    { src: 'agoric', dest: 'noble', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
+    { src: 'noble', dest: 'agoric', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
+  ],
+};
 
 export default TEST_NETWORK;

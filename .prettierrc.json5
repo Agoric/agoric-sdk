@@ -28,6 +28,16 @@
         plugins: ['prettier-plugin-sh'],
       },
     },
+    {
+      // Keep network definitions readable on wide lines
+      files: [
+        'packages/portfolio-contract/src/network/network.prod.ts',
+        'packages/portfolio-contract/test/network/test-network.ts',
+      ],
+      options: {
+        printWidth: 180,
+      },
+    },
   ],
   singleQuote: true,
 }

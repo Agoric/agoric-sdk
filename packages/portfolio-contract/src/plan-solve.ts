@@ -10,7 +10,9 @@ import type {
 import { Fail } from '@endo/errors';
 import jsLPSolver from 'javascript-lp-solver';
 import { makeTracer } from '@agoric/internal';
-import type { NetworkDefinition } from './network/types.js';
+import { PoolPlaces, type PoolKey } from './type-guards.js';
+import type { AssetPlaceRef, MovementDesc } from './type-guards-steps.js';
+import type { NetworkSpec } from './network/network-spec.js';
 import { makeGraphFromDefinition } from './network/buildGraph.js';
 import {
   preflightValidateNetworkPlan,
@@ -330,8 +332,8 @@ export const solveRebalance = async (
   // js-lp-solver returns feasible flag; treat absence as failure
   if ((result as any).feasible === false) {
     if (graph.debug) {
-  // Emit richer context only on demand to avoid noisy passing runs
-  const msg = formatInfeasibleDiagnostics(graph, model);
+      // Emit richer context only on demand to avoid noisy passing runs
+      const msg = formatInfeasibleDiagnostics(graph, model);
       console.error('[solver] No feasible solution. Diagnostics:', msg);
       throw Fail`No feasible solution: ${msg}`;
     }
@@ -439,7 +441,7 @@ export const rebalanceMinCostFlowSteps = (
  * 4. rebalanceMinCostFlowSteps
  */
 export const planRebalanceFlow = async (opts: {
-  network: NetworkDefinition;
+  network: NetworkSpec;
   current: Partial<Record<AssetPlaceRef, NatAmount>>;
   target: Partial<Record<AssetPlaceRef, NatAmount>>;
   brand: Amount['brand'];
@@ -456,11 +458,7 @@ export const planRebalanceFlow = async (opts: {
     flows = await solveRebalance(model, graph);
   } catch (err) {
     // If the solver says infeasible, try to produce a clearer message
-    try {
-      preflightValidateNetworkPlan(network, current as any, target as any);
-    } catch (pfErr) {
-      throw pfErr;
-    }
+    preflightValidateNetworkPlan(network as any, current as any, target as any);
     throw err;
   }
   const steps = rebalanceMinCostFlowSteps(flows, graph);
