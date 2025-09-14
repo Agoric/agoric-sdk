@@ -3,7 +3,6 @@ import type { Amount, Brand, NatAmount, NatValue } from '@agoric/ertp';
 import type { TargetAllocation } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { PoolKey } from '@aglocal/portfolio-contract/src/type-guards';
 import { PoolPlaces } from '@aglocal/portfolio-contract/src/type-guards.js';
-import type { MovementDesc } from './type-guards-steps.ts';
 import { NonNullish } from '@agoric/internal';
 import type {
   YieldProtocol,
@@ -204,7 +203,8 @@ export const makePortfolioSteps = async <
     network: PROD_NETWORK,
     current: current as any,
     target: target as any,
-    brand,
+  brand,
+  mode: 'cheapest',
   });
 
   // Inject USDN detail and EVM fees to match existing behavior/tests

@@ -3,6 +3,8 @@ import { validateNetworkDefinition } from './types.js';
 
 // Initial production network (static placeholder)
 export const PROD_NETWORK: NetworkDefinition = validateNetworkDefinition({
+  // debug is off by default to avoid noisy diagnostics in tests/runs
+  // Set to true in ad-hoc debugging to append infeasibility details
   nodes: [
     '@agoric',
     '@noble',

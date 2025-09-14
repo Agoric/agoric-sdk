@@ -2,11 +2,13 @@ import type { NetworkDefinition } from '../../src/network/types.js';
 import { validateNetworkDefinition } from '../../src/network/types.js';
 
 export const TEST_NETWORK: NetworkDefinition = validateNetworkDefinition({
+  debug: true,
   nodes: [
     '@agoric',
     '@noble',
     '@Arbitrum',
     '@Avalanche',
+    '@Polygon',
     '@Ethereum',
     '<Deposit>',
     '<Cash>',
@@ -14,15 +16,32 @@ export const TEST_NETWORK: NetworkDefinition = validateNetworkDefinition({
     'Aave_Arbitrum',
     'Beefy_re7_Avalanche',
     'Compound_Ethereum',
+    'Aave_Avalanche',
+    'Compound_Polygon',
     'USDN',
+    'USDNVault',
   ],
   edges: [
+    {
+      src: '@Polygon',
+      dest: '@noble',
+      variableFee: 0,
+      timeSec: 1080,
+      tags: ['cctpSlow'],
+    },
     {
       src: '@Arbitrum',
       dest: '@noble',
       variableFee: 0,
       timeSec: 1080,
       tags: ['cctpSlow'],
+    },
+    {
+      src: 'USDN',
+      dest: '@noble',
+      variableFee: 0,
+      timeSec: 0,
+      tags: ['usdn'],
     },
     {
       src: '@noble',
@@ -32,8 +51,36 @@ export const TEST_NETWORK: NetworkDefinition = validateNetworkDefinition({
       tags: ['usdn'],
     },
     {
+      src: 'USDN',
+      dest: 'USDNVault',
+      variableFee: 0,
+      timeSec: 0,
+      tags: ['usdn'],
+    },
+    {
+      src: '@noble',
+      dest: 'USDNVault',
+      variableFee: 5,
+      timeSec: 0,
+      tags: ['usdn'],
+    },
+    {
+      src: 'USDNVault',
+      dest: '@noble',
+      variableFee: 0,
+      timeSec: 0,
+      tags: ['usdn'],
+    },
+    {
       src: '@noble',
       dest: '@Arbitrum',
+      variableFee: 0,
+      timeSec: 20,
+      tags: ['cctpReturn'],
+    },
+    {
+      src: '@noble',
+      dest: '@Polygon',
       variableFee: 0,
       timeSec: 20,
       tags: ['cctpReturn'],
