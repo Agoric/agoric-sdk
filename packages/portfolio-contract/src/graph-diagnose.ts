@@ -5,7 +5,9 @@ import { Fail, q } from '@endo/errors';
 
 import type { NatAmount } from '@agoric/ertp/src/types.js';
 import { provideLazyMap } from '@agoric/internal/src/js-utils.js';
-import type { NetworkDefinition } from './network/types.js';
+
+import type { NetworkSpec } from './network/network-spec.js';
+import type { RebalanceGraph, LpModel } from './plan-solve.js';
 import { PoolPlaces, type PoolKey, type PoolPlaceInfo } from './type-guards.js';
 
 /**
@@ -106,7 +108,7 @@ export const diagnoseInfeasible = (
  * Throws Fail with a clear message on error.
  */
 export const preflightValidateNetworkPlan = (
-  network: NetworkDefinition,
+  network: NetworkSpec,
   current: Partial<Record<string, NatAmount>>,
   target: Partial<Record<string, NatAmount>>,
 ) => {
@@ -116,12 +118,12 @@ export const preflightValidateNetworkPlan = (
   ]);
   const vOf = (a?: NatAmount) => (a ? (a.value as bigint) : 0n);
 
-  // Build hub-only adjacency
+  // Build hub-only adjacency from NetworkSpec.links
   const adj = new Map<string, string[]>();
-  for (const e of network.edges) {
-    if (e.src.startsWith('@') && e.dest.startsWith('@')) {
-      (adj.get(e.src) ?? adj.set(e.src, []).get(e.src)!).push(e.dest);
-    }
+  for (const l of network.links) {
+    const src = `@${l.src}`;
+    const dest = `@${l.dest}`;
+    (adj.get(src) ?? adj.set(src, []).get(src)!).push(dest);
   }
   const bfs = (start: string) => {
     const seen = new Set<string>([start]);
@@ -140,7 +142,14 @@ export const preflightValidateNetworkPlan = (
 
   const needsToAgoric = new Map<string, string[]>();
   const needsFromAgoric = new Map<string, string[]>();
-  const declared = new Set(network.nodes);
+  const declared = new Set<string>([
+    ...network.chains.map(c => `@${c.name}`),
+    ...network.pools.map(p => p.pool),
+    ...(network.localPlaces ?? []).map(lp => lp.id),
+    '<Deposit>',
+    '<Cash>',
+    '+agoric',
+  ]);
 
   for (const k of keys) {
     if (k === '+agoric') continue;

@@ -1,103 +1,96 @@
-import type { NetworkDefinition } from './types.js';
-import { validateNetworkDefinition } from './types.js';
+import type { NetworkSpec } from './network-spec.js';
 
-// Initial production network (static placeholder)
-export const PROD_NETWORK: NetworkDefinition = validateNetworkDefinition({
-  // debug is off by default to avoid noisy diagnostics in tests/runs
-  // Set to true in ad-hoc debugging to append infeasibility details
-  nodes: [
-    '@agoric',
-    '@noble',
-    '@Arbitrum',
-    '@Avalanche',
-    '@Ethereum',
-    '<Deposit>',
-    '<Cash>',
-    '+agoric',
-    'Aave_Arbitrum',
-    'Beefy_re7_Avalanche',
-    'Compound_Ethereum',
+// Initial production network in NetworkSpec format
+export const PROD_NETWORK: NetworkSpec = {
+  environment: 'prod',
+  chains: [
+    { name: 'agoric', control: 'local' },
+    { name: 'noble', control: 'ibc' },
+    { name: 'Arbitrum', control: 'axelar' },
+    { name: 'Avalanche', control: 'axelar' },
+    { name: 'Ethereum', control: 'axelar' },
   ],
-  edges: [
-    // Inter-chain hub edges (similar to previous LINKS array)
-    {
-      src: '@Arbitrum',
-      dest: '@noble',
-      variableFee: 0,
-      timeSec: 1080,
-      tags: ['cctpSlow'],
-    },
-    {
-      src: '@Avalanche',
-      dest: '@noble',
-      variableFee: 0,
-      timeSec: 1080,
-      tags: ['cctpSlow'],
-    },
-    {
-      src: '@Ethereum',
-      dest: '@noble',
-      variableFee: 0,
-      timeSec: 1080,
-      tags: ['cctpSlow'],
-    },
-    {
-      src: '@noble',
-      dest: '@Arbitrum',
-      variableFee: 0,
-      timeSec: 20,
-      tags: ['cctpReturn'],
-    },
-    {
-      src: '@noble',
-      dest: '@Avalanche',
-      variableFee: 0,
-      timeSec: 20,
-      tags: ['cctpReturn'],
-    },
-    {
-      src: '@noble',
-      dest: '@Ethereum',
-      variableFee: 0,
-      timeSec: 20,
-      tags: ['cctpReturn'],
-    },
-    {
-      src: '@Arbitrum',
-      dest: '@noble',
-      variableFee: 0.0015,
-      timeSec: 45,
-      tags: ['fast'],
-    },
-    {
-      src: '@Avalanche',
-      dest: '@noble',
-      variableFee: 0.0015,
-      timeSec: 45,
-      tags: ['fast'],
-    },
-    {
-      src: '@Ethereum',
-      dest: '@noble',
-      variableFee: 0.0015,
-      timeSec: 45,
-      tags: ['fast'],
-    },
-    {
-      src: '@agoric',
-      dest: '@noble',
-      variableFee: 2,
-      timeSec: 10,
-      tags: ['ibc'],
-    },
-    {
-      src: '@noble',
-      dest: '@agoric',
-      variableFee: 2,
-      timeSec: 10,
-      tags: ['ibc'],
-    },
+  pools: [
+    { pool: 'Aave_Arbitrum', chain: 'Arbitrum', protocol: 'Aave' },
+    { pool: 'Beefy_re7_Avalanche', chain: 'Avalanche', protocol: 'Beefy' },
+    { pool: 'Compound_Ethereum', chain: 'Ethereum', protocol: 'Compound' },
   ],
-});
+  localPlaces: [
+    { id: '<Deposit>', chain: 'agoric' },
+    { id: '<Cash>', chain: 'agoric' },
+    { id: '+agoric', chain: 'agoric' },
+  ],
+  links: [
+    // CCTP slow
+    {
+      src: 'Arbitrum',
+      dest: 'noble',
+      transfer: 'cctpSlow',
+      variableFeeBps: 0,
+      timeSec: 1080,
+    },
+    {
+      src: 'Avalanche',
+      dest: 'noble',
+      transfer: 'cctpSlow',
+      variableFeeBps: 0,
+      timeSec: 1080,
+    },
+    {
+      src: 'Ethereum',
+      dest: 'noble',
+      transfer: 'cctpSlow',
+      variableFeeBps: 0,
+      timeSec: 1080,
+    },
+    // CCTP return (fast on return path)
+    {
+      src: 'noble',
+      dest: 'Arbitrum',
+      transfer: 'cctpReturn',
+      variableFeeBps: 0,
+      timeSec: 20,
+    },
+    {
+      src: 'noble',
+      dest: 'Avalanche',
+      transfer: 'cctpReturn',
+      variableFeeBps: 0,
+      timeSec: 20,
+    },
+    {
+      src: 'noble',
+      dest: 'Ethereum',
+      transfer: 'cctpReturn',
+      variableFeeBps: 0,
+      timeSec: 20,
+    },
+    // Fast USDC (Axelar GMP)
+    {
+      src: 'Arbitrum',
+      dest: 'noble',
+      transfer: 'fastusdc',
+      variableFeeBps: 15,
+      timeSec: 45,
+    },
+    {
+      src: 'Avalanche',
+      dest: 'noble',
+      transfer: 'fastusdc',
+      variableFeeBps: 15,
+      timeSec: 45,
+    },
+    {
+      src: 'Ethereum',
+      dest: 'noble',
+      transfer: 'fastusdc',
+      variableFeeBps: 15,
+      timeSec: 45,
+    },
+    // IBC between agoric and noble
+    { src: 'agoric', dest: 'noble', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
+    { src: 'noble', dest: 'agoric', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
+  ],
+};
 
 export default PROD_NETWORK;
