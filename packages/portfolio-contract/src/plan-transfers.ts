@@ -206,7 +206,8 @@ export const makePortfolioSteps = async <
     network: PROD_NETWORK,
     current: current as any,
     target: target as any,
-    brand,
+  brand,
+  mode: 'cheapest',
   });
 
   // Inject USDN detail and EVM fees to match existing behavior/tests

@@ -9,7 +9,8 @@ import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import { Fail, q, X } from '@endo/errors';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
-import { PROD_NETWORK } from '@aglocal/portfolio-contract/src/network/network.prod.js';
+import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
+// import { PROD_NETWORK } from '@aglocal/portfolio-contract/src/network/network.prod.js';
 import type { NetworkDefinition } from '@aglocal/portfolio-contract/src/network/types.js';
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/src/plan-solve.js';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
@@ -114,8 +115,9 @@ export const computeTargetsFromAllocation = (
       targets[key] = AmountMath.make(brand, 0n);
     }
   }
-  // Deposit seat must end at 0
-  targets['<Deposit>'] = AmountMath.make(brand, 0n);
+  // Staging account ('+agoric') must end at 0: all staged funds should be fanned out
+  // to destination accounts/pools as part of this deposit plan.
+  targets['+agoric'] = AmountMath.make(brand, 0n);
   return harden(targets);
 };
 
@@ -126,7 +128,7 @@ export const computeTargetsFromAllocation = (
 export const planDepositToTargets = async (
   amount: NatAmount,
   current: Partial<Record<PoolKey, NatAmount>>,
-  target: Partial<Record<string, NatAmount>>, // includes all pools + '<Deposit>'
+  target: Partial<Record<string, NatAmount>>, // includes all pools + '+agoric'
   network: NetworkDefinition,
 ): Promise<MovementDesc[]> => {
   const brand = amount.brand;
@@ -134,9 +136,13 @@ export const planDepositToTargets = async (
   const currentWithDeposit: Partial<Record<string, NatAmount>> = {
     ...current,
   };
-  const existing =
-    currentWithDeposit['<Deposit>'] ?? AmountMath.make(brand, 0n);
-  currentWithDeposit['<Deposit>'] = AmountMath.add(existing, amount);
+  // NOTE It is important that the only '+agoric' amount that it is allowed to
+  // include in the solution is the amount provided in this deposit operation.
+  // The actual balance on '+agoric' may include assets for another operation
+  // in progress.
+  const existing = currentWithDeposit['+agoric'] ?? AmountMath.make(brand, 0n);
+  currentWithDeposit['+agoric'] = AmountMath.add(existing, amount);
+  console.log('COMPLETE GRAPH', currentWithDeposit, target, network);
   const { steps } = await planRebalanceFlow({
     network,
     current: currentWithDeposit as any,
@@ -205,6 +211,6 @@ export const handleDeposit = async (
     amount,
     currentBalances,
     targetAllocation as any,
-    PROD_NETWORK,
+    TEST_NETWORK,
   );
 };

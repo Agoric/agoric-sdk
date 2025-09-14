@@ -12,6 +12,10 @@ import jsLPSolver from 'javascript-lp-solver';
 import { makeTracer } from '@agoric/internal';
 import type { NetworkDefinition } from './network/types.js';
 import { makeGraphFromDefinition } from './network/buildGraph.js';
+import {
+  preflightValidateNetworkPlan,
+  formatInfeasibleDiagnostics,
+} from './graph-diagnose.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const trace = makeTracer('solve');
@@ -55,17 +59,8 @@ export interface RebalanceGraph {
   supplies: SupplyMap;
   brand: Amount['brand'];
   scale: number;
-}
-
-/** Options for adding an inter-chain edge */
-export interface InterchainLinkSpec {
-  srcChain: string; // without leading @
-  destChain: string; // without leading @
-  capacity?: bigint;
-  variableFee?: number;
-  fixedFee?: number;
-  timeFixed?: number;
-  via?: string;
+  /** When true, print extra diagnostics on solver failure */
+  debug?: boolean;
 }
 
 /** Mode of optimization */
@@ -170,42 +165,20 @@ export const buildBaseGraph = (
   }
 
   // Return mutable graph (do NOT harden so we can add inter-chain links later)
-  return { nodes, edges, supplies, brand, scale: 1 } as RebalanceGraph;
+  return {
+    nodes,
+    edges,
+    supplies,
+    brand,
+    scale: 1,
+    debug: false,
+  } as RebalanceGraph;
 };
 
 /**
  * Add a directed inter-chain link between hub nodes (and optional reverse if needed externally).
  */
-export const addInterchainLink = (
-  graph: RebalanceGraph,
-  spec: InterchainLinkSpec,
-) => {
-  const {
-    srcChain,
-    destChain,
-    capacity = 9_007_199_254_740_000n,
-    variableFee = 0,
-    fixedFee,
-    timeFixed,
-    via = 'inter-chain',
-  } = spec;
-  const src = `@${srcChain}` as AssetPlaceRef;
-  const dest = `@${destChain}` as AssetPlaceRef;
-  if (!graph.nodes.has(src) || !graph.nodes.has(dest)) {
-    throw Fail`Chain hubs missing for link ${src}->${dest}`;
-  }
-  const cap = Number(capacity); // direct, assumes capacity fits JS number
-  graph.edges.push({
-    id: `e${graph.edges.length}`,
-    src,
-    dest,
-    capacity: cap,
-    variableFee,
-    fixedFee,
-    timeFixed,
-    via,
-  });
-};
+// addInterchainLink removed; inter-hub edges are added directly in makeGraphFromDefinition
 
 // ------------------------------ Model Building -------------------------------
 
@@ -235,8 +208,10 @@ export const buildLPModel = (
     const useVar = `y_${edge.id}`;
     variables[flowVar] = { [flowVar]: 1 };
     const capName = `cap_${edge.id}`;
-    ensureConstraint(capName)[flowVar] = 1;
-    constraints[capName].max = edge.capacity;
+    constraints[capName] = { [flowVar]: 1, max: edge.capacity };
+    // Non-negativity: f_e >= 0
+    const lbName = `lb_${edge.id}`;
+    constraints[lbName] = { [flowVar]: 1, min: 0 };
     const needsFixed =
       (mode === 'cheapest' && edge.fixedFee && edge.fixedFee > 0) ||
       (mode === 'fastest' && edge.timeFixed && edge.timeFixed > 0);
@@ -244,9 +219,11 @@ export const buildLPModel = (
       variables[flowVar][useVar] = 0;
       binaries[useVar] = 1;
       const linkName = `link_${edge.id}`;
-      ensureConstraint(linkName)[flowVar] = 1;
-      ensureConstraint(linkName)[useVar] = -edge.capacity;
-      constraints[linkName].max = 0;
+      constraints[linkName] = {
+        [flowVar]: 1,
+        [useVar]: -edge.capacity,
+        max: 0,
+      };
       if (mode === 'cheapest' && edge.fixedFee) {
         objectiveTerm[useVar] = (objectiveTerm[useVar] || 0) + edge.fixedFee;
       }
@@ -348,11 +325,16 @@ export const solveRebalance = async (
   graph: RebalanceGraph,
 ): Promise<SolvedEdgeFlow[]> => {
   const jsModel = toJsSolverModel(model);
-  // trace('Model:', JSON.stringify(model, null, 2));
-  // trace('JS Solver Model:', JSON.stringify(jsModel, null, 2));
+  // Use trace() sparingly; keep commented unless deep debugging is needed
   const result = runJsSolver(jsModel);
   // js-lp-solver returns feasible flag; treat absence as failure
   if ((result as any).feasible === false) {
+    if (graph.debug) {
+  // Emit richer context only on demand to avoid noisy passing runs
+  const msg = formatInfeasibleDiagnostics(graph, model);
+      console.error('[solver] No feasible solution. Diagnostics:', msg);
+      throw Fail`No feasible solution: ${msg}`;
+    }
     throw Fail`No feasible solution`;
   }
   const flows: SolvedEdgeFlow[] = [];
@@ -466,8 +448,21 @@ export const planRebalanceFlow = async (opts: {
   const { network, current, target, brand, mode = 'fastest' } = opts;
   // TODO remove "automatic" values that shoudl be static
   const graph = makeGraphFromDefinition(network, current, target, brand);
+
   const model = buildLPModel(graph, mode);
-  const flows = await solveRebalance(model, graph);
+  let flows;
+  await null;
+  try {
+    flows = await solveRebalance(model, graph);
+  } catch (err) {
+    // If the solver says infeasible, try to produce a clearer message
+    try {
+      preflightValidateNetworkPlan(network, current as any, target as any);
+    } catch (pfErr) {
+      throw pfErr;
+    }
+    throw err;
+  }
   const steps = rebalanceMinCostFlowSteps(flows, graph);
   return harden({ graph, model, flows, steps });
 };
@@ -480,6 +475,12 @@ const chainOf = (id: AssetPlaceRef): string => {
   if (id in PoolPlaces) {
     const pk = id as PoolKey;
     return PoolPlaces[pk].chainName;
+  }
+  // Fallback: syntactic pool id like "Protocol_Chain" => chain
+  // This enables base graph edges for pools even if not listed in PoolPlaces
+  const m = /^([A-Za-z0-9]+)_([A-Za-z0-9-]+)$/.exec(id);
+  if (m) {
+    return m[2];
   }
   throw Fail`Cannot determine chain for ${id}`;
 };
