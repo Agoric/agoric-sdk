@@ -155,7 +155,10 @@ const openPositions = async (
   const goal = objectMap(goalData, toAmt);
   console.debug('TODO: address Ethereum-only limitation');
   const evm = 'Ethereum';
-  const { give: giveWFees } = makePortfolioSteps(goal, { evm, feeBrand: BLD });
+  const { give: giveWFees } = await makePortfolioSteps(goal, {
+    evm,
+    feeBrand: BLD,
+  });
   // XXX WIP: contract is to pay BLD fee
   const { GmpFee: _gf, ...give } = giveWFees;
   const proposal: ProposalType['openPortfolio'] = {

@@ -10,6 +10,8 @@ export interface NetworkEdge {
 export interface NetworkDefinition {
   nodes: string[];
   edges: NetworkEdge[];
+  /** enable extra diagnostics in solver when infeasible */
+  debug?: boolean;
 }
 export const validateNetworkDefinition = (net: NetworkDefinition) => {
   const nodeSet = new Set(net.nodes);

@@ -183,6 +183,8 @@ test('solver deposit redistribution (Deposit 100 -> A 70, B 30)', async t => {
   });
   t.deepEqual(steps, [
     { src: '<Deposit>', dest: '@agoric', amount: token(100n) },
+    // TODO dckc should this  go through +agoric?
+    // { src: '+agoric', dest: '@agoric', amount: token(100n) },
     { src: '@agoric', dest: '@noble', amount: token(100n) },
     { src: '@noble', dest: '@Arbitrum', amount: token(70n) },
     { src: '@noble', dest: '@Avalanche', amount: token(30n) },

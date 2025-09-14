@@ -1,6 +1,6 @@
 # Rebalance Solver Overview
 
-This document describes the current balance rebalancing solver used in `plan-solve.ts`.
+This document describes the current balance rebalancing solver used in `plan-solve.ts` and the surrounding graph/diagnostics utilities.
 
 ## 1. Domain & Graph Structure
 We model a multi-chain, multi-place asset distribution problem as a directed flow network.
@@ -9,6 +9,10 @@ Node (vertex) types (all implement `AssetPlaceRef`):
 - Chain hubs: `@ChainName` (e.g. `@Arbitrum`, `@Avalanche`, `@Ethereum`, `@noble`, `@agoric`). A single hub per chain collects and redistributes flow for that chain.
 - Protocol / pool leaves: `Protocol_Chain` identifiers (e.g. `Aave_Arbitrum`, `Beefy_re7_Avalanche`, `Compound_Ethereum`). Each is attached to exactly one hub (its chain).
 - Local Agoric seats: `'<Cash>'`, `'<Deposit>'`, and `'+agoric'` – all leaves on the `@agoric` hub.
+
+Notes:
+- Pool-to-chain affiliation is sourced from PoolPlaces (typed map) at build time. Hubs are not auto-added from PoolPlaces; only pools whose hub is already present in the NetworkDefinition are auto-included. When a pool id isn't found, `chainOf(x)` falls back to parsing the suffix of `Protocol_Chain`.
+- `+agoric` is a staging account on `@agoric`, used to accumulate new deposits before distribution; for deposit planning it must end at 0 in the final targets.
 
 Supply (net position) per node:
 ```
@@ -30,6 +34,10 @@ Two classes of directed edges:
    - FastUSDC (unidirectional EVM -> Noble): `variableFee=0.0015`, `timeFixed=45s`.
    - Noble <-> Agoric IBC: `variableFee=2`, `timeFixed=10s`.
 Each link is directional; reverse direction is added explicitly where needed.
+
+Overrides and tags:
+- Explicit edges from the NetworkDefinition supersede any auto-added base edge with the same `src -> dest`. This lets the definition supply real pricing/latency.
+- Edges may carry `tags` (e.g., `['cctp','fast','usdn']`) for metadata and readability. Tags do not affect optimization and do not control debug.
 
 Edge attributes used by optimizer:
 - `capacity` (numeric upper bound on flow) – large default for intra-chain.
@@ -118,29 +126,111 @@ interface NetworkEdge {
   tags?: string[];      // metadata (e.g. ['cctp','fast'])
 }
 interface NetworkDefinition {
-  nodes: string[];      // all node ids (hubs + leaves)
+  nodes: string[];      // optional: declared node ids (hubs + leaves)
   edges: NetworkEdge[]; // directed edges
+  debug?: boolean;      // optional: enable extra diagnostics/debug
 }
 ```
 
-Edge translation to solver:
+Builder & translation to solver:
 - `timeFixed = timeSec`
 - default `capacity = Number.MAX_SAFE_INTEGER/4` if unspecified
-- intra-chain leaf<->hub edges auto-added (variableFee=1, timeFixed=1) only if missing.
+- intra-chain leaf<->hub edges are auto-added for every known leaf that is included in the graph. Leaves come from: definition nodes, pools from PoolPlaces whose hub is present in the definition, and any dynamically referenced nodes whose hubs are present.
+- if the definition provides an edge with the same `src -> dest` as an auto-added one, the explicit edge replaces the base edge (override with real pricing/latency).
+- the builder merges `def.nodes` with PoolPlaces-provided pools for present hubs (does not add hubs), plus any nodes mentioned in `current`/`target`. Dynamic pools require their hub to be present; dynamic hubs must be declared explicitly.
 
 Determinism:
-- Edge ids assigned in insertion order `e0..eN`: first intra-chain additions (stable set iteration) then user-specified edges in provided order.
+- Edge ids are assigned in insertion order `e0..eN`: first the auto-added intra-chain edges (stable set iteration), then explicit definition edges in the provided order. If an explicit edge overrides a base edge, the base edge is removed and the explicit one is inserted at its definition-time position.
 
 Validation:
-- A simple validator ensures well-formed nodes/edges and guards against duplicate edges unless explicitly intended (e.g., tagged variants).
+- Strict validation ensures:
+  - All edges reference declared/known nodes (after PoolPlaces merge).
+  - Hubs referenced by inter-hub edges exist; adding an edge with a missing hub is an error.
+  - Hubs that should participate in inter-hub transfers have at least one outgoing or incoming inter-hub arc; empty hubs are flagged.
+  - Duplicate `src -> dest` edges are only allowed if intentionally distinct (e.g., different tags) and don't conflict with overrides.
+
+### 10.1 PoolPlaces integration and chain inference
+- PoolPlaces provides the canonical mapping from pool ids to chain hubs used by the builder. Hubs are not implicitly added from this mapping.
+- `chainOf(x)` resolves a node's chain via PoolPlaces; if not found and `x` matches `Protocol_Chain`, it falls back to using the `_Chain` suffix.
+
+### 10.2 Diagnostics and failure analysis
+Error handling on infeasible solves is designed for clarity with minimal overhead when things work:
+- Normal operation: on success, no extra diagnostics are computed.
+- On solver infeasibility: if `graph.debug` is true (from `NetworkDefinition.debug`), the solver emits a concise error plus diagnostic details to aid triage. Otherwise, it throws a terse error message.
+- After any infeasible solve, a post-failure preflight validator runs: it checks for unsupported position keys and missing inter-hub reachability required by the requested flows. If it finds a clearer root cause, it throws a targeted error explaining the issue.
+
+Implementation notes:
+- Diagnostics live in `graph-diagnose.ts` (`diagnoseInfeasible`, `preflightValidateNetworkPlan`).
+- Enable by setting `debug: true` in your `NetworkDefinition`.
+- Typical diagnostic output includes: supply balance summary, stranded sources/sinks, hub connectivity and inter-hub links, and a suggested set of missing edges.
 
 ---
 
+### 10.3 Path explanations and near-miss analysis
+
+When a particular route is suspected to be viable but the solver reports infeasible, it helps to check a candidate path hop-by-hop and to summarize “almost works” pairs. Two helpers are available in `graph-diagnose.ts`:
+
+- `explainPath(graph, path: string[])`
+  - Validates each hop in the given path array (e.g., `['<Deposit>', '@agoric', '@noble', 'USDNVault']`).
+  - Returns `{ ok: true }` if every hop exists and has positive capacity; otherwise returns the first failing hop with a reason and suggestion:
+    - `missing-node`: node isn’t in `graph.nodes`.
+    - `missing-edge`: no `src -> dest` edge exists.
+    - `wrong-direction`: reverse edge exists but forward is missing (suggest adding forward edge).
+    - `capacity-zero`: edge exists but has no positive capacity.
+
+- `diagnoseNearMisses(graph)`
+  - Looks at all positive-supply sources to negative-supply sinks and classifies why each unreachable pair fails.
+  - Categories include `no-directed-path` and `capacity-blocked`, with an optional hint (e.g., “consider adding inter-hub @agoric->@Avalanche”).
+  - This runs automatically (and is appended to the thrown message) when `NetworkDefinition.debug` is true and the solver returns infeasible.
+
+Example usage (TypeScript):
+
+```ts
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { makeGraphFromDefinition } from './src/network/buildGraph.js';
+import { PROD_NETWORK } from './src/network/network.prod.js';
+import { explainPath, diagnoseNearMisses } from './src/graph-diagnose.js';
+
+// Build a small scenario
+const { brand: USDC } = makeIssuerKit('USDC');
+const current = {
+  '<Deposit>': AmountMath.make(USDC, 50_000_000n),
+};
+const target = {
+  'USDNVault': AmountMath.make(USDC, 50_000_000n),
+  '<Deposit>': AmountMath.make(USDC, 0n),
+};
+
+// Build the graph from the network definition and plans
+const graph = makeGraphFromDefinition(PROD_NETWORK, current as any, target as any, USDC);
+
+// 1) Explain a candidate path
+const path = ['<Deposit>', '@agoric', '@noble', 'USDNVault'];
+const pathReport = explainPath(graph, path);
+// Example outcome:
+// { ok: true }
+// or
+// { ok: false, failAtIndex: 1, src: '@agoric', dest: '@noble', reason: 'missing-edge',
+//   suggestion: 'add edge @agoric->@noble' }
+
+// 2) Summarize near-misses between sources and sinks
+const near = diagnoseNearMisses(graph);
+// Example: { missingPairs: [ { src: '@agoric', dest: '@Arbitrum', category: 'no-directed-path',
+//            hint: 'consider adding inter-hub @agoric->@Arbitrum' }, ... ] }
+```
+
+Notes:
+- These checks are purely topological/capacity-driven and independent of the optimize mode (cheapest/fastest).
+- They’re inexpensive (BFS over a small graph) and run only when requested or when `debug` is enabled and the solve is infeasible.
+
+
 ## 11. Todo
+Critical
+- Typed Node/Edge aliases to enforce pool↔hub pairing at compile time.
+
 Further items for solver
 - support additions of dynamic constraints (e.g., when route price changes)
 - add fee information and time to moves
-- handle "no feasible plan"
 - add minimimums to links
 - add capacity limits to links
   - test them
@@ -175,7 +265,7 @@ This last section is the living plan. As details are settled (schemas, invariant
 Status as of 2025-09-10:
 - Phase 1: Complete — types, builder, and prod/test configs added; `planRebalanceFlow` accepts a network.
 - Phase 2: Complete — unit tests migrated to use the test network; legacy LINKS removed in this package.
-- Phase 3: In progress — deposit routing is being refactored to derive paths via the generic graph; downstream services updated incrementally.
+- Phase 3: In progress — deposit routing is being refactored to derive paths via the generic graph; downstream services updated incrementally. Post-failure preflight validation and solver diagnostics are integrated and controlled by `graph.debug`.
 - Phase 4: Pending — finalize docs and remove remaining legacy references elsewhere.
 
 Phases:
@@ -183,5 +273,5 @@ Phases:
   - Refactor deposit and portfolio open flows to use solver outputs end-to-end (remove hardcoded paths).
   - Deprecate / remove `planTransfer` & `planTransferPath` after callers migrate.
 - Phase 4:
-  - Documentation updates: ensure this document reflects finalized schema and behavior.
+  - Documentation updates: ensure this document reflects finalized schema and behavior (this doc now includes PoolPlaces integration, edge override precedence, and diagnostics flow).
   - Add/extend validation and tooling as needed; remove remaining legacy references in downstream packages.
