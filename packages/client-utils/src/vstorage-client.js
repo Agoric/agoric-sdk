@@ -7,7 +7,7 @@ import {
 import { encodeHex } from '@agoric/internal/src/hex.js';
 import { isStreamCell } from '@agoric/internal/src/lib-chainStorage.js';
 import { decodeBase64 } from '@endo/base64';
-import { Fail, makeError, q as quote } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 
 /**
  * @import {MinimalNetworkConfig} from '@agoric/client-utils/src/network-config';
@@ -92,8 +92,7 @@ const codecs = /** @type {const} */ ({
  * @param {ReturnType<typeof parseValue>} value
  */
 const assertValueStructure = value => {
-  if (!isStreamCell(value))
-    throw Error(`Expected a stream cell, got ${quote(value)}`);
+  isStreamCell(value) || Fail`Expected a stream cell, got ${value}`;
 };
 
 /**
@@ -109,21 +108,20 @@ const isDataString = cell => !!cell && typeof cell === 'string';
  *  path: string;
  *  rpcAddress?: MinimalNetworkConfig['rpcAddrs'][0];
  * }} options
+ * @returns {never}
  */
-const makeVstorageError = ({
+const throwVstorageError = ({
   errorMessage,
   blockHeight,
   kind,
   path,
   rpcAddress,
-}) =>
-  makeError(
-    `Cannot read '${kind}' of '${path}' ${
-      rpcAddress ? `from '${rpcAddress}'` : ''
-    } ${
-      blockHeight ? `at block height '${blockHeight}'` : ''
-    } due to error: ${errorMessage}`,
-  );
+}) => {
+  const msg = `Cannot read ${q(kind)} of ${q(path)} ${
+    rpcAddress ? `from ${q(rpcAddress)}` : ''
+  } ${blockHeight ? `at block height ${q(blockHeight)}` : ''} due to error: `;
+  throw Fail([msg, ''], q(errorMessage));
+};
 
 /**
  * @template {any} T
@@ -134,13 +132,14 @@ const makeVstorageError = ({
  */
 const makeBlockTopic = ({ queryClient }, path, options) => ({
   latest: async blockHeight => {
-    if (blockHeight && blockHeight < MINIMUM_HEIGHT)
-      throw makeVstorageError({
+    if (blockHeight && blockHeight < MINIMUM_HEIGHT) {
+      throwVstorageError({
         errorMessage: INVALID_HEIGHT_ERROR_MESSAGE,
         blockHeight,
         kind: PATHS.DATA,
         path,
       });
+    }
 
     const response = await queryClient.queryAbci(path, {
       blockHeight:
@@ -166,7 +165,7 @@ const makeBlockTopic = ({ queryClient }, path, options) => ({
       });
     }
 
-    throw Error(`Expected a data cell, got ${quote(parsedValue)}`);
+    throw Fail`Expected a data cell, got ${parsedValue}`;
   },
 });
 
@@ -175,8 +174,8 @@ const makeBlockTopic = ({ queryClient }, path, options) => ({
  * @param {MinimalNetworkConfig} config
  */
 const makeQueryClient = ({ fetch }, config) => {
-  if (!config.rpcAddrs.length)
-    return Fail`${INVALID_RPC_ADDRESS_ERROR_MESSAGE} ${quote(config)}`;
+  config.rpcAddrs.length ||
+    Fail([`${INVALID_RPC_ADDRESS_ERROR_MESSAGE} `, ''], q(config));
 
   /**
    * @param {BlockHeight} blockHeight
@@ -226,7 +225,7 @@ const makeQueryClient = ({ fetch }, config) => {
       response = await fetch(url, { keepalive: true });
     } catch (err) {
       console.error(err);
-      throw makeVstorageError({
+      throwVstorageError({
         errorMessage: err.message,
         blockHeight,
         kind,
@@ -235,8 +234,8 @@ const makeQueryClient = ({ fetch }, config) => {
       });
     }
 
-    if (!response.ok)
-      throw makeVstorageError({
+    response.ok ||
+      throwVstorageError({
         errorMessage: await response.text(),
         blockHeight,
         kind,
@@ -246,8 +245,8 @@ const makeQueryClient = ({ fetch }, config) => {
 
     const { result } = /** @type {AbciResponse} */ (await response.json());
 
-    if (result.response?.code !== 0)
-      throw makeVstorageError({
+    result.response?.code === 0 ||
+      throwVstorageError({
         errorMessage: `Error code '${result.response.code}', Error message: '${result.response.log}'`,
         blockHeight,
         kind,
@@ -298,13 +297,14 @@ const makeStreamTopic = ({ queryClient }, path) => {
    * @param {BlockHeight} blockHeight
    */
   const latest = async blockHeight => {
-    if (blockHeight && blockHeight < MINIMUM_HEIGHT)
-      throw makeVstorageError({
+    if (blockHeight && blockHeight < MINIMUM_HEIGHT) {
+      throwVstorageError({
         errorMessage: `${INVALID_HEIGHT_ERROR_MESSAGE} (less than minimum height ${MINIMUM_HEIGHT})`,
         blockHeight,
         kind: PATHS.DATA,
         path,
       });
+    }
 
     const response = await queryClient.queryAbci(path, {
       blockHeight,
@@ -331,13 +331,14 @@ const makeStreamTopic = ({ queryClient }, path) => {
 
     if (!minimum || minimum < MINIMUM_HEIGHT) minimum = MINIMUM_HEIGHT;
 
-    if (maximum && maximum < minimum)
-      throw makeVstorageError({
+    if (maximum && maximum < minimum) {
+      throwVstorageError({
         errorMessage: `${INVALID_HEIGHT_ERROR_MESSAGE} (requested maximum height ${maximum} is less than requested minimum height ${minimum})`,
         blockHeight,
         kind: PATHS.DATA,
         path,
       });
+    }
 
     while (true) {
       /** @type {string | undefined} */
@@ -384,9 +385,6 @@ const makeStreamTopic = ({ queryClient }, path) => {
  * @param {MinimalNetworkConfig} config
  */
 export const makeVStorageClient = ({ fetch }, config) => {
-  if (!config.rpcAddrs.length)
-    return Fail`${INVALID_RPC_ADDRESS_ERROR_MESSAGE} ${quote(config)}`;
-
   const queryClient = makeQueryClient({ fetch }, config);
 
   const vStorageClient = {
