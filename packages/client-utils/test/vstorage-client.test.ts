@@ -23,7 +23,7 @@ type AbciResponse = {
 
 type Response = {
   abciResponse: AbciResponse;
-  height: bigint;
+  blockHeight: bigint;
   kind: (typeof PATHS)[keyof typeof PATHS];
   path: string;
 };
@@ -62,10 +62,13 @@ const createResponseMap = (responses: Array<Response>) =>
       }
     >
   >(
-    (map, { abciResponse: { ok, text, ...rest }, height, kind, path }) => ({
+    (
+      map,
+      { abciResponse: { ok, text, ...rest }, blockHeight, kind, path },
+    ) => ({
       ...map,
       [encodeURI(
-        `${RPC_ADDRESS}/abci_query?data=0x${encodeHex(path)}&height=${height}&path="${PATH_PREFIX}/${kind}"`,
+        `${RPC_ADDRESS}/abci_query?data=0x${encodeHex(path)}&height=${blockHeight}&path="${PATH_PREFIX}/${kind}"`,
       )]: { ok, response: rest, text },
     }),
     {},
@@ -99,7 +102,7 @@ test('should throw error on no rpc address', t => {
           rpcAddrs: [],
         },
       ),
-    { message: new RegExp(`.*${INVALID_RPC_ADDRESS_ERROR_MESSAGE}.*`) },
+    { message: errMsg => errMsg.includes(INVALID_RPC_ADDRESS_ERROR_MESSAGE) },
   );
 });
 
@@ -117,7 +120,7 @@ test('should receive the expected keys', async t => {
           QueryChildrenResponse.encode({ children: expectedKeys }).finish(),
         ),
       },
-      height: 0n,
+      blockHeight: 0n,
       kind: PATHS.CHILDREN,
       path,
     },
@@ -150,8 +153,8 @@ test('should receive the expected topic data', async t => {
       value: 'agoric150kwm3g7v9n9m78525ca2h5nzvu9uzkp7qddw9',
     },
   };
-  const height = 3n;
-  const invalidHeight = height * -1n;
+  const blockHeight = 3n;
+  const invalidHeight = blockHeight * -1n;
   let mockFetch: Window['fetch'];
   const path = 'published';
 
@@ -166,7 +169,7 @@ test('should receive the expected topic data', async t => {
           }).finish(),
         ),
       },
-      height: height - 1n,
+      blockHeight: blockHeight - 1n,
       kind: PATHS.DATA,
       path,
     },
@@ -180,7 +183,7 @@ test('should receive the expected topic data', async t => {
           }).finish(),
         ),
       },
-      height: height - 2n,
+      blockHeight: blockHeight - 2n,
       kind: PATHS.DATA,
       path,
     },
@@ -191,13 +194,13 @@ test('should receive the expected topic data', async t => {
         value: encodeBase64(
           QueryDataResponse.encode({
             value: JSON.stringify({
-              blockHeight: String(height - 2n),
+              blockHeight: String(blockHeight - 2n),
               values: [],
             }),
           }).finish(),
         ),
       },
-      height: 0n,
+      blockHeight: 0n,
       kind: PATHS.DATA,
       path,
     },
@@ -212,30 +215,30 @@ test('should receive the expected topic data', async t => {
 
   const topic = vStorageClient.fromTextBlock(path);
 
-  let data = await topic.latest(height);
-  t.is(data.blockHeight, height);
+  let data = await topic.latest(blockHeight);
+  t.is(data.blockHeight, blockHeight);
   t.deepEqual(JSON.parse(data.value), expectedData);
 
   await t.throwsAsync(() => topic.latest(invalidHeight), {
-    message: new RegExp(`.*${INVALID_HEIGHT_ERROR_MESSAGE} ${invalidHeight}.*`),
+    message: errMsg => errMsg.includes(INVALID_HEIGHT_ERROR_MESSAGE),
   });
 
-  data = await topic.latest(height - 1n);
-  t.is(data.blockHeight, height - 1n);
+  data = await topic.latest(blockHeight - 1n);
+  t.is(data.blockHeight, blockHeight - 1n);
   t.deepEqual(JSON.parse(data.value), lowestHeightExpectedData);
 
   await t.throwsAsync(() => topic.latest());
 });
 
 test('should receive the expected stream data', async t => {
-  const height = 2n;
+  const blockHeight = 2n;
   const path = 'published';
   const latestStreamCell = {
-    blockHeight: String(height),
+    blockHeight: String(blockHeight),
     values: [JSON.stringify('value3'), JSON.stringify('value4')],
   };
   const streamCell = {
-    blockHeight: String(height - 1n),
+    blockHeight: String(blockHeight - 1n),
     values: [JSON.stringify('value1'), JSON.stringify('value2')],
   };
 
@@ -251,7 +254,7 @@ test('should receive the expected stream data', async t => {
             }).finish(),
           ),
         },
-        height: 0n,
+        blockHeight: 0n,
         kind: PATHS.DATA,
         path,
       },
@@ -265,7 +268,7 @@ test('should receive the expected stream data', async t => {
             }).finish(),
           ),
         },
-        height,
+        blockHeight,
         kind: PATHS.DATA,
         path,
       },
@@ -279,7 +282,7 @@ test('should receive the expected stream data', async t => {
             }).finish(),
           ),
         },
-        height: height - 1n,
+        blockHeight: blockHeight - 1n,
         kind: PATHS.DATA,
         path,
       },
@@ -292,7 +295,7 @@ test('should receive the expected stream data', async t => {
   );
 
   const streamTopic = vStorageClient.fromText<string>(path);
-  const latestCell = await streamTopic.latest(height);
+  const latestCell = await streamTopic.latest(blockHeight);
 
   t.is(latestCell.blockHeight, BigInt(latestStreamCell.blockHeight));
   t.is(

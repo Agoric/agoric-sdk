@@ -14,7 +14,7 @@ import { Fail, makeError, q as quote } from '@endo/errors';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
  * @import {AbciQueryResponse} from '@cosmjs/tendermint-rpc';
  *
- * @typedef {bigint} Height;
+ * @typedef {bigint} BlockHeight;
  *
  * @typedef {JsonRpcResponse<{response: AbciQueryResponse}>} AbciResponse;
  *
@@ -44,27 +44,27 @@ import { Fail, makeError, q as quote } from '@endo/errors';
 /**
  * @template {any} T
  * @typedef {{
- *  latest(height?: Height): Promise<Update<T>>;
+ *  latest(blockHeight?: BlockHeight): Promise<Update<T>>;
  * }} Topic<T>
  */
 
 /**
  * @template {any} T
  * @typedef {Topic<T> & {
- *  iterate(minimum?: Height, maximum?: Height): AsyncIterable<Update<T>>;
- *  reverseIterate(maximum?: Height, minimum?: Height): AsyncIterable<Update<T>>;
+ *  iterate(minimum?: BlockHeight, maximum?: BlockHeight): AsyncIterable<Update<T>>;
+ *  reverseIterate(maximum?: BlockHeight, minimum?: BlockHeight): AsyncIterable<Update<T>>;
  * }} StreamTopic<T>
  */
 
 /**
  * @template {any} T
  * @typedef {{
- *  blockHeight: Height;
+ *  blockHeight: BlockHeight;
  *  value: T;
  * }} Update<T>
  */
 
-export const INVALID_HEIGHT_ERROR_MESSAGE = 'Invalid height';
+export const INVALID_HEIGHT_ERROR_MESSAGE = 'Invalid block height';
 export const INVALID_RPC_ADDRESS_ERROR_MESSAGE =
   'No valid RPC address found in config';
 
@@ -104,17 +104,25 @@ const isDataString = cell => !!cell && typeof cell === 'string';
 /**
  * @param {{
  *  errorMessage: string;
- *  height?: Height;
+ *  blockHeight?: BlockHeight;
  *  kind: PATHS[keyof PATHS];
  *  path: string;
  *  rpcAddress?: MinimalNetworkConfig['rpcAddrs'][0];
  * }} options
  */
-const makeVstorageError = ({ errorMessage, height, kind, path, rpcAddress }) =>
+const makeVstorageError = ({
+  errorMessage,
+  blockHeight,
+  kind,
+  path,
+  rpcAddress,
+}) =>
   makeError(
     `Cannot read '${kind}' of '${path}' ${
       rpcAddress ? `from '${rpcAddress}'` : ''
-    } ${height ? `at height '${height}'` : ''} due to error: ${errorMessage}`,
+    } ${
+      blockHeight ? `at block height '${blockHeight}'` : ''
+    } due to error: ${errorMessage}`,
   );
 
 /**
@@ -125,33 +133,35 @@ const makeVstorageError = ({ errorMessage, height, kind, path, rpcAddress }) =>
  * @returns {Topic<T>}
  */
 const makeBlockTopic = ({ queryClient }, path, options) => ({
-  latest: async height => {
-    if (height && height < MINIMUM_HEIGHT)
+  latest: async blockHeight => {
+    if (blockHeight && blockHeight < MINIMUM_HEIGHT)
       throw makeVstorageError({
-        errorMessage: `${INVALID_HEIGHT_ERROR_MESSAGE} ${height}`,
-        height,
+        errorMessage: INVALID_HEIGHT_ERROR_MESSAGE,
+        blockHeight,
         kind: PATHS.DATA,
         path,
       });
 
     const response = await queryClient.queryAbci(path, {
-      height: height && height > MINIMUM_HEIGHT ? height - 1n : height,
+      blockHeight:
+        blockHeight && blockHeight > MINIMUM_HEIGHT
+          ? blockHeight - 1n
+          : blockHeight,
       kind: PATHS.DATA,
     });
     const parsedValue = parseValue(response.value);
 
     if (isDataString(parsedValue))
       return /** @type {Update<T>} */ ({
-        blockHeight: height,
+        blockHeight,
         value: parsedValue,
       });
 
     if (options?.compat) {
       assertValueStructure(parsedValue);
       const data = /** @type {StreamCell} */ (parsedValue);
-      const blockHeight = BigInt(data.blockHeight);
       return /** @type {Update<T>} */ ({
-        blockHeight,
+        blockHeight: BigInt(data.blockHeight),
         value: data.values.reverse().find(Boolean),
       });
     }
@@ -169,43 +179,43 @@ const makeQueryClient = ({ fetch }, config) => {
     return Fail`${INVALID_RPC_ADDRESS_ERROR_MESSAGE} ${quote(config)}`;
 
   /**
-   * @param {Height} height
+   * @param {BlockHeight} blockHeight
    * @param {PATHS[keyof PATHS]} kind
    * @param {string} path
    */
-  const computeVstorageAbciRoute = (height, kind, path) =>
+  const computeVstorageAbciRoute = (blockHeight, kind, path) =>
     encodeURI(
       `/abci_query?data=0x${encodeHex(
         codecs[kind].request.toProto({ path }),
-      )}&height=${height}&path="${PATH_PREFIX}/${kind}"`,
+      )}&height=${blockHeight}&path="${PATH_PREFIX}/${kind}"`,
     );
 
   /**
    * @overload
    * @param {string} path
-   * @param {Partial<{ height: Height; kind: PATHS['CHILDREN'] }>} opts
+   * @param {Partial<{ blockHeight: BlockHeight; kind: PATHS['CHILDREN'] }>} opts
    * @returns {Promise<QueryChildrenResponse>}
    *
    * @overload
    * @param {string} path
-   * @param {Partial<{ height: Height; kind: PATHS['DATA'] }>} opts
+   * @param {Partial<{ blockHeight: BlockHeight; kind: PATHS['DATA'] }>} opts
    * @returns {Promise<QueryDataResponse>}
    */
   /**
    * @param {string} path
-   * @param {Partial<{ height: Height; kind: PATHS['CHILDREN'] | PATHS['DATA'] }>} [opts]
+   * @param {Partial<{ blockHeight: BlockHeight; kind: PATHS['CHILDREN'] | PATHS['DATA'] }>} [opts]
    * @returns {Promise<QueryChildrenResponse | QueryDataResponse>}
    */
   const queryAbci = async (
     path,
-    { height = 0n, kind = PATHS.CHILDREN } = {},
+    { blockHeight = 0n, kind = PATHS.CHILDREN } = {},
   ) => {
     await null;
 
     const codec = codecs[kind];
     /** @type {Response|undefined} */
     let response;
-    const route = computeVstorageAbciRoute(height, kind, path);
+    const route = computeVstorageAbciRoute(blockHeight, kind, path);
     // TODO: implement some sort of load distribution
     // mechanism to smartly choose an rpc address
     const rpcAddress = config.rpcAddrs.find(Boolean);
@@ -218,7 +228,7 @@ const makeQueryClient = ({ fetch }, config) => {
       console.error(err);
       throw makeVstorageError({
         errorMessage: err.message,
-        height,
+        blockHeight,
         kind,
         path,
         rpcAddress,
@@ -228,7 +238,7 @@ const makeQueryClient = ({ fetch }, config) => {
     if (!response.ok)
       throw makeVstorageError({
         errorMessage: await response.text(),
-        height,
+        blockHeight,
         kind,
         path,
         rpcAddress,
@@ -239,7 +249,7 @@ const makeQueryClient = ({ fetch }, config) => {
     if (result.response?.code !== 0)
       throw makeVstorageError({
         errorMessage: `Error code '${result.response.code}', Error message: '${result.response.log}'`,
-        height,
+        blockHeight,
         kind,
         path,
         rpcAddress,
@@ -259,7 +269,7 @@ const makeQueryClient = ({ fetch }, config) => {
  */
 const makeStreamTopic = ({ queryClient }, path) => {
   /**
-   * @param {Height} blockHeight
+   * @param {BlockHeight} blockHeight
    * @param {StreamCell['values']} values
    */
   function* allUpdatesFromCell(blockHeight, values) {
@@ -271,8 +281,8 @@ const makeStreamTopic = ({ queryClient }, path) => {
   }
 
   /**
-   * @param {Height} [minimum]
-   * @param {Height} [maximum]
+   * @param {BlockHeight} [minimum]
+   * @param {BlockHeight} [maximum]
    */
   async function* iterate(minimum, maximum) {
     /** @type {Array<Update<T>>} */
@@ -285,19 +295,19 @@ const makeStreamTopic = ({ queryClient }, path) => {
   }
 
   /**
-   * @param {Height} height
+   * @param {BlockHeight} blockHeight
    */
-  const latest = async height => {
-    if (height && height < MINIMUM_HEIGHT)
+  const latest = async blockHeight => {
+    if (blockHeight && blockHeight < MINIMUM_HEIGHT)
       throw makeVstorageError({
-        errorMessage: `${INVALID_HEIGHT_ERROR_MESSAGE} ${height} is less than minimum height ${MINIMUM_HEIGHT}`,
-        height,
+        errorMessage: `${INVALID_HEIGHT_ERROR_MESSAGE} (less than minimum height ${MINIMUM_HEIGHT})`,
+        blockHeight,
         kind: PATHS.DATA,
         path,
       });
 
     const response = await queryClient.queryAbci(path, {
-      height,
+      blockHeight,
       kind: PATHS.DATA,
     });
 
@@ -311,8 +321,8 @@ const makeStreamTopic = ({ queryClient }, path) => {
   };
 
   /**
-   * @param {Height} [maximum]
-   * @param {Height} [minimum]
+   * @param {BlockHeight} [maximum]
+   * @param {BlockHeight} [minimum]
    */
   async function* reverseIterate(maximum, minimum) {
     let blockHeight = maximum;
@@ -323,8 +333,8 @@ const makeStreamTopic = ({ queryClient }, path) => {
 
     if (maximum && maximum < minimum)
       throw makeVstorageError({
-        errorMessage: `${INVALID_HEIGHT_ERROR_MESSAGE} maximum height ${maximum} is less than minimum height ${minimum}`,
-        height: blockHeight,
+        errorMessage: `${INVALID_HEIGHT_ERROR_MESSAGE} (requested maximum height ${maximum} is less than requested minimum height ${minimum})`,
+        blockHeight,
         kind: PATHS.DATA,
         path,
       });
@@ -335,7 +345,7 @@ const makeStreamTopic = ({ queryClient }, path) => {
 
       try {
         ({ value } = await queryClient.queryAbci(path, {
-          height: blockHeight,
+          blockHeight,
           kind: PATHS.DATA,
         }));
       } catch (err) {
