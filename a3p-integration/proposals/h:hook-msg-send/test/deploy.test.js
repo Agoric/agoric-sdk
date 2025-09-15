@@ -1,6 +1,6 @@
 // @ts-check
 /* eslint-env node */
-import '@endo/init/legacy.js'; // axios compat
+import '@endo/init/debug.js';
 
 import test from 'ava';
 import { getIncarnation } from '@agoric/synthetic-chain';
