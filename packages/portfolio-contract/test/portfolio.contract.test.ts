@@ -313,7 +313,7 @@ test('contract rejects unknown pool keys', async t => {
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
         // @ts-expect-error testing Unknown pool key
-        { src: '@noble', dest: 'Aave_Base', amount },
+        { src: '@noble', dest: 'Aave_Noble', amount },
       ],
     },
   );

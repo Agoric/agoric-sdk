@@ -93,7 +93,6 @@ const ymaxDataPrivateArgs: Omit<
       'noble',
       'axelar',
       'osmosis',
-      'Polygon',
       'Optimism',
       'Avalanche',
       'Arbitrum',

@@ -139,6 +139,18 @@ export const BeefyPoolPlaces = {
     protocol: 'Beefy',
     chainName: 'Avalanche',
   },
+  Beefy_morphoGauntletUsdc_Ethereum: {
+    protocol: 'Beefy',
+    chainName: 'Ethereum',
+  },
+  Beefy_morphoSmokehouseUsdc_Ethereum: {
+    protocol: 'Beefy',
+    chainName: 'Ethereum',
+  },
+  Beefy_morphoSeamlessUsdc_Base: {
+    protocol: 'Beefy',
+    chainName: 'Base',
+  },
 } as const satisfies Record<string, PoolPlaceInfo>;
 
 export const PoolPlaces = {
@@ -148,12 +160,12 @@ export const PoolPlaces = {
   Aave_Ethereum: { protocol: 'Aave', chainName: 'Ethereum' },
   Aave_Optimism: { protocol: 'Aave', chainName: 'Optimism' },
   Aave_Arbitrum: { protocol: 'Aave', chainName: 'Arbitrum' },
-  Aave_Polygon: { protocol: 'Aave', chainName: 'Polygon' },
+  Aave_Base: { protocol: 'Aave', chainName: 'Base' },
   Compound_Avalanche: { protocol: 'Compound', chainName: 'Avalanche' },
   Compound_Ethereum: { protocol: 'Compound', chainName: 'Ethereum' },
   Compound_Optimism: { protocol: 'Compound', chainName: 'Optimism' },
   Compound_Arbitrum: { protocol: 'Compound', chainName: 'Arbitrum' },
-  Compound_Polygon: { protocol: 'Compound', chainName: 'Polygon' },
+  Compound_Base: { protocol: 'Compound', chainName: 'Base' },
   ...BeefyPoolPlaces,
 } as const satisfies Record<string, PoolPlaceInfo>;
 harden(PoolPlaces);

@@ -305,19 +305,19 @@ test('handleDeposit handles different position types correctly', async t => {
           'USDN',
           'USDNVault',
           'Aave_Avalanche',
-          'Compound_Polygon',
+          'Compound_Base',
         ],
         flowCount: 0,
         accountIdByChain: {
           noble: 'noble:test:addr1',
           Avalanche: 'avalanche:test:addr2',
-          Polygon: 'polygon:test:addr3',
+          Base: 'base:test:addr3',
         },
         targetAllocation: {
           USDN: 40n,
           USDNVault: 20n,
           Aave_Avalanche: 25n,
-          Compound_Polygon: 15n,
+          Compound_Base: 15n,
         },
       };
     }
@@ -339,7 +339,7 @@ test('handleDeposit handles different position types correctly', async t => {
           balance: { supplyBalance: 150, borrowAmount: 0 },
         };
       }
-      if (chain === 'polygon' && pool === 'compound') {
+      if (chain === 'base' && pool === 'compound') {
         return {
           pool,
           chain,

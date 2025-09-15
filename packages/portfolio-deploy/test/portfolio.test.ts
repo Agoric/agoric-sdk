@@ -122,11 +122,6 @@ const exampleDynamicChainInfo = {
     reference: '42161',
     cctpDestinationDomain: 3,
   },
-  Polygon: {
-    namespace: 'eip155',
-    reference: '137',
-    cctpDestinationDomain: 7,
-  },
 } satisfies Record<string, ChainInfo>;
 
 test.before('bootstrap', async t => {
@@ -153,7 +148,6 @@ test.serial('publish chainInfo etc.', async t => {
     'Avalanche',
     'Optimism',
     'Arbitrum',
-    'Polygon',
     'Ethereum',
   ]) {
     const info = await EV(agoricNames).lookup('chain', chain);

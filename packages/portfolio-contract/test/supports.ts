@@ -125,10 +125,10 @@ export const axelarCCTPConfig = {
     reference: '42161',
     cctpDestinationDomain: 3,
   },
-  Polygon: {
+  Base: {
     namespace: 'eip155',
-    reference: '137',
-    cctpDestinationDomain: 7,
+    reference: '8453',
+    cctpDestinationDomain: 6,
   },
 };
 
