@@ -8,6 +8,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"testing"
+	"time"
 
 	"cosmossdk.io/log"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -80,8 +81,11 @@ func TestFullAppSimulation(t *testing.T) {
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 
+	// Use temporary directory to prevent CosmWasm lock conflicts when running tests in parallel
+	homeDir := fmt.Sprintf("/tmp/agoric-test-%d-%d", 1, time.Now().UnixNano())
+
 	appOptions := make(simtestutil.AppOptionsMap, 0)
-	appOptions[flags.FlagHome] = DefaultNodeHome
+	appOptions[flags.FlagHome] = homeDir
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
 
 	var wasmOpts []wasmkeeper.Option
@@ -130,8 +134,11 @@ func TestAppImportExport(t *testing.T) {
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 
+	// Use temporary directory to prevent CosmWasm lock conflicts when running tests in parallel
+	homeDir := fmt.Sprintf("/tmp/agoric-test-%d-%d", 2, time.Now().UnixNano())
+
 	appOptions := make(simtestutil.AppOptionsMap, 0)
-	appOptions[flags.FlagHome] = DefaultNodeHome
+	appOptions[flags.FlagHome] = homeDir
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
 
 	var wasmOpts []wasmkeeper.Option
@@ -254,8 +261,11 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 
+	// Use temporary directory to prevent CosmWasm lock conflicts when running tests in parallel
+	homeDir := fmt.Sprintf("/tmp/agoric-test-%d-%d", 3, time.Now().UnixNano())
+
 	appOptions := make(simtestutil.AppOptionsMap, 0)
-	appOptions[flags.FlagHome] = DefaultNodeHome
+	appOptions[flags.FlagHome] = homeDir
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
 
 	var wasmOpts []wasmkeeper.Option
@@ -356,8 +366,12 @@ func TestAppStateDeterminism(t *testing.T) {
 	}
 
 	appHashList := make([]json.RawMessage, numTimesToRunPerSeed)
+
+	// Use temporary directory to prevent CosmWasm lock conflicts when running tests in parallel
+	homeDir := fmt.Sprintf("/tmp/agoric-test-%d-%d", 4, time.Now().UnixNano())
+
 	appOptions := make(simtestutil.AppOptionsMap, 0)
-	appOptions[flags.FlagHome] = DefaultNodeHome
+	appOptions[flags.FlagHome] = homeDir
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
 
 	var wasmOpts []wasmkeeper.Option
