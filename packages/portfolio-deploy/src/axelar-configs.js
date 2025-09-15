@@ -208,7 +208,7 @@ const factoryAddresses = harden({
   mainnet: {
     // TODO: Deploy and replace with correct Factory address on Arbitrum, Optimism and Base
     // cf. https://github.com/Agoric/agoric-sdk/issues/11933
-    Arbitrum: '0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc',
+    Arbitrum: '0x647Ead1a35dbC2b0160Cbe6e565f25C4915a125F', // https://arbiscan.io/address/0x647Ead1a35dbC2b0160Cbe6e565f25C4915a125F
     Avalanche: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://snowtrace.io/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
     Base: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1',
     Ethereum: '0x3bF3056835f7C25b1f71aff99B734Ad07d644577',
