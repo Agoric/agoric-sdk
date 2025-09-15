@@ -81,7 +81,7 @@ const build = async (homeP, endowments) => {
     },
   });
 
-  const isMainnet = flags.net === 'devnet';
+  const isMainnet = flags.net === 'mainnet';
   const config = configs[isMainnet ? 'mainnet' : 'testnet'];
 
   if (isMainnet) {
