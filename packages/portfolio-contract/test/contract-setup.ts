@@ -54,11 +54,11 @@ export const deploy = async (t: ExecutionContext) => {
     'noble',
     'axelar',
     'osmosis',
-    'Polygon',
     'Optimism',
     'Avalanche',
     'Arbitrum',
     'Ethereum',
+    'Base',
   ];
 
   const chainInfo = Object.fromEntries(

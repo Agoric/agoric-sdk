@@ -87,7 +87,6 @@ export const makePrivateArgs = async (
     Ethereum: axelarConfig.Ethereum.axelarId,
     Arbitrum: axelarConfig.Arbitrum.axelarId,
     Optimism: axelarConfig.Optimism.axelarId,
-    Polygon: axelarConfig.Polygon.axelarId,
     Base: axelarConfig.Base.axelarId,
   };
 
@@ -97,7 +96,6 @@ export const makePrivateArgs = async (
     Ethereum: { ...axelarConfig.Ethereum.contracts },
     Arbitrum: { ...axelarConfig.Arbitrum.contracts },
     Optimism: { ...axelarConfig.Optimism.contracts },
-    Polygon: { ...axelarConfig.Polygon.contracts },
     Base: { ...axelarConfig.Base.contracts },
   };
 

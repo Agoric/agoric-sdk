@@ -24,7 +24,6 @@ export const AxelarChain = /** @type {const} */ ({
   Base: 'Base',
   Ethereum: 'Ethereum',
   Optimism: 'Optimism',
-  Polygon: 'Polygon',
 });
 harden(AxelarChain);
 
