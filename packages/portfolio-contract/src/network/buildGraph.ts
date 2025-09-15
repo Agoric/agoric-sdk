@@ -50,11 +50,8 @@ export const makeGraphFromDefinition = (
       }
     }
   }
-  if (dynErrors.length) {
-    throw Fail`NetworkDefinition is missing required hubs for dynamic nodes: ${dynErrors.join(
-      ', ',
-    )}`;
-  }
+  dynErrors.length === 0 ||
+    Fail`NetworkSpec is missing required hubs for dynamic nodes: ${dynErrors}`;
 
   const assetRefs = [
     ...new Set([

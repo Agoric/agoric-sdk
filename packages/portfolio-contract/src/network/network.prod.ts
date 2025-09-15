@@ -2,6 +2,8 @@ import type { NetworkSpec } from './network-spec.js';
 
 // Initial production network in NetworkSpec format
 export const PROD_NETWORK: NetworkSpec = {
+  // Enable debug diagnostics to aid troubleshooting in tests
+  debug: true,
   environment: 'prod',
   chains: [
     { name: 'agoric', control: 'local' },

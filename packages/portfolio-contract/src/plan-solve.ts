@@ -1,12 +1,7 @@
 import type { Amount } from '@agoric/ertp';
 import { AmountMath } from '@agoric/ertp';
 import type { NatAmount } from '@agoric/ertp/src/types.js';
-import type { AssetPlaceRef, MovementDesc } from './type-guards-steps.js';
-import { PoolPlaces, type PoolKey } from './type-guards.js';
-import type {
-  AxelarChain,
-  YieldProtocol,
-} from '@agoric/portfolio-api/src/constants.js';
+
 import { Fail } from '@endo/errors';
 import jsLPSolver from 'javascript-lp-solver';
 import { makeTracer } from '@agoric/internal';
@@ -206,6 +201,7 @@ export const buildLPModel = (
     .filter(s => s > 0)
     .reduce((a, b) => a + b, 0);
   for (const edge of graph.edges) {
+    const { variableFee, fixedFee = 0, timeFixed = 0 } = edge;
     const flowVar = `f_${edge.id}`;
     const useVar = `y_${edge.id}`;
     variables[flowVar] = { [flowVar]: 1 };
@@ -214,10 +210,11 @@ export const buildLPModel = (
     // Non-negativity: f_e >= 0
     const lbName = `lb_${edge.id}`;
     constraints[lbName] = { [flowVar]: 1, min: 0 };
-    const needsFixed =
-      (mode === 'cheapest' && edge.fixedFee && edge.fixedFee > 0) ||
-      (mode === 'fastest' && edge.timeFixed && edge.timeFixed > 0);
-    if (needsFixed) {
+    // Create a binary use variable for edges that incur a fixed cost component in the primary
+    // objective for this mode. In 'cheapest', only fixedFee matters for y; in 'fastest', timeFixed
+    // is part of the primary objective and thus requires y.
+    const needsBinary = fixedFee > 0 || (mode === 'fastest' && timeFixed > 0);
+    if (needsBinary) {
       variables[flowVar][useVar] = 0;
       binaries[useVar] = 1;
       const linkName = `link_${edge.id}`;
@@ -226,15 +223,32 @@ export const buildLPModel = (
         [useVar]: -edge.capacity,
         max: 0,
       };
-      if (mode === 'cheapest' && edge.fixedFee) {
-        objectiveTerm[useVar] = (objectiveTerm[useVar] || 0) + edge.fixedFee;
-      }
-      if (mode === 'fastest' && edge.timeFixed) {
-        objectiveTerm[useVar] = (objectiveTerm[useVar] || 0) + edge.timeFixed;
-      }
     }
-    if (mode === 'cheapest' && edge.variableFee) {
-      objectiveTerm[flowVar] = (objectiveTerm[flowVar] || 0) + edge.variableFee;
+    // Primary objective terms
+    if (mode === 'cheapest') {
+      if (variableFee) {
+        primaryObj[flowVar] = (primaryObj[flowVar] || 0) + variableFee;
+      }
+      if (fixedFee > 0) {
+        primaryObj[useVar] = (primaryObj[useVar] || 0) + fixedFee;
+      }
+      // Secondary (tie-breaker): prefer lower time (counts once per used edge)
+      if (needsBinary && timeFixed > 0) {
+        secondaryObj[useVar] = (secondaryObj[useVar] || 0) + timeFixed;
+      }
+    } else {
+      // mode === 'fastest': count time once per used edge
+      if (timeFixed > 0) {
+        secondaryObj; // keep reference alive for TS
+        primaryObj[useVar] = (primaryObj[useVar] || 0) + timeFixed;
+      }
+      // Secondary (tie-breaker): prefer cheaper (variable + fixed)
+      if (variableFee) {
+        secondaryObj[flowVar] = (secondaryObj[flowVar] || 0) + variableFee;
+      }
+      if (fixedFee > 0) {
+        secondaryObj[useVar] = (secondaryObj[useVar] || 0) + fixedFee;
+      }
     }
     const outC = provideRecord(constraints, `node_${edge.src}`);
     outC[flowVar] = (outC[flowVar] || 0) + 1;
@@ -247,16 +261,29 @@ export const buildLPModel = (
     if (!constraints[cname]) continue;
     constraints[cname].equal = supply;
   }
-  const model: LpModel = {
-    optimize: 'obj',
-    opType: 'min',
-    constraints,
-    variables: {
-      // objective variable collects coefficients
-      obj: { obj: 1, ...objectiveTerm },
-      ...variables,
-    },
-  };
+  // Compute conservative primary upper bound to scale epsilon
+  let primaryUB = 0;
+  if (mode === 'cheapest') {
+    // Each edge flow ≤ totalPositiveSupply; each y ≤ 1
+    for (const edge of graph.edges) {
+      if (edge.variableFee) primaryUB += edge.variableFee * totalPositiveSupply;
+      if (edge.fixedFee && edge.fixedFee > 0) primaryUB += edge.fixedFee;
+    }
+  } else {
+    // Fastest sums timeFixed per used edge (worst-case use all edges with time)
+    for (const edge of graph.edges) {
+      if (edge.timeFixed && edge.timeFixed > 0) primaryUB += edge.timeFixed;
+    }
+  }
+  // Epsilon small enough not to perturb primary optimum
+  const epsilon = primaryUB > 0 ? 1 / (1 + primaryUB * 1e6) : 1e-9;
+
+  // Merge primary and epsilon-weighted secondary
+  const objectiveTerm = { ...primaryObj };
+  for (const [k, v] of Object.entries(secondaryObj))
+    objectiveTerm[k] = (objectiveTerm[k] || 0) + v * epsilon;
+  // objective variable collects coefficients
+  variables.obj = { obj: 1, ...objectiveTerm };
   if (Object.keys(binaries).length) model.binaries = binaries;
   return model;
 };
@@ -435,7 +462,7 @@ export const rebalanceMinCostFlowSteps = (
 
 /**
  * Full pipeline (network required):
- * 1. build graph from NetworkDefinition
+ * 1. build graph from NetworkSpec
  * 2. buildModel
  * 3. solveRebalance
  * 4. rebalanceMinCostFlowSteps
