@@ -101,9 +101,6 @@ export interface LpModel {
  */
 const FLOW_EPS = 1e-6;
 
-// Simplified helpers (identity conversions)
-const scaleBigInt = (n: bigint): number => Number(n);
-
 /**
  * Build base graph with:
  * - Hub nodes for each chain discovered in placeRefs (auto-added as '@chain')
@@ -135,7 +132,10 @@ export const buildBaseGraph = (
     const targetSpecified = Object.prototype.hasOwnProperty.call(target, node);
     const targetVal = targetSpecified ? target[node]!.value : currentVal; // unchanged if unspecified
     const delta = currentVal - targetVal;
-    if (delta !== 0n) supplies[node] = scaleBigInt(delta);
+    // NOTE: Number(bigint) loses precision beyond MAX_SAFE_INTEGER (2^53-1)
+    // For USDC amounts (6 decimals), the largest realistic value would be trillions
+    // of dollars, which should be well within safe integer range
+    if (delta !== 0n) supplies[node] = Number(delta);
   }
 
   // Intra-chain edges (leaf <-> hub)
@@ -158,6 +158,11 @@ export const buildBaseGraph = (
 
     // eslint-disable-next-line no-plusplus
     edges.push({ id: `e${eid++}`, src: node, dest: hub, ...base });
+
+    // Skip @agoric → +agoric edge
+    if (node === '+agoric') continue;
+
+    // eslint-disable-next-line no-plusplus
     edges.push({ id: `e${eid++}`, src: hub, dest: node, ...base });
   }
 
@@ -451,6 +456,7 @@ export const rebalanceMinCostFlowSteps = (
     return {
       src: edge.src as AssetPlaceRef,
       dest: edge.dest as AssetPlaceRef,
+      // NOTE: BigInt(number) throws for non-integer/non-finite values
       amount: AmountMath.make(graph.brand, BigInt(flow)),
     };
   });
@@ -492,7 +498,6 @@ export const planRebalanceFlow = async (opts: {
   return harden({ graph, model, flows, steps });
 };
 
-// Helpers reinstated after scaling removal
 const chainOf = (id: AssetPlaceRef): string => {
   if (id.startsWith('@')) return id.slice(1);
   if (id === '<Cash>' || id === '<Deposit>' || id === '+agoric')
