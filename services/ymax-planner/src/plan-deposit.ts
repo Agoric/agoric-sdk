@@ -11,9 +11,9 @@ import { Fail, q, X } from '@endo/errors';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
 // import { PROD_NETWORK } from '@aglocal/portfolio-contract/src/network/network.prod.js';
-import type { NetworkDefinition } from '@aglocal/portfolio-contract/src/network/types.js';
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/src/plan-solve.js';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
+import type { NetworkSpec } from '@aglocal/portfolio-contract/src/network/network-spec.js';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 import type { CosmosRestClient } from './cosmos-rest-client.js';
 
@@ -129,7 +129,7 @@ export const planDepositToTargets = async (
   amount: NatAmount,
   current: Partial<Record<PoolKey, NatAmount>>,
   target: Partial<Record<string, NatAmount>>, // includes all pools + '+agoric'
-  network: NetworkDefinition,
+  network: NetworkSpec,
 ): Promise<MovementDesc[]> => {
   const brand = amount.brand;
   // Construct current including the deposit seat
@@ -161,7 +161,7 @@ export const planDepositToAllocations = async (
   amount: NatAmount,
   current: Partial<Record<PoolKey, NatAmount>>,
   allocation: Record<PoolKey, number>,
-  network: NetworkDefinition,
+  network: NetworkSpec,
 ): Promise<MovementDesc[]> => {
   const targets = computeTargetsFromAllocation(amount, current, allocation);
   return planDepositToTargets(amount, current, targets, network);

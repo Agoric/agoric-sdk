@@ -18,7 +18,7 @@ import { PoolPlaces, type PoolKey, type PoolPlaceInfo } from './type-guards.js';
  *   No feasible solution: nodes=7 edges=12 | supply: sum=0 pos=1500 neg=1500 (pos should equal neg; sum should be 0) | sources=2 sinks=2 | sources with no path to any sink (1): Aave_Arbitrum(800) | hubs present: @agoric, @noble, @Arbitrum | inter-hub edges: @agoric->@noble, @noble->@Arbitrum
  *
  * How to enable:
- *   - Set `debug: true` on the NetworkDefinition used to build the graph.
+ *   - Set `debug: true` on the NetworkSpec used to build the graph.
  */
 export const diagnoseInfeasible = (
   graph: RebalanceGraph,
@@ -163,7 +163,15 @@ export const preflightValidateNetworkPlan = (
     if (!pp && !declared.has(k)) {
       throw Fail`Unsupported position key: ${q(k)}`;
     }
-    const chain = pp?.chainName ?? k.replace(/^[^_]+_/, '');
+    // Determine the chain for this position key
+    const chain =
+      k === '<Deposit>' || k === '<Cash>' || k === '+agoric'
+        ? 'agoric'
+        : (pp?.chainName ?? /^[^_]+_([A-Za-z0-9-]+)$/.exec(k)?.[1] ?? '');
+    if (!chain) {
+      // If still unknown, skip further inter-hub checks; builder will surface issues
+      continue;
+    }
     const hub = `@${chain}`;
 
     if (cur > tgt) {
@@ -191,7 +199,26 @@ export const preflightValidateNetworkPlan = (
 
 /**
  * Explain why a given path would fail on this graph.
- * Returns { ok: true } if every hop exists and has positive capacity.
+ *
+ * Input format:
+ * - `path` is an ordered list of node ids: `[n0, n1, ..., nk]`.
+ * - Each hop is interpreted as the directed edge `n[i] -> n[i+1]`.
+ * - Node id conventions used by the rebalance graph:
+ *   - Hubs: `@{chain}` (e.g., `@agoric`, `@noble`, `@Arbitrum`).
+ *   - Agoric-local seats: `<Deposit>`, `<Cash>`, `+agoric` (these live on `@agoric`).
+ *   - Pools/positions: `{Pool}_{Chain}` (e.g., `Aave_Arbitrum`, `Compound_Arbitrum`).
+ *   - Local places and dynamics use their declared `id` verbatim.
+ *
+ * Return format:
+ * - `{ ok: true }` if every hop exists in the graph and has positive capacity.
+ * - `{ ok: false, failAtIndex, src, dest, reason, suggestion? }` otherwise, where:
+ *   - `failAtIndex` is the index `i` of the failing hop `path[i] -> path[i+1]`.
+ *   - `reason` is one of: `missing-node`, `missing-edge`, `wrong-direction`, `capacity-zero`.
+ *   - `suggestion` is a human hint such as `add node X`, `add edge A->B`, or `increase capacity on A->B`.
+ *
+ * Tips:
+ * - Use `canonicalPathBetween(graph, src, dest)` to build a typical hub/leaf skeleton path
+ *   before validating it with `explainPath`.
  */
 export const explainPath = (
   graph: RebalanceGraph,

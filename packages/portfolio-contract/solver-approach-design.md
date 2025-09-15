@@ -45,11 +45,19 @@ Edge attributes used by optimizer:
 - `timeFixed` (activation latency metric) – triggers binary var only if >0 in Fastest mode (from `LinkSpec.timeSec`).
 
 ## 3. Optimization Modes
-Two mutually exclusive objectives:
-- Cheapest: Minimize Σ (fixedFee_e * y_e + variableFee_e * f_e)
-  - `y_e` (binary) only for edges with `fixedFee > 0`.
-- Fastest: Minimize Σ (timeFixed_e * y_e)
-  - `y_e` (binary) for any edge with `timeFixed > 0` so that using an edge counts its latency once.
+Two primary objectives, with optional secondary tie-breaks:
+- Cheapest (primary): Minimize Σ (fixedFee_e * y_e + variableFee_e * f_e)
+- Fastest (primary): Minimize Σ (timeFixed_e * y_e)
+
+Secondary (tie-break) options:
+1) Two-pass lexicographic (not currently enabled):
+   - Solve primary, fix the optimum within ±ε as a constraint, then re-solve minimizing the secondary.
+2) Composite objective (implemented):
+   - Minimize Primary + ε · Secondary, where ε is chosen dynamically small enough not to perturb the primary optimum.
+
+Current behavior:
+- In Cheapest mode, secondary prefers lower Σ(timeFixed_e · y_e).
+- In Fastest mode, secondary prefers lower Σ(fixedFee_e · y_e + variableFee_e · f_e).
 
 In both modes:
 - Continuous flow variables: `f_e ≥ 0` for every edge.
@@ -317,12 +325,11 @@ This last section is the living plan. As details are settled (schemas, invariant
 Status as of 2025-09-14:
 - Phase 1: Complete — types, builder, and prod/test configs added; `planRebalanceFlow` accepts a network.
 - Phase 2: Complete — unit tests migrated to use the test network; legacy LINKS removed in this package.
-- Phase 3: In progress — deposit routing is being refactored to derive paths via the generic graph; downstream services updated incrementally. Post-failure preflight validation and solver diagnostics are integrated and controlled by `graph.debug`.
+- Phase 3: Complete — deposit routing is being refactored to derive paths via the generic graph; downstream services updated incrementally. Post-failure preflight validation and solver diagnostics are integrated and controlled by `graph.debug`. Composite objective for secondary tie-breaks implemented.
 - Phase 4: Pending — finalize docs and remove remaining legacy references elsewhere.
 
 Phases:
 - Phase 3 next steps:
-  - Refactor deposit and portfolio open flows to use solver outputs end-to-end (remove hardcoded paths).
   - Deprecate / remove `planTransfer` & `planTransferPath` after callers migrate.
 - Phase 4:
   - Documentation updates: ensure this document reflects finalized schema and behavior (this doc now includes PoolPlaces integration, edge override precedence, and diagnostics flow).
