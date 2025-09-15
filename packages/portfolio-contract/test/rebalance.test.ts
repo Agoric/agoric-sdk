@@ -329,3 +329,23 @@ test('solver single-target deposit (Deposit 1000 -> USDN 1000)', async t => {
     { src: '@noble', dest: USDN, amount: token(1000n) },
   ]);
 });
+
+test('solver leaves unmentioned pools unchanged', async t => {
+  const current = balances({ [A]: 80n, [B]: 20n, [C]: 7n }); // C present in current
+  const target = { [A]: token(50n), [B]: token(50n) }; // C omitted from target
+  const { steps } = await planRebalanceFlow({
+    network: TEST_NETWORK,
+    current,
+    target,
+    brand: TOK_BRAND,
+    mode: 'cheapest',
+  });
+
+  // Identical to the 2-pool case; no steps to/from C
+  t.deepEqual(steps, [
+    { src: A, dest: '@Arbitrum', amount: token(30n) },
+    { src: '@Arbitrum', dest: '@noble', amount: token(30n) },
+    { src: '@noble', dest: '@Avalanche', amount: token(30n) },
+    { src: '@Avalanche', dest: B, amount: token(30n) },
+  ]);
+});
