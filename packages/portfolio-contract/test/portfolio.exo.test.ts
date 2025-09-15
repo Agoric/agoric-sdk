@@ -7,6 +7,7 @@ import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { preparePortfolioKit } from '../src/portfolio.exo.ts';
 import { gmpAddresses } from './mocks.ts';
+import type { StatusFor } from '../src/type-guards.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
@@ -54,7 +55,7 @@ test('portfolio exo caches storage nodes', async t => {
 
   reporter.allocateFlowId();
   const amount = AmountMath.make(USDC, 123n);
-  const flowStatus = {
+  const flowStatus: StatusFor['flow'] = {
     step: 1,
     amount,
     src: '@noble',
