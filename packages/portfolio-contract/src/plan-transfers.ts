@@ -3,9 +3,6 @@
 import { AmountMath } from '@agoric/ertp';
 import type { Amount, Brand, NatAmount, NatValue } from '@agoric/ertp';
 import type { TargetAllocation } from '@aglocal/portfolio-contract/src/type-guards.js';
-import type { PoolKey } from '@aglocal/portfolio-contract/src/type-guards';
-import { PoolPlaces } from '@aglocal/portfolio-contract/src/type-guards.js';
-import type { MovementDesc } from './type-guards-steps.ts';
 import { NonNullish } from '@agoric/internal';
 import type {
   YieldProtocol,
@@ -73,84 +70,6 @@ export function planDepositTransfers(
 }
 
 /**
- * Plan a transfer from the (implicit) @noble hub out to a destination pool.
- * Assumes assets already at @noble unless a preface path is supplied.
- */
-export const planTransfer = (
-  dest: PoolKey,
-  amount: NatAmount,
-  feeBrand: Brand<'nat'>,
-  preface: MovementDesc[] = [],
-): MovementDesc[] => {
-  const { protocol: p, chainName: evm } = PoolPlaces[dest];
-  const steps: MovementDesc[] = [];
-  switch (p) {
-    case 'USDN': {
-      const detail = { usdnOut: ((amount.value || 0n) * 99n) / 100n };
-      // TODO: fetch current exchange rate instead of 99%
-      steps.push({ src: '@noble', dest: 'USDNVault', amount, detail });
-      break;
-    }
-    case 'Aave':
-    case 'Compound':
-      // XXX optimize: combine noble->evm steps
-      steps.push({
-        src: '@noble',
-        dest: `@${evm}`,
-        amount,
-        // TODO: Rather than hard-code, derive from Axelar `estimateGasFee`.
-        // https://docs.axelar.dev/dev/axelarjs-sdk/axelar-query-api#estimategasfee
-        fee: AmountMath.make(feeBrand, 15_000_000n),
-      });
-      console.warn('TODO: fees');
-      steps.push({
-        src: `@${evm}`,
-        dest: `${p}_${evm}`,
-        amount,
-        fee: AmountMath.make(feeBrand, 15_000_000n), // KLUDGE.
-      });
-      break;
-    default:
-      throw Error('unreachable');
-  }
-  return harden([...preface, ...steps]);
-};
-
-/**
- * Construct a path moving assets from one pool to another via the @noble hub.
- * If src === dest returns an empty array.
- */
-export const planTransferPath = (
-  src: PoolKey,
-  dest: PoolKey,
-  amount: NatAmount,
-): MovementDesc[] => {
-  // if the assets are already there, an empty path is in order
-  if (src === dest) {
-    return harden([]);
-  }
-
-  // kludge: get a separte brand
-  const feeBrand = AmountMath.getBrand(amount);
-  const tail = planTransfer(dest, amount, feeBrand);
-  const { protocol: p, chainName: evm } = PoolPlaces[src];
-  const steps: MovementDesc[] = [];
-  switch (p) {
-    case 'USDN':
-      steps.push({ src: 'USDNVault', dest: '@noble', amount });
-      break;
-    case 'Aave':
-    case 'Compound':
-      steps.push({ src: `${p}_${evm}`, dest: `@${evm}`, amount });
-      steps.push({ src: `@${evm}`, dest: '@noble', amount });
-      break;
-    default:
-      throw Error('unreachable');
-  }
-  return harden([...steps, ...tail]);
-};
-
-/**
  * Build deposit (give) and movement steps to achieve goal amounts per protocol.
  * Aggregates deposit at @noble then fan-outs to chain-specific pools.
  */
@@ -206,8 +125,8 @@ export const makePortfolioSteps = async <
     network: PROD_NETWORK,
     current: current as any,
     target: target as any,
-  brand,
-  mode: 'cheapest',
+    brand,
+    mode: 'cheapest',
   });
 
   // Inject USDN detail and EVM fees to match existing behavior/tests
