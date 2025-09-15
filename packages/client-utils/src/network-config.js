@@ -32,7 +32,7 @@ export const LOCAL_CONFIG_KEY = 'local';
  *     with it
  *
  * @param {string} spec
- * @returns {{ domain: string, subdomain?: string, fqdn?: string, chainId?: string } & ({ domain: string } | { fqdn: string })}
+ * @returns {{ domain: string, subdomain?: string, fqdn?: string, chainId?: string } & ({ subdomain: string } | { fqdn: string })}
  */
 export const parseNetworkSpec = spec => {
   const [domain, chainId] = spec.split(',');
