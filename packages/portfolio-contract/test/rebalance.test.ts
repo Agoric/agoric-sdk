@@ -242,3 +242,90 @@ test('solver hub balances into pools (hubs supply -> pool targets)', async t => 
     { src: '@Ethereum', dest: C, amount: token(20n) },
   ]);
 });
+
+test('solver deposit split across three pools (Deposit 1000 -> USDN 500, A 300, C 200)', async t => {
+  // Mirrors planDepositTransfers case 1 proportions
+  const USDN = 'USDN';
+  const current = balances({
+    '<Deposit>': 1000n,
+    [USDN]: 0n,
+    [A]: 0n,
+    [C]: 0n,
+  });
+  const target = {
+    '<Deposit>': ZERO,
+    [USDN]: token(500n),
+    [A]: token(300n),
+    [C]: token(200n),
+  };
+  const { steps } = await planRebalanceFlow({
+    network: TEST_NETWORK,
+    current,
+    target,
+    brand: TOK_BRAND,
+    mode: 'cheapest',
+  });
+  t.deepEqual(steps, [
+    { src: '<Deposit>', dest: '@agoric', amount: token(1000n) },
+    { src: '@agoric', dest: '@noble', amount: token(1000n) },
+    { src: '@noble', dest: USDN, amount: token(500n) },
+    { src: '@noble', dest: '@Arbitrum', amount: token(300n) },
+    { src: '@noble', dest: '@Ethereum', amount: token(200n) },
+    { src: '@Arbitrum', dest: A, amount: token(300n) },
+    { src: '@Ethereum', dest: C, amount: token(200n) },
+  ]);
+});
+
+test('solver deposit with existing balances to meet targets', async t => {
+  // Mirrors planDepositTransfers case 2: existing balances + deposit 500 -> targets
+  // current: USDN 200, A 100, C 0; deposit 500; targets USDN 320, A 320, C 160
+  const USDN = 'USDN';
+  const current = balances({
+    [USDN]: 200n,
+    [A]: 100n,
+    [C]: 0n,
+    '<Deposit>': 500n,
+  });
+  const target = {
+    [USDN]: token(320n),
+    [A]: token(320n),
+    [C]: token(160n),
+    '<Deposit>': ZERO,
+  };
+  const { steps } = await planRebalanceFlow({
+    network: TEST_NETWORK,
+    current,
+    target,
+    brand: TOK_BRAND,
+    mode: 'cheapest',
+  });
+  // Expect deposit 500 to route to fill deficits: USDN 120, A 220, C 160
+  t.deepEqual(steps, [
+    { src: '<Deposit>', dest: '@agoric', amount: token(500n) },
+    { src: '@agoric', dest: '@noble', amount: token(500n) },
+    { src: '@noble', dest: USDN, amount: token(120n) },
+    { src: '@noble', dest: '@Arbitrum', amount: token(220n) },
+    { src: '@noble', dest: '@Ethereum', amount: token(160n) },
+    { src: '@Arbitrum', dest: A, amount: token(220n) },
+    { src: '@Ethereum', dest: C, amount: token(160n) },
+  ]);
+});
+
+test('solver single-target deposit (Deposit 1000 -> USDN 1000)', async t => {
+  // Mirrors planDepositTransfers case 5: one target asset
+  const USDN = 'USDN';
+  const current = balances({ '<Deposit>': 1000n, [USDN]: 500n });
+  const target = { '<Deposit>': ZERO, [USDN]: token(1500n) };
+  const { steps } = await planRebalanceFlow({
+    network: TEST_NETWORK,
+    current,
+    target,
+    brand: TOK_BRAND,
+    mode: 'cheapest',
+  });
+  t.deepEqual(steps, [
+    { src: '<Deposit>', dest: '@agoric', amount: token(1000n) },
+    { src: '@agoric', dest: '@noble', amount: token(1000n) },
+    { src: '@noble', dest: USDN, amount: token(1000n) },
+  ]);
+});
