@@ -23,7 +23,7 @@ export interface YmaxPlannerConfig {
   };
   readonly cosmosRest: {
     readonly agoricNetworkSpec: string;
-    readonly agoricNetSubdomain: string;
+    readonly agoricNetSubdomain?: string;
     readonly timeout: number;
     readonly retries: number;
   };
