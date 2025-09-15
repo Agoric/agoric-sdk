@@ -49,10 +49,6 @@ const AxelarChainIdMap = harden({
     testnet: 'base-sepolia',
     mainnet: 'base',
   },
-  BNB: {
-    testnet: 'bnb-sepolia',
-    mainnet: 'binance',
-  },
 });
 
 // XXX: Ideally this should be Record<keyof typeof AxelarChain, HexAddress>.
@@ -74,7 +70,7 @@ const AxelarChainIdMap = harden({
  * @typedef {Record<AxelarChain, AxelarChainConfig>} AxelarChainConfigMap
  */
 
-// XXX: For unsupported chains (e.g., Polygon for AAVE, BNB for USDC),
+// XXX: For unsupported chains (e.g., Polygon for AAVE),
 // we use `0x` until a proper strategy is defined.
 
 /** @type {AddressesMap} */
@@ -85,14 +81,12 @@ const aaveAddresses = harden({
     Arbitrum: '0x794a61358D6845594F94dc1DB02A252b5b4814aD', // https://aave.com/docs/resources/addresses -> Arbitrum V3 Market -> Pool contract
     Optimism: '0x794a61358D6845594F94dc1DB02A252b5b4814aD', // https://aave.com/docs/resources/addresses -> Optimism V3 Market -> Pool contract
     Base: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5', // https://aave.com/docs/resources/addresses -> Base V3 Market -> Pool contract
-    BNB: '0x6807dc923806fE8Fd134338EABCA509979a7e0cB', // https://aave.com/docs/resources/addresses -> BNB V3 Market -> Pool contract
     Polygon: '0x',
   },
   testnet: {
     Arbitrum: '0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff', // https://search.onaave.com/?q=pool%20sepolia
     Avalanche: '0x8B9b2AF4afB389b4a70A474dfD4AdCD4a302bb40', // https://search.onaave.com/?q=pool%20fuji
     Base: '0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27', // https://search.onaave.com/?q=pool%20sepolia
-    BNB: '0x', // No AAVE deployment on BNB testnet
     Ethereum: '0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951', // https://aave.com/docs/resources/addresses -> Ethereum Sepolia V3 Market -> Pool contract
     Optimism: '0xb50201558B00496A145fE76f7424749556E326D8', // https://search.onaave.com/?q=pool%20sepolia
     Polygon: '0x',
@@ -108,7 +102,6 @@ const usdcAddresses = harden({
     Optimism: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85', // https://developers.circle.com/stablecoins/usdc-contract-addresses
     Polygon: '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359', // https://developers.circle.com/stablecoins/usdc-contract-addresses
     Base: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // https://developers.circle.com/stablecoins/usdc-contract-addresses
-    BNB: '0x', // https://developers.circle.com/stablecoins/usdc-contract-addresses
   },
   testnet: {
     Avalanche: '0x5425890298aed601595a70AB815c96711a31Bc65', // https://testnet.snowtrace.io/token/0x5425890298aed601595a70AB815c96711a31Bc65
@@ -117,7 +110,6 @@ const usdcAddresses = harden({
     Optimism: '0x5fd84259d66Cd46123540766Be93DFE6D43130D7', // https://sepolia-optimism.etherscan.io/token/0x5fd84259d66Cd46123540766Be93DFE6D43130D7
     Polygon: '0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582', // https://amoy.polygonscan.com/token/0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582
     Base: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e
-    BNB: '0x', // https://developers.circle.com/stablecoins/usdc-contract-addresses
   },
 });
 
@@ -130,7 +122,6 @@ const aaveUsdcAddresses = harden({
     Optimism: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://search.onaave.com/?q=atoken%20usdc%20aavev3optimism
     Polygon: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://search.onaave.com/?q=atoken%20usdc%20aavev3polygon
     Base: '0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB', // https://search.onaave.com/?q=atoken%20usdc%20aavev3base
-    BNB: '0x00901a076785e0906d1028c7d6372d247bec7d61', // https://search.onaave.com/?q=atoken%20usdc%20aavev3bnb
   },
   testnet: {
     Ethereum: '0x16dA4541aD1807f4443d92D26044C1147406EB80', // https://search.onaave.com/?q=atoken%20usdc%20sepolia
@@ -149,7 +140,6 @@ const aaveRewardsControllerAddresses = harden({
     Arbitrum: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses -> Arbitrum V3 Market -> DefaultIncentivesController contract
     Optimism: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses -> Optimism V3 Market -> DefaultIncentivesController contract
     Base: '0xf9cc4F0D883F1a1eb2c253bdb46c254Ca51E1F44', // https://aave.com/docs/resources/addresses -> Base V3 Market -> DefaultIncentivesController contract
-    BNB: '0xC206C2764A9dBF27d599613b8F9A63ACd1160ab4', // https://aave.com/docs/resources/addresses -> BNB V3 Market -> DefaultIncentivesController contract
     Polygon: '0x',
   },
   testnet: {
@@ -158,7 +148,6 @@ const aaveRewardsControllerAddresses = harden({
     Arbitrum: '0x3A203B14CF8749a1e3b7314c6c49004B77Ee667A', // https://search.onaave.com/?q=AaveV3ArbitrumSepolia
     Optimism: '0xaD4F91D26254B6B0C6346b390dDA2991FDE2F20d', // https://search.onaave.com/?q=AaveV3OptimismSepolia
     Base: '0x71B448405c803A3982aBa448133133D2DEAFBE5F', // https://search.onaave.com/?q=AaveV3BaseSepolia
-    BNB: '0x',
     Polygon: '0x',
   },
 });
@@ -171,7 +160,6 @@ const compoundAddresses = harden({
     Arbitrum: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf', // https://docs.compound.finance/#networks -> Arbitrum USDC -> cUSDCv3 contract
     Optimism: '0x2e44e174f7D53F0212823acC11C01A11d58c5bCB', // https://docs.compound.finance/#networks -> Optimism USDC -> cUSDCv3 contract
     Base: '0xb125E6687d4313864e53df431d5425969c15Eb2F', // https://docs.compound.finance/#networks -> Base USDC -> cUSDCv3 contract
-    BNB: '0x',
   },
   testnet: {
     Ethereum: '0xAec1F48e02Cfb822Be958B68C7957156EB3F0b6e', // https://docs.compound.finance/#networks -> Sepolia USDC -> cUSDCv3 contract
@@ -190,14 +178,12 @@ const compoundRewardsControllerAddresses = harden({
     Arbitrum: '0x88730d254A2f7e6AC8388c3198aFd694bA9f7fae', // https://docs.compound.finance/#networks -> Polygon USDC -> Rewards contract
     Optimism: '0x443EA0340cb75a160F31A440722dec7b5bc3C2E9', // https://docs.compound.finance/#networks -> Polygon USDC -> Rewards contract
     Base: '0x123964802e6ABabBE1Bc9547D72Ef1B69B00A6b1', // https://docs.compound.finance/#networks -> Base USDC -> Rewards contract
-    BNB: '0x',
   },
   testnet: {
     Ethereum: '0x8bF5b658bdF0388E8b482ED51B14aef58f90abfD', // https://docs.compound.finance/#networks -> Sepolia USDC -> Rewards contract
     Polygon: '0x0785f2AC0dCBEDEE4b8D62c25A34098E9A0dF4bB', // https://docs.compound.finance/#networks -> Polygon Mumbai Testnet -> Rewards contract
     Base: '0x3394fa1baCC0b47dd0fF28C8573a476a161aF7BC', // https://docs.compound.finance/#networks -> Base Sepolia USDC -> Rewards contract
     Arbitrum: '0x',
-    BNB: '0x',
     Optimism: '0x',
   },
 });
@@ -236,7 +222,6 @@ const factoryAddresses = harden({
     Optimism: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://optimistic.etherscan.io/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
     Polygon: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://polygonscan.com/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
     Base: '0x', // TODO: Deploy and replace with correct Factory address on Base mainnet
-    BNB: '0x', // TODO: Deploy and replace with correct Factory address on BNB mainnet
   },
   testnet: {
     Avalanche: '0xcD58949D815d25A06560AFa539972bB5B4B28902', // https://testnet.snowtrace.io/address/0xcD58949D815d25A06560AFa539972bB5B4B28902
@@ -245,7 +230,6 @@ const factoryAddresses = harden({
     Optimism: '0x',
     Polygon: '0x',
     Base: '0x',
-    BNB: '0x',
   },
 });
 
@@ -262,9 +246,6 @@ const mainnetTokenMessenger = (rows =>
     ['Base', 6, '0x1682Ae6375C4E4A97e4B583BC394c861A46D8962'],
     ['Polygon PoS', 7, '0x9daF8c91AEFAE50b9c0E69629D3F6Ca40cA3B3FE'],
     ['Unichain', 10, '0x4e744b28E787c3aD0e810eD65A24461D4ac5a762'],
-    // BNB is not supported by Circle CCTP
-    // https://developers.circle.com/stablecoins/supported-domains
-    ['BNB', -1, '0x'],
   ]),
 );
 
@@ -342,16 +323,6 @@ const mainnetContracts = {
     Beefy_morphoSeamlessUsdc_Base:
       beefyVaultAddresses.morphoSeamlessUsdc.mainnet.Base,
   },
-  BNB: {
-    aavePool: aaveAddresses.mainnet.BNB,
-    compound: compoundAddresses.mainnet.BNB,
-    compoundRewardsController: compoundRewardsControllerAddresses.mainnet.BNB,
-    factory: factoryAddresses.mainnet.BNB,
-    usdc: usdcAddresses.mainnet.BNB,
-    tokenMessenger: '0x', // XXX BNB is not supported by Circle CCTP
-    aaveUSDC: aaveUsdcAddresses.mainnet.BNB,
-    aaveRewardsController: aaveRewardsControllerAddresses.mainnet.BNB,
-  },
 };
 harden(mainnetContracts);
 
@@ -396,16 +367,6 @@ const testnetContracts = {
     tokenMessenger: testnetTokenMessenger['Base Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Base,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Base,
-  },
-  BNB: {
-    aavePool: aaveAddresses.testnet.BNB,
-    compound: '0x', // TODO
-    compoundRewardsController: '0x',
-    factory: factoryAddresses.testnet.BNB,
-    usdc: usdcAddresses.testnet.BNB,
-    tokenMessenger: '0x', // XXX BNB is not supported by Circle CCTP
-    aaveUSDC: aaveUsdcAddresses.testnet.BNB,
-    aaveRewardsController: aaveRewardsControllerAddresses.testnet.BNB,
   },
   Ethereum: {
     aavePool: aaveAddresses.testnet.Ethereum,
@@ -491,17 +452,6 @@ export const axelarConfig = harden({
     },
     contracts: { ...mainnetContracts.Base },
   },
-  BNB: {
-    axelarId: AxelarChainIdMap.BNB.mainnet,
-    chainInfo: {
-      namespace: 'eip155',
-      reference: '56',
-      // TODO: BNB is not supported by Circle CCTP
-      // https://developers.circle.com/stablecoins/supported-domains
-      cctpDestinationDomain: -1,
-    },
-    contracts: { ...mainnetContracts.BNB },
-  },
   Ethereum: {
     axelarId: AxelarChainIdMap.Ethereum.mainnet,
     chainInfo: {
@@ -569,15 +519,6 @@ export const axelarConfigTestnet = harden({
       cctpDestinationDomain: 6,
     },
     contracts: { ...testnetContracts.Base },
-  },
-  BNB: {
-    axelarId: AxelarChainIdMap.BNB.testnet,
-    chainInfo: {
-      namespace: 'eip155',
-      reference: '97',
-      cctpDestinationDomain: -1,
-    },
-    contracts: { ...testnetContracts.BNB },
   },
   Ethereum: {
     axelarId: AxelarChainIdMap.Ethereum.testnet,

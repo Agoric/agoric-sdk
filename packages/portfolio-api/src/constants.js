@@ -22,7 +22,6 @@ export const AxelarChain = /** @type {const} */ ({
   Arbitrum: 'Arbitrum',
   Avalanche: 'Avalanche',
   Base: 'Base',
-  BNB: 'BNB',
   Ethereum: 'Ethereum',
   Optimism: 'Optimism',
   Polygon: 'Polygon',

@@ -333,16 +333,6 @@ export const contractsMock: EVMContractAddressesMap = {
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
   },
-  BNB: {
-    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
-    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    tokenMessenger: '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5', // BNB not supported by CCTP, using placeholder
-    aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-    aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-    compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-  },
 } as const;
 
 export const axelarIdsMock: AxelarId = {
@@ -352,7 +342,6 @@ export const axelarIdsMock: AxelarId = {
   Polygon: 'Polygon',
   Ethereum: 'ethereum-sepolia',
   Base: 'base-sepolia',
-  BNB: 'bnb-sepolia',
 } as const;
 
 /**
