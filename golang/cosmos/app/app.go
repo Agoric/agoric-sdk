@@ -754,7 +754,9 @@ func NewAgoricApp(
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ics20TransferIBCModule)
 
 	//Wasm Keeper
-	wasmDir := filepath.Join(homePath, "wasm")
+	// Use process-specific wasm directory to avoid lock conflicts in CI
+	processID := fmt.Sprintf("%d", os.Getpid())
+	wasmDir := filepath.Join(homePath, "wasm", processID)
 	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
 	if err != nil {
 		panic(fmt.Sprintf("error while reading wasm config: %s", err))
