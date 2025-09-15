@@ -20,6 +20,7 @@ import { PROD_NETWORK } from './network/network.prod.js';
  * @param currentBalances - Current balances for each position.
  * @param targetAllocation - Target allocation percentages for each position.
  * @returns Planned transfers for each position.
+ * @deprecated Use the solver in `makePortfolioSteps` instead.
  */
 export function planDepositTransfers(
   deposit: Amount<'nat'>,

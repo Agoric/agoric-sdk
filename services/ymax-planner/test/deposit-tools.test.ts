@@ -5,6 +5,7 @@ import test from 'ava';
 import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import { Far } from '@endo/pass-style';
+import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
 import { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import { handleDeposit } from '../src/plan-deposit.ts';
 import { SpectrumClient } from '../src/spectrum-client.ts';
@@ -249,10 +250,16 @@ test('handleDeposit handles different position types correctly', async t => {
     readPublished: mockReadPublished,
   } as VstorageKit;
 
-  const steps = await handleDeposit(portfolioKey, deposit, feeBrand, {
-    readPublished: mockVstorageKit.readPublished,
-    spectrum: mockSpectrumClient,
-    cosmosRest: mockCosmosRestClient,
-  });
+  const steps = await handleDeposit(
+    portfolioKey,
+    deposit,
+    feeBrand,
+    {
+      readPublished: mockVstorageKit.readPublished,
+      spectrum: mockSpectrumClient,
+      cosmosRest: mockCosmosRestClient,
+    },
+    TEST_NETWORK,
+  );
   t.snapshot(steps);
 });

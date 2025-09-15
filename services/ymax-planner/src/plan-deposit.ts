@@ -9,10 +9,13 @@ import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import { Fail, q, X } from '@endo/errors';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
-import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
-// import { PROD_NETWORK } from '@aglocal/portfolio-contract/src/network/network.prod.js';
+// import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
+import { PROD_NETWORK } from '@aglocal/portfolio-contract/src/network/network.prod.js';
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/src/plan-solve.js';
-import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
+import type {
+  AssetPlaceRef,
+  MovementDesc,
+} from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type { NetworkSpec } from '@aglocal/portfolio-contract/src/network/network-spec.js';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 import type { CosmosRestClient } from './cosmos-rest-client.js';
@@ -64,23 +67,66 @@ export const getCurrentBalance = async (
  * Compute absolute target balances from an allocation map over PoolKeys.
  * Ensures sum(target) == sum(current) + deposit; non-allocated pools target to 0.
  */
-export const computeTargetsFromAllocation = (
+export const depositTargetsFromAllocation = (
   amount: NatAmount,
-  current: Partial<Record<PoolKey, NatAmount>>,
+  current: Partial<Record<AssetPlaceRef, NatAmount>>,
   allocation: Record<PoolKey, number>, // weights; not optional
-): Partial<Record<string, NatAmount>> => {
+): Partial<Record<AssetPlaceRef, NatAmount>> => {
   const brand = amount.brand;
-  const totalCurrent = Object.values(current).reduce<bigint>((acc, a) => {
-    if (!a) return acc;
-    assert(a.brand === brand);
-    return acc + (a.value as bigint);
-  }, 0n);
-  const total = totalCurrent + (amount.value as bigint);
+  // Base weighted targets for current + delta
+  const targets = computeWeightedTargets(
+    brand,
+    current,
+    amount.value as bigint,
+    allocation,
+  );
+
+  // Staging account ('+agoric') must end at 0: all staged funds should be fanned out
+  // to destination accounts/pools as part of this deposit plan.
+  targets['+agoric'] = AmountMath.make(brand, 0n);
+  return harden(targets);
+};
+
+/**
+ * Compute absolute target balances for a withdraw operation driven by allocation weights.
+ * Reduces balances across selected pools per weights and increases '<Cash>' by the withdraw amount.
+ * Pools not in the allocation remain unchanged. Throws if selected pools do not cover the withdrawal.
+ */
+export const withdrawTargetsFromAllocation = (
+  amount: NatAmount,
+  current: Partial<Record<AssetPlaceRef, NatAmount>>,
+  allocation: Record<PoolKey, number>,
+): Partial<Record<AssetPlaceRef, NatAmount>> => {
+  const brand = amount.brand;
+  const withdraw = amount.value;
+  const targets = computeWeightedTargets(brand, current, -withdraw, allocation);
+  const currentCash = current['<Cash>']?.value ?? 0n;
+  targets['<Cash>'] = AmountMath.make(brand, currentCash + withdraw);
+  return harden(targets);
+};
+
+/**
+ * Derive weighted targets for allocation keys. Additionally, always zero out hub balances
+ * (chains; keys starting with '@') that have non-zero current amounts. Returns only entries
+ * whose values change compared to current.
+ */
+const computeWeightedTargets = (
+  brand: Brand<'nat'>,
+  current: Partial<Record<AssetPlaceRef, NatAmount>>,
+  delta: bigint,
+  allocation: Record<PoolKey, number>,
+): Partial<Record<AssetPlaceRef, NatAmount>> => {
+  const totalCurrentAmt = Object.keys(current).reduce(
+    (acc, k) => (allocation[k] ? AmountMath.add(acc, current[k]) : acc),
+    AmountMath.makeEmpty(brand),
+  );
+  const total = totalCurrentAmt.value + delta;
+  assert(total >= 0n, X`total after delta must not be negative`);
   const entries = Object.entries(allocation) as Array<
     [PoolKey, number | bigint]
   >;
   assert(entries.length > 0, X`empty allocation`);
-  const SCALE_NUM = 1_000_000; // 1e6 fixed-point for weights
+  const SCALE_NUM = 1_000_000;
   const weights = entries.map(([k, w]) => {
     const wNum = Number(w as any);
     assert(Number.isFinite(wNum), X`allocation weight must be a number`);
@@ -89,8 +135,7 @@ export const computeTargetsFromAllocation = (
   });
   const sumW = weights.reduce<bigint>((acc, [, w]) => acc + w, 0n);
   assert(sumW > 0n, X`allocation weights must sum > 0`);
-  // Base allocation by floor division
-  const targets: Partial<Record<string, NatAmount>> = {};
+  const draft: Partial<Record<AssetPlaceRef, NatAmount>> = {};
   let assigned = 0n;
   let maxKey = entries[0][0];
   let maxW = -1n as unknown as bigint;
@@ -101,24 +146,29 @@ export const computeTargetsFromAllocation = (
     }
     const v = (total * (w as bigint)) / (sumW as bigint);
     assigned += v;
-    targets[key] = AmountMath.make(brand, v);
+    draft[key] = AmountMath.make(brand, v);
   }
-  // Distribute remainder to the largest-weight key to hit exact total
   const remainder = total - assigned;
   if (remainder !== 0n) {
-    const cur = targets[maxKey] ?? AmountMath.make(brand, 0n);
-    targets[maxKey] = AmountMath.add(cur, AmountMath.make(brand, remainder));
+    const cur = draft[maxKey] ?? AmountMath.make(brand, 0n);
+    draft[maxKey] = AmountMath.add(cur, AmountMath.make(brand, remainder));
   }
-  // Any pools present in current but not in allocation -> target 0
-  for (const key of Object.keys(current) as PoolKey[]) {
-    if (!(key in allocation)) {
-      targets[key] = AmountMath.make(brand, 0n);
+  const targets: Partial<Record<AssetPlaceRef, NatAmount>> = { ...draft };
+  // Zero hubs (chains) with non-zero current balances
+  for (const key of Object.keys(current)) {
+    if (key.startsWith('@')) {
+      const curAmt = current[key];
+      if (curAmt && curAmt.value !== 0n) {
+        targets[key] = AmountMath.make(brand, 0n);
+      }
     }
   }
-  // Staging account ('+agoric') must end at 0: all staged funds should be fanned out
-  // to destination accounts/pools as part of this deposit plan.
-  targets['+agoric'] = AmountMath.make(brand, 0n);
-  return harden(targets);
+  for (const key of Object.keys(targets)) {
+    const curV = current[key]?.value ?? 0n;
+    const nextV = targets[key]!.value;
+    if (curV === nextV) delete targets[key];
+  }
+  return targets;
 };
 
 /**
@@ -127,8 +177,8 @@ export const computeTargetsFromAllocation = (
  */
 export const planDepositToTargets = async (
   amount: NatAmount,
-  current: Partial<Record<PoolKey, NatAmount>>,
-  target: Partial<Record<string, NatAmount>>, // includes all pools + '+agoric'
+  current: Partial<Record<AssetPlaceRef, NatAmount>>,
+  target: Partial<Record<AssetPlaceRef, NatAmount>>, // includes all pools + '+agoric'
   network: NetworkSpec,
 ): Promise<MovementDesc[]> => {
   const brand = amount.brand;
@@ -142,13 +192,12 @@ export const planDepositToTargets = async (
   // in progress.
   const existing = currentWithDeposit['+agoric'] ?? AmountMath.make(brand, 0n);
   currentWithDeposit['+agoric'] = AmountMath.add(existing, amount);
-  console.log('COMPLETE GRAPH', currentWithDeposit, target, network);
+  // console.log('COMPLETE GRAPH', currentWithDeposit, target, network);
   const { steps } = await planRebalanceFlow({
     network,
     current: currentWithDeposit as any,
     target: target as any,
     brand,
-    // mode not provided -> defaults to 'fastest'
   });
   return steps;
 };
@@ -159,11 +208,11 @@ export const planDepositToTargets = async (
  */
 export const planDepositToAllocations = async (
   amount: NatAmount,
-  current: Partial<Record<PoolKey, NatAmount>>,
+  current: Partial<Record<AssetPlaceRef, NatAmount>>,
   allocation: Record<PoolKey, number>,
   network: NetworkSpec,
 ): Promise<MovementDesc[]> => {
-  const targets = computeTargetsFromAllocation(amount, current, allocation);
+  const targets = depositTargetsFromAllocation(amount, current, allocation);
   return planDepositToTargets(amount, current, targets, network);
 };
 
@@ -177,6 +226,7 @@ export const handleDeposit = async (
     spectrum: SpectrumClient;
     cosmosRest: CosmosRestClient;
   },
+  network: NetworkSpec = PROD_NETWORK,
 ) => {
   const querier = makePortfolioQuery(powers.readPublished, portfolioKey);
   const status = await querier.getPortfolioStatus();
@@ -189,6 +239,7 @@ export const handleDeposit = async (
       try {
         const poolPlaceInfo =
           getOwn(PoolPlaces, posKey) || Fail`Unknown PoolPlace`;
+        // TODO there should be a bulk query operation available now
         const amountValue = await getCurrentBalance(
           poolPlaceInfo,
           accountIdByChain,
@@ -211,6 +262,6 @@ export const handleDeposit = async (
     amount,
     currentBalances,
     targetAllocation as any,
-    TEST_NETWORK,
+    network,
   );
 };
