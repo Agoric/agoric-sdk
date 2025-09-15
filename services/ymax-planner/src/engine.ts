@@ -36,6 +36,7 @@ import {
   parseStreamCell,
   parseStreamCellValue,
   readStreamCellValue,
+  tryNow,
   STALE_RESPONSE,
 } from './vstorage-utils.ts';
 
@@ -281,7 +282,7 @@ export const makeVstorageEvent = (
   path: string,
   value: any,
   marshaller: SigningSmartWalletKit['marshaller'],
-): CosmosEvent => {
+): { event: CosmosEvent; streamCellJson: string } => {
   const streamCellJson = JSON.stringify({
     blockHeight: String(blockHeight),
     values: [JSON.stringify(marshaller.toCapData(value))],
@@ -295,7 +296,7 @@ export const makeVstorageEvent = (
     type: 'state_change',
     attributes: entries(eventAttrs).map(([k, v]) => ({ key: k, value: v })),
   };
-  return event;
+  return { event, streamCellJson };
 };
 
 type Powers = {
@@ -324,49 +325,89 @@ const processPortfolioEvents = async (
     portfolioKeyForDepositAddr: Map<Bech32Address, string>;
   },
 ) => {
+  const setPortfolioKeyForDepositAddr = (addr: Bech32Address, key: string) => {
+    const oldKey = portfolioKeyForDepositAddr.get(addr);
+    if (!oldKey) {
+      console.warn(`Adding ${addr} portfolioKey ${key}`);
+    } else if (oldKey !== key) {
+      // This permanent loss of $addr->oldKey association should never happen.
+      const msg = `🚨 Overwriting ${addr} portfolioKey from ${oldKey} to ${key}`;
+      console.error(msg);
+    }
+    portfolioKeyForDepositAddr.set(addr, key);
+  };
+  const handlePortfolio = async (
+    portfolioKey: string,
+    eventRecord: EventRecord,
+  ) => {
+    const path = `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}`;
+    await null;
+    try {
+      const statusCapdata = await readStreamCellValue(vstorage, path, {
+        minBlockHeight: eventRecord.blockHeight,
+        retries: 4,
+      });
+      const status = marshaller.fromCapData(statusCapdata);
+      mustMatch(status, PortfolioStatusShapeExt, path);
+      const { depositAddress } = status;
+      if (!depositAddress) return;
+      setPortfolioKeyForDepositAddr(depositAddress, portfolioKey);
+      // TODO: Detect and address unhandled `status.policyVersion`.
+      // https://github.com/Agoric/agoric-sdk/issues/11805
+      // https://github.com/Agoric/agoric-sdk/pull/11917
+      const needsAction = true;
+      if (needsAction) {
+        deferrals.push({
+          blockHeight: eventRecord.blockHeight,
+          type: 'transfer' as const,
+          address: depositAddress,
+        });
+      }
+    } catch (err) {
+      const age = blockHeight - eventRecord.blockHeight;
+      if (err.code === STALE_RESPONSE) {
+        // Stale responses are an unfortunate possibility when connecting with
+        // more than one follower node, but we expect to recover automatically.
+        const msg = `⚠️  Deferring ${path} of age ${age} block(s)`;
+        console.warn(msg, eventRecord);
+      } else {
+        const msg = `🚨 Deferring ${path} of age ${age} block(s)`;
+        console.error(msg, eventRecord, err);
+      }
+      deferrals.push(eventRecord);
+    }
+  };
+
   await null;
   for (const portfolioEvent of portfolioEvents) {
     const { path, value: cellJson, eventRecord } = portfolioEvent;
-    const streamCell = parseStreamCell(cellJson, path);
+    const defer = err => {
+      const age = blockHeight - eventRecord.blockHeight;
+      console.error(`🚨 Deferring ${path} of age ${age} block(s)`, err);
+      deferrals.push(eventRecord);
+    };
     if (path === PORTFOLIOS_PATH_PREFIX) {
+      const streamCell = tryNow(parseStreamCell, defer, cellJson, path);
+      if (!streamCell) continue;
       for (let i = 0; i < streamCell.values.length; i += 1) {
-        const value = parseStreamCellValue(streamCell, i, path);
-        const portfoliosData = marshaller.fromCapData(
-          value,
-        ) as StatusFor['portfolios'];
-        if (portfoliosData.addPortfolio) {
-          const key = portfoliosData.addPortfolio;
-          console.warn('Detected new portfolio', key);
-          try {
-            const portfolioPath = `${PORTFOLIOS_PATH_PREFIX}.${key}`;
-            const statusCapdata = await readStreamCellValue(
-              vstorage,
-              portfolioPath,
-              { minBlockHeight: eventRecord.blockHeight, retries: 4 },
-            );
-            const status = marshaller.fromCapData(statusCapdata);
-            mustMatch(status, PortfolioStatusShapeExt, portfolioPath);
-            const { depositAddress } = status;
-            if (!depositAddress) continue;
-            portfolioKeyForDepositAddr.set(depositAddress, key);
-            console.warn('Added new portfolio', key, depositAddress);
-            deferrals.push({
-              blockHeight: eventRecord.blockHeight,
-              type: 'transfer' as const,
-              address: depositAddress,
-            });
-          } catch (err) {
-            if (err.code !== STALE_RESPONSE) throw err;
-            console.error(
-              `Deferring addPortfolio of age ${blockHeight - eventRecord.blockHeight} block(s)`,
-              eventRecord,
-            );
-            deferrals.push(eventRecord);
+        try {
+          const value = parseStreamCellValue(streamCell, i, path);
+          const portfoliosData = marshaller.fromCapData(
+            value,
+          ) as StatusFor['portfolios'];
+          if (portfoliosData.addPortfolio) {
+            const portfolioKey = portfoliosData.addPortfolio;
+            console.warn('Detected new portfolio', portfolioKey);
+            await handlePortfolio(portfolioKey, eventRecord);
           }
+        } catch (err) {
+          defer(err);
         }
       }
+    } else if (path.startsWith(`${PORTFOLIOS_PATH_PREFIX}.`)) {
+      const portfolioKey = stripPrefix(`${PORTFOLIOS_PATH_PREFIX}.`, path);
+      await handlePortfolio(portfolioKey, eventRecord);
     }
-    // TODO: Handle portfolio-level path `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}` for addition/update of depositAddress.
   }
 };
 
@@ -507,44 +548,44 @@ export const startEngine = async (
   // console.log('subscribed to events', subscriptionFilters);
 
   // TODO: Verify consumption of paginated data.
-  const [pendingTxKeys, portfolioKeys] = await Promise.all(
-    [PENDING_TX_PATH_PREFIX, PORTFOLIOS_PATH_PREFIX].map(vstoragePath =>
-      query.vstorage.keys(vstoragePath),
-    ),
+  const [pendingTxKeysResp, portfolioKeysResp] = await Promise.all(
+    [PENDING_TX_PATH_PREFIX, PORTFOLIOS_PATH_PREFIX].map(async vstoragePath => {
+      const opts = { kind: 'children' } as const;
+      const resp = await query.vstorage.readStorageMeta(vstoragePath, opts);
+      typeof resp.blockHeight === 'bigint' ||
+        Fail`blockHeight ${resp.blockHeight} must be a bigint`;
+      return resp;
+    }),
   );
+  const initialBlockHeight = [pendingTxKeysResp, portfolioKeysResp]
+    .map(r => r.blockHeight as bigint)
+    .reduce((max, h) => (h > max ? h : max));
+  const [pendingTxKeys, portfolioKeys] = [
+    pendingTxKeysResp.result.children,
+    portfolioKeysResp.result.children,
+  ];
 
   // TODO: Retry when data is associated with a block height lower than that of
   //       the first result from `responses`.
   const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
-    const path = `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}`;
-    await null;
-    let status;
-    try {
-      status = await query.readPublished(stripPrefix('published.', path));
-      mustMatch(status, PortfolioStatusShapeExt, path);
-      const { depositAddress } = status;
-      if (!depositAddress) return;
-      portfolioKeyForDepositAddr.set(depositAddress, portfolioKey);
-      // TODO: Use the block height associated with portfolioKey.
-      // https://github.com/Agoric/agoric-sdk/pull/11630
-      deferrals.push({
-        blockHeight: 0n,
-        type: 'transfer' as const,
-        address: depositAddress,
-      });
-    } catch (err) {
-      const msg = `⚠️  Could not read ${portfolioKey} status; deferring`;
-      console.error(msg, status, err);
-      const blockHeight = 0n;
-      const event = makeVstorageEvent(
-        blockHeight,
-        PORTFOLIOS_PATH_PREFIX,
-        { addPortfolio: portfolioKey } as StatusFor['portfolios'],
-        marshaller,
-      );
-      deferrals.push({ blockHeight, type: 'kvstore', event });
-    }
+    const { streamCellJson, event } = makeVstorageEvent(
+      0n,
+      PORTFOLIOS_PATH_PREFIX,
+      harden({ addPortfolio: portfolioKey }) as StatusFor['portfolios'],
+      marshaller,
+    );
+    const eventRecord: EventRecord = {
+      blockHeight: initialBlockHeight,
+      type: 'kvstore',
+      event,
+    };
+    await processPortfolioEvents(
+      [{ path: PORTFOLIOS_PATH_PREFIX, value: streamCellJson, eventRecord }],
+      initialBlockHeight,
+      deferrals,
+      { marshaller, vstorage: query.vstorage, portfolioKeyForDepositAddr },
+    );
   }).done;
 
   const txPowers = {
