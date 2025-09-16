@@ -29,6 +29,7 @@ import {
   makeCCTPTraffic,
 } from './mocks.ts';
 import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
+import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
 
 const { fromEntries, keys, values } = Object;
 
@@ -501,57 +502,96 @@ test('USDN claim fails currently', async t => {
   });
 });
 
-test('open a portfolio with Beefy position', async t => {
-  const { trader1, common, started, zoe } = await setupTrader(t);
-  const { usdc, bld, poc26 } = common.brands;
+const beefyTestMacro = test.macro({
+  async exec(t, vaultKey: AssetPlaceRef) {
+    const { trader1, common, started, zoe } = await setupTrader(t);
+    const { usdc, bld, poc26 } = common.brands;
 
-  const amount = usdc.units(3_333.33);
-  const feeAcct = bld.make(100n);
-  const feeCall = bld.make(100n);
+    const amount = usdc.units(3_333.33);
+    const feeAcct = bld.make(100n);
+    const feeCall = bld.make(100n);
 
-  const actualP = trader1.openPortfolio(
-    t,
-    { Deposit: amount, Access: poc26.make(1n) },
-    {
-      flow: [
-        { src: '<Deposit>', dest: '@agoric', amount },
-        { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
-        { src: '@Arbitrum', dest: 'Beefy_re7_Avalanche', amount, fee: feeCall },
-      ],
-    },
-  );
+    const actualP = trader1.openPortfolio(
+      t,
+      { Deposit: amount, Access: poc26.make(1n) },
+      {
+        flow: [
+          { src: '<Deposit>', dest: '@agoric', amount },
+          { src: '@agoric', dest: '@noble', amount },
+          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+          { src: '@Arbitrum', dest: vaultKey, amount, fee: feeCall },
+        ],
+      },
+    );
 
-  await eventLoopIteration(); // let IBC message go out
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  t.log('ackd send to Axelar to create account');
+    await eventLoopIteration(); // let IBC message go out
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    t.log('ackd send to Axelar to create account');
 
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
+    await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
-  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleTransaction(zoe, resolverMakers);
-  const gmpSettlementPromise = settleTransaction(zoe, resolverMakers, 1);
+    const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+    const cctpSettlementPromise = settleTransaction(zoe, resolverMakers);
+    const gmpSettlementPromise = settleTransaction(zoe, resolverMakers, 1);
 
-  await simulateCCTPAck(common.utils).finally(() =>
-    simulateAckTransferToAxelar(common.utils),
-  );
-  const [actual, cctpResult] = await Promise.all([
-    actualP,
-    cctpSettlementPromise,
-    gmpSettlementPromise,
-  ]);
+    await simulateCCTPAck(common.utils).finally(() =>
+      simulateAckTransferToAxelar(common.utils),
+    );
+    const [actual, cctpResult] = await Promise.all([
+      actualP,
+      cctpSettlementPromise,
+      gmpSettlementPromise,
+    ]);
 
-  t.log('=== Portfolio completed, CCTP result:', cctpResult);
-  const result = actual.result as any;
-  t.is(passStyleOf(result.invitationMakers), 'remotable');
+    t.log('=== Portfolio completed, CCTP result:', cctpResult);
+    const result = actual.result as any;
+    t.is(passStyleOf(result.invitationMakers), 'remotable');
 
-  t.is(keys(result.publicSubscribers).length, 1);
-  const { storagePath } = result.publicSubscribers.portfolio;
-  t.log(storagePath);
-  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
-  t.snapshot(contents, 'vstorage');
-  t.snapshot(actual.payouts, 'refund payouts');
+    t.is(keys(result.publicSubscribers).length, 1);
+    const { storagePath } = result.publicSubscribers.portfolio;
+    t.log(storagePath);
+    const { contents } = getPortfolioInfo(
+      storagePath,
+      common.bootstrap.storage,
+    );
+    t.snapshot(contents, 'vstorage');
+    t.snapshot(actual.payouts, 'refund payouts');
+  },
+  title(providedTitle = '', vaultKey: AssetPlaceRef) {
+    return `${providedTitle} ${vaultKey}`.trim();
+  },
 });
+
+test(
+  'open a portfolio with Beefy vault:',
+  beefyTestMacro,
+  'Beefy_re7_Avalanche',
+);
+test(
+  'open a portfolio with Beefy vault:',
+  beefyTestMacro,
+  'Beefy_compoundUsdc_Optimism',
+);
+test(
+  'open a portfolio with Beefy vault:',
+  beefyTestMacro,
+  'Beefy_compoundUsdc_Arbitrum',
+);
+test(
+  'open a portfolio with Beefy vault:',
+  beefyTestMacro,
+  'Beefy_morphoGauntletUsdc_Ethereum',
+);
+test(
+  'open a portfolio with Beefy vault:',
+  beefyTestMacro,
+  'Beefy_morphoSmokehouseUsdc_Ethereum',
+);
+test(
+  'open a portfolio with Beefy vault:',
+  beefyTestMacro,
+  'Beefy_morphoSeamlessUsdc_Base',
+);
 
 test('Withdraw from a Beefy position', async t => {
   const { trader1, common, started, zoe } = await setupTrader(t);

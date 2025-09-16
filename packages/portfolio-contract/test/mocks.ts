@@ -290,6 +290,10 @@ export const contractsMock: EVMContractAddressesMap = {
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     Beefy_re7_Avalanche: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    Beefy_morphoGauntletUsdc_Ethereum:
+      '0x16F06dE7F077A95684DBAeEdD15A5808c3E13cD0',
+    Beefy_morphoSmokehouseUsdc_Ethereum:
+      '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
   },
   Optimism: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
@@ -300,6 +304,7 @@ export const contractsMock: EVMContractAddressesMap = {
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    Beefy_compoundUsdc_Optimism: '0x64ceF7ac6e206944fBF50d9E50Fe934cEd9FdF5F',
   },
   Arbitrum: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
@@ -311,6 +316,13 @@ export const contractsMock: EVMContractAddressesMap = {
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     Beefy_re7_Avalanche: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    Beefy_compoundUsdc_Arbitrum: '0xb9A27ba529634017b12e3cbbbFFb6dB7908a8C8B',
+    Beefy_compoundUsdc_Optimism: '0x64ceF7ac6e206944fBF50d9E50Fe934cEd9FdF5F',
+    Beefy_morphoGauntletUsdc_Ethereum:
+      '0x16F06dE7F077A95684DBAeEdD15A5808c3E13cD0',
+    Beefy_morphoSmokehouseUsdc_Ethereum:
+      '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
+    Beefy_morphoSeamlessUsdc_Base: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
   },
   Base: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
@@ -321,6 +333,7 @@ export const contractsMock: EVMContractAddressesMap = {
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    Beefy_morphoSeamlessUsdc_Base: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
   },
 } as const;
 
