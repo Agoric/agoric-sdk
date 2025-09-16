@@ -138,6 +138,11 @@ export type PublishStatusFn = <K extends keyof StatusFor>(
   status: StatusFor[K],
 ) => void;
 
+const eventAbbr = (e: VTransferIBCEvent) => {
+  const { destination_channel: dest, sequence } = e.packet;
+  return { destination_channel: dest, sequence };
+};
+
 export const preparePortfolioKit = (
   zone: Zone,
   {
@@ -244,12 +249,27 @@ export const preparePortfolioKit = (
     {
       tap: {
         async receiveUpcall(event: VTransferIBCEvent) {
-          const traceP = trace.sub(`portfolio${this.state.portfolioId}`);
-          traceP('receiveUpcall', event);
+          const traceUpcall = trace
+            .sub(`portfolio${this.state.portfolioId}`)
+            .sub('upcall');
+          traceUpcall('event', eventAbbr(event));
+          const { destination_channel: packetDest } = event.packet;
+
+          // Validate that this is really from Axelar to Agoric.
+          const [_agoric, _axelar, connection] = await vowTools.when(
+            chainHubTools.getChainsAndConnection('agoric', 'axelar'),
+          );
+          const { channelId: agoricToAxelar } = connection.transferChannel;
+          if (packetDest !== agoricToAxelar) {
+            traceUpcall(
+              `GMP early exit: ${packetDest} != ${agoricToAxelar}: not from axelar`,
+            );
+            return false;
+          }
+
           return vowTools.watch(
             parseInboundTransfer(event.packet, this.facets),
             this.facets.parseInboundTransferWatcher,
-            event.packet,
           );
         },
       },
@@ -259,33 +279,20 @@ export const preparePortfolioKit = (
           traceP('⚠️ parseInboundTransfer failure', reason);
           throw reason;
         },
-        async onFulfilled(parsed, packet) {
-          const traceP = trace.sub(`portfolio${this.state.portfolioId}`);
+        async onFulfilled(parsed) {
+          const traceUpcall = trace
+            .sub(`portfolio${this.state.portfolioId}`)
+            .sub('upcall');
           if (!parsed) {
-            traceP('GMP processing skipped; no parsed inbound transfer');
-            return false;
-          }
-
-          // Validate that this is really from Axelar to Agoric on the expected
-          // channel. We do this after parseInboundTransfer so that that
-          // function can be simpler and not need to know about Axelar or
-          // channels.
-          const [_agoric, _axelar, connection] = await vowTools.when(
-            chainHubTools.getChainsAndConnection('agoric', 'axelar'),
-          );
-          const agoricTransferChannel = connection.transferChannel.channelId;
-          if (packet.destination_channel !== agoricTransferChannel) {
-            traceP(
-              `GMP processing skipped; Axelar chain packet expected on ${agoricTransferChannel}, got ${packet.destination_channel}`,
-            );
+            traceUpcall('GMP early exit: no parsed inbound transfer');
             return false;
           }
 
           const { extra } = parsed;
           if (!extra.memo) return;
           if (extra.sender !== gmpAddresses.AXELAR_GMP) {
-            traceP(
-              `GMP processing skipped; Axelar GMP sender expected ${gmpAddresses.AXELAR_GMP}, got ${extra.sender}`,
+            traceUpcall(
+              `GMP early exit; AXELAR_GMP sender expected ${gmpAddresses.AXELAR_GMP}, got ${extra.sender}`,
             );
             return false;
           }
@@ -296,7 +303,7 @@ export const preparePortfolioKit = (
           ).find(([_, chainId]) => chainId === memo.source_chain);
 
           if (!result) {
-            traceP('unknown source_chain', memo);
+            traceUpcall('unknown source_chain', memo);
             return false;
           }
 
@@ -308,41 +315,38 @@ export const preparePortfolioKit = (
             payloadBytes,
           ) as [AgoricResponse];
 
-          traceP(
-            'receiveUpcall Decoded:',
+          traceUpcall(
+            'Decoded:',
             JSON.stringify({ isContractCallResult, data }),
           );
 
           if (isContractCallResult) {
-            traceP('TODO: Handle the result of the contract call', data);
-          } else {
-            const [message] = data;
-            const { success, result: result2 } = message;
-            if (!success) return;
-
-            const [address] = decodeAbiParameters(
-              [{ type: 'address' }],
-              result2,
-            );
-
-            // chainInfo is safe to await: registerChain(...) ensure it's already resolved,
-            // so vowTools.when won't cause async delays or cross-vat calls.
-            const chainInfo = await vowTools.when(
-              chainHubTools.getChainInfo(chainName),
-            );
-            const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
-
-            const traceChain = traceP.sub(chainName);
-            traceChain('remoteAddress', address);
-            this.facets.manager.resolveAccount({
-              namespace: 'eip155',
-              chainName,
-              chainId: caipId,
-              remoteAddress: address,
-            });
+            traceUpcall('TODO: Handle the result of the contract call', data);
+            return false;
           }
 
-          traceP('receiveUpcall completed');
+          const [message] = data;
+          const { success, result: result2 } = message;
+          if (!success) return;
+
+          const [address] = decodeAbiParameters([{ type: 'address' }], result2);
+
+          // chainInfo is safe to await: registerChain(...) ensure it's already resolved,
+          // so vowTools.when won't cause async delays or cross-vat calls.
+          const chainInfo = await vowTools.when(
+            chainHubTools.getChainInfo(chainName),
+          );
+          const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
+
+          traceUpcall(chainName, 'remoteAddress', address);
+          this.facets.manager.resolveAccount({
+            namespace: 'eip155',
+            chainName,
+            chainId: caipId,
+            remoteAddress: address,
+          });
+
+          traceUpcall('completed');
           return true;
         },
       },

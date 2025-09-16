@@ -70,11 +70,18 @@ export const provideEVMAccount = async (
     return found as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
   }
 
+  const pId = pk.reader.getPortfolioId();
+  const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
   const axelarId = gmp.axelarIds[chainName];
   const target = { axelarId, remoteAddress: ctx.contracts[chainName].factory };
   const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
-  const feeAccount = await ctx.contractAccount;
-  await feeAccount.send(lca.getAddress(), fee);
+
+  {
+    const feeAccount = await ctx.contractAccount;
+    const src = feeAccount.getAddress();
+    traceChain('send makeAccountCall Axelar fee from', src.value);
+    await feeAccount.send(lca.getAddress(), fee);
+  }
   await sendMakeAccountCall(
     target,
     fee,
@@ -122,6 +129,8 @@ export const CCTPfromEVM = {
     dest: 'noble',
   })),
   apply: async (ctx, amount, src, dest) => {
+    const traceTransfer = trace.sub('CCTPin').sub(src.chainName);
+    traceTransfer('transfer', amount, 'from', src.remoteAddress);
     const { addresses: a } = ctx;
     const mintRecipient = bech32ToBytes32(dest.ica.getAddress().value);
 
@@ -141,6 +150,7 @@ export const CCTPfromEVM = {
     const contractCallP = sendGMPContractCall(ctx, src, calls);
 
     await Promise.all([result, contractCallP]);
+    traceTransfer('transfer complete.');
   },
   recover: async (ctx, amount, src, dest) => {
     return CCTP.apply(ctx, amount, dest, src);
@@ -161,22 +171,23 @@ export const CCTP = {
     dest,
   })),
   apply: async (ctx: PortfolioInstanceContext, amount, src, dest) => {
+    const traceTransfer = trace.sub('CCTPout').sub(dest.chainName);
     const denomAmount: DenomAmount = { denom: 'uusdc', value: amount.value };
     const { chainId, remoteAddress } = dest;
+    traceTransfer('transfer', denomAmount, 'to', remoteAddress);
     const destinationAddress: AccountId = `${chainId}:${remoteAddress}`;
-    trace(`CCTP destinationAddress: ${destinationAddress}`);
     const { ica } = src;
 
-    await ica.depositForBurn(destinationAddress, denomAmount);
-
-    trace(`CCTP transaction initiated, waiting for confirmation...`);
     const { result } = ctx.resolverClient.registerTransaction(
       TxType.CCTP_TO_EVM,
       destinationAddress,
       amount.value,
     );
-    await result;
-    trace(`CCTP transaction completed after confirmation`);
+    await Promise.all([
+      ica.depositForBurn(destinationAddress, denomAmount),
+      result,
+    ]);
+    traceTransfer('transfer complete.');
   },
   recover: async (_ctx, _amount, _src, _dest) => {
     // XXX evmCtx needs a GMP fee
