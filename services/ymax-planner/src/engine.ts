@@ -15,7 +15,6 @@ import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import {
   PublishedTxShape,
   type PendingTx,
-  type PublishedTx,
   type TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import {
@@ -23,7 +22,12 @@ import {
   PortfolioStatusShapeExt,
   type StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { mustMatch, partialMap, tryNow } from '@agoric/internal';
+import {
+  mustMatch,
+  partialMap,
+  provideLazyMap,
+  tryNow,
+} from '@agoric/internal';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
 
@@ -117,7 +121,7 @@ type Powers = {
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
   signingSmartWalletKit: SigningSmartWalletKit;
-  now: () => number;
+  now: typeof Date.now;
 };
 
 const processPortfolioEvents = async (
@@ -276,61 +280,45 @@ export const pickBalance = (
 /**
  * Process pending transactions based on their individual age
  */
-const processInitialPendingTransactions = async (
+export const processInitialPendingTransactions = async (
   initialPendingTxData: PendingTxRecord[],
-  rpc: CosmosRPCClient,
   txPowers: HandlePendingTxOpts,
-  now: () => number,
+  handlePendingTxFn = handlePendingTx,
 ) => {
-  if (initialPendingTxData.length === 0) return;
-  const { log = () => {} } = txPowers;
+  const { log = () => {}, cosmosRpc, now } = txPowers;
 
   log(`Processing ${initialPendingTxData.length} pending transactions`);
 
-  // Create a map of block heights to timestamps to avoid duplicate RPC calls
-  const blockHeightToTimestamp = new Map<bigint, number>();
+  // Cache timestamps for block heights to avoid duplicate RPC calls
+  const blockHeightToTimestamp = new Map<bigint, Promise<number>>();
 
-  for (const pendingTxRecord of initialPendingTxData) {
+  await makeWorkPool(initialPendingTxData, undefined, async pendingTxRecord => {
     const { blockHeight, tx } = pendingTxRecord;
-
-    let timestampMs = blockHeightToTimestamp.get(blockHeight);
-    if (timestampMs === undefined) {
-      try {
-        const resp = await rpc.request('block', { height: `${blockHeight}` });
-        timestampMs = new Date(resp.block.header.time).getTime();
-        blockHeightToTimestamp.set(blockHeight, timestampMs);
-      } catch (err) {
-        log(
-          `🚨 Failed to get block time for tx ${tx.txId} at height ${blockHeight}`,
-          err,
-        );
-        continue;
-      }
-    }
-
-    // Process EVERY transaction based on its individual age
-    const txAge = now() - timestampMs;
-    const isOldTx = txAge >= TX_TIMEOUT_MS;
-
-    if (isOldTx) {
-      log(
-        `Processing old tx ${tx.txId} (age: ${Math.round(txAge / 60000)}min) with lookback`,
-      );
-      void handlePendingTx(tx, {
-        ...txPowers,
-        oldestTimestampMs: timestampMs,
-      }).catch(err => {
-        const msg = `🚨 Failed to process old pending tx ${tx.txId} with lookback`;
-        log(msg, pendingTxRecord, err);
-      });
-    } else {
-      log(`Processing tx ${tx.txId} (age: ${Math.round(txAge / 60000)}min)`);
-      void handlePendingTx(tx, txPowers).catch(err => {
-        const msg = `🚨 Failed to process pending tx ${tx.txId}`;
-        log(msg, pendingTxRecord, err);
-      });
-    }
-  }
+    const timestampMs = await provideLazyMap(
+      blockHeightToTimestamp,
+      blockHeight,
+      async () => {
+        const resp = await cosmosRpc.request('block', {
+          height: `${blockHeight}`,
+        });
+        const date = new Date(resp.block.header.time);
+        return date.getTime();
+      },
+    ).catch(err => {
+      const msg = ` Couldn't get block time for pending tx ${tx.txId} at height ${blockHeight}`;
+      log(msg, err);
+    });
+    if (timestampMs === undefined) return;
+    const ageMs = now() - timestampMs;
+    const isOld = ageMs >= TX_TIMEOUT_MS;
+    const ageMinutes = Math.round(ageMs / 60000);
+    const suffix = isOld ? ' with lookback' : '';
+    log(`Processing pending tx ${tx.txId} (age: ${ageMinutes}min)${suffix}`);
+    void handlePendingTxFn(tx, txPowers).catch(err => {
+      const msg = ` Failed to process pending tx ${tx.txId}${suffix}`;
+      log(msg, pendingTxRecord, err);
+    });
+  }).done;
 };
 
 export const startEngine = async (
@@ -467,6 +455,8 @@ export const startEngine = async (
     signingSmartWalletKit,
     fetch,
     cosmosRest,
+    cosmosRpc: rpc,
+    now,
     log: console.warn.bind(console),
   });
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
@@ -489,17 +479,14 @@ export const startEngine = async (
         tx: { txId, ...data },
       });
     } catch (err) {
-      const errLabel = ` Failed to process old pending tx ${path}`;
+      const errLabel = `🚨 Failed to process old pending tx ${path}`;
       console.error(errLabel, data || streamCellJson, err);
     }
   }).done;
 
-  await processInitialPendingTransactions(
-    initialPendingTxData,
-    rpc,
-    txPowers,
-    now,
-  );
+  if (initialPendingTxData.length > 0) {
+    await processInitialPendingTransactions(initialPendingTxData, txPowers);
+  }
 
   // console.warn('consuming events');
   for await (const respContainer of responses) {

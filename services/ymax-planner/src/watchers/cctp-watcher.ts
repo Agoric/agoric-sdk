@@ -16,11 +16,12 @@ import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
  *
  * `TRANSFER_SIGNATURE` is used to detect Transfer events in transaction receipts when parsing logs.
  *
- * 📘 Docs:
+ * Docs:
  * - Solidity Events
  *    - https://docs.soliditylang.org/en/latest/contracts.html#events
  *    - https://docs.soliditylang.org/en/latest/abi-spec.html#events
  * - ERC-20 Transfer event: https://eips.ethereum.org/EIPS/eip-20#transfer
+ * - JsonRpcProvider API: https://docs.ethers.org/v5/concepts/events/#events--logs-and-filtering
  */
 const TRANSFER_SIGNATURE = id('Transfer(address,address,uint256)');
 
@@ -132,7 +133,7 @@ export const watchCctpTransfer = ({
   });
 };
 
-export const lookBackCcctp = async ({
+export const lookBackCctp = async ({
   usdcAddress,
   provider,
   toAddress,
@@ -148,8 +149,9 @@ export const lookBackCcctp = async ({
       publishTimeMs,
     );
 
-    log(`Searching blocks ${fromBlock} → ${toBlock}`);
-    log(`Looking for Transfer to ${toAddress} amount ${expectedAmount}`);
+    log(
+      `Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${toAddress} with amount ${expectedAmount}`,
+    );
 
     const toTopic = ethers.zeroPadValue(toAddress.toLowerCase(), 32);
     const baseFilter: Filter = {

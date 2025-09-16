@@ -2,7 +2,7 @@ import test from 'ava';
 import { id, toBeHex, zeroPadValue } from 'ethers';
 import { watchCctpTransfer } from '../src/watchers/cctp-watcher.ts';
 import {
-  createMockEvmContext,
+  createMockPendingTxOpts,
   createMockProvider,
   mockFetch,
 } from './mocks.ts';
@@ -18,13 +18,13 @@ const encodeAmount = (amount: bigint): string => {
 };
 
 test('handlePendingTx processes CCTP transaction successfully', async t => {
-  const mockEvmCtx = createMockEvmContext();
+  const opts = createMockPendingTxOpts();
   const txId = 'tx1';
-  mockEvmCtx.fetch = mockFetch({ txId });
+  opts.fetch = mockFetch({ txId });
   const chain = 'eip155:1'; // Ethereum
   const amount = 1_000_000n; // 1 USDC
   const receiver = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
-  const provider = mockEvmCtx.evmProviders[chain];
+  const provider = opts.evmProviders[chain];
   const type = TxType.CCTP_TO_EVM;
 
   const logMessages: string[] = [];
@@ -64,7 +64,7 @@ test('handlePendingTx processes CCTP transaction successfully', async t => {
 
   await t.notThrowsAsync(async () => {
     await handlePendingTx(cctpTx, {
-      ...mockEvmCtx,
+      ...opts,
       log: logger,
       timeoutMs: 3000,
     });
@@ -80,14 +80,14 @@ test('handlePendingTx processes CCTP transaction successfully', async t => {
 });
 
 test('handlePendingTx keeps tx pending on amount mismatch until timeout', async t => {
-  const mockEvmCtx = createMockEvmContext();
+  const opts = createMockPendingTxOpts();
   const txId = 'tx2';
-  mockEvmCtx.fetch = mockFetch({ txId });
+  opts.fetch = mockFetch({ txId });
   const chain = 'eip155:1'; // Ethereum
   const expectedAmount = 1_000_000n; // 1 USDC
   const notExpectedAmt = 1_00_000n;
   const receiver = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
-  const provider = mockEvmCtx.evmProviders[chain];
+  const provider = opts.evmProviders[chain];
   const type = TxType.CCTP_TO_EVM;
 
   const logMessages: string[] = [];
@@ -127,7 +127,7 @@ test('handlePendingTx keeps tx pending on amount mismatch until timeout', async 
 
   await t.notThrowsAsync(async () => {
     await handlePendingTx(cctpTx, {
-      ...mockEvmCtx,
+      ...opts,
       log: logger,
       timeoutMs: 3000,
     });

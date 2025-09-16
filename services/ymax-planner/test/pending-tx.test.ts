@@ -1,16 +1,22 @@
 import test from 'ava';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
-import { processPendingTxEvents } from '../src/engine.ts';
 import {
-  createMockEvmContext,
+  processPendingTxEvents,
+  processInitialPendingTransactions,
+} from '../src/engine.ts';
+import {
+  createMockPendingTxOpts,
   createMockPendingTxEvent,
   createMockStreamCell,
-  createMockTransferLog,
-  createMockGmpExecutionLog,
+  createMockTransferEvent,
+  createMockGmpExecutionEvent,
 } from './mocks.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type {
+  PendingTx,
+  TxId,
+} from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
 
 const marshaller = boardSlottingMarshaller();
@@ -29,7 +35,6 @@ const makeMockHandlePendingTx = () => {
 // --- Unit tests for processPendingTxEvents ---
 test('processPendingTxEvents handles valid single transaction event', async t => {
   const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
-  const mockEvmCtx = createMockEvmContext();
 
   const txData = createMockPendingTxData({ type: TxType.CCTP_TO_EVM });
   const capData = marshaller.toCapData(txData);
@@ -37,7 +42,7 @@ test('processPendingTxEvents handles valid single transaction event', async t =>
   const events = [createMockPendingTxEvent('tx1', JSON.stringify(streamCell))];
 
   await processPendingTxEvents(events, mockHandlePendingTx, {
-    ...mockEvmCtx,
+    ...createMockPendingTxOpts(),
     marshaller,
   });
 
@@ -51,7 +56,6 @@ test('processPendingTxEvents handles valid single transaction event', async t =>
 
 test('processPendingTxEvents handles multiple transaction events', async t => {
   const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
-  const mockEvmCtx = createMockEvmContext();
 
   const originalCctpData = createMockPendingTxData({
     type: TxType.CCTP_TO_EVM,
@@ -73,7 +77,7 @@ test('processPendingTxEvents handles multiple transaction events', async t => {
   ];
 
   await processPendingTxEvents(events, mockHandlePendingTx, {
-    ...mockEvmCtx,
+    ...createMockPendingTxOpts(),
     marshaller,
   });
 
@@ -84,7 +88,6 @@ test('processPendingTxEvents handles multiple transaction events', async t => {
 
 test('processPendingTxEvents errors do not disrupt processing valid transactions', async t => {
   const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
-  const mockEvmCtx = createMockEvmContext();
 
   const validTx1 = createMockPendingTxData({ type: TxType.CCTP_TO_EVM });
   const validTx2 = createMockPendingTxData({ type: TxType.GMP });
@@ -119,7 +122,7 @@ test('processPendingTxEvents errors do not disrupt processing valid transactions
 
   const errorLog = [] as Array<any[]>;
   await processPendingTxEvents(events, mockHandlePendingTx, {
-    ...mockEvmCtx,
+    ...createMockPendingTxOpts(),
     marshaller,
     error: (...args) => errorLog.push(args),
   });
@@ -138,7 +141,6 @@ test('processPendingTxEvents errors do not disrupt processing valid transactions
 
 test('processPendingTxEvents handles only pending transactions', async t => {
   const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
-  const mockEvmCtx = createMockEvmContext();
 
   const tx1 = createMockPendingTxData({ type: TxType.CCTP_TO_EVM });
   const tx2 = createMockPendingTxData({ type: TxType.GMP, status: 'success' });
@@ -158,7 +160,7 @@ test('processPendingTxEvents handles only pending transactions', async t => {
   ];
 
   await processPendingTxEvents(events, mockHandlePendingTx, {
-    ...mockEvmCtx,
+    ...createMockPendingTxOpts(),
     marshaller,
   });
 
@@ -168,7 +170,6 @@ test('processPendingTxEvents handles only pending transactions', async t => {
 
 test('processPendingTxEvents handles Noble withdraw transactions', async t => {
   const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
-  const mockEvmCtx = createMockEvmContext();
 
   const nobleWithdrawData = createMockPendingTxData({
     type: TxType.CCTP_TO_NOBLE,
@@ -181,7 +182,7 @@ test('processPendingTxEvents handles Noble withdraw transactions', async t => {
   const events = [createMockPendingTxEvent('tx1', JSON.stringify(streamCell))];
 
   await processPendingTxEvents(events, mockHandlePendingTx, {
-    ...mockEvmCtx,
+    ...createMockPendingTxOpts(),
     marshaller,
   });
 
@@ -197,7 +198,6 @@ test('processPendingTxEvents handles Noble withdraw transactions', async t => {
 
 // --- Unit tests for handlePendingTx ---
 test('handlePendingTx throws error for unsupported transaction type', async t => {
-  const mockEvmCtx = createMockEvmContext();
   const mockLog = () => {};
 
   const unsupportedTx = {
@@ -209,7 +209,11 @@ test('handlePendingTx throws error for unsupported transaction type', async t =>
   } as any;
 
   await t.throwsAsync(
-    () => handlePendingTx(unsupportedTx, { ...mockEvmCtx, log: mockLog }),
+    () =>
+      handlePendingTx(unsupportedTx, {
+        ...createMockPendingTxOpts(),
+        log: mockLog,
+      }),
     { message: /No monitor registered for tx type: "cctpV2"/ },
   );
 });
@@ -230,8 +234,8 @@ test('handlePendingTx resolves old pending CCTP transaction successfully', async
     destinationAddress,
   });
 
-  const mockEvmCtx = createMockEvmContext();
-  const mockProvider = mockEvmCtx.evmProviders[chainId] as any;
+  const opts = createMockPendingTxOpts();
+  const mockProvider = opts.evmProviders[chainId] as any;
 
   const currentTime = Math.floor(Date.now() / 1000);
 
@@ -240,19 +244,19 @@ test('handlePendingTx resolves old pending CCTP transaction successfully', async
     timestamp: currentTime - (31 - blockNumber) * 12, // 12 seconds per block, block 31 is current
   });
 
-  const log = createMockTransferLog(
-    mockEvmCtx.usdcAddresses[chainId],
+  const event = createMockTransferEvent(
+    opts.usdcAddresses[chainId],
     txAmount,
     recipientAddress,
   );
-  mockProvider.getLogs = async () => [log];
+  mockProvider.getLogs = async () => [event];
 
   await handlePendingTx(
     { txId, ...cctpTx },
     {
-      ...mockEvmCtx,
+      ...opts,
       log: mockLog,
-      oldestTimestampMs: Date.now() - 10000,
+      txTimestampMs: Date.now() - 10000,
     },
   );
 
@@ -262,11 +266,10 @@ test('handlePendingTx resolves old pending CCTP transaction successfully', async
 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.CCTP_TO_EVM} tx`,
-    `[${txId}] Searching blocks ${expectedFromBlock} → 31`,
-    `[${txId}] Looking for Transfer to ${recipientAddress} amount ${txAmount}`,
+    `[${txId}] Searching blocks ${expectedFromBlock} → 31 for Transfer to ${recipientAddress} with amount ${txAmount}`,
     `[${txId}] [LogScan] Searching chunk ${expectedFromBlock} → 14`,
     `[${txId}] Check: amount=${txAmount}`,
-    `[${txId}] [LogScan] Match in tx=${log.transactionHash}`,
+    `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
     `[${txId}] CCTP tx resolved`,
   ]);
 });
@@ -285,8 +288,8 @@ test('handlePendingTx resolves old pending GMP transaction successfully', async 
   });
 
   const chainId = 'eip155:42161';
-  const mockEvmCtx = createMockEvmContext();
-  const mockProvider = mockEvmCtx.evmProviders[chainId] as any;
+  const opts = createMockPendingTxOpts();
+  const mockProvider = opts.evmProviders[chainId] as any;
 
   const currentTime = Math.floor(Date.now() / 1000);
 
@@ -294,11 +297,11 @@ test('handlePendingTx resolves old pending GMP transaction successfully', async 
   mockProvider.getBlock = async (blockNumber: number) => ({
     timestamp: currentTime - (31 - blockNumber) * 12,
   });
-  const log = createMockGmpExecutionLog(txId);
-  mockProvider.getLogs = async () => [log];
+  const event = createMockGmpExecutionEvent(txId);
+  mockProvider.getLogs = async () => [event];
 
   const ctxWithFetch = harden({
-    ...mockEvmCtx,
+    ...opts,
     fetch: async (url: string) => {
       return {
         ok: true,
@@ -315,7 +318,7 @@ test('handlePendingTx resolves old pending GMP transaction successfully', async 
               executed: {
                 transactionHash: '0xexecuted123',
                 receipt: {
-                  logs: [createMockGmpExecutionLog(txId)],
+                  logs: [createMockGmpExecutionEvent(txId)],
                 },
               },
             },
@@ -330,7 +333,7 @@ test('handlePendingTx resolves old pending GMP transaction successfully', async 
     {
       ...ctxWithFetch,
       log: mockLog,
-      oldestTimestampMs: Date.now() - 10000,
+      txTimestampMs: Date.now() - 10000,
     },
   );
 
@@ -340,12 +343,126 @@ test('handlePendingTx resolves old pending GMP transaction successfully', async 
 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.GMP} tx`,
-    `[${txId}] Searching blocks ${expectedFromBlock} → 31`,
-    `[${txId}] Looking for MulticallExecuted for txId ${txId} at ${contractAddress}`,
+    `[${txId}] Searching blocks ${expectedFromBlock} → 31 for MulticallExecuted with txId ${txId} at ${contractAddress}`,
     `[${txId}] [LogScan] Searching chunk ${expectedFromBlock} → 14`,
-    `[${txId}] [LogScan] Match in tx=${log.transactionHash}`,
+    `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
     `[${txId}] GMP tx resolved`,
   ]);
 });
 
 test.skip('TODO: handlePendingTx resolves old pending Noble transfer successfully', async t => {});
+
+// --- Tests for processInitialPendingTransactions ---
+
+test('processInitialPendingTransactions handles old transactions with lookback', async t => {
+  const handledCalls: Array<{ tx: any; opts: any }> = [];
+  const txId: TxId = 'tx1';
+
+  const mockHandlePendingTx = async (tx: any, opts: any) => {
+    handledCalls.push({ tx, opts });
+  };
+
+  const oldTx = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    amount: 1000000n,
+    destinationAddress:
+      'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
+  });
+
+  const pendingTxRecords = [
+    {
+      blockHeight: 1000n,
+      tx: { txId, ...oldTx },
+    },
+  ];
+
+  const logs: string[] = [];
+  const txTimeMs = 15 * 60 * 1000; // 15 minutes ago
+  const txPowers = {
+    ...createMockPendingTxOpts(),
+    log: (...args: unknown[]) => logs.push(args.join(' ')),
+    cosmosRpc: {
+      request: async () => {
+        const oldTime = new Date(Date.now() - txTimeMs);
+        return {
+          block: {
+            header: {
+              time: oldTime.toISOString(),
+            },
+          },
+        };
+      },
+    } as any,
+  };
+
+  await processInitialPendingTransactions(
+    pendingTxRecords,
+    txPowers,
+    mockHandlePendingTx,
+  );
+
+  // Wait for async operations to complete
+  await new Promise(resolve => setTimeout(resolve, 50));
+
+  t.is(handledCalls.length, 1);
+  t.deepEqual(logs, [
+    'Processing 1 pending transactions',
+    `Processing pending tx ${txId} (age: ${txTimeMs / (1000 * 60)}min) with lookback`,
+  ]);
+});
+
+test('processInitialPendingTransactions handles new transactions without lookback', async t => {
+  const handledCalls: Array<{ tx: any; opts: any }> = [];
+  const txId: TxId = 'tx2';
+
+  const mockHandlePendingTx = async (tx: any, opts: any) => {
+    handledCalls.push({ tx, opts });
+  };
+
+  const newTx = createMockPendingTxData({
+    type: TxType.GMP,
+    amount: 500000n,
+    destinationAddress: 'eip155:1:0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF',
+  });
+
+  const pendingTxRecords = [
+    {
+      blockHeight: 2000n,
+      tx: { txId, ...newTx },
+    },
+  ];
+
+  const logs: string[] = [];
+  const txTimeMs = 2 * 60 * 1000; // 2 minutes ago
+  const txPowers = {
+    ...createMockPendingTxOpts(),
+    cosmosRpc: {
+      request: async () => {
+        const oldTime = new Date(Date.now() - txTimeMs);
+        return {
+          block: {
+            header: {
+              time: oldTime.toISOString(),
+            },
+          },
+        };
+      },
+    } as any,
+    log: (...args: unknown[]) => logs.push(args.join(' ')),
+  };
+
+  await processInitialPendingTransactions(
+    pendingTxRecords,
+    txPowers,
+    mockHandlePendingTx,
+  );
+
+  // Wait for async operations to complete
+  await new Promise(resolve => setTimeout(resolve, 50));
+
+  t.is(handledCalls.length, 1);
+  t.deepEqual(logs, [
+    'Processing 1 pending transactions',
+    `Processing pending tx ${txId} (age: ${txTimeMs / (1000 * 60)}min)`,
+  ]);
+});

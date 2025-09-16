@@ -87,7 +87,6 @@ export const main = async (
     clusterName,
     alchemyApiKey: config.alchemyApiKey,
   });
-  const now = Date.now;
 
   const powers = {
     evmCtx,
@@ -95,7 +94,7 @@ export const main = async (
     spectrum,
     cosmosRest,
     signingSmartWalletKit,
-    now,
+    now: Date.now,
   };
   await startEngine(powers, {
     depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',

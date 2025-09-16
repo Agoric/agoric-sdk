@@ -103,41 +103,45 @@ export const createEVMContext = async ({
   };
 };
 
-/**
- * Generic binary search helper for finding the greatest value that satisfies a predicate.
- * Assumes a transition from acceptance to rejection somewhere in [start, end].
- *
- * @param start - Starting value (inclusive)
- * @param end - Ending value (inclusive)
- * @param acceptancePredicate - Function that returns true for accepted values
- * @param transform - Optional function to transform values before testing
- * @returns The greatest accepted value in the range
- */
-export const binarySearch = async <T, U>(
-  start: T,
-  end: T,
-  acceptancePredicate: (x: U) => Promise<boolean> | boolean,
-  transform?: (x: T) => Promise<U> | U,
-): Promise<T> => {
-  let left = start;
-  let right = end as any;
-  let result = left;
-
-  while (left <= right) {
-    const mid = Math.floor((Number(left) + Number(right)) / 2) as T;
-    const value = transform ? await transform(mid) : mid;
-
-    if (await acceptancePredicate(value as any)) {
-      result = mid;
-      left = (mid as any) + 1;
-    } else {
-      right = (mid as any) - 1;
-    }
-  }
-
-  return result;
+type BinarySearch = {
+  (
+    start: number,
+    end: number,
+    isAcceptable: (idx: number) => Promise<boolean> | boolean,
+  ): Promise<number>;
+  (
+    start: bigint,
+    end: bigint,
+    isAcceptable: (idx: bigint) => Promise<boolean> | boolean,
+  ): Promise<bigint>;
 };
 
+export const binarySearch = (async <Index extends number | bigint>(
+  start: Index,
+  end: Index,
+  isAcceptable: (idx: Index) => Promise<boolean> | boolean,
+): Promise<Index> => {
+  const nonzero: Index = (start || ~start) as Index;
+  const unit: Index = (nonzero / nonzero) as Index; // i.e., 1 or 1n
+  let left: Index = start;
+  let right: Index = end;
+  let greatestFound: Index = left;
+  await null;
+  while (left <= right) {
+    // Calculate the number or bigint midpoint of `left` and `right` by halving
+    // their sum with a single-bit right shift (skipped if the sum is already
+    // zero).
+    const sum = ((left as any) + (right as any)) as Index;
+    const mid = (sum && sum >> unit) as Index;
+    if (await isAcceptable(mid)) {
+      greatestFound = mid;
+      left = mid + (unit as any);
+    } else {
+      right = (mid - unit) as any;
+    }
+  }
+  return greatestFound;
+}) as BinarySearch;
 const findBlockByTimestamp = async (
   provider: JsonRpcProvider,
   targetMs: number,
@@ -146,9 +150,10 @@ const findBlockByTimestamp = async (
   const startBlockNumber = await binarySearch(
     0,
     await provider.getBlockNumber(),
-    (block: Awaited<ReturnType<typeof provider.getBlock>>) =>
-      block?.timestamp ? block.timestamp <= posixSeconds : false,
-    blockNumber => provider.getBlock(blockNumber),
+    async blockNumber => {
+      const block = await provider.getBlock(blockNumber);
+      return block?.timestamp ? block.timestamp <= posixSeconds : false;
+    },
   );
   return startBlockNumber;
 };
@@ -195,12 +200,6 @@ export const scanEvmLogsInChunks = async (
   for (let start = fromBlock; start <= toBlock; start += chunkSize) {
     const end = Math.min(start + chunkSize - 1, toBlock);
 
-    /**
-     * Generic chunked log scanner: scans [fromBlock, toBlock] (inclusive) in CHUNK_SIZE windows,
-     * runs `predicate` on each log, and returns true on the first match.
-     * @param fromBlock - Starting block number (inclusive)
-     * @param toBlock - Ending block number (inclusive)
-     */
     const chunkFilter: Filter = {
       // baseFilter represents core filter configuration (address, topics, etc.) without block range
       ...baseFilter,
@@ -212,10 +211,10 @@ export const scanEvmLogsInChunks = async (
       log(`[LogScan] Searching chunk ${start} → ${end}`);
       const logs = await provider.getLogs(chunkFilter);
 
-      for (const ev of logs) {
-        if (await predicate(ev)) {
-          log(`[LogScan] Match in tx=${ev.transactionHash}`);
-          if (onMatch) await onMatch(ev);
+      for (const evt of logs) {
+        if (await predicate(evt)) {
+          log(`[LogScan] Match in tx=${evt.transactionHash}`);
+          if (onMatch) await onMatch(evt);
           return true;
         }
       }

@@ -18,11 +18,12 @@ import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import { resolvePendingTx } from './resolver.ts';
 import type { EvmProviders, UsdcAddresses } from './support.ts';
 import { watchGmp, lookBackGmp } from './watchers/gmp-watcher.ts';
-import { watchCctpTransfer, lookBackCcctp } from './watchers/cctp-watcher.ts';
+import { watchCctpTransfer, lookBackCctp } from './watchers/cctp-watcher.ts';
 import {
   lookBackNobleTransfer,
   watchNobleTransfer,
 } from './watchers/noble-watcher.ts';
+import type { CosmosRPCClient } from './cosmos-rpc.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
 
@@ -95,7 +96,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
     };
     const transferStatus = await (opts.mode === 'live'
       ? watchCctpTransfer({ ...watchArgs, timeoutMs: opts.timeoutMs })
-      : lookBackCcctp({ ...watchArgs, publishTimeMs: opts.publishTimeMs }));
+      : lookBackCctp({ ...watchArgs, publishTimeMs: opts.publishTimeMs }));
 
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
@@ -184,10 +185,12 @@ const createMonitorRegistry = (): MonitorRegistry => ({
 });
 
 export type HandlePendingTxOpts = {
+  cosmosRpc: CosmosRPCClient;
+  now: typeof Date.now;
   log?: (...args: unknown[]) => void;
   registry?: MonitorRegistry;
   timeoutMs?: number;
-  oldestTimestampMs?: number;
+  txTimestampMs?: number;
 } & EvmContext;
 
 export const TX_TIMEOUT_MS = 10 * 60 * 1000; // 10 min
@@ -197,7 +200,7 @@ export const handlePendingTx = async (
     log = () => {},
     registry = createMonitorRegistry(),
     timeoutMs = TX_TIMEOUT_MS, // 10 min
-    oldestTimestampMs,
+    txTimestampMs,
     ...evmCtx
   }: HandlePendingTxOpts,
 ) => {
@@ -208,10 +211,10 @@ export const handlePendingTx = async (
   const monitor = registry[tx.type] as PendingTxMonitor<PendingTx, EvmContext>;
   monitor || Fail`${logPrefix} No monitor registered for tx type: ${tx.type}`;
 
-  if (oldestTimestampMs) {
+  if (txTimestampMs) {
     await monitor.watch(evmCtx, tx, log, {
       mode: 'lookback',
-      publishTimeMs: oldestTimestampMs,
+      publishTimeMs: txTimestampMs,
     });
   } else {
     await monitor.watch(evmCtx, tx, log, { mode: 'live', timeoutMs });

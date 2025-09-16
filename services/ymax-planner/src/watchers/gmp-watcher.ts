@@ -92,9 +92,9 @@ export const lookBackGmp = async ({
       publishTimeMs,
     );
 
-    log(`Searching blocks ${fromBlock} → ${toBlock}`);
-    log(`Looking for MulticallExecuted for txId ${txId} at ${contractAddress}`);
-
+    log(
+      `Searching blocks ${fromBlock} → ${toBlock} for MulticallExecuted with txId ${txId} at ${contractAddress}`,
+    );
     const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
 
     const baseFilter: Filter = {
