@@ -312,12 +312,12 @@ export const preparePortfolioKit = (
             console.warn('TODO: Handle the result of the contract call', data);
           } else {
             const [message] = data;
-            const { success, result } = message;
+            const { success, result: result2 } = message;
             if (!success) return;
 
             const [address] = decodeAbiParameters(
               [{ type: 'address' }],
-              result,
+              result2,
             );
 
             // chainInfo is safe to await: registerChain(...) ensure it's already resolved,

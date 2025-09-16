@@ -199,13 +199,13 @@ const trackFlow = async (
       reporter.publishFlowStatus(flowId, { step, ...moveStatus(move), how });
       try {
         await move.recover();
-      } catch (err) {
-        console.error('⚠️ unwind step', step, ' failed', err);
+      } catch (errInUnwind) {
+        console.error('⚠️ unwind step', step, ' failed', errInUnwind);
         // if a recover fails, we just give up and report `where` the assets are
         const { dest: where, ...ms } = moveStatus(move);
-        const final = { step, ...ms, how, where, error: errmsg(err) };
+        const final = { step, ...ms, how, where, error: errmsg(errInUnwind) };
         reporter.publishFlowStatus(flowId, final);
-        throw err;
+        throw errInUnwind;
       }
     }
     reporter.publishFlowStatus(flowId, {
@@ -440,14 +440,14 @@ const stepFlow = async (
     const pos = kit.manager.providePosition(way.poolKey, way.how, accountId);
 
     const { amount } = move;
-    const ctx = { ...evmCtx, poolKey: way.poolKey };
+    const ctxE = { ...evmCtx, poolKey: way.poolKey };
     if ('src' in way) {
       return {
         how: way.how,
         amount,
         src: { proxy: gInfo },
         dest: { pos },
-        apply: () => pImpl.supply(ctx, amount, gInfo),
+        apply: () => pImpl.supply(ctxE, amount, gInfo),
         recover: () => assert.fail('last step. cannot recover'),
       };
     } else {
@@ -456,8 +456,8 @@ const stepFlow = async (
         amount,
         src: { pos },
         dest: { proxy: gInfo },
-        apply: () => pImpl.withdraw(ctx, amount, gInfo, way.claim),
-        recover: () => pImpl.supply(ctx, amount, gInfo),
+        apply: () => pImpl.withdraw(ctxE, amount, gInfo, way.claim),
+        recover: () => pImpl.supply(ctxE, amount, gInfo),
       };
     }
   };

@@ -116,7 +116,7 @@ export type AxelarId = {
   [chain in AxelarChain]: string;
 };
 
-const EVMContractAddressesMap: TypedPattern<EVMContractAddressesMap> =
+const EVMContractAddressesMapShape: TypedPattern<EVMContractAddressesMap> =
   M.splitRecord(
     fromEntries(
       keys(AxelarChain).map(chain => [chain, EVMContractAddressesShape]),
@@ -160,7 +160,7 @@ const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   ),
   assetInfo: M.arrayOf([M.string(), DenomDetailShape]),
   axelarIds: AxelarIdShape,
-  contracts: EVMContractAddressesMap,
+  contracts: EVMContractAddressesMapShape,
   gmpAddresses: GmpAddressesShape,
 };
 
@@ -294,14 +294,13 @@ export const contract = async (
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
-  const { rebalance, parseInboundTransfer } =
-    orchestrateAll(
-      {
-        rebalance: flows.rebalance,
-        parseInboundTransfer: flows.parseInboundTransfer,
-      },
-      ctx1,
-    );
+  const { rebalance, parseInboundTransfer } = orchestrateAll(
+    {
+      rebalance: flows.rebalance,
+      parseInboundTransfer: flows.parseInboundTransfer,
+    },
+    ctx1,
+  );
 
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
@@ -456,6 +455,7 @@ export const contract = async (
 };
 harden(contract);
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const keepDocsTypesImported:
   | undefined
   | YieldProtocol

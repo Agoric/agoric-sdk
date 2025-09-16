@@ -722,7 +722,7 @@ test.serial(
     const { usdc, bld, poc26 } = common.brands;
 
     const amount = usdc.units(6_666.66);
-    const amount_half = usdc.units(3_333.33);
+    const amountHalf = usdc.units(3_333.33);
     const feeAcct = bld.make(100n);
     const feeCall = bld.make(100n);
 
@@ -736,13 +736,13 @@ test.serial(
           {
             src: '@noble',
             dest: '@Arbitrum',
-            amount: amount_half,
+            amount: amountHalf,
             fee: feeAcct,
           },
           {
             src: '@noble',
             dest: '@Arbitrum',
-            amount: amount_half,
+            amount: amountHalf,
             fee: feeAcct,
           },
           { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },

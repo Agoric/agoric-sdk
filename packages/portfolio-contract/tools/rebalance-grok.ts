@@ -49,7 +49,7 @@ const parseCSVRow = (row: string): string[] => {
   let current = '';
   let inQuotes = false;
 
-  for (let i = 0; i < row.length; i++) {
+  for (let i = 0; i < row.length; i += 1) {
     const char = row[i];
 
     if (char === '"') {

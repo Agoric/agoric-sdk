@@ -211,7 +211,7 @@ const mocks = (
                   denomOrTrace = `${packet.destination_port}/${packet.destination_channel}/${transferDenom}`;
                 }
 
-                const localDenom = denomOrTrace.match(/^([^/]+)(\/[^\/]+)?$/)
+                const localDenom = denomOrTrace.match(/^([^/]+)(\/[^/]+)?$/)
                   ? denomOrTrace
                   : `ibc/${denomHash(denomOrTrace.match(/^(?<path>[^/]+\/[^/]+)\/(?<denom>.*)$/)?.groups)}`;
 

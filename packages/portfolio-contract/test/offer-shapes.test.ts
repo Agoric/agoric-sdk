@@ -11,15 +11,15 @@ import {
   PortfolioStatusShapeExt,
 } from '../src/type-guards.ts';
 
-const usdc = withAmountUtils(makeIssuerKit('USDC'));
-const { brand: USDC } = usdc;
+const usdcKit = withAmountUtils(makeIssuerKit('USDC'));
+const usdc = usdcKit.make;
+const { brand: USDC } = usdcKit;
 const bld = withAmountUtils(makeIssuerKit('BLD'));
 
 test('ProposalShapes', t => {
   const { brand: Poc26 } = makeIssuerKit('Poc26');
   const shapes = makeProposalShapes(USDC, Poc26);
 
-  const usdc = (value: bigint) => AmountMath.make(USDC, value);
   const poc26 = (value: bigint) => AmountMath.make(Poc26, value);
   const cases = harden({
     openPortfolio: {
@@ -92,7 +92,7 @@ test('ProposalShapes', t => {
 
 test('offerArgs can carry fee', t => {
   const shapes = makeOfferArgsShapes(USDC);
-  const [amount, fee] = [usdc.make(200n), bld.make(100n)];
+  const [amount, fee] = [usdc(200n), bld.make(100n)];
   const specimen = harden({
     flow: [{ src: '@noble', dest: '@Arbitrum', amount, fee }],
   });
@@ -101,7 +101,7 @@ test('offerArgs can carry fee', t => {
 
 test('offerArgs can carry usdnOut', t => {
   const shapes = makeOfferArgsShapes(USDC);
-  const [amount, detail] = [usdc.make(200n), { usdnOut: 198n }];
+  const [amount, detail] = [usdc(200n), { usdnOut: 198n }];
   const specimen = harden({
     flow: [{ src: '@noble', dest: 'USDN', amount, detail }],
   });
@@ -131,7 +131,7 @@ test('PoolKeyExt shapes accept future pool keys', t => {
 
 test('numeric position references are rejected', t => {
   const shapes = makeOfferArgsShapes(USDC);
-  const amount = usdc.make(200n);
+  const amount = usdc(200n);
 
   // Numeric position references from old design should be rejected
   const specimenWithNumber = harden({
