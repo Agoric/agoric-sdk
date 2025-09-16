@@ -357,3 +357,10 @@ export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.splitRecord(
 export type EVMContractAddressesMap = {
   [chain in AxelarChain]: EVMContractAddresses;
 };
+
+// keep these types imported for IDE navigation
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const keepDocsTypesImported:
+  | undefined
+  | ContinuingInvitationSpec
+  | ContractInvitationSpec = undefined;
