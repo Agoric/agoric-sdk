@@ -6,8 +6,5 @@
     "test",
     "testing",
     "tools"
-  ],
-  "exclude": [
-    "src/vendor/viem/viem-abi.bundle.js",
   ]
 }
