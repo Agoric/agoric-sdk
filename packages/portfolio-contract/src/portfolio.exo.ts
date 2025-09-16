@@ -348,8 +348,6 @@ export const preparePortfolioKit = (
          *
          * We rely on the portfolio creator internally adding the Agoric
          * account before making the PortfolioKit available to any clients.
-         *
-         * @returns the LocalAccount for the current chain.
          */
         getLocalAccount(): LocalAccount {
           const { accounts } = this.state;

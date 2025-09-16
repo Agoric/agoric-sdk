@@ -85,11 +85,6 @@ const proposalShape = M.splitRecord(
  *
  * This prepares a resolver maker with generic transaction functionality
  * that supports multiple transaction types through key-based identification.
- *
- * @param resolverZone - Durable storage zone
- * @param zcf - Zoe Contract Facet for creating invitations
- * @param vowTools - Vow tools for creating promises
- * @returns Resolver kit maker function
  */
 export const prepareResolverKit = (
   resolverZone: Zone,

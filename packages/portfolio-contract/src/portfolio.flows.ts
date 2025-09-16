@@ -693,8 +693,11 @@ const stepFlow = async (
  *
  * **Input Validation**: ASSUME caller validates args
  *
+ * @param orch
+ * @param ctx
  * @param seat - proposal guarded as per {@link makeProposalShapes}
  * @param offerArgs - guarded as per {@link makeOfferArgsShapes}
+ * @param kit
  */
 export const rebalance = (async (
   orch: Orchestrator,
@@ -747,9 +750,11 @@ export const parseInboundTransfer = (async (
  *
  * **Input Validation**: ASSUME caller validates args
  *
+ * @param orch
+ * @param ctx
  * @param seat - proposal guarded as per {@link makeProposalShapes}
  * @param offerArgs - guarded as per {@link makeOfferArgsShapes}
- * @returns {*} following continuing invitation pattern,
+ * returns following continuing invitation pattern,
  * with a topic for the portfolio.
  */
 export const openPortfolio = (async (

@@ -43,6 +43,8 @@ import type { PortfolioKit } from './portfolio.exo.js';
 
 export type { OfferArgsFor } from './type-guards-steps.js';
 
+/* eslint jsdoc/require-returns-type: 0 */
+
 // #region preliminaries
 const { keys } = Object;
 

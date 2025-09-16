@@ -13,7 +13,7 @@ import type { TxStatus } from '../src/resolver/constants.js';
  *
  * @param zoe - Zoe service instance
  * @param creatorFacet - The creator facet that has makeResolverInvitation
- * @returns Promise<ResolverInvitationMakers>
+ * @returns {Promise<ResolverInvitationMakers>}
  */
 export const getResolverMakers = async (
   zoe: ZoeService,
@@ -33,8 +33,8 @@ export const getResolverMakers = async (
  *
  * @param zoe - Zoe service instance
  * @param resolverMakers - ResolverInvitationMakers instance
- * @param status - Transaction status
  * @param txNumber - Transaction number for txId
+ * @param status - Transaction status
  * @param log - Optional logging function (defaults to console.log, pass () => {} to disable)
  */
 export const settleTransaction = async (

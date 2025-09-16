@@ -19,10 +19,6 @@ const trace = makeTracer('PPLN');
  * Planning is currently done off-chain
  * because it requires access to real-time APYs, balances, and market data that
  * are not readily available to the on-chain contract.
- *
- * @param zone - Durable storage zone
- * @param deps - Dependencies including rebalance flow and portfolio access
- * @returns Planner exo maker function
  */
 export const preparePlanner = (
   zone: Zone,
@@ -56,7 +52,7 @@ export const preparePlanner = (
      *
      * @param portfolioId - Target portfolio identifier
      * @param plan - Array of asset movements to execute
-     * @returns Vow that resolves when all movements complete
+     * @returns {Vow<void>} that resolves when all movements complete
      * @throws If portfolio not found. Rejects if plan validation or execution fails
      */
     submit(portfolioId: number, plan: MovementDesc[]): Vow<void> {
