@@ -172,11 +172,13 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
         assert(amount && amount.startsWith('$'), `bad amount in row ${rownum}`);
 
         flow.push({ src, dest, amount });
+        break;
       }
       case 'After':
         // console.debug('After row', row);
         currentScenario.after = parseProtocolAmounts(row);
         currentScenario.positionsNet = T2B as Dollars;
+        break;
       case 'Payouts':
         currentScenario.payouts = {
           ...parseCell('Deposit', Deposit),
@@ -184,12 +186,15 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
         };
         currentScenario.offerNet = T2B as Dollars;
         currentScenario.operationNet = T2C as Dollars;
-      // console.debug(
-      //   'Payouts row',
-      //   row,
-      //   currentScenario.description,
-      //   currentScenario.payouts,
-      // );
+        // console.debug(
+        //   'Payouts row',
+        //   row,
+        //   currentScenario.description,
+        //   currentScenario.payouts,
+        // );
+        break;
+      default:
+      // pass
     }
   }
 

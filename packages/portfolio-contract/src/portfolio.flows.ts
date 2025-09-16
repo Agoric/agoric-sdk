@@ -342,7 +342,7 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
       switch (destKind) {
         case 'seat':
           return { how: 'withdrawToSeat' }; // XXX check that src is agoric
-        case 'accountId':
+        case 'accountId': {
           const destName = getChainNameOfPlaceRef(dest);
           assert(destName);
           if (keys(AxelarChain).includes(destName)) {
@@ -360,6 +360,7 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
           } else {
             throw Fail`no route between chains: ${q(moveDesc)}`;
           }
+        }
         case 'pos': {
           const poolKey = dest as PoolKey;
           const { protocol } = PoolPlaces[poolKey];

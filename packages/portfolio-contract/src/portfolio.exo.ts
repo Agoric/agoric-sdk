@@ -119,6 +119,8 @@ const accountIdByChain = (
           case 'noble':
             byChain[n] = coerceAccountId(info.ica.getAddress());
             break;
+          default:
+            trace('skipping: unexpected chainName', info);
         }
         break;
       case 'eip155':
