@@ -2,6 +2,14 @@
 
 /// <reference types="ses" />
 
+// NOTE: Because @endo/bundle-source does not do tree-shaking (at least as of
+// September 2025), bundles for sources that import from '@agoric/internal' will
+// include each of these files even if none of their own exports are used.
+// To keep the size of bundles down, deep imports from @agoric/internal are
+// preferred.
+// HOWEVER, there are still occasional imports of '@agoric/internal', so be
+// judicious about what to include here!
+
 export * from './cli-utils.js';
 export * from './config.js';
 export * from './debug.js';
