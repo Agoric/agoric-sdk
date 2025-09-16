@@ -401,13 +401,13 @@ export const startEngine = async (
     );
   }).done;
 
-  const txPowers: HandlePendingTxOpts = {
+  const txPowers: HandlePendingTxOpts = Object.freeze({
     ...evmCtx,
     signingSmartWalletKit,
     fetch,
     cosmosRest,
     log: console.warn.bind(console),
-  };
+  });
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
 
   const initialPendingTxData: PendingTxRecord[] = [];
