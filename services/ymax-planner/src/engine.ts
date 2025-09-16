@@ -224,6 +224,7 @@ const processPortfolioEvents = async (
   }
 };
 
+// TODO: replace it with processInitialPendingTransactions
 export const processPendingTxEvents = async (
   events: Array<{ path: string; value: string }>,
   handlePendingTxFn,
@@ -270,6 +271,66 @@ export const pickBalance = (
     depositAsset.brand as Brand<'nat'>,
     Nat(BigInt(deposited.amount)),
   );
+};
+
+/**
+ * Process pending transactions based on their individual age
+ */
+const processInitialPendingTransactions = async (
+  initialPendingTxData: PendingTxRecord[],
+  rpc: CosmosRPCClient,
+  txPowers: HandlePendingTxOpts,
+  now: () => number,
+) => {
+  if (initialPendingTxData.length === 0) return;
+  const { log = () => {} } = txPowers;
+
+  log(`Processing ${initialPendingTxData.length} pending transactions`);
+
+  // Create a map of block heights to timestamps to avoid duplicate RPC calls
+  const blockHeightToTimestamp = new Map<bigint, number>();
+
+  for (const pendingTxRecord of initialPendingTxData) {
+    const { blockHeight, tx } = pendingTxRecord;
+
+    let timestampMs = blockHeightToTimestamp.get(blockHeight);
+    if (timestampMs === undefined) {
+      try {
+        const resp = await rpc.request('block', { height: `${blockHeight}` });
+        timestampMs = new Date(resp.block.header.time).getTime();
+        blockHeightToTimestamp.set(blockHeight, timestampMs);
+      } catch (err) {
+        log(
+          `🚨 Failed to get block time for tx ${tx.txId} at height ${blockHeight}`,
+          err,
+        );
+        continue;
+      }
+    }
+
+    // Process EVERY transaction based on its individual age
+    const txAge = now() - timestampMs;
+    const isOldTx = txAge >= TX_TIMEOUT_MS;
+
+    if (isOldTx) {
+      log(
+        `Processing old tx ${tx.txId} (age: ${Math.round(txAge / 60000)}min) with lookback`,
+      );
+      void handlePendingTx(tx, {
+        ...txPowers,
+        oldestTimestampMs: timestampMs,
+      }).catch(err => {
+        const msg = `🚨 Failed to process old pending tx ${tx.txId} with lookback`;
+        log(msg, pendingTxRecord, err);
+      });
+    } else {
+      log(`Processing tx ${tx.txId} (age: ${Math.round(txAge / 60000)}min)`);
+      void handlePendingTx(tx, txPowers).catch(err => {
+        const msg = `🚨 Failed to process pending tx ${tx.txId}`;
+        log(msg, pendingTxRecord, err);
+      });
+    }
+  }
 };
 
 export const startEngine = async (
@@ -433,62 +494,12 @@ export const startEngine = async (
     }
   }).done;
 
-  // If there is a pending transaction of age greater than or equal to
-  // TX_TIMEOUT_MS, then assume that the planner was restarted or offline and
-  // look for transactions that completed in the gap.
-  const keepOlderTx = (low, rec) =>
-    !low || rec.blockHeight < low.blockHeight ? rec : low;
-  const oldestPendingTxRecord =
-    initialPendingTxData.reduce<PendingTxRecord | null>(keepOlderTx, null);
-
-  if (oldestPendingTxRecord) {
-    console.warn('Oldest pending tx', oldestPendingTxRecord);
-    const resp = await rpc.request('block', {
-      height: `${oldestPendingTxRecord.blockHeight}`,
-    });
-    const { time } = resp.block.header;
-    console.warn('Oldest pending tx block time', time);
-    const oldestTimestampMs = new Date(time).getTime();
-
-    if (now() - oldestTimestampMs >= TX_TIMEOUT_MS) {
-      for (const pendingTxRecord of initialPendingTxData) {
-        void handlePendingTx(pendingTxRecord.tx, {
-          ...txPowers,
-          oldestTimestampMs,
-        }).catch(err => {
-          const msg = ` Failed to process old pending tx ${pendingTxRecord.tx.txId} with lookback`;
-          console.error(msg, pendingTxRecord, err);
-        });
-      }
-    }
-
-    // ...but always look for new completions.
-    for (const { tx } of initialPendingTxData) {
-      void handlePendingTx(tx, txPowers).catch(err =>
-        console.error(` Failed to process old pending tx  ${tx.txId}`, tx, err),
-      );
-    }
-  }
-
-  await makeWorkPool(pendingTxKeys, undefined, async txId => {
-    const path = `${PENDING_TX_PATH_PREFIX}.${txId}`;
-    const errLabel = `🚨 Failed to process old pending tx ${path}`;
-
-    await null;
-    let data;
-    try {
-      data = await query.readPublished(stripPrefix('published.', path));
-      mustMatch(data, PublishedTxShape, path);
-      const tx = { txId, ...data } as PendingTx;
-      console.warn('Old pending tx', tx);
-
-      void handlePendingTx(tx, txPowers).catch(err =>
-        console.error(errLabel, err),
-      );
-    } catch (err) {
-      console.error(errLabel, data, err);
-    }
-  }).done;
+  await processInitialPendingTransactions(
+    initialPendingTxData,
+    rpc,
+    txPowers,
+    now,
+  );
 
   // console.warn('consuming events');
   for await (const respContainer of responses) {
