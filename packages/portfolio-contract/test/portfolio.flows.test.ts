@@ -762,7 +762,7 @@ test(
 );
 
 test('rebalance handles stepFlow failure correctly', async t => {
-  const { orch, ctx, offer, storage } = mocks(
+  const { orch, ctx, offer } = mocks(
     {
       // Mock a failure in IBC transfer
       transfer: Error('IBC transfer failed'),
@@ -848,7 +848,6 @@ test('claim rewards on Aave position', async t => {
 });
 
 test('open portfolio with Beefy position', async t => {
-  const { add } = AmountMath;
   const amount = AmountMath.make(USDC, 300n);
   const feeAcct = AmountMath.make(BLD, 50n);
   const detail = { evmGas: 50n };
@@ -909,7 +908,7 @@ test('wayFromSrcToDesc handles +agoric -> @agoric', t => {
 
 test('Engine can move deposits +agoric -> @agoric', async t => {
   const { orch, ctx, offer, storage } = mocks({}, {});
-  const { log, seat } = offer;
+  const { log } = offer;
 
   const amount = AmountMath.make(USDC, 300n);
   const kit = await ctx.makePortfolioKit();
@@ -937,7 +936,7 @@ test('Engine can move deposits +agoric -> @agoric', async t => {
 
 test('client can move to deposit LCA', async t => {
   const { orch, ctx, offer, storage } = mocks({}, {});
-  const { log, seat } = offer;
+  const { log } = offer;
 
   const amount = AmountMath.make(USDC, 300n);
   const kit = await ctx.makePortfolioKit();

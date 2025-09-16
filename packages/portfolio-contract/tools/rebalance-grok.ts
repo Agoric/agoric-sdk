@@ -113,8 +113,8 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
       continue;
     }
 
-    const [label, aave, compound, usdn] = [row[0], ...row.slice(6)];
-    const [_l, Deposit, Cash, agoricLCA, nobleICA, acctEVM] = row;
+    const [label, aave, compound, _usdn] = [row[0], ...row.slice(6)];
+    const [_l, Deposit, Cash, _agoricLCA, _nobleICA, _acctEVM] = row;
     const [T2A, T2B, T2C] = row.slice(emptyHdCol);
 
     // Skip header row
@@ -148,7 +148,7 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
           if (pDef.match(/^LCA/)) return `@agoric`;
           if (pDef.match(/^ICA/)) return `@noble`;
           if (pDef.match(/^GMP/)) return `@Arbitrum`;
-          const { entries, keys } = Object;
+          const { entries } = Object;
           const [poolKey] =
             entries(PoolPlaces).find(
               ([_k, p]) =>
@@ -168,7 +168,6 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
         const src = asPlaceRef(hd[srcCol]) as AssetPlaceRef;
         const dest = asPlaceRef(hd[destCol]);
 
-        const { give = {} } = currentScenario.proposal || {};
         const amount = T2B as Dollars;
         assert(amount && amount.startsWith('$'), `bad amount in row ${rownum}`);
 

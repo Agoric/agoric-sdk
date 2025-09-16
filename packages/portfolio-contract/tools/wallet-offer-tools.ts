@@ -16,7 +16,6 @@ import type {
 import type { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
-import type { CopyRecord } from '@endo/pass-style';
 
 const { keys } = Object;
 

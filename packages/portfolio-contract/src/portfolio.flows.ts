@@ -582,8 +582,7 @@ const stepFlow = async (
 
       case 'CCTP': {
         todo.push(async () => {
-          const { how, apply, recover } = CCTP;
-          const [{ lca }, nInfo, axelar] = await Promise.all([
+          const [_ag, nInfo, _axelar] = await Promise.all([
             provideCosmosAccount(orch, 'agoric', kit, traceMove),
             provideCosmosAccount(orch, 'noble', kit, traceMove),
             orch.getChain('axelar'),

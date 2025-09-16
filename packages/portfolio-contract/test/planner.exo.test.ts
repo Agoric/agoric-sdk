@@ -28,7 +28,7 @@ test('planner exo submit method', async t => {
     }),
   } as ZCF;
 
-  const mockGetPortfolio = id => null as any;
+  const mockGetPortfolio = _id => null as any;
 
   const shapes = makeOfferArgsShapes(USDC);
   // Create planner exo

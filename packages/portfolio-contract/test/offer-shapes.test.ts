@@ -14,14 +14,12 @@ import {
 const usdc = withAmountUtils(makeIssuerKit('USDC'));
 const { brand: USDC } = usdc;
 const bld = withAmountUtils(makeIssuerKit('BLD'));
-const { brand: BLD } = bld;
 
 test('ProposalShapes', t => {
   const { brand: Poc26 } = makeIssuerKit('Poc26');
   const shapes = makeProposalShapes(USDC, Poc26);
 
   const usdc = (value: bigint) => AmountMath.make(USDC, value);
-  const fee = (value: bigint) => AmountMath.make(BLD, value);
   const poc26 = (value: bigint) => AmountMath.make(Poc26, value);
   const cases = harden({
     openPortfolio: {

@@ -104,7 +104,7 @@ test('resolver updates nodes in chain storage on settleTransaction', async t => 
     marshaller,
   });
 
-  const { client, service, reporter } = makeResolverKit();
+  const { client, service } = makeResolverKit();
 
   // Register transaction
   const tx = client.registerTransaction(
@@ -149,7 +149,7 @@ test('resolver updates nodes in chain storage on settleTransaction', async t => 
 });
 
 test('resolver creates ids in sequence on registerTransaction', async t => {
-  const { nodeUpdates, makeMockNode } = t.context;
+  const { makeMockNode } = t.context;
 
   const zone = makeHeapZone();
   const board = makeFakeBoard();

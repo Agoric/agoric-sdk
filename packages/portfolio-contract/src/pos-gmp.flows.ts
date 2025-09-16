@@ -178,7 +178,7 @@ export const CCTP = {
     await result;
     trace(`CCTP transaction completed after confirmation`);
   },
-  recover: async (_ctx, amount, src, dest) => {
+  recover: async (_ctx, _amount, _src, _dest) => {
     // XXX evmCtx needs a GMP fee
     // return CCTPfromEVM.apply(evmCtx, amount, dest, src);
     throw Error('TODO(Luqi): how to recover from CCTP transfer?');

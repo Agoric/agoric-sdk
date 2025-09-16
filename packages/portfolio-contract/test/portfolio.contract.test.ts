@@ -101,7 +101,7 @@ test('open portfolio with USDN position', async t => {
   t.is(keys(result.publicSubscribers).length, 1);
   const { storagePath } = result.publicSubscribers.portfolio;
   t.log(storagePath);
-  const { contents, positionPaths, flowPaths } = getPortfolioInfo(
+  const { contents, positionPaths } = getPortfolioInfo(
     storagePath,
     common.bootstrap.storage,
   );
@@ -892,7 +892,7 @@ const getCapDataStructure = cell => {
 
 test('start deposit more to same', async t => {
   const { trader1, common } = await setupTrader(t);
-  const { usdc, bld, poc26 } = common.brands;
+  const { usdc, poc26 } = common.brands;
 
   const targetAllocation = {
     USDN: 60n,
@@ -905,16 +905,13 @@ test('start deposit more to same', async t => {
   );
 
   const amount = usdc.units(3_333.33);
-  const actualP = trader1.rebalance(
+  await trader1.rebalance(
     t,
     { give: { Deposit: amount }, want: {} },
     {
       flow: [{ src: '<Deposit>', dest: '+agoric', amount }],
     },
   );
-
-  const actual = await actualP;
-  const result = actual.result as any;
 
   const info = await trader1.getPortfolioStatus();
   t.deepEqual(
