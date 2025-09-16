@@ -3,32 +3,33 @@ This file contains WIP design for ymax MVP product
 ## Design
 
 ```mermaid
-architecture-beta
-  group User(cloud)[User]
-    service ymaxui(internet)[ymax UI] in User
+C4Context
+  title high level system diagram
+  Boundary(u, "User") {
+    Person(ymaxUI, "ymax.app")
+  }
 
-    ymaxui:R -- L:ymaxcontract
-    ymaxui:R -- L:PE
+  Boundary(offchain, "Agoric Off Chain") {
+    System(css, "client support service", "ymax-data-service + ymax-options")
+    System(ypr, "ymax planner and resolver", "planner and resolver")
+  }
 
-  group offchain(cloud)[Agoric Off Chain]
-    service PE(server)[Ymax Planner] in offchain
+  Boundary(onchain, "Agoric On Chain") {
+    System(vstorage, "vstorage")
+  }
 
-    PE:R -- L:spectrum
+  Boundary(Simply Staking, "Simply Staking") {
+    System(spectrum, "Spectrum API")
+  }
 
-  group onchain(cloud)[Agoric On Chain]
-    service ymaxcontract(server)[ymax contract] in onchain
+  Rel(ymaxUI, vstorage, "Reads")
+  Rel(ymaxUI, css, "Uses")
+  Rel(ymaxUI, spectrum, "Uses")
 
-    PE:B -- T:ymaxcontract
+  Rel(css, spectrum, "Uses")
+  Rel(css, vstorage, "Reads")
 
-  group SS(cloud)[Simply Staking]
-    service spectrum(database)[Spectrum] in SS
-    service APY(disk)[APY] in SS
-    service fees(disk)[gas and other fees] in SS
-    service slippage(disk)[slippage] in SS
-
-    APY:L -- R:spectrum
-    fees:L -- R:spectrum
-    slippage:L -- R:spectrum
+  Rel(ypr, spectrum, "Uses")
 ```
 
 ### Operations
