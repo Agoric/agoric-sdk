@@ -163,6 +163,7 @@ const trackFlow = async (
   todo: (() => Promise<AssetMovement>)[],
   tracePortfolio: TraceLogger,
 ) => {
+  await null; // cf. wiki:NoNestedAwait
   const flowId = reporter.allocateFlowId();
   const traceFlow = tracePortfolio.sub(`flow${flowId}`);
   let step = 1;
@@ -702,6 +703,7 @@ export const rebalance = (async (
   offerArgs: OfferArgsFor['rebalance'],
   kit: GuestInterface<PortfolioKit>,
 ) => {
+  await null; // cf. wiki:NoNestedAwait
   const trace = makeTracer('rebalance');
   const proposal = seat.getProposal() as ProposalType['rebalance'];
   trace('proposal', proposal.give, proposal.want, offerArgs);

@@ -963,7 +963,7 @@ test('receiveUpcall returns false if sender is not AXELAR_GMP', async t => {
 
   // The portfolio flow will hang waiting for valid GMP, so we don't await it
   // This is expected behavior - the test just needs to verify receiveUpcall validation
-  openPortfolio(orch, { ...ctx }, offer.seat, {
+  void openPortfolio(orch, { ...ctx }, offer.seat, {
     flow: steps,
   });
 

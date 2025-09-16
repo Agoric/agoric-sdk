@@ -121,7 +121,7 @@ export const makeWallet = (
         providePurse,
       );
       const refund: AmountKeywordRecord = await deeplyFulfilledObject(
-        objectMap(payouts, async pmt => wallet.deposit(await pmt)),
+        objectMap(payouts, async pmt => E.when(pmt, wallet.deposit)),
       );
 
       if (typeof result === 'object' && 'invitationMakers' in result) {
@@ -155,7 +155,7 @@ export const makeWallet = (
       const result = await when(E(seat).getOfferResult());
       const payouts = await E(seat).getPayouts();
       const refund: AmountKeywordRecord = await deeplyFulfilledObject(
-        objectMap(payouts, async pmt => wallet.deposit(await pmt)),
+        objectMap(payouts, async pmt => E.when(pmt, wallet.deposit)),
       );
       return harden({ result, payouts: refund });
     },
