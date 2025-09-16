@@ -189,6 +189,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aglocal/portfolio-contract@workspace:packages/portfolio-contract"
   dependencies:
+    "@aglocal/boot": "workspace:*"
+    "@agoric/async-flow": "workspace:*"
     "@agoric/client-utils": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
     "@agoric/ertp": "workspace:*"
@@ -196,16 +198,19 @@ __metadata:
     "@agoric/internal": "workspace:*"
     "@agoric/orchestration": "workspace:*"
     "@agoric/portfolio-api": "workspace:*"
+    "@agoric/smart-wallet": "workspace:*"
     "@agoric/swingset-liveslots": "workspace:*"
     "@agoric/time": "workspace:*"
     "@agoric/vats": "workspace:*"
     "@agoric/vow": "workspace:*"
     "@agoric/zoe": "workspace:*"
     "@agoric/zone": "workspace:*"
+    "@cosmjs/encoding": "npm:^0.36.0"
     "@endo/base64": "npm:^1.0.12"
     "@endo/errors": "npm:^1.2.13"
     "@endo/far": "npm:^1.1.14"
     "@endo/init": "npm:^1.1.12"
+    "@endo/marshal": "npm:^1.8.0"
     "@endo/nat": "npm:^5.1.3"
     "@endo/pass-style": "npm:^1.6.3"
     "@endo/patterns": "npm:^1.7.0"
@@ -214,6 +219,7 @@ __metadata:
     ava: "npm:^5.3.0"
     c8: "npm:^10.1.3"
     ts-blank-space: "npm:^0.6.2"
+    viem: "npm:^2.31.0"
   languageName: unknown
   linkType: soft
 

@@ -26,14 +26,16 @@ export const importCSV = (specifier: string, base: string) =>
 export type Dollars = `$${string}` | `-$${string}`;
 export const numeral = (amt: Dollars) => amt.replace(/[$,]/g, '');
 
+type Empty = Record<never, never>;
+
 export type RebalanceScenario = {
   description: string;
   before: Partial<Record<YieldProtocol, Dollars>>;
   previous: string;
   proposal:
-    | { give: {}; want: {} }
-    | { give: { Deposit: Dollars }; want: {} }
-    | { want: { Cash: Dollars }; give: {} };
+    | { give: Empty; want: Empty }
+    | { give: { Deposit: Dollars }; want: Empty }
+    | { want: { Cash: Dollars }; give: Empty };
   offerArgs?: { flow: (Omit<MovementDesc, 'amount'> & { amount: Dollars })[] };
   after: Partial<Record<YieldProtocol, Dollars>>;
   payouts: { Deposit?: Dollars; Cash?: Dollars };
@@ -47,7 +49,7 @@ const parseCSVRow = (row: string): string[] => {
   let current = '';
   let inQuotes = false;
 
-  for (let i = 0; i < row.length; i++) {
+  for (let i = 0; i < row.length; i += 1) {
     const char = row[i];
 
     if (char === '"') {
@@ -111,8 +113,8 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
       continue;
     }
 
-    const [label, aave, compound, usdn] = [row[0], ...row.slice(6)];
-    const [_l, Deposit, Cash, agoricLCA, nobleICA, acctEVM] = row;
+    const [label, aave, compound, _usdn] = [row[0], ...row.slice(6)];
+    const [_l, Deposit, Cash, _agoricLCA, _nobleICA, _acctEVM] = row;
     const [T2A, T2B, T2C] = row.slice(emptyHdCol);
 
     // Skip header row
@@ -146,7 +148,7 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
           if (pDef.match(/^LCA/)) return `@agoric`;
           if (pDef.match(/^ICA/)) return `@noble`;
           if (pDef.match(/^GMP/)) return `@Arbitrum`;
-          const { entries, keys } = Object;
+          const { entries } = Object;
           const [poolKey] =
             entries(PoolPlaces).find(
               ([_k, p]) =>
@@ -166,16 +168,17 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
         const src = asPlaceRef(hd[srcCol]) as AssetPlaceRef;
         const dest = asPlaceRef(hd[destCol]);
 
-        const { give = {} } = currentScenario.proposal || {};
         const amount = T2B as Dollars;
         assert(amount && amount.startsWith('$'), `bad amount in row ${rownum}`);
 
         flow.push({ src, dest, amount });
+        break;
       }
       case 'After':
         // console.debug('After row', row);
         currentScenario.after = parseProtocolAmounts(row);
         currentScenario.positionsNet = T2B as Dollars;
+        break;
       case 'Payouts':
         currentScenario.payouts = {
           ...parseCell('Deposit', Deposit),
@@ -183,12 +186,15 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
         };
         currentScenario.offerNet = T2B as Dollars;
         currentScenario.operationNet = T2C as Dollars;
-      // console.debug(
-      //   'Payouts row',
-      //   row,
-      //   currentScenario.description,
-      //   currentScenario.payouts,
-      // );
+        // console.debug(
+        //   'Payouts row',
+        //   row,
+        //   currentScenario.description,
+        //   currentScenario.payouts,
+        // );
+        break;
+      default:
+      // pass
     }
   }
 

@@ -7,7 +7,7 @@ import type { MovementDesc } from '../src/type-guards-steps.js';
 export const plannerClientMock = (
   wallet: SmartWallet,
   instance: Instance<typeof startYMax>,
-  readAt: VStorage['readAt'],
+  _readAt: VStorage['readAt'],
 ) => {
   const offersP = E(wallet).getOffersFacet();
   const redeem = async () => {

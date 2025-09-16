@@ -101,7 +101,7 @@ test('open portfolio with USDN position', async t => {
   t.is(keys(result.publicSubscribers).length, 1);
   const { storagePath } = result.publicSubscribers.portfolio;
   t.log(storagePath);
-  const { contents, positionPaths, flowPaths } = getPortfolioInfo(
+  const { contents, positionPaths } = getPortfolioInfo(
     storagePath,
     common.bootstrap.storage,
   );
@@ -112,7 +112,7 @@ test('open portfolio with USDN position', async t => {
   );
   t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
   t.is(
-    contents[storagePath].accountIdByChain['agoric'],
+    contents[storagePath].accountIdByChain.agoric,
     `cosmos:agoric-3:${portfolio0lcaOrch}`,
     'LCA',
   );
@@ -294,7 +294,7 @@ test('open portfolio with USDN, Aave positions', async t => {
   t.snapshot(done.payouts, 'refund payouts');
 
   const tree = inspectMapStore(contractBaggage);
-  delete tree['chainHub']; // 'initial baggage' test captures this
+  delete tree.chainHub; // 'initial baggage' test captures this
   // XXX portfolio exo state not included UNTIL https://github.com/Agoric/agoric-sdk/issues/10950
   t.snapshot(tree, 'baggage after open with positions');
 });
@@ -350,7 +350,7 @@ test('open portfolio with target allocations', async t => {
   t.snapshot(done.payouts, 'refund payouts');
 
   const tree = inspectMapStore(contractBaggage);
-  delete tree['chainHub']; // 'initial baggage' test captures this
+  delete tree.chainHub; // 'initial baggage' test captures this
   // XXX portfolio exo state not included UNTIL https://github.com/Agoric/agoric-sdk/issues/10950
   t.snapshot(tree, 'baggage after open with target allocations');
 });
@@ -477,7 +477,7 @@ test('USDN claim fails currently', async t => {
   );
   t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
   t.is(
-    contents[storagePath].accountIdByChain['agoric'],
+    contents[storagePath].accountIdByChain.agoric,
     `cosmos:agoric-3:${portfolio0lcaOrch}`,
     'LCA',
   );
@@ -643,18 +643,18 @@ test('Withdraw from a Beefy position', async t => {
         {
           src: 'Beefy_re7_Avalanche',
           dest: '@Arbitrum',
-          amount: amount,
+          amount,
           fee: feeCall,
         },
         {
           src: '@Arbitrum',
           dest: '@noble',
-          amount: amount,
+          amount,
         },
         {
           src: '@noble',
           dest: '@agoric',
-          amount: amount,
+          amount,
         },
         {
           src: '@agoric',
@@ -722,7 +722,7 @@ test.serial(
     const { usdc, bld, poc26 } = common.brands;
 
     const amount = usdc.units(6_666.66);
-    const amount_half = usdc.units(3_333.33);
+    const amountHalf = usdc.units(3_333.33);
     const feeAcct = bld.make(100n);
     const feeCall = bld.make(100n);
 
@@ -736,13 +736,13 @@ test.serial(
           {
             src: '@noble',
             dest: '@Arbitrum',
-            amount: amount_half,
+            amount: amountHalf,
             fee: feeAcct,
           },
           {
             src: '@noble',
             dest: '@Arbitrum',
-            amount: amount_half,
+            amount: amountHalf,
             fee: feeAcct,
           },
           { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
@@ -892,7 +892,7 @@ const getCapDataStructure = cell => {
 
 test('start deposit more to same', async t => {
   const { trader1, common } = await setupTrader(t);
-  const { usdc, bld, poc26 } = common.brands;
+  const { usdc, poc26 } = common.brands;
 
   const targetAllocation = {
     USDN: 60n,
@@ -905,16 +905,13 @@ test('start deposit more to same', async t => {
   );
 
   const amount = usdc.units(3_333.33);
-  const actualP = trader1.rebalance(
+  await trader1.rebalance(
     t,
     { give: { Deposit: amount }, want: {} },
     {
       flow: [{ src: '<Deposit>', dest: '+agoric', amount }],
     },
   );
-
-  const actual = await actualP;
-  const result = actual.result as any;
 
   const info = await trader1.getPortfolioStatus();
   t.deepEqual(

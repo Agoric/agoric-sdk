@@ -39,6 +39,7 @@ import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
   preparePortfolioKit,
   type PortfolioKit,
@@ -74,7 +75,6 @@ import {
   makeIncomingEVMEvent,
   makeIncomingVTransferEvent,
 } from './supports.ts';
-import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 
 // Use an EVM chain whose axelar ID differs from its chain name
 const { sourceChain } = evmNamingDistinction;
@@ -211,7 +211,7 @@ const mocks = (
                   denomOrTrace = `${packet.destination_port}/${packet.destination_channel}/${transferDenom}`;
                 }
 
-                const localDenom = denomOrTrace.match(/^([^/]+)(\/[^\/]+)?$/)
+                const localDenom = denomOrTrace.match(/^([^/]+)(\/[^/]+)?$/)
                   ? denomOrTrace
                   : `ibc/${denomHash(denomOrTrace.match(/^(?<path>[^/]+\/[^/]+)\/(?<denom>.*)$/)?.groups)}`;
 
@@ -762,7 +762,7 @@ test(
 );
 
 test('rebalance handles stepFlow failure correctly', async t => {
-  const { orch, ctx, offer, storage } = mocks(
+  const { orch, ctx, offer } = mocks(
     {
       // Mock a failure in IBC transfer
       transfer: Error('IBC transfer failed'),
@@ -848,7 +848,6 @@ test('claim rewards on Aave position', async t => {
 });
 
 test('open portfolio with Beefy position', async t => {
-  const { add } = AmountMath;
   const amount = AmountMath.make(USDC, 300n);
   const feeAcct = AmountMath.make(BLD, 50n);
   const detail = { evmGas: 50n };
@@ -909,7 +908,7 @@ test('wayFromSrcToDesc handles +agoric -> @agoric', t => {
 
 test('Engine can move deposits +agoric -> @agoric', async t => {
   const { orch, ctx, offer, storage } = mocks({}, {});
-  const { log, seat } = offer;
+  const { log } = offer;
 
   const amount = AmountMath.make(USDC, 300n);
   const kit = await ctx.makePortfolioKit();
@@ -937,7 +936,7 @@ test('Engine can move deposits +agoric -> @agoric', async t => {
 
 test('client can move to deposit LCA', async t => {
   const { orch, ctx, offer, storage } = mocks({}, {});
-  const { log, seat } = offer;
+  const { log } = offer;
 
   const amount = AmountMath.make(USDC, 300n);
   const kit = await ctx.makePortfolioKit();
@@ -963,7 +962,7 @@ test('receiveUpcall returns false if sender is not AXELAR_GMP', async t => {
 
   // The portfolio flow will hang waiting for valid GMP, so we don't await it
   // This is expected behavior - the test just needs to verify receiveUpcall validation
-  openPortfolio(orch, { ...ctx }, offer.seat, {
+  void openPortfolio(orch, { ...ctx }, offer.seat, {
     flow: steps,
   });
 

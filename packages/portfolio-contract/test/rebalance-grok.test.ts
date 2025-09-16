@@ -106,7 +106,7 @@ test('withBrand adds fees for Compound', async t => {
   assert('flow' in offerArgs);
 
   const step =
-    offerArgs?.flow?.find(step => step.dest.startsWith('Compound')) ||
+    offerArgs?.flow?.find(({ dest }) => dest.startsWith('Compound')) ||
     assert.fail();
   t.truthy(step.fee);
 });

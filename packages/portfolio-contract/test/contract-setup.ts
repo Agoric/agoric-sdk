@@ -172,6 +172,5 @@ export const simulateAckTransferToAxelar = async utils => {
     .transmitVTransferEvent('acknowledgementPacket', -1)
     .finally(() => {
       // console.debug('ack Axelar done');
-      return;
     });
 };

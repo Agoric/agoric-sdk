@@ -8,11 +8,8 @@ import { ResolverOfferArgsShapes } from '../src/resolver/types.ts';
 import { deploy } from './contract-setup.ts';
 
 test('CCTP settlement invitation - no pending transaction found', async t => {
-  const { started, zoe, common } = await deploy(t);
+  const { started, zoe } = await deploy(t);
   const { creatorFacet } = started;
-  const { usdc } = common.brands;
-
-  const amount = usdc.units(1000);
 
   const resolverInvitation = await E(creatorFacet).makeResolverInvitation();
   const resolverSeat = await E(zoe).offer(resolverInvitation);
@@ -35,10 +32,8 @@ test('CCTP settlement invitation - no pending transaction found', async t => {
 });
 
 test('CCTP confirmation invitation - invalid status throws', async t => {
-  const { common } = await deploy(t);
-  const { usdc } = common.brands;
+  await deploy(t);
 
-  const amount = usdc.units(1000);
   const invalidOfferArgs: TransactionSettlementOfferArgs = harden({
     status: 'invalid' as any,
     txId: 'tx0',
@@ -49,11 +44,8 @@ test('CCTP confirmation invitation - invalid status throws', async t => {
 });
 
 test('CCTP confirmation invitation exits seat properly', async t => {
-  const { started, zoe, common } = await deploy(t);
+  const { started, zoe } = await deploy(t);
   const { creatorFacet } = started;
-  const { usdc } = common.brands;
-
-  const amount = usdc.units(1000);
 
   const resolverInvitation = await E(creatorFacet).makeResolverInvitation();
   const resolverSeat = await E(zoe).offer(resolverInvitation);

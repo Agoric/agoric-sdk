@@ -15,7 +15,7 @@ import {
   MsgUnlock as MsgUnlockType,
 } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { MsgSwap as MsgSwapType } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
-import { AmountMath, type NatValue } from '@agoric/ertp';
+import { type NatValue } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type { CosmosChainAddress, Denom } from '@agoric/orchestration';
 import {
@@ -29,7 +29,6 @@ const MsgLock = CodecHelper(MsgLockType);
 const MsgUnlock = CodecHelper(MsgUnlockType);
 const MsgSwap = CodecHelper(MsgSwapType);
 
-const { add } = AmountMath;
 const trace = makeTracer('USDNF');
 
 export const makeSwapLockMessages = (

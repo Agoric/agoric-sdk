@@ -79,7 +79,7 @@ export const makeIncomingVTransferEvent = ({
     amount,
     denom,
     sender,
-    target: target,
+    target,
     receiver,
     sourceChannel,
     destinationChannel,

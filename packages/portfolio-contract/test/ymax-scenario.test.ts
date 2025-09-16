@@ -124,7 +124,7 @@ const rebalanceScenarioMacro = test.macro({
       ? openPortfolioAndAck(sceneB.proposal.give, sceneB.offerArgs)
       : openPortfolioAndAck(sceneBP!.proposal.give, sceneBP!.offerArgs));
 
-    const { result, payouts } = await (async () => {
+    const { payouts } = await (async () => {
       if (openOnly) return openResult;
 
       const rebalanceP = trader1.rebalance(

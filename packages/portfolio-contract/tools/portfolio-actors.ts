@@ -88,7 +88,7 @@ export const makePortfolioQuery = (
  * @param wallet - WalletTool for executing offers (analogous to wallet connection in web UIs)
  * @param instance - Portfolio contract instance (obtained via chainStorageWatcher in web UIs)
  * @param readPublished - Function to read vstorage data (analogous to chainStorageWatcher)
- * @returns Trader object with methods for portfolio operations
+ * returns Trader object with methods for portfolio operations
  *
  * @example
  * // In a web client, similar patterns would use:
@@ -353,11 +353,12 @@ export const planTransfer = (
   const steps: MovementDesc[] = [];
 
   switch (p) {
-    case 'USDN':
+    case 'USDN': {
       const detail = { usdnOut: ((amount.value || 0n) * 99n) / 100n };
       console.warn('TODO: client should query exchange rate');
       steps.push({ src: '@noble', dest: 'USDNVault', amount, detail });
       break;
+    }
     case 'Aave':
     case 'Compound':
       // XXX optimize: combine noble->evm steps

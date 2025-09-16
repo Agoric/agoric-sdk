@@ -1,11 +1,11 @@
 /** @file tests for PortfolioKit exo */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { preparePortfolioKit } from '../src/portfolio.exo.ts';
 import { makeHeapZone } from '@agoric/zone';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { preparePortfolioKit } from '../src/portfolio.exo.ts';
 import { gmpAddresses } from './mocks.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');

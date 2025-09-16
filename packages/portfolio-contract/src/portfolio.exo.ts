@@ -49,7 +49,6 @@ import {
 } from './type-guards.js';
 
 const trace = makeTracer('PortExo');
-const { values } = Object;
 
 export const DECODE_CONTRACT_CALL_RESULT_ABI = [
   {
@@ -120,6 +119,8 @@ const accountIdByChain = (
           case 'noble':
             byChain[n] = coerceAccountId(info.ica.getAddress());
             break;
+          default:
+            trace('skipping: unexpected chainName', info);
         }
         break;
       case 'eip155':
@@ -313,12 +314,12 @@ export const preparePortfolioKit = (
             console.warn('TODO: Handle the result of the contract call', data);
           } else {
             const [message] = data;
-            const { success, result } = message;
+            const { success, result: result2 } = message;
             if (!success) return;
 
             const [address] = decodeAbiParameters(
               [{ type: 'address' }],
-              result,
+              result2,
             );
 
             // chainInfo is safe to await: registerChain(...) ensure it's already resolved,
@@ -330,7 +331,7 @@ export const preparePortfolioKit = (
 
             this.facets.manager.resolveAccount({
               namespace: 'eip155',
-              chainName: chainName,
+              chainName,
               chainId: caipId,
               remoteAddress: address,
             });
@@ -347,8 +348,6 @@ export const preparePortfolioKit = (
          *
          * We rely on the portfolio creator internally adding the Agoric
          * account before making the PortfolioKit available to any clients.
-         *
-         * @returns the LocalAccount for the current chain.
          */
         getLocalAccount(): LocalAccount {
           const { accounts } = this.state;

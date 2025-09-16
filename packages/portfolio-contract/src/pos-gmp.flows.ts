@@ -32,7 +32,7 @@ import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.j
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import { q, X } from '@endo/errors';
-import type { GuestInterface } from '../../async-flow/src/types.ts';
+import type { GuestInterface } from '@agoric/async-flow';
 import { ERC20, makeEVMSession, type EVMT } from './evm-facade.ts';
 import type {
   AxelarId,
@@ -178,7 +178,7 @@ export const CCTP = {
     await result;
     trace(`CCTP transaction completed after confirmation`);
   },
-  recover: async (_ctx, amount, src, dest) => {
+  recover: async (_ctx, _amount, _src, _dest) => {
     // XXX evmCtx needs a GMP fee
     // return CCTPfromEVM.apply(evmCtx, amount, dest, src);
     throw Error('TODO(Luqi): how to recover from CCTP transfer?');

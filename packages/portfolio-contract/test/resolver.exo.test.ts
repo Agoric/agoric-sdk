@@ -8,10 +8,10 @@ import { prepareVowTools } from '@agoric/vow/vat.js';
 import type { ZCF } from '@agoric/zoe';
 import { makeHeapZone } from '@agoric/zone';
 import type { TestFn } from 'ava';
+import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { TxStatus, TxType } from '../src/resolver/constants.js';
 import { prepareResolverKit } from '../src/resolver/resolver.exo.ts';
 import type { PublishedTx } from '../src/resolver/types.ts';
-import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 
 const test = anyTest as TestFn<{
   nodeUpdates: Record<string, PublishedTx>;
@@ -104,7 +104,7 @@ test('resolver updates nodes in chain storage on settleTransaction', async t => 
     marshaller,
   });
 
-  const { client, service, reporter } = makeResolverKit();
+  const { client, service } = makeResolverKit();
 
   // Register transaction
   const tx = client.registerTransaction(
@@ -149,7 +149,7 @@ test('resolver updates nodes in chain storage on settleTransaction', async t => 
 });
 
 test('resolver creates ids in sequence on registerTransaction', async t => {
-  const { nodeUpdates, makeMockNode } = t.context;
+  const { makeMockNode } = t.context;
 
   const zone = makeHeapZone();
   const board = makeFakeBoard();

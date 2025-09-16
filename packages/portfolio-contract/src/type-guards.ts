@@ -43,6 +43,8 @@ import type { PortfolioKit } from './portfolio.exo.js';
 
 export type { OfferArgsFor } from './type-guards-steps.js';
 
+/* eslint jsdoc/require-returns-type: 0 */
+
 // #region preliminaries
 const { keys } = Object;
 
@@ -76,6 +78,8 @@ export type PortfolioContinuingInvitationMaker =
   keyof PortfolioKit['invitationMakers'];
 
 // #region Proposal Shapes
+type Empty = Record<never, Amount>;
+
 /**
  * Proposal shapes for portfolio operations.
  *
@@ -91,8 +95,8 @@ export type ProposalType = {
     };
   };
   rebalance:
-    | { give: { Deposit?: NatAmount }; want: {} }
-    | { want: { Cash: NatAmount }; give: {} };
+    | { give: { Deposit?: NatAmount }; want: Empty }
+    | { want: { Cash: NatAmount }; give: Empty };
 };
 
 export const makeProposalShapes = (
@@ -355,3 +359,10 @@ export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.splitRecord(
 export type EVMContractAddressesMap = {
   [chain in AxelarChain]: EVMContractAddresses;
 };
+
+// keep these types imported for IDE navigation
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const keepDocsTypesImported:
+  | undefined
+  | ContinuingInvitationSpec
+  | ContractInvitationSpec = undefined;

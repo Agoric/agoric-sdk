@@ -163,6 +163,7 @@ const trackFlow = async (
   todo: (() => Promise<AssetMovement>)[],
   tracePortfolio: TraceLogger,
 ) => {
+  await null; // cf. wiki:NoNestedAwait
   const flowId = reporter.allocateFlowId();
   const traceFlow = tracePortfolio.sub(`flow${flowId}`);
   let step = 1;
@@ -198,13 +199,13 @@ const trackFlow = async (
       reporter.publishFlowStatus(flowId, { step, ...moveStatus(move), how });
       try {
         await move.recover();
-      } catch (err) {
-        console.error('⚠️ unwind step', step, ' failed', err);
+      } catch (errInUnwind) {
+        console.error('⚠️ unwind step', step, ' failed', errInUnwind);
         // if a recover fails, we just give up and report `where` the assets are
         const { dest: where, ...ms } = moveStatus(move);
-        const final = { step, ...ms, how, where, error: errmsg(err) };
+        const final = { step, ...ms, how, where, error: errmsg(errInUnwind) };
         reporter.publishFlowStatus(flowId, final);
-        throw err;
+        throw errInUnwind;
       }
     }
     reporter.publishFlowStatus(flowId, {
@@ -224,7 +225,7 @@ const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
 ): Promise<AccountInfoFor[C]> => {
   await null;
   const traceChain = tracePortfolio.sub(chainName);
-  let promiseMaybe = kit.manager.reserveAccount(chainName);
+  const promiseMaybe = kit.manager.reserveAccount(chainName);
   if (promiseMaybe) {
     return promiseMaybe as unknown as Promise<AccountInfoFor[C]>;
   }
@@ -341,7 +342,7 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
       switch (destKind) {
         case 'seat':
           return { how: 'withdrawToSeat' }; // XXX check that src is agoric
-        case 'accountId':
+        case 'accountId': {
           const destName = getChainNameOfPlaceRef(dest);
           assert(destName);
           if (keys(AxelarChain).includes(destName)) {
@@ -359,6 +360,7 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
           } else {
             throw Fail`no route between chains: ${q(moveDesc)}`;
           }
+        }
         case 'pos': {
           const poolKey = dest as PoolKey;
           const { protocol } = PoolPlaces[poolKey];
@@ -439,14 +441,14 @@ const stepFlow = async (
     const pos = kit.manager.providePosition(way.poolKey, way.how, accountId);
 
     const { amount } = move;
-    const ctx = { ...evmCtx, poolKey: way.poolKey };
+    const ctxE = { ...evmCtx, poolKey: way.poolKey };
     if ('src' in way) {
       return {
         how: way.how,
         amount,
         src: { proxy: gInfo },
         dest: { pos },
-        apply: () => pImpl.supply(ctx, amount, gInfo),
+        apply: () => pImpl.supply(ctxE, amount, gInfo),
         recover: () => assert.fail('last step. cannot recover'),
       };
     } else {
@@ -455,8 +457,8 @@ const stepFlow = async (
         amount,
         src: { pos },
         dest: { proxy: gInfo },
-        apply: () => pImpl.withdraw(ctx, amount, gInfo, way.claim),
-        recover: () => pImpl.supply(ctx, amount, gInfo),
+        apply: () => pImpl.withdraw(ctxE, amount, gInfo, way.claim),
+        recover: () => pImpl.supply(ctxE, amount, gInfo),
       };
     }
   };
@@ -581,8 +583,7 @@ const stepFlow = async (
 
       case 'CCTP': {
         todo.push(async () => {
-          const { how, apply, recover } = CCTP;
-          const [{ lca }, nInfo, axelar] = await Promise.all([
+          const [_ag, nInfo, _axelar] = await Promise.all([
             provideCosmosAccount(orch, 'agoric', kit, traceMove),
             provideCosmosAccount(orch, 'noble', kit, traceMove),
             orch.getChain('axelar'),
@@ -692,8 +693,11 @@ const stepFlow = async (
  *
  * **Input Validation**: ASSUME caller validates args
  *
+ * @param orch
+ * @param ctx
  * @param seat - proposal guarded as per {@link makeProposalShapes}
  * @param offerArgs - guarded as per {@link makeOfferArgsShapes}
+ * @param kit
  */
 export const rebalance = (async (
   orch: Orchestrator,
@@ -702,6 +706,7 @@ export const rebalance = (async (
   offerArgs: OfferArgsFor['rebalance'],
   kit: GuestInterface<PortfolioKit>,
 ) => {
+  await null; // cf. wiki:NoNestedAwait
   const trace = makeTracer('rebalance');
   const proposal = seat.getProposal() as ProposalType['rebalance'];
   trace('proposal', proposal.give, proposal.want, offerArgs);
@@ -745,9 +750,11 @@ export const parseInboundTransfer = (async (
  *
  * **Input Validation**: ASSUME caller validates args
  *
+ * @param orch
+ * @param ctx
  * @param seat - proposal guarded as per {@link makeProposalShapes}
  * @param offerArgs - guarded as per {@link makeOfferArgsShapes}
- * @returns {*} following continuing invitation pattern,
+ * returns following continuing invitation pattern,
  * with a topic for the portfolio.
  */
 export const openPortfolio = (async (
