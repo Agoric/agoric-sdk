@@ -1,14 +1,14 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeHeapZone } from '@agoric/zone';
-import { preparePlanner } from '../src/planner.exo.ts';
 import { makeIssuerKit } from '@agoric/ertp';
+import { prepareVowTools } from '@agoric/vow';
+import type { ZCF } from '@agoric/zoe';
 import {
   makeOfferArgsShapes,
   type MovementDesc,
 } from '../src/type-guards-steps.ts';
-import { prepareVowTools } from '@agoric/vow';
-import type { ZCF } from '@agoric/zoe';
+import { preparePlanner } from '../src/planner.exo.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 

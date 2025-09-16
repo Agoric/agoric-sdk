@@ -8,10 +8,10 @@ import { prepareVowTools } from '@agoric/vow/vat.js';
 import type { ZCF } from '@agoric/zoe';
 import { makeHeapZone } from '@agoric/zone';
 import type { TestFn } from 'ava';
+import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { TxStatus, TxType } from '../src/resolver/constants.js';
 import { prepareResolverKit } from '../src/resolver/resolver.exo.ts';
 import type { PublishedTx } from '../src/resolver/types.ts';
-import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 
 const test = anyTest as TestFn<{
   nodeUpdates: Record<string, PublishedTx>;

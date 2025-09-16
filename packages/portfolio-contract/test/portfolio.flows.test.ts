@@ -39,6 +39,7 @@ import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
   preparePortfolioKit,
   type PortfolioKit,
@@ -74,7 +75,6 @@ import {
   makeIncomingEVMEvent,
   makeIncomingVTransferEvent,
 } from './supports.ts';
-import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 
 // Use an EVM chain whose axelar ID differs from its chain name
 const { sourceChain } = evmNamingDistinction;

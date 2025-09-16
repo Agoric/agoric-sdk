@@ -112,7 +112,7 @@ test('open portfolio with USDN position', async t => {
   );
   t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
   t.is(
-    contents[storagePath].accountIdByChain['agoric'],
+    contents[storagePath].accountIdByChain.agoric,
     `cosmos:agoric-3:${portfolio0lcaOrch}`,
     'LCA',
   );
@@ -294,7 +294,7 @@ test('open portfolio with USDN, Aave positions', async t => {
   t.snapshot(done.payouts, 'refund payouts');
 
   const tree = inspectMapStore(contractBaggage);
-  delete tree['chainHub']; // 'initial baggage' test captures this
+  delete tree.chainHub; // 'initial baggage' test captures this
   // XXX portfolio exo state not included UNTIL https://github.com/Agoric/agoric-sdk/issues/10950
   t.snapshot(tree, 'baggage after open with positions');
 });
@@ -350,7 +350,7 @@ test('open portfolio with target allocations', async t => {
   t.snapshot(done.payouts, 'refund payouts');
 
   const tree = inspectMapStore(contractBaggage);
-  delete tree['chainHub']; // 'initial baggage' test captures this
+  delete tree.chainHub; // 'initial baggage' test captures this
   // XXX portfolio exo state not included UNTIL https://github.com/Agoric/agoric-sdk/issues/10950
   t.snapshot(tree, 'baggage after open with target allocations');
 });
@@ -477,7 +477,7 @@ test('USDN claim fails currently', async t => {
   );
   t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
   t.is(
-    contents[storagePath].accountIdByChain['agoric'],
+    contents[storagePath].accountIdByChain.agoric,
     `cosmos:agoric-3:${portfolio0lcaOrch}`,
     'LCA',
   );
@@ -643,18 +643,18 @@ test('Withdraw from a Beefy position', async t => {
         {
           src: 'Beefy_re7_Avalanche',
           dest: '@Arbitrum',
-          amount: amount,
+          amount,
           fee: feeCall,
         },
         {
           src: '@Arbitrum',
           dest: '@noble',
-          amount: amount,
+          amount,
         },
         {
           src: '@noble',
           dest: '@agoric',
-          amount: amount,
+          amount,
         },
         {
           src: '@agoric',
