@@ -76,6 +76,8 @@ export type PortfolioContinuingInvitationMaker =
   keyof PortfolioKit['invitationMakers'];
 
 // #region Proposal Shapes
+type Empty = Record<never, Amount>;
+
 /**
  * Proposal shapes for portfolio operations.
  *
@@ -91,8 +93,8 @@ export type ProposalType = {
     };
   };
   rebalance:
-    | { give: { Deposit?: NatAmount }; want: {} }
-    | { want: { Cash: NatAmount }; give: {} };
+    | { give: { Deposit?: NatAmount }; want: Empty }
+    | { want: { Cash: NatAmount }; give: Empty };
 };
 
 export const makeProposalShapes = (
