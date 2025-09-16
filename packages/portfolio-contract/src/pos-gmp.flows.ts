@@ -32,7 +32,7 @@ import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.j
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import { q, X } from '@endo/errors';
-import type { GuestInterface } from "@agoric/async-flow/src/types.ts";
+import type { GuestInterface } from '@agoric/async-flow';
 import { ERC20, makeEVMSession, type EVMT } from './evm-facade.ts';
 import type {
   AxelarId,
