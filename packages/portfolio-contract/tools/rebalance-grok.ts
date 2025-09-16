@@ -26,14 +26,16 @@ export const importCSV = (specifier: string, base: string) =>
 export type Dollars = `$${string}` | `-$${string}`;
 export const numeral = (amt: Dollars) => amt.replace(/[$,]/g, '');
 
+type Empty = Record<never, never>;
+
 export type RebalanceScenario = {
   description: string;
   before: Partial<Record<YieldProtocol, Dollars>>;
   previous: string;
   proposal:
-    | { give: {}; want: {} }
-    | { give: { Deposit: Dollars }; want: {} }
-    | { want: { Cash: Dollars }; give: {} };
+    | { give: Empty; want: Empty }
+    | { give: { Deposit: Dollars }; want: Empty }
+    | { want: { Cash: Dollars }; give: Empty };
   offerArgs?: { flow: (Omit<MovementDesc, 'amount'> & { amount: Dollars })[] };
   after: Partial<Record<YieldProtocol, Dollars>>;
   payouts: { Deposit?: Dollars; Cash?: Dollars };
