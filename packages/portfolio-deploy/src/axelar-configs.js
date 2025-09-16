@@ -200,6 +200,13 @@ const beefyVaultAddresses = harden({
     },
     testnet: {},
   },
+  compoundUsdc: {
+    mainnet: {
+      Optimism: '0x64ceF7ac6e206944fBF50d9E50Fe934cEd9FdF5F', // https://github.com/beefyfinance/beefy-v2/blob/9216cb622aa788668bfc40040b7e17ceb941ecfd/src/config/vault/optimism.json
+      Arbitrum: '0xb9A27ba529634017b12e3cbbbFFb6dB7908a8C8B', // https://github.com/beefyfinance/beefy-v2/blob/9216cb622aa788668bfc40040b7e17ceb941ecfd/src/config/vault/arbitrum.json
+    },
+    testnet: {},
+  },
 });
 
 // TODO: deploy the factory in testnet and fill these addresses
@@ -279,6 +286,8 @@ const mainnetContracts = {
     tokenMessenger: mainnetTokenMessenger['OP Mainnet'].Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Optimism,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Optimism,
+    Beefy_compoundUsdc_Optimism:
+      beefyVaultAddresses.compoundUsdc.mainnet.Optimism,
   },
   Arbitrum: {
     aavePool: aaveAddresses.mainnet.Arbitrum,
@@ -290,6 +299,8 @@ const mainnetContracts = {
     tokenMessenger: mainnetTokenMessenger.Arbitrum.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Arbitrum,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Arbitrum,
+    Beefy_compoundUsdc_Arbitrum:
+      beefyVaultAddresses.compoundUsdc.mainnet.Arbitrum,
   },
   Base: {
     aavePool: aaveAddresses.mainnet.Base,

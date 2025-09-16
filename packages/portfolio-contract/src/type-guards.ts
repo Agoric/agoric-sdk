@@ -151,6 +151,14 @@ export const BeefyPoolPlaces = {
     protocol: 'Beefy',
     chainName: 'Base',
   },
+  Beefy_compoundUsdc_Optimism: {
+    protocol: 'Beefy',
+    chainName: 'Optimism',
+  },
+  Beefy_compoundUsdc_Arbitrum: {
+    protocol: 'Beefy',
+    chainName: 'Arbitrum',
+  },
 } as const satisfies Record<string, PoolPlaceInfo>;
 
 export const PoolPlaces = {
