@@ -7,9 +7,6 @@ import type { Coin } from '@cosmjs/stargate';
 
 import { Fail, q } from '@endo/errors';
 import { Nat } from '@endo/nat';
-import { isPrimitive } from '@endo/pass-style';
-import { makePromiseKit, type PromiseKit } from '@endo/promise-kit';
-
 import type { SigningSmartWalletKit, VStorage } from '@agoric/client-utils';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import type { Bech32Address } from '@agoric/orchestration';
@@ -24,8 +21,9 @@ import {
   PortfolioStatusShapeExt,
   type StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { mustMatch } from '@agoric/internal';
+import { mustMatch, partialMap, tryNow } from '@agoric/internal';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
+import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
@@ -36,14 +34,10 @@ import {
   parseStreamCell,
   parseStreamCellValue,
   readStreamCellValue,
-  tryNow,
   STALE_RESPONSE,
 } from './vstorage-utils.ts';
 
-const { isInteger } = Number;
 const { entries, fromEntries, values } = Object;
-
-const sink = () => {};
 
 const knownErrorProps = harden(['cause', 'errors', 'message', 'name', 'stack']);
 
@@ -90,191 +84,6 @@ const vstoragePathStartsWith = (path: string, prefix: string) =>
 export const stripPrefix = (prefix: string, str: string) => {
   str.startsWith(prefix) || Fail`${str} is missing prefix ${q(prefix)}`;
   return str.slice(prefix.length);
-};
-
-/**
- * Map the elements of an array to new values, skipping elements for which the
- * mapping results in either `undefined` or `false`.
- */
-const partialMap = <T, U>(
-  arr: T[],
-  mapOrDrop: (value: T, index?: number, arr?: T[]) => U | undefined | false,
-): U[] =>
-  arr.flatMap((el, i, arrArg) => {
-    const result = mapOrDrop(el, i, arrArg);
-    if (result === undefined || result === false) return [];
-    return [result];
-  });
-
-/**
- * Consume an async iterable with at most `capacity` unsettled results at any
- * given time, passing each input through `processInput` and providing
- * [result, index] pairs in settlement order.
- * Source order can be recovered with consumer code like:
- * ```
- * const results = [];
- * for (const [result, i] of makeWorkPool(...)) results[i] = result;
- * ```
- * or something more sophisticated to eagerly detect complete subsequences
- * immediately following a previous high-water mark for contiguous results.
- *
- * To support cases in which `processInput` is used only for side effects rather
- * than its return value, the returned AsyncGenerator has a promise-valued
- * `done` property that fulfills when all input has been processed (to `true` if
- * the source was exhausted or to `false` if iteration was aborted early),
- * regardless of how many final iteration results have been consumed:
- * ```
- * await makeWorkPool(...).done;
- * ```
- */
-const makeWorkPool = <T, U = T, M extends 'all' | 'allSettled' = 'all'>(
-  source: AsyncIterable<T> | Iterable<T>,
-  config: undefined | [capacity: number][0] | { capacity?: number; mode?: M },
-  processInput: (
-    input: Awaited<T>,
-    index?: number,
-  ) => Promise<Awaited<U>> | Awaited<U> = x => x as any,
-): AsyncGenerator<
-  [
-    M extends 'allSettled' ? PromiseSettledResult<Awaited<U>> : Awaited<U>,
-    number,
-  ]
-> & { done: Promise<boolean> } => {
-  // Validate arguments.
-  if (isPrimitive(config)) config = { capacity: config, mode: undefined };
-  const { capacity = 10, mode = 'all' } = config;
-  if (!(capacity === Infinity || (isInteger(capacity) && capacity > 0))) {
-    throw RangeError('capacity must be a positive integer');
-  }
-  if (mode !== 'all' && mode !== 'allSettled') {
-    throw RangeError('mode must be "all" or "allSettled"');
-  }
-
-  // Normalize source into an `inputs` iterator.
-  const makeInputs = source[Symbol.asyncIterator] || source[Symbol.iterator];
-  const inputs = Reflect.apply(makeInputs, source, []) as
-    | AsyncIterator<Awaited<T>>
-    | Iterator<Awaited<T>>;
-  let inputsExhausted = false;
-  let terminated = false;
-  const doneKit = makePromiseKit() as PromiseKit<boolean>;
-
-  // Concurrently consume up to `capacity` inputs, pushing the result of
-  // processing each into a linked chain of promises before consuming more.
-  let nextIndex = 0;
-  type ResultNode = {
-    nextP: Promise<ResultNode>;
-    index: number;
-    result: M extends 'allSettled'
-      ? PromiseSettledResult<Awaited<U>>
-      : Awaited<U>;
-  };
-  const { promise: headP, ...headResolvers } =
-    makePromiseKit() as PromiseKit<ResultNode>;
-  let { resolve: resolveCurrent, reject } = headResolvers;
-  let inFlight = 0;
-  const takeMoreInput = async () => {
-    await null;
-    while (inFlight < capacity && !inputsExhausted && !terminated) {
-      inFlight += 1;
-      const index = nextIndex;
-      nextIndex += 1;
-      let iterResultP: Promise<IteratorResult<Awaited<T>>>;
-      try {
-        iterResultP = Promise.resolve(inputs.next());
-      } catch (err) {
-        iterResultP = Promise.reject(err);
-      }
-      void iterResultP
-        .then(async iterResult => {
-          if (terminated) return;
-
-          if (iterResult.done) {
-            inFlight -= 1;
-            inputsExhausted = true;
-            void takeMoreInput();
-            return;
-          }
-
-          // Process the input, propagating errors if mode is not "allSettled".
-          await null;
-          let settlementDesc: PromiseSettledResult<Awaited<U>> = {
-            status: 'rejected',
-            reason: undefined,
-          };
-          try {
-            const fulfillment = await processInput(iterResult.value, index);
-            if (terminated) return;
-            settlementDesc = { status: 'fulfilled', value: fulfillment };
-          } catch (err) {
-            if (terminated) return;
-            if (mode !== 'allSettled') throw err;
-            (settlementDesc as PromiseRejectedResult).reason = err;
-          }
-
-          // Fulfill the current tail promise with a record that includes the
-          // source index to which it corresponds and a reference to a new
-          // [unsettled] successor (thereby extending the chain), then try to
-          // consume more input.
-          const { promise: nextP, ...nextResolvers } =
-            makePromiseKit() as PromiseKit<ResultNode>;
-          // Analogous to `Promise.allSettled`, mode "allSettled" produces
-          // { status, value, reason } PromiseSettledResult records.
-          const result =
-            mode === 'allSettled'
-              ? settlementDesc
-              : (settlementDesc as PromiseFulfilledResult<Awaited<U>>).value;
-          inFlight -= 1;
-          void takeMoreInput();
-          resolveCurrent({ nextP, index, result: result as any });
-          ({ resolve: resolveCurrent, reject } = nextResolvers);
-        })
-        .catch(err => {
-          // End the chain with this rejection.
-          terminated = true;
-          reject(err);
-          doneKit.reject(err);
-          void (async () => inputs.throw?.(err))().catch(sink);
-        });
-    }
-    if (inFlight <= 0 && inputsExhausted) {
-      // @ts-expect-error This dummy signaling record conveys no result.
-      resolveCurrent({ nextP: undefined, index: -1, result: undefined });
-      doneKit.resolve(true);
-    }
-  };
-
-  const results = (async function* generateResults(nextP) {
-    await null;
-    let exhausted = false;
-    try {
-      for (;;) {
-        const { nextP: successor, index, result } = await nextP;
-        nextP = successor;
-        if (!successor) break;
-        yield Object.freeze([result, index]) as [typeof result, number];
-      }
-      exhausted = true;
-    } catch (err) {
-      terminated = true;
-      doneKit.reject(err);
-      void (async () => inputs.throw?.(err))().catch(sink);
-      throw err;
-    } finally {
-      const interrupted = !exhausted && !terminated;
-      terminated = true;
-      doneKit.resolve(false);
-      if (interrupted) void (async () => inputs.return?.())().catch(sink);
-    }
-  })(headP);
-  Object.defineProperty(results, 'done', {
-    value: doneKit.promise,
-    enumerable: true,
-  });
-
-  void takeMoreInput();
-
-  return harden(results as typeof results & { done: Promise<boolean> });
 };
 
 export const makeVstorageEvent = (

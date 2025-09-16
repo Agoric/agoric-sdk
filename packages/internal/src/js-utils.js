@@ -173,6 +173,25 @@ export const objectMapMutable = (obj, mapper) => {
 };
 
 /**
+ * Map the elements of an array to new values, skipping elements for which the
+ * mapping results in either `undefined` or `false`.
+ *
+ * @template T
+ * @template U
+ * @param {T[]} arr
+ * @param {(value: T, index: number, arr: T[]) => U | undefined | false} mapOrDrop
+ * @returns {U[]}
+ */
+export const partialMap = (arr, mapOrDrop) =>
+  arr.reduce((results, el, i, arrArg) => {
+    const result = mapOrDrop(el, i, arrArg);
+    if (result !== undefined && result !== false) {
+      results.push(result);
+    }
+    return results;
+  }, /** @type {U[]} */ ([]));
+
+/**
  * Return the value from `map` associated with `key`. If there is not yet such a
  * value, get one from `makeValue(key)` and update `map` before returning the
  * new value.
