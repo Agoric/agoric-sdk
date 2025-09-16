@@ -330,7 +330,7 @@ export const preparePortfolioKit = (
 
             this.facets.manager.resolveAccount({
               namespace: 'eip155',
-              chainName: chainName,
+              chainName,
               chainId: caipId,
               remoteAddress: address,
             });

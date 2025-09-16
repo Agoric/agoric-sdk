@@ -224,7 +224,7 @@ const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
 ): Promise<AccountInfoFor[C]> => {
   await null;
   const traceChain = tracePortfolio.sub(chainName);
-  let promiseMaybe = kit.manager.reserveAccount(chainName);
+  const promiseMaybe = kit.manager.reserveAccount(chainName);
   if (promiseMaybe) {
     return promiseMaybe as unknown as Promise<AccountInfoFor[C]>;
   }
