@@ -117,6 +117,7 @@ type Powers = {
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
   signingSmartWalletKit: SigningSmartWalletKit;
+  now: () => number;
 };
 
 const processPortfolioEvents = async (
@@ -272,7 +273,7 @@ export const pickBalance = (
 };
 
 export const startEngine = async (
-  { evmCtx, rpc, spectrum, cosmosRest, signingSmartWalletKit }: Powers,
+  { evmCtx, rpc, spectrum, cosmosRest, signingSmartWalletKit, now }: Powers,
   {
     depositBrandName,
     feeBrandName,
@@ -449,7 +450,7 @@ export const startEngine = async (
     console.warn('Oldest pending tx block time', time);
     const oldestTimestampMs = new Date(time).getTime();
 
-    if (Date.now() - oldestTimestampMs >= TX_TIMEOUT_MS) {
+    if (now() - oldestTimestampMs >= TX_TIMEOUT_MS) {
       for (const pendingTxRecord of initialPendingTxData) {
         void handlePendingTx(pendingTxRecord.tx, {
           ...txPowers,
