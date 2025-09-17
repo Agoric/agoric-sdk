@@ -34,6 +34,8 @@ import {
   parseStreamCell,
   parseStreamCellValue,
   readStreamCellValue,
+  vstoragePathIsAncestorOf,
+  vstoragePathIsParentOf,
   STALE_RESPONSE,
 } from './vstorage-utils.ts';
 
@@ -72,14 +74,6 @@ const pathToEncodedKey = (path: string) => {
   const segments = path.split(PathSeparator);
   return `${segments.length}${EncodedKeySeparator}${segments.join(EncodedKeySeparator)}`;
 };
-
-/**
- * Determine whether a dot-separated path starts with a sequence of path
- * components.
- */
-const vstoragePathStartsWith = (path: string, prefix: string) =>
-  path === prefix ||
-  path.startsWith(prefix.endsWith('.') ? prefix : `${prefix}.`);
 
 export const stripPrefix = (prefix: string, str: string) => {
   str.startsWith(prefix) || Fail`${str} is missing prefix ${q(prefix)}`;
@@ -213,7 +207,7 @@ const processPortfolioEvents = async (
           defer(err);
         }
       }
-    } else if (path.startsWith(`${PORTFOLIOS_PATH_PREFIX}.`)) {
+    } else if (vstoragePathIsParentOf(PORTFOLIOS_PATH_PREFIX, path)) {
       const portfolioKey = stripPrefix(`${PORTFOLIOS_PATH_PREFIX}.`, path);
       await handlePortfolio(portfolioKey, eventRecord);
     }
@@ -482,14 +476,14 @@ export const startEngine = async (
       // Filter for paths we care about (portfolios or pending transactions).
       const path = encodedKeyToPath(attributes.key);
 
-      if (vstoragePathStartsWith(path, PORTFOLIOS_PATH_PREFIX)) {
+      if (vstoragePathIsAncestorOf(PORTFOLIOS_PATH_PREFIX, path)) {
         vstorageEvents.portfolio.push({
           path,
           value: attributes.value,
           eventRecord,
         });
       }
-      if (vstoragePathStartsWith(path, PENDING_TX_PATH_PREFIX)) {
+      if (vstoragePathIsAncestorOf(PENDING_TX_PATH_PREFIX, path)) {
         vstorageEvents.pendingTx.push({
           path,
           value: attributes.value,
