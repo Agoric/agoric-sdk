@@ -15,13 +15,19 @@ import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import {
   PublishedTxShape,
   type PendingTx,
+  type TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import {
   PoolPlaces,
   PortfolioStatusShapeExt,
   type StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { mustMatch, partialMap, tryNow } from '@agoric/internal';
+import {
+  mustMatch,
+  partialMap,
+  provideLazyMap,
+  tryNow,
+} from '@agoric/internal';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
 
@@ -29,7 +35,12 @@ import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import { getCurrentBalance, handleDeposit } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
-import { handlePendingTx, type EvmContext } from './pending-tx-manager.ts';
+import {
+  handlePendingTx,
+  TX_TIMEOUT_MS,
+  type EvmContext,
+  type HandlePendingTxOpts,
+} from './pending-tx-manager.ts';
 import {
   parseStreamCell,
   parseStreamCellValue,
@@ -52,6 +63,8 @@ type EventRecord = { blockHeight: bigint } & (
   | { type: 'kvstore'; event: CosmosEvent }
   | { type: 'transfer'; address: Bech32Address }
 );
+
+type PendingTxRecord = { blockHeight: bigint; tx: PendingTx };
 
 export const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
 export const PENDING_TX_PATH_PREFIX = 'published.ymax0.pendingTxs';
@@ -108,6 +121,7 @@ type Powers = {
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
   signingSmartWalletKit: SigningSmartWalletKit;
+  now: typeof Date.now;
 };
 
 const processPortfolioEvents = async (
@@ -214,17 +228,13 @@ const processPortfolioEvents = async (
   }
 };
 
+// TODO: replace it with processInitialPendingTransactions
 export const processPendingTxEvents = async (
   events: Array<{ path: string; value: string }>,
   handlePendingTxFn,
-  powers: EvmContext & {
-    marshaller: SigningSmartWalletKit['marshaller'];
-    log?: typeof console.log;
-    error?: typeof console.error;
-  },
+  txPowers: HandlePendingTxOpts,
 ) => {
-  const { marshaller, error = () => {}, ...txPowers } = powers;
-  const { log = () => {} } = powers;
+  const { marshaller, error = () => {}, log = () => {} } = txPowers;
   for (const { path, value: cellJson } of events) {
     const errLabel = `🚨 Failed to process pending tx ${path}`;
     let data;
@@ -262,8 +272,57 @@ export const pickBalance = (
   );
 };
 
+/**
+ * Process each initially-present pending transaction based on its age (i.e.,
+ * scanning EVM logs if the transaction is old).
+ */
+export const processInitialPendingTransactions = async (
+  initialPendingTxData: PendingTxRecord[],
+  txPowers: HandlePendingTxOpts,
+  handlePendingTxFn = handlePendingTx,
+) => {
+  const { error = () => {}, log = () => {}, cosmosRpc, now } = txPowers;
+
+  log(`Processing ${initialPendingTxData.length} pending transactions`);
+
+  // Cache timestamps for block heights to avoid duplicate RPC calls
+  const blockHeightToTimestamp = new Map<bigint, Promise<number>>();
+
+  await makeWorkPool(initialPendingTxData, undefined, async pendingTxRecord => {
+    const { blockHeight, tx } = pendingTxRecord;
+    const timestampMs = await provideLazyMap(
+      blockHeightToTimestamp,
+      blockHeight,
+      async () => {
+        const resp = await cosmosRpc.request('block', {
+          height: `${blockHeight}`,
+        });
+        const date = new Date(resp.block.header.time);
+        return date.getTime();
+      },
+    ).catch(err => {
+      const msg = `🚨 Couldn't get block time for pending tx ${tx.txId} at height ${blockHeight}`;
+      error(msg, err);
+    });
+    if (timestampMs === undefined) return;
+    const ageMs = now() - timestampMs;
+    const isOld = ageMs >= TX_TIMEOUT_MS;
+    const ageMinutes = Math.round(ageMs / 60000);
+    const suffix = isOld ? ' with lookback' : '';
+    log(`Processing pending tx ${tx.txId} (age: ${ageMinutes}min)${suffix}`);
+    // TODO: Optimize blockchain scanning by reusing state across transactions.
+    // For details, see: https://github.com/Agoric/agoric-sdk/issues/11945
+    void handlePendingTxFn(tx, txPowers, isOld ? timestampMs : undefined).catch(
+      err => {
+        const msg = ` Failed to process pending tx ${tx.txId}${suffix}`;
+        error(msg, pendingTxRecord, err);
+      },
+    );
+  }).done;
+};
+
 export const startEngine = async (
-  { evmCtx, rpc, spectrum, cosmosRest, signingSmartWalletKit }: Powers,
+  { evmCtx, rpc, spectrum, cosmosRest, signingSmartWalletKit, now }: Powers,
   {
     depositBrandName,
     feeBrandName,
@@ -391,35 +450,45 @@ export const startEngine = async (
     );
   }).done;
 
-  const txPowers = {
+  const txPowers: HandlePendingTxOpts = Object.freeze({
     ...evmCtx,
-    signingSmartWalletKit,
-    fetch,
     cosmosRest,
-    marshaller,
+    cosmosRpc: rpc,
+    fetch,
     log: console.warn.bind(console),
     error: console.error.bind(console),
-  };
+    marshaller,
+    now,
+    signingSmartWalletKit,
+  });
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
-  await makeWorkPool(pendingTxKeys, undefined, async txId => {
-    const path = `${PENDING_TX_PATH_PREFIX}.${txId}`;
-    const errLabel = `🚨 Failed to process old pending tx ${path}`;
 
+  const initialPendingTxData: PendingTxRecord[] = [];
+  await makeWorkPool(pendingTxKeys, undefined, async (txId: TxId) => {
+    const path = `${PENDING_TX_PATH_PREFIX}.${txId}`;
     await null;
-    let data;
+    let streamCellJson;
+    let data: unknown;
     try {
-      data = await query.readPublished(stripPrefix('published.', path));
+      streamCellJson = await query.vstorage.readStorage(path, {
+        kind: 'data',
+      });
+      const streamCell = parseStreamCell(streamCellJson, path);
+      data = parseStreamCellValue(streamCell, -1, path);
       mustMatch(data, PublishedTxShape, path);
-      const tx = { txId, ...data } as PendingTx;
-      console.warn('Old pending tx', tx);
-      // Tx resolution is non-blocking.
-      void handlePendingTx(tx, txPowers).catch(err =>
-        console.error(errLabel, err),
-      );
+      initialPendingTxData.push({
+        blockHeight: BigInt(streamCell.blockHeight),
+        tx: { txId, ...data },
+      });
     } catch (err) {
-      console.error(errLabel, data, err);
+      const errLabel = `🚨 Failed to read old pending tx ${path}`;
+      console.error(errLabel, data || streamCellJson, err);
     }
   }).done;
+
+  if (initialPendingTxData.length > 0) {
+    await processInitialPendingTransactions(initialPendingTxData, txPowers);
+  }
 
   // console.warn('consuming events');
   for await (const respContainer of responses) {

@@ -1,4 +1,4 @@
-import { JsonRpcProvider } from 'ethers';
+import { JsonRpcProvider, Log, type Filter } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from './config.ts';
 import type { EvmContext } from './pending-tx-manager.ts';
@@ -101,4 +101,135 @@ export const createEVMContext = async ({
     evmProviders,
     usdcAddresses: usdcAddresses[clusterName],
   };
+};
+
+type BinarySearch = {
+  (
+    start: number,
+    end: number,
+    isAcceptable: (idx: number) => Promise<boolean> | boolean,
+  ): Promise<number>;
+  (
+    start: bigint,
+    end: bigint,
+    isAcceptable: (idx: bigint) => Promise<boolean> | boolean,
+  ): Promise<bigint>;
+};
+
+/**
+ * Generic binary search helper for finding the greatest value that satisfies a predicate.
+ * Assumes a transition from acceptance to rejection somewhere in [start, end].
+ *
+ * @param start - Starting value (inclusive)
+ * @param end - Ending value (inclusive)
+ * @param isAcceptable - Function that returns true for accepted values
+ * @returns The greatest accepted value in the range
+ */
+export const binarySearch = (async <Index extends number | bigint>(
+  start: Index,
+  end: Index,
+  isAcceptable: (idx: Index) => Promise<boolean> | boolean,
+): Promise<Index> => {
+  const unit = (typeof start === 'bigint' ? 1n : 1) as Index;
+  let left: Index = start;
+  let right: Index = end;
+  let greatestFound: Index = left;
+  await null;
+  while (left <= right) {
+    // Calculate the number or bigint midpoint of `left` and `right` by halving
+    // their sum with a single-bit right shift (skipped if the sum is already
+    // zero).
+    const sum = ((left as any) + (right as any)) as Index;
+    const mid = (sum && sum >> unit) as Index;
+    if (await isAcceptable(mid)) {
+      greatestFound = mid;
+      left = mid + (unit as any);
+    } else {
+      right = (mid - unit) as any;
+    }
+  }
+  return greatestFound;
+}) as BinarySearch;
+
+const findBlockByTimestamp = async (
+  provider: JsonRpcProvider,
+  targetMs: number,
+) => {
+  const posixSeconds = Math.floor(targetMs / 1000);
+  const startBlockNumber = await binarySearch(
+    0,
+    await provider.getBlockNumber(),
+    async blockNumber => {
+      const block = await provider.getBlock(blockNumber);
+      return block?.timestamp ? block.timestamp <= posixSeconds : false;
+    },
+  );
+  return startBlockNumber;
+};
+
+export const buildTimeWindow = async (
+  provider: JsonRpcProvider,
+  publishTimeMs: number,
+  fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
+) => {
+  const adjustedTime = publishTimeMs - fudgeFactorMs;
+  const fromBlock = await findBlockByTimestamp(provider, adjustedTime);
+  const toBlock = await provider.getBlockNumber();
+  return { fromBlock, toBlock };
+};
+
+type LogPredicate = (log: Log) => boolean | Promise<boolean>;
+
+type ScanOpts = {
+  provider: JsonRpcProvider;
+  baseFilter: Omit<Filter, 'fromBlock' | 'toBlock'> & Partial<Filter>;
+  fromBlock: number;
+  toBlock: number;
+  chunkSize?: number;
+  log?: (...args: unknown[]) => void;
+};
+
+/**
+ * Generic chunked log scanner: scans [fromBlock, toBlock] in CHUNK_SIZE windows,
+ * runs `predicate` on each log, and returns the first matching log or undefined.
+ */
+export const scanEvmLogsInChunks = async (
+  opts: ScanOpts,
+  predicate: LogPredicate,
+): Promise<Log | undefined> => {
+  const {
+    provider,
+    baseFilter,
+    fromBlock,
+    toBlock,
+    chunkSize = 10,
+    log = () => {},
+  } = opts;
+
+  for (let start = fromBlock; start <= toBlock; start += chunkSize) {
+    const end = Math.min(start + chunkSize - 1, toBlock);
+
+    const chunkFilter: Filter = {
+      // baseFilter represents core filter configuration (address, topics, etc.) without block range
+      ...baseFilter,
+      fromBlock: start,
+      toBlock: end,
+    };
+
+    try {
+      log(`[LogScan] Searching chunk ${start} → ${end}`);
+      const logs = await provider.getLogs(chunkFilter);
+
+      for (const evt of logs) {
+        if (await predicate(evt)) {
+          log(`[LogScan] Match in tx=${evt.transactionHash}`);
+          return evt;
+        }
+      }
+    } catch (err) {
+      log(`[LogScan] Error searching chunk ${start}–${end}:`, err);
+      // continue
+    }
+  }
+  return undefined;
 };

@@ -1,17 +1,17 @@
 import test from 'ava';
 import { id, keccak256, toUtf8Bytes } from 'ethers';
-import { createMockEvmContext } from './mocks.ts';
+import { createMockPendingTxOpts } from './mocks.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 
 test('handlePendingTx processes GMP transaction successfully', async t => {
-  const mockEvmCtx = createMockEvmContext();
+  const opts = createMockPendingTxOpts();
   const txId = 'tx1';
   const chain = 'eip155:1'; // Ethereum
   const amount = 1_000_000n; // 1 USDC
   const contractAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
-  const provider = mockEvmCtx.evmProviders[chain];
+  const provider = opts.evmProviders[chain];
   const type = TxType.GMP;
 
   const logMessages: string[] = [];
@@ -48,7 +48,7 @@ test('handlePendingTx processes GMP transaction successfully', async t => {
 
   await t.notThrowsAsync(async () => {
     await handlePendingTx(gmpTx, {
-      ...mockEvmCtx,
+      ...opts,
       log: logger,
       timeoutMs: 3000,
     });
@@ -64,7 +64,7 @@ test('handlePendingTx processes GMP transaction successfully', async t => {
 });
 
 test('handlePendingTx times out GMP transaction with no matching event', async t => {
-  const mockEvmCtx = createMockEvmContext();
+  const opts = createMockPendingTxOpts();
   const txId = 'tx2';
   const chain = 'eip155:1'; // Ethereum
   const amount = 1_000_000n; // 1 USDC
@@ -86,7 +86,7 @@ test('handlePendingTx times out GMP transaction with no matching event', async t
 
   await t.notThrowsAsync(async () => {
     await handlePendingTx(gmpTx, {
-      ...mockEvmCtx,
+      ...opts,
       log: logger,
       timeoutMs: 3000,
     });

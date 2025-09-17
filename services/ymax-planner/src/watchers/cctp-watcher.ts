@@ -1,17 +1,36 @@
-import type { JsonRpcProvider } from 'ethers';
+import type { Filter, JsonRpcProvider } from 'ethers';
 import type { Log } from 'ethers';
-import { id, zeroPadValue, getAddress } from 'ethers';
+import { id, zeroPadValue, getAddress, ethers } from 'ethers';
+import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
 
-const TRANSFER = id('Transfer(address,address,uint256)');
+/**
+ * The Keccak256 hash (event signature) of the standard ERC-20 `Transfer` event.
+ *
+ * In Ethereum and other EVM-based chains, events are uniquely identified by the
+ * hash of their declaration. When a smart contract emits a `Transfer` event, the
+ * first topic in the log will be this hashed signature.
+ *
+ * `id()` is a helper that computes keccak256 over the given string. Calling
+ * `id('Transfer(address,address,uint256)')` returns the 32-byte hash of the event
+ * signature, which can be used to filter logs for `Transfer` events.
+ *
+ * `TRANSFER_SIGNATURE` is used to detect Transfer events in transaction receipts when parsing logs.
+ *
+ * Docs:
+ * - Solidity Events
+ *    - https://docs.soliditylang.org/en/latest/contracts.html#events
+ *    - https://docs.soliditylang.org/en/latest/abi-spec.html#events
+ * - ERC-20 Transfer event: https://eips.ethereum.org/EIPS/eip-20#transfer
+ * - JsonRpcProvider API: https://docs.ethers.org/v5/concepts/events/#events--logs-and-filtering
+ */
+const TRANSFER_SIGNATURE = id('Transfer(address,address,uint256)');
 
-type WatchTransferOptions = {
+type CctpWatch = {
   usdcAddress: `0x${string}`;
   provider: JsonRpcProvider;
-  watchAddress: `0x${string}`;
+  toAddress: `0x${string}`;
   expectedAmount: bigint;
-  timeoutMs?: number;
-  log: (...args: unknown[]) => void;
-  setTimeout?: typeof globalThis.setTimeout;
+  log?: (...args: unknown[]) => void;
 };
 
 const parseTransferLog = log => {
@@ -39,20 +58,23 @@ const parseAmount = data => {
 export const watchCctpTransfer = ({
   usdcAddress,
   provider,
-  watchAddress,
+  toAddress,
   expectedAmount,
   timeoutMs = 300000, // 5 min
   log = () => {},
   setTimeout = globalThis.setTimeout,
-}: WatchTransferOptions): Promise<boolean> => {
+}: CctpWatch & {
+  timeoutMs?: number;
+  setTimeout?: typeof globalThis.setTimeout;
+}): Promise<boolean> => {
   return new Promise(resolve => {
-    const TO_TOPIC = zeroPadValue(watchAddress.toLowerCase(), 32);
+    const TO_TOPIC = zeroPadValue(toAddress.toLowerCase(), 32);
     const filter = {
-      topics: [TRANSFER, null, TO_TOPIC],
+      topics: [TRANSFER_SIGNATURE, null, TO_TOPIC],
     };
 
     log(
-      `Watching for ERC-20 transfers to: ${watchAddress} with amount: ${expectedAmount}`,
+      `Watching for ERC-20 transfers to: ${toAddress} with amount: ${expectedAmount}`,
     );
 
     let transferFound = false;
@@ -109,4 +131,54 @@ export const watchCctpTransfer = ({
       }
     }, timeoutMs);
   });
+};
+
+export const lookBackCctp = async ({
+  usdcAddress,
+  provider,
+  toAddress,
+  expectedAmount,
+  publishTimeMs,
+  log = () => {},
+}: CctpWatch & {
+  publishTimeMs: number;
+}): Promise<boolean> => {
+  try {
+    const { fromBlock, toBlock } = await buildTimeWindow(
+      provider,
+      publishTimeMs,
+    );
+
+    log(
+      `Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${toAddress} with amount ${expectedAmount}`,
+    );
+
+    const toTopic = ethers.zeroPadValue(toAddress.toLowerCase(), 32);
+    const baseFilter: Filter = {
+      address: usdcAddress,
+      topics: [TRANSFER_SIGNATURE, null, toTopic],
+    };
+
+    // TODO: Consider async iteration pattern for more flexible log scanning
+    // See: https://github.com/Agoric/agoric-sdk/pull/11915#discussion_r2353872425
+    const matchingEvent = await scanEvmLogsInChunks(
+      { provider, baseFilter, fromBlock, toBlock, log },
+      ev => {
+        try {
+          const t = parseTransferLog(ev);
+          log(`Check: amount=${t.amount}`);
+          return t.amount === expectedAmount;
+        } catch (e) {
+          log(`Parse error:`, e);
+          return false;
+        }
+      },
+    );
+
+    if (!matchingEvent) log(`No matching transfer found`);
+    return !!matchingEvent;
+  } catch (error) {
+    log(`Error:`, error);
+    return false;
+  }
 };

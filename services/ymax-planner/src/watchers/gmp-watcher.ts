@@ -1,18 +1,17 @@
 // eslint-disable-next-line -- Types in this file match external Axelar API schema
-import { ethers, type JsonRpcProvider, type Log } from 'ethers';
+import { ethers, type Filter, type JsonRpcProvider, type Log } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
+import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
 
-const MULTICALL_EXECUTED = ethers.id(
+const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
   'MulticallExecuted(string,(bool,bytes)[])',
 );
 
-type WatchGmpOptions = {
+type WatchGmp = {
   provider: JsonRpcProvider;
   contractAddress: `0x${string}`;
   txId: TxId;
-  timeoutMs?: number;
   log: (...args: unknown[]) => void;
-  setTimeout?: typeof globalThis.setTimeout;
 };
 
 export const watchGmp = ({
@@ -22,12 +21,15 @@ export const watchGmp = ({
   timeoutMs = 300000, // 5 min
   log = () => {},
   setTimeout = globalThis.setTimeout,
-}: WatchGmpOptions): Promise<boolean> => {
+}: WatchGmp & {
+  timeoutMs?: number;
+  setTimeout?: typeof globalThis.setTimeout;
+}): Promise<boolean> => {
   return new Promise(resolve => {
     const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
     const filter = {
       address: contractAddress,
-      topics: [MULTICALL_EXECUTED, expectedIdTopic],
+      topics: [MULTICALL_EXECUTED_SIGNATURE, expectedIdTopic],
     };
 
     log(
@@ -75,4 +77,40 @@ export const watchGmp = ({
       }
     }, timeoutMs);
   });
+};
+
+export const lookBackGmp = async ({
+  provider,
+  contractAddress,
+  txId,
+  publishTimeMs,
+  log = () => {},
+}: WatchGmp & { publishTimeMs: number }): Promise<boolean> => {
+  try {
+    const { fromBlock, toBlock } = await buildTimeWindow(
+      provider,
+      publishTimeMs,
+    );
+
+    log(
+      `Searching blocks ${fromBlock} → ${toBlock} for MulticallExecuted with txId ${txId} at ${contractAddress}`,
+    );
+    const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
+
+    const baseFilter: Filter = {
+      address: contractAddress,
+      topics: [MULTICALL_EXECUTED_SIGNATURE, expectedIdTopic],
+    };
+
+    const matchingEvent = await scanEvmLogsInChunks(
+      { provider, baseFilter, fromBlock, toBlock, log },
+      ev => ev.topics[1] === expectedIdTopic,
+    );
+
+    if (!matchingEvent) log(`No matching MulticallExecuted found`);
+    return !!matchingEvent;
+  } catch (error) {
+    log(`Error:`, error);
+    return false;
+  }
 };

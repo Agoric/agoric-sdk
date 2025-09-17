@@ -88,7 +88,14 @@ export const main = async (
     alchemyApiKey: config.alchemyApiKey,
   });
 
-  const powers = { evmCtx, rpc, spectrum, cosmosRest, signingSmartWalletKit };
+  const powers = {
+    evmCtx,
+    rpc,
+    spectrum,
+    cosmosRest,
+    signingSmartWalletKit,
+    now: Date.now,
+  };
   await startEngine(powers, {
     depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
     feeBrandName: env.FEE_BRAND_NAME || 'BLD',

@@ -1,19 +1,20 @@
 import { ethers, type JsonRpcProvider } from 'ethers';
 
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import type { AccountId } from '@agoric/orchestration';
+import {
+  boardSlottingMarshaller,
+  type SigningSmartWalletKit,
+} from '@agoric/client-utils';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
 
-import type { EvmContext } from '../src/pending-tx-manager';
-import {
-  TxType,
-  type TxStatus,
-} from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import type {
+  EvmContext,
+  HandlePendingTxOpts,
+} from '../src/pending-tx-manager';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
 
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import { PENDING_TX_PATH_PREFIX } from '../src/engine.ts';
+import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 
 export const createMockProvider = () => {
   const eventListeners = new Map<string, Function[]>();
@@ -105,18 +106,21 @@ export const createMockCosmosRestClient = (
   } as any;
 };
 
-export const createMockEvmContext = (): EvmContext => ({
+export const createMockPendingTxOpts = (): HandlePendingTxOpts => ({
+  cosmosRest: {} as unknown as CosmosRestClient,
+  cosmosRpc: {} as unknown as CosmosRPCClient,
+  evmProviders: {
+    'eip155:1': createMockProvider(),
+    'eip155:42161': createMockProvider(),
+  },
+  fetch: global.fetch,
+  marshaller: boardSlottingMarshaller(),
+  now: () => Date.now(),
+  signingSmartWalletKit: createMockSigningSmartWalletKit(),
   usdcAddresses: {
     'eip155:1': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // Ethereum
     'eip155:42161': '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', // Arbitrum
   },
-  evmProviders: {
-    'eip155:42161': createMockProvider(),
-    'eip155:1': createMockProvider(),
-  },
-  signingSmartWalletKit: createMockSigningSmartWalletKit(),
-  fetch: global.fetch,
-  cosmosRest: {} as unknown as CosmosRestClient,
 });
 
 export const createMockPendingTxEvent = (
@@ -271,5 +275,41 @@ export const mockFetch = ({ txId }: { txId: TxId }) => {
       ok: true,
       json: async () => response,
     } as Response;
+  };
+};
+
+const erc20Interface = new ethers.Interface([
+  'event Transfer(address indexed from, address indexed to, uint256 value)',
+]);
+export const createMockTransferEvent = (
+  address: `0x${string}`,
+  amount: bigint,
+  to: string,
+) => {
+  const transferEvent = erc20Interface.encodeEventLog('Transfer', [
+    ethers.ZeroAddress, // from (zero address for minting)
+    to,
+    amount,
+  ]);
+
+  return {
+    address,
+    topics: transferEvent.topics,
+    data: transferEvent.data,
+    blockNumber: 1000,
+    transactionHash: '0x1234567890abcdef1234567890abcdef12345678',
+  };
+};
+
+export const createMockGmpExecutionEvent = (txId: string) => {
+  const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
+    'MulticallExecuted(string,(bool,bytes)[])',
+  );
+  const txIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
+
+  return {
+    topics: [MULTICALL_EXECUTED_SIGNATURE, txIdTopic],
+    data: '0x',
+    transactionHash: '0x1234567890abcdef1234567890abcdef12345678',
   };
 };
