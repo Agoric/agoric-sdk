@@ -273,7 +273,8 @@ export const pickBalance = (
 };
 
 /**
- * Process pending transactions based on their individual age
+ * Process each initially-present pending transaction based on its age (i.e.,
+ * scanning EVM logs if the transaction is old).
  */
 export const processInitialPendingTransactions = async (
   initialPendingTxData: PendingTxRecord[],
@@ -300,7 +301,7 @@ export const processInitialPendingTransactions = async (
         return date.getTime();
       },
     ).catch(err => {
-      const msg = ` Couldn't get block time for pending tx ${tx.txId} at height ${blockHeight}`;
+      const msg = `🚨 Couldn't get block time for pending tx ${tx.txId} at height ${blockHeight}`;
       error(msg, err);
     });
     if (timestampMs === undefined) return;
@@ -309,10 +310,14 @@ export const processInitialPendingTransactions = async (
     const ageMinutes = Math.round(ageMs / 60000);
     const suffix = isOld ? ' with lookback' : '';
     log(`Processing pending tx ${tx.txId} (age: ${ageMinutes}min)${suffix}`);
-    void handlePendingTxFn(tx, txPowers).catch(err => {
-      const msg = ` Failed to process pending tx ${tx.txId}${suffix}`;
-      error(msg, pendingTxRecord, err);
-    });
+    // TODO: Optimize blockchain scanning by reusing state across transactions.
+    // For details, see: https://github.com/Agoric/agoric-sdk/issues/11945
+    void handlePendingTxFn(tx, txPowers, isOld ? timestampMs : undefined).catch(
+      err => {
+        const msg = ` Failed to process pending tx ${tx.txId}${suffix}`;
+        error(msg, pendingTxRecord, err);
+      },
+    );
   }).done;
 };
 
@@ -476,7 +481,7 @@ export const startEngine = async (
         tx: { txId, ...data },
       });
     } catch (err) {
-      const errLabel = `🚨 Failed to process old pending tx ${path}`;
+      const errLabel = `🚨 Failed to read old pending tx ${path}`;
       console.error(errLabel, data || streamCellJson, err);
     }
   }).done;

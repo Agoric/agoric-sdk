@@ -116,13 +116,21 @@ type BinarySearch = {
   ): Promise<bigint>;
 };
 
+/**
+ * Generic binary search helper for finding the greatest value that satisfies a predicate.
+ * Assumes a transition from acceptance to rejection somewhere in [start, end].
+ *
+ * @param start - Starting value (inclusive)
+ * @param end - Ending value (inclusive)
+ * @param isAcceptable - Function that returns true for accepted values
+ * @returns The greatest accepted value in the range
+ */
 export const binarySearch = (async <Index extends number | bigint>(
   start: Index,
   end: Index,
   isAcceptable: (idx: Index) => Promise<boolean> | boolean,
 ): Promise<Index> => {
-  const nonzero: Index = (start || ~start) as Index;
-  const unit: Index = (nonzero / nonzero) as Index; // i.e., 1 or 1n
+  const unit = (typeof start === 'bigint' ? 1n : 1) as Index;
   let left: Index = start;
   let right: Index = end;
   let greatestFound: Index = left;
@@ -142,6 +150,7 @@ export const binarySearch = (async <Index extends number | bigint>(
   }
   return greatestFound;
 }) as BinarySearch;
+
 const findBlockByTimestamp = async (
   provider: JsonRpcProvider,
   targetMs: number,

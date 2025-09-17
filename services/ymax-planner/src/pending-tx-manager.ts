@@ -192,7 +192,6 @@ export type HandlePendingTxOpts = {
   now: typeof Date.now;
   registry?: MonitorRegistry;
   timeoutMs?: number;
-  txTimestampMs?: number;
 } & EvmContext;
 
 export const TX_TIMEOUT_MS = 10 * 60 * 1000; // 10 min
@@ -202,9 +201,9 @@ export const handlePendingTx = async (
     log = () => {},
     registry = createMonitorRegistry(),
     timeoutMs = TX_TIMEOUT_MS, // 10 min
-    txTimestampMs,
     ...evmCtx
   }: HandlePendingTxOpts,
+  txTimestampMs?: number,
 ) => {
   await null;
   const logPrefix = `[${tx.txId}]`;

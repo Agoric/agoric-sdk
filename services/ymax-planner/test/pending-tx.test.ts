@@ -259,8 +259,8 @@ test('handlePendingTx resolves old pending CCTP transaction successfully', async
     {
       ...opts,
       log: mockLog,
-      txTimestampMs: Date.now() - 10000,
     },
+    Date.now() - 10000,
   );
 
   // publishTime is ~10 seconds ago, with 5 min fudge factor = 5m10s ago
@@ -336,8 +336,8 @@ test('handlePendingTx resolves old pending GMP transaction successfully', async 
     {
       ...ctxWithFetch,
       log: mockLog,
-      txTimestampMs: Date.now() - 10000,
     },
+    Date.now() - 10000,
   );
 
   // publishTime is ~10 seconds ago, with 5 min fudge factor = 5m10s ago
@@ -361,8 +361,15 @@ test('processInitialPendingTransactions handles old transactions with lookback',
   const handledCalls: Array<{ tx: any; opts: any }> = [];
   const txId: TxId = 'tx1';
 
-  const mockHandlePendingTx = async (tx: any, opts: any) => {
+  const mockHandlePendingTx = async (
+    tx: any,
+    opts: any,
+    timeStamp: number | undefined,
+  ) => {
     handledCalls.push({ tx, opts });
+    if (timeStamp) {
+      logs.push('Processing old tx');
+    }
   };
 
   const oldTx = createMockPendingTxData({
@@ -411,15 +418,24 @@ test('processInitialPendingTransactions handles old transactions with lookback',
   t.deepEqual(logs, [
     'Processing 1 pending transactions',
     `Processing pending tx ${txId} (age: ${txTimeMs / (1000 * 60)}min) with lookback`,
+    'Processing old tx',
   ]);
 });
 
 test('processInitialPendingTransactions handles new transactions without lookback', async t => {
   const handledCalls: Array<{ tx: any; opts: any }> = [];
   const txId: TxId = 'tx2';
+  const logs: string[] = [];
 
-  const mockHandlePendingTx = async (tx: any, opts: any) => {
+  const mockHandlePendingTx = async (
+    tx: any,
+    opts: any,
+    timeStamp: number | undefined,
+  ) => {
     handledCalls.push({ tx, opts });
+    if (timeStamp) {
+      logs.push('Processing old tx');
+    }
   };
 
   const newTx = createMockPendingTxData({
@@ -435,7 +451,6 @@ test('processInitialPendingTransactions handles new transactions without lookbac
     },
   ];
 
-  const logs: string[] = [];
   const txTimeMs = 2 * 60 * 1000; // 2 minutes ago
   const txPowers = {
     ...createMockPendingTxOpts(),
