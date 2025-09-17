@@ -36,17 +36,17 @@ import {
 const enableKernelGC = true;
 
 /**
- * @typedef { import('../../types-external.js').BundleCap } BundleCap
- * @typedef { import('../../types-external.js').BundleID } BundleID
- * @typedef { import('../../types-external.js').EndoZipBase64Bundle } EndoZipBase64Bundle
- * @typedef { import('../../types-external.js').KernelSlog } KernelSlog
- * @typedef { import('../../types-external.js').ManagerType } ManagerType
- * @typedef { import('../../types-external.js').SnapStore } SnapStore
- * @typedef { import('../../types-external.js').TranscriptStore } TranscriptStore
- * @typedef { import('../../types-external.js').VatKeeper } VatKeeper
+ * @import {BundleCap} from '../../types-external.js';
+ * @import {BundleID} from '../../types-external.js';
+ * @import {EndoZipBase64Bundle} from '../../types-external.js';
+ * @import {KernelSlog} from '../../types-external.js';
+ * @import {ManagerType} from '../../types-external.js';
+ * @import {SnapStore} from '../../types-external.js';
+ * @import {TranscriptStore} from '../../types-external.js';
+ * @import {VatKeeper} from '../../types-external.js';
  * @typedef { Pick<VatKeeper, 'deleteCListEntry' | 'deleteSnapshots' | 'deleteTranscripts'> } VatUndertaker
- * @typedef { import('../../types-internal.js').InternalKernelOptions } InternalKernelOptions
- * @typedef { import('../../types-internal.js').ReapDirtThreshold } ReapDirtThreshold
+ * @import {InternalKernelOptions} from '../../types-internal.js';
+ * @import {ReapDirtThreshold} from '../../types-internal.js';
  * @import {PromiseRecord} from '../../types-internal.js';
  * @import {CleanupBudget, CleanupWork, PolicyOutputCleanupBudget} from '../../types-external.js';
  * @import {RunQueueEventCleanupTerminatedVat} from '../../types-internal.js';
