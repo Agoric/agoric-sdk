@@ -1,6 +1,21 @@
 import test from 'ava';
 import { watchNobleTransfer } from '../src/watchers/noble-watcher.ts';
-import { createMockCosmosRestClient } from './mocks.ts';
+import { createMockCosmosRestClient, createMockEvmContext } from './mocks.ts';
+import { handlePendingTx } from '../src/pending-tx-manager.ts';
+import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import { boardSlottingMarshaller } from '@agoric/client-utils';
+import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
+import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+
+const marshaller = boardSlottingMarshaller();
+const mockEvmCtx = createMockEvmContext();
+const powers = {
+  ...mockEvmCtx,
+  marshaller,
+  log: () => {},
+  error: () => {},
+  timeoutMs: 1000,
+};
 
 test('watchNobleTransfer detects successful transfer', async t => {
   const mockCosmosRest = createMockCosmosRestClient([
@@ -50,4 +65,51 @@ test('watchNobleTransfer times out when no transfer detected', async t => {
 
   t.is(result, false);
   t.true(logs.some(log => log.includes('No matching Noble transfer found')));
+});
+
+// --- Noble chain validation tests ---
+test('nobleWithdrawMonitor - valid noble-1 mainnet chain passes validation', async t => {
+  const txData = createMockPendingTxData({
+    type: TxType.CCTP_TO_NOBLE,
+    amount: 1000000n,
+    destinationAddress:
+      'cosmos:noble-1:noble1xw2j23rcwrkg02yxdn5ha2d2x868cuk6370s9y',
+  });
+
+  const errorMessages: string[] = [];
+  await handlePendingTx({ txId: 'tx1', ...txData } as PendingTx, powers);
+
+  t.false(errorMessages.some(msg => msg.includes('Expected cosmos chain')));
+  t.false(errorMessages.some(msg => msg.includes('Expected noble chain')));
+});
+
+test('nobleWithdrawMonitor - valid grand-1 testnet chain passes validation', async t => {
+  const txData = createMockPendingTxData({
+    type: TxType.CCTP_TO_NOBLE,
+    amount: 1000000n,
+    destinationAddress:
+      'cosmos:grand-1:noble1xw2j23rcwrkg02yxdn5ha2d2x868cuk6370s9y',
+  });
+
+  const errorMessages: string[] = [];
+  await handlePendingTx({ txId: 'tx1', ...txData } as PendingTx, powers);
+
+  t.false(errorMessages.some(msg => msg.includes('Expected cosmos chain')));
+  t.false(errorMessages.some(msg => msg.includes('Expected noble chain')));
+});
+
+test('nobleWithdrawMonitor - invalid testnet chain fails validation', async t => {
+  const txData = createMockPendingTxData({
+    type: TxType.CCTP_TO_NOBLE,
+    amount: 1000000n,
+    destinationAddress:
+      'cosmos:grand-27:noble1xw2j23rcwrkg02yxdn5ha2d2x868cuk6370s9y',
+  });
+
+  await t.throwsAsync(
+    () => handlePendingTx({ txId: 'tx1', ...txData } as PendingTx, powers),
+    {
+      message: '"[[tx1]]" Expected noble chain, got: "grand-27"',
+    },
+  );
 });

@@ -137,9 +137,24 @@ const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, EvmContext> = {
     const { namespace, reference, accountAddress } =
       parseAccountId(destinationAddress);
 
+    /**
+     * Noble chain IDs.
+     *
+     * @constant {string[]}
+     * @description
+     * A list of Noble chain IDs used on both mainnet and testnet networks.
+     *
+     * **Mainnet Chain**
+     * - `noble-1` — Status: https://noble-rpc.polkachu.com/status
+     *
+     * **Testnet Chains**
+     * - `grand-1` — Status: https://rpc.testnet.noble.xyz/status
+     */
+    const nobleChainIds = ['noble-1', 'grand-1'];
+
     namespace === 'cosmos' ||
       Fail`${logPrefix} Expected cosmos chain, got: ${namespace}`;
-    reference === 'noble' ||
+    nobleChainIds.includes(reference) ||
       Fail`${logPrefix} Expected noble chain, got: ${reference}`;
 
     const nobleAddress = accountAddress as Bech32Address;
