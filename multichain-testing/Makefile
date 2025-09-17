@@ -228,7 +228,7 @@ $(DEPLOY)/dist/bundle-ymax0.json: $(DEPLOY)/dist/portfolio.contract.bundle.js
 $(DEPLOY)/dist/portfolio.contract.bundle.js:
 	(cd $(DEPLOY); yarn build)
 
-PUBLISHER=mudi
+PUBLISHER=gov1
 publish-ymax0: ,ymax0-installed
 
 ,ymax0-installed: $(DEPLOY)/dist/bundle-ymax0.json
@@ -287,4 +287,12 @@ compound-withdraw-e2e:
 aave-ava-e2e:
 	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Aave":0.1}' --target-allocation '{"Aave_Avalanche":100}'
+
+aave-arb-e2e:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Aave":0.1}' --target-allocation '{"Aave_Arbitrum":100}'
+
+aave-base-e2e:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Aave":0.1}' --target-allocation '{"Aave_Base":100}'
 

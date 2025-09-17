@@ -68,6 +68,7 @@ export const getEvmRpcMap = (
         'eip155:421614': 'https://arbitrum-sepolia-rpc.publicnode.com',
         'eip155:11155420': 'https://optimism-sepolia-rpc.publicnode.com',
         'eip155:80002': 'https://polygon-amoy-bor-rpc.publicnode.com',
+        'eip155:84532': 'https://sepolia.base.org',
       };
     default:
       throw Error(`Unsupported cluster name ${clusterName}`);

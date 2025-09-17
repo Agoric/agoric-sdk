@@ -369,6 +369,9 @@ export const planTransfer = (
         // TODO: Rather than hard-code, derive from Axelar `estimateGasFee`.
         // https://docs.axelar.dev/dev/axelarjs-sdk/axelar-query-api#estimategasfee
         fee: make(feeBrand, 15_000_000n),
+        detail: {
+          evmGas: 200000000000000n,
+        }
       });
       console.warn('TODO: stop hard-coding fees!');
       steps.push({
