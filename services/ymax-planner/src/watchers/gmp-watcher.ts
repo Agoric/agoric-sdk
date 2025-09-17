@@ -102,13 +102,13 @@ export const lookBackGmp = async ({
       topics: [MULTICALL_EXECUTED_SIGNATURE, expectedIdTopic],
     };
 
-    const matched = await scanEvmLogsInChunks(
+    const matchingEvent = await scanEvmLogsInChunks(
       { provider, baseFilter, fromBlock, toBlock, log },
       ev => ev.topics[1] === expectedIdTopic,
     );
 
-    if (!matched) log(`No matching MulticallExecuted found`);
-    return matched;
+    if (!matchingEvent) log(`No matching MulticallExecuted found`);
+    return !!matchingEvent;
   } catch (error) {
     log(`Error:`, error);
     return false;

@@ -178,25 +178,25 @@ type ScanOpts = {
   toBlock: number;
   chunkSize?: number;
   log?: (...args: unknown[]) => void;
-  onMatch?: (log: Log) => void | Promise<void>;
 };
 
 /**
  * Generic chunked log scanner: scans [fromBlock, toBlock] in CHUNK_SIZE windows,
- * runs `predicate` on each log, and returns true on the first match.
+ * runs `predicate` on each log, and returns the first matching log or undefined.
  */
 export const scanEvmLogsInChunks = async (
-  {
+  opts: ScanOpts,
+  predicate: LogPredicate,
+): Promise<Log | undefined> => {
+  const {
     provider,
     baseFilter,
     fromBlock,
     toBlock,
     chunkSize = 10,
     log = () => {},
-    onMatch,
-  }: ScanOpts,
-  predicate: LogPredicate,
-): Promise<boolean> => {
+  } = opts;
+
   for (let start = fromBlock; start <= toBlock; start += chunkSize) {
     const end = Math.min(start + chunkSize - 1, toBlock);
 
@@ -214,8 +214,7 @@ export const scanEvmLogsInChunks = async (
       for (const evt of logs) {
         if (await predicate(evt)) {
           log(`[LogScan] Match in tx=${evt.transactionHash}`);
-          if (onMatch) await onMatch(evt);
-          return true;
+          return evt;
         }
       }
     } catch (err) {
@@ -223,5 +222,5 @@ export const scanEvmLogsInChunks = async (
       // continue
     }
   }
-  return false;
+  return undefined;
 };

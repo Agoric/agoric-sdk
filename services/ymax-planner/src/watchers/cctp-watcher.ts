@@ -159,7 +159,7 @@ export const lookBackCctp = async ({
       topics: [TRANSFER_SIGNATURE, null, toTopic],
     };
 
-    const matched = await scanEvmLogsInChunks(
+    const matchingEvent = await scanEvmLogsInChunks(
       { provider, baseFilter, fromBlock, toBlock, log },
       ev => {
         try {
@@ -173,8 +173,8 @@ export const lookBackCctp = async ({
       },
     );
 
-    if (!matched) log(`No matching transfer found`);
-    return matched;
+    if (!matchingEvent) log(`No matching transfer found`);
+    return !!matchingEvent;
   } catch (error) {
     log(`Error:`, error);
     return false;
