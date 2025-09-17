@@ -6,6 +6,7 @@ const pkg = JSON.parse(
 );
 
 // Import rules
+const noTypedefImport = require('./rules/no-typedef-import.js');
 
 module.exports = {
   meta: {
@@ -15,21 +16,16 @@ module.exports = {
 
   // Rule definitions
   rules: {
-
+    'no-typedef-import': noTypedefImport,
   },
 
   // Recommended config
   configs: {
-    recommended: [
-      {
-        plugins: {
-          // @ts-expect-error used before declaration
-          '@agoric': plugin,
-        },
-        rules: {
-          
-        },
+    recommended: {
+      plugins: ['@agoric'],
+      rules: {
+        '@agoric/no-typedef-import': 'error',
       },
-    ],
+    },
   },
 };
