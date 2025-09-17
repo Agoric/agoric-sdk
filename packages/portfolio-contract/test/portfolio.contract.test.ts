@@ -837,10 +837,10 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
     depositToAave,
   );
 
+  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   const open2P = trader2.openPortfolio(
     t,
@@ -848,14 +848,14 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
     depositToAave,
   );
 
-  await simulateCCTPAck(common.utils).finally(() =>
-    simulateAckTransferToAxelar(common.utils),
-  );
   await simulateUpcallFromAxelar(
     common.mocks.transferBridge,
     sourceChain,
     addr2.evm,
     addr2.lca,
+  );
+  await simulateCCTPAck(common.utils).finally(() =>
+    simulateAckTransferToAxelar(common.utils),
   );
 
   await Promise.all([
