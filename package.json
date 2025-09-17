@@ -84,6 +84,14 @@
     "@lerna-lite/version@npm:4.6.1": "patch:@lerna-lite/version@npm%3A4.6.1#~/.yarn/patches/@lerna-lite-version-npm-4.6.1-77cc9b6d7e.patch",
     "@cosmology/ast": "patch:@cosmology/ast@npm%3A1.10.12#~/.yarn/patches/@cosmology-ast-npm-1.10.12-ccbeaa7cd2.patch"
   },
+  "dependenciesMeta": {
+    "better-sqlite3@10.1.0": {
+      "built": true
+    },
+    "esbuild@0.25.10": {
+      "built": true
+    }
+  },
   "engines": {
     "node": "^20.9 || ^22.11"
   },
