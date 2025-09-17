@@ -147,6 +147,8 @@ export const simulateUpcallFromAxelar = async (
   address: `0x${string}` = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
   target = portfolio0lcaOrch,
 ) => {
+  await eventLoopIteration();
+
   const event = makeIncomingEVMEvent({ address, sourceChain, target });
   return (
     VE(transferBridge)
