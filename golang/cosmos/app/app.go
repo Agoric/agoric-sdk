@@ -755,8 +755,10 @@ func NewAgoricApp(
 
 	//Wasm Keeper
 	// Use process-specific wasm directory to avoid lock conflicts in CI
-	processID := fmt.Sprintf("%d", os.Getpid())
-	wasmDir := filepath.Join(os.TempDir(), homePath, "wasm", processID)
+	// processID := fmt.Sprintf("%d", os.Getpid())
+	// wasmDir := filepath.Join(os.TempDir(), homePath, "wasm", processID)
+	wasmDir := filepath.Join(homePath, "wasm")
+
 	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
 	if err != nil {
 		panic(fmt.Sprintf("error while reading wasm config: %s", err))
