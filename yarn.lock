@@ -994,6 +994,11 @@ __metadata:
     typedoc-plugin-markdown: "npm:^4.2.1"
     typescript: "npm:~5.9.2"
     typescript-eslint: "npm:^8.40.0"
+  dependenciesMeta:
+    better-sqlite3@10.1.0:
+      built: true
+    esbuild@0.25.10:
+      built: true
   languageName: unknown
   linkType: soft
 
