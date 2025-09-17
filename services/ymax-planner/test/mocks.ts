@@ -1,6 +1,9 @@
 import { ethers, type JsonRpcProvider } from 'ethers';
 
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
+import {
+  boardSlottingMarshaller,
+  type SigningSmartWalletKit,
+} from '@agoric/client-utils';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
 
 import type {
@@ -104,19 +107,20 @@ export const createMockCosmosRestClient = (
 };
 
 export const createMockPendingTxOpts = (): HandlePendingTxOpts => ({
+  cosmosRest: {} as unknown as CosmosRestClient,
+  cosmosRpc: {} as unknown as CosmosRPCClient,
+  evmProviders: {
+    'eip155:1': createMockProvider(),
+    'eip155:42161': createMockProvider(),
+  },
+  fetch: global.fetch,
+  marshaller: boardSlottingMarshaller(),
+  now: () => Date.now(),
+  signingSmartWalletKit: createMockSigningSmartWalletKit(),
   usdcAddresses: {
     'eip155:1': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // Ethereum
     'eip155:42161': '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', // Arbitrum
   },
-  evmProviders: {
-    'eip155:42161': createMockProvider(),
-    'eip155:1': createMockProvider(),
-  },
-  signingSmartWalletKit: createMockSigningSmartWalletKit(),
-  fetch: global.fetch,
-  cosmosRest: {} as unknown as CosmosRestClient,
-  cosmosRpc: {} as unknown as CosmosRPCClient,
-  now: () => Date.now(),
 });
 
 export const createMockPendingTxEvent = (

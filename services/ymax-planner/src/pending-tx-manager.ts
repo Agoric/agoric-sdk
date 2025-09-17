@@ -186,8 +186,10 @@ const createMonitorRegistry = (): MonitorRegistry => ({
 
 export type HandlePendingTxOpts = {
   cosmosRpc: CosmosRPCClient;
-  now: typeof Date.now;
   log?: (...args: unknown[]) => void;
+  error?: (...args: unknown[]) => void;
+  marshaller: SigningSmartWalletKit['marshaller'];
+  now: typeof Date.now;
   registry?: MonitorRegistry;
   timeoutMs?: number;
   txTimestampMs?: number;

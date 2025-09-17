@@ -232,14 +232,9 @@ const processPortfolioEvents = async (
 export const processPendingTxEvents = async (
   events: Array<{ path: string; value: string }>,
   handlePendingTxFn,
-  powers: EvmContext & {
-    marshaller: SigningSmartWalletKit['marshaller'];
-    log?: typeof console.log;
-    error?: typeof console.error;
-  },
+  txPowers: HandlePendingTxOpts,
 ) => {
-  const { marshaller, error = () => {}, ...txPowers } = powers;
-  const { log = () => {} } = powers;
+  const { marshaller, error = () => {}, log = () => {} } = txPowers;
   for (const { path, value: cellJson } of events) {
     const errLabel = `🚨 Failed to process pending tx ${path}`;
     let data;
@@ -285,7 +280,7 @@ export const processInitialPendingTransactions = async (
   txPowers: HandlePendingTxOpts,
   handlePendingTxFn = handlePendingTx,
 ) => {
-  const { log = () => {}, cosmosRpc, now } = txPowers;
+  const { error = () => {}, log = () => {}, cosmosRpc, now } = txPowers;
 
   log(`Processing ${initialPendingTxData.length} pending transactions`);
 
@@ -306,7 +301,7 @@ export const processInitialPendingTransactions = async (
       },
     ).catch(err => {
       const msg = ` Couldn't get block time for pending tx ${tx.txId} at height ${blockHeight}`;
-      log(msg, err);
+      error(msg, err);
     });
     if (timestampMs === undefined) return;
     const ageMs = now() - timestampMs;
@@ -316,7 +311,7 @@ export const processInitialPendingTransactions = async (
     log(`Processing pending tx ${tx.txId} (age: ${ageMinutes}min)${suffix}`);
     void handlePendingTxFn(tx, txPowers).catch(err => {
       const msg = ` Failed to process pending tx ${tx.txId}${suffix}`;
-      log(msg, pendingTxRecord, err);
+      error(msg, pendingTxRecord, err);
     });
   }).done;
 };
@@ -452,12 +447,14 @@ export const startEngine = async (
 
   const txPowers: HandlePendingTxOpts = Object.freeze({
     ...evmCtx,
-    signingSmartWalletKit,
-    fetch,
     cosmosRest,
     cosmosRpc: rpc,
-    now,
+    fetch,
     log: console.warn.bind(console),
+    error: console.error.bind(console),
+    marshaller,
+    now,
+    signingSmartWalletKit,
   });
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
 
@@ -568,11 +565,7 @@ export const startEngine = async (
       portfolioKeyForDepositAddr,
     });
 
-    await processPendingTxEvents(pendingTxEvents, handlePendingTx, {
-      ...txPowers,
-      error: console.error.bind(console),
-      marshaller,
-    });
+    await processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers);
 
     // Detect activity against portfolio deposit addresses.
     const oldAddrActivity = deferrals.splice(0).filter(deferral => {

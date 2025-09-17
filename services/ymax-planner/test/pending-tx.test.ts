@@ -41,10 +41,11 @@ test('processPendingTxEvents handles valid single transaction event', async t =>
   const streamCell = createMockStreamCell([JSON.stringify(capData)]);
   const events = [createMockPendingTxEvent('tx1', JSON.stringify(streamCell))];
 
-  await processPendingTxEvents(events, mockHandlePendingTx, {
-    ...createMockPendingTxOpts(),
-    marshaller,
-  });
+  await processPendingTxEvents(
+    events,
+    mockHandlePendingTx,
+    createMockPendingTxOpts(),
+  );
 
   t.is(handledTxs.length, 1);
   t.like(handledTxs[0], {
@@ -76,10 +77,11 @@ test('processPendingTxEvents handles multiple transaction events', async t => {
     ),
   ];
 
-  await processPendingTxEvents(events, mockHandlePendingTx, {
-    ...createMockPendingTxOpts(),
-    marshaller,
-  });
+  await processPendingTxEvents(
+    events,
+    mockHandlePendingTx,
+    createMockPendingTxOpts(),
+  );
 
   t.is(handledTxs.length, 2);
   t.like(handledTxs[0], { txId: 'tx1', type: TxType.CCTP_TO_EVM });
@@ -123,7 +125,6 @@ test('processPendingTxEvents errors do not disrupt processing valid transactions
   const errorLog = [] as Array<any[]>;
   await processPendingTxEvents(events, mockHandlePendingTx, {
     ...createMockPendingTxOpts(),
-    marshaller,
     error: (...args) => errorLog.push(args),
   });
   if (errorLog.length !== 2) {
@@ -159,10 +160,11 @@ test('processPendingTxEvents handles only pending transactions', async t => {
     ),
   ];
 
-  await processPendingTxEvents(events, mockHandlePendingTx, {
-    ...createMockPendingTxOpts(),
-    marshaller,
-  });
+  await processPendingTxEvents(
+    events,
+    mockHandlePendingTx,
+    createMockPendingTxOpts(),
+  );
 
   t.is(handledTxs.length, 1);
   t.is(handledTxs[0].status, 'pending');
@@ -181,10 +183,11 @@ test('processPendingTxEvents handles Noble withdraw transactions', async t => {
   const streamCell = createMockStreamCell([JSON.stringify(capData)]);
   const events = [createMockPendingTxEvent('tx1', JSON.stringify(streamCell))];
 
-  await processPendingTxEvents(events, mockHandlePendingTx, {
-    ...createMockPendingTxOpts(),
-    marshaller,
-  });
+  await processPendingTxEvents(
+    events,
+    mockHandlePendingTx,
+    createMockPendingTxOpts(),
+  );
 
   t.is(handledTxs.length, 1);
   t.like(handledTxs[0], {
