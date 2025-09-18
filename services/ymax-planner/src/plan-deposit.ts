@@ -15,6 +15,10 @@ import {
 } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
 import type { CosmosRestClient } from './cosmos-rest-client.js';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
+import {
+  makeGasEstimatorKit
+} from './gas-estimation.js';
+import type { EvmContext } from './pending-tx-manager.js';
 
 const getOwn = <O, K extends PropertyKey>(
   obj: O,
@@ -63,6 +67,7 @@ export const handleDeposit = async (
   portfolioKey: `${string}.portfolios.portfolio${number}`,
   amount: NatAmount,
   feeBrand: Brand<'nat'>,
+  evmCtx: Omit<EvmContext, 'cosmosRest' | 'signingSmartWalletKit' | 'fetch'>,
   powers: {
     readPublished: VstorageKit['readPublished'];
     spectrum: SpectrumClient;
@@ -96,13 +101,27 @@ export const handleDeposit = async (
   if (errors.length) {
     throw AggregateError(errors, 'Could not get balances');
   }
+  const gasEstimator = makeGasEstimatorKit({
+    alchemyApiKey: evmCtx.alchemyApiKey,
+    clusterName: evmCtx.clusterName,
+    chainName: 'Avalanche',
+  });
+  const [gmpAccountFee, gmpWalletFee, gmpReturnFee] = await Promise.all([
+    gasEstimator.getFactoryContractEstimate(),
+    gasEstimator.getWalletEstimate(),
+    gasEstimator.getReturnFeeEstimate(),
+  ]);
   const balances = Object.fromEntries(balanceEntries);
   const transfers = planDepositTransfers(amount, balances, targetAllocation);
   const steps = [
     { src: '+agoric', dest: '@agoric', amount },
     { src: '@agoric', dest: '@noble', amount },
     ...Object.entries(transfers).flatMap(([dest, amt]) =>
-      planTransfer(dest as PoolKey, amt, feeBrand),
+      planTransfer(dest as PoolKey, amt, feeBrand, {
+        acct: gmpAccountFee,
+        wallet: gmpWalletFee,
+        return: gmpReturnFee,
+      }),
     ),
   ];
   return steps;

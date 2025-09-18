@@ -33,6 +33,8 @@ export type EvmContext = {
   evmProviders: EvmProviders;
   signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
+  alchemyApiKey: string;
+  clusterName: 'mainnet' | 'testnet';
 };
 
 export type GmpTransfer = {
