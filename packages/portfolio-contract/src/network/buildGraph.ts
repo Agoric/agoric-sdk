@@ -1,7 +1,7 @@
 import { Fail } from '@endo/errors';
 import type { NatAmount, Amount } from '@agoric/ertp/src/types.js';
 
-import { buildBaseGraph } from '../plan-solve.js';
+import { buildBaseGraph, type FlowEdge } from '../plan-solve.js';
 import { PoolPlaces, type PoolKey } from '../type-guards.js';
 import type { AssetPlaceRef } from '../type-guards-steps.js';
 
@@ -69,7 +69,11 @@ export const makeGraphFromDefinition = (
   const seats: AssetPlaceRef[] = ['<Cash>', '<Deposit>'];
   const staging: AssetPlaceRef = '+agoric';
   const capacityDefault = 9_007_199_254_740_000; // slightly less than MAX_SAFE_INTEGER
-  const addOrReplaceEdge = (src: AssetPlaceRef, dest: AssetPlaceRef) => {
+  const addOrReplaceEdge = (
+    src: AssetPlaceRef,
+    dest: AssetPlaceRef,
+    customAttrs?: Omit<FlowEdge, 'id' | 'src' | 'dest'>,
+  ) => {
     if (!graph.nodes.has(src) || !graph.nodes.has(dest)) return;
 
     // Remove any existing edge for exact src->dest
@@ -77,16 +81,14 @@ export const makeGraphFromDefinition = (
       edge => edge.src !== src || edge.dest !== dest,
     );
 
-    graph.edges.push({
-      id: 'TBD',
-      src,
-      dest,
+    const dataAttrs = customAttrs || {
       capacity: capacityDefault,
       variableFee: 1,
       fixedFee: 0,
       timeFixed: 1,
       via: 'agoric-local',
-    });
+    };
+    graph.edges.push({ id: 'TBD', src, dest, ...dataAttrs });
   };
 
   // +agoric <-> @agoric
@@ -108,14 +110,7 @@ export const makeGraphFromDefinition = (
     (graph.nodes.has(src) && graph.nodes.has(dest)) ||
       Fail`Graph missing nodes for link ${src}->${dest}`;
 
-    graph.edges = graph.edges.filter(
-      edge => edge.src !== src || edge.dest !== dest,
-    );
-
-    graph.edges.push({
-      id: 'TBD',
-      src,
-      dest,
+    addOrReplaceEdge(src, dest, {
       capacity: Number(link.capacity ?? capacityDefault),
       variableFee: link.variableFeeBps ?? 0,
       fixedFee: link.flatFee === undefined ? undefined : Number(link.flatFee),
