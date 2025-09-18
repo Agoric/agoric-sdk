@@ -272,27 +272,34 @@ fund-fee-acct:
 	@echo "Funding fee account: $(FEE_ACCT)"
 	agd tx bank send mudi $(FEE_ACCT) 120000000ubld --keyring-backend test -y -b block --node=$(DEV_NODE) $(SIG_OPTS)
 
-aave-e2e:
+aave-eth:
 	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Aave":0.1}' --target-allocation '{"Aave_Ethereum":100}'
 
-compound-e2e:
+compound-eth:
 	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Compound":1.25}' --target-allocation '{"Compound_Ethereum":100}'
 
-compound-withdraw-e2e:
+compound-withdraw:
 	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --withdraw-from-compound
 
-aave-ava-e2e:
+aave-ava:
 	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Aave":0.1}' --target-allocation '{"Aave_Avalanche":100}'
 
-aave-arb-e2e:
+aave-arb:
 	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Aave":0.1}' --target-allocation '{"Aave_Arbitrum":100}'
 
-aave-base-e2e:
+compound-arb:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Compound":1.25}' --target-allocation '{"Compound_Arbitrum":100}'
+
+aave-base:
 	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Aave":0.1}' --target-allocation '{"Aave_Base":100}'
 
+compound-base:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Compound":1.25}' --target-allocation '{"Compound_Base":100}'
