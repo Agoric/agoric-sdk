@@ -18,17 +18,17 @@ export const makeGraphFromDefinition = (
   brand: Amount['brand'],
 ) => {
   // Hubs from spec.
-  const presentHubs = new Set<string>(spec.chains.map(c => `@${c.name}`));
+  const hubs = new Set<string>(spec.chains.map(c => `@${c.name}`));
 
   // PoolKeys whose hub is in spec. Do NOT auto-add hubs.
-  const filteredPoolKeys = Object.keys(PoolPlaces).filter(k =>
-    presentHubs.has(`@${PoolPlaces[k].chainName}`),
+  const knownPoolKeys = Object.keys(PoolPlaces).filter(k =>
+    hubs.has(`@${PoolPlaces[k].chainName}`),
   );
 
   // Minimal validation: ensure links reference present hubs.
-  for (const l of spec.links) {
-    presentHubs.has(`@${l.src}`) || Fail`missing link src hub ${l.src}`;
-    presentHubs.has(`@${l.dest}`) || Fail`missing link dest hub ${l.dest}`;
+  for (const link of spec.links) {
+    hubs.has(`@${link.src}`) || Fail`missing link src hub ${link.src}`;
+    hubs.has(`@${link.dest}`) || Fail`missing link dest hub ${link.dest}`;
   }
 
   // Each current/target node must be connected to a hub.
@@ -41,11 +41,11 @@ export const makeGraphFromDefinition = (
     // Nothing to validate for a local place.
     if (n.startsWith('<') || n.startsWith('+')) continue;
     if (n.startsWith('@')) {
-      if (!presentHubs.has(n)) dynErrors.push(`undeclared hub ${n}`);
+      if (!hubs.has(n)) dynErrors.push(`undeclared hub ${n}`);
     } else if (Object.hasOwn(PoolPlaces, n)) {
       // Known PoolKey; require its hub to be present.
       const hub = `@${PoolPlaces[n as PoolKey].chainName}`;
-      if (!presentHubs.has(hub)) {
+      if (!hubs.has(hub)) {
         dynErrors.push(`pool ${n} requires missing hub ${hub}`);
       }
     }
@@ -53,16 +53,14 @@ export const makeGraphFromDefinition = (
   dynErrors.length === 0 ||
     Fail`NetworkSpec is missing required hubs for dynamic nodes: ${dynErrors}`;
 
-  const assetRefs = [
-    ...new Set([
-      ...presentHubs,
-      ...spec.pools.map(p => p.pool),
-      ...(spec.localPlaces ?? []).map(lp => lp.id),
-      ...filteredPoolKeys,
-      ...dynamicNodes,
-    ]),
-  ] as AssetPlaceRef[];
-  const graph = buildBaseGraph(assetRefs, current, target, brand, 1);
+  const placeRefs = new Set([
+    ...hubs,
+    ...spec.pools.map(p => p.pool),
+    ...knownPoolKeys,
+    ...(spec.localPlaces ?? []).map(lp => lp.id),
+    ...dynamicNodes,
+  ]) as Set<AssetPlaceRef>;
+  const graph = buildBaseGraph([...placeRefs], current, target, brand, 1);
   if (spec.debug) graph.debug = true;
 
   // Ensure intra-Agoric links with 0 fee / 0 time.
@@ -104,9 +102,9 @@ export const makeGraphFromDefinition = (
   }
 
   // Override the base graph with inter-hub links from spec.
-  for (const l of spec.links) {
-    const src = `@${l.src}` as AssetPlaceRef;
-    const dest = `@${l.dest}` as AssetPlaceRef;
+  for (const link of spec.links) {
+    const src = `@${link.src}` as AssetPlaceRef;
+    const dest = `@${link.dest}` as AssetPlaceRef;
     (graph.nodes.has(src) && graph.nodes.has(dest)) ||
       Fail`Graph missing nodes for link ${src}->${dest}`;
 
@@ -118,11 +116,11 @@ export const makeGraphFromDefinition = (
       id: 'TBD',
       src,
       dest,
-      capacity: Number(l.capacity ?? capacityDefault),
-      variableFee: l.variableFeeBps ?? 0,
-      fixedFee: l.flatFee === undefined ? undefined : Number(l.flatFee),
-      timeFixed: l.timeSec,
-      via: l.transfer,
+      capacity: Number(link.capacity ?? capacityDefault),
+      variableFee: link.variableFeeBps ?? 0,
+      fixedFee: link.flatFee === undefined ? undefined : Number(link.flatFee),
+      timeFixed: link.timeSec,
+      via: link.transfer,
     });
   }
 
