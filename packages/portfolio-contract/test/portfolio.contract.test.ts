@@ -2,9 +2,8 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import type { VStorage, VstorageKit } from '@agoric/client-utils';
+import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
-import type { StreamCell } from '@agoric/internal/src/lib-chainStorage.js';
 import {
   defaultMarshaller,
   type FakeStorageKit,
@@ -18,6 +17,7 @@ import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
+import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
 import type {
   OfferArgsFor,
   StatusFor,
@@ -33,11 +33,10 @@ import {
 } from './contract-setup.ts';
 import {
   evmNamingDistinction,
-  portfolio0lcaOrch,
   makeCCTPTraffic,
+  portfolio0lcaOrch,
 } from './mocks.ts';
 import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
-import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
 
 const { fromEntries, keys, values } = Object;
 
@@ -978,11 +977,14 @@ test('redeem, use planner invitation', async t => {
   );
   t.like(await trader1.getPortfolioStatus(), {
     policyVersion: 1,
-    policyVersionAck: 0,
+    rebalanceCount: 0,
   });
 
   await planner1.submit(0, [], 1);
-  t.like(await trader1.getPortfolioStatus(), { policyVersionAck: 1 });
+  t.like(await trader1.getPortfolioStatus(), {
+    policyVersion: 1,
+    rebalanceCount: 1,
+  });
 });
 
 test('address of LCA for fees is published', async t => {
@@ -1004,7 +1006,10 @@ test('request rebalance - send same targetAllocation', async t => {
     Compound_Avalanche: 40n,
   };
   await trader1.openPortfolio(t, {}, { targetAllocation });
-  t.like(await trader1.getPortfolioStatus(), { policyVersion: 1 });
+  t.like(await trader1.getPortfolioStatus(), {
+    policyVersion: 1,
+    rebalanceCount: 0,
+  });
   const { usdc } = common.brands;
   const Deposit = usdc.units(3_333.33);
   t.log('trader1 deposits', Deposit, targetAllocation);
@@ -1013,18 +1018,30 @@ test('request rebalance - send same targetAllocation', async t => {
     { give: { Deposit }, want: {} },
     { flow: [{ src: '<Deposit>', dest: '+agoric', amount: Deposit }] },
   );
-  t.like(await trader1.getPortfolioStatus(), { policyVersion: 2 });
+  t.like(await trader1.getPortfolioStatus(), {
+    policyVersion: 2,
+    rebalanceCount: 0,
+  });
 
   t.log('planner carries out (empty) deposit plan');
   const mockPlan = [];
   await planner1.submit(0, mockPlan, 2);
-  t.like(await trader1.getPortfolioStatus(), { policyVersionAck: 2 });
+  t.like(await trader1.getPortfolioStatus(), {
+    policyVersion: 2,
+    rebalanceCount: 1,
+  });
 
   t.log('user requests rebalance after yield makes things unbalanced');
   await trader1.rebalance(t, { give: {}, want: {} }, { targetAllocation });
-  t.like(await trader1.getPortfolioStatus(), { policyVersion: 3 });
+  t.like(await trader1.getPortfolioStatus(), {
+    policyVersion: 3,
+    rebalanceCount: 0,
+  });
 
   t.log('planner carries out (empty) rebalance plan');
   await planner1.submit(0, mockPlan, 3);
-  t.like(await trader1.getPortfolioStatus(), { policyVersionAck: 3 });
+  t.like(await trader1.getPortfolioStatus(), {
+    policyVersion: 3,
+    rebalanceCount: 1,
+  });
 });

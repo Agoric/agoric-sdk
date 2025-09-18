@@ -1,20 +1,19 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeHeapZone } from '@agoric/zone';
 import { makeIssuerKit } from '@agoric/ertp';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
+import { makeHeapZone } from '@agoric/zone';
+import { preparePlanner } from '../src/planner.exo.ts';
+import { preparePortfolioKit } from '../src/portfolio.exo.ts';
 import {
   makeOfferArgsShapes,
   type MovementDesc,
 } from '../src/type-guards-steps.ts';
-import { prepareVowTools } from '@agoric/vow';
-import type { ZCF } from '@agoric/zoe';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { preparePortfolioKit } from '../src/portfolio.exo.ts';
-import { preparePlanner } from '../src/planner.exo.ts';
+import type { StatusFor } from '../src/type-guards.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
@@ -40,7 +39,7 @@ test('planner exo submit method', async t => {
     await eventLoopIteration();
     return marshaller.fromCapData(
       JSON.parse(storage.getValues(`published.${path}`).at(-1) || ''),
-    );
+    ) as StatusFor['portfolio'];
   };
   const marshaller = board.getReadonlyMarshaller();
   const makePortfolio = preparePortfolioKit(zone, {
@@ -67,16 +66,17 @@ test('planner exo submit method', async t => {
   aPortfolio.manager.setTargetAllocation({ USDN: 100n });
 
   {
-    const { policyVersion, policyVersionAck } = await readPublished(
+    const { policyVersion, rebalanceCount } = await readPublished(
       'portfolios.portfolio1',
     );
     t.log('targetAllocation', aPortfolio.reader.getTargetAllocation(), {
       policyVersion,
-      policyVersionAck,
+      rebalanceCount,
     });
     t.deepEqual(
-      { policyVersion, policyVersionAck },
-      { policyVersion: 1, policyVersionAck: 0 },
+      { policyVersion, rebalanceCount },
+      { policyVersion: 1, rebalanceCount: 0 },
+      'version 1 after setTargetAllocation',
     );
   }
 
@@ -88,26 +88,27 @@ test('planner exo submit method', async t => {
     { src: '@noble', dest: 'USDN', amount },
   ];
 
-  t.throwsAsync(vt.when(planner.submit(portfolioId, plan, 0)), {
+  await t.throwsAsync(vt.when(planner.submit(portfolioId, plan, 0, 0)), {
     message: /expected policyVersion 1; got 0/,
   });
 
-  await vt.when(planner.submit(portfolioId, plan, 1));
+  await vt.when(planner.submit(portfolioId, plan, 1, 0));
 
   {
-    const { policyVersion, policyVersionAck } = await readPublished(
+    const { policyVersion, rebalanceCount } = await readPublished(
       'portfolios.portfolio1',
     );
-    t.log({ policyVersion, policyVersionAck });
+    t.log({ policyVersion, rebalanceCount });
     t.deepEqual(
-      { policyVersion, policyVersionAck },
-      { policyVersion: 1, policyVersionAck: 1 },
+      { policyVersion, rebalanceCount },
+      { policyVersion: 1, rebalanceCount: 1 },
+      'rebalanceCount 1 after .submit(plan, ...)',
     );
   }
 
   const mockRebalancePlan = [];
   await t.notThrowsAsync(
-    vt.when(planner.submit(portfolioId, mockRebalancePlan, 1)),
+    vt.when(planner.submit(portfolioId, mockRebalancePlan, 1, 1)),
     'planner may rebalance >1 times at same policyVersion',
   );
 });

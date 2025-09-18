@@ -32,13 +32,14 @@ export const plannerClientMock = (
     portfolioId = 0,
     plan: MovementDesc[] = [],
     policyVersion = 0,
+    rebalanceCount = 0,
   ) => {
     id += 1;
     await E(invokeP).invokeEntry({
       id,
       targetName: 'planner',
       method: 'submit',
-      args: [portfolioId, plan, policyVersion],
+      args: [portfolioId, plan, policyVersion, rebalanceCount],
     });
     await eventLoopIteration();
     const update = await getLastUpdate();

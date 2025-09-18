@@ -129,7 +129,7 @@ test('PoolKeyExt shapes accept future pool keys', t => {
     accountIdByChain: { agoric: 'agoric123', noble: 'noble456' },
     targetAllocation: { Aave_Base: 3333n, NewProtocol_Solana: 6667n },
     policyVersion: 1,
-    policyVersionAck: 1,
+    rebalanceCount: 1,
   });
 
   t.notThrows(() => mustMatch(statusWithFutureKeys, PortfolioStatusShapeExt));
