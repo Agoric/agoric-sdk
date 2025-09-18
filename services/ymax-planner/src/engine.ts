@@ -473,9 +473,10 @@ export const startEngine = async (
       streamCellJson = await query.vstorage.readStorage(path, {
         kind: 'data',
       });
-      const streamCell = parseStreamCell(streamCellJson, path);
-      data = parseStreamCellValue(streamCell, -1, path);
-      mustMatch(data, PublishedTxShape, path);
+      const streamCell = parseStreamCell(streamCellJson.value, path);
+      const marshalledData = parseStreamCellValue(streamCell, -1, path);
+      data = marshaller.fromCapData(marshalledData);
+      mustMatch(harden(data), PublishedTxShape, path);
       initialPendingTxData.push({
         blockHeight: BigInt(streamCell.blockHeight),
         tx: { txId, ...data },
