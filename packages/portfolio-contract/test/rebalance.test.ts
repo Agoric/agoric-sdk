@@ -17,6 +17,7 @@ import type { FlowEdge, RebalanceMode } from '../src/plan-solve.js';
 import type { PoolKey } from '../src/type-guards.js';
 import type { AssetPlaceRef } from '../src/type-guards-steps.js';
 import { TEST_NETWORK } from './network/test-network.js';
+import { gasEstimator } from './mocks.js';
 
 // eslint-disable-next-line no-nested-ternary
 const strcmp = (a: string, b: string) => (a > b ? 1 : a < b ? -1 : 0);
@@ -67,6 +68,7 @@ testWithAllModes('solver simple 2-pool case (A -> B 30)', async (t, mode) => {
     target: objectMap(targetBps, bps => token((100n * bps) / 10000n)),
     brand: TOK_BRAND,
     feeBrand: FEE_BRAND,
+    gasEstimator,
   });
 
   t.deepEqual(steps, [
@@ -79,6 +81,9 @@ testWithAllModes('solver simple 2-pool case (A -> B 30)', async (t, mode) => {
       dest: '@Avalanche',
       amount: token(30n),
       fee: fixedFee,
+      detail: {
+        evmGas: 200000000000000n,
+      },
     },
     // hub -> leaf
     { src: '@Avalanche', dest: B, amount: token(30n), fee: fixedFee },
@@ -97,6 +102,7 @@ testWithAllModes(
       target: objectMap(targetBps, bps => token((100n * bps) / 10000n)),
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
 
     const amt66 = token(66n);
@@ -111,12 +117,18 @@ testWithAllModes(
         dest: '@Avalanche',
         amount: amt33,
         fee: fixedFee,
+        detail: {
+          evmGas: 200000000000000n,
+        },
       },
       {
         src: '@noble',
         dest: '@Ethereum',
         amount: amt33,
         fee: fixedFee,
+        detail: {
+          evmGas: 200000000000000n,
+        },
       },
       // hub -> leaf
       { src: '@Avalanche', dest: B, amount: amt33, fee: fixedFee },
@@ -135,6 +147,7 @@ testWithAllModes('solver already balanced => no steps', async (t, mode) => {
     target: objectMap(targetBps, bps => token((100n * bps) / 10000n)),
     brand: TOK_BRAND,
     feeBrand: FEE_BRAND,
+    gasEstimator,
   });
   t.deepEqual(steps, []);
 });
@@ -148,6 +161,7 @@ testWithAllModes('solver all to one (B + C -> A)', async (t, mode) => {
     target: { [A]: token(100n), [B]: ZERO, [C]: ZERO },
     brand: TOK_BRAND,
     feeBrand: FEE_BRAND,
+    gasEstimator,
   });
   t.deepEqual(steps, [
     { src: B, dest: '@Avalanche', amount: token(20n), fee: fixedFee },
@@ -159,6 +173,9 @@ testWithAllModes('solver all to one (B + C -> A)', async (t, mode) => {
       dest: '@Arbitrum',
       amount: token(90n),
       fee: fixedFee,
+      detail: {
+        evmGas: 200000000000000n,
+      },
     },
     { src: '@Arbitrum', dest: A, amount: token(90n), fee: fixedFee },
   ]);
@@ -176,6 +193,7 @@ testWithAllModes(
       target,
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
     t.deepEqual(steps, [
       { src: A, dest: '@Arbitrum', amount: token(100n), fee: fixedFee },
@@ -185,12 +203,18 @@ testWithAllModes(
         dest: '@Avalanche',
         amount: token(60n),
         fee: fixedFee,
+        detail: {
+          evmGas: 200000000000000n,
+        },
       },
       {
         src: '@noble',
         dest: '@Ethereum',
         amount: token(40n),
         fee: fixedFee,
+        detail: {
+          evmGas: 200000000000000n,
+        },
       },
       { src: '@Avalanche', dest: B, amount: token(60n), fee: fixedFee },
       { src: '@Ethereum', dest: C, amount: token(40n), fee: fixedFee },
@@ -209,6 +233,7 @@ testWithAllModes(
       target: { [A]: token(100n), [B]: ZERO, [C]: ZERO },
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
     t.deepEqual(steps, [
       { src: B, dest: '@Avalanche', amount: token(30n), fee: fixedFee },
@@ -220,6 +245,9 @@ testWithAllModes(
         dest: '@Arbitrum',
         amount: token(100n),
         fee: fixedFee,
+        detail: {
+          evmGas: 200000000000000n,
+        },
       },
       { src: '@Arbitrum', dest: A, amount: token(100n), fee: fixedFee },
     ]);
@@ -237,6 +265,7 @@ testWithAllModes(
       target: { '+agoric': ZERO, [A]: token(70n), [B]: token(30n) },
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
     t.deepEqual(steps, [
       { src: '+agoric', dest: '@agoric', amount: token(100n) },
@@ -246,12 +275,18 @@ testWithAllModes(
         dest: '@Arbitrum',
         amount: token(70n),
         fee: fixedFee,
+        detail: {
+          evmGas: 200000000000000n,
+        },
       },
       {
         src: '@noble',
         dest: '@Avalanche',
         amount: token(30n),
         fee: fixedFee,
+        detail: {
+          evmGas: 200000000000000n,
+        },
       },
       { src: '@Arbitrum', dest: A, amount: token(70n), fee: fixedFee },
       { src: '@Avalanche', dest: B, amount: token(30n), fee: fixedFee },
@@ -270,6 +305,7 @@ testWithAllModes(
       target: { '<Deposit>': ZERO, [A]: token(70n), [B]: token(30n) },
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
     t.deepEqual(steps, [
       { src: '<Deposit>', dest: '@agoric', amount: token(100n) },
@@ -281,12 +317,18 @@ testWithAllModes(
         dest: '@Arbitrum',
         amount: token(70n),
         fee: fixedFee,
+        detail: {
+          evmGas: 200000000000000n,
+        },
       },
       {
         src: '@noble',
         dest: '@Avalanche',
         amount: token(30n),
         fee: fixedFee,
+        detail: {
+          evmGas: 200000000000000n,
+        },
       },
       { src: '@Arbitrum', dest: A, amount: token(70n), fee: fixedFee },
       { src: '@Avalanche', dest: B, amount: token(30n), fee: fixedFee },
@@ -305,6 +347,7 @@ testWithAllModes(
       target: { [A]: ZERO, [B]: ZERO, '<Cash>': token(80n) },
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
     t.deepEqual(steps, [
       { src: A, dest: '@Arbitrum', amount: token(50n), fee: fixedFee },
@@ -342,6 +385,7 @@ testWithAllModes(
       },
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
     t.deepEqual(steps, [
       { src: '@Arbitrum', dest: A, amount: token(30n), fee: fixedFee },
@@ -351,6 +395,9 @@ testWithAllModes(
         dest: '@Ethereum',
         amount: token(20n),
         fee: fixedFee,
+        detail: {
+          evmGas: 200000000000000n,
+        },
       },
       { src: '@Ethereum', dest: C, amount: token(20n), fee: fixedFee },
     ]);
@@ -381,6 +428,7 @@ testWithAllModes(
       target,
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
     t.deepEqual(steps, [
       { src: '<Deposit>', dest: '@agoric', amount: token(1000n) },
@@ -396,12 +444,18 @@ testWithAllModes(
         dest: '@Arbitrum',
         amount: token(300n),
         fee: fixedFee,
+        detail: {
+          evmGas: 200000000000000n,
+        },
       },
       {
         src: '@noble',
         dest: '@Ethereum',
         amount: token(200n),
         fee: fixedFee,
+        detail: {
+          evmGas: 200000000000000n,
+        },
       },
       { src: '@Arbitrum', dest: A, amount: token(300n), fee: fixedFee },
       { src: '@Ethereum', dest: C, amount: token(200n), fee: fixedFee },
@@ -434,6 +488,7 @@ testWithAllModes(
       target,
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
     // Expect deposit 500 to route to fill deficits: USDN 120, A 220, C 160
     t.deepEqual(steps, [
@@ -450,12 +505,18 @@ testWithAllModes(
         dest: '@Arbitrum',
         amount: token(220n),
         fee: fixedFee,
+        detail: {
+          evmGas: 200000000000000n,
+        },
       },
       {
         src: '@noble',
         dest: '@Ethereum',
         amount: token(160n),
         fee: fixedFee,
+        detail: {
+          evmGas: 200000000000000n,
+        },
       },
       { src: '@Arbitrum', dest: A, amount: token(220n), fee: fixedFee },
       { src: '@Ethereum', dest: C, amount: token(160n), fee: fixedFee },
@@ -477,6 +538,7 @@ testWithAllModes(
       target,
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
     t.deepEqual(steps, [
       { src: '<Deposit>', dest: '@agoric', amount: token(1000n) },
@@ -503,6 +565,7 @@ testWithAllModes(
       target,
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
 
     // Identical to the 2-pool case; no steps to/from C
@@ -514,6 +577,9 @@ testWithAllModes(
         dest: '@Avalanche',
         amount: token(30n),
         fee: fixedFee,
+        detail: {
+          evmGas: 200000000000000n,
+        },
       },
       { src: '@Avalanche', dest: B, amount: token(30n), fee: fixedFee },
     ]);
@@ -543,7 +609,7 @@ test.failing('solver differentiates cheapest vs. fastest', async t => {
         transfer: 'cheap' as TransferProtocol,
         variableFeeBps: 5,
         timeSec: 60,
-        feeMode: 'gmpCall',
+        feeMode: 'evmToPool',
       },
       {
         src: '@agoric',
@@ -551,7 +617,7 @@ test.failing('solver differentiates cheapest vs. fastest', async t => {
         transfer: 'fast' as TransferProtocol,
         variableFeeBps: 6,
         timeSec: 59,
-        feeMode: 'gmpCall',
+        feeMode: 'evmToPool',
       },
     ],
   };
@@ -565,6 +631,7 @@ test.failing('solver differentiates cheapest vs. fastest', async t => {
     target,
     brand: TOK_BRAND,
     feeBrand: FEE_BRAND,
+    gasEstimator,
   });
   t.like(cheapResult.flows.map(flow => flow.edge).sort(compareFlowEdges), [
     { src: '+agoric', dest: '@agoric', via: 'local' },
@@ -589,6 +656,7 @@ test.failing('solver differentiates cheapest vs. fastest', async t => {
     target,
     brand: TOK_BRAND,
     feeBrand: FEE_BRAND,
+    gasEstimator,
   });
   t.like(cheapResult.flows.map(flow => flow.edge).sort(compareFlowEdges), [
     { src: '+agoric', dest: '@agoric', via: 'local' },

@@ -119,6 +119,12 @@ export const makePortfolioSteps = async <
     '<Deposit>': deposit,
   };
 
+  const staticGasEstimator = {
+    getWalletEstimate: async () => 30_000_000n,
+    getFactoryContractEstimate: async () => 30_000_000n,
+    getReturnFeeEstimate: async () => 200_000_000_000_000n,
+  };
+
   // Run the solver to compute movement steps
   const { steps: raw } = await planRebalanceFlow({
     network: PROD_NETWORK,
@@ -127,6 +133,7 @@ export const makePortfolioSteps = async <
     brand,
     feeBrand: brand, // Use same brand for fees in this context
     mode: 'cheapest',
+    gasEstimator: staticGasEstimator,
   });
 
   // Inject USDN detail and EVM fees to match existing behavior/tests

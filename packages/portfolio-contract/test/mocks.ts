@@ -399,3 +399,9 @@ export const gmpAddresses: GmpAddresses = harden({
     'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
   AXELAR_GAS: 'axelar1aythygn6z5thymj6tmzfwekzh05ewg3l7d6y89',
 });
+
+export const gasEstimator = {
+  getWalletEstimate: async () => 10_000_000n,
+  getFactoryContractEstimate: async () => 10_000_000n,
+  getReturnFeeEstimate: async () => 200_000_000_000_000n,
+};

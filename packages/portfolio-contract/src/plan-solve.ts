@@ -87,6 +87,25 @@ export interface SolvedEdgeFlow {
 /** Model shape for javascript-lp-solver */
 export type LpModel = IModel<string, string>;
 
+/**
+ * Link to Factory and Wallet contracts:
+ * https://github.com/agoric-labs/agoric-to-axelar-local/blob/cd6087fa44de3b019b2cdac6962bb49b6a2bc1ca/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol
+ *
+ * Gas estimation interface -
+ *   @see {@link ../../../services/ymax-planner/src/gas-estimation.ts}
+ * - getFactoryContractEstimate: Estimate gas fees for executing the factory
+ *   contract to create a wallet on the specified chain
+ * - getReturnFeeEstimate: Estimate return fees for sending a transaction back
+ *   from the factory contract to Agoric
+ * - getWalletEstimate: Estimate gas fees for remote wallet operations on the
+ *   specified chain
+ */
+type GasEstimator = {
+  getWalletEstimate: (chainName: AxelarChain) => Promise<bigint>;
+  getFactoryContractEstimate: (chainName: AxelarChain) => Promise<bigint>;
+  getReturnFeeEstimate: (chainName: AxelarChain) => Promise<bigint>;
+};
+
 // --- keep existing type declarations above ---
 
 /**
@@ -150,26 +169,35 @@ export const buildBaseGraph = (
     const hub = `@${chainName}` as AssetPlaceRef;
     if (node === hub) continue;
 
-    const feeMode = Object.keys(AxelarChain).includes(chainName)
-      ? { feeMode: 'gmpCall' as FeeMode }
-      : {};
+    const chainIsEvm = Object.keys(AxelarChain).includes(chainName);
     const base: Omit<FlowEdge, 'src' | 'dest' | 'id'> = {
       capacity: (Number.MAX_SAFE_INTEGER + 1) / 4,
       variableFee: vf,
       fixedFee: 0,
       timeFixed: tf,
       via: 'local',
-      ...feeMode,
     };
 
-    // eslint-disable-next-line no-plusplus
-    edges.push({ id: `e${eid++}`, src: node, dest: hub, ...base });
+    edges.push({
+      // eslint-disable-next-line no-plusplus
+      id: `e${eid++}`,
+      src: node,
+      dest: hub,
+      ...base,
+      ...(chainIsEvm ? { feeMode: 'poolToEvm' } : {}),
+    });
 
     // Skip @agoric → +agoric edge
     if (node === '+agoric') continue;
 
-    // eslint-disable-next-line no-plusplus
-    edges.push({ id: `e${eid++}`, src: hub, dest: node, ...base });
+    edges.push({
+      // eslint-disable-next-line no-plusplus
+      id: `e${eid++}`,
+      src: hub,
+      dest: node,
+      ...base,
+      ...(chainIsEvm ? { feeMode: 'evmToPool' } : {}),
+    });
   }
 
   // Return mutable graph (do NOT harden so we can add inter-chain links later)
@@ -373,10 +401,11 @@ export const solveRebalance = async (
   return flows;
 };
 
-export const rebalanceMinCostFlowSteps = (
+export const rebalanceMinCostFlowSteps = async (
   flows: SolvedEdgeFlow[],
   graph: RebalanceGraph,
-): MovementDesc[] => {
+  gasEstimator: GasEstimator,
+): Promise<MovementDesc[]> => {
   const supplies = new Map(
     typedEntries(graph.supplies).filter(([_place, amount]) => amount > 0),
   );
@@ -425,37 +454,67 @@ export const rebalanceMinCostFlowSteps = (
     pendingFlows.delete(chosen.edge.id);
     lastChain = chosen.srcChain;
   }
+  /**
+   * Pad each fee estimate in case the landscape changes between estimation and
+   * execution.
+   */
+  const padFeeEstimate = (estimate: bigint): bigint => estimate * 3n;
 
-  const steps: MovementDesc[] = prioritized.map(({ edge, flow }) => {
-    Number.isSafeInteger(flow) ||
-      Fail`flow ${flow} for edge ${edge} is not a safe integer`;
-    const amount = AmountMath.make(graph.brand, BigInt(flow));
+  const steps: MovementDesc[] = await Promise.all(
+    prioritized.map(async ({ edge, flow }) => {
+      Number.isSafeInteger(flow) ||
+        Fail`flow ${flow} for edge ${edge} is not a safe integer`;
+      const amount = AmountMath.make(graph.brand, BigInt(flow));
 
-    let details = {};
-    switch (edge.feeMode) {
-      case 'gmpTransfer':
-        // TODO: Rather than hard-code, derive from Axelar `estimateGasFee`.
-        // https://docs.axelar.dev/dev/axelarjs-sdk/axelar-query-api#estimategasfee
-        details = { fee: AmountMath.make(graph.feeBrand, 30_000_000n) };
-        break;
-      case 'gmpCall':
-        // TODO: Rather than hard-code, derive from Axelar `estimateGasFee`.
-        // https://docs.axelar.dev/dev/axelarjs-sdk/axelar-query-api#estimategasfee
-        details = { fee: AmountMath.make(graph.feeBrand, 30_000_000n) };
-        break;
-      case 'toUSDN': {
-        // NOTE USDN transfer incurs a fee on output amount in basis points
-        const usdnOut =
-          (BigInt(flow) * (10000n - BigInt(edge.variableFee))) / 10000n;
-        details = { detail: { usdnOut } };
-        break;
+      await null;
+      let details = {};
+      switch (edge.feeMode) {
+        case 'makeEvmAccount': {
+          const feeValue = await gasEstimator.getFactoryContractEstimate(
+            chainOf(edge.dest) as AxelarChain,
+          );
+          details = {
+            // XXX: not using getReturnFeeEstimate until we can verify axelar
+            // API is accurate for this
+            detail: { evmGas: 200_000_000_000_000n },
+            fee: AmountMath.make(graph.feeBrand, padFeeEstimate(feeValue)),
+          };
+          break;
+        }
+        // XXX: revisit https://github.com/Agoric/agoric-sdk/pull/11953#discussion_r2383034184
+        case 'poolToEvm':
+        case 'evmToPool': {
+          const feeValue = await gasEstimator.getWalletEstimate(
+            chainOf(edge.dest) as AxelarChain,
+          );
+          details = {
+            fee: AmountMath.make(graph.feeBrand, padFeeEstimate(feeValue)),
+          };
+          break;
+        }
+        case 'evmToNoble': {
+          const feeValue = await gasEstimator.getWalletEstimate(
+            chainOf(edge.src) as AxelarChain,
+          );
+          details = {
+            fee: AmountMath.make(graph.feeBrand, padFeeEstimate(feeValue)),
+          };
+          break;
+        }
+        case 'toUSDN': {
+          // NOTE USDN transfer incurs a fee on output amount in basis points
+          const usdnOut =
+            (BigInt(flow) * (10000n - BigInt(edge.variableFee))) / 10000n;
+          details = { detail: { usdnOut } };
+          break;
+        }
+        default:
+          break;
       }
-      default:
-        break;
-    }
 
-    return { src: edge.src, dest: edge.dest, amount, ...details };
-  });
+      return { src: edge.src, dest: edge.dest, amount, ...details };
+    }),
+  );
 
   return harden(steps);
 };
@@ -476,8 +535,17 @@ export const planRebalanceFlow = async (opts: {
   brand: Amount['brand'];
   feeBrand: Amount['brand'];
   mode?: RebalanceMode;
+  gasEstimator: GasEstimator;
 }) => {
-  const { network, current, target, brand, feeBrand, mode = 'fastest' } = opts;
+  const {
+    network,
+    current,
+    target,
+    brand,
+    feeBrand,
+    mode = 'fastest',
+    gasEstimator,
+  } = opts;
   // TODO remove "automatic" values that should be static
   const graph = makeGraphFromDefinition(
     network,
@@ -497,7 +565,7 @@ export const planRebalanceFlow = async (opts: {
     preflightValidateNetworkPlan(network as any, current as any, target as any);
     throw err;
   }
-  const steps = rebalanceMinCostFlowSteps(flows, graph);
+  const steps = await rebalanceMinCostFlowSteps(flows, graph, gasEstimator);
   return harden({ graph, model, flows, steps });
 };
 

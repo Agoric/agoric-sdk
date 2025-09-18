@@ -43,6 +43,12 @@ export const usdcAddresses: UsdcAddresses = {
   },
 };
 
+// Avg measurements of Actual Gas used for EVM Txs
+export const gasLimitEstimates = {
+  Factory: 1_209_435n, // https://sepolia.arbiscan.io/tx/0xfdb38b1680c10919b7ff360b21703e349b74eac585f15c70ba9733c7ddaccfe6
+  Wallet: 276_809n,
+};
+
 export const getEvmRpcMap = (
   clusterName: ClusterName,
   alchemyApiKey: string,

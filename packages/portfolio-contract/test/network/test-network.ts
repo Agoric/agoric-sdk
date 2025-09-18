@@ -48,10 +48,10 @@ export const TEST_NETWORK: NetworkSpec = {
     { src: '@Avalanche', dest: '@noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080 },
     { src: '@Ethereum', dest: '@noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080 },
     // Return path
-    { src: '@noble', dest: '@Arbitrum', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'gmpTransfer' },
-    { src: '@noble', dest: '@Polygon' as AssetPlaceRef, transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'gmpTransfer' },
-    { src: '@noble', dest: '@Avalanche', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'gmpTransfer' },
-    { src: '@noble', dest: '@Ethereum', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'gmpTransfer' },
+    { src: '@noble', dest: '@Arbitrum', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'makeEvmAccount' },
+    { src: '@noble', dest: '@Polygon' as AssetPlaceRef, transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'makeEvmAccount' },
+    { src: '@noble', dest: '@Avalanche', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'makeEvmAccount' },
+    { src: '@noble', dest: '@Ethereum', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'makeEvmAccount' },
     // IBC agoric<->noble
     { src: '@agoric', dest: '@noble', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
     { src: '@noble', dest: '@agoric', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },

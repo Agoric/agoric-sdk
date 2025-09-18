@@ -4,6 +4,7 @@ import { AmountMath } from '@agoric/ertp';
 import type { NetworkSpec } from '../../src/network/network-spec.js';
 import { makeGraphFromDefinition } from '../../src/network/buildGraph.js';
 import { planRebalanceFlow } from '../../src/plan-solve.js';
+import { gasEstimator } from '../mocks.js';
 
 const brand = Far('TestBrand') as any;
 const feeBrand = Far('TestFeeBrand') as any;
@@ -109,6 +110,7 @@ test('planRebalanceFlow uses NetworkSpec (legacy links param ignored at type lev
     brand,
     feeBrand,
     mode: 'cheapest',
+    gasEstimator,
   });
   // Ensure only the two provided inter edges (plus intra) exist, not link-derived ones
   const hubEdges = res.graph.edges.filter(

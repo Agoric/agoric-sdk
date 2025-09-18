@@ -3,6 +3,8 @@
 import * as AgoricClientUtils from '@agoric/client-utils';
 import { Fail, q } from '@endo/errors';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
+import { AxelarChainIdMap } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
+import type { AxelarChain } from '@agoric/portfolio-api/src/constants';
 
 export type ClusterName = 'local' | 'testnet' | 'mainnet';
 export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
@@ -26,6 +28,10 @@ export interface YmaxPlannerConfig {
     readonly agoricNetSubdomain?: string;
     readonly timeout: number;
     readonly retries: number;
+  };
+  readonly axelar: {
+    readonly apiUrl: string;
+    readonly chainIdMap: Record<AxelarChain, string>;
   };
 }
 
@@ -121,6 +127,21 @@ export const loadConfig = async (
     (await getMnemonicFromGCP(secretManager, gcpProjectId, gcpSecretName)) ||
     Fail`Mnemonic is required`;
 
+  /**
+   * @see https://docs.axelarscan.io/gmp#estimateGasFee
+   */
+  const axelarApiAddress =
+    clusterName === 'mainnet'
+      ? 'https://api.axelarscan.io/'
+      : 'https://testnet.api.axelarscan.io/';
+
+  const axelarChainIdMap = Object.fromEntries(
+    Object.entries(AxelarChainIdMap).map(([chain, ids]) => [
+      chain,
+      ids[clusterName === 'mainnet' ? 'mainnet' : 'testnet'],
+    ]),
+  ) as Record<AxelarChain, string>;
+
   const config: YmaxPlannerConfig = harden({
     clusterName,
     mnemonic,
@@ -135,6 +156,10 @@ export const loadConfig = async (
       agoricNetSubdomain,
       timeout: parsePositiveInteger(env, 'COSMOS_REST_TIMEOUT', 15000),
       retries: parsePositiveInteger(env, 'COSMOS_REST_RETRIES', 3),
+    },
+    axelar: {
+      apiUrl: axelarApiAddress,
+      chainIdMap: axelarChainIdMap,
     },
   });
 

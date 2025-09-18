@@ -16,7 +16,29 @@ export type TransferProtocol =
   | 'cctpReturn'
   | 'cctpSlow'
   | 'local';
-export type FeeMode = 'toUSDN' | 'gmpCall' | 'gmpTransfer';
+/**
+ * Link to Factory and Wallet contracts:
+ * https://github.com/agoric-labs/agoric-to-axelar-local/blob/cd6087fa44de3b019b2cdac6962bb49b6a2bc1ca/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol
+ *
+ * Steps submitted to the contract are expected to include fee/gas payment
+ * details which vary by the traversed link.
+ * - toUSDN: transferring into USDN transfer reduces the *payload* (e.g., $10k
+ *   might get reduced to $9995)
+ * - makeEvmAccount: the fee for executing the Factory contract to
+ *   create a new remote wallet
+ * - evmToNoble: the fee for running the tx to send tokens from the remote wallet
+ *   to Noble
+ * - evmToPool: the fee for sending and executing a tx on the Wallet contract
+ *   to supply tokens to a specified pool
+ * - poolToEvm: the fee for sending and executing a tx on the Wallet contract
+ *   to withdraw tokens from a specified pool
+ */
+export type FeeMode =
+  | 'toUSDN'
+  | 'makeEvmAccount'
+  | 'evmToNoble'
+  | 'evmToPool'
+  | 'poolToEvm';
 
 // Chains (hubs)
 export interface ChainSpec {
