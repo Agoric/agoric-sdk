@@ -757,7 +757,8 @@ func NewAgoricApp(
 	// Use process-specific wasm directory to avoid lock conflicts in CI
 	// TODO: Fix this on CI we should not have CI fixes in business logic
 	var wasmDir string
-	if os.Getenv("CI") == "true" {
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+
 		processID := fmt.Sprintf("%d", os.Getpid())
 		wasmDir = filepath.Join(os.TempDir(), homePath, "wasm", processID)
 	} else {
