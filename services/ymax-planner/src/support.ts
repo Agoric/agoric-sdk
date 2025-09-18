@@ -56,6 +56,7 @@ export const getEvmRpcMap = (
         'eip155:42161': 'https://arb1.arbitrum.io/rpc',
         // Source: https://docs.optimism.io/superchain/networks
         'eip155:10': 'https://mainnet.optimism.io',
+        'eip155:8453': `https://base-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
       };
     case 'testnet':
       return {
@@ -63,6 +64,7 @@ export const getEvmRpcMap = (
         'eip155:43113': 'https://api.avax-test.network/ext/bc/C/rpc',
         'eip155:421614': 'https://arbitrum-sepolia-rpc.publicnode.com',
         'eip155:11155420': 'https://optimism-sepolia-rpc.publicnode.com',
+        'eip155:84532': `https://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
       };
     default:
       throw Error(`Unsupported cluster name ${clusterName}`);
