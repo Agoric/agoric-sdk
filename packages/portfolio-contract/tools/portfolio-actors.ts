@@ -348,6 +348,7 @@ export const planTransfer = (
   dest: PoolKey,
   amount: NatAmount,
   feeBrand: Brand<'nat'>,
+  gmpFees: { acct: bigint; wallet: bigint; return: bigint},
 ): MovementDesc[] => {
   const { protocol: p, chainName: evm } = PoolPlaces[dest];
   const steps: MovementDesc[] = [];
@@ -366,19 +367,14 @@ export const planTransfer = (
         src: '@noble',
         dest: `@${evm}`,
         amount,
-        // TODO: Rather than hard-code, derive from Axelar `estimateGasFee`.
-        // https://docs.axelar.dev/dev/axelarjs-sdk/axelar-query-api#estimategasfee
-        fee: make(feeBrand, 15_000_000n),
-        detail: {
-          evmGas: 200000000000000n,
-        }
+        fee: make(feeBrand, gmpFees.acct),
+        detail: {evmGas: gmpFees.return}
       });
-      console.warn('TODO: stop hard-coding fees!');
       steps.push({
         src: `@${evm}`,
         dest: `${p}_${evm}`,
         amount,
-        fee: make(feeBrand, 15_000_000n), // KLUDGE.
+        fee: make(feeBrand, gmpFees.wallet), // KLUDGE.
       });
       break;
     default:

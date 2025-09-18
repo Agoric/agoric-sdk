@@ -26,6 +26,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@types/keccak": "^3",
     "@types/node": "^22.10.2",
     "@types/ws": "^8",
     "ava": "^6.3.0",
@@ -41,6 +42,7 @@
     "@agoric/ertp": "workspace:*",
     "@agoric/internal": "workspace:*",
     "@agoric/orchestration": "workspace:*",
+    "@axelar-network/axelarjs-sdk": "^0.17.7",
     "@cosmjs/crypto": "^0.36.0",
     "@cosmjs/encoding": "^0.36.0",
     "@cosmjs/proto-signing": "^0.36.0",
@@ -53,10 +55,12 @@
     "@endo/patterns": "^1.7.0",
     "@endo/promise-kit": "^1.1.13",
     "@google-cloud/secret-manager": "^6.1.0",
+    "@metamask/abi-utils": "^3.0.0",
     "chain-registry": "^2.0.44",
     "dotenv": "^17.2.1",
     "ethers": "^6.13.0",
     "json-rpc-2.0": "^1.7.1",
+    "keccak": "^3.0.4",
     "ky": "^1.4.0",
     "ts-blank-space": "^0.6.1",
     "ws": "^8.18.3"
