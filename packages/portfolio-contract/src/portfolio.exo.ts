@@ -100,7 +100,7 @@ type PortfolioKitState = {
   nextFlowId: number;
   targetAllocation?: TargetAllocation;
   policyVersion: number;
-  policyVersionAck: number;
+  rebalanceCount: number;
 };
 
 /**
@@ -239,7 +239,7 @@ export const preparePortfolioKit = (
         }),
         targetAllocation: undefined,
         policyVersion: 0,
-        policyVersionAck: 0,
+        rebalanceCount: 0,
       };
     },
     {
@@ -387,7 +387,7 @@ export const preparePortfolioKit = (
             nextFlowId,
             targetAllocation,
             policyVersion,
-            policyVersionAck,
+            rebalanceCount,
           } = this.state;
 
           const deposit = () => {
@@ -402,7 +402,7 @@ export const preparePortfolioKit = (
             ...(accounts.has('agoric') ? deposit() : {}),
             ...(targetAllocation && { targetAllocation }),
             policyVersion,
-            policyVersionAck,
+            rebalanceCount,
           });
         },
         allocateFlowId() {
@@ -480,13 +480,16 @@ export const preparePortfolioKit = (
         },
         incrPolicyVersion() {
           this.state.policyVersion += 1;
+          this.state.rebalanceCount = 0;
           this.facets.reporter.publishStatus();
         },
-        ackPolicyVersion(policyVersion: number) {
-          const { policyVersion: current } = this.state;
-          current == policyVersion ||
-            Fail`expected policyVersion ${current}; got ${policyVersion}`;
-          this.state.policyVersionAck = policyVersion;
+        submitVersion(versionPre: number, countPre: number) {
+          const { policyVersion, rebalanceCount } = this.state;
+          policyVersion == versionPre ||
+            Fail`expected policyVersion ${policyVersion}; got ${versionPre}`;
+          rebalanceCount == countPre ||
+            Fail`expected rebalanceCount ${rebalanceCount}; got ${countPre}`;
+          this.state.rebalanceCount += 1;
           this.facets.reporter.publishStatus();
         },
       },

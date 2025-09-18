@@ -978,11 +978,11 @@ test('redeem, use planner invitation', async t => {
   );
   t.like(await trader1.getPortfolioStatus(), {
     policyVersion: 1,
-    policyVersionAck: 0,
+    rebalanceCount: 0,
   });
 
   await planner1.submit(0, [], 1);
-  t.like(await trader1.getPortfolioStatus(), { policyVersionAck: 1 });
+  t.like(await trader1.getPortfolioStatus(), { rebalanceCount: 1 });
 });
 
 test('address of LCA for fees is published', async t => {
@@ -1018,13 +1018,13 @@ test('request rebalance - send same targetAllocation', async t => {
   t.log('planner carries out (empty) deposit plan');
   const mockPlan = [];
   await planner1.submit(0, mockPlan, 2);
-  t.like(await trader1.getPortfolioStatus(), { policyVersionAck: 2 });
+  t.like(await trader1.getPortfolioStatus(), { rebalanceCount: 1 });
 
   t.log('user requests rebalance after yield makes things unbalanced');
   await trader1.rebalance(t, { give: {}, want: {} }, { targetAllocation });
-  t.like(await trader1.getPortfolioStatus(), { policyVersion: 3 });
+  t.like(await trader1.getPortfolioStatus(), { rebalanceCount: 0 });
 
   t.log('planner carries out (empty) rebalance plan');
   await planner1.submit(0, mockPlan, 3);
-  t.like(await trader1.getPortfolioStatus(), { policyVersionAck: 3 });
+  t.like(await trader1.getPortfolioStatus(), { rebalanceCount: 1 });
 });

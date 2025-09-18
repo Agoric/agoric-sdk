@@ -46,6 +46,7 @@ export const preparePlanner = (
       M.number(),
       M.arrayOf(movementDescShape),
       M.number(),
+      M.number(),
     ).returns(VowShape),
   });
 
@@ -59,7 +60,7 @@ export const preparePlanner = (
      * @param portfolioId - Target portfolio identifier
      * @param plan - Array of asset movements to execute
      * @param policyVersion - on which plan is based
-     * @returns {Vow<void>} that resolves when all movements complete
+     * @param rebalanceCount - presumed current count
      * @throws i.e. Vow rejects if portfolio not found, policyVersion is not current,
      *   or plan validation or execution fails
      */
@@ -67,11 +68,12 @@ export const preparePlanner = (
       portfolioId: number,
       plan: MovementDesc[],
       policyVersion: number,
+      rebalanceCount: number,
     ): Vow<void> {
       return vowTools.asVow(async () => {
-        trace('TODO: vet plan', { portfolioId, plan });
+        trace('TODO(#11782): vet plan', { portfolioId, plan });
         const pKit = getPortfolio(portfolioId);
-        pKit.manager.ackPolicyVersion(policyVersion);
+        pKit.manager.submitVersion(policyVersion, rebalanceCount);
         const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
         return rebalance(emptySeat, { flow: plan }, pKit);
       });
