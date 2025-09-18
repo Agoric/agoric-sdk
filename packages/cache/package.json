@@ -23,8 +23,8 @@
     "@agoric/notifier": "workspace:*",
     "@agoric/store": "workspace:*",
     "@agoric/vat-data": "workspace:*",
-    "@endo/far": "^1.1.14",
-    "@endo/marshal": "^1.8.0"
+    "@endo/far": "catalog:endo",
+    "@endo/marshal": "catalog:endo"
   },
   "devDependencies": {
     "@agoric/zoe": "workspace:*",
