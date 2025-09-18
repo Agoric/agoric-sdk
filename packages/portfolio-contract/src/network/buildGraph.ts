@@ -66,19 +66,14 @@ export const makeGraphFromDefinition = (
 
   // Force the presence of particular edges.
   const edges = [...graph.edges] as Array<FlowEdge | undefined>;
-
-  // Ensure intra-Agoric links with 0 fee / 0 time.
-  // Nodes: +agoric, <Cash>, <Deposit> on @agoric.
-  const agoricHub: AssetPlaceRef = '@agoric';
-  const seats: AssetPlaceRef[] = ['<Cash>', '<Deposit>'];
-  const staging: AssetPlaceRef = '+agoric';
-  const capacityDefault = 9_007_199_254_740_000; // slightly less than MAX_SAFE_INTEGER
+  const capacityDefault = 9_007_199_254_740_000; // not quite MAX_SAFE_INTEGER
   const addOrReplaceEdge = (
     src: AssetPlaceRef,
     dest: AssetPlaceRef,
     customAttrs?: Omit<FlowEdge, 'id' | 'src' | 'dest'>,
   ) => {
-    if (!graph.nodes.has(src) || !graph.nodes.has(dest)) return;
+    (graph.nodes.has(src) && graph.nodes.has(dest)) ||
+      Fail`Graph missing nodes for link ${src}->${dest}`;
 
     // Remove any existing edge for exact src->dest
     for (let i = 0; i < edges.length; i += 1) {
@@ -96,26 +91,20 @@ export const makeGraphFromDefinition = (
     edges.push({ id: 'TBD', src, dest, ...dataAttrs });
   };
 
-  // +agoric <-> @agoric
-  addOrReplaceEdge(staging, agoricHub);
-  addOrReplaceEdge(agoricHub, staging);
-
-  // seats <-> @agoric and seats <-> +agoric
-  for (const seat of seats) {
-    addOrReplaceEdge(seat, agoricHub);
-    addOrReplaceEdge(agoricHub, seat);
-    addOrReplaceEdge(seat, staging);
-    addOrReplaceEdge(staging, seat);
-  }
+  // Ensure intra-Agoric links with 0 fee / 0 time:
+  // <Deposit> -> +agoric -> @agoric -> <Cash>
+  // eslint-disable-next-line github/array-foreach
+  (['<Deposit>', '+agoric', '@agoric', '<Cash>'] as AssetPlaceRef[]).forEach(
+    (dest, i, arr) => {
+      const src: AssetPlaceRef | undefined = i === 0 ? undefined : arr[i - 1];
+      if (!src || !graph.nodes.has(src) || !graph.nodes.has(dest)) return;
+      addOrReplaceEdge(src, dest);
+    },
+  );
 
   // Override the base graph with inter-hub links from spec.
   for (const link of spec.links) {
-    const src = `@${link.src}` as AssetPlaceRef;
-    const dest = `@${link.dest}` as AssetPlaceRef;
-    (graph.nodes.has(src) && graph.nodes.has(dest)) ||
-      Fail`Graph missing nodes for link ${src}->${dest}`;
-
-    addOrReplaceEdge(src, dest, {
+    addOrReplaceEdge(`@${link.src}`, `@${link.dest}`, {
       capacity: Number(link.capacity ?? capacityDefault),
       variableFee: link.variableFeeBps ?? 0,
       fixedFee: link.flatFee === undefined ? undefined : Number(link.flatFee),
