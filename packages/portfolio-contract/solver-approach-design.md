@@ -305,6 +305,11 @@ Further non-planner items
 - support multiple assets
 - sanity check the step list
 
+Renames
+- cctpSlow → cctpToNoble and cctpReturn → cctpFromNoble
+- NetworkSpec → NetworkDesc, and probably likewise for ChainSpec/PoolSpec/LocalPlaceSpec/LinkSpec (since we generally use "spec" to describe a string specifier)
+- `src`/`dest` if acceptable alphabetical synonyms can be found (e.g., `source`/`target` or `fromPlace`/`toPlace`)
+
 Later
 - add the method to the move operations (CCTP vs. Fast USDC)
 - re-plan after some steps have already happened?
