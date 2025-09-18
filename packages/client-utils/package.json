@@ -43,13 +43,13 @@
     "@cosmjs/proto-signing": "^0.36.0",
     "@cosmjs/stargate": "^0.36.0",
     "@cosmjs/tendermint-rpc": "^0.36.0",
-    "@endo/base64": "^1.0.12",
-    "@endo/common": "^1.2.13",
-    "@endo/errors": "^1.2.13",
-    "@endo/marshal": "^1.8.0",
-    "@endo/pass-style": "^1.6.3",
-    "@endo/patterns": "^1.7.0",
-    "@endo/promise-kit": "^1.1.13"
+    "@endo/base64": "catalog:endo",
+    "@endo/common": "catalog:endo",
+    "@endo/errors": "catalog:endo",
+    "@endo/marshal": "catalog:endo",
+    "@endo/pass-style": "catalog:endo",
+    "@endo/patterns": "catalog:endo",
+    "@endo/promise-kit": "catalog:endo"
   },
   "ava": {
     "extensions": {
