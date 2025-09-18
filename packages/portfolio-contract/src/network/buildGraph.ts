@@ -1,5 +1,6 @@
 import { Fail } from '@endo/errors';
 import type { NatAmount, Amount } from '@agoric/ertp/src/types.js';
+import { partialMap } from '@agoric/internal/src/js-utils.js';
 
 import { buildBaseGraph, type FlowEdge } from '../plan-solve.js';
 import { PoolPlaces, type PoolKey } from '../type-guards.js';
@@ -63,6 +64,9 @@ export const makeGraphFromDefinition = (
   const graph = buildBaseGraph([...placeRefs], current, target, brand, 1);
   if (spec.debug) graph.debug = true;
 
+  // Force the presence of particular edges.
+  const edges = [...graph.edges] as Array<FlowEdge | undefined>;
+
   // Ensure intra-Agoric links with 0 fee / 0 time.
   // Nodes: +agoric, <Cash>, <Deposit> on @agoric.
   const agoricHub: AssetPlaceRef = '@agoric';
@@ -77,9 +81,10 @@ export const makeGraphFromDefinition = (
     if (!graph.nodes.has(src) || !graph.nodes.has(dest)) return;
 
     // Remove any existing edge for exact src->dest
-    graph.edges = graph.edges.filter(
-      edge => edge.src !== src || edge.dest !== dest,
-    );
+    for (let i = 0; i < edges.length; i += 1) {
+      const edge = edges[i];
+      if (edge?.src === src && edge?.dest === dest) edges[i] = undefined;
+    }
 
     const dataAttrs = customAttrs || {
       capacity: capacityDefault,
@@ -88,7 +93,7 @@ export const makeGraphFromDefinition = (
       timeFixed: 1,
       via: 'agoric-local',
     };
-    graph.edges.push({ id: 'TBD', src, dest, ...dataAttrs });
+    edges.push({ id: 'TBD', src, dest, ...dataAttrs });
   };
 
   // +agoric <-> @agoric
@@ -120,7 +125,8 @@ export const makeGraphFromDefinition = (
   }
 
   // Force unique sequential edge IDs for avoiding collisions in the solver.
-  graph.edges = graph.edges.map((edge, i) => ({ ...edge, id: `e${i}` }));
+  graph.edges = partialMap(edges, edge => (edge ? { ...edge } : undefined));
+  for (let i = 0; i < graph.edges.length; i += 1) graph.edges[i].id = `e${i}`;
 
   return graph;
 };
