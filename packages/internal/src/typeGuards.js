@@ -9,8 +9,8 @@ export const StorageNodeShape = M.remotable('StorageNode');
 export const UnguardedHelperI = M.interface(
   'helper',
   {},
-  // not exposed so sloppy okay
-  { sloppy: true },
+  // not exposed so using `defaultGuards` is fine.
+  { defaultGuards: 'passable' },
 );
 
 /**
