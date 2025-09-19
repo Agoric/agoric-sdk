@@ -445,6 +445,7 @@ export const preparePortfolioKit = (
             return accountsPending.get(chainName).vow as Vow<AccountInfoFor[C]>;
           }
           const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
+          vowTools.watch(pending.vow, this.facets.accountWatcher, chainName);
           traceChain('accountsPending.init');
           accountsPending.init(chainName, pending);
           this.facets.reporter.publishStatus();
@@ -495,6 +496,14 @@ export const preparePortfolioKit = (
         setTargetAllocation(allocation: TargetAllocation) {
           this.state.targetAllocation = allocation;
           this.facets.reporter.publishStatus();
+        },
+      },
+      accountWatcher: {
+        onRejected(reason, chainName) {
+          const traceChain = trace
+            .sub(`portfolio${this.state.portfolioId}`)
+            .sub(chainName);
+          traceChain('rejected', reason);
         },
       },
       rebalanceHandler: {
