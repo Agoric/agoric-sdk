@@ -4,7 +4,8 @@ import type { NatAmount } from '@agoric/ertp/src/types.js';
 
 import { Fail } from '@endo/errors';
 import jsLPSolver from 'javascript-lp-solver';
-import { makeTracer } from '@agoric/internal';
+import type { IModel, IModelVariableConstraint } from 'javascript-lp-solver';
+import { makeTracer, objectMap, typedEntries } from '@agoric/internal';
 import { PoolPlaces, type PoolKey } from './type-guards.js';
 import type { AssetPlaceRef, MovementDesc } from './type-guards-steps.js';
 import type { NetworkSpec } from './network/network-spec.js';
@@ -16,14 +17,6 @@ import {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const trace = makeTracer('solve');
-
-const provideRecord = <
-  K1 extends PropertyKey,
-  C extends Record<K1, Record<PropertyKey, unknown>>,
->(
-  container: C,
-  key: K1,
-): C[K1] => (container[key] ??= {} as C[K1]);
 
 // ----------------------------------- Types -----------------------------------
 
@@ -70,21 +63,8 @@ export interface SolvedEdgeFlow {
   used: boolean;
 }
 
-/** Model shape for javascript-lp-solver (loosely typed) */
-export interface LpModel {
-  optimize: string;
-  opType: 'min' | 'max';
-  constraints: Record<string, Record<string, number>>;
-  variables: Record<
-    string,
-    Record<string, number> & {
-      int?: Record<string, 1>;
-      binary?: Record<string, 1>;
-    }
-  >;
-  ints?: Record<string, 1>;
-  binaries?: Record<string, 1>;
-}
+/** Model shape for javascript-lp-solver */
+export type LpModel = IModel<string, string>;
 
 // --- keep existing type declarations above ---
 
@@ -134,7 +114,7 @@ export const buildBaseGraph = (
     const delta = currentVal - targetVal;
     // NOTE: Number(bigint) loses precision beyond MAX_SAFE_INTEGER (2^53-1)
     // For USDC amounts (6 decimals), the largest realistic value would be trillions
-    // of dollars, which should be well within safe integer range
+    // of dollars, which should be well within safe integer range.
     if (delta !== 0n) supplies[node] = Number(delta);
   }
 
@@ -177,12 +157,50 @@ export const buildBaseGraph = (
   } as RebalanceGraph;
 };
 
-/**
- * Add a directed inter-chain link between hub nodes (and optional reverse if needed externally).
- */
-// addInterchainLink removed; inter-hub edges are added directly in makeGraphFromDefinition
-
 // ------------------------------ Model Building -------------------------------
+
+type IntVar = Record<
+  | `allow_${string}`
+  | `through_${string}`
+  | `netOut_${string}`
+  | 'magnifiedVariableFee'
+  | 'weight',
+  number
+>;
+type BinaryVar = Record<
+  `allow_${string}` | 'magnifiedFlatFee' | 'timeFixed' | 'weight',
+  number
+>;
+type WeightFns = {
+  getPrimaryWeights: (intVar: IntVar, binaryVar: BinaryVar) => number[];
+  setWeights: (intVar: IntVar, binaryVar: BinaryVar, epsilon: number) => void;
+};
+
+const modeFns = new Map(
+  typedEntries({
+    cheapest: {
+      getPrimaryWeights: (intVar, binaryVar) => [
+        intVar.magnifiedVariableFee,
+        binaryVar.magnifiedFlatFee,
+      ],
+      setWeights: (intVar, binaryVar, epsilon) => {
+        // Fees have full weight; time is weighted by epsilon.
+        intVar.weight = intVar.magnifiedVariableFee;
+        binaryVar.weight =
+          binaryVar.magnifiedFlatFee + binaryVar.timeFixed * epsilon;
+      },
+    },
+    fastest: {
+      getPrimaryWeights: (_intVar, binaryVar) => [binaryVar.timeFixed],
+      setWeights: (intVar, binaryVar, epsilon) => {
+        // Fees are weighted by epsilon; time has full weight.
+        intVar.weight = intVar.magnifiedVariableFee * epsilon;
+        binaryVar.weight =
+          binaryVar.timeFixed + binaryVar.magnifiedFlatFee * epsilon;
+      },
+    },
+  } as Record<RebalanceMode, WeightFns>),
+);
 
 /**
  * Build LP/MIP model for javascript-lp-solver.
@@ -191,165 +209,91 @@ export const buildLPModel = (
   graph: RebalanceGraph,
   mode: RebalanceMode,
 ): LpModel => {
-  const model: LpModel = {
-    optimize: 'goal',
-    opType: 'min',
-    constraints: {},
-    variables: {},
-  };
-  const { constraints, variables, binaries = {} } = model;
-  const primaryObj: Record<string, number> = {};
-  const secondaryObj: Record<string, number> = {};
+  const { getPrimaryWeights, setWeights } =
+    modeFns.get(mode) || Fail`unknown mode ${mode}`;
 
-  // Compute a conservative total positive supply bound (S) for flows
-  const totalPositiveSupply = Object.values(graph.supplies)
-    .filter(s => s > 0)
-    .reduce((a, b) => a + b, 0);
+  const intVariables = {} as Record<`via_${string}`, IntVar>;
+  const binaryVariables = {} as Record<`pick_${string}`, BinaryVar>;
+  const constraints = {} as Record<string, IModelVariableConstraint>;
+  let minPrimaryWeight = Infinity;
   for (const edge of graph.edges) {
-    const { variableFee, fixedFee = 0, timeFixed = 0 } = edge;
-    const flowVar = `f_${edge.id}`;
-    const useVar = `y_${edge.id}`;
-    variables[flowVar] = { [flowVar]: 1 };
-    const capName = `cap_${edge.id}`;
-    constraints[capName] = { [flowVar]: 1, max: edge.capacity };
-    // Non-negativity: f_e >= 0
-    const lbName = `lb_${edge.id}`;
-    constraints[lbName] = { [flowVar]: 1, min: 0 };
-    // Create a binary use variable for edges that incur a fixed cost component in the primary
-    // objective for this mode. In 'cheapest', only fixedFee matters for y; in 'fastest', timeFixed
-    // is part of the primary objective and thus requires y.
-    const needsBinary = fixedFee > 0 || (mode === 'fastest' && timeFixed > 0);
-    if (needsBinary) {
-      variables[flowVar][useVar] = 0;
-      binaries[useVar] = 1;
-      const linkName = `link_${edge.id}`;
-      constraints[linkName] = {
-        [flowVar]: 1,
-        [useVar]: -edge.capacity,
-        max: 0,
-      };
-    }
-    // Primary objective terms
-    if (mode === 'cheapest') {
-      if (variableFee) {
-        primaryObj[flowVar] = (primaryObj[flowVar] || 0) + variableFee;
-      }
-      if (fixedFee > 0) {
-        primaryObj[useVar] = (primaryObj[useVar] || 0) + fixedFee;
-      }
-      // Secondary (tie-breaker): prefer lower time (counts once per used edge)
-      if (needsBinary && timeFixed > 0) {
-        secondaryObj[useVar] = (secondaryObj[useVar] || 0) + timeFixed;
-      }
-    } else {
-      // mode === 'fastest': count time once per used edge
-      if (timeFixed > 0) {
-        secondaryObj; // keep reference alive for TS
-        primaryObj[useVar] = (primaryObj[useVar] || 0) + timeFixed;
-      }
-      // Secondary (tie-breaker): prefer cheaper (variable + fixed)
-      if (variableFee) {
-        secondaryObj[flowVar] = (secondaryObj[flowVar] || 0) + variableFee;
-      }
-      if (fixedFee > 0) {
-        secondaryObj[useVar] = (secondaryObj[useVar] || 0) + fixedFee;
-      }
-    }
-    const outC = provideRecord(constraints, `node_${edge.src}`);
-    outC[flowVar] = (outC[flowVar] || 0) + 1;
-    const inC = provideRecord(constraints, `node_${edge.dest}`);
-    inC[flowVar] = (inC[flowVar] || 0) - 1;
+    const { id, src, dest } = edge;
+    const { capacity, variableFee, fixedFee = 0, timeFixed = 0 } = edge;
+
+    // The numbers in graph.supplies should use the same units as fixedFee, but
+    // variableFee is in basis points relative to some scaling of those other
+    // values.
+    // We also want fee attributes large enough to avoid IEEE 754 rounding
+    // issues.
+    // Assume that scaling to be 1e6 (i.e., 100 bp = 1% of supplies[key]/1e6)
+    // and scale the fee attributes accordingly such that variableFee 100 will
+    // contribute a weight of 0.01 for each `via_$edge` atomic unit of payload
+    // (i.e., magnified by 1e6 if the scaling is actually 1e6) and fixedFee 1
+    // will contribute a weight of 1e6 if the corresponding edge is used (i.e.,
+    // also magnified by 1e6 if the scaling is actually 1e6).
+    // The solution may be disrupted by either over- or under-weighting
+    // variableFee w.r.t. fixedFee, but not otherwise, and we accept the risk.
+    // TODO: Define RebalanceGraph['scale'] to eliminate this guesswork.
+    const magnifiedVariableFee = variableFee / 10_000;
+    const magnifiedFlatFee = fixedFee * 1e6;
+
+    const intVar: IntVar = {
+      // A negative value for `allow_${id}` forces the solution to include 1
+      // `pick_${id}` (and the corresponding fixed costs) in order to satisfy
+      // that attribute's min: 0 constraint below.
+      [`allow_${id}`]: -1,
+      [`through_${id}`]: 1,
+      [`netOut_${src}`]: 1,
+      [`netOut_${dest}`]: -1,
+      magnifiedVariableFee,
+      weight: 0, // increased below
+    };
+    intVariables[`via_${id}`] = intVar;
+
+    constraints[`allow_${id}`] = { min: 0 };
+    constraints[`through_${id}`] = { max: capacity };
+
+    const binaryVar = {
+      [`allow_${id}`]: Number.MAX_SAFE_INTEGER,
+      magnifiedFlatFee,
+      timeFixed,
+      weight: 0, // increased below
+    };
+    binaryVariables[`pick_${id}`] = binaryVar;
+
+    // Keep track of the lowest non-zero primary weight for `mode`.
+    minPrimaryWeight = Math.min(
+      minPrimaryWeight,
+      ...getPrimaryWeights(intVar, binaryVar).map(n => n || Infinity),
+    );
   }
+
+  // Finalize the weights.
+  const epsilonWeight = Number.isFinite(minPrimaryWeight)
+    ? minPrimaryWeight / 1e6
+    : 1e-9;
+  for (const { id } of graph.edges) {
+    setWeights(
+      intVariables[`via_${id}`],
+      binaryVariables[`pick_${id}`],
+      epsilonWeight,
+    );
+  }
+
+  // Constrain the net flow from each node.
   for (const node of graph.nodes) {
-    const cname = `node_${node}`;
     const supply = graph.supplies[node] || 0;
-    if (!constraints[cname]) continue;
-    constraints[cname].equal = supply;
+    constraints[`netOut_${node}`] = { equal: supply };
   }
-  // Compute conservative primary upper bound to scale epsilon
-  let primaryUB = 0;
-  if (mode === 'cheapest') {
-    // Each edge flow ≤ totalPositiveSupply; each y ≤ 1
-    for (const edge of graph.edges) {
-      if (edge.variableFee) primaryUB += edge.variableFee * totalPositiveSupply;
-      if (edge.fixedFee && edge.fixedFee > 0) primaryUB += edge.fixedFee;
-    }
-  } else {
-    // Fastest sums timeFixed per used edge (worst-case use all edges with time)
-    for (const edge of graph.edges) {
-      if (edge.timeFixed && edge.timeFixed > 0) primaryUB += edge.timeFixed;
-    }
-  }
-  // Epsilon small enough not to perturb primary optimum
-  const epsilon = primaryUB > 0 ? 1 / (1 + primaryUB * 1e6) : 1e-9;
 
-  // Merge primary and epsilon-weighted secondary
-  const objectiveTerm = { ...primaryObj };
-  for (const [k, v] of Object.entries(secondaryObj))
-    objectiveTerm[k] = (objectiveTerm[k] || 0) + v * epsilon;
-  // objective variable collects coefficients
-  variables.obj = { obj: 1, ...objectiveTerm };
-  if (Object.keys(binaries).length) model.binaries = binaries;
-  return model;
-};
-
-// NEW: translate intermediate LpModel to js-lp-solver compatible model
-export interface JsSolverModel {
-  optimize: string;
-  opType: 'min' | 'max';
-  constraints: Record<string, { equal?: number; max?: number; min?: number }>;
-  variables: Record<string, Record<string, number>>;
-  binaries?: Record<string, 1>;
-  ints?: Record<string, 1>;
-}
-
-const toJsSolverModel = (lp: LpModel): JsSolverModel => {
-  const optimizeKey = 'cost';
-  // Extract objective coefficients from synthetic obj variable
-  const objectiveTerms: Record<string, number> = {};
-  const objVar = lp.variables.obj || {};
-  for (const [k, v] of Object.entries(objVar)) {
-    if (k === 'obj') continue;
-    if (typeof v === 'number') objectiveTerms[k] = v;
-  }
-  // Build constraints bounds only + accumulate variable coefficients
-  const constraints: JsSolverModel['constraints'] = {};
-  const variables: Record<string, Record<string, number>> = {};
-  for (const [cName, spec] of Object.entries(lp.constraints)) {
-    const bounds: { equal?: number; max?: number; min?: number } = {};
-    if (typeof (spec as any).equal === 'number')
-      bounds.equal = (spec as any).equal;
-    if (typeof (spec as any).max === 'number') bounds.max = (spec as any).max;
-    if (typeof (spec as any).min === 'number') bounds.min = (spec as any).min;
-    constraints[cName] = bounds;
-    for (const [vName, coeff] of Object.entries(spec)) {
-      if (vName === 'equal' || vName === 'max' || vName === 'min') continue;
-      provideRecord(variables, vName)[cName] = coeff as number;
-    }
-  }
-  // Apply objective coefficients under optimizeKey
-  for (const [vName, coeff] of Object.entries(objectiveTerms)) {
-    provideRecord(variables, vName)[optimizeKey] = coeff;
-  }
-  const jsModel: JsSolverModel = {
-    optimize: optimizeKey,
+  return {
+    optimize: 'weight',
     opType: 'min',
     constraints,
-    variables,
+    variables: { ...intVariables, ...binaryVariables },
+    binaries: objectMap(binaryVariables, () => true),
+    ints: objectMap(intVariables, () => true),
   };
-  if (lp.binaries && Object.keys(lp.binaries).length)
-    jsModel.binaries = lp.binaries;
-  if (lp.ints && Object.keys(lp.ints).length) jsModel.ints = lp.ints;
-  return jsModel;
-};
-
-const runJsSolver = (model: JsSolverModel) => {
-  const res = (jsLPSolver as any).Solve(model);
-  return res as {
-    result: number;
-    feasible: boolean;
-    bounded: boolean;
-  } & Record<string, number | unknown>;
 };
 
 // solveRebalance: use javascript-lp-solver directly
@@ -358,11 +302,8 @@ export const solveRebalance = async (
   model: LpModel,
   graph: RebalanceGraph,
 ): Promise<SolvedEdgeFlow[]> => {
-  const jsModel = toJsSolverModel(model);
-  // Use trace() sparingly; keep commented unless deep debugging is needed
-  const result = runJsSolver(jsModel);
-  // js-lp-solver returns feasible flag; treat absence as failure
-  if ((result as any).feasible === false) {
+  const result = jsLPSolver.Solve(model, 1e-6);
+  if (result.feasible !== true) {
     if (graph.debug) {
       // Emit richer context only on demand to avoid noisy passing runs
       const msg = formatInfeasibleDiagnostics(graph, model);
@@ -373,12 +314,11 @@ export const solveRebalance = async (
   }
   const flows: SolvedEdgeFlow[] = [];
   for (const edge of graph.edges) {
-    const vName = `f_${edge.id}`;
-    const flowVal = (result as any)[vName];
-    if (typeof flowVal === 'number' && Math.abs(flowVal) > FLOW_EPS) {
-      const used = (result as any)[`y_${edge.id}`] === 1 || flowVal > FLOW_EPS;
-      flows.push({ edge, flow: flowVal, used });
-    }
+    const { id } = edge;
+    const flowKey = `via_${id}`;
+    const flow = Object.hasOwn(result, flowKey) ? result[flowKey] : undefined;
+    const used = (flow ?? 0) > FLOW_EPS || result[`pick_${id}`];
+    if (used) flows.push({ edge, flow, used: true });
   }
   return flows;
 };
@@ -481,7 +421,7 @@ export const planRebalanceFlow = async (opts: {
   mode?: RebalanceMode;
 }) => {
   const { network, current, target, brand, mode = 'fastest' } = opts;
-  // TODO remove "automatic" values that shoudl be static
+  // TODO remove "automatic" values that should be static
   const graph = makeGraphFromDefinition(network, current, target, brand);
 
   const model = buildLPModel(graph, mode);
