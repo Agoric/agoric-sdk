@@ -166,8 +166,7 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
   t.deepEqual(result, []);
 });
 
-// The steps emitted by this test result in out-of-balance results.
-test.skip('handleDeposit handles different position types correctly', async t => {
+test('handleDeposit handles different position types correctly', async t => {
   const deposit = makeDeposit(1000n);
   const portfolioKey = 'test.portfolios.portfolio1' as const;
 
