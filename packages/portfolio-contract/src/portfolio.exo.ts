@@ -485,9 +485,9 @@ export const preparePortfolioKit = (
         },
         submitVersion(versionPre: number, countPre: number) {
           const { policyVersion, rebalanceCount } = this.state;
-          policyVersion == versionPre ||
+          policyVersion === versionPre ||
             Fail`expected policyVersion ${policyVersion}; got ${versionPre}`;
-          rebalanceCount == countPre ||
+          rebalanceCount === countPre ||
             Fail`expected rebalanceCount ${rebalanceCount}; got ${countPre}`;
           this.state.rebalanceCount += 1;
           this.facets.reporter.publishStatus();

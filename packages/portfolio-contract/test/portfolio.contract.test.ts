@@ -2,9 +2,8 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import type { VStorage, VstorageKit } from '@agoric/client-utils';
+import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
-import type { StreamCell } from '@agoric/internal/src/lib-chainStorage.js';
 import {
   defaultMarshaller,
   type FakeStorageKit,
@@ -18,6 +17,7 @@ import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
+import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
 import type {
   OfferArgsFor,
   StatusFor,
@@ -33,11 +33,10 @@ import {
 } from './contract-setup.ts';
 import {
   evmNamingDistinction,
-  portfolio0lcaOrch,
   makeCCTPTraffic,
+  portfolio0lcaOrch,
 } from './mocks.ts';
 import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
-import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
 
 const { fromEntries, keys, values } = Object;
 

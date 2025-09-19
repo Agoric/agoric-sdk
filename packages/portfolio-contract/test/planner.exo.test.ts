@@ -88,7 +88,7 @@ test('planner exo submit method', async t => {
     { src: '@noble', dest: 'USDN', amount },
   ];
 
-  t.throwsAsync(vt.when(planner.submit(portfolioId, plan, 0, 0)), {
+  await t.throwsAsync(vt.when(planner.submit(portfolioId, plan, 0, 0)), {
     message: /expected policyVersion 1; got 0/,
   });
 
