@@ -16,6 +16,11 @@ import {
 import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
+import {
+  AxelarChain,
+  SupportedChain,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
 import type { MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import type { VTransferIBCEvent } from '@agoric/vats';
@@ -28,11 +33,6 @@ import { X } from '@endo/errors';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import {
-  AxelarChain,
-  SupportedChain,
-  YieldProtocol,
-} from '@agoric/portfolio-api/src/constants.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.js';
 import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
@@ -137,6 +137,11 @@ export type PublishStatusFn = <K extends keyof StatusFor>(
   path: string[],
   status: StatusFor[K],
 ) => void;
+
+const eventAbbr = (e: VTransferIBCEvent) => {
+  const { destination_channel: dest, sequence } = e.packet;
+  return { destination_channel: dest, sequence };
+};
 
 export const preparePortfolioKit = (
   zone: Zone,
@@ -244,45 +249,50 @@ export const preparePortfolioKit = (
     {
       tap: {
         async receiveUpcall(event: VTransferIBCEvent) {
-          trace('receiveUpcall', event);
+          const traceUpcall = trace
+            .sub(`portfolio${this.state.portfolioId}`)
+            .sub('upcall');
+          traceUpcall('event', eventAbbr(event));
+          const { destination_channel: packetDest } = event.packet;
+
+          // Validate that this is really from Axelar to Agoric.
+          const [_agoric, _axelar, connection] = await vowTools.when(
+            chainHubTools.getChainsAndConnection('agoric', 'axelar'),
+          );
+          const { channelId: agoricToAxelar } = connection.transferChannel;
+          if (packetDest !== agoricToAxelar) {
+            traceUpcall(
+              `GMP early exit: ${packetDest} != ${agoricToAxelar}: not from axelar`,
+            );
+            return false;
+          }
+
           return vowTools.watch(
             parseInboundTransfer(event.packet, this.facets),
             this.facets.parseInboundTransferWatcher,
-            event.packet,
           );
         },
       },
       parseInboundTransferWatcher: {
         onRejected(reason) {
-          console.warn('⚠️ parseInboundTransfer failure', reason);
+          const traceP = trace.sub(`portfolio${this.state.portfolioId}`);
+          traceP('⚠️ parseInboundTransfer failure', reason);
           throw reason;
         },
-        async onFulfilled(parsed, packet) {
+        async onFulfilled(parsed) {
+          const traceUpcall = trace
+            .sub(`portfolio${this.state.portfolioId}`)
+            .sub('upcall');
           if (!parsed) {
-            trace('GMP processing skipped; no parsed inbound transfer');
-            return false;
-          }
-
-          // Validate that this is really from Axelar to Agoric on the expected
-          // channel. We do this after parseInboundTransfer so that that
-          // function can be simpler and not need to know about Axelar or
-          // channels.
-          const [_agoric, _axelar, connection] = await vowTools.when(
-            chainHubTools.getChainsAndConnection('agoric', 'axelar'),
-          );
-          const agoricTransferChannel = connection.transferChannel.channelId;
-          if (packet.destination_channel !== agoricTransferChannel) {
-            trace(
-              `GMP processing skipped; Axelar chain packet expected on ${agoricTransferChannel}, got ${packet.destination_channel}`,
-            );
+            traceUpcall('GMP early exit: no parsed inbound transfer');
             return false;
           }
 
           const { extra } = parsed;
           if (!extra.memo) return;
           if (extra.sender !== gmpAddresses.AXELAR_GMP) {
-            trace(
-              `GMP processing skipped; Axelar GMP sender expected ${gmpAddresses.AXELAR_GMP}, got ${extra.sender}`,
+            traceUpcall(
+              `GMP early exit; AXELAR_GMP sender expected ${gmpAddresses.AXELAR_GMP}, got ${extra.sender}`,
             );
             return false;
           }
@@ -293,7 +303,7 @@ export const preparePortfolioKit = (
           ).find(([_, chainId]) => chainId === memo.source_chain);
 
           if (!result) {
-            console.warn('unknown source_chain', memo);
+            traceUpcall('unknown source_chain', memo);
             return false;
           }
 
@@ -305,40 +315,38 @@ export const preparePortfolioKit = (
             payloadBytes,
           ) as [AgoricResponse];
 
-          trace(
-            'receiveUpcall Decoded:',
+          traceUpcall(
+            'Decoded:',
             JSON.stringify({ isContractCallResult, data }),
           );
 
           if (isContractCallResult) {
-            console.warn('TODO: Handle the result of the contract call', data);
-          } else {
-            const [message] = data;
-            const { success, result: result2 } = message;
-            if (!success) return;
-
-            const [address] = decodeAbiParameters(
-              [{ type: 'address' }],
-              result2,
-            );
-
-            // chainInfo is safe to await: registerChain(...) ensure it's already resolved,
-            // so vowTools.when won't cause async delays or cross-vat calls.
-            const chainInfo = await vowTools.when(
-              chainHubTools.getChainInfo(chainName),
-            );
-            const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
-
-            this.facets.manager.resolveAccount({
-              namespace: 'eip155',
-              chainName,
-              chainId: caipId,
-              remoteAddress: address,
-            });
-            trace(`remoteAddress ${address}`);
+            traceUpcall('TODO: Handle the result of the contract call', data);
+            return false;
           }
 
-          trace('receiveUpcall completed');
+          const [message] = data;
+          const { success, result: result2 } = message;
+          if (!success) return;
+
+          const [address] = decodeAbiParameters([{ type: 'address' }], result2);
+
+          // chainInfo is safe to await: registerChain(...) ensure it's already resolved,
+          // so vowTools.when won't cause async delays or cross-vat calls.
+          const chainInfo = await vowTools.when(
+            chainHubTools.getChainInfo(chainName),
+          );
+          const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
+
+          traceUpcall(chainName, 'remoteAddress', address);
+          this.facets.manager.resolveAccount({
+            namespace: 'eip155',
+            chainName,
+            chainId: caipId,
+            remoteAddress: address,
+          });
+
+          traceUpcall('completed');
           return true;
         },
       },
@@ -385,6 +393,7 @@ export const preparePortfolioKit = (
             accounts,
             nextFlowId,
             targetAllocation,
+            accountsPending,
           } = this.state;
 
           const deposit = () => {
@@ -398,6 +407,7 @@ export const preparePortfolioKit = (
             accountIdByChain: accountIdByChain(accounts),
             ...(accounts.has('agoric') ? deposit() : {}),
             ...(targetAllocation && { targetAllocation }),
+            accountsPending: [...accountsPending.keys()],
           });
         },
         allocateFlowId() {
@@ -416,10 +426,13 @@ export const preparePortfolioKit = (
         reserveAccount<C extends SupportedChain>(
           chainName: C,
         ): undefined | Vow<AccountInfoFor[C]> {
-          trace('reserveAccount', chainName);
+          const traceChain = trace
+            .sub(`portfolio${this.state.portfolioId}`)
+            .sub(chainName);
+          traceChain('reserveAccount');
           const { accounts, accountsPending } = this.state;
           if (accounts.has(chainName)) {
-            trace('accounts.has', chainName);
+            traceChain('accounts.has');
             return vowTools.asVow(async () => {
               const infoAny = accounts.get(chainName);
               assert.equal(infoAny.chainName, chainName);
@@ -428,23 +441,29 @@ export const preparePortfolioKit = (
             });
           }
           if (accountsPending.has(chainName)) {
-            trace('accountsPending.has', chainName);
+            traceChain('accountsPending.has');
             return accountsPending.get(chainName).vow as Vow<AccountInfoFor[C]>;
           }
           const pending: VowKit<AccountInfoFor[C]> = vowTools.makeVowKit();
-          trace('accountsPending.init', chainName);
+          traceChain('accountsPending.init');
           accountsPending.init(chainName, pending);
           this.facets.reporter.publishStatus();
           return undefined;
         },
         resolveAccount(info: AccountInfo) {
-          const { accounts, accountsPending } = this.state;
+          const { accounts, accountsPending, portfolioId } = this.state;
+          const traceChain = trace
+            .sub(`portfolio${portfolioId}`)
+            .sub(info.chainName);
+
           if (accountsPending.has(info.chainName)) {
             const vow = accountsPending.get(info.chainName);
             // NEEDSTEST - why did all tests pass without .resolve()?
+            traceChain('accountsPending.resolve');
             vow.resolver.resolve(info);
             accountsPending.delete(info.chainName);
           }
+          traceChain('accounts.init');
           accounts.init(info.chainName, info);
           this.facets.reporter.publishStatus();
         },

@@ -5,8 +5,13 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
+import {
+  getChainNameOfPlaceRef,
+  type MovementDesc,
+} from '../src/type-guards-steps.ts';
 import type { OfferArgsFor, ProposalType } from '../src/type-guards.ts';
 import {
   grokRebalanceScenarios,
@@ -16,9 +21,9 @@ import {
 import { setupTrader, simulateUpcallFromAxelar } from './contract-setup.ts';
 import {
   evmNamingDistinction,
-  portfolio0lcaOrch,
   makeCCTPTraffic,
   makeUSDNIBCTraffic,
+  portfolio0lcaOrch,
 } from './mocks.ts';
 import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
 
@@ -26,6 +31,23 @@ import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
 const { sourceChain } = evmNamingDistinction;
 
 const { values } = Object;
+
+const dedup = <T>(xs: T[]) => harden([...new Set(xs)]);
+
+const findEVMChains = (moves: MovementDesc[]) => {
+  const evmChains = Object.keys(AxelarChain);
+
+  return dedup(
+    moves.flatMap(m =>
+      [m.src, m.dest].flatMap(ref => {
+        const maybeChain = getChainNameOfPlaceRef(ref);
+        if (!maybeChain) return [];
+        if (evmChains.includes(maybeChain)) return [maybeChain as AxelarChain];
+        return [];
+      }),
+    ),
+  );
+};
 
 const rebalanceScenarioMacro = test.macro({
   async exec(t, description: string) {
@@ -68,16 +90,20 @@ const rebalanceScenarioMacro = test.macro({
     const ackSteps = async (offerArgs: OfferArgsFor['openPortfolio']) => {
       const { flow: moves } = { flow: [], ...offerArgs };
       const { transmitVTransferEvent } = common.utils;
+
+      await eventLoopIteration();
+      for (const evmChain of findEVMChains(moves)) {
+        if (upcallDone.has(evmChain)) continue;
+        upcallDone.add(evmChain);
+        await simulateUpcallFromAxelar(
+          common.mocks.transferBridge,
+          sourceChain,
+        );
+      }
+
       for (const move of moves) {
         await eventLoopIteration();
         if (move.dest === '@Arbitrum') {
-          if (!upcallDone.has(move.dest)) {
-            upcallDone.add(move.dest);
-            await simulateUpcallFromAxelar(
-              common.mocks.transferBridge,
-              sourceChain,
-            );
-          }
           // Also confirm CCTP transaction for flows to Arbitrum
           const resolverMakers = await getResolverMakers(
             zoe,

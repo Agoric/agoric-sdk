@@ -16,6 +16,7 @@ import {
   documentStorageSchema,
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   denomHash,
   type ActualChainInfo,
@@ -25,6 +26,7 @@ import {
 } from '@agoric/orchestration';
 import { buildGasPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
   RebalanceStrategy,
   YieldProtocol,
@@ -39,7 +41,6 @@ import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Far, passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
   preparePortfolioKit,
   type PortfolioKit,
@@ -538,13 +539,13 @@ test('open portfolio with Aave position', async t => {
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
+    { _method: 'send' },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
     {
       _method: 'localTransfer',
       amounts: { Deposit: { value: 300n } },
     },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { _method: 'send' },
-    { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'depositForBurn' },
     { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
@@ -552,7 +553,7 @@ test('open portfolio with Aave position', async t => {
   ]);
 
   t.like(
-    JSON.parse(log[4].opts.memo),
+    JSON.parse(log[2].opts.memo),
     { payload: buildGasPayload(50n) },
     '1st transfer to axelar carries evmGas for return message',
   );
@@ -588,10 +589,10 @@ test('open portfolio with Compound position', async t => {
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'localTransfer', amounts: { Deposit: { value: 300n } } },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'localTransfer', amounts: { Deposit: { value: 300n } } },
+    { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'depositForBurn' },
     { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
@@ -876,13 +877,13 @@ test('open portfolio with Beefy position', async t => {
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
+    { _method: 'send' },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
     {
       _method: 'localTransfer',
       amounts: { Deposit: { value: 300n } },
     },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { _method: 'send' },
-    { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'depositForBurn' },
     { _method: 'send' },
     { _method: 'transfer', address: { chainId: 'axelar-6' } },
@@ -967,6 +968,9 @@ test('receiveUpcall returns false if sender is not AXELAR_GMP', async t => {
   });
 
   const tap = await tapPK.promise;
+  // XXX resolution of tapPK entails that reg = await monitorTransfers() has been called,
+  // but not that resolveAccount({... lca, reg }) has been called
+  await eventLoopIteration();
 
   const upcallProcessed = await tap.receiveUpcall(
     makeIncomingEVMEvent({ sourceChain, sender: makeTestAddress() }),

@@ -28,18 +28,20 @@ import {
   type Bech32Address,
   type CosmosChainAddress,
 } from '@agoric/orchestration';
+import {
+  AxelarChain,
+  SupportedChain,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
 import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
 import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
-import {
-  AxelarChain,
-  YieldProtocol,
-} from '@agoric/portfolio-api/src/constants.js';
 import type { EVMContractAddresses, start } from './portfolio.contract.js';
 import type { PortfolioKit } from './portfolio.exo.js';
+import type { AssetPlaceRef } from './type-guards-steps.js';
 
 export type { OfferArgsFor } from './type-guards-steps.js';
 
@@ -244,8 +246,8 @@ export const portfolioIdOfPath = (path: string | string[]) => {
 type FlowStatus = {
   step: number;
   how: string;
-  src: string;
-  dest: string;
+  src: AssetPlaceRef;
+  dest: AssetPlaceRef;
   amount: Amount<'nat'>;
   error?: string;
 };
@@ -266,6 +268,7 @@ export type StatusFor = {
     positionKeys: PoolKeyExt[];
     flowCount: number;
     accountIdByChain: Record<ChainNameExt, AccountId>;
+    accountsPending?: SupportedChain[];
     depositAddress?: Bech32Address;
     targetAllocation?: TargetAllocation;
   };
@@ -294,6 +297,7 @@ export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
     {
       depositAddress: M.string(), // XXX no runtime validation of Bech32Address
       targetAllocation: TargetAllocationShapeExt,
+      accountsPending: M.arrayOf(ChainNameExtShape),
     },
   );
 
