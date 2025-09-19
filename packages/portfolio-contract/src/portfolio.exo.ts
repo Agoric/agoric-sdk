@@ -3,7 +3,7 @@
  */
 import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
-import { makeTracer, mustMatch, type Remote } from '@agoric/internal';
+import { makeTracer, mustMatch } from '@agoric/internal';
 import type {
   Marshaller,
   StorageNode,
@@ -16,23 +16,22 @@ import {
 import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
+import {
+  AxelarChain,
+  SupportedChain,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
 import type { MapStore } from '@agoric/store';
-import type { TimerService } from '@agoric/time';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { decodeBase64 } from '@endo/base64';
-import { X } from '@endo/errors';
+import { Fail, X } from '@endo/errors';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import {
-  AxelarChain,
-  SupportedChain,
-  YieldProtocol,
-} from '@agoric/portfolio-api/src/constants.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.js';
 import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
@@ -100,6 +99,8 @@ type PortfolioKitState = {
   positions: MapStore<PoolKey, Position>;
   nextFlowId: number;
   targetAllocation?: TargetAllocation;
+  policyVersion: number;
+  rebalanceCount: number;
 };
 
 /**
@@ -145,7 +146,6 @@ export const preparePortfolioKit = (
     gmpAddresses,
     rebalance,
     parseInboundTransfer,
-    timer,
     chainHubTools,
     proposalShapes,
     offerArgsShapes,
@@ -166,7 +166,6 @@ export const preparePortfolioKit = (
       packet: VTransferIBCEvent['packet'],
       kit: unknown, // XXX avoid circular reference to this.facets
     ) => Vow<Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>>;
-    timer: Remote<TimerService>;
     chainHubTools: Pick<ChainHub, 'getChainInfo' | 'getChainsAndConnection'>;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>;
@@ -239,6 +238,8 @@ export const preparePortfolioKit = (
           valueShape: M.remotable('Position'),
         }),
         targetAllocation: undefined,
+        policyVersion: 0,
+        rebalanceCount: 0,
       };
     },
     {
@@ -385,6 +386,8 @@ export const preparePortfolioKit = (
             accounts,
             nextFlowId,
             targetAllocation,
+            policyVersion,
+            rebalanceCount,
           } = this.state;
 
           const deposit = () => {
@@ -398,6 +401,8 @@ export const preparePortfolioKit = (
             accountIdByChain: accountIdByChain(accounts),
             ...(accounts.has('agoric') ? deposit() : {}),
             ...(targetAllocation && { targetAllocation }),
+            policyVersion,
+            rebalanceCount,
           });
         },
         allocateFlowId() {
@@ -469,12 +474,22 @@ export const preparePortfolioKit = (
           this.facets.reporter.publishStatus();
           return position;
         },
-        /** KLUDGE around lack of synchronization signals for now. TODO: rethink design. */
-        waitKLUDGE(val: bigint) {
-          return vowTools.watch(E(timer).delay(val));
-        },
         setTargetAllocation(allocation: TargetAllocation) {
           this.state.targetAllocation = allocation;
+          this.facets.manager.incrPolicyVersion();
+        },
+        incrPolicyVersion() {
+          this.state.policyVersion += 1;
+          this.state.rebalanceCount = 0;
+          this.facets.reporter.publishStatus();
+        },
+        submitVersion(versionPre: number, countPre: number) {
+          const { policyVersion, rebalanceCount } = this.state;
+          policyVersion == versionPre ||
+            Fail`expected policyVersion ${policyVersion}; got ${versionPre}`;
+          rebalanceCount == countPre ||
+            Fail`expected rebalanceCount ${rebalanceCount}; got ${countPre}`;
+          this.state.rebalanceCount += 1;
           this.facets.reporter.publishStatus();
         },
       },

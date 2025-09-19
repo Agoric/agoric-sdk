@@ -427,7 +427,9 @@ const main = async (
   if (values['submit-for']) {
     const portfolioId = Number(values['submit-for']);
     const planner = walletStore.get<PortfolioPlanner>('planner');
-    await planner.submit(portfolioId, []);
+    const policyVersion = 0; // XXX should get from vstorage
+    const rebalanceCount = 0;
+    await planner.submit(portfolioId, [], policyVersion, rebalanceCount);
     return;
   }
 
