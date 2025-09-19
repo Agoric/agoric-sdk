@@ -1,14 +1,15 @@
 /** @file tests for PortfolioKit exo */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { makeHeapZone } from '@agoric/zone';
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+
+import { makeIssuerKit } from '@agoric/ertp';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow';
+import { makeHeapZone } from '@agoric/zone';
 import { preparePortfolioKit } from '../src/portfolio.exo.ts';
-import { gmpAddresses } from './mocks.ts';
 import type { StatusFor } from '../src/type-guards.ts';
+import { gmpAddresses } from './mocks.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
@@ -91,14 +92,7 @@ test('portfolio exo caches storage nodes', async t => {
   t.is(nodeQty, 2, 'root + portfolio');
 
   reporter.allocateFlowId();
-  const amount = AmountMath.make(USDC, 123n);
-  const flowStatus: StatusFor['flow'] = {
-    step: 1,
-    amount,
-    src: '@noble',
-    dest: 'USDN',
-    how: 'USDN',
-  };
+  const flowStatus: StatusFor['flow'] = { state: 'run', step: 1, how: 'USDN' };
   reporter.publishFlowStatus(1, flowStatus);
   reporter.publishFlowStatus(1, { ...flowStatus, step: 2 });
   await eventLoopIteration();

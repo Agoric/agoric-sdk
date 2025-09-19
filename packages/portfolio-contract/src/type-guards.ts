@@ -242,15 +242,18 @@ export const portfolioIdOfPath = (path: string | string[]) => {
   return id;
 };
 
-// XXX refactor using AssetMoveDesc
-type FlowStatus = {
-  step: number;
+type FlowStatus =
+  | { state: 'run'; step: number; how: string }
+  | { state: 'undo'; step: number; how: string }
+  | { state: 'done' }
+  | { state: 'fail'; step: number; how: string; error: string; where?: string };
+
+type FlowSteps = {
   how: string;
+  amount: Amount<'nat'>;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
-  amount: Amount<'nat'>;
-  error?: string;
-};
+}[];
 
 /** ChainNames including those in future upgrades */
 type ChainNameExt = string;
@@ -279,9 +282,8 @@ export type StatusFor = {
     totalIn: Amount<'nat'>;
     totalOut: Amount<'nat'>;
   };
-  // XXX refactor using AssetMoveDesc
-  // XXX how many steps? step: 1, last: 3, for example
-  flow: FlowStatus | (Omit<FlowStatus, 'dest'> & { where: string }); // recovery failed
+  flow: FlowStatus;
+  flowSteps: FlowSteps;
 };
 
 export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
@@ -340,6 +342,13 @@ export const makeFlowPath = (parent: number, id: number) => [
   `portfolio${parent}`,
   'flows',
   `flow${id}`,
+];
+
+export const makeFlowStepsPath = (parent: number, id: number) => [
+  `portfolio${parent}`,
+  'flows',
+  `flow${id}`,
+  'steps',
 ];
 
 export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.splitRecord(
