@@ -62,7 +62,7 @@ import {
   type OfferArgsFor,
 } from '../src/type-guards-steps.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
-import { makePortfolioSteps } from '../tools/portfolio-actors.ts';
+import { makePortfolioSteps } from '../src/plan-transfers.ts';
 import { decodeFunctionCall } from './abi-utils.ts';
 import {
   axelarIdsMock,
@@ -440,8 +440,10 @@ test('Noble Dollar Swap, Lock messages', t => {
   }
 });
 
-test('makePortfolioSteps for USDN position', t => {
-  const actual = makePortfolioSteps({ USDN: make(USDC, 50n * 1_000_000n) });
+test('makePortfolioSteps for USDN position', async t => {
+  const actual = await makePortfolioSteps({
+    USDN: make(USDC, 50n * 1_000_000n),
+  });
 
   const amount = make(USDC, 50n * 1_000_000n);
   const detail = { usdnOut: 49500000n };
@@ -456,7 +458,9 @@ test('makePortfolioSteps for USDN position', t => {
 });
 
 test('open portfolio with USDN position', async t => {
-  const { give, steps } = makePortfolioSteps({ USDN: make(USDC, 50_000_000n) });
+  const { give, steps } = await makePortfolioSteps({
+    USDN: make(USDC, 50_000_000n),
+  });
   const { orch, ctx, offer, storage } = mocks({}, give);
   const { log, seat } = offer;
 
@@ -484,7 +488,7 @@ const openAndTransfer = test.macro(
     goal: Partial<Record<YieldProtocol, NatAmount>>,
     makeEvents: () => VTransferIBCEvent[],
   ) => {
-    const { give, steps } = makePortfolioSteps(goal, { feeBrand: BLD });
+    const { give, steps } = await makePortfolioSteps(goal, { feeBrand: BLD });
     const { orch, ctx, offer, storage, tapPK } = mocks({}, give);
     const { log, seat } = offer;
 
@@ -570,7 +574,7 @@ test.skip('reject missing fee before committing anything', t => {
 });
 
 test('open portfolio with Compound position', async t => {
-  const { give, steps } = makePortfolioSteps(
+  const { give, steps } = await makePortfolioSteps(
     { Compound: make(USDC, 300n) },
     { fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } } },
   );
@@ -626,7 +630,7 @@ test('handle failure in localTransfer from seat to local account', async t => {
 });
 
 test('handle failure in IBC transfer', async t => {
-  const { give, steps } = makePortfolioSteps({ USDN: make(USDC, 100n) });
+  const { give, steps } = await makePortfolioSteps({ USDN: make(USDC, 100n) });
   const { orch, ctx, offer, storage } = mocks(
     { transfer: Error('IBC is on the fritz!!') },
     give,
@@ -650,7 +654,7 @@ test('handle failure in IBC transfer', async t => {
 });
 
 test('handle failure in executeEncodedTx', async t => {
-  const { give, steps } = makePortfolioSteps({ USDN: make(USDC, 100n) });
+  const { give, steps } = await makePortfolioSteps({ USDN: make(USDC, 100n) });
   const { orch, ctx, offer, storage } = mocks(
     { executeEncodedTx: Error('exec swaplock went kerflewey') },
     give,
@@ -954,7 +958,7 @@ test('client can move to deposit LCA', async t => {
 });
 
 test('receiveUpcall returns false if sender is not AXELAR_GMP', async t => {
-  const { give, steps } = makePortfolioSteps(
+  const { give, steps } = await makePortfolioSteps(
     { Compound: make(USDC, 300n) },
     { fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } } },
   );

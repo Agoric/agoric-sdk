@@ -13,10 +13,8 @@ import {
   type ProposalType,
   type TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import {
-  makePortfolioQuery,
-  makePortfolioSteps,
-} from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
+import { makePortfolioSteps } from '@aglocal/portfolio-contract/src/plan-transfers.ts';
+import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
 import {
   axelarConfigTestnet,
   gmpAddresses as gmpConfigs,
@@ -157,7 +155,10 @@ const openPositions = async (
   const goal = objectMap(goalData, toAmt);
   console.debug('TODO: address Ethereum-only limitation');
   const evm = 'Ethereum';
-  const { give: giveWFees } = makePortfolioSteps(goal, { evm, feeBrand: BLD });
+  const { give: giveWFees } = await makePortfolioSteps(goal, {
+    evm,
+    feeBrand: BLD,
+  });
   // XXX WIP: contract is to pay BLD fee
   const { GmpFee: _gf, ...give } = giveWFees;
   const proposal: ProposalType['openPortfolio'] = {

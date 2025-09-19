@@ -313,6 +313,7 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
         throw Fail`src pos must have account as dest ${q(moveDesc)}`;
       const poolKey = src as PoolKey;
       const { protocol } = PoolPlaces[poolKey];
+      // TODO move this into metadata
       const feeRequired = ['Compound', 'Aave', 'Beefy'];
       moveDesc.fee ||
         !feeRequired.includes(protocol) ||
@@ -706,8 +707,8 @@ export const rebalance = (async (
   offerArgs: OfferArgsFor['rebalance'],
   kit: GuestInterface<PortfolioKit>,
 ) => {
-  await null; // cf. wiki:NoNestedAwait
-  const trace = makeTracer('rebalance');
+  await null;
+  const trace = makeTracer('rebalance', false);
   const proposal = seat.getProposal() as ProposalType['rebalance'];
   trace('proposal', proposal.give, proposal.want, offerArgs);
 

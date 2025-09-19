@@ -48,7 +48,7 @@ import {
   type TargetAllocation,
 } from './type-guards.js';
 
-const trace = makeTracer('PortExo');
+const trace = makeTracer('PortExo', false);
 
 export const DECODE_CONTRACT_CALL_RESULT_ABI = [
   {
