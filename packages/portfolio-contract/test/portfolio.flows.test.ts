@@ -35,7 +35,7 @@ import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools, type VowTools } from '@agoric/vow';
-import type { Proposal, ZCFSeat } from '@agoric/zoe';
+import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
@@ -62,7 +62,11 @@ import {
   makeOfferArgsShapes,
   type OfferArgsFor,
 } from '../src/type-guards-steps.ts';
-import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
+import {
+  makeProposalShapes,
+  type ProposalType,
+  type StatusFor,
+} from '../src/type-guards.ts';
 import { makePortfolioSteps } from '../tools/portfolio-actors.ts';
 import { decodeFunctionCall } from './abi-utils.ts';
 import {
@@ -122,9 +126,31 @@ const makeVowToolsAreJustPromises = () => {
   return vowTools as VowTools;
 };
 
+const makeMockSeat = (
+  give: ProposalType['openPortfolio']['give'] = {},
+  buf: any[] = [],
+) => {
+  const proposal = harden({ give, want: {} });
+  let hasExited = false;
+  return {
+    getProposal: () => proposal,
+    hasExited: () => hasExited,
+    exit(completion) {
+      if (hasExited) throw Error('already exited');
+      hasExited = true;
+      buf.push({ _cap: 'seat', _method: 'exit', completion });
+    },
+    fail(reason) {
+      if (hasExited) throw Error('already exited');
+      hasExited = true;
+      buf.push({ _cap: 'seat', _method: 'fail', reason });
+    },
+  } as any as ZCFSeat;
+};
+
 // XXX move to mocks.ts for readability?
 const mocks = (
-  errs: Record<string, Error> = {},
+  errs: Record<string, Error | Map<string, Error>> = {},
   give: ProposalType['openPortfolio']['give'] = {},
 ) => {
   const buf = [] as any[];
@@ -151,6 +177,16 @@ const mocks = (
           return harden({ chainId, stakingTokens });
         },
         async makeAccount() {
+          const { makeAccount: makeAcctErr } = errs;
+          if (makeAcctErr) {
+            if (makeAcctErr instanceof Map) {
+              const err = makeAcctErr.get(name);
+              if (err) throw err;
+            } else {
+              throw makeAcctErr;
+            }
+          }
+
           const addr = harden({
             chainId,
             value: `${name}1${1000 + 7 * (nonce += 2)}`,
@@ -160,7 +196,8 @@ const mocks = (
               return addr;
             },
             async send(toAccount, amount) {
-              // XXX simulate errors?
+              const { send: sendErr } = errs;
+              if (sendErr && amount?.value === 13n) throw sendErr;
               log({ _cap: addr.value, _method: 'send', toAccount, amount });
             },
             async transfer(address, amount, opts) {
@@ -173,7 +210,12 @@ const mocks = (
                 opts,
               });
               const { transfer: err } = errs;
-              if (err && !err.message.includes(address.chainId)) throw err;
+              if (
+                err &&
+                !(err instanceof Map) &&
+                !err.message.includes(address.chainId)
+              )
+                throw err;
               if (opts?.memo) factoryPK.resolve(opts.memo);
             },
             async executeEncodedTx(msgs) {
@@ -357,29 +399,22 @@ const mocks = (
       portfolioId: 1,
     }) as unknown as GuestInterface<PortfolioKit>;
 
-  const proposal: Proposal = harden({ give, want: {} });
-  let hasExited = false;
-  const seat = {
-    getProposal: () => proposal,
-    hasExited: () => hasExited,
-    exit(completion) {
-      if (hasExited) throw Error('already exited');
-      log({ _cap: 'seat', _method: 'exit', completion });
-      hasExited = true;
-    },
-    fail(reason) {
-      if (hasExited) throw Error('already exited');
-      log({ _cap: 'seat', _method: 'fail', reason });
-      hasExited = true;
-    },
-  } as ZCFSeat;
+  const seat = makeMockSeat(give, buf);
 
   return {
     orch,
     tapPK,
     ctx: { ...ctx1, makePortfolioKit: makePortfolioKitGuest },
     offer: { log: buf, seat, factoryPK },
-    storage,
+    storage: {
+      ...storage,
+      /**
+       * Read pure data (CapData that has no slots) from the storage path
+       */
+      getDeserialized(path: string): unknown[] {
+        return storage.getValues(path).map(defaultSerializer.parse);
+      },
+    },
     vowTools,
   };
 };
@@ -977,6 +1012,136 @@ test('receiveUpcall returns false if sender is not AXELAR_GMP', async t => {
   );
 
   t.is(upcallProcessed, false, 'upcall indicates bad GMP sender');
+});
+
+test('handle failure in provideCosmosAccount makeAccount', async t => {
+  const amount = make(USDC, 100n);
+  const chainToErr = new Map([['noble', Error('timeout creating ICA')]]);
+
+  const { give, steps } = makePortfolioSteps({ USDN: amount });
+  const { orch, ctx, offer, storage } = mocks(
+    { makeAccount: chainToErr },
+    give,
+  );
+  const { log } = offer;
+
+  // Create portfolio once for both attempts
+  const kit = await ctx.makePortfolioKit();
+
+  // First attempt - will fail creating noble account
+  const seat1 = makeMockSeat({ Deposit: amount }, log);
+
+  const attempt1 = rebalance(orch, ctx, seat1, { flow: steps }, kit);
+
+  await t.throwsAsync(
+    attempt1,
+    { message: 'timeout creating ICA' },
+    'rebalance should fail when noble account creation fails',
+  );
+
+  // Check failure evidence
+  const failCall = log.find(entry => entry._method === 'fail');
+  t.truthy(
+    failCall,
+    'seat.fail() should be called when noble account creation fails',
+  );
+
+  const getPortfolioStatus = () =>
+    storage
+      .getDeserialized('published.ymax0.portfolios.portfolio1')
+      .at(-1) as StatusFor['portfolio'];
+
+  // Check portfolio status shows limited accounts (only agoric, no noble due to failure)
+  {
+    const { accountIdByChain: byChain } = getPortfolioStatus();
+    t.true('agoric' in byChain, 'agoric account should be present');
+    t.false(
+      'noble' in byChain,
+      'noble account should not be present due to failure',
+    );
+  }
+
+  // Recovery attempt - clear the error and use same portfolio
+  chainToErr.delete('noble');
+
+  const seat2 = makeMockSeat({ Deposit: amount }, log);
+
+  await rebalance(orch, ctx, seat2, { flow: steps }, kit);
+
+  const exitCall = log.find(entry => entry._method === 'exit');
+  t.truthy(exitCall, 'seat.exit() should be called on successful recovery');
+
+  {
+    const { accountIdByChain: byChain } = getPortfolioStatus();
+    t.deepEqual(
+      Object.keys(byChain),
+      ['agoric', 'noble'],
+      'portfolio includes noble account',
+    );
+  }
+});
+
+test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
+  const unlucky = make(BLD, 13n);
+  const { give, steps } = makePortfolioSteps(
+    { Compound: make(USDC, 300n) },
+    {
+      fees: { Compound: { Account: unlucky, Call: make(BLD, 100n) } },
+      evm: 'Arbitrum',
+    },
+  );
+  const { orch, ctx, offer, storage, tapPK } = mocks(
+    { send: Error('Insufficient funds - piggy bank sprang a leak') },
+    give,
+  );
+  const { log } = offer;
+
+  // Create portfolio once for both attempts
+  const pKit = await ctx.makePortfolioKit();
+
+  // First attempt - will fail when trying to send 13n BLD (unlucky amount)
+  const seat1 = makeMockSeat(give, log);
+
+  const attempt1P = rebalance(orch, ctx, seat1, { flow: steps }, pKit);
+
+  await t.throwsAsync(
+    attempt1P,
+    { message: 'Insufficient funds - piggy bank sprang a leak' },
+    'rebalance should fail when EVM account creation fails',
+  );
+  t.truthy(log.find(entry => entry._method === 'fail'));
+
+  const getPortfolioStatus = () =>
+    storage
+      .getDeserialized('published.ymax0.portfolios.portfolio1')
+      .at(-1) as StatusFor['portfolio'];
+
+  {
+    const { accountIdByChain: byChain } = getPortfolioStatus();
+    // limited accounts (no EVM account due to failure)
+    t.deepEqual(Object.keys(byChain), ['agoric']);
+
+    // TODO: "Insufficient funds" error should be visible in vstorage
+  }
+
+  // Recovery attempt - avoid the unlucky 13n fee using same portfolio
+  const { give: giveGood, steps: stepsGood } = makePortfolioSteps(
+    { Compound: make(USDC, 300n) },
+    { fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } } },
+  );
+  const seat2 = makeMockSeat(giveGood, log);
+  const attempt2P = rebalance(orch, ctx, seat2, { flow: stepsGood }, pKit);
+
+  await Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
+    tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain })),
+  );
+  await attempt2P;
+  t.truthy(log.find(entry => entry._method === 'exit'));
+
+  {
+    const { accountIdByChain: byChain } = getPortfolioStatus();
+    t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
+  }
 });
 
 test.todo('recover from send step');

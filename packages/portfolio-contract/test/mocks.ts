@@ -362,7 +362,8 @@ export const axelarIdsMock: AxelarId = {
 export const evmNamingDistinction = {
   destinationEVMChain: 'Arbitrum' as AxelarChain,
   sourceChain: 'arbitrum',
-};
+} as const;
+harden(evmNamingDistinction);
 
 /** from https://www.mintscan.io/noble explorer */
 export const explored = [
