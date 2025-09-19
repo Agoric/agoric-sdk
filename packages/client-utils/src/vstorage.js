@@ -151,6 +151,7 @@ export const makeVStorage = ({ fetch }, config) => {
     readStorageMeta,
     readStorage,
     /**
+     * @deprecated Use vstorage-client instead
      *
      * @param {string} path
      * @returns {Promise<QueryDataResponse>} latest vstorage value at path
@@ -169,6 +170,8 @@ export const makeVStorage = ({ fetch }, config) => {
       return response.children;
     },
     /**
+     * @deprecated Use vstorage-client instead
+     *
      * @param {string} path
      * @param {number} [height] default is highest
      * @returns {Promise<StreamCell<unknown>>}
@@ -181,6 +184,8 @@ export const makeVStorage = ({ fetch }, config) => {
       return cell;
     },
     /**
+     * @deprecated Use vstorage-client instead
+     *
      * Read values going back as far as available
      *
      * @param {string} path
