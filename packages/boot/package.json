@@ -59,7 +59,7 @@
     "viem": "^2.31.0"
   },
   "devDependencies": {
-    "@aglocal/fast-usdc-deploy": "^0.1.0",
+    "@aglocal/fast-usdc-deploy": "workspace:*",
     "@agoric/deploy-script-support": "workspace:*",
     "@agoric/governance": "workspace:*",
     "@agoric/store": "workspace:*",
