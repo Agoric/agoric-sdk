@@ -468,7 +468,7 @@ export const startEngine = async (
     const path = `${PENDING_TX_PATH_PREFIX}.${txId}`;
     await null;
     let streamCellJson;
-    let data: unknown;
+    let data;
     try {
       streamCellJson = await query.vstorage.readStorage(path, {
         kind: 'data',
