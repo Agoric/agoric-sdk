@@ -7,6 +7,10 @@ import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions'
 export * from './make-slog-sender.js';
 
 /**
+ * @import { LimitedConsole } from '@agoric/internal/src/js-utils.js';
+ */
+
+/**
  * @typedef {((obj: {}, jsonObj?: string | undefined) => void) & {
  *  usesJsonObject?: boolean;
  *  forceFlush?: () => Promise<void>;
@@ -20,6 +24,7 @@ export * from './make-slog-sender.js';
  * @typedef {MakeSlogSenderCommonOptions & Record<string, unknown>} MakeSlogSenderOptions
  * @typedef {object} MakeSlogSenderCommonOptions
  * @property {Record<string, string | undefined>} [env]
+ * @property {LimitedConsole} [console]
  * @property {string} [stateDir]
  * @property {string} [serviceName]
  */
@@ -28,11 +33,16 @@ export * from './make-slog-sender.js';
  * @param {SlogSender} [slogSender]
  * @param {object} [options]
  * @param {Record<string, string | undefined>} [options.env]
- * @param {(...args: any[]) => void} [options.log]
+ * @param {MakeSlogSenderCommonOptions['console']} [options.console]
+ * @param {(...args) => void} [options.log]
  */
 export const tryFlushSlogSender = async (
   slogSender,
-  { env = {}, log } = {},
+  {
+    env = {},
+    console = globalThis.console,
+    log = (...args) => console.warn(...args),
+  } = {},
 ) => {
   await null;
   try {
