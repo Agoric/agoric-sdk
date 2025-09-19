@@ -161,6 +161,11 @@ const trackFlow = async (
   await null; // cf. wiki:NoNestedAwait
   const flowId = reporter.allocateFlowId();
   const traceFlow = tracePortfolio.sub(`flow${flowId}`);
+  reporter.publishFlowSteps(
+    flowId,
+    todo.map(({ apply: _a, recover: _r, ...data }) => data),
+  );
+
   let step = 1;
   const moves: AssetMovement[] = [];
   try {
@@ -168,10 +173,10 @@ const trackFlow = async (
       const traceStep = traceFlow.sub(`step${step}`);
       moves.push(move);
       traceStep('starting', moveStatus(move));
-      reporter.publishFlowStatus(flowId, { step, ...moveStatus(move) });
+      const { amount, how } = move;
+      reporter.publishFlowStatus(flowId, { state: 'run', step, how });
       const { srcPos, destPos } = await move.apply(accounts, traceStep);
-      traceStep('done:', move.how);
-      const { amount } = move;
+      traceStep('done:', how);
 
       if (srcPos) {
         srcPos.recordTransferOut(amount);
@@ -181,8 +186,8 @@ const trackFlow = async (
       }
       step += 1;
     }
+    reporter.publishFlowStatus(flowId, { state: 'done' });
     // TODO(#NNNN): delete the flow storage node
-    // reporter.publishFlowStatus(flowId, { complete: true });
   } catch (err) {
     traceFlow('⚠️ step', step, ' failed', err);
     const failure = moves[step - 1];
@@ -192,21 +197,27 @@ const trackFlow = async (
       const traceStep = traceFlow.sub(`step${step}`);
       const move = moves[step - 1];
       const how = `unwind: ${move.how}`;
-      reporter.publishFlowStatus(flowId, { step, ...moveStatus(move), how });
+      reporter.publishFlowStatus(flowId, { state: 'undo', step, how });
       try {
         await move.recover(accounts, traceStep);
       } catch (errInUnwind) {
         traceStep('⚠️ unwind failed', errInUnwind);
         // if a recover fails, we just give up and report `where` the assets are
-        const { dest: where, ...ms } = moveStatus(move);
-        const final = { step, ...ms, how, where, error: errmsg(errInUnwind) };
-        reporter.publishFlowStatus(flowId, final);
+        const { dest: where } = move;
+        reporter.publishFlowStatus(flowId, {
+          state: 'fail',
+          step,
+          how,
+          error: errmsg(errInUnwind),
+          where,
+        });
         throw errInUnwind;
       }
     }
     reporter.publishFlowStatus(flowId, {
+      state: 'fail',
       step: errStep,
-      ...moveStatus(failure),
+      how: failure.how,
       error: errmsg(err),
     });
     throw err;
