@@ -16,7 +16,7 @@
     "doctor": "yarn synthetic-chain doctor"
   },
   "dependencies": {
-    "@agoric/synthetic-chain": "^0.6.1"
+    "@agoric/synthetic-chain": "^0.6.3"
   },
   "devDependencies": {
     "eslint": "^8.57.1",

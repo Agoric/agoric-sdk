@@ -1,7 +1,5 @@
 import test from 'ava';
 
-// XXX the @cosmjs packages load `axios` and `protobufjs`  versions that are incompatible with Endo (which Ava has already inited)
-// UNTIL https://github.com/cosmology-tech/telescope/issues/692
 import { QueryClient, setupStakingExtension } from '@cosmjs/stargate';
 import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
 
