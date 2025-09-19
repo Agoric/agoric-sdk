@@ -468,6 +468,16 @@ export const preparePortfolioKit = (
           accounts.init(info.chainName, info);
           this.facets.reporter.publishStatus();
         },
+        releaseAccount(chainName: SupportedChain, reason: unknown) {
+          trace('releaseAccount', chainName, reason);
+          const { accountsPending } = this.state;
+          if (accountsPending.has(chainName)) {
+            const vow = accountsPending.get(chainName);
+            vow.resolver.reject(reason);
+            accountsPending.delete(chainName);
+            this.facets.reporter.publishStatus();
+          }
+        },
         providePosition(
           poolKey: PoolKey,
           protocol: YieldProtocol,
