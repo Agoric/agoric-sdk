@@ -379,10 +379,11 @@ export const startEngine = async (
   const blockHeightFromSubscriptionResponse = (resp: SubscriptionResponse) => {
     const { type: respType, value: respData } = resp;
     switch (respType) {
-      case 'tendermint/event/NewBlockHeader':
-        return BigInt((respData.header as any).height);
       case 'tendermint/event/Tx':
         return BigInt((respData.TxResult as any).height);
+      case 'tendermint/event/NewBlock':
+        // https://pkg.go.dev/github.com/cometbft/cometbft/types#EventDataNewBlock
+        return BigInt((respData.block as any).header.height);
       default: {
         console.error(
           `🚨 Attempting to read block height from unexpected response type ${respType}`,
@@ -398,7 +399,7 @@ export const startEngine = async (
   // To avoid data gaps, establish subscriptions before gathering initial state.
   const subscriptionFilters = [
     // vstorage events are in BEGIN_BLOCK/END_BLOCK activity
-    "tm.event = 'NewBlockHeader'",
+    "tm.event = 'NewBlock'",
     // transactions
     "tm.event = 'Tx'",
   ];
