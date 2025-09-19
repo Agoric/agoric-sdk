@@ -82,7 +82,7 @@ export const diagnoseInfeasible = (
   const lines: string[] = [];
   lines.push(`nodes=${nodes.length} edges=${edges.length}`);
   lines.push(
-    `supply: sum=${sumSupply} pos=${posTotal} neg=${negTotal} (pos should equal neg; sum should be 0)`,
+    `supply: pos ${posTotal} must equal neg ${negTotal} (diff ${sumSupply})`,
   );
   if (sumSupply !== 0) lines.push('WARN: total supply does not balance to 0');
   lines.push(`sources=${sources.length} sinks=${sinksSet.size}`);
