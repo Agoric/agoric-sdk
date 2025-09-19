@@ -110,8 +110,8 @@ const aaveUsdcAddresses = harden({
   mainnet: {
     Ethereum: '0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c', // https://search.onaave.com/?q=atoken%20usdc%20aavev3ethereum
     Avalanche: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://search.onaave.com/?q=atoken%20usdc%20aavev3avalanche
-    Arbitrum: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://search.onaave.com/?q=atoken%20usdc%20aavev3arbitrum
-    Optimism: '0x625E7708f30cA75bfd92586e17077590C60eb4cD', // https://search.onaave.com/?q=atoken%20usdc%20aavev3optimism
+    Arbitrum: '0x724dc807b04555b71ed48a6896b6F41593b8C637', // https://search.onaave.com/?q=atoken%20usdcn%20aavev3arbitrum // token is USDCn not USDC on Arbitrum
+    Optimism: '0x38d693cE1dF5AaDF7bC62595A37D667aD57922e5', // https://search.onaave.com/?q=atoken%20usdcn%20aavev3optimism  // token is USDCn not USDC on Optimism
     Base: '0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB', // https://search.onaave.com/?q=atoken%20usdc%20aavev3base
   },
   testnet: {
