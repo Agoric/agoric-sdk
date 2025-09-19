@@ -8,6 +8,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"testing"
+	"time"
 
 	"cosmossdk.io/log"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -23,6 +24,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -78,11 +81,19 @@ func TestFullAppSimulation(t *testing.T) {
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 
+	// Use temporary directory to prevent CosmWasm lock conflicts when running tests in parallel
+	homeDir := fmt.Sprintf("/tmp/agoric-test-%d-%d", 1, time.Now().UnixNano())
+
 	appOptions := make(simtestutil.AppOptionsMap, 0)
-	appOptions[flags.FlagHome] = DefaultNodeHome
+	appOptions[flags.FlagHome] = homeDir
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
 
-	app := NewSimApp(logger, db, nil, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
+	var wasmOpts []wasmkeeper.Option
+
+	app := NewSimApp(
+		logger, db, nil, true, appOptions, wasmOpts,
+		fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID),
+	)
 	require.Equal(t, "SimApp", app.Name())
 
 	// run randomized simulation
@@ -123,11 +134,19 @@ func TestAppImportExport(t *testing.T) {
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 
+	// Use temporary directory to prevent CosmWasm lock conflicts when running tests in parallel
+	homeDir := fmt.Sprintf("/tmp/agoric-test-%d-%d", 2, time.Now().UnixNano())
+
 	appOptions := make(simtestutil.AppOptionsMap, 0)
-	appOptions[flags.FlagHome] = DefaultNodeHome
+	appOptions[flags.FlagHome] = homeDir
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
 
-	app := NewSimApp(logger, db, nil, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
+	var wasmOpts []wasmkeeper.Option
+
+	app := NewSimApp(
+		logger, db, nil, true, appOptions, wasmOpts,
+		fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID),
+	)
 	require.Equal(t, "SimApp", app.Name())
 
 	// Run randomized simulation
@@ -167,7 +186,10 @@ func TestAppImportExport(t *testing.T) {
 		require.NoError(t, os.RemoveAll(newDir))
 	}()
 
-	newApp := NewSimApp(log.NewNopLogger(), newDB, nil, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
+	newApp := NewSimApp(
+		log.NewNopLogger(), newDB, nil, true, appOptions, wasmOpts,
+		fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID),
+	)
 	require.Equal(t, "SimApp", newApp.Name())
 
 	var genesisState GenesisState
@@ -239,11 +261,19 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 
+	// Use temporary directory to prevent CosmWasm lock conflicts when running tests in parallel
+	homeDir := fmt.Sprintf("/tmp/agoric-test-%d-%d", 3, time.Now().UnixNano())
+
 	appOptions := make(simtestutil.AppOptionsMap, 0)
-	appOptions[flags.FlagHome] = DefaultNodeHome
+	appOptions[flags.FlagHome] = homeDir
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
 
-	app := NewSimApp(logger, db, nil, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
+	var wasmOpts []wasmkeeper.Option
+
+	app := NewSimApp(
+		logger, db, nil, true, appOptions, wasmOpts,
+		fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID),
+	)
 	require.Equal(t, "SimApp", app.Name())
 
 	// Run randomized simulation
@@ -288,7 +318,10 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		require.NoError(t, os.RemoveAll(newDir))
 	}()
 
-	newApp := NewSimApp(log.NewNopLogger(), newDB, nil, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
+	newApp := NewSimApp(
+		log.NewNopLogger(), newDB, nil, true, appOptions, wasmOpts,
+		fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID),
+	)
 	require.Equal(t, "SimApp", newApp.Name())
 
 	newApp.InitChain(&abci.RequestInitChain{
@@ -333,9 +366,15 @@ func TestAppStateDeterminism(t *testing.T) {
 	}
 
 	appHashList := make([]json.RawMessage, numTimesToRunPerSeed)
+
+	// Use temporary directory to prevent CosmWasm lock conflicts when running tests in parallel
+	homeDir := fmt.Sprintf("/tmp/agoric-test-%d-%d", 4, time.Now().UnixNano())
+
 	appOptions := make(simtestutil.AppOptionsMap, 0)
-	appOptions[flags.FlagHome] = DefaultNodeHome
+	appOptions[flags.FlagHome] = homeDir
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
+
+	var wasmOpts []wasmkeeper.Option
 
 	for i := 0; i < numSeeds; i++ {
 		if config.Seed == simcli.DefaultSeedValue {
@@ -353,7 +392,10 @@ func TestAppStateDeterminism(t *testing.T) {
 			}
 
 			db := dbm.NewMemDB()
-			app := NewSimApp(logger, db, nil, true, appOptions, interBlockCacheOpt(), baseapp.SetChainID(SimAppChainID))
+			app := NewSimApp(
+				logger, db, nil, true, appOptions, wasmOpts,
+				interBlockCacheOpt(), baseapp.SetChainID(SimAppChainID),
+			)
 
 			fmt.Printf(
 				"running non-determinism simulation; seed %d: %d/%d, attempt: %d/%d\n",

@@ -2,6 +2,9 @@ package ante
 
 import (
 	sdkioerrors "cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -14,10 +17,13 @@ import (
 type HandlerOptions struct {
 	ante.HandlerOptions
 
-	IBCKeeper        *ibckeeper.Keeper
-	FeeCollectorName string
-	AdmissionData    interface{}
-	SwingsetKeeper   SwingsetKeeper
+	IBCKeeper         *ibckeeper.Keeper
+	FeeCollectorName  string
+	AdmissionData     interface{}
+	SwingsetKeeper    SwingsetKeeper
+	WasmKeeper        *wasmkeeper.Keeper
+	WasmConfig        *wasmtypes.WasmConfig
+	TXCounterStoreKey storetypes.StoreKey
 }
 
 func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {

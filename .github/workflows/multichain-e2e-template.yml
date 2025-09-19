@@ -122,6 +122,13 @@ jobs:
           #repo: https://agoric-labs.github.io/starship
           repo: https://agoric-labs.github.io/starship
 
+      - name: Clean VM State
+        run: |
+          kubectl config set-context --current --namespace=${NAMESPACE}
+          echo "Cleaning any stale VM locks and cache..."
+          kubectl exec agoriclocal-genesis-0 -c validator -- sh -c 'find /root/.agoric/wasm -name "exclusive.lock" -delete 2>/dev/null || true; rm -rf /root/.agoric/wasm/cache 2>/dev/null || true' || true
+        working-directory: ./agoric-sdk/multichain-testing
+
       - name: Fund Provision Pool
         run: |
           kubectl config set-context --current --namespace=${NAMESPACE}

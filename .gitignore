@@ -87,3 +87,5 @@ endo-sha.txt
 !.aiderignore
 .claude
 
+
+packages/deployment/ansible/wasm/
