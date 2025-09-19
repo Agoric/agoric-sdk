@@ -19,7 +19,7 @@ import zcfBundle from '../bundles/bundle-contractFacet.js';
  */
 
 // this simulates a bundlecap, which is normally a swingset "device node"
-/** @typedef { import('@agoric/swingset-vat').BundleCap } BundleCap */
+/** @import {BundleCap} from '@agoric/swingset-vat'; */
 /** @type {() => BundleCap} */
 const fakeBundleCap = () => makeHandle('FakeBundleCap');
 const bogusBundleCap = () => makeHandle('BogusBundleCap');

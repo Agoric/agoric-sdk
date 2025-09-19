@@ -70,9 +70,9 @@ bundleID before submitting to the kernel), or (temporarily) a full bundle.
 */
 
 /**
- * @typedef { import('../../types-external.js').Bundle } Bundle
- * @typedef { import('../../types-external.js').BundleCap } BundleCap
- * @typedef { import('../../types-external.js').BundleID } BundleID
+ * @import {Bundle} from '../../types-external.js';
+ * @import {BundleCap} from '../../types-external.js';
+ * @import {BundleID} from '../../types-external.js';
  */
 
 /**
