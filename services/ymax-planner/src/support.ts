@@ -81,7 +81,7 @@ export const createEVMContext = async ({
   clusterName,
   alchemyApiKey,
 }: CreateContextParams): Promise<
-  Pick<EvmContext, 'evmProviders' | 'usdcAddresses'>
+  Omit<EvmContext, 'cosmosRest' | 'signingSmartWalletKit' | 'fetch'>
 > => {
   if (clusterName === 'local') clusterName = 'testnet';
   if (!alchemyApiKey) throw Error('missing alchemyApiKey');
@@ -97,6 +97,8 @@ export const createEVMContext = async ({
   return {
     evmProviders,
     usdcAddresses: usdcAddresses[clusterName],
+    alchemyApiKey,
+    clusterName,
   };
 };
 

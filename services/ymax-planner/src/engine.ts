@@ -648,7 +648,12 @@ export const startEngine = async (
               unprefixedPortfolioPath as any,
               amount,
               feeAsset.brand as Brand<'nat'>,
-              { readPublished: query.readPublished, spectrum, cosmosRest },
+              evmCtx,
+              {
+                readPublished: query.readPublished,
+                spectrum,
+                cosmosRest,
+              },
             );
 
             // TODO: consolidate with portfolioIdOfPath
