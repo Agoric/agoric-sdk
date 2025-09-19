@@ -296,6 +296,29 @@ export const buildLPModel = (
   };
 };
 
+/**
+ * Represent a JSON-serializable object as a spacey single-line literal with
+ * identifier-compatible property names unquoted.
+ */
+const prettyJsonable = (obj: unknown): string => {
+  const jsonText = JSON.stringify(obj, null, 1);
+  // Capture strings and replace them with JSON-incompatible `#`s.
+  const strings = [] as string[];
+  const safe = jsonText.replace(/"(\\.|[^\\"])*":?/g, s => {
+    strings.push(s);
+    return '#';
+  });
+  // Condense the [now guaranteed-insignificant] whitespace.
+  const singleLine = safe.replace(/\s+/g, ' ');
+  // Restore the strings, stripping quotes from property names as possible.
+  const pretty = singleLine.replaceAll('#', () => {
+    const s = strings.shift() as string;
+    if (!s.endsWith(':')) return s;
+    return s.replace(/^"([\p{ID_Start}$_][\p{ID_Continue}$]*)":$/u, '$1:');
+  });
+  return pretty;
+};
+
 // solveRebalance: use javascript-lp-solver directly
 // This operation is async to allow future use of async solvers if needed
 export const solveRebalance = async (
@@ -306,11 +329,12 @@ export const solveRebalance = async (
   if (result.feasible !== true) {
     if (graph.debug) {
       // Emit richer context only on demand to avoid noisy passing runs
-      const msg = formatInfeasibleDiagnostics(graph, model);
+      let msg = formatInfeasibleDiagnostics(graph, model);
+      msg += ` | ${prettyJsonable(result)}`;
       console.error('[solver] No feasible solution. Diagnostics:', msg);
       throw Fail`No feasible solution: ${msg}`;
     }
-    throw Fail`No feasible solution`;
+    throw Fail`No feasible solution: ${result}`;
   }
   const flows: SolvedEdgeFlow[] = [];
   for (const edge of graph.edges) {
