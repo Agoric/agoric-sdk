@@ -226,39 +226,45 @@ const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
     return promiseMaybe as unknown as Promise<AccountInfoFor[C]>;
   }
 
-  // We have the map entry reserved
-  switch (chainName) {
-    case 'noble': {
-      const nobleChain = await orch.getChain('noble');
-      traceChain('makeAccount()');
-      const ica: NobleAccount = await nobleChain.makeAccount();
-      traceChain('result:', coerceAccountId(ica.getAddress()));
-      const info: AccountInfoFor['noble'] = {
-        namespace: 'cosmos',
-        chainName: 'noble' as const,
-        ica,
-      };
-      kit.manager.resolveAccount(info);
-      return info as AccountInfoFor[C];
+  // We have the map entry reserved - use critical section pattern
+  try {
+    switch (chainName) {
+      case 'noble': {
+        const nobleChain = await orch.getChain('noble');
+        traceChain('makeAccount()');
+        const ica: NobleAccount = await nobleChain.makeAccount();
+        traceChain('result:', coerceAccountId(ica.getAddress()));
+        const info: AccountInfoFor['noble'] = {
+          namespace: 'cosmos',
+          chainName: 'noble' as const,
+          ica,
+        };
+        kit.manager.resolveAccount(info);
+        return info as AccountInfoFor[C];
+      }
+      case 'agoric': {
+        const agoricChain = await orch.getChain('agoric');
+        const lca = await agoricChain.makeAccount();
+        const lcaIn = await agoricChain.makeAccount();
+        const reg = await lca.monitorTransfers(kit.tap);
+        traceChain('Monitoring transfers for', lca.getAddress().value);
+        const info: AccountInfoFor['agoric'] = {
+          namespace: 'cosmos',
+          chainName,
+          lca,
+          lcaIn,
+          reg,
+        };
+        kit.manager.resolveAccount(info);
+        return info as AccountInfoFor[C];
+      }
+      default:
+        throw Error('unreachable');
     }
-    case 'agoric': {
-      const agoricChain = await orch.getChain('agoric');
-      const lca = await agoricChain.makeAccount();
-      const lcaIn = await agoricChain.makeAccount();
-      const reg = await lca.monitorTransfers(kit.tap);
-      traceChain('Monitoring transfers for', lca.getAddress().value);
-      const info: AccountInfoFor['agoric'] = {
-        namespace: 'cosmos',
-        chainName,
-        lca,
-        lcaIn,
-        reg,
-      };
-      kit.manager.resolveAccount(info);
-      return info as AccountInfoFor[C];
-    }
-    default:
-      throw Error('unreachable');
+  } catch (reason) {
+    traceChain('failed to make', reason);
+    kit.manager.releaseAccount(chainName, reason);
+    throw reason;
   }
 };
 
@@ -499,6 +505,7 @@ const stepFlow = async (
     });
   };
 
+  traceP('checking', moves.length, 'moves');
   for (const [i, move] of entries(moves)) {
     const traceMove = traceP.sub(`move${i}`);
     // @@@ traceMove('wayFromSrcToDesc?', move);
@@ -692,6 +699,7 @@ const stepFlow = async (
     }
   }
 
+  traceP('provide accounts for', moves.length, 'moves');
   const agoric = await provideCosmosAccount(orch, 'agoric', kit, traceP);
   const evmAccts = await provideEVMAccounts(orch, ctx, moves, kit, agoric.lca);
   traceP('EVM accounts ready', keys(evmAccts));

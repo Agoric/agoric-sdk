@@ -65,33 +65,41 @@ export const provideEVMAccount = async (
   ctx: PortfolioInstanceContext,
   pk: GuestInterface<PortfolioKit>,
 ) => {
+  await null;
   const found = pk.manager.reserveAccount(chainName);
   if (found) {
     return found as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
   }
 
-  const pId = pk.reader.getPortfolioId();
-  const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
-  const axelarId = gmp.axelarIds[chainName];
-  const target = { axelarId, remoteAddress: ctx.contracts[chainName].factory };
-  const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
-
-  {
+  // We have the map entry reserved - use critical section pattern
+  try {
+    const pId = pk.reader.getPortfolioId();
+    const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
+    const axelarId = gmp.axelarIds[chainName];
+    const target = {
+      axelarId,
+      remoteAddress: ctx.contracts[chainName].factory,
+    };
+    const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
     const feeAccount = await ctx.contractAccount;
     const src = feeAccount.getAddress();
     traceChain('send makeAccountCall Axelar fee from', src.value);
     await feeAccount.send(lca.getAddress(), fee);
-  }
-  await sendMakeAccountCall(
-    target,
-    fee,
-    lca,
-    gmp.chain,
-    ctx.gmpAddresses,
-    gmp.evmGas,
-  );
+    await sendMakeAccountCall(
+      target,
+      fee,
+      lca,
+      gmp.chain,
+      ctx.gmpAddresses,
+      gmp.evmGas,
+    );
 
-  return pk.reader.getGMPInfo(chainName) as unknown as Promise<GMPAccountInfo>; // XXX Guest/Host #9822
+    return pk.reader.getGMPInfo(chainName);
+  } catch (reason) {
+    trace('failed to make', chainName, reason);
+    pk.manager.releaseAccount(chainName, reason);
+    throw reason;
+  }
 };
 
 type TokenMessengerI = {
