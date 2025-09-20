@@ -1,4 +1,4 @@
-/** @file test for ProposalShapes, offerArgs shapes */
+/** @file test for ProposalShapes, offerArgs, vstorage shapes */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
@@ -6,9 +6,13 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { matches, mustMatch } from '@endo/patterns';
 import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 import {
+  FlowStatusShape,
+  FlowStepsShape,
   makeProposalShapes,
   PoolKeyShapeExt,
   PortfolioStatusShapeExt,
+  PositionStatusShape,
+  type StatusFor,
 } from '../src/type-guards.ts';
 
 const usdcKit = withAmountUtils(makeIssuerKit('USDC'));
@@ -141,4 +145,201 @@ test('numeric position references are rejected', t => {
   t.throws(() => mustMatch(specimenWithNumber, shapes.rebalance), {
     message: /Must match one of/,
   });
+});
+
+test('vstorage flow type matches shape', t => {
+  const passCases: Record<string, StatusFor['flow']> = harden({
+    runningFlow: {
+      state: 'run',
+      step: 1,
+      how: 'deposit',
+    },
+    undoingFlow: {
+      state: 'undo',
+      step: 2,
+      how: 'withdraw',
+    },
+    completedFlow: {
+      state: 'done',
+    },
+    failedFlow: {
+      state: 'fail',
+      step: 0,
+      how: 'transfer',
+      error: 'Insufficient funds',
+    },
+    failedFlowWithLocation: {
+      state: 'fail',
+      step: 1,
+      how: 'deposit',
+      error: 'Network timeout',
+      where: '@Arbitrum',
+    },
+  });
+
+  const failCases = harden({
+    missingState: {
+      step: 1,
+      how: 'deposit',
+    },
+    invalidState: {
+      state: 'invalid',
+      step: 1,
+      how: 'deposit',
+    },
+    runMissingStep: {
+      state: 'run',
+      how: 'deposit',
+    },
+    runMissingHow: {
+      state: 'run',
+      step: 1,
+    },
+    failMissingError: {
+      state: 'fail',
+      step: 1,
+      how: 'deposit',
+    },
+  });
+
+  const { entries } = Object;
+  for (const [name, flowStatus] of entries(passCases)) {
+    t.notThrows(() => mustMatch(flowStatus, FlowStatusShape), `pass: ${name}`);
+  }
+  for (const [name, flowStatus] of entries(failCases)) {
+    t.false(matches(flowStatus, FlowStatusShape), `fail: ${name}`);
+  }
+});
+
+test('vstorage flow steps type matches shape', t => {
+  const passCases: Record<string, StatusFor['flowSteps']> = harden({
+    emptySteps: [],
+    singleStep: [
+      {
+        how: 'deposit',
+        amount: usdc(1000n),
+        src: '<Deposit>',
+        dest: '@noble',
+      },
+    ],
+    multipleSteps: [
+      {
+        how: 'transfer',
+        amount: usdc(2000n),
+        src: '@noble',
+        dest: '@Arbitrum',
+      },
+      {
+        how: 'deposit',
+        amount: usdc(1800n),
+        src: '@Arbitrum',
+        dest: 'Aave_Arbitrum',
+      },
+    ],
+  });
+
+  const failCases = harden({
+    missingHow: [
+      {
+        amount: usdc(1000n),
+        src: '<Deposit>',
+        dest: '@noble',
+      },
+    ],
+    missingAmount: [
+      {
+        how: 'deposit',
+        src: '<Deposit>',
+        dest: '@noble',
+      },
+    ],
+    missingSrc: [
+      {
+        how: 'deposit',
+        amount: usdc(1000n),
+        dest: '@noble',
+      },
+    ],
+    missingDest: [
+      {
+        how: 'deposit',
+        amount: usdc(1000n),
+        src: '<Deposit>',
+      },
+    ],
+  });
+
+  const { entries } = Object;
+  for (const [name, flowSteps] of entries(passCases)) {
+    t.notThrows(() => mustMatch(flowSteps, FlowStepsShape), `pass: ${name}`);
+  }
+  for (const [name, flowSteps] of entries(failCases)) {
+    t.false(matches(flowSteps, FlowStepsShape), `fail: ${name}`);
+  }
+});
+
+test('vstorage position type matches shape', t => {
+  const passCases: Record<string, StatusFor['position']> = harden({
+    usdnPosition: {
+      protocol: 'USDN',
+      accountId: 'cosmos:noble-1:noble1234567890abcdef1234567890abcdef12345678',
+      netTransfers: usdc(1000n),
+      totalIn: usdc(2000n),
+      totalOut: usdc(1000n),
+    },
+    aavePosition: {
+      protocol: 'Aave',
+      accountId: 'eip155:1:0x1234567890abcdef1234567890abcdef12345678',
+      netTransfers: usdc(500n),
+      totalIn: usdc(1500n),
+      totalOut: usdc(1000n),
+    },
+    compoundPosition: {
+      protocol: 'Compound',
+      accountId: 'eip155:42161:0x456def1234567890abcdef1234567890abcdef12',
+      netTransfers: usdc(0n),
+      totalIn: usdc(1000n),
+      totalOut: usdc(1000n),
+    },
+    beefyPosition: {
+      protocol: 'Beefy',
+      accountId: 'eip155:8453:0x789ghi1234567890abcdef1234567890abcdef12',
+      netTransfers: usdc(2000n),
+      totalIn: usdc(3000n),
+      totalOut: usdc(1000n),
+    },
+  });
+
+  const failCases = harden({
+    missingProtocol: {
+      accountId: 'cosmos:noble-1:noble1234567890abcdef1234567890abcdef12345678',
+      netTransfers: usdc(1000n),
+      totalIn: usdc(2000n),
+      totalOut: usdc(1000n),
+    },
+    invalidProtocol: {
+      protocol: 'InvalidProtocol',
+      accountId: 'cosmos:noble-1:noble1234567890abcdef1234567890abcdef12345678',
+      netTransfers: usdc(1000n),
+      totalIn: usdc(2000n),
+      totalOut: usdc(1000n),
+    },
+    missingAccountId: {
+      protocol: 'USDN',
+      netTransfers: usdc(1000n),
+      totalIn: usdc(2000n),
+      totalOut: usdc(1000n),
+    },
+  });
+
+  const { entries } = Object;
+  for (const [name, position] of entries(passCases)) {
+    t.notThrows(
+      () => mustMatch(position, PositionStatusShape),
+      `pass: ${name}`,
+    );
+  }
+  for (const [name, position] of entries(failCases)) {
+    t.false(matches(position, PositionStatusShape), `fail: ${name}`);
+  }
 });

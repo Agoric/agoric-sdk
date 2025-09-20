@@ -319,14 +319,13 @@ export const makePositionPath = (parent: number, key: PoolKeyExt) => [
   key,
 ];
 
-export const PositionStatusShape: TypedPattern<StatusFor['position']> =
-  M.splitRecord({
-    protocol: M.or('USDN', 'Aave', 'Compound'), // YieldProtocol
-    accountId: M.string(), // AccountId
-    netTransfers: AnyNatAmountShape, // XXX constrain brand to USDC
-    totalIn: AnyNatAmountShape,
-    totalOut: AnyNatAmountShape,
-  });
+export const PositionStatusShape: TypedPattern<StatusFor['position']> = harden({
+  protocol: M.or(...Object.keys(YieldProtocol)), // YieldProtocol
+  accountId: M.string(), // AccountId
+  netTransfers: AnyNatAmountShape, // XXX constrain brand to USDC
+  totalIn: AnyNatAmountShape,
+  totalOut: AnyNatAmountShape,
+});
 
 /**
  * Creates vstorage path for flow operation logging.
@@ -351,19 +350,23 @@ export const makeFlowStepsPath = (parent: number, id: number) => [
   'steps',
 ];
 
-export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.splitRecord(
-  {
-    step: M.nat(),
-    how: M.string(),
-    src: M.string(),
-    dest: M.string(),
-    amount: AnyNatAmountShape,
-  },
-  {
-    where: M.string(),
-    error: M.string(),
-  },
+export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.or(
+  { state: 'run', step: M.number(), how: M.string() },
+  { state: 'undo', step: M.number(), how: M.string() },
+  { state: 'done' },
+  M.splitRecord(
+    { state: 'fail', step: M.number(), how: M.string(), error: M.string() },
+    { where: M.string() },
+    {},
+  ),
 );
+
+export const FlowStepsShape: TypedPattern<StatusFor['flowSteps']> = M.arrayOf({
+  how: M.string(),
+  amount: AnyNatAmountShape,
+  src: M.string(), // AssetPlaceRef
+  dest: M.string(), // AssetPlaceRef
+});
 // #endregion
 
 // XXX deployment concern, not part of contract external interface
