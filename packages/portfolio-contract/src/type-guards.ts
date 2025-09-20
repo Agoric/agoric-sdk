@@ -242,15 +242,18 @@ export const portfolioIdOfPath = (path: string | string[]) => {
   return id;
 };
 
-// XXX refactor using AssetMoveDesc
-type FlowStatus = {
-  step: number;
+type FlowStatus =
+  | { state: 'run'; step: number; how: string }
+  | { state: 'undo'; step: number; how: string }
+  | { state: 'done' }
+  | { state: 'fail'; step: number; how: string; error: string; where?: string };
+
+type FlowSteps = {
   how: string;
+  amount: Amount<'nat'>;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
-  amount: Amount<'nat'>;
-  error?: string;
-};
+}[];
 
 /** ChainNames including those in future upgrades */
 type ChainNameExt = string;
@@ -279,9 +282,8 @@ export type StatusFor = {
     totalIn: Amount<'nat'>;
     totalOut: Amount<'nat'>;
   };
-  // XXX refactor using AssetMoveDesc
-  // XXX how many steps? step: 1, last: 3, for example
-  flow: FlowStatus | (Omit<FlowStatus, 'dest'> & { where: string }); // recovery failed
+  flow: FlowStatus;
+  flowSteps: FlowSteps;
 };
 
 export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
@@ -317,14 +319,13 @@ export const makePositionPath = (parent: number, key: PoolKeyExt) => [
   key,
 ];
 
-export const PositionStatusShape: TypedPattern<StatusFor['position']> =
-  M.splitRecord({
-    protocol: M.or('USDN', 'Aave', 'Compound'), // YieldProtocol
-    accountId: M.string(), // AccountId
-    netTransfers: AnyNatAmountShape, // XXX constrain brand to USDC
-    totalIn: AnyNatAmountShape,
-    totalOut: AnyNatAmountShape,
-  });
+export const PositionStatusShape: TypedPattern<StatusFor['position']> = harden({
+  protocol: M.or(...Object.keys(YieldProtocol)), // YieldProtocol
+  accountId: M.string(), // AccountId
+  netTransfers: AnyNatAmountShape, // XXX constrain brand to USDC
+  totalIn: AnyNatAmountShape,
+  totalOut: AnyNatAmountShape,
+});
 
 /**
  * Creates vstorage path for flow operation logging.
@@ -342,19 +343,30 @@ export const makeFlowPath = (parent: number, id: number) => [
   `flow${id}`,
 ];
 
-export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.splitRecord(
-  {
-    step: M.nat(),
-    how: M.string(),
-    src: M.string(),
-    dest: M.string(),
-    amount: AnyNatAmountShape,
-  },
-  {
-    where: M.string(),
-    error: M.string(),
-  },
+export const makeFlowStepsPath = (parent: number, id: number) => [
+  `portfolio${parent}`,
+  'flows',
+  `flow${id}`,
+  'steps',
+];
+
+export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.or(
+  { state: 'run', step: M.number(), how: M.string() },
+  { state: 'undo', step: M.number(), how: M.string() },
+  { state: 'done' },
+  M.splitRecord(
+    { state: 'fail', step: M.number(), how: M.string(), error: M.string() },
+    { where: M.string() },
+    {},
+  ),
 );
+
+export const FlowStepsShape: TypedPattern<StatusFor['flowSteps']> = M.arrayOf({
+  how: M.string(),
+  amount: AnyNatAmountShape,
+  src: M.string(), // AssetPlaceRef
+  dest: M.string(), // AssetPlaceRef
+});
 // #endregion
 
 // XXX deployment concern, not part of contract external interface

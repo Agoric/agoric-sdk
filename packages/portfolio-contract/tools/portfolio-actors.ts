@@ -120,7 +120,7 @@ export const makeTrader = (
      * This is the entry point to the portfolio management system.
      */
     async openPortfolio(
-      t: ExecutionContext,
+      _t: ExecutionContext,
       give: ProposalType['openPortfolio']['give'],
       offerArgs: OfferArgsFor['openPortfolio'] = {},
     ) {
@@ -135,7 +135,6 @@ export const makeTrader = (
         instance,
         publicInvitationMaker,
       };
-      t.log('I ask the portfolio manager to allocate', give);
       const proposal = { give: { Access, ...give } };
       openId = `openP-${(nonce += 1)}`;
       const doneP = wallet.executePublicOffer({

@@ -231,9 +231,8 @@ export const contract = async (
 
   // Only register chains and assets if chainHub is empty to avoid conflicts on restart
   if (chainHub.isEmpty()) {
-    registerChainsAndAssets(chainHub, brands, chainInfo, assetInfo, {
-      log: trace,
-    });
+    trace('chainHub:', Object.keys(chainInfo));
+    registerChainsAndAssets(chainHub, brands, chainInfo, assetInfo);
   } else {
     trace('chainHub already populated, using existing entries');
   }

@@ -1111,17 +1111,32 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
   );
   t.truthy(log.find(entry => entry._method === 'fail'));
 
-  const getPortfolioStatus = () =>
+  const getPortfolioStatus = (pId: number) =>
     storage
-      .getDeserialized('published.ymax0.portfolios.portfolio1')
+      .getDeserialized(`published.ymax0.portfolios.portfolio${pId}`)
       .at(-1) as StatusFor['portfolio'];
 
+  const getFlowStatus = (pId: number, fId: number) =>
+    storage
+      .getDeserialized(
+        `published.ymax0.portfolios.portfolio${pId}.flows.flow${fId}`,
+      )
+      .at(-1) as StatusFor['flow'];
+
   {
-    const { accountIdByChain: byChain } = getPortfolioStatus();
+    const { accountIdByChain: byChain } = getPortfolioStatus(1);
     // limited accounts (no EVM account due to failure)
     t.deepEqual(Object.keys(byChain), ['agoric']);
 
     // TODO: "Insufficient funds" error should be visible in vstorage
+    const fs = getFlowStatus(1, 1);
+    t.log(fs);
+    t.deepEqual(fs, {
+      state: 'fail',
+      step: 0,
+      how: 'makeAccount: Arbitrum',
+      error: 'Insufficient funds - piggy bank sprang a leak',
+    });
   }
 
   // Recovery attempt - avoid the unlucky 13n fee using same portfolio
@@ -1139,7 +1154,7 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
   t.truthy(log.find(entry => entry._method === 'exit'));
 
   {
-    const { accountIdByChain: byChain } = getPortfolioStatus();
+    const { accountIdByChain: byChain } = getPortfolioStatus(1);
     t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric', 'noble']);
   }
 });
