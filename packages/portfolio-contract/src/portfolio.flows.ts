@@ -154,24 +154,21 @@ export type ProtocolDetail<
  */
 const trackFlow = async (
   reporter: GuestInterface<PortfolioKit['reporter']>,
-  todo: AssetMovement[],
+  moves: AssetMovement[],
+  flowId: number,
+  traceFlow: TraceLogger,
   accounts: AccountsByChain,
-  tracePortfolio: TraceLogger,
 ) => {
   await null; // cf. wiki:NoNestedAwait
-  const flowId = reporter.allocateFlowId();
-  const traceFlow = tracePortfolio.sub(`flow${flowId}`);
   reporter.publishFlowSteps(
     flowId,
-    todo.map(({ apply: _a, recover: _r, ...data }) => data),
+    moves.map(({ apply: _a, recover: _r, ...data }) => data),
   );
 
   let step = 1;
-  const moves: AssetMovement[] = [];
   try {
-    for (const move of todo) {
+    for (const move of moves) {
       const traceStep = traceFlow.sub(`step${step}`);
-      moves.push(move);
       traceStep('starting', moveStatus(move));
       const { amount, how } = move;
       reporter.publishFlowStatus(flowId, { state: 'run', step, how });
@@ -388,37 +385,6 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
   }
 };
 
-const provideEVMAccounts = async (
-  orch: Orchestrator,
-  ctx: PortfolioInstanceContext,
-  moves: MovementDesc[],
-  kit: GuestInterface<PortfolioKit>,
-  lca: LocalAccount,
-) => {
-  const axelar = await orch.getChain('axelar');
-  const { axelarIds } = ctx;
-
-  const chainToAcct: Partial<Record<AxelarChain, GMPAccountInfo>> = {};
-  const evmChains = Object.keys(AxelarChain) as unknown[];
-
-  for (const move of moves) {
-    const gmp = {
-      chain: axelar,
-      fee: move.fee?.value || 0n,
-      axelarIds,
-      evmGas: move.detail?.evmGas || 0n,
-    };
-    for (const ref of [move.src, move.dest]) {
-      const maybeChain = getChainNameOfPlaceRef(ref);
-      if (!evmChains.includes(maybeChain)) continue;
-      const chain = maybeChain as AxelarChain;
-      const info = await provideEVMAccount(chain, gmp, lca, ctx, kit);
-      chainToAcct[chain] = info;
-    }
-  }
-  return harden(chainToAcct);
-};
-
 const stepFlow = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -516,7 +482,11 @@ const stepFlow = async (
     });
   };
 
-  traceP('checking', moves.length, 'moves');
+  const { reporter } = kit;
+  const flowId = reporter.allocateFlowId();
+  const traceFlow = traceP.sub(`flow${flowId}`);
+
+  traceFlow('checking', moves.length, 'moves');
   for (const [i, move] of entries(moves)) {
     const traceMove = traceP.sub(`move${i}`);
     // @@@ traceMove('wayFromSrcToDesc?', move);
@@ -710,18 +680,72 @@ const stepFlow = async (
     }
   }
 
-  traceP('provide accounts for', moves.length, 'moves');
-  const agoric = await provideCosmosAccount(orch, 'agoric', kit, traceP);
-  const evmAccts = await provideEVMAccounts(orch, ctx, moves, kit, agoric.lca);
-  traceP('EVM accounts ready', keys(evmAccts));
+  const agoric = await provideCosmosAccount(orch, 'agoric', kit, traceFlow);
+
+  /** run thunk(); on failure, report to vstorage */
+  const forChain = async <T>(
+    chain: SupportedChain,
+    thunk: () => Promise<T>,
+  ) => {
+    await null;
+    try {
+      const result = await thunk();
+      return result;
+    } catch (err) {
+      traceFlow('failed to make account for', chain, err);
+      reporter.publishFlowStatus(flowId, {
+        state: 'fail',
+        step: 0,
+        how: `makeAccount: ${chain}`,
+        error: err && typeof err === 'object' ? err.message : `${err}`,
+      });
+      throw err;
+    }
+  };
+
+  const evmAccts = await (async () => {
+    const axelar = await orch.getChain('axelar');
+    const { axelarIds } = ctx;
+
+    const chainToAcct: Partial<Record<AxelarChain, GMPAccountInfo>> = {};
+    const evmChains = Object.keys(AxelarChain) as unknown[];
+
+    for (const move of moves) {
+      const gmp = {
+        chain: axelar,
+        fee: move.fee?.value || 0n,
+        axelarIds,
+        evmGas: move.detail?.evmGas || 0n,
+      };
+      for (const ref of [move.src, move.dest]) {
+        const maybeChain = getChainNameOfPlaceRef(ref);
+        if (!evmChains.includes(maybeChain)) continue;
+        const chain = maybeChain as AxelarChain;
+        const info = await forChain(chain, () =>
+          provideEVMAccount(chain, gmp, agoric.lca, ctx, kit),
+        );
+        chainToAcct[chain] = info;
+      }
+    }
+    return harden(chainToAcct);
+  })();
+
+  traceFlow('EVM accounts ready', keys(evmAccts));
   const nobleMentioned = moves.some(m => [m.src, m.dest].includes('@noble'));
   const nobleInfo = await (nobleMentioned || keys(evmAccts).length > 0
-    ? provideCosmosAccount(orch, 'noble', kit, traceP)
+    ? forChain('noble', () =>
+        provideCosmosAccount(orch, 'noble', kit, traceFlow),
+      )
     : undefined);
-  const accounts: AccountsByChain = { agoric, noble: nobleInfo, ...evmAccts };
-  traceP('accounts for trackFlow', keys(accounts));
-  await trackFlow(kit.reporter, todo, accounts, traceP);
-  traceP('stepFlow done');
+  const accounts: AccountsByChain = {
+    agoric,
+    ...(nobleInfo && { noble: nobleInfo }),
+    ...evmAccts,
+  };
+  traceFlow('accounts for trackFlow', keys(accounts));
+
+  await trackFlow(reporter, todo, flowId, traceFlow, accounts);
+  traceFlow('stepFlow done');
 };
 
 /**
