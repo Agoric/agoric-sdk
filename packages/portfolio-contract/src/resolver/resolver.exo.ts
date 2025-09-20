@@ -6,6 +6,7 @@
  * This is an orchestration component that can be used independently of portfolio logic.
  */
 
+import type { NatValue } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type {
   Marshaller,
@@ -41,7 +42,7 @@ type TransactionEntry = {
 const trace = makeTracer('Resolver');
 
 const ClientFacetI = M.interface('ResolverClient', {
-  registerTransaction: M.call(M.or(...Object.values(TxType)), M.string())
+  registerTransaction: M.call(M.or('CCTP_TO_EVM', 'GMP', 'CCTP_TO_NOBLE'), M.string())
     .optional(M.nat())
     .returns(M.splitRecord({ result: VowShape, txId: M.string() })),
 });
@@ -50,7 +51,7 @@ const ReporterI = M.interface('Reporter', {
   insertPendingTransaction: M.call(
     M.string(),
     M.string(),
-    M.or(...Object.values(TxType)),
+    M.or('CCTP_TO_EVM', 'GMP', 'CCTP_TO_NOBLE'),
   )
     .optional(M.nat())
     .returns(),
@@ -104,6 +105,12 @@ export const prepareResolverKit = (
       E(node).setValue(JSON.stringify(capData)),
     );
   };
+
+  const resolverStateShape = harden({
+    transactionRegistry: M.remotable('MapStore'),
+    index: M.number(),
+  });
+
   return resolverZone.exoClassKit(
     'Resolver',
     {
@@ -256,6 +263,7 @@ export const prepareResolverKit = (
         },
       },
     },
+    { stateShape: resolverStateShape },
   );
 };
 export type ResolverInvitationMakers = ResolverKit['invitationMakers'];

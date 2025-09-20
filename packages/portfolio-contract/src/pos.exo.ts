@@ -5,11 +5,13 @@
  * @see {@link Position}
  */
 import { AmountMath, type Amount } from '@agoric/ertp';
+import { AnyNatAmountShape } from '@agoric/orchestration';
 import type { AccountId } from '@agoric/orchestration';
 import type { Zone } from '@agoric/zone';
 import type { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';
+import { M } from '@endo/patterns';
 import { type PublishStatusFn } from './portfolio.exo.ts';
-import { makePositionPath, type PoolKey } from './type-guards.ts';
+import { makePositionPath, PoolKeyShapeExt, type PoolKey } from './type-guards.ts';
 
 const { assign } = Object;
 const { add, subtract } = AmountMath;
@@ -33,6 +35,24 @@ export type TransferStatus = {
   totalOut: Amount<'nat'>;
   netTransfers: Amount<'nat'>;
 };
+
+const PositionInterface = M.interface('Position', {
+  getPoolKey: M.call().returns(M.string()),
+  getYieldProtocol: M.call().returns(M.string()),
+  recordTransferIn: M.call(AnyNatAmountShape).returns(AnyNatAmountShape),
+  recordTransferOut: M.call(AnyNatAmountShape).returns(AnyNatAmountShape),
+  publishStatus: M.call().returns(),
+});
+
+const positionStateShape = harden({
+  portfolioId: M.number(),
+  protocol: M.string(), // YieldProtocol
+  poolKey: PoolKeyShapeExt,
+  accountId: M.string(), // AccountId
+  totalIn: AnyNatAmountShape,
+  totalOut: AnyNatAmountShape,
+  netTransfers: AnyNatAmountShape,
+});
 
 const recordTransferIn = (
   amount: Amount<'nat'>,
@@ -69,7 +89,7 @@ export const preparePosition = (
 ) =>
   zone.exoClass(
     'Position',
-    undefined, // interface TODO
+    PositionInterface,
     (
       portfolioId: number,
       poolKey: PoolKey,
@@ -118,4 +138,5 @@ export const preparePosition = (
         publishStatus(key, status);
       },
     },
+    { stateShape: positionStateShape },
   );

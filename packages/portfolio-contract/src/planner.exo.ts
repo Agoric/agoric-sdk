@@ -43,6 +43,8 @@ export const preparePlanner = (
     submit: M.call(M.number(), M.arrayOf(movementDescShape)).returns(VowShape),
   });
 
+  const plannerStateShape = harden({});
+
   return zone.exoClass('Planner', PlannerI, () => ({}), {
     /**
      * Submit a plan (sequence of moves) for execution.
@@ -61,7 +63,7 @@ export const preparePlanner = (
       const pKit = getPortfolio(portfolioId);
       return rebalance(emptySeat, { flow: plan }, pKit);
     },
-  });
+  }, { stateShape: plannerStateShape });
 };
 
 export type PortfolioPlanner = ReturnType<ReturnType<typeof preparePlanner>>;

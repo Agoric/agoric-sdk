@@ -25,8 +25,9 @@ import type { MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
-import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
+import { type Vow, type VowKit, type VowTools, VowShape } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Zone } from '@agoric/zone';
 import { decodeBase64 } from '@endo/base64';
 import { X } from '@endo/errors';
@@ -42,6 +43,7 @@ import {
   makeFlowStepsPath,
   makePortfolioPath,
   PoolKeyShapeExt,
+  TargetAllocationShapeExt,
   type makeProposalShapes,
   type OfferArgsFor,
   type PoolKey,
@@ -144,6 +146,62 @@ const eventAbbr = (e: VTransferIBCEvent) => {
   return { destination_channel: dest, sequence };
 };
 
+// Interface definitions for PortfolioKit facets
+const TapI = M.interface('PortfolioTap', {
+  receiveUpcall: M.call(M.record()).returns(M.promise()),
+});
+
+const ParseInboundTransferWatcherI = M.interface('ParseInboundTransferWatcher', {
+  onRejected: M.call(M.any()).returns(),
+  onFulfilled: M.call(M.any()).returns(M.promise()),
+});
+
+const ReaderI = M.interface('PortfolioReader', {
+  getLocalAccount: M.call().returns(M.remotable('LocalAccount')),
+  getStoragePath: M.call().returns(VowShape),
+  getPortfolioId: M.call().returns(M.number()),
+  getGMPInfo: M.call(M.string()).returns(VowShape),
+  getTargetAllocation: M.call().returns(M.or(TargetAllocationShapeExt, M.undefined())),
+});
+
+const ReporterI = M.interface('PortfolioReporter', {
+  publishStatus: M.call().returns(),
+  allocateFlowId: M.call().returns(M.number()),
+  publishFlowSteps: M.call(M.number(), M.arrayOf(M.record())).returns(),
+  publishFlowStatus: M.call(M.number(), M.record()).returns(),
+});
+
+const ManagerI = M.interface('PortfolioManager', {
+  reserveAccount: M.call(M.string()).returns(M.or(VowShape, M.undefined())),
+  resolveAccount: M.call(M.record()).returns(),
+  releaseAccount: M.call(M.string(), M.any()).returns(),
+  providePosition: M.call(PoolKeyShapeExt, M.string(), M.string()).returns(M.remotable('Position')),
+  waitKLUDGE: M.call(M.bigint()).returns(VowShape),
+  setTargetAllocation: M.call(TargetAllocationShapeExt).returns(),
+});
+
+const AccountWatcherI = M.interface('AccountWatcher', {
+  onRejected: M.call(M.any(), M.string()).returns(),
+});
+
+const RebalanceHandlerI = M.interface('RebalanceHandler', {
+  handle: M.call(M.remotable('ZCFSeat'), M.any()).returns(M.promise()),
+});
+
+const InvitationMakersI = M.interface('InvitationMakers', {
+  Rebalance: M.call().returns(InvitationShape),
+});
+
+// State shape for PortfolioKit
+const portfolioKitStateShape = harden({
+  portfolioId: M.number(),
+  nextFlowId: M.number(),
+  accounts: M.remotable('MapStore'),
+  accountsPending: M.remotable('MapStore'),
+  positions: M.remotable('MapStore'),
+  targetAllocation: M.or(TargetAllocationShapeExt, M.undefined()),
+});
+
 export const preparePortfolioKit = (
   zone: Zone,
   {
@@ -216,16 +274,16 @@ export const preparePortfolioKit = (
 
   return zone.exoClassKit(
     'Portfolio',
-    undefined /* TODO {
-      tap: M.interface('tap', {
-        receiveUpcall: M.call(M.record()).returns(M.promise()),
-      }),
+    {
+      tap: TapI,
+      parseInboundTransferWatcher: ParseInboundTransferWatcherI,
       reader: ReaderI,
+      reporter: ReporterI,
       manager: ManagerI,
-      rebalanceHandler: OfferHandlerI,
-      invitationMakers: M.interface('invitationMakers', {
-        Rebalance: M.callWhen().returns(InvitationShape),
-      })}*/,
+      accountWatcher: AccountWatcherI,
+      rebalanceHandler: RebalanceHandlerI,
+      invitationMakers: InvitationMakersI,
+    },
     ({ portfolioId }: { portfolioId: number }): PortfolioKitState => {
       return {
         portfolioId,
@@ -540,6 +598,7 @@ export const preparePortfolioKit = (
       },
     },
     {
+      stateShape: portfolioKitStateShape,
       finish({ facets, state }) {
         facets.reporter.publishStatus();
         const { portfolioId } = state;
