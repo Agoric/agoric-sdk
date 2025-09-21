@@ -44,6 +44,8 @@ import {
   makePortfolioPath,
   PoolKeyShapeExt,
   TargetAllocationShapeExt,
+  FlowStatusShape,
+  FlowStepsShape,
   type makeProposalShapes,
   type OfferArgsFor,
   type PoolKey,
@@ -148,12 +150,12 @@ const eventAbbr = (e: VTransferIBCEvent) => {
 
 // Interface definitions for PortfolioKit facets
 const TapI = M.interface('PortfolioTap', {
-  receiveUpcall: M.call(M.record()).returns(M.promise()),
+  receiveUpcall: M.callWhen(M.record()).returns(M.boolean()),
 });
 
 const ParseInboundTransferWatcherI = M.interface('ParseInboundTransferWatcher', {
   onRejected: M.call(M.any()).returns(),
-  onFulfilled: M.call(M.any()).returns(M.promise()),
+  onFulfilled: M.callWhen(M.any()).returns(M.boolean()),
 });
 
 const ReaderI = M.interface('PortfolioReader', {
@@ -167,8 +169,8 @@ const ReaderI = M.interface('PortfolioReader', {
 const ReporterI = M.interface('PortfolioReporter', {
   publishStatus: M.call().returns(),
   allocateFlowId: M.call().returns(M.number()),
-  publishFlowSteps: M.call(M.number(), M.arrayOf(M.record())).returns(),
-  publishFlowStatus: M.call(M.number(), M.record()).returns(),
+  publishFlowSteps: M.call(M.number(), FlowStepsShape).returns(),
+  publishFlowStatus: M.call(M.number(), FlowStatusShape).returns(),
 });
 
 const ManagerI = M.interface('PortfolioManager', {
@@ -185,7 +187,9 @@ const AccountWatcherI = M.interface('AccountWatcher', {
 });
 
 const RebalanceHandlerI = M.interface('RebalanceHandler', {
-  handle: M.call(M.remotable('ZCFSeat'), M.any()).returns(M.promise()),
+  // offerArgs is checked against offerArgsShapes.rebalance within the method
+  // We can't make that shape here because it includes a brand that's not available at module initialization time
+  handle: M.callWhen(M.remotable('ZCFSeat'), M.any()).returns(M.any()),
 });
 
 const InvitationMakersI = M.interface('InvitationMakers', {

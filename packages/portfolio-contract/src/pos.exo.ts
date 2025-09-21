@@ -11,7 +11,7 @@ import type { Zone } from '@agoric/zone';
 import type { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';
 import { M } from '@endo/patterns';
 import { type PublishStatusFn } from './portfolio.exo.ts';
-import { makePositionPath, PoolKeyShapeExt, type PoolKey } from './type-guards.ts';
+import { makePositionPath, PoolKeyShapeExt, YieldProtocolShapeExt, type PoolKey } from './type-guards.ts';
 
 const { assign } = Object;
 const { add, subtract } = AmountMath;
@@ -37,8 +37,8 @@ export type TransferStatus = {
 };
 
 const PositionInterface = M.interface('Position', {
-  getPoolKey: M.call().returns(M.string()),
-  getYieldProtocol: M.call().returns(M.string()),
+  getPoolKey: M.call().returns(PoolKeyShapeExt),
+  getYieldProtocol: M.call().returns(YieldProtocolShapeExt),
   recordTransferIn: M.call(AnyNatAmountShape).returns(AnyNatAmountShape),
   recordTransferOut: M.call(AnyNatAmountShape).returns(AnyNatAmountShape),
   publishStatus: M.call().returns(),
@@ -46,7 +46,7 @@ const PositionInterface = M.interface('Position', {
 
 const positionStateShape = harden({
   portfolioId: M.number(),
-  protocol: M.string(), // YieldProtocol
+  protocol: YieldProtocolShapeExt, // YieldProtocol
   poolKey: PoolKeyShapeExt,
   accountId: M.string(), // AccountId
   totalIn: AnyNatAmountShape,
