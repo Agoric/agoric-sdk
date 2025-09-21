@@ -42,7 +42,7 @@ type TransactionEntry = {
 const trace = makeTracer('Resolver');
 
 const ClientFacetI = M.interface('ResolverClient', {
-  registerTransaction: M.call(M.or('CCTP_TO_EVM', 'GMP', 'CCTP_TO_NOBLE'), M.string())
+  registerTransaction: M.call(M.or(...Object.values(TxType)), M.string())
     .optional(M.nat())
     .returns(M.splitRecord({ result: VowShape, txId: M.string() })),
 });
@@ -51,7 +51,7 @@ const ReporterI = M.interface('Reporter', {
   insertPendingTransaction: M.call(
     M.string(),
     M.string(),
-    M.or('CCTP_TO_EVM', 'GMP', 'CCTP_TO_NOBLE'),
+    M.or(...Object.values(TxType)),
   )
     .optional(M.nat())
     .returns(),
