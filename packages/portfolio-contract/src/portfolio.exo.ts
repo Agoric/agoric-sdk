@@ -160,9 +160,9 @@ const ParseInboundTransferWatcherI = M.interface('ParseInboundTransferWatcher', 
 
 const ReaderI = M.interface('PortfolioReader', {
   getLocalAccount: M.call().returns(M.remotable('LocalAccount')),
-  getStoragePath: M.callWhen().returns(M.string()),
+  getStoragePath: M.call().returns(VowShape),
   getPortfolioId: M.call().returns(M.number()),
-  getGMPInfo: M.callWhen(M.string()).returns(M.record()),
+  getGMPInfo: M.call(M.string()).returns(VowShape),
   getTargetAllocation: M.call().returns(M.or(TargetAllocationShapeExt, M.undefined())),
 });
 
@@ -174,7 +174,7 @@ const ReporterI = M.interface('PortfolioReporter', {
 });
 
 const ManagerI = M.interface('PortfolioManager', {
-  reserveAccount: M.callWhen(M.string()).returns(M.or(M.record(), M.undefined())),
+  reserveAccount: M.call(M.string()).returns(M.or(VowShape, M.undefined())),
   resolveAccount: M.call(M.record()).returns(),
   releaseAccount: M.call(M.string(), M.any()).returns(),
   providePosition: M.call(PoolKeyShapeExt, M.string(), M.string()).returns(M.remotable('Position')),
