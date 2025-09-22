@@ -719,24 +719,23 @@ export default function buildKernel(
       finish({ work: zeroFreeWorkCounts });
       slogged = true;
 
-      /** @type {PolicyInputCleanupCounts} */
-      const cleanups = {
-        total:
-          work.exports +
-          work.imports +
-          work.promises +
-          work.kv +
-          work.snapshots +
-          work.transcripts,
-        ...work,
-      };
       if (done) {
         kernelKeeper.forgetTerminatedVat(vatID);
         kernelSlog.write({ type: 'vat-cleanup-complete', vatID });
       }
+
       // We don't perform any deliveries here, so there are no computrons to
       // report, but we do tell the runPolicy know how much kernel-side DB
       // work we did, so it can decide how much was too much.
+      const total =
+        work.exports +
+        work.imports +
+        work.promises +
+        work.kv +
+        work.snapshots +
+        work.transcripts;
+      /** @type {PolicyInputCleanupCounts} */
+      const cleanups = { total, ...work };
       return harden({ computrons: 0n, cleanups });
     } catch (err) {
       if (!slogged) finish({ error: err.message });
