@@ -68,17 +68,11 @@ export const preparePosition = (
   emptyTransferState: TransferStatus,
   publishStatus: PublishStatusFn,
 ) => {
-  const PositionInterface = M.interface('Position', {
-    getPoolKey: M.call().returns(M.string()),
-    getYieldProtocol: M.call().returns(M.string()),
-    recordTransferIn: M.call(M.any()).returns(M.any()),
-    recordTransferOut: M.call(M.any()).returns(M.any()),
-    publishStatus: M.call().returns(),
-  });
-
+  const PositionI = M.interface('Position', {}, { defaultGuards: 'raw' });
+  
   return zone.exoClass(
     'Position',
-    PositionInterface,
+    PositionI,
     (
       portfolioId: number,
       poolKey: PoolKey,

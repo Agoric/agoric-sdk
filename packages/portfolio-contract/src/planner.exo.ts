@@ -43,8 +43,6 @@ export const preparePlanner = (
     submit: M.call(M.number(), M.arrayOf(movementDescShape)).returns(VowShape),
   });
 
-  const plannerStateShape = harden({});
-
   return zone.exoClass('Planner', PlannerI, () => ({}), {
     /**
      * Submit a plan (sequence of moves) for execution.
