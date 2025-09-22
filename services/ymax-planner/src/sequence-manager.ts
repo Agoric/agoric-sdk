@@ -104,3 +104,5 @@ export class SequenceManager {
     }
   }
 }
+
+harden(SequenceManager);

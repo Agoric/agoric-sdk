@@ -22,6 +22,7 @@ import {
   type PendingTx,
   type TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import {
   TxStatus,
   TxType,
