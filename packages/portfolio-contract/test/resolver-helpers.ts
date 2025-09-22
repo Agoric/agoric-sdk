@@ -2,7 +2,7 @@
 
 import { E } from '@endo/far';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import type { UserSeat, ZoeService } from '@agoric/zoe';
+import type { ZoeService } from '@agoric/zoe';
 import type { TxStatus } from '../src/resolver/constants.js';
 
 /**
