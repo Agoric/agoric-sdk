@@ -43,6 +43,7 @@ import type { MakeAbortController } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
 import { makeSQLiteKeyValueStore } from './kv-store.ts';
+import { SequenceManager } from './sequence-manager.ts';
 
 const assertChainId = async (
   rpc: CosmosRPCClient,
@@ -189,6 +190,12 @@ export const main = async (
       amount: [{ denom: 'ubld', amount: '10000' }],
     },
   });
+
+  const sequenceManager = new SequenceManager(
+    { cosmosRest },
+    { chainKey: 'agoric', address: signingSmartWalletKit.address },
+  );
+  await sequenceManager.initialize();
 
   const spectrum = new SpectrumClient(simplePowers, {
     baseUrl: config.spectrum.apiUrl,
