@@ -257,7 +257,7 @@ export const contract = async (
   });
   const {
     client: resolverClient,
-    invitationMakers: makeResolverInvitationMakers,
+    service: resolverService,
   } = resolverZone.makeOnce('resolverKit', () => makeResolverKit());
 
   const { makeLCA } = orchestrateAll({ makeLCA: flows.makeLCA }, {});
@@ -372,7 +372,7 @@ export const contract = async (
 
     const resolverHandler = (seat: ZCFSeat) => {
       seat.exit();
-      return harden({ invitationMakers: makeResolverInvitationMakers });
+      return resolverService;
     };
 
     return zcf.makeInvitation(resolverHandler, 'resolver', undefined);
