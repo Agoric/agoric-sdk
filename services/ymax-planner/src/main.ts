@@ -16,6 +16,7 @@ import { startEngine } from './engine.ts';
 import { createEVMContext } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 import { SequenceManager } from './sequence-manager.ts';
+import { SmartWalletWithSequence } from './smart-wallet-with-sequence.ts';
 
 const assertChainId = async (
   rpc: CosmosRPCClient,
@@ -79,10 +80,37 @@ export const main = async (
   console.warn('Signer address:', signingSmartWalletKit.address);
 
   const sequenceManager = new SequenceManager(
-    { cosmosRest },
+    {
+      cosmosRest,
+      log: (...args) => console.log('[SequenceManager]:', ...args),
+    },
     { chainKey: 'agoric', address: signingSmartWalletKit.address },
   );
   await sequenceManager.initialize();
+
+  const smartWalletWithSequence = new SmartWalletWithSequence(
+    {
+      signingSmartWalletKit,
+      sequenceManager,
+      log: (...args) => console.log('[SmartWalletWithSequence]:', ...args),
+    },
+    { chainId: networkConfig.chainName },
+  );
+
+  // Create a wrapper that uses SmartWalletWithSequence methods instead of direct smartWalletKit calls
+  const smartWalletKitWithSequence = {
+    ...signingSmartWalletKit,
+    // Override the three main methods to use SmartWalletWithSequence
+    sendBridgeAction: smartWalletWithSequence.sendBridgeAction.bind(
+      smartWalletWithSequence,
+    ),
+    executeOffer: smartWalletWithSequence.executeOffer.bind(
+      smartWalletWithSequence,
+    ),
+    invokeEntry: smartWalletWithSequence.invokeEntry.bind(
+      smartWalletWithSequence,
+    ),
+  };
 
   const spectrum = new SpectrumClient(simplePowers, {
     baseUrl: config.spectrum.apiUrl,
@@ -100,7 +128,7 @@ export const main = async (
     rpc,
     spectrum,
     cosmosRest,
-    signingSmartWalletKit,
+    signingSmartWalletKit: smartWalletKitWithSequence,
     now: Date.now,
   };
   await startEngine(powers, {
