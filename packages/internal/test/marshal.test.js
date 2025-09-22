@@ -286,3 +286,15 @@ test(
   withNullAndNonNullSlots,
   { withCache: 'includeSevered' },
 );
+
+test('wrapRemoteMarshaller preserves identity in fromCapData', async t => {
+  const src = makeMockMarshaller();
+  const wrappedMarshaller = wrapRemoteMarshaller(src);
+
+  const specimen = Far('BLD Brand');
+  const capData = await src.toCapData(specimen);
+
+  const presence1 = await wrappedMarshaller.fromCapData(capData);
+  const presence2 = await wrappedMarshaller.fromCapData(capData);
+  t.is(presence1, presence2);
+});
