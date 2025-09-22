@@ -1,9 +1,10 @@
 // @ts-check
 import test from 'ava';
 
-import { Far, makeMarshal, passStyleOf } from '@endo/marshal';
 import { Fail } from '@endo/errors';
-import { wrapRemoteMarshaller, makeInaccessibleVal } from '../src/marshal.js';
+import { E } from '@endo/far';
+import { Far, makeMarshal, passStyleOf } from '@endo/marshal';
+import { makeInaccessibleVal, wrapRemoteMarshaller } from '../src/marshal.js';
 
 /**
  * @import {Marshal} from '@endo/marshal';
@@ -168,4 +169,16 @@ test('wrapRemoteMarshaller - null and non-null slots', async t => {
   const clone = await wrappedMarshaller.fromCapData(capData);
 
   t.deepEqual(clone, { ...specimen, bar: makeInaccessibleVal('bar') });
+});
+
+test('wrapRemoteMarshaller preserves identity in fromCapData', async t => {
+  const src = makeMockMarshaller();
+  const wrappedMarshaller = wrapRemoteMarshaller(src);
+
+  const specimen = Far('BLD Brand');
+  const capData = await E(src).toCapData(specimen);
+
+  const presence1 = await wrappedMarshaller.fromCapData(capData);
+  const presence2 = await wrappedMarshaller.fromCapData(capData);
+  t.is(presence1, presence2);
 });
