@@ -341,10 +341,7 @@ test.skip('CCTP settlement works', async t => {
     id: '123',
     targetName: 'resolverService',
     method: 'settleTransaction',
-    args: [{
-      status: 'success',
-      txId: 'tx0',
-    }],
+    args: [{ status: 'success', txId: 'tx0' }],
   });
   const latestWalletRecord = wallet.getLatestUpdateRecord();
 
@@ -446,10 +443,7 @@ test.skip('CCTP settlement works across contract restarts', async t => {
     id: '456',
     targetName: 'resolverService',
     method: 'settleTransaction',
-    args: [{
-      status: 'success',
-      txId: 'tx0',
-    }],
+    args: [{ status: 'success', txId: 'tx0' }],
   });
 
   const finalUpdate = wallet.getLatestUpdateRecord();
@@ -532,10 +526,7 @@ test.serial(
         id,
         targetName: 'resolverService',
         method: 'settleTransaction',
-        args: [{
-          status: 'success',
-          txId: 'tx0',
-        }],
+        args: [{ status: 'success', txId: 'tx0' }],
       }),
     );
   },
@@ -588,10 +579,7 @@ test.skip('CCTP settlement works with new invitation after contract remove and s
     id,
     targetName: 'resolverService-new',
     method: 'settleTransaction',
-    args: [{
-      status: 'success',
-      txId: 'tx0',
-    }],
+    args: [{ status: 'success', txId: 'tx0' }],
   });
   const latestWalletRecord = wallet.getLatestUpdateRecord();
 
