@@ -10,7 +10,7 @@ C4Context
   }
 
   Boundary(offchain, "Agoric Off Chain") {
-    System(css, "client support service", "ymax-data-service + ymax-options")
+    System(css, "ymax data service")
     System(ypr, "ymax planner and resolver", "planner and resolver")
   }
 
