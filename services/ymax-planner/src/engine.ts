@@ -17,14 +17,14 @@ import { Nat } from '@endo/nat';
 
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import {
-  TxStatus,
-  TxType,
-} from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import {
   PublishedTxShape,
   type PendingTx,
   type TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import {
+  TxStatus,
+  TxType,
+} from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type {
   FlowDetail,
