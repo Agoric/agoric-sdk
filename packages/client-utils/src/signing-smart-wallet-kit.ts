@@ -3,12 +3,17 @@ import type {
   OfferSpec,
 } from '@agoric/smart-wallet/src/offers.js';
 import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
-import type { SigningStargateClient, StdFee } from '@cosmjs/stargate';
+import type {
+  SignerData,
+  SigningStargateClient,
+  StdFee,
+} from '@cosmjs/stargate';
 import { toAccAddress } from '@cosmjs/stargate/build/queryclient/utils.js';
 import type { EReturn } from '@endo/far';
 import { MsgWalletSpendAction } from './codegen/agoric/swingset/msgs.js';
 import { makeStargateClientKit } from './signing-client.js';
 import { type SmartWalletKit } from './smart-wallet-kit.js';
+import { TxRaw } from './codegen/cosmos/tx/v1beta1/tx.js';
 
 // TODO parameterize as part of https://github.com/Agoric/agoric-sdk/issues/5912
 const defaultFee: StdFee = {
@@ -50,28 +55,56 @@ export const makeSigningSmartWalletKit = async (
     ) => walletUtils.pollOffer(address, ...args),
   };
 
-  const sendBridgeAction = (action: BridgeAction, fee: StdFee = defaultFee) => {
+  const sendBridgeAction = async (
+    action: BridgeAction,
+    fee: StdFee = defaultFee,
+    data?: SignerData,
+  ) => {
     const msgSpend = MsgWalletSpendAction.fromPartial({
       owner: toAccAddress(address),
       spendAction: JSON.stringify(walletUtils.marshaller.toCapData(action)),
     });
 
-    return client.signAndBroadcast(
+    if (!data) {
+      return client.signAndBroadcast(
+        address,
+        [{ typeUrl: MsgWalletSpendAction.typeUrl, value: msgSpend }],
+        fee,
+      );
+    }
+
+    const signedTx = await client.sign(
       address,
       [{ typeUrl: MsgWalletSpendAction.typeUrl, value: msgSpend }],
       fee,
+      '', // memo
+      data,
     );
+
+    const txBytes = TxRaw.encode(signedTx).finish();
+    return client.broadcastTx(txBytes);
   };
 
-  const executeOffer = async (offer: OfferSpec) => {
+  const executeOffer = async (offer: OfferSpec, data?: SignerData) => {
     const before = await client.getBlock();
 
-    await sendBridgeAction(
-      harden({
-        method: 'executeOffer',
-        offer,
-      }),
-    );
+    if (data) {
+      await sendBridgeAction(
+        harden({
+          method: 'executeOffer',
+          offer,
+        }),
+        defaultFee,
+        data,
+      );
+    } else {
+      await sendBridgeAction(
+        harden({
+          method: 'executeOffer',
+          offer,
+        }),
+      );
+    }
 
     return walletUtils.pollOffer(address, offer.id, before.header.height);
   };
