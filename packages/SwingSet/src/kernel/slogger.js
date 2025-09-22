@@ -107,14 +107,19 @@ export function makeDummySlogger(slogCallbacks, dummyConsole = badConsole) {
 }
 
 /**
+ * @typedef {(extraProps?: SlogDurationProps) => void} FinishSlogDuration
+ */
+
+/**
  * @callback StartDuration
- * Capture an extended process, writing an entry with `type` $startLabel and
- * then later (when the returned finish function is called) another entry with
- * `type` $endLabel and `seconds` reporting the intervening duration.
+ * Capture an extended process, writing an entry with `type` $startLabel if
+ * provided and then later (when the returned finish function is called) another
+ * entry with `type` $endLabel and `seconds` reporting the intervening duration
+ * (@see {SwingsetController['slogDuration']}).
  *
- * @param {readonly [startLabel: string, endLabel: string]} labels
+ * @param {readonly [startLabel: string | undefined, endLabel: string]} labels
  * @param {SlogDurationProps} startProps
- * @returns {import('../types-external').FinishSlogDuration}
+ * @returns {FinishSlogDuration}
  */
 
 /**
@@ -149,8 +154,9 @@ export function makeSlogger(slogCallbacks, writeSlogObject, slogDuration) {
       try {
         /** @type {(extraProps?: SlogDurationProps) => void} */
         let closeSpan;
-        // @ts-expect-error TS2722 slogDuration is not undefined here
-        void slogDuration(labels, startProps, async finish => {
+        const slogDurationFn =
+          /** @type {SwingsetController['slogDuration']} */ (slogDuration);
+        void slogDurationFn(labels, startProps, async finish => {
           const doneKit = makePromiseKit();
           closeSpan = props => {
             try {
