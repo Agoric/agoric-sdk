@@ -704,34 +704,44 @@ export default function buildKernel(
    */
   async function processCleanupTerminatedVat(message) {
     const { vatID, budget } = message;
-    const { done, work } = kernelKeeper.cleanupAfterTerminatedVat(
+    const finish = kernelSlog.startDuration([undefined, 'vat-cleanup'], {
       vatID,
-      budget,
-    );
-    const zeroFreeWorkCounts = objectMetaMap(work, desc =>
-      desc.value ? desc : undefined,
-    );
-    kernelSlog.write({ type: 'vat-cleanup', vatID, work: zeroFreeWorkCounts });
+    });
+    let slogged = false;
+    try {
+      const { done, work } = kernelKeeper.cleanupAfterTerminatedVat(
+        vatID,
+        budget,
+      );
+      const zeroFreeWorkCounts = objectMetaMap(work, desc =>
+        desc.value ? desc : undefined,
+      );
+      finish({ work: zeroFreeWorkCounts });
+      slogged = true;
 
-    /** @type {PolicyInputCleanupCounts} */
-    const cleanups = {
-      total:
-        work.exports +
-        work.imports +
-        work.promises +
-        work.kv +
-        work.snapshots +
-        work.transcripts,
-      ...work,
-    };
-    if (done) {
-      kernelKeeper.forgetTerminatedVat(vatID);
-      kernelSlog.write({ type: 'vat-cleanup-complete', vatID });
+      /** @type {PolicyInputCleanupCounts} */
+      const cleanups = {
+        total:
+          work.exports +
+          work.imports +
+          work.promises +
+          work.kv +
+          work.snapshots +
+          work.transcripts,
+        ...work,
+      };
+      if (done) {
+        kernelKeeper.forgetTerminatedVat(vatID);
+        kernelSlog.write({ type: 'vat-cleanup-complete', vatID });
+      }
+      // We don't perform any deliveries here, so there are no computrons to
+      // report, but we do tell the runPolicy know how much kernel-side DB
+      // work we did, so it can decide how much was too much.
+      return harden({ computrons: 0n, cleanups });
+    } catch (err) {
+      if (!slogged) finish({ error: err.message });
+      throw err;
     }
-    // We don't perform any deliveries here, so there are no computrons to
-    // report, but we do tell the runPolicy know how much kernel-side DB
-    // work we did, so it can decide how much was too much.
-    return harden({ computrons: 0n, cleanups });
   }
 
   /**
