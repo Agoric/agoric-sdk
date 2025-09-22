@@ -216,16 +216,46 @@ export const preparePortfolioKit = (
 
   return zone.exoClassKit(
     'Portfolio',
-    undefined /* TODO {
-      tap: M.interface('tap', {
-        receiveUpcall: M.call(M.record()).returns(M.promise()),
+    {
+      tap: M.interface('PortfolioTap', {
+        receiveUpcall: M.call(M.any()).returns(M.any()),
       }),
-      reader: ReaderI,
-      manager: ManagerI,
-      rebalanceHandler: OfferHandlerI,
-      invitationMakers: M.interface('invitationMakers', {
-        Rebalance: M.callWhen().returns(InvitationShape),
-      })}*/,
+      parseInboundTransferWatcher: M.interface('ParseInboundTransferWatcher', {
+        onRejected: M.call(M.any()).returns(),
+        onFulfilled: M.call(M.any()).returns(M.any()),
+      }),
+      reader: M.interface('PortfolioReader', {
+        getLocalAccount: M.call().returns(M.any()),
+        getStoragePath: M.call().returns(M.any()),
+        getPortfolioId: M.call().returns(M.any()),
+        getGMPInfo: M.call(M.any()).returns(M.any()),
+        getTargetAllocation: M.call().returns(M.any()),
+      }),
+      reporter: M.interface('PortfolioReporter', {
+        publishStatus: M.call().returns(),
+        allocateFlowId: M.call().returns(M.any()),
+        publishFlowSteps: M.call(M.any(), M.any()).returns(),
+        publishFlowStatus: M.call(M.any(), M.any()).returns(),
+      }),
+      manager: M.interface('PortfolioManager', {
+        reserveAccount: M.call(M.any()).returns(M.any()),
+        resolveAccount: M.call(M.any()).returns(),
+        releaseAccount: M.call(M.any(), M.any()).returns(),
+        providePosition: M.call(M.any(), M.any(), M.any()).returns(M.any()),
+        waitKLUDGE: M.call(M.any()).returns(M.any()),
+        setTargetAllocation: M.call(M.any()).returns(),
+      }),
+      accountWatcher: M.interface('AccountWatcher', {
+        onFulfilled: M.call(M.any(), M.any()).returns(),
+        onRejected: M.call(M.any(), M.any()).returns(),
+      }),
+      rebalanceHandler: M.interface('RebalanceHandler', {
+        handle: M.call(M.any(), M.any()).returns(M.any()),
+      }),
+      invitationMakers: M.interface('InvitationMakers', {
+        Rebalance: M.call().returns(M.any()),
+      }),
+    },
     ({ portfolioId }: { portfolioId: number }): PortfolioKitState => {
       return {
         portfolioId,
