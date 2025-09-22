@@ -6,7 +6,6 @@
  * This is an orchestration component that can be used independently of portfolio logic.
  */
 
-import type { NatValue } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import type {
   Marshaller,
@@ -105,12 +104,6 @@ export const prepareResolverKit = (
       E(node).setValue(JSON.stringify(capData)),
     );
   };
-
-  const resolverStateShape = harden({
-    transactionRegistry: M.remotable('MapStore'),
-    index: M.number(),
-  });
-
   return resolverZone.exoClassKit(
     'Resolver',
     {
@@ -263,7 +256,6 @@ export const prepareResolverKit = (
         },
       },
     },
-    { stateShape: resolverStateShape },
   );
 };
 export type ResolverInvitationMakers = ResolverKit['invitationMakers'];

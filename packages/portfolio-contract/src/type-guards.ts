@@ -195,9 +195,6 @@ export type PoolKeyExt = string;
 /** Ext for Extensible: includes PoolKeys in future upgrades */
 export const PoolKeyShapeExt = M.string();
 
-/** Ext for Extensible: includes YieldProtocols in future upgrades */
-export const YieldProtocolShapeExt = M.string();
-
 /**
  * Target allocation mapping from PoolKey to numerator (typically in basis points).
  * Denominator is implicitly the sum of all numerators.

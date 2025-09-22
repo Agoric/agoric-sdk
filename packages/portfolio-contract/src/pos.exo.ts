@@ -5,13 +5,12 @@
  * @see {@link Position}
  */
 import { AmountMath, type Amount } from '@agoric/ertp';
-import { AnyNatAmountShape } from '@agoric/orchestration';
 import type { AccountId } from '@agoric/orchestration';
 import type { Zone } from '@agoric/zone';
 import type { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';
 import { M } from '@endo/patterns';
 import { type PublishStatusFn } from './portfolio.exo.ts';
-import { makePositionPath, PoolKeyShapeExt, YieldProtocolShapeExt, type PoolKey } from './type-guards.ts';
+import { makePositionPath, type PoolKey } from './type-guards.ts';
 
 const { assign } = Object;
 const { add, subtract } = AmountMath;
@@ -35,24 +34,6 @@ export type TransferStatus = {
   totalOut: Amount<'nat'>;
   netTransfers: Amount<'nat'>;
 };
-
-const PositionInterface = M.interface('Position', {
-  getPoolKey: M.call().returns(PoolKeyShapeExt),
-  getYieldProtocol: M.call().returns(YieldProtocolShapeExt),
-  recordTransferIn: M.call(AnyNatAmountShape).returns(AnyNatAmountShape),
-  recordTransferOut: M.call(AnyNatAmountShape).returns(AnyNatAmountShape),
-  publishStatus: M.call().returns(),
-});
-
-const positionStateShape = harden({
-  portfolioId: M.number(),
-  protocol: YieldProtocolShapeExt, // YieldProtocol
-  poolKey: PoolKeyShapeExt,
-  accountId: M.string(), // AccountId
-  totalIn: AnyNatAmountShape,
-  totalOut: AnyNatAmountShape,
-  netTransfers: AnyNatAmountShape,
-});
 
 const recordTransferIn = (
   amount: Amount<'nat'>,
@@ -86,8 +67,16 @@ export const preparePosition = (
   zone: Zone,
   emptyTransferState: TransferStatus,
   publishStatus: PublishStatusFn,
-) =>
-  zone.exoClass(
+) => {
+  const PositionInterface = M.interface('Position', {
+    getPoolKey: M.call().returns(M.string()),
+    getYieldProtocol: M.call().returns(M.string()),
+    recordTransferIn: M.call(M.any()).returns(M.any()),
+    recordTransferOut: M.call(M.any()).returns(M.any()),
+    publishStatus: M.call().returns(),
+  });
+
+  return zone.exoClass(
     'Position',
     PositionInterface,
     (
@@ -138,5 +127,4 @@ export const preparePosition = (
         publishStatus(key, status);
       },
     },
-    { stateShape: positionStateShape },
   );
