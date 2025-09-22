@@ -109,13 +109,25 @@ export const makeSigningSmartWalletKit = async (
     return walletUtils.pollOffer(address, offer.id, before.header.height);
   };
 
-  const invokeEntry = async (message: InvokeEntryMessage) => {
-    const transaction = await sendBridgeAction(
-      harden({
-        method: 'invokeEntry',
-        message,
-      }),
-    );
+  const invokeEntry = async (
+    message: InvokeEntryMessage,
+    data?: SignerData,
+  ) => {
+    const transaction = data
+      ? await sendBridgeAction(
+          harden({
+            method: 'invokeEntry',
+            message,
+          }),
+          defaultFee,
+          data,
+        )
+      : await sendBridgeAction(
+          harden({
+            method: 'invokeEntry',
+            message,
+          }),
+        );
 
     return { result: { transaction } };
   };
