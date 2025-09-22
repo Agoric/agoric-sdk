@@ -150,7 +150,7 @@ const eventAbbr = (e: VTransferIBCEvent) => {
 
 // Interface definitions for PortfolioKit facets
 const TapI = M.interface('PortfolioTap', {
-  receiveUpcall: M.callWhen(M.record()).returns(M.boolean()),
+  receiveUpcall: M.callWhen(M.record()).returns(M.or(M.boolean(), VowShape)),
 });
 
 const ParseInboundTransferWatcherI = M.interface('ParseInboundTransferWatcher', {
@@ -160,9 +160,9 @@ const ParseInboundTransferWatcherI = M.interface('ParseInboundTransferWatcher', 
 
 const ReaderI = M.interface('PortfolioReader', {
   getLocalAccount: M.call().returns(M.remotable('LocalAccount')),
-  getStoragePath: M.call().returns(VowShape),
+  getStoragePath: M.callWhen().returns(M.string()),
   getPortfolioId: M.call().returns(M.number()),
-  getGMPInfo: M.call(M.string()).returns(VowShape),
+  getGMPInfo: M.callWhen(M.string()).returns(M.record()),
   getTargetAllocation: M.call().returns(M.or(TargetAllocationShapeExt, M.undefined())),
 });
 
@@ -174,7 +174,7 @@ const ReporterI = M.interface('PortfolioReporter', {
 });
 
 const ManagerI = M.interface('PortfolioManager', {
-  reserveAccount: M.call(M.string()).returns(M.or(VowShape, M.undefined())),
+  reserveAccount: M.callWhen(M.string()).returns(M.or(M.record(), M.undefined())),
   resolveAccount: M.call(M.record()).returns(),
   releaseAccount: M.call(M.string(), M.any()).returns(),
   providePosition: M.call(PoolKeyShapeExt, M.string(), M.string()).returns(M.remotable('Position')),
@@ -193,7 +193,7 @@ const RebalanceHandlerI = M.interface('RebalanceHandler', {
 });
 
 const InvitationMakersI = M.interface('InvitationMakers', {
-  Rebalance: M.call().returns(InvitationShape),
+  Rebalance: M.callWhen().returns(InvitationShape),
 });
 
 // State shape for PortfolioKit
