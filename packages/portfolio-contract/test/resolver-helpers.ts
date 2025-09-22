@@ -45,7 +45,7 @@ export const settleTransaction = async (
   await eventLoopIteration(); // XXX for some reason we need two iterations here to pass the tests
 
   log('Settling transaction directly via service...');
-  
+
   await E(resolverService).settleTransaction({
     status,
     txId: `tx${txNumber}`,

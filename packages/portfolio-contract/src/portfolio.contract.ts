@@ -255,10 +255,8 @@ export const contract = async (
     pendingTxsNode: E(storageNode).makeChildNode(PENDING_TXS_NODE_KEY),
     marshaller,
   });
-  const {
-    client: resolverClient,
-    service: resolverService,
-  } = resolverZone.makeOnce('resolverKit', () => makeResolverKit());
+  const { client: resolverClient, service: resolverService } =
+    resolverZone.makeOnce('resolverKit', () => makeResolverKit());
 
   const { makeLCA } = orchestrateAll({ makeLCA: flows.makeLCA }, {});
   const contractAccountV = zone.makeOnce('contractAccountV', () => makeLCA());

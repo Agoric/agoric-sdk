@@ -47,7 +47,7 @@ test('CCTP confirmation invitation exits seat properly', async t => {
 
   await t.throwsAsync(E(resolverService).settleTransaction(offerArgs));
 
-  // Note: In the new pattern, we don't have a seat to check, 
+  // Note: In the new pattern, we don't have a seat to check,
   // but the operation should complete without issues
   t.pass('Settlement completed without seat management');
 });
