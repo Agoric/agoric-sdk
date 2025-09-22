@@ -15,6 +15,7 @@ import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { startEngine } from './engine.ts';
 import { createEVMContext } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
+import { SequenceManager } from './sequence-manager.ts';
 
 const assertChainId = async (
   rpc: CosmosRPCClient,
@@ -76,6 +77,12 @@ export const main = async (
     config.mnemonic,
   );
   console.warn('Signer address:', signingSmartWalletKit.address);
+
+  const sequenceManager = new SequenceManager(
+    { cosmosRest },
+    { chainKey: 'agoric', address: signingSmartWalletKit.address },
+  );
+  await sequenceManager.initialize();
 
   const spectrum = new SpectrumClient(simplePowers, {
     baseUrl: config.spectrum.apiUrl,

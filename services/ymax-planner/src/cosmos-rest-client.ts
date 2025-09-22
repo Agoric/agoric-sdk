@@ -28,21 +28,6 @@ interface ChainConfig {
   name: string;
 }
 
-type AccountInfo = {
-  '@type': string;
-  address: string;
-  pub_key?: {
-    '@type': string;
-    key: string;
-  };
-  account_number: string;
-  sequence: string;
-};
-
-type AccountResponse = {
-  account: AccountInfo;
-};
-
 // transformation of subset of chain-registry
 const CHAIN_CONFIGS: Record<
   Exclude<ClusterName, 'local'>,
@@ -220,10 +205,7 @@ export class CosmosRestClient {
     );
   }
 
-  async getAccountSequence(
-    chainKey: string,
-    address: string,
-  ): Promise<AccountInfo> {
+  async getAccountSequence(chainKey: string, address: string) {
     const chainConfig = this.chainConfigs.get(chainKey);
     if (!chainConfig) {
       throw new Error(`Chain configuration not found for: ${chainKey}`);
