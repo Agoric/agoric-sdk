@@ -17,15 +17,25 @@ type SmartWalletWithSequenceConfig = {
   chainId: string;
 };
 
+type QueuedOperation<T> = {
+  operation: () => Promise<T>;
+  resolve: (value: T) => void;
+  reject: (error: any) => void;
+  context: string;
+};
+
 /**
  * A smart wallet kit wrapper that manages sequence numbers for wallet operations.
  * Provides automatic sequence number management and retry logic.
+ * Uses a queue to ensure sequential execution and prevent sequence conflicts.
  */
 export class SmartWalletWithSequence {
   private readonly signingSmartWalletKit: SigningSmartWalletKit;
   private readonly sequenceManager: SequenceManager;
   private readonly log: (...args: unknown[]) => void;
   private readonly chainId: string;
+  private readonly operationQueue: QueuedOperation<any>[] = [];
+  private isProcessingQueue = false;
 
   constructor(
     powers: SmartWalletWithSequencePowers,
@@ -56,9 +66,70 @@ export class SmartWalletWithSequence {
   }
 
   /**
+   * Queue an operation for sequential execution
+   */
+  private async queueOperation<T>(
+    operation: () => Promise<T>,
+    context: string,
+  ): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.operationQueue.push({
+        operation,
+        resolve,
+        reject,
+        context,
+      });
+
+      this.log(
+        `Queued ${context}, queue length: ${this.operationQueue.length}`,
+      );
+
+      // Start processing if not already running
+      if (!this.isProcessingQueue) {
+        void this.processQueue();
+      }
+    });
+  }
+
+  /**
+   * Process the operation queue sequentially
+   */
+  private async processQueue(): Promise<void> {
+    if (this.isProcessingQueue) return;
+    this.isProcessingQueue = true;
+
+    this.log(
+      `Starting queue processing, ${this.operationQueue.length} operations queued`,
+    );
+
+    while (this.operationQueue.length > 0) {
+      const queuedOp = this.operationQueue.shift()!;
+
+      this.log(
+        `Processing ${queuedOp.context}, ${this.operationQueue.length} remaining`,
+      );
+
+      try {
+        const result = await this.performOperation(
+          queuedOp.operation,
+          queuedOp.context,
+        );
+        queuedOp.resolve(result);
+        this.log(`Completed ${queuedOp.context}`);
+      } catch (error) {
+        this.log(`Failed ${queuedOp.context}:`, error);
+        queuedOp.reject(error);
+      }
+    }
+
+    this.log('Queue processing finished');
+    this.isProcessingQueue = false;
+  }
+
+  /**
    * Handles sequence number errors and retries with sync
    */
-  private async handleSequenceError<T>(
+  private async performOperation<T>(
     operation: () => Promise<T>,
     context: string,
   ): Promise<T> {
@@ -104,7 +175,7 @@ export class SmartWalletWithSequence {
       );
     };
 
-    return this.handleSequenceError(operation, 'sendBridgeAction');
+    return this.queueOperation(operation, 'sendBridgeAction');
   }
 
   /**
@@ -118,7 +189,7 @@ export class SmartWalletWithSequence {
       return this.signingSmartWalletKit.executeOffer(offer, signerData);
     };
 
-    return this.handleSequenceError(operation, 'executeOffer');
+    return this.queueOperation(operation, 'executeOffer');
   }
 
   /**
@@ -132,7 +203,7 @@ export class SmartWalletWithSequence {
       return this.signingSmartWalletKit.invokeEntry(message, signerData);
     };
 
-    return this.handleSequenceError(operation, 'invokeEntry');
+    return this.queueOperation(operation, 'invokeEntry');
   }
 }
 
