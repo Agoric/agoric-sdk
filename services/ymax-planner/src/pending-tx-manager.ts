@@ -30,6 +30,7 @@ import {
   watchSmartWalletTx,
   lookBackSmartWalletTx,
 } from './watchers/wallet-watcher.ts';
+import type { SmartWalletKitWithSequence } from './main.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
 
@@ -37,7 +38,7 @@ export type EvmContext = {
   cosmosRest: CosmosRestClient;
   usdcAddresses: UsdcAddresses['mainnet' | 'testnet'];
   evmProviders: EvmProviders;
-  signingSmartWalletKit: SigningSmartWalletKit;
+  signingSmartWalletKit: SmartWalletKitWithSequence;
   fetch: typeof fetch;
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
@@ -354,7 +355,7 @@ export type HandlePendingTxOpts = {
   cosmosRpc: CosmosRPCClient;
   log?: (...args: unknown[]) => void;
   error?: (...args: unknown[]) => void;
-  marshaller: SigningSmartWalletKit['marshaller'];
+  marshaller: SmartWalletKitWithSequence['marshaller'];
   registry?: MonitorRegistry;
   timeoutMs?: number;
   vstoragePathPrefixes: {

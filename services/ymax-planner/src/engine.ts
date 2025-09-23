@@ -76,6 +76,7 @@ import {
   vstoragePathIsAncestorOf,
   vstoragePathIsParentOf,
 } from './vstorage-utils.ts';
+import type { SmartWalletKitWithSequence } from './main.ts';
 
 const { entries, fromEntries, values } = Object;
 
@@ -183,7 +184,7 @@ export type Powers = {
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
   spectrumPoolIds: Partial<Record<InstrumentId, string>>;
   cosmosRest: CosmosRestClient;
-  signingSmartWalletKit: SigningSmartWalletKit;
+  signingSmartWalletKit: SmartWalletKitWithSequence;
   walletStore: ReturnType<typeof reflectWalletStore>;
   getWalletInvocationUpdate: (
     messageId: string | number,

@@ -15,6 +15,7 @@ import type { Powers as EnginePowers } from '../src/engine.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 import { prepareAbortController } from '../src/support.ts';
+import type { SmartWalletKitWithSequence } from '../src/main.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 
@@ -136,50 +137,64 @@ export const createMockProvider = (
   return mockProvider;
 };
 
-export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
-  const executedOffers: OfferSpec[] = [];
+export const createMockSigningSmartWalletKit =
+  (): SmartWalletKitWithSequence => {
+    const executedOffers: OfferSpec[] = [];
 
-  return {
-    address: 'agoric1mockplanner123456789abcdefghijklmnopqrstuvwxyz',
+    return {
+      address: 'agoric1mockplanner123456789abcdefghijklmnopqrstuvwxyz',
 
-    query: {
-      getCurrentWalletRecord: async () => ({
-        offerToUsedInvitation: [
-          [
-            'resolver-offer-1',
-            {
-              value: [
-                {
-                  description: 'resolver',
-                  instance: 'mock-instance',
-                  installation: 'mock-installation',
-                },
-              ],
-            },
+      query: {
+        getCurrentWalletRecord: async () => ({
+          offerToUsedInvitation: [
+            [
+              'resolver-offer-1',
+              {
+                value: [
+                  {
+                    description: 'resolver',
+                    instance: 'mock-instance',
+                    installation: 'mock-installation',
+                  },
+                ],
+              },
+            ],
           ],
-        ],
-        liveOffers: [],
-        purses: [],
-      }),
-    },
+          liveOffers: [],
+          purses: [],
+        }),
+      },
 
-    executeOffer: async (offerSpec: OfferSpec) => {
-      executedOffers.push(offerSpec);
-      return {
-        offerId: offerSpec.id,
-        invitationSpec: offerSpec.invitationSpec,
-        offerArgs: offerSpec.offerArgs,
-        proposal: offerSpec.proposal,
-        status: 'executed',
-      };
-    },
-  } as any;
+      executeOffer: async (offerSpec: OfferSpec) => {
+        executedOffers.push(offerSpec);
+        return {
+          offerId: offerSpec.id,
+          invitationSpec: offerSpec.invitationSpec,
+          offerArgs: offerSpec.offerArgs,
+          proposal: offerSpec.proposal,
+          status: 'executed',
+        };
+      },
+    } as any;
+  };
+
+type BalanceResponse = { amount: string; denom: string };
+type Account = { sequence: string; account_number: string };
+type CosmosRestClientConfig = {
+  balanceResponses?: BalanceResponse[];
+  initialAccount?: Account;
 };
-
+const DEFAULT_BALANCE_RESPONSES: BalanceResponse[] = [
+  { amount: '1000000', denom: 'uusdc' },
+];
+const DEFAULT_ACCOUNT: Account = { account_number: '377', sequence: '100' };
 export const createMockCosmosRestClient = (
-  balanceResponses: Array<{ amount: string; denom: string }>,
-): CosmosRestClient => {
+  config: CosmosRestClientConfig = {},
+) => {
   let callCount = 0;
+  const balanceResponses = config.balanceResponses ?? DEFAULT_BALANCE_RESPONSES;
+  const initialAccount = config.initialAccount ?? DEFAULT_ACCOUNT;
+  let mockAccount = initialAccount;
 
   return {
     getAccountBalance: async (chainKey, address, denom) => {
@@ -191,6 +206,22 @@ export const createMockCosmosRestClient = (
         denom,
         amount: response.amount,
       };
+    },
+    async getAccountSequence(chainKey: string, address: string) {
+      callCount++;
+      return { account: mockAccount };
+    },
+
+    getCallCount() {
+      return callCount;
+    },
+
+    updateSequence(amount: string) {
+      mockAccount.sequence = amount;
+    },
+
+    getNetworkSequence() {
+      return Number(mockAccount.sequence);
     },
   } as any;
 };
@@ -414,3 +445,89 @@ export const createMockGmpExecutionEvent = (
     transactionHash: '0x1234567890abcdef1234567890abcdef12345678',
   };
 };
+
+type SubmitTxResponse = {
+  code: number;
+  height: number;
+  transactionHash: string;
+  sequence: number;
+};
+export class MockSigningSmartWalletKit {
+  private submittedTransactions: Array<{
+    method: string;
+    sequence: number;
+    timestamp: number;
+  }> = [];
+  private networkSequence: () => number;
+  private shouldSimulateSequenceConflicts = false;
+  private networkDelay = 20;
+  private mockTime = 1234567890000;
+  private sequenceCounter = 0;
+
+  constructor(getNetworkSequence: () => number, mockTime = 1234567890000) {
+    this.networkSequence = getNetworkSequence;
+    this.mockTime = mockTime;
+  }
+
+  enableSequenceConflictSimulation() {
+    this.shouldSimulateSequenceConflicts = true;
+  }
+
+  async executeOffer(offer: any, signerData: any) {
+    return this.submitTransaction('executeOffer', signerData);
+  }
+
+  async sendBridgeAction(action: any, fee: any, memo: any, signerData: any) {
+    return this.submitTransaction('sendBridgeAction', signerData);
+  }
+
+  private async submitTransaction(
+    method: string,
+    signerData: any,
+  ): Promise<SubmitTxResponse> {
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, this.networkDelay));
+
+    const currentNetworkSequence = this.networkSequence();
+
+    // Simulate sequence mismatch if enabled and sequence is out of sync
+    if (
+      this.shouldSimulateSequenceConflicts &&
+      signerData.sequence < currentNetworkSequence
+    ) {
+      throw new Error(
+        `Broadcasting transaction failed with code 32 (codespace: sdk). Log: account sequence mismatch, expected ${currentNetworkSequence}, got ${signerData.sequence}: incorrect account sequence`,
+      );
+    }
+
+    // Record successful transaction
+    this.submittedTransactions.push({
+      method,
+      sequence: signerData.sequence,
+      timestamp: this.mockTime + this.sequenceCounter++ * 1000, // Increment by 1 second for each transaction
+    });
+
+    return {
+      code: 0,
+      height: 3321450 + this.submittedTransactions.length,
+      transactionHash: `hash_${method}_${signerData.sequence}`,
+      sequence: signerData.sequence,
+    };
+  }
+
+  getSubmittedTransactions() {
+    return this.submittedTransactions;
+  }
+
+  clearTransactions() {
+    this.submittedTransactions = [];
+  }
+
+  setNetworkDelay(delay: number) {
+    this.networkDelay = delay;
+  }
+
+  setMockTime(time: number) {
+    this.mockTime = time;
+  }
+}
