@@ -708,7 +708,7 @@ export const rebalance = (async (
   kit: GuestInterface<PortfolioKit>,
 ) => {
   await null;
-  const trace = makeTracer('rebalance', false);
+  const trace = makeTracer('rebalance');
   const proposal = seat.getProposal() as ProposalType['rebalance'];
   trace('proposal', proposal.give, proposal.want, offerArgs);
 
