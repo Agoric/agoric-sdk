@@ -43,7 +43,10 @@ import {
   objectMap,
   type TypedPattern,
 } from '@agoric/internal';
-import { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';
+import {
+  AxelarChain,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
 import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import type { NameHub } from '@agoric/vats';
 import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils';
@@ -88,6 +91,9 @@ const parseToolArgs = (argv: string[]) =>
       invitePlanner: { type: 'string' },
       pruneStorage: { type: 'boolean', default: false },
       'submit-for': { type: 'string' },
+      'resolve-account-for': { type: 'string' },
+      unsafeRemoteAddress: { type: 'string' },
+      chainName: { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
     allowPositionals: false,
@@ -430,6 +436,26 @@ const main = async (
     const policyVersion = 0; // XXX should get from vstorage
     const rebalanceCount = 0;
     await planner.submit(portfolioId, [], policyVersion, rebalanceCount);
+    return;
+  }
+
+  if (values['resolve-account-for']) {
+    const portfolioId = Number(values['resolve-account-for']);
+    const { chainName, unsafeRemoteAddress: remoteAddress } = values;
+    const planner = walletStore.get<PortfolioPlanner>('planner');
+    trace(
+      'KLUDGE!!! resolve',
+      chainName,
+      'account for',
+      portfolioId,
+      'to',
+      remoteAddress,
+    );
+    await planner.UNSAFEresolveEVMAddress(
+      portfolioId,
+      chainName as AxelarChain,
+      remoteAddress as `0x${string}`,
+    );
     return;
   }
 
