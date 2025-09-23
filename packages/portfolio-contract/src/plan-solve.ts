@@ -6,9 +6,14 @@ import { Fail } from '@endo/errors';
 import jsLPSolver from 'javascript-lp-solver';
 import type { IModel, IModelVariableConstraint } from 'javascript-lp-solver';
 import { makeTracer, objectMap, typedEntries } from '@agoric/internal';
+import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { PoolPlaces, type PoolKey } from './type-guards.js';
 import type { AssetPlaceRef, MovementDesc } from './type-guards-steps.js';
-import type { NetworkSpec } from './network/network-spec.js';
+import type {
+  FeeMode,
+  NetworkSpec,
+  TransferProtocol,
+} from './network/network-spec.js';
 import { makeGraphFromDefinition } from './network/buildGraph.js';
 import {
   preflightValidateNetworkPlan,
@@ -31,10 +36,11 @@ export interface FlowEdge {
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
   capacity: number; // numeric for LP; derived from bigint
-  variableFee: number; // cost coefficient per unit flow
+  variableFee: number; // cost coefficient per unit flow in basis points
   fixedFee?: number; // optional fixed cost (cheapest mode)
   timeFixed?: number; // optional time cost (fastest mode)
-  via?: string; // annotation (e.g. 'intra-chain', 'cctp', etc.)
+  via?: TransferProtocol; // annotation (e.g. 'intra-chain', 'cctp', etc.)
+  feeMode?: FeeMode;
 }
 
 /** Node supply: positive => must send out; negative => must receive */
@@ -48,7 +54,7 @@ export interface RebalanceGraph {
   edges: FlowEdge[];
   supplies: SupplyMap;
   brand: Amount['brand'];
-  scale: number;
+  feeBrand: Amount['brand'];
   /** When true, print extra diagnostics on solver failure */
   debug?: boolean;
 }
@@ -93,7 +99,7 @@ export const buildBaseGraph = (
   current: Partial<Record<AssetPlaceRef, NatAmount>>,
   target: Partial<Record<AssetPlaceRef, NatAmount>>,
   brand: Amount['brand'],
-  _scale: number = 1,
+  feeBrand: Amount['brand'],
 ): RebalanceGraph => {
   const nodes = new Set<AssetPlaceRef>();
   const edges: FlowEdge[] = [];
@@ -125,15 +131,20 @@ export const buildBaseGraph = (
   for (const node of nodes) {
     if (isHub(node)) continue;
 
-    const hub = `@${chainOf(node)}` as AssetPlaceRef;
+    const chainName = chainOf(node);
+    const hub = `@${chainName}` as AssetPlaceRef;
     if (node === hub) continue;
 
+    const feeMode = Object.keys(AxelarChain).includes(chainName)
+      ? { feeMode: 'gmpCall' as FeeMode }
+      : {};
     const base: Omit<FlowEdge, 'src' | 'dest' | 'id'> = {
       capacity: (Number.MAX_SAFE_INTEGER + 1) / 4,
       variableFee: vf,
       fixedFee: 0,
       timeFixed: tf,
-      via: 'intra-chain',
+      via: 'local',
+      ...feeMode,
     };
 
     // eslint-disable-next-line no-plusplus
@@ -152,7 +163,7 @@ export const buildBaseGraph = (
     edges,
     supplies,
     brand,
-    scale: 1,
+    feeBrand,
     debug: false,
   } as RebalanceGraph;
 };
@@ -417,11 +428,34 @@ export const rebalanceMinCostFlowSteps = (
   const steps: MovementDesc[] = scheduled.map(({ edge, flow }) => {
     // XXX generate tests for this
     assert(Number.isSafeInteger(flow));
+    let details = {};
+    switch (edge.feeMode) {
+      case 'gmpTransfer':
+        // TODO: Rather than hard-code, derive from Axelar `estimateGasFee`.
+        // https://docs.axelar.dev/dev/axelarjs-sdk/axelar-query-api#estimategasfee
+        details = { fee: AmountMath.make(graph.feeBrand, 15_000_000n) };
+        break;
+      case 'gmpCall':
+        // TODO: Rather than hard-code, derive from Axelar `estimateGasFee`.
+        // https://docs.axelar.dev/dev/axelarjs-sdk/axelar-query-api#estimategasfee
+        details = { fee: AmountMath.make(graph.feeBrand, 15_000_000n) };
+        break;
+      case 'toUSDN': {
+        // NOTE USDN transfer incurs a fee on output amount in basis points
+        const usdnOut =
+          (BigInt(flow) * (10000n - BigInt(edge.variableFee))) / 10000n;
+        details = { detail: { usdnOut } };
+        break;
+      }
+      default:
+        break;
+    }
     return {
       src: edge.src as AssetPlaceRef,
       dest: edge.dest as AssetPlaceRef,
       // NOTE: BigInt(number) throws for non-integer/non-finite values
       amount: AmountMath.make(graph.brand, BigInt(flow)),
+      ...details,
     };
   });
 
@@ -442,11 +476,18 @@ export const planRebalanceFlow = async (opts: {
   current: Partial<Record<AssetPlaceRef, NatAmount>>;
   target: Partial<Record<AssetPlaceRef, NatAmount>>;
   brand: Amount['brand'];
+  feeBrand: Amount['brand'];
   mode?: RebalanceMode;
 }) => {
-  const { network, current, target, brand, mode = 'fastest' } = opts;
+  const { network, current, target, brand, feeBrand, mode = 'fastest' } = opts;
   // TODO remove "automatic" values that should be static
-  const graph = makeGraphFromDefinition(network, current, target, brand);
+  const graph = makeGraphFromDefinition(
+    network,
+    current,
+    target,
+    brand,
+    feeBrand,
+  );
 
   const model = buildLPModel(graph, mode);
   let flows;

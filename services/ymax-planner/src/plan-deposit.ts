@@ -180,6 +180,7 @@ export const planDepositToTargets = async (
   current: Partial<Record<AssetPlaceRef, NatAmount>>,
   target: Partial<Record<AssetPlaceRef, NatAmount>>, // includes all pools + '+agoric'
   network: NetworkSpec,
+  feeBrand: Brand<'nat'>,
 ): Promise<MovementDesc[]> => {
   const brand = amount.brand;
   // Construct current including the deposit seat
@@ -198,6 +199,7 @@ export const planDepositToTargets = async (
     current: currentWithDeposit as any,
     target: target as any,
     brand,
+    feeBrand,
   });
   return steps;
 };
@@ -211,9 +213,10 @@ export const planDepositToAllocations = async (
   current: Partial<Record<AssetPlaceRef, NatAmount>>,
   allocation: Record<PoolKey, number>,
   network: NetworkSpec,
+  feeBrand: Brand<'nat'>,
 ): Promise<MovementDesc[]> => {
   const targets = depositTargetsFromAllocation(amount, current, allocation);
-  return planDepositToTargets(amount, current, targets, network);
+  return planDepositToTargets(amount, current, targets, network, feeBrand);
 };
 
 // Back-compat utility used by CLI or handlers
@@ -263,5 +266,6 @@ export const handleDeposit = async (
     currentBalances,
     targetAllocation as any,
     network,
+    feeBrand,
   );
 };

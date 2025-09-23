@@ -127,6 +127,7 @@ export const makePortfolioSteps = async <
     current: current as any,
     target: target as any,
     brand,
+    feeBrand: brand, // Use same brand for fees in this context
     mode: 'cheapest',
   });
 
