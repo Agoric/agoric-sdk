@@ -86,10 +86,13 @@ export const makeGraphFromDefinition = (
     (graph.nodes.has(src) && graph.nodes.has(dest)) ||
       Fail`Graph missing nodes for link ${src}->${dest}`;
 
-    // Remove any existing edge for exact src->dest
+    // Remove any existing edge that matches on (src, dest, via?).
     for (let i = 0; i < edges.length; i += 1) {
       const edge = edges[i];
-      if (edge?.src === src && edge?.dest === dest) edges[i] = undefined;
+      if (!edge || edge.src !== src || edge.dest !== dest) continue;
+      if (customAttrs?.via === undefined || edge.via === customAttrs.via) {
+        edges[i] = undefined;
+      }
     }
 
     const dataAttrs = customAttrs || {
