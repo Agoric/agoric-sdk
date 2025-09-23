@@ -3,9 +3,26 @@ import type { ImplementationFn } from 'ava';
 import { AmountMath } from '@agoric/ertp';
 import type { Brand } from '@agoric/ertp/src/types.js';
 import { objectMap } from '@agoric/internal';
+import type {
+  SupportedChain,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
 import { Far } from '@endo/marshal';
-import { planRebalanceFlow, type RebalanceMode } from '../src/plan-solve.js';
+import type {
+  NetworkSpec,
+  TransferProtocol,
+} from '../src/network/network-spec.js';
+import { planRebalanceFlow } from '../src/plan-solve.js';
+import type { FlowEdge, RebalanceMode } from '../src/plan-solve.js';
+import type { PoolKey } from '../src/type-guards.js';
+import type { AssetPlaceRef } from '../src/type-guards-steps.js';
 import { TEST_NETWORK } from './network/test-network.js';
+
+// eslint-disable-next-line no-nested-ternary
+const strcmp = (a: string, b: string) => (a > b ? 1 : a < b ? -1 : 0);
+const compareFlowEdges = (a: FlowEdge, b: FlowEdge) =>
+  strcmp(a.src.toLowerCase(), b.src.toLowerCase()) ||
+  strcmp(a.dest.toLowerCase(), b.dest.toLowerCase());
 
 // Shared Tok brand + helper
 const { brand: TOK_BRAND } = (() => ({ brand: Far('USD*') as Brand<'nat'> }))();
@@ -501,3 +518,90 @@ testWithAllModes(
     ]);
   },
 );
+
+test.failing('solver differentiates cheapest vs. fastest', async t => {
+  const network: NetworkSpec = {
+    debug: true,
+    environment: 'test',
+    chains: [
+      { name: 'agoric', control: 'local' },
+      { name: 'External' as SupportedChain, control: 'ibc' },
+    ],
+    pools: [
+      {
+        pool: 'Sink_External' as PoolKey,
+        chain: 'external' as SupportedChain,
+        protocol: 'sink' as YieldProtocol,
+      },
+    ],
+    localPlaces: [{ id: '+agoric', chain: 'agoric' }],
+    links: [
+      {
+        src: '@agoric',
+        dest: '@External' as AssetPlaceRef,
+        transfer: 'cheap' as TransferProtocol,
+        variableFeeBps: 5,
+        timeSec: 60,
+        feeMode: 'gmpCall',
+      },
+      {
+        src: '@agoric',
+        dest: '@External' as AssetPlaceRef,
+        transfer: 'fast' as TransferProtocol,
+        variableFeeBps: 6,
+        timeSec: 59,
+        feeMode: 'gmpCall',
+      },
+    ],
+  };
+  const current = balances({ '+agoric': 100n, Sink_External: 0n });
+  const target = balances({ '+agoric': 0n, Sink_External: 100n });
+
+  const cheapResult = await planRebalanceFlow({
+    mode: 'cheapest',
+    network,
+    current,
+    target,
+    brand: TOK_BRAND,
+    feeBrand: FEE_BRAND,
+  });
+  t.like(cheapResult.flows.map(flow => flow.edge).sort(compareFlowEdges), [
+    { src: '+agoric', dest: '@agoric', via: 'local' },
+    { src: '@agoric', dest: '@External', via: 'cheap' },
+    { src: '@External', dest: 'Sink_External', via: 'local' },
+  ]);
+  t.deepEqual(cheapResult.steps, [
+    { src: '+agoric', dest: '@agoric', amount: token(100n) },
+    {
+      src: '@agoric',
+      dest: '@External',
+      amount: token(100n),
+      fee: fee(15_000_000n),
+    },
+    { src: '@External', dest: 'Sink_External', amount: token(100n) },
+  ]);
+
+  const fastResult = await planRebalanceFlow({
+    mode: 'fastest',
+    network,
+    current,
+    target,
+    brand: TOK_BRAND,
+    feeBrand: FEE_BRAND,
+  });
+  t.like(cheapResult.flows.map(flow => flow.edge).sort(compareFlowEdges), [
+    { src: '+agoric', dest: '@agoric', via: 'local' },
+    { src: '@agoric', dest: '@External', via: 'fast' },
+    { src: '@External', dest: 'Sink_External', via: 'local' },
+  ]);
+  t.deepEqual(fastResult.steps, [
+    { src: '+agoric', dest: '@agoric', amount: token(100n) },
+    {
+      src: '@agoric',
+      dest: '@External',
+      amount: token(100n),
+      fee: fee(15_000_000n),
+    },
+    { src: '@External', dest: 'Sink_External', amount: token(100n) },
+  ]);
+});
