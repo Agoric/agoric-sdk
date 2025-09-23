@@ -7,9 +7,11 @@ import {
 } from './mocks.ts';
 
 test('handles concurrent offers and actions with correct sequence management', async t => {
+  const mockTime = 1640995200000; // Fixed timestamp: Jan 1, 2022
   const mockCosmosRest = createMockCosmosRestClient();
-  const mockWallet = new MockSigningSmartWalletKit(() =>
-    mockCosmosRest.getNetworkSequence(),
+  const mockWallet = new MockSigningSmartWalletKit(
+    () => mockCosmosRest.getNetworkSequence(),
+    mockTime,
   );
 
   const logs: string[] = [];
@@ -64,9 +66,11 @@ test('handles concurrent offers and actions with correct sequence management', a
 });
 
 test('handles sequence error recovery with network sync', async t => {
+  const mockTime = 1640995200000; // Fixed timestamp: Jan 1, 2022
   const mockCosmosRest = createMockCosmosRestClient();
-  const mockWallet = new MockSigningSmartWalletKit(() =>
-    mockCosmosRest.getNetworkSequence(),
+  const mockWallet = new MockSigningSmartWalletKit(
+    () => mockCosmosRest.getNetworkSequence(),
+    mockTime,
   );
 
   const logs: string[] = [];

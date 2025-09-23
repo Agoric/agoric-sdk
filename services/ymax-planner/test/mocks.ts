@@ -134,7 +134,9 @@ export const createMockCosmosRestClient = (
   };
 };
 
-export const createMockPendingTxOpts = (): HandlePendingTxOpts => ({
+export const createMockPendingTxOpts = (
+  mockTime = 1234567890000,
+): HandlePendingTxOpts => ({
   cosmosRest: {} as unknown as CosmosRestClient,
   cosmosRpc: {} as unknown as CosmosRPCClient,
   evmProviders: {
@@ -143,7 +145,7 @@ export const createMockPendingTxOpts = (): HandlePendingTxOpts => ({
   },
   fetch: global.fetch,
   marshaller: boardSlottingMarshaller(),
-  now: () => Date.now(),
+  now: () => mockTime,
   signingSmartWalletKit: createMockSigningSmartWalletKit(),
   usdcAddresses: {
     'eip155:1': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // Ethereum
@@ -164,7 +166,11 @@ export const createMockStreamCell = (values: unknown[]) => ({
   blockHeight: '1000',
 });
 
-const createMockAxelarScanResponse = (txId: string, status = 'executed') => {
+const createMockAxelarScanResponse = (
+  txId: string,
+  status = 'executed',
+  mockTime = 1234567890000,
+) => {
   const baseEvent = {
     call: {
       chain: 'agoric',
@@ -219,7 +225,7 @@ const createMockAxelarScanResponse = (txId: string, status = 'executed') => {
       chain_type: 'evm',
       messageId: 'msg_12345',
       created_at: {
-        ms: Date.now(),
+        ms: mockTime,
         hour: 0,
         day: 0,
         week: 0,
@@ -233,7 +239,7 @@ const createMockAxelarScanResponse = (txId: string, status = 'executed') => {
       relayerAddress: '0xrelayer123',
       transactionHash: '0xexecuted123',
       blockNumber: 18500000,
-      block_timestamp: Math.floor(Date.now() / 1000),
+      block_timestamp: Math.floor(mockTime / 1000),
       from: '0xrelayer123',
       receipt: {
         gasUsed: '150000',
@@ -296,9 +302,12 @@ const createMockAxelarScanResponse = (txId: string, status = 'executed') => {
   };
 };
 
-export const mockFetch = ({ txId }: { txId: TxId }) => {
+export const mockFetch = (
+  { txId }: { txId: TxId },
+  mockTime = 1234567890000,
+) => {
   return async () => {
-    const response = createMockAxelarScanResponse(txId);
+    const response = createMockAxelarScanResponse(txId, 'executed', mockTime);
     return {
       ok: true,
       json: async () => response,
@@ -357,9 +366,12 @@ export class MockSigningSmartWalletKit {
   private networkSequence: () => string;
   private shouldSimulateSequenceConflicts = false;
   private networkDelay = 20;
+  private mockTime = 1234567890000;
+  private sequenceCounter = 0;
 
-  constructor(getNetworkSequence: () => string) {
+  constructor(getNetworkSequence: () => string, mockTime = 1234567890000) {
     this.networkSequence = getNetworkSequence;
+    this.mockTime = mockTime;
   }
 
   enableSequenceConflictSimulation() {
@@ -401,7 +413,7 @@ export class MockSigningSmartWalletKit {
     this.submittedTransactions.push({
       method,
       sequence: signerData.sequence,
-      timestamp: Date.now(),
+      timestamp: this.mockTime + this.sequenceCounter++ * 1000, // Increment by 1 second for each transaction
     });
 
     return {
@@ -422,5 +434,9 @@ export class MockSigningSmartWalletKit {
 
   setNetworkDelay(delay: number) {
     this.networkDelay = delay;
+  }
+
+  setMockTime(time: number) {
+    this.mockTime = time;
   }
 }
