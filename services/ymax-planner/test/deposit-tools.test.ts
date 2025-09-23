@@ -303,12 +303,7 @@ test('handleDeposit handles different position types correctly', async t => {
   const mockReadPublished = async (path: string) => {
     if (path === portfolioKey) {
       return {
-        positionKeys: [
-          'USDN',
-          'USDNVault',
-          'Aave_Avalanche',
-          'Compound_Base',
-        ],
+        positionKeys: ['USDN', 'USDNVault', 'Aave_Avalanche', 'Compound_Base'],
         flowCount: 0,
         accountIdByChain: {
           noble: 'noble:test:addr1',
