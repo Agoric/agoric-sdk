@@ -163,6 +163,8 @@ test('handleDeposit works with mocked dependencies', async t => {
           Aave_Arbitrum: 30n,
           Compound_Arbitrum: 20n,
         },
+        policyVersion: 4,
+        rebalanceCount: 2,
       };
     }
     throw new Error(`Unexpected path: ${path}`);
@@ -222,12 +224,12 @@ test('handleDeposit works with mocked dependencies', async t => {
     readPublished: mockReadPublished,
   } as VstorageKit;
 
-  const steps = await handleDeposit(portfolioKey, deposit, feeBrand, {
+  const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
     readPublished: mockVstorageKit.readPublished,
     spectrum: mockSpectrumClient,
     cosmosRest: mockCosmosRestClient,
   });
-  t.snapshot(steps);
+  t.snapshot(result);
 });
 
 test('handleDeposit handles missing targetAllocation gracefully', async t => {
@@ -377,10 +379,10 @@ test('handleDeposit handles different position types correctly', async t => {
     readPublished: mockReadPublished,
   } as VstorageKit;
 
-  const steps = await handleDeposit(portfolioKey, deposit, feeBrand, {
+  const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
     readPublished: mockVstorageKit.readPublished,
     spectrum: mockSpectrumClient,
     cosmosRest: mockCosmosRestClient,
   });
-  t.snapshot(steps);
+  t.snapshot(result?.steps);
 });

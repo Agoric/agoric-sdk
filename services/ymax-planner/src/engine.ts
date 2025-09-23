@@ -644,7 +644,7 @@ export const startEngine = async (
           await null;
           try {
             // TODO: Use an API that exposes block height to detect stale data.
-            const steps = await handleDeposit(
+            const stepsRecord = await handleDeposit(
               unprefixedPortfolioPath as any,
               amount,
               feeAsset.brand as Brand<'nat'>,
@@ -657,7 +657,7 @@ export const startEngine = async (
               10,
             );
 
-            return { portfolioId, steps };
+            return { portfolioId, stepsRecord };
           } catch (err) {
             console.warn(
               `⚠️ Failed to handle ${portfolioKey} deposit; deferring`,
@@ -669,12 +669,13 @@ export const startEngine = async (
       ),
     );
 
-    for (const { portfolioId, steps } of portfolioOps.filter(x => !!x)) {
-      if (!steps) continue;
+    for (const { portfolioId, stepsRecord } of portfolioOps.filter(x => !!x)) {
+      if (!stepsRecord) continue;
+      const { policyVersion, rebalanceCount, steps } = stepsRecord;
       const result = await signingSmartWalletKit.invokeEntry({
         targetName: 'planner',
         method: 'submit',
-        args: [portfolioId, steps],
+        args: [portfolioId, steps, policyVersion, rebalanceCount],
       });
       console.log('result', result);
     }
