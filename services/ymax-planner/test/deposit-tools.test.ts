@@ -222,12 +222,12 @@ test('handleDeposit works with mocked dependencies', async t => {
     readPublished: mockReadPublished,
   } as VstorageKit;
 
-  const steps = await handleDeposit(portfolioKey, deposit, feeBrand, {
+  const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
     readPublished: mockVstorageKit.readPublished,
     spectrum: mockSpectrumClient,
     cosmosRest: mockCosmosRestClient,
   });
-  t.snapshot(steps);
+  t.snapshot(result?.steps);
 });
 
 test('handleDeposit handles missing targetAllocation gracefully', async t => {
@@ -377,10 +377,10 @@ test('handleDeposit handles different position types correctly', async t => {
     readPublished: mockReadPublished,
   } as VstorageKit;
 
-  const steps = await handleDeposit(portfolioKey, deposit, feeBrand, {
+  const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
     readPublished: mockVstorageKit.readPublished,
     spectrum: mockSpectrumClient,
     cosmosRest: mockCosmosRestClient,
   });
-  t.snapshot(steps);
+  t.snapshot(result?.steps);
 });

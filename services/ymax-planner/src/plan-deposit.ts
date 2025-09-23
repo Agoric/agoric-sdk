@@ -71,7 +71,13 @@ export const handleDeposit = async (
 ) => {
   const querier = makePortfolioQuery(powers.readPublished, portfolioKey);
   const status = await querier.getPortfolioStatus();
-  const { targetAllocation, positionKeys, accountIdByChain } = status;
+  const {
+    targetAllocation,
+    positionKeys,
+    accountIdByChain,
+    policyVersion,
+    rebalanceCount,
+  } = status;
   if (!targetAllocation) return;
   const errors = [] as Error[];
   const balanceEntries = await Promise.all(
@@ -105,5 +111,5 @@ export const handleDeposit = async (
       planTransfer(dest as PoolKey, amt, feeBrand),
     ),
   ];
-  return steps;
+  return { policyVersion, rebalanceCount, steps };
 };
