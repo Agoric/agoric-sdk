@@ -17,6 +17,23 @@ const feeBrand = Far('fee brand (BLD)') as Brand<'nat'>;
 
 const powers = { fetch, setTimeout };
 
+/**
+ * Deposit: 1000n
+ * TargetAllocation:
+ *   USDN: 50%
+ *   Aave_Arbitrum: 30%
+ *   Compound_Arbitrum: 20%
+ 
+ * CurrentBalance:
+ *   Noble: 200n,
+ *   Aave_Arbitrum: 100n,
+ *   Compound_Arlanbitrum: 50n,
+ * 
+ * Expected:
+ *   USDN: 675n, +675n, 475n from deposit, 200n Noble
+ *   Aave_Arbitrum: 405n, +305n
+ *   Compound_Arbitrum: 270n, +220n
+ */
 test('handleDeposit works with mocked dependencies', async t => {
   const deposit = makeDeposit(1000n);
   const portfolioKey = 'test.portfolios.portfolio1' as const;
