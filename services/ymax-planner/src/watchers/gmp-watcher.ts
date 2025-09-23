@@ -1,4 +1,3 @@
-// eslint-disable-next-line -- Types in this file match external Axelar API schema
 import { ethers, type Filter, type JsonRpcProvider, type Log } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
@@ -42,9 +41,9 @@ export const watchGmp = ({
 
     const cleanup = () => {
       if (timeoutId) clearTimeout(timeoutId);
-      listeners.forEach(({ event, listener }) => {
-        provider.off(event, listener);
-      });
+      for (const { event, listener } of listeners) {
+        void provider.off(event, listener);
+      }
       listeners = [];
     };
 
@@ -64,7 +63,7 @@ export const watchGmp = ({
       }
     };
 
-    provider.on(filter, listenForExecution);
+    void provider.on(filter, listenForExecution);
     listeners.push({ event: filter, listener: listenForExecution });
 
     timeoutId = setTimeout(() => {
@@ -86,6 +85,7 @@ export const lookBackGmp = async ({
   publishTimeMs,
   log = () => {},
 }: WatchGmp & { publishTimeMs: number }): Promise<boolean> => {
+  await null;
   try {
     const { fromBlock, toBlock } = await buildTimeWindow(
       provider,

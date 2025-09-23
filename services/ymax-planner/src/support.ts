@@ -1,3 +1,5 @@
+/* eslint-disable jsdoc/require-returns-type */
+
 import { JsonRpcProvider, Log, type Filter } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from './config.ts';
@@ -137,6 +139,7 @@ export const binarySearch = (async <Index extends number | bigint>(
     // their sum with a single-bit right shift (skipped if the sum is already
     // zero).
     const sum = ((left as any) + (right as any)) as Index;
+    // eslint-disable-next-line no-bitwise
     const mid = (sum && sum >> unit) as Index;
     if (await isAcceptable(mid)) {
       greatestFound = mid;
@@ -203,6 +206,7 @@ export const scanEvmLogsInChunks = async (
     log = () => {},
   } = opts;
 
+  await null;
   for (let start = fromBlock; start <= toBlock; start += chunkSize) {
     const end = Math.min(start + chunkSize - 1, toBlock);
 
