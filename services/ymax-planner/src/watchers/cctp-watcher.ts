@@ -1,5 +1,4 @@
-import type { Filter, JsonRpcProvider } from 'ethers';
-import type { Log } from 'ethers';
+import type { Filter, JsonRpcProvider, Log } from 'ethers';
 import { id, zeroPadValue, getAddress, ethers } from 'ethers';
 import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
 
@@ -47,7 +46,7 @@ const parseTransferLog = log => {
 const extractAddress = topic => {
   // Topics are 32 bytes (64 hex digits) in which the last 20 bytes (40 hex digits)
   // represent an Ethereum address.
-  return getAddress('0x' + topic.slice(-40));
+  return getAddress(`0x${topic.slice(-40)}`);
 };
 
 const parseAmount = data => {
@@ -83,9 +82,9 @@ export const watchCctpTransfer = ({
 
     const cleanup = () => {
       if (timeoutId) clearTimeout(timeoutId);
-      listeners.forEach(({ event, listener }) => {
-        provider.off(event, listener);
-      });
+      for (const { event, listener } of listeners) {
+        void provider.off(event, listener);
+      }
       listeners = [];
     };
 
@@ -112,15 +111,13 @@ export const watchCctpTransfer = ({
         transferFound = true;
         cleanup();
         resolve(true);
-      } else {
-        log(
-          `Amount mismatch. Expected: ${expectedAmount}, Received: ${amount}`,
-        );
-        return; // Continue watching
+        return;
       }
+      // Warn and continue watching.
+      log(`Amount mismatch. Expected: ${expectedAmount}, Received: ${amount}`);
     };
 
-    provider.on(filter, listenForTransfer);
+    void provider.on(filter, listenForTransfer);
     listeners.push({ event: filter, listener: listenForTransfer });
 
     timeoutId = setTimeout(() => {
@@ -143,6 +140,7 @@ export const lookBackCctp = async ({
 }: CctpWatch & {
   publishTimeMs: number;
 }): Promise<boolean> => {
+  await null;
   try {
     const { fromBlock, toBlock } = await buildTimeWindow(
       provider,

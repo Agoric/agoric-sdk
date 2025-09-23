@@ -1,7 +1,5 @@
-import type { CosmosRestClient } from '../cosmos-rest-client.ts';
 import type { Bech32Address } from '@agoric/orchestration';
-
-const MILLIS_PER_MINUTE = 60 * 1000;
+import type { CosmosRestClient } from '../cosmos-rest-client.ts';
 
 type WatchNobleTransferOptions = {
   cosmosRest: CosmosRestClient;
@@ -46,6 +44,7 @@ export const watchNobleTransfer = ({
     };
 
     const checkBalance = async () => {
+      await null;
       try {
         const balance = await cosmosRest.getAccountBalance(
           chainKey,
@@ -105,6 +104,7 @@ export const lookBackNobleTransfer = async ({
   chainKey = 'noble',
   log = () => {},
 }: WatchNobleTransferOptions) => {
+  await null;
   try {
     log(`Checking Noble address ${watchAddress} for amount ${expectedAmount}`);
 
