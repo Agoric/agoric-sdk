@@ -3,10 +3,12 @@ import { watchNobleTransfer } from '../src/watchers/noble-watcher.ts';
 import { createMockCosmosRestClient } from './mocks.ts';
 
 test('watchNobleTransfer detects successful transfer', async t => {
-  const mockCosmosRest = createMockCosmosRestClient([
-    { amount: '1000000', denom: 'uusdc' }, // Initial balance: 1 USDC
-    { amount: '1500000', denom: 'uusdc' }, // After transfer: 1.5 USDC
-  ]);
+  const mockCosmosRest = createMockCosmosRestClient({
+    balanceResponses: [
+      { amount: '1000000', denom: 'uusdc' }, // Initial balance: 1 USDC
+      { amount: '1500000', denom: 'uusdc' }, // After transfer: 1.5 USDC
+    ],
+  });
 
   const logs: string[] = [];
   const mockLog = (...args: unknown[]) => {
@@ -14,7 +16,7 @@ test('watchNobleTransfer detects successful transfer', async t => {
   };
 
   const result = await watchNobleTransfer({
-    cosmosRest: mockCosmosRest,
+    cosmosRest: mockCosmosRest as any,
     watchAddress: 'noble1abc123456789',
     expectedAmount: 500000n, // 0.5 USDC
     expectedDenom: 'uusdc',
@@ -29,9 +31,11 @@ test('watchNobleTransfer detects successful transfer', async t => {
 });
 
 test('watchNobleTransfer times out when no transfer detected', async t => {
-  const mockCosmosRest = createMockCosmosRestClient([
-    { amount: '1000000', denom: 'uusdc' }, // Balance stays the same
-  ]);
+  const mockCosmosRest = createMockCosmosRestClient({
+    balanceResponses: [
+      { amount: '1000000', denom: 'uusdc' }, // Balance stays the same
+    ],
+  });
 
   const logs: string[] = [];
   const mockLog = (...args: unknown[]) => {
@@ -39,7 +43,7 @@ test('watchNobleTransfer times out when no transfer detected', async t => {
   };
 
   const result = await watchNobleTransfer({
-    cosmosRest: mockCosmosRest,
+    cosmosRest: mockCosmosRest as any,
     watchAddress: 'noble1abc123456789',
     expectedAmount: 500000n, // 0.5 USDC
     expectedDenom: 'uusdc',

@@ -26,7 +26,7 @@ type QueuedOperation<T> = {
 
 /**
  * A smart wallet kit wrapper that manages sequence numbers for wallet operations.
- * Provides automatic sequence number management and retry logic.
+ * Provides sequence number management and retry logic.
  * Uses a queue to ensure sequential execution and prevent sequence conflicts.
  */
 export class SmartWalletWithSequence {
@@ -34,6 +34,7 @@ export class SmartWalletWithSequence {
   private readonly sequenceManager: SequenceManager;
   private readonly log: (...args: unknown[]) => void;
   private readonly chainId: string;
+  // TODO: Add bounds checking to prevent unbounded queue growth under sustained failures
   private readonly operationQueue: QueuedOperation<any>[] = [];
   private isProcessingQueue = false;
 
@@ -84,9 +85,11 @@ export class SmartWalletWithSequence {
         `Queued ${context}, queue length: ${this.operationQueue.length}`,
       );
 
-      // Start processing if not already running
       if (!this.isProcessingQueue) {
-        void this.processQueue();
+        this.isProcessingQueue = true;
+        void this.processQueue().finally(() => {
+          this.isProcessingQueue = false;
+        });
       }
     });
   }
@@ -95,9 +98,6 @@ export class SmartWalletWithSequence {
    * Process the operation queue sequentially
    */
   private async processQueue(): Promise<void> {
-    if (this.isProcessingQueue) return;
-    this.isProcessingQueue = true;
-
     this.log(
       `Starting queue processing, ${this.operationQueue.length} operations queued`,
     );
@@ -121,9 +121,6 @@ export class SmartWalletWithSequence {
         queuedOp.reject(error);
       }
     }
-
-    this.log('Queue processing finished');
-    this.isProcessingQueue = false;
   }
 
   /**

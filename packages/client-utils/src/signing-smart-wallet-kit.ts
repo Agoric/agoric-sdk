@@ -88,23 +88,14 @@ export const makeSigningSmartWalletKit = async (
   const executeOffer = async (offer: OfferSpec, data?: SignerData) => {
     const before = await client.getBlock();
 
-    if (data) {
-      await sendBridgeAction(
-        harden({
-          method: 'executeOffer',
-          offer,
-        }),
-        defaultFee,
-        data,
-      );
-    } else {
-      await sendBridgeAction(
-        harden({
-          method: 'executeOffer',
-          offer,
-        }),
-      );
-    }
+    await sendBridgeAction(
+      harden({
+        method: 'executeOffer',
+        offer,
+      }),
+      defaultFee,
+      data,
+    );
 
     return walletUtils.pollOffer(address, offer.id, before.header.height);
   };
@@ -113,21 +104,16 @@ export const makeSigningSmartWalletKit = async (
     message: InvokeEntryMessage,
     data?: SignerData,
   ) => {
-    const transaction = data
-      ? await sendBridgeAction(
-          harden({
-            method: 'invokeEntry',
-            message,
-          }),
-          defaultFee,
-          data,
-        )
-      : await sendBridgeAction(
-          harden({
-            method: 'invokeEntry',
-            message,
-          }),
-        );
+    await null;
+
+    const transaction = await sendBridgeAction(
+      harden({
+        method: 'invokeEntry',
+        message,
+      }),
+      defaultFee,
+      data,
+    );
 
     return { result: { transaction } };
   };

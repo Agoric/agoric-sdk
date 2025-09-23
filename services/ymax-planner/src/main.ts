@@ -97,10 +97,10 @@ export const main = async (
     { chainId: networkConfig.chainName },
   );
 
-  // Create a wrapper that uses SmartWalletWithSequence methods instead of direct smartWalletKit calls
+  // create a wrapper that uses SmartWalletWithSequence methods
   const smartWalletKitWithSequence = {
     ...signingSmartWalletKit,
-    // Override the three main methods to use SmartWalletWithSequence
+    // override the three main methods to use SmartWalletWithSequence
     sendBridgeAction: smartWalletWithSequence.sendBridgeAction.bind(
       smartWalletWithSequence,
     ),
