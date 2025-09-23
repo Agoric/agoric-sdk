@@ -276,8 +276,10 @@ export default [
     files: ['**/*.ts'],
 
     rules: {
+      // Not needed with TypeScript syntax
       'jsdoc/require-param': 'off',
       'jsdoc/require-param-type': 'off',
+      'jsdoc/require-returns-type': 'off',
       'no-undef': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
