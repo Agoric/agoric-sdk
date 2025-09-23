@@ -5,7 +5,12 @@ import type { NatAmount } from '@agoric/ertp/src/types.js';
 import { Fail } from '@endo/errors';
 import jsLPSolver from 'javascript-lp-solver';
 import type { IModel, IModelVariableConstraint } from 'javascript-lp-solver';
-import { makeTracer, objectMap, typedEntries } from '@agoric/internal';
+import {
+  makeTracer,
+  naturalCompare,
+  objectMap,
+  typedEntries,
+} from '@agoric/internal';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { PoolPlaces, type PoolKey } from './type-guards.js';
 import type { AssetPlaceRef, MovementDesc } from './type-guards-steps.js';
@@ -19,6 +24,16 @@ import {
   preflightValidateNetworkPlan,
   formatInfeasibleDiagnostics,
 } from './graph-diagnose.js';
+
+const replaceOrInit = <K, V>(
+  map: Map<K, V>,
+  key: K,
+  callback: (value: V | undefined, key: K, exists: boolean) => V,
+) => {
+  const old = map.get(key);
+  const exists = old !== undefined || map.has(key);
+  map.set(key, callback(old, key, exists));
+};
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const trace = makeTracer('solve');
@@ -358,76 +373,64 @@ export const solveRebalance = async (
   return flows;
 };
 
-// Re-add / ensure intact helper (heuristic extraction)
 export const rebalanceMinCostFlowSteps = (
   flows: SolvedEdgeFlow[],
   graph: RebalanceGraph,
 ): MovementDesc[] => {
-  const available: Record<string, number> = {};
-  for (const [node, sup] of Object.entries(graph.supplies))
-    if (sup > 0) available[node] = sup;
+  const supplies = new Map(
+    typedEntries(graph.supplies).filter(([_place, amount]) => amount > 0),
+  );
+  type AnnotatedFlow = SolvedEdgeFlow & { srcChain: string };
+  const pendingFlows = new Map<string, AnnotatedFlow>(
+    flows
+      .filter(f => f.flow > FLOW_EPS)
+      .map(f => [f.edge.id, { ...f, srcChain: chainOf(f.edge.src) }]),
+  );
+  const prioritized = [] as AnnotatedFlow[];
 
-  const work = flows
-    .filter(f => f.flow > FLOW_EPS)
-    .map(f => ({ edge: f.edge, flow: f.flow }));
-
-  const edgeIdNum = (e: FlowEdge) => Number(e.id.slice(1));
-  const scheduled: { edge: FlowEdge; flow: number }[] = [];
-  const pending = new Set(work.map(w => w.edge.id));
-  const edgeById: Record<string, { edge: FlowEdge; flow: number }> = {};
-  for (const w of work) edgeById[w.edge.id] = w;
-
-  // Maintain last chosen originating chain to group sequential operations
+  // Maintain last chosen originating chain to group sequential operations.
   let lastChain: string | undefined;
 
-  while (pending.size) {
-    const candidates: { edge: FlowEdge; flow: number; chain: string }[] = [];
-    for (const id of pending) {
-      const { edge, flow } = edgeById[id];
-      const avail = available[edge.src] || 0;
-      if (avail + 1e-12 >= flow) {
-        candidates.push({
-          edge,
-          flow,
-          chain: chainOf(edge.src),
-        });
-      }
-    }
+  while (pendingFlows.size) {
+    const candidates = [...pendingFlows.values()].filter(
+      f => (supplies.get(f.edge.src) || 0) + 1e-12 >= f.flow,
+    );
+
     if (!candidates.length) {
-      // Deadlock fallback: schedule by id order regardless of availability
-      const fallback = [...pending]
-        .map(id => edgeById[id])
-        .sort((a, b) => edgeIdNum(a.edge) - edgeIdNum(b.edge));
-      for (const w of fallback) {
-        scheduled.push(w);
-        available[w.edge.src] = (available[w.edge.src] || 0) - w.flow;
-        available[w.edge.dest] = (available[w.edge.dest] || 0) + w.flow;
-        pending.delete(w.edge.id);
+      // Deadlock mitigation: pick by edge id order regardless of availability.
+      const sorted = [...pendingFlows.values()].sort((a, b) =>
+        naturalCompare(a.edge.id, b.edge.id),
+      );
+      for (const f of sorted) {
+        prioritized.push(f);
+        replaceOrInit(supplies, f.edge.src, (old = 0) => old - f.flow);
+        replaceOrInit(supplies, f.edge.dest, (old = 0) => old + f.flow);
+        pendingFlows.delete(f.edge.id);
       }
       break;
     }
 
-    // Group by chain; prefer continuing with lastChain if present
-    let chosenGroup = candidates;
-    if (lastChain) {
-      const same = candidates.filter(c => c.chain === lastChain);
-      if (same.length) chosenGroup = same;
-    }
-    // Pick deterministic smallest edge id within chosen group
-    chosenGroup.sort((a, b) => edgeIdNum(a.edge) - edgeIdNum(b.edge));
+    // Prefer continuing with lastChain if possible.
+    const fromSameChain = lastChain
+      ? candidates.filter(c => c.srcChain === lastChain)
+      : undefined;
+    const chosenGroup = fromSameChain?.length ? fromSameChain : candidates;
+
+    // Pick deterministic smallest edge id within chosen group.
+    chosenGroup.sort((a, b) => naturalCompare(a.edge.id, b.edge.id));
     const chosen = chosenGroup[0];
-    scheduled.push(chosen);
-    lastChain = chosen.chain; // update grouping chain
-    available[chosen.edge.src] =
-      (available[chosen.edge.src] || 0) - chosen.flow;
-    available[chosen.edge.dest] =
-      (available[chosen.edge.dest] || 0) + chosen.flow;
-    pending.delete(chosen.edge.id);
+    prioritized.push(chosen);
+    replaceOrInit(supplies, chosen.edge.src, (old = 0) => old - chosen.flow);
+    replaceOrInit(supplies, chosen.edge.dest, (old = 0) => old + chosen.flow);
+    pendingFlows.delete(chosen.edge.id);
+    lastChain = chosen.srcChain;
   }
 
-  const steps: MovementDesc[] = scheduled.map(({ edge, flow }) => {
-    // XXX generate tests for this
-    assert(Number.isSafeInteger(flow));
+  const steps: MovementDesc[] = prioritized.map(({ edge, flow }) => {
+    Number.isSafeInteger(flow) ||
+      Fail`flow ${flow} for edge ${edge} is not a safe integer`;
+    const amount = AmountMath.make(graph.brand, BigInt(flow));
+
     let details = {};
     switch (edge.feeMode) {
       case 'gmpTransfer':
@@ -450,13 +453,8 @@ export const rebalanceMinCostFlowSteps = (
       default:
         break;
     }
-    return {
-      src: edge.src as AssetPlaceRef,
-      dest: edge.dest as AssetPlaceRef,
-      // NOTE: BigInt(number) throws for non-integer/non-finite values
-      amount: AmountMath.make(graph.brand, BigInt(flow)),
-      ...details,
-    };
+
+    return { src: edge.src, dest: edge.dest, amount, ...details };
   });
 
   return harden(steps);
