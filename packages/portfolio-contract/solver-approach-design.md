@@ -287,6 +287,9 @@ Notes:
 ## 11. Todo
 Critical
 - Typed Node/Edge aliases to enforce pool↔hub pairing at compile time.
+- add USDN and USDNVault to PROD_NETWORK; override the fee
+- use teh fee to compute 
+
 
 Further items for solver
 - support additions of dynamic constraints (e.g., when route price changes)
