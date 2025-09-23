@@ -433,12 +433,12 @@ export const rebalanceMinCostFlowSteps = (
       case 'gmpTransfer':
         // TODO: Rather than hard-code, derive from Axelar `estimateGasFee`.
         // https://docs.axelar.dev/dev/axelarjs-sdk/axelar-query-api#estimategasfee
-        details = { fee: AmountMath.make(graph.feeBrand, 15_000_000n) };
+        details = { fee: AmountMath.make(graph.feeBrand, 20_000_000n) };
         break;
       case 'gmpCall':
         // TODO: Rather than hard-code, derive from Axelar `estimateGasFee`.
         // https://docs.axelar.dev/dev/axelarjs-sdk/axelar-query-api#estimategasfee
-        details = { fee: AmountMath.make(graph.feeBrand, 15_000_000n) };
+        details = { fee: AmountMath.make(graph.feeBrand, 20_000_000n) };
         break;
       case 'toUSDN': {
         // NOTE USDN transfer incurs a fee on output amount in basis points

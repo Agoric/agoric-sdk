@@ -12,6 +12,7 @@ const { brand: FEE_BRAND } = (() => ({ brand: Far('BLD') as Brand<'nat'> }))();
 const token = (v: bigint) => AmountMath.make(TOK_BRAND, v);
 const fee = (v: bigint) => AmountMath.make(FEE_BRAND, v);
 const ZERO = token(0n);
+const fixedFee = fee(20_000_000n);
 
 // Pools
 const A = 'Aave_Arbitrum';
@@ -36,17 +37,17 @@ test('solver simple 2-pool case (A -> B 30)', async t => {
 
   t.deepEqual(steps, [
     // leaf -> hub
-    { src: A, dest: '@Arbitrum', amount: token(30n), fee: fee(15_000_000n) },
+    { src: A, dest: '@Arbitrum', amount: token(30n), fee: fixedFee },
     // hub -> hub legs
     { src: '@Arbitrum', dest: '@noble', amount: token(30n) },
     {
       src: '@noble',
       dest: '@Avalanche',
       amount: token(30n),
-      fee: fee(15_000_000n),
+      fee: fixedFee,
     },
     // hub -> leaf
-    { src: '@Avalanche', dest: B, amount: token(30n), fee: fee(15_000_000n) },
+    { src: '@Avalanche', dest: B, amount: token(30n), fee: fixedFee },
   ]);
 });
 
@@ -66,14 +67,14 @@ test('solver 3-pool rounding (A -> B 33, A -> C 33)', async t => {
   const amt33 = token(33n);
   t.deepEqual(steps, [
     // leaf -> hub (aggregated outflow from A)
-    { src: A, dest: '@Arbitrum', amount: amt66, fee: fee(15_000_000n) },
+    { src: A, dest: '@Arbitrum', amount: amt66, fee: fixedFee },
     // hub -> hub aggregated then split
     { src: '@Arbitrum', dest: '@noble', amount: amt66 },
-    { src: '@noble', dest: '@Avalanche', amount: amt33, fee: fee(15_000_000n) },
-    { src: '@noble', dest: '@Ethereum', amount: amt33, fee: fee(15_000_000n) },
+    { src: '@noble', dest: '@Avalanche', amount: amt33, fee: fixedFee },
+    { src: '@noble', dest: '@Ethereum', amount: amt33, fee: fixedFee },
     // hub -> leaf
-    { src: '@Avalanche', dest: B, amount: amt33, fee: fee(15_000_000n) },
-    { src: '@Ethereum', dest: C, amount: amt33, fee: fee(15_000_000n) },
+    { src: '@Avalanche', dest: B, amount: amt33, fee: fixedFee },
+    { src: '@Ethereum', dest: C, amount: amt33, fee: fixedFee },
   ]);
 });
 
@@ -102,17 +103,17 @@ test('solver all to one (B + C -> A)', async t => {
     feeBrand: FEE_BRAND,
   });
   t.deepEqual(steps, [
-    { src: B, dest: '@Avalanche', amount: token(20n), fee: fee(15_000_000n) },
+    { src: B, dest: '@Avalanche', amount: token(20n), fee: fixedFee },
     { src: '@Avalanche', dest: '@noble', amount: token(20n) },
-    { src: C, dest: '@Ethereum', amount: token(70n), fee: fee(15_000_000n) },
+    { src: C, dest: '@Ethereum', amount: token(70n), fee: fixedFee },
     { src: '@Ethereum', dest: '@noble', amount: token(70n) },
     {
       src: '@noble',
       dest: '@Arbitrum',
       amount: token(90n),
-      fee: fee(15_000_000n),
+      fee: fixedFee,
     },
-    { src: '@Arbitrum', dest: A, amount: token(90n), fee: fee(15_000_000n) },
+    { src: '@Arbitrum', dest: A, amount: token(90n), fee: fixedFee },
   ]);
 });
 
@@ -128,22 +129,22 @@ test('solver distribute from one (A -> B 60, A -> C 40)', async t => {
     feeBrand: FEE_BRAND,
   });
   t.deepEqual(steps, [
-    { src: A, dest: '@Arbitrum', amount: token(100n), fee: fee(15_000_000n) },
+    { src: A, dest: '@Arbitrum', amount: token(100n), fee: fixedFee },
     { src: '@Arbitrum', dest: '@noble', amount: token(100n) },
     {
       src: '@noble',
       dest: '@Avalanche',
       amount: token(60n),
-      fee: fee(15_000_000n),
+      fee: fixedFee,
     },
     {
       src: '@noble',
       dest: '@Ethereum',
       amount: token(40n),
-      fee: fee(15_000_000n),
+      fee: fixedFee,
     },
-    { src: '@Avalanche', dest: B, amount: token(60n), fee: fee(15_000_000n) },
-    { src: '@Ethereum', dest: C, amount: token(40n), fee: fee(15_000_000n) },
+    { src: '@Avalanche', dest: B, amount: token(60n), fee: fixedFee },
+    { src: '@Ethereum', dest: C, amount: token(40n), fee: fixedFee },
   ]);
 });
 
@@ -158,17 +159,17 @@ test('solver collect to one (B 30 + C 70 -> A)', async t => {
     feeBrand: FEE_BRAND,
   });
   t.deepEqual(steps, [
-    { src: B, dest: '@Avalanche', amount: token(30n), fee: fee(15_000_000n) },
+    { src: B, dest: '@Avalanche', amount: token(30n), fee: fixedFee },
     { src: '@Avalanche', dest: '@noble', amount: token(30n) },
-    { src: C, dest: '@Ethereum', amount: token(70n), fee: fee(15_000_000n) },
+    { src: C, dest: '@Ethereum', amount: token(70n), fee: fixedFee },
     { src: '@Ethereum', dest: '@noble', amount: token(70n) },
     {
       src: '@noble',
       dest: '@Arbitrum',
       amount: token(100n),
-      fee: fee(15_000_000n),
+      fee: fixedFee,
     },
-    { src: '@Arbitrum', dest: A, amount: token(100n), fee: fee(15_000_000n) },
+    { src: '@Arbitrum', dest: A, amount: token(100n), fee: fixedFee },
   ]);
 });
 
@@ -189,16 +190,16 @@ test('solver deposit redistribution (+agoric 100 -> A 70, B 30)', async t => {
       src: '@noble',
       dest: '@Arbitrum',
       amount: token(70n),
-      fee: fee(15_000_000n),
+      fee: fixedFee,
     },
     {
       src: '@noble',
       dest: '@Avalanche',
       amount: token(30n),
-      fee: fee(15_000_000n),
+      fee: fixedFee,
     },
-    { src: '@Arbitrum', dest: A, amount: token(70n), fee: fee(15_000_000n) },
-    { src: '@Avalanche', dest: B, amount: token(30n), fee: fee(15_000_000n) },
+    { src: '@Arbitrum', dest: A, amount: token(70n), fee: fixedFee },
+    { src: '@Avalanche', dest: B, amount: token(30n), fee: fixedFee },
   ]);
 });
 
@@ -221,16 +222,16 @@ test('solver deposit redistribution (Deposit 100 -> A 70, B 30)', async t => {
       src: '@noble',
       dest: '@Arbitrum',
       amount: token(70n),
-      fee: fee(15_000_000n),
+      fee: fixedFee,
     },
     {
       src: '@noble',
       dest: '@Avalanche',
       amount: token(30n),
-      fee: fee(15_000_000n),
+      fee: fixedFee,
     },
-    { src: '@Arbitrum', dest: A, amount: token(70n), fee: fee(15_000_000n) },
-    { src: '@Avalanche', dest: B, amount: token(30n), fee: fee(15_000_000n) },
+    { src: '@Arbitrum', dest: A, amount: token(70n), fee: fixedFee },
+    { src: '@Avalanche', dest: B, amount: token(30n), fee: fixedFee },
   ]);
 });
 
@@ -245,9 +246,9 @@ test('solver withdraw to cash (A 50 + B 30 -> Cash)', async t => {
     feeBrand: FEE_BRAND,
   });
   t.deepEqual(steps, [
-    { src: A, dest: '@Arbitrum', amount: token(50n), fee: fee(15_000_000n) },
+    { src: A, dest: '@Arbitrum', amount: token(50n), fee: fixedFee },
     { src: '@Arbitrum', dest: '@noble', amount: token(50n) },
-    { src: B, dest: '@Avalanche', amount: token(30n), fee: fee(15_000_000n) },
+    { src: B, dest: '@Avalanche', amount: token(30n), fee: fixedFee },
     { src: '@Avalanche', dest: '@noble', amount: token(30n) },
     { src: '@noble', dest: '@agoric', amount: token(80n) },
     { src: '@agoric', dest: '<Cash>', amount: token(80n) },
@@ -279,15 +280,15 @@ test('solver hub balances into pools (hubs supply -> pool targets)', async t => 
     feeBrand: FEE_BRAND,
   });
   t.deepEqual(steps, [
-    { src: '@Arbitrum', dest: A, amount: token(30n), fee: fee(15_000_000n) },
-    { src: '@Avalanche', dest: B, amount: token(20n), fee: fee(15_000_000n) },
+    { src: '@Arbitrum', dest: A, amount: token(30n), fee: fixedFee },
+    { src: '@Avalanche', dest: B, amount: token(20n), fee: fixedFee },
     {
       src: '@noble',
       dest: '@Ethereum',
       amount: token(20n),
-      fee: fee(15_000_000n),
+      fee: fixedFee,
     },
-    { src: '@Ethereum', dest: C, amount: token(20n), fee: fee(15_000_000n) },
+    { src: '@Ethereum', dest: C, amount: token(20n), fee: fixedFee },
   ]);
 });
 
@@ -327,16 +328,16 @@ test('solver deposit split across three pools (Deposit 1000 -> USDN 500, A 300, 
       src: '@noble',
       dest: '@Arbitrum',
       amount: token(300n),
-      fee: fee(15_000_000n),
+      fee: fixedFee,
     },
     {
       src: '@noble',
       dest: '@Ethereum',
       amount: token(200n),
-      fee: fee(15_000_000n),
+      fee: fixedFee,
     },
-    { src: '@Arbitrum', dest: A, amount: token(300n), fee: fee(15_000_000n) },
-    { src: '@Ethereum', dest: C, amount: token(200n), fee: fee(15_000_000n) },
+    { src: '@Arbitrum', dest: A, amount: token(300n), fee: fixedFee },
+    { src: '@Ethereum', dest: C, amount: token(200n), fee: fixedFee },
   ]);
 });
 
@@ -378,16 +379,16 @@ test('solver deposit with existing balances to meet targets', async t => {
       src: '@noble',
       dest: '@Arbitrum',
       amount: token(220n),
-      fee: fee(15_000_000n),
+      fee: fixedFee,
     },
     {
       src: '@noble',
       dest: '@Ethereum',
       amount: token(160n),
-      fee: fee(15_000_000n),
+      fee: fixedFee,
     },
-    { src: '@Arbitrum', dest: A, amount: token(220n), fee: fee(15_000_000n) },
-    { src: '@Ethereum', dest: C, amount: token(160n), fee: fee(15_000_000n) },
+    { src: '@Arbitrum', dest: A, amount: token(220n), fee: fixedFee },
+    { src: '@Ethereum', dest: C, amount: token(160n), fee: fixedFee },
   ]);
 });
 
@@ -430,14 +431,14 @@ test('solver leaves unmentioned pools unchanged', async t => {
 
   // Identical to the 2-pool case; no steps to/from C
   t.deepEqual(steps, [
-    { src: A, dest: '@Arbitrum', amount: token(30n), fee: fee(15_000_000n) },
+    { src: A, dest: '@Arbitrum', amount: token(30n), fee: fixedFee },
     { src: '@Arbitrum', dest: '@noble', amount: token(30n) },
     {
       src: '@noble',
       dest: '@Avalanche',
       amount: token(30n),
-      fee: fee(15_000_000n),
+      fee: fixedFee,
     },
-    { src: '@Avalanche', dest: B, amount: token(30n), fee: fee(15_000_000n) },
+    { src: '@Avalanche', dest: B, amount: token(30n), fee: fixedFee },
   ]);
 });
