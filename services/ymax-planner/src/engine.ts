@@ -20,7 +20,6 @@ import {
   type PendingTx,
   type TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import {
   TxStatus,
   TxType,
@@ -71,6 +70,7 @@ import {
   vstoragePathIsParentOf,
   STALE_RESPONSE,
 } from './vstorage-utils.ts';
+import type { SmartWalletKitWithSequence } from './main.ts';
 
 const { entries, fromEntries, values } = Object;
 
@@ -165,7 +165,7 @@ type Powers = {
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
-  signingSmartWalletKit: SigningSmartWalletKit;
+  signingSmartWalletKit: SmartWalletKitWithSequence;
   walletStore: ReturnType<typeof reflectWalletStore>;
   getWalletInvocationUpdate: (
     messageId: string | number,

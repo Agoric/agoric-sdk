@@ -4,12 +4,15 @@ import {
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
   reflectWalletStore,
+  type SigningSmartWalletKit,
 } from '@agoric/client-utils';
 import { objectMetaMap } from '@agoric/internal';
 import { Fail, q } from '@endo/errors';
 import { isPrimitive } from '@endo/pass-style';
 
 import { SigningStargateClient } from '@cosmjs/stargate';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
+import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 
 import { loadConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
@@ -20,6 +23,16 @@ import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
 import { SequenceManager } from './sequence-manager.ts';
 import { SmartWalletWithSequence } from './smart-wallet-with-sequence.ts';
+
+export type SmartWalletKitWithSequence = Omit<
+  SigningSmartWalletKit,
+  'executeOffer'
+> & {
+  executeOffer: (
+    offer: OfferSpec,
+    pollForResult?: boolean,
+  ) => Promise<Awaited<ReturnType<SigningSmartWalletKit['executeOffer']>>>;
+};
 
 const assertChainId = async (
   rpc: CosmosRPCClient,
@@ -87,14 +100,13 @@ export const main = async (
     makeNonce: () => new Date(now()).toISOString(),
   });
 
-  const sequenceManager = new SequenceManager(
+  const sequenceManager = await SequenceManager.create(
     {
       cosmosRest,
       log: (...args) => console.log('[SequenceManager]:', ...args),
     },
     { chainKey: 'agoric', address: signingSmartWalletKit.address },
   );
-  await sequenceManager.initialize();
 
   const smartWalletWithSequence = new SmartWalletWithSequence(
     {
@@ -105,17 +117,14 @@ export const main = async (
     { chainId: networkConfig.chainName },
   );
 
-  // Create a wrapper that uses SmartWalletWithSequence methods instead of direct smartWalletKit calls
-  const smartWalletKitWithSequence = {
+  // create a wrapper that uses SmartWalletWithSequence methods
+  const smartWalletKitWithSequence: SmartWalletKitWithSequence = {
     ...signingSmartWalletKit,
-    // Override the three main methods to use SmartWalletWithSequence
+    // override the three main methods to use SmartWalletWithSequence
     sendBridgeAction: smartWalletWithSequence.sendBridgeAction.bind(
       smartWalletWithSequence,
     ),
     executeOffer: smartWalletWithSequence.executeOffer.bind(
-      smartWalletWithSequence,
-    ),
-    invokeEntry: smartWalletWithSequence.invokeEntry.bind(
       smartWalletWithSequence,
     ),
   };
@@ -146,7 +155,7 @@ export const main = async (
     rpc,
     spectrum,
     cosmosRest,
-    signingSmartWalletKit: smartWalletKitWithSequence,
+    signingSmartWalletKit,
     walletStore,
     getWalletInvocationUpdate: (messageId, opts) => {
       const { getLastUpdate } = signingSmartWalletKit.query;
