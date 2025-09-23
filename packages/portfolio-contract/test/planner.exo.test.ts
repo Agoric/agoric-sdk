@@ -3,6 +3,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { ActualChainInfo } from '@agoric/orchestration';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
@@ -58,6 +59,16 @@ test('planner exo submit method', async t => {
     getPortfolio: mockGetPortfolio,
     shapes: makeOfferArgsShapes(USDC),
     vowTools: vt,
+    chainHubTools: {
+      getChainInfo: <K extends string>(_c: K) =>
+        vt.asVow(
+          async () =>
+            ({
+              namespace: 'eip155',
+              reference: '1234',
+            }) as unknown as ActualChainInfo<K>,
+        ),
+    },
   });
 
   const planner = makePlanner();
