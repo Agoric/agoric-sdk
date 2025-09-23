@@ -109,6 +109,8 @@ module.exports = {
     {
       files: ['**/*.ts'],
       rules: {
+        // Not needed with TypeScript syntax
+        'jsdoc/require-returns-type': 'off',
         // Handled better by tsc
         'import/no-unresolved': 'off',
         'no-unused-vars': 'off',

@@ -1,5 +1,3 @@
-/* eslint-disable jsdoc/require-returns-type */
-
 import { JsonRpcProvider, Log, type Filter } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from './config.ts';
