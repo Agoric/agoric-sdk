@@ -17,6 +17,7 @@ export const makeGraphFromDefinition = (
   current: Partial<Record<AssetPlaceRef, NatAmount>>,
   target: Partial<Record<AssetPlaceRef, NatAmount>>,
   brand: Amount['brand'],
+  feeBrand: Amount['brand'],
 ) => {
   // Hubs from spec.
   const hubs = new Set<string>(spec.chains.map(c => `@${c.name}`));
@@ -28,8 +29,12 @@ export const makeGraphFromDefinition = (
 
   // Minimal validation: ensure links reference present hubs.
   for (const link of spec.links) {
-    hubs.has(`@${link.src}`) || Fail`missing link src hub ${link.src}`;
-    hubs.has(`@${link.dest}`) || Fail`missing link dest hub ${link.dest}`;
+    hubs.has(link.src) ||
+      !link.src.startsWith('@') ||
+      Fail`missing link src hub ${link.src}`;
+    hubs.has(link.dest) ||
+      !link.dest.startsWith('@') ||
+      Fail`missing link dest hub ${link.dest}`;
   }
 
   // Each current/target node must be connected to a hub.
@@ -61,7 +66,13 @@ export const makeGraphFromDefinition = (
     ...(spec.localPlaces ?? []).map(lp => lp.id),
     ...dynamicNodes,
   ]) as Set<AssetPlaceRef>;
-  const graph = buildBaseGraph([...placeRefs], current, target, brand, 1);
+  const graph = buildBaseGraph(
+    [...placeRefs],
+    current,
+    target,
+    brand,
+    feeBrand,
+  );
   if (spec.debug) graph.debug = true;
 
   // Force the presence of particular edges.
@@ -86,7 +97,7 @@ export const makeGraphFromDefinition = (
       variableFee: 1,
       fixedFee: 0,
       timeFixed: 1,
-      via: 'agoric-local',
+      via: 'local',
     };
     edges.push({ id: 'TBD', src, dest, ...dataAttrs });
   };
@@ -104,12 +115,13 @@ export const makeGraphFromDefinition = (
 
   // Override the base graph with inter-hub links from spec.
   for (const link of spec.links) {
-    addOrReplaceEdge(`@${link.src}`, `@${link.dest}`, {
+    addOrReplaceEdge(link.src, link.dest, {
       capacity: Number(link.capacity ?? capacityDefault),
       variableFee: link.variableFeeBps ?? 0,
       fixedFee: link.flatFee === undefined ? undefined : Number(link.flatFee),
       timeFixed: link.timeSec,
       via: link.transfer,
+      feeMode: link.feeMode,
     });
   }
 

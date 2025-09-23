@@ -5,7 +5,8 @@ import type { NetworkSpec } from '../../src/network/network-spec.js';
 import { makeGraphFromDefinition } from '../../src/network/buildGraph.js';
 import { planRebalanceFlow } from '../../src/plan-solve.js';
 
-const brand = Far('TestBrand');
+const brand = Far('TestBrand') as any;
+const feeBrand = Far('TestFeeBrand') as any;
 const makeAmt = (v: bigint) => AmountMath.make(brand as any, v);
 
 test('NetworkSpec minimal validation via builder', t => {
@@ -18,7 +19,7 @@ test('NetworkSpec minimal validation via builder', t => {
     links: [],
     localPlaces: [],
   } as any;
-  t.notThrows(() => makeGraphFromDefinition(base, {}, {}, Far('B') as any));
+  t.notThrows(() => makeGraphFromDefinition(base, {}, {}, Far('B'), feeBrand));
 });
 
 test('makeGraphFromDefinition adds intra-chain edges and appends inter edges with sequential ids', t => {
@@ -34,22 +35,22 @@ test('makeGraphFromDefinition adds intra-chain edges and appends inter edges wit
     localPlaces: [],
     links: [
       {
-        src: 'Arbitrum',
-        dest: 'Ethereum',
+        src: '@Arbitrum',
+        dest: '@Ethereum',
         transfer: 'fastusdc',
         variableFeeBps: 0,
         timeSec: 10,
       },
       {
-        src: 'Ethereum',
-        dest: 'Arbitrum',
+        src: '@Ethereum',
+        dest: '@Arbitrum',
         transfer: 'fastusdc',
         variableFeeBps: 0,
         timeSec: 10,
       },
     ],
   } as any;
-  const graph = makeGraphFromDefinition(net, {}, {}, brand as any);
+  const graph = makeGraphFromDefinition(net, {}, {}, brand, feeBrand);
   const leafCount = 2; // Aave_Arbitrum, Compound_Ethereum
   const expectedIntra = leafCount * 2; // bidirectional
   t.true(graph.edges.length >= expectedIntra + net.links.length);
@@ -78,15 +79,15 @@ test('planRebalanceFlow uses NetworkSpec (legacy links param ignored at type lev
     localPlaces: [],
     links: [
       {
-        src: 'Arbitrum',
-        dest: 'Avalanche',
+        src: '@Arbitrum',
+        dest: '@Avalanche',
         transfer: 'fastusdc',
         variableFeeBps: 0,
         timeSec: 10,
       },
       {
-        src: 'Avalanche',
-        dest: 'Arbitrum',
+        src: '@Avalanche',
+        dest: '@Arbitrum',
         transfer: 'fastusdc',
         variableFeeBps: 0,
         timeSec: 10,
@@ -105,7 +106,8 @@ test('planRebalanceFlow uses NetworkSpec (legacy links param ignored at type lev
     network: net,
     current,
     target,
-    brand: brand as any,
+    brand,
+    feeBrand,
     mode: 'cheapest',
   });
   // Ensure only the two provided inter edges (plus intra) exist, not link-derived ones

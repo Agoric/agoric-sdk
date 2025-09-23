@@ -10,7 +10,13 @@ import type { AssetPlaceRef } from '../type-guards-steps.js';
 
 // Control and transfer planes
 export type ControlProtocol = 'ibc' | 'axelar' | 'local';
-export type TransferProtocol = 'ibc' | 'fastusdc' | 'cctpReturn' | 'cctpSlow';
+export type TransferProtocol =
+  | 'ibc'
+  | 'fastusdc'
+  | 'cctpReturn'
+  | 'cctpSlow'
+  | 'local';
+export type FeeMode = 'toUSDN' | 'gmpCall' | 'gmpTransfer';
 
 // Chains (hubs)
 export interface ChainSpec {
@@ -45,8 +51,8 @@ export interface LocalPlaceSpec {
 
 // Directed inter-hub link
 export interface LinkSpec {
-  src: SupportedChain;
-  dest: SupportedChain;
+  src: AssetPlaceRef;
+  dest: AssetPlaceRef;
 
   // Fees
   variableFeeBps: number; // basis points of amount
@@ -59,6 +65,7 @@ export interface LinkSpec {
 
   // Protocols
   transfer: TransferProtocol; // asset transfer mechanism
+  feeMode?: FeeMode; // how fees apply to transation using this link. See plan-solve.ts
 
   // Policy / guardrails (optional)
   priority?: number; // tie-break hint
