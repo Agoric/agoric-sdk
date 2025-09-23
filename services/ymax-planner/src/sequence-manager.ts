@@ -87,8 +87,12 @@ export class SequenceManager {
    * Sync sequence with the network (useful for error recovery)
    */
   async syncSequence(): Promise<void> {
+    const oldSequence = this.sequence;
     const accountInfo = await this.fetchAccountInfo();
     this.sequence = Number(accountInfo.sequence);
+    this.log(
+      `Synced sequence: ${oldSequence} → ${this.sequence} (network: ${accountInfo.sequence})`,
+    );
   }
 
   private async fetchAccountInfo(): Promise<AccountInfo> {
