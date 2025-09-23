@@ -13,6 +13,7 @@ import { chain as agoricTest } from 'chain-registry/testnet/agoricdevnet/index.j
 import { Fail } from '@endo/errors';
 
 import type { ClusterName } from '@agoric/internal';
+import type { AccountResponse } from './sequence-manager.ts';
 
 interface CosmosRestClientConfig {
   clusterName: ClusterName;
@@ -67,54 +68,54 @@ export const USDN =
   nobleAssetList.assets.find(a => a.symbol === 'USDN') || Fail`no USDN`;
 
 export class CosmosRestClient {
-  private readonly fetch: typeof fetch;
+  #fetch: typeof fetch;
 
-  private readonly setTimeout: typeof setTimeout;
+  #setTimeout: typeof setTimeout;
 
-  private readonly clusterName: string;
+  #clusterName: string;
 
-  private readonly log: (...args: unknown[]) => void;
+  #log: (...args: unknown[]) => void;
 
-  private readonly timeout: number;
+  #timeout: number;
 
-  private readonly retries: number;
+  #retries: number;
 
-  private readonly chainConfigs: Map<string, ChainConfig>;
+  #chainConfigs: Map<string, ChainConfig>;
 
-  private readonly http: KyInstance;
+  #http: KyInstance;
 
   constructor(
     io: CosmosRestClientPowers,
     config: CosmosRestClientConfig = { clusterName: 'testnet' },
   ) {
-    this.fetch = io.fetch;
-    this.setTimeout = io.setTimeout;
-    if (!this.fetch || !this.setTimeout) {
+    this.#fetch = io.fetch;
+    this.#setTimeout = io.setTimeout;
+    if (!this.#fetch || !this.#setTimeout) {
       throw new Error('`fetch` and `setTimeout` are required');
     }
 
-    this.clusterName =
+    this.#clusterName =
       config.clusterName === 'local' ? 'testnet' : config.clusterName;
-    this.log = io.log ?? (() => {});
-    this.timeout = config.timeout ?? 10000; // 10s timeout
-    this.retries = config.retries ?? 3;
+    this.#log = io.log ?? (() => {});
+    this.#timeout = config.timeout ?? 10000; // 10s timeout
+    this.#retries = config.retries ?? 3;
 
-    const chainConfig = CHAIN_CONFIGS[this.clusterName];
+    const chainConfig = CHAIN_CONFIGS[this.#clusterName];
     if (!chainConfig) {
-      throw new Error(`No chain config for cluster name ${this.clusterName}`);
+      throw new Error(`No chain config for cluster name ${this.#clusterName}`);
     }
 
     // Initialize with predefined chains
-    this.chainConfigs = new Map(Object.entries(chainConfig));
+    this.#chainConfigs = new Map(Object.entries(chainConfig));
 
     // Create ky instance using provided fetch, retry, and timeout settings.
-    this.http = ky.create({
-      fetch: this.fetch,
+    this.#http = ky.create({
+      fetch: this.#fetch,
       retry: {
-        limit: this.retries,
+        limit: this.#retries,
         methods: ['get'],
       },
-      timeout: this.timeout,
+      timeout: this.#timeout,
       headers: {
         Accept: 'application/json',
         'User-Agent': 'Agoric-YMax-Planner/1.0.0',
@@ -130,10 +131,10 @@ export class CosmosRestClient {
     address: string,
     pagination?: { limit?: number; offset?: number },
   ): Promise<QueryAllBalancesResponse> {
-    const chainConfig = this.chainConfigs.get(chainKey);
+    const chainConfig = this.#chainConfigs.get(chainKey);
     if (!chainConfig) {
       throw new Error(
-        `Chain configuration not found for: ${chainKey}. Available: ${Array.from(this.chainConfigs.keys()).join(', ')}`,
+        `Chain configuration not found for: ${chainKey}. Available: ${Array.from(this.#chainConfigs.keys()).join(', ')}`,
       );
     }
 
@@ -151,11 +152,11 @@ export class CosmosRestClient {
       url += `?${params.toString()}`;
     }
 
-    this.log(
+    this.#log(
       `[CosmosRestClient] Fetching balances for ${address} on ${chainConfig.name}: ${url}`,
     );
 
-    return this.makeRequest<QueryAllBalancesResponse>(
+    return this.#makeRequest<QueryAllBalancesResponse>(
       url,
       chainConfig,
       `Account balances for ${address} on ${chainConfig.name}`,
@@ -170,18 +171,18 @@ export class CosmosRestClient {
     address: string,
     denom: string,
   ): Promise<Coin> {
-    const chainConfig = this.chainConfigs.get(chainKey);
+    const chainConfig = this.#chainConfigs.get(chainKey);
     if (!chainConfig) {
       throw new Error(`Chain configuration not found for: ${chainKey}`);
     }
 
     const url = `${chainConfig.restEndpoint}/cosmos/bank/v1beta1/balances/${address}/by_denom?denom=${encodeURIComponent(denom)}`;
 
-    this.log(
+    this.#log(
       `[CosmosRestClient] Fetching ${denom} balance for ${address} on ${chainConfig.name}: ${url}`,
     );
 
-    const response = await this.makeRequest<{ balance: Coin }>(
+    const response = await this.#makeRequest<{ balance: Coin }>(
       url,
       chainConfig,
       `${denom} balance for ${address} on ${chainConfig.name}`,
@@ -194,49 +195,52 @@ export class CosmosRestClient {
    * Get chain information/status
    */
   async getChainInfo(chainKey: string) {
-    const chainConfig = this.chainConfigs.get(chainKey);
+    const chainConfig = this.#chainConfigs.get(chainKey);
     if (!chainConfig) {
       throw new Error(`Chain configuration not found for: ${chainKey}`);
     }
 
     const url = `${chainConfig.restEndpoint}/cosmos/base/tendermint/v1beta1/node_info`;
 
-    this.log(
+    this.#log(
       `[CosmosRestClient] Fetching chain info for ${chainConfig.name}: ${url}`,
     );
 
-    return this.makeRequest(
+    return this.#makeRequest(
       url,
       chainConfig,
       `Chain info for ${chainConfig.name}`,
     );
   }
 
-  async getAccountSequence(chainKey: string, address: string) {
-    const chainConfig = this.chainConfigs.get(chainKey);
+  async getAccountSequence(
+    chainKey: string,
+    address: string,
+  ): Promise<AccountResponse> {
+    const chainConfig = this.#chainConfigs.get(chainKey);
     if (!chainConfig) {
       throw new Error(`Chain configuration not found for: ${chainKey}`);
     }
     const url = `${chainConfig.restEndpoint}/cosmos/auth/v1beta1/accounts/${address}`;
 
-    this.log(`[CosmosRestClient] Fetching account sequence for ${address}`);
+    this.#log(`[CosmosRestClient] Fetching account sequence for ${address}`);
 
-    return this.makeRequest(
+    return this.#makeRequest(
       url,
       chainConfig,
       `Chain info for ${chainConfig.name}`,
     );
   }
 
-  private async makeRequest<T>(
+  async #makeRequest<T>(
     url: string,
     chainConfig: ChainConfig,
     context: string,
   ): Promise<T> {
     await null;
     try {
-      const data = await this.http.get(url).json<T>();
-      this.log(`[CosmosRestClient] Success: ${context}`);
+      const data = await this.#http.get(url).json<T>();
+      this.#log(`[CosmosRestClient] Success: ${context}`);
       return data;
     } catch (err) {
       if (err instanceof HTTPError) {
