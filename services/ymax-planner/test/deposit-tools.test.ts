@@ -163,6 +163,8 @@ test('handleDeposit works with mocked dependencies', async t => {
           Aave_Arbitrum: 30n,
           Compound_Arbitrum: 20n,
         },
+        policyVersion: 4,
+        rebalanceCount: 2,
       };
     }
     throw new Error(`Unexpected path: ${path}`);
@@ -227,7 +229,7 @@ test('handleDeposit works with mocked dependencies', async t => {
     spectrum: mockSpectrumClient,
     cosmosRest: mockCosmosRestClient,
   });
-  t.snapshot(result?.steps);
+  t.snapshot(result);
 });
 
 test('handleDeposit handles missing targetAllocation gracefully', async t => {
