@@ -44,7 +44,7 @@ import (
 	"github.com/spf13/viper"
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	wasmtesting "github.com/CosmWasm/wasmd/x/wasm/testing"
+	wasmtesting "github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting"
 
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
