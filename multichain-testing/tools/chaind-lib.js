@@ -366,22 +366,21 @@ export const makeCopyFiles = (
     // Create the destination directory if it doesn't exist
     execFileSync(
       kubectlBinary,
-      `exec -i ${podName} -c ${containerName} -- mkdir -p ${destDir}`.split(
-        ' ',
-      ),
+      // prettier-ignore
+      ['exec', '-i', podName, '-c', containerName, '--', 'mkdir', '-p', destDir],
       { stdio: ['ignore', 'pipe', 'pipe'] },
     );
     for (const path of paths) {
       execFileSync(
         kubectlBinary,
-        `cp ${path} ${podName}:${destDir}/ -c ${containerName}`.split(' '),
+        ['cp', path, `${podName}:${destDir}/`, '-c', containerName],
         { stdio: ['ignore', 'pipe', 'pipe'] },
       );
       log(`Copied ${path} to ${destDir} in pod ${podName}`);
     }
     const lsOutput = execFileSync(
       kubectlBinary,
-      `exec -i ${podName} -c ${containerName}  -- ls -l ${destDir}`.split(' '),
+      ['exec', '-i', podName, '-c', containerName, '--', 'ls', '-l', destDir],
       { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf-8' },
     );
     log(`ls ${destDir}:\n${lsOutput}`);
