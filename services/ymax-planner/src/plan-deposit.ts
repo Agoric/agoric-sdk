@@ -240,7 +240,7 @@ export const handleDeposit = async (
     policyVersion,
     rebalanceCount,
   } = status;
-  if (!targetAllocation) return [];
+  if (!targetAllocation) return { policyVersion, rebalanceCount, steps: [] };
   const errors = [] as Error[];
   const balanceEntries = await Promise.all(
     positionKeys.map(async (posKey: PoolKey): Promise<[PoolKey, NatAmount]> => {

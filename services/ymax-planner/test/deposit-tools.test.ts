@@ -137,6 +137,8 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
           Arbitrum: 'arbitrum:test:addr2',
         },
         // No targetAllocation
+        policyVersion: 4,
+        rebalanceCount: 0,
       };
     }
     throw new Error(`Unexpected path: ${path}`);
@@ -182,7 +184,7 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
     cosmosRest: mockCosmosRestClient,
   });
 
-  t.deepEqual(result, []);
+  t.deepEqual(result, { policyVersion: 4, rebalanceCount: 0, steps: [] });
 });
 
 test('handleDeposit handles different position types correctly', async t => {
