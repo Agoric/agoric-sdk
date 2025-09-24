@@ -381,7 +381,7 @@ export const makeCopyFiles = (
     }
     const lsOutput = execFileSync(
       kubectlBinary,
-      `exec -i ${podName} -c ${containerName}  -- ls ${destDir}`.split(' '),
+      `exec -i ${podName} -c ${containerName}  -- ls -l ${destDir}`.split(' '),
       { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf-8' },
     );
     log(`ls ${destDir}:\n${lsOutput}`);
