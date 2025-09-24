@@ -11,9 +11,8 @@ import {
   IBCTransferOptionsShape,
 } from '../typeGuards.js';
 
-/** @import {OrchestrationAccountCommon} from '../orchestration-api.js'; */
-
 const { Vow$ } = NetworkShape; // TODO #9611
+// const EVow$ = shape => M.or(Vow$(shape), M.promise(/* shape */));
 
 /** @see {OrchestrationAccountCommon} */
 export const orchestrationAccountMethods = {
@@ -29,6 +28,9 @@ export const orchestrationAccountMethods = {
   transfer: M.call(AccountIdArgShape, AmountArgShape)
     .optional(IBCTransferOptionsShape)
     .returns(VowShape),
+  transferWithMeta: M.call(AccountIdArgShape, AmountArgShape)
+    .optional(IBCTransferOptionsShape)
+    .returns(Vow$({ result: Vow$(M.any()), meta: M.record() })),
   transferSteps: M.call(AmountArgShape, M.any()).returns(VowShape),
   asContinuingOffer: M.call().returns(
     Vow$({
@@ -38,4 +40,22 @@ export const orchestrationAccountMethods = {
     }),
   ),
   getPublicTopics: M.call().returns(Vow$(TopicsRecordShape)),
+};
+
+export const pickData = {
+  watcher: {
+    /**
+     * @template {PropertyKey} [K=PropertyKey]
+     * @template {Record<PropertyKey, any>} [R=Record<PropertyKey, any>]
+     * @param {R} record
+     * @param {K} key
+     * @returns {R[K]}
+     */
+    onFulfilled(record, key) {
+      return harden(record[key]);
+    },
+  },
+  shape: M.interface('pickDataWatcher', {
+    onFulfilled: M.call(M.record(), M.key()).returns(M.any()),
+  }),
 };
