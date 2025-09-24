@@ -672,10 +672,13 @@ export const startEngine = async (
     for (const { portfolioId, stepsRecord } of portfolioOps.filter(x => !!x)) {
       if (!stepsRecord) continue;
       const { policyVersion, rebalanceCount, steps } = stepsRecord;
-      const result = await signingSmartWalletKit.invokeEntry({
-        targetName: 'planner',
-        method: 'submit',
-        args: [portfolioId, steps, policyVersion, rebalanceCount],
+      const result = await signingSmartWalletKit.sendBridgeAction({
+        method: 'invokeEntry',
+        message: {
+          targetName: 'planner',
+          method: 'submit',
+          args: [portfolioId, steps, policyVersion, rebalanceCount],
+        },
       });
       console.log('result', result);
     }

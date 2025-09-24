@@ -1,6 +1,6 @@
 import type {
-  InvokeEntryMessage,
   OfferSpec,
+  OfferStatus,
 } from '@agoric/smart-wallet/src/offers.js';
 import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import type {
@@ -12,9 +12,9 @@ import type {
 import { toAccAddress } from '@cosmjs/stargate/build/queryclient/utils.js';
 import type { EReturn } from '@endo/far';
 import { MsgWalletSpendAction } from './codegen/agoric/swingset/msgs.js';
+import { TxRaw } from './codegen/cosmos/tx/v1beta1/tx.js';
 import { makeStargateClientKit } from './signing-client.js';
 import { type SmartWalletKit } from './smart-wallet-kit.js';
-import { TxRaw } from './codegen/cosmos/tx/v1beta1/tx.js';
 
 // TODO parameterize as part of https://github.com/Agoric/agoric-sdk/issues/5912
 const defaultFee: StdFee = {
@@ -88,7 +88,7 @@ export const makeSigningSmartWalletKit = async (
     return client.broadcastTx(txBytes);
   };
 
-  const executeOffer = async (offer: OfferSpec) => {
+  const executeOffer = async (offer: OfferSpec): Promise<OfferStatus> => {
     const before = await client.getBlock();
 
     await sendBridgeAction(
@@ -101,24 +101,17 @@ export const makeSigningSmartWalletKit = async (
     return walletUtils.pollOffer(address, offer.id, before.header.height);
   };
 
-  const invokeEntry = async (message: InvokeEntryMessage) => {
-    const transaction = await sendBridgeAction(
-      harden({
-        method: 'invokeEntry',
-        message,
-      }),
-    );
-
-    return { result: { transaction } };
-  };
-
   return Object.freeze({
     networkConfig: walletUtils.networkConfig,
     marshaller: walletUtils.marshaller,
     query,
     address,
+    /**
+     * Send an `executeOffer` bridge action and promise the resulting offer
+     * record once the offer has settled. If you don't need the offer record,
+     * consider using `sendBridgeAction` instead.
+     */
     executeOffer,
-    invokeEntry,
     sendBridgeAction,
   });
 };

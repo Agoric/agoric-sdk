@@ -76,19 +76,21 @@ export const reflectWalletStore = (
         if (method === 'then') return undefined;
         const boundMethod = async (...args) => {
           const id = `${method}.${retryOpts.fresh()}`;
-          const tx = await sig.invokeEntry(
-            logged('invoke', {
-              id,
-              targetName,
-              method,
-              args,
-              ...(saveResult ? { saveResult } : {}),
-            }),
-          );
-          if (tx.result.transaction.code !== 0) {
-            throw Error(tx.result.transaction.rawLog);
+          const message = logged('invoke', {
+            id,
+            targetName,
+            method,
+            args,
+            ...(saveResult ? { saveResult } : {}),
+          });
+          const tx = await sig.sendBridgeAction({
+            method: 'invokeEntry',
+            message,
+          });
+          if (tx.code !== 0) {
+            throw Error(tx.rawLog);
           }
-          lastTx = tx.result.transaction;
+          lastTx = tx;
           await up.invocation(id);
           return saveResult ? makeEntryProxy(saveResult.name) : undefined;
         };
