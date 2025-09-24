@@ -393,7 +393,7 @@ export const rebalanceMinCostFlowSteps = (
 
   while (pendingFlows.size) {
     const candidates = [...pendingFlows.values()].filter(
-      f => (supplies.get(f.edge.src) || 0) + 1e-12 >= f.flow,
+      f => (supplies.get(f.edge.src) || 0) >= f.flow,
     );
 
     if (!candidates.length) {
