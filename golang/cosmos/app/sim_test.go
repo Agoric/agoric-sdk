@@ -8,7 +8,6 @@ import (
 	"runtime/debug"
 	"strings"
 	"testing"
-	"time"
 
 	"cosmossdk.io/log"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -16,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	storetypes "cosmossdk.io/store/types"
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
 
 	"cosmossdk.io/store"
@@ -46,6 +44,13 @@ const SimAppChainID = "simulation-app"
 // Get flags every time the simulator is run
 func init() {
 	simcli.GetSimulatorFlags()
+}
+
+// Create the wrapper using the appOptionsFn type
+type appOptionsFn func(string) any
+
+func (f appOptionsFn) Get(k string) any {
+	return f(k)
 }
 
 type StoreKeysPrefixes struct {
@@ -81,12 +86,7 @@ func TestFullAppSimulation(t *testing.T) {
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 
-	// Use temporary directory to prevent CosmWasm lock conflicts when running tests in parallel
-	homeDir := fmt.Sprintf("/tmp/agoric-test-%d-%d", 1, time.Now().UnixNano())
-
-	appOptions := make(simtestutil.AppOptionsMap, 0)
-	appOptions[flags.FlagHome] = homeDir
-	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
+	appOptions := simtestutil.NewAppOptionsWithFlagHome(dir)
 
 	var wasmOpts []wasmkeeper.Option
 
@@ -134,12 +134,7 @@ func TestAppImportExport(t *testing.T) {
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 
-	// Use temporary directory to prevent CosmWasm lock conflicts when running tests in parallel
-	homeDir := fmt.Sprintf("/tmp/agoric-test-%d-%d", 2, time.Now().UnixNano())
-
-	appOptions := make(simtestutil.AppOptionsMap, 0)
-	appOptions[flags.FlagHome] = homeDir
-	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
+	appOptions := simtestutil.NewAppOptionsWithFlagHome(dir)
 
 	var wasmOpts []wasmkeeper.Option
 
@@ -186,10 +181,20 @@ func TestAppImportExport(t *testing.T) {
 		require.NoError(t, os.RemoveAll(newDir))
 	}()
 
+	appOptsWithHome := simtestutil.NewAppOptionsWithFlagHome(newDir)
+	newAppOptions := appOptionsFn(func(k string) any {
+		switch k {
+		case server.FlagInvCheckPeriod:
+			return simcli.FlagPeriodValue
+		default:
+			return appOptsWithHome.Get(k)
+		}
+	})
 	newApp := NewSimApp(
-		log.NewNopLogger(), newDB, nil, true, appOptions, wasmOpts,
+		log.NewNopLogger(), newDB, nil, true, newAppOptions, wasmOpts,
 		fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID),
 	)
+
 	require.Equal(t, "SimApp", newApp.Name())
 
 	var genesisState GenesisState
@@ -261,12 +266,16 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 
-	// Use temporary directory to prevent CosmWasm lock conflicts when running tests in parallel
-	homeDir := fmt.Sprintf("/tmp/agoric-test-%d-%d", 3, time.Now().UnixNano())
+	appOptionWithHome := simtestutil.NewAppOptionsWithFlagHome(dir)
 
-	appOptions := make(simtestutil.AppOptionsMap, 0)
-	appOptions[flags.FlagHome] = homeDir
-	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
+	appOptions := appOptionsFn(func(k string) any {
+		switch k {
+		case server.FlagInvCheckPeriod:
+			return simcli.FlagPeriodValue
+		default:
+			return appOptionWithHome.Get(k)
+		}
+	})
 
 	var wasmOpts []wasmkeeper.Option
 
@@ -367,12 +376,16 @@ func TestAppStateDeterminism(t *testing.T) {
 
 	appHashList := make([]json.RawMessage, numTimesToRunPerSeed)
 
-	// Use temporary directory to prevent CosmWasm lock conflicts when running tests in parallel
-	homeDir := fmt.Sprintf("/tmp/agoric-test-%d-%d", 4, time.Now().UnixNano())
+	appOptionsWithHome := simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome)
 
-	appOptions := make(simtestutil.AppOptionsMap, 0)
-	appOptions[flags.FlagHome] = homeDir
-	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
+	appOptions := appOptionsFn(func(k string) any {
+		switch k {
+		case server.FlagInvCheckPeriod:
+			return simcli.FlagPeriodValue
+		default:
+			return appOptionsWithHome.Get(k)
+		}
+	})
 
 	var wasmOpts []wasmkeeper.Option
 

@@ -44,6 +44,7 @@ import (
 	"github.com/spf13/viper"
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	wasmtesting "github.com/CosmWasm/wasmd/x/wasm/testing"
 
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -94,6 +95,9 @@ func NewRootCmd(sender vm.Sender) (*cobra.Command, params.EncodingConfig) {
 	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
 	var emptyWasmOpts []wasmkeeper.Option
 
+	tempWasmEngine := &wasmtesting.MockEngine{}
+	tempWasmOpts := []wasmkeeper.Option{wasmkeeper.WithWasmEngine(tempWasmEngine)}
+
 	appOpts := make(simtestutil.AppOptionsMap, 0)
 	tempApp := gaia.NewSimApp(
 		log.NewNopLogger(),
@@ -101,7 +105,7 @@ func NewRootCmd(sender vm.Sender) (*cobra.Command, params.EncodingConfig) {
 		nil,
 		false, // we don't want to run the app, just get the encoding config
 		appOpts,
-		emptyWasmOpts,
+		tempWasmOpts,
 	)
 
 	encodingConfig := params.EncodingConfig{
