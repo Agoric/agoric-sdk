@@ -17,6 +17,7 @@ import {
   type PendingTx,
   type TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import {
   PoolPlaces,
   PortfolioStatusShapeExt,
@@ -49,6 +50,7 @@ import {
   vstoragePathIsParentOf,
   STALE_RESPONSE,
 } from './vstorage-utils.ts';
+import type { SmartWalletKitWithSequence } from './main.ts';
 
 const { entries, fromEntries, values } = Object;
 
@@ -120,7 +122,7 @@ type Powers = {
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
-  signingSmartWalletKit: SigningSmartWalletKit;
+  signingSmartWalletKit: SmartWalletKitWithSequence;
   now: typeof Date.now;
 };
 
@@ -246,6 +248,7 @@ export const processPendingTxEvents = async (
       const streamCell = parseStreamCell(cellJson, path);
       const value = parseStreamCellValue(streamCell, -1, path);
       data = marshaller.fromCapData(value);
+      if (data?.status !== TxStatus.PENDING) continue;
       mustMatch(data, PublishedTxShape, `${path} index -1`);
       const tx = { txId, ...data } as PendingTx;
       log('New pending tx', tx);
@@ -477,6 +480,7 @@ export const startEngine = async (
       const streamCell = parseStreamCell(streamCellJson.value, path);
       const marshalledData = parseStreamCellValue(streamCell, -1, path);
       data = marshaller.fromCapData(marshalledData);
+      if (data?.status !== TxStatus.PENDING) return;
       mustMatch(harden(data), PublishedTxShape, path);
       initialPendingTxData.push({
         blockHeight: BigInt(streamCell.blockHeight),

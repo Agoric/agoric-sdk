@@ -205,6 +205,22 @@ export class CosmosRestClient {
     );
   }
 
+  async getAccountSequence(chainKey: string, address: string) {
+    const chainConfig = this.chainConfigs.get(chainKey);
+    if (!chainConfig) {
+      throw new Error(`Chain configuration not found for: ${chainKey}`);
+    }
+    const url = `${chainConfig.restEndpoint}/cosmos/auth/v1beta1/accounts/${address}`;
+
+    this.log(`[CosmosRestClient] Fetching account sequence for ${address}`);
+
+    return this.makeRequest(
+      url,
+      chainConfig,
+      `Chain info for ${chainConfig.name}`,
+    );
+  }
+
   private async makeRequest<T>(
     url: string,
     chainConfig: ChainConfig,

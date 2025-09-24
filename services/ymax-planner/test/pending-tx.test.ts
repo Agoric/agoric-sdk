@@ -237,10 +237,11 @@ test('handlePendingTx resolves old pending CCTP transaction successfully', async
     destinationAddress,
   });
 
-  const opts = createMockPendingTxOpts();
+  const mockTime = 1640995200000; // Fixed timestamp: Jan 1, 2022
+  const opts = createMockPendingTxOpts(mockTime);
   const mockProvider = opts.evmProviders[chainId] as any;
 
-  const currentTime = Math.floor(Date.now() / 1000);
+  const currentTime = Math.floor(mockTime / 1000);
 
   mockProvider.getBlockNumber = async () => 31;
   mockProvider.getBlock = async (blockNumber: number) => ({
@@ -260,7 +261,7 @@ test('handlePendingTx resolves old pending CCTP transaction successfully', async
       ...opts,
       log: mockLog,
     },
-    Date.now() - 10000,
+    mockTime - 10000,
   );
 
   // publishTime is ~10 seconds ago, with 5 min fudge factor = 5m10s ago
@@ -291,10 +292,11 @@ test('handlePendingTx resolves old pending GMP transaction successfully', async 
   });
 
   const chainId = 'eip155:42161';
-  const opts = createMockPendingTxOpts();
+  const mockTime = 1640995200000; // Fixed timestamp: Jan 1, 2022
+  const opts = createMockPendingTxOpts(mockTime);
   const mockProvider = opts.evmProviders[chainId] as any;
 
-  const currentTime = Math.floor(Date.now() / 1000);
+  const currentTime = Math.floor(mockTime / 1000);
 
   mockProvider.getBlockNumber = async () => 31;
   mockProvider.getBlock = async (blockNumber: number) => ({
@@ -337,7 +339,7 @@ test('handlePendingTx resolves old pending GMP transaction successfully', async 
       ...ctxWithFetch,
       log: mockLog,
     },
-    Date.now() - 10000,
+    mockTime - 10000,
   );
 
   // publishTime is ~10 seconds ago, with 5 min fudge factor = 5m10s ago
@@ -388,12 +390,13 @@ test('processInitialPendingTransactions handles old transactions with lookback',
 
   const logs: string[] = [];
   const txTimeMs = 15 * 60 * 1000; // 15 minutes ago
+  const mockTime = 1640995200000; // Fixed timestamp: Jan 1, 2022
   const txPowers = {
-    ...createMockPendingTxOpts(),
+    ...createMockPendingTxOpts(mockTime),
     log: (...args: unknown[]) => logs.push(args.join(' ')),
     cosmosRpc: {
       request: async () => {
-        const oldTime = new Date(Date.now() - txTimeMs);
+        const oldTime = new Date(mockTime - txTimeMs);
         return {
           block: {
             header: {
@@ -452,11 +455,12 @@ test('processInitialPendingTransactions handles new transactions without lookbac
   ];
 
   const txTimeMs = 2 * 60 * 1000; // 2 minutes ago
+  const mockTime = 1640995200000; // Fixed timestamp: Jan 1, 2022
   const txPowers = {
-    ...createMockPendingTxOpts(),
+    ...createMockPendingTxOpts(mockTime),
     cosmosRpc: {
       request: async () => {
-        const oldTime = new Date(Date.now() - txTimeMs);
+        const oldTime = new Date(mockTime - txTimeMs);
         return {
           block: {
             header: {
