@@ -249,7 +249,7 @@ const namesOf = async (target, nameHub) => {
  *
  * @param {Issuer} issuer
  * @param {Brand} brand
- * @returns {Promise<boolean>} true iff the the brand and issuer match
+ * @returns {Promise<boolean>} true iff the brand and issuer match
  */
 const checkMutual = (issuer, brand) =>
   Promise.all([
