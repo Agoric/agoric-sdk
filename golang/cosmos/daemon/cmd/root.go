@@ -93,9 +93,8 @@ func appendToPreRunE(cmd *cobra.Command, fn cobraRunE) {
 func NewRootCmd(sender vm.Sender) (*cobra.Command, params.EncodingConfig) {
 	// we "pre"-instantiate the application for getting the injected/configured encoding configuration
 	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
-	var emptyWasmOpts []wasmkeeper.Option
 
-	tempWasmEngine := &wasmtesting.MockEngine{}
+	tempWasmEngine := &wasmtesting.MockWasmEngine{}
 	tempWasmOpts := []wasmkeeper.Option{wasmkeeper.WithWasmEngine(tempWasmEngine)}
 
 	appOpts := make(simtestutil.AppOptionsMap, 0)
