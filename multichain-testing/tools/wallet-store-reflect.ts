@@ -25,17 +25,32 @@ export const walletUpdates = (
       return done.result;
     },
     offerResult: async (id: string | number) => {
-      const done = (await retryUntilCondition(
+      const done = await retryUntilCondition(
         getLastUpdate,
         update =>
-          update.updated === 'offerStatus' &&
-          update.status.id === id &&
-          (!!update.status.result || !!update.status.error),
+          // walletAction implies an error, so also stop on that
+          update.updated === 'walletAction' ||
+          // if it's offerStatus, it can be in progress until result or error
+          (update.updated === 'offerStatus' &&
+            update.status.id === id &&
+            (!!update.status.result || !!update.status.error)),
         `${id}`,
         retryOpts,
-      )) as UpdateRecord & { updated: 'offerStatus' };
-      if (done.status.error) throw Error(done.status.error);
-      return done.status.result;
+      );
+      switch (done.updated) {
+        case 'walletAction':
+          throw Error(`walletAction failure: ${done.status.error}`);
+        case 'offerStatus':
+          if (done.status.error) {
+            throw Error(`offerStatus failure: ${done.status.error}`);
+          }
+          if (!done.status.result) {
+            throw Error(`offerStatus missing result`);
+          }
+          return done.status.result;
+        default:
+          throw Error(`unexpected update type ${done.updated}`);
+      }
     },
     // payoutAmounts: ...
   });
