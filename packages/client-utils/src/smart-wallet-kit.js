@@ -1,6 +1,5 @@
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
-import { pollBlocks } from './chain.js';
-import { makeStargateClient } from './rpc.js';
+import { retryUntilCondition } from './sync-tools.js';
 import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
 
 /**
@@ -23,12 +22,15 @@ import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
  * @param {MinimalNetworkConfig} networkConfig
  */
 export const makeSmartWalletKit = async (
-  { fetch, delay, names = true },
+  {
+    fetch,
+    // eslint-disable-next-line no-unused-vars -- keep for removing ambient authority
+    delay,
+    names = true,
+  },
   networkConfig,
 ) => {
   const vsk = makeVstorageKit({ fetch }, networkConfig);
-
-  const client = makeStargateClient(networkConfig, { fetch });
 
   const agoricNames = await (names
     ? makeAgoricNames(vsk.fromBoard, vsk.vstorage)
@@ -64,7 +66,7 @@ export const makeSmartWalletKit = async (
    *
    * @param {string} from
    * @param {string|number} id
-   * @param {number|string} minHeight
+   * @param {number|string} [minHeight] - deprecated, start polling before broadcasting the offer
    * @param {boolean} [untilNumWantsSatisfied]
    */
   const pollOffer = async (
@@ -73,23 +75,50 @@ export const makeSmartWalletKit = async (
     minHeight,
     untilNumWantsSatisfied = false,
   ) => {
-    const poll = pollBlocks({
-      client,
-      delay,
-      retryMessage: 'offer not in wallet at block',
-    });
-
-    const lookup = async () => {
-      const { offerStatuses } = await storedWalletState(from, minHeight);
-      const offerStatus = [...offerStatuses.values()].find(s => s.id === id);
-      if (!offerStatus) throw Error('retry');
-      harden(offerStatus);
-      if (untilNumWantsSatisfied && !('numWantsSatisfied' in offerStatus)) {
-        throw Error('retry (no numWantsSatisfied yet)');
-      }
-      return offerStatus;
-    };
-    return poll(lookup);
+    /** @type {UpdateRecord} */
+    const done = await retryUntilCondition(
+      () => getLastUpdate(from),
+      update => {
+        switch (update.updated) {
+          // walletAction implies an error, so stop on that
+          case 'walletAction':
+            return true;
+          case 'offerStatus':
+            if (update.status.id !== id) {
+              return false;
+            }
+            if (update.status.error) {
+              // regardless of untilNumWantsSatisfied, stop on error
+              return true;
+            }
+            if (untilNumWantsSatisfied) {
+              return 'numWantsSatisfied' in update.status;
+            }
+            // Matches ID and we don't care about numWantsSatisfied
+            return true;
+          default:
+            // a different kind of update, keep waiting
+            return false;
+        }
+      },
+      `${id}`,
+      // XXX ambient authority
+      { setTimeout: global.setTimeout },
+    );
+    switch (done.updated) {
+      case 'walletAction':
+        throw Error(`walletAction failure: ${done.status.error}`);
+      case 'offerStatus':
+        if (done.status.error) {
+          throw Error(`offerStatus failure: ${done.status.error}`);
+        }
+        if (!done.status.result) {
+          throw Error(`offerStatus missing result`);
+        }
+        return done.status;
+      default:
+        throw Error(`unexpected update type ${done.updated}`);
+    }
   };
 
   /**

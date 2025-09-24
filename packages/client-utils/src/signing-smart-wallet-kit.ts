@@ -89,8 +89,9 @@ export const makeSigningSmartWalletKit = async (
   };
 
   const executeOffer = async (offer: OfferSpec): Promise<OfferStatus> => {
-    const before = await client.getBlock();
+    const offerP = walletUtils.pollOffer(address, offer.id);
 
+    // Await for rejection handling
     await sendBridgeAction(
       harden({
         method: 'executeOffer',
@@ -98,7 +99,7 @@ export const makeSigningSmartWalletKit = async (
       }),
     );
 
-    return walletUtils.pollOffer(address, offer.id, before.header.height);
+    return offerP;
   };
 
   return Object.freeze({
