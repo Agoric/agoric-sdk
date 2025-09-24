@@ -21,6 +21,8 @@
         buf
         # Multichain testing deps
         kubernetes-helm
+        kubectl
+        kind
         yq
       ] ++ (with nodePkgs; [
         nodejs
