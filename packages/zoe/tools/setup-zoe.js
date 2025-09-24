@@ -1,7 +1,6 @@
-import { E, makeLoopback } from '@endo/captp';
-
+import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import bundleSource from '@endo/bundle-source';
+import { E, makeLoopback } from '@endo/captp';
 import { bundleTestExports } from '@endo/import-bundle';
 import { makeDurableZoeKit } from '../src/zoeService/zoe.js';
 import fakeVatAdmin, { makeFakeVatAdmin } from './fakeVatAdmin.js';
@@ -46,6 +45,8 @@ export const setUpZoeForTest = async ({
 } = {}) => {
   const { makeFar, makeNear } = makeLoopback('zoeTest');
 
+  const bundleCache = await provideBundleCache('bundles', {}, s => import(s));
+
   /** @type {ReturnType<typeof makeFakeVatAdmin>['vatAdminState'] | undefined} */
   let vatAdminState;
   if (!vatAdminSvc) {
@@ -68,8 +69,12 @@ export const setUpZoeForTest = async ({
    */
   const bundleModule = async pathOrExports => {
     if (typeof pathOrExports === 'string') {
+      assert(
+        vatAdminState,
+        'installBundle called before vatAdminState defined',
+      );
       const path = pathOrExports;
-      return bundleSource(path);
+      return bundleCache.load(path);
     } else {
       assert.equal(
         Object.getOwnPropertyDescriptor(pathOrExports, Symbol.toStringTag)

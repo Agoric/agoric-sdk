@@ -3,10 +3,8 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { prepareSwingsetVowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeHeapZone } from '@agoric/zone';
-import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import { E, Far, type EReturn } from '@endo/far';
 import type { TestFn } from 'ava';
 import { createRequire } from 'node:module';
@@ -18,14 +16,12 @@ const contractEntry = nodeRequire.resolve('../fixtures/zcfTester.contract.js');
 const makeTestContext = async () => {
   let testJig;
   const setJig = jig => (testJig = jig);
-  const fakeVatAdmin = makeFakeVatAdmin(setJig);
-  const { zoeService: zoe } = makeZoeKitForTest(fakeVatAdmin.admin);
 
-  const bundleCache = await makeNodeBundleCache('bundles', {}, s => import(s));
-  const contractBundle = await bundleCache.load(contractEntry);
+  const { bundleAndInstall, zoe } = await setUpZoeForTest({
+    setJig,
+  });
 
-  fakeVatAdmin.vatAdminState.installBundle('b1-contract', contractBundle);
-  const installation = await E(zoe).installBundleID('b1-contract');
+  const installation = await bundleAndInstall(contractEntry);
 
   const stuff = makeIssuerKit('Stuff');
   await E(zoe).startInstance(installation, { Stuff: stuff.issuer });
