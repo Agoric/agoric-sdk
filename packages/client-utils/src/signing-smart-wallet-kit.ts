@@ -41,11 +41,14 @@ export const makeSigningSmartWalletKit = async (
     rpcAddr: walletUtils.networkConfig.rpcAddrs[0],
   });
 
+  // Omit deprecated utilities
+  const { storedWalletState: _, ...swk } = walletUtils;
+
   const query = {
-    readPublished: walletUtils.readPublished,
-    vstorage: walletUtils.vstorage,
-    getLastUpdate: () => walletUtils.getLastUpdate(address),
-    getCurrentWalletRecord: () => walletUtils.getCurrentWalletRecord(address),
+    readPublished: swk.readPublished,
+    vstorage: swk.vstorage,
+    getLastUpdate: () => swk.getLastUpdate(address),
+    getCurrentWalletRecord: () => swk.getCurrentWalletRecord(address),
     pollOffer: (
       ...args: Parameters<SmartWalletKit['pollOffer']> extends [
         any,
@@ -53,7 +56,7 @@ export const makeSigningSmartWalletKit = async (
       ]
         ? Rest
         : never
-    ) => walletUtils.pollOffer(address, ...args),
+    ) => swk.pollOffer(address, ...args),
   };
 
   const sendBridgeAction = async (
@@ -64,7 +67,7 @@ export const makeSigningSmartWalletKit = async (
   ): Promise<DeliverTxResponse> => {
     const msgSpend = MsgWalletSpendAction.fromPartial({
       owner: toAccAddress(address),
-      spendAction: JSON.stringify(walletUtils.marshaller.toCapData(action)),
+      spendAction: JSON.stringify(swk.marshaller.toCapData(action)),
     });
 
     const messages = [
@@ -89,7 +92,7 @@ export const makeSigningSmartWalletKit = async (
   };
 
   const executeOffer = async (offer: OfferSpec): Promise<OfferStatus> => {
-    const offerP = walletUtils.pollOffer(address, offer.id);
+    const offerP = swk.pollOffer(address, offer.id);
 
     // Await for rejection handling
     await sendBridgeAction(
@@ -103,8 +106,7 @@ export const makeSigningSmartWalletKit = async (
   };
 
   return Object.freeze({
-    networkConfig: walletUtils.networkConfig,
-    marshaller: walletUtils.marshaller,
+    ...swk,
     query,
     address,
     /**
