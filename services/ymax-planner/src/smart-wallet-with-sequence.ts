@@ -180,10 +180,15 @@ export class SmartWalletWithSequence {
    */
   async executeOffer(
     offer: OfferSpec,
+    pollForResult = true,
   ): Promise<Awaited<ReturnType<SigningSmartWalletKit['executeOffer']>>> {
     const operation = async () => {
       const signerData = this.createSignerData();
-      return this.signingSmartWalletKit.executeOffer(offer, signerData);
+      return this.signingSmartWalletKit.executeOffer(
+        offer,
+        signerData,
+        pollForResult,
+      );
     };
 
     return this.queueOperation(operation, 'executeOffer');

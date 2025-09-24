@@ -50,6 +50,7 @@ import {
   vstoragePathIsParentOf,
   STALE_RESPONSE,
 } from './vstorage-utils.ts';
+import type { SmartWalletKitWithSequence } from './main.ts';
 
 const { entries, fromEntries, values } = Object;
 
@@ -121,7 +122,7 @@ type Powers = {
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
-  signingSmartWalletKit: SigningSmartWalletKit;
+  signingSmartWalletKit: SmartWalletKitWithSequence;
   now: typeof Date.now;
 };
 

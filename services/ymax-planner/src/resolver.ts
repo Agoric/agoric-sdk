@@ -1,16 +1,16 @@
-import { type SigningSmartWalletKit } from '@agoric/client-utils';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
 import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
+import type { SmartWalletKitWithSequence } from './main';
 
 type ResolveTxParams = {
-  signingSmartWalletKit: SigningSmartWalletKit;
+  signingSmartWalletKit: SmartWalletKitWithSequence;
   txId: TxId;
   status: Omit<TxStatus, 'pending'>;
   proposal?: object;
 };
 
-const getInvitationMakers = async (wallet: SigningSmartWalletKit) => {
+const getInvitationMakers = async (wallet: SmartWalletKitWithSequence) => {
   const getCurrentWalletRecord = await wallet.query.getCurrentWalletRecord();
   const invitation = getCurrentWalletRecord.offerToUsedInvitation
     .filter(inv => inv[1].value[0].description === 'resolver')
@@ -49,6 +49,6 @@ export const resolvePendingTx = async ({
     proposal,
   });
 
-  const result = await signingSmartWalletKit.executeOffer(action);
+  const result = await signingSmartWalletKit.executeOffer(action, false);
   return result;
 };

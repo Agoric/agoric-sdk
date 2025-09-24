@@ -85,7 +85,11 @@ export const makeSigningSmartWalletKit = async (
     return client.broadcastTx(txBytes);
   };
 
-  const executeOffer = async (offer: OfferSpec, data?: SignerData) => {
+  const executeOffer = async (
+    offer: OfferSpec,
+    data?: SignerData,
+    pollForResult = true,
+  ) => {
     const before = await client.getBlock();
 
     await sendBridgeAction(
@@ -97,7 +101,11 @@ export const makeSigningSmartWalletKit = async (
       data,
     );
 
-    return walletUtils.pollOffer(address, offer.id, before.header.height);
+    if (pollForResult) {
+      return walletUtils.pollOffer(address, offer.id, before.header.height);
+    }
+
+    return { offerId: offer.id };
   };
 
   const invokeEntry = async (

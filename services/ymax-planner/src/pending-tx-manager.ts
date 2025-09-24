@@ -2,7 +2,6 @@ import type { JsonRpcProvider } from 'ethers';
 
 import { Fail } from '@endo/errors';
 
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { Bech32Address, CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
@@ -24,6 +23,7 @@ import {
   watchNobleTransfer,
 } from './watchers/noble-watcher.ts';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
+import type { SmartWalletKitWithSequence } from './main.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
 
@@ -31,7 +31,7 @@ export type EvmContext = {
   cosmosRest: CosmosRestClient;
   usdcAddresses: UsdcAddresses['mainnet' | 'testnet'];
   evmProviders: EvmProviders;
-  signingSmartWalletKit: SigningSmartWalletKit;
+  signingSmartWalletKit: SmartWalletKitWithSequence;
   fetch: typeof fetch;
 };
 
@@ -188,7 +188,7 @@ export type HandlePendingTxOpts = {
   cosmosRpc: CosmosRPCClient;
   log?: (...args: unknown[]) => void;
   error?: (...args: unknown[]) => void;
-  marshaller: SigningSmartWalletKit['marshaller'];
+  marshaller: SmartWalletKitWithSequence['marshaller'];
   now: typeof Date.now;
   registry?: MonitorRegistry;
   timeoutMs?: number;
