@@ -68,7 +68,7 @@ export const preparePosition = (
   emptyTransferState: TransferStatus,
   publishStatus: PublishStatusFn,
 ) => {
-  const PositionI = M.interface('Position', {}, { defaultGuards: 'raw' });
+  const PositionI = M.interface('Position', {}, { defaultGuards: 'passable' });
   
   return zone.exoClass(
     'Position',
