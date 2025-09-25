@@ -89,6 +89,7 @@ const parseToolArgs = (argv: string[]) =>
       buildEthOverrides: { type: 'boolean' },
       installAndStart: { type: 'string' },
       invitePlanner: { type: 'string' },
+      inviteResolver: { type: 'string' },
       checkStorage: { type: 'boolean' },
       pruneStorage: { type: 'boolean', default: false },
       'submit-for': { type: 'string' },
@@ -493,6 +494,17 @@ const main = async (
       await walletKit.readPublished('agoricNames.instance'),
     );
     await cf.deliverPlannerInvitation(planner, postalService);
+    return;
+  }
+
+  if (values.inviteResolver) {
+    const { inviteResolver: resolver } = values;
+    const cf =
+      walletStore.get<ZStarted<YMaxStartFn>['creatorFacet']>('creatorFacet');
+    const { postalService } = fromEntries(
+      await walletKit.readPublished('agoricNames.instance'),
+    );
+    await cf.deliverResolverInvitation(resolver, postalService);
     return;
   }
 
