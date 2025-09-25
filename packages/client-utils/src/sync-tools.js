@@ -67,7 +67,7 @@ export const retryUntilCondition = async (
 
   await null; // separate sync prologue
 
-  const timedOut = Symbol('timed out');
+  const timedOut = unpassableSymbolForName('timed out');
   let retries = 0;
   /** @type {Promise | undefined } */
   let resultP;
