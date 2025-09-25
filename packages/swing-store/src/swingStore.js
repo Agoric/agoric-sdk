@@ -28,18 +28,18 @@ const IN_MEMORY = ':memory:';
  */
 
 /**
- * @typedef { import('./kvStore.js').KVStore } KVStore
+ * @import {KVStore} from './kvStore.js';
  *
- * @typedef { import('./snapStore.js').SnapStore } SnapStore
- * @typedef { import('./snapStore.js').SnapshotResult } SnapshotResult
+ * @import {SnapStore} from './snapStore.js';
+ * @import {SnapshotResult} from './snapStore.js';
  *
- * @typedef { import('./transcriptStore.js').TranscriptStore } TranscriptStore
- * @typedef { import('./transcriptStore.js').TranscriptStoreDebug } TranscriptStoreDebug
+ * @import {TranscriptStore} from './transcriptStore.js';
+ * @import {TranscriptStoreDebug} from './transcriptStore.js';
  *
- * @typedef { import('./bundleStore.js').BundleStore } BundleStore
- * @typedef { import('./bundleStore.js').BundleStoreDebug } BundleStoreDebug
+ * @import {BundleStore} from './bundleStore.js';
+ * @import {BundleStoreDebug} from './bundleStore.js';
  *
- * @typedef { import('./exporter.js').KVPair } KVPair
+ * @import {KVPair} from './exporter.js';
  *
  * @typedef {{
  *   kvStore: KVStore, // a key-value API object to load and store data on behalf of the kernel
