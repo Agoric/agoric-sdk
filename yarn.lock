@@ -3554,12 +3554,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/eventual-send@npm:^1.3.4":
+"@endo/eventual-send@npm:1.3.4":
   version: 1.3.4
   resolution: "@endo/eventual-send@npm:1.3.4"
   dependencies:
     "@endo/env-options": "npm:^1.1.11"
   checksum: 10c0/c0baa6b20bac2273f2d6816a8b9a0cdad2a80cadffb421163a4985179eb5c9979b77482ce7bb314a6ffe08526f83838e51089fbc94e5f3b2d27b04e856a23631
+  languageName: node
+  linkType: hard
+
+"@endo/eventual-send@patch:@endo/eventual-send@npm%3A1.3.4#~/.yarn/patches/@endo-eventual-send-npm-1.3.4-12411c5a98.patch":
+  version: 1.3.4
+  resolution: "@endo/eventual-send@patch:@endo/eventual-send@npm%3A1.3.4#~/.yarn/patches/@endo-eventual-send-npm-1.3.4-12411c5a98.patch::version=1.3.4&hash=bea41a"
+  dependencies:
+    "@endo/env-options": "npm:^1.1.11"
+  checksum: 10c0/8acb1a84b602b2782907ca8c02da21dd6bcbea3af8f84c3d5209c55cd1ab2cfdf7b2068e84cf376df242a4bd455892556af823d36bd7c518c849099deee183ce
   languageName: node
   linkType: hard
 
@@ -3578,7 +3587,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/far@npm:^1.0.0, @endo/far@npm:^1.1.14":
+"@endo/far@npm:1.1.14":
   version: 1.1.14
   resolution: "@endo/far@npm:1.1.14"
   dependencies:
@@ -3586,6 +3595,17 @@ __metadata:
     "@endo/eventual-send": "npm:^1.3.4"
     "@endo/pass-style": "npm:^1.6.3"
   checksum: 10c0/17e68cfaa765941dba7e7731c141c92452a1d1cfa523927714b9e27ddb576da0522380d066ce4746e4d920731962575ba0ddd7d681d22a220795d7596b4f993d
+  languageName: node
+  linkType: hard
+
+"@endo/far@patch:@endo/far@npm%3A1.1.14#~/.yarn/patches/@endo-far-npm-1.1.14-ef03a62612.patch":
+  version: 1.1.14
+  resolution: "@endo/far@patch:@endo/far@npm%3A1.1.14#~/.yarn/patches/@endo-far-npm-1.1.14-ef03a62612.patch::version=1.1.14&hash=6ff17c"
+  dependencies:
+    "@endo/errors": "npm:^1.2.13"
+    "@endo/eventual-send": "npm:^1.3.4"
+    "@endo/pass-style": "npm:^1.6.3"
+  checksum: 10c0/9d11a8805fdc9a66c64bee09f562abeb4c75813dd8b273450c2574ae4ee6e2e8a15dceab97f8c8d6353b13dec9bac191e2c049df8a5c4cb5a94310d4eeba5325
   languageName: node
   linkType: hard
 
@@ -3677,7 +3697,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/pass-style@npm:^1.6.3":
+"@endo/pass-style@npm:1.6.3":
   version: 1.6.3
   resolution: "@endo/pass-style@npm:1.6.3"
   dependencies:
@@ -3690,6 +3710,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@endo/pass-style@patch:@endo/pass-style@npm%3A1.6.3#~/.yarn/patches/@endo-pass-style-npm-1.6.3-139d4e4c47.patch":
+  version: 1.6.3
+  resolution: "@endo/pass-style@patch:@endo/pass-style@npm%3A1.6.3#~/.yarn/patches/@endo-pass-style-npm-1.6.3-139d4e4c47.patch::version=1.6.3&hash=dd0bba"
+  dependencies:
+    "@endo/common": "npm:^1.2.13"
+    "@endo/env-options": "npm:^1.1.11"
+    "@endo/errors": "npm:^1.2.13"
+    "@endo/eventual-send": "npm:^1.3.4"
+    "@endo/promise-kit": "npm:^1.1.13"
+  checksum: 10c0/de272b348c4dadee083ee5ec77ac74a3e8074d90caea7c1756fa5558858ec0ef9f08d81b98dc248fe50b263b442b0af122c19aeccd2eeaa352d068e7db3d5965
+  languageName: node
+  linkType: hard
+
 "@endo/path-compare@npm:^1.1.0":
   version: 1.1.0
   resolution: "@endo/path-compare@npm:1.1.0"
@@ -3697,7 +3730,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/patterns@npm:^1.7.0":
+"@endo/patterns@npm:1.7.0":
   version: 1.7.0
   resolution: "@endo/patterns@npm:1.7.0"
   dependencies:
@@ -3708,6 +3741,20 @@ __metadata:
     "@endo/pass-style": "npm:^1.6.3"
     "@endo/promise-kit": "npm:^1.1.13"
   checksum: 10c0/f054cf9c1201eaad084ce278603afc319a6dff69c1d51c9a3ff3288304a7c3d3097e0887ab83889c9fbb4f3bc9eeb22201484438b310ca2ed9bb56504adba1e4
+  languageName: node
+  linkType: hard
+
+"@endo/patterns@patch:@endo/patterns@npm%3A1.7.0#~/.yarn/patches/@endo-patterns-npm-1.7.0-70bb963d8a.patch":
+  version: 1.7.0
+  resolution: "@endo/patterns@patch:@endo/patterns@npm%3A1.7.0#~/.yarn/patches/@endo-patterns-npm-1.7.0-70bb963d8a.patch::version=1.7.0&hash=da5fdf"
+  dependencies:
+    "@endo/common": "npm:^1.2.13"
+    "@endo/errors": "npm:^1.2.13"
+    "@endo/eventual-send": "npm:^1.3.4"
+    "@endo/marshal": "npm:^1.8.0"
+    "@endo/pass-style": "npm:^1.6.3"
+    "@endo/promise-kit": "npm:^1.1.13"
+  checksum: 10c0/72e3ff7aeed4d508b85e1da8e3cafc397b7c8bd915377140883e3693af2e6946542f3da614e95ce0ac1e3f6445003b3079d6e1c85f3ffecf659b6aeac548d3e7
   languageName: node
   linkType: hard
 
