@@ -93,10 +93,12 @@ export type ProposalType = {
       Access?: NatAmount;
       Deposit?: NatAmount;
     };
+    want?: Empty;
   };
   rebalance:
     | { give: { Deposit?: NatAmount }; want: Empty }
     | { want: { Cash: NatAmount }; give: Empty };
+  withdraw: { want: { Cash: NatAmount }; give: Empty };
 };
 
 export const makeProposalShapes = (
@@ -121,13 +123,14 @@ export const makeProposalShapes = (
       { want: {}, exit: M.any() },
       {},
     ),
-    M.splitRecord(
-      { want: M.splitRecord({ Cash: $Shape }, {}, {}) },
-      { give: {}, exit: M.any() },
-      {},
-    ),
+    M.splitRecord({ want: { Cash: $Shape } }, { give: {}, exit: M.any() }, {}),
   ) as TypedPattern<ProposalType['rebalance']>;
-  return harden({ openPortfolio, rebalance });
+  const withdraw = M.splitRecord(
+    { want: { Cash: $Shape }, give: {} },
+    { exit: M.any() },
+    {},
+  ) as TypedPattern<ProposalType['withdraw']>;
+  return harden({ openPortfolio, rebalance, withdraw });
 };
 harden(makeProposalShapes);
 // #endregion
@@ -240,6 +243,11 @@ export const portfolioIdOfPath = (path: string | string[]) => {
   return id;
 };
 
+export type FlowDetail =
+  | { type: 'deposit'; amount: NatAmount }
+  | { type: 'withdraw'; amount: NatAmount }
+  | { type: 'other' }; // refine to deposit etc.?
+
 type FlowStatus =
   | { state: 'run'; step: number; how: string }
   | { state: 'undo'; step: number; how: string }
@@ -267,7 +275,9 @@ export type StatusFor = {
   };
   portfolio: {
     positionKeys: PoolKeyExt[];
+    /** @deprecated in favor of flowsRunning */
     flowCount: number;
+    flowsRunning: Record<number, FlowDetail>;
     accountIdByChain: Record<ChainNameExt, AccountId>;
     accountsPending?: SupportedChain[];
     depositAddress?: Bech32Address;
@@ -276,6 +286,9 @@ export type StatusFor = {
     policyVersion: number;
     /** the count of acknowledged submissions [from the planner] associated with the current policyVersion */
     rebalanceCount: number;
+    /** @deprecated in favor of flowsRunning */
+    flowCount: number;
+    flowsRunning?: Record<`flow${number}`, FlowDetail>;
   };
   position: {
     protocol: YieldProtocol;

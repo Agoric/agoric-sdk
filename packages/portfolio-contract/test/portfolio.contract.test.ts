@@ -2,13 +2,9 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
-import {
-  defaultMarshaller,
-  type FakeStorageKit,
-  type makeFakeStorageKit,
-} from '@agoric/internal/src/storage-test-utils.js';
+import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
+import { type makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import {
   eventLoopIteration,
   inspectMapStore,
@@ -17,7 +13,7 @@ import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
-import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
+import type { AssetPlaceRef, MovementDesc } from '../src/type-guards-steps.ts';
 import type {
   OfferArgsFor,
   StatusFor,
@@ -37,6 +33,7 @@ import {
   portfolio0lcaOrch,
 } from './mocks.ts';
 import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
+import { makeStorageTools } from './supports.ts';
 
 const { fromEntries, keys, values } = Object;
 
@@ -600,7 +597,7 @@ test(
   'Beefy_morphoSeamlessUsdc_Base',
 );
 
-test('Withdraw from a Beefy position', async t => {
+test('Withdraw from a Beefy position (future client)', async t => {
   const { trader1, common, started, zoe } = await setupTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
@@ -891,12 +888,6 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
   }
 });
 
-const getCapDataStructure = cell => {
-  const { body, slots } = JSON.parse(cell);
-  const structure = JSON.parse(body.replace(/^#/, ''));
-  return { structure, slots };
-};
-
 test('start deposit more to same', async t => {
   const { trader1, common } = await setupTrader(t);
   const { usdc, poc26 } = common.brands;
@@ -926,24 +917,6 @@ test('start deposit more to same', async t => {
     makeTestAddress(2), // ...64vywd
   );
 });
-
-const makeStorageTools = (storage: FakeStorageKit) => {
-  const readPublished = (async path => {
-    await eventLoopIteration();
-    return defaultMarshaller.fromCapData(
-      JSON.parse(
-        storage.getValues(`${ROOT_STORAGE_PATH}.${path}`).at(-1) || '',
-      ),
-    );
-  }) as VstorageKit['readPublished'];
-
-  const readLegible = async (path: string) => {
-    await eventLoopIteration();
-    return getCapDataStructure(storage.getValues(path).at(-1));
-  };
-
-  return harden({ readPublished, readLegible });
-};
 
 const setupPlanner = async t => {
   const { common, zoe, started, trader1 } = await setupTrader(t);
@@ -980,7 +953,7 @@ test('redeem, use planner invitation', async t => {
     rebalanceCount: 0,
   });
 
-  await planner1.submit(0, [], 1);
+  await E(planner1.stub).submit(0, [], 1);
   t.like(await trader1.getPortfolioStatus(), {
     policyVersion: 1,
     rebalanceCount: 1,
@@ -1025,7 +998,7 @@ test('request rebalance - send same targetAllocation', async t => {
 
   t.log('planner carries out (empty) deposit plan');
   const mockPlan = [];
-  await planner1.submit(0, mockPlan, 2);
+  await E(planner1.stub).submit(0, mockPlan, 2);
   t.like(await trader1.getPortfolioStatus(), {
     policyVersion: 2,
     rebalanceCount: 1,
@@ -1039,9 +1012,72 @@ test('request rebalance - send same targetAllocation', async t => {
   });
 
   t.log('planner carries out (empty) rebalance plan');
-  await planner1.submit(0, mockPlan, 3);
+  await E(planner1.stub).submit(0, mockPlan, 3);
   t.like(await trader1.getPortfolioStatus(), {
     policyVersion: 3,
     rebalanceCount: 1,
   });
+});
+
+test('withdraw using planner', async t => {
+  const { common, trader1, planner1 } = await setupPlanner(t);
+
+  await planner1.redeem();
+  await trader1.openPortfolio(t, {}, {});
+  const pId: number = trader1.getPortfolioId();
+  const { usdc } = common.brands;
+  const Deposit = usdc.units(3_333.33);
+  const depP = trader1.rebalance(
+    t,
+    { give: { Deposit }, want: {} },
+    { flow: [{ src: '<Deposit>', dest: '@agoric', amount: Deposit }] },
+  );
+  await depP;
+  t.log('trader deposited', Deposit);
+
+  const traderP = (async () => {
+    const Cash = multiplyBy(Deposit, parseRatio(0.25, usdc.brand));
+    await trader1.withdraw(t, Cash);
+    t.log('trader withdrew', Cash);
+  })();
+
+  const plannerP = (async () => {
+    const { flowsRunning, policyVersion, rebalanceCount } =
+      await trader1.getPortfolioStatus();
+    t.log('flowsRunning', flowsRunning);
+    t.is(keys(flowsRunning).length, 1);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    const fId = Number(flowId.replace('flow', ''));
+
+    // narrow the type
+    if (detail.type !== 'withdraw') throw t.fail(detail.type);
+
+    // XXX brand from vstorage isn't suitable for use in call to kit
+    const amount = AmountMath.make(Deposit.brand, detail.amount.value);
+
+    const plan: MovementDesc[] = [{ src: '@agoric', dest: '<Cash>', amount }];
+    await E(planner1.stub).resolvePlan(
+      pId,
+      fId,
+      plan,
+      policyVersion,
+      rebalanceCount,
+    );
+    t.log('planner resolved plan');
+  })();
+
+  await Promise.all([traderP, plannerP]);
+
+  const bankTraffic = common.utils.inspectBankBridge();
+  const { accountIdByChain } = await trader1.getPortfolioStatus();
+  const [_ns, _ref, addr] = accountIdByChain.agoric.split(':');
+  const myVBankIO = bankTraffic.filter(obj =>
+    [obj.sender, obj.recipient].includes(addr),
+  );
+  t.log('bankBridge for', addr, myVBankIO);
+  t.like(myVBankIO, [
+    { type: 'VBANK_GIVE', amount: '3333330000' },
+    { type: 'VBANK_GRAB', amount: '833332500' },
+  ]);
+  t.is(833332500n, (3333330000n * 25n) / 100n);
 });

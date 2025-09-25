@@ -394,6 +394,7 @@ const stepFlow = async (
   moves: MovementDesc[],
   kit: GuestInterface<PortfolioKit>,
   traceP: TraceLogger,
+  flowId: number,
 ) => {
   const todo: AssetMovement[] = [];
 
@@ -485,12 +486,11 @@ const stepFlow = async (
   };
 
   const { reporter } = kit;
-  const flowId = reporter.allocateFlowId();
   const traceFlow = traceP.sub(`flow${flowId}`);
 
   traceFlow('checking', moves.length, 'moves');
   for (const [i, move] of entries(moves)) {
-    const traceMove = traceP.sub(`move${i}`);
+    const traceMove = traceFlow.sub(`move${i}`);
     // @@@ traceMove('wayFromSrcToDesc?', move);
     const way = wayFromSrcToDesc(move);
     const { amount } = move;
@@ -809,6 +809,7 @@ export const rebalance = (async (
   traceP('proposal', proposal.give, proposal.want, offerArgs);
 
   await null;
+  let flowId: number | undefined;
   try {
     if (offerArgs.targetAllocation) {
       kit.manager.setTargetAllocation(offerArgs.targetAllocation);
@@ -818,7 +819,8 @@ export const rebalance = (async (
     }
 
     if (offerArgs.flow) {
-      await stepFlow(orch, ctx, seat, offerArgs.flow, kit, traceP);
+      ({ flowId } = kit.manager.startFlow({ type: 'other' }));
+      await stepFlow(orch, ctx, seat, offerArgs.flow, kit, traceP, flowId);
     }
 
     if (!seat.hasExited()) {
@@ -829,6 +831,8 @@ export const rebalance = (async (
       seat.fail(err);
     }
     throw err;
+  } finally {
+    if (flowId) kit.reporter.finishFlow(flowId);
   }
 }) satisfies OrchestrationFlow;
 
@@ -911,3 +915,36 @@ export const makeLCA = (async (orch: Orchestrator): Promise<LocalAccount> => {
   return agoricChain.makeAccount();
 }) satisfies OrchestrationFlow;
 harden(makeLCA);
+
+export const withdraw = (async (
+  orch: Orchestrator,
+  ctx: PortfolioInstanceContext,
+  seat: ZCFSeat,
+  pKit: GuestInterface<PortfolioKit>,
+) => {
+  const pId = pKit.reader.getPortfolioId();
+  const traceP = makeTracer('withdraw').sub(`portfolio${pId}`);
+
+  // cast justified by proposal shape.
+  const proposal = seat.getProposal() as unknown as ProposalType['withdraw'];
+  const { Cash: amount } = proposal.want;
+
+  // XXX enhancement: let caller supply steps
+  const { stepsP, flowId } = pKit.manager.startFlow({
+    type: 'withdraw',
+    amount,
+  });
+  const traceFlow = traceP.sub(`flow${flowId}`);
+  traceFlow('waiting for steps from planner');
+  const steps = await (stepsP as unknown as Promise<MovementDesc[]>); // XXX Guest/Host types UNTIL #9822
+  try {
+    await stepFlow(orch, ctx, seat, steps, pKit, traceP, flowId);
+  } finally {
+    // XXX flow.finish() would eliminate the possibility of sending the wrong one,
+    // at the cost of an exo (or Far?)
+    pKit.reporter.finishFlow(flowId);
+
+    if (!seat.hasExited()) seat.exit();
+  }
+}) satisfies OrchestrationFlow;
+harden(withdraw);
