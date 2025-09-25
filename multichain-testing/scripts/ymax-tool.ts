@@ -13,7 +13,7 @@ import {
   type ProposalType,
   type TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { makePortfolioSteps } from '@aglocal/portfolio-contract/src/plan-transfers.ts';
+import { makePortfolioSteps } from '@aglocal/portfolio-contract/tools/plan-transfers.ts';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
 import {
   axelarConfigTestnet,
