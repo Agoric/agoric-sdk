@@ -42,17 +42,22 @@ export const preparePlanner = (
 ) => {
   const { movementDescShape } = shapes;
   const PlannerI = M.interface('Planner', {
-    submit: M.call(
+    submit: M.call(M.number(), M.arrayOf(movementDescShape), M.number())
+      .optional(M.number())
+      .returns(VowShape),
+    resolvePlan: M.call(
+      M.number(),
       M.number(),
       M.arrayOf(movementDescShape),
       M.number(),
-      M.number(),
-    ).returns(VowShape),
+    )
+      .optional(M.number())
+      .returns(),
   });
 
   return zone.exoClass('Planner', PlannerI, () => ({}), {
     /**
-     * Submit a plan (sequence of moves) for execution.
+     * Submit a plan (sequence of moves) for execution in a new flow.
      *
      * Used by off-chain planning services to carry out expressed wishes
      * of a portfolio owner.
@@ -68,15 +73,27 @@ export const preparePlanner = (
       portfolioId: number,
       plan: MovementDesc[],
       policyVersion: number,
-      rebalanceCount: number,
+      rebalanceCount = 0,
     ): Vow<void> {
       return vowTools.asVow(async () => {
         trace('TODO(#11782): vet plan', { portfolioId, plan });
         const pKit = getPortfolio(portfolioId);
-        pKit.manager.submitVersion(policyVersion, rebalanceCount);
+        pKit.planner.submitVersion(policyVersion, rebalanceCount);
         const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
         return rebalance(emptySeat, { flow: plan }, pKit);
       });
+    },
+    resolvePlan(
+      portfolioId: number,
+      flowId: number,
+      plan: MovementDesc[],
+      policyVersion: number,
+      rebalanceCount = 0,
+    ) {
+      trace('TODO(#11782): vet plan', { portfolioId, plan });
+      const { planner: portfolioPlanner } = getPortfolio(portfolioId);
+      portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
+      portfolioPlanner.resolveFlowPlan(flowId, plan);
     },
   });
 };
