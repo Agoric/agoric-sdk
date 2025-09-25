@@ -156,7 +156,6 @@ sequenceDiagram
     participant portfolio
     participant vstorage
     participant LCAorch
-    participant LCAin
   end
 
   box  rgb(255,165,0) Agoric off-chain
@@ -177,27 +176,38 @@ sequenceDiagram
   end
 
   %% get plan
-  UI ->> portfolio: withdraw with steps, <br>steps also include CCTP fee
+  UI ->> portfolio: withdraw(2K)
+  portfolio -->> vstorage: flowsRunning: { flow4: withdraw }<br/>flow4: { want: 2k USDC }
+  vstorage -->> YP: flow4!
+  note over portfolio: WAIT 4
 
-  Note over portfolio, aavePos: withdraw from Aave
-  portfolio ->> AX: GMP (withdraw, $2k USDC, Noble ICA address, CCTP fee optional)
+  YP -->> portfolio: steps: aave, cctp...
+
+  Note over acctArb, aavePos: withdraw from Aave
+  portfolio ->> AX: GMP (withdraw,<br/> $2k USDC, Noble ICA address, CCTP fee optional)
   AX -->> acctArb: withdraw $2k
   acctArb ->> aavePos: withdraw $2k
   acctArb -->> Res: observe withdraw is complete
   Res ->> portfolio: ack
-  Note over portfolio, aavePos: depositForBurn
-  portfolio->> AX: GMP (depositForBurn, $2k USDC, Noble ICA address, CCTP fee optional)
+
+  Note over icaN, acctArb: CCTPin
+  portfolio->> AX: GMP (depositForBurn,<br/> $2k USDC, Noble ICA address, CCTP fee optional)
   acctArb ->> CCTP TokenMessenger v1: depositForBurn($2k)
   acctArb -->> Res: observe depositForBurn complete
   Res ->> portfolio: ack
-  Note over portfolio, aavePos: GMP ack'ed, waiting for CCTP to arrive
+
+  Note over icaN, acctArb: GMP ack'ed, waiting for CCTP to arrive
   CCTP TokenMessenger v1 -->> icaN: CCTP mint $2k USDC
   icaN -->> Res: observe mint
   Res ->> portfolio: ack
+
+  Note over LCAorch, icaN: IBC transfer
   portfolio -->> icaN: IBC transxfer
   icaN ->> LCAorch: IBC $2k USDC
-  Note over LCAorch: contract has a queue of withdrawals(seats) to resolve <br> matches on amount
-  LCAorch ->> UI: $2k USDC
+  portfolio -->> portfolio: resume 4
+  note over portfolio: RESUME 4
+  LCAorch ->> UI: payout $2k USDC
+  portfolio -->> vstorage: flowsRunning: {}
 ```
 
     2. pipelined (not our focus right now)
