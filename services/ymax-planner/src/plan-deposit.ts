@@ -3,11 +3,12 @@ import {
   type PoolKey,
   type PoolPlaceInfo,
   type StatusFor,
+  type TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
 import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
-import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
+import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
 import { Fail, q, X } from '@endo/errors';
 // import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
 import type {
@@ -71,14 +72,14 @@ export const getCurrentBalance = async (
 export const depositTargetsFromAllocation = (
   amount: NatAmount,
   current: Partial<Record<AssetPlaceRef, NatAmount>>,
-  allocation: Record<PoolKey, number>, // weights; not optional
+  allocation: TargetAllocation, // integer weights (NatValue)
 ): Partial<Record<AssetPlaceRef, NatAmount>> => {
   const brand = amount.brand;
   // Base weighted targets for current + delta
   const targets = computeWeightedTargets(
     brand,
     current,
-    amount.value as bigint,
+    amount.value,
     allocation,
   );
 
@@ -96,7 +97,7 @@ export const depositTargetsFromAllocation = (
 export const withdrawTargetsFromAllocation = (
   amount: NatAmount,
   current: Partial<Record<AssetPlaceRef, NatAmount>>,
-  allocation: Record<PoolKey, number>,
+  allocation: TargetAllocation,
 ): Partial<Record<AssetPlaceRef, NatAmount>> => {
   const brand = amount.brand;
   const withdraw = amount.value;
@@ -115,7 +116,7 @@ const computeWeightedTargets = (
   brand: Brand<'nat'>,
   current: Partial<Record<AssetPlaceRef, NatAmount>>,
   delta: bigint,
-  allocation: Record<PoolKey, number>,
+  allocation: TargetAllocation,
 ): Partial<Record<AssetPlaceRef, NatAmount>> => {
   const totalCurrentAmt = Object.keys(current).reduce(
     (acc, k) => (allocation[k] ? AmountMath.add(acc, current[k]) : acc),
@@ -123,29 +124,27 @@ const computeWeightedTargets = (
   );
   const total = totalCurrentAmt.value + delta;
   assert(total >= 0n, X`total after delta must not be negative`);
-  const entries = Object.entries(allocation) as Array<
-    [PoolKey, number | bigint]
-  >;
+  const entries = Object.entries(allocation) as Array<[PoolKey, NatValue]>;
   assert(entries.length > 0, X`empty allocation`);
-  const SCALE_NUM = 1_000_000;
   const weights = entries.map(([k, w]) => {
-    const wNum = Number(w as any);
-    assert(Number.isFinite(wNum), X`allocation weight must be a number`);
-    const wScaled = BigInt(Math.round(wNum * SCALE_NUM));
-    return [k, wScaled] as const;
+    assert(
+      typeof w === 'bigint' && w >= 0n,
+      X`allocation weight must be a Nat`,
+    );
+    return [k, w] as const;
   });
   const sumW = weights.reduce<bigint>((acc, [, w]) => acc + w, 0n);
   assert(sumW > 0n, X`allocation weights must sum > 0`);
   const draft: Partial<Record<AssetPlaceRef, NatAmount>> = {};
   let assigned = 0n;
   let maxKey = entries[0][0];
-  let maxW = -1n as unknown as bigint;
+  let maxW = -1n as bigint;
   for (const [key, w] of weights) {
     if (w > (maxW as bigint)) {
-      maxW = w as bigint;
+      maxW = w;
       maxKey = key;
     }
-    const v = (total * (w as bigint)) / (sumW as bigint);
+    const v = (total * w) / sumW;
     assigned += v;
     draft[key] = AmountMath.make(brand, v);
   }
@@ -214,7 +213,7 @@ export const planDepositToTargets = async (
 export const planDepositToAllocations = async (
   amount: NatAmount,
   current: Partial<Record<AssetPlaceRef, NatAmount>>,
-  allocation: Record<PoolKey, number>,
+  allocation: TargetAllocation,
   network: NetworkSpec,
   feeBrand: Brand<'nat'>,
   gasEstimator: GasEstimator,
@@ -282,7 +281,7 @@ export const handleDeposit = async (
   const steps = await planDepositToAllocations(
     amount,
     currentBalances,
-    targetAllocation as any,
+    targetAllocation,
     network,
     feeBrand,
     powers.gasEstimator,
