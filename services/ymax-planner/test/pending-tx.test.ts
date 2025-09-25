@@ -387,7 +387,7 @@ test('processInitialPendingTransactions handles old transactions with lookback',
   ];
 
   const logs: string[] = [];
-  const txTimeMs = 15 * 60 * 1000; // 15 minutes ago
+  const txTimeMs = 25 * 60 * 1000; // 25 minutes ago
   const txPowers = {
     ...createMockPendingTxOpts(),
     log: (...args: unknown[]) => logs.push(args.join(' ')),

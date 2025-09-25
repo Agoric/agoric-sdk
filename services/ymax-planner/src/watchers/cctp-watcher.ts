@@ -1,6 +1,7 @@
 import type { Filter, JsonRpcProvider, Log } from 'ethers';
 import { id, zeroPadValue, getAddress, ethers } from 'ethers';
 import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
+import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 
 /**
  * The Keccak256 hash (event signature) of the standard ERC-20 `Transfer` event.
@@ -59,7 +60,7 @@ export const watchCctpTransfer = ({
   provider,
   toAddress,
   expectedAmount,
-  timeoutMs = 300000, // 5 min
+  timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
   setTimeout = globalThis.setTimeout,
 }: CctpWatch & {

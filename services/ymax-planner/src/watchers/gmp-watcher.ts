@@ -1,6 +1,7 @@
 import { ethers, type Filter, type JsonRpcProvider, type Log } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
+import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 
 const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
   'MulticallExecuted(string,(bool,bytes)[])',
@@ -17,7 +18,7 @@ export const watchGmp = ({
   provider,
   contractAddress,
   txId,
-  timeoutMs = 300000, // 5 min
+  timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
   setTimeout = globalThis.setTimeout,
 }: WatchGmp & {

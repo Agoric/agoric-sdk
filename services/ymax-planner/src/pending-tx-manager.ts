@@ -194,7 +194,7 @@ export type HandlePendingTxOpts = {
   timeoutMs?: number;
 } & EvmContext;
 
-export const TX_TIMEOUT_MS = 10 * 60 * 1000; // 10 min
+export const TX_TIMEOUT_MS = 20 * 60 * 1000; // 20 min
 export const handlePendingTx = async (
   tx: PendingTx,
   {

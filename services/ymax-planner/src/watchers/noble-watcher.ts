@@ -1,5 +1,6 @@
 import type { Bech32Address } from '@agoric/orchestration';
 import type { CosmosRestClient } from '../cosmos-rest-client.ts';
+import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 
 type WatchNobleTransferOptions = {
   cosmosRest: CosmosRestClient;
@@ -23,7 +24,7 @@ export const watchNobleTransfer = ({
   expectedAmount,
   expectedDenom,
   chainKey = 'noble',
-  timeoutMs = 600000, // 10 min
+  timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
   setTimeout = globalThis.setTimeout,
   pollIntervalMs = 5000, // Poll every 5 seconds
