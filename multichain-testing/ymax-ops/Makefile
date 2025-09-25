@@ -4,6 +4,9 @@
 AGORIC_NET ?= devnet
 
 YMAX_TOOL=../scripts/ymax-tool.ts
+AGD=agd
+AGORIC=agoric
+JQ=jq
 
 DEPLOY=../../packages/portfolio-deploy
 
@@ -19,7 +22,7 @@ $(DEPLOY)/dist/bundle-ymax0.json:
 	(cd $(DEPLOY); yarn build; yarn build:bundle)
 
 provision-ymaxControl:
-	agd tx swingset provision-one yc $(YMAX_CONTROL_ADDR) SMART_WALLET --node $(NODE) --from $(YMAX_CONTROL_ADDR) $(SIG_OPTS)
+	$(AGD) tx swingset provision-one yc $(YMAX_CONTROL_ADDR) SMART_WALLET --node $(NODE) --from $(YMAX_CONTROL_ADDR) $(SIG_OPTS)
 
 redeem-ymaxControl:
 	@echo "Using AGORIC_NET=$(AGORIC_NET)"
@@ -42,9 +45,10 @@ NETCONFIG=https://main.agoric.net/network-config
 		$(YMAX_TOOL) --installAndStart $$(cat ,ymax0-bundle-id) <,privateArgsOverrides.json
 	agoric follow -B $(NETCONFIG) -lF :published.agoricNames.instance >$@ || (rm $@; false)
 
-,ymax0-installed: $(DEPLOY)/dist/bundle-ymax0.json
-	agd keys --keyring-backend=test show $(PUBLISHER)
-	AGORIC_NET=devnet ./scripts/install-bundle.ts $< >$@ || (rm $@; false)
+,ymax0-installed: ,ymax0-bundle-id
+	grep $$($(AGORIC) follow -lF -B $(NETCONFIG) -o json :bundles \
+		| jq -r .endoZipBase64Sha512) ,ymax0-bundle-id >$@ \
+			|| (rm $@; false)
 
 ,creatorFacet: ,ymax0-deployed
 	AGORIC_NET=$(AGORIC_NET) \
