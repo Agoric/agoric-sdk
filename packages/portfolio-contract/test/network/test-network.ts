@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 
 import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
-import type { NetworkSpec } from '../../src/network/network-spec.js';
+import type { NetworkSpec } from '../../tools/network/network-spec.js';
 import type { PoolKey } from '../../src/type-guards.js';
 import type { AssetPlaceRef } from '../../src/type-guards-steps.js';
 

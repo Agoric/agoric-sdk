@@ -5,8 +5,8 @@ import type {
   SupportedChain,
 } from '@agoric/portfolio-api/src/constants.js';
 
-import type { PoolKey } from '../type-guards.js';
-import type { AssetPlaceRef } from '../type-guards-steps.js';
+import type { PoolKey } from '../../src/type-guards.js';
+import type { AssetPlaceRef } from '../../src/type-guards-steps.js';
 
 // Control and transfer planes
 export type ControlProtocol = 'ibc' | 'axelar' | 'local';
