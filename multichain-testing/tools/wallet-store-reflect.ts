@@ -98,10 +98,12 @@ export const reflectWalletStore = (
             args,
             ...(saveResult ? { saveResult } : {}),
           });
-          const tx = await sig.sendBridgeAction({
-            method: 'invokeEntry',
-            message,
-          });
+          const tx = await sig.sendBridgeAction(
+            harden({
+              method: 'invokeEntry',
+              message,
+            }),
+          );
           if (tx.code !== 0) {
             throw Error(tx.rawLog);
           }
