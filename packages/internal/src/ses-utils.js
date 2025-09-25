@@ -75,7 +75,6 @@ harden(makeLimitedConsole);
  */
 export const deeplyFulfilledObject = async obj => {
   !isPrimitive(obj) || Fail`param must be an object`;
-  // @ts-expect-error Until the upstream endo type is also fixed to handle remotable objects
   return deeplyFulfilled(obj);
 };
 
