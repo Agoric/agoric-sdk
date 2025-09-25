@@ -5,6 +5,19 @@ AGORIC_NET ?= devnet
 
 YMAX_TOOL=../scripts/ymax-tool.ts
 
+DEPLOY=../../packages/portfolio-deploy
+
+##
+# default make target: no chain interaction
+build: ,ymax0-bundle-id
+
+,ymax0-bundle-id: $(DEPLOY)/dist/bundle-ymax0.json
+	((cd $(DEPLOY); yarn build:bundle-id) ; cp $(DEPLOY)/dist/ymax0.bundleId $@; cat $@) \
+		|| (rm $@; false)
+
+$(DEPLOY)/dist/bundle-ymax0.json:
+	(cd $(DEPLOY); yarn build; yarn build:bundle)
+
 provision-ymaxControl:
 	agd tx swingset provision-one yc $(YMAX_CONTROL_ADDR) SMART_WALLET --node $(NODE) --from $(YMAX_CONTROL_ADDR) $(SIG_OPTS)
 
@@ -66,4 +79,4 @@ prune-vstorage: ,vstorage-outdated-$(AGORIC_NET).json
 
 
 clean:
-	rm -rf build
+	rm -rf ,* $(DEPLOY)/dist/
