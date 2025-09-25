@@ -14,6 +14,12 @@ DEPLOY=../../packages/portfolio-deploy
 # default make target: no chain interaction
 build: ,ymax0-bundle-id
 
+##
+# whole system update. see ymax0-terminate first, though.
+redeploy: ,ymax0-deployed introduce-parties prune-vstorage fund-fee-acct
+
+introduce-parties: ,invitePlanner ,inviteResolver
+
 ,ymax0-bundle-id: $(DEPLOY)/dist/bundle-ymax0.json
 	((cd $(DEPLOY); yarn build:bundle-id) ; cp $(DEPLOY)/dist/ymax0.bundleId $@; cat $@) \
 		|| (rm $@; false)
@@ -76,11 +82,24 @@ check-vstorage: ,vstorage-outdated-$(AGORIC_NET).json
 	AGORIC_NET=$(AGORIC_NET) $(YMAX_TOOL) --checkStorage >$@ || \
 		(rm $@; false)
 
-prune-vstorage: ,vstorage-outdated-$(AGORIC_NET).json
+prune-vstorage: ,vstorage-pruned
+
+,vstorage-pruned: ,vstorage-outdated-$(AGORIC_NET).json
 	@echo "Using AGORIC_NET=$(AGORIC_NET)"
 	AGORIC_NET=$(AGORIC_NET) $(YMAX_TOOL) --pruneStorage < $<
+	touch $@
 
+NODE=https://main.rpc.agoric.net:443
+,ymax0-node.json:
+	$(AGD) --node $(NODE) query vstorage data published.ymax0 -o json >$@ \
+		|| (rm $@; false)
 
+SIG_OPTS=--chain-id=agoric-3 --gas-adjustment=1.5 --gas=auto
+WHALE=gov1
+fund-fee-acct: ,ymax0-node.json
+	$(AGD) tx bank send $(WHALE) \
+		$$($(JQ) -r '.value|fromjson|.values[0]|fromjson|.body|fromjson|.contractAccount' ,ymax0-node.json) \
+			120000000ubld -y -b block --node=$(NODE) $(SIG_OPTS)
 
 clean:
 	rm -rf ,* $(DEPLOY)/dist/
