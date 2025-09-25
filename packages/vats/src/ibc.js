@@ -11,6 +11,8 @@ import {
   decodeRemoteIbcAddress,
   encodeLocalIbcAddress,
   encodeRemoteIbcAddress,
+  decodeIbcEndpoint,
+  encodeIbcEndpoint,
 } from '../tools/ibc-utils.js';
 
 const trace = makeTracer('IBC', false);
@@ -454,10 +456,12 @@ export const prepareIBCProtocol = (zone, powers) => {
                 connectionHops: rHops,
               } = /** @type {IBCEvent<'channelOpenAck'>} */ (obj);
 
-              const outbounds = this.state.srcPortToOutbounds.has(portID)
-                ? [...this.state.srcPortToOutbounds.get(portID)]
+              const readonlyOutbounds = this.state.srcPortToOutbounds.has(
+                portID,
+              )
+                ? this.state.srcPortToOutbounds.get(portID)
                 : [];
-              const oidx = outbounds.findIndex(
+              const oidx = readonlyOutbounds.findIndex(
                 ({
                   counterparty: { port_id: iPortID },
                   connectionHops: iHops,
@@ -477,8 +481,11 @@ export const prepareIBCProtocol = (zone, powers) => {
                 },
               );
               oidx >= 0 || Fail`${portID}: did not expect channelOpenAck`;
-              const { onConnectP, localAddr, ...chanInfo } = outbounds[oidx];
-              outbounds.splice(oidx, 1);
+              const { onConnectP, localAddr, ...chanInfo } =
+                readonlyOutbounds[oidx];
+              const outbounds = readonlyOutbounds
+                .slice(0, oidx)
+                .concat(readonlyOutbounds.slice(oidx + 1));
               if (outbounds.length === 0) {
                 srcPortToOutbounds.delete(portID);
               } else {
@@ -493,7 +500,13 @@ export const prepareIBCProtocol = (zone, powers) => {
                 rVersion,
                 rChannelID,
               );
-              const localAddress = `${localAddr}/${chanInfo.order.toLowerCase()}/${rVersion}/ibc-channel/${channelID}`;
+              const decodedLocal = decodeIbcEndpoint(localAddr);
+              const localAddress = encodeIbcEndpoint({
+                ...decodedLocal,
+                order: chanInfo.order,
+                version: rVersion,
+                channelID,
+              });
               const rchandler = makeIBCConnectionHandler(
                 {
                   protocolUtils: util,
@@ -791,13 +804,9 @@ export const prepareIBCProtocol = (zone, powers) => {
           } = watcherContext;
           const { channelKeyToAttempt, channelKeyToInfo } = this.state;
 
-          const match = attemptedLocal.match(
-            // Match:  ... /ORDER/VERSION ...
-            new RegExp('^(/[^/]+/[^/]+)*/(ordered|unordered)/([^/]+)(/|$)'),
-          );
-
+          const al = decodeIbcEndpoint(attemptedLocal);
           const channelKey = `${channelID}:${portID}`;
-          if (!match) {
+          if (!al.version) {
             throw Error(
               `${channelKey}: cannot determine version from attempted local address ${attemptedLocal}`,
             );
@@ -806,7 +815,7 @@ export const prepareIBCProtocol = (zone, powers) => {
           channelKeyToAttempt.init(channelKey, attempt);
           channelKeyToInfo.init(channelKey, obj);
 
-          const negotiatedVersion = match[3];
+          const negotiatedVersion = al.version;
 
           try {
             if (asyncVersions) {

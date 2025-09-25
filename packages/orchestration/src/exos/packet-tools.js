@@ -4,6 +4,7 @@ import { M, matches } from '@endo/patterns';
 import { E } from '@endo/far';
 import { pickFacet } from '@agoric/vat-data';
 import { makeTracer } from '@agoric/internal';
+import { pickData } from '../utils/orchestrationAccount.js';
 
 const trace = makeTracer('PacketTools');
 
@@ -35,13 +36,18 @@ const just = obj => {
  * @property {(
  *   match: Vow<IBCEvent<'acknowledgementPacket'> | IBCEvent<'timeoutPacket'>>,
  *   opts: PacketOptions,
- * ) => Vow<{ eventPattern: Pattern; resultV: Vow<any> }>} sendPacket
+ * ) => Vow<{
+ *   eventPattern: Pattern;
+ *   resultV: Vow<any>;
+ *   meta: Record<string, any>;
+ * }>} sendPacket
  */
 
 /**
  * @typedef {object} PacketOptions
  * @property {string} [opName]
  * @property {PacketTimeout} [timeout]
+ * @property {Record<string, any>} [meta]
  */
 
 /**
@@ -72,6 +78,9 @@ export const preparePacketTools = (zone, vowTools) => {
         sendThenWaitForAck: M.call(EVow$(M.remotable('PacketSender')))
           .optional(M.any())
           .returns(EVow$(M.any())),
+        sendThenWaitForAckWithMeta: M.call(EVow$(M.remotable('PacketSender')))
+          .optional(M.any())
+          .returns(EVow$({ meta: M.record(), result: M.any() })),
         matchFirstPacket: M.call(M.any()).returns(EVow$(M.any())),
         monitorTransfers: M.call(M.remotable('TargetApp')).returns(
           EVow$(M.any()),
@@ -89,6 +98,7 @@ export const preparePacketTools = (zone, vowTools) => {
         // eslint-disable-next-line no-restricted-syntax
         revoke: M.callWhen().returns(),
       }),
+      pickDataWatcher: pickData.shape,
       watchPacketMatch: M.interface('watchPacketMatch', {
         onFulfilled: M.call(M.any(), M.record()).returns(M.any()),
       }),
@@ -106,6 +116,19 @@ export const preparePacketTools = (zone, vowTools) => {
           M.record(),
         ).returns(M.any()),
       }),
+      packetWasSentWithMetaWatcher: M.interface(
+        'packetWasSentWithMetaWatcher',
+        {
+          onFulfilled: M.call(
+            {
+              eventPattern: M.pattern(),
+              resultV: Vow$(M.any()),
+              meta: M.record(),
+            },
+            M.record(),
+          ).returns(Vow$({ result: M.any(), meta: M.record() })),
+        },
+      ),
       packetWasSentWatcher: M.interface('packetWasSentWatcher', {
         onFulfilled: M.call(
           { eventPattern: M.pattern(), resultV: Vow$(M.any()) },
@@ -162,12 +185,19 @@ export const preparePacketTools = (zone, vowTools) => {
             { patternP },
           );
         },
+        sendThenWaitForAck(packetSender, opts = {}) {
+          const resultMeta = this.facets.public.sendThenWaitForAckWithMeta(
+            packetSender,
+            opts,
+          );
+          return watch(resultMeta, this.facets.pickDataWatcher, 'result');
+        },
         /**
          * @param {Remote<PacketSender>} packetSender
          * @param {PacketOptions} [opts]
-         * @returns {Vow<any>}
+         * @returns {Vow<{ result: Vow<any>; meta: Record<string, unknown> }>}
          */
-        sendThenWaitForAck(packetSender, opts = {}) {
+        sendThenWaitForAckWithMeta(packetSender, opts = {}) {
           /** @type {import('@agoric/vow').VowKit<Pattern>} */
           const pattern = makeVowKit();
 
@@ -182,18 +212,27 @@ export const preparePacketTools = (zone, vowTools) => {
             { opts },
           );
 
-          // When the packet is sent, resolve the resultV for the reply.
-          const resultV = watch(matchV, this.facets.packetWasSentWatcher, {
-            opts,
-            patternResolver: pattern.resolver,
-          });
+          // When the packet is sent, resolve the resultMeta for the reply.
+          const resultMeta = watch(
+            matchV,
+            this.facets.packetWasSentWithMetaWatcher,
+            {
+              opts,
+              patternResolver: pattern.resolver,
+            },
+          );
 
           // If anything fails, try to reject the packet sender.
-          return watch(resultV, this.facets.rejectResolverAndRethrowWatcher, {
-            resolver: pattern.resolver,
-          });
+          return watch(
+            resultMeta,
+            this.facets.rejectResolverAndRethrowWatcher,
+            {
+              resolver: pattern.resolver,
+            },
+          );
         },
       },
+      pickDataWatcher: pickData.watcher,
       monitorRegistration: {
         /** @type {TargetRegistration['updateTargetApp']} */
         // eslint-disable-next-line no-restricted-syntax
@@ -258,11 +297,21 @@ export const preparePacketTools = (zone, vowTools) => {
           return watch(E(sender).sendPacket(match, ctx.opts));
         },
       },
+      /**
+       * @deprecated migrate to packetWasSentWithMetaWatcher
+       */
       packetWasSentWatcher: {
         onFulfilled({ eventPattern, resultV }, ctx) {
           const { patternResolver } = ctx;
           patternResolver.resolve(eventPattern);
           return resultV;
+        },
+      },
+      packetWasSentWithMetaWatcher: {
+        onFulfilled({ eventPattern, resultV, meta }, ctx) {
+          const { patternResolver } = ctx;
+          patternResolver.resolve(eventPattern);
+          return harden({ result: resultV, meta });
         },
       },
       rejectResolverAndRethrowWatcher: {
@@ -305,7 +354,7 @@ export const preparePacketTools = (zone, vowTools) => {
 
           // Try matching the first in queue.
           const i = upcallQueue.findIndex(obj => matches(obj, pattern));
-          if (i === -1) {
+          if (i < 0) {
             trace('No match yet. Save the pattern for later.');
             resolverToPattern.init(resolver, pattern);
             return;

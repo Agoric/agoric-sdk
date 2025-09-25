@@ -24,6 +24,7 @@ import type {
   IBCChannelID,
   IBCConnectionID,
   IBCPortID,
+  NetworkEndpoints,
   VTransferIBCEvent,
 } from '@agoric/vats';
 import type {
@@ -43,6 +44,16 @@ import type {
   Denom,
   DenomAmount,
 } from './types.js';
+
+export type MetaTrafficEntry<
+  P extends
+    keyof NetworkEndpoints['absolute'] = keyof NetworkEndpoints['absolute'],
+> = {
+  op: string;
+  src: NetworkEndpoints['absolute'][P];
+  dst: NetworkEndpoints['absolute'][P];
+  seq: number | bigint | string | null;
+};
 
 /**
  * @example
@@ -273,6 +284,16 @@ export interface IcaAccountMethods {
     msgs: AnyJson[],
     opts?: Partial<Omit<TxBody, 'messages'>> & { sendOpts?: SendOptions },
   ) => Promise<string>;
+  /**
+   * Submit a transaction on behalf of the remote account for execution on the remote chain.
+   * @param msgs - records for the transaction
+   * @param [opts] - optional parameters for the Tx. use `opts.sendOpts.relativeTimeoutNs` to specify a timeout for the ICA tx packet
+   * @returns acknowledgement string
+   */
+  executeEncodedTxWithMeta: (
+    msgs: AnyJson[],
+    opts?: Partial<Omit<TxBody, 'messages'>> & { sendOpts?: SendOptions },
+  ) => Promise<{ result: Promise<string>; meta: Record<string, any> }>;
   /**
    * Deactivates the ICA account by closing the ICA channel. The `Port` is
    * persisted so holders can always call `.reactivate()` to re-establish a new

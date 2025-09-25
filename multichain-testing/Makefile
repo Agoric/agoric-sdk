@@ -6,10 +6,7 @@ FILE = config.yaml
 HELM_REPO_URL = https://agoric-labs.github.io/starship
 HELM_REPO = starship
 HELM_CHART = devnet
-NAMESPACE := $(shell kubectl config view -o jsonpath='{.contexts[?(@.name=="starship")].context.user}' 2>/dev/null \
-	| tr '[:upper:]' '[:lower:]' \
-	| sed -E 's/@/-/g; s/[.]+/-/g; s/[^a-z0-9-]+/-/g; s/^-+|-+$$//g' \
-	| awk '{ if ($$0 == "") print "default"; else print $$0 }')
+NAMESPACE := $(shell ./scripts/get-namespace.sh)
 
 SS = yarn starship
 SSOPTS = --config $(FILE) --name $(NAME) --repoUrl $(HELM_REPO_URL) \

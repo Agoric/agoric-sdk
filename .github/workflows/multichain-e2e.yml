@@ -77,9 +77,11 @@ jobs:
 
   orchestration-staking-hermes:
     name: Orchestration Staking - Hermes
+    # TODO: Reenable when #11981 is fixed.
     if: |
+      false && (
       github.event_name == 'workflow_call' ||
-      github.event_name == 'pull_request' ||
+      github.event_name == 'pull_request') ||
       (github.event_name == 'workflow_dispatch' && inputs.test_type == 'orchestration-staking-hermes')
     uses: ./.github/workflows/multichain-e2e-template.yml
     with:

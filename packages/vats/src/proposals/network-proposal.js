@@ -96,7 +96,7 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
  *
  * - loopback ports: `E(portAllocator).allocateCustomLocalPort()`
  * - an echo port: `E(portAllocator).allocateCustomIBCPort("echo")`
- * - echo port addrees: /ibc-port/custom-echo
+ * - echo port address: /ibc-port/custom-echo
  *
  * @param {BootstrapPowers & {
  *   produce: { portAllocator: Producer<any> };
