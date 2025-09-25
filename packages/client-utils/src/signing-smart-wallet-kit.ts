@@ -65,6 +65,11 @@ export const makeSigningSmartWalletKit = async (
     memo: string = '',
     signerData?: SignerData,
   ): Promise<DeliverTxResponse> => {
+    // The caller should do this but it's more ergonomic to allow an object
+    // literal, and in that case this hardening does not create an external
+    // side-effect.
+    harden(action);
+
     const msgSpend = MsgWalletSpendAction.fromPartial({
       owner: toAccAddress(address),
       spendAction: JSON.stringify(swk.marshaller.toCapData(action)),
