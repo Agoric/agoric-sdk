@@ -13,11 +13,14 @@ async function prepare() {
   const kernelBundles = await buildKernelBundles();
   // we'll give this bundle to the loader vat, which will use it to create a
   // new (metered) dynamic vat
+  // Elide comments to make the metering test less sensitive to non-runtime code changes
   const dynamicVatBundle = await bundleSource(
     new URL('metered-dynamic-vat.js', import.meta.url).pathname,
+    { elideComments: true },
   );
   const bootstrapBundle = await bundleSource(
     new URL('vat-load-dynamic.js', import.meta.url).pathname,
+    { elideComments: true },
   );
   return { kernelBundles, dynamicVatBundle, bootstrapBundle };
 }
@@ -182,12 +185,11 @@ async function overflowCrank(t, explosion) {
 
   // create a meter with ~10M remaining
   // This test runs at the cusp of meter failure and is sensitive to changes to
-  // the underlying platform, including merely adding more text to the source,
-  // including comments / JSDoc.
+  // the underlying platform, including merely adding more text to the source.
   t.log(
     'adjust the remaining computrons figure if this test fails due to platform changes and run a benchmark to check the wallclock impact',
   );
-  const cmargs = [10_500_000n, 5_000_000n]; // remaining, notifyThreshold
+  const cmargs = [7_500_000n, 5_000_000n]; // remaining, notifyThreshold
   const kp1 = c.queueToVatRoot('bootstrap', 'createMeter', cmargs);
   await c.run();
   const marg = kunser(c.kpResolution(kp1));
