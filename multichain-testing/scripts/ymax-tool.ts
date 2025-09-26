@@ -17,6 +17,7 @@ import { makePortfolioSteps } from '@aglocal/portfolio-contract/src/plan-transfe
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
 import {
   axelarConfigTestnet,
+  axelarConfig as axelarConfigMainnet,
   gmpAddresses as gmpConfigs,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import type { ContractControl } from '@aglocal/portfolio-deploy/src/contract-control.js';
@@ -289,6 +290,31 @@ const agoricNamesForChainInfo = (vsk: VstorageKit) => {
 };
 
 /**
+ * Get network-specific configurations based on AGORIC_NET environment variable
+ *
+ * @param network - The network name from AGORIC_NET env var
+ */
+const getNetworkConfig = (network: string) => {
+  switch (network) {
+    case 'mainnet':
+      return {
+        axelarConfig: axelarConfigMainnet,
+        gmpAddresses: gmpConfigs.mainnet,
+      };
+    case 'testnet':
+    case 'devnet':
+      return {
+        axelarConfig: axelarConfigTestnet,
+        gmpAddresses: gmpConfigs.testnet,
+      };
+    default:
+      throw new Error(
+        `Unsupported network: ${network}. Supported networks are: mainnet, testnet, devnet`,
+      );
+  }
+};
+
+/**
  * Build privateArgsOverrides sufficient to add new EVM chains.
  *
  * @param vsk
@@ -297,8 +323,12 @@ const agoricNamesForChainInfo = (vsk: VstorageKit) => {
  */
 const overridesForEthChainInfo = async (
   vsk: VstorageKit,
-  axelarConfig = axelarConfigTestnet,
-  gmpAddresses = gmpConfigs.testnet,
+  axelarConfig:
+    | typeof axelarConfigTestnet
+    | typeof axelarConfigMainnet = axelarConfigTestnet,
+  gmpAddresses:
+    | typeof gmpConfigs.testnet
+    | typeof gmpConfigs.mainnet = gmpConfigs.testnet,
 ) => {
   const { chainInfo: cosmosChainInfo } = await lookupInterchainInfo(
     agoricNamesForChainInfo(vsk),
@@ -399,10 +429,17 @@ const main = async (
       await walletKit.readPublished('agoricNames.vbankAsset'),
     );
 
+    const { axelarConfig, gmpAddresses } = getNetworkConfig(
+      env.AGORIC_NET as string,
+    );
     await yc.installAndStart({
       bundleId,
       issuers: { USDC, BLD, Fee: BLD, Access: upoc26.issuer },
-      privateArgsOverrides: await overridesForEthChainInfo(walletKit),
+      privateArgsOverrides: await overridesForEthChainInfo(
+        walletKit,
+        axelarConfig,
+        gmpAddresses,
+      ),
     });
     return;
   }
