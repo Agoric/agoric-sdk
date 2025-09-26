@@ -279,7 +279,6 @@ export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
 
 type FlowStatus =
   | { state: 'run'; step: number; how: string }
-  | { state: 'undo'; step: number; how: string }
   | { state: 'done' }
   | { state: 'fail'; step: number; how: string; error: string; where?: string };
 

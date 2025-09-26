@@ -190,28 +190,6 @@ const trackFlow = async (
     traceFlow('⚠️ step', step, ' failed', err);
     const failure = moves[step - 1];
     const errStep = step;
-    while (step > 1) {
-      step -= 1;
-      const traceStep = traceFlow.sub(`step${step}`);
-      const move = moves[step - 1];
-      const how = `unwind: ${move.how}`;
-      reporter.publishFlowStatus(flowId, { state: 'undo', step, how });
-      try {
-        await move.recover(accounts, traceStep);
-      } catch (errInUnwind) {
-        traceStep('⚠️ unwind failed', errInUnwind);
-        // if a recover fails, we just give up and report `where` the assets are
-        const { dest: where } = move;
-        reporter.publishFlowStatus(flowId, {
-          state: 'fail',
-          step,
-          how,
-          error: errmsg(errInUnwind),
-          where,
-        });
-        throw errInUnwind;
-      }
-    }
     reporter.publishFlowStatus(flowId, {
       state: 'fail',
       step: errStep,

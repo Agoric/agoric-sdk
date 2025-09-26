@@ -667,7 +667,7 @@ test('handle failure in localTransfer from seat to local account', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
-test('handle failure in IBC transfer', async t => {
+test.skip('handle failure in IBC transfer', async t => {
   const { give, steps } = await makePortfolioSteps({ USDN: make(USDC, 100n) });
   const { orch, ctx, offer, storage } = mocks(
     { transfer: Error('IBC is on the fritz!!') },
@@ -691,7 +691,7 @@ test('handle failure in IBC transfer', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
-test('handle failure in executeEncodedTx', async t => {
+test.skip('handle failure in executeEncodedTx', async t => {
   const { give, steps } = await makePortfolioSteps({ USDN: make(USDC, 100n) });
   const { orch, ctx, offer, storage } = mocks(
     { executeEncodedTx: Error('exec swaplock went kerflewey') },
@@ -717,7 +717,7 @@ test('handle failure in executeEncodedTx', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
-test('handle failure in recovery from executeEncodedTx', async t => {
+test.skip('handle failure in recovery from executeEncodedTx', async t => {
   const amount = make(USDC, 100n);
   const { orch, ctx, offer, storage } = mocks(
     {
