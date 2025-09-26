@@ -17,7 +17,8 @@
     "lint:eslint": "yarn run -T eslint src/",
     "lint:types": "yarn run -T tsc",
     "test": "ava",
-    "test:xs": "exit 0"
+    "test:xs": "exit 0",
+    "resolve": "nodemon --ext js,ts --exec 'node --import ts-blank-space/register ./src/resolve-manually.ts'"
   },
   "keywords": [
     "agoric",
