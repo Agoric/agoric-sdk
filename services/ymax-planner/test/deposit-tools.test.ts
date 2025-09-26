@@ -9,6 +9,7 @@ import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-netw
 import { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import { handleDeposit } from '../src/plan-deposit.ts';
 import { SpectrumClient } from '../src/spectrum-client.ts';
+import { mockGasEstimator } from './mocks.ts';
 
 const depositBrand = Far('mock brand') as Brand<'nat'>;
 const makeDeposit = value => AmountMath.make(depositBrand, value);
@@ -118,6 +119,7 @@ test('handleDeposit works with mocked dependencies', async t => {
     readPublished: mockVstorageKit.readPublished,
     spectrum: mockSpectrumClient,
     cosmosRest: mockCosmosRestClient,
+    gasEstimator: mockGasEstimator,
   });
   t.snapshot(result);
 });
@@ -182,6 +184,7 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
     readPublished: mockVstorageKit.readPublished,
     spectrum: mockSpectrumClient,
     cosmosRest: mockCosmosRestClient,
+    gasEstimator: mockGasEstimator,
   });
 
   t.deepEqual(result, { policyVersion: 4, rebalanceCount: 0, steps: [] });
@@ -279,6 +282,7 @@ test('handleDeposit handles different position types correctly', async t => {
       readPublished: mockVstorageKit.readPublished,
       spectrum: mockSpectrumClient,
       cosmosRest: mockCosmosRestClient,
+    gasEstimator: mockGasEstimator,
     },
     TEST_NETWORK,
   );

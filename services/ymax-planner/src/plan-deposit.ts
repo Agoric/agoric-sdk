@@ -19,6 +19,7 @@ import type {
 import type { NetworkSpec } from '@aglocal/portfolio-contract/src/network/network-spec.js';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 import type { CosmosRestClient } from './cosmos-rest-client.js';
+import { type GasEstimator } from './gas-estimation.ts';
 
 const getOwn = <O, K extends PropertyKey>(
   obj: O,
@@ -181,6 +182,7 @@ export const planDepositToTargets = async (
   target: Partial<Record<AssetPlaceRef, NatAmount>>, // includes all pools + '+agoric'
   network: NetworkSpec,
   feeBrand: Brand<'nat'>,
+  gasEstimator: GasEstimator,
 ): Promise<MovementDesc[]> => {
   const brand = amount.brand;
   // Construct current including the deposit seat
@@ -200,6 +202,7 @@ export const planDepositToTargets = async (
     target: target as any,
     brand,
     feeBrand,
+    gasEstimator,
   });
   return steps;
 };
@@ -214,9 +217,17 @@ export const planDepositToAllocations = async (
   allocation: Record<PoolKey, number>,
   network: NetworkSpec,
   feeBrand: Brand<'nat'>,
+  gasEstimator: GasEstimator,
 ): Promise<MovementDesc[]> => {
   const targets = depositTargetsFromAllocation(amount, current, allocation);
-  return planDepositToTargets(amount, current, targets, network, feeBrand);
+  return planDepositToTargets(
+    amount,
+    current,
+    targets,
+    network,
+    feeBrand,
+    gasEstimator,
+  );
 };
 
 // Back-compat utility used by CLI or handlers
@@ -228,6 +239,7 @@ export const handleDeposit = async (
     readPublished: VstorageKit['readPublished'];
     spectrum: SpectrumClient;
     cosmosRest: CosmosRestClient;
+    gasEstimator: GasEstimator;
   },
   network: NetworkSpec = PROD_NETWORK,
 ) => {
@@ -273,6 +285,7 @@ export const handleDeposit = async (
     targetAllocation as any,
     network,
     feeBrand,
+    powers.gasEstimator,
   );
   return { policyVersion, rebalanceCount, steps };
 };

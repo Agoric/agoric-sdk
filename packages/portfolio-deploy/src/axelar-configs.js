@@ -24,7 +24,7 @@
  * @see {@link https://docs.axelar.dev/resources/contract-addresses/testnet/#evm-contract-addresses}
  * @see {@link https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts | supported-chains-list.ts}
  */
-const AxelarChainIdMap = harden({
+export const AxelarChainIdMap = harden({
   Avalanche: {
     testnet: 'Avalanche',
     mainnet: 'Avalanche',

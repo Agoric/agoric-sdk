@@ -15,6 +15,7 @@ import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { startEngine } from './engine.ts';
 import { createEVMContext, verifyEvmChains } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
+import { makeGasEstimator } from './gas-estimation.ts';
 
 const assertChainId = async (
   rpc: CosmosRPCClient,
@@ -92,6 +93,12 @@ export const main = async (
   console.warn('Verifying EVM chain connectivity...');
   await verifyEvmChains(evmCtx.evmProviders);
 
+  const gasEstimator = makeGasEstimator({
+    axelarApiAddress: config.axelar.apiUrl,
+    fetchFunc: fetch,
+    axelarChainIdMap: config.axelar.chainIdMap,
+  });
+
   const powers = {
     evmCtx,
     rpc,
@@ -99,6 +106,7 @@ export const main = async (
     cosmosRest,
     signingSmartWalletKit,
     now: Date.now,
+    gasEstimator,
   };
   await startEngine(powers, {
     depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',

@@ -58,7 +58,7 @@ export const PROD_NETWORK: NetworkSpec = {
       transfer: 'cctpReturn',
       variableFeeBps: 0,
       timeSec: 20,
-      feeMode: 'gmpTransfer',
+      feeMode: 'makeEvmAccount',
     },
     {
       src: '@noble',
@@ -66,7 +66,7 @@ export const PROD_NETWORK: NetworkSpec = {
       transfer: 'cctpReturn',
       variableFeeBps: 0,
       timeSec: 20,
-      feeMode: 'gmpTransfer',
+      feeMode: 'makeEvmAccount',
     },
     {
       src: '@noble',
@@ -74,7 +74,7 @@ export const PROD_NETWORK: NetworkSpec = {
       transfer: 'cctpReturn',
       variableFeeBps: 0,
       timeSec: 20,
-      feeMode: 'gmpTransfer',
+      feeMode: 'makeEvmAccount',
     },
     // Fast USDC (Axelar GMP)
     {
@@ -83,6 +83,7 @@ export const PROD_NETWORK: NetworkSpec = {
       transfer: 'fastusdc',
       variableFeeBps: 15,
       timeSec: 45,
+      feeMode: 'evmToNoble',
     },
     {
       src: '@Avalanche',
@@ -90,6 +91,7 @@ export const PROD_NETWORK: NetworkSpec = {
       transfer: 'fastusdc',
       variableFeeBps: 15,
       timeSec: 45,
+      feeMode: 'evmToNoble',
     },
     {
       src: '@Ethereum',
@@ -97,6 +99,7 @@ export const PROD_NETWORK: NetworkSpec = {
       transfer: 'fastusdc',
       variableFeeBps: 15,
       timeSec: 45,
+      feeMode: 'evmToNoble',
     },
     // IBC between agoric and noble
     { src: '@agoric', dest: '@noble', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },

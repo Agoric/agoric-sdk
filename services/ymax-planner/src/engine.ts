@@ -49,6 +49,7 @@ import {
   vstoragePathIsParentOf,
   STALE_RESPONSE,
 } from './vstorage-utils.ts';
+import type { GasEstimator } from './gas-estimation.ts';
 
 const { entries, fromEntries, values } = Object;
 
@@ -122,6 +123,7 @@ type Powers = {
   cosmosRest: CosmosRestClient;
   signingSmartWalletKit: SigningSmartWalletKit;
   now: typeof Date.now;
+  gasEstimator: GasEstimator;
 };
 
 const processPortfolioEvents = async (
@@ -318,7 +320,15 @@ export const processInitialPendingTransactions = async (
 };
 
 export const startEngine = async (
-  { evmCtx, rpc, spectrum, cosmosRest, signingSmartWalletKit, now }: Powers,
+  {
+    evmCtx,
+    rpc,
+    spectrum,
+    cosmosRest,
+    signingSmartWalletKit,
+    now,
+    gasEstimator,
+  }: Powers,
   {
     depositBrandName,
     feeBrandName,
@@ -646,7 +656,12 @@ export const startEngine = async (
               unprefixedPortfolioPath as any,
               amount,
               feeAsset.brand as Brand<'nat'>,
-              { readPublished: query.readPublished, spectrum, cosmosRest },
+              {
+                readPublished: query.readPublished,
+                spectrum,
+                cosmosRest,
+                gasEstimator,
+              },
             );
 
             // TODO: consolidate with portfolioIdOfPath
@@ -670,14 +685,16 @@ export const startEngine = async (
     for (const { portfolioId, stepsRecord } of portfolioOps.filter(x => !!x)) {
       if (!stepsRecord) continue;
       const { policyVersion, rebalanceCount, steps } = stepsRecord;
-      const result = await signingSmartWalletKit.sendBridgeAction({
-        method: 'invokeEntry',
-        message: {
-          targetName: 'planner',
-          method: 'submit',
-          args: [portfolioId, steps, policyVersion, rebalanceCount],
-        },
-      });
+      const result = await signingSmartWalletKit.sendBridgeAction(
+        harden({
+          method: 'invokeEntry',
+          message: {
+            targetName: 'planner',
+            method: 'submit',
+            args: [portfolioId, steps, policyVersion, rebalanceCount],
+          },
+        }),
+      );
       console.log('result', result);
     }
   }
