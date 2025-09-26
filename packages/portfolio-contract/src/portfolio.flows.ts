@@ -160,10 +160,6 @@ const trackFlow = async (
   accounts: AccountsByChain,
 ) => {
   await null; // cf. wiki:NoNestedAwait
-  reporter.publishFlowSteps(
-    flowId,
-    moves.map(({ apply: _a, recover: _r, ...data }) => data),
-  );
 
   let step = 1;
   try {
@@ -681,6 +677,22 @@ const stepFlow = async (
     }
   }
 
+  const acctDests = [
+    ...new Set(
+      moves.map(({ dest }) => getChainNameOfPlaceRef(dest)).filter(Boolean),
+    ),
+  ];
+  traceFlow('provideAccounts', ...acctDests);
+  reporter.publishFlowStatus(flowId, {
+    state: 'run',
+    step: 0,
+    how: `provideAccounts(${acctDests.join(', ')})`,
+  });
+  reporter.publishFlowSteps(
+    flowId,
+    todo.map(({ apply: _a, recover: _r, ...data }) => data),
+  );
+
   const agoric = await provideCosmosAccount(orch, 'agoric', kit, traceFlow);
 
   /** run thunk(); on failure, report to vstorage */
@@ -718,15 +730,14 @@ const stepFlow = async (
         axelarIds,
         evmGas: move.detail?.evmGas || 0n,
       };
-      for (const ref of [move.src, move.dest]) {
-        const maybeChain = getChainNameOfPlaceRef(ref);
-        if (!evmChains.includes(maybeChain)) continue;
-        const chain = maybeChain as AxelarChain;
-        const info = await forChain(chain, () =>
-          provideEVMAccount(chain, gmp, agoric.lca, ctx, kit),
-        );
-        chainToAcct[chain] = info;
-      }
+      const ref = move.dest;
+      const maybeChain = getChainNameOfPlaceRef(ref);
+      if (!evmChains.includes(maybeChain)) continue;
+      const chain = maybeChain as AxelarChain;
+      const info = await forChain(chain, () =>
+        provideEVMAccount(chain, gmp, agoric.lca, ctx, kit),
+      );
+      chainToAcct[chain] = info;
     }
     return harden(chainToAcct);
   })();
