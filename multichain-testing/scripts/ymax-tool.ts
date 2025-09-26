@@ -4,6 +4,7 @@
  */
 import '@endo/init';
 
+import { makePortfolioSteps } from '@aglocal/portfolio-contract/src/plan-transfers.ts';
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.ts';
@@ -13,11 +14,10 @@ import {
   type ProposalType,
   type TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { makePortfolioSteps } from '@aglocal/portfolio-contract/src/plan-transfers.ts';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
 import {
-  axelarConfigTestnet,
   axelarConfig as axelarConfigMainnet,
+  axelarConfigTestnet,
   gmpAddresses as gmpConfigs,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import type { ContractControl } from '@aglocal/portfolio-deploy/src/contract-control.js';
@@ -27,6 +27,8 @@ import {
   fetchEnvNetworkConfig,
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
+  makeVStorage,
+  makeVstorageKit,
   type SigningSmartWalletKit,
   type VstorageKit,
 } from '@agoric/client-utils';
@@ -48,6 +50,7 @@ import type { NameHub } from '@agoric/vats';
 import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils';
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { M } from '@endo/patterns';
+import fsp from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import {
   reflectWalletStore,
@@ -83,8 +86,11 @@ const parseToolArgs = (argv: string[]) =>
       description: { type: 'string', default: 'planner' },
       getCreatorFacet: { type: 'boolean', default: false },
       terminate: { type: 'string' },
+      buildEthOverrides: { type: 'boolean' },
       installAndStart: { type: 'string' },
       invitePlanner: { type: 'string' },
+      inviteResolver: { type: 'string' },
+      checkStorage: { type: 'boolean' },
       pruneStorage: { type: 'boolean', default: false },
       'submit-for': { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
@@ -355,6 +361,12 @@ const overridesForEthChainInfo = async (
   return privateArgsOverrides;
 };
 
+async function readText(stream: typeof process.stdin) {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream as AsyncIterable<Buffer>) chunks.push(chunk);
+  return Buffer.concat(chunks).toString('utf8');
+}
+
 const main = async (
   argv = process.argv,
   env = process.env,
@@ -363,6 +375,9 @@ const main = async (
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
     now = Date.now,
+    stdin = process.stdin,
+    stdout = process.stdout,
+    readFile = fsp.readFile,
   } = {},
 ) => {
   const { values } = parseToolArgs(argv);
@@ -372,12 +387,36 @@ const main = async (
     return;
   }
 
+  const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
+  if (values.checkStorage) {
+    console.error('finding outdated vstorage...');
+    const vs = makeVStorage({ fetch }, networkConfig);
+    const toPrune = await findOutdated(vs);
+    stdout.write(JSON.stringify(toPrune, null, 2));
+    stdout.write('\n');
+    return;
+  }
+
+  if (values.buildEthOverrides) {
+    const vsk = makeVstorageKit({ fetch }, networkConfig);
+    const { axelarConfig, gmpAddresses } = getNetworkConfig(
+      env.AGORIC_NET as string,
+    );
+    const privateArgsOverrides = await overridesForEthChainInfo(
+      vsk,
+      axelarConfig,
+      gmpAddresses,
+    );
+    stdout.write(JSON.stringify(privateArgsOverrides, null, 2));
+    stdout.write('\n');
+    return;
+  }
+
   const { MNEMONIC } = env;
   if (!MNEMONIC) throw Error(`MNEMONIC not set`);
 
   const delay = ms =>
     new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
-  const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
   const walletKit0 = await makeSmartWalletKit({ fetch, delay }, networkConfig);
   const walletKit = values['skip-poll'] ? noPoll(walletKit0) : walletKit0;
   const sig = await makeSigningSmartWalletKit(
@@ -420,6 +459,9 @@ const main = async (
 
   if (values.installAndStart) {
     const { installAndStart: bundleId } = values;
+
+    const privateArgsOverrides = JSON.parse(await readText(stdin));
+
     const { BLD, USDC } = fromEntries(
       await walletKit.readPublished('agoricNames.issuer'),
     );
@@ -429,26 +471,19 @@ const main = async (
       await walletKit.readPublished('agoricNames.vbankAsset'),
     );
 
-    const { axelarConfig, gmpAddresses } = getNetworkConfig(
-      env.AGORIC_NET as string,
-    );
     await yc.installAndStart({
       bundleId,
       issuers: { USDC, BLD, Fee: BLD, Access: upoc26.issuer },
-      privateArgsOverrides: await overridesForEthChainInfo(
-        walletKit,
-        axelarConfig,
-        gmpAddresses,
-      ),
+      privateArgsOverrides,
     });
     return;
   }
 
   if (values.pruneStorage) {
-    console.error('finding outdated vstorage...');
-    const toPrune = await findOutdated(walletKit.vstorage);
-    console.log('toPrune', toPrune);
+    const txt = await readText(stdin);
+    const toPrune = JSON.parse(txt);
     await yc.pruneChainStorage(toPrune);
+    return;
   }
 
   if (values.invitePlanner) {
@@ -459,6 +494,17 @@ const main = async (
       await walletKit.readPublished('agoricNames.instance'),
     );
     await cf.deliverPlannerInvitation(planner, postalService);
+    return;
+  }
+
+  if (values.inviteResolver) {
+    const { inviteResolver: resolver } = values;
+    const cf =
+      walletStore.get<ZStarted<YMaxStartFn>['creatorFacet']>('creatorFacet');
+    const { postalService } = fromEntries(
+      await walletKit.readPublished('agoricNames.instance'),
+    );
+    await cf.deliverResolverInvitation(resolver, postalService);
     return;
   }
 
