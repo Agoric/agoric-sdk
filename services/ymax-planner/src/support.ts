@@ -3,6 +3,8 @@ import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from './config.ts';
 import type { EvmContext } from './pending-tx-manager.ts';
 
+const { entries } = Object;
+
 type HexAddress = `0x${string}`;
 
 export type UsdcAddresses = {
@@ -64,9 +66,9 @@ export const getEvmRpcMap = (
         // Source: https://www.alchemy.com/rpc/ethereum-sepolia
         'eip155:11155111': `https://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/avalanche-fuji
-        'eip155:43113': `https://avax-fuji.g.alchemy.com/${alchemyApiKey}`,
+        'eip155:43113': `https://avax-fuji.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/arbitrum-sepolia
-        'eip155:421614': `https://arb-sepolia.g.alchemy.com/${alchemyApiKey}`,
+        'eip155:421614': `https://arb-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         'eip155:11155420': 'https://optimism-sepolia-rpc.publicnode.com',
         // Source: https://www.alchemy.com/rpc/base-sepolia
         'eip155:84532': `https://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
@@ -81,6 +83,61 @@ type CreateContextParams = {
 };
 
 export type EvmProviders = Record<CaipChainId, JsonRpcProvider>;
+
+/**
+ * Verifies that all EVM chains are accessible via their providers.
+ * Throws an error if any chain fails to connect.
+ */
+export const verifyEvmChains = async (
+  evmProviders: EvmProviders,
+): Promise<void> => {
+  const chainResults = await Promise.allSettled(
+    entries(evmProviders).map(async ([chainId, provider]) => {
+      try {
+        await provider.getBlockNumber();
+        return { chainId, success: true };
+      } catch (error: any) {
+        return { chainId, success: false, error: error.message };
+      }
+    }),
+  );
+
+  const workingChains: string[] = [];
+  const failedChains: Array<{ chainId: string; error: string }> = [];
+
+  chainResults.forEach(result => {
+    if (result.status === 'fulfilled') {
+      const chainResult = result.value;
+      if (chainResult.success) {
+        workingChains.push(chainResult.chainId);
+      } else {
+        failedChains.push({
+          chainId: chainResult.chainId,
+          error: chainResult.error,
+        });
+      }
+    } else {
+      failedChains.push({
+        chainId: 'unknown',
+        error: result.reason?.message || 'Unknown error',
+      });
+    }
+  });
+
+  console.warn(`✓ Working chains (${workingChains.length}):`, workingChains);
+
+  if (failedChains.length > 0) {
+    console.error(`✗ Failed chains (${failedChains.length}):`);
+    failedChains.forEach(({ chainId, error }) => {
+      console.error(`  - ${chainId}: ${error}`);
+    });
+    throw new Error(
+      `Failed to connect to ${failedChains.length} EVM chain(s). ` +
+        `Ensure all required chains are enabled in your Alchemy dashboard. ` +
+        `Failed chains: ${failedChains.map(c => c.chainId).join(', ')}`,
+    );
+  }
+};
 
 export const createEVMContext = async ({
   clusterName,
