@@ -94,6 +94,7 @@ export const verifyEvmChains = async (
 ): Promise<void> => {
   const chainResults = await Promise.allSettled(
     entries(evmProviders).map(async ([chainId, provider]) => {
+      await null;
       try {
         await provider.getBlockNumber();
         return { chainId, success: true };
@@ -106,7 +107,7 @@ export const verifyEvmChains = async (
   const workingChains: string[] = [];
   const failedChains: Array<{ chainId: string; error: string }> = [];
 
-  chainResults.forEach(result => {
+  for (const result of chainResults) {
     if (result.status === 'fulfilled') {
       const chainResult = result.value;
       if (chainResult.success) {
@@ -123,15 +124,15 @@ export const verifyEvmChains = async (
         error: result.reason?.message || 'Unknown error',
       });
     }
-  });
+  }
 
   console.warn(`✓ Working chains (${workingChains.length}):`, workingChains);
 
   if (failedChains.length > 0) {
     console.error(`✗ Failed chains (${failedChains.length}):`);
-    failedChains.forEach(({ chainId, error }) => {
+    for (const { chainId, error } of failedChains) {
       console.error(`  - ${chainId}: ${error}`);
-    });
+    }
     throw new Error(
       `Failed to connect to ${failedChains.length} EVM chain(s). ` +
         `Ensure all required chains are enabled in your Alchemy dashboard. ` +

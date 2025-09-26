@@ -357,7 +357,7 @@ test.skip('TODO: handlePendingTx resolves old pending Noble transfer successfull
 
 // --- Tests for processInitialPendingTransactions ---
 
-test('processInitialPendingTransactions handles old transactions with lookback', async t => {
+test('processInitialPendingTransactions handles transactions with lookback', async t => {
   const handledCalls: Array<{ tx: any; opts: any }> = [];
   const txId: TxId = 'tx1';
 
@@ -417,12 +417,12 @@ test('processInitialPendingTransactions handles old transactions with lookback',
   t.is(handledCalls.length, 1);
   t.deepEqual(logs, [
     'Processing 1 pending transactions',
-    `Processing pending tx ${txId} (age: ${txTimeMs / (1000 * 60)}min) with lookback`,
+    `Processing pending tx ${txId} with lookback`,
     'Processing old tx',
   ]);
 });
 
-test('processInitialPendingTransactions handles new transactions without lookback', async t => {
+test('processInitialPendingTransactions handles transactions with age < 20min in lookback mode', async t => {
   const handledCalls: Array<{ tx: any; opts: any }> = [];
   const txId: TxId = 'tx2';
   const logs: string[] = [];
@@ -481,6 +481,7 @@ test('processInitialPendingTransactions handles new transactions without lookbac
   t.is(handledCalls.length, 1);
   t.deepEqual(logs, [
     'Processing 1 pending transactions',
-    `Processing pending tx ${txId} (age: ${txTimeMs / (1000 * 60)}min)`,
+    `Processing pending tx ${txId} with lookback`,
+    'Processing old tx',
   ]);
 });
