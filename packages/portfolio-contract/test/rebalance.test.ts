@@ -11,9 +11,9 @@ import { Far } from '@endo/marshal';
 import type {
   NetworkSpec,
   TransferProtocol,
-} from '../src/network/network-spec.js';
-import { planRebalanceFlow } from '../src/plan-solve.js';
-import type { FlowEdge, RebalanceMode } from '../src/plan-solve.js';
+} from '../tools/network/network-spec.js';
+import { planRebalanceFlow } from '../tools/plan-solve.js';
+import type { FlowEdge, RebalanceMode } from '../tools/plan-solve.js';
 import type { PoolKey } from '../src/type-guards.js';
 import type { AssetPlaceRef } from '../src/type-guards-steps.js';
 import { TEST_NETWORK } from './network/test-network.js';

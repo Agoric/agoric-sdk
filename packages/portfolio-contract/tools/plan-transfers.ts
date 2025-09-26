@@ -8,7 +8,7 @@ import type {
 } from '@agoric/portfolio-api/src/constants.js';
 import { throwRedacted as Fail } from '@endo/errors';
 import { objectMap } from '@endo/patterns';
-import type { MovementDesc } from './type-guards-steps.ts';
+import type { MovementDesc } from '../src/type-guards-steps.ts';
 import { planRebalanceFlow } from './plan-solve.js';
 import { PROD_NETWORK } from './network/network.prod.js';
 /**

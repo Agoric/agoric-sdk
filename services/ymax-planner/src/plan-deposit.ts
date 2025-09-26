@@ -4,21 +4,21 @@ import {
   type PoolPlaceInfo,
   type StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.js';
+import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
 import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import { Fail, q, X } from '@endo/errors';
-import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
 // import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
-import { PROD_NETWORK } from '@aglocal/portfolio-contract/src/network/network.prod.js';
-import { planRebalanceFlow } from '@aglocal/portfolio-contract/src/plan-solve.js';
 import type {
   AssetPlaceRef,
   MovementDesc,
 } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
-import type { NetworkSpec } from '@aglocal/portfolio-contract/src/network/network-spec.js';
-import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
+import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
+import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
+import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
 import type { CosmosRestClient } from './cosmos-rest-client.js';
+import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 
 const getOwn = <O, K extends PropertyKey>(
   obj: O,

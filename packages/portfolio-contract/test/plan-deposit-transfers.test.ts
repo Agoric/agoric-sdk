@@ -3,7 +3,7 @@ import { AmountMath, type Brand } from '@agoric/ertp';
 import { Far } from '@endo/pass-style';
 import type { TargetAllocation } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { makeTracer } from '@agoric/internal';
-import { planDepositTransfers } from '../src/plan-transfers.ts';
+import { planDepositTransfers } from '../tools/plan-transfers.ts';
 
 const brand = Far('mock brand') as Brand<'nat'>;
 const trace = makeTracer('planDepositTransfers');
