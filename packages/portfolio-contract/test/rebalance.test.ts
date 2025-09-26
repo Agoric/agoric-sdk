@@ -627,7 +627,7 @@ testWithAllModes(
   },
 );
 
-test.failing('solver differentiates cheapest vs. fastest', async t => {
+test('solver differentiates cheapest vs. fastest', async t => {
   const network: NetworkSpec = {
     debug: true,
     environment: 'test',
@@ -699,7 +699,7 @@ test.failing('solver differentiates cheapest vs. fastest', async t => {
     feeBrand: FEE_BRAND,
     gasEstimator,
   });
-  t.like(cheapResult.flows.map(flow => flow.edge).sort(compareFlowEdges), [
+  t.like(fastResult.flows.map(flow => flow.edge).sort(compareFlowEdges), [
     { src: '+agoric', dest: '@agoric', via: 'local' },
     { src: '@agoric', dest: '@External', via: 'fast' },
     { src: '@External', dest: 'Sink_External', via: 'local' },
