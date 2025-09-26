@@ -1,9 +1,9 @@
 import test from 'ava';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
-import type { NetworkSpec } from '../../src/network/network-spec.js';
-import { makeGraphFromDefinition } from '../../src/network/buildGraph.js';
-import { planRebalanceFlow } from '../../src/plan-solve.js';
+import type { NetworkSpec } from '../../tools/network/network-spec.js';
+import { makeGraphFromDefinition } from '../../tools/network/buildGraph.js';
+import { planRebalanceFlow } from '../../tools/plan-solve.js';
 
 const brand = Far('TestBrand') as any;
 const feeBrand = Far('TestFeeBrand') as any;

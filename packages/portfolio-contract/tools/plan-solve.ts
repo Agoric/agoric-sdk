@@ -12,8 +12,8 @@ import {
   typedEntries,
 } from '@agoric/internal';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
-import { PoolPlaces, type PoolKey } from './type-guards.js';
-import type { AssetPlaceRef, MovementDesc } from './type-guards-steps.js';
+import { PoolPlaces, type PoolKey } from '../src/type-guards.js';
+import type { AssetPlaceRef, MovementDesc } from '../src/type-guards-steps.js';
 import type {
   FeeMode,
   NetworkSpec,
