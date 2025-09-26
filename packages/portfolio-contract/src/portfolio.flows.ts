@@ -6,7 +6,11 @@
  */
 import type { GuestInterface } from '@agoric/async-flow';
 import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
-import { makeTracer, type TraceLogger } from '@agoric/internal';
+import {
+  deeplyFulfilledObject,
+  makeTracer,
+  type TraceLogger,
+} from '@agoric/internal';
 import type {
   AccountId,
   Denom,
@@ -63,7 +67,7 @@ import {
 } from './type-guards.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
-const { keys, entries } = Object;
+const { keys, entries, fromEntries } = Object;
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
@@ -84,10 +88,11 @@ type PortfolioBootstrapContext = PortfolioInstanceContext & {
   makePortfolioKit: () => GuestInterface<PortfolioKit>;
 };
 
+type EVMAccounts = Partial<Record<AxelarChain, GMPAccountInfo>>;
 type AccountsByChain = {
   agoric: AccountInfoFor['agoric'];
   noble?: AccountInfoFor['noble'];
-} & Partial<Record<AxelarChain, GMPAccountInfo>>;
+} & EVMAccounts;
 
 type AssetMovement = {
   how: string;
@@ -677,16 +682,22 @@ const stepFlow = async (
     }
   }
 
-  const acctDests = [
+  const acctsDone = keys(kit.reader.accountIdByChain());
+  const acctsToDo = [
     ...new Set(
-      moves.map(({ dest }) => getChainNameOfPlaceRef(dest)).filter(Boolean),
+      (
+        moves
+          .map(({ dest }) => getChainNameOfPlaceRef(dest))
+          .filter(Boolean) as string[]
+      ).filter(ch => !acctsDone.includes(ch)),
     ),
   ];
-  traceFlow('provideAccounts', ...acctDests);
+
+  traceFlow('provideAccounts', ...acctsToDo);
   reporter.publishFlowStatus(flowId, {
     state: 'run',
     step: 0,
-    how: `provideAccounts(${acctDests.join(', ')})`,
+    how: `makeAccounts(${acctsToDo.join(', ')})`,
   });
   reporter.publishFlowSteps(
     flowId,
@@ -716,35 +727,41 @@ const stepFlow = async (
     }
   };
 
-  const evmAccts = await (async () => {
+  const evmAcctInfo = await (async () => {
     const axelar = await orch.getChain('axelar');
     const { axelarIds } = ctx;
+    const gmpCommon = { chain: axelar, axelarIds };
 
-    const chainToAcct: Partial<Record<AxelarChain, GMPAccountInfo>> = {};
-    const evmChains = Object.keys(AxelarChain) as unknown[];
+    const evmChains = keys(AxelarChain) as unknown[];
+    const asEntry = <K, V>(k: K, v: V): [K, V] => [k, v];
 
-    for (const move of moves) {
-      const gmp = {
-        chain: axelar,
-        fee: move.fee?.value || 0n,
-        axelarIds,
-        evmGas: move.detail?.evmGas || 0n,
-      };
-      const ref = move.dest;
-      const maybeChain = getChainNameOfPlaceRef(ref);
-      if (!evmChains.includes(maybeChain)) continue;
-      const chain = maybeChain as AxelarChain;
-      const info = await forChain(chain, () =>
-        provideEVMAccount(chain, gmp, agoric.lca, ctx, kit),
-      );
-      chainToAcct[chain] = info;
-    }
-    return harden(chainToAcct);
+    const seen = new Set<AxelarChain>();
+    const chainToAcctP = moves.flatMap(move =>
+      [move.src, move.dest].flatMap(ref => {
+        const maybeChain = getChainNameOfPlaceRef(ref);
+        if (!evmChains.includes(maybeChain)) return [];
+        const chain = maybeChain as AxelarChain;
+        if (seen.has(chain)) return [];
+        seen.add(chain);
+
+        const gmp = {
+          ...gmpCommon,
+          fee: move.fee?.value || 0n,
+          evmGas: move.detail?.evmGas || 0n,
+        };
+
+        const acctP = forChain(chain, () =>
+          provideEVMAccount(chain, gmp, agoric.lca, ctx, kit),
+        );
+        return [asEntry(chain, acctP)];
+      }),
+    );
+    return deeplyFulfilledObject(harden(fromEntries(chainToAcctP)));
   })();
 
-  traceFlow('EVM accounts ready', keys(evmAccts));
+  traceFlow('EVM accounts ready', keys(evmAcctInfo));
   const nobleMentioned = moves.some(m => [m.src, m.dest].includes('@noble'));
-  const nobleInfo = await (nobleMentioned || keys(evmAccts).length > 0
+  const nobleInfo = await (nobleMentioned || keys(evmAcctInfo).length > 0
     ? forChain('noble', () =>
         provideCosmosAccount(orch, 'noble', kit, traceFlow),
       )
@@ -752,7 +769,7 @@ const stepFlow = async (
   const accounts: AccountsByChain = {
     agoric,
     ...(nobleInfo && { noble: nobleInfo }),
-    ...evmAccts,
+    ...evmAcctInfo,
   };
   traceFlow('accounts for trackFlow', keys(accounts));
 
