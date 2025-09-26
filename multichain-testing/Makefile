@@ -149,7 +149,7 @@ sstart:
 # YMax testing for https://github.com/Agoric/agoric-sdk/issues/11536
 
 deploy-ymax: poc-asset agoricNames.chain
-	$(TESTYMAX) test/ymax0 -m ymax-deployed || \
+	$(TESTYMAX) test/$(CONTRACT_INSTANCE) -m ymax-deployed || \
 	( 	(cd ../packages/portfolio-deploy; yarn build) && \
 		./scripts/deploy-cli.ts ../packages/portfolio-deploy/src/portfolio.build.js)
 
@@ -170,40 +170,40 @@ TRADER1ag=agoric1yupasge4528pgkszg9v328x4faxtkldsnygwjl
 TRADER1_MNEMONIC = "cause eight cattle slot course mail more aware vapor slab hobby match"
 
 poc-asset: beneficiary-wallet
-	$(TESTYMAX) test/ymax0 -m poc-asset || \
+	$(TESTYMAX) test/$(CONTRACT_INSTANCE) -m poc-asset || \
 	./scripts/deploy-cli.ts ../packages/portfolio-deploy/src/access-token-setup.build.js \
 		beneficiary=$(TRADER1ag)
 
 # Calling ./scripts/ymax-tool.ts twice to create a smart wallet so that TRADER1
 # can receive the poc tokens
 beneficiary-wallet: ./scripts/ymax-tool.ts
-	$(TESTYMAX) test/ymax0 -m beneficiary-wallet || \
+	$(TESTYMAX) test/$(CONTRACT_INSTANCE) -m beneficiary-wallet || \
 	(make ADDR=$(TRADER1ag) fund-wallet && \
 	MNEMONIC=$(TRADER1_MNEMONIC) ./scripts/ymax-tool.ts 0.1 --exit-success --skip-poll && \
 	MNEMONIC=$(TRADER1_MNEMONIC) ./scripts/ymax-tool.ts 0.1 --exit-success)
 
 
 agoricNames.chain:
-	$(TESTYMAX) test/ymax0 -m chain-info || \
+	$(TESTYMAX) test/$(CONTRACT_INSTANCE) -m chain-info || \
 	./scripts/deploy-cli.ts ../packages/portfolio-deploy/src/chain-info.build.js \
 		net=local peer=noble:connection-0:channel-0:uusdc
 
 ##
 # Using ymax
 open-with-usdn: deploy-ymax usdc-available ./scripts/ymax-tool.ts
-	(MNEMONIC=$(TRADER1_MNEMONIC) ./scripts/ymax-tool.ts 1.03)
+	(MNEMONIC=$(TRADER1_MNEMONIC) ./scripts/ymax-tool.ts $(CONTRACT_FLAG) 1.03)
 
 usdc-available: ./scripts/noble-usdn-lab.ts
-	$(TESTYMAX) test/ymax0 -m usdc-available || \
+	$(TESTYMAX) test/$(CONTRACT_INSTANCE) -m usdc-available || \
 	( \
 		FAUCET=trader1 NET=starship ./scripts/noble-usdn-lab.ts && \
 		TXFR=9950000 NET=starship ./scripts/noble-usdn-lab.ts && \
 		( \
-			$(TESTYMAX) test/ymax0 -m usdc-available || { \
+			$(TESTYMAX) test/$(CONTRACT_INSTANCE) -m usdc-available || { \
 				sleep 3 && \
-				$(TESTYMAX) test/ymax0 -m usdc-available || { \
+				$(TESTYMAX) test/$(CONTRACT_INSTANCE) -m usdc-available || { \
 					sleep 5 && \
-					$(TESTYMAX) test/ymax0 -m usdc-available; \
+					$(TESTYMAX) test/$(CONTRACT_INSTANCE) -m usdc-available; \
 				}; \
 			} \
 		) \
@@ -212,23 +212,29 @@ usdc-available: ./scripts/noble-usdn-lab.ts
 
 DEPLOY=../packages/portfolio-deploy
 
-,ymax0-bundle-id: $(DEPLOY)/dist/bundle-ymax0.json
-	(echo -n b1-; jq -r .endoZipBase64Sha512 $(DEPLOY)/dist/bundle-ymax0.json) >$@
+# Contract instance to use (defaults to ymax0 if not set)
+CONTRACT_INSTANCE ?= ymax0
 
-$(DEPLOY)/dist/bundle-ymax0.json: $(DEPLOY)/dist/portfolio.contract.bundle.js
+clean-ymax:
+	rm -rf $(DEPLOY)/dist/
+
+,$(CONTRACT_INSTANCE)-bundle-id: $(DEPLOY)/dist/bundle-$(CONTRACT_INSTANCE).json
+	(printf "b1-"; jq -r .endoZipBase64Sha512 $(DEPLOY)/dist/bundle-$(CONTRACT_INSTANCE).json) >$@
+
+$(DEPLOY)/dist/bundle-$(CONTRACT_INSTANCE).json: $(DEPLOY)/dist/portfolio.contract.bundle.js
 	(cd $(DEPLOY); \
-	 npx bundle-source --cache-json dist/ ./dist/portfolio.contract.bundle.js ymax0)
+	 npx bundle-source --cache-json dist/ ./dist/portfolio.contract.bundle.js $(CONTRACT_INSTANCE))
 
 $(DEPLOY)/dist/portfolio.contract.bundle.js:
 	(cd $(DEPLOY); yarn build)
 
 PUBLISHER=gov2.devnet
-publish-ymax0: ,ymax0-installed
+publish-ymax: ,$(CONTRACT_INSTANCE)-installed
 
 AGORIC_NET ?= devnet
 YMAX_TOOL=./scripts/ymax-tool.ts
 
-,ymax0-installed: $(DEPLOY)/dist/bundle-ymax0.json
+,$(CONTRACT_INSTANCE)-installed: $(DEPLOY)/dist/bundle-$(CONTRACT_INSTANCE).json
 	agd keys --keyring-backend=test show $(PUBLISHER)
 	AGORIC_NET=devnet ./scripts/install-bundle.ts $< >$@ || (rm $@; false)
 
@@ -236,35 +242,42 @@ YMAX_TOOL=./scripts/ymax-tool.ts
 	@echo "Using AGORIC_NET=$(AGORIC_NET)"
 	AGORIC_NET=$(AGORIC_NET) $(YMAX_TOOL) --buildEthOverrides >$@ || (rm $@; false)
 
-yctrl-redeploy: ,ymax0-deployed
+yctrl-redeploy: ,$(CONTRACT_INSTANCE)-deployed
 
-REASON=
 NETCONFIG=https://devnet.agoric.net/network-config
-,ymax0-deployed: $(DEPLOY)/dist/bundle-ymax0.json ,ymax0-bundle-id ,ymax0-installed ,privateArgsOverrides.json
+CONTRACT_FLAG=--contract=$(CONTRACT_INSTANCE)
+
+,$(CONTRACT_INSTANCE)-deployed: $(DEPLOY)/dist/bundle-$(CONTRACT_INSTANCE).json ,$(CONTRACT_INSTANCE)-bundle-id ,$(CONTRACT_INSTANCE)-installed ,privateArgsOverrides.json
 	@[ -n "$$MNEMONIC" ] || (echo "ymaxControl MNEMONIC not set; see gov keys sheet"; false)
-	if [ -n "$$REASON" ]; then AGORIC_NET=devnet ./scripts/ymax-tool.ts --terminate "$(REASON)"; else true; fi
-	AGORIC_NET=devnet ./scripts/ymax-tool.ts --installAndStart $$(cat ,ymax0-bundle-id) <,privateArgsOverrides.json
+	if [ -n "$$REASON" ]; then AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --terminate "$(REASON)"; else true; fi
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --installAndStart $$(cat ,$(CONTRACT_INSTANCE)-bundle-id) <,privateArgsOverrides.json
 	agoric follow -B $(NETCONFIG) -lF :published.agoricNames.instance >$@ || (rm $@; false)
 
-,creatorFacet: ,ymax0-deployed
-	AGORIC_NET=devnet ./scripts/ymax-tool.ts --getCreatorFacet
+,upgrade: $(DEPLOY)/dist/bundle-$(CONTRACT_INSTANCE).json ,$(CONTRACT_INSTANCE)-bundle-id ,$(CONTRACT_INSTANCE)-installed
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --upgrade $$(cat ,$(CONTRACT_INSTANCE)-bundle-id)
+
+,creatorFacet: ,$(CONTRACT_INSTANCE)-deployed
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --getCreatorFacet
 	touch $@
 
+##
+# Introduce parties (planner and resolver) for contract instances
 introduce-parties: ,invitePlanner ,inviteResolver
 
 # see gov keys sheet
 PLANNER ?= agoric140yw0u2qrvmrgp33ejpddgnrwpm74vpfpx5v7n
+
 ,invitePlanner: ,creatorFacet
-	AGORIC_NET=devnet ./scripts/ymax-tool.ts --invitePlanner $(PLANNER)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --invitePlanner $(PLANNER)
 	touch $@
-	@echo now use planner MNEMONIC: ymax-tool.ts --redeem --description planner
+	@echo now use planner MNEMONIC: ymax-tool.ts $(CONTRACT_FLAG) --redeem --description planner
 
 RESOLVER ?= $(PLANNER)
 ,inviteResolver: ,creatorFacet
 	AGORIC_NET=$(AGORIC_NET) \
-		$(YMAX_TOOL) --inviteResolver $(RESOLVER)
+		$(YMAX_TOOL) $(CONTRACT_FLAG) --inviteResolver $(RESOLVER)
 	touch $@
-	@echo now use resolver MNEMONIC: ymax-tool.ts --redeem --description resolver
+	@echo now use resolver MNEMONIC: ymax-tool.ts $(CONTRACT_FLAG) --redeem --description resolver
 
 check-vstorage: ,vstorage-outdated-$(AGORIC_NET).json
 
@@ -273,13 +286,41 @@ check-vstorage: ,vstorage-outdated-$(AGORIC_NET).json
 	AGORIC_NET=$(AGORIC_NET) $(YMAX_TOOL) --checkStorage >$@ || \
 		(rm $@; false)
 
-# TODO: get from vstorage
-FEE_ACCT=agoric1rqqy9r0s4ahl8agr89f200gch78hnef3jckf4vntqe4p67rsxegs9qpzjw
 DEV_NODE=https://devnet.rpc.agoric.net:443
 SIG_OPTS=--chain-id=agoricdev-25 --gas-adjustment=1.5 --gas=auto
 fund-fee-acct:
-	agd tx bank send gov1.devnet $(FEE_ACCT) 120000000ubld -y -b block --node=$(DEV_NODE) $(SIG_OPTS)
+	$(eval FEE_ACCT := $(shell agd q vstorage data published.$(CONTRACT_INSTANCE) --node $(DEV_NODE) -o json | jq -r '.value | fromjson | .values[0] | fromjson | .body | fromjson | .contractAccount'))
+	@echo "Funding fee account: $(FEE_ACCT)"
+	agd tx bank send gov1.devnet $(FEE_ACCT) 120000000ubld --keyring-backend test -y -b block --node=$(DEV_NODE) $(SIG_OPTS)
 
-aave-e2e:
+aave-eth:
 	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
-	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Aave":0.1}' --target-allocation '{"Aave_Ethereum":100}'
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --positions '{"Aave":0.1}' --target-allocation '{"Aave_Ethereum":100}'
+
+compound-eth:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --positions '{"Compound":1.25}' --target-allocation '{"Compound_Ethereum":100}'
+
+compound-withdraw:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --withdraw-from-compound
+
+aave-ava:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --positions '{"Aave":0.1}' --target-allocation '{"Aave_Avalanche":100}'
+
+aave-arb:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --positions '{"Aave":0.1}' --target-allocation '{"Aave_Arbitrum":100}'
+
+compound-arb:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --positions '{"Compound":0.1}' --target-allocation '{"Compound_Arbitrum":100}'
+
+aave-base:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --positions '{"Aave":0.1}' --target-allocation '{"Aave_Base":100}'
+
+compound-base:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --positions '{"Compound":0.1}' --target-allocation '{"Compound_Base":100}'
