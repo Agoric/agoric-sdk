@@ -3,31 +3,32 @@ import { Fail } from '@endo/errors';
 
 // adapted from 'netstring-stream', https://github.com/tlivings/netstring-stream/
 import { Transform } from 'stream';
+import { concatUint8Arrays, fromString, toString, isUint8Array } from './uint8array-utils.js';
 
 const COLON = 58;
 const COMMA = 44;
 
 /**
- * @param {Buffer} data
- * @returns {Buffer} netstring-wrapped
+ * @param {Uint8Array} data
+ * @returns {Uint8Array} netstring-wrapped
  */
 export function encode(data) {
-  const prefix = Buffer.from(`${data.length}:`);
-  const suffix = Buffer.from(',');
-  return Buffer.concat([prefix, data, suffix]);
+  const prefix = fromString(`${data.length}:`);
+  const suffix = fromString(',');
+  return concatUint8Arrays([prefix, data, suffix]);
 }
 
 // input is a sequence of strings, output is a byte pipe
 export function netstringEncoderStream() {
   /**
-   * @param {Buffer} chunk
+   * @param {Uint8Array} chunk
    * @param {BufferEncoding} encoding
    * @param {any} callback
-   * @this {{ push: (b: Buffer) => void }}
+   * @this {{ push: (b: Uint8Array) => void }}
    */
   function transform(chunk, encoding, callback) {
-    if (!Buffer.isBuffer(chunk)) {
-      throw Error('stream requires Buffers');
+    if (!isUint8Array(chunk)) {
+      throw Error('stream requires Uint8Arrays');
     }
     let err;
     try {
@@ -37,17 +38,17 @@ export function netstringEncoderStream() {
     }
     callback(err);
   }
-  // (maybe empty) Buffer in, Buffer out. We use writableObjectMode to
+  // (maybe empty) Uint8Array in, Uint8Array out. We use writableObjectMode to
   // indicate that empty input buffers are important
   return new Transform({ transform, writableObjectMode: true });
 }
 
 /**
- * @param {Buffer} data containing zero or more netstrings and maybe some
+ * @param {Uint8Array} data containing zero or more netstrings and maybe some
  *   leftover bytes
  * @param {number} [optMaxChunkSize]
- * @returns {{ leftover: Buffer; payloads: Buffer[] }} zero or more decoded
- *   Buffers, one per netstring,
+ * @returns {{ leftover: Uint8Array; payloads: Uint8Array[] }} zero or more decoded
+ *   Uint8Arrays, one per netstring,
  */
 export function decode(data, optMaxChunkSize) {
   // TODO: it would be more efficient to accumulate pending data in an array,
@@ -60,7 +61,7 @@ export function decode(data, optMaxChunkSize) {
     if (colon === -1) {
       break; // still waiting for `${LENGTH}:`
     }
-    const sizeString = data.toString('utf-8', start, colon);
+    const sizeString = toString(data.subarray(start, colon));
     const size = parseInt(sizeString, 10);
     if (!(size > -1)) {
       // reject NaN, all negative numbers
@@ -87,21 +88,21 @@ export function decode(data, optMaxChunkSize) {
  * @param {number} [optMaxChunkSize]
  * @returns {Transform}
  */
-// input is a byte pipe, output is a sequence of Buffers
+// input is a byte pipe, output is a sequence of Uint8Arrays
 export function netstringDecoderStream(optMaxChunkSize) {
-  /** @type {Buffer<ArrayBufferLike>} */
-  let buffered = Buffer.from('');
+  /** @type {Uint8Array} */
+  let buffered = new Uint8Array(0);
   /**
-   * @param {Buffer} chunk
+   * @param {Uint8Array} chunk
    * @param {BufferEncoding} encoding
    * @param {any} callback
-   * @this {{ push: (b: Buffer) => void }}
+   * @this {{ push: (b: Uint8Array) => void }}
    */
   function transform(chunk, encoding, callback) {
-    if (!Buffer.isBuffer(chunk)) {
-      throw Error('stream requires Buffers');
+    if (!isUint8Array(chunk)) {
+      throw Error('stream requires Uint8Arrays');
     }
-    buffered = Buffer.concat([buffered, chunk]);
+    buffered = concatUint8Arrays([buffered, chunk]);
     let err;
     try {
       const { leftover, payloads } = decode(buffered, optMaxChunkSize);
@@ -118,7 +119,7 @@ export function netstringDecoderStream(optMaxChunkSize) {
     callback(err);
   }
 
-  // Buffer in, Buffer out, except that each output Buffer is precious, even
+  // Uint8Array in, Uint8Array out, except that each output Uint8Array is precious, even
   // empty ones, and without readableObjectMode the Stream will discard empty
   // buffers
   return new Transform({ transform, readableObjectMode: true });
