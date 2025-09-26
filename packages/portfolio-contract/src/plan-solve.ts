@@ -3,12 +3,15 @@ import { AmountMath } from '@agoric/ertp';
 import type { NatAmount } from '@agoric/ertp/src/types.js';
 
 import { Fail } from '@endo/errors';
+import makeHighsSolver from 'highs';
 import jsLPSolver from 'javascript-lp-solver';
 import type { IModel, IModelVariableConstraint } from 'javascript-lp-solver';
 import {
   makeTracer,
   naturalCompare,
   objectMap,
+  partialMap,
+  provideLazyMap,
   typedEntries,
 } from '@agoric/internal';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
@@ -24,6 +27,8 @@ import {
   preflightValidateNetworkPlan,
   formatInfeasibleDiagnostics,
 } from './graph-diagnose.js';
+
+const highsSolverP = makeHighsSolver();
 
 const replaceOrInit = <K, V>(
   map: Map<K, V>,
@@ -267,7 +272,9 @@ export const buildLPModel = (
 
   const intVariables = {} as Record<`via_${string}`, IntVar>;
   const binaryVariables = {} as Record<`pick_${string}`, BinaryVar>;
-  const constraints = {} as Record<string, IModelVariableConstraint>;
+  const couplingConstraints = {} as Record<string, IModelVariableConstraint>;
+  const throughputConstraints = {} as Record<string, IModelVariableConstraint>;
+  const netFlowConstraints = {} as Record<string, IModelVariableConstraint>;
   let minPrimaryWeight = Infinity;
   for (const edge of graph.edges) {
     const { id, src, dest } = edge;
@@ -303,8 +310,8 @@ export const buildLPModel = (
     };
     intVariables[`via_${id}`] = intVar;
 
-    constraints[`allow_${id}`] = { min: 0 };
-    constraints[`through_${id}`] = { max: capacity };
+    couplingConstraints[`allow_${id}`] = { min: 0 };
+    throughputConstraints[`through_${id}`] = { max: capacity };
 
     const binaryVar = {
       [`allow_${id}`]: 1e9,
@@ -336,16 +343,20 @@ export const buildLPModel = (
   // Constrain the net flow from each node.
   for (const node of graph.nodes) {
     const supply = graph.supplies[node] || 0;
-    constraints[`netOut_${node}`] = { equal: supply };
+    netFlowConstraints[`netOut_${node}`] = { equal: supply };
   }
 
   return {
-    optimize: 'weight',
     opType: 'min',
-    constraints,
-    variables: { ...intVariables, ...binaryVariables },
+    optimize: 'weight',
+    constraints: {
+      ...couplingConstraints,
+      ...throughputConstraints,
+      ...netFlowConstraints,
+    },
     binaries: objectMap(binaryVariables, () => true),
     ints: objectMap(intVariables, () => true),
+    variables: { ...binaryVariables, ...intVariables },
   };
 };
 
@@ -372,32 +383,92 @@ const prettyJsonable = (obj: unknown): string => {
   return pretty;
 };
 
-// solveRebalance: use javascript-lp-solver directly
+const cplexLpOpForName = { min: '>=', max: '<=', equal: '=' };
+
+/**
+ * Convert a javascript-lp-solver Model into CPLEX LP format.
+ * https://lim.univ-reunion.fr/staff/fred/Enseignement/Optim/doc/CPLEX-LP/CPLEX-LP-file-format.html
+ */
+const toCplexLpText = (model: LpModel) => {
+  const variableEntries = typedEntries(model.variables);
+  const makeSumExpr = attr =>
+    partialMap(variableEntries, ([varName, attrs]) => {
+      const attrValue = Object.hasOwn(attrs, attr) ? attrs[attr] : 0;
+      if (attrValue) return `${attrValue === 1 ? '' : attrValue} ${varName}`;
+    }).join(' + ');
+  // Variables [and constraints] can be named anything provided that the
+  // **name does not exceed 16 characters**.
+  const mappedAttrs = new Map();
+  const mode: 'MIN' | 'MAX' = model.opType.toUpperCase();
+  const text = `
+${mode}
+  ${model.optimize}: ${makeSumExpr(model.optimize)}
+SUBJECT TO
+  ${typedEntries(model.constraints)
+    .flatMap(([attr, constraint]) => {
+      let attrParts = attr.split('_');
+      if (attrParts[0] === 'through') {
+        attrParts[0] = 'thru';
+      } else if (attrParts[0] !== 'allow') {
+        // Replace everything after the first "_" with a unique counter.
+        attrParts = [
+          attrParts[0],
+          provideLazyMap(mappedAttrs, attr, () => mappedAttrs.size + 1),
+        ];
+      }
+      const prefix = attrParts.join('_');
+      const lines = [`\\# ${attr} ${prettyJsonable(constraint)}`];
+      for (const [opName, value] of Object.entries(constraint)) {
+        const label = `${prefix}_${opName.slice(0, 3)}`;
+        const op = cplexLpOpForName[opName];
+        lines.push(`${label}: ${makeSumExpr(attr)} ${op} ${value}`);
+      }
+      return lines;
+    })
+    .join('\n  ')}
+BINARY
+  ${Object.keys(model.binaries).join(' ')}
+GENERAL
+  ${Object.keys(model.ints).join(' ')}
+END`.trim();
+  return `${text}\n`;
+};
+
 // This operation is async to allow future use of async solvers if needed
 export const solveRebalance = async (
   model: LpModel,
   graph: RebalanceGraph,
-): Promise<SolvedEdgeFlow[]> => {
-  const result = jsLPSolver.Solve(model, 1e-6);
-  if (result.feasible !== true) {
+): Promise<{ flows: SolvedEdgeFlow[]; detail?: Record<string, unknown> }> => {
+  const cplexLpText = toCplexLpText(model);
+  const matrixResult = await Promise.resolve(highsSolverP)
+    .then(solver => solver.solve(cplexLpText))
+    .catch(error => ({ Status: undefined, error }));
+  if (matrixResult.Status !== 'Optimal') {
+    // Switch to javascript-lp-solver for diagnostics.
+    const jsResult = jsLPSolver.Solve(model, 1e-9);
     if (graph.debug) {
       // Emit richer context only on demand to avoid noisy passing runs
+      const { error } = matrixResult as any;
+      if (error) {
+        console.error('[CPLEX LP solver] Error:', error.message, cplexLpText);
+        throw Fail`Invalid CPLEX LP model: ${error.message}`;
+      }
       let msg = formatInfeasibleDiagnostics(graph, model);
-      msg += ` | ${prettyJsonable(result)}`;
+      msg += ` | ${prettyJsonable(jsResult)}`;
       console.error('[solver] No feasible solution. Diagnostics:', msg);
       throw Fail`No feasible solution: ${msg}`;
     }
-    throw Fail`No feasible solution: ${result}`;
+    throw Fail`No feasible solution: ${jsResult}`;
   }
   const flows: SolvedEdgeFlow[] = [];
   for (const edge of graph.edges) {
     const { id } = edge;
     const flowKey = `via_${id}`;
-    const flow = Object.hasOwn(result, flowKey) ? result[flowKey] : undefined;
-    const used = (flow ?? 0) > FLOW_EPS || result[`pick_${id}`];
+    const flow = matrixResult.Columns[flowKey]?.Primal;
+    const used = (flow ?? 0) > FLOW_EPS;
     if (used) flows.push({ edge, flow, used: true });
   }
-  return flows;
+  return { flows, detail: { cplexLpText, matrixResult } };
 };
 
 export const rebalanceMinCostFlowSteps = async (
@@ -555,17 +626,18 @@ export const planRebalanceFlow = async (opts: {
   );
 
   const model = buildLPModel(graph, mode);
-  let flows;
+  let result;
   await null;
   try {
-    flows = await solveRebalance(model, graph);
+    result = await solveRebalance(model, graph);
   } catch (err) {
     // If the solver says infeasible, try to produce a clearer message
     preflightValidateNetworkPlan(network as any, current as any, target as any);
     throw err;
   }
+  const { flows, detail } = result;
   const steps = await rebalanceMinCostFlowSteps(flows, graph, gasEstimator);
-  return harden({ graph, model, flows, steps });
+  return harden({ graph, model, flows, steps, detail });
 };
 
 const chainOf = (id: AssetPlaceRef): string => {
