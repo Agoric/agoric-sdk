@@ -386,6 +386,10 @@ export const preparePortfolioKit = (
         getTargetAllocation() {
           return this.state.targetAllocation;
         },
+        accountIdByChain() {
+          const { accounts } = this.state;
+          return accountIdByChain(accounts);
+        },
       },
       reporter: {
         publishStatus() {
