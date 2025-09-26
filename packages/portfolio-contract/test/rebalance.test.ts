@@ -350,8 +350,6 @@ testWithAllModes(
     });
     await assertSteps(t, steps, [
       { src: '<Deposit>', dest: '@agoric', amount: token(100n) },
-      // TODO dckc should this  go through +agoric?
-      // { src: '+agoric', dest: '@agoric', amount: token(100n) },
       { src: '@agoric', dest: '@noble', amount: token(100n) },
       {
         src: '@noble',

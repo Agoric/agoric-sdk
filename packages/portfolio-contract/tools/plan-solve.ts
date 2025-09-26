@@ -158,16 +158,15 @@ export const buildBaseGraph = (
     if (delta !== 0n) supplies[node] = Number(delta);
   }
 
-  // Intra-chain edges (leaf <-> hub)
+  // Ensure intra-chain edges (leaf <-> hub)
   let eid = 0;
   const vf = 1; // direct variable fee per unit
   const tf = 1; // time cost unit (seconds or abstract)
   for (const node of nodes) {
-    if (isHub(node)) continue;
-
     const chainName = chainOf(node);
     const hub = `@${chainName}` as AssetPlaceRef;
-    if (node === hub) continue;
+    // Skip hubs and agoric-local places (which are connected unidirectionally).
+    if (node === hub || hub === '@agoric') continue;
 
     const chainIsEvm = Object.keys(AxelarChain).includes(chainName);
     const base: Omit<FlowEdge, 'src' | 'dest' | 'id'> = {
@@ -585,7 +584,6 @@ const chainOf = (id: AssetPlaceRef): string => {
   }
   throw Fail`Cannot determine chain for ${id}`;
 };
-const isHub = (id: AssetPlaceRef): boolean => id.startsWith('@');
 
 // ---------------------------- Example (commented) ----------------------------
 /*

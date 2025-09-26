@@ -105,16 +105,16 @@ export const makeGraphFromDefinition = (
     edges.push({ id: 'TBD', src, dest, ...dataAttrs });
   };
 
-  // Ensure intra-Agoric links with 0 fee / 0 time:
+  // Ensure unidirectional intra-Agoric links with 0 fee / 0 time:
   // <Deposit> -> +agoric -> @agoric -> <Cash>
-  // eslint-disable-next-line github/array-foreach
-  (['<Deposit>', '+agoric', '@agoric', '<Cash>'] as AssetPlaceRef[]).forEach(
-    (dest, i, arr) => {
-      const src: AssetPlaceRef | undefined = i === 0 ? undefined : arr[i - 1];
-      if (!src || !graph.nodes.has(src) || !graph.nodes.has(dest)) return;
-      addOrReplaceEdge(src, dest);
-    },
-  );
+  // plus a special <Deposit> -> @agoric bypass.
+  const agoricLinks = (
+    ['<Deposit>', '+agoric', '@agoric', '<Cash>'] as AssetPlaceRef[]
+  ).map((dest, i, arr) => (i === 0 ? [dest, arr[2]] : [arr[i - 1], dest]));
+  for (const [src, dest] of agoricLinks) {
+    if (!graph.nodes.has(src) || !graph.nodes.has(dest)) continue;
+    addOrReplaceEdge(src, dest);
+  }
 
   // Override the base graph with inter-hub links from spec.
   for (const link of spec.links) {
