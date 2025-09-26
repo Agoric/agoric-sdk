@@ -171,11 +171,12 @@ const processPortfolioEvents = async (
       const { depositAddress } = status;
       if (!depositAddress) return;
       setPortfolioKeyForDepositAddr(depositAddress, portfolioKey);
-      // TODO: Detect and address unhandled `status.policyVersion`.
-      // https://github.com/Agoric/agoric-sdk/issues/11805
-      // https://github.com/Agoric/agoric-sdk/pull/11917
-      const needsAction = true;
-      if (needsAction) {
+      // If rebalanceCount is 0, then no plan has been submitted for this
+      // policyVersion so we synthesize an activity record for its deposit
+      // address to trigger a rebalance.
+      // Otherwise, we assume that the update was a response to such a
+      // submission and take no further action here.
+      if (status.rebalanceCount === 0) {
         deferrals.push({
           blockHeight: eventRecord.blockHeight,
           type: 'transfer' as const,
