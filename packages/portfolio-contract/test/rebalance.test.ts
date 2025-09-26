@@ -8,14 +8,15 @@ import type {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import { Far } from '@endo/marshal';
+import type { PoolKey } from '../src/type-guards.js';
+import type { AssetPlaceRef } from '../src/type-guards-steps.js';
 import type {
   NetworkSpec,
   TransferProtocol,
 } from '../tools/network/network-spec.js';
+import type { FlowEdge } from '../tools/network/buildGraph.js';
 import { planRebalanceFlow } from '../tools/plan-solve.js';
-import type { FlowEdge, RebalanceMode } from '../tools/plan-solve.js';
-import type { PoolKey } from '../src/type-guards.js';
-import type { AssetPlaceRef } from '../src/type-guards-steps.js';
+import type { RebalanceMode } from '../tools/plan-solve.js';
 import { TEST_NETWORK } from './network/test-network.js';
 import { gasEstimator } from './mocks.js';
 
