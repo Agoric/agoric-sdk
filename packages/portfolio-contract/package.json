@@ -51,6 +51,7 @@
     "@endo/marshal": "^1.8.0",
     "@endo/pass-style": "^1.6.3",
     "@endo/patterns": "^1.7.0",
+    "highs": "^1.8.0",
     "javascript-lp-solver": "^0.4.24",
     "viem": "^2.31.0"
   },
