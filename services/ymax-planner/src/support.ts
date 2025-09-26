@@ -53,7 +53,7 @@ export const getEvmRpcMap = (
         // Source: https://build.avax.network/docs/tooling/rpc-providers#http
         'eip155:43114': 'https://api.avax.network/ext/bc/C/rpc',
         // Source: https://docs.arbitrum.io/build-decentralized-apps/reference/node-providers
-        'eip155:42161': 'https://arb1.arbitrum.io/rpc',
+        'eip155:42161': `https://arb-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://docs.optimism.io/superchain/networks
         'eip155:10': 'https://mainnet.optimism.io',
         'eip155:8453': `https://base-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
