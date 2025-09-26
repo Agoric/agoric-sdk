@@ -32,19 +32,18 @@ const USCALE = 1_000_000n;
 // Shared Tok brand + helper
 const { brand: TOK_BRAND } = (() => ({ brand: Far('USD*') as Brand<'nat'> }))();
 const { brand: FEE_BRAND } = (() => ({ brand: Far('BLD') as Brand<'nat'> }))();
-const token = (v: bigint) => AmountMath.make(TOK_BRAND, v);
-const fee = (v: bigint) => AmountMath.make(FEE_BRAND, v);
+const token = (v: bigint) => AmountMath.make(TOK_BRAND, v * USCALE);
 const ZERO = token(0n);
-const fixedFee = fee(30_000_000n);
+const fixedFee = AmountMath.make(FEE_BRAND, 30n * USCALE);
+const subtract5bps = (scaled: bigint) => (scaled * USCALE * 9995n) / 10000n;
 
 const formatAmount = ({ brand, value }) => {
-  if (brand === TOK_BRAND) return `¤${value}`;
-  if (brand === FEE_BRAND) {
-    const intPart = Number(value / USCALE);
-    const fracPart = Number(value - BigInt(intPart) * USCALE) / Number(USCALE);
-    return `${intPart + fracPart}bld`;
-  }
-  return `${value} ${brand[Symbol.toStringTag].replace(/^Alleged: /, '')}`;
+  const intPart = Number(value / USCALE);
+  const fracPart = Number(value - BigInt(intPart) * USCALE) / Number(USCALE);
+  const scaledValue = intPart + fracPart;
+  if (brand === TOK_BRAND) return `$${scaledValue}`;
+  const prettyBrand = brand[Symbol.toStringTag].replace(/^Alleged: /, '');
+  return `${scaledValue} ${prettyBrand}`;
 };
 
 // Pools
@@ -479,7 +478,7 @@ testWithAllModes(
         src: '@noble',
         dest: USDN,
         amount: token(500n),
-        detail: { usdnOut: 499n },
+        detail: { usdnOut: subtract5bps(500n) },
       },
       {
         src: '@noble',
@@ -540,7 +539,7 @@ testWithAllModes(
         src: '@noble',
         dest: USDN,
         amount: token(120n),
-        detail: { usdnOut: 119n },
+        detail: { usdnOut: subtract5bps(120n) },
       },
       {
         src: '@noble',
@@ -589,7 +588,7 @@ testWithAllModes(
         src: '@noble',
         dest: USDN,
         amount: token(1000n),
-        detail: { usdnOut: 999n },
+        detail: { usdnOut: subtract5bps(1000n) },
       },
     ]);
   },
