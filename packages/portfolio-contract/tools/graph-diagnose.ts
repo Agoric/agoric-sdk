@@ -8,7 +8,11 @@ import { provideLazyMap } from '@agoric/internal/src/js-utils.js';
 
 import type { NetworkSpec } from './network/network-spec.js';
 import type { RebalanceGraph, LpModel } from './plan-solve.js';
-import { PoolPlaces, type PoolKey, type PoolPlaceInfo } from './type-guards.js';
+import {
+  PoolPlaces,
+  type PoolKey,
+  type PoolPlaceInfo,
+} from '../src/type-guards.js';
 
 /**
  * Build human-readable diagnostics for infeasible models.

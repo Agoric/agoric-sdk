@@ -1,7 +1,7 @@
 import { AmountMath } from '@agoric/ertp';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import type { PoolKey } from '@aglocal/portfolio-contract/src/type-guards';
-import type { AssetPlaceRef } from './type-guards-steps.ts';
+import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
 
 /**
  * Compare two nat-based amounts of the same brand.
