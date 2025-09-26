@@ -77,7 +77,7 @@ export const makeGraphFromDefinition = (
 
   // Force the presence of particular edges.
   const edges = [...graph.edges] as Array<FlowEdge | undefined>;
-  const capacityDefault = 9_007_199_254_740_000; // not quite MAX_SAFE_INTEGER
+  const capacityDefault = 1e15; // not quite MAX_SAFE_INTEGER
   const addOrReplaceEdge = (
     src: AssetPlaceRef,
     dest: AssetPlaceRef,
