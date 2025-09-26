@@ -13,7 +13,7 @@ import { loadConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { startEngine } from './engine.ts';
-import { createEVMContext } from './support.ts';
+import { createEVMContext, verifyEvmChains } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 
 const assertChainId = async (
@@ -87,6 +87,10 @@ export const main = async (
     clusterName,
     alchemyApiKey: config.alchemyApiKey,
   });
+
+  // Verify Alchemy chain availability - throws if any chain fails
+  console.warn('Verifying EVM chain connectivity...');
+  await verifyEvmChains(evmCtx.evmProviders);
 
   const powers = {
     evmCtx,

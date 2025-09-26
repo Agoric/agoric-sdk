@@ -17,6 +17,7 @@ import {
   type PendingTx,
   type TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import {
   PoolPlaces,
   PortfolioStatusShapeExt,
@@ -37,7 +38,6 @@ import { getCurrentBalance, handleDeposit } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import {
   handlePendingTx,
-  TX_TIMEOUT_MS,
   type EvmContext,
   type HandlePendingTxOpts,
 } from './pending-tx-manager.ts';
@@ -246,6 +246,7 @@ export const processPendingTxEvents = async (
       const streamCell = parseStreamCell(cellJson, path);
       const value = parseStreamCellValue(streamCell, -1, path);
       data = marshaller.fromCapData(value);
+      if (data?.status !== TxStatus.PENDING) continue;
       mustMatch(data, PublishedTxShape, `${path} index -1`);
       const tx = { txId, ...data } as PendingTx;
       log('New pending tx', tx);
@@ -281,7 +282,7 @@ export const processInitialPendingTransactions = async (
   txPowers: HandlePendingTxOpts,
   handlePendingTxFn = handlePendingTx,
 ) => {
-  const { error = () => {}, log = () => {}, cosmosRpc, now } = txPowers;
+  const { error = () => {}, log = () => {}, cosmosRpc } = txPowers;
 
   log(`Processing ${initialPendingTxData.length} pending transactions`);
 
@@ -305,19 +306,14 @@ export const processInitialPendingTransactions = async (
       error(msg, err);
     });
     if (timestampMs === undefined) return;
-    const ageMs = now() - timestampMs;
-    const isOld = ageMs >= TX_TIMEOUT_MS;
-    const ageMinutes = Math.round(ageMs / 60000);
-    const suffix = isOld ? ' with lookback' : '';
-    log(`Processing pending tx ${tx.txId} (age: ${ageMinutes}min)${suffix}`);
+
+    log(`Processing pending tx ${tx.txId} with lookback`);
     // TODO: Optimize blockchain scanning by reusing state across transactions.
     // For details, see: https://github.com/Agoric/agoric-sdk/issues/11945
-    void handlePendingTxFn(tx, txPowers, isOld ? timestampMs : undefined).catch(
-      err => {
-        const msg = ` Failed to process pending tx ${tx.txId}${suffix}`;
-        error(msg, pendingTxRecord, err);
-      },
-    );
+    void handlePendingTxFn(tx, txPowers, timestampMs).catch(err => {
+      const msg = ` Failed to process pending tx ${tx.txId} with lookback`;
+      error(msg, pendingTxRecord, err);
+    });
   }).done;
 };
 
@@ -477,6 +473,7 @@ export const startEngine = async (
       const streamCell = parseStreamCell(streamCellJson.value, path);
       const marshalledData = parseStreamCellValue(streamCell, -1, path);
       data = marshaller.fromCapData(marshalledData);
+      if (data?.status !== TxStatus.PENDING) return;
       mustMatch(harden(data), PublishedTxShape, path);
       initialPendingTxData.push({
         blockHeight: BigInt(streamCell.blockHeight),
@@ -489,6 +486,7 @@ export const startEngine = async (
   }).done;
 
   if (initialPendingTxData.length > 0) {
+    // Process initial transactions in lookback mode upon planner startup
     await processInitialPendingTransactions(initialPendingTxData, txPowers);
   }
 
