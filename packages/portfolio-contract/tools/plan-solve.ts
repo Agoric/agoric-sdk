@@ -170,7 +170,7 @@ export const buildBaseGraph = (
 
     const chainIsEvm = Object.keys(AxelarChain).includes(chainName);
     const base: Omit<FlowEdge, 'src' | 'dest' | 'id'> = {
-      capacity: (Number.MAX_SAFE_INTEGER + 1) / 4,
+      capacity: 1e15,
       variableFee: vf,
       fixedFee: 0,
       timeFixed: tf,
@@ -294,7 +294,7 @@ export const buildLPModel = (
       // A negative value for `allow_${id}` forces the solution to include 1
       // `pick_${id}` (and the corresponding fixed costs) in order to satisfy
       // that attribute's min: 0 constraint below.
-      [`allow_${id}`]: -1,
+      [`allow_${id}`]: -1e-6,
       [`through_${id}`]: 1,
       [`netOut_${src}`]: 1,
       [`netOut_${dest}`]: -1,
@@ -307,7 +307,7 @@ export const buildLPModel = (
     constraints[`through_${id}`] = { max: capacity };
 
     const binaryVar = {
-      [`allow_${id}`]: Number.MAX_SAFE_INTEGER,
+      [`allow_${id}`]: 1e9,
       magnifiedFlatFee,
       timeFixed,
       weight: 0, // increased below
