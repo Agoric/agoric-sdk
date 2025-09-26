@@ -189,7 +189,6 @@ export type HandlePendingTxOpts = {
   log?: (...args: unknown[]) => void;
   error?: (...args: unknown[]) => void;
   marshaller: SigningSmartWalletKit['marshaller'];
-  now: typeof Date.now;
   registry?: MonitorRegistry;
   timeoutMs?: number;
 } & EvmContext;
