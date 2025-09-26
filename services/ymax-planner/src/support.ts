@@ -56,8 +56,8 @@ export const getEvmRpcMap = (
         'eip155:43114': `https://avax-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source:  https://www.alchemy.com/rpc/arbitrum
         'eip155:42161': `https://arb-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
-        // Source: https://docs.optimism.io/superchain/networks
-        'eip155:10': 'https://mainnet.optimism.io',
+        // Source: https://www.alchemy.com/rpc/optimism
+        'eip155:10': `https://opt-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/base
         'eip155:8453': `https://base-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
       };
@@ -69,7 +69,8 @@ export const getEvmRpcMap = (
         'eip155:43113': `https://avax-fuji.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/arbitrum-sepolia
         'eip155:421614': `https://arb-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
-        'eip155:11155420': 'https://optimism-sepolia-rpc.publicnode.com',
+        // Source: https://www.alchemy.com/rpc/optimism-sepolia
+        'eip155:11155420': `https://opt-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/base-sepolia
         'eip155:84532': `https://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
       };

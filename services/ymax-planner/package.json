@@ -17,8 +17,7 @@
     "lint:eslint": "yarn run -T eslint src/",
     "lint:types": "yarn run -T tsc",
     "test": "ava",
-    "test:xs": "exit 0",
-    "resolve": "node --import ts-blank-space/register ./src/resolve-manually.ts"
+    "test:xs": "exit 0"
   },
   "keywords": [
     "agoric",
