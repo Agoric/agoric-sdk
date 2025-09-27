@@ -1042,8 +1042,11 @@ test('withdraw using planner', async t => {
   })();
 
   const plannerP = (async () => {
-    const { flowsRunning, policyVersion, rebalanceCount } =
-      await trader1.getPortfolioStatus();
+    const {
+      flowsRunning = {},
+      policyVersion,
+      rebalanceCount,
+    } = await trader1.getPortfolioStatus();
     t.log('flowsRunning', flowsRunning);
     t.is(keys(flowsRunning).length, 1);
     const [[flowId, detail]] = Object.entries(flowsRunning);
