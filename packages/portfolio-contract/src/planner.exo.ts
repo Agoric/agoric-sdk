@@ -3,6 +3,7 @@
  * @see {@link preparePlanner}
  */
 import { makeTracer } from '@agoric/internal';
+import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { type Vow, VowShape, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
@@ -10,6 +11,7 @@ import { M } from '@endo/patterns';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import type { MovementDesc, OfferArgsFor } from './type-guards-steps.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
+import type { ChainHub } from '@agoric/orchestration';
 
 const trace = makeTracer('PPLN');
 
@@ -28,6 +30,7 @@ export const preparePlanner = (
     getPortfolio,
     shapes,
     vowTools,
+    chainHubTools,
   }: {
     rebalance: (
       seat: ZCFSeat,
@@ -37,7 +40,8 @@ export const preparePlanner = (
     zcf: ZCF;
     getPortfolio: (id: number) => PortfolioKit;
     shapes: ReturnType<typeof makeOfferArgsShapes>;
-    vowTools: Pick<VowTools, 'asVow'>;
+    vowTools: Pick<VowTools, 'asVow' | 'when'>;
+    chainHubTools: Pick<ChainHub, 'getChainInfo'>;
   },
 ) => {
   const { movementDescShape } = shapes;
@@ -48,6 +52,11 @@ export const preparePlanner = (
       M.number(),
       M.number(),
     ).returns(VowShape),
+    UNSAFEresolveEVMAddress: M.callWhen(
+      M.number(),
+      M.string(),
+      M.string(),
+    ).returns(),
   });
 
   return zone.exoClass('Planner', PlannerI, () => ({}), {
@@ -76,6 +85,27 @@ export const preparePlanner = (
         pKit.manager.submitVersion(policyVersion, rebalanceCount);
         const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
         return rebalance(emptySeat, { flow: plan }, pKit);
+      });
+    },
+
+    /** KLUDGE - contract MUST NOT rely on planner for authentic remoteAddress */
+    async UNSAFEresolveEVMAddress(
+      portfolioId: number,
+      chainName: AxelarChain,
+      remoteAddress: `0x${string}`,
+    ) {
+      assert(remoteAddress.startsWith('0x'));
+      const pKit = getPortfolio(portfolioId);
+
+      const { namespace, reference } = await vowTools.when(
+        chainHubTools.getChainInfo(chainName),
+      );
+
+      pKit.manager.resolveAccount({
+        namespace: 'eip155',
+        chainName,
+        chainId: `${namespace}:${reference}`,
+        remoteAddress,
       });
     },
   });
