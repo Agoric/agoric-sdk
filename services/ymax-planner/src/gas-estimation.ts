@@ -17,15 +17,10 @@ export const makeGasEstimator = ({
   fetchFunc: typeof fetch;
   axelarChainIdMap: Record<AxelarChain, string>;
 }) => {
-  axelarApiAddress.endsWith('/') ||
-    Fail`Axelar API address must end with a slash: ${axelarApiAddress}`;
-  try {
-    // eslint-disable-next-line no-new
-    new URL(axelarApiAddress);
-  } catch {
+  URL.canParse(axelarApiAddress) ||
     Fail`Invalid Axelar API address: ${axelarApiAddress}`;
-  }
-  const axelarEstimateGasAddress = `${axelarApiAddress}gmp/estimateGasFee`;
+  // Allow trailing slashes in `axelarApiAddress`.
+  const axelarEstimateGasAddress = `${axelarApiAddress.replace(/\/*$/, '')}/gmp/estimateGasFee`;
 
   const queryAxelarGasAPI = async (
     sourceChainName: AxelarChain | 'agoric',
