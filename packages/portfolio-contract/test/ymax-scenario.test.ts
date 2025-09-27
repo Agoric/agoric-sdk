@@ -25,7 +25,7 @@ import {
   makeUSDNIBCTraffic,
   portfolio0lcaOrch,
 } from './mocks.ts';
-import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
+import { getResolverService, settleTransaction } from './resolver-helpers.ts';
 
 // Use an EVM chain whose axelar ID differs from its chain name
 const { sourceChain } = evmNamingDistinction;
@@ -105,24 +105,24 @@ const rebalanceScenarioMacro = test.macro({
         await eventLoopIteration();
         if (move.dest === '@Arbitrum') {
           // Also confirm CCTP transaction for flows to Arbitrum
-          const resolverMakers = await getResolverMakers(
+          const resolverService = await getResolverService(
             zoe,
             started.creatorFacet,
           );
-          await settleTransaction(zoe, resolverMakers, index, 'success');
+          await settleTransaction(resolverService, index, 'success');
           index += 1;
         }
         if (move.src === '@Arbitrum') {
-          const resolverMakers = await getResolverMakers(
+          const resolverService = await getResolverService(
             zoe,
             started.creatorFacet,
           );
-          await settleTransaction(zoe, resolverMakers, index, 'success');
+          await settleTransaction(resolverService, index, 'success');
           index += 1;
           if (move.dest === '@noble') {
             await transmitVTransferEvent('acknowledgementPacket', -1);
             // Also confirm Noble transaction for flows to Noble
-            await settleTransaction(zoe, resolverMakers, index, 'success');
+            await settleTransaction(resolverService, index, 'success');
             index += 1;
           }
         }
