@@ -150,6 +150,8 @@ export const buildLPModel = (
     const { id, src, dest } = edge;
     const { capacity, variableFee, fixedFee = 0, timeFixed = 0 } = edge;
 
+    throughputConstraints[`through_${id}`] = { min: 0, max: capacity };
+
     // The numbers in graph.supplies should use the same units as fixedFee, but
     // variableFee is in basis points relative to some scaling of those other
     // values.
@@ -167,11 +169,19 @@ export const buildLPModel = (
     const magnifiedVariableFee = variableFee / 10_000;
     const magnifiedFlatFee = fixedFee * 1e6;
 
+    // Dynamic costs for this edge are associated with the numeric `via_${id}`
+    // variable, and fixed costs are associated with the binary `pick_${id}`.
+    // We couple them together with a shared `allow_${id}` attribute that has a
+    // tiny negative value for the former and an enormous positive value for the
+    // latter, and a constraint that the total sum be non-negative.
+    // So any `via_${id}` dynamic flow requires activation of `pick_${id}`,
+    // which adds enough `allow_${id}` to cover all of the flow.
+    couplingConstraints[`allow_${id}`] = { min: 0 };
+    const FORCE_PICK = -1e-6;
+    const COVER_FLOW = 1e9;
+
     const intVar: IntVar = {
-      // A negative value for `allow_${id}` forces the solution to include 1
-      // `pick_${id}` (and the corresponding fixed costs) in order to satisfy
-      // that attribute's min: 0 constraint below.
-      [`allow_${id}`]: -1e-6,
+      [`allow_${id}`]: FORCE_PICK,
       [`through_${id}`]: 1,
       [`netOut_${src}`]: 1,
       [`netOut_${dest}`]: -1,
@@ -180,11 +190,8 @@ export const buildLPModel = (
     };
     intVariables[`via_${id}`] = intVar;
 
-    couplingConstraints[`allow_${id}`] = { min: 0 };
-    throughputConstraints[`through_${id}`] = { max: capacity };
-
     const binaryVar = {
-      [`allow_${id}`]: 1e9,
+      [`allow_${id}`]: COVER_FLOW,
       magnifiedFlatFee,
       timeFixed,
       weight: 0, // increased below
