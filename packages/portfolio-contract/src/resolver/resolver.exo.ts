@@ -118,6 +118,7 @@ export const prepareResolverKit = (
         .detached()
         .mapStore<TxId, TransactionEntry>('transactionRegistry'),
       index: 0,
+      etc: undefined,
     }),
     {
       client: {

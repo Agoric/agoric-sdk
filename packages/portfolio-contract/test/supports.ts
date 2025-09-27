@@ -1,6 +1,12 @@
 import { makeReceiveUpCallPayload } from '@aglocal/boot/tools/axelar-supports.ts';
+import type { VstorageKit } from '@agoric/client-utils';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { makeIssuerKit } from '@agoric/ertp';
+import {
+  defaultMarshaller,
+  type FakeStorageKit,
+} from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   denomHash,
   withChainCapabilities,
@@ -10,7 +16,10 @@ import {
 } from '@agoric/orchestration';
 import { type DenomDetail } from '@agoric/orchestration/src/exos/chain-hub.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { setupOrchestrationTest } from '@agoric/orchestration/tools/contract-tests.ts';
+import {
+  ROOT_STORAGE_PATH,
+  setupOrchestrationTest,
+} from '@agoric/orchestration/tools/contract-tests.ts';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { makeNameHubKit } from '@agoric/vats';
@@ -19,6 +28,7 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import { encodeAbiParameters } from 'viem';
+import type { StatusFor } from '../src/type-guards.ts';
 import { gmpAddresses } from './mocks.ts';
 
 export const makeIncomingEVMEvent = ({
@@ -84,6 +94,53 @@ export const makeIncomingVTransferEvent = ({
     sourceChannel,
     destinationChannel,
     memo,
+  });
+};
+
+const vstoragePendingWrites = eventLoopIteration;
+
+const getCapDataStructure = cell => {
+  const { body, slots } = JSON.parse(cell);
+  const structure = JSON.parse(body.replace(/^#/, ''));
+  return { structure, slots };
+};
+
+export const makeStorageTools = (storage: FakeStorageKit) => {
+  const readPublished = (async path => {
+    await vstoragePendingWrites();
+    return defaultMarshaller.fromCapData(
+      JSON.parse(
+        storage.getValues(`${ROOT_STORAGE_PATH}.${path}`).at(-1) || '',
+      ),
+    );
+  }) as VstorageKit['readPublished'];
+
+  const readLegible = async (path: string) => {
+    await vstoragePendingWrites();
+    return getCapDataStructure(storage.getValues(path).at(-1));
+  };
+
+  const getPortfolioStatus = async (pId: number) => {
+    await vstoragePendingWrites();
+    return storage
+      .getDeserialized(`published.ymax0.portfolios.portfolio${pId}`)
+      .at(-1) as StatusFor['portfolio'];
+  };
+
+  const getFlowStatus = async (pId: number, fId: number) => {
+    await vstoragePendingWrites();
+    return storage
+      .getDeserialized(
+        `published.ymax0.portfolios.portfolio${pId}.flows.flow${fId}`,
+      )
+      .at(-1) as StatusFor['flow'];
+  };
+
+  return harden({
+    readPublished,
+    readLegible,
+    getPortfolioStatus,
+    getFlowStatus,
   });
 };
 
