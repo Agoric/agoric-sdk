@@ -516,7 +516,7 @@ test('open portfolio with USDN position', async t => {
   await documentStorageSchema(t, storage, docOpts);
 
   const { getPortfolioStatus } = makeStorageTools(storage);
-  const { flowsRunning } = await getPortfolioStatus(1);
+  const { flowsRunning = {} } = await getPortfolioStatus(1);
   t.deepEqual(flowsRunning, {}, 'all flows are done by now');
 });
 
@@ -1177,7 +1177,7 @@ test('withdraw in coordination with planner', async t => {
   })();
 
   const plannerP = (async () => {
-    const { flowsRunning } = await getPortfolioStatus(portfolioId);
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
     const [[flowId, detail]] = Object.entries(flowsRunning);
     t.log('planner found', { portfolioId, flowId, detail });
 

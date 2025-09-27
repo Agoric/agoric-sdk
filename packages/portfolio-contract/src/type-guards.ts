@@ -244,9 +244,13 @@ export const portfolioIdOfPath = (path: string | string[]) => {
 };
 
 export type FlowDetail =
-  | { type: 'deposit'; amount: NatAmount }
   | { type: 'withdraw'; amount: NatAmount }
   | { type: 'other' }; // refine to deposit etc.?
+
+export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
+  { type: 'withdraw', amount: AnyNatAmountShape },
+  { type: 'other' },
+);
 
 type FlowStatus =
   | { state: 'run'; step: number; how: string }
@@ -275,9 +279,6 @@ export type StatusFor = {
   };
   portfolio: {
     positionKeys: PoolKeyExt[];
-    /** @deprecated in favor of flowsRunning */
-    flowCount: number;
-    flowsRunning: Record<number, FlowDetail>;
     accountIdByChain: Record<ChainNameExt, AccountId>;
     accountsPending?: SupportedChain[];
     depositAddress?: Bech32Address;
@@ -317,6 +318,7 @@ export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
       depositAddress: M.string(), // XXX no runtime validation of Bech32Address
       targetAllocation: TargetAllocationShapeExt,
       accountsPending: M.arrayOf(ChainNameExtShape),
+      flowsRunning: M.recordOf(M.string(), FlowDetailShape),
     },
   );
 
