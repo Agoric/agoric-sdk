@@ -54,19 +54,16 @@ export interface SolvedEdgeFlow {
 export type LpModel = IModel<string, string>;
 
 /**
- * Link to Factory and Wallet contracts:
- * https://github.com/agoric-labs/agoric-to-axelar-local/blob/cd6087fa44de3b019b2cdac6962bb49b6a2bc1ca/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol
- *
- * Gas estimation interface -
- *   @see {@link ../../../services/ymax-planner/src/gas-estimation.ts}
- * - getFactoryContractEstimate: Estimate gas fees for executing the factory
- *   contract to create a wallet on the specified chain
+ * Gas estimation interface:
+ * - getFactoryContractEstimate: Estimate gas fees for executing the
+ *   [Factory Contract]{@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/cd6087fa44de3b019b2cdac6962bb49b6a2bc1ca/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol}
+ *   to create a wallet on the specified chain
  * - getReturnFeeEstimate: Estimate return fees for sending a transaction back
  *   from the factory contract to Agoric
  * - getWalletEstimate: Estimate gas fees for remote wallet operations on the
  *   specified chain
  */
-type GasEstimator = {
+export type GasEstimator = {
   getWalletEstimate: (chainName: AxelarChain) => Promise<bigint>;
   getFactoryContractEstimate: (chainName: AxelarChain) => Promise<bigint>;
   getReturnFeeEstimate: (chainName: AxelarChain) => Promise<bigint>;

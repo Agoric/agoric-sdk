@@ -1,11 +1,10 @@
 import { Fail, q } from '@endo/errors';
+import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants';
 import { gasLimitEstimates } from './support.ts';
 
 const AGORIC_CHAIN = 'agoric';
 const BLD_TOKEN = 'ubld';
-
-export type GasEstimator = ReturnType<typeof makeGasEstimator>;
 
 export const makeGasEstimator = ({
   axelarApiAddress,
@@ -15,7 +14,7 @@ export const makeGasEstimator = ({
   axelarApiAddress: string;
   fetchFunc: typeof fetch;
   axelarChainIdMap: Record<AxelarChain, string>;
-}) => {
+}): GasEstimator => {
   URL.canParse(axelarApiAddress) ||
     Fail`Invalid Axelar API address: ${axelarApiAddress}`;
   // Allow trailing slashes in `axelarApiAddress`.
