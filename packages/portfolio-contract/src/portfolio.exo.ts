@@ -104,6 +104,8 @@ type PortfolioKitState = {
   targetAllocation?: TargetAllocation;
   policyVersion: number;
   rebalanceCount: number;
+  /** reserved for future use */
+  etc: unknown;
 };
 
 /**
@@ -269,6 +271,7 @@ export const preparePortfolioKit = (
         targetAllocation: undefined,
         policyVersion: 0,
         rebalanceCount: 0,
+        etc: undefined,
       };
     },
     {
