@@ -35,12 +35,13 @@ import { M } from '@endo/patterns';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.js';
 import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
-import type { makeOfferArgsShapes } from './type-guards-steps.js';
+import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
 import {
   makeFlowPath,
   makeFlowStepsPath,
   makePortfolioPath,
   PoolKeyShapeExt,
+  type FlowDetail,
   type makeProposalShapes,
   type OfferArgsFor,
   type PoolKey,
@@ -98,10 +99,13 @@ type PortfolioKitState = {
   accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
   accounts: MapStore<SupportedChain, AccountInfo>;
   positions: MapStore<PoolKey, Position>;
+  flowsRunning: MapStore<number, { sync: VowKit<MovementDesc[]> } & FlowDetail>;
   nextFlowId: number;
   targetAllocation?: TargetAllocation;
   policyVersion: number;
   rebalanceCount: number;
+  /** reserved for future use */
+  etc: unknown;
 };
 
 /**
@@ -135,6 +139,21 @@ const accountIdByChain = (
   return harden(byChain);
 };
 
+const { fromEntries } = Object;
+
+/** publish everyting about flowsRunning but the sync VowKit */
+const makeFlowsRunningRecord = (
+  flowsRunning: PortfolioKitState['flowsRunning'],
+): StatusFor['portfolio']['flowsRunning'] =>
+  harden(
+    fromEntries(
+      [...flowsRunning.entries()].map(([num, { sync: _s, ...data }]) => [
+        `flow${num}`,
+        data,
+      ]),
+    ),
+  );
+
 export type PublishStatusFn = <K extends keyof StatusFor>(
   path: string[],
   status: StatusFor[K],
@@ -151,6 +170,7 @@ export const preparePortfolioKit = (
     axelarIds,
     gmpAddresses,
     rebalance,
+    withdraw,
     parseInboundTransfer,
     chainHubTools,
     proposalShapes,
@@ -167,7 +187,8 @@ export const preparePortfolioKit = (
       seat: ZCFSeat,
       offerArgs: OfferArgsFor['rebalance'],
       kit: unknown, // XXX avoid circular reference
-    ) => Vow<any>; // XXX HostForGuest???
+    ) => Vow<unknown>; // XXX HostForGuest???
+    withdraw: (seat: ZCFSeat, kit: unknown) => Vow<unknown>;
     parseInboundTransfer: (
       packet: VTransferIBCEvent['packet'],
       kit: unknown, // XXX avoid circular reference to this.facets
@@ -229,6 +250,10 @@ export const preparePortfolioKit = (
       return {
         portfolioId,
         nextFlowId: 1,
+        flowsRunning: zone.detached().mapStore('flowsRunning', {
+          keyShape: M.number(),
+          valueShape: M.record(),
+        }),
         accounts: zone.detached().mapStore('accounts', {
           keyShape: M.string(),
           valueShape: M.or(
@@ -246,6 +271,7 @@ export const preparePortfolioKit = (
         targetAllocation: undefined,
         policyVersion: 0,
         rebalanceCount: 0,
+        etc: undefined,
       };
     },
     {
@@ -398,6 +424,7 @@ export const preparePortfolioKit = (
             positions,
             accounts,
             nextFlowId,
+            flowsRunning,
             targetAllocation,
             accountsPending,
             policyVersion,
@@ -412,6 +439,7 @@ export const preparePortfolioKit = (
           publishStatus(makePortfolioPath(portfolioId), {
             positionKeys: [...positions.keys()],
             flowCount: nextFlowId - 1,
+            flowsRunning: makeFlowsRunningRecord(flowsRunning),
             accountIdByChain: accountIdByChain(accounts),
             ...(accounts.has('agoric') ? deposit() : {}),
             ...(targetAllocation && { targetAllocation }),
@@ -420,11 +448,10 @@ export const preparePortfolioKit = (
             rebalanceCount,
           });
         },
-        allocateFlowId() {
-          const { nextFlowId } = this.state;
-          this.state.nextFlowId = nextFlowId + 1;
+        finishFlow(flowId) {
+          const { flowsRunning } = this.state;
+          flowsRunning.delete(flowId);
           this.facets.reporter.publishStatus();
-          return nextFlowId;
         },
         // XXX collecting flow nodes is TBD
         publishFlowSteps(id: number, steps: StatusFor['flowSteps']) {
@@ -434,6 +461,22 @@ export const preparePortfolioKit = (
         publishFlowStatus(id: number, status: StatusFor['flow']) {
           const { portfolioId } = this.state;
           publishStatus(makeFlowPath(portfolioId, id), status);
+        },
+      },
+      planner: {
+        submitVersion(versionPre: number, countPre: number) {
+          const { policyVersion, rebalanceCount } = this.state;
+          policyVersion === versionPre ||
+            Fail`expected policyVersion ${policyVersion}; got ${versionPre}`;
+          rebalanceCount === countPre ||
+            Fail`expected rebalanceCount ${rebalanceCount}; got ${countPre}`;
+          this.state.rebalanceCount += 1;
+          this.facets.reporter.publishStatus();
+        },
+        resolveFlowPlan(flowId: number, steps: MovementDesc[]) {
+          const { flowsRunning } = this.state;
+          const detail = flowsRunning.get(flowId);
+          detail.sync.resolver.resolve(steps);
         },
       },
       manager: {
@@ -492,6 +535,14 @@ export const preparePortfolioKit = (
             this.facets.reporter.publishStatus();
           }
         },
+        startFlow(detail: FlowDetail) {
+          const { nextFlowId, flowsRunning } = this.state;
+          this.state.nextFlowId = nextFlowId + 1;
+          const sync: VowKit<MovementDesc[]> = vowTools.makeVowKit();
+          flowsRunning.init(nextFlowId, harden({ sync, ...detail }));
+          this.facets.reporter.publishStatus();
+          return { stepsP: sync.vow, flowId: nextFlowId };
+        },
         providePosition(
           poolKey: PoolKey,
           protocol: YieldProtocol,
@@ -522,15 +573,6 @@ export const preparePortfolioKit = (
           this.state.rebalanceCount = 0;
           this.facets.reporter.publishStatus();
         },
-        submitVersion(versionPre: number, countPre: number) {
-          const { policyVersion, rebalanceCount } = this.state;
-          policyVersion === versionPre ||
-            Fail`expected policyVersion ${policyVersion}; got ${versionPre}`;
-          rebalanceCount === countPre ||
-            Fail`expected rebalanceCount ${rebalanceCount}; got ${countPre}`;
-          this.state.rebalanceCount += 1;
-          this.facets.reporter.publishStatus();
-        },
       },
       accountWatcher: {
         onRejected(reason, chainName) {
@@ -546,6 +588,11 @@ export const preparePortfolioKit = (
           return rebalance(seat, offerArgs, this.facets);
         },
       },
+      withdrawHandler: {
+        async handle(seat: ZCFSeat) {
+          return withdraw(seat, this.facets);
+        },
+      },
       invitationMakers: {
         Rebalance() {
           const { rebalanceHandler } = this.facets;
@@ -554,6 +601,15 @@ export const preparePortfolioKit = (
             'rebalance',
             undefined,
             proposalShapes.rebalance,
+          );
+        },
+        Withdraw() {
+          const { withdrawHandler } = this.facets;
+          return zcf.makeInvitation(
+            withdrawHandler,
+            'withdraw',
+            undefined,
+            proposalShapes.withdraw,
           );
         },
       },
