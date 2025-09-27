@@ -8,6 +8,7 @@ import { AmountMath, type Amount } from '@agoric/ertp';
 import type { AccountId } from '@agoric/orchestration';
 import type { Zone } from '@agoric/zone';
 import type { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';
+import { M } from '@endo/patterns';
 import { type PublishStatusFn } from './portfolio.exo.ts';
 import { makePositionPath, type PoolKey } from './type-guards.ts';
 
@@ -66,10 +67,12 @@ export const preparePosition = (
   zone: Zone,
   emptyTransferState: TransferStatus,
   publishStatus: PublishStatusFn,
-) =>
-  zone.exoClass(
+) => {
+  const PositionI = M.interface('Position', {}, { defaultGuards: 'passable' });
+  
+  return zone.exoClass(
     'Position',
-    undefined, // interface TODO
+    PositionI,
     (
       portfolioId: number,
       poolKey: PoolKey,
@@ -119,3 +122,4 @@ export const preparePosition = (
       },
     },
   );
+};
