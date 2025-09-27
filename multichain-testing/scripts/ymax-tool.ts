@@ -50,7 +50,6 @@ import type { NameHub } from '@agoric/vats';
 import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils';
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { M } from '@endo/patterns';
-import fsp from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import {
   reflectWalletStore,
@@ -377,7 +376,6 @@ const main = async (
     now = Date.now,
     stdin = process.stdin,
     stdout = process.stdout,
-    readFile = fsp.readFile,
   } = {},
 ) => {
   const { values } = parseToolArgs(argv);
