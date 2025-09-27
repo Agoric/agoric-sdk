@@ -28,8 +28,8 @@
     "@agoric/internal": "workspace:*",
     "@agoric/vats": "workspace:*",
     "@agoric/zoe": "workspace:*",
-    "@endo/errors": "^1.2.13",
-    "@endo/init": "^1.1.12"
+    "@endo/errors": "catalog:endo",
+    "@endo/init": "catalog:endo"
   },
   "files": [
     "CHANGELOG.md",

@@ -1,0 +1,46 @@
+diff --git a/dist/conventional-commits/recommend-version.js b/dist/conventional-commits/recommend-version.js
+index 3ca8a1e5fe62a9238529c1af5f45cfa128b54a20..11b2dfdbdd0613c675d39683c7d02d004bf4d1fd 100644
+--- a/dist/conventional-commits/recommend-version.js
++++ b/dist/conventional-commits/recommend-version.js
+@@ -46,6 +46,14 @@ export async function recommendVersion(pkg, type, recommendationOptions, premajo
+             const whatBumpFn = (await getWhatBump());
+             const bumpResult = (await bumper.bump(whatBumpFn));
+             let releaseType = (bumpResult?.releaseType || 'patch');
++            if (semver.major(pkg.version) === 0) {
++                if (releaseType === 'major') {
++                    releaseType = 'minor';
++                }
++                else if (premajorVersionBump === 'force-patch') {
++                    releaseType = 'patch';
++                }
++            }
+             if (prereleaseId) {
+                 const shouldBump = conventionalBumpPrerelease || shouldBumpPrerelease(releaseType, pkg.version);
+                 const prereleaseType = (shouldBump ? `pre${releaseType}` : 'prerelease');
+@@ -53,14 +61,6 @@ export async function recommendVersion(pkg, type, recommendationOptions, premajo
+                 resolve(applyBuildMetadata(semver.inc(pkg.version, prereleaseType, prereleaseId), buildMetadata));
+             }
+             else {
+-                if (semver.major(pkg.version) === 0) {
+-                    if (releaseType === 'major') {
+-                        releaseType = 'minor';
+-                    }
+-                    else if (premajorVersionBump === 'force-patch') {
+-                        releaseType = 'patch';
+-                    }
+-                }
+                 log.verbose(type, 'increment %s by %s - %s', pkg.version, releaseType, pkg.name);
+                 resolve(applyBuildMetadata(semver.inc(pkg.version, releaseType), buildMetadata));
+             }
+diff --git a/package.json b/package.json
+index 7e7ee59120fa432b617e28386d84eada2a38af8a..30105bccfb9aa1d001f55f7e2c7a8559aea27180 100644
+--- a/package.json
++++ b/package.json
+@@ -59,5 +59,6 @@
+     "write-json-file": "^7.0.0",
+     "zeptomatch": "^2.0.2"
+   },
+-  "gitHead": "4184b3d2179e30e474dc522f3052e170927b0fab"
++  "gitHead": "4184b3d2179e30e474dc522f3052e170927b0fab",
++  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+ }

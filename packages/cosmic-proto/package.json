@@ -183,8 +183,8 @@
     "@agoric/cosmos": "workspace:*",
     "@ava/typescript": "^5.0.0",
     "@cosmology/telescope": "^1.12.21",
-    "@endo/bundle-source": "^4.1.2",
-    "@endo/import-bundle": "^1.5.2",
+    "@endo/bundle-source": "catalog:endo",
+    "@endo/import-bundle": "catalog:endo",
     "ava": "^6.3.0",
     "glob": "^11.0.3",
     "rimraf": "^5.0.0",
@@ -193,8 +193,8 @@
     "typescript": "~5.9.2"
   },
   "dependencies": {
-    "@endo/base64": "^1.0.12",
-    "@endo/init": "^1.1.12",
+    "@endo/base64": "catalog:endo",
+    "@endo/init": "catalog:endo",
     "bech32": "^2.0.0",
     "query-string": "^9.1.1"
   },

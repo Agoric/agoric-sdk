@@ -14,7 +14,7 @@
     "test:ymax": "ava --config ava.ymd.config.js",
     "test:xcs": "ava --config ava.xcs.config.js"
   },
-  "packageManager": "yarn@4.9.3",
+  "packageManager": "yarn@4.10.3",
   "devDependencies": {
     "@agoric/cosmic-proto": "MULTICHAIN_TESTING",
     "@agoric/fast-usdc": "MULTICHAIN_TESTING",
