@@ -1,5 +1,5 @@
+import { Fail, q } from '@endo/errors';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants';
-import { Fail } from '@endo/errors';
 import { gasLimitEstimates } from './support.ts';
 
 const AGORIC_CHAIN = 'agoric';
@@ -7,7 +7,6 @@ const BLD_TOKEN = 'ubld';
 
 export type GasEstimator = ReturnType<typeof makeGasEstimator>;
 
-/** @see {@link https://docs.axelarscan.io/gmp#estimateGasFee} */
 export const makeGasEstimator = ({
   axelarApiAddress,
   fetchFunc,
@@ -22,6 +21,7 @@ export const makeGasEstimator = ({
   // Allow trailing slashes in `axelarApiAddress`.
   const axelarEstimateGasAddress = `${axelarApiAddress.replace(/\/*$/, '')}/gmp/estimateGasFee`;
 
+  /** @see {@link https://docs.axelarscan.io/gmp#estimateGasFee} */
   const queryAxelarGasAPI = async (
     sourceChainName: AxelarChain | 'agoric',
     destinationChainName: AxelarChain | 'agoric',
@@ -45,7 +45,8 @@ export const makeGasEstimator = ({
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const body = await response.text().catch(() => {});
+      Fail`HTTP ${q(response.status)} error! ${response} ${body}`;
     }
 
     const body = await response.text();
