@@ -32,6 +32,9 @@
   "devDependencies": {
     "@agoric/cosmic-swingset": "workspace:*",
     "@agoric/deploy-script-support": "workspace:*",
+    "@types/bn.js": "^5",
+    "@types/elliptic": "^6",
+    "@types/libsodium-wrappers-sumo": "^0",
     "ava": "^5.3.0",
     "c8": "^10.1.2"
   },
@@ -72,10 +75,13 @@
     "@endo/zip": "^1.0.11",
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",
+    "bn.js": "^5.2.2",
     "chalk": "^5.2.0",
     "commander": "^12.1.0",
     "deterministic-json": "^1.0.5",
+    "elliptic": "^6.6.1",
     "inquirer": "^8.2.2",
+    "libsodium-wrappers-sumo": "^0.7.15",
     "opener": "^1.5.2",
     "tmp": "^0.2.1",
     "ws": "^7.2.0"

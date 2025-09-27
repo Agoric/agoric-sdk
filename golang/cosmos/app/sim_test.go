@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	storetypes "cosmossdk.io/store/types"
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
 
 	"cosmossdk.io/store"
@@ -23,6 +22,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -43,6 +44,13 @@ const SimAppChainID = "simulation-app"
 // Get flags every time the simulator is run
 func init() {
 	simcli.GetSimulatorFlags()
+}
+
+// Create the wrapper using the appOptionsFn type
+type appOptionsFn func(string) any
+
+func (f appOptionsFn) Get(k string) any {
+	return f(k)
 }
 
 type StoreKeysPrefixes struct {
@@ -78,11 +86,14 @@ func TestFullAppSimulation(t *testing.T) {
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 
-	appOptions := make(simtestutil.AppOptionsMap, 0)
-	appOptions[flags.FlagHome] = DefaultNodeHome
-	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
+	appOptions := simtestutil.NewAppOptionsWithFlagHome(dir)
 
-	app := NewSimApp(logger, db, nil, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
+	var wasmOpts []wasmkeeper.Option
+
+	app := NewSimApp(
+		logger, db, nil, true, appOptions, wasmOpts,
+		fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID),
+	)
 	require.Equal(t, "SimApp", app.Name())
 
 	// run randomized simulation
@@ -123,11 +134,14 @@ func TestAppImportExport(t *testing.T) {
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 
-	appOptions := make(simtestutil.AppOptionsMap, 0)
-	appOptions[flags.FlagHome] = DefaultNodeHome
-	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
+	appOptions := simtestutil.NewAppOptionsWithFlagHome(dir)
 
-	app := NewSimApp(logger, db, nil, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
+	var wasmOpts []wasmkeeper.Option
+
+	app := NewSimApp(
+		logger, db, nil, true, appOptions, wasmOpts,
+		fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID),
+	)
 	require.Equal(t, "SimApp", app.Name())
 
 	// Run randomized simulation
@@ -167,7 +181,20 @@ func TestAppImportExport(t *testing.T) {
 		require.NoError(t, os.RemoveAll(newDir))
 	}()
 
-	newApp := NewSimApp(log.NewNopLogger(), newDB, nil, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
+	appOptsWithHome := simtestutil.NewAppOptionsWithFlagHome(newDir)
+	newAppOptions := appOptionsFn(func(k string) any {
+		switch k {
+		case server.FlagInvCheckPeriod:
+			return simcli.FlagPeriodValue
+		default:
+			return appOptsWithHome.Get(k)
+		}
+	})
+	newApp := NewSimApp(
+		log.NewNopLogger(), newDB, nil, true, newAppOptions, wasmOpts,
+		fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID),
+	)
+
 	require.Equal(t, "SimApp", newApp.Name())
 
 	var genesisState GenesisState
@@ -239,11 +266,23 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 
-	appOptions := make(simtestutil.AppOptionsMap, 0)
-	appOptions[flags.FlagHome] = DefaultNodeHome
-	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
+	appOptionWithHome := simtestutil.NewAppOptionsWithFlagHome(dir)
 
-	app := NewSimApp(logger, db, nil, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
+	appOptions := appOptionsFn(func(k string) any {
+		switch k {
+		case server.FlagInvCheckPeriod:
+			return simcli.FlagPeriodValue
+		default:
+			return appOptionWithHome.Get(k)
+		}
+	})
+
+	var wasmOpts []wasmkeeper.Option
+
+	app := NewSimApp(
+		logger, db, nil, true, appOptions, wasmOpts,
+		fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID),
+	)
 	require.Equal(t, "SimApp", app.Name())
 
 	// Run randomized simulation
@@ -288,7 +327,10 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		require.NoError(t, os.RemoveAll(newDir))
 	}()
 
-	newApp := NewSimApp(log.NewNopLogger(), newDB, nil, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
+	newApp := NewSimApp(
+		log.NewNopLogger(), newDB, nil, true, appOptions, wasmOpts,
+		fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID),
+	)
 	require.Equal(t, "SimApp", newApp.Name())
 
 	newApp.InitChain(&abci.RequestInitChain{
@@ -333,9 +375,19 @@ func TestAppStateDeterminism(t *testing.T) {
 	}
 
 	appHashList := make([]json.RawMessage, numTimesToRunPerSeed)
-	appOptions := make(simtestutil.AppOptionsMap, 0)
-	appOptions[flags.FlagHome] = DefaultNodeHome
-	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
+
+	appOptionsWithHome := simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome)
+
+	appOptions := appOptionsFn(func(k string) any {
+		switch k {
+		case server.FlagInvCheckPeriod:
+			return simcli.FlagPeriodValue
+		default:
+			return appOptionsWithHome.Get(k)
+		}
+	})
+
+	var wasmOpts []wasmkeeper.Option
 
 	for i := 0; i < numSeeds; i++ {
 		if config.Seed == simcli.DefaultSeedValue {
@@ -353,7 +405,10 @@ func TestAppStateDeterminism(t *testing.T) {
 			}
 
 			db := dbm.NewMemDB()
-			app := NewSimApp(logger, db, nil, true, appOptions, interBlockCacheOpt(), baseapp.SetChainID(SimAppChainID))
+			app := NewSimApp(
+				logger, db, nil, true, appOptions, wasmOpts,
+				interBlockCacheOpt(), baseapp.SetChainID(SimAppChainID),
+			)
 
 			fmt.Printf(
 				"running non-determinism simulation; seed %d: %d/%d, attempt: %d/%d\n",
