@@ -14,7 +14,7 @@ const trace = makeTracer('InitChainInfo', true);
 
 /**
  * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
- * @param {ERef<StorageNode | null>} chainStorageP
+ * @param {ERef<import('@agoric/internal').Remote<StorageNode> | null>} chainStorageP
  */
 const publishChainInfoToChainStorage = async (
   agoricNamesAdmin,

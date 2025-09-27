@@ -22,7 +22,7 @@ export const testLocalChain = async (
   { options: { testResultPath } },
 ) => {
   console.warn('=== localchain test started (result in', testResultPath, ')!');
-  /** @type {null | ERef<StorageNode>} */
+  /** @type {null | import('@agoric/internal').ERemote<StorageNode>} */
   let node = await chainStorage;
   if (!node) {
     console.error('testLocalChain no chainStorage');

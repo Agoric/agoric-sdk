@@ -3,7 +3,7 @@
  */
 import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
-import { makeTracer, mustMatch } from '@agoric/internal';
+import { makeTracer, mustMatch, type ERemote } from '@agoric/internal';
 import type {
   Marshaller,
   StorageNode,
@@ -29,7 +29,6 @@ import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { decodeBase64 } from '@endo/base64';
 import { Fail, X } from '@endo/errors';
-import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.js';
@@ -177,15 +176,15 @@ export const preparePortfolioKit = (
     offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>;
     vowTools: VowTools;
     zcf: ZCF;
-    portfoliosNode: ERef<StorageNode>;
-    marshaller: Marshaller;
+    portfoliosNode: ERemote<StorageNode>;
+    marshaller: ERemote<Marshaller>;
     usdcBrand: Brand<'nat'>;
   },
 ) => {
   // Ephemeral node cache
   // XXX collecting flow nodes is TBD
-  const nodes = new Map<string, ERef<StorageNode>>();
-  const providePathNode = (segments: string[]): ERef<StorageNode> => {
+  const nodes = new Map<string, ERemote<StorageNode>>();
+  const providePathNode = (segments: string[]): ERemote<StorageNode> => {
     if (segments.length === 0) return portfoliosNode;
     const path = segments.join('.');
     if (nodes.has(path)) return nodes.get(path)!;

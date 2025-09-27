@@ -9,6 +9,7 @@ import {
 import { prepareAssetReserveKit } from './assetReserveKit.js';
 
 /**
+ * @import {ERemote} from '@agoric/internal';
  * @import {EReturn} from '@endo/far';
  * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {Allocation, ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
@@ -46,8 +47,8 @@ harden(meta);
  * @param {{
  *   feeMintAccess: FeeMintAccess;
  *   initialPoserInvitation: Invitation;
- *   marshaller: ERef<Marshaller>;
- *   storageNode: ERef<StorageNode>;
+ *   marshaller: ERemote<Marshaller>;
+ *   storageNode: ERemote<StorageNode>;
  * }} privateArgs
  * @param {Baggage} baggage
  */

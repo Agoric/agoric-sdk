@@ -16,6 +16,7 @@ import * as sharedFlows from './shared.flows.js';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 
 /**
+ * @import {Remote} from '@agoric/internal';
  * @import {GuestInterface} from '@agoric/async-flow';
  * @import {ContractMeta, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {Zone} from '@agoric/zone';
@@ -36,7 +37,7 @@ const emptyOfferShape = harden({
  *
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
- *   marshaller: Marshaller;
+ *   marshaller: Remote<Marshaller>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools

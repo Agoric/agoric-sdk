@@ -23,7 +23,7 @@ const trace = makeTracer('AxelarGmp');
  *
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
- *   marshaller: Marshaller;
+ *   marshaller: Remote<Marshaller>;
  *   chainInfo?: Record<string, CosmosChainInfo>;
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
  *   storageNode: Remote<StorageNode>;

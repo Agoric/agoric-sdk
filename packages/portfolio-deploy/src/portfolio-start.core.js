@@ -17,7 +17,7 @@ import { name, permit } from './portfolio.contract.permit.js';
  * @import {PortfolioBootPowers} from './portfolio-start.type.ts';
  * @import {AxelarChainConfigMap} from './axelar-configs.js';
  * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.ts';
- * @import {TypedPattern} from '@agoric/internal';
+ * @import { TypedPattern, Remote } from '@agoric/internal';
  * @import { ChainInfoPowers } from './chain-info.core.js';
  * @import { Bech32Address } from '@agoric/orchestration';
  */
@@ -52,7 +52,7 @@ export const portfolioDeployConfigShape = M.splitRecord(
 
 /**
  * @param {OrchestrationPowersWithStorage} orchestrationPowers
- * @param {Marshaller} marshaller
+ * @param {Remote<Marshaller>} marshaller
  * @param {PortfolioDeployConfig} config
  */
 export const makePrivateArgs = async (

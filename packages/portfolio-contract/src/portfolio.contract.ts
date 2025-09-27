@@ -143,7 +143,7 @@ type PortfolioPrivateArgs = OrchestrationPowers & {
   // XXX document required assets, chains
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
   chainInfo: Record<string, ChainInfo>;
-  marshaller: Marshaller;
+  marshaller: Remote<Marshaller>;
   storageNode: Remote<StorageNode>;
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
