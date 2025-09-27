@@ -6,7 +6,10 @@ FILE = config.yaml
 HELM_REPO_URL = https://agoric-labs.github.io/starship
 HELM_REPO = starship
 HELM_CHART = devnet
-NAMESPACE := $(shell ./scripts/get-namespace.sh)
+NAMESPACE := $(shell kubectl config view -o jsonpath='{.contexts[?(@.name=="starship")].context.user}' 2>/dev/null \
+	| tr '[:upper:]' '[:lower:]' \
+	| sed -E 's/@/-/g; s/[.]+/-/g; s/[^a-z0-9-]+/-/g; s/^-+|-+$$//g' \
+	| awk '{ if ($$0 == "") print "default"; else print $$0 }')
 
 SS = yarn starship
 SSOPTS = --config $(FILE) --name $(NAME) --repoUrl $(HELM_REPO_URL) \
@@ -212,8 +215,11 @@ usdc-available: ./scripts/noble-usdn-lab.ts
 
 DEPLOY=../packages/portfolio-deploy
 
+clean-ymax:
+	rm -rf $(DEPLOY)/dist/
+
 ,ymax0-bundle-id: $(DEPLOY)/dist/bundle-ymax0.json
-	(echo -n b1-; jq -r .endoZipBase64Sha512 $(DEPLOY)/dist/bundle-ymax0.json) >$@
+	(printf "b1-"; jq -r .endoZipBase64Sha512 $(DEPLOY)/dist/bundle-ymax0.json) >$@
 
 $(DEPLOY)/dist/bundle-ymax0.json: $(DEPLOY)/dist/portfolio.contract.bundle.js
 	(cd $(DEPLOY); \
@@ -222,7 +228,7 @@ $(DEPLOY)/dist/bundle-ymax0.json: $(DEPLOY)/dist/portfolio.contract.bundle.js
 $(DEPLOY)/dist/portfolio.contract.bundle.js:
 	(cd $(DEPLOY); yarn build)
 
-PUBLISHER=gov2.devnet
+PUBLISHER=gov1
 publish-ymax0: ,ymax0-installed
 
 ,ymax0-installed: $(DEPLOY)/dist/bundle-ymax0.json
@@ -231,7 +237,6 @@ publish-ymax0: ,ymax0-installed
 
 yctrl-redeploy: ,ymax0-deployed
 
-REASON=
 NETCONFIG=https://devnet.agoric.net/network-config
 ,ymax0-deployed: $(DEPLOY)/dist/bundle-ymax0.json ,ymax0-bundle-id ,ymax0-installed
 	@[ -n "$$MNEMONIC" ] || (echo "ymaxControl MNEMONIC not set; see gov keys sheet"; false)
@@ -239,7 +244,10 @@ NETCONFIG=https://devnet.agoric.net/network-config
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --installAndStart $$(cat ,ymax0-bundle-id)
 	agoric follow -B $(NETCONFIG) -lF :published.agoricNames.instance >$@ || (rm $@; false)
 
-,creatorFacet: ,ymax0-deployed
+,upgrade: $(DEPLOY)/dist/bundle-ymax0.json ,ymax0-bundle-id ,ymax0-installed
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --upgrade $$(cat ,ymax0-bundle-id)
+
+,creatorFacet:
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --getCreatorFacet
 	touch $@
 
@@ -250,13 +258,48 @@ PLANNER=agoric140yw0u2qrvmrgp33ejpddgnrwpm74vpfpx5v7n
 	touch $@
 	@echo now use planner MNEMONIC: ymax-tool.ts --redeem
 
-# TODO: get from vstorage
-FEE_ACCT=agoric1rqqy9r0s4ahl8agr89f200gch78hnef3jckf4vntqe4p67rsxegs9qpzjw
+# see gov keys sheet
+RESOLVER=agoric140yw0u2qrvmrgp33ejpddgnrwpm74vpfpx5v7n
+,inviteResolver: ,creatorFacet
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --inviteResolver $(RESOLVER)
+	touch $@
+	@echo now use resolver MNEMONIC: ymax-tool.ts --redeem-resolver
+
 DEV_NODE=https://devnet.rpc.agoric.net:443
 SIG_OPTS=--chain-id=agoricdev-25 --gas-adjustment=1.5 --gas=auto
 fund-fee-acct:
-	agd tx bank send gov1.devnet $(FEE_ACCT) 120000000ubld -y -b block --node=$(DEV_NODE) $(SIG_OPTS)
+	$(eval FEE_ACCT := $(shell agd q vstorage data published.ymax0 --node $(DEV_NODE) -o json | jq -r '.value | fromjson | .values[0] | fromjson | .body | fromjson | .contractAccount'))
+	@echo "Funding fee account: $(FEE_ACCT)"
+	agd tx bank send mudi $(FEE_ACCT) 120000000ubld --keyring-backend test -y -b block --node=$(DEV_NODE) $(SIG_OPTS)
 
-aave-e2e:
+aave-eth:
 	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Aave":0.1}' --target-allocation '{"Aave_Ethereum":100}'
+
+compound-eth:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Compound":1.25}' --target-allocation '{"Compound_Ethereum":100}'
+
+compound-withdraw:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --withdraw-from-compound
+
+aave-ava:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Aave":0.1}' --target-allocation '{"Aave_Avalanche":100}'
+
+aave-arb:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Aave":0.1}' --target-allocation '{"Aave_Arbitrum":100}'
+
+compound-arb:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Compound":0.1}' --target-allocation '{"Compound_Arbitrum":100}'
+
+aave-base:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Aave":0.1}' --target-allocation '{"Aave_Base":100}'
+
+compound-base:
+	@[ -n "$$MNEMONIC" ] || (echo "trader MNEMONIC not set; see noble-usdn-lab.ts"; false)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --positions '{"Compound":0.1}' --target-allocation '{"Compound_Base":100}'
