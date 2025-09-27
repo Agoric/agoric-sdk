@@ -81,6 +81,7 @@ export const preparePosition = (
       ...emptyTransferState,
       poolKey,
       accountId,
+      etc: undefined,
     }),
     {
       getPoolKey(): PoolKey {

@@ -55,7 +55,7 @@ export const preparePlanner = (
       .returns(),
   });
 
-  return zone.exoClass('Planner', PlannerI, () => ({}), {
+  return zone.exoClass('Planner', PlannerI, () => ({ etc: undefined }), {
     /**
      * Submit a plan (sequence of moves) for execution in a new flow.
      *
