@@ -108,6 +108,76 @@ export const withdrawTargetsFromAllocation = (
 };
 
 /**
+ * Compute a withdraw-only flow (steps) that strictly decreases balances towards
+ * the weighted rebalance target computed for a given withdraw amount and allocation.
+ *
+ * Properties:
+ * - No pool/account balance increases are produced (only decrements).
+ * - The '<Cash>' seat increases by exactly the withdrawal amount.
+ * - Decrements are allocated greedily to minimize actions, draining the largest needs first.
+ * - Hub accounts (keys starting with '@') are preferred and drained before pools when possible.
+ */
+export const withdrawStepsFromAllocation = (
+  amount: NatAmount,
+  current: Partial<Record<AssetPlaceRef, NatAmount>>,
+  allocation: TargetAllocation,
+): MovementDesc[] => {
+  const brand = amount.brand;
+  const withdraw = amount.value;
+  if (withdraw === 0n) return harden([]);
+
+  // Compute absolute targets for the withdraw scenario
+  const targets = computeWeightedTargets(brand, current, -withdraw, allocation);
+
+  // Build full target values map: unchanged keys default to current
+  const targetVals: Partial<Record<AssetPlaceRef, NatAmount>> = { ...targets };
+  for (const key of Object.keys(current)) {
+    if (!targetVals[key]) targetVals[key] = current[key];
+  }
+
+  // Determine over-weight sources (those that must decrease to reach target)
+  type DecEntry = { key: AssetPlaceRef; need: bigint };
+  const decs: DecEntry[] = [];
+  for (const key of Object.keys(targetVals)) {
+    // Skip seats that should not be decreased
+    if (key === '<Cash>' || key === '+agoric') continue;
+    const curV: bigint = current[key]?.value ?? 0n;
+    const tgtV: bigint = targetVals[key]?.value ?? 0n;
+    if (tgtV < curV) {
+      decs.push({ key: key as AssetPlaceRef, need: curV - tgtV });
+    }
+  }
+
+  const totalNeed = decs.reduce<bigint>((acc, e) => acc + e.need, 0n);
+  assert(totalNeed >= withdraw, X`not enough over-weight to satisfy withdraw`);
+
+  // Greedy allocation: prefer non-pool (hub '@') sources first, then by need descending
+  const sorted = decs.sort((a, b) => {
+    const aHub = (a.key as string).startsWith('@');
+    const bHub = (b.key as string).startsWith('@');
+    if (aHub !== bHub) return aHub ? -1 : 1; // hubs first
+    if (a.need === b.need) return 0;
+    return a.need < b.need ? 1 : -1; // descending by need
+  });
+  let remaining = withdraw;
+  const steps: MovementDesc[] = [];
+  for (const { key, need } of sorted) {
+    if (remaining === 0n) break;
+    const take = need < remaining ? need : remaining;
+    if (take > 0n) {
+      steps.push({
+        amount: AmountMath.make(brand, take),
+        src: key,
+        dest: '<Cash>',
+      });
+      remaining -= take;
+    }
+  }
+  assert(remaining === 0n, X`insufficient capacity to complete withdraw`);
+  return harden(steps);
+};
+
+/**
  * Derive weighted targets for allocation keys. Additionally, always zero out hub balances
  * (chains; keys starting with '@') that have non-zero current amounts. Returns only entries
  * whose values change compared to current.
@@ -204,6 +274,64 @@ export const planDepositToTargets = async (
     gasEstimator,
   });
   return steps;
+};
+
+/**
+ * Plan a deposit using only monotonic increases to pool balances.
+ *
+ * Properties:
+ * - Only creates steps from '+agoric' to Pool destinations (no decreases anywhere).
+ * - Consumes exactly `amount.value` by allocating greedily to the largest needs first.
+ * - Ignores non-pool destinations (e.g., '<Cash>', hubs '@...').
+ * - Throws if the target does not have enough pool headroom (sum of positive deltas) to absorb the deposit amount.
+ *
+ * Signature is identical to planDepositToTargets for easy substitution.
+ */
+export const planDepositOnlyToTargets = async (
+  amount: NatAmount,
+  current: Partial<Record<AssetPlaceRef, NatAmount>>,
+  target: Partial<Record<AssetPlaceRef, NatAmount>>, // includes all pools + '+agoric'
+  _network: NetworkSpec,
+  _feeBrand: Brand<'nat'>,
+): Promise<MovementDesc[]> => {
+  const brand = amount.brand;
+  let remaining = amount.value;
+  if (remaining === 0n) return harden([]);
+
+  // Collect positive deltas for pool destinations only
+  type Inc = { key: AssetPlaceRef; need: bigint };
+  const incs: Inc[] = [];
+  for (const key of Object.keys(target)) {
+    // Skip non-destinations we don't increase here
+    if (key === '+agoric' || key === '<Cash>' || key.startsWith('@')) continue;
+    // Only treat known pools as valid destinations
+    if (!getOwn(PoolPlaces, key as PoolKey)) continue;
+    const curV: bigint = current[key]?.value ?? 0n;
+    const tgtV: bigint = target[key]?.value ?? 0n;
+    if (tgtV > curV) {
+      incs.push({ key: key as AssetPlaceRef, need: tgtV - curV });
+    }
+  }
+
+  const totalNeed = incs.reduce<bigint>((acc, e) => acc + e.need, 0n);
+  assert(totalNeed >= remaining, X`not enough pool headroom to absorb deposit`);
+
+  // Greedy: largest needs first to minimize actions
+  incs.sort((a, b) => {
+    if (a.need === b.need) return 0;
+    return a.need < b.need ? 1 : -1; // descending by need
+  });
+  const steps: MovementDesc[] = [];
+  for (const { key, need } of incs) {
+    if (remaining === 0n) break;
+    const take = need < remaining ? need : remaining;
+    if (take > 0n) {
+      steps.push({ amount: AmountMath.make(brand, take), src: '+agoric', dest: key });
+      remaining -= take;
+    }
+  }
+  assert(remaining === 0n, X`internal error: deposit not fully allocated`);
+  return harden(steps);
 };
 
 /**
