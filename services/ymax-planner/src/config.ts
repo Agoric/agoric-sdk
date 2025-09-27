@@ -1,9 +1,11 @@
 /* eslint-disable @jessie.js/safe-await-separator */
 /// <reference types="ses" />
-import * as AgoricClientUtils from '@agoric/client-utils';
 import { Fail, q } from '@endo/errors';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
+
 import { AxelarChainIdMap } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
+import * as AgoricClientUtils from '@agoric/client-utils';
+import { objectMap } from '@agoric/internal';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants';
 
 export type ClusterName = 'local' | 'testnet' | 'mainnet';
@@ -127,20 +129,14 @@ export const loadConfig = async (
     (await getMnemonicFromGCP(secretManager, gcpProjectId, gcpSecretName)) ||
     Fail`Mnemonic is required`;
 
-  /**
-   * @see https://docs.axelarscan.io/gmp#estimateGasFee
-   */
-  const axelarApiAddress =
-    clusterName === 'mainnet'
-      ? 'https://api.axelarscan.io/'
-      : 'https://testnet.api.axelarscan.io/';
-
-  const axelarChainIdMap = Object.fromEntries(
-    Object.entries(AxelarChainIdMap).map(([chain, ids]) => [
-      chain,
-      ids[clusterName === 'mainnet' ? 'mainnet' : 'testnet'],
-    ]),
-  ) as Record<AxelarChain, string>;
+  const isMainnet = clusterName === 'mainnet';
+  /** @see {@link https://docs.axelarscan.io/gmp#estimateGasFee} */
+  const axelarApiAddress = isMainnet
+    ? 'https://api.axelarscan.io/'
+    : 'https://testnet.api.axelarscan.io/';
+  const axelarChainIdMap = objectMap(AxelarChainIdMap, ids =>
+    isMainnet ? ids.mainnet : ids.testnet,
+  );
 
   const config: YmaxPlannerConfig = harden({
     clusterName,
