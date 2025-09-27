@@ -3,8 +3,8 @@ import type { NatAmount, Amount } from '@agoric/ertp/src/types.js';
 import { partialMap } from '@agoric/internal/src/js-utils.js';
 
 import { buildBaseGraph, type FlowEdge } from '../plan-solve.js';
-import { PoolPlaces, type PoolKey } from '../type-guards.js';
-import type { AssetPlaceRef } from '../type-guards-steps.js';
+import { PoolPlaces, type PoolKey } from '../../src/type-guards.js';
+import type { AssetPlaceRef } from '../../src/type-guards-steps.js';
 
 import type { NetworkSpec } from './network-spec.js';
 
