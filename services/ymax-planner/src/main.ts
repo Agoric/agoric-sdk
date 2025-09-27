@@ -95,8 +95,8 @@ export const main = async (
 
   const gasEstimator = makeGasEstimator({
     axelarApiAddress: config.axelar.apiUrl,
-    fetchFunc: fetch,
     axelarChainIdMap: config.axelar.chainIdMap,
+    fetch,
   });
 
   const powers = {

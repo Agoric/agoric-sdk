@@ -8,12 +8,12 @@ const BLD_TOKEN = 'ubld';
 
 export const makeGasEstimator = ({
   axelarApiAddress,
-  fetchFunc,
   axelarChainIdMap,
+  fetch: fetchUrl,
 }: {
   axelarApiAddress: string;
-  fetchFunc: typeof fetch;
   axelarChainIdMap: Record<AxelarChain, string>;
+  fetch: typeof fetch;
 }): GasEstimator => {
   URL.canParse(axelarApiAddress) ||
     Fail`Invalid Axelar API address: ${axelarApiAddress}`;
@@ -29,7 +29,7 @@ export const makeGasEstimator = ({
   ) => {
     const sourceChain = axelarChainIdMap[sourceChainName] || 'agoric';
     const destinationChain = axelarChainIdMap[destinationChainName] || 'agoric';
-    const response = await fetchFunc(axelarEstimateGasAddress, {
+    const response = await fetchUrl(axelarEstimateGasAddress, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
