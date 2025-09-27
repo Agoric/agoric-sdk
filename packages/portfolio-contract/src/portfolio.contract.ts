@@ -15,6 +15,7 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
 import {
   ChainInfoShape,
   DenomDetailShape,
@@ -39,7 +40,7 @@ import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import type { Zone } from '@agoric/zone';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
-import { makeMarshal } from '@endo/marshal';
+import { makeMarshal, type Marshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import { preparePlanner } from './planner.exo.ts';
@@ -214,7 +215,7 @@ export const contract = async (
     assetInfo,
     axelarIds,
     contracts,
-    marshaller,
+    marshaller: slowMarshaller,
     storageNode,
     gmpAddresses,
   } = privateArgs;
@@ -249,10 +250,15 @@ export const contract = async (
     },
   };
 
+  const marshaller = wrapRemoteMarshaller(
+    slowMarshaller as Remote<Marshal<string | null>>,
+  );
+
   const resolverZone = zone.subZone('Resolver');
   const makeResolverKit = prepareResolverKit(resolverZone, zcf, {
     vowTools,
     pendingTxsNode: E(storageNode).makeChildNode(PENDING_TXS_NODE_KEY),
+    // @ts-expect-error methods are remote
     marshaller,
   });
   const {
@@ -314,6 +320,7 @@ export const contract = async (
       getChainsAndConnection: chainHub.getChainsAndConnection.bind(chainHub),
     },
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
+    // @ts-expect-error Remote marshal types
     marshaller,
     usdcBrand: brands.USDC,
   });

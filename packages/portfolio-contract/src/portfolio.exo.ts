@@ -3,11 +3,8 @@
  */
 import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
-import { makeTracer, mustMatch } from '@agoric/internal';
-import type {
-  Marshaller,
-  StorageNode,
-} from '@agoric/internal/src/lib-chainStorage.js';
+import { makeTracer, mustMatch, type Remote } from '@agoric/internal';
+import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import {
   type AccountId,
   type CaipChainId,
@@ -31,6 +28,7 @@ import { decodeBase64 } from '@endo/base64';
 import { Fail, X } from '@endo/errors';
 import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
+import type { Marshal } from '@endo/marshal';
 import { M } from '@endo/patterns';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.js';
 import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
@@ -178,7 +176,7 @@ export const preparePortfolioKit = (
     vowTools: VowTools;
     zcf: ZCF;
     portfoliosNode: ERef<StorageNode>;
-    marshaller: Marshaller;
+    marshaller: Remote<Marshal<string | null>>;
     usdcBrand: Brand<'nat'>;
   },
 ) => {

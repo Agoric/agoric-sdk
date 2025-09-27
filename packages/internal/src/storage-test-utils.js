@@ -20,7 +20,7 @@ const trace = makeTracer('StorTU', false);
  * A convertSlotToVal function that produces basic Remotables. Assumes that all
  * slots are Remotables (i.e. none are Promises).
  *
- * @param {string} _slotId
+ * @param {string | null} _slotId
  * @param {string} iface
  */
 export const slotToRemotable = (_slotId, iface = 'Remotable') =>
