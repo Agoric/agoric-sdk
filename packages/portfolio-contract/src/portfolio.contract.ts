@@ -380,13 +380,18 @@ export const contract = async (
     return zcf.makeInvitation(resolverHandler, 'resolver', undefined);
   };
 
-  // New invitation that returns the service directly for invokeEntry support
+  /**
+   * Create an invitation that returns the resolver service directly.
+   * This enables direct method invocation via invokeEntry pattern
+   * without the overhead of continuing zoe offers.
+   * 
+   * @returns {Invitation} Invitation whose offer result is the resolver service
+   */
   const makeResolverServiceInvitation = () => {
     trace('makeResolverServiceInvitation');
 
     const resolverServiceHandler = (seat: ZCFSeat) => {
       seat.exit();
-      // Return service directly for invokeEntry pattern
       return resolverService;
     };
 

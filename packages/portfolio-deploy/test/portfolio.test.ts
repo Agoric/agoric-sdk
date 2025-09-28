@@ -322,7 +322,7 @@ test.skip('CCTP settlement works', async t => {
 
   const currentWalletRecord = await wallet.getCurrentWalletRecord();
 
-  t.log('Using resolver invitation to get resolver service');
+  t.log('Using resolver invitation to get invitationMaker');
   await wallet.executeOffer({
     id: 'settle-cctp',
     invitationSpec: {
@@ -331,24 +331,49 @@ test.skip('CCTP settlement works', async t => {
       description: 'resolver',
     },
     proposal: { give: {}, want: {} },
-    saveResult: { name: 'resolverService' },
   });
 
   await eventLoopIteration();
 
-  t.log('Executing CCTP settlement via invokeEntry');
-  await wallet.invokeEntry({
+  t.log('Executing CCTP settlement offer');
+  await wallet.executeOffer({
     id: '123',
-    targetName: 'resolverService',
-    method: 'settleTransaction',
-    args: [{ status: 'success', txId: 'tx0' }],
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'settle-cctp',
+      invitationMakerName: 'SettleTransaction',
+    },
+    proposal: { give: {}, want: {} },
+    offerArgs: {
+      txDetails: {
+        amount: 10_000n,
+        remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+        status: 'success',
+      },
+      remoteAxelarChain: 'eip155:42161',
+      txId: 'tx0',
+    },
   });
   const latestWalletRecord = wallet.getLatestUpdateRecord();
 
   t.like(latestWalletRecord, {
     status: {
       id: '123',
-      result: 'UNPUBLISHED',
+      invitationSpec: {
+        invitationMakerName: 'SettleTransaction',
+        source: 'continuing',
+        previousOffer: 'settle-cctp',
+      },
+      numWantsSatisfied: 1,
+      offerArgs: {
+        remoteAxelarChain: 'eip155:42161',
+        txDetails: {
+          amount: 10000n,
+          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+          status: 'success',
+        },
+        txId: 'tx0',
+      },
     },
   });
 });
@@ -439,11 +464,23 @@ test.skip('CCTP settlement works across contract restarts', async t => {
   const myMarshaller = makeClientMarshaller(v => (v as any).getBoardId());
   const wallet = await wfd.provideSmartWallet(beneficiary, myMarshaller);
 
-  await wallet.invokeEntry({
+  await wallet.executeOffer({
     id: '456',
-    targetName: 'resolverService',
-    method: 'settleTransaction',
-    args: [{ status: 'success', txId: 'tx0' }],
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'settle-cctp',
+      invitationMakerName: 'SettleTransaction',
+    },
+    proposal: { give: {}, want: {} },
+    offerArgs: {
+      txDetails: {
+        amount: 40_000n,
+        remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+        status: 'success',
+      },
+      remoteAxelarChain: 'eip155:42161',
+      txId: 'tx0',
+    },
   });
 
   const finalUpdate = wallet.getLatestUpdateRecord();
@@ -452,7 +489,21 @@ test.skip('CCTP settlement works across contract restarts', async t => {
   t.like(finalUpdate, {
     status: {
       id: '456',
-      result: 'UNPUBLISHED',
+      invitationSpec: {
+        invitationMakerName: 'SettleTransaction',
+        source: 'continuing',
+        previousOffer: 'settle-cctp',
+      },
+      numWantsSatisfied: 1,
+      offerArgs: {
+        remoteAxelarChain: 'eip155:42161',
+        txDetails: {
+          amount: 40000n,
+          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+          status: 'success',
+        },
+        txId: 'tx0',
+      },
     },
   });
 
@@ -522,11 +573,23 @@ test.serial(
 
     const id = Date.now().toString();
     await t.throwsAsync(
-      wallet.invokeEntry({
+      wallet.executeOffer({
         id,
-        targetName: 'resolverService',
-        method: 'settleTransaction',
-        args: [{ status: 'success', txId: 'tx0' }],
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: 'settle-cctp',
+          invitationMakerName: 'SettleTransaction',
+        },
+        proposal: { give: {}, want: {} },
+        offerArgs: {
+          txDetails: {
+            amount: 10_000n,
+            remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+            status: 'success',
+          },
+          txId: 'tx0',
+          remoteAxelarChain: 'eip155:42161',
+        },
       }),
     );
   },
@@ -569,24 +632,69 @@ test.skip('CCTP settlement works with new invitation after contract remove and s
       description: 'resolver',
     },
     proposal: { give: {}, want: {} },
-    saveResult: { name: 'resolverService-new' },
   });
 
   await eventLoopIteration();
 
   const id = Date.now().toString();
-  await wallet.invokeEntry({
+  await wallet.executeOffer({
     id,
-    targetName: 'resolverService-new',
-    method: 'settleTransaction',
-    args: [{ status: 'success', txId: 'tx0' }],
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'settle-cctp-new',
+      invitationMakerName: 'SettleTransaction',
+    },
+    proposal: { give: {}, want: {} },
+    offerArgs: {
+      txDetails: {
+        amount: 10_000n,
+        remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+        status: 'success',
+      },
+      remoteAxelarChain: 'eip155:42161',
+    },
   });
   const latestWalletRecord = wallet.getLatestUpdateRecord();
 
   t.like(latestWalletRecord, {
     status: {
       id,
-      result: 'UNPUBLISHED',
+      invitationSpec: {
+        invitationMakerName: 'SettleTransaction',
+        source: 'continuing',
+        previousOffer: 'settle-cctp-new',
+      },
+      numWantsSatisfied: 1,
+      offerArgs: {
+        remoteAxelarChain: 'eip155:42161',
+        txDetails: {
+          amount: 10000n,
+          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+          status: 'success',
+        },
+        txId: 'tx0',
+      },
+    },
+  });
+
+  t.like(latestWalletRecord, {
+    status: {
+      id,
+      invitationSpec: {
+        invitationMakerName: 'SettleTransaction',
+        source: 'continuing',
+        previousOffer: 'settle-cctp-new',
+      },
+      numWantsSatisfied: 1,
+      offerArgs: {
+        remoteAxelarChain: 'eip155:42161',
+        txDetails: {
+          amount: 10000n,
+          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+          status: 'success',
+        },
+        txId: 'tx0',
+      },
     },
   });
 });
@@ -650,6 +758,66 @@ test.skip('open a USDN position', async t => {
     owner: 'ymax0',
     showValue,
   });
+});
+
+test.serial('CCTP settlement with direct resolver service approach', async t => {
+  const { walletFactoryDriver: wfd } = t.context;
+  const marshaller = makeClientMarshaller(v => (v as any).getBoardId());
+
+  const wallet = await wfd.provideSmartWallet(beneficiary, marshaller);
+
+  // Deliver the new resolver service invitation instead of the old one
+  await wfd.executeProposal({
+    method: 'deliverResolverServiceInvitation',
+    args: [beneficiary, postalService],
+  });
+
+  const currentWalletRecord = await wallet.getCurrentWalletRecord();
+
+  t.log('Using direct resolver service invitation');
+  await wallet.executeOffer({
+    id: 'settle-cctp-direct',
+    invitationSpec: {
+      source: 'purse',
+      instance: currentWalletRecord.purses[0].balance.value[0].instance,
+      description: 'resolverService',
+    },
+    proposal: { give: {}, want: {} },
+  });
+
+  await eventLoopIteration();
+
+  // Use invokeEntry to settle transaction directly
+  const id = Date.now().toString();
+  await wallet.sendBridgeAction({
+    type: 'WALLET_SPEND_ACTION',
+    owner: beneficiary,
+    spendAction: JSON.stringify({
+      method: 'invokeEntry',
+      id,
+      targetName: 'settle-cctp-direct',
+      method: 'settleTransaction',
+      args: [{
+        txDetails: {
+          amount: 10_000n,
+          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+          status: 'success',
+        },
+        remoteAxelarChain: 'eip155:42161',
+        txId: 'tx0',
+      }],
+    }),
+  });
+
+  // Verify the invocation completed successfully
+  const latestWalletRecord = wallet.getLatestUpdateRecord();
+  t.like(latestWalletRecord, {
+    updated: 'invocation',
+    id,
+  });
+  t.falsy(latestWalletRecord.error, 'Should not have invocation error');
+
+  t.log('✅ Direct resolver service approach works via invokeEntry');
 });
 
 test.todo("won't a contract upgrade override the older positions in vstorage?");

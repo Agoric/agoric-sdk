@@ -1090,6 +1090,17 @@ test.serial('direct resolver service approach (recommended)', async t => {
   const { result } = await openP;
   t.truthy(result.publicSubscribers.portfolio, 'Portfolio should be created');
 
-  t.log('✅ Direct resolver service approach works without zoe offer overhead');
-  t.log('   This enables invokeEntry pattern: saveResult -> invokeEntry with method: "settleTransaction"');
+  // Validate that the resolver worked by checking the final portfolio state
+  const { storagePath } = result.publicSubscribers.portfolio;
+  const info = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  t.log('Portfolio info after direct resolver settlement:', info.contents);
+  
+  // Should have the Aave_Arbitrum position with 100n net transfers
+  const positions = info.contents.positions;
+  const aavePosition = positions.find(p => p.protocol === 'Aave_Arbitrum');
+  t.truthy(aavePosition, 'Should have Aave_Arbitrum position');
+  t.is(aavePosition?.netTransfers, 100n, 'Should have net transfers of 100n');
+
+  t.log('✅ Direct resolver service approach validated with actual position creation');
+  t.log('   This confirms the invokeEntry pattern works: saveResult -> invokeEntry with method: "settleTransaction"');
 });
