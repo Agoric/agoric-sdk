@@ -55,47 +55,55 @@ export const preparePlanner = (
       .returns(),
   });
 
-  return zone.exoClass('Planner', PlannerI, () => ({ etc: undefined }), {
-    /**
-     * Submit a plan (sequence of moves) for execution in a new flow.
-     *
-     * Used by off-chain planning services to carry out expressed wishes
-     * of a portfolio owner.
-     *
-     * @param portfolioId - Target portfolio identifier
-     * @param plan - Array of asset movements to execute
-     * @param policyVersion - on which plan is based
-     * @param rebalanceCount - presumed current count
-     * @throws i.e. Vow rejects if portfolio not found, policyVersion is not current,
-     *   or plan validation or execution fails
-     */
-    submit(
-      portfolioId: number,
-      plan: MovementDesc[],
-      policyVersion: number,
-      rebalanceCount = 0,
-    ): Vow<void> {
-      return vowTools.asVow(async () => {
+  return zone.exoClass(
+    'Planner',
+    PlannerI,
+    () => ({ etc: undefined }),
+    {
+      /**
+       * Submit a plan (sequence of moves) for execution in a new flow.
+       *
+       * Used by off-chain planning services to carry out expressed wishes
+       * of a portfolio owner.
+       *
+       * @param portfolioId - Target portfolio identifier
+       * @param plan - Array of asset movements to execute
+       * @param policyVersion - on which plan is based
+       * @param rebalanceCount - presumed current count
+       * @throws i.e. Vow rejects if portfolio not found, policyVersion is not current,
+       *   or plan validation or execution fails
+       */
+      submit(
+        portfolioId: number,
+        plan: MovementDesc[],
+        policyVersion: number,
+        rebalanceCount = 0,
+      ): Vow<void> {
+        return vowTools.asVow(async () => {
+          trace('TODO(#11782): vet plan', { portfolioId, plan });
+          const pKit = getPortfolio(portfolioId);
+          pKit.planner.submitVersion(policyVersion, rebalanceCount);
+          const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
+          return rebalance(emptySeat, { flow: plan }, pKit);
+        });
+      },
+      resolvePlan(
+        portfolioId: number,
+        flowId: number,
+        plan: MovementDesc[],
+        policyVersion: number,
+        rebalanceCount = 0,
+      ) {
         trace('TODO(#11782): vet plan', { portfolioId, plan });
-        const pKit = getPortfolio(portfolioId);
-        pKit.planner.submitVersion(policyVersion, rebalanceCount);
-        const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
-        return rebalance(emptySeat, { flow: plan }, pKit);
-      });
+        const { planner: portfolioPlanner } = getPortfolio(portfolioId);
+        portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
+        portfolioPlanner.resolveFlowPlan(flowId, plan);
+      },
     },
-    resolvePlan(
-      portfolioId: number,
-      flowId: number,
-      plan: MovementDesc[],
-      policyVersion: number,
-      rebalanceCount = 0,
-    ) {
-      trace('TODO(#11782): vet plan', { portfolioId, plan });
-      const { planner: portfolioPlanner } = getPortfolio(portfolioId);
-      portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
-      portfolioPlanner.resolveFlowPlan(flowId, plan);
+    {
+      stateShape: { etc: M.any() },
     },
-  });
+  );
 };
 
 export type PortfolioPlanner = ReturnType<ReturnType<typeof preparePlanner>>;
