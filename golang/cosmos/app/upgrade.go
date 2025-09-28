@@ -11,6 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	icahosttypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/types"
@@ -18,6 +19,7 @@ import (
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+
 	ibctmmigrations "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint/migrations"
 )
 
@@ -167,6 +169,9 @@ func (app *GaiaApp) RegisterUpgradeHandlers() {
 			keyTable = icahosttypes.ParamKeyTable() //nolint:staticcheck
 		case ibctransfertypes.ModuleName:
 			keyTable = ibctransfertypes.ParamKeyTable() //nolint:staticcheck
+		case wasmtypes.ModuleName:
+			// we dont have a param key table for wasm yet
+			continue
 		default:
 			continue
 		}
@@ -257,6 +262,11 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 		err = m.MigrateParams(ctx)
 		if err != nil {
 			return mvm, err
+		}
+
+		wparams := DropWasmPrivilegeParams(app.WasmKeeper.GetParams(ctx))
+		if err := app.WasmKeeper.SetParams(ctx, wparams); err != nil {
+			return nil, err
 		}
 
 		return mvm, nil

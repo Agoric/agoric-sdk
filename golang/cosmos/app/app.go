@@ -142,6 +142,10 @@ import (
 	packetforward "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward"
 	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/keeper"
 	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v8/packetforward/types"
+
+	"github.com/CosmWasm/wasmd/x/wasm"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	// unnamed import of statik for swagger UI support
 	// XXX figure out how to build the docs
 	// _ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -170,6 +174,41 @@ var (
 	// DefaultNodeHome default home directories for the application daemon
 	DefaultNodeHome string
 
+	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
+	// non-dependant module elements, such as codec registration
+	// and genesis verification.
+	ModuleBasics = module.NewBasicManager(
+		auth.AppModuleBasic{},
+		genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
+		bank.AppModuleBasic{},
+		capability.AppModuleBasic{},
+		staking.AppModuleBasic{},
+		mint.AppModuleBasic{},
+		distr.AppModuleBasic{},
+		gov.NewAppModuleBasic([]govclient.ProposalHandler{
+			paramsclient.ProposalHandler,
+			swingsetclient.CoreEvalProposalHandler,
+		}),
+		params.AppModuleBasic{},
+		slashing.AppModuleBasic{},
+		feegrantmodule.AppModuleBasic{},
+		authzmodule.AppModuleBasic{},
+		ibc.AppModuleBasic{},
+		ibctm.AppModuleBasic{},
+		ibcsolo.AppModuleBasic{},
+		upgrade.AppModuleBasic{},
+		evidence.AppModuleBasic{},
+		ibctransfer.AppModuleBasic{},
+		vesting.AppModuleBasic{},
+		ica.AppModuleBasic{},
+		packetforward.AppModuleBasic{},
+		wasm.AppModuleBasic{},
+		swingset.AppModuleBasic{},
+		vstorage.AppModuleBasic{},
+		vibc.AppModuleBasic{},
+		vbank.AppModuleBasic{},
+		vtransfer.AppModuleBasic{},
+	)
 	// module account permissions
 	maccPerms = map[string][]string{
 		authtypes.FeeCollectorName:     nil,
@@ -184,6 +223,7 @@ var (
 		vbanktypes.ReservePoolName:     nil,
 		vbanktypes.ProvisionPoolName:   nil,
 		vbanktypes.GiveawayPoolName:    nil,
+		wasmtypes.ModuleName:           {authtypes.Burner},
 	}
 )
 
@@ -260,6 +300,10 @@ type GaiaApp struct { // nolint: golint
 	ScopedTransferKeeper capabilitykeeper.ScopedKeeper
 	ScopedICAHostKeeper  capabilitykeeper.ScopedKeeper
 	ScopedVibcKeeper     capabilitykeeper.ScopedKeeper
+	ScopedWasmKeeper     capabilitykeeper.ScopedKeeper
+
+	// Wasm
+	WasmKeeper wasmkeeper.Keeper
 
 	// the module managers
 	ModuleManager      *module.Manager
@@ -285,6 +329,7 @@ func NewSimApp(
 	db dbm.DB, traceStore io.Writer,
 	loadLatest bool,
 	appOpts servertypes.AppOptions,
+	wasmOpts []wasmkeeper.Option,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *GaiaApp {
 	var defaultController vm.Sender = func(ctx context.Context, needReply bool, jsonRequest string) (jsonReply string, err error) {
@@ -293,7 +338,7 @@ func NewSimApp(
 
 	app := NewAgoricApp(
 		defaultController, vm.NewAgdServer(),
-		logger, db, traceStore, loadLatest, appOpts, baseAppOptions...,
+		logger, db, traceStore, loadLatest, appOpts, wasmOpts, baseAppOptions...,
 	)
 	app.SetName("SimApp")
 	return app
@@ -307,6 +352,7 @@ func NewAgoricApp(
 	traceStore io.Writer,
 	loadLatest bool,
 	appOpts servertypes.AppOptions,
+	wasmOpts []wasmkeeper.Option,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *GaiaApp {
 	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
@@ -364,6 +410,7 @@ func NewAgoricApp(
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey, icahosttypes.StoreKey,
 		swingset.StoreKey, vstorage.StoreKey, vibc.StoreKey,
 		vlocalchain.StoreKey, vtransfer.StoreKey, vbank.StoreKey, consensusparamstypes.StoreKey,
+		wasmtypes.StoreKey,
 	)
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey, vbanktypes.TStoreKey)
 	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -405,6 +452,7 @@ func NewAgoricApp(
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
 	scopedVibcKeeper := app.CapabilityKeeper.ScopeToModule(vibc.ModuleName)
+	scopedWasmKeeper := app.CapabilityKeeper.ScopeToModule(wasmtypes.ModuleName)
 	app.CapabilityKeeper.Seal()
 
 	// add keepers
@@ -628,10 +676,10 @@ func NewAgoricApp(
 	)
 	app.GovKeeper.SetLegacyRouter(govRouter)
 
+	governanceHooks := []govtypes.GovHooks{}
 	app.GovKeeper = app.GovKeeper.SetHooks(
-		govtypes.NewMultiGovHooks(
 		// register the governance hooks
-		),
+		govtypes.NewMultiGovHooks(governanceHooks...),
 	)
 
 	// Initialize the packet forward middleware Keeper
@@ -695,18 +743,67 @@ func NewAgoricApp(
 	// Cosmos functionality with middleware (from the inside out, Cosmos
 	// packet-forwarding and then our own "vtransfer").
 	var ics20TransferIBCModule ibcporttypes.IBCModule = ibctransfer.NewIBCModule(app.TransferKeeper)
+	var packetForwardMiddlewareDefaultNumbeOfRetriesOnTimeout uint8 = 0
 	ics20TransferIBCModule = packetforward.NewIBCMiddleware(
 		ics20TransferIBCModule,
 		app.PacketForwardKeeper,
-		0, // retries on timeout
+		packetForwardMiddlewareDefaultNumbeOfRetriesOnTimeout,            // retries on timeout
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
 	)
 	ics20TransferIBCModule = vtransfer.NewIBCMiddleware(ics20TransferIBCModule, app.VtransferKeeper)
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ics20TransferIBCModule)
 
+	//Wasm Keeper
+	// Use process-specific wasm directory to avoid lock conflicts in CI
+	// TODO: Fix this on CI we should not have CI fixes in business logic
+	var wasmDir string
+	// if os.Getenv("GITHUB_ACTIONS") == "true" {
+
+	// 	processID := fmt.Sprintf("%d", os.Getpid())
+	// 	wasmDir = filepath.Join(os.TempDir(), homePath, "wasm", processID)
+	// // } else {
+	wasmDir = filepath.Join(homePath, "wasm")
+	// }
+
+	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
+	if err != nil {
+		panic(fmt.Sprintf("error while reading wasm config: %s", err))
+	}
+
+	// The last arguments can contain custom message handlers, and custom query handlers,
+	// if we want to allow any custom callbacks
+
+	app.WasmKeeper = wasmkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[wasmtypes.StoreKey]),
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.StakingKeeper,
+		distrkeeper.NewQuerier(app.DistrKeeper),
+		app.PacketForwardKeeper, // ISC4 Wrapper: fee IBC middleware
+		app.IBCKeeper.ChannelKeeper,
+		app.IBCKeeper.PortKeeper,
+		scopedWasmKeeper,
+		app.TransferKeeper,
+		app.MsgServiceRouter(),
+		app.GRPCQueryRouter(),
+		wasmDir,
+		wasmConfig,
+		AllCapabilities(),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		wasmOpts...,
+	)
+
+	// Create fee enabled wasm ibc Stack
+	var wasmStack ibcporttypes.IBCModule
+	wasmStack = wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper, app.PacketForwardKeeper)
+	//wasmStack = ibcfee.NewIBCMiddleware(wasmStack, app.PacketForwardKeeper)
+
+	// Add CosmWasm
+	ibcRouter.AddRoute(wasmtypes.ModuleName, wasmStack)
+
 	// Seal the router
 	app.IBCKeeper.SetRouter(ibcRouter)
-
 	// The local chain keeper provides ICA/ICQ-like support for the VM to
 	// control a fresh account and/or query this Cosmos-SDK instance.
 	app.VlocalchainKeeper = vlocalchain.NewKeeper(
@@ -761,6 +858,7 @@ func NewAgoricApp(
 		ibc.NewAppModule(app.IBCKeeper),
 		ibctm.NewAppModule(),
 		ibcsolo.NewAppModule(),
+		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
 		params.NewAppModule(app.ParamsKeeper),
 		ics20TransferModule,
 		icaModule,
@@ -838,6 +936,8 @@ func NewAgoricApp(
 		vibc.ModuleName,
 		vbank.ModuleName,
 		vtransfer.ModuleName,
+
+		wasmtypes.ModuleName,
 	)
 	app.ModuleManager.SetOrderEndBlockers(
 		// Cosmos-SDK modules appear roughly in the order used by simapp and gaiad.
@@ -871,6 +971,8 @@ func NewAgoricApp(
 		swingset.ModuleName,
 		// And then vstorage, to produce SwingSet-induced events.
 		vstorage.ModuleName,
+
+		wasmtypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -908,6 +1010,9 @@ func NewAgoricApp(
 		vibc.ModuleName,
 		vtransfer.ModuleName,
 		swingset.ModuleName,
+
+		// wasm after ibc transfer
+		wasmtypes.ModuleName,
 	}
 
 	app.ModuleManager.SetOrderInitGenesis(moduleOrderForGenesisAndUpgrade...)
@@ -949,10 +1054,13 @@ func NewAgoricApp(
 				SignModeHandler: app.txConfig.SignModeHandler(),
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
-			IBCKeeper:        app.IBCKeeper,
-			AdmissionData:    app.SwingSetKeeper,
-			FeeCollectorName: vbanktypes.ReservePoolName,
-			SwingsetKeeper:   app.SwingSetKeeper,
+			IBCKeeper:         app.IBCKeeper,
+			AdmissionData:     app.SwingSetKeeper,
+			FeeCollectorName:  vbanktypes.ReservePoolName,
+			SwingsetKeeper:    app.SwingSetKeeper,
+			WasmConfig:        &wasmConfig,
+			TXCounterStoreKey: keys[wasmtypes.StoreKey],
+			WasmKeeper:        &app.WasmKeeper,
 		},
 	)
 	if err != nil {
@@ -979,6 +1087,8 @@ func NewAgoricApp(
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{
 				capabilitytypes.MemStoreKey,
+				consensusparamstypes.StoreKey,
+				wasmtypes.ModuleName,
 			},
 			Deleted: []string{},
 		}
@@ -991,20 +1101,47 @@ func NewAgoricApp(
 		if err := app.LoadLatestVersion(); err != nil {
 			tmos.Exit(fmt.Sprintf("failed to load latest version: %s", err))
 		}
+		ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{})
+
+		// Initialize pinned codes in wasmvm as they are not persisted there
+		if err := app.WasmKeeper.InitializePinnedCodes(ctx); err != nil {
+			tmos.Exit(fmt.Sprintf("failed to initialize x/wasm pinned codes %s", err))
+		}
 	}
 
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedVibcKeeper = scopedVibcKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 	app.ScopedICAHostKeeper = scopedICAHostKeeper
+	app.ScopedWasmKeeper = scopedWasmKeeper
 	snapshotManager := app.SnapshotManager()
 	if snapshotManager != nil {
-		if err = snapshotManager.RegisterExtensions(&app.SwingSetSnapshotter); err != nil {
+		if err = snapshotManager.RegisterExtensions(
+			&app.SwingSetSnapshotter,
+			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.WasmKeeper),
+		); err != nil {
 			panic(fmt.Errorf("failed to register snapshot extension: %s", err))
 		}
 	}
 
 	return app
+}
+
+// DropWasmPrivilegeParams returns new x/wasm params that enforce the use of
+// "nobody" or address allowlists.  Governance authority is preserved.
+func DropWasmPrivilegeParams(wparams wasmtypes.Params) wasmtypes.Params {
+	switch wparams.CodeUploadAccess.Permission {
+	case wasmtypes.AccessTypeNobody, wasmtypes.AccessTypeAnyOfAddresses:
+		// Code upload is already sufficiently locked down, nothing more to do.
+
+	default:
+		// Override the unrecognized access type with a "nobody" permission.
+		wparams.CodeUploadAccess = wasmtypes.AllowNobody
+	}
+
+	// Forcefully change the instantiation default to "nobody".
+	wparams.InstantiateDefaultPermission = wasmtypes.AccessTypeNobody
+	return wparams
 }
 
 // normalizeModuleAccount ensures that the given account is a module account,
@@ -1166,6 +1303,11 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*a
 	// as a default account upon receiving a transfer. See BlockedAddresses().
 	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ProvisionPoolName)
 	normalizeModuleAccount(ctx, app.AccountKeeper, vbanktypes.ReservePoolName)
+
+	wparams := DropWasmPrivilegeParams(app.WasmKeeper.GetParams(ctx))
+	if err := app.WasmKeeper.SetParams(ctx, wparams); err != nil {
+		panic(err)
+	}
 
 	// Init early (before first BeginBlock) to run the potentially lengthy bootstrap
 	if app.bootstrapNeeded {
@@ -1373,6 +1515,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(swingset.ModuleName)
 	paramsKeeper.Subspace(vbank.ModuleName)
+	paramsKeeper.Subspace(wasmtypes.ModuleName)
 
 	return paramsKeeper
 }

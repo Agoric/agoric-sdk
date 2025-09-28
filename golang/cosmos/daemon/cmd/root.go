@@ -43,6 +43,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	wasmtesting "github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting"
+
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtxconfig "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
@@ -91,6 +94,9 @@ func NewRootCmd(sender vm.Sender) (*cobra.Command, params.EncodingConfig) {
 	// we "pre"-instantiate the application for getting the injected/configured encoding configuration
 	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
 
+	tempWasmEngine := &wasmtesting.MockWasmEngine{}
+	tempWasmOpts := []wasmkeeper.Option{wasmkeeper.WithWasmEngine(tempWasmEngine)}
+
 	appOpts := make(simtestutil.AppOptionsMap, 0)
 	tempApp := gaia.NewSimApp(
 		log.NewNopLogger(),
@@ -98,6 +104,7 @@ func NewRootCmd(sender vm.Sender) (*cobra.Command, params.EncodingConfig) {
 		nil,
 		false, // we don't want to run the app, just get the encoding config
 		appOpts,
+		tempWasmOpts,
 	)
 
 	encodingConfig := params.EncodingConfig{
@@ -405,11 +412,13 @@ func (ac appCreator) newApp(
 		exportDir := filepath.Join(homePath, "config", ExportedSwingStoreDirectoryName)
 		viper.Set(gaia.FlagSwingStoreExportDir, exportDir)
 	}
+	var emptyWasmOpts []wasmkeeper.Option
 
 	return gaia.NewAgoricApp(
 		ac.sender, ac.agdServer,
 		logger, db, traceStore, true,
 		appOpts,
+		emptyWasmOpts,
 		baseappOptions...,
 	)
 }
@@ -425,6 +434,7 @@ func (ac appCreator) newSnapshotsApp(
 			panic(err)
 		}
 	}
+	var emptyWasmOpts []wasmkeeper.Option
 
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
 
@@ -432,6 +442,7 @@ func (ac appCreator) newSnapshotsApp(
 		ac.sender, ac.agdServer,
 		logger, db, traceStore, true,
 		appOpts,
+		emptyWasmOpts,
 		baseappOptions...,
 	)
 }
@@ -566,6 +577,8 @@ func (ac appCreator) appExport(
 
 	loadLatest := height == -1
 
+	var emptyWasmOpts []wasmkeeper.Option
+
 	gaiaApp := gaia.NewAgoricApp(
 		ac.sender, ac.agdServer,
 		logger,
@@ -573,6 +586,7 @@ func (ac appCreator) appExport(
 		traceStore,
 		loadLatest,
 		appOpts,
+		emptyWasmOpts,
 	)
 
 	if !loadLatest {

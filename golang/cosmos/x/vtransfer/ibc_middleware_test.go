@@ -9,16 +9,18 @@ import (
 	"strings"
 	"testing"
 	"text/template"
+	"time"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/store"
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	dbm "github.com/cosmos/cosmos-db"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	"github.com/iancoleman/orderedmap"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/types"
@@ -27,6 +29,7 @@ import (
 	vibctypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 
 	sdkmath "cosmossdk.io/math"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -112,8 +115,6 @@ func SetupAgoricTestingApp(t *testing.T, instance int) TestingAppMaker {
 	return func() (ibctesting.TestingApp, map[string]json.RawMessage) {
 		db := dbm.NewMemDB()
 		mockController := func(ctx context.Context, needReply bool, jsonRequest string) (jsonReply string, err error) {
-			// fmt.Printf("controller %d got: %s\n", instance, jsonRequest)
-
 			// Check that the message is at least JSON.
 			var jsonAny interface{}
 			if err := json.Unmarshal([]byte(jsonRequest), &jsonAny); err != nil {
@@ -124,8 +125,16 @@ func SetupAgoricTestingApp(t *testing.T, instance int) TestingAppMaker {
 			jsonReply = `true`
 			return jsonReply, nil
 		}
+
+		// This is to prevent CosmWasm lock conflicts when running tests in parallel
+		homeDir := fmt.Sprintf("/tmp/agoric-test-%d-%d", instance, time.Now().UnixNano())
+
+		// Create a proper viper configuration
+		v := viper.New()
+		v.Set(flags.FlagHome, homeDir)
+
 		appd := app.NewAgoricApp(mockController, vm.NewAgdServer(), log.NewTestLogger(t), db, nil,
-			true, sims.EmptyAppOptions{}, interBlockCacheOpt())
+			true, v, []wasmkeeper.Option{}, interBlockCacheOpt())
 		genesisState := app.NewDefaultGenesisState(appd.AppCodec(), appd.BasicModuleManager)
 
 		t := template.Must(template.New("").Parse(`
