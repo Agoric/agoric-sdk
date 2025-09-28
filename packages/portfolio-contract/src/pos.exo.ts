@@ -6,8 +6,10 @@
  */
 import { AmountMath, type Amount } from '@agoric/ertp';
 import type { AccountId } from '@agoric/orchestration';
-import type { Zone } from '@agoric/zone';
+import { AnyNatAmountShape } from '@agoric/orchestration';
 import type { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';
+import type { Zone } from '@agoric/zone';
+import { M } from '@endo/patterns';
 import { type PublishStatusFn } from './portfolio.exo.ts';
 import { makePositionPath, type PoolKey } from './type-guards.ts';
 
@@ -62,6 +64,27 @@ const recordTransferOut = (
   return state.netTransfers;
 };
 
+type PositionState = TransferStatus & {
+  portfolioId: number;
+  protocol: YieldProtocol;
+  poolKey: PoolKey;
+  accountId: AccountId;
+  etc: unknown;
+};
+
+// a bit more lax than the type to facilitate evolution; hence not a TypedPattern
+export const PositionStateShape = {
+  portfolioId: M.number(),
+  protocol: M.string(),
+  totalIn: AnyNatAmountShape,
+  totalOut: AnyNatAmountShape,
+  netTransfers: AnyNatAmountShape,
+  poolKey: M.string(),
+  accountId: M.string(),
+  etc: M.any(),
+};
+harden(PositionStateShape);
+
 export const preparePosition = (
   zone: Zone,
   emptyTransferState: TransferStatus,
@@ -75,7 +98,7 @@ export const preparePosition = (
       poolKey: PoolKey,
       protocol: YieldProtocol,
       accountId: AccountId,
-    ) => ({
+    ): PositionState => ({
       portfolioId,
       protocol,
       ...emptyTransferState,
@@ -118,5 +141,8 @@ export const preparePosition = (
         // mustMatch(status, PositionStatusShape);
         publishStatus(key, status);
       },
+    },
+    {
+      stateShape: PositionStateShape,
     },
   );
