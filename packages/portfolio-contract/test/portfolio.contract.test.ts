@@ -1095,11 +1095,14 @@ test.serial('direct resolver service approach (recommended)', async t => {
   const info = getPortfolioInfo(storagePath, common.bootstrap.storage);
   t.log('Portfolio info after direct resolver settlement:', info.contents);
   
-  // Should have the Aave_Arbitrum position with 100n net transfers
+  // Should have the Aave_Arbitrum position with correct net transfers amount
   const positions = info.contents.positions;
   const aavePosition = positions.find(p => p.protocol === 'Aave_Arbitrum');
   t.truthy(aavePosition, 'Should have Aave_Arbitrum position');
-  t.is(aavePosition?.netTransfers, 100n, 'Should have net transfers of 100n');
+  
+  // netTransfers should be an Amount object, not just a bigint
+  const expectedTransfers = usdc.units(3_333.33); // The deposited amount
+  t.deepEqual(aavePosition?.netTransfers, expectedTransfers, 'Should have correct net transfers amount');
 
   t.log('✅ Direct resolver service approach validated with actual position creation');
   t.log('   This confirms the invokeEntry pattern works: saveResult -> invokeEntry with method: "settleTransaction"');
