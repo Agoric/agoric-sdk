@@ -28,6 +28,8 @@ const PublicParts = harden({
 });
 const BundleIdShape = M.string();
 const VatUpgradeResultsShape = M.splitRecord({ incarnationNumber: M.number() });
+const IssuersShape = M.recordOf(M.string(), IssuerShape);
+const PrivateArgsOverridesShape = M.record();
 
 const iface = M.interface('ContractControl', {
   install: M.callWhen(M.string()).returns({
@@ -38,18 +40,20 @@ const iface = M.interface('ContractControl', {
     M.splitRecord(
       { installation: InstallationShape },
       {
-        issuers: M.recordOf(M.string(), IssuerShape),
-        dataPrivateArgs: M.record(),
+        issuers: IssuersShape,
+        privateArgsOverrides: PrivateArgsOverridesShape,
       },
+      {}, // Refuse unsupported options
     ),
   ).returns(PublicParts),
   installAndStart: M.callWhen(
     M.splitRecord(
       { bundleId: BundleIdShape },
       {
-        issuers: M.recordOf(M.string(), IssuerShape),
-        dataPrivateArgs: M.record(),
+        issuers: IssuersShape,
+        privateArgsOverrides: PrivateArgsOverridesShape,
       },
+      {}, // Refuse unsupported options
     ),
   ).returns(PublicParts),
   getPublicFacet: M.call().returns(M.remotable('publicFacet')),
@@ -60,6 +64,7 @@ const iface = M.interface('ContractControl', {
       M.splitRecord(
         {},
         { message: M.string(), target: M.string(), revoke: M.boolean() },
+        {}, // Refuse unsupported options
       ),
     )
     .returns(),
