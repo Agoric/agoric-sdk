@@ -31,8 +31,7 @@ const waitForInvocation = async (
   wallet: SigningSmartWalletKit,
   invocationId: string,
 ): Promise<void> => {
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
+  for (;;) {
     const update = wallet.getLastUpdate();
     
     // Check for wallet action error
