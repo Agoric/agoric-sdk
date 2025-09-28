@@ -1,5 +1,4 @@
-import { type SigningSmartWalletKit } from '@agoric/client-utils';
-import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
+import { type SigningSmartWalletKit, retryUntilCondition } from '@agoric/client-utils';
 import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 
@@ -7,48 +6,56 @@ type ResolveTxParams = {
   signingSmartWalletKit: SigningSmartWalletKit;
   txId: TxId;
   status: Omit<TxStatus, 'pending'>;
-  proposal?: object;
+  rejectionReason?: string;
+  setTimeout: typeof globalThis.setTimeout;
 };
 
-const getInvitationMakers = async (wallet: SigningSmartWalletKit) => {
-  const getCurrentWalletRecord = await wallet.query.getCurrentWalletRecord();
-  const invitation = getCurrentWalletRecord.offerToUsedInvitation
-    .filter(inv => inv[1].value[0].description === 'resolver')
-    .toSorted()
-    .at(-1);
-  if (!invitation) {
-    throw new Error('No invitation makers found');
-  }
-  return {
-    id: invitation[0],
-    invitation: invitation[1],
-  };
+/**
+ * Wait for a wallet invocation to complete by polling getLastUpdate.
+ */
+const waitForInvocation = async (
+  wallet: SigningSmartWalletKit,
+  id: string,
+  setTimeout: typeof globalThis.setTimeout,
+) => {
+  await retryUntilCondition(
+    async () => {
+      const update = wallet.getLastUpdate();
+      if (update.updated === 'walletAction') {
+        throw Error(update.error);
+      }
+      return (
+        update.updated === 'invocation' &&
+        update.id === id &&
+        !!(update.result || update.error)
+      );
+    },
+    'invocation completion',
+    { retryIntervalMs: 1000, maxRetries: 30, setTimeout },
+  );
+
+  const update = wallet.getLastUpdate();
+  if (update.error) throw Error(update.error);
 };
 
 export const resolvePendingTx = async ({
   signingSmartWalletKit,
   txId,
   status,
-  proposal = {},
+  rejectionReason,
+  setTimeout,
 }: ResolveTxParams) => {
-  const invitationMakersOffer = await getInvitationMakers(
-    signingSmartWalletKit,
-  );
-
-  const action: OfferSpec = harden({
-    id: `offer-${Date.now()}`,
-    invitationSpec: {
-      source: 'continuing',
-      previousOffer: invitationMakersOffer.id,
-      invitationMakerName: 'SettleTransaction',
+  const id = `resolve-${txId}-${Date.now()}`;
+  
+  await signingSmartWalletKit.sendBridgeAction({
+    method: 'invokeEntry',
+    id,
+    spendAction: 'resolver-service',
+    message: {
+      method: 'settleTransaction',
+      args: { txId, status, rejectionReason },
     },
-    offerArgs: {
-      status,
-      txId,
-    },
-    proposal,
   });
 
-  const result = await signingSmartWalletKit.executeOffer(action);
-  return result;
+  await waitForInvocation(signingSmartWalletKit, id, setTimeout);
 };
