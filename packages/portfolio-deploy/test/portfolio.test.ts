@@ -788,7 +788,7 @@ test.serial('CCTP settlement with direct resolver service approach', async t => 
   await eventLoopIteration();
 
   // Use invokeEntry to settle transaction directly
-  const id = Date.now().toString();
+  const id = 'direct-resolver-test';
   await wallet.sendBridgeAction({
     type: 'WALLET_SPEND_ACTION',
     owner: beneficiary,

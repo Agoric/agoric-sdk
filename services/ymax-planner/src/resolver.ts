@@ -1,4 +1,5 @@
 import { type SigningSmartWalletKit } from '@agoric/client-utils';
+import { retryUntilCondition } from '@agoric/client-utils';
 import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 
@@ -7,6 +8,7 @@ type ResolveTxParams = {
   txId: TxId;
   status: Omit<TxStatus, 'pending'>;
   rejectionReason?: string;
+  setTimeout: typeof global.setTimeout;
 };
 
 const getResolverService = async (wallet: SigningSmartWalletKit) => {
@@ -30,29 +32,36 @@ const getResolverService = async (wallet: SigningSmartWalletKit) => {
 const waitForInvocation = async (
   wallet: SigningSmartWalletKit,
   invocationId: string,
+  { setTimeout }: { setTimeout: typeof global.setTimeout },
 ): Promise<void> => {
-  for (;;) {
-    const update = wallet.getLastUpdate();
-    
-    // Check for wallet action error
-    if (update.updated === 'walletAction') {
-      throw new Error(update.error);
-    }
-    
-    // Check for invocation completion
-    if (
-      update.updated === 'invocation' &&
-      update.id === invocationId &&
-      !!(update.result || update.error)
-    ) {
-      if (update.error) {
+  await retryUntilCondition(
+    () => wallet.getLastUpdate(),
+    (update) => {
+      // Check for wallet action error
+      if (update.updated === 'walletAction') {
         throw new Error(update.error);
       }
-      return;
+      
+      // Check for invocation completion
+      return (
+        update.updated === 'invocation' &&
+        update.id === invocationId &&
+        !!(update.result || update.error)
+      );
+    },
+    `Waiting for invocation ${invocationId} to complete`,
+    {
+      maxRetries: 60, // 60 * 100ms = 6 seconds max wait
+      retryIntervalMs: 100,
+      setTimeout,
+      log: () => {}, // Disable logging for cleaner output
     }
-    
-    // Wait before polling again
-    await new Promise(resolve => setTimeout(resolve, 100));
+  );
+
+  // Check final result for errors
+  const finalUpdate = wallet.getLastUpdate();
+  if (finalUpdate.error) {
+    throw new Error(finalUpdate.error);
   }
 };
 
@@ -61,6 +70,7 @@ export const resolvePendingTx = async ({
   txId,
   status,
   rejectionReason,
+  setTimeout,
 }: ResolveTxParams) => {
   const resolverOffer = await getResolverService(
     signingSmartWalletKit,
@@ -84,5 +94,5 @@ export const resolvePendingTx = async ({
     }),
   });
 
-  await waitForInvocation(signingSmartWalletKit, id);
+  await waitForInvocation(signingSmartWalletKit, id, { setTimeout });
 };
