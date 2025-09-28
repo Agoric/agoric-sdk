@@ -257,6 +257,13 @@ export const prepareResolverKit = (
         },
       },
     },
+    {
+      stateShape: {
+        transactionRegistry: M.remotable('transactionRegistry'),
+        index: M.number(),
+        etc: M.any(),
+      },
+    },
   );
 };
 export type ResolverInvitationMakers = ResolverKit['invitationMakers'];
