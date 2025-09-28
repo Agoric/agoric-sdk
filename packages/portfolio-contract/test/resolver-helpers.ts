@@ -2,76 +2,46 @@
 
 import { E } from '@endo/far';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import type { ZoeService } from '@agoric/zoe';
+import type { UserSeat, ZoeService } from '@agoric/zoe';
+import type { ResolverInvitationMakers } from '../src/resolver/resolver.exo.js';
 import type { TxStatus } from '../src/resolver/constants.js';
 
 /**
- * Helper to get resolver makers from a creator facet (original pattern).
- * This is the original behavior - kept for backward compatibility.
+ * Helper to get resolver makers from a creator facet.
+ * Encapsulates the common pattern of making a resolver invitation,
+ * offering it to zoe, and getting the resolver makers from the result.
  *
  * @param zoe - Zoe service instance
  * @param creatorFacet - The creator facet that has makeResolverInvitation
- * @returns {Promise<any>} Object containing invitationMakers
- */
-export const getResolverService = async (
-  zoe: ZoeService,
-  creatorFacet: any,
-): Promise<any> => {
-  const resolverInvitation = await E(creatorFacet).makeResolverInvitation();
-  const resolverSeat = await E(zoe).offer(resolverInvitation);
-  return E(resolverSeat).getOfferResult();
-};
-
-/**
- * Helper to get the new resolver service directly (new pattern).
- * 
- * @param zoe - Zoe service instance
- * @param creatorFacet - The creator facet that has makeResolverServiceInvitation
- * @returns {Promise<any>} Resolver service for direct method calls
- */
-export const getResolverServiceDirect = async (
-  zoe: ZoeService,
-  creatorFacet: any,
-): Promise<any> => {
-  const resolverServiceInvitation = await E(creatorFacet).makeResolverServiceInvitation();
-  const resolverServiceSeat = await E(zoe).offer(resolverServiceInvitation);
-  return E(resolverServiceSeat).getOfferResult();
-};
-
-/**
- * @deprecated Use getResolverService().invitationMakers instead
- * Helper to get resolver makers from a creator facet (deprecated pattern).
- * 
- * @param zoe - Zoe service instance
- * @param creatorFacet - The creator facet that has makeResolverInvitation
- * @returns {Promise<any>} Resolver invitation makers
+ * @returns {Promise<ResolverInvitationMakers>}
  */
 export const getResolverMakers = async (
   zoe: ZoeService,
   creatorFacet: any,
-): Promise<any> => {
-  const resolverService = await getResolverService(zoe, creatorFacet);
-  return resolverService.invitationMakers;
+): Promise<ResolverInvitationMakers> => {
+  const resolverInvitation = await E(creatorFacet).makeResolverInvitation();
+  const resolverSeat = (await E(zoe).offer(resolverInvitation)) as UserSeat<{
+    invitationMakers: ResolverInvitationMakers;
+  }>;
+  return (await E(resolverSeat).getOfferResult()).invitationMakers;
 };
 
 /**
- * Helper to manually settle a transaction using the old invitation makers pattern.
+ * Helper to manually settle a transaction in tests.
  * This should be called when a test flow includes a transaction operation
  * to resolve the waiting promise.
  *
  * @param zoe - Zoe service instance
- * @param resolverMakers - ResolverInvitationMakers instance  
+ * @param resolverMakers - ResolverInvitationMakers instance
  * @param txNumber - Transaction number for txId
  * @param status - Transaction status
- * @param rejectionReason - Optional rejection reason for failed transactions
  * @param log - Optional logging function (defaults to console.log, pass () => {} to disable)
  */
 export const settleTransaction = async (
   zoe: ZoeService,
-  resolverMakers: any,
+  resolverMakers: ResolverInvitationMakers,
   txNumber: number = 0,
   status: Exclude<TxStatus, 'pending'> = 'success',
-  rejectionReason?: string,
   log: (message: string, ...args: any[]) => void = console.log,
 ): Promise<string> => {
   await eventLoopIteration();
@@ -84,40 +54,9 @@ export const settleTransaction = async (
   const settlementSeat = await E(zoe).offer(settleInvitation, {}, undefined, {
     status,
     txId: `tx${txNumber}`,
-    ...(rejectionReason && { rejectionReason }),
   });
 
   const result = (await E(settlementSeat).getOfferResult()) as string;
   log(`Transaction settlement got result:`, result);
   return result;
-};
-
-/**
- * Helper to manually settle a transaction using the new direct service pattern.
- * 
- * @param resolverService - Resolver service instance (from getResolverServiceDirect)
- * @param txNumber - Transaction number for txId
- * @param status - Transaction status
- * @param rejectionReason - Optional rejection reason for failed transactions
- * @param log - Optional logging function
- */
-export const settleTransactionDirect = async (
-  resolverService: any,
-  txNumber: number = 0,
-  status: Exclude<TxStatus, 'pending'> = 'success',
-  rejectionReason?: string,
-  log: (message: string, ...args: any[]) => void = console.log,
-): Promise<void> => {
-  await eventLoopIteration();
-  await eventLoopIteration();
-
-  log('Settling transaction directly via service...');
-
-  await E(resolverService).settleTransaction({
-    status,
-    txId: `tx${txNumber}`,
-    ...(rejectionReason && { rejectionReason }),
-  });
-
-  log(`Transaction tx${txNumber} settled with status: ${status}`);
 };
