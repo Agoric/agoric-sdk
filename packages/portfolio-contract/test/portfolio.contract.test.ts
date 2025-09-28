@@ -155,8 +155,8 @@ test.serial('open a portfolio with Aave position', async t => {
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   const resolverService = await getResolverService(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleTransaction(resolverService);
-  const gmpSettlementPromise = settleTransaction(resolverService, 1);
+  const cctpSettlementPromise = settleTransaction(zoe, resolverService.invitationMakers);
+  const gmpSettlementPromise = settleTransaction(zoe, resolverService.invitationMakers, 1);
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
@@ -211,8 +211,8 @@ test('open a portfolio with Compound position', async t => {
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   const resolverService = await getResolverService(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleTransaction(resolverService);
-  const gmpSettlementPromise = settleTransaction(resolverService, 1);
+  const cctpSettlementPromise = settleTransaction(zoe, resolverService.invitationMakers);
+  const gmpSettlementPromise = settleTransaction(zoe, resolverService.invitationMakers, 1);
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
@@ -274,8 +274,8 @@ test('open portfolio with USDN, Aave positions', async t => {
 
   // Start CCTP confirmation for the Aave portion (amount goes to Arbitrum)
   const resolverService = await getResolverService(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleTransaction(resolverService);
-  const gmpSettlementPromise = settleTransaction(resolverService, 1);
+  const cctpSettlementPromise = settleTransaction(zoe, resolverService.invitationMakers);
+  const gmpSettlementPromise = settleTransaction(zoe, resolverService.invitationMakers, 1);
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
@@ -390,8 +390,8 @@ test('claim rewards on Aave position successfully', async t => {
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   const resolverService = await getResolverService(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleTransaction(resolverService);
-  const gmpSettlementPromise = settleTransaction(resolverService, 1);
+  const cctpSettlementPromise = settleTransaction(zoe, resolverService.invitationMakers);
+  const gmpSettlementPromise = settleTransaction(zoe, resolverService.invitationMakers, 1);
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
@@ -425,7 +425,7 @@ test('claim rewards on Aave position successfully', async t => {
     },
   );
 
-  await settleTransaction(resolverService, 2);
+  await settleTransaction(zoe, resolverService.invitationMakers, 2);
 
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   const rebalanceResult = await rebalanceP;
@@ -538,8 +538,8 @@ const beefyTestMacro = test.macro({
     await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
     const resolverService = await getResolverService(zoe, started.creatorFacet);
-    const cctpSettlementPromise = settleTransaction(resolverService);
-    const gmpSettlementPromise = settleTransaction(resolverService, 1);
+    const cctpSettlementPromise = settleTransaction(zoe, resolverService.invitationMakers);
+    const gmpSettlementPromise = settleTransaction(zoe, resolverService.invitationMakers, 1);
 
     await simulateCCTPAck(common.utils).finally(() =>
       simulateAckTransferToAxelar(common.utils),
@@ -628,8 +628,8 @@ test('Withdraw from a Beefy position', async t => {
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
   const resolverService = await getResolverService(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleTransaction(resolverService);
-  const gmpSettlementPromise = settleTransaction(resolverService, 1);
+  const cctpSettlementPromise = settleTransaction(zoe, resolverService.invitationMakers);
+  const gmpSettlementPromise = settleTransaction(zoe, resolverService.invitationMakers, 1);
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
@@ -673,7 +673,7 @@ test('Withdraw from a Beefy position', async t => {
   );
 
   // GMP transaction settlement for the withdraw
-  await settleTransaction(resolverService, 2);
+  await settleTransaction(zoe, resolverService.invitationMakers, 2);
 
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   await simulateCCTPAck(common.utils).finally(() =>
@@ -681,9 +681,9 @@ test('Withdraw from a Beefy position', async t => {
   );
 
   // CCTP transaction settlement for the withdraw
-  await settleTransaction(resolverService, 3);
+  await settleTransaction(zoe, resolverService.invitationMakers, 3);
   // Transaction settlement on noble for the withdraw
-  await settleTransaction(resolverService, 4);
+  await settleTransaction(zoe, resolverService.invitationMakers, 4);
 
   const withdraw = await withdrawP;
 
@@ -769,19 +769,19 @@ test.serial(
     await eventLoopIteration();
 
     const resolverService = await getResolverService(zoe, started.creatorFacet);
-    const cctpSettlementPromise = settleTransaction(resolverService, 0);
+    const cctpSettlementPromise = settleTransaction(zoe, resolverService.invitationMakers, 0);
 
     await simulateCCTPAck(common.utils).finally(() =>
       simulateAckTransferToAxelar(common.utils),
     );
-    const gmpSettlementPromise = settleTransaction(resolverService, 1);
+    const gmpSettlementPromise = settleTransaction(zoe, resolverService.invitationMakers, 1);
 
     await common.utils
       .transmitVTransferEvent('acknowledgementPacket', -1)
       .then(() => eventLoopIteration());
     await eventLoopIteration();
 
-    const cctpSettlementPromise2 = settleTransaction(resolverService, 2);
+    const cctpSettlementPromise2 = settleTransaction(zoe, resolverService.invitationMakers, 2);
 
     await simulateCCTPAck(common.utils).finally(() =>
       simulateAckTransferToAxelar(common.utils),
@@ -866,13 +866,13 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
   );
 
   await Promise.all([
-    settleTransaction(resolverService),
-    settleTransaction(resolverService, 1),
+    settleTransaction(zoe, resolverService.invitationMakers),
+    settleTransaction(zoe, resolverService.invitationMakers, 1),
   ]);
 
   await Promise.all([
-    settleTransaction(resolverService, 2),
-    settleTransaction(resolverService, 3),
+    settleTransaction(zoe, resolverService.invitationMakers, 2),
+    settleTransaction(zoe, resolverService.invitationMakers, 3),
   ]);
 
   await eventLoopIteration(); // let IBC message go out

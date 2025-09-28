@@ -109,7 +109,7 @@ const rebalanceScenarioMacro = test.macro({
             zoe,
             started.creatorFacet,
           );
-          await settleTransaction(resolverService, index, 'success');
+          await settleTransaction(zoe, resolverService.invitationMakers, index, 'success');
           index += 1;
         }
         if (move.src === '@Arbitrum') {
@@ -117,12 +117,12 @@ const rebalanceScenarioMacro = test.macro({
             zoe,
             started.creatorFacet,
           );
-          await settleTransaction(resolverService, index, 'success');
+          await settleTransaction(zoe, resolverService.invitationMakers, index, 'success');
           index += 1;
           if (move.dest === '@noble') {
             await transmitVTransferEvent('acknowledgementPacket', -1);
             // Also confirm Noble transaction for flows to Noble
-            await settleTransaction(resolverService, index, 'success');
+            await settleTransaction(zoe, resolverService.invitationMakers, index, 'success');
             index += 1;
           }
         }
