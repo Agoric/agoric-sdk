@@ -1048,7 +1048,7 @@ test('request rebalance - send same targetAllocation', async t => {
 
 test.serial('direct resolver service approach (recommended)', async t => {
   const { trader1, common, started, zoe } = await setupTrader(t);
-  const { usdc, bld, poc26 } = common.brands;
+  const { usdc, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
   
