@@ -58,7 +58,18 @@ const iface = M.interface('ContractControl', {
   ).returns(PublicParts),
   getPublicFacet: M.call().returns(M.remotable('publicFacet')),
   getCreatorFacet: M.call().returns(M.remotable('creatorFacet')),
-  upgrade: M.callWhen(BundleIdShape).returns(VatUpgradeResultsShape),
+  upgrade: M.callWhen(
+    M.or(
+      BundleIdShape, // Backward compat with old signature
+      M.splitRecord(
+        { bundleId: BundleIdShape },
+        {
+          privateArgsOverrides: PrivateArgsOverridesShape,
+        },
+        {}, // Refuse unsupported options
+      ),
+    ),
+  ).returns(VatUpgradeResultsShape),
   terminate: M.callWhen()
     .optional(
       M.splitRecord(
@@ -214,18 +225,28 @@ export const prepareContractControl = (zone, svcs) => {
         return kit.creatorFacet;
       },
 
-      /** @param {string} bundleId */
-      async upgrade(bundleId) {
-        const { name, revoked, kit } = this.state;
+      /** @param {string | {bundleId: string; privateArgsOverrides?: CopyRecord; }} opts */
+      async upgrade(opts) {
+        if (typeof opts === 'string') opts = { bundleId: opts };
+        const { bundleId, privateArgsOverrides = {} } = opts;
+
+        const { name, revoked, kit, initialPrivateArgs } = this.state;
         trace(name, 'upgrade', bundleId);
         !revoked || Fail`revoked`;
         if (!kit) throw Fail`${q(name)}: no StartedInstanceKit`;
-        const { privateArgs } = kit;
+        const { privateArgs: previousPrivateArgs } = kit;
+        const privateArgs = {
+          ...initialPrivateArgs,
+          ...previousPrivateArgs,
+          ...privateArgsOverrides,
+        };
         const result = await E(kit.adminFacet).upgradeContract(
           bundleId,
           privateArgs,
         );
+        const newKit = harden({ ...kit, privateArgs });
         trace(name, 'upgrade result', result);
+        this.state.kit = newKit;
         return result;
       },
 
