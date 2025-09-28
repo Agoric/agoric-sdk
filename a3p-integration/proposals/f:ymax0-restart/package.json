@@ -1,9 +1,5 @@
 {
   "agoricProposal": {
-    "source": "subdir",
-    "sdk-generate": [
-      "../../portfolio-deploy/src/portfolio-control.build.js submission --ymaxControlAddress=agoric15u29seyj3c9rdwg7gwkc97uttrk6j9fl4jkuyh"
-    ],
     "type": "/agoric.swingset.CoreEvalProposal"
   },
   "type": "module",
