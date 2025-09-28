@@ -23,6 +23,7 @@ import {
   PortfolioStatusShapeExt,
   type StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import {
   mustMatch,
   partialMap,
@@ -49,7 +50,6 @@ import {
   vstoragePathIsParentOf,
   STALE_RESPONSE,
 } from './vstorage-utils.ts';
-import type { GasEstimator } from './gas-estimation.ts';
 
 const { entries, fromEntries, values } = Object;
 

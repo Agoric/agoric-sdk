@@ -1,32 +1,26 @@
+import { Fail, q } from '@endo/errors';
+import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants';
-import { Fail } from '@endo/errors';
 import { gasLimitEstimates } from './support.ts';
 
 const AGORIC_CHAIN = 'agoric';
 const BLD_TOKEN = 'ubld';
 
-export type GasEstimator = ReturnType<typeof makeGasEstimator>;
-
-/** @see {@link https://docs.axelarscan.io/gmp#estimateGasFee} */
 export const makeGasEstimator = ({
   axelarApiAddress,
-  fetchFunc,
   axelarChainIdMap,
+  fetch: fetchUrl,
 }: {
   axelarApiAddress: string;
-  fetchFunc: typeof fetch;
   axelarChainIdMap: Record<AxelarChain, string>;
-}) => {
-  axelarApiAddress.endsWith('/') ||
-    Fail`Axelar API address must end with a slash: ${axelarApiAddress}`;
-  try {
-    // eslint-disable-next-line no-new
-    new URL(axelarApiAddress);
-  } catch {
+  fetch: typeof fetch;
+}): GasEstimator => {
+  URL.canParse(axelarApiAddress) ||
     Fail`Invalid Axelar API address: ${axelarApiAddress}`;
-  }
-  const axelarEstimateGasAddress = `${axelarApiAddress}gmp/estimateGasFee`;
+  // Allow trailing slashes in `axelarApiAddress`.
+  const axelarEstimateGasAddress = `${axelarApiAddress.replace(/\/*$/, '')}/gmp/estimateGasFee`;
 
+  /** @see {@link https://docs.axelarscan.io/gmp#estimateGasFee} */
   const queryAxelarGasAPI = async (
     sourceChainName: AxelarChain | 'agoric',
     destinationChainName: AxelarChain | 'agoric',
@@ -35,7 +29,7 @@ export const makeGasEstimator = ({
   ) => {
     const sourceChain = axelarChainIdMap[sourceChainName] || 'agoric';
     const destinationChain = axelarChainIdMap[destinationChainName] || 'agoric';
-    const response = await fetchFunc(axelarEstimateGasAddress, {
+    const response = await fetchUrl(axelarEstimateGasAddress, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -50,7 +44,8 @@ export const makeGasEstimator = ({
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const body = await response.text().catch(() => {});
+      Fail`HTTP ${q(response.status)} error! ${response} ${body}`;
     }
 
     const body = await response.text();

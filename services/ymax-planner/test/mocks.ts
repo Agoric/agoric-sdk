@@ -33,8 +33,8 @@ const mockAxelarChainIdMap: Record<AxelarChain, string> = {
 
 export const mockGasEstimator = makeGasEstimator({
   axelarApiAddress: mockAxelarApiAddress,
-  fetchFunc: mockFetchForGasEstimate,
   axelarChainIdMap: mockAxelarChainIdMap,
+  fetch: mockFetchForGasEstimate,
 });
 
 export const createMockProvider = () => {

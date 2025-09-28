@@ -18,8 +18,8 @@ import type {
 import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
 import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
+import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { CosmosRestClient } from './cosmos-rest-client.js';
-import { type GasEstimator } from './gas-estimation.ts';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 
 const getOwn = <O, K extends PropertyKey>(
