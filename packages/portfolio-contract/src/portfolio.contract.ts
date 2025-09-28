@@ -255,8 +255,11 @@ export const contract = async (
     pendingTxsNode: E(storageNode).makeChildNode(PENDING_TXS_NODE_KEY),
     marshaller,
   });
-  const { client: resolverClient, service: resolverService } =
-    resolverZone.makeOnce('resolverKit', () => makeResolverKit());
+  const {
+    client: resolverClient,
+    service: resolverService,
+    invitationMakers: makeResolverInvitationMakers,
+  } = resolverZone.makeOnce('resolverKit', () => makeResolverKit());
 
   const { makeLCA } = orchestrateAll({ makeLCA: flows.makeLCA }, {});
   const contractAccountV = zone.makeOnce('contractAccountV', () => makeLCA());
@@ -370,10 +373,24 @@ export const contract = async (
 
     const resolverHandler = (seat: ZCFSeat) => {
       seat.exit();
-      return resolverService;
+      // Keep original pattern for backward compatibility  
+      return harden({ invitationMakers: makeResolverInvitationMakers });
     };
 
     return zcf.makeInvitation(resolverHandler, 'resolver', undefined);
+  };
+
+  // New invitation that returns the service directly for invokeEntry support
+  const makeResolverServiceInvitation = () => {
+    trace('makeResolverServiceInvitation');
+
+    const resolverServiceHandler = (seat: ZCFSeat) => {
+      seat.exit();
+      // Return service directly for invokeEntry pattern
+      return resolverService;
+    };
+
+    return zcf.makeInvitation(resolverServiceHandler, 'resolverService', undefined);
   };
 
   const getPortfolio = (id: number) => portfolios.get(id);
@@ -395,7 +412,12 @@ export const contract = async (
     'PortfolioAdmin',
     M.interface('PortfolioAdmin', {
       makeResolverInvitation: M.callWhen().returns(InvitationShape),
+      makeResolverServiceInvitation: M.callWhen().returns(InvitationShape),
       deliverResolverInvitation: M.callWhen(
+        M.string(),
+        M.remotable('Instance'),
+      ).returns(),
+      deliverResolverServiceInvitation: M.callWhen(
         M.string(),
         M.remotable('Instance'),
       ).returns(),
@@ -409,6 +431,9 @@ export const contract = async (
       makeResolverInvitation() {
         return makeResolverInvitation();
       },
+      makeResolverServiceInvitation() {
+        return makeResolverServiceInvitation();
+      },
       async deliverResolverInvitation(
         address: string,
         instancePS: Instance<() => { publicFacet: PostalServiceI }>,
@@ -419,6 +444,17 @@ export const contract = async (
         trace('made resolver invitation', invitation);
         await E(pfP).deliverPayment(address, invitation);
         trace('delivered resolver invitation');
+      },
+      async deliverResolverServiceInvitation(
+        address: string,
+        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+      ) {
+        const zoe = zcf.getZoeService();
+        const pfP = E(zoe).getPublicFacet(instancePS);
+        const invitation = await makeResolverServiceInvitation();
+        trace('made resolver service invitation', invitation);
+        await E(pfP).deliverPayment(address, invitation);
+        trace('delivered resolver service invitation');
       },
       makePlannerInvitation() {
         return makePlannerInvitation();
