@@ -1070,24 +1070,39 @@ test.serial('direct resolver service approach (recommended)', async t => {
   const resolverServiceSeat = await E(zoe).offer(resolverServiceInvitation);
   const resolverService = await E(resolverServiceSeat).getOfferResult();
 
-  // Demonstrate direct method calls (like what invokeEntry would do)
-  t.log('Settling CCTP transaction directly via resolver service');
-  await E(resolverService).settleTransaction({
-    status: 'success',
-    txId: 'tx0',
-  });
+  // Create settlement promises that will wait for transactions to be created
+  // This follows the same async pattern as the working tests
+  const cctpSettlementPromise = (async () => {
+    await eventLoopIteration();
+    await eventLoopIteration(); // Wait for transactions to be created
+    t.log('Settling CCTP transaction directly via resolver service');
+    return E(resolverService).settleTransaction({
+      status: 'success',
+      txId: 'tx0',
+    });
+  })();
 
-  t.log('Settling GMP transaction directly via resolver service');
-  await E(resolverService).settleTransaction({
-    status: 'success', 
-    txId: 'tx1',
-  });
+  const gmpSettlementPromise = (async () => {
+    await eventLoopIteration();
+    await eventLoopIteration(); // Wait for transactions to be created
+    t.log('Settling GMP transaction directly via resolver service');
+    return E(resolverService).settleTransaction({
+      status: 'success',
+      txId: 'tx1',
+    });
+  })();
 
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
 
-  const { result } = await openP;
+  const [{ result }, cctpResult, gmpResult] = await Promise.all([
+    openP,
+    cctpSettlementPromise,
+    gmpSettlementPromise,
+  ]);
+  
+  t.log('=== Portfolio completed, settlement results:', { cctpResult, gmpResult });
   t.truthy(result.publicSubscribers.portfolio, 'Portfolio should be created');
 
   // Validate that the resolver worked by checking the final portfolio state
