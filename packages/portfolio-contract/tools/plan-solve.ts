@@ -1,29 +1,31 @@
-import type { Amount } from '@agoric/ertp';
-import { AmountMath } from '@agoric/ertp';
-import type { NatAmount } from '@agoric/ertp/src/types.js';
-
-import { Fail } from '@endo/errors';
+import makeHighsSolver from 'highs';
 import jsLPSolver from 'javascript-lp-solver';
 import type { IModel, IModelVariableConstraint } from 'javascript-lp-solver';
+
+import { Fail } from '@endo/errors';
+
+import { AmountMath } from '@agoric/ertp';
+import type { Amount, NatAmount } from '@agoric/ertp/src/types.js';
 import {
   makeTracer,
   naturalCompare,
   objectMap,
+  partialMap,
+  provideLazyMap,
   typedEntries,
 } from '@agoric/internal';
-import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
-import { PoolPlaces, type PoolKey } from '../src/type-guards.js';
+import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+
 import type { AssetPlaceRef, MovementDesc } from '../src/type-guards-steps.js';
-import type {
-  FeeMode,
-  NetworkSpec,
-  TransferProtocol,
-} from './network/network-spec.js';
-import { makeGraphFromDefinition } from './network/buildGraph.js';
 import {
   preflightValidateNetworkPlan,
   formatInfeasibleDiagnostics,
 } from './graph-diagnose.js';
+import { chainOf, makeGraphFromDefinition } from './network/buildGraph.js';
+import type { FlowEdge, RebalanceGraph } from './network/buildGraph.js';
+import type { NetworkSpec } from './network/network-spec.js';
+
+const highsSolverP = makeHighsSolver();
 
 const replaceOrInit = <K, V>(
   map: Map<K, V>,
@@ -37,42 +39,6 @@ const replaceOrInit = <K, V>(
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const trace = makeTracer('solve');
-
-// ----------------------------------- Types -----------------------------------
-
-/**
- * A chain hub node id looks like '@agoric', '@noble', '@Arbitrum', etc.
- * Leaf nodes: PoolKey, '<Cash>', '<Deposit>', '+agoric'
- */
-
-/** Internal edge representation */
-export interface FlowEdge {
-  id: string;
-  src: AssetPlaceRef;
-  dest: AssetPlaceRef;
-  capacity: number; // numeric for LP; derived from bigint
-  variableFee: number; // cost coefficient per unit flow in basis points
-  fixedFee?: number; // optional fixed cost (cheapest mode)
-  timeFixed?: number; // optional time cost (fastest mode)
-  via?: TransferProtocol; // annotation (e.g. 'intra-chain', 'cctp', etc.)
-  feeMode?: FeeMode;
-}
-
-/** Node supply: positive => must send out; negative => must receive */
-export interface SupplyMap {
-  [node: string]: number;
-}
-
-/** Graph structure */
-export interface RebalanceGraph {
-  nodes: Set<AssetPlaceRef>;
-  edges: FlowEdge[];
-  supplies: SupplyMap;
-  brand: Amount['brand'];
-  feeBrand: Amount['brand'];
-  /** When true, print extra diagnostics on solver failure */
-  debug?: boolean;
-}
 
 /** Mode of optimization */
 export type RebalanceMode = 'cheapest' | 'fastest';
@@ -106,8 +72,6 @@ type GasEstimator = {
   getReturnFeeEstimate: (chainName: AxelarChain) => Promise<bigint>;
 };
 
-// --- keep existing type declarations above ---
-
 /**
  * -----------------------------------------------------------------------------
  * Scaling Rules (model domain normalization)
@@ -120,96 +84,6 @@ type GasEstimator = {
  * -----------------------------------------------------------------------------
  */
 const FLOW_EPS = 1e-6;
-
-/**
- * Build base graph with:
- * - Hub nodes for each chain discovered in placeRefs (auto-added as '@chain')
- * - Leaf nodes for each placeRef (except hubs already formatted)
- * - Intra-chain bidirectional edges leaf <-> hub (variableFee=1, timeFixed=1)
- * - Supplies = current - target; if target missing, assume unchanged (target=current)
- */
-export const buildBaseGraph = (
-  placeRefs: AssetPlaceRef[],
-  current: Partial<Record<AssetPlaceRef, NatAmount>>,
-  target: Partial<Record<AssetPlaceRef, NatAmount>>,
-  brand: Amount['brand'],
-  feeBrand: Amount['brand'],
-): RebalanceGraph => {
-  const nodes = new Set<AssetPlaceRef>();
-  const edges: FlowEdge[] = [];
-  const supplies: SupplyMap = {};
-
-  // Collect chains needed
-  for (const ref of placeRefs) {
-    nodes.add(ref);
-    const chain = chainOf(ref);
-    nodes.add(`@${chain}` as AssetPlaceRef);
-  }
-
-  // Build supplies (signed deltas)
-  for (const node of nodes) {
-    const currentVal = current[node]?.value ?? 0n;
-    const targetSpecified = Object.prototype.hasOwnProperty.call(target, node);
-    const targetVal = targetSpecified ? target[node]!.value : currentVal; // unchanged if unspecified
-    const delta = currentVal - targetVal;
-    // NOTE: Number(bigint) loses precision beyond MAX_SAFE_INTEGER (2^53-1)
-    // For USDC amounts (6 decimals), the largest realistic value would be trillions
-    // of dollars, which should be well within safe integer range.
-    if (delta !== 0n) supplies[node] = Number(delta);
-  }
-
-  // Intra-chain edges (leaf <-> hub)
-  let eid = 0;
-  const vf = 1; // direct variable fee per unit
-  const tf = 1; // time cost unit (seconds or abstract)
-  for (const node of nodes) {
-    if (isHub(node)) continue;
-
-    const chainName = chainOf(node);
-    const hub = `@${chainName}` as AssetPlaceRef;
-    if (node === hub) continue;
-
-    const chainIsEvm = Object.keys(AxelarChain).includes(chainName);
-    const base: Omit<FlowEdge, 'src' | 'dest' | 'id'> = {
-      capacity: (Number.MAX_SAFE_INTEGER + 1) / 4,
-      variableFee: vf,
-      fixedFee: 0,
-      timeFixed: tf,
-      via: 'local',
-    };
-
-    edges.push({
-      // eslint-disable-next-line no-plusplus
-      id: `e${eid++}`,
-      src: node,
-      dest: hub,
-      ...base,
-      ...(chainIsEvm ? { feeMode: 'poolToEvm' } : {}),
-    });
-
-    // Skip @agoric → +agoric edge
-    if (node === '+agoric') continue;
-
-    edges.push({
-      // eslint-disable-next-line no-plusplus
-      id: `e${eid++}`,
-      src: hub,
-      dest: node,
-      ...base,
-      ...(chainIsEvm ? { feeMode: 'evmToPool' } : {}),
-    });
-  }
-
-  // Return mutable graph (do NOT harden so we can add inter-chain links later)
-  return {
-    nodes,
-    edges,
-    supplies,
-    brand,
-    feeBrand,
-    debug: false,
-  } as RebalanceGraph;
-};
 
 // ------------------------------ Model Building -------------------------------
 
@@ -268,11 +142,15 @@ export const buildLPModel = (
 
   const intVariables = {} as Record<`via_${string}`, IntVar>;
   const binaryVariables = {} as Record<`pick_${string}`, BinaryVar>;
-  const constraints = {} as Record<string, IModelVariableConstraint>;
+  const couplingConstraints = {} as Record<string, IModelVariableConstraint>;
+  const throughputConstraints = {} as Record<string, IModelVariableConstraint>;
+  const netFlowConstraints = {} as Record<string, IModelVariableConstraint>;
   let minPrimaryWeight = Infinity;
   for (const edge of graph.edges) {
     const { id, src, dest } = edge;
     const { capacity, variableFee, fixedFee = 0, timeFixed = 0 } = edge;
+
+    throughputConstraints[`through_${id}`] = { min: 0, max: capacity };
 
     // The numbers in graph.supplies should use the same units as fixedFee, but
     // variableFee is in basis points relative to some scaling of those other
@@ -291,11 +169,19 @@ export const buildLPModel = (
     const magnifiedVariableFee = variableFee / 10_000;
     const magnifiedFlatFee = fixedFee * 1e6;
 
+    // Dynamic costs for this edge are associated with the numeric `via_${id}`
+    // variable, and fixed costs are associated with the binary `pick_${id}`.
+    // We couple them together with a shared `allow_${id}` attribute that has a
+    // tiny negative value for the former and an enormous positive value for the
+    // latter, and a constraint that the total sum be non-negative.
+    // So any `via_${id}` dynamic flow requires activation of `pick_${id}`,
+    // which adds enough `allow_${id}` to cover all of the flow.
+    couplingConstraints[`allow_${id}`] = { min: 0 };
+    const FORCE_PICK = -1e-6;
+    const COVER_FLOW = 1e9;
+
     const intVar: IntVar = {
-      // A negative value for `allow_${id}` forces the solution to include 1
-      // `pick_${id}` (and the corresponding fixed costs) in order to satisfy
-      // that attribute's min: 0 constraint below.
-      [`allow_${id}`]: -1,
+      [`allow_${id}`]: FORCE_PICK,
       [`through_${id}`]: 1,
       [`netOut_${src}`]: 1,
       [`netOut_${dest}`]: -1,
@@ -304,11 +190,8 @@ export const buildLPModel = (
     };
     intVariables[`via_${id}`] = intVar;
 
-    constraints[`allow_${id}`] = { min: 0 };
-    constraints[`through_${id}`] = { max: capacity };
-
     const binaryVar = {
-      [`allow_${id}`]: Number.MAX_SAFE_INTEGER,
+      [`allow_${id}`]: COVER_FLOW,
       magnifiedFlatFee,
       timeFixed,
       weight: 0, // increased below
@@ -337,16 +220,20 @@ export const buildLPModel = (
   // Constrain the net flow from each node.
   for (const node of graph.nodes) {
     const supply = graph.supplies[node] || 0;
-    constraints[`netOut_${node}`] = { equal: supply };
+    netFlowConstraints[`netOut_${node}`] = { equal: supply };
   }
 
   return {
-    optimize: 'weight',
     opType: 'min',
-    constraints,
-    variables: { ...intVariables, ...binaryVariables },
+    optimize: 'weight',
+    constraints: {
+      ...couplingConstraints,
+      ...throughputConstraints,
+      ...netFlowConstraints,
+    },
     binaries: objectMap(binaryVariables, () => true),
     ints: objectMap(intVariables, () => true),
+    variables: { ...binaryVariables, ...intVariables },
   };
 };
 
@@ -373,32 +260,92 @@ const prettyJsonable = (obj: unknown): string => {
   return pretty;
 };
 
-// solveRebalance: use javascript-lp-solver directly
+const cplexLpOpForName = { min: '>=', max: '<=', equal: '=' };
+
+/**
+ * Convert a javascript-lp-solver Model into CPLEX LP format.
+ * https://lim.univ-reunion.fr/staff/fred/Enseignement/Optim/doc/CPLEX-LP/CPLEX-LP-file-format.html
+ */
+const toCplexLpText = (model: LpModel) => {
+  const variableEntries = typedEntries(model.variables);
+  const makeSumExpr = attr =>
+    partialMap(variableEntries, ([varName, attrs]) => {
+      const attrValue = Object.hasOwn(attrs, attr) ? attrs[attr] : 0;
+      if (attrValue) return `${attrValue === 1 ? '' : attrValue} ${varName}`;
+    }).join(' + ');
+  // Variables [and constraints] can be named anything provided that the
+  // **name does not exceed 16 characters**.
+  const mappedAttrs = new Map();
+  const mode: 'MIN' | 'MAX' = model.opType.toUpperCase();
+  const text = `
+${mode}
+  ${model.optimize}: ${makeSumExpr(model.optimize)}
+SUBJECT TO
+  ${typedEntries(model.constraints)
+    .flatMap(([attr, constraint]) => {
+      let attrParts = attr.split('_');
+      if (attrParts[0] === 'through') {
+        attrParts[0] = 'thru';
+      } else if (attrParts[0] !== 'allow') {
+        // Replace everything after the first "_" with a unique counter.
+        attrParts = [
+          attrParts[0],
+          provideLazyMap(mappedAttrs, attr, () => mappedAttrs.size + 1),
+        ];
+      }
+      const prefix = attrParts.join('_');
+      const lines = [`\\# ${attr} ${prettyJsonable(constraint)}`];
+      for (const [opName, value] of Object.entries(constraint)) {
+        const label = `${prefix}_${opName.slice(0, 3)}`;
+        const op = cplexLpOpForName[opName];
+        lines.push(`${label}: ${makeSumExpr(attr)} ${op} ${value}`);
+      }
+      return lines;
+    })
+    .join('\n  ')}
+BINARY
+  ${Object.keys(model.binaries).join(' ')}
+GENERAL
+  ${Object.keys(model.ints).join(' ')}
+END`.trim();
+  return `${text}\n`;
+};
+
 // This operation is async to allow future use of async solvers if needed
 export const solveRebalance = async (
   model: LpModel,
   graph: RebalanceGraph,
-): Promise<SolvedEdgeFlow[]> => {
-  const result = jsLPSolver.Solve(model, 1e-6);
-  if (result.feasible !== true) {
+): Promise<{ flows: SolvedEdgeFlow[]; detail?: Record<string, unknown> }> => {
+  const cplexLpText = toCplexLpText(model);
+  const matrixResult = await Promise.resolve(highsSolverP)
+    .then(solver => solver.solve(cplexLpText))
+    .catch(error => ({ Status: undefined, error }));
+  if (matrixResult.Status !== 'Optimal') {
+    // Switch to javascript-lp-solver for diagnostics.
+    const jsResult = jsLPSolver.Solve(model, 1e-9);
     if (graph.debug) {
       // Emit richer context only on demand to avoid noisy passing runs
+      const { error } = matrixResult as any;
+      if (error) {
+        console.error('[CPLEX LP solver] Error:', error.message, cplexLpText);
+        throw Fail`Invalid CPLEX LP model: ${error.message}`;
+      }
       let msg = formatInfeasibleDiagnostics(graph, model);
-      msg += ` | ${prettyJsonable(result)}`;
+      msg += ` | ${prettyJsonable(jsResult)}`;
       console.error('[solver] No feasible solution. Diagnostics:', msg);
       throw Fail`No feasible solution: ${msg}`;
     }
-    throw Fail`No feasible solution: ${result}`;
+    throw Fail`No feasible solution: ${jsResult}`;
   }
   const flows: SolvedEdgeFlow[] = [];
   for (const edge of graph.edges) {
     const { id } = edge;
     const flowKey = `via_${id}`;
-    const flow = Object.hasOwn(result, flowKey) ? result[flowKey] : undefined;
-    const used = (flow ?? 0) > FLOW_EPS || result[`pick_${id}`];
+    const flow = matrixResult.Columns[flowKey]?.Primal;
+    const used = (flow ?? 0) > FLOW_EPS;
     if (used) flows.push({ edge, flow, used: true });
   }
-  return flows;
+  return { flows, detail: { cplexLpText, matrixResult } };
 };
 
 export const rebalanceMinCostFlowSteps = async (
@@ -556,36 +503,19 @@ export const planRebalanceFlow = async (opts: {
   );
 
   const model = buildLPModel(graph, mode);
-  let flows;
+  let result;
   await null;
   try {
-    flows = await solveRebalance(model, graph);
+    result = await solveRebalance(model, graph);
   } catch (err) {
     // If the solver says infeasible, try to produce a clearer message
     preflightValidateNetworkPlan(network as any, current as any, target as any);
     throw err;
   }
+  const { flows, detail } = result;
   const steps = await rebalanceMinCostFlowSteps(flows, graph, gasEstimator);
-  return harden({ graph, model, flows, steps });
+  return harden({ graph, model, flows, steps, detail });
 };
-
-const chainOf = (id: AssetPlaceRef): string => {
-  if (id.startsWith('@')) return id.slice(1);
-  if (id === '<Cash>' || id === '<Deposit>' || id === '+agoric')
-    return 'agoric';
-  if (id in PoolPlaces) {
-    const pk = id as PoolKey;
-    return PoolPlaces[pk].chainName;
-  }
-  // Fallback: syntactic pool id like "Protocol_Chain" => chain
-  // This enables base graph edges for pools even if not listed in PoolPlaces
-  const m = /^([A-Za-z0-9]+)_([A-Za-z0-9-]+)$/.exec(id);
-  if (m) {
-    return m[2];
-  }
-  throw Fail`Cannot determine chain for ${id}`;
-};
-const isHub = (id: AssetPlaceRef): boolean => id.startsWith('@');
 
 // ---------------------------- Example (commented) ----------------------------
 /*
