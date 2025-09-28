@@ -124,23 +124,21 @@ const computeWeightedTargets = (
   );
   const total = totalCurrentAmt.value + delta;
   assert(total >= 0n, X`total after delta must not be negative`);
-  const entries = Object.entries(allocation) as Array<[PoolKey, NatValue]>;
-  assert(entries.length > 0, X`empty allocation`);
-  const weights = entries.map(([k, w]) => {
-    assert(
-      typeof w === 'bigint' && w >= 0n,
-      X`allocation weight must be a Nat`,
-    );
-    return [k, w] as const;
-  });
+  const weights = Object.entries(allocation) as Array<[PoolKey, NatValue]>;
+  assert(weights.length > 0, X`empty allocation`);
+  for (const entry of weights) {
+    const w = entry[1];
+    (typeof w === 'bigint' && w > 0n) ||
+      Fail`allocation weight in ${entry} must be a Nat`;
+  }
   const sumW = weights.reduce<bigint>((acc, [, w]) => acc + w, 0n);
-  assert(sumW > 0n, X`allocation weights must sum > 0`);
+  sumW > 0n || Fail`allocation weights must sum > 0`;
   const draft: Partial<Record<AssetPlaceRef, NatAmount>> = {};
   let assigned = 0n;
-  let maxKey = entries[0][0];
-  let maxW = -1n as bigint;
+  let maxKey = weights[0][0];
+  let maxW = -1n;
   for (const [key, w] of weights) {
-    if (w > (maxW as bigint)) {
+    if (w > maxW) {
       maxW = w;
       maxKey = key;
     }
@@ -185,7 +183,7 @@ export const planDepositToTargets = async (
 ): Promise<MovementDesc[]> => {
   const brand = amount.brand;
   // Construct current including the deposit seat
-  const currentWithDeposit: Partial<Record<string, NatAmount>> = {
+  const currentWithDeposit: Partial<Record<AssetPlaceRef, NatAmount>> = {
     ...current,
   };
   // NOTE It is important that the only '+agoric' amount that it is allowed to
@@ -197,8 +195,8 @@ export const planDepositToTargets = async (
   // console.log('COMPLETE GRAPH', currentWithDeposit, target, network);
   const { steps } = await planRebalanceFlow({
     network,
-    current: currentWithDeposit as any,
-    target: target as any,
+    current: currentWithDeposit,
+    target,
     brand,
     feeBrand,
     gasEstimator,
