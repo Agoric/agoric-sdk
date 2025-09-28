@@ -9,7 +9,7 @@ import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-
 import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
-import { Fail, q, X } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 // import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
 import type {
   AssetPlaceRef,
@@ -123,9 +123,9 @@ const computeWeightedTargets = (
     AmountMath.makeEmpty(brand),
   );
   const total = totalCurrentAmt.value + delta;
-  assert(total >= 0n, X`total after delta must not be negative`);
+  total >= 0n || Fail`total after delta must not be negative`;
   const weights = Object.entries(allocation) as Array<[PoolKey, NatValue]>;
-  assert(weights.length > 0, X`empty allocation`);
+  weights.length > 0 || Fail`empty allocation`;
   for (const entry of weights) {
     const w = entry[1];
     (typeof w === 'bigint' && w > 0n) ||
