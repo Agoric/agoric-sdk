@@ -11,11 +11,15 @@ import {
   setupPortfolioTest,
 } from '@aglocal/portfolio-contract/test/supports.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makePromiseSpace } from '@agoric/vats';
+import {
+  produceDiagnostics,
+  produceStartUpgradable,
+} from '@agoric/vats/src/core/basic-behaviors.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/pass-style';
-import { makePromiseKit } from '@endo/promise-kit';
-import type { TestFn } from 'ava';
+import type { ExecutionContext, TestFn } from 'ava';
 import {
   prepareContractControl,
   type ContractControl,
@@ -23,36 +27,31 @@ import {
 
 type YMaxStartFn = typeof ymaxExports.start;
 
+type Space = WellKnownSpaces &
+  BootstrapSpace &
+  PromiseSpaceOf<{ ymaxControl: ContractControl<YMaxStartFn> }>;
+
 const test: TestFn<Awaited<ReturnType<typeof makeTestContext>>> = anyTest;
 
-const makeTestContext = async t => {
+const makeTestContext = async (t: ExecutionContext) => {
   const common = await setupPortfolioTest(t);
-  const { rootZone } = common.utils;
+  const { rootZone, wellKnownSpaces } = common.utils;
   // XXX type of zoe from setUpZoeForTest is any???
   const { zoe: zoeAny, bundleAndInstall } = await setUpZoeForTest();
   const zoe: ZoeService = zoeAny;
-  const startedKitPK = makePromiseKit<StartedInstanceKit<any>>();
 
-  const startUpgradable = (async ({
-    label,
-    installation,
-    issuerKeywordRecord,
-    privateArgs,
-    terms,
-  }) => {
-    const kit = await E(zoe).startInstance(
-      installation,
-      issuerKeywordRecord,
-      terms,
-      privateArgs,
-      label,
-    );
-
-    startedKitPK.resolve(kit);
-    return harden({ ...kit, label });
-  }) as StartUpgradable;
-
+  const space = { ...wellKnownSpaces, ...makePromiseSpace(t.log) } as Space;
   const zone = rootZone.subZone('bootstrap vat');
+
+  space.produce.zoe.resolve(zoe);
+  space.produce.agoricNames.resolve(common.bootstrap.agoricNames);
+  space.produce.agoricNamesAdmin.resolve(common.bootstrap.agoricNamesAdmin);
+
+  await produceDiagnostics(space);
+  await produceStartUpgradable({ zone, ...space });
+
+  const startUpgradable = await space.consume.startUpgradable;
+
   const { agoricNamesAdmin, board } = common.bootstrap;
 
   const makeContractControl = prepareContractControl(zone, {
@@ -68,8 +67,7 @@ const makeTestContext = async t => {
     bundleAndInstall,
     startUpgradable,
     makeContractControl,
-    ymaxControlPK: makePromiseKit<ContractControl<YMaxStartFn>>(), // analog to wallet/purse
-    startedKitP: startedKitPK.promise,
+    space,
   };
 };
 
@@ -106,7 +104,7 @@ const ymaxDataPrivateArgs: Omit<
 harden(ymaxDataPrivateArgs);
 
 test.serial('make, deliver ContractControl for ymax', async t => {
-  const { common, makeContractControl } = t.context;
+  const { common, makeContractControl, space } = t.context;
 
   const { rootNode: chainStorage } = common.bootstrap.storage;
   const storageNode = await E(chainStorage).makeChildNode(contractName);
@@ -137,18 +135,18 @@ test.serial('make, deliver ContractControl for ymax', async t => {
     'upgrade',
   ]);
 
-  t.context.ymaxControlPK.resolve(cc);
+  space.produce.ymaxControl.resolve(cc);
 });
 
 const arbBundleId = 'b2-arbitrary-teeFae9u';
 
 test.serial('install ymax0 updates agoricNames.installation', async t => {
-  const { bundleAndInstall } = t.context;
+  const { bundleAndInstall, space } = t.context;
   await bundleAndInstall(
     './dist/portfolio.contract.bundle.js', // package-relative
     arbBundleId,
   );
-  const cc = await t.context.ymaxControlPK.promise;
+  const cc = await space.consume.ymaxControl;
   const actual = await E(cc).install(arbBundleId);
   t.is(passStyleOf(actual), 'copyRecord');
   const { agoricNames } = t.context.common.bootstrap;
@@ -160,8 +158,8 @@ test.serial('install ymax0 updates agoricNames.installation', async t => {
 });
 
 test.serial('installAndStart ymax0', async t => {
-  const { common } = t.context;
-  const cc = await t.context.ymaxControlPK.promise;
+  const { common, space } = t.context;
+  const cc = await space.consume.ymaxControl;
 
   const { usdc, bld } = common.brands;
   const issuers = { USDC: usdc.issuer, Fee: bld.issuer, BLD: bld.issuer };
@@ -177,8 +175,8 @@ test.serial('installAndStart ymax0', async t => {
 });
 
 test.serial('start ymax0 using contractExport', async t => {
-  const { common, bundleAndInstall } = t.context;
-  const cc = await t.context.ymaxControlPK.promise;
+  const { common, bundleAndInstall, space } = t.context;
+  const cc = await space.consume.ymaxControl;
 
   const installation = await bundleAndInstall(ymaxExports);
 
@@ -194,14 +192,14 @@ test.serial('start ymax0 using contractExport', async t => {
 });
 
 test.serial('getCreatorFacet', async t => {
-  const cc = await t.context.ymaxControlPK.promise;
+  const cc = await t.context.space.consume.ymaxControl;
   const cf = await E(cc).getCreatorFacet();
   t.log('creatorFacet', cf);
   t.is(passStyleOf(cf), 'remotable');
 });
 
 test.serial('limited upgrade test', async t => {
-  const cc = await t.context.ymaxControlPK.promise;
+  const cc = await t.context.space.consume.ymaxControl;
 
   t.log('fakeVatAdmin does not support upgrade');
   await t.throwsAsync(E(cc).upgrade(arbBundleId), {
@@ -210,8 +208,8 @@ test.serial('limited upgrade test', async t => {
 });
 
 test.serial('starting while already running fails', async t => {
-  const { bundleAndInstall } = t.context;
-  const cc = await t.context.ymaxControlPK.promise;
+  const { bundleAndInstall, space } = t.context;
+  const cc = await space.consume.ymaxControl;
 
   const installation = await bundleAndInstall(ymaxExports);
 
@@ -223,12 +221,16 @@ test.serial('starting while already running fails', async t => {
 });
 
 test.serial('terminate continues after error', async t => {
-  const { common, startedKitP, bundleAndInstall } = t.context;
-  const cc = await t.context.ymaxControlPK.promise;
+  const { common, bundleAndInstall, space } = t.context;
+  const { agoricNames } = common.bootstrap;
 
-  const { adminFacet } = await startedKitP;
+  const contractKits = await space.consume.contractKits;
+  const instance = await E(agoricNames).lookup('instance', contractName);
+
+  const { adminFacet } = contractKits.get(instance);
   await E(adminFacet).terminateContract(Error('testing early termination'));
 
+  const cc = await space.consume.ymaxControl;
   await t.notThrowsAsync(E(cc).terminate());
 
   // start for next test
@@ -239,7 +241,7 @@ test.serial('terminate continues after error', async t => {
 });
 
 test.serial('prune ymax0 vstorage', async t => {
-  const { common, zoe } = t.context;
+  const { common, zoe, space } = t.context;
   const { agoricNames } = common.bootstrap;
 
   const instance = await E(agoricNames).lookup('instance', contractName);
@@ -252,7 +254,7 @@ test.serial('prune ymax0 vstorage', async t => {
   const keysPre = [...storage.data.keys()];
   t.log('ymax storage keys with 1 portfolio', keysPre);
 
-  const cc = await t.context.ymaxControlPK.promise;
+  const cc = await space.consume.ymaxControl;
   await E(cc).pruneChainStorage({
     'orchtest.ymax0.portfolios': ['portfolio0'],
     'orchtest.ymax0': ['portfolios'],
@@ -265,9 +267,9 @@ test.serial('prune ymax0 vstorage', async t => {
 });
 
 test.serial('terminate ymax0', async t => {
-  const { common } = t.context;
+  const { common, space } = t.context;
   const { agoricNames, board } = common.bootstrap;
-  const cc = await t.context.ymaxControlPK.promise;
+  const cc = await space.consume.ymaxControl;
 
   const instance = await E(agoricNames).lookup('instance', contractName);
   const target = await E(board).getId(instance);
@@ -282,7 +284,7 @@ test.serial('terminate ymax0', async t => {
 });
 
 test.serial('revoke', async t => {
-  const cc = await t.context.ymaxControlPK.promise;
+  const cc = await t.context.space.consume.ymaxControl;
   await E(cc)
     .terminate({ revoke: true })
     .catch(() => {});

@@ -18,6 +18,10 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { makePromiseSpace } from '@agoric/vats';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
+import {
+  produceDiagnostics,
+  produceStartUpgradable,
+} from '@agoric/vats/src/core/basic-behaviors.js';
 import type { Instance, ZoeService } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
@@ -59,14 +63,21 @@ const getCapDataStructure = cell => {
 
 const makeBootstrap = async t => {
   const common = await setupPortfolioTest(t);
-  const { bootstrap } = common;
-  const { agoricNamesAdmin } = bootstrap;
+  const {
+    bootstrap,
+    utils: { rootZone },
+  } = common;
+  const { agoricNamesAdmin, agoricNames } = bootstrap;
   const wk = await makeWellKnownSpaces(agoricNamesAdmin);
   const log = () => {}; // console.log
   const { produce, consume } = makePromiseSpace({ log });
-  const powers = { produce, consume, ...wk } as unknown as BootstrapPowers &
-    PortfolioBootPowers &
-    ChainInfoPowers;
+  const zone = rootZone.subZone('bootstrap vat');
+  const powers = {
+    zone,
+    produce,
+    consume,
+    ...wk,
+  } as unknown as BootstrapPowers & PortfolioBootPowers & ChainInfoPowers;
   // XXX type of zoe from setUpZoeForTest is any???
   const { zoe: zoeAny, bundleAndInstall } = await setUpZoeForTest();
   const zoe: ZoeService = zoeAny;
@@ -99,17 +110,13 @@ const makeBootstrap = async t => {
     }
 
     t.log('produce startUpgradable');
-    produce.startUpgradable.resolve(
-      ({ label, installation, issuerKeywordRecord, privateArgs, terms }) =>
-        E(zoe).startInstance(
-          installation,
-          issuerKeywordRecord,
-          terms,
-          privateArgs,
-          label,
-        ),
-    );
-    produce.zoe.resolve(zoe);
+
+    powers.produce.zoe.resolve(zoe);
+    powers.produce.agoricNames.resolve(agoricNames);
+    powers.produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
+
+    await produceDiagnostics(powers);
+    await produceStartUpgradable(powers);
   }
 
   const { storage } = bootstrap;
@@ -212,7 +219,6 @@ test('coreEval code without swingset', async t => {
 test('delegate ymax control; invite planner; submit plan', async t => {
   const { common, powers, zoe, bundleAndInstall, provisionSmartWallet } =
     await makeBootstrap(t);
-  const { rootZone } = common.utils;
 
   t.log('produce getDepositFacet');
   await produceAttenuatedDeposit(powers as any);
@@ -255,10 +261,9 @@ test('delegate ymax control; invite planner; submit plan', async t => {
   const addrCtrl = 'agoric1ymaxcontrol';
   const [walletCtrl] = await provisionSmartWallet(addrCtrl);
 
-  const zone = rootZone.subZone('bootstrap vat');
   await delegatePortfolioContract(
     // @ts-expect-error mock
-    { ...powers, zone },
+    powers,
     { options: { ymaxControlAddress: addrCtrl } },
   );
   await eventLoopIteration(); // core eval doesn't block on delivery
