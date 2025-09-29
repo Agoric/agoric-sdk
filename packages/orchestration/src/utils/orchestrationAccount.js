@@ -11,6 +11,10 @@ import {
   IBCTransferOptionsShape,
 } from '../typeGuards.js';
 
+/**
+ * @import {NetworkTraffic} from '../cosmos-api.js';
+ */
+
 const { Vow$ } = NetworkShape; // TODO #9611
 // const EVow$ = shape => M.or(Vow$(shape), M.promise(/* shape */));
 
@@ -28,9 +32,6 @@ export const orchestrationAccountMethods = {
   transfer: M.call(AccountIdArgShape, AmountArgShape)
     .optional(IBCTransferOptionsShape)
     .returns(VowShape),
-  transferWithMeta: M.call(AccountIdArgShape, AmountArgShape)
-    .optional(IBCTransferOptionsShape)
-    .returns(Vow$({ result: Vow$(M.any()), meta: M.record() })),
   transferSteps: M.call(AmountArgShape, M.any()).returns(VowShape),
   asContinuingOffer: M.call().returns(
     Vow$({

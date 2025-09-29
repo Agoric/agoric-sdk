@@ -76,7 +76,7 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
         onFulfilled: M.call([M.record()], M.record()).returns(M.any()),
       }),
       verifyTransferSuccess: M.interface('verifyTransferSuccess', {
-        onFulfilled: M.call(M.any()).returns(M.string()),
+        onFulfilled: M.call(M.any()).returns(M.any()),
       }),
     },
     /**
@@ -145,24 +145,7 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
             { opName: 'transfer', ...opts },
           );
           const resultV = watch(ackDataV, this.facets.verifyTransferSuccess);
-
-          const baseMeta = opts?.meta ?? {};
-          const traffic = baseMeta.traffic ?? [];
-          const priorTraffic = traffic.slice(0, -1);
-          const thisTraffic = traffic.at(-1);
-
-          const meta = {
-            ...baseMeta,
-            traffic: [
-              ...priorTraffic,
-              {
-                ...thisTraffic,
-                seq: sequence,
-              },
-            ],
-          };
-
-          return harden({ resultV, ...rest, meta });
+          return harden({ resultV, ...rest });
         },
       },
       verifyTransferSuccess: {

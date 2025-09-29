@@ -4,7 +4,6 @@ import { M, matches } from '@endo/patterns';
 import { E } from '@endo/far';
 import { pickFacet } from '@agoric/vat-data';
 import { makeTracer } from '@agoric/internal';
-import { pickData } from '../utils/orchestrationAccount.js';
 
 const trace = makeTracer('PacketTools');
 
@@ -39,7 +38,6 @@ const just = obj => {
  * ) => Vow<{
  *   eventPattern: Pattern;
  *   resultV: Vow<any>;
- *   meta: Record<string, any>;
  * }>} sendPacket
  */
 
@@ -78,9 +76,6 @@ export const preparePacketTools = (zone, vowTools) => {
         sendThenWaitForAck: M.call(EVow$(M.remotable('PacketSender')))
           .optional(M.any())
           .returns(EVow$(M.any())),
-        sendThenWaitForAckWithMeta: M.call(EVow$(M.remotable('PacketSender')))
-          .optional(M.any())
-          .returns(EVow$({ meta: M.record(), result: M.any() })),
         matchFirstPacket: M.call(M.any()).returns(EVow$(M.any())),
         monitorTransfers: M.call(M.remotable('TargetApp')).returns(
           EVow$(M.any()),
@@ -98,7 +93,6 @@ export const preparePacketTools = (zone, vowTools) => {
         // eslint-disable-next-line no-restricted-syntax
         revoke: M.callWhen().returns(),
       }),
-      pickDataWatcher: pickData.shape,
       watchPacketMatch: M.interface('watchPacketMatch', {
         onFulfilled: M.call(M.any(), M.record()).returns(M.any()),
       }),
@@ -116,19 +110,6 @@ export const preparePacketTools = (zone, vowTools) => {
           M.record(),
         ).returns(M.any()),
       }),
-      packetWasSentWithMetaWatcher: M.interface(
-        'packetWasSentWithMetaWatcher',
-        {
-          onFulfilled: M.call(
-            {
-              eventPattern: M.pattern(),
-              resultV: Vow$(M.any()),
-              meta: M.record(),
-            },
-            M.record(),
-          ).returns(Vow$({ result: M.any(), meta: M.record() })),
-        },
-      ),
       packetWasSentWatcher: M.interface('packetWasSentWatcher', {
         onFulfilled: M.call(
           { eventPattern: M.pattern(), resultV: Vow$(M.any()) },
@@ -185,19 +166,12 @@ export const preparePacketTools = (zone, vowTools) => {
             { patternP },
           );
         },
-        sendThenWaitForAck(packetSender, opts = {}) {
-          const resultMeta = this.facets.public.sendThenWaitForAckWithMeta(
-            packetSender,
-            opts,
-          );
-          return watch(resultMeta, this.facets.pickDataWatcher, 'result');
-        },
         /**
          * @param {Remote<PacketSender>} packetSender
          * @param {PacketOptions} [opts]
-         * @returns {Vow<{ result: Vow<any>; meta: Record<string, unknown> }>}
+         * @returns {Vow<any>} }
          */
-        sendThenWaitForAckWithMeta(packetSender, opts = {}) {
+        sendThenWaitForAck(packetSender, opts = {}) {
           /** @type {import('@agoric/vow').VowKit<Pattern>} */
           const pattern = makeVowKit();
 
@@ -213,26 +187,23 @@ export const preparePacketTools = (zone, vowTools) => {
           );
 
           // When the packet is sent, resolve the resultMeta for the reply.
-          const resultMeta = watch(
-            matchV,
-            this.facets.packetWasSentWithMetaWatcher,
-            {
-              opts,
-              patternResolver: pattern.resolver,
-            },
-          );
+          const result = watch(matchV, this.facets.packetWasSentWatcher, {
+            opts,
+            patternResolver: pattern.resolver,
+          });
 
           // If anything fails, try to reject the packet sender.
-          return watch(
-            resultMeta,
+          const result2 = watch(
+            result,
             this.facets.rejectResolverAndRethrowWatcher,
             {
               resolver: pattern.resolver,
             },
           );
+
+          return result2;
         },
       },
-      pickDataWatcher: pickData.watcher,
       monitorRegistration: {
         /** @type {TargetRegistration['updateTargetApp']} */
         // eslint-disable-next-line no-restricted-syntax
@@ -291,27 +262,19 @@ export const preparePacketTools = (zone, vowTools) => {
          *   },
          *   Remote<PacketSender>,
          * ]} result
-         * @param {{ opts: PacketOptions }} ctx
+         * @param {{
+         *   opts: PacketOptions;
+         * }} ctx
          */
         onFulfilled([{ match }, sender], ctx) {
           return watch(E(sender).sendPacket(match, ctx.opts));
         },
       },
-      /**
-       * @deprecated migrate to packetWasSentWithMetaWatcher
-       */
       packetWasSentWatcher: {
         onFulfilled({ eventPattern, resultV }, ctx) {
           const { patternResolver } = ctx;
           patternResolver.resolve(eventPattern);
           return resultV;
-        },
-      },
-      packetWasSentWithMetaWatcher: {
-        onFulfilled({ eventPattern, resultV, meta }, ctx) {
-          const { patternResolver } = ctx;
-          patternResolver.resolve(eventPattern);
-          return harden({ result: resultV, meta });
         },
       },
       rejectResolverAndRethrowWatcher: {

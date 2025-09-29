@@ -10,11 +10,7 @@ import {
 } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowTools, heapVowE as VE } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { isVow } from '@agoric/vow/src/vow-utils.js';
-import type {
-  IBCMsgTransferOptions,
-  MetaTrafficEntry,
-} from '../../src/cosmos-api.js';
+import type { IBCMsgTransferOptions } from '../../src/cosmos-api.js';
 import { PFM_RECEIVER } from '../../src/exos/chain-hub.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type {
@@ -200,20 +196,6 @@ test('transfer', async t => {
     'cannot create transfer msg with unknown chainId',
   );
 
-  const doTransferWithMeta = async (
-    amount: AmountArg,
-    dest: CosmosChainAddress,
-    opts: IBCMsgTransferOptions = {},
-  ) => {
-    const resultMeta = VE(account).transferWithMeta(dest, amount, opts);
-
-    // Ensure the toBridge of the transferP happens before the fromBridge is awaited after this function returns
-    await eventLoopIteration();
-
-    await transmitVTransferEvent('acknowledgementPacket');
-    return resultMeta;
-  };
-
   /**
    * Helper to start the transfer AND send the ack packet so this promise can be awaited
    */
@@ -290,42 +272,6 @@ test('transfer', async t => {
       timeout: '10m',
     },
   });
-
-  const resultMeta = await doTransferWithMeta(aDenomAmount, dydxDest);
-  const { result: multiHopResult, meta: multiHopMeta } = resultMeta;
-
-  t.is(latestTxMsg().receiver, PFM_RECEIVER, 'defaults to "pfm" receiver');
-  t.deepEqual(JSON.parse(latestTxMsg().memo), {
-    forward: {
-      receiver: 'dydx1test',
-      port: 'transfer',
-      channel: 'channel-33',
-      retries: 3,
-      timeout: '10m',
-    },
-  });
-
-  t.deepEqual(
-    multiHopMeta,
-    {
-      traffic: [
-        {
-          op: 'transfer',
-          src: ['ibc', 'cosmos', 'agoric-3', 'transfer', 'channel-62'],
-          dst: ['ibc', 'cosmos', 'noble-1', 'transfer', 'channel-21'],
-          seq: 7,
-        },
-      ] as MetaTrafficEntry[],
-    },
-    'we only receive meta for the first hop of a PFM-forwarded transfer',
-  );
-
-  t.assert(isVow(multiHopResult), 'multiHopResult is vow');
-  t.is(
-    await when(multiHopResult),
-    ICS20_TRANSFER_SUCCESS_RESULT,
-    'multiHopResult resolves to ICS20_TRANSFER_SUCCESS',
-  );
 
   t.log('accepts pfm `forwardOpts`');
   const intermediateRecipient: CosmosChainAddress = {

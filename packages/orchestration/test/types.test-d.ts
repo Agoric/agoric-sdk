@@ -108,7 +108,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 // CosmosOrchestrationAccount interfaces
 {
   const coa: CosmosOrchestrationAccount = null as any;
-  const resultMeta = coa.executeEncodedTxWithMeta([
+  const resultP = coa.executeEncodedTx([
     Any.toJSON(
       MsgDelegate.toProtoMsg({
         amount: {
@@ -126,14 +126,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     ),
   ] as const);
 
-  expectType<
-    Vow<{
-      result: Vow<string>;
-      meta: Record<string, any>;
-    }>
-  >(resultMeta);
-  const { result: resultP, meta } = await vt.when(resultMeta);
-  expectType<Record<string, any>>(meta);
+  expectType<Vow<string>>(resultP);
 
   const result = await vt.when(resultP);
 
@@ -388,8 +381,8 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     (
       msgs: AnyJson[],
       opts?: Partial<Omit<TxBody, 'messages'>>,
-    ) => Promise<{ result: Promise<string>; meta: Record<string, any> }>
-  >(account.executeEncodedTxWithMeta);
+    ) => Promise<string>
+  >(account.executeEncodedTx);
 
   // Verify delegate is available via stakingTokens parameter
   expectType<
