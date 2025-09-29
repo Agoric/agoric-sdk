@@ -41,6 +41,7 @@ shared:
 
 merge_queue:
   max_parallel_checks: 1
+  queued_label: null
 
 priority_rules:
   - name: high_priority
