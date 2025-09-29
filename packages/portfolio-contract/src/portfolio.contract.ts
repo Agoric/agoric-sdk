@@ -257,6 +257,7 @@ export const contract = async (
   });
   const {
     client: resolverClient,
+    service: resolverService,
     invitationMakers: makeResolverInvitationMakers,
   } = resolverZone.makeOnce('resolverKit', () => makeResolverKit());
 
@@ -380,6 +381,12 @@ export const contract = async (
     return zcf.makeInvitation(resolverHandler, 'resolver', undefined);
   };
 
+  const makeResolverServiceInvitation = () =>
+    zcf.makeInvitation(seat => {
+      seat.exit();
+      return resolverService;
+    }, 'resolverService');
+
   const getPortfolio = (id: number) => portfolios.get(id);
   const makePlanner = preparePlanner(zone.subZone('planner'), {
     zcf,
@@ -403,6 +410,11 @@ export const contract = async (
         M.string(),
         M.remotable('Instance'),
       ).returns(),
+      makeResolverServiceInvitation: M.callWhen().returns(InvitationShape),
+      deliverResolverServiceInvitation: M.callWhen(
+        M.string(),
+        M.remotable('Instance'),
+      ).returns(),
       makePlannerInvitation: M.callWhen().returns(InvitationShape),
       deliverPlannerInvitation: M.callWhen(
         M.string(),
@@ -423,6 +435,20 @@ export const contract = async (
         trace('made resolver invitation', invitation);
         await E(pfP).deliverPayment(address, invitation);
         trace('delivered resolver invitation');
+      },
+      makeResolverServiceInvitation() {
+        return makeResolverServiceInvitation();
+      },
+      async deliverResolverServiceInvitation(
+        address: string,
+        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+      ) {
+        const zoe = zcf.getZoeService();
+        const pfP = E(zoe).getPublicFacet(instancePS);
+        const invitation = await makeResolverServiceInvitation();
+        trace('made resolver service invitation', invitation);
+        await E(pfP).deliverPayment(address, invitation);
+        trace('delivered resolver service invitation');
       },
       makePlannerInvitation() {
         return makePlannerInvitation();
