@@ -65,6 +65,12 @@ type EventRecord = { blockHeight: bigint } & (
   | { type: 'transfer'; address: Bech32Address }
 );
 
+type VstorageEventDetail = {
+  path: string;
+  value: string;
+  eventRecord: EventRecord;
+};
+
 type PendingTxRecord = { blockHeight: bigint; tx: PendingTx };
 
 export const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
@@ -126,23 +132,17 @@ type Powers = {
   gasEstimator: GasEstimator;
 };
 
+type ProcessPortfolioPowers = {
+  marshaller: SigningSmartWalletKit['marshaller'];
+  vstorage: VStorage;
+  portfolioKeyForDepositAddr: Map<Bech32Address, string>;
+};
+
 const processPortfolioEvents = async (
-  portfolioEvents: Array<{
-    path: string;
-    value: string;
-    eventRecord: EventRecord;
-  }>,
+  portfolioEvents: VstorageEventDetail[],
   blockHeight: bigint,
   deferrals: EventRecord[],
-  {
-    marshaller,
-    vstorage,
-    portfolioKeyForDepositAddr,
-  }: {
-    marshaller: SigningSmartWalletKit['marshaller'];
-    vstorage: VStorage;
-    portfolioKeyForDepositAddr: Map<Bech32Address, string>;
-  },
+  { marshaller, vstorage, portfolioKeyForDepositAddr }: ProcessPortfolioPowers,
 ) => {
   const setPortfolioKeyForDepositAddr = (addr: Bech32Address, key: string) => {
     const oldKey = portfolioKeyForDepositAddr.get(addr);
@@ -532,10 +532,8 @@ export const startEngine = async (
         event,
       })),
     ];
-    const vstorageEvents = { portfolio: [], pendingTx: [] } as Record<
-      'portfolio' | 'pendingTx',
-      Array<{ path: string; value: string; eventRecord: EventRecord }>
-    >;
+    const portfolioEvents = [] as VstorageEventDetail[];
+    const pendingTxEvents = [] as VstorageEventDetail[];
     for (const eventRecord of eventRecords) {
       const { type: eventType, attributes: attrRecords } = eventRecord.event;
       // Filter for vstorage state_change events.
@@ -556,22 +554,11 @@ export const startEngine = async (
       const path = encodedKeyToPath(attributes.key);
 
       if (vstoragePathIsAncestorOf(PORTFOLIOS_PATH_PREFIX, path)) {
-        vstorageEvents.portfolio.push({
-          path,
-          value: attributes.value,
-          eventRecord,
-        });
-      }
-      if (vstoragePathIsAncestorOf(PENDING_TX_PATH_PREFIX, path)) {
-        vstorageEvents.pendingTx.push({
-          path,
-          value: attributes.value,
-          eventRecord,
-        });
+        portfolioEvents.push({ path, value: attributes.value, eventRecord });
+      } else if (vstoragePathIsAncestorOf(PENDING_TX_PATH_PREFIX, path)) {
+        pendingTxEvents.push({ path, value: attributes.value, eventRecord });
       }
     }
-    const { portfolio: portfolioEvents, pendingTx: pendingTxEvents } =
-      vstorageEvents;
 
     // Detect new portfolios.
     await processPortfolioEvents(portfolioEvents, respHeight, deferrals, {
