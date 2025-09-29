@@ -1034,6 +1034,9 @@ test.serial(
     const feeCall = bld.make(100n);
     const detail = { evmGas: 175n };
 
+    // Use resolver service instead of invitation makers
+    const resolverService = await getResolverService(zoe, started.creatorFacet);
+
     const actualP = trader1.openPortfolio(
       t,
       { Deposit: amount, Access: poc26.make(1n) },
@@ -1047,36 +1050,60 @@ test.serial(
       },
     );
 
-    await eventLoopIteration();
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     t.log('ackd send to Axelar to create account');
 
     await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
-    // Use resolver service instead of invitation makers
-    const resolverService = await getResolverService(zoe, started.creatorFacet);
-
-    const cctpSettlementPromise = E(resolverService).settleTransaction({
-      status: 'success',
-      txId: 'tx0',
-    });
-
-    const gmpSettlementPromise = E(resolverService).settleTransaction({
-      status: 'success',
-      txId: 'tx1',
-    });
+    // ack @agoric -> @noble txfr
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
 
     await simulateCCTPAck(common.utils).finally(() =>
       simulateAckTransferToAxelar(common.utils),
     );
 
-    await eventLoopIteration();
-    await eventLoopIteration();
+    const { storage } = common.bootstrap;
+    const { readPublished } = makeStorageTools(storage);
+    const getRegisteredTxIds = async () => {
+      await eventLoopIteration();
+      const paths = [...storage.data.keys()];
+      // console.log('@@@@', ...paths);
+      const txSubPaths = paths
+        .filter(p => /pendingTxs/.test(p))
+        .map(p => p.replace(/^orchtest./, ''));
+      console.log('@@@@', ...txSubPaths);
+      const txIds = [];
+      for (const p of txSubPaths) {
+        const { status } = (await readPublished(p)) as any;
+        if (status !== 'pending') continue;
+        const txId = p.split('.').at(-1);
+        txIds.push(txId);
+      }
+      console.log('@@pending:', txIds);
+      return txIds;
+    };
+
+    const settled = new Set();
+    const settlePendingTxs = async () =>
+      getRegisteredTxIds().then(txs =>
+        Promise.all(
+          txs.map(async txId => {
+            if (settled.has(txId)) return;
+            settled.add(txId);
+            await eventLoopIteration();
+            console.log('@@resolve:', txId);
+            return E(resolverService).settleTransaction({
+              status: 'success',
+              txId,
+            });
+          }),
+        ),
+      );
 
     const [actual, cctpResult, gmpResult] = await Promise.all([
       actualP,
-      cctpSettlementPromise,
-      gmpSettlementPromise,
+      settlePendingTxs().then(_ => settlePendingTxs()),
+      'xxxx',
     ]);
 
     t.log(
