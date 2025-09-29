@@ -114,7 +114,7 @@ test('open portfolio with USDN position', async t => {
     'I can see where my money is:',
     positionPaths.map(p => contents[p].accountId),
   );
-  t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
+  t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:noble1test`);
   t.is(
     contents[storagePath].accountIdByChain.agoric,
     `cosmos:agoric-3:${portfolio0lcaOrch}`,
@@ -479,7 +479,7 @@ test('USDN claim fails currently', async t => {
     'I can see where my money is:',
     positionPaths.map(p => contents[p].accountId),
   );
-  t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
+  t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:noble1test`);
   t.is(
     contents[storagePath].accountIdByChain.agoric,
     `cosmos:agoric-3:${portfolio0lcaOrch}`,
@@ -813,7 +813,7 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
 
   const addr2 = {
     lca: makeTestAddress(3), // agoric1q...rytxkw
-    nobleICA: 'cosmos1test1',
+    nobleICA: 'noble1test1',
     evm: '0xFbb89cC04ffb710b1f645b2cbEda0CE7D93294F4',
   } as const;
   const amount = usdc.units(3_333.33);
