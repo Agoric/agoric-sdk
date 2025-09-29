@@ -151,7 +151,7 @@ test('coreEval code without swingset', async t => {
   t.log('invoke coreEval');
   await t.notThrowsAsync(startPortfolio(powers, { options: ymaxOptions }));
 
-  // TODO:  common.mocks.ibcBridge.setAddressPrefix('noble');
+  common.mocks.ibcBridge.setAddressPrefix('noble');
   for (const { msg, ack } of Object.values(
     makeUSDNIBCTraffic(undefined, `${3333 * 1_000_000}`),
   )) {
