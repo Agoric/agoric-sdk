@@ -100,6 +100,23 @@ export const stripPrefix = (prefix: string, str: string) => {
   return str.slice(prefix.length);
 };
 
+const vstorageEntryFromCosmosEvent = (event: CosmosEvent) => {
+  const attributes = tryNow(
+    fromUniqueEntries,
+    _err => Fail`attributes must be unique`,
+    event.attributes?.map(({ key, value }) => [key, value]) || [],
+  ) as Record<string, string>;
+
+  if (attributes.store !== 'vstorage') return;
+  const { key, value } = attributes;
+  if (key === undefined || value === undefined) {
+    throw Fail`missing "key" and/or "value"`;
+  }
+
+  const path = encodedKeyToPath(key);
+  return { path, value };
+};
+
 export const makeVstorageEvent = (
   blockHeight: bigint,
   path: string,
@@ -535,28 +552,23 @@ export const startEngine = async (
     const portfolioEvents = [] as VstorageEventDetail[];
     const pendingTxEvents = [] as VstorageEventDetail[];
     for (const eventRecord of eventRecords) {
-      const { type: eventType, attributes: attrRecords } = eventRecord.event;
+      const { event } = eventRecord;
+
       // Filter for vstorage state_change events.
       // cf. golang/cosmos/types/events.go
-      if (eventType !== 'state_change') continue;
-      const attributes = fromUniqueEntries(
-        attrRecords?.map(({ key, value }) => [key, value]) || [],
+      if (event.type !== 'state_change') continue;
+
+      const vstorageEntry = tryNow(
+        () => vstorageEntryFromCosmosEvent(event),
+        // prettier-ignore
+        err => console.error('🚨 invalid vstorage state_change', event.attributes, err),
       );
-      if (attributes.store !== 'vstorage') continue;
-
-      // Require attributes "key" and "value".
-      if (attributes.key === undefined || attributes.value === undefined) {
-        console.error('vstorage state_change missing "key" and/or "value"');
-        continue;
-      }
-
-      // Filter for paths we care about (portfolios or pending transactions).
-      const path = encodedKeyToPath(attributes.key);
-
+      if (!vstorageEntry) continue;
+      const { path, value } = vstorageEntry;
       if (vstoragePathIsAncestorOf(PORTFOLIOS_PATH_PREFIX, path)) {
-        portfolioEvents.push({ path, value: attributes.value, eventRecord });
+        portfolioEvents.push({ path, value, eventRecord });
       } else if (vstoragePathIsAncestorOf(PENDING_TX_PATH_PREFIX, path)) {
-        pendingTxEvents.push({ path, value: attributes.value, eventRecord });
+        pendingTxEvents.push({ path, value, eventRecord });
       }
     }
 
