@@ -231,7 +231,6 @@ const processPortfolioEvents = async (
   }
 };
 
-// TODO: replace it with processInitialPendingTransactions
 export const processPendingTxEvents = async (
   events: Array<{ path: string; value: string }>,
   handlePendingTxFn,
