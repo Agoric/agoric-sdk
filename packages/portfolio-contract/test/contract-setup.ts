@@ -131,6 +131,7 @@ export const setupTrader = async (t, initial = 10_000) => {
   const trader1 = await makeFundedTrader();
   const trader2 = await makeFundedTrader();
   const { ibcBridge } = common.mocks;
+  ibcBridge.setAddressPrefix('noble');
   for (const { msg, ack } of values(makeUSDNIBCTraffic())) {
     ibcBridge.addMockAck(msg, ack);
   }
