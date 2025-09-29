@@ -1084,3 +1084,66 @@ test('withdraw using planner', async t => {
   ]);
   t.is(833332500n, (3333330000n * 25n) / 100n);
 });
+
+test('creatorFacet.withdrawFees', async t => {
+  const { started, common } = await setupTrader(t);
+  const { storage } = common.bootstrap;
+  const { inspectLocalBridge } = common.utils;
+
+  const { contractAccount } = storage
+    .getDeserialized(`${ROOT_STORAGE_PATH}`)
+    .at(-1) as unknown as { contractAccount: string };
+  t.log('contractAddress for fees', contractAccount);
+
+  const { bld } = common.brands;
+  const bld2k = bld.units(2_000);
+  {
+    const pmt = await common.utils.pourPayment(bld2k);
+    const { bankManager } = common.bootstrap;
+    const bank = E(bankManager).getBankForAddress(contractAccount);
+    const purse = E(bank).getPurse(bld2k.brand);
+    await E(purse).deposit(pmt);
+    t.log('deposited', bld2k, 'for fees');
+  }
+
+  const { creatorFacet } = started;
+
+  const dest = `cosmos:agoric-3:${makeTestAddress(5)}` as const;
+
+  {
+    const actual = await E(creatorFacet).withdrawFees(dest, {
+      denom: 'ubld',
+      value: 100n,
+    });
+    t.log('withdrew some', actual);
+
+    t.deepEqual(actual, { denom: 'ubld', value: 100n });
+
+    const [tx] = inspectLocalBridge().filter(
+      obj => obj.type === 'VLOCALCHAIN_EXECUTE_TX',
+    );
+    t.like(tx.messages[0], {
+      '@type': '/cosmos.bank.v1beta1.MsgSend',
+      fromAddress: 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+      toAddress: 'agoric1q5qqqqqqqqqqqqqqqqqqqqqqqqqqqqqq8ee25y',
+      amount: [{ denom: 'ubld', amount: '100' }],
+    });
+  }
+
+  {
+    const amt = await E(creatorFacet).withdrawFees(dest);
+
+    t.log('withdrew all', amt);
+    t.deepEqual(amt, { denom: 'ubld', value: bld2k.value });
+
+    const [_, tx] = inspectLocalBridge().filter(
+      obj => obj.type === 'VLOCALCHAIN_EXECUTE_TX',
+    );
+    t.like(tx.messages[0], {
+      '@type': '/cosmos.bank.v1beta1.MsgSend',
+      fromAddress: 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+      toAddress: 'agoric1q5qqqqqqqqqqqqqqqqqqqqqqqqqqqqqq8ee25y',
+      amount: [{ denom: 'ubld', amount: '2000000000' }],
+    });
+  }
+});
