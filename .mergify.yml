@@ -27,13 +27,13 @@ shared:
     - base=master
     - label=automerge:no-update
     - or:
-        - "#commits-behind=0"
+        - '#commits-behind=0'
         - label=bypass:linear-history
   pr_queue_rebase_conditions: &pr-queue-rebase-conditions
     - base=master
     - label=automerge:rebase
     - or:
-        - "#commits-behind>0"
+        - '#commits-behind>0'
         - linear-history
   pr_queue_squash_conditions: &pr-queue-squash-conditions
     - base=master
@@ -90,7 +90,7 @@ pull_request_rules:
     conditions:
       - base=master
       - label=automerge:rebase
-      - "#commits-behind=0"
+      - '#commits-behind=0'
       - or:
           - -linear-history
           - check-failure=no-fixup-commits
