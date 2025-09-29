@@ -108,6 +108,21 @@ type PortfolioKitState = {
   etc: unknown;
 };
 
+// a bit more lax than the type to facilitate evolution; hence not a TypedPattern
+export const PortfolioStateShape = {
+  portfolioId: M.number(),
+  accountsPending: M.remotable('accountsPending'),
+  accounts: M.remotable('accounts'),
+  positions: M.remotable('positions'),
+  flowsRunning: M.remotable('flowsRunning'),
+  nextFlowId: M.number(),
+  targetAllocation: M.opt(M.record()),
+  policyVersion: M.number(),
+  rebalanceCount: M.number(),
+  etc: M.any(),
+};
+harden(PortfolioStateShape);
+
 /**
  * For publishing, represent accounts collection using accountId values
  */
@@ -615,6 +630,7 @@ export const preparePortfolioKit = (
       },
     },
     {
+      stateShape: PortfolioStateShape,
       finish({ facets, state }) {
         facets.reporter.publishStatus();
         const { portfolioId } = state;
