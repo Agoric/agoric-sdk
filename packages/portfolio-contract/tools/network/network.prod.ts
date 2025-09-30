@@ -26,8 +26,8 @@ export const PROD_NETWORK: NetworkSpec = {
   ],
   links: [
     // USDN costs a fee to get into
-    { src: '@noble', dest: 'USDN', transfer: 'local', variableFeeBps: 5, timeSec: 0, feeMode: 'toUSDN' },
-    { src: '@noble', dest: 'USDNVault', transfer: 'local', variableFeeBps: 5, timeSec: 0, feeMode: 'toUSDN' },
+    { src: '@noble', dest: 'USDN', transfer: 'local', variableFeeBps: 10, timeSec: 0, feeMode: 'toUSDN' },
+    { src: '@noble', dest: 'USDNVault', transfer: 'local', variableFeeBps: 10, timeSec: 0, feeMode: 'toUSDN' },
 
     // CCTP slow
     {
