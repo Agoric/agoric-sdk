@@ -103,30 +103,6 @@ export const getCurrentBalances = async (
 };
 
 /**
- * Compute absolute target balances from an allocation map over PoolKeys.
- * Ensures sum(target) == sum(current) + deposit; non-allocated pools target to 0.
- */
-export const depositTargetsFromAllocation = (
-  amount: NatAmount,
-  current: Partial<Record<AssetPlaceRef, NatAmount>>,
-  allocation: TargetAllocation, // integer weights (NatValue)
-): Partial<Record<AssetPlaceRef, NatAmount>> => {
-  const brand = amount.brand;
-  // Base weighted targets for current + delta
-  const targets = computeWeightedTargets(
-    brand,
-    current,
-    amount.value,
-    allocation,
-  );
-
-  // Staging account ('+agoric') must end at 0: all staged funds should be fanned out
-  // to destination accounts/pools as part of this deposit plan.
-  targets['+agoric'] = AmountMath.make(brand, 0n);
-  return harden(targets);
-};
-
-/**
  * Compute absolute target balances for a withdraw operation driven by allocation weights.
  * Reduces balances across selected pools per weights and increases '<Cash>' by the withdraw amount.
  * Pools not in the allocation remain unchanged. Throws if selected pools do not cover the withdrawal.
@@ -207,43 +183,8 @@ const computeWeightedTargets = (
 };
 
 /**
- * Plan deposit to absolute target balances using the LP rebalance solver.
- * Default mode is 'fastest'.
- */
-export const planDepositToTargets = async (
-  amount: NatAmount,
-  current: Partial<Record<AssetPlaceRef, NatAmount>>,
-  target: Partial<Record<AssetPlaceRef, NatAmount>>, // includes all pools + '+agoric'
-  network: NetworkSpec,
-  feeBrand: Brand<'nat'>,
-  gasEstimator: GasEstimator,
-): Promise<MovementDesc[]> => {
-  const brand = amount.brand;
-  // Construct current including the deposit seat
-  const currentWithDeposit: Partial<Record<AssetPlaceRef, NatAmount>> = {
-    ...current,
-  };
-  // NOTE It is important that the only '+agoric' amount that it is allowed to
-  // include in the solution is the amount provided in this deposit operation.
-  // The actual balance on '+agoric' may include assets for another operation
-  // in progress.
-  const existing = currentWithDeposit['+agoric'] ?? AmountMath.make(brand, 0n);
-  currentWithDeposit['+agoric'] = AmountMath.add(existing, amount);
-  // console.log('COMPLETE GRAPH', currentWithDeposit, target, network);
-  const { steps } = await planRebalanceFlow({
-    network,
-    current: currentWithDeposit,
-    target,
-    brand,
-    feeBrand,
-    gasEstimator,
-  });
-  return steps;
-};
-
-/**
  * Plan deposit driven by target allocation weights.
- * Computes absolute targets, then calls the amount-based planner above.
+ * Computes absolute targets, then plans the corresponding flow.
  */
 export const planDepositToAllocations = async (
   amount: NatAmount,
@@ -253,15 +194,27 @@ export const planDepositToAllocations = async (
   feeBrand: Brand<'nat'>,
   gasEstimator: GasEstimator,
 ): Promise<MovementDesc[]> => {
-  const targets = depositTargetsFromAllocation(amount, current, allocation);
-  return planDepositToTargets(
-    amount,
+  const brand = amount.brand;
+  const target = computeWeightedTargets(
+    brand,
     current,
-    targets,
+    amount.value,
+    allocation,
+  );
+
+  // The deposit should be distributed.
+  const currentWithDeposit = { ...current, '+agoric': amount };
+  target['+agoric'] = AmountMath.make(brand, 0n);
+
+  const flowDetail = await planRebalanceFlow({
     network,
+    current: currentWithDeposit,
+    target,
+    brand,
     feeBrand,
     gasEstimator,
-  );
+  });
+  return flowDetail.steps;
 };
 
 // Back-compat utility used by CLI or handlers
