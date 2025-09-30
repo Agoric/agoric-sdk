@@ -349,8 +349,18 @@ export const scanEvmLogsInChunks = async (
   } = opts;
 
   await null;
-  for (let start = fromBlock; start <= toBlock; start += chunkSize) {
+  for (let start = fromBlock; start <= toBlock; ) {
     const end = Math.min(start + chunkSize - 1, toBlock);
+    const currentBlock = await provider.getBlockNumber();
+
+    // Wait for the chain to catch up if end block doesn't exist yet
+    if (end > currentBlock) {
+      log(
+        `[LogScan] Waiting for chain to reach block ${end} (current: ${currentBlock})`,
+      );
+      await new Promise(resolve => setTimeout(resolve, 20_000));
+      continue; // Retry this chunk after waiting
+    }
 
     const chunkFilter: Filter = {
       // baseFilter represents core filter configuration (address, topics, etc.) without block range
@@ -362,7 +372,6 @@ export const scanEvmLogsInChunks = async (
     try {
       log(`[LogScan] Searching chunk ${start} → ${end}`);
       const logs = await provider.getLogs(chunkFilter);
-
       for (const evt of logs) {
         if (await predicate(evt)) {
           log(`[LogScan] Match in tx=${evt.transactionHash}`);
@@ -373,6 +382,8 @@ export const scanEvmLogsInChunks = async (
       log(`[LogScan] Error searching chunk ${start}–${end}:`, err);
       // continue
     }
+
+    start += chunkSize;
   }
   return undefined;
 };
