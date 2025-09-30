@@ -7,7 +7,7 @@ import type { Coin } from '@cosmjs/stargate';
 
 import { Fail, q } from '@endo/errors';
 import { Nat } from '@endo/nat';
-import type { SigningSmartWalletKit, VStorage } from '@agoric/client-utils';
+import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
@@ -19,10 +19,15 @@ import {
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import {
+  flowIdFromKey,
+  portfolioIdFromKey,
   PoolPlaces,
   PortfolioStatusShapeExt,
+  type FlowDetail,
   type StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
+import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import {
   mustMatch,
@@ -36,7 +41,13 @@ import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
-import { getCurrentBalance, handleDeposit } from './plan-deposit.ts';
+import {
+  getCurrentBalance,
+  getCurrentBalances,
+  handleDeposit,
+  planRebalanceToAllocations,
+  planWithdrawFromAllocations,
+} from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import {
   handlePendingTx,
@@ -46,6 +57,7 @@ import {
 import {
   parseStreamCell,
   parseStreamCellValue,
+  readStorageMeta,
   readStreamCellValue,
   vstoragePathIsAncestorOf,
   vstoragePathIsParentOf,
@@ -73,6 +85,15 @@ type VstorageEventDetail = {
 };
 
 type PendingTxRecord = { blockHeight: bigint; tx: PendingTx };
+
+/** @see {@link ../../../packages/portfolio-contract/src/planner.exo.ts} */
+type ResolvePlanArgs = {
+  portfolioId: number;
+  flowId: number;
+  steps: MovementDesc[];
+  policyVersion: number;
+  rebalanceCount: number;
+};
 
 export const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
 export const PENDING_TX_PATH_PREFIX = 'published.ymax0.pendingTxs';
@@ -145,9 +166,12 @@ type Powers = {
   gasEstimator: GasEstimator;
 };
 
-type ProcessPortfolioPowers = {
-  marshaller: SigningSmartWalletKit['marshaller'];
-  vstorage: VStorage;
+type ProcessPortfolioPowers = Pick<
+  Powers,
+  'cosmosRest' | 'spectrum' | 'signingSmartWalletKit' | 'gasEstimator'
+> & {
+  depositBrand: Brand<'nat'>;
+  feeBrand: Brand<'nat'>;
   portfolioKeyForDepositAddr: Map<Bech32Address, string>;
 };
 
@@ -155,8 +179,19 @@ const processPortfolioEvents = async (
   portfolioEvents: VstorageEventDetail[],
   blockHeight: bigint,
   deferrals: EventRecord[],
-  { marshaller, vstorage, portfolioKeyForDepositAddr }: ProcessPortfolioPowers,
+  {
+    cosmosRest,
+    depositBrand,
+    feeBrand,
+    gasEstimator,
+    signingSmartWalletKit,
+    spectrum,
+
+    portfolioKeyForDepositAddr,
+  }: ProcessPortfolioPowers,
 ) => {
+  const { query, marshaller } = signingSmartWalletKit;
+  const { vstorage } = query;
   const setPortfolioKeyForDepositAddr = (addr: Bech32Address, key: string) => {
     const oldKey = portfolioKeyForDepositAddr.get(addr);
     if (!oldKey) {
@@ -168,28 +203,108 @@ const processPortfolioEvents = async (
     }
     portfolioKeyForDepositAddr.set(addr, key);
   };
-  const handlePortfolio = async (
+  const startFlow = async (
+    portfolioStatus: StatusFor['portfolio'],
     portfolioKey: string,
-    eventRecord: EventRecord,
+    flowKey: string,
+    flowDetail: FlowDetail,
   ) => {
     const path = `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}`;
+    const currentBalances = await getCurrentBalances(
+      portfolioStatus,
+      depositBrand,
+      { cosmosRest, spectrum },
+    );
+    const plannerContext = {
+      currentBalances,
+      targetAllocation: portfolioStatus.targetAllocation,
+      network: PROD_NETWORK,
+      brand: depositBrand,
+      feeBrand,
+      gasEstimator,
+    };
+
+    let steps: MovementDesc[];
+    const { type } = flowDetail;
+    if (type === 'withdraw') {
+      steps = await planWithdrawFromAllocations({
+        ...plannerContext,
+        amount: flowDetail.amount,
+      });
+    } else if (type === 'other') {
+      steps = await planRebalanceToAllocations(plannerContext);
+    } else {
+      const msg = `⚠️  Unknown flow type ${type} for ${path} in-progress flow ${flowKey}`;
+      console.warn(msg);
+      return;
+    }
+
+    const resolvePlanArgs: ResolvePlanArgs = {
+      portfolioId: portfolioIdFromKey(portfolioKey as any),
+      flowId: flowIdFromKey(flowKey as any),
+      steps,
+      policyVersion: portfolioStatus.policyVersion,
+      rebalanceCount: portfolioStatus.rebalanceCount,
+    };
+    // TODO: Incorporate `reflectWalletStore` type safety into
+    // SigningSmartWalletKit and use that here.
+    // const planner = signingSmartWalletKit.get<PortfolioPlanner>('planner');
+    // const { tx } =
+    //   await planner.resolvePlan(portfolioId, flowId, steps, policyVersion, rebalanceCount);
+    const result = await signingSmartWalletKit.sendBridgeAction({
+      method: 'invokeEntry',
+      message: {
+        targetName: 'planner',
+        method: 'resolvePlan',
+        args: Object.values(resolvePlanArgs),
+      },
+    });
+    console.log(
+      `Resolving ${path} in-progress flow ${flowKey}`,
+      flowDetail,
+      resolvePlanArgs,
+      result,
+    );
+  };
+  const handledPortfolioKeys = new Set<string>();
+  // prettier-ignore
+  const handlePortfolio = async (portfolioKey: string, eventRecord: EventRecord) => {
+    if (handledPortfolioKeys.has(portfolioKey)) return;
+    handledPortfolioKeys.add(portfolioKey);
+    const path = `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}`;
+    const readOpts = { minBlockHeight: eventRecord.blockHeight, retries: 4, };
     await null;
     try {
-      const statusCapdata = await readStreamCellValue(vstorage, path, {
-        minBlockHeight: eventRecord.blockHeight,
-        retries: 4,
-      });
+      const [statusCapdata, flowKeysResp] = await Promise.all([
+        readStreamCellValue(vstorage, path, readOpts),
+        readStorageMeta(vstorage, `${path}.flows`, 'children', readOpts),
+      ]);
       const status = marshaller.fromCapData(statusCapdata);
       mustMatch(status, PortfolioStatusShapeExt, path);
       const { depositAddress } = status;
-      if (!depositAddress) return;
-      setPortfolioKeyForDepositAddr(depositAddress, portfolioKey);
+      if (depositAddress) {
+        setPortfolioKeyForDepositAddr(depositAddress, portfolioKey);
+      }
+      // If any in-progress flows need activation (as indicated by not having
+      // its own dedicated vstorage data), then find the first such flow and
+      // respond to it. Responding to the rest now is pointless because
+      // acceptance of the first submission would invalidate the others as
+      // stale, but we'll see them again when such acceptance prompts changes
+      // to the portfolio status.
+      const flowKeys = new Set(flowKeysResp.result.children);
+      for (const [flowKey, flowDetail] of entries(status.flowsRunning || {})) {
+        // If vstorage has data for this flow then we've already responded.
+        if (flowKeys.has(flowKey)) continue;
+        await startFlow(status, portfolioKey, flowKey, flowDetail);
+        return;
+      }
       // If rebalanceCount is 0, then no plan has been submitted for this
       // policyVersion so we synthesize an activity record for its deposit
       // address to trigger a rebalance.
       // Otherwise, we assume that the update was a response to such a
-      // submission and take no further action here.
-      if (status.rebalanceCount === 0) {
+      // submission.
+      // TODO: Remove this in favor of driving everything through flows.
+      if (depositAddress && status.rebalanceCount === 0) {
         deferrals.push({
           blockHeight: eventRecord.blockHeight,
           type: 'transfer' as const,
@@ -450,6 +565,16 @@ export const startEngine = async (
   // TODO: Retry when data is associated with a block height lower than that of
   //       the first result from `responses`.
   const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
+  const processPortfolioPowers: ProcessPortfolioPowers = Object.freeze({
+    cosmosRest,
+    gasEstimator,
+    depositBrand: depositAsset.brand as Brand<'nat'>,
+    feeBrand: feeAsset.brand as Brand<'nat'>,
+    signingSmartWalletKit,
+    spectrum,
+
+    portfolioKeyForDepositAddr,
+  });
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
     const { streamCellJson, event } = makeVstorageEvent(
       0n,
@@ -466,7 +591,7 @@ export const startEngine = async (
       [{ path: PORTFOLIOS_PATH_PREFIX, value: streamCellJson, eventRecord }],
       initialBlockHeight,
       deferrals,
-      { marshaller, vstorage: query.vstorage, portfolioKeyForDepositAddr },
+      processPortfolioPowers,
     );
   }).done;
 
@@ -568,12 +693,12 @@ export const startEngine = async (
       }
     }
 
-    // Detect new portfolios.
-    await processPortfolioEvents(portfolioEvents, respHeight, deferrals, {
-      marshaller,
-      vstorage: query.vstorage,
-      portfolioKeyForDepositAddr,
-    });
+    await processPortfolioEvents(
+      portfolioEvents,
+      respHeight,
+      deferrals,
+      processPortfolioPowers,
+    );
 
     await processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers);
 
@@ -659,12 +784,7 @@ export const startEngine = async (
               },
             );
 
-            // TODO: consolidate with portfolioIdOfPath
-            const portfolioId = parseInt(
-              stripPrefix(`portfolio`, portfolioKey),
-              10,
-            );
-
+            const portfolioId = portfolioIdFromKey(portfolioKey as any);
             return { portfolioId, stepsRecord };
           } catch (err) {
             console.warn(
