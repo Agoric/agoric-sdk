@@ -7,6 +7,7 @@ import type {
   UpdateRecord,
 } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { EMethods } from '@agoric/vow/src/E.js';
+import type { Instance } from '@agoric/zoe';
 import type {
   DeliverTxResponse,
   SignerData,
@@ -14,7 +15,7 @@ import type {
   StdFee,
 } from '@cosmjs/stargate';
 import { toAccAddress } from '@cosmjs/stargate/build/queryclient/utils.js';
-import { Fail } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 import type { EReturn } from '@endo/far';
 import { MsgWalletSpendAction } from './codegen/agoric/swingset/msgs.js';
 import { TxRaw } from './codegen/cosmos/tx/v1beta1/tx.js';
@@ -196,6 +197,53 @@ export const reflectWalletStore = (
     });
   };
 
+  const saveOfferResult = async (
+    { instance, description }: { instance: Instance; description: string },
+    name: string = description,
+    options?: Partial<TxOptions & { overwrite: boolean }>,
+  ) => {
+    const combinedOpts = { ...baseTxOpts, ...options } as TxOptions & {
+      overwrite?: boolean;
+    };
+    const {
+      immediate: _immediate,
+      makeNonce,
+      overwrite = true,
+      ...retryOpts
+    } = combinedOpts;
+    if (!makeNonce) throw Fail`missing makeNonce`;
+    const id = `${description}.${makeNonce()}`;
+    const tx = await sswk.sendBridgeAction({
+      method: 'executeOffer',
+      offer: {
+        id,
+        invitationSpec: { source: 'purse', instance, description },
+        proposal: {},
+        saveResult: { name, overwrite },
+      },
+    });
+    // await up.offerResult(id);
+    const done = (await retryUntilCondition(
+      sswk.query.getLastUpdate,
+      // "walletAction" indicates an error, "offerStatus" with the right id and
+      // either `result` or `error` indicates settlement.
+      update =>
+        update.updated === 'walletAction' ||
+        (update.updated === 'offerStatus' &&
+          update.status.id === id &&
+          !!(update.status.result || update.status.error)),
+      `${id}`,
+      retryOpts,
+    )) as UpdateRecord & { updated: 'walletAction' | 'offerStatus' };
+    if (done.updated !== 'offerStatus') {
+      throw Fail`${q(id)} ${q(done.updated)} failure: ${q(done.status?.error)}`;
+    }
+    const { error, result } = done.status;
+    !error || Fail`${q(id)} offerStatus failure: ${q(error)}`;
+    result || Fail`${q(id)} offerStatus missing result`;
+    return { id, tx, result };
+  };
+
   return harden({
     /**
      * Return a previously-saved result as a remote object with type-aware
@@ -206,5 +254,12 @@ export const reflectWalletStore = (
      */
     get: <T>(name: string, options?: Partial<TxOptions>) =>
       makeEntryProxy(name, options) as EMethods<T>,
+    /**
+     * Execute the offer specified by { instance, description } and save the
+     * result in the wallet store with the specified name (default to match the
+     * offer description), overwriting any prior entry for that name unless
+     * otherwise specified. Waits for confirmation in vstorage before returning.
+     */
+    saveOfferResult,
   });
 };
