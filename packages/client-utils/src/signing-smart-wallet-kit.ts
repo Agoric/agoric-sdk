@@ -100,17 +100,15 @@ export const makeSigningSmartWalletKit = async (
     const offerP = swk.pollOffer(address, offer.id);
 
     // Await for rejection handling
-    await sendBridgeAction(
-      harden({
-        method: 'executeOffer',
-        offer,
-      }),
-    );
+    await sendBridgeAction({
+      method: 'executeOffer',
+      offer,
+    });
 
     return offerP;
   };
 
-  return Object.freeze({
+  return harden({
     ...swk,
     query,
     address,
