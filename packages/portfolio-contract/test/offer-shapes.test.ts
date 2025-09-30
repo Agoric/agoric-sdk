@@ -238,6 +238,15 @@ test('vstorage flow steps type matches shape', t => {
         dest: 'Aave_Arbitrum',
       },
     ],
+    hasDetail: [
+      {
+        how: 'USDN',
+        amount: usdc(1_750_000n),
+        dest: 'USDN',
+        detail: { usdnOut: 1_749_125n },
+        src: '@noble',
+      },
+    ],
   });
 
   const failCases = harden({
@@ -267,6 +276,15 @@ test('vstorage flow steps type matches shape', t => {
         how: 'deposit',
         amount: usdc(1000n),
         src: '<Deposit>',
+      },
+    ],
+    badDetail: [
+      {
+        how: 'USDN',
+        amount: usdc(1_750_000n),
+        dest: 'USDN',
+        detail: { usdnOut: 'oops!' },
+        src: '@noble',
       },
     ],
   });
