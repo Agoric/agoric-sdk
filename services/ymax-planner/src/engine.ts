@@ -28,6 +28,7 @@ import {
   mustMatch,
   partialMap,
   provideLazyMap,
+  stripPrefix,
   tryNow,
 } from '@agoric/internal';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
@@ -93,11 +94,6 @@ const encodedKeyToPath = (key: string) => {
 const pathToEncodedKey = (path: string) => {
   const segments = path.split(PathSeparator);
   return `${segments.length}${EncodedKeySeparator}${segments.join(EncodedKeySeparator)}`;
-};
-
-export const stripPrefix = (prefix: string, str: string) => {
-  str.startsWith(prefix) || Fail`${str} is missing prefix ${q(prefix)}`;
-  return str.slice(prefix.length);
 };
 
 const vstorageEntryFromCosmosEvent = (event: CosmosEvent) => {
