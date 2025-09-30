@@ -6,7 +6,7 @@ import type {
   BridgeAction,
   UpdateRecord,
 } from '@agoric/smart-wallet/src/smartWallet.js';
-import type { ECallable, EMethods } from '@agoric/vow/src/E.js';
+import type { ECallable } from '@agoric/vow/src/E.js';
 import type { EUnwrap } from '@agoric/vow/src/types.js';
 import type { Instance } from '@agoric/zoe';
 import type {
@@ -298,7 +298,7 @@ export const reflectWalletStore = (
      * `makeNonce` option) unless overridden by an `immediate: true` option.
      */
     get: <T>(name: string, options?: Partial<TxOptions>) =>
-      makeEntryProxy(name, options) as EMethods<T>,
+      makeEntryProxy(name, options, false) as WalletStoreEntryProxy<T, false>,
     /**
      * Return a previously-saved result as a remote object with type-aware
      * methods that map to "invokeEntry" submissions, each having an additional
