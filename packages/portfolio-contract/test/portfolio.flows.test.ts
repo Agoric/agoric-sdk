@@ -474,7 +474,7 @@ test('Noble Dollar Swap, Lock messages', t => {
   }
 });
 
-test('makePortfolioSteps for USDN position', async t => {
+test('makePortfolioSteps for USDNVault position', async t => {
   const actual = await makePortfolioSteps({
     USDN: make(USDC, 50n * 1_000_000n),
   });
@@ -491,7 +491,7 @@ test('makePortfolioSteps for USDN position', async t => {
   });
 });
 
-test('open portfolio with USDN position', async t => {
+test('open portfolio with USDNVault position', async t => {
   const { give, steps } = await makePortfolioSteps({
     USDN: make(USDC, 50_000_000n),
   });
@@ -1219,4 +1219,38 @@ test('withdraw in coordination with planner', async t => {
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
 
   await documentStorageSchema(t, storage, docOpts);
+});
+
+test('open portfolio with non-vault USDN position', async t => {
+  const give = { Deposit: make(USDC, 1_750_000n) };
+  const { orch, ctx, offer, storage } = mocks({}, give);
+  const { log, seat } = offer;
+
+  const shapes = makeProposalShapes(USDC);
+  mustMatch(seat.getProposal(), shapes.openPortfolio);
+
+  const amount = give.Deposit;
+  const actual = await openPortfolio(orch, ctx, seat, {
+    flow: [
+      { amount, dest: '@agoric', src: '<Deposit>' },
+      { amount, dest: '@noble', src: '@agoric' },
+      { amount, dest: 'USDN', detail: { usdnOut: 1_749_125n }, src: '@noble' },
+    ],
+  });
+  t.log(log.map(msg => msg._method).join(', '));
+
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'localTransfer', sourceSeat: seat },
+    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'executeEncodedTx', _cap: 'noble11056' },
+    { _method: 'exit' },
+  ]);
+  t.snapshot(log, 'call log'); // see snapshot for remaining arg details
+  t.is(passStyleOf(actual.invitationMakers), 'remotable');
+  await documentStorageSchema(t, storage, docOpts);
+
+  const { getPortfolioStatus } = makeStorageTools(storage);
+  const { flowsRunning = {} } = await getPortfolioStatus(1);
+  t.deepEqual(flowsRunning, {}, 'all flows are done by now');
 });
