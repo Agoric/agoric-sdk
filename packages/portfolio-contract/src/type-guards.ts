@@ -21,6 +21,7 @@
  * For usage examples, see `makeTrader` in {@link ../test/portfolio-actors.ts}.
  */
 import type { Amount, Brand, NatAmount, NatValue } from '@agoric/ertp';
+import { stripPrefix, tryNow } from '@agoric/internal/src/ses-utils.js';
 import type { TypedPattern } from '@agoric/internal';
 import {
   AnyNatAmountShape,
@@ -38,6 +39,7 @@ import type {
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
 import { Fail } from '@endo/errors';
+import { isNat } from '@endo/nat';
 import { M } from '@endo/patterns';
 import type { EVMContractAddresses, start } from './portfolio.contract.js';
 import type { PortfolioKit } from './portfolio.exo.js';
@@ -228,7 +230,29 @@ export const makePortfolioPath = (id: number): [`portfolio${number}`] => [
 ];
 
 /**
- * Extracts portfolio ID from a vstorage path.
+ * Extracts portfolio ID number from a portfolio key (e.g., a vstorage path
+ * segment).
+ */
+export const portfolioIdFromKey = (portfolioKey: `portfolio${number}`) => {
+  // TODO: const strId = stripPrefix('portfolio', portfolioKey);
+  // TODO: const id = Number(strId);
+  const id = Number(portfolioKey.replace(/^portfolio/, ''));
+  isNat(id) || Fail`bad key: ${portfolioKey}`;
+  return id;
+};
+
+/**
+ * Extracts flow ID number from a flow key (e.g., a vstorage path segment).
+ */
+export const flowIdFromKey = (flowKey: `flow${number}`) => {
+  const strId = stripPrefix('flow', flowKey);
+  const id = Number(strId);
+  isNat(id) || Fail`bad key: ${flowKey}`;
+  return id;
+};
+
+/**
+ * Extracts portfolio ID number from a vstorage path.
  *
  * @param path - Either a dot-separated string or array of path segments
  * @returns Portfolio ID number
@@ -238,9 +262,10 @@ export const portfolioIdOfPath = (path: string | string[]) => {
   const where = segments.indexOf('portfolios');
   where >= 0 || Fail`bad path: ${path}`;
   const segment = segments[where + 1];
-  const id = Number(segment.replace(/^portfolio/, ''));
-  Number.isSafeInteger(id) || Fail`bad path: ${path}`;
-  return id;
+  return tryNow(
+    () => portfolioIdFromKey(segment as any),
+    _err => Fail`bad path: ${path}`,
+  );
 };
 
 export type FlowDetail =
