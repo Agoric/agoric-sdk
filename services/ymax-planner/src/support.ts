@@ -327,6 +327,7 @@ type ScanOpts = {
   baseFilter: Omit<Filter, 'fromBlock' | 'toBlock'> & Partial<Filter>;
   fromBlock: number;
   toBlock: number;
+  chainId: CaipChainId;
   chunkSize?: number;
   log?: (...args: unknown[]) => void;
 };
@@ -344,6 +345,7 @@ export const scanEvmLogsInChunks = async (
     baseFilter,
     fromBlock,
     toBlock,
+    chainId,
     chunkSize = 10,
     log = () => {},
   } = opts;
@@ -355,10 +357,14 @@ export const scanEvmLogsInChunks = async (
 
     // Wait for the chain to catch up if end block doesn't exist yet
     if (end > currentBlock) {
+      const blockTimeMs = getBlockTimeMs(chainId);
+      const blocksToWait = Math.max(50, chunkSize);
+      const waitTimeMs = blocksToWait * blockTimeMs;
+      const blocksBehind = end - currentBlock;
       log(
-        `[LogScan] Waiting for chain to reach block ${end} (current: ${currentBlock})`,
+        `[LogScan] Chain ${blocksBehind} blocks behind (need ${end}, at ${currentBlock}). Waiting ${waitTimeMs}ms (${blocksToWait} blocks @ ${blockTimeMs}ms/block)`,
       );
-      await new Promise(resolve => setTimeout(resolve, 20_000));
+      await new Promise(resolve => setTimeout(resolve, waitTimeMs));
       continue; // Retry this chunk after waiting
     }
 

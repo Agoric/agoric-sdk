@@ -111,7 +111,7 @@ export const lookBackGmp = async ({
     };
 
     const matchingEvent = await scanEvmLogsInChunks(
-      { provider, baseFilter, fromBlock, toBlock, log },
+      { provider, baseFilter, fromBlock, toBlock, chainId, log },
       ev => ev.topics[1] === expectedIdTopic,
     );
 
