@@ -130,6 +130,7 @@ test.serial('make, deliver ContractControl for ymax', async t => {
     'install',
     'installAndStart',
     'pruneChainStorage',
+    'revoke',
     'start',
     'terminate',
     'upgrade',
@@ -179,6 +180,10 @@ test.serial('start ymax0 using contractExport', async t => {
   const cc = await space.consume.ymaxControl;
 
   const installation = await bundleAndInstall(ymaxExports);
+  const installationAdmin = E(common.bootstrap.agoricNamesAdmin).lookupAdmin(
+    'installation',
+  );
+  await E(installationAdmin).update(contractName, installation);
 
   const { usdc, bld } = common.brands;
   const issuers = { USDC: usdc.issuer, Fee: bld.issuer, BLD: bld.issuer };
@@ -283,10 +288,62 @@ test.serial('terminate ymax0', async t => {
   // NOTE: setUpZoeForTest() uses a fakeVatAdmin where terminate is a noop
 });
 
+test.serial('restart ymax0', async t => {
+  const { common, space } = t.context;
+  const { agoricNames } = common.bootstrap;
+
+  const { usdc, bld } = common.brands;
+  const issuers = { USDC: usdc.issuer, Fee: bld.issuer, BLD: bld.issuer };
+
+  const installation = await E(agoricNames).lookup(
+    'installation',
+    contractName,
+  );
+
+  const cc = await space.consume.ymaxControl;
+  await E(cc).start({ installation, issuers });
+
+  const instance = await E(agoricNames).lookup('instance', contractName);
+  t.log('instance', instance);
+  t.is(passStyleOf(instance), 'remotable');
+});
+
 test.serial('revoke', async t => {
+  const { space } = t.context;
+  const cc = await space.consume.ymaxControl;
+  await E(cc).revoke();
+  await t.throwsAsync(E(cc).getCreatorFacet(), { message: 'revoked' });
+  space.produce.ymaxControl.reset();
+});
+
+test.serial('create from kit', async t => {
+  const { common, space, makeContractControl } = t.context;
+  const { agoricNames } = common.bootstrap;
+
+  const contractKits = await space.consume.contractKits;
+  const instance = await E(agoricNames).lookup('instance', contractName);
+
+  const kit = contractKits.get(instance);
+  const initialPrivateArgs = common.commonPrivateArgs;
+
+  const { rootNode: chainStorage } = common.bootstrap.storage;
+  const storageNode = await E(chainStorage).makeChildNode(contractName);
+
+  const cc = makeContractControl({
+    name: contractName,
+    storageNode,
+    kit,
+    initialPrivateArgs,
+  });
+  space.produce.ymaxControl.resolve(cc);
+
+  const cf = await E(cc).getCreatorFacet();
+  t.log('creatorFacet', cf);
+  t.is(cf, kit.creatorFacet);
+});
+
+test.serial('terminate with revoke', async t => {
   const cc = await t.context.space.consume.ymaxControl;
-  await E(cc)
-    .terminate({ revoke: true })
-    .catch(() => {});
+  await E(cc).terminate({ message: 'terminate and revoke', revoke: true });
   await t.throwsAsync(E(cc).getCreatorFacet(), { message: 'revoked' });
 });

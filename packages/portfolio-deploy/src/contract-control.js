@@ -82,6 +82,7 @@ const iface = M.interface('ContractControl', {
   pruneChainStorage: M.callWhen(
     M.recordOf(M.string(), M.arrayOf(M.string())),
   ).returns(M.number()),
+  revoke: M.call().returns(),
 });
 
 /**
@@ -115,16 +116,16 @@ export const prepareContractControl = (zone, svcs) => {
      * @param {{
      *   name: string;
      *   storageNode: Remote<StorageNode>;
-     *   kit?: (StartedInstanceKit<SF> & { privateArgs: Parameters<SF>[1] });
+     *   kit?: (StartedInstanceKit<SF> & { privateArgs?: Parameters<SF>[1] });
      *   initialPrivateArgs?: Parameters<SF>[1],
      * }} initial
      */
     initial => ({
       initialPrivateArgs:
         initial.initialPrivateArgs || initial.kit?.privateArgs,
-      revoked: false,
       kit: undefined,
       ...initial,
+      revoked: false,
     }),
     {
       /** @param {string} bundleId */
@@ -337,6 +338,15 @@ export const prepareContractControl = (zone, svcs) => {
         }
         trace('done');
         return qty;
+      },
+
+      revoke() {
+        const { name, kit, revoked } = this.state;
+        trace(name, 'revoke', kit?.adminFacet);
+        !revoked || Fail`revoked`;
+
+        trace(name, 'revoked');
+        this.state.revoked = true;
       },
     },
   );
