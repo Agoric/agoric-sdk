@@ -28,6 +28,7 @@ RUN --mount=type=cache,target=/root/.yarn/berry/cache yarn install --mode=skip-b
 RUN cd packages/cosmic-proto && yarn build
 RUN cd packages/client-utils && yarn build
 RUN cd services/ymax-planner && yarn build
+RUN cd packages/portfolio-contract && yarn build
 
 # Production stage
 FROM node:22-alpine AS production
@@ -40,6 +41,9 @@ LABEL org.opencontainers.image.title="ymax-planner" \
 
 # Copy built application from builder stage
 COPY --from=builder /build/services/ymax-planner/dist/entrypoint.js /app/entrypoint.js
+
+# Copy built highs.wasm file from builder stage
+COPY --from=builder /build/node_modules/highs/build/highs.wasm /app/highs.wasm
 
 # Prepare for running as a non-root user.
 RUN addgroup -g 1001 -S appgroup && adduser -u 1001 -S appuser -G appgroup
