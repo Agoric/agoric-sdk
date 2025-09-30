@@ -1,5 +1,6 @@
 import { ethers, type Filter, type JsonRpcProvider, type Log } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
+import type { CaipChainId } from '@agoric/orchestration';
 import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 
@@ -84,14 +85,19 @@ export const lookBackGmp = async ({
   contractAddress,
   txId,
   publishTimeMs,
+  chainId,
   log = () => {},
-}: WatchGmp & { publishTimeMs: number }): Promise<boolean> => {
+}: WatchGmp & {
+  publishTimeMs: number;
+  chainId: CaipChainId;
+}): Promise<boolean> => {
   await null;
   try {
     const { fromBlock, toBlock } = await buildTimeWindow(
       provider,
       publishTimeMs,
       log,
+      chainId,
     );
 
     log(

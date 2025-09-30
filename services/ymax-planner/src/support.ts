@@ -49,6 +49,54 @@ export const gasLimitEstimates = {
   Wallet: 276_809n,
 };
 
+/**
+ * Average block times for supported EVM chains in milliseconds.
+ *
+ * Sources:
+ * - Ethereum:
+ *   Mainnet ~12s → https://etherscan.io/chart/blocktime
+ *   Sepolia ~12s → https://eth-sepolia.blockscout.com/
+ *
+ * - Arbitrum:
+ *   Mainnet ~0.3s → https://arbitrum.blockscout.com/
+ *   Sepolia ~0.3s → https://arbitrum-sepolia.blockscout.com/
+ *
+ * - Avalanche:
+ *   Mainnet ~2s → https://snowscan.xyz/chart/blocktime
+ *   Fuji ~2s → Didn't find any specific resource for it
+ *
+ * - Base:
+ *   Mainnet ~2.5s → https://base.blockscout.com/stats
+ *   Sepolia ~2s → https://base-sepolia.blockscout.com/
+ *
+ * - Optimism:
+ *   Mainnet ~2s → https://explorer.optimism.io/
+ *   Sepolia ~2s → https://testnet-explorer.optimism.io/
+ */
+const chainBlockTimesMs: Record<CaipChainId, number> = harden({
+  // ========= Mainnet =========
+  'eip155:1': 12_000, // Ethereum Mainnet
+  'eip155:42161': 300, // Arbitrum One
+  'eip155:43114': 2_000, // Avalanche C-Chain
+  'eip155:8453': 2_500, // Base
+  'eip155:10': 2_000, // Optimism
+
+  // ========= Testnet =========
+  'eip155:11155111': 12_000, // Ethereum Sepolia
+  'eip155:421614': 300, // Arbitrum Sepolia
+  'eip155:43113': 2_000, // Avalanche Fuji
+  'eip155:84532': 2_000, // Base Sepolia
+  'eip155:11155420': 2_000, // Optimism Sepolia
+});
+
+/**
+ * Get the average block time for a given chain ID.
+ * Defaults to Ethereum's 12s if chain is unknown (conservative approach).
+ */
+export const getBlockTimeMs = (chainId: CaipChainId): number => {
+  return chainBlockTimesMs[chainId] ?? 12_000; // Default to Ethereum's conservative 12s
+};
+
 export const getEvmRpcMap = (
   clusterName: ClusterName,
   alchemyApiKey: string,
@@ -239,6 +287,7 @@ export const buildTimeWindow = async (
   provider: JsonRpcProvider,
   publishTimeMs: number,
   log: (...args: unknown[]) => void,
+  chainId: CaipChainId,
   fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
 ) => {
   const adjustedTime = publishTimeMs - fudgeFactorMs;
@@ -258,10 +307,12 @@ export const buildTimeWindow = async (
   }
 
   log('end time is in the future - estimate blocks ahead');
-  const SINGLE_BLOCK_TIME_MS = 2_000; // one number for all chains
+
+  const blockTimeMs = getBlockTimeMs(chainId);
+  log(`using block time ${blockTimeMs}ms for chain ${chainId}`);
 
   const timeUntilEnd = endTime - currentBlockTime;
-  const estimatedFutureBlocks = Math.ceil(timeUntilEnd / SINGLE_BLOCK_TIME_MS);
+  const estimatedFutureBlocks = Math.ceil(timeUntilEnd / blockTimeMs);
   log('future blocks', estimatedFutureBlocks);
 
   const toBlock = currentBlock + estimatedFutureBlocks;

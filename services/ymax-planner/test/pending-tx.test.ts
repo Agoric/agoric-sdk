@@ -270,8 +270,9 @@ test('handlePendingTx resolves old pending CCTP transaction successfully', async
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.CCTP_TO_EVM} tx`,
     `[${txId}] end time is in the future - estimate blocks ahead`,
-    `[${txId}] future blocks 744`,
-    `[${txId}] Searching blocks ${expectedFromBlock} → 775 for Transfer to ${recipientAddress} with amount ${txAmount}`,
+    `[${txId}] using block time 300ms for chain eip155:42161`,
+    `[${txId}] future blocks 4960`,
+    `[${txId}] Searching blocks ${expectedFromBlock} → 4991 for Transfer to ${recipientAddress} with amount ${txAmount}`,
     `[${txId}] [LogScan] Searching chunk ${expectedFromBlock} → 14`,
     `[${txId}] Check: amount=${txAmount}`,
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
@@ -349,8 +350,9 @@ test('handlePendingTx resolves old pending GMP transaction successfully', async 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.GMP} tx`,
     `[${txId}] end time is in the future - estimate blocks ahead`,
-    `[${txId}] future blocks 744`,
-    `[${txId}] Searching blocks ${expectedFromBlock} → 775 for MulticallExecuted with txId ${txId} at ${contractAddress}`,
+    `[${txId}] using block time 300ms for chain eip155:42161`,
+    `[${txId}] future blocks 4960`,
+    `[${txId}] Searching blocks ${expectedFromBlock} → 4991 for MulticallExecuted with txId ${txId} at ${contractAddress}`,
     `[${txId}] [LogScan] Searching chunk ${expectedFromBlock} → 14`,
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
     `[${txId}] GMP tx resolved`,
