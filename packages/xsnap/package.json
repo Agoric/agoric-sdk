@@ -20,9 +20,9 @@
     "postinstall": "npm run build:from-env",
     "clean": "rm -rf xsnap-native/xsnap/build",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
-    "lint:js": "eslint 'src/**/*.js' 'test/**/*.js' api.js",
+    "lint:eslint": "yarn run -T eslint 'src/**/*.js' 'test/**/*.js' api.js",
     "lint:types": "yarn run -T tsc",
-    "lint-fix": "eslint --fix 'src/**/*.js' 'test/**/*.js' api.js",
+    "lint-fix": "yarn lint:eslint --fix",
     "test": "ava",
     "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "test:xs": "exit 0"
