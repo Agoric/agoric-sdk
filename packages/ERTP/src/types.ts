@@ -1,7 +1,7 @@
 import type { LatestTopic } from '@agoric/notifier';
 import type { ERef } from '@endo/far';
-import type { RemotableObject } from '@endo/pass-style';
-import type { CopyBag, CopySet, Key, Pattern } from '@endo/patterns';
+import type { RemotableObject, CopyTagged } from '@endo/pass-style';
+import type { CopyBag, CopySet, Key, Pattern, Limits } from '@endo/patterns';
 import type { TypeTag } from '@agoric/internal/src/tagged.js';
 import type { AssetKind } from './amountMath.js';
 
@@ -69,11 +69,8 @@ export type Amount<
  * once or more times, i.e., some positive bigint number of times,
  * representing that quantity of the asset represented by that key.
  */
-export type AmountValue =
-  | NatValue
-  | SetValue
-  | CopySet
-  | import('@endo/patterns').CopyBag;
+export type AmountValue = NatValue | SetValue | CopySet | CopyBag;
+
 /**
  * See doc-comment
  *   for `AmountValue`.
@@ -90,15 +87,39 @@ export type AssetValueForKind<
       : K extends 'copyBag'
         ? CopyBag<M>
         : never;
+
 export type AssetKindForValue<V extends AmountValue> = V extends NatValue
   ? 'nat'
   : V extends SetValue
     ? 'set'
     : V extends CopySet
       ? 'copySet'
-      : V extends import('@endo/patterns').CopyBag
+      : V extends CopyBag
         ? 'copyBag'
         : never;
+
+export type HasBound = CopyTagged<
+  'match:containerHas',
+  [elementPatt: Pattern, countPatt: bigint, limits?: Limits]
+>;
+
+export type AmountValueBound<
+  K extends AssetKind = AssetKind,
+  M extends Key = Key,
+> = AssetValueForKind<K, M> | HasBound;
+
+export type AmountBound<
+  K extends AssetKind = AssetKind,
+  M extends Key = Key,
+> = {
+  brand: Brand<K>;
+  value: AmountValueBound<K, M>;
+};
+
+export type AmountHasBound<K extends AssetKind = AssetKind> = {
+  brand: Brand<K>;
+  value: HasBound;
+};
 
 export type Ratio = { numerator: Amount<'nat'>; denominator: Amount<'nat'> };
 
@@ -363,7 +384,7 @@ export type PurseMethods<
    * Withdraw amount
    * from this purse into a new Payment.
    */
-  withdraw: (amount: Amount<K, M>) => Payment<K, M>;
+  withdraw: (amount: AmountBound<K, M>) => Payment<K, M>;
   /**
    * The set of payments
    * withdrawn from this purse that are still live. These are the payments that
@@ -433,7 +454,11 @@ export type Payment<
  *   methods but coerce can assume their inputs are valid. They only need to do
  *   output validation, and only when there is a possibility of invalid output.
  */
-export type MathHelpers<V extends AmountValue> = {
+export type MathHelpers<
+  K extends AssetKind = AssetKind,
+  M extends Key = Key,
+  V extends AssetValueForKind<K, M> = AssetValueForKind<K, M>,
+> = {
   /**
    * Check the kind of this value and
    * throw if it is not the expected kind.
