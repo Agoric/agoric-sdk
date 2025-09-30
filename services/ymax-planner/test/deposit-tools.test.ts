@@ -4,10 +4,14 @@ import test from 'ava';
 
 import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath, type Brand } from '@agoric/ertp';
+import { objectMap } from '@agoric/internal';
 import { Far } from '@endo/pass-style';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
 import { CosmosRestClient } from '../src/cosmos-rest-client.ts';
-import { handleDeposit } from '../src/plan-deposit.ts';
+import {
+  handleDeposit,
+  planRebalanceToAllocations,
+} from '../src/plan-deposit.ts';
 import { SpectrumClient } from '../src/spectrum-client.ts';
 import { mockGasEstimator } from './mocks.ts';
 
@@ -282,9 +286,47 @@ test('handleDeposit handles different position types correctly', async t => {
       readPublished: mockVstorageKit.readPublished,
       spectrum: mockSpectrumClient,
       cosmosRest: mockCosmosRestClient,
-    gasEstimator: mockGasEstimator,
+      gasEstimator: mockGasEstimator,
     },
     TEST_NETWORK,
   );
   t.snapshot(result?.steps);
+});
+
+test('planRebalanceToAllocations emits an empty plan when already balanced', async t => {
+  const targetAllocation = {
+    USDN: 40n,
+    Aave_Arbitrum: 40n,
+    Compound_Arbitrum: 20n,
+  };
+  const currentBalances = objectMap(targetAllocation, v =>
+    makeDeposit(v * 200n),
+  );
+  const steps = await planRebalanceToAllocations({
+    brand: depositBrand,
+    currentBalances,
+    targetAllocation,
+    network: TEST_NETWORK,
+    feeBrand,
+    gasEstimator: mockGasEstimator,
+  });
+  t.deepEqual(steps, []);
+});
+
+test('planRebalanceToAllocations moves funds when needed', async t => {
+  const targetAllocation = {
+    USDN: 40n,
+    Aave_Arbitrum: 40n,
+    Compound_Arbitrum: 20n,
+  };
+  const currentBalances = { USDN: makeDeposit(1000n) };
+  const steps = await planRebalanceToAllocations({
+    brand: depositBrand,
+    currentBalances,
+    targetAllocation,
+    network: TEST_NETWORK,
+    feeBrand,
+    gasEstimator: mockGasEstimator,
+  });
+  t.snapshot(steps);
 });

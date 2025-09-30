@@ -223,6 +223,34 @@ export const planDepositToAllocations = async (
   return flowDetail.steps;
 };
 
+/**
+ * Plan rebalance driven by target allocation weights.
+ * Computes absolute targets, then plans the corresponding flow.
+ */
+export const planRebalanceToAllocations = async (
+  details: PlannerContext,
+): Promise<MovementDesc[]> => {
+  const { brand, currentBalances, targetAllocation } = details;
+  if (!targetAllocation) return [];
+  const target = computeWeightedTargets(
+    brand,
+    currentBalances,
+    0n,
+    targetAllocation,
+  );
+
+  const { network, feeBrand, gasEstimator } = details;
+  const flowDetail = await planRebalanceFlow({
+    network,
+    current: currentBalances,
+    target,
+    brand,
+    feeBrand,
+    gasEstimator,
+  });
+  return flowDetail.steps;
+};
+
 // Back-compat utility used by CLI or handlers
 export const handleDeposit = async (
   portfolioKey: `${string}.portfolios.portfolio${number}`,
