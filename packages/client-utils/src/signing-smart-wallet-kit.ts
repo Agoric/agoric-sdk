@@ -2,10 +2,7 @@ import type {
   OfferSpec,
   OfferStatus,
 } from '@agoric/smart-wallet/src/offers.js';
-import type {
-  BridgeAction,
-  UpdateRecord,
-} from '@agoric/smart-wallet/src/smartWallet.js';
+import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { ECallable } from '@agoric/vow/src/E.js';
 import type { EUnwrap } from '@agoric/vow/src/types.js';
 import type { Instance } from '@agoric/zoe';
@@ -16,13 +13,13 @@ import type {
   StdFee,
 } from '@cosmjs/stargate';
 import { toAccAddress } from '@cosmjs/stargate/build/queryclient/utils.js';
-import { Fail, q } from '@endo/errors';
+import { Fail } from '@endo/errors';
 import type { EReturn } from '@endo/far';
 import { MsgWalletSpendAction } from './codegen/agoric/swingset/msgs.js';
 import { TxRaw } from './codegen/cosmos/tx/v1beta1/tx.js';
 import { makeStargateClientKit } from './signing-client.js';
+import { getInvocationUpdate, getOfferResult } from './smart-wallet-kit.js';
 import type { SmartWalletKit } from './smart-wallet-kit.js';
-import { retryUntilCondition } from './sync-tools.js';
 import type { RetryOptionsAndPowers } from './sync-tools.js';
 
 type TxOptions = RetryOptionsAndPowers & {
@@ -217,16 +214,7 @@ export const reflectWalletStore = (
             throw Error(tx.rawLog);
           }
           if (!immediate && id) {
-            const done = (await retryUntilCondition(
-              sswk.query.getLastUpdate,
-              update =>
-                update.updated === 'invocation' &&
-                update.id === id &&
-                !!(update.result || update.error),
-              `${id}`,
-              retryOpts,
-            )) as UpdateRecord & { updated: 'invocation' };
-            if (done.error) throw Error(done.error);
+            await getInvocationUpdate(id, sswk.query.getLastUpdate, retryOpts);
           }
           const ret = { id, tx };
           if (forSavingResults) {
@@ -267,26 +255,12 @@ export const reflectWalletStore = (
         saveResult: { name, overwrite },
       },
     });
-    // await up.offerResult(id);
-    const done = (await retryUntilCondition(
+    const status = await getOfferResult(
+      id,
       sswk.query.getLastUpdate,
-      // "walletAction" indicates an error, "offerStatus" with the right id and
-      // either `result` or `error` indicates settlement.
-      update =>
-        update.updated === 'walletAction' ||
-        (update.updated === 'offerStatus' &&
-          update.status.id === id &&
-          !!(update.status.result || update.status.error)),
-      `${id}`,
       retryOpts,
-    )) as UpdateRecord & { updated: 'walletAction' | 'offerStatus' };
-    if (done.updated !== 'offerStatus') {
-      throw Fail`${q(id)} ${q(done.updated)} failure: ${q(done.status?.error)}`;
-    }
-    const { error, result } = done.status;
-    !error || Fail`${q(id)} offerStatus failure: ${q(error)}`;
-    result || Fail`${q(id)} offerStatus missing result`;
-    return { id, tx, result };
+    );
+    return { id, tx, result: status.result };
   };
 
   return harden({
