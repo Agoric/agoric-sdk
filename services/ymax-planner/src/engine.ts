@@ -31,6 +31,7 @@ import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import {
   mustMatch,
+  naturalCompare,
   partialMap,
   provideLazyMap,
   stripPrefix,
@@ -65,6 +66,9 @@ import {
 } from './vstorage-utils.ts';
 
 const { entries, fromEntries, values } = Object;
+
+// eslint-disable-next-line no-nested-ternary
+const compareBigints = (a: bigint, b: bigint) => (a > b ? 1 : a < b ? -1 : 0);
 
 const knownErrorProps = harden(['cause', 'errors', 'message', 'name', 'stack']);
 
@@ -693,6 +697,12 @@ export const startEngine = async (
       }
     }
 
+    // Process portfolio events in (blockHeight, vstoragePath) order.
+    portfolioEvents.sort(
+      (a, b) =>
+        compareBigints(a.eventRecord.blockHeight, b.eventRecord.blockHeight) ||
+        naturalCompare(a.path, b.path),
+    );
     await processPortfolioEvents(
       portfolioEvents,
       respHeight,
