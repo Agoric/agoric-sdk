@@ -65,6 +65,43 @@ export const getCurrentBalance = async (
   }
 };
 
+export const getCurrentBalances = async (
+  status: StatusFor['portfolio'],
+  brand: Brand<'nat'>,
+  powers: {
+    spectrum: SpectrumClient;
+    cosmosRest: CosmosRestClient;
+  },
+) => {
+  const { positionKeys, accountIdByChain } = status;
+  const errors = [] as Error[];
+  const balanceEntries = await Promise.all(
+    positionKeys.map(async (posKey: PoolKey): Promise<[PoolKey, NatAmount]> => {
+      await null;
+      try {
+        const poolPlaceInfo =
+          getOwn(PoolPlaces, posKey) || Fail`Unknown PoolPlace`;
+        // TODO there should be a bulk query operation available now
+        const amountValue = await getCurrentBalance(
+          poolPlaceInfo,
+          accountIdByChain,
+          powers,
+        );
+        return [posKey, AmountMath.make(brand, amountValue)];
+      } catch (cause) {
+        errors.push(Error(`Could not get ${posKey} balance`, { cause }));
+        // @ts-expect-error
+        return [posKey, undefined];
+      }
+    }),
+  );
+  if (errors.length) {
+    throw AggregateError(errors, 'Could not get balances');
+  }
+  const currentBalances = Object.fromEntries(balanceEntries);
+  return currentBalances;
+};
+
 /**
  * Compute absolute target balances from an allocation map over PoolKeys.
  * Ensures sum(target) == sum(current) + deposit; non-allocated pools target to 0.
@@ -242,40 +279,13 @@ export const handleDeposit = async (
 ) => {
   const querier = makePortfolioQuery(powers.readPublished, portfolioKey);
   const status = await querier.getPortfolioStatus();
-  const {
-    targetAllocation,
-    positionKeys,
-    accountIdByChain,
-    policyVersion,
-    rebalanceCount,
-  } = status;
+  const { policyVersion, rebalanceCount, targetAllocation } = status;
   if (!targetAllocation) return { policyVersion, rebalanceCount, steps: [] };
-  const errors = [] as Error[];
-  const balanceEntries = await Promise.all(
-    positionKeys.map(async (posKey: PoolKey): Promise<[PoolKey, NatAmount]> => {
-      await null;
-      try {
-        const poolPlaceInfo =
-          getOwn(PoolPlaces, posKey) || Fail`Unknown PoolPlace`;
-        // TODO there should be a bulk query operation available now
-        const amountValue = await getCurrentBalance(
-          poolPlaceInfo,
-          accountIdByChain,
-          powers,
-        );
-        return [posKey, AmountMath.make(amount.brand, amountValue)];
-      } catch (cause) {
-        errors.push(Error(`Could not get ${posKey} balance`, { cause }));
-        // @ts-expect-error
-        return [posKey, undefined];
-      }
-    }),
+  const currentBalances = await getCurrentBalances(
+    status,
+    amount.brand,
+    powers,
   );
-  if (errors.length) {
-    throw AggregateError(errors, 'Could not get balances');
-  }
-  const currentBalances = Object.fromEntries(balanceEntries);
-  // Use PROD network by default; callers may wish to parameterize later
   const steps = await planDepositToAllocations(
     amount,
     currentBalances,
