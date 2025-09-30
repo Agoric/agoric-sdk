@@ -182,30 +182,36 @@ const computeWeightedTargets = (
   return targets;
 };
 
+type PlannerContext = {
+  currentBalances: Partial<Record<AssetPlaceRef, NatAmount>>;
+  targetAllocation?: TargetAllocation;
+  network: NetworkSpec;
+  brand: Brand<'nat'>;
+  feeBrand: Brand<'nat'>;
+  gasEstimator: GasEstimator;
+};
+
 /**
  * Plan deposit driven by target allocation weights.
  * Computes absolute targets, then plans the corresponding flow.
  */
 export const planDepositToAllocations = async (
-  amount: NatAmount,
-  current: Partial<Record<AssetPlaceRef, NatAmount>>,
-  allocation: TargetAllocation,
-  network: NetworkSpec,
-  feeBrand: Brand<'nat'>,
-  gasEstimator: GasEstimator,
+  details: PlannerContext & { amount: NatAmount },
 ): Promise<MovementDesc[]> => {
-  const brand = amount.brand;
+  const { amount, brand, currentBalances, targetAllocation } = details;
+  if (!targetAllocation) return [];
   const target = computeWeightedTargets(
     brand,
-    current,
+    currentBalances,
     amount.value,
-    allocation,
+    targetAllocation,
   );
 
   // The deposit should be distributed.
-  const currentWithDeposit = { ...current, '+agoric': amount };
+  const currentWithDeposit = { ...currentBalances, '+agoric': amount };
   target['+agoric'] = AmountMath.make(brand, 0n);
 
+  const { network, feeBrand, gasEstimator } = details;
   const flowDetail = await planRebalanceFlow({
     network,
     current: currentWithDeposit,
@@ -239,13 +245,14 @@ export const handleDeposit = async (
     amount.brand,
     powers,
   );
-  const steps = await planDepositToAllocations(
+  const steps = await planDepositToAllocations({
     amount,
+    brand: amount.brand,
     currentBalances,
     targetAllocation,
     network,
     feeBrand,
-    powers.gasEstimator,
-  );
+    gasEstimator: powers.gasEstimator,
+  });
   return { policyVersion, rebalanceCount, steps };
 };
