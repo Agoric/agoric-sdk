@@ -9,6 +9,7 @@ import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-
 import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
+import { typedEntries } from '@agoric/internal';
 import { Fail, q } from '@endo/errors';
 // import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
 import type {
@@ -103,24 +104,6 @@ export const getCurrentBalances = async (
 };
 
 /**
- * Compute absolute target balances for a withdraw operation driven by allocation weights.
- * Reduces balances across selected pools per weights and increases '<Cash>' by the withdraw amount.
- * Pools not in the allocation remain unchanged. Throws if selected pools do not cover the withdrawal.
- */
-export const withdrawTargetsFromAllocation = (
-  amount: NatAmount,
-  current: Partial<Record<AssetPlaceRef, NatAmount>>,
-  allocation: TargetAllocation,
-): Partial<Record<AssetPlaceRef, NatAmount>> => {
-  const brand = amount.brand;
-  const withdraw = amount.value;
-  const targets = computeWeightedTargets(brand, current, -withdraw, allocation);
-  const currentCash = current['<Cash>']?.value ?? 0n;
-  targets['<Cash>'] = AmountMath.make(brand, currentCash + withdraw);
-  return harden(targets);
-};
-
-/**
  * Derive weighted targets for allocation keys. Additionally, always zero out hub balances
  * (chains; keys starting with '@') that have non-zero current amounts. Returns only entries
  * whose values change compared to current.
@@ -129,16 +112,21 @@ const computeWeightedTargets = (
   brand: Brand<'nat'>,
   current: Partial<Record<AssetPlaceRef, NatAmount>>,
   delta: bigint,
-  allocation: TargetAllocation,
+  allocation: TargetAllocation = {},
 ): Partial<Record<AssetPlaceRef, NatAmount>> => {
-  const totalCurrentAmt = Object.keys(current).reduce(
-    (acc, k) => (allocation[k] ? AmountMath.add(acc, current[k]) : acc),
-    AmountMath.makeEmpty(brand),
+  const currentTotal = Object.values(current).reduce(
+    (acc, amount) => acc + amount.value,
+    0n,
   );
-  const total = totalCurrentAmt.value + delta;
+  const total = currentTotal + delta;
   total >= 0n || Fail`total after delta must not be negative`;
-  const weights = Object.entries(allocation) as Array<[PoolKey, NatValue]>;
-  weights.length > 0 || Fail`empty allocation`;
+  const targetWeights = typedEntries(allocation as Required<typeof allocation>);
+  // In the absence of target weights, maintain the relative status quo.
+  const weights = targetWeights.length
+    ? targetWeights
+    : typedEntries(current as Required<typeof current>).map(
+        ([key, amount]) => [key, amount.value] as [PoolKey, NatValue],
+      );
   for (const entry of weights) {
     const w = entry[1];
     (typeof w === 'bigint' && w > 0n) ||
@@ -147,39 +135,32 @@ const computeWeightedTargets = (
   const sumW = weights.reduce<bigint>((acc, [, w]) => acc + w, 0n);
   sumW > 0n || Fail`allocation weights must sum > 0`;
   const draft: Partial<Record<AssetPlaceRef, NatAmount>> = {};
-  let assigned = 0n;
-  let maxKey = weights[0][0];
-  let maxW = -1n;
+  let remainder = total;
+  let [maxKey, maxW] = [weights[0][0], -1n];
   for (const [key, w] of weights) {
     if (w > maxW) {
-      maxW = w;
-      maxKey = key;
+      [maxKey, maxW] = [key, w];
     }
     const v = (total * w) / sumW;
-    assigned += v;
     draft[key] = AmountMath.make(brand, v);
+    remainder -= v;
   }
-  const remainder = total - assigned;
   if (remainder !== 0n) {
-    const cur = draft[maxKey] ?? AmountMath.make(brand, 0n);
-    draft[maxKey] = AmountMath.add(cur, AmountMath.make(brand, remainder));
+    const remainderAmount = AmountMath.make(brand, remainder);
+    draft[maxKey] = AmountMath.add(draft[maxKey] as NatAmount, remainderAmount);
   }
-  const targets: Partial<Record<AssetPlaceRef, NatAmount>> = { ...draft };
-  // Zero hubs (chains) with non-zero current balances
+  // Zero out hubs (chains) with non-zero current balances
   for (const key of Object.keys(current)) {
-    if (key.startsWith('@')) {
-      const curAmt = current[key];
-      if (curAmt && curAmt.value !== 0n) {
-        targets[key] = AmountMath.make(brand, 0n);
-      }
+    if (key.startsWith('@')) draft[key] = AmountMath.make(brand, 0n);
+  }
+  // Delete entries reflecting no change.
+  for (const [key, amount] of Object.entries(draft)) {
+    const currentAmount = current[key];
+    if (currentAmount && AmountMath.isEqual(currentAmount, amount)) {
+      delete draft[key];
     }
   }
-  for (const key of Object.keys(targets)) {
-    const curV = current[key]?.value ?? 0n;
-    const nextV = targets[key]!.value;
-    if (curV === nextV) delete targets[key];
-  }
-  return targets;
+  return draft;
 };
 
 type PlannerContext = {
@@ -238,6 +219,36 @@ export const planRebalanceToAllocations = async (
     0n,
     targetAllocation,
   );
+
+  const { network, feeBrand, gasEstimator } = details;
+  const flowDetail = await planRebalanceFlow({
+    network,
+    current: currentBalances,
+    target,
+    brand,
+    feeBrand,
+    gasEstimator,
+  });
+  return flowDetail.steps;
+};
+
+/**
+ * Plan withdrawal driven by target allocation weights.
+ * Computes absolute targets, then plans the corresponding flow.
+ */
+export const planWithdrawFromAllocations = async (
+  details: PlannerContext & { amount: NatAmount },
+): Promise<MovementDesc[]> => {
+  const { amount, brand, currentBalances, targetAllocation } = details;
+  const target = computeWeightedTargets(
+    brand,
+    currentBalances,
+    -amount.value,
+    targetAllocation,
+  );
+
+  const currentCash = currentBalances['<Cash>'] || AmountMath.make(brand, 0n);
+  target['<Cash>'] = AmountMath.add(currentCash, amount);
 
   const { network, feeBrand, gasEstimator } = details;
   const flowDetail = await planRebalanceFlow({

@@ -11,6 +11,7 @@ import { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import {
   handleDeposit,
   planRebalanceToAllocations,
+  planWithdrawFromAllocations,
 } from '../src/plan-deposit.ts';
 import { SpectrumClient } from '../src/spectrum-client.ts';
 import { mockGasEstimator } from './mocks.ts';
@@ -324,6 +325,43 @@ test('planRebalanceToAllocations moves funds when needed', async t => {
     brand: depositBrand,
     currentBalances,
     targetAllocation,
+    network: TEST_NETWORK,
+    feeBrand,
+    gasEstimator: mockGasEstimator,
+  });
+  t.snapshot(steps);
+});
+
+test('planWithdrawFromAllocations withdraws and rebalances', async t => {
+  const targetAllocation = {
+    USDN: 40n,
+    Aave_Arbitrum: 40n,
+    Compound_Arbitrum: 20n,
+  };
+  const currentBalances = { USDN: makeDeposit(2000n) };
+  const steps = await planWithdrawFromAllocations({
+    amount: makeDeposit(1000n),
+    brand: depositBrand,
+    currentBalances,
+    targetAllocation,
+    network: TEST_NETWORK,
+    feeBrand,
+    gasEstimator: mockGasEstimator,
+  });
+  t.snapshot(steps);
+});
+
+test('planWithdrawFromAllocations with no target preserves relative amounts', async t => {
+  const currentBalances = {
+    USDN: makeDeposit(800n),
+    Aave_Arbitrum: makeDeposit(800n),
+    Compound_Arbitrum: makeDeposit(400n),
+  };
+  const steps = await planWithdrawFromAllocations({
+    amount: makeDeposit(1000n),
+    brand: depositBrand,
+    currentBalances,
+    targetAllocation: {},
     network: TEST_NETWORK,
     feeBrand,
     gasEstimator: mockGasEstimator,
