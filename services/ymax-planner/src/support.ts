@@ -238,6 +238,7 @@ const findBlockByTimestamp = async (
 export const buildTimeWindow = async (
   provider: JsonRpcProvider,
   publishTimeMs: number,
+  log: (...args: unknown[]) => void,
   fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
 ) => {
   const adjustedTime = publishTimeMs - fudgeFactorMs;
@@ -251,16 +252,17 @@ export const buildTimeWindow = async (
   const currentBlockInfo = await provider.getBlock(currentBlock);
   const currentBlockTime = (currentBlockInfo?.timestamp || 0) * 1000;
 
-  // End time is in the past
   if (endTime <= currentBlockTime) {
+    log('end time is in the past');
     return { fromBlock, toBlock: currentBlock };
   }
 
-  // End time is in the future - estimate blocks ahead
+  log('end time is in the future - estimate blocks ahead');
   const SINGLE_BLOCK_TIME_MS = 2_000; // one number for all chains
 
   const timeUntilEnd = endTime - currentBlockTime;
   const estimatedFutureBlocks = Math.ceil(timeUntilEnd / SINGLE_BLOCK_TIME_MS);
+  log('future blocks', estimatedFutureBlocks);
 
   const toBlock = currentBlock + estimatedFutureBlocks;
   return { fromBlock, toBlock };

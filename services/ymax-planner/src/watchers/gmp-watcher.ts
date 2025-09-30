@@ -91,6 +91,7 @@ export const lookBackGmp = async ({
     const { fromBlock, toBlock } = await buildTimeWindow(
       provider,
       publishTimeMs,
+      log,
     );
 
     log(

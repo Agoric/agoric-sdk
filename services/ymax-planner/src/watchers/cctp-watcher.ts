@@ -146,6 +146,7 @@ export const lookBackCctp = async ({
     const { fromBlock, toBlock } = await buildTimeWindow(
       provider,
       publishTimeMs,
+      log,
     );
 
     log(
