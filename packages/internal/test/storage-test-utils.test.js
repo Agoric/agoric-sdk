@@ -29,7 +29,7 @@ test('makeFakeStorageKit', async t => {
       boolean: true,
       null: null,
       undefined,
-      symbol: Symbol('foo'),
+      symbol: unpassableSymbolForName('foo'),
       array: ['foo'],
       object: {
         toString() {
