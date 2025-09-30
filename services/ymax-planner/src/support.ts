@@ -295,7 +295,8 @@ export const buildTimeWindow = async (
 
   const fromBlockInfo = await provider.getBlock(fromBlock);
   const fromBlockTime = (fromBlockInfo?.timestamp || 0) * 1000;
-  const endTime = fromBlockTime + TX_TIMEOUT_MS;
+  // Add fudgeFactorMs back to TX_TIMEOUT_MS to compensate for the earlier subtraction
+  const endTime = fromBlockTime + TX_TIMEOUT_MS + fudgeFactorMs;
 
   const currentBlock = await provider.getBlockNumber();
   const currentBlockInfo = await provider.getBlock(currentBlock);
