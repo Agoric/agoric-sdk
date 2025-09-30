@@ -1,7 +1,7 @@
 import { JsonRpcProvider, Log, type Filter } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from './config.ts';
-import type { EvmContext } from './pending-tx-manager.ts';
+import { TX_TIMEOUT_MS, type EvmContext } from './pending-tx-manager.ts';
 
 const { entries } = Object;
 
@@ -242,7 +242,27 @@ export const buildTimeWindow = async (
 ) => {
   const adjustedTime = publishTimeMs - fudgeFactorMs;
   const fromBlock = await findBlockByTimestamp(provider, adjustedTime);
-  const toBlock = await provider.getBlockNumber();
+
+  const fromBlockInfo = await provider.getBlock(fromBlock);
+  const fromBlockTime = (fromBlockInfo?.timestamp || 0) * 1000;
+  const endTime = fromBlockTime + TX_TIMEOUT_MS;
+
+  const currentBlock = await provider.getBlockNumber();
+  const currentBlockInfo = await provider.getBlock(currentBlock);
+  const currentBlockTime = (currentBlockInfo?.timestamp || 0) * 1000;
+
+  // End time is in the past
+  if (endTime <= currentBlockTime) {
+    return { fromBlock, toBlock: currentBlock };
+  }
+
+  // End time is in the future - estimate blocks ahead
+  const SINGLE_BLOCK_TIME_MS = 2_000; // one number for all chains
+
+  const timeUntilEnd = endTime - currentBlockTime;
+  const estimatedFutureBlocks = Math.ceil(timeUntilEnd / SINGLE_BLOCK_TIME_MS);
+
+  const toBlock = currentBlock + estimatedFutureBlocks;
   return { fromBlock, toBlock };
 };
 
