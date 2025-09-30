@@ -457,7 +457,7 @@ test('Noble Dollar Swap, Lock messages', t => {
 
   {
     const actual = makeSwapLockMessages(
-      { value: 'cosmos1test', chainId: 'grand-1', encoding: 'bech32' },
+      { value: 'noble1test', chainId: 'grand-1', encoding: 'bech32' },
       5_000n * 1_000_000n,
       { vault: 1 },
     );
@@ -466,7 +466,7 @@ test('Noble Dollar Swap, Lock messages', t => {
 
   {
     const actual = makeUnlockSwapMessages(
-      { value: 'cosmos1test', chainId: 'grand-1', encoding: 'bech32' },
+      { value: 'noble1test', chainId: 'grand-1', encoding: 'bech32' },
       5_000n * 1_000_000n,
       { vault: 1, usdnOut: 4_900n * 1_000_000n },
     );
