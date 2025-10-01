@@ -124,7 +124,7 @@ testWithAllModes('solver simple 2-pool case (A -> B 30)', async (t, mode) => {
       amount: token(30n),
       fee: fixedFee,
       detail: {
-        evmGas: 200000000000000n,
+        evmGas: 600000000000000n,
       },
     },
     // hub -> leaf
@@ -160,7 +160,7 @@ testWithAllModes(
         amount: amt33,
         fee: fixedFee,
         detail: {
-          evmGas: 200000000000000n,
+          evmGas: 600000000000000n,
         },
       },
       {
@@ -169,7 +169,7 @@ testWithAllModes(
         amount: amt33,
         fee: fixedFee,
         detail: {
-          evmGas: 200000000000000n,
+          evmGas: 600000000000000n,
         },
       },
       // hub -> leaf
@@ -216,7 +216,7 @@ testWithAllModes('solver all to one (B + C -> A)', async (t, mode) => {
       amount: token(90n),
       fee: fixedFee,
       detail: {
-        evmGas: 200000000000000n,
+        evmGas: 600000000000000n,
       },
     },
     { src: '@Arbitrum', dest: A, amount: token(90n), fee: fixedFee },
@@ -246,7 +246,7 @@ testWithAllModes(
         amount: token(60n),
         fee: fixedFee,
         detail: {
-          evmGas: 200000000000000n,
+          evmGas: 600000000000000n,
         },
       },
       {
@@ -255,7 +255,7 @@ testWithAllModes(
         amount: token(40n),
         fee: fixedFee,
         detail: {
-          evmGas: 200000000000000n,
+          evmGas: 600000000000000n,
         },
       },
       { src: '@Avalanche', dest: B, amount: token(60n), fee: fixedFee },
@@ -288,7 +288,7 @@ testWithAllModes(
         amount: token(100n),
         fee: fixedFee,
         detail: {
-          evmGas: 200000000000000n,
+          evmGas: 600000000000000n,
         },
       },
       { src: '@Arbitrum', dest: A, amount: token(100n), fee: fixedFee },
@@ -318,7 +318,7 @@ testWithAllModes(
         amount: token(70n),
         fee: fixedFee,
         detail: {
-          evmGas: 200000000000000n,
+          evmGas: 600000000000000n,
         },
       },
       {
@@ -327,7 +327,7 @@ testWithAllModes(
         amount: token(30n),
         fee: fixedFee,
         detail: {
-          evmGas: 200000000000000n,
+          evmGas: 600000000000000n,
         },
       },
       { src: '@Arbitrum', dest: A, amount: token(70n), fee: fixedFee },
@@ -358,7 +358,7 @@ testWithAllModes(
         amount: token(70n),
         fee: fixedFee,
         detail: {
-          evmGas: 200000000000000n,
+          evmGas: 600000000000000n,
         },
       },
       {
@@ -367,7 +367,7 @@ testWithAllModes(
         amount: token(30n),
         fee: fixedFee,
         detail: {
-          evmGas: 200000000000000n,
+          evmGas: 600000000000000n,
         },
       },
       { src: '@Arbitrum', dest: A, amount: token(70n), fee: fixedFee },
@@ -436,7 +436,7 @@ testWithAllModes(
         amount: token(20n),
         fee: fixedFee,
         detail: {
-          evmGas: 200000000000000n,
+          evmGas: 600000000000000n,
         },
       },
       { src: '@Ethereum', dest: C, amount: token(20n), fee: fixedFee },
@@ -485,7 +485,7 @@ testWithAllModes(
         amount: token(300n),
         fee: fixedFee,
         detail: {
-          evmGas: 200000000000000n,
+          evmGas: 600000000000000n,
         },
       },
       {
@@ -494,7 +494,7 @@ testWithAllModes(
         amount: token(200n),
         fee: fixedFee,
         detail: {
-          evmGas: 200000000000000n,
+          evmGas: 600000000000000n,
         },
       },
       { src: '@Arbitrum', dest: A, amount: token(300n), fee: fixedFee },
@@ -546,7 +546,7 @@ testWithAllModes(
         amount: token(220n),
         fee: fixedFee,
         detail: {
-          evmGas: 200000000000000n,
+          evmGas: 600000000000000n,
         },
       },
       {
@@ -555,7 +555,7 @@ testWithAllModes(
         amount: token(160n),
         fee: fixedFee,
         detail: {
-          evmGas: 200000000000000n,
+          evmGas: 600000000000000n,
         },
       },
       { src: '@Arbitrum', dest: A, amount: token(220n), fee: fixedFee },
@@ -618,7 +618,7 @@ testWithAllModes(
         amount: token(30n),
         fee: fixedFee,
         detail: {
-          evmGas: 200000000000000n,
+          evmGas: 600000000000000n,
         },
       },
       { src: '@Avalanche', dest: B, amount: token(30n), fee: fixedFee },
