@@ -131,16 +131,19 @@ export const makeSmartWalletWithSequence = (
   const queueOperation = async <T>(
     operation: () => Promise<T>,
     context: string,
+    logPrefix = '',
   ): Promise<T> => {
     return new Promise((resolve, reject) => {
       operationQueue.push({
         operation,
         resolve,
         reject,
-        context,
+        context: logPrefix ? `${logPrefix} ${context}` : context,
       });
 
-      log(`Queued ${context}, queue length: ${operationQueue.length}`);
+      log(
+        `${logPrefix ? `${logPrefix} ` : ''}Queued ${context}, queue length: ${operationQueue.length}`,
+      );
 
       if (!isProcessingQueue) {
         isProcessingQueue = true;
@@ -180,6 +183,9 @@ export const makeSmartWalletWithSequence = (
   ): Promise<
     Awaited<ReturnType<SigningSmartWalletKit['sendBridgeAction']>>
   > => {
+    const txId = offer.offerArgs?.txId;
+    const logPrefix = txId ? `[${txId}]` : '';
+
     const operation = async () => {
       const signerData = createSignerData();
       return signingSmartWalletKit.sendBridgeAction(
@@ -193,7 +199,7 @@ export const makeSmartWalletWithSequence = (
       );
     };
 
-    return queueOperation(operation, 'executeOffer');
+    return queueOperation(operation, 'executeOffer', logPrefix);
   };
 
   return harden({

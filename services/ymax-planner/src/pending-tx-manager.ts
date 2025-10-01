@@ -2,7 +2,6 @@ import type { WebSocketProvider } from 'ethers';
 
 import { Fail } from '@endo/errors';
 
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';

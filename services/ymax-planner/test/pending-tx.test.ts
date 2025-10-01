@@ -212,6 +212,7 @@ test('resolves a 31 min old pending CCTP transaction in lookback mode', async t 
   const mockProvider = opts.evmProviders[chainId] as any;
 
   const currentTimeMs = 1700000000; // 2023-11-14T22:13:20Z
+  const txTimestampMs = currentTimeMs - 31 * 60 * 1000; // 31 min ago
   const avgBlockTimeMs = 300; // 300 ms per block on eip155:42161
 
   const latestBlock = 1_450_031;
@@ -239,7 +240,7 @@ test('resolves a 31 min old pending CCTP transaction in lookback mode', async t 
       ...opts,
       log: mockLog,
     },
-    Date.now() - 10000,
+    txTimestampMs,
   );
 
   const currentBlock = await mockProvider.getBlockNumber();

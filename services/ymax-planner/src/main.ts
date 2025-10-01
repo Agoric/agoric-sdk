@@ -53,8 +53,7 @@ export type SmartWalletKitWithSequence = Omit<
 > & {
   executeOffer: (
     offer: OfferSpec,
-    pollForResult?: boolean,
-  ) => Promise<Awaited<ReturnType<SigningSmartWalletKit['executeOffer']>>>;
+  ) => Promise<Awaited<ReturnType<SigningSmartWalletKit['sendBridgeAction']>>>;
 };
 
 const assertChainId = async (
@@ -295,7 +294,7 @@ export const main = async (
     spectrumBlockchain,
     spectrumPools,
     cosmosRest,
-    signingSmartWalletKit,
+    signingSmartWalletKit: smartWalletKitWithSequence,
     walletStore,
     getWalletInvocationUpdate: (messageId, opts) => {
       const { getLastUpdate } = signingSmartWalletKit.query;
