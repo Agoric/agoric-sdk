@@ -367,12 +367,12 @@ func (k Keeper) FlushChangeEvents(ctx sdk.Context) error {
 }
 
 func (k Keeper) SetStorageAndNotify(ctx sdk.Context, entry agoric.KVEntry) {
-	k.changeManager.Track(ctx, k, entry, false)
+	_ = k.changeManager.Track(ctx, k, entry, false)
 	k.SetStorage(ctx, entry)
 }
 
 func (k Keeper) LegacySetStorageAndNotify(ctx sdk.Context, entry agoric.KVEntry) {
-	k.changeManager.Track(ctx, k, entry, true)
+	_ = k.changeManager.Track(ctx, k, entry, true)
 	k.SetStorage(ctx, entry)
 }
 

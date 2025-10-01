@@ -231,7 +231,10 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 			return "", err
 		}
 		state.RewardPool = state.RewardPool.Add(coins...)
-		keeper.SetState(ctx, state)
+		err = keeper.SetState(ctx, state)
+		if err != nil {
+			return "", err
+		}
 		// We don't supply the module balance, since the controller shouldn't know.
 		ret = "true"
 
