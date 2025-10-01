@@ -43,7 +43,7 @@ import { isNat } from '@endo/nat';
 import { M } from '@endo/patterns';
 import type { EVMContractAddresses, start } from './portfolio.contract.js';
 import type { PortfolioKit } from './portfolio.exo.js';
-import type { AssetPlaceRef } from './type-guards-steps.js';
+import type { AssetPlaceRef, MovementDesc } from './type-guards-steps.js';
 
 export type { OfferArgsFor } from './type-guards-steps.js';
 
@@ -283,12 +283,11 @@ type FlowStatus =
   | { state: 'done' }
   | { state: 'fail'; step: number; how: string; error: string; where?: string };
 
-type FlowSteps = {
-  how: string;
-  amount: Amount<'nat'>;
-  src: AssetPlaceRef;
-  dest: AssetPlaceRef;
-}[];
+type FlowSteps = Array<
+  MovementDesc & {
+    how: string;
+  }
+>;
 
 /** ChainNames including those in future upgrades */
 type ChainNameExt = string;
@@ -405,12 +404,24 @@ export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.or(
   ),
 );
 
-export const FlowStepsShape: TypedPattern<StatusFor['flowSteps']> = M.arrayOf({
-  how: M.string(),
-  amount: AnyNatAmountShape,
-  src: M.string(), // AssetPlaceRef
-  dest: M.string(), // AssetPlaceRef
-});
+/** See also .movementDescShape from makeOfferArgsShapes */
+export const FlowStepsShape: TypedPattern<StatusFor['flowSteps']> = M.arrayOf(
+  M.splitRecord(
+    {
+      how: M.string(),
+      amount: AnyNatAmountShape,
+      src: M.string(), // AssetPlaceRef
+      dest: M.string(), // AssetPlaceRef
+    },
+    {
+      fee: AnyNatAmountShape,
+      detail: M.recordOf(M.string(), M.nat()),
+      claim: M.boolean(),
+    },
+    // NOTE: no rest; other properties may be added
+  ),
+);
+
 // #endregion
 
 // XXX deployment concern, not part of contract external interface

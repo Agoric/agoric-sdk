@@ -451,9 +451,7 @@ const stepFlow = async (
     const { amount } = move;
     return harden({
       how: way.how,
-      amount,
-      src: move.src,
-      dest: move.dest,
+      ...move,
       apply: async ({ [evmChain]: gInfo, agoric }) => {
         assert(gInfo, evmChain);
         const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
@@ -500,9 +498,7 @@ const stepFlow = async (
         const amounts = harden({ Deposit: amount });
         todo.push({
           how: 'localTransfer',
-          src: move.src,
-          dest: move.dest,
-          amount,
+          ...move,
           apply: async ({ agoric }) => {
             const { lca, lcaIn } = agoric;
             const account = move.dest === '+agoric' ? lcaIn : lca;
@@ -522,9 +518,7 @@ const stepFlow = async (
         const amounts = { Cash: amount };
         todo.push({
           how: 'withdrawToSeat',
-          src: move.src,
-          dest: move.dest,
-          amount,
+          ...move,
           apply: async ({ agoric }) => {
             await ctx.zoeTools.withdrawToSeat(agoric.lca, seat, amounts);
             return {};
@@ -539,9 +533,7 @@ const stepFlow = async (
       case 'send':
         todo.push({
           how: 'send',
-          amount,
-          src: move.src,
-          dest: move.dest,
+          ...move,
           apply: async ({ agoric }) => {
             const { lca, lcaIn } = agoric;
             await lcaIn.send(lca.getAddress(), amount);
@@ -563,9 +555,7 @@ const stepFlow = async (
         const ctxI = { usdc: ctx.usdc };
         todo.push({
           how,
-          amount,
-          src: move.src,
-          dest: move.dest,
+          ...move,
           apply: async ({ agoric, noble }) => {
             assert(noble, 'nobleMentioned'); // per nobleMentioned below
             await null;
@@ -597,9 +587,7 @@ const stepFlow = async (
 
         todo.push({
           how,
-          amount,
-          src: move.src,
-          dest: move.dest,
+          ...move,
           apply: async ({ [evmChain]: gInfo, noble }) => {
             // If an EVM account is in a move, it's available
             // in the accounts arg, along with noble.
@@ -632,12 +620,9 @@ const stepFlow = async (
         const ctxU = { usdnOut: move?.detail?.usdnOut, vault };
 
         const isSupply = 'src' in way;
-
         todo.push({
           how: way.how,
-          src: move.src,
-          dest: move.dest,
-          amount,
+          ...move,
           apply: async ({ noble }) => {
             assert(noble); // per nobleMentioned below
             const acctId = coerceAccountId(noble.ica.getAddress());
