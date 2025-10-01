@@ -16,7 +16,6 @@ const trace = makeTracer('CCtrl');
  * @import {IssuerKeywordRecord} from '@agoric/zoe';
  * @import {Remote} from '@agoric/internal';
  * @import {Board, NameHubKit} from '@agoric/vats';
- * @import {CopyRecord} from '@endo/pass-style';
  */
 
 const IssuerShape = M.remotable('Issuer');
@@ -94,6 +93,7 @@ const iface = M.interface('ContractControl', {
  */
 
 /**
+ * @template {ContractStartFunction} SF
  * @param {Zone} zone
  * @param {{
  *   agoricNamesAdmin: ERef<NameHubKit['nameAdmin']>,
@@ -112,13 +112,7 @@ export const prepareContractControl = (zone, svcs) => {
      *
      * Former installations can be reached from the board.
      *
-     * @template {ContractStartFunction} SF
-     * @param {{
-     *   name: string;
-     *   storageNode: Remote<StorageNode>;
-     *   kit?: (StartedInstanceKit<SF> & { privateArgs?: Parameters<SF>[1] });
-     *   initialPrivateArgs?: Parameters<SF>[1],
-     * }} initial
+     * @param {ContractControlOpts} initial
      */
     initial => ({
       initialPrivateArgs:
@@ -147,11 +141,10 @@ export const prepareContractControl = (zone, svcs) => {
        * Start the contract; publish the instance to (the board and) agoricNames.
        *
        * @throws if already running
-       * @template {ContractStartFunction} SF
        * @param {object} opts
        * @param {Installation<SF>} opts.installation
        * @param {IssuerKeywordRecord} [opts.issuers]
-       * @param {CopyRecord} [opts.privateArgsOverrides]
+       * @param {Partial<Parameters<SF>[1]>} [opts.privateArgsOverrides]
        */
       async start({ installation, issuers, privateArgsOverrides }) {
         const { name, storageNode, revoked, initialPrivateArgs } = this.state;
@@ -194,7 +187,7 @@ export const prepareContractControl = (zone, svcs) => {
        * @param {object} opts
        * @param {string} opts.bundleId
        * @param {IssuerKeywordRecord} [opts.issuers]
-       * @param {CopyRecord} [opts.privateArgsOverrides]
+       * @param {Partial<Parameters<SF>[1]>} [opts.privateArgsOverrides]
        */
       async installAndStart({ bundleId, issuers, privateArgsOverrides }) {
         trace(this.state.name, 'installAndStart');
@@ -208,7 +201,7 @@ export const prepareContractControl = (zone, svcs) => {
         });
       },
 
-      /** @template {ContractStartFunction} SF @returns {StartResult<SF>['publicFacet']} */
+      /** @returns {StartResult<SF>['publicFacet']} */
       getPublicFacet() {
         const { name, revoked, kit } = this.state;
         trace(name, 'getPublicFacet');
@@ -217,7 +210,7 @@ export const prepareContractControl = (zone, svcs) => {
         return kit.publicFacet;
       },
 
-      /** @template {ContractStartFunction} SF @returns {StartResult<SF>['creatorFacet']} */
+      /** @returns {StartResult<SF>['creatorFacet']} */
       getCreatorFacet() {
         const { name, revoked, kit } = this.state;
         trace(name, 'getCreatorFacet');
@@ -226,7 +219,7 @@ export const prepareContractControl = (zone, svcs) => {
         return kit.creatorFacet;
       },
 
-      /** @param {string | {bundleId: string; privateArgsOverrides?: CopyRecord; }} opts */
+      /** @param {string | {bundleId: string; privateArgsOverrides?: Partial<Parameters<SF>[1]>; }} opts */
       async upgrade(opts) {
         if (typeof opts === 'string') opts = { bundleId: opts };
         const { bundleId, privateArgsOverrides = {} } = opts;
@@ -352,4 +345,14 @@ export const prepareContractControl = (zone, svcs) => {
   );
 };
 
-/** @template SF @typedef {ReturnType<ReturnType<typeof prepareContractControl>>} ContractControl<SF> */
+/**
+ * @template {ContractStartFunction} [SF=ContractStartFunction]
+ * @typedef {object} ContractControlOpts
+ * @property {string} name contractName
+ * @property {Remote<StorageNode>} storageNode
+ * @property {StartedInstanceKit<SF> & { privateArgs?: Parameters<SF>[1] }} [kit]
+ * @property {Partial<Parameters<SF>[1]>} [initialPrivateArgs]
+ */
+
+/** @template {ContractStartFunction} [SF=ContractStartFunction] @typedef {ReturnType<typeof prepareContractControl<SF>>} MakeContractControl */
+/** @template {ContractStartFunction} [SF=ContractStartFunction] @typedef {ReturnType<MakeContractControl<SF>>} ContractControl */

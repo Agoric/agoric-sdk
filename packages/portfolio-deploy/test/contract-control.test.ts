@@ -54,7 +54,7 @@ const makeTestContext = async (t: ExecutionContext) => {
 
   const { agoricNamesAdmin, board } = common.bootstrap;
 
-  const makeContractControl = prepareContractControl(zone, {
+  const makeContractControl = prepareContractControl<YMaxStartFn>(zone, {
     agoricNamesAdmin,
     board,
     startUpgradable,
@@ -323,7 +323,8 @@ test.serial('create from kit', async t => {
   const contractKits = await space.consume.contractKits;
   const instance = await E(agoricNames).lookup('instance', contractName);
 
-  const kit = contractKits.get(instance);
+  // @ts-expect-error cast from StartedInstanceKit<ContractStartFunction>
+  const kit = contractKits.get(instance) as StartedInstanceKit<YMaxStartFn>;
   const initialPrivateArgs = common.commonPrivateArgs;
 
   const { rootNode: chainStorage } = common.bootstrap.storage;
