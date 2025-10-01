@@ -12,7 +12,6 @@ import { isPrimitive } from '@endo/pass-style';
 
 import { SigningStargateClient } from '@cosmjs/stargate';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
-import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 
 import { loadConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
@@ -30,8 +29,7 @@ export type SmartWalletKitWithSequence = Omit<
 > & {
   executeOffer: (
     offer: OfferSpec,
-    pollForResult?: boolean,
-  ) => Promise<Awaited<ReturnType<SigningSmartWalletKit['executeOffer']>>>;
+  ) => Promise<Awaited<ReturnType<SigningSmartWalletKit['sendBridgeAction']>>>;
 };
 
 const assertChainId = async (
@@ -151,7 +149,7 @@ export const main = async (
     rpc,
     spectrum,
     cosmosRest,
-    signingSmartWalletKit,
+    signingSmartWalletKit: smartWalletKitWithSequence,
     walletStore,
     getWalletInvocationUpdate: (messageId, opts) => {
       const { getLastUpdate } = signingSmartWalletKit.query;
