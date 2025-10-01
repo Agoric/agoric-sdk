@@ -1,4 +1,3 @@
-import { Fail } from '@endo/errors';
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 
 type AccountInfo = {
@@ -12,7 +11,7 @@ type AccountInfo = {
   sequence: string;
 };
 
-type AccountResponse = {
+export type AccountResponse = {
   account: AccountInfo;
 };
 
@@ -27,9 +26,9 @@ type SequenceManagerPowers = {
 };
 
 export class SequenceManager {
-  private sequence: number = 0;
+  private sequence: number;
 
-  private accountNumber: number = 0;
+  private accountNumber: number;
 
   private readonly address: string;
 
@@ -37,43 +36,49 @@ export class SequenceManager {
 
   private readonly chainName: string;
 
-  private initialized = false;
-
   private readonly log: (...args: unknown[]) => void;
 
-  constructor(io: SequenceManagerPowers, config: SequenceManagerConfig) {
+  private constructor(
+    io: SequenceManagerPowers,
+    config: SequenceManagerConfig,
+    accountInfo: AccountInfo,
+  ) {
     this.address = config.address;
     this.chainName = config.chainKey;
     this.cosmosRest = io.cosmosRest;
     this.log = io.log ?? (() => {});
-  }
-
-  private ensureInitialized(): void {
-    if (!this.initialized) {
-      Fail`SequenceManager not initialized. Call initialize() first.`;
-    }
-  }
-
-  /**
-   * Fetch current account info from the network and initialize sequence tracking
-   */
-  async initialize(): Promise<void> {
-    if (this.initialized) return;
-
-    const accountInfo = await this.fetchAccountInfo();
     this.sequence = Number(accountInfo.sequence);
     this.accountNumber = Number(accountInfo.account_number);
-    this.initialized = true;
     this.log(
       `Sequence manager initialized: account=${this.accountNumber}, sequence=${this.sequence}`,
     );
   }
 
   /**
+   * Create a new SequenceManager by fetching current account info from the network
+   */
+  static async create(
+    io: SequenceManagerPowers,
+    config: SequenceManagerConfig,
+  ): Promise<SequenceManager> {
+    await null;
+    try {
+      const response = await io.cosmosRest.getAccountSequence(
+        config.chainKey,
+        config.address,
+      );
+      const accountInfo = response.account;
+      return new SequenceManager(io, config, accountInfo);
+    } catch (error) {
+      io.log?.(`Failed to fetch account info for ${config.address}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Get the next sequence number and increment the internal counter
    */
   getSequence(): number {
-    this.ensureInitialized();
     const curr = this.sequence;
     this.sequence += 1;
     return curr;
@@ -83,7 +88,6 @@ export class SequenceManager {
    * Get the account number
    */
   getAccountNumber(): number {
-    this.ensureInitialized();
     return this.accountNumber;
   }
 

@@ -17,7 +17,7 @@ test('handles concurrent offers and actions with correct sequence management', a
   const logs: string[] = [];
   const log = (...args: any[]) => logs.push(args.join(' '));
 
-  const sequenceManager = new SequenceManager(
+  const sequenceManager = await SequenceManager.create(
     { cosmosRest: mockCosmosRest as any, log },
     { chainKey: 'agoric', address: 'agoric1test' },
   );
@@ -31,8 +31,6 @@ test('handles concurrent offers and actions with correct sequence management', a
     },
     { chainId: 'agoricdev-25' },
   );
-
-  await sequenceManager.initialize();
 
   // Submit multiple transactions concurrently
   const promises = [
@@ -77,7 +75,7 @@ test('handles sequence error recovery with network sync', async t => {
   // Enable sequence conflict simulation
   mockWallet.enableSequenceConflictSimulation();
 
-  const sequenceManager = new SequenceManager(
+  const sequenceManager = await SequenceManager.create(
     { cosmosRest: mockCosmosRest as any, log },
     { chainKey: 'agoric', address: 'agoric1test' },
   );
@@ -90,8 +88,6 @@ test('handles sequence error recovery with network sync', async t => {
     },
     { chainId: 'agoricdev-25' },
   );
-
-  await sequenceManager.initialize();
 
   // Simulate network advancing (as if external transactions occurred)
   mockCosmosRest.updateSequence('105'); // Network is now at 105

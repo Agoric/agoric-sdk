@@ -95,14 +95,13 @@ export const main = async (
   );
   console.warn('Signer address:', signingSmartWalletKit.address);
 
-  const sequenceManager = new SequenceManager(
+  const sequenceManager = await SequenceManager.create(
     {
       cosmosRest,
       log: (...args) => console.log('[SequenceManager]:', ...args),
     },
     { chainKey: 'agoric', address: signingSmartWalletKit.address },
   );
-  await sequenceManager.initialize();
 
   const smartWalletWithSequence = new SmartWalletWithSequence(
     {

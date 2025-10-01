@@ -9,6 +9,7 @@ import { chain as nobleTest } from 'chain-registry/testnet/nobletestnet/index.js
 import { chain as agoricTest } from 'chain-registry/testnet/agoricdevnet/index.js'; // agoricdev was named before testnets were a thing
 
 import type { ClusterName } from './config.ts';
+import type { AccountResponse } from './sequence-manager.ts';
 
 interface CosmosRestClientConfig {
   clusterName: ClusterName;
@@ -205,7 +206,10 @@ export class CosmosRestClient {
     );
   }
 
-  async getAccountSequence(chainKey: string, address: string) {
+  async getAccountSequence(
+    chainKey: string,
+    address: string,
+  ): Promise<AccountResponse> {
     const chainConfig = this.chainConfigs.get(chainKey);
     if (!chainConfig) {
       throw new Error(`Chain configuration not found for: ${chainKey}`);

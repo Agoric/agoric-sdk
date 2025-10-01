@@ -6,7 +6,7 @@ test('SequenceManager initialization', async t => {
   const mockCosmosRest = createMockCosmosRestClient();
   const logs: string[] = [];
 
-  const sequenceManager = new SequenceManager(
+  const sequenceManager = await SequenceManager.create(
     {
       cosmosRest: mockCosmosRest as any,
       log: (...args: any[]) => logs.push(args.join(' ')),
@@ -17,15 +17,7 @@ test('SequenceManager initialization', async t => {
     },
   );
 
-  // Should not be initialized yet
-  t.throws(() => sequenceManager.getSequence(), {
-    message: /not initialized/,
-  });
-
-  // Initialize
-  await sequenceManager.initialize();
-
-  // Should be initialized now
+  // Should be initialized and ready to use
   t.is(sequenceManager.getAccountNumber(), 377);
   t.is(sequenceManager.getSequence(), 100);
   t.is(sequenceManager.getSequence(), 101); // Should increment
@@ -40,7 +32,7 @@ test('SequenceManager sync functionality', async t => {
   const mockCosmosRest = createMockCosmosRestClient();
   const logs: string[] = [];
 
-  const sequenceManager = new SequenceManager(
+  const sequenceManager = await SequenceManager.create(
     {
       cosmosRest: mockCosmosRest as any,
       log: (...args: any[]) => logs.push(args.join(' ')),
@@ -50,8 +42,6 @@ test('SequenceManager sync functionality', async t => {
       address: 'agoric1test',
     },
   );
-
-  await sequenceManager.initialize();
 
   // Use some sequences
   sequenceManager.getSequence(); // 100
@@ -76,27 +66,29 @@ test('SequenceManager error handling', async t => {
 
   const logs: string[] = [];
 
-  const sequenceManager = new SequenceManager(
+  await t.throwsAsync(
+    () =>
+      SequenceManager.create(
+        {
+          cosmosRest: mockCosmosRest as any,
+          log: (...args: any[]) => logs.push(args.join(' ')),
+        },
+        {
+          chainKey: 'agoric',
+          address: 'agoric1test',
+        },
+      ),
     {
-      cosmosRest: mockCosmosRest as any,
-      log: (...args: any[]) => logs.push(args.join(' ')),
-    },
-    {
-      chainKey: 'agoric',
-      address: 'agoric1test',
+      message: 'Network error',
     },
   );
-
-  await t.throwsAsync(() => sequenceManager.initialize(), {
-    message: 'Network error',
-  });
   t.true(logs.some(log => log.includes('Failed to fetch account info')));
 });
 
-test('SequenceManager multiple initialization calls', async t => {
+test('SequenceManager creation calls network once', async t => {
   const mockCosmosRest = createMockCosmosRestClient();
 
-  const sequenceManager = new SequenceManager(
+  const sequenceManager = await SequenceManager.create(
     {
       cosmosRest: mockCosmosRest as any,
     },
@@ -106,15 +98,10 @@ test('SequenceManager multiple initialization calls', async t => {
     },
   );
 
-  // Initialize multiple times
-  await sequenceManager.initialize();
-  await sequenceManager.initialize();
-  await sequenceManager.initialize();
-
-  // Should only call network once
+  // Should have called network exactly once during creation
   t.is(mockCosmosRest.getCallCount(), 1);
 
-  // Should still work correctly
+  // Should work correctly
   t.is(sequenceManager.getAccountNumber(), 377);
   t.is(sequenceManager.getSequence(), 100);
 });
