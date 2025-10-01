@@ -44,35 +44,35 @@ interface SpectrumClientPowers {
 }
 
 export class SpectrumClient {
-  #fetch: typeof fetch;
+  private readonly fetch: typeof fetch;
 
-  #setTimeout: typeof setTimeout;
+  private readonly setTimeout: typeof setTimeout;
 
-  #log: (...args: unknown[]) => void;
+  private readonly log: (...args: unknown[]) => void;
 
-  #config: Required<
+  private readonly config: Required<
     Pick<SpectrumClientConfig, 'baseUrl' | 'timeout' | 'retries'>
   >;
 
-  #http: KyInstance;
+  private readonly http: KyInstance;
 
   constructor(io: SpectrumClientPowers, config: SpectrumClientConfig = {}) {
-    this.#fetch = io.fetch;
-    this.#setTimeout = io.setTimeout;
-    if (!this.#fetch || !this.#setTimeout) {
+    this.fetch = io.fetch;
+    this.setTimeout = io.setTimeout;
+    if (!this.fetch || !this.setTimeout) {
       throw new Error('`fetch` and `setTimeout` are required');
     }
 
-    this.#log = io.log ?? (() => {});
-    this.#config = {
+    this.log = io.log ?? (() => {});
+    this.config = {
       baseUrl: config.baseUrl ?? BASE_URL,
       timeout: config.timeout ?? 10000, // 10s timeout
       retries: config.retries ?? 3,
     };
 
     // Create ky instance with retries and timeout; use provided fetch.
-    this.#http = ky.create({
-      fetch: this.#fetch,
+    this.http = ky.create({
+      fetch: this.fetch,
       retry: {
         methods: ['get'],
         limit: this.config.retries,
@@ -80,7 +80,7 @@ export class SpectrumClient {
         retryOnTimeout: true,
         jitter: true,
       },
-      timeout: this.#config.timeout,
+      timeout: this.config.timeout,
       headers: {
         Accept: 'application/json',
         'User-Agent': 'Agoric-YMax-Planner/1.0.0',
@@ -89,10 +89,10 @@ export class SpectrumClient {
   }
 
   async getApr(chain: Chain, pool: Pool): Promise<AprResponse> {
-    const url = `${this.#config.baseUrl}/apr?chain=${chain}&pool=${pool}`;
-    this.#log(`[SpectrumClient] Fetching APR: ${url}`);
+    const url = `${this.config.baseUrl}/apr?chain=${chain}&pool=${pool}`;
+    this.log(`[SpectrumClient] Fetching APR: ${url}`);
 
-    return this.#makeRequest<AprResponse>(url, `APR for ${chain}/${pool}`);
+    return this.makeRequest<AprResponse>(url, `APR for ${chain}/${pool}`);
   }
 
   async getPoolBalance(
@@ -100,20 +100,20 @@ export class SpectrumClient {
     pool: Pool,
     address: string,
   ): Promise<PoolBalanceResponse> {
-    const url = `${this.#config.baseUrl}/pool-balance?pool=${pool}&chain=${chain}&address=${address}`;
-    this.#log(`[SpectrumClient] Fetching pool balance: ${url}`);
+    const url = `${this.config.baseUrl}/pool-balance?pool=${pool}&chain=${chain}&address=${address}`;
+    this.log(`[SpectrumClient] Fetching pool balance: ${url}`);
 
-    return this.#makeRequest<PoolBalanceResponse>(
+    return this.makeRequest<PoolBalanceResponse>(
       url,
       `Pool balance for ${address} on ${chain}/${pool}`,
     );
   }
 
-  async #makeRequest<T>(url: string, context: string): Promise<T> {
+  private async makeRequest<T>(url: string, context: string): Promise<T> {
     await null;
     try {
-      const data = await this.#http.get(url).json<T>();
-      this.#log(`[SpectrumClient] Success: ${context}`);
+      const data = await this.http.get(url).json<T>();
+      this.log(`[SpectrumClient] Success: ${context}`);
       return data;
     } catch (err) {
       if (err instanceof HTTPError) {
