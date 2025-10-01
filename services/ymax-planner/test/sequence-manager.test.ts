@@ -1,12 +1,12 @@
 import test from 'ava';
-import { SequenceManager } from '../src/sequence-manager.ts';
+import { makeSequenceManager } from '../src/sequence-manager.ts';
 import { createMockCosmosRestClient } from './mocks.ts';
 
 test('SequenceManager initialization', async t => {
   const mockCosmosRest = createMockCosmosRestClient();
   const logs: string[] = [];
 
-  const sequenceManager = await SequenceManager.create(
+  const sequenceManager = await makeSequenceManager(
     {
       cosmosRest: mockCosmosRest as any,
       log: (...args: any[]) => logs.push(args.join(' ')),
@@ -32,7 +32,7 @@ test('SequenceManager sync functionality', async t => {
   const mockCosmosRest = createMockCosmosRestClient();
   const logs: string[] = [];
 
-  const sequenceManager = await SequenceManager.create(
+  const sequenceManager = await makeSequenceManager(
     {
       cosmosRest: mockCosmosRest as any,
       log: (...args: any[]) => logs.push(args.join(' ')),
@@ -68,7 +68,7 @@ test('SequenceManager error handling', async t => {
 
   await t.throwsAsync(
     () =>
-      SequenceManager.create(
+      makeSequenceManager(
         {
           cosmosRest: mockCosmosRest as any,
           log: (...args: any[]) => logs.push(args.join(' ')),
@@ -88,7 +88,7 @@ test('SequenceManager error handling', async t => {
 test('SequenceManager creation calls network once', async t => {
   const mockCosmosRest = createMockCosmosRestClient();
 
-  const sequenceManager = await SequenceManager.create(
+  const sequenceManager = await makeSequenceManager(
     {
       cosmosRest: mockCosmosRest as any,
     },

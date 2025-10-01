@@ -1,5 +1,5 @@
 import test from 'ava';
-import { SequenceManager } from '../src/sequence-manager.ts';
+import { makeSequenceManager } from '../src/sequence-manager.ts';
 import { SmartWalletWithSequence } from '../src/smart-wallet-with-sequence.ts';
 import {
   createMockCosmosRestClient,
@@ -17,7 +17,7 @@ test('handles concurrent offers and actions with correct sequence management', a
   const logs: string[] = [];
   const log = (...args: any[]) => logs.push(args.join(' '));
 
-  const sequenceManager = await SequenceManager.create(
+  const sequenceManager = await makeSequenceManager(
     { cosmosRest: mockCosmosRest as any, log },
     { chainKey: 'agoric', address: 'agoric1test' },
   );
@@ -75,7 +75,7 @@ test('handles sequence error recovery with network sync', async t => {
   // Enable sequence conflict simulation
   mockWallet.enableSequenceConflictSimulation();
 
-  const sequenceManager = await SequenceManager.create(
+  const sequenceManager = await makeSequenceManager(
     { cosmosRest: mockCosmosRest as any, log },
     { chainKey: 'agoric', address: 'agoric1test' },
   );
