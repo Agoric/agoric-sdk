@@ -414,13 +414,13 @@ export const rebalanceMinCostFlowSteps = async (
       let details = {};
       switch (edge.feeMode) {
         case 'makeEvmAccount': {
-          const feeValue = await gasEstimator.getFactoryContractEstimate(
-            chainOf(edge.dest) as AxelarChain,
-          );
+          const destinationEvmChain = chainOf(edge.dest) as AxelarChain;
+          const feeValue =
+            await gasEstimator.getFactoryContractEstimate(destinationEvmChain);
+          const returnFeeValue =
+            await gasEstimator.getReturnFeeEstimate(destinationEvmChain);
           details = {
-            // XXX: not using getReturnFeeEstimate until we can verify axelar
-            // API is accurate for this
-            detail: { evmGas: 200_000_000_000_000n },
+            detail: { evmGas: padFeeEstimate(returnFeeValue) },
             fee: AmountMath.make(graph.feeBrand, padFeeEstimate(feeValue)),
           };
           break;
