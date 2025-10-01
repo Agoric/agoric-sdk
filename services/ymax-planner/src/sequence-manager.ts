@@ -28,13 +28,17 @@ type SequenceManagerPowers = {
 
 export class SequenceManager {
   private sequence: number = 0;
+
   private accountNumber: number = 0;
+
   private readonly address: string;
 
   private readonly cosmosRest: CosmosRestClient;
+
   private readonly chainName: string;
 
   private initialized = false;
+
   private readonly log: (...args: unknown[]) => void;
 
   constructor(io: SequenceManagerPowers, config: SequenceManagerConfig) {
@@ -96,6 +100,7 @@ export class SequenceManager {
   }
 
   private async fetchAccountInfo(): Promise<AccountInfo> {
+    await null;
     try {
       const response = (await this.cosmosRest.getAccountSequence(
         this.chainName,

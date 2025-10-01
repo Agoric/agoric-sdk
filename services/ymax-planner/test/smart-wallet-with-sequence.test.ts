@@ -38,7 +38,6 @@ test('handles concurrent offers and actions with correct sequence management', a
   const promises = [
     walletWithSequence.executeOffer({ id: 'offer1' } as any),
     walletWithSequence.executeOffer({ id: 'offer2' } as any),
-    walletWithSequence.invokeEntry({ targetName: 'test1' } as any),
     walletWithSequence.sendBridgeAction({ method: 'test' } as any),
     walletWithSequence.executeOffer({ id: 'offer3' } as any),
   ];
@@ -46,7 +45,7 @@ test('handles concurrent offers and actions with correct sequence management', a
   const results = (await Promise.all(promises)) as any;
 
   // All transactions should succeed
-  t.is(results.length, 5);
+  t.is(results.length, 4);
   results.forEach(result => {
     t.is(result.code, 0);
     t.truthy(result.transactionHash);
@@ -54,14 +53,13 @@ test('handles concurrent offers and actions with correct sequence management', a
 
   // Transactions should have been submitted with sequential sequence numbers
   const submittedTransactions = mockWallet.getSubmittedTransactions();
-  t.is(submittedTransactions.length, 5);
+  t.is(submittedTransactions.length, 4);
 
   const sequences = submittedTransactions.map(tx => tx.sequence);
-  t.deepEqual(sequences, [100, 101, 102, 103, 104]);
+  t.deepEqual(sequences, [100, 101, 102, 103]);
 
   t.true(logs.some(log => log.includes('Starting queue processing')));
   t.true(logs.some(log => log.includes('Queued executeOffer')));
-  t.true(logs.some(log => log.includes('Queued invokeEntry')));
   t.true(logs.some(log => log.includes('Queued sendBridgeAction')));
 });
 

@@ -1,7 +1,4 @@
-import type {
-  InvokeEntryMessage,
-  OfferSpec,
-} from '@agoric/smart-wallet/src/offers.js';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { SignerData } from '@cosmjs/stargate';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
@@ -31,11 +28,16 @@ type QueuedOperation<T> = {
  */
 export class SmartWalletWithSequence {
   private readonly signingSmartWalletKit: SigningSmartWalletKit;
+
   private readonly sequenceManager: SequenceManager;
+
   private readonly log: (...args: unknown[]) => void;
+
   private readonly chainId: string;
+
   // TODO: Add bounds checking to prevent unbounded queue growth under sustained failures
   private readonly operationQueue: QueuedOperation<any>[] = [];
+
   private isProcessingQueue = false;
 
   constructor(
@@ -98,6 +100,7 @@ export class SmartWalletWithSequence {
    * Process the operation queue sequentially
    */
   private async processQueue(): Promise<void> {
+    await null;
     this.log(
       `Starting queue processing, ${this.operationQueue.length} operations queued`,
     );
@@ -130,6 +133,7 @@ export class SmartWalletWithSequence {
     operation: () => Promise<T>,
     context: string,
   ): Promise<T> {
+    await null;
     try {
       return await operation();
     } catch (error) {
@@ -168,6 +172,7 @@ export class SmartWalletWithSequence {
       return this.signingSmartWalletKit.sendBridgeAction(
         action,
         undefined,
+        undefined,
         signerData,
       );
     };
@@ -180,32 +185,21 @@ export class SmartWalletWithSequence {
    */
   async executeOffer(
     offer: OfferSpec,
-    pollForResult = true,
-  ): Promise<Awaited<ReturnType<SigningSmartWalletKit['executeOffer']>>> {
+  ): Promise<Awaited<ReturnType<SigningSmartWalletKit['sendBridgeAction']>>> {
     const operation = async () => {
       const signerData = this.createSignerData();
-      return this.signingSmartWalletKit.executeOffer(
-        offer,
+      return this.signingSmartWalletKit.sendBridgeAction(
+        harden({
+          method: 'executeOffer',
+          offer,
+        }),
+        undefined,
+        undefined,
         signerData,
-        pollForResult,
       );
     };
 
     return this.queueOperation(operation, 'executeOffer');
-  }
-
-  /**
-   * Invoke an entry with managed sequence number
-   */
-  async invokeEntry(
-    message: InvokeEntryMessage,
-  ): Promise<Awaited<ReturnType<SigningSmartWalletKit['invokeEntry']>>> {
-    const operation = async () => {
-      const signerData = this.createSignerData();
-      return this.signingSmartWalletKit.invokeEntry(message, signerData);
-    };
-
-    return this.queueOperation(operation, 'invokeEntry');
   }
 }
 

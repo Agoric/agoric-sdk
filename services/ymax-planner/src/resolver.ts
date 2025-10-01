@@ -1,7 +1,7 @@
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
 import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
-import type { SmartWalletKitWithSequence } from './main';
+import type { SmartWalletKitWithSequence } from './main.js';
 
 type ResolveTxParams = {
   signingSmartWalletKit: SmartWalletKitWithSequence;
@@ -49,6 +49,6 @@ export const resolvePendingTx = async ({
     proposal,
   });
 
-  const result = await signingSmartWalletKit.executeOffer(action, false);
+  const result = await signingSmartWalletKit.executeOffer(action);
   return result;
 };
