@@ -169,11 +169,15 @@ test.serial('publish chainInfo etc.', async t => {
 });
 
 test.serial('access token setup', async t => {
-  const { buildProposal, evalProposal, runUtils } = t.context;
-  const materials = buildProposal(
-    '@aglocal/portfolio-deploy/src/access-token-setup.build.js',
-    ['--beneficiary', beneficiary],
-  );
+  const { buildProposal, combineProposals, evalProposal, runUtils } = t.context;
+  // This used to be a single builder but has now been split up
+  const materials = Promise.all([
+    buildProposal('@aglocal/portfolio-deploy/src/access-token-setup.build.js', [
+      '--beneficiary',
+      beneficiary,
+    ]),
+    buildProposal('@aglocal/portfolio-deploy/src/attenuated-deposit.build.js'),
+  ]).then(combineProposals);
 
   const { walletFactoryDriver: wfd } = t.context;
   await wfd.provideSmartWallet(beneficiary);
