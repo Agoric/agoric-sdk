@@ -25,97 +25,75 @@ type SequenceManagerPowers = {
   log?: (...args: unknown[]) => void;
 };
 
-export class SequenceManager {
-  #sequence: number;
+export type SequenceManager = {
+  getSequence: () => number;
+  getAccountNumber: () => number;
+  syncSequence: () => Promise<void>;
+};
 
-  #accountNumber: number;
+/**
+ * Create a new SequenceManager by fetching current account info from the network
+ */
+export const makeSequenceManager = async (
+  io: SequenceManagerPowers,
+  config: SequenceManagerConfig,
+): Promise<SequenceManager> => {
+  await null;
+  const { cosmosRest, log = () => {} } = io;
+  const { chainKey, address } = config;
 
-  #address: string;
-
-  #cosmosRest: CosmosRestClient;
-
-  #chainName: string;
-
-  #log: (...args: unknown[]) => void;
-
-  private constructor(
-    io: SequenceManagerPowers,
-    config: SequenceManagerConfig,
-    accountInfo: AccountInfo,
-  ) {
-    this.#address = config.address;
-    this.#chainName = config.chainKey;
-    this.#cosmosRest = io.cosmosRest;
-    this.#log = io.log ?? (() => {});
-    this.#sequence = Number(accountInfo.sequence);
-    this.#accountNumber = Number(accountInfo.account_number);
-    this.#log(
-      `Sequence manager initialized: account=${this.#accountNumber}, sequence=${this.#sequence}`,
-    );
-  }
-
-  /**
-   * Create a new SequenceManager by fetching current account info from the network
-   */
-  static async create(
-    io: SequenceManagerPowers,
-    config: SequenceManagerConfig,
-  ): Promise<SequenceManager> {
+  const fetchAccountInfo = async (): Promise<AccountInfo> => {
     await null;
     try {
-      const response = await io.cosmosRest.getAccountSequence(
-        config.chainKey,
-        config.address,
-      );
-      const accountInfo = response.account;
-      return new SequenceManager(io, config, accountInfo);
+      const response = (await cosmosRest.getAccountSequence(
+        chainKey,
+        address,
+      )) as AccountResponse;
+      return response.account;
     } catch (error) {
-      io.log?.(`Failed to fetch account info for ${config.address}:`, error);
+      log(`Failed to fetch account info for ${address}:`, error);
       throw error;
     }
-  }
+  };
+
+  const accountInfo = await fetchAccountInfo();
+
+  let sequence = Number(accountInfo.sequence);
+  const accountNumber = Number(accountInfo.account_number);
+
+  log(
+    `Sequence manager initialized: account=${accountNumber}, sequence=${sequence}`,
+  );
 
   /**
    * Get the next sequence number and increment the internal counter
    */
-  getSequence(): number {
-    const curr = this.#sequence;
-    this.#sequence += 1;
+  const getSequence = () => {
+    const curr = sequence;
+    sequence += 1;
     return curr;
-  }
+  };
 
   /**
    * Get the account number
    */
-  getAccountNumber(): number {
-    return this.#accountNumber;
-  }
+  const getAccountNumber = () => accountNumber;
 
   /**
    * Sync sequence with the network (useful for error recovery)
    */
-  async syncSequence(): Promise<void> {
-    const oldSequence = this.#sequence;
-    const accountInfo = await this.#fetchAccountInfo();
-    this.#sequence = Number(accountInfo.sequence);
-    this.#log(
-      `Synced sequence: ${oldSequence} → ${this.#sequence} (network: ${accountInfo.sequence})`,
+  const syncSequence = async () => {
+    const oldSequence = sequence;
+    const acctInfo = await fetchAccountInfo();
+    sequence = Number(acctInfo.sequence);
+    log(
+      `Synced sequence: ${oldSequence} → ${sequence} (network: ${acctInfo.sequence})`,
     );
-  }
+  };
 
-  async #fetchAccountInfo(): Promise<AccountInfo> {
-    await null;
-    try {
-      const response = (await this.#cosmosRest.getAccountSequence(
-        this.#chainName,
-        this.#address,
-      )) as AccountResponse;
-      return response.account;
-    } catch (error) {
-      this.#log(`Failed to fetch account info for ${this.#address}:`, error);
-      throw error;
-    }
-  }
-}
-
-harden(SequenceManager);
+  return harden({
+    getSequence,
+    getAccountNumber,
+    syncSequence,
+  });
+};
