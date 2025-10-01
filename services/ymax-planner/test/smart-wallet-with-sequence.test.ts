@@ -1,6 +1,6 @@
 import test from 'ava';
 import { makeSequenceManager } from '../src/sequence-manager.ts';
-import { SmartWalletWithSequence } from '../src/smart-wallet-with-sequence.ts';
+import { makeSmartWalletWithSequence } from '../src/smart-wallet-with-sequence.ts';
 import {
   createMockCosmosRestClient,
   MockSigningSmartWalletKit,
@@ -23,7 +23,7 @@ test('handles concurrent offers and actions with correct sequence management', a
   );
 
   // Create wallet with sequence management
-  const walletWithSequence = new SmartWalletWithSequence(
+  const walletWithSequence = makeSmartWalletWithSequence(
     {
       signingSmartWalletKit: mockWallet as any,
       sequenceManager: sequenceManager as any,
@@ -80,7 +80,7 @@ test('handles sequence error recovery with network sync', async t => {
     { chainKey: 'agoric', address: 'agoric1test' },
   );
 
-  const walletWithSequence = new SmartWalletWithSequence(
+  const walletWithSequence = makeSmartWalletWithSequence(
     {
       signingSmartWalletKit: mockWallet as any,
       sequenceManager: sequenceManager as any,
