@@ -12,13 +12,25 @@ import { E, passStyleOf } from '@endo/far';
  */
 
 /**
- * @typedef {object} DelegatePortfolioOptions
- * @property {string} ymaxControlAddress
+ * @template {number} [T=number]
+ * @typedef {`ymax${T}`} YMaxCN
  */
 
-const contractName = 'ymax0';
+/**
+ * @template {YMaxCN} [CN=YMaxCN]
+ * @typedef {object} DelegatePortfolioOptions
+ * @property {string} ymaxControlAddress
+ * @property {CN} contractName
+ */
 
 const trace = makeTracer('PCtrl');
+
+/**
+ * @param {*} name
+ * @returns {name is YMaxCN}
+ */
+export const isYMaxContractName = name =>
+  typeof name === 'string' && name.startsWith('ymax');
 
 /**
  * @param {BootstrapPowers &
@@ -28,8 +40,9 @@ const trace = makeTracer('PCtrl');
  * @param {{ options: DelegatePortfolioOptions}} config
  */
 export const delegatePortfolioContract = async (permitted, config) => {
-  const { ymaxControlAddress } = config?.options || {};
+  const { ymaxControlAddress, contractName } = config?.options || {};
   assert(ymaxControlAddress);
+  assert(isYMaxContractName(contractName));
 
   await null;
   const { consume } = permitted;
@@ -38,9 +51,9 @@ export const delegatePortfolioContract = async (permitted, config) => {
   // It does require a lot of powers, maybe we need a new helper to get these, or implement it in contract control
 
   // The kit may not exist
-  const kit = await Promise.race([consume.ymax0Kit, undefined]);
+  const kit = await Promise.race([consume[`${contractName}Kit`], undefined]);
   trace(
-    'ymax0Kit?.privateArgs',
+    `${contractName}Kit?.privateArgs`,
     kit?.privateArgs && objectMap(kit.privateArgs, v => passStyleOf(v)),
   );
 
@@ -77,26 +90,29 @@ export const delegatePortfolioContract = async (permitted, config) => {
     kit,
   });
 
-  trace('created ymax control', passStyleOf(contractControl));
+  trace(`created ${contractName} control`, passStyleOf(contractControl));
 };
 
-export const getManifestForPortfolioControl = (utils, { options }) => ({
-  manifest: {
-    [delegatePortfolioContract.name]: {
-      consume: {
-        deliverContractControl: true,
-        ymax0Kit: true,
+export const getManifestForPortfolioControl = (utils, { options }) => {
+  const { contractName } = options;
+  return {
+    manifest: {
+      [delegatePortfolioContract.name]: {
+        consume: {
+          deliverContractControl: true,
+          [`${contractName}Kit`]: true,
 
-        // subset of orchPermit
-        localchain: true,
-        cosmosInterchainService: true,
-        chainTimerService: true,
-        agoricNames: true,
+          // subset of orchPermit
+          localchain: true,
+          cosmosInterchainService: true,
+          chainTimerService: true,
+          agoricNames: true,
 
-        // for publishing Brands and other remote object references
-        board: true,
+          // for publishing Brands and other remote object references
+          board: true,
+        },
       },
     },
-  },
-  options,
-});
+    options,
+  };
+};

@@ -4,7 +4,10 @@
 
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { parseArgs } from 'util';
-import { getManifestForPortfolioControl } from './portfolio-control.core.js';
+import {
+  getManifestForPortfolioControl,
+  isYMaxContractName,
+} from './portfolio-control.core.js';
 
 /**
  * @import { DelegatePortfolioOptions } from './portfolio-control.core.js';
@@ -33,19 +36,22 @@ const defaultProposalBuilder = async (tools, config) => {
 const build = async (homeP, endowments) => {
   const { scriptArgs } = endowments;
   const {
-    values: { ymaxControlAddress },
+    values: { ymaxControlAddress, contractName },
   } = parseArgs({
     args: scriptArgs,
     options: {
       ymaxControlAddress: { type: 'string' },
+      contractName: { type: 'string', default: 'ymax0' },
     },
   });
-  if (!ymaxControlAddress) {
-    throw Error('Usage: agoric run _script_ --ymaxControlAddress=agoric1...');
+  if (!ymaxControlAddress || !isYMaxContractName(contractName)) {
+    throw Error(
+      'Usage: agoric run _script_ --ymaxControlAddress=agoric1... --contractName=ymaxN',
+    );
   }
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
-  const config = { ymaxControlAddress };
+  const config = { ymaxControlAddress, contractName };
   await writeCoreEval('eval-ymax-control', utils =>
     defaultProposalBuilder(utils, harden(config)),
   );
