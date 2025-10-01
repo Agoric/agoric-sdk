@@ -267,7 +267,7 @@ test('delegate ymax control; invite planner; submit plan', async t => {
   await delegatePortfolioContract(
     // @ts-expect-error mock
     powers,
-    { options: { ymaxControlAddress: addrCtrl } },
+    { options: { ymaxControlAddress: addrCtrl, contractName: 'ymax0' } },
   );
   await eventLoopIteration(); // core eval doesn't block on delivery
 
