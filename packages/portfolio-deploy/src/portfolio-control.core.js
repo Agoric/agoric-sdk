@@ -1,24 +1,18 @@
 /** @file core eval to give control of YMax contract to a smartWallet */
 
 import { makeTracer } from '@agoric/internal/src/debug.js';
-import { E } from '@endo/eventual-send';
-import { makeHeapZone } from '@agoric/zone';
 import { objectMap } from '@endo/patterns';
 import { passStyleOf } from '@endo/pass-style';
-import { prepareContractControl } from './contract-control.js';
-import { orchPermit } from './orch.start.js';
-import {
-  deployPostalService,
-  getManifestForPostalService,
-} from './postal-service.core.js';
-
-export { deployPostalService };
 
 /**
- * @import {ChainStoragePresent} from './chain-info.core.js'
+ * @import {ContractControlPowers, DeliverContractControl} from './contract-control.core.js';
  * @import {PortfolioBootPowers} from './portfolio-start.type.ts';
- * @import {PostalServiceBoot} from './postal-service.core.js';
- * @import {AttenuatedDepositPowers} from './attenuated-deposit.core.js';
+ * @import {StartFn} from './portfolio-start.type.ts';
+ */
+
+/**
+ * @typedef {object} DelegatePortfolioOptions
+ * @property {string} ymaxControlAddress
  */
 
 const contractName = 'ymax0';
@@ -27,12 +21,10 @@ const trace = makeTracer('PCtrl');
 
 /**
  * @param {BootstrapPowers &
- *  ChainStoragePresent &
- *  PortfolioBootPowers &
- *  PostalServiceBoot &
- *  AttenuatedDepositPowers
+ *  ContractControlPowers &
+ *  PortfolioBootPowers
  * } permitted
- * @param {{ options: { ymaxControlAddress: string }}} config
+ * @param {{ options: DelegatePortfolioOptions}} config
  */
 export const delegatePortfolioContract = async (permitted, config) => {
   const { ymaxControlAddress } = config?.options || {};
@@ -41,68 +33,39 @@ export const delegatePortfolioContract = async (permitted, config) => {
   await null;
   const { consume } = permitted;
 
-  // Use a heap zone to avoid entanglement with old liveslots
-  const ymaxZone = makeHeapZone();
-  const makeContractControl = prepareContractControl(ymaxZone, {
-    agoricNamesAdmin: await consume.agoricNamesAdmin,
-    board: await consume.board,
-    startUpgradable: await consume.startUpgradable,
-    zoe: await consume.zoe,
-  });
   const { privateArgs } = await consume.ymax0Kit;
   trace(
     'ymax0Kit.privateArgs',
     objectMap(privateArgs, v => passStyleOf(v)),
   );
 
-  const ymaxControl = makeContractControl({
+  const deliverContractControl = await consume.deliverContractControl;
+
+  // Note: we don't wait till chainInfoPublished settles, but any invocation
+  // of start should be done after
+
+  const { contractControl } = await deliverContractControl({
     name: contractName,
-    storageNode: await E(consume.chainStorage).makeChildNode(contractName),
+    controlAddress: ymaxControlAddress,
     initialPrivateArgs: privateArgs,
   });
 
-  const { getDepositFacet } = consume;
-  trace('reserving', ymaxControlAddress);
-  await E(getDepositFacet)(ymaxControlAddress);
-
-  const postalSvcPub = await E.when(
-    permitted.instance.consume.postalService,
-    instance => E(consume.zoe).getPublicFacet(instance),
-  );
-  trace('delivering ymax control', ymaxControlAddress, ymaxControl);
-  // don't block the coreEval on the recipient's offer
-  void E.when(
-    E(postalSvcPub).deliverPrize(
-      ymaxControlAddress,
-      ymaxControl,
-      'ymaxControl',
-    ),
-    () => trace('ymax control received'),
+  trace(
+    'created ymax control',
+    passStyleOf(contractControl),
+    'and delivering to',
+    ymaxControlAddress,
   );
 };
 
-export const getManifestForPortfolioControl = (
-  utils,
-  { installKeys, options },
-) => {
-  const postalServiceManifest = getManifestForPostalService(utils, {
-    installKeys,
-  });
-
-  return {
-    manifest: {
-      ...postalServiceManifest.manifest,
-      [delegatePortfolioContract.name]: {
-        consume: {
-          ...orchPermit,
-          agoricNamesAdmin: true,
-          getDepositFacet: true,
-          ymax0Kit: true,
-        },
-        instance: { consume: { postalService: true } },
+export const getManifestForPortfolioControl = (utils, { options }) => ({
+  manifest: {
+    [delegatePortfolioContract.name]: {
+      consume: {
+        deliverContractControl: true,
+        ymax0Kit: true,
       },
     },
-    installations: { ...postalServiceManifest.installations },
-    options,
-  };
-};
+  },
+  options,
+});

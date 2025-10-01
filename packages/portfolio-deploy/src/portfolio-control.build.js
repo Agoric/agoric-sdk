@@ -6,23 +6,24 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 import { parseArgs } from 'util';
 import { getManifestForPortfolioControl } from './portfolio-control.core.js';
 
+/**
+ * @import { DelegatePortfolioOptions } from './portfolio-control.core.js';
+ */
+
 const sourceSpec = './portfolio-control.core.js';
 
 /**
  * @param {Parameters<CoreEvalBuilder>[0]} tools
- * @param {{ymaxControlAddress: string}} config
+ * @param {DelegatePortfolioOptions} config
  * @satisfies {CoreEvalBuilder}
  */
-const defaultProposalBuilder = async ({ publishRef, install }, config) => {
+const defaultProposalBuilder = async (tools, config) => {
   return harden({
     sourceSpec,
     getManifestCall: [
       getManifestForPortfolioControl.name,
       {
         options: config,
-        installKeys: {
-          postalService: publishRef(install('./postal-service.contract.js')),
-        },
       },
     ],
   });
