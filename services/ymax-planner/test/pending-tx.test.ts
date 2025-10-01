@@ -237,11 +237,10 @@ test('handlePendingTx resolves old pending CCTP transaction successfully', async
     destinationAddress,
   });
 
-  const mockTime = 1640995200000; // Fixed timestamp: Jan 1, 2022
-  const opts = createMockPendingTxOpts(mockTime);
+  const opts = createMockPendingTxOpts();
   const mockProvider = opts.evmProviders[chainId] as any;
 
-  const currentTime = Math.floor(mockTime / 1000);
+  const currentTime = Math.floor(Date.now() / 1000);
 
   mockProvider.getBlockNumber = async () => 31;
   mockProvider.getBlock = async (blockNumber: number) => ({
@@ -261,7 +260,7 @@ test('handlePendingTx resolves old pending CCTP transaction successfully', async
       ...opts,
       log: mockLog,
     },
-    mockTime - 10000,
+    Date.now() - 10000,
   );
 
   // publishTime is ~10 seconds ago, with 5 min fudge factor = 5m10s ago
@@ -292,11 +291,10 @@ test('handlePendingTx resolves old pending GMP transaction successfully', async 
   });
 
   const chainId = 'eip155:42161';
-  const mockTime = 1640995200000; // Fixed timestamp: Jan 1, 2022
-  const opts = createMockPendingTxOpts(mockTime);
+  const opts = createMockPendingTxOpts();
   const mockProvider = opts.evmProviders[chainId] as any;
 
-  const currentTime = Math.floor(mockTime / 1000);
+  const currentTime = Math.floor(Date.now() / 1000);
 
   mockProvider.getBlockNumber = async () => 31;
   mockProvider.getBlock = async (blockNumber: number) => ({
@@ -339,7 +337,7 @@ test('handlePendingTx resolves old pending GMP transaction successfully', async 
       ...ctxWithFetch,
       log: mockLog,
     },
-    mockTime - 10000,
+    Date.now() - 10000,
   );
 
   // publishTime is ~10 seconds ago, with 5 min fudge factor = 5m10s ago
@@ -359,7 +357,7 @@ test.skip('TODO: handlePendingTx resolves old pending Noble transfer successfull
 
 // --- Tests for processInitialPendingTransactions ---
 
-test('processInitialPendingTransactions handles old transactions with lookback', async t => {
+test('processInitialPendingTransactions handles transactions with lookback', async t => {
   const handledCalls: Array<{ tx: any; opts: any }> = [];
   const txId: TxId = 'tx1';
 
@@ -389,14 +387,13 @@ test('processInitialPendingTransactions handles old transactions with lookback',
   ];
 
   const logs: string[] = [];
-  const txTimeMs = 15 * 60 * 1000; // 15 minutes ago
-  const mockTime = 1640995200000; // Fixed timestamp: Jan 1, 2022
+  const txTimeMs = 25 * 60 * 1000; // 25 minutes ago
   const txPowers = {
-    ...createMockPendingTxOpts(mockTime),
+    ...createMockPendingTxOpts(),
     log: (...args: unknown[]) => logs.push(args.join(' ')),
     cosmosRpc: {
       request: async () => {
-        const oldTime = new Date(mockTime - txTimeMs);
+        const oldTime = new Date(Date.now() - txTimeMs);
         return {
           block: {
             header: {
@@ -420,12 +417,12 @@ test('processInitialPendingTransactions handles old transactions with lookback',
   t.is(handledCalls.length, 1);
   t.deepEqual(logs, [
     'Processing 1 pending transactions',
-    `Processing pending tx ${txId} (age: ${txTimeMs / (1000 * 60)}min) with lookback`,
+    `Processing pending tx ${txId} with lookback`,
     'Processing old tx',
   ]);
 });
 
-test('processInitialPendingTransactions handles new transactions without lookback', async t => {
+test('processInitialPendingTransactions handles transactions with age < 20min in lookback mode', async t => {
   const handledCalls: Array<{ tx: any; opts: any }> = [];
   const txId: TxId = 'tx2';
   const logs: string[] = [];
@@ -455,12 +452,11 @@ test('processInitialPendingTransactions handles new transactions without lookbac
   ];
 
   const txTimeMs = 2 * 60 * 1000; // 2 minutes ago
-  const mockTime = 1640995200000; // Fixed timestamp: Jan 1, 2022
   const txPowers = {
-    ...createMockPendingTxOpts(mockTime),
+    ...createMockPendingTxOpts(),
     cosmosRpc: {
       request: async () => {
-        const oldTime = new Date(mockTime - txTimeMs);
+        const oldTime = new Date(Date.now() - txTimeMs);
         return {
           block: {
             header: {
@@ -485,6 +481,7 @@ test('processInitialPendingTransactions handles new transactions without lookbac
   t.is(handledCalls.length, 1);
   t.deepEqual(logs, [
     'Processing 1 pending transactions',
-    `Processing pending tx ${txId} (age: ${txTimeMs / (1000 * 60)}min)`,
+    `Processing pending tx ${txId} with lookback`,
+    'Processing old tx',
   ]);
 });

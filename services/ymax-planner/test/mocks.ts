@@ -1,15 +1,41 @@
 import { ethers, type JsonRpcProvider } from 'ethers';
 
-import { boardSlottingMarshaller } from '@agoric/client-utils';
-import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
-
-import type { HandlePendingTxOpts } from '../src/pending-tx-manager';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-
+import {
+  boardSlottingMarshaller,
+  type SigningSmartWalletKit,
+} from '@agoric/client-utils';
+import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
-import { PENDING_TX_PATH_PREFIX } from '../src/engine.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
-import type { SmartWalletKitWithSequence } from '../src/main.ts';
+import { PENDING_TX_PATH_PREFIX } from '../src/engine.ts';
+import { makeGasEstimator } from '../src/gas-estimation.ts';
+import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
+
+const mockFetchForGasEstimate = async (_, options?: any) => {
+    return {
+      ok: true,
+      json: async () => JSON.parse(options.body).gasLimit,
+      text: async () => JSON.parse(options.body).gasLimit,
+    } as Response;
+};
+
+const mockAxelarApiAddress = 'https://api.axelar.example/';
+
+const mockAxelarChainIdMap: Record<AxelarChain, string> = {
+  Avalanche: 'Avalanche',
+  Ethereum: 'Ethereum',
+  Optimism: 'Optimism',
+  Base: 'Base',
+  Arbitrum: 'Arbitrum',
+};
+
+export const mockGasEstimator = makeGasEstimator({
+  axelarApiAddress: mockAxelarApiAddress,
+  axelarChainIdMap: mockAxelarChainIdMap,
+  fetch: mockFetchForGasEstimate,
+});
 
 export const createMockProvider = () => {
   const eventListeners = new Map<string, Function[]>();
@@ -42,65 +68,49 @@ export const createMockProvider = () => {
   } as JsonRpcProvider;
 };
 
-export const createMockSigningSmartWalletKit =
-  (): SmartWalletKitWithSequence => {
-    const executedOffers: OfferSpec[] = [];
+export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
+  const executedOffers: OfferSpec[] = [];
 
-    return {
-      address: 'agoric1mockplanner123456789abcdefghijklmnopqrstuvwxyz',
+  return {
+    address: 'agoric1mockplanner123456789abcdefghijklmnopqrstuvwxyz',
 
-      query: {
-        getCurrentWalletRecord: async () => ({
-          offerToUsedInvitation: [
-            [
-              'resolver-offer-1',
-              {
-                value: [
-                  {
-                    description: 'resolver',
-                    instance: 'mock-instance',
-                    installation: 'mock-installation',
-                  },
-                ],
-              },
-            ],
+    query: {
+      getCurrentWalletRecord: async () => ({
+        offerToUsedInvitation: [
+          [
+            'resolver-offer-1',
+            {
+              value: [
+                {
+                  description: 'resolver',
+                  instance: 'mock-instance',
+                  installation: 'mock-installation',
+                },
+              ],
+            },
           ],
-          liveOffers: [],
-          purses: [],
-        }),
-      },
+        ],
+        liveOffers: [],
+        purses: [],
+      }),
+    },
 
-      executeOffer: async (offerSpec: OfferSpec) => {
-        executedOffers.push(offerSpec);
-        return {
-          offerId: offerSpec.id,
-          invitationSpec: offerSpec.invitationSpec,
-          offerArgs: offerSpec.offerArgs,
-          proposal: offerSpec.proposal,
-          status: 'executed',
-        };
-      },
-    } as any;
-  };
-
-type BalanceResponse = { amount: string; denom: string };
-type Account = { sequence: string; account_number: string };
-type CosmosRestClientConfig = {
-  balanceResponses?: BalanceResponse[];
-  initialAccount?: Account;
+    executeOffer: async (offerSpec: OfferSpec) => {
+      executedOffers.push(offerSpec);
+      return {
+        offerId: offerSpec.id,
+        invitationSpec: offerSpec.invitationSpec,
+        offerArgs: offerSpec.offerArgs,
+        proposal: offerSpec.proposal,
+        status: 'executed',
+      };
+    },
+  } as any;
 };
 
-const DEFAULT_BALANCE_RESPONSES: BalanceResponse[] = [
-  { amount: '1000000', denom: 'uusdc' },
-];
-const DEFAULT_ACCOUNT: Account = { account_number: '377', sequence: '100' };
-
 export const createMockCosmosRestClient = (
-  config: CosmosRestClientConfig = {},
-) => {
-  const balanceResponses = config.balanceResponses ?? DEFAULT_BALANCE_RESPONSES;
-  const initialAccount = config.initialAccount ?? DEFAULT_ACCOUNT;
-  let mockAccount = initialAccount;
+  balanceResponses: Array<{ amount: string; denom: string }>,
+): CosmosRestClient => {
   let callCount = 0;
 
   return {
@@ -114,28 +124,10 @@ export const createMockCosmosRestClient = (
         amount: response.amount,
       };
     },
-    async getAccountSequence(chainKey: string, address: string) {
-      callCount++;
-      return { account: mockAccount };
-    },
-
-    getCallCount() {
-      return callCount;
-    },
-
-    updateSequence(amount: string) {
-      mockAccount.sequence = amount;
-    },
-
-    getNetworkSequence() {
-      return mockAccount.sequence;
-    },
-  };
+  } as any;
 };
 
-export const createMockPendingTxOpts = (
-  mockTime = 1234567890000,
-): HandlePendingTxOpts => ({
+export const createMockPendingTxOpts = (): HandlePendingTxOpts => ({
   cosmosRest: {} as unknown as CosmosRestClient,
   cosmosRpc: {} as unknown as CosmosRPCClient,
   evmProviders: {
@@ -144,7 +136,6 @@ export const createMockPendingTxOpts = (
   },
   fetch: global.fetch,
   marshaller: boardSlottingMarshaller(),
-  now: () => mockTime,
   signingSmartWalletKit: createMockSigningSmartWalletKit(),
   usdcAddresses: {
     'eip155:1': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // Ethereum
@@ -165,11 +156,7 @@ export const createMockStreamCell = (values: unknown[]) => ({
   blockHeight: '1000',
 });
 
-const createMockAxelarScanResponse = (
-  txId: string,
-  status = 'executed',
-  mockTime = 1234567890000,
-) => {
+const createMockAxelarScanResponse = (txId: string, status = 'executed') => {
   const baseEvent = {
     call: {
       chain: 'agoric',
@@ -224,7 +211,7 @@ const createMockAxelarScanResponse = (
       chain_type: 'evm',
       messageId: 'msg_12345',
       created_at: {
-        ms: mockTime,
+        ms: Date.now(),
         hour: 0,
         day: 0,
         week: 0,
@@ -238,7 +225,7 @@ const createMockAxelarScanResponse = (
       relayerAddress: '0xrelayer123',
       transactionHash: '0xexecuted123',
       blockNumber: 18500000,
-      block_timestamp: Math.floor(mockTime / 1000),
+      block_timestamp: Math.floor(Date.now() / 1000),
       from: '0xrelayer123',
       receipt: {
         gasUsed: '150000',
@@ -301,12 +288,9 @@ const createMockAxelarScanResponse = (
   };
 };
 
-export const mockFetch = (
-  { txId }: { txId: TxId },
-  mockTime = 1234567890000,
-) => {
+export const mockFetch = ({ txId }: { txId: TxId }) => {
   return async () => {
-    const response = createMockAxelarScanResponse(txId, 'executed', mockTime);
+    const response = createMockAxelarScanResponse(txId);
     return {
       ok: true,
       json: async () => response,
@@ -349,93 +333,3 @@ export const createMockGmpExecutionEvent = (txId: string) => {
     transactionHash: '0x1234567890abcdef1234567890abcdef12345678',
   };
 };
-
-type SubmitTxResponse = {
-  code: number;
-  height: number;
-  transactionHash: string;
-  sequence: number;
-};
-export class MockSigningSmartWalletKit {
-  private submittedTransactions: Array<{
-    method: string;
-    sequence: number;
-    timestamp: number;
-  }> = [];
-  private networkSequence: () => string;
-  private shouldSimulateSequenceConflicts = false;
-  private networkDelay = 20;
-  private mockTime = 1234567890000;
-  private sequenceCounter = 0;
-
-  constructor(getNetworkSequence: () => string, mockTime = 1234567890000) {
-    this.networkSequence = getNetworkSequence;
-    this.mockTime = mockTime;
-  }
-
-  enableSequenceConflictSimulation() {
-    this.shouldSimulateSequenceConflicts = true;
-  }
-
-  async executeOffer(offer: any, signerData: any) {
-    return this.submitTransaction('executeOffer', signerData);
-  }
-
-  async invokeEntry(message: any, signerData: any) {
-    return this.submitTransaction('invokeEntry', signerData);
-  }
-
-  async sendBridgeAction(action: any, fee: any, signerData: any) {
-    return this.submitTransaction('sendBridgeAction', signerData);
-  }
-
-  private async submitTransaction(
-    method: string,
-    signerData: any,
-  ): Promise<SubmitTxResponse> {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, this.networkDelay));
-
-    const currentNetworkSequence = this.networkSequence();
-
-    // Simulate sequence mismatch if enabled and sequence is out of sync
-    if (
-      this.shouldSimulateSequenceConflicts &&
-      signerData.sequence < currentNetworkSequence
-    ) {
-      throw new Error(
-        `Broadcasting transaction failed with code 32 (codespace: sdk). Log: account sequence mismatch, expected ${currentNetworkSequence}, got ${signerData.sequence}: incorrect account sequence`,
-      );
-    }
-
-    // Record successful transaction
-    this.submittedTransactions.push({
-      method,
-      sequence: signerData.sequence,
-      timestamp: this.mockTime + this.sequenceCounter++ * 1000, // Increment by 1 second for each transaction
-    });
-
-    return {
-      code: 0,
-      height: 3321450 + this.submittedTransactions.length,
-      transactionHash: `hash_${method}_${signerData.sequence}`,
-      sequence: signerData.sequence,
-    };
-  }
-
-  getSubmittedTransactions() {
-    return this.submittedTransactions;
-  }
-
-  clearTransactions() {
-    this.submittedTransactions = [];
-  }
-
-  setNetworkDelay(delay: number) {
-    this.networkDelay = delay;
-  }
-
-  setMockTime(time: number) {
-    this.mockTime = time;
-  }
-}

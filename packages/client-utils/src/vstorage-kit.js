@@ -110,9 +110,11 @@ export const makeVstorageKit = ({ fetch }, networkConfig) => {
 
     /**
      * Read latest at path and unmarshal it
-     * @type {(path: string) => Promise<unknown>}
+     * @template T
+     * @type {(path: string) => Promise<T>}
      */
     const readLatestHead = path =>
+      // @ts-expect-error cast
       vstorage.readLatest(path).then(unserializeHead);
 
     /**

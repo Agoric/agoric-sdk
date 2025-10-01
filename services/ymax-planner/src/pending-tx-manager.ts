@@ -2,6 +2,7 @@ import type { JsonRpcProvider } from 'ethers';
 
 import { Fail } from '@endo/errors';
 
+import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { Bech32Address, CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
@@ -23,7 +24,6 @@ import {
   watchNobleTransfer,
 } from './watchers/noble-watcher.ts';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
-import type { SmartWalletKitWithSequence } from './main.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
 
@@ -31,7 +31,7 @@ export type EvmContext = {
   cosmosRest: CosmosRestClient;
   usdcAddresses: UsdcAddresses['mainnet' | 'testnet'];
   evmProviders: EvmProviders;
-  signingSmartWalletKit: SmartWalletKitWithSequence;
+  signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
 };
 
@@ -150,7 +150,17 @@ const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, EvmContext> = {
     const { accountAddress } = parseAccountId(destinationAddress);
 
     const nobleAddress = accountAddress as Bech32Address;
-    const expectedDenom = 'uusdc'; // TODO: find the exact denom while e2e testing
+
+    /**
+     * - depositForBurn initiated from Ethereum:
+     *   https://sepolia.etherscan.io/tx/0x68c2c427e43e089db94ae105c30645e5fe00bf6124fcac9eab9df9f8a8f7fb83
+     *
+     * - Corresponding message received on Noble:
+     *   https://www.mintscan.io/noble-testnet/tx/6D165B5B8F1BF6004AA9A61FE00CC8B841C09120BDB433A11063C2A7F71C7028?height=39572351
+     *
+     * This confirms the expected denom is `uusdc`.
+     */
+    const expectedDenom = 'uusdc';
 
     log(
       `${logPrefix} Watching Noble withdrawal to ${nobleAddress} for ${amount} ${expectedDenom}`,
@@ -188,19 +198,18 @@ export type HandlePendingTxOpts = {
   cosmosRpc: CosmosRPCClient;
   log?: (...args: unknown[]) => void;
   error?: (...args: unknown[]) => void;
-  marshaller: SmartWalletKitWithSequence['marshaller'];
-  now: typeof Date.now;
+  marshaller: SigningSmartWalletKit['marshaller'];
   registry?: MonitorRegistry;
   timeoutMs?: number;
 } & EvmContext;
 
-export const TX_TIMEOUT_MS = 10 * 60 * 1000; // 10 min
+export const TX_TIMEOUT_MS = 30 * 60 * 1000; // 30 min
 export const handlePendingTx = async (
   tx: PendingTx,
   {
     log = () => {},
     registry = createMonitorRegistry(),
-    timeoutMs = TX_TIMEOUT_MS, // 10 min
+    timeoutMs = TX_TIMEOUT_MS,
     ...evmCtx
   }: HandlePendingTxOpts,
   txTimestampMs?: number,

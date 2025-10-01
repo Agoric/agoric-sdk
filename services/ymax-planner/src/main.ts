@@ -2,12 +2,10 @@ import {
   fetchEnvNetworkConfig,
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
-  type SigningSmartWalletKit,
 } from '@agoric/client-utils';
 import { objectMetaMap } from '@agoric/internal';
 import { Fail, q } from '@endo/errors';
 import { isPrimitive } from '@endo/pass-style';
-import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 
 import { SigningStargateClient } from '@cosmjs/stargate';
 
@@ -15,20 +13,9 @@ import { loadConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { startEngine } from './engine.ts';
-import { createEVMContext } from './support.ts';
+import { createEVMContext, verifyEvmChains } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
-import { SequenceManager } from './sequence-manager.ts';
-import { SmartWalletWithSequence } from './smart-wallet-with-sequence.ts';
-
-export type SmartWalletKitWithSequence = Omit<
-  SigningSmartWalletKit,
-  'executeOffer'
-> & {
-  executeOffer: (
-    offer: OfferSpec,
-    pollForResult?: boolean,
-  ) => Promise<Awaited<ReturnType<SigningSmartWalletKit['executeOffer']>>>;
-};
+import { makeGasEstimator } from './gas-estimation.ts';
 
 const assertChainId = async (
   rpc: CosmosRPCClient,
@@ -91,39 +78,6 @@ export const main = async (
   );
   console.warn('Signer address:', signingSmartWalletKit.address);
 
-  const sequenceManager = new SequenceManager(
-    {
-      cosmosRest,
-      log: (...args) => console.log('[SequenceManager]:', ...args),
-    },
-    { chainKey: 'agoric', address: signingSmartWalletKit.address },
-  );
-  await sequenceManager.initialize();
-
-  const smartWalletWithSequence = new SmartWalletWithSequence(
-    {
-      signingSmartWalletKit,
-      sequenceManager,
-      log: (...args) => console.log('[SmartWalletWithSequence]:', ...args),
-    },
-    { chainId: networkConfig.chainName },
-  );
-
-  // create a wrapper that uses SmartWalletWithSequence methods
-  const smartWalletKitWithSequence: SmartWalletKitWithSequence = {
-    ...signingSmartWalletKit,
-    // override the three main methods to use SmartWalletWithSequence
-    sendBridgeAction: smartWalletWithSequence.sendBridgeAction.bind(
-      smartWalletWithSequence,
-    ),
-    executeOffer: smartWalletWithSequence.executeOffer.bind(
-      smartWalletWithSequence,
-    ),
-    invokeEntry: smartWalletWithSequence.invokeEntry.bind(
-      smartWalletWithSequence,
-    ),
-  };
-
   const spectrum = new SpectrumClient(simplePowers, {
     baseUrl: config.spectrum.apiUrl,
     timeout: config.spectrum.timeout,
@@ -135,13 +89,24 @@ export const main = async (
     alchemyApiKey: config.alchemyApiKey,
   });
 
+  // Verify Alchemy chain availability - throws if any chain fails
+  console.warn('Verifying EVM chain connectivity...');
+  await verifyEvmChains(evmCtx.evmProviders);
+
+  const gasEstimator = makeGasEstimator({
+    axelarApiAddress: config.axelar.apiUrl,
+    axelarChainIdMap: config.axelar.chainIdMap,
+    fetch,
+  });
+
   const powers = {
     evmCtx,
     rpc,
     spectrum,
     cosmosRest,
-    signingSmartWalletKit: smartWalletKitWithSequence,
+    signingSmartWalletKit,
     now: Date.now,
+    gasEstimator,
   };
   await startEngine(powers, {
     depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',

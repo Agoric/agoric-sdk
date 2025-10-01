@@ -1,9 +1,10 @@
 import type {
-  InvokeEntryMessage,
   OfferSpec,
+  OfferStatus,
 } from '@agoric/smart-wallet/src/offers.js';
 import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import type {
+  DeliverTxResponse,
   SignerData,
   SigningStargateClient,
   StdFee,
@@ -11,9 +12,9 @@ import type {
 import { toAccAddress } from '@cosmjs/stargate/build/queryclient/utils.js';
 import type { EReturn } from '@endo/far';
 import { MsgWalletSpendAction } from './codegen/agoric/swingset/msgs.js';
+import { TxRaw } from './codegen/cosmos/tx/v1beta1/tx.js';
 import { makeStargateClientKit } from './signing-client.js';
 import { type SmartWalletKit } from './smart-wallet-kit.js';
-import { TxRaw } from './codegen/cosmos/tx/v1beta1/tx.js';
 
 // TODO parameterize as part of https://github.com/Agoric/agoric-sdk/issues/5912
 const defaultFee: StdFee = {
@@ -40,11 +41,14 @@ export const makeSigningSmartWalletKit = async (
     rpcAddr: walletUtils.networkConfig.rpcAddrs[0],
   });
 
+  // Omit deprecated utilities
+  const { storedWalletState: _, ...swk } = walletUtils;
+
   const query = {
-    readPublished: walletUtils.readPublished,
-    vstorage: walletUtils.vstorage,
-    getLastUpdate: () => walletUtils.getLastUpdate(address),
-    getCurrentWalletRecord: () => walletUtils.getCurrentWalletRecord(address),
+    readPublished: swk.readPublished,
+    vstorage: swk.vstorage,
+    getLastUpdate: () => swk.getLastUpdate(address),
+    getCurrentWalletRecord: () => swk.getCurrentWalletRecord(address),
     pollOffer: (
       ...args: Parameters<SmartWalletKit['pollOffer']> extends [
         any,
@@ -52,87 +56,70 @@ export const makeSigningSmartWalletKit = async (
       ]
         ? Rest
         : never
-    ) => walletUtils.pollOffer(address, ...args),
+    ) => swk.pollOffer(address, ...args),
   };
 
   const sendBridgeAction = async (
     action: BridgeAction,
     fee: StdFee = defaultFee,
-    data?: SignerData,
-  ) => {
+    memo: string = '',
+    signerData?: SignerData,
+  ): Promise<DeliverTxResponse> => {
+    // The caller should do this but it's more ergonomic to allow an object
+    // literal, and in that case this hardening does not create an external
+    // side-effect.
+    harden(action);
+
     const msgSpend = MsgWalletSpendAction.fromPartial({
       owner: toAccAddress(address),
-      spendAction: JSON.stringify(walletUtils.marshaller.toCapData(action)),
+      spendAction: JSON.stringify(swk.marshaller.toCapData(action)),
     });
 
-    if (!data) {
-      return client.signAndBroadcast(
-        address,
-        [{ typeUrl: MsgWalletSpendAction.typeUrl, value: msgSpend }],
-        fee,
-      );
+    const messages = [
+      { typeUrl: MsgWalletSpendAction.typeUrl, value: msgSpend },
+    ];
+
+    if (!signerData) {
+      return client.signAndBroadcast(address, messages, fee, memo);
     }
 
+    // Explicit signing data
     const signedTx = await client.sign(
       address,
-      [{ typeUrl: MsgWalletSpendAction.typeUrl, value: msgSpend }],
+      messages,
       fee,
-      '', // memo
-      data,
+      memo,
+      signerData,
     );
 
     const txBytes = TxRaw.encode(signedTx).finish();
     return client.broadcastTx(txBytes);
   };
 
-  const executeOffer = async (
-    offer: OfferSpec,
-    data?: SignerData,
-    pollForResult = true,
-  ) => {
-    const before = await client.getBlock();
+  const executeOffer = async (offer: OfferSpec): Promise<OfferStatus> => {
+    const offerP = swk.pollOffer(address, offer.id);
 
+    // Await for rejection handling
     await sendBridgeAction(
       harden({
         method: 'executeOffer',
         offer,
       }),
-      defaultFee,
-      data,
     );
 
-    if (pollForResult) {
-      return walletUtils.pollOffer(address, offer.id, before.header.height);
-    }
-
-    return { offerId: offer.id };
-  };
-
-  const invokeEntry = async (
-    message: InvokeEntryMessage,
-    data?: SignerData,
-  ) => {
-    await null;
-
-    const transaction = await sendBridgeAction(
-      harden({
-        method: 'invokeEntry',
-        message,
-      }),
-      defaultFee,
-      data,
-    );
-
-    return { result: { transaction } };
+    return offerP;
   };
 
   return Object.freeze({
-    networkConfig: walletUtils.networkConfig,
-    marshaller: walletUtils.marshaller,
+    ...swk,
     query,
     address,
+    /**
+     * Send an `executeOffer` bridge action and promise the resulting offer
+     * record once the offer has settled. If you don't need the offer record,
+     * consider using `sendBridgeAction` instead.
+     */
     executeOffer,
-    invokeEntry,
     sendBridgeAction,
   });
 };
