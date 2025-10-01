@@ -45,7 +45,7 @@ import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
 import { makeSQLiteKeyValueStore } from './kv-store.ts';
 import { makeSequenceManager } from './sequence-manager.ts';
-import { SmartWalletWithSequence } from './smart-wallet-with-sequence.ts';
+import { makeSmartWalletWithSequence } from './smart-wallet-with-sequence.ts';
 
 export type SmartWalletKitWithSequence = Omit<
   SigningSmartWalletKit,
@@ -211,7 +211,7 @@ export const main = async (
     { chainKey: 'agoric', address: signingSmartWalletKit.address },
   );
 
-  const smartWalletWithSequence = new SmartWalletWithSequence(
+  const smartWalletWithSequence = makeSmartWalletWithSequence(
     {
       signingSmartWalletKit,
       sequenceManager,
@@ -224,12 +224,8 @@ export const main = async (
   const smartWalletKitWithSequence: SmartWalletKitWithSequence = {
     ...signingSmartWalletKit,
     // override the three main methods to use SmartWalletWithSequence
-    sendBridgeAction: smartWalletWithSequence.sendBridgeAction.bind(
-      smartWalletWithSequence,
-    ),
-    executeOffer: smartWalletWithSequence.executeOffer.bind(
-      smartWalletWithSequence,
-    ),
+    sendBridgeAction: smartWalletWithSequence.sendBridgeAction,
+    executeOffer: smartWalletWithSequence.executeOffer,
   };
 
   const spectrum = new SpectrumClient(simplePowers, {
