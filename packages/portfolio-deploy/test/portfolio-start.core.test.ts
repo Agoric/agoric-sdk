@@ -38,6 +38,7 @@ import type {
 import { name as contractName } from '../src/portfolio.contract.permit.js';
 import * as postalServiceExports from '../src/postal-service.contract.js';
 import { deployPostalService } from '../src/postal-service.core.js';
+import { produceDeliverContractControl } from '../src/contract-control.core.js';
 
 const { entries, keys } = Object;
 
@@ -242,10 +243,11 @@ test('delegate ymax control; invite planner; submit plan', async t => {
       postalInstall,
     );
   }
-
   console.log('awaited namesByAddress');
   await deployPostalService(powers as any);
   t.log('deployPostalService done');
+  t.log('produce deliverContractControl');
+  await produceDeliverContractControl(powers as any);
   const { agoricNames } = common.bootstrap;
   const pInst = await E(agoricNames).lookup('instance', pContractName);
   t.is(passStyleOf(pInst), 'remotable');

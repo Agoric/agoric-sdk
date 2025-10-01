@@ -261,12 +261,22 @@ test.serial('contract starts; appears in agoricNames', async t => {
 });
 
 test.serial('delegate control', async t => {
-  const { buildProposal, evalProposal, refreshAgoricNamesRemotes } = t.context;
+  const {
+    buildProposal,
+    combineProposals,
+    evalProposal,
+    refreshAgoricNamesRemotes,
+  } = t.context;
 
-  const materials = buildProposal(
-    '@aglocal/portfolio-deploy/src/portfolio-control.build.js',
-    ['--ymaxControlAddress', controllerAddr],
-  );
+  // This used to be a single builder but has now been split up
+  const materials = Promise.all([
+    buildProposal('@aglocal/portfolio-deploy/src/postal-service.build.js'),
+    buildProposal('@aglocal/portfolio-deploy/src/contract-control.build.js'),
+    buildProposal('@aglocal/portfolio-deploy/src/portfolio-control.build.js', [
+      '--ymaxControlAddress',
+      controllerAddr,
+    ]),
+  ]).then(combineProposals);
 
   const { agoricNamesRemotes, walletFactoryDriver: wfd } = t.context;
 
