@@ -40,7 +40,7 @@ import {
 } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
-import { SequenceManager } from './sequence-manager.ts';
+import { makeSequenceManager } from './sequence-manager.ts';
 import { SmartWalletWithSequence } from './smart-wallet-with-sequence.ts';
 
 export type SmartWalletKitWithSequence = Omit<
@@ -231,7 +231,7 @@ export const main = async (
     makeNonce: () => new Date(now()).toISOString(),
   });
 
-  const sequenceManager = await SequenceManager.create(
+  const sequenceManager = await makeSequenceManager(
     {
       cosmosRest,
       log: (...args) => console.log('[SequenceManager]:', ...args),
