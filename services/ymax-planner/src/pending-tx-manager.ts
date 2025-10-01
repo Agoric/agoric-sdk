@@ -96,7 +96,11 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
     };
     const transferStatus = await (opts.mode === 'live'
       ? watchCctpTransfer({ ...watchArgs, timeoutMs: opts.timeoutMs })
-      : lookBackCctp({ ...watchArgs, publishTimeMs: opts.publishTimeMs }));
+      : lookBackCctp({
+          ...watchArgs,
+          publishTimeMs: opts.publishTimeMs,
+          chainId: caipId,
+        }));
 
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
@@ -130,7 +134,11 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
     };
     const transferStatus = await (opts.mode === 'live'
       ? watchGmp({ ...watchArgs, timeoutMs: opts.timeoutMs })
-      : lookBackGmp({ ...watchArgs, publishTimeMs: opts.publishTimeMs }));
+      : lookBackGmp({
+          ...watchArgs,
+          publishTimeMs: opts.publishTimeMs,
+          chainId: caipId,
+        }));
 
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
