@@ -6,7 +6,11 @@
  */
 import type { GuestInterface } from '@agoric/async-flow';
 import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
-import { makeTracer, type TraceLogger } from '@agoric/internal';
+import {
+  deeplyFulfilledObject,
+  makeTracer,
+  type TraceLogger,
+} from '@agoric/internal';
 import type {
   AccountId,
   Denom,
@@ -63,7 +67,7 @@ import {
 } from './type-guards.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
-const { keys, entries } = Object;
+const { keys, entries, fromEntries } = Object;
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
@@ -84,10 +88,11 @@ type PortfolioBootstrapContext = PortfolioInstanceContext & {
   makePortfolioKit: () => GuestInterface<PortfolioKit>;
 };
 
+type EVMAccounts = Partial<Record<AxelarChain, GMPAccountInfo>>;
 type AccountsByChain = {
   agoric: AccountInfoFor['agoric'];
   noble?: AccountInfoFor['noble'];
-} & Partial<Record<AxelarChain, GMPAccountInfo>>;
+} & EVMAccounts;
 
 type AssetMovement = {
   how: string;
@@ -160,10 +165,6 @@ const trackFlow = async (
   accounts: AccountsByChain,
 ) => {
   await null; // cf. wiki:NoNestedAwait
-  reporter.publishFlowSteps(
-    flowId,
-    moves.map(({ apply: _a, recover: _r, ...data }) => data),
-  );
 
   let step = 1;
   try {
@@ -323,6 +324,7 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
         throw Fail`src pos must have account as dest ${q(moveDesc)}`;
       const poolKey = src as PoolKey;
       const { protocol } = PoolPlaces[poolKey];
+      // TODO move this into metadata
       const feeRequired = ['Compound', 'Aave', 'Beefy'];
       moveDesc.fee ||
         !feeRequired.includes(protocol) ||
@@ -392,6 +394,7 @@ const stepFlow = async (
   moves: MovementDesc[],
   kit: GuestInterface<PortfolioKit>,
   traceP: TraceLogger,
+  flowId: number,
 ) => {
   const todo: AssetMovement[] = [];
 
@@ -483,12 +486,11 @@ const stepFlow = async (
   };
 
   const { reporter } = kit;
-  const flowId = reporter.allocateFlowId();
   const traceFlow = traceP.sub(`flow${flowId}`);
 
   traceFlow('checking', moves.length, 'moves');
   for (const [i, move] of entries(moves)) {
-    const traceMove = traceP.sub(`move${i}`);
+    const traceMove = traceFlow.sub(`move${i}`);
     // @@@ traceMove('wayFromSrcToDesc?', move);
     const way = wayFromSrcToDesc(move);
     const { amount } = move;
@@ -680,6 +682,28 @@ const stepFlow = async (
     }
   }
 
+  const acctsDone = keys(kit.reader.accountIdByChain());
+  const acctsToDo = [
+    ...new Set(
+      (
+        moves
+          .map(({ dest }) => getChainNameOfPlaceRef(dest))
+          .filter(Boolean) as string[]
+      ).filter(ch => !acctsDone.includes(ch)),
+    ),
+  ];
+
+  traceFlow('provideAccounts', ...acctsToDo);
+  reporter.publishFlowStatus(flowId, {
+    state: 'run',
+    step: 0,
+    how: `makeAccounts(${acctsToDo.join(', ')})`,
+  });
+  reporter.publishFlowSteps(
+    flowId,
+    todo.map(({ apply: _a, recover: _r, ...data }) => data),
+  );
+
   const agoric = await provideCosmosAccount(orch, 'agoric', kit, traceFlow);
 
   /** run thunk(); on failure, report to vstorage */
@@ -703,36 +727,41 @@ const stepFlow = async (
     }
   };
 
-  const evmAccts = await (async () => {
+  const evmAcctInfo = await (async () => {
     const axelar = await orch.getChain('axelar');
     const { axelarIds } = ctx;
+    const gmpCommon = { chain: axelar, axelarIds };
 
-    const chainToAcct: Partial<Record<AxelarChain, GMPAccountInfo>> = {};
-    const evmChains = Object.keys(AxelarChain) as unknown[];
+    const evmChains = keys(AxelarChain) as unknown[];
+    const asEntry = <K, V>(k: K, v: V): [K, V] => [k, v];
 
-    for (const move of moves) {
-      const gmp = {
-        chain: axelar,
-        fee: move.fee?.value || 0n,
-        axelarIds,
-        evmGas: move.detail?.evmGas || 0n,
-      };
-      for (const ref of [move.src, move.dest]) {
+    const seen = new Set<AxelarChain>();
+    const chainToAcctP = moves.flatMap(move =>
+      [move.src, move.dest].flatMap(ref => {
         const maybeChain = getChainNameOfPlaceRef(ref);
-        if (!evmChains.includes(maybeChain)) continue;
+        if (!evmChains.includes(maybeChain)) return [];
         const chain = maybeChain as AxelarChain;
-        const info = await forChain(chain, () =>
+        if (seen.has(chain)) return [];
+        seen.add(chain);
+
+        const gmp = {
+          ...gmpCommon,
+          fee: move.fee?.value || 0n,
+          evmGas: move.detail?.evmGas || 0n,
+        };
+
+        const acctP = forChain(chain, () =>
           provideEVMAccount(chain, gmp, agoric.lca, ctx, kit),
         );
-        chainToAcct[chain] = info;
-      }
-    }
-    return harden(chainToAcct);
+        return [asEntry(chain, acctP)];
+      }),
+    );
+    return deeplyFulfilledObject(harden(fromEntries(chainToAcctP)));
   })();
 
-  traceFlow('EVM accounts ready', keys(evmAccts));
+  traceFlow('EVM accounts ready', keys(evmAcctInfo));
   const nobleMentioned = moves.some(m => [m.src, m.dest].includes('@noble'));
-  const nobleInfo = await (nobleMentioned || keys(evmAccts).length > 0
+  const nobleInfo = await (nobleMentioned || keys(evmAcctInfo).length > 0
     ? forChain('noble', () =>
         provideCosmosAccount(orch, 'noble', kit, traceFlow),
       )
@@ -740,7 +769,7 @@ const stepFlow = async (
   const accounts: AccountsByChain = {
     agoric,
     ...(nobleInfo && { noble: nobleInfo }),
-    ...evmAccts,
+    ...evmAcctInfo,
   };
   traceFlow('accounts for trackFlow', keys(accounts));
 
@@ -780,6 +809,7 @@ export const rebalance = (async (
   traceP('proposal', proposal.give, proposal.want, offerArgs);
 
   await null;
+  let flowId: number | undefined;
   try {
     if (offerArgs.targetAllocation) {
       kit.manager.setTargetAllocation(offerArgs.targetAllocation);
@@ -789,7 +819,8 @@ export const rebalance = (async (
     }
 
     if (offerArgs.flow) {
-      await stepFlow(orch, ctx, seat, offerArgs.flow, kit, traceP);
+      ({ flowId } = kit.manager.startFlow({ type: 'other' }));
+      await stepFlow(orch, ctx, seat, offerArgs.flow, kit, traceP, flowId);
     }
 
     if (!seat.hasExited()) {
@@ -800,6 +831,8 @@ export const rebalance = (async (
       seat.fail(err);
     }
     throw err;
+  } finally {
+    if (flowId) kit.reporter.finishFlow(flowId);
   }
 }) satisfies OrchestrationFlow;
 
@@ -882,3 +915,36 @@ export const makeLCA = (async (orch: Orchestrator): Promise<LocalAccount> => {
   return agoricChain.makeAccount();
 }) satisfies OrchestrationFlow;
 harden(makeLCA);
+
+export const withdraw = (async (
+  orch: Orchestrator,
+  ctx: PortfolioInstanceContext,
+  seat: ZCFSeat,
+  pKit: GuestInterface<PortfolioKit>,
+) => {
+  const pId = pKit.reader.getPortfolioId();
+  const traceP = makeTracer('withdraw').sub(`portfolio${pId}`);
+
+  // cast justified by proposal shape.
+  const proposal = seat.getProposal() as unknown as ProposalType['withdraw'];
+  const { Cash: amount } = proposal.want;
+
+  // XXX enhancement: let caller supply steps
+  const { stepsP, flowId } = pKit.manager.startFlow({
+    type: 'withdraw',
+    amount,
+  });
+  const traceFlow = traceP.sub(`flow${flowId}`);
+  traceFlow('waiting for steps from planner');
+  const steps = await (stepsP as unknown as Promise<MovementDesc[]>); // XXX Guest/Host types UNTIL #9822
+  try {
+    await stepFlow(orch, ctx, seat, steps, pKit, traceP, flowId);
+  } finally {
+    // XXX flow.finish() would eliminate the possibility of sending the wrong one,
+    // at the cost of an exo (or Far?)
+    pKit.reporter.finishFlow(flowId);
+
+    if (!seat.hasExited()) seat.exit();
+  }
+}) satisfies OrchestrationFlow;
+harden(withdraw);

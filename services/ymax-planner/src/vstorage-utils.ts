@@ -1,5 +1,9 @@
 /// <reference types="ses" />
-import type { VStorage } from '@agoric/client-utils';
+import type {
+  VStorage,
+  QueryChildrenMetaResponse,
+  QueryDataMetaResponse,
+} from '@agoric/client-utils';
 import { mustMatch, throwErrorCode, tryJsonParse } from '@agoric/internal';
 import {
   StreamCellShape,
@@ -90,6 +94,69 @@ harden(parseStreamCellValue);
 
 export const STALE_RESPONSE = 'STALE_RESPONSE';
 
+type ReadStorageMetaOptions<
+  MethodName extends 'children' | 'data',
+  Result = MethodName extends 'children'
+    ? QueryChildrenMetaResponse
+    : QueryDataMetaResponse,
+> = Partial<{
+  minBlockHeight?: bigint;
+  retries?: number;
+  transformResponse?: (
+    metaResponse: MethodName extends 'children'
+      ? QueryChildrenMetaResponse
+      : QueryDataMetaResponse,
+  ) => Result;
+}>;
+
+/**
+ * Make a vstorage Children or Data query, returning the decoded result along
+ * with response metadata derived from fields documented at
+ * https://docs.cometbft.com/v1.0/spec/abci/abci++_methods#query (for
+ * successful responses, `log` and `height` [as `blockHeight`], and for error
+ * responses, `codespace` and `code`) or a transformation thereof.
+ * UNTIL https://github.com/Agoric/agoric-sdk/pull/11630
+ */
+export const readStorageMeta = async <
+  M extends 'children' | 'data',
+  Result = M extends 'children'
+    ? QueryChildrenMetaResponse
+    : QueryDataMetaResponse,
+>(
+  vstorage: VStorage,
+  vstoragePath: string,
+  kind: M,
+  {
+    minBlockHeight = 0n,
+    retries = 0,
+    transformResponse = (x => x) as any,
+  }: ReadStorageMetaOptions<M, Result> = {},
+) => {
+  await null;
+  let finalErr: undefined | Error;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      const metaResponse = (await vstorage.readStorageMeta(vstoragePath, {
+        kind,
+      })) as M extends 'children'
+        ? QueryChildrenMetaResponse
+        : QueryDataMetaResponse;
+      const { blockHeight } = metaResponse;
+      if (typeof blockHeight !== 'bigint') {
+        throw Fail`blockHeight ${blockHeight} must be a bigint`;
+      }
+      if (blockHeight < minBlockHeight) {
+        throwErrorCode(`old blockHeight ${blockHeight}`, STALE_RESPONSE);
+      }
+      return transformResponse(metaResponse);
+    } catch (err) {
+      if (err.code || !finalErr) finalErr = err;
+    }
+  }
+  throw finalErr;
+};
+harden(readStorageMeta);
+
 /**
  * Read from a vstorage path, requiring the data to be a StreamCell of
  * CapData-encoded values and returning the decoding of the final one.
@@ -98,34 +165,18 @@ export const STALE_RESPONSE = 'STALE_RESPONSE';
 export const readStreamCellValue = async (
   vstorage: VStorage,
   vstoragePath: string,
-  {
-    minBlockHeight = 0n,
-    retries = 0,
-  }: { minBlockHeight?: bigint; retries?: number } = {},
+  opts?: Pick<ReadStorageMetaOptions<'data'>, 'minBlockHeight' | 'retries'>,
 ) => {
-  await null;
-  let finalErr: undefined | Error;
-  for (let attempt = 0; attempt <= retries; attempt += 1) {
-    let streamCell: StreamCell;
-    try {
-      const { blockHeight, result } = await vstorage.readStorageMeta(
-        vstoragePath,
-        { kind: 'data' } as const,
-      );
-      if (typeof blockHeight !== 'bigint') {
-        throw Fail`blockHeight ${blockHeight} must be a bigint`;
-      }
-      if (blockHeight < minBlockHeight) {
-        throwErrorCode(`old blockHeight ${blockHeight}`, STALE_RESPONSE);
-      }
-      streamCell = parseStreamCell(result.value, vstoragePath);
-      // We have suitably fresh data; any further errors should propagate.
-    } catch (err) {
-      if (err.code || !finalErr) finalErr = err;
-      continue;
-    }
-    return parseStreamCellValue(streamCell, -1, vstoragePath);
-  }
-  throw finalErr;
+  const streamCell = await readStorageMeta(
+    vstorage,
+    vstoragePath,
+    'data' as const,
+    {
+      ...opts,
+      transformResponse: metaResponse =>
+        parseStreamCell(metaResponse.result.value, vstoragePath),
+    },
+  );
+  return parseStreamCellValue(streamCell, -1, vstoragePath);
 };
 harden(readStreamCellValue);

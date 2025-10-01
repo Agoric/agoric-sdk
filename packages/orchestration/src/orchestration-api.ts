@@ -10,6 +10,7 @@ import type { Timestamp } from '@agoric/time';
 import type { QueryManyFn } from '@agoric/vats/src/localchain.js';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Passable } from '@endo/marshal';
+import type { Vow } from '@agoric/vow';
 import type {
   AgoricChainMethods,
   CosmosChainAccountMethods,
@@ -274,15 +275,32 @@ export interface OrchestrationAccountCommon {
    * @param amount - the amount to transfer. Can be provided as pure data using denoms or as ERTP Amounts.
    * @param destination - the account to transfer the amount to.
    * @param [opts] - an optional memo to include with the transfer, which could drive custom PFM behavior, and timeout parameters
-   * @returns void
+   * @returns {Promise<any>} The promise fulfills with the successful acknowledgement of the transfer
    * @throws {Error} if route is not determinable, asset is not recognized, or
-   * the transfer is rejected (insufficient funds, timeout)
+   * the transfer is rejected (insufficient funds, timeout, error ack)
    */
   transfer: (
     destination: AccountIdArg,
     amount: AmountArg,
     opts?: IBCMsgTransferOptions,
-  ) => Promise<void>;
+  ) => Promise<any>;
+
+  /**
+   * Transfer an amount to another account, typically on another chain.
+   * @param destination - the account to transfer the amount to.
+   * @param amount - the amount to transfer. Can be provided as pure data using denoms or as ERTP Amounts.
+   * @param [opts] - an optional memo to include with the transfer, which could drive custom PFM behavior, and timeout parameters
+   * @returns Promise<resultMeta> The promise fulfills with resultMeta where
+   * .meta is metadata about transfer on sending, and the resultMeta.result
+   * fulfills with a completion message.
+   * @throws {Error} if route is not determinable, asset is not recognized, or
+   * the transfer is rejected (insufficient funds, timeout)
+   */
+  transferWithMeta: (
+    destination: AccountIdArg,
+    amount: AmountArg,
+    opts?: IBCMsgTransferOptions,
+  ) => Promise<{ result: Vow<any> | Promise<any>; meta: Record<string, any> }>;
 
   /**
    * Transfer an amount to another account in multiple steps. The promise settles when

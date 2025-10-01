@@ -17,6 +17,7 @@ import {
   forever,
   deeplyFulfilledObject,
   synchronizedTee,
+  stripPrefix,
   throwErrorCode,
   tryJsonParse,
   tryNow,
@@ -578,6 +579,14 @@ test('assertAllDefined', t => {
       // @ts-expect-error key presence not checked
       foo.prop.toFixed,
   );
+});
+
+test('stripPrefix', t => {
+  t.is(stripPrefix('prefix', 'prefixed'), 'ed');
+  t.is(stripPrefix('', 'prefixed'), 'prefixed');
+  t.is(stripPrefix(':', '::foo'), ':foo');
+  t.is(stripPrefix('foo.bar.baz', 'foo.bar.baz'), '');
+  t.throws(() => stripPrefix('::', ':foo'));
 });
 
 test('throwErrorCode', t => {

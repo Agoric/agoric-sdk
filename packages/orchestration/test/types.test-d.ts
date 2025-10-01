@@ -3,17 +3,16 @@
  */
 
 import type { HostInterface, HostOf } from '@agoric/async-flow';
-import { type AnyJson, CodecHelper, type JsonSafe } from '@agoric/cosmic-proto';
-import {
-  QueryAllBalancesRequest as QueryAllBalancesRequestType,
-  QueryBalanceRequest as QueryBalanceRequestType,
-  type QueryAllBalancesResponse,
-  type QueryBalanceResponse,
+import type {
+  AnyJson,
+  JsonSafe,
+  Proto3CodecHelper,
+} from '@agoric/cosmic-proto';
+import type {
+  QueryAllBalancesResponse as QueryAllBalancesResponseType,
+  QueryBalanceResponse as QueryBalanceResponseType,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import {
-  MsgDelegate as MsgDelegateType,
-  type MsgDelegateResponse,
-} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import type { MsgDelegateResponse as MsgDelegateResponseType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import type { ResponseQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import type { Vow, VowTools } from '@agoric/vow';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
@@ -24,7 +23,10 @@ import type {
   TargetApp,
   TargetRegistration,
 } from '@agoric/vats/src/bridge-target.js';
-import { prepareCosmosOrchestrationAccount } from '../src/exos/cosmos-orchestration-account.js';
+import {
+  prepareCosmosOrchestrationAccount,
+  type CosmosOrchestrationAccount,
+} from '../src/exos/cosmos-orchestration-account.js';
 import type { LocalOrchestrationAccountKit } from '../src/exos/local-orchestration-account.js';
 import type { OrchestrationFacade } from '../src/facade.js';
 import type {
@@ -44,10 +46,21 @@ import type { ResolvedContinuingOfferResult } from '../src/utils/zoe-tools.js';
 import { withChainCapabilities } from '../src/chain-capabilities.js';
 import fetchedChainInfo from '../src/fetched-chain-info.js';
 import cctpChainInfo from '../src/cctp-chain-info.js';
+import { tryDecodeResponses } from '../src/utils/cosmos.js';
 
-const MsgDelegate = CodecHelper(MsgDelegateType);
-const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);
-const QueryBalanceRequest = CodecHelper(QueryBalanceRequestType);
+const MsgDelegate: Proto3CodecHelper<'/cosmos.staking.v1beta1.MsgDelegate'> =
+  null as any;
+const MsgDelegateResponse: Proto3CodecHelper<'/cosmos.staking.v1beta1.MsgDelegateResponse'> =
+  null as any;
+const QueryAllBalancesRequest: Proto3CodecHelper<'/cosmos.bank.v1beta1.QueryAllBalancesRequest'> =
+  null as any;
+const QueryAllBalancesResponse: Proto3CodecHelper<'/cosmos.bank.v1beta1.QueryAllBalancesResponse'> =
+  null as any;
+const QueryBalanceRequest: Proto3CodecHelper<'/cosmos.bank.v1beta1.QueryBalanceRequest'> =
+  null as any;
+const QueryBalanceResponse: Proto3CodecHelper<'/cosmos.bank.v1beta1.QueryBalanceResponse'> =
+  null as any;
+const Any: Proto3CodecHelper<'/google.protobuf.Any'> = null as any;
 
 const anyVal = null as any;
 
@@ -88,12 +101,55 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
       address: 'agoric1pleab',
     }),
   ] as const);
-  expectType<MsgDelegateResponse>(results[0]);
-  expectType<QueryAllBalancesResponse>(results[1]);
+  expectType<MsgDelegateResponseType>(results[0]);
+  expectType<QueryAllBalancesResponseType>(results[1]);
 }
 
 // CosmosOrchestrationAccount interfaces
 {
+  const coa: CosmosOrchestrationAccount = null as any;
+  const resultMeta = coa.executeEncodedTxWithMeta([
+    Any.toJSON(
+      MsgDelegate.toProtoMsg({
+        amount: {
+          amount: '1',
+          denom: 'ubld',
+        },
+        validatorAddress: 'agoric1valoperhello',
+        delegatorAddress: 'agoric1pleab',
+      }),
+    ),
+    Any.toJSON(
+      QueryAllBalancesRequest.toProtoMsg({
+        address: 'agoric1pleab',
+      }),
+    ),
+  ] as const);
+
+  expectType<
+    Vow<{
+      result: Vow<string>;
+      meta: Record<string, any>;
+    }>
+  >(resultMeta);
+  const { result: resultP, meta } = await vt.when(resultMeta);
+  expectType<Record<string, any>>(meta);
+
+  const result = await vt.when(resultP);
+
+  const resps = tryDecodeResponses(result, [
+    MsgDelegateResponse,
+    QueryAllBalancesResponse,
+  ]);
+
+  expectType<2>(resps.length);
+
+  // Check that the result is a tuple of the expected types.
+  expectType<[MsgDelegateResponseType, QueryAllBalancesResponseType]>(resps);
+
+  // Ensure the result is not widened to (MsgDelegateResponseType | QueryAllBalancesResponseType)[]
+  expectNotType<[QueryAllBalancesResponseType, MsgDelegateResponseType]>(resps);
+
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     anyVal,
     anyVal,
@@ -225,8 +281,8 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   ] as const);
 
   expectType<ReturnType<ChainFacade['query']>>(results);
-  expectType<{ reply: JsonSafe<QueryBalanceResponse> }>(results[0]);
-  expectType<{ reply: JsonSafe<QueryAllBalancesResponse> }>(results[1]);
+  expectType<{ reply: JsonSafe<QueryBalanceResponseType> }>(results[0]);
+  expectType<{ reply: JsonSafe<QueryAllBalancesResponseType> }>(results[1]);
 }
 
 // Test RemoteCosmosChain.query() (icqEnabled: true)
@@ -327,6 +383,13 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
       opts?: Partial<Omit<TxBody, 'messages'>>,
     ) => Promise<string>
   >(account.executeEncodedTx);
+
+  expectType<
+    (
+      msgs: AnyJson[],
+      opts?: Partial<Omit<TxBody, 'messages'>>,
+    ) => Promise<{ result: Promise<string>; meta: Record<string, any> }>
+  >(account.executeEncodedTxWithMeta);
 
   // Verify delegate is available via stakingTokens parameter
   expectType<

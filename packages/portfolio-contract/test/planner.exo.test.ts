@@ -46,6 +46,7 @@ test('planner exo submit method', async t => {
     usdcBrand: USDC,
     marshaller,
     portfoliosNode: storage.rootNode.makeChildNode('portfolios'),
+    vowTools: vt,
     ...({} as any),
   });
   const aPortfolio = makePortfolio({ portfolioId: 1 });
@@ -110,5 +111,10 @@ test('planner exo submit method', async t => {
   await t.notThrowsAsync(
     vt.when(planner.submit(portfolioId, mockRebalancePlan, 1, 1)),
     'planner may rebalance >1 times at same policyVersion',
+  );
+
+  aPortfolio.manager.startFlow({ type: 'withdraw', amount });
+  await t.notThrowsAsync(
+    vt.when(planner.resolvePlan(portfolioId, 1, plan, 1, 2)),
   );
 });

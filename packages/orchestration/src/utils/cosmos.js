@@ -1,32 +1,45 @@
 import { makeError } from '@endo/errors';
 import { decodeBase64 } from '@endo/base64';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { TxMsgData as TxMsgDataType } from '@agoric/cosmic-proto/cosmos/base/abci/v1beta1/abci.js';
+
+const TxMsgData = CodecHelper(TxMsgDataType);
 
 /**
  * @import {Bech32Address, CosmosDelegationResponse, CosmosValidatorAddress, DenomAmount} from '../types.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js'
  * @import {DelegationResponse} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
+ * @import {Proto3CodecHelper, MessageBody} from '@agoric/cosmic-proto';
  */
 
 /** maximum clock skew, in seconds, for unbonding time reported from other chain */
 export const maxClockSkew = 10n * 60n;
 
 /**
- * @template T
+ * @template {string[]} TUS
  * @param {string} ackStr
- * @param {(p: { typeUrl: string; value: Uint8Array }) => T} fromProtoMsg
+ * @param {{ [K in keyof TUS]: Proto3CodecHelper<TUS[K]> }} codecs
  */
-export const tryDecodeResponse = (ackStr, fromProtoMsg) => {
+export const tryDecodeResponses = (ackStr, codecs) => {
   try {
-    const any = Any.decode(decodeBase64(ackStr));
-    const protoMsg = Any.decode(any.value);
-
-    const msg = fromProtoMsg(protoMsg);
-    return msg;
+    const { msgResponses } = TxMsgData.decode(decodeBase64(ackStr));
+    const results = codecs.map((codec, i) => {
+      return codec.fromProtoMsg(msgResponses[i]);
+    });
+    return /** @type {{ [T in keyof TUS]: MessageBody<TUS[T]> }} */ (results);
   } catch (cause) {
     throw makeError(`bad response: ${ackStr}`, undefined, { cause });
   }
 };
+
+/**
+ * @deprecated use {@link tryDecodeResponses} instead
+ * @template {string} TU
+ * @param {string} ackStr
+ * @param {Proto3CodecHelper<TU>} codec
+ */
+export const tryDecodeResponse = (ackStr, codec) =>
+  tryDecodeResponses(ackStr, /** @type {const} */ ([codec]))[0];
 
 /**
  * Transform a cosmos-sdk {@link Coin} object into a {@link DenomAmount}

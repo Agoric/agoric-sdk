@@ -8,13 +8,13 @@ test('decodeRemoteIbcAddress', t => {
   /** @type {[string, any][]} */
   const cases = [
     [
-      '/ibc-hop/connection-0/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-0","hostConnectionId":"connection-1","address":"","encoding":"proto3","txType":"sdk_multi_msg"}',
+      '/ibc-hop/connection-0/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-0","hostConnectionId":"connection-1","address":"something\\x2fwith\\x2fescaped\\x2fslashes","encoding":"proto3","txType":"sdk_multi_msg"}',
       {
         hops: ['connection-0'],
         order: 'ORDERED',
         rPortID: 'icahost',
         version:
-          '{"version":"ics27-1","controllerConnectionId":"connection-0","hostConnectionId":"connection-1","address":"","encoding":"proto3","txType":"sdk_multi_msg"}',
+          '{"version":"ics27-1","controllerConnectionId":"connection-0","hostConnectionId":"connection-1","address":"something/with/escaped/slashes","encoding":"proto3","txType":"sdk_multi_msg"}',
       },
     ],
   ];

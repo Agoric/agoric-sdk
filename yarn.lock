@@ -218,6 +218,8 @@ __metadata:
     "@fast-check/ava": "npm:^2.0.1"
     ava: "npm:^5.3.0"
     c8: "npm:^10.1.3"
+    highs: "npm:^1.8.0"
+    javascript-lp-solver: "npm:^0.4.24"
     ts-blank-space: "npm:^0.6.2"
     viem: "npm:^2.31.0"
   languageName: unknown
@@ -10834,6 +10836,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"highs@npm:^1.8.0":
+  version: 1.8.0
+  resolution: "highs@npm:1.8.0"
+  checksum: 10c0/68dc6ded60271c03f360ac1bf4172ed2c8199349ec5942bf749e1a9fab704ebf422cd2e47e28fa0d0a26dd00ef9fd0bd24b231aa53c03f309b21105662587f5a
+  languageName: node
+  linkType: hard
+
 "hosted-git-info@npm:^2.1.4":
   version: 2.8.9
   resolution: "hosted-git-info@npm:2.8.9"
@@ -11784,6 +11793,13 @@ __metadata:
   dependencies:
     "@isaacs/cliui": "npm:^8.0.2"
   checksum: 10c0/84ec4f8e21d6514db24737d9caf65361511f75e5e424980eebca4199f400874f45e562ac20fa8aeb1dd20ca2f3f81f0788b6e9c3e64d216a5794fd6f30e0e042
+  languageName: node
+  linkType: hard
+
+"javascript-lp-solver@npm:^0.4.24":
+  version: 0.4.24
+  resolution: "javascript-lp-solver@npm:0.4.24"
+  checksum: 10c0/447cef1ac521d58d03e35f551c9a392e72a8837c4a0dba32f549f56b830d2a16f90dc823a9307bc2cc89e649a2c53a19fd904d65ebee0c2ad8fe712acdf429a3
   languageName: node
   linkType: hard
 

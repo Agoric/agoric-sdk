@@ -2,13 +2,9 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
-import {
-  defaultMarshaller,
-  type FakeStorageKit,
-  type makeFakeStorageKit,
-} from '@agoric/internal/src/storage-test-utils.js';
+import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
+import { type makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import {
   eventLoopIteration,
   inspectMapStore,
@@ -17,7 +13,7 @@ import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
-import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
+import type { AssetPlaceRef, MovementDesc } from '../src/type-guards-steps.ts';
 import type {
   OfferArgsFor,
   StatusFor,
@@ -37,6 +33,7 @@ import {
   portfolio0lcaOrch,
 } from './mocks.ts';
 import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
+import { makeStorageTools } from './supports.ts';
 
 const { fromEntries, keys, values } = Object;
 
@@ -117,7 +114,7 @@ test('open portfolio with USDN position', async t => {
     'I can see where my money is:',
     positionPaths.map(p => contents[p].accountId),
   );
-  t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
+  t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:noble1test`);
   t.is(
     contents[storagePath].accountIdByChain.agoric,
     `cosmos:agoric-3:${portfolio0lcaOrch}`,
@@ -482,7 +479,7 @@ test('USDN claim fails currently', async t => {
     'I can see where my money is:',
     positionPaths.map(p => contents[p].accountId),
   );
-  t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:cosmos1test`);
+  t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:noble1test`);
   t.is(
     contents[storagePath].accountIdByChain.agoric,
     `cosmos:agoric-3:${portfolio0lcaOrch}`,
@@ -600,7 +597,7 @@ test(
   'Beefy_morphoSeamlessUsdc_Base',
 );
 
-test('Withdraw from a Beefy position', async t => {
+test('Withdraw from a Beefy position (future client)', async t => {
   const { trader1, common, started, zoe } = await setupTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
@@ -816,7 +813,7 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
 
   const addr2 = {
     lca: makeTestAddress(3), // agoric1q...rytxkw
-    nobleICA: 'cosmos1test1',
+    nobleICA: 'noble1test1',
     evm: '0xFbb89cC04ffb710b1f645b2cbEda0CE7D93294F4',
   } as const;
   const amount = usdc.units(3_333.33);
@@ -891,12 +888,6 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
   }
 });
 
-const getCapDataStructure = cell => {
-  const { body, slots } = JSON.parse(cell);
-  const structure = JSON.parse(body.replace(/^#/, ''));
-  return { structure, slots };
-};
-
 test('start deposit more to same', async t => {
   const { trader1, common } = await setupTrader(t);
   const { usdc, poc26 } = common.brands;
@@ -926,24 +917,6 @@ test('start deposit more to same', async t => {
     makeTestAddress(2), // ...64vywd
   );
 });
-
-const makeStorageTools = (storage: FakeStorageKit) => {
-  const readPublished = (async path => {
-    await eventLoopIteration();
-    return defaultMarshaller.fromCapData(
-      JSON.parse(
-        storage.getValues(`${ROOT_STORAGE_PATH}.${path}`).at(-1) || '',
-      ),
-    );
-  }) as VstorageKit['readPublished'];
-
-  const readLegible = async (path: string) => {
-    await eventLoopIteration();
-    return getCapDataStructure(storage.getValues(path).at(-1));
-  };
-
-  return harden({ readPublished, readLegible });
-};
 
 const setupPlanner = async t => {
   const { common, zoe, started, trader1 } = await setupTrader(t);
@@ -980,7 +953,7 @@ test('redeem, use planner invitation', async t => {
     rebalanceCount: 0,
   });
 
-  await planner1.submit(0, [], 1);
+  await E(planner1.stub).submit(0, [], 1);
   t.like(await trader1.getPortfolioStatus(), {
     policyVersion: 1,
     rebalanceCount: 1,
@@ -1025,7 +998,7 @@ test('request rebalance - send same targetAllocation', async t => {
 
   t.log('planner carries out (empty) deposit plan');
   const mockPlan = [];
-  await planner1.submit(0, mockPlan, 2);
+  await E(planner1.stub).submit(0, mockPlan, 2);
   t.like(await trader1.getPortfolioStatus(), {
     policyVersion: 2,
     rebalanceCount: 1,
@@ -1039,9 +1012,138 @@ test('request rebalance - send same targetAllocation', async t => {
   });
 
   t.log('planner carries out (empty) rebalance plan');
-  await planner1.submit(0, mockPlan, 3);
+  await E(planner1.stub).submit(0, mockPlan, 3);
   t.like(await trader1.getPortfolioStatus(), {
     policyVersion: 3,
     rebalanceCount: 1,
   });
+});
+
+test('withdraw using planner', async t => {
+  const { common, trader1, planner1 } = await setupPlanner(t);
+
+  await planner1.redeem();
+  await trader1.openPortfolio(t, {}, {});
+  const pId: number = trader1.getPortfolioId();
+  const { usdc } = common.brands;
+  const Deposit = usdc.units(3_333.33);
+  const depP = trader1.rebalance(
+    t,
+    { give: { Deposit }, want: {} },
+    { flow: [{ src: '<Deposit>', dest: '@agoric', amount: Deposit }] },
+  );
+  await depP;
+  t.log('trader deposited', Deposit);
+
+  const traderP = (async () => {
+    const Cash = multiplyBy(Deposit, parseRatio(0.25, usdc.brand));
+    await trader1.withdraw(t, Cash);
+    t.log('trader withdrew', Cash);
+  })();
+
+  const plannerP = (async () => {
+    const {
+      flowsRunning = {},
+      policyVersion,
+      rebalanceCount,
+    } = await trader1.getPortfolioStatus();
+    t.log('flowsRunning', flowsRunning);
+    t.is(keys(flowsRunning).length, 1);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    const fId = Number(flowId.replace('flow', ''));
+
+    // narrow the type
+    if (detail.type !== 'withdraw') throw t.fail(detail.type);
+
+    // XXX brand from vstorage isn't suitable for use in call to kit
+    const amount = AmountMath.make(Deposit.brand, detail.amount.value);
+
+    const plan: MovementDesc[] = [{ src: '@agoric', dest: '<Cash>', amount }];
+    await E(planner1.stub).resolvePlan(
+      pId,
+      fId,
+      plan,
+      policyVersion,
+      rebalanceCount,
+    );
+    t.log('planner resolved plan');
+  })();
+
+  await Promise.all([traderP, plannerP]);
+
+  const bankTraffic = common.utils.inspectBankBridge();
+  const { accountIdByChain } = await trader1.getPortfolioStatus();
+  const [_ns, _ref, addr] = accountIdByChain.agoric.split(':');
+  const myVBankIO = bankTraffic.filter(obj =>
+    [obj.sender, obj.recipient].includes(addr),
+  );
+  t.log('bankBridge for', addr, myVBankIO);
+  t.like(myVBankIO, [
+    { type: 'VBANK_GIVE', amount: '3333330000' },
+    { type: 'VBANK_GRAB', amount: '833332500' },
+  ]);
+  t.is(833332500n, (3333330000n * 25n) / 100n);
+});
+
+test('creatorFacet.withdrawFees', async t => {
+  const { started, common } = await setupTrader(t);
+  const { storage } = common.bootstrap;
+  const { inspectLocalBridge } = common.utils;
+
+  const { contractAccount } = storage
+    .getDeserialized(`${ROOT_STORAGE_PATH}`)
+    .at(-1) as unknown as { contractAccount: string };
+  t.log('contractAddress for fees', contractAccount);
+
+  const { bld } = common.brands;
+  const bld2k = bld.units(2_000);
+  {
+    const pmt = await common.utils.pourPayment(bld2k);
+    const { bankManager } = common.bootstrap;
+    const bank = E(bankManager).getBankForAddress(contractAccount);
+    const purse = E(bank).getPurse(bld2k.brand);
+    await E(purse).deposit(pmt);
+    t.log('deposited', bld2k, 'for fees');
+  }
+
+  const { creatorFacet } = started;
+
+  const dest = `cosmos:agoric-3:${makeTestAddress(5)}` as const;
+
+  {
+    const actual = await E(creatorFacet).withdrawFees(dest, {
+      denom: 'ubld',
+      value: 100n,
+    });
+    t.log('withdrew some', actual);
+
+    t.deepEqual(actual, { denom: 'ubld', value: 100n });
+
+    const [tx] = inspectLocalBridge().filter(
+      obj => obj.type === 'VLOCALCHAIN_EXECUTE_TX',
+    );
+    t.like(tx.messages[0], {
+      '@type': '/cosmos.bank.v1beta1.MsgSend',
+      fromAddress: 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+      toAddress: 'agoric1q5qqqqqqqqqqqqqqqqqqqqqqqqqqqqqq8ee25y',
+      amount: [{ denom: 'ubld', amount: '100' }],
+    });
+  }
+
+  {
+    const amt = await E(creatorFacet).withdrawFees(dest);
+
+    t.log('withdrew all', amt);
+    t.deepEqual(amt, { denom: 'ubld', value: bld2k.value });
+
+    const [_, tx] = inspectLocalBridge().filter(
+      obj => obj.type === 'VLOCALCHAIN_EXECUTE_TX',
+    );
+    t.like(tx.messages[0], {
+      '@type': '/cosmos.bank.v1beta1.MsgSend',
+      fromAddress: 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+      toAddress: 'agoric1q5qqqqqqqqqqqqqqqqqqqqqqqqqqqqqq8ee25y',
+      amount: [{ denom: 'ubld', amount: '2000000000' }],
+    });
+  }
 });

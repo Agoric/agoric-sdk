@@ -21,6 +21,7 @@
  * For usage examples, see `makeTrader` in {@link ../test/portfolio-actors.ts}.
  */
 import type { Amount, Brand, NatAmount, NatValue } from '@agoric/ertp';
+import { stripPrefix, tryNow } from '@agoric/internal/src/ses-utils.js';
 import type { TypedPattern } from '@agoric/internal';
 import {
   AnyNatAmountShape,
@@ -38,14 +39,13 @@ import type {
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
 import { Fail } from '@endo/errors';
+import { isNat } from '@endo/nat';
 import { M } from '@endo/patterns';
 import type { EVMContractAddresses, start } from './portfolio.contract.js';
 import type { PortfolioKit } from './portfolio.exo.js';
 import type { AssetPlaceRef } from './type-guards-steps.js';
 
 export type { OfferArgsFor } from './type-guards-steps.js';
-
-/* eslint jsdoc/require-returns-type: 0 */
 
 // #region preliminaries
 const { keys } = Object;
@@ -95,10 +95,12 @@ export type ProposalType = {
       Access?: NatAmount;
       Deposit?: NatAmount;
     };
+    want?: Empty;
   };
   rebalance:
     | { give: { Deposit?: NatAmount }; want: Empty }
     | { want: { Cash: NatAmount }; give: Empty };
+  withdraw: { want: { Cash: NatAmount }; give: Empty };
 };
 
 export const makeProposalShapes = (
@@ -123,13 +125,14 @@ export const makeProposalShapes = (
       { want: {}, exit: M.any() },
       {},
     ),
-    M.splitRecord(
-      { want: M.splitRecord({ Cash: $Shape }, {}, {}) },
-      { give: {}, exit: M.any() },
-      {},
-    ),
+    M.splitRecord({ want: { Cash: $Shape } }, { give: {}, exit: M.any() }, {}),
   ) as TypedPattern<ProposalType['rebalance']>;
-  return harden({ openPortfolio, rebalance });
+  const withdraw = M.splitRecord(
+    { want: { Cash: $Shape }, give: {} },
+    { exit: M.any() },
+    {},
+  ) as TypedPattern<ProposalType['withdraw']>;
+  return harden({ openPortfolio, rebalance, withdraw });
 };
 harden(makeProposalShapes);
 // #endregion
@@ -227,7 +230,29 @@ export const makePortfolioPath = (id: number): [`portfolio${number}`] => [
 ];
 
 /**
- * Extracts portfolio ID from a vstorage path.
+ * Extracts portfolio ID number from a portfolio key (e.g., a vstorage path
+ * segment).
+ */
+export const portfolioIdFromKey = (portfolioKey: `portfolio${number}`) => {
+  // TODO: const strId = stripPrefix('portfolio', portfolioKey);
+  // TODO: const id = Number(strId);
+  const id = Number(portfolioKey.replace(/^portfolio/, ''));
+  isNat(id) || Fail`bad key: ${portfolioKey}`;
+  return id;
+};
+
+/**
+ * Extracts flow ID number from a flow key (e.g., a vstorage path segment).
+ */
+export const flowIdFromKey = (flowKey: `flow${number}`) => {
+  const strId = stripPrefix('flow', flowKey);
+  const id = Number(strId);
+  isNat(id) || Fail`bad key: ${flowKey}`;
+  return id;
+};
+
+/**
+ * Extracts portfolio ID number from a vstorage path.
  *
  * @param path - Either a dot-separated string or array of path segments
  * @returns Portfolio ID number
@@ -237,10 +262,20 @@ export const portfolioIdOfPath = (path: string | string[]) => {
   const where = segments.indexOf('portfolios');
   where >= 0 || Fail`bad path: ${path}`;
   const segment = segments[where + 1];
-  const id = Number(segment.replace(/^portfolio/, ''));
-  Number.isSafeInteger(id) || Fail`bad path: ${path}`;
-  return id;
+  return tryNow(
+    () => portfolioIdFromKey(segment as any),
+    _err => Fail`bad path: ${path}`,
+  );
 };
+
+export type FlowDetail =
+  | { type: 'withdraw'; amount: NatAmount }
+  | { type: 'other' }; // refine to deposit etc.?
+
+export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
+  { type: 'withdraw', amount: AnyNatAmountShape },
+  { type: 'other' },
+);
 
 type FlowStatus =
   | { state: 'run'; step: number; how: string }
@@ -269,7 +304,6 @@ export type StatusFor = {
   };
   portfolio: {
     positionKeys: PoolKeyExt[];
-    flowCount: number;
     accountIdByChain: Record<ChainNameExt, AccountId>;
     accountsPending?: SupportedChain[];
     depositAddress?: Bech32Address;
@@ -278,6 +312,9 @@ export type StatusFor = {
     policyVersion: number;
     /** the count of acknowledged submissions [from the planner] associated with the current policyVersion */
     rebalanceCount: number;
+    /** @deprecated in favor of flowsRunning */
+    flowCount: number;
+    flowsRunning?: Record<`flow${number}`, FlowDetail>;
   };
   position: {
     protocol: YieldProtocol;
@@ -306,6 +343,7 @@ export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
       depositAddress: M.string(), // XXX no runtime validation of Bech32Address
       targetAllocation: TargetAllocationShapeExt,
       accountsPending: M.arrayOf(ChainNameExtShape),
+      flowsRunning: M.recordOf(M.string(), FlowDetailShape),
     },
   );
 

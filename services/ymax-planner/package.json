@@ -12,10 +12,12 @@
     "start:docker": "docker compose up --build",
     "start:deps": "docker compose up --scale app=0",
     "build": "node ./esbuild.config.mjs",
-    "lint": "npm run lint:types",
+    "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint:eslint": "yarn run -T eslint src/",
+    "lint:types": "yarn run -T tsc",
     "test": "ava",
-    "test:xs": "exit 0",
-    "lint:types": "yarn run -T tsc"
+    "test:xs": "exit 0"
   },
   "keywords": [
     "agoric",

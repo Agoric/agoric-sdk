@@ -21,9 +21,11 @@ import {
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
+  type AccountId,
   type Bech32Address,
   type ChainInfo,
   type Denom,
+  type DenomAmount,
   type DenomDetail,
   type OrchestrationPowers,
   type OrchestrationTools,
@@ -265,6 +267,7 @@ export const contract = async (
   void vowTools.when(contractAccountV, acct => {
     const addr = acct.getAddress();
     publishStatus(storageNode, harden({ contractAccount: addr.value }));
+    trace('published contractAccount', addr.value);
   });
 
   const ctx1: flows.PortfolioInstanceContext = {
@@ -292,9 +295,10 @@ export const contract = async (
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
-  const { rebalance, parseInboundTransfer } = orchestrateAll(
+  const { rebalance, withdraw, parseInboundTransfer } = orchestrateAll(
     {
       rebalance: flows.rebalance,
+      withdraw: flows.withdraw,
       parseInboundTransfer: flows.parseInboundTransfer,
     },
     ctx1,
@@ -306,6 +310,7 @@ export const contract = async (
     axelarIds,
     gmpAddresses,
     rebalance,
+    withdraw,
     parseInboundTransfer,
     proposalShapes,
     offerArgsShapes,
@@ -406,6 +411,9 @@ export const contract = async (
         M.string(),
         M.remotable('Instance'),
       ).returns(),
+      withdrawFees: M.callWhen(M.string())
+        .optional(M.record())
+        .returns(M.record()),
     }),
     {
       makeResolverInvitation() {
@@ -445,6 +453,24 @@ export const contract = async (
         trace('made planner invitation', invitation);
         await E(pfP).deliverPayment(address, invitation);
         trace('delivered planner invitation');
+      },
+      /**
+       * Withdraw from contractAccount; for example, before terminating the contract
+       *
+       * @param toAccount
+       * @param optAmount - defaults to BLD balance
+       */
+      async withdrawFees(toAccount: AccountId, optAmount?: DenomAmount) {
+        const traceWithdraw = trace.sub('withdrawFees');
+        traceWithdraw('to', toAccount);
+        // LCA operations are prompt
+        const { when } = vowTools;
+        const acct = await when(contractAccountV);
+        const amount = await (optAmount || when(acct.getBalance('ubld')));
+        traceWithdraw('amount', amount);
+        await when(acct.send(toAccount, amount));
+        traceWithdraw({ amount, from: acct.getAddress().value, toAccount });
+        return amount;
       },
     },
   );

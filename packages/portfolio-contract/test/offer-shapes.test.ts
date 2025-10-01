@@ -345,3 +345,26 @@ test('vstorage position type matches shape', t => {
     t.false(matches(position, PositionStatusShape), `fail: ${name}`);
   }
 });
+
+test('porfolio node includes flowsRunning', t => {
+  const status1: StatusFor['portfolio'] = harden({
+    accountIdByChain: {
+      agoric: 'cosmos:agoric-6:agoric11028',
+      noble: 'cosmos:noble-5:noble11056',
+    },
+    accountsPending: [],
+    depositAddress: 'agoric11042',
+    flowCount: 2,
+    flowsRunning: {},
+    policyVersion: 0,
+    positionKeys: ['USDN'],
+    rebalanceCount: 0,
+  });
+  t.notThrows(() => mustMatch(status1, PortfolioStatusShapeExt));
+
+  const badFlowsRunning = harden({
+    ...status1,
+    flowsRunning: { flow2: 'quack!' },
+  });
+  t.throws(() => mustMatch(badFlowsRunning, PortfolioStatusShapeExt));
+});

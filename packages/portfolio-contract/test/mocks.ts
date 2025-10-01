@@ -160,7 +160,7 @@ export const makeTestFeeConfig = (usdc: Omit<AmountUtils, 'mint'>): FeeConfig =>
   });
 
 export const makeUSDNIBCTraffic = (
-  signer = 'cosmos1test',
+  signer = 'noble1test',
   money = `${3_333.33 * 1000000}`,
   { denom = 'uusdc', denomTo = 'uusdn' } = {},
 ) => ({
@@ -219,7 +219,7 @@ export const makeUSDNIBCTraffic = (
 });
 
 export const makeCCTPTraffic = (
-  from = 'cosmos1test',
+  from = 'noble1test',
   money = `${3_333.33 * 1000000}`,
   dest = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
 ) => ({
@@ -399,3 +399,9 @@ export const gmpAddresses: GmpAddresses = harden({
     'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
   AXELAR_GAS: 'axelar1aythygn6z5thymj6tmzfwekzh05ewg3l7d6y89',
 });
+
+export const gasEstimator = {
+  getWalletEstimate: async () => 10_000_000n,
+  getFactoryContractEstimate: async () => 10_000_000n,
+  getReturnFeeEstimate: async () => 200_000_000_000_000n,
+};

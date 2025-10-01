@@ -36,6 +36,10 @@
       "types": "./dist/codegen/circle/cctp/v1/tx.d.ts",
       "default": "./dist/codegen/circle/cctp/v1/tx.js"
     },
+    "./cosmos/base/abci/v1beta1/abci.js": {
+      "types": "./dist/codegen/cosmos/base/abci/v1beta1/abci.d.ts",
+      "default": "./dist/codegen/cosmos/base/abci/v1beta1/abci.js"
+    },
     "./cosmos/bank/v1beta1/query.js": {
       "types": "./dist/codegen/cosmos/bank/v1beta1/query.d.ts",
       "default": "./dist/codegen/cosmos/bank/v1beta1/query.js"

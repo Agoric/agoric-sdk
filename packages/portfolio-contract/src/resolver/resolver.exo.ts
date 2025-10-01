@@ -118,6 +118,7 @@ export const prepareResolverKit = (
         .detached()
         .mapStore<TxId, TransactionEntry>('transactionRegistry'),
       index: 0,
+      etc: undefined,
     }),
     {
       client: {
@@ -254,6 +255,13 @@ export const prepareResolverKit = (
             proposalShape,
           );
         },
+      },
+    },
+    {
+      stateShape: {
+        transactionRegistry: M.remotable('transactionRegistry'),
+        index: M.number(),
+        etc: M.any(),
       },
     },
   );

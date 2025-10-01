@@ -198,11 +198,6 @@ export function commaSplit(s) {
   return s.split(',');
 }
 
-export function stripPrefix(prefix, str) {
-  assert(str.startsWith(prefix), str);
-  return str.slice(prefix.length);
-}
-
 function insistMeterID(m) {
   assert.typeof(m, 'string');
   assert.equal(m[0], 'm');
