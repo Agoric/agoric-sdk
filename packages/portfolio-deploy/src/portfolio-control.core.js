@@ -1,8 +1,9 @@
 /** @file core eval to give control of YMax contract to a smartWallet */
 
 import { makeTracer } from '@agoric/internal/src/debug.js';
+import { deeplyFulfilledObject } from '@agoric/internal';
 import { objectMap } from '@endo/patterns';
-import { passStyleOf } from '@endo/pass-style';
+import { E, passStyleOf } from '@endo/far';
 
 /**
  * @import {ContractControlPowers, DeliverContractControl} from './contract-control.core.js';
@@ -33,10 +34,32 @@ export const delegatePortfolioContract = async (permitted, config) => {
   await null;
   const { consume } = permitted;
 
-  const { privateArgs } = await consume.ymax0Kit;
+  // TODO: use the kit and privateAgrs that startUpgradable stores instead (or as preference)
+  // It does require a lot of powers, maybe we need a new helper to get these, or implement it in contract control
+
+  // The kit may not exist
+  const kit = await Promise.race([consume.ymax0Kit, undefined]);
   trace(
-    'ymax0Kit.privateArgs',
-    objectMap(privateArgs, v => passStyleOf(v)),
+    'ymax0Kit?.privateArgs',
+    kit?.privateArgs && objectMap(kit.privateArgs, v => passStyleOf(v)),
+  );
+
+  const {
+    localchain,
+    cosmosInterchainService,
+    chainTimerService,
+    agoricNames,
+    board,
+  } = consume;
+
+  const initialPrivateArgs = await deeplyFulfilledObject(
+    harden({
+      localchain,
+      orchestrationService: cosmosInterchainService,
+      timerService: chainTimerService,
+      agoricNames,
+      marshaller: E(board).getPublishingMarshaller(),
+    }),
   );
 
   const deliverContractControl =
@@ -50,7 +73,8 @@ export const delegatePortfolioContract = async (permitted, config) => {
   const { contractControl } = await deliverContractControl({
     name: contractName,
     controlAddress: ymaxControlAddress,
-    initialPrivateArgs: privateArgs,
+    initialPrivateArgs,
+    kit,
   });
 
   trace('created ymax control', passStyleOf(contractControl));
@@ -62,6 +86,15 @@ export const getManifestForPortfolioControl = (utils, { options }) => ({
       consume: {
         deliverContractControl: true,
         ymax0Kit: true,
+
+        // subset of orchPermit
+        localchain: true,
+        cosmosInterchainService: true,
+        chainTimerService: true,
+        agoricNames: true,
+
+        // for publishing Brands and other remote object references
+        board: true,
       },
     },
   },

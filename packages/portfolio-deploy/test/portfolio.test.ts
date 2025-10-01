@@ -13,7 +13,7 @@ import {
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
 import type { ChainInfo } from '@agoric/orchestration';
-import type { CopyRecord } from '@endo/pass-style';
+import { passStyleOf, type CopyRecord } from '@endo/pass-style';
 import { mustMatch } from '@endo/patterns';
 import type { TestFn } from 'ava';
 import type { PortfolioBootPowers } from '../src/portfolio-start.type.ts';
@@ -526,6 +526,7 @@ test.skip('CCTP settlement works across contract restarts', async t => {
 
 test.serial('remove old contract; start new contract', async t => {
   const {
+    runUtils: { EV },
     agoricNamesRemotes,
     refreshAgoricNamesRemotes,
     walletFactoryDriver: wfd,
@@ -541,6 +542,10 @@ test.serial('remove old contract; start new contract', async t => {
     Fee: agoricNamesRemotes.issuer.BLD,
   };
 
+  const { privateArgs } = await (
+    EV.vat('bootstrap').consumeItem as ConsumeBootstrapItem
+  )('ymax0Kit');
+
   const oldBoardId = (instancePre as any).getBoardId();
   const wallet = await wfd.provideSmartWallet(controllerAddr);
 
@@ -552,12 +557,23 @@ test.serial('remove old contract; start new contract', async t => {
     args: [{ message: 'restarting contract', target: oldBoardId }],
   });
 
+  const privateArgsOverrides = harden({
+    assetInfo: privateArgs.assetInfo,
+    axelarIds: privateArgs.axelarIds,
+    chainInfo: privateArgs.chainInfo,
+    contracts: privateArgs.contracts,
+    gmpAddresses: privateArgs.gmpAddresses,
+  }) satisfies CopyRecord;
+  t.is(passStyleOf(privateArgsOverrides), 'copyRecord');
+
   t.log('Invoking ymaxControl to start new contract');
   await wallet.invokeEntry({
     id: Date.now().toString(),
     targetName: 'ymaxControl',
     method: 'start',
-    args: [{ installation, issuers }],
+    // use privateArgsOverrides as portfolio-control no longer copies those from the kit
+    // @ts-expect-error chainInfo incompatible with Passable?
+    args: [{ installation, issuers, privateArgsOverrides }],
   });
 
   refreshAgoricNamesRemotes();
