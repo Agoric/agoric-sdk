@@ -24,7 +24,8 @@ import {
 } from '@agoric/vats/src/core/basic-behaviors.js';
 import type { Instance, ZoeService } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E, passStyleOf } from '@endo/far';
+import { E } from '@endo/far';
+import { passStyleOf, type CopyRecord } from '@endo/pass-style';
 import { produceAttenuatedDeposit } from '../src/attenuated-deposit.core.js';
 import { axelarConfig } from '../src/axelar-configs.js';
 import type { ChainInfoPowers } from '../src/chain-info.core.js';
@@ -282,6 +283,18 @@ test('delegate ymax control; invite planner; submit plan', async t => {
     saveResult: { name: 'ymaxControl' },
   });
 
+  // New portfolio-control passes existing kit. Call terminate to make it forget it.
+  // The portfolio control on chain didn't pass kit in
+  t.log('terminate to forget kit');
+  {
+    await E(E(walletCtrl).getInvokeFacet()).invokeEntry({
+      targetName: 'ymaxControl',
+      method: 'terminate',
+      args: [{ message: 'forget kit' }],
+    });
+    await eventLoopIteration(); // terminate is async
+  }
+
   t.log('installAndStart');
   {
     const { issuer } = powers;
@@ -291,10 +304,22 @@ test('delegate ymax control; invite planner; submit plan', async t => {
       issuer.consume.PoC26,
     ]);
     const issuers = { USDC, Access: PoC26, Fee: BLD, BLD };
+    const { privateArgs } = await (powers as PortfolioBootPowers).consume
+      .ymax0Kit;
+
+    // New portfolio-control does not use privateArgs from previous kit
+    const privateArgsOverrides = {
+      assetInfo: privateArgs.assetInfo,
+      axelarIds: privateArgs.axelarIds,
+      chainInfo: privateArgs.chainInfo,
+      contracts: privateArgs.contracts,
+      gmpAddresses: privateArgs.gmpAddresses,
+    } as CopyRecord;
+
     await E(E(walletCtrl).getInvokeFacet()).invokeEntry({
       targetName: 'ymaxControl',
       method: 'installAndStart',
-      args: [{ bundleId: 'b2-ymax-bundleId', issuers }],
+      args: [{ bundleId: 'b2-ymax-bundleId', issuers, privateArgsOverrides }],
     });
     await eventLoopIteration(); // installAndStart is async
   }
