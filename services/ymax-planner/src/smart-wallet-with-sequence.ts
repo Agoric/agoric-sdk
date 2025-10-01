@@ -27,70 +27,70 @@ type QueuedOperation<T> = {
  * Uses a queue to ensure sequential execution and prevent sequence conflicts.
  */
 export class SmartWalletWithSequence {
-  private readonly signingSmartWalletKit: SigningSmartWalletKit;
+  #signingSmartWalletKit: SigningSmartWalletKit;
 
-  private readonly sequenceManager: SequenceManager;
+  #sequenceManager: SequenceManager;
 
-  private readonly log: (...args: unknown[]) => void;
+  #log: (...args: unknown[]) => void;
 
-  private readonly chainId: string;
+  #chainId: string;
 
   // TODO: Add bounds checking to prevent unbounded queue growth under sustained failures
-  private readonly operationQueue: QueuedOperation<any>[] = [];
+  #operationQueue: QueuedOperation<any>[] = [];
 
-  private isProcessingQueue = false;
+  #isProcessingQueue = false;
 
   constructor(
     powers: SmartWalletWithSequencePowers,
     config: SmartWalletWithSequenceConfig,
   ) {
-    this.signingSmartWalletKit = powers.signingSmartWalletKit;
-    this.sequenceManager = powers.sequenceManager;
-    this.chainId = config.chainId;
-    this.log = powers.log ?? (() => {});
+    this.#signingSmartWalletKit = powers.signingSmartWalletKit;
+    this.#sequenceManager = powers.sequenceManager;
+    this.#chainId = config.chainId;
+    this.#log = powers.log ?? (() => {});
   }
 
   /**
    * Creates SignerData with managed sequence number
    */
-  private createSignerData(): SignerData {
-    const sequence = this.sequenceManager.getSequence();
-    const accountNumber = this.sequenceManager.getAccountNumber();
+  #createSignerData(): SignerData {
+    const sequence = this.#sequenceManager.getSequence();
+    const accountNumber = this.#sequenceManager.getAccountNumber();
 
-    this.log(
+    this.#log(
       `Creating SignerData with sequence: ${sequence}, accountNumber: ${accountNumber}`,
     );
 
     return {
       accountNumber,
       sequence,
-      chainId: this.chainId,
+      chainId: this.#chainId,
     };
   }
 
   /**
    * Queue an operation for sequential execution
    */
-  private async queueOperation<T>(
+  async #queueOperation<T>(
     operation: () => Promise<T>,
     context: string,
   ): Promise<T> {
     return new Promise((resolve, reject) => {
-      this.operationQueue.push({
+      this.#operationQueue.push({
         operation,
         resolve,
         reject,
         context,
       });
 
-      this.log(
-        `Queued ${context}, queue length: ${this.operationQueue.length}`,
+      this.#log(
+        `Queued ${context}, queue length: ${this.#operationQueue.length}`,
       );
 
-      if (!this.isProcessingQueue) {
-        this.isProcessingQueue = true;
-        void this.processQueue().finally(() => {
-          this.isProcessingQueue = false;
+      if (!this.#isProcessingQueue) {
+        this.#isProcessingQueue = true;
+        void this.#processQueue().finally(() => {
+          this.#isProcessingQueue = false;
         });
       }
     });
@@ -99,28 +99,28 @@ export class SmartWalletWithSequence {
   /**
    * Process the operation queue sequentially
    */
-  private async processQueue(): Promise<void> {
+  async #processQueue(): Promise<void> {
     await null;
-    this.log(
-      `Starting queue processing, ${this.operationQueue.length} operations queued`,
+    this.#log(
+      `Starting queue processing, ${this.#operationQueue.length} operations queued`,
     );
 
-    while (this.operationQueue.length > 0) {
-      const queuedOp = this.operationQueue.shift()!;
+    while (this.#operationQueue.length > 0) {
+      const queuedOp = this.#operationQueue.shift()!;
 
-      this.log(
-        `Processing ${queuedOp.context}, ${this.operationQueue.length} remaining`,
+      this.#log(
+        `Processing ${queuedOp.context}, ${this.#operationQueue.length} remaining`,
       );
 
       try {
-        const result = await this.performOperation(
+        const result = await this.#performOperation(
           queuedOp.operation,
           queuedOp.context,
         );
         queuedOp.resolve(result);
-        this.log(`Completed ${queuedOp.context}`);
+        this.#log(`Completed ${queuedOp.context}`);
       } catch (error) {
-        this.log(`Failed ${queuedOp.context}:`, error);
+        this.#log(`Failed ${queuedOp.context}:`, error);
         queuedOp.reject(error);
       }
     }
@@ -129,7 +129,7 @@ export class SmartWalletWithSequence {
   /**
    * Handles sequence number errors and retries with sync
    */
-  private async performOperation<T>(
+  async #performOperation<T>(
     operation: () => Promise<T>,
     context: string,
   ): Promise<T> {
@@ -141,18 +141,18 @@ export class SmartWalletWithSequence {
         error instanceof Error ? error.message : String(error);
 
       if (errorMessage.includes('account sequence mismatch')) {
-        this.log(
+        this.#log(
           `Sequence error detected in ${context}, syncing and retrying:`,
           errorMessage,
         );
 
         // Sync sequence with network and retry once
-        await this.sequenceManager.syncSequence();
+        await this.#sequenceManager.syncSequence();
 
         try {
           return await operation();
         } catch (retryError) {
-          this.log(`Retry failed for ${context}:`, retryError);
+          this.#log(`Retry failed for ${context}:`, retryError);
           throw retryError;
         }
       }
@@ -168,8 +168,8 @@ export class SmartWalletWithSequence {
     action: BridgeAction,
   ): Promise<Awaited<ReturnType<SigningSmartWalletKit['sendBridgeAction']>>> {
     const operation = async () => {
-      const signerData = this.createSignerData();
-      return this.signingSmartWalletKit.sendBridgeAction(
+      const signerData = this.#createSignerData();
+      return this.#signingSmartWalletKit.sendBridgeAction(
         action,
         undefined,
         undefined,
@@ -177,7 +177,7 @@ export class SmartWalletWithSequence {
       );
     };
 
-    return this.queueOperation(operation, 'sendBridgeAction');
+    return this.#queueOperation(operation, 'sendBridgeAction');
   }
 
   /**
@@ -187,8 +187,8 @@ export class SmartWalletWithSequence {
     offer: OfferSpec,
   ): Promise<Awaited<ReturnType<SigningSmartWalletKit['sendBridgeAction']>>> {
     const operation = async () => {
-      const signerData = this.createSignerData();
-      return this.signingSmartWalletKit.sendBridgeAction(
+      const signerData = this.#createSignerData();
+      return this.#signingSmartWalletKit.sendBridgeAction(
         harden({
           method: 'executeOffer',
           offer,
@@ -199,7 +199,7 @@ export class SmartWalletWithSequence {
       );
     };
 
-    return this.queueOperation(operation, 'executeOffer');
+    return this.#queueOperation(operation, 'executeOffer');
   }
 }
 

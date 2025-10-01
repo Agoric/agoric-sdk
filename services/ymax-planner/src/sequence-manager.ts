@@ -26,31 +26,31 @@ type SequenceManagerPowers = {
 };
 
 export class SequenceManager {
-  private sequence: number;
+  #sequence: number;
 
-  private accountNumber: number;
+  #accountNumber: number;
 
-  private readonly address: string;
+  #address: string;
 
-  private readonly cosmosRest: CosmosRestClient;
+  #cosmosRest: CosmosRestClient;
 
-  private readonly chainName: string;
+  #chainName: string;
 
-  private readonly log: (...args: unknown[]) => void;
+  #log: (...args: unknown[]) => void;
 
   private constructor(
     io: SequenceManagerPowers,
     config: SequenceManagerConfig,
     accountInfo: AccountInfo,
   ) {
-    this.address = config.address;
-    this.chainName = config.chainKey;
-    this.cosmosRest = io.cosmosRest;
-    this.log = io.log ?? (() => {});
-    this.sequence = Number(accountInfo.sequence);
-    this.accountNumber = Number(accountInfo.account_number);
-    this.log(
-      `Sequence manager initialized: account=${this.accountNumber}, sequence=${this.sequence}`,
+    this.#address = config.address;
+    this.#chainName = config.chainKey;
+    this.#cosmosRest = io.cosmosRest;
+    this.#log = io.log ?? (() => {});
+    this.#sequence = Number(accountInfo.sequence);
+    this.#accountNumber = Number(accountInfo.account_number);
+    this.#log(
+      `Sequence manager initialized: account=${this.#accountNumber}, sequence=${this.#sequence}`,
     );
   }
 
@@ -79,8 +79,8 @@ export class SequenceManager {
    * Get the next sequence number and increment the internal counter
    */
   getSequence(): number {
-    const curr = this.sequence;
-    this.sequence += 1;
+    const curr = this.#sequence;
+    this.#sequence += 1;
     return curr;
   }
 
@@ -88,31 +88,31 @@ export class SequenceManager {
    * Get the account number
    */
   getAccountNumber(): number {
-    return this.accountNumber;
+    return this.#accountNumber;
   }
 
   /**
    * Sync sequence with the network (useful for error recovery)
    */
   async syncSequence(): Promise<void> {
-    const oldSequence = this.sequence;
-    const accountInfo = await this.fetchAccountInfo();
-    this.sequence = Number(accountInfo.sequence);
-    this.log(
-      `Synced sequence: ${oldSequence} → ${this.sequence} (network: ${accountInfo.sequence})`,
+    const oldSequence = this.#sequence;
+    const accountInfo = await this.#fetchAccountInfo();
+    this.#sequence = Number(accountInfo.sequence);
+    this.#log(
+      `Synced sequence: ${oldSequence} → ${this.#sequence} (network: ${accountInfo.sequence})`,
     );
   }
 
-  private async fetchAccountInfo(): Promise<AccountInfo> {
+  async #fetchAccountInfo(): Promise<AccountInfo> {
     await null;
     try {
-      const response = (await this.cosmosRest.getAccountSequence(
-        this.chainName,
-        this.address,
+      const response = (await this.#cosmosRest.getAccountSequence(
+        this.#chainName,
+        this.#address,
       )) as AccountResponse;
       return response.account;
     } catch (error) {
-      this.log(`Failed to fetch account info for ${this.address}:`, error);
+      this.#log(`Failed to fetch account info for ${this.#address}:`, error);
       throw error;
     }
   }
