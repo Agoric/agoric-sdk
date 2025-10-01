@@ -9,7 +9,7 @@ import { prepareContractControl } from './contract-control.js';
 import { orchPermit } from './orch.start.js';
 import {
   deployPostalService,
-  permit as postalServicePermit,
+  getManifestForPostalService,
 } from './postal-service.core.js';
 
 export { deployPostalService };
@@ -82,21 +82,27 @@ export const delegatePortfolioContract = async (permitted, config) => {
 };
 
 export const getManifestForPortfolioControl = (
-  { restoreRef },
+  utils,
   { installKeys, options },
-) => ({
-  manifest: {
-    ...postalServicePermit,
-    [delegatePortfolioContract.name]: {
-      consume: {
-        ...orchPermit,
-        agoricNamesAdmin: true,
-        getDepositFacet: true,
-        ymax0Kit: true,
+) => {
+  const postalServiceManifest = getManifestForPostalService(utils, {
+    installKeys,
+  });
+
+  return {
+    manifest: {
+      ...postalServiceManifest.manifest,
+      [delegatePortfolioContract.name]: {
+        consume: {
+          ...orchPermit,
+          agoricNamesAdmin: true,
+          getDepositFacet: true,
+          ymax0Kit: true,
+        },
+        instance: { consume: { postalService: true } },
       },
-      instance: { consume: { postalService: true } },
     },
-  },
-  installations: { postalService: restoreRef(installKeys.postalService) },
-  options,
-});
+    installations: { ...postalServiceManifest.installations },
+    options,
+  };
+};
