@@ -1,4 +1,5 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { expectType } from 'tsd';
 
 import * as ymaxExports from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import {
@@ -111,14 +112,18 @@ test.serial('make, deliver ContractControl for ymax', async t => {
 
   const initialPrivateArgs = {
     ...ymaxDataPrivateArgs,
-    ...common.commonPrivateArgs,
+    // @ts-expect-error some commonPrivateArgs types are sus
+    ...(common.commonPrivateArgs as ymaxExports.PortfolioPrivateArgs),
   };
 
-  const cc = makeContractControl({
+  // Without a kit, makeContractControl cannot infer the type
+  const cc = makeContractControl<YMaxStartFn>({
     name: contractName,
     storageNode,
     initialPrivateArgs,
   });
+  // Need to check in that direction instead of `expectType<ContractControl<YMaxStartFn>>(cc)`
+  expectType<typeof cc>(undefined as unknown as ContractControl<YMaxStartFn>);
 
   t.is(passStyleOf(cc), 'remotable');
   // eslint-disable-next-line no-underscore-dangle
@@ -323,7 +328,8 @@ test.serial('create from kit', async t => {
   const contractKits = await space.consume.contractKits;
   const instance = await E(agoricNames).lookup('instance', contractName);
 
-  const kit = contractKits.get(instance);
+  // @ts-expect-error cast from StartedInstanceKit<ContractStartFunction>
+  const kit = contractKits.get(instance) as StartedInstanceKit<YMaxStartFn>;
   const initialPrivateArgs = common.commonPrivateArgs;
 
   const { rootNode: chainStorage } = common.bootstrap.storage;
@@ -333,8 +339,10 @@ test.serial('create from kit', async t => {
     name: contractName,
     storageNode,
     kit,
+    // @ts-expect-error commonPrivateArgs is not actually PortfolioPrivateArgs
     initialPrivateArgs,
   });
+  expectType<typeof cc>(undefined as unknown as ContractControl<YMaxStartFn>);
   space.produce.ymaxControl.resolve(cc);
 
   const cf = await E(cc).getCreatorFacet();
