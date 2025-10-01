@@ -1,8 +1,11 @@
 import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/pass-style';
 import { objectMap } from '@endo/patterns';
+import { makeTracer } from '@agoric/internal/src/debug.js';
 
 const contractName = 'postalService';
+
+const trace = makeTracer('CCtrlCore');
 
 /**
  * @import {start as StartFn} from './postal-service.contract.js';
@@ -16,28 +19,35 @@ const contractName = 'postalService';
 
 /** @param {BootstrapPowers & PostalServiceBoot} permitted */
 export const deployPostalService = async permitted => {
+  permitted.instance.produce.postalService.reset();
   const { startUpgradable, namesByAddress } = permitted.consume;
   const { postalService: installationP } = permitted.installation.consume;
-  console.log('await: installation.postalService');
+  trace('await: installation.postalService');
   const installation = await installationP;
-  console.log('await: namesByAddress');
+  trace('await: namesByAddress');
   const privateArgs = harden({
     namesByAddress: await namesByAddress,
   });
-  console.log('await: startUpgradable(...)');
+  trace('await: startUpgradable(...)');
   const kit = await E(startUpgradable)({
     label: contractName,
     installation,
     privateArgs,
   });
-  console.log(objectMap(kit, passStyleOf));
+  trace('kit', objectMap(kit, passStyleOf));
   permitted.instance.produce.postalService.resolve(kit.instance);
 };
 
-export const permit = {
-  [deployPostalService.name]: {
-    consume: { startUpgradable: true, namesByAddress: true },
-    installation: { consume: { postalService: true } },
-    instance: { produce: { postalService: true } },
+export const getManifestForPostalService = (
+  { restoreRef },
+  { installKeys },
+) => ({
+  manifest: {
+    [deployPostalService.name]: {
+      consume: { startUpgradable: true, namesByAddress: true },
+      installation: { consume: { postalService: true } },
+      instance: { produce: { postalService: true } },
+    },
   },
-};
+  installations: { postalService: restoreRef(installKeys.postalService) },
+});
