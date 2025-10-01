@@ -212,7 +212,7 @@ func TestStorage(t *testing.T) {
 		t.Errorf("got remaining export %q, want %q", expectedRemainingExport, expectedRemainingExport)
 	}
 
-	keeper.ImportStorage(ctx, gotExport)
+	_ = keeper.ImportStorage(ctx, gotExport)
 	gotExport, err = keeper.ExportStorage(ctx)
 	if err != nil {
 		t.Errorf("ExportStorage failed: %v", err)
@@ -292,7 +292,9 @@ func TestStorageNotify(t *testing.T) {
 		},
 	}
 
-	keeper.FlushChangeEvents(ctx)
+	if err := keeper.FlushChangeEvents(ctx); err != nil {
+		t.Errorf("got unexpected flush error %v", err)
+	}
 	if got := ctx.EventManager().Events(); !reflect.DeepEqual(got, expectedAfterFlushEvents) {
 		for _, e := range got {
 			t.Logf("got event: %s", e.Type)
@@ -303,7 +305,9 @@ func TestStorageNotify(t *testing.T) {
 		t.Errorf("got after flush events %#v, want %#v", got, expectedAfterFlushEvents)
 	}
 
-	keeper.FlushChangeEvents(ctx)
+	if err := keeper.FlushChangeEvents(ctx); err != nil {
+		t.Errorf("got unexpected second flush error %v", err)
+	}
 	if got := ctx.EventManager().Events(); !reflect.DeepEqual(got, expectedAfterFlushEvents) {
 		t.Errorf("got after second flush events %#v, want %#v", got, expectedAfterFlushEvents)
 	}

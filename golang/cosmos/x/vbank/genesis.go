@@ -30,7 +30,7 @@ func DefaultGenesisState() *types.GenesisState {
 
 func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) {
 	keeper.SetParams(ctx, data.GetParams())
-	keeper.SetState(ctx, data.GetState())
+	_ = keeper.SetState(ctx, data.GetState())
 }
 
 func ExportGenesis(ctx sdk.Context, k Keeper) (*types.GenesisState, error) {
