@@ -1,19 +1,35 @@
 import test from 'ava';
 import { Far } from '@endo/marshal';
+import type { Brand } from '@agoric/ertp/src/types.js';
+import {
+  AxelarChain,
+  SupportedChain,
+} from '@agoric/portfolio-api/src/constants.js';
 
-import { makeGraphFromDefinition } from '../../tools/network/buildGraph.js';
+import {
+  makeGraphFromDefinition,
+  type RebalanceGraph,
+} from '../../tools/network/buildGraph.js';
 import PROD_NETWORK, {
   PROD_NETWORK as NAMED_PROD,
 } from '../../tools/network/network.prod.js';
+import { PoolPlaces } from '../../src/type-guards.js';
 import type { AssetPlaceRef } from '../../src/type-guards-steps.js';
+import type {
+  PoolKey,
+  TransferProtocol,
+} from '../../tools/network/network-spec.js';
 
-const brand = Far('TestBrand') as any;
-const feeBrand = Far('TestFeeBrand') as any;
+const brand = Far('TestBrand') as Brand<'nat'>;
+const feeBrand = Far('TestFeeBrand') as Brand<'nat'>;
 
 const toSet = <T>(iter: Iterable<T>) => new Set(iter);
 
-// Shared expectations
-const HUBS = [
+// Shared expectations (precisely typed)
+type HubKey = `@${(typeof SupportedChain)[keyof typeof SupportedChain]}`;
+type EvmHubKey = `@${(typeof AxelarChain)[keyof typeof AxelarChain]}`;
+
+const HUBS: ReadonlyArray<HubKey> = [
   '@agoric',
   '@noble',
   '@Arbitrum',
@@ -23,9 +39,15 @@ const HUBS = [
   '@Optimism',
 ];
 
-const EVM_HUBS = ['@Arbitrum', '@Avalanche', '@Ethereum', '@Base', '@Optimism'];
+const EVM_HUBS: ReadonlyArray<EvmHubKey> = [
+  '@Arbitrum',
+  '@Avalanche',
+  '@Base',
+  '@Ethereum',
+  '@Optimism',
+];
 
-const POOLS = [
+const POOLS: ReadonlyArray<PoolKey> = [
   // Aave pools
   'Aave_Arbitrum',
   'Aave_Avalanche',
@@ -54,33 +76,30 @@ const getGraph = () =>
   makeGraphFromDefinition(PROD_NETWORK, {}, {}, brand, feeBrand);
 
 const hasEdge = (
-  edges: ReturnType<typeof getGraph>['edges'],
-  src: string,
-  dest: string,
-  via?: string,
+  edges: RebalanceGraph['edges'],
+  src: AssetPlaceRef,
+  dest: AssetPlaceRef,
+  via?: TransferProtocol,
 ) =>
   edges.some(
-    e =>
-      e.src === (src as any) &&
-      e.dest === (dest as any) &&
-      (via ? e.via === (via as any) : true),
+    e => e.src === src && e.dest === dest && (via ? e.via === via : true),
   );
 
 const isReachable = (
-  edges: ReturnType<typeof getGraph>['edges'],
-  start: string,
-  goal: string,
+  edges: RebalanceGraph['edges'],
+  start: AssetPlaceRef,
+  goal: AssetPlaceRef,
 ) => {
-  const q = [start as any];
-  const seen = new Set<string>([start]);
+  const q = [start];
+  const seen = new Set<AssetPlaceRef>([start]);
   while (q.length) {
-    const cur = q.shift() as any;
+    const cur = q.shift()!;
     if (cur === goal) return true;
     for (const e of edges) {
       if (e.src !== cur) continue;
-      if (!seen.has(e.dest as any)) {
-        seen.add(e.dest as any);
-        q.push(e.dest as any);
+      if (!seen.has(e.dest)) {
+        seen.add(e.dest);
+        q.push(e.dest);
       }
     }
   }
@@ -88,20 +107,35 @@ const isReachable = (
 };
 
 // Map a pool key to its hub based on naming convention (or noble for USDN)
-const poolToHub = (pool: string): AssetPlaceRef => {
-  if (pool === 'USDN' || pool === 'USDNVault') return '@noble';
-  const parts = pool.split('_');
-  const chain = parts[parts.length - 1];
-  return `@${chain}` as AssetPlaceRef;
-};
+const poolToHub = (pool: PoolKey): AssetPlaceRef =>
+  `@${PoolPlaces[pool].chainName}`;
 
 // Derived intra-chain validation pairs
-const INTRA_PAIRS: Array<[string, AssetPlaceRef]> = POOLS.map(p => [
+const INTRA_PAIRS: Array<[PoolKey, AssetPlaceRef]> = POOLS.map(p => [
   p,
   poolToHub(p),
 ]);
 
 // Tests
+
+// Parity checks with source definitions
+test('HUBS matches SupportedChain values', t => {
+  t.deepEqual(
+    Object.keys(SupportedChain).sort(),
+    HUBS.map(h => h.slice(1)).sort(),
+  );
+});
+
+test('EVM_HUBS matches AxelarChain values', t => {
+  t.deepEqual(
+    Object.keys(AxelarChain).sort(),
+    EVM_HUBS.map(h => h.slice(1)).sort(),
+  );
+});
+
+test('POOLS entries are valid PoolKeys and match PROD pools', t => {
+  t.deepEqual(Object.keys(PoolPlaces).sort(), [...POOLS].sort());
+});
 
 test('PROD_NETWORK has the expected hubs', t => {
   // Ensure both default and named export refer to the same object
@@ -109,15 +143,13 @@ test('PROD_NETWORK has the expected hubs', t => {
 
   const graph = getGraph();
   const nodes = toSet(graph.nodes.values());
-  for (const hub of HUBS)
-    t.true(nodes.has(hub as AssetPlaceRef), `missing hub ${hub}`);
+  for (const hub of HUBS) t.true(nodes.has(hub), `missing hub ${hub}`);
 });
 
 test('PROD_NETWORK has the expected pools', t => {
   const graph = getGraph();
   const nodes = toSet(graph.nodes.values());
-  for (const p of POOLS)
-    t.true(nodes.has(p as AssetPlaceRef), `missing pool ${p}`);
+  for (const p of POOLS) t.true(nodes.has(p), `missing pool ${p}`);
 });
 
 test('PROD_NETWORK has the right connections', t => {

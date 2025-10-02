@@ -178,7 +178,6 @@ export const PoolPlaces = {
   Aave_Optimism: { protocol: 'Aave', chainName: 'Optimism' },
   Aave_Arbitrum: { protocol: 'Aave', chainName: 'Arbitrum' },
   Aave_Base: { protocol: 'Aave', chainName: 'Base' },
-  Compound_Avalanche: { protocol: 'Compound', chainName: 'Avalanche' },
   Compound_Ethereum: { protocol: 'Compound', chainName: 'Ethereum' },
   Compound_Optimism: { protocol: 'Compound', chainName: 'Optimism' },
   Compound_Arbitrum: { protocol: 'Compound', chainName: 'Arbitrum' },

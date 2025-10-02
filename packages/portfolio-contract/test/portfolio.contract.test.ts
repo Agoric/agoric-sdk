@@ -976,7 +976,7 @@ test('request rebalance - send same targetAllocation', async t => {
 
   const targetAllocation: TargetAllocation = {
     Aave_Avalanche: 60n,
-    Compound_Avalanche: 40n,
+    Compound_Arbitrum: 40n,
   };
   await trader1.openPortfolio(t, {}, { targetAllocation });
   t.like(await trader1.getPortfolioStatus(), {
