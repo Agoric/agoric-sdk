@@ -272,6 +272,7 @@ test.serial('delegate control', async t => {
   const materials = Promise.all([
     buildProposal('@aglocal/portfolio-deploy/src/postal-service.build.js'),
     buildProposal('@aglocal/portfolio-deploy/src/contract-control.build.js'),
+    buildProposal('@aglocal/portfolio-deploy/src/get-upgrade-kit.build.js'),
     buildProposal('@aglocal/portfolio-deploy/src/portfolio-control.build.js', [
       '--ymaxControlAddress',
       controllerAddr,
