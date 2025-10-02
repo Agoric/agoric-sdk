@@ -19,6 +19,9 @@ const trace = (...args) => console.log('---- GetUpgradeKit', ...args);
  */
 
 /**
+ * `getUpgradeKit` is a power allowing to retrieve a contract upgrade kit by
+ * the contract's name, without giving full access to the underlying stores.
+ *
  * @typedef {PromiseSpaceOf<{
  *   getUpgradeKit: <SF extends ContractStartFunction>(name: string) => Promise<UpgradeKit<SF>>
  * }>} GetUpgradeKitPowers
