@@ -47,7 +47,9 @@ export const delegatePortfolioContract = async (permitted, config) => {
   await null;
   const { consume } = permitted;
 
-  trace('getting existing instance kit for', contractName);
+  const trace = makeTracer(`PCtrl-${contractName}`);
+
+  trace('getting existing instance kit');
   /** @type {UpgradeKit<StartFn> | undefined} */
   let kit;
   try {
@@ -62,7 +64,6 @@ export const delegatePortfolioContract = async (permitted, config) => {
   }
 
   trace(
-    contractName,
     'kit',
     kit &&
       objectMap(kit, v => {
@@ -71,7 +72,6 @@ export const delegatePortfolioContract = async (permitted, config) => {
       }),
   );
   trace(
-    contractName,
     'kit?.privateArgs',
     kit?.privateArgs && objectMap(kit.privateArgs, v => passStyleOf(v)),
   );
