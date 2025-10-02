@@ -13,10 +13,14 @@ const trace = makeTracer('CCtrl');
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {ContractStartFunction, StartResult} from '@agoric/zoe/src/zoeService/utils';
- * @import {IssuerKeywordRecord} from '@agoric/zoe';
+ * @import {Instance, IssuerKeywordRecord} from '@agoric/zoe';
  * @import {Remote} from '@agoric/internal';
  * @import {Board, NameHubKit} from '@agoric/vats';
  * @import {UpgradeKit} from './get-upgrade-kit.core.js';
+ */
+
+/**
+ * @typedef {<SF extends ContractStartFunction>(instance: Instance<SF>, privateArgs: Parameters<SF>[1]) => void} UpdatePrivateArgs
  */
 
 const IssuerShape = M.remotable('Issuer');
@@ -92,6 +96,7 @@ const iface = M.interface('ContractControl', {
  *   board: ERef<Board>,
  *   zoe: ERef<ZoeService>,
  *   startUpgradable: ERef<StartUpgradable>,
+ *   updatePrivateArgs: ERef<UpdatePrivateArgs>
  * }} svcs
  */
 export const prepareContractControl = (zone, svcs) => {
@@ -218,6 +223,8 @@ export const prepareContractControl = (zone, svcs) => {
           if (typeof opts === 'string') opts = { bundleId: opts };
           const { bundleId, privateArgsOverrides = {} } = opts;
 
+          const { updatePrivateArgs } = svcs;
+
           const { name, revoked, kit, initialPrivateArgs } = this.state;
           trace(name, 'upgrade', bundleId);
           !revoked || Fail`revoked`;
@@ -235,6 +242,7 @@ export const prepareContractControl = (zone, svcs) => {
           const newKit = harden({ ...kit, privateArgs });
           trace(name, 'upgrade result', result);
           this.state.kit = newKit;
+          await E(updatePrivateArgs)(kit.instance, privateArgs);
           return result;
         },
 
