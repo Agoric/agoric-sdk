@@ -24,8 +24,6 @@ import { E, passStyleOf, getInterfaceOf } from '@endo/far';
  * @property {CN} contractName
  */
 
-const trace = makeTracer('PCtrl');
-
 /**
  * @param {*} name
  * @returns {name is YMaxCN}
@@ -109,7 +107,7 @@ export const delegatePortfolioContract = async (permitted, config) => {
   });
 
   trace(
-    `created ${contractName} control`,
+    'created control',
     passStyleOf(contractControl),
     'and delivering to',
     ymaxControlAddress,
