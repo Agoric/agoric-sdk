@@ -1047,6 +1047,9 @@ __metadata:
     "@endo/promise-kit": "npm:^1.1.13"
     ava: "npm:^5.3.0"
     import-meta-resolve: "npm:^4.1.0"
+  peerDependencies:
+    "@agoric/schemas": "workspace:*"
+    zod: ^4.1.11
   languageName: unknown
   linkType: soft
 

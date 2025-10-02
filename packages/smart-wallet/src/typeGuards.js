@@ -1,69 +1,27 @@
 import { M } from '@agoric/store';
+import { ProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import {
-  InstanceHandleShape,
-  ProposalShape,
-} from '@agoric/zoe/src/typeGuards.js';
-
-/**
- * @import {TypedPattern} from '@agoric/internal';
- * @import {InvokeEntryMessage, ResultPlan} from './offers';
- */
-
-/** @type {TypedPattern<ResultPlan>} */
-const ResultPlanShape = M.splitRecord(
-  { name: M.string() },
-  { overwrite: M.boolean() },
-  {},
-);
-/** @type {TypedPattern<InvokeEntryMessage>} */
-const InvokeEntryMessageShape = M.splitRecord(
-  {
-    targetName: M.string(),
-    method: M.string(),
-    args: M.array(),
-  },
-  { saveResult: ResultPlanShape, id: M.or(M.number(), M.string()) },
-  {},
-);
+  AgoricContractInvitationSpec as AgoricContractInvitationSpecPattern,
+  ContractInvitationSpec as ContractInvitationSpecPattern,
+  ContinuingInvitationSpec as ContinuingInvitationSpecPattern,
+  InvokeEntryMessage,
+  PurseInvitationSpec as PurseInvitationSpecPattern,
+  ResultPlan,
+  StringCapData as StringCapDataPattern,
+  WalletActionMsg as WalletActionMsgPattern,
+  WalletBridgeMsg as WalletBridgeMsgPattern,
+  WalletSpendActionMsg as WalletSpendActionMsgPattern,
+} from './schemas/codegen/type-guards.patterns.js';
 
 export const shape = {
   // smartWallet
-  StringCapData: {
-    body: M.string(),
-    slots: M.arrayOf(M.string()),
-  },
+  StringCapData: StringCapDataPattern,
 
   // invitations
-  AgoricContractInvitationSpec: {
-    source: 'agoricContract',
-    instancePath: M.arrayOf(M.string()),
-    callPipe: M.arrayOf(M.splitArray([M.string()], [M.arrayOf(M.any())])),
-  },
-  ContractInvitationSpec: M.splitRecord(
-    {
-      source: 'contract',
-      instance: InstanceHandleShape,
-      publicInvitationMaker: M.string(),
-    },
-    {
-      invitationArgs: M.array(),
-    },
-  ),
-  ContinuingInvitationSpec: M.splitRecord(
-    {
-      source: 'continuing',
-      previousOffer: M.or(M.number(), M.string()),
-      invitationMakerName: M.string(),
-    },
-    {
-      invitationArgs: M.array(),
-    },
-  ),
-  PurseInvitationSpec: {
-    source: 'purse',
-    instance: InstanceHandleShape,
-    description: M.string(),
-  },
+  AgoricContractInvitationSpec: AgoricContractInvitationSpecPattern,
+  ContractInvitationSpec: ContractInvitationSpecPattern,
+  ContinuingInvitationSpec: ContinuingInvitationSpecPattern,
+  PurseInvitationSpec: PurseInvitationSpecPattern,
 
   // offers
   OfferSpec: M.splitRecord(
@@ -75,12 +33,12 @@ export const shape = {
     },
     {
       offerArgs: M.any(),
-      saveResult: ResultPlanShape,
+      saveResult: ResultPlan,
     },
     {},
   ),
-  ResultPlan: ResultPlanShape,
-  InvokeEntryMessage: InvokeEntryMessageShape,
+  ResultPlan,
+  InvokeEntryMessage,
 
   // walletFactory
   /**
@@ -88,28 +46,14 @@ export const shape = {
    *
    * @see walletAction in msg_server.go
    */
-  WalletActionMsg: M.splitRecord({
-    type: 'WALLET_ACTION',
-    action: M.string(),
-
-    blockHeight: M.number(),
-    blockTime: M.number(),
-    owner: M.string(),
-  }),
+  WalletActionMsg: WalletActionMsgPattern,
 
   /**
    * Defined by walletAction struct in msg_server.go
    *
    * @see walletSpendAction in msg_server.go
    */
-  WalletSpendActionMsg: M.splitRecord({
-    type: 'WALLET_SPEND_ACTION',
-    spendAction: M.string(),
-
-    blockHeight: M.number(),
-    blockTime: M.number(),
-    owner: M.string(),
-  }),
+  WalletSpendActionMsg: WalletSpendActionMsgPattern,
+  WalletBridgeMsg: WalletBridgeMsgPattern,
 };
-shape.WalletBridgeMsg = M.or(shape.WalletActionMsg, shape.WalletSpendActionMsg);
 harden(shape);
