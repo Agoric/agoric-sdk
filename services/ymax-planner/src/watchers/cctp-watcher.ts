@@ -143,10 +143,12 @@ export const lookBackCctp = async ({
   expectedAmount,
   publishTimeMs,
   chainId,
+  timeoutMs,
   log = () => {},
 }: CctpWatch & {
   publishTimeMs: number;
   chainId: CaipChainId;
+  timeoutMs: number;
 }): Promise<boolean> => {
   await null;
   try {
@@ -154,6 +156,7 @@ export const lookBackCctp = async ({
       provider,
       publishTimeMs,
       {
+        timeoutMs,
         meanBlockDurationMs: getBlockTimeMs(chainId),
         log,
       },

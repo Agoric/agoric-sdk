@@ -41,7 +41,11 @@ type CctpTx = PendingTx & { type: typeof TxType.CCTP_TO_EVM; amount: bigint };
 type GmpTx = PendingTx & { type: typeof TxType.GMP };
 
 type LiveWatchOpts = { mode: 'live'; timeoutMs: number };
-type LookBackWatchOpts = { mode: 'lookback'; publishTimeMs: number };
+type LookBackWatchOpts = {
+  mode: 'lookback';
+  publishTimeMs: number;
+  timeoutMs: number;
+};
 type WatchOpts = LiveWatchOpts | LookBackWatchOpts;
 
 export type PendingTxMonitor<
@@ -91,6 +95,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
           ...watchArgs,
           publishTimeMs: opts.publishTimeMs,
           chainId: caipId,
+          timeoutMs: opts.timeoutMs,
         }));
 
     await resolvePendingTx({
@@ -129,6 +134,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
           ...watchArgs,
           publishTimeMs: opts.publishTimeMs,
           chainId: caipId,
+          timeoutMs: opts.timeoutMs,
         }));
 
     await resolvePendingTx({
@@ -181,6 +187,7 @@ export const handlePendingTx = async (
     await monitor.watch(evmCtx, tx, log, {
       mode: 'lookback',
       publishTimeMs: txTimestampMs,
+      timeoutMs,
     });
   } else {
     await monitor.watch(evmCtx, tx, log, { mode: 'live', timeoutMs });

@@ -116,10 +116,12 @@ export const lookBackGmp = async ({
   txId,
   publishTimeMs,
   chainId,
+  timeoutMs,
   log = () => {},
 }: WatchGmp & {
   publishTimeMs: number;
   chainId: CaipChainId;
+  timeoutMs: number;
 }): Promise<boolean> => {
   await null;
   try {
@@ -127,6 +129,7 @@ export const lookBackGmp = async ({
       provider,
       publishTimeMs,
       {
+        timeoutMs,
         meanBlockDurationMs: getBlockTimeMs(chainId),
         log,
       },
