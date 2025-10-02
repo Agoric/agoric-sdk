@@ -16,8 +16,6 @@ import { prepareContractControl } from './contract-control.js';
  * @import {ContractControlOpts, ContractControl, UpdatePrivateArgs} from './contract-control.js';
  */
 
-const trace = makeTracer('CCtrlCore');
-
 /**
  * @template {ContractStartFunction} SF
  * @typedef {Omit<ContractControlOpts<SF>, 'storageNode'> & {controlAddress: string}} ContractControlDeliverOpts
@@ -80,12 +78,9 @@ export const produceDeliverContractControl = async permitted => {
   }) => {
     await null;
 
-    trace(
-      'creating contract control for',
-      contractName,
-      'and delivering to',
-      controlAddress,
-    );
+    const trace = makeTracer(`CCtrlCore-${contractName}`);
+
+    trace('creating contract control and delivering to', controlAddress);
 
     const contractControl = makeContractControl({
       name: contractName,
@@ -94,13 +89,10 @@ export const produceDeliverContractControl = async permitted => {
     });
 
     trace('reserving', controlAddress);
+    // This can block if the wallet is not provisioned
     await E(getDepositFacet)(controlAddress);
 
-    trace(
-      `delivering ${contractName} control`,
-      controlAddress,
-      contractControl,
-    );
+    trace(`delivering control`, controlAddress, contractControl);
     // don't block on the recipient's offer
     const delivered = E.when(
       E(postalSvcPub).deliverPrize(
@@ -108,7 +100,7 @@ export const produceDeliverContractControl = async permitted => {
         contractControl,
         'ymaxControl',
       ),
-      () => trace(`${contractName} control received`),
+      () => trace('control received'),
     );
 
     return harden({ delivered, contractControl });
