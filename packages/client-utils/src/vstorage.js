@@ -56,6 +56,12 @@ export const makeAbciQuery = (
 };
 
 /**
+ * @typedef {{ blockHeight?: bigint, log?: string }} QueryMetaResponseBase
+ * @typedef {QueryMetaResponseBase & { result: QueryChildrenResponse }} QueryChildrenMetaResponse
+ * @typedef {QueryMetaResponseBase & { result: QueryDataResponse }} QueryDataMetaResponse
+ */
+
+/**
  * @param {object} powers
  * @param {typeof window.fetch} powers.fetch
  * @param {MinimalNetworkConfig} config
@@ -91,7 +97,7 @@ export const makeVStorage = ({ fetch }, config) => {
    * @param {object} [opts]
    * @param {T} [opts.kind]
    * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
-   * @returns {Promise<{ blockHeight?: bigint, log?: string, result: T extends 'children' ? QueryChildrenResponse : QueryDataResponse }>}
+   * @returns {Promise<T extends 'children' ? QueryChildrenMetaResponse : QueryDataMetaResponse>}
    */
   const readStorageMeta = async (
     path = 'published',
@@ -125,13 +131,14 @@ export const makeVStorage = ({ fetch }, config) => {
 
     const { value: b64Value } = response;
     const result = codec.response.decode(decodeBase64(b64Value));
-    return {
+    /** @type {QueryMetaResponseBase} */
+    const metaResponseBase = {
       blockHeight:
         response.height === undefined ? undefined : BigInt(response.height),
       log: response.log,
-      // @ts-expect-error cast
-      result,
     };
+    // @ts-expect-error cast
+    return { ...metaResponseBase, result };
   };
 
   /**
@@ -144,6 +151,7 @@ export const makeVStorage = ({ fetch }, config) => {
    */
   const readStorage = async (path = 'published', opts = {}) => {
     const respWithMetadata = await readStorageMeta(path, opts);
+    // @ts-expect-error cast
     return respWithMetadata.result;
   };
 

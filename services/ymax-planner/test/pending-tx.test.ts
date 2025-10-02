@@ -221,7 +221,7 @@ test('handlePendingTx throws error for unsupported transaction type', async t =>
   );
 });
 
-test('handlePendingTx resolves old pending CCTP transaction successfully', async t => {
+test('resolves a 31 min old pending CCTP transaction in lookback mode', async t => {
   const logs: string[] = [];
   const mockLog = (...args: unknown[]) => logs.push(args.join(' '));
 
@@ -240,12 +240,18 @@ test('handlePendingTx resolves old pending CCTP transaction successfully', async
   const opts = createMockPendingTxOpts();
   const mockProvider = opts.evmProviders[chainId] as any;
 
-  const currentTime = Math.floor(Date.now() / 1000);
+  const currentTimeMs = 1700000000; // 2023-11-14T22:13:20Z
+  const txTimestampMs = currentTimeMs - 31 * 60 * 1000; // 31 min ago
+  const avgBlockTimeMs = 300; // 300 ms per block on eip155:42161
 
-  mockProvider.getBlockNumber = async () => 31;
-  mockProvider.getBlock = async (blockNumber: number) => ({
-    timestamp: currentTime - (31 - blockNumber) * 12, // 12 seconds per block, block 31 is current
-  });
+  const latestBlock = 1_450_031;
+  mockProvider.getBlockNumber = async () => latestBlock;
+
+  mockProvider.getBlock = async (blockNumber: number) => {
+    const blocksAgo = latestBlock - blockNumber;
+    const ts = currentTimeMs - blocksAgo * avgBlockTimeMs;
+    return { timestamp: Math.floor(ts / 1000) };
+  };
 
   const event = createMockTransferEvent(
     opts.usdcAddresses[chainId],
@@ -260,24 +266,227 @@ test('handlePendingTx resolves old pending CCTP transaction successfully', async
       ...opts,
       log: mockLog,
     },
-    Date.now() - 10000,
+    txTimestampMs,
   );
 
-  // publishTime is ~10 seconds ago, with 5 min fudge factor = 5m10s ago
-  // binary search should find block ~5 (since block 31 is current time and each block is 12 seconds apart)
-  const expectedFromBlock = 5;
+  const currentBlock = await mockProvider.getBlockNumber();
+  const fromBlock = 1442834;
+  const toBlock = currentBlock;
+  const expectedChunkEnd = Math.min(fromBlock + 10 - 1, toBlock);
 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.CCTP_TO_EVM} tx`,
-    `[${txId}] Searching blocks ${expectedFromBlock} → 31 for Transfer to ${recipientAddress} with amount ${txAmount}`,
-    `[${txId}] [LogScan] Searching chunk ${expectedFromBlock} → 14`,
+    `[${txId}] end time is in the past`,
+    `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${recipientAddress} with amount ${txAmount}`,
+    `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] Check: amount=${txAmount}`,
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
     `[${txId}] CCTP tx resolved`,
   ]);
 });
 
-test('handlePendingTx resolves old pending GMP transaction successfully', async t => {
+test('resolves a 28 min old pending CCTP transaction in lookback mode', async t => {
+  const logs: string[] = [];
+  const mockLog = (...args: unknown[]) => logs.push(args.join(' '));
+
+  const txId = 'tx1';
+  const txAmount = 1_000_000n;
+  const recipientAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const destinationAddress = `eip155:42161:${recipientAddress}`;
+  const chainId = 'eip155:42161';
+
+  const cctpTx = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    amount: txAmount,
+    destinationAddress,
+  });
+
+  const opts = createMockPendingTxOpts();
+  const mockProvider = opts.evmProviders[chainId] as any;
+
+  const currentTimeMs = 1700000000; // 2023-11-14T22:13:20Z
+  const txTimestampMs = currentTimeMs - 28 * 60 * 1000; // 28 min ago
+  const avgBlockTimeMs = 300; // 300 ms per block on eip155:42161
+
+  const latestBlock = 1_450_031;
+  mockProvider.getBlockNumber = async () => latestBlock;
+
+  mockProvider.getBlock = async (blockNumber: number) => {
+    const blocksAgo = latestBlock - blockNumber;
+    const ts = currentTimeMs - blocksAgo * avgBlockTimeMs;
+    return { timestamp: Math.floor(ts / 1000) };
+  };
+
+  const event = createMockTransferEvent(
+    opts.usdcAddresses[chainId],
+    txAmount,
+    recipientAddress,
+  );
+  mockProvider.getLogs = async () => [event];
+
+  await handlePendingTx(
+    { txId, ...cctpTx },
+    {
+      ...opts,
+      log: mockLog,
+    },
+    txTimestampMs,
+  );
+
+  const currentBlock = await mockProvider.getBlockNumber();
+  const fromBlock = 1443434;
+  const expectedFutureBlocks = 400;
+  const toBlock = currentBlock + expectedFutureBlocks;
+  const expectedChunkEnd = Math.min(fromBlock + 10 - 1, toBlock);
+
+  t.deepEqual(logs, [
+    `[${txId}] handling ${TxType.CCTP_TO_EVM} tx`,
+    `[${txId}] end time is in the future - estimate blocks ahead`,
+    `[${txId}] using block time 300ms for chain eip155:42161`,
+    `[${txId}] future blocks ${expectedFutureBlocks}`,
+    `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${recipientAddress} with amount ${txAmount}`,
+    `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
+    `[${txId}] Check: amount=${txAmount}`,
+    `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
+    `[${txId}] CCTP tx resolved`,
+  ]);
+});
+
+test('resolves a transaction published at current time in lookback mode', async t => {
+  const logs: string[] = [];
+  const mockLog = (...args: unknown[]) => logs.push(args.join(' '));
+
+  const txId = 'tx1';
+  const txAmount = 1_000_000n;
+  const recipientAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const destinationAddress = `eip155:42161:${recipientAddress}`;
+  const chainId = 'eip155:42161';
+
+  const cctpTx = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    amount: txAmount,
+    destinationAddress,
+  });
+
+  const opts = createMockPendingTxOpts();
+  const mockProvider = opts.evmProviders[chainId] as any;
+
+  const currentTimeMs = 1700000000; // 2023-11-14T22:13:20Z
+  const txTimestampMs = currentTimeMs; // published exactly now
+  const avgBlockTimeMs = 300; // 300 ms per block on eip155:42161
+
+  const latestBlock = 1_450_031;
+  mockProvider.getBlockNumber = async () => latestBlock;
+
+  mockProvider.getBlock = async (blockNumber: number) => {
+    const blocksAgo = latestBlock - blockNumber;
+    const ts = currentTimeMs - blocksAgo * avgBlockTimeMs;
+    return { timestamp: Math.floor(ts / 1000) };
+  };
+
+  const event = createMockTransferEvent(
+    opts.usdcAddresses[chainId],
+    txAmount,
+    recipientAddress,
+  );
+  mockProvider.getLogs = async () => [event];
+
+  await handlePendingTx(
+    { txId, ...cctpTx },
+    {
+      ...opts,
+      log: mockLog,
+    },
+    txTimestampMs,
+  );
+
+  const currentBlock = await mockProvider.getBlockNumber();
+  const fromBlock = 1449034;
+  const expectedFutureBlocks = 6000;
+  const toBlock = currentBlock + expectedFutureBlocks;
+  const expectedChunkEnd = Math.min(fromBlock + 10 - 1, toBlock);
+
+  t.deepEqual(logs, [
+    `[${txId}] handling ${TxType.CCTP_TO_EVM} tx`,
+    `[${txId}] end time is in the future - estimate blocks ahead`,
+    `[${txId}] using block time 300ms for chain eip155:42161`,
+    `[${txId}] future blocks ${expectedFutureBlocks}`,
+    `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${recipientAddress} with amount ${txAmount}`,
+    `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
+    `[${txId}] Check: amount=${txAmount}`,
+    `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
+    `[${txId}] CCTP tx resolved`,
+  ]);
+});
+
+test('resolves a 10 second old pending CCTP transaction in lookback mode', async t => {
+  const logs: string[] = [];
+  const mockLog = (...args: unknown[]) => logs.push(args.join(' '));
+
+  const txId = 'tx1';
+  const txAmount = 1_000_000n;
+  const recipientAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const destinationAddress = `eip155:42161:${recipientAddress}`;
+  const chainId = 'eip155:42161';
+
+  const cctpTx = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    amount: txAmount,
+    destinationAddress,
+  });
+
+  const opts = createMockPendingTxOpts();
+  const mockProvider = opts.evmProviders[chainId] as any;
+
+  const currentTimeMs = 1700000000; // 2023-11-14T22:13:20Z
+  const txTimestampMs = currentTimeMs - 10 * 1000; // 10 seconds ago
+  const avgBlockTimeMs = 300; // 300 ms per block on eip155:42161
+
+  const latestBlock = 1_450_031;
+  mockProvider.getBlockNumber = async () => latestBlock;
+
+  mockProvider.getBlock = async (blockNumber: number) => {
+    const blocksAgo = latestBlock - blockNumber;
+    const ts = currentTimeMs - blocksAgo * avgBlockTimeMs;
+    return { timestamp: Math.floor(ts / 1000) };
+  };
+
+  const event = createMockTransferEvent(
+    opts.usdcAddresses[chainId],
+    txAmount,
+    recipientAddress,
+  );
+  mockProvider.getLogs = async () => [event];
+
+  await handlePendingTx(
+    { txId, ...cctpTx },
+    {
+      ...opts,
+      log: mockLog,
+    },
+    txTimestampMs,
+  );
+
+  const currentBlock = await mockProvider.getBlockNumber();
+  const fromBlock = 1449000;
+  const expectedFutureBlocks = 5967;
+  const toBlock = currentBlock + expectedFutureBlocks;
+  const expectedChunkEnd = Math.min(fromBlock + 10 - 1, toBlock);
+
+  t.deepEqual(logs, [
+    `[${txId}] handling ${TxType.CCTP_TO_EVM} tx`,
+    `[${txId}] end time is in the future - estimate blocks ahead`,
+    `[${txId}] using block time 300ms for chain eip155:42161`,
+    `[${txId}] future blocks ${expectedFutureBlocks}`,
+    `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${recipientAddress} with amount ${txAmount}`,
+    `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
+    `[${txId}] Check: amount=${txAmount}`,
+    `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
+    `[${txId}] CCTP tx resolved`,
+  ]);
+});
+
+test('resolves a 10 second old pending GMP transaction in lookback mode', async t => {
   const logs: string[] = [];
   const mockLog = (...args: unknown[]) => logs.push(args.join(' '));
 
@@ -294,12 +503,19 @@ test('handlePendingTx resolves old pending GMP transaction successfully', async 
   const opts = createMockPendingTxOpts();
   const mockProvider = opts.evmProviders[chainId] as any;
 
-  const currentTime = Math.floor(Date.now() / 1000);
+  const currentTimeMs = 1700000000; // 2023-11-14T22:13:20Z
+  const txTimestampMs = currentTimeMs - 10 * 1000; // 10 seconds ago
+  const avgBlockTimeMs = 300; // 300 ms per block on eip155:42161
 
-  mockProvider.getBlockNumber = async () => 31;
-  mockProvider.getBlock = async (blockNumber: number) => ({
-    timestamp: currentTime - (31 - blockNumber) * 12,
-  });
+  const latestBlock = 1_450_031;
+  mockProvider.getBlockNumber = async () => latestBlock;
+
+  mockProvider.getBlock = async (blockNumber: number) => {
+    const blocksAgo = latestBlock - blockNumber;
+    const ts = currentTimeMs - blocksAgo * avgBlockTimeMs;
+    return { timestamp: Math.floor(ts / 1000) };
+  };
+
   const event = createMockGmpExecutionEvent(txId);
   mockProvider.getLogs = async () => [event];
 
@@ -337,17 +553,22 @@ test('handlePendingTx resolves old pending GMP transaction successfully', async 
       ...ctxWithFetch,
       log: mockLog,
     },
-    Date.now() - 10000,
+    txTimestampMs,
   );
 
-  // publishTime is ~10 seconds ago, with 5 min fudge factor = 5m10s ago
-  // binary search should find block ~5 (since block 31 is current time and each block is 12 seconds apart)
-  const expectedFromBlock = 5;
+  const currentBlock = await mockProvider.getBlockNumber();
+  const fromBlock = 1449000;
+  const expectedFutureBlocks = 5967;
+  const toBlock = currentBlock + expectedFutureBlocks;
+  const expectedChunkEnd = Math.min(fromBlock + 10 - 1, toBlock);
 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.GMP} tx`,
-    `[${txId}] Searching blocks ${expectedFromBlock} → 31 for MulticallExecuted with txId ${txId} at ${contractAddress}`,
-    `[${txId}] [LogScan] Searching chunk ${expectedFromBlock} → 14`,
+    `[${txId}] end time is in the future - estimate blocks ahead`,
+    `[${txId}] using block time 300ms for chain eip155:42161`,
+    `[${txId}] future blocks ${expectedFutureBlocks}`,
+    `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for MulticallExecuted with txId ${txId} at ${contractAddress}`,
+    `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
     `[${txId}] GMP tx resolved`,
   ]);

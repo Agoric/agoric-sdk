@@ -1,9 +1,9 @@
 import type { Amount } from '@agoric/ertp';
-import type { RebalanceGraph, FlowEdge } from '../plan-solve.js';
 import type {
   AssetPlaceRef,
   MovementDesc,
 } from '../../src/type-guards-steps.js';
+import type { RebalanceGraph, FlowEdge } from './buildGraph.js';
 
 /** Weight selector: cheapest => variableFee, fastest => timeFixed, default 1 */
 const edgeWeight = (e: FlowEdge, mode: 'cheapest' | 'fastest') => {

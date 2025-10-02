@@ -42,43 +42,68 @@ export const preparePlanner = (
 ) => {
   const { movementDescShape } = shapes;
   const PlannerI = M.interface('Planner', {
-    submit: M.call(
+    submit: M.call(M.number(), M.arrayOf(movementDescShape), M.number())
+      .optional(M.number())
+      .returns(VowShape),
+    resolvePlan: M.call(
+      M.number(),
       M.number(),
       M.arrayOf(movementDescShape),
       M.number(),
-      M.number(),
-    ).returns(VowShape),
+    )
+      .optional(M.number())
+      .returns(),
   });
 
-  return zone.exoClass('Planner', PlannerI, () => ({}), {
-    /**
-     * Submit a plan (sequence of moves) for execution.
-     *
-     * Used by off-chain planning services to carry out expressed wishes
-     * of a portfolio owner.
-     *
-     * @param portfolioId - Target portfolio identifier
-     * @param plan - Array of asset movements to execute
-     * @param policyVersion - on which plan is based
-     * @param rebalanceCount - presumed current count
-     * @throws i.e. Vow rejects if portfolio not found, policyVersion is not current,
-     *   or plan validation or execution fails
-     */
-    submit(
-      portfolioId: number,
-      plan: MovementDesc[],
-      policyVersion: number,
-      rebalanceCount: number,
-    ): Vow<void> {
-      return vowTools.asVow(async () => {
+  return zone.exoClass(
+    'Planner',
+    PlannerI,
+    () => ({ etc: undefined }),
+    {
+      /**
+       * Submit a plan (sequence of moves) for execution in a new flow.
+       *
+       * Used by off-chain planning services to carry out expressed wishes
+       * of a portfolio owner.
+       *
+       * @param portfolioId - Target portfolio identifier
+       * @param plan - Array of asset movements to execute
+       * @param policyVersion - on which plan is based
+       * @param rebalanceCount - presumed current count
+       * @throws i.e. Vow rejects if portfolio not found, policyVersion is not current,
+       *   or plan validation or execution fails
+       */
+      submit(
+        portfolioId: number,
+        plan: MovementDesc[],
+        policyVersion: number,
+        rebalanceCount = 0,
+      ): Vow<void> {
+        return vowTools.asVow(async () => {
+          trace('TODO(#11782): vet plan', { portfolioId, plan });
+          const pKit = getPortfolio(portfolioId);
+          pKit.planner.submitVersion(policyVersion, rebalanceCount);
+          const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
+          return rebalance(emptySeat, { flow: plan }, pKit);
+        });
+      },
+      resolvePlan(
+        portfolioId: number,
+        flowId: number,
+        plan: MovementDesc[],
+        policyVersion: number,
+        rebalanceCount = 0,
+      ) {
         trace('TODO(#11782): vet plan', { portfolioId, plan });
-        const pKit = getPortfolio(portfolioId);
-        pKit.manager.submitVersion(policyVersion, rebalanceCount);
-        const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
-        return rebalance(emptySeat, { flow: plan }, pKit);
-      });
+        const { planner: portfolioPlanner } = getPortfolio(portfolioId);
+        portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
+        portfolioPlanner.resolveFlowPlan(flowId, plan);
+      },
     },
-  });
+    {
+      stateShape: { etc: M.any() },
+    },
+  );
 };
 
 export type PortfolioPlanner = ReturnType<ReturnType<typeof preparePlanner>>;

@@ -118,7 +118,7 @@ const TokenMessenger: TokenMessengerI = {
 const nobleDomain = 4;
 
 const bech32ToBytes32 = (addr: Bech32Address) => {
-  if (addr === 'cosmos1test') {
+  if (addr === 'noble1test') {
     trace('XXX replacing test address to convert to bytes32');
     addr = makeTestAddress(3, 'noble');
   }
