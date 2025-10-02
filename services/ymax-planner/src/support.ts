@@ -76,26 +76,10 @@ export const walletOperationFallbackGasLimit = 276_809n;
 /**
  * Average block times for supported EVM chains in milliseconds.
  *
- * Sources:
- * - Ethereum:
- *   Mainnet ~12s → https://etherscan.io/chart/blocktime
- *   Sepolia ~12s → https://eth-sepolia.blockscout.com/
- *
- * - Arbitrum:
- *   Mainnet ~0.3s → https://arbitrum.blockscout.com/
- *   Sepolia ~0.3s → https://arbitrum-sepolia.blockscout.com/
- *
- * - Avalanche:
- *   Mainnet ~2s → https://snowscan.xyz/chart/blocktime
- *   Fuji ~2s → Didn't find any specific resource for it
- *
- * - Base:
- *   Mainnet ~2.5s → https://base.blockscout.com/stats
- *   Sepolia ~2s → https://base-sepolia.blockscout.com/
- *
- * - Optimism:
- *   Mainnet ~2s → https://explorer.optimism.io/
- *   Sepolia ~2s → https://testnet-explorer.optimism.io/
+ * Mainnet data: https://eth.blockscout.com/ (except Avalanche),
+ *   https://chainspect.app/ , https://subnets.avax.network/c-chain
+ * Testnet data: https://eth.blockscout.com/ (except Avalanche),
+ *   https://subnets-test.avax.network/c-chain
  */
 const chainBlockTimesMs: Record<CaipChainId, number> = harden({
   // ========= Mainnet =========
@@ -310,9 +294,15 @@ const findBlockByTimestamp = async (
 export const buildTimeWindow = async (
   provider: WebSocketProvider,
   publishTimeMs: number,
-  log: (...args: unknown[]) => void,
-  chainId: CaipChainId,
-  fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
+  {
+    meanBlockDurationMs = 12_000, // Default to Ethereum's conservative 12s
+    log = () => {},
+    fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
+  }: {
+    meanBlockDurationMs?: number;
+    log?: (...args: unknown[]) => void;
+    fudgeFactorMs?: number;
+  } = {},
 ) => {
   const adjustedTime = publishTimeMs - fudgeFactorMs;
   const fromBlock = await findBlockByTimestamp(provider, adjustedTime);
@@ -333,8 +323,8 @@ export const buildTimeWindow = async (
 
   log('end time is in the future - estimate blocks ahead');
 
-  const blockTimeMs = getBlockTimeMs(chainId);
-  log(`using block time ${blockTimeMs}ms for chain ${chainId}`);
+  const blockTimeMs = meanBlockDurationMs;
+  log(`using block time ${blockTimeMs}ms`);
 
   const timeUntilEnd = endTime - currentBlockTime;
   const estimatedFutureBlocks = Math.ceil(timeUntilEnd / blockTimeMs);
