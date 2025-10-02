@@ -16,6 +16,7 @@ const trace = makeTracer('CCtrl');
  * @import {IssuerKeywordRecord} from '@agoric/zoe';
  * @import {Remote} from '@agoric/internal';
  * @import {Board, NameHubKit} from '@agoric/vats';
+ * @import {UpgradeKit} from './get-upgrade-kit.core.js';
  */
 
 const IssuerShape = M.remotable('Issuer');
@@ -83,14 +84,6 @@ const iface = M.interface('ContractControl', {
   ).returns(M.number()),
   revoke: M.call().returns(),
 });
-
-/**
- * @template {ContractStartFunction} SF
- * @typedef {StartedInstanceKit<SF> & {
- *   label: string;
- *   privateArgs: Parameters<SF>[1];
- * }} UpgradeKit
- */
 
 /**
  * @param {Zone} zone
