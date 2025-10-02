@@ -90,7 +90,12 @@ export const delegatePortfolioContract = async (permitted, config) => {
     kit,
   });
 
-  trace(`created ${contractName} control`, passStyleOf(contractControl));
+  trace(
+    `created ${contractName} control`,
+    passStyleOf(contractControl),
+    'and delivering to',
+    ymaxControlAddress,
+  );
 };
 
 export const getManifestForPortfolioControl = (utils, { options }) => {
