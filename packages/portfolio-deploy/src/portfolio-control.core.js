@@ -3,12 +3,13 @@
 import { makeTracer } from '@agoric/internal/src/debug.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { objectMap } from '@endo/patterns';
-import { E, passStyleOf } from '@endo/far';
+import { E, passStyleOf, getInterfaceOf } from '@endo/far';
 
 /**
  * @import {ContractControlPowers, DeliverContractControl} from './contract-control.core.js';
  * @import {PortfolioBootPowers} from './portfolio-start.type.ts';
  * @import {StartFn} from './portfolio-start.type.ts';
+ * @import {UpgradeKit, GetUpgradeKitPowers} from './get-upgrade-kit.core.js';
  */
 
 /**
@@ -35,6 +36,7 @@ export const isYMaxContractName = name =>
 /**
  * @param {BootstrapPowers &
  *  ContractControlPowers &
+ *  GetUpgradeKitPowers &
  *  PortfolioBootPowers
  * } permitted
  * @param {{ options: DelegatePortfolioOptions}} config
@@ -47,13 +49,32 @@ export const delegatePortfolioContract = async (permitted, config) => {
   await null;
   const { consume } = permitted;
 
-  // TODO: use the kit and privateAgrs that startUpgradable stores instead (or as preference)
-  // It does require a lot of powers, maybe we need a new helper to get these, or implement it in contract control
+  trace('getting existing instance kit for', contractName);
+  /** @type {UpgradeKit<StartFn> | undefined} */
+  let kit;
+  try {
+    kit = await E(consume.getUpgradeKit)(contractName);
+  } catch (err) {
+    trace(
+      'Could not get existing instance kit, falling back to promise space',
+      err,
+    );
+    // The kit may not exist in promise space, but if it does, it is resolved already
+    kit = await Promise.race([consume[`${contractName}Kit`], undefined]);
+  }
 
-  // The kit may not exist
-  const kit = await Promise.race([consume[`${contractName}Kit`], undefined]);
   trace(
-    `${contractName}Kit?.privateArgs`,
+    contractName,
+    'kit',
+    kit &&
+      objectMap(kit, v => {
+        const style = passStyleOf(v);
+        return style === 'remotable' ? getInterfaceOf(v) : style;
+      }),
+  );
+  trace(
+    contractName,
+    'kit?.privateArgs',
     kit?.privateArgs && objectMap(kit.privateArgs, v => passStyleOf(v)),
   );
 
@@ -105,6 +126,7 @@ export const getManifestForPortfolioControl = (utils, { options }) => {
       [delegatePortfolioContract.name]: {
         consume: {
           deliverContractControl: true,
+          getUpgradeKit: true,
           [`${contractName}Kit`]: true,
 
           // subset of orchPermit

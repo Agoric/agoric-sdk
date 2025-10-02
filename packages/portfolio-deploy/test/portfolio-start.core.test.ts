@@ -44,6 +44,7 @@ import { name as contractName } from '../src/portfolio.contract.permit.js';
 import * as postalServiceExports from '../src/postal-service.contract.js';
 import { deployPostalService } from '../src/postal-service.core.js';
 import { produceDeliverContractControl } from '../src/contract-control.core.js';
+import { produceGetUpgradeKit } from '../src/get-upgrade-kit.core.js';
 
 const { entries, keys } = Object;
 
@@ -255,6 +256,8 @@ test('delegate ymax control; invite planner; submit plan', async t => {
   t.log('deployPostalService done');
   t.log('produce deliverContractControl');
   await produceDeliverContractControl(powers as any);
+  t.log('produce getUpgradeKit');
+  await produceGetUpgradeKit(powers as any);
   const { agoricNames } = common.bootstrap;
   const pInst = await E(agoricNames).lookup('instance', pContractName);
   t.is(passStyleOf(pInst), 'remotable');
