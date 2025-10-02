@@ -1,7 +1,7 @@
 import { JsonRpcProvider, Log, type Filter } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from './config.ts';
-import { TX_TIMEOUT_MS, type EvmContext } from './pending-tx-manager.ts';
+import type { EvmContext } from './pending-tx-manager.ts';
 
 const { entries } = Object;
 
@@ -267,26 +267,38 @@ const findBlockByTimestamp = async (
   return startBlockNumber;
 };
 
+/**
+ * Builds a time window for scanning blockchain logs based on a transaction publish time and timeout.
+ *
+ * Given a publish time from vstorage and a timeout duration, this function:
+ * 1. Finds the starting block corresponding to (publishTime - fudgeFactorMs)
+ * 2. Calculates the cutoff time as (fromBlockTime + timeoutMs + fudgeFactorMs)
+ * 3. Determines the ending block:
+ *    - If cutoff is in the past: returns current block
+ *    - If cutoff is in the future: estimates future block based on mean block duration
+ */
 export const buildTimeWindow = async (
   provider: JsonRpcProvider,
   publishTimeMs: number,
   {
+    timeoutMs,
     meanBlockDurationMs = 12_000, // Default to Ethereum's conservative 12s
     log = () => {},
     fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
   }: {
+    timeoutMs: number;
     meanBlockDurationMs?: number;
     log?: (...args: unknown[]) => void;
     fudgeFactorMs?: number;
-  } = {},
+  },
 ) => {
   const adjustedTime = publishTimeMs - fudgeFactorMs;
   const fromBlock = await findBlockByTimestamp(provider, adjustedTime);
 
   const fromBlockInfo = await provider.getBlock(fromBlock);
   const fromBlockTime = (fromBlockInfo?.timestamp || 0) * 1000;
-  // Add fudgeFactorMs back to TX_TIMEOUT_MS to compensate for the earlier subtraction
-  const endTime = fromBlockTime + TX_TIMEOUT_MS + fudgeFactorMs;
+  // Add fudgeFactorMs back to timeoutMs to compensate for the earlier subtraction
+  const endTime = fromBlockTime + timeoutMs + fudgeFactorMs;
 
   const currentBlock = await provider.getBlockNumber();
   const currentBlockInfo = await provider.getBlock(currentBlock);
