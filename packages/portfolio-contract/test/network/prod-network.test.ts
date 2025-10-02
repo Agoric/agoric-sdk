@@ -32,6 +32,13 @@ const POOLS = [
   'Aave_Base',
   'Aave_Ethereum',
   'Aave_Optimism',
+  // Beefy pools
+  'Beefy_re7_Avalanche',
+  'Beefy_morphoGauntletUsdc_Ethereum',
+  'Beefy_morphoSmokehouseUsdc_Ethereum',
+  'Beefy_morphoSeamlessUsdc_Base',
+  'Beefy_compoundUsdc_Optimism',
+  'Beefy_compoundUsdc_Arbitrum',
   // Compound pools
   'Compound_Arbitrum',
   'Compound_Base',
