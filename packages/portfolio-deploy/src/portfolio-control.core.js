@@ -96,10 +96,7 @@ export const delegatePortfolioContract = async (permitted, config) => {
     }),
   );
 
-  const deliverContractControl =
-    /** @type {DeliverContractControl<StartFn>} */ (
-      await consume.deliverContractControl
-    );
+  const deliverContractControl = await consume.deliverContractControl;
 
   // Note: we don't wait till chainInfoPublished settles, but any invocation
   // of start should be done after
