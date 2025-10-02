@@ -262,7 +262,10 @@ export const planWithdrawFromAllocations = async (
   return flowDetail.steps;
 };
 
-// Back-compat utility used by CLI or handlers
+/**
+ * Back-compat utility used by CLI or handlers
+ * @deprecated in favor of planDepositToAllocations
+ */
 export const handleDeposit = async (
   portfolioKey: `${string}.portfolios.portfolio${number}`,
   amount: NatAmount,
