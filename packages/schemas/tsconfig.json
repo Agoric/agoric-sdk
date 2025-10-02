@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {},
+  "include": [
+    "bin",
+    "src",
+    "test",
+    "tools"
+  ]
+}
