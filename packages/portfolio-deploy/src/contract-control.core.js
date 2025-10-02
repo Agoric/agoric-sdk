@@ -2,6 +2,7 @@
 
 import { makeTracer } from '@agoric/internal/src/debug.js';
 import { E } from '@endo/eventual-send';
+import { Fail } from '@endo/errors';
 import { makeHeapZone } from '@agoric/zone';
 // import { objectMap } from '@endo/patterns';
 // import { passStyleOf } from '@endo/pass-style';
@@ -12,7 +13,7 @@ import { prepareContractControl } from './contract-control.js';
  * @import {ChainStoragePresent} from './chain-info.core.js'
  * @import {PostalServiceBoot} from './postal-service.core.js';
  * @import {AttenuatedDepositPowers} from './attenuated-deposit.core.js';
- * @import {ContractControlOpts, ContractControl} from './contract-control.js';
+ * @import {ContractControlOpts, ContractControl, UpdatePrivateArgs} from './contract-control.js';
  */
 
 const trace = makeTracer('CCtrlCore');
@@ -46,10 +47,20 @@ export const produceDeliverContractControl = async permitted => {
 
   const { chainStorage, getDepositFacet, zoe } = consume;
 
+  const instancePrivateArgs = await consume.instancePrivateArgs;
+
   const postalSvcPub = E.when(
     permitted.instance.consume.postalService,
     instance => E(zoe).getPublicFacet(instance),
   );
+
+  /** @type {UpdatePrivateArgs} */
+  const updatePrivateArgs = (instance, privateArgs) => {
+    if (!instancePrivateArgs.has(instance)) {
+      Fail`instance doesn't have privateArgs`;
+    }
+    instancePrivateArgs.set(instance, privateArgs);
+  };
 
   // Use a heap zone to avoid entanglement with old liveslots
   const zone = makeHeapZone();
@@ -57,6 +68,7 @@ export const produceDeliverContractControl = async permitted => {
     agoricNamesAdmin: await consume.agoricNamesAdmin,
     board: await consume.board,
     startUpgradable: await consume.startUpgradable,
+    updatePrivateArgs,
     zoe: await zoe,
   });
 
@@ -114,6 +126,7 @@ export const getManifestForDeliverContractControl = () => ({
         board: true,
         chainStorage: true,
         getDepositFacet: true,
+        instancePrivateArgs: true,
         startUpgradable: true,
         zoe: true,
       },
