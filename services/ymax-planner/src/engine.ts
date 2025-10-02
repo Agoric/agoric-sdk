@@ -49,6 +49,7 @@ import {
   getCurrentBalance,
   getCurrentBalances,
   handleDeposit,
+  planDepositToAllocations,
   planRebalanceToAllocations,
   planWithdrawFromAllocations,
 } from './plan-deposit.ts';
@@ -230,6 +231,10 @@ const processPortfolioEvents = async (
       currentBalances,
     };
     const plannerContext = {
+      // @ts-expect-error "amount" is not present on all varieties of
+      // FlowDetail, but we need it here when it is present (i.e., for types
+      // "deposit" and "withdraw" and it's harmless otherwise.
+      amount: flowDetail.amount,
       currentBalances,
       targetAllocation: portfolioStatus.targetAllocation,
       network: PROD_NETWORK,
@@ -241,17 +246,21 @@ const processPortfolioEvents = async (
     try {
       let steps: MovementDesc[];
       const { type } = flowDetail;
-      if (type === 'withdraw') {
-        steps = await planWithdrawFromAllocations({
-          ...plannerContext,
-          amount: flowDetail.amount,
-        });
-      } else if (type === 'other') {
-        steps = await planRebalanceToAllocations(plannerContext);
-      } else {
-        const msg = `⚠️  Unknown flow type ${type} for ${path} in-progress flow ${flowKey}`;
-        console.warn(msg);
-        return;
+      switch (type) {
+        case 'deposit':
+          steps = await planDepositToAllocations(plannerContext);
+          break;
+        case 'rebalance':
+          steps = await planRebalanceToAllocations(plannerContext);
+          break;
+        case 'withdraw':
+          steps = await planWithdrawFromAllocations(plannerContext);
+          break;
+        default: {
+          const msg = `⚠️  Unknown flow type ${type} for ${path} in-progress flow ${flowKey}`;
+          console.warn(msg);
+          return;
+        }
       }
       errorContext.steps = steps;
 
@@ -327,7 +336,7 @@ const processPortfolioEvents = async (
       // address to trigger a rebalance.
       // Otherwise, we assume that the update was a response to such a
       // submission.
-      // TODO: Remove this in favor of driving everything through flows.
+      // UNTIL https://github.com/Agoric/agoric-sdk/pull/12016
       if (depositAddress && status.rebalanceCount === 0) {
         deferrals.push({
           blockHeight: eventRecord.blockHeight,
@@ -789,6 +798,7 @@ export const startEngine = async (
     );
 
     // Respond to deposits.
+    // UNTIL https://github.com/Agoric/agoric-sdk/pull/12016
     const portfolioOps = await Promise.all(
       [...depositAddrsWithActivity.entries()].map(
         async ([addr, { portfolioKey, eventRecord }]) => {
