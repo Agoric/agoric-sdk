@@ -23,13 +23,11 @@ const trace = makeTracer('CCtrlCore');
  */
 
 /**
- * @template {ContractStartFunction} SF
- * @typedef {(opts: ContractControlDeliverOpts<SF>) => Promise<{delivered: Promise<void>, contractControl: ContractControl<SF>}>} DeliverContractControl
+ * @typedef {<SF extends ContractStartFunction>(opts: ContractControlDeliverOpts<SF>) => Promise<{delivered: Promise<void>, contractControl: ContractControl<SF>}>} DeliverContractControl
  */
 
 /**
- * @template {ContractStartFunction} [SF=ContractStartFunction]
- * @typedef {PromiseSpaceOf<{ deliverContractControl: DeliverContractControl<SF>}>} ContractControlPowers
+ * @typedef {PromiseSpaceOf<{ deliverContractControl: DeliverContractControl}>} ContractControlPowers
  */
 
 /**
@@ -62,7 +60,7 @@ export const produceDeliverContractControl = async permitted => {
     zoe: await zoe,
   });
 
-  /** @type {DeliverContractControl<ContractStartFunction>} */
+  /** @type {DeliverContractControl} */
   const deliverContractControl = async ({
     name: contractName,
     controlAddress,
