@@ -55,10 +55,15 @@ const makeTestContext = async (t: ExecutionContext) => {
 
   const { agoricNamesAdmin, board } = common.bootstrap;
 
+  const updatePrivateArgs = (_instance, _privateArgs) => {
+    // TODO: upgrade test not functional in fakeZoe
+  };
+
   const makeContractControl = prepareContractControl(zone, {
     agoricNamesAdmin,
     board,
     startUpgradable,
+    updatePrivateArgs,
     zoe,
   });
 
