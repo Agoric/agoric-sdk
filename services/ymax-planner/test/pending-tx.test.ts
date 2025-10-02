@@ -342,7 +342,7 @@ test('resolves a 28 min old pending CCTP transaction in lookback mode', async t 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.CCTP_TO_EVM} tx`,
     `[${txId}] end time is in the future - estimate blocks ahead`,
-    `[${txId}] using block time 300ms for chain eip155:42161`,
+    `[${txId}] using block time 300ms`,
     `[${txId}] future blocks ${expectedFutureBlocks}`,
     `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${recipientAddress} with amount ${txAmount}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
@@ -409,7 +409,7 @@ test('resolves a transaction published at current time in lookback mode', async 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.CCTP_TO_EVM} tx`,
     `[${txId}] end time is in the future - estimate blocks ahead`,
-    `[${txId}] using block time 300ms for chain eip155:42161`,
+    `[${txId}] using block time 300ms`,
     `[${txId}] future blocks ${expectedFutureBlocks}`,
     `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${recipientAddress} with amount ${txAmount}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
@@ -476,7 +476,7 @@ test('resolves a 10 second old pending CCTP transaction in lookback mode', async
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.CCTP_TO_EVM} tx`,
     `[${txId}] end time is in the future - estimate blocks ahead`,
-    `[${txId}] using block time 300ms for chain eip155:42161`,
+    `[${txId}] using block time 300ms`,
     `[${txId}] future blocks ${expectedFutureBlocks}`,
     `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${recipientAddress} with amount ${txAmount}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
@@ -565,7 +565,7 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.GMP} tx`,
     `[${txId}] end time is in the future - estimate blocks ahead`,
-    `[${txId}] using block time 300ms for chain eip155:42161`,
+    `[${txId}] using block time 300ms`,
     `[${txId}] future blocks ${expectedFutureBlocks}`,
     `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for MulticallExecuted with txId ${txId} at ${contractAddress}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,

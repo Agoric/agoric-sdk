@@ -1,7 +1,11 @@
 import { ethers, type Filter, type JsonRpcProvider, type Log } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 import type { CaipChainId } from '@agoric/orchestration';
-import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
+import {
+  buildTimeWindow,
+  getBlockTimeMs,
+  scanEvmLogsInChunks,
+} from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 
 const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
@@ -96,8 +100,10 @@ export const lookBackGmp = async ({
     const { fromBlock, toBlock } = await buildTimeWindow(
       provider,
       publishTimeMs,
-      log,
-      chainId,
+      {
+        meanBlockDurationMs: getBlockTimeMs(chainId),
+        log,
+      },
     );
 
     log(
