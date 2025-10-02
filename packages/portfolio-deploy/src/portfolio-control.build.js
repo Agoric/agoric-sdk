@@ -52,7 +52,7 @@ const build = async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
   const config = { ymaxControlAddress, contractName };
-  await writeCoreEval('eval-ymax-control', utils =>
+  await writeCoreEval(`eval-${contractName}-control`, utils =>
     defaultProposalBuilder(utils, harden(config)),
   );
 };
