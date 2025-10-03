@@ -3,7 +3,7 @@
  * @see {@link contract}
  * @see {@link start}
  */
-import type { Payment } from '@agoric/ertp';
+import { AmountMath, type Payment } from '@agoric/ertp';
 import {
   makeTracer,
   mustMatch,
@@ -342,6 +342,17 @@ export const contract = async (
     },
   );
 
+  const usedAccessTokens = zone.makeOnce(
+    'usedAccessTokens',
+    () => zcf.makeEmptySeatKit().zcfSeat,
+  );
+  const consumeAccessToken = brands.Access
+    ? (seat: ZCFSeat) => {
+        const Access = AmountMath.make(brands.Access, 1n);
+        zcf.atomicRearrange([[seat, usedAccessTokens, { Access }]]);
+      }
+    : () => {};
+
   const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
     /**
      * Make an invitation to open a new portfolio.
@@ -363,6 +374,7 @@ export const contract = async (
       return zcf.makeInvitation(
         (seat, offerArgs) => {
           mustMatch(offerArgs, offerArgsShapes.openPortfolio);
+          consumeAccessToken(seat);
           return openPortfolio(seat, offerArgs);
         },
         'openPortfolio',
