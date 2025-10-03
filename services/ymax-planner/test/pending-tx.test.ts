@@ -572,7 +572,7 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
-    `[${txId}] Found MulticallStatus event`,
+    `[${txId}] Found matching event`,
     `[${txId}] GMP tx resolved`,
   ]);
 });

@@ -141,7 +141,7 @@ export const lookBackGmp = async ({
       topics: [MULTICALL_EXECUTED_SIGNATURE, expectedIdTopic],
     };
 
-    const [statusEvent, executedEvent] = await Promise.all([
+    const matchingEvent = await Promise.race([
       scanEvmLogsInChunks(
         {
           provider,
@@ -166,13 +166,8 @@ export const lookBackGmp = async ({
       ),
     ]);
 
-    if (statusEvent) {
-      log(`Found MulticallStatus event`);
-      return true;
-    }
-
-    if (executedEvent) {
-      log(`Found MulticallExecuted event`);
+    if (matchingEvent) {
+      log(`Found matching event`);
       return true;
     }
 
