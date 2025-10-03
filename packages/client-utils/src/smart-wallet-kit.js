@@ -1,3 +1,4 @@
+import { Fail, q } from '@endo/errors';
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
 import { retryUntilCondition } from './sync-tools.js';
 import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
@@ -5,9 +6,110 @@ import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
 /**
  * @import {EReturn} from '@endo/far';
  * @import {Amount, Brand} from '@agoric/ertp/src/types.js'
+ * @import {OfferStatus} from '@agoric/smart-wallet/src/offers.js';
  * @import {CurrentWalletRecord, UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
+ * @import {RetryOptionsAndPowers} from './sync-tools.js';
  */
+
+/**
+ * @param {string | number} id
+ * @param {() => Promise<UpdateRecord>} getLastUpdate
+ * @param {RetryOptionsAndPowers} retryOpts
+ * @param {(update: UpdateRecord) => boolean} isMatch
+ * @returns {Promise<UpdateRecord>}
+ */
+const findUpdate = (id, getLastUpdate, retryOpts, isMatch) =>
+  retryUntilCondition(getLastUpdate, isMatch, `${id}`, retryOpts);
+
+/**
+ * Wait for an update indicating settlement of the specified invocation and
+ * return its result or throw its error.
+ * @alpha
+ *
+ * @param {string | number} id
+ * @param {() => Promise<UpdateRecord>} getLastUpdate
+ * @param {RetryOptionsAndPowers} retryOpts
+ * @returns {Promise<(UpdateRecord & { updated: 'invocation' })['result']>}
+ */
+export const getInvocationUpdate = async (id, getLastUpdate, retryOpts) => {
+  const isMatch = update =>
+    update.updated === 'invocation' &&
+    update.id === id &&
+    !!(update.error || update.result);
+  const found = /** @type {UpdateRecord & { updated: 'invocation' }} */ (
+    await findUpdate(id, getLastUpdate, retryOpts, isMatch)
+  );
+  if (found.error) throw Error(found.error);
+  return found.result;
+};
+harden(getInvocationUpdate);
+
+/**
+ * Wait for an update indicating settlement of the specified offer and return
+ * its status or throw its error.
+ * Used internally but not yet considered public.
+ * @alpha
+ *
+ * @param {string | number} id
+ * @param {() => Promise<UpdateRecord>} getLastUpdate
+ * @param {RetryOptionsAndPowers} retryOpts
+ * @returns {Promise<OfferStatus>}
+ */
+export const getOfferResult = async (id, getLastUpdate, retryOpts) => {
+  // "walletAction" indicates an error, "offerStatus" with the right id and
+  // either `result` or `error` indicates settlement.
+  const isMatch = update =>
+    update.updated === 'walletAction' ||
+    (update.updated === 'offerStatus' &&
+      update.status.id === id &&
+      !!(update.status.error || update.status.result));
+  const found =
+    /** @type {UpdateRecord & { updated: 'walletAction' | 'offerStatus' }} */ (
+      await findUpdate(id, getLastUpdate, retryOpts, isMatch)
+    );
+  if (found.updated !== 'offerStatus') {
+    throw Fail`${q(id)} ${q(found.updated)} failure: ${q(found.status?.error)}`;
+  }
+  const { error, result } = found.status;
+  !error || Fail`${q(id)} offerStatus failure: ${q(error)}`;
+  result || Fail`${q(id)} offerStatus missing result`;
+  return found.status;
+};
+harden(getOfferResult);
+
+/**
+ * Wait for an update indicating untilNumWantsSatisfied of the specified offer
+ * and return its status or throw its error.
+ * Used internally but not yet considered public.
+ * @alpha
+ *
+ * @param {string | number} id
+ * @param {() => Promise<UpdateRecord>} getLastUpdate
+ * @param {RetryOptionsAndPowers} retryOpts
+ * @returns {Promise<OfferStatus>}
+ */
+export const getOfferWantsSatisfied = async (id, getLastUpdate, retryOpts) => {
+  // "walletAction" indicates an error, "offerStatus" with the right id and
+  // either `result` or `error` indicates settlement.
+  const isMatch = update =>
+    update.updated === 'walletAction' ||
+    (update.updated === 'offerStatus' &&
+      update.status.id === id &&
+      !!(update.status.error || 'numWantsSatisfied' in update.status));
+  const found =
+    /** @type {UpdateRecord & { updated: 'walletAction' | 'offerStatus' }} */ (
+      await findUpdate(id, getLastUpdate, retryOpts, isMatch)
+    );
+  if (found.updated !== 'offerStatus') {
+    throw Fail`${q(id)} ${q(found.updated)} failure: ${q(found.status?.error)}`;
+  }
+  const { error, result } = found.status;
+  !error || Fail`${q(id)} offerStatus failure: ${q(error)}`;
+  result || Fail`${q(id)} offerStatus missing result`;
+  return found.status;
+};
+harden(getOfferWantsSatisfied);
 
 /**
  * Augment VstorageKit with addtional convenience methods for working with
@@ -75,50 +177,13 @@ export const makeSmartWalletKit = async (
     minHeight,
     untilNumWantsSatisfied = false,
   ) => {
-    /** @type {UpdateRecord} */
-    const done = await retryUntilCondition(
-      () => getLastUpdate(from),
-      update => {
-        switch (update.updated) {
-          // walletAction implies an error, so stop on that
-          case 'walletAction':
-            return true;
-          case 'offerStatus':
-            if (update.status.id !== id) {
-              return false;
-            }
-            if (update.status.error) {
-              // regardless of untilNumWantsSatisfied, stop on error
-              return true;
-            }
-            if (untilNumWantsSatisfied) {
-              return 'numWantsSatisfied' in update.status;
-            }
-            // Matches ID and we don't care about numWantsSatisfied
-            return true;
-          default:
-            // a different kind of update, keep waiting
-            return false;
-        }
-      },
-      `${id}`,
-      // XXX ambient authority
-      { setTimeout: global.setTimeout },
-    );
-    switch (done.updated) {
-      case 'walletAction':
-        throw Error(`walletAction failure: ${done.status.error}`);
-      case 'offerStatus':
-        if (done.status.error) {
-          throw Error(`offerStatus failure: ${done.status.error}`);
-        }
-        if (!done.status.result) {
-          throw Error(`offerStatus missing result`);
-        }
-        return done.status;
-      default:
-        throw Error(`unexpected update type ${done.updated}`);
-    }
+    const getAddrLastUpdate = () => getLastUpdate(from);
+    // XXX ambient authority
+    const retryOpts = { setTimeout: global.setTimeout };
+    const status = await (untilNumWantsSatisfied
+      ? getOfferWantsSatisfied(id, getAddrLastUpdate, retryOpts)
+      : getOfferResult(id, getAddrLastUpdate, retryOpts));
+    return status;
   };
 
   /**
