@@ -317,6 +317,7 @@ test('planRebalanceToAllocations emits an empty plan when already balanced', asy
 test('planRebalanceToAllocations moves funds when needed', async t => {
   const targetAllocation = {
     USDN: 40n,
+    USDNVault: 0n,
     Aave_Arbitrum: 40n,
     Compound_Arbitrum: 20n,
   };
