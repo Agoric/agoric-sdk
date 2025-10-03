@@ -129,7 +129,7 @@ const computeWeightedTargets = (
       );
   for (const entry of weights) {
     const w = entry[1];
-    (typeof w === 'bigint' && w > 0n) ||
+    (typeof w === 'bigint' && w >= 0n) ||
       Fail`allocation weight in ${entry} must be a Nat`;
   }
   const sumW = weights.reduce<bigint>((acc, [, w]) => acc + w, 0n);
