@@ -152,7 +152,7 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   gmpAddresses: GmpAddresses;
 };
 
-const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
+export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   ...(OrchestrationPowersShape as CopyRecord),
   marshaller: M.remotable('marshaller'),
   storageNode: M.remotable('storageNode'),
