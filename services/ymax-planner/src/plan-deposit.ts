@@ -189,8 +189,8 @@ export const planDepositToAllocations = async (
   );
 
   // The deposit should be distributed.
-  const currentWithDeposit = { ...currentBalances, '+agoric': amount };
-  target['+agoric'] = AmountMath.make(brand, 0n);
+  const currentWithDeposit = { ...currentBalances, '<Deposit>': amount };
+  target['<Deposit>'] = AmountMath.make(brand, 0n);
 
   const { network, feeBrand, gasEstimator } = details;
   const flowDetail = await planRebalanceFlow({
