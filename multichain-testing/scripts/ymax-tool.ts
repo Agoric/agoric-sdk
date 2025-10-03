@@ -142,11 +142,13 @@ const openPositions = async (
     when,
     targetAllocation,
     id = `open-${new Date(when).toISOString()}`,
+    contract = 'ymax0',
   }: {
     sig: SigningSmartWalletKit;
     when: number;
     targetAllocation?: TargetAllocation;
     id?: string;
+    contract?: string;
   },
 ) => {
   const { readPublished } = sig.query;
@@ -191,7 +193,7 @@ const openPositions = async (
         id,
         invitationSpec: {
           source: 'agoricContract',
-          instancePath: ['ymax0'],
+          instancePath: [contract],
           callPipe: [['makeOpenPortfolioInvitation']],
         },
         proposal,
@@ -530,6 +532,7 @@ const main = async (
       sig,
       when: now(),
       targetAllocation,
+      contract: values['contract'],
     });
     trace('opened', opened);
     const { path } = opened;
