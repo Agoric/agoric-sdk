@@ -141,6 +141,9 @@ export const lookBackGmp = async ({
       topics: [MULTICALL_EXECUTED_SIGNATURE, expectedIdTopic],
     };
 
+    const statusController = new AbortController();
+    const executedController = new AbortController();
+
     const matchingEvent = await Promise.race([
       scanEvmLogsInChunks(
         {
@@ -150,9 +153,13 @@ export const lookBackGmp = async ({
           toBlock,
           chainId,
           log,
+          signal: statusController.signal,
         },
         ev => ev.topics[1] === expectedIdTopic,
-      ),
+      ).then(result => {
+        executedController.abort();
+        return result;
+      }),
       scanEvmLogsInChunks(
         {
           provider,
@@ -161,9 +168,13 @@ export const lookBackGmp = async ({
           toBlock,
           chainId,
           log,
+          signal: executedController.signal,
         },
         ev => ev.topics[1] === expectedIdTopic,
-      ),
+      ).then(result => {
+        statusController.abort();
+        return result;
+      }),
     ]);
 
     if (matchingEvent) {
