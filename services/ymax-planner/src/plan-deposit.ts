@@ -127,12 +127,12 @@ const computeWeightedTargets = (
     : typedEntries(current as Required<typeof current>).map(
         ([key, amount]) => [key, amount.value] as [PoolKey, NatValue],
       );
-  for (const entry of weights) {
+  const sumW = weights.reduce<bigint>((acc, entry) => {
     const w = entry[1];
-    (typeof w === 'bigint' && w > 0n) ||
+    (typeof w === 'bigint' && w >= 0n) ||
       Fail`allocation weight in ${entry} must be a Nat`;
-  }
-  const sumW = weights.reduce<bigint>((acc, [, w]) => acc + w, 0n);
+    return acc + w;
+  }, 0n);
   sumW > 0n || Fail`allocation weights must sum > 0`;
   const draft: Partial<Record<AssetPlaceRef, NatAmount>> = {};
   let remainder = total;
