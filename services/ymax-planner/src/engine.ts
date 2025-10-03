@@ -7,11 +7,14 @@ import type { Coin } from '@cosmjs/stargate';
 
 import { Fail, X, annotateError, q } from '@endo/errors';
 import { Nat } from '@endo/nat';
+import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
+import type { RetryOptionsAndPowers } from '@agoric/client-utils/src/sync-tools.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 
+import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import {
   PublishedTxShape,
   type PendingTx,
@@ -90,15 +93,6 @@ type VstorageEventDetail = {
 
 type PendingTxRecord = { blockHeight: bigint; tx: PendingTx };
 
-/** @see {@link ../../../packages/portfolio-contract/src/planner.exo.ts} */
-type ResolvePlanArgs = {
-  portfolioId: number;
-  flowId: number;
-  steps: MovementDesc[];
-  policyVersion: number;
-  rebalanceCount: number;
-};
-
 export const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
 export const PENDING_TX_PATH_PREFIX = 'published.ymax0.pendingTxs';
 
@@ -166,13 +160,23 @@ type Powers = {
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
   signingSmartWalletKit: SigningSmartWalletKit;
+  walletStore: ReturnType<typeof reflectWalletStore>;
+  getWalletInvocationUpdate: (
+    messageId: string | number,
+    retryOpts?: RetryOptionsAndPowers,
+  ) => ReturnType<typeof getInvocationUpdate>;
   now: typeof Date.now;
   gasEstimator: GasEstimator;
 };
 
 type ProcessPortfolioPowers = Pick<
   Powers,
-  'cosmosRest' | 'spectrum' | 'signingSmartWalletKit' | 'gasEstimator'
+  | 'cosmosRest'
+  | 'spectrum'
+  | 'signingSmartWalletKit'
+  | 'walletStore'
+  | 'getWalletInvocationUpdate'
+  | 'gasEstimator'
 > & {
   depositBrand: Brand<'nat'>;
   feeBrand: Brand<'nat'>;
@@ -189,6 +193,8 @@ const processPortfolioEvents = async (
     feeBrand,
     gasEstimator,
     signingSmartWalletKit,
+    walletStore,
+    getWalletInvocationUpdate,
     spectrum,
 
     portfolioKeyForDepositAddr,
@@ -231,7 +237,7 @@ const processPortfolioEvents = async (
       feeBrand,
       gasEstimator,
     };
-  
+
     try {
       let steps: MovementDesc[];
       const { type } = flowDetail;
@@ -248,33 +254,36 @@ const processPortfolioEvents = async (
         return;
       }
       errorContext.steps = steps;
-  
-      const resolvePlanArgs: ResolvePlanArgs = {
-        portfolioId: portfolioIdFromKey(portfolioKey as any),
-        flowId: flowIdFromKey(flowKey as any),
+
+      const portfolioId = portfolioIdFromKey(portfolioKey as any);
+      const flowId = flowIdFromKey(flowKey as any);
+      const { policyVersion, rebalanceCount } = portfolioStatus;
+      const planner = walletStore.get<PortfolioPlanner>('planner', {
+        immediate: true,
+      });
+      const { tx, id } = await planner.resolvePlan(
+        portfolioId,
+        flowId,
         steps,
-        policyVersion: portfolioStatus.policyVersion,
-        rebalanceCount: portfolioStatus.rebalanceCount,
-      };
-      // TODO: Incorporate `reflectWalletStore` type safety into
-      // SigningSmartWalletKit and use that here.
-      // const planner = signingSmartWalletKit.get<PortfolioPlanner>('planner');
-      // const { tx } =
-      //   await planner.resolvePlan(portfolioId, flowId, steps, policyVersion, rebalanceCount);
-      const result = await signingSmartWalletKit.sendBridgeAction({
-        method: 'invokeEntry',
-        message: {
-          targetName: 'planner',
-          method: 'resolvePlan',
-          args: Object.values(resolvePlanArgs),
-        },
+        policyVersion,
+        rebalanceCount,
+      );
+      // The transaction has been submitted, but we won't know about a rejection
+      // for at least another block.
+      void getWalletInvocationUpdate(id as any).catch(err => {
+        console.warn(
+          `⚠️ Failure for ${path} in-progress flow ${flowKey} resolvePlan`,
+          { policyVersion, rebalanceCount },
+          steps,
+          err,
+        );
       });
       console.log(
         `Resolving ${path} in-progress flow ${flowKey}`,
         flowDetail,
         currentBalances,
-        resolvePlanArgs,
-        result,
+        { portfolioId, flowId, steps, policyVersion, rebalanceCount },
+        tx,
       );
     } catch (err) {
       annotateError(err, X`${errorContext}`);
@@ -469,6 +478,8 @@ export const startEngine = async (
     spectrum,
     cosmosRest,
     signingSmartWalletKit,
+    walletStore,
+    getWalletInvocationUpdate,
     now,
     gasEstimator,
   }: Powers,
@@ -586,6 +597,8 @@ export const startEngine = async (
     depositBrand: depositAsset.brand as Brand<'nat'>,
     feeBrand: feeAsset.brand as Brand<'nat'>,
     signingSmartWalletKit,
+    walletStore,
+    getWalletInvocationUpdate,
     spectrum,
 
     portfolioKeyForDepositAddr,

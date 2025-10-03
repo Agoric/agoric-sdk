@@ -1,7 +1,9 @@
 import {
   fetchEnvNetworkConfig,
+  getInvocationUpdate,
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
+  reflectWalletStore,
 } from '@agoric/client-utils';
 import { objectMetaMap } from '@agoric/internal';
 import { Fail, q } from '@endo/errors';
@@ -35,6 +37,7 @@ export const main = async (
   {
     env = process.env,
     fetch = globalThis.fetch,
+    now = Date.now,
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
   } = {},
@@ -77,6 +80,10 @@ export const main = async (
     config.mnemonic,
   );
   console.warn('Signer address:', signingSmartWalletKit.address);
+  const walletStore = reflectWalletStore(signingSmartWalletKit, {
+    setTimeout,
+    makeNonce: () => new Date(now()).toISOString(),
+  });
 
   const spectrum = new SpectrumClient(simplePowers, {
     baseUrl: config.spectrum.apiUrl,
@@ -105,7 +112,13 @@ export const main = async (
     spectrum,
     cosmosRest,
     signingSmartWalletKit,
-    now: Date.now,
+    walletStore,
+    getWalletInvocationUpdate: (messageId, opts) => {
+      const { getLastUpdate } = signingSmartWalletKit.query;
+      const retryOpts = { log: () => {}, setTimeout, ...opts };
+      return getInvocationUpdate(messageId, getLastUpdate, retryOpts);
+    },
+    now,
     gasEstimator,
   };
   await startEngine(powers, {
