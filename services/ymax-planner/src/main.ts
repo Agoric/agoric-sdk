@@ -2,12 +2,15 @@ import {
   fetchEnvNetworkConfig,
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
+  type SigningSmartWalletKit,
 } from '@agoric/client-utils';
 import { objectMetaMap } from '@agoric/internal';
 import { Fail, q } from '@endo/errors';
 import { isPrimitive } from '@endo/pass-style';
 
 import { SigningStargateClient } from '@cosmjs/stargate';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
+import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 
 import { loadConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
@@ -16,6 +19,20 @@ import { startEngine } from './engine.ts';
 import { createEVMContext, verifyEvmChains } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
+import { makeSequenceManager } from './sequence-manager.ts';
+import { makeSmartWalletWithSequence } from './smart-wallet-with-sequence.ts';
+
+export type SmartWalletKitWithSequence = Omit<
+  SigningSmartWalletKit,
+  'executeOffer' | 'sendBridgeAction'
+> & {
+  executeOffer: (
+    offer: OfferSpec,
+  ) => Promise<Awaited<ReturnType<SigningSmartWalletKit['sendBridgeAction']>>>;
+  sendBridgeAction: (
+    action: BridgeAction,
+  ) => Promise<Awaited<ReturnType<SigningSmartWalletKit['sendBridgeAction']>>>;
+};
 
 const assertChainId = async (
   rpc: CosmosRPCClient,
@@ -78,6 +95,31 @@ export const main = async (
   );
   console.warn('Signer address:', signingSmartWalletKit.address);
 
+  const sequenceManager = await makeSequenceManager(
+    {
+      cosmosRest,
+      log: (...args) => console.log('[SequenceManager]:', ...args),
+    },
+    { chainKey: 'agoric', address: signingSmartWalletKit.address },
+  );
+
+  const smartWalletWithSequence = makeSmartWalletWithSequence(
+    {
+      signingSmartWalletKit,
+      sequenceManager,
+      log: (...args) => console.log('[SmartWalletWithSequence]:', ...args),
+    },
+    { chainId: networkConfig.chainName },
+  );
+
+  // create a wrapper that uses SmartWalletWithSequence methods
+  const smartWalletKitWithSequence: SmartWalletKitWithSequence = {
+    ...signingSmartWalletKit,
+    // override the three main methods to use SmartWalletWithSequence
+    sendBridgeAction: smartWalletWithSequence.sendBridgeAction,
+    executeOffer: smartWalletWithSequence.executeOffer,
+  };
+
   const spectrum = new SpectrumClient(simplePowers, {
     baseUrl: config.spectrum.apiUrl,
     timeout: config.spectrum.timeout,
@@ -104,7 +146,7 @@ export const main = async (
     rpc,
     spectrum,
     cosmosRest,
-    signingSmartWalletKit,
+    signingSmartWalletKit: smartWalletKitWithSequence,
     now: Date.now,
     gasEstimator,
   };

@@ -24,6 +24,7 @@ import {
   watchNobleTransfer,
 } from './watchers/noble-watcher.ts';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
+import type { SmartWalletKitWithSequence } from './main.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
 
@@ -31,7 +32,7 @@ export type EvmContext = {
   cosmosRest: CosmosRestClient;
   usdcAddresses: UsdcAddresses['mainnet' | 'testnet'];
   evmProviders: EvmProviders;
-  signingSmartWalletKit: SigningSmartWalletKit;
+  signingSmartWalletKit: SmartWalletKitWithSequence;
   fetch: typeof fetch;
 };
 
