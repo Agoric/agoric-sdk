@@ -567,9 +567,12 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
     `[${txId}] end time is in the future - estimate blocks ahead`,
     `[${txId}] using block time 300ms for chain eip155:42161`,
     `[${txId}] future blocks ${expectedFutureBlocks}`,
-    `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for MulticallExecuted with txId ${txId} at ${contractAddress}`,
+    `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
+    `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
+    `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
+    `[${txId}] Found MulticallStatus event`,
     `[${txId}] GMP tx resolved`,
   ]);
 });
