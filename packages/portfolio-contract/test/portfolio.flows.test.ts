@@ -71,6 +71,7 @@ import {
   contractsMock,
   evmNamingDistinction,
   gmpAddresses,
+  planUSDNDeposit,
 } from './mocks.ts';
 import {
   axelarCCTPConfig,
@@ -384,13 +385,13 @@ const mocks = (
     vowTools,
     chainHubTools,
     rebalance: rebalanceHost as any,
-    withdraw: null as any,
     parseInboundTransfer: parseInboundTransferHost as any,
     proposalShapes: makeProposalShapes(USDC, BLD),
     offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
     portfoliosNode,
     usdcBrand: USDC,
+    ...(null as any),
   });
   const makePortfolioKitGuest = () =>
     makePortfolioKit({
@@ -1235,7 +1236,7 @@ test('deposit in coordination with planner', async t => {
   const webUiDone = (async () => {
     const Deposit = make(USDC, 1_000_000n);
     const dSeat = makeMockSeat({ Deposit }, {}, offer.log);
-    await executePlan(orch, ctx, dSeat, {}, kit, {
+    return executePlan(orch, ctx, dSeat, {}, kit, {
       type: 'deposit',
       amount: Deposit,
     });
@@ -1250,15 +1251,13 @@ test('deposit in coordination with planner', async t => {
     // XXX brand from vstorage isn't suitable for use in call to kit
     const amount = make(USDC, detail.amount.value);
 
-    const steps: MovementDesc[] = [
-      { src: '<Deposit>', dest: '@agoric', amount },
-      { src: '@agoric', dest: '@noble', amount },
-      { src: '@noble', dest: 'USDN', amount },
-    ];
-
+    const steps = planUSDNDeposit(amount);
     kit.planner.resolveFlowPlan(Number(flowId.replace('flow', '')), steps);
   })();
-  await Promise.all([webUiDone, plannerP]);
+
+  const [result] = await Promise.all([webUiDone, plannerP]);
+  t.log('result', result);
+  t.is(result, 'flow1');
 
   const { log } = offer;
   t.log('calls:', log.map(msg => msg._method).join(', '));
