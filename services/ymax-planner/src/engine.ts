@@ -219,6 +219,10 @@ const processPortfolioEvents = async (
       depositBrand,
       { cosmosRest, spectrum },
     );
+    const errorContext: Record<string, unknown> = {
+      flowDetail,
+      currentBalances,
+    };
     const plannerContext = {
       currentBalances,
       targetAllocation: portfolioStatus.targetAllocation,
@@ -243,6 +247,7 @@ const processPortfolioEvents = async (
         console.warn(msg);
         return;
       }
+      errorContext.steps = steps;
   
       const resolvePlanArgs: ResolvePlanArgs = {
         portfolioId: portfolioIdFromKey(portfolioKey as any),
@@ -272,7 +277,7 @@ const processPortfolioEvents = async (
         result,
       );
     } catch (err) {
-      annotateError(err, X`currentBalances: ${currentBalances}`);
+      annotateError(err, X`${errorContext}`);
       throw err;
     }
   };
