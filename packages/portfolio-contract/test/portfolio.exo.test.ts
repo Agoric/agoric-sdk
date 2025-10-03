@@ -78,7 +78,7 @@ test('portfolio exo caches storage nodes', async t => {
   await eventLoopIteration();
   t.is(nodeQty, 2, 'root + portfolio');
 
-  manager.startFlow({ type: 'other' });
+  manager.startFlow({ type: 'rebalance' });
   const flowStatus: StatusFor['flow'] = { state: 'run', step: 1, how: 'USDN' };
   reporter.publishFlowStatus(1, flowStatus);
   reporter.publishFlowStatus(1, { ...flowStatus, step: 2 });

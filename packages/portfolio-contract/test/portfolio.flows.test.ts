@@ -45,11 +45,11 @@ import {
   type PortfolioKit,
 } from '../src/portfolio.exo.ts';
 import {
+  executePlan,
   openPortfolio,
   parseInboundTransfer,
   rebalance,
   wayFromSrcToDesc,
-  withdraw,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
 import {
@@ -1173,7 +1173,10 @@ test('withdraw in coordination with planner', async t => {
   const webUiDone = (async () => {
     const Cash = make(USDC, 300n);
     const wSeat = makeMockSeat({}, { Cash }, offer.log);
-    await withdraw(orch, ctx, wSeat, kit);
+    await executePlan(orch, ctx, wSeat, {}, kit, {
+      type: 'withdraw',
+      amount: Cash,
+    });
   })();
 
   const plannerP = (async () => {
@@ -1217,6 +1220,152 @@ test('withdraw in coordination with planner', async t => {
     { _method: 'exit' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
+
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test('deposit in coordination with planner', async t => {
+  const { orch, ctx, offer, storage } = mocks({});
+
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  const kit = await ctx.makePortfolioKit();
+  const portfolioId = kit.reader.getPortfolioId();
+
+  const webUiDone = (async () => {
+    const Deposit = make(USDC, 1_000_000n);
+    const dSeat = makeMockSeat({ Deposit }, {}, offer.log);
+    await executePlan(orch, ctx, dSeat, {}, kit, {
+      type: 'deposit',
+      amount: Deposit,
+    });
+  })();
+
+  const plannerP = (async () => {
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    t.log('planner found', { portfolioId, flowId, detail });
+
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+    // XXX brand from vstorage isn't suitable for use in call to kit
+    const amount = make(USDC, detail.amount.value);
+
+    const steps: MovementDesc[] = [
+      { src: '<Deposit>', dest: '@agoric', amount },
+      { src: '@agoric', dest: '@noble', amount },
+      { src: '@noble', dest: 'USDN', amount },
+    ];
+
+    kit.planner.resolveFlowPlan(Number(flowId.replace('flow', '')), steps);
+  })();
+  await Promise.all([webUiDone, plannerP]);
+
+  const { log } = offer;
+  t.log('calls:', log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    // deposit calls
+    { _method: 'monitorTransfers' },
+    { _method: 'localTransfer', amounts: { Deposit: { value: 1000000n } } },
+    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { msgs: [{ typeUrl: '/noble.swap.v1.MsgSwap' }] },
+    { _method: 'exit' },
+  ]);
+  t.snapshot(log, 'call log'); // see snapshot for remaining arg details
+
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test('simple rebalance in coordination with planner', async t => {
+  const { orch, ctx, offer, storage, tapPK } = mocks({});
+
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  // Create portfolio with initial allocation
+  const initialKit = await ctx.makePortfolioKit();
+  const portfolioId = initialKit.reader.getPortfolioId();
+
+  // First deposit funds into USDN position
+  {
+    const depositAmount = make(USDC, 10_000n);
+    const depositSeat = makeMockSeat({ Deposit: depositAmount }, {}, offer.log);
+    await rebalance(
+      orch,
+      ctx,
+      depositSeat,
+      {
+        flow: [
+          { src: '<Deposit>', dest: '@agoric', amount: depositAmount },
+          { src: '@agoric', dest: '@noble', amount: depositAmount },
+          { src: '@noble', dest: 'USDN', amount: depositAmount },
+        ],
+      },
+      initialKit,
+    );
+  }
+
+  // Set initial allocation (100% USDN in basis points)
+  {
+    const initialAllocation = { USDN: 10000n }; // 100% = 10000 basis points
+    const seat = makeMockSeat({}, {}, offer.log);
+    await rebalance(
+      orch,
+      ctx,
+      seat,
+      { targetAllocation: initialAllocation },
+      initialKit,
+    );
+  }
+
+  // Now test simpleRebalance flow with different allocation
+  const webUiDone = (async () => {
+    const newAllocation = { USDN: 5000n, Aave_Arbitrum: 5000n }; // 50% each = 5000 basis points each
+    const srSeat = makeMockSeat({}, {}, offer.log);
+    initialKit.manager.setTargetAllocation(newAllocation);
+    await executePlan(orch, ctx, srSeat, {}, initialKit, { type: 'rebalance' });
+  })();
+
+  const plannerP = (async () => {
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    t.log('planner found', { portfolioId, flowId, detail });
+
+    if (detail.type !== 'rebalance') throw t.fail(detail.type);
+
+    // Planner provides steps to move from USDN to mixed allocation
+    const steps: MovementDesc[] = [
+      { src: 'USDN', dest: '@noble', amount: make(USDC, 5000n) },
+      {
+        src: '@noble',
+        dest: '@Arbitrum',
+        amount: make(USDC, 5000n),
+        fee: make(BLD, 100n),
+      },
+      {
+        src: '@Arbitrum',
+        dest: 'Aave_Arbitrum',
+        amount: make(USDC, 5000n),
+        fee: make(BLD, 50n),
+      },
+    ];
+
+    initialKit.planner.resolveFlowPlan(
+      Number(flowId.replace('flow', '')),
+      steps,
+    );
+  })();
+
+  // Simulate external system responses for cross-chain operations
+  const simulationP = (async () => {
+    // Wait for the tap to be set up, then simulate Axelar GMP response for Arbitrum account creation
+    const tap = await tapPK.promise;
+    await tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain }));
+  })();
+
+  await Promise.all([webUiDone, plannerP, simulationP]);
+
+  const { log } = offer;
+  t.log('calls:', log.map(msg => msg._method).join(', '));
+  t.snapshot(log, 'call log');
 
   await documentStorageSchema(t, storage, docOpts);
 });
