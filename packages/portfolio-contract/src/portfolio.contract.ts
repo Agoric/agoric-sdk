@@ -141,7 +141,7 @@ const GmpAddressesShape: TypedPattern<GmpAddresses> = M.splitRecord({
   AXELAR_GAS: M.string(),
 });
 
-type PortfolioPrivateArgs = OrchestrationPowers & {
+export type PortfolioPrivateArgs = OrchestrationPowers & {
   // XXX document required assets, chains
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
   chainInfo: Record<string, ChainInfo>;

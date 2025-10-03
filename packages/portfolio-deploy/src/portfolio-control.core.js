@@ -1,102 +1,140 @@
 /** @file core eval to give control of YMax contract to a smartWallet */
 
 import { makeTracer } from '@agoric/internal/src/debug.js';
-import { E } from '@endo/eventual-send';
-import { makeHeapZone } from '@agoric/zone';
+import { deeplyFulfilledObject } from '@agoric/internal';
 import { objectMap } from '@endo/patterns';
-import { passStyleOf } from '@endo/pass-style';
-import { prepareContractControl } from './contract-control.js';
-import { orchPermit } from './orch.start.js';
-import {
-  deployPostalService,
-  permit as postalServicePermit,
-} from './postal-service.core.js';
-
-export { deployPostalService };
+import { E, passStyleOf, getInterfaceOf } from '@endo/far';
 
 /**
- * @import {ChainStoragePresent} from './chain-info.core.js'
+ * @import {ContractControlPowers, DeliverContractControl} from './contract-control.core.js';
  * @import {PortfolioBootPowers} from './portfolio-start.type.ts';
- * @import {PostalServiceBoot} from './postal-service.core.js';
- * @import {AttenuatedDepositPowers} from './attenuated-deposit.core.js';
+ * @import {StartFn} from './portfolio-start.type.ts';
+ * @import {UpgradeKit, GetUpgradeKitPowers} from './get-upgrade-kit.core.js';
  */
 
-const contractName = 'ymax0';
+/**
+ * @template {number} [T=number]
+ * @typedef {`ymax${T}`} YMaxCN
+ */
 
-const trace = makeTracer('PCtrl');
+/**
+ * @template {YMaxCN} [CN=YMaxCN]
+ * @typedef {object} DelegatePortfolioOptions
+ * @property {string} ymaxControlAddress
+ * @property {CN} contractName
+ */
+
+/**
+ * @param {*} name
+ * @returns {name is YMaxCN}
+ */
+export const isYMaxContractName = name =>
+  typeof name === 'string' && name.startsWith('ymax');
 
 /**
  * @param {BootstrapPowers &
- *  ChainStoragePresent &
- *  PortfolioBootPowers &
- *  PostalServiceBoot &
- *  AttenuatedDepositPowers
+ *  ContractControlPowers &
+ *  GetUpgradeKitPowers &
+ *  PortfolioBootPowers
  * } permitted
- * @param {{ options: { ymaxControlAddress: string }}} config
+ * @param {{ options: DelegatePortfolioOptions}} config
  */
 export const delegatePortfolioContract = async (permitted, config) => {
-  const { ymaxControlAddress } = config?.options || {};
+  const { ymaxControlAddress, contractName } = config?.options || {};
   assert(ymaxControlAddress);
+  assert(isYMaxContractName(contractName));
 
   await null;
   const { consume } = permitted;
 
-  // Use a heap zone to avoid entanglement with old liveslots
-  const ymaxZone = makeHeapZone();
-  const makeContractControl = prepareContractControl(ymaxZone, {
-    agoricNamesAdmin: await consume.agoricNamesAdmin,
-    board: await consume.board,
-    startUpgradable: await consume.startUpgradable,
-    zoe: await consume.zoe,
-  });
-  const { privateArgs } = await consume.ymax0Kit;
+  const trace = makeTracer(`PCtrl-${contractName}`);
+
+  trace('getting existing instance kit');
+  /** @type {UpgradeKit<StartFn> | undefined} */
+  let kit;
+  try {
+    kit = await E(consume.getUpgradeKit)(contractName);
+  } catch (err) {
+    trace(
+      'Could not get existing instance kit, falling back to promise space',
+      err,
+    );
+    // The kit may not exist in promise space, but if it does, it is resolved already
+    kit = await Promise.race([consume[`${contractName}Kit`], undefined]);
+  }
+
   trace(
-    'ymax0Kit.privateArgs',
-    objectMap(privateArgs, v => passStyleOf(v)),
+    'kit',
+    kit &&
+      objectMap(kit, v => {
+        const style = passStyleOf(v);
+        return style === 'remotable' ? getInterfaceOf(v) : style;
+      }),
+  );
+  trace(
+    'kit?.privateArgs',
+    kit?.privateArgs && objectMap(kit.privateArgs, v => passStyleOf(v)),
   );
 
-  const ymaxControl = makeContractControl({
+  const {
+    localchain,
+    cosmosInterchainService,
+    chainTimerService,
+    agoricNames,
+    board,
+  } = consume;
+
+  const initialPrivateArgs = await deeplyFulfilledObject(
+    harden({
+      localchain,
+      orchestrationService: cosmosInterchainService,
+      timerService: chainTimerService,
+      agoricNames,
+      marshaller: E(board).getPublishingMarshaller(),
+    }),
+  );
+
+  const deliverContractControl = await consume.deliverContractControl;
+
+  // Note: we don't wait till chainInfoPublished settles, but any invocation
+  // of start should be done after
+
+  const { contractControl } = await deliverContractControl({
     name: contractName,
-    storageNode: await E(consume.chainStorage).makeChildNode(contractName),
-    initialPrivateArgs: privateArgs,
+    controlAddress: ymaxControlAddress,
+    initialPrivateArgs,
+    kit,
   });
 
-  const { getDepositFacet } = consume;
-  trace('reserving', ymaxControlAddress);
-  await E(getDepositFacet)(ymaxControlAddress);
-
-  const postalSvcPub = await E.when(
-    permitted.instance.consume.postalService,
-    instance => E(consume.zoe).getPublicFacet(instance),
-  );
-  trace('delivering ymax control', ymaxControlAddress, ymaxControl);
-  // don't block the coreEval on the recipient's offer
-  void E.when(
-    E(postalSvcPub).deliverPrize(
-      ymaxControlAddress,
-      ymaxControl,
-      'ymaxControl',
-    ),
-    () => trace('ymax control received'),
+  trace(
+    'created ymax control',
+    passStyleOf(contractControl),
+    'and delivering to',
+    ymaxControlAddress,
   );
 };
 
-export const getManifestForPortfolioControl = (
-  { restoreRef },
-  { installKeys, options },
-) => ({
-  manifest: {
-    ...postalServicePermit,
-    [delegatePortfolioContract.name]: {
-      consume: {
-        ...orchPermit,
-        agoricNamesAdmin: true,
-        getDepositFacet: true,
-        ymax0Kit: true,
+export const getManifestForPortfolioControl = (utils, { options }) => {
+  const { contractName } = options;
+  return {
+    manifest: {
+      [delegatePortfolioContract.name]: {
+        consume: {
+          deliverContractControl: true,
+          getUpgradeKit: true,
+          [`${contractName}Kit`]: true,
+
+          // subset of orchPermit
+          localchain: true,
+          cosmosInterchainService: true,
+          chainTimerService: true,
+          agoricNames: true,
+
+          // for publishing Brands and other remote object references
+          board: true,
+        },
       },
-      instance: { consume: { postalService: true } },
     },
-  },
-  installations: { postalService: restoreRef(installKeys.postalService) },
-  options,
-});
+    options,
+  };
+};

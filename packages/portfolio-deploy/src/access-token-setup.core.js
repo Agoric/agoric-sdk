@@ -7,9 +7,6 @@ import { AssetKind } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
-import { produceAttenuatedDeposit } from './attenuated-deposit.core.js';
-
-export { produceAttenuatedDeposit };
 
 const { Fail } = assert;
 
@@ -189,10 +186,6 @@ export const getManifestCall = (_powers, options) => {
         installation: {
           consume: { mintHolder: true },
         },
-      },
-      [produceAttenuatedDeposit.name]: {
-        consume: { namesByAddress: true, namesByAddressAdmin: true },
-        produce: { getDepositFacet: true },
       },
     },
     options,

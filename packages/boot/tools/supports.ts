@@ -743,9 +743,14 @@ export const makeSwingsetTestKit = async (
     fs: fsAmbientPromises,
   });
 
-  const evalProposal = async (
-    proposalP: ERef<Awaited<ReturnType<typeof buildProposal>>>,
-  ) => {
+  type ProposalMaterials = Awaited<ReturnType<typeof buildProposal>>;
+
+  const combineProposals = (materials: ProposalMaterials[]) => ({
+    evals: materials.flatMap(e => e.evals),
+    bundles: materials.flatMap(e => e.bundles),
+  });
+
+  const evalProposal = async (proposalP: ERef<ProposalMaterials>) => {
     const { EV } = runUtils;
 
     const proposal = harden(await proposalP);
@@ -884,6 +889,7 @@ export const makeSwingsetTestKit = async (
     advanceTimeTo,
     bridgeUtils,
     buildProposal,
+    combineProposals,
     controller,
     evalProposal,
     getCrankNumber,
