@@ -5,7 +5,7 @@ import { inspect } from 'node:util';
 
 import type { Coin } from '@cosmjs/stargate';
 
-import { Fail, q } from '@endo/errors';
+import { Fail, X, annotateError, q } from '@endo/errors';
 import { Nat } from '@endo/nat';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import { AmountMath, type Brand } from '@agoric/ertp';
@@ -227,48 +227,54 @@ const processPortfolioEvents = async (
       feeBrand,
       gasEstimator,
     };
-
-    let steps: MovementDesc[];
-    const { type } = flowDetail;
-    if (type === 'withdraw') {
-      steps = await planWithdrawFromAllocations({
-        ...plannerContext,
-        amount: flowDetail.amount,
+  
+    try {
+      let steps: MovementDesc[];
+      const { type } = flowDetail;
+      if (type === 'withdraw') {
+        steps = await planWithdrawFromAllocations({
+          ...plannerContext,
+          amount: flowDetail.amount,
+        });
+      } else if (type === 'other') {
+        steps = await planRebalanceToAllocations(plannerContext);
+      } else {
+        const msg = `⚠️  Unknown flow type ${type} for ${path} in-progress flow ${flowKey}`;
+        console.warn(msg);
+        return;
+      }
+  
+      const resolvePlanArgs: ResolvePlanArgs = {
+        portfolioId: portfolioIdFromKey(portfolioKey as any),
+        flowId: flowIdFromKey(flowKey as any),
+        steps,
+        policyVersion: portfolioStatus.policyVersion,
+        rebalanceCount: portfolioStatus.rebalanceCount,
+      };
+      // TODO: Incorporate `reflectWalletStore` type safety into
+      // SigningSmartWalletKit and use that here.
+      // const planner = signingSmartWalletKit.get<PortfolioPlanner>('planner');
+      // const { tx } =
+      //   await planner.resolvePlan(portfolioId, flowId, steps, policyVersion, rebalanceCount);
+      const result = await signingSmartWalletKit.sendBridgeAction({
+        method: 'invokeEntry',
+        message: {
+          targetName: 'planner',
+          method: 'resolvePlan',
+          args: Object.values(resolvePlanArgs),
+        },
       });
-    } else if (type === 'other') {
-      steps = await planRebalanceToAllocations(plannerContext);
-    } else {
-      const msg = `⚠️  Unknown flow type ${type} for ${path} in-progress flow ${flowKey}`;
-      console.warn(msg);
-      return;
+      console.log(
+        `Resolving ${path} in-progress flow ${flowKey}`,
+        flowDetail,
+        currentBalances,
+        resolvePlanArgs,
+        result,
+      );
+    } catch (err) {
+      annotateError(err, X`currentBalances: ${currentBalances}`);
+      throw err;
     }
-
-    const resolvePlanArgs: ResolvePlanArgs = {
-      portfolioId: portfolioIdFromKey(portfolioKey as any),
-      flowId: flowIdFromKey(flowKey as any),
-      steps,
-      policyVersion: portfolioStatus.policyVersion,
-      rebalanceCount: portfolioStatus.rebalanceCount,
-    };
-    // TODO: Incorporate `reflectWalletStore` type safety into
-    // SigningSmartWalletKit and use that here.
-    // const planner = signingSmartWalletKit.get<PortfolioPlanner>('planner');
-    // const { tx } =
-    //   await planner.resolvePlan(portfolioId, flowId, steps, policyVersion, rebalanceCount);
-    const result = await signingSmartWalletKit.sendBridgeAction({
-      method: 'invokeEntry',
-      message: {
-        targetName: 'planner',
-        method: 'resolvePlan',
-        args: Object.values(resolvePlanArgs),
-      },
-    });
-    console.log(
-      `Resolving ${path} in-progress flow ${flowKey}`,
-      flowDetail,
-      resolvePlanArgs,
-      result,
-    );
   };
   const handledPortfolioKeys = new Set<string>();
   // prettier-ignore
