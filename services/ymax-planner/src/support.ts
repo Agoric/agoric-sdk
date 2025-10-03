@@ -330,6 +330,7 @@ type ScanOpts = {
   chainId: CaipChainId;
   chunkSize?: number;
   log?: (...args: unknown[]) => void;
+  signal?: AbortSignal;
 };
 
 /**
@@ -348,10 +349,15 @@ export const scanEvmLogsInChunks = async (
     chainId,
     chunkSize = 10,
     log = () => {},
+    signal,
   } = opts;
 
   await null;
   for (let start = fromBlock; start <= toBlock; ) {
+    if (signal?.aborted) {
+      log('[LogScan] Aborted');
+      return undefined;
+    }
     const end = Math.min(start + chunkSize - 1, toBlock);
     const currentBlock = await provider.getBlockNumber();
 
