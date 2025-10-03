@@ -6,6 +6,7 @@ import { untilTrue } from '@agoric/internal';
 import { withGroundState, makeState } from './state.js';
 
 /**
+ * @import {ERemote} from '@agoric/internal'
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {Key, Pattern} from '@endo/patterns';
  */
@@ -112,7 +113,7 @@ const applyCacheTransaction = async (
 
 /**
  * @param {MapStore<string, import('./state.js').State>} stateStore
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERemote<Marshaller>} marshaller
  * @returns {Promise<string>}
  */
 const stringifyStateStore = async (stateStore, marshaller) => {
@@ -176,8 +177,8 @@ export const makeScalarStoreCoordinator = (
  * Don't write any marshalled value that's older than what's already pushed
  *
  * @param {MapStore<string, import('./state.js').State>} stateStore
- * @param {ERef<Marshaller>} marshaller
- * @param {ERef<StorageNode>} storageNode
+ * @param {ERemote<Marshaller>} marshaller
+ * @param {ERemote<StorageNode>} storageNode
  * @returns {<T>(storedValue: T) => Promise<T>}
  */
 const makeLastWinsUpdater = (stateStore, marshaller, storageNode) => {
@@ -205,8 +206,8 @@ const makeLastWinsUpdater = (stateStore, marshaller, storageNode) => {
  * Make a cache coordinator backed by a MapStore.  This coordinator doesn't
  * currently enforce any cache eviction, but that would be a useful feature.
  *
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERemote<StorageNode>} storageNode
+ * @param {ERemote<Marshaller>} marshaller
  */
 export const makeChainStorageCoordinator = (storageNode, marshaller) => {
   const stateStore = makeScalarBigMapStore('stateKey');

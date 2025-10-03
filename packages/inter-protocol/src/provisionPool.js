@@ -18,7 +18,7 @@ import {
 } from './provisionPoolKit.js';
 
 /**
- * @import {Marshal} from '@endo/marshal';
+ * @import {Remote} from '@agoric/internal';
  * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
  * @import {ContractMeta, Invitation, StandardTerms, ZCF} from '@agoric/zoe';
  * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
@@ -54,8 +54,8 @@ harden(meta);
  *     import('@agoric/vats/src/vat-bank.js').Bank
  *   >;
  *   initialPoserInvitation: Invitation;
- *   storageNode: StorageNode;
- *   marshaller: Marshal<any>;
+ *   storageNode: Remote<StorageNode>;
+ *   marshaller: Remote<Marshaller>;
  *   metricsOverride?: import('./provisionPoolKit.js').MetricsNotification;
  *   governedParamOverrides?: Record<string, Amount | undefined>;
  * }} privateArgs

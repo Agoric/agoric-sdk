@@ -46,6 +46,7 @@ import { objectMapStoragePath } from './utils.js';
 import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
 
 /**
+ * @import {ERemote, Remote} from '@agoric/internal';
  * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
  * @import {WeakMapStore, MapStore} from '@agoric/store'
  * @import {InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
@@ -169,9 +170,9 @@ const trace = makeTracer('SmrtWlt');
  * @typedef {{
  *   address: string;
  *   bank: ERef<import('@agoric/vats/src/vat-bank.js').Bank>;
- *   currentStorageNode: StorageNode;
+ *   currentStorageNode: Remote<StorageNode>;
  *   invitationPurse: Purse<'set', InvitationDetails>;
- *   walletStorageNode: StorageNode;
+ *   walletStorageNode: Remote<StorageNode>;
  * }} UniqueParams
  *
  *
@@ -184,7 +185,7 @@ const trace = makeTracer('SmrtWlt');
  *   invitationIssuer: Issuer<'set'>;
  *   invitationBrand: Brand<'set'>;
  *   invitationDisplayInfo: DisplayInfo;
- *   publicMarshaller: Marshaller;
+ *   publicMarshaller: Remote<Marshaller>;
  *   zoe: ERef<ZoeService>;
  * }} SharedParams
  *
@@ -324,7 +325,9 @@ export const prepareSmartWallet = (baggage, shared) => {
       amountWatcherGuard,
       /**
        * @param {Purse} purse
-       * @param {ReturnType<makeWalletWithResolvedStorageNodes>['helper']} helper
+       * @param {ReturnType<
+       *   typeof makeWalletWithResolvedStorageNodes
+       * >['helper']} helper
        */
       (purse, helper) => ({ purse, helper }),
       {
@@ -371,6 +374,7 @@ export const prepareSmartWallet = (baggage, shared) => {
         address: M.string(),
         bank: M.eref(M.remotable()),
         invitationPurse: PurseShape,
+        // Should not be M.eref, makeRecordedKit assumes resolved
         currentStorageNode: M.eref(StorageNodeShape),
         walletStorageNode: M.eref(StorageNodeShape),
       }),
@@ -1260,7 +1264,7 @@ export const prepareSmartWallet = (baggage, shared) => {
    *   UniqueParams,
    *   'currentStorageNode' | 'walletStorageNode'
    * > & {
-   *   walletStorageNode: ERef<StorageNode>;
+   *   walletStorageNode: ERemote<StorageNode>;
    * }} uniqueWithoutChildNodes
    */
   const makeSmartWallet = async uniqueWithoutChildNodes => {

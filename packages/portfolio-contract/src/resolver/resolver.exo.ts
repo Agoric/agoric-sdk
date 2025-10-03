@@ -6,7 +6,7 @@
  * This is an orchestration component that can be used independently of portfolio logic.
  */
 
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, type ERemote } from '@agoric/internal';
 import type {
   Marshaller,
   StorageNode,
@@ -17,7 +17,6 @@ import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
-import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { TxStatus, TxType } from './constants.js';
@@ -95,11 +94,14 @@ export const prepareResolverKit = (
     marshaller,
   }: {
     vowTools: VowTools;
-    pendingTxsNode: ERef<StorageNode>;
-    marshaller: Marshaller;
+    pendingTxsNode: ERemote<StorageNode>;
+    marshaller: ERemote<Marshaller>;
   },
 ) => {
-  const writeToNode = (node: ERef<StorageNode>, value: PublishedTx): void => {
+  const writeToNode = (
+    node: ERemote<StorageNode>,
+    value: PublishedTx,
+  ): void => {
     void E.when(E(marshaller).toCapData(value), capData =>
       E(node).setValue(JSON.stringify(capData)),
     );

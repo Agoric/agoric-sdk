@@ -18,6 +18,8 @@ import { prepareSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
 
 /**
+ * @import {ERemote} from '@agoric/internal';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {NameHub} from '@agoric/vats';
  */
@@ -150,7 +152,7 @@ export const makeAssetRegistry = assetPublisher => {
 /**
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
- *   storageNode: ERef<StorageNode>;
+ *   storageNode: ERemote<StorageNode>;
  *   walletBridgeManager?: ERef<
  *     import('@agoric/vats').ScopedBridgeManager<'wallet'>
  *   >;

@@ -8,6 +8,10 @@ import { provideRetiredInstances } from './utils.js';
 const trace = makeTracer('NewAuction', true);
 
 /**
+ * @import {Remote} from '@agoric/internal';
+ */
+
+/**
  * @typedef {PromiseSpaceOf<{
  *   auctionUpgradeNewInstance: Instance;
  *   auctionUpgradeNewGovCreator: any;
@@ -123,6 +127,7 @@ export const addAuction = async (
   const timerBrand = await E(chainTimerService).getTimerBrand();
 
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
+  /** @type {Remote<Marshaller>} */
   const marshaller = await E(board).getReadonlyMarshaller();
 
   const reservePublicFacet = await E(zoe).getPublicFacet(reserveInstance);
