@@ -283,11 +283,8 @@ export const reflectWalletStore = (
      * (but note that when so overridden, the returned `result` is not yet
      * usable).
      */
-    getForSavingResults: <T>(
-      name: string,
-      options: Partial<TxOptions> &
-        (Pick<TxOptions, 'makeNonce'> | { immediate: true }),
-    ) => makeEntryProxy(name, options, true) as WalletStoreEntryProxy<T, true>,
+    getForSavingResults: <T>(name: string, options?: Partial<TxOptions>) =>
+      makeEntryProxy(name, options, true) as WalletStoreEntryProxy<T, true>,
     /**
      * Execute the offer specified by { instance, description } and save the
      * result in the wallet store with the specified name (default to match the
