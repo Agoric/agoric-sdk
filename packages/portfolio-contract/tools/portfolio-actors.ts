@@ -164,6 +164,28 @@ export const makeTrader = (
         offerArgs,
       });
     },
+    async simpleRebalance(
+      t: ExecutionContext,
+      proposal: ProposalType['rebalance'],
+      offerArgs: OfferArgsFor['rebalance'],
+    ) {
+      if (!openId) throw Error('not open');
+      const invitationMakerName: PortfolioContinuingInvitationMaker =
+        'SimpleRebalance';
+      const id = `simpleRebalance-${(nonce += 1)}`;
+      const invitationSpec: InvitationSpec = {
+        source: 'continuing' as const,
+        invitationMakerName,
+        previousOffer: openId,
+      };
+
+      return wallet.executeContinuingOffer({
+        id,
+        invitationSpec,
+        proposal,
+        offerArgs,
+      });
+    },
     async withdraw(t: ExecutionContext, Cash: NatAmount) {
       if (!openId) throw Error('not open');
       const invitationMakerName: PortfolioContinuingInvitationMaker =
@@ -176,6 +198,22 @@ export const makeTrader = (
       };
 
       const proposal: ProposalType['withdraw'] = { give: {}, want: { Cash } };
+      return wallet.executeContinuingOffer({ id, invitationSpec, proposal });
+    },
+    async deposit(t: ExecutionContext, Deposit: NatAmount) {
+      if (!openId) throw Error('not open');
+      const invitationMakerName: PortfolioContinuingInvitationMaker = 'Deposit';
+      const id = `Deposit-${(nonce += 1)}`;
+      const invitationSpec: InvitationSpec = {
+        source: 'continuing' as const,
+        invitationMakerName,
+        previousOffer: openId,
+      };
+
+      const proposal: ProposalType['deposit'] = {
+        give: { Deposit },
+        want: {},
+      };
       return wallet.executeContinuingOffer({ id, invitationSpec, proposal });
     },
     getPortfolioId: () => portfolioIdOfPath(stripRoot(self.getPortfolioPath())),

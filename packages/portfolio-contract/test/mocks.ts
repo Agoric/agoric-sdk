@@ -15,7 +15,7 @@ import {
   MsgSwap,
   MsgSwapResponse,
 } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
-import type { Brand, Issuer, Payment } from '@agoric/ertp';
+import type { Brand, Issuer, NatAmount, Payment } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.js';
 import type {
@@ -36,6 +36,7 @@ import type { Zone } from '@agoric/zone';
 import { makePromiseKit } from '@endo/promise-kit';
 import type { AxelarId, GmpAddresses } from '../src/portfolio.contract.ts';
 import type { EVMContractAddressesMap } from '../src/type-guards.ts';
+import type { MovementDesc } from '../src/type-guards-steps.ts';
 
 /** address of orch LCA for portfolio0, after contract/fee LCA */
 export const portfolio0lcaOrch = makeTestAddress(1); // agoric1q...c09z0g';
@@ -404,4 +405,14 @@ export const gasEstimator = {
   getWalletEstimate: async () => 10_000_000n,
   getFactoryContractEstimate: async () => 10_000_000n,
   getReturnFeeEstimate: async () => 200_000_000_000_000n,
+};
+
+/** plan for deposit to USDN */
+export const planUSDNDeposit = (amount: NatAmount): MovementDesc[] => {
+  const detail = { usdnOut: (amount.value * 999n) / 1000n };
+  return [
+    { amount, dest: '@agoric', src: '<Deposit>' },
+    { amount, dest: '@noble', src: '@agoric' },
+    { amount, dest: 'USDN', detail, src: '@noble' },
+  ];
 };

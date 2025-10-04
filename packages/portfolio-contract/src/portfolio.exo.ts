@@ -33,7 +33,7 @@ import type { ERef } from '@endo/far';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.js';
-import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
+import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
 import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
 import {
@@ -43,8 +43,8 @@ import {
   PoolKeyShapeExt,
   type FlowDetail,
   type makeProposalShapes,
-  type OfferArgsFor,
   type PoolKey,
+  type ProposalType,
   type StatusFor,
   type TargetAllocation,
 } from './type-guards.js';
@@ -179,13 +179,16 @@ const eventAbbr = (e: VTransferIBCEvent) => {
   return { destination_channel: dest, sequence };
 };
 
+/** avoid circular reference */
+type PortfolioKitCycleBreaker = unknown;
+
 export const preparePortfolioKit = (
   zone: Zone,
   {
     axelarIds,
     gmpAddresses,
     rebalance,
-    withdraw,
+    executePlan,
     parseInboundTransfer,
     chainHubTools,
     proposalShapes,
@@ -200,13 +203,18 @@ export const preparePortfolioKit = (
     gmpAddresses: GmpAddresses;
     rebalance: (
       seat: ZCFSeat,
-      offerArgs: OfferArgsFor['rebalance'],
-      kit: unknown, // XXX avoid circular reference
-    ) => Vow<unknown>; // XXX HostForGuest???
-    withdraw: (seat: ZCFSeat, kit: unknown) => Vow<unknown>;
+      offerArgs: unknown,
+      kit: PortfolioKitCycleBreaker,
+    ) => Vow<unknown>;
+    executePlan: (
+      seat: ZCFSeat,
+      offerArgs: unknown,
+      kit: PortfolioKitCycleBreaker,
+      flowDetail: FlowDetail,
+    ) => Vow<unknown>;
     parseInboundTransfer: (
       packet: VTransferIBCEvent['packet'],
-      kit: unknown, // XXX avoid circular reference to this.facets
+      kit: PortfolioKitCycleBreaker,
     ) => Vow<Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>>;
     chainHubTools: Pick<ChainHub, 'getChainInfo' | 'getChainsAndConnection'>;
     proposalShapes: ReturnType<typeof makeProposalShapes>;
@@ -446,7 +454,7 @@ export const preparePortfolioKit = (
             rebalanceCount,
           } = this.state;
 
-          const deposit = () => {
+          const depositAddr = () => {
             const { lcaIn } = accounts.get('agoric') as AgoricAccountInfo;
             return { depositAddress: lcaIn.getAddress().value };
           };
@@ -456,7 +464,7 @@ export const preparePortfolioKit = (
             flowCount: nextFlowId - 1,
             flowsRunning: makeFlowsRunningRecord(flowsRunning),
             accountIdByChain: accountIdByChain(accounts),
-            ...(accounts.has('agoric') ? deposit() : {}),
+            ...(accounts.has('agoric') ? depositAddr() : {}),
             ...(targetAllocation && { targetAllocation }),
             accountsPending: [...accountsPending.keys()],
             policyVersion,
@@ -603,11 +611,42 @@ export const preparePortfolioKit = (
           return rebalance(seat, offerArgs, this.facets);
         },
       },
-      withdrawHandler: {
-        async handle(seat: ZCFSeat) {
-          return withdraw(seat, this.facets);
+      depositHandler: {
+        async handle(seat: ZCFSeat, offerArgs: unknown) {
+          mustMatch(offerArgs, harden({}));
+          const proposal =
+            seat.getProposal() as unknown as ProposalType['deposit'];
+          return executePlan(seat, offerArgs, this.facets, {
+            type: 'deposit',
+            amount: proposal.give.Deposit,
+          });
         },
       },
+      simpleRebalanceHandler: {
+        async handle(seat: ZCFSeat, offerArgs: unknown) {
+          // XXX offerArgs.flow shouldn't be allowed
+          mustMatch(offerArgs, offerArgsShapes.rebalance);
+          if (offerArgs.targetAllocation) {
+            const { manager } = this.facets;
+            manager.setTargetAllocation(offerArgs.targetAllocation);
+          }
+          return executePlan(seat, offerArgs, this.facets, {
+            type: 'rebalance',
+          });
+        },
+      },
+      withdrawHandler: {
+        async handle(seat: ZCFSeat, offerArgs: unknown) {
+          mustMatch(offerArgs, harden({}));
+          const proposal =
+            seat.getProposal() as unknown as ProposalType['withdraw'];
+          return executePlan(seat, offerArgs, this.facets, {
+            type: 'withdraw',
+            amount: proposal.want.Cash,
+          });
+        },
+      },
+
       invitationMakers: {
         Rebalance() {
           const { rebalanceHandler } = this.facets;
@@ -625,6 +664,24 @@ export const preparePortfolioKit = (
             'withdraw',
             undefined,
             proposalShapes.withdraw,
+          );
+        },
+        Deposit() {
+          const { depositHandler } = this.facets;
+          return zcf.makeInvitation(
+            depositHandler,
+            'deposit',
+            undefined,
+            proposalShapes.deposit,
+          );
+        },
+        SimpleRebalance() {
+          const { simpleRebalanceHandler } = this.facets;
+          return zcf.makeInvitation(
+            simpleRebalanceHandler,
+            'simpleRebalance',
+            undefined,
+            proposalShapes.rebalance,
           );
         },
       },
