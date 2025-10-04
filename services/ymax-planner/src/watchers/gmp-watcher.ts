@@ -1,7 +1,11 @@
 import { ethers, type Filter, type JsonRpcProvider, type Log } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 import type { CaipChainId } from '@agoric/orchestration';
-import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
+import {
+  buildTimeWindow,
+  getBlockTimeMs,
+  scanEvmLogsInChunks,
+} from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 
 // TODO: Remove once all contracts are upgraded to emit MulticallStatus
@@ -112,18 +116,23 @@ export const lookBackGmp = async ({
   txId,
   publishTimeMs,
   chainId,
+  timeoutMs,
   log = () => {},
 }: WatchGmp & {
   publishTimeMs: number;
   chainId: CaipChainId;
+  timeoutMs: number;
 }): Promise<boolean> => {
   await null;
   try {
     const { fromBlock, toBlock } = await buildTimeWindow(
       provider,
       publishTimeMs,
-      log,
-      chainId,
+      {
+        timeoutMs,
+        meanBlockDurationMs: getBlockTimeMs(chainId),
+        log,
+      },
     );
 
     log(

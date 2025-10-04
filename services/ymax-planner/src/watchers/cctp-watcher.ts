@@ -1,7 +1,11 @@
 import type { Filter, JsonRpcProvider, Log } from 'ethers';
 import { id, zeroPadValue, getAddress, ethers } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
-import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
+import {
+  buildTimeWindow,
+  getBlockTimeMs,
+  scanEvmLogsInChunks,
+} from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 
 /**
@@ -139,18 +143,23 @@ export const lookBackCctp = async ({
   expectedAmount,
   publishTimeMs,
   chainId,
+  timeoutMs,
   log = () => {},
 }: CctpWatch & {
   publishTimeMs: number;
   chainId: CaipChainId;
+  timeoutMs: number;
 }): Promise<boolean> => {
   await null;
   try {
     const { fromBlock, toBlock } = await buildTimeWindow(
       provider,
       publishTimeMs,
-      log,
-      chainId,
+      {
+        timeoutMs,
+        meanBlockDurationMs: getBlockTimeMs(chainId),
+        log,
+      },
     );
 
     log(
