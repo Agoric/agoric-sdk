@@ -73,6 +73,16 @@ export const provideEVMAccount = async (
 
   // We have the map entry reserved - use critical section pattern
   try {
+    // Try the optional in-contract pool first; if present and has an entry,
+    // resolve immediately and return the reader vow.
+    if (ctx.evmAccountPool) {
+      const pooled = await ctx.evmAccountPool.acquire(chainName);
+      if (pooled) {
+        pk.manager.resolveAccount(pooled);
+        return pk.reader.getGMPInfo(chainName);
+      }
+    }
+
     const pId = pk.reader.getPortfolioId();
     const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
     const axelarId = gmp.axelarIds[chainName];

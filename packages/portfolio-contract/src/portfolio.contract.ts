@@ -3,7 +3,8 @@
  * @see {@link contract}
  * @see {@link start}
  */
-import { AmountMath, type Payment } from '@agoric/ertp';
+import { AmountMath, type Payment, type NatValue } from '@agoric/ertp';
+import type { GuestInterface } from '@agoric/async-flow';
 import {
   makeTracer,
   mustMatch,
@@ -34,6 +35,11 @@ import {
   AxelarChain,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
+import {
+  AxelarGMPMessageType,
+  type AxelarGmpOutgoingMemo,
+} from '@agoric/orchestration/src/axelar-types.js';
+import { buildGasPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
@@ -45,7 +51,11 @@ import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import { preparePlanner } from './planner.exo.ts';
-import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
+import {
+  preparePortfolioKit,
+  type GMPAccountInfo,
+  type PortfolioKit,
+} from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import { prepareResolverKit } from './resolver/resolver.exo.js';
 import { PENDING_TXS_NODE_KEY } from './resolver/types.ts';
@@ -270,6 +280,74 @@ export const contract = async (
     trace('published contractAccount', addr.value);
   });
 
+  // Minimal durable in-contract EVM account pool; shared across portfolios.
+  const poolZone = zone.subZone('EvmPool');
+  const EvmAccountPoolI = M.interface('EvmAccountPool', {
+    acquire: M.call(M.string()).returns(M.or(M.record(), M.undefined())),
+    addReady: M.call(M.record()).returns(),
+    summary: M.call().returns(
+      M.recordOf(
+        M.string(),
+        M.splitRecord({ ready: M.number(), handedOut: M.number() }),
+      ),
+    ),
+  });
+  type HostEvmAccountPool = {
+    acquire: (chain: AxelarChain) => GMPAccountInfo | undefined;
+    addReady: (info: GMPAccountInfo) => void;
+    summary: () => Record<string, { ready: number; handedOut: number }>;
+  };
+  const readyByChain = poolZone
+    .detached()
+    .mapStore<string, GMPAccountInfo[]>('readyByChain');
+  const handedOut = poolZone.detached().mapStore<string, number>('handedOut');
+  const evmAccountPool: HostEvmAccountPool = poolZone.exo(
+    'EvmAccountPool',
+    EvmAccountPoolI,
+    {
+      acquire(chain: AxelarChain) {
+        const list: GMPAccountInfo[] = readyByChain.has(chain)
+          ? readyByChain.get(chain)
+          : [];
+        if (!list.length) return undefined;
+        const info = list.shift()!;
+        readyByChain.set(chain, list);
+        const n = handedOut.has(chain) ? handedOut.get(chain) : 0;
+        handedOut.set(chain, n + 1);
+        return info;
+      },
+      addReady(info: GMPAccountInfo) {
+        const chain = info.chainName;
+        const list: GMPAccountInfo[] = readyByChain.has(chain)
+          ? readyByChain.get(chain)
+          : [];
+        list.push(info);
+        readyByChain.set(chain, list);
+      },
+      summary() {
+        const out: Record<string, { ready: number; handedOut: number }> = {};
+        for (const [chain, list] of readyByChain.entries()) {
+          out[chain] = {
+            ready: list.length,
+            handedOut: handedOut.has(chain) ? handedOut.get(chain) : 0,
+          };
+        }
+        return out;
+      },
+    },
+  );
+
+  // Provide a GuestInterface-compatible facade exposing only the acquire() method
+  // with an async signature expected by flows.
+  type EvmAccountPoolGuest = GuestInterface<{
+    acquire: (chain: AxelarChain) => Promise<GMPAccountInfo | undefined>;
+  }>;
+  const evmAccountPoolGuest: EvmAccountPoolGuest = harden({
+    async acquire(chain: AxelarChain) {
+      return evmAccountPool.acquire(chain);
+    },
+  }) as unknown as EvmAccountPoolGuest;
+
   const ctx1: flows.PortfolioInstanceContext = {
     zoeTools: zoeTools as any, // XXX Guest...
     usdc: {
@@ -292,6 +370,7 @@ export const contract = async (
     resolverClient,
     inertSubscriber,
     contractAccount: contractAccountV as any, // XXX Guest...
+    evmAccountPool: evmAccountPoolGuest,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
@@ -321,6 +400,7 @@ export const contract = async (
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller,
     usdcBrand: brands.USDC,
+    evmAccountPool,
   });
 
   const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
@@ -423,6 +503,13 @@ export const contract = async (
         M.string(),
         M.remotable('Instance'),
       ).returns(),
+      /** Proactively create GMP accounts to populate the in-contract pool */
+      prefillEvmAccounts: M.callWhen(
+        M.string(),
+        M.number(),
+        M.bigint(),
+        M.nat(),
+      ).returns(),
       withdrawFees: M.callWhen(M.string())
         .optional(M.record())
         .returns(M.record()),
@@ -465,6 +552,47 @@ export const contract = async (
         trace('made planner invitation', invitation);
         await E(pfP).deliverPayment(address, invitation);
         trace('delivered planner invitation');
+      },
+      async prefillEvmAccounts(
+        chainName: AxelarChain,
+        count: number,
+        evmGas: bigint,
+        feeValue: NatValue,
+      ) {
+        trace('prefillEvmAccounts', chainName, count);
+        const { when } = vowTools;
+        const acct = await when(contractAccountV);
+        const feeDenom = NonNullish(
+          chainHub.getDenom(brands.Fee),
+          'no denom for Fee brand',
+        );
+        const fee = { denom: feeDenom, value: feeValue };
+
+        const axelarInfo = await when(chainHub.getChainInfo('axelar'));
+        const gmpChainId = `${axelarInfo.namespace}:${axelarInfo.reference}`;
+        const gmpAccount = {
+          chainId: gmpChainId,
+          value: gmpAddresses.AXELAR_GMP,
+          encoding: 'bech32' as const,
+        };
+        const axelarId = axelarIds[chainName];
+        const destinationAddress = contracts[chainName].factory;
+
+        for (let i = 0; i < count; i += 1) {
+          const memo: AxelarGmpOutgoingMemo = {
+            destination_chain: axelarId,
+            destination_address: destinationAddress,
+            payload: buildGasPayload(evmGas),
+            type: AxelarGMPMessageType.ContractCall,
+            fee: {
+              amount: String(fee.value),
+              recipient: gmpAddresses.AXELAR_GAS,
+            },
+          };
+          await when(
+            acct.transfer(gmpAccount, fee, { memo: JSON.stringify(memo) }),
+          );
+        }
       },
       /**
        * Withdraw from contractAccount; for example, before terminating the contract

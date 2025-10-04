@@ -83,6 +83,10 @@ export type PortfolioInstanceContext = {
   zoeTools: GuestInterface<ZoeTools>;
   resolverClient: GuestInterface<ResolverKit['client']>;
   contractAccount: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>;
+  /** Optional in-contract pool of pre-created EVM accounts */
+  evmAccountPool?: GuestInterface<{
+    acquire: (chain: AxelarChain) => Promise<GMPAccountInfo | undefined>;
+  }>;
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {

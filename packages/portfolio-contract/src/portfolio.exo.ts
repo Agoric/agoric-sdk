@@ -187,6 +187,7 @@ export const preparePortfolioKit = (
   {
     axelarIds,
     gmpAddresses,
+    evmAccountPool,
     rebalance,
     executePlan,
     parseInboundTransfer,
@@ -201,6 +202,7 @@ export const preparePortfolioKit = (
   }: {
     axelarIds: AxelarId;
     gmpAddresses: GmpAddresses;
+    evmAccountPool?: { addReady: (info: GMPAccountInfo) => void };
     rebalance: (
       seat: ZCFSeat,
       offerArgs: unknown,
@@ -390,12 +392,23 @@ export const preparePortfolioKit = (
           const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
 
           traceUpcall(chainName, 'remoteAddress', address);
-          this.facets.manager.resolveAccount({
+          const gmpInfo: GMPAccountInfo = {
             namespace: 'eip155',
             chainName,
             chainId: caipId,
             remoteAddress: address,
-          });
+          };
+          // If this portfolio is waiting on an account for this chain, resolve it here;
+          // otherwise, if a pool exists, add it to the pool.
+          const waiting = this.state.accountsPending.has(chainName);
+          if (waiting) {
+            this.facets.manager.resolveAccount(gmpInfo);
+          } else if (evmAccountPool) {
+            evmAccountPool.addReady(gmpInfo);
+          } else {
+            // No portfolio waiting and no pool; drop on the floor (shouldn't happen in tests)
+            traceUpcall('no pending reservation and no pool; ignoring');
+          }
 
           traceUpcall('completed');
           return true;
