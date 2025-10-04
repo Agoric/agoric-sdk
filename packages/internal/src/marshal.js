@@ -1,39 +1,44 @@
 // @ts-check
 import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { M } from '@endo/patterns';
 import { isStreamCell } from './lib-chainStorage.js';
 
 /**
- * @import {CapData} from '@endo/marshal';
- * @import {TypedPattern} from './types.js';
+ * @import {RemotableObject, Simplify} from '@endo/pass-style';
+ * @import {CapData, FromCapData, ConvertValToSlot, Passable, Marshal, MakeMarshalOptions} from '@endo/marshal';
+ * @import {Remote, TypedPattern} from './types.js';
  */
 
 /**
- * Should be a union with Remotable, but that's `any`, making this type
- * meaningless
- *
- * @typedef {{ getBoardId: () => string | null }} BoardRemote
+ * @template [BoardId=(string | null)]
+ * @typedef {{ getBoardId: () => BoardId } & RemotableObject} BoardRemote
  */
 
 /**
- * @param {{ boardId: string | null; iface?: string }} slotInfo
- * @returns {BoardRemote}
+ * @template [BoardId=(string | null)]
+ * @param {{ boardId: BoardId; iface?: string; prefix?: string }} slotInfo
+ * @returns {BoardRemote<BoardId>}
  */
-export const makeBoardRemote = ({ boardId, iface }) => {
+export const makeBoardRemote = ({ boardId, iface, prefix = 'BoardRemote' }) => {
   const nonalleged = iface ? iface.replace(/^Alleged: /, '') : '';
-  return Far(`BoardRemote${nonalleged}`, { getBoardId: () => boardId });
+  return Far(`${prefix}${nonalleged}`, { getBoardId: () => boardId });
 };
 
 /**
- * @param {string} boardId
+ * @template [BoardId=string]
+ * @param {BoardId} boardId
  * @param {string} iface
  */
 export const slotToBoardRemote = (boardId, iface) =>
   makeBoardRemote({ boardId, iface });
 
-/** @param {BoardRemote | object} val */
+/**
+ * @param {BoardRemote<any> | object} val
+ * @returns {val extends BoardRemote<infer BoardId> ? BoardId : never}
+ */
 const boardValToSlot = val => {
   if ('getBoardId' in val) {
     return val.getBoardId();
@@ -46,16 +51,31 @@ const boardValToSlot = val => {
  * allows the caller to pick their slots. The deserializer is configurable: the
  * default cannot handle Remotable-bearing data.
  *
- * @param {(slot: string, iface: string) => any} [slotToVal]
- * @returns {Omit<
- *   import('@endo/marshal').Marshal<string | null>,
- *   'serialize' | 'unserialize'
- * >}
+ * @template [BoardId=(string | null)]
+ * @param {(slot: BoardId, iface: string) => any} [slotToVal]
+ * @returns {Omit<Marshal<BoardId>, 'serialize' | 'unserialize'>}
  */
 export const boardSlottingMarshaller = (slotToVal = undefined) => {
-  return makeMarshal(boardValToSlot, slotToVal, {
-    serializeBodyFormat: 'smallcaps',
-  });
+  return makeMarshal(
+    /** @type {ConvertValToSlot<BoardId>} */ (boardValToSlot),
+    slotToVal,
+    {
+      serializeBodyFormat: 'smallcaps',
+    },
+  );
+};
+
+const ifaceAllegedPrefix = 'Alleged: ';
+const ifaceInaccessiblePrefix = 'SEVERED: ';
+/**
+ * @param {string | undefined} iface
+ * @returns {any}
+ */
+export const makeInaccessibleVal = iface => {
+  if (typeof iface === 'string' && iface.startsWith(ifaceAllegedPrefix)) {
+    iface = iface.slice(ifaceAllegedPrefix.length);
+  }
+  return Far(`${ifaceInaccessiblePrefix}${iface}`, {});
 };
 
 // TODO move CapDataShape to Endo
@@ -84,9 +104,7 @@ harden(assertCapData);
  *
  * @param {Map<string, string>} data
  * @param {string} key
- * @param {ReturnType<
- *   typeof import('@endo/marshal').makeMarshal
- * >['fromCapData']} fromCapData
+ * @param {FromCapData<string>} fromCapData
  * @param {number} index index of the desired value in a deserialized stream
  *   cell
  * @returns {any}
@@ -107,7 +125,7 @@ export const unmarshalFromVstorage = (data, key, fromCapData, index) => {
   const marshalled = values.at(index);
   assert.typeof(marshalled, 'string');
 
-  /** @type {import('@endo/marshal').CapData<string>} */
+  /** @type {CapData<string>} */
   const capData = harden(JSON.parse(marshalled));
   assertCapData(capData);
 
@@ -148,9 +166,140 @@ export const makeHistoryReviver = (entries, slotToVal = undefined) => {
   return harden({ getItem, children, has });
 };
 
-/** @param {import('@endo/marshal').CapData<unknown>} cap */
+/** @param {CapData<unknown>} cap */
 const rejectOCap = cap => Fail`${cap} is not pure data`;
 export const pureDataMarshaller = makeMarshal(rejectOCap, rejectOCap, {
   serializeBodyFormat: 'smallcaps',
 });
 harden(pureDataMarshaller);
+
+/**
+ * @template [Slot=unknown]
+ * @param {Remote<Pick<Marshal<Slot>, 'fromCapData' | 'toCapData'>>} marshaller
+ * @param {MakeMarshalOptions} marshalOptions
+ * @returns {Simplify<ReturnType<typeof E<Marshal<Slot>>>>}
+ */
+export const wrapRemoteMarshaller = (
+  marshaller,
+  {
+    serializeBodyFormat = 'smallcaps',
+    errorTagging = 'off', // Disable error tagging by default
+    ...otherMarshalOptions
+  } = {},
+) => {
+  const passThroughMarshaller = makeMarshal(
+    undefined,
+    (slot, iface) => slot ?? makeInaccessibleVal(iface),
+    {
+      serializeBodyFormat,
+      errorTagging,
+      ...otherMarshalOptions,
+    },
+  );
+
+  /** @type {Map<Slot, string | undefined>} */
+  const remoteSlotToIface = new Map();
+
+  /** @type {Pick<Marshal<Slot>, 'toCapData' | 'fromCapData'>} */
+  const boardRemoteMarshaller = makeMarshal(
+    /** @type {ConvertValToSlot<Slot>} */ (boardValToSlot),
+    (slot, iface) => {
+      // Note: Technically different slots could contain the same slotId with
+      // different iface. If the marshaller producing CapData wasn't well
+      // behaved, we just store the last iface encountered.
+      if (slot != null) remoteSlotToIface.set(slot, iface);
+      return makeBoardRemote({ boardId: slot, iface, prefix: '' });
+    },
+    {
+      serializeBodyFormat,
+      errorTagging,
+      ...otherMarshalOptions,
+    },
+  );
+
+  /**
+   * @param {{ slot: Slot; iface?: string }[]} slotsAndIface
+   * @returns {Promise<(object | null)[]>}
+   */
+  const mapSlotsToCaps = async slotsAndIface => {
+    let hasCap = false;
+    const boardRemoteMappedSlots = harden(
+      slotsAndIface.map(({ slot, iface }) => {
+        if (slot == null) return null;
+        hasCap = true;
+        return makeBoardRemote({
+          boardId: slot,
+          iface,
+          prefix: '',
+        });
+      }),
+    );
+    if (!hasCap) return boardRemoteMappedSlots;
+
+    const slotsOnlyCapData = boardRemoteMarshaller.toCapData(
+      boardRemoteMappedSlots,
+    );
+    return E(marshaller).fromCapData(slotsOnlyCapData);
+  };
+
+  /**
+   * @param {any[]} caps
+   * @returns {Promise<Slot[]>}
+   */
+  const mapCapsToSlots = async caps => {
+    if (caps.length === 0) {
+      return caps;
+    }
+    const mappedSlotsCapData = await E(marshaller).toCapData(caps);
+    /** @type {BoardRemote<Slot>[]} */
+    const boardRemoteMappedSlots =
+      boardRemoteMarshaller.fromCapData(mappedSlotsCapData);
+
+    // We don't care about the remote iface and rely on the one extracted by the local marshaller
+    remoteSlotToIface.clear();
+    return boardRemoteMappedSlots.map(boardRemote => boardRemote.getBoardId());
+  };
+
+  /**
+   * @param {Passable} val
+   * @returns {Promise<CapData<Slot>>}
+   */
+  const toCapData = async val => {
+    const capData = passThroughMarshaller.toCapData(val);
+    const mappedSlots = await mapCapsToSlots(capData.slots);
+    return harden({ ...capData, slots: mappedSlots });
+  };
+
+  /**
+   * @param {CapData<Slot>} data
+   * @returns {Promise<Passable>}
+   */
+  const fromCapData = async data => {
+    // First extract alleged iface
+    // It would be great if iface info wasn't nested in the body, e.g. another top level field
+    const maybeVal = boardRemoteMarshaller.fromCapData(data);
+    const slotsAndIface = data.slots.map(slot => ({
+      slot,
+      iface: remoteSlotToIface.get(slot),
+    }));
+    remoteSlotToIface.clear();
+    if (data.slots.length === 0) {
+      // No capabilities, we can just use the unserialized value
+      return maybeVal;
+    }
+
+    const mappedSlots = await mapSlotsToCaps(slotsAndIface);
+    return passThroughMarshaller.fromCapData({ ...data, slots: mappedSlots });
+  };
+
+  return Far('wrapped remote marshaller', {
+    toCapData,
+    fromCapData,
+
+    // for backwards compatibility
+    /** @deprecated use toCapData */
+    serialize: toCapData,
+    /** @deprecated use fromCapData */
+    unserialize: fromCapData,
+  });
+};
