@@ -295,10 +295,10 @@ export const contract = async (
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
-  const { rebalance, withdraw, parseInboundTransfer } = orchestrateAll(
+  const { executePlan, rebalance, parseInboundTransfer } = orchestrateAll(
     {
+      executePlan: flows.executePlan,
       rebalance: flows.rebalance,
-      withdraw: flows.withdraw,
       parseInboundTransfer: flows.parseInboundTransfer,
     },
     ctx1,
@@ -309,8 +309,8 @@ export const contract = async (
     vowTools,
     axelarIds,
     gmpAddresses,
+    executePlan,
     rebalance,
-    withdraw,
     parseInboundTransfer,
     proposalShapes,
     offerArgsShapes,

@@ -1147,3 +1147,128 @@ test('creatorFacet.withdrawFees', async t => {
     });
   }
 });
+
+test('deposit using planner', async t => {
+  const { common, trader1, planner1 } = await setupPlanner(t);
+
+  await planner1.redeem();
+  await trader1.openPortfolio(t, {}, {});
+  const pId: number = trader1.getPortfolioId();
+  const { usdc } = common.brands;
+  const Deposit = usdc.units(1_000);
+
+  const traderP = (async () => {
+    await trader1.deposit(t, Deposit);
+    t.log('trader deposited', Deposit);
+  })();
+
+  const plannerP = (async () => {
+    const {
+      flowsRunning = {},
+      policyVersion,
+      rebalanceCount,
+    } = await trader1.getPortfolioStatus();
+    t.log('flowsRunning', flowsRunning);
+    t.is(keys(flowsRunning).length, 1);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    const fId = Number(flowId.replace('flow', ''));
+
+    // narrow the type
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+
+    // XXX brand from vstorage isn't suitable for use in call to kit
+    const amount = AmountMath.make(Deposit.brand, detail.amount.value);
+
+    const plan: MovementDesc[] = [
+      { src: '<Deposit>', dest: '@agoric', amount },
+    ];
+    await E(planner1.stub).resolvePlan(
+      pId,
+      fId,
+      plan,
+      policyVersion,
+      rebalanceCount,
+    );
+    t.log('planner resolved plan');
+  })();
+
+  await Promise.all([traderP, plannerP]);
+
+  const bankTraffic = common.utils.inspectBankBridge();
+  const { accountIdByChain } = await trader1.getPortfolioStatus();
+  const [_ns, _ref, addr] = accountIdByChain.agoric.split(':');
+  const myVBankIO = bankTraffic.filter(obj =>
+    [obj.sender, obj.recipient].includes(addr),
+  );
+  t.log('bankBridge for', addr, myVBankIO);
+  t.like(myVBankIO, [{ type: 'VBANK_GIVE', amount: '1000000000' }]);
+});
+
+test('simple rebalance using planner', async t => {
+  const { common, trader1, planner1 } = await setupPlanner(t);
+
+  await planner1.redeem();
+  await trader1.openPortfolio(t, {}, { targetAllocation: { USDN: 10000n } });
+  const pId: number = trader1.getPortfolioId();
+  const { usdc } = common.brands;
+  const Deposit = usdc.units(3_333.33);
+  const depP = trader1.rebalance(
+    t,
+    { give: { Deposit }, want: {} },
+    { flow: [{ src: '<Deposit>', dest: '@agoric', amount: Deposit }] },
+  );
+  await depP;
+  t.log('trader deposited', Deposit);
+
+  const traderP = (async () => {
+    const targetAllocation = { USDN: 60000n, Aave_Arbitrum: 4000n };
+    await trader1.simpleRebalance(
+      t,
+      { give: {}, want: {} },
+      { targetAllocation },
+    );
+    t.log('trader rebalanced to', targetAllocation);
+  })();
+
+  const plannerP = (async () => {
+    const {
+      flowsRunning = {},
+      policyVersion,
+      rebalanceCount,
+    } = await trader1.getPortfolioStatus();
+    t.log('flowsRunning', flowsRunning);
+    t.is(keys(flowsRunning).length, 1);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    const fId = Number(flowId.replace('flow', ''));
+
+    // narrow the type
+    if (detail.type !== 'rebalance') throw t.fail(detail.type);
+
+    const amount = AmountMath.make(usdc.brand, 1_000n);
+
+    const plan: MovementDesc[] = [{ src: '@agoric', dest: '<Cash>', amount }];
+    await E(planner1.stub).resolvePlan(
+      pId,
+      fId,
+      plan,
+      policyVersion,
+      rebalanceCount,
+    );
+    t.log('planner resolved plan');
+  })();
+
+  await Promise.all([traderP, plannerP]);
+
+  const bankTraffic = common.utils.inspectBankBridge();
+  const { accountIdByChain } = await trader1.getPortfolioStatus();
+  const [_ns, _ref, addr] = accountIdByChain.agoric.split(':');
+  const myVBankIO = bankTraffic.filter(obj =>
+    [obj.sender, obj.recipient].includes(addr),
+  );
+  t.log('bankBridge for', addr, myVBankIO);
+  t.like(myVBankIO, [
+    { type: 'VBANK_GIVE', amount: '3333330000' },
+    { type: 'VBANK_GRAB', amount: '1000' },
+  ]);
+  t.is(833332500n, (3333330000n * 25n) / 100n);
+});

@@ -101,6 +101,7 @@ export type ProposalType = {
     | { give: { Deposit?: NatAmount }; want: Empty }
     | { want: { Cash: NatAmount }; give: Empty };
   withdraw: { want: { Cash: NatAmount }; give: Empty };
+  deposit: { give: { Deposit: NatAmount }; want: Empty };
 };
 
 export const makeProposalShapes = (
@@ -132,7 +133,12 @@ export const makeProposalShapes = (
     { exit: M.any() },
     {},
   ) as TypedPattern<ProposalType['withdraw']>;
-  return harden({ openPortfolio, rebalance, withdraw });
+  const deposit = M.splitRecord(
+    { give: { Deposit: $Shape }, want: {} },
+    { exit: M.any() },
+    {},
+  ) as TypedPattern<ProposalType['deposit']>;
+  return harden({ openPortfolio, rebalance, withdraw, deposit });
 };
 harden(makeProposalShapes);
 // #endregion
@@ -269,11 +275,13 @@ export const portfolioIdOfPath = (path: string | string[]) => {
 
 export type FlowDetail =
   | { type: 'withdraw'; amount: NatAmount }
-  | { type: 'other' }; // refine to deposit etc.?
+  | { type: 'deposit'; amount: NatAmount }
+  | { type: 'rebalance' }; // aka simpleRebalance
 
 export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
   { type: 'withdraw', amount: AnyNatAmountShape },
-  { type: 'other' },
+  { type: 'deposit', amount: AnyNatAmountShape },
+  { type: 'rebalance' },
 );
 
 type FlowStatus =
