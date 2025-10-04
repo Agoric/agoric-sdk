@@ -23,7 +23,7 @@ import type { SmartWalletKit } from './smart-wallet-kit.js';
 import type { RetryOptionsAndPowers } from './sync-tools.js';
 
 type TxOptions = RetryOptionsAndPowers & {
-  immediate?: boolean;
+  sendOnly?: boolean;
   makeNonce?: () => string;
 };
 
@@ -180,9 +180,9 @@ export const reflectWalletStore = (
   ) => {
     const combinedOpts = { ...baseTxOpts, ...overrides } as TxOptions;
     combinedOpts.setTimeout || Fail`missing setTimeout`;
-    const { immediate, makeNonce, ...retryOpts } = combinedOpts;
-    if (forSavingResults && !makeNonce && !immediate) {
-      throw Fail`makeNonce is required without immediate: true (to create an awaitable message id)`;
+    const { sendOnly, makeNonce, ...retryOpts } = combinedOpts;
+    if (forSavingResults && !makeNonce && !sendOnly) {
+      throw Fail`makeNonce is required without sendOnly: true (to create an awaitable message id)`;
     }
     const { log = () => {} } = combinedOpts;
     const logged = <T>(label: string, x: T): T => {
@@ -213,7 +213,7 @@ export const reflectWalletStore = (
           if (tx.code !== 0) {
             throw Error(tx.rawLog);
           }
-          if (!immediate && id) {
+          if (!sendOnly && id) {
             await getInvocationUpdate(id, sswk.query.getLastUpdate, retryOpts);
           }
           const ret = { id, tx };
@@ -239,7 +239,7 @@ export const reflectWalletStore = (
       overwrite?: boolean;
     };
     const {
-      immediate: _immediate,
+      sendOnly: _sendOnly,
       makeNonce,
       overwrite = true,
       ...retryOpts
@@ -269,7 +269,7 @@ export const reflectWalletStore = (
      * methods that map to "invokeEntry" submissions. The methods will always
      * await tx output from `sendBridgeAction`, and will also wait for
      * confirmation in vstorage when sent with an `id` (e.g., derived from a
-     * `makeNonce` option) unless overridden by an `immediate: true` option.
+     * `makeNonce` option) unless overridden by a `sendOnly: true` option.
      */
     get: <T>(name: string, options?: Partial<TxOptions>) =>
       makeEntryProxy(name, options, false) as WalletStoreEntryProxy<T, false>,
@@ -279,15 +279,12 @@ export const reflectWalletStore = (
      * initial { name?: string, overwrite?: boolean } parameter for specifying
      * how (or if) to save results in the wallet store. The methods will always
      * await tx output from `sendBridgeAction`, and will also wait for
-     * confirmation in vstorage unless overridden by an `immediate: true` option
+     * confirmation in vstorage unless overridden by a `sendOnly: true` option
      * (but note that when so overridden, the returned `result` is not yet
      * usable).
      */
-    getForSavingResults: <T>(
-      name: string,
-      options: Partial<TxOptions> &
-        (Pick<TxOptions, 'makeNonce'> | { immediate: true }),
-    ) => makeEntryProxy(name, options, true) as WalletStoreEntryProxy<T, true>,
+    getForSavingResults: <T>(name: string, options?: Partial<TxOptions>) =>
+      makeEntryProxy(name, options, true) as WalletStoreEntryProxy<T, true>,
     /**
      * Execute the offer specified by { instance, description } and save the
      * result in the wallet store with the specified name (default to match the
