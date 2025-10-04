@@ -32,7 +32,11 @@ import {
   makeCCTPTraffic,
   portfolio0lcaOrch,
 } from './mocks.ts';
-import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
+import {
+  getResolverMakers,
+  getResolverService,
+  settleTransaction,
+} from './resolver-helpers.ts';
 import { makeStorageTools } from './supports.ts';
 
 const { fromEntries, keys, values } = Object;
@@ -1019,7 +1023,111 @@ test('request rebalance - send same targetAllocation', async t => {
   });
 });
 
-test('withdraw using planner', async t => {
+test.serial(
+  'open a portfolio with Aave position using resolver service',
+  async t => {
+    const { trader1, common, started, zoe } = await setupTrader(t);
+    const { usdc, bld, poc26 } = common.brands;
+
+    const amount = usdc.units(3_333.33);
+    const feeAcct = bld.make(100n);
+    const feeCall = bld.make(100n);
+    const detail = { evmGas: 175n };
+
+    // Use resolver service instead of invitation makers
+    const resolverService = await getResolverService(zoe, started.creatorFacet);
+
+    const actualP = trader1.openPortfolio(
+      t,
+      { Deposit: amount, Access: poc26.make(1n) },
+      {
+        flow: [
+          { src: '<Deposit>', dest: '@agoric', amount },
+          { src: '@agoric', dest: '@noble', amount },
+          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct, detail },
+          { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+        ],
+      },
+    );
+
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    t.log('ackd send to Axelar to create account');
+
+    await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
+
+    // ack @agoric -> @noble txfr
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
+    await simulateCCTPAck(common.utils).finally(() =>
+      simulateAckTransferToAxelar(common.utils),
+    );
+
+    const { storage } = common.bootstrap;
+    const { readPublished } = makeStorageTools(storage);
+    const getRegisteredTxIds = async () => {
+      await eventLoopIteration();
+      const paths = [...storage.data.keys()];
+      // console.log('@@@@', ...paths);
+      const txSubPaths = paths
+        .filter(p => /pendingTxs/.test(p))
+        .map(p => p.replace(/^orchtest./, ''));
+      console.log('@@@@', ...txSubPaths);
+      const txIds = [];
+      for (const p of txSubPaths) {
+        const { status } = (await readPublished(p)) as any;
+        if (status !== 'pending') continue;
+        const txId = p.split('.').at(-1);
+        txIds.push(txId);
+      }
+      console.log('@@pending:', txIds);
+      return txIds;
+    };
+
+    const settled = new Set();
+    const settlePendingTxs = async () =>
+      getRegisteredTxIds().then(txs =>
+        Promise.all(
+          txs.map(async txId => {
+            if (settled.has(txId)) return;
+            settled.add(txId);
+            await eventLoopIteration();
+            console.log('@@resolve:', txId);
+            return E(resolverService).settleTransaction({
+              status: 'success',
+              txId,
+            });
+          }),
+        ),
+      );
+
+    const [actual, cctpResult, gmpResult] = await Promise.all([
+      actualP,
+      settlePendingTxs().then(_ => settlePendingTxs()),
+      'xxxx',
+    ]);
+
+    t.log(
+      '=== Portfolio completed, CCTP result:',
+      cctpResult,
+      'GMP result:',
+      gmpResult,
+    );
+    const result = actual.result as any;
+    t.is(passStyleOf(result.invitationMakers), 'remotable');
+
+    t.is(keys(result.publicSubscribers).length, 1);
+    const { storagePath } = result.publicSubscribers.portfolio;
+    t.log(storagePath);
+    const { contents } = getPortfolioInfo(
+      storagePath,
+      common.bootstrap.storage,
+    );
+    t.snapshot(contents, 'vstorage');
+    t.snapshot(actual.payouts, 'refund payouts');
+  },
+);
+
+test.serial('withdraw using planner', async t => {
   const { common, trader1, planner1 } = await setupPlanner(t);
 
   await planner1.redeem();
