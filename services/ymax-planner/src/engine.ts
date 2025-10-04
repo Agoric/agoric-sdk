@@ -259,7 +259,7 @@ const processPortfolioEvents = async (
       const flowId = flowIdFromKey(flowKey as any);
       const { policyVersion, rebalanceCount } = portfolioStatus;
       const planner = walletStore.get<PortfolioPlanner>('planner', {
-        immediate: true,
+        sendOnly: true,
       });
       const { tx, id } = await planner.resolvePlan(
         portfolioId,
