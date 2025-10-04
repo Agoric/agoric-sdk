@@ -25,10 +25,12 @@ import { lookupInterchainInfo } from '@aglocal/portfolio-deploy/src/orch.start.j
 import { findOutdated } from '@aglocal/portfolio-deploy/src/vstorage-outdated.js';
 import {
   fetchEnvNetworkConfig,
+  getOfferResult,
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
   makeVStorage,
   makeVstorageKit,
+  reflectWalletStore,
   type SigningSmartWalletKit,
   type VstorageKit,
 } from '@agoric/client-utils';
@@ -51,10 +53,6 @@ import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { M } from '@endo/patterns';
 import { parseArgs } from 'node:util';
-import {
-  reflectWalletStore,
-  walletUpdates,
-} from '../tools/wallet-store-reflect.ts';
 
 type YMaxStartFn = typeof YMaxStart;
 
@@ -202,10 +200,10 @@ const openPositions = async (
   if (tx.code !== 0) throw Error(tx.rawLog);
 
   // result is UNPUBLISHED
-  await walletUpdates(sig.query.getLastUpdate, {
+  await getOfferResult(id, sig.query.getLastUpdate, {
     log: trace,
     setTimeout,
-  }).offerResult(id);
+  });
 
   const { offerToPublicSubscriberPaths } =
     await sig.query.getCurrentWalletRecord();
@@ -425,7 +423,7 @@ const main = async (
   const walletStore = reflectWalletStore(sig, {
     setTimeout,
     log: trace,
-    fresh: () => new Date(now()).toISOString(),
+    makeNonce: () => new Date(now()).toISOString(),
   });
 
   if (values.redeem) {
@@ -434,20 +432,24 @@ const main = async (
     const { [contract]: instance } = fromEntries(
       await walletKit.readPublished('agoricNames.instance'),
     );
-    const result = await walletStore.saveOfferResult(
+    const meta = await walletStore.saveOfferResult(
       { instance, description },
       description.replace(/^deliver /, ''),
     );
-    trace('redeem result', result);
+    trace('redeem result', meta.result);
+    return;
+  }
+
+  if (values.getCreatorFacet) {
+    const yc =
+      walletStore.getForSavingResults<ContractControl<YMaxStartFn>>(
+        'ymaxControl',
+      );
+    await yc.getCreatorFacet({ name: 'creatorFacet' });
     return;
   }
 
   const yc = walletStore.get<ContractControl<YMaxStartFn>>('ymaxControl');
-
-  if (values.getCreatorFacet) {
-    await walletStore.savingResult('creatorFacet', () => yc.getCreatorFacet());
-    return;
-  }
 
   if (values.terminate) {
     const { terminate: message } = values;
