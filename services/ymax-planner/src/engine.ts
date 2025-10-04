@@ -48,7 +48,7 @@ import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import {
   getCurrentBalance,
   getCurrentBalances,
-  handleDeposit,
+  planDepositToAllocations,
   planRebalanceToAllocations,
   planWithdrawFromAllocations,
 } from './plan-deposit.ts';
@@ -230,6 +230,10 @@ const processPortfolioEvents = async (
       currentBalances,
     };
     const plannerContext = {
+      // @ts-expect-error "amount" is not present on all varieties of
+      // FlowDetail, but we need it here when it is present (i.e., for types
+      // "deposit" and "withdraw" and it's harmless otherwise.
+      amount: flowDetail.amount,
       currentBalances,
       targetAllocation: portfolioStatus.targetAllocation,
       network: PROD_NETWORK,
@@ -241,17 +245,21 @@ const processPortfolioEvents = async (
     try {
       let steps: MovementDesc[];
       const { type } = flowDetail;
-      if (type === 'withdraw') {
-        steps = await planWithdrawFromAllocations({
-          ...plannerContext,
-          amount: flowDetail.amount,
-        });
-      } else if (type === 'other') {
-        steps = await planRebalanceToAllocations(plannerContext);
-      } else {
-        const msg = `⚠️  Unknown flow type ${type} for ${path} in-progress flow ${flowKey}`;
-        console.warn(msg);
-        return;
+      switch (type) {
+        case 'deposit':
+          steps = await planDepositToAllocations(plannerContext);
+          break;
+        case 'rebalance':
+          steps = await planRebalanceToAllocations(plannerContext);
+          break;
+        case 'withdraw':
+          steps = await planWithdrawFromAllocations(plannerContext);
+          break;
+        default: {
+          const msg = `⚠️  Unknown flow type ${type} for ${path} in-progress flow ${flowKey}`;
+          console.warn(msg);
+          return;
+        }
       }
       errorContext.steps = steps;
 
@@ -321,19 +329,6 @@ const processPortfolioEvents = async (
         if (flowKeys.has(flowKey)) continue;
         await startFlow(status, portfolioKey, flowKey, flowDetail);
         return;
-      }
-      // If rebalanceCount is 0, then no plan has been submitted for this
-      // policyVersion so we synthesize an activity record for its deposit
-      // address to trigger a rebalance.
-      // Otherwise, we assume that the update was a response to such a
-      // submission.
-      // TODO: Remove this in favor of driving everything through flows.
-      if (depositAddress && status.rebalanceCount === 0) {
-        deferrals.push({
-          blockHeight: eventRecord.blockHeight,
-          type: 'transfer' as const,
-          address: depositAddress,
-        });
       }
     } catch (err) {
       const age = blockHeight - eventRecord.blockHeight;
@@ -560,8 +555,6 @@ export const startEngine = async (
   const subscriptionFilters = [
     // vstorage events are in BEGIN_BLOCK/END_BLOCK activity
     "tm.event = 'NewBlock'",
-    // transactions
-    "tm.event = 'Tx'",
   ];
   const responses = rpc.subscribeAll(subscriptionFilters);
   const readyResult = await responses.next();
@@ -736,116 +729,15 @@ export const startEngine = async (
 
     await processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers);
 
-    // Detect activity against portfolio deposit addresses.
-    const oldAddrActivity = deferrals.splice(0).filter(deferral => {
-      if (deferral.type === 'transfer') return true;
-      deferrals.push(deferral);
-      return false;
-    }) as Array<EventRecord & { type: 'transfer' }>;
-    const newActiveAddresses: Bech32Address[] = [
-      ...new Set([
-        ...((eventRollups['coin_received.receiver'] as Bech32Address[]) || []),
-        ...((eventRollups['coin_spent.spender'] as Bech32Address[]) || []),
-        ...((eventRollups['transfer.recipient'] as Bech32Address[]) || []),
-        ...((eventRollups['transfer.sender'] as Bech32Address[]) || []),
-      ]),
-    ];
-    const addrsWithActivity = [
-      ...oldAddrActivity,
-      ...newActiveAddresses.map(address => ({
-        blockHeight: respHeight,
-        type: 'transfer' as const,
-        address,
-      })),
-    ];
-    const depositAddrsWithActivity = new Map(
-      partialMap(addrsWithActivity, eventRecord => {
-        const { address: addr } = eventRecord;
-        const portfolioKey = portfolioKeyForDepositAddr.get(addr);
-        return portfolioKey ? [addr, { portfolioKey, eventRecord }] : undefined;
-      }),
-    );
-
-    const addrBalances = new Map() as Map<Bech32Address, Coin[]>;
-    await makeWorkPool(addrsWithActivity, undefined, async eventRecord => {
-      const { address: addr } = eventRecord;
-      // TODO: Switch to an API that exposes block height, so we can detect stale
-      // data and push to `deferrals`.
-      // cf. https://github.com/Agoric/agoric-sdk/pull/11630
-      const balancesResp = await cosmosRest.getAccountBalances('agoric', addr);
-      addrBalances.set(addr, balancesResp.balances);
-    }).done;
     console.log(
       inspect(
         {
-          addrsWithActivity,
-          addrBalances,
-          depositAddrsWithActivity,
           portfolioEvents,
           pendingTxEvents,
         },
         { depth: 10 },
       ),
     );
-
-    // Respond to deposits.
-    const portfolioOps = await Promise.all(
-      [...depositAddrsWithActivity.entries()].map(
-        async ([addr, { portfolioKey, eventRecord }]) => {
-          const amount = pickBalance(addrBalances.get(addr), depositAsset);
-          if (!amount) {
-            console.warn(`No ${q(depositAsset.issuerName)} at ${addr}`);
-            return;
-          }
-
-          const unprefixedPortfolioPath = stripPrefix(
-            'published.',
-            `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}`,
-          );
-
-          await null;
-          try {
-            // TODO: Use an API that exposes block height to detect stale data.
-            const stepsRecord = await handleDeposit(
-              unprefixedPortfolioPath as any,
-              amount,
-              feeAsset.brand as Brand<'nat'>,
-              {
-                readPublished: query.readPublished,
-                spectrum,
-                cosmosRest,
-                gasEstimator,
-              },
-            );
-
-            const portfolioId = portfolioIdFromKey(portfolioKey as any);
-            return { portfolioId, stepsRecord };
-          } catch (err) {
-            console.warn(
-              `⚠️ Failed to handle ${portfolioKey} deposit; deferring`,
-              err,
-            );
-            deferrals.push(eventRecord);
-          }
-        },
-      ),
-    );
-
-    for (const { portfolioId, stepsRecord } of portfolioOps.filter(x => !!x)) {
-      if (!stepsRecord) continue;
-      const { policyVersion, rebalanceCount, steps } = stepsRecord;
-      const result = await signingSmartWalletKit.sendBridgeAction(
-        harden({
-          method: 'invokeEntry',
-          message: {
-            targetName: 'planner',
-            method: 'submit',
-            args: [portfolioId, steps, policyVersion, rebalanceCount],
-          },
-        }),
-      );
-      console.log('result', result);
-    }
   }
 
   console.warn('Terminating...');
