@@ -43,6 +43,7 @@ import type {
   CosmosChainAddress,
   Denom,
   DenomAmount,
+  ResultMeta,
 } from './types.js';
 
 export type MetaTrafficEntry<
@@ -293,7 +294,7 @@ export interface IcaAccountMethods {
   executeEncodedTxWithMeta: (
     msgs: AnyJson[],
     opts?: Partial<Omit<TxBody, 'messages'>> & { sendOpts?: SendOptions },
-  ) => Promise<{ result: Promise<string>; meta: Record<string, any> }>;
+  ) => Promise<ResultMeta<string>>;
   /**
    * Deactivates the ICA account by closing the ICA channel. The `Port` is
    * persisted so holders can always call `.reactivate()` to re-establish a new

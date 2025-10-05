@@ -557,8 +557,8 @@ export const prepareLocalOrchestrationAccountKit = (
         },
       },
       /**
-       * takes an array of results (from `executeEncodedTx`) and returns the
-       * first result
+       * takes an array of results (from `executeTx`) and returns the first
+       * result
        */
       extractFirstResultWatcher: {
         /** @param {Record<unknown, unknown>[]} results */

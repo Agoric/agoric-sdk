@@ -22,6 +22,7 @@ import type {
   KnownNamespace,
   NobleMethods,
   Bech32Address,
+  ResultMeta,
 } from './types.js';
 import type { ResolvedContinuingOfferResult } from './utils/zoe-tools.js';
 
@@ -300,7 +301,7 @@ export interface OrchestrationAccountCommon {
     destination: AccountIdArg,
     amount: AmountArg,
     opts?: IBCMsgTransferOptions,
-  ) => Promise<{ result: Vow<any> | Promise<any>; meta: Record<string, any> }>;
+  ) => Promise<ResultMeta<any>>;
 
   /**
    * Transfer an amount to another account in multiple steps. The promise settles when
