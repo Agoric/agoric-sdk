@@ -250,12 +250,28 @@ NETCONFIG=https://devnet.agoric.net/network-config
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --getCreatorFacet
 	touch $@
 
+introduce-parties: ,invitePlanner ,inviteResolver
+
 # see gov keys sheet
-PLANNER=agoric140yw0u2qrvmrgp33ejpddgnrwpm74vpfpx5v7n
+PLANNER ?= agoric140yw0u2qrvmrgp33ejpddgnrwpm74vpfpx5v7n
 ,invitePlanner: ,creatorFacet
-	AGORIC_NET=devnet ./scripts/ymax-tool.ts --pruneStorage --invitePlanner $(PLANNER)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --invitePlanner $(PLANNER)
 	touch $@
-	@echo now use planner MNEMONIC: ymax-tool.ts --redeem
+	@echo now use planner MNEMONIC: ymax-tool.ts --redeem --description planner
+
+RESOLVER ?= $(PLANNER)
+,inviteResolver: ,creatorFacet
+	AGORIC_NET=$(AGORIC_NET) \
+		$(YMAX_TOOL) --inviteResolver $(RESOLVER)
+	touch $@
+	@echo now use resolver MNEMONIC: ymax-tool.ts --redeem --description resolver
+
+check-vstorage: ,vstorage-outdated-$(AGORIC_NET).json
+
+,vstorage-outdated-$(AGORIC_NET).json:
+	@echo "Using AGORIC_NET=$(AGORIC_NET)"
+	AGORIC_NET=$(AGORIC_NET) $(YMAX_TOOL) --checkStorage >$@ || \
+		(rm $@; false)
 
 # TODO: get from vstorage
 FEE_ACCT=agoric1rqqy9r0s4ahl8agr89f200gch78hnef3jckf4vntqe4p67rsxegs9qpzjw
