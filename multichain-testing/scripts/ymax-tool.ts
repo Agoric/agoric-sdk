@@ -501,8 +501,15 @@ const main = async (
 
   if (values.pruneStorage) {
     const txt = await readText(stdin);
-    const toPrune = JSON.parse(txt);
-    await yc.pruneChainStorage(toPrune);
+    const toPrune: Record<string, string[]> = JSON.parse(txt);
+    // avoid: Must not have more than 80 properties: (an object)
+    const batchSize = 50;
+
+    const es = Object.entries(toPrune);
+    for (let i = 0; i < es.length; i += batchSize) {
+      const batch = es.slice(i, i + batchSize);
+      await yc.pruneChainStorage(fromEntries(batch));
+    }
     return;
   }
 
