@@ -225,12 +225,13 @@ export const sendMakeAccountCall = async (
   gmpChain: Chain<{ chainId: string }>,
   gmpAddresses: GmpAddresses,
   evmGas: bigint,
+  count: bigint = 1n,
 ) => {
   const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
   const memo: AxelarGmpOutgoingMemo = {
     destination_chain: dest.axelarId,
     destination_address: dest.remoteAddress,
-    payload: buildGasPayload(evmGas),
+    payload: buildGasPayload(evmGas, count),
     type: AxelarGMPMessageType.ContractCall,
     fee: { amount: String(fee.value), recipient: AXELAR_GAS },
   };

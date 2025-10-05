@@ -109,17 +109,20 @@ export const buildNoncePayload = nonce => {
 };
 
 /**
- * @param {bigint} gasAmount - gas amount for the EVM to Agoric message
+ * - @param {bigint} gasAmount - gas amount for the EVM to Agoric message
+ * - @param {bigint} [count=1n] - number of accounts to create
+ *
  * @returns {number[]} The payload array.
  */
-export const buildGasPayload = gasAmount => {
-  const abiEncodedData = encodeAbiParameters(
-    [{ type: 'uint256' }],
-    [gasAmount],
+export const buildGasPayload = (gasAmount, count = 1n) =>
+  Array.from(
+    hexToBytes(
+      encodeAbiParameters(
+        [{ type: 'uint256' }, { type: 'uint256' }],
+        [gasAmount, count],
+      ),
+    ),
   );
-
-  return Array.from(hexToBytes(abiEncodedData));
-};
 
 export const EVM_CHAINS = {
   Avalanche: 'Avalanche',
