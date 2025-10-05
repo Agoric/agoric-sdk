@@ -380,7 +380,10 @@ export const preparePortfolioKit = (
           const { success, result: result2 } = message;
           if (!success) return;
 
-          const [address] = decodeAbiParameters([{ type: 'address' }], result2);
+          const [addresses] = decodeAbiParameters(
+            [{ type: 'address[]' }],
+            result2,
+          );
 
           // chainInfo is safe to await: registerChain(...) ensure it's already resolved,
           // so vowTools.when won't cause async delays or cross-vat calls.
@@ -389,13 +392,15 @@ export const preparePortfolioKit = (
           );
           const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
 
-          traceUpcall(chainName, 'remoteAddress', address);
-          this.facets.manager.resolveAccount({
-            namespace: 'eip155',
-            chainName,
-            chainId: caipId,
-            remoteAddress: address,
-          });
+          traceUpcall(chainName, 'remoteAddresses', addresses);
+          for (const address of addresses) {
+            this.facets.manager.resolveAccount({
+              namespace: 'eip155',
+              chainName,
+              chainId: caipId,
+              remoteAddress: address,
+            });
+          }
 
           traceUpcall('completed');
           return true;
