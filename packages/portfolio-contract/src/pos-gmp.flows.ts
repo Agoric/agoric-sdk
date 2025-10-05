@@ -12,11 +12,11 @@
 import type { NatValue } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { encodeHex } from '@agoric/internal/src/hex.js';
-import type {
-  AccountId,
-  Bech32Address,
-  Chain,
-  DenomAmount,
+import {
+  type AccountId,
+  type Bech32Address,
+  type Chain,
+  type DenomAmount,
 } from '@agoric/orchestration';
 import {
   AxelarGMPMessageType,
@@ -29,6 +29,7 @@ import {
   buildGMPPayload,
 } from '@agoric/orchestration/src/utils/gmp.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import { transformResultMeta } from '@agoric/orchestration/src/utils/result-meta.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import { q, X } from '@endo/errors';
@@ -85,16 +86,20 @@ export const provideEVMAccount = async (
     const src = feeAccount.getAddress();
     traceChain('send makeAccountCall Axelar fee from', src.value);
     await feeAccount.send(lca.getAddress(), fee);
-    await sendMakeAccountCall(
-      target,
-      fee,
-      lca,
-      gmp.chain,
-      ctx.gmpAddresses,
-      gmp.evmGas,
+    return transformResultMeta(
+      sendMakeAccountCall(
+        target,
+        fee,
+        lca,
+        gmp.chain,
+        ctx.gmpAddresses,
+        gmp.evmGas,
+      ),
+      async ({ result, meta }) => {
+        await result;
+        return { result: pk.reader.getGMPInfo(chainName), meta };
+      },
     );
-
-    return pk.reader.getGMPInfo(chainName);
   } catch (reason) {
     trace('failed to make', chainName, reason);
     pk.manager.releaseAccount(chainName, reason);
@@ -155,13 +160,21 @@ export const CCTPfromEVM = {
       amount.value,
     );
 
-    const contractCallP = sendGMPContractCall(ctx, src, calls);
+    const { result: contractCallP, meta } = await sendGMPContractCall(
+      ctx,
+      src,
+      calls,
+    );
+    const doneP = Promise.all([contractCallP, result]).then(() => {
+      traceTransfer('transfer complete.');
+      return contractCallP;
+    });
 
-    await Promise.all([result, contractCallP]);
-    traceTransfer('transfer complete.');
+    return { result: doneP, meta };
   },
   recover: async (ctx, amount, src, dest) => {
-    return CCTP.apply(ctx, amount, dest, src);
+    await CCTP.apply(ctx, amount, dest, src);
+    return {};
   },
 } as const satisfies TransportDetail<
   'CCTP',
@@ -196,6 +209,7 @@ export const CCTP = {
       result,
     ]);
     traceTransfer('transfer complete.');
+    return {};
   },
   recover: async (_ctx, _amount, _src, _dest) => {
     // XXX evmCtx needs a GMP fee
@@ -236,7 +250,7 @@ export const sendMakeAccountCall = async (
   };
   const { chainId } = await gmpChain.getChainInfo();
   const gmp = { chainId, value: AXELAR_GMP, encoding: 'bech32' as const };
-  await lca.transfer(gmp, fee, { memo: JSON.stringify(memo) });
+  return lca.transferWithMeta(gmp, fee, { memo: JSON.stringify(memo) });
 };
 
 /**
@@ -287,9 +301,15 @@ export const sendGMPContractCall = async (
     encoding: 'bech32' as const,
   };
   await ctx.feeAccount.send(lca.getAddress(), fee);
-  await lca.transfer(gmp, fee, { memo: JSON.stringify(memo) });
-
-  await result;
+  return transformResultMeta(
+    lca.transferWithMeta(gmp, fee, {
+      memo: JSON.stringify(memo),
+    }),
+    async ({ result: transferDoneP, meta }) => ({
+      result: Promise.all([result, transferDoneP]).then(() => ({})),
+      meta,
+    }),
+  );
 };
 
 export type EVMContext = {
@@ -340,7 +360,7 @@ export const AaveProtocol = {
     aave.supply(a.usdc, amount.value, remoteAddress, 0);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, src, calls);
+    return sendGMPContractCall(ctx, src, calls);
   },
   withdraw: async (ctx, amount, dest, claim) => {
     const { remoteAddress } = dest;
@@ -358,7 +378,7 @@ export const AaveProtocol = {
     aave.withdraw(a.usdc, amount.value, remoteAddress);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, dest, calls);
+    return sendGMPContractCall(ctx, dest, calls);
   },
 } as const satisfies ProtocolDetail<'Aave', AxelarChain, EVMContext>;
 
@@ -396,7 +416,7 @@ export const CompoundProtocol = {
     compound.supply(a.usdc, amount.value);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, src, calls);
+    return sendGMPContractCall(ctx, src, calls);
   },
   withdraw: async (ctx, amount, dest, claim) => {
     const { addresses: a } = ctx;
@@ -412,7 +432,7 @@ export const CompoundProtocol = {
     compound.withdraw(a.usdc, amount.value);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, dest, calls);
+    return sendGMPContractCall(ctx, dest, calls);
   },
 } as const satisfies ProtocolDetail<'Compound', AxelarChain, EVMContext>;
 
@@ -445,7 +465,7 @@ export const BeefyProtocol = {
     vault.deposit(amount.value);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, src, calls);
+    return sendGMPContractCall(ctx, src, calls);
   },
   withdraw: async (ctx, amount, dest) => {
     const { addresses: a, poolKey } = ctx;
@@ -457,7 +477,7 @@ export const BeefyProtocol = {
     vault.withdraw(amount.value);
     const calls = session.finish();
 
-    await sendGMPContractCall(ctx, dest, calls);
+    return sendGMPContractCall(ctx, dest, calls);
   },
 } as const satisfies ProtocolDetail<
   'Beefy',

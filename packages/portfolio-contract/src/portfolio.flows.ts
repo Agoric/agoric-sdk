@@ -21,6 +21,10 @@ import type {
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
+  type ResultMeta,
+  unwrapResultMeta,
+} from '@agoric/orchestration/src/utils/result-meta.js';
+import {
   AxelarChain,
   SupportedChain,
   type YieldProtocol,
@@ -103,8 +107,11 @@ type AssetMovement = {
   apply: (
     accounts: AccountsByChain,
     tracer: TraceLogger,
-  ) => Promise<{ srcPos?: Position; destPos?: Position }>;
-  recover: (accounts: AccountsByChain, tracer: TraceLogger) => Promise<void>;
+  ) => Promise<ResultMeta<{ srcPos?: Position; destPos?: Position }>>;
+  recover: (
+    accounts: AccountsByChain,
+    tracer: TraceLogger,
+  ) => Promise<ResultMeta<void>>;
 };
 
 const moveStatus = ({ apply: _a, recover: _r, ...data }: AssetMovement) => data;
@@ -124,13 +131,13 @@ export type TransportDetail<
     amount: NatAmount,
     src: AccountInfoFor[S],
     dest: AccountInfoFor[D],
-  ) => Promise<void>;
+  ) => Promise<ResultMeta<unknown>>;
   recover: (
     ctx: RecoverCTX,
     amount: NatAmount,
     src: AccountInfoFor[S],
     dest: AccountInfoFor[D],
-  ) => Promise<void>;
+  ) => Promise<ResultMeta<unknown>>;
 };
 
 export type ProtocolDetail<
@@ -144,13 +151,13 @@ export type ProtocolDetail<
     ctx: CTX,
     amount: NatAmount,
     src: AccountInfoFor[C],
-  ) => Promise<void>;
+  ) => Promise<ResultMeta<unknown>>;
   withdraw: (
     ctx: CTX,
     amount: NatAmount,
     dest: AccountInfoFor[C],
     claim?: boolean,
-  ) => Promise<void>;
+  ) => Promise<ResultMeta<unknown>>;
 };
 
 /**
@@ -173,8 +180,22 @@ const trackFlow = async (
       const traceStep = traceFlow.sub(`step${step}`);
       traceStep('starting', moveStatus(move));
       const { amount, how } = move;
+
       reporter.publishFlowStatus(flowId, { state: 'run', step, how });
-      const { srcPos, destPos } = await move.apply(accounts, traceStep);
+
+      const {
+        result: { srcPos, destPos },
+      } = await unwrapResultMeta(
+        move.apply(accounts, traceStep),
+        '@@@ move.apply',
+        {
+          flowId,
+          step,
+          how,
+        },
+        traceStep,
+      );
+
       traceStep('done:', how);
 
       if (srcPos) {
@@ -198,7 +219,12 @@ const trackFlow = async (
       const how = `unwind: ${move.how}`;
       reporter.publishFlowStatus(flowId, { state: 'undo', step, how });
       try {
-        await move.recover(accounts, traceStep);
+        await unwrapResultMeta(
+          move.recover(accounts, traceStep),
+          '@@@ move.recover',
+          { flowId, step, how },
+          traceStep,
+        );
       } catch (errInUnwind) {
         traceStep('⚠️ unwind failed', errInUnwind);
         // if a recover fails, we just give up and report `where` the assets are
@@ -464,10 +490,18 @@ const stepFlow = async (
         const evmCtx = await makeEVMPoolCtx(evmChain, move, lca, poolKey);
         await null;
         if ('src' in way) {
-          await pImpl.supply(evmCtx, amount, gInfo);
+          await unwrapResultMeta(
+            pImpl.supply(evmCtx, amount, gInfo),
+            '@@@ apply pImpl.supply',
+            { how, poolKey, accountId },
+          );
           return { destPos: pos };
         } else {
-          await pImpl.withdraw(evmCtx, amount, gInfo, way.claim);
+          await unwrapResultMeta(
+            pImpl.withdraw(evmCtx, amount, gInfo, way.claim),
+            '@@@ apply pImpl.withdraw',
+            { how, poolKey, accountId },
+          );
           return { srcPos: pos };
         }
       },
@@ -480,7 +514,13 @@ const stepFlow = async (
           const { lca } = agoric;
           const { poolKey } = way;
           const evmCtx = await makeEVMPoolCtx(evmChain, move, lca, poolKey);
-          await pImpl.supply(evmCtx, amount, gInfo);
+          await unwrapResultMeta(
+            pImpl.supply(evmCtx, amount, gInfo),
+            '@@@ recover pImpl.supply',
+            {
+              poolKey,
+            },
+          );
         }
       },
     });
@@ -571,9 +611,23 @@ const stepFlow = async (
             assert(noble, 'nobleMentioned'); // per nobleMentioned below
             await null;
             if (way.src === 'agoric') {
-              await agoricToNoble.apply(ctxI, amount, agoric, noble);
+              await unwrapResultMeta(
+                agoricToNoble.apply(ctxI, amount, agoric, noble),
+                '@@@ agoricToNoble.apply',
+                {
+                  how: way.how,
+                  amount,
+                },
+              );
             } else {
-              await nobleToAgoric.apply(ctxI, amount, noble, agoric);
+              await unwrapResultMeta(
+                nobleToAgoric.apply(ctxI, amount, noble, agoric),
+                '@@@ nobleToAgoric.apply',
+                {
+                  how: way.how,
+                  amount,
+                },
+              );
             }
             return {};
           },
@@ -581,9 +635,23 @@ const stepFlow = async (
             assert(noble); // per nobleMentioned below
             await null;
             if (way.src === 'agoric') {
-              await agoricToNoble.recover(ctxI, amount, agoric, noble);
+              await unwrapResultMeta(
+                agoricToNoble.recover(ctxI, amount, agoric, noble),
+                '@@@ recover agoricToNoble',
+                {
+                  how: way.how,
+                  amount,
+                },
+              );
             } else {
-              await nobleToAgoric.recover(ctxI, amount, noble, agoric);
+              await unwrapResultMeta(
+                nobleToAgoric.recover(ctxI, amount, noble, agoric),
+                '@@@ recover nobleToAgoric',
+                {
+                  how: way.how,
+                  amount,
+                },
+              );
             }
           },
         });
@@ -607,10 +675,24 @@ const stepFlow = async (
             assert(gInfo && noble, evmChain);
             await null;
             if (outbound) {
-              await CCTP.apply(ctx, amount, noble, gInfo);
+              await unwrapResultMeta(
+                CCTP.apply(ctx, amount, noble, gInfo),
+                '@@@ CCTP.apply',
+                {
+                  how,
+                  amount,
+                },
+              );
             } else {
               const evmCtx = await makeEVMCtx(evmChain, move, agoric.lca);
-              await CCTPfromEVM.apply(evmCtx, amount, gInfo, noble);
+              await unwrapResultMeta(
+                CCTPfromEVM.apply(evmCtx, amount, gInfo, noble),
+                '@@@ CCTPfromEVM.apply',
+                {
+                  how,
+                  amount,
+                },
+              );
             }
             return {};
           },
@@ -618,9 +700,23 @@ const stepFlow = async (
             assert(gInfo && noble, evmChain);
             await null;
             if (outbound) {
-              await CCTP.recover(ctx, amount, noble, gInfo);
+              await unwrapResultMeta(
+                CCTP.recover(ctx, amount, noble, gInfo),
+                '@@@ CCTP.recover',
+                {
+                  how,
+                  amount,
+                },
+              );
             } else {
-              await CCTPfromEVM.recover(ctx, amount, gInfo, noble);
+              await unwrapResultMeta(
+                CCTPfromEVM.recover(ctx, amount, gInfo, noble),
+                '@@@ CCTPfromEVM.recover',
+                {
+                  how,
+                  amount,
+                },
+              );
             }
           },
         });
@@ -645,10 +741,24 @@ const stepFlow = async (
             const pos = kit.manager.providePosition('USDN', 'USDN', acctId);
             await null;
             if (isSupply) {
-              await protocolUSDN.supply(ctxU, amount, noble);
+              await unwrapResultMeta(
+                protocolUSDN.supply(ctxU, amount, noble),
+                '@@@ protocolUSDN.supply',
+                {
+                  how: way.how,
+                  destPos: pos,
+                },
+              );
               return { destPos: pos };
             } else {
-              await protocolUSDN.withdraw(ctxU, amount, noble, way.claim);
+              await unwrapResultMeta(
+                protocolUSDN.withdraw(ctxU, amount, noble, way.claim),
+                '@@@ protocolUSDN.withdraw',
+                {
+                  how: way.how,
+                  srcPos: pos,
+                },
+              );
               return { srcPos: pos };
             }
           },
@@ -658,7 +768,14 @@ const stepFlow = async (
             if (isSupply) {
               Fail`no recovery from supply (final step)`;
             } else {
-              await protocolUSDN.supply(ctxU, amount, noble);
+              await unwrapResultMeta(
+                protocolUSDN.supply(ctxU, amount, noble),
+                '@@@ recover protocolUSDN.supply',
+                {
+                  how: way.how,
+                  amount,
+                },
+              );
             }
           },
         });
@@ -751,9 +868,13 @@ const stepFlow = async (
           evmGas: move.detail?.evmGas || 0n,
         };
 
-        const acctP = forChain(chain, () =>
-          provideEVMAccount(chain, gmp, agoric.lca, ctx, kit),
-        );
+        const acctP = forChain(chain, async () => {
+          const { result } = await unwrapResultMeta(
+            provideEVMAccount(chain, gmp, agoric.lca, ctx, kit),
+            '@@@ provideEVMAccount',
+          );
+          return result;
+        });
         return [asEntry(chain, acctP)];
       }),
     );
