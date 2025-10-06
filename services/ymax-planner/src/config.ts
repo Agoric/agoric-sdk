@@ -139,7 +139,7 @@ export const loadConfig = async (
     isMainnet ? ids.mainnet : ids.testnet,
   );
 
-  const contractInstance = env.CONTRACT_INSTANCE?.trim() || 'ymax0';
+  const contractInstance = validateRequired(env, 'CONTRACT_INSTANCE');
   if (contractInstance !== 'ymax0' && contractInstance !== 'ymax1') {
     throw Fail`CONTRACT_INSTANCE must be 'ymax0' or 'ymax1', got: ${contractInstance}`;
   }

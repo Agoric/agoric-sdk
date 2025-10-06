@@ -14,6 +14,7 @@ const { entries, keys } = Object;
 const minimalEnv = {
   MNEMONIC: 'test mnemonic phrase',
   ALCHEMY_API_KEY: 'test1234',
+  CONTRACT_INSTANCE: 'ymax1',
 };
 
 const makeFakeSecretManager = (mnemonic?: string) =>
@@ -45,6 +46,7 @@ test('loadConfig accepts valid configuration', async t => {
   const env = {
     CLUSTER: 'testnet',
     MNEMONIC: 'test mnemonic phrase',
+    CONTRACT_INSTANCE: 'ymax1',
     ALCHEMY_API_KEY: 'test1234',
     SPECTRUM_API_URL: 'https://api.spectrum.example.com',
     SPECTRUM_API_TIMEOUT: '5000',
@@ -73,7 +75,7 @@ test('loadConfig uses default values when optional fields are missing', async t 
   const config = await callLoadConfig();
 
   t.is(config.clusterName, 'local');
-  t.is(config.contractInstance, 'ymax0');
+  t.is(config.contractInstance, 'ymax1');
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemyApiKey, 'test1234');
   t.is(config.spectrum.apiUrl, undefined);
