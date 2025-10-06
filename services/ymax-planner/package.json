@@ -32,7 +32,7 @@
     "@types/ws": "^8",
     "ava": "^6.3.0",
     "esbuild": "^0.25.2",
-    "nodemon": "^3.1.10",
+    "nodemon": "patch:nodemon@npm%3A3.1.10#~/.yarn/patches/nodemon-npm-3.1.10-a345fb1076.patch",
     "ts-blank-space": "^0.6.2",
     "typescript": "^5.9.2"
   },

@@ -1,0 +1,162 @@
+diff --git a/doc/cli/options.txt b/doc/cli/options.txt
+index 598ae63ba310e212a9cac7b2f5449cbd91e9a34f..5945265389ba3a87cd0ba2ae800d297ee460e287 100644
+--- a/doc/cli/options.txt
++++ b/doc/cli/options.txt
+@@ -1,36 +1,37 @@
+ 
+ Configuration
+-  --config <file> .......... alternate nodemon.json config file to use
+-  --exitcrash .............. exit on crash, allows nodemon to work with other watchers
+-  -i, --ignore ............. ignore specific files or directories
+-  --no-colors .............. disable color output
+-  --signal <signal> ........ use specified kill signal instead of default (ex. SIGTERM)
+-  -w, --watch path ......... watch directory "dir" or files. use once for each
+-                             directory or file to watch
+-  --no-update-notifier ..... opt-out of update version check
++  --config <file> ............. alternate nodemon.json config file to use
++  --exitcrash ................. exit on crash, allows nodemon to work with other watchers
++  -i, --ignore ................ ignore specific files or directories
++  --no-colors ................. disable color output
++  --signal <signal> ........... use specified kill signal instead of default (ex. SIGTERM)
++  -w, --watch path ............ watch directory "dir" or files. use once for each
++                                directory or file to watch
++  --no-update-notifier ........ opt-out of update version check
+ 
+ Execution
+-  -C, --on-change-only ..... execute script on change only, not startup
+-  --cwd <dir> .............. change into <dir> before running the script
+-  -e, --ext ................ extensions to look for, ie. "js,pug,hbs"
+-  -I, --no-stdin ........... nodemon passes stdin directly to child process
+-  --spawn .................. force nodemon to use spawn (over fork) [node only]
+-  -x, --exec app ........... execute script with "app", ie. -x "python -v"
+-  -- <your args> ........... to tell nodemon stop slurping arguments
++  -C, --on-change-only ........ execute script on change only, not startup
++  -A, --auto-restart <when> ... when to automatically restart: never|always|crash|clean
++  --cwd <dir> ................. change into <dir> before running the script
++  -e, --ext ................... extensions to look for, ie. "js,pug,hbs"
++  -I, --no-stdin .............. nodemon passes stdin directly to child process
++  --spawn ..................... force nodemon to use spawn (over fork) [node only]
++  -x, --exec app .............. execute script with "app", ie. -x "python -v"
++  -- <your args> .............. to tell nodemon stop slurping arguments
+ 
+ Watching
+-  -d, --delay n ............ debounce restart for "n" seconds
+-  -L, --legacy-watch ....... use polling to watch for changes (typically needed
+-                             when watching over a network/Docker)
+-  -P, --polling-interval ... combined with -L, milliseconds to poll for (default 100)
++  -d, --delay n ............... debounce restart for "n" seconds
++  -L, --legacy-watch .......... use polling to watch for changes (typically needed
++                           ...  when watching over a network/Docker)
++  -P, --polling-interval ...... combined with -L, milliseconds to poll for (default 100)
+ 
+ Information
+-  --dump ................... print full debug configuration
+-  -h, --help ............... default help
+-  --help <topic> ........... help on a specific feature. Try "--help topics"
+-  -q, --quiet .............. minimise nodemon messages to start/stop only
+-  -v, --version ............ current nodemon version
+-  -V, --verbose ............ show detail on what is causing restarts
++  --dump ...................... print full debug configuration
++  -h, --help .................. default help
++  --help <topic> .............. help on a specific feature. Try "--help topics"
++  -q, --quiet ................. minimise nodemon messages to start/stop only
++  -v, --version ............... current nodemon version
++  -V, --verbose ............... show detail on what is causing restarts
+ 
+ 
+ > Note that any unrecognised arguments are passed to the executing command.
+diff --git a/index.d.ts b/index.d.ts
+index 9037c9a49119e3f7255d11f1e194eda4b44e0f52..ab7478f29e8381d6cb4d94f62f14979f226ca86a 100644
+--- a/index.d.ts
++++ b/index.d.ts
+@@ -73,6 +73,7 @@ export interface NodemonExecOptions {
+ export interface NodemonConfig {
+   /** restartable defaults to "rs" as a string the user enters */
+   restartable?: false | string;
++  autoRestart?: 'never' | 'always' | 'crash' | 'clean';
+   colours?: boolean;
+   execMap?: { [key: string]: string };
+   ignoreRoot?: string[];
+diff --git a/lib/cli/parse.js b/lib/cli/parse.js
+index 560cc71534e0439ae591ea994ab0338796565fb2..0e39634d3fbc4792e3ad7a98bca6ca2252a3b52b 100644
+--- a/lib/cli/parse.js
++++ b/lib/cli/parse.js
+@@ -164,6 +164,15 @@ function nodemonOption(options, arg, eatNext) {
+     options.exitCrash = true;
+   } else
+ 
++  if (arg === '--auto-restart' || arg === '-A') {
++    options.autoRestart = eatNext();
++    var acceptable = ['never', 'always', 'crash', 'clean'];
++    if (acceptable.indexOf(options.autoRestart) === -1) {
++      throw Error(`--auto-restart|-A must be one of ${acceptable}`);
++    }
++
++  } else
++
+   if (arg === '--delay' || arg === '-d') {
+     options.delay = parseDelay(eatNext());
+   } else
+diff --git a/lib/config/defaults.js b/lib/config/defaults.js
+index dc95d346bf505e6edbf54a839e45ef76ad934dd4..9a95c58d025cbe9fb59f7d01f9257699f5133129 100644
+--- a/lib/config/defaults.js
++++ b/lib/config/defaults.js
+@@ -3,6 +3,7 @@ var ignoreRoot = require('ignore-by-default').directories();
+ // default options for config.options
+ const defaults = {
+   restartable: 'rs',
++  autoRestart: 'never',
+   colours: true,
+   execMap: {
+     py: 'python',
+diff --git a/lib/monitor/run.js b/lib/monitor/run.js
+index 5fa7f45ad215c29c9591ac5b0b7a7fc094f7dec9..d3b74d532d20b35f50547385ebcc86774e07ed7b 100644
+--- a/lib/monitor/run.js
++++ b/lib/monitor/run.js
+@@ -20,6 +20,7 @@ const undefsafe = require('undefsafe');
+ const osRelease = parseInt(require('os').release().split('.')[0], 10);
+ 
+ function run(options) {
++  var autoRestart = options.autoRestart;
+   var cmd = config.command.raw;
+   // moved up
+   // we need restart function below in the global scope for run.kill
+@@ -240,12 +241,13 @@ function run(options) {
+         return restart();
+       }
+ 
+-      if (code === 0) {
+-        // clean exit - wait until file change to restart
+-        if (runCmd) {
+-          utils.log.status('clean exit - waiting for changes before restart');
+-        }
+-        child = null;
++      // clean exit
++      child = null;
++      if (autoRestart === 'always' || autoRestart === 'clean') {
++        utils.log.status('clean exit - automatically restarting');
++        bus.emit('restart');
++      } else if (runCmd) {
++        utils.log.status('clean exit - waiting for changes before restart');
+       }
+     } else {
+       bus.emit('crash');
+@@ -261,11 +263,16 @@ function run(options) {
+         if (!config.required) {
+           process.exit(1);
+         }
++      }
++
++      child = null;
++      if (autoRestart === 'always' || autoRestart === 'crash') {
++        utils.log.fail('app crashed - automatically restarting');
++        bus.emit('restart');
+       } else {
+         utils.log.fail(
+-          'app crashed - waiting for file changes before' + ' starting...'
++          'app crashed - waiting for file changes before starting...'
+         );
+-        child = null;
+       }
+     }
+ 
