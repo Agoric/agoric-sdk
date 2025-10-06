@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "start": "node ./dist/entrypoint.js",
-    "dev": "nodemon -A crash --ext js,ts --exec 'node --import ts-blank-space/register ./src/entrypoint.ts'",
+    "dev": "nodemon --ext js,ts --exec 'node --import ts-blank-space/register ./src/entrypoint.ts || touch ./src/entrypoint.ts'",
     "debug": "node --inspect ./dist/entrypoint.js",
     "start:docker": "docker compose up --build",
     "start:deps": "docker compose up --scale app=0",
@@ -32,7 +32,7 @@
     "@types/ws": "^8",
     "ava": "^6.3.0",
     "esbuild": "^0.25.2",
-    "nodemon": "patch:nodemon@npm%3A3.1.10#~/.yarn/patches/nodemon-npm-3.1.10-a345fb1076.patch",
+    "nodemon": "^3.1.10",
     "ts-blank-space": "^0.6.2",
     "typescript": "^5.9.2"
   },

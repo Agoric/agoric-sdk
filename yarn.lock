@@ -325,7 +325,7 @@ __metadata:
     ethers: "npm:^6.13.0"
     json-rpc-2.0: "npm:^1.7.1"
     ky: "npm:^1.4.0"
-    nodemon: "patch:nodemon@npm%3A3.1.10#~/.yarn/patches/nodemon-npm-3.1.10-a345fb1076.patch"
+    nodemon: "npm:^3.1.10"
     ts-blank-space: "npm:^0.6.2"
     typescript: "npm:^5.9.2"
     ws: "npm:^8.18.3"
@@ -13579,7 +13579,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nodemon@npm:3.1.10":
+"nodemon@npm:^3.1.10":
   version: 3.1.10
   resolution: "nodemon@npm:3.1.10"
   dependencies:
@@ -13596,26 +13596,6 @@ __metadata:
   bin:
     nodemon: bin/nodemon.js
   checksum: 10c0/95b64d647f2c22e85e375b250517b0a4b32c2d2392ad898444e331f70d6b1ab43b17f53a8a1d68d5879ab8401fc6cd6e26f0d2a8736240984f6b5a8435b407c0
-  languageName: node
-  linkType: hard
-
-"nodemon@patch:nodemon@npm%3A3.1.10#~/.yarn/patches/nodemon-npm-3.1.10-a345fb1076.patch":
-  version: 3.1.10
-  resolution: "nodemon@patch:nodemon@npm%3A3.1.10#~/.yarn/patches/nodemon-npm-3.1.10-a345fb1076.patch::version=3.1.10&hash=0f33e0"
-  dependencies:
-    chokidar: "npm:^3.5.2"
-    debug: "npm:^4"
-    ignore-by-default: "npm:^1.0.1"
-    minimatch: "npm:^3.1.2"
-    pstree.remy: "npm:^1.1.8"
-    semver: "npm:^7.5.3"
-    simple-update-notifier: "npm:^2.0.0"
-    supports-color: "npm:^5.5.0"
-    touch: "npm:^3.1.0"
-    undefsafe: "npm:^2.0.5"
-  bin:
-    nodemon: bin/nodemon.js
-  checksum: 10c0/39981c27596526607ea4e08a199efab99dd9c795628e8b753b1de058d9ef66f33c82d77f142edd87611db7bc56687d4ec96aa0bcf5fc115862fdb56ecc06b16d
   languageName: node
   linkType: hard
 
