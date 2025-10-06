@@ -12,6 +12,7 @@ type WatchNobleTransferOptions = {
   log: (...args: unknown[]) => void;
   setTimeout?: typeof globalThis.setTimeout;
   pollIntervalMs?: number;
+  signal?: AbortSignal;
 };
 
 /**
@@ -28,8 +29,9 @@ export const watchNobleTransfer = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   pollIntervalMs = 5000, // Poll every 5 seconds
+  signal,
 }: WatchNobleTransferOptions): Promise<boolean> => {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     log(
       `Watching for Noble transfers to: ${watchAddress} with amount: ${expectedAmount} ${expectedDenom}`,
     );
@@ -94,6 +96,14 @@ export const watchNobleTransfer = ({
         resolve(false);
       }
     }, timeoutMs);
+
+    if (signal) {
+      signal.addEventListener('abort', () => {
+        log('Watch aborted');
+        cleanup();
+        reject(new Error('Aborted'));
+      });
+    }
   });
 };
 
@@ -104,7 +114,7 @@ export const lookBackNobleTransfer = async ({
   expectedDenom,
   chainKey = 'noble',
   log = () => {},
-}: WatchNobleTransferOptions) => {
+}: WatchNobleTransferOptions): Promise<boolean> => {
   await null;
   try {
     log(`Checking Noble address ${watchAddress} for amount ${expectedAmount}`);
