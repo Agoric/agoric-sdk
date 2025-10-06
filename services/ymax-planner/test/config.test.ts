@@ -73,6 +73,7 @@ test('loadConfig uses default values when optional fields are missing', async t 
   const config = await callLoadConfig();
 
   t.is(config.clusterName, 'local');
+  t.is(config.contractInstance, 'ymax0');
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemyApiKey, 'test1234');
   t.is(config.spectrum.apiUrl, undefined);
@@ -166,6 +167,22 @@ test('loadConfig trims whitespace from values', async t => {
 test('loadConfig rejects empty required values', async t => {
   await t.throwsAsync(() => callLoadConfig({ ALCHEMY_API_KEY: '   ' }), {
     message: '"ALCHEMY_API_KEY" is required',
+  });
+});
+
+test('loadConfig accepts ymax0 contract instance', async t => {
+  const config = await callLoadConfig({ CONTRACT_INSTANCE: 'ymax0' });
+  t.is(config.contractInstance, 'ymax0');
+});
+
+test('loadConfig accepts ymax1 contract instance', async t => {
+  const config = await callLoadConfig({ CONTRACT_INSTANCE: 'ymax1' });
+  t.is(config.contractInstance, 'ymax1');
+});
+
+test('loadConfig rejects invalid contract instance', async t => {
+  await t.throwsAsync(() => callLoadConfig({ CONTRACT_INSTANCE: 'ymax2' }), {
+    message: /CONTRACT_INSTANCE must be 'ymax0' or 'ymax1'/,
   });
 });
 

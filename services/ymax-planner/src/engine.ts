@@ -93,8 +93,10 @@ type VstorageEventDetail = {
 
 type PendingTxRecord = { blockHeight: bigint; tx: PendingTx };
 
-export const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
-export const PENDING_TX_PATH_PREFIX = 'published.ymax0.pendingTxs';
+const makeVstoragePathPrefixes = (contractInstance: string) => ({
+  PORTFOLIOS_PATH_PREFIX: `published.${contractInstance}.portfolios`,
+  PENDING_TX_PATH_PREFIX: `published.${contractInstance}.pendingTxs`,
+});
 
 /** cf. golang/cosmos/x/vstorage/types/path_keys.go */
 const EncodedKeySeparator = '\x00';
@@ -181,6 +183,10 @@ type ProcessPortfolioPowers = Pick<
   depositBrand: Brand<'nat'>;
   feeBrand: Brand<'nat'>;
   portfolioKeyForDepositAddr: Map<Bech32Address, string>;
+  vstoragePathPrefixes: {
+    PORTFOLIOS_PATH_PREFIX: string;
+    PENDING_TX_PATH_PREFIX: string;
+  };
 };
 
 const processPortfolioEvents = async (
@@ -196,11 +202,13 @@ const processPortfolioEvents = async (
     walletStore,
     getWalletInvocationUpdate,
     spectrum,
+    vstoragePathPrefixes,
 
     portfolioKeyForDepositAddr,
   }: ProcessPortfolioPowers,
 ) => {
   const { query, marshaller } = signingSmartWalletKit;
+  const { PORTFOLIOS_PATH_PREFIX } = vstoragePathPrefixes;
   const { vstorage } = query;
   const setPortfolioKeyForDepositAddr = (addr: Bech32Address, key: string) => {
     const oldKey = portfolioKeyForDepositAddr.get(addr);
@@ -383,7 +391,12 @@ export const processPendingTxEvents = async (
   handlePendingTxFn,
   txPowers: HandlePendingTxOpts,
 ) => {
-  const { marshaller, error = () => {}, log = () => {} } = txPowers;
+  const {
+    marshaller,
+    error = () => {},
+    log = () => {},
+    vstoragePathPrefixes: { PENDING_TX_PATH_PREFIX },
+  } = txPowers;
   for (const { path, value: cellJson } of events) {
     const errLabel = `🚨 Failed to process pending tx ${path}`;
     let data;
@@ -479,10 +492,18 @@ export const startEngine = async (
     gasEstimator,
   }: Powers,
   {
+    contractInstance,
     depositBrandName,
     feeBrandName,
-  }: { depositBrandName: string; feeBrandName: string },
+  }: {
+    contractInstance: string;
+    depositBrandName: string;
+    feeBrandName: string;
+  },
 ) => {
+  const vstoragePathPrefixes = makeVstoragePathPrefixes(contractInstance);
+  const { PORTFOLIOS_PATH_PREFIX, PENDING_TX_PATH_PREFIX } =
+    vstoragePathPrefixes;
   await null;
   const { query, marshaller } = signingSmartWalletKit;
 
@@ -593,6 +614,7 @@ export const startEngine = async (
     walletStore,
     getWalletInvocationUpdate,
     spectrum,
+    vstoragePathPrefixes,
 
     portfolioKeyForDepositAddr,
   });
@@ -626,6 +648,7 @@ export const startEngine = async (
     marshaller,
     now,
     signingSmartWalletKit,
+    vstoragePathPrefixes,
   });
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
 

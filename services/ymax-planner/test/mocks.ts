@@ -9,9 +9,10 @@ import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
-import { PENDING_TX_PATH_PREFIX } from '../src/engine.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
+
+const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 
 const mockFetchForGasEstimate = async (_, options?: any) => {
     return {
@@ -140,6 +141,10 @@ export const createMockPendingTxOpts = (): HandlePendingTxOpts => ({
   usdcAddresses: {
     'eip155:1': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // Ethereum
     'eip155:42161': '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', // Arbitrum
+  },
+  vstoragePathPrefixes: {
+    PORTFOLIOS_PATH_PREFIX: 'IGNORED',
+    PENDING_TX_PATH_PREFIX,
   },
 });
 
