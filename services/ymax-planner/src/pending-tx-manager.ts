@@ -209,6 +209,10 @@ export type HandlePendingTxOpts = {
   marshaller: SigningSmartWalletKit['marshaller'];
   registry?: MonitorRegistry;
   timeoutMs?: number;
+  vstoragePathPrefixes: {
+    PORTFOLIOS_PATH_PREFIX: string;
+    PENDING_TX_PATH_PREFIX: string;
+  };
 } & EvmContext;
 
 export const TX_TIMEOUT_MS = 30 * 60 * 1000; // 30 min
