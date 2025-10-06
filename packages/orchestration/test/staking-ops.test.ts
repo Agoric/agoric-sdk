@@ -186,7 +186,9 @@ const makeScenario = () => {
         return { result: doMessage(msgs[0]), meta: {} };
       },
       executeEncodedTx: async msgs => {
-        const { result, meta } = await account.executeEncodedTxWithMeta(msgs);
+        const resultMeta = await account.executeEncodedTxWithMeta(msgs);
+        assert.typeof(resultMeta, 'object');
+        const { result, meta } = resultMeta;
         assert(meta);
         return result;
       },

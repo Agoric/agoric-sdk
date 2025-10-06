@@ -69,6 +69,7 @@ import {
   toDenomAmount,
   toTruncatedDenomAmount,
   tryDecodeResponse,
+  tryDecodeResponses,
 } from '../utils/cosmos.js';
 import {
   orchestrationAccountMethods,
@@ -133,8 +134,8 @@ const MsgTransfer = CodecHelper(MsgTransferType);
 const MsgTransferResponse = CodecHelper(MsgTransferResponseType);
 
 /**
- * @import {HostOf} from '@agoric/async-flow';
- * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, NobleMethods, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse, CaipChainId, AccountIdArg, ChainInfo, MetaTrafficEntry} from '../types.js';
+ * @import {HostInterface, HostOf} from '@agoric/async-flow';
+ * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, NobleMethods, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse, CaipChainId, AccountIdArg, ChainInfo, MetaTrafficEntry, ResultMeta} from '../types.js';
  * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
@@ -240,6 +241,9 @@ const nobleMethods = {
   depositForBurn: M.call(M.string(), AmountArgShape)
     .optional(M.string())
     .returns(VowShape),
+  depositForBurnWithMeta: M.call(M.string(), AmountArgShape)
+    .optional(M.string())
+    .returns(EVow$({ result: EVow$(M.any()), meta: M.record({}) })),
 };
 
 /** @see {OrchestrationAccountCommon} */
@@ -305,21 +309,6 @@ export const prepareCosmosOrchestrationAccountKit = (
     zcf,
   },
 ) => {
-  /**
-   * Use a WeakMapStore to memoize some additional details about the ICA
-   * Account.
-   *
-   * @type {import('@agoric/store').WeakMapStore<
-   *   IcaAccount,
-   *   {
-   *     agoric: ChainInfo<'cosmos'>;
-   *     la: LocalIbcAddress;
-   *     counterparty: CaipChainId;
-   *     ra: RemoteIbcAddress;
-   *   }
-   * >}
-   */
-  const icaAccountToDetails = zone.weakMapStore('icaAccountToDetails');
   const timestampHelper = makeTimestampHelper(timerService);
   const makeCosmosOrchestrationAccountKit = zone.exoClassKit(
     'Cosmos Orchestration Account Holder',
@@ -522,16 +511,6 @@ export const prepareCosmosOrchestrationAccountKit = (
           { result, meta: origMeta },
           protocol,
         ) {
-          const { helper } = this.facets;
-          const acct = helper.owned();
-          if (!icaAccountToDetails.has(acct)) {
-            // Memoize the details for next time.
-            icaAccountToDetails.init(
-              acct,
-              harden({ agoric, la, counterparty, ra }),
-            );
-          }
-
           const cp = counterparty.split(':', 2);
           const lad = decodeIbcEndpoint(la);
           const rad = decodeIbcEndpoint(ra);
@@ -542,14 +521,10 @@ export const prepareCosmosOrchestrationAccountKit = (
               ...(origMeta.traffic || []),
               /** @type {MetaTrafficEntry} */ ({
                 op: 'ICA',
-                src: [
-                  protocol,
-                  agoric.namespace,
-                  agoric.reference,
-                  lad.portID,
-                  lad.channelID,
-                ],
-                dst: [protocol, cp[0], cp[1], rad.portID, rad.channelID],
+                srcChainId: `${agoric.namespace}:${agoric.reference}`,
+                src: [protocol, lad.portID, lad.channelID],
+                dstChainId: `${cp[0]}:${cp[1]}`,
+                dst: [protocol, rad.portID, rad.channelID],
                 // TODO(#11994): Need to expose from Network API `conn.sendWithMeta(...)`
                 // Unknown for now, so set it to null.
                 seq: null,
@@ -793,20 +768,15 @@ export const prepareCosmosOrchestrationAccountKit = (
           const meta = watch(resultMeta, this.facets.pickDataWatcher, 'meta');
           const transferTraffic = /** @type {MetaTrafficEntry} */ ({
             op: 'transfer',
-            src: [
-              'ibc',
-              'cosmos',
-              chainAddress.chainId,
-              transferChannel.portId,
-              transferChannel.channelId,
-            ],
+            srcChainId: `cosmos:${chainAddress.chainId}`,
+            src: ['ibc', transferChannel.portId, transferChannel.channelId],
+            dstChainId: `cosmos:${destination.chainId}`,
             dst: [
               'ibc',
-              'cosmos',
-              destination.chainId,
               transferChannel.counterPartyPortId,
               transferChannel.counterPartyChannelId,
             ],
+            seq: null, // filled in by parseTransferWatcher.onFulfilled below
           });
           return watch(
             allVows([result, meta]),
@@ -822,28 +792,25 @@ export const prepareCosmosOrchestrationAccountKit = (
             baseMeta,
             transferTraffic,
           });
-          const { sequence } = tryDecodeResponse(
-            transferResp,
+          const [{ sequence }] = tryDecodeResponses(transferResp, [
             MsgTransferResponse,
-          );
+          ]);
           const baseSequence = transferTraffic?.seq;
           baseSequence == null ||
             Fail`expected traffic?.seq ${baseSequence} to be nullish`;
           sequence != null ||
             Fail`expected MsgTransferResponse.sequence ${sequence} to be non-nullish`;
 
+          const newTransferTraffic = { ...transferTraffic, seq: sequence };
           /** @type {Record<string, any>} */
           const meta = {
             ...baseMeta,
-            traffic: [
-              ...(baseMeta.traffic || []),
-              { ...transferTraffic, seq: sequence },
-            ],
+            traffic: [...(baseMeta.traffic || []), newTransferTraffic],
           };
-          // Result is unknown, so return Vow<undefined>, even though our meta is good.
-          // XXX would be good to use a resolver promise to indicate acknowledgement.
+          // Result is not known to this account.  Ask the caller to follow the
+          // traffic.
           const resMeta = harden({
-            result: watch(null),
+            result: { followTraffic: newTransferTraffic },
             meta,
           });
           return resMeta;
@@ -1168,6 +1135,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         /** @type {HostOf<OrchestrationAccountCommon['transferWithMeta']>} */
         transferWithMeta(destination, amount, opts) {
           trace('transferWithMeta', destination, amount, opts);
+          // @ts-expect-error HostOf typing doesn't recurse here
           return asVow(() => {
             const cosmosDest = chainHub.coerceCosmosAddress(destination);
             const { helper } = this.facets;
@@ -1407,21 +1375,14 @@ export const prepareCosmosOrchestrationAccountKit = (
             const { helper } = this.facets;
             const acct = helper.owned();
             const result = watch(E(acct).executeEncodedTx(msgs, opts));
-            const all = [];
-            if (icaAccountToDetails.has(acct)) {
-              const { agoric, la, counterparty, ra } =
-                icaAccountToDetails.get(acct);
-              all.push(agoric, la, counterparty, ra);
-            } else {
-              const agoric = chainHub.getChainInfo('agoric');
-              const la = E(acct).getLocalAddress();
-              const counterparty = `cosmos:${chainAddress.chainId}`;
-              const ra = E(acct).getRemoteAddress();
 
-              all.push(agoric, la, counterparty, ra);
-            }
+            const agoric = chainHub.getChainInfo('agoric');
+            const la = E(acct).getLocalAddress();
+            const counterparty = `cosmos:${chainAddress.chainId}`;
+            const ra = E(acct).getRemoteAddress();
+
             return watch(
-              allVows(all),
+              allVows([agoric, la, counterparty, ra]),
               this.facets.attachTxMetaWatcher,
               { result, meta: {} },
               'ibc',
@@ -1432,8 +1393,23 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @type {HostOf<NobleMethods['depositForBurn']>}
          */
         depositForBurn(destination, amount, caller) {
+          return watch(
+            E(this.facets.holder).depositForBurnWithMeta(
+              destination,
+              amount,
+              caller,
+            ),
+            this.facets.pickDataWatcher,
+            'result',
+          );
+        },
+        /**
+         * @type {HostOf<NobleMethods['depositForBurnWithMeta']>}
+         */
+        depositForBurnWithMeta(destination, amount, caller) {
+          // @ts-expect-error HostOf typing doesn't recurse here
           return asVow(() => {
-            trace('depositForBurn', { destination, amount });
+            trace('depositForBurnWithMeta', { destination, amount });
             const { helper } = this.facets;
             const { chainAddress } = this.state;
 
@@ -1447,7 +1423,7 @@ export const prepareCosmosOrchestrationAccountKit = (
               throw Fail`${q(chainId)} does not have "cctpDestinationDomain" set in ChainInfo`;
             }
 
-            /** @satisfies {MsgDepositForBurnType} */
+            /** @type {MsgDepositForBurnType} */
             const depositForBurn = {
               amount: helper.amountToCoin(amount)?.amount,
               from: chainAddress.value,
@@ -1465,19 +1441,16 @@ export const prepareCosmosOrchestrationAccountKit = (
               return accountIdTo32Bytes(caller);
             })();
 
-            return watch(
-              E(helper.owned()).executeEncodedTx([
-                Any.toJSON(
-                  destinationCaller
-                    ? MsgDepositForBurnWithCaller.toProtoMsg({
-                        ...depositForBurn,
-                        destinationCaller,
-                      })
-                    : MsgDepositForBurn.toProtoMsg(depositForBurn),
-                ),
-              ]),
-              this.facets.returnVoidWatcher,
-            );
+            return this.facets.holder.executeEncodedTxWithMeta([
+              Any.toJSON(
+                destinationCaller
+                  ? MsgDepositForBurnWithCaller.toProtoMsg({
+                      ...depositForBurn,
+                      destinationCaller,
+                    })
+                  : MsgDepositForBurn.toProtoMsg(depositForBurn),
+              ),
+            ]);
           });
         },
       },

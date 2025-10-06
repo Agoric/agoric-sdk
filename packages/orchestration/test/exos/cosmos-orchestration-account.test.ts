@@ -347,7 +347,20 @@ test('transfer', async t => {
     basicIbcTransfer,
     'outgoing transfer msg matches expected default mock',
   );
-  t.deepEqual(await res, null, 'transfer returns null (for now)');
+  t.deepEqual(
+    await res,
+    {
+      followTraffic: {
+        dst: ['ibc', 'transfer', 'channel-4'],
+        dstChainId: 'cosmos:noble-1',
+        op: 'transfer',
+        seq: 0n,
+        src: ['ibc', 'transfer', 'channel-536'],
+        srcChainId: 'cosmos:cosmoshub-4',
+      },
+    },
+    'transfer returns unknown flag (for now)',
+  );
 
   const resWithMeta = E(account).transferWithMeta(
     mockDestination,
@@ -370,23 +383,36 @@ test('transfer', async t => {
         {
           op: 'ICA',
           seq: null,
-          src: ['ibc', 'cosmos', 'agoric-3', 'icacontroller-1', 'channel-0'],
-          dst: ['ibc', 'cosmos', 'cosmoshub-4', 'icahost', 'channel-0'],
+          srcChainId: 'cosmos:agoric-3',
+          src: ['ibc', 'icacontroller-1', 'channel-0'],
+          dstChainId: 'cosmos:cosmoshub-4',
+          dst: ['ibc', 'icahost', 'channel-0'],
         },
         {
           op: 'transfer',
           seq: 0n,
-          src: ['ibc', 'cosmos', 'cosmoshub-4', 'transfer', 'channel-536'],
-          dst: ['ibc', 'cosmos', 'noble-1', 'transfer', 'channel-4'],
+          srcChainId: 'cosmos:cosmoshub-4',
+          src: ['ibc', 'transfer', 'channel-536'],
+          dstChainId: 'cosmos:noble-1',
+          dst: ['ibc', 'transfer', 'channel-4'],
         },
       ] as MetaTrafficEntry[],
     },
     'transfer returns proper meta',
   );
-  t.is(
+  t.deepEqual(
     await heapVowTools.when(resultMeta.result),
-    null,
-    'transfer result is null, indicating no knowledge of the acknowledgement',
+    {
+      followTraffic: {
+        dst: ['ibc', 'transfer', 'channel-4'],
+        dstChainId: 'cosmos:noble-1',
+        op: 'transfer',
+        seq: 0n,
+        src: ['ibc', 'transfer', 'channel-536'],
+        srcChainId: 'cosmos:cosmoshub-4',
+      },
+    },
+    'transfer returns unknown flag (for now)',
   );
 
   t.log('transfer accepts custom memo');
@@ -1106,7 +1132,10 @@ test(`depositForBurn via Noble to Base`, async t => {
   );
 
   t.log('check the bridge');
-  t.deepEqual(actual, undefined);
+  t.deepEqual(
+    actual,
+    'EisKKS9jaXJjbGUuY2N0cC52MS5Nc2dEZXBvc2l0Rm9yQnVyblJlc3BvbnNl',
+  );
 
   const getAndDecodeLatestPacket = async () => {
     await eventLoopIteration();

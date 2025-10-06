@@ -527,17 +527,15 @@ export const prepareLocalOrchestrationAccountKit = (
             traffic: /** @type {MetaTrafficEntry[]} */ ([
               {
                 op: 'transfer',
+                srcChainId: `${srcChainInfo.namespace}:${srcChainInfo.reference}`,
                 src: [
                   'ibc',
-                  srcChainInfo.namespace,
-                  srcChainInfo.reference,
                   transferDetails.sourcePort,
                   transferDetails.sourceChannel,
                 ],
+                dstChainId: `${dstChainInfo.namespace}:${dstChainInfo.reference}`,
                 dst: [
                   'ibc',
-                  dstChainInfo.namespace,
-                  dstChainInfo.reference,
                   transferChannel.counterPartyPortId,
                   transferChannel.counterPartyChannelId,
                 ],
@@ -887,7 +885,7 @@ export const prepareLocalOrchestrationAccountKit = (
         },
         /** @type {HostOf<OrchestrationAccountCommon['transferWithMeta']>} */
         transferWithMeta(destination, amount, opts) {
-          // @ts-expect-error Vow combined with HostInterface doesn't type.
+          // @ts-expect-error HostOf typing doesn't recurse here
           return asVow(() => {
             trace('Transferring funds over IBC');
 

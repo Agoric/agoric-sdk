@@ -18,12 +18,12 @@ import { MsgSwap as MsgSwapType } from '@agoric/cosmic-proto/noble/swap/v1/tx.js
 import { type NatValue } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { type CosmosChainAddress, type Denom } from '@agoric/orchestration';
+import { unwrapResultMeta } from '@agoric/orchestration/src/utils/result-meta.js';
+// XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 import {
   type ProtocolDetail,
   type TransportDetail,
 } from './portfolio.flows.ts';
-import { unwrapResultMeta } from '@agoric/orchestration/src/utils/result-meta.js';
-// XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const Any = CodecHelper(AnyType);
 const MsgLock = CodecHelper(MsgLockType);

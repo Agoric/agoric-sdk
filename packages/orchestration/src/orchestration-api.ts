@@ -10,7 +10,6 @@ import type { Timestamp } from '@agoric/time';
 import type { QueryManyFn } from '@agoric/vats/src/localchain.js';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Passable } from '@endo/marshal';
-import type { Vow } from '@agoric/vow';
 import type {
   AgoricChainMethods,
   CosmosChainAccountMethods,

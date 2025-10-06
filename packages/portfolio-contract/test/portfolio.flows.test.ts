@@ -293,8 +293,8 @@ const mocks = (
               ] as MetaTrafficEntry[];
 
               return harden({
-                result: msgs.map(({ typeUrl, value: response }) => {
-                  if (typeUrl.startsWith('Fake/')) {
+                result: msgs.map(({ typeUrl, response = {} }) => {
+                  if (typeUrl.startsWith('/')) {
                     return response;
                   }
                   return {};
@@ -1066,8 +1066,12 @@ test('Engine can move deposits +agoric -> @agoric', async t => {
   const lca = kit.reader.getLocalAccount();
   t.is(lca.getAddress().value, 'agoric11028');
   t.like(log, [
-    { _method: 'monitorTransfers' },
-    { _method: 'send', toAccount: { value: 'agoric11042' } },
+    { _cap: 'agoric11028', _method: 'monitorTransfers' },
+    {
+      _cap: 'agoric11028',
+      _method: 'send',
+      toAccount: { value: 'agoric11042' },
+    },
     { _method: 'exit' },
   ]);
 
@@ -1317,7 +1321,7 @@ test('withdraw in coordination with planner', async t => {
       address: { chainId: 'agoric-6' },
       amount: { value: 300n },
     },
-    { msgs: [{ typeUrl: 'Fake/ibc.applications.transfer.v1.MsgTransfer' }] },
+    { msgs: [{ typeUrl: '/ibc.applications.transfer.v1.MsgTransfer' }] },
     { _method: 'withdrawToSeat', amounts: { Cash: { value: 300n } } },
     { _method: 'exit' },
   ]);
