@@ -60,7 +60,7 @@ export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
     {
       type: M.or(TxType.CCTP_TO_EVM, TxType.CCTP_TO_NOBLE),
       destinationAddress: M.string(), // Format: `${chainId}:${chainId}:${remotAddess}`
-      status: M.or(TxStatus.PENDING),
+      status: TxStatus.PENDING,
       amount: M.nat(),
     },
     {},
@@ -71,7 +71,7 @@ export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
     {
       type: M.or(TxType.GMP),
       destinationAddress: M.string(),
-      status: M.or(TxStatus.PENDING),
+      status: TxStatus.PENDING,
     },
     {
       amount: M.nat(),

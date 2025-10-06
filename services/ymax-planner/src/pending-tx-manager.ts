@@ -16,7 +16,11 @@ import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.t
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import { resolvePendingTx } from './resolver.ts';
-import type { EvmProviders, UsdcAddresses } from './support.ts';
+import {
+  waitForBlock,
+  type EvmProviders,
+  type UsdcAddresses,
+} from './support.ts';
 import { watchGmp, lookBackGmp } from './watchers/gmp-watcher.ts';
 import { watchCctpTransfer, lookBackCctp } from './watchers/cctp-watcher.ts';
 import {
@@ -117,12 +121,17 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
         timeoutMs: opts.timeoutMs,
         signal: abortController.signal,
       });
-      void liveResultP.then(() => abortController.abort());
+      void liveResultP.then(found => {
+        if (found) {
+          log(`${logPrefix} Live mode completed`);
+          abortController.abort();
+        }
+      });
 
       await null;
       // Wait for at least one block to ensure overlap between lookback and live mode
       const currentBlock = await provider.getBlockNumber();
-      await provider.waitForBlock(BigInt(currentBlock) + 1n);
+      await waitForBlock(provider, currentBlock + 1);
 
       // Scan historical blocks
       transferStatus = await lookBackCctp({
@@ -134,9 +143,13 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
 
       if (transferStatus) {
         // Found in lookback, cancel live mode
+        log(`${logPrefix} Lookback found transaction`);
         abortController.abort();
       } else {
         // Not found in lookback, rely on live mode
+        log(
+          `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
+        );
         transferStatus = await liveResultP;
       }
     }
@@ -190,12 +203,17 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         timeoutMs: opts.timeoutMs,
         signal: abortController.signal,
       });
-      void liveResultP.then(() => abortController.abort());
+      void liveResultP.then(found => {
+        if (found) {
+          log(`${logPrefix} Live mode completed`);
+          abortController.abort();
+        }
+      });
 
       await null;
       // Wait for at least one block to ensure overlap between lookback and live mode
       const currentBlock = await provider.getBlockNumber();
-      await provider.waitForBlock(BigInt(currentBlock) + 1n);
+      await waitForBlock(provider, currentBlock + 1);
 
       // Scan historical blocks
       transferStatus = await lookBackGmp({
@@ -207,9 +225,13 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
 
       if (transferStatus) {
         // Found in lookback, cancel live mode
+        log(`${logPrefix} Lookback found transaction`);
         abortController.abort();
       } else {
         // Not found in lookback, rely on live mode
+        log(
+          `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
+        );
         transferStatus = await liveResultP;
       }
     }
@@ -275,7 +297,12 @@ const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, EvmContext> = {
         timeoutMs: opts.timeoutMs,
         signal: abortController.signal,
       });
-      void liveResultP.then(() => abortController.abort());
+      void liveResultP.then(found => {
+        if (found) {
+          log(`${logPrefix} Live mode completed`);
+          abortController.abort();
+        }
+      });
 
       await null;
 
@@ -284,9 +311,13 @@ const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, EvmContext> = {
 
       if (transferStatus) {
         // Found in lookback, cancel live mode
+        log(`${logPrefix} Lookback found transaction`);
         abortController.abort();
       } else {
         // Not found in lookback, rely on live mode
+        log(
+          `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
+        );
         transferStatus = await liveResultP;
       }
     }
