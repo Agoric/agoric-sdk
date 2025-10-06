@@ -122,6 +122,7 @@ export const main = async (
     gasEstimator,
   };
   await startEngine(powers, {
+    contractInstance: config.contractInstance,
     depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
     feeBrandName: env.FEE_BRAND_NAME || 'BLD',
   });

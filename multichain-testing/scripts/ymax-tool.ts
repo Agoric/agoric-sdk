@@ -71,6 +71,7 @@ Options:
   --target-allocation JSON string of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
   --redeem            redeem invitation
   --contract=[ymax0]  agoricNames.instance name of contract that issued invitation
+                      ('ymax0' or 'ymax1')
   --description=[planner]
   --submit-for <id>   submit (empty) plan for portfolio <id>
   --repl              start a repl with walletStore and ymaxControl bound
@@ -145,11 +146,13 @@ const openPositions = async (
   {
     sig,
     when,
+    contract,
     targetAllocation,
     id = `open-${new Date(when).toISOString()}`,
   }: {
     sig: SigningSmartWalletKit;
     when: number;
+    contract: string;
     targetAllocation?: TargetAllocation;
     id?: string;
   },
@@ -196,7 +199,7 @@ const openPositions = async (
         id,
         invitationSpec: {
           source: 'agoricContract',
-          instancePath: ['ymax0'],
+          instancePath: [contract],
           callPipe: [['makeOpenPortfolioInvitation']],
         },
         proposal,
@@ -558,6 +561,7 @@ const main = async (
     const opened = await openPositions(positionData, {
       sig,
       when: now(),
+      contract: values.contract,
       targetAllocation,
     });
     trace('opened', opened);
