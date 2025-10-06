@@ -31,7 +31,7 @@ export const watchNobleTransfer = ({
   pollIntervalMs = 5000, // Poll every 5 seconds
   signal,
 }: WatchNobleTransferOptions): Promise<boolean> => {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     log(
       `Watching for Noble transfers to: ${watchAddress} with amount: ${expectedAmount} ${expectedDenom}`,
     );
@@ -99,9 +99,8 @@ export const watchNobleTransfer = ({
 
     if (signal) {
       signal.addEventListener('abort', () => {
-        log('Watch aborted');
         cleanup();
-        reject(new Error('Aborted'));
+        resolve(false);
       });
     }
   });

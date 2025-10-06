@@ -293,10 +293,8 @@ const findBlockByTimestamp = async (
 
 /**
  * Builds a time window for scanning blockchain logs based on a transaction publish time.
- *
  * Returns a range of blocks that should contain the block corresponding to publishTimeMs
  * (with a fudge factor applied for clock skew) up to the current block at the time of calling.
-
  */
 export const buildTimeWindow = async (
   provider: WebSocketProvider,

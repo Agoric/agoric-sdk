@@ -70,7 +70,7 @@ export const watchCctpTransfer = ({
   setTimeout?: typeof globalThis.setTimeout;
   signal?: AbortSignal;
 }): Promise<boolean> => {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     const TO_TOPIC = zeroPadValue(toAddress.toLowerCase(), 32);
     const filter = {
       topics: [TRANSFER_SIGNATURE, null, TO_TOPIC],
@@ -134,9 +134,8 @@ export const watchCctpTransfer = ({
 
     if (signal) {
       signal.addEventListener('abort', () => {
-        log('Watch aborted');
         cleanup();
-        reject(new Error('Aborted'));
+        resolve(false);
       });
     }
   });

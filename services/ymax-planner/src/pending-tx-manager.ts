@@ -67,6 +67,8 @@ type MonitorRegistry = {
 
 const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
   watch: async (ctx, tx, log, opts) => {
+    await null;
+
     const { txId, destinationAddress, amount } = tx;
     const logPrefix = `[${txId}]`;
 
@@ -142,6 +144,8 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
 
 const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
   watch: async (ctx, tx, log, opts) => {
+    await null;
+
     const { txId, destinationAddress } = tx;
     const logPrefix = `[${txId}]`;
 
