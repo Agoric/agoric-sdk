@@ -210,8 +210,8 @@ export type HandlePendingTxOpts = {
   registry?: MonitorRegistry;
   timeoutMs?: number;
   vstoragePathPrefixes: {
-    PORTFOLIOS_PATH_PREFIX: string;
-    PENDING_TX_PATH_PREFIX: string;
+    portfoliosPathPrefix: string;
+    pendingTxPathPrefix: string;
   };
 } & EvmContext;
 

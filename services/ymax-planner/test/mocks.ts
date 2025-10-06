@@ -143,8 +143,8 @@ export const createMockPendingTxOpts = (): HandlePendingTxOpts => ({
     'eip155:42161': '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', // Arbitrum
   },
   vstoragePathPrefixes: {
-    PORTFOLIOS_PATH_PREFIX: 'IGNORED',
-    PENDING_TX_PATH_PREFIX,
+    portfoliosPathPrefix: 'IGNORED',
+    pendingTxPathPrefix: PENDING_TX_PATH_PREFIX,
   },
 });
 

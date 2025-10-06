@@ -94,8 +94,8 @@ type VstorageEventDetail = {
 type PendingTxRecord = { blockHeight: bigint; tx: PendingTx };
 
 const makeVstoragePathPrefixes = (contractInstance: string) => ({
-  PORTFOLIOS_PATH_PREFIX: `published.${contractInstance}.portfolios`,
-  PENDING_TX_PATH_PREFIX: `published.${contractInstance}.pendingTxs`,
+  portfoliosPathPrefix: `published.${contractInstance}.portfolios`,
+  pendingTxPathPrefix: `published.${contractInstance}.pendingTxs`,
 });
 
 /** cf. golang/cosmos/x/vstorage/types/path_keys.go */
@@ -184,8 +184,8 @@ type ProcessPortfolioPowers = Pick<
   feeBrand: Brand<'nat'>;
   portfolioKeyForDepositAddr: Map<Bech32Address, string>;
   vstoragePathPrefixes: {
-    PORTFOLIOS_PATH_PREFIX: string;
-    PENDING_TX_PATH_PREFIX: string;
+    portfoliosPathPrefix: string;
+    pendingTxPathPrefix: string;
   };
 };
 
@@ -208,7 +208,7 @@ const processPortfolioEvents = async (
   }: ProcessPortfolioPowers,
 ) => {
   const { query, marshaller } = signingSmartWalletKit;
-  const { PORTFOLIOS_PATH_PREFIX } = vstoragePathPrefixes;
+  const { portfoliosPathPrefix } = vstoragePathPrefixes;
   const { vstorage } = query;
   const setPortfolioKeyForDepositAddr = (addr: Bech32Address, key: string) => {
     const oldKey = portfolioKeyForDepositAddr.get(addr);
@@ -227,7 +227,7 @@ const processPortfolioEvents = async (
     flowKey: string,
     flowDetail: FlowDetail,
   ) => {
-    const path = `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}`;
+    const path = `${portfoliosPathPrefix}.${portfolioKey}`;
     const currentBalances = await getCurrentBalances(
       portfolioStatus,
       depositBrand,
@@ -311,7 +311,7 @@ const processPortfolioEvents = async (
   const handlePortfolio = async (portfolioKey: string, eventRecord: EventRecord) => {
     if (handledPortfolioKeys.has(portfolioKey)) return;
     handledPortfolioKeys.add(portfolioKey);
-    const path = `${PORTFOLIOS_PATH_PREFIX}.${portfolioKey}`;
+    const path = `${portfoliosPathPrefix}.${portfolioKey}`;
     const readOpts = { minBlockHeight: eventRecord.blockHeight, retries: 4, };
     await null;
     try {
@@ -361,7 +361,7 @@ const processPortfolioEvents = async (
       console.error(`🚨 Deferring ${path} of age ${age} block(s)`, err);
       deferrals.push(eventRecord);
     };
-    if (path === PORTFOLIOS_PATH_PREFIX) {
+    if (path === portfoliosPathPrefix) {
       const streamCell = tryNow(parseStreamCell, defer, cellJson, path);
       if (!streamCell) continue;
       for (let i = 0; i < streamCell.values.length; i += 1) {
@@ -379,8 +379,8 @@ const processPortfolioEvents = async (
           defer(err);
         }
       }
-    } else if (vstoragePathIsParentOf(PORTFOLIOS_PATH_PREFIX, path)) {
-      const portfolioKey = stripPrefix(`${PORTFOLIOS_PATH_PREFIX}.`, path);
+    } else if (vstoragePathIsParentOf(portfoliosPathPrefix, path)) {
+      const portfolioKey = stripPrefix(`${portfoliosPathPrefix}.`, path);
       await handlePortfolio(portfolioKey, eventRecord);
     }
   }
@@ -395,14 +395,14 @@ export const processPendingTxEvents = async (
     marshaller,
     error = () => {},
     log = () => {},
-    vstoragePathPrefixes: { PENDING_TX_PATH_PREFIX },
+    vstoragePathPrefixes: { pendingTxPathPrefix },
   } = txPowers;
   for (const { path, value: cellJson } of events) {
     const errLabel = `🚨 Failed to process pending tx ${path}`;
     let data;
     try {
       // Extract txId from path (e.g., "published.ymax0.pendingTxs.tx1")
-      const txId = stripPrefix(`${PENDING_TX_PATH_PREFIX}.`, path);
+      const txId = stripPrefix(`${pendingTxPathPrefix}.`, path);
       log('Processing pendingTx event', path);
 
       const streamCell = parseStreamCell(cellJson, path);
@@ -502,7 +502,7 @@ export const startEngine = async (
   },
 ) => {
   const vstoragePathPrefixes = makeVstoragePathPrefixes(contractInstance);
-  const { PORTFOLIOS_PATH_PREFIX, PENDING_TX_PATH_PREFIX } =
+  const { portfoliosPathPrefix, pendingTxPathPrefix } =
     vstoragePathPrefixes;
   await null;
   const { query, marshaller } = signingSmartWalletKit;
@@ -586,7 +586,7 @@ export const startEngine = async (
 
   // TODO: Verify consumption of paginated data.
   const [pendingTxKeysResp, portfolioKeysResp] = await Promise.all(
-    [PENDING_TX_PATH_PREFIX, PORTFOLIOS_PATH_PREFIX].map(async vstoragePath => {
+    [pendingTxPathPrefix, portfoliosPathPrefix].map(async vstoragePath => {
       const opts = { kind: 'children' } as const;
       const resp = await query.vstorage.readStorageMeta(vstoragePath, opts);
       typeof resp.blockHeight === 'bigint' ||
@@ -621,7 +621,7 @@ export const startEngine = async (
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
     const { streamCellJson, event } = makeVstorageEvent(
       0n,
-      PORTFOLIOS_PATH_PREFIX,
+      portfoliosPathPrefix,
       harden({ addPortfolio: portfolioKey }) as StatusFor['portfolios'],
       marshaller,
     );
@@ -631,7 +631,7 @@ export const startEngine = async (
       event,
     };
     await processPortfolioEvents(
-      [{ path: PORTFOLIOS_PATH_PREFIX, value: streamCellJson, eventRecord }],
+      [{ path: portfoliosPathPrefix, value: streamCellJson, eventRecord }],
       initialBlockHeight,
       deferrals,
       processPortfolioPowers,
@@ -654,7 +654,7 @@ export const startEngine = async (
 
   const initialPendingTxData: PendingTxRecord[] = [];
   await makeWorkPool(pendingTxKeys, undefined, async (txId: TxId) => {
-    const path = `${PENDING_TX_PATH_PREFIX}.${txId}`;
+    const path = `${pendingTxPathPrefix}.${txId}`;
     await null;
     let streamCellJson;
     let data;
@@ -730,9 +730,9 @@ export const startEngine = async (
       );
       if (!vstorageEntry) continue;
       const { path, value } = vstorageEntry;
-      if (vstoragePathIsAncestorOf(PORTFOLIOS_PATH_PREFIX, path)) {
+      if (vstoragePathIsAncestorOf(portfoliosPathPrefix, path)) {
         portfolioEvents.push({ path, value, eventRecord });
-      } else if (vstoragePathIsAncestorOf(PENDING_TX_PATH_PREFIX, path)) {
+      } else if (vstoragePathIsAncestorOf(pendingTxPathPrefix, path)) {
         pendingTxEvents.push({ path, value, eventRecord });
       }
     }
