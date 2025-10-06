@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "start": "node ./dist/entrypoint.js",
-    "dev": "nodemon --ext js,ts --exec 'node --import ts-blank-space/register ./src/entrypoint.ts'",
+    "dev": "nodemon --ext js,ts --exec 'node --import ts-blank-space/register ./src/entrypoint.ts || touch ./src/entrypoint.ts'",
     "debug": "node --inspect ./dist/entrypoint.js",
     "start:docker": "docker compose up --build",
     "start:deps": "docker compose up --scale app=0",
