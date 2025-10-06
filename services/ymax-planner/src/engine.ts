@@ -740,6 +740,7 @@ export const startEngine = async (
     );
   }
 
-  console.warn('Terminating...');
+  // We expect to run forever, but the server can terminate our connection.
+  Fail`⚠️ rpc.subscribeAll finished`;
 };
 harden(startEngine);
