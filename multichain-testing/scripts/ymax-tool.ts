@@ -65,16 +65,19 @@ const getUsage = (
   programName: string,
 ): string => `USAGE: ${programName} [options]
 Options:
-  --skip-poll         Skip polling for offer result
-  --exit-success      Exit with success code even if errors occur
-  --positions         JSON string of opening positions (e.g. '{"USDN":6000,"Aave":4000}')
-  --target-allocation JSON string of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
-  --redeem            redeem invitation
-  --contract=[ymax0]  agoricNames.instance name of contract that issued invitation
+  --skip-poll            Skip polling for offer result
+  --exit-success         Exit with success code even if errors occur
+  --positions            JSON string of opening positions (e.g. '{"USDN":6000,"Aave":4000}')
+  --target-allocation    JSON string of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
+  --redeem               redeem invitation
+  --contract=[ymax0]     agoricNames.instance name of contract (ymax0 or ymax1, default: ymax0)
+                         Used for: opening portfolios, invitePlanner, inviteResolver
   --description=[planner]
-  --submit-for <id>   submit (empty) plan for portfolio <id>
-  --repl              start a repl with walletStore and ymaxControl bound
-  -h, --help          Show this help message`;
+  --submit-for <id>      submit (empty) plan for portfolio <id>
+  --invitePlanner <addr> send planner invitation to address (uses --contract to determine instance)
+  --inviteResolver <addr> send resolver invitation to address (uses --contract to determine instance)
+  --repl                 start a repl with walletStore and ymaxControl bound
+  -h, --help             Show this help message`;
 
 const parseToolArgs = (argv: string[]) =>
   parseArgs({
@@ -146,11 +149,13 @@ const openPositions = async (
     sig,
     when,
     targetAllocation,
+    contract = 'ymax0',
     id = `open-${new Date(when).toISOString()}`,
   }: {
     sig: SigningSmartWalletKit;
     when: number;
     targetAllocation?: TargetAllocation;
+    contract?: string;
     id?: string;
   },
 ) => {
@@ -196,7 +201,7 @@ const openPositions = async (
         id,
         invitationSpec: {
           source: 'agoricContract',
-          instancePath: ['ymax0'],
+          instancePath: [contract],
           callPipe: [['makeOpenPortfolioInvitation']],
         },
         proposal,
@@ -467,7 +472,10 @@ const main = async (
   }
 
   if (values.getCreatorFacet) {
-    await walletStore.savingResult('creatorFacet', () => yc.getCreatorFacet());
+    const { contract } = values;
+    const creatorFacetKey =
+      contract === 'ymax0' ? 'creatorFacet' : `creatorFacet-${contract}`;
+    await walletStore.savingResult(creatorFacetKey, () => yc.getCreatorFacet());
     return;
   }
 
@@ -514,9 +522,11 @@ const main = async (
   }
 
   if (values.invitePlanner) {
-    const { invitePlanner: planner } = values;
+    const { invitePlanner: planner, contract } = values;
+    const creatorFacetKey =
+      contract === 'ymax0' ? 'creatorFacet' : `creatorFacet-${contract}`;
     const cf =
-      walletStore.get<ZStarted<YMaxStartFn>['creatorFacet']>('creatorFacet');
+      walletStore.get<ZStarted<YMaxStartFn>['creatorFacet']>(creatorFacetKey);
     const { postalService } = fromEntries(
       await walletKit.readPublished('agoricNames.instance'),
     );
@@ -525,9 +535,11 @@ const main = async (
   }
 
   if (values.inviteResolver) {
-    const { inviteResolver: resolver } = values;
+    const { inviteResolver: resolver, contract } = values;
+    const creatorFacetKey =
+      contract === 'ymax0' ? 'creatorFacet' : `creatorFacet-${contract}`;
     const cf =
-      walletStore.get<ZStarted<YMaxStartFn>['creatorFacet']>('creatorFacet');
+      walletStore.get<ZStarted<YMaxStartFn>['creatorFacet']>(creatorFacetKey);
     const { postalService } = fromEntries(
       await walletKit.readPublished('agoricNames.instance'),
     );
@@ -559,6 +571,7 @@ const main = async (
       sig,
       when: now(),
       targetAllocation,
+      contract: values.contract,
     });
     trace('opened', opened);
     const { path } = opened;
