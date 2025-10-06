@@ -305,9 +305,6 @@ export const buildTimeWindow = async (
   provider: WebSocketProvider,
   publishTimeMs: number,
   {
-    timeoutMs,
-    meanBlockDurationMs = 12_000, // Default to Ethereum's conservative 12s
-    log = () => {},
     fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
   }: {
     timeoutMs: number;
@@ -318,31 +315,7 @@ export const buildTimeWindow = async (
 ) => {
   const adjustedTime = publishTimeMs - fudgeFactorMs;
   const fromBlock = await findBlockByTimestamp(provider, adjustedTime);
-
-  const fromBlockInfo = await provider.getBlock(fromBlock);
-  const fromBlockTime = (fromBlockInfo?.timestamp || 0) * 1000;
-  // Add fudgeFactorMs back to timeoutMs to compensate for the earlier subtraction
-  const endTime = fromBlockTime + timeoutMs + fudgeFactorMs;
-
-  const currentBlock = await provider.getBlockNumber();
-  const currentBlockInfo = await provider.getBlock(currentBlock);
-  const currentBlockTime = (currentBlockInfo?.timestamp || 0) * 1000;
-
-  if (endTime <= currentBlockTime) {
-    log('end time is in the past');
-    return { fromBlock, toBlock: currentBlock };
-  }
-
-  log('end time is in the future - estimate blocks ahead');
-
-  const blockTimeMs = meanBlockDurationMs;
-  log(`using block time ${blockTimeMs}ms`);
-
-  const timeUntilEnd = endTime - currentBlockTime;
-  const estimatedFutureBlocks = Math.ceil(timeUntilEnd / blockTimeMs);
-  log('future blocks', estimatedFutureBlocks);
-
-  const toBlock = currentBlock + estimatedFutureBlocks;
+  const toBlock = await provider.getBlockNumber();
   return { fromBlock, toBlock };
 };
 
