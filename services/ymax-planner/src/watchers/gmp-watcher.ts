@@ -32,7 +32,7 @@ export const watchGmp = ({
   setTimeout?: typeof globalThis.setTimeout;
   signal?: AbortSignal;
 }): Promise<boolean> => {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
     const statusFilter = {
       address: contractAddress,
@@ -108,9 +108,8 @@ export const watchGmp = ({
 
     if (signal) {
       signal.addEventListener('abort', () => {
-        log('Watch aborted');
         cleanup();
-        reject(new Error('Aborted'));
+        resolve(false);
       });
     }
   });

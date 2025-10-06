@@ -14,11 +14,11 @@ import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 
 const mockFetchForGasEstimate = async (_, options?: any) => {
-    return {
-      ok: true,
-      json: async () => JSON.parse(options.body).gasLimit,
-      text: async () => JSON.parse(options.body).gasLimit,
-    } as Response;
+  return {
+    ok: true,
+    json: async () => JSON.parse(options.body).gasLimit,
+    text: async () => JSON.parse(options.body).gasLimit,
+  } as Response;
 };
 
 const mockAxelarApiAddress = 'https://api.axelar.example/';
@@ -39,6 +39,7 @@ export const mockGasEstimator = makeGasEstimator({
 
 export const createMockProvider = () => {
   const eventListeners = new Map<string, Function[]>();
+  let currentBlock = 1000n;
 
   return {
     on: (eventOrFilter: any, listener: Function) => {
@@ -64,6 +65,18 @@ export const createMockProvider = () => {
       if (listeners) {
         listeners.forEach(listener => listener(log));
       }
+    },
+    getBlockNumber: async () => {
+      return Number(currentBlock);
+    },
+    waitForBlock: async (blockTag: bigint) => {
+      // Simulate immediate resolution for tests
+      currentBlock = blockTag;
+      return {
+        number: Number(blockTag),
+        hash: '0x1234567890abcdef',
+        timestamp: Math.floor(Date.now() / 1000),
+      } as any;
     },
   } as JsonRpcProvider;
 };

@@ -276,7 +276,7 @@ test('resolves a 31 min old pending CCTP transaction in lookback mode', async t 
 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.CCTP_TO_EVM} tx`,
-    `[${txId}] end time is in the past`,
+    `[${txId}] Watching for ERC-20 transfers to: ${recipientAddress} with amount: ${txAmount}`,
     `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${recipientAddress} with amount ${txAmount}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] Check: amount=${txAmount}`,
@@ -335,15 +335,12 @@ test('resolves a 28 min old pending CCTP transaction in lookback mode', async t 
 
   const currentBlock = await mockProvider.getBlockNumber();
   const fromBlock = 1443434;
-  const expectedFutureBlocks = 400;
-  const toBlock = currentBlock + expectedFutureBlocks;
+  const toBlock = currentBlock;
   const expectedChunkEnd = Math.min(fromBlock + 10 - 1, toBlock);
 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.CCTP_TO_EVM} tx`,
-    `[${txId}] end time is in the future - estimate blocks ahead`,
-    `[${txId}] using block time 300ms`,
-    `[${txId}] future blocks ${expectedFutureBlocks}`,
+    `[${txId}] Watching for ERC-20 transfers to: ${recipientAddress} with amount: ${txAmount}`,
     `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${recipientAddress} with amount ${txAmount}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] Check: amount=${txAmount}`,
@@ -402,15 +399,12 @@ test('resolves a transaction published at current time in lookback mode', async 
 
   const currentBlock = await mockProvider.getBlockNumber();
   const fromBlock = 1449034;
-  const expectedFutureBlocks = 6000;
-  const toBlock = currentBlock + expectedFutureBlocks;
+  const toBlock = currentBlock;
   const expectedChunkEnd = Math.min(fromBlock + 10 - 1, toBlock);
 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.CCTP_TO_EVM} tx`,
-    `[${txId}] end time is in the future - estimate blocks ahead`,
-    `[${txId}] using block time 300ms`,
-    `[${txId}] future blocks ${expectedFutureBlocks}`,
+    `[${txId}] Watching for ERC-20 transfers to: ${recipientAddress} with amount: ${txAmount}`,
     `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${recipientAddress} with amount ${txAmount}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] Check: amount=${txAmount}`,
@@ -469,15 +463,12 @@ test('resolves a 10 second old pending CCTP transaction in lookback mode', async
 
   const currentBlock = await mockProvider.getBlockNumber();
   const fromBlock = 1449000;
-  const expectedFutureBlocks = 5967;
-  const toBlock = currentBlock + expectedFutureBlocks;
+  const toBlock = currentBlock;
   const expectedChunkEnd = Math.min(fromBlock + 10 - 1, toBlock);
 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.CCTP_TO_EVM} tx`,
-    `[${txId}] end time is in the future - estimate blocks ahead`,
-    `[${txId}] using block time 300ms`,
-    `[${txId}] future blocks ${expectedFutureBlocks}`,
+    `[${txId}] Watching for ERC-20 transfers to: ${recipientAddress} with amount: ${txAmount}`,
     `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${recipientAddress} with amount ${txAmount}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] Check: amount=${txAmount}`,
@@ -558,15 +549,12 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
 
   const currentBlock = await mockProvider.getBlockNumber();
   const fromBlock = 1449000;
-  const expectedFutureBlocks = 5967;
-  const toBlock = currentBlock + expectedFutureBlocks;
+  const toBlock = currentBlock;
   const expectedChunkEnd = Math.min(fromBlock + 10 - 1, toBlock);
 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.GMP} tx`,
-    `[${txId}] end time is in the future - estimate blocks ahead`,
-    `[${txId}] using block time 300ms`,
-    `[${txId}] future blocks ${expectedFutureBlocks}`,
+    `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
     `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
