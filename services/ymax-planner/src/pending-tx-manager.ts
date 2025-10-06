@@ -89,20 +89,45 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       provider,
       log: (msg, ...args) => log(logPrefix, msg, ...args),
     };
-    let transferStatus = await (opts.mode === 'live'
-      ? watchCctpTransfer({ ...watchArgs, timeoutMs: opts.timeoutMs })
-      : lookBackCctp({
-          ...watchArgs,
-          publishTimeMs: opts.publishTimeMs,
-          chainId: caipId,
-          timeoutMs: opts.timeoutMs,
-        }));
 
-    if (opts.mode === 'lookback' && !transferStatus) {
+    let transferStatus: boolean | undefined;
+
+    if (opts.mode === 'live') {
       transferStatus = await watchCctpTransfer({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
       });
+    } else {
+      // Lookback mode with concurrent live watching
+      // Start live mode now in case the txId has not yet appeared
+      const abortController = new AbortController();
+      const liveResultP = watchCctpTransfer({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+        signal: abortController.signal,
+      });
+      void liveResultP.then(() => abortController.abort());
+
+      await null;
+      // Wait for at least one block to ensure overlap between lookback and live mode
+      const currentBlock = await provider.getBlockNumber();
+      await provider.waitForBlock(BigInt(currentBlock) + 1n);
+
+      // Scan historical blocks
+      transferStatus = await lookBackCctp({
+        ...watchArgs,
+        publishTimeMs: opts.publishTimeMs,
+        chainId: caipId,
+        signal: abortController.signal,
+      });
+
+      if (transferStatus) {
+        // Found in lookback, cancel live mode
+        abortController.abort();
+      } else {
+        // Not found in lookback, rely on live mode
+        transferStatus = await liveResultP;
+      }
     }
 
     await resolvePendingTx({
@@ -135,20 +160,45 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       txId,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
     };
-    let transferStatus = await (opts.mode === 'live'
-      ? watchGmp({ ...watchArgs, timeoutMs: opts.timeoutMs })
-      : lookBackGmp({
-          ...watchArgs,
-          publishTimeMs: opts.publishTimeMs,
-          chainId: caipId,
-          timeoutMs: opts.timeoutMs,
-        }));
 
-    if (opts.mode === 'lookback' && !transferStatus) {
+    let transferStatus: boolean | undefined;
+
+    if (opts.mode === 'live') {
       transferStatus = await watchGmp({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
       });
+    } else {
+      // Lookback mode with concurrent live watching
+      // Start live mode now in case the txId has not yet appeared
+      const abortController = new AbortController();
+      const liveResultP = watchGmp({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+        signal: abortController.signal,
+      });
+      void liveResultP.then(() => abortController.abort());
+
+      await null;
+      // Wait for at least one block to ensure overlap between lookback and live mode
+      const currentBlock = await provider.getBlockNumber();
+      await provider.waitForBlock(BigInt(currentBlock) + 1n);
+
+      // Scan historical blocks
+      transferStatus = await lookBackGmp({
+        ...watchArgs,
+        publishTimeMs: opts.publishTimeMs,
+        chainId: caipId,
+        signal: abortController.signal,
+      });
+
+      if (transferStatus) {
+        // Found in lookback, cancel live mode
+        abortController.abort();
+      } else {
+        // Not found in lookback, rely on live mode
+        transferStatus = await liveResultP;
+      }
     }
 
     await resolvePendingTx({
