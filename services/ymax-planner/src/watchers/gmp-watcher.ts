@@ -1,11 +1,7 @@
 import { ethers, type Filter, type WebSocketProvider, type Log } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 import type { CaipChainId } from '@agoric/orchestration';
-import {
-  buildTimeWindow,
-  getBlockTimeMs,
-  scanEvmLogsInChunks,
-} from '../support.ts';
+import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 
 // TODO: Remove once all contracts are upgraded to emit MulticallStatus
@@ -30,11 +26,13 @@ export const watchGmp = ({
   timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
   setTimeout = globalThis.setTimeout,
+  signal,
 }: WatchGmp & {
   timeoutMs?: number;
   setTimeout?: typeof globalThis.setTimeout;
+  signal?: AbortSignal;
 }): Promise<boolean> => {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
     const statusFilter = {
       address: contractAddress,
@@ -107,6 +105,14 @@ export const watchGmp = ({
         resolve(false);
       }
     }, timeoutMs);
+
+    if (signal) {
+      signal.addEventListener('abort', () => {
+        log('Watch aborted');
+        cleanup();
+        reject(new Error('Aborted'));
+      });
+    }
   });
 };
 
@@ -116,23 +122,18 @@ export const lookBackGmp = async ({
   txId,
   publishTimeMs,
   chainId,
-  timeoutMs,
   log = () => {},
+  signal,
 }: WatchGmp & {
   publishTimeMs: number;
   chainId: CaipChainId;
-  timeoutMs: number;
+  signal?: AbortSignal;
 }): Promise<boolean> => {
   await null;
   try {
     const { fromBlock, toBlock } = await buildTimeWindow(
       provider,
       publishTimeMs,
-      {
-        timeoutMs,
-        meanBlockDurationMs: getBlockTimeMs(chainId),
-        log,
-      },
     );
 
     log(
@@ -152,6 +153,13 @@ export const lookBackGmp = async ({
 
     const statusController = new AbortController();
     const executedController = new AbortController();
+
+    if (signal) {
+      signal.addEventListener('abort', () => {
+        statusController.abort();
+        executedController.abort();
+      });
+    }
 
     const matchingEvent = await Promise.race([
       scanEvmLogsInChunks(

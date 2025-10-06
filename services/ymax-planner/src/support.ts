@@ -292,14 +292,11 @@ const findBlockByTimestamp = async (
 };
 
 /**
- * Builds a time window for scanning blockchain logs based on a transaction publish time and timeout.
+ * Builds a time window for scanning blockchain logs based on a transaction publish time.
  *
- * Given a publish time from vstorage and a timeout duration, this function:
- * 1. Finds the starting block corresponding to (publishTime - fudgeFactorMs)
- * 2. Calculates the cutoff time as (fromBlockTime + timeoutMs + fudgeFactorMs)
- * 3. Determines the ending block:
- *    - If cutoff is in the past: returns current block
- *    - If cutoff is in the future: estimates future block based on mean block duration
+ * Returns a range of blocks that should contain the block corresponding to publishTimeMs
+ * (with a fudge factor applied for clock skew) up to the current block at the time of calling.
+
  */
 export const buildTimeWindow = async (
   provider: WebSocketProvider,
@@ -307,11 +304,8 @@ export const buildTimeWindow = async (
   {
     fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
   }: {
-    timeoutMs: number;
-    meanBlockDurationMs?: number;
-    log?: (...args: unknown[]) => void;
     fudgeFactorMs?: number;
-  },
+  } = {},
 ) => {
   const adjustedTime = publishTimeMs - fudgeFactorMs;
   const fromBlock = await findBlockByTimestamp(provider, adjustedTime);

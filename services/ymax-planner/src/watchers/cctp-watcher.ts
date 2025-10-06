@@ -1,11 +1,7 @@
 import type { Filter, WebSocketProvider, Log } from 'ethers';
 import { id, zeroPadValue, getAddress, ethers } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
-import {
-  buildTimeWindow,
-  getBlockTimeMs,
-  scanEvmLogsInChunks,
-} from '../support.ts';
+import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 
 /**
@@ -68,11 +64,13 @@ export const watchCctpTransfer = ({
   timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
   setTimeout = globalThis.setTimeout,
+  signal,
 }: CctpWatch & {
   timeoutMs?: number;
   setTimeout?: typeof globalThis.setTimeout;
+  signal?: AbortSignal;
 }): Promise<boolean> => {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const TO_TOPIC = zeroPadValue(toAddress.toLowerCase(), 32);
     const filter = {
       topics: [TRANSFER_SIGNATURE, null, TO_TOPIC],
@@ -133,6 +131,14 @@ export const watchCctpTransfer = ({
         resolve(false);
       }
     }, timeoutMs);
+
+    if (signal) {
+      signal.addEventListener('abort', () => {
+        log('Watch aborted');
+        cleanup();
+        reject(new Error('Aborted'));
+      });
+    }
   });
 };
 
@@ -143,23 +149,18 @@ export const lookBackCctp = async ({
   expectedAmount,
   publishTimeMs,
   chainId,
-  timeoutMs,
   log = () => {},
+  signal,
 }: CctpWatch & {
   publishTimeMs: number;
   chainId: CaipChainId;
-  timeoutMs: number;
+  signal?: AbortSignal;
 }): Promise<boolean> => {
   await null;
   try {
     const { fromBlock, toBlock } = await buildTimeWindow(
       provider,
       publishTimeMs,
-      {
-        timeoutMs,
-        meanBlockDurationMs: getBlockTimeMs(chainId),
-        log,
-      },
     );
 
     log(
@@ -175,7 +176,7 @@ export const lookBackCctp = async ({
     // TODO: Consider async iteration pattern for more flexible log scanning
     // See: https://github.com/Agoric/agoric-sdk/pull/11915#discussion_r2353872425
     const matchingEvent = await scanEvmLogsInChunks(
-      { provider, baseFilter, fromBlock, toBlock, chainId, log },
+      { provider, baseFilter, fromBlock, toBlock, chainId, log, signal },
       ev => {
         try {
           const t = parseTransferLog(ev);
