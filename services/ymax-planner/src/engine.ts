@@ -93,6 +93,11 @@ type VstorageEventDetail = {
 
 type PendingTxRecord = { blockHeight: bigint; tx: PendingTx };
 
+const makeVstoragePathPrefixes = (contractInstance: string) => ({
+  PORTFOLIOS_PATH_PREFIX: `published.${contractInstance}.portfolios`,
+  PENDING_TX_PATH_PREFIX: `published.${contractInstance}.pendingTxs`,
+});
+
 export const PORTFOLIOS_PATH_PREFIX = 'published.ymax0.portfolios';
 export const PENDING_TX_PATH_PREFIX = 'published.ymax0.pendingTxs';
 
@@ -479,10 +484,12 @@ export const startEngine = async (
     gasEstimator,
   }: Powers,
   {
+    contractInstance,
     depositBrandName,
     feeBrandName,
-  }: { depositBrandName: string; feeBrandName: string },
+  }: { contractInstance: string; depositBrandName: string; feeBrandName: string },
 ) => {
+  const { PORTFOLIOS_PATH_PREFIX, PENDING_TX_PATH_PREFIX } = makeVstoragePathPrefixes(contractInstance);
   await null;
   const { query, marshaller } = signingSmartWalletKit;
 

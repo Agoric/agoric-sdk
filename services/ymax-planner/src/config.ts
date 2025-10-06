@@ -18,6 +18,7 @@ export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
 
 export interface YmaxPlannerConfig {
   readonly clusterName: ClusterName;
+  readonly contractInstance: string;
   readonly mnemonic: string;
   readonly alchemyApiKey: string;
   readonly spectrum: {
@@ -138,8 +139,14 @@ export const loadConfig = async (
     isMainnet ? ids.mainnet : ids.testnet,
   );
 
+  const contractInstance = env.CONTRACT_INSTANCE?.trim() || 'ymax0';
+  if (contractInstance !== 'ymax0' && contractInstance !== 'ymax1') {
+    throw Fail`CONTRACT_INSTANCE must be 'ymax0' or 'ymax1', got: ${contractInstance}`;
+  }
+
   const config: YmaxPlannerConfig = harden({
     clusterName,
+    contractInstance,
     mnemonic,
     alchemyApiKey: validateRequired(env, 'ALCHEMY_API_KEY'),
     spectrum: {

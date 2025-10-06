@@ -73,6 +73,7 @@ yarn test
 
 Environment variables:
 
+- `CONTRACT_INSTANCE`: Contract instance identifier, either "ymax0" (dev) or "ymax1" (prod) (default "ymax0")
 - `CLUSTER`: "local", "testnet", or "mainnet" to specify the respective
   collection of networks to use, in which "local" is currently incomplete and
   overlaps with "testnet" (default derived from `AGORIC_NET`)
