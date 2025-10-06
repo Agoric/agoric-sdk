@@ -61,14 +61,14 @@ NETCONFIG=https://main.agoric.net/network-config
 		$(YMAX_TOOL) --getCreatorFacet
 	touch $@
 
-PLANNER=agoric1y3e3mlnrkuh6j2qcnlrtap42j8mzw240vwr74j
+PLANNER ?= agoric1y3e3mlnrkuh6j2qcnlrtap42j8mzw240vwr74j
 ,invitePlanner: ,creatorFacet
 	AGORIC_NET=$(AGORIC_NET) \
 		$(YMAX_TOOL) --invitePlanner $(PLANNER)
 	touch $@
 	@echo now use planner MNEMONIC: ymax-tool.ts --redeem
 
-RESOLVER=agoric1y3e3mlnrkuh6j2qcnlrtap42j8mzw240vwr74j
+RESOLVER ?= agoric1y3e3mlnrkuh6j2qcnlrtap42j8mzw240vwr74j
 ,inviteResolver: ,creatorFacet
 	AGORIC_NET=$(AGORIC_NET) \
 		$(YMAX_TOOL) --inviteResolver $(RESOLVER)
