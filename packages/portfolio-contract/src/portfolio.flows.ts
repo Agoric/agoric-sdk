@@ -62,6 +62,7 @@ import {
 import {
   PoolPlaces,
   type EVMContractAddressesMap,
+  type FlowDetail,
   type PoolKey,
   type ProposalType,
 } from './type-guards.ts';
@@ -819,7 +820,7 @@ export const rebalance = (async (
     }
 
     if (offerArgs.flow) {
-      ({ flowId } = kit.manager.startFlow({ type: 'other' }));
+      ({ flowId } = kit.manager.startFlow({ type: 'rebalance' }));
       await stepFlow(orch, ctx, seat, offerArgs.flow, kit, traceP, flowId);
     }
 
@@ -916,35 +917,32 @@ export const makeLCA = (async (orch: Orchestrator): Promise<LocalAccount> => {
 }) satisfies OrchestrationFlow;
 harden(makeLCA);
 
-export const withdraw = (async (
+export const executePlan = (async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
+  _offerArgs: unknown,
   pKit: GuestInterface<PortfolioKit>,
-) => {
+  flowDetail: FlowDetail,
+): Promise<`flow${number}`> => {
   const pId = pKit.reader.getPortfolioId();
-  const traceP = makeTracer('withdraw').sub(`portfolio${pId}`);
-
-  // cast justified by proposal shape.
-  const proposal = seat.getProposal() as unknown as ProposalType['withdraw'];
-  const { Cash: amount } = proposal.want;
+  const traceP = makeTracer(flowDetail.type).sub(`portfolio${pId}`);
 
   // XXX enhancement: let caller supply steps
-  const { stepsP, flowId } = pKit.manager.startFlow({
-    type: 'withdraw',
-    amount,
-  });
+  const { stepsP, flowId } = pKit.manager.startFlow(flowDetail);
   const traceFlow = traceP.sub(`flow${flowId}`);
   traceFlow('waiting for steps from planner');
+  // idea: race with seat.getSubscriber()
   const steps = await (stepsP as unknown as Promise<MovementDesc[]>); // XXX Guest/Host types UNTIL #9822
   try {
     await stepFlow(orch, ctx, seat, steps, pKit, traceP, flowId);
+
+    if (!seat.hasExited()) seat.exit();
+    return `flow${flowId}`;
   } finally {
     // XXX flow.finish() would eliminate the possibility of sending the wrong one,
     // at the cost of an exo (or Far?)
     pKit.reporter.finishFlow(flowId);
-
-    if (!seat.hasExited()) seat.exit();
   }
 }) satisfies OrchestrationFlow;
-harden(withdraw);
+harden(executePlan);

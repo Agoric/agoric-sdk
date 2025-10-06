@@ -49,7 +49,10 @@ import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import type { NameHub } from '@agoric/vats';
 import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils';
 import { SigningStargateClient } from '@cosmjs/stargate';
+import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { once } from 'node:events';
+import repl from 'node:repl';
 import { parseArgs } from 'node:util';
 import {
   reflectWalletStore,
@@ -70,6 +73,7 @@ Options:
   --contract=[ymax0]  agoricNames.instance name of contract that issued invitation
   --description=[planner]
   --submit-for <id>   submit (empty) plan for portfolio <id>
+  --repl              start a repl with walletStore and ymaxControl bound
   -h, --help          Show this help message`;
 
 const parseToolArgs = (argv: string[]) =>
@@ -83,6 +87,7 @@ const parseToolArgs = (argv: string[]) =>
       redeem: { type: 'boolean', default: false },
       contract: { type: 'string', default: 'ymax0' },
       description: { type: 'string', default: 'planner' },
+      repl: { type: 'boolean', default: false },
       getCreatorFacet: { type: 'boolean', default: false },
       terminate: { type: 'string' },
       buildEthOverrides: { type: 'boolean' },
@@ -444,6 +449,23 @@ const main = async (
 
   const yc = walletStore.get<ContractControl<YMaxStartFn>>('ymaxControl');
 
+  if (values.repl) {
+    const tools = {
+      E,
+      harden,
+      networkConfig,
+      walletKit,
+      signing: sig,
+      walletStore,
+      ymaxControl: yc,
+    };
+    console.error('bindings:', Object.keys(tools).join(', '));
+    const session = repl.start({ prompt: 'ymax> ', useGlobal: true });
+    Object.assign(session.context, tools);
+    await once(session, 'exit');
+    return;
+  }
+
   if (values.getCreatorFacet) {
     await walletStore.savingResult('creatorFacet', () => yc.getCreatorFacet());
     return;
@@ -479,8 +501,15 @@ const main = async (
 
   if (values.pruneStorage) {
     const txt = await readText(stdin);
-    const toPrune = JSON.parse(txt);
-    await yc.pruneChainStorage(toPrune);
+    const toPrune: Record<string, string[]> = JSON.parse(txt);
+    // avoid: Must not have more than 80 properties: (an object)
+    const batchSize = 50;
+
+    const es = Object.entries(toPrune);
+    for (let i = 0; i < es.length; i += batchSize) {
+      const batch = es.slice(i, i + batchSize);
+      await yc.pruneChainStorage(fromEntries(batch));
+    }
     return;
   }
 

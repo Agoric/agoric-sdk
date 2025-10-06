@@ -225,30 +225,53 @@ $(DEPLOY)/dist/portfolio.contract.bundle.js:
 PUBLISHER=gov2.devnet
 publish-ymax0: ,ymax0-installed
 
+AGORIC_NET ?= devnet
+YMAX_TOOL=./scripts/ymax-tool.ts
+
 ,ymax0-installed: $(DEPLOY)/dist/bundle-ymax0.json
 	agd keys --keyring-backend=test show $(PUBLISHER)
 	AGORIC_NET=devnet ./scripts/install-bundle.ts $< >$@ || (rm $@; false)
+
+,privateArgsOverrides.json:
+	@echo "Using AGORIC_NET=$(AGORIC_NET)"
+	AGORIC_NET=$(AGORIC_NET) $(YMAX_TOOL) --buildEthOverrides >$@ || (rm $@; false)
 
 yctrl-redeploy: ,ymax0-deployed
 
 REASON=
 NETCONFIG=https://devnet.agoric.net/network-config
-,ymax0-deployed: $(DEPLOY)/dist/bundle-ymax0.json ,ymax0-bundle-id ,ymax0-installed
+,ymax0-deployed: $(DEPLOY)/dist/bundle-ymax0.json ,ymax0-bundle-id ,ymax0-installed ,privateArgsOverrides.json
 	@[ -n "$$MNEMONIC" ] || (echo "ymaxControl MNEMONIC not set; see gov keys sheet"; false)
 	if [ -n "$$REASON" ]; then AGORIC_NET=devnet ./scripts/ymax-tool.ts --terminate "$(REASON)"; else true; fi
-	AGORIC_NET=devnet ./scripts/ymax-tool.ts --installAndStart $$(cat ,ymax0-bundle-id)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --installAndStart $$(cat ,ymax0-bundle-id) <,privateArgsOverrides.json
 	agoric follow -B $(NETCONFIG) -lF :published.agoricNames.instance >$@ || (rm $@; false)
 
 ,creatorFacet: ,ymax0-deployed
 	AGORIC_NET=devnet ./scripts/ymax-tool.ts --getCreatorFacet
 	touch $@
 
+introduce-parties: ,invitePlanner ,inviteResolver
+
 # see gov keys sheet
-PLANNER=agoric140yw0u2qrvmrgp33ejpddgnrwpm74vpfpx5v7n
+PLANNER ?= agoric140yw0u2qrvmrgp33ejpddgnrwpm74vpfpx5v7n
 ,invitePlanner: ,creatorFacet
-	AGORIC_NET=devnet ./scripts/ymax-tool.ts --pruneStorage --invitePlanner $(PLANNER)
+	AGORIC_NET=devnet ./scripts/ymax-tool.ts --invitePlanner $(PLANNER)
 	touch $@
-	@echo now use planner MNEMONIC: ymax-tool.ts --redeem
+	@echo now use planner MNEMONIC: ymax-tool.ts --redeem --description planner
+
+RESOLVER ?= $(PLANNER)
+,inviteResolver: ,creatorFacet
+	AGORIC_NET=$(AGORIC_NET) \
+		$(YMAX_TOOL) --inviteResolver $(RESOLVER)
+	touch $@
+	@echo now use resolver MNEMONIC: ymax-tool.ts --redeem --description resolver
+
+check-vstorage: ,vstorage-outdated-$(AGORIC_NET).json
+
+,vstorage-outdated-$(AGORIC_NET).json:
+	@echo "Using AGORIC_NET=$(AGORIC_NET)"
+	AGORIC_NET=$(AGORIC_NET) $(YMAX_TOOL) --checkStorage >$@ || \
+		(rm $@; false)
 
 # TODO: get from vstorage
 FEE_ACCT=agoric1rqqy9r0s4ahl8agr89f200gch78hnef3jckf4vntqe4p67rsxegs9qpzjw

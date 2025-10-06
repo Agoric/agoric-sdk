@@ -23,7 +23,9 @@ const depositFacetKey = 'depositFacet';
  * @param {BootstrapPowers & AttenuatedDepositPowers} powers
  */
 export const produceAttenuatedDeposit = powers => {
+  powers.produce.getDepositFacet.reset();
   const { namesByAddress, namesByAddressAdmin } = powers.consume;
+
   /**
    *
    * @param {string} addr
@@ -41,3 +43,12 @@ export const produceAttenuatedDeposit = powers => {
 
   powers.produce.getDepositFacet.resolve(getDepositFacet);
 };
+
+export const getManifestForAttenuatedDeposit = () => ({
+  manifest: {
+    [produceAttenuatedDeposit.name]: {
+      consume: { namesByAddress: true, namesByAddressAdmin: true },
+      produce: { getDepositFacet: true },
+    },
+  },
+});

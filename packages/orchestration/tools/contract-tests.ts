@@ -71,7 +71,7 @@ export const setupOrchestrationTest = async ({
   });
   // XXX real bankManager does this. fake should too?
   // TODO https://github.com/Agoric/agoric-sdk/issues/9966
-  await makeWellKnownSpaces(agoricNamesAdmin, log, [
+  const wellKnownSpaces = await makeWellKnownSpaces(agoricNamesAdmin, log, [
     'installation',
     'instance',
     'vbankAsset',
@@ -319,6 +319,7 @@ export const setupOrchestrationTest = async ({
       rootZone,
       transmitVTransferEvent,
       vowTools,
+      wellKnownSpaces,
     },
   };
 };

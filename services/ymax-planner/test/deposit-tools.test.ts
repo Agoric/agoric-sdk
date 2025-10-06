@@ -2,14 +2,17 @@
 /* eslint-disable max-classes-per-file, class-methods-use-this */
 import test from 'ava';
 
+import { planUSDNDeposit } from '@aglocal/portfolio-contract/test/mocks.js';
+import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
+import PROD_NETWORK from '@aglocal/portfolio-contract/tools/network/network.prod.ts';
 import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import { objectMap } from '@agoric/internal';
 import { Far } from '@endo/pass-style';
-import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
 import { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import {
   handleDeposit,
+  planDepositToAllocations,
   planRebalanceToAllocations,
   planWithdrawFromAllocations,
 } from '../src/plan-deposit.ts';
@@ -317,6 +320,7 @@ test('planRebalanceToAllocations emits an empty plan when already balanced', asy
 test('planRebalanceToAllocations moves funds when needed', async t => {
   const targetAllocation = {
     USDN: 40n,
+    USDNVault: 0n,
     Aave_Arbitrum: 40n,
     Compound_Arbitrum: 20n,
   };
@@ -367,4 +371,24 @@ test('planWithdrawFromAllocations with no target preserves relative amounts', as
     gasEstimator: mockGasEstimator,
   });
   t.snapshot(steps);
+});
+
+test('planDepositToAllocations produces steps expected by contract', async t => {
+  const USDC = depositBrand;
+  const BLD = feeBrand;
+  const amount = makeDeposit(1000n);
+
+  const network = PROD_NETWORK;
+  const actual = await planDepositToAllocations({
+    amount,
+    brand: USDC,
+    currentBalances: {},
+    feeBrand: BLD,
+    gasEstimator: null as any,
+    network,
+    targetAllocation: { USDN: 1n },
+  });
+
+  const expected = planUSDNDeposit(amount);
+  t.deepEqual(actual, expected);
 });

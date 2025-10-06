@@ -13,7 +13,7 @@ import {
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
 import type { ChainInfo } from '@agoric/orchestration';
-import type { CopyRecord } from '@endo/pass-style';
+import { passStyleOf, type CopyRecord } from '@endo/pass-style';
 import { mustMatch } from '@endo/patterns';
 import type { TestFn } from 'ava';
 import type { PortfolioBootPowers } from '../src/portfolio-start.type.ts';
@@ -169,11 +169,15 @@ test.serial('publish chainInfo etc.', async t => {
 });
 
 test.serial('access token setup', async t => {
-  const { buildProposal, evalProposal, runUtils } = t.context;
-  const materials = buildProposal(
-    '@aglocal/portfolio-deploy/src/access-token-setup.build.js',
-    ['--beneficiary', beneficiary],
-  );
+  const { buildProposal, combineProposals, evalProposal, runUtils } = t.context;
+  // This used to be a single builder but has now been split up
+  const materials = Promise.all([
+    buildProposal('@aglocal/portfolio-deploy/src/access-token-setup.build.js', [
+      '--beneficiary',
+      beneficiary,
+    ]),
+    buildProposal('@aglocal/portfolio-deploy/src/attenuated-deposit.build.js'),
+  ]).then(combineProposals);
 
   const { walletFactoryDriver: wfd } = t.context;
   await wfd.provideSmartWallet(beneficiary);
@@ -257,12 +261,23 @@ test.serial('contract starts; appears in agoricNames', async t => {
 });
 
 test.serial('delegate control', async t => {
-  const { buildProposal, evalProposal, refreshAgoricNamesRemotes } = t.context;
+  const {
+    buildProposal,
+    combineProposals,
+    evalProposal,
+    refreshAgoricNamesRemotes,
+  } = t.context;
 
-  const materials = buildProposal(
-    '@aglocal/portfolio-deploy/src/portfolio-control.build.js',
-    ['--ymaxControlAddress', controllerAddr],
-  );
+  // This used to be a single builder but has now been split up
+  const materials = Promise.all([
+    buildProposal('@aglocal/portfolio-deploy/src/postal-service.build.js'),
+    buildProposal('@aglocal/portfolio-deploy/src/contract-control.build.js'),
+    buildProposal('@aglocal/portfolio-deploy/src/get-upgrade-kit.build.js'),
+    buildProposal('@aglocal/portfolio-deploy/src/portfolio-control.build.js', [
+      '--ymaxControlAddress',
+      controllerAddr,
+    ]),
+  ]).then(combineProposals);
 
   const { agoricNamesRemotes, walletFactoryDriver: wfd } = t.context;
 
@@ -512,6 +527,7 @@ test.skip('CCTP settlement works across contract restarts', async t => {
 
 test.serial('remove old contract; start new contract', async t => {
   const {
+    runUtils: { EV },
     agoricNamesRemotes,
     refreshAgoricNamesRemotes,
     walletFactoryDriver: wfd,
@@ -527,6 +543,10 @@ test.serial('remove old contract; start new contract', async t => {
     Fee: agoricNamesRemotes.issuer.BLD,
   };
 
+  const { privateArgs } = await (
+    EV.vat('bootstrap').consumeItem as ConsumeBootstrapItem
+  )('ymax0Kit');
+
   const oldBoardId = (instancePre as any).getBoardId();
   const wallet = await wfd.provideSmartWallet(controllerAddr);
 
@@ -538,12 +558,23 @@ test.serial('remove old contract; start new contract', async t => {
     args: [{ message: 'restarting contract', target: oldBoardId }],
   });
 
+  const privateArgsOverrides = harden({
+    assetInfo: privateArgs.assetInfo,
+    axelarIds: privateArgs.axelarIds,
+    chainInfo: privateArgs.chainInfo,
+    contracts: privateArgs.contracts,
+    gmpAddresses: privateArgs.gmpAddresses,
+  }) satisfies CopyRecord;
+  t.is(passStyleOf(privateArgsOverrides), 'copyRecord');
+
   t.log('Invoking ymaxControl to start new contract');
   await wallet.invokeEntry({
     id: Date.now().toString(),
     targetName: 'ymaxControl',
     method: 'start',
-    args: [{ installation, issuers }],
+    // use privateArgsOverrides as portfolio-control no longer copies those from the kit
+    // @ts-expect-error chainInfo incompatible with Passable?
+    args: [{ installation, issuers, privateArgsOverrides }],
   });
 
   refreshAgoricNamesRemotes();

@@ -10,10 +10,6 @@ import { walletUpdates } from './walletUpdates.js';
 // see ../prepare.sh for mnemonic
 const ymaxControlAddr = 'agoric15u29seyj3c9rdwg7gwkc97uttrk6j9fl4jkuyh';
 
-/** ymax0 bundleID from mainnet proposal 103 */
-const bundleId =
-  'b1-867596e047f55dcf08bafe36e4a6719adb36421ee4718f4c94f4747771fd0e89b3bd5db4dadaff29a837181d669b61332ef2a5c67e7feb28e5377d19ee2f16fc';
-
 const { fromEntries } = Object;
 
 const vsc = makeVstorageKit({ fetch }, LOCAL_CONFIG);
@@ -22,17 +18,8 @@ const wup = walletUpdates(
   { setTimeout, log: () => {} },
 );
 
+/** @param {any} x */
 const boardId = x => x.getBoardId();
-
-test.serial('ymaxControl wallet has invitations', async t => {
-  const current = await vsc.readPublished(`wallet.${ymaxControlAddr}.current`);
-  const brands = fromEntries(await vsc.readPublished(`agoricNames.brand`));
-  t.log('balances', vsc.marshaller.toCapData(current.purses));
-  const invitationBalance = current.purses.find(
-    p => boardId(p.brand) === boardId(brands.Invitation),
-  )?.balance;
-  t.like(invitationBalance?.value, [{ description: 'deliver ymaxControl' }]);
-});
 
 /**
  * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet';
@@ -56,34 +43,33 @@ const sendWalletAction = async (addr, action) => {
   );
 };
 
-test.serial('redeem ymaxControl invitation', async t => {
-  const { postalService } = fromEntries(
+test.before('get current ymax0 instance', async t => {
+  const { ymax0 } = fromEntries(
     await vsc.readPublished(`agoricNames.instance`),
   );
 
-  const id = 'redeem-1';
+  t.context = {
+    ymax0InstanceId: boardId(ymax0),
+  };
+});
+
+test.serial('terminate existing instance', async t => {
+  const id = 'terminate.0';
   /** @type {BridgeAction} */
-  const redeemAction = {
-    method: 'executeOffer',
-    offer: {
+  const invokeAction = {
+    // @ts-expect-error old type from npm
+    method: 'invokeEntry',
+    message: {
       id,
-      invitationSpec: {
-        source: 'purse',
-        // @ts-expect-error XXX x...Instance not assignable to y...Instance
-        instance: postalService,
-        description: 'deliver ymaxControl',
-      },
-      proposal: {},
-      saveResult: { name: 'ymaxControl', overwrite: true },
+      targetName: 'ymaxControl',
+      method: 'terminate',
+      args: [{ message: 'terminate in order to restart the contract' }],
     },
   };
 
-  await sendWalletAction(ymaxControlAddr, redeemAction);
+  await sendWalletAction(ymaxControlAddr, invokeAction);
 
-  t.deepEqual(await wup.offerResult(id), {
-    name: 'ymaxControl',
-    passStyle: 'remotable',
-  });
+  t.deepEqual(await wup.invocation(id), { passStyle: 'undefined' });
 });
 
 test.serial('invoke ymaxControl showing no instance', async t => {
@@ -97,7 +83,7 @@ test.serial('invoke ymaxControl showing no instance', async t => {
       targetName: 'ymaxControl',
       method: 'getCreatorFacet',
       args: [],
-      saveResult: { name: 'ymax0.creatorFacet' },
+      saveResult: { name: 'creatorFacet', overwrite: true },
     },
   };
 
@@ -108,14 +94,51 @@ test.serial('invoke ymaxControl showing no instance', async t => {
   });
 });
 
-test.serial('installAndStart using ymaxControl', async t => {
+test.serial('start using ymaxControl', async t => {
   const { BLD, USDC, PoC26 } = fromEntries(
     await vsc.readPublished('agoricNames.issuer'),
   );
 
+  const { ymax0: installation } = fromEntries(
+    /** @type {Array<[string, import('@agoric/zoe').Installation]>}*/ (
+      await vsc.readPublished('agoricNames.installation')
+    ),
+  );
+
   const issuers = harden({ USDC, Access: PoC26, BLD, Fee: BLD });
 
-  const id = 'installAndStart.3';
+  const evmContractAddressesStub = {
+    aavePool: '0x',
+    compound: '0x',
+    factory: '0x',
+    usdc: '0x',
+  };
+
+  // Stubs to satisfy the private args state shape checks
+  const privateArgsOverrides = {
+    axelarIds: {
+      Arbitrum: 'arbitrum',
+      Avalanche: 'Avalanche',
+      Base: 'base',
+      Ethereum: 'Ethereum',
+      Optimism: 'optimism',
+      Polygon: 'Polygon',
+    },
+    contracts: {
+      Arbitrum: evmContractAddressesStub,
+      Avalanche: evmContractAddressesStub,
+      Base: evmContractAddressesStub,
+      Ethereum: evmContractAddressesStub,
+      Optimism: evmContractAddressesStub,
+      Polygon: evmContractAddressesStub,
+    },
+    gmpAddresses: {
+      AXELAR_GAS: 'axelar1gas',
+      AXELAR_GMP: 'axelar1gmp',
+    },
+  };
+
+  const id = 'start.2';
   /** @type {BridgeAction} */
   const invokeAction = {
     // @ts-expect-error old type from npm
@@ -123,8 +146,8 @@ test.serial('installAndStart using ymaxControl', async t => {
     message: {
       id,
       targetName: 'ymaxControl',
-      method: 'installAndStart',
-      args: [{ bundleId, issuers }],
+      method: 'start',
+      args: [{ installation, issuers, privateArgsOverrides }],
     },
   };
 
@@ -134,7 +157,7 @@ test.serial('installAndStart using ymaxControl', async t => {
 });
 
 test.serial('invoke ymaxControl to getCreatorFacet', async t => {
-  const id = 'getCreatorFacet.33';
+  const id = 'getCreatorFacet.3';
 
   /** @type {BridgeAction} */
   const invokeAction = {
@@ -145,46 +168,25 @@ test.serial('invoke ymaxControl to getCreatorFacet', async t => {
       targetName: 'ymaxControl',
       method: 'getCreatorFacet',
       args: [],
-      saveResult: { name: 'ymax0.creatorFacet' },
+      saveResult: { name: 'creatorFacet', overwrite: true },
     },
   };
 
   await sendWalletAction(ymaxControlAddr, invokeAction);
 
   t.deepEqual(await wup.invocation(id), {
-    name: 'ymax0.creatorFacet',
+    name: 'creatorFacet',
     passStyle: 'remotable',
   });
-});
-
-test.serial('no deliverPlannerInvitation yet', async t => {
-  const { postalService } = fromEntries(
-    await vsc.readPublished('agoricNames.instance'),
-  );
-
-  const id = 'deliverResolverInvitation.34';
-
-  /** @type {BridgeAction} */
-  const invokeAction = {
-    // @ts-expect-error old type from npm
-    method: 'invokeEntry',
-    message: {
-      id,
-      targetName: 'ymax0.creatorFacet',
-      method: 'deliverResolverInvitation',
-      args: [postalService],
-    },
-  };
-
-  await sendWalletAction(ymaxControlAddr, invokeAction);
-
-  await t.throwsAsync(wup.invocation(id), { message: /no method/ });
 });
 
 test.serial('ymax0 told zoe that Access token is required', async t => {
   const { ymax0 } = fromEntries(
     await vsc.readPublished(`agoricNames.instance`),
   );
+
+  // @ts-expect-error ExecutionContext<unknown>
+  t.not(boardId(ymax0), t.context.ymax0InstanceId, 'ymax0 has a new instance');
 
   const id = 'open.132';
 

@@ -3,7 +3,7 @@
  * @see {@link contract}
  * @see {@link start}
  */
-import type { Payment } from '@agoric/ertp';
+import { AmountMath, type Payment } from '@agoric/ertp';
 import {
   makeTracer,
   mustMatch,
@@ -141,7 +141,7 @@ const GmpAddressesShape: TypedPattern<GmpAddresses> = M.splitRecord({
   AXELAR_GAS: M.string(),
 });
 
-type PortfolioPrivateArgs = OrchestrationPowers & {
+export type PortfolioPrivateArgs = OrchestrationPowers & {
   // XXX document required assets, chains
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
   chainInfo: Record<string, ChainInfo>;
@@ -295,10 +295,10 @@ export const contract = async (
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
-  const { rebalance, withdraw, parseInboundTransfer } = orchestrateAll(
+  const { executePlan, rebalance, parseInboundTransfer } = orchestrateAll(
     {
+      executePlan: flows.executePlan,
       rebalance: flows.rebalance,
-      withdraw: flows.withdraw,
       parseInboundTransfer: flows.parseInboundTransfer,
     },
     ctx1,
@@ -309,8 +309,8 @@ export const contract = async (
     vowTools,
     axelarIds,
     gmpAddresses,
+    executePlan,
     rebalance,
-    withdraw,
     parseInboundTransfer,
     proposalShapes,
     offerArgsShapes,
@@ -342,6 +342,17 @@ export const contract = async (
     },
   );
 
+  const usedAccessTokens = zone.makeOnce(
+    'usedAccessTokens',
+    () => zcf.makeEmptySeatKit().zcfSeat,
+  );
+  const consumeAccessToken = brands.Access
+    ? (seat: ZCFSeat) => {
+        const Access = AmountMath.make(brands.Access, 1n);
+        zcf.atomicRearrange([[seat, usedAccessTokens, { Access }]]);
+      }
+    : () => {};
+
   const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
     /**
      * Make an invitation to open a new portfolio.
@@ -363,6 +374,7 @@ export const contract = async (
       return zcf.makeInvitation(
         (seat, offerArgs) => {
           mustMatch(offerArgs, offerArgsShapes.openPortfolio);
+          consumeAccessToken(seat);
           return openPortfolio(seat, offerArgs);
         },
         'openPortfolio',

@@ -22,13 +22,17 @@ import type {
 } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.js';
-import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
+import type {
+  Installation,
+  Instance,
+} from '@agoric/zoe/src/zoeService/types.js';
 
 // For static string key types. String template matching has to be in the ternary below.
 type PublishedTypeMap = {
   'auction.governance': { current: AuctionParamRecord };
   'auction.schedule': ScheduleNotification;
   'vaultFactory.metrics': VaultDirectorMetrics;
+  'agoricNames.installation': Array<[string, Installation]>;
   'agoricNames.instance': Array<[string, Instance]>;
   'agoricNames.brand': Array<[string, Brand]>;
   'agoricNames.issuer': Array<[string, Issuer]>;

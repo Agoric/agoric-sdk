@@ -127,12 +127,12 @@ const computeWeightedTargets = (
     : typedEntries(current as Required<typeof current>).map(
         ([key, amount]) => [key, amount.value] as [PoolKey, NatValue],
       );
-  for (const entry of weights) {
+  const sumW = weights.reduce<bigint>((acc, entry) => {
     const w = entry[1];
-    (typeof w === 'bigint' && w > 0n) ||
+    (typeof w === 'bigint' && w >= 0n) ||
       Fail`allocation weight in ${entry} must be a Nat`;
-  }
-  const sumW = weights.reduce<bigint>((acc, [, w]) => acc + w, 0n);
+    return acc + w;
+  }, 0n);
   sumW > 0n || Fail`allocation weights must sum > 0`;
   const draft: Partial<Record<AssetPlaceRef, NatAmount>> = {};
   let remainder = total;
@@ -189,8 +189,8 @@ export const planDepositToAllocations = async (
   );
 
   // The deposit should be distributed.
-  const currentWithDeposit = { ...currentBalances, '+agoric': amount };
-  target['+agoric'] = AmountMath.make(brand, 0n);
+  const currentWithDeposit = { ...currentBalances, '<Deposit>': amount };
+  target['<Deposit>'] = AmountMath.make(brand, 0n);
 
   const { network, feeBrand, gasEstimator } = details;
   const flowDetail = await planRebalanceFlow({
@@ -262,7 +262,10 @@ export const planWithdrawFromAllocations = async (
   return flowDetail.steps;
 };
 
-// Back-compat utility used by CLI or handlers
+/**
+ * Back-compat utility used by CLI or handlers
+ * @deprecated in favor of planDepositToAllocations
+ */
 export const handleDeposit = async (
   portfolioKey: `${string}.portfolios.portfolio${number}`,
   amount: NatAmount,

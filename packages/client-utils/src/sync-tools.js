@@ -20,6 +20,12 @@
  * @property {boolean} [reusePromise]
  * @property {(value: unknown) => unknown} [renderResult]
  *
+ * @typedef {object} RetryPowers
+ * @property {typeof global.setTimeout} setTimeout
+ * @property {(...args: unknown[]) => void} [log]
+ *
+ * @typedef {RetryOptions & RetryPowers} RetryOptionsAndPowers mixes ocaps with configuration
+ *
  * @typedef {RetryOptions & {errorMessage: string}} WaitUntilOptions
  *
  * @typedef {object} CosmosBalanceThreshold
@@ -31,7 +37,7 @@
  * From https://github.com/Agoric/agoric-sdk/blob/442f07c8f0af03281b52b90e90c27131eef6f331/multichain-testing/tools/sleep.ts#L10
  *
  * @param {number} ms
- * @param {{log: (message: string) => void, setTimeout: typeof global.setTimeout}} io
+ * @param {RetryPowers} io
  */
 export const sleep = (ms, { log = () => {}, setTimeout }) =>
   new Promise(resolve => {
@@ -46,7 +52,7 @@ export const sleep = (ms, { log = () => {}, setTimeout }) =>
  * @param {() => Promise<T>} operation
  * @param {(result: T) => boolean} condition
  * @param {string} message
- * @param {RetryOptions & {log?: typeof console.log, setTimeout: typeof global.setTimeout}} options
+ * @param {RetryOptionsAndPowers} options
  * @returns {Promise<T>}
  */
 export const retryUntilCondition = async (
