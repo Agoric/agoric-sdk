@@ -98,7 +98,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       provider,
       log: (msg, ...args) => log(logPrefix, msg, ...args),
     };
-    const transferStatus = await (opts.mode === 'live'
+    let transferStatus = await (opts.mode === 'live'
       ? watchCctpTransfer({ ...watchArgs, timeoutMs: opts.timeoutMs })
       : lookBackCctp({
           ...watchArgs,
@@ -106,6 +106,13 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
           chainId: caipId,
           timeoutMs: opts.timeoutMs,
         }));
+
+    if (opts.mode === 'lookback' && !transferStatus) {
+      transferStatus = await watchCctpTransfer({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+      });
+    }
 
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
@@ -137,7 +144,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       txId,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
     };
-    const transferStatus = await (opts.mode === 'live'
+    let transferStatus = await (opts.mode === 'live'
       ? watchGmp({ ...watchArgs, timeoutMs: opts.timeoutMs })
       : lookBackGmp({
           ...watchArgs,
@@ -145,6 +152,13 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
           chainId: caipId,
           timeoutMs: opts.timeoutMs,
         }));
+
+    if (opts.mode === 'lookback' && !transferStatus) {
+      transferStatus = await watchGmp({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+      });
+    }
 
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
