@@ -224,6 +224,9 @@ test('resolves a 31 min old pending CCTP transaction in lookback mode', async t 
     return { timestamp: Math.floor(ts / 1000) };
   };
 
+  // Trigger block event to resolve waitForBlock
+  setTimeout(() => mockProvider.emit('block', latestBlock + 1), 10);
+
   const event = createMockTransferEvent(
     opts.usdcAddresses[chainId],
     txAmount,
@@ -252,6 +255,7 @@ test('resolves a 31 min old pending CCTP transaction in lookback mode', async t 
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] Check: amount=${txAmount}`,
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
+    `[${txId}] Lookback found transaction`,
     `[${txId}] CCTP tx resolved`,
   ]);
 });
@@ -288,6 +292,9 @@ test('resolves a 28 min old pending CCTP transaction in lookback mode', async t 
     return { timestamp: Math.floor(ts / 1000) };
   };
 
+  // Trigger block event to resolve waitForBlock
+  setTimeout(() => mockProvider.emit('block', latestBlock + 1), 10);
+
   const event = createMockTransferEvent(
     opts.usdcAddresses[chainId],
     txAmount,
@@ -316,6 +323,7 @@ test('resolves a 28 min old pending CCTP transaction in lookback mode', async t 
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] Check: amount=${txAmount}`,
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
+    `[${txId}] Lookback found transaction`,
     `[${txId}] CCTP tx resolved`,
   ]);
 });
@@ -352,6 +360,9 @@ test('resolves a transaction published at current time in lookback mode', async 
     return { timestamp: Math.floor(ts / 1000) };
   };
 
+  // Trigger block event to resolve waitForBlock
+  setTimeout(() => mockProvider.emit('block', latestBlock + 1), 10);
+
   const event = createMockTransferEvent(
     opts.usdcAddresses[chainId],
     txAmount,
@@ -380,6 +391,7 @@ test('resolves a transaction published at current time in lookback mode', async 
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] Check: amount=${txAmount}`,
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
+    `[${txId}] Lookback found transaction`,
     `[${txId}] CCTP tx resolved`,
   ]);
 });
@@ -416,6 +428,9 @@ test('resolves a 10 second old pending CCTP transaction in lookback mode', async
     return { timestamp: Math.floor(ts / 1000) };
   };
 
+  // Trigger block event to resolve waitForBlock
+  setTimeout(() => mockProvider.emit('block', latestBlock + 1), 10);
+
   const event = createMockTransferEvent(
     opts.usdcAddresses[chainId],
     txAmount,
@@ -444,6 +459,7 @@ test('resolves a 10 second old pending CCTP transaction in lookback mode', async
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] Check: amount=${txAmount}`,
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
+    `[${txId}] Lookback found transaction`,
     `[${txId}] CCTP tx resolved`,
   ]);
 });
@@ -477,6 +493,9 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
     const ts = currentTimeMs - blocksAgo * avgBlockTimeMs;
     return { timestamp: Math.floor(ts / 1000) };
   };
+
+  // Trigger block event to resolve waitForBlock
+  setTimeout(() => mockProvider.emit('block', latestBlock + 1), 10);
 
   const event = createMockGmpExecutionEvent(txId);
   mockProvider.getLogs = async () => [event];
@@ -532,6 +551,7 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,
     `[${txId}] Found matching event`,
+    `[${txId}] Lookback found transaction`,
     `[${txId}] GMP tx resolved`,
   ]);
 });

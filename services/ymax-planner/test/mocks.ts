@@ -40,15 +40,24 @@ export const mockGasEstimator = makeGasEstimator({
 
 export const createMockProvider = () => {
   const eventListeners = new Map<string, Function[]>();
-  let currentBlock = 1000n;
+  let currentBlock = 1000;
 
-  return {
+  const mockProvider = {
     on: (eventOrFilter: any, listener: Function) => {
       const key = JSON.stringify(eventOrFilter);
       if (!eventListeners.has(key)) {
         eventListeners.set(key, []);
       }
       eventListeners.get(key)!.push(listener);
+
+      // If subscribing to 'block' events, immediately emit next block
+      if (eventOrFilter === 'block') {
+        // Simulate next block in the next tick
+        setTimeout(() => {
+          currentBlock += 1;
+          listener(currentBlock);
+        }, 0);
+      }
     },
     off: (eventOrFilter: any, listener: Function) => {
       const key = JSON.stringify(eventOrFilter);
@@ -67,19 +76,13 @@ export const createMockProvider = () => {
         listeners.forEach(listener => listener(log));
       }
     },
+    waitForBlock: blockTag => {},
     getBlockNumber: async () => {
-      return Number(currentBlock);
-    },
-    waitForBlock: async (blockTag: bigint) => {
-      // Simulate immediate resolution for tests
-      currentBlock = blockTag;
-      return {
-        number: Number(blockTag),
-        hash: '0x1234567890abcdef',
-        timestamp: Math.floor(Date.now() / 1000),
-      } as any;
+      return currentBlock;
     },
   } as WebSocketProvider;
+
+  return mockProvider;
 };
 
 export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
