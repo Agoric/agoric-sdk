@@ -215,15 +215,15 @@ const factoryAddresses = harden({
   mainnet: {
     // TODO: Deploy and replace with correct Factory address on Arbitrum, Optimism and Base
     // cf. https://github.com/Agoric/agoric-sdk/issues/11933
-    Arbitrum: '0x647Ead1a35dbC2b0160Cbe6e565f25C4915a125F', // https://arbiscan.io/address/0x647Ead1a35dbC2b0160Cbe6e565f25C4915a125F
-    Avalanche: '0x647Ead1a35dbC2b0160Cbe6e565f25C4915a125F', // https://snowtrace.io/address/0x647Ead1a35dbC2b0160Cbe6e565f25C4915a125F
+    Arbitrum: '0x51e589D94b51d01B75442AE1504cD8c50d6127C9', // https://arbiscan.io/address/0x51e589D94b51d01B75442AE1504cD8c50d6127C9
+    Avalanche: '0x13cA288486f2bb6B3619c5fd6A2917Ec98a41E7f', // https://snowtrace.io/address/0x13cA288486f2bb6B3619c5fd6A2917Ec98a41E7f
     Base: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1',
     Ethereum: '0x3bF3056835f7C25b1f71aff99B734Ad07d644577',
     Optimism: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1',
   },
   testnet: {
-    Arbitrum: '0xaf84964745bd4edcea4b8c474cbe423e3d2f27d9', // https://sepolia.arbiscan.io/address/0xaf84964745bd4edcea4b8c474cbe423e3d2f27d9
-    Avalanche: '0x8C654562C5f74eFfd24e1DE7EE43c75d0Cd36bC5', // https://testnet.snowtrace.io/address/0x8C654562C5f74eFfd24e1DE7EE43c75d0Cd36bC5
+    Arbitrum: '0xB04B6994Da569010E72480D701C7e42E0819DF4d', // https://sepolia.arbiscan.io/address/0xB04B6994Da569010E72480D701C7e42E0819DF4d
+    Avalanche: '0x75E97ed669C1500784194626b9b45006f76F75f2', // https://testnet.snowtrace.io/address/0x75E97ed669C1500784194626b9b45006f76F75f2
     Base: '0xaf84964745bd4edcea4b8c474cbe423e3d2f27d9', // https://sepolia.basescan.org/address/0xaf84964745bd4edcea4b8c474cbe423e3d2f27d9
     Ethereum: '0x6b124C850407e857B7fBB9fD61cC91f379066063', // https://sepolia.etherscan.io/address/0x6b124C850407e857B7fBB9fD61cC91f379066063
     Optimism: '0x',
