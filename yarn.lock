@@ -965,7 +965,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/sdk@workspace:."
   dependencies:
-    "@endo/eslint-plugin": "npm:^2.4.0"
+    "@endo/eslint-plugin": "patch:@endo/eslint-plugin@npm%3A2.4.0#~/.yarn/patches/@endo-eslint-plugin-npm-2.4.0-13eed9d91f.patch"
     "@google-cloud/monitoring": "npm:^4.1.0"
     "@jessie.js/eslint-plugin": "npm:^0.4.2"
     "@lerna-lite/cli": "npm:^4.6.1"
@@ -3493,7 +3493,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/common@npm:^1.2.13":
+"@endo/common@npm:1.2.13":
   version: 1.2.13
   resolution: "@endo/common@npm:1.2.13"
   dependencies:
@@ -3501,6 +3501,17 @@ __metadata:
     "@endo/eventual-send": "npm:^1.3.4"
     "@endo/promise-kit": "npm:^1.1.13"
   checksum: 10c0/dd5f1da0e4b773e17219bd342648c6214ae18fa8a0a3878a22679932f6027b86edc4b504c0b346d3d191113fbbcb84ec2e3050c731cc36954fab2b9c0c7eddb1
+  languageName: node
+  linkType: hard
+
+"@endo/common@patch:@endo/common@npm%3A1.2.13#~/.yarn/patches/@endo-common-npm-1.2.13-da045893de.patch":
+  version: 1.2.13
+  resolution: "@endo/common@patch:@endo/common@npm%3A1.2.13#~/.yarn/patches/@endo-common-npm-1.2.13-da045893de.patch::version=1.2.13&hash=a65dc9"
+  dependencies:
+    "@endo/errors": "npm:^1.2.13"
+    "@endo/eventual-send": "npm:^1.3.4"
+    "@endo/promise-kit": "npm:^1.1.13"
+  checksum: 10c0/15c49cb72aa61582b40241af70435996e38647fe676fddef14de1e310430e164d6cc905188e1b8f8b43e82d20a180fce2cfbcdaf5db633ab8bf2ed7986e23961
   languageName: node
   linkType: hard
 
@@ -3525,7 +3536,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/errors@npm:^1.2.13":
+"@endo/errors@npm:1.2.13":
   version: 1.2.13
   resolution: "@endo/errors@npm:1.2.13"
   dependencies:
@@ -3534,7 +3545,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/eslint-plugin@npm:^2.4.0":
+"@endo/errors@patch:@endo/errors@npm%3A1.2.13#~/.yarn/patches/@endo-errors-npm-1.2.13-63a30bcf2f.patch":
+  version: 1.2.13
+  resolution: "@endo/errors@patch:@endo/errors@npm%3A1.2.13#~/.yarn/patches/@endo-errors-npm-1.2.13-63a30bcf2f.patch::version=1.2.13&hash=addd33"
+  dependencies:
+    ses: "npm:^1.14.0"
+  checksum: 10c0/8098e3b25b8416d491a86a3d4b16777a9ddc2238e0a13868dcc0a2be41209ebd05b88a230caa7059763a275c8c2d25ed6f06645e8de7e71c67787b7a37b2f94e
+  languageName: node
+  linkType: hard
+
+"@endo/eslint-plugin@npm:2.4.0":
   version: 2.4.0
   resolution: "@endo/eslint-plugin@npm:2.4.0"
   dependencies:
@@ -3543,6 +3563,18 @@ __metadata:
     typescript: "npm:~5.8.3"
     typescript-eslint: "npm:^8.33.0"
   checksum: 10c0/446897ab0deeef244fd7525d4bfc08de698a97c876805b50f6d4b4cc9d6c9fc7d0bcdbc85eb9fe579fa3ee14e5c4bea2f8da0be04a469dbfbcffc591e42ca82e
+  languageName: node
+  linkType: hard
+
+"@endo/eslint-plugin@patch:@endo/eslint-plugin@npm%3A2.4.0#~/.yarn/patches/@endo-eslint-plugin-npm-2.4.0-13eed9d91f.patch":
+  version: 2.4.0
+  resolution: "@endo/eslint-plugin@patch:@endo/eslint-plugin@npm%3A2.4.0#~/.yarn/patches/@endo-eslint-plugin-npm-2.4.0-13eed9d91f.patch::version=2.4.0&hash=2d9874"
+  dependencies:
+    requireindex: "npm:~1.1.0"
+    tsutils: "npm:~3.21.0"
+    typescript: "npm:~5.8.3"
+    typescript-eslint: "npm:^8.33.0"
+  checksum: 10c0/b5e048c88b4f66f39163a717b66621667abc9fab040f8cdda82b39f6cac0f4811ac1345530c917d5aeb74c028f780396446fcfd29a5d376a893e78b384ac0896
   languageName: node
   linkType: hard
 
@@ -3557,12 +3589,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/eventual-send@npm:^1.3.4":
+"@endo/eventual-send@npm:1.3.4":
   version: 1.3.4
   resolution: "@endo/eventual-send@npm:1.3.4"
   dependencies:
     "@endo/env-options": "npm:^1.1.11"
   checksum: 10c0/c0baa6b20bac2273f2d6816a8b9a0cdad2a80cadffb421163a4985179eb5c9979b77482ce7bb314a6ffe08526f83838e51089fbc94e5f3b2d27b04e856a23631
+  languageName: node
+  linkType: hard
+
+"@endo/eventual-send@patch:@endo/eventual-send@npm%3A1.3.4#~/.yarn/patches/@endo-eventual-send-npm-1.3.4-12411c5a98.patch":
+  version: 1.3.4
+  resolution: "@endo/eventual-send@patch:@endo/eventual-send@npm%3A1.3.4#~/.yarn/patches/@endo-eventual-send-npm-1.3.4-12411c5a98.patch::version=1.3.4&hash=07ca9a"
+  dependencies:
+    "@endo/env-options": "npm:^1.1.11"
+  checksum: 10c0/b510bbf11fadb01227654e3f4da197918dd88815e156c1030ca3ccccc7e0af4020c728f1f5697f54b6e9b458a6e03e864b75b6ac6b649507f3eebad7ba67d91e
   languageName: node
   linkType: hard
 
@@ -3581,7 +3622,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/far@npm:^1.0.0, @endo/far@npm:^1.1.14":
+"@endo/far@npm:1.1.14":
   version: 1.1.14
   resolution: "@endo/far@npm:1.1.14"
   dependencies:
@@ -3589,6 +3630,17 @@ __metadata:
     "@endo/eventual-send": "npm:^1.3.4"
     "@endo/pass-style": "npm:^1.6.3"
   checksum: 10c0/17e68cfaa765941dba7e7731c141c92452a1d1cfa523927714b9e27ddb576da0522380d066ce4746e4d920731962575ba0ddd7d681d22a220795d7596b4f993d
+  languageName: node
+  linkType: hard
+
+"@endo/far@patch:@endo/far@npm%3A1.1.14#~/.yarn/patches/@endo-far-npm-1.1.14-ef03a62612.patch":
+  version: 1.1.14
+  resolution: "@endo/far@patch:@endo/far@npm%3A1.1.14#~/.yarn/patches/@endo-far-npm-1.1.14-ef03a62612.patch::version=1.1.14&hash=74ec7a"
+  dependencies:
+    "@endo/errors": "npm:^1.2.13"
+    "@endo/eventual-send": "npm:^1.3.4"
+    "@endo/pass-style": "npm:^1.6.3"
+  checksum: 10c0/80fe94846f3d430a38aae9653b7520246b5b1a62c6a3ca51a60897cace0e5ced435db5aad16b77ea1c4e23005cfe550f8239899d9a20eac27201f0f963716980
   languageName: node
   linkType: hard
 
@@ -3633,7 +3685,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/marshal@npm:^1.8.0":
+"@endo/marshal@npm:1.8.0":
   version: 1.8.0
   resolution: "@endo/marshal@npm:1.8.0"
   dependencies:
@@ -3645,6 +3697,21 @@ __metadata:
     "@endo/pass-style": "npm:^1.6.3"
     "@endo/promise-kit": "npm:^1.1.13"
   checksum: 10c0/fd6d9b7bdc499fa21b4f739d141d2989914e868c1cef0937010c0f9c04d45ffac5cf1356a7fc45898ece7155c98e70d2bd2886c075cd6460c9fa6685672513ac
+  languageName: node
+  linkType: hard
+
+"@endo/marshal@patch:@endo/marshal@npm%3A1.8.0#~/.yarn/patches/@endo-marshal-npm-1.8.0-c73c5363a1.patch":
+  version: 1.8.0
+  resolution: "@endo/marshal@patch:@endo/marshal@npm%3A1.8.0#~/.yarn/patches/@endo-marshal-npm-1.8.0-c73c5363a1.patch::version=1.8.0&hash=35ac34"
+  dependencies:
+    "@endo/common": "npm:^1.2.13"
+    "@endo/env-options": "npm:^1.1.11"
+    "@endo/errors": "npm:^1.2.13"
+    "@endo/eventual-send": "npm:^1.3.4"
+    "@endo/nat": "npm:^5.1.3"
+    "@endo/pass-style": "npm:^1.6.3"
+    "@endo/promise-kit": "npm:^1.1.13"
+  checksum: 10c0/cf037a2ea2bf362ea49dcd6f0c7e3943848a17586fe80125a3fa2211f96f6924a435fcbbf25b158fc59922f75abc7da75c50bea586762ca54ee5e80c5b753a0c
   languageName: node
   linkType: hard
 
@@ -3680,7 +3747,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/pass-style@npm:^1.6.3":
+"@endo/pass-style@npm:1.6.3":
   version: 1.6.3
   resolution: "@endo/pass-style@npm:1.6.3"
   dependencies:
@@ -3693,6 +3760,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@endo/pass-style@patch:@endo/pass-style@npm%3A1.6.3#~/.yarn/patches/@endo-pass-style-npm-1.6.3-139d4e4c47.patch":
+  version: 1.6.3
+  resolution: "@endo/pass-style@patch:@endo/pass-style@npm%3A1.6.3#~/.yarn/patches/@endo-pass-style-npm-1.6.3-139d4e4c47.patch::version=1.6.3&hash=b5f306"
+  dependencies:
+    "@endo/common": "npm:^1.2.13"
+    "@endo/env-options": "npm:^1.1.11"
+    "@endo/errors": "npm:^1.2.13"
+    "@endo/eventual-send": "npm:^1.3.4"
+    "@endo/promise-kit": "npm:^1.1.13"
+  checksum: 10c0/c5bcf5a4c528c9281e2633f15417e62331552611fa769ad1c5f3459c782526fdc8c06e07b2a7fd9e254d87f239e14ef84281ceb865987ec5a4fcf135bb62831b
+  languageName: node
+  linkType: hard
+
 "@endo/path-compare@npm:^1.1.0":
   version: 1.1.0
   resolution: "@endo/path-compare@npm:1.1.0"
@@ -3700,7 +3780,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/patterns@npm:^1.7.0":
+"@endo/patterns@npm:1.7.0":
   version: 1.7.0
   resolution: "@endo/patterns@npm:1.7.0"
   dependencies:
@@ -3711,6 +3791,20 @@ __metadata:
     "@endo/pass-style": "npm:^1.6.3"
     "@endo/promise-kit": "npm:^1.1.13"
   checksum: 10c0/f054cf9c1201eaad084ce278603afc319a6dff69c1d51c9a3ff3288304a7c3d3097e0887ab83889c9fbb4f3bc9eeb22201484438b310ca2ed9bb56504adba1e4
+  languageName: node
+  linkType: hard
+
+"@endo/patterns@patch:@endo/patterns@npm%3A1.7.0#~/.yarn/patches/@endo-patterns-npm-1.7.0-70bb963d8a.patch":
+  version: 1.7.0
+  resolution: "@endo/patterns@patch:@endo/patterns@npm%3A1.7.0#~/.yarn/patches/@endo-patterns-npm-1.7.0-70bb963d8a.patch::version=1.7.0&hash=39a8bc"
+  dependencies:
+    "@endo/common": "npm:^1.2.13"
+    "@endo/errors": "npm:^1.2.13"
+    "@endo/eventual-send": "npm:^1.3.4"
+    "@endo/marshal": "npm:^1.8.0"
+    "@endo/pass-style": "npm:^1.6.3"
+    "@endo/promise-kit": "npm:^1.1.13"
+  checksum: 10c0/dc24302aa2109477739af405eb61cd2f3295f59e9289dc381420f5cb9a03f9e8d940711f1d0eeae2882f6d2991a91f0b22bd60853c3d5db654668ccc9f7043e8
   languageName: node
   linkType: hard
 
@@ -15629,7 +15723,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ses@npm:^1.14.0":
+"ses@npm:1.14.0":
   version: 1.14.0
   resolution: "ses@npm:1.14.0"
   dependencies:
@@ -15637,6 +15731,17 @@ __metadata:
     "@endo/env-options": "npm:^1.1.11"
     "@endo/immutable-arraybuffer": "npm:^1.1.2"
   checksum: 10c0/51336ab196e2211bb576ef72ef762a5a6f11f45db35b301a9176085116c17c02674d42e340fc76d9ac0d5b3dcabdfdc0c00c2386858960544386b5befd31324d
+  languageName: node
+  linkType: hard
+
+"ses@patch:ses@npm%3A1.14.0#~/.yarn/patches/ses-npm-1.14.0-dbbb8ec921.patch":
+  version: 1.14.0
+  resolution: "ses@patch:ses@npm%3A1.14.0#~/.yarn/patches/ses-npm-1.14.0-dbbb8ec921.patch::version=1.14.0&hash=7d0022"
+  dependencies:
+    "@endo/cache-map": "npm:^1.1.0"
+    "@endo/env-options": "npm:^1.1.11"
+    "@endo/immutable-arraybuffer": "npm:^1.1.2"
+  checksum: 10c0/2ea91f1432fd109539a941a58088c06cc6d24696a2e9ac88d407fad5e8c5328f7145349322ffff6f1a817af136b9095054f8cbea1f0459a11daf0725d459d53b
   languageName: node
   linkType: hard
 

@@ -1,0 +1,102 @@
+diff --git a/apply-labeling-error.d.ts.map b/apply-labeling-error.d.ts.map
+index 81448dae5838381d73425f0ff04ce8389cb49cde..04e6fa5a23c38ca8c53567679f16dd550d33ff64 100644
+--- a/apply-labeling-error.d.ts.map
++++ b/apply-labeling-error.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"apply-labeling-error.d.ts","sourceRoot":"","sources":["apply-labeling-error.js"],"names":[],"mappings":"AAkCO,mCANM,CAAC,EAAC,CAAC,QACL,CAAC,GAAG,IAAI,EAAE,CAAC,EAAE,KAAK,CAAC,QACnB,CAAC,EAAE,UACH,MAAM,GAAC,MAAM,GACX,CAAC,CA0Bb"}
+\ No newline at end of file
++{"version":3,"file":"apply-labeling-error.d.ts","sourceRoot":"","sources":["apply-labeling-error.js"],"names":[],"mappings":"AAmCO,mCANM,CAAC,EAAC,CAAC,QACL,CAAC,GAAG,IAAI,EAAE,CAAC,EAAE,KAAK,CAAC,QACnB,CAAC,EAAE,UACH,MAAM,GAAC,MAAM,GACX,CAAC,CA0Bb"}
+\ No newline at end of file
+diff --git a/apply-labeling-error.js b/apply-labeling-error.js
+index af80678cbd45f0b5019d8e8c8e58cea1ee2ee8c6..fb11fd370c376855b94a2055d05eab3bac1973dc 100644
+--- a/apply-labeling-error.js
++++ b/apply-labeling-error.js
+@@ -1,3 +1,4 @@
++import { hideAndHardenFunction } from '@endo/errors';
+ import { E } from '@endo/eventual-send';
+ import { isPromise } from '@endo/promise-kit';
+ import { throwLabeled } from './throw-labeled.js';
+@@ -57,4 +58,4 @@ export const applyLabelingError = (func, args, label = undefined) => {
+     return result;
+   }
+ };
+-harden(applyLabelingError);
++hideAndHardenFunction(applyLabelingError);
+diff --git a/ident-checker.d.ts b/ident-checker.d.ts
+index ee9dae79afa25fa23922ea250fb82f097ad2c870..e1548ffa0c8110ab09d87dfd8e8b3fd829a7642b 100644
+--- a/ident-checker.d.ts
++++ b/ident-checker.d.ts
+@@ -1,4 +1,5 @@
+ /**
++ * @deprecated Use `Rejector` in the confirm/reject pattern instead
+  * @callback Checker
+  * Internal to a useful pattern for writing checking logic
+  * (a "checkFoo" function) that can be used to implement a predicate
+@@ -26,6 +27,7 @@
+  * identity function, but is typed as a `Checker` to indicate its
+  * intended use.
+  *
++ * @deprecated use `false` in the confirm/reject pattern instead
+  * @type {Checker}
+  */
+ export const identChecker: Checker;
+diff --git a/ident-checker.d.ts.map b/ident-checker.d.ts.map
+index 00b88d9193b1f39b296c7df0a4591d6d6baef878..59a4b409cc35ec04f0545e8d5b4e6113a2f8cc38 100644
+--- a/ident-checker.d.ts.map
++++ b/ident-checker.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"ident-checker.d.ts","sourceRoot":"","sources":["ident-checker.js"],"names":[],"mappings":"AAGA;;;;;;;;;;;;;;;;;;;GAmBG;AAEH;;;;;;;;;GASG;AACH,2BAFU,OAAO,CAEoC;;;;;;;;;;;;;;;;;6BAf1C,OAAO,kDAEL,OAAO"}
+\ No newline at end of file
++{"version":3,"file":"ident-checker.d.ts","sourceRoot":"","sources":["ident-checker.js"],"names":[],"mappings":"AAAA;;;;;;;;;;;;;;;;;;;;GAoBG;AAEH;;;;;;;;;;GAUG;AACH,2BAFU,OAAO,CAEoC;;;;;;;;;;;;;;;;;6BAhB1C,OAAO,kDAEL,OAAO"}
+\ No newline at end of file
+diff --git a/ident-checker.js b/ident-checker.js
+index 4001fc08e4bdc3ffcbd2180535695c73136c04c5..64c696e27f7be0142a8dc9e448e699759356c096 100644
+--- a/ident-checker.js
++++ b/ident-checker.js
+@@ -1,7 +1,5 @@
+-// TODO Complete migration of Checker type from @endo/pass-style to @endo/common
+-// by having @endo/pass-style, and everyone else who needs it, import it from
+-// `@endo/common/ident-checker.js`.
+ /**
++ * @deprecated Use `Rejector` in the confirm/reject pattern instead
+  * @callback Checker
+  * Internal to a useful pattern for writing checking logic
+  * (a "checkFoo" function) that can be used to implement a predicate
+@@ -30,6 +28,7 @@
+  * identity function, but is typed as a `Checker` to indicate its
+  * intended use.
+  *
++ * @deprecated use `false` in the confirm/reject pattern instead
+  * @type {Checker}
+  */
+ export const identChecker = (cond, _details) => cond;
+diff --git a/throw-labeled.d.ts.map b/throw-labeled.d.ts.map
+index 4ad466ec577bdbc23a1df4438c213fdc5c4e9f4e..814bddf2b8fd15a2300d336b1e0e90f72b65c80a 100644
+--- a/throw-labeled.d.ts.map
++++ b/throw-labeled.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"throw-labeled.d.ts","sourceRoot":"","sources":["throw-labeled.js"],"names":[],"mappings":"AAaO,uCANI,KAAK,SACL,MAAM,GAAC,MAAM,mBACb,OAAO,KAAK,EAAE,uBAAuB,YACrC,OAAO,KAAK,EAAE,sBAAsB,GAClC,KAAK,CAkBjB"}
+\ No newline at end of file
++{"version":3,"file":"throw-labeled.d.ts","sourceRoot":"","sources":["throw-labeled.js"],"names":[],"mappings":"AAkBO,uCANI,KAAK,SACL,MAAM,GAAC,MAAM,mBACb,OAAO,KAAK,EAAE,uBAAuB,YACrC,OAAO,KAAK,EAAE,sBAAsB,GAClC,KAAK,CAkBjB"}
+\ No newline at end of file
+diff --git a/throw-labeled.js b/throw-labeled.js
+index 1c3709de6397b52287800cad58940f961ababcdd..41cf6400942655fb4e29a471fb3a5abadff60151 100644
+--- a/throw-labeled.js
++++ b/throw-labeled.js
+@@ -1,4 +1,9 @@
+-import { X, makeError, annotateError } from '@endo/errors';
++import {
++  X,
++  makeError,
++  annotateError,
++  hideAndHardenFunction,
++} from '@endo/errors';
+ 
+ /**
+  * Given an error `innerErr` and a `label`, throws a similar
+@@ -28,4 +33,4 @@ export const throwLabeled = (
+   annotateError(outerErr, X`Caused by ${innerErr}`);
+   throw outerErr;
+ };
+-harden(throwLabeled);
++hideAndHardenFunction(throwLabeled);
