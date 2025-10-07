@@ -447,8 +447,10 @@ export const rebalanceMinCostFlowSteps = async (
         }
         case 'toUSDN': {
           // NOTE USDN transfer incurs a fee on output amount in basis points
+          // HACK of subtract 1n in order to avoid rounding errors in Noble
+          // See https://github.com/Agoric/agoric-private/issues/415
           const usdnOut =
-            (BigInt(flow) * (10000n - BigInt(edge.variableFee))) / 10000n;
+            (BigInt(flow) * (10000n - BigInt(edge.variableFee))) / 10000n - 1n;
           details = { detail: { usdnOut } };
           break;
         }
