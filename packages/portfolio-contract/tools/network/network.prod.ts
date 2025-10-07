@@ -50,6 +50,7 @@ export const PROD_NETWORK: NetworkSpec = {
       transfer: 'cctpSlow',
       variableFeeBps: 0,
       timeSec: 1080,
+      feeMode: 'evmToNoble',
     },
     {
       src: '@Avalanche',
@@ -57,6 +58,7 @@ export const PROD_NETWORK: NetworkSpec = {
       transfer: 'cctpSlow',
       variableFeeBps: 0,
       timeSec: 1080,
+      feeMode: 'evmToNoble',
     },
     {
       src: '@Ethereum',
@@ -64,6 +66,7 @@ export const PROD_NETWORK: NetworkSpec = {
       transfer: 'cctpSlow',
       variableFeeBps: 0,
       timeSec: 1080,
+      feeMode: 'evmToNoble',
     },
     {
       src: '@Optimism',
@@ -71,6 +74,7 @@ export const PROD_NETWORK: NetworkSpec = {
       transfer: 'cctpSlow',
       variableFeeBps: 0,
       timeSec: 1080,
+      feeMode: 'evmToNoble',
     },
     {
       src: '@Base',
@@ -78,6 +82,7 @@ export const PROD_NETWORK: NetworkSpec = {
       transfer: 'cctpSlow',
       variableFeeBps: 0,
       timeSec: 1080,
+      feeMode: 'evmToNoble',
     },
     // CCTP return (fast on return path)
     {
