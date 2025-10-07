@@ -481,7 +481,7 @@ test('makePortfolioSteps for USDN position', async t => {
   });
 
   const amount = make(USDC, 50n * 1_000_000n);
-  const detail = { usdnOut: 49500000n };
+  const detail = { usdnOut: 49499999n };
   t.deepEqual(actual, {
     give: { Deposit: { brand: USDC, value: 50_000_000n } },
     steps: [

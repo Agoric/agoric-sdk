@@ -409,7 +409,7 @@ export const gasEstimator = {
 
 /** plan for deposit to USDN */
 export const planUSDNDeposit = (amount: NatAmount): MovementDesc[] => {
-  const detail = { usdnOut: (amount.value * 999n) / 1000n };
+  const detail = { usdnOut: (amount.value * 999n) / 1000n - 1n };
   return [
     { amount, dest: '@agoric', src: '<Deposit>' },
     { amount, dest: '@noble', src: '@agoric' },

@@ -142,7 +142,11 @@ export const makePortfolioSteps = async <
   // USDN detail: 99% min-out of requested USDN
   const usdnAmt = (goal as any).USDN as NatAmount | undefined;
   if (usdnAmt) {
-    const usdnDetail = { usdnOut: ((usdnAmt.value || 0n) * 99n) / 100n } as {
+    // HACK of subtract 1n in order to avoid rounding errors in Noble
+    // See https://github.com/Agoric/agoric-private/issues/415
+    const usdnDetail = {
+      usdnOut: ((usdnAmt.value || 0n) * 99n) / 100n - 1n,
+    } as {
       usdnOut: NatValue;
     };
     for (const s of steps) {
