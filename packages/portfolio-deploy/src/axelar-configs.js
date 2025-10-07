@@ -224,7 +224,7 @@ const factoryAddresses = harden({
   testnet: {
     Arbitrum: '0xB04B6994Da569010E72480D701C7e42E0819DF4d', // https://sepolia.arbiscan.io/address/0xB04B6994Da569010E72480D701C7e42E0819DF4d
     Avalanche: '0x75E97ed669C1500784194626b9b45006f76F75f2', // https://testnet.snowtrace.io/address/0x75E97ed669C1500784194626b9b45006f76F75f2
-    Base: '0xaf84964745bd4edcea4b8c474cbe423e3d2f27d9', // https://sepolia.basescan.org/address/0xaf84964745bd4edcea4b8c474cbe423e3d2f27d9
+    Base: '0xdD65Cf969A54F1EBD8f49529540D848709479198', // https://sepolia.basescan.org/address/0xdD65Cf969A54F1EBD8f49529540D848709479198
     Ethereum: '0x6b124C850407e857B7fBB9fD61cC91f379066063', // https://sepolia.etherscan.io/address/0x6b124C850407e857B7fBB9fD61cC91f379066063
     Optimism: '0x',
   },
