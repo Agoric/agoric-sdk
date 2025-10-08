@@ -80,7 +80,7 @@ export const makePortfolioSteps = async <
     evm?: AxelarChain;
     feeBrand?: Brand<'nat'>;
     fees?: Record<keyof G, { Account: NatAmount; Call: NatAmount }>;
-    detail?: { usdnOut: NatValue };
+    detail?: { amountOut: NatValue };
   } = {},
 ) => {
   Object.values(goal).length > 0 || Fail`empty goal`;
@@ -145,9 +145,9 @@ export const makePortfolioSteps = async <
     // HACK of subtract 1n in order to avoid rounding errors in Noble
     // See https://github.com/Agoric/agoric-private/issues/415
     const usdnDetail = {
-      usdnOut: ((usdnAmt.value || 0n) * 99n) / 100n - 1n,
+      amountOut: ((usdnAmt.value || 0n) * 99n) / 100n - 1n,
     } as {
-      usdnOut: NatValue;
+      amountOut: NatValue;
     };
     for (const s of steps) {
       if (s.src === '@noble' && s.dest === 'USDNVault') {

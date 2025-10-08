@@ -630,7 +630,7 @@ const stepFlow = async (
 
       case 'USDN': {
         const vault = way.poolKey === 'USDNVault' ? 1 : undefined;
-        const ctxU = { usdnOut: move?.detail?.usdnOut, vault };
+        const ctxU = { usdnOut: move?.detail?.amountOut, vault };
 
         const isSupply = 'src' in way;
 

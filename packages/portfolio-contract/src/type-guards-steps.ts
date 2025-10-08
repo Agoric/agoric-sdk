@@ -71,7 +71,7 @@ export type MovementDesc = {
   dest: AssetPlaceRef;
   /** for example: GMP fee */
   fee?: NatAmount;
-  /** for example: { usdnOut: 98n } */
+  /** for example: { amountOut: 98n } */
   detail?: Record<string, NatValue>;
   claim?: boolean;
 };

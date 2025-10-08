@@ -480,7 +480,7 @@ testWithAllModes(
         src: '@noble',
         dest: USDN,
         amount: token(500n),
-        detail: { usdnOut: subtract5bps(500n) },
+        detail: { amountOut: subtract5bps(500n) },
       },
       {
         src: '@noble',
@@ -541,7 +541,7 @@ testWithAllModes(
         src: '@noble',
         dest: USDN,
         amount: token(120n),
-        detail: { usdnOut: subtract5bps(120n) },
+        detail: { amountOut: subtract5bps(120n) },
       },
       {
         src: '@noble',
@@ -590,7 +590,7 @@ testWithAllModes(
         src: '@noble',
         dest: USDN,
         amount: token(1000n),
-        detail: { usdnOut: subtract5bps(1000n) },
+        detail: { amountOut: subtract5bps(1000n) },
       },
     ]);
   },

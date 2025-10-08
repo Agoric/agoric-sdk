@@ -39,14 +39,14 @@ export const makeSwapLockMessages = (
     denom = 'uusdc',
     denomTo = 'uusdn',
     vault = undefined as number | undefined,
-    usdnOut = undefined as bigint | undefined,
+    amountOut = undefined as bigint | undefined,
   } = {},
 ) => {
   const msgSwap = MsgSwap.fromPartial({
     signer: nobleAddr.value,
     amount: { denom, amount: `${usdcIn}` },
     routes: [{ poolId, denomTo }],
-    min: { denom: denomTo, amount: `${usdnOut || usdcIn}` },
+    min: { denom: denomTo, amount: `${amountOut || usdcIn}` },
   });
   if (vault === undefined) {
     const protoMessages = [Any.toJSON(MsgSwap.toProtoMsg(msgSwap))];
@@ -55,7 +55,7 @@ export const makeSwapLockMessages = (
   const msgLock = MsgLock.fromPartial({
     signer: nobleAddr.value,
     vault,
-    amount: `${usdnOut}`,
+    amount: `${amountOut}`,
   });
   const protoMessages = [
     Any.toJSON(MsgSwap.toProtoMsg(msgSwap)),
@@ -72,24 +72,24 @@ export const makeUnlockSwapMessages = (
     denom = 'uusdn',
     denomTo = 'uusdc',
     vault = 1, // VaultType.STAKED
-    usdnOut = undefined as bigint | undefined,
+    amountOut = undefined as bigint | undefined,
   } = {},
 ) => {
   // MsgSwap (uusdn → uusdc)
   const msgSwap = MsgSwap.fromPartial({
     signer: nobleAddr.value,
-    amount: { denom, amount: `${usdnOut || usdcOut}` },
+    amount: { denom, amount: `${amountOut || usdcOut}` },
     routes: [{ poolId, denomTo }],
-    min: { denom: denomTo, amount: `${usdnOut || usdcOut}` },
+    min: { denom: denomTo, amount: `${amountOut || usdcOut}` },
   });
-  if (usdnOut === undefined) {
+  if (amountOut === undefined) {
     const protoMessages = [Any.toJSON(MsgSwap.toProtoMsg(msgSwap))];
     return { msgSwap, protoMessages };
   }
   const msgUnlock = MsgUnlock.fromPartial({
     signer: nobleAddr.value,
     vault,
-    amount: `${usdnOut}`,
+    amount: `${amountOut}`,
   });
 
   const protoMessages = [
@@ -104,14 +104,14 @@ export const protocolUSDN = {
   protocol: 'USDN',
   chains: ['noble'],
   supply: async (ctx, amount, src) => {
-    const { usdnOut, vault } = ctx;
+    const { amountOut: usdnOut, vault } = ctx;
     const { ica } = src;
     const nobleAddr = ica.getAddress();
 
     const { msgSwap, msgLock, protoMessages } = makeSwapLockMessages(
       nobleAddr,
       amount.value,
-      { usdnOut, vault },
+      { amountOut: usdnOut, vault },
     );
 
     trace('executing', [msgSwap, msgLock].filter(Boolean));
@@ -122,13 +122,13 @@ export const protocolUSDN = {
     if (claim) {
       throw new Error('claiming USDN is not supported');
     }
-    const { usdnOut } = ctx;
+    const { amountOut: usdnOut } = ctx;
     const { ica } = dest;
     const address = ica.getAddress();
     const { msgUnlock, msgSwap, protoMessages } = makeUnlockSwapMessages(
       address,
       amount.value,
-      { usdnOut },
+      { amountOut: usdnOut },
     );
     trace('executing', [msgUnlock, msgSwap].filter(Boolean));
     const result = await ica.executeEncodedTx(protoMessages);
@@ -137,7 +137,7 @@ export const protocolUSDN = {
 } as const satisfies ProtocolDetail<
   'USDN',
   'noble',
-  { usdnOut?: NatValue; vault?: number }
+  { amountOut?: NatValue; vault?: number }
 >;
 harden(protocolUSDN);
 
