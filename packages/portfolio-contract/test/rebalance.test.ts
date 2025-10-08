@@ -120,7 +120,7 @@ testWithAllModes('solver simple 2-pool case (A -> B 30)', async (t, mode) => {
     // leaf -> hub
     { src: A, dest: '@Arbitrum', amount: token(30n), fee: fixedFee },
     // hub -> hub legs
-    { src: '@Arbitrum', dest: '@noble', amount: token(30n) },
+    { src: '@Arbitrum', dest: '@noble', amount: token(30n), fee: fixedFee },
     {
       src: '@noble',
       dest: '@Avalanche',
@@ -156,7 +156,7 @@ testWithAllModes(
       // leaf -> hub (aggregated outflow from A)
       { src: A, dest: '@Arbitrum', amount: amt66, fee: fixedFee },
       // hub -> hub aggregated then split
-      { src: '@Arbitrum', dest: '@noble', amount: amt66 },
+      { src: '@Arbitrum', dest: '@noble', amount: amt66, fee: fixedFee },
       {
         src: '@noble',
         dest: '@Avalanche',
@@ -210,9 +210,9 @@ testWithAllModes('solver all to one (B + C -> A)', async (t, mode) => {
   });
   await assertSteps(t, steps, [
     { src: B, dest: '@Avalanche', amount: token(20n), fee: fixedFee },
-    { src: '@Avalanche', dest: '@noble', amount: token(20n) },
+    { src: '@Avalanche', dest: '@noble', amount: token(20n), fee: fixedFee },
     { src: C, dest: '@Ethereum', amount: token(70n), fee: fixedFee },
-    { src: '@Ethereum', dest: '@noble', amount: token(70n) },
+    { src: '@Ethereum', dest: '@noble', amount: token(70n), fee: fixedFee },
     {
       src: '@noble',
       dest: '@Arbitrum',
@@ -242,7 +242,7 @@ testWithAllModes(
     });
     await assertSteps(t, steps, [
       { src: A, dest: '@Arbitrum', amount: token(100n), fee: fixedFee },
-      { src: '@Arbitrum', dest: '@noble', amount: token(100n) },
+      { src: '@Arbitrum', dest: '@noble', amount: token(100n), fee: fixedFee },
       {
         src: '@noble',
         dest: '@Avalanche',
@@ -282,9 +282,9 @@ testWithAllModes(
     });
     await assertSteps(t, steps, [
       { src: B, dest: '@Avalanche', amount: token(30n), fee: fixedFee },
-      { src: '@Avalanche', dest: '@noble', amount: token(30n) },
+      { src: '@Avalanche', dest: '@noble', amount: token(30n), fee: fixedFee },
       { src: C, dest: '@Ethereum', amount: token(70n), fee: fixedFee },
-      { src: '@Ethereum', dest: '@noble', amount: token(70n) },
+      { src: '@Ethereum', dest: '@noble', amount: token(70n), fee: fixedFee },
       {
         src: '@noble',
         dest: '@Arbitrum',
@@ -394,9 +394,9 @@ testWithAllModes(
     });
     await assertSteps(t, steps, [
       { src: A, dest: '@Arbitrum', amount: token(50n), fee: fixedFee },
-      { src: '@Arbitrum', dest: '@noble', amount: token(50n) },
+      { src: '@Arbitrum', dest: '@noble', amount: token(50n), fee: fixedFee },
       { src: B, dest: '@Avalanche', amount: token(30n), fee: fixedFee },
-      { src: '@Avalanche', dest: '@noble', amount: token(30n) },
+      { src: '@Avalanche', dest: '@noble', amount: token(30n), fee: fixedFee },
       { src: '@noble', dest: '@agoric', amount: token(80n) },
       { src: '@agoric', dest: '<Cash>', amount: token(80n) },
     ]);
@@ -614,7 +614,7 @@ testWithAllModes(
     // Identical to the 2-pool case; no steps to/from C
     await assertSteps(t, steps, [
       { src: A, dest: '@Arbitrum', amount: token(30n), fee: fixedFee },
-      { src: '@Arbitrum', dest: '@noble', amount: token(30n) },
+      { src: '@Arbitrum', dest: '@noble', amount: token(30n), fee: fixedFee },
       {
         src: '@noble',
         dest: '@Avalanche',
