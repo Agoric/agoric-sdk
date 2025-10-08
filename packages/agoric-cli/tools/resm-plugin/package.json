@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "type": "commonjs",
   "dependencies": {
-    "@endo/eventual-send": "^0.17.2",
-    "@endo/marshal": "^0.8.5"
+    "@endo/eventual-send": "catalog:endo",
+    "@endo/marshal": "catalog:endo"
   },
   "typeCoverage": {
     "atLeast": 0

@@ -9,16 +9,16 @@
     "services/*"
   ],
   "type": "module",
-  "packageManager": "yarn@4.9.3",
+  "packageManager": "yarn@4.10.3",
   "devDependencies": {
-    "@endo/eslint-plugin": "^2.4.0",
+    "@endo/eslint-plugin": "catalog:endo",
     "@google-cloud/monitoring": "^4.1.0",
     "@jessie.js/eslint-plugin": "^0.4.2",
-    "@lerna-lite/cli": "^4.6.1",
-    "@lerna-lite/exec": "^4.6.1",
-    "@lerna-lite/publish": "^4.6.1",
-    "@lerna-lite/run": "^4.6.1",
-    "@lerna-lite/version": "patch:@lerna-lite/version@npm%3A4.6.1#~/.yarn/patches/@lerna-lite-version-npm-4.6.1-77cc9b6d7e.patch",
+    "@lerna-lite/cli": "^4.8.0",
+    "@lerna-lite/exec": "^4.8.0",
+    "@lerna-lite/publish": "^4.8.0",
+    "@lerna-lite/run": "^4.8.0",
+    "@lerna-lite/version": "patch:@lerna-lite/version@npm%3A4.8.0#~/.yarn/patches/@lerna-lite-version-npm-4.8.0-2b510f40b9.patch",
     "@types/express": "^4.17.17",
     "@types/node": "~22.9.0",
     "@yarnpkg/types": "^4.0.1",
@@ -81,8 +81,8 @@
     "readable-stream@npm:3": "npm:4.7.0",
     "rxjs@npm:^6.4.0": "patch:rxjs@npm%3A7.5.5#~/.yarn/patches/rxjs-npm-7.5.5-d0546b1ccb.patch",
     "rxjs@npm:^7.5.5": "patch:rxjs@npm%3A7.5.5#~/.yarn/patches/rxjs-npm-7.5.5-d0546b1ccb.patch",
-    "@lerna-lite/version@npm:4.6.1": "patch:@lerna-lite/version@npm%3A4.6.1#~/.yarn/patches/@lerna-lite-version-npm-4.6.1-77cc9b6d7e.patch",
-    "@cosmology/ast": "patch:@cosmology/ast@npm%3A1.10.12#~/.yarn/patches/@cosmology-ast-npm-1.10.12-ccbeaa7cd2.patch"
+    "@cosmology/ast": "patch:@cosmology/ast@npm%3A1.10.12#~/.yarn/patches/@cosmology-ast-npm-1.10.12-ccbeaa7cd2.patch",
+    "@lerna-lite/version@npm:4.8.0": "patch:@lerna-lite/version@npm%3A4.8.0#~/.yarn/patches/@lerna-lite-version-npm-4.8.0-2b510f40b9.patch"
   },
   "dependenciesMeta": {
     "better-sqlite3@10.1.0": {
