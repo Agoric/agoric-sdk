@@ -3,10 +3,14 @@ import type { QueryAllBalancesResponse } from '@agoric/cosmic-proto/cosmos/bank/
 import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import ky, { HTTPError, type KyInstance } from 'ky';
 
-import { chain as nobleMain } from 'chain-registry/mainnet/noble/index.js';
+import {
+  chain as nobleMain,
+  assetList as nobleAssetList,
+} from 'chain-registry/mainnet/noble/index.js';
 import { chain as agoricMain } from 'chain-registry/mainnet/agoric/index.js';
 import { chain as nobleTest } from 'chain-registry/testnet/nobletestnet/index.js';
 import { chain as agoricTest } from 'chain-registry/testnet/agoricdevnet/index.js'; // agoricdev was named before testnets were a thing
+import { Fail } from '@endo/errors';
 
 import type { ClusterName } from './config.ts';
 
@@ -58,6 +62,9 @@ const CHAIN_CONFIGS: Record<
     },
   },
 };
+
+export const USDN =
+  nobleAssetList.assets.find(a => a.symbol === 'USDN') || Fail`no USDN`;
 
 export class CosmosRestClient {
   private readonly fetch: typeof fetch;

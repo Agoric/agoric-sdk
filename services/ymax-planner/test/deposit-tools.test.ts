@@ -9,7 +9,7 @@ import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import { objectMap } from '@agoric/internal';
 import { Far } from '@endo/pass-style';
-import { CosmosRestClient } from '../src/cosmos-rest-client.ts';
+import { CosmosRestClient, USDN } from '../src/cosmos-rest-client.ts';
 import {
   handleDeposit,
   planDepositToAllocations,
@@ -110,7 +110,7 @@ test('handleDeposit works with mocked dependencies', async t => {
     }
 
     async getAccountBalance(chainName: string, addr: string, denom: string) {
-      if (chainName === 'noble' && denom === 'usdn') {
+      if (chainName === 'noble' && denom === 'uusdn') {
         return { denom, amount: '200' };
       }
       return { denom, amount: '0' };
@@ -269,7 +269,7 @@ test('handleDeposit handles different position types correctly', async t => {
     }
 
     async getAccountBalance(chainName: string, addr: string, denom: string) {
-      if (chainName === 'noble' && denom === 'usdn') {
+      if (chainName === 'noble' && denom === 'uusdn') {
         return { denom, amount: '300' };
       }
       return { denom, amount: '0' };
@@ -391,4 +391,8 @@ test('planDepositToAllocations produces steps expected by contract', async t => 
 
   const expected = planUSDNDeposit(amount);
   t.deepEqual(actual, expected);
+});
+
+test('USDN denom', t => {
+  t.is(USDN.base, 'uusdn');
 });
