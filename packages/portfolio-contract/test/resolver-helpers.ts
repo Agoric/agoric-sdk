@@ -27,6 +27,24 @@ export const getResolverMakers = async (
 };
 
 /**
+ * Helper to get resolver service from a creator facet.
+ * Encapsulates the common pattern of making a resolver service invitation,
+ * offering it to zoe, and getting the resolver service from the result.
+ *
+ * @param zoe - Zoe service instance
+ * @param creatorFacet - The creator facet that has makeResolverServiceInvitation
+ * @returns {Promise<any>} The resolver service facet
+ */
+export const getResolverService = async (
+  zoe: ZoeService,
+  creatorFacet: any,
+): Promise<any> => {
+  const resolverServiceInvitation = await E(creatorFacet).makeResolverServiceInvitation();
+  const resolverServiceSeat = await E(zoe).offer(resolverServiceInvitation);
+  return E(resolverServiceSeat).getOfferResult();
+};
+
+/**
  * Helper to manually settle a transaction in tests.
  * This should be called when a test flow includes a transaction operation
  * to resolve the waiting promise.
