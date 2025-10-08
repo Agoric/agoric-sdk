@@ -157,7 +157,8 @@ testWithAllModes(
       // leaf -> hub (aggregated outflow from A)
       { src: A, dest: '@Arbitrum', amount: amt66, fee: fixedFee },
       // hub -> hub aggregated then split
-      { src: '@Arbitrum', dest: '@noble', amount: amt66, fee: fixedFee },
+      { src: '@Arbitrum', dest: '@agoric', amount: amt66, fee: fixedFee },
+      { src: '@agoric', dest: '@noble', amount: amt66 },
       {
         src: '@noble',
         dest: '@Avalanche',
@@ -211,9 +212,10 @@ testWithAllModes('solver all to one (B + C -> A)', async (t, mode) => {
   });
   await assertSteps(t, steps, [
     { src: B, dest: '@Avalanche', amount: token(20n), fee: fixedFee },
-    { src: '@Avalanche', dest: '@noble', amount: token(20n), fee: fixedFee },
+    { src: '@Avalanche', dest: '@agoric', amount: token(20n), fee: fixedFee },
     { src: C, dest: '@Ethereum', amount: token(70n), fee: fixedFee },
-    { src: '@Ethereum', dest: '@noble', amount: token(70n), fee: fixedFee },
+    { src: '@Ethereum', dest: '@agoric', amount: token(70n), fee: fixedFee },
+    { src: '@agoric', dest: '@noble', amount: token(90n) },
     {
       src: '@noble',
       dest: '@Arbitrum',
@@ -243,7 +245,8 @@ testWithAllModes(
     });
     await assertSteps(t, steps, [
       { src: A, dest: '@Arbitrum', amount: token(100n), fee: fixedFee },
-      { src: '@Arbitrum', dest: '@noble', amount: token(100n), fee: fixedFee },
+      { src: '@Arbitrum', dest: '@agoric', amount: token(100n), fee: fixedFee },
+      { src: '@agoric', dest: '@noble', amount: token(100n) },
       {
         src: '@noble',
         dest: '@Avalanche',
@@ -283,9 +286,10 @@ testWithAllModes(
     });
     await assertSteps(t, steps, [
       { src: B, dest: '@Avalanche', amount: token(30n), fee: fixedFee },
-      { src: '@Avalanche', dest: '@noble', amount: token(30n), fee: fixedFee },
+      { src: '@Avalanche', dest: '@agoric', amount: token(30n), fee: fixedFee },
       { src: C, dest: '@Ethereum', amount: token(70n), fee: fixedFee },
-      { src: '@Ethereum', dest: '@noble', amount: token(70n), fee: fixedFee },
+      { src: '@Ethereum', dest: '@agoric', amount: token(70n), fee: fixedFee },
+      { src: '@agoric', dest: '@noble', amount: token(100n) },
       {
         src: '@noble',
         dest: '@Arbitrum',
