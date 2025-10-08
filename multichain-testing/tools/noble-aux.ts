@@ -1,11 +1,9 @@
-import { MsgTransfer } from 'cosmjs-types/ibc/applications/transfer/v1/tx';
-import { Height } from 'cosmjs-types/ibc/core/client/v1/client';
-import { getSigner } from './utils';
-import {
-  assertIsDeliverTxSuccess,
-  SigningStargateClient,
-} from '@cosmjs/stargate';
-import { tokens, urls } from './axelar/config';
+import { stringToPath } from '@cosmjs/crypto';
+import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
+import { SigningStargateClient } from '@cosmjs/stargate';
+import { MsgTransfer } from 'cosmjs-types/ibc/applications/transfer/v1/tx.js';
+import { Height } from 'cosmjs-types/ibc/core/client/v1/client.js';
+import type { configs } from '../scripts/noble-usdn-lab.ts';
 
 type NobleForwardingMemo = {
   noble: {
@@ -58,38 +56,52 @@ const nfaIbcPayload = (
   };
 };
 
-const signer = await getSigner();
+export const registerNobleForwardingAddress = async ({
+  MNEMONIC,
+  connectWithSigner,
+  config,
+  agoricDenom = 'ubld',
+}: {
+  MNEMONIC: string;
+  connectWithSigner: typeof SigningStargateClient.connectWithSigner;
+  config: typeof configs.testnet;
+  agoricDenom?: string;
+}) => {
+  const agWallet = await DirectSecp256k1HdWallet.fromMnemonic(MNEMONIC, {
+    prefix: 'agoric',
+    hdPaths: [stringToPath(`m/44'/564'/0'/0/0`)],
+  });
 
-const accounts = await signer.getAccounts();
-const senderAddress = accounts[0].address;
-console.log('Sender Address:', senderAddress);
+  const [{ address: senderAddress }] = await agWallet.getAccounts();
+  console.log('Sender Address:', senderAddress);
 
-const ibcPayload = [
-  nfaIbcPayload(
-    'channel-11', // Source chain channel to Noble
-    senderAddress, // Your address on source chain
-    'noble1n4j0cy98dac5q6d9y5nhlmk5d6e4wzve0gznrw', // Noble address (will become forwarding account)
-    senderAddress, // Final destination on Agoric
-    'channel-337', // Noble channel to Agoric
-  ),
-];
+  const agToNoble = config.agoric.connections['grand-1'];
+  const ibcPayload = [
+    nfaIbcPayload(
+      agToNoble.transferChannel.channelId, // Source chain channel to Noble
+      senderAddress, // Your address on source chain
+      'noble1n4j0cy98dac5q6d9y5nhlmk5d6e4wzve0gznrw', // Noble address (will become forwarding account)
+      senderAddress, // Final destination on Agoric
+      agToNoble.transferChannel.counterPartyChannelId, // Noble channel to Agoric
+    ),
+  ];
 
-console.log('Connecting with Signer...');
-const signingClient = await SigningStargateClient.connectWithSigner(
-  urls.RPC_AGORIC_DEVNET,
-  signer,
-);
+  console.log('Connecting with Signer...');
 
-const fee = {
-  gas: '1000000',
-  amount: [{ denom: tokens.nativeTokenAgoric, amount: '1000000' }],
+  const clientA = await connectWithSigner(config.agoric.rpc, agWallet);
+
+  const fee = {
+    gas: '1000000',
+    amount: [{ denom: agoricDenom, amount: '1000000' }],
+  };
+
+  console.log('Sign and Broadcast transaction...');
+  const response = await clientA.signAndBroadcast(
+    senderAddress,
+    ibcPayload,
+    fee,
+  );
+
+  console.log('Asserting', response);
+  return response;
 };
-
-console.log('Sign and Broadcast transaction...');
-const response = await signingClient.signAndBroadcast(
-  senderAddress,
-  ibcPayload,
-  fee,
-);
-
-console.log('Asserting', response);
