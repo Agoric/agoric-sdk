@@ -20,7 +20,7 @@ import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/netw
 import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
-import type { CosmosRestClient } from './cosmos-rest-client.js';
+import { USDN, type CosmosRestClient } from './cosmos-rest-client.js';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 
 const getOwn = <O, K extends PropertyKey>(
@@ -46,7 +46,11 @@ export const getCurrentBalance = async (
     case 'USDN': {
       const addr = addressOfAccountId(accountIdByChain[chainName]);
       // XXX add denom to PoolPlaceInfo?
-      const resp = await cosmosRest.getAccountBalance(chainName, addr, 'usdn');
+      const resp = await cosmosRest.getAccountBalance(
+        chainName,
+        addr,
+        USDN.base,
+      );
       return BigInt(resp.amount);
     }
     case 'Aave':
