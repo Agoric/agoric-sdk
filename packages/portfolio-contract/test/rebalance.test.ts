@@ -394,10 +394,9 @@ testWithAllModes(
     });
     await assertSteps(t, steps, [
       { src: A, dest: '@Arbitrum', amount: token(50n), fee: fixedFee },
-      { src: '@Arbitrum', dest: '@noble', amount: token(50n), fee: fixedFee },
+      { src: '@Arbitrum', dest: '@agoric', amount: token(50n), fee: fixedFee },
       { src: B, dest: '@Avalanche', amount: token(30n), fee: fixedFee },
-      { src: '@Avalanche', dest: '@noble', amount: token(30n), fee: fixedFee },
-      { src: '@noble', dest: '@agoric', amount: token(80n) },
+      { src: '@Avalanche', dest: '@agoric', amount: token(30n), fee: fixedFee },
       { src: '@agoric', dest: '<Cash>', amount: token(80n) },
     ]);
   },
