@@ -16,6 +16,21 @@ export const YieldProtocol = /** @type {const} */ ({
 harden(YieldProtocol);
 
 /**
+ * EVM chain wallet operations that incur different gas costs.
+ * Supply: user is supplying assets to a yield protocol on the target chain.
+ * Withdraw: user is withdrawing assets from a yield protocol on the target chain.
+ * DepositForBurn: user is transferring assets off the target chain via CCTP.
+ *
+ * @enum {(typeof EvmWalletOperationType)[keyof typeof EvmWalletOperationType]}
+ */
+export const EvmWalletOperationType = /** @type {const} */ ({
+  Supply: 'supply',
+  Withdraw: 'withdraw',
+  DepositForBurn: 'depositforburn',
+});
+harden(EvmWalletOperationType);
+
+/**
  * @enum {(typeof AxelarChain)[keyof typeof AxelarChain]}
  */
 export const AxelarChain = /** @type {const} */ ({
