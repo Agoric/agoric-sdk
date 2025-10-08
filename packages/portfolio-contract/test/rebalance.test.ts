@@ -120,7 +120,8 @@ testWithAllModes('solver simple 2-pool case (A -> B 30)', async (t, mode) => {
     // leaf -> hub
     { src: A, dest: '@Arbitrum', amount: token(30n), fee: fixedFee },
     // hub -> hub legs
-    { src: '@Arbitrum', dest: '@noble', amount: token(30n), fee: fixedFee },
+    { src: '@Arbitrum', dest: '@agoric', amount: token(30n), fee: fixedFee },
+    { src: '@agoric', dest: '@noble', amount: token(30n) },
     {
       src: '@noble',
       dest: '@Avalanche',
@@ -613,7 +614,8 @@ testWithAllModes(
     // Identical to the 2-pool case; no steps to/from C
     await assertSteps(t, steps, [
       { src: A, dest: '@Arbitrum', amount: token(30n), fee: fixedFee },
-      { src: '@Arbitrum', dest: '@noble', amount: token(30n), fee: fixedFee },
+      { src: '@Arbitrum', dest: '@agoric', amount: token(30n), fee: fixedFee },
+      { src: '@agoric', dest: '@noble', amount: token(30n) },
       {
         src: '@noble',
         dest: '@Avalanche',

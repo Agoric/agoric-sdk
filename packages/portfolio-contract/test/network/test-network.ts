@@ -44,9 +44,9 @@ export const TEST_NETWORK: NetworkSpec = {
 
     // CCTP slow towards noble
     { src: '@Polygon' as AssetPlaceRef, dest: '@noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080, feeMode: 'evmToNoble' },
-    { src: '@Arbitrum', dest: '@noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080, feeMode: 'evmToNoble' },
-    { src: '@Avalanche', dest: '@noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080, feeMode: 'evmToNoble' },
-    { src: '@Ethereum', dest: '@noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080, feeMode: 'evmToNoble' },
+    { src: '@Arbitrum', dest: '@agoric', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080, feeMode: 'evmToNoble' },
+    { src: '@Avalanche', dest: '@agoric', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080, feeMode: 'evmToNoble' },
+    { src: '@Ethereum', dest: '@agoric', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080, feeMode: 'evmToNoble' },
     // Return path
     { src: '@noble', dest: '@Arbitrum', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'makeEvmAccount' },
     { src: '@noble', dest: '@Polygon' as AssetPlaceRef, transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'makeEvmAccount' },
