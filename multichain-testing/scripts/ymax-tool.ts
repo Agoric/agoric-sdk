@@ -317,14 +317,13 @@ const agoricNamesForChainInfo = (vsk: VstorageKit) => {
  *
  * @param network - The network name from AGORIC_NET env var
  */
-const getNetworkConfig = (network: string) => {
+const getNetworkConfig = (network: 'main' | 'devnet') => {
   switch (network) {
-    case 'mainnet':
+    case 'main':
       return {
         axelarConfig: axelarConfigMainnet,
         gmpAddresses: gmpConfigs.mainnet,
       };
-    case 'testnet':
     case 'devnet':
       return {
         axelarConfig: axelarConfigTestnet,
@@ -415,9 +414,11 @@ const main = async (
 
   if (values.buildEthOverrides) {
     const vsk = makeVstorageKit({ fetch }, networkConfig);
-    const { axelarConfig, gmpAddresses } = getNetworkConfig(
-      env.AGORIC_NET as string,
-    );
+    const { AGORIC_NET: net } = env;
+    if (net !== 'main' && net !== 'devnet') {
+      throw Error(`unsupported/unknown net: ${net}`);
+    }
+    const { axelarConfig, gmpAddresses } = getNetworkConfig(net);
     const privateArgsOverrides = await overridesForEthChainInfo(
       vsk,
       axelarConfig,

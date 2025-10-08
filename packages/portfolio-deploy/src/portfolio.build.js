@@ -12,7 +12,6 @@ import { portfolioDeployConfigShape } from './portfolio-start.core.js';
 
 /**
  * @import { CoreEvalBuilder, DeployScriptFunction } from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import {ParseArgsConfig} from 'node:util';
  * @import {PortfolioDeployConfig} from './portfolio-start.core.js';
  */
 
@@ -20,11 +19,14 @@ const isValidAddr = addr => {
   return /^0x[a-fA-F0-9]{40}$/.test(addr);
 };
 
-/** @type {ParseArgsConfig['options'] } */
-const options = {
-  net: { type: 'string' },
-  replace: { type: 'string' },
-};
+const parseBuilderArgs = args =>
+  parseArgs({
+    args,
+    options: {
+      net: { type: 'string' },
+      replace: { type: 'string' },
+    },
+  });
 
 /**
  * @param {Parameters<CoreEvalBuilder>[0]} tools
@@ -46,21 +48,10 @@ const defaultProposalBuilder = async ({ publishRef, install }, config) => {
   });
 };
 
-/**
- * @typedef {{
- *   baseName: string;
- *   chainInfo: string;
- *   net?: string;
- *   peer?: string[];
- *   replace?: string;
- * }} FlagValues
- */
 /** @type {DeployScriptFunction} */ 0;
 const build = async (homeP, endowments) => {
   const { scriptArgs } = endowments;
-  /** @type {FlagValues} */
-  // @ts-expect-error guaranteed by options config
-  const { values: flags } = parseArgs({ args: scriptArgs, options });
+  const { values: flags } = parseBuilderArgs(scriptArgs);
   const boardId = flags.replace;
 
   /** @type {{ mainnet: PortfolioDeployConfig, testnet: PortfolioDeployConfig }} */
