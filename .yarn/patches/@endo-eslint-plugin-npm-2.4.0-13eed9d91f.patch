@@ -1,0 +1,379 @@
+diff --git a/lib/configs/recommended.js b/lib/configs/recommended.js
+index 6e0da94c8aceddce0d4df6653e5e5f6bb1dac1a1..3791718bb68527a7916b5d68a3275939d92e81bd 100644
+--- a/lib/configs/recommended.js
++++ b/lib/configs/recommended.js
+@@ -66,6 +66,8 @@ module.exports = {
+   },
+   rules: {
+     '@endo/assert-fail-as-throw': 'error',
++    '@endo/no-assign-to-exported-let-var-or-function': 'error',
++    '@endo/no-multi-name-local-export': 'error',
+     'guard-for-in': 'error',
+     'no-self-compare': 'error',
+   },
+diff --git a/lib/rules/no-assign-to-exported-let-var-or-function.js b/lib/rules/no-assign-to-exported-let-var-or-function.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..d9226e06c679d789c1abe05eee7da6b29904f612
+--- /dev/null
++++ b/lib/rules/no-assign-to-exported-let-var-or-function.js
+@@ -0,0 +1,237 @@
++/**
++ * Disallow assignment to exported let/var/function bindings.
++ *
++ * Flags all assignments/updates to identifiers that resolve to a local binding
++ * which is exported (either inline or via a separate `export { ... }`)
++ * and whose original declaration is a `let`, `var`, or `function` declaration.
++ *
++ * Examples that will be reported:
++ *   export let x = 1; x = 2; x++;
++ *   let y; export { y }; ({ y } = obj);
++ *   function f() {} export { f }; f = other;
++ *   export var z = 0; z += 1;
++ *
++ * Note: does NOT flag property writes like `obj.x = 1`, only direct binding writes.
++ */
++
++'use strict';
++
++/**
++ * @import { Rule } from "eslint";
++ * @import {
++ *   Node,
++ *   Identifier,
++ *   Pattern,
++ *   ExportNamedDeclaration,
++ *   AssignmentExpression,
++ *   UpdateExpression
++ * } from "estree";
++ * @import { Scope, Variable } from "eslint-scope";
++ */
++
++module.exports = {
++  meta: {
++    type: 'problem',
++    docs: {
++      description:
++        'Disallow assignment to exported let/var/function bindings (including separately exported locals).',
++      recommended: false,
++    },
++    schema: [], // no options for now
++    messages: {
++      noAssign: "Assignment to exported binding '{{name}}' is disallowed.",
++    },
++  },
++
++  /**
++   * @param {Rule.RuleContext} context
++   */
++  create(context) {
++    /** @type {Set<Variable>} Set of eslint-scope Variable objects that are exported */
++    const exportedVars = new Set();
++
++    const sourceCode = context.sourceCode ?? context.getSourceCode(); // v9/v8 compat
++
++    /**
++     * Find a variable by name starting from a given scope and walking up.
++     * @param {Scope} scope
++     * @param {string} name
++     * @returns {Variable | null}
++     */
++    function findVariable(scope, name) {
++      for (let s = scope; s; s = s.upper) {
++        const found = s.variables.find(v => v.name === name);
++        if (found) return found;
++      }
++      return null;
++    }
++
++    /**
++     * True if a Variable’s definition is a let/var or a function declaration.
++     * @param {Variable} variable
++     * @returns {boolean}
++     */
++    function isLetVarOrFunction(variable) {
++      return variable.defs.some(def => {
++        if (def.type === 'Variable') {
++          const declNode = def.parent; // VariableDeclaration
++          return (
++            declNode && (declNode.kind === 'let' || declNode.kind === 'var')
++          );
++        }
++        // Function declaration
++        if (def.type === 'FunctionName') {
++          return true;
++        }
++        return false;
++      });
++    }
++
++    /**
++     * Collect variables declared by a node and, if eligible, mark them exported.
++     * @param {Node} nodeWithDecl
++     * @returns {void}
++     */
++    function collectDeclaredAndMark(nodeWithDecl) {
++      const vars = sourceCode.getDeclaredVariables(nodeWithDecl);
++      for (const v of vars) {
++        if (isLetVarOrFunction(v)) {
++          exportedVars.add(v);
++        }
++      }
++    }
++
++    /**
++     * Record a local name (from an export specifier) as exported if eligible.
++     * @param {Identifier} nameNode
++     * @returns {void}
++     */
++    function markLocalNameIfEligible(nameNode) {
++      const scope = context.getScope();
++      const variable = findVariable(scope, nameNode.name);
++      if (variable && isLetVarOrFunction(variable)) {
++        exportedVars.add(variable);
++      }
++    }
++
++    /**
++     * Extract all identifiers on the left side of an Assignment target (handles patterns).
++     * @param {Pattern | Node} pattern
++     * @param {Identifier[]} [acc]
++     * @returns {Identifier[]}
++     */
++    function gatherAssignedIdentifiers(pattern, acc) {
++      acc = acc || [];
++      if (!pattern) return acc;
++
++      switch (pattern.type) {
++        case 'Identifier':
++          acc.push(pattern);
++          break;
++
++        case 'ArrayPattern':
++          for (const elt of pattern.elements) {
++            if (elt) gatherAssignedIdentifiers(elt, acc);
++          }
++          break;
++
++        case 'ObjectPattern':
++          for (const prop of pattern.properties) {
++            if (prop.type === 'Property') {
++              gatherAssignedIdentifiers(prop.value, acc);
++            } else if (prop.type === 'RestElement') {
++              gatherAssignedIdentifiers(prop.argument, acc);
++            }
++          }
++          break;
++
++        case 'AssignmentPattern':
++          gatherAssignedIdentifiers(pattern.left, acc);
++          break;
++
++        case 'RestElement':
++          gatherAssignedIdentifiers(pattern.argument, acc);
++          break;
++
++        default:
++          // Non-binding LHS targets (e.g., MemberExpression) – intentionally do nothing
++          break;
++      }
++      return acc;
++    }
++
++    /**
++     * Report if the identifier resolves to one of the exported variables.
++     * @param {Identifier} idNode
++     * @returns {void}
++     */
++    function maybeReportIdentifier(idNode) {
++      const scope = context.getScope();
++      const variable = findVariable(scope, idNode.name);
++      if (variable && exportedVars.has(variable)) {
++        context.report({
++          node: idNode,
++          messageId: 'noAssign',
++          data: { name: idNode.name },
++        });
++      }
++    }
++
++    return {
++      // Collect directly exported declarations, e.g.:
++      //   export let x = 1;
++      //   export var y = 0;
++      //   export function f() {}
++      /**
++       * @param {ExportNamedDeclaration} node
++       */
++      ExportNamedDeclaration(node) {
++        // Case 1: inline declaration export
++        if (node.declaration) {
++          // Only add if kind is let/var OR function decl
++          if (
++            node.declaration.type === 'VariableDeclaration' &&
++            (node.declaration.kind === 'let' || node.declaration.kind === 'var')
++          ) {
++            collectDeclaredAndMark(node.declaration);
++          } else if (node.declaration.type === 'FunctionDeclaration') {
++            collectDeclaredAndMark(node.declaration);
++          }
++        }
++
++        // Case 2: `export { local as exported }` (only when source == null; otherwise it's a re-export)
++        if (!node.source && node.specifiers && node.specifiers.length > 0) {
++          for (const spec of node.specifiers) {
++            if (spec.type === 'ExportSpecifier') {
++              // spec.local is the local binding in this module
++              markLocalNameIfEligible(spec.local);
++            }
++          }
++        }
++      },
++
++      // Assignments like `x = ...`, `x += ...`, `({x} = obj)`, `[x] = arr`, etc.
++      /**
++       * @param {AssignmentExpression} node
++       */
++      AssignmentExpression(node) {
++        const ids = gatherAssignedIdentifiers(node.left, []);
++        for (const id of ids) {
++          if (id.type === 'Identifier') {
++            maybeReportIdentifier(id);
++          }
++        }
++      },
++
++      // Updates like `x++`, `--x`
++      /**
++       * @param {UpdateExpression} node
++       */
++      UpdateExpression(node) {
++        if (node.argument && node.argument.type === 'Identifier') {
++          maybeReportIdentifier(node.argument);
++        }
++      },
++    };
++  },
++};
+diff --git a/lib/rules/no-multi-name-local-export.js b/lib/rules/no-multi-name-local-export.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..8a255df2d9101e512e0b9f8cd02ce90ec3ac011d
+--- /dev/null
++++ b/lib/rules/no-multi-name-local-export.js
+@@ -0,0 +1,117 @@
++/* eslint-disable no-continue */
++/**
++ * Disallow exporting the same local binding under multiple names (value space only).
++ * Allows single alias (e.g. `export { foo as bar }`).
++ * Ignores re-exports (`export { x as y } from 'mod'`, `export * from 'mod'`)
++ * and TS type exports.
++ */
++
++'use strict';
++
++/** @type {import('eslint').Rule.RuleModule} */
++module.exports = {
++  meta: {
++    type: 'problem',
++    docs: {
++      description:
++        'Disallow exporting the same local binding under multiple names (local value exports only).',
++      recommended: false,
++    },
++    schema: [],
++    messages: {
++      multiple:
++        "Local binding '{{local}}' is exported under multiple names: {{names}}.",
++    },
++  },
++
++  create(context) {
++    const sourceCode = context.sourceCode ?? context.getSourceCode(); // v9/v8 compat
++
++    /** @type {Map<localName, Set<exportedNames>>} */
++    const seen = new Map();
++
++    const add = (localName, exportedName, node) => {
++      let entry = seen.get(localName);
++      if (!entry) {
++        entry = new Set();
++        seen.set(localName, entry);
++      }
++      const before = entry.size;
++      entry.add(exportedName);
++      if (entry.size > 1 && entry.size !== before) {
++        context.report({
++          node,
++          messageId: 'multiple',
++          data: { local: localName, names: Array.from(entry).join(', ') },
++        });
++      }
++    };
++
++    const getName = id => {
++      if (!id) return null;
++      if (id.type === 'Identifier') return id.name;
++      if ('name' in id && typeof id.name === 'string') return id.name;
++      if ('value' in id && typeof id.value === 'string') return id.value;
++      return String(id);
++    };
++
++    return {
++      ExportNamedDeclaration(node) {
++        // Skip re-exports and type-only exports
++        if (node.source) return;
++        if (node.exportKind === 'type') return;
++
++        // Track declaration exports (e.g. `export const a = 1;`)
++        if (node.declaration) {
++          const d = node.declaration;
++
++          // function/class declarations
++          if (
++            (d.type === 'FunctionDeclaration' ||
++              d.type === 'ClassDeclaration') &&
++            d.id &&
++            d.id.type === 'Identifier'
++          ) {
++            add(d.id.name, d.id.name, node);
++          }
++
++          // variable declarations (handles destructuring too)
++          if (d.type === 'VariableDeclaration') {
++            for (const v of sourceCode.getDeclaredVariables(d)) {
++              if (v && typeof v.name === 'string') {
++                add(v.name, v.name, node);
++              }
++            }
++          }
++
++          // Optional TS value-space cases (safe no-ops in plain JS)
++          if (
++            d.type === 'TSEnumDeclaration' &&
++            d.id &&
++            d.id.type === 'Identifier'
++          ) {
++            add(d.id.name, d.id.name, node);
++          }
++        }
++
++        if (!node.specifiers) return;
++
++        for (const spec of node.specifiers) {
++          // Skip type-only specifiers (TS)
++          if (spec.exportKind === 'type') continue;
++          if (spec.type !== 'ExportSpecifier') continue;
++
++          const localName = getName(spec.local);
++          const exportedName = getName(spec.exported);
++          if (!localName || !exportedName) continue;
++
++          // Note: `export { x as default }` counts because it's a named export alias.
++          add(localName, exportedName, spec);
++        }
++      },
++
++      // Deliberately ignore `export default …` so it doesn't count as another name.
++      // ExportDefaultDeclaration() {}
++    };
++  },
++};

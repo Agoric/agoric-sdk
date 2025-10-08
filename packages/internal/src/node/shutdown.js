@@ -77,4 +77,4 @@ export const makeCachedShutdown = (...args) => {
   return cachedShutdown;
 };
 
-export { makeCachedShutdown as makeShutdown };
+export const makeShutdown = makeCachedShutdown;

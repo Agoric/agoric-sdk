@@ -1,0 +1,1784 @@
+diff --git a/src/byteArray.d.ts.map b/src/byteArray.d.ts.map
+index d29d118d2f29ee921fd5589eb20f94fc0c73d9d9..0a0cca42360ee8a32215c08b9abe929edcdfb995 100644
+--- a/src/byteArray.d.ts.map
++++ b/src/byteArray.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"byteArray.d.ts","sourceRoot":"","sources":["byteArray.js"],"names":[],"mappings":"AAiDA;;GAEG;AACH,8BAFU,eAAe,CAsBtB;qCArE+B,qBAAqB"}
+\ No newline at end of file
++{"version":3,"file":"byteArray.d.ts","sourceRoot":"","sources":["byteArray.js"],"names":[],"mappings":"AA6CA;;GAEG;AACH,8BAFU,eAAe,CAoBtB;qCA/D+B,qBAAqB"}
+\ No newline at end of file
+diff --git a/src/byteArray.js b/src/byteArray.js
+index fa78d07008f6638dd5a1fb36d68c563437cba8db..fa7582219d21986c14616833086d9143fe405c5d 100644
+--- a/src/byteArray.js
++++ b/src/byteArray.js
+@@ -15,8 +15,6 @@ const adaptImmutableArrayBuffer = () => {
+ 
+   // On platforms that do not support sliceToImmutable, pass-style byteArray
+   // cannot be constructed.
+-  // @ts-expect-error TODO This error will be addressed when updating
+-  // TypeScript's native types to a version recognizing the upcoming standard.
+   if (anArrayBuffer.sliceToImmutable === undefined) {
+     return {
+       immutableArrayBufferPrototype: null,
+@@ -24,8 +22,6 @@ const adaptImmutableArrayBuffer = () => {
+     };
+   }
+ 
+-  // @ts-expect-error TODO This error will be addressed when updating
+-  // TypeScript's native types to a version recognizing the upcoming standard.
+   const anImmutableArrayBuffer = anArrayBuffer.sliceToImmutable();
+ 
+   /**
+@@ -53,11 +49,9 @@ const { immutableArrayBufferPrototype, immutableGetter } =
+ export const ByteArrayHelper = harden({
+   styleName: 'byteArray',
+ 
+-  canBeValid: (candidate, check = undefined) =>
+-    (candidate instanceof ArrayBuffer &&
+-      // @ts-expect-error TODO How do I add it to the ArrayBuffer type?
+-      candidate.immutable) ||
+-    (!!check && check(false, X`Immutable ArrayBuffer expected: ${candidate}`)),
++  confirmCanBeValid: (candidate, reject) =>
++    (candidate instanceof ArrayBuffer && candidate.immutable) ||
++    (reject && reject`Immutable ArrayBuffer expected: ${candidate}`),
+ 
+   assertRestValid: (candidate, _passStyleOfRecur) => {
+     getPrototypeOf(candidate) === immutableArrayBufferPrototype ||
+diff --git a/src/copyArray.d.ts.map b/src/copyArray.d.ts.map
+index 78b1791666f0c7d38296d8f7f79eb12123f1306a..ce9d6b53a97266726794c5d6882937cd45e78f6b 100644
+--- a/src/copyArray.d.ts.map
++++ b/src/copyArray.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"copyArray.d.ts","sourceRoot":"","sources":["copyArray.js"],"names":[],"mappings":"AASA;;;GAGG;AACH,8BAFU,OAAO,qBAAqB,EAAE,eAAe,CA4BpD"}
+\ No newline at end of file
++{"version":3,"file":"copyArray.d.ts","sourceRoot":"","sources":["copyArray.js"],"names":[],"mappings":"AASA;;;GAGG;AACH,8BAFU,OAAO,qBAAqB,EAAE,eAAe,CA2BpD"}
+\ No newline at end of file
+diff --git a/src/copyArray.js b/src/copyArray.js
+index 6f6041d1f270937e5ca790d2c48b1dbc8a77299c..60d4221ab21ae9894a5455c95882b93a9beab7db 100644
+--- a/src/copyArray.js
++++ b/src/copyArray.js
+@@ -1,7 +1,7 @@
+ /// <reference types="ses"/>
+ 
+-import { X } from '@endo/errors';
+-import { assertChecker, getOwnDataDescriptor } from './passStyle-helpers.js';
++import { Fail, X } from '@endo/errors';
++import { confirmOwnDataDescriptor } from './passStyle-helpers.js';
+ 
+ const { getPrototypeOf } = Object;
+ const { ownKeys } = Reflect;
+@@ -14,9 +14,8 @@ const { isArray, prototype: arrayPrototype } = Array;
+ export const CopyArrayHelper = harden({
+   styleName: 'copyArray',
+ 
+-  canBeValid: (candidate, check = undefined) =>
+-    isArray(candidate) ||
+-    (!!check && check(false, X`Array expected: ${candidate}`)),
++  confirmCanBeValid: (candidate, reject) =>
++    isArray(candidate) || (reject && reject`Array expected: ${candidate}`),
+ 
+   assertRestValid: (candidate, passStyleOfRecur) => {
+     getPrototypeOf(candidate) === arrayPrototype ||
+@@ -24,13 +23,13 @@ export const CopyArrayHelper = harden({
+     // Since we're already ensured candidate is an array, it should not be
+     // possible for the following get to fail.
+     const len = /** @type {number} */ (
+-      getOwnDataDescriptor(candidate, 'length', false, assertChecker).value
++      confirmOwnDataDescriptor(candidate, 'length', false, Fail).value
+     );
+     // Validate that each index property is own/data/enumerable
+     // and its associated value is recursively passable.
+     for (let i = 0; i < len; i += 1) {
+       passStyleOfRecur(
+-        getOwnDataDescriptor(candidate, i, true, assertChecker).value,
++        confirmOwnDataDescriptor(candidate, i, true, Fail).value,
+       );
+     }
+     // Expect one key per index plus one for 'length'.
+diff --git a/src/copyRecord.d.ts b/src/copyRecord.d.ts
+index ba9d688edddb723e6e4f39c7cf89865a75c1621a..27add315f5fcbf6e6693439aab4a99fa098cc989 100644
+--- a/src/copyRecord.d.ts
++++ b/src/copyRecord.d.ts
+@@ -1,6 +1,7 @@
+ /**
+  *
+- * @type {import('./internal-types.js').PassStyleHelper}
++ * @type {PassStyleHelper}
+  */
+-export const CopyRecordHelper: import("./internal-types.js").PassStyleHelper;
++export const CopyRecordHelper: PassStyleHelper;
++import type { PassStyleHelper } from './internal-types.js';
+ //# sourceMappingURL=copyRecord.d.ts.map
+\ No newline at end of file
+diff --git a/src/copyRecord.d.ts.map b/src/copyRecord.d.ts.map
+index 45cc80accae311d26b5a59277875b3c682b3b999..e88d8f1e85c257a237c770789d7b80617d49dd68 100644
+--- a/src/copyRecord.d.ts.map
++++ b/src/copyRecord.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"copyRecord.d.ts","sourceRoot":"","sources":["copyRecord.js"],"names":[],"mappings":"AAgDA;;;GAGG;AACH,+BAFU,OAAO,qBAAqB,EAAE,eAAe,CA8BpD"}
+\ No newline at end of file
++{"version":3,"file":"copyRecord.d.ts","sourceRoot":"","sources":["copyRecord.js"],"names":[],"mappings":"AA2CA;;;GAGG;AACH,+BAFU,eAAe,CAyBtB;qCA9D+B,qBAAqB"}
+\ No newline at end of file
+diff --git a/src/copyRecord.js b/src/copyRecord.js
+index f3ce8a156da8ce2cf78a148da9cca0d26d840cf6..f7f87aff1bf46e56ebf8c38ce28642aeefa73e2a 100644
+--- a/src/copyRecord.js
++++ b/src/copyRecord.js
+@@ -1,26 +1,25 @@
+ /// <reference types="ses"/>
+ 
+-/** @import {Checker} from './types.js' */
+-
+-import {
+-  assertChecker,
+-  getOwnDataDescriptor,
+-  CX,
+-} from './passStyle-helpers.js';
++import { Fail } from '@endo/errors';
++import { confirmOwnDataDescriptor } from './passStyle-helpers.js';
+ import { canBeMethod } from './remotable.js';
+ 
++/**
++ * @import {Rejector} from '@endo/errors/rejector.js';
++ * @import {PassStyleHelper} from './internal-types.js';
++ */
++
+ const { ownKeys } = Reflect;
+ const { getPrototypeOf, prototype: objectPrototype } = Object;
+ 
+ /**
+  * @param {unknown} candidate
+- * @param {Checker} [check]
++ * @param {Rejector} reject
+  */
+-const checkObjectPrototype = (candidate, check = undefined) => {
++const confirmObjectPrototype = (candidate, reject) => {
+   return (
+     getPrototypeOf(candidate) === objectPrototype ||
+-    (!!check &&
+-      CX(check)`Records must inherit from Object.prototype: ${candidate}`)
++    (reject && reject`Records must inherit from Object.prototype: ${candidate}`)
+   );
+ };
+ 
+@@ -28,53 +27,44 @@ const checkObjectPrototype = (candidate, check = undefined) => {
+  * @param {unknown} candidate
+  * @param {PropertyKey} key
+  * @param {unknown} value
+- * @param {Checker} [check]
++ * @param {Rejector} reject
+  */
+-const checkPropertyCanBeValid = (candidate, key, value, check = undefined) => {
++const confirmPropertyCanBeValid = (candidate, key, value, reject) => {
+   return (
+     (typeof key === 'string' ||
+-      (!!check &&
+-        CX(
+-          check,
+-        )`Records can only have string-named properties: ${candidate}`)) &&
++      (reject &&
++        reject`Records can only have string-named properties: ${candidate}`)) &&
+     (!canBeMethod(value) ||
+-      (!!check &&
++      (reject &&
+         // TODO: Update message now that there is no such thing as "implicit Remotable".
+-        CX(
+-          check,
+-        )`Records cannot contain non-far functions because they may be methods of an implicit Remotable: ${candidate}`))
++        reject`Records cannot contain non-far functions because they may be methods of an implicit Remotable: ${candidate}`))
+   );
+ };
+ 
+ /**
+  *
+- * @type {import('./internal-types.js').PassStyleHelper}
++ * @type {PassStyleHelper}
+  */
+ export const CopyRecordHelper = harden({
+   styleName: 'copyRecord',
+ 
+-  canBeValid: (candidate, check = undefined) => {
++  confirmCanBeValid: (candidate, reject) => {
+     return (
+-      checkObjectPrototype(candidate, check) &&
++      confirmObjectPrototype(candidate, reject) &&
+       // Reject any candidate with a symbol-keyed property or method-like property
+       // (such input is potentially a Remotable).
+       ownKeys(candidate).every(key =>
+-        checkPropertyCanBeValid(candidate, key, candidate[key], check),
++        confirmPropertyCanBeValid(candidate, key, candidate[key], reject),
+       )
+     );
+   },
+ 
+   assertRestValid: (candidate, passStyleOfRecur) => {
+     // Validate that each own property has a recursively passable associated
+-    // value (we already know from canBeValid that the other constraints are
++    // value (we already know from confirmCanBeValid that the other constraints are
+     // satisfied).
+     for (const name of ownKeys(candidate)) {
+-      const { value } = getOwnDataDescriptor(
+-        candidate,
+-        name,
+-        true,
+-        assertChecker,
+-      );
++      const { value } = confirmOwnDataDescriptor(candidate, name, true, Fail);
+       passStyleOfRecur(value);
+     }
+   },
+diff --git a/src/deeplyFulfilled.d.ts b/src/deeplyFulfilled.d.ts
+index 959ab7274bce73f1f218e66e4369d68ef0974859..c7dcad04e1da7d14fde0cfc1bf1d86be576dd180 100644
+--- a/src/deeplyFulfilled.d.ts
++++ b/src/deeplyFulfilled.d.ts
+@@ -16,6 +16,8 @@ export type DeeplyAwaitedObject<T extends {}> = { [K in keyof T]: T[K] extends C
+ /**
+  * Currently copied from
+  */
+-export type DeeplyAwaited<T> = T extends PromiseLike<any> ? Awaited<T> : T extends {} ? Simplify<DeeplyAwaitedObject<T>> : Awaited<T>;
++export type DeeplyAwaited<T> = T extends PromiseLike<any> ? Awaited<T> : T extends (RemotableBrand<any, any> | RemotableObject) ? T : T extends {} ? Simplify<DeeplyAwaitedObject<T>> : Awaited<T>;
+ import type { Passable } from '@endo/pass-style';
++import type { RemotableBrand } from '@endo/eventual-send';
++import type { RemotableObject } from '@endo/pass-style';
+ //# sourceMappingURL=deeplyFulfilled.d.ts.map
+\ No newline at end of file
+diff --git a/src/deeplyFulfilled.d.ts.map b/src/deeplyFulfilled.d.ts.map
+index f1ccb5ab5f28b2f6fb9cd333df7b8059aa0d7180..d6c22038753ddbb9cc10b385ca48bb1a119b7870 100644
+--- a/src/deeplyFulfilled.d.ts.map
++++ b/src/deeplyFulfilled.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"deeplyFulfilled.d.ts","sourceRoot":"","sources":["deeplyFulfilled.js"],"names":[],"mappings":"AAgFO,gCAJkB,CAAC,SAAb,QAAU,kBACZ,CAAC,GACC,OAAO,CAAC,aAAa,CAAC,CAAC,CAAC,CAAC,CAqErC;;;;;;qBAhIY,CAAC,IACD,GAAG,OAAO,IAAI,MAAM,CAAC,GAAG,CAAC,CAAC,OAAO,CAAC,GAAE,GAAG,EAAE;;;;uBASzC,CAAC,GAAG,IAAI,EAAE,GAAG,EAAE,KAAK,GAAG;;;;gCAOlB,CAAC,SAAN,EAAI,IACJ,GACP,CAAC,IAAI,MAAM,CAAC,GAAG,CAAC,CAAC,CAAC,CAAC,SAAS,QAAQ,GAAG,CAAC,CAAC,CAAC,CAAC,GAAG,aAAa,CAAC,CAAC,CAAC,CAAC,CAAC,CAAC,GACnE;;;;0BAOS,CAAC,IACD,CAAC,SAAS,WAAW,CAAC,GAAG,CAAC,GAC9B,OAAO,CAAC,CAAC,CAAC,GACV,CAAC,SAAS,EAAE,GACV,QAAQ,CAAC,mBAAmB,CAAC,CAAC,CAAC,CAAC,GAChC,OAAO,CAAC,CAAC,CAAC;8BA1CqE,kBAAkB"}
+\ No newline at end of file
++{"version":3,"file":"deeplyFulfilled.d.ts","sourceRoot":"","sources":["deeplyFulfilled.js"],"names":[],"mappings":"AAmFO,gCAJkB,CAAC,SAAb,QAAU,kBACZ,CAAC,GACC,OAAO,CAAC,aAAa,CAAC,CAAC,CAAC,CAAC,CAqErC;;;;;;qBAlIY,CAAC,IACD,GAAG,OAAO,IAAI,MAAM,CAAC,GAAG,CAAC,CAAC,OAAO,CAAC,GAAE,GAAG,EAAE;;;;uBASzC,CAAC,GAAG,IAAI,EAAE,GAAG,EAAE,KAAK,GAAG;;;;gCAOlB,CAAC,SAAN,EAAI,IACJ,GACP,CAAC,IAAI,MAAM,CAAC,GAAG,CAAC,CAAC,CAAC,CAAC,SAAS,QAAQ,GAAG,CAAC,CAAC,CAAC,CAAC,GAAG,aAAa,CAAC,CAAC,CAAC,CAAC,CAAC,CAAC,GACnE;;;;0BAOS,CAAC,IACD,CAAC,SAAS,WAAW,CAAC,GAAG,CAAC,GAC9B,OAAO,CAAC,CAAC,CAAC,GACV,CAAC,SAAS,CAAC,eAAe,GAAG,EAAE,GAAG,CAAC,GAAG,eAAe,CAAC,GACpD,CAAC,GACD,CAAC,SAAS,EAAE,GACV,QAAQ,CAAC,mBAAmB,CAAC,CAAC,CAAC,CAAC,GAChC,OAAO,CAAC,CAAC,CAAC;8BA5CmE,kBAAkB;oCAD3E,qBAAqB;qCACoC,kBAAkB"}
+\ No newline at end of file
+diff --git a/src/deeplyFulfilled.js b/src/deeplyFulfilled.js
+index 169edcba788d2ae73992261b883706565e2be5c2..6061dd56dc4f831a79fc68882a9def2ff8690937 100644
+--- a/src/deeplyFulfilled.js
++++ b/src/deeplyFulfilled.js
+@@ -7,6 +7,7 @@ import { makeTagged } from './makeTagged.js';
+ import { isAtom } from './typeGuards.js';
+ 
+ /**
++ * @import {RemotableBrand} from '@endo/eventual-send';
+  * @import {Passable, ByteArray, CopyRecord, CopyArray, CopyTagged, RemotableObject} from '@endo/pass-style'
+  */
+ 
+@@ -47,9 +48,11 @@ const { fromEntries } = Object;
+  * @template T
+  * @typedef {T extends PromiseLike<any>
+  *     ? Awaited<T>
+- *     : T extends {}
+- *       ? Simplify<DeeplyAwaitedObject<T>>
+- *       : Awaited<T>} DeeplyAwaited
++ *     : T extends (RemotableBrand<any, any> | RemotableObject)
++ *       ? T
++ *       : T extends {}
++ *         ? Simplify<DeeplyAwaitedObject<T>>
++ *         : Awaited<T>} DeeplyAwaited
+  */
+ 
+ /**
+diff --git a/src/error.d.ts b/src/error.d.ts
+index 3795b1bebe9253eaa2ca8a5aee4c00ba9e0afd9a..94e2b3189fafbc4b75920e336503d16adb0c1206 100644
+--- a/src/error.d.ts
++++ b/src/error.d.ts
+@@ -1,12 +1,12 @@
+ export function getErrorConstructor(name: string): import("ses").GenericErrorConstructor | undefined;
+ export function isErrorLike(candidate: unknown): boolean;
+-export function checkRecursivelyPassableErrorPropertyDesc(propName: string, desc: PropertyDescriptor, passStyleOfRecur: (val: any) => PassStyle, check?: Checker): boolean;
+-export function checkRecursivelyPassableError(candidate: unknown, passStyleOfRecur: (val: any) => PassStyle, check?: Checker): boolean;
++export function confirmRecursivelyPassableErrorPropertyDesc(propName: string, desc: PropertyDescriptor, passStyleOfRecur: (val: any) => PassStyle, reject: Rejector): boolean;
++export function confirmRecursivelyPassableError(candidate: unknown, passStyleOfRecur: (val: any) => PassStyle, reject: Rejector): boolean;
+ /**
+  * @type {PassStyleHelper}
+  */
+ export const ErrorHelper: PassStyleHelper;
+ import type { PassStyle } from './types.js';
+-import type { Checker } from './types.js';
++import type { Rejector } from '@endo/errors/rejector.js';
+ import type { PassStyleHelper } from './internal-types.js';
+ //# sourceMappingURL=error.d.ts.map
+\ No newline at end of file
+diff --git a/src/error.d.ts.map b/src/error.d.ts.map
+index 0e0a7e47bba2518dd1a2e8727ff9e948396a3f9a..c1976428110c12e7e71adbf46231e20e6a29f700 100644
+--- a/src/error.d.ts.map
++++ b/src/error.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"error.d.ts","sourceRoot":"","sources":["error.js"],"names":[],"mappings":"AA+CO,0CAHI,MAAM,GACJ,OAAO,KAAK,EAAE,uBAAuB,GAAG,SAAS,CAEQ;AAoC/D,uCAHI,OAAO,GACL,OAAO,CAE6C;AAU1D,oEANI,MAAM,QACN,kBAAkB,oBAClB,CAAC,GAAG,EAAE,GAAG,KAAK,SAAS,UACvB,OAAO,GACL,OAAO,CA8DnB;AASM,yDALI,OAAO,oBACP,CAAC,GAAG,EAAE,GAAG,KAAK,SAAS,UACvB,OAAO,GACL,OAAO,CAuCnB;AAGD;;GAEG;AACH,0BAFU,eAAe,CAStB;+BA9MgD,YAAY;6BAAZ,YAAY;qCAD5B,qBAAqB"}
+\ No newline at end of file
++{"version":3,"file":"error.d.ts","sourceRoot":"","sources":["error.js"],"names":[],"mappings":"AAiDO,0CAHI,MAAM,GACJ,OAAO,KAAK,EAAE,uBAAuB,GAAG,SAAS,CAEQ;AAoC/D,uCAHI,OAAO,GACL,OAAO,CAEsD;AAUnE,sEANI,MAAM,QACN,kBAAkB,oBAClB,CAAC,GAAG,EAAE,GAAG,KAAK,SAAS,UACvB,QAAQ,GACN,OAAO,CA6DnB;AASM,2DALI,OAAO,oBACP,CAAC,GAAG,EAAE,GAAG,KAAK,SAAS,UACvB,QAAQ,GACN,OAAO,CAmCnB;AAGD;;GAEG;AACH,0BAFU,eAAe,CAStB;+BA1MyB,YAAY;8BAFb,0BAA0B;qCACnB,qBAAqB"}
+\ No newline at end of file
+diff --git a/src/error.js b/src/error.js
+index 87fd8afb62d282a5c0c8f5e4cbf4740dd3c1b65f..10768d5088efa6c91f86d228e27d0870a215f73e 100644
+--- a/src/error.js
++++ b/src/error.js
+@@ -1,10 +1,12 @@
+ /// <reference types="ses"/>
+ 
+-import { q } from '@endo/errors';
+-import { assertChecker, CX } from './passStyle-helpers.js';
++import { Fail, q, hideAndHardenFunction } from '@endo/errors';
+ 
+-/** @import {PassStyleHelper} from './internal-types.js' */
+-/** @import {Checker, PassStyle, PassStyleOf} from './types.js' */
++/**
++ * @import {Rejector} from '@endo/errors/rejector.js';
++ * @import {PassStyleHelper} from './internal-types.js';
++ * @import {PassStyle} from './types.js';
++ */
+ 
+ const { getPrototypeOf, getOwnPropertyDescriptors, hasOwn, entries } = Object;
+ 
+@@ -50,17 +52,17 @@ harden(getErrorConstructor);
+ 
+ /**
+  * @param {unknown} candidate
+- * @param {Checker} [check]
++ * @param {Rejector} reject
+  * @returns {boolean}
+  */
+-const checkErrorLike = (candidate, check = undefined) => {
++const confirmErrorLike = (candidate, reject) => {
+   // TODO: Need a better test than instanceof
+   return (
+     candidate instanceof Error ||
+-    (!!check && CX(check)`Error expected: ${candidate}`)
++    (reject && reject`Error expected: ${candidate}`)
+   );
+ };
+-harden(checkErrorLike);
++harden(confirmErrorLike);
+ /// <reference types="ses"/>
+ 
+ /**
+@@ -81,34 +83,34 @@ harden(checkErrorLike);
+  * @param {unknown} candidate
+  * @returns {boolean}
+  */
+-export const isErrorLike = candidate => checkErrorLike(candidate);
+-harden(isErrorLike);
++export const isErrorLike = candidate => confirmErrorLike(candidate, false);
++hideAndHardenFunction(isErrorLike);
+ 
+ /**
+  * @param {string} propName
+  * @param {PropertyDescriptor} desc
+  * @param {(val: any) => PassStyle} passStyleOfRecur
+- * @param {Checker} [check]
++ * @param {Rejector} reject
+  * @returns {boolean}
+  */
+-export const checkRecursivelyPassableErrorPropertyDesc = (
++export const confirmRecursivelyPassableErrorPropertyDesc = (
+   propName,
+   desc,
+   passStyleOfRecur,
+-  check = undefined,
++  reject,
+ ) => {
+   if (desc.enumerable) {
+     return (
+-      !!check &&
+-      CX(check)`Passable Error ${q(
++      reject &&
++      reject`Passable Error ${q(
+         propName,
+       )} own property must not be enumerable: ${desc}`
+     );
+   }
+   if (!hasOwn(desc, 'value')) {
+     return (
+-      !!check &&
+-      CX(check)`Passable Error ${q(
++      reject &&
++      reject`Passable Error ${q(
+         propName,
+       )} own property must be a data property: ${desc}`
+     );
+@@ -119,28 +121,28 @@ export const checkRecursivelyPassableErrorPropertyDesc = (
+     case 'stack': {
+       return (
+         typeof value === 'string' ||
+-        (!!check &&
+-          CX(check)`Passable Error ${q(
++        (reject &&
++          reject`Passable Error ${q(
+             propName,
+           )} own property must be a string: ${value}`)
+       );
+     }
+     case 'cause': {
+       // eslint-disable-next-line no-use-before-define
+-      return checkRecursivelyPassableError(value, passStyleOfRecur, check);
++      return confirmRecursivelyPassableError(value, passStyleOfRecur, reject);
+     }
+     case 'errors': {
+       if (!Array.isArray(value) || passStyleOfRecur(value) !== 'copyArray') {
+         return (
+-          !!check &&
+-          CX(check)`Passable Error ${q(
++          reject &&
++          reject`Passable Error ${q(
+             propName,
+           )} own property must be a copyArray: ${value}`
+         );
+       }
+       return value.every(err =>
+         // eslint-disable-next-line no-use-before-define
+-        checkRecursivelyPassableError(err, passStyleOfRecur, check),
++        confirmRecursivelyPassableError(err, passStyleOfRecur, reject),
+       );
+     }
+     default: {
+@@ -148,24 +150,23 @@ export const checkRecursivelyPassableErrorPropertyDesc = (
+     }
+   }
+   return (
+-    !!check &&
+-    CX(check)`Passable Error has extra unpassed property ${q(propName)}`
++    reject && reject`Passable Error has extra unpassed property ${q(propName)}`
+   );
+ };
+-harden(checkRecursivelyPassableErrorPropertyDesc);
++harden(confirmRecursivelyPassableErrorPropertyDesc);
+ 
+ /**
+  * @param {unknown} candidate
+  * @param {(val: any) => PassStyle} passStyleOfRecur
+- * @param {Checker} [check]
++ * @param {Rejector} reject
+  * @returns {boolean}
+  */
+-export const checkRecursivelyPassableError = (
++export const confirmRecursivelyPassableError = (
+   candidate,
+   passStyleOfRecur,
+-  check = undefined,
++  reject,
+ ) => {
+-  if (!checkErrorLike(candidate, check)) {
++  if (!confirmErrorLike(candidate, reject)) {
+     return false;
+   }
+   const proto = getPrototypeOf(candidate);
+@@ -173,32 +174,28 @@ export const checkRecursivelyPassableError = (
+   const errConstructor = getErrorConstructor(name);
+   if (errConstructor === undefined || errConstructor.prototype !== proto) {
+     return (
+-      !!check &&
+-      CX(
+-        check,
+-      )`Passable Error must inherit from an error class .prototype: ${candidate}`
++      reject &&
++      reject`Passable Error must inherit from an error class .prototype: ${candidate}`
+     );
+   }
+   const descs = getOwnPropertyDescriptors(candidate);
+   if (!('message' in descs)) {
+     return (
+-      !!check &&
+-      CX(
+-        check,
+-      )`Passable Error must have an own "message" string property: ${candidate}`
++      reject &&
++      reject`Passable Error must have an own "message" string property: ${candidate}`
+     );
+   }
+ 
+   return entries(descs).every(([propName, desc]) =>
+-    checkRecursivelyPassableErrorPropertyDesc(
++    confirmRecursivelyPassableErrorPropertyDesc(
+       propName,
+       desc,
+       passStyleOfRecur,
+-      check,
++      reject,
+     ),
+   );
+ };
+-harden(checkRecursivelyPassableError);
++harden(confirmRecursivelyPassableError);
+ 
+ /**
+  * @type {PassStyleHelper}
+@@ -206,8 +203,8 @@ harden(checkRecursivelyPassableError);
+ export const ErrorHelper = harden({
+   styleName: 'error',
+ 
+-  canBeValid: checkErrorLike,
++  confirmCanBeValid: confirmErrorLike,
+ 
+   assertRestValid: (candidate, passStyleOfRecur) =>
+-    checkRecursivelyPassableError(candidate, passStyleOfRecur, assertChecker),
++    confirmRecursivelyPassableError(candidate, passStyleOfRecur, Fail),
+ });
+diff --git a/src/internal-types.d.ts b/src/internal-types.d.ts
+index c787a48e42e28e84e207a446cf2c5b3c758da835..99a419c68e35ceda45d14713b1272755cd932c9a 100644
+--- a/src/internal-types.d.ts
++++ b/src/internal-types.d.ts
+@@ -12,14 +12,14 @@
+ export type PassStyleHelper = {
+     styleName: PassStyle;
+     /**
+-     * If `canBeValid` returns true, then the candidate would
++     * If `confirmCanBeValid` returns true, then the candidate would
+      * definitely not be valid for any of the other helpers.
+      * `assertRestValid` still needs to be called to determine if it
+-     * actually is valid, but only after the `canBeValid` check has passed.
++     * actually is valid, but only after the `confirmCanBeValid` check has passed.
+      */
+-    canBeValid: (candidate: any, check?: Checker) => boolean;
++    confirmCanBeValid: (candidate: any, reject: Rejector) => boolean;
+     assertRestValid: (candidate: any, passStyleOfRecur: (val: any) => PassStyle) => void;
+ };
+ import type { PassStyle } from './types.js';
+-import type { Checker } from './types.js';
++import type { Rejector } from '@endo/errors/rejector.js';
+ //# sourceMappingURL=internal-types.d.ts.map
+\ No newline at end of file
+diff --git a/src/internal-types.d.ts.map b/src/internal-types.d.ts.map
+index 14e347fe285b2fb82602d78d4c816c04bccdd238..26d766846e66127fca0998ec96f817d44c619bd0 100644
+--- a/src/internal-types.d.ts.map
++++ b/src/internal-types.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"internal-types.d.ts","sourceRoot":"","sources":["internal-types.js"],"names":[],"mappings":";;;;;;;;;;;;eAkBc,SAAS;;;;;;;gBACT,CAAC,SAAS,EAAE,GAAG,EAAE,KAAK,CAAC,EAAE,OAAO,KAAK,OAAO;qBAK5C,CAAC,SAAS,EAAE,GAAG,EACd,gBAAgB,EAAE,CAAC,GAAG,EAAE,GAAG,KAAK,SAAS,KACrC,IAAI;;+BAvBM,YAAY;6BADd,YAAY"}
+\ No newline at end of file
++{"version":3,"file":"internal-types.d.ts","sourceRoot":"","sources":["internal-types.js"],"names":[],"mappings":";;;;;;;;;;;;eAmBc,SAAS;;;;;;;uBACT,CAAC,SAAS,EAAE,GAAG,EAAE,MAAM,EAAE,QAAQ,KAAK,OAAO;qBAM7C,CAAC,SAAS,EAAE,GAAG,EACd,gBAAgB,EAAE,CAAC,GAAG,EAAE,GAAG,KAAK,SAAS,KACrC,IAAI;;+BAxBK,YAAY;8BADb,0BAA0B"}
+\ No newline at end of file
+diff --git a/src/internal-types.js b/src/internal-types.js
+index 7aaf87e128a0fef242ad39d21be3e31f95b9cf70..224a6b5b33828542df4158e971cc34aac85becb1 100644
+--- a/src/internal-types.js
++++ b/src/internal-types.js
+@@ -1,8 +1,9 @@
+ export {};
+ 
+-/** @import {Checker} from './types.js' */
+-/** @import {PassStyle} from './types.js' */
+-/** @import {PassStyleOf} from './types.js' */
++/**
++ * @import {Rejector} from '@endo/errors/rejector.js';
++ * @import {PassStyle} from './types.js';
++ */
+ 
+ /**
+  * The PassStyleHelper are only used to make a `passStyleOf` function.
+@@ -17,11 +18,12 @@ export {};
+  *
+  * @typedef {object} PassStyleHelper
+  * @property {PassStyle} styleName
+- * @property {(candidate: any, check?: Checker) => boolean} canBeValid
+- * If `canBeValid` returns true, then the candidate would
++ * @property {(candidate: any, reject: Rejector) => boolean} confirmCanBeValid
++ * If `confirmCanBeValid` returns true, then the candidate would
+  * definitely not be valid for any of the other helpers.
+  * `assertRestValid` still needs to be called to determine if it
+- * actually is valid, but only after the `canBeValid` check has passed.
++ * actually is valid, but only after the `confirmCanBeValid` check has passed.
++ *
+  * @property {(candidate: any,
+  *             passStyleOfRecur: (val: any) => PassStyle
+  *            ) => void} assertRestValid
+diff --git a/src/make-far.js b/src/make-far.js
+index 0baa8323cfe6630039db48eceebdcda8dc4abdb9..db74613c4429afc4607b629064fc13798c279c70 100644
+--- a/src/make-far.js
++++ b/src/make-far.js
+@@ -2,7 +2,7 @@
+ 
+ import { getMethodNames } from '@endo/eventual-send/utils.js';
+ import { q, Fail } from '@endo/errors';
+-import { assertChecker, PASS_STYLE } from './passStyle-helpers.js';
++import { PASS_STYLE } from './passStyle-helpers.js';
+ import { assertIface, getInterfaceOf, RemotableHelper } from './remotable.js';
+ 
+ /** @import {RemotableBrand} from '@endo/eventual-send' */
+@@ -52,7 +52,7 @@ const makeRemotableProto = (remotable, iface) => {
+ };
+ 
+ const assertCanBeRemotable = candidate =>
+-  RemotableHelper.canBeValid(candidate, assertChecker);
++  RemotableHelper.confirmCanBeValid(candidate, Fail);
+ 
+ /**
+  * Create and register a Remotable.  After this, getInterfaceOf(remotable)
+diff --git a/src/passStyle-helpers.d.ts b/src/passStyle-helpers.d.ts
+index 2f3705f0fdcbe959fbdbd1eb12f4781e5261ba90..d160ff0f98336bc08cd465976186e5c7e032c656 100644
+--- a/src/passStyle-helpers.d.ts
++++ b/src/passStyle-helpers.d.ts
+@@ -6,11 +6,7 @@ export const hasOwnPropertyOf: (o: object, v: PropertyKey) => boolean;
+  * @type {(val: unknown) => val is JSPrimitive}
+  */
+ export const isPrimitive: (val: unknown) => val is JSPrimitive;
+-/**
+- * @deprecated use `!isPrimitive` instead
+- * @type {(val: unknown) => val is (Function | Record<string | symbol, unknown>)}
+- */
+-export const isObject: (val: unknown) => val is (Function | Record<string | symbol, unknown>);
++export function isObject(val: any): boolean;
+ export function isTypedArray(object: unknown): boolean;
+ export const PASS_STYLE: unique symbol;
+ /**
+@@ -19,28 +15,29 @@ export const PASS_STYLE: unique symbol;
+  * the corresponding predicate function would have returned true. But it
+  * reproduces the internal tests so failures can give a better error message.
+  *
++ * @deprecated Use `Fail` with confirm/reject pattern instead
+  * @type {Checker}
+  */
+ export const assertChecker: Checker;
+-export function CX(check: Checker): (T: any, ...subs: any[]) => boolean;
+-export function getOwnDataDescriptor(candidate: object, propName: string | number | symbol, shouldBeEnumerable: boolean, check?: Checker): PropertyDescriptor;
++export function confirmOwnDataDescriptor(candidate: object, propName: string | number | symbol, shouldBeEnumerable: boolean, reject: Rejector): PropertyDescriptor;
+ export function getTag<T extends import("./types.js").InterfaceSpec>(tagRecord: import("./types.js").PassStyled<any, T>): T;
+-export function checkPassStyle(obj: any, passStyle: any, expectedPassStyle: any, check: any): boolean;
++export function confirmPassStyle(obj: any, passStyle: PassStyle, expectedPassStyle: PassStyle, reject: Rejector): boolean;
+ /**
+  * @param {import('./types.js').PassStyled<any, any>} tagRecord
+  * @param {PassStyle} expectedPassStyle
+- * @param {Checker} [check]
++ * @param {Rejector} reject
+  * @returns {boolean}
+  */
+-export function checkTagRecord(tagRecord: import("./types.js").PassStyled<any, any>, expectedPassStyle: PassStyle, check?: Checker): boolean;
++export function confirmTagRecord(tagRecord: import("./types.js").PassStyled<any, any>, expectedPassStyle: PassStyle, reject: Rejector): boolean;
+ /**
+  * @param {import('./types.js').PassStyled<any, any>} tagRecord
+  * @param {PassStyle} expectedPassStyle
+- * @param {Checker} [check]
++ * @param {Rejector} reject
+  * @returns {boolean}
+  */
+-export function checkFunctionTagRecord(tagRecord: import("./types.js").PassStyled<any, any>, expectedPassStyle: PassStyle, check?: Checker): boolean;
++export function confirmFunctionTagRecord(tagRecord: import("./types.js").PassStyled<any, any>, expectedPassStyle: PassStyle, reject: Rejector): boolean;
+ import type { JSPrimitive } from './types.js';
+ import type { Checker } from './types.js';
++import type { Rejector } from '@endo/errors/rejector.js';
+ import type { PassStyle } from './types.js';
+ //# sourceMappingURL=passStyle-helpers.d.ts.map
+\ No newline at end of file
+diff --git a/src/passStyle-helpers.d.ts.map b/src/passStyle-helpers.d.ts.map
+index cc4456200278be8de5a3e8a6c334227d7909f308..56d6b5998c9d0911171ce1053e62fcbab9ee12c9 100644
+--- a/src/passStyle-helpers.d.ts.map
++++ b/src/passStyle-helpers.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"passStyle-helpers.d.ts","sourceRoot":"","sources":["passStyle-helpers.js"],"names":[],"mappings":"AA6BA;;GAEG;AACH,sEAAuC;AAEvC;;GAEG;AACH,0BAFU,CAAC,GAAG,EAAE,OAAO,KAAK,GAAG,IAAI,WAAW,CAMmB;AAGjE;;;GAGG;AACH,uBAFU,CAAC,GAAG,EAAE,OAAO,KAAK,GAAG,IAAI,CAAC,WAAW,MAAM,CAAC,MAAM,GAAG,MAAM,EAAE,OAAO,CAAC,CAAC,CAMd;AAQ3D,qCAFI,OAAO,WAMjB;AAGD,uCAAkD;AAElD;;;;;;;GAOG;AACH,4BAFU,OAAO,CAKf;AAYK,0BAFI,OAAO,uCAKjB;AAaM,gDANI,MAAM,YACN,MAAM,GAAC,MAAM,GAAC,MAAM,sBACpB,OAAO,UACP,OAAO,GACL,kBAAkB,CA+B9B;AAQM,uBAJ2C,CAAC,SAAtC,OAAQ,YAAY,EAAE,aAAc,aACtC,OAAO,YAAY,EAAE,UAAU,CAAC,GAAG,EAAE,CAAC,CAAC,GACrC,CAAC,CAEkD;AAGzD,sGAMN;AAIC;;;;;GAKG;AACH,0CALW,OAAO,YAAY,EAAE,UAAU,CAAC,GAAG,EAAE,GAAG,CAAC,qBACzC,SAAS,UACT,OAAO,GACL,OAAO,CAyBnB;AA7BD;;;;;GAKG;AACH,kDALW,OAAO,YAAY,EAAE,UAAU,CAAC,GAAG,EAAE,GAAG,CAAC,qBACzC,SAAS,UACT,OAAO,GACL,OAAO,CAyBnB;iCAtL+C,YAAY;6BAAZ,YAAY;+BAAZ,YAAY"}
+\ No newline at end of file
++{"version":3,"file":"passStyle-helpers.d.ts","sourceRoot":"","sources":["passStyle-helpers.js"],"names":[],"mappings":"AA8BA;;GAEG;AACH,sEAAuC;AAEvC;;GAEG;AACH,0BAFU,CAAC,GAAG,EAAE,OAAO,KAAK,GAAG,IAAI,WAAW,CAMmB;AAU1D,8BAHI,GAAG,GACD,OAAO,CAM6C;AAQ1D,qCAFI,OAAO,WAMjB;AAGD,uCAAkD;AAElD;;;;;;;;GAQG;AACH,4BAFU,OAAO,CAKf;AAaK,oDANI,MAAM,YACN,MAAM,GAAC,MAAM,GAAC,MAAM,sBACpB,OAAO,UACP,QAAQ,GACN,kBAAkB,CAyB9B;AAQM,uBAJ2C,CAAC,SAAtC,OAAQ,YAAY,EAAE,aAAc,aACtC,OAAO,YAAY,EAAE,UAAU,CAAC,GAAG,EAAE,CAAC,CAAC,GACrC,CAAC,CAEkD;AASzD,sCALI,GAAG,aACH,SAAS,qBACT,SAAS,UACT,QAAQ,WAQlB;AAIC;;;;;GAKG;AACH,4CALW,OAAO,YAAY,EAAE,UAAU,CAAC,GAAG,EAAE,GAAG,CAAC,qBACzC,SAAS,UACT,QAAQ,GACN,OAAO,CA0BnB;AA9BD;;;;;GAKG;AACH,oDALW,OAAO,YAAY,EAAE,UAAU,CAAC,GAAG,EAAE,GAAG,CAAC,qBACzC,SAAS,UACT,QAAQ,GACN,OAAO,CA0BnB;iCA5K+C,YAAY;6BAAZ,YAAY;8BADnC,0BAA0B;+BACH,YAAY"}
+\ No newline at end of file
+diff --git a/src/passStyle-helpers.js b/src/passStyle-helpers.js
+index 26e0fe2997ff449e41a65a0f505c13faf0fe62e4..1e94ef04c4880d865510fdec818e032c9728c2df 100644
+--- a/src/passStyle-helpers.js
++++ b/src/passStyle-helpers.js
+@@ -1,8 +1,9 @@
+ /// <reference types="ses"/>
+ 
+-import { X, q } from '@endo/errors';
++import { q, hideAndHardenFunction } from '@endo/errors';
+ 
+ /**
++ * @import {Rejector} from '@endo/errors/rejector.js';
+  * @import {Checker, PassStyle, JSPrimitive} from './types.js';
+  */
+ 
+@@ -40,18 +41,21 @@ export const isPrimitive = val =>
+   // So instead we use this adhoc set of type tests. But this is not safe in
+   // the face of possible evolution of the language. Beware!
+   !val || (typeof val !== 'object' && typeof val !== 'function');
+-harden(isPrimitive);
++hideAndHardenFunction(isPrimitive);
+ 
++// NOTE: Do not make this type more precise because it breaks only clients
++// that rely on it being less precise.
+ /**
+  * @deprecated use `!isPrimitive` instead
+- * @type {(val: unknown) => val is (Function | Record<string | symbol, unknown>)}
++ * @param {any} val
++ * @returns {boolean}
+  */
+ export const isObject = val =>
+   // Safer would be `Object(val) -== val` but is too expensive on XS.
+   // So instead we use this adhoc set of type tests. But this is not safe in
+   // the face of possible evolution of the language. Beware!
+   !!val && (typeof val === 'object' || typeof val === 'function');
+-harden(isObject);
++hideAndHardenFunction(isObject);
+ 
+ /**
+  * Duplicates packages/ses/src/make-hardener.js to avoid a dependency.
+@@ -63,7 +67,7 @@ export const isTypedArray = object => {
+   const tag = apply(getTypedArrayToStringTag, object, []);
+   return tag !== undefined;
+ };
+-harden(isTypedArray);
++hideAndHardenFunction(isTypedArray);
+ 
+ export const PASS_STYLE = Symbol.for('passStyle');
+ 
+@@ -73,28 +77,14 @@ export const PASS_STYLE = Symbol.for('passStyle');
+  * the corresponding predicate function would have returned true. But it
+  * reproduces the internal tests so failures can give a better error message.
+  *
++ * @deprecated Use `Fail` with confirm/reject pattern instead
+  * @type {Checker}
+  */
+ export const assertChecker = (cond, details) => {
+   assert(cond, details);
+   return true;
+ };
+-harden(assertChecker);
+-
+-/**
+- * Returns a template literal tag function to fail the provided Checker with details.
+- * The name must be short for ergonomic inline use as in:
+- * ```
+- * return checkCondition(...) || (!!check && CX(check)`...`);
+- * ```
+- *
+- * @param {Checker} check
+- */
+-export const CX = check => {
+-  const reject = (T, ...subs) => check(false, X(T, ...subs));
+-  return reject;
+-};
+-harden(CX);
++hideAndHardenFunction(assertChecker);
+ 
+ /**
+  * Verifies the presence and enumerability of an own data property
+@@ -103,40 +93,34 @@ harden(CX);
+  * @param {object} candidate
+  * @param {string|number|symbol} propName
+  * @param {boolean} shouldBeEnumerable
+- * @param {Checker} [check]
++ * @param {Rejector} reject
+  * @returns {PropertyDescriptor}
+  */
+-export const getOwnDataDescriptor = (
++export const confirmOwnDataDescriptor = (
+   candidate,
+   propName,
+   shouldBeEnumerable,
+-  check,
++  reject,
+ ) => {
+   const desc = /** @type {PropertyDescriptor} */ (
+     getOwnPropertyDescriptor(candidate, propName)
+   );
+   return (desc !== undefined ||
+-    (!!check && CX(check)`${q(propName)} property expected: ${candidate}`)) &&
++    (reject && reject`${q(propName)} property expected: ${candidate}`)) &&
+     (hasOwn(desc, 'value') ||
+-      (!!check &&
+-        CX(
+-          check,
+-        )`${q(propName)} must not be an accessor property: ${candidate}`)) &&
++      (reject &&
++        reject`${q(propName)} must not be an accessor property: ${candidate}`)) &&
+     (shouldBeEnumerable
+       ? desc.enumerable ||
+-        (!!check &&
+-          CX(
+-            check,
+-          )`${q(propName)} must be an enumerable property: ${candidate}`)
++        (reject &&
++          reject`${q(propName)} must be an enumerable property: ${candidate}`)
+       : !desc.enumerable ||
+-        (!!check &&
+-          CX(
+-            check,
+-          )`${q(propName)} must not be an enumerable property: ${candidate}`))
++        (reject &&
++          reject`${q(propName)} must not be an enumerable property: ${candidate}`))
+     ? desc
+     : /** @type {PropertyDescriptor} */ (/** @type {unknown} */ (undefined));
+ };
+-harden(getOwnDataDescriptor);
++harden(confirmOwnDataDescriptor);
+ 
+ /**
+  * @template {import('./types.js').InterfaceSpec} T
+@@ -146,65 +130,68 @@ harden(getOwnDataDescriptor);
+ export const getTag = tagRecord => tagRecord[Symbol.toStringTag];
+ harden(getTag);
+ 
+-export const checkPassStyle = (obj, passStyle, expectedPassStyle, check) => {
++/**
++ * @param {any} obj
++ * @param {PassStyle} passStyle
++ * @param {PassStyle} expectedPassStyle
++ * @param {Rejector} reject
++ */
++export const confirmPassStyle = (obj, passStyle, expectedPassStyle, reject) => {
+   return (
+     passStyle === expectedPassStyle ||
+-    (!!check &&
+-      CX(check)`Expected ${q(expectedPassStyle)}, not ${q(passStyle)}: ${obj}`)
++    (reject &&
++      reject`Expected ${q(expectedPassStyle)}, not ${q(passStyle)}: ${obj}`)
+   );
+ };
+-harden(checkPassStyle);
++harden(confirmPassStyle);
+ 
+-const makeCheckTagRecord = checkProto => {
++const makeConfirmTagRecord = confirmProto => {
+   /**
+    * @param {import('./types.js').PassStyled<any, any>} tagRecord
+    * @param {PassStyle} expectedPassStyle
+-   * @param {Checker} [check]
++   * @param {Rejector} reject
+    * @returns {boolean}
+    */
+-  const checkTagRecord = (tagRecord, expectedPassStyle, check) => {
++  const confirmTagRecord = (tagRecord, expectedPassStyle, reject) => {
+     return (
+       (!isPrimitive(tagRecord) ||
+-        (!!check &&
+-          CX(check)`A non-object cannot be a tagRecord: ${tagRecord}`)) &&
++        (reject && reject`A non-object cannot be a tagRecord: ${tagRecord}`)) &&
+       (isFrozen(tagRecord) ||
+-        (!!check && CX(check)`A tagRecord must be frozen: ${tagRecord}`)) &&
++        (reject && reject`A tagRecord must be frozen: ${tagRecord}`)) &&
+       (!isArray(tagRecord) ||
+-        (!!check && CX(check)`An array cannot be a tagRecord: ${tagRecord}`)) &&
+-      checkPassStyle(
++        (reject && reject`An array cannot be a tagRecord: ${tagRecord}`)) &&
++      confirmPassStyle(
+         tagRecord,
+-        getOwnDataDescriptor(tagRecord, PASS_STYLE, false, check).value,
++        confirmOwnDataDescriptor(tagRecord, PASS_STYLE, false, reject)?.value,
+         expectedPassStyle,
+-        check,
++        reject,
+       ) &&
+-      (typeof getOwnDataDescriptor(tagRecord, Symbol.toStringTag, false, check)
+-        .value === 'string' ||
+-        (!!check &&
+-          CX(
+-            check,
+-          )`A [Symbol.toStringTag]-named property must be a string: ${tagRecord}`)) &&
+-      checkProto(tagRecord, getPrototypeOf(tagRecord), check)
++      (typeof confirmOwnDataDescriptor(
++        tagRecord,
++        Symbol.toStringTag,
++        false,
++        reject,
++      )?.value === 'string' ||
++        (reject &&
++          reject`A [Symbol.toStringTag]-named property must be a string: ${tagRecord}`)) &&
++      confirmProto(tagRecord, getPrototypeOf(tagRecord), reject)
+     );
+   };
+-  return harden(checkTagRecord);
++  return harden(confirmTagRecord);
+ };
+ 
+-export const checkTagRecord = makeCheckTagRecord(
+-  (val, proto, check) =>
++export const confirmTagRecord = makeConfirmTagRecord(
++  (val, proto, reject) =>
+     proto === objectPrototype ||
+-    (!!check &&
+-      check(false, X`A tagRecord must inherit from Object.prototype: ${val}`)),
++    (reject && reject`A tagRecord must inherit from Object.prototype: ${val}`),
+ );
+-harden(checkTagRecord);
++harden(confirmTagRecord);
+ 
+-export const checkFunctionTagRecord = makeCheckTagRecord(
+-  (val, proto, check) =>
++export const confirmFunctionTagRecord = makeConfirmTagRecord(
++  (val, proto, reject) =>
+     proto === functionPrototype ||
+     (proto !== null && getPrototypeOf(proto) === functionPrototype) ||
+-    (!!check &&
+-      check(
+-        false,
+-        X`For functions, a tagRecord must inherit from Function.prototype: ${val}`,
+-      )),
++    (reject &&
++      reject`For functions, a tagRecord must inherit from Function.prototype: ${val}`),
+ );
+-harden(checkFunctionTagRecord);
++harden(confirmFunctionTagRecord);
+diff --git a/src/passStyleOf.d.ts.map b/src/passStyleOf.d.ts.map
+index b831d3b6dcc2e604400212b711a0350a3d2b0778..0e0428c2feb6243455ffcea541bdc7f3f8889e09 100644
+--- a/src/passStyleOf.d.ts.map
++++ b/src/passStyleOf.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"passStyleOf.d.ts","sourceRoot":"","sources":["passStyleOf.js"],"names":[],"mappings":"AAyNA,uDAA0E;AAE1E;;;;;;;;;;;;;;GAcG;AACH,0BAFU,WAAW,CAWhB;AAEE,+CAEN;AAmBM,qCAHI,GAAG,GACD,QAAQ,IAAI,QAAQ,CAUhC;AAwBM,qCAHI,KAAK,GACH,KAAK,CAkCjB;AA0BM,sCAHI,OAAO,GACL,SAAS,KAAK,EAAE,KAAK,CAAC,CAgDlC;iCAjX8B,YAAY;8BAFoB,YAAY"}
+\ No newline at end of file
++{"version":3,"file":"passStyleOf.d.ts","sourceRoot":"","sources":["passStyleOf.js"],"names":[],"mappings":"AA2NA,uDAA0E;AAE1E;;;;;;;;;;;;;;GAcG;AACH,0BAFU,WAAW,CAWhB;AAEE,+CAEN;AAmBM,qCAHI,GAAG,GACD,QAAQ,IAAI,QAAQ,CAUhC;AAwBM,qCAHI,KAAK,GACH,KAAK,CAkCjB;AA0BM,sCAHI,OAAO,GACL,SAAS,KAAK,EAAE,KAAK,CAAC,CAgDlC;iCAjX8B,YAAY;8BAFoB,YAAY"}
+\ No newline at end of file
+diff --git a/src/passStyleOf.js b/src/passStyleOf.js
+index 5e9552a22c4a491c624fcefc5f1f7a8f6c33233e..bae5e85711c3b172ccec679e6c156842b1484041 100644
+--- a/src/passStyleOf.js
++++ b/src/passStyleOf.js
+@@ -3,13 +3,15 @@
+ /// <reference types="ses"/>
+ 
+ import { isPromise } from '@endo/promise-kit';
+-import { X, Fail, q, annotateError, makeError } from '@endo/errors';
+ import {
+-  isPrimitive,
+-  isTypedArray,
+-  PASS_STYLE,
+-  assertChecker,
+-} from './passStyle-helpers.js';
++  X,
++  Fail,
++  q,
++  annotateError,
++  makeError,
++  hideAndHardenFunction,
++} from '@endo/errors';
++import { isPrimitive, isTypedArray, PASS_STYLE } from './passStyle-helpers.js';
+ 
+ import { CopyArrayHelper } from './copyArray.js';
+ import { ByteArrayHelper } from './byteArray.js';
+@@ -17,8 +19,8 @@ import { CopyRecordHelper } from './copyRecord.js';
+ import { TaggedHelper } from './tagged.js';
+ import {
+   ErrorHelper,
+-  checkRecursivelyPassableErrorPropertyDesc,
+-  checkRecursivelyPassableError,
++  confirmRecursivelyPassableErrorPropertyDesc,
++  confirmRecursivelyPassableError,
+   getErrorConstructor,
+   isErrorLike,
+ } from './error.js';
+@@ -69,7 +71,7 @@ const makeHelperTable = passStyleHelpers => {
+ };
+ 
+ /**
+- * The `assertRestValid` assumes that the `canBeValid` check has already passed.
++ * The `assertRestValid` assumes that the `confirmCanBeValid` check has already passed.
+  * Contexts where we cannot assume that should call `assertValid` instead,
+  * which checks both conditions in the right order.
+  *
+@@ -79,7 +81,7 @@ const makeHelperTable = passStyleHelpers => {
+  * @returns {void}
+  */
+ const assertValid = (helper, candidate, passStyleOfRecur) => {
+-  helper.canBeValid(candidate, assertChecker);
++  helper.confirmCanBeValid(candidate, Fail);
+   helper.assertRestValid(candidate, passStyleOfRecur);
+ };
+ 
+@@ -188,7 +190,7 @@ const makePassStyleOf = passStyleHelpers => {
+             return /** @type {PassStyle} */ (passStyleTag);
+           }
+           for (const helper of passStyleHelpers) {
+-            if (helper.canBeValid(inner)) {
++            if (helper.confirmCanBeValid(inner, false)) {
+               helper.assertRestValid(inner, passStyleOfRecur);
+               return helper.styleName;
+             }
+@@ -246,7 +248,7 @@ export const passStyleOf =
+ export const assertPassable = val => {
+   passStyleOf(val); // throws if val is not a passable
+ };
+-harden(assertPassable);
++hideAndHardenFunction(assertPassable);
+ 
+ /**
+  * Is `specimen` Passable? This returns true iff `passStyleOf(specimen)`
+@@ -273,7 +275,7 @@ export const isPassable = specimen => {
+     return false;
+   }
+ };
+-harden(isPassable);
++hideAndHardenFunction(isPassable);
+ 
+ /**
+  * @param {string} name
+@@ -281,7 +283,7 @@ harden(isPassable);
+  * @returns {boolean}
+  */
+ const isPassableErrorPropertyDesc = (name, desc) =>
+-  checkRecursivelyPassableErrorPropertyDesc(name, desc, passStyleOf);
++  confirmRecursivelyPassableErrorPropertyDesc(name, desc, passStyleOf, false);
+ 
+ /**
+  * After hardening, if `err` is a passable error, return it.
+@@ -298,7 +300,7 @@ const isPassableErrorPropertyDesc = (name, desc) =>
+  */
+ export const toPassableError = err => {
+   harden(err);
+-  if (checkRecursivelyPassableError(err, passStyleOf)) {
++  if (confirmRecursivelyPassableError(err, passStyleOf, false)) {
+     return err;
+   }
+   const { name, message } = err;
+diff --git a/src/remotable.d.ts.map b/src/remotable.d.ts.map
+index 0f2da600d449593abc3d6030abe227a9b250c33d..8c84687193b7e61b704ae235e5749829f60e33ad 100644
+--- a/src/remotable.d.ts.map
++++ b/src/remotable.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"remotable.d.ts","sourceRoot":"","sources":["remotable.js"],"names":[],"mappings":"AAkCO,kCAHI,GAAG,GACD,IAAI,IAAI,gBAAgB,CAGgB;AA0B9C,wCAJyC,CAAC,SAAnC,MAAM,CAAC,MAAM,EAAE,gBAAgB,CAAE,mBACpC,CAAC,GACC,mBAAmB,EAAE,CAGD;AA6C1B,mCAFI,aAAa,WAE4C;AA6GpE;;;;;;;;GAQG;AACH,6BALU;IACT,CAAG,CAAC,SAAS,MAAM,EAAE,GAAG,EAAE,WAAW,GAAG,EAAE,CAAC,CAAC,GAAG,CAAC,CAAC;IACjD,CAAG,GAAG,EAAE,GAAG,GAAG,aAAa,GAAG,SAAS,CAAC;CACrC,CAaF;AAGF;;;GAGG;AACH,8BAFU,eAAe,CAgFtB;yCAlT4C,YAAY;mCACf,YAAY;gCAAZ,YAAY;qCACtB,qBAAqB"}
+\ No newline at end of file
++{"version":3,"file":"remotable.d.ts","sourceRoot":"","sources":["remotable.js"],"names":[],"mappings":"AA+BO,kCAHI,GAAG,GACD,IAAI,IAAI,gBAAgB,CAGgB;AA0B9C,wCAJyC,CAAC,SAAnC,MAAM,CAAC,MAAM,EAAE,gBAAgB,CAAE,mBACpC,CAAC,GACC,mBAAmB,EAAE,CAGD;AA2C1B,mCAFI,aAAa,WAEqC;AAwG7D;;;;;;;;GAQG;AACH,6BALU;IACT,CAAG,CAAC,SAAS,MAAM,EAAE,GAAG,EAAE,WAAW,GAAG,EAAE,CAAC,CAAC,GAAG,CAAC,CAAC;IACjD,CAAG,GAAG,EAAE,GAAG,GAAG,aAAa,GAAG,SAAS,CAAC;CACrC,CAaF;AAGF;;;GAGG;AACH,8BAFU,eAAe,CA0EtB;yCAlS+E,YAAY;mCAAZ,YAAY;gCAAZ,YAAY;qCAD5D,qBAAqB"}
+\ No newline at end of file
+diff --git a/src/remotable.js b/src/remotable.js
+index 586597930e1f9ce207baaa3ae3ff784cdeba1324..ed02b8fe56aa7cb4539cb180134970e62c7fee85 100644
+--- a/src/remotable.js
++++ b/src/remotable.js
+@@ -1,22 +1,19 @@
+ /// <reference types="ses"/>
+ 
+-import { Fail, q } from '@endo/errors';
++import { Fail, q, hideAndHardenFunction } from '@endo/errors';
+ import { getMethodNames } from '@endo/eventual-send/utils.js';
+ import {
+-  assertChecker,
+   PASS_STYLE,
+-  checkTagRecord,
+-  checkFunctionTagRecord,
++  confirmTagRecord,
++  confirmFunctionTagRecord,
+   isPrimitive,
+   getTag,
+-  CX,
+ } from './passStyle-helpers.js';
+ 
+ /**
+- * @import {Checker, RemotableMethodName} from './types.js'
+- * @import {InterfaceSpec, PassStyled} from './types.js'
+- * @import {PassStyleHelper} from './internal-types.js'
+- * @import {RemotableObject as Remotable} from './types.js'
++ * @import {Rejector} from '@endo/errors/rejector.js';
++ * @import {PassStyleHelper} from './internal-types.js';
++ * @import {InterfaceSpec, PassStyled, RemotableObject, RemotableMethodName} from './types.js';
+  */
+ 
+ /**
+@@ -75,21 +72,19 @@ const {
+ 
+ /**
+  * @param {InterfaceSpec} iface
+- * @param {Checker} [check]
++ * @param {Rejector} reject
+  */
+-const checkIface = (iface, check) => {
++const confirmIface = (iface, reject) => {
+   return (
+     // TODO other possible ifaces, once we have third party veracity
+     (typeof iface === 'string' ||
+-      (!!check &&
+-        CX(
+-          check,
+-        )`For now, interface ${iface} must be a string; unimplemented`)) &&
++      (reject &&
++        reject`For now, interface ${iface} must be a string; unimplemented`)) &&
+     (iface === 'Remotable' ||
+       iface.startsWith('Alleged: ') ||
+       iface.startsWith('DebugName: ') ||
+-      (!!check &&
+-        CX(check)`For now, iface ${q(
++      (reject &&
++        reject`For now, iface ${q(
+           iface,
+         )} must be "Remotable" or begin with "Alleged: " or "DebugName: "; unimplemented`))
+   );
+@@ -105,15 +100,15 @@ const checkIface = (iface, check) => {
+  *
+  * @param {InterfaceSpec} iface
+  */
+-export const assertIface = iface => checkIface(iface, assertChecker);
+-harden(assertIface);
++export const assertIface = iface => confirmIface(iface, Fail);
++hideAndHardenFunction(assertIface);
+ 
+ /**
+  * @param {object | Function} original
+- * @param {Checker} [check]
++ * @param {Rejector} reject
+  * @returns {boolean}
+  */
+-const checkRemotableProtoOf = (original, check) => {
++const confirmRemotableProtoOf = (original, reject) => {
+   !isPrimitive(original) ||
+     Fail`Remotables must be objects or functions: ${original}`;
+ 
+@@ -138,8 +133,7 @@ const checkRemotableProtoOf = (original, check) => {
+     proto === Function.prototype
+   ) {
+     return (
+-      !!check &&
+-      CX(check)`Remotables must be explicitly declared: ${q(original)}`
++      reject && reject`Remotables must be explicitly declared: ${q(original)}`
+     );
+   }
+ 
+@@ -147,13 +141,13 @@ const checkRemotableProtoOf = (original, check) => {
+     const protoProto = getPrototypeOf(proto);
+     if (protoProto !== objectPrototype && protoProto !== null) {
+       // eslint-disable-next-line no-use-before-define
+-      return checkRemotable(proto, check);
++      return confirmRemotable(proto, reject);
+     }
+-    if (!checkTagRecord(proto, 'remotable', check)) {
++    if (!confirmTagRecord(proto, 'remotable', reject)) {
+       return false;
+     }
+   } else if (typeof original === 'function') {
+-    if (!checkFunctionTagRecord(proto, 'remotable', check)) {
++    if (!confirmFunctionTagRecord(proto, 'remotable', reject)) {
+       return false;
+     }
+   }
+@@ -162,7 +156,7 @@ const checkRemotableProtoOf = (original, check) => {
+   const passStyleKey = /** @type {unknown} */ (PASS_STYLE);
+   const tagKey = /** @type {unknown} */ (Symbol.toStringTag);
+   const {
+-    // checkTagRecord already verified PASS_STYLE and Symbol.toStringTag own data properties.
++    // confirmTagRecord already verified PASS_STYLE and Symbol.toStringTag own data properties.
+     [/** @type {string} */ (passStyleKey)]: _passStyleDesc,
+     [/** @type {string} */ (tagKey)]: { value: iface },
+     ...restDescs
+@@ -170,11 +164,9 @@ const checkRemotableProtoOf = (original, check) => {
+ 
+   return (
+     (ownKeys(restDescs).length === 0 ||
+-      (!!check &&
+-        CX(
+-          check,
+-        )`Unexpected properties on Remotable Proto ${ownKeys(restDescs)}`)) &&
+-    checkIface(iface, check)
++      (reject &&
++        reject`Unexpected properties on Remotable Proto ${ownKeys(restDescs)}`)) &&
++    confirmIface(iface, reject)
+   );
+ };
+ 
+@@ -185,29 +177,27 @@ const checkRemotableProtoOf = (original, check) => {
+  * We don't remember rejections because they are possible to correct
+  * with e.g. `harden`.
+  *
+- * @type {WeakSet<Remotable>}
++ * @type {WeakSet<RemotableObject>}
+  */
+ const confirmedRemotables = new WeakSet();
+ 
+ /**
+  * @param {any} val
+- * @param {Checker} [check]
+- * @returns {val is Remotable}
++ * @param {Rejector} reject
++ * @returns {val is RemotableObject}
+  */
+-const checkRemotable = (val, check) => {
++const confirmRemotable = (val, reject) => {
+   if (confirmedRemotables.has(val)) {
+     return true;
+   }
+   if (!isFrozen(val)) {
+-    return (
+-      !!check && CX(check)`cannot serialize non-frozen objects like ${val}`
+-    );
++    return reject && reject`cannot serialize non-frozen objects like ${val}`;
+   }
+   // eslint-disable-next-line no-use-before-define
+-  if (!RemotableHelper.canBeValid(val, check)) {
++  if (!RemotableHelper.confirmCanBeValid(val, reject)) {
+     return false;
+   }
+-  const result = checkRemotableProtoOf(val, check);
++  const result = confirmRemotableProtoOf(val, reject);
+   if (result) {
+     confirmedRemotables.add(val);
+   }
+@@ -227,7 +217,7 @@ export const getInterfaceOf = val => {
+   if (
+     isPrimitive(val) ||
+     val[PASS_STYLE] !== 'remotable' ||
+-    !checkRemotable(val)
++    !confirmRemotable(val, false)
+   ) {
+     // @ts-expect-error narrowed
+     return undefined;
+@@ -244,14 +234,13 @@ harden(getInterfaceOf);
+ export const RemotableHelper = harden({
+   styleName: 'remotable',
+ 
+-  canBeValid: (candidate, check = undefined) => {
++  confirmCanBeValid: (candidate, reject) => {
+     const validType =
+       (!isPrimitive(candidate) ||
+-        (!!check &&
+-          CX(check)`cannot serialize non-objects as Remotable ${candidate}`)) &&
++        (reject &&
++          reject`cannot serialize non-objects as Remotable ${candidate}`)) &&
+       (!isArray(candidate) ||
+-        (!!check &&
+-          CX(check)`cannot serialize arrays as Remotable ${candidate}`));
++        (reject && reject`cannot serialize arrays as Remotable ${candidate}`));
+     if (!validType) {
+       return false;
+     }
+@@ -264,19 +253,20 @@ export const RemotableHelper = harden({
+         return (
+           // Typecast needed due to https://github.com/microsoft/TypeScript/issues/1863
+           (hasOwn(descs[/** @type {string} */ (key)], 'value') ||
+-            (!!check &&
+-              CX(check)`cannot serialize Remotables with accessors like ${q(
++            (reject &&
++              reject`cannot serialize Remotables with accessors like ${q(
+                 String(key),
+               )} in ${candidate}`)) &&
+-          ((key === Symbol.toStringTag && checkIface(candidate[key], check)) ||
++          ((key === Symbol.toStringTag &&
++            confirmIface(candidate[key], reject)) ||
+             ((canBeMethod(candidate[key]) ||
+-              (!!check &&
+-                CX(check)`cannot serialize Remotables with non-methods like ${q(
++              (reject &&
++                reject`cannot serialize Remotables with non-methods like ${q(
+                   String(key),
+                 )} in ${candidate}`)) &&
+               (key !== PASS_STYLE ||
+-                (!!check &&
+-                  CX(check)`A pass-by-remote cannot shadow ${q(PASS_STYLE)}`))))
++                (reject &&
++                  reject`A pass-by-remote cannot shadow ${q(PASS_STYLE)}`))))
+         );
+       });
+     } else if (typeof candidate === 'function') {
+@@ -292,31 +282,25 @@ export const RemotableHelper = harden({
+       const restKeys = ownKeys(restDescs);
+       return (
+         ((nameDesc && typeof nameDesc.value === 'string') ||
+-          (!!check &&
+-            CX(check)`Far function name must be a string, in ${candidate}`)) &&
++          (reject &&
++            reject`Far function name must be a string, in ${candidate}`)) &&
+         ((lengthDesc && typeof lengthDesc.value === 'number') ||
+-          (!!check &&
+-            CX(
+-              check,
+-            )`Far function length must be a number, in ${candidate}`)) &&
++          (reject &&
++            reject`Far function length must be a number, in ${candidate}`)) &&
+         (toStringTagDesc === undefined ||
+           ((typeof toStringTagDesc.value === 'string' ||
+-            (!!check &&
+-              CX(
+-                check,
+-              )`Far function @@toStringTag must be a string, in ${candidate}`)) &&
+-            checkIface(toStringTagDesc.value, check))) &&
++            (reject &&
++              reject`Far function @@toStringTag must be a string, in ${candidate}`)) &&
++            confirmIface(toStringTagDesc.value, reject))) &&
+         (restKeys.length === 0 ||
+-          (!!check &&
+-            CX(
+-              check,
+-            )`Far functions unexpected properties besides .name and .length ${restKeys}`))
++          (reject &&
++            reject`Far functions unexpected properties besides .name and .length ${restKeys}`))
+       );
+     }
+-    return !!check && CX(check)`unrecognized typeof ${candidate}`;
++    return reject && reject`unrecognized typeof ${candidate}`;
+   },
+ 
+-  assertRestValid: candidate => checkRemotable(candidate, assertChecker),
++  assertRestValid: candidate => confirmRemotable(candidate, Fail),
+ 
+   every: (_passable, _fn) => true,
+ });
+diff --git a/src/safe-promise.d.ts.map b/src/safe-promise.d.ts.map
+index 3b0036ae16baf8ecf92b90c18c8d95338b301562..da040aeb78aba15cbf02d6b4f0b7e9466a6a51e8 100644
+--- a/src/safe-promise.d.ts.map
++++ b/src/safe-promise.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"safe-promise.d.ts","sourceRoot":"","sources":["safe-promise.js"],"names":[],"mappings":"AAuJO,kCAHI,OAAO,GACL,EAAE,gBAAW,CAEqC;AAGxD,+DAAmE"}
+\ No newline at end of file
++{"version":3,"file":"safe-promise.d.ts","sourceRoot":"","sources":["safe-promise.js"],"names":[],"mappings":"AA0JO,kCAHI,OAAO,GACL,EAAE,gBAAW,CAEsC;AAGzD,+DAA4D"}
+\ No newline at end of file
+diff --git a/src/safe-promise.js b/src/safe-promise.js
+index 071d6b6fd46b4a45293e9db8ef8a52e578c325f3..89dbe64ba2c1bd578242c8b209373c48195bf85d 100644
+--- a/src/safe-promise.js
++++ b/src/safe-promise.js
+@@ -1,10 +1,11 @@
+ /// <reference types="ses"/>
+ 
+ import { isPromise } from '@endo/promise-kit';
+-import { q } from '@endo/errors';
+-import { assertChecker, CX } from './passStyle-helpers.js';
++import { Fail, q, hideAndHardenFunction } from '@endo/errors';
+ 
+-/** @import {Checker} from './types.js' */
++/**
++ * @import {Rejector} from '@endo/errors/rejector.js';
++ */
+ 
+ const { isFrozen, getPrototypeOf, getOwnPropertyDescriptor, hasOwn } = Object;
+ const { ownKeys } = Reflect;
+@@ -12,10 +13,10 @@ const { toStringTag } = Symbol;
+ 
+ /**
+  * @param {Promise} pr The value to examine
+- * @param {Checker} check
++ * @param {Rejector} reject
+  * @returns {pr is Promise} Whether it is a safe promise
+  */
+-const checkPromiseOwnKeys = (pr, check) => {
++const confirmPromiseOwnKeys = (pr, reject) => {
+   const keys = ownKeys(pr);
+ 
+   if (keys.length === 0) {
+@@ -36,9 +37,10 @@ const checkPromiseOwnKeys = (pr, check) => {
+   );
+ 
+   if (unknownKeys.length !== 0) {
+-    return CX(
+-      check,
+-    )`${pr} - Must not have any own properties: ${q(unknownKeys)}`;
++    return (
++      reject &&
++      reject`${pr} - Must not have any own properties: ${q(unknownKeys)}`
++    );
+   }
+ 
+   /**
+@@ -70,15 +72,14 @@ const checkPromiseOwnKeys = (pr, check) => {
+       assert(tagDesc !== undefined);
+       return (
+         (hasOwn(tagDesc, 'value') ||
+-          CX(
+-            check,
+-          )`Own @@toStringTag must be a data property, not an accessor: ${q(tagDesc)}`) &&
++          (reject &&
++            reject`Own @@toStringTag must be a data property, not an accessor: ${q(tagDesc)}`)) &&
+         (typeof tagDesc.value === 'string' ||
+-          CX(
+-            check,
+-          )`Own @@toStringTag value must be a string: ${q(tagDesc.value)}`) &&
++          (reject &&
++            reject`Own @@toStringTag value must be a string: ${q(tagDesc.value)}`)) &&
+         (!tagDesc.enumerable ||
+-          CX(check)`Own @@toStringTag must not be enumerable: ${q(tagDesc)}`)
++          (reject &&
++            reject`Own @@toStringTag must not be enumerable: ${q(tagDesc)}`))
+       );
+     }
+     const val = pr[key];
+@@ -104,11 +105,12 @@ const checkPromiseOwnKeys = (pr, check) => {
+         return true;
+       }
+     }
+-    return CX(
+-      check,
+-    )`Unexpected Node async_hooks additions to promise: ${pr}.${q(
+-      String(key),
+-    )} is ${val}`;
++    return (
++      reject &&
++      reject`Unexpected Node async_hooks additions to promise: ${pr}.${q(
++        String(key),
++      )} is ${val}`
++    );
+   };
+ 
+   return keys.every(checkSafeOwnKey);
+@@ -127,21 +129,22 @@ const checkPromiseOwnKeys = (pr, check) => {
+  * use it here as well.
+  *
+  * @param {unknown} pr The value to examine
+- * @param {Checker} check
++ * @param {Rejector} reject
+  * @returns {pr is Promise} Whether it is a safe promise
+  */
+-const checkSafePromise = (pr, check) => {
++const confirmSafePromise = (pr, reject) => {
+   return (
+-    (isFrozen(pr) || CX(check)`${pr} - Must be frozen`) &&
+-    (isPromise(pr) || CX(check)`${pr} - Must be a promise`) &&
++    (isFrozen(pr) || (reject && reject`${pr} - Must be frozen`)) &&
++    (isPromise(pr) || (reject && reject`${pr} - Must be a promise`)) &&
+     (getPrototypeOf(pr) === Promise.prototype ||
+-      CX(check)`${pr} - Must inherit from Promise.prototype: ${q(
+-        getPrototypeOf(pr),
+-      )}`) &&
+-    checkPromiseOwnKeys(/** @type {Promise} */ (pr), check)
++      (reject &&
++        reject`${pr} - Must inherit from Promise.prototype: ${q(
++          getPrototypeOf(pr),
++        )}`)) &&
++    confirmPromiseOwnKeys(/** @type {Promise} */ (pr), reject)
+   );
+ };
+-harden(checkSafePromise);
++harden(confirmSafePromise);
+ 
+ /**
+  * Determine if the argument is a Promise.
+@@ -149,7 +152,8 @@ harden(checkSafePromise);
+  * @param {unknown} pr The value to examine
+  * @returns {pr is Promise} Whether it is a promise
+  */
+-export const isSafePromise = pr => checkSafePromise(pr, x => x);
+-harden(isSafePromise);
++export const isSafePromise = pr => confirmSafePromise(pr, false);
++hideAndHardenFunction(isSafePromise);
+ 
+-export const assertSafePromise = pr => checkSafePromise(pr, assertChecker);
++export const assertSafePromise = pr => confirmSafePromise(pr, Fail);
++hideAndHardenFunction(assertSafePromise);
+diff --git a/src/string.js b/src/string.js
+index dad6b1cfefa5d1eb81071dc592ee7e8c598df65e..6d388b125632680d2660ecfbd59a3c9082a53eee 100644
+--- a/src/string.js
++++ b/src/string.js
+@@ -1,5 +1,5 @@
+ import { getEnvironmentOption } from '@endo/env-options';
+-import { Fail } from '@endo/errors';
++import { Fail, hideAndHardenFunction } from '@endo/errors';
+ 
+ // know about`isWellFormed`
+ const hasWellFormedStringMethod = !!String.prototype.isWellFormed;
+@@ -40,7 +40,7 @@ export const isWellFormedString = hasWellFormedStringMethod
+       }
+       return true;
+     };
+-harden(isWellFormedString);
++hideAndHardenFunction(isWellFormedString);
+ 
+ /**
+  * Returns normally when `isWellFormedString(str)` would return true.
+@@ -52,7 +52,7 @@ harden(isWellFormedString);
+ export const assertWellFormedString = str => {
+   isWellFormedString(str) || Fail`Expected well-formed unicode string: ${str}`;
+ };
+-harden(assertWellFormedString);
++hideAndHardenFunction(assertWellFormedString);
+ 
+ const ONLY_WELL_FORMED_STRINGS_PASSABLE =
+   getEnvironmentOption('ONLY_WELL_FORMED_STRINGS_PASSABLE', 'disabled', [
+@@ -80,4 +80,4 @@ export const assertPassableString = str => {
+   typeof str === 'string' || Fail`Expected string ${str}`;
+   !ONLY_WELL_FORMED_STRINGS_PASSABLE || assertWellFormedString(str);
+ };
+-harden(assertPassableString);
++hideAndHardenFunction(assertPassableString);
+diff --git a/src/symbol.js b/src/symbol.js
+index 9b42c67844d773118d09ef823941582053428ad8..fb5a0945c8e854abd7bb4b7580086cb10106fd88 100644
+--- a/src/symbol.js
++++ b/src/symbol.js
+@@ -1,4 +1,4 @@
+-import { Fail, q } from '@endo/errors';
++import { Fail, q, hideAndHardenFunction } from '@endo/errors';
+ 
+ const { ownKeys } = Reflect;
+ 
+@@ -38,7 +38,7 @@ harden(isPassableSymbol);
+ export const assertPassableSymbol = sym =>
+   isPassableSymbol(sym) ||
+   Fail`Only registered symbols or well-known symbols are passable: ${q(sym)}`;
+-harden(assertPassableSymbol);
++hideAndHardenFunction(assertPassableSymbol);
+ 
+ /**
+  * If `sym` is a passable symbol, return a string that uniquely identifies this
+diff --git a/src/tagged.d.ts.map b/src/tagged.d.ts.map
+index 1989319571ea99a51daca512faecd6d29b765015..1d49368bbc61e24d6c6b32128db86fb524ac0799 100644
+--- a/src/tagged.d.ts.map
++++ b/src/tagged.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"tagged.d.ts","sourceRoot":"","sources":["tagged.js"],"names":[],"mappings":"AAkBA;;;GAGG;AACH,2BAFU,eAAe,CA8BtB;qCAtC+B,qBAAqB"}
+\ No newline at end of file
++{"version":3,"file":"tagged.d.ts","sourceRoot":"","sources":["tagged.js"],"names":[],"mappings":"AAiBA;;;GAGG;AACH,2BAFU,eAAe,CA8BtB;qCAtC+B,qBAAqB"}
+\ No newline at end of file
+diff --git a/src/tagged.js b/src/tagged.js
+index 7abd9063851c2bafc1e08dd261c4d59db4f954e5..2bb11b29a1ff66b8db348eea161761ca0bd4d5a7 100644
+--- a/src/tagged.js
++++ b/src/tagged.js
+@@ -2,11 +2,10 @@
+ 
+ import { Fail } from '@endo/errors';
+ import {
+-  assertChecker,
+-  checkTagRecord,
++  confirmTagRecord,
+   PASS_STYLE,
+-  getOwnDataDescriptor,
+-  checkPassStyle,
++  confirmOwnDataDescriptor,
++  confirmPassStyle,
+ } from './passStyle-helpers.js';
+ 
+ /**
+@@ -23,17 +22,17 @@ const { getOwnPropertyDescriptors } = Object;
+ export const TaggedHelper = harden({
+   styleName: 'tagged',
+ 
+-  canBeValid: (candidate, check = undefined) =>
+-    checkPassStyle(candidate, candidate[PASS_STYLE], 'tagged', check),
++  confirmCanBeValid: (candidate, reject) =>
++    confirmPassStyle(candidate, candidate[PASS_STYLE], 'tagged', reject),
+ 
+   assertRestValid: (candidate, passStyleOfRecur) => {
+-    checkTagRecord(candidate, 'tagged', assertChecker);
++    confirmTagRecord(candidate, 'tagged', Fail);
+ 
+     // Typecasts needed due to https://github.com/microsoft/TypeScript/issues/1863
+     const passStyleKey = /** @type {unknown} */ (PASS_STYLE);
+     const tagKey = /** @type {unknown} */ (Symbol.toStringTag);
+     const {
+-      // checkTagRecord already verified PASS_STYLE and Symbol.toStringTag own data properties.
++      // confirmTagRecord already verified PASS_STYLE and Symbol.toStringTag own data properties.
+       [/** @type {string} */ (passStyleKey)]: _passStyleDesc,
+       [/** @type {string} */ (tagKey)]: _labelDesc,
+       payload: _payloadDesc, // value checked by recursive walk at the end
+@@ -45,7 +44,7 @@ export const TaggedHelper = harden({
+     // Validate that the 'payload' property is own/data/enumerable
+     // and its associated value is recursively passable.
+     passStyleOfRecur(
+-      getOwnDataDescriptor(candidate, 'payload', true, assertChecker).value,
++      confirmOwnDataDescriptor(candidate, 'payload', true, Fail).value,
+     );
+   },
+ });
+diff --git a/src/typeGuards.d.ts.map b/src/typeGuards.d.ts.map
+index 9b38bfa55abb58d2cb17efa0d0a139cd58b5f2b5..ab658e0efd4b2d38e591719795c871a2e5ce4a03 100644
+--- a/src/typeGuards.d.ts.map
++++ b/src/typeGuards.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"typeGuards.d.ts","sourceRoot":"","sources":["typeGuards.js"],"names":[],"mappings":"AAgBO,iCAHI,GAAG,GACD,GAAG,IAAI,UAAU,GAAG,CAAC,CAEgC;AAU3D,iCAHI,QAAQ,GACN,GAAG,IAAI,SAAS,CAEqC;AAU3D,iCAHI,GAAG,GACD,MAAM,IAAI,WAAW,GAAG,CAAC,CAEgC;AAS/D,uCAHI,QAAQ,GACN,SAAS,IAAI,eAAe,CAEqC;AAQvE,qCAJI,GAAG,mBACH,MAAM,YAAC,GACL,QAAQ,GAAG,IAAI,UAAU,GAAG,CAAC,CAQzC;AAQM,qCAJI,QAAQ,mBACR,MAAM,YAAC,GACL,QAAQ,GAAG,IAAI,SAAS,CAQpC;AASM,0EAMN;AAQM,2CAJI,QAAQ,uBACR,MAAM,YAAC,GACL,QAAQ,SAAS,IAAI,eAAe,CAWhD;AA4CM,4BAHI,GAAG,GACD,GAAG,IAAI,IAAI,CAEiC;AAOlD,gCAHI,QAAQ,GACN,QAAQ,GAAG,IAAI,IAAI,CAI/B;oCAhFU,GAAG,oBACH,MAAM,YAAC,KACL,QAAQ,MAAM,IAAI,WAAW,GAAG,CAAC;+BA1E+C,YAAY;8BAAZ,YAAY;+BAAZ,YAAY;gCAAZ,YAAY;qCAAZ,YAAY;0BAAZ,YAAY"}
+\ No newline at end of file
++{"version":3,"file":"typeGuards.d.ts","sourceRoot":"","sources":["typeGuards.js"],"names":[],"mappings":"AAeO,iCAHI,GAAG,GACD,GAAG,IAAI,UAAU,GAAG,CAAC,CAEgC;AAU3D,iCAHI,QAAQ,GACN,GAAG,IAAI,SAAS,CAEqC;AAU3D,iCAHI,GAAG,GACD,MAAM,IAAI,WAAW,GAAG,CAAC,CAEgC;AAS/D,uCAHI,QAAQ,GACN,SAAS,IAAI,eAAe,CAEqC;AAQvE,qCAJI,GAAG,mBACH,MAAM,YAAC,GACL,QAAQ,GAAG,IAAI,UAAU,GAAG,CAAC,CAQzC;AAQM,qCAJI,QAAQ,mBACR,MAAM,YAAC,GACL,QAAQ,GAAG,IAAI,SAAS,CAQpC;AASM,0EAMN;AAQM,2CAJI,QAAQ,uBACR,MAAM,YAAC,GACL,QAAQ,SAAS,IAAI,eAAe,CAWhD;AAsCM,4BAHI,GAAG,GACD,GAAG,IAAI,IAAI,CAE4B;AAO7C,gCAHI,QAAQ,GACN,QAAQ,GAAG,IAAI,IAAI,CAI/B;oCA1EU,GAAG,oBACH,MAAM,YAAC,KACL,QAAQ,MAAM,IAAI,WAAW,GAAG,CAAC;+BA1EsC,YAAY;8BAAZ,YAAY;+BAAZ,YAAY;gCAAZ,YAAY;qCAAZ,YAAY;0BAAZ,YAAY"}
+\ No newline at end of file
+diff --git a/src/typeGuards.js b/src/typeGuards.js
+index 8a27bbcc7885848e1ccab702400b051b7b03fdda..cdd5ee08724220b265c57249db2d65d411d404a4 100644
+--- a/src/typeGuards.js
++++ b/src/typeGuards.js
+@@ -1,10 +1,9 @@
+-import { Fail, q, X } from '@endo/errors';
+-import { identChecker } from '@endo/common/ident-checker.js';
++import { Fail, q, hideAndHardenFunction } from '@endo/errors';
+ import { passStyleOf } from './passStyleOf.js';
+-import { assertChecker } from './passStyle-helpers.js';
+ 
+ /**
+- * @import {CopyArray, CopyRecord, Passable, RemotableObject, ByteArray, Checker, Atom} from './types.js'
++ * @import {Rejector} from '@endo/errors/rejector.js';
++ * @import {CopyArray, CopyRecord, Passable, RemotableObject, ByteArray, Atom} from './types.js'
+  */
+ 
+ /**
+@@ -15,7 +14,7 @@ import { assertChecker } from './passStyle-helpers.js';
+  * @returns {arr is CopyArray<any>}
+  */
+ export const isCopyArray = arr => passStyleOf(arr) === 'copyArray';
+-harden(isCopyArray);
++hideAndHardenFunction(isCopyArray);
+ 
+ /**
+  * Check whether the argument is a pass-by-copy binary data, AKA a "byteArray"
+@@ -25,7 +24,7 @@ harden(isCopyArray);
+  * @returns {arr is ByteArray}
+  */
+ export const isByteArray = arr => passStyleOf(arr) === 'byteArray';
+-harden(isByteArray);
++hideAndHardenFunction(isByteArray);
+ 
+ /**
+  * Check whether the argument is a pass-by-copy record, AKA a
+@@ -35,7 +34,7 @@ harden(isByteArray);
+  * @returns {record is CopyRecord<any>}
+  */
+ export const isRecord = record => passStyleOf(record) === 'copyRecord';
+-harden(isRecord);
++hideAndHardenFunction(isRecord);
+ 
+ /**
+  * Check whether the argument is a remotable.
+@@ -44,7 +43,7 @@ harden(isRecord);
+  * @returns {remotable is RemotableObject}
+  */
+ export const isRemotable = remotable => passStyleOf(remotable) === 'remotable';
+-harden(isRemotable);
++hideAndHardenFunction(isRemotable);
+ 
+ /**
+  * @param {any} arr
+@@ -58,7 +57,7 @@ export const assertCopyArray = (arr, optNameOfArray = 'Alleged array') => {
+       passStyle,
+     )}`;
+ };
+-harden(assertCopyArray);
++hideAndHardenFunction(assertCopyArray);
+ 
+ /**
+  * @param {Passable} arr
+@@ -72,7 +71,7 @@ export const assertByteArray = (arr, optNameOfArray = 'Alleged byteArray') => {
+       optNameOfArray,
+     )} ${arr} must be a pass-by-copy binary data, not ${q(passStyle)}`;
+ };
+-harden(assertByteArray);
++hideAndHardenFunction(assertByteArray);
+ 
+ /**
+  * @callback AssertRecord
+@@ -87,7 +86,7 @@ export const assertRecord = (record, optNameOfRecord = 'Alleged record') => {
+       passStyle,
+     )}`;
+ };
+-harden(assertRecord);
++hideAndHardenFunction(assertRecord);
+ 
+ /**
+  * @param {Passable} remotable
+@@ -104,22 +103,19 @@ export const assertRemotable = (
+       passStyle,
+     )}`;
+ };
+-harden(assertRemotable);
++hideAndHardenFunction(assertRemotable);
+ 
+ /**
+  * @param {any} val Not necessarily passable
+- * @param {Checker} check
++ * @param {Rejector} reject
+  * @returns {val is Atom}
+  */
+-const checkAtom = (val, check) => {
++const confirmAtom = (val, reject) => {
+   let passStyle;
+   try {
+     passStyle = passStyleOf(val);
+   } catch (err) {
+-    return (
+-      check !== identChecker &&
+-      check(false, X`Not even Passable: ${q(err)}: ${val}`)
+-    );
++    return reject && reject`Not even Passable: ${q(err)}: ${val}`;
+   }
+   switch (passStyle) {
+     case 'undefined':
+@@ -135,10 +131,7 @@ const checkAtom = (val, check) => {
+     }
+     default: {
+       // The other PassStyle cases
+-      return (
+-        check !== identChecker &&
+-        check(false, X`A ${q(passStyle)} cannot be an atom: ${val}`)
+-      );
++      return reject && reject`A ${q(passStyle)} cannot be an atom: ${val}`;
+     }
+   }
+ };
+@@ -147,14 +140,14 @@ const checkAtom = (val, check) => {
+  * @param {any} val
+  * @returns {val is Atom}
+  */
+-export const isAtom = val => checkAtom(val, identChecker);
+-harden(isAtom);
++export const isAtom = val => confirmAtom(val, false);
++hideAndHardenFunction(isAtom);
+ 
+ /**
+  * @param {Passable} val
+  * @returns {asserts val is Atom}
+  */
+ export const assertAtom = val => {
+-  checkAtom(val, assertChecker);
++  confirmAtom(val, Fail);
+ };
+-harden(assertAtom);
++hideAndHardenFunction(assertAtom);
+diff --git a/src/types.d.ts b/src/types.d.ts
+index 7c50263edc7fb2af8ddf84db83dc5fd0f97e775e..00183b18ba47ca0eacdbd429a4b59c06c6ec323a 100644
+--- a/src/types.d.ts
++++ b/src/types.d.ts
+@@ -1,3 +1,4 @@
++import type { RemotableBrand } from '@endo/eventual-send';
+ /* eslint-disable no-use-before-define */
+ import { PASS_STYLE } from './passStyle-helpers.js';
+ 
+@@ -78,7 +79,9 @@ export type PassByCopy = Atom | Error | CopyArray | CopyRecord | CopyTagged;
+ 
+ export type PassByRef =
+   | RemotableObject
++  | RemotableBrand<any, any>
+   | Promise<RemotableObject>
++  | Promise<RemotableBrand<any, any>>
+   | Promise<PassByCopy>;
+ 
+ /**
+@@ -164,6 +167,9 @@ export type PassStyleOf = {
+ export type PureData = Passable<never, never>;
+ 
+ /**
++ * @deprecated this type doesn't carry the type of the behavior for remote
++ * sends. You likely want to use {@link RemotableBrand} instead.
++ *
+  * An object marked as remotely accessible using the `Far` or `Remotable`
+  * functions, or a local presence representing such a remote object.
+  *
+@@ -188,7 +194,10 @@ export type RemotableMethodName = PropertyKey;
+ /**
+  * The authority-bearing leaves of a Passable's pass-by-copy superstructure.
+  */
+-export type PassableCap = Promise<any> | RemotableObject;
++export type PassableCap =
++  | Promise<any>
++  | RemotableObject
++  | RemotableBrand<any, any>;
+ 
+ /**
+  * A Passable sequence of Passable values.
+@@ -216,9 +225,7 @@ export type CopyRecord<T extends Passable = any> = Record<string, T>;
+ export type CopyTagged<
+   Tag extends string = string,
+   Payload extends Passable = any,
+-> = PassStyled<'tagged', Tag> & {
+-  payload: Payload;
+-};
++> = PassStyled<'tagged', Tag> & { payload: Payload };
+ 
+ /**
+  * This is an interface specification.
+@@ -229,22 +236,7 @@ export type CopyTagged<
+ export type InterfaceSpec = string;
+ 
+ /**
+- * Internal to a useful pattern for writing checking logic
+- * (a "checkFoo" function) that can be used to implement a predicate
+- * (an "isFoo" function) or a validator (an "assertFoo" function).
+- *
+- *  * A predicate ideally only returns `true` or `false` and rarely throws.
+- *  * A validator throws an informative diagnostic when the predicate
+- *    would have returned `false`, and simply returns `undefined` normally
+- *    when the predicate would have returned `true`.
+- *  * The internal checking function that they share is parameterized by a
+- *    `Checker` that determines how to proceed with a failure condition.
+- *    Predicates pass in an identity function as checker. Validators
+- *    pass in `assertChecker` which is a trivial wrapper around `assert`.
+- *
+- * See the various uses for good examples.
++ * Consider this export deprecated.
++ * Import `Checker` directly from `'@endo/common/ident-checker.js'` instead.
+  */
+-export type Checker = (
+-  cond: boolean,
+-  details?: import('ses').Details | undefined,
+-) => boolean;
++export type { Checker } from '@endo/common/ident-checker.js';
+diff --git a/src/types.test-d.ts b/src/types.test-d.ts
+index 5d420e165188e5955ced4b7800b14dad3a61343a..f6d52dc8614d9940d591c07d601b8f841914e064 100644
+--- a/src/types.test-d.ts
++++ b/src/types.test-d.ts
+@@ -3,7 +3,7 @@ import { expectAssignable, expectType, expectNotType } from 'tsd';
+ import { Far } from './make-far.js';
+ import { passStyleOf } from './passStyleOf.js';
+ import { makeTagged } from './makeTagged.js';
+-import type { CopyTagged, Passable, PassStyle } from './types.js';
++import type { Checker, CopyTagged, Passable, PassStyle } from './types.js';
+ import { PASS_STYLE } from './passStyle-helpers.js';
+ import { passableSymbolForName } from './symbol.js';
+ 
+@@ -57,3 +57,5 @@ expectPassable(copyTagged);
+ expectPassable(Promise.resolve(remotable));
+ expectPassable({ a: Promise.resolve(remotable) });
+ expectPassable({ a: Promise.resolve(fn) });
++
++expectAssignable<Checker>((cond: boolean, details: string) => cond);

@@ -48,7 +48,7 @@ harden(prepareSwingsetVowTools);
  * Reexport as prepareVowTools, since that's the thing that people find easiest
  * to reach.
  */
-export { prepareSwingsetVowTools as prepareVowTools };
+export const prepareVowTools = prepareSwingsetVowTools;
 
 /**
  * `vowTools` that are not durable, but are useful in non-durable clients that

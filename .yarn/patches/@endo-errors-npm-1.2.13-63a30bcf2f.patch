@@ -1,0 +1,256 @@
+diff --git a/index.d.ts b/index.d.ts
+index 640305532e65121acafe0ba187c77c4800b4bec7..40453714be2ffa6dbd15825bb83753f0db84cefd 100644
+--- a/index.d.ts
++++ b/index.d.ts
+@@ -1,13 +1,19 @@
++export const b: (text: string, spaces?: string | number) => import("ses").Stringable;
++export const X: (template: TemplateStringsArray | string[], ...args: any) => import("ses").DetailsToken;
++export const q: (value: any, space?: string | number) => import("ses").Stringable;
++export const annotateError: (error: Error, details: Details) => void;
++export const redacted: (template: TemplateStringsArray | string[], ...args: any) => import("ses").DetailsToken;
++export const throwRedacted: (template: TemplateStringsArray | string[], ...args: any) => never;
++export function hideAndHardenFunction<T extends Function = Function>(func: T): T;
+ /** @type {import("ses").AssertionFunctions } */
+ export const assert: import("ses").AssertionFunctions;
+-declare const bareOrQuote: (payload: any, spaces?: string | number) => import("ses").StringablePayload;
++export const bare: (text: string, spaces?: string | number) => import("ses").Stringable;
+ export const makeError: (details?: Details, errConstructor?: GenericErrorConstructor, options?: AssertMakeErrorOptions) => Error;
++export const details: (template: TemplateStringsArray | string[], ...args: any) => import("ses").DetailsToken;
+ export const note: (error: Error, details: Details) => void;
+-export const quote: (payload: any, spaces?: string | number) => import("ses").StringablePayload;
+-export const redacted: (template: TemplateStringsArray | string[], ...args: any) => import("ses").DetailsToken;
+-export const throwRedacted: (template: TemplateStringsArray | string[], ...args: any) => never;
++export const quote: (value: any, space?: string | number) => import("ses").Stringable;
++export const Fail: (template: TemplateStringsArray | string[], ...args: any) => never;
+ import type { Details } from 'ses';
+ import type { GenericErrorConstructor } from 'ses';
+ import type { AssertMakeErrorOptions } from 'ses';
+-export { bareOrQuote as bare, bareOrQuote as b, quote as q, redacted as X, throwRedacted as Fail, note as annotateError };
+ //# sourceMappingURL=index.d.ts.map
+\ No newline at end of file
+diff --git a/index.d.ts.map b/index.d.ts.map
+index 2b331c5feaf0b71a53464652decc896e3768bdaa..46528af2a0065c7e34da760c10aab3acedc7b092 100644
+--- a/index.d.ts.map
++++ b/index.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["index.js"],"names":[],"mappings":"AA0DA,gDAAgD;AAEhD,qBAFW,OAAO,KAAK,EAAE,kBAAkB,CAGe;AAM1D,uGAAkC;;;;;;6BAG0C,KAAK;6CAAL,KAAK;4CAAL,KAAK"}
+\ No newline at end of file
++{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["index.js"],"names":[],"mappings":"AA6FA,qFAAsB;AACtB,wGAAyB;AACzB,kFAAuB;AAGvB,qEAAkC;AAClC,+GAAgC;AAChC,+FAAkC;AAqB3B,sCAJkB,CAAC,SAAb,QAAU,mBACZ,CAAC,GACC,CAAC,CAUb;AAhED,gDAAgD;AAEhD,qBAFW,OAAO,KAAK,EAAE,kBAAkB,CAGe;AAM1D,wFAAiC;AACjC,iIAAiD;;;;;6BAG2B,KAAK;6CAAL,KAAK;4CAAL,KAAK"}
+\ No newline at end of file
+diff --git a/index.js b/index.js
+index 83271b2c625543b815878c4fb2880f64c01f9cf0..e81b3b8294734716a54bca3e5af1c4a78f6902c5 100644
+--- a/index.js
++++ b/index.js
+@@ -11,6 +11,8 @@
+ // The assertions re-exported here are defined in
+ // https://github.com/endojs/endo/blob/HEAD/packages/ses/src/error/assert.js
+ 
++const { defineProperty } = Object;
++
+ const globalAssert = globalThis.assert;
+ 
+ if (globalAssert === undefined) {
+@@ -19,9 +21,8 @@ if (globalAssert === undefined) {
+   );
+ }
+ 
+-const missing = /** @type {const} */ ([
++const missing = [
+   'typeof',
+-  'error',
+   'fail',
+   'equal',
+   'string',
+@@ -29,12 +30,17 @@ const missing = /** @type {const} */ ([
+   'details',
+   'Fail',
+   'quote',
+-  // As of 2024-02, the Agoric chain's bootstrap vat runs with a version of SES that
+-  // predates addition of the 'bare' method, so we must tolerate its absence and fall
+-  // back to quote behavior in that environment (see below).
++  // As of 2025-07, the Agoric chain's bootstrap vat runs with a version of SES
++  // that predates addition of the 'bare' and 'makeError' methods, so we must
++  // tolerate their absence and fall back to other behavior in that environment
++  // (see below).
+   // 'bare',
++  // 'makeError',
+   'makeAssert',
+-]).filter(name => globalAssert[name] === undefined);
++].filter(name => globalAssert[name] === undefined);
++if (globalAssert.makeError === undefined && globalAssert.error === undefined) {
++  missing.push('makeError');
++}
+ if (missing.length > 0) {
+   throw Error(
+     `Cannot initialize @endo/errors, missing globalThis.assert methods ${missing.join(
+@@ -47,11 +53,12 @@ if (missing.length > 0) {
+ // This module splits them apart
+ // and also updates the names of the utility functions.
+ const {
+-  bare,
+-  details: redacted,
+-  error: makeError,
+-  Fail: throwRedacted,
++  bare: globalBare,
++  details,
++  error: globalError,
++  Fail,
+   makeAssert: _omittedMakeAssert,
++  makeError: globalMakeError,
+   note,
+   quote,
+   ...assertions
+@@ -62,10 +69,11 @@ const assert = (value, optDetails, errContructor, options) =>
+   globalAssert(value, optDetails, errContructor, options);
+ Object.assign(assert, assertions);
+ 
+-// As of 2024-02, the Agoric chain's bootstrap vat runs with a version of SES
+-// that predates the addition of the 'bare' method, so we must fall back to
+-// quote behavior for that environment.
+-const bareOrQuote = bare || quote;
++// As of 2025-07, the Agoric chain's bootstrap vat runs with a version of SES
++// that predates the addition of the 'bare' and 'makeError' methods, so we must
++// fall back to 'quote' for the former and 'error' for the latter.
++const bare = globalBare || quote;
++const makeError = globalMakeError || globalError;
+ 
+ // XXX module exports fail if these aren't in scope
+ /** @import {AssertMakeErrorOptions, Details, GenericErrorConstructor} from 'ses' */
+@@ -73,17 +81,50 @@ const bareOrQuote = bare || quote;
+ export {
+   // assertions
+   assert,
+-  // related utilities that aren't assertions
+-  bareOrQuote as bare,
++  // non-assertion utilities that appear as properties of `assert`
++  bare,
+   makeError,
++  details,
+   note,
+   quote,
+-  redacted,
+-  throwRedacted,
+-  // conventional abbreviations and aliases
+-  bareOrQuote as b,
+-  quote as q,
+-  redacted as X,
+-  throwRedacted as Fail,
+-  note as annotateError,
++  Fail,
++};
++
++// conventional abbreviations
++export const b = bare;
++export const X = details;
++export const q = quote;
++
++// other aliases
++export const annotateError = note;
++export const redacted = details;
++export const throwRedacted = Fail;
++
++/**
++ * `stackFiltering: 'omit-frames'` and `stackFiltering: 'concise'` omit frames
++ * not only of "obvious" infrastructure functions, but also of functions
++ * whose `name` property begins with `'__HIDE_'`. (Note: currently
++ * these options only work on v8.)
++ *
++ * Given that `func` is not yet frozen, then `hideAndHardenFunction(func)`
++ * will prifix `func.name` with an additional `'__HIDE_'`, so that under
++ * those stack filtering options, frames for calls to such functions are
++ * not reported.
++ *
++ * Then the function is hardened and returned. Thus, you can say
++ * `hideAndHardenFunction(func)` where you would normally first say
++ * `harden(func)`.
++ *
++ * @template {Function} [T=Function]
++ * @param {T} func
++ * @returns {T}
++ */
++export const hideAndHardenFunction = func => {
++  typeof func === 'function' || Fail`${func} must be a function`;
++  const { name } = func;
++  defineProperty(func, 'name', {
++    // Use `String` in case `name` is a symbol.
++    value: `__HIDE_${String(name)}`,
++  });
++  return harden(func);
+ };
+diff --git a/package.json b/package.json
+index 05fee4470b72764512bf0fc2f9215935e4900bdf..6642e5bdf8bdf2f3f5590b3abe753c3ae2ad1d27 100644
+--- a/package.json
++++ b/package.json
+@@ -19,6 +19,7 @@
+   "module": "./index.js",
+   "exports": {
+     ".": "./index.js",
++    "./rejector.js": "./rejector.js",
+     "./package.json": "./package.json"
+   },
+   "scripts": {
+diff --git a/rejector.d.ts b/rejector.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..af87c407d8eaadf8286961fd25e411d22ab9f2d6
+--- /dev/null
++++ b/rejector.d.ts
+@@ -0,0 +1,21 @@
++/**
++ * Either
++ * - `false`
++ * - or an object like `Fail`
++ *
++ * A `Rejector` should be used as
++ * ```js
++ * cond || reject && reject`...`
++ * ```
++ * If `cond` is truthy, that is the value of the expression.
++ * Else if `reject` is false, it is the value
++ * Otherwise, invoke `reject` just like you would invoke `Fail`, with the
++ * same template arguments. This throws the same kind of Error object that
++ * `Fail` would throw, typically because it is the `Fail` template literal
++ * tag itself.
++ *
++ * See rejector.test.js for illustrative examples.
++ */
++export type Rejector = false | typeof Fail;
++import { Fail } from './index.js';
++//# sourceMappingURL=rejector.d.ts.map
+\ No newline at end of file
+diff --git a/rejector.d.ts.map b/rejector.d.ts.map
+new file mode 100644
+index 0000000000000000000000000000000000000000..b4019aa7bd70675b5d88434e6bccf2a42b9ae3b6
+--- /dev/null
++++ b/rejector.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"rejector.d.ts","sourceRoot":"","sources":["rejector.js"],"names":[],"mappings":";;;;;;;;;;;;;;;;;;uBAqBa,KAAK,GAAG,OAAO,IAAI;qBApBX,YAAY"}
+\ No newline at end of file
+diff --git a/rejector.js b/rejector.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e7bfb28a8e347926c9f11e01489e72bdf3602c22
+--- /dev/null
++++ b/rejector.js
+@@ -0,0 +1,23 @@
++// eslint-disable-next-line no-unused-vars
++import { Fail } from './index.js';
++
++/**
++ * Either
++ * - `false`
++ * - or an object like `Fail`
++ *
++ * A `Rejector` should be used as
++ * ```js
++ * cond || reject && reject`...`
++ * ```
++ * If `cond` is truthy, that is the value of the expression.
++ * Else if `reject` is false, it is the value
++ * Otherwise, invoke `reject` just like you would invoke `Fail`, with the
++ * same template arguments. This throws the same kind of Error object that
++ * `Fail` would throw, typically because it is the `Fail` template literal
++ * tag itself.
++ *
++ * See rejector.test.js for illustrative examples.
++ *
++ * @typedef {false | typeof Fail} Rejector
++ */

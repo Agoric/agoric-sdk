@@ -1,0 +1,3945 @@
+diff --git a/index.d.ts b/index.d.ts
+index 7348dae349938cb226085d10b016f6cac8094cfb..1246e018fbc2f35ec4e4d68b17f20c78bacdfae4 100644
+--- a/index.d.ts
++++ b/index.d.ts
+@@ -1,6 +1,6 @@
+ export { coerceToElements } from "./src/keys/copySet.js";
+ export { coerceToBagEntries } from "./src/keys/copyBag.js";
+-export * from "./src/types.js";
++export * from "./types-index.js";
+ export { listDifference } from "@endo/common/list-difference.js";
+ export { objectMap } from "@endo/common/object-map.js";
+ export { isKey, assertKey, assertScalarKey, isCopySet, assertCopySet, makeCopySet, getCopySetKeys, isCopyBag, assertCopyBag, makeCopyBag, makeCopyBagFromElements, getCopyBagEntries, isCopyMap, assertCopyMap, makeCopyMap, getCopyMapEntries } from "./src/keys/checkKey.js";
+@@ -8,5 +8,5 @@ export { bagCompare, setCompare, compareKeys, keyLT, keyLTE, keyEQ, keyGTE, keyG
+ export { elementsIsSuperset, elementsIsDisjoint, elementsCompare, elementsUnion, elementsDisjointUnion, elementsIntersection, elementsDisjointSubtract, setIsSuperset, setIsDisjoint, setUnion, setDisjointUnion, setIntersection, setDisjointSubtract } from "./src/keys/merge-set-operators.js";
+ export { bagIsSuperbag, bagUnion, bagIntersection, bagDisjointSubtract } from "./src/keys/merge-bag-operators.js";
+ export { M, getRankCover, isPattern, assertPattern, matches, mustMatch, isAwaitArgGuard, assertAwaitArgGuard, isRawGuard, assertRawGuard, assertMethodGuard, assertInterfaceGuard, kindOf, containerHasSplit } from "./src/patterns/patternMatchers.js";
+-export { getAwaitArgGuardPayload, getMethodGuardPayload, getInterfaceGuardPayload, getInterfaceMethodKeys } from "./src/patterns/getGuardPayloads.js";
++export { getAwaitArgGuardPayload, getMethodGuardPayload, getInterfaceGuardPayload, getInterfaceMethodKeys, getNamedMethodGuards } from "./src/patterns/getGuardPayloads.js";
+ //# sourceMappingURL=index.d.ts.map
+\ No newline at end of file
+diff --git a/index.js b/index.js
+index 16d3741b2fc62672e7c6de37c3c86aef0f7bba9a..f1d1f111ac317d05e30e5d09392cb76e214fdb23 100644
+--- a/index.js
++++ b/index.js
+@@ -73,10 +73,11 @@ export {
+   getMethodGuardPayload,
+   getInterfaceGuardPayload,
+   getInterfaceMethodKeys,
++  getNamedMethodGuards,
+ } from './src/patterns/getGuardPayloads.js';
+ 
+ // eslint-disable-next-line import/export
+-export * from './src/types.js';
++export * from './types-index.js';
+ 
+ // /////////////////////////// Deprecated //////////////////////////////////////
+ 
+diff --git a/src/keys/checkKey.d.ts b/src/keys/checkKey.d.ts
+index b13ad31a3be67cc43e99cdcf65db85bc5ddc3f77..d36bea722fa09e039c57d2ba595a669b071ff2f6 100644
+--- a/src/keys/checkKey.d.ts
++++ b/src/keys/checkKey.d.ts
+@@ -1,7 +1,7 @@
+-export function checkScalarKey(val: any, check: Checker): boolean;
++export function confirmScalarKey(val: any, reject: Rejector): boolean;
+ export function isScalarKey(val: any): val is ScalarKey;
+ export function assertScalarKey(val: Passable): asserts val is ScalarKey;
+-export function checkKey(val: unknown, check: Checker): boolean;
++export function confirmKey(val: unknown, reject: Rejector): boolean;
+ /**
+  * @type {{
+  *   (val: Passable): val is Key;
+@@ -13,7 +13,7 @@ export const isKey: {
+     (val: any): boolean;
+ };
+ export function assertKey(val: Key): asserts val is Key;
+-export function checkCopySet(s: any, check: Checker): boolean;
++export function confirmCopySet(s: any, reject: Rejector): boolean;
+ export function isCopySet(s: any): s is CopySet;
+ /**
+  * @callback AssertCopySet
+@@ -25,7 +25,7 @@ export const assertCopySet: AssertCopySet;
+ export function getCopySetKeys<K extends Key>(s: CopySet<K>): K[];
+ export function everyCopySetKey<K extends Key>(s: CopySet<K>, fn: (key: K, index: number) => boolean): boolean;
+ export function makeCopySet<K extends Key>(elementIter: Iterable<K>): CopySet<K>;
+-export function checkCopyBag(b: any, check: Checker): boolean;
++export function confirmCopyBag(b: any, reject: Rejector): boolean;
+ export function isCopyBag(b: any): b is CopyBag;
+ /**
+  * @callback AssertCopyBag
+@@ -38,7 +38,7 @@ export function getCopyBagEntries<K extends Key>(b: CopyBag<K>): CopyBag<K>["pay
+ export function everyCopyBagEntry<K extends Key>(b: CopyBag<K>, fn: (entry: [K, bigint], index: number) => boolean): boolean;
+ export function makeCopyBag<K extends Key>(bagEntryIter: Iterable<[K, bigint]>): CopyBag<K>;
+ export function makeCopyBagFromElements<K extends Key>(elementIter: Iterable<K>): CopyBag<K>;
+-export function checkCopyMap(m: any, check: Checker): boolean;
++export function confirmCopyMap(m: any, reject: Rejector): boolean;
+ export function isCopyMap(m: any): m is CopyMap<Key, Passable>;
+ export function assertCopyMap(m: Passable): asserts m is CopyMap<Key, Passable>;
+ export function getCopyMapKeys<K extends Key, V extends Passable>(m: CopyMap<K, V>): K[];
+@@ -51,7 +51,7 @@ export function copyMapKeySet<K extends Key, V extends Passable>(m: CopyMap<K, V
+ export function makeCopyMap<K extends Key, V extends Passable>(entries: Iterable<[K, V]>): CopyMap<K, V>;
+ export type AssertCopySet = (s: Passable) => asserts s is CopySet;
+ export type AssertCopyBag = (b: Passable) => asserts b is CopyBag;
+-import type { Checker } from '@endo/pass-style';
++import type { Rejector } from '@endo/errors/rejector.js';
+ import type { ScalarKey } from '../types.js';
+ import type { Passable } from '@endo/pass-style';
+ import type { Key } from '../types.js';
+diff --git a/src/keys/checkKey.d.ts.map b/src/keys/checkKey.d.ts.map
+index f201099a4b0c70017a8950d1874b41ebeaf8a867..e15570b1415d3dd54f86afe0f6c9e5456af8d43d 100644
+--- a/src/keys/checkKey.d.ts.map
++++ b/src/keys/checkKey.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"checkKey.d.ts","sourceRoot":"","sources":["checkKey.js"],"names":[],"mappings":"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"}
+\ No newline at end of file
++{"version":3,"file":"checkKey.d.ts","sourceRoot":"","sources":["checkKey.js"],"names":[],"mappings":"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"}
+\ No newline at end of file
+diff --git a/src/keys/checkKey.js b/src/keys/checkKey.js
+index dba1798afab752219534829e7b0bec705d508894..0398b9c9b4987dc9f70b196a03ffc63cd71c1bcd 100644
+--- a/src/keys/checkKey.js
++++ b/src/keys/checkKey.js
+@@ -1,39 +1,32 @@
+ /// <reference types="ses"/>
+ 
+-import { X, q, Fail } from '@endo/errors';
+-import { identChecker } from '@endo/common/ident-checker.js';
+-import {
+-  assertChecker,
+-  Far,
+-  getTag,
+-  makeTagged,
+-  passStyleOf,
+-  isAtom,
+-} from '@endo/pass-style';
++import { Fail, q, hideAndHardenFunction } from '@endo/errors';
++import { Far, getTag, makeTagged, passStyleOf, isAtom } from '@endo/pass-style';
+ import {
+   compareAntiRank,
+   makeFullOrderComparatorKit,
+   sortByRank,
+ } from '@endo/marshal';
+ 
+-import { checkElements, makeSetOfElements } from './copySet.js';
+-import { checkBagEntries, makeBagOfEntries } from './copyBag.js';
++import { confirmElements, makeSetOfElements } from './copySet.js';
++import { confirmBagEntries, makeBagOfEntries } from './copyBag.js';
+ 
+ const { ownKeys } = Reflect;
+ 
+ /**
+- * @import {Passable, Atom, Checker} from '@endo/pass-style'
+- * @import {CopyBag, CopyMap, CopySet, Key, ScalarKey} from '../types.js'
++ * @import {Rejector} from '@endo/errors/rejector.js';
++ * @import {Passable, Atom} from '@endo/pass-style';
++ * @import {CopyBag, CopyMap, CopySet, Key, ScalarKey} from '../types.js';
+  */
+ 
+ // ////////////////// Atom and Scalar keys ////////////////////////////////
+ 
+ /**
+  * @param {any} val
+- * @param {Checker} check
++ * @param {Rejector} reject
+  * @returns {boolean}
+  */
+-export const checkScalarKey = (val, check) => {
++export const confirmScalarKey = (val, reject) => {
+   if (isAtom(val)) {
+     return true;
+   }
+@@ -41,24 +34,24 @@ export const checkScalarKey = (val, check) => {
+   if (passStyle === 'remotable') {
+     return true;
+   }
+-  return check(false, X`A ${q(passStyle)} cannot be a scalar key: ${val}`);
++  return reject && reject`A ${q(passStyle)} cannot be a scalar key: ${val}`;
+ };
+ 
+ /**
+  * @param {any} val
+  * @returns {val is ScalarKey}
+  */
+-export const isScalarKey = val => checkScalarKey(val, identChecker);
+-harden(isScalarKey);
++export const isScalarKey = val => confirmScalarKey(val, false);
++hideAndHardenFunction(isScalarKey);
+ 
+ /**
+  * @param {Passable} val
+  * @returns {asserts val is ScalarKey}
+  */
+ export const assertScalarKey = val => {
+-  checkScalarKey(val, assertChecker);
++  confirmScalarKey(val, Fail);
+ };
+-harden(assertScalarKey);
++hideAndHardenFunction(assertScalarKey);
+ 
+ // ////////////////////////////// Keys /////////////////////////////////////////
+ 
+@@ -69,10 +62,10 @@ const keyMemo = new WeakSet();
+ 
+ /**
+  * @param {unknown} val
+- * @param {Checker} check
++ * @param {Rejector} reject
+  * @returns {boolean}
+  */
+-export const checkKey = (val, check) => {
++export const confirmKey = (val, reject) => {
+   if (isAtom(val)) {
+     return true;
+   }
+@@ -81,18 +74,18 @@ export const checkKey = (val, check) => {
+     return true;
+   }
+   // eslint-disable-next-line no-use-before-define
+-  const result = checkKeyInternal(val, check);
++  const result = confirmKeyInternal(val, reject);
+   if (result) {
+     // Don't cache the undefined cases, so that if it is tried again
+-    // with `assertChecker` it'll throw a diagnostic again
++    // with `Fail` it'll throw a diagnostic again
+     // @ts-expect-error narrowed
+     keyMemo.add(val);
+   }
+-  // Note that we do not memoize a negative judgement, so that if it is tried
+-  // again with a checker, it will still produce a useful diagnostic.
++  // Note that we must not memoize a negative judgement, so that if it is tried
++  // again with `Fail`, it will still produce a useful diagnostic.
+   return result;
+ };
+-harden(checkKey);
++harden(confirmKey);
+ 
+ /**
+  * @type {{
+@@ -100,17 +93,17 @@ harden(checkKey);
+  *   (val: any): boolean;
+  * }}
+  */
+-export const isKey = val => checkKey(val, identChecker);
+-harden(isKey);
++export const isKey = val => confirmKey(val, false);
++hideAndHardenFunction(isKey);
+ 
+ /**
+  * @param {Key} val
+  * @returns {asserts val is Key}
+  */
+ export const assertKey = val => {
+-  checkKey(val, assertChecker);
++  confirmKey(val, Fail);
+ };
+-harden(assertKey);
++hideAndHardenFunction(assertKey);
+ 
+ // //////////////////////////// CopySet ////////////////////////////////////////
+ 
+@@ -122,31 +115,31 @@ const copySetMemo = new WeakSet();
+ 
+ /**
+  * @param {any} s
+- * @param {Checker} check
++ * @param {Rejector} reject
+  * @returns {boolean}
+  */
+-export const checkCopySet = (s, check) => {
++export const confirmCopySet = (s, reject) => {
+   if (copySetMemo.has(s)) {
+     return true;
+   }
+   const result =
+     ((passStyleOf(s) === 'tagged' && getTag(s) === 'copySet') ||
+-      check(false, X`Not a copySet: ${s}`)) &&
+-    checkElements(s.payload, check) &&
+-    checkKey(s.payload, check);
++      (reject && reject`Not a copySet: ${s}`)) &&
++    confirmElements(s.payload, reject) &&
++    confirmKey(s.payload, reject);
+   if (result) {
+     copySetMemo.add(s);
+   }
+   return result;
+ };
+-harden(checkCopySet);
++harden(confirmCopySet);
+ 
+ /**
+  * @param {any} s
+  * @returns {s is CopySet}
+  */
+-export const isCopySet = s => checkCopySet(s, identChecker);
+-harden(isCopySet);
++export const isCopySet = s => confirmCopySet(s, false);
++hideAndHardenFunction(isCopySet);
+ 
+ /**
+  * @callback AssertCopySet
+@@ -156,9 +149,9 @@ harden(isCopySet);
+ 
+ /** @type {AssertCopySet} */
+ export const assertCopySet = s => {
+-  checkCopySet(s, assertChecker);
++  confirmCopySet(s, Fail);
+ };
+-harden(assertCopySet);
++hideAndHardenFunction(assertCopySet);
+ 
+ /**
+  * @template {Key} K
+@@ -203,31 +196,31 @@ const copyBagMemo = new WeakSet();
+ 
+ /**
+  * @param {any} b
+- * @param {Checker} check
++ * @param {Rejector} reject
+  * @returns {boolean}
+  */
+-export const checkCopyBag = (b, check) => {
++export const confirmCopyBag = (b, reject) => {
+   if (copyBagMemo.has(b)) {
+     return true;
+   }
+   const result =
+     ((passStyleOf(b) === 'tagged' && getTag(b) === 'copyBag') ||
+-      check(false, X`Not a copyBag: ${b}`)) &&
+-    checkBagEntries(b.payload, check) &&
+-    checkKey(b.payload, check);
++      (reject && reject`Not a copyBag: ${b}`)) &&
++    confirmBagEntries(b.payload, reject) &&
++    confirmKey(b.payload, reject);
+   if (result) {
+     copyBagMemo.add(b);
+   }
+   return result;
+ };
+-harden(checkCopyBag);
++harden(confirmCopyBag);
+ 
+ /**
+  * @param {any} b
+  * @returns {b is CopyBag}
+  */
+-export const isCopyBag = b => checkCopyBag(b, identChecker);
+-harden(isCopyBag);
++export const isCopyBag = b => confirmCopyBag(b, false);
++hideAndHardenFunction(isCopyBag);
+ 
+ /**
+  * @callback AssertCopyBag
+@@ -237,9 +230,9 @@ harden(isCopyBag);
+ 
+ /** @type {AssertCopyBag} */
+ export const assertCopyBag = b => {
+-  checkCopyBag(b, assertChecker);
++  confirmCopyBag(b, Fail);
+ };
+-harden(assertCopyBag);
++hideAndHardenFunction(assertCopyBag);
+ 
+ /**
+  * @template {Key} K
+@@ -309,58 +302,54 @@ const copyMapMemo = new WeakSet();
+ 
+ /**
+  * @param {any} m
+- * @param {Checker} check
++ * @param {Rejector} reject
+  * @returns {boolean}
+  */
+-export const checkCopyMap = (m, check) => {
++export const confirmCopyMap = (m, reject) => {
+   if (copyMapMemo.has(m)) {
+     return true;
+   }
+   if (!(passStyleOf(m) === 'tagged' && getTag(m) === 'copyMap')) {
+-    return check(false, X`Not a copyMap: ${m}`);
++    return reject && reject`Not a copyMap: ${m}`;
+   }
+   const { payload } = m;
+   if (passStyleOf(payload) !== 'copyRecord') {
+-    return check(false, X`A copyMap's payload must be a record: ${m}`);
++    return reject && reject`A copyMap's payload must be a record: ${m}`;
+   }
+   const { keys, values, ...rest } = payload;
+   const result =
+     (ownKeys(rest).length === 0 ||
+-      check(
+-        false,
+-        X`A copyMap's payload must only have .keys and .values: ${m}`,
+-      )) &&
+-    checkElements(keys, check) &&
+-    checkKey(keys, check) &&
++      (reject &&
++        reject`A copyMap's payload must only have .keys and .values: ${m}`)) &&
++    confirmElements(keys, reject) &&
++    confirmKey(keys, reject) &&
+     (passStyleOf(values) === 'copyArray' ||
+-      check(false, X`A copyMap's .values must be a copyArray: ${m}`)) &&
++      (reject && reject`A copyMap's .values must be a copyArray: ${m}`)) &&
+     (keys.length === values.length ||
+-      check(
+-        false,
+-        X`A copyMap must have the same number of keys and values: ${m}`,
+-      ));
++      (reject &&
++        reject`A copyMap must have the same number of keys and values: ${m}`));
+   if (result) {
+     copyMapMemo.add(m);
+   }
+   return result;
+ };
+-harden(checkCopyMap);
++harden(confirmCopyMap);
+ 
+ /**
+  * @param {any} m
+  * @returns {m is CopyMap<Key, Passable>}
+  */
+-export const isCopyMap = m => checkCopyMap(m, identChecker);
+-harden(isCopyMap);
++export const isCopyMap = m => confirmCopyMap(m, false);
++hideAndHardenFunction(isCopyMap);
+ 
+ /**
+  * @param {Passable} m
+  * @returns {asserts m is CopyMap<Key, Passable>}
+  */
+ export const assertCopyMap = m => {
+-  checkCopyMap(m, assertChecker);
++  confirmCopyMap(m, Fail);
+ };
+-harden(assertCopyMap);
++hideAndHardenFunction(assertCopyMap);
+ 
+ /**
+  * @template {Key} K
+@@ -497,14 +486,14 @@ harden(makeCopyMap);
+ // //////////////////////// Keys Recur /////////////////////////////////////////
+ 
+ /**
+- * `checkKeyInternal` is only called if `val` is Passable but is not an Atom.
++ * `confirmKeyInternal` is only called if `val` is Passable but is not an Atom.
+  *
+  * @param {any} val
+- * @param {Checker} check
++ * @param {Rejector} reject
+  * @returns {boolean}
+  */
+-const checkKeyInternal = (val, check) => {
+-  const checkIt = child => checkKey(child, check);
++const confirmKeyInternal = (val, reject) => {
++  const checkIt = child => confirmKey(child, reject);
+ 
+   const passStyle = passStyleOf(val);
+   switch (passStyle) {
+@@ -524,31 +513,30 @@ const checkKeyInternal = (val, check) => {
+       const tag = getTag(val);
+       switch (tag) {
+         case 'copySet': {
+-          return checkCopySet(val, check);
++          return confirmCopySet(val, reject);
+         }
+         case 'copyBag': {
+-          return checkCopyBag(val, check);
++          return confirmCopyBag(val, reject);
+         }
+         case 'copyMap': {
+           return (
+-            checkCopyMap(val, check) &&
++            confirmCopyMap(val, reject) &&
+             // For a copyMap to be a key, all its keys and values must
+-            // be keys. Keys already checked by `checkCopyMap` since
++            // be keys. Keys already checked by `confirmCopyMap` since
+             // that's a copyMap requirement in general.
+             everyCopyMapValue(val, checkIt)
+           );
+         }
+         default: {
+           return (
+-            check !== identChecker &&
+-            check(false, X`A passable tagged ${q(tag)} is not a key: ${val}`)
++            reject && reject`A passable tagged ${q(tag)} is not a key: ${val}`
+           );
+         }
+       }
+     }
+     case 'error':
+     case 'promise': {
+-      return check(false, X`A ${q(passStyle)} cannot be a key`);
++      return reject && reject`A ${q(passStyle)} cannot be a key`;
+     }
+     default: {
+       // Unexpected tags are just non-keys, but an unexpected passStyle
+diff --git a/src/keys/copyBag.d.ts b/src/keys/copyBag.d.ts
+index 3c2c0ad953dcd8cb74608045829632318311af70..3a74951ba5f3db6ab5252f53dbf9cb717a60ced9 100644
+--- a/src/keys/copyBag.d.ts
++++ b/src/keys/copyBag.d.ts
+@@ -1,11 +1,11 @@
+ export function assertNoDuplicateKeys<T extends Key>(bagEntries: [T, bigint][], fullCompare?: FullCompare): void;
+-export function checkBagEntries(bagEntries: [Passable, bigint][], check: Checker): boolean;
++export function confirmBagEntries(bagEntries: [Passable, bigint][], reject: Rejector): boolean;
+ export function assertBagEntries(bagEntries: [Passable, bigint][]): asserts bagEntries is [Passable, bigint][];
+ export function coerceToBagEntries<K extends Key>(bagEntriesList: Iterable<[K, bigint]>): [K, bigint][];
+ export function makeBagOfEntries<K extends Key>(bagEntryIter: Iterable<[K, bigint]>): CopyBag<K>;
+ import type { Key } from '../types.js';
+ import type { FullCompare } from '@endo/marshal';
+ import type { Passable } from '@endo/pass-style';
+-import type { Checker } from '@endo/marshal';
++import type { Rejector } from '@endo/errors/rejector.js';
+ import type { CopyBag } from '../types.js';
+ //# sourceMappingURL=copyBag.d.ts.map
+\ No newline at end of file
+diff --git a/src/keys/copyBag.d.ts.map b/src/keys/copyBag.d.ts.map
+index 77404c15a2e4fab6b425ddb0d3f93351f4d68541..5b1370e990626a8fc9df22d36fbc5647a5e06aac 100644
+--- a/src/keys/copyBag.d.ts.map
++++ b/src/keys/copyBag.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"copyBag.d.ts","sourceRoot":"","sources":["copyBag.js"],"names":[],"mappings":"AA8DO,sCALY,CAAC,SAAP,GAAK,cACP,CAAC,CAAC,EAAC,MAAM,CAAC,EAAE,gBACZ,WAAW,GACT,IAAI,CAIhB;AAOM,4CAJI,CAAC,QAAQ,EAAC,MAAM,CAAC,EAAE,SACnB,OAAO,GACL,OAAO,CAmCnB;AAQM,6CAHI,CAAC,QAAQ,EAAC,MAAM,CAAC,EAAE,GACjB,QAAQ,UAAU,IAAI,CAAC,QAAQ,EAAC,MAAM,CAAC,EAAE,CAIrD;AAOM,mCAHY,CAAC,SAAP,GAAK,kBACP,QAAQ,CAAC,CAAC,CAAC,EAAE,MAAM,CAAC,CAAC,iBAM/B;AAQM,iCAJY,CAAC,SAAP,GAAK,gBACP,QAAQ,CAAC,CAAC,CAAC,EAAE,MAAM,CAAC,CAAC,GACnB,QAAQ,CAAC,CAAC,CAGkC;yBArH1B,aAAa;iCADL,eAAe;8BAD3B,kBAAkB;6BACN,eAAe;6BACvB,aAAa"}
+\ No newline at end of file
++{"version":3,"file":"copyBag.d.ts","sourceRoot":"","sources":["copyBag.js"],"names":[],"mappings":"AA6DO,sCALY,CAAC,SAAP,GAAK,cACP,CAAC,CAAC,EAAC,MAAM,CAAC,EAAE,gBACZ,WAAW,GACT,IAAI,CAIhB;AAOM,8CAJI,CAAC,QAAQ,EAAC,MAAM,CAAC,EAAE,UACnB,QAAQ,GACN,OAAO,CAmCnB;AAQM,6CAHI,CAAC,QAAQ,EAAC,MAAM,CAAC,EAAE,GACjB,QAAQ,UAAU,IAAI,CAAC,QAAQ,EAAC,MAAM,CAAC,EAAE,CAIrD;AAOM,mCAHY,CAAC,SAAP,GAAK,kBACP,QAAQ,CAAC,CAAC,CAAC,EAAE,MAAM,CAAC,CAAC,iBAM/B;AAQM,iCAJY,CAAC,SAAP,GAAK,gBACP,QAAQ,CAAC,CAAC,CAAC,EAAE,MAAM,CAAC,CAAC,GACnB,QAAQ,CAAC,CAAC,CAGkC;yBArH1B,aAAa;iCADd,eAAe;8BADlB,kBAAkB;8BADlB,0BAA0B;6BAGtB,aAAa"}
+\ No newline at end of file
+diff --git a/src/keys/copyBag.js b/src/keys/copyBag.js
+index 7f0e93dac3faef7d06103eb74ca4d48a59c2f00b..a86f6ff5a4baa09a04c2beb214752f3f0283da27 100644
+--- a/src/keys/copyBag.js
++++ b/src/keys/copyBag.js
+@@ -1,5 +1,5 @@
++import { Fail, hideAndHardenFunction } from '@endo/errors';
+ import {
+-  assertChecker,
+   makeTagged,
+   passStyleOf,
+   compareAntiRank,
+@@ -10,12 +10,11 @@ import {
+ 
+ /// <reference types="ses"/>
+ 
+-import { X } from '@endo/errors';
+-
+ /**
+- * @import {Passable} from '@endo/pass-style'
+- * @import {Checker, FullCompare} from '@endo/marshal'
+- * @import {CopyBag, Key} from '../types.js'
++ * @import {Rejector} from '@endo/errors/rejector.js';
++ * @import {Passable} from '@endo/pass-style';
++ * @import {FullCompare} from '@endo/marshal';
++ * @import {CopyBag, Key} from '../types.js';
+  */
+ 
+ /**
+@@ -29,10 +28,10 @@ import { X } from '@endo/errors';
+  * TODO: If doing this reduntantly turns out to be expensive, we
+  * could memoize this no-duplicate-keys finding as well, independent
+  * of the `fullOrder` use to reach this finding.
+- * @param {Checker} check
++ * @param {Rejector} reject
+  * @returns {boolean}
+  */
+-const checkNoDuplicateKeys = (bagEntries, fullCompare, check) => {
++const confirmNoDuplicateKeys = (bagEntries, fullCompare, reject) => {
+   // This fullOrder contains history dependent state. It is specific
+   // to this one call and does not survive it.
+   // TODO Once all our tooling is ready for `&&=`, the following
+@@ -48,7 +47,7 @@ const checkNoDuplicateKeys = (bagEntries, fullCompare, check) => {
+     const k0 = bagEntries[i - 1][0];
+     const k1 = bagEntries[i][0];
+     if (fullCompare(k0, k1) === 0) {
+-      return check(false, X`value has duplicate keys: ${k0}`);
++      return reject && reject`value has duplicate keys: ${k0}`;
+     }
+   }
+   return true;
+@@ -61,25 +60,25 @@ const checkNoDuplicateKeys = (bagEntries, fullCompare, check) => {
+  * @returns {void}
+  */
+ export const assertNoDuplicateKeys = (bagEntries, fullCompare = undefined) => {
+-  checkNoDuplicateKeys(bagEntries, fullCompare, assertChecker);
++  confirmNoDuplicateKeys(bagEntries, fullCompare, Fail);
+ };
+ 
+ /**
+  * @param {[Passable,bigint][]} bagEntries
+- * @param {Checker} check
++ * @param {Rejector} reject
+  * @returns {boolean}
+  */
+-export const checkBagEntries = (bagEntries, check) => {
++export const confirmBagEntries = (bagEntries, reject) => {
+   if (passStyleOf(bagEntries) !== 'copyArray') {
+-    return check(
+-      false,
+-      X`The entries of a copyBag must be a copyArray: ${bagEntries}`,
++    return (
++      reject &&
++      reject`The entries of a copyBag must be a copyArray: ${bagEntries}`
+     );
+   }
+   if (!isRankSorted(bagEntries, compareAntiRank)) {
+-    return check(
+-      false,
+-      X`The entries of a copyBag must be sorted in reverse rank order: ${bagEntries}`,
++    return (
++      reject &&
++      reject`The entries of a copyBag must be sorted in reverse rank order: ${bagEntries}`
+     );
+   }
+   for (const entry of bagEntries) {
+@@ -88,22 +87,22 @@ export const checkBagEntries = (bagEntries, check) => {
+       entry.length !== 2 ||
+       typeof entry[1] !== 'bigint'
+     ) {
+-      return check(
+-        false,
+-        X`Each entry of a copyBag must be pair of a key and a bigint representing a count: ${entry}`,
++      return (
++        reject &&
++        reject`Each entry of a copyBag must be pair of a key and a bigint representing a count: ${entry}`
+       );
+     }
+     if (entry[1] < 1) {
+-      return check(
+-        false,
+-        X`Each entry of a copyBag must have a positive count: ${entry}`,
++      return (
++        reject &&
++        reject`Each entry of a copyBag must have a positive count: ${entry}`
+       );
+     }
+   }
+   // @ts-expect-error XXX Key types
+-  return checkNoDuplicateKeys(bagEntries, undefined, check);
++  return confirmNoDuplicateKeys(bagEntries, undefined, reject);
+ };
+-harden(checkBagEntries);
++harden(confirmBagEntries);
+ 
+ // eslint-disable-next-line jsdoc/require-returns-check -- doesn't understand asserts
+ /**
+@@ -111,9 +110,9 @@ harden(checkBagEntries);
+  * @returns {asserts bagEntries is [Passable,bigint][]}
+  */
+ export const assertBagEntries = bagEntries => {
+-  checkBagEntries(bagEntries, assertChecker);
++  confirmBagEntries(bagEntries, Fail);
+ };
+-harden(assertBagEntries);
++hideAndHardenFunction(assertBagEntries);
+ 
+ /**
+  * @template {Key} K
+diff --git a/src/keys/copySet.d.ts b/src/keys/copySet.d.ts
+index f7a765debe56e0226f38efb965df1afb9281501c..b9bdac31dff737ec509d3fe815c2af2356f93b07 100644
+--- a/src/keys/copySet.d.ts
++++ b/src/keys/copySet.d.ts
+@@ -1,11 +1,11 @@
+ export function assertNoDuplicates<T extends Passable>(elements: T[], fullCompare?: FullCompare): void;
+-export function checkElements(elements: Passable[], check: Checker): boolean;
++export function confirmElements(elements: Passable[], reject: Rejector): boolean;
+ export function assertElements(elements: any): void;
+ export function coerceToElements<K extends Key>(elementsList: Iterable<K>): K[];
+ export function makeSetOfElements<K extends Key>(elementIter: Iterable<K>): CopySet<K>;
+ import type { Passable } from '@endo/pass-style';
+ import type { FullCompare } from '@endo/marshal';
+-import type { Checker } from '@endo/marshal';
++import type { Rejector } from '@endo/errors/rejector.js';
+ import type { Key } from '../types.js';
+ import type { CopySet } from '../types.js';
+ //# sourceMappingURL=copySet.d.ts.map
+\ No newline at end of file
+diff --git a/src/keys/copySet.d.ts.map b/src/keys/copySet.d.ts.map
+index 334a60de9d31f81ff6a858507068e86a6643535f..03f4cee29c239996b8f3b04b424284c12e2f7c1d 100644
+--- a/src/keys/copySet.d.ts.map
++++ b/src/keys/copySet.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"copySet.d.ts","sourceRoot":"","sources":["copySet.js"],"names":[],"mappings":"AA2DO,mCALiB,CAAC,SAAZ,QAAU,YACZ,CAAC,EAAE,gBACH,WAAW,GACT,IAAI,CAIhB;AAOM,wCAJI,QAAQ,EAAE,SACV,OAAO,GACL,OAAO,CAgBnB;AAGM,oDAEN;AAOM,iCAHY,CAAC,SAAP,GAAK,gBACP,QAAQ,CAAC,CAAC,CAAC,OAMrB;AAQM,kCAJY,CAAC,SAAP,GAAK,eACP,QAAQ,CAAC,CAAC,CAAC,GACT,QAAQ,CAAC,CAAC,CAG+B;8BA5F3B,kBAAkB;iCACN,eAAe;6BAAf,eAAe;yBACvB,aAAa;6BAAb,aAAa"}
+\ No newline at end of file
++{"version":3,"file":"copySet.d.ts","sourceRoot":"","sources":["copySet.js"],"names":[],"mappings":"AA0DO,mCALiB,CAAC,SAAZ,QAAU,YACZ,CAAC,EAAE,gBACH,WAAW,GACT,IAAI,CAIhB;AAOM,0CAJI,QAAQ,EAAE,UACV,QAAQ,GACN,OAAO,CAgBnB;AAGM,oDAEN;AAOM,iCAHY,CAAC,SAAP,GAAK,gBACP,QAAQ,CAAC,CAAC,CAAC,OAMrB;AAQM,kCAJY,CAAC,SAAP,GAAK,eACP,QAAQ,CAAC,CAAC,CAAC,GACT,QAAQ,CAAC,CAAC,CAG+B;8BA5F3B,kBAAkB;iCACf,eAAe;8BAFlB,0BAA0B;yBAGtB,aAAa;6BAAb,aAAa"}
+\ No newline at end of file
+diff --git a/src/keys/copySet.js b/src/keys/copySet.js
+index 4c8588d93fa05778bbe4c24b7a9086e507d659b1..f9e71e7adc773ec94d88248f14ed7981c1496b89 100644
+--- a/src/keys/copySet.js
++++ b/src/keys/copySet.js
+@@ -1,5 +1,5 @@
++import { Fail, hideAndHardenFunction } from '@endo/errors';
+ import {
+-  assertChecker,
+   makeTagged,
+   passStyleOf,
+   compareAntiRank,
+@@ -10,12 +10,11 @@ import {
+ 
+ /// <reference types="ses"/>
+ 
+-import { X } from '@endo/errors';
+-
+ /**
+- * @import {Passable} from '@endo/pass-style'
+- * @import {Checker, FullCompare} from '@endo/marshal'
+- * @import {CopySet, Key} from '../types.js'
++ * @import {Rejector} from '@endo/errors/rejector.js';
++ * @import {Passable} from '@endo/pass-style';
++ * @import {FullCompare} from '@endo/marshal';
++ * @import {CopySet, Key} from '../types.js';
+  */
+ 
+ /**
+@@ -29,10 +28,10 @@ import { X } from '@endo/errors';
+  * TODO: If doing this reduntantly turns out to be expensive, we
+  * could memoize this no-duplicate finding as well, independent
+  * of the `fullOrder` use to reach this finding.
+- * @param {Checker} check
++ * @param {Rejector} reject
+  * @returns {boolean}
+  */
+-const checkNoDuplicates = (elements, fullCompare, check) => {
++const confirmNoDuplicates = (elements, fullCompare, reject) => {
+   // This fullOrder contains history dependent state. It is specific
+   // to this one call and does not survive it.
+   // TODO Once all our tooling is ready for `&&=`, the following
+@@ -45,7 +44,7 @@ const checkNoDuplicates = (elements, fullCompare, check) => {
+     const k0 = elements[i - 1];
+     const k1 = elements[i];
+     if (fullCompare(k0, k1) === 0) {
+-      return check(false, X`value has duplicate keys: ${k0}`);
++      return reject && reject`value has duplicate keys: ${k0}`;
+     }
+   }
+   return true;
+@@ -58,35 +57,35 @@ const checkNoDuplicates = (elements, fullCompare, check) => {
+  * @returns {void}
+  */
+ export const assertNoDuplicates = (elements, fullCompare = undefined) => {
+-  checkNoDuplicates(elements, fullCompare, assertChecker);
++  confirmNoDuplicates(elements, fullCompare, Fail);
+ };
+ 
+ /**
+  * @param {Passable[]} elements
+- * @param {Checker} check
++ * @param {Rejector} reject
+  * @returns {boolean}
+  */
+-export const checkElements = (elements, check) => {
++export const confirmElements = (elements, reject) => {
+   if (passStyleOf(elements) !== 'copyArray') {
+-    return check(
+-      false,
+-      X`The keys of a copySet or copyMap must be a copyArray: ${elements}`,
++    return (
++      reject &&
++      reject`The keys of a copySet or copyMap must be a copyArray: ${elements}`
+     );
+   }
+   if (!isRankSorted(elements, compareAntiRank)) {
+-    return check(
+-      false,
+-      X`The keys of a copySet or copyMap must be sorted in reverse rank order: ${elements}`,
++    return (
++      reject &&
++      reject`The keys of a copySet or copyMap must be sorted in reverse rank order: ${elements}`
+     );
+   }
+-  return checkNoDuplicates(elements, undefined, check);
++  return confirmNoDuplicates(elements, undefined, reject);
+ };
+-harden(checkElements);
++harden(confirmElements);
+ 
+ export const assertElements = elements => {
+-  checkElements(elements, assertChecker);
++  confirmElements(elements, Fail);
+ };
+-harden(assertElements);
++hideAndHardenFunction(assertElements);
+ 
+ /**
+  * @template {Key} K
+diff --git a/src/patterns/getGuardPayloads.d.ts b/src/patterns/getGuardPayloads.d.ts
+index 91d5bc24e824eaa48311940dda798a982bcb17e2..5017c47819d0e7bf19ccb008b7ad07961d64115e 100644
+--- a/src/patterns/getGuardPayloads.d.ts
++++ b/src/patterns/getGuardPayloads.d.ts
+@@ -2,6 +2,7 @@ export function getAwaitArgGuardPayload(awaitArgGuard: AwaitArgGuard): AwaitArgG
+ export function getMethodGuardPayload(methodGuard: MethodGuard): MethodGuardPayload;
+ export function getInterfaceGuardPayload<T extends Record<RemotableMethodName, MethodGuard> = Record<PropertyKey, MethodGuard>>(interfaceGuard: InterfaceGuard<T>): InterfaceGuardPayload<T>;
+ export function getInterfaceMethodKeys(interfaceGuard: InterfaceGuard): (string | symbol)[];
++export function getNamedMethodGuards<T extends Record<RemotableMethodName, MethodGuard> = Record<PropertyKey, MethodGuard>>(interfaceGuard: InterfaceGuard<T>): Omit<T, symbol> & Partial<{ [K in Extract<keyof T, symbol>]: never; }>;
+ import type { AwaitArgGuard } from '../types.js';
+ import type { AwaitArgGuardPayload } from '../types.js';
+ import type { MethodGuard } from '../types.js';
+diff --git a/src/patterns/getGuardPayloads.d.ts.map b/src/patterns/getGuardPayloads.d.ts.map
+index cb6d549345590e15465ed15a8aacc515a3032002..f4d564d8e7d0f69466f75e852eb14cf47a8b4d35 100644
+--- a/src/patterns/getGuardPayloads.d.ts.map
++++ b/src/patterns/getGuardPayloads.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"getGuardPayloads.d.ts","sourceRoot":"","sources":["getGuardPayloads.js"],"names":[],"mappings":"AAoEO,uDAHI,aAAa,GACX,oBAAoB,CAWhC;AA2EM,mDAHI,WAAW,GACT,kBAAkB,CAsC9B;AAyDM,yCAJkD,CAAC,SAA5C,MAAM,CAAC,mBAAmB,EAAE,WAAW,CAAE,qDAC5C,eAAe,CAAC,CAAC,GACf,sBAAsB,CAAC,CAAC,CAsBpC;AASM,uDAHI,cAAc,GACZ,CAAC,MAAM,GAAG,MAAM,CAAC,EAAE,CAY/B;mCAxQ6H,aAAa;0CAAb,aAAa;iCAAb,aAAa;wCAAb,aAAa;yCADrG,kBAAkB;oCACsE,aAAa;2CAAb,aAAa"}
+\ No newline at end of file
++{"version":3,"file":"getGuardPayloads.d.ts","sourceRoot":"","sources":["getGuardPayloads.js"],"names":[],"mappings":"AAoEO,uDAHI,aAAa,GACX,oBAAoB,CAWhC;AA2EM,mDAHI,WAAW,GACT,kBAAkB,CAsC9B;AAyDM,yCAJkD,CAAC,SAA5C,MAAM,CAAC,mBAAmB,EAAE,WAAW,CAAE,qDAC5C,eAAe,CAAC,CAAC,GACf,sBAAsB,CAAC,CAAC,CAsBpC;AASM,uDAHI,cAAc,GACZ,CAAC,MAAM,GAAG,MAAM,CAAC,EAAE,CAY/B;AAwBM,qCAHkD,CAAC,SAA5C,MAAM,CAAC,mBAAmB,EAAE,WAAW,CAAE,qDAC5C,eAAe,CAAC,CAAC,0EAG2B;mCAjSuE,aAAa;0CAAb,aAAa;iCAAb,aAAa;wCAAb,aAAa;yCADrG,kBAAkB;oCACsE,aAAa;2CAAb,aAAa"}
+\ No newline at end of file
+diff --git a/src/patterns/getGuardPayloads.js b/src/patterns/getGuardPayloads.js
+index 4163db4b26781773c03d137d5e70b73823d4b620..d1fa0718c6b911d54a3e08c11efa721cd6ffe94c 100644
+--- a/src/patterns/getGuardPayloads.js
++++ b/src/patterns/getGuardPayloads.js
+@@ -234,7 +234,7 @@ const adaptMethodGuard = methodGuard => {
+  * we smooth the transition to https://github.com/endojs/endo/pull/1712,
+  * tolerating both the legacy and current guard shapes.
+  *
+- * Unlike LegacyAwaitArgGuardShape, tolerating LegacyInterfaceGuardShape
++ * Unlike `LegacyAwaitArgGuardShape`, tolerating `LegacyInterfaceGuardShape`
+  * does not seem like a currently exploitable bug, because there is not
+  * currently any context where either an interfaceGuard or a copyRecord would
+  * both be meaningful.
+@@ -284,3 +284,28 @@ export const getInterfaceMethodKeys = interfaceGuard => {
+   ]);
+ };
+ harden(getInterfaceMethodKeys);
++
++// Tested in @endo/exo by exo-wobbly-point.test.js since that's already
++// about class inheritance, which naturally goes with interface
++// inheritance.
++/**
++ * This ignores symbol-named method guards (which cannot be represented
++ * directly in a `CopyRecord` anyway). It returns only a `CopyRecord` of
++ * the string-named method guards. This is useful for interface guard
++ * inheritance patterns like
++ * ```js
++ * const I2 = M.interface('I2', {
++ *   ...getNamedMethodGuards(I1),
++ *   doMore: M.call().returns(M.any()),
++ * });
++ * ```
++ * While we could do more to support symbol-named method guards,
++ * this feature is deprecated, and hopefully will disappear soon.
++ * (TODO link to PRs removing symbol-named methods and method guards.)
++ *
++ * @template {Record<RemotableMethodName, MethodGuard>} [T=Record<RemotableMethodName, MethodGuard>]
++ * @param {InterfaceGuard<T>} interfaceGuard
++ */
++export const getNamedMethodGuards = interfaceGuard =>
++  getInterfaceGuardPayload(interfaceGuard).methodGuards;
++harden(getNamedMethodGuards);
+diff --git a/src/patterns/patternMatchers.d.ts b/src/patterns/patternMatchers.d.ts
+index ad38c017a78709efb92d46c5335d3bd98677956e..84b8473043fb2c531bd13a2497091600beff94de 100644
+--- a/src/patterns/patternMatchers.d.ts
++++ b/src/patterns/patternMatchers.d.ts
+@@ -10,14 +10,15 @@ export namespace defaultLimits {
+     let numUniqueBagElementsLimit: number;
+     let numMapEntriesLimit: number;
+ }
+-export const checkMatches: (specimen: any, patt: Passable, check: Checker, label?: string | number) => boolean;
++export const confirmMatches: (specimen: any, patt: Passable, reject: Rejector, label?: string | number) => boolean;
++export const confirmLabeledMatches: any;
+ export const matches: (specimen: any, patt: Pattern) => boolean;
+ export const mustMatch: (specimen: any, patt: Pattern, label?: string | number) => void;
+ export const assertPattern: (patt: Pattern) => void;
+ export const isPattern: (patt: any) => boolean;
+ export const getRankCover: GetRankCover;
+ export const M: MatcherNamespace;
+-export const kindOf: (specimen: Passable, check?: Checker) => Kind | undefined;
++export const kindOf: (specimen: Passable) => Kind | undefined;
+ export const containerHasSplit: any;
+ export const AwaitArgGuardShape: import("../types.js").Matcher;
+ export function isAwaitArgGuard(specimen: any): specimen is AwaitArgGuard;
+@@ -35,7 +36,7 @@ export const InterfaceGuardPayloadShape: import("../types.js").Matcher;
+ export const InterfaceGuardShape: import("../types.js").Matcher;
+ export function assertInterfaceGuard(specimen: any): asserts specimen is InterfaceGuard;
+ import type { Passable } from '@endo/pass-style';
+-import type { Checker } from '@endo/pass-style';
++import type { Rejector } from '@endo/errors/rejector.js';
+ import type { Pattern } from '../types.js';
+ import type { GetRankCover } from '../types.js';
+ import type { MatcherNamespace } from '../types.js';
+diff --git a/src/patterns/patternMatchers.d.ts.map b/src/patterns/patternMatchers.d.ts.map
+index a2e0608df3deb58a08751a16fbc47dbd3891e33f..138fa1c099e9feae6dde7aa41f129b0e69a4afa3 100644
+--- a/src/patterns/patternMatchers.d.ts.map
++++ b/src/patterns/patternMatchers.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"patternMatchers.d.ts","sourceRoot":"","sources":["patternMatchers.js"],"names":[],"mappings":";;;;;;;;;;;;;;;;;;;;;AAwhEA,+DAAgE;AAMzD,0CAHI,GAAG,GACD,QAAQ,IAAI,aAAa,CAGC;AAOhC,8CAHI,GAAG,GACD,QAAQ,QAAQ,IAAI,aAAa,CAI7C;AAoBD,0DAAsD;AAE/C,mDAA+D;AAE/D,oDACyC;AAUhD,gEAAoE;AAEpE,oEAAsE;AAGtE,8DAA0D;AAkB1D,oEAGE;AAEF,6DAA4D;AAMrD,4CAHI,GAAG,GACD,QAAQ,QAAQ,IAAI,WAAW,CAI3C;AA+CD,uEAUE;AAEF,gEAAkE;AAM3D,+CAHI,GAAG,GACD,QAAQ,QAAQ,IAAI,cAAc,CAI9C;8BAvoEsE,kBAAkB;6BAAlB,kBAAkB;6BACmJ,aAAa;kCAAb,aAAa;sCAAb,aAAa;0BAAb,aAAa;mCAAb,aAAa;iCAAb,aAAa;oCAAb,aAAa"}
+\ No newline at end of file
++{"version":3,"file":"patternMatchers.d.ts","sourceRoot":"","sources":["patternMatchers.js"],"names":[],"mappings":";;;;;;;;;;;;;;;;;;;;;;AAijEA,+DAAgE;AAMzD,0CAHI,GAAG,GACD,QAAQ,IAAI,aAAa,CAGC;AAOhC,8CAHI,GAAG,GACD,QAAQ,QAAQ,IAAI,aAAa,CAI7C;AAoBD,0DAAsD;AAE/C,mDAA+D;AAE/D,oDACyC;AAUhD,gEAAoE;AAEpE,oEAAsE;AAGtE,8DAA0D;AAkB1D,oEAGE;AAEF,6DAA4D;AAMrD,4CAHI,GAAG,GACD,QAAQ,QAAQ,IAAI,WAAW,CAI3C;AA+CD,uEAUE;AAEF,gEAAkE;AAM3D,+CAHI,GAAG,GACD,QAAQ,QAAQ,IAAI,cAAc,CAI9C;8BAzpE6D,kBAAkB;8BADrD,0BAA0B;6BAEyL,aAAa;kCAAb,aAAa;sCAAb,aAAa;0BAAb,aAAa;mCAAb,aAAa;iCAAb,aAAa;oCAAb,aAAa"}
+\ No newline at end of file
+diff --git a/src/patterns/patternMatchers.js b/src/patterns/patternMatchers.js
+index bf6118dd39b97849d98b36c9e4e93088232c8d3a..2260045eeff46c4a14529e8bca5f4f07cbb1d5e7 100644
+--- a/src/patterns/patternMatchers.js
++++ b/src/patterns/patternMatchers.js
+@@ -1,12 +1,18 @@
+ // @ts-nocheck So many errors that the suppressions hamper readability.
+ // TODO parameterize MatchHelper which will solve most of them
+-import { q, b, X, Fail, makeError, annotateError } from '@endo/errors';
+-import { identChecker } from '@endo/common/ident-checker.js';
++import {
++  q,
++  b,
++  X,
++  Fail,
++  makeError,
++  annotateError,
++  hideAndHardenFunction,
++} from '@endo/errors';
+ import { applyLabelingError } from '@endo/common/apply-labeling-error.js';
+ import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
+ import { listDifference } from '@endo/common/list-difference.js';
+ import {
+-  assertChecker,
+   Far,
+   getTag,
+   makeTagged,
+@@ -26,13 +32,13 @@ import {
+ import { keyEQ, keyGT, keyGTE, keyLT, keyLTE } from '../keys/compareKeys.js';
+ import {
+   assertKey,
+-  checkKey,
++  confirmKey,
+   isKey,
+-  checkScalarKey,
+-  checkCopySet,
+-  checkCopyMap,
++  confirmScalarKey,
++  confirmCopySet,
++  confirmCopyMap,
+   copyMapKeySet,
+-  checkCopyBag,
++  confirmCopyBag,
+   getCopyMapEntryArray,
+   makeCopyMap,
+   makeCopySet,
+@@ -41,9 +47,10 @@ import {
+ import { generateCollectionPairEntries } from '../keys/keycollection-operators.js';
+ 
+ /**
+- * @import {Checker, CopyArray, CopyRecord, CopyTagged, Passable} from '@endo/pass-style'
+- * @import {CopySet, CopyBag, ArgGuard, AwaitArgGuard, CheckPattern, GetRankCover, InterfaceGuard, MatcherNamespace, MethodGuard, MethodGuardMaker, Pattern, RawGuard, SyncValueGuard, Kind, Limits, AllLimits, Key, DefaultGuardType} from '../types.js'
+- * @import {MatchHelper, PatternKit} from './types.js'
++ * @import {Rejector} from '@endo/errors/rejector.js';
++ * @import {CopyArray, CopyRecord, CopyTagged, Passable} from '@endo/pass-style';
++ * @import {CopySet, CopyBag, ArgGuard, AwaitArgGuard, ConfirmPattern, GetRankCover, InterfaceGuard, MatcherNamespace, MethodGuard, MethodGuardMaker, Pattern, RawGuard, SyncValueGuard, Kind, Limits, AllLimits, Key, DefaultGuardType} from '../types.js';
++ * @import {MatchHelper, PatternKit} from './types.js';
+  */
+ 
+ const { entries, values, hasOwn } = Object;
+@@ -91,34 +98,31 @@ export const defaultLimits = harden({
+ const limit = (limits = {}) =>
+   /** @type {AllLimits} */ (harden({ __proto__: defaultLimits, ...limits }));
+ 
+-const checkIsWellFormedWithLimit = (
++/**
++ * @param {any} payload
++ * @param {any} mainPayloadShape
++ * @param {string} prefix
++ * @param {Rejector} reject
++ */
++const confirmIsWellFormedWithLimit = (
+   payload,
+   mainPayloadShape,
+-  check,
+-  label,
++  prefix,
++  reject,
+ ) => {
+   assert(Array.isArray(mainPayloadShape));
+   if (!Array.isArray(payload)) {
+-    return check(false, X`${q(label)} payload must be an array: ${payload}`);
++    return reject && reject`${q(prefix)} payload must be an array: ${payload}`;
+   }
+ 
+-  // Was the following, but its overuse of patterns caused an infinite regress
+-  // const payloadLimitShape = harden(
+-  //   M.split(
+-  //     mainPayloadShape,
+-  //     M.partial(harden([M.recordOf(M.string(), M.number())]), harden([])),
+-  //   ),
+-  // );
+-  // return checkMatches(payload, payloadLimitShape, check, label);
+-
+   const mainLength = mainPayloadShape.length;
+   if (!(payload.length === mainLength || payload.length === mainLength + 1)) {
+-    return check(false, X`${q(label)} payload unexpected size: ${payload}`);
++    return reject && reject`${q(prefix)} payload unexpected size: ${payload}`;
+   }
+   const limits = payload[mainLength];
+   payload = harden(payload.slice(0, mainLength));
+   // eslint-disable-next-line no-use-before-define
+-  if (!checkMatches(payload, mainPayloadShape, check, label)) {
++  if (!confirmLabeledMatches(payload, mainPayloadShape, prefix, reject)) {
+     return false;
+   }
+   if (limits === undefined) {
+@@ -126,11 +130,12 @@ const checkIsWellFormedWithLimit = (
+   }
+   return (
+     (passStyleOf(limits) === 'copyRecord' ||
+-      check(false, X`Limits must be a record: ${q(limits)}`)) &&
++      (reject && reject`Limits must be a record: ${q(limits)}`)) &&
+     entries(limits).every(
+       ([key, value]) =>
+         passStyleOf(value) === 'number' ||
+-        check(false, X`Value of limit ${q(key)} but be a number: ${q(value)}`),
++        (reject &&
++          reject`Value of limit ${q(key)} but be a number: ${q(value)}`),
+     )
+   );
+ };
+@@ -138,18 +143,18 @@ const checkIsWellFormedWithLimit = (
+ /**
+  * @param {unknown} specimen
+  * @param {number} decimalDigitsLimit
+- * @param {Checker} check
++ * @param {Rejector} reject
+  */
+-const checkDecimalDigitsLimit = (specimen, decimalDigitsLimit, check) => {
++const confirmDecimalDigitsLimit = (specimen, decimalDigitsLimit, reject) => {
+   if (
+     Math.floor(Math.log10(Math.abs(Number(specimen)))) + 1 <=
+     decimalDigitsLimit
+   ) {
+     return true;
+   }
+-  return check(
+-    false,
+-    X`bigint ${specimen} must not have more than ${decimalDigitsLimit} digits`,
++  return (
++    reject &&
++    reject`bigint ${specimen} must not have more than ${decimalDigitsLimit} digits`
+   );
+ };
+ 
+@@ -199,36 +204,35 @@ const makePatternKit = () => {
+    *
+    * @param {Passable} tagged
+    * @param {Kind} tag
+-   * @param {Checker} check
++   * @param {Rejector} reject
+    * @returns {boolean}
+    */
+-  const checkTagged = (tagged, tag, check) => {
++  const confirmTagged = (tagged, tag, reject) => {
+     const matchHelper = maybeMatchHelper(tag);
+     if (matchHelper) {
+       // Buried here is the important case, where we process
+       // the various patternNodes
+-      return matchHelper.checkIsWellFormed(tagged.payload, check);
++      return matchHelper.confirmIsWellFormed(tagged.payload, reject);
+     } else {
+       const payloadShape = maybePayloadShape(tag);
+       if (payloadShape !== undefined) {
+         // eslint-disable-next-line no-use-before-define
+-        return checkMatches(tagged.payload, payloadShape, check, tag);
++        return confirmNestedMatches(tagged.payload, payloadShape, tag, reject);
+       }
+     }
+     switch (tag) {
+       case 'copySet': {
+-        return checkCopySet(tagged, check);
++        return confirmCopySet(tagged, reject);
+       }
+       case 'copyBag': {
+-        return checkCopyBag(tagged, check);
++        return confirmCopyBag(tagged, reject);
+       }
+       case 'copyMap': {
+-        return checkCopyMap(tagged, check);
++        return confirmCopyMap(tagged, reject);
+       }
+       default: {
+-        return check(
+-          false,
+-          X`cannot check unrecognized tag ${q(tag)}: ${tagged}`,
++        return (
++          reject && reject`cannot check unrecognized tag ${q(tag)}: ${tagged}`
+         );
+       }
+     }
+@@ -237,13 +241,13 @@ const makePatternKit = () => {
+   /**
+    * Returns only a recognized kind, and only if the specimen passes the
+    * invariants associated with that recognition.
+-   * Otherwise, `check(false, ...)` and returns undefined
++   * Otherwise, if `reject` is false, returns undefined. Else rejects.
+    *
+    * @param {any} specimen
+-   * @param {Checker} [check]
++   * @param {Rejector} reject
+    * @returns {Kind | undefined}
+    */
+-  const kindOf = (specimen, check = identChecker) => {
++  const confirmKindOf = (specimen, reject) => {
+     const passStyle = passStyleOf(specimen);
+     if (passStyle !== 'tagged') {
+       return passStyle;
+@@ -255,15 +259,20 @@ const makePatternKit = () => {
+       return tagMemo.get(specimen);
+     }
+     const tag = getTag(specimen);
+-    if (checkTagged(specimen, tag, check)) {
++    if (confirmTagged(specimen, tag, reject)) {
+       tagMemo.set(specimen, tag);
+       return tag;
+     }
+-    if (check !== identChecker) {
+-      check(false, X`cannot check unrecognized tag ${q(tag)}`);
+-    }
++    reject && reject`cannot check unrecognized tag ${q(tag)}`;
+     return undefined;
+   };
++  harden(confirmKindOf);
++
++  /**
++   * @param {any} specimen
++   * @returns {Kind | undefined}
++   */
++  const kindOf = specimen => confirmKindOf(specimen, false);
+   harden(kindOf);
+ 
+   /**
+@@ -272,26 +281,23 @@ const makePatternKit = () => {
+    *
+    * @param {any} specimen
+    * @param {Kind} kind
+-   * @param {Checker} check
++   * @param {Rejector} reject
+    * @returns {boolean}
+    */
+-  const checkKind = (specimen, kind, check) => {
++  const confirmKind = (specimen, kind, reject) => {
+     // check null and undefined as Keys
+     if (singletonKinds.has(kind)) {
+       // eslint-disable-next-line no-use-before-define
+-      return checkAsKeyPatt(specimen, singletonKinds.get(kind), check);
++      return confirmAsKeyPatt(specimen, singletonKinds.get(kind), reject);
+     }
+ 
+-    const realKind = kindOf(specimen, check);
++    const realKind = confirmKindOf(specimen, reject);
+     if (kind === realKind) {
+       return true;
+     }
+-    if (check !== identChecker) {
+-      // `kind` and `realKind` can be embedded without quotes
+-      // because they are drawn from the enumerated collection of known Kinds.
+-      check(false, X`${b(realKind)} ${specimen} - Must be a ${b(kind)}`);
+-    }
+-    return false;
++    // `kind` and `realKind` can be embedded without quotes
++    // because they are drawn from the enumerated collection of known Kinds.
++    return reject && reject`${b(realKind)} ${specimen} - Must be a ${b(kind)}`;
+   };
+ 
+   /**
+@@ -302,7 +308,7 @@ const makePatternKit = () => {
+    * @param {Kind} kind
+    * @returns {boolean}
+    */
+-  const isKind = (specimen, kind) => checkKind(specimen, kind, identChecker);
++  const isKind = (specimen, kind) => confirmKind(specimen, kind, false);
+ 
+   /**
+    * Checks if a pattern matches only `undefined`.
+@@ -317,25 +323,24 @@ const makePatternKit = () => {
+   /**
+    * @param {any} specimen
+    * @param {Key} keyAsPattern
+-   * @param {Checker} check
++   * @param {Rejector} reject
+    * @returns {boolean}
+    */
+-  const checkAsKeyPatt = (specimen, keyAsPattern, check) => {
++  const confirmAsKeyPatt = (specimen, keyAsPattern, reject) => {
+     if (isKey(specimen) && keyEQ(specimen, keyAsPattern)) {
+       return true;
+     }
+     return (
+-      check !== identChecker &&
+       // When the mismatch occurs against a key used as a pattern,
+       // the pattern should still be redacted.
+-      check(false, X`${specimen} - Must be: ${keyAsPattern}`)
++      reject && reject`${specimen} - Must be: ${keyAsPattern}`
+     );
+   };
+ 
+   // /////////////////////// isPattern /////////////////////////////////////////
+ 
+-  /** @type {CheckPattern} */
+-  const checkPattern = (patt, check) => {
++  /** @type {ConfirmPattern} */
++  const confirmPattern = (patt, reject) => {
+     if (isKey(patt)) {
+       // All keys are patterns. For these, the keyMemo will do.
+       // All primitives that are patterns are also keys, which this
+@@ -347,7 +352,7 @@ const makePatternKit = () => {
+       return true;
+     }
+     // eslint-disable-next-line no-use-before-define
+-    const result = checkPatternInternal(patt, check);
++    const result = confirmPatternInternal(patt, reject);
+     if (result) {
+       patternMemo.add(patt);
+     }
+@@ -357,16 +362,16 @@ const makePatternKit = () => {
+   /**
+    * @param {Passable} patt - known not to be a key, and therefore known
+    * not to be primitive.
+-   * @param {Checker} check
++   * @param {Rejector} reject
+    * @returns {boolean}
+    */
+-  const checkPatternInternal = (patt, check) => {
+-    // Purposely parallels checkKey. TODO reuse more logic between them.
++  const confirmPatternInternal = (patt, reject) => {
++    // Purposely parallels chonfirmKey. TODO reuse more logic between them.
+     // Most of the text of the switch below not dealing with matchers is
+     // essentially identical.
+-    const checkIt = child => checkPattern(child, check);
++    const checkIt = child => confirmPattern(child, reject);
+ 
+-    const kind = kindOf(patt, check);
++    const kind = confirmKindOf(patt, reject);
+     switch (kind) {
+       case undefined: {
+         return false;
+@@ -385,19 +390,19 @@ const makePatternKit = () => {
+         // A copyMap's keys are keys and therefore already known to be
+         // patterns.
+         // A copyMap is a pattern if its values are patterns.
+-        return checkPattern(patt.values, check);
++        return confirmPattern(patt.values, reject);
+       }
+       case 'error':
+       case 'promise': {
+-        return check(false, X`A ${q(kind)} cannot be a pattern`);
++        return reject && reject`A ${q(kind)} cannot be a pattern`;
+       }
+       default: {
+         if (maybeMatchHelper(kind) !== undefined) {
+           return true;
+         }
+-        return check(
+-          false,
+-          X`A passable of kind ${q(kind)} is not a pattern: ${patt}`,
++        return (
++          reject &&
++          reject`A passable of kind ${q(kind)} is not a pattern: ${patt}`
+         );
+       }
+     }
+@@ -407,13 +412,13 @@ const makePatternKit = () => {
+    * @param {Passable} patt
+    * @returns {boolean}
+    */
+-  const isPattern = patt => checkPattern(patt, identChecker);
++  const isPattern = patt => confirmPattern(patt, false);
+ 
+   /**
+    * @param {Pattern} patt
+    */
+   const assertPattern = patt => {
+-    checkPattern(patt, assertChecker);
++    confirmPattern(patt, Fail);
+   };
+ 
+   // /////////////////////// matches ///////////////////////////////////////////
+@@ -421,33 +426,35 @@ const makePatternKit = () => {
+   /**
+    * @param {any} specimen
+    * @param {Pattern} pattern
+-   * @param {Checker} check
+-   * @param {string|number} [label]
++   * @param {Rejector} reject
+    * @returns {boolean}
+    */
+-  const checkMatches = (specimen, pattern, check, label = undefined) =>
++  const confirmMatches = (specimen, pattern, reject) =>
+     // eslint-disable-next-line no-use-before-define
+-    applyLabelingError(checkMatchesInternal, [specimen, pattern, check], label);
++    confirmMatchesInternal(specimen, pattern, reject);
++  hideAndHardenFunction(confirmMatches);
+ 
+   /**
+    * @param {any} specimen
+    * @param {Pattern} patt
+-   * @param {Checker} check
++   * @param {Rejector} reject
+    * @returns {boolean}
+    */
+-  const checkMatchesInternal = (specimen, patt, check) => {
+-    // Worth being a bit verbose and repetitive in order to optimize
+-    const patternKind = kindOf(patt, check);
++  const confirmMatchesInternal = (specimen, patt, reject) => {
++    // If `patt` does not have a kind (or is not a pattern)
++    // then, even if `reject === false`, we should throw about
++    // `patt` anyway.
++    const patternKind = confirmKindOf(patt, Fail);
+     const specimenKind = kindOf(specimen); // may be undefined
+     switch (patternKind) {
+       case undefined: {
+-        return Fail`pattern expected: ${patt}`;
++        return reject && reject`pattern expected: ${patt}`;
+       }
+       case 'promise': {
+-        return Fail`promises cannot be patterns: ${patt}`;
++        return reject && reject`promises cannot be patterns: ${patt}`;
+       }
+       case 'error': {
+-        return Fail`errors cannot be patterns: ${patt}`;
++        return reject && reject`errors cannot be patterns: ${patt}`;
+       }
+       case 'undefined':
+       case 'null':
+@@ -461,45 +468,48 @@ const makePatternKit = () => {
+       case 'copyBag':
+       case 'remotable': {
+         // These kinds are necessarily keys
+-        return checkAsKeyPatt(specimen, patt, check);
++        return confirmAsKeyPatt(specimen, patt, reject);
+       }
+       case 'copyArray': {
+         if (isKey(patt)) {
+           // Takes care of patterns which are keys, so the rest of this
+           // logic can assume patterns that are not keys.
+-          return checkAsKeyPatt(specimen, patt, check);
++          return confirmAsKeyPatt(specimen, patt, reject);
+         }
+         if (specimenKind !== 'copyArray') {
+-          return check(
+-            false,
+-            X`${specimen} - Must be a copyArray to match a copyArray pattern: ${qp(
++          return (
++            reject &&
++            reject`${specimen} - Must be a copyArray to match a copyArray pattern: ${qp(
+               patt,
+-            )}`,
++            )}`
+           );
+         }
+         const { length } = patt;
+         if (specimen.length !== length) {
+-          return check(
+-            false,
+-            X`Array ${specimen} - Must be as long as copyArray pattern: ${qp(
++          return (
++            reject &&
++            reject`Array ${specimen} - Must be as long as copyArray pattern: ${qp(
+               patt,
+-            )}`,
++            )}`
+           );
+         }
+-        return patt.every((p, i) => checkMatches(specimen[i], p, check, i));
++        return patt.every((p, i) =>
++          // eslint-disable-next-line no-use-before-define
++          confirmNestedMatches(specimen[i], p, i, reject),
++        );
+       }
+       case 'copyRecord': {
+         if (isKey(patt)) {
+           // Takes care of patterns which are keys, so the rest of this
+           // logic can assume patterns that are not keys.
+-          return checkAsKeyPatt(specimen, patt, check);
++          return confirmAsKeyPatt(specimen, patt, reject);
+         }
+         if (specimenKind !== 'copyRecord') {
+-          return check(
+-            false,
+-            X`${specimen} - Must be a copyRecord to match a copyRecord pattern: ${qp(
++          return (
++            reject &&
++            reject`${specimen} - Must be a copyRecord to match a copyRecord pattern: ${qp(
+               patt,
+-            )}`,
++            )}`
+           );
+         }
+         // TODO Detect and accumulate difference in one pass.
+@@ -511,44 +521,45 @@ const makePatternKit = () => {
+         const pattNames = recordNames(patt);
+         const missing = listDifference(pattNames, specimenNames);
+         if (missing.length >= 1) {
+-          return check(
+-            false,
+-            X`${specimen} - Must have missing properties ${q(missing)}`,
++          return (
++            reject &&
++            reject`${specimen} - Must have missing properties ${q(missing)}`
+           );
+         }
+         const unexpected = listDifference(specimenNames, pattNames);
+         if (unexpected.length >= 1) {
+-          return check(
+-            false,
+-            X`${specimen} - Must not have unexpected properties: ${q(
++          return (
++            reject &&
++            reject`${specimen} - Must not have unexpected properties: ${q(
+               unexpected,
+-            )}`,
++            )}`
+           );
+         }
+         const specimenValues = recordValues(specimen, specimenNames);
+         const pattValues = recordValues(patt, pattNames);
+         return pattNames.every((label, i) =>
+-          checkMatches(specimenValues[i], pattValues[i], check, label),
++          // eslint-disable-next-line no-use-before-define
++          confirmNestedMatches(specimenValues[i], pattValues[i], label, reject),
+         );
+       }
+       case 'copyMap': {
+         if (isKey(patt)) {
+           // Takes care of patterns which are keys, so the rest of this
+           // logic can assume patterns that are not keys.
+-          return checkAsKeyPatt(specimen, patt, check);
++          return confirmAsKeyPatt(specimen, patt, reject);
+         }
+         if (specimenKind !== 'copyMap') {
+-          return check(
+-            false,
+-            X`${specimen} - Must be a copyMap to match a copyMap pattern: ${qp(
++          return (
++            reject &&
++            reject`${specimen} - Must be a copyMap to match a copyMap pattern: ${qp(
+               patt,
+-            )}`,
++            )}`
+           );
+         }
+         // Compare keys as copySets
+         const pattKeySet = copyMapKeySet(patt);
+         const specimenKeySet = copyMapKeySet(specimen);
+-        if (!checkMatches(specimenKeySet, pattKeySet, check)) {
++        if (!confirmMatches(specimenKeySet, pattKeySet, reject)) {
+           return false;
+         }
+         // Compare values as copyArrays after applying a shared total order.
+@@ -566,25 +577,38 @@ const makePatternKit = () => {
+           pattValues.push(pattValue);
+           specimenValues.push(specimenValue);
+         }
+-        return checkMatches(harden(specimenValues), harden(pattValues), check);
++        return confirmMatches(
++          harden(specimenValues),
++          harden(pattValues),
++          reject,
++        );
+       }
+       default: {
+         const matchHelper = maybeMatchHelper(patternKind);
+         if (matchHelper) {
+-          return matchHelper.checkMatches(specimen, patt.payload, check);
++          return matchHelper.confirmMatches(specimen, patt.payload, reject);
+         }
+         throw Fail`internal: should have recognized ${q(patternKind)} `;
+       }
+     }
+   };
+ 
++  /**
++   * @param {any} specimen
++   * @param {Pattern} pattern
++   * @param {string} prefix
++   * @param {Rejector} reject
++   * @returns {boolean}
++   */
++  const confirmNestedMatches = (specimen, pattern, prefix, reject) =>
++    applyLabelingError(confirmMatches, [specimen, pattern, reject], prefix);
++
+   /**
+    * @param {any} specimen
+    * @param {Pattern} patt
+    * @returns {boolean}
+    */
+-  const matches = (specimen, patt) =>
+-    checkMatches(specimen, patt, identChecker);
++  const matches = (specimen, patt) => confirmMatches(specimen, patt, false);
+ 
+   /**
+    * Returning normally indicates success. Match failure is indicated by
+@@ -592,19 +616,19 @@ const makePatternKit = () => {
+    *
+    * @param {any} specimen
+    * @param {Pattern} patt
+-   * @param {string|number} [label]
++   * @param {string|number|bigint} [label]
+    */
+   const mustMatch = (specimen, patt, label = undefined) => {
+     let innerError;
+     try {
+-      if (checkMatches(specimen, patt, identChecker, undefined)) {
++      if (confirmMatches(specimen, patt, false)) {
+         return;
+       }
+     } catch (er) {
+       innerError = er;
+     }
+     // should only throw
+-    checkMatches(specimen, patt, assertChecker, label);
++    confirmNestedMatches(specimen, patt, label, Fail);
+     const outerError = makeError(
+       X`internal: ${label}: inconsistent pattern match: ${qp(patt)}`,
+     );
+@@ -729,17 +753,17 @@ const makePatternKit = () => {
+   /**
+    * @param {Passable[]} array
+    * @param {Pattern} patt
+-   * @param {Checker} check
+-   * @param {string} [labelPrefix]
++   * @param {string} labelPrefix
++   * @param {Rejector} reject
+    * @returns {boolean}
+    */
+-  const arrayEveryMatchPattern = (array, patt, check, labelPrefix = '') => {
++  const confirmArrayEveryMatchPattern = (array, patt, labelPrefix, reject) => {
+     if (isKind(patt, 'match:any')) {
+       // if the pattern is M.any(), we know its true
+       return true;
+     }
+     return array.every((el, i) =>
+-      checkMatches(el, patt, check, `${labelPrefix}[${i}]`),
++      confirmNestedMatches(el, patt, `${labelPrefix}[${i}]`, reject),
+     );
+   };
+ 
+@@ -747,26 +771,28 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchAnyHelper = Far('match:any helper', {
+-    checkMatches: (_specimen, _matcherPayload, _check) => true,
++    confirmMatches: (_specimen, _matcherPayload, _reject) => true,
+ 
+-    checkIsWellFormed: (matcherPayload, check) =>
++    confirmIsWellFormed: (matcherPayload, reject) =>
+       matcherPayload === undefined ||
+-      check(false, X`match:any payload: ${matcherPayload} - Must be undefined`),
++      (reject &&
++        reject`match:any payload: ${matcherPayload} - Must be undefined`),
+ 
+     getRankCover: (_matchPayload, _encodePassable) => ['', '{'],
+   });
+ 
+   /** @type {MatchHelper} */
+   const matchAndHelper = Far('match:and helper', {
+-    checkMatches: (specimen, patts, check) => {
+-      return patts.every(patt => checkMatches(specimen, patt, check));
++    confirmMatches: (specimen, patts, reject) => {
++      return patts.every(patt => confirmMatches(specimen, patt, reject));
+     },
+ 
+-    checkIsWellFormed: (allegedPatts, check) => {
+-      const checkIt = patt => checkPattern(patt, check);
++    confirmIsWellFormed: (allegedPatts, reject) => {
++      const checkIt = patt => confirmPattern(patt, reject);
+       return (
+         (passStyleOf(allegedPatts) === 'copyArray' ||
+-          check(false, X`Needs array of sub-patterns: ${qp(allegedPatts)}`)) &&
++          (reject &&
++            reject`Needs array of sub-patterns: ${qp(allegedPatts)}`)) &&
+         allegedPatts.every(checkIt)
+       );
+     },
+@@ -780,12 +806,12 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchOrHelper = Far('match:or helper', {
+-    checkMatches: (specimen, patts, check) => {
++    confirmMatches: (specimen, patts, reject) => {
+       const { length } = patts;
+       if (length === 0) {
+-        return check(
+-          false,
+-          X`${specimen} - no pattern disjuncts to match: ${qp(patts)}`,
++        return (
++          reject &&
++          reject`${specimen} - no pattern disjuncts to match: ${qp(patts)}`
+         );
+       }
+       // Special case disjunctions representing a single optional pattern for
+@@ -797,16 +823,16 @@ const makePatternKit = () => {
+       if (binaryUndefPattIdx !== -1) {
+         return (
+           specimen === undefined ||
+-          checkMatches(specimen, patts[1 - binaryUndefPattIdx], check)
++          confirmMatches(specimen, patts[1 - binaryUndefPattIdx], reject)
+         );
+       }
+       if (patts.some(patt => matches(specimen, patt))) {
+         return true;
+       }
+-      return check(false, X`${specimen} - Must match one of ${qp(patts)}`);
++      return reject && reject`${specimen} - Must match one of ${qp(patts)}`;
+     },
+ 
+-    checkIsWellFormed: matchAndHelper.checkIsWellFormed,
++    confirmIsWellFormed: matchAndHelper.confirmIsWellFormed,
+ 
+     getRankCover: (patts, encodePassable) =>
+       unionRankCovers(
+@@ -817,62 +843,59 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchNotHelper = Far('match:not helper', {
+-    checkMatches: (specimen, patt, check) => {
++    confirmMatches: (specimen, patt, reject) => {
+       if (matches(specimen, patt)) {
+-        return check(
+-          false,
+-          X`${specimen} - Must fail negated pattern: ${qp(patt)}`,
++        return (
++          reject && reject`${specimen} - Must fail negated pattern: ${qp(patt)}`
+         );
+       } else {
+         return true;
+       }
+     },
+ 
+-    checkIsWellFormed: checkPattern,
++    confirmIsWellFormed: confirmPattern,
+ 
+     getRankCover: (_patt, _encodePassable) => ['', '{'],
+   });
+ 
+   /** @type {MatchHelper} */
+   const matchScalarHelper = Far('match:scalar helper', {
+-    checkMatches: (specimen, _matcherPayload, check) =>
+-      checkScalarKey(specimen, check),
++    confirmMatches: (specimen, _matcherPayload, reject) =>
++      confirmScalarKey(specimen, reject),
+ 
+-    checkIsWellFormed: matchAnyHelper.checkIsWellFormed,
++    confirmIsWellFormed: matchAnyHelper.confirmIsWellFormed,
+ 
+     getRankCover: (_matchPayload, _encodePassable) => ['a', 'z~'],
+   });
+ 
+   /** @type {MatchHelper} */
+   const matchKeyHelper = Far('match:key helper', {
+-    checkMatches: (specimen, _matcherPayload, check) =>
+-      checkKey(specimen, check),
++    confirmMatches: (specimen, _matcherPayload, reject) =>
++      confirmKey(specimen, reject),
+ 
+-    checkIsWellFormed: matchAnyHelper.checkIsWellFormed,
++    confirmIsWellFormed: matchAnyHelper.confirmIsWellFormed,
+ 
+     getRankCover: (_matchPayload, _encodePassable) => ['a', 'z~'],
+   });
+ 
+   /** @type {MatchHelper} */
+   const matchPatternHelper = Far('match:pattern helper', {
+-    checkMatches: (specimen, _matcherPayload, check) =>
+-      checkPattern(specimen, check),
++    confirmMatches: (specimen, _matcherPayload, reject) =>
++      confirmPattern(specimen, reject),
+ 
+-    checkIsWellFormed: matchAnyHelper.checkIsWellFormed,
++    confirmIsWellFormed: matchAnyHelper.confirmIsWellFormed,
+ 
+     getRankCover: (_matchPayload, _encodePassable) => ['a', 'z~'],
+   });
+ 
+   /** @type {MatchHelper} */
+   const matchKindHelper = Far('match:kind helper', {
+-    checkMatches: checkKind,
++    confirmMatches: confirmKind,
+ 
+-    checkIsWellFormed: (allegedKeyKind, check) =>
++    confirmIsWellFormed: (allegedKeyKind, reject) =>
+       typeof allegedKeyKind === 'string' ||
+-      check(
+-        false,
+-        X`match:kind: payload: ${allegedKeyKind} - A kind name must be a string`,
+-      ),
++      (reject &&
++        reject`match:kind: payload: ${allegedKeyKind} - A kind name must be a string`),
+ 
+     getRankCover: (kind, _encodePassable) => {
+       let style;
+@@ -893,27 +916,27 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchTaggedHelper = Far('match:tagged helper', {
+-    checkMatches: (specimen, [tagPatt, payloadPatt], check) => {
++    confirmMatches: (specimen, [tagPatt, payloadPatt], reject) => {
+       if (passStyleOf(specimen) !== 'tagged') {
+-        return check(
+-          false,
+-          X`Expected tagged object, not ${q(
++        return (
++          reject &&
++          reject`Expected tagged object, not ${q(
+             passStyleOf(specimen),
+-          )}: ${specimen}`,
++          )}: ${specimen}`
+         );
+       }
+       return (
+-        checkMatches(getTag(specimen), tagPatt, check, 'tag') &&
+-        checkMatches(specimen.payload, payloadPatt, check, 'payload')
++        confirmNestedMatches(getTag(specimen), tagPatt, 'tag', reject) &&
++        confirmNestedMatches(specimen.payload, payloadPatt, 'payload', reject)
+       );
+     },
+ 
+-    checkIsWellFormed: (payload, check) =>
+-      checkMatches(
++    confirmIsWellFormed: (payload, reject) =>
++      confirmNestedMatches(
+         payload,
+         harden([MM.pattern(), MM.pattern()]),
+-        check,
+         'match:tagged payload',
++        reject,
+       ),
+ 
+     getRankCover: (_kind, _encodePassable) => getPassStyleCover('tagged'),
+@@ -921,20 +944,20 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchBigintHelper = Far('match:bigint helper', {
+-    checkMatches: (specimen, [limits = undefined], check) => {
++    confirmMatches: (specimen, [limits = undefined], reject) => {
+       const { decimalDigitsLimit } = limit(limits);
+       return (
+-        checkKind(specimen, 'bigint', check) &&
+-        checkDecimalDigitsLimit(specimen, decimalDigitsLimit, check)
++        confirmKind(specimen, 'bigint', reject) &&
++        confirmDecimalDigitsLimit(specimen, decimalDigitsLimit, reject)
+       );
+     },
+ 
+-    checkIsWellFormed: (payload, check) =>
+-      checkIsWellFormedWithLimit(
++    confirmIsWellFormed: (payload, reject) =>
++      confirmIsWellFormedWithLimit(
+         payload,
+         harden([]),
+-        check,
+         'match:bigint payload',
++        reject,
+       ),
+ 
+     getRankCover: (_matchPayload, _encodePassable) =>
+@@ -943,24 +966,23 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchNatHelper = Far('match:nat helper', {
+-    checkMatches: (specimen, [limits = undefined], check) => {
++    confirmMatches: (specimen, [limits = undefined], reject) => {
+       const { decimalDigitsLimit } = limit(limits);
++      const typedSpecimen = /** @type {bigint} */ (specimen);
+       return (
+-        checkKind(specimen, 'bigint', check) &&
+-        check(
+-          /** @type {bigint} */ (specimen) >= 0n,
+-          X`${specimen} - Must be non-negative`,
+-        ) &&
+-        checkDecimalDigitsLimit(specimen, decimalDigitsLimit, check)
++        confirmKind(specimen, 'bigint', reject) &&
++        (typedSpecimen >= 0n ||
++          (reject && reject`${typedSpecimen} - Must be non-negative`)) &&
++        confirmDecimalDigitsLimit(typedSpecimen, decimalDigitsLimit, reject)
+       );
+     },
+ 
+-    checkIsWellFormed: (payload, check) =>
+-      checkIsWellFormedWithLimit(
++    confirmIsWellFormed: (payload, reject) =>
++      confirmIsWellFormedWithLimit(
+         payload,
+         harden([]),
+-        check,
+         'match:nat payload',
++        reject,
+       ),
+ 
+     getRankCover: (_matchPayload, _encodePassable) =>
+@@ -970,26 +992,23 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchStringHelper = Far('match:string helper', {
+-    checkMatches: (specimen, [limits = undefined], check) => {
++    confirmMatches: (specimen, [limits = undefined], reject) => {
+       const { stringLengthLimit } = limit(limits);
+-      // prettier-ignore
++      const typedSpecimen = /** @type {string} */ (specimen);
+       return (
+-        checkKind(specimen, 'string', check) &&
+-          // eslint-disable-next-line @endo/restrict-comparison-operands
+-          (/** @type {string} */ (specimen).length <= stringLengthLimit ||
+-          check(
+-            false,
+-            X`string ${specimen} must not be bigger than ${stringLengthLimit}`,
+-          ))
++        confirmKind(specimen, 'string', reject) &&
++        (typedSpecimen.length <= stringLengthLimit ||
++          (reject &&
++            reject`string ${typedSpecimen} must not be bigger than ${stringLengthLimit}`))
+       );
+     },
+ 
+-    checkIsWellFormed: (payload, check) =>
+-      checkIsWellFormedWithLimit(
++    confirmIsWellFormed: (payload, reject) =>
++      confirmIsWellFormedWithLimit(
+         payload,
+         harden([]),
+-        check,
+         'match:string payload',
++        reject,
+       ),
+ 
+     getRankCover: (_matchPayload, _encodePassable) =>
+@@ -998,9 +1017,9 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchSymbolHelper = Far('match:symbol helper', {
+-    checkMatches: (specimen, [limits = undefined], check) => {
++    confirmMatches: (specimen, [limits = undefined], reject) => {
+       const { symbolNameLengthLimit } = limit(limits);
+-      if (!checkKind(specimen, 'symbol', check)) {
++      if (!confirmKind(specimen, 'symbol', reject)) {
+         return false;
+       }
+       const symbolName = nameForPassableSymbol(specimen);
+@@ -1008,20 +1027,21 @@ const makePatternKit = () => {
+       if (typeof symbolName !== 'string') {
+         throw Fail`internal: Passable symbol ${specimen} must have a passable name`;
+       }
+-      return check(
+-        symbolName.length <= symbolNameLengthLimit,
+-        X`Symbol name ${q(
+-          symbolName,
+-        )} must not be bigger than ${symbolNameLengthLimit}`,
++      return (
++        symbolName.length <= symbolNameLengthLimit ||
++        (reject &&
++          reject`Symbol name ${q(
++            symbolName,
++          )} must not be bigger than ${symbolNameLengthLimit}`)
+       );
+     },
+ 
+-    checkIsWellFormed: (payload, check) =>
+-      checkIsWellFormedWithLimit(
++    confirmIsWellFormed: (payload, reject) =>
++      confirmIsWellFormedWithLimit(
+         payload,
+         harden([]),
+-        check,
+         'match:symbol payload',
++        reject,
+       ),
+ 
+     getRankCover: (_matchPayload, _encodePassable) =>
+@@ -1030,11 +1050,11 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchRemotableHelper = Far('match:remotable helper', {
+-    checkMatches: (specimen, remotableDesc, check) => {
++    confirmMatches: (specimen, remotableDesc, reject) => {
+       if (isKind(specimen, 'remotable')) {
+         return true;
+       }
+-      if (check === identChecker) {
++      if (!reject) {
+         return false;
+       }
+       const { label } = remotableDesc;
+@@ -1046,20 +1066,18 @@ const makePatternKit = () => {
+           : // Tag must be quoted because it is potentially attacker-controlled
+             // (unlike `kindOf`, this does not reject unrecognized tags).
+             q(getTag(specimen));
+-      return check(
+-        false,
+-        // `label` can be embedded without quotes because it is provided by
+-        // local code like `M.remotable("...")`.
+-        X`${specimen} - Must be a remotable ${b(label)}, not ${kindDetails}`,
++      return (
++        reject &&
++        reject`${specimen} - Must be a remotable ${b(label)}, not ${kindDetails}`
+       );
+     },
+ 
+-    checkIsWellFormed: (allegedRemotableDesc, check) =>
+-      checkMatches(
++    confirmIsWellFormed: (allegedRemotableDesc, reject) =>
++      confirmNestedMatches(
+         allegedRemotableDesc,
+         harden({ label: MM.string() }),
+-        check,
+         'match:remotable payload',
++        reject,
+       ),
+ 
+     getRankCover: (_remotableDesc, _encodePassable) =>
+@@ -1068,11 +1086,11 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchLTEHelper = Far('match:lte helper', {
+-    checkMatches: (specimen, rightOperand, check) =>
++    confirmMatches: (specimen, rightOperand, reject) =>
+       keyLTE(specimen, rightOperand) ||
+-      check(false, X`${specimen} - Must be <= ${rightOperand}`),
++      (reject && reject`${specimen} - Must be <= ${rightOperand}`),
+ 
+-    checkIsWellFormed: checkKey,
++    confirmIsWellFormed: confirmKey,
+ 
+     getRankCover: (rightOperand, encodePassable) => {
+       const passStyle = passStyleOf(rightOperand);
+@@ -1090,22 +1108,22 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchLTHelper = Far('match:lt helper', {
+-    checkMatches: (specimen, rightOperand, check) =>
++    confirmMatches: (specimen, rightOperand, reject) =>
+       keyLT(specimen, rightOperand) ||
+-      check(false, X`${specimen} - Must be < ${rightOperand}`),
++      (reject && reject`${specimen} - Must be < ${rightOperand}`),
+ 
+-    checkIsWellFormed: checkKey,
++    confirmIsWellFormed: confirmKey,
+ 
+     getRankCover: matchLTEHelper.getRankCover,
+   });
+ 
+   /** @type {MatchHelper} */
+   const matchGTEHelper = Far('match:gte helper', {
+-    checkMatches: (specimen, rightOperand, check) =>
++    confirmMatches: (specimen, rightOperand, reject) =>
+       keyGTE(specimen, rightOperand) ||
+-      check(false, X`${specimen} - Must be >= ${rightOperand}`),
++      (reject && reject`${specimen} - Must be >= ${rightOperand}`),
+ 
+-    checkIsWellFormed: checkKey,
++    confirmIsWellFormed: confirmKey,
+ 
+     getRankCover: (rightOperand, encodePassable) => {
+       const passStyle = passStyleOf(rightOperand);
+@@ -1123,59 +1141,58 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchGTHelper = Far('match:gt helper', {
+-    checkMatches: (specimen, rightOperand, check) =>
++    confirmMatches: (specimen, rightOperand, reject) =>
+       keyGT(specimen, rightOperand) ||
+-      check(false, X`${specimen} - Must be > ${rightOperand}`),
++      (reject && reject`${specimen} - Must be > ${rightOperand}`),
+ 
+-    checkIsWellFormed: checkKey,
++    confirmIsWellFormed: confirmKey,
+ 
+     getRankCover: matchGTEHelper.getRankCover,
+   });
+ 
+   /** @type {MatchHelper} */
+   const matchRecordOfHelper = Far('match:recordOf helper', {
+-    checkMatches: (
++    confirmMatches: (
+       specimen,
+       [keyPatt, valuePatt, limits = undefined],
+-      check,
++      reject,
+     ) => {
+       const { numPropertiesLimit, propertyNameLengthLimit } = limit(limits);
+       return (
+-        checkKind(specimen, 'copyRecord', check) &&
+-        check(
+-          ownKeys(specimen).length <= numPropertiesLimit,
+-          X`Must not have more than ${q(
+-            numPropertiesLimit,
+-          )} properties: ${specimen}`,
+-        ) &&
++        confirmKind(specimen, 'copyRecord', reject) &&
++        (ownKeys(specimen).length <= numPropertiesLimit ||
++          (reject &&
++            reject`Must not have more than ${q(
++              numPropertiesLimit,
++            )} properties: ${specimen}`)) &&
+         entries(specimen).every(
+           ([key, value]) =>
+-            applyLabelingError(
+-              check,
+-              [
+-                key.length <= propertyNameLengthLimit,
+-                X`Property name must not be longer than ${q(
+-                  propertyNameLengthLimit,
+-                )}`,
+-              ],
+-              key,
+-            ) &&
+-            checkMatches(
++            (key.length <= propertyNameLengthLimit ||
++              (reject &&
++                applyLabelingError(
++                  () =>
++                    reject`Property name must not be longer than ${q(
++                      propertyNameLengthLimit,
++                    )}`,
++                  [],
++                  key,
++                ))) &&
++            confirmNestedMatches(
+               harden([key, value]),
+               harden([keyPatt, valuePatt]),
+-              check,
+               key,
++              reject,
+             ),
+         )
+       );
+     },
+ 
+-    checkIsWellFormed: (payload, check) =>
+-      checkIsWellFormedWithLimit(
++    confirmIsWellFormed: (payload, reject) =>
++      confirmIsWellFormedWithLimit(
+         payload,
+         harden([MM.pattern(), MM.pattern()]),
+-        check,
+         'match:recordOf payload',
++        reject,
+       ),
+ 
+     getRankCover: _entryPatt => getPassStyleCover('copyRecord'),
+@@ -1183,26 +1200,23 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchArrayOfHelper = Far('match:arrayOf helper', {
+-    checkMatches: (specimen, [subPatt, limits = undefined], check) => {
++    confirmMatches: (specimen, [subPatt, limits = undefined], reject) => {
+       const { arrayLengthLimit } = limit(limits);
+       // prettier-ignore
+       return (
+-        checkKind(specimen, 'copyArray', check) &&
++        confirmKind(specimen, 'copyArray', reject) &&
+         (/** @type {Array} */ (specimen).length <= arrayLengthLimit ||
+-          check(
+-            false,
+-            X`Array length ${specimen.length} must be <= limit ${arrayLengthLimit}`,
+-          )) &&
+-        arrayEveryMatchPattern(specimen, subPatt, check)
++          reject && reject`Array length ${specimen.length} must be <= limit ${arrayLengthLimit}`) &&
++        confirmArrayEveryMatchPattern(specimen, subPatt, '', reject)
+       );
+     },
+ 
+-    checkIsWellFormed: (payload, check) =>
+-      checkIsWellFormedWithLimit(
++    confirmIsWellFormed: (payload, reject) =>
++      confirmIsWellFormedWithLimit(
+         payload,
+         harden([MM.pattern()]),
+-        check,
+         'match:arrayOf payload',
++        reject,
+       ),
+ 
+     getRankCover: () => getPassStyleCover('copyArray'),
+@@ -1210,25 +1224,22 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchByteArrayHelper = Far('match:byteArray helper', {
+-    checkMatches: (specimen, [limits = undefined], check) => {
++    confirmMatches: (specimen, [limits = undefined], reject) => {
+       const { byteLengthLimit } = limit(limits);
+       // prettier-ignore
+       return (
+-        checkKind(specimen, 'byteArray', check) &&
++        confirmKind(specimen, 'byteArray', reject) &&
+         (/** @type {ArrayBuffer} */ (specimen).byteLength <= byteLengthLimit ||
+-          check(
+-            false,
+-            X`byteArray ${specimen} must not be bigger than ${byteLengthLimit}`,
+-          ))
++          reject && reject`byteArray ${specimen} must not be bigger than ${byteLengthLimit}`)
+       );
+     },
+ 
+-    checkIsWellFormed: (payload, check) =>
+-      checkIsWellFormedWithLimit(
++    confirmIsWellFormed: (payload, reject) =>
++      confirmIsWellFormedWithLimit(
+         payload,
+         harden([]),
+-        check,
+         'match:byteArray payload',
++        reject,
+       ),
+ 
+     getRankCover: (_matchPayload, _encodePassable) =>
+@@ -1237,26 +1248,31 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchSetOfHelper = Far('match:setOf helper', {
+-    checkMatches: (specimen, [keyPatt, limits = undefined], check) => {
++    confirmMatches: (specimen, [keyPatt, limits = undefined], reject) => {
+       const { numSetElementsLimit } = limit(limits);
+       return (
+-        checkKind(specimen, 'copySet', check) &&
+-        check(
+-          /** @type {Array} */ (specimen.payload).length < numSetElementsLimit,
+-          X`Set must not have more than ${q(numSetElementsLimit)} elements: ${
+-            specimen.payload.length
+-          }`,
+-        ) &&
+-        arrayEveryMatchPattern(specimen.payload, keyPatt, check, 'set elements')
++        ((confirmKind(specimen, 'copySet', reject) &&
++          /** @type {Array} */ (specimen.payload).length <
++            numSetElementsLimit) ||
++          (reject &&
++            reject`Set must not have more than ${q(numSetElementsLimit)} elements: ${
++              specimen.payload.length
++            }`)) &&
++        confirmArrayEveryMatchPattern(
++          specimen.payload,
++          keyPatt,
++          'set elements',
++          reject,
++        )
+       );
+     },
+ 
+-    checkIsWellFormed: (payload, check) =>
+-      checkIsWellFormedWithLimit(
++    confirmIsWellFormed: (payload, reject) =>
++      confirmIsWellFormedWithLimit(
+         payload,
+         harden([MM.pattern()]),
+-        check,
+         'match:setOf payload',
++        reject,
+       ),
+ 
+     getRankCover: () => getPassStyleCover('tagged'),
+@@ -1264,40 +1280,40 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchBagOfHelper = Far('match:bagOf helper', {
+-    checkMatches: (
++    confirmMatches: (
+       specimen,
+       [keyPatt, countPatt, limits = undefined],
+-      check,
++      reject,
+     ) => {
+       const { numUniqueBagElementsLimit, decimalDigitsLimit } = limit(limits);
+       return (
+-        checkKind(specimen, 'copyBag', check) &&
+-        check(
++        ((confirmKind(specimen, 'copyBag', reject) &&
+           /** @type {Array} */ (specimen.payload).length <=
+-            numUniqueBagElementsLimit,
+-          X`Bag must not have more than ${q(
+-            numUniqueBagElementsLimit,
+-          )} unique elements: ${specimen}`,
+-        ) &&
++            numUniqueBagElementsLimit) ||
++          (reject &&
++            reject`Bag must not have more than ${q(
++              numUniqueBagElementsLimit,
++            )} unique elements: ${specimen}`)) &&
+         specimen.payload.every(
+           ([key, count], i) =>
+-            checkMatches(key, keyPatt, check, `bag keys[${i}]`) &&
++            confirmNestedMatches(key, keyPatt, `bag keys[${i}]`, reject) &&
+             applyLabelingError(
+-              checkDecimalDigitsLimit,
+-              [count, decimalDigitsLimit, check],
++              () =>
++                confirmDecimalDigitsLimit(count, decimalDigitsLimit, reject) &&
++                confirmMatches(count, countPatt, reject),
++              [],
+               `bag counts[${i}]`,
+-            ) &&
+-            checkMatches(count, countPatt, check, `bag counts[${i}]`),
++            ),
+         )
+       );
+     },
+ 
+-    checkIsWellFormed: (payload, check) =>
+-      checkIsWellFormedWithLimit(
++    confirmIsWellFormed: (payload, reject) =>
++      confirmIsWellFormedWithLimit(
+         payload,
+         harden([MM.pattern(), MM.pattern()]),
+-        check,
+         'match:bagOf payload',
++        reject,
+       ),
+ 
+     getRankCover: () => getPassStyleCover('tagged'),
+@@ -1307,18 +1323,18 @@ const makePatternKit = () => {
+    * @param {CopyArray} elements
+    * @param {Pattern} elementPatt
+    * @param {bigint} bound Must be >= 1n
++   * @param {Rejector} reject
+    * @param {CopyArray} [inResults]
+    * @param {CopyArray} [outResults]
+-   * @param {Checker} [check]
+    * @returns {boolean}
+    */
+-  const elementsHasSplit = (
++  const confirmElementsHasSplit = (
+     elements,
+     elementPatt,
+     bound,
++    reject,
+     inResults = undefined,
+     outResults = undefined,
+-    check = identChecker,
+   ) => {
+     let count = 0n;
+     // Since this feature is motivated by ERTP's use on
+@@ -1343,9 +1359,9 @@ const makePatternKit = () => {
+         outResults.push(element);
+       }
+     }
+-    return check(
+-      count >= bound,
+-      X`Has only ${q(count)} matches, but needs ${q(bound)}`,
++    return (
++      count >= bound ||
++      (reject && reject`Has only ${q(count)} matches, but needs ${q(bound)}`)
+     );
+   };
+ 
+@@ -1353,18 +1369,18 @@ const makePatternKit = () => {
+    * @param {CopyArray<[Key, bigint]>} pairs
+    * @param {Pattern} elementPatt
+    * @param {bigint} bound Must be >= 1n
++   * @param {Rejector} reject
+    * @param {CopyArray<[Key, bigint]>} [inResults]
+    * @param {CopyArray<[Key, bigint]>} [outResults]
+-   * @param {Checker} [check]
+    * @returns {boolean}
+    */
+   const pairsHasSplit = (
+     pairs,
+     elementPatt,
+     bound,
++    reject,
+     inResults = undefined,
+     outResults = undefined,
+-    check = identChecker,
+   ) => {
+     let count = 0n;
+     // Since this feature is motivated by ERTP's use on
+@@ -1397,9 +1413,9 @@ const makePatternKit = () => {
+         outResults.push([element, num]);
+       }
+     }
+-    return check(
+-      count >= bound,
+-      X`Has only ${q(count)} matches, but needs ${q(bound)}`,
++    return (
++      count >= bound ||
++      (reject && reject`Has only ${q(count)} matches, but needs ${q(bound)}`)
+     );
+   };
+ 
+@@ -1408,18 +1424,18 @@ const makePatternKit = () => {
+    * @param {Container} specimen
+    * @param {Pattern} elementPatt
+    * @param {bigint} bound Must be >= 1n
++   * @param {Rejector} reject
+    * @param {boolean} [needInResults]
+    * @param {boolean} [needOutResults]
+-   * @param {Checker} [check]
+    * @returns {[Container | undefined, Container | undefined] | false}
+    */
+-  const containerHasSplit = (
++  const confirmContainerHasSplit = (
+     specimen,
+     elementPatt,
+     bound,
++    reject,
+     needInResults = false,
+     needOutResults = false,
+-    check = identChecker,
+   ) => {
+     const inResults = needInResults ? [] : undefined;
+     const outResults = needOutResults ? [] : undefined;
+@@ -1427,29 +1443,29 @@ const makePatternKit = () => {
+     switch (kind) {
+       case 'copyArray': {
+         if (
+-          !elementsHasSplit(
++          !confirmElementsHasSplit(
+             specimen,
+             elementPatt,
+             bound,
++            reject,
+             inResults,
+             outResults,
+-            check,
+           )
+         ) {
+-          // check logic already performed by elementsHasSplit
++          // check logic already performed by confirmContainerHasSplit
+           return false;
+         }
+         return [inResults, outResults];
+       }
+       case 'copySet': {
+         if (
+-          !elementsHasSplit(
++          !confirmElementsHasSplit(
+             specimen.payload,
+             elementPatt,
+             bound,
++            reject,
+             inResults,
+             outResults,
+-            check,
+           )
+         ) {
+           return false;
+@@ -1465,9 +1481,9 @@ const makePatternKit = () => {
+             specimen.payload,
+             elementPatt,
+             bound,
++            reject,
+             inResults,
+             outResults,
+-            check,
+           )
+         ) {
+           return false;
+@@ -1478,7 +1494,7 @@ const makePatternKit = () => {
+         ];
+       }
+       default: {
+-        return check(false, X`unexpected ${q(kind)}`);
++        return reject && reject`unexpected ${q(kind)}`;
+       }
+     }
+   };
+@@ -1488,40 +1504,40 @@ const makePatternKit = () => {
+     /**
+      * @param {CopyArray | CopySet | CopyBag} specimen
+      * @param {[Pattern, bigint, Limits?]} payload
+-     * @param {Checker} check
++     * @param {Rejector} reject
+      */
+-    checkMatches: (
++    confirmMatches: (
+       specimen,
+       [elementPatt, bound, limits = undefined],
+-      check,
++      reject,
+     ) => {
+-      const kind = kindOf(specimen, check);
++      const kind = confirmKindOf(specimen, reject);
+       const { decimalDigitsLimit } = limit(limits);
+       if (
+         !applyLabelingError(
+-          checkDecimalDigitsLimit,
+-          [bound, decimalDigitsLimit, check],
++          confirmDecimalDigitsLimit,
++          [bound, decimalDigitsLimit, reject],
+           `${kind} matches`,
+         )
+       ) {
+         return false;
+       }
+-      return !!containerHasSplit(
++      return !!confirmContainerHasSplit(
+         specimen,
+         elementPatt,
+         bound,
++        reject,
+         false,
+         false,
+-        check,
+       );
+     },
+ 
+-    checkIsWellFormed: (payload, check) =>
+-      checkIsWellFormedWithLimit(
++    confirmIsWellFormed: (payload, reject) =>
++      confirmIsWellFormedWithLimit(
+         payload,
+         harden([MM.pattern(), MM.gte(1n)]),
+-        check,
+         'M.containerHas payload',
++        reject,
+       ),
+ 
+     getRankCover: () => getPassStyleCover('tagged'),
+@@ -1529,42 +1545,41 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchMapOfHelper = Far('match:mapOf helper', {
+-    checkMatches: (
++    confirmMatches: (
+       specimen,
+       [keyPatt, valuePatt, limits = undefined],
+-      check,
++      reject,
+     ) => {
+       const { numMapEntriesLimit } = limit(limits);
+       return (
+-        checkKind(specimen, 'copyMap', check) &&
+-        check(
+-          /** @type {Array} */ (specimen.payload.keys).length <=
+-            numMapEntriesLimit,
+-          X`CopyMap must have no more than ${q(
+-            numMapEntriesLimit,
+-          )} entries: ${specimen}`,
+-        ) &&
+-        arrayEveryMatchPattern(
++        confirmKind(specimen, 'copyMap', reject) &&
++        // eslint-disable-next-line @endo/restrict-comparison-operands
++        (specimen.payload.keys.length <= numMapEntriesLimit ||
++          (reject &&
++            reject`CopyMap must have no more than ${q(
++              numMapEntriesLimit,
++            )} entries: ${specimen}`)) &&
++        confirmArrayEveryMatchPattern(
+           specimen.payload.keys,
+           keyPatt,
+-          check,
+           'map keys',
++          reject,
+         ) &&
+-        arrayEveryMatchPattern(
++        confirmArrayEveryMatchPattern(
+           specimen.payload.values,
+           valuePatt,
+-          check,
+           'map values',
++          reject,
+         )
+       );
+     },
+ 
+-    checkIsWellFormed: (payload, check) =>
+-      checkIsWellFormedWithLimit(
++    confirmIsWellFormed: (payload, reject) =>
++      confirmIsWellFormedWithLimit(
+         payload,
+         harden([MM.pattern(), MM.pattern()]),
+-        check,
+         'match:mapOf payload',
++        reject,
+       ),
+ 
+     getRankCover: _entryPatt => getPassStyleCover('tagged'),
+@@ -1606,12 +1621,12 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchSplitArrayHelper = Far('match:splitArray helper', {
+-    checkMatches: (
++    confirmMatches: (
+       specimen,
+       [requiredPatt, optionalPatt = [], restPatt = MM.any()],
+-      check,
++      reject,
+     ) => {
+-      if (!checkKind(specimen, 'copyArray', check)) {
++      if (!confirmKind(specimen, 'copyArray', reject)) {
+         return false;
+       }
+       const { requiredSpecimen, optionalSpecimen, restSpecimen } =
+@@ -1623,29 +1638,37 @@ const makePatternKit = () => {
+       let argNum = 0;
+       return (
+         (requiredSpecimen.length === requiredPatt.length ||
+-          check(
+-            false,
+-            X`Expected at least ${q(
++          (reject &&
++            reject`Expected at least ${q(
+               requiredPatt.length,
+-            )} arguments: ${specimen}`,
+-          )) &&
++            )} arguments: ${specimen}`)) &&
+         requiredPatt.every((p, i) =>
+-          // eslint-disable-next-line no-plusplus
+-          checkMatches(requiredSpecimen[i], p, check, `arg ${argNum++}`),
++          confirmNestedMatches(
++            requiredSpecimen[i],
++            p,
++            // eslint-disable-next-line no-plusplus
++            `arg ${argNum++}`,
++            reject,
++          ),
+         ) &&
+         partialPatt.every((p, i) =>
+-          // eslint-disable-next-line no-plusplus
+-          checkMatches(optionalSpecimen[i], p, check, `arg ${argNum++}?`),
++          confirmNestedMatches(
++            optionalSpecimen[i],
++            p,
++            // eslint-disable-next-line no-plusplus
++            `arg ${argNum++}?`,
++            reject,
++          ),
+         ) &&
+-        checkMatches(restSpecimen, restPatt, check, '...rest')
++        confirmNestedMatches(restSpecimen, restPatt, '...rest', reject)
+       );
+     },
+ 
+     /**
+      * @param {Array} splitArray
+-     * @param {Checker} check
++     * @param {Rejector} reject
+      */
+-    checkIsWellFormed: (splitArray, check) => {
++    confirmIsWellFormed: (splitArray, reject) => {
+       if (
+         passStyleOf(splitArray) === 'copyArray' &&
+         (splitArray.length >= 1 || splitArray.length <= 3)
+@@ -1663,11 +1686,11 @@ const makePatternKit = () => {
+           return true;
+         }
+       }
+-      return check(
+-        false,
+-        X`Must be an array of a requiredPatt array, an optional optionalPatt array, and an optional restPatt: ${q(
++      return (
++        reject &&
++        reject`Must be an array of a requiredPatt array, an optional optionalPatt array, and an optional restPatt: ${q(
+           splitArray,
+-        )}`,
++        )}`
+       );
+     },
+ 
+@@ -1726,12 +1749,12 @@ const makePatternKit = () => {
+ 
+   /** @type {MatchHelper} */
+   const matchSplitRecordHelper = Far('match:splitRecord helper', {
+-    checkMatches: (
++    confirmMatches: (
+       specimen,
+       [requiredPatt, optionalPatt = {}, restPatt = MM.any()],
+-      check,
++      reject,
+     ) => {
+-      if (!checkKind(specimen, 'copyRecord', check)) {
++      if (!confirmKind(specimen, 'copyRecord', reject)) {
+         return false;
+       }
+       const { requiredSpecimen, optionalSpecimen, restSpecimen } =
+@@ -1740,24 +1763,24 @@ const makePatternKit = () => {
+       const partialNames = /** @type {string[]} */ (ownKeys(optionalSpecimen));
+       const partialPatt = adaptRecordPattern(optionalPatt, partialNames);
+       return (
+-        checkMatches(requiredSpecimen, requiredPatt, check) &&
++        confirmMatches(requiredSpecimen, requiredPatt, reject) &&
+         partialNames.every(name =>
+-          checkMatches(
++          confirmNestedMatches(
+             optionalSpecimen[name],
+             partialPatt[name],
+-            check,
+             `${name}?`,
++            reject,
+           ),
+         ) &&
+-        checkMatches(restSpecimen, restPatt, check, '...rest')
++        confirmNestedMatches(restSpecimen, restPatt, '...rest', reject)
+       );
+     },
+ 
+     /**
+      * @param {Array} splitArray
+-     * @param {Checker} check
++     * @param {Rejector} reject
+      */
+-    checkIsWellFormed: (splitArray, check) => {
++    confirmIsWellFormed: (splitArray, reject) => {
+       if (
+         passStyleOf(splitArray) === 'copyArray' &&
+         (splitArray.length >= 1 || splitArray.length <= 3)
+@@ -1775,11 +1798,11 @@ const makePatternKit = () => {
+           return true;
+         }
+       }
+-      return check(
+-        false,
+-        X`Must be an array of a requiredPatt record, an optional optionalPatt record, and an optional restPatt: ${q(
++      return (
++        reject &&
++        reject`Must be an array of a requiredPatt record, an optional optionalPatt record, and an optional restPatt: ${q(
+           splitArray,
+-        )}`,
++        )}`
+       );
+     },
+ 
+@@ -2031,7 +2054,8 @@ const makePatternKit = () => {
+   });
+ 
+   return harden({
+-    checkMatches,
++    confirmMatches,
++    confirmLabeledMatches: confirmNestedMatches,
+     matches,
+     mustMatch,
+     assertPattern,
+@@ -2039,7 +2063,7 @@ const makePatternKit = () => {
+     getRankCover,
+     M,
+     kindOf,
+-    containerHasSplit,
++    containerHasSplit: confirmContainerHasSplit,
+   });
+ };
+ 
+@@ -2050,7 +2074,8 @@ const makePatternKit = () => {
+ // uses of `getRankCover`, for clarity during development, `makePatternKit`
+ // is not currently exported.
+ export const {
+-  checkMatches,
++  confirmMatches,
++  confirmLabeledMatches,
+   matches,
+   mustMatch,
+   assertPattern,
+@@ -2078,7 +2103,7 @@ export const AwaitArgGuardShape = M.kind('guard:awaitArgGuard');
+  */
+ export const isAwaitArgGuard = specimen =>
+   matches(specimen, AwaitArgGuardShape);
+-harden(isAwaitArgGuard);
++hideAndHardenFunction(isAwaitArgGuard);
+ 
+ /**
+  * @param {any} specimen
+@@ -2087,7 +2112,7 @@ harden(isAwaitArgGuard);
+ export const assertAwaitArgGuard = specimen => {
+   mustMatch(specimen, AwaitArgGuardShape, 'awaitArgGuard');
+ };
+-harden(assertAwaitArgGuard);
++hideAndHardenFunction(assertAwaitArgGuard);
+ 
+ /**
+  * @param {Pattern} argPattern
+@@ -2158,7 +2183,7 @@ export const MethodGuardShape = M.kind('guard:methodGuard');
+ export const assertMethodGuard = specimen => {
+   mustMatch(specimen, MethodGuardShape, 'methodGuard');
+ };
+-harden(assertMethodGuard);
++hideAndHardenFunction(assertMethodGuard);
+ 
+ /**
+  * @param {'sync'|'async'} callKind
+@@ -2225,7 +2250,7 @@ export const InterfaceGuardShape = M.kind('guard:interfaceGuard');
+ export const assertInterfaceGuard = specimen => {
+   mustMatch(specimen, InterfaceGuardShape, 'interfaceGuard');
+ };
+-harden(assertInterfaceGuard);
++hideAndHardenFunction(assertInterfaceGuard);
+ 
+ /**
+  * @template {Record<PropertyKey, MethodGuard>} [M = Record<PropertyKey, MethodGuard>]
+diff --git a/src/patterns/types.d.ts b/src/patterns/types.d.ts
+index d402b7767399cae9daadff0825e47b79fa43d7f6..fa2b63b729c68d93151d3737f7291bff438852f3 100644
+--- a/src/patterns/types.d.ts
++++ b/src/patterns/types.d.ts
+@@ -1,3 +1,6 @@
++import type { Rejector } from '@endo/errors/rejector.js';
++import type { Passable } from '@endo/pass-style';
++import type { MatcherNamespace, Pattern, GetRankCover, Kind } from '../types.js';
+ /**
+  * This factors out only the parts specific to each kind of Matcher. It is
+  * encapsulated, and its methods can make the stated unchecked assumptions
+@@ -8,12 +11,12 @@ export type MatchHelper = {
+      * Reports whether `allegedPayload` is valid as the payload of a CopyTagged
+      * whose tag corresponds with this MatchHelper's Matchers.
+      */
+-    checkIsWellFormed: (allegedPayload: Passable, check: Checker) => boolean;
++    confirmIsWellFormed: (allegedPayload: Passable, reject: Rejector) => boolean;
+     /**
+      * Assuming validity of `matcherPayload` as the payload of a Matcher corresponding
+      * with this MatchHelper, reports whether `specimen` is matched by that Matcher.
+      */
+-    checkMatches: (specimen: Passable, matcherPayload: Passable, check: Checker) => boolean;
++    confirmMatches: (specimen: Passable, matcherPayload: Passable, reject: Rejector) => boolean;
+     /**
+      * Assumes this is the payload of a CopyTagged with the corresponding
+      * matchTag. Return a RankCover to bound from below and above,
+@@ -25,19 +28,13 @@ export type MatchHelper = {
+     getRankCover: GetRankCover;
+ };
+ export type PatternKit = {
+-    checkMatches: (specimen: any, patt: Passable, check: Checker, label?: string | number) => boolean;
++    confirmMatches: (specimen: any, patt: Passable, reject: Rejector, label?: string | number) => boolean;
+     matches: (specimen: any, patt: Pattern) => boolean;
+     mustMatch: (specimen: any, patt: Pattern, label?: string | number) => void;
+     assertPattern: (patt: Pattern) => void;
+     isPattern: (patt: any) => boolean;
+     getRankCover: GetRankCover;
+     M: MatcherNamespace;
+-    kindOf: (specimen: Passable, check?: Checker) => Kind | undefined;
++    kindOf: (specimen: Passable) => Kind | undefined;
+ };
+-import type { Passable } from '@endo/pass-style';
+-import type { Checker } from '@endo/pass-style';
+-import type { GetRankCover } from '../types.js';
+-import type { Pattern } from '../types.js';
+-import type { MatcherNamespace } from '../types.js';
+-import type { Kind } from '../types.js';
+ //# sourceMappingURL=types.d.ts.map
+\ No newline at end of file
+diff --git a/src/patterns/types.d.ts.map b/src/patterns/types.d.ts.map
+index 18b139de20db2ac051f873c01a974e15c39df557..8b13743d57749a4667f51f2d69d66f957c6934b9 100644
+--- a/src/patterns/types.d.ts.map
++++ b/src/patterns/types.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"types.d.ts","sourceRoot":"","sources":["types.js"],"names":[],"mappings":";;;;;;;;;;uBAec,CAAC,cAAc,EAAE,QAAQ,EACxB,KAAK,EAAE,OAAO,KACrB,OAAO;;;;;kBAID,CAAC,QAAQ,EAAE,QAAQ,EAClB,cAAc,EAAE,QAAQ,EACxB,KAAK,EAAE,OAAO,KACrB,OAAO;;;;;;;;;kBAID,YAAY;;;kBAWZ,CAAC,QAAQ,EAAE,GAAG,EACb,IAAI,EAAE,QAAQ,EACd,KAAK,EAAE,OAAO,EACd,KAAK,CAAC,EAAE,MAAM,GAAC,MAAM,KAC5B,OAAO;aACD,CAAC,QAAQ,EAAE,GAAG,EAAE,IAAI,EAAE,OAAO,KAAK,OAAO;eACzC,CAAC,QAAQ,EAAE,GAAG,EAAE,IAAI,EAAE,OAAO,EAAE,KAAK,CAAC,EAAE,MAAM,GAAC,MAAM,KAAK,IAAI;mBAC7D,CAAC,IAAI,EAAE,OAAO,KAAK,IAAI;eACvB,CAAC,IAAI,EAAE,GAAG,KAAK,OAAO;kBACtB,YAAY;OACZ,gBAAgB;YAChB,CAAC,QAAQ,EAAE,QAAQ,EAAE,KAAK,CAAC,EAAE,OAAO,KAAK,IAAI,GAAG,SAAS;;8BA7CnC,kBAAkB;6BAAlB,kBAAkB;kCACU,aAAa;6BAAb,aAAa;sCAAb,aAAa;0BAAb,aAAa"}
+\ No newline at end of file
++{"version":3,"file":"types.d.ts","sourceRoot":"","sources":["types.ts"],"names":[],"mappings":"AAEA,OAAO,KAAK,EAAE,QAAQ,EAAE,MAAM,0BAA0B,CAAC;AACzD,OAAO,KAAK,EAAE,QAAQ,EAAE,MAAM,kBAAkB,CAAC;AACjD,OAAO,KAAK,EACV,gBAAgB,EAChB,OAAO,EACP,YAAY,EACZ,IAAI,EACL,MAAM,aAAa,CAAC;AAErB;;;;GAIG;AACH,MAAM,MAAM,WAAW,GAAG;IACxB;;;OAGG;IACH,mBAAmB,EAAE,CAAC,cAAc,EAAE,QAAQ,EAAE,MAAM,EAAE,QAAQ,KAAK,OAAO,CAAC;IAE7E;;;OAGG;IACH,cAAc,EAAE,CACd,QAAQ,EAAE,QAAQ,EAClB,cAAc,EAAE,QAAQ,EACxB,MAAM,EAAE,QAAQ,KACb,OAAO,CAAC;IAEb;;;;;;;OAOG;IACH,YAAY,EAAE,YAAY,CAAC;CAC5B,CAAC;AAEF,MAAM,MAAM,UAAU,GAAG;IACvB,cAAc,EAAE,CACd,QAAQ,EAAE,GAAG,EACb,IAAI,EAAE,QAAQ,EACd,MAAM,EAAE,QAAQ,EAChB,KAAK,CAAC,EAAE,MAAM,GAAG,MAAM,KACpB,OAAO,CAAC;IACb,OAAO,EAAE,CAAC,QAAQ,EAAE,GAAG,EAAE,IAAI,EAAE,OAAO,KAAK,OAAO,CAAC;IACnD,SAAS,EAAE,CAAC,QAAQ,EAAE,GAAG,EAAE,IAAI,EAAE,OAAO,EAAE,KAAK,CAAC,EAAE,MAAM,GAAG,MAAM,KAAK,IAAI,CAAC;IAC3E,aAAa,EAAE,CAAC,IAAI,EAAE,OAAO,KAAK,IAAI,CAAC;IACvC,SAAS,EAAE,CAAC,IAAI,EAAE,GAAG,KAAK,OAAO,CAAC;IAClC,YAAY,EAAE,YAAY,CAAC;IAC3B,CAAC,EAAE,gBAAgB,CAAC;IACpB,MAAM,EAAE,CAAC,QAAQ,EAAE,QAAQ,KAAK,IAAI,GAAG,SAAS,CAAC;CAClD,CAAC"}
+\ No newline at end of file
+diff --git a/src/patterns/types.ts b/src/patterns/types.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..14ab6de1cf5438e8f0116280e3a1be532f8f20b3
+--- /dev/null
++++ b/src/patterns/types.ts
+@@ -0,0 +1,59 @@
++/// <reference types="ses"/>
++
++import type { Rejector } from '@endo/errors/rejector.js';
++import type { Passable } from '@endo/pass-style';
++import type {
++  MatcherNamespace,
++  Pattern,
++  GetRankCover,
++  Kind,
++} from '../types.js';
++
++/**
++ * This factors out only the parts specific to each kind of Matcher. It is
++ * encapsulated, and its methods can make the stated unchecked assumptions
++ * enforced by the common calling logic.
++ */
++export type MatchHelper = {
++  /**
++   * Reports whether `allegedPayload` is valid as the payload of a CopyTagged
++   * whose tag corresponds with this MatchHelper's Matchers.
++   */
++  confirmIsWellFormed: (allegedPayload: Passable, reject: Rejector) => boolean;
++
++  /**
++   * Assuming validity of `matcherPayload` as the payload of a Matcher corresponding
++   * with this MatchHelper, reports whether `specimen` is matched by that Matcher.
++   */
++  confirmMatches: (
++    specimen: Passable,
++    matcherPayload: Passable,
++    reject: Rejector,
++  ) => boolean;
++
++  /**
++   * Assumes this is the payload of a CopyTagged with the corresponding
++   * matchTag. Return a RankCover to bound from below and above,
++   * in rank order, all possible Passables that would match this Matcher.
++   * The left element must be before or the same rank as any possible
++   * matching specimen. The right element must be after or the same
++   * rank as any possible matching specimen.
++   */
++  getRankCover: GetRankCover;
++};
++
++export type PatternKit = {
++  confirmMatches: (
++    specimen: any,
++    patt: Passable,
++    reject: Rejector,
++    label?: string | number,
++  ) => boolean;
++  matches: (specimen: any, patt: Pattern) => boolean;
++  mustMatch: (specimen: any, patt: Pattern, label?: string | number) => void;
++  assertPattern: (patt: Pattern) => void;
++  isPattern: (patt: any) => boolean;
++  getRankCover: GetRankCover;
++  M: MatcherNamespace;
++  kindOf: (specimen: Passable) => Kind | undefined;
++};
+diff --git a/src/types.d.ts b/src/types.d.ts
+index 9211f4193d08117a96289d1a72595a39fa300bec..c4cfc9e090d8982382a89408e2bdeb65a4683b48 100644
+--- a/src/types.d.ts
++++ b/src/types.d.ts
+@@ -1,6 +1,9 @@
+-export type FullCompare = import("@endo/marshal").FullCompare;
++import type { Rejector } from '@endo/errors/rejector.js';
++import type { RemotableBrand } from '@endo/eventual-send';
++import type { CopyArray, CopyRecord, CopyTagged, Passable, PassStyle, Atom, RemotableObject } from '@endo/pass-style';
++import type { PartialCompare, PartialComparison, RankCover } from '@endo/marshal';
++export type { FullCompare } from '@endo/marshal';
+ /**
+- *
+  * Keys are Passable arbitrarily-nested pass-by-copy containers
+  * (CopyArray, CopyRecord, CopySet, CopyBag, CopyMap) in which every
+  * non-container leaf is either a Passable primitive value or a Remotable (a
+@@ -52,12 +55,11 @@ export type FullCompare = import("@endo/marshal").FullCompare;
+  *    in fact only in the mutually incomparable case can the rank be said to
+  *    contain more than one key.
+  */
+-export type Key = Exclude<Passable<RemotableObject, never>, Error | Promise<any>>;
+-export type ScalarKey = Atom | RemotableObject;
+-export type GetRankCover = (payload: Passable, encodePassable: KeyToDBKey) => RankCover;
++export type Key = Exclude<Passable<RemotableObject | RemotableBrand<any, any>, never>, Error | Promise<any>>;
++export type ScalarKey = Atom | RemotableObject | RemotableBrand<any, any>;
+ export type KeyToDBKey = (key: Key) => string;
++export type GetRankCover = (payload: Passable, encodePassable: KeyToDBKey) => RankCover;
+ /**
+- *
+  * Patterns are Passable arbitrarily-nested pass-by-copy containers
+  * (CopyArray, CopyRecord, CopySet, CopyBag, CopyMap) in which every
+  * non-container leaf is either a Key or a {@link Matcher}, or such leaves in
+@@ -103,25 +105,22 @@ export type KeyToDBKey = (key: Key) => string;
+  */
+ export type Pattern = Exclude<Passable, Error | Promise<any>>;
+ /**
+- *
+  * A Passable collection of Keys that are all mutually distinguishable
+  * according to the key distributed equality semantics exposed by {@link keyEQ}.
+  */
+-export type CopySet<K extends Key = Key> = CopyTagged<"copySet", K[]>;
++export type CopySet<K extends Key = Key> = CopyTagged<'copySet', K[]>;
+ /**
+- *
+  * A Passable collection of entries with Keys that are all mutually distinguishable
+  * according to the key distributed equality semantics exposed by {@link keyEQ},
+  * each with a corresponding positive cardinality.
+  */
+-export type CopyBag<K extends Key = Key> = CopyTagged<"copyBag", [K, bigint][]>;
++export type CopyBag<K extends Key = Key> = CopyTagged<'copyBag', [K, bigint][]>;
+ /**
+- *
+  * A Passable collection of entries with Keys that are all mutually distinguishable
+  * according to the key distributed equality semantics exposed by {@link keyEQ},
+  * each with a corresponding Passable value.
+  */
+-export type CopyMap<K extends Key = Key, V extends Passable = Passable> = CopyTagged<"copyMap", {
++export type CopyMap<K extends Key = Key, V extends Passable = Passable> = CopyTagged<'copyMap', {
+     keys: K[];
+     values: V[];
+ }>;
+@@ -144,10 +143,10 @@ export type KeyComparison = PartialComparison;
+  * A function that implements a partial order over Keys.
+  * Key order (a partial order) and rank order (a total preorder) are
+  * co-designed to support efficient range search for Key-based queries
+- * (@see {@link  ../README.md#rank-order-and-key-order}).
++ * (@see {@link @endo/patterns!#rank-order-and-key-order}).
+  */
+ export type KeyCompare = PartialCompare<Key>;
+-export type CheckPattern = (allegedPattern: Passable, check: Checker) => boolean;
++export type ConfirmPattern = (allegedPattern: Passable, reject: Rejector) => boolean;
+ export type AllLimits = {
+     decimalDigitsLimit: number;
+     stringLengthLimit: number;
+@@ -164,9 +163,14 @@ export type Limits = Partial<AllLimits>;
+ /**
+  * It is either a PassStyle other than 'tagged', or, if the underlying
+  * PassStyle is 'tagged', then the `getTag` value for tags that are
+- * recognized at the
++ * recognized at the @endo/patterns level of abstraction. For each of those
++ * tags, a tagged record only has that kind if it satisfies the invariants
++ * that the @endo/patterns level associates with that kind.
++ */
++export type Kind = Exclude<PassStyle, 'tagged'> | 'copySet' | 'copyBag' | 'copyMap' | `match:${string}` | `guard:${string}`;
++/**
++ * Matchers for characterizing Passables and compound shapes.
+  */
+-export type Kind = Exclude<PassStyle, "tagged"> | "copySet" | "copyBag" | "copyMap" | `match:${any}` | `guard:${any}`;
+ export type PatternMatchers = {
+     /**
+      * Matches any Passable.
+@@ -392,13 +396,12 @@ export type PatternMatchers = {
+      */
+     splitRecord: (required: CopyRecord<Pattern>, optional?: CopyRecord<Pattern>, rest?: Pattern) => Matcher;
+     /**
+-     * Deprecated. Use `M.splitArray` or `M.splitRecord` instead.
+      * An array or record is split into the first part that is matched by
+      * `basePatt`, and the remainder, which is matched against `rest` if present.
++     * @deprecated Use `M.splitArray` or `M.splitRecord` instead.
+      */
+     split: (basePatt: CopyRecord<any> | CopyArray<any>, rest?: Pattern) => Matcher;
+     /**
+-     * Deprecated. Use `M.splitArray` or `M.splitRecord` instead.
+      * An array or record is split into the first part that is matched by
+      * `basePatt`, and the remainder, which is matched against `rest` if present.
+      * `M.partial` differs from `M.split` in the handling of data that is
+@@ -407,6 +410,7 @@ export type PatternMatchers = {
+      *     that are not present on the specimen.
+      *   - For a CopyArray, `M.partial` ignores elements of `basePatt`
+      *     at indices beyond the maximum index of the specimen.
++     * @deprecated Use `M.splitArray` or `M.splitRecord` instead.
+      */
+     partial: (basePatt: CopyRecord<any> | CopyArray<any>, rest?: Pattern) => Matcher;
+     /**
+@@ -426,32 +430,60 @@ export type PatternMatchers = {
+      */
+     opt: (subPatt: Pattern) => Pattern;
+ };
+-export type DefaultGuardType = undefined | "passable" | "raw";
++/**
++ * Default guard choice for method guards: undefined, 'passable', or 'raw'.
++ */
++export type DefaultGuardType = undefined | 'passable' | 'raw';
++/**
++ * Overload for strictly-typed interface guards (no sloppy mode).
++ */
+ export type MakeInterfaceGuardStrict = <M extends Record<PropertyKey, MethodGuard>>(interfaceName: string, methodGuards: M, options: {
+     defaultGuards?: undefined;
++    /**
++     * @deprecated This has no effect.
++     */
+     sloppy?: false;
+ }) => InterfaceGuard<M>;
++/**
++ * Overload for sloppy interface guards (looser typing).
++ * @deprecated Use {@link MakeInterfaceGuardStrict} or {@link MakeInterfaceGuardGeneral} instead.
++ */
+ export type MakeInterfaceGuardSloppy = (interfaceName: string, methodGuards: any, options: {
+-    defaultGuards?: "passable" | "raw";
++    defaultGuards?: 'passable' | 'raw';
++    /**
++     * @deprecated Use `defaultGuards: undefined` instead.
++     */
+     sloppy?: true;
+ }) => InterfaceGuard<any>;
++/**
++ * General overload for interface guards.
++ */
+ export type MakeInterfaceGuardGeneral = <M extends Record<PropertyKey, MethodGuard>>(interfaceName: string, methodGuards: M, options?: {
+     defaultGuards?: DefaultGuardType;
++    /**
++     * @deprecated Use `defaultGuards` instead.
++     */
+     sloppy?: boolean;
+ }) => InterfaceGuard<M>;
++/**
++ * Callable that constructs interface guards (union of overloads).
++ */
+ export type MakeInterfaceGuard = MakeInterfaceGuardStrict & MakeInterfaceGuardSloppy & MakeInterfaceGuardGeneral;
++/**
++ * Makers for guards: interface, call/callWhen, await, and raw passthrough.
++ */
+ export type GuardMakers = {
+     /**
+-     * Guard the interface of an exo object
++     * Guard the interface of an exo object.
+      */
+     interface: MakeInterfaceGuard;
+     /**
+-     * Guard a synchronous call.  Arguments not guarded by `M.raw()` are
++     * Guard a synchronous call. Arguments not guarded by `M.raw()` are
+      * automatically hardened and must be at least Passable.
+      */
+     call: (...argPatterns: SyncValueGuard[]) => MethodGuardMaker;
+     /**
+-     * Guard an async call.  Arguments not guarded by `M.raw()` are automatically
++     * Guard an async call. Arguments not guarded by `M.raw()` are automatically
+      * hardened and must be at least Passable.
+      */
+     callWhen: (...argGuards: ArgGuard[]) => MethodGuardMaker;
+@@ -479,37 +511,49 @@ export type GuardMakers = {
+      */
+     raw: () => RawGuard;
+ };
++/**
++ * Public namespace combining pattern matchers and guard makers.
++ */
+ export type MatcherNamespace = PatternMatchers & GuardMakers;
++/** A generic method function. */
+ export type Method = (...args: any[]) => any;
++/**
++ * Payload for an interface guard definition.
++ */
+ export type InterfaceGuardPayload<T extends Record<PropertyKey, MethodGuard> = Record<PropertyKey, MethodGuard>> = {
+     interfaceName: string;
+-    methodGuards: Omit<T, symbol> & Partial<{ [K in Extract<keyof T, symbol>]: never; }>;
++    methodGuards: Omit<T, symbol> & Partial<{
++        [K in Extract<keyof T, symbol>]: never;
++    }>;
+     symbolMethodGuards?: CopyMap<Extract<keyof T, symbol>, T[Extract<keyof T, symbol>]>;
+     defaultGuards?: DefaultGuardType;
++    /**
++     * @deprecated Use `defaultGuards` instead.
++     */
+     sloppy?: boolean;
+ };
+ /**
+  * Characterize dynamic behavior such as method argument/response signatures and promise awaiting.
+  *
+- * The {@link  @endo/exo!} package uses `InterfaceGuard`s as the first level of
++ * The {@link @endo/exo!} package uses `InterfaceGuard`s as the first level of
+  * defense for Exo objects against malformed input.
+  *
+  * For example:
+  *
+  * ```js
+  * const AsyncSerializerI = M.interface('AsyncSerializer', {
+- * // This interface has a single method, which is async as indicated by M.callWhen().
+- * // The method accepts a single argument, consumed with an implied `await` as indicated by M.await(),
+- * // and the result of that implied `await` is allowed to fulfill to any value per M.any().
+- * // The method result is a string as indicated by M.string(),
+- * // which is inherently wrapped in a promise by the async nature of the method.
+- * getStringOf: M.callWhen(M.await(M.any())).returns(M.string()),
++ *   // This interface has a single method, which is async as indicated by M.callWhen().
++ *   // The method accepts a single argument, consumed with an implied `await` as indicated by M.await(),
++ *   // and the result of that implied `await` is allowed to fulfill to any value per M.any().
++ *   // The method result is a string as indicated by M.string(),
++ *   // which is inherently wrapped in a promise by the async nature of the method.
++ *   getStringOf: M.callWhen(M.await(M.any())).returns(M.string()),
+  * });
+  * const asyncSerializer = makeExo('AsyncSerializer', AsyncSerializerI, {
+- * // M.callWhen() delays invocation of this method implementation
+- * // while provided argument is in a pending state
+- * // (i.e., it is a promise that has not yet settled).
+- * getStringOf(val) { return String(val); },
++ *   // M.callWhen() delays invocation of this method implementation
++ *   // while provided argument is in a pending state
++ *   // (i.e., it is a promise that has not yet settled).
++ *   getStringOf(val) { return String(val); },
+  * });
+  *
+  * const stringP = asyncSerializer.getStringOf(Promise.resolve(42n));
+@@ -517,34 +561,34 @@ export type InterfaceGuardPayload<T extends Record<PropertyKey, MethodGuard> = R
+  * await stringP; // => "42"
+  * ```
+  */
+-export type InterfaceGuard<T extends Record<PropertyKey, MethodGuard> = Record<PropertyKey, MethodGuard>> = CopyTagged<"guard:interfaceGuard", InterfaceGuardPayload<T>>;
++export type InterfaceGuard<T extends Record<PropertyKey, MethodGuard> = Record<PropertyKey, MethodGuard>> = CopyTagged<'guard:interfaceGuard', InterfaceGuardPayload<T>>;
+ /**
+  * A method name and parameter/return signature like:
+  * ```js
+- * foo(a, b, c = d, ...e) => f
++ *   foo(a, b, c = d, ...e) => f
+  * ```
+  * should be guarded by something like:
+  * ```js
+  * {
+- * ...otherMethodGuards,
+- * foo: M.call(AShape, BShape).optional(CShape).rest(EShape).returns(FShape),
++ *   ...otherMethodGuards,
++ *   foo: M.call(AShape, BShape).optional(CShape).rest(EShape).returns(FShape),
+  * }
+  * ```
+  */
+ export type MethodGuardMaker = MethodGuardOptional & MethodGuardRestReturns;
++/**
++ * Arguments have been specified, now finish by creating a `MethodGuard`.
++ * If the return guard is not `M.raw()`, the return value is automatically
++ * hardened and must be Passable.
++ */
+ export type MethodGuardReturns = {
+-    /**
+-     * Arguments have been specified, now finish by creating a `MethodGuard`.
+-     * If the return guard is not `M.raw()`, the return value is automatically
+-     * hardened and must be Passable.
+-     */
+     returns: (returnGuard?: SyncValueGuard) => MethodGuard;
+ };
++/**
++ * If the rest argument guard is not `M.raw()`, all rest arguments are
++ * automatically hardened and must be Passable.
++ */
+ export type MethodGuardRest = {
+-    /**
+-     * If the rest argument guard is not `M.raw()`, all rest arguments are
+-     * automatically hardened and must be Passable.
+-     */
+     rest: (restArgGuard: SyncValueGuard) => MethodGuardReturns;
+ };
+ /**
+@@ -552,38 +596,39 @@ export type MethodGuardRest = {
+  * finish with `returns`.
+  */
+ export type MethodGuardRestReturns = MethodGuardRest & MethodGuardReturns;
++/**
++ * Optional arguments not guarded with `M.raw()` are automatically hardened and
++ * must be Passable.
++ */
+ export type MethodGuardOptional = {
+-    /**
+-     * Optional arguments not guarded with `M.raw()` are automatically hardened and
+-     * must be Passable.
+-     */
+     optional: (...optArgGuards: ArgGuard[]) => MethodGuardRestReturns;
+ };
+ export type MethodGuardPayload = {
+-    callKind: "sync" | "async";
++    callKind: 'sync' | 'async';
+     argGuards: ArgGuard[];
+     optionalArgGuards?: ArgGuard[];
+     restArgGuard?: SyncValueGuard;
+     returnGuard: SyncValueGuard;
+ };
+-export type MethodGuard = CopyTagged<"guard:methodGuard", MethodGuardPayload>;
++export type CopyTaggedMethodGuard = CopyTagged<'guard:methodGuard', MethodGuardPayload>;
++/**
++ * Guard for a method's call signature and return type.
++ */
++export type MethodGuard = CopyTagged<'guard:methodGuard', MethodGuardPayload>;
+ export type AwaitArgGuardPayload = {
+     argGuard: Pattern;
+ };
+-export type AwaitArgGuard = CopyTagged<"guard:awaitArgGuard", AwaitArgGuardPayload>;
++/**
++ * Guard that awaits a positional argument (for async calls).
++ */
++export type AwaitArgGuard = CopyTagged<'guard:awaitArgGuard', AwaitArgGuardPayload>;
+ export type RawGuardPayload = {};
+-export type RawGuard = CopyTagged<"guard:rawGuard", RawGuardPayload>;
++/**
++ * Raw passthrough guard with no hardening or checking.
++ */
++export type RawGuard = CopyTagged<'guard:rawGuard', RawGuardPayload>;
++/** Guard for a synchronous value position (raw or Pattern). */
+ export type SyncValueGuard = RawGuard | Pattern;
++/** Guard for any argument position (await, raw, or Pattern). */
+ export type ArgGuard = AwaitArgGuard | RawGuard | Pattern;
+-import type { RemotableObject } from '@endo/pass-style';
+-import type { Passable } from '@endo/pass-style';
+-import type { Atom } from '@endo/pass-style';
+-import type { RankCover } from '@endo/marshal';
+-import type { CopyTagged } from '@endo/pass-style';
+-import type { PartialComparison } from '@endo/marshal';
+-import type { PartialCompare } from '@endo/marshal';
+-import type { Checker } from '@endo/pass-style';
+-import type { PassStyle } from '@endo/pass-style';
+-import type { CopyRecord } from '@endo/pass-style';
+-import type { CopyArray } from '@endo/pass-style';
+ //# sourceMappingURL=types.d.ts.map
+\ No newline at end of file
+diff --git a/src/types.d.ts.map b/src/types.d.ts.map
+index 35f106c6d8cb6591facd60237ad2a7deb4b43e6e..435b6a651a59c7a711773dcc06b2c5bc3093d381 100644
+--- a/src/types.d.ts.map
++++ b/src/types.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"types.d.ts","sourceRoot":"","sources":["types.js"],"names":[],"mappings":"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"}
+\ No newline at end of file
++{"version":3,"file":"types.d.ts","sourceRoot":"","sources":["types.ts"],"names":[],"mappings":"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"}
+\ No newline at end of file
+diff --git a/src/types.ts b/src/types.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..38a536a2badc5ea26294e0a37d6d958ee8073824
+--- /dev/null
++++ b/src/types.ts
+@@ -0,0 +1,806 @@
++/// <reference types="ses"/>
++/* eslint-disable no-use-before-define */
++
++import type { Rejector } from '@endo/errors/rejector.js';
++import type { RemotableBrand } from '@endo/eventual-send';
++import type {
++  CopyArray,
++  CopyRecord,
++  CopyTagged,
++  Passable,
++  PassStyle,
++  Atom,
++  RemotableObject,
++} from '@endo/pass-style';
++import type {
++  PartialCompare,
++  PartialComparison,
++  RankCover,
++} from '@endo/marshal';
++
++export type { FullCompare } from '@endo/marshal';
++
++/**
++ * Keys are Passable arbitrarily-nested pass-by-copy containers
++ * (CopyArray, CopyRecord, CopySet, CopyBag, CopyMap) in which every
++ * non-container leaf is either a Passable primitive value or a Remotable (a
++ * remotely-accessible object or presence for a remote object), or such leaves
++ * in isolation with no container.
++ *
++ * Keys are so named because they can be used as keys in CopyMaps and
++ * [agoric-sdk Stores](https://github.com/Agoric/agoric-sdk/blob/master/packages/store/docs/store-taxonomy.md),
++ * and as elements in CopySets and CopyBags.
++ *
++ * Keys cannot contain promises or errors, as these do not have useful
++ * distributed equality semantics. Keys also cannot contain any CopyTagged
++ * except for those recognized as CopySets, CopyBags, and CopyMaps.
++ *
++ * Be aware that we may recognize more CopyTaggeds over time, including
++ * CopyTaggeds recognized as Keys.
++ *
++ * Distributed equality is location independent.
++ * The same two Keys, passed to another location, will be {@link keyEQ} there iff
++ * they are {@link keyEQ} here. ({@link keyEQ} tests equality according to the
++ * key distributed equality semantics.)
++ *
++ * ### Rank order and key order
++ *
++ * The "key order" of `compareKeys` implements a partial order over Keys --- it defines relative position between two Keys but leaves some pairs incomparable (for example, subsets over sets is a partial order in which {} precedes {x} and {y}, which are mutually incomparable but both precede {x, y}).
++ * It is co-designed with the "rank order" (a total preorder) of `compareRank` from [`@endo/marshal`](https://www.npmjs.com/package/@endo/marshal) to support efficient range search for Key-based queries (for example, finding all entries in a map for which the key is a CopyRecord with particular fields can be implemented by selecting from rank-ordered keys those that are CopyRecords whose lexicographically greatest field is at least as big as the lexicographically greatest required field, and then filtering out matched keys that don't have the necessary shape).
++ * Both functions use `-1`, `0`, and `1` to respectively mean "less than", "equivalent to", and "greater than".
++ * `NaN` means "incomparable" --- the first key is not less than, equivalent to, or greater than the second.
++ * To keep the orders distinct when speaking informally, we use "earlier" and "later" for rank order, and "smaller" and "bigger" for key order.
++ *
++ * The key ordering of `compareKeys` refines the rank ordering of `compareRank` but leaves gaps for which a more complete "full order" relies upon rank ordering:
++ * 1. `compareKeys(X,Y) === 0` implies that `compareRank(X,Y) === 0` --- if X
++ *    is equivalent to Y in key order, then X is equivalent to Y in rank order.
++ *    But the converse does not hold; for example, Remotables `Far('X')` and
++ *    `Far('Y')` are equivalent in rank order but incomparable in key order.
++ * 2. `compareKeys(X,Y) < 0` implies that `compareRank(X,Y) < 0` --- if X is
++ *    smaller than Y in key order, then X is earlier than Y in rank order.
++ *    But the converse does not hold; for example, the record `{b: 3, a: 5}`
++ *    is earlier than the record `{b: 5, a: 3}` in rank order but they are
++ *    incomparable in key order.
++ * 3. `compareRank(X,Y) === 0` implies that `compareKeys(X,Y)` is either
++ *    0 or NaN --- Keys within the same rank are either equivalent to or
++ *    incomparable to each other in key order. But the converse does not hold;
++ *    for example, `Far('X')` and `{}` are incomparable in key order but not
++ *    equivalent in rank order.
++ * 4. `compareRank(X,Y) === 0` and `compareRank(X,Z) === 0` imply that
++ *    `compareKeys(X,Y)` and `compareKeys(X,Z)` are the same --- all Keys within
++ *    the same rank are either mutually equivalent or mutually incomparable, and
++ *    in fact only in the mutually incomparable case can the rank be said to
++ *    contain more than one key.
++ */
++export type Key = Exclude<
++  Passable<RemotableObject | RemotableBrand<any, any>, never>,
++  Error | Promise<any>
++>;
++
++export type ScalarKey = Atom | RemotableObject | RemotableBrand<any, any>;
++
++export type KeyToDBKey = (key: Key) => string;
++export type GetRankCover = (
++  payload: Passable,
++  encodePassable: KeyToDBKey,
++) => RankCover;
++
++/**
++ * Patterns are Passable arbitrarily-nested pass-by-copy containers
++ * (CopyArray, CopyRecord, CopySet, CopyBag, CopyMap) in which every
++ * non-container leaf is either a Key or a {@link Matcher}, or such leaves in
++ * isolation with no container.
++ *
++ * A Pattern acts as a declarative total predicate over Passables, where each
++ * Passable is either matched or not matched by it. Every {@link Key} is also a Pattern
++ * that matches only "itself", i.e., Keys that are {@link keyEQ} to it according to
++ * the key distributed equality semantics.
++ *
++ * Patterns cannot contain promises or errors, as these do
++ * not have useful distributed equality or matching semantics. Likewise,
++ * no Pattern can distinguish among promises, or distinguish among errors.
++ * Patterns also cannot contain any CopyTaggeds except for those recognized as
++ * {@link CopySet}s, {@link CopyBag}s, {@link CopyMap}s, or {@link Matcher}s.
++ *
++ * Be aware that we may recognize more CopyTaggeds over time, including
++ * CopyTaggeds recognized as Patterns.
++ *
++ * Whether a Passable is matched by a given Pattern is location independent.
++ * If a given Passable and Pattern are passed to another location,
++ * the Passable will be matched by the Pattern there iff the Passable is matched
++ * by the Pattern here.
++ *
++ * Patterns are often used in a type-like manner, to represent the category
++ * of Passables that the Pattern is intended* to match. To keep this
++ * distinction clear, we often use the suffix "Shape" rather than "Pattern"
++ * to avoid confusion when the Pattern itself represents
++ * some category of Pattern. For example, an "AmountShape" represents the
++ * category of Amounts. And "AmountPatternShape" represents the
++ * category of Patterns over Amounts.
++ *
++ * * We say "intended" above because Patterns, in order to be declarative
++ * and Passable, cannot have the generality of predicates written in a
++ * Turing-universal programming language. Rather, to represent the category of
++ * things intended to be a Foo, a FooShape should reliably
++ * accept all Foos and reject only non-Foos. However, a FooShape may also accept
++ * non-Foos that "look like" or "have the same shape as" genuine Foos.
++ * An accurate predicate for e.g. input validation would need to supplement the
++ * Pattern check with code to detect the residual cases.
++ * We hope the "Shape" metaphor helps remind us of this type-like imprecision
++ * of Patterns.
++ */
++export type Pattern = Exclude<Passable, Error | Promise<any>>;
++
++// TODO parameterize CopyTagged to support these refinements
++
++/**
++ * A Passable collection of Keys that are all mutually distinguishable
++ * according to the key distributed equality semantics exposed by {@link keyEQ}.
++ */
++export type CopySet<K extends Key = Key> = CopyTagged<'copySet', K[]>;
++
++/**
++ * A Passable collection of entries with Keys that are all mutually distinguishable
++ * according to the key distributed equality semantics exposed by {@link keyEQ},
++ * each with a corresponding positive cardinality.
++ */
++export type CopyBag<K extends Key = Key> = CopyTagged<'copyBag', [K, bigint][]>;
++
++/**
++ * A Passable collection of entries with Keys that are all mutually distinguishable
++ * according to the key distributed equality semantics exposed by {@link keyEQ},
++ * each with a corresponding Passable value.
++ */
++export type CopyMap<
++  K extends Key = Key,
++  V extends Passable = Passable,
++> = CopyTagged<'copyMap', { keys: K[]; values: V[] }>;
++
++/**
++ * CopySet, CopyBag, and CopyMap all store Keys in reverse rankOrder,
++ * which supports generalized utilities.
++ */
++export type KeyCollection = CopySet | CopyBag | CopyMap;
++
++// TODO: enumerate Matcher tag values?
++/**
++ * A Pattern representing the predicate characterizing a category of Passables,
++ * such as strings or 8-bit unsigned integer numbers or CopyArrays of Remotables.
++ */
++export type Matcher = CopyTagged<`match:${string}`, Passable>;
++
++/**
++ * The result of a `KeyCompare` function that defines a meaningful
++ * and meaningfully precise partial order of Key values. See `KeyCompare`.
++ */
++export type KeyComparison = PartialComparison;
++
++/**
++ * A function that implements a partial order over Keys.
++ * Key order (a partial order) and rank order (a total preorder) are
++ * co-designed to support efficient range search for Key-based queries
++ * (@see {@link @endo/patterns!#rank-order-and-key-order}).
++ */
++export type KeyCompare = PartialCompare<Key>;
++
++export type ConfirmPattern = (
++  allegedPattern: Passable,
++  reject: Rejector,
++) => boolean;
++
++export type AllLimits = {
++  decimalDigitsLimit: number;
++  stringLengthLimit: number;
++  symbolNameLengthLimit: number;
++  numPropertiesLimit: number;
++  propertyNameLengthLimit: number;
++  arrayLengthLimit: number;
++  byteLengthLimit: number;
++  numSetElementsLimit: number;
++  numUniqueBagElementsLimit: number;
++  numMapEntriesLimit: number;
++};
++
++export type Limits = Partial<AllLimits>;
++
++/**
++ * It is either a PassStyle other than 'tagged', or, if the underlying
++ * PassStyle is 'tagged', then the `getTag` value for tags that are
++ * recognized at the @endo/patterns level of abstraction. For each of those
++ * tags, a tagged record only has that kind if it satisfies the invariants
++ * that the @endo/patterns level associates with that kind.
++ */
++export type Kind =
++  | Exclude<PassStyle, 'tagged'>
++  | 'copySet'
++  | 'copyBag'
++  | 'copyMap'
++  | `match:${string}`
++  | `guard:${string}`;
++
++/**
++ * Matchers for characterizing Passables and compound shapes.
++ */
++export type PatternMatchers = {
++  /**
++   * Matches any Passable.
++   */
++  any: () => Matcher;
++
++  /**
++   * Matches against the intersection of all sub-Patterns.
++   */
++  and: (...subPatts: Pattern[]) => Matcher;
++
++  /**
++   * Matches against the union of all sub-Patterns
++   * (requiring a successful match against at least one).
++   */
++  or: (...subPatts: Pattern[]) => Matcher;
++
++  /**
++   * Matches against the negation of the sub-Pattern.
++   */
++  not: (subPatt: Pattern) => Matcher;
++
++  /**
++   * Matches any Passable primitive value or Remotable.
++   * All matched values are Keys.
++   */
++  scalar: () => Matcher;
++
++  /**
++   * Matches any value that can be a key in a CopyMap
++   * or an element in a CopySet or CopyBag.
++   * All matched values are also valid Patterns that match only themselves.
++   */
++  key: () => Matcher;
++
++  /**
++   * Matches any Pattern that can be used to characterize Passables.
++   * A Pattern cannot contain promises or errors,
++   * as these are not stable enough to usefully match.
++   */
++  pattern: () => Matcher;
++
++  /**
++   * When `kind` specifies a PassStyle other than "tagged",
++   * matches any value having that PassStyle.
++   * Otherwise, when `kind` specifies a known tagged record tag
++   * (such as 'copySet', 'copyBag', 'copyMap', or 'match:scalar'),
++   * matches any CopyTagged with that tag and a valid tag-specific payload.
++   * Otherwise, does not match any value.
++   * TODO: Reject attempts to create a kind matcher with unknown `kind`?
++   */
++  kind: (kind: PassStyle | string) => Matcher;
++
++  /**
++   * For matching an arbitrary Passable Tagged object, whether it has a
++   * recognized kind or not. If `tagPatt` is omitted, it defaults to
++   * `M.string()`. If `payloadPatt` is omitted, it defaults to
++   * `M.any()`.
++   */
++  tagged: (tagPatt?: Pattern, payloadPatt?: Pattern) => Matcher;
++
++  /**
++   * Matches `true` or `false`.
++   */
++  boolean: () => Matcher;
++
++  /**
++   * Matches any floating point number,
++   * including `NaN` and either signed Infinity.
++   */
++  number: () => Matcher;
++
++  /**
++   * Matches any bigint, subject to limits.
++   */
++  bigint: (limits?: Limits) => Matcher;
++
++  /**
++   * Matches any non-negative bigint, subject to limits.
++   */
++  nat: (limits?: Limits) => Matcher;
++
++  /**
++   * Matches any string, subject to limits.
++   */
++  string: (limits?: Limits) => Matcher;
++
++  /**
++   * Matches any registered or well-known symbol,
++   * subject to limits.
++   */
++  symbol: (limits?: Limits) => Matcher;
++
++  /**
++   * Matches any CopyRecord, subject to limits.
++   */
++  record: (limits?: Limits) => Matcher;
++
++  /**
++   * Matches any CopyArray, subject to limits.
++   */
++  array: (limits?: Limits) => Matcher;
++
++  /**
++   * Matches any ByteArray, subject to limits.
++   */
++  byteArray: (limits?: Limits) => Matcher;
++
++  /**
++   * Matches any CopySet, subject to limits.
++   */
++  set: (limits?: Limits) => Matcher;
++
++  /**
++   * Matches any CopyBag, subject to limits.
++   */
++  bag: (limits?: Limits) => Matcher;
++
++  /**
++   * Matches any CopyMap, subject to limits.
++   */
++  map: (limits?: Limits) => Matcher;
++
++  /**
++   * Matches a far object or its remote presence.
++   * The optional `label` is purely for diagnostic purposes and does not
++   * add any constraints.
++   */
++  remotable: (label?: string) => Matcher;
++
++  /**
++   * Matches any error object.
++   * Error objects are Passable, but are neither Keys nor Patterns.
++   * They do not have a useful identity.
++   */
++  error: () => Matcher;
++
++  /**
++   * Matches any promise object.
++   * Promises are Passable, but are neither Keys nor Patterns.
++   * They do not have a useful identity.
++   */
++  promise: () => Matcher;
++
++  /**
++   * Matches the exact value `undefined`.
++   * All keys including `undefined` are already valid Patterns and
++   * so can validly represent themselves.
++   * But optional Pattern arguments `(patt = undefined) => ...`
++   * treat explicit `undefined` as omission of the argument.
++   * Thus, when a passed Pattern does not also need to be a Key,
++   * we recommend passing `M.undefined()` rather than `undefined`.
++   */
++  undefined: () => Matcher;
++
++  /**
++   * Returns `null`, which matches only itself.
++   */
++  null: () => null;
++
++  /**
++   * Matches any value that compareKeys reports as less than rightOperand.
++   */
++  lt: (rightOperand: Key) => Matcher;
++
++  /**
++   * Matches any value that compareKeys reports as less than or equal to
++   * rightOperand.
++   */
++  lte: (rightOperand: Key) => Matcher;
++
++  /**
++   * Matches any value that is equal to key.
++   */
++  eq: (key: Key) => Matcher;
++
++  /**
++   * Matches any value that is not equal to key.
++   */
++  neq: (key: Key) => Matcher;
++
++  /**
++   * Matches any value that compareKeys reports as greater than or equal
++   * to rightOperand.
++   */
++  gte: (rightOperand: Key) => Matcher;
++
++  /**
++   * Matches any value that compareKeys reports as greater than
++   * rightOperand.
++   */
++  gt: (rightOperand: Key) => Matcher;
++
++  /**
++   * Matches any CopyArray whose elements are all matched by `subPatt`
++   * if defined, subject to limits.
++   */
++  arrayOf: (subPatt?: Pattern, limits?: Limits) => Matcher;
++
++  /**
++   * Matches any CopyRecord whose keys are all matched by `keyPatt`
++   * if defined and values are all matched by `valuePatt` if defined,
++   * subject to limits.
++   */
++  recordOf: (
++    keyPatt?: Pattern,
++    valuePatt?: Pattern,
++    limits?: Limits,
++  ) => Matcher;
++
++  /**
++   * Matches any CopySet whose elements are all matched by `keyPatt`
++   * if defined, subject to limits.
++   */
++  setOf: (keyPatt?: Pattern, limits?: Limits) => Matcher;
++
++  /**
++   * Matches any CopyBag whose elements are all matched by `keyPatt`
++   * if defined and the cardinality of each is matched by `countPatt`
++   * if defined, subject to limits.
++   * `countPatt` is expected to rarely be useful,
++   * but is provided to minimize surprise.
++   */
++  bagOf: (keyPatt?: Pattern, countPatt?: Pattern, limits?: Limits) => Matcher;
++
++  /**
++   * Matches any array, CopySet, or CopyBag in which the bigint number of
++   * elements that match `elementPatt` is >= `bound` (which defaults to `1n`).
++   */
++  containerHas: (
++    elementPatt?: Pattern,
++    bound?: bigint,
++    limits?: Limits,
++  ) => Matcher;
++
++  /**
++   * Matches any CopyMap whose keys are all matched by `keyPatt` if defined
++   * and values are all matched by `valuePatt` if defined,
++   * subject to limits.
++   */
++  mapOf: (keyPatt?: Pattern, valuePatt?: Pattern, limits?: Limits) => Matcher;
++
++  /**
++   * Matches any array --- typically an arguments list --- consisting of
++   *   - an initial portion matched by `required`, and
++   *   - a middle portion of length up to the length of `optional` that is
++   *     matched by the equal-length prefix of `optional` if `optional` is
++   *     defined, and
++   *   - a remainder that is matched by `rest` if `rest` is defined.
++   * The array must be at least as long as `required`
++   * but its remainder can be arbitrarily short.
++   * Any array elements beyond the summed length of `required` and `optional`
++   * are collected and matched against `rest`.
++   */
++  splitArray: (
++    required: Pattern[],
++    optional?: Pattern[],
++    rest?: Pattern,
++  ) => Matcher;
++
++  /**
++   * Matches any CopyRecord that can be split into component CopyRecords
++   * as follows:
++   *   - all properties corresponding with a property of `required`
++   *   - all properties corresponding with a property of `optional`
++   *     but not corresponding with a property of `required`
++   *   - all other properties
++   * where the first component is matched by `required`,
++   * the second component is matched by the subset of `optional`
++   * corresponding with its properties if `optional` is defined, and
++   * the third component is matched by `rest` if defined.
++   * The CopyRecord must have all properties that appear on `required`,
++   * but may omit properties that appear on `optional`.
++   */
++  splitRecord: (
++    required: CopyRecord<Pattern>,
++    optional?: CopyRecord<Pattern>,
++    rest?: Pattern,
++  ) => Matcher;
++
++  /**
++   * An array or record is split into the first part that is matched by
++   * `basePatt`, and the remainder, which is matched against `rest` if present.
++   * @deprecated Use `M.splitArray` or `M.splitRecord` instead.
++   */
++  split: (
++    basePatt: CopyRecord<any> | CopyArray<any>,
++    rest?: Pattern,
++  ) => Matcher;
++
++  /**
++   * An array or record is split into the first part that is matched by
++   * `basePatt`, and the remainder, which is matched against `rest` if present.
++   * `M.partial` differs from `M.split` in the handling of data that is
++   * described in `basePatt` but absent in a provided specimen:
++   *   - For a CopyRecord, `M.partial` ignores properties of `basePatt`
++   *     that are not present on the specimen.
++   *   - For a CopyArray, `M.partial` ignores elements of `basePatt`
++   *     at indices beyond the maximum index of the specimen.
++   * @deprecated Use `M.splitArray` or `M.splitRecord` instead.
++   */
++  partial: (
++    basePatt: CopyRecord<any> | CopyArray<any>,
++    rest?: Pattern,
++  ) => Matcher;
++
++  /**
++   * Matches any Passable that is either matched by `subPatt` or is a promise object.
++   * Note that validation is immediate, so (unlike the TypeScript `ERef<T>`
++   * type) `M.eref` matches a promise object whose fulfillment value is
++   * _not_ matched by `subPatt`.
++   * For describing a top-level parameter,
++   * `M.callWhen(..., M.await(p), ...)` is preferred over `M.call(..., M.eref(p), ...)`
++   * because the former always checks against the sub-Pattern (awaiting fulfillment
++   * if necessary) while the latter bypasses such checks when the relevant argument
++   * is a promise.
++   */
++  eref: (subPatt: Pattern) => Pattern;
++
++  /**
++   * Matches any Passable that is matched by `subPatt` or is the exact value `undefined`.
++   */
++  opt: (subPatt: Pattern) => Pattern;
++};
++
++/**
++ * Default guard choice for method guards: undefined, 'passable', or 'raw'.
++ */
++export type DefaultGuardType = undefined | 'passable' | 'raw';
++
++/**
++ * Overload for strictly-typed interface guards (no sloppy mode).
++ */
++export type MakeInterfaceGuardStrict = <
++  M extends Record<PropertyKey, MethodGuard>,
++>(
++  interfaceName: string,
++  methodGuards: M,
++  options: {
++    defaultGuards?: undefined;
++    /**
++     * @deprecated This has no effect.
++     */
++    sloppy?: false;
++  },
++) => InterfaceGuard<M>;
++
++/**
++ * Overload for sloppy interface guards (looser typing).
++ * @deprecated Use {@link MakeInterfaceGuardStrict} or {@link MakeInterfaceGuardGeneral} instead.
++ */
++export type MakeInterfaceGuardSloppy = (
++  interfaceName: string,
++  methodGuards: any,
++  options: {
++    defaultGuards?: 'passable' | 'raw';
++    /**
++     * @deprecated Use `defaultGuards: undefined` instead.
++     */
++    sloppy?: true;
++  },
++) => InterfaceGuard<any>;
++
++/**
++ * General overload for interface guards.
++ */
++export type MakeInterfaceGuardGeneral = <
++  M extends Record<PropertyKey, MethodGuard>,
++>(
++  interfaceName: string,
++  methodGuards: M,
++  options?: {
++    defaultGuards?: DefaultGuardType;
++    /**
++     * @deprecated Use `defaultGuards` instead.
++     */
++    sloppy?: boolean;
++  },
++) => InterfaceGuard<M>;
++
++/**
++ * Callable that constructs interface guards (union of overloads).
++ */
++export type MakeInterfaceGuard = MakeInterfaceGuardStrict &
++  MakeInterfaceGuardSloppy &
++  MakeInterfaceGuardGeneral;
++
++/**
++ * Makers for guards: interface, call/callWhen, await, and raw passthrough.
++ */
++export type GuardMakers = {
++  /**
++   * Guard the interface of an exo object.
++   */
++  interface: MakeInterfaceGuard;
++
++  /**
++   * Guard a synchronous call. Arguments not guarded by `M.raw()` are
++   * automatically hardened and must be at least Passable.
++   */
++  call: (...argPatterns: SyncValueGuard[]) => MethodGuardMaker;
++
++  /**
++   * Guard an async call. Arguments not guarded by `M.raw()` are automatically
++   * hardened and must be at least Passable.
++   */
++  callWhen: (...argGuards: ArgGuard[]) => MethodGuardMaker;
++
++  /**
++   * Guard a positional parameter in `M.callWhen`, awaiting it and matching its
++   * fulfillment against the provided pattern.
++   * For example, `M.callWhen(M.await(M.nat())).returns()` will await the first
++   * argument, check that its fulfillment satisfies `M.nat()`, and only then call
++   * the guarded method with that fulfillment. If the argument is a non-promise
++   * value that already satisfies `M.nat()`, then the result of `await`ing it will
++   * still pass, and  `M.callWhen` will still delay the guarded method call to a
++   * future turn.
++   * If the argument is a promise that rejects rather than fulfills, or if its
++   * fulfillment does not satisfy the nested pattern, then the call is rejected
++   * without ever invoking the guarded method.
++   *
++   * Any `AwaitArgGuard` may not appear as a rest pattern or a result pattern,
++   * only a top-level single parameter pattern.
++   */
++  await: (argPattern: Pattern) => AwaitArgGuard;
++
++  /**
++   * In parameter position, pass this argument through without any hardening or checking.
++   * In rest position, pass the rest of the arguments through without any hardening or checking.
++   * In return position, return the result without any hardening or checking.
++   */
++  raw: () => RawGuard;
++};
++
++/**
++ * Public namespace combining pattern matchers and guard makers.
++ */
++export type MatcherNamespace = PatternMatchers & GuardMakers;
++
++/** A generic method function. */
++export type Method = (...args: any[]) => any;
++
++/**
++ * Payload for an interface guard definition.
++ */
++export type InterfaceGuardPayload<
++  T extends Record<PropertyKey, MethodGuard> = Record<PropertyKey, MethodGuard>,
++> = {
++  interfaceName: string;
++  methodGuards: Omit<T, symbol> &
++    Partial<{ [K in Extract<keyof T, symbol>]: never }>;
++  symbolMethodGuards?: CopyMap<
++    Extract<keyof T, symbol>,
++    T[Extract<keyof T, symbol>]
++  >;
++  defaultGuards?: DefaultGuardType;
++  /**
++   * @deprecated Use `defaultGuards` instead.
++   */
++  sloppy?: boolean;
++};
++
++/**
++ * Characterize dynamic behavior such as method argument/response signatures and promise awaiting.
++ *
++ * The {@link @endo/exo!} package uses `InterfaceGuard`s as the first level of
++ * defense for Exo objects against malformed input.
++ *
++ * For example:
++ *
++ * ```js
++ * const AsyncSerializerI = M.interface('AsyncSerializer', {
++ *   // This interface has a single method, which is async as indicated by M.callWhen().
++ *   // The method accepts a single argument, consumed with an implied `await` as indicated by M.await(),
++ *   // and the result of that implied `await` is allowed to fulfill to any value per M.any().
++ *   // The method result is a string as indicated by M.string(),
++ *   // which is inherently wrapped in a promise by the async nature of the method.
++ *   getStringOf: M.callWhen(M.await(M.any())).returns(M.string()),
++ * });
++ * const asyncSerializer = makeExo('AsyncSerializer', AsyncSerializerI, {
++ *   // M.callWhen() delays invocation of this method implementation
++ *   // while provided argument is in a pending state
++ *   // (i.e., it is a promise that has not yet settled).
++ *   getStringOf(val) { return String(val); },
++ * });
++ *
++ * const stringP = asyncSerializer.getStringOf(Promise.resolve(42n));
++ * isPromise(stringP); // => true
++ * await stringP; // => "42"
++ * ```
++ */
++export type InterfaceGuard<
++  T extends Record<PropertyKey, MethodGuard> = Record<PropertyKey, MethodGuard>,
++> = CopyTagged<'guard:interfaceGuard', InterfaceGuardPayload<T>>;
++
++/**
++ * A method name and parameter/return signature like:
++ * ```js
++ *   foo(a, b, c = d, ...e) => f
++ * ```
++ * should be guarded by something like:
++ * ```js
++ * {
++ *   ...otherMethodGuards,
++ *   foo: M.call(AShape, BShape).optional(CShape).rest(EShape).returns(FShape),
++ * }
++ * ```
++ */
++export type MethodGuardMaker = MethodGuardOptional & MethodGuardRestReturns;
++
++/**
++ * Arguments have been specified, now finish by creating a `MethodGuard`.
++ * If the return guard is not `M.raw()`, the return value is automatically
++ * hardened and must be Passable.
++ */
++export type MethodGuardReturns = {
++  returns: (returnGuard?: SyncValueGuard) => MethodGuard;
++};
++
++/**
++ * If the rest argument guard is not `M.raw()`, all rest arguments are
++ * automatically hardened and must be Passable.
++ */
++export type MethodGuardRest = {
++  rest: (restArgGuard: SyncValueGuard) => MethodGuardReturns;
++};
++
++/**
++ * Mandatory and optional arguments have been specified, now specify `rest`, or
++ * finish with `returns`.
++ */
++export type MethodGuardRestReturns = MethodGuardRest & MethodGuardReturns;
++
++/**
++ * Optional arguments not guarded with `M.raw()` are automatically hardened and
++ * must be Passable.
++ */
++export type MethodGuardOptional = {
++  optional: (...optArgGuards: ArgGuard[]) => MethodGuardRestReturns;
++};
++
++export type MethodGuardPayload = {
++  callKind: 'sync' | 'async';
++  argGuards: ArgGuard[];
++  optionalArgGuards?: ArgGuard[];
++  restArgGuard?: SyncValueGuard;
++  returnGuard: SyncValueGuard;
++};
++
++export type CopyTaggedMethodGuard = CopyTagged<
++  'guard:methodGuard',
++  MethodGuardPayload
++>;
++
++/**
++ * Guard for a method's call signature and return type.
++ */
++export type MethodGuard = CopyTagged<'guard:methodGuard', MethodGuardPayload>;
++
++export type AwaitArgGuardPayload = {
++  argGuard: Pattern;
++};
++
++/**
++ * Guard that awaits a positional argument (for async calls).
++ */
++export type AwaitArgGuard = CopyTagged<
++  'guard:awaitArgGuard',
++  AwaitArgGuardPayload
++>;
++
++export type RawGuardPayload = {};
++
++/**
++ * Raw passthrough guard with no hardening or checking.
++ */
++export type RawGuard = CopyTagged<'guard:rawGuard', RawGuardPayload>;
++
++/** Guard for a synchronous value position (raw or Pattern). */
++export type SyncValueGuard = RawGuard | Pattern;
++
++/** Guard for any argument position (await, raw, or Pattern). */
++export type ArgGuard = AwaitArgGuard | RawGuard | Pattern;
+diff --git a/types-index.d.ts b/types-index.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..4768fa0043d9b1277eef87f49a916807aa05d96a
+--- /dev/null
++++ b/types-index.d.ts
+@@ -0,0 +1 @@
++export type * from './src/types.js';
+diff --git a/types-index.js b/types-index.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..d382eb5feafec1a45ebac75794f1d9536adaf50d
+--- /dev/null
++++ b/types-index.js
+@@ -0,0 +1,2 @@
++// Empty JS file to correspond with its .d.ts twin
++export {};
