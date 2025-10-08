@@ -46,7 +46,7 @@ export const PROD_NETWORK: NetworkSpec = {
     // CCTP slow
     {
       src: '@Arbitrum',
-      dest: '@agoric',
+      dest: '@noble',
       transfer: 'cctpSlow',
       variableFeeBps: 0,
       timeSec: 1080,
@@ -54,7 +54,7 @@ export const PROD_NETWORK: NetworkSpec = {
     },
     {
       src: '@Avalanche',
-      dest: '@agoric',
+      dest: '@noble',
       transfer: 'cctpSlow',
       variableFeeBps: 0,
       timeSec: 1080,
@@ -62,7 +62,7 @@ export const PROD_NETWORK: NetworkSpec = {
     },
     {
       src: '@Ethereum',
-      dest: '@agoric',
+      dest: '@noble',
       transfer: 'cctpSlow',
       variableFeeBps: 0,
       timeSec: 1080,
@@ -70,7 +70,7 @@ export const PROD_NETWORK: NetworkSpec = {
     },
     {
       src: '@Optimism',
-      dest: '@agoric',
+      dest: '@noble',
       transfer: 'cctpSlow',
       variableFeeBps: 0,
       timeSec: 1080,
@@ -78,7 +78,7 @@ export const PROD_NETWORK: NetworkSpec = {
     },
     {
       src: '@Base',
-      dest: '@agoric',
+      dest: '@noble',
       transfer: 'cctpSlow',
       variableFeeBps: 0,
       timeSec: 1080,
@@ -128,7 +128,7 @@ export const PROD_NETWORK: NetworkSpec = {
     // Fast USDC (Axelar GMP)
     {
       src: '@Arbitrum',
-      dest: '@agoric',
+      dest: '@noble',
       transfer: 'fastusdc',
       variableFeeBps: 15,
       timeSec: 45,
@@ -136,7 +136,7 @@ export const PROD_NETWORK: NetworkSpec = {
     },
     {
       src: '@Avalanche',
-      dest: '@agoric',
+      dest: '@noble',
       transfer: 'fastusdc',
       variableFeeBps: 15,
       timeSec: 45,
@@ -144,7 +144,7 @@ export const PROD_NETWORK: NetworkSpec = {
     },
     {
       src: '@Ethereum',
-      dest: '@agoric',
+      dest: '@noble',
       transfer: 'fastusdc',
       variableFeeBps: 15,
       timeSec: 45,
@@ -152,7 +152,7 @@ export const PROD_NETWORK: NetworkSpec = {
     },
     {
       src: '@Optimism',
-      dest: '@agoric',
+      dest: '@noble',
       transfer: 'fastusdc',
       variableFeeBps: 15,
       timeSec: 45,
@@ -160,7 +160,7 @@ export const PROD_NETWORK: NetworkSpec = {
     },
     {
       src: '@Base',
-      dest: '@agoric',
+      dest: '@noble',
       transfer: 'fastusdc',
       variableFeeBps: 15,
       timeSec: 45,
