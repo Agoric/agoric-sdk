@@ -5,11 +5,13 @@ import { MsgTransfer } from 'cosmjs-types/ibc/applications/transfer/v1/tx.js';
 import { Height } from 'cosmjs-types/ibc/core/client/v1/client.js';
 import type { configs } from '../scripts/noble-usdn-lab.ts';
 
+// https://github.com/noble-assets/forwarding/blob/main/proto/noble/forwarding/v1/packet.proto
 type NobleForwardingMemo = {
   noble: {
     forwarding: {
       recipient: string;
       channel?: string; // Optional: defaults to reverse of incoming channel
+      fallback?: string;
     };
   };
 };
