@@ -1,0 +1,6 @@
+{
+  "consume": {
+    "agoricNames": "lookupBrands",
+    "bankManager": "getBankForAddress"
+  }
+}
