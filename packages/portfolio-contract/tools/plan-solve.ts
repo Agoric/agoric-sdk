@@ -145,11 +145,12 @@ export const buildLPModel = (
   let minPrimaryWeight = Infinity;
   for (const edge of graph.edges) {
     const { id, src, dest } = edge;
-    const { capacity, variableFee, fixedFee = 0, timeFixed = 0 } = edge;
+    const { capacity, min, variableFee, fixedFee = 0, timeFixed = 0 } = edge;
 
-    const throughputConstraint: { min: number; max?: number } = { min: 0 };
-    if (capacity) throughputConstraint.max = capacity;
-    throughputConstraints[`through_${id}`] = throughputConstraint;
+    throughputConstraints[`through_${id}`] = {
+      min: min || 0,
+      max: capacity,
+    };
 
     // The numbers in graph.supplies should use the same units as fixedFee, but
     // variableFee is in basis points relative to some scaling of those other
@@ -297,6 +298,7 @@ SUBJECT TO
       const prefix = attrParts.join('_');
       const lines = [`\\# ${attr} ${prettyJsonable(constraint)}`];
       for (const [opName, value] of Object.entries(constraint)) {
+        if (!Number.isFinite(value)) continue;
         const label = `${prefix}_${opName.slice(0, 3)}`;
         const op = cplexLpOpForName[opName];
         lines.push(`${label}: ${makeSumExpr(attr)} ${op} ${value}`);
