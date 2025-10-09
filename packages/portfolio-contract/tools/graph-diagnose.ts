@@ -246,7 +246,7 @@ export const explainPath = (
   const nodes = graph.nodes;
   const edgeMap = new Map<string, { capacity: number }>();
   for (const e of graph.edges)
-    edgeMap.set(`${e.src}->${e.dest}`, { capacity: e.capacity });
+    edgeMap.set(`${e.src}->${e.dest}`, { capacity: e.capacity ?? Infinity });
   for (let i = 0; i < path.length - 1; i += 1) {
     const src = path[i];
     const dest = path[i + 1];
@@ -320,7 +320,7 @@ export const diagnoseNearMisses = (graph: RebalanceGraph) => {
   const capAdj = new Map<string, string[]>();
   for (const e of graph.edges) {
     (adj.get(e.src) ?? adj.set(e.src, []).get(e.src)!).push(e.dest);
-    if (e.capacity > 0)
+    if (e.capacity === undefined || e.capacity > 0)
       (capAdj.get(e.src) ?? capAdj.set(e.src, []).get(e.src)!).push(e.dest);
   }
   const bfs = (start: string, A: Map<string, string[]>) => {
