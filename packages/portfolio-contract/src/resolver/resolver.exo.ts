@@ -62,8 +62,13 @@ const ReporterI = M.interface('Reporter', {
   ).returns(),
 });
 
+const TargetShape = M.splitRecord(
+  { type: M.string(), destination: M.string() },
+  { amountValue: M.nat() },
+);
 const ServiceFacetI = M.interface('ResolverService', {
   settleTransaction: M.call(TransactionSettlementOfferArgsShape).returns(),
+  lookupTx: M.call(TargetShape).returns(M.string()),
 });
 
 const InvitationMakersFacetI = M.interface('ResolverInvitationMakers', {
@@ -235,6 +240,23 @@ export const prepareResolverKit = (
 
             default:
               throw Fail`Unexpected status ${q(status)} for transaction: ${q(txId)}`;
+          }
+        },
+        // XXX O(n) in pending transactions
+        lookupTx(pattern: {
+          type: TxType;
+          destination: AccountId;
+          amountValue?: NatValue;
+        }) {
+          const { transactionRegistry } = this.state;
+          for (const [txId, info] of transactionRegistry.entries()) {
+            if (
+              info.type === pattern.type &&
+              info.destinationAddress === pattern.destination &&
+              info.amountValue === pattern.amountValue
+            ) {
+              return txId;
+            }
           }
         },
       },
