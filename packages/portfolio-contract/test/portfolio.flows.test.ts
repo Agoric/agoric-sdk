@@ -349,7 +349,7 @@ const mocks = (
 
   const chainHubTools = harden({
     getChainInfo: (chainName: string) => {
-      if (chainName === 'agoric' || chainName === 'axelar') {
+      if (['agoric', 'axelar', 'noble'].includes(chainName)) {
         return { chainId: chainName } as Partial<ChainInfo>;
       }
       if (!(chainName in axelarCCTPConfig)) {
@@ -364,13 +364,14 @@ const mocks = (
       vowTools.asVow(() => {
         const primaryChain = chainHubTools.getChainInfo(primaryChainName);
         const secondaryChain = chainHubTools.getChainInfo(secondaryChainName);
+        const cid = secondaryChainName.charCodeAt(1);
         return [
           primaryChain,
           secondaryChain,
           {
             transferChannel: {
               channelId: 'channel-9',
-              counterpartyChannelId: 'channel-41',
+              counterpartyChannelId: `channel-${cid}`,
             },
           } as unknown,
         ] as [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo];
@@ -1230,11 +1231,34 @@ test('withdraw in coordination with planner', async t => {
   const portfolioId = kit.reader.getPortfolioId();
 
   {
-    const { give, steps } = await makePortfolioSteps({
-      USDN: make(USDC, 50_000_000n),
-    });
-    const seat = makeMockSeat(give, {}, offer.log);
-    await rebalance(orch, ctx, seat, { flow: steps }, kit);
+    const amount = make(USDC, 50_000_000n);
+    const seat = makeMockSeat({ Aave: amount }, {}, offer.log);
+    const feeAcct = AmountMath.make(BLD, 50n);
+    const detail = { evmGas: 50n };
+    const feeCall = AmountMath.make(BLD, 100n);
+    const depositP = rebalance(
+      orch,
+      ctx,
+      seat,
+      {
+        flow: [
+          { src: '<Deposit>', dest: '@agoric', amount },
+          { src: '@agoric', dest: '@noble', amount },
+          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct, detail },
+          { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+        ],
+      },
+      kit,
+    );
+    await Promise.all([
+      depositP,
+      Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
+        async ([tap]) => {
+          await tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain }));
+          await txResolver.drainPending();
+        },
+      ),
+    ]);
   }
 
   const webUiDone = (async () => {
@@ -1246,6 +1270,8 @@ test('withdraw in coordination with planner', async t => {
     });
   })();
 
+  const chainSim = (async () => {})();
+
   const plannerP = (async () => {
     const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
     const [[flowId, detail]] = Object.entries(flowsRunning);
@@ -1254,35 +1280,41 @@ test('withdraw in coordination with planner', async t => {
     if (detail.type !== 'withdraw') throw t.fail(detail.type);
     // XXX brand from vstorage isn't suitable for use in call to kit
     const amount = make(USDC, detail.amount.value);
-
+    const feeCall = AmountMath.make(BLD, 100n);
     const steps: MovementDesc[] = [
-      { src: 'USDN', dest: '@noble', amount },
-      { src: '@noble', dest: '@agoric', amount },
+      { src: 'Aave_Arbitrum', dest: '@Arbitrum', amount, fee: feeCall },
+      { src: '@Arbitrum', dest: '@agoric', amount },
       { src: '@agoric', dest: '<Cash>', amount },
     ];
 
     kit.planner.resolveFlowPlan(Number(flowId.replace('flow', '')), steps);
   })();
-  await Promise.all([webUiDone, plannerP]);
+  await Promise.all([webUiDone, chainSim, plannerP, txResolver.drainPending()]);
 
   const { log } = offer;
   t.log('calls:', log.map(msg => msg._method).join(', '));
   t.like(log, [
     // deposit calls
     { _method: 'monitorTransfers' },
+    { _method: 'send', _cap: 'agoric11014' }, // from fee account
+    { _method: 'transfer' }, // makeAccount
     { _method: 'localTransfer', amounts: { Deposit: { value: 50000000n } } },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
-    { msgs: [{ typeUrl: '/noble.swap.v1.MsgSwap' }] },
+    { _method: 'depositForBurn' },
+    { _method: 'send' },
+    { _method: 'transfer' }, // supply call
     { _method: 'exit' },
 
     // withdraw calls
-    { msgs: [{ typeUrl: '/noble.swap.v1.MsgSwap' }] },
+    { _method: 'send' },
     {
-      _cap: 'noble11056',
+      _cap: 'agoric11028',
       _method: 'transfer',
-      address: { chainId: 'agoric-6' },
-      amount: { value: 300n },
+      address: { chainId: 'axelar-6' },
+      amount: { value: 100n },
     },
+    { _method: 'send', _cap: 'agoric11014' },
+    { _method: 'transfer' }, // depositForBurn
     { _method: 'withdrawToSeat', amounts: { Cash: { value: 300n } } },
     { _method: 'exit' },
   ]);

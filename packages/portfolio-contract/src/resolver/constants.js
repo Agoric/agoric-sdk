@@ -24,6 +24,8 @@ harden(TxStatus);
 export const TxType = /** @type {const} */ ({
   CCTP_TO_EVM: 'CCTP_TO_EVM',
   GMP: 'GMP',
+  CCTP_TO_AGORIC: 'CCTP_TO_AGORIC',
+  /** @deprecated - only supports 20 byte addresses */
   CCTP_TO_NOBLE: 'CCTP_TO_NOBLE',
 });
 harden(TxType);

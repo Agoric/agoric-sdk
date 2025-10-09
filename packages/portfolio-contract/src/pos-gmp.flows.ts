@@ -9,6 +9,7 @@
  * @see {@link AaveProtocol}
  * @see {@link CompoundProtocol}
  */
+import type { GuestInterface } from '@agoric/async-flow';
 import type { NatValue } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { encodeHex } from '@agoric/internal/src/hex.js';
@@ -32,8 +33,8 @@ import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.j
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import { q, X } from '@endo/errors';
-import type { GuestInterface } from '@agoric/async-flow';
 import { ERC20, makeEVMSession, type EVMT } from './evm-facade.ts';
+import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type {
   AxelarId,
   EVMContractAddresses,
@@ -134,13 +135,19 @@ export const CCTPfromEVM = {
   how: 'CCTP',
   connections: keys(AxelarChain).map((src: AxelarChain) => ({
     src,
-    dest: 'noble',
+    dest: 'agoric',
   })),
   apply: async (ctx, amount, src, dest) => {
     const traceTransfer = trace.sub('CCTPin').sub(src.chainName);
     traceTransfer('transfer', amount, 'from', src.remoteAddress);
     const { addresses: a } = ctx;
-    const mintRecipient = bech32ToBytes32(dest.ica.getAddress().value);
+    const channel = 'channel-555' as const; // TODO
+    const fwdAddr = generateNobleForwardingAddress(
+      channel,
+      dest.lca.getAddress().value,
+    );
+    traceTransfer('Noble forwarding address', fwdAddr);
+    const mintRecipient = bech32ToBytes32(fwdAddr);
 
     const session = makeEVMSession();
     const usdc = session.makeContract(a.usdc, ERC20);
@@ -150,8 +157,8 @@ export const CCTPfromEVM = {
     const calls = session.finish();
 
     const { result } = ctx.resolverClient.registerTransaction(
-      TxType.CCTP_TO_NOBLE,
-      coerceAccountId(dest.ica.getAddress()),
+      TxType.CCTP_TO_AGORIC,
+      coerceAccountId(dest.lca.getAddress()),
       amount.value,
     );
 
@@ -160,13 +167,13 @@ export const CCTPfromEVM = {
     await Promise.all([result, contractCallP]);
     traceTransfer('transfer complete.');
   },
-  recover: async (ctx, amount, src, dest) => {
-    return CCTP.apply(ctx, amount, dest, src);
+  recover: async (_ctx, _amount, _src, _dest) => {
+    throw Error('TODO: do away with recover. see #NNNN');
   },
 } as const satisfies TransportDetail<
   'CCTP',
   AxelarChain,
-  'noble',
+  'agoric',
   EVMContext,
   PortfolioInstanceContext
 >;
