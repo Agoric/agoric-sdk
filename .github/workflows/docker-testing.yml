@@ -40,7 +40,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: services/ymax-planner/Doclerfile.testing
+          file: services/ymax-planner/Dockerfile.testing
           push: true
           tags: |
             ${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}
