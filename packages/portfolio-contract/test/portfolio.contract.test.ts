@@ -150,14 +150,15 @@ test.serial('open a portfolio with Aave position', async t => {
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
+  const drainP = txResolver.drainPending();
+
   await simulateCCTPAck(common.utils).finally(() =>
     simulateAckTransferToAxelar(common.utils),
   );
 
-  await txResolver.drainPending();
-  const actual = await actualP;
+  const [actual, drained] = await Promise.all([actualP, drainP]);
 
-  t.log('=== Portfolio completed');
+  t.log('=== Portfolio completed. resolved:', drained);
   const result = actual.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
 
