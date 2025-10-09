@@ -46,6 +46,7 @@ const makeTestContext = async _t => {
   return {
     nodeUpdates,
     makeMockNode,
+    vowTools,
     makeResolverKit,
   };
 };
@@ -301,4 +302,33 @@ test.skip('resolver sets status to SUCCESS or FAILED on settlement', async t => 
     },
     'second transaction settles as failed with correct data',
   );
+});
+
+test('resolver can find incoming CCTP txs by amount', async t => {
+  const { vowTools, nodeUpdates, makeResolverKit } = t.context;
+
+  const { client, service } = makeResolverKit();
+
+  const lca =
+    'cosmos:agoric-3:agoric1zlnuqyjceyuwhgy68d9lsqu208q68j2c9lhzdl2vq5y2ee57uwcs3ydtlr' as const;
+  const reg = await vowTools.when(
+    client.registerTransaction('CCTP_TO_AGORIC', lca, 12345n),
+  );
+  t.log(nodeUpdates);
+
+  const found = service.lookupTx({
+    type: 'CCTP_TO_AGORIC',
+    destination: lca,
+    amountValue: 12345n,
+  });
+
+  t.is(found, reg.txId);
+
+  const notFound = service.lookupTx({
+    type: 'CCTP_TO_AGORIC',
+    destination: lca,
+    amountValue: 123n,
+  });
+
+  t.is(notFound, undefined);
 });
