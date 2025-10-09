@@ -156,20 +156,27 @@ test('PROD_NETWORK has the right connections', t => {
   const graph = getGraph();
   const { edges } = graph;
 
-  // IBC connectivity between @agoric and @noble
+  // IBC connectivity both directions (required for USDN & noble-origin flows)
   t.true(hasEdge(edges, '@agoric', '@noble', 'ibc'));
   t.true(hasEdge(edges, '@noble', '@agoric', 'ibc'));
 
-  // Each EVM hub should have links to @noble and a return path
+  // Each EVM hub should have compressed inbound links directly to @agoric (either slow CCTP or fastusdc)
   for (const hub of EVM_HUBS) {
     t.true(
-      hasEdge(edges, hub, '@noble', 'cctpSlow') ||
-        hasEdge(edges, hub, '@noble', 'fastusdc'),
-      `no inbound EVM->@noble link for ${hub}`,
+      hasEdge(edges, hub, '@agoric', 'cctpSlow') ||
+        hasEdge(edges, hub, '@agoric', 'fastusdc'),
+      `no inbound EVM->@agoric compressed link for ${hub}`,
     );
+    // Return path still originates at @noble
     t.true(
       hasEdge(edges, '@noble', hub, 'cctpReturn'),
       `no @noble->${hub} return link`,
+    );
+    // Ensure legacy inbound to @noble was removed
+    t.false(
+      hasEdge(edges, hub, '@noble', 'cctpSlow') ||
+        hasEdge(edges, hub, '@noble', 'fastusdc'),
+      `legacy inbound EVM->@noble edge still present for ${hub}`,
     );
   }
 
