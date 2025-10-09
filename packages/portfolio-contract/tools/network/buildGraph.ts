@@ -273,7 +273,11 @@ export const makeGraphFromDefinition = (
 
   // Force unique sequential edge IDs for avoiding collisions in the solver.
   graph.edges = partialMap(edges, edge => (edge ? { ...edge } : undefined));
-  for (let i = 0; i < graph.edges.length; i += 1) graph.edges[i].id = `e${i}`;
+  const width = `${graph.edges.length - 1}`.length;
+  for (let i = 0; i < graph.edges.length; i += 1) {
+    const iPadded = `${i}`.padStart(width, '0');
+    graph.edges[i].id = `e${iPadded}`;
+  }
 
   return graph;
 };
