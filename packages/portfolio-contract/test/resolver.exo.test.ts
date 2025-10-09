@@ -2,23 +2,20 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow/vat.js';
 import type { ZCF } from '@agoric/zoe';
 import { makeHeapZone } from '@agoric/zone';
 import type { TestFn } from 'ava';
-import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { TxStatus, TxType } from '../src/resolver/constants.js';
 import { prepareResolverKit } from '../src/resolver/resolver.exo.ts';
 import type { PublishedTx } from '../src/resolver/types.ts';
 
-const test = anyTest as TestFn<{
-  nodeUpdates: Record<string, PublishedTx>;
-  makeMockNode: (here: string) => StorageNode;
-}>;
+const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 
-test.beforeEach(async t => {
+const makeTestContext = async _t => {
   const nodeUpdates: Record<string, PublishedTx> = {};
   const makeMockNode = (here: string) => {
     return harden({
@@ -29,14 +26,6 @@ test.beforeEach(async t => {
     }) as unknown as StorageNode;
   };
 
-  t.context = {
-    nodeUpdates,
-    makeMockNode,
-  };
-});
-
-test('resolver creates nodes in chain storage on registerTransaction', async t => {
-  const { nodeUpdates, makeMockNode } = t.context;
   const zone = makeHeapZone();
   const board = makeFakeBoard();
   const marshaller = board.getReadonlyMarshaller();
@@ -53,6 +42,18 @@ test('resolver creates nodes in chain storage on registerTransaction', async t =
     pendingTxsNode: makeMockNode('pendingTxs'),
     marshaller,
   });
+
+  return {
+    nodeUpdates,
+    makeMockNode,
+    makeResolverKit,
+  };
+};
+
+test.beforeEach(async t => (t.context = await makeTestContext(t)));
+
+test('resolver creates nodes in chain storage on registerTransaction', async t => {
+  const { nodeUpdates, makeResolverKit } = t.context;
 
   const { client } = makeResolverKit();
 
@@ -85,24 +86,7 @@ test('resolver creates nodes in chain storage on registerTransaction', async t =
 });
 
 test('resolver updates nodes in chain storage on settleTransaction', async t => {
-  const { nodeUpdates, makeMockNode } = t.context;
-
-  const zone = makeHeapZone();
-  const board = makeFakeBoard();
-  const marshaller = board.getReadonlyMarshaller();
-  const vowTools = prepareVowTools(zone);
-
-  const zcf = {
-    makeEmptySeatKit: () => ({
-      zcfSeat: null as any,
-    }),
-  } as ZCF;
-
-  const makeResolverKit = prepareResolverKit(zone, zcf, {
-    vowTools,
-    pendingTxsNode: makeMockNode('pendingTxs'),
-    marshaller,
-  });
+  const { nodeUpdates, makeResolverKit } = t.context;
 
   const { client, service } = makeResolverKit();
 
@@ -149,24 +133,7 @@ test('resolver updates nodes in chain storage on settleTransaction', async t => 
 });
 
 test('resolver creates ids in sequence on registerTransaction', async t => {
-  const { makeMockNode } = t.context;
-
-  const zone = makeHeapZone();
-  const board = makeFakeBoard();
-  const marshaller = board.getReadonlyMarshaller();
-  const vowTools = prepareVowTools(zone);
-
-  const zcf = {
-    makeEmptySeatKit: () => ({
-      zcfSeat: null as any,
-    }),
-  } as ZCF;
-
-  const makeResolverKit = prepareResolverKit(zone, zcf, {
-    vowTools,
-    pendingTxsNode: makeMockNode('pendingTxs'),
-    marshaller,
-  });
+  const { makeResolverKit } = t.context;
 
   const { client } = makeResolverKit();
 
@@ -194,24 +161,7 @@ test('resolver creates ids in sequence on registerTransaction', async t => {
 });
 
 test('resolver creates correct types for different TxTypes', async t => {
-  const { nodeUpdates, makeMockNode } = t.context;
-
-  const zone = makeHeapZone();
-  const board = makeFakeBoard();
-  const marshaller = board.getReadonlyMarshaller();
-  const vowTools = prepareVowTools(zone);
-
-  const zcf = {
-    makeEmptySeatKit: () => ({
-      zcfSeat: null as any,
-    }),
-  } as ZCF;
-
-  const makeResolverKit = prepareResolverKit(zone, zcf, {
-    vowTools,
-    pendingTxsNode: makeMockNode('pendingTxs'),
-    marshaller,
-  });
+  const { nodeUpdates, makeResolverKit } = t.context;
 
   const { client } = makeResolverKit();
 
@@ -274,24 +224,7 @@ test('resolver creates correct types for different TxTypes', async t => {
 
 // XXX: figure out why failing settlement crashes the entire transaction.
 test.skip('resolver sets status to SUCCESS or FAILED on settlement', async t => {
-  const { nodeUpdates, makeMockNode } = t.context;
-
-  const zone = makeHeapZone();
-  const board = makeFakeBoard();
-  const marshaller = board.getReadonlyMarshaller();
-  const vowTools = prepareVowTools(zone);
-
-  const zcf = {
-    makeEmptySeatKit: () => ({
-      zcfSeat: null as any,
-    }),
-  } as ZCF;
-
-  const makeResolverKit = prepareResolverKit(zone, zcf, {
-    vowTools,
-    pendingTxsNode: makeMockNode('pendingTxs'),
-    marshaller,
-  });
+  const { nodeUpdates, makeResolverKit } = t.context;
 
   const { client, service } = makeResolverKit();
 
