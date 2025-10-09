@@ -43,10 +43,11 @@ export const PROD_NETWORK: NetworkSpec = {
     { src: '@noble', dest: 'USDN', transfer: 'local', variableFeeBps: 10, timeSec: 0, feeMode: 'toUSDN' },
     { src: '@noble', dest: 'USDNVault', transfer: 'local', variableFeeBps: 10, timeSec: 0, feeMode: 'toUSDN' },
 
-    // CCTP slow
+    // CCTP slow (inbound auto-forward compressed: EVM -> @agoric)
+    // Latency kept at 1080s (assuming IBC forward overlaps); adjust if sequential.
     {
       src: '@Arbitrum',
-      dest: '@noble',
+      dest: '@agoric',
       transfer: 'cctpSlow',
       variableFeeBps: 0,
       timeSec: 1080,
@@ -54,7 +55,7 @@ export const PROD_NETWORK: NetworkSpec = {
     },
     {
       src: '@Avalanche',
-      dest: '@noble',
+      dest: '@agoric',
       transfer: 'cctpSlow',
       variableFeeBps: 0,
       timeSec: 1080,
@@ -62,7 +63,7 @@ export const PROD_NETWORK: NetworkSpec = {
     },
     {
       src: '@Ethereum',
-      dest: '@noble',
+      dest: '@agoric',
       transfer: 'cctpSlow',
       variableFeeBps: 0,
       timeSec: 1080,
@@ -70,7 +71,7 @@ export const PROD_NETWORK: NetworkSpec = {
     },
     {
       src: '@Optimism',
-      dest: '@noble',
+      dest: '@agoric',
       transfer: 'cctpSlow',
       variableFeeBps: 0,
       timeSec: 1080,
@@ -78,7 +79,7 @@ export const PROD_NETWORK: NetworkSpec = {
     },
     {
       src: '@Base',
-      dest: '@noble',
+      dest: '@agoric',
       transfer: 'cctpSlow',
       variableFeeBps: 0,
       timeSec: 1080,
@@ -125,10 +126,10 @@ export const PROD_NETWORK: NetworkSpec = {
       timeSec: 20,
       feeMode: 'makeEvmAccount',
     },
-    // Fast USDC (Axelar GMP)
+    // Fast USDC (Axelar GMP) compressed: EVM -> @agoric (keep 45s)
     {
       src: '@Arbitrum',
-      dest: '@noble',
+      dest: '@agoric',
       transfer: 'fastusdc',
       variableFeeBps: 15,
       timeSec: 45,
@@ -136,7 +137,7 @@ export const PROD_NETWORK: NetworkSpec = {
     },
     {
       src: '@Avalanche',
-      dest: '@noble',
+      dest: '@agoric',
       transfer: 'fastusdc',
       variableFeeBps: 15,
       timeSec: 45,
@@ -144,7 +145,7 @@ export const PROD_NETWORK: NetworkSpec = {
     },
     {
       src: '@Ethereum',
-      dest: '@noble',
+      dest: '@agoric',
       transfer: 'fastusdc',
       variableFeeBps: 15,
       timeSec: 45,
@@ -152,7 +153,7 @@ export const PROD_NETWORK: NetworkSpec = {
     },
     {
       src: '@Optimism',
-      dest: '@noble',
+      dest: '@agoric',
       transfer: 'fastusdc',
       variableFeeBps: 15,
       timeSec: 45,
@@ -160,15 +161,15 @@ export const PROD_NETWORK: NetworkSpec = {
     },
     {
       src: '@Base',
-      dest: '@noble',
+      dest: '@agoric',
       transfer: 'fastusdc',
       variableFeeBps: 15,
       timeSec: 45,
       feeMode: 'evmToNoble',
     },
-    // IBC between agoric and noble
-    { src: '@agoric', dest: '@noble', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
-    { src: '@noble', dest: '@agoric', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
+  // IBC connectivity (explicit both directions required for USDN and other noble-origin flows)
+  { src: '@agoric', dest: '@noble', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
+  { src: '@noble', dest: '@agoric', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
   ],
 };
 

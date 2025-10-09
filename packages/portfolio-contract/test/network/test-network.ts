@@ -42,8 +42,8 @@ export const TEST_NETWORK: NetworkSpec = {
     { src: '@noble', dest: 'USDN', transfer: 'local', variableFeeBps: 5, timeSec: 0, feeMode: 'toUSDN' },
     { src: '@noble', dest: 'USDNVault', transfer: 'local', variableFeeBps: 5, timeSec: 0, feeMode: 'toUSDN' },
 
-    // CCTP slow towards noble
-    { src: '@Polygon' as AssetPlaceRef, dest: '@noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080, feeMode: 'evmToNoble' },
+  // CCTP slow inbound compressed (EVM -> @agoric)
+  { src: '@Polygon' as AssetPlaceRef, dest: '@agoric', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080, feeMode: 'evmToNoble' },
     { src: '@Arbitrum', dest: '@agoric', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080, feeMode: 'evmToNoble' },
     { src: '@Avalanche', dest: '@agoric', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080, feeMode: 'evmToNoble' },
     { src: '@Ethereum', dest: '@agoric', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080, feeMode: 'evmToNoble' },
@@ -52,9 +52,9 @@ export const TEST_NETWORK: NetworkSpec = {
     { src: '@noble', dest: '@Polygon' as AssetPlaceRef, transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'makeEvmAccount' },
     { src: '@noble', dest: '@Avalanche', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'makeEvmAccount' },
     { src: '@noble', dest: '@Ethereum', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'makeEvmAccount' },
-    // IBC agoric<->noble
-    { src: '@agoric', dest: '@noble', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
-    { src: '@noble', dest: '@agoric', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
+  // IBC connectivity both directions (needed for USDN flows & noble-origin transfers)
+  { src: '@agoric', dest: '@noble', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
+  { src: '@noble', dest: '@agoric', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
   ],
 };
 
