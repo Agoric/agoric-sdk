@@ -7,10 +7,8 @@
  */
 
 import { makeTracer, type ERemote } from '@agoric/internal';
-import type {
-  Marshaller,
-  StorageNode,
-} from '@agoric/internal/src/lib-chainStorage.js';
+import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import type { AccountId } from '@agoric/orchestration';
 import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
@@ -98,7 +96,7 @@ export const prepareResolverKit = (
   }: {
     vowTools: VowTools;
     pendingTxsNode: ERemote<StorageNode>;
-    marshaller: ERemote<Marshaller>;
+    marshaller: ERemote<EMarshaller>;
   },
 ) => {
   const writeToNode = (
