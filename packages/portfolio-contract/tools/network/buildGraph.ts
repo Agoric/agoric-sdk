@@ -20,7 +20,7 @@ export interface FlowEdge {
   id: string;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
-  capacity: number; // numeric for LP; derived from bigint
+  capacity?: number; // numeric for LP; derived from bigint
   variableFee: number; // cost coefficient per unit flow in basis points
   fixedFee?: number; // optional fixed cost (cheapest mode)
   timeFixed?: number; // optional time cost (fastest mode)
@@ -111,7 +111,6 @@ export const buildBaseGraph = (
 
     const chainIsEvm = Object.keys(AxelarChain).includes(chainName);
     const base: Omit<FlowEdge, 'src' | 'dest' | 'id'> = {
-      capacity: 1e15,
       variableFee: vf,
       fixedFee: 0,
       timeFixed: tf,
@@ -220,7 +219,6 @@ export const makeGraphFromDefinition = (
 
   // Force the presence of particular edges.
   const edges = [...graph.edges] as Array<FlowEdge | undefined>;
-  const capacityDefault = 1e15; // not quite MAX_SAFE_INTEGER
   const addOrReplaceEdge = (
     src: AssetPlaceRef,
     dest: AssetPlaceRef,
@@ -239,7 +237,6 @@ export const makeGraphFromDefinition = (
     }
 
     const dataAttrs = customAttrs || {
-      capacity: capacityDefault,
       variableFee: 1,
       fixedFee: 0,
       timeFixed: 1,
@@ -262,7 +259,7 @@ export const makeGraphFromDefinition = (
   // Override the base graph with inter-hub links from spec.
   for (const link of spec.links) {
     addOrReplaceEdge(link.src, link.dest, {
-      capacity: Number(link.capacity ?? capacityDefault),
+      capacity: link.capacity === undefined ? undefined : Number(link.capacity),
       variableFee: link.variableFeeBps ?? 0,
       fixedFee: link.flatFee === undefined ? undefined : Number(link.flatFee),
       timeFixed: link.timeSec,

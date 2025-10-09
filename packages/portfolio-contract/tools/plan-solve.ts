@@ -147,7 +147,9 @@ export const buildLPModel = (
     const { id, src, dest } = edge;
     const { capacity, variableFee, fixedFee = 0, timeFixed = 0 } = edge;
 
-    throughputConstraints[`through_${id}`] = { min: 0, max: capacity };
+    const throughputConstraint: { min: number; max?: number } = { min: 0 };
+    if (capacity) throughputConstraint.max = capacity;
+    throughputConstraints[`through_${id}`] = throughputConstraint;
 
     // The numbers in graph.supplies should use the same units as fixedFee, but
     // variableFee is in basis points relative to some scaling of those other
