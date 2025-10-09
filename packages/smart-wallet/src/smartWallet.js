@@ -47,6 +47,7 @@ import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
 
 /**
  * @import {ERemote, Remote} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
  * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
  * @import {WeakMapStore, MapStore} from '@agoric/store'
  * @import {InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
@@ -185,7 +186,7 @@ const trace = makeTracer('SmrtWlt');
  *   invitationIssuer: Issuer<'set'>;
  *   invitationBrand: Brand<'set'>;
  *   invitationDisplayInfo: DisplayInfo;
- *   publicMarshaller: Remote<Marshaller>;
+ *   publicMarshaller: ERemote<EMarshaller>;
  *   zoe: ERef<ZoeService>;
  * }} SharedParams
  *

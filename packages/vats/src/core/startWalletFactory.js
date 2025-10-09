@@ -14,6 +14,7 @@ import {
 
 /**
  * @import {ERemote} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
  * @import {EReturn} from '@endo/far';
  * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
  */
@@ -39,7 +40,7 @@ const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
  * been provisioned.
  *
  * @param {string[]} oldAddresses
- * @param {ERemote<Marshaller>} marshaller
+ * @param {ERemote<EMarshaller>} marshaller
  * @param {ERemote<StorageNode>} walletStorageNode
  */
 const publishRevivableWalletState = async (

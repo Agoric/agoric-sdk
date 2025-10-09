@@ -10,6 +10,7 @@ import * as cb from './callback.js';
  * @import {ERef} from '@endo/far';
  * @import {Marshal, Passable} from '@endo/marshal';
  * @import {Remote, ERemote, TypedPattern} from './types.js';
+ * @import {EMarshaller} from './marshal.js';
  */
 
 /** @typedef {Marshal<unknown>} Marshaller */
@@ -296,7 +297,7 @@ harden(makeStorageNodeChild);
 // TODO find a better module for this
 /**
  * @param {ERemote<StorageNode>} storageNode
- * @param {ERemote<Marshaller>} marshaller
+ * @param {ERemote<EMarshaller>} marshaller
  * @returns {(value: Passable) => Promise<void>}
  */
 export const makeSerializeToStorage = (storageNode, marshaller) => {

@@ -6,9 +6,15 @@ import { M } from '@endo/patterns';
 import { isStreamCell } from './lib-chainStorage.js';
 
 /**
- * @import {RemotableObject} from '@endo/pass-style';
+ * @import {EOnly} from '@endo/eventual-send';
+ * @import {RemotableObject, Simplify} from '@endo/pass-style';
  * @import {CapData, FromCapData, ConvertValToSlot, Marshal} from '@endo/marshal';
  * @import {TypedPattern} from './types.js';
+ */
+
+/**
+ * @template [Slot=unknown]
+ * @typedef {Simplify<EOnly<Marshal<Slot>>>} EMarshaller
  */
 
 /**

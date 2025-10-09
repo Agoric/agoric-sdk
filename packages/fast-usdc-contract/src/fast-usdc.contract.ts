@@ -44,6 +44,7 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
+import type { EMarshaller } from '@agoric/internal/src/marshal.js';
 import type { ContractMeta, Invitation, ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { prepareAdvancer } from './exos/advancer.ts';
@@ -84,7 +85,7 @@ harden(meta);
 
 const publishFeeConfig = (
   node: ERemote<StorageNode>,
-  marshaller: ERemote<Marshaller>,
+  marshaller: ERemote<EMarshaller>,
   feeConfig: FeeConfig,
 ) => {
   const feeNode = E(node).makeChildNode(FEE_NODE);
