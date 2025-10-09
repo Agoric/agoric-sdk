@@ -10,6 +10,7 @@ import { M } from '@agoric/store';
  * @import {AsyncSpecTuple} from '@agoric/governance/src/contractGovernance/typedParamManager.js';
  * @import {SyncSpecTuple} from '@agoric/governance/src/contractGovernance/typedParamManager.js';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {Remote} from '@agoric/internal';
  */
 
 // TODO duplicated with zoe/src/TypeGuards.js
@@ -150,7 +151,10 @@ harden(makeAuctioneerParamManager);
 /** @typedef {ReturnType<typeof makeAuctioneerParams>} AuctionParamRecord */
 
 /**
- * @param {{ storageNode: ERef<StorageNode>; marshaller: ERef<Marshaller> }} caps
+ * @param {{
+ *   storageNode: Remote<StorageNode>;
+ *   marshaller: Remote<Marshaller>;
+ * }} caps
  * @param {ERef<import('@agoric/time').TimerService>} timer
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {ERef<AssetReservePublicFacet>} reservePublicFacet

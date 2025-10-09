@@ -341,7 +341,7 @@ type ChainBootstrapSpaceT = {
   bldIssuerKit: RemoteIssuerKit;
   board: import('@agoric/vats').Board;
   bridgeManager: import('../types.js').BridgeManager | undefined;
-  chainStorage: StorageNode | null;
+  chainStorage: import('@agoric/internal').Remote<StorageNode> | null;
   chainTimerService: import('@agoric/time').TimerService;
   client: ClientManager;
   clientCreator: any;

@@ -16,6 +16,7 @@ import { ElectorateCreatorI, ElectoratePublicI } from './typeGuards.js';
 import { prepareVoterKit } from './voterKit.js';
 
 /**
+ * @import {Remote} from '@agoric/internal';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {ContractMeta, Invitation, ZCF} from '@agoric/zoe';
  * @import {ElectorateCreatorFacet, CommitteeElectoratePublic, QuestionDetails, OutcomeRecord, AddQuestion} from './types.js';
@@ -50,7 +51,7 @@ harden(meta);
  *   committeeName: string,
  *   committeeSize: number,
  * }>} zcf
- * @param {{ storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} privateArgs
+ * @param {{ storageNode: Remote<StorageNode>, marshaller: Remote<Marshaller>}} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @returns {{creatorFacet: CommitteeElectorateCreatorFacet, publicFacet: CommitteeElectoratePublic}}
  */

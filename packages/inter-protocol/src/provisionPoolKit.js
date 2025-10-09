@@ -28,6 +28,7 @@ import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
  * @import {EReturn} from '@endo/far';
  * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
  * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
+ * @import {ERemote, Remote} from '@agoric/internal';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {ZCF} from '@agoric/zoe';
  * @import {ERef} from '@endo/far'
@@ -198,7 +199,7 @@ export const prepareProvisionPoolKit = (
      * @param {object} opts
      * @param {Purse<'nat'>} [opts.fundPurse]
      * @param {Brand<'nat'>} opts.poolBrand
-     * @param {StorageNode} opts.metricsNode
+     * @param {Remote<StorageNode>} opts.metricsNode
      */
     ({ fundPurse, poolBrand, metricsNode }) => {
       /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<MetricsNotification>} */
@@ -590,11 +591,12 @@ export const prepareProvisionPoolKit = (
    *
    * @param {object} opts
    * @param {Brand<'nat'>} opts.poolBrand
-   * @param {ERef<StorageNode>} opts.storageNode
+   * @param {ERemote<StorageNode>} opts.storageNode
    * @returns {Promise<ProvisionPoolKit>}
    */
   const makeProvisionPoolKit = async ({ poolBrand, storageNode }) => {
     const fundPurse = await getFundingPurseForBrand(poolBrand);
+    /** @type {Remote<StorageNode>} */
     const metricsNode = await E(storageNode).makeChildNode('metrics');
 
     return makeProvisionPoolKitInternal({

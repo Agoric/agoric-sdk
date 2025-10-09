@@ -70,7 +70,7 @@ export const defaultParamValues = debtBrand =>
  * @param {IssuerKit<'nat'>} aeth
  * @param {NatValue[] | Ratio} priceOrList
  * @param {RelativeTime} quoteInterval
- * @param {Amount | undefined} unitAmountIn
+ * @param {Amount<'nat'> | undefined} unitAmountIn
  * @param {Partial<import('../../src/auction/params.js').AuctionParams>} actionParamArgs
  */
 export const setupElectorateReserveAndAuction = async (
@@ -116,7 +116,7 @@ export const setupElectorateReserveAndAuction = async (
         actualBrandOut: run.brand,
         priceList: priceOrList,
         timer,
-        quoteMint: quoteIssuerKit.mint,
+        quoteIssuerKit,
         unitAmountIn,
         quoteInterval,
       })
