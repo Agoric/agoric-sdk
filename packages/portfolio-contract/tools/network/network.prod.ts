@@ -167,9 +167,9 @@ export const PROD_NETWORK: NetworkSpec = {
       timeSec: 45,
       feeMode: 'evmToNoble',
     },
-  // IBC connectivity (explicit both directions required for USDN and other noble-origin flows)
-  { src: '@agoric', dest: '@noble', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
-  { src: '@noble', dest: '@agoric', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
+    // IBC connectivity (explicit both directions required for USDN and other noble-origin flows)
+    { src: '@agoric', dest: '@noble', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
+    { src: '@noble', dest: '@agoric', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
   ],
 };
 
