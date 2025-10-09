@@ -363,7 +363,8 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
             return { how: 'CCTP', dest: destName as AxelarChain };
           }
           if (keys(AxelarChain).includes(srcName)) {
-            destName === 'noble' || Fail`dest for ${q(srcName)} must be noble`;
+            destName === 'agoric' ||
+              Fail`dest for ${q(srcName)} must be agoric`;
             return { how: 'CCTP', src: srcName as AxelarChain };
           }
           if (srcName === 'agoric' && destName === 'noble') {
@@ -601,7 +602,7 @@ const stepFlow = async (
           amount,
           src: move.src,
           dest: move.dest,
-          apply: async ({ [evmChain]: gInfo, noble }) => {
+          apply: async ({ [evmChain]: gInfo, noble, agoric }) => {
             // If an EVM account is in a move, it's available
             // in the accounts arg, along with noble.
             assert(gInfo && noble, evmChain);
@@ -610,17 +611,17 @@ const stepFlow = async (
               await CCTP.apply(ctx, amount, noble, gInfo);
             } else {
               const evmCtx = await makeEVMCtx(evmChain, move, agoric.lca);
-              await CCTPfromEVM.apply(evmCtx, amount, gInfo, noble);
+              await CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric);
             }
             return {};
           },
-          recover: async ({ [evmChain]: gInfo, noble }) => {
+          recover: async ({ [evmChain]: gInfo, agoric, noble }) => {
             assert(gInfo && noble, evmChain);
             await null;
             if (outbound) {
               await CCTP.recover(ctx, amount, noble, gInfo);
             } else {
-              await CCTPfromEVM.recover(ctx, amount, gInfo, noble);
+              await CCTPfromEVM.recover(ctx, amount, gInfo, agoric);
             }
           },
         });
