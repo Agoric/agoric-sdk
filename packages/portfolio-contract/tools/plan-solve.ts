@@ -165,8 +165,8 @@ export const buildLPModel = (
     // The solution may be disrupted by either over- or under-weighting
     // variableFee w.r.t. fixedFee, but not otherwise, and we accept the risk.
     // TODO: Define RebalanceGraph['scale'] to eliminate this guesswork.
-    const magnifiedVariableFee = variableFee / 10_000 + 1;
-    const magnifiedFlatFee = fixedFee * 1e6 + 1; // ensure non-zero
+    const magnifiedVariableFee = variableFee / 10_000;
+    const magnifiedFlatFee = fixedFee * 1e6;
 
     // Dynamic costs for this edge are associated with the numeric `via_${id}`
     // variable, and fixed costs are associated with the binary `pick_${id}`.
@@ -214,6 +214,8 @@ export const buildLPModel = (
       binaryVariables[`pick_${id}`],
       epsilonWeight,
     );
+    // No arc is free.
+    binaryVariables[`pick_${id}`].weight += 1;
   }
 
   // Constrain the net flow from each node.
