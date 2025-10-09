@@ -32,12 +32,16 @@ import {
   TypedJsonShape,
 } from '../typeGuards.js';
 import { maxClockSkew, toDenomAmount } from '../utils/cosmos.js';
-import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
+import {
+  orchestrationAccountMethods,
+  pickData,
+} from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
 import { preparePacketTools } from './packet-tools.js';
 import { prepareIBCTools } from './ibc-packet.js';
 import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
 import { TransferRouteShape } from './chain-hub.js';
+import { chainOfAccount } from '../utils/address.js';
 
 const { details: X } = assert;
 
@@ -53,7 +57,9 @@ const MsgSend = CodecHelper(MsgSendType);
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute, AccountIdArg, Denom, Bech32Address} from '@agoric/orchestration';
+ * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions,
+ *   OrchestrationAccountCommon, LocalAccountMethods, MetaTrafficEntry, TransferRoute,
+ *   AccountIdArg, Denom, Bech32Address, IBCConnectionInfo, ChainInfo, CosmosChainInfo} from '@agoric/orchestration';
  * @import {OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {IBCEvent} from '@agoric/vats';
  * @import {QueryDenomHashResponse} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/query.js';
@@ -119,7 +125,10 @@ const HolderI = M.interface('holder', {
   executeTx: M.call(M.arrayOf(M.record())).returns(Vow$(M.record())),
   sendThenWaitForAck: M.call(EVow$(M.remotable('PacketSender')))
     .optional(M.any())
-    .returns(EVow$(M.string())),
+    .returns(EVow$(M.any())),
+  sendThenWaitForAckWithMeta: M.call(EVow$(M.remotable('PacketSender')))
+    .optional(M.any())
+    .returns(EVow$({ result: EVow$(M.any()), meta: M.record() })),
   matchFirstPacket: M.call(M.any()).returns(EVow$(M.any())),
   monitorTransfers: M.call(M.remotable('TargetApp')).returns(EVow$(M.any())),
   parseInboundTransfer: M.call(M.recordOf(M.string(), M.any())).returns(
@@ -185,6 +194,7 @@ export const prepareLocalOrchestrationAccountKit = (
         amountToCoin: M.call(AmountArgShape).returns(M.record()),
       }),
       holder: HolderI,
+      pickDataWatcher: pickData.shape,
       undelegateWatcher: M.interface('undelegateWatcher', {
         onFulfilled: M.call([
           M.splitRecord({ completionTime: TimestampProtoShape }),
@@ -195,7 +205,23 @@ export const prepareLocalOrchestrationAccountKit = (
       transferWatcher: M.interface('transferWatcher', {
         onFulfilled: M.call(M.nat())
           .optional({
-            opts: M.or(M.undefined(), IBCTransferOptionsShape),
+            opts: M.opt(IBCTransferOptionsShape),
+            route: TransferRouteShape,
+          })
+          .returns(Vow$(M.record())),
+      }),
+      transferWithMetaWatcher: M.interface('transferWatcher', {
+        onFulfilled: M.call([M.record(), M.record(), M.record(), M.nat()])
+          .optional({
+            opts: M.opt(IBCTransferOptionsShape),
+            route: TransferRouteShape,
+          })
+          .returns(Vow$(M.record())),
+      }),
+      transferConnectionWatcher: M.interface('transferConnectionWatcher', {
+        onFulfilled: M.call([M.record(), M.record(), M.nat()])
+          .optional({
+            opts: M.opt(IBCTransferOptionsShape),
             route: TransferRouteShape,
           })
           .returns(Vow$(M.record())),
@@ -271,6 +297,7 @@ export const prepareLocalOrchestrationAccountKit = (
           return coerceCoin(chainHub, amount);
         },
       },
+      pickDataWatcher: pickData.watcher,
       invitationMakers: {
         /**
          * @param {string} validatorAddress
@@ -410,16 +437,64 @@ export const prepareLocalOrchestrationAccountKit = (
           );
         },
       },
-      transferWatcher: {
+      transferConnectionWatcher: {
         /**
-         * @param {bigint} timeoutTimestamp
+         * @param {[CosmosChainInfo, CosmosChainInfo, bigint]} all
+         * @param {Record<string, any>} ctx
+         */
+        onFulfilled([srcChainInfo, nextChainInfo, timeout], ctx) {
+          return watch(
+            vowTools.allVows([
+              srcChainInfo,
+              nextChainInfo,
+              chainHub.getConnectionInfo(srcChainInfo, nextChainInfo),
+              timeout,
+            ]),
+            this.facets.transferWithMetaWatcher,
+            ctx,
+          );
+        },
+      },
+      /** @deprecated migrate to transferWithMetaWatcher */
+      transferWatcher: {
+        onFulfilled(...args) {
+          throw Fail`obsolete transferWatcher(${args}); please retry`;
+        },
+      },
+      transferWithMetaWatcher: {
+        /**
+         * @param {[
+         *   ChainInfo,
+         *   ChainInfo,
+         *   Pick<IBCConnectionInfo, 'transferChannel'>,
+         *   bigint,
+         * ]} details
          * @param {{
          *   opts?: Omit<IBCMsgTransferOptions, 'forwardOpts'>;
          *   route: TransferRoute;
          * }} ctx
          */
-        onFulfilled(timeoutTimestamp, { opts, route }) {
+        onFulfilled(
+          [srcChainInfo, dstChainInfo, { transferChannel }, timeoutTimestamp],
+          { opts, route },
+        ) {
           const { forwardInfo, ...transferDetails } = route;
+
+          assert.equal(
+            transferDetails.sourcePort,
+            transferChannel.portId,
+            X`sourcePort ${q(
+              transferDetails.sourcePort,
+            )} must match the portId ${q(transferChannel.portId)}`,
+          );
+          assert.equal(
+            transferDetails.sourceChannel,
+            transferChannel.channelId,
+            X`sourceChannel ${q(
+              transferDetails.sourceChannel,
+            )} must match the channelId ${q(transferChannel.channelId)}`,
+          );
+
           /** @type {string | undefined} */
           let memo;
           if (opts && 'memo' in opts) {
@@ -447,10 +522,38 @@ export const prepareLocalOrchestrationAccountKit = (
             /** @type {any} */ (holder),
             transferMsg,
           );
+
+          const meta = {
+            traffic: /** @type {MetaTrafficEntry[]} */ ([
+              {
+                op: 'transfer',
+                src: [
+                  'ibc',
+                  srcChainInfo.namespace,
+                  srcChainInfo.reference,
+                  transferDetails.sourcePort,
+                  transferDetails.sourceChannel,
+                ],
+                dst: [
+                  'ibc',
+                  dstChainInfo.namespace,
+                  dstChainInfo.reference,
+                  transferChannel.counterPartyPortId,
+                  transferChannel.counterPartyChannelId,
+                ],
+
+                // Sequence number is not known at this stage; it will be
+                // populated by IBCTransferSenderKit['responseWatcher'] once the
+                // transfer packet is sent and the sequence number is assigned.
+                seq: null,
+              },
+            ]),
+          };
+
           // Begin capturing packets, send the transfer packet, then return a
           // vow that rejects unless the packet acknowledgment comes back and is
           // verified.
-          return holder.sendThenWaitForAck(sender);
+          return holder.sendThenWaitForAckWithMeta(sender, { ...opts, meta });
         },
       },
       /**
@@ -782,19 +885,9 @@ export const prepareLocalOrchestrationAccountKit = (
             );
           });
         },
-        /**
-         * @param {AccountIdArg} destination
-         * @param {AmountArg} amount an ERTP {@link Amount} or a
-         *   {@link DenomAmount}
-         * @param {IBCMsgTransferOptions} [opts] if either timeoutHeight or
-         *   timeoutTimestamp are not supplied, a default timeoutTimestamp will
-         *   be set for 5 minutes in the future
-         * @returns {Vow<any>}
-         * @throws {Error} if route is not determinable, asset is not
-         *   recognized, or the transfer is rejected (insufficient funds,
-         *   timeout)
-         */
-        transfer(destination, amount, opts) {
+        /** @type {HostOf<OrchestrationAccountCommon['transferWithMeta']>} */
+        transferWithMeta(destination, amount, opts) {
+          // @ts-expect-error Vow combined with HostInterface doesn't type.
           return asVow(() => {
             trace('Transferring funds over IBC');
 
@@ -803,25 +896,60 @@ export const prepareLocalOrchestrationAccountKit = (
             const { forwardOpts, ...rest } = opts ?? {};
 
             // throws if route is not determinable
+            const srcChainName = 'agoric';
             const route = chainHub.makeTransferRoute(
               destination,
               denomAmount,
-              'agoric',
+              srcChainName,
               forwardOpts,
             );
             trace('got transfer route', route);
 
+            const denomDetail = chainHub.getAsset(
+              denomAmount.denom,
+              srcChainName,
+            );
+            assert(denomDetail);
+
+            const { baseName: denomBaseName } = denomDetail;
+
+            const srcChainInfo = chainHub.getChainInfoByChainId(
+              chainOfAccount(this.state.address),
+            );
+
+            const nextChainInfo =
+              srcChainName === denomBaseName
+                ? chainHub.getChainInfoByChainId(chainOfAccount(destination))
+                : chainHub.getChainInfo(denomBaseName);
+
             // don't resolve the vow until the transfer is confirmed on remote
             // and reject vow if the transfer fails for any reason
             const resultV = watch(
-              timestampHelper.vowOrValueFromOpts(opts),
-              this.facets.transferWatcher,
+              vowTools.allVows([
+                srcChainInfo,
+                nextChainInfo,
+                timestampHelper.vowOrValueFromOpts(opts),
+              ]),
+              this.facets.transferConnectionWatcher,
               {
                 opts: rest,
                 route,
               },
             );
             return resultV;
+          });
+        },
+        /**
+         * @type {HostOf<OrchestrationAccountCommon['transfer']>}
+         */
+        transfer(destination, amount, opts) {
+          return asVow(() => {
+            trace('transfer', destination, amount, opts);
+            return watch(
+              this.facets.holder.transferWithMeta(destination, amount, opts),
+              this.facets.pickDataWatcher,
+              'result',
+            );
           });
         },
         /**
@@ -897,7 +1025,15 @@ export const prepareLocalOrchestrationAccountKit = (
         /** @type {HostOf<PacketTools['sendThenWaitForAck']>} */
         sendThenWaitForAck(sender, opts) {
           return watch(
-            E(this.state.packetTools).sendThenWaitForAck(sender, opts),
+            E(this.facets.holder).sendThenWaitForAckWithMeta(sender, opts),
+            this.facets.pickDataWatcher,
+            'result',
+          );
+        },
+        /** @type {HostOf<PacketTools['sendThenWaitForAckWithMeta']>} */
+        sendThenWaitForAckWithMeta(sender, opts) {
+          return watch(
+            E(this.state.packetTools).sendThenWaitForAckWithMeta(sender, opts),
           );
         },
         /** @type {HostOf<PacketTools['matchFirstPacket']>} */

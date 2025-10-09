@@ -94,6 +94,18 @@ const makeAggregateError =
       };
 
 /**
+ * Assert that a string has a prefix, and return the part that follows it.
+ *
+ * @param {string} prefix
+ * @param {string} str
+ * @returns {string}
+ */
+export const stripPrefix = (prefix, str) => {
+  str.startsWith(prefix) || Fail`${str} is missing prefix ${q(prefix)}`;
+  return str.slice(prefix.length);
+};
+
+/**
  * Throw an error with an own "code" data property, supporting identification
  * without parsing `message`. Note that such errors are not Passable and thus
  * cannot appear inside a Passable structure, and even at top level the "code"

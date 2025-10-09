@@ -63,7 +63,9 @@ func (k Keeper) DistributeRewards(ctx sdk.Context) error {
 		toDistribute := mulCoins(state.RewardPool, params.PerEpochRewardFraction)
 		state.LastRewardDistributionBlock = thisBlock
 		state.RewardBlockAmount = params.RewardRate(toDistribute, smoothingBlocks)
-		k.SetState(ctx, state)
+		if err := k.SetState(ctx, state); err != nil {
+			return err
+		}
 	}
 
 	if cycleIndex >= smoothingBlocks {
@@ -80,6 +82,5 @@ func (k Keeper) DistributeRewards(ctx sdk.Context) error {
 	}
 
 	state.RewardPool = state.RewardPool.Sub(xfer...)
-	k.SetState(ctx, state)
-	return nil
+	return k.SetState(ctx, state)
 }

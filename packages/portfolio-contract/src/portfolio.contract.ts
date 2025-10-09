@@ -3,7 +3,7 @@
  * @see {@link contract}
  * @see {@link start}
  */
-import type { Payment } from '@agoric/ertp';
+import { AmountMath, type Payment } from '@agoric/ertp';
 import {
   makeTracer,
   mustMatch,
@@ -21,9 +21,11 @@ import {
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
+  type AccountId,
   type Bech32Address,
   type ChainInfo,
   type Denom,
+  type DenomAmount,
   type DenomDetail,
   type OrchestrationPowers,
   type OrchestrationTools,
@@ -139,7 +141,7 @@ const GmpAddressesShape: TypedPattern<GmpAddresses> = M.splitRecord({
   AXELAR_GAS: M.string(),
 });
 
-type PortfolioPrivateArgs = OrchestrationPowers & {
+export type PortfolioPrivateArgs = OrchestrationPowers & {
   // XXX document required assets, chains
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
   chainInfo: Record<string, ChainInfo>;
@@ -150,7 +152,7 @@ type PortfolioPrivateArgs = OrchestrationPowers & {
   gmpAddresses: GmpAddresses;
 };
 
-const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
+export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   ...(OrchestrationPowersShape as CopyRecord),
   marshaller: M.remotable('marshaller'),
   storageNode: M.remotable('storageNode'),
@@ -265,6 +267,7 @@ export const contract = async (
   void vowTools.when(contractAccountV, acct => {
     const addr = acct.getAddress();
     publishStatus(storageNode, harden({ contractAccount: addr.value }));
+    trace('published contractAccount', addr.value);
   });
 
   const ctx1: flows.PortfolioInstanceContext = {
@@ -292,8 +295,9 @@ export const contract = async (
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
-  const { rebalance, parseInboundTransfer } = orchestrateAll(
+  const { executePlan, rebalance, parseInboundTransfer } = orchestrateAll(
     {
+      executePlan: flows.executePlan,
       rebalance: flows.rebalance,
       parseInboundTransfer: flows.parseInboundTransfer,
     },
@@ -305,6 +309,7 @@ export const contract = async (
     vowTools,
     axelarIds,
     gmpAddresses,
+    executePlan,
     rebalance,
     parseInboundTransfer,
     proposalShapes,
@@ -337,6 +342,17 @@ export const contract = async (
     },
   );
 
+  const usedAccessTokens = zone.makeOnce(
+    'usedAccessTokens',
+    () => zcf.makeEmptySeatKit().zcfSeat,
+  );
+  const consumeAccessToken = brands.Access
+    ? (seat: ZCFSeat) => {
+        const Access = AmountMath.make(brands.Access, 1n);
+        zcf.atomicRearrange([[seat, usedAccessTokens, { Access }]]);
+      }
+    : () => {};
+
   const publicFacet = zone.exo('PortfolioPub', interfaceTODO, {
     /**
      * Make an invitation to open a new portfolio.
@@ -358,6 +374,7 @@ export const contract = async (
       return zcf.makeInvitation(
         (seat, offerArgs) => {
           mustMatch(offerArgs, offerArgsShapes.openPortfolio);
+          consumeAccessToken(seat);
           return openPortfolio(seat, offerArgs);
         },
         'openPortfolio',
@@ -406,6 +423,9 @@ export const contract = async (
         M.string(),
         M.remotable('Instance'),
       ).returns(),
+      withdrawFees: M.callWhen(M.string())
+        .optional(M.record())
+        .returns(M.record()),
     }),
     {
       makeResolverInvitation() {
@@ -445,6 +465,24 @@ export const contract = async (
         trace('made planner invitation', invitation);
         await E(pfP).deliverPayment(address, invitation);
         trace('delivered planner invitation');
+      },
+      /**
+       * Withdraw from contractAccount; for example, before terminating the contract
+       *
+       * @param toAccount
+       * @param optAmount - defaults to BLD balance
+       */
+      async withdrawFees(toAccount: AccountId, optAmount?: DenomAmount) {
+        const traceWithdraw = trace.sub('withdrawFees');
+        traceWithdraw('to', toAccount);
+        // LCA operations are prompt
+        const { when } = vowTools;
+        const acct = await when(contractAccountV);
+        const amount = await (optAmount || when(acct.getBalance('ubld')));
+        traceWithdraw('amount', amount);
+        await when(acct.send(toAccount, amount));
+        traceWithdraw({ amount, from: acct.getAddress().value, toAccount });
+        return amount;
       },
     },
   );

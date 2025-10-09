@@ -6,9 +6,14 @@ import { Fail, q } from '@endo/errors';
 import type { NatAmount } from '@agoric/ertp/src/types.js';
 import { provideLazyMap } from '@agoric/internal/src/js-utils.js';
 
+import {
+  PoolPlaces,
+  type PoolKey,
+  type PoolPlaceInfo,
+} from '../src/type-guards.js';
+import type { RebalanceGraph } from './network/buildGraph.js';
 import type { NetworkSpec } from './network/network-spec.js';
-import type { RebalanceGraph, LpModel } from './plan-solve.js';
-import { PoolPlaces, type PoolKey, type PoolPlaceInfo } from './type-guards.js';
+import type { LpModel } from './plan-solve.js';
 
 /**
  * Build human-readable diagnostics for infeasible models.

@@ -8,15 +8,17 @@ import type {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import { Far } from '@endo/marshal';
+import type { PoolKey } from '../src/type-guards.js';
+import type { AssetPlaceRef } from '../src/type-guards-steps.js';
 import type {
   NetworkSpec,
   TransferProtocol,
-} from '../src/network/network-spec.js';
-import { planRebalanceFlow } from '../src/plan-solve.js';
-import type { FlowEdge, RebalanceMode } from '../src/plan-solve.js';
-import type { PoolKey } from '../src/type-guards.js';
-import type { AssetPlaceRef } from '../src/type-guards-steps.js';
+} from '../tools/network/network-spec.js';
+import type { FlowEdge } from '../tools/network/buildGraph.js';
+import { planRebalanceFlow } from '../tools/plan-solve.js';
+import type { RebalanceMode } from '../tools/plan-solve.js';
 import { TEST_NETWORK } from './network/test-network.js';
+import { gasEstimator } from './mocks.js';
 
 // eslint-disable-next-line no-nested-ternary
 const strcmp = (a: string, b: string) => (a > b ? 1 : a < b ? -1 : 0);
@@ -24,13 +26,29 @@ const compareFlowEdges = (a: FlowEdge, b: FlowEdge) =>
   strcmp(a.src.toLowerCase(), b.src.toLowerCase()) ||
   strcmp(a.dest.toLowerCase(), b.dest.toLowerCase());
 
+// Use realistic flow values (e.g., millions of uUSDC) but format for
+// readability (e.g., in full USDC).
+const USCALE = 1_000_000n;
+
 // Shared Tok brand + helper
 const { brand: TOK_BRAND } = (() => ({ brand: Far('USD*') as Brand<'nat'> }))();
 const { brand: FEE_BRAND } = (() => ({ brand: Far('BLD') as Brand<'nat'> }))();
-const token = (v: bigint) => AmountMath.make(TOK_BRAND, v);
-const fee = (v: bigint) => AmountMath.make(FEE_BRAND, v);
+const token = (v: bigint) => AmountMath.make(TOK_BRAND, v * USCALE);
 const ZERO = token(0n);
-const fixedFee = fee(30_000_000n);
+const fixedFee = AmountMath.make(FEE_BRAND, 30n * USCALE);
+const subtract5bps = (scaled: bigint) =>
+  // HACK subtract an extra 1n to match `rebalanceMinCostFlowSteps`.
+  // See https://github.com/Agoric/agoric-private/issues/415
+  (scaled * USCALE * 9995n) / 10000n - 1n;
+
+const formatAmount = ({ brand, value }) => {
+  const intPart = Number(value / USCALE);
+  const fracPart = Number(value - BigInt(intPart) * USCALE) / Number(USCALE);
+  const scaledValue = intPart + fracPart;
+  if (brand === TOK_BRAND) return `$${scaledValue}`;
+  const prettyBrand = brand[Symbol.toStringTag].replace(/^Alleged: /, '');
+  return `${scaledValue} ${prettyBrand}`;
+};
 
 // Pools
 const A = 'Aave_Arbitrum';
@@ -39,6 +57,34 @@ const C = 'Compound_Ethereum';
 
 // Helper to build current map (use shared token)
 const balances = (rec: Record<string, bigint>) => objectMap(rec, v => token(v));
+
+// Helper for comprehensible ava outputs.
+const readableSteps = steps =>
+  steps.map(step => {
+    const { src, dest, amount, fee } = step;
+    const prettyAmount = formatAmount(amount);
+    const feeSuffix = fee ? ` [fee ${formatAmount(fee)}]` : '';
+    return `${src} -> ${dest} ${prettyAmount}${feeSuffix}`;
+  });
+const assertSteps = async (t, actual, expected) => {
+  const fullResult = await t.try(tt => tt.deepEqual(actual, expected));
+  if (fullResult.passed) {
+    fullResult.commit();
+    return;
+  }
+  // Try for a simple diff, but if that doesn't exhibit the failure then commit
+  // to the full result after all.
+  const summaryResult = await t.try(tt =>
+    tt.deepEqual(readableSteps(actual), readableSteps(expected)),
+  );
+  if (!summaryResult.passed) {
+    fullResult.discard();
+    summaryResult.commit();
+    return;
+  }
+  summaryResult.discard();
+  fullResult.commit();
+};
 
 const testWithModes = (
   titlePrefix: string,
@@ -67,18 +113,22 @@ testWithAllModes('solver simple 2-pool case (A -> B 30)', async (t, mode) => {
     target: objectMap(targetBps, bps => token((100n * bps) / 10000n)),
     brand: TOK_BRAND,
     feeBrand: FEE_BRAND,
+    gasEstimator,
   });
 
-  t.deepEqual(steps, [
+  await assertSteps(t, steps, [
     // leaf -> hub
     { src: A, dest: '@Arbitrum', amount: token(30n), fee: fixedFee },
     // hub -> hub legs
-    { src: '@Arbitrum', dest: '@noble', amount: token(30n) },
+    { src: '@Arbitrum', dest: '@noble', amount: token(30n), fee: fixedFee },
     {
       src: '@noble',
       dest: '@Avalanche',
       amount: token(30n),
       fee: fixedFee,
+      detail: {
+        evmGas: 600000000000000n,
+      },
     },
     // hub -> leaf
     { src: '@Avalanche', dest: B, amount: token(30n), fee: fixedFee },
@@ -97,26 +147,33 @@ testWithAllModes(
       target: objectMap(targetBps, bps => token((100n * bps) / 10000n)),
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
 
     const amt66 = token(66n);
     const amt33 = token(33n);
-    t.deepEqual(steps, [
+    await assertSteps(t, steps, [
       // leaf -> hub (aggregated outflow from A)
       { src: A, dest: '@Arbitrum', amount: amt66, fee: fixedFee },
       // hub -> hub aggregated then split
-      { src: '@Arbitrum', dest: '@noble', amount: amt66 },
+      { src: '@Arbitrum', dest: '@noble', amount: amt66, fee: fixedFee },
       {
         src: '@noble',
         dest: '@Avalanche',
         amount: amt33,
         fee: fixedFee,
+        detail: {
+          evmGas: 600000000000000n,
+        },
       },
       {
         src: '@noble',
         dest: '@Ethereum',
         amount: amt33,
         fee: fixedFee,
+        detail: {
+          evmGas: 600000000000000n,
+        },
       },
       // hub -> leaf
       { src: '@Avalanche', dest: B, amount: amt33, fee: fixedFee },
@@ -135,8 +192,9 @@ testWithAllModes('solver already balanced => no steps', async (t, mode) => {
     target: objectMap(targetBps, bps => token((100n * bps) / 10000n)),
     brand: TOK_BRAND,
     feeBrand: FEE_BRAND,
+    gasEstimator,
   });
-  t.deepEqual(steps, []);
+  await assertSteps(t, steps, []);
 });
 
 testWithAllModes('solver all to one (B + C -> A)', async (t, mode) => {
@@ -148,17 +206,21 @@ testWithAllModes('solver all to one (B + C -> A)', async (t, mode) => {
     target: { [A]: token(100n), [B]: ZERO, [C]: ZERO },
     brand: TOK_BRAND,
     feeBrand: FEE_BRAND,
+    gasEstimator,
   });
-  t.deepEqual(steps, [
+  await assertSteps(t, steps, [
     { src: B, dest: '@Avalanche', amount: token(20n), fee: fixedFee },
-    { src: '@Avalanche', dest: '@noble', amount: token(20n) },
+    { src: '@Avalanche', dest: '@noble', amount: token(20n), fee: fixedFee },
     { src: C, dest: '@Ethereum', amount: token(70n), fee: fixedFee },
-    { src: '@Ethereum', dest: '@noble', amount: token(70n) },
+    { src: '@Ethereum', dest: '@noble', amount: token(70n), fee: fixedFee },
     {
       src: '@noble',
       dest: '@Arbitrum',
       amount: token(90n),
       fee: fixedFee,
+      detail: {
+        evmGas: 600000000000000n,
+      },
     },
     { src: '@Arbitrum', dest: A, amount: token(90n), fee: fixedFee },
   ]);
@@ -176,21 +238,28 @@ testWithAllModes(
       target,
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
-    t.deepEqual(steps, [
+    await assertSteps(t, steps, [
       { src: A, dest: '@Arbitrum', amount: token(100n), fee: fixedFee },
-      { src: '@Arbitrum', dest: '@noble', amount: token(100n) },
+      { src: '@Arbitrum', dest: '@noble', amount: token(100n), fee: fixedFee },
       {
         src: '@noble',
         dest: '@Avalanche',
         amount: token(60n),
         fee: fixedFee,
+        detail: {
+          evmGas: 600000000000000n,
+        },
       },
       {
         src: '@noble',
         dest: '@Ethereum',
         amount: token(40n),
         fee: fixedFee,
+        detail: {
+          evmGas: 600000000000000n,
+        },
       },
       { src: '@Avalanche', dest: B, amount: token(60n), fee: fixedFee },
       { src: '@Ethereum', dest: C, amount: token(40n), fee: fixedFee },
@@ -209,17 +278,21 @@ testWithAllModes(
       target: { [A]: token(100n), [B]: ZERO, [C]: ZERO },
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
-    t.deepEqual(steps, [
+    await assertSteps(t, steps, [
       { src: B, dest: '@Avalanche', amount: token(30n), fee: fixedFee },
-      { src: '@Avalanche', dest: '@noble', amount: token(30n) },
+      { src: '@Avalanche', dest: '@noble', amount: token(30n), fee: fixedFee },
       { src: C, dest: '@Ethereum', amount: token(70n), fee: fixedFee },
-      { src: '@Ethereum', dest: '@noble', amount: token(70n) },
+      { src: '@Ethereum', dest: '@noble', amount: token(70n), fee: fixedFee },
       {
         src: '@noble',
         dest: '@Arbitrum',
         amount: token(100n),
         fee: fixedFee,
+        detail: {
+          evmGas: 600000000000000n,
+        },
       },
       { src: '@Arbitrum', dest: A, amount: token(100n), fee: fixedFee },
     ]);
@@ -237,8 +310,9 @@ testWithAllModes(
       target: { '+agoric': ZERO, [A]: token(70n), [B]: token(30n) },
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
-    t.deepEqual(steps, [
+    await assertSteps(t, steps, [
       { src: '+agoric', dest: '@agoric', amount: token(100n) },
       { src: '@agoric', dest: '@noble', amount: token(100n) },
       {
@@ -246,12 +320,18 @@ testWithAllModes(
         dest: '@Arbitrum',
         amount: token(70n),
         fee: fixedFee,
+        detail: {
+          evmGas: 600000000000000n,
+        },
       },
       {
         src: '@noble',
         dest: '@Avalanche',
         amount: token(30n),
         fee: fixedFee,
+        detail: {
+          evmGas: 600000000000000n,
+        },
       },
       { src: '@Arbitrum', dest: A, amount: token(70n), fee: fixedFee },
       { src: '@Avalanche', dest: B, amount: token(30n), fee: fixedFee },
@@ -270,23 +350,28 @@ testWithAllModes(
       target: { '<Deposit>': ZERO, [A]: token(70n), [B]: token(30n) },
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
-    t.deepEqual(steps, [
+    await assertSteps(t, steps, [
       { src: '<Deposit>', dest: '@agoric', amount: token(100n) },
-      // TODO dckc should this  go through +agoric?
-      // { src: '+agoric', dest: '@agoric', amount: token(100n) },
       { src: '@agoric', dest: '@noble', amount: token(100n) },
       {
         src: '@noble',
         dest: '@Arbitrum',
         amount: token(70n),
         fee: fixedFee,
+        detail: {
+          evmGas: 600000000000000n,
+        },
       },
       {
         src: '@noble',
         dest: '@Avalanche',
         amount: token(30n),
         fee: fixedFee,
+        detail: {
+          evmGas: 600000000000000n,
+        },
       },
       { src: '@Arbitrum', dest: A, amount: token(70n), fee: fixedFee },
       { src: '@Avalanche', dest: B, amount: token(30n), fee: fixedFee },
@@ -305,12 +390,13 @@ testWithAllModes(
       target: { [A]: ZERO, [B]: ZERO, '<Cash>': token(80n) },
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
-    t.deepEqual(steps, [
+    await assertSteps(t, steps, [
       { src: A, dest: '@Arbitrum', amount: token(50n), fee: fixedFee },
-      { src: '@Arbitrum', dest: '@noble', amount: token(50n) },
+      { src: '@Arbitrum', dest: '@noble', amount: token(50n), fee: fixedFee },
       { src: B, dest: '@Avalanche', amount: token(30n), fee: fixedFee },
-      { src: '@Avalanche', dest: '@noble', amount: token(30n) },
+      { src: '@Avalanche', dest: '@noble', amount: token(30n), fee: fixedFee },
       { src: '@noble', dest: '@agoric', amount: token(80n) },
       { src: '@agoric', dest: '<Cash>', amount: token(80n) },
     ]);
@@ -342,8 +428,9 @@ testWithAllModes(
       },
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
-    t.deepEqual(steps, [
+    await assertSteps(t, steps, [
       { src: '@Arbitrum', dest: A, amount: token(30n), fee: fixedFee },
       { src: '@Avalanche', dest: B, amount: token(20n), fee: fixedFee },
       {
@@ -351,6 +438,9 @@ testWithAllModes(
         dest: '@Ethereum',
         amount: token(20n),
         fee: fixedFee,
+        detail: {
+          evmGas: 600000000000000n,
+        },
       },
       { src: '@Ethereum', dest: C, amount: token(20n), fee: fixedFee },
     ]);
@@ -381,27 +471,34 @@ testWithAllModes(
       target,
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
-    t.deepEqual(steps, [
+    await assertSteps(t, steps, [
       { src: '<Deposit>', dest: '@agoric', amount: token(1000n) },
       { src: '@agoric', dest: '@noble', amount: token(1000n) },
       {
         src: '@noble',
         dest: USDN,
         amount: token(500n),
-        detail: { usdnOut: 499n },
+        detail: { usdnOut: subtract5bps(500n) },
       },
       {
         src: '@noble',
         dest: '@Arbitrum',
         amount: token(300n),
         fee: fixedFee,
+        detail: {
+          evmGas: 600000000000000n,
+        },
       },
       {
         src: '@noble',
         dest: '@Ethereum',
         amount: token(200n),
         fee: fixedFee,
+        detail: {
+          evmGas: 600000000000000n,
+        },
       },
       { src: '@Arbitrum', dest: A, amount: token(300n), fee: fixedFee },
       { src: '@Ethereum', dest: C, amount: token(200n), fee: fixedFee },
@@ -434,28 +531,35 @@ testWithAllModes(
       target,
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
     // Expect deposit 500 to route to fill deficits: USDN 120, A 220, C 160
-    t.deepEqual(steps, [
+    await assertSteps(t, steps, [
       { src: '<Deposit>', dest: '@agoric', amount: token(500n) },
       { src: '@agoric', dest: '@noble', amount: token(500n) },
       {
         src: '@noble',
         dest: USDN,
         amount: token(120n),
-        detail: { usdnOut: 119n },
+        detail: { usdnOut: subtract5bps(120n) },
       },
       {
         src: '@noble',
         dest: '@Arbitrum',
         amount: token(220n),
         fee: fixedFee,
+        detail: {
+          evmGas: 600000000000000n,
+        },
       },
       {
         src: '@noble',
         dest: '@Ethereum',
         amount: token(160n),
         fee: fixedFee,
+        detail: {
+          evmGas: 600000000000000n,
+        },
       },
       { src: '@Arbitrum', dest: A, amount: token(220n), fee: fixedFee },
       { src: '@Ethereum', dest: C, amount: token(160n), fee: fixedFee },
@@ -477,15 +581,16 @@ testWithAllModes(
       target,
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
-    t.deepEqual(steps, [
+    await assertSteps(t, steps, [
       { src: '<Deposit>', dest: '@agoric', amount: token(1000n) },
       { src: '@agoric', dest: '@noble', amount: token(1000n) },
       {
         src: '@noble',
         dest: USDN,
         amount: token(1000n),
-        detail: { usdnOut: 999n },
+        detail: { usdnOut: subtract5bps(1000n) },
       },
     ]);
   },
@@ -503,24 +608,28 @@ testWithAllModes(
       target,
       brand: TOK_BRAND,
       feeBrand: FEE_BRAND,
+      gasEstimator,
     });
 
     // Identical to the 2-pool case; no steps to/from C
-    t.deepEqual(steps, [
+    await assertSteps(t, steps, [
       { src: A, dest: '@Arbitrum', amount: token(30n), fee: fixedFee },
-      { src: '@Arbitrum', dest: '@noble', amount: token(30n) },
+      { src: '@Arbitrum', dest: '@noble', amount: token(30n), fee: fixedFee },
       {
         src: '@noble',
         dest: '@Avalanche',
         amount: token(30n),
         fee: fixedFee,
+        detail: {
+          evmGas: 600000000000000n,
+        },
       },
       { src: '@Avalanche', dest: B, amount: token(30n), fee: fixedFee },
     ]);
   },
 );
 
-test.failing('solver differentiates cheapest vs. fastest', async t => {
+test('solver differentiates cheapest vs. fastest', async t => {
   const network: NetworkSpec = {
     debug: true,
     environment: 'test',
@@ -543,7 +652,7 @@ test.failing('solver differentiates cheapest vs. fastest', async t => {
         transfer: 'cheap' as TransferProtocol,
         variableFeeBps: 5,
         timeSec: 60,
-        feeMode: 'gmpCall',
+        feeMode: 'evmToPool',
       },
       {
         src: '@agoric',
@@ -551,7 +660,7 @@ test.failing('solver differentiates cheapest vs. fastest', async t => {
         transfer: 'fast' as TransferProtocol,
         variableFeeBps: 6,
         timeSec: 59,
-        feeMode: 'gmpCall',
+        feeMode: 'evmToPool',
       },
     ],
   };
@@ -565,13 +674,14 @@ test.failing('solver differentiates cheapest vs. fastest', async t => {
     target,
     brand: TOK_BRAND,
     feeBrand: FEE_BRAND,
+    gasEstimator,
   });
   t.like(cheapResult.flows.map(flow => flow.edge).sort(compareFlowEdges), [
     { src: '+agoric', dest: '@agoric', via: 'local' },
     { src: '@agoric', dest: '@External', via: 'cheap' },
     { src: '@External', dest: 'Sink_External', via: 'local' },
   ]);
-  t.deepEqual(cheapResult.steps, [
+  await assertSteps(t, cheapResult.steps, [
     { src: '+agoric', dest: '@agoric', amount: token(100n) },
     {
       src: '@agoric',
@@ -589,13 +699,14 @@ test.failing('solver differentiates cheapest vs. fastest', async t => {
     target,
     brand: TOK_BRAND,
     feeBrand: FEE_BRAND,
+    gasEstimator,
   });
-  t.like(cheapResult.flows.map(flow => flow.edge).sort(compareFlowEdges), [
+  t.like(fastResult.flows.map(flow => flow.edge).sort(compareFlowEdges), [
     { src: '+agoric', dest: '@agoric', via: 'local' },
     { src: '@agoric', dest: '@External', via: 'fast' },
     { src: '@External', dest: 'Sink_External', via: 'local' },
   ]);
-  t.deepEqual(fastResult.steps, [
+  await assertSteps(t, fastResult.steps, [
     { src: '+agoric', dest: '@agoric', amount: token(100n) },
     {
       src: '@agoric',

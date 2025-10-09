@@ -1,20 +1,42 @@
 import { ethers, type JsonRpcProvider } from 'ethers';
 
+import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import {
   boardSlottingMarshaller,
   type SigningSmartWalletKit,
 } from '@agoric/client-utils';
+import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
-
-import type {
-  EvmContext,
-  HandlePendingTxOpts,
-} from '../src/pending-tx-manager';
-import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
-import { PENDING_TX_PATH_PREFIX } from '../src/engine.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
+import { makeGasEstimator } from '../src/gas-estimation.ts';
+import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
+
+const PENDING_TX_PATH_PREFIX = 'published.ymax1';
+
+const mockFetchForGasEstimate = async (_, options?: any) => {
+    return {
+      ok: true,
+      json: async () => JSON.parse(options.body).gasLimit,
+      text: async () => JSON.parse(options.body).gasLimit,
+    } as Response;
+};
+
+const mockAxelarApiAddress = 'https://api.axelar.example/';
+
+const mockAxelarChainIdMap: Record<AxelarChain, string> = {
+  Avalanche: 'Avalanche',
+  Ethereum: 'Ethereum',
+  Optimism: 'Optimism',
+  Base: 'Base',
+  Arbitrum: 'Arbitrum',
+};
+
+export const mockGasEstimator = makeGasEstimator({
+  axelarApiAddress: mockAxelarApiAddress,
+  axelarChainIdMap: mockAxelarChainIdMap,
+  fetch: mockFetchForGasEstimate,
+});
 
 export const createMockProvider = () => {
   const eventListeners = new Map<string, Function[]>();
@@ -115,11 +137,14 @@ export const createMockPendingTxOpts = (): HandlePendingTxOpts => ({
   },
   fetch: global.fetch,
   marshaller: boardSlottingMarshaller(),
-  now: () => Date.now(),
   signingSmartWalletKit: createMockSigningSmartWalletKit(),
   usdcAddresses: {
     'eip155:1': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // Ethereum
     'eip155:42161': '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', // Arbitrum
+  },
+  vstoragePathPrefixes: {
+    portfoliosPathPrefix: 'IGNORED',
+    pendingTxPathPrefix: PENDING_TX_PATH_PREFIX,
   },
 });
 

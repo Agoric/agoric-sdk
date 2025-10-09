@@ -1,3 +1,4 @@
+import { encodeRemoteIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
 import { fromBech32, fromHex } from '@cosmjs/encoding';
 import { Fail, q } from '@endo/errors';
 import bs58 from 'bs58';
@@ -45,7 +46,12 @@ export const makeICAChannelAddress = (
     encoding,
     txType,
   });
-  return `/ibc-hop/${controllerConnectionId}/ibc-port/icahost/${ordering}/${connString}`;
+  return encodeRemoteIbcAddress(
+    [controllerConnectionId],
+    'icahost',
+    ordering,
+    connString,
+  );
 };
 harden(makeICAChannelAddress);
 
@@ -61,7 +67,12 @@ export const makeICQChannelAddress = (
   version = DEFAULT_ICQ_VERSION,
 ) => {
   controllerConnectionId || Fail`controllerConnectionId is required`;
-  return `/ibc-hop/${controllerConnectionId}/ibc-port/icqhost/unordered/${version}`;
+  return encodeRemoteIbcAddress(
+    [controllerConnectionId],
+    'icqhost',
+    'unordered',
+    version,
+  );
 };
 harden(makeICQChannelAddress);
 

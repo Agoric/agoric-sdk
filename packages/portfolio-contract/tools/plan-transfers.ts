@@ -8,7 +8,7 @@ import type {
 } from '@agoric/portfolio-api/src/constants.js';
 import { throwRedacted as Fail } from '@endo/errors';
 import { objectMap } from '@endo/patterns';
-import type { MovementDesc } from './type-guards-steps.ts';
+import type { MovementDesc } from '../src/type-guards-steps.ts';
 import { planRebalanceFlow } from './plan-solve.js';
 import { PROD_NETWORK } from './network/network.prod.js';
 /**
@@ -119,6 +119,12 @@ export const makePortfolioSteps = async <
     '<Deposit>': deposit,
   };
 
+  const staticGasEstimator = {
+    getWalletEstimate: async () => 30_000_000n,
+    getFactoryContractEstimate: async () => 30_000_000n,
+    getReturnFeeEstimate: async () => 200_000_000_000_000n,
+  };
+
   // Run the solver to compute movement steps
   const { steps: raw } = await planRebalanceFlow({
     network: PROD_NETWORK,
@@ -127,6 +133,7 @@ export const makePortfolioSteps = async <
     brand,
     feeBrand: brand, // Use same brand for fees in this context
     mode: 'cheapest',
+    gasEstimator: staticGasEstimator,
   });
 
   // Inject USDN detail and EVM fees to match existing behavior/tests
@@ -135,7 +142,11 @@ export const makePortfolioSteps = async <
   // USDN detail: 99% min-out of requested USDN
   const usdnAmt = (goal as any).USDN as NatAmount | undefined;
   if (usdnAmt) {
-    const usdnDetail = { usdnOut: ((usdnAmt.value || 0n) * 99n) / 100n } as {
+    // HACK of subtract 1n in order to avoid rounding errors in Noble
+    // See https://github.com/Agoric/agoric-private/issues/415
+    const usdnDetail = {
+      usdnOut: ((usdnAmt.value || 0n) * 99n) / 100n - 1n,
+    } as {
       usdnOut: NatValue;
     };
     for (const s of steps) {

@@ -76,9 +76,10 @@ test('sendBridgeAction handles simple action', async t => {
     mnemonic,
   );
 
-  const actual = await signing.sendBridgeAction(
-    harden({ method: 'tryExitOffer', offerId: 'bid-1' }),
-  );
+  const actual = await signing.sendBridgeAction({
+    method: 'tryExitOffer',
+    offerId: 'bid-1',
+  });
   t.deepEqual(actual, { code: 42 });
   t.is(calls.length, 1);
   t.like(calls[0], {
@@ -117,7 +118,7 @@ test('sendBridgeAction supports fee param', async t => {
     amount: [{ denom: 'ubld', amount: '123' }],
   };
   const actual = await signing.sendBridgeAction(
-    harden({ method: 'tryExitOffer', offerId: 'bid-1' }),
+    { method: 'tryExitOffer', offerId: 'bid-1' },
     moar,
   );
   t.deepEqual(actual, { code: 42 });
@@ -147,7 +148,7 @@ test('sendBridgeAction uses explicit signing when signerData provided', async t 
   };
 
   const actual = await signing.sendBridgeAction(
-    harden({ method: 'tryExitOffer', offerId: 'bid-1' }),
+    { method: 'tryExitOffer', offerId: 'bid-1' },
     undefined, // use default fee
     'test memo',
     signerData,

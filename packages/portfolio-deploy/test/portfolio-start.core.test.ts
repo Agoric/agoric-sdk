@@ -18,9 +18,14 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { makePromiseSpace } from '@agoric/vats';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
+import {
+  produceDiagnostics,
+  produceStartUpgradable,
+} from '@agoric/vats/src/core/basic-behaviors.js';
 import type { Instance, ZoeService } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E, passStyleOf } from '@endo/far';
+import { E } from '@endo/far';
+import { passStyleOf, type CopyRecord } from '@endo/pass-style';
 import { produceAttenuatedDeposit } from '../src/attenuated-deposit.core.js';
 import { axelarConfig } from '../src/axelar-configs.js';
 import type { ChainInfoPowers } from '../src/chain-info.core.js';
@@ -38,6 +43,8 @@ import type {
 import { name as contractName } from '../src/portfolio.contract.permit.js';
 import * as postalServiceExports from '../src/postal-service.contract.js';
 import { deployPostalService } from '../src/postal-service.core.js';
+import { produceDeliverContractControl } from '../src/contract-control.core.js';
+import { produceGetUpgradeKit } from '../src/get-upgrade-kit.core.js';
 
 const { entries, keys } = Object;
 
@@ -59,14 +66,21 @@ const getCapDataStructure = cell => {
 
 const makeBootstrap = async t => {
   const common = await setupPortfolioTest(t);
-  const { bootstrap } = common;
-  const { agoricNamesAdmin } = bootstrap;
+  const {
+    bootstrap,
+    utils: { rootZone },
+  } = common;
+  const { agoricNamesAdmin, agoricNames } = bootstrap;
   const wk = await makeWellKnownSpaces(agoricNamesAdmin);
   const log = () => {}; // console.log
   const { produce, consume } = makePromiseSpace({ log });
-  const powers = { produce, consume, ...wk } as unknown as BootstrapPowers &
-    PortfolioBootPowers &
-    ChainInfoPowers;
+  const zone = rootZone.subZone('bootstrap vat');
+  const powers = {
+    zone,
+    produce,
+    consume,
+    ...wk,
+  } as unknown as BootstrapPowers & PortfolioBootPowers & ChainInfoPowers;
   // XXX type of zoe from setUpZoeForTest is any???
   const { zoe: zoeAny, bundleAndInstall } = await setUpZoeForTest();
   const zoe: ZoeService = zoeAny;
@@ -99,17 +113,13 @@ const makeBootstrap = async t => {
     }
 
     t.log('produce startUpgradable');
-    produce.startUpgradable.resolve(
-      ({ label, installation, issuerKeywordRecord, privateArgs, terms }) =>
-        E(zoe).startInstance(
-          installation,
-          issuerKeywordRecord,
-          terms,
-          privateArgs,
-          label,
-        ),
-    );
-    produce.zoe.resolve(zoe);
+
+    powers.produce.zoe.resolve(zoe);
+    powers.produce.agoricNames.resolve(agoricNames);
+    powers.produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
+
+    await produceDiagnostics(powers);
+    await produceStartUpgradable(powers);
   }
 
   const { storage } = bootstrap;
@@ -151,7 +161,7 @@ test('coreEval code without swingset', async t => {
   t.log('invoke coreEval');
   await t.notThrowsAsync(startPortfolio(powers, { options: ymaxOptions }));
 
-  // TODO:  common.mocks.ibcBridge.setAddressPrefix('noble');
+  common.mocks.ibcBridge.setAddressPrefix('noble');
   for (const { msg, ack } of Object.values(
     makeUSDNIBCTraffic(undefined, `${3333 * 1_000_000}`),
   )) {
@@ -212,7 +222,6 @@ test('coreEval code without swingset', async t => {
 test('delegate ymax control; invite planner; submit plan', async t => {
   const { common, powers, zoe, bundleAndInstall, provisionSmartWallet } =
     await makeBootstrap(t);
-  const { rootZone } = common.utils;
 
   t.log('produce getDepositFacet');
   await produceAttenuatedDeposit(powers as any);
@@ -242,10 +251,13 @@ test('delegate ymax control; invite planner; submit plan', async t => {
       postalInstall,
     );
   }
-
   console.log('awaited namesByAddress');
   await deployPostalService(powers as any);
   t.log('deployPostalService done');
+  t.log('produce deliverContractControl');
+  await produceDeliverContractControl(powers as any);
+  t.log('produce getUpgradeKit');
+  await produceGetUpgradeKit(powers as any);
   const { agoricNames } = common.bootstrap;
   const pInst = await E(agoricNames).lookup('instance', pContractName);
   t.is(passStyleOf(pInst), 'remotable');
@@ -255,11 +267,10 @@ test('delegate ymax control; invite planner; submit plan', async t => {
   const addrCtrl = 'agoric1ymaxcontrol';
   const [walletCtrl] = await provisionSmartWallet(addrCtrl);
 
-  const zone = rootZone.subZone('bootstrap vat');
   await delegatePortfolioContract(
     // @ts-expect-error mock
-    { ...powers, zone },
-    { options: { ymaxControlAddress: addrCtrl } },
+    powers,
+    { options: { ymaxControlAddress: addrCtrl, contractName: 'ymax0' } },
   );
   await eventLoopIteration(); // core eval doesn't block on delivery
 
@@ -275,6 +286,18 @@ test('delegate ymax control; invite planner; submit plan', async t => {
     saveResult: { name: 'ymaxControl' },
   });
 
+  // New portfolio-control passes existing kit. Call terminate to make it forget it.
+  // The portfolio control on chain didn't pass kit in
+  t.log('terminate to forget kit');
+  {
+    await E(E(walletCtrl).getInvokeFacet()).invokeEntry({
+      targetName: 'ymaxControl',
+      method: 'terminate',
+      args: [{ message: 'forget kit' }],
+    });
+    await eventLoopIteration(); // terminate is async
+  }
+
   t.log('installAndStart');
   {
     const { issuer } = powers;
@@ -284,10 +307,22 @@ test('delegate ymax control; invite planner; submit plan', async t => {
       issuer.consume.PoC26,
     ]);
     const issuers = { USDC, Access: PoC26, Fee: BLD, BLD };
+    const { privateArgs } = await (powers as PortfolioBootPowers).consume
+      .ymax0Kit;
+
+    // New portfolio-control does not use privateArgs from previous kit
+    const privateArgsOverrides = {
+      assetInfo: privateArgs.assetInfo,
+      axelarIds: privateArgs.axelarIds,
+      chainInfo: privateArgs.chainInfo,
+      contracts: privateArgs.contracts,
+      gmpAddresses: privateArgs.gmpAddresses,
+    } as CopyRecord;
+
     await E(E(walletCtrl).getInvokeFacet()).invokeEntry({
       targetName: 'ymaxControl',
       method: 'installAndStart',
-      args: [{ bundleId: 'b2-ymax-bundleId', issuers }],
+      args: [{ bundleId: 'b2-ymax-bundleId', issuers, privateArgsOverrides }],
     });
     await eventLoopIteration(); // installAndStart is async
   }

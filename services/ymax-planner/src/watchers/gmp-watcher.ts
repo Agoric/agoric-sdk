@@ -1,9 +1,15 @@
 import { ethers, type Filter, type JsonRpcProvider, type Log } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
+import type { CaipChainId } from '@agoric/orchestration';
 import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
+import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 
+// TODO: Remove once all contracts are upgraded to emit MulticallStatus
 const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
   'MulticallExecuted(string,(bool,bytes)[])',
+);
+const MULTICALL_STATUS_SIGNATURE = ethers.id(
+  'MulticallStatus(string,bool,uint256)',
 );
 
 type WatchGmp = {
@@ -17,7 +23,7 @@ export const watchGmp = ({
   provider,
   contractAddress,
   txId,
-  timeoutMs = 300000, // 5 min
+  timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
   setTimeout = globalThis.setTimeout,
 }: WatchGmp & {
@@ -26,13 +32,17 @@ export const watchGmp = ({
 }): Promise<boolean> => {
   return new Promise(resolve => {
     const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
-    const filter = {
+    const statusFilter = {
+      address: contractAddress,
+      topics: [MULTICALL_STATUS_SIGNATURE, expectedIdTopic],
+    };
+    const executedFilter = {
       address: contractAddress,
       topics: [MULTICALL_EXECUTED_SIGNATURE, expectedIdTopic],
     };
 
     log(
-      `Watching for MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
+      `Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
     );
 
     let executionFound = false;
@@ -45,6 +55,22 @@ export const watchGmp = ({
         void provider.off(event, listener);
       }
       listeners = [];
+    };
+
+    const listenForStatus = (eventLog: Log) => {
+      log(
+        `MulticallStatus detected: txId=${txId} contract=${contractAddress} tx=${eventLog.transactionHash}`,
+      );
+
+      // Check if this log matches our expected txId
+      if (eventLog.topics[1] === expectedIdTopic) {
+        log(`✓ MulticallStatus matches txId: ${txId}`);
+        executionFound = true;
+        cleanup();
+        resolve(true);
+      } else {
+        log(`MulticallStatus txId mismatch for ${txId}`);
+      }
     };
 
     const listenForExecution = (eventLog: Log) => {
@@ -63,13 +89,15 @@ export const watchGmp = ({
       }
     };
 
-    void provider.on(filter, listenForExecution);
-    listeners.push({ event: filter, listener: listenForExecution });
+    void provider.on(statusFilter, listenForStatus);
+    void provider.on(executedFilter, listenForExecution);
+    listeners.push({ event: statusFilter, listener: listenForStatus });
+    listeners.push({ event: executedFilter, listener: listenForExecution });
 
     timeoutId = setTimeout(() => {
       if (!executionFound) {
         log(
-          `✗ No MulticallExecuted found for txId ${txId} within ${timeoutMs / 60000} minutes`,
+          `✗ No MulticallStatus or MulticallExecuted found for txId ${txId} within ${timeoutMs / 60000} minutes`,
         );
         cleanup();
         resolve(false);
@@ -83,32 +111,79 @@ export const lookBackGmp = async ({
   contractAddress,
   txId,
   publishTimeMs,
+  chainId,
   log = () => {},
-}: WatchGmp & { publishTimeMs: number }): Promise<boolean> => {
+}: WatchGmp & {
+  publishTimeMs: number;
+  chainId: CaipChainId;
+}): Promise<boolean> => {
   await null;
   try {
     const { fromBlock, toBlock } = await buildTimeWindow(
       provider,
       publishTimeMs,
+      log,
+      chainId,
     );
 
     log(
-      `Searching blocks ${fromBlock} → ${toBlock} for MulticallExecuted with txId ${txId} at ${contractAddress}`,
+      `Searching blocks ${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
     );
     const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
 
-    const baseFilter: Filter = {
+    const statusFilter: Filter = {
+      address: contractAddress,
+      topics: [MULTICALL_STATUS_SIGNATURE, expectedIdTopic],
+    };
+
+    const executedFilter: Filter = {
       address: contractAddress,
       topics: [MULTICALL_EXECUTED_SIGNATURE, expectedIdTopic],
     };
 
-    const matchingEvent = await scanEvmLogsInChunks(
-      { provider, baseFilter, fromBlock, toBlock, log },
-      ev => ev.topics[1] === expectedIdTopic,
-    );
+    const statusController = new AbortController();
+    const executedController = new AbortController();
 
-    if (!matchingEvent) log(`No matching MulticallExecuted found`);
-    return !!matchingEvent;
+    const matchingEvent = await Promise.race([
+      scanEvmLogsInChunks(
+        {
+          provider,
+          baseFilter: statusFilter,
+          fromBlock,
+          toBlock,
+          chainId,
+          log,
+          signal: statusController.signal,
+        },
+        ev => ev.topics[1] === expectedIdTopic,
+      ).then(result => {
+        executedController.abort();
+        return result;
+      }),
+      scanEvmLogsInChunks(
+        {
+          provider,
+          baseFilter: executedFilter,
+          fromBlock,
+          toBlock,
+          chainId,
+          log,
+          signal: executedController.signal,
+        },
+        ev => ev.topics[1] === expectedIdTopic,
+      ).then(result => {
+        statusController.abort();
+        return result;
+      }),
+    ]);
+
+    if (matchingEvent) {
+      log(`Found matching event`);
+      return true;
+    }
+
+    log(`No matching MulticallStatus or MulticallExecuted found`);
+    return false;
   } catch (error) {
     log(`Error:`, error);
     return false;

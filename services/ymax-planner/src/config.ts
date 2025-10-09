@@ -1,8 +1,12 @@
 /* eslint-disable @jessie.js/safe-await-separator */
 /// <reference types="ses" />
-import * as AgoricClientUtils from '@agoric/client-utils';
 import { Fail, q } from '@endo/errors';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
+
+import { AxelarChainIdMap } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
+import * as AgoricClientUtils from '@agoric/client-utils';
+import { objectMap } from '@agoric/internal';
+import type { AxelarChain } from '@agoric/portfolio-api/src/constants';
 
 export type ClusterName = 'local' | 'testnet' | 'mainnet';
 export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
@@ -14,6 +18,7 @@ export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
 
 export interface YmaxPlannerConfig {
   readonly clusterName: ClusterName;
+  readonly contractInstance: string;
   readonly mnemonic: string;
   readonly alchemyApiKey: string;
   readonly spectrum: {
@@ -26,6 +31,10 @@ export interface YmaxPlannerConfig {
     readonly agoricNetSubdomain?: string;
     readonly timeout: number;
     readonly retries: number;
+  };
+  readonly axelar: {
+    readonly apiUrl: string;
+    readonly chainIdMap: Record<AxelarChain, string>;
   };
 }
 
@@ -121,8 +130,23 @@ export const loadConfig = async (
     (await getMnemonicFromGCP(secretManager, gcpProjectId, gcpSecretName)) ||
     Fail`Mnemonic is required`;
 
+  const isMainnet = clusterName === 'mainnet';
+  /** @see {@link https://docs.axelarscan.io/gmp#estimateGasFee} */
+  const axelarApiAddress = isMainnet
+    ? 'https://api.axelarscan.io/'
+    : 'https://testnet.api.axelarscan.io/';
+  const axelarChainIdMap = objectMap(AxelarChainIdMap, ids =>
+    isMainnet ? ids.mainnet : ids.testnet,
+  );
+
+  const contractInstance = validateRequired(env, 'CONTRACT_INSTANCE');
+  if (contractInstance !== 'ymax0' && contractInstance !== 'ymax1') {
+    throw Fail`CONTRACT_INSTANCE must be 'ymax0' or 'ymax1', got: ${contractInstance}`;
+  }
+
   const config: YmaxPlannerConfig = harden({
     clusterName,
+    contractInstance,
     mnemonic,
     alchemyApiKey: validateRequired(env, 'ALCHEMY_API_KEY'),
     spectrum: {
@@ -135,6 +159,10 @@ export const loadConfig = async (
       agoricNetSubdomain,
       timeout: parsePositiveInteger(env, 'COSMOS_REST_TIMEOUT', 15000),
       retries: parsePositiveInteger(env, 'COSMOS_REST_RETRIES', 3),
+    },
+    axelar: {
+      apiUrl: axelarApiAddress,
+      chainIdMap: axelarChainIdMap,
     },
   });
 

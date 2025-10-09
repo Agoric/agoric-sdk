@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 
 import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
-import type { NetworkSpec } from '../../src/network/network-spec.js';
+import type { NetworkSpec } from '../../tools/network/network-spec.js';
 import type { PoolKey } from '../../src/type-guards.js';
 import type { AssetPlaceRef } from '../../src/type-guards-steps.js';
 
@@ -43,15 +43,15 @@ export const TEST_NETWORK: NetworkSpec = {
     { src: '@noble', dest: 'USDNVault', transfer: 'local', variableFeeBps: 5, timeSec: 0, feeMode: 'toUSDN' },
 
     // CCTP slow towards noble
-    { src: '@Polygon' as AssetPlaceRef, dest: '@noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080 },
-    { src: '@Arbitrum', dest: '@noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080 },
-    { src: '@Avalanche', dest: '@noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080 },
-    { src: '@Ethereum', dest: '@noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080 },
+    { src: '@Polygon' as AssetPlaceRef, dest: '@noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080, feeMode: 'evmToNoble' },
+    { src: '@Arbitrum', dest: '@noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080, feeMode: 'evmToNoble' },
+    { src: '@Avalanche', dest: '@noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080, feeMode: 'evmToNoble' },
+    { src: '@Ethereum', dest: '@noble', transfer: 'cctpSlow', variableFeeBps: 0, timeSec: 1080, feeMode: 'evmToNoble' },
     // Return path
-    { src: '@noble', dest: '@Arbitrum', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'gmpTransfer' },
-    { src: '@noble', dest: '@Polygon' as AssetPlaceRef, transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'gmpTransfer' },
-    { src: '@noble', dest: '@Avalanche', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'gmpTransfer' },
-    { src: '@noble', dest: '@Ethereum', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'gmpTransfer' },
+    { src: '@noble', dest: '@Arbitrum', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'makeEvmAccount' },
+    { src: '@noble', dest: '@Polygon' as AssetPlaceRef, transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'makeEvmAccount' },
+    { src: '@noble', dest: '@Avalanche', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'makeEvmAccount' },
+    { src: '@noble', dest: '@Ethereum', transfer: 'cctpReturn', variableFeeBps: 0, timeSec: 20, feeMode: 'makeEvmAccount' },
     // IBC agoric<->noble
     { src: '@agoric', dest: '@noble', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },
     { src: '@noble', dest: '@agoric', transfer: 'ibc', variableFeeBps: 0, timeSec: 10 },

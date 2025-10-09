@@ -1,7 +1,9 @@
 import { JsonRpcProvider, Log, type Filter } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from './config.ts';
-import type { EvmContext } from './pending-tx-manager.ts';
+import { TX_TIMEOUT_MS, type EvmContext } from './pending-tx-manager.ts';
+
+const { entries } = Object;
 
 type HexAddress = `0x${string}`;
 
@@ -41,6 +43,60 @@ export const usdcAddresses: UsdcAddresses = {
   },
 };
 
+// Avg measurements of Actual Gas used for EVM Txs
+export const gasLimitEstimates = {
+  Factory: 1_209_435n, // https://sepolia.arbiscan.io/tx/0xfdb38b1680c10919b7ff360b21703e349b74eac585f15c70ba9733c7ddaccfe6
+  Wallet: 276_809n,
+};
+
+/**
+ * Average block times for supported EVM chains in milliseconds.
+ *
+ * Sources:
+ * - Ethereum:
+ *   Mainnet ~12s → https://etherscan.io/chart/blocktime
+ *   Sepolia ~12s → https://eth-sepolia.blockscout.com/
+ *
+ * - Arbitrum:
+ *   Mainnet ~0.3s → https://arbitrum.blockscout.com/
+ *   Sepolia ~0.3s → https://arbitrum-sepolia.blockscout.com/
+ *
+ * - Avalanche:
+ *   Mainnet ~2s → https://snowscan.xyz/chart/blocktime
+ *   Fuji ~2s → Didn't find any specific resource for it
+ *
+ * - Base:
+ *   Mainnet ~2.5s → https://base.blockscout.com/stats
+ *   Sepolia ~2s → https://base-sepolia.blockscout.com/
+ *
+ * - Optimism:
+ *   Mainnet ~2s → https://explorer.optimism.io/
+ *   Sepolia ~2s → https://testnet-explorer.optimism.io/
+ */
+const chainBlockTimesMs: Record<CaipChainId, number> = harden({
+  // ========= Mainnet =========
+  'eip155:1': 12_000, // Ethereum Mainnet
+  'eip155:42161': 300, // Arbitrum One
+  'eip155:43114': 2_000, // Avalanche C-Chain
+  'eip155:8453': 2_500, // Base
+  'eip155:10': 2_000, // Optimism
+
+  // ========= Testnet =========
+  'eip155:11155111': 12_000, // Ethereum Sepolia
+  'eip155:421614': 300, // Arbitrum Sepolia
+  'eip155:43113': 2_000, // Avalanche Fuji
+  'eip155:84532': 2_000, // Base Sepolia
+  'eip155:11155420': 2_000, // Optimism Sepolia
+});
+
+/**
+ * Get the average block time for a given chain ID.
+ * Defaults to Ethereum's 12s if chain is unknown (conservative approach).
+ */
+export const getBlockTimeMs = (chainId: CaipChainId): number => {
+  return chainBlockTimesMs[chainId] ?? 12_000; // Default to Ethereum's conservative 12s
+};
+
 export const getEvmRpcMap = (
   clusterName: ClusterName,
   alchemyApiKey: string,
@@ -50,20 +106,26 @@ export const getEvmRpcMap = (
       return {
         // Source: https://www.alchemy.com/rpc/ethereum
         'eip155:1': `https://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
-        // Source: https://build.avax.network/docs/tooling/rpc-providers#http
-        'eip155:43114': 'https://api.avax.network/ext/bc/C/rpc',
-        // Source: https://docs.arbitrum.io/build-decentralized-apps/reference/node-providers
-        'eip155:42161': 'https://arb1.arbitrum.io/rpc',
-        // Source: https://docs.optimism.io/superchain/networks
-        'eip155:10': 'https://mainnet.optimism.io',
+        // Source: https://www.alchemy.com/rpc/avalanche
+        'eip155:43114': `https://avax-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        // Source:  https://www.alchemy.com/rpc/arbitrum
+        'eip155:42161': `https://arb-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        // Source: https://www.alchemy.com/rpc/optimism
+        'eip155:10': `https://opt-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        // Source: https://www.alchemy.com/rpc/base
         'eip155:8453': `https://base-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
       };
     case 'testnet':
       return {
+        // Source: https://www.alchemy.com/rpc/ethereum-sepolia
         'eip155:11155111': `https://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
-        'eip155:43113': 'https://api.avax-test.network/ext/bc/C/rpc',
-        'eip155:421614': 'https://arbitrum-sepolia-rpc.publicnode.com',
-        'eip155:11155420': 'https://optimism-sepolia-rpc.publicnode.com',
+        // Source: https://www.alchemy.com/rpc/avalanche-fuji
+        'eip155:43113': `https://avax-fuji.g.alchemy.com/v2/${alchemyApiKey}`,
+        // Source: https://www.alchemy.com/rpc/arbitrum-sepolia
+        'eip155:421614': `https://arb-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        // Source: https://www.alchemy.com/rpc/optimism-sepolia
+        'eip155:11155420': `https://opt-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        // Source: https://www.alchemy.com/rpc/base-sepolia
         'eip155:84532': `https://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
       };
     default:
@@ -76,6 +138,62 @@ type CreateContextParams = {
 };
 
 export type EvmProviders = Record<CaipChainId, JsonRpcProvider>;
+
+/**
+ * Verifies that all EVM chains are accessible via their providers.
+ * Throws an error if any chain fails to connect.
+ */
+export const verifyEvmChains = async (
+  evmProviders: EvmProviders,
+): Promise<void> => {
+  const chainResults = await Promise.allSettled(
+    entries(evmProviders).map(async ([chainId, provider]) => {
+      await null;
+      try {
+        await provider.getBlockNumber();
+        return { chainId, success: true };
+      } catch (error: any) {
+        return { chainId, success: false, error: error.message };
+      }
+    }),
+  );
+
+  const workingChains: string[] = [];
+  const failedChains: Array<{ chainId: string; error: string }> = [];
+
+  for (const result of chainResults) {
+    if (result.status === 'fulfilled') {
+      const chainResult = result.value;
+      if (chainResult.success) {
+        workingChains.push(chainResult.chainId);
+      } else {
+        failedChains.push({
+          chainId: chainResult.chainId,
+          error: chainResult.error,
+        });
+      }
+    } else {
+      failedChains.push({
+        chainId: 'unknown',
+        error: result.reason?.message || 'Unknown error',
+      });
+    }
+  }
+
+  console.warn(`✓ Working chains (${workingChains.length}):`, workingChains);
+
+  if (failedChains.length > 0) {
+    console.error(`✗ Failed chains (${failedChains.length}):`);
+    for (const { chainId, error } of failedChains) {
+      console.error(`  - ${chainId}: ${error}`);
+    }
+    throw new Error(
+      `Failed to connect to ${failedChains.length} EVM chain(s). ` +
+        `Ensure all required chains are enabled in your Alchemy dashboard. ` +
+        `Failed chains: ${failedChains.map(c => c.chainId).join(', ')}`,
+    );
+  }
+};
 
 export const createEVMContext = async ({
   clusterName,
@@ -168,11 +286,37 @@ const findBlockByTimestamp = async (
 export const buildTimeWindow = async (
   provider: JsonRpcProvider,
   publishTimeMs: number,
+  log: (...args: unknown[]) => void,
+  chainId: CaipChainId,
   fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
 ) => {
   const adjustedTime = publishTimeMs - fudgeFactorMs;
   const fromBlock = await findBlockByTimestamp(provider, adjustedTime);
-  const toBlock = await provider.getBlockNumber();
+
+  const fromBlockInfo = await provider.getBlock(fromBlock);
+  const fromBlockTime = (fromBlockInfo?.timestamp || 0) * 1000;
+  // Add fudgeFactorMs back to TX_TIMEOUT_MS to compensate for the earlier subtraction
+  const endTime = fromBlockTime + TX_TIMEOUT_MS + fudgeFactorMs;
+
+  const currentBlock = await provider.getBlockNumber();
+  const currentBlockInfo = await provider.getBlock(currentBlock);
+  const currentBlockTime = (currentBlockInfo?.timestamp || 0) * 1000;
+
+  if (endTime <= currentBlockTime) {
+    log('end time is in the past');
+    return { fromBlock, toBlock: currentBlock };
+  }
+
+  log('end time is in the future - estimate blocks ahead');
+
+  const blockTimeMs = getBlockTimeMs(chainId);
+  log(`using block time ${blockTimeMs}ms for chain ${chainId}`);
+
+  const timeUntilEnd = endTime - currentBlockTime;
+  const estimatedFutureBlocks = Math.ceil(timeUntilEnd / blockTimeMs);
+  log('future blocks', estimatedFutureBlocks);
+
+  const toBlock = currentBlock + estimatedFutureBlocks;
   return { fromBlock, toBlock };
 };
 
@@ -183,8 +327,10 @@ type ScanOpts = {
   baseFilter: Omit<Filter, 'fromBlock' | 'toBlock'> & Partial<Filter>;
   fromBlock: number;
   toBlock: number;
+  chainId: CaipChainId;
   chunkSize?: number;
   log?: (...args: unknown[]) => void;
+  signal?: AbortSignal;
 };
 
 /**
@@ -200,13 +346,33 @@ export const scanEvmLogsInChunks = async (
     baseFilter,
     fromBlock,
     toBlock,
+    chainId,
     chunkSize = 10,
     log = () => {},
+    signal,
   } = opts;
 
   await null;
-  for (let start = fromBlock; start <= toBlock; start += chunkSize) {
+  for (let start = fromBlock; start <= toBlock; ) {
+    if (signal?.aborted) {
+      log('[LogScan] Aborted');
+      return undefined;
+    }
     const end = Math.min(start + chunkSize - 1, toBlock);
+    const currentBlock = await provider.getBlockNumber();
+
+    // Wait for the chain to catch up if end block doesn't exist yet
+    if (end > currentBlock) {
+      const blockTimeMs = getBlockTimeMs(chainId);
+      const blocksToWait = Math.max(50, chunkSize);
+      const waitTimeMs = blocksToWait * blockTimeMs;
+      const blocksBehind = end - currentBlock;
+      log(
+        `[LogScan] Chain ${blocksBehind} blocks behind (need ${end}, at ${currentBlock}). Waiting ${waitTimeMs}ms (${blocksToWait} blocks @ ${blockTimeMs}ms/block)`,
+      );
+      await new Promise(resolve => setTimeout(resolve, waitTimeMs));
+      continue; // Retry this chunk after waiting
+    }
 
     const chunkFilter: Filter = {
       // baseFilter represents core filter configuration (address, topics, etc.) without block range
@@ -218,7 +384,6 @@ export const scanEvmLogsInChunks = async (
     try {
       log(`[LogScan] Searching chunk ${start} → ${end}`);
       const logs = await provider.getLogs(chunkFilter);
-
       for (const evt of logs) {
         if (await predicate(evt)) {
           log(`[LogScan] Match in tx=${evt.transactionHash}`);
@@ -229,6 +394,8 @@ export const scanEvmLogsInChunks = async (
       log(`[LogScan] Error searching chunk ${start}–${end}:`, err);
       // continue
     }
+
+    start += chunkSize;
   }
   return undefined;
 };

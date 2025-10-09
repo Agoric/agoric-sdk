@@ -3,6 +3,9 @@ import type {
   OfferStatus,
 } from '@agoric/smart-wallet/src/offers.js';
 import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
+import type { ECallable } from '@agoric/vow/src/E.js';
+import type { EUnwrap } from '@agoric/vow/src/types.js';
+import type { Instance } from '@agoric/zoe';
 import type {
   DeliverTxResponse,
   SignerData,
@@ -10,11 +13,49 @@ import type {
   StdFee,
 } from '@cosmjs/stargate';
 import { toAccAddress } from '@cosmjs/stargate/build/queryclient/utils.js';
+import { Fail } from '@endo/errors';
 import type { EReturn } from '@endo/far';
 import { MsgWalletSpendAction } from './codegen/agoric/swingset/msgs.js';
 import { TxRaw } from './codegen/cosmos/tx/v1beta1/tx.js';
 import { makeStargateClientKit } from './signing-client.js';
-import { type SmartWalletKit } from './smart-wallet-kit.js';
+import { getInvocationUpdate, getOfferResult } from './smart-wallet-kit.js';
+import type { SmartWalletKit } from './smart-wallet-kit.js';
+import type { RetryOptionsAndPowers } from './sync-tools.js';
+
+type TxOptions = RetryOptionsAndPowers & {
+  sendOnly?: boolean;
+  makeNonce?: () => string;
+};
+
+/**
+ * A type-aware representation of an object saved in the wallet store, with
+ * methods that return information about their implementing "invokeEntry"
+ * submissions. If Recursive is true, then each method has an initial
+ * { name?: string, overwrite?: boolean } parameter for specifying how (or if)
+ * to save results back into the wallet store and responses for such saved
+ * results also include a WalletStoreEntryProxy `result` representing those
+ * results.
+ */
+type WalletStoreEntryProxy<T, Recursive extends true | false = false> = {
+  readonly [M in keyof T]: T[M] extends (...args: infer P) => infer R
+    ? Recursive extends false
+      ? ECallable<(...args: P) => { id?: string; tx: DeliverTxResponse }>
+      : ECallable<
+          <SaveToName extends string | undefined>(
+            options: SaveToName extends string
+              ? { name: SaveToName; overwrite?: boolean }
+              : undefined | Record<PropertyKey, never>,
+            ...args: P
+          ) => {
+            id?: string;
+            tx: DeliverTxResponse;
+            result: SaveToName extends string
+              ? WalletStoreEntryProxy<EUnwrap<R>, true>
+              : undefined;
+          }
+        >
+    : never;
+};
 
 // TODO parameterize as part of https://github.com/Agoric/agoric-sdk/issues/5912
 const defaultFee: StdFee = {
@@ -65,6 +106,11 @@ export const makeSigningSmartWalletKit = async (
     memo: string = '',
     signerData?: SignerData,
   ): Promise<DeliverTxResponse> => {
+    // The caller should do this but it's more ergonomic to allow an object
+    // literal, and in that case this hardening does not create an external
+    // side-effect.
+    harden(action);
+
     const msgSpend = MsgWalletSpendAction.fromPartial({
       owner: toAccAddress(address),
       spendAction: JSON.stringify(swk.marshaller.toCapData(action)),
@@ -95,17 +141,15 @@ export const makeSigningSmartWalletKit = async (
     const offerP = swk.pollOffer(address, offer.id);
 
     // Await for rejection handling
-    await sendBridgeAction(
-      harden({
-        method: 'executeOffer',
-        offer,
-      }),
-    );
+    await sendBridgeAction({
+      method: 'executeOffer',
+      offer,
+    });
 
     return offerP;
   };
 
-  return Object.freeze({
+  return harden({
     ...swk,
     query,
     address,
@@ -119,3 +163,134 @@ export const makeSigningSmartWalletKit = async (
   });
 };
 export type SigningSmartWalletKit = EReturn<typeof makeSigningSmartWalletKit>;
+
+/**
+ * @alpha
+ */
+export const reflectWalletStore = (
+  sswk: SigningSmartWalletKit,
+  baseTxOpts?: Partial<TxOptions>,
+) => {
+  baseTxOpts = { log: () => {}, ...baseTxOpts };
+
+  const makeEntryProxy = (
+    targetName: string,
+    overrides?: Partial<TxOptions>,
+    forSavingResults?: boolean,
+  ) => {
+    const combinedOpts = { ...baseTxOpts, ...overrides } as TxOptions;
+    combinedOpts.setTimeout || Fail`missing setTimeout`;
+    const { sendOnly, makeNonce, ...retryOpts } = combinedOpts;
+    if (forSavingResults && !makeNonce && !sendOnly) {
+      throw Fail`makeNonce is required without sendOnly: true (to create an awaitable message id)`;
+    }
+    const { log = () => {} } = combinedOpts;
+    const logged = <T>(label: string, x: T): T => {
+      log(label, x);
+      return x;
+    };
+    return new Proxy(harden({}), {
+      get(_t, method, _rx) {
+        assert.typeof(method, 'string');
+        method !== 'then' || Fail`unsupported method name "then"`;
+        const boundMethod = async (...args) => {
+          const options = forSavingResults ? args.shift() : {};
+          const { name, overwrite = true } = options;
+          const saveResult =
+            forSavingResults && name ? { name, overwrite } : undefined;
+          const id = makeNonce ? `${method}.${makeNonce()}` : undefined;
+          const message = logged('invoke', {
+            id,
+            targetName,
+            method,
+            args,
+            ...(saveResult ? { saveResult } : undefined),
+          });
+          const tx = await sswk.sendBridgeAction({
+            method: 'invokeEntry',
+            message,
+          });
+          if (tx.code !== 0) {
+            throw Error(tx.rawLog);
+          }
+          if (!sendOnly && id) {
+            await getInvocationUpdate(id, sswk.query.getLastUpdate, retryOpts);
+          }
+          const ret = { id, tx };
+          if (forSavingResults) {
+            const result = name
+              ? makeEntryProxy(name, overrides, forSavingResults)
+              : undefined;
+            return { ...ret, result };
+          }
+          return ret;
+        };
+        return harden(boundMethod);
+      },
+    });
+  };
+
+  const saveOfferResult = async (
+    { instance, description }: { instance: Instance; description: string },
+    name: string = description,
+    options?: Partial<TxOptions & { overwrite: boolean }>,
+  ) => {
+    const combinedOpts = { ...baseTxOpts, ...options } as TxOptions & {
+      overwrite?: boolean;
+    };
+    const {
+      sendOnly: _sendOnly,
+      makeNonce,
+      overwrite = true,
+      ...retryOpts
+    } = combinedOpts;
+    if (!makeNonce) throw Fail`missing makeNonce`;
+    const id = `${description}.${makeNonce()}`;
+    const tx = await sswk.sendBridgeAction({
+      method: 'executeOffer',
+      offer: {
+        id,
+        invitationSpec: { source: 'purse', instance, description },
+        proposal: {},
+        saveResult: { name, overwrite },
+      },
+    });
+    const status = await getOfferResult(
+      id,
+      sswk.query.getLastUpdate,
+      retryOpts,
+    );
+    return { id, tx, result: status.result };
+  };
+
+  return harden({
+    /**
+     * Return a previously-saved result as a remote object with type-aware
+     * methods that map to "invokeEntry" submissions. The methods will always
+     * await tx output from `sendBridgeAction`, and will also wait for
+     * confirmation in vstorage when sent with an `id` (e.g., derived from a
+     * `makeNonce` option) unless overridden by a `sendOnly: true` option.
+     */
+    get: <T>(name: string, options?: Partial<TxOptions>) =>
+      makeEntryProxy(name, options, false) as WalletStoreEntryProxy<T, false>,
+    /**
+     * Return a previously-saved result as a remote object with type-aware
+     * methods that map to "invokeEntry" submissions, each having an additional
+     * initial { name?: string, overwrite?: boolean } parameter for specifying
+     * how (or if) to save results in the wallet store. The methods will always
+     * await tx output from `sendBridgeAction`, and will also wait for
+     * confirmation in vstorage unless overridden by a `sendOnly: true` option
+     * (but note that when so overridden, the returned `result` is not yet
+     * usable).
+     */
+    getForSavingResults: <T>(name: string, options?: Partial<TxOptions>) =>
+      makeEntryProxy(name, options, true) as WalletStoreEntryProxy<T, true>,
+    /**
+     * Execute the offer specified by { instance, description } and save the
+     * result in the wallet store with the specified name (default to match the
+     * offer description), overwriting any prior entry for that name unless
+     * otherwise specified. Waits for confirmation in vstorage before returning.
+     */
+    saveOfferResult,
+  });
+};

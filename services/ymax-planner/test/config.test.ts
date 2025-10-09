@@ -10,6 +10,13 @@ import { createEVMContext } from '../src/support.ts';
 
 const { entries, keys } = Object;
 
+/** Acceptable values for all required environment variables. */
+const minimalEnv = {
+  MNEMONIC: 'test mnemonic phrase',
+  ALCHEMY_API_KEY: 'test1234',
+  CONTRACT_INSTANCE: 'ymax1',
+};
+
 const makeFakeSecretManager = (mnemonic?: string) =>
   ({
     accessSecretVersion: async () => [
@@ -20,6 +27,11 @@ const makeFakeSecretManager = (mnemonic?: string) =>
       },
     ],
   }) as SecretManager;
+
+const callLoadConfig = (
+  envOverrides: Record<string, string | undefined> = {},
+  secretManager: SecretManager = makeFakeSecretManager(),
+) => loadConfig({ ...minimalEnv, ...envOverrides }, secretManager);
 
 test('loadConfig validates required MNEMONIC', async t => {
   const env = {};
@@ -34,6 +46,7 @@ test('loadConfig accepts valid configuration', async t => {
   const env = {
     CLUSTER: 'testnet',
     MNEMONIC: 'test mnemonic phrase',
+    CONTRACT_INSTANCE: 'ymax1',
     ALCHEMY_API_KEY: 'test1234',
     SPECTRUM_API_URL: 'https://api.spectrum.example.com',
     SPECTRUM_API_TIMEOUT: '5000',
@@ -59,15 +72,10 @@ test('loadConfig accepts valid configuration', async t => {
 });
 
 test('loadConfig uses default values when optional fields are missing', async t => {
-  const env = {
-    MNEMONIC: 'test mnemonic phrase',
-    ALCHEMY_API_KEY: 'test1234',
-  };
-  const secretManager = makeFakeSecretManager();
-
-  const config = await loadConfig(env, secretManager);
+  const config = await callLoadConfig();
 
   t.is(config.clusterName, 'local');
+  t.is(config.contractInstance, 'ymax1');
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemyApiKey, 'test1234');
   t.is(config.spectrum.apiUrl, undefined);
@@ -80,20 +88,14 @@ test('loadConfig uses default values when optional fields are missing', async t 
 });
 
 test('loadConfig defaults AGORIC_NET from CLUSTER', async t => {
-  const envBase = {
-    MNEMONIC: 'test mnemonic phrase',
-    ALCHEMY_API_KEY: 'test1234',
-  };
-  const secretManager = makeFakeSecretManager();
-
   for (const [clusterName, defaultAgoricNetworkSpec] of Object.entries(
     defaultAgoricNetworkSpecForCluster,
   )) {
     for (const agoricNetworkSpec of [undefined, 'xnet', 'xnet,forceChainId']) {
-      const config = await loadConfig(
-        { ...envBase, CLUSTER: clusterName, AGORIC_NET: agoricNetworkSpec },
-        secretManager,
-      );
+      const config = await callLoadConfig({
+        CLUSTER: clusterName,
+        AGORIC_NET: agoricNetworkSpec,
+      });
       t.is(config.clusterName, clusterName as any, `CLUSTER=${clusterName}`);
       t.is(
         config.cosmosRest.agoricNetworkSpec,
@@ -105,12 +107,6 @@ test('loadConfig defaults AGORIC_NET from CLUSTER', async t => {
 });
 
 test('loadConfig defaults CLUSTER from AGORIC_NET', async t => {
-  const envBase = {
-    MNEMONIC: 'test mnemonic phrase',
-    ALCHEMY_API_KEY: 'test1234',
-  };
-  const secretManager = makeFakeSecretManager();
-
   const defaultClusterNameForAgoricNetwork = new Map<string, ClusterName>([
     ['local', 'local'],
     ['devnet', 'testnet'],
@@ -126,10 +122,10 @@ test('loadConfig defaults CLUSTER from AGORIC_NET', async t => {
       `${agoricNetSubdomain},forceChainId`,
     ]) {
       for (const clusterName of [undefined, 'mainnet']) {
-        const config = await loadConfig(
-          { ...envBase, AGORIC_NET: agoricNetworkSpec, CLUSTER: clusterName },
-          secretManager,
-        );
+        const config = await callLoadConfig({
+          AGORIC_NET: agoricNetworkSpec,
+          CLUSTER: clusterName,
+        });
         t.is(
           config.cosmosRest.agoricNetworkSpec,
           agoricNetworkSpec,
@@ -151,40 +147,19 @@ test('loadConfig defaults CLUSTER from AGORIC_NET', async t => {
 });
 
 test('loadConfig validates positive integers', async t => {
-  const env = {
-    MNEMONIC: 'test mnemonic phrase',
-    ALCHEMY_API_KEY: 'test1234',
-    SPECTRUM_API_TIMEOUT: '0',
-  };
-  const secretManager = makeFakeSecretManager();
-
-  await t.throwsAsync(() => loadConfig(env, secretManager), {
+  await t.throwsAsync(() => callLoadConfig({ SPECTRUM_API_TIMEOUT: '0' }), {
     message: /"SPECTRUM_API_TIMEOUT" must be a positive integer/,
   });
 });
 
 test('loadConfig validates URL format', async t => {
-  const env = {
-    MNEMONIC: 'test mnemonic phrase',
-    ALCHEMY_API_KEY: 'test1234',
-    SPECTRUM_API_URL: 'not-a-url',
-  };
-  const secretManager = makeFakeSecretManager();
-
-  await t.throwsAsync(() => loadConfig(env, secretManager), {
+  await t.throwsAsync(() => callLoadConfig({ SPECTRUM_API_URL: 'not-a-url' }), {
     message: /"SPECTRUM_API_URL" must be a valid URL/,
   });
 });
 
 test('loadConfig trims whitespace from values', async t => {
-  const env = {
-    MNEMONIC: '  test mnemonic phrase  ',
-    ALCHEMY_API_KEY: '  test1234  ',
-    AGORIC_NET: '  devnet  ',
-  };
-  const secretManager = makeFakeSecretManager();
-
-  const config = await loadConfig(env, secretManager);
+  const config = await callLoadConfig({ AGORIC_NET: '  devnet  ' });
 
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemyApiKey, 'test1234');
@@ -192,14 +167,24 @@ test('loadConfig trims whitespace from values', async t => {
 });
 
 test('loadConfig rejects empty required values', async t => {
-  const env = {
-    MNEMONIC: 'test mnemonic phrase',
-    ALCHEMY_API_KEY: '   ',
-  };
-  const secretManager = makeFakeSecretManager();
-
-  await t.throwsAsync(() => loadConfig(env, secretManager), {
+  await t.throwsAsync(() => callLoadConfig({ ALCHEMY_API_KEY: '   ' }), {
     message: '"ALCHEMY_API_KEY" is required',
+  });
+});
+
+test('loadConfig accepts ymax0 contract instance', async t => {
+  const config = await callLoadConfig({ CONTRACT_INSTANCE: 'ymax0' });
+  t.is(config.contractInstance, 'ymax0');
+});
+
+test('loadConfig accepts ymax1 contract instance', async t => {
+  const config = await callLoadConfig({ CONTRACT_INSTANCE: 'ymax1' });
+  t.is(config.contractInstance, 'ymax1');
+});
+
+test('loadConfig rejects invalid contract instance', async t => {
+  await t.throwsAsync(() => callLoadConfig({ CONTRACT_INSTANCE: 'ymax2' }), {
+    message: /CONTRACT_INSTANCE must be 'ymax0' or 'ymax1'/,
   });
 });
 

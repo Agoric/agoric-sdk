@@ -15,7 +15,7 @@ import {
   MsgSwap,
   MsgSwapResponse,
 } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
-import type { Brand, Issuer, Payment } from '@agoric/ertp';
+import type { Brand, Issuer, NatAmount, Payment } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.js';
 import type {
@@ -36,6 +36,7 @@ import type { Zone } from '@agoric/zone';
 import { makePromiseKit } from '@endo/promise-kit';
 import type { AxelarId, GmpAddresses } from '../src/portfolio.contract.ts';
 import type { EVMContractAddressesMap } from '../src/type-guards.ts';
+import type { MovementDesc } from '../src/type-guards-steps.ts';
 
 /** address of orch LCA for portfolio0, after contract/fee LCA */
 export const portfolio0lcaOrch = makeTestAddress(1); // agoric1q...c09z0g';
@@ -160,7 +161,7 @@ export const makeTestFeeConfig = (usdc: Omit<AmountUtils, 'mint'>): FeeConfig =>
   });
 
 export const makeUSDNIBCTraffic = (
-  signer = 'cosmos1test',
+  signer = 'noble1test',
   money = `${3_333.33 * 1000000}`,
   { denom = 'uusdc', denomTo = 'uusdn' } = {},
 ) => ({
@@ -219,7 +220,7 @@ export const makeUSDNIBCTraffic = (
 });
 
 export const makeCCTPTraffic = (
-  from = 'cosmos1test',
+  from = 'noble1test',
   money = `${3_333.33 * 1000000}`,
   dest = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
 ) => ({
@@ -399,3 +400,19 @@ export const gmpAddresses: GmpAddresses = harden({
     'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
   AXELAR_GAS: 'axelar1aythygn6z5thymj6tmzfwekzh05ewg3l7d6y89',
 });
+
+export const gasEstimator = {
+  getWalletEstimate: async () => 10_000_000n,
+  getFactoryContractEstimate: async () => 10_000_000n,
+  getReturnFeeEstimate: async () => 200_000_000_000_000n,
+};
+
+/** plan for deposit to USDN */
+export const planUSDNDeposit = (amount: NatAmount): MovementDesc[] => {
+  const detail = { usdnOut: (amount.value * 999n) / 1000n - 1n };
+  return [
+    { amount, dest: '@agoric', src: '<Deposit>' },
+    { amount, dest: '@noble', src: '@agoric' },
+    { amount, dest: 'USDN', detail, src: '@noble' },
+  ];
+};

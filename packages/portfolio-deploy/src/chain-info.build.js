@@ -2,7 +2,7 @@
  * @file build core-eval to populate agoricNames.chain etc.
  * optionally using IBC queries.
  *
- * @see {options} for CLI usage
+ * @see {parseBuilderArgs} for CLI usage
  * @see {sourceSpec} for core-eval details
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
@@ -26,25 +26,20 @@ const sourceSpec = '@aglocal/portfolio-deploy/src/chain-info.core.js';
  * @import {IBCChannelID, IBCConnectionID} from '@agoric/vats';
  */
 
-/** @type {ParseArgsConfig['options'] } */
-const options = {
-  baseName: { type: 'string', default: 'eval-chain-info' },
-  chainInfo: { type: 'string' },
-  net: { type: 'string' },
-  peer: { type: 'string', multiple: true },
-  podName: { type: 'string' },
-  container: { type: 'string' },
-};
-/**
- * @typedef {{
- *   baseName: string;
- *   chainInfo?: string;
- *   net?: string;
- *   peer?: string[];
- *   podName?: string;
- *   container?: string;
- * }} FlagValues
- */
+/** @param {string[]} args */
+const parseBuilderArgs = args =>
+  parseArgs({
+    args,
+    options: {
+      /** base name of output files */
+      baseName: { type: 'string', default: 'eval-chain-info' },
+      chainInfo: { type: 'string' },
+      net: { type: 'string' },
+      peer: { type: 'string', multiple: true },
+      podName: { type: 'string' },
+      container: { type: 'string' },
+    },
+  });
 
 /**
  * @param {unknown} _utils
@@ -286,15 +281,12 @@ const getMainnetChainInfo = (chains = ['agoric', 'noble', 'axelar']) => {
 
 /** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
-  const { scriptArgs } = endowments;
-  /** @type {FlagValues} */
-  // @ts-expect-error guaranteed by options config
-  const { values: flags } = parseArgs({ args: scriptArgs, options });
+  const { scriptArgs = [] } = endowments;
+  const { values: flags } = parseBuilderArgs(scriptArgs);
   const { baseName } = flags;
-  let chainInfo =
-    'chainInfo' in flags
-      ? harden(JSON.parse(flags.chainInfo))
-      : getMainnetChainInfo();
+  let chainInfo = flags.chainInfo
+    ? harden(JSON.parse(flags.chainInfo))
+    : getMainnetChainInfo();
 
   await null;
   if (flags.net) {

@@ -13,9 +13,10 @@ import {
   type ProposalType,
   type TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { makePortfolioSteps } from '@aglocal/portfolio-contract/src/plan-transfers.ts';
+import { makePortfolioSteps } from '@aglocal/portfolio-contract/tools/plan-transfers.ts';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
 import {
+  axelarConfig as axelarConfigMainnet,
   axelarConfigTestnet,
   gmpAddresses as gmpConfigs,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
@@ -26,6 +27,8 @@ import {
   fetchEnvNetworkConfig,
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
+  makeVStorage,
+  makeVstorageKit,
   type SigningSmartWalletKit,
   type VstorageKit,
 } from '@agoric/client-utils';
@@ -46,7 +49,10 @@ import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import type { NameHub } from '@agoric/vats';
 import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils';
 import { SigningStargateClient } from '@cosmjs/stargate';
+import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { once } from 'node:events';
+import repl from 'node:repl';
 import { parseArgs } from 'node:util';
 import {
   reflectWalletStore,
@@ -59,15 +65,19 @@ const getUsage = (
   programName: string,
 ): string => `USAGE: ${programName} [options]
 Options:
-  --skip-poll         Skip polling for offer result
-  --exit-success      Exit with success code even if errors occur
-  --positions         JSON string of opening positions (e.g. '{"USDN":6000,"Aave":4000}')
-  --target-allocation JSON string of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
-  --redeem            redeem invitation
-  --contract=[ymax0]  agoricNames.instance name of contract that issued invitation
+  --skip-poll            Skip polling for offer result
+  --exit-success         Exit with success code even if errors occur
+  --positions            JSON string of opening positions (e.g. '{"USDN":6000,"Aave":4000}')
+  --target-allocation    JSON string of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
+  --redeem               redeem invitation
+  --contract=[ymax0]     agoricNames.instance name of contract (ymax0 or ymax1, default: ymax0)
+                         Used for: opening portfolios, invitePlanner, inviteResolver
   --description=[planner]
-  --submit-for <id>   submit (empty) plan for portfolio <id>
-  -h, --help          Show this help message`;
+  --submit-for <id>      submit (empty) plan for portfolio <id>
+  --invitePlanner <addr> send planner invitation to address (uses --contract to determine instance)
+  --inviteResolver <addr> send resolver invitation to address (uses --contract to determine instance)
+  --repl                 start a repl with walletStore and ymaxControl bound
+  -h, --help             Show this help message`;
 
 const parseToolArgs = (argv: string[]) =>
   parseArgs({
@@ -80,10 +90,14 @@ const parseToolArgs = (argv: string[]) =>
       redeem: { type: 'boolean', default: false },
       contract: { type: 'string', default: 'ymax0' },
       description: { type: 'string', default: 'planner' },
+      repl: { type: 'boolean', default: false },
       getCreatorFacet: { type: 'boolean', default: false },
       terminate: { type: 'string' },
+      buildEthOverrides: { type: 'boolean' },
       installAndStart: { type: 'string' },
       invitePlanner: { type: 'string' },
+      inviteResolver: { type: 'string' },
+      checkStorage: { type: 'boolean' },
       pruneStorage: { type: 'boolean', default: false },
       'submit-for': { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
@@ -135,11 +149,13 @@ const openPositions = async (
     sig,
     when,
     targetAllocation,
+    contract = 'ymax0',
     id = `open-${new Date(when).toISOString()}`,
   }: {
     sig: SigningSmartWalletKit;
     when: number;
     targetAllocation?: TargetAllocation;
+    contract?: string;
     id?: string;
   },
 ) => {
@@ -185,7 +201,7 @@ const openPositions = async (
         id,
         invitationSpec: {
           source: 'agoricContract',
-          instancePath: ['ymax0'],
+          instancePath: [contract],
           callPipe: [['makeOpenPortfolioInvitation']],
         },
         proposal,
@@ -211,6 +227,14 @@ const openPositions = async (
     tx: { hash: tx.transactionHash, height: tx.height },
   };
 };
+
+/**
+ * Get the creator facet key for a contract instance.
+ * @param contract - The contract name (e.g., 'ymax0', 'ymax1')
+ * @returns The key for accessing the creator facet in wallet store
+ */
+const getCreatorFacetKey = (contract: string): string =>
+  contract === 'ymax0' ? 'creatorFacet' : `creatorFacet-${contract}`;
 
 /**
  * Build a NameHub suitable for use by lookupInterchainInfo,
@@ -289,6 +313,30 @@ const agoricNamesForChainInfo = (vsk: VstorageKit) => {
 };
 
 /**
+ * Get network-specific configurations based on AGORIC_NET environment variable
+ *
+ * @param network - The network name from AGORIC_NET env var
+ */
+const getNetworkConfig = (network: 'main' | 'devnet') => {
+  switch (network) {
+    case 'main':
+      return {
+        axelarConfig: axelarConfigMainnet,
+        gmpAddresses: gmpConfigs.mainnet,
+      };
+    case 'devnet':
+      return {
+        axelarConfig: axelarConfigTestnet,
+        gmpAddresses: gmpConfigs.testnet,
+      };
+    default:
+      throw new Error(
+        `Unsupported network: ${network}. Supported networks are: mainnet, testnet, devnet`,
+      );
+  }
+};
+
+/**
  * Build privateArgsOverrides sufficient to add new EVM chains.
  *
  * @param vsk
@@ -297,8 +345,12 @@ const agoricNamesForChainInfo = (vsk: VstorageKit) => {
  */
 const overridesForEthChainInfo = async (
   vsk: VstorageKit,
-  axelarConfig = axelarConfigTestnet,
-  gmpAddresses = gmpConfigs.testnet,
+  axelarConfig:
+    | typeof axelarConfigTestnet
+    | typeof axelarConfigMainnet = axelarConfigTestnet,
+  gmpAddresses:
+    | typeof gmpConfigs.testnet
+    | typeof gmpConfigs.mainnet = gmpConfigs.testnet,
 ) => {
   const { chainInfo: cosmosChainInfo } = await lookupInterchainInfo(
     agoricNamesForChainInfo(vsk),
@@ -325,6 +377,12 @@ const overridesForEthChainInfo = async (
   return privateArgsOverrides;
 };
 
+async function readText(stream: typeof process.stdin) {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream as AsyncIterable<Buffer>) chunks.push(chunk);
+  return Buffer.concat(chunks).toString('utf8');
+}
+
 const main = async (
   argv = process.argv,
   env = process.env,
@@ -333,6 +391,8 @@ const main = async (
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
     now = Date.now,
+    stdin = process.stdin,
+    stdout = process.stdout,
   } = {},
 ) => {
   const { values } = parseToolArgs(argv);
@@ -342,12 +402,38 @@ const main = async (
     return;
   }
 
+  const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
+  if (values.checkStorage) {
+    console.error('finding outdated vstorage...');
+    const vs = makeVStorage({ fetch }, networkConfig);
+    const toPrune = await findOutdated(vs);
+    stdout.write(JSON.stringify(toPrune, null, 2));
+    stdout.write('\n');
+    return;
+  }
+
+  if (values.buildEthOverrides) {
+    const vsk = makeVstorageKit({ fetch }, networkConfig);
+    const { AGORIC_NET: net } = env;
+    if (net !== 'main' && net !== 'devnet') {
+      throw Error(`unsupported/unknown net: ${net}`);
+    }
+    const { axelarConfig, gmpAddresses } = getNetworkConfig(net);
+    const privateArgsOverrides = await overridesForEthChainInfo(
+      vsk,
+      axelarConfig,
+      gmpAddresses,
+    );
+    stdout.write(JSON.stringify(privateArgsOverrides, null, 2));
+    stdout.write('\n');
+    return;
+  }
+
   const { MNEMONIC } = env;
   if (!MNEMONIC) throw Error(`MNEMONIC not set`);
 
   const delay = ms =>
     new Promise(resolve => setTimeout(resolve, ms)).then(_ => {});
-  const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
   const walletKit0 = await makeSmartWalletKit({ fetch, delay }, networkConfig);
   const walletKit = values['skip-poll'] ? noPoll(walletKit0) : walletKit0;
   const sig = await makeSigningSmartWalletKit(
@@ -377,8 +463,27 @@ const main = async (
 
   const yc = walletStore.get<ContractControl<YMaxStartFn>>('ymaxControl');
 
+  if (values.repl) {
+    const tools = {
+      E,
+      harden,
+      networkConfig,
+      walletKit,
+      signing: sig,
+      walletStore,
+      ymaxControl: yc,
+    };
+    console.error('bindings:', Object.keys(tools).join(', '));
+    const session = repl.start({ prompt: 'ymax> ', useGlobal: true });
+    Object.assign(session.context, tools);
+    await once(session, 'exit');
+    return;
+  }
+
   if (values.getCreatorFacet) {
-    await walletStore.savingResult('creatorFacet', () => yc.getCreatorFacet());
+    const { contract } = values;
+    const creatorFacetKey = getCreatorFacetKey(contract);
+    await walletStore.savingResult(creatorFacetKey, () => yc.getCreatorFacet());
     return;
   }
 
@@ -390,6 +495,9 @@ const main = async (
 
   if (values.installAndStart) {
     const { installAndStart: bundleId } = values;
+
+    const privateArgsOverrides = JSON.parse(await readText(stdin));
+
     const { BLD, USDC } = fromEntries(
       await walletKit.readPublished('agoricNames.issuer'),
     );
@@ -402,26 +510,46 @@ const main = async (
     await yc.installAndStart({
       bundleId,
       issuers: { USDC, BLD, Fee: BLD, Access: upoc26.issuer },
-      privateArgsOverrides: await overridesForEthChainInfo(walletKit),
+      privateArgsOverrides,
     });
     return;
   }
 
   if (values.pruneStorage) {
-    console.error('finding outdated vstorage...');
-    const toPrune = await findOutdated(walletKit.vstorage);
-    console.log('toPrune', toPrune);
-    await yc.pruneChainStorage(toPrune);
+    const txt = await readText(stdin);
+    const toPrune: Record<string, string[]> = JSON.parse(txt);
+    // avoid: Must not have more than 80 properties: (an object)
+    const batchSize = 50;
+
+    const es = Object.entries(toPrune);
+    for (let i = 0; i < es.length; i += batchSize) {
+      const batch = es.slice(i, i + batchSize);
+      await yc.pruneChainStorage(fromEntries(batch));
+    }
+    return;
   }
 
   if (values.invitePlanner) {
-    const { invitePlanner: planner } = values;
+    const { invitePlanner: planner, contract } = values;
+    const creatorFacetKey = getCreatorFacetKey(contract);
     const cf =
-      walletStore.get<ZStarted<YMaxStartFn>['creatorFacet']>('creatorFacet');
+      walletStore.get<ZStarted<YMaxStartFn>['creatorFacet']>(creatorFacetKey);
     const { postalService } = fromEntries(
       await walletKit.readPublished('agoricNames.instance'),
     );
     await cf.deliverPlannerInvitation(planner, postalService);
+    return;
+  }
+
+  if (values.inviteResolver) {
+    const { inviteResolver: resolver, contract } = values;
+    const creatorFacetKey = getCreatorFacetKey(contract);
+    const cf =
+      walletStore.get<ZStarted<YMaxStartFn>['creatorFacet']>(creatorFacetKey);
+    const { postalService } = fromEntries(
+      await walletKit.readPublished('agoricNames.instance'),
+    );
+    await cf.deliverResolverInvitation(resolver, postalService);
     return;
   }
 
@@ -449,6 +577,7 @@ const main = async (
       sig,
       when: now(),
       targetAllocation,
+      contract: values.contract,
     });
     trace('opened', opened);
     const { path } = opened;

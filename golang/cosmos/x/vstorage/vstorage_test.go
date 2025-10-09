@@ -230,7 +230,9 @@ func doTestSet(t *testing.T, method string, expectNotify bool) {
 	if got := ctx.EventManager().Events(); !reflect.DeepEqual(got, sdk.Events{}) {
 		t.Errorf("%s got unexpected events before flush %#v", method, got)
 	}
-	keeper.FlushChangeEvents(ctx)
+	if err := keeper.FlushChangeEvents(ctx); err != nil {
+		t.Errorf("%s got unexpected flush error %v", method, err)
+	}
 	if !expectNotify {
 		if got := ctx.EventManager().Events(); !reflect.DeepEqual(got, sdk.Events{}) {
 			t.Errorf("%s got unexpected events after flush %#v", method, got)

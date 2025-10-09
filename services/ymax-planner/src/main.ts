@@ -1,7 +1,9 @@
 import {
   fetchEnvNetworkConfig,
+  getInvocationUpdate,
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
+  reflectWalletStore,
 } from '@agoric/client-utils';
 import { objectMetaMap } from '@agoric/internal';
 import { Fail, q } from '@endo/errors';
@@ -13,8 +15,9 @@ import { loadConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { startEngine } from './engine.ts';
-import { createEVMContext } from './support.ts';
+import { createEVMContext, verifyEvmChains } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
+import { makeGasEstimator } from './gas-estimation.ts';
 
 const assertChainId = async (
   rpc: CosmosRPCClient,
@@ -34,6 +37,7 @@ export const main = async (
   {
     env = process.env,
     fetch = globalThis.fetch,
+    now = Date.now,
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
   } = {},
@@ -76,6 +80,10 @@ export const main = async (
     config.mnemonic,
   );
   console.warn('Signer address:', signingSmartWalletKit.address);
+  const walletStore = reflectWalletStore(signingSmartWalletKit, {
+    setTimeout,
+    makeNonce: () => new Date(now()).toISOString(),
+  });
 
   const spectrum = new SpectrumClient(simplePowers, {
     baseUrl: config.spectrum.apiUrl,
@@ -88,15 +96,33 @@ export const main = async (
     alchemyApiKey: config.alchemyApiKey,
   });
 
+  // Verify Alchemy chain availability - throws if any chain fails
+  console.warn('Verifying EVM chain connectivity...');
+  await verifyEvmChains(evmCtx.evmProviders);
+
+  const gasEstimator = makeGasEstimator({
+    axelarApiAddress: config.axelar.apiUrl,
+    axelarChainIdMap: config.axelar.chainIdMap,
+    fetch,
+  });
+
   const powers = {
     evmCtx,
     rpc,
     spectrum,
     cosmosRest,
     signingSmartWalletKit,
-    now: Date.now,
+    walletStore,
+    getWalletInvocationUpdate: (messageId, opts) => {
+      const { getLastUpdate } = signingSmartWalletKit.query;
+      const retryOpts = { log: () => {}, setTimeout, ...opts };
+      return getInvocationUpdate(messageId, getLastUpdate, retryOpts);
+    },
+    now,
+    gasEstimator,
   };
   await startEngine(powers, {
+    contractInstance: config.contractInstance,
     depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
     feeBrandName: env.FEE_BRAND_NAME || 'BLD',
   });

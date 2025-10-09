@@ -11,7 +11,7 @@
  * @see type-guards.ts for the authoritative interface specification
  */
 import { type VstorageKit } from '@agoric/client-utils';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, type NatAmount } from '@agoric/ertp';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
 import type { Instance } from '@agoric/zoe';
@@ -163,6 +163,58 @@ export const makeTrader = (
         proposal,
         offerArgs,
       });
+    },
+    async simpleRebalance(
+      t: ExecutionContext,
+      proposal: ProposalType['rebalance'],
+      offerArgs: OfferArgsFor['rebalance'],
+    ) {
+      if (!openId) throw Error('not open');
+      const invitationMakerName: PortfolioContinuingInvitationMaker =
+        'SimpleRebalance';
+      const id = `simpleRebalance-${(nonce += 1)}`;
+      const invitationSpec: InvitationSpec = {
+        source: 'continuing' as const,
+        invitationMakerName,
+        previousOffer: openId,
+      };
+
+      return wallet.executeContinuingOffer({
+        id,
+        invitationSpec,
+        proposal,
+        offerArgs,
+      });
+    },
+    async withdraw(t: ExecutionContext, Cash: NatAmount) {
+      if (!openId) throw Error('not open');
+      const invitationMakerName: PortfolioContinuingInvitationMaker =
+        'Withdraw';
+      const id = `Withdraw-${(nonce += 1)}`;
+      const invitationSpec: InvitationSpec = {
+        source: 'continuing' as const,
+        invitationMakerName,
+        previousOffer: openId,
+      };
+
+      const proposal: ProposalType['withdraw'] = { give: {}, want: { Cash } };
+      return wallet.executeContinuingOffer({ id, invitationSpec, proposal });
+    },
+    async deposit(t: ExecutionContext, Deposit: NatAmount) {
+      if (!openId) throw Error('not open');
+      const invitationMakerName: PortfolioContinuingInvitationMaker = 'Deposit';
+      const id = `Deposit-${(nonce += 1)}`;
+      const invitationSpec: InvitationSpec = {
+        source: 'continuing' as const,
+        invitationMakerName,
+        previousOffer: openId,
+      };
+
+      const proposal: ProposalType['deposit'] = {
+        give: { Deposit },
+        want: {},
+      };
+      return wallet.executeContinuingOffer({ id, invitationSpec, proposal });
     },
     getPortfolioId: () => portfolioIdOfPath(stripRoot(self.getPortfolioPath())),
     getPortfolioPath: () => portfolioPath || assert.fail('no portfolio'),
