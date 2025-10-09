@@ -34,7 +34,7 @@ import {
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { prepareVowTools, type VowTools } from '@agoric/vow';
+import { type VowTools } from '@agoric/vow';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { makeHeapZone } from '@agoric/zone';
@@ -56,8 +56,12 @@ import {
   makeSwapLockMessages,
   makeUnlockSwapMessages,
 } from '../src/pos-usdn.flows.ts';
+import { TxStatus } from '../src/resolver/constants.js';
 import { prepareResolverKit } from '../src/resolver/resolver.exo.js';
-import { PENDING_TXS_NODE_KEY } from '../src/resolver/types.ts';
+import {
+  PENDING_TXS_NODE_KEY,
+  type PublishedTx,
+} from '../src/resolver/types.ts';
 import {
   makeOfferArgsShapes,
   type MovementDesc,
@@ -322,13 +326,12 @@ const mocks = (
   const inertSubscriber = {} as ResolvedPublicTopic<never>['subscriber'];
 
   const resolverZone = zone.subZone('Resolver');
-  // Use actual vow tools for the resolver to create proper vows, not promises
-  const resolverVowTools = prepareVowTools(zone.subZone('vowTools'));
-  const { client: resolverClient } = prepareResolverKit(resolverZone, mockZCF, {
-    vowTools: resolverVowTools,
-    pendingTxsNode,
-    marshaller,
-  })();
+  const { client: resolverClient, service: resolverService } =
+    prepareResolverKit(resolverZone, mockZCF, {
+      vowTools,
+      pendingTxsNode,
+      marshaller,
+    })();
 
   const ctx1: PortfolioInstanceContext = {
     zoeTools,
@@ -400,6 +403,39 @@ const mocks = (
 
   const seat = makeMockSeat(give, undefined, buf);
 
+  /**
+   * Read pure data (CapData that has no slots) from the storage path
+   */
+  const getDeserialized = (path: string): unknown[] => {
+    return storage.getValues(path).map(defaultSerializer.parse);
+  };
+
+  const txResolver = harden({
+    findPending: async () => {
+      await eventLoopIteration();
+      const paths = [...storage.data.keys()].filter(k =>
+        k.includes('.pendingTxs.'),
+      );
+      const txIds: `tx${number}`[] = [];
+      for (const p of paths) {
+        const info = getDeserialized(p).at(-1) as PublishedTx;
+        if (info.status !== 'pending') continue;
+        const txId = p.split('.').at(-1) as `tx${number}`;
+        txIds.push(txId);
+      }
+      return harden(txIds);
+    },
+    drainPending: async (status: Exclude<TxStatus, 'pending'> = 'success') => {
+      for (;;) {
+        const txIds = await txResolver.findPending();
+        if (!txIds.length) break;
+        for (const txId of txIds) {
+          resolverService.settleTransaction({ txId, status });
+        }
+      }
+    },
+  });
+
   return {
     orch,
     tapPK,
@@ -407,14 +443,10 @@ const mocks = (
     offer: { log: buf, seat, factoryPK },
     storage: {
       ...storage,
-      /**
-       * Read pure data (CapData that has no slots) from the storage path
-       */
-      getDeserialized(path: string): unknown[] {
-        return storage.getValues(path).map(defaultSerializer.parse);
-      },
+      getDeserialized,
     },
     vowTools,
+    txResolver,
   };
 };
 
@@ -528,7 +560,7 @@ const openAndTransfer = test.macro(
     makeEvents: () => VTransferIBCEvent[],
   ) => {
     const { give, steps } = await makePortfolioSteps(goal, { feeBrand: BLD });
-    const { orch, ctx, offer, storage, tapPK } = mocks({}, give);
+    const { orch, ctx, offer, storage, tapPK, txResolver } = mocks({}, give);
     const { log, seat } = offer;
 
     const [actual] = await Promise.all([
@@ -539,6 +571,7 @@ const openAndTransfer = test.macro(
             t.log(`tap.receiveUpcall(${event})`);
             await tap.receiveUpcall(event);
           }
+          await txResolver.drainPending();
         },
       ),
     ]);
@@ -562,7 +595,10 @@ test('open portfolio with Aave position', async t => {
   const feeAcct = AmountMath.make(BLD, 50n);
   const detail = { evmGas: 50n };
   const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage } = mocks({}, { Deposit: amount });
+  const { orch, tapPK, ctx, offer, storage, txResolver } = mocks(
+    {},
+    { Deposit: amount },
+  );
 
   const [actual] = await Promise.all([
     openPortfolio(orch, ctx, offer.seat, {
@@ -573,8 +609,12 @@ test('open portfolio with Aave position', async t => {
         { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
       ],
     }),
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
-      tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain })),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
+      async ([tap]) => {
+        await tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain }));
+        // Complete CCTP, GMP transactions
+        await txResolver.drainPending();
+      },
     ),
   ]);
   const { log } = offer;
@@ -617,14 +657,17 @@ test('open portfolio with Compound position', async t => {
     { Compound: make(USDC, 300n) },
     { fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } } },
   );
-  const { orch, tapPK, ctx, offer, storage } = mocks({}, give);
+  const { orch, tapPK, ctx, offer, storage, txResolver } = mocks({}, give);
 
   const [actual] = await Promise.all([
     openPortfolio(orch, { ...ctx }, offer.seat, {
       flow: steps,
     }),
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
-      tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain })),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
+      async ([tap, _]) => {
+        await tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain }));
+        await txResolver.drainPending();
+      },
     ),
   ]);
   const { log } = offer;
@@ -842,7 +885,10 @@ test('claim rewards on Aave position', async t => {
   const amount = AmountMath.make(USDC, 300n);
   const emptyAmount = AmountMath.make(USDC, 0n);
   const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage } = mocks({}, { Deposit: amount });
+  const { orch, tapPK, ctx, offer, storage, txResolver } = mocks(
+    {},
+    { Deposit: amount },
+  );
 
   const kit = await ctx.makePortfolioKit();
   await Promise.all([
@@ -863,8 +909,11 @@ test('claim rewards on Aave position', async t => {
       },
       kit,
     ),
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
-      tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain })),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
+      async ([tap, _]) => {
+        await tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain }));
+        await txResolver.drainPending();
+      },
     ),
   ]);
 
@@ -895,7 +944,10 @@ test('open portfolio with Beefy position', async t => {
   const feeAcct = AmountMath.make(BLD, 50n);
   const detail = { evmGas: 50n };
   const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage } = mocks({}, { Deposit: amount });
+  const { orch, tapPK, ctx, offer, storage, txResolver } = mocks(
+    {},
+    { Deposit: amount },
+  );
 
   const [actual] = await Promise.all([
     openPortfolio(orch, ctx, offer.seat, {
@@ -911,8 +963,14 @@ test('open portfolio with Beefy position', async t => {
         },
       ],
     }),
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
-      tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain: 'Avalanche' })),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
+      async ([tap, _]) => {
+        await tap.receiveUpcall(
+          makeIncomingEVMEvent({ sourceChain: 'Avalanche' }),
+        );
+
+        await txResolver.drainPending();
+      },
     ),
   ]);
   const { log } = offer;
@@ -1094,7 +1152,7 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
       evm: 'Arbitrum',
     },
   );
-  const { orch, ctx, offer, storage, tapPK } = mocks(
+  const { orch, ctx, offer, storage, tapPK, txResolver } = mocks(
     { send: Error('Insufficient funds - piggy bank sprang a leak') },
     give,
   );
@@ -1141,10 +1199,16 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
   const seat2 = makeMockSeat(giveGood, undefined, log);
   const attempt2P = rebalance(orch, ctx, seat2, { flow: stepsGood }, pKit);
 
-  await Promise.all([tapPK.promise, offer.factoryPK.promise]).then(([tap, _]) =>
-    tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain })),
-  );
-  await attempt2P;
+  await Promise.all([
+    attempt2P,
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(
+      async ([tap, _]) => {
+        await tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain }));
+
+        await txResolver.drainPending();
+      },
+    ),
+  ]);
   t.truthy(log.find(entry => entry._method === 'exit'));
 
   {
@@ -1156,7 +1220,7 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
 test.todo('recover from send step');
 
 test('withdraw in coordination with planner', async t => {
-  const { orch, ctx, offer, storage } = mocks({});
+  const { orch, ctx, offer, storage, tapPK, txResolver } = mocks({});
 
   const { getPortfolioStatus } = makeStorageTools(storage);
 
@@ -1275,7 +1339,7 @@ test('deposit in coordination with planner', async t => {
 });
 
 test('simple rebalance in coordination with planner', async t => {
-  const { orch, ctx, offer, storage, tapPK } = mocks({});
+  const { orch, ctx, offer, storage, tapPK, txResolver } = mocks({});
 
   const { getPortfolioStatus } = makeStorageTools(storage);
 
@@ -1358,6 +1422,8 @@ test('simple rebalance in coordination with planner', async t => {
     // Wait for the tap to be set up, then simulate Axelar GMP response for Arbitrum account creation
     const tap = await tapPK.promise;
     await tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain }));
+
+    await txResolver.drainPending();
   })();
 
   await Promise.all([webUiDone, plannerP, simulationP]);
