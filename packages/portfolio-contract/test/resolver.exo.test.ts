@@ -15,7 +15,7 @@ import type { PublishedTx } from '../src/resolver/types.ts';
 
 const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 
-const makeTestContext = async t => {
+const makeTestContext = async _t => {
   const nodeUpdates: Record<string, PublishedTx> = {};
   const makeMockNode = (here: string) => {
     return harden({
@@ -46,6 +46,7 @@ const makeTestContext = async t => {
   return {
     nodeUpdates,
     makeMockNode,
+    vowTools,
     makeResolverKit,
   };
 };
@@ -133,7 +134,7 @@ test('resolver updates nodes in chain storage on settleTransaction', async t => 
 });
 
 test('resolver creates ids in sequence on registerTransaction', async t => {
-  const { makeMockNode, makeResolverKit } = t.context;
+  const { makeResolverKit } = t.context;
 
   const { client } = makeResolverKit();
 
@@ -301,4 +302,25 @@ test.skip('resolver sets status to SUCCESS or FAILED on settlement', async t => 
     },
     'second transaction settles as failed with correct data',
   );
+});
+
+test('resolver can find incoming CCTP txs by amount', async t => {
+  const { vowTools, nodeUpdates, makeResolverKit } = t.context;
+
+  const { client, service } = makeResolverKit();
+
+  const lca =
+    'cosmos:agoric-3:agoric1zlnuqyjceyuwhgy68d9lsqu208q68j2c9lhzdl2vq5y2ee57uwcs3ydtlr' as const;
+  const reg = await vowTools.when(
+    client.registerTransaction('CCTP_TO_AGORIC', lca, 12345n),
+  );
+  t.log(nodeUpdates);
+
+  const found = service.lookupTx({
+    type: 'CCTP_TO_AGORIC',
+    destination: lca,
+    amountValue: 12345n,
+  });
+
+  t.is(found, reg.txId);
 });
