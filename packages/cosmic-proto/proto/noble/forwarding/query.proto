@@ -1,0 +1,114 @@
+// SPDX-License-Identifier: BUSL-1.1
+//
+// Copyright (C) 2025, NASD Inc. All rights reserved.
+// Use of this software is governed by the Business Source License included
+// in the LICENSE file of this repository and at www.mariadb.com/bsl11.
+//
+// ANY USE OF THE LICENSED WORK IN VIOLATION OF THIS LICENSE WILL AUTOMATICALLY
+// TERMINATE YOUR RIGHTS UNDER THIS LICENSE FOR THE CURRENT AND ALL OTHER
+// VERSIONS OF THE LICENSED WORK.
+//
+// THIS LICENSE DOES NOT GRANT YOU ANY RIGHT IN ANY TRADEMARK OR LOGO OF
+// LICENSOR OR ITS AFFILIATES (PROVIDED THAT YOU MAY USE A TRADEMARK OR LOGO OF
+// LICENSOR AS EXPRESSLY REQUIRED BY THIS LICENSE).
+//
+// TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSED WORK IS PROVIDED ON
+// AN "AS IS" BASIS. LICENSOR HEREBY DISCLAIMS ALL WARRANTIES AND CONDITIONS,
+// EXPRESS OR IMPLIED, INCLUDING (WITHOUT LIMITATION) WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
+// TITLE.
+
+syntax = "proto3";
+
+package noble.forwarding.v1;
+
+import "amino/amino.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/query/v1/query.proto";
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/noble-assets/forwarding/v2/types";
+
+service Query {
+  rpc Denoms(QueryDenoms) returns (QueryDenomsResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/noble/forwarding/v1/denoms";
+  }
+
+  rpc Address(QueryAddress) returns (QueryAddressResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/noble/forwarding/v1/address/{channel}/{recipient}/{fallback}";
+  }
+
+  rpc Stats(QueryStats) returns (QueryStatsResponse) {
+    // NOTE: This is intentionally not a module safe query.
+    option (google.api.http).get = "/noble/forwarding/v1/stats";
+  }
+
+  rpc StatsByChannel(QueryStatsByChannel) returns (QueryStatsByChannelResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/noble/forwarding/v1/stats/{channel}";
+  }
+}
+
+//
+
+message QueryDenoms {}
+
+message QueryDenomsResponse {
+  repeated string allowed_denoms = 1 [(amino.dont_omitempty) = true];
+}
+
+message QueryAddress {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string channel = 1;
+  string recipient = 2;
+  string fallback = 3;
+}
+
+message QueryAddressResponse {
+  string address = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  bool exists = 2 [(amino.dont_omitempty) = true];
+}
+
+message QueryStats {}
+
+message QueryStatsResponse {
+  map<string, Stats> stats = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryStatsByChannel {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string channel = 1;
+}
+
+message QueryStatsByChannelResponse {
+  uint64 num_of_accounts = 1 [(amino.dont_omitempty) = true];
+  uint64 num_of_forwards = 2 [(amino.dont_omitempty) = true];
+  repeated cosmos.base.v1beta1.Coin total_forwarded = 3 [
+    (amino.dont_omitempty) = true,
+    (amino.encoding) = "legacy_coins",
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
+
+//
+
+message Stats {
+  string chain_id = 1 [(amino.dont_omitempty) = true];
+  uint64 num_of_accounts = 2 [(amino.dont_omitempty) = true];
+  uint64 num_of_forwards = 3 [(amino.dont_omitempty) = true];
+  repeated cosmos.base.v1beta1.Coin total_forwarded = 4 [
+    (amino.dont_omitempty) = true,
+    (amino.encoding) = "legacy_coins",
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}

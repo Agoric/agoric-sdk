@@ -1,0 +1,58 @@
+// SPDX-License-Identifier: BUSL-1.1
+//
+// Copyright (C) 2025, NASD Inc. All rights reserved.
+// Use of this software is governed by the Business Source License included
+// in the LICENSE file of this repository and at www.mariadb.com/bsl11.
+//
+// ANY USE OF THE LICENSED WORK IN VIOLATION OF THIS LICENSE WILL AUTOMATICALLY
+// TERMINATE YOUR RIGHTS UNDER THIS LICENSE FOR THE CURRENT AND ALL OTHER
+// VERSIONS OF THE LICENSED WORK.
+//
+// THIS LICENSE DOES NOT GRANT YOU ANY RIGHT IN ANY TRADEMARK OR LOGO OF
+// LICENSOR OR ITS AFFILIATES (PROVIDED THAT YOU MAY USE A TRADEMARK OR LOGO OF
+// LICENSOR AS EXPRESSLY REQUIRED BY THIS LICENSE).
+//
+// TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSED WORK IS PROVIDED ON
+// AN "AS IS" BASIS. LICENSOR HEREBY DISCLAIMS ALL WARRANTIES AND CONDITIONS,
+// EXPRESS OR IMPLIED, INCLUDING (WITHOUT LIMITATION) WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
+// TITLE.
+
+syntax = "proto3";
+
+package noble.forwarding.v1;
+
+option go_package = "github.com/noble-assets/forwarding/v2/types";
+
+// AccountRegistered is emitted whenever a new forwarding account is registered.
+message AccountRegistered {
+  // address is the address of the forwarding account.
+  string address = 1;
+
+  // channel is the channel id that funds are forwarded through.
+  string channel = 2;
+
+  // recipient is the address of the recipient of forwards.
+  string recipient = 3;
+
+  // fallback is the address of the fallback account.
+  string fallback = 4;
+}
+
+// AccountCleared is emitted whenever a forwarding account is cleared.
+message AccountCleared {
+  // address is the address of the forwarding account.
+  string address = 1;
+
+  // recipient is the address of the fallback account.
+  string recipient = 2;
+}
+
+// AllowedDenomsConfigured is emitted whenever the allowed denoms are updated.
+message AllowedDenomsConfigured {
+  // previous_denoms is the list of previously allowed denoms.
+  repeated string previous_denoms = 1;
+
+  // current_denoms is the list of currently allowed denoms.
+  repeated string current_denoms = 2;
+}

@@ -28,6 +28,7 @@ const Any = CodecHelper(AnyType);
 const MsgLock = CodecHelper(MsgLockType);
 const MsgUnlock = CodecHelper(MsgUnlockType);
 const MsgSwap = CodecHelper(MsgSwapType);
+const MsgRegisterAccount = CodecHelper(RegisterAccountType);
 
 const trace = makeTracer('USDNF');
 
@@ -98,6 +99,32 @@ export const makeUnlockSwapMessages = (
   ];
 
   return { msgUnlock, msgSwap, protoMessages };
+};
+
+export const makeRegisterForwarder = (
+  agoricAddr: CosmosChainAddress,
+  channelId: string,
+): CosmosChainAddress => {
+  const msgSwap = MsgSwap.fromPartial({
+    signer: nobleAddr.value,
+    amount: { denom, amount: `${usdcIn}` },
+    routes: [{ poolId, denomTo }],
+    min: { denom: denomTo, amount: `${usdnOut || usdcIn}` },
+  });
+  if (vault === undefined) {
+    const protoMessages = [Any.toJSON(MsgSwap.toProtoMsg(msgSwap))];
+    return { msgSwap, protoMessages };
+  }
+  const msgLock = MsgLock.fromPartial({
+    signer: nobleAddr.value,
+    vault,
+    amount: `${usdnOut}`,
+  });
+  const protoMessages = [
+    Any.toJSON(MsgSwap.toProtoMsg(msgSwap)),
+    Any.toJSON(MsgLock.toProtoMsg(msgLock)),
+  ];
+  return { msgSwap, msgLock, protoMessages };
 };
 
 export const protocolUSDN = {
