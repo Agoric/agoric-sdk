@@ -18,7 +18,7 @@ export type MakePrivateArgs<
   CFG extends CopyRecord,
 > = (
   op: OrchestrationPowersWithStorage,
-  m: Marshaller,
+  m: Remote<Marshaller>,
   cfg: CFG,
 ) => Parameters<SF>[1];
 
@@ -29,7 +29,7 @@ export type UpgradeKit<SF extends ContractStartFunction> =
   };
 
 export type ChainStoragePowers = {
-  consume: { chainStorage: Promise<StorageNode> };
+  consume: { chainStorage: Promise<Remote<StorageNode>> };
 };
 
 export type CorePowersG<

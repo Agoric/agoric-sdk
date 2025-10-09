@@ -31,7 +31,7 @@ import {
  * @import {EReturn} from '@endo/far';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {TypedPattern, Remote} from '@agoric/internal';
  */
 
 const { makeEmpty } = AmountMath;
@@ -149,7 +149,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
      * @param {Brand<'nat'>} bidBrand
      * @param {Brand<'nat'>} collateralBrand
      * @param {PriceAuthority} pAuthority
-     * @param {StorageNode} node
+     * @param {Remote<StorageNode>} node
      */
     (bidBrand, collateralBrand, pAuthority, node) => {
       assertAllDefined({ bidBrand, collateralBrand, pAuthority });
