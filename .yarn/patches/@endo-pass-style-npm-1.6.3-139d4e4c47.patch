@@ -49,8 +49,38 @@ index 169edcba788d2ae73992261b883706565e2be5c2..6061dd56dc4f831a79fc68882a9def2f
   */
  
  /**
+diff --git a/src/remotable.js b/src/remotable.js
+index 586597930e1f9ce207baaa3ae3ff784cdeba1324..65d0552e05fbd5e9f90f95d5762f0635eee0c1c9 100644
+--- a/src/remotable.js
++++ b/src/remotable.js
+@@ -16,7 +16,7 @@ import {
+  * @import {Checker, RemotableMethodName} from './types.js'
+  * @import {InterfaceSpec, PassStyled} from './types.js'
+  * @import {PassStyleHelper} from './internal-types.js'
+- * @import {RemotableObject as Remotable} from './types.js'
++ * @import {RemotableObject} from './types.js'
+  */
+ 
+ /**
+@@ -185,14 +185,14 @@ const checkRemotableProtoOf = (original, check) => {
+  * We don't remember rejections because they are possible to correct
+  * with e.g. `harden`.
+  *
+- * @type {WeakSet<Remotable>}
++ * @type {WeakSet<RemotableObject>}
+  */
+ const confirmedRemotables = new WeakSet();
+ 
+ /**
+  * @param {any} val
+  * @param {Checker} [check]
+- * @returns {val is Remotable}
++ * @returns {val is RemotableObject}
+  */
+ const checkRemotable = (val, check) => {
+   if (confirmedRemotables.has(val)) {
 diff --git a/src/types.d.ts b/src/types.d.ts
-index 7c50263edc7fb2af8ddf84db83dc5fd0f97e775e..038ca4cf7a61bf1f18f78cc67648dd6e39acda01 100644
+index 7c50263edc7fb2af8ddf84db83dc5fd0f97e775e..76e50e129f3c2407765b7d974058fcb307018a53 100644
 --- a/src/types.d.ts
 +++ b/src/types.d.ts
 @@ -1,3 +1,4 @@
@@ -68,7 +98,17 @@ index 7c50263edc7fb2af8ddf84db83dc5fd0f97e775e..038ca4cf7a61bf1f18f78cc67648dd6e
    | Promise<PassByCopy>;
  
  /**
-@@ -188,7 +191,10 @@ export type RemotableMethodName = PropertyKey;
+@@ -164,6 +167,9 @@ export type PassStyleOf = {
+ export type PureData = Passable<never, never>;
+ 
+ /**
++ * @deprecated this type doesn't carry the type of the behavior for remote
++ * sends. You likely want to use {@link RemotableBrand} instead.
++ *
+  * An object marked as remotely accessible using the `Far` or `Remotable`
+  * functions, or a local presence representing such a remote object.
+  *
+@@ -188,7 +194,10 @@ export type RemotableMethodName = PropertyKey;
  /**
   * The authority-bearing leaves of a Passable's pass-by-copy superstructure.
   */
@@ -80,3 +120,14 @@ index 7c50263edc7fb2af8ddf84db83dc5fd0f97e775e..038ca4cf7a61bf1f18f78cc67648dd6e
  
  /**
   * A Passable sequence of Passable values.
+@@ -216,9 +225,7 @@ export type CopyRecord<T extends Passable = any> = Record<string, T>;
+ export type CopyTagged<
+   Tag extends string = string,
+   Payload extends Passable = any,
+-> = PassStyled<'tagged', Tag> & {
+-  payload: Payload;
+-};
++> = PassStyled<'tagged', Tag> & { payload: Payload };
+ 
+ /**
+  * This is an interface specification.

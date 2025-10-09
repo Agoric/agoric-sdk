@@ -87,7 +87,8 @@
     "@endo/far@npm:^1.1.14": "patch:@endo/far@npm%3A1.1.14#~/.yarn/patches/@endo-far-npm-1.1.14-ef03a62612.patch",
     "@endo/far@npm:^1.0.0": "patch:@endo/far@npm%3A1.1.14#~/.yarn/patches/@endo-far-npm-1.1.14-ef03a62612.patch",
     "@endo/pass-style@npm:^1.6.3": "patch:@endo/pass-style@npm%3A1.6.3#~/.yarn/patches/@endo-pass-style-npm-1.6.3-139d4e4c47.patch",
-    "@endo/patterns@npm:^1.7.0": "patch:@endo/patterns@npm%3A1.7.0#~/.yarn/patches/@endo-patterns-npm-1.7.0-70bb963d8a.patch"
+    "@endo/patterns@npm:^1.7.0": "patch:@endo/patterns@npm%3A1.7.0#~/.yarn/patches/@endo-patterns-npm-1.7.0-70bb963d8a.patch",
+    "@endo/marshal@npm:^1.8.0": "patch:@endo/marshal@npm%3A1.8.0#~/.yarn/patches/@endo-marshal-npm-1.8.0-c73c5363a1.patch"
   },
   "dependenciesMeta": {
     "better-sqlite3@10.1.0": {

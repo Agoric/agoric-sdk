@@ -3565,10 +3565,10 @@ __metadata:
 
 "@endo/eventual-send@patch:@endo/eventual-send@npm%3A1.3.4#~/.yarn/patches/@endo-eventual-send-npm-1.3.4-12411c5a98.patch":
   version: 1.3.4
-  resolution: "@endo/eventual-send@patch:@endo/eventual-send@npm%3A1.3.4#~/.yarn/patches/@endo-eventual-send-npm-1.3.4-12411c5a98.patch::version=1.3.4&hash=bea41a"
+  resolution: "@endo/eventual-send@patch:@endo/eventual-send@npm%3A1.3.4#~/.yarn/patches/@endo-eventual-send-npm-1.3.4-12411c5a98.patch::version=1.3.4&hash=07ca9a"
   dependencies:
     "@endo/env-options": "npm:^1.1.11"
-  checksum: 10c0/8acb1a84b602b2782907ca8c02da21dd6bcbea3af8f84c3d5209c55cd1ab2cfdf7b2068e84cf376df242a4bd455892556af823d36bd7c518c849099deee183ce
+  checksum: 10c0/b510bbf11fadb01227654e3f4da197918dd88815e156c1030ca3ccccc7e0af4020c728f1f5697f54b6e9b458a6e03e864b75b6ac6b649507f3eebad7ba67d91e
   languageName: node
   linkType: hard
 
@@ -3600,12 +3600,12 @@ __metadata:
 
 "@endo/far@patch:@endo/far@npm%3A1.1.14#~/.yarn/patches/@endo-far-npm-1.1.14-ef03a62612.patch":
   version: 1.1.14
-  resolution: "@endo/far@patch:@endo/far@npm%3A1.1.14#~/.yarn/patches/@endo-far-npm-1.1.14-ef03a62612.patch::version=1.1.14&hash=6ff17c"
+  resolution: "@endo/far@patch:@endo/far@npm%3A1.1.14#~/.yarn/patches/@endo-far-npm-1.1.14-ef03a62612.patch::version=1.1.14&hash=74ec7a"
   dependencies:
     "@endo/errors": "npm:^1.2.13"
     "@endo/eventual-send": "npm:^1.3.4"
     "@endo/pass-style": "npm:^1.6.3"
-  checksum: 10c0/9d11a8805fdc9a66c64bee09f562abeb4c75813dd8b273450c2574ae4ee6e2e8a15dceab97f8c8d6353b13dec9bac191e2c049df8a5c4cb5a94310d4eeba5325
+  checksum: 10c0/80fe94846f3d430a38aae9653b7520246b5b1a62c6a3ca51a60897cace0e5ced435db5aad16b77ea1c4e23005cfe550f8239899d9a20eac27201f0f963716980
   languageName: node
   linkType: hard
 
@@ -3650,7 +3650,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/marshal@npm:^1.8.0":
+"@endo/marshal@npm:1.8.0":
   version: 1.8.0
   resolution: "@endo/marshal@npm:1.8.0"
   dependencies:
@@ -3662,6 +3662,21 @@ __metadata:
     "@endo/pass-style": "npm:^1.6.3"
     "@endo/promise-kit": "npm:^1.1.13"
   checksum: 10c0/fd6d9b7bdc499fa21b4f739d141d2989914e868c1cef0937010c0f9c04d45ffac5cf1356a7fc45898ece7155c98e70d2bd2886c075cd6460c9fa6685672513ac
+  languageName: node
+  linkType: hard
+
+"@endo/marshal@patch:@endo/marshal@npm%3A1.8.0#~/.yarn/patches/@endo-marshal-npm-1.8.0-c73c5363a1.patch":
+  version: 1.8.0
+  resolution: "@endo/marshal@patch:@endo/marshal@npm%3A1.8.0#~/.yarn/patches/@endo-marshal-npm-1.8.0-c73c5363a1.patch::version=1.8.0&hash=cdf29e"
+  dependencies:
+    "@endo/common": "npm:^1.2.13"
+    "@endo/env-options": "npm:^1.1.11"
+    "@endo/errors": "npm:^1.2.13"
+    "@endo/eventual-send": "npm:^1.3.4"
+    "@endo/nat": "npm:^5.1.3"
+    "@endo/pass-style": "npm:^1.6.3"
+    "@endo/promise-kit": "npm:^1.1.13"
+  checksum: 10c0/901026171c882e54192fbd5f180f04cd2279d8c8a4d26a0422f1d69545b74b602e887408fd7634dbea0ba73b3419fa371bb561bc16dfed83f234689961de95a6
   languageName: node
   linkType: hard
 
@@ -3712,14 +3727,14 @@ __metadata:
 
 "@endo/pass-style@patch:@endo/pass-style@npm%3A1.6.3#~/.yarn/patches/@endo-pass-style-npm-1.6.3-139d4e4c47.patch":
   version: 1.6.3
-  resolution: "@endo/pass-style@patch:@endo/pass-style@npm%3A1.6.3#~/.yarn/patches/@endo-pass-style-npm-1.6.3-139d4e4c47.patch::version=1.6.3&hash=dd0bba"
+  resolution: "@endo/pass-style@patch:@endo/pass-style@npm%3A1.6.3#~/.yarn/patches/@endo-pass-style-npm-1.6.3-139d4e4c47.patch::version=1.6.3&hash=1f61c8"
   dependencies:
     "@endo/common": "npm:^1.2.13"
     "@endo/env-options": "npm:^1.1.11"
     "@endo/errors": "npm:^1.2.13"
     "@endo/eventual-send": "npm:^1.3.4"
     "@endo/promise-kit": "npm:^1.1.13"
-  checksum: 10c0/de272b348c4dadee083ee5ec77ac74a3e8074d90caea7c1756fa5558858ec0ef9f08d81b98dc248fe50b263b442b0af122c19aeccd2eeaa352d068e7db3d5965
+  checksum: 10c0/856ceec8512cb9c01db6adb37ce9c1e7c9ff4a8ff6cdb9d8d7cb7dfe69e7dec44b0e4a8ebad7643ce3b9b236c1244d3dc41b3cc68448a2836549fde39b1ef596
   languageName: node
   linkType: hard
 

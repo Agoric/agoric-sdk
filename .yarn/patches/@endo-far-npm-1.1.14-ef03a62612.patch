@@ -1,15 +1,7 @@
 diff --git a/src/exports.d.ts b/src/exports.d.ts
-index 92104c141b073daa6be7bec74bce91977d1a0b37..2ec12c98cce441985abc8c5f1740aed6ec1ea8a9 100644
+index 92104c141b073daa6be7bec74bce91977d1a0b37..24396ead6cdccfe4486901171d49eb0f581d2a69 100644
 --- a/src/exports.d.ts
 +++ b/src/exports.d.ts
-@@ -1 +1,9 @@
+@@ -1 +1 @@
 -export { FarRef, ERef, EOnly, EReturn } from '@endo/eventual-send';
-+export {
-+  FarRef,
-+  ERef,
-+  EOnly,
-+  EReturn,
-+  EResult,
-+  ERemote,
-+  Remote,
-+} from '@endo/eventual-send';
++export { FarRef, ERef, EOnly, EReturn, EResult } from '@endo/eventual-send';

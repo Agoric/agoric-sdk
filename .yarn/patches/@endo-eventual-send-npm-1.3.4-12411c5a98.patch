@@ -1,8 +1,8 @@
 diff --git a/src/E.d.ts b/src/E.d.ts
-index 31d86c0a513a593126983266faa324edf326342e..21e8e4e6856e98495352edb27d981e541834367d 100644
+index 31d86c0a513a593126983266faa324edf326342e..0f9ad18535740467e5d8576a1a7bf7ddbab806bd 100644
 --- a/src/E.d.ts
 +++ b/src/E.d.ts
-@@ -57,29 +57,56 @@ export type EProxy = ReturnType<(HandledPromise: HandledPromiseConstructor) => (
+@@ -57,12 +57,12 @@ export type EProxy = ReturnType<(HandledPromise: HandledPromiseConstructor) => (
   * are distributed object creator components like the `Far` or `Remotable`
   * functions.
   */
@@ -17,20 +17,8 @@ index 31d86c0a513a593126983266faa324edf326342e..21e8e4e6856e98495352edb27d981e54
  /**
   * Declare that `T` may or may not be a Promise.  This should be used only for
   * consumers of arguments and declarations; return values should specifically be
-  * `Promise<T>` or `T` itself.
-  */
+@@ -71,15 +71,31 @@ export type DataOnly<T> = Omit<T, FilteredKeys<T, import("./types.js").Callable>
  export type ERef<T> = PromiseLike<T> | T;
-+/**
-+ * A type that doesn't assume its parameter is local, but is satisfied with both
-+ * local and remote references. It accepts both near and marshalled references
-+ * that were returned from `Remotable` or `Far`.
-+ */
-+export type Remote<Primary, Local = DataOnly<Primary>> = Primary | RemotableBrand<Local, Primary>;
-+/**
-+ * A type that accepts either resolved or promised references that may be either
-+ * near or marshalled.
-+ */
-+export type ERemote<Primary, Local = DataOnly<Primary>> = ERef<Remote<Primary, Local>>;
  /**
   * The awaited return type of a function.
 + * For the eventual result of an E call,
@@ -39,7 +27,7 @@ index 31d86c0a513a593126983266faa324edf326342e..21e8e4e6856e98495352edb27d981e54
 -export type ECallable<T extends import("./types.js").Callable> = (ReturnType<T> extends PromiseLike<infer U> ? T : (...args: Parameters<T>) => Promise<EReturn<T>>);
 -export type EMethods<T> = { readonly [P in keyof T]: T[P] extends import("./types.js").Callable ? ECallable<T[P]> : never; };
 +/**
-+ * <T>
++ * An eventual value where remotable objects are recursively mapped to Remote types
 + */
 +export type EResult<T> = Awaited<T>;
 +/**
@@ -67,7 +55,7 @@ index 31d86c0a513a593126983266faa324edf326342e..21e8e4e6856e98495352edb27d981e54
  /**
   * Return a union of property names/symbols/numbers P for which the record element T[P]'s type extends U.
   *
-@@ -95,22 +122,22 @@ export type FilteredKeys<T, U> = { [P in keyof T]: T[P] extends U ? P : never; }
+@@ -95,22 +111,22 @@ export type FilteredKeys<T, U> = { [P in keyof T]: T[P] extends U ? P : never; }
   * `PickCallable<T>` means to return a single root callable or a record type
   * consisting only of properties that are functions.
   */
@@ -95,7 +83,7 @@ index 31d86c0a513a593126983266faa324edf326342e..21e8e4e6856e98495352edb27d981e54
  /**
   * @param {HandledPromiseConstructor} HandledPromise
   */
-@@ -166,4 +193,7 @@ declare function makeE(HandledPromise: HandledPromiseConstructor): (<T>(x: T) =>
+@@ -166,4 +182,7 @@ declare function makeE(HandledPromise: HandledPromiseConstructor): (<T>(x: T) =>
      readonly when: <T, U = T>(x: T | PromiseLike<T>, onfulfilled?: (value: T) => ERef<U>, onrejected?: (reason: any) => ERef<U>) => Promise<U>;
  };
  import type { HandledPromiseConstructor } from './types.js';
@@ -105,16 +93,16 @@ index 31d86c0a513a593126983266faa324edf326342e..21e8e4e6856e98495352edb27d981e54
  //# sourceMappingURL=E.d.ts.map
 \ No newline at end of file
 diff --git a/src/E.d.ts.map b/src/E.d.ts.map
-index 57a2d9d27f0dade92df1b7e8bcc5a6177937da23..0f7e1d7cb232bed6957db90767bf165482f1b03d 100644
+index 57a2d9d27f0dade92df1b7e8bcc5a6177937da23..dad157712a07a29f05782e9be029a0047d923416 100644
 --- a/src/E.d.ts.map
 +++ b/src/E.d.ts.map
 @@ -1 +1 @@
 -{"version":3,"file":"E.d.ts","sourceRoot":"","sources":["E.js"],"names":[],"mappings":"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"}
 \ No newline at end of file
-+{"version":3,"file":"E.d.ts","sourceRoot":"","sources":["E.js"],"names":[],"mappings":"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"}
++{"version":3,"file":"E.d.ts","sourceRoot":"","sources":["E.js"],"names":[],"mappings":"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"}
 \ No newline at end of file
 diff --git a/src/E.js b/src/E.js
-index 88309686e1dd92282d0a8bf7a3706135ef58c683..4ebe060df4f45b2e366cedbfc9981a8625b9d92c 100644
+index 88309686e1dd92282d0a8bf7a3706135ef58c683..2f8582b8acd3d399a0e6fb739c6aac3c3b81e3f3 100644
 --- a/src/E.js
 +++ b/src/E.js
 @@ -5,7 +5,7 @@ const { details: X, quote: q, Fail, error: makeError } = assert;
@@ -144,29 +132,8 @@ index 88309686e1dd92282d0a8bf7a3706135ef58c683..4ebe060df4f45b2e366cedbfc9981a86
   */
  
  /**
-@@ -302,26 +302,90 @@ export default makeE;
-  * `Promise<T>` or `T` itself.
-  */
+@@ -304,24 +304,69 @@ export default makeE;
  
-+/**
-+ * A type that doesn't assume its parameter is local, but is satisfied with both
-+ * local and remote references. It accepts both near and marshalled references
-+ * that were returned from `Remotable` or `Far`.
-+ *
-+ * @template Primary The type of the primary reference.
-+ * @template [Local=DataOnly<Primary>] The local properties of the object.
-+ * @typedef {Primary | RemotableBrand<Local, Primary>} Remote
-+ */
-+
-+/**
-+ * A type that accepts either resolved or promised references that may be either
-+ * near or marshalled. @see {ERef} and @see {Remote}.
-+ *
-+ * @template Primary The type of the primary reference.
-+ * @template [Local=DataOnly<Primary>] The local properties of the object.
-+ * @typedef {ERef<Remote<Primary, Local>>} ERemote
-+ */
-+
  /**
   * The awaited return type of a function.
 + * For the eventual result of an E call, @see {EResult} or @see {ECallableReturn}
@@ -180,7 +147,7 @@ index 88309686e1dd92282d0a8bf7a3706135ef58c683..4ebe060df4f45b2e366cedbfc9981a86
 + * An eventual value where remotable objects are recursively mapped to Remote types
 + *
 + * @template T
-+ * @typedef {Awaited<T>} EResult<T>
++ * @typedef {Awaited<T>} EResult
 + */
 +
 +/**
@@ -191,17 +158,17 @@ index 88309686e1dd92282d0a8bf7a3706135ef58c683..4ebe060df4f45b2e366cedbfc9981a86
 - *   ReturnType<T> extends PromiseLike<infer U>                       // if function returns a promise
 - *     ? T                                                            // return the function
 - *     : (...args: Parameters<T>) => Promise<EReturn<T>>  // make it return a promise
-+ *   0 extends (1 & T)
-+ *     ? T
-+ *     : T extends RemotableBrand<infer L, infer P>
-+ *       ? (P | RemotableBrand<L, P>)
-+ *       : T extends PromiseLike<infer U>
-+ *         ? Promise<EAwaitedResult<Awaited<T>>>
++ *   0 extends (1 & T)                                        // If T is any
++ *     ? T                                                    // Propagate the any type through the result
++ *     : T extends RemotableBrand<infer L, infer P>           // If we have a Remotable
++ *       ? (P | RemotableBrand<L, P>)                         // map it to its "maybe remote" form (primary behavior or remotable presence)
++ *       : T extends PromiseLike<infer U>                     // If T is a promise
++ *         ? Promise<EAwaitedResult<Awaited<T>>>              // map its resolution
 + *         : T extends (null | undefined | string | number | boolean | symbol | bigint | Callable) // Intersections of these types with objects are not mapped
-+ *           ? T
-+ *           : T extends object
-+ *             ? { [P in keyof T]: EAwaitedResult<T[P]>; }
-+ *             : T
++ *           ? T                                              // primitives and non-remotable functions are passed-through
++ *           : T extends object                               //
++ *             ? { [P in keyof T]: EAwaitedResult<T[P]>; }    // other objects are considered copy data and properties mapped
++ *             : T                                            // in case anything wasn't covered, fallback to pass-through
 + * )} EAwaitedResult
 + */
 +
@@ -240,7 +207,7 @@ index 88309686e1dd92282d0a8bf7a3706135ef58c683..4ebe060df4f45b2e366cedbfc9981a86
   *     ? ECallable<T[P]>
   *     : never;
   * }} EMethods
-@@ -337,14 +401,14 @@ export default makeE;
+@@ -337,14 +382,14 @@ export default makeE;
   */
  
  /**
@@ -257,7 +224,7 @@ index 88309686e1dd92282d0a8bf7a3706135ef58c683..4ebe060df4f45b2e366cedbfc9981a86
   *     ? ESendOnlyCallable<T[P]>
   *     : never;
   * }} ESendOnlyMethods
-@@ -353,18 +417,22 @@ export default makeE;
+@@ -353,18 +398,22 @@ export default makeE;
  /**
   * @template T
   * @typedef {(
@@ -284,7 +251,7 @@ index 88309686e1dd92282d0a8bf7a3706135ef58c683..4ebe060df4f45b2e366cedbfc9981a86
   * )} ECallableOrMethods
   */
  
-@@ -389,9 +457,9 @@ export default makeE;
+@@ -389,9 +438,9 @@ export default makeE;
   *
   * @template T
   * @typedef {(
@@ -296,7 +263,7 @@ index 88309686e1dd92282d0a8bf7a3706135ef58c683..4ebe060df4f45b2e366cedbfc9981a86
   * )} PickCallable
   */
  
-@@ -400,25 +468,21 @@ export default makeE;
+@@ -400,25 +449,21 @@ export default makeE;
   *
   * @template T
   * @typedef {(
@@ -329,7 +296,7 @@ index 88309686e1dd92282d0a8bf7a3706135ef58c683..4ebe060df4f45b2e366cedbfc9981a86
   *     : T
   * )} LocalRecord
   */
-@@ -427,7 +491,7 @@ export default makeE;
+@@ -427,7 +472,7 @@ export default makeE;
   * @template [R = unknown]
   * @typedef {{
   *   promise: Promise<R>;
@@ -338,7 +305,7 @@ index 88309686e1dd92282d0a8bf7a3706135ef58c683..4ebe060df4f45b2e366cedbfc9981a86
   * }} EPromiseKit
   */
  
-@@ -438,11 +502,11 @@ export default makeE;
+@@ -438,11 +483,11 @@ export default makeE;
   *
   * @template T
   * @typedef {(
@@ -354,17 +321,36 @@ index 88309686e1dd92282d0a8bf7a3706135ef58c683..4ebe060df4f45b2e366cedbfc9981a86
   *           : T[K];
   *       }
 diff --git a/src/exports.d.ts b/src/exports.d.ts
-index 0dec8d4795b1b0712286bce8c374f8090c810579..ca77f280725bc88b9a0778352937dd86263acd99 100644
+index 0dec8d4795b1b0712286bce8c374f8090c810579..27a80d1a95a30cb806b442396fbc867cd97e8612 100644
 --- a/src/exports.d.ts
 +++ b/src/exports.d.ts
-@@ -13,6 +13,10 @@ export type {
+@@ -13,6 +13,8 @@ export type {
    EProxy,
    EOnly,
    EReturn,
 +  EResult,
 +  ECallableReturn,
-+  ERemote,
-+  Remote,
    RemoteFunctions,
    LocalRecord,
    FilteredKeys,
+diff --git a/src/types.d.ts b/src/types.d.ts
+index 64bb686fd508b20d1369c3cda2252b529fe21def..30ae4d2196e7b4ba8bc335d7f33ca2878d6866cf 100644
+--- a/src/types.d.ts
++++ b/src/types.d.ts
+@@ -19,8 +19,16 @@ export type * from './track-turns.js';
+ 
+ export type Callable = (...args: any[]) => any;
+ 
++// TODO(https://github.com/endojs/endo/issues/2979): We likely want to merge
++// the RemotableObject symbol shape into this type to reduce confusion about
++// why both exist, but all kinds of things blow up when trying to do that.
++
+ /**
+  * Nominal type to carry the local and remote interfaces of a Remotable.
++ *
++ * Note: this type does not currently include the structural aspect of the
++ * {@link RemotableObject} type, and as such is not suitable to represent a
++ * "remotable" for APIs that expect an object with a pass-style symbol.
+  */
+ export declare class RemotableBrand<Local, Remote> {
+   /** The local properties of the object. */
