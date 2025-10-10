@@ -235,6 +235,18 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
     errorTagging,
     ...otherMarshalOptions,
   });
+  // The implementation of this wrapped marshaller internally uses 2 marshallers
+  // to transform the CapData into a Passable structure and vice-versa:
+  // - A cap pass-through marshaller which places capabilities as-is in the slots.
+  //   When unserializing CapData with null-ish slots, a severed presence is created.
+  //   This pass-through marshaller is used to locally process the structure, and
+  //   separate capabilities into a slots array for potential resolution by the
+  //   wrapped marshaller.
+  // - A "BoardRemote" marshaller used to wrap into remotables the slots of the
+  //   wrapped marshaller. This marshaller is an internal implementation detail and
+  //   does not mean the wrapped marshaller is produced by a the board vat, or using
+  //   strings for slots. BoardRemote are used purely as a way to associate a slot
+  //   value to a remotable when interacting with the wrapped marshaller.
 
   /** @type {Marshal<object | null>} */
   const passThroughMarshaller = makeMarshal(
@@ -260,6 +272,12 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
   );
 
   /**
+   * Resolves an array of wrapped marshaller's slots to an array of
+   * capabilities.
+   *
+   * This is used by `fromCapData` to map slots before using the pass-through
+   * marshaller to recreate the passable data.
+   *
    * @param {Slot[]} slots
    * @param {(index: number) => string | undefined} getIface
    * @returns {Promise<(object | null)[]>}
@@ -324,6 +342,12 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
   };
 
   /**
+   * Resolves an array of capabilities into an array of slots of the wrapped
+   * marshaller.
+   *
+   * This is used by `toCapData` to map slots after the pass-through marshaller
+   * has serialized the passable data.
+   *
    * @param {object[]} caps
    * @returns {Promise<Slot[]>}
    */
