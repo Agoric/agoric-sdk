@@ -20,6 +20,7 @@ import { shape } from './typeGuards.js';
 /**
  * @import {ERemote} from '@agoric/internal';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {NameHub} from '@agoric/vats';
  */
@@ -231,7 +232,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     invitationIssuer,
     invitationBrand,
     invitationDisplayInfo,
-    publicMarshaller,
+    publicMarshaller: remotePublicMarshaller,
   } = await provideAll(baggage, {
     invitationIssuer: () => invitationIssuerP,
     invitationBrand: () => E(invitationIssuerP).getBrand(),
@@ -242,12 +243,15 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   const registry = makeAssetRegistry(assetPublisher);
 
+  /** @type {ERemote<EMarshaller>} */
+  const publicCachingMarshaller = remotePublicMarshaller;
+
   const shared = harden({
     agoricNames,
     invitationBrand,
     invitationDisplayInfo,
     invitationIssuer,
-    publicMarshaller,
+    publicMarshaller: publicCachingMarshaller,
     registry,
     zoe,
   });

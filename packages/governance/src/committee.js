@@ -16,7 +16,8 @@ import { ElectorateCreatorI, ElectoratePublicI } from './typeGuards.js';
 import { prepareVoterKit } from './voterKit.js';
 
 /**
- * @import {Remote} from '@agoric/internal';
+ * @import {Remote, ERemote} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {ContractMeta, Invitation, ZCF} from '@agoric/zoe';
  * @import {ElectorateCreatorFacet, CommitteeElectoratePublic, QuestionDetails, OutcomeRecord, AddQuestion} from './types.js';
@@ -75,9 +76,15 @@ export const start = (zcf, privateArgs, baggage) => {
   const questionNode = E(privateArgs.storageNode).makeChildNode(
     'latestQuestion',
   );
+
+  const { marshaller: remoteMarshaller } = privateArgs;
+
+  /** @type {ERemote<EMarshaller>} */
+  const cachingMarshaller = remoteMarshaller;
+
   /** @type {StoredPublishKit<QuestionDetails>} */
   const { subscriber: questionsSubscriber, publisher: questionsPublisher } =
-    makeStoredPublishKit(questionNode, privateArgs.marshaller);
+    makeStoredPublishKit(questionNode, cachingMarshaller);
 
   const makeCommitteeVoterInvitation = index => {
     // https://github.com/Agoric/agoric-sdk/pull/3448/files#r704003612
@@ -156,7 +163,7 @@ export const start = (zcf, privateArgs, baggage) => {
         /** @type {StoredPublishKit<OutcomeRecord>} */
         const { publisher: outcomePublisher } = makeStoredPublishKit(
           outcomeNode,
-          privateArgs.marshaller,
+          cachingMarshaller,
         );
 
         return startCounter(

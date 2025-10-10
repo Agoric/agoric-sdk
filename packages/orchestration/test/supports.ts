@@ -143,6 +143,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   );
 
   const timer = buildZoeManualTimer(t.log);
+  // TODO: wrap marshaller for fidelity?
   const marshaller = makeFakeBoard().getReadonlyMarshaller();
   const storage = makeFakeStorageKit('mockChainStorageRoot', {
     sequence: false,

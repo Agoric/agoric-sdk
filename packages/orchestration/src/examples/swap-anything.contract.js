@@ -13,6 +13,8 @@ import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 const trace = makeTracer('SwapAnything.Contract');
 const interfaceTODO = undefined;
 /**
+ * @import {ERemote} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
  * @import {Remote, Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
@@ -59,6 +61,11 @@ export const contract = async (
   /** @type {(msg: string) => Vow<void>} */
   const log = (msg, level = 'info') =>
     vowTools.watch(E(logNode).setValue(JSON.stringify({ msg, level })));
+
+  const { marshaller: remoteMarshaller } = privateArgs;
+
+  /** @type {ERemote<EMarshaller>} */
+  const cachingMarshaller = remoteMarshaller;
 
   const makeLocalAccount = orchestrate(
     'makeLocalAccount',
@@ -155,7 +162,7 @@ export const contract = async (
   void vowTools.when(sharedLocalAccountP, async lca => {
     sharedLocalAccount = lca;
     await sharedLocalAccount.monitorTransfers(tap);
-    const encoded = await E(privateArgs.marshaller).toCapData({
+    const encoded = await E(cachingMarshaller).toCapData({
       sharedLocalAccount: sharedLocalAccount.getAddress(),
     });
     void E(privateArgs.storageNode).setValue(JSON.stringify(encoded));

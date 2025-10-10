@@ -10,6 +10,8 @@ import { prepareAssetReserveKit } from './assetReserveKit.js';
 
 /**
  * @import {ERemote} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
+ * @import {Baggage} from '@agoric/vat-data'
  * @import {EReturn} from '@endo/far';
  * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {Allocation, ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
@@ -29,8 +31,6 @@ harden(meta);
  *   reduceLiquidationShortfall: (reduction: Amount) => void;
  * }} ShortfallReportingFacet
  */
-
-/** @import {Baggage} from '@agoric/vat-data' */
 
 /**
  * Asset Reserve holds onto assets for the Inter Protocol, and can dispense it
@@ -59,9 +59,14 @@ export const start = async (zcf, privateArgs, baggage) => {
   // accessed via the `state` object. The latter means updates are made directly
   // to state and don't require reference to baggage.
 
+  const { marshaller: remoteMarshaller } = privateArgs;
+
+  /** @type {ERemote<EMarshaller>} */
+  const cachingMarshaller = remoteMarshaller;
+
   const { makeRecorderKit } = prepareRecorderKitMakers(
     baggage,
-    privateArgs.marshaller,
+    cachingMarshaller,
   );
 
   const storageNode = await privateArgs.storageNode;
@@ -88,7 +93,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.initialPoserInvitation,
     {},
     privateArgs.storageNode,
-    privateArgs.marshaller,
+    cachingMarshaller,
   );
 
   const { governorFacet } = makeDurableGovernorFacet(

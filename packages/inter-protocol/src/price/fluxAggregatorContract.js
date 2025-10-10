@@ -15,7 +15,8 @@ const trace = makeTracer('FluxAgg', false);
 /**
  * @import {Baggage} from '@agoric/vat-data'
  * @import {TimerService} from '@agoric/time'
- * @import {Remote} from '@agoric/internal';
+ * @import {Remote, ERemote} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
  */
 
 /** @type {ContractMeta} */
@@ -81,7 +82,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const {
     highPrioritySendersManager,
     initialPoserInvitation,
-    marshaller,
+    marshaller: remoteMarshaller,
     namesByAddressAdmin,
     storageNode,
   } = privateArgs;
@@ -90,11 +91,14 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   trace('awaited args');
 
+  /** @type {ERemote<EMarshaller>} */
+  const cachingMarshaller = remoteMarshaller;
+
   const makeDurablePublishKit = prepareDurablePublishKit(
     baggage,
     'Price Aggregator publish kit',
   );
-  const makeRecorder = prepareRecorder(baggage, marshaller);
+  const makeRecorder = prepareRecorder(baggage, cachingMarshaller);
 
   const makeFluxAggregatorKit = await prepareFluxAggregatorKit(
     baggage,
@@ -121,7 +125,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       // No governed parameters. Governance just for API methods.
     },
     storageNode,
-    marshaller,
+    cachingMarshaller,
   );
 
   trace('got makeDurableGovernorFacet', makeDurableGovernorFacet);
