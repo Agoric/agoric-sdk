@@ -56,17 +56,16 @@ export type FlowStatus =
   | { state: 'done' }
   | { state: 'fail'; step: number; how: string; error: string; where?: string };
 
-export type FlowSteps = {
+export type FlowStep = {
   how: string;
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
-}[];
+};
 
 export type PortfolioKey = `portfolio${number}`;
 export type FlowKey = `flow${number}`;
 
-// XXX relate paths to types a la readPublished()
 export type StatusFor = {
   contract: {
     contractAccount: CosmosChainAddress['value'];
@@ -96,5 +95,5 @@ export type StatusFor = {
     totalOut: NatAmount;
   };
   flow: FlowStatus;
-  flowSteps: FlowSteps;
+  flowSteps: FlowStep[];
 };
