@@ -56,7 +56,7 @@ export type MetaTrafficEntry<
   src: NetworkEndpoints[SP];
   dstChainId: CaipChainId;
   dst: NetworkEndpoints[DP];
-  seq: number | bigint | string | null;
+  seq: { status: 'pending' | 'unknown' } | number | bigint | string;
 };
 
 /**

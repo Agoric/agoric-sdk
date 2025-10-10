@@ -1,9 +1,13 @@
 import { makeTracer } from '@agoric/internal';
+import { heapVowTools } from '@agoric/vow';
 
 /**
  * @import {TraceLogger} from '@agoric/internal';
  * @import {ERef} from '@endo/far';
+ * @import {EVow} from '@agoric/vow';
  */
+
+const { when } = heapVowTools;
 
 /**
  * @template T
@@ -13,7 +17,7 @@ import { makeTracer } from '@agoric/internal';
 /**
  * @template T
  * @typedef {{
- *   result: Promise<T>;
+ *   result: EVow<T | ResultMeta<T>>;
  *   meta: Record<string, any>;
  * }} ResultMeta
  */
@@ -48,7 +52,7 @@ export const reduceResultMeta = async (resultP, reducer, initialMeta = {}) => {
     if (reducer) {
       meta = reducer(result.meta, meta);
     }
-    result = await result.result;
+    result = await when(result.result);
   }
   if (reducer) {
     // Final merge to allow extra publishing.
@@ -114,14 +118,14 @@ harden(wrapResultMeta);
 /**
  * @template T
  * @template [U=T]
- * @param {ERef<MaybeResultMeta<T>>} resultP
+ * @param {EVow<MaybeResultMeta<T>>} resultP
  * @param {(rm: ResultMeta<T>) => ERef<MaybeResultMeta<U>>} transform
  * @returns {Promise<ResultMeta<U>>}
  */
 export const transformResultMeta = async (resultP, transform) => {
   const resultMeta = await wrapResultMeta(resultP);
   const { result, meta } = resultMeta;
-  const transformed = transform({ result, meta });
+  const transformed = await transform({ result: when(result), meta });
   return wrapResultMeta(transformed);
 };
 harden(transformResultMeta);

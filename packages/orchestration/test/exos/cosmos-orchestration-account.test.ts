@@ -347,20 +347,24 @@ test('transfer', async t => {
     basicIbcTransfer,
     'outgoing transfer msg matches expected default mock',
   );
-  t.deepEqual(
-    await res,
+  const transferResult = await res;
+  t.like(
+    transferResult,
     {
-      followTraffic: {
-        dst: ['ibc', 'transfer', 'channel-4'],
-        dstChainId: 'cosmos:noble-1',
-        op: 'transfer',
-        seq: 0n,
-        src: ['ibc', 'transfer', 'channel-536'],
-        srcChainId: 'cosmos:cosmoshub-4',
+      result: {
+        followTraffic: {
+          dst: ['ibc', 'transfer', 'channel-4'],
+          dstChainId: 'cosmos:noble-1',
+          op: 'transfer',
+          seq: 0n,
+          src: ['ibc', 'transfer', 'channel-536'],
+          srcChainId: 'cosmos:cosmoshub-4',
+        },
       },
     },
-    'transfer returns unknown flag (for now)',
+    'transfer returns followTraffic',
   );
+  t.snapshot(transferResult, 'transfer full result');
 
   const resWithMeta = E(account).transferWithMeta(
     mockDestination,
@@ -382,7 +386,7 @@ test('transfer', async t => {
       traffic: [
         {
           op: 'ICA',
-          seq: null,
+          seq: { status: 'unknown' },
           srcChainId: 'cosmos:agoric-3',
           src: ['ibc', 'icacontroller-1', 'channel-0'],
           dstChainId: 'cosmos:cosmoshub-4',
@@ -390,7 +394,7 @@ test('transfer', async t => {
         },
         {
           op: 'transfer',
-          seq: 0n,
+          seq: { status: 'pending' },
           srcChainId: 'cosmos:cosmoshub-4',
           src: ['ibc', 'transfer', 'channel-536'],
           dstChainId: 'cosmos:noble-1',
@@ -400,20 +404,24 @@ test('transfer', async t => {
     },
     'transfer returns proper meta',
   );
-  t.deepEqual(
-    await heapVowTools.when(resultMeta.result),
+  const resultMetaResult = await heapVowTools.when(resultMeta.result);
+  t.like(
+    resultMetaResult,
     {
-      followTraffic: {
-        dst: ['ibc', 'transfer', 'channel-4'],
-        dstChainId: 'cosmos:noble-1',
-        op: 'transfer',
-        seq: 0n,
-        src: ['ibc', 'transfer', 'channel-536'],
-        srcChainId: 'cosmos:cosmoshub-4',
+      result: {
+        followTraffic: {
+          dst: ['ibc', 'transfer', 'channel-4'],
+          dstChainId: 'cosmos:noble-1',
+          op: 'transfer',
+          seq: 0n,
+          src: ['ibc', 'transfer', 'channel-536'],
+          srcChainId: 'cosmos:cosmoshub-4',
+        },
       },
     },
-    'transfer returns unknown flag (for now)',
+    'transfer returns followTraffic result',
   );
+  t.snapshot(resultMeta, 'transferWithMeta full result');
 
   t.log('transfer accepts custom memo');
   await E(account).transfer(mockDestination, mockAmountArg, {

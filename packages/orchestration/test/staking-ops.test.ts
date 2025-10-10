@@ -37,6 +37,7 @@ import type {
 } from '../src/types.js';
 import { MILLISECONDS_PER_SECOND } from '../src/utils/time.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';
+import { unwrapResultMeta } from '../src/utils/result-meta.js';
 
 const Any = CodecHelper(AnyType);
 const MsgBeginRedelegateResponse = CodecHelper(MsgBeginRedelegateResponseType);
@@ -186,10 +187,9 @@ const makeScenario = () => {
         return { result: doMessage(msgs[0]), meta: {} };
       },
       executeEncodedTx: async msgs => {
-        const resultMeta = await account.executeEncodedTxWithMeta(msgs);
-        assert.typeof(resultMeta, 'object');
-        const { result, meta } = resultMeta;
-        assert(meta);
+        const { result } = await unwrapResultMeta(
+          account.executeEncodedTxWithMeta(msgs),
+        );
         return result;
       },
       executeTx: () => Fail`mock`,

@@ -543,7 +543,7 @@ export const prepareLocalOrchestrationAccountKit = (
                 // Sequence number is not known at this stage; it will be
                 // populated by IBCTransferSenderKit['responseWatcher'] once the
                 // transfer packet is sent and the sequence number is assigned.
-                seq: null,
+                seq: { status: 'pending' },
               },
             ]),
           };
@@ -885,7 +885,6 @@ export const prepareLocalOrchestrationAccountKit = (
         },
         /** @type {HostOf<OrchestrationAccountCommon['transferWithMeta']>} */
         transferWithMeta(destination, amount, opts) {
-          // @ts-expect-error HostOf typing doesn't recurse here
           return asVow(() => {
             trace('Transferring funds over IBC');
 

@@ -375,10 +375,13 @@ export const prepareCosmosOrchestrationAccountKit = (
           })
           .returns(Vow$({ result: Vow$(M.any()), meta: M.record() })),
       }),
-      parseTransferWatcher: M.interface('parseTransferWatcher', {
-        onFulfilled: M.call([M.string(), M.record()], M.record()).returns(
-          Vow$(M.record()),
-        ),
+      updateMetaTrafficWatcher: M.interface('updateMetaTrafficWatcher', {
+        onFulfilled: M.call(M.record(), M.record())
+          .optional(M.remotable('nextWatcher'))
+          .returns(Vow$(M.record())),
+      }),
+      fillSequenceWatcher: M.interface('fillSequenceWatcher', {
+        onFulfilled: M.call(M.string(), M.record()).returns(Vow$(M.record())),
       }),
       delegationQueryWatcher: M.interface('delegationQueryWatcher', {
         onFulfilled: M.call(M.arrayOf(M.record())).returns(M.record()),
@@ -526,8 +529,7 @@ export const prepareCosmosOrchestrationAccountKit = (
                 dstChainId: `${cp[0]}:${cp[1]}`,
                 dst: [protocol, rad.portID, rad.channelID],
                 // TODO(#11994): Need to expose from Network API `conn.sendWithMeta(...)`
-                // Unknown for now, so set it to null.
-                seq: null,
+                seq: { status: 'unknown' },
               }),
             ],
           };
@@ -760,12 +762,6 @@ export const prepareCosmosOrchestrationAccountKit = (
               }),
             ),
           ]);
-          const result = watch(
-            resultMeta,
-            this.facets.pickDataWatcher,
-            'result',
-          );
-          const meta = watch(resultMeta, this.facets.pickDataWatcher, 'meta');
           const transferTraffic = /** @type {MetaTrafficEntry} */ ({
             op: 'transfer',
             srcChainId: `cosmos:${chainAddress.chainId}`,
@@ -776,44 +772,78 @@ export const prepareCosmosOrchestrationAccountKit = (
               transferChannel.counterPartyPortId,
               transferChannel.counterPartyChannelId,
             ],
-            seq: null, // filled in by parseTransferWatcher.onFulfilled below
+            seq: { status: 'pending' }, // filled in by parseTransferWatcher.onFulfilled below
           });
           return watch(
-            allVows([result, meta]),
-            this.facets.parseTransferWatcher,
+            resultMeta,
+            this.facets.updateMetaTrafficWatcher,
             transferTraffic,
           );
         },
       },
-      parseTransferWatcher: {
-        onFulfilled([transferResp, baseMeta], transferTraffic) {
-          trace('parseTransferWatcher', {
-            submitted: transferResp,
-            baseMeta,
-            transferTraffic,
+      updateMetaTrafficWatcher: {
+        /**
+         * @param {ResultMeta<any>} param0
+         * @param {MetaTrafficEntry} traffic
+         * @returns {ResultMeta<{ followTraffic: MetaTrafficEntry }>}
+         */
+        onFulfilled({ result, meta }, traffic) {
+          trace('updateMetaTrafficWatcher', {
+            result,
+            meta,
+            traffic,
           });
-          const [{ sequence }] = tryDecodeResponses(transferResp, [
+          const newMeta = {
+            ...meta,
+            traffic: [...(meta.traffic || []), traffic],
+          };
+          const newResult = watch(
+            result,
+            this.facets.fillSequenceWatcher,
+            newMeta,
+          );
+          return harden({ result: newResult, meta: newMeta });
+        },
+      },
+      fillSequenceWatcher: {
+        /**
+         * @param {string} sequenceResp
+         * @param {Record<string, any>} meta
+         */
+        onFulfilled(sequenceResp, meta) {
+          trace('fillSequenceWatcher', {
+            submitted: sequenceResp,
+            meta,
+          });
+
+          const [{ sequence }] = tryDecodeResponses(sequenceResp, [
             MsgTransferResponse,
           ]);
-          const baseSequence = transferTraffic?.seq;
-          baseSequence == null ||
-            Fail`expected traffic?.seq ${baseSequence} to be nullish`;
+          const lastMetaTraffic = meta.traffic?.at(-1);
+          lastMetaTraffic ||
+            Fail`expected meta.traffic to have at least one entry: ${q(meta)}`;
+          const baseSequence = lastMetaTraffic?.seq;
+          baseSequence?.status === 'pending' ||
+            Fail`expected traffic?.seq ${baseSequence} to be pending`;
           sequence != null ||
-            Fail`expected MsgTransferResponse.sequence ${sequence} to be non-nullish`;
+            Fail`expected sequenceResp.sequence ${sequence} to be non-nullish`;
 
-          const newTransferTraffic = { ...transferTraffic, seq: sequence };
+          const newTransferTraffic = { ...lastMetaTraffic, seq: sequence };
           /** @type {Record<string, any>} */
-          const meta = {
-            ...baseMeta,
-            traffic: [...(baseMeta.traffic || []), newTransferTraffic],
+          const newMeta = {
+            ...meta,
+            traffic: [
+              ...(meta.traffic ? meta.traffic.slice(0, -1) : []),
+              newTransferTraffic,
+            ],
           };
           // Result is not known to this account.  Ask the caller to follow the
           // traffic.
-          const resMeta = harden({
+          const nextMeta = harden({
             result: { followTraffic: newTransferTraffic },
-            meta,
+            meta: newMeta,
           });
-          return resMeta;
+          return nextMeta;
         },
       },
       invitationMakers: {
@@ -1135,7 +1165,6 @@ export const prepareCosmosOrchestrationAccountKit = (
         /** @type {HostOf<OrchestrationAccountCommon['transferWithMeta']>} */
         transferWithMeta(destination, amount, opts) {
           trace('transferWithMeta', destination, amount, opts);
-          // @ts-expect-error HostOf typing doesn't recurse here
           return asVow(() => {
             const cosmosDest = chainHub.coerceCosmosAddress(destination);
             const { helper } = this.facets;
