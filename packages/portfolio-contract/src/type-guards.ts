@@ -23,10 +23,15 @@
 import type { Brand, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { stripPrefix, tryNow } from '@agoric/internal/src/ses-utils.js';
-import { AnyNatAmountShape } from '@agoric/orchestration';
+import {
+  AnyNatAmountShape,
+  type AccountId,
+  type Bech32Address,
+} from '@agoric/orchestration';
 import {
   AxelarChain,
   YieldProtocol,
+  type AssetPlaceRef,
   type FlowDetail,
   type InstrumentId,
   type ProposalType,
@@ -47,6 +52,9 @@ export type { OfferArgsFor } from './type-guards-steps.js';
 
 // #region preliminaries
 const { keys } = Object;
+
+/** no runtime validation */
+const AnyString = <_T>() => M.string();
 
 /**
  * @param brand must be a 'nat' brand, not checked
@@ -258,18 +266,15 @@ export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
     {
       positionKeys: M.arrayOf(PoolKeyShapeExt),
       flowCount: M.number(),
-      accountIdByChain: M.recordOf(
-        ChainNameExtShape,
-        M.string(), // XXX no runtime validation of AccountId
-      ),
+      accountIdByChain: M.recordOf(ChainNameExtShape, AnyString<AccountId>()),
       policyVersion: M.number(),
       rebalanceCount: M.number(),
     },
     {
-      depositAddress: M.string(), // XXX no runtime validation of Bech32Address
+      depositAddress: AnyString<Bech32Address>(),
       targetAllocation: TargetAllocationShapeExt,
       accountsPending: M.arrayOf(ChainNameExtShape),
-      flowsRunning: M.recordOf(M.string(), FlowDetailShape),
+      flowsRunning: M.recordOf(AnyString<`flow${number}`>(), FlowDetailShape),
     },
   );
 
@@ -291,7 +296,7 @@ export const makePositionPath = (parent: number, key: PoolKeyExt) => [
 
 export const PositionStatusShape: TypedPattern<StatusFor['position']> = harden({
   protocol: M.or(...Object.keys(YieldProtocol)), // YieldProtocol
-  accountId: M.string(), // AccountId
+  accountId: AnyString<AccountId>(),
   netTransfers: AnyNatAmountShape, // XXX constrain brand to USDC
   totalIn: AnyNatAmountShape,
   totalOut: AnyNatAmountShape,
@@ -326,7 +331,7 @@ export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.or(
   { state: 'done' },
   M.splitRecord(
     { state: 'fail', step: M.number(), how: M.string(), error: M.string() },
-    { where: M.string() },
+    { where: AnyString<AssetPlaceRef>() },
     {},
   ),
 );
@@ -334,8 +339,8 @@ export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.or(
 export const FlowStepsShape: TypedPattern<StatusFor['flowSteps']> = M.arrayOf({
   how: M.string(),
   amount: AnyNatAmountShape,
-  src: M.string(), // AssetPlaceRef
-  dest: M.string(), // AssetPlaceRef
+  src: AnyString<AssetPlaceRef>(),
+  dest: AnyString<AssetPlaceRef>(),
 });
 // #endregion
 
