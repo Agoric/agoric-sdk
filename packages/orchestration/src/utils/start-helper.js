@@ -1,4 +1,5 @@
 import { prepareAsyncFlowTools } from '@agoric/async-flow';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { prepareVowTools } from '@agoric/vow';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
@@ -227,8 +228,7 @@ export const withOrchestration =
     const { storageNode: _, ...requiredOrchPowers } = allOrchPowers;
     const { publishAccountInfo, chainInfoValueShape } = opts ?? {};
 
-    /** @type {ERemote<EMarshaller>} */
-    const cachingMarshaller = remoteMarshaller;
+    const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
     const { zone, ...tools } = provideOrchestration(
       zcf,

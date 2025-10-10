@@ -1,5 +1,6 @@
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 import {
   makeNotifierKit,
@@ -29,8 +30,7 @@ import {
 } from '../contractSupport/index.js';
 
 /**
- * @import {Remote, ERemote} from '@agoric/internal';
- * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
+ * @import {Remote} from '@agoric/internal';
  * @import {LegacyMap} from '@agoric/store'
  * @import {ContractOf} from '../zoeService/utils.js';
  * @import {PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
@@ -81,8 +81,7 @@ const start = async (zcf, privateArgs) => {
   const { marshaller: remoteMarshaller, storageNode } = privateArgs;
   assertAllDefined({ remoteMarshaller, storageNode });
 
-  /** @type {ERemote<EMarshaller>} */
-  const cachingMarshaller = remoteMarshaller;
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
   /** @type {ERef<Mint<'set', PriceDescription>>} */
   const quoteMint =

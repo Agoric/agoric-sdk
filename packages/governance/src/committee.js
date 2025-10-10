@@ -3,6 +3,7 @@ import { M } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 
 import { StorageNodeShape } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
 import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import {
@@ -16,8 +17,7 @@ import { ElectorateCreatorI, ElectoratePublicI } from './typeGuards.js';
 import { prepareVoterKit } from './voterKit.js';
 
 /**
- * @import {Remote, ERemote} from '@agoric/internal';
- * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
+ * @import {Remote} from '@agoric/internal';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {ContractMeta, Invitation, ZCF} from '@agoric/zoe';
  * @import {ElectorateCreatorFacet, CommitteeElectoratePublic, QuestionDetails, OutcomeRecord, AddQuestion} from './types.js';
@@ -79,8 +79,7 @@ export const start = (zcf, privateArgs, baggage) => {
 
   const { marshaller: remoteMarshaller } = privateArgs;
 
-  /** @type {ERemote<EMarshaller>} */
-  const cachingMarshaller = remoteMarshaller;
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
   /** @type {StoredPublishKit<QuestionDetails>} */
   const { subscriber: questionsSubscriber, publisher: questionsPublisher } =

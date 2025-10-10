@@ -2,6 +2,7 @@
 
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import {
   prepareRecorderKitMakers,
   provideAll,
@@ -10,7 +11,6 @@ import { prepareAssetReserveKit } from './assetReserveKit.js';
 
 /**
  * @import {ERemote} from '@agoric/internal';
- * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {Baggage} from '@agoric/vat-data'
  * @import {EReturn} from '@endo/far';
  * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
@@ -60,9 +60,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   // to state and don't require reference to baggage.
 
   const { marshaller: remoteMarshaller } = privateArgs;
-
-  /** @type {ERemote<EMarshaller>} */
-  const cachingMarshaller = remoteMarshaller;
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
     baggage,

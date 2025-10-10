@@ -44,7 +44,10 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
+import {
+  wrapRemoteMarshaller,
+  type EMarshaller,
+} from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import type { ContractMeta, Invitation, ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { prepareAdvancer } from './exos/advancer.ts';
@@ -121,7 +124,7 @@ export const contract = async (
 
   const { feeConfig, marshaller: remoteMarshaller, storageNode } = privateArgs;
 
-  const cachingMarshaller: ERemote<EMarshaller> = remoteMarshaller;
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
   const { makeRecorderKit } = prepareRecorderKitMakers(
     zone.mapStore('vstorage'),
     cachingMarshaller,

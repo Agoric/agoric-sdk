@@ -1,6 +1,7 @@
 /** @file Example contract that uses orchestration */
 
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { TimerServiceShape } from '@agoric/time';
 import { heapVowE as E, prepareVowTools } from '@agoric/vow/vat.js';
 import {
@@ -17,7 +18,6 @@ const trace = makeTracer('StakeIca');
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {ERemote, Remote} from '@agoric/internal';
- * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {CosmosChainInfo, CosmosInterchainService, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {ContractMeta, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {IBCConnectionID, NameHub} from '@agoric/vats';
@@ -85,8 +85,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       ),
   });
 
-  /** @type {ERemote<EMarshaller>} */
-  const cachingMarshaller = remoteMarshaller;
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
     baggage,
