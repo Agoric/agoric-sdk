@@ -445,7 +445,7 @@ export function makeVatWarehouse({
   }
 
   /**
-   * @typedef { import('../types-internal.js').MeterID } MeterID
+   * @import {MeterID} from '../types-internal.js';
    */
 
   /**

@@ -387,8 +387,8 @@ export default function buildKernel(
 
   /**
    *
-   * @typedef { import('../types-internal.js').MeterID } MeterID
-   * @typedef { import('../types-internal.js').Dirt } Dirt
+   * @import {MeterID} from '../types-internal.js';
+   * @import {Dirt} from '../types-internal.js';
    *
    *  Any delivery crank (send, notify, start-vat.. anything which is allowed
    *  to make vat delivery) emits one of these status events if a delivery
@@ -1251,22 +1251,22 @@ export default function buildKernel(
   const gcMessages = ['dropExports', 'retireExports', 'retireImports'];
 
   /**
-   * @typedef { import('../types-internal.js').VatID } VatID
-   * @typedef { import('../types-internal.js').InternalDynamicVatOptions } InternalDynamicVatOptions
+   * @import {VatID} from '../types-internal.js';
+   * @import {InternalDynamicVatOptions} from '../types-internal.js';
    *
-   * @typedef { import('../types-internal.js').RunQueueEventNotify } RunQueueEventNotify
-   * @typedef { import('../types-internal.js').RunQueueEventSend } RunQueueEventSend
-   * @typedef { import('../types-internal.js').RunQueueEventCreateVat } RunQueueEventCreateVat
-   * @typedef { import('../types-internal.js').RunQueueEventUpgradeVat } RunQueueEventUpgradeVat
-   * @typedef { import('../types-internal.js').RunQueueEventChangeVatOptions } RunQueueEventChangeVatOptions
-   * @typedef { import('../types-internal.js').RunQueueEventStartVat } RunQueueEventStartVat
-   * @typedef { import('../types-internal.js').RunQueueEventDropExports } RunQueueEventDropExports
-   * @typedef { import('../types-internal.js').RunQueueEventRetireExports } RunQueueEventRetireExports
-   * @typedef { import('../types-internal.js').RunQueueEventRetireImports } RunQueueEventRetireImports
-   * @typedef { import('../types-internal.js').RunQueueEventNegatedGCAction } RunQueueEventNegatedGCAction
-   * @typedef { import('../types-internal.js').RunQueueEventBringOutYourDead } RunQueueEventBringOutYourDead
-   * @typedef { import('../types-internal.js').RunQueueEventCleanupTerminatedVat } RunQueueEventCleanupTerminatedVat
-   * @typedef { import('../types-internal.js').RunQueueEvent } RunQueueEvent
+   * @import {RunQueueEventNotify} from '../types-internal.js';
+   * @import {RunQueueEventSend} from '../types-internal.js';
+   * @import {RunQueueEventCreateVat} from '../types-internal.js';
+   * @import {RunQueueEventUpgradeVat} from '../types-internal.js';
+   * @import {RunQueueEventChangeVatOptions} from '../types-internal.js';
+   * @import {RunQueueEventStartVat} from '../types-internal.js';
+   * @import {RunQueueEventDropExports} from '../types-internal.js';
+   * @import {RunQueueEventRetireExports} from '../types-internal.js';
+   * @import {RunQueueEventRetireImports} from '../types-internal.js';
+   * @import {RunQueueEventNegatedGCAction} from '../types-internal.js';
+   * @import {RunQueueEventBringOutYourDead} from '../types-internal.js';
+   * @import {RunQueueEventCleanupTerminatedVat} from '../types-internal.js';
+   * @import {RunQueueEvent} from '../types-internal.js';
    */
 
   /**
