@@ -34,6 +34,8 @@ jobs:
       - name: Write .env.gcp from secret
         run: |
           printf '%s\n' "${{ secrets.ENV_GCP_FILE }}" > .env.gcp
+          echo "Contents of .env.gcp:"
+          cat .env.gcp
 
       - name: Build and Push image
         id: build
