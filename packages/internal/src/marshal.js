@@ -15,6 +15,9 @@ import { isStreamCell } from './lib-chainStorage.js';
  */
 
 /**
+ * A Marshaller which methods may be async. Use this type to indicate accepting
+ * either a sync or async marshaller, usually through `E` eventual-sends.
+ *
  * @template [Slot=unknown]
  * @typedef {Simplify<EOnly<Marshal<Slot>>>} EMarshaller
  */
