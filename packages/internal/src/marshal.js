@@ -199,6 +199,12 @@ const makeCacheMap = weakKey =>
   );
 
 /**
+ * Wraps a marshaller, either sync or async, local or remote, into a local async
+ * marshaller which only sends slots for resolution to the wrapped marshaller.
+ *
+ * Assumes that a null-ish slot value is a severed presence that can be resolved
+ * locally.
+ *
  * @template [Slot=unknown]
  * @param {ERemote<Pick<EMarshaller<Slot>, 'fromCapData' | 'toCapData'>>} marshaller
  * @param {MakeMarshalOptions} [marshalOptions]
