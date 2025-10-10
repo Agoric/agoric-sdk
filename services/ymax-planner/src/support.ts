@@ -1,4 +1,5 @@
 import { JsonRpcProvider, Log, type Filter } from 'ethers';
+import { Alchemy, Network } from 'alchemy-sdk';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from './config.ts';
 import { TX_TIMEOUT_MS, type EvmContext } from './pending-tx-manager.ts';
@@ -138,6 +139,32 @@ type CreateContextParams = {
 };
 
 export type EvmProviders = Record<CaipChainId, JsonRpcProvider>;
+export type AlchemyClients = Record<CaipChainId, Alchemy>;
+
+/**
+ * Map CAIP chain IDs to Alchemy SDK Network enums
+ */
+const getAlchemyNetwork = (
+  chainId: CaipChainId,
+  clusterName: ClusterName,
+): Network | undefined => {
+  const networkMap: Record<string, Network> = {
+    // Mainnet
+    'eip155:1': Network.ETH_MAINNET,
+    'eip155:10': Network.OPT_MAINNET,
+    'eip155:42161': Network.ARB_MAINNET,
+    'eip155:8453': Network.BASE_MAINNET,
+    'eip155:43114': Network.AVAX_MAINNET,
+    // Testnet
+    'eip155:11155111': Network.ETH_SEPOLIA,
+    'eip155:11155420': Network.OPT_SEPOLIA,
+    'eip155:421614': Network.ARB_SEPOLIA,
+    'eip155:84532': Network.BASE_SEPOLIA,
+    'eip155:43113': Network.AVAX_FUJI,
+  };
+
+  return networkMap[chainId];
+};
 
 /**
  * Verifies that all EVM chains are accessible via their providers.
@@ -199,7 +226,9 @@ export const createEVMContext = async ({
   clusterName,
   alchemyApiKey,
 }: CreateContextParams): Promise<
-  Pick<EvmContext, 'evmProviders' | 'usdcAddresses'>
+  Pick<EvmContext, 'evmProviders' | 'usdcAddresses'> & {
+    alchemyClients: AlchemyClients;
+  }
 > => {
   if (clusterName === 'local') clusterName = 'testnet';
   if (!alchemyApiKey) throw Error('missing alchemyApiKey');
@@ -212,8 +241,27 @@ export const createEVMContext = async ({
     ]),
   ) as EvmProviders;
 
+  // Create Alchemy SDK clients for enhanced functionality
+  const alchemyClients = Object.fromEntries(
+    Object.entries(urls)
+      .map(([caip]) => {
+        const network = getAlchemyNetwork(caip as CaipChainId, clusterName);
+        if (!network) return null;
+
+        const alchemy = new Alchemy({
+          apiKey: alchemyApiKey,
+          network,
+          maxRetries: 3,
+        });
+
+        return [caip, alchemy];
+      })
+      .filter(Boolean),
+  ) as AlchemyClients;
+
   return {
     evmProviders,
+    alchemyClients,
     usdcAddresses: usdcAddresses[clusterName],
   };
 };
