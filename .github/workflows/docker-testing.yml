@@ -58,11 +58,11 @@ jobs:
           gcloud compute instances list
           echo ${{ steps.build.outputs.digest }}
 
-    #   - name: Update GCE container (by digest)
-    #     run: |
-    #       IMAGE="${{ env.IMAGE_DEPLOY_REPO }}@${{ steps.build.outputs.digest }}"
-    #       echo "Deploying image: $IMAGE"
-    #       gcloud compute instances update-container "${{ env.GCE_INSTANCE }}" \
-    #         --zone "${{ env.GCE_ZONE }}" \
-    #         --container-env-file ./.env.gcp \
-    #         --container-image="$IMAGE"
+      - name: Update GCE container (by digest)
+        run: |
+          IMAGE="${{ env.IMAGE_DEPLOY_REPO }}@${{ steps.build.outputs.digest }}"
+          echo "Deploying image: $IMAGE"
+          gcloud compute instances update-container "${{ env.GCE_INSTANCE }}" \
+            --zone "${{ env.GCE_ZONE }}" \
+            --container-env-file ./.env.gcp \
+            --container-image="$IMAGE"
