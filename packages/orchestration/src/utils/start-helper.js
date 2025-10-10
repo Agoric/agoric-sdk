@@ -223,16 +223,22 @@ harden(provideOrchestration);
  */
 export const withOrchestration =
   (contractFn, opts) => async (zcf, privateArgs, baggage) => {
-    const { marshaller, ...allOrchPowers } = privateArgs;
+    const { marshaller: remoteMarshaller, ...allOrchPowers } = privateArgs;
     const { storageNode: _, ...requiredOrchPowers } = allOrchPowers;
     const { publishAccountInfo, chainInfoValueShape } = opts ?? {};
+
+    /** @type {ERemote<EMarshaller>} */
+    const cachingMarshaller = remoteMarshaller;
+
     const { zone, ...tools } = provideOrchestration(
       zcf,
       baggage,
       publishAccountInfo ? allOrchPowers : requiredOrchPowers,
-      marshaller,
+      cachingMarshaller,
       { chainInfoValueShape },
     );
+    // TODO: pass the cachingMarshaller to orchestrated contracts so they don't
+    // have to wrap it themselves
     return contractFn(zcf, privateArgs, zone, tools);
   };
 harden(withOrchestration);

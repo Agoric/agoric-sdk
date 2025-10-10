@@ -29,7 +29,8 @@ import {
 } from '../contractSupport/index.js';
 
 /**
- * @import {Remote} from '@agoric/internal';
+ * @import {Remote, ERemote} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {LegacyMap} from '@agoric/store'
  * @import {ContractOf} from '../zoeService/utils.js';
  * @import {PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
@@ -77,8 +78,11 @@ const start = async (zcf, privateArgs) => {
   assertAllDefined({ brandIn, brandOut, POLL_INTERVAL, timer, unitAmountIn });
 
   assert(privateArgs, 'Missing privateArgs in priceAggregator start');
-  const { marshaller, storageNode } = privateArgs;
-  assertAllDefined({ marshaller, storageNode });
+  const { marshaller: remoteMarshaller, storageNode } = privateArgs;
+  assertAllDefined({ remoteMarshaller, storageNode });
+
+  /** @type {ERemote<EMarshaller>} */
+  const cachingMarshaller = remoteMarshaller;
 
   /** @type {ERef<Mint<'set', PriceDescription>>} */
   const quoteMint =
@@ -118,7 +122,7 @@ const start = async (zcf, privateArgs) => {
   // For publishing priceAuthority values to off-chain storage
   const { publisher, subscriber } = makeStoredPublishKit(
     storageNode,
-    marshaller,
+    cachingMarshaller,
   );
 
   const zoe = zcf.getZoeService();

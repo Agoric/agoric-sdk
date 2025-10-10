@@ -18,7 +18,8 @@ import {
 } from './provisionPoolKit.js';
 
 /**
- * @import {Remote} from '@agoric/internal';
+ * @import {Remote, ERemote} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
  * @import {ContractMeta, Invitation, StandardTerms, ZCF} from '@agoric/zoe';
  * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
@@ -64,9 +65,14 @@ harden(meta);
 export const start = async (zcf, privateArgs, baggage) => {
   const { poolBank, metricsOverride } = privateArgs;
 
+  const { marshaller: remoteMarshaller } = privateArgs;
+
+  /** @type {ERemote<EMarshaller>} */
+  const cachingMarshaller = remoteMarshaller;
+
   const { makeRecorderKit } = prepareRecorderKitMakers(
     baggage,
-    privateArgs.marshaller,
+    cachingMarshaller,
   );
 
   // Governance

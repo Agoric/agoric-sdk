@@ -8,6 +8,7 @@ import {
   makeTracer,
   mustMatch,
   NonNullish,
+  type ERemote,
   type Remote,
   type TypedPattern,
 } from '@agoric/internal';
@@ -15,6 +16,7 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
+import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import {
   ChainInfoShape,
   DenomDetailShape,
@@ -216,7 +218,7 @@ export const contract = async (
     assetInfo,
     axelarIds,
     contracts,
-    marshaller,
+    marshaller: remoteMarshaller,
     storageNode,
     gmpAddresses,
   } = privateArgs;
@@ -241,6 +243,8 @@ export const contract = async (
   const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
 
+  const cachingMarshaller: ERemote<EMarshaller> = remoteMarshaller;
+
   // Until we find a need for on-chain subscribers, this stop-gap will do.
   const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
     getUpdateSince() {
@@ -255,7 +259,7 @@ export const contract = async (
   const makeResolverKit = prepareResolverKit(resolverZone, zcf, {
     vowTools,
     pendingTxsNode: E(storageNode).makeChildNode(PENDING_TXS_NODE_KEY),
-    marshaller,
+    marshaller: cachingMarshaller,
   });
   const {
     client: resolverClient,
@@ -324,7 +328,7 @@ export const contract = async (
       getChainsAndConnection: chainHub.getChainsAndConnection.bind(chainHub),
     },
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
-    marshaller,
+    marshaller: cachingMarshaller,
     usdcBrand: brands.USDC,
   });
 
