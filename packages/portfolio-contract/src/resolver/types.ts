@@ -6,10 +6,11 @@
  */
 
 import type { TypedPattern } from '@agoric/internal';
-import type { AccountId } from '@agoric/orchestration';
+import type { AccountId, MetaTrafficEntry } from '@agoric/orchestration';
 import { M } from '@endo/patterns';
 import { TxStatus, TxType } from './constants.js';
 
+// tx for transactions
 export type TxId = `tx${number}`;
 
 export type TransactionSettlementOfferArgs = {
@@ -42,11 +43,17 @@ harden(ResolverOfferArgsShapes);
 export const PENDING_TXS_NODE_KEY = 'pendingTxs';
 
 export type PublishedTx = {
-  type: TxType;
   amount?: bigint;
-  destinationAddress: AccountId;
   status: TxStatus;
-};
+} & (
+  | {
+      type: Exclude<TxType, typeof TxType.TRAFFIC>;
+      destinationAddress: AccountId;
+    }
+  | ({
+      type: typeof TxType.TRAFFIC;
+    } & MetaTrafficEntry)
+);
 
 /**
  * A PendingTx is a PublishedTx (published by ymax contract) with an additional
@@ -74,6 +81,22 @@ export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
       status: M.or(TxStatus.PENDING),
     },
     {
+      amount: M.nat(),
+    },
+    {},
+  ),
+  M.splitRecord(
+    {
+      type: M.or(TxType.TRAFFIC),
+      status: M.or(TxStatus.PENDING),
+    },
+    {
+      op: M.string(),
+      srcChainId: M.string(),
+      src: M.arrayOf(M.any()),
+      dstChainId: M.string(),
+      dst: M.arrayOf(M.any()),
+      seq: M.any(),
       amount: M.nat(),
     },
     {},

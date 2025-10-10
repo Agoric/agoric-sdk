@@ -17,6 +17,7 @@ import type {
   OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
+  MetaTrafficEntry,
 } from '@agoric/orchestration';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
@@ -74,6 +75,7 @@ import {
   type ProposalType,
   type StatusFor,
 } from './type-guards.ts';
+import { TxType } from './resolver/constants.js';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const { keys, entries, fromEntries } = Object;
@@ -111,7 +113,13 @@ type AssetMovement = {
   apply: (
     accounts: AccountsByChain,
     tracer: TraceLogger,
-  ) => Promise<MaybeResultMeta<{ srcPos?: Position; destPos?: Position }>>;
+  ) => Promise<
+    MaybeResultMeta<{
+      followTraffic?: MetaTrafficEntry;
+      srcPos?: Position;
+      destPos?: Position;
+    }>
+  >;
   recover: (
     accounts: AccountsByChain,
     tracer: TraceLogger,
@@ -189,6 +197,7 @@ const trackFlow = async (
   flowId: number,
   traceFlow: TraceLogger,
   accounts: AccountsByChain,
+  resolverClient: GuestInterface<ResolverKit['client']>,
 ) => {
   await null; // cf. wiki:NoNestedAwait
 
@@ -202,7 +211,7 @@ const trackFlow = async (
       reporter.publishFlowStatus(flowId, { state: 'run', step, how });
 
       const {
-        result: { srcPos, destPos },
+        result: { srcPos, destPos, followTraffic },
       } = await reduceResultMeta(
         move.apply(accounts, traceStep),
         (thisMeta, prior) => {
@@ -214,6 +223,15 @@ const trackFlow = async (
           return meta;
         },
       );
+
+      if (followTraffic) {
+        const { result } = resolverClient.registerTransaction(
+          TxType.TRAFFIC,
+          followTraffic,
+          amount.value,
+        );
+        await result;
+      }
 
       traceStep('done:', how);
 
@@ -304,8 +322,8 @@ const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
       }
       case 'agoric': {
         const agoricChain = await orch.getChain('agoric');
-        const lca = await agoricChain.makeAccount(); // FIXME: used like lcaIn!
-        const lcaIn = await agoricChain.makeAccount(); // FIXME: used like lcaOrch!
+        const lca = await agoricChain.makeAccount();
+        const lcaIn = await agoricChain.makeAccount();
         const reg = await lca.monitorTransfers(kit.tap);
         traceChain('Monitoring transfers for', lca.getAddress().value);
         const info: AccountInfoFor['agoric'] = {
@@ -612,7 +630,6 @@ const stepFlow = async (
           dest: move.dest,
           apply: async ({ agoric }) => {
             const { lca, lcaIn } = agoric;
-            // FIXME: Do we only need to send from lcaIn to lcaOrch?
             await lca.send(lcaIn.getAddress(), amount);
             return {};
           },
@@ -863,7 +880,14 @@ const stepFlow = async (
   };
   traceFlow('accounts for trackFlow', keys(accounts));
 
-  await trackFlow(reporter, todo, flowId, traceFlow, accounts);
+  await trackFlow(
+    reporter,
+    todo,
+    flowId,
+    traceFlow,
+    accounts,
+    ctx.resolverClient,
+  );
   traceFlow('stepFlow done');
 };
 
