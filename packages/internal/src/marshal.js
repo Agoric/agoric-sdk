@@ -8,6 +8,7 @@ import { M } from '@endo/patterns';
 import { isStreamCell } from './lib-chainStorage.js';
 
 /**
+ * @import {WeakMapAPI} from '@endo/cache-map';
  * @import {EOnly} from '@endo/eventual-send';
  * @import {RemotableObject, Simplify} from '@endo/pass-style';
  * @import {CapData, FromCapData, ConvertValToSlot, Passable, Marshal, MakeMarshalOptions} from '@endo/marshal';
@@ -183,24 +184,12 @@ export const pureDataMarshaller = makeMarshal(rejectOCap, rejectOCap, {
 });
 harden(pureDataMarshaller);
 
-/**
- * A cache uses the WeakMap interface subset but holds keys strongly.
- *
- * @template K
- * @template V
- * @typedef {Pick<Map<K, V>, Exclude<keyof WeakMap<WeakKey, any>, 'set'>> & {
- *   set: (key: K, value: V) => WeakMapAPI<K, V>;
- * }} WeakMapAPI
- */
-
 const defaultCacheCapacity = 50;
 
 /**
  * @template K
  * @template V
  * @param {boolean} [weakKey]
- * @todo Replace with an evicting cache map
- *
  * @todo Check cost of using virtual-aware WeakMap in liveslots
  */
 const makeCacheMap = weakKey =>
