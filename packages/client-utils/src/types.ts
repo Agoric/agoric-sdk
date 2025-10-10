@@ -60,19 +60,21 @@ export type TypedPublished<T extends string> = T extends keyof PublishedTypeMap
         ? StatusFor['portfolio']
         : T extends `ymax${'0' | '1'}.portfolios.portfolio${number}.positions.${string}`
           ? StatusFor['position']
-          : T extends `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}`
-            ? StatusFor['flow']
-            : T extends `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}.steps`
-              ? StatusFor['flowSteps']
-              : T extends `committees.${string}.latestQuestion`
-                ? QuestionDetails
-                : T extends `committees.${string}.latestOutcome`
-                  ? OutcomeRecord
-                  : T extends `vaultFactory.managers.manager${number}.metrics`
-                    ? VaultDirectorMetrics
-                    : T extends `fastUsdc.txns.${string}`
-                      ? TransactionRecord
-                      : T extends `auction.book${number}`
-                        ? BookDataNotification
-                        : unknown;
+          : T extends `ymax${'0' | '1'}.portfolios.portfolio${number}.pendingTx.tx${number}`
+            ? StatusFor['pendingTx']
+            : T extends `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}`
+              ? StatusFor['flow']
+              : T extends `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}.steps`
+                ? StatusFor['flowSteps']
+                : T extends `committees.${string}.latestQuestion`
+                  ? QuestionDetails
+                  : T extends `committees.${string}.latestOutcome`
+                    ? OutcomeRecord
+                    : T extends `vaultFactory.managers.manager${number}.metrics`
+                      ? VaultDirectorMetrics
+                      : T extends `fastUsdc.txns.${string}`
+                        ? TransactionRecord
+                        : T extends `auction.book${number}`
+                          ? BookDataNotification
+                          : unknown;
 // static string keys are defined in PublishedTypeMap

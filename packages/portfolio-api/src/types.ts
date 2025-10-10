@@ -6,6 +6,7 @@ import {
 } from '@agoric/orchestration';
 import type { SupportedChain, YieldProtocol } from './constants.js';
 import type { InstrumentId } from './instruments.js';
+import type { PublishedTx } from './resolver.js';
 
 export type SeatKeyword = 'Cash' | 'Deposit';
 
@@ -70,6 +71,7 @@ export type StatusFor = {
   contract: {
     contractAccount: CosmosChainAddress['value'];
   };
+  pendingTx: PublishedTx;
   portfolios: {
     addPortfolio: PortfolioKey;
   };
