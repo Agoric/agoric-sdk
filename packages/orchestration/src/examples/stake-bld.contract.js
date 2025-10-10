@@ -16,7 +16,8 @@ import { makeZoeTools } from '../utils/zoe-tools.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
- * @import {Remote} from '@agoric/internal';
+ * @import {Remote, ERemote} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {ZCF} from '@agoric/zoe';
@@ -38,9 +39,15 @@ const trace = makeTracer('StakeBld');
 export const start = async (zcf, privateArgs, baggage) => {
   const zone = makeDurableZone(baggage);
 
+  const { marshaller: remoteMarshaller } = privateArgs;
+  // TODO(https://github.com/Agoric/agoric-sdk/issues/12109):
+  // once withOrchestration provides a wrapped marshaller, don't re-wrap.
+  /** @type {ERemote<EMarshaller>} */
+  const cachingMarshaller = remoteMarshaller;
+
   const { makeRecorderKit } = prepareRecorderKitMakers(
     baggage,
-    privateArgs.marshaller,
+    cachingMarshaller,
   );
   const vowTools = prepareVowTools(zone.subZone('vows'));
 

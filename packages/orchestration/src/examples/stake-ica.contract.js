@@ -17,6 +17,7 @@ const trace = makeTracer('StakeIca');
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {ERemote, Remote} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {CosmosChainInfo, CosmosInterchainService, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {ContractMeta, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {IBCConnectionID, NameHub} from '@agoric/vats';
@@ -70,7 +71,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const {
     agoricNames,
     cosmosInterchainService: orchestration,
-    marshaller,
+    marshaller: remoteMarshaller,
     storageNode,
     timer,
   } = privateArgs;
@@ -84,7 +85,15 @@ export const start = async (zcf, privateArgs, baggage) => {
       ),
   });
 
-  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
+  // TODO(https://github.com/Agoric/agoric-sdk/issues/12109):
+  // once withOrchestration provides a wrapped marshaller, don't re-wrap.
+  /** @type {ERemote<EMarshaller>} */
+  const cachingMarshaller = remoteMarshaller;
+
+  const { makeRecorderKit } = prepareRecorderKitMakers(
+    baggage,
+    cachingMarshaller,
+  );
 
   const vowTools = prepareVowTools(zone.subZone('vows'));
 

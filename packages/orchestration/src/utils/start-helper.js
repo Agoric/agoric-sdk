@@ -223,17 +223,24 @@ harden(provideOrchestration);
  */
 export const withOrchestration =
   (contractFn, opts) => async (zcf, privateArgs, baggage) => {
-    const { marshaller, ...allOrchPowers } = privateArgs;
+    const { marshaller: remoteMarshaller, ...allOrchPowers } = privateArgs;
     const { storageNode: _, ...requiredOrchPowers } = allOrchPowers;
     const { publishAccountInfo, chainInfoValueShape } = opts ?? {};
+
+    /** @type {ERemote<EMarshaller>} */
+    const cachingMarshaller = remoteMarshaller;
+
     const { zone, ...tools } = provideOrchestration(
       zcf,
       baggage,
       publishAccountInfo ? allOrchPowers : requiredOrchPowers,
-      marshaller,
+      cachingMarshaller,
       { chainInfoValueShape },
     );
     const [startResult] = await Promise.all([
+      // TODO(https://github.com/Agoric/agoric-sdk/issues/12109):
+      // pass the cachingMarshaller to orchestrated contracts so they don't
+      // have to wrap it themselves. This requires some generic PA magic.
       contractFn(zcf, privateArgs, zone, tools),
       // Make sure that any errors in async-flow awake abort contract start
       tools.asyncFlowTools.allWokenP,

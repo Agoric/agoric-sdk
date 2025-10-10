@@ -30,7 +30,8 @@ import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
 import { provideDirector } from './vaultDirector.js';
 
 /**
- * @import {Remote} from '@agoric/internal';
+ * @import {Remote, ERemote} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {ContractMeta, FeeMintAccess, HandleOffer, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
  * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
@@ -88,12 +89,15 @@ export const start = async (zcf, privateArgs, baggage) => {
   const {
     initialPoserInvitation,
     initialShortfallInvitation,
-    marshaller,
+    marshaller: remoteMarshaller,
     storageNode,
     auctioneerInstance,
     managerParams,
     directorParamOverrides,
   } = privateArgs;
+
+  /** @type {ERemote<EMarshaller>} */
+  const cachingMarshaller = remoteMarshaller;
 
   trace('awaiting debtMint');
   const { debtMint } = await provideAll(baggage, {
@@ -111,7 +115,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const { makeRecorderKit, makeERecorderKit } = prepareRecorderKitMakers(
     baggage,
-    marshaller,
+    cachingMarshaller,
   );
 
   trace('making non-durable publishers');
@@ -121,7 +125,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const governanceSubscriber = makeStoredSubscription(
     governanceSubscriptionKit.subscription,
     governanceNode,
-    marshaller,
+    cachingMarshaller,
   );
   /** a powerful object; can modify the invitation */
   const vaultDirectorParamManager = await makeParamManagerFromTerms(
@@ -147,7 +151,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     auctioneerPublicFacet,
     storageNode,
     // XXX remove Recorder makers; remove once we excise deprecated kits for governance
-    marshaller,
+    cachingMarshaller,
     makeRecorderKit,
     makeERecorderKit,
     managerParams,

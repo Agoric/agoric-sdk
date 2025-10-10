@@ -119,10 +119,14 @@ export const contract = async (
   assert('USDC' in terms.brands, 'no USDC brand');
   assert('usdcDenom' in terms, 'no usdcDenom');
 
-  const { feeConfig, marshaller, storageNode } = privateArgs;
+  const { feeConfig, marshaller: remoteMarshaller, storageNode } = privateArgs;
+
+  // TODO(https://github.com/Agoric/agoric-sdk/issues/12109):
+  // once withOrchestration provides a wrapped marshaller, don't re-wrap.
+  const cachingMarshaller: ERemote<EMarshaller> = remoteMarshaller;
   const { makeRecorderKit } = prepareRecorderKitMakers(
     zone.mapStore('vstorage'),
-    marshaller,
+    cachingMarshaller,
   );
 
   const routeHealth = makeRouteHealth(MAX_ROUTE_FAILURES);
@@ -130,7 +134,7 @@ export const contract = async (
   const statusManager = prepareStatusManager(
     zone,
     E(storageNode).makeChildNode(TXNS_NODE),
-    { marshaller, routeHealth },
+    { marshaller: cachingMarshaller, routeHealth },
   );
 
   const { USDC } = terms.brands;
@@ -403,7 +407,7 @@ export const contract = async (
   // So we use zone.exoClassKit above to define the liquidity pool kind
   // and pass the shareMint into the maker / init function.
 
-  publishFeeConfig(storageNode, marshaller, feeConfig);
+  publishFeeConfig(storageNode, cachingMarshaller, feeConfig);
 
   const shareMint = await provideSingleton(
     zone.mapStore('mint'),
