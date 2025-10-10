@@ -13,7 +13,9 @@ import {
 } from '@agoric/internal';
 import type {
   AccountId,
+  CosmosChainAddress,
   Denom,
+  DenomAmount,
   OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
@@ -66,6 +68,7 @@ import {
   type PoolKey,
   type ProposalType,
 } from './type-guards.ts';
+import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const { keys, entries, fromEntries } = Object;
@@ -83,6 +86,7 @@ export type PortfolioInstanceContext = {
   zoeTools: GuestInterface<ZoeTools>;
   resolverClient: GuestInterface<ResolverKit['client']>;
   contractAccount: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>;
+  nobleForwardingChannel: `channel-${number}`;
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
@@ -278,6 +282,27 @@ const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
   }
 };
 
+/**
+ * Send minimal BLD amount to LCA for registering the forwarding account
+ *
+ * @param sender - must have at least `amount`
+ * @param dest - on Noble chain
+ */
+const registerNobleForwardingAccount = async (
+  sender: LocalAccount,
+  dest: CosmosChainAddress,
+  forwarding: RegisterAccountMemo['noble']['forwarding'],
+  trace: TraceLogger,
+  amount: DenomAmount = { denom: 'ubld', value: 1n },
+): Promise<void> => {
+  trace('Registering NFA', forwarding, 'from', sender.getAddress().value);
+
+  await sender.transfer(dest, amount, {
+    memo: JSON.stringify({ noble: { forwarding } }),
+  });
+  trace('NFA registration transfer sent');
+};
+
 const getAssetPlaceRefKind = (
   ref: AssetPlaceRef,
 ): 'pos' | 'accountId' | 'depositAddr' | 'seat' => {
@@ -404,6 +429,7 @@ const stepFlow = async (
     chain: AxelarChain,
     move: MovementDesc,
     lca: LocalAccount,
+    nobleForwardingChannel: `channel-${number}`,
   ) => {
     const [axelar, feeAccount] = await Promise.all([
       orch.getChain('axelar'),
@@ -422,6 +448,7 @@ const stepFlow = async (
       gmpAddresses,
       resolverClient: ctx.resolverClient,
       feeAccount,
+      nobleForwardingChannel,
     });
     return evmCtx;
   };
@@ -430,8 +457,9 @@ const stepFlow = async (
     move: MovementDesc,
     lca: LocalAccount,
     poolKey: PoolKey,
+    nobleForwardingChannel: `channel-${number}`,
   ): Promise<EVMContext & { poolKey: PoolKey }> => {
-    const evmCtx = await makeEVMCtx(chain, move, lca);
+    const evmCtx = await makeEVMCtx(chain, move, lca, nobleForwardingChannel);
     return harden({ ...evmCtx, poolKey });
   };
 
@@ -462,7 +490,13 @@ const stepFlow = async (
         const { poolKey, how } = way;
         const pos = kit.manager.providePosition(poolKey, how, accountId);
         const { lca } = agoric;
-        const evmCtx = await makeEVMPoolCtx(evmChain, move, lca, poolKey);
+        const evmCtx = await makeEVMPoolCtx(
+          evmChain,
+          move,
+          lca,
+          poolKey,
+          ctx.nobleForwardingChannel,
+        );
         await null;
         if ('src' in way) {
           await pImpl.supply(evmCtx, amount, gInfo);
@@ -480,7 +514,13 @@ const stepFlow = async (
         } else {
           const { lca } = agoric;
           const { poolKey } = way;
-          const evmCtx = await makeEVMPoolCtx(evmChain, move, lca, poolKey);
+          const evmCtx = await makeEVMPoolCtx(
+            evmChain,
+            move,
+            lca,
+            poolKey,
+            ctx.nobleForwardingChannel,
+          );
           await pImpl.supply(evmCtx, amount, gInfo);
         }
       },
@@ -610,7 +650,12 @@ const stepFlow = async (
             if (outbound) {
               await CCTP.apply(ctx, amount, noble, gInfo);
             } else {
-              const evmCtx = await makeEVMCtx(evmChain, move, agoric.lca);
+              const evmCtx = await makeEVMCtx(
+                evmChain,
+                move,
+                agoric.lca,
+                ctx.nobleForwardingChannel,
+              );
               await CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric);
             }
             return {};
@@ -873,23 +918,31 @@ export const openPortfolio = (async (
   const trace = makeTracer('openPortfolio');
   try {
     const { makePortfolioKit, ...ctxI } = ctx;
-    const { inertSubscriber } = ctxI;
+    const { inertSubscriber, nobleForwardingChannel } = ctxI;
     const kit = makePortfolioKit();
     const id = kit.reader.getPortfolioId();
     const traceP = trace.sub(`portfolio${id}`);
     traceP('portfolio opened');
-    await provideCosmosAccount(orch, 'agoric', kit, traceP);
 
-    if (!seat.hasExited()) {
-      try {
-        await rebalance(orch, ctxI, seat, offerArgs, kit);
-      } catch (err) {
-        traceP('⚠️ rebalance failed', err);
-        if (!seat.hasExited()) seat.fail(err);
-      }
+    // Register Noble Forwarding Account (NFA) for CCTP transfers
+    {
+      const sender = await ctxI.contractAccount;
+      const { lca } = await provideCosmosAccount(orch, 'agoric', kit, traceP);
+      const { ica } = await provideCosmosAccount(orch, 'noble', kit, traceP);
+      const forwarding = {
+        channel: nobleForwardingChannel,
+        recipient: lca.getAddress().value,
+      };
+      const dest = ica.getAddress();
+      await registerNobleForwardingAccount(sender, dest, forwarding, traceP);
     }
 
-    if (!seat.hasExited()) seat.exit();
+    try {
+      await rebalance(orch, ctxI, seat, offerArgs, kit);
+    } catch (err) {
+      traceP('⚠️ rebalance failed', err);
+      if (!seat.hasExited()) seat.fail(err);
+    }
 
     const publicSubscribers: GuestInterface<PublicSubscribers> = {
       portfolio: {
@@ -907,8 +960,10 @@ export const openPortfolio = (async (
     // XXX async flow DX: stack traces don't cross vow boundaries?
     trace('🚨 openPortfolio flow failed', err);
     throw err;
+    /* c8 ignore end */
+  } finally {
+    if (!seat.hasExited()) seat.exit();
   }
-  /* c8 ignore end */
 }) satisfies OrchestrationFlow;
 harden(openPortfolio);
 
