@@ -1,4 +1,5 @@
 // @ts-check
+import { makeCacheMapKit } from '@endo/cache-map';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/far';
@@ -7,6 +8,7 @@ import { makeMarshal } from '@endo/marshal';
 import { makeInaccessibleVal } from './inaccessible-val.js';
 
 /**
+ * @import {WeakMapAPI} from '@endo/cache-map';
  * @import {EOnly} from '@endo/eventual-send';
  * @import {RemotableObject, Simplify} from '@endo/pass-style';
  * @import {CapData, Passable, Marshal, MakeMarshalOptions} from '@endo/marshal';
@@ -85,15 +87,7 @@ const { slotToWrapper, wrapperToSlot } = (() => {
  *   SlotWrapper
  */
 
-/**
- * A cache uses the WeakMap interface subset but holds keys strongly.
- *
- * @template K
- * @template V
- * @typedef {Pick<Map<K, V>, Exclude<keyof WeakMap<WeakKey, any>, 'set'>> & {
- *   set: (key: K, value: V) => WeakMapAPI<K, V>;
- * }} WeakMapAPI
- */
+const capacityOfDefaultCache = 50;
 
 // TODO(https://github.com/Agoric/agoric-sdk/issues/12111)
 // Check cost of using virtual-aware WeakMap in liveslots
@@ -101,10 +95,13 @@ const { slotToWrapper, wrapperToSlot } = (() => {
  * @template K
  * @template V
  * @param {boolean} [weakKey]
- * @todo Replace with an evicting cache map
  */
 const makeDefaultCacheMap = weakKey =>
-  /** @type {WeakMapAPI<K, V>} */ (weakKey ? new WeakMap() : new Map());
+  /** @type {WeakMapAPI<K, V>} */ (
+    makeCacheMapKit(capacityOfDefaultCache, {
+      makeMap: weakKey ? WeakMap : Map,
+    }).cache
+  );
 
 /**
  * Wraps a marshaller, either sync or async, local or remote, into a local async
