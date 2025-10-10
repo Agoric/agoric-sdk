@@ -1,4 +1,5 @@
 // @ts-check
+import { makeCacheMapKit } from '@endo/cache-map';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/far';
@@ -189,6 +190,8 @@ harden(pureDataMarshaller);
  * }} WeakMapAPI
  */
 
+const defaultCacheCapacity = 50;
+
 /**
  * @template K
  * @template V
@@ -198,7 +201,10 @@ harden(pureDataMarshaller);
  * @todo Check cost of using virtual-aware WeakMap in liveslots
  */
 const makeCacheMap = weakKey =>
-  /** @type {WeakMapAPI<K, V>} */ (weakKey ? new WeakMap() : new Map());
+  /** @type {WeakMapAPI<K, V>} */ (
+    makeCacheMapKit(defaultCacheCapacity, { makeMap: weakKey ? WeakMap : Map })
+      .cache
+  );
 
 /**
  * @template [Slot=unknown]
