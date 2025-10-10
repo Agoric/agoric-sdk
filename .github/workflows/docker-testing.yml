@@ -42,7 +42,7 @@ jobs:
         run: |
           jq -r '
             to_entries[]
-            | "\(.key)=\(.value|@sh)"
+            | "\(.key)=\(.value)"
           ' <<< '${{ secrets.ENV_GCP_FILE }}' > .env.gcp
           echo "Contents of .env.gcp:"
           cat .env.gcp
