@@ -209,23 +209,20 @@ const beefyVaultAddresses = harden({
   },
 });
 
-// TODO: deploy the factory in testnet and fill these addresses
 /** @type {AddressesMap} */
 const factoryAddresses = harden({
   mainnet: {
-    // TODO: Deploy and replace with correct Factory address on Arbitrum, Optimism and Base
-    // cf. https://github.com/Agoric/agoric-sdk/issues/11933
     Arbitrum: '0x51e589D94b51d01B75442AE1504cD8c50d6127C9', // https://arbiscan.io/address/0x51e589D94b51d01B75442AE1504cD8c50d6127C9
     Avalanche: '0x13cA288486f2bb6B3619c5fd6A2917Ec98a41E7f', // https://snowtrace.io/address/0x13cA288486f2bb6B3619c5fd6A2917Ec98a41E7f
-    Base: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1',
-    Ethereum: '0x3bF3056835f7C25b1f71aff99B734Ad07d644577',
-    Optimism: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1',
+    Base: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://basescan.org/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
+    Ethereum: '0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc', // https://etherscan.io/address/0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc
+    Optimism: '0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc', // https://optimistic.etherscan.io/address/0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc
   },
   testnet: {
-    Arbitrum: '0xB04B6994Da569010E72480D701C7e42E0819DF4d', // https://sepolia.arbiscan.io/address/0xB04B6994Da569010E72480D701C7e42E0819DF4d
+    Arbitrum: '0x230973176B58Ea6071cf2e45061B07692ff1057f', // https://sepolia.arbiscan.io/address/0x230973176B58Ea6071cf2e45061B07692ff1057f
     Avalanche: '0x75E97ed669C1500784194626b9b45006f76F75f2', // https://testnet.snowtrace.io/address/0x75E97ed669C1500784194626b9b45006f76F75f2
-    Base: '0xdD65Cf969A54F1EBD8f49529540D848709479198', // https://sepolia.basescan.org/address/0xdD65Cf969A54F1EBD8f49529540D848709479198
-    Ethereum: '0x6b124C850407e857B7fBB9fD61cC91f379066063', // https://sepolia.etherscan.io/address/0x6b124C850407e857B7fBB9fD61cC91f379066063
+    Base: '0x98B8598E1cAc53FE9C0B40eB71e3d9aA4ED6bAAF', // https://sepolia.basescan.org/address/0x98B8598E1cAc53FE9C0B40eB71e3d9aA4ED6bAAF
+    Ethereum: '0x2cA7d5d7d1492714FC3636b7A190b99fc80aD057', // https://sepolia.etherscan.io/address/0x2cA7d5d7d1492714FC3636b7A190b99fc80aD057
     Optimism: '0x',
   },
 });
