@@ -1,5 +1,6 @@
 // @ts-check
 import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { M } from '@endo/patterns';
@@ -8,8 +9,8 @@ import { isStreamCell } from './lib-chainStorage.js';
 /**
  * @import {EOnly} from '@endo/eventual-send';
  * @import {RemotableObject, Simplify} from '@endo/pass-style';
- * @import {CapData, FromCapData, ConvertValToSlot, Marshal} from '@endo/marshal';
- * @import {TypedPattern} from './types.js';
+ * @import {CapData, FromCapData, ConvertValToSlot, Passable, Marshal} from '@endo/marshal';
+ * @import {ERemote, TypedPattern} from './types.js';
  */
 
 /**
@@ -177,3 +178,34 @@ export const pureDataMarshaller = makeMarshal(rejectOCap, rejectOCap, {
   serializeBodyFormat: 'smallcaps',
 });
 harden(pureDataMarshaller);
+/**
+ * @template [Slot=unknown]
+ * @param {ERemote<Pick<EMarshaller<Slot>, 'fromCapData' | 'toCapData'>>} marshaller
+ * @returns {ReturnType<typeof Far<EMarshaller<Slot>>>}
+ */
+export const wrapRemoteMarshallerDirectSend = marshaller => {
+  /**
+   * @param {Passable} val
+   * @returns {Promise<CapData<Slot>>}
+   */
+  const toCapData = val => E(marshaller).toCapData(val);
+
+  /**
+   * @param {CapData<Slot>} data
+   * @returns {Promise<Passable>}
+   */
+  const fromCapData = data => E(marshaller).fromCapData(data);
+
+  return Far('wrapped remote marshaller', {
+    toCapData,
+    fromCapData,
+
+    // for backwards compatibility
+    /** @deprecated use toCapData */
+    serialize: toCapData,
+    /** @deprecated use fromCapData */
+    unserialize: fromCapData,
+  });
+};
+
+export const wrapRemoteMarshaller = wrapRemoteMarshallerDirectSend;
