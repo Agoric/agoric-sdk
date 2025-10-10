@@ -12,10 +12,9 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_REPO: ghcr.io/agoric/agoric-sdk-test
-  IMAGE_TAG: ymax-planner-testing              
+  IMAGE_TAG: ymax-planner-testing
   GCE_INSTANCE: ymax-test-planner
   GCE_ZONE: us-central1-a
-  IMAGE_DEPLOY_REPO: ghcr.io/agoric/agoric-sdk-test
 
 jobs:
   build-and-deploy:
@@ -72,7 +71,7 @@ jobs:
 
       - name: Update GCE container (by digest)
         run: |
-          IMAGE="${{ env.IMAGE_DEPLOY_REPO }}@${{ steps.build.outputs.digest }}"
+          IMAGE="${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}@${{ steps.build.outputs.digest }}"
           echo "Deploying image: $IMAGE"
           gcloud compute instances update-container "${{ env.GCE_INSTANCE }}" \
             --zone "${{ env.GCE_ZONE }}" \
