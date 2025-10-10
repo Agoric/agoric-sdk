@@ -72,6 +72,9 @@ const getPortfolioInfo = (key: string, storage: FakeStorage) => {
   return { contents, positionPaths: posPaths, flowPaths };
 };
 
+const ackNFA = (utils, ix = 0) =>
+  utils.transmitVTransferEvent('acknowledgementPacket', ix);
+
 test('open portfolio with USDN position', async t => {
   const { trader1, common } = await setupTrader(t);
   const { usdc, poc26 } = common.brands;
@@ -89,7 +92,8 @@ test('open portfolio with USDN position', async t => {
     },
   );
 
-  // ack IBC transfer for forward
+  // ack IBC transfer for NFA, forward
+  await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
 
   const done = await doneP;
@@ -147,6 +151,7 @@ test('open a portfolio with Aave position', async t => {
   })();
 
   const chainP = (async () => {
+    await ackNFA(common.utils);
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     t.log('ackd send to Axelar to create account');
     await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
@@ -196,8 +201,9 @@ test('open a portfolio with Compound position', async t => {
   );
 
   await eventLoopIteration(); // let IBC message go out
+  await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  t.log('ackd send to Axelar to create account');
+  t.log('ackd NFA, send to Axelar to create account');
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
@@ -251,8 +257,9 @@ test('open portfolio with USDN, Aave positions', async t => {
 
   await eventLoopIteration(); // let outgoing IBC happen
   t.log('openPortfolio, eventloop');
+  await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  t.log('ackd send to noble');
+  t.log('ackd NFA, send to noble');
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
@@ -320,6 +327,7 @@ test('open portfolio with target allocations', async t => {
     { Access: poc26.make(1n) },
     { targetAllocation },
   );
+  await ackNFA(common.utils);
 
   const done = await doneP;
   const result = done.result as any;
@@ -359,6 +367,7 @@ test('claim rewards on Aave position successfully', async t => {
   );
 
   await eventLoopIteration(); // let IBC message go out
+  await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   t.log('ackd send to Axelar to create account');
 
@@ -429,6 +438,7 @@ test('USDN claim fails currently', async t => {
   );
 
   // ack IBC transfer for forward
+  await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
 
   const done = await doneP;
@@ -501,6 +511,7 @@ const beefyTestMacro = test.macro({
     );
 
     await eventLoopIteration(); // let IBC message go out
+    await ackNFA(common.utils);
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     t.log('ackd send to Axelar to create account');
 
@@ -585,6 +596,7 @@ test('Withdraw from a Beefy position (future client)', async t => {
   );
 
   await eventLoopIteration(); // let IBC message go out
+  await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   t.log('ackd send to Axelar to create account');
 
@@ -612,11 +624,6 @@ test('Withdraw from a Beefy position (future client)', async t => {
         },
         {
           src: '@Arbitrum',
-          dest: '@noble',
-          amount,
-        },
-        {
-          src: '@noble',
           dest: '@agoric',
           amount,
         },
@@ -655,13 +662,19 @@ test('portfolios node updates for each new portfolio', async t => {
   const give = { Access: poc26.make(1n) };
   {
     const trader = await makeFundedTrader();
-    await trader.openPortfolio(t, give);
+    await Promise.all([
+      trader.openPortfolio(t, give),
+      ackNFA(common.utils, -1),
+    ]);
     const x = storage.getDeserialized(`${ROOT_STORAGE_PATH}.portfolios`).at(-1);
     t.deepEqual(x, { addPortfolio: `portfolio0` });
   }
   {
     const trader = await makeFundedTrader();
-    await trader.openPortfolio(t, give);
+    await Promise.all([
+      trader.openPortfolio(t, give),
+      ackNFA(common.utils, -1),
+    ]);
     const x = storage.getDeserialized(`${ROOT_STORAGE_PATH}.portfolios`).at(-1);
     t.deepEqual(x, { addPortfolio: `portfolio1` });
   }
@@ -712,6 +725,7 @@ test.serial(
     );
 
     await eventLoopIteration();
+    await ackNFA(common.utils);
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     t.log('ackd send to Axelar to create account');
 
@@ -835,11 +849,10 @@ test('start deposit more to same', async t => {
     USDN: 60n,
     Aave_Arbitrum: 40n,
   };
-  await trader1.openPortfolio(
-    t,
-    { Access: poc26.make(1n) },
-    { targetAllocation },
-  );
+  await Promise.all([
+    trader1.openPortfolio(t, { Access: poc26.make(1n) }, { targetAllocation }),
+    ackNFA(common.utils),
+  ]);
 
   const amount = usdc.units(3_333.33);
   await trader1.rebalance(
@@ -879,7 +892,7 @@ test('redeem, use planner invitation', async t => {
 
   await planner1.redeem();
 
-  await trader1.openPortfolio(t, {}, {});
+  await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
   const { usdc } = common.brands;
   const Deposit = usdc.units(3_333.33);
   await trader1.rebalance(
@@ -917,7 +930,10 @@ test('request rebalance - send same targetAllocation', async t => {
     Aave_Avalanche: 60n,
     Compound_Arbitrum: 40n,
   };
-  await trader1.openPortfolio(t, {}, { targetAllocation });
+  await Promise.all([
+    trader1.openPortfolio(t, {}, { targetAllocation }),
+    ackNFA(common.utils),
+  ]);
   t.like(await trader1.getPortfolioStatus(), {
     policyVersion: 1,
     rebalanceCount: 0,
@@ -962,7 +978,7 @@ test('withdraw using planner', async t => {
   const { common, trader1, planner1 } = await setupPlanner(t);
 
   await planner1.redeem();
-  await trader1.openPortfolio(t, {}, {});
+  await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
   const pId: number = trader1.getPortfolioId();
   const { usdc } = common.brands;
   const Deposit = usdc.units(3_333.33);
@@ -1091,7 +1107,7 @@ test('deposit using planner', async t => {
   const { common, trader1, planner1 } = await setupPlanner(t);
 
   await planner1.redeem();
-  await trader1.openPortfolio(t, {}, {});
+  await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
   const pId: number = trader1.getPortfolioId();
   const { usdc } = common.brands;
   const Deposit = usdc.units(1_000);
@@ -1147,7 +1163,7 @@ test('simple rebalance using planner', async t => {
   const { common, trader1, planner1 } = await setupPlanner(t);
 
   await planner1.redeem();
-  await trader1.openPortfolio(t, {}, { targetAllocation: { USDN: 10000n } });
+  await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
   const pId: number = trader1.getPortfolioId();
   const { usdc } = common.brands;
   const Deposit = usdc.units(3_333.33);
