@@ -3,6 +3,7 @@
 import { prepareIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
@@ -15,8 +16,7 @@ const trace = makeTracer('FluxAgg', false);
 /**
  * @import {Baggage} from '@agoric/vat-data'
  * @import {TimerService} from '@agoric/time'
- * @import {Remote, ERemote} from '@agoric/internal';
- * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
+ * @import {Remote} from '@agoric/internal';
  */
 
 /** @type {ContractMeta} */
@@ -91,8 +91,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   trace('awaited args');
 
-  /** @type {ERemote<EMarshaller>} */
-  const cachingMarshaller = remoteMarshaller;
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
   const makeDurablePublishKit = prepareDurablePublishKit(
     baggage,

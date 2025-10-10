@@ -8,6 +8,7 @@
  */
 
 import { makeTracer, WalletName } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { M, makeExo, makeScalarMapStore, mustMatch } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
@@ -20,7 +21,6 @@ import { shape } from './typeGuards.js';
 /**
  * @import {ERemote} from '@agoric/internal';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
- * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {NameHub} from '@agoric/vats';
  */
@@ -243,8 +243,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   const registry = makeAssetRegistry(assetPublisher);
 
-  /** @type {ERemote<EMarshaller>} */
-  const publicCachingMarshaller = remotePublicMarshaller;
+  const publicCachingMarshaller = wrapRemoteMarshaller(remotePublicMarshaller);
 
   const shared = harden({
     agoricNames,

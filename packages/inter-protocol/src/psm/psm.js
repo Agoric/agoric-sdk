@@ -12,6 +12,7 @@ import {
   publicMixinAPI,
 } from '@agoric/governance';
 import { StorageNodeShape } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
 import { M, prepareExo, provide } from '@agoric/vat-data';
 import {
   atomicTransfer,
@@ -45,8 +46,7 @@ import { makeNatAmountShape } from '../contractSupport.js';
 
 /**
  * @import {EReturn} from '@endo/far';
- * @import {TypedPattern, Remote, ERemote} from '@agoric/internal';
- * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
+ * @import {TypedPattern, Remote} from '@agoric/internal';
  * @import {Baggage} from '@agoric/vat-data'
  * @import {ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
  */
@@ -127,9 +127,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   console.log('PSM Starting', anchorBrand, anchorPerMinted);
 
   const { marshaller: remoteMarshaller } = privateArgs;
-
-  /** @type {ERemote<EMarshaller>} */
-  const cachingMarshaller = remoteMarshaller;
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
     baggage,

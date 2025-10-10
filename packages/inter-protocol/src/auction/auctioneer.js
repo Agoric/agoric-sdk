@@ -7,6 +7,7 @@ import { Far } from '@endo/marshal';
 import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { mustMatch } from '@agoric/store';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
@@ -35,8 +36,7 @@ import { makeScheduler } from './scheduler.js';
 import { AuctionState } from './util.js';
 
 /**
- * @import {Remote, ERemote, TypedPattern} from '@agoric/internal';
- * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
+ * @import {Remote, TypedPattern} from '@agoric/internal';
  * @import {MapStore} from '@agoric/store';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
@@ -427,8 +427,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const { marshaller: remoteMarshaller } = privateArgs;
 
-  /** @type {ERemote<EMarshaller>} */
-  const cachingMarshaller = remoteMarshaller;
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
   const makeDurablePublishKit = prepareDurablePublishKit(
     baggage,

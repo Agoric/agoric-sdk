@@ -2,6 +2,7 @@
  * @file Stake BLD contract
  */
 import { makeTracer } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
 import { heapVowE as E, prepareVowTools } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
@@ -16,8 +17,7 @@ import { makeZoeTools } from '../utils/zoe-tools.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
- * @import {Remote, ERemote} from '@agoric/internal';
- * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
+ * @import {Remote} from '@agoric/internal';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {ZCF} from '@agoric/zoe';
@@ -40,9 +40,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const zone = makeDurableZone(baggage);
 
   const { marshaller: remoteMarshaller } = privateArgs;
-
-  /** @type {ERemote<EMarshaller>} */
-  const cachingMarshaller = remoteMarshaller;
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
     baggage,

@@ -6,6 +6,7 @@ import {
   publicMixinAPI,
 } from '@agoric/governance';
 import { InvitationShape } from '@agoric/governance/src/typeGuards.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
 import { M } from '@agoric/store';
 import { prepareExo } from '@agoric/vat-data';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
@@ -18,8 +19,7 @@ import {
 } from './provisionPoolKit.js';
 
 /**
- * @import {Remote, ERemote} from '@agoric/internal';
- * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
+ * @import {Remote} from '@agoric/internal';
  * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
  * @import {ContractMeta, Invitation, StandardTerms, ZCF} from '@agoric/zoe';
  * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
@@ -66,9 +66,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const { poolBank, metricsOverride } = privateArgs;
 
   const { marshaller: remoteMarshaller } = privateArgs;
-
-  /** @type {ERemote<EMarshaller>} */
-  const cachingMarshaller = remoteMarshaller;
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
     baggage,
