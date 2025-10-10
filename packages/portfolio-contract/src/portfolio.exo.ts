@@ -306,21 +306,29 @@ export const preparePortfolioKit = (
           const { destination_channel: packetDest } = event.packet;
 
           // Validate that this is really from Axelar to Agoric.
-          const [_agoric, _axelar, connection] = await vowTools.when(
-            chainHubTools.getChainsAndConnection('agoric', 'axelar'),
-          );
-          const { channelId: agoricToAxelar } = connection.transferChannel;
-          if (packetDest !== agoricToAxelar) {
-            traceUpcall(
-              `GMP early exit: ${packetDest} != ${agoricToAxelar}: not from axelar`,
-            );
-            return false;
-          }
+          const [[_agoric, _axelar, agToAxelar], [_ag2, _noble, agToNoble]] =
+            await Promise.all([
+              vowTools.when(
+                chainHubTools.getChainsAndConnection('agoric', 'axelar'),
+              ),
+              vowTools.when(
+                chainHubTools.getChainsAndConnection('agoric', 'noble'),
+              ),
+            ]);
 
-          return vowTools.watch(
-            parseInboundTransfer(event.packet, this.facets),
-            this.facets.parseInboundTransferWatcher,
-          );
+          switch (packetDest) {
+            case agToAxelar.transferChannel.channelId:
+            case agToNoble.transferChannel.channelId:
+              return vowTools.watch(
+                parseInboundTransfer(event.packet, this.facets),
+                this.facets.parseInboundTransferWatcher,
+              );
+            default:
+              traceUpcall(
+                `GMP early exit: ${packetDest} not from axelar nor noble`,
+              );
+              return false;
+          }
         },
       },
       parseInboundTransferWatcher: {

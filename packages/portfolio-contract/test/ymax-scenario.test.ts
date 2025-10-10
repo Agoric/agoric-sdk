@@ -75,6 +75,8 @@ const rebalanceScenarioMacro = test.macro({
       ? withBrand(scenarios[scenario.previous], usdc.brand)
       : undefined;
 
+    const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+
     if (description.includes('Recover')) {
       // simulate arrival of funds in the LCA via IBC from Noble
       const funds = await common.utils.pourPayment(usdc.units(500));
@@ -91,6 +93,8 @@ const rebalanceScenarioMacro = test.macro({
       const { flow: moves } = { flow: [], ...offerArgs };
       const { transmitVTransferEvent } = common.utils;
 
+      await transmitVTransferEvent('acknowledgementPacket', -1); // NFA
+
       await eventLoopIteration();
       for (const evmChain of findEVMChains(moves)) {
         if (upcallDone.has(evmChain)) continue;
@@ -105,21 +109,13 @@ const rebalanceScenarioMacro = test.macro({
         await eventLoopIteration();
         if (move.dest === '@Arbitrum') {
           // Also confirm CCTP transaction for flows to Arbitrum
-          const resolverMakers = await getResolverMakers(
-            zoe,
-            started.creatorFacet,
-          );
           await settleTransaction(zoe, resolverMakers, index, 'success');
           index += 1;
         }
         if (move.src === '@Arbitrum') {
-          const resolverMakers = await getResolverMakers(
-            zoe,
-            started.creatorFacet,
-          );
           await settleTransaction(zoe, resolverMakers, index, 'success');
           index += 1;
-          if (move.dest === '@noble') {
+          if (move.dest === '@agoric') {
             await transmitVTransferEvent('acknowledgementPacket', -1);
             // Also confirm Noble transaction for flows to Noble
             await settleTransaction(zoe, resolverMakers, index, 'success');
