@@ -38,7 +38,7 @@ import {
 
 const trace = makeTracer('VFDriver');
 
-export const AT_NEXT = Symbol('AT_NEXT');
+export const AT_NEXT = unpassableSymbolForName('AT_NEXT');
 
 export const BASIS_POINTS = 10000n;
 
