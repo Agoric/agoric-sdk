@@ -1,2 +1,2 @@
 FROM alpine:3.20
-CMD ["sh", "-c", "echo 'hello from testing' $(uname -m); sleep infinity"]
+CMD ["sh", "-c", "echo 'hello from testing v2' $(uname -m); sleep infinity"]
