@@ -8,7 +8,6 @@ import {
   makeTracer,
   mustMatch,
   NonNullish,
-  type ERemote,
   type Remote,
   type TypedPattern,
 } from '@agoric/internal';
@@ -16,7 +15,7 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import {
   ChainInfoShape,
   DenomDetailShape,
@@ -271,7 +270,7 @@ export const contract = async (
 
   // TODO(https://github.com/Agoric/agoric-sdk/issues/12109):
   // once withOrchestration provides a wrapped marshaller, don't re-wrap.
-  const cachingMarshaller: ERemote<EMarshaller> = remoteMarshaller;
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
   const resolverZone = zone.subZone('Resolver');
   const makeResolverKit = prepareResolverKit(resolverZone, zcf, {
