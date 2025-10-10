@@ -140,20 +140,19 @@ export const CCTPfromEVM = {
   apply: async (ctx, amount, src, dest) => {
     const traceTransfer = trace.sub('CCTPin').sub(src.chainName);
     traceTransfer('transfer', amount, 'from', src.remoteAddress);
-    const { addresses: a } = ctx;
-    const channel = 'channel-555' as const; // TODO
+    const { addresses, nobleForwardingChannel } = ctx;
     const fwdAddr = generateNobleForwardingAddress(
-      channel,
+      nobleForwardingChannel,
       dest.lca.getAddress().value,
     );
     traceTransfer('Noble forwarding address', fwdAddr);
     const mintRecipient = bech32ToBytes32(fwdAddr);
 
     const session = makeEVMSession();
-    const usdc = session.makeContract(a.usdc, ERC20);
-    const tm = session.makeContract(a.tokenMessenger, TokenMessenger);
-    usdc.approve(a.tokenMessenger, amount.value);
-    tm.depositForBurn(amount.value, nobleDomain, mintRecipient, a.usdc);
+    const usdc = session.makeContract(addresses.usdc, ERC20);
+    const tm = session.makeContract(addresses.tokenMessenger, TokenMessenger);
+    usdc.approve(addresses.tokenMessenger, amount.value);
+    tm.depositForBurn(amount.value, nobleDomain, mintRecipient, addresses.usdc);
     const calls = session.finish();
 
     const { result } = ctx.resolverClient.registerTransaction(
@@ -309,6 +308,7 @@ export type EVMContext = {
   axelarIds: AxelarId;
   poolKey?: PoolKey;
   resolverClient: GuestInterface<ResolverKit['client']>;
+  nobleForwardingChannel: `channel-${number}`;
 };
 
 type AaveI = {
