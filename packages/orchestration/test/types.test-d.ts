@@ -41,6 +41,7 @@ import type {
   Orchestrator,
   StakingAccountActions,
   KnownChains,
+  ResultMeta,
 } from '../src/types.js';
 import type { ResolvedContinuingOfferResult } from '../src/utils/zoe-tools.js';
 import { withChainCapabilities } from '../src/chain-capabilities.js';
@@ -388,7 +389,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     (
       msgs: AnyJson[],
       opts?: Partial<Omit<TxBody, 'messages'>>,
-    ) => Promise<{ result: Promise<string>; meta: Record<string, any> }>
+    ) => Promise<ResultMeta<string>>
   >(account.executeEncodedTxWithMeta);
 
   // Verify delegate is available via stakingTokens parameter

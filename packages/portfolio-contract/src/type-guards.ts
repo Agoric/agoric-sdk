@@ -290,12 +290,13 @@ type FlowStatus =
   | { state: 'done' }
   | { state: 'fail'; step: number; how: string; error: string; where?: string };
 
-type FlowSteps = {
+type FlowStep = {
   how: string;
   amount: Amount<'nat'>;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
-}[];
+  meta?: Record<string, any>;
+};
 
 /** ChainNames including those in future upgrades */
 type ChainNameExt = string;
@@ -331,7 +332,8 @@ export type StatusFor = {
     totalOut: Amount<'nat'>;
   };
   flow: FlowStatus;
-  flowSteps: FlowSteps;
+  flowSteps: FlowStep[];
+  flowStep: FlowStep;
 };
 
 export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
@@ -399,6 +401,14 @@ export const makeFlowStepsPath = (parent: number, id: number) => [
   'flows',
   `flow${id}`,
   'steps',
+];
+
+export const makeFlowStepPath = (parent: number, id: number, step: number) => [
+  `portfolio${parent}`,
+  'flows',
+  `flow${id}`,
+  'steps',
+  `step${step}`,
 ];
 
 export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.or(

@@ -6,7 +6,7 @@ import { pickFacet } from '@agoric/vat-data';
 import { makeTracer } from '@agoric/internal';
 import { pickData } from '../utils/orchestrationAccount.js';
 
-const trace = makeTracer('PacketTools');
+const trace = makeTracer('PacketTools', false);
 
 const { toCapData } = makeMarshal(undefined, undefined, {
   marshalName: 'JustEncoder',
@@ -19,8 +19,9 @@ const just = obj => {
 
 /**
  * @import {Pattern} from '@endo/patterns';
- * @import {EVow, Remote, Vow, VowResolver, VowTools} from '@agoric/vow';
+ * @import {EVow, Remote, Vow, VowKit, VowResolver, VowTools} from '@agoric/vow';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
+ * @import {ResultMeta} from '../types.js';
  * @import {IBCEvent, VTransferIBCEvent} from '@agoric/vats';
  * @import {TargetApp, TargetRegistration} from '@agoric/vats/src/bridge-target.js';
  */
@@ -195,7 +196,7 @@ export const preparePacketTools = (zone, vowTools) => {
         /**
          * @param {Remote<PacketSender>} packetSender
          * @param {PacketOptions} [opts]
-         * @returns {Vow<{ result: Vow<any>; meta: Record<string, unknown> }>}
+         * @returns {Vow<ResultMeta<string>>}
          */
         sendThenWaitForAckWithMeta(packetSender, opts = {}) {
           /** @type {import('@agoric/vow').VowKit<Pattern>} */
@@ -308,6 +309,17 @@ export const preparePacketTools = (zone, vowTools) => {
         },
       },
       packetWasSentWithMetaWatcher: {
+        /**
+         * @param {{
+         *   eventPattern: Pattern;
+         *   resultV: Vow<unknown>;
+         *   meta: Record<string, any>;
+         * }} param0
+         * @param {{
+         *   opts: PacketOptions;
+         *   patternResolver: VowKit<Pattern>['resolver'];
+         * }} ctx
+         */
         onFulfilled({ eventPattern, resultV, meta }, ctx) {
           const { patternResolver } = ctx;
           patternResolver.resolve(eventPattern);

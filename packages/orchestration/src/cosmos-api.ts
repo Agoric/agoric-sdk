@@ -40,19 +40,23 @@ import type {
   AccountId,
   AmountArg,
   BaseChainInfo,
+  CaipChainId,
   CosmosChainAddress,
   Denom,
   DenomAmount,
+  ResultMeta,
 } from './types.js';
 
 export type MetaTrafficEntry<
-  P extends
-    keyof NetworkEndpoints['absolute'] = keyof NetworkEndpoints['absolute'],
+  SP extends keyof NetworkEndpoints = keyof NetworkEndpoints,
+  DP extends keyof NetworkEndpoints = SP,
 > = {
   op: string;
-  src: NetworkEndpoints['absolute'][P];
-  dst: NetworkEndpoints['absolute'][P];
-  seq: number | bigint | string | null;
+  srcChainId: CaipChainId;
+  src: NetworkEndpoints[SP];
+  dstChainId: CaipChainId;
+  dst: NetworkEndpoints[DP];
+  seq: { status: 'pending' | 'unknown' } | number | bigint | string;
 };
 
 /**
@@ -293,7 +297,7 @@ export interface IcaAccountMethods {
   executeEncodedTxWithMeta: (
     msgs: AnyJson[],
     opts?: Partial<Omit<TxBody, 'messages'>> & { sendOpts?: SendOptions },
-  ) => Promise<{ result: Promise<string>; meta: Record<string, any> }>;
+  ) => Promise<ResultMeta<string>>;
   /**
    * Deactivates the ICA account by closing the ICA channel. The `Port` is
    * persisted so holders can always call `.reactivate()` to re-establish a new
@@ -353,6 +357,13 @@ export interface NobleMethods {
     /** if specified, only this account can call MsgReceive on the destination chain */
     caller?: AccountId,
   ) => Promise<void>;
+  /** burn USDC on Noble and mint on a destination chain via CCTP */
+  depositForBurnWithMeta: (
+    mintRecipient: AccountId,
+    amount: AmountArg,
+    /** if specified, only this account can call MsgReceive on the destination chain */
+    caller?: AccountId,
+  ) => Promise<ResultMeta<void>>;
 }
 
 // TODO support StakingAccountQueries

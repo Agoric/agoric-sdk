@@ -25,5 +25,6 @@ export const TxType = /** @type {const} */ ({
   CCTP_TO_EVM: 'CCTP_TO_EVM',
   GMP: 'GMP',
   CCTP_TO_NOBLE: 'CCTP_TO_NOBLE',
+  TRAFFIC: 'TRAFFIC',
 });
 harden(TxType);
