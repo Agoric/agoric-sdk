@@ -288,7 +288,7 @@ const mocks = (
                   dst: ['ibc', 'icahost-9', 'channel-1'],
                   // XXX emulate an unknown sequence number, at least until the
                   // Network API connection.sendWithMeta provides it.
-                  seq: null,
+                  seq: { status: 'unknown' },
                 },
               ] as MetaTrafficEntry[];
 

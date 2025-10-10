@@ -96,7 +96,12 @@ export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
       src: M.arrayOf(M.any()),
       dstChainId: M.string(),
       dst: M.arrayOf(M.any()),
-      seq: M.any(),
+      seq: M.or(
+        M.nat(),
+        M.number(),
+        M.string(),
+        M.splitRecord({ status: M.or('pending', 'unknown') }, {}),
+      ),
       amount: M.nat(),
     },
     {},

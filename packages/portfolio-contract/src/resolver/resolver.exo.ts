@@ -174,11 +174,11 @@ export const prepareResolverKit = (
               amountValue,
             );
 
-            // TODO(): Rip this out when we teach the resolver service about
+            // TODO(#12090): Rip this out when we teach the resolver service about
             // TxType.TRAFFIC.
             void Promise.resolve().then(() => {
               console.warn(
-                `TODO(#FIXME: auto-resolving ${type} transaction ${txId} just to prevent deadlock`,
+                `TODO(#12090): auto-resolving ${type} transaction ${txId} just to prevent deadlock`,
               );
               this.facets.service.settleTransaction({
                 status: TxStatus.SUCCESS,

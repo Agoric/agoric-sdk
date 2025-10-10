@@ -29,7 +29,10 @@ import {
   buildGMPPayload,
 } from '@agoric/orchestration/src/utils/gmp.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
-import { transformResultMeta } from '@agoric/orchestration/src/utils/result-meta.js';
+import {
+  transformResultMeta,
+  type MaybeResultMeta,
+} from '@agoric/orchestration/src/utils/result-meta.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import { q, X } from '@endo/errors';
@@ -65,7 +68,7 @@ export const provideEVMAccount = async (
   lca: LocalAccount,
   ctx: PortfolioInstanceContext,
   pk: GuestInterface<PortfolioKit>,
-) => {
+): Promise<MaybeResultMeta<GMPAccountInfo>> => {
   await null;
   const found = pk.manager.reserveAccount(chainName);
   if (found) {
@@ -95,9 +98,13 @@ export const provideEVMAccount = async (
         ctx.gmpAddresses,
         gmp.evmGas,
       ),
-      async ({ result, meta }) => {
-        await result;
-        return { result: pk.reader.getGMPInfo(chainName), meta };
+      ({ result, meta }) => {
+        return {
+          result: Promise.resolve(result).then(() =>
+            pk.reader.getGMPInfo(chainName),
+          ),
+          meta,
+        };
       },
     );
   } catch (reason) {

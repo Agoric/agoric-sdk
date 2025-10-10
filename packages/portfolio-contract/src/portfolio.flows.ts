@@ -533,9 +533,9 @@ const stepFlow = async (
         if ('src' in way) {
           return transformResultMeta(
             pImpl.supply(evmCtx, amount, gInfo),
-            async ({ result, meta }) => {
+            ({ result, meta }) => {
               return {
-                result: result.then(() => ({ destPos: pos })),
+                result: Promise.resolve(result).then(() => ({ destPos: pos })),
                 meta,
               };
             },
@@ -543,9 +543,9 @@ const stepFlow = async (
         } else {
           return transformResultMeta(
             pImpl.withdraw(evmCtx, amount, gInfo, way.claim),
-            async ({ result, meta }) => {
+            ({ result, meta }) => {
               return {
-                result: result.then(() => ({ srcPos: pos })),
+                result: Promise.resolve(result).then(() => ({ srcPos: pos })),
                 meta,
               };
             },
@@ -730,7 +730,9 @@ const stepFlow = async (
               return transformResultMeta(
                 protocolUSDN.supply(ctxU, amount, noble),
                 ({ result, meta }) => ({
-                  result: result.then(() => ({ destPos: pos })),
+                  result: Promise.resolve(result).then(() => ({
+                    destPos: pos,
+                  })),
                   meta,
                 }),
               );
@@ -738,7 +740,7 @@ const stepFlow = async (
               return transformResultMeta(
                 protocolUSDN.withdraw(ctxU, amount, noble, way.claim),
                 ({ result, meta }) => ({
-                  result: result.then(() => ({ srcPos: pos })),
+                  result: Promise.resolve(result).then(() => ({ srcPos: pos })),
                   meta,
                 }),
               );
