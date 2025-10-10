@@ -16,7 +16,7 @@ env:
   GCE_ZONE: us-central1-a
 
 jobs:
-  build-image:
+  docker-ymax:
     runs-on: ubuntu-latest
     outputs:
       digest: ${{ steps.build.outputs.digest }}
@@ -40,8 +40,9 @@ jobs:
           tags: |
             ${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}
 
-  deploy:
-    needs: build-image
+  deploy-ymax-planner:
+    needs: docker-ymax
+    if: needs.docker-ymax.result == 'success'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -73,7 +74,7 @@ jobs:
           GCE_INSTANCE: ${{ matrix.target.instance }}
           GCE_ZONE: ${{ env.GCE_ZONE }}
         run: |
-          TARGET="${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}@${{ needs.build-image.outputs.digest }}"
+          TARGET="ghcr.io/agoric/agoric-sdk-test:ymax-planner-testing@${{ needs.docker-ymax.outputs.digest }}"
           echo "Target image: $TARGET"
 
           DECL=$(
@@ -98,7 +99,7 @@ jobs:
           GCE_INSTANCE: ${{ matrix.target.instance }}
           GCE_ZONE: ${{ env.GCE_ZONE }}
         run: |
-          IMAGE="${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}@${{ needs.build-image.outputs.digest }}"
+          IMAGE="ghcr.io/agoric/agoric-sdk-test:ymax-planner-testing@${{ needs.docker-ymax.outputs.digest }}"
           echo "Deploying to $GCE_INSTANCE: $IMAGE"
           gcloud compute instances update-container "$GCE_INSTANCE" \
             --zone "$GCE_ZONE" \
