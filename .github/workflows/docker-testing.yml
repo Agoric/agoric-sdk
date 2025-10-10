@@ -31,9 +31,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Write .env.gcp from secret
+      # - name: Write .env.gcp from secret
+      #   run: |
+      #     printf '%s\n' "${{ secrets.ENV_GCP_FILE }}" > .env.gcp
+      #     echo "Contents of .env.gcp:"
+      #     cat .env.gcp
+
+      - name: Write .env file from JSON
+        shell: bash
         run: |
-          printf '%s\n' "${{ secrets.ENV_GCP_FILE }}" > .env.gcp
+          jq -r '
+            to_entries[]
+            | "\(.key)=\(.value|@sh)"
+          ' <<< '${{ secrets.ENV_GCP_FILE }}' > .env.gcp
           echo "Contents of .env.gcp:"
           cat .env.gcp
 
