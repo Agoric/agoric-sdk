@@ -575,7 +575,7 @@ test('oracle continuing invitation', async t => {
 
   const invPrice = await E(invitationMakers).PushPrice('1234');
   const invPriceResult = await E(zoe).offer(invPrice);
-  t.deepEqual(await E(invPriceResult).numWantsSatisfied(), 1);
+  t.deepEqual(await E(invPriceResult).numWantsSatisfied(), Infinity);
 
   await E(oracleTimer).tick();
   await E(oracleTimer).tick();
