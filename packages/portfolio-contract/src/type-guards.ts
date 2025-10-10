@@ -20,24 +20,17 @@
  *
  * For usage examples, see `makeTrader` in {@link ../test/portfolio-actors.ts}.
  */
-import type { Amount, Brand, NatValue } from '@agoric/ertp';
+import type { Brand, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { stripPrefix, tryNow } from '@agoric/internal/src/ses-utils.js';
-import {
-  AnyNatAmountShape,
-  type AccountId,
-  type Bech32Address,
-  type CosmosChainAddress,
-} from '@agoric/orchestration';
+import { AnyNatAmountShape } from '@agoric/orchestration';
 import {
   AxelarChain,
-  SupportedChain,
   YieldProtocol,
   type FlowDetail,
-  type FlowStatus,
-  type FlowSteps,
   type InstrumentId,
   type ProposalType,
+  type StatusFor,
   type TargetAllocation,
 } from '@agoric/portfolio-api';
 import type {
@@ -260,39 +253,6 @@ export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
 type ChainNameExt = string;
 const ChainNameExtShape: TypedPattern<ChainNameExt> = M.string();
 
-// XXX relate paths to types a la readPublished()
-export type StatusFor = {
-  contract: {
-    contractAccount: CosmosChainAddress['value'];
-  };
-  portfolios: {
-    addPortfolio: `portfolio${number}`;
-  };
-  portfolio: {
-    positionKeys: PoolKeyExt[];
-    accountIdByChain: Record<ChainNameExt, AccountId>;
-    accountsPending?: SupportedChain[];
-    depositAddress?: Bech32Address;
-    targetAllocation?: TargetAllocation;
-    /** incremented by the contract every time the user sends a transaction that the planner should respond to */
-    policyVersion: number;
-    /** the count of acknowledged submissions [from the planner] associated with the current policyVersion */
-    rebalanceCount: number;
-    /** @deprecated in favor of flowsRunning */
-    flowCount: number;
-    flowsRunning?: Record<`flow${number}`, FlowDetail>;
-  };
-  position: {
-    protocol: YieldProtocol;
-    accountId: AccountId;
-    netTransfers: Amount<'nat'>;
-    totalIn: Amount<'nat'>;
-    totalOut: Amount<'nat'>;
-  };
-  flow: FlowStatus;
-  flowSteps: FlowSteps;
-};
-
 export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
   M.splitRecord(
     {
@@ -394,4 +354,4 @@ const keepDocsTypesImported:
   | ContractInvitationSpec = undefined;
 
 // Backwards compat
-export type { FlowDetail, ProposalType, TargetAllocation };
+export type { FlowDetail, ProposalType, StatusFor, TargetAllocation };

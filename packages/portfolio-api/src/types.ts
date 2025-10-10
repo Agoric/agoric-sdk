@@ -1,5 +1,10 @@
 import type { NatAmount } from '@agoric/ertp';
-import type { SupportedChain } from './constants.js';
+import {
+  type AccountId,
+  type Bech32Address,
+  type CosmosChainAddress,
+} from '@agoric/orchestration';
+import type { SupportedChain, YieldProtocol } from './constants.js';
 import type { InstrumentId } from './instruments.js';
 
 export type SeatKeyword = 'Cash' | 'Deposit';
@@ -58,4 +63,38 @@ export type FlowSteps = {
   dest: AssetPlaceRef;
 }[];
 
+export type PortfolioKey = `portfolio${number}`;
 export type FlowKey = `flow${number}`;
+
+// XXX relate paths to types a la readPublished()
+export type StatusFor = {
+  contract: {
+    contractAccount: CosmosChainAddress['value'];
+  };
+  portfolios: {
+    addPortfolio: PortfolioKey;
+  };
+  portfolio: {
+    positionKeys: InstrumentId[];
+    accountIdByChain: Partial<Record<SupportedChain, AccountId>>;
+    accountsPending?: SupportedChain[];
+    depositAddress?: Bech32Address;
+    targetAllocation?: TargetAllocation;
+    /** incremented by the contract every time the user sends a transaction that the planner should respond to */
+    policyVersion: number;
+    /** the count of acknowledged submissions [from the planner] associated with the current policyVersion */
+    rebalanceCount: number;
+    /** @deprecated in favor of flowsRunning */
+    flowCount: number;
+    flowsRunning?: Record<FlowKey, FlowDetail>;
+  };
+  position: {
+    protocol: YieldProtocol;
+    accountId: AccountId;
+    netTransfers: NatAmount;
+    totalIn: NatAmount;
+    totalOut: NatAmount;
+  };
+  flow: FlowStatus;
+  flowSteps: FlowSteps;
+};
