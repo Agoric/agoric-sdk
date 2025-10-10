@@ -30,21 +30,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # - name: Write .env.gcp from secret
-      #   run: |
-      #     printf '%s\n' "${{ secrets.ENV_GCP_FILE }}" > .env.gcp
-      #     echo "Contents of .env.gcp:"
-      #     cat .env.gcp
-
       - name: Write .env file from JSON
         shell: bash
         run: |
-          jq -r '
-            to_entries[]
-            | "\(.key)=\(.value)"
-          ' <<< '${{ secrets.ENV_GCP_FILE }}' > .env.gcp
-          echo "Contents of .env.gcp:"
-          cat .env.gcp
+          jq -r 'to_entries[] | "\(.key)=\(.value)"' \
+            <<< '${{ secrets.ENV_GCP_FILE }}' > .env.gcp
 
       - name: Build and Push image
         id: build
@@ -63,13 +53,32 @@ jobs:
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
-    
-      - name: Check Gcloud Access
+
+      - name: Check if VM already has this digest
+        id: decide
+        shell: bash
         run: |
-          gcloud compute instances list
-          echo ${{ steps.build.outputs.digest }}
+          TARGET="ghcr.io/agoric/agoric-sdk-test:ymax-planner-testing@${{ steps.build.outputs.digest }}"
+
+          # Pull current container declaration YAML from instance metadata
+          DECL=$(
+            gcloud compute instances describe "${{ env.GCE_INSTANCE }}" \
+              --zone "${{ env.GCE_ZONE }}" \
+              --format=json \
+            | jq -r '.metadata.items[] | select(.key=="gce-container-declaration") | .value'
+          )
+
+          if printf '%s\n' "$DECL" | grep -F "$TARGET" >/dev/null 2>&1; then
+            echo "VM already configured with this digest. Skipping deploy."
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Digest differs (or not set). Will deploy."
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Update GCE container (by digest)
+        if: steps.decide.outputs.should_deploy == 'true'
+        shell: bash
         run: |
           IMAGE="${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}@${{ steps.build.outputs.digest }}"
           echo "Deploying image: $IMAGE"
