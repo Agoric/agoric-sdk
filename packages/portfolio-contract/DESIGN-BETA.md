@@ -45,7 +45,13 @@ sequenceDiagram
     participant LCAin
   end
 
+  box rgb(163,180,243) Noble
+    participant icaN as icaNoble
+    participant NFA as NFA
+  end
+
   portfolio ->> vstorage: write portfolio
+  portfolio ->> NFA: create NFA if needed
 ```
 2. deposit from Agoric chain into existing portfolio
 ```mermaid
@@ -59,7 +65,13 @@ sequenceDiagram
     participant LCAin
   end
 
-  portfolio ->> LCAin: localTransfer
+  box rgb(163,180,243) Noble
+    participant icaN as icaNoble
+    participant NFA as NFA
+  end
+
+  portfolio ->> vstorage: signal for ymax-planner
+  portfolio ->> NFA: create NFA if needed
 ```
 3. new/edit portfolio and deposit from Agoric chain
 ```mermaid
@@ -74,15 +86,16 @@ sequenceDiagram
   end
 
   portfolio ->> vstorage: write portfolio
-  portfolio ->> LCAin: localTransfer
+  portfolio ->> vstorage: signal for ymax-planner
 ```
-4. deposit-triggered distribution
+4. deposit (single-flow)
 ```mermaid
 sequenceDiagram
   autonumber
 
   box rgb(255,153,153) Agoric
     participant portfolio
+    participant vstorage
     participant LCAorch
     participant LCAin
   end
@@ -94,6 +107,7 @@ sequenceDiagram
 
   box rgb(163,180,243) Noble
     participant icaN as icaNoble
+    participant NFA as NFA
   end
 
   box rgb(163,180,243) Axelar
@@ -109,15 +123,14 @@ sequenceDiagram
   %% Notation: ->> for initial message, -->> for consequences
 
   Note over YP: long-running process starts and monitors all portfolios
-  Note over LCAin: USDC arriving in LCAin
-  LCAin -->> YP: YP observes USDC arrives
-  YP ->> LCAin: query bank balance
+  Note over vstorage: signal for ymax-planner
+  vstorage -->> YP: ymax-planner observes signal
   YP ->> portfolio: read portfolio allocations
   YP ->> icaN: read balance
   YP ->> aavePos: read balance
   YP ->> AX: figure out how much to pay for GMP(agoric, arbitrum) and GMP(arbitrum, agoric) ticket TBD
   Note over YP: think and generate steps
-  YP ->> portfolio: send moves and X BLD for GMP(agoric, arbitrum) and Y ARB for GMP(arbitrum, agoric)
+  YP ->> portfolio: send steps that include X BLD for GMP(agoric, arbitrum) and Y ARB for GMP(arbitrum, agoric)
   Note over portfolio, acctArb: Make Account if Needed
   portfolio ->> LCAorch: LCAgas pays X BLD (#11781)
   LCAorch ->> AX: makeAccount("Y ARB" for postage)
@@ -133,19 +146,21 @@ sequenceDiagram
   LCAorch ->> icaN: depositForBurn
   icaN ->> LCAorch: ack
   icaN -->> acctArb: $5ku
-  acctArb -->> Res: event?
+  acctArb -->> Res: observe $5k arriving
   Res ->> portfolio: ack
 
   Note over LCAorch, aavePos: Supply to Aave
   LCAorch ->> AX: supply $5k acctArb
   AX -->> acctArb: supply $5k
   acctArb ->> aavePos: $5k
-  aavePos -->> Res: Mint event
+  aavePos -->> Res: observe mint event
   Res ->> portfolio: ack
 ```
 
 5. Withdraw
+```
     1. non-pipelined
+```
 ```mermaid
 sequenceDiagram
   autonumber
@@ -165,6 +180,7 @@ sequenceDiagram
 
   box rgb(163,180,243) Noble
       participant icaN as icaNoble
+      participant NFA as NFA
   end
   box rgb(163,180,243) Axelar
       participant AX as GMP
@@ -197,19 +213,13 @@ sequenceDiagram
   Res ->> portfolio: ack
 
   Note over icaN, acctArb: GMP ack'ed, waiting for CCTP to arrive
-  CCTP TokenMessenger v1 -->> icaN: CCTP mint $2k USDC
-  icaN -->> Res: observe mint
-  Res ->> portfolio: ack
-
-  Note over LCAorch, icaN: IBC transfer
-  portfolio -->> icaN: IBC transxfer
-  icaN ->> LCAorch: IBC $2k USDC
-  portfolio -->> portfolio: resume 4
+  CCTP TokenMessenger v1 -->> NFA: CCTP mint $2k USDC
+  NFA -->> LCAorch: Noble forwards $2k USDC to LCAorch
+  LCAorch -->> portfolio: receiveUpcall
   note over portfolio: RESUME 4
   LCAorch ->> UI: payout $2k USDC
   portfolio -->> vstorage: flowsRunning: {}
 ```
-
     2. pipelined (not our focus right now)
 ```mermaid
 sequenceDiagram
@@ -231,6 +241,7 @@ sequenceDiagram
 
   box rgb(163,180,243) Noble
       participant icaN as icaNoble
+      participant NFA as NFA
   end
   box rgb(163,180,243) Axelar
       participant AX as GMP
@@ -252,14 +263,15 @@ sequenceDiagram
   acctArb ->> CCTP TokenMessenger v1: depositForBurn($2k)
   acctArb -->> Res: observe depositForBurn complete
   Res ->> portfolio: ack
+
   Note over portfolio, aavePos: GMP ack'ed, waiting for CCTP to arrive
-  CCTP TokenMessenger v1 -->> icaN: CCTP mint $2k USDC
-  icaN -->> Res: observe mint
-  Res ->> portfolio: ack
-  portfolio -->> icaN: IBC transxfer
-  icaN ->> LCAorch: IBC $2k USDC
+  CCTP TokenMessenger v1 -->> NFA: CCTP mint $2k USDC
+  NFA -->> LCAorch: Noble forwards $2k USDC to LCAorch
+  LCAorch -->> portfolio: receiveUpcall
   Note over LCAorch: contract has a queue of withdrawals(seats) to resolve <br> matches on amount
+  note over portfolio: RESUME 4
   LCAorch ->> UI: $2k USDC
+  portfolio -->> vstorage: flowsRunning: {}
 ```
 
 6. manually-triggered rebalance
@@ -283,6 +295,7 @@ sequenceDiagram
 
   box rgb(163,180,243) Noble
       participant icaN as icaN*
+      participant NFA as NFA
   end
   box rgb(163,180,243) Axelar
       participant AX as GMP
@@ -306,12 +319,14 @@ sequenceDiagram
   AX -->> acctArb: withdraw $2k
   acctArb ->> aavePos: withdraw $2k
   aavePos ->> acctArb: $2k
-  acctArb -->> icaN: $2k via CCTP
+  acctArb -->> NFA: $2k via CCTP
+  NFA -->> LCAorch: Noble forwards $2k
 
   Note over portfolio, compPos: CCTP Out and Supply to Compound
   portfolio ->> portfolio: provideAccount on Base
 
   %% Note over portfolio, acctArb: Send USDC
+  LCAorch ->> icaN: $2k
   icaN -->> acctBase: $2k via CCTP
   acctBase -->> portfolio: ack
 
