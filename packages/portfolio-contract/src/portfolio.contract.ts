@@ -309,32 +309,29 @@ export const contract = async (
     resolverClient,
     inertSubscriber,
     contractAccount: contractAccountV as any, // XXX Guest...
-    nobleForwardingChannel: transferChannels.noble,
+    transferChannels,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
-  const { executePlan, rebalance, parseInboundTransfer } = orchestrateAll(
-    {
-      executePlan: flows.executePlan,
-      rebalance: flows.rebalance,
-      parseInboundTransfer: flows.parseInboundTransfer,
-    },
-    ctx1,
-  );
+  const { executePlan, rebalance, parseInboundTransfer, onAgoricTransfer } =
+    orchestrateAll(
+      {
+        executePlan: flows.executePlan,
+        rebalance: flows.rebalance,
+        onAgoricTransfer: flows.onAgoricTransfer,
+        parseInboundTransfer: flows.parseInboundTransfer,
+      },
+      ctx1,
+    );
 
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
     vowTools,
-    axelarIds,
-    gmpAddresses,
     executePlan,
     rebalance,
-    parseInboundTransfer,
+    onAgoricTransfer,
     proposalShapes,
     offerArgsShapes,
-    chainHubTools: {
-      getChainInfo: chainHub.getChainInfo.bind(chainHub),
-    },
     transferChannels,
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller,

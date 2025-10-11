@@ -46,6 +46,7 @@ import {
   executePlan,
   openPortfolio,
   parseInboundTransfer,
+  onAgoricTransfer,
   rebalance,
   wayFromSrcToDesc,
   type PortfolioInstanceContext,
@@ -336,18 +337,6 @@ const mocks = (
     axelar: 'channel-9',
   } as const;
 
-  const chainHubTools = harden({
-    getChainInfo: (chainName: string) => {
-      if (['agoric', 'axelar', 'noble'].includes(chainName)) {
-        return { chainId: chainName } as Partial<ChainInfo>;
-      }
-      if (!(chainName in axelarCCTPConfig)) {
-        throw Error(`unable to get chainInfo for ${chainName}`);
-      }
-      return axelarCCTPConfig[chainName];
-    },
-  });
-
   const ctx1: PortfolioInstanceContext = {
     axelarIds: axelarIdsMock,
     contracts: contractsMock,
@@ -358,22 +347,21 @@ const mocks = (
     zoeTools,
     resolverClient,
     contractAccount: orch.getChain('agoric').then(ch => ch.makeAccount()),
-    nobleForwardingChannel: transferChannels.noble,
+    transferChannels,
   };
 
   const rebalanceHost = (seat, offerArgs, kit) =>
     rebalance(orch, ctx1, seat, offerArgs, kit);
-  const parseInboundTransferHost = (packet, kit) =>
-    parseInboundTransfer(orch, ctx1, packet, kit);
+  const onAgoricTransferHost = (event, kit) =>
+    onAgoricTransfer(orch, ctx1, event, kit);
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
     axelarIds: axelarIdsMock,
     gmpAddresses,
     vowTools,
-    chainHubTools,
     transferChannels,
     rebalance: rebalanceHost as any,
-    parseInboundTransfer: parseInboundTransferHost as any,
+    onAgoricTransfer: onAgoricTransferHost as any,
     proposalShapes: makeProposalShapes(USDC, BLD),
     offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,

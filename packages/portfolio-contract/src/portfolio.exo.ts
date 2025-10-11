@@ -1,21 +1,14 @@
 /**
  * NOTE: This is host side code; can't use await.
  */
-import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import { makeTracer, mustMatch, type ERemote } from '@agoric/internal';
 import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import {
-  type AccountId,
-  type CaipChainId,
-  type ChainHub,
-} from '@agoric/orchestration';
-import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
+import { type AccountId, type CaipChainId } from '@agoric/orchestration';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
-import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import {
   AxelarChain,
   SupportedChain,
@@ -27,12 +20,10 @@ import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { decodeBase64 } from '@endo/base64';
 import { Fail, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
-import type { AxelarId, GmpAddresses } from './portfolio.contract.js';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
 import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
@@ -50,24 +41,6 @@ import {
 } from './type-guards.js';
 
 const trace = makeTracer('PortExo');
-
-export const DECODE_CONTRACT_CALL_RESULT_ABI = [
-  {
-    type: 'tuple',
-    components: [
-      { name: 'isContractCallResult', type: 'bool' },
-      {
-        name: 'data',
-        type: 'tuple[]',
-        components: [
-          { name: 'success', type: 'bool' },
-          { name: 'result', type: 'bytes' },
-        ],
-      },
-    ],
-  },
-] as const;
-harden(DECODE_CONTRACT_CALL_RESULT_ABI);
 
 export type AccountInfo = GMPAccountInfo | AgoricAccountInfo | NobleAccountInfo;
 export type GMPAccountInfo = {
@@ -174,23 +147,15 @@ export type PublishStatusFn = <K extends keyof StatusFor>(
   status: StatusFor[K],
 ) => void;
 
-const eventAbbr = (e: VTransferIBCEvent) => {
-  const { destination_channel: dest, sequence } = e.packet;
-  return { destination_channel: dest, sequence };
-};
-
 /** avoid circular reference */
 type PortfolioKitCycleBreaker = unknown;
 
 export const preparePortfolioKit = (
   zone: Zone,
   {
-    axelarIds,
-    gmpAddresses,
     rebalance,
     executePlan,
-    parseInboundTransfer,
-    chainHubTools,
+    onAgoricTransfer,
     transferChannels,
     proposalShapes,
     offerArgsShapes,
@@ -200,8 +165,6 @@ export const preparePortfolioKit = (
     marshaller,
     usdcBrand,
   }: {
-    axelarIds: AxelarId;
-    gmpAddresses: GmpAddresses;
     rebalance: (
       seat: ZCFSeat,
       offerArgs: unknown,
@@ -213,11 +176,10 @@ export const preparePortfolioKit = (
       kit: PortfolioKitCycleBreaker,
       flowDetail: FlowDetail,
     ) => Vow<unknown>;
-    parseInboundTransfer: (
-      packet: VTransferIBCEvent['packet'],
+    onAgoricTransfer: (
+      event: VTransferIBCEvent,
       kit: PortfolioKitCycleBreaker,
-    ) => Vow<Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>>;
-    chainHubTools: Pick<ChainHub, 'getChainInfo'>;
+    ) => Vow<boolean>;
     transferChannels: {
       noble: IBCChannelID;
       axelar?: IBCChannelID;
@@ -305,101 +267,16 @@ export const preparePortfolioKit = (
     {
       tap: {
         async receiveUpcall(event: VTransferIBCEvent) {
-          const traceUpcall = trace
-            .sub(`portfolio${this.state.portfolioId}`)
-            .sub('upcall');
-          traceUpcall('event', eventAbbr(event));
-          const { destination_channel: packetDest } = event.packet;
-
-          // Validate that this is really from Axelar to Agoric.
-          if (packetDest !== transferChannels.axelar) {
-            traceUpcall(
-              `GMP early exit: ${packetDest} != ${transferChannels.axelar}: not from axelar`,
-            );
-            return false;
-          }
-
-          return vowTools.watch(
-            parseInboundTransfer(event.packet, this.facets),
-            this.facets.parseInboundTransferWatcher,
-          );
+          // onAgoricTransfer is prompt
+          return vowTools.when(onAgoricTransfer(event, this.facets));
         },
       },
       parseInboundTransferWatcher: {
-        onRejected(reason) {
-          const traceP = trace.sub(`portfolio${this.state.portfolioId}`);
-          traceP('⚠️ parseInboundTransfer failure', reason);
-          throw reason;
+        onRejected(_reason) {
+          Fail`vestigial`;
         },
-        async onFulfilled(parsed) {
-          const traceUpcall = trace
-            .sub(`portfolio${this.state.portfolioId}`)
-            .sub('upcall');
-          if (!parsed) {
-            traceUpcall('GMP early exit: no parsed inbound transfer');
-            return false;
-          }
-
-          const { extra } = parsed;
-          if (!extra.memo) return;
-          if (extra.sender !== gmpAddresses.AXELAR_GMP) {
-            traceUpcall(
-              `GMP early exit; AXELAR_GMP sender expected ${gmpAddresses.AXELAR_GMP}, got ${extra.sender}`,
-            );
-            return false;
-          }
-          const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
-
-          const result = (
-            Object.entries(axelarIds) as [AxelarChain, string][]
-          ).find(([_, chainId]) => chainId === memo.source_chain);
-
-          if (!result) {
-            traceUpcall('unknown source_chain', memo);
-            return false;
-          }
-
-          const [chainName, _] = result;
-
-          const payloadBytes = decodeBase64(memo.payload);
-          const [{ isContractCallResult, data }] = decodeAbiParameters(
-            DECODE_CONTRACT_CALL_RESULT_ABI,
-            payloadBytes,
-          ) as [AgoricResponse];
-
-          traceUpcall(
-            'Decoded:',
-            JSON.stringify({ isContractCallResult, data }),
-          );
-
-          if (isContractCallResult) {
-            traceUpcall('TODO: Handle the result of the contract call', data);
-            return false;
-          }
-
-          const [message] = data;
-          const { success, result: result2 } = message;
-          if (!success) return;
-
-          const [address] = decodeAbiParameters([{ type: 'address' }], result2);
-
-          // chainInfo is safe to await: registerChain(...) ensure it's already resolved,
-          // so vowTools.when won't cause async delays or cross-vat calls.
-          const chainInfo = await vowTools.when(
-            chainHubTools.getChainInfo(chainName),
-          );
-          const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
-
-          traceUpcall(chainName, 'remoteAddress', address);
-          this.facets.manager.resolveAccount({
-            namespace: 'eip155',
-            chainName,
-            chainId: caipId,
-            remoteAddress: address,
-          });
-
-          traceUpcall('completed');
-          return true;
+        async onFulfilled(_parsed) {
+          Fail`vestigial`;
         },
       },
       reader: {
