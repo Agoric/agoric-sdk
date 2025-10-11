@@ -150,7 +150,7 @@ export const BeefyPoolPlaces = {
     protocol: 'Beefy',
     chainName: 'Arbitrum',
   },
-} as const satisfies Record<string, PoolPlaceInfo>;
+} as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
 
 export const PoolPlaces = {
   USDN: { protocol: 'USDN', vault: null, chainName: 'noble' }, // MsgSwap only
@@ -165,7 +165,7 @@ export const PoolPlaces = {
   Compound_Arbitrum: { protocol: 'Compound', chainName: 'Arbitrum' },
   Compound_Base: { protocol: 'Compound', chainName: 'Base' },
   ...BeefyPoolPlaces,
-} as const satisfies Record<string, PoolPlaceInfo>;
+} as const satisfies Record<InstrumentId, PoolPlaceInfo>;
 harden(PoolPlaces);
 
 /**
