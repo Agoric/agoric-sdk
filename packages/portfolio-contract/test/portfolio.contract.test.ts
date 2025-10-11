@@ -1028,7 +1028,7 @@ test('withdraw using planner', async t => {
 
   const bankTraffic = common.utils.inspectBankBridge();
   const { accountIdByChain } = await trader1.getPortfolioStatus();
-  const [_ns, _ref, addr] = accountIdByChain.agoric.split(':');
+  const [_ns, _ref, addr] = accountIdByChain.agoric!.split(':');
   const myVBankIO = bankTraffic.filter(obj =>
     [obj.sender, obj.recipient].includes(addr),
   );
@@ -1151,7 +1151,7 @@ test('deposit using planner', async t => {
 
   const bankTraffic = common.utils.inspectBankBridge();
   const { accountIdByChain } = await trader1.getPortfolioStatus();
-  const [_ns, _ref, addr] = accountIdByChain.agoric.split(':');
+  const [_ns, _ref, addr] = accountIdByChain.agoric!.split(':');
   const myVBankIO = bankTraffic.filter(obj =>
     [obj.sender, obj.recipient].includes(addr),
   );
@@ -1216,7 +1216,7 @@ test('simple rebalance using planner', async t => {
 
   const bankTraffic = common.utils.inspectBankBridge();
   const { accountIdByChain } = await trader1.getPortfolioStatus();
-  const [_ns, _ref, addr] = accountIdByChain.agoric.split(':');
+  const [_ns, _ref, addr] = accountIdByChain.agoric!.split(':');
   const myVBankIO = bankTraffic.filter(obj =>
     [obj.sender, obj.recipient].includes(addr),
   );

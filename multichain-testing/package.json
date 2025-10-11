@@ -77,6 +77,7 @@
     "@agoric/network": "portal:../packages/network",
     "@agoric/notifier": "portal:../packages/notifier",
     "@agoric/orchestration": "portal:../packages/orchestration",
+    "@agoric/portfolio-api": "portal:../../agoric-sdk/packages/portfolio-api",
     "@agoric/pegasus": "portal:../packages/pegasus",
     "@agoric/smart-wallet": "portal:../packages/smart-wallet",
     "@agoric/solo": "portal:../packages/solo",

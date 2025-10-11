@@ -37,6 +37,7 @@
     "@agoric/cosmic-proto": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/internal": "workspace:*",
+    "@agoric/portfolio-api": "workspace:*",
     "@agoric/smart-wallet": "workspace:*",
     "@agoric/vats": "workspace:*",
     "@cosmjs/crypto": "^0.36.0",
