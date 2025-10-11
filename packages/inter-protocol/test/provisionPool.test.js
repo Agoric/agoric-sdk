@@ -584,6 +584,9 @@ test('provisionPool publishes metricsOverride promptly', async t => {
 
   const metrics = E(facets.publicFacet).getMetrics();
 
+  // Without this the test seems sensitive to the number of turn the start operation takes
+  await eventLoopIteration();
+
   const {
     head: { value: initialMetrics },
   } = await E(metrics).subscribeAfter();

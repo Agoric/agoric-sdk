@@ -1,6 +1,7 @@
 /** @file Example contract that uses orchestration */
 
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
 import { TimerServiceShape } from '@agoric/time';
 import { heapVowE as E, prepareVowTools } from '@agoric/vow/vat.js';
 import {
@@ -70,7 +71,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const {
     agoricNames,
     cosmosInterchainService: orchestration,
-    marshaller,
+    marshaller: remoteMarshaller,
     storageNode,
     timer,
   } = privateArgs;
@@ -84,7 +85,12 @@ export const start = async (zcf, privateArgs, baggage) => {
       ),
   });
 
-  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
+
+  const { makeRecorderKit } = prepareRecorderKitMakers(
+    baggage,
+    cachingMarshaller,
+  );
 
   const vowTools = prepareVowTools(zone.subZone('vows'));
 

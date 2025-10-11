@@ -19,10 +19,8 @@ import type {
 } from '@agoric/fast-usdc/src/types.js';
 import type { RepayAmountKWR } from '@agoric/fast-usdc/src/utils/fees.js';
 import type { ERemote } from '@agoric/internal';
-import type {
-  Marshaller,
-  StorageNode,
-} from '@agoric/internal/src/lib-chainStorage.js';
+import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+import type { EMarshaller } from '@agoric/internal/src/marshal.js';
 import type { MapStore, SetStore } from '@agoric/store';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Zone } from '@agoric/zone';
@@ -38,7 +36,7 @@ import { makeSettlementMatcher } from '../utils/settlement-matcher.ts';
 
 interface StatusManagerPowers {
   log?: LogFn;
-  marshaller: ERemote<Marshaller>;
+  marshaller: ERemote<EMarshaller>;
   routeHealth: RouteHealth;
 }
 

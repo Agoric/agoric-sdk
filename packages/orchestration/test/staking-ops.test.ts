@@ -228,6 +228,7 @@ const makeScenario = () => {
 
   const baggage = makeScalarBigMapStore('b1') as Baggage;
   const zone = makeDurableZone(baggage);
+  // TODO: wrap marshaller for fidelity?
   const marshaller = makeFakeBoard().getReadonlyMarshaller();
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 

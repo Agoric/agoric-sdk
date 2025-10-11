@@ -2,6 +2,7 @@
  * @file Stake BLD contract
  */
 import { makeTracer } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
 import { heapVowE as E, prepareVowTools } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
@@ -38,9 +39,12 @@ const trace = makeTracer('StakeBld');
 export const start = async (zcf, privateArgs, baggage) => {
   const zone = makeDurableZone(baggage);
 
+  const { marshaller: remoteMarshaller } = privateArgs;
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
+
   const { makeRecorderKit } = prepareRecorderKitMakers(
     baggage,
-    privateArgs.marshaller,
+    cachingMarshaller,
   );
   const vowTools = prepareVowTools(zone.subZone('vows'));
 

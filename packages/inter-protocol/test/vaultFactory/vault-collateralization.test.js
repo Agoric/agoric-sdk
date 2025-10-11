@@ -50,6 +50,7 @@ test('totalDebt calculation includes compoundedInterest', async t => {
 
   t.log('give some collateral (adjustBalances); no change to debt');
   await E(vd).giveCollateral(50n, aeth);
+  await eventLoopIteration();
   const v1debtAfterGive = await E(vd.vault()).getCurrentDebt();
   t.deepEqual(v1debtAfterGive, v1debtAfterDay, 'no debt change');
 
