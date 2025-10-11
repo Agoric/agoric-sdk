@@ -272,6 +272,7 @@ export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
     },
     {
       depositAddress: AnyString<Bech32Address>(),
+      nobleForwardingAddress: AnyString<Bech32Address>(),
       targetAllocation: TargetAllocationShapeExt,
       accountsPending: M.arrayOf(ChainNameExtShape),
       flowsRunning: M.recordOf(AnyString<`flow${number}`>(), FlowDetailShape),
