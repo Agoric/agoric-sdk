@@ -16,7 +16,11 @@ import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.t
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import { resolvePendingTx } from './resolver.ts';
-import type { EvmProviders, UsdcAddresses } from './support.ts';
+import type {
+  EvmProviders,
+  UsdcAddresses,
+  AlchemyClients,
+} from './support.ts';
 import { watchGmp, lookBackGmp } from './watchers/gmp-watcher.ts';
 import { watchCctpTransfer, lookBackCctp } from './watchers/cctp-watcher.ts';
 import {
@@ -31,6 +35,7 @@ export type EvmContext = {
   cosmosRest: CosmosRestClient;
   usdcAddresses: UsdcAddresses['mainnet' | 'testnet'];
   evmProviders: EvmProviders;
+  alchemyClients: AlchemyClients;
   signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
 };
@@ -86,12 +91,15 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
     const provider =
       ctx.evmProviders[caipId] ||
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
+    const alchemyClient = ctx.alchemyClients[caipId];
 
     const watchArgs = {
       usdcAddress,
       toAddress: accountAddress as `0x${string}`,
       expectedAmount: amount,
       provider,
+      alchemyClient,
+      chainId: caipId,
       log: (msg, ...args) => log(logPrefix, msg, ...args),
     };
     const transferStatus = await (opts.mode === 'live'
@@ -99,7 +107,6 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       : lookBackCctp({
           ...watchArgs,
           publishTimeMs: opts.publishTimeMs,
-          chainId: caipId,
         }));
 
     await resolvePendingTx({

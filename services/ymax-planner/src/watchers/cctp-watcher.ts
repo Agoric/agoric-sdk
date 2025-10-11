@@ -1,5 +1,7 @@
 import type { Filter, JsonRpcProvider, Log } from 'ethers';
 import { id, zeroPadValue, getAddress, ethers } from 'ethers';
+import type { Alchemy } from 'alchemy-sdk';
+import { AssetTransfersCategory } from 'alchemy-sdk';
 import type { CaipChainId } from '@agoric/orchestration';
 import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
@@ -31,6 +33,8 @@ type CctpWatch = {
   provider: JsonRpcProvider;
   toAddress: `0x${string}`;
   expectedAmount: bigint;
+  chainId: CaipChainId;
+  alchemyClient?: Alchemy;
   log?: (...args: unknown[]) => void;
 };
 
@@ -139,13 +143,69 @@ export const lookBackCctp = async ({
   expectedAmount,
   publishTimeMs,
   chainId,
+  alchemyClient,
   log = () => {},
 }: CctpWatch & {
   publishTimeMs: number;
-  chainId: CaipChainId;
 }): Promise<boolean> => {
   await null;
+
+  // Try Alchemy SDK first if available (more efficient)
+  if (alchemyClient) {
+    try {
+      log(`Using getAssetTransfers for historical scan`);
+
+      const { fromBlock, toBlock } = await buildTimeWindow(
+        provider,
+        publishTimeMs,
+        log,
+        chainId,
+      );
+
+      log(
+        `Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${toAddress} with amount ${expectedAmount}`,
+      );
+
+      const transfers = await alchemyClient.core.getAssetTransfers({
+        fromBlock: `0x${fromBlock.toString(16)}`,
+        toBlock: `0x${toBlock.toString(16)}`,
+        toAddress: toAddress,
+        contractAddresses: [usdcAddress],
+        category: [AssetTransfersCategory.ERC20],
+        withMetadata: true,
+        maxCount: 1000,
+      });
+
+      log(`Found ${transfers.transfers.length} transfers to ${toAddress}`);
+
+      for (const transfer of transfers.transfers) {
+        const value = transfer.value;
+        if (value === null || value === undefined) continue;
+
+        const valueInSmallestUnits = BigInt(Math.round(value * 1_000_000));
+
+        log(
+          `Check transfer: ${valueInSmallestUnits} (expected: ${expectedAmount})`,
+        );
+
+        if (valueInSmallestUnits === expectedAmount) {
+          log(
+            `✓ Found matching transfer at block ${transfer.blockNum}, tx ${transfer.hash}`,
+          );
+          return true;
+        }
+      }
+
+      log(`No matching transfer found`);
+      return false;
+    } catch (error: any) {
+      log(`Error, falling back to ethers.js:`, error.message || error);
+    }
+  }
+
   try {
+    log(`Using getLogs for historical scan`);
+
     const { fromBlock, toBlock } = await buildTimeWindow(
       provider,
       publishTimeMs,

@@ -55,6 +55,7 @@
     "@endo/patterns": "^1.7.0",
     "@endo/promise-kit": "^1.1.13",
     "@google-cloud/secret-manager": "^6.1.0",
+    "alchemy-sdk": "^3.4.5",
     "chain-registry": "^2.0.44",
     "dotenv": "^17.2.1",
     "ethers": "^6.13.0",
