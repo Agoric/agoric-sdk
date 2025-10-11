@@ -181,6 +181,16 @@ const publishStatus = <K extends keyof StatusFor>(
   void E(node).setValue(JSON.stringify(capData));
 };
 
+// Until we find a need for on-chain subscribers, this stop-gap will do.
+const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
+  getUpdateSince() {
+    assert.fail('use off-chain queries');
+  },
+  subscribeAfter() {
+    assert.fail('use off-chain queries');
+  },
+};
+
 /**
  * Portfolio contract implementation. Creates and manages diversified stablecoin portfolios
  * that can be rebalanced across different yield protocols.
@@ -240,16 +250,6 @@ export const contract = async (
 
   const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
-
-  // Until we find a need for on-chain subscribers, this stop-gap will do.
-  const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
-    getUpdateSince() {
-      assert.fail('use off-chain queries');
-    },
-    subscribeAfter() {
-      assert.fail('use off-chain queries');
-    },
-  };
 
   const resolverZone = zone.subZone('Resolver');
   const makeResolverKit = prepareResolverKit(resolverZone, zcf, {
