@@ -31,6 +31,7 @@ import { decodeBase64 } from '@endo/base64';
 import { Fail, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.js';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
@@ -454,9 +455,18 @@ export const preparePortfolioKit = (
             rebalanceCount,
           } = this.state;
 
-          const depositAddr = () => {
-            const { lcaIn } = accounts.get('agoric') as AgoricAccountInfo;
-            return { depositAddress: lcaIn.getAddress().value };
+          const agoricAux = (): Pick<
+            StatusFor['portfolio'],
+            'depositAddress' | 'nobleForwardingAddress'
+          > => {
+            const { lca, lcaIn } = accounts.get('agoric') as AgoricAccountInfo;
+            const { value: recipient } = lca.getAddress();
+            const { value: depositAddress } = lcaIn.getAddress();
+            const nobleForwardingAddress = generateNobleForwardingAddress(
+              transferChannels.noble,
+              recipient,
+            );
+            return { depositAddress, nobleForwardingAddress };
           };
 
           publishStatus(makePortfolioPath(portfolioId), {
@@ -464,7 +474,7 @@ export const preparePortfolioKit = (
             flowCount: nextFlowId - 1,
             flowsRunning: makeFlowsRunningRecord(flowsRunning),
             accountIdByChain: accountIdByChain(accounts),
-            ...(accounts.has('agoric') ? depositAddr() : {}),
+            ...(accounts.has('agoric') ? agoricAux() : {}),
             ...(targetAllocation && { targetAllocation }),
             accountsPending: [...accountsPending.keys()],
             policyVersion,
