@@ -2,6 +2,8 @@
 
 /// <reference types="ses" />
 
+import { keyMirror } from '@agoric/internal';
+
 /**
  * Tx statuses for published transactions. Exhaustive state machine flows:
  *   - pending -> success (when cross-chain operation completes successfully)
@@ -21,11 +23,11 @@ harden(TxStatus);
  *
  * @enum {(typeof TxType)[keyof typeof TxType]}
  */
-export const TxType = /** @type {const} */ ({
-  CCTP_TO_EVM: 'CCTP_TO_EVM',
-  GMP: 'GMP',
-  CCTP_TO_AGORIC: 'CCTP_TO_AGORIC',
+export const TxType = keyMirror({
+  CCTP_TO_EVM: null,
+  GMP: null,
+  CCTP_TO_AGORIC: null,
   /** @deprecated - only supports 20 byte addresses */
-  CCTP_TO_NOBLE: 'CCTP_TO_NOBLE',
+  CCTP_TO_NOBLE: null,
 });
 harden(TxType);

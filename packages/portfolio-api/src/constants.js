@@ -2,40 +2,44 @@
 
 /// <reference types="ses" />
 
+import { keyMirror } from '@agoric/internal';
+
 /**
  * Yield protocols for Proof of Concept.
  *
  * @enum {(typeof YieldProtocol)[keyof typeof YieldProtocol]}
  */
-export const YieldProtocol = /** @type {const} */ ({
-  Aave: 'Aave',
-  Compound: 'Compound',
-  USDN: 'USDN',
-  Beefy: 'Beefy',
+export const YieldProtocol = keyMirror({
+  Aave: null,
+  Compound: null,
+  USDN: null,
+  Beefy: null,
 });
 harden(YieldProtocol);
 
 /**
  * @enum {(typeof AxelarChain)[keyof typeof AxelarChain]}
  */
-export const AxelarChain = /** @type {const} */ ({
-  Arbitrum: 'Arbitrum',
-  Avalanche: 'Avalanche',
-  Base: 'Base',
-  Ethereum: 'Ethereum',
-  Optimism: 'Optimism',
+export const AxelarChain = keyMirror({
+  Arbitrum: null,
+  Avalanche: null,
+  Base: null,
+  Ethereum: null,
+  Optimism: null,
 });
 harden(AxelarChain);
 
 /**
  * @enum {(typeof SupportedChain)[keyof typeof SupportedChain]}
  */
-export const SupportedChain = /** @type {const} */ ({
+export const SupportedChain = {
   ...AxelarChain,
-  agoric: 'agoric',
-  noble: 'noble',
-  // XXX: check privateArgs for chainInfo for all of these
-});
+  ...keyMirror({
+    agoric: null,
+    noble: null,
+    // XXX: check privateArgs for chainInfo for all of these
+  }),
+};
 harden(SupportedChain);
 
 /**

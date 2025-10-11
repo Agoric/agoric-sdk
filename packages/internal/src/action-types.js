@@ -1,5 +1,7 @@
 // @jessie-check
 
+import { keyMirror } from './keyMirror.js';
+
 /**
  * Types of messages used for communication between a cosmos-sdk blockchain node
  * and its paired swingset VM, especially for the ABCI lifecycle. See:
@@ -14,13 +16,13 @@
  *
  * @enum {(typeof SwingsetMessageType)[keyof typeof SwingsetMessageType]}
  */
-export const SwingsetMessageType = /** @type {const} */ ({
-  AG_COSMOS_INIT: 'AG_COSMOS_INIT', // used to synchronize at process launch
-  BEGIN_BLOCK: 'BEGIN_BLOCK',
-  END_BLOCK: 'END_BLOCK',
-  COMMIT_BLOCK: 'COMMIT_BLOCK',
-  AFTER_COMMIT_BLOCK: 'AFTER_COMMIT_BLOCK',
-  SWING_STORE_EXPORT: 'SWING_STORE_EXPORT', // used to synchronize data export
+export const SwingsetMessageType = keyMirror({
+  AG_COSMOS_INIT: null, // used to synchronize at process launch
+  BEGIN_BLOCK: null,
+  END_BLOCK: null,
+  COMMIT_BLOCK: null,
+  AFTER_COMMIT_BLOCK: null,
+  SWING_STORE_EXPORT: null, // used to synchronize data export
 });
 harden(SwingsetMessageType);
 
@@ -47,17 +49,17 @@ export const {
  *
  * @enum {(typeof QueuedActionType)[keyof typeof QueuedActionType]}
  */
-export const QueuedActionType = /** @type {const} */ ({
-  CORE_EVAL: 'CORE_EVAL',
-  DELIVER_INBOUND: 'DELIVER_INBOUND',
-  IBC_EVENT: 'IBC_EVENT',
-  INSTALL_BUNDLE: 'INSTALL_BUNDLE',
-  PLEASE_PROVISION: 'PLEASE_PROVISION',
-  VBANK_BALANCE_UPDATE: 'VBANK_BALANCE_UPDATE',
-  WALLET_ACTION: 'WALLET_ACTION',
-  WALLET_SPEND_ACTION: 'WALLET_SPEND_ACTION',
-  VTRANSFER_IBC_EVENT: 'VTRANSFER_IBC_EVENT',
-  KERNEL_UPGRADE_EVENTS: 'KERNEL_UPGRADE_EVENTS',
+export const QueuedActionType = keyMirror({
+  CORE_EVAL: null,
+  DELIVER_INBOUND: null,
+  IBC_EVENT: null,
+  INSTALL_BUNDLE: null,
+  PLEASE_PROVISION: null,
+  VBANK_BALANCE_UPDATE: null,
+  WALLET_ACTION: null,
+  WALLET_SPEND_ACTION: null,
+  VTRANSFER_IBC_EVENT: null,
+  KERNEL_UPGRADE_EVENTS: null,
 });
 harden(QueuedActionType);
 
