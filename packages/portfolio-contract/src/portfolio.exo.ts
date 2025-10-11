@@ -22,7 +22,7 @@ import {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { MapStore } from '@agoric/store';
-import type { VTransferIBCEvent } from '@agoric/vats';
+import type { IBCChannelID, VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
@@ -190,6 +190,7 @@ export const preparePortfolioKit = (
     executePlan,
     parseInboundTransfer,
     chainHubTools,
+    transferChannels,
     proposalShapes,
     offerArgsShapes,
     vowTools,
@@ -215,7 +216,11 @@ export const preparePortfolioKit = (
       packet: VTransferIBCEvent['packet'],
       kit: PortfolioKitCycleBreaker,
     ) => Vow<Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>>;
-    chainHubTools: Pick<ChainHub, 'getChainInfo' | 'getChainsAndConnection'>;
+    chainHubTools: Pick<ChainHub, 'getChainInfo'>;
+    transferChannels: {
+      noble: IBCChannelID;
+      axelar?: IBCChannelID;
+    };
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>;
     vowTools: VowTools;
@@ -306,13 +311,9 @@ export const preparePortfolioKit = (
           const { destination_channel: packetDest } = event.packet;
 
           // Validate that this is really from Axelar to Agoric.
-          const [_agoric, _axelar, connection] = await vowTools.when(
-            chainHubTools.getChainsAndConnection('agoric', 'axelar'),
-          );
-          const { channelId: agoricToAxelar } = connection.transferChannel;
-          if (packetDest !== agoricToAxelar) {
+          if (packetDest !== transferChannels.axelar) {
             traceUpcall(
-              `GMP early exit: ${packetDest} != ${agoricToAxelar}: not from axelar`,
+              `GMP early exit: ${packetDest} != ${transferChannels.axelar}: not from axelar`,
             );
             return false;
           }
