@@ -270,6 +270,10 @@ export const contract = async (
     trace('published contractAccount', addr.value);
   });
 
+  const [_ag2, _noble, agToNoble] = await vowTools.when(
+    chainHub.getChainsAndConnection('agoric', 'noble'),
+  );
+
   const ctx1: flows.PortfolioInstanceContext = {
     zoeTools: zoeTools as any, // XXX Guest...
     usdc: {
@@ -292,6 +296,7 @@ export const contract = async (
     resolverClient,
     inertSubscriber,
     contractAccount: contractAccountV as any, // XXX Guest...
+    nobleForwardingChannel: agToNoble.transferChannel.channelId,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit

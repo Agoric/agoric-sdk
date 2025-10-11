@@ -32,6 +32,9 @@ type Space = WellKnownSpaces &
   BootstrapSpace &
   PromiseSpaceOf<{ ymaxControl: ContractControl<YMaxStartFn> }>;
 
+const ackNFA = (utils, ix = 0) =>
+  utils.transmitVTransferEvent('acknowledgementPacket', ix);
+
 const test: TestFn<Awaited<ReturnType<typeof makeTestContext>>> = anyTest;
 
 const makeTestContext = async (t: ExecutionContext) => {
@@ -264,7 +267,10 @@ test.serial('prune ymax0 vstorage', async t => {
   const toOpen = await E(pf).makeOpenPortfolioInvitation();
   const offerArgs = { targetAllocation: { USDN: 100n } };
   const seat = await E(zoe).offer(toOpen, {}, {}, offerArgs);
-  t.log('payouts', await E(seat).getPayouts());
+  t.log(
+    'payouts',
+    await Promise.all([E(seat).getPayouts(), ackNFA(common.utils)]),
+  );
   const { storage } = common.bootstrap;
   const keysPre = [...storage.data.keys()];
   t.log('ymax storage keys with 1 portfolio', keysPre);

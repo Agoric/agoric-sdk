@@ -21,8 +21,11 @@
  */
 import '@endo/init';
 
+import { makeSwapLockMessages } from '@aglocal/portfolio-contract/src/pos-usdn.flows.ts';
 import { CodecHelper } from '@agoric/cosmic-proto';
 import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import { MsgLock as MsgLockType } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
+import { MsgSwap as MsgSwapType } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { StdFee } from '@cosmjs/amino';
 import { stringToPath } from '@cosmjs/crypto';
 import {
@@ -33,12 +36,10 @@ import {
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { $ } from 'execa';
 import { ConfigContext, useChain, useRegistry } from 'starshipjs';
-import { DEFAULT_TIMEOUT_NS } from '../tools/ibc-transfer.ts';
-import { makeQueryClient } from '../tools/query.ts';
-import { makeSwapLockMessages } from '@aglocal/portfolio-contract/src/pos-usdn.flows.ts';
-import { MsgSwap as MsgSwapType } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
-import { MsgLock as MsgLockType } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import starshipChainInfo from '../starship-chain-info.js';
+import { DEFAULT_TIMEOUT_NS } from '../tools/ibc-transfer.ts';
+import { registerNobleForwardingAddress } from '../tools/noble-aux.ts';
+import { makeQueryClient } from '../tools/query.ts';
 
 const MsgTransfer = CodecHelper(MsgTransferType);
 const MsgSwap = CodecHelper(MsgSwapType);
@@ -66,7 +67,7 @@ const keyring1 = {
 } as const;
 type Who = keyof typeof keyring1;
 
-const configs = {
+export const configs = {
   starship: {
     ...starshipChainInfo,
     noble: {
@@ -84,6 +85,7 @@ const configs = {
       explorer: 'https://www.mintscan.io/noble-testnet',
     },
     agoric: {
+      rpc: 'https://devnet.rpc.agoric.net:443',
       connections: {
         'grand-1': {
           client_id: '07-tendermint-13',
@@ -323,6 +325,18 @@ const main = async ({
   const $v = $({ verbose: 'short' });
 
   const config = configs[env.NET || 'starship'];
+
+  if (env.MKFWD) {
+    const { MNEMONIC = keyring1.trader1.mnemonic } = env;
+    const tx = await registerNobleForwardingAddress({
+      MNEMONIC,
+      connectWithSigner,
+      config: configs[env.NET || 'testnet'],
+    });
+    console.log(tx);
+    return;
+  }
+
   if (env.FAUCET) {
     if (env.NET === 'testnet') {
       throw Error(`use ${configs.testnet.noble.faucet}`);

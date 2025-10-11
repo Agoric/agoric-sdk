@@ -1,5 +1,6 @@
 import type { VstorageKit } from '@agoric/client-utils';
 import { mustMatch } from '@agoric/internal';
+import { defaultSerializer } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
 import type { ScopedBridgeManager } from '@agoric/vats';
@@ -11,16 +12,18 @@ import { passStyleOf } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import * as contractExports from '../src/portfolio.contract.ts';
+import type { PublishedTx, TxStatus } from '../src/resolver/types.ts';
 import { makeTrader } from '../tools/portfolio-actors.ts';
 import { makeWallet } from '../tools/wallet-offer-tools.ts';
 import {
   axelarIdsMock,
   contractsMock,
   gmpAddresses,
-  portfolio0lcaOrch,
   makeCCTPTraffic,
   makeUSDNIBCTraffic,
+  portfolio0lcaOrch,
 } from './mocks.ts';
+import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
 import {
   chainInfoWithCCTP,
   makeIncomingEVMEvent,
@@ -139,7 +142,46 @@ export const setupTrader = async (t, initial = 10_000) => {
     ibcBridge.addMockAck(msg, ack);
   }
 
-  return { ...deployed, makeFundedTrader, trader1, trader2 };
+  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+
+  /**
+   * Read pure data (CapData that has no slots) from the storage path
+   */
+  const getDeserialized = (path: string): unknown[] => {
+    return storage.getValues(path).map(defaultSerializer.parse);
+  };
+
+  const txResolver = harden({
+    findPending: async () => {
+      await eventLoopIteration();
+      const paths = [...storage.data.keys()].filter(k =>
+        k.includes('.pendingTxs.'),
+      );
+      const txIds: `tx${number}`[] = [];
+      for (const p of paths) {
+        const info = getDeserialized(p).at(-1) as PublishedTx;
+        if (info.status !== 'pending') continue;
+        const txId = p.split('.').at(-1) as `tx${number}`;
+        txIds.push(txId);
+      }
+      return harden(txIds);
+    },
+    drainPending: async (status: Exclude<TxStatus, 'pending'> = 'success') => {
+      const done: `tx${number}`[] = [];
+      for (;;) {
+        const txIds = await txResolver.findPending();
+        if (!txIds.length) break;
+        for (const txId of txIds) {
+          const txNum = Number(txId.replace(/^tx/, ''));
+          await settleTransaction(zoe, resolverMakers, txNum, status);
+          done.push(txId);
+        }
+      }
+      return harden(done);
+    },
+  });
+
+  return { ...deployed, makeFundedTrader, trader1, trader2, txResolver };
 };
 
 export const simulateUpcallFromAxelar = async (

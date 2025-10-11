@@ -58,6 +58,9 @@ const docOpts = {
   showValue: defaultSerializer.parse,
 };
 
+const ackNFA = (utils, ix = 0) =>
+  utils.transmitVTransferEvent('acknowledgementPacket', ix);
+
 const getCapDataStructure = cell => {
   const { body, slots } = JSON.parse(cell);
   const structure = JSON.parse(body.replace(/^#/, ''));
@@ -200,7 +203,8 @@ test('coreEval code without swingset', async t => {
       ],
     },
   );
-  // ack IBC transfer for forward
+  // ack IBC transfer for NFA, forward
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', 0);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   const actual = await actualP;
   t.like(actual, {
@@ -363,7 +367,7 @@ test('delegate ymax control; invite planner; submit plan', async t => {
   const accessToken = poc26.mint.mintPayment(poc26.make(1n));
   const [walletTrader] = await provisionSmartWallet('agoric1trader1');
   await E(E(walletTrader).getDepositFacet()).receive(accessToken);
-  await E(E(walletTrader).getOffersFacet()).executeOffer({
+  const openP = E(E(walletTrader).getOffersFacet()).executeOffer({
     id: 1,
     invitationSpec: {
       source: 'contract',
@@ -373,6 +377,8 @@ test('delegate ymax control; invite planner; submit plan', async t => {
     proposal: { give: { Access: poc26.make(1n) } },
     offerArgs: {},
   });
+
+  await Promise.all([openP, ackNFA(common.utils)]);
 
   t.log('invoke planner');
   await E(E(walletPl).getInvokeFacet()).invokeEntry({
