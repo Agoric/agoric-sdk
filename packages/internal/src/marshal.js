@@ -418,7 +418,14 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
     return /** @type {Slot[]} */ (harden(locallyResolvedSlots));
   };
 
-  /** @param {CapData<Slot>} data */
+  /**
+   * Unfortunately CapData only contains iface information for slotted
+   * capabilities nested inside the body, which means we need to process the
+   * body to extract it. Maybe in the future CapData could be extended to carry
+   * this separately. See https://github.com/endojs/endo/issues/2991
+   *
+   * @param {CapData<Slot>} data
+   */
   const makeIfaceExtractor = data => {
     /** @type {(string | undefined)[] | undefined} */
     let ifaces;
