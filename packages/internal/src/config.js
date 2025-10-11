@@ -1,6 +1,8 @@
 // @ts-check
 // @jessie-check
 
+import { keyMirror } from './keyMirror.js';
+
 /**
  * @file
  *
@@ -59,8 +61,8 @@ export const CosmosInitKeyToBridgeId = {
 };
 harden(CosmosInitKeyToBridgeId);
 
-export const WalletName = /** @type {const} */ ({
-  depositFacet: 'depositFacet',
+export const WalletName = keyMirror({
+  depositFacet: null,
 });
 harden(WalletName);
 
