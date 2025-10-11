@@ -124,7 +124,6 @@ func TestActionContext(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			toJson := func(in interface{}) string {
 				bz, err := json.Marshal(in)
