@@ -13,6 +13,7 @@ import {
 } from '@agoric/internal';
 import type {
   AccountId,
+  CaipChainId,
   CosmosChainAddress,
   Denom,
   DenomAmount,
@@ -28,7 +29,7 @@ import {
   type YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
-import type { VTransferIBCEvent } from '@agoric/vats';
+import type { IBCChannelID, VTransferIBCEvent } from '@agoric/vats';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { assert, Fail, q } from '@endo/errors';
@@ -69,6 +70,11 @@ import {
   type ProposalType,
 } from './type-guards.ts';
 import type { RegisterAccountMemo } from './noble-fwd-calc.js';
+import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
+import type { AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
+import { decodeBase64 } from '@endo/base64';
+import { DECODE_CONTRACT_CALL_RESULT_ABI } from './evm-facade.ts';
+import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const { keys, entries, fromEntries } = Object;
@@ -86,7 +92,10 @@ export type PortfolioInstanceContext = {
   zoeTools: GuestInterface<ZoeTools>;
   resolverClient: GuestInterface<ResolverKit['client']>;
   contractAccount: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>;
-  nobleForwardingChannel: `channel-${number}`;
+  transferChannels: {
+    noble: IBCChannelID;
+    axelar?: IBCChannelID;
+  };
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
@@ -495,7 +504,7 @@ const stepFlow = async (
           move,
           lca,
           poolKey,
-          ctx.nobleForwardingChannel,
+          ctx.transferChannels.noble,
         );
         await null;
         if ('src' in way) {
@@ -519,7 +528,7 @@ const stepFlow = async (
             move,
             lca,
             poolKey,
-            ctx.nobleForwardingChannel,
+            ctx.transferChannels.noble,
           );
           await pImpl.supply(evmCtx, amount, gInfo);
         }
@@ -654,7 +663,7 @@ const stepFlow = async (
                 evmChain,
                 move,
                 agoric.lca,
-                ctx.nobleForwardingChannel,
+                ctx.transferChannels.noble,
               );
               await CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric);
             }
@@ -896,6 +905,102 @@ export const parseInboundTransfer = (async (
   return parsed;
 }) satisfies OrchestrationFlow;
 
+const eventAbbr = (e: VTransferIBCEvent) => {
+  const { destination_channel: dest, sequence } = e.packet;
+  return { destination_channel: dest, sequence };
+};
+
+/**
+ * Handle notification of transfer in/out of agoric LCA (@agoric)
+ *
+ * Prompt.
+ */
+export const onAgoricTransfer = (async (
+  orch: Orchestrator,
+  ctx: PortfolioInstanceContext,
+  event: VTransferIBCEvent,
+  pKit: PortfolioKit,
+): Promise<boolean> => {
+  /**
+   * @param memo - valid memo from AXELAR_GMP by way of transferChannels.axelar
+   */
+  const resolveEVMAccount = async (memo: AxelarGmpIncomingMemo) => {
+    const result = (entries(axelarIds) as [AxelarChain, string][]).find(
+      ([_, chainId]) => chainId === memo.source_chain,
+    );
+
+    if (!result) {
+      traceUpcall('unknown source_chain', memo);
+      return false;
+    }
+
+    const [chainName, _] = result;
+
+    const payloadBytes = decodeBase64(memo.payload);
+    const [{ isContractCallResult, data }] = decodeAbiParameters(
+      DECODE_CONTRACT_CALL_RESULT_ABI,
+      payloadBytes,
+    ) as [AgoricResponse];
+
+    traceUpcall('Decoded:', JSON.stringify({ isContractCallResult, data }));
+
+    if (isContractCallResult) {
+      traceUpcall('TODO: Handle the result of the contract call', data);
+      return false;
+    }
+
+    const [message] = data;
+    const { success, result: result2 } = message;
+    if (!success) return false;
+
+    const [address] = decodeAbiParameters([{ type: 'address' }], result2);
+
+    const chainInfo = await (await orch.getChain(chainName)).getChainInfo();
+    const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
+
+    traceUpcall(chainName, 'remoteAddress', address);
+    pKit.manager.resolveAccount({
+      namespace: 'eip155',
+      chainName,
+      chainId: caipId,
+      remoteAddress: address,
+    });
+
+    return true;
+  };
+
+  const { gmpAddresses, axelarIds, transferChannels } = ctx;
+  const { reader } = pKit;
+  const pId = reader.getPortfolioId();
+  const traceUpcall = makeTracer('upcall').sub(`portfolio${pId}`);
+  traceUpcall('event', eventAbbr(event));
+  const { destination_channel: packetDest } = event.packet;
+
+  switch (packetDest) {
+    case transferChannels.axelar: {
+      const lca = reader.getLocalAccount();
+      const parsed = await lca.parseInboundTransfer(event.packet);
+      const { extra } = parsed;
+      if (extra.sender !== gmpAddresses.AXELAR_GMP) {
+        traceUpcall(
+          `GMP early exit; AXELAR_GMP sender expected ${gmpAddresses.AXELAR_GMP}, got ${extra.sender}`,
+        );
+        return false;
+      }
+
+      if (!extra.memo) return false;
+
+      const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
+      return resolveEVMAccount(memo);
+    }
+    default:
+      traceUpcall(
+        `GMP early exit: ${packetDest} != ${transferChannels.axelar}: not from axelar`,
+      );
+      return false;
+  }
+}) satisfies OrchestrationFlow;
+
 /**
  * Offer handler to make a portfolio and, optionally, open yield positions.
  *
@@ -918,7 +1023,7 @@ export const openPortfolio = (async (
   const trace = makeTracer('openPortfolio');
   try {
     const { makePortfolioKit, ...ctxI } = ctx;
-    const { inertSubscriber, nobleForwardingChannel } = ctxI;
+    const { inertSubscriber, transferChannels } = ctxI;
     const kit = makePortfolioKit();
     const id = kit.reader.getPortfolioId();
     const traceP = trace.sub(`portfolio${id}`);
@@ -930,7 +1035,7 @@ export const openPortfolio = (async (
       const { lca } = await provideCosmosAccount(orch, 'agoric', kit, traceP);
       const { ica } = await provideCosmosAccount(orch, 'noble', kit, traceP);
       const forwarding = {
-        channel: nobleForwardingChannel,
+        channel: transferChannels.noble,
         recipient: lca.getAddress().value,
       };
       const dest = ica.getAddress();
