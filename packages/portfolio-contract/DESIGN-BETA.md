@@ -33,6 +33,7 @@ C4Context
 ```
 
 ### Operations
+
 1. new/edit portfolio
 ```mermaid
 sequenceDiagram
@@ -51,12 +52,15 @@ sequenceDiagram
   end
 
   portfolio ->> vstorage: write portfolio
-  portfolio ->> NFA: create NFA if needed
+  opt When creating new portfolio
+    portfolio ->> NFA: create NFA
+  end
 ```
+
 2. deposit from Agoric chain into existing portfolio
 ```mermaid
 sequenceDiagram
-  UI ->> portfolio: rebalance in type-guards.ts
+  UI ->> portfolio: deposit in type-guards.ts
 
   box rgb(255,153,153) Agoric
     participant portfolio
@@ -70,13 +74,13 @@ sequenceDiagram
     participant NFA as NFA
   end
 
-  portfolio ->> vstorage: signal for ymax-planner
-  portfolio ->> NFA: create NFA if needed
+  portfolio ->> vstorage: flowsRunning:<br/>{ flowN: { type: 'deposit', amount } }
 ```
+
 3. new/edit portfolio and deposit from Agoric chain
 ```mermaid
 sequenceDiagram
-  UI ->> portfolio: openPortfolio AND rebalance in type-guards.ts
+  UI ->> portfolio: openPortfolio in type-guards.ts
 
   box rgb(255,153,153) Agoric
     participant portfolio
@@ -85,10 +89,19 @@ sequenceDiagram
     participant LCAin
   end
 
+  box rgb(163,180,243) Noble
+    participant icaN as icaNoble
+    participant NFA as NFA
+  end
+
   portfolio ->> vstorage: write portfolio
-  portfolio ->> vstorage: signal for ymax-planner
+  opt When creating new portfolio
+    portfolio ->> NFA: create NFA
+  end
+  portfolio ->> vstorage: flowsRunning:<br/>{ flowN: { type: 'deposit', amount } }
 ```
-4. deposit (single-flow)
+
+4. ymax-planner in response to single-flow deposit
 ```mermaid
 sequenceDiagram
   autonumber
@@ -158,9 +171,11 @@ sequenceDiagram
 ```
 
 5. Withdraw
+
 ```
     1. non-pipelined
 ```
+
 ```mermaid
 sequenceDiagram
   autonumber
@@ -220,7 +235,11 @@ sequenceDiagram
   LCAorch ->> UI: payout $2k USDC
   portfolio -->> vstorage: flowsRunning: {}
 ```
+
+```
     2. pipelined (not our focus right now)
+```
+
 ```mermaid
 sequenceDiagram
   autonumber
