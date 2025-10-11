@@ -19,9 +19,7 @@ import {
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   denomHash,
-  type ActualChainInfo,
   type ChainInfo,
-  type IBCConnectionInfo,
   type Orchestrator,
 } from '@agoric/orchestration';
 import { buildGasPayload } from '@agoric/orchestration/src/utils/gmp.js';
@@ -333,6 +331,11 @@ const mocks = (
       marshaller,
     })();
 
+  const transferChannels = {
+    noble: 'channel-62',
+    axelar: 'channel-9',
+  } as const;
+
   const chainHubTools = harden({
     getChainInfo: (chainName: string) => {
       if (['agoric', 'axelar', 'noble'].includes(chainName)) {
@@ -343,25 +346,6 @@ const mocks = (
       }
       return axelarCCTPConfig[chainName];
     },
-    getChainsAndConnection: <C1 extends string, C2 extends string>(
-      primaryChainName: C1,
-      secondaryChainName: C2,
-    ) =>
-      vowTools.asVow(() => {
-        const primaryChain = chainHubTools.getChainInfo(primaryChainName);
-        const secondaryChain = chainHubTools.getChainInfo(secondaryChainName);
-        const cid = secondaryChainName.charCodeAt(1);
-        return [
-          primaryChain,
-          secondaryChain,
-          {
-            transferChannel: {
-              channelId: 'channel-9',
-              counterpartyChannelId: `channel-${cid}`,
-            },
-          } as unknown,
-        ] as [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo];
-      }),
   });
 
   const ctx1: PortfolioInstanceContext = {
@@ -374,7 +358,7 @@ const mocks = (
     zoeTools,
     resolverClient,
     contractAccount: orch.getChain('agoric').then(ch => ch.makeAccount()),
-    nobleForwardingChannel: 'channel-62',
+    nobleForwardingChannel: transferChannels.noble,
   };
 
   const rebalanceHost = (seat, offerArgs, kit) =>
@@ -387,6 +371,7 @@ const mocks = (
     gmpAddresses,
     vowTools,
     chainHubTools,
+    transferChannels,
     rebalance: rebalanceHost as any,
     parseInboundTransfer: parseInboundTransferHost as any,
     proposalShapes: makeProposalShapes(USDC, BLD),

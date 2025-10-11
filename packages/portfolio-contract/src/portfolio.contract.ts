@@ -236,10 +236,6 @@ export const contract = async (
   assert(brands.USDC, 'USDC missing from brands in terms');
   assert(brands.Fee, 'Fee missing from brands in terms');
 
-  if (!('axelar' in chainInfo)) {
-    trace('⚠️ no axelar chainInfo; GMP not available', Object.keys(chainInfo));
-  }
-
   // Only register chains and assets if chainHub is empty to avoid conflicts on restart
   if (chainHub.isEmpty()) {
     trace('chainHub:', Object.keys(chainInfo));
@@ -270,9 +266,26 @@ export const contract = async (
     trace('published contractAccount', addr.value);
   });
 
+  const toAxelar = await (async () => {
+    if (!('axelar' in chainInfo)) {
+      trace('⚠️ no axelar chainInfo; GMP not available', keys(chainInfo));
+      return;
+    }
+    // getChainsAndConnection is prompt; should be sync #10602
+    const [_ag, _noble, agToAxelar] = await vowTools.when(
+      chainHub.getChainsAndConnection('agoric', 'axelar'),
+    );
+    return agToAxelar.transferChannel.channelId;
+  })();
+
   const [_ag2, _noble, agToNoble] = await vowTools.when(
     chainHub.getChainsAndConnection('agoric', 'noble'),
   );
+
+  const transferChannels = {
+    axelar: toAxelar,
+    noble: agToNoble.transferChannel.channelId,
+  };
 
   const ctx1: flows.PortfolioInstanceContext = {
     zoeTools: zoeTools as any, // XXX Guest...
@@ -296,7 +309,7 @@ export const contract = async (
     resolverClient,
     inertSubscriber,
     contractAccount: contractAccountV as any, // XXX Guest...
-    nobleForwardingChannel: agToNoble.transferChannel.channelId,
+    nobleForwardingChannel: transferChannels.noble,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
@@ -321,8 +334,8 @@ export const contract = async (
     offerArgsShapes,
     chainHubTools: {
       getChainInfo: chainHub.getChainInfo.bind(chainHub),
-      getChainsAndConnection: chainHub.getChainsAndConnection.bind(chainHub),
     },
+    transferChannels,
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller,
     usdcBrand: brands.USDC,
