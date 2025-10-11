@@ -64,9 +64,11 @@ export const watchCctpTransfer = ({
   timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
   setTimeout = globalThis.setTimeout,
+  signal,
 }: CctpWatch & {
   timeoutMs?: number;
   setTimeout?: typeof globalThis.setTimeout;
+  signal?: AbortSignal;
 }): Promise<boolean> => {
   return new Promise(resolve => {
     const TO_TOPIC = zeroPadValue(toAddress.toLowerCase(), 32);
@@ -129,6 +131,13 @@ export const watchCctpTransfer = ({
         resolve(false);
       }
     }, timeoutMs);
+
+    if (signal) {
+      signal.addEventListener('abort', () => {
+        cleanup();
+        resolve(false);
+      });
+    }
   });
 };
 
@@ -140,17 +149,17 @@ export const lookBackCctp = async ({
   publishTimeMs,
   chainId,
   log = () => {},
+  signal,
 }: CctpWatch & {
   publishTimeMs: number;
   chainId: CaipChainId;
+  signal?: AbortSignal;
 }): Promise<boolean> => {
   await null;
   try {
     const { fromBlock, toBlock } = await buildTimeWindow(
       provider,
       publishTimeMs,
-      log,
-      chainId,
     );
 
     log(
@@ -166,7 +175,7 @@ export const lookBackCctp = async ({
     // TODO: Consider async iteration pattern for more flexible log scanning
     // See: https://github.com/Agoric/agoric-sdk/pull/11915#discussion_r2353872425
     const matchingEvent = await scanEvmLogsInChunks(
-      { provider, baseFilter, fromBlock, toBlock, chainId, log },
+      { provider, baseFilter, fromBlock, toBlock, chainId, log, signal },
       ev => {
         try {
           const t = parseTransferLog(ev);

@@ -15,11 +15,11 @@ import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 
 const mockFetchForGasEstimate = async (_, options?: any) => {
-    return {
-      ok: true,
-      json: async () => JSON.parse(options.body).gasLimit,
-      text: async () => JSON.parse(options.body).gasLimit,
-    } as Response;
+  return {
+    ok: true,
+    json: async () => JSON.parse(options.body).gasLimit,
+    text: async () => JSON.parse(options.body).gasLimit,
+  } as Response;
 };
 
 const mockAxelarApiAddress = 'https://api.axelar.example/';
@@ -40,14 +40,23 @@ export const mockGasEstimator = makeGasEstimator({
 
 export const createMockProvider = () => {
   const eventListeners = new Map<string, Function[]>();
+  let currentBlock = 1000;
 
-  return {
+  const mockProvider = {
     on: (eventOrFilter: any, listener: Function) => {
       const key = JSON.stringify(eventOrFilter);
       if (!eventListeners.has(key)) {
         eventListeners.set(key, []);
       }
       eventListeners.get(key)!.push(listener);
+
+      // If subscribing to 'block' events, immediately emit next block
+      if (eventOrFilter === 'block') {
+        // Simulate next block in the next tick
+        setTimeout(() => {
+          listener(currentBlock + 1);
+        }, 0);
+      }
     },
     off: (eventOrFilter: any, listener: Function) => {
       const key = JSON.stringify(eventOrFilter);
@@ -66,7 +75,12 @@ export const createMockProvider = () => {
         listeners.forEach(listener => listener(log));
       }
     },
+    getBlockNumber: async () => {
+      return currentBlock;
+    },
   } as JsonRpcProvider;
+
+  return mockProvider;
 };
 
 export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {

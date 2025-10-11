@@ -26,9 +26,11 @@ export const watchGmp = ({
   timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
   setTimeout = globalThis.setTimeout,
+  signal,
 }: WatchGmp & {
   timeoutMs?: number;
   setTimeout?: typeof globalThis.setTimeout;
+  signal?: AbortSignal;
 }): Promise<boolean> => {
   return new Promise(resolve => {
     const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
@@ -103,6 +105,13 @@ export const watchGmp = ({
         resolve(false);
       }
     }, timeoutMs);
+
+    if (signal) {
+      signal.addEventListener('abort', () => {
+        cleanup();
+        resolve(false);
+      });
+    }
   });
 };
 
@@ -113,17 +122,17 @@ export const lookBackGmp = async ({
   publishTimeMs,
   chainId,
   log = () => {},
+  signal,
 }: WatchGmp & {
   publishTimeMs: number;
   chainId: CaipChainId;
+  signal?: AbortSignal;
 }): Promise<boolean> => {
   await null;
   try {
     const { fromBlock, toBlock } = await buildTimeWindow(
       provider,
       publishTimeMs,
-      log,
-      chainId,
     );
 
     log(
@@ -143,6 +152,13 @@ export const lookBackGmp = async ({
 
     const statusController = new AbortController();
     const executedController = new AbortController();
+
+    if (signal) {
+      signal.addEventListener('abort', () => {
+        statusController.abort();
+        executedController.abort();
+      });
+    }
 
     const matchingEvent = await Promise.race([
       scanEvmLogsInChunks(

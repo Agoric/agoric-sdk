@@ -1,7 +1,7 @@
 import { JsonRpcProvider, Log, type Filter } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from './config.ts';
-import { TX_TIMEOUT_MS, type EvmContext } from './pending-tx-manager.ts';
+import type { EvmContext } from './pending-tx-manager.ts';
 
 const { entries } = Object;
 
@@ -52,26 +52,10 @@ export const gasLimitEstimates = {
 /**
  * Average block times for supported EVM chains in milliseconds.
  *
- * Sources:
- * - Ethereum:
- *   Mainnet ~12s → https://etherscan.io/chart/blocktime
- *   Sepolia ~12s → https://eth-sepolia.blockscout.com/
- *
- * - Arbitrum:
- *   Mainnet ~0.3s → https://arbitrum.blockscout.com/
- *   Sepolia ~0.3s → https://arbitrum-sepolia.blockscout.com/
- *
- * - Avalanche:
- *   Mainnet ~2s → https://snowscan.xyz/chart/blocktime
- *   Fuji ~2s → Didn't find any specific resource for it
- *
- * - Base:
- *   Mainnet ~2.5s → https://base.blockscout.com/stats
- *   Sepolia ~2s → https://base-sepolia.blockscout.com/
- *
- * - Optimism:
- *   Mainnet ~2s → https://explorer.optimism.io/
- *   Sepolia ~2s → https://testnet-explorer.optimism.io/
+ * Mainnet data: https://eth.blockscout.com/ (except Avalanche),
+ *   https://chainspect.app/ , https://subnets.avax.network/c-chain
+ * Testnet data: https://eth.blockscout.com/ (except Avalanche),
+ *   https://subnets-test.avax.network/c-chain
  */
 const chainBlockTimesMs: Record<CaipChainId, number> = harden({
   // ========= Mainnet =========
@@ -283,40 +267,23 @@ const findBlockByTimestamp = async (
   return startBlockNumber;
 };
 
+/**
+ * Builds a time window for scanning blockchain logs based on a transaction publish time.
+ * Returns a range of blocks that should contain the block corresponding to publishTimeMs
+ * (with a fudge factor applied for clock skew) up to the current block at the time of calling.
+ */
 export const buildTimeWindow = async (
   provider: JsonRpcProvider,
   publishTimeMs: number,
-  log: (...args: unknown[]) => void,
-  chainId: CaipChainId,
-  fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
+  {
+    fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
+  }: {
+    fudgeFactorMs?: number;
+  } = {},
 ) => {
   const adjustedTime = publishTimeMs - fudgeFactorMs;
   const fromBlock = await findBlockByTimestamp(provider, adjustedTime);
-
-  const fromBlockInfo = await provider.getBlock(fromBlock);
-  const fromBlockTime = (fromBlockInfo?.timestamp || 0) * 1000;
-  // Add fudgeFactorMs back to TX_TIMEOUT_MS to compensate for the earlier subtraction
-  const endTime = fromBlockTime + TX_TIMEOUT_MS + fudgeFactorMs;
-
-  const currentBlock = await provider.getBlockNumber();
-  const currentBlockInfo = await provider.getBlock(currentBlock);
-  const currentBlockTime = (currentBlockInfo?.timestamp || 0) * 1000;
-
-  if (endTime <= currentBlockTime) {
-    log('end time is in the past');
-    return { fromBlock, toBlock: currentBlock };
-  }
-
-  log('end time is in the future - estimate blocks ahead');
-
-  const blockTimeMs = getBlockTimeMs(chainId);
-  log(`using block time ${blockTimeMs}ms for chain ${chainId}`);
-
-  const timeUntilEnd = endTime - currentBlockTime;
-  const estimatedFutureBlocks = Math.ceil(timeUntilEnd / blockTimeMs);
-  log('future blocks', estimatedFutureBlocks);
-
-  const toBlock = currentBlock + estimatedFutureBlocks;
+  const toBlock = await provider.getBlockNumber();
   return { fromBlock, toBlock };
 };
 
@@ -398,4 +365,19 @@ export const scanEvmLogsInChunks = async (
     start += chunkSize;
   }
   return undefined;
+};
+
+export const waitForBlock = async (
+  provider: JsonRpcProvider,
+  targetBlock: number,
+) => {
+  return new Promise(resolve => {
+    const listener = blockNumber => {
+      if (blockNumber >= targetBlock) {
+        void provider.off('block', listener);
+        resolve(blockNumber);
+      }
+    };
+    void provider.on('block', listener);
+  });
 };
