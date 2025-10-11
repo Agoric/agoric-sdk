@@ -1,8 +1,7 @@
-import { Buffer } from 'node:buffer';
 import { createSHA256 } from '../src/hasher.js';
 
 export async function* getSnapshotStream(contents) {
-  yield Buffer.from(contents);
+  yield new TextEncoder().encode(contents);
 }
 harden(getSnapshotStream);
 
