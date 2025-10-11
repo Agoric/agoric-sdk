@@ -473,7 +473,6 @@ func (s *IntegrationTestSuite) TestHops() {
 
 	for hops := 1; hops <= 2; hops += 1 {
 		for _, tc := range testCases {
-			tc := tc
 			name := fmt.Sprintf("%s_%dHop", tc.name, hops)
 			s.Run(name, func() {
 				_, _, baseSenderAddr := testdata.KeyTestPubAddr()
