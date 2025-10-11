@@ -67,13 +67,15 @@ export const makeGasEstimator = ({
     const estimates = operationType
       ? walletOperationGasLimitEstimates[operationType]
       : {};
+
     // Absent a protocol-specific gas estimate, pick the first value for this
     // operation type (e.g., DepositForBurn might have the same value for all
     // protocols) or the generic fallback.
     const gasLimit =
-      (protocol && estimates[protocol]) ??
+      (protocol ? estimates[protocol] : undefined) ??
       Object.values(estimates)[0] ??
       walletOperationFallbackGasLimit;
+
     return queryAxelarGasAPI(AGORIC_CHAIN, chainName, gasLimit, BLD_TOKEN);
   };
 
