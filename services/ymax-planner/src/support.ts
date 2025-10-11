@@ -1,5 +1,10 @@
 import { JsonRpcProvider, Log, type Filter } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
+import { objectMap } from '@agoric/internal';
+import {
+  EvmWalletOperationType,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
 import type { ClusterName } from './config.ts';
 import { TX_TIMEOUT_MS, type EvmContext } from './pending-tx-manager.ts';
 
@@ -43,11 +48,30 @@ export const usdcAddresses: UsdcAddresses = {
   },
 };
 
-// Avg measurements of Actual Gas used for EVM Txs
-export const gasLimitEstimates = {
-  Factory: 1_209_435n, // https://sepolia.arbiscan.io/tx/0xfdb38b1680c10919b7ff360b21703e349b74eac585f15c70ba9733c7ddaccfe6
-  Wallet: 276_809n,
+export const walletOperationGasLimitEstimates: Record<
+  EvmWalletOperationType,
+  Partial<Record<YieldProtocol, bigint>>
+> = {
+  // Assume that creation has the same gas cost on every chain.
+  // https://sepolia.arbiscan.io/tx/0xfdb38b1680c10919b7ff360b21703e349b74eac585f15c70ba9733c7ddaccfe6
+  [EvmWalletOperationType.Create]: objectMap(YieldProtocol, () => 1_209_435n),
+  // https://github.com/Agoric/agoric-sdk/issues/12021#issuecomment-3361285596
+  [EvmWalletOperationType.Supply]: {
+    [YieldProtocol.Aave]: 279_473n,
+    [YieldProtocol.Compound]: 151_692n,
+  },
+  [EvmWalletOperationType.Withdraw]: {
+    [YieldProtocol.Aave]: 234_327n,
+    [YieldProtocol.Compound]: 123_081n,
+  },
+  [EvmWalletOperationType.DepositForBurn]: objectMap(
+    YieldProtocol,
+    () => 151_320n,
+  ),
 };
+
+/** In the absence of a more specific gas estimate, use this one. */
+export const walletOperationFallbackGasLimit = 276_809n;
 
 /**
  * Average block times for supported EVM chains in milliseconds.
