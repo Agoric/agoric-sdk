@@ -32,7 +32,7 @@ import {
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
-import { q, X } from '@endo/errors';
+import { Fail, q, X } from '@endo/errors';
 import { ERC20, makeEVMSession, type EVMT } from './evm-facade.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type {
@@ -82,10 +82,12 @@ export const provideEVMAccount = async (
       remoteAddress: ctx.contracts[chainName].factory,
     };
     const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
+    fee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
     const feeAccount = await ctx.contractAccount;
     const src = feeAccount.getAddress();
     traceChain('send makeAccountCall Axelar fee from', src.value);
     await feeAccount.send(lca.getAddress(), fee);
+
     await sendMakeAccountCall(
       target,
       fee,
