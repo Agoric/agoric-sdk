@@ -68,7 +68,7 @@ const TargetShape = M.splitRecord(
 );
 const ServiceFacetI = M.interface('ResolverService', {
   settleTransaction: M.call(TransactionSettlementOfferArgsShape).returns(),
-  lookupTx: M.call(TargetShape).returns(M.string()),
+  lookupTx: M.call(TargetShape).returns(M.opt(M.string())),
 });
 
 const InvitationMakersFacetI = M.interface('ResolverInvitationMakers', {
@@ -258,6 +258,7 @@ export const prepareResolverKit = (
               return txId;
             }
           }
+          return undefined;
         },
       },
       settlementHandler: {
