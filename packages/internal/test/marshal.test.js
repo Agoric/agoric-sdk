@@ -15,8 +15,8 @@ import {
 
 /**
  * @param {object} [options]
- * @param {Map<string, object>} [options.slotToVal]
- * @param {WeakMap<object, string>} [options.valToSlot]
+ * @param {Map<string, object>} [options.mockSotToVal]
+ * @param {WeakMap<object, string>} [options.mockValToSlot]
  * @param {(val: any, direction: 'from' | 'to') => void} [options.valueHook]
  * @param {boolean} [options.readOnly]
  * @returns {Farable<
@@ -24,27 +24,27 @@ import {
  * >}
  */
 const makeMockMarshaller = ({
-  slotToVal = new Map(),
-  valToSlot = new WeakMap(),
+  mockSotToVal = new Map(),
+  mockValToSlot = new WeakMap(),
   valueHook,
   readOnly = false,
 } = {}) => {
   let nextId = 1;
   const marshaller = makeMarshal(
     val => {
-      if (!valToSlot.has(val) && !readOnly) {
+      if (!mockValToSlot.has(val) && !readOnly) {
         const nextSlot = `mock${nextId}`;
         nextId += 1;
-        valToSlot.set(val, nextSlot);
-        slotToVal.set(nextSlot, val);
+        mockValToSlot.set(val, nextSlot);
+        mockSotToVal.set(nextSlot, val);
       }
-      return valToSlot.get(val) || null;
+      return mockValToSlot.get(val) || null;
     },
     (slot, iface) => {
       if (slot === null) {
         return makeInaccessibleVal(iface);
       }
-      return slotToVal.get(slot) || Fail`Unknown mock slot ${slot}`;
+      return mockSotToVal.get(slot) || Fail`Unknown mock slot ${slot}`;
     },
     {
       serializeBodyFormat: 'smallcaps',
@@ -200,14 +200,14 @@ test('wrapRemoteMarshaller - read-only marshaller', async t => {
 const withNullAndNonNullSlots = test.macro(async (t, { withCache }) => {
   const sharedCap = Far('shared', { sentinel() {} });
 
-  const slotToVal = new Map();
-  const valToSlot = new WeakMap();
+  const mockSotToVal = new Map();
+  const mockValToSlot = new WeakMap();
 
   let valueHookCalled = false;
-  const writeMarshaller = makeMockMarshaller({ slotToVal, valToSlot });
+  const writeMarshaller = makeMockMarshaller({ mockSotToVal, mockValToSlot });
   const marshaller = makeMockMarshaller({
-    slotToVal,
-    valToSlot,
+    mockSotToVal,
+    mockValToSlot,
     valueHook: val => {
       if (valueHookCalled && withCache) {
         unexpectedMarshallerInvocation(t, val);
