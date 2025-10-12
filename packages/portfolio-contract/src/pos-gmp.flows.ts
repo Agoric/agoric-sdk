@@ -146,7 +146,7 @@ export const CCTPfromEVM = {
       dest.lca.getAddress().value,
     );
     traceTransfer('Noble forwarding address', fwdAddr);
-    const mintRecipient = bech32ToBytes32(fwdAddr);
+    const mintRecipient = bech32ToBytes32(fwdAddr); // XXX we generate bech32 only to go back to bytes
 
     const session = makeEVMSession();
     const usdc = session.makeContract(addresses.usdc, ERC20);
