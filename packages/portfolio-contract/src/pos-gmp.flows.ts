@@ -82,10 +82,14 @@ export const provideEVMAccount = async (
       remoteAddress: ctx.contracts[chainName].factory,
     };
     const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
-    const feeAccount = await ctx.contractAccount;
-    const src = feeAccount.getAddress();
-    traceChain('send makeAccountCall Axelar fee from', src.value);
-    await feeAccount.send(lca.getAddress(), fee);
+    if (fee.value > 0n) {
+      const feeAccount = await ctx.contractAccount;
+      const src = feeAccount.getAddress();
+      traceChain('send makeAccountCall Axelar fee from', src.value);
+      await feeAccount.send(lca.getAddress(), fee);
+    } else {
+      traceChain('⚠️ SKIP: fee = 0ubld');
+    }
     await sendMakeAccountCall(
       target,
       fee,
