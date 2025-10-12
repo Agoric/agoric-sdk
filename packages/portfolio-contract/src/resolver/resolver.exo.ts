@@ -211,10 +211,7 @@ export const prepareResolverKit = (
 
           switch (status) {
             case TxStatus.SUCCESS:
-              trace(
-                'Transaction confirmed - resolving pending operation for key:',
-                txId,
-              );
+              trace('fulfill:', txId, registryEntry.type);
               registryEntry.vowKit.resolver.resolve();
               this.facets.reporter.completePendingTransaction(
                 txId,
@@ -224,10 +221,7 @@ export const prepareResolverKit = (
               return;
 
             case TxStatus.FAILED:
-              trace(
-                'Transaction failed - rejecting pending operation for key:',
-                txId,
-              );
+              trace('reject:', txId, registryEntry.type);
               registryEntry.vowKit.resolver.reject(
                 Error(rejectionReason || 'Transaction failed'),
               );
