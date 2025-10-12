@@ -1,8 +1,9 @@
 // @ts-check
 import { makeCacheMapKit } from '@endo/cache-map';
-import { Fail } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/far';
+import { PASS_STYLE } from '@endo/pass-style';
 import { makeMarshal } from '@endo/marshal';
 import { M } from '@endo/patterns';
 import { isStreamCell } from './lib-chainStorage.js';
@@ -184,6 +185,68 @@ export const pureDataMarshaller = makeMarshal(rejectOCap, rejectOCap, {
 });
 harden(pureDataMarshaller);
 
+const { slotToWrapper, wrapperToSlot } = (() => {
+  /** @template [Slot=unknown] */
+  class SlotWrapper {
+    /** @type {Slot} */
+    #slot;
+
+    [Symbol.toStringTag];
+
+    /**
+     * @param {Slot} slot
+     * @param {string} [iface]
+     */
+    constructor(slot, iface) {
+      if (iface == null || iface === 'Remotable') {
+        iface = 'Remotable';
+      } else if (!iface.startsWith('Alleged: ')) {
+        iface = `Alleged: ${iface}`;
+      }
+      this.#slot = slot;
+      this[Symbol.toStringTag] =
+        /** @type {'Remotable' | `Alleged: ${string}`} */ (iface);
+    }
+
+    /** @param {SlotWrapper} wrapper */
+    static getSlot(wrapper) {
+      return wrapper.#slot;
+    }
+  }
+  Object.defineProperties(SlotWrapper.prototype, {
+    [PASS_STYLE]: { value: 'remotable' },
+    [Symbol.toStringTag]: { value: 'Alleged: SlotWrapper' },
+  });
+  Reflect.deleteProperty(SlotWrapper.prototype, 'constructor');
+  harden(SlotWrapper);
+
+  /**
+   * @type {<Slot = unknown>(
+   *   wrapper: SlotWrapper<Slot> & RemotableObject,
+   * ) => Slot}
+   */
+  const getSlot = SlotWrapper.getSlot;
+
+  return {
+    /**
+     * @template [Slot=unknown]
+     * @param {Slot} slot
+     * @param {string} [iface]
+     */
+    slotToWrapper: (slot, iface) =>
+      /** @type {SlotWrapper<Slot> & RemotableObject} */ (
+        harden(new SlotWrapper(slot, iface))
+      ),
+
+    wrapperToSlot: getSlot,
+  };
+})();
+
+/**
+ * @template [Slot=unknown] @typedef {ReturnType<typeof slotToWrapper<Slot>>}
+ *   SlotWrapper
+ */
+
 const defaultCacheCapacity = 50;
 
 /**
@@ -242,11 +305,11 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
   //   This pass-through marshaller is used to locally process the structure, and
   //   separate capabilities into a slots array for potential resolution by the
   //   wrapped marshaller.
-  // - A "BoardRemote" marshaller used to wrap into remotables the slots of the
-  //   wrapped marshaller. This marshaller is an internal implementation detail and
-  //   does not mean the wrapped marshaller is produced by a the board vat, or using
-  //   strings for slots. BoardRemote are used purely as a way to associate a slot
-  //   value to a remotable when interacting with the wrapped marshaller.
+  // - A "SlotWrapper" marshaller used to wrap into remotables the slots of the
+  //   wrapped marshaller. When unserializing CapData, it is used to recreate
+  //   CapData of a simple array of non-severed capabilities for resolution by
+  //   the wrapped marshaller. When serializing to CapData, it allows extracting
+  //   the slots from the capabilities array serialized by the wrapped marshaller.
 
   /** @type {Marshal<object | null>} */
   const passThroughMarshaller = makeMarshal(
@@ -255,19 +318,35 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
     marshalOptions,
   );
 
-  /** @type {Map<Slot, string | undefined>} */
-  const remoteSlotToIface = new Map();
+  /** @type {Map<Slot, SlotWrapper<NonNullable<Slot>>>} */
+  const currentSlotToWrapper = new Map();
+
+  const convertWrapperToSlot = /** @type {typeof wrapperToSlot<Slot>} */ (
+    wrapperToSlot
+  );
+  /**
+   * @param {Slot} slot
+   * @param {string | undefined} [iface]
+   */
+  const convertSlotToWrapper = (slot, iface) => {
+    if (slot == null) {
+      // The wrapped marshaller may send us CapData with a null slot. These are not
+      // meant to be considered equivalent with each other, so bypass mapping.
+      return slotToWrapper(slot, iface);
+    }
+    let wrapper = currentSlotToWrapper.get(slot);
+    if (!wrapper) {
+      wrapper = slotToWrapper(slot, iface);
+      currentSlotToWrapper.set(slot, wrapper);
+    }
+
+    return wrapper;
+  };
 
   /** @type {Pick<Marshal<Slot>, 'toCapData' | 'fromCapData'>} */
-  const boardRemoteMarshaller = makeMarshal(
-    /** @type {ConvertValToSlot<Slot>} */ (boardValToSlot),
-    (slot, iface) => {
-      // Note: Technically different slots could contain the same slotId with
-      // different iface. If the marshaller producing CapData wasn't well
-      // behaved, we just store the last iface encountered.
-      if (slot != null) remoteSlotToIface.set(slot, iface);
-      return makeBoardRemote({ boardId: slot, iface, prefix: '' });
-    },
+  const slotWrapperMarshaller = makeMarshal(
+    convertWrapperToSlot,
+    convertSlotToWrapper,
     marshalOptions,
   );
 
@@ -279,21 +358,21 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
    * marshaller to recreate the passable data.
    *
    * @param {Slot[]} slots
-   * @param {(index: number) => string | undefined} getIface
+   * @param {(index: number) => SlotWrapper<NonNullable<Slot>>} getWrapper
    * @returns {Promise<(object | null)[]>}
    */
-  const mapSlotsToCaps = async (slots, getIface) => {
+  const mapSlotsToCaps = async (slots, getWrapper) => {
     let hasRemoteCap = false;
     const { length } = slots;
-    /** @type {(BoardRemote<NonNullable<Slot>> | null | undefined)[]} */
-    const boardRemoteMappedSlots = Array.from({ length });
+    /** @type {(SlotWrapper<NonNullable<Slot>> | null | undefined)[]} */
+    const slotWrapperMappedSlots = Array.from({ length });
     /** @type {(object | null | undefined)[]} */
     const locallyResolvedCapSlots = Array.from({ length });
 
     for (const [index, slot] of slots.entries()) {
       if (slot === null) {
         const nullSlot = /** @type {null} */ (slot);
-        boardRemoteMappedSlots[index] = nullSlot;
+        slotWrapperMappedSlots[index] = nullSlot;
         locallyResolvedCapSlots[index] = nullSlot;
       } else if (slot !== undefined) {
         const cachedCap = slotToVal?.get(slot);
@@ -302,20 +381,16 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
           locallyResolvedCapSlots[index] = cachedCap;
         } else {
           hasRemoteCap = true;
-          boardRemoteMappedSlots[index] = makeBoardRemote({
-            boardId: slot,
-            iface: getIface(index),
-            prefix: '',
-          });
+          slotWrapperMappedSlots[index] = getWrapper(index);
         }
       }
     }
 
     await null;
     if (hasRemoteCap) {
-      harden(boardRemoteMappedSlots);
-      const slotsOnlyCapData = boardRemoteMarshaller.toCapData(
-        boardRemoteMappedSlots,
+      harden(slotWrapperMappedSlots);
+      const slotsOnlyCapData = slotWrapperMarshaller.toCapData(
+        slotWrapperMappedSlots,
       );
 
       /** @type {(object | null | undefined)[]} */
@@ -386,31 +461,33 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
     if (hasRemoteCap) {
       const remotelyResolvedSlotsCapData =
         await E(marshaller).toCapData(remoteCapsToResolve);
-      /** @type {(BoardRemote<Slot> | null | undefined)[]} */
-      const boardRemoteMappedSlots = boardRemoteMarshaller.fromCapData(
-        remotelyResolvedSlotsCapData,
-      );
-      // We don't care about the remote iface and rely on the one extracted by the local marshaller
-      remoteSlotToIface.clear();
-
-      for (const [index, boardRemote] of boardRemoteMappedSlots.entries()) {
-        if (boardRemote != null) {
-          const slot = boardRemote.getBoardId();
-          const val = caps[index];
-          locallyResolvedSlots[index] = slot;
-          if (slot != null) {
-            slotToVal?.set(slot, val);
+      try {
+        /** @type {(SlotWrapper<Slot> | null | undefined)[]} */
+        const slotWrapperMappedSlots = slotWrapperMarshaller.fromCapData(
+          remotelyResolvedSlotsCapData,
+        );
+        for (const [index, slotWrapper] of slotWrapperMappedSlots.entries()) {
+          if (slotWrapper != null) {
+            const slot = convertWrapperToSlot(slotWrapper);
+            const val = caps[index];
+            locallyResolvedSlots[index] = slot;
+            if (slot != null) {
+              slotToVal?.set(slot, val);
+            }
+            if (slot != null || cacheSeveredVal) {
+              valToSlot?.set(val, slot);
+            }
+          } else if (locallyResolvedSlots[index] === undefined) {
+            const cap = caps[index];
+            console.warn('⚠️ Unresolved local slot in wrapped marshaller', {
+              index,
+              cap,
+            });
           }
-          if (slot != null || cacheSeveredVal) {
-            valToSlot?.set(val, slot);
-          }
-        } else if (locallyResolvedSlots[index] === undefined) {
-          const cap = caps[index];
-          console.warn('⚠️ Unresolved local slot in wrapped marshaller', {
-            index,
-            cap,
-          });
         }
+      } finally {
+        // We're done with the slotWrapperMarshaller, clear its state
+        currentSlotToWrapper.clear();
       }
     }
 
@@ -424,23 +501,30 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
    * body to extract it. Maybe in the future CapData could be extended to carry
    * this separately. See https://github.com/endojs/endo/issues/2991
    *
+   * Since this helper is used internally to ultimately provide SlotWrapper
+   * objects to the corresponding marshaller, and that we use the same
+   * marshaller to extract the iface information, directly return the full
+   * SlotWrapper object instead of just the iface.
+   *
    * @param {CapData<Slot>} data
    */
   const makeIfaceExtractor = data => {
-    /** @type {(string | undefined)[] | undefined} */
-    let ifaces;
-
-    const getIface = slotIndex => {
-      if (!ifaces) {
-        boardRemoteMarshaller.fromCapData(data);
-        ifaces = data.slots.map(slot => remoteSlotToIface.get(slot));
-        remoteSlotToIface.clear();
+    const { slots } = data;
+    /** @param {number} index */
+    const getWrapper = index => {
+      const slot = slots[index];
+      let wrapper = currentSlotToWrapper.get(slot);
+      if (!wrapper) {
+        void slotWrapperMarshaller.fromCapData(data);
       }
-
-      return ifaces[slotIndex];
+      wrapper = currentSlotToWrapper.get(slot);
+      if (!wrapper) {
+        throw Fail`Marshaller didn't create wrapper for slot ${q(slot)} (index=${q(index)})`;
+      }
+      return wrapper;
     };
 
-    return getIface;
+    return getWrapper;
   };
 
   /**
@@ -458,9 +542,14 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
    * @returns {Promise<Passable>}
    */
   const fromCapData = async data => {
-    const getIface = makeIfaceExtractor(data);
-    const mappedSlots = await mapSlotsToCaps(data.slots, getIface);
-    return passThroughMarshaller.fromCapData({ ...data, slots: mappedSlots });
+    const getWrapper = makeIfaceExtractor(data);
+    await null;
+    try {
+      const mappedSlots = await mapSlotsToCaps(data.slots, getWrapper);
+      return passThroughMarshaller.fromCapData({ ...data, slots: mappedSlots });
+    } finally {
+      currentSlotToWrapper.clear();
+    }
   };
 
   return Far('wrapped remote marshaller', {
