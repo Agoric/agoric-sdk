@@ -4,7 +4,7 @@
  * @see {openPortfolio}
  * @see {rebalance}
  */
-import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.ts';
+import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import type { GuestInterface } from '@agoric/async-flow';
 import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
 import {
