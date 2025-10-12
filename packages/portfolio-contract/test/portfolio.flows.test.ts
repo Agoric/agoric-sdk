@@ -688,6 +688,8 @@ test('open portfolio with Compound position', async t => {
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'send' },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'localTransfer', amounts: { Deposit: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'depositForBurn' },
@@ -995,6 +997,8 @@ test('open portfolio with Beefy position', async t => {
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'send' },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
     {
       _method: 'localTransfer',
       amounts: { Deposit: { value: 300n } },
@@ -1009,7 +1013,7 @@ test('open portfolio with Beefy position', async t => {
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
 
-  const rawMemo = log[6].opts.memo;
+  const rawMemo = log[8].opts.memo;
   const decodedCalls = decodeFunctionCall(rawMemo, [
     'approve(address,uint256)',
     'deposit(uint256)',
