@@ -186,11 +186,14 @@ export const pureDataMarshaller = makeMarshal(rejectOCap, rejectOCap, {
 harden(pureDataMarshaller);
 
 const { slotToWrapper, wrapperToSlot } = (() => {
+  /** @typedef {'Remotable' | `Alleged: ${string}`} InterfaceSpec */
+
   /** @template [Slot=unknown] */
   class SlotWrapper {
     /** @type {Slot} */
     #slot;
 
+    /** @type {InterfaceSpec} */
     [Symbol.toStringTag];
 
     /**
@@ -204,8 +207,7 @@ const { slotToWrapper, wrapperToSlot } = (() => {
         iface = `Alleged: ${iface}`;
       }
       this.#slot = slot;
-      this[Symbol.toStringTag] =
-        /** @type {'Remotable' | `Alleged: ${string}`} */ (iface);
+      this[Symbol.toStringTag] = /** @type {InterfaceSpec} */ (iface);
     }
 
     /** @param {SlotWrapper} wrapper */
@@ -222,7 +224,7 @@ const { slotToWrapper, wrapperToSlot } = (() => {
 
   /**
    * @type {<Slot = unknown>(
-   *   wrapper: SlotWrapper<Slot> & RemotableObject,
+   *   wrapper: SlotWrapper<Slot> & RemotableObject<InterfaceSpec>,
    * ) => Slot}
    */
   const getSlot = SlotWrapper.getSlot;
@@ -234,7 +236,7 @@ const { slotToWrapper, wrapperToSlot } = (() => {
      * @param {string} [iface]
      */
     slotToWrapper: (slot, iface) =>
-      /** @type {SlotWrapper<Slot> & RemotableObject} */ (
+      /** @type {SlotWrapper<Slot> & RemotableObject<InterfaceSpec>} */ (
         harden(new SlotWrapper(slot, iface))
       ),
 
