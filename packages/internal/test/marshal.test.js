@@ -1,8 +1,8 @@
 // @ts-check
 import test from 'ava';
 
-import { Far, makeMarshal, passStyleOf } from '@endo/marshal';
-import { Fail } from '@endo/errors';
+import { Far, getInterfaceOf, makeMarshal, passStyleOf } from '@endo/marshal';
+import { Fail, q } from '@endo/errors';
 import {
   wrapRemoteMarshallerSendSlotsOnly as wrapRemoteMarshaller,
   makeInaccessibleVal,
@@ -36,7 +36,7 @@ const makeMockMarshaller = ({
         const nextSlot = `mock${nextId}`;
         nextId += 1;
         mockValToSlot.set(val, nextSlot);
-        mockSotToVal.set(nextSlot, val);
+        mockSotToVal.set(`${nextSlot}.(${getInterfaceOf(val)})`, val);
       }
       return mockValToSlot.get(val) || null;
     },
@@ -44,7 +44,10 @@ const makeMockMarshaller = ({
       if (slot === null) {
         return makeInaccessibleVal(iface);
       }
-      return mockSotToVal.get(slot) || Fail`Unknown mock slot ${slot}`;
+      return (
+        mockSotToVal.get(`${slot}.(${iface})`) ||
+        Fail`Unknown mock slot ${q(slot)} for iface ${q(iface)}. Known entries: ${q([...mockSotToVal.keys()])}`
+      );
     },
     {
       serializeBodyFormat: 'smallcaps',
