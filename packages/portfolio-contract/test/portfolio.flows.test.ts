@@ -17,11 +17,7 @@ import {
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import {
-  denomHash,
-  type ChainInfo,
-  type Orchestrator,
-} from '@agoric/orchestration';
+import { denomHash, type Orchestrator } from '@agoric/orchestration';
 import { buildGasPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
@@ -44,9 +40,8 @@ import {
 } from '../src/portfolio.exo.ts';
 import {
   executePlan,
-  openPortfolio,
-  parseInboundTransfer,
   onAgoricTransfer,
+  openPortfolio,
   rebalance,
   wayFromSrcToDesc,
   type PortfolioInstanceContext,
@@ -219,7 +214,9 @@ const mocks = (
                 !err.message.includes(address.chainId)
               )
                 throw err;
-              if (opts?.memo) factoryPK.resolve(opts.memo);
+              if (opts?.memo && address.value.startsWith('axelar1')) {
+                factoryPK.resolve(opts.memo);
+              }
             },
             async executeEncodedTx(msgs) {
               log({ _cap: addr.value, _method: 'executeEncodedTx', msgs });
@@ -394,6 +391,18 @@ const mocks = (
         const info = getDeserialized(p).at(-1) as PublishedTx;
         if (info.status !== 'pending') continue;
         const txId = p.split('.').at(-1) as `tx${number}`;
+        if (info.type === 'CCTP_TO_AGORIC') {
+          console.log('@@@@@@@CCTP_TO_AGORIC!!', txId, info);
+          const tap = await tapPK.promise;
+          const fwdEvent = makeIncomingVTransferEvent({
+            sender: 'noble1fwd',
+            sourceChannel: 'channel-12345',
+            destinationChannel: transferChannels.noble,
+            target: makeTestAddress(0),
+            memo: '{"noteWell":"abc"}',
+          });
+          await tap.receiveUpcall(fwdEvent);
+        }
         txIds.push(txId);
       }
       return harden(txIds);

@@ -898,11 +898,7 @@ export const parseInboundTransfer = (async (
   packet: VTransferIBCEvent['packet'],
   kit: PortfolioKit,
 ): Promise<Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>> => {
-  const { reader } = kit;
-
-  const lca = reader.getLocalAccount();
-  const parsed = await lca.parseInboundTransfer(packet);
-  return parsed;
+  throw Error('obsolete');
 }) satisfies OrchestrationFlow;
 
 const eventAbbr = (e: VTransferIBCEvent) => {
@@ -975,10 +971,10 @@ export const onAgoricTransfer = (async (
   const traceUpcall = makeTracer('upcall').sub(`portfolio${pId}`);
   traceUpcall('event', eventAbbr(event));
   const { destination_channel: packetDest } = event.packet;
+  const lca = reader.getLocalAccount();
 
   switch (packetDest) {
     case transferChannels.axelar: {
-      const lca = reader.getLocalAccount();
       const parsed = await lca.parseInboundTransfer(event.packet);
       const { extra } = parsed;
       if (extra.sender !== gmpAddresses.AXELAR_GMP) {
@@ -992,6 +988,11 @@ export const onAgoricTransfer = (async (
 
       const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
       return resolveEVMAccount(memo);
+    }
+    case transferChannels.noble: {
+      const parsed = await lca.parseInboundTransfer(event.packet);
+      const { extra } = parsed;
+      traceUpcall('TODO!!!!', extra);
     }
     default:
       traceUpcall(
