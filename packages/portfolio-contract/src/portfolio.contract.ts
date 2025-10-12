@@ -255,6 +255,7 @@ export const contract = async (
   });
   const {
     client: resolverClient,
+    service: resolverService,
     invitationMakers: makeResolverInvitationMakers,
   } = resolverZone.makeOnce('resolverKit', () => makeResolverKit());
 
@@ -313,16 +314,36 @@ export const contract = async (
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
-  const { executePlan, rebalance, parseInboundTransfer, onAgoricTransfer } =
-    orchestrateAll(
-      {
-        executePlan: flows.executePlan,
-        rebalance: flows.rebalance,
-        onAgoricTransfer: flows.onAgoricTransfer,
-        parseInboundTransfer: flows.parseInboundTransfer,
-      },
-      ctx1,
-    );
+  const { executePlan, rebalance } = orchestrateAll(
+    {
+      executePlan: flows.executePlan,
+      rebalance: flows.rebalance,
+    },
+    ctx1,
+  );
+
+  // unused but must be defined for upgrade
+  const { parseInboundTransfer: _obsolete } = orchestrateAll(
+    { parseInboundTransfer: flows.parseInboundTransfer },
+    ctx1,
+  );
+
+  /**
+   * Distinct context for POLA to only provide resolverService
+   * where required.
+   */
+  const txfrCtx: flows.OnTransferContext = {
+    axelarIds,
+    gmpAddresses,
+    resolverService,
+    transferChannels,
+  };
+  const { onAgoricTransfer } = orchestrateAll(
+    {
+      onAgoricTransfer: flows.onAgoricTransfer,
+    },
+    txfrCtx,
+  );
 
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
