@@ -17,7 +17,12 @@ import {
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { denomHash, type Orchestrator } from '@agoric/orchestration';
+import {
+  denomHash,
+  type Bech32Address,
+  type Orchestrator,
+} from '@agoric/orchestration';
+import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { buildGasPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
@@ -44,6 +49,7 @@ import {
   openPortfolio,
   rebalance,
   wayFromSrcToDesc,
+  type OnTransferContext,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
 import {
@@ -334,6 +340,16 @@ const mocks = (
     axelar: 'channel-9',
   } as const;
 
+  const txfrCtx: OnTransferContext = {
+    axelarIds: axelarIdsMock,
+    gmpAddresses,
+    resolverService,
+    transferChannels,
+  };
+
+  const onAgoricTransferHost = (event, kit) =>
+    onAgoricTransfer(orch, txfrCtx, event, kit);
+
   const ctx1: PortfolioInstanceContext = {
     axelarIds: axelarIdsMock,
     contracts: contractsMock,
@@ -349,8 +365,7 @@ const mocks = (
 
   const rebalanceHost = (seat, offerArgs, kit) =>
     rebalance(orch, ctx1, seat, offerArgs, kit);
-  const onAgoricTransferHost = (event, kit) =>
-    onAgoricTransfer(orch, ctx1, event, kit);
+
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
     axelarIds: axelarIdsMock,
@@ -391,18 +406,25 @@ const mocks = (
         const info = getDeserialized(p).at(-1) as PublishedTx;
         if (info.status !== 'pending') continue;
         const txId = p.split('.').at(-1) as `tx${number}`;
+
         if (info.type === 'CCTP_TO_AGORIC') {
-          console.log('@@@@@@@CCTP_TO_AGORIC!!', txId, info);
+          // console.debug('CCTP_TO_AGORIC', txId, info);
+          const { amount, destinationAddress: cctpDest } = info;
+          const { accountAddress: target } = parseAccountId(cctpDest);
           const tap = await tapPK.promise;
           const fwdEvent = makeIncomingVTransferEvent({
             sender: 'noble1fwd',
-            sourceChannel: 'channel-12345',
+            sourceChannel: 'channel-99999',
             destinationChannel: transferChannels.noble,
-            target: makeTestAddress(0),
+            target,
+            receiver: target as Bech32Address,
+            amount,
             memo: '{"noteWell":"abc"}',
           });
           await tap.receiveUpcall(fwdEvent);
+          continue;
         }
+
         txIds.push(txId);
       }
       return harden(txIds);

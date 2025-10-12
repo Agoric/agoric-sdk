@@ -4,6 +4,7 @@
  * @see {openPortfolio}
  * @see {rebalance}
  */
+import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.ts';
 import type { GuestInterface } from '@agoric/async-flow';
 import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
 import {
@@ -21,8 +22,11 @@ import type {
   OrchestrationFlow,
   Orchestrator,
 } from '@agoric/orchestration';
+import type { AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
+import { TxType } from '@agoric/portfolio-api';
 import {
   AxelarChain,
   SupportedChain,
@@ -32,7 +36,10 @@ import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { IBCChannelID, VTransferIBCEvent } from '@agoric/vats';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import { decodeBase64 } from '@endo/base64';
 import { assert, Fail, q } from '@endo/errors';
+import { DECODE_CONTRACT_CALL_RESULT_ABI } from './evm-facade.ts';
+import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
 import type {
   AccountInfoFor,
@@ -69,12 +76,6 @@ import {
   type PoolKey,
   type ProposalType,
 } from './type-guards.ts';
-import type { RegisterAccountMemo } from './noble-fwd-calc.js';
-import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
-import type { AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
-import { decodeBase64 } from '@endo/base64';
-import { DECODE_CONTRACT_CALL_RESULT_ABI } from './evm-facade.ts';
-import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const { keys, entries, fromEntries } = Object;
@@ -895,8 +896,8 @@ export const rebalance = (async (
 export const parseInboundTransfer = (async (
   _orch: Orchestrator,
   _ctx: PortfolioInstanceContext,
-  packet: VTransferIBCEvent['packet'],
-  kit: PortfolioKit,
+  _packet: VTransferIBCEvent['packet'],
+  _kit: PortfolioKit,
 ): Promise<Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>> => {
   throw Error('obsolete');
 }) satisfies OrchestrationFlow;
@@ -906,6 +907,13 @@ const eventAbbr = (e: VTransferIBCEvent) => {
   return { destination_channel: dest, sequence };
 };
 
+export type OnTransferContext = Pick<
+  PortfolioInstanceContext,
+  'gmpAddresses' | 'axelarIds' | 'transferChannels'
+> & {
+  resolverService: GuestInterface<ResolverKit['service']>;
+};
+
 /**
  * Handle notification of transfer in/out of agoric LCA (@agoric)
  *
@@ -913,7 +921,7 @@ const eventAbbr = (e: VTransferIBCEvent) => {
  */
 export const onAgoricTransfer = (async (
   orch: Orchestrator,
-  ctx: PortfolioInstanceContext,
+  ctx: OnTransferContext,
   event: VTransferIBCEvent,
   pKit: PortfolioKit,
 ): Promise<boolean> => {
@@ -921,6 +929,7 @@ export const onAgoricTransfer = (async (
    * @param memo - valid memo from AXELAR_GMP by way of transferChannels.axelar
    */
   const resolveEVMAccount = async (memo: AxelarGmpIncomingMemo) => {
+    traceUpcall('GMP', memo);
     const result = (entries(axelarIds) as [AxelarChain, string][]).find(
       ([_, chainId]) => chainId === memo.source_chain,
     );
@@ -965,6 +974,25 @@ export const onAgoricTransfer = (async (
     return true;
   };
 
+  const resolveCCTPIn = async (
+    parsed: Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>,
+  ) => {
+    traceUpcall('CCTPin', parsed);
+    const destination = coerceAccountId(lca.getAddress());
+    // XXX check parsed.amount is USDC-on-Agoric
+    const txId = ctx.resolverService.lookupTx({
+      type: TxType.CCTP_TO_AGORIC,
+      destination,
+      amountValue: parsed.amount.value,
+    });
+    if (!txId) {
+      traceUpcall('lookupTx found nothing');
+      return false;
+    }
+    await ctx.resolverService.settleTransaction({ status: 'success', txId });
+    return true;
+  };
+
   const { gmpAddresses, axelarIds, transferChannels } = ctx;
   const { reader } = pKit;
   const pId = reader.getPortfolioId();
@@ -972,6 +1000,8 @@ export const onAgoricTransfer = (async (
   traceUpcall('event', eventAbbr(event));
   const { destination_channel: packetDest } = event.packet;
   const lca = reader.getLocalAccount();
+
+  await null;
 
   switch (packetDest) {
     case transferChannels.axelar: {
@@ -991,8 +1021,7 @@ export const onAgoricTransfer = (async (
     }
     case transferChannels.noble: {
       const parsed = await lca.parseInboundTransfer(event.packet);
-      const { extra } = parsed;
-      traceUpcall('TODO!!!!', extra);
+      return resolveCCTPIn(parsed);
     }
     default:
       traceUpcall(
