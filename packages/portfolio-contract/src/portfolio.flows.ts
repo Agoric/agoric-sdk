@@ -903,8 +903,12 @@ export const parseInboundTransfer = (async (
 }) satisfies OrchestrationFlow;
 
 const eventAbbr = (e: VTransferIBCEvent) => {
-  const { destination_channel: dest, sequence } = e.packet;
-  return { destination_channel: dest, sequence };
+  const {
+    destination_channel: dest,
+    destination_port: destPort,
+    sequence,
+  } = e.packet;
+  return { destination_channel: dest, destination_port: destPort, sequence };
 };
 
 export type OnTransferContext = Pick<
@@ -925,6 +929,12 @@ export const onAgoricTransfer = (async (
   event: VTransferIBCEvent,
   pKit: PortfolioKit,
 ): Promise<boolean> => {
+  const { reader } = pKit;
+  const pId = reader.getPortfolioId();
+  const traceUpcall = makeTracer('upcall').sub(`portfolio${pId}`);
+  traceUpcall('event', eventAbbr(event));
+  if (event.packet.destination_port !== 'transfer') return false;
+
   /**
    * @param memo - valid memo from AXELAR_GMP by way of transferChannels.axelar
    */
@@ -994,10 +1004,6 @@ export const onAgoricTransfer = (async (
   };
 
   const { gmpAddresses, axelarIds, transferChannels } = ctx;
-  const { reader } = pKit;
-  const pId = reader.getPortfolioId();
-  const traceUpcall = makeTracer('upcall').sub(`portfolio${pId}`);
-  traceUpcall('event', eventAbbr(event));
   const { destination_channel: packetDest } = event.packet;
   const lca = reader.getLocalAccount();
 
@@ -1024,9 +1030,18 @@ export const onAgoricTransfer = (async (
       return resolveCCTPIn(parsed);
     }
     default:
-      traceUpcall(
-        `GMP early exit: ${packetDest} != ${transferChannels.axelar}: not from axelar`,
-      );
+      switch (event.packet.source_channel) {
+        case transferChannels.axelar:
+          traceUpcall('ignore packet to axelar');
+          break;
+        case transferChannels.noble:
+          traceUpcall('ignore packet to nonble');
+          break;
+        default: {
+          const parsed = await lca.parseInboundTransfer(event.packet);
+          traceUpcall('ignore packet: unknown src/dest', parsed);
+        }
+      }
       return false;
   }
 }) satisfies OrchestrationFlow;
