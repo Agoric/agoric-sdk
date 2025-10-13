@@ -2,12 +2,10 @@
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
-import { M } from '@endo/patterns';
 import { isStreamCell } from './lib-chainStorage.js';
 
 /**
  * @import {CapData} from '@endo/marshal';
- * @import {TypedPattern} from './types.js';
  */
 
 /**
@@ -57,13 +55,6 @@ export const boardSlottingMarshaller = (slotToVal = undefined) => {
     serializeBodyFormat: 'smallcaps',
   });
 };
-
-// TODO move CapDataShape to Endo
-/**
- * @type {TypedPattern<CapData<any>>}
- */
-export const CapDataShape = { body: M.string(), slots: M.array() };
-harden(CapDataShape);
 
 /**
  * Assert that this is CapData
