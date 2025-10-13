@@ -2,8 +2,8 @@
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
-import { isStreamCell } from './lib-chainStorage.js';
-import { assertCapData } from './marshal/cap-data.js';
+import { isStreamCell } from '../lib-chainStorage.js';
+import { assertCapData } from './cap-data.js';
 
 /**
  * @import {CapData} from '@endo/marshal';

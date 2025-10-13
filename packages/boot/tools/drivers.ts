@@ -6,7 +6,7 @@ import { NonNullish } from '@agoric/internal';
 import {
   boardSlottingMarshaller,
   unmarshalFromVstorage,
-} from '@agoric/internal/src/marshal.js';
+} from '@agoric/internal/src/marshal/board-client-utils.js';
 import {
   slotToRemotable,
   type FakeStorageKit,

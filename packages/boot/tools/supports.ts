@@ -18,7 +18,7 @@ import {
   VBankAccount,
   type Remote,
 } from '@agoric/internal';
-import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
+import { unmarshalFromVstorage } from '@agoric/internal/src/marshal/board-client-utils.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { krefOf } from '@agoric/kmarshal';
