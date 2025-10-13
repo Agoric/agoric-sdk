@@ -3,6 +3,7 @@ import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { isStreamCell } from './lib-chainStorage.js';
+import { assertCapData } from './marshal/cap-data.js';
 
 /**
  * @import {CapData} from '@endo/marshal';
@@ -57,20 +58,6 @@ export const boardSlottingMarshaller = (slotToVal = undefined) => {
 };
 
 /**
- * Assert that this is CapData
- *
- * @param {unknown} data
- * @returns {asserts data is CapData<unknown>}
- */
-export const assertCapData = data => {
-  assert.typeof(data, 'object');
-  assert(data);
-  typeof data.body === 'string' || Fail`data has non-string .body ${data.body}`;
-  Array.isArray(data.slots) || Fail`data has non-Array slots ${data.slots}`;
-};
-harden(assertCapData);
-
-/**
  * Read and unmarshal a value from a map representation of vstorage data
  *
  * @param {Map<string, string>} data
@@ -98,7 +85,7 @@ export const unmarshalFromVstorage = (data, key, fromCapData, index) => {
   const marshalled = values.at(index);
   assert.typeof(marshalled, 'string');
 
-  /** @type {import('@endo/marshal').CapData<string>} */
+  /** @type {CapData<string>} */
   const capData = harden(JSON.parse(marshalled));
   assertCapData(capData);
 
@@ -139,7 +126,7 @@ export const makeHistoryReviver = (entries, slotToVal = undefined) => {
   return harden({ getItem, children, has });
 };
 
-/** @param {import('@endo/marshal').CapData<unknown>} cap */
+/** @param {CapData<unknown>} cap */
 const rejectOCap = cap => Fail`${cap} is not pure data`;
 export const pureDataMarshaller = makeMarshal(rejectOCap, rejectOCap, {
   serializeBodyFormat: 'smallcaps',

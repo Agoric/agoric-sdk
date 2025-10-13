@@ -1,7 +1,7 @@
 import { Fail } from '@endo/errors';
 
 /**
- * @import {assertCapData} from '@agoric/internal/src/marshal.js';
+ * @import {assertCapData} from '@agoric/internal/src/marshal/cap-data.js';
  */
 
 /**
