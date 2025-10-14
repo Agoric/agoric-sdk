@@ -62,6 +62,7 @@ export type FlowStep = {
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
+  meta?: Record<string, any>;
 };
 
 export type PortfolioKey = `portfolio${number}`;
@@ -98,5 +99,6 @@ export type StatusFor = {
     totalOut: NatAmount;
   };
   flow: FlowStatus;
+  flowStep: FlowStep;
   flowSteps: FlowStep[];
 };

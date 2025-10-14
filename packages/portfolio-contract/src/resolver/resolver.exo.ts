@@ -11,7 +11,7 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import type { AccountId } from '@agoric/orchestration';
+import type { AccountId, MetaTrafficEntry } from '@agoric/orchestration';
 import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
@@ -31,11 +31,17 @@ import {
 } from './types.js';
 
 type TransactionEntry = {
-  destinationAddress: AccountId;
-  amountValue?: bigint;
   vowKit: VowKit<void>;
-  type: TxType;
-};
+  amountValue?: bigint;
+} & (
+  | {
+      type: Exclude<TxType, typeof TxType.TRAFFIC>;
+      destinationAddress: AccountId;
+    }
+  | ({
+      type: typeof TxType.TRAFFIC;
+    } & MetaTrafficEntry)
+);
 
 const trace = makeTracer('Resolver');
 
@@ -43,7 +49,10 @@ const trace = makeTracer('Resolver');
 const PromiseVowShape = M.any();
 
 const ClientFacetI = M.interface('ResolverClient', {
-  registerTransaction: M.call(M.or(...Object.values(TxType)), M.string())
+  registerTransaction: M.call(
+    M.or(...Object.values(TxType)),
+    M.or(M.string(), M.record()),
+  )
     .optional(M.nat())
     .returns(M.splitRecord({ result: PromiseVowShape, txId: M.string() })),
 });
@@ -51,7 +60,7 @@ const ClientFacetI = M.interface('ResolverClient', {
 const ReporterI = M.interface('Reporter', {
   insertPendingTransaction: M.call(
     M.string(),
-    M.string(),
+    M.or(M.record(), M.string()),
     M.or(...Object.values(TxType)),
   )
     .optional(M.nat())
@@ -128,7 +137,7 @@ export const prepareResolverKit = (
         .detached()
         .mapStore<TxId, TransactionEntry>('transactionRegistry'),
       index: 0,
-      etc: undefined,
+      etc: undefined as Record<string, any> | undefined,
     }),
     {
       client: {
@@ -136,12 +145,12 @@ export const prepareResolverKit = (
          * Register a transaction and return a vow that is fulfilled when the transaction is resolved.
          *
          * @param type
-         * @param destinationAddress
+         * @param destinationAddressOrTraffic
          * @param amountValue
          */
         registerTransaction(
           type: TxType,
-          destinationAddress: AccountId,
+          destinationAddressOrTraffic: AccountId | MetaTrafficEntry,
           amountValue?: NatValue,
         ): { result: Vow<void>; txId: TxId } {
           const txId: TxId = `tx${this.state.index}`;
@@ -149,37 +158,103 @@ export const prepareResolverKit = (
 
           const { transactionRegistry } = this.state;
           const vowKit = vowTools.makeVowKit<void>();
-          const txEntry: TransactionEntry = {
-            destinationAddress,
-            vowKit,
-            type,
-            ...(type !== TxType.GMP ? { amountValue } : {}),
-          };
-          transactionRegistry.init(txId, harden(txEntry));
-          this.facets.reporter.insertPendingTransaction(
-            txId,
-            destinationAddress,
-            type,
-            amountValue,
-          );
+          if (type === TxType.TRAFFIC) {
+            const traffic = destinationAddressOrTraffic;
+            assert.typeof(
+              traffic,
+              'object',
+              'TRAFFIC transaction requires a record argument',
+            );
+            assert(traffic != null, 'TRAFFIC transaction cannot be nullish');
+            transactionRegistry.init(
+              txId,
+              harden({
+                ...traffic,
+                ...(amountValue == null ? {} : { amountValue }),
+                vowKit,
+                type,
+              }),
+            );
+            this.facets.reporter.insertPendingTransaction(
+              txId,
+              traffic,
+              type,
+              amountValue,
+            );
 
-          trace(`Registered pending transaction: ${txId}`);
+            // TODO(#12090): Rip this out when we teach the resolver service about
+            // TxType.TRAFFIC.
+            void Promise.resolve().then(() => {
+              console.warn(
+                `TODO(#12090): auto-resolving ${type} transaction ${txId} just to prevent deadlock`,
+              );
+              this.facets.service.settleTransaction({
+                status: TxStatus.SUCCESS,
+                txId,
+              });
+            });
+          } else {
+            const destinationAddress = destinationAddressOrTraffic;
+            assert.typeof(
+              destinationAddress,
+              'string',
+              `transaction type ${q(type)} requires a destination address string`,
+            );
+            const txEntry: TransactionEntry = {
+              destinationAddress,
+              vowKit,
+              type,
+              ...(type !== TxType.GMP ? { amountValue } : {}),
+            };
+            transactionRegistry.init(txId, harden(txEntry));
+            this.facets.reporter.insertPendingTransaction(
+              txId,
+              destinationAddress,
+              type,
+              amountValue,
+            );
+          }
+
+          trace(`Registered pending transaction: ${type} ${txId}`);
           return { result: vowKit.vow, txId };
         },
       },
       reporter: {
         insertPendingTransaction(
           txId: TxId,
-          destinationAddress: AccountId,
+          destinationAddressOrTraffic: AccountId | MetaTrafficEntry,
           type: TxType,
           amount?: NatValue,
         ) {
-          const value: PublishedTx = {
-            type,
-            destinationAddress,
-            status: TxStatus.PENDING,
-            ...(type !== TxType.GMP ? { amount } : {}),
-          };
+          let value: PublishedTx;
+          if (type === TxType.TRAFFIC) {
+            const traffic = destinationAddressOrTraffic;
+            assert.typeof(
+              traffic,
+              'object',
+              'TRAFFIC transaction requires a record argument',
+            );
+            assert(traffic != null, 'TRAFFIC transaction cannot be nullish');
+            value = {
+              ...traffic,
+              type,
+              status: TxStatus.PENDING,
+              ...(amount == null ? {} : { amount }),
+            };
+          } else {
+            const destinationAddress = destinationAddressOrTraffic;
+            assert.typeof(
+              destinationAddress,
+              'string',
+              `transaction type ${q(type)} requires a destination address string`,
+            );
+            value = {
+              type,
+              destinationAddress,
+              status: TxStatus.PENDING,
+              ...(type !== TxType.GMP ? { amount } : {}),
+            };
+          }
           const node = E(pendingTxsNode).makeChildNode(txId);
           writeToNode(node, value);
         },
@@ -190,16 +265,28 @@ export const prepareResolverKit = (
         ) {
           const node = E(pendingTxsNode).makeChildNode(txId);
           const txEntry = this.state.transactionRegistry.get(txId);
-          const value: PublishedTx = {
-            destinationAddress: txEntry.destinationAddress,
-            type: txEntry.type,
-            ...(txEntry.type !== TxType.GMP
-              ? { amount: txEntry.amountValue }
-              : {}),
-            status,
-          };
-          // UNTIL https://github.com/Agoric/agoric-sdk/issues/11791
-          writeToNode(node, value);
+          if (txEntry.type === TxType.TRAFFIC) {
+            const { amountValue, type, vowKit: _, ...traffic } = txEntry;
+            const value: PublishedTx = {
+              ...traffic,
+              type,
+              ...(amountValue == null ? {} : { amount: amountValue }),
+              status,
+            };
+            // UNTIL https://github.com/Agoric/agoric-sdk/issues/11791
+            writeToNode(node, value);
+          } else {
+            const value: PublishedTx = {
+              destinationAddress: txEntry.destinationAddress,
+              type: txEntry.type,
+              ...(txEntry.type !== TxType.GMP
+                ? { amount: txEntry.amountValue }
+                : {}),
+              status,
+            };
+            // UNTIL https://github.com/Agoric/agoric-sdk/issues/11791
+            writeToNode(node, value);
+          }
         },
       },
       service: {
@@ -240,17 +327,31 @@ export const prepareResolverKit = (
         lookupTx(pattern: {
           type: TxType;
           destination: AccountId;
-          amountValue: NatValue;
+          amountValue?: NatValue;
         }) {
           const { transactionRegistry } = this.state;
-          for (const [txId, info] of transactionRegistry.entries()) {
-            if (
-              info.type === pattern.type &&
-              info.destinationAddress === pattern.destination &&
-              info.amountValue === pattern.amountValue
-            ) {
-              return txId;
-            }
+          assert(
+            pattern.type !== TxType.TRAFFIC,
+            `TxType.TRAFFIC unimplemented`,
+          );
+
+          // Find the first key for a matching value. While this is still O(n),
+          // the approach may someday take advantage of an index.
+          M.splitRecord(
+            { type: M.string(), destination: M.string() },
+            { amountValue: M.nat() },
+          );
+          const valuePatt = M.splitRecord({
+            type: pattern.type,
+            destinationAddress: pattern.destination,
+            ...(pattern.amountValue === undefined
+              ? {}
+              : { amountValue: pattern.amountValue }),
+          });
+
+          // eslint-disable-next-line no-unreachable-loop
+          for (const txId of transactionRegistry.keys(M.any(), valuePatt)) {
+            return txId;
           }
           return undefined;
         },

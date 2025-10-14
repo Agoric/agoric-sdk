@@ -17,12 +17,13 @@ import {
 import { MsgSwap as MsgSwapType } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import { type NatValue } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import type { CosmosChainAddress, Denom } from '@agoric/orchestration';
+import { type CosmosChainAddress, type Denom } from '@agoric/orchestration';
+import { unwrapResultMeta } from '@agoric/orchestration/src/utils/result-meta.js';
+// XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 import {
   type ProtocolDetail,
   type TransportDetail,
 } from './portfolio.flows.ts';
-// XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const Any = CodecHelper(AnyType);
 const MsgLock = CodecHelper(MsgLockType);
@@ -115,8 +116,12 @@ export const protocolUSDN = {
     );
 
     trace('executing', [msgSwap, msgLock].filter(Boolean));
-    const result = await ica.executeEncodedTx(protoMessages);
-    trace('supply result', result);
+    const ret = ica.executeEncodedTxWithMeta(protoMessages);
+    unwrapResultMeta(ret).then(
+      ({ result }) => trace('supply result', result),
+      e => trace('supply error', e),
+    );
+    return ret;
   },
   withdraw: async (ctx, amount, dest, claim) => {
     if (claim) {
@@ -131,8 +136,12 @@ export const protocolUSDN = {
       { usdnOut },
     );
     trace('executing', [msgUnlock, msgSwap].filter(Boolean));
-    const result = await ica.executeEncodedTx(protoMessages);
-    trace('withdraw result', result);
+    const resultMeta = ica.executeEncodedTxWithMeta(protoMessages);
+    unwrapResultMeta(resultMeta).then(
+      ({ result }) => trace('withdraw result', result),
+      e => trace('withdraw error', e),
+    );
+    return resultMeta;
   },
 } as const satisfies ProtocolDetail<
   'USDN',
@@ -147,11 +156,11 @@ export const agoricToNoble = {
   apply: async (ctx, amount, src, dest) => {
     const { denom } = ctx.usdc;
     const denomAmount = { value: amount.value, denom };
-    await src.lca.transfer(dest.ica.getAddress(), denomAmount);
+    return src.lca.transferWithMeta(dest.ica.getAddress(), denomAmount);
   },
   recover: async (ctx, amount, src, dest) => {
     const nobleAmount = { value: amount.value, denom: 'uusdc' };
-    await dest.ica.transfer(src.lca.getAddress(), nobleAmount);
+    return dest.ica.transferWithMeta(src.lca.getAddress(), nobleAmount);
   },
 } as const satisfies TransportDetail<
   'IBC to Noble',
@@ -166,12 +175,12 @@ export const nobleToAgoric = {
   connections: [{ src: 'noble', dest: 'agoric' }],
   apply: async (_ctx, amount, src, dest) => {
     const nobleAmount = { value: amount.value, denom: 'uusdc' };
-    await src.ica.transfer(dest.lca.getAddress(), nobleAmount);
+    return src.ica.transferWithMeta(dest.lca.getAddress(), nobleAmount);
   },
   recover: async (ctx, amount, src, dest) => {
     const { denom } = ctx.usdc;
     const denomAmount = { value: amount.value, denom };
-    await dest.lca.transfer(src.ica.getAddress(), denomAmount);
+    return dest.lca.transferWithMeta(src.ica.getAddress(), denomAmount);
   },
 } as const satisfies TransportDetail<
   'IBC from Noble',
