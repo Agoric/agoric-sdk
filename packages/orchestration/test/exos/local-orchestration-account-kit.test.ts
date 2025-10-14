@@ -311,8 +311,10 @@ test('transfer', async t => {
       traffic: [
         {
           op: 'transfer',
-          src: ['ibc', 'cosmos', 'agoric-3', 'transfer', 'channel-62'],
-          dst: ['ibc', 'cosmos', 'noble-1', 'transfer', 'channel-21'],
+          srcChainId: 'cosmos:agoric-3',
+          src: ['ibc', 'transfer', 'channel-62'],
+          dstChainId: 'cosmos:noble-1',
+          dst: ['ibc', 'transfer', 'channel-21'],
           seq: 7,
         },
       ] as MetaTrafficEntry[],
