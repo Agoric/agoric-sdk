@@ -220,7 +220,9 @@ export const withBrand = (
     objectMap(dollarCells, a => $(a!));
 
   const withFee = m =>
-    ['Compound', 'Aave'].some(p => m.dest.startsWith(p) || m.src.startsWith(p))
+    ['Compound', 'Aave'].some(
+      p => m.dest.startsWith(p) || m.src.startsWith(p),
+    ) || m.dest === '@Arbitrum'
       ? { ...m, fee: { brand: feeBrand, value: 100n } }
       : m;
 

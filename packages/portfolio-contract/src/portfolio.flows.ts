@@ -4,6 +4,7 @@
  * @see {openPortfolio}
  * @see {rebalance}
  */
+import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import type { GuestInterface } from '@agoric/async-flow';
 import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
 import {
@@ -13,6 +14,7 @@ import {
 } from '@agoric/internal';
 import type {
   AccountId,
+  CaipChainId,
   CosmosChainAddress,
   Denom,
   DenomAmount,
@@ -20,18 +22,24 @@ import type {
   OrchestrationFlow,
   Orchestrator,
 } from '@agoric/orchestration';
+import type { AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
+import { TxType } from '@agoric/portfolio-api';
 import {
   AxelarChain,
   SupportedChain,
   type YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
-import type { VTransferIBCEvent } from '@agoric/vats';
+import type { IBCChannelID, VTransferIBCEvent } from '@agoric/vats';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import { decodeBase64 } from '@endo/base64';
 import { assert, Fail, q } from '@endo/errors';
+import { DECODE_CONTRACT_CALL_RESULT_ABI } from './evm-facade.ts';
+import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
 import type {
   AccountInfoFor,
@@ -68,7 +76,6 @@ import {
   type PoolKey,
   type ProposalType,
 } from './type-guards.ts';
-import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const { keys, entries, fromEntries } = Object;
@@ -86,7 +93,10 @@ export type PortfolioInstanceContext = {
   zoeTools: GuestInterface<ZoeTools>;
   resolverClient: GuestInterface<ResolverKit['client']>;
   contractAccount: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>;
-  nobleForwardingChannel: `channel-${number}`;
+  transferChannels: {
+    noble: IBCChannelID;
+    axelar?: IBCChannelID;
+  };
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
@@ -495,7 +505,7 @@ const stepFlow = async (
           move,
           lca,
           poolKey,
-          ctx.nobleForwardingChannel,
+          ctx.transferChannels.noble,
         );
         await null;
         if ('src' in way) {
@@ -519,7 +529,7 @@ const stepFlow = async (
             move,
             lca,
             poolKey,
-            ctx.nobleForwardingChannel,
+            ctx.transferChannels.noble,
           );
           await pImpl.supply(evmCtx, amount, gInfo);
         }
@@ -654,7 +664,7 @@ const stepFlow = async (
                 evmChain,
                 move,
                 agoric.lca,
-                ctx.nobleForwardingChannel,
+                ctx.transferChannels.noble,
               );
               await CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric);
             }
@@ -886,14 +896,179 @@ export const rebalance = (async (
 export const parseInboundTransfer = (async (
   _orch: Orchestrator,
   _ctx: PortfolioInstanceContext,
-  packet: VTransferIBCEvent['packet'],
-  kit: PortfolioKit,
+  _packet: VTransferIBCEvent['packet'],
+  _kit: PortfolioKit,
 ): Promise<Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>> => {
-  const { reader } = kit;
+  throw Error('obsolete');
+}) satisfies OrchestrationFlow;
 
+const eventAbbr = ({ packet }: VTransferIBCEvent) => ({
+  destination_channel: packet.destination_channel,
+  destination_port: packet.destination_port,
+  sequence: packet.sequence,
+});
+
+type UpcallData = Pick<PortfolioInstanceContext, 'gmpAddresses' | 'axelarIds'>;
+export type OnTransferContext = UpcallData &
+  Pick<PortfolioInstanceContext, 'transferChannels'> & {
+    resolverService: GuestInterface<ResolverKit['service']>;
+  };
+
+/**
+ * Resolve EVM account creation from Axelar GMP memo.
+ *
+ * @param memo - GMP memo from AXELAR_GMP via axelar channel
+ * @param axelarIds - name -> axelar id mapping
+ * @param orch - Orchestrator to get chain information
+ * @param portfolioManager - Portfolio manager to resolve the account
+ * @param traceUpcall - Logger for tracing
+ * @returns Promise<boolean> - true if account was resolved, false otherwise
+ */
+const resolveEVMAccount = async (
+  memo: AxelarGmpIncomingMemo,
+  axelarIds: AxelarId,
+  orch: Orchestrator,
+  portfolioManager: GuestInterface<PortfolioKit['manager']>,
+  traceUpcall: TraceLogger,
+) => {
+  traceUpcall('GMP', memo);
+
+  const result = (entries(axelarIds) as [AxelarChain, string][]).find(
+    ([_, chainId]) => chainId === memo.source_chain,
+  );
+  if (!result) {
+    traceUpcall('unknown source_chain', memo);
+    return false;
+  }
+
+  const [chainName, _] = result;
+
+  const payloadBytes = decodeBase64(memo.payload);
+  const [{ data }] = decodeAbiParameters(
+    DECODE_CONTRACT_CALL_RESULT_ABI,
+    payloadBytes,
+  ) as [AgoricResponse];
+
+  traceUpcall('Decoded:', JSON.stringify({ data }));
+
+  const [message] = data;
+  const { success, result: result2 } = message;
+  if (!success) return false;
+
+  const [address] = decodeAbiParameters([{ type: 'address' }], result2);
+
+  const chainInfo = await (await orch.getChain(chainName)).getChainInfo();
+  const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
+
+  traceUpcall(chainName, 'remoteAddress', address);
+  portfolioManager.resolveAccount({
+    namespace: 'eip155',
+    chainName,
+    chainId: caipId,
+    remoteAddress: address,
+  });
+
+  return true;
+};
+
+/**
+ * Resolve CCTP transfer completion by looking up and settling the transaction.
+ *
+ * @param parsed - authenticated inbound transfer data (in particular: amount)
+ * @param destination - of tx to be resolved
+ * @param resolverService
+ * @returns Promise<boolean> - true if transaction was found and settled, false otherwise
+ */
+const resolveCCTPIn = (
+  parsed: Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>,
+  destination: AccountId,
+  resolverService: GuestInterface<ResolverKit['service']>,
+  traceUpcall: TraceLogger,
+): boolean => {
+  traceUpcall('CCTPin', parsed);
+  // XXX check parsed.amount is USDC-on-Agoric
+  const txId = resolverService.lookupTx({
+    type: TxType.CCTP_TO_AGORIC,
+    destination,
+    amountValue: parsed.amount.value,
+  });
+  if (!txId) {
+    traceUpcall('lookupTx found nothing');
+    return false;
+  }
+  resolverService.settleTransaction({ status: 'success', txId });
+  return true;
+};
+
+/**
+ * Handle notification of transfer in/out of agoric LCA (@agoric)
+ *
+ * Prompt.
+ */
+export const onAgoricTransfer = (async (
+  orch: Orchestrator,
+  ctx: OnTransferContext,
+  event: VTransferIBCEvent,
+  pKit: PortfolioKit,
+): Promise<boolean> => {
+  const { reader } = pKit;
+  const pId = reader.getPortfolioId();
+  const traceUpcall = makeTracer('upcall').sub(`portfolio${pId}`);
+  traceUpcall('event', eventAbbr(event));
+  if (event.packet.destination_port !== 'transfer') return false;
+
+  const { gmpAddresses, axelarIds, transferChannels } = ctx;
+  const { destination_channel: packetDest } = event.packet;
   const lca = reader.getLocalAccount();
-  const parsed = await lca.parseInboundTransfer(packet);
-  return parsed;
+
+  await null;
+
+  switch (packetDest) {
+    case transferChannels.axelar: {
+      const parsed = await lca.parseInboundTransfer(event.packet);
+      const { extra } = parsed;
+      if (extra.sender !== gmpAddresses.AXELAR_GMP) {
+        traceUpcall(
+          `GMP early exit; AXELAR_GMP sender expected ${gmpAddresses.AXELAR_GMP}, got ${extra.sender}`,
+        );
+        return false;
+      }
+
+      if (!extra.memo) return false;
+
+      const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
+      return resolveEVMAccount(
+        memo,
+        axelarIds,
+        orch,
+        pKit.manager,
+        traceUpcall,
+      );
+    }
+    case transferChannels.noble: {
+      const parsed = await lca.parseInboundTransfer(event.packet);
+      return resolveCCTPIn(
+        parsed,
+        coerceAccountId(lca.getAddress()),
+        ctx.resolverService,
+        traceUpcall,
+      );
+    }
+    default:
+      switch (event.packet.source_channel) {
+        case transferChannels.axelar:
+          traceUpcall('ignore packet to axelar');
+          break;
+        case transferChannels.noble:
+          traceUpcall('ignore packet to noble');
+          break;
+        default: {
+          const parsed = await lca.parseInboundTransfer(event.packet);
+          traceUpcall('ignore packet: unknown src/dest', parsed);
+        }
+      }
+      return false;
+  }
 }) satisfies OrchestrationFlow;
 
 /**
@@ -918,7 +1093,7 @@ export const openPortfolio = (async (
   const trace = makeTracer('openPortfolio');
   try {
     const { makePortfolioKit, ...ctxI } = ctx;
-    const { inertSubscriber, nobleForwardingChannel } = ctxI;
+    const { inertSubscriber, transferChannels } = ctxI;
     const kit = makePortfolioKit();
     const id = kit.reader.getPortfolioId();
     const traceP = trace.sub(`portfolio${id}`);
@@ -930,7 +1105,7 @@ export const openPortfolio = (async (
       const { lca } = await provideCosmosAccount(orch, 'agoric', kit, traceP);
       const { ica } = await provideCosmosAccount(orch, 'noble', kit, traceP);
       const forwarding = {
-        channel: nobleForwardingChannel,
+        channel: transferChannels.noble,
         recipient: lca.getAddress().value,
       };
       const dest = ica.getAddress();

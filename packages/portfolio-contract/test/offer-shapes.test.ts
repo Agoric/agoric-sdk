@@ -346,25 +346,60 @@ test('vstorage position type matches shape', t => {
   }
 });
 
-test('porfolio node includes flowsRunning', t => {
-  const status1: StatusFor['portfolio'] = harden({
-    accountIdByChain: {
-      agoric: 'cosmos:agoric-6:agoric11028',
-      noble: 'cosmos:noble-5:noble11056',
+test('porfolio node includes flowsRunning, nobleForwardingAddress', t => {
+  const passCases: Record<string, StatusFor['portfolio']> = harden({
+    minimalInTheory: {
+      accountIdByChain: {},
+      positionKeys: [],
+      flowCount: 0,
+      policyVersion: 0,
+      rebalanceCount: 0,
     },
-    accountsPending: [],
-    depositAddress: 'agoric11042',
-    flowCount: 2,
-    flowsRunning: {},
-    policyVersion: 0,
-    positionKeys: ['USDN'],
-    rebalanceCount: 0,
+    minimalInPractice: {
+      accountIdByChain: {
+        agoric: 'cosmos:agoric-6:agoric11028',
+      },
+      depositAddress: 'agoric11028asdf',
+      nobleForwardingAddress: 'noble1sdlfjlsdjf',
+      positionKeys: [],
+      flowCount: 0,
+      policyVersion: 0,
+      rebalanceCount: 0,
+    },
+    status1: {
+      accountIdByChain: {
+        agoric: 'cosmos:agoric-6:agoric11028',
+        noble: 'cosmos:noble-5:noble11056',
+      },
+      accountsPending: [],
+      depositAddress: 'agoric11042',
+      flowCount: 2,
+      flowsRunning: {},
+      policyVersion: 0,
+      positionKeys: ['USDN'],
+      rebalanceCount: 0,
+    },
   });
-  t.notThrows(() => mustMatch(status1, PortfolioStatusShapeExt));
 
-  const badFlowsRunning = harden({
-    ...status1,
-    flowsRunning: { flow2: 'quack!' },
+  const failCases = harden({
+    badFlowsRunning: {
+      ...passCases.status1,
+      flowsRunning: { flow2: 'quack!' },
+    },
+    badNFA: {
+      ...passCases.status1,
+      nobleForwardingAddress: { value: 'noble1dlkj' },
+    },
   });
-  t.throws(() => mustMatch(badFlowsRunning, PortfolioStatusShapeExt));
+
+  const { entries } = Object;
+  for (const [name, position] of entries(passCases)) {
+    t.notThrows(
+      () => mustMatch(position, PortfolioStatusShapeExt),
+      `pass: ${name}`,
+    );
+  }
+  for (const [name, position] of entries(failCases)) {
+    t.false(matches(position, PortfolioStatusShapeExt), `fail: ${name}`);
+  }
 });

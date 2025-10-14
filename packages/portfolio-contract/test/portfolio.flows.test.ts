@@ -19,11 +19,11 @@ import {
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   denomHash,
-  type ActualChainInfo,
-  type ChainInfo,
-  type IBCConnectionInfo,
+  type Bech32Address,
   type Orchestrator,
 } from '@agoric/orchestration';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { buildGasPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
@@ -46,10 +46,11 @@ import {
 } from '../src/portfolio.exo.ts';
 import {
   executePlan,
+  onAgoricTransfer,
   openPortfolio,
-  parseInboundTransfer,
   rebalance,
   wayFromSrcToDesc,
+  type OnTransferContext,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
 import {
@@ -220,7 +221,9 @@ const mocks = (
                 !err.message.includes(address.chainId)
               )
                 throw err;
-              if (opts?.memo) factoryPK.resolve(opts.memo);
+              if (opts?.memo && address.value.startsWith('axelar1')) {
+                factoryPK.resolve(opts.memo);
+              }
             },
             async executeEncodedTx(msgs) {
               log({ _cap: addr.value, _method: 'executeEncodedTx', msgs });
@@ -333,36 +336,23 @@ const mocks = (
       marshaller,
     })();
 
-  const chainHubTools = harden({
-    getChainInfo: (chainName: string) => {
-      if (['agoric', 'axelar', 'noble'].includes(chainName)) {
-        return { chainId: chainName } as Partial<ChainInfo>;
-      }
-      if (!(chainName in axelarCCTPConfig)) {
-        throw Error(`unable to get chainInfo for ${chainName}`);
-      }
-      return axelarCCTPConfig[chainName];
-    },
-    getChainsAndConnection: <C1 extends string, C2 extends string>(
-      primaryChainName: C1,
-      secondaryChainName: C2,
-    ) =>
-      vowTools.asVow(() => {
-        const primaryChain = chainHubTools.getChainInfo(primaryChainName);
-        const secondaryChain = chainHubTools.getChainInfo(secondaryChainName);
-        const cid = secondaryChainName.charCodeAt(1);
-        return [
-          primaryChain,
-          secondaryChain,
-          {
-            transferChannel: {
-              channelId: 'channel-9',
-              counterpartyChannelId: `channel-${cid}`,
-            },
-          } as unknown,
-        ] as [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo];
-      }),
-  });
+  const transferChannels = {
+    noble:
+      fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
+    axelar:
+      fetchedChainInfo.agoric.connections['axelar-dojo-1'].transferChannel
+        .channelId,
+  } as const;
+
+  const txfrCtx: OnTransferContext = {
+    axelarIds: axelarIdsMock,
+    gmpAddresses,
+    resolverService,
+    transferChannels,
+  };
+
+  const onAgoricTransferHost = (event, kit) =>
+    onAgoricTransfer(orch, txfrCtx, event, kit);
 
   const ctx1: PortfolioInstanceContext = {
     axelarIds: axelarIdsMock,
@@ -374,21 +364,20 @@ const mocks = (
     zoeTools,
     resolverClient,
     contractAccount: orch.getChain('agoric').then(ch => ch.makeAccount()),
-    nobleForwardingChannel: 'channel-62',
+    transferChannels,
   };
 
   const rebalanceHost = (seat, offerArgs, kit) =>
     rebalance(orch, ctx1, seat, offerArgs, kit);
-  const parseInboundTransferHost = (packet, kit) =>
-    parseInboundTransfer(orch, ctx1, packet, kit);
+
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf: mockZCF,
     axelarIds: axelarIdsMock,
     gmpAddresses,
     vowTools,
-    chainHubTools,
+    transferChannels,
     rebalance: rebalanceHost as any,
-    parseInboundTransfer: parseInboundTransferHost as any,
+    onAgoricTransfer: onAgoricTransferHost as any,
     proposalShapes: makeProposalShapes(USDC, BLD),
     offerArgsShapes: makeOfferArgsShapes(USDC),
     marshaller,
@@ -421,6 +410,25 @@ const mocks = (
         const info = getDeserialized(p).at(-1) as PublishedTx;
         if (info.status !== 'pending') continue;
         const txId = p.split('.').at(-1) as `tx${number}`;
+
+        if (info.type === 'CCTP_TO_AGORIC') {
+          // console.debug('CCTP_TO_AGORIC', txId, info);
+          const { amount, destinationAddress: cctpDest } = info;
+          const { accountAddress: target } = parseAccountId(cctpDest);
+          const tap = await tapPK.promise;
+          const fwdEvent = makeIncomingVTransferEvent({
+            sender: 'noble1fwd',
+            sourceChannel: 'channel-99999',
+            destinationChannel: transferChannels.noble,
+            target,
+            receiver: target as Bech32Address,
+            amount,
+            memo: '{"noteWell":"abc"}',
+          });
+          await tap.receiveUpcall(fwdEvent);
+          continue;
+        }
+
         txIds.push(txId);
       }
       return harden(txIds);
@@ -684,6 +692,8 @@ test('open portfolio with Compound position', async t => {
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'send' },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
     { _method: 'localTransfer', amounts: { Deposit: { value: 300n } } },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'depositForBurn' },
@@ -991,6 +1001,8 @@ test('open portfolio with Beefy position', async t => {
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'send' },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
     {
       _method: 'localTransfer',
       amounts: { Deposit: { value: 300n } },
@@ -1005,7 +1017,7 @@ test('open portfolio with Beefy position', async t => {
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
 
-  const rawMemo = log[6].opts.memo;
+  const rawMemo = log[8].opts.memo;
   const decodedCalls = decodeFunctionCall(rawMemo, [
     'approve(address,uint256)',
     'deposit(uint256)',

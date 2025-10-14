@@ -181,6 +181,16 @@ const publishStatus = <K extends keyof StatusFor>(
   void E(node).setValue(JSON.stringify(capData));
 };
 
+// Until we find a need for on-chain subscribers, this stop-gap will do.
+const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
+  getUpdateSince() {
+    assert.fail('use off-chain queries');
+  },
+  subscribeAfter() {
+    assert.fail('use off-chain queries');
+  },
+};
+
 /**
  * Portfolio contract implementation. Creates and manages diversified stablecoin portfolios
  * that can be rebalanced across different yield protocols.
@@ -226,10 +236,6 @@ export const contract = async (
   assert(brands.USDC, 'USDC missing from brands in terms');
   assert(brands.Fee, 'Fee missing from brands in terms');
 
-  if (!('axelar' in chainInfo)) {
-    trace('⚠️ no axelar chainInfo; GMP not available', Object.keys(chainInfo));
-  }
-
   // Only register chains and assets if chainHub is empty to avoid conflicts on restart
   if (chainHub.isEmpty()) {
     trace('chainHub:', Object.keys(chainInfo));
@@ -241,16 +247,6 @@ export const contract = async (
   const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
 
-  // Until we find a need for on-chain subscribers, this stop-gap will do.
-  const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
-    getUpdateSince() {
-      assert.fail('use off-chain queries');
-    },
-    subscribeAfter() {
-      assert.fail('use off-chain queries');
-    },
-  };
-
   const resolverZone = zone.subZone('Resolver');
   const makeResolverKit = prepareResolverKit(resolverZone, zcf, {
     vowTools,
@@ -259,6 +255,7 @@ export const contract = async (
   });
   const {
     client: resolverClient,
+    service: resolverService,
     invitationMakers: makeResolverInvitationMakers,
   } = resolverZone.makeOnce('resolverKit', () => makeResolverKit());
 
@@ -270,9 +267,26 @@ export const contract = async (
     trace('published contractAccount', addr.value);
   });
 
+  const toAxelar = await (async () => {
+    if (!('axelar' in chainInfo)) {
+      trace('⚠️ no axelar chainInfo; GMP not available', keys(chainInfo));
+      return;
+    }
+    // getChainsAndConnection is prompt; should be sync #10602
+    const [_ag, _noble, agToAxelar] = await vowTools.when(
+      chainHub.getChainsAndConnection('agoric', 'axelar'),
+    );
+    return agToAxelar.transferChannel.channelId;
+  })();
+
   const [_ag2, _noble, agToNoble] = await vowTools.when(
     chainHub.getChainsAndConnection('agoric', 'noble'),
   );
+
+  const transferChannels = {
+    axelar: toAxelar,
+    noble: agToNoble.transferChannel.channelId,
+  };
 
   const ctx1: flows.PortfolioInstanceContext = {
     zoeTools: zoeTools as any, // XXX Guest...
@@ -296,33 +310,50 @@ export const contract = async (
     resolverClient,
     inertSubscriber,
     contractAccount: contractAccountV as any, // XXX Guest...
-    nobleForwardingChannel: agToNoble.transferChannel.channelId,
+    transferChannels,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
-  const { executePlan, rebalance, parseInboundTransfer } = orchestrateAll(
+  const { executePlan, rebalance } = orchestrateAll(
     {
       executePlan: flows.executePlan,
       rebalance: flows.rebalance,
-      parseInboundTransfer: flows.parseInboundTransfer,
     },
     ctx1,
+  );
+
+  // unused but must be defined for upgrade
+  const { parseInboundTransfer: _obsolete } = orchestrateAll(
+    { parseInboundTransfer: flows.parseInboundTransfer },
+    ctx1,
+  );
+
+  /**
+   * Distinct context for POLA to only provide resolverService
+   * where required.
+   */
+  const txfrCtx: flows.OnTransferContext = {
+    axelarIds,
+    gmpAddresses,
+    resolverService,
+    transferChannels,
+  };
+  const { onAgoricTransfer } = orchestrateAll(
+    {
+      onAgoricTransfer: flows.onAgoricTransfer,
+    },
+    txfrCtx,
   );
 
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
     vowTools,
-    axelarIds,
-    gmpAddresses,
     executePlan,
     rebalance,
-    parseInboundTransfer,
+    onAgoricTransfer,
     proposalShapes,
     offerArgsShapes,
-    chainHubTools: {
-      getChainInfo: chainHub.getChainInfo.bind(chainHub),
-      getChainsAndConnection: chainHub.getChainsAndConnection.bind(chainHub),
-    },
+    transferChannels,
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller,
     usdcBrand: brands.USDC,
