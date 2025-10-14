@@ -19,7 +19,7 @@ import { CONTRACT_ELECTORATE } from '@agoric/governance';
 import { makeParamManagerFromTerms } from '@agoric/governance/src/contractGovernance/typedParamManager.js';
 import { validateElectorate } from '@agoric/governance/src/contractHelper.js';
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
-import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { makeStoredSubscription, makeSubscriptionKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';

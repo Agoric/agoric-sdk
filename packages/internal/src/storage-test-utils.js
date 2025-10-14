@@ -5,7 +5,7 @@ import { makeMarshal, Remotable } from '@endo/marshal';
 import { makeTracer } from './debug.js';
 import { NonNullish } from './errors.js';
 import { isStreamCell, makeChainStorageRoot } from './lib-chainStorage.js';
-import { unmarshalFromVstorage } from './marshal.js';
+import { unmarshalFromVstorage } from './marshal/board-client-utils.js';
 import { bindAllMethods } from './method-tools.js';
 import { eventLoopIteration } from './testing-utils.js';
 

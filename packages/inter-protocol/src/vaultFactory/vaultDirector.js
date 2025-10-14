@@ -44,7 +44,7 @@ import {
  * @import {TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
  * @import {EReturn} from '@endo/far';
  * @import {TypedPattern, ERemote, Remote} from '@agoric/internal';
- * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  */
 
 const trace = makeTracer('VD', true);

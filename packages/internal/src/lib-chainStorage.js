@@ -10,7 +10,7 @@ import * as cb from './callback.js';
  * @import {ERef} from '@endo/far';
  * @import {Marshal, Passable} from '@endo/marshal';
  * @import {Remote, ERemote, TypedPattern} from './types.js';
- * @import {EMarshaller} from './marshal.js';
+ * @import {EMarshaller} from './marshal/wrap-marshaller.js';
  */
 
 /** @typedef {Marshal<unknown>} Marshaller */

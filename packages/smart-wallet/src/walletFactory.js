@@ -8,7 +8,7 @@
  */
 
 import { makeTracer, WalletName } from '@agoric/internal';
-import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { M, makeExo, makeScalarMapStore, mustMatch } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';

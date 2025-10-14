@@ -4,11 +4,11 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Fail } from '@endo/errors';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { SECONDS_PER_DAY } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
-import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeMarshal } from '@endo/marshal';
 import {
   makeAgoricNamesRemotesFromFakeStorage,
+  unmarshalFromVstorage,
   slotToBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
 import type { TestFn } from 'ava';

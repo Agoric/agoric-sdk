@@ -67,7 +67,7 @@ import { AuctionPFShape } from '../auction/auctioneer.js';
 
 /**
  * @import {ERemote, Remote} from '@agoric/internal';
- * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {EReturn} from '@endo/far';
  * @import {ZCFMint} from '@agoric/zoe';

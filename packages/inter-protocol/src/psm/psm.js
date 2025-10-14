@@ -12,7 +12,7 @@ import {
   publicMixinAPI,
 } from '@agoric/governance';
 import { StorageNodeShape } from '@agoric/internal';
-import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { M, prepareExo, provide } from '@agoric/vat-data';
 import {
   atomicTransfer,

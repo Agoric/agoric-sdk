@@ -47,7 +47,7 @@ import type {
 import {
   wrapRemoteMarshaller,
   type EMarshaller,
-} from '@agoric/internal/src/marshal.js';
+} from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import type { ContractMeta, Invitation, ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { prepareAdvancer } from './exos/advancer.ts';

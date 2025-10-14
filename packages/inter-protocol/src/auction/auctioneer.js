@@ -7,7 +7,7 @@ import { Far } from '@endo/marshal';
 import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer } from '@agoric/internal';
-import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { mustMatch } from '@agoric/store';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';

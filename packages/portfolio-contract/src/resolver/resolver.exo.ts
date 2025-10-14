@@ -8,7 +8,7 @@
 
 import { makeTracer, type ERemote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
-import type { EMarshaller } from '@agoric/internal/src/marshal.js';
+import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import type { AccountId } from '@agoric/orchestration';
 import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';

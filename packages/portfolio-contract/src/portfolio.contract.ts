@@ -15,7 +15,7 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import {
   ChainInfoShape,
   DenomDetailShape,

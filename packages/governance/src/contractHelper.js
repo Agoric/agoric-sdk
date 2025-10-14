@@ -14,7 +14,7 @@ import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
 
 /**
  * @import {ERemote} from '@agoric/internal';
- * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, GovernanceSubscriptionState, GovernanceTerms, GovernedApis, GovernedCreatorFacet, GovernedPublicFacet} from './types.js';
  * @import {Baggage} from '@agoric/vat-data';

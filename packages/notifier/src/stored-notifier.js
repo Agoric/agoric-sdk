@@ -9,7 +9,7 @@ import { observeNotifier } from './asyncIterableAdaptor.js';
  * @import {ERef} from '@endo/far';
  * @import {BaseNotifier, Notifier} from './types.js';
  * @import {ERemote} from '@agoric/internal';
- * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {StoredFacet, StorageNode, Unserializer} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {PassableCap} from '@endo/pass-style';
  */

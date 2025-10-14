@@ -1,5 +1,5 @@
 import { prepareAsyncFlowTools } from '@agoric/async-flow';
-import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { prepareVowTools } from '@agoric/vow';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
@@ -16,7 +16,7 @@ import { makeZcfTools } from './zcf-tools.js';
 /**
  * @import {ERemote} from '@agoric/internal';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
- * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Baggage} from '@agoric/vat-data';

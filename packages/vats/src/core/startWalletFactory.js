@@ -14,7 +14,7 @@ import {
 
 /**
  * @import {ERemote} from '@agoric/internal';
- * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {EReturn} from '@endo/far';
  * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
  */

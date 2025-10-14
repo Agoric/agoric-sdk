@@ -11,7 +11,7 @@ import { E } from '@endo/eventual-send';
 
 /**
  * @import {TypedPattern, ERemote, Remote} from '@agoric/internal';
- * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  */
 
 /**

@@ -3,7 +3,7 @@ import { M } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 
 import { StorageNodeShape } from '@agoric/internal';
-import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
 import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import {

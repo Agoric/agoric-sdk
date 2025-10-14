@@ -1,7 +1,7 @@
 /** @file Example contract that uses orchestration */
 
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
-import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { TimerServiceShape } from '@agoric/time';
 import { heapVowE as E, prepareVowTools } from '@agoric/vow/vat.js';
 import {

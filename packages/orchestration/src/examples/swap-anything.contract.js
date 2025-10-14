@@ -1,6 +1,6 @@
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeTracer } from '@agoric/internal';
-import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';

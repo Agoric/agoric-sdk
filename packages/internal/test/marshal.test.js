@@ -3,10 +3,8 @@ import test from 'ava';
 
 import { Far, getInterfaceOf, makeMarshal, passStyleOf } from '@endo/marshal';
 import { Fail, q } from '@endo/errors';
-import {
-  wrapRemoteMarshallerSendSlotsOnly as wrapRemoteMarshaller,
-  makeInaccessibleVal,
-} from '../src/marshal.js';
+import { makeInaccessibleVal } from '../src/marshal/inaccessible-val.js';
+import { wrapRemoteMarshallerSendSlotsOnly as wrapRemoteMarshaller } from '../src/marshal/wrap-marshaller.js';
 
 /**
  * @import {Marshal} from '@endo/marshal';

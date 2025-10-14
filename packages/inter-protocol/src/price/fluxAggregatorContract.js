@@ -3,7 +3,7 @@
 import { prepareIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
-import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';

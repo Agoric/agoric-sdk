@@ -2,7 +2,7 @@
 
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer } from '@agoric/internal';
-import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import {
   prepareRecorderKitMakers,
   provideAll,

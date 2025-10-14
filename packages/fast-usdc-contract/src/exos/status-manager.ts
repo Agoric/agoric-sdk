@@ -20,7 +20,7 @@ import type {
 import type { RepayAmountKWR } from '@agoric/fast-usdc/src/utils/fees.js';
 import type { ERemote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
-import type { EMarshaller } from '@agoric/internal/src/marshal.js';
+import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import type { MapStore, SetStore } from '@agoric/store';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Zone } from '@agoric/zone';

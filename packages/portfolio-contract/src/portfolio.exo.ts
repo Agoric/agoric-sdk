@@ -5,7 +5,7 @@ import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import { makeTracer, mustMatch, type ERemote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
-import type { EMarshaller } from '@agoric/internal/src/marshal.js';
+import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import {
   type AccountId,
   type CaipChainId,

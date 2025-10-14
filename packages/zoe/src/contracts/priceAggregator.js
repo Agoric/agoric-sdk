@@ -1,6 +1,6 @@
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
-import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 import {
   makeNotifierKit,

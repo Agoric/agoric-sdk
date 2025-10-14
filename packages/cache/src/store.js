@@ -7,7 +7,7 @@ import { withGroundState, makeState } from './state.js';
 
 /**
  * @import {ERemote} from '@agoric/internal'
- * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {Key, Pattern} from '@endo/patterns';
  */

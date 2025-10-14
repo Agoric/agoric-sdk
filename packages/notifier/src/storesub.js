@@ -12,7 +12,7 @@ import { subscribeEach } from './subscribe.js';
  * @import {ERef} from '@endo/far';
  * @import {IterationObserver, LatestTopic, Notifier, NotifierRecord, PublicationRecord, Publisher, PublishKit, StoredPublishKit, StoredSubscription, StoredSubscriber, Subscriber, Subscription, UpdateRecord} from '../src/types.js';
  * @import {StorageNode, Unserializer} from '@agoric/internal/src/lib-chainStorage.js';
- * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  */
 
 /**

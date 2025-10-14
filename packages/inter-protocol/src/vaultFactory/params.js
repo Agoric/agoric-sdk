@@ -17,7 +17,7 @@ import { amountPattern, ratioPattern } from '../contractSupport.js';
 
 /**
  * @import {ERemote, Remote} from '@agoric/internal';
- * @import {EMarshaller} from '@agoric/internal/src/marshal.js';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {MapStore} from '@agoric/store';
  * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
  */
