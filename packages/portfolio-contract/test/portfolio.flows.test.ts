@@ -20,12 +20,17 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   denomHash,
   type Bech32Address,
+  type MetaTrafficEntry,
   type Orchestrator,
 } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
+import {
+  parseAccountId,
+  chainOfAccount,
+} from '@agoric/orchestration/src/utils/address.js';
 import { buildGasPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import { unwrapResultMeta } from '@agoric/orchestration/src/utils/result-meta.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
   RebalanceStrategy,
@@ -158,6 +163,36 @@ const mocks = (
   errs: Record<string, Error | Map<string, Error>> = {},
   give: ProposalType['openPortfolio']['give'] = {},
 ) => {
+  const throwIfErr = (key: string, name: string = '') => {
+    let err = errs[key];
+    if (err === undefined) {
+      return;
+    }
+
+    if (err instanceof Map) {
+      const suberr = err.get(name);
+      if (suberr === undefined) {
+        return;
+      }
+      err.delete(name);
+      err = suberr;
+    } else {
+      delete errs[key];
+    }
+
+    if (err instanceof Error) {
+      assert.note(
+        err,
+        assert.details`injected ${assert.quote(key)} error at ${Error('stack trace')}`,
+      );
+    } else {
+      err = assert.error(assert.details`injected ${key} error`, undefined, {
+        cause: err,
+      });
+    }
+    throw err;
+  };
+
   const buf = [] as any[];
   const log = ev => {
     buf.push(ev);
@@ -182,15 +217,7 @@ const mocks = (
           return harden({ chainId, stakingTokens });
         },
         async makeAccount() {
-          const { makeAccount: makeAcctErr } = errs;
-          if (makeAcctErr) {
-            if (makeAcctErr instanceof Map) {
-              const err = makeAcctErr.get(name);
-              if (err) throw err;
-            } else {
-              throw makeAcctErr;
-            }
-          }
+          throwIfErr('makeAccount', name);
 
           const addr = harden({
             chainId,
@@ -202,10 +229,10 @@ const mocks = (
             },
             async send(toAccount, amount) {
               const { send: sendErr } = errs;
-              if (sendErr && amount?.value === 13n) throw sendErr;
+              if (sendErr && amount?.value === 13n) throwIfErr('send');
               log({ _cap: addr.value, _method: 'send', toAccount, amount });
             },
-            async transfer(address, amount, opts) {
+            async transferWithMeta(address, amount, opts) {
               if (!('denom' in amount)) throw Error('#10449');
               log({
                 _cap: addr.value,
@@ -220,21 +247,85 @@ const mocks = (
                 !(err instanceof Map) &&
                 !err.message.includes(address.chainId)
               )
-                throw err;
+                throwIfErr('transfer');
               if (opts?.memo && address.value.startsWith('axelar1')) {
                 factoryPK.resolve(opts.memo);
               }
+              const dstChainId = chainOfAccount(address);
+
+              const traffic = [] as MetaTrafficEntry[];
+              let lastResult = Promise.resolve({});
+              if (name !== 'agoric') {
+                const { result, meta } = await account.executeEncodedTxWithMeta(
+                  [
+                    {
+                      typeUrl: '/ibc.applications.transfer.v1.MsgTransfer',
+                      value: { sequence: 223n },
+                    },
+                  ],
+                );
+                traffic.push(...(meta?.traffic ?? []));
+                lastResult = lastResult.then(() => result);
+              }
+              const transferTraffic = {
+                op: 'transfer',
+                srcChainId: `cosmos:${chainId}`,
+                src: ['ibc', 'transferPort', 'channel-5'],
+                dstChainId,
+                dst: ['ibc', 'transferPort2', 'channel-42'],
+                seq: 339n,
+              } as MetaTrafficEntry;
+              traffic.push(transferTraffic);
+
+              return harden({ result: lastResult, meta: { traffic } });
+            },
+            async transfer(address, amount, opts) {
+              const { result } = await unwrapResultMeta(
+                account.transferWithMeta(address, amount, opts),
+              );
+              return result;
+            },
+            async executeEncodedTxWithMeta(msgs) {
+              log({ _cap: addr.value, _method: 'executeEncodedTx', msgs });
+              throwIfErr('executeEncodedTx');
+              const traffic = [
+                {
+                  op: 'ICA',
+                  srcChainId: `cosmos:${chainId}`,
+                  src: ['ibc', 'icacontroller-2', 'channel-7'],
+                  dstChainId: `cosmos:${name}`,
+                  dst: ['ibc', 'icahost-9', 'channel-1'],
+                  // XXX emulate an unknown sequence number, at least until the
+                  // Network API connection.sendWithMeta provides it.
+                  seq: { status: 'unknown' },
+                },
+              ] as MetaTrafficEntry[];
+
+              return harden({
+                result: msgs.map(({ typeUrl, response = {} }) => {
+                  if (typeUrl.startsWith('/')) {
+                    return response;
+                  }
+                  return {};
+                }),
+                meta: { traffic },
+              });
             },
             async executeEncodedTx(msgs) {
-              log({ _cap: addr.value, _method: 'executeEncodedTx', msgs });
-              const { executeEncodedTx: err } = errs;
-              if (err) throw err;
-              return harden(msgs.map(_ => ({})));
+              const { result } = await unwrapResultMeta(
+                account.executeEncodedTxWithMeta(msgs),
+              );
+              return result;
             },
           };
           if (name === 'agoric') {
+            const {
+              executeEncodedTx: _,
+              executeEncodedTxWithMeta: _2,
+              ...localAccount
+            } = account;
             return Far('AgoricAccount', {
-              ...account,
+              ...localAccount,
               monitorTransfers: async tap => {
                 log({ _cap: addr.value, _method: 'monitorTransfers', tap });
                 tapPK.resolve(tap);
@@ -306,8 +397,7 @@ const mocks = (
   const zoeTools = harden({
     async localTransfer(sourceSeat, localAccount, amounts) {
       log({ _method: 'localTransfer', sourceSeat, localAccount, amounts });
-      const { localTransfer: err } = errs;
-      if (err) throw err;
+      throwIfErr('localTransfer');
     },
     async withdrawToSeat(localAccount, destSeat, amounts) {
       log({ _method: 'withdrawToSeat', localAccount, destSeat, amounts });
@@ -775,6 +865,7 @@ test('handle failure in executeEncodedTx', async t => {
     { _method: 'transfer', address: { chainId: 'noble-5' } },
     { _method: 'executeEncodedTx', _cap: 'noble11056' }, // fail
     { _method: 'transfer', address: { chainId: 'agoric-6' } }, // unwind
+    { _method: 'executeEncodedTx' }, // unwind
     { _method: 'withdrawToSeat' }, // unwind
     { _method: 'fail' },
   ]);
@@ -1051,8 +1142,13 @@ test('Engine can move deposits +agoric -> @agoric', async t => {
   const lca = kit.reader.getLocalAccount();
   t.is(lca.getAddress().value, 'agoric11028');
   t.like(log, [
-    { _method: 'monitorTransfers' },
-    { _method: 'send', toAccount: { value: 'agoric11028' } },
+    { _cap: 'agoric11028', _method: 'monitorTransfers' },
+    {
+      _cap: 'agoric11028',
+      _method: 'send',
+      toAccount: { value: 'agoric11042' },
+    },
+    { _method: 'exit' },
   ]);
 
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -1096,9 +1192,11 @@ test('receiveUpcall returns false if sender is not AXELAR_GMP', async t => {
   // but not that resolveAccount({... lca, reg }) has been called
   await eventLoopIteration();
 
-  const upcallProcessed = await tap.receiveUpcall(
-    makeIncomingEVMEvent({ sourceChain, sender: makeTestAddress() }),
-  );
+  const upcallProcessed = await tap
+    .receiveUpcall(
+      makeIncomingEVMEvent({ sourceChain, sender: makeTestAddress() }),
+    )
+    .catch(err => t.log('upcall error', err));
 
   t.is(upcallProcessed, false, 'upcall indicates bad GMP sender');
 });
