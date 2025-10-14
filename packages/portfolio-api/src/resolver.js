@@ -6,7 +6,7 @@
  * Represents a published transaction with its type, optional amount, destination, and status.
  *
  * @typedef {object} PublishedTx
- * @property {TxType} type - The type of transaction (CCTP_TO_EVM, GMP, CCTP_TO_AGORIC, or CCTP_TO_NOBLE)
+ * @property {TxType} type - The type of transaction (CCTP_TO_EVM, GMP or CCTP_TO_AGORIC)
  * @property {bigint} [amount] - Optional transaction amount as a bigint
  * @property {AccountId} destinationAddress - The destination account identifier for the transaction
  * @property {TxStatus} status - Current status of the transaction (pending, success, or failed)
@@ -35,7 +35,5 @@ export const TxType = /** @type {const} */ ({
   CCTP_TO_EVM: 'CCTP_TO_EVM',
   GMP: 'GMP',
   CCTP_TO_AGORIC: 'CCTP_TO_AGORIC',
-  /** @deprecated - only supports 20 byte addresses */
-  CCTP_TO_NOBLE: 'CCTP_TO_NOBLE',
 });
 harden(TxType);
