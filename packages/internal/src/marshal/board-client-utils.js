@@ -2,24 +2,23 @@
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
-import { M } from '@endo/patterns';
-import { isStreamCell } from './lib-chainStorage.js';
+import { isStreamCell } from '../lib-chainStorage.js';
+import { assertCapData } from './cap-data.js';
 
 /**
- * @import {CapData} from '@endo/marshal';
- * @import {TypedPattern} from './types.js';
+ * @import {RemotableObject} from '@endo/pass-style';
+ * @import {CapData, FromCapData, ConvertValToSlot, Marshal} from '@endo/marshal';
  */
 
 /**
- * Should be a union with Remotable, but that's `any`, making this type
- * meaningless
- *
- * @typedef {{ getBoardId: () => string | null }} BoardRemote
+ * @template [BoardId=(string | null)]
+ * @typedef {{ getBoardId: () => BoardId } & RemotableObject} BoardRemote
  */
 
 /**
- * @param {{ boardId: string | null; iface?: string }} slotInfo
- * @returns {BoardRemote}
+ * @template [BoardId=(string | null)]
+ * @param {{ boardId: BoardId; iface?: string }} slotInfo
+ * @returns {BoardRemote<BoardId>}
  */
 export const makeBoardRemote = ({ boardId, iface }) => {
   const nonalleged = iface ? iface.replace(/^Alleged: /, '') : '';
@@ -27,13 +26,17 @@ export const makeBoardRemote = ({ boardId, iface }) => {
 };
 
 /**
- * @param {string} boardId
+ * @template [BoardId=string]
+ * @param {BoardId} boardId
  * @param {string} iface
  */
 export const slotToBoardRemote = (boardId, iface) =>
   makeBoardRemote({ boardId, iface });
 
-/** @param {BoardRemote | object} val */
+/**
+ * @param {BoardRemote<any> | object} val
+ * @returns {val extends BoardRemote<infer BoardId> ? BoardId : never}
+ */
 const boardValToSlot = val => {
   if ('getBoardId' in val) {
     return val.getBoardId();
@@ -46,47 +49,26 @@ const boardValToSlot = val => {
  * allows the caller to pick their slots. The deserializer is configurable: the
  * default cannot handle Remotable-bearing data.
  *
- * @param {(slot: string, iface: string) => any} [slotToVal]
- * @returns {Omit<
- *   import('@endo/marshal').Marshal<string | null>,
- *   'serialize' | 'unserialize'
- * >}
+ * @template [BoardId=(string | null)]
+ * @param {(slot: BoardId, iface: string) => any} [slotToVal]
+ * @returns {Omit<Marshal<BoardId>, 'serialize' | 'unserialize'>}
  */
 export const boardSlottingMarshaller = (slotToVal = undefined) => {
-  return makeMarshal(boardValToSlot, slotToVal, {
-    serializeBodyFormat: 'smallcaps',
-  });
+  return makeMarshal(
+    /** @type {ConvertValToSlot<BoardId>} */ (boardValToSlot),
+    slotToVal,
+    {
+      serializeBodyFormat: 'smallcaps',
+    },
+  );
 };
-
-// TODO move CapDataShape to Endo
-/**
- * @type {TypedPattern<CapData<any>>}
- */
-export const CapDataShape = { body: M.string(), slots: M.array() };
-harden(CapDataShape);
-
-/**
- * Assert that this is CapData
- *
- * @param {unknown} data
- * @returns {asserts data is CapData<unknown>}
- */
-export const assertCapData = data => {
-  assert.typeof(data, 'object');
-  assert(data);
-  typeof data.body === 'string' || Fail`data has non-string .body ${data.body}`;
-  Array.isArray(data.slots) || Fail`data has non-Array slots ${data.slots}`;
-};
-harden(assertCapData);
 
 /**
  * Read and unmarshal a value from a map representation of vstorage data
  *
  * @param {Map<string, string>} data
  * @param {string} key
- * @param {ReturnType<
- *   typeof import('@endo/marshal').makeMarshal
- * >['fromCapData']} fromCapData
+ * @param {FromCapData<string>} fromCapData
  * @param {number} index index of the desired value in a deserialized stream
  *   cell
  * @returns {any}
@@ -107,7 +89,7 @@ export const unmarshalFromVstorage = (data, key, fromCapData, index) => {
   const marshalled = values.at(index);
   assert.typeof(marshalled, 'string');
 
-  /** @type {import('@endo/marshal').CapData<string>} */
+  /** @type {CapData<string>} */
   const capData = harden(JSON.parse(marshalled));
   assertCapData(capData);
 
@@ -147,10 +129,3 @@ export const makeHistoryReviver = (entries, slotToVal = undefined) => {
 
   return harden({ getItem, children, has });
 };
-
-/** @param {import('@endo/marshal').CapData<unknown>} cap */
-const rejectOCap = cap => Fail`${cap} is not pure data`;
-export const pureDataMarshaller = makeMarshal(rejectOCap, rejectOCap, {
-  serializeBodyFormat: 'smallcaps',
-});
-harden(pureDataMarshaller);

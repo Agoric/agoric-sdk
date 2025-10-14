@@ -183,7 +183,7 @@ export const lookupOfferIdForVault = async (vaultId, currentP) => {
 /**
  * @param {Record<
  *   string,
- *   import('@agoric/internal/src/marshal.js').BoardRemote
+ *   import('@agoric/internal/src/marshal/board-client-utils.js').BoardRemote
  * >} brands
  * @param {{ wantMinted: number; giveMinted?: undefined }
  *   | { giveMinted: number; wantMinted?: undefined }} opts

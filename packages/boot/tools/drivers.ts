@@ -6,7 +6,7 @@ import { NonNullish } from '@agoric/internal';
 import {
   boardSlottingMarshaller,
   unmarshalFromVstorage,
-} from '@agoric/internal/src/marshal.js';
+} from '@agoric/internal/src/marshal/board-client-utils.js';
 import {
   slotToRemotable,
   type FakeStorageKit,
@@ -51,7 +51,7 @@ export const makeWalletFactoryDriver = async (
     'namesByAddressAdmin',
   );
 
-  const marshaller = boardSlottingMarshaller(slotToRemotable);
+  const marshaller: Marshaller = boardSlottingMarshaller(slotToRemotable);
 
   const makeWalletDriver = (
     walletAddress: string,
