@@ -3,7 +3,7 @@ import type { JsonRpcProvider } from 'ethers';
 import { Fail } from '@endo/errors';
 
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import type { Bech32Address, CaipChainId } from '@agoric/orchestration';
+import type { CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 
@@ -19,10 +19,6 @@ import { resolvePendingTx } from './resolver.ts';
 import type { EvmProviders, UsdcAddresses } from './support.ts';
 import { watchGmp, lookBackGmp } from './watchers/gmp-watcher.ts';
 import { watchCctpTransfer, lookBackCctp } from './watchers/cctp-watcher.ts';
-import {
-  lookBackNobleTransfer,
-  watchNobleTransfer,
-} from './watchers/noble-watcher.ts';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
@@ -43,10 +39,6 @@ export type GmpTransfer = {
 
 type CctpTx = PendingTx & { type: typeof TxType.CCTP_TO_EVM; amount: bigint };
 type GmpTx = PendingTx & { type: typeof TxType.GMP };
-type NobleWithdrawTx = PendingTx & {
-  type: typeof TxType.CCTP_TO_NOBLE;
-  amount: bigint;
-};
 
 type LiveWatchOpts = { mode: 'live'; timeoutMs: number };
 type LookBackWatchOpts = { mode: 'lookback'; publishTimeMs: number };
@@ -67,7 +59,6 @@ export type PendingTxMonitor<
 type MonitorRegistry = {
   [TxType.CCTP_TO_EVM]: PendingTxMonitor<CctpTx, EvmContext>;
   [TxType.GMP]: PendingTxMonitor<GmpTx, EvmContext>;
-  [TxType.CCTP_TO_NOBLE]: PendingTxMonitor<NobleWithdrawTx, EvmContext>;
 };
 
 const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
@@ -150,56 +141,9 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
   },
 };
 
-const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, EvmContext> = {
-  watch: async (ctx, tx, log, opts) => {
-    const { txId, destinationAddress, amount } = tx;
-    const logPrefix = `[${txId}]`;
-
-    const { accountAddress } = parseAccountId(destinationAddress);
-
-    const nobleAddress = accountAddress as Bech32Address;
-
-    /**
-     * - depositForBurn initiated from Ethereum:
-     *   https://sepolia.etherscan.io/tx/0x68c2c427e43e089db94ae105c30645e5fe00bf6124fcac9eab9df9f8a8f7fb83
-     *
-     * - Corresponding message received on Noble:
-     *   https://www.mintscan.io/noble-testnet/tx/6D165B5B8F1BF6004AA9A61FE00CC8B841C09120BDB433A11063C2A7F71C7028?height=39572351
-     *
-     * This confirms the expected denom is `uusdc`.
-     */
-    const expectedDenom = 'uusdc';
-
-    log(
-      `${logPrefix} Watching Noble withdrawal to ${nobleAddress} for ${amount} ${expectedDenom}`,
-    );
-
-    const watchArgs = {
-      cosmosRest: ctx.cosmosRest,
-      watchAddress: nobleAddress,
-      expectedAmount: amount,
-      expectedDenom,
-      chainKey: 'noble',
-      log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
-    };
-    const transferStatus = await (opts.mode === 'live'
-      ? watchNobleTransfer({ ...watchArgs, timeoutMs: opts.timeoutMs })
-      : lookBackNobleTransfer({ ...watchArgs }));
-
-    await resolvePendingTx({
-      signingSmartWalletKit: ctx.signingSmartWalletKit,
-      txId,
-      status: transferStatus ? TxStatus.SUCCESS : TxStatus.FAILED,
-    });
-
-    log(`${logPrefix} Noble withdraw tx resolved`);
-  },
-};
-
 const createMonitorRegistry = (): MonitorRegistry => ({
   [TxType.CCTP_TO_EVM]: cctpMonitor,
   [TxType.GMP]: gmpMonitor,
-  [TxType.CCTP_TO_NOBLE]: nobleWithdrawMonitor,
 });
 
 export type HandlePendingTxOpts = {
