@@ -902,20 +902,102 @@ export const parseInboundTransfer = (async (
   throw Error('obsolete');
 }) satisfies OrchestrationFlow;
 
-const eventAbbr = (e: VTransferIBCEvent) => {
-  const {
-    destination_channel: dest,
-    destination_port: destPort,
-    sequence,
-  } = e.packet;
-  return { destination_channel: dest, destination_port: destPort, sequence };
+const eventAbbr = ({ packet }: VTransferIBCEvent) => ({
+  destination_channel: packet.destination_channel,
+  destination_port: packet.destination_port,
+  sequence: packet.sequence,
+});
+
+type UpcallData = Pick<PortfolioInstanceContext, 'gmpAddresses' | 'axelarIds'>;
+export type OnTransferContext = UpcallData &
+  Pick<PortfolioInstanceContext, 'transferChannels'> & {
+    resolverService: GuestInterface<ResolverKit['service']>;
+  };
+
+/**
+ * Resolve EVM account creation from Axelar GMP memo.
+ *
+ * @param memo - GMP memo from AXELAR_GMP via axelar channel
+ * @param axelarIds - name -> axelar id mapping
+ * @param orch - Orchestrator to get chain information
+ * @param portfolioManager - Portfolio manager to resolve the account
+ * @param traceUpcall - Logger for tracing
+ * @returns Promise<boolean> - true if account was resolved, false otherwise
+ */
+const resolveEVMAccount = async (
+  memo: AxelarGmpIncomingMemo,
+  axelarIds: AxelarId,
+  orch: Orchestrator,
+  portfolioManager: GuestInterface<PortfolioKit['manager']>,
+  traceUpcall: TraceLogger,
+) => {
+  traceUpcall('GMP', memo);
+
+  const result = (entries(axelarIds) as [AxelarChain, string][]).find(
+    ([_, chainId]) => chainId === memo.source_chain,
+  );
+  if (!result) {
+    traceUpcall('unknown source_chain', memo);
+    return false;
+  }
+
+  const [chainName, _] = result;
+
+  const payloadBytes = decodeBase64(memo.payload);
+  const [{ data }] = decodeAbiParameters(
+    DECODE_CONTRACT_CALL_RESULT_ABI,
+    payloadBytes,
+  ) as [AgoricResponse];
+
+  traceUpcall('Decoded:', JSON.stringify({ data }));
+
+  const [message] = data;
+  const { success, result: result2 } = message;
+  if (!success) return false;
+
+  const [address] = decodeAbiParameters([{ type: 'address' }], result2);
+
+  const chainInfo = await (await orch.getChain(chainName)).getChainInfo();
+  const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
+
+  traceUpcall(chainName, 'remoteAddress', address);
+  portfolioManager.resolveAccount({
+    namespace: 'eip155',
+    chainName,
+    chainId: caipId,
+    remoteAddress: address,
+  });
+
+  return true;
 };
 
-export type OnTransferContext = Pick<
-  PortfolioInstanceContext,
-  'gmpAddresses' | 'axelarIds' | 'transferChannels'
-> & {
-  resolverService: GuestInterface<ResolverKit['service']>;
+/**
+ * Resolve CCTP transfer completion by looking up and settling the transaction.
+ *
+ * @param parsed - authenticated inbound transfer data (in particular: amount)
+ * @param destination - of tx to be resolved
+ * @param resolverService
+ * @returns Promise<boolean> - true if transaction was found and settled, false otherwise
+ */
+const resolveCCTPIn = (
+  parsed: Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>,
+  destination: AccountId,
+  resolverService: GuestInterface<ResolverKit['service']>,
+  traceUpcall: TraceLogger,
+): boolean => {
+  traceUpcall('CCTPin', parsed);
+  // XXX check parsed.amount is USDC-on-Agoric
+  const txId = resolverService.lookupTx({
+    type: TxType.CCTP_TO_AGORIC,
+    destination,
+    amountValue: parsed.amount.value,
+  });
+  if (!txId) {
+    traceUpcall('lookupTx found nothing');
+    return false;
+  }
+  resolverService.settleTransaction({ status: 'success', txId });
+  return true;
 };
 
 /**
@@ -934,74 +1016,6 @@ export const onAgoricTransfer = (async (
   const traceUpcall = makeTracer('upcall').sub(`portfolio${pId}`);
   traceUpcall('event', eventAbbr(event));
   if (event.packet.destination_port !== 'transfer') return false;
-
-  /**
-   * @param memo - valid memo from AXELAR_GMP by way of transferChannels.axelar
-   */
-  const resolveEVMAccount = async (memo: AxelarGmpIncomingMemo) => {
-    traceUpcall('GMP', memo);
-    const result = (entries(axelarIds) as [AxelarChain, string][]).find(
-      ([_, chainId]) => chainId === memo.source_chain,
-    );
-
-    if (!result) {
-      traceUpcall('unknown source_chain', memo);
-      return false;
-    }
-
-    const [chainName, _] = result;
-
-    const payloadBytes = decodeBase64(memo.payload);
-    const [{ isContractCallResult, data }] = decodeAbiParameters(
-      DECODE_CONTRACT_CALL_RESULT_ABI,
-      payloadBytes,
-    ) as [AgoricResponse];
-
-    traceUpcall('Decoded:', JSON.stringify({ isContractCallResult, data }));
-
-    if (isContractCallResult) {
-      traceUpcall('TODO: Handle the result of the contract call', data);
-      return false;
-    }
-
-    const [message] = data;
-    const { success, result: result2 } = message;
-    if (!success) return false;
-
-    const [address] = decodeAbiParameters([{ type: 'address' }], result2);
-
-    const chainInfo = await (await orch.getChain(chainName)).getChainInfo();
-    const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
-
-    traceUpcall(chainName, 'remoteAddress', address);
-    pKit.manager.resolveAccount({
-      namespace: 'eip155',
-      chainName,
-      chainId: caipId,
-      remoteAddress: address,
-    });
-
-    return true;
-  };
-
-  const resolveCCTPIn = async (
-    parsed: Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>,
-  ) => {
-    traceUpcall('CCTPin', parsed);
-    const destination = coerceAccountId(lca.getAddress());
-    // XXX check parsed.amount is USDC-on-Agoric
-    const txId = ctx.resolverService.lookupTx({
-      type: TxType.CCTP_TO_AGORIC,
-      destination,
-      amountValue: parsed.amount.value,
-    });
-    if (!txId) {
-      traceUpcall('lookupTx found nothing');
-      return false;
-    }
-    await ctx.resolverService.settleTransaction({ status: 'success', txId });
-    return true;
-  };
 
   const { gmpAddresses, axelarIds, transferChannels } = ctx;
   const { destination_channel: packetDest } = event.packet;
@@ -1023,11 +1037,22 @@ export const onAgoricTransfer = (async (
       if (!extra.memo) return false;
 
       const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
-      return resolveEVMAccount(memo);
+      return resolveEVMAccount(
+        memo,
+        axelarIds,
+        orch,
+        pKit.manager,
+        traceUpcall,
+      );
     }
     case transferChannels.noble: {
       const parsed = await lca.parseInboundTransfer(event.packet);
-      return resolveCCTPIn(parsed);
+      return resolveCCTPIn(
+        parsed,
+        coerceAccountId(lca.getAddress()),
+        ctx.resolverService,
+        traceUpcall,
+      );
     }
     default:
       switch (event.packet.source_channel) {
@@ -1035,7 +1060,7 @@ export const onAgoricTransfer = (async (
           traceUpcall('ignore packet to axelar');
           break;
         case transferChannels.noble:
-          traceUpcall('ignore packet to nonble');
+          traceUpcall('ignore packet to noble');
           break;
         default: {
           const parsed = await lca.parseInboundTransfer(event.packet);
