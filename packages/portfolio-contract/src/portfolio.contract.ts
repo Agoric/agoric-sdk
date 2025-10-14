@@ -328,6 +328,10 @@ export const contract = async (
     ctx1,
   );
 
+  /**
+   * Distinct context for POLA to only provide resolverService
+   * where required.
+   */
   const txfrCtx: flows.OnTransferContext = {
     axelarIds,
     gmpAddresses,
