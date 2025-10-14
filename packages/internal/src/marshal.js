@@ -31,12 +31,12 @@ import { isStreamCell } from './lib-chainStorage.js';
 
 /**
  * @template [BoardId=(string | null)]
- * @param {{ boardId: BoardId; iface?: string; prefix?: string }} slotInfo
+ * @param {{ boardId: BoardId; iface?: string }} slotInfo
  * @returns {BoardRemote<BoardId>}
  */
-export const makeBoardRemote = ({ boardId, iface, prefix = 'BoardRemote' }) => {
+export const makeBoardRemote = ({ boardId, iface }) => {
   const nonalleged = iface ? iface.replace(/^Alleged: /, '') : '';
-  return Far(`${prefix}${nonalleged}`, { getBoardId: () => boardId });
+  return Far(`BoardRemote${nonalleged}`, { getBoardId: () => boardId });
 };
 
 /**
