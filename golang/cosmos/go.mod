@@ -263,7 +263,7 @@ replace (
 	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with
 	// https://github.com/cometbft/cometbft/issue/6899 resolved.
-	github.com/cometbft/cometbft => github.com/agoric-labs/cometbft v0.38.17-alpha.agoric.1
+	github.com/cometbft/cometbft => github.com/agoric-labs/cometbft v0.38.17-alpha.agoric.1.1
 	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.50.14-alpha.agoric.3
 	github.com/cosmos/ibc-go/modules/capability => github.com/agoric-labs/ibc-go/modules/capability v1.0.1-v8.7.0-alpha.agoric.1
 

@@ -227,8 +227,8 @@ github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/
 github.com/adlio/schema v1.3.6 h1:k1/zc2jNfeiZBA5aFTRy37jlBIuCkXCm0XmvpzCKI9I=
 github.com/adlio/schema v1.3.6/go.mod h1:qkxwLgPBd1FgLRHYVCmQT/rrBr3JH38J9LjmVzWNudg=
 github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5/go.mod h1:SkGFH1ia65gfNATL8TAiHDNxPzPdmEL5uirI2Uyuz6c=
-github.com/agoric-labs/cometbft v0.38.17-alpha.agoric.1 h1:NmKLLSctK9CXt0X92b2N+kh790o0jwaADSTsuv4ADRA=
-github.com/agoric-labs/cometbft v0.38.17-alpha.agoric.1/go.mod h1:5l0SkgeLRXi6bBfQuevXjKqML1jjfJJlvI1Ulp02/o4=
+github.com/agoric-labs/cometbft v0.38.17-alpha.agoric.1.1 h1:gA1sxgpycMwbTFTpJ6xc8RgDd8+riEGltFw3rOO/bLA=
+github.com/agoric-labs/cometbft v0.38.17-alpha.agoric.1.1/go.mod h1:5l0SkgeLRXi6bBfQuevXjKqML1jjfJJlvI1Ulp02/o4=
 github.com/agoric-labs/cosmos-sdk v0.50.14-alpha.agoric.3 h1:sDVooA9+hDskJv2XHTCN6J5FT5AuvfRFkP5FXoznGeg=
 github.com/agoric-labs/cosmos-sdk v0.50.14-alpha.agoric.3/go.mod h1:xEBva4dbDLcZcPQx3/yuSz3272k9XJKxl7O1J5oagsw=
 github.com/agoric-labs/cosmos-sdk/client/v2 v2.0.0-v0.50.14-alpha.agoric.2 h1:6nR9bQSscriuHcj6nTtDFGjsMuoOeaGT+nDL/q83pdE=
