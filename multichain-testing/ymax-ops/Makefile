@@ -133,5 +133,17 @@ fund-fee-acct: ,$(CONTRACT)-node.json
 		$$($(JQ) -r '.value|fromjson|.values[0]|fromjson|.body|fromjson|.contractAccount' ,$(CONTRACT)-node.json) \
 			1234000000ubld -y -b block --node=$(NODE) $(SIG_OPTS)
 
+,ymax-upgrade.js: ,ymax-bundle-id
+	echo "await E(ymaxControl).upgrade('$$(cat ,ymax-bundle-id)').catch(err=>console.error(err));" >$@
+
+
+,$(CONTRACT)-upgraded: ,ymax-bundle-id ,ymax-installed ,privateArgsOverrides.json
+	AGORIC_NET=$(AGORIC_NET) \
+		$(YMAX_TOOL) --upgrade <,privateArgsOverrides.json $$(cat ,ymax-bundle-id) >$@ || (rm $@; false)
+
+,$(CONTRACT)-upgraded-repl: ,ymax-upgrade.js ,ymax-installed
+	AGORIC_NET=$(AGORIC_NET) \
+		$(YMAX_TOOL) --repl <,ymax-upgrade.js >$@ || (rm $@; false)
+
 clean:
 	rm -rf ,* $(DEPLOY)/dist/
