@@ -14,9 +14,15 @@ import {
   provideLazyMap,
   typedEntries,
 } from '@agoric/internal';
-import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+import { EvmWalletOperationType } from '@agoric/portfolio-api/src/constants.js';
+import type {
+  AxelarChain,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
 
 import type { AssetPlaceRef, MovementDesc } from '../src/type-guards-steps.js';
+import { PoolPlaces } from '../src/type-guards.js';
+import type { PoolKey } from '../src/type-guards.js';
 import {
   preflightValidateNetworkPlan,
   formatInfeasibleDiagnostics,
@@ -64,7 +70,11 @@ export type LpModel = IModel<string, string>;
  *   specified chain
  */
 export type GasEstimator = {
-  getWalletEstimate: (chainName: AxelarChain) => Promise<bigint>;
+  getWalletEstimate: (
+    chainName: AxelarChain,
+    operationType?: EvmWalletOperationType,
+    protocol?: YieldProtocol,
+  ) => Promise<bigint>;
   getFactoryContractEstimate: (chainName: AxelarChain) => Promise<bigint>;
   getReturnFeeEstimate: (chainName: AxelarChain) => Promise<bigint>;
 };
@@ -145,9 +155,12 @@ export const buildLPModel = (
   let minPrimaryWeight = Infinity;
   for (const edge of graph.edges) {
     const { id, src, dest } = edge;
-    const { capacity, variableFee, fixedFee = 0, timeFixed = 0 } = edge;
+    const { capacity, min, variableFee, fixedFee = 0, timeFixed = 0 } = edge;
 
-    throughputConstraints[`through_${id}`] = { min: 0, max: capacity };
+    throughputConstraints[`through_${id}`] = {
+      min: min || 0,
+      max: capacity,
+    };
 
     // The numbers in graph.supplies should use the same units as fixedFee, but
     // variableFee is in basis points relative to some scaling of those other
@@ -212,6 +225,8 @@ export const buildLPModel = (
       binaryVariables[`pick_${id}`],
       epsilonWeight,
     );
+    // No arc is free.
+    binaryVariables[`pick_${id}`].weight += 1;
   }
 
   // Constrain the net flow from each node.
@@ -293,6 +308,7 @@ SUBJECT TO
       const prefix = attrParts.join('_');
       const lines = [`\\# ${attr} ${prettyJsonable(constraint)}`];
       for (const [opName, value] of Object.entries(constraint)) {
+        if (!Number.isFinite(value)) continue;
         const label = `${prefix}_${opName.slice(0, 3)}`;
         const op = cplexLpOpForName[opName];
         lines.push(`${label}: ${makeSumExpr(attr)} ${op} ${value}`);
@@ -426,10 +442,26 @@ export const rebalanceMinCostFlowSteps = async (
           break;
         }
         // XXX: revisit https://github.com/Agoric/agoric-sdk/pull/11953#discussion_r2383034184
-        case 'poolToEvm':
-        case 'evmToPool': {
+        case 'poolToEvm': {
+          const poolInfo = PoolPlaces[edge.src as PoolKey];
+          const protocol = poolInfo?.protocol;
           const feeValue = await gasEstimator.getWalletEstimate(
             chainOf(edge.dest) as AxelarChain,
+            EvmWalletOperationType.Withdraw,
+            protocol,
+          );
+          details = {
+            fee: AmountMath.make(graph.feeBrand, padFeeEstimate(feeValue)),
+          };
+          break;
+        }
+        case 'evmToPool': {
+          const poolInfo = PoolPlaces[edge.dest as PoolKey];
+          const protocol = poolInfo?.protocol;
+          const feeValue = await gasEstimator.getWalletEstimate(
+            chainOf(edge.dest) as AxelarChain,
+            EvmWalletOperationType.Supply,
+            protocol,
           );
           details = {
             fee: AmountMath.make(graph.feeBrand, padFeeEstimate(feeValue)),
@@ -439,6 +471,7 @@ export const rebalanceMinCostFlowSteps = async (
         case 'evmToNoble': {
           const feeValue = await gasEstimator.getWalletEstimate(
             chainOf(edge.src) as AxelarChain,
+            EvmWalletOperationType.DepositForBurn,
           );
           details = {
             fee: AmountMath.make(graph.feeBrand, padFeeEstimate(feeValue)),

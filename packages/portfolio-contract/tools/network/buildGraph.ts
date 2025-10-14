@@ -20,7 +20,8 @@ export interface FlowEdge {
   id: string;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
-  capacity: number; // numeric for LP; derived from bigint
+  capacity?: number; // numeric for LP; derived from bigint
+  min?: number; // numeric for LP; derived from bigint
   variableFee: number; // cost coefficient per unit flow in basis points
   fixedFee?: number; // optional fixed cost (cheapest mode)
   timeFixed?: number; // optional time cost (fastest mode)
@@ -111,7 +112,6 @@ export const buildBaseGraph = (
 
     const chainIsEvm = Object.keys(AxelarChain).includes(chainName);
     const base: Omit<FlowEdge, 'src' | 'dest' | 'id'> = {
-      capacity: 1e15,
       variableFee: vf,
       fixedFee: 0,
       timeFixed: tf,
@@ -220,7 +220,6 @@ export const makeGraphFromDefinition = (
 
   // Force the presence of particular edges.
   const edges = [...graph.edges] as Array<FlowEdge | undefined>;
-  const capacityDefault = 1e15; // not quite MAX_SAFE_INTEGER
   const addOrReplaceEdge = (
     src: AssetPlaceRef,
     dest: AssetPlaceRef,
@@ -239,7 +238,6 @@ export const makeGraphFromDefinition = (
     }
 
     const dataAttrs = customAttrs || {
-      capacity: capacityDefault,
       variableFee: 1,
       fixedFee: 0,
       timeFixed: 1,
@@ -262,7 +260,8 @@ export const makeGraphFromDefinition = (
   // Override the base graph with inter-hub links from spec.
   for (const link of spec.links) {
     addOrReplaceEdge(link.src, link.dest, {
-      capacity: Number(link.capacity ?? capacityDefault),
+      capacity: link.capacity === undefined ? undefined : Number(link.capacity),
+      min: link.min === undefined ? undefined : Number(link.min),
       variableFee: link.variableFeeBps ?? 0,
       fixedFee: link.flatFee === undefined ? undefined : Number(link.flatFee),
       timeFixed: link.timeSec,
@@ -273,7 +272,11 @@ export const makeGraphFromDefinition = (
 
   // Force unique sequential edge IDs for avoiding collisions in the solver.
   graph.edges = partialMap(edges, edge => (edge ? { ...edge } : undefined));
-  for (let i = 0; i < graph.edges.length; i += 1) graph.edges[i].id = `e${i}`;
+  const width = `${graph.edges.length - 1}`.length;
+  for (let i = 0; i < graph.edges.length; i += 1) {
+    const iPadded = `${i}`.padStart(width, '0');
+    graph.edges[i].id = `e${iPadded}`;
+  }
 
   return graph;
 };

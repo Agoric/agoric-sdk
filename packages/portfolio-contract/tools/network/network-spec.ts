@@ -90,8 +90,8 @@ export interface LinkSpec {
   feeMode?: FeeMode; // how fees apply to transation using this link. See plan-solve.ts
 
   // Policy / guardrails (optional)
-  priority?: number; // tie-break hint
-  enabled?: boolean; // admin toggle
+  // priority?: number; // tie-break hint
+  // enabled?: boolean; // admin toggle
 }
 
 // Overall network definition

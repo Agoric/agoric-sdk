@@ -20,20 +20,19 @@
  *
  * For usage examples, see `makeTrader` in {@link ../test/portfolio-actors.ts}.
  */
-import type { Amount, Brand, NatAmount, NatValue } from '@agoric/ertp';
-import { stripPrefix, tryNow } from '@agoric/internal/src/ses-utils.js';
+import type { Brand, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
-import {
-  AnyNatAmountShape,
-  type AccountId,
-  type Bech32Address,
-  type CosmosChainAddress,
-} from '@agoric/orchestration';
+import { stripPrefix, tryNow } from '@agoric/internal/src/ses-utils.js';
+import { AnyNatAmountShape } from '@agoric/orchestration';
 import {
   AxelarChain,
-  SupportedChain,
   YieldProtocol,
-} from '@agoric/portfolio-api/src/constants.js';
+  type FlowDetail,
+  type InstrumentId,
+  type ProposalType,
+  type StatusFor,
+  type TargetAllocation,
+} from '@agoric/portfolio-api';
 import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
@@ -43,7 +42,6 @@ import { isNat } from '@endo/nat';
 import { M } from '@endo/patterns';
 import type { EVMContractAddresses, start } from './portfolio.contract.js';
 import type { PortfolioKit } from './portfolio.exo.js';
-import type { AssetPlaceRef } from './type-guards-steps.js';
 
 export type { OfferArgsFor } from './type-guards-steps.js';
 
@@ -80,29 +78,6 @@ export type PortfolioContinuingInvitationMaker =
   keyof PortfolioKit['invitationMakers'];
 
 // #region Proposal Shapes
-type Empty = Record<never, Amount>;
-
-/**
- * Proposal shapes for portfolio operations.
- *
- * **openPortfolio**: Create portfolio with initial funding across protocols
- * **rebalance**: Add funds (give) or withdraw funds (want) from protocols
- */
-export type ProposalType = {
-  openPortfolio: {
-    give: {
-      /** required iff the contract was started with an Access issuer */
-      Access?: NatAmount;
-      Deposit?: NatAmount;
-    };
-    want?: Empty;
-  };
-  rebalance:
-    | { give: { Deposit?: NatAmount }; want: Empty }
-    | { want: { Cash: NatAmount }; give: Empty };
-  withdraw: { want: { Cash: NatAmount }; give: Empty };
-  deposit: { give: { Deposit: NatAmount }; want: Empty };
-};
 
 export const makeProposalShapes = (
   usdcBrand: Brand<'nat'>,
@@ -147,8 +122,9 @@ harden(makeProposalShapes);
 
 export type PoolPlaceInfo =
   | { protocol: 'USDN'; vault: null | 1; chainName: 'noble' }
-  | { protocol: 'Aave' | 'Compound' | 'Beefy'; chainName: AxelarChain };
+  | { protocol: YieldProtocol; chainName: AxelarChain };
 
+// XXX special handling. What's the functional difference from other places?
 export const BeefyPoolPlaces = {
   Beefy_re7_Avalanche: {
     protocol: 'Beefy',
@@ -174,7 +150,7 @@ export const BeefyPoolPlaces = {
     protocol: 'Beefy',
     chainName: 'Arbitrum',
   },
-} as const satisfies Record<string, PoolPlaceInfo>;
+} as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
 
 export const PoolPlaces = {
   USDN: { protocol: 'USDN', vault: null, chainName: 'noble' }, // MsgSwap only
@@ -189,25 +165,19 @@ export const PoolPlaces = {
   Compound_Arbitrum: { protocol: 'Compound', chainName: 'Arbitrum' },
   Compound_Base: { protocol: 'Compound', chainName: 'Base' },
   ...BeefyPoolPlaces,
-} as const satisfies Record<string, PoolPlaceInfo>;
+} as const satisfies Record<InstrumentId, PoolPlaceInfo>;
 harden(PoolPlaces);
 
 /**
  * Names of places where a portfolio may have a position.
  */
-export type PoolKey = keyof typeof PoolPlaces;
+export type PoolKey = InstrumentId;
 
 /** Ext for Extensible: includes PoolKeys in future upgrades */
 export type PoolKeyExt = string;
 
 /** Ext for Extensible: includes PoolKeys in future upgrades */
 export const PoolKeyShapeExt = M.string();
-
-/**
- * Target allocation mapping from PoolKey to numerator (typically in basis points).
- * Denominator is implicitly the sum of all numerators.
- */
-export type TargetAllocation = Partial<Record<PoolKey, NatValue>>;
 
 export const TargetAllocationShape: TypedPattern<TargetAllocation> = M.recordOf(
   M.or(...keys(PoolPlaces)),
@@ -273,66 +243,15 @@ export const portfolioIdOfPath = (path: string | string[]) => {
   );
 };
 
-export type FlowDetail =
-  | { type: 'withdraw'; amount: NatAmount }
-  | { type: 'deposit'; amount: NatAmount }
-  | { type: 'rebalance' }; // aka simpleRebalance
-
 export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
   { type: 'withdraw', amount: AnyNatAmountShape },
   { type: 'deposit', amount: AnyNatAmountShape },
   { type: 'rebalance' },
 );
 
-type FlowStatus =
-  | { state: 'run'; step: number; how: string }
-  | { state: 'undo'; step: number; how: string }
-  | { state: 'done' }
-  | { state: 'fail'; step: number; how: string; error: string; where?: string };
-
-type FlowSteps = {
-  how: string;
-  amount: Amount<'nat'>;
-  src: AssetPlaceRef;
-  dest: AssetPlaceRef;
-}[];
-
 /** ChainNames including those in future upgrades */
 type ChainNameExt = string;
 const ChainNameExtShape: TypedPattern<ChainNameExt> = M.string();
-
-// XXX relate paths to types a la readPublished()
-export type StatusFor = {
-  contract: {
-    contractAccount: CosmosChainAddress['value'];
-  };
-  portfolios: {
-    addPortfolio: `portfolio${number}`;
-  };
-  portfolio: {
-    positionKeys: PoolKeyExt[];
-    accountIdByChain: Record<ChainNameExt, AccountId>;
-    accountsPending?: SupportedChain[];
-    depositAddress?: Bech32Address;
-    targetAllocation?: TargetAllocation;
-    /** incremented by the contract every time the user sends a transaction that the planner should respond to */
-    policyVersion: number;
-    /** the count of acknowledged submissions [from the planner] associated with the current policyVersion */
-    rebalanceCount: number;
-    /** @deprecated in favor of flowsRunning */
-    flowCount: number;
-    flowsRunning?: Record<`flow${number}`, FlowDetail>;
-  };
-  position: {
-    protocol: YieldProtocol;
-    accountId: AccountId;
-    netTransfers: Amount<'nat'>;
-    totalIn: Amount<'nat'>;
-    totalOut: Amount<'nat'>;
-  };
-  flow: FlowStatus;
-  flowSteps: FlowSteps;
-};
 
 export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
   M.splitRecord(
@@ -433,3 +352,6 @@ const keepDocsTypesImported:
   | undefined
   | ContinuingInvitationSpec
   | ContractInvitationSpec = undefined;
+
+// Backwards compat
+export type { FlowDetail, ProposalType, StatusFor, TargetAllocation };

@@ -6,9 +6,9 @@
  */
 
 import type { TypedPattern } from '@agoric/internal';
-import type { AccountId } from '@agoric/orchestration';
+import type { PublishedTx } from '@agoric/portfolio-api';
+import { TxStatus, TxType } from '@agoric/portfolio-api/src/resolver.js';
 import { M } from '@endo/patterns';
-import { TxStatus, TxType } from './constants.js';
 
 export type TxId = `tx${number}`;
 
@@ -40,13 +40,6 @@ export const ResolverOfferArgsShapes = {
 harden(ResolverOfferArgsShapes);
 
 export const PENDING_TXS_NODE_KEY = 'pendingTxs';
-
-export type PublishedTx = {
-  type: TxType;
-  amount?: bigint;
-  destinationAddress: AccountId;
-  status: TxStatus;
-};
 
 /**
  * A PendingTx is a PublishedTx (published by ymax contract) with an additional
@@ -80,4 +73,6 @@ export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
   ),
 );
 
-export type * from './constants.js';
+// Backwards compatibility
+export * from '@agoric/portfolio-api/src/resolver.js';
+export type { PublishedTx };
