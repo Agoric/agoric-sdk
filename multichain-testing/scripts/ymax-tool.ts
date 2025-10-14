@@ -95,6 +95,7 @@ const parseToolArgs = (argv: string[]) =>
       terminate: { type: 'string' },
       buildEthOverrides: { type: 'boolean' },
       installAndStart: { type: 'string' },
+      upgrade: { type: 'string' },
       invitePlanner: { type: 'string' },
       inviteResolver: { type: 'string' },
       checkStorage: { type: 'boolean' },
@@ -512,6 +513,15 @@ const main = async (
       issuers: { USDC, BLD, Fee: BLD, Access: upoc26.issuer },
       privateArgsOverrides,
     });
+    return;
+  }
+
+  if (values.upgrade) {
+    const { upgrade: bundleId } = values;
+
+    const privateArgsOverrides = JSON.parse(await readText(stdin));
+
+    await yc.upgrade({ bundleId, privateArgsOverrides });
     return;
   }
 
