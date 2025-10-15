@@ -731,9 +731,14 @@ export const prepareCosmosOrchestrationAccountKit = (
           return harden(coins.map(toDenomAmount));
         },
       },
+      /**
+       * TODO: transferWatcher can be removed once there is no instance of this
+       * CosmosOrchestrationAccountKit that was initialized (i.e. not just
+       * upgraded) before 2025-10-14.
+       */
       transferWatcher: {
         onFulfilled(...args) {
-          throw Fail`obsolete transferWatcher(${args}); please retry`;
+          throw Fail`obsolete transferWatcher(${args}) only defined for upgrade; please retry`;
         },
       },
       transferWithMetaWatcher: {
