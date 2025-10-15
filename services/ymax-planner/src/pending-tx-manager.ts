@@ -1,4 +1,4 @@
-import type { JsonRpcProvider } from 'ethers';
+import type { WebSocketProvider } from 'ethers';
 
 import { Fail } from '@endo/errors';
 
@@ -115,7 +115,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
     caipId in ctx.evmProviders ||
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
-    const provider = ctx.evmProviders[caipId] as JsonRpcProvider;
+    const provider = ctx.evmProviders[caipId] as WebSocketProvider;
 
     const watchArgs = {
       provider,

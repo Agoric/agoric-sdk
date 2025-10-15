@@ -1,4 +1,4 @@
-import { ethers, type Filter, type JsonRpcProvider, type Log } from 'ethers';
+import { ethers, type Filter, type WebSocketProvider, type Log } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 import type { CaipChainId } from '@agoric/orchestration';
 import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
@@ -13,7 +13,7 @@ const MULTICALL_STATUS_SIGNATURE = ethers.id(
 );
 
 type WatchGmp = {
-  provider: JsonRpcProvider;
+  provider: WebSocketProvider;
   contractAddress: `0x${string}`;
   txId: TxId;
   log: (...args: unknown[]) => void;
