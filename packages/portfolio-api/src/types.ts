@@ -10,9 +10,12 @@ import type { PublishedTx } from './resolver.js';
 
 export type SeatKeyword = 'Cash' | 'Deposit';
 
+/**
+ * `+agoric` is `lcaIn`
+ */
 export type AssetPlaceRef =
   | `<${SeatKeyword}>`
-  | '+agoric' // deposit LCA
+  | '+agoric'
   | `@${SupportedChain}`
   | InstrumentId;
 

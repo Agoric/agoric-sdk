@@ -53,7 +53,9 @@ export type GMPAccountInfo = {
 type AgoricAccountInfo = {
   namespace: 'cosmos';
   chainName: 'agoric';
+  /** aka `@agoric` */
   lca: LocalAccount;
+  /** aka `+agoric` */
   lcaIn: LocalAccount;
   reg: TargetRegistration;
 };

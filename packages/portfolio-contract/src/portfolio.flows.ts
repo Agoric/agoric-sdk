@@ -680,7 +680,7 @@ const stepFlow = async (
           dest: move.dest,
           apply: async ({ agoric }) => {
             const { lca, lcaIn } = agoric;
-            await lca.send(lcaIn.getAddress(), amount);
+            await lcaIn.send(lca.getAddress(), amount);
             return {};
           },
           recover: async () => {
