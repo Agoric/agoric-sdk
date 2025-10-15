@@ -1,4 +1,4 @@
-import { ethers, type JsonRpcProvider } from 'ethers';
+import { ethers, type WebSocketProvider } from 'ethers';
 
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import {
@@ -15,11 +15,11 @@ import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 
 const mockFetchForGasEstimate = async (_, options?: any) => {
-    return {
-      ok: true,
-      json: async () => JSON.parse(options.body).gasLimit,
-      text: async () => JSON.parse(options.body).gasLimit,
-    } as Response;
+  return {
+    ok: true,
+    json: async () => JSON.parse(options.body).gasLimit,
+    text: async () => JSON.parse(options.body).gasLimit,
+  } as Response;
 };
 
 const mockAxelarApiAddress = 'https://api.axelar.example/';
@@ -66,7 +66,7 @@ export const createMockProvider = () => {
         listeners.forEach(listener => listener(log));
       }
     },
-  } as JsonRpcProvider;
+  } as WebSocketProvider;
 };
 
 export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {

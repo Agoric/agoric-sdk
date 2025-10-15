@@ -20,7 +20,10 @@ import {
   type PendingTx,
   type TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import {
+  TxStatus,
+  TxType,
+} from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import {
   flowIdFromKey,
   portfolioIdFromKey,
@@ -408,7 +411,11 @@ export const processPendingTxEvents = async (
       const streamCell = parseStreamCell(cellJson, path);
       const value = parseStreamCellValue(streamCell, -1, path);
       data = marshaller.fromCapData(value);
-      if (data?.status !== TxStatus.PENDING) continue;
+      if (
+        data?.status !== TxStatus.PENDING ||
+        data.type === TxType.CCTP_TO_AGORIC
+      )
+        continue;
       mustMatch(data, PublishedTxShape, `${path} index -1`);
       const tx = { txId, ...data } as PendingTx;
       log('New pending tx', tx);
@@ -502,8 +509,7 @@ export const startEngine = async (
   },
 ) => {
   const vstoragePathPrefixes = makeVstoragePathPrefixes(contractInstance);
-  const { portfoliosPathPrefix, pendingTxPathPrefix } =
-    vstoragePathPrefixes;
+  const { portfoliosPathPrefix, pendingTxPathPrefix } = vstoragePathPrefixes;
   await null;
   const { query, marshaller } = signingSmartWalletKit;
 
@@ -665,7 +671,11 @@ export const startEngine = async (
       const streamCell = parseStreamCell(streamCellJson.value, path);
       const marshalledData = parseStreamCellValue(streamCell, -1, path);
       data = marshaller.fromCapData(marshalledData);
-      if (data?.status !== TxStatus.PENDING) return;
+      if (
+        data?.status !== TxStatus.PENDING ||
+        data.type === TxType.CCTP_TO_AGORIC
+      )
+        return;
       mustMatch(harden(data), PublishedTxShape, path);
       initialPendingTxData.push({
         blockHeight: BigInt(streamCell.blockHeight),

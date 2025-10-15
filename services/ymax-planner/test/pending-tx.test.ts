@@ -170,35 +170,6 @@ test('processPendingTxEvents handles only pending transactions', async t => {
   t.is(handledTxs[0].status, 'pending');
 });
 
-test('processPendingTxEvents handles Noble withdraw transactions', async t => {
-  const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
-
-  const nobleWithdrawData = createMockPendingTxData({
-    type: TxType.CCTP_TO_NOBLE,
-    amount: 1_000_000n,
-    destinationAddress: 'cosmos:noble:noble1abc123456789',
-  });
-
-  const capData = marshaller.toCapData(nobleWithdrawData);
-  const streamCell = createMockStreamCell([JSON.stringify(capData)]);
-  const events = [createMockPendingTxEvent('tx1', JSON.stringify(streamCell))];
-
-  await processPendingTxEvents(
-    events,
-    mockHandlePendingTx,
-    createMockPendingTxOpts(),
-  );
-
-  t.is(handledTxs.length, 1);
-  t.like(handledTxs[0], {
-    txId: 'tx1',
-    type: TxType.CCTP_TO_NOBLE,
-    status: 'pending',
-    amount: 1_000_000n,
-    destinationAddress: 'cosmos:noble:noble1abc123456789',
-  });
-});
-
 // --- Unit tests for handlePendingTx ---
 test('handlePendingTx throws error for unsupported transaction type', async t => {
   const mockLog = () => {};
@@ -576,8 +547,6 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
     `[${txId}] GMP tx resolved`,
   ]);
 });
-
-test.skip('TODO: handlePendingTx resolves old pending Noble transfer successfully', async t => {});
 
 // --- Tests for processInitialPendingTransactions ---
 

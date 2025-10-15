@@ -43,6 +43,7 @@
     "@agoric/ertp": "workspace:*",
     "@agoric/internal": "workspace:*",
     "@agoric/orchestration": "workspace:*",
+    "@agoric/portfolio-api": "workspace:^",
     "@cosmjs/crypto": "^0.36.0",
     "@cosmjs/encoding": "^0.36.0",
     "@cosmjs/proto-signing": "^0.36.0",

@@ -346,7 +346,7 @@ test('vstorage position type matches shape', t => {
   }
 });
 
-test('porfolio node includes flowsRunning, nobleForwardingAddress', t => {
+test('portfolio node includes flowsRunning, nobleForwardingAddress', t => {
   const passCases: Record<string, StatusFor['portfolio']> = harden({
     minimalInTheory: {
       accountIdByChain: {},

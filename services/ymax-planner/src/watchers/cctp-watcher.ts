@@ -1,4 +1,4 @@
-import type { Filter, JsonRpcProvider, Log } from 'ethers';
+import type { Filter, WebSocketProvider, Log } from 'ethers';
 import { id, zeroPadValue, getAddress, ethers } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
@@ -28,7 +28,7 @@ const TRANSFER_SIGNATURE = id('Transfer(address,address,uint256)');
 
 type CctpWatch = {
   usdcAddress: `0x${string}`;
-  provider: JsonRpcProvider;
+  provider: WebSocketProvider;
   toAddress: `0x${string}`;
   expectedAmount: bigint;
   log?: (...args: unknown[]) => void;

@@ -18,6 +18,7 @@ import type {
   CosmosChainAddress,
   Denom,
   DenomAmount,
+  IBCConnectionInfo,
   OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
@@ -41,7 +42,7 @@ import {
   type YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
-import type { IBCChannelID, VTransferIBCEvent } from '@agoric/vats';
+import type { VTransferIBCEvent } from '@agoric/vats';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { decodeBase64 } from '@endo/base64';
@@ -103,8 +104,8 @@ export type PortfolioInstanceContext = {
   resolverClient: GuestInterface<ResolverKit['client']>;
   contractAccount: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>;
   transferChannels: {
-    noble: IBCChannelID;
-    axelar?: IBCChannelID;
+    noble: IBCConnectionInfo['transferChannel'];
+    axelar?: IBCConnectionInfo['transferChannel'];
   };
 };
 
@@ -572,7 +573,7 @@ const stepFlow = async (
           move,
           lca,
           poolKey,
-          ctx.transferChannels.noble,
+          ctx.transferChannels.noble.counterPartyChannelId,
         );
         if ('src' in way) {
           return transformResultMeta(
@@ -608,7 +609,7 @@ const stepFlow = async (
           move,
           lca,
           poolKey,
-          ctx.transferChannels.noble,
+          ctx.transferChannels.noble.counterPartyChannelId,
         );
         return pImpl.supply(evmCtx, amount, gInfo);
       },
@@ -747,7 +748,7 @@ const stepFlow = async (
               evmChain,
               move,
               agoric.lca,
-              ctx.transferChannels.noble,
+              ctx.transferChannels.noble.counterPartyChannelId,
             );
             return CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric);
           },
@@ -1135,7 +1136,7 @@ export const onAgoricTransfer = (async (
   await null;
 
   switch (packetDest) {
-    case transferChannels.axelar: {
+    case transferChannels.axelar?.channelId: {
       const parsed = await lca.parseInboundTransfer(event.packet);
       const { extra } = parsed;
       if (extra.sender !== gmpAddresses.AXELAR_GMP) {
@@ -1156,7 +1157,7 @@ export const onAgoricTransfer = (async (
         traceUpcall,
       );
     }
-    case transferChannels.noble: {
+    case transferChannels.noble.channelId: {
       const parsed = await lca.parseInboundTransfer(event.packet);
       return resolveCCTPIn(
         parsed,
@@ -1167,10 +1168,10 @@ export const onAgoricTransfer = (async (
     }
     default:
       switch (event.packet.source_channel) {
-        case transferChannels.axelar:
+        case transferChannels.axelar?.channelId:
           traceUpcall('ignore packet to axelar');
           break;
-        case transferChannels.noble:
+        case transferChannels.noble.channelId:
           traceUpcall('ignore packet to noble');
           break;
         default: {
@@ -1224,7 +1225,7 @@ export const openPortfolio = (async (
         provideCosmosAccount(orch, 'noble', kit, traceP),
       );
       const forwarding = {
-        channel: transferChannels.noble,
+        channel: transferChannels.noble.counterPartyChannelId,
         recipient: lca.getAddress().value,
       };
       const dest = ica.getAddress();

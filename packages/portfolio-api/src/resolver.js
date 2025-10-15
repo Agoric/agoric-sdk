@@ -14,7 +14,7 @@
  * Destination details for non-TRAFFIC transactions.
  *
  * @typedef {object} PublishedTxDestination
- * @property {Exclude<TxType, typeof TxType.TRAFFIC>} type - The type of transaction (CCTP_TO_EVM, GMP, CCTP_TO_AGORIC, or CCTP_TO_NOBLE)
+ * @property {Exclude<TxType, typeof TxType.TRAFFIC>} type - The type of transaction (CCTP_TO_EVM, GMP, or CCTP_TO_AGORIC)
  * @property {AccountId} destinationAddress - The destination account identifier for the transaction
  */
 
@@ -53,8 +53,6 @@ export const TxType = /** @type {const} */ ({
   CCTP_TO_EVM: 'CCTP_TO_EVM',
   GMP: 'GMP',
   CCTP_TO_AGORIC: 'CCTP_TO_AGORIC',
-  /** @deprecated - only supports 20 byte addresses */
-  CCTP_TO_NOBLE: 'CCTP_TO_NOBLE',
   TRAFFIC: 'TRAFFIC',
 });
 harden(TxType);

@@ -1,4 +1,4 @@
-import { JsonRpcProvider, Log, type Filter } from 'ethers';
+import { WebSocketProvider, Log, type Filter } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import { objectMap } from '@agoric/internal';
 import {
@@ -129,28 +129,28 @@ export const getEvmRpcMap = (
     case 'mainnet':
       return {
         // Source: https://www.alchemy.com/rpc/ethereum
-        'eip155:1': `https://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:1': `wss://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/avalanche
-        'eip155:43114': `https://avax-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:43114': `wss://avax-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source:  https://www.alchemy.com/rpc/arbitrum
-        'eip155:42161': `https://arb-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:42161': `wss://arb-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/optimism
-        'eip155:10': `https://opt-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:10': `wss://opt-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/base
-        'eip155:8453': `https://base-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:8453': `wss://base-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
       };
     case 'testnet':
       return {
         // Source: https://www.alchemy.com/rpc/ethereum-sepolia
-        'eip155:11155111': `https://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:11155111': `wss://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/avalanche-fuji
-        'eip155:43113': `https://avax-fuji.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:43113': `wss://avax-fuji.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/arbitrum-sepolia
-        'eip155:421614': `https://arb-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:421614': `wss://arb-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/optimism-sepolia
-        'eip155:11155420': `https://opt-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:11155420': `wss://opt-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/base-sepolia
-        'eip155:84532': `https://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:84532': `wss://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
       };
     default:
       throw Error(`Unsupported cluster name ${clusterName}`);
@@ -161,7 +161,7 @@ type CreateContextParams = {
   alchemyApiKey: string;
 };
 
-export type EvmProviders = Record<CaipChainId, JsonRpcProvider>;
+export type EvmProviders = Record<CaipChainId, WebSocketProvider>;
 
 /**
  * Verifies that all EVM chains are accessible via their providers.
@@ -230,9 +230,9 @@ export const createEVMContext = async ({
 
   const urls = getEvmRpcMap(clusterName, alchemyApiKey);
   const evmProviders = Object.fromEntries(
-    Object.entries(urls).map(([caip, rpcUrl]) => [
+    Object.entries(urls).map(([caip, wsUrl]) => [
       caip,
-      new JsonRpcProvider(rpcUrl),
+      new WebSocketProvider(wsUrl),
     ]),
   ) as EvmProviders;
 
@@ -292,7 +292,7 @@ export const binarySearch = (async <Index extends number | bigint>(
 }) as BinarySearch;
 
 const findBlockByTimestamp = async (
-  provider: JsonRpcProvider,
+  provider: WebSocketProvider,
   targetMs: number,
 ) => {
   const posixSeconds = Math.floor(targetMs / 1000);
@@ -308,7 +308,7 @@ const findBlockByTimestamp = async (
 };
 
 export const buildTimeWindow = async (
-  provider: JsonRpcProvider,
+  provider: WebSocketProvider,
   publishTimeMs: number,
   log: (...args: unknown[]) => void,
   chainId: CaipChainId,
@@ -347,7 +347,7 @@ export const buildTimeWindow = async (
 type LogPredicate = (log: Log) => boolean | Promise<boolean>;
 
 type ScanOpts = {
-  provider: JsonRpcProvider;
+  provider: WebSocketProvider;
   baseFilter: Omit<Filter, 'fromBlock' | 'toBlock'> & Partial<Filter>;
   fromBlock: number;
   toBlock: number;

@@ -81,38 +81,3 @@ test('parsePendingTx accepts GMP transaction without amount field', t => {
       'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
   });
 });
-
-test('parsePendingTx validates Noble withdraw transactions require amount', t => {
-  const txId = 'tx1' as `tx${number}`;
-  const nobleWithdrawData = harden({
-    type: TxType.CCTP_TO_NOBLE,
-    status: 'pending',
-    destinationAddress: 'cosmos:noble:noble1abc123456789',
-  });
-  const capData = marshaller.toCapData(nobleWithdrawData);
-  const unmarshalledData = marshaller.fromCapData(capData);
-
-  const result = parsePendingTx(txId, unmarshalledData);
-
-  t.is(result, null);
-});
-
-test('parsePendingTx creates valid Noble withdraw PendingTx from data', t => {
-  const txId = 'tx1' as `tx${number}`;
-  const nobleWithdrawData = createMockPendingTxData({
-    type: TxType.CCTP_TO_NOBLE,
-    amount: 500_000n,
-    destinationAddress: 'cosmos:noble:noble1abc123456789',
-  });
-  const capData = marshaller.toCapData(nobleWithdrawData);
-
-  const result = parsePendingTx(txId, marshaller.fromCapData(capData));
-
-  t.deepEqual(result, {
-    txId,
-    type: TxType.CCTP_TO_NOBLE,
-    status: 'pending',
-    amount: 500_000n,
-    destinationAddress: 'cosmos:noble:noble1abc123456789',
-  });
-});
