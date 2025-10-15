@@ -1,16 +1,15 @@
-import { Fail, q } from '@endo/errors';
-import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
+import type { Brand } from '@agoric/ertp/src/types.js';
 import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import type {
   CurrentWalletRecord,
   UpdateRecord,
 } from '@agoric/smart-wallet/src/smartWallet.js';
-import type { Brand } from '@agoric/ertp/src/types.js';
+import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
+import { Fail, q } from '@endo/errors';
 import type { EReturn } from '@endo/far';
-import type { MinimalNetworkConfig } from './network-config.js';
-import { retryUntilCondition } from './sync-tools.js';
 import type { RetryOptionsAndPowers } from './sync-tools.js';
-import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
+import { retryUntilCondition } from './sync-tools.js';
+import { makeAgoricNames, type VstorageKit } from './vstorage-kit.js';
 
 type UpdateKind = UpdateRecord extends { updated: infer U } ? U : never;
 type UpdateOf<K extends UpdateKind> = Extract<UpdateRecord, { updated: K }>;
@@ -128,20 +127,14 @@ harden(getOfferWantsSatisfied);
  * Augment VstorageKit with additional convenience methods for working with
  * Agoric smart wallets.
  */
-export const makeSmartWalletKit = async (
+export const composeSmartWalletUtils = async (
+  vsk: VstorageKit,
   {
-    fetch,
-    delay: _delay,
     names = true,
   }: {
-    fetch: typeof globalThis.fetch;
-    delay: (ms: number) => Promise<void>;
     names?: boolean;
   },
-  networkConfig: MinimalNetworkConfig,
 ) => {
-  const vsk = makeVstorageKit({ fetch }, networkConfig);
-
   type AgoricNames = Awaited<ReturnType<typeof makeAgoricNames>>;
   const agoricNames: AgoricNames = await (names
     ? makeAgoricNames(vsk.fromBoard, vsk.vstorage)
@@ -211,4 +204,4 @@ export const makeSmartWalletKit = async (
   };
 };
 
-export type SmartWalletKit = EReturn<typeof makeSmartWalletKit>;
+export type SmartWalletUtils = EReturn<typeof composeSmartWalletUtils>;
