@@ -10,9 +10,12 @@ import type { PublishedTx } from './resolver.js';
 
 export type SeatKeyword = 'Cash' | 'Deposit';
 
+/**
+ * `+agoric` is `lcaIn`
+ */
 export type AssetPlaceRef =
   | `<${SeatKeyword}>`
-  | '+agoric' // deposit LCA
+  | '+agoric'
   | `@${SupportedChain}`
   | InstrumentId;
 
@@ -62,6 +65,7 @@ export type FlowStep = {
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
+  meta?: Record<string, any>;
 };
 
 export type PortfolioKey = `portfolio${number}`;
@@ -98,5 +102,6 @@ export type StatusFor = {
     totalOut: NatAmount;
   };
   flow: FlowStatus;
+  flowStep: FlowStep;
   flowSteps: FlowStep[];
 };

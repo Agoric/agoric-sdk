@@ -33,6 +33,7 @@ import { preparePosition, type Position } from './pos.exo.js';
 import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
 import {
   makeFlowPath,
+  makeFlowStepPath,
   makeFlowStepsPath,
   makePortfolioPath,
   PoolKeyShapeExt,
@@ -56,7 +57,9 @@ export type GMPAccountInfo = {
 type AgoricAccountInfo = {
   namespace: 'cosmos';
   chainName: 'agoric';
+  /** aka `@agoric` */
   lca: LocalAccount;
+  /** aka `+agoric` */
   lcaIn: LocalAccount;
   reg: TargetRegistration;
 };
@@ -371,6 +374,14 @@ export const preparePortfolioKit = (
         publishFlowSteps(id: number, steps: StatusFor['flowSteps']) {
           const { portfolioId } = this.state;
           publishStatus(makeFlowStepsPath(portfolioId, id), steps);
+        },
+        publishFlowOneStep(
+          id: number,
+          step: number,
+          status: StatusFor['flowStep'],
+        ) {
+          const { portfolioId } = this.state;
+          publishStatus(makeFlowStepPath(portfolioId, id, step), status);
         },
         publishFlowStatus(id: number, status: StatusFor['flow']) {
           const { portfolioId } = this.state;

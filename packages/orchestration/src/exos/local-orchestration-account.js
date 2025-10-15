@@ -527,17 +527,15 @@ export const prepareLocalOrchestrationAccountKit = (
             traffic: /** @type {MetaTrafficEntry[]} */ ([
               {
                 op: 'transfer',
+                srcChainId: `${srcChainInfo.namespace}:${srcChainInfo.reference}`,
                 src: [
                   'ibc',
-                  srcChainInfo.namespace,
-                  srcChainInfo.reference,
                   transferDetails.sourcePort,
                   transferDetails.sourceChannel,
                 ],
+                dstChainId: `${dstChainInfo.namespace}:${dstChainInfo.reference}`,
                 dst: [
                   'ibc',
-                  dstChainInfo.namespace,
-                  dstChainInfo.reference,
                   transferChannel.counterPartyPortId,
                   transferChannel.counterPartyChannelId,
                 ],
@@ -545,7 +543,7 @@ export const prepareLocalOrchestrationAccountKit = (
                 // Sequence number is not known at this stage; it will be
                 // populated by IBCTransferSenderKit['responseWatcher'] once the
                 // transfer packet is sent and the sequence number is assigned.
-                seq: null,
+                seq: { status: 'pending' },
               },
             ]),
           };
@@ -557,8 +555,8 @@ export const prepareLocalOrchestrationAccountKit = (
         },
       },
       /**
-       * takes an array of results (from `executeEncodedTx`) and returns the
-       * first result
+       * takes an array of results (from `executeTx`) and returns the first
+       * result
        */
       extractFirstResultWatcher: {
         /** @param {Record<unknown, unknown>[]} results */
@@ -887,7 +885,6 @@ export const prepareLocalOrchestrationAccountKit = (
         },
         /** @type {HostOf<OrchestrationAccountCommon['transferWithMeta']>} */
         transferWithMeta(destination, amount, opts) {
-          // @ts-expect-error Vow combined with HostInterface doesn't type.
           return asVow(() => {
             trace('Transferring funds over IBC');
 

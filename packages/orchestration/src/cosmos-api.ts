@@ -40,19 +40,35 @@ import type {
   AccountId,
   AmountArg,
   BaseChainInfo,
+  CaipChainId,
   CosmosChainAddress,
   Denom,
   DenomAmount,
+  ResultMeta,
 } from './types.js';
 
+/**
+ * Logical record of Network API traffic for a specific data packet sent between
+ * two chains.
+ */
 export type MetaTrafficEntry<
-  P extends
-    keyof NetworkEndpoints['absolute'] = keyof NetworkEndpoints['absolute'],
+  /** Source Protocol (like `'ibc'`) */
+  SP extends keyof NetworkEndpoints = keyof NetworkEndpoints,
+  /** Destination Protocol */
+  DP extends keyof NetworkEndpoints = SP,
 > = {
+  /** Logical operation name for debugging, e.g. 'IBC transfer' */
   op: string;
-  src: NetworkEndpoints['absolute'][P];
-  dst: NetworkEndpoints['absolute'][P];
-  seq: number | bigint | string | null;
+  /** CAIP-2 chain ID of source chain */
+  srcChainId: CaipChainId;
+  /** Network API endpoint info for source chain */
+  src: NetworkEndpoints[SP];
+  /** CAIP-2 chain ID of destination chain */
+  dstChainId: CaipChainId;
+  /** Network API endpoint info for destination chain */
+  dst: NetworkEndpoints[DP];
+  /** Sequence number to match sent packet to received acknowledgement */
+  seq: { status: 'pending' | 'unknown' } | number | bigint | string;
 };
 
 /**
@@ -293,7 +309,7 @@ export interface IcaAccountMethods {
   executeEncodedTxWithMeta: (
     msgs: AnyJson[],
     opts?: Partial<Omit<TxBody, 'messages'>> & { sendOpts?: SendOptions },
-  ) => Promise<{ result: Promise<string>; meta: Record<string, any> }>;
+  ) => Promise<ResultMeta<string>>;
   /**
    * Deactivates the ICA account by closing the ICA channel. The `Port` is
    * persisted so holders can always call `.reactivate()` to re-establish a new
@@ -353,6 +369,13 @@ export interface NobleMethods {
     /** if specified, only this account can call MsgReceive on the destination chain */
     caller?: AccountId,
   ) => Promise<void>;
+  /** burn USDC on Noble and mint on a destination chain via CCTP */
+  depositForBurnWithMeta: (
+    mintRecipient: AccountId,
+    amount: AmountArg,
+    /** if specified, only this account can call MsgReceive on the destination chain */
+    caller?: AccountId,
+  ) => Promise<ResultMeta<void>>;
 }
 
 // TODO support StakingAccountQueries

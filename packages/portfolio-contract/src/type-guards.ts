@@ -326,6 +326,14 @@ export const makeFlowStepsPath = (parent: number, id: number) => [
   'steps',
 ];
 
+export const makeFlowStepPath = (parent: number, id: number, step: number) => [
+  `portfolio${parent}`,
+  'flows',
+  `flow${id}`,
+  'steps',
+  `step${step}`,
+];
+
 export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.or(
   { state: 'run', step: M.number(), how: M.string() },
   { state: 'undo', step: M.number(), how: M.string() },

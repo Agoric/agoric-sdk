@@ -10,7 +10,6 @@ import type { Timestamp } from '@agoric/time';
 import type { QueryManyFn } from '@agoric/vats/src/localchain.js';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Passable } from '@endo/marshal';
-import type { Vow } from '@agoric/vow';
 import type {
   AgoricChainMethods,
   CosmosChainAccountMethods,
@@ -22,6 +21,7 @@ import type {
   KnownNamespace,
   NobleMethods,
   Bech32Address,
+  ResultMeta,
 } from './types.js';
 import type { ResolvedContinuingOfferResult } from './utils/zoe-tools.js';
 
@@ -300,7 +300,7 @@ export interface OrchestrationAccountCommon {
     destination: AccountIdArg,
     amount: AmountArg,
     opts?: IBCMsgTransferOptions,
-  ) => Promise<{ result: Vow<any> | Promise<any>; meta: Record<string, any> }>;
+  ) => Promise<ResultMeta<any>>;
 
   /**
    * Transfer an amount to another account in multiple steps. The promise settles when
