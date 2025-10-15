@@ -77,7 +77,7 @@ export const registerNobleForwardingAddress = async ({
   const [{ address: senderAddress }] = await agWallet.getAccounts();
   console.log('Sender Address:', senderAddress);
 
-  const agToNoble = config.agoric.connections['grand-1'];
+  const agToNoble = config.agoric.connections[config.noble.chainId];
   const ibcPayload = [
     nfaIbcPayload(
       agToNoble.transferChannel.channelId, // Source chain channel to Noble
