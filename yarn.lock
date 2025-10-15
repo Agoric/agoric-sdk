@@ -306,6 +306,7 @@ __metadata:
     "@agoric/ertp": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/orchestration": "workspace:*"
+    "@agoric/portfolio-api": "workspace:^"
     "@cosmjs/crypto": "npm:^0.36.0"
     "@cosmjs/encoding": "npm:^0.36.0"
     "@cosmjs/proto-signing": "npm:^0.36.0"
@@ -931,7 +932,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@agoric/portfolio-api@workspace:*, @agoric/portfolio-api@workspace:packages/portfolio-api":
+"@agoric/portfolio-api@workspace:*, @agoric/portfolio-api@workspace:^, @agoric/portfolio-api@workspace:packages/portfolio-api":
   version: 0.0.0-use.local
   resolution: "@agoric/portfolio-api@workspace:packages/portfolio-api"
   dependencies:

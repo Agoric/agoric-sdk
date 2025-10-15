@@ -93,7 +93,7 @@ test('resolver updates nodes in chain storage on settleTransaction', async t => 
 
   // Register transaction
   const tx = client.registerTransaction(
-    TxType.CCTP_TO_NOBLE,
+    TxType.CCTP_TO_AGORIC,
     'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
     250n,
   );
@@ -103,7 +103,7 @@ test('resolver updates nodes in chain storage on settleTransaction', async t => 
   t.deepEqual(
     nodeUpdates['pendingTxs.tx0'],
     {
-      type: TxType.CCTP_TO_NOBLE,
+      type: TxType.CCTP_TO_AGORIC,
       destinationAddress:
         'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
       status: TxStatus.PENDING,
@@ -125,7 +125,7 @@ test('resolver updates nodes in chain storage on settleTransaction', async t => 
     {
       destinationAddress:
         'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
-      type: TxType.CCTP_TO_NOBLE,
+      type: TxType.CCTP_TO_AGORIC,
       status: TxStatus.SUCCESS,
       amount: 250n,
     },
@@ -151,7 +151,7 @@ test('resolver creates ids in sequence on registerTransaction', async t => {
   );
 
   const tx3 = client.registerTransaction(
-    TxType.CCTP_TO_NOBLE,
+    TxType.CCTP_TO_AGORIC,
     'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
     500n,
   );
@@ -179,9 +179,9 @@ test('resolver creates correct types for different TxTypes', async t => {
     'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
   );
 
-  // Test CCTP_TO_NOBLE transaction with amount
+  // Test CCTP_TO_AGORIC transaction with amount
   client.registerTransaction(
-    TxType.CCTP_TO_NOBLE,
+    TxType.CCTP_TO_AGORIC,
     'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
     500n,
   );
@@ -213,7 +213,7 @@ test('resolver creates correct types for different TxTypes', async t => {
   t.deepEqual(
     nodeUpdates['pendingTxs.tx2'],
     {
-      type: TxType.CCTP_TO_NOBLE,
+      type: TxType.CCTP_TO_AGORIC,
       destinationAddress:
         'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
       status: TxStatus.PENDING,
