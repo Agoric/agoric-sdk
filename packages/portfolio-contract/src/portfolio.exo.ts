@@ -7,7 +7,11 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { type AccountId, type CaipChainId } from '@agoric/orchestration';
+import {
+  type AccountId,
+  type CaipChainId,
+  type IBCConnectionInfo,
+} from '@agoric/orchestration';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import {
   AxelarChain,
@@ -15,7 +19,7 @@ import {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { MapStore } from '@agoric/store';
-import type { IBCChannelID, VTransferIBCEvent } from '@agoric/vats';
+import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
@@ -181,8 +185,8 @@ export const preparePortfolioKit = (
       kit: PortfolioKitCycleBreaker,
     ) => Vow<boolean>;
     transferChannels: {
-      noble: IBCChannelID;
-      axelar?: IBCChannelID;
+      noble: IBCConnectionInfo['transferChannel'];
+      axelar?: IBCConnectionInfo['transferChannel'];
     };
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>;
@@ -340,7 +344,7 @@ export const preparePortfolioKit = (
             const { value: recipient } = lca.getAddress();
             const { value: depositAddress } = lcaIn.getAddress();
             const nobleForwardingAddress = generateNobleForwardingAddress(
-              transferChannels.noble,
+              transferChannels.noble.counterPartyChannelId,
               recipient,
             );
             return { depositAddress, nobleForwardingAddress };

@@ -28,6 +28,7 @@ import {
   type Denom,
   type DenomAmount,
   type DenomDetail,
+  type IBCConnectionInfo,
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
@@ -35,7 +36,6 @@ import {
   AxelarChain,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
-import type { IBCChannelID } from '@agoric/vats';
 import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
@@ -254,10 +254,10 @@ export const contract = async (
     >;
     const { connections } = agoric;
 
-    const nobleConn = connections![noble.chainId].transferChannel.channelId;
-    let axelarConn: IBCChannelID | undefined;
+    const nobleConn = connections![noble.chainId].transferChannel;
+    let axelarConn: IBCConnectionInfo['transferChannel'] | undefined;
     if ('axelar' in chainInfo) {
-      axelarConn = connections![axelar.chainId].transferChannel.channelId;
+      axelarConn = connections![axelar.chainId].transferChannel;
     } else {
       trace('⚠️ no axelar chainInfo; GMP not available', keys(chainInfo));
     }
