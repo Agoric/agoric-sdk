@@ -337,11 +337,9 @@ const mocks = (
     })();
 
   const transferChannels = {
-    noble:
-      fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
+    noble: fetchedChainInfo.agoric.connections['noble-1'].transferChannel,
     axelar:
-      fetchedChainInfo.agoric.connections['axelar-dojo-1'].transferChannel
-        .channelId,
+      fetchedChainInfo.agoric.connections['axelar-dojo-1'].transferChannel,
   } as const;
 
   const txfrCtx: OnTransferContext = {
@@ -419,7 +417,7 @@ const mocks = (
           const fwdEvent = makeIncomingVTransferEvent({
             sender: 'noble1fwd',
             sourceChannel: 'channel-99999',
-            destinationChannel: transferChannels.noble,
+            destinationChannel: transferChannels.noble.channelId,
             target,
             receiver: target as Bech32Address,
             amount,

@@ -48,10 +48,10 @@ export const PENDING_TXS_NODE_KEY = 'pendingTxs';
 export type PendingTx = { txId: TxId } & PublishedTx;
 
 export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
-  // CCTP_TO_EVM and CCTP_TO_NOBLE require amount
+  // CCTP_TO_EVM require amount
   M.splitRecord(
     {
-      type: M.or(TxType.CCTP_TO_EVM, TxType.CCTP_TO_NOBLE),
+      type: M.or(TxType.CCTP_TO_EVM),
       destinationAddress: M.string(), // Format: `${chainId}:${chainId}:${remotAddess}`
       status: M.or(TxStatus.PENDING),
       amount: M.nat(),
