@@ -1144,9 +1144,9 @@ test('Engine can move deposits +agoric -> @agoric', async t => {
   t.like(log, [
     { _cap: 'agoric11028', _method: 'monitorTransfers' },
     {
-      _cap: 'agoric11028',
+      _cap: 'agoric11042',
       _method: 'send',
-      toAccount: { value: 'agoric11042' },
+      toAccount: { value: 'agoric11028' },
     },
     { _method: 'exit' },
   ]);
