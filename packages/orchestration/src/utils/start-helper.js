@@ -232,6 +232,11 @@ export const withOrchestration =
       marshaller,
       { chainInfoValueShape },
     );
-    return contractFn(zcf, privateArgs, zone, tools);
+    const [startResult] = await Promise.all([
+      contractFn(zcf, privateArgs, zone, tools),
+      // Make sure that any errors in async-flow awake abort contract start
+      tools.asyncFlowTools.allWokenP,
+    ]);
+    return startResult;
   };
 harden(withOrchestration);
