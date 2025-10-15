@@ -75,7 +75,7 @@ $(CONTRACT)-terminate:
 	@echo "Using AGORIC_NET=$(AGORIC_NET)"
 	AGORIC_NET=$(AGORIC_NET) $(YMAX_TOOL) --buildEthOverrides >$@ || (rm $@; false)
 
-NETCONFIG=https://main.agoric.net/network-config
+NETCONFIG=https://$(AGORIC_NET).agoric.net/network-config
 ,$(CONTRACT)-deployed: ,ymax-bundle-id ,privateArgsOverrides.json ,ymax-installed
 	AGORIC_NET=$(AGORIC_NET) \
 		$(YMAX_TOOL) --installAndStart $$(cat ,ymax-bundle-id) <,privateArgsOverrides.json
