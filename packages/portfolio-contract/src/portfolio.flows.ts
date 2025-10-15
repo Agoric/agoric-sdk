@@ -506,7 +506,7 @@ const stepFlow = async (
           move,
           lca,
           poolKey,
-          ctx.transferChannels.noble.channelId,
+          ctx.transferChannels.noble.counterPartyChannelId,
         );
         await null;
         if ('src' in way) {
@@ -530,7 +530,7 @@ const stepFlow = async (
             move,
             lca,
             poolKey,
-            ctx.transferChannels.noble.channelId,
+            ctx.transferChannels.noble.counterPartyChannelId,
           );
           await pImpl.supply(evmCtx, amount, gInfo);
         }
@@ -665,7 +665,7 @@ const stepFlow = async (
                 evmChain,
                 move,
                 agoric.lca,
-                ctx.transferChannels.noble.channelId,
+                ctx.transferChannels.noble.counterPartyChannelId,
               );
               await CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric);
             }
