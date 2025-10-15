@@ -24,6 +24,7 @@ import {
   type AccountId,
   type Bech32Address,
   type ChainInfo,
+  type CosmosChainInfo,
   type Denom,
   type DenomAmount,
   type DenomDetail,
@@ -34,6 +35,7 @@ import {
   AxelarChain,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
+import type { IBCChannelID } from '@agoric/vats';
 import type { ContractMeta, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
@@ -244,6 +246,24 @@ export const contract = async (
     trace('chainHub already populated, using existing entries');
   }
 
+  // Extract transfer channel info synchronously
+  const transferChannels = (() => {
+    const { agoric, axelar, noble } = chainInfo as Record<
+      string,
+      CosmosChainInfo
+    >;
+    const { connections } = agoric;
+
+    const nobleConn = connections![noble.chainId].transferChannel.channelId;
+    let axelarConn: IBCChannelID | undefined;
+    if ('axelar' in chainInfo) {
+      axelarConn = connections![axelar.chainId].transferChannel.channelId;
+    } else {
+      trace('⚠️ no axelar chainInfo; GMP not available', keys(chainInfo));
+    }
+    return harden({ noble: nobleConn, axelar: axelarConn });
+  })();
+
   const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
 
@@ -266,27 +286,6 @@ export const contract = async (
     publishStatus(storageNode, harden({ contractAccount: addr.value }));
     trace('published contractAccount', addr.value);
   });
-
-  const toAxelar = await (async () => {
-    if (!('axelar' in chainInfo)) {
-      trace('⚠️ no axelar chainInfo; GMP not available', keys(chainInfo));
-      return;
-    }
-    // getChainsAndConnection is prompt; should be sync #10602
-    const [_ag, _noble, agToAxelar] = await vowTools.when(
-      chainHub.getChainsAndConnection('agoric', 'axelar'),
-    );
-    return agToAxelar.transferChannel.channelId;
-  })();
-
-  const [_ag2, _noble, agToNoble] = await vowTools.when(
-    chainHub.getChainsAndConnection('agoric', 'noble'),
-  );
-
-  const transferChannels = {
-    axelar: toAxelar,
-    noble: agToNoble.transferChannel.channelId,
-  };
 
   const ctx1: flows.PortfolioInstanceContext = {
     zoeTools: zoeTools as any, // XXX Guest...
