@@ -452,10 +452,11 @@ const main = async (
     MNEMONIC,
   );
   trace('address', sig.address);
+  const fresh = () => new Date(now()).toISOString();
   const walletStore = reflectWalletStore(sig, {
     setTimeout,
     log: trace,
-    fresh: () => new Date(now()).toISOString(),
+    fresh,
   });
 
   if (values.redeem) {
@@ -464,6 +465,22 @@ const main = async (
     const { [contract]: instance } = fromEntries(
       await walletKit.readPublished('agoricNames.instance'),
     );
+
+    // XXX generalize to --no-save or some such?
+    if (description === 'resolver') {
+      const id = `redeem-${fresh()}`;
+      await sig.sendBridgeAction({
+        method: 'executeOffer',
+        offer: {
+          id,
+          invitationSpec: { source: 'purse', description, instance },
+          proposal: {},
+        },
+      });
+      await sig.pollOffer(sig.address, id, undefined, true);
+      return;
+    }
+
     const result = await walletStore.saveOfferResult(
       { instance, description },
       description.replace(/^deliver /, ''),
