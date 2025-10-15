@@ -1,46 +1,67 @@
 import { Fail, q } from '@endo/errors';
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
+import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
+import type {
+  CurrentWalletRecord,
+  UpdateRecord,
+} from '@agoric/smart-wallet/src/smartWallet.js';
+import type { Brand } from '@agoric/ertp/src/types.js';
+import type { EReturn } from '@endo/far';
+import type { MinimalNetworkConfig } from './network-config.js';
 import { retryUntilCondition } from './sync-tools.js';
+import type { RetryOptionsAndPowers } from './sync-tools.js';
 import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
 
-/**
- * @import {EReturn} from '@endo/far';
- * @import {Amount, Brand} from '@agoric/ertp/src/types.js'
- * @import {OfferStatus} from '@agoric/smart-wallet/src/offers.js';
- * @import {CurrentWalletRecord, UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
- * @import {MinimalNetworkConfig} from './network-config.js';
- * @import {RetryOptionsAndPowers} from './sync-tools.js';
- */
+type UpdateKind = UpdateRecord extends { updated: infer U } ? U : never;
+type UpdateOf<K extends UpdateKind> = Extract<UpdateRecord, { updated: K }>;
+type OfferStatusUpdate = UpdateOf<'offerStatus'>;
+type WalletActionUpdate = UpdateOf<'walletAction'>;
+type InvocationUpdate = UpdateOf<'invocation'>;
+type CoalescedWalletState = ReturnType<
+  typeof makeWalletStateCoalescer
+>['state'];
 
-/**
- * @param {string | number} id
- * @param {() => Promise<UpdateRecord>} getLastUpdate
- * @param {RetryOptionsAndPowers} retryOpts
- * @param {(update: UpdateRecord) => boolean} isMatch
- * @returns {Promise<UpdateRecord>}
- */
-const findUpdate = (id, getLastUpdate, retryOpts, isMatch) =>
+const isOfferStatusUpdate = (
+  update: UpdateRecord,
+): update is OfferStatusUpdate => update.updated === 'offerStatus';
+
+const isWalletActionUpdate = (
+  update: UpdateRecord,
+): update is WalletActionUpdate => update.updated === 'walletAction';
+
+const isInvocationUpdate = (update: UpdateRecord): update is InvocationUpdate =>
+  update.updated === 'invocation';
+
+// Extract T from a boolean type guard: (arg, ...) => arg is T
+type GuardedType<F> = F extends (arg: any) => arg is infer T ? T : never;
+
+const findUpdate = async <F extends (value: UpdateRecord) => boolean>(
+  id: string | number,
+  getLastUpdate: () => Promise<UpdateRecord>,
+  retryOpts: RetryOptionsAndPowers,
+  isMatch: F,
+): Promise<GuardedType<F>> =>
+  // @ts-expect-error TS cannot verify that the return type matches the guarded type
   retryUntilCondition(getLastUpdate, isMatch, `${id}`, retryOpts);
 
 /**
  * Wait for an update indicating settlement of the specified invocation and
  * return its result or throw its error.
  * @alpha
- *
- * @param {string | number} id
- * @param {() => Promise<UpdateRecord>} getLastUpdate
- * @param {RetryOptionsAndPowers} retryOpts
- * @returns {Promise<(UpdateRecord & { updated: 'invocation' })['result']>}
  */
-export const getInvocationUpdate = async (id, getLastUpdate, retryOpts) => {
-  const isMatch = update =>
-    update.updated === 'invocation' &&
+export const getInvocationUpdate = async (
+  id: string | number,
+  getLastUpdate: () => Promise<UpdateRecord>,
+  retryOpts: RetryOptionsAndPowers,
+): Promise<InvocationUpdate['result']> => {
+  const isMatch = (update: UpdateRecord): update is InvocationUpdate =>
+    isInvocationUpdate(update) &&
     update.id === id &&
-    !!(update.error || update.result);
-  const found = /** @type {UpdateRecord & { updated: 'invocation' }} */ (
-    await findUpdate(id, getLastUpdate, retryOpts, isMatch)
-  );
-  if (found.error) throw Error(found.error);
+    Boolean(update.error || update.result);
+  const found = await findUpdate(id, getLastUpdate, retryOpts, isMatch);
+  if (found.error) {
+    throw Error(found.error);
+  }
   return found.result;
 };
 harden(getInvocationUpdate);
@@ -50,25 +71,21 @@ harden(getInvocationUpdate);
  * its status or throw its error.
  * Used internally but not yet considered public.
  * @alpha
- *
- * @param {string | number} id
- * @param {() => Promise<UpdateRecord>} getLastUpdate
- * @param {RetryOptionsAndPowers} retryOpts
- * @returns {Promise<OfferStatus>}
  */
-export const getOfferResult = async (id, getLastUpdate, retryOpts) => {
-  // "walletAction" indicates an error, "offerStatus" with the right id and
-  // either `result` or `error` indicates settlement.
-  const isMatch = update =>
-    update.updated === 'walletAction' ||
-    (update.updated === 'offerStatus' &&
+export const getOfferResult = async (
+  id: string | number,
+  getLastUpdate: () => Promise<UpdateRecord>,
+  retryOpts: RetryOptionsAndPowers,
+): Promise<OfferStatus> => {
+  const isMatch = (
+    update: UpdateRecord,
+  ): update is OfferStatusUpdate | WalletActionUpdate =>
+    isWalletActionUpdate(update) ||
+    (isOfferStatusUpdate(update) &&
       update.status.id === id &&
-      !!(update.status.error || update.status.result));
-  const found =
-    /** @type {UpdateRecord & { updated: 'walletAction' | 'offerStatus' }} */ (
-      await findUpdate(id, getLastUpdate, retryOpts, isMatch)
-    );
-  if (found.updated !== 'offerStatus') {
+      Boolean(update.status.error || update.status.result));
+  const found = await findUpdate(id, getLastUpdate, retryOpts, isMatch);
+  if (!isOfferStatusUpdate(found)) {
     throw Fail`${q(id)} ${q(found.updated)} failure: ${q(found.status?.error)}`;
   }
   const { error, result } = found.status;
@@ -83,25 +100,21 @@ harden(getOfferResult);
  * and return its status or throw its error.
  * Used internally but not yet considered public.
  * @alpha
- *
- * @param {string | number} id
- * @param {() => Promise<UpdateRecord>} getLastUpdate
- * @param {RetryOptionsAndPowers} retryOpts
- * @returns {Promise<OfferStatus>}
  */
-export const getOfferWantsSatisfied = async (id, getLastUpdate, retryOpts) => {
-  // "walletAction" indicates an error, "offerStatus" with the right id and
-  // either `result` or `error` indicates settlement.
-  const isMatch = update =>
-    update.updated === 'walletAction' ||
-    (update.updated === 'offerStatus' &&
+export const getOfferWantsSatisfied = async (
+  id: string | number,
+  getLastUpdate: () => Promise<UpdateRecord>,
+  retryOpts: RetryOptionsAndPowers,
+): Promise<OfferStatus> => {
+  const isMatch = (
+    update: UpdateRecord,
+  ): update is OfferStatusUpdate | WalletActionUpdate =>
+    isWalletActionUpdate(update) ||
+    (isOfferStatusUpdate(update) &&
       update.status.id === id &&
-      !!(update.status.error || 'numWantsSatisfied' in update.status));
-  const found =
-    /** @type {UpdateRecord & { updated: 'walletAction' | 'offerStatus' }} */ (
-      await findUpdate(id, getLastUpdate, retryOpts, isMatch)
-    );
-  if (found.updated !== 'offerStatus') {
+      Boolean(update.status.error || 'numWantsSatisfied' in update.status));
+  const found = await findUpdate(id, getLastUpdate, retryOpts, isMatch);
+  if (!isOfferStatusUpdate(found)) {
     throw Fail`${q(id)} ${q(found.updated)} failure: ${q(found.status?.error)}`;
   }
   const { error, result } = found.status;
@@ -112,95 +125,80 @@ export const getOfferWantsSatisfied = async (id, getLastUpdate, retryOpts) => {
 harden(getOfferWantsSatisfied);
 
 /**
- * Augment VstorageKit with addtional convenience methods for working with
- * Agoric smart wallets. This use of "kit" is unfortunate because it does not
- * pertain to a single smart wallet. (Whereas VstorageKit pertains to a single
- * vstorage tree.) It was once called WalletUtils, which is more accurate.
- *
- * @param {object} root0
- * @param {typeof globalThis.fetch} root0.fetch
- * @param {(ms: number) => Promise<void>} root0.delay
- * @param {boolean} [root0.names]
- * @param {MinimalNetworkConfig} networkConfig
+ * Augment VstorageKit with additional convenience methods for working with
+ * Agoric smart wallets.
  */
 export const makeSmartWalletKit = async (
   {
     fetch,
-    // eslint-disable-next-line no-unused-vars -- keep for removing ambient authority
-    delay,
+    delay: _delay,
     names = true,
+  }: {
+    fetch: typeof globalThis.fetch;
+    delay: (ms: number) => Promise<void>;
+    names?: boolean;
   },
-  networkConfig,
+  networkConfig: MinimalNetworkConfig,
 ) => {
   const vsk = makeVstorageKit({ fetch }, networkConfig);
 
-  const agoricNames = await (names
+  type AgoricNames = Awaited<ReturnType<typeof makeAgoricNames>>;
+  const agoricNames: AgoricNames = await (names
     ? makeAgoricNames(vsk.fromBoard, vsk.vstorage)
-    : /** @type {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} */ ({}));
+    : ({} as AgoricNames));
 
-  /**
-   * @param {string} from
-   * @param {number|string} [minHeight]
-   */
-  const storedWalletState = async (from, minHeight = undefined) => {
+  // @ts-expect-error XXX BoardRemote
+  const invitationBrand = (agoricNames.brand?.Invitation ??
+    Fail`missing Invitation brand`) as Brand<'set'>;
+
+  const storedWalletState = async (
+    from: string,
+    minHeight: number | string | undefined = undefined,
+  ): Promise<CoalescedWalletState> => {
     const history = await vsk.vstorage.readFully(
       `published.wallet.${from}`,
       minHeight,
     );
 
-    /** @type {{ Invitation: Brand<'set'> }} */
-    // @ts-expect-error XXX how to narrow AssetKind to set?
-    const { Invitation } = agoricNames.brand;
-    const coalescer = makeWalletStateCoalescer(Invitation);
+    const coalescer = makeWalletStateCoalescer(invitationBrand);
     // update with oldest first
-    for (const txt of history.reverse()) {
-      const { body, slots } = JSON.parse(txt);
-      const record = vsk.marshaller.fromCapData({ body, slots });
+    for (const txt of [...history].reverse()) {
+      const { body, slots } = JSON.parse(txt) as {
+        body: string;
+        slots: string[];
+      };
+      const record = vsk.marshaller.fromCapData({
+        body,
+        slots,
+      }) as UpdateRecord;
       coalescer.update(record);
     }
+
     const coalesced = coalescer.state;
     harden(coalesced);
     return coalesced;
   };
 
-  /**
-   * Get OfferStatus by id, polling until available.
-   *
-   * @param {string} from
-   * @param {string|number} id
-   * @param {number|string} [minHeight] - deprecated, start polling before broadcasting the offer
-   * @param {boolean} [untilNumWantsSatisfied]
-   */
   const pollOffer = async (
-    from,
-    id,
-    minHeight,
+    from: string,
+    id: string | number,
+    _minHeight?: number | string,
     untilNumWantsSatisfied = false,
-  ) => {
+  ): Promise<OfferStatus> => {
     const getAddrLastUpdate = () => getLastUpdate(from);
-    // XXX ambient authority
-    const retryOpts = { setTimeout: global.setTimeout };
-    const status = await (untilNumWantsSatisfied
+    const retryOpts: RetryOptionsAndPowers = {
+      setTimeout: globalThis.setTimeout,
+    };
+    return untilNumWantsSatisfied
       ? getOfferWantsSatisfied(id, getAddrLastUpdate, retryOpts)
-      : getOfferResult(id, getAddrLastUpdate, retryOpts));
-    return status;
+      : getOfferResult(id, getAddrLastUpdate, retryOpts);
   };
 
-  /**
-   * @param {string} addr
-   * @returns {Promise<UpdateRecord>}
-   */
-  const getLastUpdate = addr => {
-    return vsk.readPublished(`wallet.${addr}`);
-  };
+  const getLastUpdate = (addr: string): Promise<UpdateRecord> =>
+    vsk.readPublished(`wallet.${addr}`) as Promise<UpdateRecord>;
 
-  /**
-   * @param {string} addr
-   * @returns {Promise<CurrentWalletRecord>}
-   */
-  const getCurrentWalletRecord = addr => {
-    return vsk.readPublished(`wallet.${addr}.current`);
-  };
+  const getCurrentWalletRecord = (addr: string): Promise<CurrentWalletRecord> =>
+    vsk.readPublished(`wallet.${addr}.current`) as Promise<CurrentWalletRecord>;
 
   return {
     // pass along all of VstorageKit
@@ -212,4 +210,5 @@ export const makeSmartWalletKit = async (
     pollOffer,
   };
 };
-/** @typedef {EReturn<typeof makeSmartWalletKit>} SmartWalletKit */
+
+export type SmartWalletKit = EReturn<typeof makeSmartWalletKit>;
