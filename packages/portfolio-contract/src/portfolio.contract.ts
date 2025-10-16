@@ -15,6 +15,7 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import {
   ChainInfoShape,
   DenomDetailShape,
@@ -228,7 +229,7 @@ export const contract = async (
     assetInfo,
     axelarIds,
     contracts,
-    marshaller,
+    marshaller: remoteMarshaller,
     storageNode,
     gmpAddresses,
   } = privateArgs;
@@ -267,11 +268,15 @@ export const contract = async (
   const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
 
+  // TODO(https://github.com/Agoric/agoric-sdk/issues/12109):
+  // once withOrchestration provides a wrapped marshaller, don't re-wrap.
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
+
   const resolverZone = zone.subZone('Resolver');
   const makeResolverKit = prepareResolverKit(resolverZone, zcf, {
     vowTools,
     pendingTxsNode: E(storageNode).makeChildNode(PENDING_TXS_NODE_KEY),
-    marshaller,
+    marshaller: cachingMarshaller,
   });
   const {
     client: resolverClient,
@@ -354,7 +359,7 @@ export const contract = async (
     offerArgsShapes,
     transferChannels,
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
-    marshaller,
+    marshaller: cachingMarshaller,
     usdcBrand: brands.USDC,
   });
 

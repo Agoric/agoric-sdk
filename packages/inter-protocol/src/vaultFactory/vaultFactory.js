@@ -19,6 +19,7 @@ import { CONTRACT_ELECTORATE } from '@agoric/governance';
 import { makeParamManagerFromTerms } from '@agoric/governance/src/contractGovernance/typedParamManager.js';
 import { validateElectorate } from '@agoric/governance/src/contractHelper.js';
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { makeStoredSubscription, makeSubscriptionKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
@@ -88,12 +89,14 @@ export const start = async (zcf, privateArgs, baggage) => {
   const {
     initialPoserInvitation,
     initialShortfallInvitation,
-    marshaller,
+    marshaller: remoteMarshaller,
     storageNode,
     auctioneerInstance,
     managerParams,
     directorParamOverrides,
   } = privateArgs;
+
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
   trace('awaiting debtMint');
   const { debtMint } = await provideAll(baggage, {
@@ -111,7 +114,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const { makeRecorderKit, makeERecorderKit } = prepareRecorderKitMakers(
     baggage,
-    marshaller,
+    cachingMarshaller,
   );
 
   trace('making non-durable publishers');
@@ -121,7 +124,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const governanceSubscriber = makeStoredSubscription(
     governanceSubscriptionKit.subscription,
     governanceNode,
-    marshaller,
+    cachingMarshaller,
   );
   /** a powerful object; can modify the invitation */
   const vaultDirectorParamManager = await makeParamManagerFromTerms(
@@ -147,7 +150,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     auctioneerPublicFacet,
     storageNode,
     // XXX remove Recorder makers; remove once we excise deprecated kits for governance
-    marshaller,
+    cachingMarshaller,
     makeRecorderKit,
     makeERecorderKit,
     managerParams,

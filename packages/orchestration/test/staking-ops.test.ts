@@ -228,6 +228,10 @@ const makeScenario = () => {
 
   const baggage = makeScalarBigMapStore('b1') as Baggage;
   const zone = makeDurableZone(baggage);
+  // TODO(https://github.com/Agoric/agoric-sdk/issues/12109):
+  // once withOrchestration provides a wrapped marshaller to contracts so
+  // should the test setup. Right now `withOrchestration` does wrap the
+  // marshaller but only for the recorder kit, which we don't bother to do here
   const marshaller = makeFakeBoard().getReadonlyMarshaller();
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 

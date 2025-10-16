@@ -3,6 +3,7 @@
 import { prepareIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
@@ -81,7 +82,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const {
     highPrioritySendersManager,
     initialPoserInvitation,
-    marshaller,
+    marshaller: remoteMarshaller,
     namesByAddressAdmin,
     storageNode,
   } = privateArgs;
@@ -90,11 +91,13 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   trace('awaited args');
 
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
+
   const makeDurablePublishKit = prepareDurablePublishKit(
     baggage,
     'Price Aggregator publish kit',
   );
-  const makeRecorder = prepareRecorder(baggage, marshaller);
+  const makeRecorder = prepareRecorder(baggage, cachingMarshaller);
 
   const makeFluxAggregatorKit = await prepareFluxAggregatorKit(
     baggage,
@@ -121,7 +124,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       // No governed parameters. Governance just for API methods.
     },
     storageNode,
-    marshaller,
+    cachingMarshaller,
   );
 
   trace('got makeDurableGovernorFacet', makeDurableGovernorFacet);

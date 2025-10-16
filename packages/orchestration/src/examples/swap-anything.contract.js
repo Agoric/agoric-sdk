@@ -1,5 +1,6 @@
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeTracer } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
@@ -59,6 +60,11 @@ export const contract = async (
   /** @type {(msg: string) => Vow<void>} */
   const log = (msg, level = 'info') =>
     vowTools.watch(E(logNode).setValue(JSON.stringify({ msg, level })));
+
+  const { marshaller: remoteMarshaller } = privateArgs;
+  // TODO(https://github.com/Agoric/agoric-sdk/issues/12109):
+  // once withOrchestration provides a wrapped marshaller, don't re-wrap.
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
   const makeLocalAccount = orchestrate(
     'makeLocalAccount',
@@ -155,7 +161,7 @@ export const contract = async (
   void vowTools.when(sharedLocalAccountP, async lca => {
     sharedLocalAccount = lca;
     await sharedLocalAccount.monitorTransfers(tap);
-    const encoded = await E(privateArgs.marshaller).toCapData({
+    const encoded = await E(cachingMarshaller).toCapData({
       sharedLocalAccount: sharedLocalAccount.getAddress(),
     });
     void E(privateArgs.storageNode).setValue(JSON.stringify(encoded));

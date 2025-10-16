@@ -1,4 +1,5 @@
 import { prepareAsyncFlowTools } from '@agoric/async-flow';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { prepareVowTools } from '@agoric/vow';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
@@ -15,6 +16,7 @@ import { makeZcfTools } from './zcf-tools.js';
 /**
  * @import {ERemote} from '@agoric/internal';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Baggage} from '@agoric/vat-data';
@@ -54,7 +56,7 @@ import { makeZcfTools } from './zcf-tools.js';
  * @param {ZCF} zcf
  * @param {Baggage} baggage
  * @param {OrchestrationPowers} remotePowers
- * @param {ERemote<Marshaller>} marshaller
+ * @param {ERemote<EMarshaller>} marshaller
  * @param {object} [opts]
  * @param {WithOrchestrationOpts['chainInfoValueShape']} [opts.chainInfoValueShape]
  * @internal
@@ -222,17 +224,23 @@ harden(provideOrchestration);
  */
 export const withOrchestration =
   (contractFn, opts) => async (zcf, privateArgs, baggage) => {
-    const { marshaller, ...allOrchPowers } = privateArgs;
+    const { marshaller: remoteMarshaller, ...allOrchPowers } = privateArgs;
     const { storageNode: _, ...requiredOrchPowers } = allOrchPowers;
     const { publishAccountInfo, chainInfoValueShape } = opts ?? {};
+
+    const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
+
     const { zone, ...tools } = provideOrchestration(
       zcf,
       baggage,
       publishAccountInfo ? allOrchPowers : requiredOrchPowers,
-      marshaller,
+      cachingMarshaller,
       { chainInfoValueShape },
     );
     const [startResult] = await Promise.all([
+      // TODO(https://github.com/Agoric/agoric-sdk/issues/12109):
+      // pass the cachingMarshaller to orchestrated contracts so they don't
+      // have to wrap it themselves. This requires some generic PA magic.
       contractFn(zcf, privateArgs, zone, tools),
       // Make sure that any errors in async-flow awake abort contract start
       tools.asyncFlowTools.allWokenP,
