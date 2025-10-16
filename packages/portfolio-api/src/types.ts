@@ -88,6 +88,7 @@ export type StatusFor = {
     accountIdByChain: Partial<Record<SupportedChain, AccountId>>;
     accountsPending?: SupportedChain[];
     depositAddress?: Bech32Address;
+    /** Noble Forwarding Address (NFA) registered by the contract for the `@agoric` address */
     nobleForwardingAddress?: Bech32Address;
     targetAllocation?: TargetAllocation;
     /** incremented by the contract every time the user sends a transaction that the planner should respond to */
