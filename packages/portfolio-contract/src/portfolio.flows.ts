@@ -878,7 +878,7 @@ export const rebalance = (async (
     }
 
     if (flow) {
-      ({ flowId } = kit.manager.startFlow({ type: 'rebalance' }));
+      ({ flowId } = kit.manager.startFlow({ type: 'rebalance' }, flow));
       await stepFlow(orch, ctx, seat, flow, kit, traceP, flowId);
     }
 
