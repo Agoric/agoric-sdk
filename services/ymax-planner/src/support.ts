@@ -396,3 +396,18 @@ export const scanEvmLogsInChunks = async (
   }
   return undefined;
 };
+
+export const waitForBlock = async (
+  provider: WebSocketProvider,
+  targetBlock: number,
+) => {
+  return new Promise(resolve => {
+    const listener = blockNumber => {
+      if (blockNumber >= targetBlock) {
+        void provider.off('block', listener);
+        resolve(blockNumber);
+      }
+    };
+    void provider.on('block', listener);
+  });
+};

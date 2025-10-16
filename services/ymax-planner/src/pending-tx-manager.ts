@@ -16,7 +16,11 @@ import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.t
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import { resolvePendingTx } from './resolver.ts';
-import { type EvmProviders, type UsdcAddresses } from './support.ts';
+import {
+  waitForBlock,
+  type EvmProviders,
+  type UsdcAddresses,
+} from './support.ts';
 import { watchGmp, lookBackGmp } from './watchers/gmp-watcher.ts';
 import { watchCctpTransfer, lookBackCctp } from './watchers/cctp-watcher.ts';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
@@ -118,7 +122,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       await null;
       // Wait for at least one block to ensure overlap between lookback and live mode
       const currentBlock = await provider.getBlockNumber();
-      await provider.waitForBlock(currentBlock + 1);
+      await waitForBlock(provider, currentBlock + 1);
 
       // Scan historical blocks
       transferStatus = await lookBackCctp({
@@ -200,7 +204,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       await null;
       // Wait for at least one block to ensure overlap between lookback and live mode
       const currentBlock = await provider.getBlockNumber();
-      await provider.waitForBlock(currentBlock + 1);
+      await waitForBlock(provider, currentBlock + 1);
 
       // Scan historical blocks
       transferStatus = await lookBackGmp({
