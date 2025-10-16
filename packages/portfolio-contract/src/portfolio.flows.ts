@@ -865,20 +865,21 @@ export const rebalance = (async (
   const traceP = makeTracer('rebalance').sub(`portfolio${id}`);
   const proposal = seat.getProposal() as ProposalType['rebalance'];
   traceP('proposal', proposal.give, proposal.want, offerArgs);
+  const { flow, targetAllocation } = offerArgs;
 
   await null;
   let flowId: number | undefined;
   try {
-    if (offerArgs.targetAllocation) {
-      kit.manager.setTargetAllocation(offerArgs.targetAllocation);
-    } else if ((offerArgs.flow || []).some(step => step.dest === '+agoric')) {
-      // steps include a deposit that the planner should respond to
+    if (targetAllocation) {
+      kit.manager.setTargetAllocation(targetAllocation);
+    } else if (flow?.some(step => step.dest === '+agoric')) {
+      // flow includes a deposit that the planner should respond to
       kit.manager.incrPolicyVersion();
     }
 
-    if (offerArgs.flow) {
+    if (flow) {
       ({ flowId } = kit.manager.startFlow({ type: 'rebalance' }));
-      await stepFlow(orch, ctx, seat, offerArgs.flow, kit, traceP, flowId);
+      await stepFlow(orch, ctx, seat, flow, kit, traceP, flowId);
     }
 
     if (!seat.hasExited()) {
