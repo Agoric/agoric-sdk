@@ -528,13 +528,10 @@ test.serial('deploy RC2; update Settler reference', async t => {
   );
 });
 
-test.serial('deploy CCTP beta', async t => {
-  const { buildProposal, evalProposal, getVatDetailsByName, readPublished } =
+test.serial('deploy fast-usdc-cctp-b1', async t => {
+  const { evalReleasedProposal, getVatDetailsByName, readPublished } =
     t.context;
-
-  await evalProposal(
-    buildProposal('@aglocal/fast-usdc-deploy/src/fast-usdc-evm-dests.build.js'),
-  );
+  await evalReleasedProposal('fast-usdc-cctp-b1', 'eval-fast-usdc-evm-dests');
   const [vatDetails] = await getVatDetailsByName('fastUsdc');
   t.is(vatDetails.incarnation, 3);
 
@@ -553,6 +550,25 @@ test.serial('deploy CCTP beta', async t => {
     t.like(t.context.readTxnRecord({ txHash }).at(-1), { status: 'DISBURSED' });
   }
   t.is(readPublished('fastUsdc.poolMetrics').encumberedBalance.value, 0n);
+});
+
+test.serial('deploy HEAD', async t => {
+  const { buildProposal, evalProposal, getVatDetailsByName, storage } =
+    t.context;
+
+  await evalProposal(
+    // TODO: is there a "null upgrade" type proposal builder?
+    buildProposal('@aglocal/fast-usdc-deploy/src/fast-usdc-evm-dests.build.js'),
+  );
+  const [vatDetails] = await getVatDetailsByName('fastUsdc');
+  t.is(vatDetails.incarnation, 4);
+
+  const doc = {
+    node: 'fastUsdc.feeConfig',
+    owner: 'the updated fee configuration for Fast USDC after contract upgrade',
+    showValue: defaultSerializer.parse,
+  };
+  await documentStorageSchema(t, storage, doc);
 });
 
 test.serial('makes usdc advance', async t => {
@@ -591,7 +607,7 @@ test.serial('makes usdc advance', async t => {
   // Restart contract to make sure it doesn't break advance flow
   const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
   const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
-  t.deepEqual(actual, { incarnationNumber: 4 });
+  t.deepEqual(actual, { incarnationNumber: 5 });
 
   const { runInbound } = t.context.bridgeUtils;
   // simulate acknowledgement of outgoing forward transfer
@@ -1079,8 +1095,8 @@ test.serial('restart contract', async t => {
 
   const actual = await EV(kit.adminFacet).restartContract(newArgs);
 
-  // Incarnation 5 because of upgrade, previous test
-  t.deepEqual(actual, { incarnationNumber: 5 });
+  // Incarnation 6 because of upgrade, previous test
+  t.deepEqual(actual, { incarnationNumber: 6 });
   const { flat, variableRate, contractRate } = storage
     .getValues(`published.fastUsdc.feeConfig`)
     .map(defaultSerializer.parse)
