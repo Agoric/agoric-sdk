@@ -363,6 +363,7 @@ const main = async ({
       MNEMONIC,
       connectWithSigner,
       config: configs[env.NET || 'testnet'],
+      dest: env.MKFWD,
     });
     console.log(tx);
     return;

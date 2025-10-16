@@ -63,11 +63,13 @@ export const registerNobleForwardingAddress = async ({
   connectWithSigner,
   config,
   agoricDenom = 'ubld',
+  dest,
 }: {
   MNEMONIC: string;
   connectWithSigner: typeof SigningStargateClient.connectWithSigner;
   config: typeof configs.testnet;
   agoricDenom?: string;
+  dest?: string;
 }) => {
   const agWallet = await DirectSecp256k1HdWallet.fromMnemonic(MNEMONIC, {
     prefix: 'agoric',
@@ -75,15 +77,16 @@ export const registerNobleForwardingAddress = async ({
   });
 
   const [{ address: senderAddress }] = await agWallet.getAccounts();
-  console.log('Sender Address:', senderAddress);
+  dest ||= senderAddress;
+  console.log('Sender, dest:', senderAddress, dest);
 
   const agToNoble = config.agoric.connections[config.noble.chainId];
   const ibcPayload = [
     nfaIbcPayload(
       agToNoble.transferChannel.channelId, // Source chain channel to Noble
       senderAddress, // Your address on source chain
-      'noble1n4j0cy98dac5q6d9y5nhlmk5d6e4wzve0gznrw', // Noble address (will become forwarding account)
-      senderAddress, // Final destination on Agoric
+      'noble1n4j0cy98dac5q6d9y5nhlmk5d6e4wzve0gznrw',
+      dest, // Final destination on Agoric
       agToNoble.transferChannel.counterPartyChannelId, // Noble channel to Agoric
     ),
   ];
