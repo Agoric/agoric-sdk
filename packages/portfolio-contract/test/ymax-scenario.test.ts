@@ -4,6 +4,7 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { inspect } from 'node:util';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { Fail } from '@endo/errors';
