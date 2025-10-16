@@ -46,7 +46,13 @@ harden(AxelarChain);
  * @enum {(typeof SupportedChain)[keyof typeof SupportedChain]}
  */
 export const SupportedChain = /** @type {const} */ ({
-  ...AxelarChain,
+  // ...AxelarChain works locally but gets lost in .d.ts generation
+  Arbitrum: 'Arbitrum',
+  Avalanche: 'Avalanche',
+  Base: 'Base',
+  Ethereum: 'Ethereum',
+  Optimism: 'Optimism',
+  // Unique to this object
   agoric: 'agoric',
   noble: 'noble',
   // XXX: check privateArgs for chainInfo for all of these
