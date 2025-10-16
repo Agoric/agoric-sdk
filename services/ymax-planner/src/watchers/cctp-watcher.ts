@@ -1,7 +1,10 @@
 import type { Filter, WebSocketProvider, Log } from 'ethers';
 import { id, zeroPadValue, getAddress, ethers } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
-import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
+import {
+  getBlockNumberBeforeRealTime,
+  scanEvmLogsInChunks,
+} from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 
 /**
@@ -156,10 +159,11 @@ export const lookBackCctp = async ({
 }): Promise<boolean> => {
   await null;
   try {
-    const { fromBlock, toBlock } = await buildTimeWindow(
+    const fromBlock = await getBlockNumberBeforeRealTime(
       provider,
       publishTimeMs,
     );
+    const toBlock = await provider.getBlockNumber();
 
     log(
       `Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${toAddress} with amount ${expectedAmount}`,

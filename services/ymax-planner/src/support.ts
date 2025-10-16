@@ -275,40 +275,46 @@ export const binarySearch = (async <Index extends number | bigint>(
   return greatestFound;
 }) as BinarySearch;
 
-const findBlockByTimestamp = async (
+/**
+ * Returns the highest block number whose real time (i.e., published timestamp
+ * as adjusted by clock skew of up to fudgeFactorMs) is known to be less than or
+ * equal to targetMs.
+ */
+export const getBlockNumberBeforeRealTime = async (
   provider: WebSocketProvider,
   targetMs: number,
-) => {
-  const posixSeconds = Math.floor(targetMs / 1000);
-  const startBlockNumber = await binarySearch(
-    0,
-    await provider.getBlockNumber(),
-    async blockNumber => {
-      const block = await provider.getBlock(blockNumber);
-      return block?.timestamp ? block.timestamp <= posixSeconds : false;
-    },
-  );
-  return startBlockNumber;
-};
-
-/**
- * Builds a time window for scanning blockchain logs based on a transaction publish time.
- * Returns a range of blocks that should contain the block corresponding to publishTimeMs
- * (with a fudge factor applied for clock skew) up to the current block at the time of calling.
- */
-export const buildTimeWindow = async (
-  provider: WebSocketProvider,
-  publishTimeMs: number,
   {
     fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
+    meanBlockDurationMs,
   }: {
     fudgeFactorMs?: number;
+    meanBlockDurationMs?: number;
   } = {},
 ) => {
-  const adjustedTime = publishTimeMs - fudgeFactorMs;
-  const fromBlock = await findBlockByTimestamp(provider, adjustedTime);
-  const toBlock = await provider.getBlockNumber();
-  return { fromBlock, toBlock };
+  const posixSeconds = Math.floor((targetMs - fudgeFactorMs) / 1000);
+
+  // Try to find a good starting point.
+  let startNumber = 0;
+  const latestNumber = await provider.getBlockNumber();
+  const latestBlock = await provider.getBlock(latestNumber);
+  const deltaSec = latestBlock!.timestamp - posixSeconds;
+  if (deltaSec <= 0) return latestNumber;
+  if (deltaSec > 0 && meanBlockDurationMs) {
+    const deltaBlocks = Math.ceil(deltaSec / (meanBlockDurationMs / 1000));
+    const pastNumber = latestNumber - deltaBlocks * 2;
+    if (startNumber < pastNumber) {
+      const pastBlock = await provider.getBlock(pastNumber);
+      if (pastBlock?.timestamp && pastBlock.timestamp <= posixSeconds) {
+        startNumber = pastNumber;
+      }
+    }
+  }
+
+  const blockNumber = await binarySearch(startNumber, latestNumber, async n => {
+    const block = await provider.getBlock(n);
+    return block?.timestamp ? block.timestamp <= posixSeconds : false;
+  });
+  return blockNumber;
 };
 
 type LogPredicate = (log: Log) => boolean | Promise<boolean>;

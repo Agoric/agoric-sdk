@@ -1,7 +1,10 @@
 import { ethers, type Filter, type WebSocketProvider, type Log } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 import type { CaipChainId } from '@agoric/orchestration';
-import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
+import {
+  getBlockNumberBeforeRealTime,
+  scanEvmLogsInChunks,
+} from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 
 // TODO: Remove once all contracts are upgraded to emit MulticallStatus
@@ -128,10 +131,11 @@ export const lookBackGmp = async ({
 }): Promise<boolean> => {
   await null;
   try {
-    const { fromBlock, toBlock } = await buildTimeWindow(
+    const fromBlock = await getBlockNumberBeforeRealTime(
       provider,
       publishTimeMs,
     );
+    const toBlock = await provider.getBlockNumber();
 
     log(
       `Searching blocks ${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
