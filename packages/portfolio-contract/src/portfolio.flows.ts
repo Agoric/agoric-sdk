@@ -1113,11 +1113,26 @@ export const openPortfolio = (async (
       await registerNobleForwardingAccount(sender, dest, forwarding, traceP);
     }
 
-    try {
-      await rebalance(orch, ctxI, seat, offerArgs, kit);
-    } catch (err) {
-      traceP('⚠️ rebalance failed', err);
-      if (!seat.hasExited()) seat.fail(err);
+    if (offerArgs.targetAllocation) {
+      kit.manager.setTargetAllocation(offerArgs.targetAllocation);
+    }
+
+    const { give } = seat.getProposal() as ProposalType['openPortfolio'];
+    if (offerArgs.flow) {
+      try {
+        if (give.Deposit) {
+          await executePlan(orch, ctxI, seat, offerArgs, kit, {
+            type: 'deposit',
+            amount: give.Deposit,
+          });
+        } else {
+          // XXX only for testing recovery?
+          await rebalance(orch, ctxI, seat, offerArgs, kit);
+        }
+      } catch (err) {
+        traceP('⚠️ initial flow failed', err);
+        if (!seat.hasExited()) seat.fail(err);
+      }
     }
 
     const publicSubscribers: GuestInterface<PublicSubscribers> = {
@@ -1153,17 +1168,16 @@ export const executePlan = (async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
-  _offerArgs: unknown,
+  offerArgs: { flow?: MovementDesc[] },
   pKit: GuestInterface<PortfolioKit>,
   flowDetail: FlowDetail,
 ): Promise<`flow${number}`> => {
   const pId = pKit.reader.getPortfolioId();
   const traceP = makeTracer(flowDetail.type).sub(`portfolio${pId}`);
 
-  // XXX enhancement: let caller supply steps
-  const { stepsP, flowId } = pKit.manager.startFlow(flowDetail);
+  const { stepsP, flowId } = pKit.manager.startFlow(flowDetail, offerArgs.flow);
   const traceFlow = traceP.sub(`flow${flowId}`);
-  traceFlow('waiting for steps from planner');
+  if (!offerArgs.flow) traceFlow('waiting for steps from planner');
   // idea: race with seat.getSubscriber()
   const steps = await (stepsP as unknown as Promise<MovementDesc[]>); // XXX Guest/Host types UNTIL #9822
   try {
