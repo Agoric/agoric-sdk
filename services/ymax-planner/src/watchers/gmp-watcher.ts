@@ -33,6 +33,11 @@ export const watchGmp = ({
   signal?: AbortSignal;
 }): Promise<boolean> => {
   return new Promise(resolve => {
+    if (signal?.aborted) {
+      resolve(false);
+      return;
+    }
+
     const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
     const statusFilter = {
       address: contractAddress,
@@ -51,13 +56,16 @@ export const watchGmp = ({
     let timeoutId: NodeJS.Timeout;
     let listeners: Array<{ event: any; listener: any }> = [];
 
-    const cleanup = () => {
+    const finish = (result: boolean) => {
+      resolve(result);
       if (timeoutId) clearTimeout(timeoutId);
       for (const { event, listener } of listeners) {
         void provider.off(event, listener);
       }
       listeners = [];
     };
+
+    signal?.addEventListener('abort', () => finish(false));
 
     const listenForStatus = (eventLog: Log) => {
       log(
@@ -68,8 +76,7 @@ export const watchGmp = ({
       if (eventLog.topics[1] === expectedIdTopic) {
         log(`✓ MulticallStatus matches txId: ${txId}`);
         executionFound = true;
-        cleanup();
-        resolve(true);
+        finish(true);
       } else {
         log(`MulticallStatus txId mismatch for ${txId}`);
       }
@@ -84,8 +91,7 @@ export const watchGmp = ({
       if (eventLog.topics[1] === expectedIdTopic) {
         log(`✓ MulticallExecuted matches txId: ${txId}`);
         executionFound = true;
-        cleanup();
-        resolve(true);
+        finish(true);
       } else {
         log(`MulticallExecuted txId mismatch for ${txId}`);
       }
@@ -101,17 +107,9 @@ export const watchGmp = ({
         log(
           `✗ No MulticallStatus or MulticallExecuted found for txId ${txId} within ${timeoutMs / 60000} minutes`,
         );
-        cleanup();
-        resolve(false);
+        finish(false);
       }
     }, timeoutMs);
-
-    if (signal) {
-      signal.addEventListener('abort', () => {
-        cleanup();
-        resolve(false);
-      });
-    }
   });
 };
 

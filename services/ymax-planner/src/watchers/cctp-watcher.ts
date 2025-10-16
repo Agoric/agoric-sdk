@@ -71,6 +71,11 @@ export const watchCctpTransfer = ({
   signal?: AbortSignal;
 }): Promise<boolean> => {
   return new Promise(resolve => {
+    if (signal?.aborted) {
+      resolve(false);
+      return;
+    }
+
     const TO_TOPIC = zeroPadValue(toAddress.toLowerCase(), 32);
     const filter = {
       topics: [TRANSFER_SIGNATURE, null, TO_TOPIC],
@@ -84,13 +89,16 @@ export const watchCctpTransfer = ({
     let timeoutId: NodeJS.Timeout;
     let listeners: Array<{ event: any; listener: any }> = [];
 
-    const cleanup = () => {
+    const finish = (result: boolean) => {
+      resolve(result);
       if (timeoutId) clearTimeout(timeoutId);
       for (const { event, listener } of listeners) {
         void provider.off(event, listener);
       }
       listeners = [];
     };
+
+    signal?.addEventListener('abort', () => finish(false));
 
     const listenForTransfer = (eventLog: Log) => {
       let transferData;
@@ -113,8 +121,7 @@ export const watchCctpTransfer = ({
           `✓ Amount matches! Expected: ${expectedAmount}, Received: ${amount}`,
         );
         transferFound = true;
-        cleanup();
-        resolve(true);
+        finish(true);
         return;
       }
       // Warn and continue watching.
@@ -127,17 +134,9 @@ export const watchCctpTransfer = ({
     timeoutId = setTimeout(() => {
       if (!transferFound) {
         log(`✗ No matching transfer found within ${timeoutMs / 60000} minutes`);
-        cleanup();
-        resolve(false);
+        finish(false);
       }
     }, timeoutMs);
-
-    if (signal) {
-      signal.addEventListener('abort', () => {
-        cleanup();
-        resolve(false);
-      });
-    }
   });
 };
 
