@@ -447,13 +447,14 @@ export const preparePortfolioKit = (
             this.facets.reporter.publishStatus();
           }
         },
-        startFlow(detail: FlowDetail) {
-          const { nextFlowId, flowsRunning } = this.state;
-          this.state.nextFlowId = nextFlowId + 1;
+        startFlow(detail: FlowDetail, steps?: MovementDesc[]) {
+          const { nextFlowId: flowId, flowsRunning } = this.state;
+          this.state.nextFlowId = flowId + 1;
           const sync: VowKit<MovementDesc[]> = vowTools.makeVowKit();
-          flowsRunning.init(nextFlowId, harden({ sync, ...detail }));
+          if (steps) sync.resolver.resolve(steps);
+          flowsRunning.init(flowId, harden({ sync, ...detail }));
           this.facets.reporter.publishStatus();
-          return { stepsP: sync.vow, flowId: nextFlowId };
+          return { stepsP: sync.vow, flowId };
         },
         providePosition(
           poolKey: PoolKey,
