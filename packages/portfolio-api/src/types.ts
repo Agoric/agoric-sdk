@@ -10,10 +10,18 @@ import type { PublishedTx } from './resolver.js';
 
 export type SeatKeyword = 'Cash' | 'Deposit';
 
+/**
+ * Reference to a local chain accounts (LCA).
+ * '+agoric' is published as `depositAddress`
+ */
+export type LocalChainAccountRef = '+agoric';
+
+export type InterChainAccountRef = `@${SupportedChain}`;
+
 export type AssetPlaceRef =
   | `<${SeatKeyword}>`
-  | '+agoric' // deposit LCA
-  | `@${SupportedChain}`
+  | LocalChainAccountRef
+  | InterChainAccountRef
   | InstrumentId;
 
 type Empty = Record<never, NatAmount>;
