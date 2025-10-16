@@ -1113,11 +1113,22 @@ export const openPortfolio = (async (
       await registerNobleForwardingAccount(sender, dest, forwarding, traceP);
     }
 
-    try {
-      await rebalance(orch, ctxI, seat, offerArgs, kit);
-    } catch (err) {
-      traceP('⚠️ rebalance failed', err);
-      if (!seat.hasExited()) seat.fail(err);
+    const proposal = seat.getProposal() as ProposalType['rebalance'];
+    const deposit = (proposal.give as { Deposit?: NatAmount }).Deposit;
+    if (deposit) {
+      (offerArgs.flow || []).length === 0 ||
+        Fail`Flow steps are not currently allowed with a deposit`;
+      await executePlan(orch, ctxI, seat, offerArgs, kit, {
+        type: 'deposit',
+        amount: deposit,
+      });
+    } else {
+      try {
+        await rebalance(orch, ctxI, seat, offerArgs, kit);
+      } catch (err) {
+        traceP('⚠️ rebalance failed', err);
+        if (!seat.hasExited()) seat.fail(err);
+      }
     }
 
     const publicSubscribers: GuestInterface<PublicSubscribers> = {
