@@ -1119,11 +1119,16 @@ export const openPortfolio = (async (
     }
 
     const { give } = seat.getProposal() as ProposalType['openPortfolio'];
-    if (give.Deposit) {
-      await executePlan(orch, ctxI, seat, offerArgs, kit, {
-        type: 'deposit',
-        amount: give.Deposit,
-      });
+    if (give.Deposit && offerArgs.flow) {
+      try {
+        await executePlan(orch, ctxI, seat, offerArgs, kit, {
+          type: 'deposit',
+          amount: give.Deposit,
+        });
+      } catch (err) {
+        traceP('⚠️ deposit flow failed', err);
+        if (!seat.hasExited()) seat.fail(err);
+      }
     } else if (offerArgs.flow) {
       // XXX only for testing recovery?
       try {
@@ -1175,10 +1180,13 @@ export const executePlan = (async (
   const traceP = makeTracer(flowDetail.type).sub(`portfolio${pId}`);
 
   const { stepsP, flowId } = pKit.manager.startFlow(flowDetail, offerArgs.flow);
+
   const traceFlow = traceP.sub(`flow${flowId}`);
   if (!offerArgs.flow) traceFlow('waiting for steps from planner');
   // idea: race with seat.getSubscriber()
+
   const steps = await (stepsP as unknown as Promise<MovementDesc[]>); // XXX Guest/Host types UNTIL #9822
+
   try {
     await stepFlow(orch, ctx, seat, steps, pKit, traceP, flowId);
 
