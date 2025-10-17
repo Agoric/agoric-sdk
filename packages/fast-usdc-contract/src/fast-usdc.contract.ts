@@ -108,7 +108,7 @@ export const contract = async (
     chainInfo: Record<string, ChainHubChainInfo>;
     feeConfig: FeeConfig;
     marshaller: Remote<Marshaller>;
-    cachingMarshaller: ERemote<EMarshaller>;
+    cachingMarshaller?: ERemote<EMarshaller>;
     storageNode: Remote<StorageNode>;
     poolMetricsNode: Remote<StorageNode>;
   },
@@ -120,7 +120,13 @@ export const contract = async (
   assert('USDC' in terms.brands, 'no USDC brand');
   assert('usdcDenom' in terms, 'no usdcDenom');
 
-  const { feeConfig, cachingMarshaller, storageNode } = privateArgs;
+  const { feeConfig, cachingMarshaller: maybeCachingMarshaller, storageNode } =
+    privateArgs;
+  assert(
+    maybeCachingMarshaller,
+    'cachingMarshaller must be provided by withOrchestration',
+  );
+  const cachingMarshaller = maybeCachingMarshaller;
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
     zone.mapStore('vstorage'),

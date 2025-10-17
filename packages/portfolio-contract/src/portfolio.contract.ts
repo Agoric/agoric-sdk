@@ -150,7 +150,7 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
   chainInfo: Record<string, ChainInfo>;
   marshaller: Remote<Marshaller>;
-  cachingMarshaller: ERemote<EMarshaller>;
+  cachingMarshaller?: ERemote<EMarshaller>;
   storageNode: Remote<StorageNode>;
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
@@ -160,7 +160,6 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
 export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> = {
   ...(OrchestrationPowersShape as CopyRecord),
   marshaller: M.remotable('marshaller'),
-  cachingMarshaller: M.remotable('cachingMarshaller'),
   storageNode: M.remotable('storageNode'),
   chainInfo: M.and(
     M.recordOf(M.string(), ChainInfoShape),
@@ -232,10 +231,15 @@ export const contract = async (
     assetInfo,
     axelarIds,
     contracts,
-    cachingMarshaller,
+    cachingMarshaller: maybeCachingMarshaller,
     storageNode,
     gmpAddresses,
   } = privateArgs;
+  assert(
+    maybeCachingMarshaller,
+    'cachingMarshaller must be provided by withOrchestration',
+  );
+  const cachingMarshaller = maybeCachingMarshaller;
   const { brands } = zcf.getTerms();
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
 
