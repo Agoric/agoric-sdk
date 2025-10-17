@@ -1124,6 +1124,14 @@ export const openPortfolio = (async (
         type: 'deposit',
         amount: give.Deposit,
       });
+    } else if (offerArgs.flow) {
+      // XXX only for testing recovery?
+      try {
+        await rebalance(orch, ctxI, seat, offerArgs, kit);
+      } catch (err) {
+        traceP('⚠️ rebalance failed', err);
+        if (!seat.hasExited()) seat.fail(err);
+      }
     }
 
     const publicSubscribers: GuestInterface<PublicSubscribers> = {
