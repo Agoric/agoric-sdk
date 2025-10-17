@@ -416,9 +416,9 @@ export const rebalanceMinCostFlowSteps = async (
   }
   /**
    * Pad each fee estimate in case the landscape changes between estimation and
-   * execution.
+   * execution. Add 10%
    */
-  const padFeeEstimate = (estimate: bigint): bigint => estimate * 3n;
+  const padFeeEstimate = (estimate: bigint): bigint => (estimate * 110n) / 100n;
 
   const steps: MovementDesc[] = await Promise.all(
     prioritized.map(async ({ edge, flow }) => {
