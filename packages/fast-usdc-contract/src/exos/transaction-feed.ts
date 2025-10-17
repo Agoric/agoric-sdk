@@ -96,6 +96,7 @@ export const prepareTransactionFeedKit = (zone: Zone, zcf: ZCF) => {
 
   const makeOperatorKit = prepareOperatorKit(zone, {
     makeInertInvitation,
+    zcf,
   });
 
   return zone.exoClassKit(

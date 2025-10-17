@@ -31,6 +31,7 @@ import {
   buildVTransferEvent,
 } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { Fail } from '@endo/errors';
+import type { Passable } from '@endo/pass-style';
 import type { ForwardInfo } from '@agoric/orchestration';
 import { configurations } from '../src/utils/deploy-config.js';
 import {
@@ -48,6 +49,11 @@ const test: TestFn<
       evidence: CctpTxEvidence,
       offerIdPrefix: string,
       ...extraArgs: unknown[]
+    ) => Promise<void>;
+    invokeAttest: (
+      evidence: CctpTxEvidence,
+      invocationIdPrefix: string,
+      ...extraArgs: Passable[]
     ) => Promise<void>;
     harness?: ReturnType<typeof makeSwingsetHarness>;
     readTxnRecord({ txHash }: { txHash: string }): TransactionRecord[];
@@ -114,12 +120,45 @@ test.before('bootstrap', async t => {
     await eventLoopIteration();
   };
 
+  /**
+   * Helper to submit evidence by wallet invoke message from all configured oracles.
+   * @param evidence CCTP evidence
+   * @param invocationIdPrefix Prefix for the invocation ID
+   * @param extraArgs Additional arguments for the submitEvidence call
+   */
+  const invokeAttest = async (
+    evidence: CctpTxEvidence,
+    invocationIdPrefix: string,
+    ...extraArgs: Passable[]
+  ) => {
+    const { walletFactoryDriver: wfd } = t.context;
+    const oracles = await Promise.all(
+      oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
+    );
+
+    await Promise.all(
+      oracles.map((wallet, i) =>
+        wallet.invokeEntry({
+          id: `${invocationIdPrefix}-${i}`,
+          targetName: 'fastUsdcOperator',
+          method: 'submitEvidence',
+          args: [
+            // @ts-expect-error Type 'CctpTxEvidence' is not assignable to type 'Passable'.
+            evidence,
+            ...extraArgs,
+          ],
+        }),
+      ),
+    );
+    await eventLoopIteration();
+  };
+
   const readTxnRecord = ({ txHash }) =>
     t.context.storage
       .getValues(`published.fastUsdc.txns.${txHash}`)
       .map(defaultSerializer.parse) as TransactionRecord[];
 
-  t.context = { ...ctx, attest, harness, readTxnRecord };
+  t.context = { ...ctx, attest, invokeAttest, harness, readTxnRecord };
 });
 test.after.always(t => t.context.shutdown?.());
 
@@ -1072,6 +1111,111 @@ test.serial('forward timeout', async t => {
     ],
     'Transaction status should be FORWARDED after successful retry/ack',
   );
+});
+
+test.serial('oracles get facet for invocation', async t => {
+  const { walletFactoryDriver: wfd } = t.context;
+  const oracles = await Promise.all(
+    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
+  );
+  await Promise.all(
+    oracles.map(wallet =>
+      wallet.sendOffer({
+        id: 'get-operator-facet',
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: 'claim-oracle-invitation',
+          invitationMakerName: 'GetOperatorFacet',
+          invitationArgs: [],
+        },
+        proposal: {},
+        saveResult: { name: 'fastUsdcOperator', overwrite: true },
+      }),
+    ),
+  );
+  for (const wallet of oracles) {
+    t.like(wallet.getLatestUpdateRecord(), {
+      status: {
+        id: 'get-operator-facet',
+        result: { name: 'fastUsdcOperator', passStyle: 'remotable' },
+      },
+    });
+  }
+});
+
+test.serial('submit evidence by invocation', async t => {
+  const {
+    walletFactoryDriver: wfd,
+    readPublished,
+    storage,
+    harness,
+  } = t.context;
+  const oracles = await Promise.all(
+    oracleAddrs.map(addr => wfd.provideSmartWallet(addr)),
+  );
+
+  const EUD = 'dydx1anotherthing';
+  const { settlementAccount } = readPublished('fastUsdc');
+
+  // Check that we can still submit evidence by continuing invitation during the transition
+  const evidence1 = {
+    ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(
+      encodeAddressHook(settlementAccount, { EUD }),
+    ),
+    txHash:
+      '0xInvokeTestTxHash100000000000000000000000000000000000000000000000',
+  } as CctpTxEvidence;
+
+  harness?.useRunPolicy(true);
+  await t.context.attest(
+    evidence1,
+    'submit-mock-evidence-after-get-facet-osmo',
+  );
+  harness &&
+    t.log(
+      `fusdc advance computrons (${oracles.length} oracles)`,
+      harness.totalComputronCount(),
+    );
+  harness?.resetRunPolicy();
+
+  t.deepEqual(t.context.readTxnRecord(evidence1), [
+    { evidence: evidence1, status: 'OBSERVED' }, // observation includes evidence observed
+    { status: 'ADVANCING' },
+  ]);
+
+  // Check we can start submitting by invocation
+
+  const evidence2 = {
+    ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(
+      encodeAddressHook(settlementAccount, { EUD }),
+    ),
+    txHash:
+      '0xInvokeTestTxHash200000000000000000000000000000000000000000000000',
+  } as CctpTxEvidence;
+
+  harness?.useRunPolicy(true);
+  await t.context.invokeAttest(evidence2, 'submit-mock-evidence-osmo');
+  harness &&
+    t.log(
+      `fusdc advance computrons (${oracles.length} oracles)`,
+      harness.totalComputronCount(),
+    );
+  harness?.resetRunPolicy();
+
+  t.deepEqual(t.context.readTxnRecord(evidence2), [
+    { evidence: evidence2, status: 'OBSERVED' }, // observation includes evidence observed
+    { status: 'ADVANCING' },
+  ]);
+
+  // We don't care about moving the transactions forward as long as the evidence
+  // submissions were accepted
+
+  const doc = {
+    node: 'fastUsdc.txns',
+    owner: 'the Ethereum transactions upon which Fast USDC is acting',
+    showValue: defaultSerializer.parse,
+  };
+  await documentStorageSchema(t, storage, doc);
 });
 
 test.serial('restart contract', async t => {
