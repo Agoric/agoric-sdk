@@ -44,10 +44,7 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import {
-  wrapRemoteMarshaller,
-  type EMarshaller,
-} from '@agoric/internal/src/marshal/wrap-marshaller.js';
+import { type EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import type { ContractMeta, Invitation, ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { prepareAdvancer } from './exos/advancer.ts';
@@ -111,6 +108,7 @@ export const contract = async (
     chainInfo: Record<string, ChainHubChainInfo>;
     feeConfig: FeeConfig;
     marshaller: Remote<Marshaller>;
+    cachingMarshaller: ERemote<EMarshaller>;
     storageNode: Remote<StorageNode>;
     poolMetricsNode: Remote<StorageNode>;
   },
@@ -122,11 +120,8 @@ export const contract = async (
   assert('USDC' in terms.brands, 'no USDC brand');
   assert('usdcDenom' in terms, 'no usdcDenom');
 
-  const { feeConfig, marshaller: remoteMarshaller, storageNode } = privateArgs;
+  const { feeConfig, cachingMarshaller, storageNode } = privateArgs;
 
-  // TODO(https://github.com/Agoric/agoric-sdk/issues/12109):
-  // once withOrchestration provides a wrapped marshaller, don't re-wrap.
-  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
   const { makeRecorderKit } = prepareRecorderKitMakers(
     zone.mapStore('vstorage'),
     cachingMarshaller,
