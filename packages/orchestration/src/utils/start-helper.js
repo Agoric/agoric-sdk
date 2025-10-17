@@ -214,7 +214,7 @@ harden(provideOrchestration);
  * @template R
  * @param {(
  *   zcf: ZCF<CT>,
- *   privateArgs: PA,
+ *   privateArgs: PA & { cachingMarshaller: ReturnType<typeof wrapRemoteMarshaller> },
  *   zone: Zone,
  *   tools: OrchestrationTools,
  * ) => Promise<R>} contractFn
@@ -238,10 +238,7 @@ export const withOrchestration =
       { chainInfoValueShape },
     );
     const [startResult] = await Promise.all([
-      // TODO(https://github.com/Agoric/agoric-sdk/issues/12109):
-      // pass the cachingMarshaller to orchestrated contracts so they don't
-      // have to wrap it themselves. This requires some generic PA magic.
-      contractFn(zcf, privateArgs, zone, tools),
+      contractFn(zcf, { ...privateArgs, cachingMarshaller }, zone, tools),
       // Make sure that any errors in async-flow awake abort contract start
       tools.asyncFlowTools.allWokenP,
     ]);
