@@ -1114,26 +1114,23 @@ export const openPortfolio = (async (
       await registerNobleForwardingAccount(sender, dest, forwarding, traceP);
     }
 
-    if (offerArgs.targetAllocation) {
-      kit.manager.setTargetAllocation(offerArgs.targetAllocation);
-    }
-
     const { give } = seat.getProposal() as ProposalType['openPortfolio'];
-    if (offerArgs.flow) {
-      try {
+    try {
+      if (offerArgs.flow) {
+        // XXX only for testing recovery?
+        await rebalance(orch, ctxI, seat, offerArgs, kit);
+      } else if (offerArgs.targetAllocation) {
+        kit.manager.setTargetAllocation(offerArgs.targetAllocation);
         if (give.Deposit) {
           await executePlan(orch, ctxI, seat, offerArgs, kit, {
             type: 'deposit',
             amount: give.Deposit,
           });
-        } else {
-          // XXX only for testing recovery?
-          await rebalance(orch, ctxI, seat, offerArgs, kit);
         }
-      } catch (err) {
-        traceP('⚠️ initial flow failed', err);
-        if (!seat.hasExited()) seat.fail(err);
       }
+    } catch (err) {
+      traceP('⚠️ initial flow failed', err);
+      if (!seat.hasExited()) seat.fail(err);
     }
 
     const publicSubscribers: GuestInterface<PublicSubscribers> = {
