@@ -4,6 +4,7 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { inspect } from 'node:util';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { Fail } from '@endo/errors';
@@ -53,9 +54,9 @@ const rebalanceScenarioMacro = test.macro({
   async exec(t, description: string) {
     const { trader1, common, started, zoe } = await setupTrader(t);
     const scenarios = await scenariosP;
-    const scenario = scenarios[description];
-    if (!scenario) return t.fail(`Scenario "${description}" not found`);
-    t.log('start', description);
+    const rawScenario = scenarios[description];
+    if (!rawScenario) return t.fail(`Scenario "${description}" not found`);
+    t.log('start', description, inspect(rawScenario, { depth: 5 }));
 
     const { ibcBridge } = common.mocks;
     for (const money of [
@@ -70,8 +71,8 @@ const rebalanceScenarioMacro = test.macro({
     }
 
     const { usdc } = common.brands;
-    const sceneB = withBrand(scenario, usdc.brand);
-    const sceneBP = scenario.previous
+    const scenario = withBrand(rawScenario, usdc.brand);
+    const previous = scenario.previous
       ? withBrand(scenarios[scenario.previous], usdc.brand)
       : undefined;
 
@@ -140,21 +141,21 @@ const rebalanceScenarioMacro = test.macro({
       return { result, payouts };
     };
 
-    const openOnly = Object.keys(sceneB.before).length === 0;
-    openOnly || sceneBP || Fail`no previous scenario for ${description}`;
+    const openOnly = Object.keys(scenario.before).length === 0;
+    openOnly || previous || Fail`no previous scenario for ${description}`;
     const openResult = await (openOnly
-      ? openPortfolioAndAck(sceneB.proposal.give, sceneB.offerArgs)
-      : openPortfolioAndAck(sceneBP!.proposal.give, sceneBP!.offerArgs));
+      ? openPortfolioAndAck(scenario.proposal.give, scenario.offerArgs)
+      : openPortfolioAndAck(previous!.proposal.give, previous!.offerArgs));
 
     const { payouts } = await (async () => {
       if (openOnly) return openResult;
 
       const rebalanceP = trader1.rebalance(
         t,
-        sceneB.proposal,
-        sceneB.offerArgs,
+        scenario.proposal,
+        scenario.offerArgs,
       );
-      await ackSteps(sceneB.offerArgs);
+      await ackSteps(scenario.offerArgs);
       const result = await rebalanceP;
       return result;
     })();
@@ -170,11 +171,11 @@ const rebalanceScenarioMacro = test.macro({
 
     const txfrs = await trader1.netTransfersByPosition();
     t.log('net transfers by position', txfrs);
-    t.deepEqual(txfrs, sceneB.after, 'net transfers should match After row');
+    t.deepEqual(txfrs, scenario.after, 'net transfers should match After row');
 
     t.log('payouts', payouts);
     const { Access: _, ...skipAssets } = payouts;
-    t.deepEqual(skipAssets, sceneB.payouts, 'payouts');
+    t.deepEqual(skipAssets, scenario.payouts, 'payouts');
 
     // XXX: inspect bridge for netTransfersByPosition chains?
   },

@@ -884,7 +884,7 @@ const setupPlanner = async t => {
   const planner1 = plannerClientMock(walletPlanner, started.instance, () =>
     readPublished(`wallet.agoric1planner`),
   );
-  return { common, zoe, started, trader1, planner1 };
+  return { common, zoe, started, trader1, planner1, readPublished };
 };
 
 test('redeem, use planner invitation', async t => {
@@ -1226,4 +1226,67 @@ test('simple rebalance using planner', async t => {
     { type: 'VBANK_GRAB', amount: '1000' },
   ]);
   t.is(833332500n, (3333330000n * 25n) / 100n);
+});
+
+test('create+deposit using planner', async t => {
+  const { common, trader1, planner1, readPublished } = await setupPlanner(t);
+  const { usdc } = common.brands;
+
+  await planner1.redeem();
+
+  const traderP = (async () => {
+    const Deposit = usdc.units(1_000);
+    await Promise.all([
+      trader1.openPortfolio(t, { Deposit }, { targetAllocation: { USDN: 1n } }),
+      ackNFA(common.utils),
+    ]);
+    t.log('trader created with deposit', Deposit);
+  })();
+
+  const plannerP = (async () => {
+    const getStatus = async pId => {
+      // NOTE: readPublished uses eventLoopIteration() to let vstorage writes settle
+      const x = await readPublished(`portfolios.portfolio${pId}`);
+      return x as unknown as StatusFor['portfolio'];
+    };
+
+    const pId = 0;
+    const {
+      flowsRunning = {},
+      policyVersion,
+      rebalanceCount,
+    } = await getStatus(pId);
+    t.is(keys(flowsRunning).length, 1);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    const fId = Number(flowId.replace('flow', ''));
+
+    // narrow the type
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+
+    // XXX brand from vstorage isn't suitable for use in call to kit
+    const amount = AmountMath.make(usdc.brand, detail.amount.value);
+
+    const plan: MovementDesc[] = [
+      { src: '<Deposit>', dest: '@agoric', amount },
+    ];
+    await E(planner1.stub).resolvePlan(
+      pId,
+      fId,
+      plan,
+      policyVersion,
+      rebalanceCount,
+    );
+    t.log('planner resolved plan');
+  })();
+
+  await Promise.all([traderP, plannerP]);
+
+  const bankTraffic = common.utils.inspectBankBridge();
+  const { accountIdByChain } = await trader1.getPortfolioStatus();
+  const [_ns, _ref, addr] = accountIdByChain.agoric!.split(':');
+  const myVBankIO = bankTraffic.filter(obj =>
+    [obj.sender, obj.recipient].includes(addr),
+  );
+  t.log('bankBridge for', addr, myVBankIO);
+  t.like(myVBankIO, [{ type: 'VBANK_GIVE', amount: '1000000000' }]);
 });

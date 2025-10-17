@@ -865,20 +865,21 @@ export const rebalance = (async (
   const traceP = makeTracer('rebalance').sub(`portfolio${id}`);
   const proposal = seat.getProposal() as ProposalType['rebalance'];
   traceP('proposal', proposal.give, proposal.want, offerArgs);
+  const { flow, targetAllocation } = offerArgs;
 
   await null;
   let flowId: number | undefined;
   try {
-    if (offerArgs.targetAllocation) {
-      kit.manager.setTargetAllocation(offerArgs.targetAllocation);
-    } else if ((offerArgs.flow || []).some(step => step.dest === '+agoric')) {
-      // steps include a deposit that the planner should respond to
+    if (targetAllocation) {
+      kit.manager.setTargetAllocation(targetAllocation);
+    } else if (flow?.some(step => step.dest === '+agoric')) {
+      // flow includes a deposit that the planner should respond to
       kit.manager.incrPolicyVersion();
     }
 
-    if (offerArgs.flow) {
-      ({ flowId } = kit.manager.startFlow({ type: 'rebalance' }));
-      await stepFlow(orch, ctx, seat, offerArgs.flow, kit, traceP, flowId);
+    if (flow) {
+      ({ flowId } = kit.manager.startFlow({ type: 'rebalance' }, flow));
+      await stepFlow(orch, ctx, seat, flow, kit, traceP, flowId);
     }
 
     if (!seat.hasExited()) {
@@ -1113,10 +1114,22 @@ export const openPortfolio = (async (
       await registerNobleForwardingAccount(sender, dest, forwarding, traceP);
     }
 
+    const { give } = seat.getProposal() as ProposalType['openPortfolio'];
     try {
-      await rebalance(orch, ctxI, seat, offerArgs, kit);
+      if (offerArgs.flow) {
+        // XXX only for testing recovery?
+        await rebalance(orch, ctxI, seat, offerArgs, kit);
+      } else if (offerArgs.targetAllocation) {
+        kit.manager.setTargetAllocation(offerArgs.targetAllocation);
+        if (give.Deposit) {
+          await executePlan(orch, ctxI, seat, offerArgs, kit, {
+            type: 'deposit',
+            amount: give.Deposit,
+          });
+        }
+      }
     } catch (err) {
-      traceP('⚠️ rebalance failed', err);
+      traceP('⚠️ initial flow failed', err);
       if (!seat.hasExited()) seat.fail(err);
     }
 
@@ -1153,17 +1166,16 @@ export const executePlan = (async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
-  _offerArgs: unknown,
+  offerArgs: { flow?: MovementDesc[] },
   pKit: GuestInterface<PortfolioKit>,
   flowDetail: FlowDetail,
 ): Promise<`flow${number}`> => {
   const pId = pKit.reader.getPortfolioId();
   const traceP = makeTracer(flowDetail.type).sub(`portfolio${pId}`);
 
-  // XXX enhancement: let caller supply steps
-  const { stepsP, flowId } = pKit.manager.startFlow(flowDetail);
+  const { stepsP, flowId } = pKit.manager.startFlow(flowDetail, offerArgs.flow);
   const traceFlow = traceP.sub(`flow${flowId}`);
-  traceFlow('waiting for steps from planner');
+  if (!offerArgs.flow) traceFlow('waiting for steps from planner');
   // idea: race with seat.getSubscriber()
   const steps = await (stepsP as unknown as Promise<MovementDesc[]>); // XXX Guest/Host types UNTIL #9822
   try {
