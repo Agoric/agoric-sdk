@@ -1,15 +1,18 @@
 import { q, Fail } from '@endo/errors';
-import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
+import { assertRemotable, assertRecord, assertChecker } from '@endo/pass-style';
+import { identChecker } from '@endo/common/ident-checker.js';
+import { containerHasSplit, kindOf, mustMatch } from '@endo/patterns';
 
-import { M, matches } from '@agoric/store';
 import { natMathHelpers } from './mathHelpers/natMathHelpers.js';
 import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
 import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
 import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
+import { AmountShape } from './typeGuards.js';
 
 /**
- * @import {CopyBag, CopySet} from '@endo/patterns';
- * @import {Amount, AmountValue, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue} from './types.js';
+ * @import {Checker} from '@endo/common/ident-checker.js'
+ * @import {Key, CopyBag, CopySet} from '@endo/patterns';
+ * @import {Amount, AmountBound, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue, HasBound, AmountValue} from './types.js';
  */
 
 // NB: AssetKind is both a constant for enumerated values and a type for those values.
@@ -75,29 +78,30 @@ const helpers = {
   copyBag: copyBagMathHelpers,
 };
 
-/** @type {(value: unknown) => 'nat' | 'set' | 'copySet' | 'copyBag'} } */
-const assertValueGetAssetKind = value => {
-  const passStyle = passStyleOf(value);
-  if (passStyle === 'bigint') {
-    return 'nat';
+/**
+ * @template {AssetKind} K=AssetKind
+ * @template {Key} M=Key
+ * @template {AssetValueForKind<K, M>} V=AssetValueForKind<K, M>
+ * @param {V} value
+ * @returns {AssetKind}
+ */
+export const assertValueGetAssetKind = value => {
+  const kind = kindOf(value);
+  switch (kind) {
+    case 'bigint': {
+      return 'nat';
+    }
+    case 'copyArray': {
+      return 'set';
+    }
+    case 'copySet':
+    case 'copyBag': {
+      return kind;
+    }
+    default: {
+      throw Fail`value ${value} must be an AmountValue, not ${q(kind)}`;
+    }
   }
-  if (passStyle === 'copyArray') {
-    return 'set';
-  }
-  if (matches(value, M.set())) {
-    return 'copySet';
-  }
-  if (matches(value, M.bag())) {
-    return 'copyBag';
-  }
-  // TODO This isn't quite the right error message, in case valuePassStyle
-  // is 'tagged'. We would need to distinguish what kind of tagged
-  // object it is.
-  // Also, this kind of manual listing is a maintenance hazard we
-  // (TODO) will encounter when we extend the math helpers further.
-  throw Fail`value ${value} must be a bigint, copySet, copyBag, or an array, not ${q(
-    passStyle,
-  )}`;
 };
 
 /**
@@ -105,9 +109,11 @@ const assertValueGetAssetKind = value => {
  *
  * Made available only for testing, but it is harmless for other uses.
  *
- * @template {AmountValue} V
+ * @template {AssetKind} K=AssetKind
+ * @template {Key} M=Key
+ * @template {AssetValueForKind<K, M>} V=AssetValueForKind<K, M>
  * @param {V} value
- * @returns {MathHelpers<V>}
+ * @returns {MathHelpers<K, M, V>}
  */
 export const assertValueGetHelpers = value =>
   // @ts-expect-error cast
@@ -127,38 +133,41 @@ const optionalBrandCheck = (allegedBrand, brand) => {
 };
 
 /**
- * @template {AssetKind} K
+ * @template {AssetKind} K=AssetKind
+ * @template {Key} M=Key
+ * @template {AssetValueForKind<K, M>} V=AssetValueForKind<K, M>
  * @param {Amount<K>} leftAmount
  * @param {Amount<K>} rightAmount
  * @param {Brand<K> | undefined} brand
- * @returns {MathHelpers<any>}
+ * @returns {MathHelpers<K, M, V>}
  */
 const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
-  assertRecord(leftAmount, 'leftAmount');
-  assertRecord(rightAmount, 'rightAmount');
-  const { value: leftValue, brand: leftBrand } = leftAmount;
-  const { value: rightValue, brand: rightBrand } = rightAmount;
-  assertRemotable(leftBrand, 'leftBrand');
-  assertRemotable(rightBrand, 'rightBrand');
+  mustMatch(leftAmount, AmountShape, 'left amount');
+  mustMatch(rightAmount, AmountShape, 'right amount');
+  const { brand: leftBrand, value: leftValue } = leftAmount;
+  const { brand: rightBrand, value: rightValue } = rightAmount;
   optionalBrandCheck(leftBrand, brand);
   optionalBrandCheck(rightBrand, brand);
   leftBrand === rightBrand ||
     Fail`Brands in left ${q(leftBrand)} and right ${q(
       rightBrand,
     )} should match but do not`;
-  const leftHelpers = assertValueGetHelpers(leftValue);
-  const rightHelpers = assertValueGetHelpers(rightValue);
-  leftHelpers === rightHelpers ||
-    Fail`The left ${leftAmount} and right amount ${rightAmount} had different assetKinds`;
-  return leftHelpers;
+  const leftKind = assertValueGetAssetKind(leftValue);
+  const rightKind = assertValueGetAssetKind(rightValue);
+  leftKind === rightKind ||
+    Fail`The left ${leftAmount} and right amounts ${rightAmount} had different assetKinds: ${q(leftKind)} vs ${q(rightKind)}`;
+  // @ts-expect-error cast
+  return helpers[leftKind];
 };
 
 /**
- * @template {AssetKind} K
- * @param {MathHelpers<AssetValueForKind<K>>} h
+ * @template {AssetKind} K=AssetKind
+ * @template {Key} M=Key
+ * @template {AssetValueForKind<K, M>} V=AssetValueForKind<K, M>
+ * @param {MathHelpers<K, M, V>} h
  * @param {Amount<K>} leftAmount
  * @param {Amount<K>} rightAmount
- * @returns {[AssetValueForKind<K>, AssetValueForKind<K>]}
+ * @returns {[V, V]}
  */
 const coerceLR = (h, leftAmount, rightAmount) => {
   // @ts-expect-error could be arbitrary subtype
@@ -166,22 +175,125 @@ const coerceLR = (h, leftAmount, rightAmount) => {
 };
 
 /**
- * Returns true if the leftAmount is greater than or equal to the rightAmount.
- * The notion of "greater than or equal to" depends on the kind of amount, as
- * defined by the MathHelpers. For example, whether rectangle A is greater than
- * rectangle B depends on whether rectangle A includes rectangle B as defined by
- * the logic in MathHelpers.
+ * If `leftAmount` >= `rightAmountBound`
+ *
+ * - then return a pair of optional amounts:
+ *
+ *   - the in amount, if `needInAmount` is true. Else undefined
+ *   - the out amount, if `needOutAmount` is true. Else undefined
+ * - else return false
  *
  * @template {AssetKind} K
  * @param {Amount<K>} leftAmount
- * @param {Amount<K>} rightAmount
+ * @param {AmountBound<K>} rightAmountBound
+ * @param {Brand<K>} [brand]
+ * @param {boolean} [needInAmount]
+ * @param {boolean} [needOutAmount]
+ * @param {Checker} [check]
+ * @returns {[Amount | undefined, Amount | undefined] | false}
+ */
+const amountSplit = (
+  leftAmount,
+  rightAmountBound,
+  brand = undefined,
+  needInAmount = false,
+  needOutAmount = false,
+  check = identChecker,
+) => {
+  mustMatch(leftAmount, AmountShape, 'left amount');
+  const { brand: leftBrand, value: leftValue } = leftAmount;
+  const { brand: rightBrand, value: rightValueBound } = rightAmountBound;
+  optionalBrandCheck(leftBrand, brand);
+  optionalBrandCheck(rightBrand, brand);
+  leftBrand === rightBrand ||
+    Fail`Brands in left ${q(leftBrand)} and right ${q(
+      rightBrand,
+    )} should match but do not`;
+  brand = /** @type {Brand<K>} */ (leftBrand);
+  const leftKind = assertValueGetAssetKind(leftValue);
+  const h = helpers[leftKind];
+  // @ts-expect-error param type of doCoerce should not be never
+  const lv = h.doCoerce(leftValue);
+
+  if (kindOf(rightValueBound) === 'match:containerHas') {
+    leftKind !== 'nat' ||
+      Fail`can only use M.containerHas on non-fungible or semi-fungible assets ('set', 'copySet', 'copyBag'), not fungible assets ('nat'): ${leftValue}`;
+    const {
+      payload: [elementPatt, bound],
+    } = /** @type {HasBound} */ (rightValueBound);
+    const containerPair = containerHasSplit(
+      lv,
+      elementPatt,
+      bound,
+      needInAmount,
+      needOutAmount,
+      check,
+    );
+    if (containerPair) {
+      const [inContainer, outContainer] = containerPair;
+      return harden([
+        inContainer && { brand, value: inContainer },
+        outContainer && { brand, value: outContainer },
+      ]);
+    } else {
+      return false;
+    }
+  }
+  const rightAmount = /** @type {Amount<K>} */ (rightAmountBound);
+  // @ts-expect-error param type of doCoerce should not be never
+  const rv = h.doCoerce(rightValueBound);
+  const rightKind = assertValueGetAssetKind(rv);
+  leftKind === rightKind ||
+    Fail`The left ${leftAmount} and right amounts ${rightAmount} had different assetKinds: ${q(leftKind)} vs ${q(rightKind)}`;
+
+  // @ts-expect-error cast?
+  if (h.doIsGTE(lv, rv)) {
+    // @ts-expect-error type inference too weak
+    return harden([
+      needInAmount ? leftAmount : undefined,
+      needOutAmount
+        ? {
+            brand,
+            // @ts-expect-error Where did type "never" come from?
+            value: h.doSubtract(lv, rv),
+          }
+        : undefined,
+    ]);
+  } else if (check === identChecker) {
+    return false;
+  } else {
+    // @ts-expect-error Where did type "never" come from?
+    h.doSubtract(lv, rv); // Just to get a better error message
+    throw Fail`${lv} must be >= ${rv}`;
+  }
+};
+
+/**
+ * Returns true if the leftAmount is greater than or equal to the
+ * rightAmountBound. The notion of "greater than or equal to" depends on the
+ * kind of amount, as defined by the MathHelpers. For example, whether rectangle
+ * A is greater than rectangle B depends on whether rectangle A includes
+ * rectangle B as defined by the logic in MathHelpers.
+ *
+ * For non-fungible or sem-fungible amounts, the right operand can also be an
+ * `AmountBound` which can a normal concrete `Amount` or a specialized pattern:
+ * A `RecordPattern` of a normal concrete `brand: Brand` and a `value:
+ * HasBound`, as made by `M.containerHas(elementPattern)` or
+ * `M.containerHas(elementPattern, bigint)`. This represents those elements of
+ * the value collection that match the elementPattern, if that number is exactly
+ * the same as the bigint argument. If the second argument of `M.containerHas`
+ * is omitted, it defaults to `1n`. IOW, the left operand is `>=` such a bound
+ * if the total number of elements in the left operand that match the element
+ * pattern is `>=` the bigint argument in the `M.containerHas` pattern.
+ *
+ * @template {AssetKind} K
+ * @param {Amount<K>} leftAmount
+ * @param {AmountBound<K>} rightAmountBound
  * @param {Brand<K>} [brand]
  * @returns {boolean}
  */
-const isGTE = (leftAmount, rightAmount, brand = undefined) => {
-  const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
-  return h.doIsGTE(...coerceLR(h, leftAmount, rightAmount));
-};
+const isGTE = (leftAmount, rightAmountBound, brand = undefined) =>
+  !!amountSplit(leftAmount, rightAmountBound, brand);
 
 /**
  * Logic for manipulating amounts.
@@ -296,6 +408,7 @@ export const AmountMath = {
     const h = assertValueGetHelpers(value);
     return h.doIsEmpty(h.doCoerce(value));
   },
+  amountSplit,
   isGTE,
   /**
    * Returns true if the leftAmount equals the rightAmount. We assume that if
@@ -333,24 +446,35 @@ export const AmountMath = {
     return harden({ brand: leftAmount.brand, value });
   },
   /**
-   * Returns a new amount that is the leftAmount minus the rightAmount (i.e.
-   * everything in the leftAmount that is not in the rightAmount). If leftAmount
-   * doesn't include rightAmount (subtraction results in a negative), throw an
-   * error. Because the left amount must include the right amount, this is NOT
-   * equivalent to set subtraction.
+   * Returns a new amount that is the leftAmount minus the rightAmountBound
+   * (i.e. everything in the leftAmount that is not in the rightAmountBound). If
+   * leftAmount doesn't include rightAmountBound (subtraction results in a
+   * negative), throw an error. Because the left amount must include the right
+   * amount bound, this is NOT equivalent to set subtraction.
    *
-   * @template {Amount} L
-   * @template {Amount} R
+   * @template {AssetKind} K
+   * @template {Amount<K>} L
+   * @template {AmountBound<K>} R
    * @param {L} leftAmount
-   * @param {R} rightAmount
+   * @param {R} rightAmountBound
    * @param {Brand} [brand]
-   * @returns {L extends R ? L : never}
+   * @returns {L}
    */
-  subtract: (leftAmount, rightAmount, brand = undefined) => {
-    const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
-    const value = h.doSubtract(...coerceLR(h, leftAmount, rightAmount));
-    // @ts-expect-error different subtype
-    return harden({ brand: leftAmount.brand, value });
+  subtract: (leftAmount, rightAmountBound, brand = undefined) => {
+    // @ts-expect-error passing in `assertChecker` as the `check` argument
+    // guarantees that amountSplit returns a pair rather than `false`.
+    // It would have thrown first.
+    // In addition, passing in `true` as the `needOutAmount` argument
+    // guarantees that `result` is not `undefined`.
+    const [_, result] = amountSplit(
+      leftAmount,
+      rightAmountBound,
+      brand,
+      false,
+      true,
+      assertChecker,
+    );
+    return result;
   },
   /**
    * Returns the min value between x and y using isGTE
