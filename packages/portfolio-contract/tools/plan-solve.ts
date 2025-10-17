@@ -91,6 +91,12 @@ export type GasEstimator = {
  * -----------------------------------------------------------------------------
  */
 const FLOW_EPS = 1e-6;
+// Tolerance for supply availability checks during scheduling.
+// Needs to be larger than FLOW_EPS to handle:
+// 1. Floating-point rounding accumulation from arithmetic operations
+// 2. Integer division rounding in target allocation computations
+// For USDC (6 decimals), values are in micro-USDC, so allow ~10 units of slack.
+const SCHEDULING_EPS = 10;
 
 // ------------------------------ Model Building -------------------------------
 
@@ -366,9 +372,13 @@ export const rebalanceMinCostFlowSteps = async (
   graph: RebalanceGraph,
   gasEstimator: GasEstimator,
 ): Promise<MovementDesc[]> => {
+  // Initialize supplies with all nodes including transit hubs (netSupply = 0).
+  // This ensures proper tracking of funds as they flow through intermediate nodes.
+  // const supplies = new Map(typedEntries(graph.supplies));
   const supplies = new Map(
     typedEntries(graph.supplies).filter(([_place, amount]) => amount > 0),
   );
+
   type AnnotatedFlow = SolvedEdgeFlow & { srcChain: string };
   const pendingFlows = new Map<string, AnnotatedFlow>(
     flows
@@ -381,22 +391,23 @@ export const rebalanceMinCostFlowSteps = async (
   let lastChain: string | undefined;
 
   while (pendingFlows.size) {
+    // Find flows that can be executed based on current supplies.
+    // Use SCHEDULING_EPS tolerance to avoid spurious deadlocks from:
+    // - Floating-point rounding accumulated during supply tracking
+    // - Integer division rounding in target allocation computations
     const candidates = [...pendingFlows.values()].filter(
-      f => (supplies.get(f.edge.src) || 0) >= f.flow,
+      f => (supplies.get(f.edge.src) || 0) >= f.flow - SCHEDULING_EPS,
     );
 
     if (!candidates.length) {
-      // Deadlock mitigation: pick by edge id order regardless of availability.
-      const sorted = [...pendingFlows.values()].sort((a, b) =>
-        naturalCompare(a.edge.id, b.edge.id),
-      );
-      for (const f of sorted) {
-        prioritized.push(f);
-        replaceOrInit(supplies, f.edge.src, (old = 0) => old - f.flow);
-        replaceOrInit(supplies, f.edge.dest, (old = 0) => old + f.flow);
-        pendingFlows.delete(f.edge.id);
-      }
-      break;
+      // Deadlock detected: cannot schedule remaining flows.
+      // This indicates a solver bug or rounding error that produced an infeasible flow.
+      const diagnostics = [...pendingFlows.values()].map(f => {
+        const srcSupply = supplies.get(f.edge.src) || 0;
+        const shortage = f.flow - srcSupply;
+        return `${f.edge.id}: ${f.edge.src}(${srcSupply}) -> ${f.edge.dest} needs ${f.flow} (short ${shortage})`;
+      });
+      throw Fail`Scheduling deadlock: no flows can be executed. Remaining flows:\n${diagnostics.join('\n')}`;
     }
 
     // Prefer continuing with lastChain if possible.

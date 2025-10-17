@@ -396,3 +396,58 @@ test('planDepositToAllocations produces steps expected by contract', async t => 
 test('USDN denom', t => {
   t.is(USDN.base, 'uusdn');
 });
+
+test('ordering of steps should be correct', async t => {
+  const targetAllocation = {
+    Aave_Arbitrum: 10n,
+    Aave_Avalanche: 11n,
+    Aave_Base: 11n,
+    Aave_Ethereum: 10n,
+    Aave_Optimism: 10n,
+  };
+
+  const currentBalances = {
+    Aave_Avalanche: makeDeposit(3750061n),
+  };
+
+  const steps = await planRebalanceToAllocations({
+    brand: depositBrand,
+    currentBalances,
+    targetAllocation,
+    network: PROD_NETWORK,
+    feeBrand,
+    gasEstimator: mockGasEstimator,
+  });
+  t.snapshot(steps);
+});
+
+test('Full ordering of steps should be correct', async t => {
+  const targetAllocation = {
+    Aave_Arbitrum: 10n,
+    Aave_Avalanche: 11n,
+    Aave_Base: 11n,
+    Aave_Ethereum: 10n,
+    Aave_Optimism: 10n,
+    Compound_Arbitrum: 5n,
+    Compound_Base: 10n,
+    Compound_Ethereum: 10n,
+    Compound_Optimism: 23n,
+  };
+
+  const currentBalances = {
+    Aave_Avalanche: makeDeposit(3750061n),
+    Aave_Base: makeDeposit(4800007n),
+    Aave_Optimism: makeDeposit(3600002n),
+    Compound_Arbitrum: makeDeposit(2849999n),
+  };
+
+  const steps = await planRebalanceToAllocations({
+    brand: depositBrand,
+    currentBalances,
+    targetAllocation,
+    network: PROD_NETWORK,
+    feeBrand,
+    gasEstimator: mockGasEstimator,
+  });
+  t.snapshot(steps);
+});
