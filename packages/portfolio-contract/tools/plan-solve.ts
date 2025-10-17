@@ -386,33 +386,40 @@ export const rebalanceMinCostFlowSteps = async (
     );
 
     if (!candidates.length) {
-      // Deadlock mitigation: pick by edge id order regardless of availability.
-      const sorted = [...pendingFlows.values()].sort((a, b) =>
-        naturalCompare(a.edge.id, b.edge.id),
-      );
-      for (const f of sorted) {
-        prioritized.push(f);
-        replaceOrInit(supplies, f.edge.src, (old = 0) => old - f.flow);
-        replaceOrInit(supplies, f.edge.dest, (old = 0) => old + f.flow);
-        pendingFlows.delete(f.edge.id);
-      }
-      break;
+      // Deadlock mitigation: Allow one flow with the least negative balance.
+      // This allows intermediate chain accounts to go negative temporarily,
+      // expecting funds to arrive from earlier steps.
+      const sorted = [...pendingFlows.values()].sort((a, b) => {
+        const aSupply = supplies.get(a.edge.src) || 0;
+        const bSupply = supplies.get(b.edge.src) || 0;
+        const aShortfall = aSupply - a.flow;
+        const bShortfall = bSupply - b.flow;
+        if (aShortfall !== bShortfall) return bShortfall - aShortfall;
+        return naturalCompare(a.edge.id, b.edge.id);
+      });
+      const chosen = sorted[0];
+      prioritized.push(chosen);
+      replaceOrInit(supplies, chosen.edge.src, (old = 0) => old - chosen.flow);
+      replaceOrInit(supplies, chosen.edge.dest, (old = 0) => old + chosen.flow);
+      pendingFlows.delete(chosen.edge.id);
+      lastChain = chosen.srcChain;
+      // Continue loop instead of breaking
+    } else {
+      // Prefer continuing with lastChain if possible.
+      const fromSameChain = lastChain
+        ? candidates.filter(c => c.srcChain === lastChain)
+        : undefined;
+      const chosenGroup = fromSameChain?.length ? fromSameChain : candidates;
+
+      // Pick deterministic smallest edge id within chosen group.
+      chosenGroup.sort((a, b) => naturalCompare(a.edge.id, b.edge.id));
+      const chosen = chosenGroup[0];
+      prioritized.push(chosen);
+      replaceOrInit(supplies, chosen.edge.src, (old = 0) => old - chosen.flow);
+      replaceOrInit(supplies, chosen.edge.dest, (old = 0) => old + chosen.flow);
+      pendingFlows.delete(chosen.edge.id);
+      lastChain = chosen.srcChain;
     }
-
-    // Prefer continuing with lastChain if possible.
-    const fromSameChain = lastChain
-      ? candidates.filter(c => c.srcChain === lastChain)
-      : undefined;
-    const chosenGroup = fromSameChain?.length ? fromSameChain : candidates;
-
-    // Pick deterministic smallest edge id within chosen group.
-    chosenGroup.sort((a, b) => naturalCompare(a.edge.id, b.edge.id));
-    const chosen = chosenGroup[0];
-    prioritized.push(chosen);
-    replaceOrInit(supplies, chosen.edge.src, (old = 0) => old - chosen.flow);
-    replaceOrInit(supplies, chosen.edge.dest, (old = 0) => old + chosen.flow);
-    pendingFlows.delete(chosen.edge.id);
-    lastChain = chosen.srcChain;
   }
   /**
    * Pad each fee estimate in case the landscape changes between estimation and
