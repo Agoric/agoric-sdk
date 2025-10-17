@@ -1,16 +1,10 @@
-import { Fail } from '@endo/errors';
-import {
-  SECONDS_PER_HOUR,
-  SECONDS_PER_MINUTE,
-} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import {
   type AgoricNamesRemotes,
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { Fail } from '@endo/errors';
 import type { ExecutionContext } from 'ava';
-import { insistManagerType, makeSwingsetHarness } from './supports.js';
-import { type SwingsetTestKit, makeSwingsetTestKit } from './supports.js';
 import {
   type GovernanceDriver,
   type PriceFeedDriver,
@@ -19,6 +13,12 @@ import {
   makePriceFeedDriver,
   makeWalletFactoryDriver,
 } from './drivers.js';
+import {
+  type SwingsetTestKit,
+  insistManagerType,
+  makeSwingsetHarness,
+  makeSwingsetTestKit,
+} from './supports.js';
 
 export type LiquidationSetup = {
   vaults: {
@@ -78,6 +78,9 @@ export const likePayouts = ({ Bid, Collateral }) => ({
   },
 });
 
+/**
+ * @deprecated liquidation is no longer supported
+ */
 export const makeLiquidationTestKit = async ({
   swingsetTestKit,
   agoricNamesRemotes,
@@ -179,26 +182,6 @@ export const makeLiquidationTestKit = async ({
         },
       },
     });
-    t.like(readPublished('auction.governance'), {
-      current: {
-        AuctionStartDelay: { type: 'relativeTime', value: { relValue: 2n } },
-        ClockStep: {
-          type: 'relativeTime',
-          value: { relValue: 3n * SECONDS_PER_MINUTE },
-        },
-        DiscountStep: { type: 'nat', value: 500n }, // 5%
-        LowestRate: { type: 'nat', value: 6500n }, // 65%
-        PriceLockPeriod: {
-          type: 'relativeTime',
-          value: { relValue: SECONDS_PER_HOUR / 2n },
-        },
-        StartFrequency: {
-          type: 'relativeTime',
-          value: { relValue: SECONDS_PER_HOUR },
-        },
-        StartingRate: { type: 'nat', value: 10500n }, // 105%
-      },
-    });
   };
 
   const check = {
@@ -257,52 +240,10 @@ export const makeLiquidationTestKit = async ({
     }
   };
 
-  const placeBids = async (
-    collateralBrandKey: string,
-    buyerWalletAddress: string,
-    setup: LiquidationSetup,
-    base = 0, // number of bids made before
-  ) => {
-    const buyer =
-      await walletFactoryDriver.provideSmartWallet(buyerWalletAddress);
-
-    await buyer.sendOffer(
-      Offers.psm.swap(
-        agoricNamesRemotes,
-        agoricNamesRemotes.instance['psm-IST-USDC_axl'],
-        {
-          offerId: `print-${collateralBrandKey}-ist`,
-          wantMinted: 1_000,
-          pair: ['IST', 'USDC_axl'],
-        },
-      ),
-    );
-
-    const maxBuy = `10000${collateralBrandKey}`;
-
-    for (let i = 0; i < setup.bids.length; i += 1) {
-      const offerId = `${collateralBrandKey}-bid${i + 1 + base}`;
-      // bids are long-lasting offers so we can't wait here for completion
-      await buyer.sendOfferMaker(Offers.auction.Bid, {
-        offerId,
-        ...setup.bids[i],
-        maxBuy,
-      });
-      t.like(swingsetTestKit.readPublished(`wallet.${buyerWalletAddress}`), {
-        status: {
-          id: offerId,
-          result: 'Your bid has been accepted',
-          payouts: undefined,
-        },
-      });
-    }
-  };
-
   return {
     check,
     priceFeedDrivers,
     setupVaults,
-    placeBids,
   };
 };
 
