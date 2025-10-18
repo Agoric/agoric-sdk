@@ -8,6 +8,7 @@ import {
   makeTracer,
   mustMatch,
   NonNullish,
+  type ERemote,
   type Remote,
   type TypedPattern,
 } from '@agoric/internal';
@@ -15,7 +16,7 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
+import { type EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import {
   ChainInfoShape,
   DenomDetailShape,
@@ -149,6 +150,7 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
   chainInfo: Record<string, ChainInfo>;
   marshaller: Remote<Marshaller>;
+  cachingMarshaller?: ERemote<EMarshaller>;
   storageNode: Remote<StorageNode>;
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
@@ -229,10 +231,15 @@ export const contract = async (
     assetInfo,
     axelarIds,
     contracts,
-    marshaller: remoteMarshaller,
+    cachingMarshaller: maybeCachingMarshaller,
     storageNode,
     gmpAddresses,
   } = privateArgs;
+  assert(
+    maybeCachingMarshaller,
+    'cachingMarshaller must be provided by withOrchestration',
+  );
+  const cachingMarshaller = maybeCachingMarshaller;
   const { brands } = zcf.getTerms();
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
 
@@ -267,10 +274,6 @@ export const contract = async (
 
   const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
-
-  // TODO(https://github.com/Agoric/agoric-sdk/issues/12109):
-  // once withOrchestration provides a wrapped marshaller, don't re-wrap.
-  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
   const resolverZone = zone.subZone('Resolver');
   const makeResolverKit = prepareResolverKit(resolverZone, zcf, {
