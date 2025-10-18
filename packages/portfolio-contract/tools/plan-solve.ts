@@ -1,4 +1,3 @@
-import makeHighsSolver from 'highs';
 import jsLPSolver from 'javascript-lp-solver';
 import type { IModel, IModelVariableConstraint } from 'javascript-lp-solver';
 
@@ -10,8 +9,6 @@ import {
   makeTracer,
   naturalCompare,
   objectMap,
-  partialMap,
-  provideLazyMap,
   typedEntries,
 } from '@agoric/internal';
 import { EvmWalletOperationType } from '@agoric/portfolio-api/src/constants.js';
@@ -26,12 +23,11 @@ import type { PoolKey } from '../src/type-guards.js';
 import {
   preflightValidateNetworkPlan,
   formatInfeasibleDiagnostics,
+  validateSolvedFlows,
 } from './graph-diagnose.js';
 import { chainOf, makeGraphFromDefinition } from './network/buildGraph.js';
 import type { FlowEdge, RebalanceGraph } from './network/buildGraph.js';
 import type { NetworkSpec } from './network/network-spec.js';
-
-const highsSolverP = makeHighsSolver();
 
 const replaceOrInit = <K, V>(
   map: Map<K, V>,
@@ -272,77 +268,23 @@ const prettyJsonable = (obj: unknown): string => {
   return pretty;
 };
 
-const cplexLpOpForName = { min: '>=', max: '<=', equal: '=' };
-
-/**
- * Convert a javascript-lp-solver Model into CPLEX LP format.
- * https://lim.univ-reunion.fr/staff/fred/Enseignement/Optim/doc/CPLEX-LP/CPLEX-LP-file-format.html
- */
-const toCplexLpText = (model: LpModel) => {
-  const variableEntries = typedEntries(model.variables);
-  const makeSumExpr = attr =>
-    partialMap(variableEntries, ([varName, attrs]) => {
-      const attrValue = Object.hasOwn(attrs, attr) ? attrs[attr] : 0;
-      if (attrValue) return `${attrValue === 1 ? '' : attrValue} ${varName}`;
-    }).join(' + ');
-  // Variables [and constraints] can be named anything provided that the
-  // **name does not exceed 16 characters**.
-  const mappedAttrs = new Map();
-  const mode: 'MIN' | 'MAX' = model.opType.toUpperCase();
-  const text = `
-${mode}
-  ${model.optimize}: ${makeSumExpr(model.optimize)}
-SUBJECT TO
-  ${typedEntries(model.constraints)
-    .flatMap(([attr, constraint]) => {
-      let attrParts = attr.split('_');
-      if (attrParts[0] === 'through') {
-        attrParts[0] = 'thru';
-      } else if (attrParts[0] !== 'allow') {
-        // Replace everything after the first "_" with a unique counter.
-        attrParts = [
-          attrParts[0],
-          provideLazyMap(mappedAttrs, attr, () => mappedAttrs.size + 1),
-        ];
-      }
-      const prefix = attrParts.join('_');
-      const lines = [`\\# ${attr} ${prettyJsonable(constraint)}`];
-      for (const [opName, value] of Object.entries(constraint)) {
-        if (!Number.isFinite(value)) continue;
-        const label = `${prefix}_${opName.slice(0, 3)}`;
-        const op = cplexLpOpForName[opName];
-        lines.push(`${label}: ${makeSumExpr(attr)} ${op} ${value}`);
-      }
-      return lines;
-    })
-    .join('\n  ')}
-BINARY
-  ${Object.keys(model.binaries).join(' ')}
-GENERAL
-  ${Object.keys(model.ints).join(' ')}
-END`.trim();
-  return `${text}\n`;
-};
-
 // This operation is async to allow future use of async solvers if needed
 export const solveRebalance = async (
   model: LpModel,
   graph: RebalanceGraph,
 ): Promise<{ flows: SolvedEdgeFlow[]; detail?: Record<string, unknown> }> => {
-  const cplexLpText = toCplexLpText(model);
-  const matrixResult = await Promise.resolve(highsSolverP)
-    .then(solver => solver.solve(cplexLpText))
-    .catch(error => ({ Status: undefined, error }));
-  if (matrixResult.Status !== 'Optimal') {
-    // Switch to javascript-lp-solver for diagnostics.
-    const jsResult = jsLPSolver.Solve(model, 1e-9);
+  await null;
+  const jsResult = jsLPSolver.Solve(model, 1e-9);
+
+  // jsLPSolver returns an object with variable values
+  // The 'feasible' flag can be overly strict, so we check if we got a result
+  // instead. If result is undefined or there are no variable values, it's truly infeasible.
+  if (
+    !jsResult ||
+    (jsResult.feasible === false && jsResult.result === undefined)
+  ) {
     if (graph.debug) {
       // Emit richer context only on demand to avoid noisy passing runs
-      const { error } = matrixResult as any;
-      if (error) {
-        console.error('[CPLEX LP solver] Error:', error.message, cplexLpText);
-        throw Fail`Invalid CPLEX LP model: ${error.message}`;
-      }
       let msg = formatInfeasibleDiagnostics(graph, model);
       msg += ` | ${prettyJsonable(jsResult)}`;
       console.error('[solver] No feasible solution. Diagnostics:', msg);
@@ -350,15 +292,18 @@ export const solveRebalance = async (
     }
     throw Fail`No feasible solution: ${jsResult}`;
   }
+
   const flows: SolvedEdgeFlow[] = [];
   for (const edge of graph.edges) {
     const { id } = edge;
     const flowKey = `via_${id}`;
-    const flow = matrixResult.Columns[flowKey]?.Primal;
-    const used = (flow ?? 0) > FLOW_EPS;
+    const rawFlow = jsResult[flowKey];
+    // jsLPSolver returns floating-point values, round to nearest integer
+    const flow = rawFlow ? Math.round(rawFlow) : 0;
+    const used = flow > FLOW_EPS;
     if (used) flows.push({ edge, flow, used: true });
   }
-  return { flows, detail: { cplexLpText, matrixResult } };
+  return { flows, detail: { jsResult } };
 };
 
 export const rebalanceMinCostFlowSteps = async (
@@ -366,9 +311,13 @@ export const rebalanceMinCostFlowSteps = async (
   graph: RebalanceGraph,
   gasEstimator: GasEstimator,
 ): Promise<MovementDesc[]> => {
+  // Initialize supplies with all nodes including transit hubs (netSupply = 0).
+  // This ensures proper tracking of funds as they flow through intermediate nodes.
+  // const supplies = new Map(typedEntries(graph.supplies));
   const supplies = new Map(
     typedEntries(graph.supplies).filter(([_place, amount]) => amount > 0),
   );
+
   type AnnotatedFlow = SolvedEdgeFlow & { srcChain: string };
   const pendingFlows = new Map<string, AnnotatedFlow>(
     flows
@@ -381,24 +330,21 @@ export const rebalanceMinCostFlowSteps = async (
   let lastChain: string | undefined;
 
   while (pendingFlows.size) {
+    // Find flows that can be executed based on current supplies.
     const candidates = [...pendingFlows.values()].filter(
       f => (supplies.get(f.edge.src) || 0) >= f.flow,
     );
 
     if (!candidates.length) {
-      // Deadlock mitigation: pick by edge id order regardless of availability.
-      const sorted = [...pendingFlows.values()].sort((a, b) =>
-        naturalCompare(a.edge.id, b.edge.id),
-      );
-      for (const f of sorted) {
-        prioritized.push(f);
-        replaceOrInit(supplies, f.edge.src, (old = 0) => old - f.flow);
-        replaceOrInit(supplies, f.edge.dest, (old = 0) => old + f.flow);
-        pendingFlows.delete(f.edge.id);
-      }
-      break;
+      // Deadlock detected: cannot schedule remaining flows.
+      // This indicates a solver bug or rounding error that produced an infeasible flow.
+      const diagnostics = [...pendingFlows.values()].map(f => {
+        const srcSupply = supplies.get(f.edge.src) || 0;
+        const shortage = f.flow - srcSupply;
+        return `${f.edge.id}: ${f.edge.src}(${srcSupply}) -> ${f.edge.dest} needs ${f.flow} (short ${shortage})`;
+      });
+      throw Fail`Scheduling deadlock: no flows can be executed. Remaining flows:\n${diagnostics.join('\n')}`;
     }
-
     // Prefer continuing with lastChain if possible.
     const fromSameChain = lastChain
       ? candidates.filter(c => c.srcChain === lastChain)
@@ -495,6 +441,28 @@ export const rebalanceMinCostFlowSteps = async (
     }),
   );
 
+  // Validate flow consistency after scheduling (optional, only in debug mode)
+  if (graph.debug) {
+    const validation = validateSolvedFlows(graph, prioritized, FLOW_EPS);
+    if (!validation.ok) {
+      console.error('[solver] Flow validation failed:', validation.errors);
+      console.log('[solver] Original supplies:', graph.supplies);
+      console.log('[solver] Scheduling deadlock. Final supplies:', supplies);
+      console.log(
+        '[solver] All proposed flows in order:',
+        JSON.stringify(
+          steps,
+          (k, v) => (typeof v === 'bigint' ? v.toString() : v),
+          2,
+        ),
+      );
+      throw Fail`Flow validation failed: ${validation.errors.join('; ')}`;
+    }
+    if (validation.warnings.length > 0) {
+      console.warn('[solver] Flow validation warnings:', validation.warnings);
+    }
+  }
+
   return harden(steps);
 };
 
@@ -533,7 +501,6 @@ export const planRebalanceFlow = async (opts: {
     brand,
     feeBrand,
   );
-
   const model = buildLPModel(graph, mode);
   let result;
   await null;
