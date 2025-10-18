@@ -1,4 +1,3 @@
-import makeHighsSolver from 'highs';
 import jsLPSolver from 'javascript-lp-solver';
 import type { IModel, IModelVariableConstraint } from 'javascript-lp-solver';
 
@@ -10,8 +9,6 @@ import {
   makeTracer,
   naturalCompare,
   objectMap,
-  partialMap,
-  provideLazyMap,
   typedEntries,
 } from '@agoric/internal';
 import { EvmWalletOperationType } from '@agoric/portfolio-api/src/constants.js';
@@ -26,12 +23,11 @@ import type { PoolKey } from '../src/type-guards.js';
 import {
   preflightValidateNetworkPlan,
   formatInfeasibleDiagnostics,
+  validateSolvedFlows,
 } from './graph-diagnose.js';
 import { chainOf, makeGraphFromDefinition } from './network/buildGraph.js';
 import type { FlowEdge, RebalanceGraph } from './network/buildGraph.js';
 import type { NetworkSpec } from './network/network-spec.js';
-
-const highsSolverP = makeHighsSolver();
 
 const replaceOrInit = <K, V>(
   map: Map<K, V>,
@@ -95,8 +91,10 @@ const FLOW_EPS = 1e-6;
 // Needs to be larger than FLOW_EPS to handle:
 // 1. Floating-point rounding accumulation from arithmetic operations
 // 2. Integer division rounding in target allocation computations
-// For USDC (6 decimals), values are in micro-USDC, so allow ~10 units of slack.
-const SCHEDULING_EPS = 10;
+// Use both absolute tolerance (for small flows) and relative tolerance (for large flows).
+// For USDC (6 decimals), values are in micro-USDC.
+const SCHEDULING_EPS_ABS = 10;
+const SCHEDULING_EPS_REL = 1e-6; // 1 part per million relative error tolerance
 
 // ------------------------------ Model Building -------------------------------
 
@@ -278,77 +276,23 @@ const prettyJsonable = (obj: unknown): string => {
   return pretty;
 };
 
-const cplexLpOpForName = { min: '>=', max: '<=', equal: '=' };
-
-/**
- * Convert a javascript-lp-solver Model into CPLEX LP format.
- * https://lim.univ-reunion.fr/staff/fred/Enseignement/Optim/doc/CPLEX-LP/CPLEX-LP-file-format.html
- */
-const toCplexLpText = (model: LpModel) => {
-  const variableEntries = typedEntries(model.variables);
-  const makeSumExpr = attr =>
-    partialMap(variableEntries, ([varName, attrs]) => {
-      const attrValue = Object.hasOwn(attrs, attr) ? attrs[attr] : 0;
-      if (attrValue) return `${attrValue === 1 ? '' : attrValue} ${varName}`;
-    }).join(' + ');
-  // Variables [and constraints] can be named anything provided that the
-  // **name does not exceed 16 characters**.
-  const mappedAttrs = new Map();
-  const mode: 'MIN' | 'MAX' = model.opType.toUpperCase();
-  const text = `
-${mode}
-  ${model.optimize}: ${makeSumExpr(model.optimize)}
-SUBJECT TO
-  ${typedEntries(model.constraints)
-    .flatMap(([attr, constraint]) => {
-      let attrParts = attr.split('_');
-      if (attrParts[0] === 'through') {
-        attrParts[0] = 'thru';
-      } else if (attrParts[0] !== 'allow') {
-        // Replace everything after the first "_" with a unique counter.
-        attrParts = [
-          attrParts[0],
-          provideLazyMap(mappedAttrs, attr, () => mappedAttrs.size + 1),
-        ];
-      }
-      const prefix = attrParts.join('_');
-      const lines = [`\\# ${attr} ${prettyJsonable(constraint)}`];
-      for (const [opName, value] of Object.entries(constraint)) {
-        if (!Number.isFinite(value)) continue;
-        const label = `${prefix}_${opName.slice(0, 3)}`;
-        const op = cplexLpOpForName[opName];
-        lines.push(`${label}: ${makeSumExpr(attr)} ${op} ${value}`);
-      }
-      return lines;
-    })
-    .join('\n  ')}
-BINARY
-  ${Object.keys(model.binaries).join(' ')}
-GENERAL
-  ${Object.keys(model.ints).join(' ')}
-END`.trim();
-  return `${text}\n`;
-};
-
 // This operation is async to allow future use of async solvers if needed
 export const solveRebalance = async (
   model: LpModel,
   graph: RebalanceGraph,
 ): Promise<{ flows: SolvedEdgeFlow[]; detail?: Record<string, unknown> }> => {
-  const cplexLpText = toCplexLpText(model);
-  const matrixResult = await Promise.resolve(highsSolverP)
-    .then(solver => solver.solve(cplexLpText))
-    .catch(error => ({ Status: undefined, error }));
-  if (matrixResult.Status !== 'Optimal') {
-    // Switch to javascript-lp-solver for diagnostics.
-    const jsResult = jsLPSolver.Solve(model, 1e-9);
+  await null;
+  const jsResult = jsLPSolver.Solve(model, 1e-9);
+
+  // jsLPSolver returns an object with variable values
+  // The 'feasible' flag can be overly strict, so we check if we got a result
+  // instead. If result is undefined or there are no variable values, it's truly infeasible.
+  if (
+    !jsResult ||
+    (jsResult.feasible === false && jsResult.result === undefined)
+  ) {
     if (graph.debug) {
       // Emit richer context only on demand to avoid noisy passing runs
-      const { error } = matrixResult as any;
-      if (error) {
-        console.error('[CPLEX LP solver] Error:', error.message, cplexLpText);
-        throw Fail`Invalid CPLEX LP model: ${error.message}`;
-      }
       let msg = formatInfeasibleDiagnostics(graph, model);
       msg += ` | ${prettyJsonable(jsResult)}`;
       console.error('[solver] No feasible solution. Diagnostics:', msg);
@@ -356,15 +300,18 @@ export const solveRebalance = async (
     }
     throw Fail`No feasible solution: ${jsResult}`;
   }
+
   const flows: SolvedEdgeFlow[] = [];
   for (const edge of graph.edges) {
     const { id } = edge;
     const flowKey = `via_${id}`;
-    const flow = matrixResult.Columns[flowKey]?.Primal;
-    const used = (flow ?? 0) > FLOW_EPS;
+    const rawFlow = jsResult[flowKey];
+    // jsLPSolver returns floating-point values, round to nearest integer
+    const flow = rawFlow ? Math.round(rawFlow) : 0;
+    const used = flow > FLOW_EPS;
     if (used) flows.push({ edge, flow, used: true });
   }
-  return { flows, detail: { cplexLpText, matrixResult } };
+  return { flows, detail: { jsResult } };
 };
 
 export const rebalanceMinCostFlowSteps = async (
@@ -392,12 +339,18 @@ export const rebalanceMinCostFlowSteps = async (
 
   while (pendingFlows.size) {
     // Find flows that can be executed based on current supplies.
-    // Use SCHEDULING_EPS tolerance to avoid spurious deadlocks from:
+    // Use tolerance to avoid spurious deadlocks from:
     // - Floating-point rounding accumulated during supply tracking
     // - Integer division rounding in target allocation computations
-    const candidates = [...pendingFlows.values()].filter(
-      f => (supplies.get(f.edge.src) || 0) >= f.flow - SCHEDULING_EPS,
-    );
+    // Apply both absolute and relative tolerance - take the larger of the two.
+    const candidates = [...pendingFlows.values()].filter(f => {
+      const supply = supplies.get(f.edge.src) || 0;
+      const tolerance = Math.max(
+        SCHEDULING_EPS_ABS,
+        f.flow * SCHEDULING_EPS_REL,
+      );
+      return supply >= f.flow - tolerance;
+    });
 
     if (!candidates.length) {
       // Deadlock detected: cannot schedule remaining flows.
@@ -409,7 +362,6 @@ export const rebalanceMinCostFlowSteps = async (
       });
       throw Fail`Scheduling deadlock: no flows can be executed. Remaining flows:\n${diagnostics.join('\n')}`;
     }
-
     // Prefer continuing with lastChain if possible.
     const fromSameChain = lastChain
       ? candidates.filter(c => c.srcChain === lastChain)
@@ -506,6 +458,28 @@ export const rebalanceMinCostFlowSteps = async (
     }),
   );
 
+  // Validate flow consistency after scheduling (optional, only in debug mode)
+  if (graph.debug) {
+    const validation = validateSolvedFlows(graph, prioritized, FLOW_EPS);
+    if (!validation.ok) {
+      console.error('[solver] Flow validation failed:', validation.errors);
+      console.log('[solver] Original supplies:', graph.supplies);
+      console.log('[solver] Scheduling deadlock. Final supplies:', supplies);
+      console.log(
+        '[solver] All proposed flows in order:',
+        JSON.stringify(
+          steps,
+          (k, v) => (typeof v === 'bigint' ? v.toString() : v),
+          2,
+        ),
+      );
+      throw Fail`Flow validation failed: ${validation.errors.join('; ')}`;
+    }
+    if (validation.warnings.length > 0) {
+      console.warn('[solver] Flow validation warnings:', validation.warnings);
+    }
+  }
+
   return harden(steps);
 };
 
@@ -544,6 +518,7 @@ export const planRebalanceFlow = async (opts: {
     brand,
     feeBrand,
   );
+  console.log({ current, target });
 
   const model = buildLPModel(graph, mode);
   let result;

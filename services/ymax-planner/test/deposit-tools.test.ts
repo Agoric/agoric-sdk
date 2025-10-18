@@ -407,7 +407,7 @@ test('ordering of steps should be correct', async t => {
   };
 
   const currentBalances = {
-    Aave_Avalanche: makeDeposit(3750061n),
+    Aave_Avalanche: makeDeposit(37500610n),
   };
 
   const steps = await planRebalanceToAllocations({
