@@ -427,7 +427,7 @@ Given the precision issues and the need for integer rounding regardless of solve
 
 **Migration changes:**
 - Removed CPLEX LP format conversion (no longer needed)
-- Changed result extraction from `matrixResult.Columns[varName].Primal` to `jsResult[varName]`
+- Changed result extraction from `matrixResult.Columns[varName].Primal` to `solution[varName]`
 - Added explicit rounding: `Math.round(rawFlow)` to convert float to integer
 - Adjusted feasibility checking (jsLPSolver uses `feasible` boolean property)
 
