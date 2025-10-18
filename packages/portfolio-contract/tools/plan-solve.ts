@@ -443,7 +443,7 @@ export const rebalanceMinCostFlowSteps = async (
 
   // Validate flow consistency after scheduling (optional, only in debug mode)
   if (graph.debug) {
-    const validation = validateSolvedFlows(graph, prioritized, FLOW_EPS);
+    const validation = validateSolvedFlows(graph, prioritized);
     if (!validation.ok) {
       console.error('[solver] Flow validation failed:', validation.errors);
       console.log('[solver] Original supplies:', graph.supplies);
