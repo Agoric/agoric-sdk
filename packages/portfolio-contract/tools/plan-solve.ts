@@ -501,8 +501,6 @@ export const planRebalanceFlow = async (opts: {
     brand,
     feeBrand,
   );
-  console.log({ current, target });
-
   const model = buildLPModel(graph, mode);
   let result;
   await null;

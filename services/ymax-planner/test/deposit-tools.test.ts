@@ -397,7 +397,7 @@ test('USDN denom', t => {
   t.is(USDN.base, 'uusdn');
 });
 
-test('ordering of steps should be correct', async t => {
+async function prodOrderSteps(scale: number) {
   const targetAllocation = {
     Aave_Arbitrum: 10n,
     Aave_Avalanche: 11n,
@@ -407,7 +407,7 @@ test('ordering of steps should be correct', async t => {
   };
 
   const currentBalances = {
-    Aave_Avalanche: makeDeposit(3750061n),
+    Aave_Avalanche: makeDeposit(3750061n * BigInt(scale)),
   };
 
   const steps = await planRebalanceToAllocations({
@@ -418,30 +418,16 @@ test('ordering of steps should be correct', async t => {
     feeBrand,
     gasEstimator: mockGasEstimator,
   });
+  return steps;
+}
+
+test('ordering of steps should be correct', async t => {
+  const steps = await prodOrderSteps(1);
   t.snapshot(steps);
 });
 
-test('Second ordering of steps should be correct', async t => {
-  const targetAllocation = {
-    Aave_Arbitrum: 10n,
-    Aave_Avalanche: 11n,
-    Aave_Base: 11n,
-    Aave_Ethereum: 10n,
-    Aave_Optimism: 10n,
-  };
-
-  const currentBalances = {
-    Aave_Avalanche: makeDeposit(37500610n),
-  };
-
-  const steps = await planRebalanceToAllocations({
-    brand: depositBrand,
-    currentBalances,
-    targetAllocation,
-    network: PROD_NETWORK,
-    feeBrand,
-    gasEstimator: mockGasEstimator,
-  });
+test('ordering 10x of steps should be correct', async t => {
+  const steps = await prodOrderSteps(10);
   t.snapshot(steps);
 });
 
