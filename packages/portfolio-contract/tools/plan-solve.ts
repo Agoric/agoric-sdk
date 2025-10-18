@@ -307,9 +307,6 @@ export const rebalanceMinCostFlowSteps = async (
   graph: RebalanceGraph,
   gasEstimator: GasEstimator,
 ): Promise<MovementDesc[]> => {
-  // Initialize supplies with all nodes including transit hubs (netSupply = 0).
-  // This ensures proper tracking of funds as they flow through intermediate nodes.
-  // const supplies = new Map(typedEntries(graph.supplies));
   const supplies = new Map(
     typedEntries(graph.supplies).filter(([_place, amount]) => amount > 0),
   );
@@ -442,16 +439,9 @@ export const rebalanceMinCostFlowSteps = async (
     const validation = validateSolvedFlows(graph, prioritized);
     if (!validation.ok) {
       console.error('[solver] Flow validation failed:', validation.errors);
-      console.log('[solver] Original supplies:', graph.supplies);
-      console.log('[solver] Scheduling deadlock. Final supplies:', supplies);
-      console.log(
-        '[solver] All proposed flows in order:',
-        JSON.stringify(
-          steps,
-          (k, v) => (typeof v === 'bigint' ? v.toString() : v),
-          2,
-        ),
-      );
+      console.error('[solver] Original supplies:', graph.supplies);
+      console.error('[solver] Scheduling deadlock. Final supplies:', supplies);
+      console.error('[solver] All proposed flows in order:', steps);
       throw Fail`Flow validation failed: ${validation.errors.join('; ')}`;
     }
     if (validation.warnings.length > 0) {
