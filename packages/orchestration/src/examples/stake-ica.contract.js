@@ -85,8 +85,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       ),
   });
 
-  // TODO(https://github.com/Agoric/agoric-sdk/issues/12109):
-  // once withOrchestration provides a wrapped marshaller, don't re-wrap.
+  //  withOrchestration() provides this but this contract shows how to use orchestration without that
   const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
