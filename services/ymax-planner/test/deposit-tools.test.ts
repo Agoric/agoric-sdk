@@ -407,6 +407,30 @@ test('ordering of steps should be correct', async t => {
   };
 
   const currentBalances = {
+    Aave_Avalanche: makeDeposit(3750061n),
+  };
+
+  const steps = await planRebalanceToAllocations({
+    brand: depositBrand,
+    currentBalances,
+    targetAllocation,
+    network: PROD_NETWORK,
+    feeBrand,
+    gasEstimator: mockGasEstimator,
+  });
+  t.snapshot(steps);
+});
+
+test('Second ordering of steps should be correct', async t => {
+  const targetAllocation = {
+    Aave_Arbitrum: 10n,
+    Aave_Avalanche: 11n,
+    Aave_Base: 11n,
+    Aave_Ethereum: 10n,
+    Aave_Optimism: 10n,
+  };
+
+  const currentBalances = {
     Aave_Avalanche: makeDeposit(37500610n),
   };
 

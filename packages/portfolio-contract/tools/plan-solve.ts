@@ -87,14 +87,6 @@ export type GasEstimator = {
  * -----------------------------------------------------------------------------
  */
 const FLOW_EPS = 1e-6;
-// Tolerance for supply availability checks during scheduling.
-// Needs to be larger than FLOW_EPS to handle:
-// 1. Floating-point rounding accumulation from arithmetic operations
-// 2. Integer division rounding in target allocation computations
-// Use both absolute tolerance (for small flows) and relative tolerance (for large flows).
-// For USDC (6 decimals), values are in micro-USDC.
-const SCHEDULING_EPS_ABS = 10;
-const SCHEDULING_EPS_REL = 1e-6; // 1 part per million relative error tolerance
 
 // ------------------------------ Model Building -------------------------------
 
@@ -339,18 +331,9 @@ export const rebalanceMinCostFlowSteps = async (
 
   while (pendingFlows.size) {
     // Find flows that can be executed based on current supplies.
-    // Use tolerance to avoid spurious deadlocks from:
-    // - Floating-point rounding accumulated during supply tracking
-    // - Integer division rounding in target allocation computations
-    // Apply both absolute and relative tolerance - take the larger of the two.
-    const candidates = [...pendingFlows.values()].filter(f => {
-      const supply = supplies.get(f.edge.src) || 0;
-      const tolerance = Math.max(
-        SCHEDULING_EPS_ABS,
-        f.flow * SCHEDULING_EPS_REL,
-      );
-      return supply >= f.flow - tolerance;
-    });
+    const candidates = [...pendingFlows.values()].filter(
+      f => (supplies.get(f.edge.src) || 0) >= f.flow,
+    );
 
     if (!candidates.length) {
       // Deadlock detected: cannot schedule remaining flows.
