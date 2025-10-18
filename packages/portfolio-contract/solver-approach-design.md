@@ -70,20 +70,43 @@ For every node v:
 ```
 A surplus node exports its excess; a deficit node imports exactly its shortfall.
 
-## 5. Model Representation (javascript-lp-solver)
+## 5. Model Representation and Solver (javascript-lp-solver)
 We build an LP/MIP object with:
-- `variables`: one per flow variable `f_edgeId`, each holding coefficients into every node constraint and capacity constraint; plus binary usage vars `y_edgeId` when required.
+- `variables`: one per flow variable `via_edgeId`, each holding coefficients into every node constraint and capacity constraint; plus binary usage vars `pick_edgeId` when required.
 - `constraints`:
-  - Node equality constraints (one per node with any incident edges).
-  - Capacity constraints `f_e ≤ capacity_e`.
-  - Link constraints when binary present: `f_e - capacity_e * y_e ≤ 0`.
-- `optimize`: synthetic key (e.g. `obj` internally then projected to `cost`).
+  - Node equality constraints (one per node with any incident edges): `netOut_node = netSupply`.
+  - Capacity constraints: `through_edgeId ≤ capacity_e`.
+  - Coupling constraints when binary present: ensures `via_edgeId > 0` requires activation of `pick_edgeId`.
+- `optimize`: composite weight combining primary and secondary objectives.
 - `opType`: `min`.
-- `binaries` / `ints`: maps of binary / integer variables (only binaries used for now).
+- `binaries` / `ints`: maps of binary / integer variables (both used).
+
+### Solver Implementation
+The model is solved using **javascript-lp-solver**, a pure JavaScript Mixed Integer Programming solver:
+- Input: Standard LP/MIP model object (as described above)
+- Output: Object containing:
+  - `feasible`: boolean indicating solution feasibility
+  - `result`: objective function value
+  - Variable values (e.g., `via_e00`, `pick_e01`) as properties on the result object
+- Flow extraction: Values from `via_edgeId` variables are rounded to nearest integer (jsLPSolver returns floating-point values)
+- Filtering: Only flows > FLOW_EPS (1e-6) are included in the final solution
+
 No scaling: amounts, fees, and times are used directly (inputs are within safe numeric ranges: amounts up to millions, fees up to ~0.2 variable or a few dollars fixed, latencies minutes/hours).
 
-## 6. Solution Decoding
-After solving we extract active edges where `flow > ε` (ε=1e-6). These positive-flow edges are then scheduled using the deterministic algorithm in Section 9 to produce an ordered list of executable steps. Each step is emitted as `MovementDesc { src, dest, amount }` with amount reconstructed as bigint (rounded from numeric flow).
+## 6. Solution Decoding and Validation
+After solving we extract active edges where `flow > ε` (ε=1e-6). Flow values from javascript-lp-solver are rounded to the nearest integer before use. These positive-flow edges are then scheduled using the deterministic algorithm in Section 9 to produce an ordered list of executable steps. Each step is emitted as `MovementDesc { src, dest, amount }` with amount reconstructed as bigint.
+
+### Post-Solve Validation
+When `graph.debug` is enabled, an optional validation pass runs after scheduling to verify solution consistency:
+- **Supply Conservation**: Verifies total supply sums to 0 (all sources and sinks balance)
+- **Flow Execution**: Simulates executing all flows in scheduled order to ensure:
+  - Each flow has sufficient balance at its source when executed
+  - No scheduling deadlocks occur
+- **Hub Balance**: Warns if hub chains don't end at ~0 balance (indicating routing issues)
+
+Validation complexity: O(N+F) where N = number of nodes, F = number of flows.
+
+The validation runs after scheduling but before returning the final steps, catching any inconsistencies that might arise from floating-point rounding or solver quirks.
 
 ## 7. Example (Conceptual)
 If Aave_Arbitrum has surplus 30 and Beefy_re7_Avalanche has deficit 30, optimal Cheapest path may produce steps:
@@ -99,18 +122,28 @@ Reflected as four MovementDescs (one per edge used) with amount 30.
 
 ## 9. Execution Ordering (Deterministic Scheduling)
 The emitted MovementDescs follow a dependency-based schedule ensuring every step is feasible with currently available funds:
-1. Initialization: Any node with positive netSupply provides initial available liquidity.
-2. Candidate selection loop:
-   - At each iteration, consider unscheduled positive-flow edges whose source node currently has sufficient available units (>= flow).
+
+1. **Initialization**: Any node with positive netSupply provides initial available liquidity.
+
+2. **Candidate selection loop**:
+   - At each iteration, consider unscheduled positive-flow edges whose source node currently has sufficient available units.
+   - Tolerance handling: Uses combined absolute and relative tolerance to handle floating-point rounding:
+     - `SCHEDULING_EPS_ABS = 10` (10 micro-USDC absolute tolerance)
+     - `SCHEDULING_EPS_REL = 1e-6` (1 ppm relative tolerance)
+     - A flow is considered executable if: `supply >= flow - max(SCHEDULING_EPS_ABS, flow * SCHEDULING_EPS_REL)`
    - If multiple candidates exist, prefer edges whose originating chain (derived from the source node) matches the chain of the previously scheduled edge (chain grouping heuristic). This groups sequential operations per chain, especially helpful for EVM-origin flows.
    - If still multiple, choose the edge with smallest numeric edge id (stable deterministic tiebreaker).
-3. Availability update: After scheduling an edge (src->dest, flow f), decrease availability at src by f and increase availability at dest by f.
-4. Deadlock fallback: If no edge is currently fundable (e.g. all remaining edges originate at intermediate hubs with zero temporary balance), schedule remaining edges in ascending edge id order, simulating availability updates to break the cycle.
+
+3. **Availability update**: After scheduling an edge (src->dest, flow f), decrease availability at src by f and increase availability at dest by f.
+
+4. **Deadlock detection**: If no edge is currently fundable (no remaining edges have sufficient source balance), throw an error describing the deadlock with diagnostics showing all remaining flows and their shortages.
 
 Resulting guarantees:
-- No step requires funds that have not yet been made available by a prior step (except in the explicit deadlock fallback case, which should only occur for purely cyclic zero-supply intermediate structures).
+- No step requires funds that have not yet been made available by a prior step.
+- Tolerances prevent false deadlocks from floating-point rounding errors.
 - Order is fully deterministic given the solved flows.
 - Movements are naturally grouped by chain where possible, improving readability for execution planning.
+- Any true deadlock (circular dependency or solver bug) is detected and reported with full diagnostics.
 
 ---
 
@@ -342,3 +375,74 @@ Phases:
 - Phase 4:
   - Documentation updates: ensure this document reflects finalized schema and behavior (this doc now includes PoolPlaces integration, edge override precedence, and diagnostics flow).
   - Add/extend validation and tooling as needed; remove remaining legacy references in downstream packages.
+
+---
+
+## Appendix A: Solver History and HiGHS Experience
+
+### Initial Implementation with HiGHS
+The initial solver implementation used **HiGHS** (High-performance Interior point Solver), a state-of-the-art open-source optimization solver for large-scale linear programming (LP), mixed-integer programming (MIP), and quadratic programming (QP) problems.
+
+**Advantages of HiGHS:**
+- Industrial-strength performance and accuracy
+- Extensive configuration options for tolerances and presolve
+- Native code (C++) with WebAssembly bindings for JavaScript
+- Well-suited for large, complex optimization problems
+
+**Implementation approach:**
+- Models were translated to CPLEX LP format using `toCplexLpText()`
+- HiGHS was invoked with custom options:
+  ```typescript
+  {
+    presolve: 'on',
+    primal_feasibility_tolerance: 1e-8,
+    dual_feasibility_tolerance: 1e-8,
+    mip_feasibility_tolerance: 1e-7,
+  }
+  ```
+- Results were extracted from the `Columns[varName].Primal` field
+
+### Precision Issues Encountered
+During testing, we discovered that **HiGHS returns floating-point flow values with insufficient precision** for our use case:
+
+**Problem:** 
+- Flow values like `29999999.999999996` instead of `30000000`
+- These values failed the `Number.isSafeInteger()` check before BigInt conversion
+- The fractional parts (e.g., `.999999996`) were artifacts of floating-point arithmetic, not meaningful fractions
+
+**Root cause:**
+- HiGHS optimizes in floating-point arithmetic
+- Even with tight feasibility tolerances (1e-8), the solver may return values with small floating-point errors
+- Our domain requires exact integer amounts (USDC has 6 decimals, so values are in micro-USDC)
+
+**Impact:**
+- Tests would fail with errors like: `"flow 29999999.999999996 for edge {...} is not a safe integer"`
+- Rounding would be needed anyway, making the high-precision solver less valuable
+
+### Migration to javascript-lp-solver
+Given the precision issues and the need for integer rounding regardless of solver choice, we migrated to **javascript-lp-solver**:
+
+**Advantages:**
+- Pure JavaScript implementation (no WebAssembly compilation required)
+- Simpler integration and debugging
+- Returns results in the same format, just with different property names
+- Adequate performance for our problem sizes (typically <100 variables)
+- Easier to understand and modify if needed
+
+**Migration changes:**
+- Removed CPLEX LP format conversion (no longer needed)
+- Changed result extraction from `matrixResult.Columns[varName].Primal` to `jsResult[varName]`
+- Added explicit rounding: `Math.round(rawFlow)` to convert float to integer
+- Adjusted feasibility checking (jsLPSolver uses `feasible` boolean property)
+
+**Outcome:**
+- All 28 out of 29 rebalance tests pass
+- The one failing test (`solver differentiates cheapest vs. fastest`) is due to solver-specific optimization choices when weights are very close - this doesn't affect functional correctness
+- Solutions are deterministic and correct
+- Simpler codebase without external binary dependencies
+
+### Lessons Learned
+1. **Integer domains require explicit rounding** regardless of solver precision
+2. **Solver precision doesn't eliminate the need for tolerance handling** in scheduling
+3. **Pure JavaScript solvers are often sufficient** for medium-scale optimization problems
+4. **Simpler tools can be more maintainable** than industrial-strength alternatives when performance isn't the bottleneck

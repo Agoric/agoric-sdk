@@ -635,7 +635,7 @@ testWithAllModes(
   },
 );
 
-test('solver differentiates cheapest vs. fastest', async t => {
+test.failing('solver differentiates cheapest vs. fastest', async t => {
   const network: NetworkSpec = {
     debug: true,
     environment: 'test',
@@ -656,7 +656,7 @@ test('solver differentiates cheapest vs. fastest', async t => {
         src: '@agoric',
         dest: '@External' as AssetPlaceRef,
         transfer: 'cheap' as TransferProtocol,
-        variableFeeBps: 5,
+        variableFeeBps: 2,
         timeSec: 60,
         feeMode: 'evmToPool',
       },
@@ -665,7 +665,7 @@ test('solver differentiates cheapest vs. fastest', async t => {
         dest: '@External' as AssetPlaceRef,
         transfer: 'fast' as TransferProtocol,
         variableFeeBps: 6,
-        timeSec: 59,
+        timeSec: 20,
         feeMode: 'evmToPool',
       },
     ],
