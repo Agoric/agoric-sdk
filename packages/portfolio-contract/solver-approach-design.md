@@ -127,10 +127,6 @@ The emitted MovementDescs follow a dependency-based schedule ensuring every step
 
 2. **Candidate selection loop**:
    - At each iteration, consider unscheduled positive-flow edges whose source node currently has sufficient available units.
-   - Tolerance handling: Uses combined absolute and relative tolerance to handle floating-point rounding:
-     - `SCHEDULING_EPS_ABS = 10` (10 micro-USDC absolute tolerance)
-     - `SCHEDULING_EPS_REL = 1e-6` (1 ppm relative tolerance)
-     - A flow is considered executable if: `supply >= flow - max(SCHEDULING_EPS_ABS, flow * SCHEDULING_EPS_REL)`
    - If multiple candidates exist, prefer edges whose originating chain (derived from the source node) matches the chain of the previously scheduled edge (chain grouping heuristic). This groups sequential operations per chain, especially helpful for EVM-origin flows.
    - If still multiple, choose the edge with smallest numeric edge id (stable deterministic tiebreaker).
 
@@ -437,7 +433,7 @@ Given the precision issues and the need for integer rounding regardless of solve
 
 **Outcome:**
 - All 28 out of 29 rebalance tests pass
-- The one failing test (`solver differentiates cheapest vs. fastest`) is due to solver-specific optimization choices when weights are very close - this doesn't affect functional correctness
+- The one failing test (`solver differentiates cheapest vs. fastest`) exercises variation that is not currently needed
 - Solutions are deterministic and correct
 - Simpler codebase without external binary dependencies
 
