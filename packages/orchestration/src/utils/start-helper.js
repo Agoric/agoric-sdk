@@ -56,7 +56,7 @@ import { makeZcfTools } from './zcf-tools.js';
  * @param {ZCF} zcf
  * @param {Baggage} baggage
  * @param {OrchestrationPowers} remotePowers
- * @param {ERemote<EMarshaller>} marshaller
+ * @param {ERemote<EMarshaller>} remoteMarshaller
  * @param {object} [opts]
  * @param {WithOrchestrationOpts['chainInfoValueShape']} [opts.chainInfoValueShape]
  * @internal
@@ -65,7 +65,7 @@ export const provideOrchestration = (
   zcf,
   baggage,
   remotePowers,
-  marshaller,
+  remoteMarshaller,
   opts = {},
 ) => {
   // separate zones
@@ -97,7 +97,12 @@ export const provideOrchestration = (
 
   const zcfTools = makeZcfTools(zcf, vowTools);
 
-  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
+
+  const { makeRecorderKit } = prepareRecorderKitMakers(
+    baggage,
+    cachingMarshaller,
+  );
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zones.orchestration,
     {
@@ -184,6 +189,7 @@ export const provideOrchestration = (
     ...defaultOrchestrateKit,
     makeOrchestrateKit,
     baggage,
+    cachingMarshaller,
     chainHub,
     vowTools,
     asyncFlowTools,
@@ -228,19 +234,14 @@ export const withOrchestration =
     const { storageNode: _, ...requiredOrchPowers } = allOrchPowers;
     const { publishAccountInfo, chainInfoValueShape } = opts ?? {};
 
-    const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
-
     const { zone, ...tools } = provideOrchestration(
       zcf,
       baggage,
       publishAccountInfo ? allOrchPowers : requiredOrchPowers,
-      cachingMarshaller,
+      remoteMarshaller,
       { chainInfoValueShape },
     );
     const [startResult] = await Promise.all([
-      // TODO(https://github.com/Agoric/agoric-sdk/issues/12109):
-      // pass the cachingMarshaller to orchestrated contracts so they don't
-      // have to wrap it themselves. This requires some generic PA magic.
       contractFn(zcf, privateArgs, zone, tools),
       // Make sure that any errors in async-flow awake abort contract start
       tools.asyncFlowTools.allWokenP,
