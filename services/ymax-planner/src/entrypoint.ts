@@ -6,8 +6,8 @@ import './shims.cjs';
 // import '@endo/lockdown/commit-debug.js';
 import './lockdown.js';
 
-// ...but the WebSocket shim must be loaded *after* lockdown, seemingly because
-// of a dependency upon EventEmitter that is otherwise broken:
+// ...but `main` must be loaded *after* lockdown, seemingly because
+// of a "ws" dependency upon EventEmitter that is otherwise broken:
 // TypeError#1: Cannot assign to read only property '_events' of object '[object Object]'
 //  at EventEmitter.init (node:events:345:18)
 //  at new EventEmitter (node:events:220:21)
@@ -17,36 +17,28 @@ import './lockdown.js';
 //
 // See also https://github.com/nodejs/node/pull/58315 and
 // https://github.com/endojs/endo/issues/2037#issuecomment-3142004849
-const shimmedP = (async () => {
-  if (typeof WebSocket !== 'undefined') return;
-  const ws = await import('ws');
-  // @ts-expect-error
-  globalThis.WebSocket = ws.WebSocket;
-})();
+import { main } from './main.ts';
 
-shimmedP
-  .then(async () => {
-    const [{ main }] = await Promise.all([import('./main.ts')]);
+(async () => {
+  const dotEnvFile = process.env.DOTENV || '.env';
 
-    const dotEnvFile = process.env.DOTENV || '.env';
+  // Capture our current env so that we can use them to override dotenv.
+  const processEnv = { ...process.env };
 
-    // Capture our current env so that we can use them to override dotenv.
-    const processEnv = { ...process.env };
+  const dotenv = await import('dotenv');
 
-    const dotenv = await import('dotenv');
+  /**
+   * Object that dotenv.config() will mutate to add variables from the
+   * dotEnvFile.
+   */
+  const dotEnvAdditions = {} as { [key: string]: string };
+  dotenv.config({ path: dotEnvFile, processEnv: dotEnvAdditions });
+  // console.log('Loaded .env variables:', dotEnv);
 
-    /**
-     * Object that dotenv.config() will mutate to add variables from the
-     * dotEnvFile.
-     */
-    const dotEnvAdditions = {} as { [key: string]: string };
-    dotenv.config({ path: dotEnvFile, processEnv: dotEnvAdditions });
-    // console.log('Loaded .env variables:', dotEnv);
+  const env = harden({ ...dotEnvAdditions, ...processEnv });
 
-    const env = harden({ ...dotEnvAdditions, ...processEnv });
-
-    return main(process.argv.slice(1), { env });
-  })
+  return main(process.argv.slice(1), { env });
+})()
   .then(() => process.exit())
   .catch(err => {
     console.error('Error in main:', err);
