@@ -1,15 +1,14 @@
-import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
+import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { makeTracer } from '@agoric/internal';
-import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
+import { AnyNatAmountShape } from '../typeGuards.js';
+import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as sharedFlows from './shared.flows.js';
 import { swapAnythingViaHook, swapIt } from './swap-anything.flows.js';
-import { AnyNatAmountShape } from '../typeGuards.js';
-import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 
 const trace = makeTracer('SwapAnything.Contract');
 const interfaceTODO = undefined;
@@ -46,7 +45,7 @@ export const contract = async (
   zcf,
   privateArgs,
   zone,
-  { chainHub, orchestrate, vowTools, zoeTools },
+  { cachingMarshaller, chainHub, orchestrate, vowTools, zoeTools },
 ) => {
   const creatorFacet = prepareChainHubAdmin(zone, chainHub);
 
@@ -60,11 +59,6 @@ export const contract = async (
   /** @type {(msg: string) => Vow<void>} */
   const log = (msg, level = 'info') =>
     vowTools.watch(E(logNode).setValue(JSON.stringify({ msg, level })));
-
-  const { marshaller: remoteMarshaller } = privateArgs;
-  // TODO(https://github.com/Agoric/agoric-sdk/issues/12109):
-  // once withOrchestration provides a wrapped marshaller, don't re-wrap.
-  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
   const makeLocalAccount = orchestrate(
     'makeLocalAccount',
