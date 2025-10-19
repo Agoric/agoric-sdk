@@ -1,6 +1,9 @@
 import { JSONRPCClient, type JSONRPCResponse } from 'json-rpc-2.0';
+import type { WebSocket } from 'ws';
 
 const MAX_SUBSCRIPTIONS = 5;
+
+const sink = () => {};
 
 const hasOwnProperties = (obj: unknown) =>
   typeof obj === 'object' && obj !== null && Reflect.ownKeys(obj).length > 0;
@@ -31,7 +34,16 @@ export class CosmosRPCClient extends JSONRPCClient {
 
   #ws: WebSocket;
 
-  constructor(url) {
+  constructor(
+    url: string | URL,
+    {
+      WebSocket,
+      heartbeats,
+    }: {
+      WebSocket: typeof import('ws').WebSocket;
+      heartbeats?: AsyncIterable<unknown>;
+    },
+  ) {
     const wsUrl = new URL('/websocket', url);
     wsUrl.protocol = wsUrl.protocol.replace(/^http/, 'ws');
     wsUrl.pathname = '/websocket';
@@ -64,6 +76,24 @@ export class CosmosRPCClient extends JSONRPCClient {
       }
       this.#subscriptions.clear();
     });
+    if (heartbeats) {
+      let closed = false;
+      void this.#closedPK.promise.catch(sink).then(() => {
+        closed = true;
+      });
+      let gotPong = true;
+      ws.on('pong', () => {
+        gotPong = true;
+      });
+      void (async () => {
+        for await (const _ of heartbeats) {
+          if (closed) break;
+          if (!gotPong) ws.emit('error', Error('pong timeout'));
+          gotPong = false;
+          ws.ping();
+        }
+      })();
+    }
 
     ws.addEventListener('message', event => {
       const str = event.data.toString('utf8');
