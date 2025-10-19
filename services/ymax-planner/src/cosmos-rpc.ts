@@ -45,12 +45,18 @@ export class CosmosRPCClient extends JSONRPCClient {
     this.#closedPK = Promise.withResolvers<void>();
     this.#lastSentId = -1;
 
-    ws.addEventListener('close', () => {
+    ws.addEventListener('close', ev => {
+      console.warn(`[RPC WS] Closed ${wsUrl.href}`, {
+        code: ev.code,
+        reason: ev.reason,
+        wasClean: ev.wasClean,
+      });
       this.#closedPK.resolve();
       this.#subscriptions.clear();
     });
 
     ws.addEventListener('error', ev => {
+      console.error('🚨 [RPC WS] Error', wsUrl.href, ev);
       const err = new Error(`WebSocket ${wsUrl.href} error: ${ev}`);
       this.#openedPK.reject(err);
       this.#closedPK.reject(err);
@@ -67,6 +73,7 @@ export class CosmosRPCClient extends JSONRPCClient {
     });
 
     ws.addEventListener('open', () => {
+      console.warn(`[RPC WS] Opened ${wsUrl.href}`);
       this.#openedPK.resolve();
     });
   }
