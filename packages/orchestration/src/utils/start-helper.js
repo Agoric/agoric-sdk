@@ -56,7 +56,7 @@ import { makeZcfTools } from './zcf-tools.js';
  * @param {ZCF} zcf
  * @param {Baggage} baggage
  * @param {OrchestrationPowers} remotePowers
- * @param {ERemote<EMarshaller>} remoteMarshaller
+ * @param {Remote<Marshaller>} remoteMarshaller
  * @param {object} [opts]
  * @param {WithOrchestrationOpts['chainInfoValueShape']} [opts.chainInfoValueShape]
  * @internal
