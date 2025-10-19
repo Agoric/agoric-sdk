@@ -99,11 +99,12 @@ export class CosmosRPCClient extends JSONRPCClient {
    * Query syntax: https://pkg.go.dev/github.com/cometbft/cometbft@v1.0.1/libs/pubsub/query/syntax
    * List of events: https://pkg.go.dev/github.com/cometbft/cometbft/types#pkg-constants
    */
-  async *subscribeAll(queries: string[]): AsyncGenerator<{
+  async *subscribeAll(queries: string[], opts?: { inactivityMs?: number }): AsyncGenerator<{
     query: string;
     data: SubscriptionResponse;
     events?: Record<string, unknown>;
   }> {
+    const inactivityMs = Math.max(10000, opts?.inactivityMs ?? 30000);
     const newQueries = new Set(queries);
     if (newQueries.size < 1) {
       throw new Error(`No new subscriptions: ${queries.join(', ')}`);
@@ -163,8 +164,14 @@ export class CosmosRPCClient extends JSONRPCClient {
     // console.log('wait forever?');
     try {
       while (true) {
-        // console.log('wait for next event');
-        const { head, tail } = await nextCell;
+        // Wait for next event, but enforce inactivity timeout to detect dead connections.
+        const timeoutP = new Promise<never>((_, reject) => {
+          const tid = setTimeout(() => reject(new Error('RPC subscription inactivity timeout')), inactivityMs);
+          // Prevent hold if resolved
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+          nextCell.finally(() => clearTimeout(tid));
+        });
+        const { head, tail } = await Promise.race([nextCell, timeoutP]);
         nextCell = tail;
         if (head.error) {
           // Propagate errors non-fatally.

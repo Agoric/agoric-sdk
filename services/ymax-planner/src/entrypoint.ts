@@ -45,7 +45,15 @@ shimmedP
 
     const env = harden({ ...dotEnvAdditions, ...processEnv });
 
-    return main(process.argv.slice(1), { env });
+    const argv = process.argv.slice(1);
+    for (;;) {
+      try {
+        return await main(argv, { env });
+      } catch (err) {
+        console.error('Top-level main failed; restarting shortly...', err);
+        await new Promise(resolve => setTimeout(resolve, 20000));
+      }
+    }
   })
   .then(() => process.exit())
   .catch(err => {

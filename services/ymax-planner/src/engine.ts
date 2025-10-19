@@ -583,7 +583,7 @@ export const startEngine = async (
     // vstorage events are in BEGIN_BLOCK/END_BLOCK activity
     "tm.event = 'NewBlock'",
   ];
-  const responses = rpc.subscribeAll(subscriptionFilters);
+  const responses = rpc.subscribeAll(subscriptionFilters, { inactivityMs: 45000 });
   const readyResult = await responses.next();
   if (readyResult.done !== false || readyResult.value !== undefined) {
     console.error('🚨 Unexpected non-undefined ready signal', readyResult);
