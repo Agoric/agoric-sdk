@@ -67,8 +67,12 @@ export class CosmosRPCClient extends JSONRPCClient {
       this.#subscriptions.clear();
     });
 
-    ws.addEventListener('error', ev => {
-      const err = new Error(`WebSocket ${wsUrl.href} error: ${ev}`);
+    ws.addEventListener('error', event => {
+      const cause = event.error;
+      const err = new Error(
+        `WebSocket ${wsUrl.href} error: ${cause?.message}`,
+        { cause },
+      );
       this.#openedPK.reject(err);
       this.#closedPK.reject(err);
       for (const sub of this.#subscriptions.values()) {

@@ -130,10 +130,15 @@ export const main = async (
     now,
     gasEstimator,
   };
-  await startEngine(powers, {
-    contractInstance: config.contractInstance,
-    depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
-    feeBrandName: env.FEE_BRAND_NAME || 'BLD',
-  });
+  try {
+    await startEngine(powers, {
+      contractInstance: config.contractInstance,
+      depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
+      feeBrandName: env.FEE_BRAND_NAME || 'BLD',
+    });
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
 };
 harden(main);
