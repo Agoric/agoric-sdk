@@ -7,7 +7,7 @@ import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 import type { EReturn } from '@endo/far';
 import path from 'path';
-import { makeMockTestSpace } from './supports.js';
+import { makeMockTestSpace } from './supports.ts';
 
 import type { start as WalletFactoryStart } from '../src/walletFactory.js';
 

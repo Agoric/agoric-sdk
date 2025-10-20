@@ -8,21 +8,18 @@ import { AmountShape } from '@agoric/ertp/src/typeGuards.js';
 import { AmountMath, AssetKind } from '@agoric/ertp/src/amountMath.js';
 import { makeTracer } from '@agoric/internal';
 import { M, getCopyBagEntries } from '@agoric/store';
+import type { Amount } from '@agoric/ertp';
+import type { ZCF, ZCFSeat } from '@agoric/zoe';
 
 const trace = makeTracer('Game', true);
 
-/** @param {Amount<'copyBag'>} amt */
-const totalPlaces = amt => {
-  /** @type {[unknown, bigint][]} */
-  const entries = getCopyBagEntries(amt.value); // XXX getCopyBagEntries returns any???
+const totalPlaces = (amt: Amount<'copyBag'>): bigint => {
+  const entries = getCopyBagEntries(amt.value) as Array<[unknown, bigint]>;
   const total = entries.reduce((acc, [_place, qty]) => acc + qty, 0n);
   return total;
 };
 
-/**
- * @param {ZCF<{ joinPrice: Amount }>} zcf
- */
-export const start = async zcf => {
+export const start = async (zcf: ZCF<{ joinPrice: Amount }>) => {
   const { joinPrice } = zcf.getTerms();
   const stableIssuer = await E(zcf.getZoeService()).getFeeIssuer();
   await zcf.saveIssuer(stableIssuer, 'Price');
@@ -36,8 +33,7 @@ export const start = async zcf => {
     exit: M.any(),
   });
 
-  /** @param {ZCFSeat} playerSeat */
-  const joinHook = playerSeat => {
+  const joinHook = (playerSeat: ZCFSeat) => {
     const { give, want } = playerSeat.getProposal();
     trace('join', 'give', give, 'want', want.Places.value);
 

@@ -9,8 +9,8 @@ import { makeCopyBag } from '@agoric/store';
 import { E, passStyleOf } from '@endo/far';
 import type { OfferSpec, ResultPlan } from '../src/offers.js';
 import { deploy } from '../tools/wf-tools.js';
-import * as gameExports from './gameAssetContract.js';
-import * as priceExports from './wallet-fun.contract.js';
+import * as gameExports from './gameAssetContract.ts';
+import * as priceExports from './wallet-fun.contract.ts';
 
 type WTestCtx = Awaited<ReturnType<typeof makeTestContext>>;
 

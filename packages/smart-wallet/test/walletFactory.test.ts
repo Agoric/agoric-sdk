@@ -6,13 +6,13 @@ import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { E } from '@endo/far';
 import type { OfferSpec } from '../src/offers.js';
 import { makeImportContext } from '../src/marshal-contexts.js';
-import { makeDefaultTestContext } from './contexts.js';
+import { makeDefaultTestContext } from './contexts.ts';
 import {
   ActionType,
   headValue,
   makeMockTestSpace,
   topicPath,
-} from './supports.js';
+} from './supports.ts';
 
 type DefaultTestContext = Awaited<ReturnType<typeof makeDefaultTestContext>>;
 

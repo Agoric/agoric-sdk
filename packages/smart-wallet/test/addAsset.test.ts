@@ -1,28 +1,28 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import type { ExecutionContext, TestFn } from 'ava';
 import type { Brand } from '@agoric/ertp';
 import type { MockChainStorageRoot as MockVStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+import type { ExecutionContext, TestFn } from 'ava';
 
-import { Fail } from '@endo/errors';
-import { E, Far, type ERef } from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
-import type { PromiseKit } from '@endo/promise-kit';
-import bundleSource from '@endo/bundle-source';
-import { makeMarshal, type CapData } from '@endo/marshal';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeCopyBag } from '@agoric/store';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
-import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
-import type { BridgeAction, UpdateRecord } from '../src/smartWallet.js';
+import bundleSource from '@endo/bundle-source';
+import { Fail } from '@endo/errors';
+import { E, Far, type ERef } from '@endo/far';
+import { makeMarshal, type CapData } from '@endo/marshal';
+import type { PromiseKit } from '@endo/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { makeImportContext } from '../src/marshal-contexts.js';
 import type { OfferSpec } from '../src/offers.js';
+import type { BridgeAction, UpdateRecord } from '../src/smartWallet.js';
+import { makeDefaultTestContext } from './contexts.ts';
+import { ActionType, headValue, makeMockTestSpace } from './supports.ts';
 
 type BundleLike = Awaited<ReturnType<typeof bundleSource>>;
-import { makeDefaultTestContext } from './contexts.js';
-import { ActionType, headValue, makeMockTestSpace } from './supports.js';
-import { makeImportContext } from '../src/marshal-contexts.js';
 
 type DefaultTestContext = Awaited<ReturnType<typeof makeDefaultTestContext>>;
 
@@ -291,9 +291,6 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
 
   /**
    * Core eval script to start contract
-   *
-   * @param permittedPowers
-   * @param bundle - in prod: a bundleId
    */
   const startGameContract = async (
     { consume }: BootstrapPowers,
@@ -369,7 +366,7 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
   const { consume, simpleProvideWallet, sendToBridge } = t.context;
 
   const bundles = {
-    game: await importSpec('./gameAssetContract.js').then(spec =>
+    game: await importSpec('./gameAssetContract.ts').then(spec =>
       bundleSource(spec),
     ),
     centralSupply: await importSpec('@agoric/vats/src/centralSupply.js').then(
