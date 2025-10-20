@@ -49,10 +49,8 @@ jobs:
       tags: '${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}'
     steps:
       - uses: actions/checkout@v4
-      - uses: depot/setup-action@v1
-        with:
-          oidc: true # to set DEPOT_TOKEN for later steps
-      - run: depot configure-docker
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         # see https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
@@ -71,7 +69,7 @@ jobs:
         run: |
           node packages/xsnap/src/build.js --show-env >> $GITHUB_ENV
       - name: Build and Push ssh-node
-        uses: depot/build-push-action@v1
+        uses: docker/build-push-action@v3
         with:
           file: packages/deployment/Dockerfile.ssh-node
           context: packages/deployment/docker
@@ -122,7 +120,7 @@ jobs:
           done
           echo "tags=$PREFIXED" >> $GITHUB_OUTPUT
       - name: Build and Push sdk
-        uses: depot/build-push-action@v1
+        uses: docker/build-push-action@v3
         with:
           file: packages/deployment/Dockerfile.sdk
           context: ./
@@ -139,7 +137,7 @@ jobs:
             XSNAP_NATIVE_URL=${{env.XSNAP_NATIVE_URL}}
             GIT_REVISION=${{env.GIT_REVISION}}
       - name: Build and Push setup
-        uses: depot/build-push-action@v1
+        uses: docker/build-push-action@v3
         with:
           file: packages/deployment/Dockerfile
           context: packages/deployment
@@ -180,10 +178,8 @@ jobs:
             sep=,
           done
           echo "tags=$PREFIXED" >> $GITHUB_OUTPUT
-      - uses: depot/setup-action@v1
-        with:
-          oidc: true # to set DEPOT_TOKEN for later steps
-      - run: depot configure-docker
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
       - name: Login to Docker Registry
         uses: docker/login-action@v3
         with:
@@ -191,7 +187,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ${{ env.REGISTRY }}
       - name: Build and Push
-        uses: depot/build-push-action@v1
+        uses: docker/build-push-action@v3
         with:
           file: packages/solo/Dockerfile
           context: packages/solo
@@ -224,10 +220,8 @@ jobs:
       tags: '${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}'
     steps:
       - uses: actions/checkout@v4
-      - uses: depot/setup-action@v1
-        with:
-          oidc: true # to set DEPOT_TOKEN for later steps
-      - run: depot configure-docker
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         # see https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
@@ -243,7 +237,7 @@ jobs:
       - name: Save GIT_COMMIT
         run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
       - name: Build and Push ymax-planner
-        uses: depot/build-push-action@v1
+        uses: docker/build-push-action@v3
         with:
           file: services/ymax-planner/Dockerfile
           context: ./
