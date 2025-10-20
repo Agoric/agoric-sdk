@@ -828,7 +828,7 @@ test('failed upgrade - explode', async t => {
   // vat? only the console?
 });
 
-test.failing('failed upgrade - lost promise export', async t => {
+test('failed upgrade - lost promise export', async t => {
   const config = makeConfigFromPaths('../../tools/bootstrap-relay.js', {
     defaultManagerType: 'xs-worker',
     defaultReapInterval: 'never',
