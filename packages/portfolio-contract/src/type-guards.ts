@@ -295,13 +295,18 @@ export const makePositionPath = (parent: number, key: PoolKeyExt) => [
   key,
 ];
 
-export const PositionStatusShape: TypedPattern<StatusFor['position']> = harden({
-  protocol: M.or(...Object.keys(YieldProtocol)), // YieldProtocol
-  accountId: AnyString<AccountId>(),
-  netTransfers: AnyNatAmountShape, // XXX constrain brand to USDC
-  totalIn: AnyNatAmountShape,
-  totalOut: AnyNatAmountShape,
-});
+export const PositionStatusShape: TypedPattern<StatusFor['position']> =
+  M.splitRecord(
+    {
+      protocol: M.or(...Object.keys(YieldProtocol)), // YieldProtocol
+      accountId: AnyString<AccountId>(),
+      totalIn: AnyNatAmountShape,
+      totalOut: AnyNatAmountShape,
+    },
+    {
+      netTransfers: AnyNatAmountShape, // XXX obsolete
+    },
+  );
 
 /**
  * Creates vstorage path for flow operation logging.

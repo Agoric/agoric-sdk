@@ -102,7 +102,6 @@ export type StatusFor = {
   position: {
     protocol: YieldProtocol;
     accountId: AccountId;
-    netTransfers: NatAmount;
     totalIn: NatAmount;
     totalOut: NatAmount;
   };
