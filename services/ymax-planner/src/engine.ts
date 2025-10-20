@@ -765,6 +765,7 @@ export const startEngine = async (
     console.log(
       inspect(
         {
+          blockHeight: respHeight,
           portfolioEvents,
           pendingTxEvents,
         },
