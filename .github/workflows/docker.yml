@@ -43,7 +43,7 @@ jobs:
       # to push the resulting images
       packages: write
     needs: snapshot
-    runs-on: 'depot-ubuntu-22.04-16' # ubuntu-latest
+    runs-on: 'ubuntu-latest-16core' # ubuntu-latest
     outputs:
       tag: '${{ steps.docker-tags.outputs.tags }}'
       tags: '${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}'
@@ -159,7 +159,7 @@ jobs:
 
   docker-solo:
     needs: [docker-sdk, snapshot]
-    runs-on: 'depot-ubuntu-22.04-16' # ubuntu-latest
+    runs-on: 'ubuntu-latest' # ubuntu-latest
     permissions:
       # allow issuing OIDC tokens for this workflow run
       id-token: write
@@ -218,7 +218,7 @@ jobs:
       # to push the resulting images
       packages: write
     needs: snapshot
-    runs-on: 'depot-ubuntu-latest'
+    runs-on: 'ubuntu-latest'
     outputs:
       tag: '${{ steps.docker-tags.outputs.tags }}'
       tags: '${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}'
