@@ -121,6 +121,11 @@ export class CosmosRPCClient extends JSONRPCClient {
     });
   }
 
+  async send(payload: any) {
+    if (this.#isClosed) throw Error('already closed');
+    return super.send(payload);
+  }
+
   receive(response: JSONRPCResponse) {
     // console.log('Received RPC response:', response);
     return super.receive(response);
