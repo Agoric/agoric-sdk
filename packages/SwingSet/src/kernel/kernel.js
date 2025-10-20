@@ -1475,8 +1475,16 @@ export default function buildKernel(
       queueToKref(vatAdminRootKref, method, args, 'logFailure');
     }
 
-    kernelKeeper.processRefcounts();
     const crankNum = kernelKeeper.getCrankNumber();
+    const { lostKrefs } = kernelKeeper.processRefcounts();
+    if (lostKrefs.length) {
+      console.log(
+        `⚠️ Ignoring lost krefs from crankNum ${crankNum}`,
+        lostKrefs,
+        message,
+        crankResults,
+      );
+    }
     kernelKeeper.incrementCrankNumber();
     const { crankhash, activityhash } = kernelKeeper.emitCrankHashes();
     finish({

@@ -221,12 +221,12 @@ export const getAllDynamicVats = getRequired => {
 const getObjectReferenceCount = (kvStore, kref) => {
   const data = kvStore.get(`${kref}.refCount`);
   if (!data) {
-    return { reachable: 0, recognizable: 0 };
+    return { exists: false, reachable: 0, recognizable: 0 };
   }
   const [reachable, recognizable] = commaSplit(data).map(Number);
   reachable <= recognizable ||
     Fail`refmismatch(get) ${kref} ${reachable},${recognizable}`;
-  return { reachable, recognizable };
+  return { exists: true, reachable, recognizable };
 };
 
 const setObjectReferenceCount = (kvStore, kref, counts) => {
@@ -1609,12 +1609,17 @@ export default function makeKernelKeeper(
   // leaving work for the next delivery.
 
   function processRefcounts() {
+    const lostKrefs = [];
     if (enableKernelGC) {
       const actions = new Set();
       for (const kref of maybeFreeKrefs.values()) {
         const { type } = parseKernelSlot(kref);
         if (type === 'promise') {
           const kpid = kref;
+          if (!hasKernelPromise(kpid)) {
+            lostKrefs.push(kref);
+            continue;
+          }
           const kp = getKernelPromise(kpid);
           if (kp.refCount === 0) {
             let idx = 0;
@@ -1633,7 +1638,10 @@ export default function makeKernelKeeper(
         }
 
         if (type === 'object') {
-          const { reachable, recognizable } = getObjectRefCount(kref);
+          const { exists, reachable, recognizable } = getObjectRefCount(kref);
+          if (!exists) {
+            lostKrefs.push(kref);
+          }
           if (reachable === 0) {
             // We avoid ownerOfKernelObject(), which will report
             // 'undefined' if the owner is dead (and being slowly
@@ -1701,6 +1709,7 @@ export default function makeKernelKeeper(
       addGCActions([...actions]);
     }
     maybeFreeKrefs.clear();
+    return { lostKrefs };
   }
 
   function createVatState(vatID, source, options) {
