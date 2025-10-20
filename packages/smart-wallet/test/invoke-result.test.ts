@@ -1,29 +1,23 @@
 /** @file test {@link InvokeStoreEntryAction} */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { ExecutionContext, TestFn } from 'ava';
+
 import { AmountMath } from '@agoric/ertp';
 import { objectMap } from '@agoric/internal';
 import { makeCopyBag } from '@agoric/store';
 import { E, passStyleOf } from '@endo/far';
+import type { OfferSpec, ResultPlan } from '../src/offers.js';
 import { deploy } from '../tools/wf-tools.js';
 import * as gameExports from './gameAssetContract.js';
 import * as priceExports from './wallet-fun.contract.js';
 
-/**
- * @import {TestFn, ExecutionContext} from 'ava'
- * @import {OfferSpec, ResultPlan} from '../src/offers.js';
- * @import {InvokeStoreEntryAction} from '../src/smartWallet.js';
- */
-
-/**
- * @typedef {Awaited<ReturnType<makeTestContext>>} WTestCtx
- */
+type WTestCtx = Awaited<ReturnType<typeof makeTestContext>>;
 
 const contractName = 'walletFactory';
 const { make } = AmountMath;
 
-/** @type {TestFn<WTestCtx>} */
-const test = anyTest;
+const test = anyTest as TestFn<WTestCtx>;
 
 const makeTestContext = async t => {
   t.log('contract deployment', contractName);
@@ -93,8 +87,7 @@ test('start game contract; make offer', async t => {
     want: { Places: make(Place, makeCopyBag([['scroll', 1n]])) },
     give: { Price: make(Price, 0n) },
   };
-  /** @type {OfferSpec} */
-  const spec = {
+  const spec: OfferSpec = {
     id: 'join-1',
     invitationSpec: {
       source: 'contract',
@@ -127,11 +120,10 @@ test('start game contract; make offer', async t => {
   t.deepEqual(slots, [ids.instance, ids.brand, 'board0371']);
 });
 
-/**
- * @param {ExecutionContext<Awaited<ReturnType<typeof makeTestContext>>>} t
- * @param {string} addr
- */
-const startPriceContract = async (t, addr) => {
+const startPriceContract = async (
+  t: ExecutionContext<WTestCtx>,
+  addr: string,
+) => {
   const { board, zoe, namesByAddress, utils } = t.context.bootstrap;
 
   t.log('start price contract');
@@ -159,8 +151,7 @@ const startPriceContract = async (t, addr) => {
 
 const redeemAdminInvitation = async (t, { wallet, instance }) => {
   t.log('redeem price admin invitation');
-  /** @type {OfferSpec} */
-  const redeemSpec = {
+  const redeemSpec: OfferSpec = {
     id: 'redeem-1',
     invitationSpec: {
       source: 'purse',
@@ -249,11 +240,7 @@ test('save result of method call - overwrite cases', async t => {
   await tools.getReceived();
   await redeemAdminInvitation(t, { wallet, instance });
 
-  /**
-   * @param {number} offset
-   * @param {ResultPlan} saveResult
-   */
-  const doOffsetOffer = async (offset, saveResult) => {
+  const doOffsetOffer = async (offset: number, saveResult: ResultPlan) => {
     await E(offersP).executeOffer({
       id: `setter-${offset}`,
       invitationSpec: {

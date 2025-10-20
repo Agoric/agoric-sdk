@@ -1,19 +1,15 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import type { TestFn } from 'ava';
+import type { Installation } from '@agoric/zoe';
 
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
+import type { EReturn } from '@endo/far';
 import path from 'path';
 import { makeMockTestSpace } from './supports.js';
 
-/**
- * @import {EReturn} from '@endo/far';
- */
-
-/**
- * @type {import('ava').TestFn<EReturn<typeof makeTestContext>>}
- */
-const test = anyTest;
+import type { start as WalletFactoryStart } from '../src/walletFactory.js';
 
 const makeTestContext = async () => {
   // To debug, pass t.log instead of null logger
@@ -30,8 +26,8 @@ const makeTestContext = async () => {
     `${dirname}/../src/walletFactory.js`,
     'walletFactory',
   );
-  /** @type {Promise<Installation<import('../src/walletFactory.js').start>>} */
-  const installation = E(zoe).install(bundle);
+  const installation: Promise<Installation<WalletFactoryStart>> =
+    E(zoe).install(bundle);
   //#endregion
 
   // copied from makeClientBanks()
@@ -50,6 +46,10 @@ const makeTestContext = async () => {
   };
 };
 
+type TestContext = EReturn<typeof makeTestContext>;
+
+const test = anyTest as TestFn<TestContext>;
+
 test.before(async t => {
   t.context = await makeTestContext();
 });
@@ -63,19 +63,14 @@ test('customTermsShape', async t => {
   const board = await consume.board;
 
   // extra term
+  const extraTerms = {
+    agoricNames,
+    board,
+    assetPublisher: {} as any,
+    extra: board,
+  } as any;
   await t.throwsAsync(
-    E(zoe).startInstance(
-      installation,
-      {},
-      {
-        agoricNames,
-        board,
-        assetPublisher: /** @type {any} */ ({}),
-        //   @ts-expect-error extra term
-        extra: board,
-      },
-      privateArgs,
-    ),
+    E(zoe).startInstance(installation, {}, extraTerms, privateArgs),
     {
       message:
         'customTerms: {"agoricNames":"[Alleged: NameHubKit nameHub]","assetPublisher":{},"board":"[Alleged: Board board]","extra":"[Seen]"} - Must not have unexpected properties: ["extra"]',
@@ -83,16 +78,9 @@ test('customTermsShape', async t => {
   );
 
   // missing a term
+  const missingTerms = { agoricNames } as any;
   await t.throwsAsync(
-    E(zoe).startInstance(
-      installation,
-      {},
-      //   @ts-expect-error missing 'board'
-      {
-        agoricNames,
-      },
-      privateArgs,
-    ),
+    E(zoe).startInstance(installation, {}, missingTerms, privateArgs),
     {
       message:
         'customTerms: {"agoricNames":"[Alleged: NameHubKit nameHub]"} - Must have missing properties ["board","assetPublisher"]',
@@ -108,18 +96,12 @@ test('privateArgsShape', async t => {
   const terms = {
     agoricNames,
     board,
-    assetPublisher: /** @type {any} */ ({}),
+    assetPublisher: {} as any,
   };
 
   // missing an arg
   await t.throwsAsync(
-    E(zoe).startInstance(
-      installation,
-      {},
-      terms,
-      // @ts-expect-error bridgeManager optional but storageNode required
-      { bridgeManager },
-    ),
+    E(zoe).startInstance(installation, {}, terms, { bridgeManager } as any),
     {
       message: 'privateArgs: {} - Must have missing properties ["storageNode"]',
     },
