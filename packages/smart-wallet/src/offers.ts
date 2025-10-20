@@ -3,7 +3,14 @@ import type { Passable } from '@endo/pass-style';
 import type { AmountKeywordRecord } from '@agoric/zoe/src/zoeService/types.js';
 import type { InvitationSpec } from './invitations.js';
 
-export type OfferId = number | string;
+/**
+ * This is a string that uniquely identifies an offer within a smart wallet.
+ *
+ * This type used to be a union with number but that led to confusion. For
+ * backwards compatibility with clients sending number the contract coerces them
+ * to string at first opportunity..
+ */
+export type OfferId = string;
 
 export interface ResultPlan {
   /** by which to save the item */

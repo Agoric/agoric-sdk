@@ -158,6 +158,8 @@ const test = anyTest as TestFn<TestContext>;
 
 test.before(async t => (t.context = await makeTestContext(t)));
 
+const OFFER_ID = 'offer1';
+
 test.serial('handle failure to create invitation', async t => {
   const { powers, makeSmartWallet, spendable, shared } = t.context;
   const { chainStorage, board } = powers.consume as Record<string, any>;
@@ -216,7 +218,7 @@ test.serial('handle failure to create invitation', async t => {
   const spec1 = {
     method: 'executeOffer',
     offer: {
-      id: 1,
+      id: OFFER_ID,
       invitationSpec: {
         source: 'contract',
         instance: anyInstance,
@@ -244,15 +246,15 @@ test.serial('recover withdrawn payments', async t => {
 
   const spec1 = {
     method: 'tryExitOffer',
-    offerId: 1,
-  } as BridgeAction;
+    offerId: OFFER_ID,
+  } satisfies BridgeAction;
 
   const { board } = powers.consume;
   const publicMarshaller = await E(board).getPublishingMarshaller();
 
   const actionCapData = await E(publicMarshaller).toCapData(spec1);
   await t.throwsAsync(E(theWallet).handleBridgeAction(actionCapData, true), {
-    message: /key 1 not found in collection "live offer seats"/,
+    message: /key "offer1" not found in collection "live offer seats"/,
   });
   await eventLoopIteration();
   await delay(10);

@@ -39,6 +39,7 @@ test('bridge handler', async t => {
   // fund the wallet with anchor
 
   const offerSpec = {
+    // @ts-expect-error testing coercion
     id: 1,
     invitationSpec: {
       source: 'purse',
@@ -76,6 +77,7 @@ test('bridge handler', async t => {
     updated: 'offerStatus',
     status: {
       ...offerSpec,
+      id: String(offerSpec.id), // coerced to string
       error: 'Error: no invitation match (0 description and 0 instance)',
     },
   });

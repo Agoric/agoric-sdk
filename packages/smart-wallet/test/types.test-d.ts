@@ -12,7 +12,7 @@ declare const offerSpec: OfferSpec;
 
 // Check that offerSpec has the expected properties
 expectType<OfferSpec>(offerSpec);
-expectType<number | string>(offerSpec.id);
+expectType<string>(offerSpec.id);
 expectType<object>(offerSpec.invitationSpec);
 expectType<object>(offerSpec.proposal);
 expectNotType<undefined>(offerSpec.offerArgs);
