@@ -144,7 +144,6 @@ const status: StatusFor = {
   position: {
     protocol: yieldProtocol,
     accountId,
-    netTransfers: natAmount,
     totalIn: natAmount,
     totalOut: natAmount,
   },
