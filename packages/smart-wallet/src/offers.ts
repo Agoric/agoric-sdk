@@ -17,6 +17,7 @@ export interface ResultPlan {
   name: string;
   /** whether to overwrite an existing item. If false and there is a conflict, the contract will autogen a similar name. */
   overwrite?: boolean;
+  [key: string]: Passable; // XXX CopyRecord expects
 }
 
 export interface InvokeEntryMessage {
@@ -25,6 +26,7 @@ export interface InvokeEntryMessage {
   args: Passable[];
   saveResult?: ResultPlan;
   id?: number | string;
+  [key: string]: Passable; // XXX CopyRecord expects
 }
 
 /**
