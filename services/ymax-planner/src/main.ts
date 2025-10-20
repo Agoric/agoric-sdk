@@ -1,3 +1,11 @@
+import timersPromises from 'node:timers/promises';
+
+import { SigningStargateClient } from '@cosmjs/stargate';
+import * as ws from 'ws';
+
+import { Fail, q } from '@endo/errors';
+import { isPrimitive } from '@endo/pass-style';
+
 import {
   fetchEnvNetworkConfig,
   getInvocationUpdate,
@@ -6,10 +14,6 @@ import {
   reflectWalletStore,
 } from '@agoric/client-utils';
 import { objectMetaMap } from '@agoric/internal';
-import { Fail, q } from '@endo/errors';
-import { isPrimitive } from '@endo/pass-style';
-
-import { SigningStargateClient } from '@cosmjs/stargate';
 
 import { loadConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
@@ -37,9 +41,11 @@ export const main = async (
   {
     env = process.env,
     fetch = globalThis.fetch,
+    generateInterval = timersPromises.setInterval,
     now = Date.now,
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
+    WebSocket = ws.WebSocket,
   } = {},
 ) => {
   const delay = ms =>
@@ -56,7 +62,10 @@ export const main = async (
   const agoricRpcAddr = networkConfig.rpcAddrs[0];
   console.warn('Initializing planner', networkConfig);
 
-  const rpc = new CosmosRPCClient(agoricRpcAddr);
+  const rpc = new CosmosRPCClient(agoricRpcAddr, {
+    WebSocket,
+    heartbeats: generateInterval(6000),
+  });
   await rpc.opened();
   await assertChainId(rpc, networkConfig.chainName, (...args) =>
     console.warn('Agoric chain status', ...args),
@@ -121,10 +130,15 @@ export const main = async (
     now,
     gasEstimator,
   };
-  await startEngine(powers, {
-    contractInstance: config.contractInstance,
-    depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
-    feeBrandName: env.FEE_BRAND_NAME || 'BLD',
-  });
+  try {
+    await startEngine(powers, {
+      contractInstance: config.contractInstance,
+      depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
+      feeBrandName: env.FEE_BRAND_NAME || 'BLD',
+    });
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
 };
 harden(main);

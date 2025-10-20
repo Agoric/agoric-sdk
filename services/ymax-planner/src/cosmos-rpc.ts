@@ -1,6 +1,9 @@
 import { JSONRPCClient, type JSONRPCResponse } from 'json-rpc-2.0';
+import type { WebSocket } from 'ws';
 
 const MAX_SUBSCRIPTIONS = 5;
+
+const sink = () => {};
 
 const hasOwnProperties = (obj: unknown) =>
   typeof obj === 'object' && obj !== null && Reflect.ownKeys(obj).length > 0;
@@ -16,7 +19,9 @@ export class CosmosRPCClient extends JSONRPCClient {
     number,
     {
       query: string;
-      notified: (response: JSONRPCResponse) => void;
+      notify: (response: JSONRPCResponse) => void;
+      finish: () => void;
+      fail: (error: unknown) => void;
       unsubscribe: () => void;
     }
   >;
@@ -29,7 +34,16 @@ export class CosmosRPCClient extends JSONRPCClient {
 
   #ws: WebSocket;
 
-  constructor(url) {
+  constructor(
+    url: string | URL,
+    {
+      WebSocket,
+      heartbeats,
+    }: {
+      WebSocket: typeof import('ws').WebSocket;
+      heartbeats?: AsyncIterable<unknown>;
+    },
+  ) {
     const wsUrl = new URL('/websocket', url);
     wsUrl.protocol = wsUrl.protocol.replace(/^http/, 'ws');
     wsUrl.pathname = '/websocket';
@@ -47,21 +61,50 @@ export class CosmosRPCClient extends JSONRPCClient {
 
     ws.addEventListener('close', () => {
       this.#closedPK.resolve();
+      for (const sub of this.#subscriptions.values()) {
+        sub.finish();
+      }
       this.#subscriptions.clear();
     });
 
-    ws.addEventListener('error', ev => {
-      const err = new Error(`WebSocket ${wsUrl.href} error: ${ev}`);
+    ws.addEventListener('error', event => {
+      const cause = event.error;
+      const err = new Error(
+        `WebSocket ${wsUrl.href} error: ${cause?.message}`,
+        { cause },
+      );
       this.#openedPK.reject(err);
       this.#closedPK.reject(err);
+      for (const sub of this.#subscriptions.values()) {
+        sub.fail(err);
+      }
+      this.#subscriptions.clear();
     });
+    if (heartbeats) {
+      let closed = false;
+      void this.#closedPK.promise.catch(sink).then(() => {
+        closed = true;
+      });
+      let gotPong = true;
+      ws.on('pong', () => {
+        gotPong = true;
+      });
+      void (async () => {
+        for await (const _ of heartbeats) {
+          if (closed) break;
+          if (!gotPong) ws.emit('error', Error('pong timeout'));
+          gotPong = false;
+          ws.ping();
+        }
+      })();
+    }
 
     ws.addEventListener('message', event => {
       const str = event.data.toString('utf8');
       const response = JSON.parse(str);
       const sub = this.#subscriptions.get(response.id);
       if (sub) {
-        sub.notified(response);
+        sub.notify(response);
       }
       this.receive(response);
     });
@@ -117,7 +160,7 @@ export class CosmosRPCClient extends JSONRPCClient {
 
     type Cell = { head: JSONRPCResponse; tail: Promise<Cell> };
     let lastPK = Promise.withResolvers<Cell>();
-    let nextCell = lastPK.promise;
+    let nextCellP = lastPK.promise;
 
     const subscriptionKits = [...newQueries.keys()].map(query => {
       const subP = this.request('subscribe', { query });
@@ -133,7 +176,18 @@ export class CosmosRPCClient extends JSONRPCClient {
       };
       this.#subscriptions.set(subId, {
         query,
-        notified: (response: JSONRPCResponse) => {
+        finish: () => {
+          readyKit.isSettled = true;
+          readyKit.resolve(undefined);
+          // @ts-expect-error undefined is not a Cell but indicates conclusion
+          lastPK.resolve(undefined);
+        },
+        fail: (err: unknown) => {
+          readyKit.isSettled = true;
+          readyKit.reject(err);
+          lastPK.reject(err);
+        },
+        notify: (response: JSONRPCResponse) => {
           // Ignore an initial empty-result response.
           if (!readyKit.isSettled) {
             readyKit.isSettled = true;
@@ -163,19 +217,17 @@ export class CosmosRPCClient extends JSONRPCClient {
     // console.log('wait forever?');
     try {
       while (true) {
-        // console.log('wait for next event');
-        const { head, tail } = await nextCell;
-        nextCell = tail;
+        const nextCell = await nextCellP;
+        if (!nextCell) break;
+        const { head, tail } = nextCell;
+        nextCellP = tail;
         if (head.error) {
-          // Propagate errors non-fatally.
+          // Propagate application-level errors non-fatally.
           yield Promise.reject(Error(head.error.message));
           continue;
         }
         yield head.result;
       }
-    } catch (error) {
-      console.error('Subscription error:', error);
-      lastPK.reject(error);
     } finally {
       for (const { unsubscribe } of subscriptionKits) {
         unsubscribe();
