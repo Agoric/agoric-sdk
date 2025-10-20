@@ -4,7 +4,7 @@
 import { Fail, q } from '@endo/errors';
 
 import type { NatAmount } from '@agoric/ertp/src/types.js';
-import { provideLazyMap } from '@agoric/internal/src/js-utils.js';
+import { provideLazyMap, typedEntries } from '@agoric/internal/src/js-utils.js';
 
 import {
   PoolPlaces,
@@ -453,13 +453,11 @@ export const formatInfeasibleDiagnostics = (
  * Validate solved flows for consistency.
  * Checks:
  * 1. Total supply sums to 0 (conservation)
- * 2. Positive supplies (sources) are within starting balances
- * 3. Each flow has sufficient supply at its source
- * 4. Hub chains end with zero balance (proper routing)
+ * 2. Each flow has sufficient supply at its source
+ * 3. Hub chains end with zero balance (proper routing)
  *
  * @param graph - The rebalance graph with initial supplies
  * @param flows - Solved flows from the optimizer
- * @param flowEps - Epsilon for filtering negligible flows (default 0)
  * @returns Validation result with ok flag and details
  */
 export const validateSolvedFlows = (
@@ -468,7 +466,6 @@ export const validateSolvedFlows = (
     edge: { src: string; dest: string; id: string };
     flow: number;
   }>,
-  flowEps: number = 0,
 ): {
   ok: boolean;
   errors: string[];
@@ -483,33 +480,15 @@ export const validateSolvedFlows = (
   for (const node of graph.nodes) {
     totalSupply += graph.supplies[node] || 0;
   }
-  if (Math.abs(totalSupply) > 1e-9) {
+  if (totalSupply !== 0) {
     errors.push(
       `Supply conservation violated: total supply = ${totalSupply}, expected 0`,
     );
   }
 
-  // Check 2: Positive supplies are within starting balances
-  for (const node of graph.nodes) {
-    const supply = graph.supplies[node] || 0;
-    if (supply > 0) {
-      // This is a source - verify it matches initial balance
-      // (In practice, initial balances should match supplies, this validates consistency)
-    }
-  }
-
-  // Check 3 & 4: Simulate flow execution to verify supply sufficiency
-  const balances = new Map<string, number>();
-  for (const node of graph.nodes) {
-    const supply = graph.supplies[node] || 0;
-    if (supply !== 0) {
-      balances.set(node, supply);
-    }
-  }
-
-  const activeFlows = flows.filter(f => f.flow > flowEps);
-
-  for (const { edge, flow } of activeFlows) {
+  // Check 2: Simulate flow execution to verify supply sufficiency
+  const balances = new Map(typedEntries(graph.supplies));
+  for (const { edge, flow } of flows) {
     const srcBalance = balances.get(edge.src) || 0;
 
     // Check if source has sufficient balance
@@ -526,21 +505,11 @@ export const validateSolvedFlows = (
     balances.set(edge.dest, destBalance + flow);
   }
 
-  // Check 4: Hub chains should end with ~0 balance
-  const hubChains = [
-    '@agoric',
-    '@noble',
-    '@Arbitrum',
-    '@Avalanche',
-    '@Base',
-    '@Ethereum',
-    '@Optimism',
-  ];
-  const HUB_BALANCE_EPS = 1e-6;
-  for (const hub of hubChains) {
-    if (!graph.nodes.has(hub as any)) continue;
+  // Check 3: Hub chains should end with 0 balance
+  for (const hub of graph.nodes) {
+    if (!hub.startsWith('@')) continue;
     const finalBalance = balances.get(hub) || 0;
-    if (Math.abs(finalBalance) > HUB_BALANCE_EPS) {
+    if (finalBalance !== 0) {
       warnings.push(`Hub ${hub} has non-zero final balance: ${finalBalance}`);
     }
   }

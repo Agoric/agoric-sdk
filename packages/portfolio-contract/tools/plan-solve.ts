@@ -274,36 +274,32 @@ export const solveRebalance = async (
   graph: RebalanceGraph,
 ): Promise<{ flows: SolvedEdgeFlow[]; detail?: Record<string, unknown> }> => {
   await null;
-  const jsResult = jsLPSolver.Solve(model, 1e-9);
+  const solution = jsLPSolver.Solve(model, 1e-9);
 
   // jsLPSolver returns an object with variable values
   // The 'feasible' flag can be overly strict, so we check if we got a result
   // instead. If result is undefined or there are no variable values, it's truly infeasible.
-  if (
-    !jsResult ||
-    (jsResult.feasible === false && jsResult.result === undefined)
-  ) {
+  if (!(solution?.feasible || solution?.result)) {
     if (graph.debug) {
       // Emit richer context only on demand to avoid noisy passing runs
       let msg = formatInfeasibleDiagnostics(graph, model);
-      msg += ` | ${prettyJsonable(jsResult)}`;
+      msg += ` | ${prettyJsonable(solution)}`;
       console.error('[solver] No feasible solution. Diagnostics:', msg);
       throw Fail`No feasible solution: ${msg}`;
     }
-    throw Fail`No feasible solution: ${jsResult}`;
+    throw Fail`No feasible solution: ${solution}`;
   }
 
   const flows: SolvedEdgeFlow[] = [];
   for (const edge of graph.edges) {
     const { id } = edge;
     const flowKey = `via_${id}`;
-    const rawFlow = jsResult[flowKey];
+    const rawFlow = solution[flowKey];
     // jsLPSolver returns floating-point values, round to nearest integer
     const flow = rawFlow ? Math.round(rawFlow) : 0;
-    const used = flow > FLOW_EPS;
-    if (used) flows.push({ edge, flow, used: true });
+    if (flow !== 0) flows.push({ edge, flow, used: true });
   }
-  return { flows, detail: { jsResult } };
+  return { flows, detail: { solution } };
 };
 
 export const rebalanceMinCostFlowSteps = async (
@@ -311,9 +307,6 @@ export const rebalanceMinCostFlowSteps = async (
   graph: RebalanceGraph,
   gasEstimator: GasEstimator,
 ): Promise<MovementDesc[]> => {
-  // Initialize supplies with all nodes including transit hubs (netSupply = 0).
-  // This ensures proper tracking of funds as they flow through intermediate nodes.
-  // const supplies = new Map(typedEntries(graph.supplies));
   const supplies = new Map(
     typedEntries(graph.supplies).filter(([_place, amount]) => amount > 0),
   );
@@ -443,19 +436,12 @@ export const rebalanceMinCostFlowSteps = async (
 
   // Validate flow consistency after scheduling (optional, only in debug mode)
   if (graph.debug) {
-    const validation = validateSolvedFlows(graph, prioritized, FLOW_EPS);
+    const validation = validateSolvedFlows(graph, prioritized);
     if (!validation.ok) {
       console.error('[solver] Flow validation failed:', validation.errors);
-      console.log('[solver] Original supplies:', graph.supplies);
-      console.log('[solver] Scheduling deadlock. Final supplies:', supplies);
-      console.log(
-        '[solver] All proposed flows in order:',
-        JSON.stringify(
-          steps,
-          (k, v) => (typeof v === 'bigint' ? v.toString() : v),
-          2,
-        ),
-      );
+      console.error('[solver] Original supplies:', graph.supplies);
+      console.error('[solver] Scheduling deadlock. Final supplies:', supplies);
+      console.error('[solver] All proposed flows in order:', steps);
       throw Fail`Flow validation failed: ${validation.errors.join('; ')}`;
     }
     if (validation.warnings.length > 0) {

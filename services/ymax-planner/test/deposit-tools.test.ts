@@ -397,7 +397,7 @@ test('USDN denom', t => {
   t.is(USDN.base, 'uusdn');
 });
 
-async function prodOrderSteps(scale: number) {
+async function singleSourceRebalanceSteps(scale: number) {
   const targetAllocation = {
     Aave_Arbitrum: 10n,
     Aave_Avalanche: 11n,
@@ -414,6 +414,7 @@ async function prodOrderSteps(scale: number) {
     brand: depositBrand,
     currentBalances,
     targetAllocation,
+    // TODO: Refactor this test against a stable network dedicated to testing.
     network: PROD_NETWORK,
     feeBrand,
     gasEstimator: mockGasEstimator,
@@ -421,17 +422,19 @@ async function prodOrderSteps(scale: number) {
   return steps;
 }
 
-test('ordering of steps should be correct', async t => {
-  const steps = await prodOrderSteps(1);
+test('planRebalanceToAllocations regression - single source', async t => {
+  // TODO: For human comprehensibility, adopt something like `readableSteps`
+  // from packages/portfolio-contract/test/rebalance.test.ts.
+  const steps = await singleSourceRebalanceSteps(1);
   t.snapshot(steps);
 });
 
-test('ordering 10x of steps should be correct', async t => {
-  const steps = await prodOrderSteps(10);
+test('planRebalanceToAllocations regression - single source, 10x', async t => {
+  const steps = await singleSourceRebalanceSteps(10);
   t.snapshot(steps);
 });
 
-test('Full ordering of steps should be correct', async t => {
+test('planRebalanceToAllocations regression - multiple sources', async t => {
   const targetAllocation = {
     Aave_Arbitrum: 10n,
     Aave_Avalanche: 11n,
@@ -455,6 +458,7 @@ test('Full ordering of steps should be correct', async t => {
     brand: depositBrand,
     currentBalances,
     targetAllocation,
+    // TODO: Refactor this test against a stable network dedicated to testing.
     network: PROD_NETWORK,
     feeBrand,
     gasEstimator: mockGasEstimator,

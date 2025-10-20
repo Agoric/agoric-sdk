@@ -44,7 +44,7 @@ export const getCurrentBalance = async (
   await null;
   switch (protocol) {
     case 'USDN': {
-      const addr = addressOfAccountId(accountIdByChain[chainName]);
+      const addr = addressOfAccountId(accountIdByChain[chainName] as any);
       // XXX add denom to PoolPlaceInfo?
       const resp = await cosmosRest.getAccountBalance(
         chainName,
@@ -57,7 +57,7 @@ export const getCurrentBalance = async (
     case 'Compound': {
       const pool = protocol.toLowerCase() as Pool;
       const chain = chainName.toLowerCase() as Chain;
-      const addr = addressOfAccountId(accountIdByChain[chainName]);
+      const addr = addressOfAccountId(accountIdByChain[chainName] as any);
       const resp = await spectrum.getPoolBalance(chain, pool, addr);
       const balance = resp.balance.supplyBalance;
       Number.isSafeInteger(balance) ||
