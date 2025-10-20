@@ -333,7 +333,6 @@ export const makeFlowStepsPath = (parent: number, id: number) => [
 
 export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.or(
   { state: 'run', step: M.number(), how: M.string() },
-  { state: 'undo', step: M.number(), how: M.string() },
   { state: 'done' },
   M.splitRecord(
     { state: 'fail', step: M.number(), how: M.string(), error: M.string() },
