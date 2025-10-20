@@ -4,6 +4,7 @@ import { assert } from '@endo/errors';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { buildVatController } from '@agoric/swingset-vat';
+import type { SwingSetConfig } from '@agoric/swingset-vat';
 import {
   wfV1BundleName,
   wfV2BundleName,
@@ -16,8 +17,7 @@ const importSpec = async spec =>
   new URL(importMetaResolve(spec, import.meta.url)).pathname;
 
 test('walletFactory service upgrade', async t => {
-  /** @type {SwingSetConfig} */
-  const config = {
+  const config: SwingSetConfig = {
     bundleCachePath: 'bundles/',
     bootstrap: 'bootstrap',
     vats: {
