@@ -205,7 +205,6 @@ const trackFlow = async (
       step,
       how: failure?.how ?? 'unknown',
       error: errmsg(err),
-      where: failure.dest,
     });
     throw err;
   }
