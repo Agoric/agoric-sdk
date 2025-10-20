@@ -119,10 +119,9 @@ type AssetMovement = {
     accounts: AccountsByChain,
     tracer: TraceLogger,
   ) => Promise<{ srcPos?: Position; destPos?: Position }>;
-  recover: (accounts: AccountsByChain, tracer: TraceLogger) => Promise<void>;
 };
 
-const moveStatus = ({ apply: _a, recover: _r, ...data }: AssetMovement) => data;
+const moveStatus = ({ apply: _a, ...data }: AssetMovement) => data;
 const errmsg = (err: any) => ('message' in err ? err.message : `${err}`);
 
 export type TransportDetail<
@@ -130,18 +129,11 @@ export type TransportDetail<
   S extends SupportedChain,
   D extends SupportedChain,
   CTX = unknown,
-  RecoverCTX = CTX,
 > = {
   how: How;
   connections: { src: S; dest: D }[];
   apply: (
     ctx: CTX,
-    amount: NatAmount,
-    src: AccountInfoFor[S],
-    dest: AccountInfoFor[D],
-  ) => Promise<void>;
-  recover: (
-    ctx: RecoverCTX,
     amount: NatAmount,
     src: AccountInfoFor[S],
     dest: AccountInfoFor[D],
@@ -169,9 +161,9 @@ export type ProtocolDetail<
 };
 
 /**
- * **Failure Handling**: Attempts to unwind failed operations, but recovery
- * itself can fail. In that case, publishes final asset location to vstorage
- * and gives up. Clients must manually rebalance to recover.
+ * **Failure Handling**: Logs failures and publishes status without attempting
+ * to unwind already-completed steps. Operators must resolve any partial
+ * effects manually.
  */
 const trackFlow = async (
   reporter: GuestInterface<PortfolioKit['reporter']>,
@@ -203,35 +195,15 @@ const trackFlow = async (
     reporter.publishFlowStatus(flowId, { state: 'done' });
     // TODO(#NNNN): delete the flow storage node
   } catch (err) {
-    traceFlow('⚠️ step', step, ' failed', err);
+    traceFlow('⚠️ step', step, 'failed', err);
     const failure = moves[step - 1];
-    const errStep = step;
-    while (step > 1) {
-      step -= 1;
-      const traceStep = traceFlow.sub(`step${step}`);
-      const move = moves[step - 1];
-      const how = `unwind: ${move.how}`;
-      reporter.publishFlowStatus(flowId, { state: 'undo', step, how });
-      try {
-        await move.recover(accounts, traceStep);
-      } catch (errInUnwind) {
-        traceStep('⚠️ unwind failed', errInUnwind);
-        // if a recover fails, we just give up and report `where` the assets are
-        const { dest: where } = move;
-        reporter.publishFlowStatus(flowId, {
-          state: 'fail',
-          step,
-          how,
-          error: errmsg(errInUnwind),
-          where,
-        });
-        throw errInUnwind;
-      }
+    if (failure) {
+      traceFlow('failed movement details', moveStatus(failure));
     }
     reporter.publishFlowStatus(flowId, {
       state: 'fail',
-      step: errStep,
-      how: failure.how,
+      step,
+      how: failure?.how ?? 'unknown',
       error: errmsg(err),
     });
     throw err;
@@ -517,24 +489,6 @@ const stepFlow = async (
           return { srcPos: pos };
         }
       },
-      recover: async ({ [evmChain]: gInfo }) => {
-        assert(gInfo, evmChain);
-        await null;
-        if ('src' in way) {
-          assert.fail('last step. cannot recover');
-        } else {
-          const { lca } = agoric;
-          const { poolKey } = way;
-          const evmCtx = await makeEVMPoolCtx(
-            evmChain,
-            move,
-            lca,
-            poolKey,
-            ctx.transferChannels.noble.counterPartyChannelId,
-          );
-          await pImpl.supply(evmCtx, amount, gInfo);
-        }
-      },
     });
   };
 
@@ -544,8 +498,8 @@ const stepFlow = async (
   traceFlow('checking', moves.length, 'moves');
   for (const [i, move] of entries(moves)) {
     const traceMove = traceFlow.sub(`move${i}`);
-    // @@@ traceMove('wayFromSrcToDesc?', move);
     const way = wayFromSrcToDesc(move);
+    traceMove('plan', { move, way });
     const { amount } = move;
     switch (way.how) {
       case 'localTransfer': {
@@ -562,11 +516,6 @@ const stepFlow = async (
             await ctx.zoeTools.localTransfer(src.seat, account, amounts);
             return {};
           },
-          recover: async ({ agoric }) => {
-            const { lca, lcaIn } = agoric;
-            const account = move.dest === '+agoric' ? lcaIn : lca;
-            await ctx.zoeTools.withdrawToSeat(account, seat, amounts);
-          },
         });
         break;
       }
@@ -582,9 +531,6 @@ const stepFlow = async (
             await ctx.zoeTools.withdrawToSeat(agoric.lca, seat, amounts);
             return {};
           },
-          recover: async ({ agoric }) => {
-            await ctx.zoeTools.localTransfer(seat, agoric.lca, amounts);
-          },
         });
         break;
       }
@@ -599,9 +545,6 @@ const stepFlow = async (
             const { lca, lcaIn } = agoric;
             await lcaIn.send(lca.getAddress(), amount);
             return {};
-          },
-          recover: async () => {
-            traceMove('recover send is noop; not sending back to deposit LCA');
           },
         });
         break;
@@ -628,15 +571,6 @@ const stepFlow = async (
               await nobleToAgoric.apply(ctxI, amount, noble, agoric);
             }
             return {};
-          },
-          recover: async ({ agoric, noble }) => {
-            assert(noble); // per nobleMentioned below
-            await null;
-            if (way.src === 'agoric') {
-              await agoricToNoble.recover(ctxI, amount, agoric, noble);
-            } else {
-              await nobleToAgoric.recover(ctxI, amount, noble, agoric);
-            }
           },
         });
 
@@ -671,15 +605,6 @@ const stepFlow = async (
             }
             return {};
           },
-          recover: async ({ [evmChain]: gInfo, agoric, noble }) => {
-            assert(gInfo && noble, evmChain);
-            await null;
-            if (outbound) {
-              await CCTP.recover(ctx, amount, noble, gInfo);
-            } else {
-              await CCTPfromEVM.recover(ctx, amount, gInfo, agoric);
-            }
-          },
         });
 
         break;
@@ -707,15 +632,6 @@ const stepFlow = async (
             } else {
               await protocolUSDN.withdraw(ctxU, amount, noble, way.claim);
               return { srcPos: pos };
-            }
-          },
-          recover: async ({ noble }) => {
-            assert(noble); // per nobleMentioned below
-            await null;
-            if (isSupply) {
-              Fail`no recovery from supply (final step)`;
-            } else {
-              await protocolUSDN.supply(ctxU, amount, noble);
             }
           },
         });
@@ -759,7 +675,7 @@ const stepFlow = async (
   });
   reporter.publishFlowSteps(
     flowId,
-    todo.map(({ apply: _a, recover: _r, ...data }) => data),
+    todo.map(({ apply: _a, ...data }) => data),
   );
 
   const agoric = await provideCosmosAccount(orch, 'agoric', kit, traceFlow);
@@ -840,11 +756,12 @@ const stepFlow = async (
  * More generally: move assets as instructed by client.
  *
  * **Non-Atomic Operations**: Cross-chain flows are not atomic. If operations
- * fail partway through, assets may be left in intermediate accounts.
- * Recovery is attempted but can also fail, leaving assets "stranded".
+ * fail partway through, assets may be left in intermediate accounts and must
+ * be reconciled manually.
  *
  * **Client Recovery**: If rebalancing fails, check flow status in vstorage
- * and call rebalance() again to move assets to desired destinations.
+ * and call rebalance() again (or another corrective flow) to move assets to
+ * desired destinations.
  *
  * **Input Validation**: ASSUME caller validates args
  *

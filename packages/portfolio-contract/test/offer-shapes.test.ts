@@ -156,11 +156,6 @@ test('vstorage flow type matches shape', t => {
       step: 1,
       how: 'deposit',
     },
-    undoingFlow: {
-      state: 'undo',
-      step: 2,
-      how: 'withdraw',
-    },
     completedFlow: {
       state: 'done',
     },
