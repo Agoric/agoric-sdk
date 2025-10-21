@@ -3,13 +3,14 @@
 
 import path from 'node:path';
 import popen from 'node:child_process';
+
 import tmp from 'tmp';
 
 import { parseLocatedJson } from './json.js';
 
 import {
   makeBundlePublisher,
-  makeAgdBundlePublisher,
+  makeCosmosBundlePublisher,
 } from './publish.js';
 
 /** @import { AgdLoggingLevel, AgdSignMode } from './publish.js' */
@@ -84,7 +85,7 @@ const publishMain = async (progname, rawArgs, powers, opts) => {
     const bundleText = await fs.readFile(bundlePath, 'utf-8');
     const bundle = parseLocatedJson(bundleText, bundlePath);
 
-    const publishBundleAgd = makeAgdBundlePublisher({
+    const publishBundleCosmos = makeCosmosBundlePublisher({
       pathResolve: path.resolve,
       writeFile: fs.writeFile,
       tmpDirSync: tmp.dirSync,
@@ -97,7 +98,7 @@ const publishMain = async (progname, rawArgs, powers, opts) => {
           'Invariant: publishBundle will never call getDefaultConnection because we provide an explicit connectionSpec',
         );
       },
-      publishBundleCosmos: publishBundleAgd,
+      publishBundleCosmos,
     });
 
     // AWAIT

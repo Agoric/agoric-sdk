@@ -1,14 +1,17 @@
 // @ts-check
 /* eslint-env node */
 
+import path from 'node:path';
+import http from 'node:http';
+import popen from 'node:child_process';
+
+import inquirer from 'inquirer';
+import tmp from 'tmp';
+
 import { X } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 import { E, makeCapTP } from '@endo/captp';
 import { makeLeaderFromRpcAddresses } from '@agoric/casting';
-import path from 'path';
-import http from 'http';
-import inquirer from 'inquirer';
-import { SigningStargateClient } from '@cosmjs/stargate';
 import { whileTrue } from '@agoric/internal';
 
 import { getAccessToken } from '@agoric/access-token';
@@ -325,10 +328,11 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
   };
 
   const publishBundleCosmos = makeCosmosBundlePublisher({
-    connectWithSigner: SigningStargateClient.connectWithSigner,
     pathResolve: path.resolve,
-    readFile: fs.readFile,
+    writeFile: fs.writeFile,
+    tmpDirSync: tmp.dirSync,
     random: Math.random,
+    spawn: popen.spawn,
   });
   const publishBundleHttp = makeHttpBundlePublisher({
     getAccessToken,

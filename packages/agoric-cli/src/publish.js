@@ -10,44 +10,8 @@ import {
   makeLeaderFromRpcAddresses,
   makeCastingSpec,
 } from '@agoric/casting';
-import { DirectSecp256k1HdWallet, Registry } from '@cosmjs/proto-signing';
-import { defaultRegistryTypes } from '@cosmjs/stargate';
-import { stringToPath } from '@cosmjs/crypto';
-import { Decimal } from '@cosmjs/math';
-import { fromBech32 } from '@cosmjs/encoding';
-import { CodecHelper } from '@agoric/cosmic-proto';
-import { MsgInstallBundle as MsgInstallBundleType } from '@agoric/cosmic-proto/swingset/msgs.js';
-
-const MsgInstallBundle = CodecHelper(MsgInstallBundleType);
 
 import { makePspawn, getSDKBinaries } from './helpers.js';
-
-// https://github.com/Agoric/agoric-sdk/blob/master/golang/cosmos/daemon/main.go
-const Agoric = {
-  Bech32MainPrefix: 'agoric',
-  CoinType: 564,
-  proto: {
-    swingset: {
-      InstallBundle: {
-        // matches package agoric.swingset in swingset/msgs.go
-        typeUrl: '/agoric.swingset.MsgInstallBundle',
-      },
-    },
-  },
-  // arbitrary fee for installing a bundle
-  fee: { amount: [], gas: '50000000' },
-  // Agoric chain does not use cosmos gas (yet?)
-  gasPrice: { denom: 'uist', amount: Decimal.fromUserInput('50000000', 0) },
-};
-
-const hdPath = (coinType = 118, account = 0) =>
-  stringToPath(`m/44'/${coinType}'/${account}'/0/0`);
-
-// @ts-expect-error difference in private property _push
-const registry = new Registry([
-  ...defaultRegistryTypes,
-  [Agoric.proto.swingset.InstallBundle.typeUrl, MsgInstallBundle],
-]);
 
 /**
  * @typedef {object} JsonHttpRequest
@@ -239,7 +203,7 @@ const urlForRpcAddress = address => {
  * @param {() => number} powers.random - a random number in the interval [0, 1)
  * @param {typeof import('child_process').spawn} powers.spawn
  */
-export const makeAgdBundlePublisher = ({
+export const makeCosmosBundlePublisher = ({
   pathResolve,
   writeFile,
   random,
@@ -404,117 +368,6 @@ export const makeAgdBundlePublisher = ({
   };
 
   return publishBundleAgd;
-};
-
-/**
- * @param {object} args
- * @param {typeof import('path').resolve} args.pathResolve
- * @param {typeof import('fs').promises.readFile} args.readFile
- * @param {typeof import('@cosmjs/stargate').SigningStargateClient.connectWithSigner} args.connectWithSigner
- * @param {() => number} args.random - a random number in the interval [0, 1)
- */
-export const makeCosmosBundlePublisher = ({
-  pathResolve,
-  readFile,
-  connectWithSigner,
-  random,
-}) => {
-  /**
-   * @param {unknown} bundle
-   * @param {CosmosConnectionSpec} connectionSpec
-   */
-  const publishBundleCosmos = async (bundle, connectionSpec) => {
-    const { homeDirectory, rpcAddresses } = connectionSpec;
-
-    if (typeof homeDirectory !== 'string') {
-      throw Error(
-        `Required flag for agoric publish: -h, --home <directory>, containing ag-solo-mnemonic`,
-      );
-    }
-
-    assert.typeof(bundle, 'object', 'Bundles must be objects');
-    assert(bundle !== null, 'Bundles must be objects');
-    const { endoZipBase64Sha512: expectedEndoZipBase64Sha512 } = bundle;
-
-    const leader = makeLeaderFromRpcAddresses(rpcAddresses);
-
-    const file = await readFile(
-      pathResolve(homeDirectory, 'ag-solo-mnemonic'),
-      'ascii',
-    );
-    // AWAIT
-    const mnemonic = file.trim();
-
-    const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
-      prefix: Agoric.Bech32MainPrefix,
-      hdPaths: [hdPath(Agoric.CoinType, 0), hdPath(Agoric.CoinType, 1)],
-    });
-
-    const [from] = await wallet.getAccounts();
-
-    const installBundleMsg = {
-      bundle: JSON.stringify(bundle),
-      submitter: fromBech32(from.address).data,
-    };
-
-    /** @type {Array<import('@cosmjs/proto-signing').EncodeObject>} */
-    const encodeObjects = [
-      {
-        typeUrl: Agoric.proto.swingset.InstallBundle.typeUrl,
-        value: installBundleMsg,
-      },
-    ];
-
-    let height;
-    for (let attempt = 0; ; attempt += 1) {
-      const rpcAddress = choose(rpcAddresses, random());
-
-      // TODO round-robin rpcAddress, create client proxy that rotates through clients
-      // or push round-robin down to a Tendermint34Client concern (where it ought to be)
-      const endpoint = urlForRpcAddress(rpcAddress);
-
-      // AWAIT
-      const stargateClient = await connectWithSigner(endpoint, wallet, {
-        gasPrice: Agoric.gasPrice,
-        registry,
-      });
-
-      // AWAIT
-      const result = await stargateClient
-        .signAndBroadcast(from.address, encodeObjects, Agoric.fee)
-        .catch(error => {
-          console.error(error);
-          return null;
-        });
-      if (result !== null) {
-        let code;
-        ({ code, height } = result);
-        if (code === 0) {
-          break;
-        }
-      }
-
-      // AWAIT
-      await E(leader).jitter('agoric CLI deploy');
-    }
-
-    const castingSpec = makeCastingSpec(':bundles');
-    const follower = makeFollower(castingSpec, leader);
-
-    for await (const envelope of iterateEach(follower, { height })) {
-      const { value } = envelope;
-      const { endoZipBase64Sha512, installed, error } = value;
-      if (endoZipBase64Sha512 === expectedEndoZipBase64Sha512) {
-        if (!installed) {
-          throw error;
-        } else {
-          return;
-        }
-      }
-    }
-  };
-
-  return publishBundleCosmos;
 };
 
 /**
