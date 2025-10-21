@@ -1,0 +1,95 @@
+name: Build CoreEval
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package name'
+        required: true
+        type: string
+      branch:
+        description: 'Branch name to checkout'
+        required: false
+        type: string
+        default: 'master'
+  pull_request:
+
+jobs:
+  build-bundle:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          submodules: 'true'
+
+      - name: Clean repository
+        run: |
+          git clean -xdf
+          git submodule foreach --recursive git clean -xdf
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable Corepack and install dependencies
+        run: |
+          corepack enable
+          yarn install
+
+      - name: Build project
+        run: yarn build
+
+      - name: Build CoreEval bundle
+        id: build-bundle
+        working-directory: packages/${{ inputs.package }}
+        run: |
+          set -o pipefail
+          echo "=== Running yarn build ==="
+          yarn build
+          echo "=== Running yarn build:bundle ==="
+          yarn build:bundle
+          echo "Bundle build completed"
+
+      - name: Extract bundle IDs
+        id: extract-bundle-ids
+        working-directory: packages/${{ inputs.package }}/dist
+        run: |
+          echo "=== Extracting Bundle IDs ==="
+
+          BUNDLE_IDS=""
+
+          # Find all JSON files that are not meta.json files
+          for json_file in *.json; do
+            if [[ "$json_file" == *meta.json ]]; then
+              continue
+            fi
+
+            if [[ -f "$json_file" ]]; then
+              echo "Processing: $json_file"
+
+              # Extract hash and prepend with b1-
+              HASH=$(jq -r .endoZipBase64Sha512 "$json_file")
+              BUNDLE_ID="b1-${HASH}"
+
+              echo "  Bundle ID: $BUNDLE_ID"
+
+              # Collect bundle IDs for output
+              if [ -z "$BUNDLE_IDS" ]; then
+                BUNDLE_IDS="$BUNDLE_ID"
+              else
+                BUNDLE_IDS="$BUNDLE_IDS, $BUNDLE_ID"
+              fi
+            fi
+          done
+
+          echo "bundle_ids=$BUNDLE_IDS" >> $GITHUB_OUTPUT
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coreeval-artifacts-${{ inputs.package }}-${{ github.run_number }}
+          path: packages/${{ inputs.package }}/dist/
