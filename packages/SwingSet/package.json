@@ -38,6 +38,7 @@
     "@agoric/time": "workspace:*",
     "@agoric/vat-data": "workspace:*",
     "@agoric/xsnap-lockdown": "workspace:*",
+    "@agoric/zone": "workspace:*",
     "@endo/base64": "^1.0.12",
     "@endo/bundle-source": "^4.1.2",
     "@endo/captp": "^4.4.8",

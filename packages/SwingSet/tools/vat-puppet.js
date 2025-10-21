@@ -7,6 +7,9 @@ import { Fail, q } from '@endo/errors';
 import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { objectMap } from '@agoric/internal';
+import { M } from '@agoric/store';
+import { watchPromise } from '@agoric/vat-data';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 
 /**
  * @callback Die
@@ -25,12 +28,46 @@ import { objectMap } from '@agoric/internal';
  * @typedef {Array<[name: string, ...args: unknown[]]>} CallLog
  */
 
+const PromiseWatcherI = M.interface('PromiseWatcher', {
+  onFulfilled: M.call(M.any()).returns(),
+  onRejected: M.call(M.any()).returns(),
+  getResult: M.call().returns(
+    M.or(['unsettled'], [M.or('fulfilled', 'rejected'), M.any()]),
+  ),
+});
+/** @param {unknown} [remoteTarget] */
+const initPromiseWatcher = remoteTarget =>
+  harden({ remoteTarget, result: ['unsettled'] });
+const promiseWatcherMethods = {
+  onFulfilled(value) {
+    this.state.result = harden(['fulfilled', value]);
+    if (!this.state.remoteTarget) return;
+    void E(this.state.remoteTarget).onFulfilled(value);
+  },
+  onRejected(value) {
+    this.state.result = harden(['rejected', value]);
+    if (!this.state.remoteTarget) return;
+    void E(this.state.remoteTarget).onRejected(value);
+  },
+  getResult() {
+    return this.state.result;
+  },
+};
+
 /**
  * @param {import('@agoric/swingset-vat').VatPowers} vatPowers
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {unknown} [vatParameters]
  */
 export const makeReflectionMethods = (vatPowers, baggage, vatParameters) => {
+  const zone = makeDurableZone(baggage);
+  const makePromiseWatcher = zone.exoClass(
+    'PromiseWatcher',
+    PromiseWatcherI,
+    initPromiseWatcher,
+    promiseWatcherMethods,
+  );
+
   let baggageHoldCount = 0;
   /** @type {Map<object, CallLog>} */
   const callLogsByRemotable = new Map();
@@ -135,6 +172,11 @@ export const makeReflectionMethods = (vatPowers, baggage, vatParameters) => {
 
     throw: message => {
       throw Error(message);
+    },
+
+    watchSettledPromiseByProxy: (settlement, watcher, ...args) => {
+      const watcherProxy = makePromiseWatcher(watcher);
+      watchPromise(Promise.resolve(settlement), watcherProxy, ...args);
     },
   };
 };
