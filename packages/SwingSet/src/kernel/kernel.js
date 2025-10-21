@@ -43,6 +43,23 @@ import { makeVatAdminHooks } from './vat-admin-hooks.js';
 /**
  * @import {MeterConsumption, VatDeliveryObject, VatDeliveryResult, VatSyscallObject, VatSyscallResult} from '@agoric/swingset-liveslots';
  * @import {PolicyInputCleanupCounts} from '../types-external.js';
+ * @import {
+ *   VatID,
+ *   InternalDynamicVatOptions,
+ *   RunQueueEvent,
+ *   RunQueueEventNotify,
+ *   RunQueueEventSend,
+ *   RunQueueEventCreateVat,
+ *   RunQueueEventUpgradeVat,
+ *   RunQueueEventChangeVatOptions,
+ *   RunQueueEventStartVat,
+ *   RunQueueEventDropExports,
+ *   RunQueueEventRetireExports,
+ *   RunQueueEventRetireImports,
+ *   RunQueueEventNegatedGCAction,
+ *   RunQueueEventBringOutYourDead,
+ *   RunQueueEventCleanupTerminatedVat,
+ * } from '../types-internal.js';
  */
 
 function abbreviateReplacer(_, arg) {
@@ -1265,25 +1282,6 @@ export default function buildKernel(
   }
 
   const gcMessages = ['dropExports', 'retireExports', 'retireImports'];
-
-  /**
-   * @typedef { import('../types-internal.js').VatID } VatID
-   * @typedef { import('../types-internal.js').InternalDynamicVatOptions } InternalDynamicVatOptions
-   *
-   * @typedef { import('../types-internal.js').RunQueueEventNotify } RunQueueEventNotify
-   * @typedef { import('../types-internal.js').RunQueueEventSend } RunQueueEventSend
-   * @typedef { import('../types-internal.js').RunQueueEventCreateVat } RunQueueEventCreateVat
-   * @typedef { import('../types-internal.js').RunQueueEventUpgradeVat } RunQueueEventUpgradeVat
-   * @typedef { import('../types-internal.js').RunQueueEventChangeVatOptions } RunQueueEventChangeVatOptions
-   * @typedef { import('../types-internal.js').RunQueueEventStartVat } RunQueueEventStartVat
-   * @typedef { import('../types-internal.js').RunQueueEventDropExports } RunQueueEventDropExports
-   * @typedef { import('../types-internal.js').RunQueueEventRetireExports } RunQueueEventRetireExports
-   * @typedef { import('../types-internal.js').RunQueueEventRetireImports } RunQueueEventRetireImports
-   * @typedef { import('../types-internal.js').RunQueueEventNegatedGCAction } RunQueueEventNegatedGCAction
-   * @typedef { import('../types-internal.js').RunQueueEventBringOutYourDead } RunQueueEventBringOutYourDead
-   * @typedef { import('../types-internal.js').RunQueueEventCleanupTerminatedVat } RunQueueEventCleanupTerminatedVat
-   * @typedef { import('../types-internal.js').RunQueueEvent } RunQueueEvent
-   */
 
   /**
    *
