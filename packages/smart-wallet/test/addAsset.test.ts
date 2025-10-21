@@ -344,7 +344,7 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
     const want = {
       Places: AmountMath.make(
         wkBrand.Place,
-        makeCopyBag(choices.map<[string, bigint]>(name => [name, 1n])),
+        makeCopyBag(choices.map(name => [name, 1n])),
       ),
     };
     const give = { Price: AmountMath.make(wkBrand.IST, 25n * CENT) };
@@ -482,7 +482,7 @@ test.serial('non-vbank asset: give before deposit', async t => {
     const give = {
       Places: AmountMath.make(
         wkBrand.Place,
-        makeCopyBag(choices.map<[string, bigint]>(name => [name, 1n])),
+        makeCopyBag(choices.map(name => [name, 1n])),
       ),
     };
     const want = { Price: AmountMath.make(wkBrand.IST, 25n * CENT) };
