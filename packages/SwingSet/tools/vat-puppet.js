@@ -8,8 +8,7 @@ import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { objectMap } from '@agoric/internal';
 import { M } from '@agoric/store';
-import { watchPromise } from '@agoric/vat-data';
-import { makeDurableZone } from '@agoric/zone/durable.js';
+import { prepareExoClass, watchPromise } from '@agoric/vat-data';
 
 /**
  * @callback Die
@@ -60,8 +59,12 @@ const promiseWatcherMethods = {
  * @param {unknown} [vatParameters]
  */
 export const makeReflectionMethods = (vatPowers, baggage, vatParameters) => {
-  const zone = makeDurableZone(baggage);
-  const makePromiseWatcher = zone.exoClass(
+  // Avoid a @agoric/swingset-vat -> @agoric/zone -> @agoric/swingset-vat
+  // dependency cycle.
+  // const zone = makeDurableZone(baggage);
+  // const makePromiseWatcher = zone.exoClass(...);
+  const makePromiseWatcher = prepareExoClass(
+    baggage,
     'PromiseWatcher',
     PromiseWatcherI,
     initPromiseWatcher,
