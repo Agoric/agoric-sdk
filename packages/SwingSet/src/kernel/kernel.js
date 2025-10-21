@@ -62,6 +62,16 @@ import { makeVatAdminHooks } from './vat-admin-hooks.js';
  * } from '../types-internal.js';
  */
 
+/** @type {Set<RunQueueEvent['type']>} */
+const gcTypes = new Set([
+  'bringOutYourDead',
+  'dropExports',
+  'retireExports',
+  'retireImports',
+]);
+/** @type {(messageType: RunQueueEvent['type']) => boolean} */
+const isGCType = messageType => gcTypes.has(messageType);
+
 function abbreviateReplacer(_, arg) {
   if (typeof arg === 'bigint') {
     return Number(arg);
@@ -1169,14 +1179,16 @@ export default function buildKernel(
     } else if (message.type === 'changeVatOptions') {
       // prettier-ignore
       return `changeVatOptions ${message.vatID} options: ${JSON.stringify(message.options)}`;
-    } else if (gcMessages.includes(message.type)) {
-      // prettier-ignore
-      return `${message.type} ${message.vatID} ${message.krefs.map(e=>`@${e}`).join(' ')}`;
     } else if (
       message.type === 'bringOutYourDead' ||
       message.type === 'startVat'
     ) {
       return `${message.type} ${message.vatID}`;
+    } else if (isGCType(message.type)) {
+      // All GC messages other than bringOutYourDead include a list of krefs.
+      const krefs = message.krefs.map(e => `@${e}`).join(' ');
+      // prettier-ignore
+      return `${message.type} ${message.vatID} ${krefs}`;
     } else {
       return `unknown message type ${message.type}`;
     }
@@ -1281,8 +1293,6 @@ export default function buildKernel(
     kernelKeeper.decrementRefCount(message.kpid, `deq|notify`);
   }
 
-  const gcMessages = ['dropExports', 'retireExports', 'retireImports'];
-
   /**
    *
    * Dispatch one delivery event. Eventually, this will be called in a
@@ -1342,15 +1352,16 @@ export default function buildKernel(
       deliverP = processUpgradeVat(message);
     } else if (message.type === 'changeVatOptions') {
       deliverP = processChangeVatOptions(message);
-    } else if (message.type === 'bringOutYourDead') {
-      deliverP = processBringOutYourDead(message);
     } else if (message.type === 'negated-gc-action') {
       // processGCActionSet pruned some negated actions, but had no GC
       // action to perform. Record the DB changes in their own crank.
     } else if (message.type === 'cleanup-terminated-vat') {
       deliverP = processCleanupTerminatedVat(message);
-    } else if (gcMessages.includes(message.type)) {
-      deliverP = processGCMessage(message);
+    } else if (isGCType(message.type)) {
+      deliverP =
+        message.type === 'bringOutYourDead'
+          ? processBringOutYourDead(message)
+          : processGCMessage(message);
     } else {
       Fail`unable to process message.type ${message.type}`;
     }
