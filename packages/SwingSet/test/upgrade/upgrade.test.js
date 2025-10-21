@@ -4,7 +4,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { assert } from '@endo/errors';
 import bundleSource from '@endo/bundle-source';
-import { objectMap } from '@agoric/internal';
+import { objectMap, objectMapMutable } from '@agoric/internal';
 import { kser, kunser, krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { parseReachableAndVatSlot } from '../../src/kernel/state/reachable.js';
@@ -17,6 +17,9 @@ import {
 import { bundleOpts, restartVatAdminVat } from '../util.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
+/** @type {(pathRecord: Record<string, string>) => Record<string, { sourceSpec: string }>} */
+const specsFromPaths = pathRecord =>
+  objectMapMutable(pathRecord, path => ({ sourceSpec: bfile(path) }));
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
@@ -44,29 +47,16 @@ const dumpState = (debug, vatID) => {
  */
 const makeConfigFromPaths = (bootstrapVatPath, options = {}) => {
   const { staticVatPaths = {}, bundlePaths = {}, ...kernelOptions } = options;
-  /**
-   * @param {Record<string, string>} paths
-   * @returns {Record<string, {sourceSpec: string}>}
-   */
-  const specsFromPaths = paths => {
-    const entries = Object.entries(paths).map(([name, path]) => [
-      name,
-      { sourceSpec: bfile(path) },
-    ]);
-    return Object.fromEntries(entries);
-  };
+
   assert(!Object.hasOwn(staticVatPaths, 'bootstrap'));
-  const vats = specsFromPaths({
-    bootstrap: bootstrapVatPath,
-    ...staticVatPaths,
-  });
-  const bundles = specsFromPaths(bundlePaths);
+  const vatPaths = { bootstrap: bootstrapVatPath, ...staticVatPaths };
+
   return {
     includeDevDependencies: true, // for vat-data
     ...kernelOptions,
     bootstrap: 'bootstrap',
-    vats,
-    bundles,
+    vats: specsFromPaths(vatPaths),
+    bundles: specsFromPaths(bundlePaths),
   };
 };
 
