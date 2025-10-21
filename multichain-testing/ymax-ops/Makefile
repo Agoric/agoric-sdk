@@ -140,6 +140,8 @@ fund-fee-acct: ,$(CONTRACT)-node.json
 
 
 ,$(CONTRACT)-upgraded: ,ymax-bundle-id ,ymax-installed ,privateArgsOverrides.json
+	# check that the account we're using matches the contract we're upgrading...
+	$(YMAX_TOOL) --repl </dev/null | grep $(YMAX_CONTROL_ADDR)
 	AGORIC_NET=$(AGORIC_NET) \
 		$(YMAX_TOOL) --upgrade <,privateArgsOverrides.json $$(cat ,ymax-bundle-id) >$@ || (rm $@; false)
 
