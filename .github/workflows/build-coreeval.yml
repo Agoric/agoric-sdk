@@ -12,7 +12,6 @@ on:
         required: false
         type: string
         default: 'master'
-  pull_request:
 
 jobs:
   build-bundle:
