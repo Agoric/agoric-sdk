@@ -140,7 +140,15 @@ export const makeReflectionMethods = (vatPowers, baggage, vatParameters) => {
 };
 harden(makeReflectionMethods);
 
-export function buildRootObject(vatPowers, vatParameters, baggage) {
+export async function buildRootObject(vatPowers, vatParameters, baggage) {
   const methods = makeReflectionMethods(vatPowers, baggage, vatParameters);
-  return Far('root', methods);
+  const rootObject = Far('root', methods);
+
+  const { initialCalls = [] } = vatParameters || {};
+  await null;
+  for (const [methodName, ...args] of initialCalls) {
+    await rootObject[methodName](...args);
+  }
+
+  return rootObject;
 }
