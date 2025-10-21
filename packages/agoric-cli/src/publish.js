@@ -20,6 +20,8 @@ import { MsgInstallBundle as MsgInstallBundleType } from '@agoric/cosmic-proto/s
 
 const MsgInstallBundle = CodecHelper(MsgInstallBundleType);
 
+import { makePspawn, getSDKBinaries } from './helpers.js';
+
 // https://github.com/Agoric/agoric-sdk/blob/master/golang/cosmos/daemon/main.go
 const Agoric = {
   Bech32MainPrefix: 'agoric',
@@ -150,11 +152,13 @@ const assertCosmosConnectionSpec = connectionSpec => {
     'string',
     `connection chainID must be a string, got ${chainID}`,
   );
-  assert.typeof(
-    homeDirectory,
-    'string',
-    `connection homeDirectory must be a string, got ${homeDirectory}`,
-  );
+  if (homeDirectory !== undefined) {
+    assert.typeof(
+      homeDirectory,
+      'string',
+      `connection homeDirectory must be a string if present, got ${homeDirectory}`,
+    );
+  }
 
   assert(
     Array.isArray(rpcAddresses),
@@ -228,6 +232,181 @@ const urlForRpcAddress = address => {
 };
 
 /**
+ * @param {object} powers
+ * @param {typeof import('path').resolve} powers.pathResolve
+ * @param {typeof import('fs').promises.writeFile} powers.writeFile
+ * @param {typeof import('tmp').dirSync} powers.tmpDirSync
+ * @param {() => number} powers.random - a random number in the interval [0, 1)
+ * @param {typeof import('child_process').spawn} powers.spawn
+ */
+export const makeAgdBundlePublisher = ({
+  pathResolve,
+  writeFile,
+  random,
+  spawn,
+  tmpDirSync,
+}) => {
+  const publishBundleAgd = async (bundle, connectionSpec, transactionSpec) => {
+    await null;
+
+    const { useSdk = false } = transactionSpec ?? {};
+
+    const sdkPrefixes = {};
+    if (!useSdk) {
+      const agoricPrefix = pathResolve(`node_modules/@agoric`);
+      sdkPrefixes.goPfx = agoricPrefix;
+      sdkPrefixes.jsPfx = agoricPrefix;
+    }
+
+    const pspawnEnv = { ...process.env, DEBUG: 'agoric,deploy,deploy:publish' };
+    const pspawn = makePspawn({ env: pspawnEnv, spawn, log: console });
+
+    const { cosmosHelper } = getSDKBinaries(sdkPrefixes);
+
+    /**
+     * @param {unknown} bundle
+     * @param {CosmosConnectionSpec} connectionSpec
+     * @param {TransactionSpec} [transactionSpec]
+     */
+    assert.typeof(bundle, 'object', 'Bundles must be objects');
+    assert(bundle !== null, 'Bundles must be objects');
+    const { endoZipBase64Sha512: expectedEndoZipBase64Sha512 } = bundle;
+
+    const {
+      chainID = 'agoriclocal',
+      homeDirectory,
+      rpcAddresses,
+    } = connectionSpec;
+
+    const { name: tempDirPath, removeCallback: removeTemporaryBundle } =
+      tmpDirSync({
+        unsafeCleanup: true,
+        prefix: 'agoric-cli-bundle-',
+      });
+
+    const leader = makeLeaderFromRpcAddresses(rpcAddresses);
+    let height;
+
+    try {
+      const tempFilePath = pathResolve(tempDirPath, 'bundle.json');
+      await writeFile(tempFilePath, `${JSON.stringify(bundle)}\n`);
+
+      for (let attempt = 0; ; attempt += 1) {
+        const rpcAddress = choose(rpcAddresses, random());
+
+        const {
+          gas = 'auto',
+          gasAdjustment = '1.2',
+          gasPrices = undefined,
+          home = homeDirectory
+            ? pathResolve(homeDirectory, 'ag-cosmos-helper-statedir')
+            : undefined,
+          node = urlForRpcAddress(rpcAddress),
+          keyringBackend = 'test',
+          keyringDirectory = undefined,
+          from: fromLabel = 'ag-solo',
+          interactive = false,
+          ledger = false,
+          feeGranter = undefined,
+          feePayer = undefined,
+          fees = undefined,
+          note = undefined,
+          signMode = undefined,
+          timeoutHeight = undefined,
+          logFormat = undefined,
+          logNoColor = false,
+          trace = false,
+        } = transactionSpec ?? {};
+
+        const args = [
+          'tx',
+          'swingset',
+          'install-bundle',
+          '--compress',
+          ...['--gas', gas],
+          ...['--gas-adjustment', gasAdjustment],
+          ...(feeGranter !== undefined? ['--fee-granter', feeGranter] : []),
+          ...(feePayer !== undefined? ['--fee-payer', feePayer] : []),
+          ...(fees!== undefined ? ['--fees', fees] : []),
+          ...(gasPrices !== undefined? ['--gas-prices', gasPrices] : []),
+          ...(home !== undefined? ['--home', home] : []),
+          ...(ledger ? ['--ledger'] : []),
+          ...(note !== undefined ? ['--note', note] : []),
+          ...(signMode !== undefined ? ['--sign-mode', signMode] : []),
+          ...['--node', node],
+          ...['--keyring-backend', keyringBackend],
+          ...(keyringDirectory !== undefined ? ['--keyring-dir', keyringDirectory] : []),
+          ...['--from', fromLabel],
+          ...['--chain-id', chainID],
+          // The CLI help claims that the modes are sync|async.
+          // The mode "block" works, and is presumed equivalent to sync.
+          ...['--broadcast-mode', 'sync'],
+          ...['--output', 'json'],
+          ...(interactive ? [] : ['--yes']),
+          ...(timeoutHeight !== undefined ? ['--timeout-height', timeoutHeight] : []),
+          // Cosmos CLI went with snake_case for log flags and no governing
+          // principle is in evidence.
+          ...(logFormat !== undefined ? ['--log_format', logFormat] : []),
+          ...(logNoColor ? ['--log_no_color'] : []),
+          ...(trace ? ['--trace'] : []),
+          `@${tempFilePath}`,
+        ];
+        const promise = pspawn(cosmosHelper, args, {
+          stdio: ['inherit', 'pipe', 'inherit'],
+        });
+        const { childProcess } = promise;
+        const { stdout } = childProcess;
+        assert(stdout);
+        const buffer = new ArrayBuffer(1024, { maxByteLength: 0x1_00_00_00_00});
+        const bytes = new Uint8Array(buffer);
+        let byteLength = 0;
+        stdout.on('data', chunk => {
+          while (byteLength + chunk.byteLength >= buffer.byteLength) {
+            buffer.resize(buffer.byteLength * 2);
+          }
+          bytes.set(chunk, byteLength);
+          byteLength += chunk.byteLength;
+        });
+        const exitCode = await promise;
+        if (exitCode === 0) {
+          const text = new TextDecoder().decode(bytes.subarray(0, byteLength));
+          const json = JSON.parse(text);
+          const { code } = json;
+          if (code === 0) {
+            const { height: heightString } = json;
+            height = parseInt(heightString, 10);
+            break;
+          }
+          console.error(json);
+        }
+
+        // AWAIT
+        await E(leader).jitter('agoric CLI deploy');
+      }
+    } finally {
+      removeTemporaryBundle();
+    }
+
+    const castingSpec = makeCastingSpec(':bundles');
+    const follower = makeFollower(castingSpec, leader);
+
+    for await (const envelope of iterateEach(follower, { height })) {
+      const { value } = envelope;
+      const { endoZipBase64Sha512, installed, error } = value;
+      if (endoZipBase64Sha512 === expectedEndoZipBase64Sha512) {
+        if (!installed) {
+          throw error;
+        } else {
+          return;
+        }
+      }
+    }
+  };
+
+  return publishBundleAgd;
+};
+
+/**
  * @param {object} args
  * @param {typeof import('path').resolve} args.pathResolve
  * @param {typeof import('fs').promises.readFile} args.readFile
@@ -246,6 +425,12 @@ export const makeCosmosBundlePublisher = ({
    */
   const publishBundleCosmos = async (bundle, connectionSpec) => {
     const { homeDirectory, rpcAddresses } = connectionSpec;
+
+    if (typeof homeDirectory !== 'string') {
+      throw Error(
+        `Required flag for agoric publish: -h, --home <directory>, containing ag-solo-mnemonic`,
+      );
+    }
 
     assert.typeof(bundle, 'object', 'Bundles must be objects');
     assert(bundle !== null, 'Bundles must be objects');
@@ -343,6 +528,7 @@ export const makeCosmosBundlePublisher = ({
  * @callback PublishBundleHttp
  * @param {SourceBundle} bundle
  * @param {HttpConnectionSpec} connectionSpec
+ * @param {TransactionSpec | undefined} transactionSpec
  * @returns {Promise<void>}
  */
 
@@ -354,6 +540,34 @@ export const makeCosmosBundlePublisher = ({
  * @property {Array<string>} rpcAddresses
  */
 
+/** @typedef {'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal' | 'panic'} AgdLoggingLevel */
+/** @typedef {'direct' | 'amino-json' | 'direct-aux'} AgdSignMode */
+
+/**
+ * @typedef {object} TransactionSpec
+ * @property {string | undefined} feeGranter
+ * @property {string | undefined} feePayer
+ * @property {string | undefined} fees
+ * @property {string | undefined} from
+ * @property {string | undefined} gas
+ * @property {string | undefined} gasAdjustment
+ * @property {string | undefined} gasPrices
+ * @property {string | undefined} home
+ * @property {string | undefined} keyringBackend
+ * @property {string | undefined} keyringDirectory
+ * @property {boolean} ledger
+ * @property {'json' | 'plain'} logFormat
+ * @property {boolean} logNoColor
+ * @property {AgdLoggingLevel} loggingLevel
+ * @property {string | undefined} node
+ * @property {string | undefined} note
+ * @property {AgdSignMode} signMode
+ * @property {string | undefined} timeoutHeight
+ * @property {string | undefined} tip
+ * @property {string | undefined} trace
+ * @property {boolean} useSdk
+ */
+
 /**
  * @typedef {HttpConnectionSpec | CosmosConnectionSpec} ConnectionSpec
  */
@@ -362,6 +576,7 @@ export const makeCosmosBundlePublisher = ({
  * @callback PublishBundleCosmos
  * @param {SourceBundle} bundle
  * @param {CosmosConnectionSpec} connectionSpec
+ * @param {TransactionSpec | undefined} transactionSpec
  * @returns {Promise<void>}
  */
 
@@ -372,6 +587,7 @@ export const makeCosmosBundlePublisher = ({
 /**
  * @param {SourceBundle} bundle
  * @param {ConnectionSpec | undefined} connectionSpec
+ * @param {TransactionSpec | undefined} transactionSpec
  * @param {object} powers
  * @param {PublishBundleCosmos} [powers.publishBundleCosmos]
  * @param {PublishBundleHttp} [powers.publishBundleHttp]
@@ -381,6 +597,7 @@ export const makeCosmosBundlePublisher = ({
 const publishBundle = async (
   bundle,
   connectionSpec,
+  transactionSpec,
   { publishBundleCosmos, publishBundleHttp, getDefaultConnection },
 ) => {
   // We attempt to construct a hash bundle for the given bundle first, to
@@ -444,14 +661,14 @@ const publishBundle = async (
       publishBundleHttp,
       'HTTP installation transaction publisher required',
     );
-    p = publishBundleHttp(bundle, connectionSpec);
+    p = publishBundleHttp(bundle, connectionSpec, transactionSpec);
   } else if (type === 'chain-cosmos-sdk') {
     assertCosmosConnectionSpec(connectionSpec);
     assert(
       publishBundleCosmos,
       'Cosmos SDK installation transaction publisher required',
     );
-    p = publishBundleCosmos(bundle, connectionSpec);
+    p = publishBundleCosmos(bundle, connectionSpec, transactionSpec);
   } else if (type === 'fake-chain') {
     // For the purposes of submitting a bundle to an API like
     // E(zoe).install(bundle), in the cases where the publication target does
@@ -480,7 +697,8 @@ export const makeBundlePublisher = powers => {
   /**
    * @param {SourceBundle} bundle
    * @param {ConnectionSpec} [connectionSpec]
+   * @param {TransactionSpec} [transactionSpec]
    */
-  return async (bundle, connectionSpec) =>
-    publishBundle(bundle, connectionSpec, powers);
+  return async (bundle, connectionSpec, transactionSpec) =>
+    publishBundle(bundle, connectionSpec, transactionSpec, powers);
 };
