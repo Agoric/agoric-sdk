@@ -41,6 +41,6 @@ import { main } from './main.ts';
 })()
   .then(() => process.exit())
   .catch(err => {
-    console.error('Error in main:', err);
+    console.error(err);
     process.exit(1);
   });

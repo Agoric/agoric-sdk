@@ -96,7 +96,12 @@ export class CosmosRPCClient extends JSONRPCClient {
         for await (const _ of heartbeats) {
           if (this.#isClosed) break;
           if (!gotPong) {
-            onError(Error('pong timeout'));
+            const err = Error('WebSocket pong timeout');
+            Object.defineProperty(err, 'code', {
+              value: 'WEBSOCKET_PONG_TIMEOUT',
+              enumerable: true,
+            });
+            onError(err);
             ws.terminate();
             break;
           }
