@@ -5,7 +5,7 @@ const { stringify: jq } = JSON;
  *   1. set RECORDING=true in interpose-net-access.test.js
  *   2. run: yarn test test/interpose-net-access.test.js --update-snapshots
  *   3. for each map in interpose-net-access.test.js.md, copy it and
- *   4. replace all occurences of => with : and paste as args to Object.fromEntries()
+ *   4. replace all occurrences of => with : and paste as args to Object.fromEntries()
  *   5. change RECORDING back to false
  */
 export const web1 = new Map([
