@@ -1489,7 +1489,9 @@ export default function buildKernel(
 
     const crankNum = kernelKeeper.getCrankNumber();
     const { lostKrefs } = kernelKeeper.processRefcounts();
-    if (lostKrefs.length) {
+    // Lost krefs are expected for GC, but can also occur when a crank is rolled
+    // back.
+    if (lostKrefs.length && !isGCType(messageType)) {
       const vatID = crankResults.didDelivery;
       console.log(
         `⚠️ Ignoring lost krefs from crankNum ${crankNum} ${vatID} ${messageSummary}`,
