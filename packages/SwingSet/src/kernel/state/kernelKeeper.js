@@ -1614,12 +1614,17 @@ export default function makeKernelKeeper(
   // leaving work for the next delivery.
 
   function processRefcounts() {
+    const lostObjects = [];
     if (enableKernelGC) {
       const actions = new Set();
       for (const kref of maybeFreeKrefs.values()) {
         const { type } = parseKernelSlot(kref);
         if (type === 'promise') {
           const kpid = kref;
+          if (!hasKernelPromise(kpid)) {
+            lostObjects.push(kref);
+            continue;
+          }
           const kp = getKernelPromise(kpid);
           if (kp.refCount === 0) {
             let idx = 0;
@@ -1645,6 +1650,9 @@ export default function makeKernelKeeper(
             // deleted). Message delivery should use that, but not us.
             const ownerKey = `${kref}.owner`;
             let ownerVatID = kvStore.get(ownerKey);
+            if (!ownerVatID) {
+              lostObjects.push(kref);
+            }
             const terminated = terminatedVats.includes(ownerVatID);
 
             // Some objects that are still owned, but the owning vat
@@ -1706,6 +1714,7 @@ export default function makeKernelKeeper(
       addGCActions([...actions]);
     }
     maybeFreeKrefs.clear();
+    return { lostObjects };
   }
 
   function createVatState(vatID, source, options) {

@@ -1458,8 +1458,16 @@ export default function buildKernel(
       queueToKref(vatAdminRootKref, method, args, 'logFailure');
     }
 
-    kernelKeeper.processRefcounts();
     const crankNum = kernelKeeper.getCrankNumber();
+    const { lostObjects } = kernelKeeper.processRefcounts();
+    if (lostObjects.length) {
+      console.log(
+        `⚠️ Ignoring lost objects from crankNum ${crankNum}`,
+        lostObjects,
+        message,
+        crankResults,
+      );
+    }
     kernelKeeper.incrementCrankNumber();
     const { crankhash, activityhash } = kernelKeeper.emitCrankHashes();
     finish({
