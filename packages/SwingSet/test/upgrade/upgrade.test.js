@@ -5,6 +5,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 import { assert } from '@endo/errors';
 import bundleSource from '@endo/bundle-source';
 import { objectMap, objectMapMutable } from '@agoric/internal';
+import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import { kser, kunser, krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { parseReachableAndVatSlot } from '../../src/kernel/state/reachable.js';
@@ -825,6 +826,101 @@ test('failed upgrade - explode', async t => {
 
   // TODO: who should see the details of what v2 did wrong? calling
   // vat? only the console?
+});
+
+test.failing('failed upgrade - lost promise export', async t => {
+  const config = makeConfigFromPaths('../../tools/bootstrap-relay.js', {
+    defaultManagerType: 'xs-worker',
+    defaultReapInterval: 'never',
+    bundlePaths: {
+      puppet: '../../tools/vat-puppet.js',
+    },
+  });
+  const { messageToVat, messageToObject } = await initKernelForTest(
+    t,
+    t.context.data,
+    config,
+  );
+  // Open-coded `EV` analog.
+  const bootstrapHandler = {
+    get: (_target, key, _receiver) => {
+      const sendMessage = (...args) => messageToVat('bootstrap', key, ...args);
+      return sendMessage;
+    },
+  };
+  const EBootstrap = new Proxy({}, bootstrapHandler);
+
+  // Create spies in the bootstrap vat.
+  const bootstrapSpy = await EBootstrap.makeRemotable('Spy', {
+    log: true,
+    onFulfilled: true,
+    onRejected: true,
+  });
+  const expectSpyCalls = [];
+  const assertSpyCalls = async (message, newCalls) => {
+    expectSpyCalls.push(...newCalls);
+    const actualSpyCalls = await EBootstrap.getLogForRemotable(bootstrapSpy);
+    arrayIsLike(t, actualSpyCalls, expectSpyCalls, message);
+  };
+
+  // Create a puppet vat and give it the spy.
+  const puppet = await EBootstrap.createVat({
+    name: 'puppet',
+    bundleCapName: 'puppet',
+    vatParameters: {
+      version: 1,
+      initialCalls: [
+        ['setInBaggage', 'bootstrapSpy', bootstrapSpy],
+        ['callFromBaggage', 'bootstrapSpy', 'log', 'v1'],
+        ['watchSettledPromiseByProxy', 'v1', bootstrapSpy],
+      ],
+    },
+  });
+  await assertSpyCalls('started v1', [
+    ['log', 'v1'],
+    ['onFulfilled', 'v1'],
+  ]);
+  t.like(await messageToObject(puppet, 'getVatParameters'), { version: 1 });
+
+  // Upgrade the puppet and observe new calls from it.
+  const { incarnationNumber: puppet2IncarnationNumber } =
+    await EBootstrap.upgradeVat({
+      name: 'puppet',
+      bundleCapName: 'puppet',
+      vatParameters: {
+        version: 2,
+        initialCalls: [
+          ['callFromBaggage', 'bootstrapSpy', 'log', 'v2'],
+          ['watchSettledPromiseByProxy', 'v2', bootstrapSpy],
+        ],
+      },
+    });
+  t.is(puppet2IncarnationNumber, 1);
+  await assertSpyCalls('started v2', [
+    ['log', 'v2'],
+    ['onFulfilled', 'v2'],
+  ]);
+  t.like(await messageToObject(puppet, 'getVatParameters'), { version: 2 });
+
+  // Make a failed upgrade attempt (including a promise export) and observe
+  // the lack of new calls from it due to rollback.
+  await t.throwsAsync(
+    EBootstrap.upgradeVat({
+      name: 'puppet',
+      bundleCapName: 'puppet',
+      vatParameters: {
+        version: 3,
+        initialCalls: [
+          ['callFromBaggage', 'bootstrapSpy', 'log', 'v3'],
+          ['watchSettledPromiseByProxy', 'v3', bootstrapSpy],
+          ['throw', 'forced failure'],
+        ],
+      },
+    }),
+    { message: /vat-upgrade failure/ },
+  );
+  await assertSpyCalls('failed to start v3', []);
+  t.like(await messageToObject(puppet, 'getVatParameters'), { version: 2 });
 });
 
 async function testKindMode(t, v1mode, v2mode, complaint) {
