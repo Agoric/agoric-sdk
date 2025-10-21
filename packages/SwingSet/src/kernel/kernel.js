@@ -1460,9 +1460,11 @@ export default function buildKernel(
 
     const crankNum = kernelKeeper.getCrankNumber();
     const { lostObjects } = kernelKeeper.processRefcounts();
-    if (lostObjects.length) {
+    const isGC =
+      messageType === 'bringOutYourDead' || gcMessages.includes(messageType);
+    if (lostObjects.length && !isGC) {
       console.log(
-        `⚠️ Ignoring lost objects from crankNum ${crankNum}`,
+        `⚠️ Ignoring lost krefs from crankNum ${crankNum}`,
         lostObjects,
         message,
         crankResults,
