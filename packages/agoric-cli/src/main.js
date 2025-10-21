@@ -1,7 +1,8 @@
 /* eslint-env node */
+import os from 'node:os';
+import path from 'node:path';
+import url from 'node:url';
 import { Command } from 'commander';
-import path from 'path';
-import url from 'url';
 import { assert, X } from '@endo/errors';
 import {
   DEFAULT_KEEP_POLLING_SECONDS,
@@ -302,24 +303,103 @@ const main = async (progname, rawArgs, powers) => {
 
   baseCmd('publish [bundle...]')
     .option(
-      '-c, --chain-id <chainID>',
+      '-c, --chain-id <chainId>',
       'The ID of the destination chain',
       'agoriclocal',
     )
     .option(
       '-n, --node <rpcAddress>',
-      'A bare IPv4 address or fully qualified URL of an RPC node',
+      'A bare IPv4 address or fully qualified URL of a Tendermint RPC interface for t his chain (default: http://localhost:26657)',
       'http://localhost:26657',
     )
     .option(
-      '-h, --home <directory>',
-      "[required] Path to the directory containing ag-solo-mnemonic, for the publisher's wallet mnemonic",
+      '-f, --from <from>',
+      'Name or address of private key with which to sign',
     )
+    .option(
+      '--keyring-backend <keyringBackend>',
+      `Select keyring's backend (os|file|kwallet|pass|test|memory) (default "os")`,
+    )
+    .option(
+      '--keyring-dir <keyringDirectory>',
+      `The client Keyring directory; if omitted, the default 'Home' directory will be used`,
+    )
+    .option(
+      '--fee-granter <feeGranter>',
+      'Fee granter grants fees for the transaction',
+    )
+    .option(
+      '--fee-payer <feePayer>',
+      'Fee payer pays fees for the transaction instead of deducting from the signer',
+    )
+    .option('--fees <fees>', 'Fees to pay along with transaction; eg: 10uatom')
+    .option(
+      '--gas <gas>',
+      `(uint) gas limit to set per-transaction; set to "auto" to calculate sufficient gas automatically. Note: "auto" option doesn't always report accurate results. Set a valid coin value to adjust the result. Can be used instead of "fees". (default 200000)`,
+    )
+    .option(
+      '--gas-adjustment <gasAdjustment>',
+      `(float) adjustment factor to be multiplied against the estimate returned by the tx simulation; if the gas limit is set manually this flag is ignored  (default 1)`,
+    )
+    .option(
+      '--gas-prices <gasPrices>',
+      'Gas prices in decimal format to determine the transaction fee (e.g. 0.1uatom)',
+    )
+    .option(
+      '-h, --home <homeDirectory>',
+      `directory for config and data (default ${path.join(os.homedir(), '.agoric')})`,
+    )
+    .option('-i, --interactive', 'Prompt for transaction confirmation')
+    .option('--ledger', 'Use a connected Ledger device')
+    .option(
+      '--note <note>',
+      'Note to add a description to the transaction (previously --memo)',
+    )
+    .option(
+      '--sign-mode <signMode>',
+      'Choose sign mode (direct|amino-json|direct-aux). This is an advanced feature.',
+    )
+    .option(
+      '--timeout-height <timeoutHight>',
+      'Set a block timeout height to prevent the tx from being committed past a certain height',
+    )
+    .option(
+      '--tip <tip>',
+      `Tip is the amount that is going to be transferred to the fee payer on the target chain. This flag is only valid when used with --aux, and is ignored if the target chain didn't enable the TipDecorator`,
+    )
+    .option(
+      '--log_format, --log-format <logFormat>',
+      'The logging format (json|plain) (default "plain")',
+    )
+    .option(
+      '--log_level, --log-level <logLevel>',
+      'The logging level (trace|debug|info|warn|error|fatal|panic) (default "info")',
+    )
+    .option('--log_no_color, --log-no-color', 'Disable colored logs')
+    .option('--trace', 'print out full stack trace on errors')
     .description('publish a bundle to a Cosmos chain')
     .action(async (bundles, _options, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(publishMain, ['publish', ...bundles], opts);
     });
+  // What follows is a list of the flags we do not pass down to agd and why.
+  // Omitted because publish bundle is only for online mode.
+  //  -a, --account-number uint      The account number of the signing account (offline mode only)
+  // Omitted because publish always blocks, in order to report enqueue errors,
+  // then to get a block height to watch the bundle published topic.
+  //  -b, --broadcast-mode string    Transaction broadcasting mode (sync|async) (default "sync")
+  // Omitted because publish bundle always compresses.
+  //      --compress                 Compress the bundle in transit (default true)
+  // Omitted because no dry-run mode supported.
+  //      --aux                      Generate aux signer data instead of sending a tx
+  //      --dry-run                  ignore the --gas flag and perform a simulation of a transaction, but don't broadcast it (when enabled, the local Keybase is not accessible)
+  //      --generate-only            Build an unsigned transaction and write it to STDOUT (when enabled, the local Keybase only accessed when providing a key name)
+  //  -s, --sequence uint            The sequence number of the signing account (offline mode only)
+  //      --offline                  Offline mode (does not allow any online functionality)
+  // Inverted as -i, --interactive:
+  //  -y, --yes                      Skip tx broadcasting prompt confirmation
+  // Always JSON for parsing programmatically.
+  //  -o, --output string            Output format (text|json) (default "json")
 
   await makeWalletCommand(baseCmd);
 
