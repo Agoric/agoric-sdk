@@ -1353,10 +1353,13 @@ export default function buildKernel(
    */
   async function processDeliveryMessage(message) {
     const messageType = message.type;
+    const messageSummary = legibilizeMessage(message);
+
     kdebug('');
     // prettier-ignore
     kdebug(`processQ crank ${kernelKeeper.getCrankNumber()} ${JSON.stringify(message)}`);
-    kdebug(legibilizeMessage(message));
+    kdebug(messageSummary);
+
     const finish = kernelSlog.startDuration(['crank-start', 'crank-finish'], {
       crankType: 'delivery',
       crankNum: kernelKeeper.getCrankNumber(),
@@ -1461,8 +1464,9 @@ export default function buildKernel(
     const crankNum = kernelKeeper.getCrankNumber();
     const { lostKrefs } = kernelKeeper.processRefcounts();
     if (lostKrefs.length) {
+      const vatID = crankResults.didDelivery;
       console.log(
-        `⚠️ Ignoring lost krefs from crankNum ${crankNum}`,
+        `⚠️ Ignoring lost krefs from crankNum ${crankNum} ${vatID} ${messageSummary}`,
         lostKrefs,
         message,
         crankResults,
