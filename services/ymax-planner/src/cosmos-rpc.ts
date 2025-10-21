@@ -1,5 +1,5 @@
 import { JSONRPCClient, type JSONRPCResponse } from 'json-rpc-2.0';
-import type { WebSocket } from 'ws';
+import type { CloseEvent, WebSocket } from 'ws';
 
 const MAX_SUBSCRIPTIONS = 5;
 
@@ -26,7 +26,7 @@ export class CosmosRPCClient extends JSONRPCClient {
 
   #openedPK: PromiseWithResolvers<void>;
 
-  #closedPK: PromiseWithResolvers<void>;
+  #closedPK: PromiseWithResolvers<CloseEvent>;
 
   #isClosed: boolean;
 
@@ -55,13 +55,13 @@ export class CosmosRPCClient extends JSONRPCClient {
     });
     this.#ws = ws;
     this.#subscriptions = new Map();
-    this.#openedPK = Promise.withResolvers<void>();
-    this.#closedPK = Promise.withResolvers<void>();
+    this.#openedPK = Promise.withResolvers();
+    this.#closedPK = Promise.withResolvers();
     this.#isClosed = false;
     this.#lastSentId = -1;
 
-    ws.addEventListener('close', () => {
-      this.#closedPK.resolve();
+    ws.addEventListener('close', event => {
+      this.#closedPK.resolve(event);
       this.#isClosed = true;
       for (const sub of this.#subscriptions.values()) {
         sub.finish();
