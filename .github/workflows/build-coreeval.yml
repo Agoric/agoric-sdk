@@ -1,4 +1,4 @@
-name: Build CoreEval
+name: Build Package Bundles
 
 on:
   workflow_dispatch:
@@ -42,7 +42,7 @@ jobs:
       - name: Build project
         run: yarn build
 
-      - name: Build CoreEval bundle
+      - name: Build Package bundle
         id: build-bundle
         working-directory: packages/${{ inputs.package }}
         run: |
@@ -90,5 +90,5 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: coreeval-artifacts-${{ inputs.package }}-${{ github.run_number }}
+          name: package-artifacts-${{ inputs.package }}-${{ github.run_number }}
           path: packages/${{ inputs.package }}/dist/
