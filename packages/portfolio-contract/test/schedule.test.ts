@@ -42,7 +42,38 @@ test('runJob handles full order', async t => {
   await t.notThrowsAsync(runJob(job1, t.log));
 });
 
-test.todo('partial failure');
+test('partial failure', async t => {
+  const job = {
+    steps: [
+      { src: '@agoric', dest: '@noble' },
+      { src: '@noble', dest: '@Ethereum' },
+      { src: '@Ethereum', dest: 'Aave_Ethereum' }, // This step will fail
+      { src: '@noble', dest: '@Arbitrum' },
+      { src: '@Arbitrum', dest: 'Aave_Arbitrum' },
+    ],
+    order: [
+      [1, [0]],
+      [2, [1]],
+      [3, [0]], // Independent of the failing step
+      [4, [3]],
+    ] as Array<[number, number[]]>,
+  };
+
+  const results = await runJob(job, t.log);
+  
+  t.is(results.length, 5);
+  t.is(results[0].status, 'fulfilled');
+  t.is(results[1].status, 'fulfilled');
+  t.is(results[2].status, 'rejected'); // This step should fail
+  t.is(results[3].status, 'fulfilled');
+  t.is(results[4].status, 'fulfilled');
+  
+  // Check the failure reason
+  if (results[2].status === 'rejected') {
+    t.regex(results[2].reason.message, /Simulated step failure/);
+  }
+});
+
 test.todo('partial progress');
 
 test('runJob takes advantage of partial order', async t => {

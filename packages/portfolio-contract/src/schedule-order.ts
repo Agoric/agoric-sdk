@@ -9,6 +9,10 @@ const range = (xs: Array<unknown>) => Array.from(xs, (_, i) => i);
 
 const execute = async (m, trace): Promise<void> => {
   trace('chug chug...', `${m.src} -> ${m.dest}`);
+  // Simulate failure for testing
+  if (m.src === '@Ethereum' && m.dest === 'Aave_Ethereum') {
+    throw new Error('Simulated step failure');
+  }
 };
 
 type PromiseSettledResult<T> =
