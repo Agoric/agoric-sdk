@@ -1,0 +1,149 @@
+name: docker-testing
+
+on:
+  push:
+    branches:
+      - mz/ymax-planner-testing
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_REPO: ghcr.io/agoric/agoric-sdk-test
+  IMAGE_TAG: ymax-planner-testing
+  GCE_ZONE: us-central1-a
+
+jobs:
+  docker-ymax:
+    runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: services/ymax-planner/Dockerfile.testing
+          push: true
+          tags: |
+            ${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}
+
+  deploy-ymax-planner:
+    needs: docker-ymax
+    if: needs.docker-ymax.result == 'failure'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - instance: ymax-test-planner
+            env_secret: ENV_GCP_FILE
+          - instance: ymax-test-planner-2
+            env_secret: ENV_GCP_FILE_2
+
+    steps:
+      - name: Auth to Google Cloud (SA key)
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Write .env file from JSON (per-target)
+        shell: bash
+        run: |
+          jq -r 'to_entries[] | "\(.key)=\(.value)"' \
+            <<< '${{ secrets[matrix.target.env_secret] }}' > .env.gcp
+
+      - name: Check if VM already has this digest
+        id: decide
+        shell: bash
+        env:
+          GCE_INSTANCE: ${{ matrix.target.instance }}
+          GCE_ZONE: ${{ env.GCE_ZONE }}
+        run: |
+          TARGET="ghcr.io/agoric/agoric-sdk-test:ymax-planner-testing@${{ needs.docker-ymax.outputs.digest }}"
+          echo "Target image: $TARGET"
+
+          DECL=$(
+            gcloud compute instances describe "$GCE_INSTANCE" \
+              --zone "$GCE_ZONE" \
+              --format=json \
+            | jq -r '.metadata.items[]? | select(.key=="gce-container-declaration") | .value'
+          )
+
+          if [ -n "$DECL" ] && printf '%s\n' "$DECL" | grep -F "$TARGET" >/dev/null 2>&1; then
+            echo "VM $GCE_INSTANCE already configured with this digest. Skipping deploy."
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Digest differs (or not set) on $GCE_INSTANCE. Will deploy."
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update GCE container (by digest)
+        if: steps.decide.outputs.should_deploy == 'true'
+        shell: bash
+        env:
+          GCE_INSTANCE: ${{ matrix.target.instance }}
+          GCE_ZONE: ${{ env.GCE_ZONE }}
+        run: |
+          IMAGE="ghcr.io/agoric/agoric-sdk-test:ymax-planner-testing@${{ needs.docker-ymax.outputs.digest }}"
+          echo "Deploying to $GCE_INSTANCE: $IMAGE"
+          gcloud compute instances update-container "$GCE_INSTANCE" \
+            --zone "$GCE_ZONE" \
+            --container-env-file ./.env.gcp \
+            --container-image="$IMAGE"
+
+  deploy-ymax-planner-1:
+    needs: docker-ymax
+    if: needs.docker-ymax.result == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Auth to Google Cloud (SA key)
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Write .env file from JSON (per-target)
+        shell: bash
+        run: |
+          jq -r 'to_entries[] | "\(.key)=\(.value)"' \
+            <<< '${{ secrets.ENV_GCP_FILE }}' > .env.gcp
+
+      - name: Check if VM already has this digest
+        id: decide
+        shell: bash
+        env:
+          GCE_INSTANCE: ymax-test-planner
+          GCE_ZONE: ${{ env.GCE_ZONE }}
+        run: |
+          TARGET="ghcr.io/agoric/agoric-sdk-test:ymax-planner-testing@${{ needs.docker-ymax.outputs.digest }}"
+          .github/scripts/check_digest.sh "$GCE_INSTANCE" "$GCE_ZONE" "$TARGET"
+
+      - name: Update GCE container (by digest)
+        if: steps.decide.outputs.should_deploy == 'true'
+        shell: bash
+        env:
+          GCE_INSTANCE: ymax-test-planner
+          GCE_ZONE: ${{ env.GCE_ZONE }}
+        run: |
+          IMAGE="ghcr.io/agoric/agoric-sdk-test:ymax-planner-testing@${{ needs.docker-ymax.outputs.digest }}"
+          .github/scripts/deploy_vm.sh "$GCE_INSTANCE" "$GCE_ZONE" "$IMAGE" "./.env.gcp"
