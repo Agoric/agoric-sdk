@@ -863,8 +863,8 @@ test('failed upgrade - lost promise export', async t => {
         expectation.push(expectCall);
         continue;
       }
-      const updatedExpectArgs = expectArgs.map((arg, i) =>
-        isPromise(arg) && isPromise(actualArgs[i]) ? actualArgs[i] : arg,
+      const updatedExpectArgs = expectArgs.map((arg, j) =>
+        isPromise(arg) && isPromise(actualArgs[j]) ? actualArgs[j] : arg,
       );
       expectation.push([expectMethodName, ...updatedExpectArgs]);
     }
@@ -873,7 +873,6 @@ test('failed upgrade - lost promise export', async t => {
   };
 
   // Create a puppet vat that sends messages during buildRootObject.
-  const bootstrap = await EV.vat('bootstrap').getVatRoot('bootstrap');
   const puppet = await EV.vat('bootstrap').createVat({
     name: 'puppet',
     vatParameters: {
@@ -917,7 +916,6 @@ test('failed upgrade - lost promise export', async t => {
   await t.throwsAsync(
     EV.vat('bootstrap').upgradeVat({
       name: 'puppet',
-      bundleCapName: 'puppet',
       vatParameters: {
         version: 3,
         initialCalls: [
