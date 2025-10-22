@@ -180,6 +180,10 @@ export const makeReflectionMethods = (vatPowers, baggage, vatParameters) => {
       return harden([...callLog]);
     },
 
+    sendOnly: (target, methodName, ...args) => {
+      void E(target)[methodName](...args);
+    },
+
     throw: message => {
       throw Error(message);
     },
@@ -192,14 +196,26 @@ export const makeReflectionMethods = (vatPowers, baggage, vatParameters) => {
 };
 harden(makeReflectionMethods);
 
-export async function buildRootObject(vatPowers, vatParameters, baggage) {
+export function buildRootObject(vatPowers, vatParameters, baggage) {
   const methods = makeReflectionMethods(vatPowers, baggage, vatParameters);
   const rootObject = Far('root', methods);
 
+  // Invoke specified methods of the new root object *before* returning,
+  // supporting use of previous results as top-level arguments by interpreting
+  // registered symbols with decimal-integer descriptions as references into an
+  // array of previous results.
   const { initialCalls = [] } = vatParameters || {};
-  await null;
+  const results = [];
+  const decimalIntPatt = /^-?(?:0|[1-9][0-9]*)$/;
+  const translateArg = arg => {
+    if (typeof arg !== 'symbol' || !Symbol.keyFor(arg)) return arg;
+    if (!arg.description?.match(decimalIntPatt)) return arg;
+    return results.at(Number(arg.description));
+  };
   for (const [methodName, ...args] of initialCalls) {
-    await rootObject[methodName](...args);
+    const translatedArgs = args.map(translateArg);
+    const result = rootObject[methodName](...translatedArgs);
+    results.push(result);
   }
 
   return rootObject;
