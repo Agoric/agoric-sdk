@@ -17,7 +17,7 @@ import type {
   EvmHash,
   LogFn,
   NobleAddress,
-} from '@agoric/fast-usdc/src/types.js';
+} from '@agoric/fast-usdc/src/types.ts';
 import type { TypedPattern } from '@agoric/internal';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import type {

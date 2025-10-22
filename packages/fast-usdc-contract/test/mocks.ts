@@ -1,7 +1,7 @@
 import type { HostInterface } from '@agoric/async-flow';
 import type { Brand, Issuer, Payment } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
-import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.js';
+import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.ts';
 import type {
   CosmosChainAddress,
   DenomAmount,

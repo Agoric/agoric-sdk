@@ -17,7 +17,7 @@ import type {
   MovementDesc,
 } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
-import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
+import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.ts';
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { USDN, type CosmosRestClient } from './cosmos-rest-client.js';
