@@ -2,25 +2,30 @@
  * @file Source code for a bootstrap vat that runs blockchain behaviors (such as
  *   bridge vat integration) and exposes reflective methods for use in testing.
  *
- * TODO: Build from ./vat-puppet.js makeReflectionMethods
- * and share code with packages/vats/tools/vat-reflective-chain-bootstrap.js
+ * TODO: Share code with packages/vats/tools/vat-reflective-chain-bootstrap.js
  * (which basically extends this for better [mock] blockchain integration).
  */
 
 import { Fail, q } from '@endo/errors';
-import { objectMap } from '@agoric/internal';
 import { Far, E } from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
 import { buildManualTimer } from './manual-timer.js';
+import { makeReflectionMethods } from './vat-puppet.js';
 
-export const buildRootObject = () => {
+export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
   const timer = buildManualTimer();
   let vatAdmin;
   const vatData = new Map();
   const devicesByName = new Map();
-  const callLogsByRemotable = new Map();
+
+  const reflectionMethods = makeReflectionMethods(
+    vatPowers,
+    baggage,
+    bootstrapParameters,
+  );
 
   return Far('root', {
+    ...reflectionMethods,
+
     bootstrap: async (vats, devices) => {
       vatAdmin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
       for (const [name, root] of Object.entries(vats)) {
@@ -63,48 +68,6 @@ export const buildRootObject = () => {
       const incarnationNumber = await E(vat.adminNode).upgrade(bcap, options);
       vat.incarnationNumber = incarnationNumber;
       return incarnationNumber;
-    },
-
-    /**
-     * Derives a remotable from an object by mapping each object property into a method that returns the value.
-     *
-     * @param {string} label
-     * @param {Record<string, any>} returnValues
-     */
-    makeRemotable: (label, returnValues) => {
-      const callLogs = [];
-      const makeGetterFunction = (value, name) => {
-        const getValue = (...args) => {
-          callLogs.push([name, ...args]);
-          return value;
-        };
-        return getValue;
-      };
-      // `objectMap` hardens its result, but...
-      const methods = objectMap(returnValues, makeGetterFunction);
-      // ... `Far` requires its methods argument not to be hardened.
-      const remotable = Far(label, { ...methods });
-      callLogsByRemotable.set(remotable, callLogs);
-      return remotable;
-    },
-
-    makePromiseKit: () => {
-      const { promise, ...resolverMethods } = makePromiseKit();
-      const resolver = Far('resolver', resolverMethods);
-      return harden({ promise, resolver });
-    },
-
-    /**
-     * Returns a copy of a remotable's logs.
-     *
-     * @param {object} remotable
-     */
-    getLogForRemotable: remotable => {
-      const logs =
-        callLogsByRemotable.get(remotable) ||
-        Fail`logs not found for ${q(remotable)}`;
-      // Return a copy so that the original remains mutable.
-      return harden([...logs]);
     },
 
     awaitVatObject: async (presence, path = []) => {
