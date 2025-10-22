@@ -183,15 +183,29 @@ export default [
   {
     // Tighten rules for exported code.
     files: [
-      'packages/*/src/**/*.js',
-      'packages/*/tools/**/*.js',
-      'packages/*/tools/**/*.mjs',
-      'packages/*/*.js',
-      'packages/wallet/api/src/**/*.js',
+      'packages/*/src/*.{js,ts}',
+      'packages/*/src/**/*.{js,ts}',
+      'packages/*/tools/**/*.{js,ts,mjs,mts}',
+      'packages/*/tools/*.{js,ts,mjs,mts}',
+      'packages/*/*.{js,ts}',
+      'packages/wallet/api/src/**/*.{js,ts}',
     ],
 
     rules: {
       'no-restricted-syntax': ['error', ...deprecatedTerminology.all],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '^[^.].*\\.[cm]?ts$',
+              message:
+                'Cannot import TypeScript across package boundary. Package entrypoints should be JavaScript files.',
+              allowTypeImports: true,
+            },
+          ],
+        },
+      ],
     },
   },
   {
