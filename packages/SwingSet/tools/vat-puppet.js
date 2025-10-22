@@ -147,17 +147,18 @@ export const makeReflectionMethods = (vatPowers, baggage, vatParameters) => {
     },
 
     /**
-     * Returns a remotable with methods that return provided values. Invocations
-     * of those methods and their arguments are captured for later retrieval by
-     * `getCallLogForRemotable`.
+     * Return a remotable with a method for each property of an optional object
+     * that returns the corresponding property value. Invocations of those
+     * methods and their arguments are captured for later retrieval by
+     * `getLogForRemotable`.
      *
      * @param {string} [label]
-     * @param {Record<string, any>} [fields]
+     * @param {Record<string, any>} [methodReturnValues]
      */
-    makeRemotable: (label = 'Remotable', fields = {}) => {
+    makeRemotable: (label = 'Remotable', methodReturnValues = {}) => {
       /** @type {CallLog} */
       const callLog = [];
-      const methods = objectMap(fields, (value, name) =>
+      const methods = objectMap(methodReturnValues, (value, name) =>
         makeSpy(value, name, callLog),
       );
       const remotable = Far(label, { ...methods });
@@ -166,12 +167,18 @@ export const makeReflectionMethods = (vatPowers, baggage, vatParameters) => {
     },
 
     /**
+     * Return a copy of a remotable's call log.
+     *
      * @param {object} remotable
      * @returns {CallLog}
      */
-    getCallLogForRemotable: remotable =>
-      callLogsByRemotable.get(remotable) ||
-      Fail`unknown remotable ${q(remotable)}`,
+    getLogForRemotable: remotable => {
+      const callLog =
+        callLogsByRemotable.get(remotable) ||
+        Fail`unknown remotable ${q(remotable)}`;
+      // Return an immutable copy of the mutable original.
+      return harden([...callLog]);
+    },
 
     throw: message => {
       throw Error(message);
