@@ -180,8 +180,9 @@ export const makeReflectionMethods = (vatPowers, baggage, vatParameters) => {
       return harden([...callLog]);
     },
 
-    sendOnly: (target, methodName, ...args) =>
-      void E(target)[methodName](...args),
+    sendOnly: (target, methodName, ...args) => {
+      void E(target)[methodName](...args);
+    },
 
     throw: message => {
       throw Error(message);
