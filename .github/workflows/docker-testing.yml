@@ -112,6 +112,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Auth to Google Cloud (SA key)
         uses: google-github-actions/auth@v2
         with:
@@ -125,8 +127,6 @@ jobs:
         run: |
           jq -r 'to_entries[] | "\(.key)=\(.value)"' \
             <<< '${{ secrets.ENV_GCP_FILE }}' > .env.gcp
-      
-      - uses: actions/checkout@v4
 
       - name: Check if VM already has this digest
         id: decide
