@@ -64,3 +64,19 @@ test('runJob takes advantage of partial order', async t => {
 
   await t.notThrowsAsync(runJob(job, t.log));
 });
+
+test('runJob fails on cycle', async t => {
+  const job = {
+    steps: [
+      { src: '@agoric', dest: '@noble' },
+      { src: '@noble', dest: '@Avalanche' },
+      { src: '@Avalanche', dest: '@noble' },
+    ],
+    order: [
+      [1, [0, 2]],
+      [2, [1]],
+    ] as Array<[number, number[]]>,
+  };
+
+  await t.throwsAsync(runJob(job, t.log), { message: 'loop!' });
+});
