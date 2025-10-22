@@ -134,22 +134,7 @@ jobs:
           GCE_ZONE: ${{ env.GCE_ZONE }}
         run: |
           TARGET="ghcr.io/agoric/agoric-sdk-test:ymax-planner-testing@${{ needs.docker-ymax.outputs.digest }}"
-          echo "Target image: $TARGET"
-
-          DECL=$(
-            gcloud compute instances describe "$GCE_INSTANCE" \
-              --zone "$GCE_ZONE" \
-              --format=json \
-            | jq -r '.metadata.items[]? | select(.key=="gce-container-declaration") | .value'
-          )
-
-          if [ -n "$DECL" ] && printf '%s\n' "$DECL" | grep -F "$TARGET" >/dev/null 2>&1; then
-            echo "VM $GCE_INSTANCE already configured with this digest. Skipping deploy."
-            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "Digest differs (or not set) on $GCE_INSTANCE. Will deploy."
-            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
-          fi
+          .github/scripts/check_digest.sh "$GCE_INSTANCE" "$GCE_ZONE" "$TARGET"
 
       - name: Update GCE container (by digest)
         if: steps.decide.outputs.should_deploy == 'true'
@@ -159,8 +144,4 @@ jobs:
           GCE_ZONE: ${{ env.GCE_ZONE }}
         run: |
           IMAGE="ghcr.io/agoric/agoric-sdk-test:ymax-planner-testing@${{ needs.docker-ymax.outputs.digest }}"
-          echo "Deploying to $GCE_INSTANCE: $IMAGE"
-          gcloud compute instances update-container "$GCE_INSTANCE" \
-            --zone "$GCE_ZONE" \
-            --container-env-file ./.env.gcp \
-            --container-image="$IMAGE"
+          .github/scripts/deploy_vm.sh "$GCE_INSTANCE" "$GCE_ZONE" "$IMAGE" "./.env.gcp"
