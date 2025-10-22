@@ -125,6 +125,8 @@ jobs:
         run: |
           jq -r 'to_entries[] | "\(.key)=\(.value)"' \
             <<< '${{ secrets.ENV_GCP_FILE }}' > .env.gcp
+      
+      - uses: actions/checkout@v4
 
       - name: Check if VM already has this digest
         id: decide
