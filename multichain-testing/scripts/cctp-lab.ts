@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --import ts-blank-space/register
+#!/usr/bin/env -S node --import @aglocal/strict-ts-loader
 /**
  * @file verify CCTP mintRecipient encoding by sending
  * a burn transaction to noble and verifying that

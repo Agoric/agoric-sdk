@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --import ts-blank-space/register
+#!/usr/bin/env -S node --import @aglocal/strict-ts-loader
 /**
  * @file tools for local integration testing for FastUSDC. See USAGE.
  */

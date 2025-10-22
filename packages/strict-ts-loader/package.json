@@ -1,0 +1,9 @@
+{
+  "name": "@aglocal/strict-ts-loader",
+  "private": true,
+  "main": "index.js",
+  "type": "module",
+  "dependencies": {
+    "ts-blank-space": "^0.6.2"
+  }
+}
