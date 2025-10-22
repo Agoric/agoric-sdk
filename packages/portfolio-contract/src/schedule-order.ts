@@ -11,11 +11,24 @@ const execute = async (m, trace): Promise<void> => {
   trace('chug chug...', `${m.src} -> ${m.dest}`);
 };
 
-export const runJob = async <M>(job: Job<M>, trace) => {
+type PromiseSettledResult<T> =
+  | { status: 'fulfilled'; value: T }
+  | { status: 'rejected'; reason: any };
+const ok = {
+  status: 'fulfilled',
+  value: undefined,
+} as PromiseSettledResult<void>;
+harden(ok);
+
+export const runJob = async <M>(
+  job: Job<M>,
+  trace,
+): Promise<PromiseSettledResult<void>[]> => {
   const running = new Map<Ix, Promise<Ix>>();
 
   const { steps } = job;
   const todo = new Set(range(steps));
+  const results = steps.map(_ => ok);
   const order: Map<Ix, Set<Ix>> = new Map(
     job.order.map(([ix, deps]) => [ix, new Set(deps)]),
   );
@@ -31,28 +44,31 @@ export const runJob = async <M>(job: Job<M>, trace) => {
       throw Error('loop!');
     }
     for (const ix of runnable) {
-      const done = execute(steps[ix], trace).then(() => {
-        trace('finished', ix);
-        return ix;
-      });
+      const done = execute(steps[ix], trace)
+        .then(() => {
+          trace('done', ix);
+          return ix;
+        })
+        .catch(reason => {
+          trace('fail', ix, reason);
+          results[ix] = { status: 'rejected', reason };
+          return ix;
+        });
       running.set(ix, done);
       todo.delete(ix);
       trace('starting', ix, 'running', ...running.keys());
     }
 
-    try {
-      if (running.size === 0) break; // assert?
-      const winnerIx = await Promise.any(running.values());
-      running.delete(winnerIx);
-      for (const [ix, deps] of order.entries()) {
-        deps.delete(winnerIx);
-        if (deps.size === 0) {
-          order.delete(ix);
-        }
+    if (running.size === 0) break; // assert?
+    const winnerIx = await Promise.any(running.values());
+    running.delete(winnerIx);
+    for (const [ix, deps] of order.entries()) {
+      deps.delete(winnerIx);
+      if (deps.size === 0) {
+        order.delete(ix);
       }
-    } catch (err) {
-      trace('error! TODO!', err);
-      return;
     }
   }
+
+  return harden(results);
 };
