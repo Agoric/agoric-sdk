@@ -103,5 +103,7 @@ export const kunser = serializedValue => kmarshal.unserialize(serializedValue);
 
 export function makeError(message) {
   assert.typeof(message, 'string');
+  // Marshal has a relaxation for an error at the root of the data
+  // so these will always serialize even if not passable
   return kser(Error(message));
 }

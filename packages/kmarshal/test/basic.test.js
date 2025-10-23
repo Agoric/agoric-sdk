@@ -1,3 +1,4 @@
+import '@endo/init/debug.js';
 import test from 'ava';
 
 import { kser, kunser, krefOf, kslot } from '../src/kmarshal.js';
