@@ -1396,7 +1396,7 @@ export default function buildKernel(
 
     kernelKeeper.establishCrankSavepoint('deliver');
     const crankResults = await deliverRunQueueEvent(message);
-    // { abort/commit, deduct, terminate+notify, consumeMessage }
+    let didSnapshot = false;
 
     if (message.type === 'cleanup-terminated-vat') {
       const { cleanups } = crankResults;
@@ -1429,7 +1429,7 @@ export default function buildKernel(
     } else {
       const vatID = crankResults.didDelivery;
       if (vatID) {
-        await vatWarehouse.maybeSaveSnapshot(vatID);
+        didSnapshot = await vatWarehouse.maybeSaveSnapshot(vatID);
       }
     }
     const { computrons, meterID } = crankResults;
@@ -1476,7 +1476,7 @@ export default function buildKernel(
     if (lostKrefs.length && !isGCType(messageType)) {
       const vatID = crankResults.didDelivery;
       console.log(
-        `⚠️ Ignoring lost krefs from crankNum ${crankNum} ${vatID} ${messageSummary}`,
+        `⚠️ Ignoring lost krefs from crankNum ${crankNum} ${vatID} ${messageSummary}${didSnapshot ? ' + snapshot' : ''}`,
         lostKrefs,
         message,
         crankResults,
