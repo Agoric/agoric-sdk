@@ -7,9 +7,10 @@ import '@agoric/builders';
 import anylogger from 'anylogger';
 
 import bundleSource from '@endo/bundle-source';
-import { assert, Fail } from '@endo/errors';
+import { assert, Fail, makeError, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
+import { toThrowable } from '@endo/marshal';
 
 import {
   buildMailbox,
@@ -661,12 +662,18 @@ export async function launchAndShareInternals({
     if (installationPublisher === undefined) {
       return;
     }
+    let throwable;
+    try {
+      throwable = toThrowable(error);
+    } catch (err) {
+      throwable = makeError(X`Failed to make throwable from ${error}: ${err}`);
+    }
 
     await installationPublisher.publish(
       harden({
         endoZipBase64Sha512,
         installed: error === null,
-        error,
+        error: throwable,
       }),
     );
   }
