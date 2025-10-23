@@ -1,23 +1,19 @@
 type Ix = number;
-type Job<Move> = {
-  steps: Move[];
+export type Job = {
+  taskQty: number;
   /** entries of map from virtex to vertexes it depends on */
   order: Array<[Ix, Ix[]]>;
 };
 
-const range = (xs: Array<unknown>) => Array.from(xs, (_, i) => i);
+const range = (n: number) => Array.from(Array(n).keys());
 
-const execute = async (m, trace): Promise<void> => {
-  trace('chug chug...', `${m.src} -> ${m.dest}`);
-  // Simulate failure for testing
-  if (m.src === '@Ethereum' && m.dest === 'Aave_Ethereum') {
-    throw new Error('Simulated step failure');
-  }
-};
-
+/**
+ * ref [Promise.allSettled Return value](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled#return_value)
+ */
 type PromiseSettledResult<T> =
   | { status: 'fulfilled'; value: T }
   | { status: 'rejected'; reason: any };
+
 const ok = {
   status: 'fulfilled',
   value: undefined,
@@ -25,14 +21,16 @@ const ok = {
 harden(ok);
 
 export const runJob = async <M>(
-  job: Job<M>,
+  job: Job,
+  runTask: (ix: Ix, trace) => Promise<void>,
   trace,
 ): Promise<PromiseSettledResult<void>[]> => {
   const running = new Map<Ix, Promise<Ix>>();
 
-  const { steps } = job;
-  const todo = new Set(range(steps));
-  const results = steps.map(_ => ok);
+  const { taskQty } = job;
+  const taskIxs = range(taskQty);
+  const todo = new Set(taskIxs);
+  const results = taskIxs.map(_ => ok);
   const order: Map<Ix, Set<Ix>> = new Map(
     job.order.map(([ix, deps]) => [ix, new Set(deps)]),
   );
@@ -48,7 +46,7 @@ export const runJob = async <M>(
       throw Error('loop!');
     }
     for (const ix of runnable) {
-      const done = execute(steps[ix], trace)
+      const done = runTask(ix, trace)
         .then(() => {
           trace('done', ix);
           return ix;

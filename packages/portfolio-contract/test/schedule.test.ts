@@ -38,12 +38,26 @@ const job1 = {
   ] as Array<[number, number[]]>,
 };
 
+const makeRunTask =
+  steps =>
+  async (ix, trace): Promise<void> => {
+    const m = steps[ix];
+    trace('chug chug...', `${m.src} -> ${m.dest}`);
+    // Simulate failure for testing
+    if (m.src === '@Ethereum' && m.dest === 'Aave_Ethereum') {
+      throw new Error('Simulated step failure');
+    }
+  };
+
 test('runJob handles full order', async t => {
-  await t.notThrowsAsync(runJob(job1, t.log));
+  const { steps, order } = job1;
+  const runTask = makeRunTask(steps);
+  const job = { taskQty: steps.length, order };
+  await t.notThrowsAsync(runJob(job, runTask, t.log));
 });
 
 test('partial failure', async t => {
-  const job = {
+  const jobInfo = {
     steps: [
       { src: '@agoric', dest: '@noble' },
       { src: '@noble', dest: '@Ethereum' },
@@ -59,15 +73,18 @@ test('partial failure', async t => {
     ] as Array<[number, number[]]>,
   };
 
-  const results = await runJob(job, t.log);
-  
+  const { steps, order } = jobInfo;
+  const runTask = makeRunTask(steps);
+  const job = { taskQty: steps.length, order };
+  const results = await runJob(job, runTask, t.log);
+
   t.is(results.length, 5);
   t.is(results[0].status, 'fulfilled');
   t.is(results[1].status, 'fulfilled');
   t.is(results[2].status, 'rejected'); // This step should fail
   t.is(results[3].status, 'fulfilled');
   t.is(results[4].status, 'fulfilled');
-  
+
   // Check the failure reason
   if (results[2].status === 'rejected') {
     t.regex(results[2].reason.message, /Simulated step failure/);
@@ -77,7 +94,7 @@ test('partial failure', async t => {
 test.todo('partial progress');
 
 test('runJob takes advantage of partial order', async t => {
-  const job = {
+  const jobInfo = {
     steps: [
       { src: '@agoric', dest: '@noble' },
       { src: '@noble', dest: '@Ethereum' },
@@ -93,11 +110,14 @@ test('runJob takes advantage of partial order', async t => {
     ] as Array<[number, number[]]>,
   };
 
-  await t.notThrowsAsync(runJob(job, t.log));
+  const { steps, order } = jobInfo;
+  const runTask = makeRunTask(steps);
+  const job = { taskQty: steps.length, order };
+  await t.notThrowsAsync(runJob(job, runTask, t.log));
 });
 
 test('runJob fails on cycle', async t => {
-  const job = {
+  const jobInfo = {
     steps: [
       { src: '@agoric', dest: '@noble' },
       { src: '@noble', dest: '@Avalanche' },
@@ -109,5 +129,9 @@ test('runJob fails on cycle', async t => {
     ] as Array<[number, number[]]>,
   };
 
-  await t.throwsAsync(runJob(job, t.log), { message: 'loop!' });
+  const { steps, order } = jobInfo;
+  const runTask = makeRunTask(steps);
+  const job = { taskQty: steps.length, order };
+
+  await t.throwsAsync(runJob(job, runTask, t.log), { message: 'loop!' });
 });
