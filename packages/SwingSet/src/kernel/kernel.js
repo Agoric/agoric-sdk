@@ -1379,15 +1379,15 @@ export default function buildKernel(
   async function processDeliveryMessage(message) {
     const messageType = message.type;
     const messageSummary = legibilizeMessage(message);
+    const crankNum = kernelKeeper.getCrankNumber();
 
     kdebug('');
-    // prettier-ignore
-    kdebug(`processQ crank ${kernelKeeper.getCrankNumber()} ${JSON.stringify(message)}`);
+    kdebug(`processQ crank ${crankNum} ${JSON.stringify(message)}`);
     kdebug(messageSummary);
 
     const finish = kernelSlog.startDuration(['crank-start', 'crank-finish'], {
       crankType: 'delivery',
-      crankNum: kernelKeeper.getCrankNumber(),
+      crankNum,
       messageType,
       message,
     });
@@ -1487,7 +1487,6 @@ export default function buildKernel(
       queueToKref(vatAdminRootKref, method, args, 'logFailure');
     }
 
-    const crankNum = kernelKeeper.getCrankNumber();
     const { lostKrefs } = kernelKeeper.processRefcounts();
     // Lost krefs are expected for GC, but can also occur when a crank is rolled
     // back.
