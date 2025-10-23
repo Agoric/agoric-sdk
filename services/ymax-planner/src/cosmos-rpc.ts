@@ -1,9 +1,7 @@
 import { JSONRPCClient, type JSONRPCResponse } from 'json-rpc-2.0';
-import type { WebSocket } from 'ws';
+import type { CloseEvent, WebSocket } from 'ws';
 
 const MAX_SUBSCRIPTIONS = 5;
-
-const sink = () => {};
 
 const hasOwnProperties = (obj: unknown) =>
   typeof obj === 'object' && obj !== null && Reflect.ownKeys(obj).length > 0;
@@ -28,7 +26,9 @@ export class CosmosRPCClient extends JSONRPCClient {
 
   #openedPK: PromiseWithResolvers<void>;
 
-  #closedPK: PromiseWithResolvers<void>;
+  #closedPK: PromiseWithResolvers<CloseEvent>;
+
+  #isClosed: boolean;
 
   #lastSentId: number;
 
@@ -55,44 +55,56 @@ export class CosmosRPCClient extends JSONRPCClient {
     });
     this.#ws = ws;
     this.#subscriptions = new Map();
-    this.#openedPK = Promise.withResolvers<void>();
-    this.#closedPK = Promise.withResolvers<void>();
+    this.#openedPK = Promise.withResolvers();
+    this.#closedPK = Promise.withResolvers();
+    this.#isClosed = false;
     this.#lastSentId = -1;
 
-    ws.addEventListener('close', () => {
-      this.#closedPK.resolve();
+    ws.addEventListener('close', event => {
+      this.#closedPK.resolve(event);
+      this.#isClosed = true;
       for (const sub of this.#subscriptions.values()) {
         sub.finish();
       }
       this.#subscriptions.clear();
+      this.rejectAllPendingRequests('socket closed');
     });
 
-    ws.addEventListener('error', event => {
-      const cause = event.error;
-      const err = new Error(
-        `WebSocket ${wsUrl.href} error: ${cause?.message}`,
-        { cause },
-      );
+    const onError = err => {
       this.#openedPK.reject(err);
       this.#closedPK.reject(err);
+      this.#isClosed = true;
       for (const sub of this.#subscriptions.values()) {
         sub.fail(err);
       }
       this.#subscriptions.clear();
+      this.rejectAllPendingRequests(err?.message ?? 'unknown error');
+    };
+
+    ws.addEventListener('error', event => {
+      const cause = event.error;
+      const msg = `WebSocket ${wsUrl.href} error: ${cause?.message}`;
+      onError(Error(msg, { cause }));
     });
+
     if (heartbeats) {
-      let closed = false;
-      void this.#closedPK.promise.catch(sink).then(() => {
-        closed = true;
-      });
       let gotPong = true;
       ws.on('pong', () => {
         gotPong = true;
       });
       void (async () => {
         for await (const _ of heartbeats) {
-          if (closed) break;
-          if (!gotPong) ws.emit('error', Error('pong timeout'));
+          if (this.#isClosed) break;
+          if (!gotPong) {
+            const err = Error('WebSocket pong timeout');
+            Object.defineProperty(err, 'code', {
+              value: 'WEBSOCKET_PONG_TIMEOUT',
+              enumerable: true,
+            });
+            onError(err);
+            ws.terminate();
+            break;
+          }
           gotPong = false;
           ws.ping();
         }
@@ -114,6 +126,11 @@ export class CosmosRPCClient extends JSONRPCClient {
     });
   }
 
+  async send(payload: any) {
+    if (this.#isClosed) throw Error('already closed');
+    return super.send(payload);
+  }
+
   receive(response: JSONRPCResponse) {
     // console.log('Received RPC response:', response);
     return super.receive(response);
@@ -122,7 +139,6 @@ export class CosmosRPCClient extends JSONRPCClient {
   close() {
     this.rejectAllPendingRequests('RPC client closed');
     this.#ws.close();
-    this.#subscriptions.clear();
   }
 
   opened() {

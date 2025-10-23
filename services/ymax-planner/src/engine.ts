@@ -774,6 +774,13 @@ export const startEngine = async (
   }
 
   // We expect to run forever, but the server can terminate our connection.
+  await null;
+  const closeEvent = await Promise.race([rpc.closed(), Promise.resolve()]);
+  if (closeEvent) {
+    const { code, reason, wasClean } = closeEvent;
+    const cleanly = q(wasClean ? 'cleanly' : 'not cleanly');
+    Fail`⚠️ rpc.subscribeAll finished (${cleanly}) with code ${q(code)}: ${q(reason)}`;
+  }
   Fail`⚠️ rpc.subscribeAll finished`;
 };
 harden(startEngine);
