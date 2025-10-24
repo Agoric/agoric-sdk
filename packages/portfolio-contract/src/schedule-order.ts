@@ -22,7 +22,7 @@ harden(ok);
 
 export const runJob = async <M>(
   job: Job,
-  runTask: (ix: Ix, trace) => Promise<void>,
+  runTask: (ix: Ix, running: number[]) => Promise<void>,
   trace,
 ): Promise<PromiseSettledResult<void>[]> => {
   const running = new Map<Ix, Promise<Ix>>();
@@ -38,6 +38,21 @@ export const runJob = async <M>(
   /** no dependencies */
   const ready = (ix: Ix) => !order.has(ix);
 
+  const failTaskAndAncestors = (ix: Ix, reason) => {
+    trace('fail', ix, reason);
+    todo.delete(ix);
+    results[ix] = { status: 'rejected', reason };
+
+    // XXX let caller make more descriptive error?
+    const cascade = Error(`predecessor ${ix} failed`, { cause: reason });
+    // fail everything upstream
+    for (const [candidate, deps] of order.entries()) {
+      if (deps.has(ix)) {
+        failTaskAndAncestors(candidate, cascade);
+      }
+    }
+  };
+
   while (todo.size > 0) {
     const runnable = [...todo].filter(v => !running.has(v) && ready(v));
     trace('runnable', ...runnable);
@@ -46,14 +61,13 @@ export const runJob = async <M>(
       throw Error('loop!');
     }
     for (const ix of runnable) {
-      const done = runTask(ix, trace)
+      const done = runTask(ix, [...running.keys(), ix])
         .then(() => {
           trace('done', ix);
           return ix;
         })
         .catch(reason => {
-          trace('fail', ix, reason);
-          results[ix] = { status: 'rejected', reason };
+          failTaskAndAncestors(ix, reason);
           return ix;
         });
       running.set(ix, done);
@@ -61,7 +75,8 @@ export const runJob = async <M>(
       trace('starting', ix, 'running', ...running.keys());
     }
 
-    if (running.size === 0) break; // assert?
+    if (running.size === 0) break; // TODO: assert?
+    // can't throw due to .catch() above
     const winnerIx = await Promise.any(running.values());
     running.delete(winnerIx);
     for (const [ix, deps] of order.entries()) {

@@ -39,8 +39,8 @@ const job1 = {
 };
 
 const makeRunTask =
-  steps =>
-  async (ix, trace): Promise<void> => {
+  (steps, trace) =>
+  async (ix, _running): Promise<void> => {
     const m = steps[ix];
     trace('chug chug...', `${m.src} -> ${m.dest}`);
     // Simulate failure for testing
@@ -51,7 +51,7 @@ const makeRunTask =
 
 test('runJob handles full order', async t => {
   const { steps, order } = job1;
-  const runTask = makeRunTask(steps);
+  const runTask = makeRunTask(steps, t.log);
   const job = { taskQty: steps.length, order };
   await t.notThrowsAsync(runJob(job, runTask, t.log));
 });
@@ -74,7 +74,7 @@ test('partial failure', async t => {
   };
 
   const { steps, order } = jobInfo;
-  const runTask = makeRunTask(steps);
+  const runTask = makeRunTask(steps, t.log);
   const job = { taskQty: steps.length, order };
   const results = await runJob(job, runTask, t.log);
 
@@ -111,9 +111,11 @@ test('runJob takes advantage of partial order', async t => {
   };
 
   const { steps, order } = jobInfo;
-  const runTask = makeRunTask(steps);
+  const { log } = console;
+  log('LOG!');
+  const runTask = makeRunTask(steps, log);
   const job = { taskQty: steps.length, order };
-  await t.notThrowsAsync(runJob(job, runTask, t.log));
+  await t.notThrowsAsync(runJob(job, runTask, log));
 });
 
 test('runJob fails on cycle', async t => {
@@ -130,7 +132,7 @@ test('runJob fails on cycle', async t => {
   };
 
   const { steps, order } = jobInfo;
-  const runTask = makeRunTask(steps);
+  const runTask = makeRunTask(steps, t.log);
   const job = { taskQty: steps.length, order };
 
   await t.throwsAsync(runJob(job, runTask, t.log), { message: 'loop!' });
