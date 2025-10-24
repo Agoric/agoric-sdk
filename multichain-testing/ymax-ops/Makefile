@@ -75,7 +75,7 @@ $(CONTRACT)-terminate:
 	@echo "Using AGORIC_NET=$(AGORIC_NET)"
 	AGORIC_NET=$(AGORIC_NET) $(YMAX_TOOL) --buildEthOverrides >$@ || (rm $@; false)
 
-NETCONFIG=https://main.agoric.net/network-config
+NETCONFIG=https://$(AGORIC_NET).agoric.net/network-config
 ,$(CONTRACT)-deployed: ,ymax-bundle-id ,privateArgsOverrides.json ,ymax-installed
 	AGORIC_NET=$(AGORIC_NET) \
 		$(YMAX_TOOL) --installAndStart $$(cat ,ymax-bundle-id) <,privateArgsOverrides.json
@@ -127,11 +127,27 @@ NODE=https://main.rpc.agoric.net:443
 	$(AGD) --node $(NODE) query vstorage data published.$(CONTRACT) -o json >$@ \
 		|| (rm $@; false)
 
-SIG_OPTS=--chain-id=agoric-3 --gas-adjustment=1.5 --gas=auto
+FEES=3000ubld
+SIG_OPTS=--chain-id=agoric-3 --gas-adjustment=1.4 --gas=auto --fees=$(FEES)
+FUNDS=1234000000ubld
 fund-fee-acct: ,$(CONTRACT)-node.json
 	$(AGD) tx bank send $(PAYER) \
 		$$($(JQ) -r '.value|fromjson|.values[0]|fromjson|.body|fromjson|.contractAccount' ,$(CONTRACT)-node.json) \
-			1234000000ubld -y -b block --node=$(NODE) $(SIG_OPTS)
+			$(FUNDS) -y -b block --node=$(NODE) $(SIG_OPTS)
+
+,ymax-upgrade.js: ,ymax-bundle-id
+	echo "await E(ymaxControl).upgrade('$$(cat ,ymax-bundle-id)').catch(err=>console.error(err));" >$@
+
+
+,$(CONTRACT)-upgraded: ,ymax-bundle-id ,ymax-installed ,privateArgsOverrides.json
+	# check that the account we're using matches the contract we're upgrading...
+	$(YMAX_TOOL) --repl </dev/null | grep $(YMAX_CONTROL_ADDR)
+	AGORIC_NET=$(AGORIC_NET) \
+		$(YMAX_TOOL) --upgrade <,privateArgsOverrides.json $$(cat ,ymax-bundle-id) >$@ || (rm $@; false)
+
+,$(CONTRACT)-upgraded-repl: ,ymax-upgrade.js ,ymax-installed
+	AGORIC_NET=$(AGORIC_NET) \
+		$(YMAX_TOOL) --repl <,ymax-upgrade.js >$@ || (rm $@; false)
 
 clean:
 	rm -rf ,* $(DEPLOY)/dist/
