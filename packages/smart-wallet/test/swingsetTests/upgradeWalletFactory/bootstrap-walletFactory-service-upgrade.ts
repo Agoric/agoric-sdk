@@ -1,4 +1,3 @@
-// @ts-check
 import { Fail } from '@endo/errors';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
@@ -10,12 +9,18 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-
-/**
- * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
- */
+import type {
+  AdminFacet,
+  Installation,
+  Instance,
+  ZoeService,
+} from '@agoric/zoe';
+import type { ContractOf } from '@agoric/zoe/src/zoeService/utils.js';
+import type { SmartWallet } from '../../../src/smartWallet.js';
 
 const trace = makeTracer('BootWFUpg', false);
+
+type V1Start = import('../../../src/walletFactory.js').start;
 
 export const wfV1BundleName = 'walletFactoryV1';
 export const wfV2BundleName = 'walletFactoryV2';
@@ -32,23 +37,19 @@ export const buildRootObject = async () => {
   const { agoricNames } = await makeAgoricNamesAccess();
   const { nameAdmin: namesByAddressAdmin } = makeNameHubKit();
 
-  /** @type {PromiseKit<ZoeService>} */
-  const { promise: zoe, ...zoePK } = makePromiseKit();
-  /** @type {PromiseKit<Instance>} */
-  const { promise: automaticRefundInstance, ...arPK } = makePromiseKit();
+  const { promise: zoe, ...zoePK } = makePromiseKit<ZoeService>();
+  const { promise: automaticRefundInstance, ...arPK } =
+    makePromiseKit<Instance>();
 
-  let vatAdmin;
-  /** @type {AdminFacet} */
-  let adminFacet;
-  let creatorFacet;
-  /** @type {import('../../../src/smartWallet.js').SmartWallet} */
-  let wallet;
+  let vatAdmin: any;
+  let adminFacet: AdminFacet;
+  let creatorFacet: ContractOf<V1Start>['creatorFacet'];
+  let wallet: SmartWallet;
 
   const bank = await E(bankManager).getBankForAddress(walletAddr);
 
   // for startInstance
-  /** @type {Installation<import('../../../src/walletFactory.js').start>} */
-  let installation;
+  let installation: Installation<import('../../../src/walletFactory.js').start>;
   const terms = {
     agoricNames,
     board,
@@ -188,6 +189,7 @@ export const buildRootObject = async () => {
       currentStoragePath === currentPath || Fail`bad storage path`;
 
       // verify new method is present
+      // @ts-expect-error new method not on the v1 type
       const result = await E(creatorFacet).sayHelloUpgrade();
       result === 'hello, upgrade' || Fail`bad upgrade`;
 

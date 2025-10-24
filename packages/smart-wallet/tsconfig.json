@@ -3,10 +3,10 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {},
   "include": [
-    "*.js",
-    "scripts/**/*.js",
-    "src/**/*.js",
-    "test/**/*.js",
-    "tools/**/*.js",
+    "*.*s",
+    "scripts/**/*.*s",
+    "src/**/*.*s",
+    "test/**/*.*s",
+    "tools/**/*.*s",
   ],
 }

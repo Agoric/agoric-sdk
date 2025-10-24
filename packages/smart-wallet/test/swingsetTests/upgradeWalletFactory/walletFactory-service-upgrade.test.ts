@@ -4,10 +4,11 @@ import { assert } from '@endo/errors';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { buildVatController } from '@agoric/swingset-vat';
+import type { SwingSetConfig } from '@agoric/swingset-vat';
 import {
   wfV1BundleName,
   wfV2BundleName,
-} from './bootstrap-walletFactory-service-upgrade.js';
+} from './bootstrap-walletFactory-service-upgrade.ts';
 
 // so paths can be expresssed relative to this file and made absolute
 const bfile = name => new URL(name, import.meta.url).pathname;
@@ -16,14 +17,13 @@ const importSpec = async spec =>
   new URL(importMetaResolve(spec, import.meta.url)).pathname;
 
 test('walletFactory service upgrade', async t => {
-  /** @type {SwingSetConfig} */
-  const config = {
+  const config: SwingSetConfig = {
     bundleCachePath: 'bundles/',
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
         // TODO refactor to use bootstrap-relay.js
-        sourceSpec: bfile('bootstrap-walletFactory-service-upgrade.js'),
+        sourceSpec: bfile('bootstrap-walletFactory-service-upgrade.ts'),
       },
       zoe: { sourceSpec: await importSpec('@agoric/vats/src/vat-zoe.js') },
     },
@@ -41,7 +41,7 @@ test('walletFactory service upgrade', async t => {
       [wfV1BundleName]: {
         sourceSpec: bfile('../../../src/walletFactory.js'),
       },
-      [wfV2BundleName]: { sourceSpec: bfile('walletFactory-V2.js') },
+      [wfV2BundleName]: { sourceSpec: bfile('walletFactory-V2.ts') },
     },
   };
 

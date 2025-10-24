@@ -2,29 +2,28 @@
 import { makeTracer } from '@agoric/internal';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
+import type { NatValue } from '@agoric/ertp';
+import type { SetStore } from '@agoric/store';
+import type { Baggage } from '@agoric/vat-data';
+import type { ZCF, ZCFSeat } from '@agoric/zoe';
 
 const trace = makeTracer('WFun');
 
-/**
- * @param {ZCF} zcf
- * @param {unknown} _pa
- * @param {import('@agoric/swingset-liveslots').Baggage} baggage
- */
-export const start = (zcf, _pa, baggage) => {
+export const start = (zcf: ZCF, _pa: unknown, baggage: Baggage) => {
   const zone = makeDurableZone(baggage);
 
-  /** @type {import('@agoric/store').SetStore<ReturnType<typeof makeAdmin>>} */
-  const admins = zone.setStore('admins');
+  const admins: SetStore<ReturnType<typeof makeAdmin>> =
+    zone.setStore('admins');
 
-  let value;
+  let value: NatValue | undefined;
   const makeValueSetter = zone.exoClass(
     'FunThing',
     undefined,
-    offset => ({ offset }),
+    (offset: NatValue | undefined) => ({ offset }),
     {
-      setValue(valueIn) {
+      setValue(valueIn: NatValue) {
         const { offset } = this.state;
-        value = valueIn + offset;
+        value = offset === undefined ? valueIn : valueIn + offset;
       },
     },
   );
@@ -39,16 +38,19 @@ export const start = (zcf, _pa, baggage) => {
       getValue: M.call().returns(M.scalar()),
     }),
     {
-      getPrices() {
+      getPrices(): NatValue[] {
         return [...admins.values()].map(a => a.getPrice());
       },
       makeValueSetterInvitation() {
-        return zcf.makeInvitation((seat, /** @type {object} */ args) => {
-          seat.exit();
-          return makeValueSetter(args?.offset);
-        }, 'setter');
+        return zcf.makeInvitation(
+          (seat: ZCFSeat, args?: { offset?: NatValue }) => {
+            seat.exit();
+            return makeValueSetter(args?.offset);
+          },
+          'setter',
+        );
       },
-      getValue() {
+      getValue(): NatValue | undefined {
         return value;
       },
     },
@@ -65,8 +67,7 @@ export const start = (zcf, _pa, baggage) => {
       getPrice() {
         return this.state.price;
       },
-      /** @param {import('@agoric/ertp').NatValue} p */
-      setPrice(p) {
+      setPrice(p: NatValue) {
         this.state.price = p;
         console.log('price', p);
       },

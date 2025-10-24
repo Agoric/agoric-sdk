@@ -16,41 +16,29 @@ import { buildRootObject as mintsRoot } from '@agoric/vats/src/vat-mints.js';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E, Far } from '@endo/far';
-
-/**
- * @import {StoredFacet} from '@agoric/internal/src/lib-chainStorage.js';
- */
+import { E, Far, type ERef } from '@endo/far';
+import type { Brand, Issuer, Mint, NatValue } from '@agoric/ertp';
+import type { StoredFacet } from '@agoric/internal/src/lib-chainStorage.js';
+import type { Subscriber } from '@agoric/notifier';
+import type { BridgeManager } from '@agoric/vats';
 
 export { ActionType };
 
-/**
- * @param {object} kit
- * @param {Brand<'nat'>} kit.brand
- * @param {Issuer<'nat'>} kit.issuer
- * @param {Mint<'nat'>} [kit.mint]
- */
-export const withAmountUtils = kit => {
+export const withAmountUtils = (kit: {
+  brand: Brand<'nat'>;
+  issuer: Issuer<'nat'>;
+  mint?: Mint<'nat'>;
+}) => {
   return {
     ...kit,
-    /**
-     * @param {NatValue} v
-     */
-    make: v => AmountMath.make(kit.brand, v),
+    make: (v: NatValue) => AmountMath.make(kit.brand, v),
     makeEmpty: () => AmountMath.makeEmpty(kit.brand),
-    /**
-     * @param {NatValue} n
-     * @param {NatValue} [d]
-     */
-    makeRatio: (n, d) => makeRatio(n, kit.brand, d),
+    makeRatio: (n: NatValue, d?: NatValue) => makeRatio(n, kit.brand, d),
   };
 };
-/** @typedef {ReturnType<typeof withAmountUtils>} AmountUtils */
+export type AmountUtils = ReturnType<typeof withAmountUtils>;
 
-/**
- * @param {ERef<StoredFacet>} subscription
- */
-export const subscriptionKey = subscription => {
+export const subscriptionKey = (subscription: ERef<StoredFacet>) => {
   return E(subscription)
     .getStoreKey()
     .then(storeKey => {
@@ -61,10 +49,10 @@ export const subscriptionKey = subscription => {
     });
 };
 
-/** @returns {import('@agoric/vats').BridgeManager} */
-const makeFakeBridgeManager = () =>
+const makeFakeBridgeManager = (): BridgeManager =>
   Far('fakeBridgeManager', {
     register(bridgeId, handler) {
+      let currentHandler = handler;
       return Far('scopedBridgeManager', {
         getBridgeId() {
           return bridgeId;
@@ -73,39 +61,33 @@ const makeFakeBridgeManager = () =>
           assert.fail(`expected fromBridge`);
         },
         toBridge(obj) {
-          if (!handler) {
-            Fail`No handler for ${bridgeId}`;
+          if (!currentHandler) {
+            throw Fail`No handler for ${bridgeId}`;
           }
           // Rely on interface guard for validation.
           // This should also be validated upstream but don't rely on it.
-          // @ts-expect-error handler possibly undefined
-          return E(handler).fromBridge(obj);
+          return E(currentHandler).fromBridge(obj);
         },
         initHandler(newHandler) {
-          !handler || Fail`Handler already set`;
-          handler = newHandler;
+          !currentHandler || Fail`Handler already set`;
+          currentHandler = newHandler;
         },
         setHandler(newHandler) {
-          !!handler || Fail`Handler not set`;
-          handler = newHandler;
+          !!currentHandler || Fail`Handler not set`;
+          currentHandler = newHandler;
         },
       });
     },
   });
-/**
- * @param {any} log
- * @returns {Promise<ChainBootstrapSpace>} >}
- */
-export const makeMockTestSpace = async log => {
-  const space = /** @type {any} */ (makePromiseSpace(log));
-  /**
-   * @type {BootstrapPowers & {
-   *   produce: {
-   *     loadVat: Producer<VatLoader>;
-   *     loadCriticalVat: Producer<VatLoader>;
-   *   };
-   * }}
-   */
+export const makeMockTestSpace = async (
+  log: (...args: unknown[]) => void,
+): Promise<ChainBootstrapSpace> => {
+  const space = makePromiseSpace(log) as ChainBootstrapSpace & {
+    produce: ChainBootstrapSpace['produce'] & {
+      loadVat: Producer<VatLoader>;
+      loadCriticalVat: Producer<VatLoader>;
+    };
+  };
   const { consume, produce } = space;
   const { agoricNames, agoricNamesAdmin, spaces } =
     await makeAgoricNamesAccess();
@@ -116,15 +98,15 @@ export const makeMockTestSpace = async log => {
   produce.zoe.resolve(zoe);
   produce.feeMintAccess.resolve(feeMintAccessP);
 
-  /** @type {VatLoader<'mints' | 'board'>} */
-  const vatLoader = async name => {
-    /** @typedef {Awaited<WellKnownVats[typeof name]>} ReturnedVat */
+  // @ts-expect-error XXX VatLoader type
+  const vatLoader: VatLoader<'mints' | 'board'> = async name => {
+    type ReturnedVat = Awaited<WellKnownVats[typeof name]>;
     switch (name) {
       case 'mints':
-        return /** @type {ReturnedVat} */ (mintsRoot());
+        return mintsRoot() as ReturnedVat;
       case 'board': {
-        const baggage = makeScalarBigMapStore('baggage');
-        return /** @type {ReturnedVat} */ (boardRoot({}, {}, baggage));
+        const baggage = makeScalarBigMapStore<string, unknown>('baggage');
+        return boardRoot({}, {}, baggage) as ReturnedVat;
       }
       default:
         throw Error('unknown loadVat name');
@@ -149,29 +131,32 @@ export const makeMockTestSpace = async log => {
   await Promise.all([
     // @ts-expect-error
     makeBoard({ consume, produce, ...spaces }),
+    // @ts-expect-error XXX bootstrap type
     makeAddressNameHubs({ consume, produce, ...spaces }),
+    // @ts-expect-error XXX bootstrap type
     installBootContracts({ consume, produce, ...spaces }),
+    // @ts-expect-error XXX bootstrap type
     setupClientManager({ consume, produce, ...spaces }),
   ]);
 
   return space;
 };
 
-/**
- * @param {ERef<{
- *   getPublicTopics: () => import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord;
- * }>} hasTopics
- * @param {string} subscriberName
- */
-export const topicPath = (hasTopics, subscriberName) => {
+export const topicPath = (
+  hasTopics: ERef<{
+    getPublicTopics: () => import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord;
+  }>,
+  subscriberName: string,
+) => {
   return E(hasTopics)
     .getPublicTopics()
     .then(subscribers => subscribers[subscriberName])
     .then(tr => tr.storagePath);
 };
 
-/** @type {<T>(subscriber: ERef<Subscriber<T>>) => Promise<T>} */
-export const headValue = async subscriber => {
+export const headValue = async <T>(
+  subscriber: ERef<Subscriber<T>>,
+): Promise<T> => {
   await eventLoopIteration();
   const record = await E(subscriber).subscribeAfter();
   return record.head.value;

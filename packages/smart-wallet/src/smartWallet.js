@@ -97,7 +97,11 @@ const trace = makeTracer('SmrtWlt');
 // Discriminated union. Possible future messages types:
 // maybe suggestIssuer for https://github.com/Agoric/agoric-sdk/issues/6132
 // setting petnames and adding brands for https://github.com/Agoric/agoric-sdk/issues/6126
-/** @typedef {ExecuteOfferAction | TryExitOfferAction | InvokeStoreEntryAction} BridgeAction */
+// XXX union with CopyRecord because records lacking index signature do not qualify as Passable
+/**
+ * @typedef {CopyRecord &
+ *   (ExecuteOfferAction | TryExitOfferAction | InvokeStoreEntryAction)} BridgeAction
+ */
 
 /**
  * Purses is an array to support a future requirement of multiple purses per

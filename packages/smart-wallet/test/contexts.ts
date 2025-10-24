@@ -1,16 +1,19 @@
 import { BridgeId, deeplyFulfilledObject } from '@agoric/internal';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { E } from '@endo/far';
-import path from 'path';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeScopedBridge } from '@agoric/vats';
-import { withAmountUtils } from './supports.js';
+import type { Installation } from '@agoric/zoe';
+import { E } from '@endo/far';
+import type { ExecutionContext } from 'ava';
+import path from 'path';
+import { withAmountUtils } from './supports.ts';
 
-/**
- * @param {import('ava').ExecutionContext} t
- * @param {(logger) => Promise<ChainBootstrapSpace>} makeSpace
- */
-export const makeDefaultTestContext = async (t, makeSpace) => {
+export const makeDefaultTestContext = async (
+  t: ExecutionContext,
+  makeSpace: (
+    logger: (...args: unknown[]) => void,
+  ) => Promise<ChainBootstrapSpace>,
+) => {
   // To debug, pass t.log instead of null logger
   const log = () => null;
   const { consume } = await makeSpace(log);
@@ -25,8 +28,9 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     `${dirname}/../src/walletFactory.js`,
     'walletFactory',
   );
-  /** @type {Promise<Installation<import('../src/walletFactory.js').start>>} */
-  const installation = E(zoe).install(bundle);
+  const installation: Promise<
+    Installation<import('../src/walletFactory.js').start>
+  > = E(zoe).install(bundle);
   //#endregion
 
   // copied from makeClientBanks()
@@ -57,7 +61,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     { storageNode, walletBridgeManager },
   );
 
-  const simpleProvideWallet = async address => {
+  const simpleProvideWallet = async (address: string) => {
     // copied from makeClientBanks()
     const bank = E(consume.bankManager).getBankForAddress(address);
 
@@ -75,7 +79,8 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     anchor,
     invitationBrand: await E(E(zoe).getInvitationIssuer()).getBrand(),
     sendToBridge:
-      walletBridgeManager && (obj => E(walletBridgeManager).toBridge(obj)),
+      walletBridgeManager &&
+      ((obj: unknown) => E(walletBridgeManager).toBridge(obj)),
     consume,
     simpleProvideWallet,
   };

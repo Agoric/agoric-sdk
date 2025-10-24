@@ -1,10 +1,12 @@
-// @ts-check
 import { Fail } from '@endo/errors';
-import { E } from '@endo/far';
+import { E, type ERef } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
+import type { Brand } from '@agoric/ertp';
+import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+import type { Board } from '@agoric/vats';
 
-console.warn('start-game1-proposal.js module evaluating');
+console.warn('start-game1-proposal.ts module evaluating');
 
 // vstorage paths under published.*
 const BOARD_AUX = 'boardAux';
@@ -16,31 +18,33 @@ const CENT = IST_UNIT / 100n;
 
 /**
  * Make a storage node for auxilliary data for a value on the board.
- *
- * @param {ERef<StorageNode>} chainStorage
- * @param {string} boardId
  */
-const makeBoardAuxNode = async (chainStorage, boardId) => {
+const makeBoardAuxNode = async (
+  chainStorage: ERef<StorageNode>,
+  boardId: string,
+): Promise<ERef<StorageNode>> => {
   const boardAux = E(chainStorage).makeChildNode(BOARD_AUX);
   return E(boardAux).makeChildNode(boardId);
 };
 
-const publishBrandInfo = async (chainStorage, board, brand) => {
+const publishBrandInfo = async (
+  chainStorage: ERef<StorageNode>,
+  board: ERef<Board>,
+  brand: Brand,
+) => {
   const [id, displayInfo] = await Promise.all([
     E(board).getId(brand),
     E(brand).getDisplayInfo(),
   ]);
-  const node = makeBoardAuxNode(chainStorage, id);
+  const node = await makeBoardAuxNode(chainStorage, id);
   const aux = marshalData.toCapData(harden({ displayInfo }));
   await E(node).setValue(JSON.stringify(aux));
 };
 
 /**
- * Core eval script to start contract
- *
- * @param {BootstrapPowers} permittedPowers
+ * Core eval script to start contract.
  */
-export const startGameContract = async permittedPowers => {
+export const startGameContract = async (permittedPowers: BootstrapPowers) => {
   console.error('startGameContract()...');
   const {
     consume: { agoricNames, board, chainStorage, startUpgradable, zoe },
@@ -89,26 +93,27 @@ export const startGameContract = async permittedPowers => {
   producePlaceBrand.resolve(brand);
   producePlaceIssuer.resolve(issuer);
 
+  // @ts-expect-error XXX chainStorage nullable
   await publishBrandInfo(chainStorage, board, brand);
   console.log('game1 (re)installed');
 };
 
-/** @type {import('@agoric/vats/src/core/lib-boot').BootstrapManifest} */
-const gameManifest = {
-  [startGameContract.name]: {
-    consume: {
-      agoricNames: true,
-      board: true, // to publish boardAux info for game NFT
-      chainStorage: true, // to publish boardAux info for game NFT
-      startUpgradable: true, // to start contract and save adminFacet
-      zoe: true, // to get contract terms, including issuer/brand
+const gameManifest: import('@agoric/vats/src/core/lib-boot').BootstrapManifest =
+  {
+    [startGameContract.name]: {
+      consume: {
+        agoricNames: true,
+        board: true, // to publish boardAux info for game NFT
+        chainStorage: true, // to publish boardAux info for game NFT
+        startUpgradable: true, // to start contract and save adminFacet
+        zoe: true, // to get contract terms, including issuer/brand
+      },
+      installation: { consume: { game1: true } },
+      issuer: { produce: { Place: true } },
+      brand: { produce: { Place: true } },
+      instance: { produce: { game1: true } },
     },
-    installation: { consume: { game1: true } },
-    issuer: { produce: { Place: true } },
-    brand: { produce: { Place: true } },
-    instance: { produce: { game1: true } },
-  },
-};
+  };
 harden(gameManifest);
 
 export const getManifestForGame1 = ({ restoreRef }, { game1Ref }) => {
