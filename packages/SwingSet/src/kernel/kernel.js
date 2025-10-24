@@ -43,7 +43,34 @@ import { makeVatAdminHooks } from './vat-admin-hooks.js';
 /**
  * @import {MeterConsumption, VatDeliveryObject, VatDeliveryResult, VatSyscallObject, VatSyscallResult} from '@agoric/swingset-liveslots';
  * @import {PolicyInputCleanupCounts} from '../types-external.js';
+ * @import {
+ *   VatID,
+ *   InternalDynamicVatOptions,
+ *   RunQueueEvent,
+ *   RunQueueEventNotify,
+ *   RunQueueEventSend,
+ *   RunQueueEventCreateVat,
+ *   RunQueueEventUpgradeVat,
+ *   RunQueueEventChangeVatOptions,
+ *   RunQueueEventStartVat,
+ *   RunQueueEventDropExports,
+ *   RunQueueEventRetireExports,
+ *   RunQueueEventRetireImports,
+ *   RunQueueEventNegatedGCAction,
+ *   RunQueueEventBringOutYourDead,
+ *   RunQueueEventCleanupTerminatedVat,
+ * } from '../types-internal.js';
  */
+
+/** @type {Set<RunQueueEvent['type']>} */
+const gcTypes = new Set([
+  'bringOutYourDead',
+  'dropExports',
+  'retireExports',
+  'retireImports',
+]);
+/** @type {(messageType: RunQueueEvent['type']) => boolean} */
+const isGCType = messageType => gcTypes.has(messageType);
 
 function abbreviateReplacer(_, arg) {
   if (typeof arg === 'bigint') {
@@ -1152,14 +1179,16 @@ export default function buildKernel(
     } else if (message.type === 'changeVatOptions') {
       // prettier-ignore
       return `changeVatOptions ${message.vatID} options: ${JSON.stringify(message.options)}`;
-    } else if (gcMessages.includes(message.type)) {
-      // prettier-ignore
-      return `${message.type} ${message.vatID} ${message.krefs.map(e=>`@${e}`).join(' ')}`;
     } else if (
       message.type === 'bringOutYourDead' ||
       message.type === 'startVat'
     ) {
       return `${message.type} ${message.vatID}`;
+    } else if (isGCType(message.type)) {
+      // All GC messages other than bringOutYourDead include a list of krefs.
+      const krefs = message.krefs.map(e => `@${e}`).join(' ');
+      // prettier-ignore
+      return `${message.type} ${message.vatID} ${krefs}`;
     } else {
       return `unknown message type ${message.type}`;
     }
@@ -1264,27 +1293,6 @@ export default function buildKernel(
     kernelKeeper.decrementRefCount(message.kpid, `deq|notify`);
   }
 
-  const gcMessages = ['dropExports', 'retireExports', 'retireImports'];
-
-  /**
-   * @typedef { import('../types-internal.js').VatID } VatID
-   * @typedef { import('../types-internal.js').InternalDynamicVatOptions } InternalDynamicVatOptions
-   *
-   * @typedef { import('../types-internal.js').RunQueueEventNotify } RunQueueEventNotify
-   * @typedef { import('../types-internal.js').RunQueueEventSend } RunQueueEventSend
-   * @typedef { import('../types-internal.js').RunQueueEventCreateVat } RunQueueEventCreateVat
-   * @typedef { import('../types-internal.js').RunQueueEventUpgradeVat } RunQueueEventUpgradeVat
-   * @typedef { import('../types-internal.js').RunQueueEventChangeVatOptions } RunQueueEventChangeVatOptions
-   * @typedef { import('../types-internal.js').RunQueueEventStartVat } RunQueueEventStartVat
-   * @typedef { import('../types-internal.js').RunQueueEventDropExports } RunQueueEventDropExports
-   * @typedef { import('../types-internal.js').RunQueueEventRetireExports } RunQueueEventRetireExports
-   * @typedef { import('../types-internal.js').RunQueueEventRetireImports } RunQueueEventRetireImports
-   * @typedef { import('../types-internal.js').RunQueueEventNegatedGCAction } RunQueueEventNegatedGCAction
-   * @typedef { import('../types-internal.js').RunQueueEventBringOutYourDead } RunQueueEventBringOutYourDead
-   * @typedef { import('../types-internal.js').RunQueueEventCleanupTerminatedVat } RunQueueEventCleanupTerminatedVat
-   * @typedef { import('../types-internal.js').RunQueueEvent } RunQueueEvent
-   */
-
   /**
    *
    * Dispatch one delivery event. Eventually, this will be called in a
@@ -1344,15 +1352,16 @@ export default function buildKernel(
       deliverP = processUpgradeVat(message);
     } else if (message.type === 'changeVatOptions') {
       deliverP = processChangeVatOptions(message);
-    } else if (message.type === 'bringOutYourDead') {
-      deliverP = processBringOutYourDead(message);
     } else if (message.type === 'negated-gc-action') {
       // processGCActionSet pruned some negated actions, but had no GC
       // action to perform. Record the DB changes in their own crank.
     } else if (message.type === 'cleanup-terminated-vat') {
       deliverP = processCleanupTerminatedVat(message);
-    } else if (gcMessages.includes(message.type)) {
-      deliverP = processGCMessage(message);
+    } else if (isGCType(message.type)) {
+      deliverP =
+        message.type === 'bringOutYourDead'
+          ? processBringOutYourDead(message)
+          : processGCMessage(message);
     } else {
       Fail`unable to process message.type ${message.type}`;
     }
@@ -1369,13 +1378,16 @@ export default function buildKernel(
    */
   async function processDeliveryMessage(message) {
     const messageType = message.type;
+    const messageSummary = legibilizeMessage(message);
+    const crankNum = kernelKeeper.getCrankNumber();
+
     kdebug('');
-    // prettier-ignore
-    kdebug(`processQ crank ${kernelKeeper.getCrankNumber()} ${JSON.stringify(message)}`);
-    kdebug(legibilizeMessage(message));
+    kdebug(`processQ crank ${crankNum} ${JSON.stringify(message)}`);
+    kdebug(messageSummary);
+
     const finish = kernelSlog.startDuration(['crank-start', 'crank-finish'], {
       crankType: 'delivery',
-      crankNum: kernelKeeper.getCrankNumber(),
+      crankNum,
       messageType,
       message,
     });
@@ -1400,7 +1412,7 @@ export default function buildKernel(
 
     kernelKeeper.establishCrankSavepoint('deliver');
     const crankResults = await deliverRunQueueEvent(message);
-    // { abort/commit, deduct, terminate+notify, consumeMessage }
+    let didSnapshot = false;
 
     if (message.type === 'cleanup-terminated-vat') {
       const { cleanups } = crankResults;
@@ -1433,7 +1445,7 @@ export default function buildKernel(
     } else {
       const vatID = crankResults.didDelivery;
       if (vatID) {
-        await vatWarehouse.maybeSaveSnapshot(vatID);
+        didSnapshot = await vatWarehouse.maybeSaveSnapshot(vatID);
       }
     }
     const { computrons, meterID } = crankResults;
@@ -1475,8 +1487,18 @@ export default function buildKernel(
       queueToKref(vatAdminRootKref, method, args, 'logFailure');
     }
 
-    kernelKeeper.processRefcounts();
-    const crankNum = kernelKeeper.getCrankNumber();
+    const { lostKrefs } = kernelKeeper.processRefcounts();
+    // Lost krefs are expected for GC, but can also occur when a crank is rolled
+    // back.
+    if (lostKrefs.length && !isGCType(messageType)) {
+      const vatID = crankResults.didDelivery;
+      console.log(
+        `⚠️ Ignoring lost krefs from crankNum ${crankNum} ${vatID} ${messageSummary}${didSnapshot ? ' + snapshot' : ''}`,
+        lostKrefs,
+        message,
+        crankResults,
+      );
+    }
     kernelKeeper.incrementCrankNumber();
     const { crankhash, activityhash } = kernelKeeper.emitCrankHashes();
     finish({
