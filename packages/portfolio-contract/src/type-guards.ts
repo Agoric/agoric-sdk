@@ -332,12 +332,31 @@ export const makeFlowStepsPath = (parent: number, id: number) => [
 ];
 
 export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.or(
-  { state: 'run', step: M.number(), how: M.string() },
+  M.splitRecord(
+    { state: 'run' },
+    {
+      // current usage
+      steps: M.arrayOf(M.number()),
+
+      // deprecated
+      step: M.number(),
+      how: M.string(),
+    },
+  ),
   { state: 'undo', step: M.number(), how: M.string() }, // XXX Not currently used
   { state: 'done' },
   M.splitRecord(
-    { state: 'fail', step: M.number(), how: M.string(), error: M.string() },
-    { where: AnyString<AssetPlaceRef>() },
+    { state: 'fail' },
+    {
+      // current usage
+      reasons: M.arrayOf({ step: M.number(), reason: M.string() }),
+
+      // legacy
+      step: M.number(),
+      how: M.string(),
+      error: M.string(),
+      where: AnyString<AssetPlaceRef>(),
+    },
     {},
   ),
 );

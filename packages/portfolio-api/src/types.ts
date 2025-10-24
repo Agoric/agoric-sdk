@@ -60,10 +60,16 @@ export type FlowDetail =
   | { type: 'rebalance' }; // aka simpleRebalance
 
 export type FlowStatus =
-  | { state: 'run'; step: number; how: string }
+  | { state: 'run'; step: number; steps?: number[] }
+  /** @deprecated */
   | { state: 'undo'; step: number; how: string }
   | { state: 'done' }
-  | { state: 'fail'; step: number; how: string; error: string; where?: string };
+  | {
+      state: 'fail';
+      step: number;
+      how?: string;
+      reasons?: { step: number; reason: string }[];
+    };
 
 export type FlowStep = {
   how: string;
