@@ -234,22 +234,32 @@ test.serial('iterate simulation several times', async t => {
       }
     }
     const snapshotted = new Set(await controller.snapshotAllVats());
-    await controller.run(); // clear any reactions
+    // Account for snapshot pseudo-deliveries without triggering reap
+    previousReapPos = controller.reapAllVats(
+      Object.fromEntries(
+        Object.entries(previousReapPos).map(([vatID]) => [vatID, Infinity]),
+      ),
+    );
+    await controller.run(); // clear any reactions, should be none
     const { kernelTable } = controller.dump();
     const snapshots = [...snapStore.listAllSnapshots()].filter(
       s => s.inUse && snapshotted.has(s.vatID),
     );
 
+    const computrons = harness.totalComputronCount();
     const observation = {
       id: `post-prune-${id}`,
       time: Date.now(),
       kernelTable,
       snapshots,
+      computrons,
       ...getResourceUsageStats(controller, storage.data),
     };
     observations.push(observation);
     slogSender?.({ type: 'cleanup-finish', id, observation });
     await slogSender?.forceFlush?.();
+
+    harness.resetRunPolicy();
   }
 
   const { simulatedIterations } = t.context;
