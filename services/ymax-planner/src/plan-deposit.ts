@@ -20,6 +20,7 @@ import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/netw
 import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
+import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
 import { USDN, type CosmosRestClient } from './cosmos-rest-client.js';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 
@@ -105,6 +106,23 @@ export const getCurrentBalances = async (
   }
   const currentBalances = Object.fromEntries(balanceEntries);
   return currentBalances;
+};
+
+export const getNonDustBalances = async (
+  status: StatusFor['portfolio'],
+  brand: Brand<'nat'>,
+  powers: {
+    spectrum: SpectrumClient;
+    cosmosRest: CosmosRestClient;
+  },
+) => {
+  const currentBalances = await getCurrentBalances(status, brand, powers);
+  const nonDustBalances = Object.fromEntries(
+    Object.entries(currentBalances).filter(
+      ([, amount]) => amount.value > ACCOUNT_DUST_EPSILON,
+    ),
+  );
+  return nonDustBalances;
 };
 
 /**

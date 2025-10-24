@@ -21,6 +21,11 @@ netSupply(node) = current[node] - target[node]
 < 0 : deficit (must receive)
 = 0 : balanced
 ```
+Upstream data prep filters out balances at or below `ACCOUNT_DUST_EPSILON`
+(currently 100 `uusdc`, ≈$10^{-4}$ USDC) via `getNonDustBalances` so the solver
+never sees dust-only accounts. Once a place clears that threshold the graph
+records its full delta (no additional epsilon trimming inside the solver).
+
 Sum of all supplies must be zero for feasibility.
 
 ## 2. Edges
