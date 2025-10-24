@@ -10,7 +10,7 @@ import {
 import { AmountShape } from '@agoric/ertp/src/typeGuards.js';
 import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 
-import { UNPUBLISHED_RESULT } from './offers.js';
+import { UNPUBLISHED_RESULT } from './offers.ts';
 
 /**
  * @import {OfferSpec} from './offers.js';

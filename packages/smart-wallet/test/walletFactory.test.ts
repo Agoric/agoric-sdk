@@ -1,8 +1,11 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { TestFn } from 'ava';
+
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { E } from '@endo/far';
 import { makeImportContext } from '../src/marshal-contexts.js';
+import type { OfferSpec } from '../src/offers.js';
 import { makeDefaultTestContext } from './contexts.js';
 import {
   ActionType,
@@ -11,12 +14,9 @@ import {
   topicPath,
 } from './supports.js';
 
-/**
- * @type {import('ava').TestFn<
- *   Awaited<ReturnType<makeDefaultTestContext>>
- * >}
- */
-const test = anyTest;
+type DefaultTestContext = Awaited<ReturnType<typeof makeDefaultTestContext>>;
+
+const test = anyTest as TestFn<DefaultTestContext>;
 
 const mockAddress1 = 'mockAddress1';
 const mockAddress2 = 'mockAddress2';
@@ -38,8 +38,8 @@ test('bridge handler', async t => {
 
   // fund the wallet with anchor
 
-  /** @type {import('../src/offers.js').OfferSpec} */
   const offerSpec = {
+    // @ts-expect-error testing coercion
     id: 1,
     invitationSpec: {
       source: 'purse',
@@ -47,7 +47,7 @@ test('bridge handler', async t => {
       instance: someInstance,
     },
     proposal: {},
-  };
+  } satisfies OfferSpec;
 
   t.like(await headValue(updates), {
     updated: 'balance',
@@ -77,6 +77,7 @@ test('bridge handler', async t => {
     updated: 'offerStatus',
     status: {
       ...offerSpec,
+      id: String(offerSpec.id), // coerced to string
       error: 'Error: no invitation match (0 description and 0 instance)',
     },
   });
@@ -92,7 +93,6 @@ test('bridge with offerId string', async t => {
 
   // fund the wallet with anchor
 
-  /** @type {import('../src/offers.js').OfferSpec} */
   const offerSpec = {
     id: 'uniqueString',
     invitationSpec: {
@@ -101,7 +101,7 @@ test('bridge with offerId string', async t => {
       instance: someInstance,
     },
     proposal: {},
-  };
+  } satisfies OfferSpec;
   assert(t.context.sendToBridge);
   const validMsg = {
     type: ActionType.WALLET_SPEND_ACTION,

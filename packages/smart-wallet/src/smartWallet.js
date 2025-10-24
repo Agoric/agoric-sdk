@@ -75,16 +75,20 @@ const trace = makeTracer('SmrtWlt');
  */
 
 /**
+ * `number` ids are deprecated but we may still receive some over the bridge.
+ *
  * @typedef {{
  *   method: 'executeOffer';
- *   offer: OfferSpec;
+ *   offer: Omit<OfferSpec, 'id'> & { id: string | number };
  * }} ExecuteOfferAction
  */
 
 /**
+ * Allows legacy `number` offer IDs.
+ *
  * @typedef {{
  *   method: 'tryExitOffer';
- *   offerId: OfferId;
+ *   offerId: OfferId | number;
  * }} TryExitOfferAction
  */
 
@@ -954,7 +958,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           const { zoe, agoricNames } = shared;
           const { invitationBrand, invitationIssuer } = shared;
 
-          facets.helper.assertUniqueOfferId(String(offerSpec.id));
+          facets.helper.assertUniqueOfferId(offerSpec.id);
 
           await null;
 
@@ -1186,11 +1190,19 @@ export const prepareSmartWallet = (baggage, shared) => {
                       Fail`executeOffer saveResult requires a new smart wallet with myStore`;
                     }
 
-                    return offers.executeOffer(action.offer);
+                    // Coerce number ids to string for backwards compatibility
+                    /** @type {OfferSpec} */
+                    const offerSpec = {
+                      ...action.offer,
+                      id: String(action.offer.id),
+                    };
+
+                    return offers.executeOffer(offerSpec);
                   }
                   case 'tryExitOffer': {
                     assert(canSpend, 'tryExitOffer requires spend authority');
-                    return offers.tryExitOffer(action.offerId);
+                    // Coerce number ids to string for backwards compatibility
+                    return offers.tryExitOffer(String(action.offerId));
                   }
                   case 'invokeEntry': {
                     walletHasNameHub ||
