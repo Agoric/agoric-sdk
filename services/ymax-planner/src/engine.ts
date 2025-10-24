@@ -50,7 +50,7 @@ import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import {
   getCurrentBalance,
-  getCurrentBalances,
+  getNonDustBalances,
   planDepositToAllocations,
   planRebalanceToAllocations,
   planWithdrawFromAllocations,
@@ -231,7 +231,7 @@ const processPortfolioEvents = async (
     flowDetail: FlowDetail,
   ) => {
     const path = `${portfoliosPathPrefix}.${portfolioKey}`;
-    const currentBalances = await getCurrentBalances(
+    const currentBalances = await getNonDustBalances(
       portfolioStatus,
       depositBrand,
       { cosmosRest, spectrum },

@@ -77,3 +77,9 @@ export const RebalanceStrategy = /** @type {const} */ ({
   PreserveExistingProportions: 'pep',
 });
 harden(RebalanceStrategy);
+
+/**
+ * Treat account deltas smaller than this value (in micro-units) as dust.
+ * This corresponds to 100 uusdc, i.e., $0.0001 for USDC.
+ */
+export const ACCOUNT_DUST_EPSILON = 100n;

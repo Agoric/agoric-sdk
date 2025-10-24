@@ -11,6 +11,7 @@ import { objectMap } from '@agoric/internal';
 import { Far } from '@endo/pass-style';
 import { CosmosRestClient, USDN } from '../src/cosmos-rest-client.ts';
 import {
+  getNonDustBalances,
   handleDeposit,
   planDepositToAllocations,
   planRebalanceToAllocations,
@@ -25,6 +26,94 @@ const makeDeposit = value => AmountMath.make(depositBrand, value);
 const feeBrand = Far('fee brand (BLD)') as Brand<'nat'>;
 
 const powers = { fetch, setTimeout };
+
+test('getNonDustBalances filters balances at or below the dust epsilon', async t => {
+  const status = {
+    positionKeys: ['Aave_Arbitrum', 'Compound_Base'],
+    accountIdByChain: {
+      Arbitrum: 'chain:mock:addr-arb',
+      Base: 'chain:mock:addr-base',
+    },
+  } as any;
+
+  class MockSpectrumClientDust extends SpectrumClient {
+    constructor() {
+      super(powers);
+    }
+
+    async getPoolBalance(chain: any, pool: any, addr: any) {
+      if (chain === 'arbitrum' && pool === 'aave') {
+        return {
+          pool,
+          chain,
+          address: addr,
+          balance: { supplyBalance: 100, borrowAmount: 0 },
+        };
+      }
+      if (chain === 'base' && pool === 'compound') {
+        return {
+          pool,
+          chain,
+          address: addr,
+          balance: { supplyBalance: 150, borrowAmount: 0 },
+        };
+      }
+      return {
+        pool,
+        chain,
+        address: addr,
+        balance: { supplyBalance: 0, borrowAmount: 0 },
+      };
+    }
+  }
+  const mockSpectrumClient = new MockSpectrumClientDust();
+  const mockCosmosRestClient = {
+    async getAccountBalance() {
+      throw new Error('unexpected Cosmos balance request');
+    },
+  } as unknown as CosmosRestClient;
+
+  const balances = await getNonDustBalances(status, depositBrand, {
+    spectrum: mockSpectrumClient,
+    cosmosRest: mockCosmosRestClient,
+  });
+
+  t.deepEqual(Object.keys(balances), ['Compound_Base']);
+  t.false(Object.hasOwn(balances, 'Aave_Arbitrum'));
+  t.is(balances.Compound_Base.value, 150n);
+});
+
+test('getNonDustBalances retains noble balances above the dust epsilon', async t => {
+  const status = {
+    positionKeys: ['USDN'],
+    accountIdByChain: {
+      noble: 'chain:mock:addr-noble',
+    },
+  } as any;
+
+  const spectrumStub = {
+    async getPoolBalance() {
+      throw new Error('unexpected Spectrum balance request');
+    },
+  } as unknown as SpectrumClient;
+
+  const mockCosmosRestClient = {
+    async getAccountBalance(chainName: string, addr: string, denom: string) {
+      t.is(chainName, 'noble');
+      t.is(denom, 'uusdn');
+      t.truthy(addr);
+      return { denom, amount: '101' };
+    },
+  } as unknown as CosmosRestClient;
+
+  const balances = await getNonDustBalances(status, depositBrand, {
+    spectrum: spectrumStub,
+    cosmosRest: mockCosmosRestClient,
+  });
+
+  t.deepEqual(Object.keys(balances), ['USDN']);
+  t.is(balances.USDN.value, 101n);
+});
 
 /**
  * Deposit: 1000n
