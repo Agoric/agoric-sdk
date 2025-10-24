@@ -1366,3 +1366,353 @@ test('forward via cctp failed (MsgDepositForBurn)', async t => {
     { status: 'FORWARD_FAILED' }, // Transaction should be marked as FORWARD_FAILED
   ]);
 });
+
+test('remediateMintedEarly: disburse when minted amount exceeds pending advance', async t => {
+  const {
+    common: {
+      brands: { usdc },
+    },
+    makeSettler,
+    defaultSettlerParams,
+    repayer,
+    accounts,
+    peekCalls,
+    inspectLogs,
+    makeSimulate,
+    statusManager,
+  } = t.context;
+
+  const settler = makeSettler({
+    repayer,
+    settlementAccount: accounts.settlement.account,
+    ...defaultSettlerParams,
+  });
+  const simulate = makeSimulate(settler.notifier);
+
+  t.log('Simulate advance of 100 USDC');
+  const evidence = simulate.advance({
+    ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
+    tx: {
+      ...MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx,
+      amount: 100_000000n, // 100 USDC
+    },
+  });
+  await eventLoopIteration();
+
+  t.log('Simulate minting of 110 USDC (slightly more due to rounding)');
+  void settler.tap.receiveUpcall(
+    MockVTransferEvents.AGORIC_PLUS_OSMO({
+      packet: {
+        ...MockVTransferEvents.AGORIC_PLUS_OSMO().packet,
+        data: btoa(
+          JSON.stringify({
+            amount: '110000000', // 110 USDC
+            denom: 'uusdc',
+            sender: evidence.tx.forwardingAddress,
+            receiver: encodeAddressHook(
+              'agoric1fakeLCAAddress1',
+              harden({ EUD: evidence.aux.recipientAddress }),
+            ),
+          }),
+        ),
+      },
+    }),
+  );
+  await eventLoopIteration();
+
+  t.log('Funds should be in mintedEarly (minted before settled)');
+  const tapLogs = inspectLogs();
+  t.like(tapLogs.at(-1), ['⚠️ tap: minted while advancing']);
+
+  t.log('Run remediateMintedEarly to disburse the stuck funds');
+  settler.creator.remediateMintedEarly(50_000000n); // min 50 USDC
+  await eventLoopIteration();
+
+  t.log('Verify disburse was called');
+  const calls = peekCalls();
+  t.is(calls.length, 1, 'Should have one repay call');
+  t.like(calls[0], {
+    method: 'repay',
+    amounts: {
+      PoolFee: usdc.make(0n),
+      ContractFee: usdc.make(0n),
+    },
+  });
+
+  t.log('Verify pending tx was removed from StatusManager');
+  t.deepEqual(
+    statusManager.lookupPending(
+      evidence.tx.forwardingAddress,
+      evidence.tx.amount,
+    ),
+    [],
+    'Pending tx should be removed',
+  );
+
+  t.log('Verify transaction status is DISBURSED');
+  t.deepEqual(t.context.common.readTxnRecord(evidence), [
+    { evidence, status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+    { status: 'ADVANCED' },
+    { split: calls[0].amounts, status: 'DISBURSED' },
+  ]);
+});
+
+test('remediateMintedEarly: greedy algorithm matches multiple pending txs', async t => {
+  const {
+    common: {
+      brands: { usdc },
+    },
+    makeSettler,
+    defaultSettlerParams,
+    repayer,
+    accounts,
+    peekCalls,
+    inspectLogs,
+    makeSimulate,
+    statusManager,
+  } = t.context;
+
+  const settler = makeSettler({
+    repayer,
+    settlementAccount: accounts.settlement.account,
+    ...defaultSettlerParams,
+  });
+  const simulate = makeSimulate(settler.notifier);
+
+  const forwardingAddress = MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx
+    .forwardingAddress;
+
+  t.log('Simulate three advances: 30, 50, 80 USDC');
+  const evidence30 = simulate.advance({
+    ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
+    txHash: '0x0000000000000000000000000000000000000000000000000000000000000001',
+    tx: {
+      ...MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx,
+      amount: 30_000000n,
+    },
+  });
+
+  const evidence50 = simulate.advance({
+    ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
+    txHash: '0x0000000000000000000000000000000000000000000000000000000000000002',
+    tx: {
+      ...MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx,
+      amount: 50_000000n,
+    },
+  });
+
+  const evidence80 = simulate.advance({
+    ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
+    txHash: '0x0000000000000000000000000000000000000000000000000000000000000003',
+    tx: {
+      ...MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx,
+      amount: 80_000000n,
+    },
+  });
+  await eventLoopIteration();
+
+  t.log('Simulate minting of 100 USDC');
+  void settler.tap.receiveUpcall(
+    MockVTransferEvents.AGORIC_PLUS_OSMO({
+      packet: {
+        ...MockVTransferEvents.AGORIC_PLUS_OSMO().packet,
+        data: btoa(
+          JSON.stringify({
+            amount: '100000000', // 100 USDC
+            denom: 'uusdc',
+            sender: forwardingAddress,
+            receiver: encodeAddressHook(
+              'agoric1fakeLCAAddress1',
+              harden({ EUD: evidence30.aux.recipientAddress }),
+            ),
+          }),
+        ),
+      },
+    }),
+  );
+  await eventLoopIteration();
+
+  t.log('Run remediateMintedEarly');
+  settler.creator.remediateMintedEarly(50_000000n);
+  await eventLoopIteration();
+
+  t.log('Verify two disburses: 30 + 50 = 80 USDC (greedy ascending)');
+  const calls = peekCalls();
+  t.is(calls.length, 2, 'Should have two repay calls');
+
+  t.log('Verify 30 and 50 USDC txs were removed, 80 USDC remains');
+  t.deepEqual(
+    statusManager.lookupPending(forwardingAddress, 30_000000n),
+    [],
+    '30 USDC tx should be removed',
+  );
+  t.deepEqual(
+    statusManager.lookupPending(forwardingAddress, 50_000000n),
+    [],
+    '50 USDC tx should be removed',
+  );
+  t.is(
+    statusManager.lookupPending(forwardingAddress, 80_000000n).length,
+    1,
+    '80 USDC tx should remain',
+  );
+});
+
+test('remediateMintedEarly: only processes Advanced status txs', async t => {
+  const {
+    makeSettler,
+    defaultSettlerParams,
+    repayer,
+    accounts,
+    peekCalls,
+    makeSimulate,
+    statusManager,
+  } = t.context;
+
+  const settler = makeSettler({
+    repayer,
+    settlementAccount: accounts.settlement.account,
+    ...defaultSettlerParams,
+  });
+  const simulate = makeSimulate(settler.notifier);
+
+  const forwardingAddress = MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx
+    .forwardingAddress;
+
+  t.log('Simulate one successful advance and one failed advance');
+  const evidenceAdvanced = simulate.advance({
+    ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
+    txHash: '0x0000000000000000000000000000000000000000000000000000000000000001',
+    tx: {
+      ...MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx,
+      amount: 100_000000n,
+    },
+  });
+
+  const evidenceFailed = simulate.startAdvance({
+    ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
+    txHash: '0x0000000000000000000000000000000000000000000000000000000000000002',
+    tx: {
+      ...MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx,
+      amount: 50_000000n,
+    },
+  });
+  simulate.finishAdvance(evidenceFailed, false); // advance failed
+  await eventLoopIteration();
+
+  t.log('Simulate minting of 150 USDC');
+  void settler.tap.receiveUpcall(
+    MockVTransferEvents.AGORIC_PLUS_OSMO({
+      packet: {
+        ...MockVTransferEvents.AGORIC_PLUS_OSMO().packet,
+        data: btoa(
+          JSON.stringify({
+            amount: '150000000', // 150 USDC
+            denom: 'uusdc',
+            sender: forwardingAddress,
+            receiver: encodeAddressHook(
+              'agoric1fakeLCAAddress1',
+              harden({ EUD: evidenceAdvanced.aux.recipientAddress }),
+            ),
+          }),
+        ),
+      },
+    }),
+  );
+  await eventLoopIteration();
+
+  t.log('Run remediateMintedEarly');
+  settler.creator.remediateMintedEarly(50_000000n);
+  await eventLoopIteration();
+
+  t.log('Verify only the Advanced tx was disbursed');
+  const calls = peekCalls();
+  t.is(calls.length, 1, 'Should have one repay call for Advanced tx only');
+
+  t.log('Verify Advanced tx removed, AdvanceFailed tx remains');
+  t.deepEqual(
+    statusManager.lookupPending(forwardingAddress, 100_000000n),
+    [],
+    'Advanced tx should be removed',
+  );
+  t.is(
+    statusManager.lookupPending(forwardingAddress, 50_000000n).length,
+    1,
+    'AdvanceFailed tx should remain',
+  );
+});
+
+test('remediateMintedEarly: removes key even when no matches found', async t => {
+  const {
+    makeSettler,
+    defaultSettlerParams,
+    repayer,
+    accounts,
+    peekCalls,
+    inspectLogs,
+  } = t.context;
+
+  const settler = makeSettler({
+    repayer,
+    settlementAccount: accounts.settlement.account,
+    ...defaultSettlerParams,
+  });
+
+  const forwardingAddress = MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx
+    .forwardingAddress;
+
+  t.log('Simulate minting of 100 USDC with no corresponding advance');
+  void settler.tap.receiveUpcall(
+    MockVTransferEvents.AGORIC_PLUS_OSMO({
+      packet: {
+        ...MockVTransferEvents.AGORIC_PLUS_OSMO().packet,
+        data: btoa(
+          JSON.stringify({
+            amount: '100000000',
+            denom: 'uusdc',
+            sender: forwardingAddress,
+            receiver: encodeAddressHook(
+              'agoric1fakeLCAAddress1',
+              harden({
+                EUD: MockCctpTxEvidences.AGORIC_PLUS_OSMO().aux.recipientAddress,
+              }),
+            ),
+          }),
+        ),
+      },
+    }),
+  );
+  await eventLoopIteration();
+
+  t.log('Verify mintedEarly was recorded');
+  const tapLogs = inspectLogs();
+  t.like(tapLogs.at(-1), ['⚠️ tap: minted before observed']);
+
+  t.log('Run remediateMintedEarly with no pending advances');
+  settler.creator.remediateMintedEarly(50_000000n);
+  await eventLoopIteration();
+
+  t.log('Verify no disburse calls were made');
+  const calls = peekCalls();
+  t.is(calls.length, 0, 'Should have no repay calls');
+
+  t.log('Verify the mintedEarly key was removed (preventing stuck entry)');
+  const logsAfterRemediate = inspectLogs();
+  t.like(
+    logsAfterRemediate.at(-1),
+    ['⚠️ no advanced pending txs for', forwardingAddress],
+    'Should log no advanced pending txs',
+  );
+
+  t.log('Run remediateMintedEarly again - should be a no-op');
+  settler.creator.remediateMintedEarly(50_000000n);
+  await eventLoopIteration();
+
+  const finalCalls = peekCalls();
+  t.is(
+    finalCalls.length,
+    0,
+    'Should still have no repay calls (key was removed)',
+  );
+});
