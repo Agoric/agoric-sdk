@@ -77,6 +77,7 @@ import {
   type PoolKey,
   type ProposalType,
 } from './type-guards.ts';
+import { runJob, type Job } from './schedule-order.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const { keys, entries, fromEntries } = Object;
@@ -122,7 +123,7 @@ type AssetMovement = {
 };
 
 const moveStatus = ({ apply: _a, ...data }: AssetMovement) => data;
-const errmsg = (err: any) => ('message' in err ? err.message : `${err}`);
+const errmsg = (err: any) => `${'message' in err ? err.message : err}`;
 
 export type TransportDetail<
   How extends string,
@@ -160,6 +161,9 @@ export type ProtocolDetail<
   ) => Promise<void>;
 };
 
+const range = (n: number) => Array.from(Array(n).keys());
+const min = (xs: number[]) => xs.reduce((lo, x) => (x < lo ? x : lo));
+
 /**
  * **Failure Handling**: Logs failures and publishes status without attempting
  * to unwind already-completed steps. Operators must resolve any partial
@@ -172,16 +176,21 @@ const trackFlow = async (
   traceFlow: TraceLogger,
   accounts: AccountsByChain,
 ) => {
-  await null; // cf. wiki:NoNestedAwait
-
-  let step = 1;
-  try {
-    for (const move of moves) {
-      const traceStep = traceFlow.sub(`step${step}`);
+  const runTask = async (ix: number, running: number[]) => {
+    // stesp are 1-based. the scheduler is 0-based
+    const step = ix + 1;
+    const steps = running.map(ix => ix + 1);
+    const move = moves[ix];
+    const traceStep = traceFlow.sub(`step${step}`);
+    reporter.publishFlowStatus(flowId, {
+      state: 'run',
+      steps,
+      step: min(steps),
+    });
+    try {
       traceStep('starting', moveStatus(move));
-      const { amount, how } = move;
-      reporter.publishFlowStatus(flowId, { state: 'run', step, how });
       const { srcPos, destPos } = await move.apply(accounts, traceStep);
+      const { amount, how } = move;
       traceStep('done:', how);
 
       if (srcPos) {
@@ -190,24 +199,34 @@ const trackFlow = async (
       if (destPos) {
         destPos.recordTransferIn(amount);
       }
-      step += 1;
+
+      // TODO(#NNNN): delete the flow storage node
+    } catch (err) {
+      traceFlow('⚠️ step', step, 'failed', err);
+      const failure = moves[step - 1];
+      if (failure) {
+        traceFlow('failed movement details', moveStatus(failure));
+      }
     }
-    reporter.publishFlowStatus(flowId, { state: 'done' });
-    // TODO(#NNNN): delete the flow storage node
-  } catch (err) {
-    traceFlow('⚠️ step', step, 'failed', err);
-    const failure = moves[step - 1];
-    if (failure) {
-      traceFlow('failed movement details', moveStatus(failure));
-    }
-    reporter.publishFlowStatus(flowId, {
-      state: 'fail',
-      step,
-      how: failure?.how ?? 'unknown',
-      error: errmsg(err),
-    });
-    throw err;
+  };
+
+  const job: Job = {
+    taskQty: moves.length,
+    order: range(moves.length - 1).map(lo => [lo + 1, [lo]]),
+  };
+  const results = await runJob(job, runTask, traceFlow);
+  if (results.some(r => r.status === 'rejected')) {
+    const reasons = results.flatMap((r, ix) =>
+      r.status === 'rejected'
+        ? [{ step: ix + 1, reason: errmsg(r.reason) }]
+        : [],
+    );
+    const step = min(reasons.map(r => r.step));
+    reporter.publishFlowStatus(flowId, { state: 'fail', step, reasons });
+    throw results;
   }
+
+  reporter.publishFlowStatus(flowId, { state: 'done' });
 };
 
 const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
