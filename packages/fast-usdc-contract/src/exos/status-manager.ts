@@ -274,6 +274,9 @@ export const prepareStatusManager = (
       lookupPending: M.call(M.string(), M.bigint()).returns(
         M.arrayOf(PendingTxShape),
       ),
+      lookupPendingByAddress: M.call(M.string()).returns(
+        M.arrayOf(PendingTxShape),
+      ),
     }),
     {
       /**
@@ -516,6 +519,21 @@ export const prepareStatusManager = (
         }
         const pendingTxs = pendingSettleTxs.get(nfa);
         return harden(pendingTxs.filter(tx => tx.tx.amount === amount));
+      },
+
+      /**
+       * Lookup all pending entries for a given address.
+       * Returns a shallow copy to preserve store encapsulation.
+       *
+       * @param nfa - Noble forwarding address
+       * @returns Array of all pending transactions for this address, or [] if none
+       */
+      lookupPendingByAddress(nfa: NobleAddress): PendingTx[] {
+        if (!pendingSettleTxs.has(nfa)) {
+          return harden([]);
+        }
+        // Return shallow copy to preserve encapsulation
+        return harden([...pendingSettleTxs.get(nfa)]);
       },
     },
     { stateShape },
