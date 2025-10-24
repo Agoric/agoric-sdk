@@ -265,20 +265,9 @@ export const prepareSettler = (
         /**
          * Remediate minted-early funds by disbursing them to the pool.
          *
-         * This algorithm handles cases where minted amounts are slightly larger
-         * than pending advanced tx amounts due to rounding or extra IBC amounts.
-         * By allowing a mintedEarly amount to cover pending advanced txs with
-         * amounts <= mintedAmount, those funds will be disbursed to the liquidity
-         * pool instead of remaining stuck.
-         *
-         * Strategy:
-         * - For each mintedEarly entry >= minUusdc
-         * - Fetch all pending txs for that address
-         * - Filter to only Advanced status entries
-         * - Greedily consume advanced pending txs (ascending sort, smallest first)
-         *   to maximize number of pending advances covered by slightly-larger minted amount
-         * - For each matched pending tx, dequeue and disburse
-         * - Remove the mintedEarly key after processing to prevent stuck entries
+         * Now that the core settlement matcher uses greedy ascending logic,
+         * this primarily handles clearing out mintedEarly entries that accumulated
+         * before the fix. It matches pending Advanced txs and disburses them.
          *
          * @deprecated to be used only in the CCTP beta release
          */
@@ -298,63 +287,34 @@ export const prepareSettler = (
 
             // Process each occurrence in the multiset
             for (let i = 0; i < count; i += 1) {
-              // Fetch all pending txs for this address
-              const allPending = statusManager.lookupPendingByAddress(address);
-
-              // Filter to only Advanced status entries
-              const advancedPending = allPending.filter(
-                tx => tx.status === PendingTxStatus.Advanced,
+              // Use the core greedy matcher which now handles ascending partial matches
+              const dequeued = statusManager.matchAndDequeueSettlement(
+                address,
+                mintedAmount,
               );
 
-              if (advancedPending.length === 0) {
-                log('⚠️ no advanced pending txs for', address);
-                continue;
-              }
-
-              // Sort ascending (smallest first) to maximize number of matches
-              const sortedPending = advancedPending.sort((a, b) =>
-                Number(a.tx.amount - b.tx.amount),
-              );
-
-              // Greedily consume pending txs whose amount <= remaining minted amount
-              let remainingMinted = mintedAmount;
-              const toDisburse = [];
-
-              for (const pending of sortedPending) {
-                if (pending.tx.amount <= remainingMinted) {
-                  toDisburse.push(pending);
-                  remainingMinted -= pending.tx.amount;
-                }
-              }
-
-              if (toDisburse.length === 0) {
+              if (dequeued.length === 0) {
                 log(
                   '⚠️ no pending txs matched for minted amount',
                   mintedAmount,
                 );
-                // Continue to remove the key below to prevent stuck entries
               } else {
-                log(
-                  'disbursing',
-                  toDisburse.length,
-                  'pending txs for',
-                  address,
-                );
+                log('disbursing', dequeued.length, 'pending txs for', address);
 
-                // Dequeue and disburse each matched pending tx
-                for (const pending of toDisburse) {
-                  const dequeuedTxs = statusManager.matchAndDequeueSettlement(
-                    address,
-                    pending.tx.amount,
-                  );
-
-                  // Disburse each dequeued tx
-                  for (const p of dequeuedTxs) {
+                // Disburse only the Advanced txs
+                for (const p of dequeued) {
+                  if (p.status === PendingTxStatus.Advanced) {
                     const fullValue = AmountMath.make(USDC, p.tx.amount);
                     void self.disburse(
                       p.txHash,
                       fullValue,
                       p.aux.recipientAddress,
+                    );
+                  } else {
+                    log(
+                      '⚠️ unexpected non-Advanced tx in remediation',
+                      p.status,
+                      p.txHash,
                     );
                   }
                 }

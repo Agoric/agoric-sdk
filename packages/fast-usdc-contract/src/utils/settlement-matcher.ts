@@ -2,38 +2,33 @@
  * @file Settlement-matching utilities for USDC transactions.
  *
  * This module maintains a `MapStore<NobleAddress, PendingTx[]>` where pending transactions
- * for each Noble address are kept in **descending order** by `tx.amount`. This sorting
- * invariant enables efficient resolution of new mints through two approaches:
+ * for each Noble address are kept in **ascending order** by `tx.amount`. This sorting
+ * invariant enables efficient resolution of new mints through a greedy approach:
  *   1. Exact-amount direct lookup (O(n) time complexity)
- *   2. Greedy combination algorithm that processes transactions from largest to smallest
+ *   2. Greedy algorithm that processes transactions from smallest to largest
  *
- * The greedy strategy is deterministic and auditable: it always selects the largest
- * transaction that doesn't exceed the remaining target until the full amount is matched.
- * If no valid combination exists, an empty array is returned.
+ * The greedy strategy is deterministic and auditable: it selects the smallest pending
+ * transactions that fit within the minted amount, maximizing the number of advances covered.
+ * This handles cases where minted amounts are slightly larger than pending advances due to
+ * rounding differences or extra IBC amounts, preventing funds from getting stuck.
  *
- * Implementation includes memoization and depth-limiting to ensure performance even with
- * larger transaction sets, though typical match depth is 2-3 transactions.
+ * If the minted amount is less than any single pending tx, an empty array is returned.
  */
 
 import type { MapStore } from '@agoric/swingset-liveslots';
 import type { NobleAddress, PendingTx } from '@agoric/fast-usdc/src/types.ts';
 import { insertIntoSortedArray } from './store.ts';
 
-/**
- * Max number of txs to settle against a single mint.
- * Much higher than observed value of 2-3.
- */
-const MAX_MATCH_DEPTH = 25;
+/** bigint‑safe ascending comparator (smallest first) */
+const comparePendingTxAsc = (a: PendingTx, b: PendingTx): number =>
+  Number(a.tx.amount - b.tx.amount);
 
-/** bigint‑safe descending comparator (largest first) */
-const comparePendingTxDesc = (a: PendingTx, b: PendingTx): number =>
-  Number(b.tx.amount - a.tx.amount);
-
-harden(comparePendingTxDesc);
+harden(comparePendingTxAsc);
 
 /**
- * Depth‑first, memoised, largest‑first chooser.
- * Returns the *first* exact combination or [] if none.
+ * Greedy smallest‑first matcher that allows partial matches.
+ * Returns pending txs whose amounts sum to <= target, maximizing count.
+ * If no txs fit within target, returns [].
  */
 const greedyMatch = (
   pending: readonly PendingTx[],
@@ -42,47 +37,23 @@ const greedyMatch = (
   if (target === 0n) return [];
   if (pending.length === 0) return [];
 
-  const deadEnds = new Set<string>();
-  const path: PendingTx[] = [];
+  const matched: PendingTx[] = [];
+  let remaining = target;
 
-  const dfs = (index: number, sum: bigint): boolean => {
-    if (sum === target) return true;
-    if (sum > target) {
-      // unreachable with current continue‑on‑overshoot logic
-      throw Error(
-        `internal: target exceeded for ${pending[0].tx.forwardingAddress}`,
-      );
+  // Greedily consume pending txs (already sorted ascending)
+  for (const tx of pending) {
+    if (tx.tx.amount <= remaining) {
+      matched.push(tx);
+      remaining -= tx.tx.amount;
     }
-    if (path.length >= MAX_MATCH_DEPTH)
-      throw Error(
-        `MAX_MATCH_DEPTH: ${MAX_MATCH_DEPTH} exceeded for ${pending[0].tx.forwardingAddress}`,
-      );
+  }
 
-    if (index >= pending.length) return false;
-
-    const key = `${index}:${sum}`;
-    if (deadEnds.has(key)) return false; // skip known dead end
-
-    for (let i = index; i < pending.length; i += 1) {
-      const tx = pending[i];
-      const nextSum = sum + tx.tx.amount;
-      if (nextSum > target) continue; // overshoot, skip
-
-      path.push(tx);
-      if (dfs(i + 1, nextSum)) return true;
-      path.pop();
-    }
-
-    deadEnds.add(key);
-    return false;
-  };
-
-  return dfs(0, 0n) ? path : [];
+  return matched;
 };
 harden(greedyMatch);
 
 export const makeSettlementMatcher = () => {
-  /** add to per‑address queue, preserving descending sort */
+  /** add to per‑address queue, preserving ascending sort */
   const addPendingSettleTx = (
     pendingSettleTxs: MapStore<NobleAddress, PendingTx[]>,
     pending: PendingTx,
@@ -94,13 +65,17 @@ export const makeSettlementMatcher = () => {
     }
 
     const list = [...pendingSettleTxs.get(nfa)];
-    insertIntoSortedArray(list, pending, comparePendingTxDesc);
+    insertIntoSortedArray(list, pending, comparePendingTxAsc);
     pendingSettleTxs.set(nfa, harden(list));
   };
 
   /**
-   * Attempt to satisfy `amount` for `nfa`.  Returns the matched txs (possibly
-   * empty).  Updates the MapStore so those txs are no longer pending.
+   * Attempt to satisfy `amount` for `nfa`. Returns the matched txs (possibly
+   * empty). Updates the MapStore so those txs are no longer pending.
+   *
+   * The greedy algorithm matches pending txs (smallest first) whose amounts
+   * sum to <= amount, allowing partial matches when the minted amount is
+   * slightly larger than pending advances.
    */
   const matchAndDequeueSettlement = (
     pendingSettleTxs: MapStore<NobleAddress, PendingTx[]>,
@@ -110,20 +85,7 @@ export const makeSettlementMatcher = () => {
     if (!pendingSettleTxs.has(nfa)) return [];
     const list = pendingSettleTxs.get(nfa);
 
-    // 1. exact
-    const ix = list.findIndex(tx => tx.tx.amount === amount);
-    if (ix >= 0) {
-      const match = list[ix];
-      if (list.length > 1) {
-        const remaining = [...list.slice(0, ix), ...list.slice(ix + 1)];
-        pendingSettleTxs.set(nfa, harden(remaining));
-      } else {
-        pendingSettleTxs.delete(nfa);
-      }
-      return harden([match]);
-    }
-
-    // 2. greedy combination
+    // Use greedy match (smallest first, allows partial)
     const combo = greedyMatch(list, amount);
     if (combo.length) {
       if (combo.length !== list.length) {

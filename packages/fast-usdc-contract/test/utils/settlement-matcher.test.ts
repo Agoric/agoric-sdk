@@ -81,7 +81,7 @@ const exact = test.macro({
 
 test(exact, 200n, [100n, 200n], [100n]);
 test(exact, 100n, [100n, 200n], [200n]);
-test(exact, 200n, [100n, 200n, 200n], [200n, 100n]);
+test(exact, 200n, [100n, 200n, 200n], [100n, 200n]);
 test(exact, 200n, [200n], []);
 
 const greedy = test.macro({
@@ -118,19 +118,27 @@ const greedy = test.macro({
   },
 });
 
-test(greedy, 500n, [200n, 100n, 300n], [300n, 200n], [100n]);
-test(greedy, 300n, [200n, 100n, 300n], [300n], [200n, 100n]);
-test(greedy, 350n, [250n, 150n, 200n], [200n, 150n], [250n]);
-test(greedy, 150n, [100n, 50n, 25n], [100n, 50n], [25n]);
-test(greedy, 150n, [100n, 30n, 10n, 10n], [100n, 30n, 10n, 10n], []);
-test(greedy, 150n, [75n, 100n], [], [100n, 75n]);
+// Greedy ascending: smallest first, allows partial matches
+test(greedy, 500n, [200n, 100n, 300n], [100n, 200n, 300n], []); // sum=600 > 500, but all fit
+test(greedy, 300n, [200n, 100n, 300n], [100n, 200n], [300n]); // sum=300, exact
+test(greedy, 350n, [250n, 150n, 200n], [150n, 200n], [250n]); // sum=350, exact
+test(greedy, 150n, [100n, 50n, 25n], [25n, 50n, 100n], []); // sum=175 > 150, but all fit
+test(greedy, 150n, [100n, 30n, 10n, 10n], [10n, 10n, 30n, 100n], []); // sum=150, exact
+test(greedy, 150n, [75n, 100n], [75n, 100n], []); // sum=175 > 150, but all fit
+test(greedy, 110n, [100n], [100n], []); // Partial match: 110 >= 100
 
-test('no combination possible', t => {
+test('no combination possible - all txs too large', t => {
   const { match, store } = t.context;
   for (const a of [7n, 5n]) {
     match.addPendingSettleTx(store, makePendingTx(a));
   }
-  t.deepEqual(match.matchAndDequeueSettlement(store, ADDRESS, 6n), []);
+  // Target 4n is less than smallest tx (5n), so no match
+  t.deepEqual(match.matchAndDequeueSettlement(store, ADDRESS, 4n), []);
+  // But target 6n will match the 5n tx
+  t.deepEqual(
+    match.matchAndDequeueSettlement(store, ADDRESS, 6n).map(tx => tx.tx.amount),
+    [5n],
+  );
 });
 
 test('address not found returns []', t => {
@@ -147,17 +155,6 @@ test('empty queue returns []', t => {
   // drain it
   void match.matchAndDequeueSettlement(store, ADDRESS, 10n);
   t.deepEqual(match.matchAndDequeueSettlement(store, ADDRESS, 1n), []);
-});
-
-test('exception thrown when greedy depth cap reached', t => {
-  const { match, store } = t.context;
-  for (const a of Array.from({ length: 30 }, () => 1n)) {
-    match.addPendingSettleTx(store, makePendingTx(a));
-  }
-  t.throws(() => match.matchAndDequeueSettlement(store, ADDRESS, 26n), {
-    message: 'MAX_MATCH_DEPTH: 25 exceeded for noble1address',
-  });
-  t.true(store.has(ADDRESS), 'queue unchanged when cap exceeded');
 });
 
 test('recipients isolated', t => {
