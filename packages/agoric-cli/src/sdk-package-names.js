@@ -8,6 +8,7 @@ export default [
   "@aglocal/fast-usdc-deploy",
   "@aglocal/portfolio-contract",
   "@aglocal/portfolio-deploy",
+  "@aglocal/strict-ts-loader",
   "@aglocal/swingset-runner",
   "@aglocal/ymax-planner",
   "@agoric/access-token",

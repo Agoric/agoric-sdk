@@ -10,7 +10,7 @@ import { publishFeedPolicy } from './utils/core-eval.js';
  * @import {Passable} from '@endo/pass-style'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
- * @import {FeedPolicy} from '@agoric/fast-usdc/src/types.js'
+ * @import {FeedPolicy} from '@agoric/fast-usdc/src/types.ts'
  */
 
 const contractName = 'fastUsdc';

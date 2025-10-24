@@ -9,12 +9,12 @@ import '@agoric/cosmic-swingset/src/launch-chain.js';
 import { Fail } from '@endo/errors';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { makeSwingsetTestKit } from '@aglocal/boot/tools/supports.js';
+import { makeSwingsetTestKit } from '@aglocal/boot/tools/supports.ts';
 import {
   makeWalletFactoryDriver,
   makeGovernanceDriver,
 } from '@aglocal/boot/tools/drivers.js';
-import { makeLiquidationTestKit } from '@aglocal/boot/tools/liquidation.js';
+import { makeLiquidationTestKit } from '@aglocal/boot/tools/liquidation.ts';
 
 // When I was a child my family took a lot of roadtrips around California to go
 // camping and backpacking and so on.  It was not uncommon in those days (nor is

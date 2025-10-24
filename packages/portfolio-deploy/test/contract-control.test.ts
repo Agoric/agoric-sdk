@@ -6,7 +6,7 @@ import {
   axelarIdsMock,
   contractsMock,
   gmpAddresses,
-} from '@aglocal/portfolio-contract/test/mocks.js';
+} from '@aglocal/portfolio-contract/test/mocks.ts';
 import {
   chainInfoWithCCTP,
   setupPortfolioTest,

@@ -7,7 +7,7 @@ import {
 } from '@agoric/cosmic-proto/address-hooks.js';
 import { PendingTxStatus, TxStatus } from '@agoric/fast-usdc/src/constants.js';
 import { AddressHookShape } from '@agoric/fast-usdc/src/type-guards.js';
-import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
+import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.ts';
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';

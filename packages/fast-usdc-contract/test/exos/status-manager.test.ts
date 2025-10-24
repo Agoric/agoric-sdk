@@ -2,7 +2,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
 import { PendingTxStatus, TxStatus } from '@agoric/fast-usdc/src/constants.js';
-import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
+import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.ts';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';

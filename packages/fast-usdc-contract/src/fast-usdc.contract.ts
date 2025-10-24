@@ -38,7 +38,7 @@ import type {
   ContractRecord,
   FastUsdcTerms,
   FeeConfig,
-} from '@agoric/fast-usdc/src/types.js';
+} from '@agoric/fast-usdc/src/types.ts';
 import type { ERemote, Remote } from '@agoric/internal';
 import type {
   Marshaller,

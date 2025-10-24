@@ -3,7 +3,7 @@ import { CctpTxEvidenceShape, RiskAssessmentShape } from './type-guards.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, RiskAssessment} from '@agoric/fast-usdc/src/types.js';
+ * @import {CctpTxEvidence, RiskAssessment} from '@agoric/fast-usdc/src/types.ts';
  */
 
 /** Name in the invitation purse (keyed also by this contract instance) */

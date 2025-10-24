@@ -6,7 +6,7 @@ import * as contractExports from '@aglocal/portfolio-contract/src/portfolio.cont
 import {
   gmpAddresses,
   makeUSDNIBCTraffic,
-} from '@aglocal/portfolio-contract/test/mocks.js';
+} from '@aglocal/portfolio-contract/test/mocks.ts';
 import { setupPortfolioTest } from '@aglocal/portfolio-contract/test/supports.ts';
 import { makeTrader } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
 import { makeWallet } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.ts';
