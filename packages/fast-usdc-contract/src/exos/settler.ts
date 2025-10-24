@@ -262,41 +262,95 @@ export const prepareSettler = (
           assert.typeof(registration, 'object');
           this.state.registration = registration;
         },
-        /** @deprecated to be used only in the CCTP beta release */
+        /**
+         * Remediate minted-early funds by disbursing them to the pool.
+         *
+         * This algorithm handles cases where minted amounts are slightly larger
+         * than pending advanced tx amounts due to rounding or extra IBC amounts.
+         * By allowing a mintedEarly amount to cover pending advanced txs with
+         * amounts <= mintedAmount, those funds will be disbursed to the liquidity
+         * pool instead of remaining stuck.
+         *
+         * Strategy:
+         * - For each mintedEarly entry >= minUusdc
+         * - Fetch all pending txs for that address
+         * - Filter to only Advanced status entries
+         * - Greedily consume advanced pending txs (ascending sort, smallest first)
+         *   to maximize number of pending advances covered by slightly-larger minted amount
+         * - For each matched pending tx, dequeue and disburse
+         * - Remove the mintedEarly key after processing to prevent stuck entries
+         *
+         * @deprecated to be used only in the CCTP beta release
+         */
         remediateMintedEarly(minUusdc: bigint): void {
           const { self } = this.facets;
           const { mintedEarly } = this.state;
           log('remediateMintedEarly', minUusdc, [...mintedEarly.keys()]);
           const batches = mintedEarly.entries();
+          
           for (const [key, count] of batches) {
-            const { address, amount } = parseMintedEarlyKey(key);
-            if (amount < minUusdc) {
+            const { address, amount: mintedAmount } = parseMintedEarlyKey(key);
+            
+            if (mintedAmount < minUusdc) {
               log('skipping', key, 'less than', minUusdc);
               continue;
             }
-            const allPending = statusManager.lookupPending(address, amount);
-            if (
-              allPending.some(
-                ({ status }) => status !== PendingTxStatus.Advanced,
-              )
-            ) {
-              log('🚨 pending txs included one not advanced', allPending);
-              continue;
-            }
-            // now COMMIT to disbursing all pending txs
+            
+            // Process each occurrence in the multiset
             for (let i = 0; i < count; i += 1) {
-              const pendingTxs = statusManager.matchAndDequeueSettlement(
-                address,
-                amount,
+              // Fetch all pending txs for this address
+              const allPending = statusManager.lookupPendingByAddress(address);
+              
+              // Filter to only Advanced status entries
+              const advancedPending = allPending.filter(
+                tx => tx.status === PendingTxStatus.Advanced,
               );
-
-              // Disburse the funds to the pool for the transaction
-              for (const p of pendingTxs) {
-                const fullValue = AmountMath.make(USDC, p.tx.amount);
-                void self.disburse(p.txHash, fullValue, p.aux.recipientAddress);
+              
+              if (advancedPending.length === 0) {
+                log('⚠️ no advanced pending txs for', address);
+                continue;
               }
-              // Remove the minted early key
-              mintedEarly.delete(key);
+              
+              // Sort ascending (smallest first) to maximize number of matches
+              const sortedPending = advancedPending.sort(
+                (a, b) => Number(a.tx.amount - b.tx.amount),
+              );
+              
+              // Greedily consume pending txs whose amount <= remaining minted amount
+              let remainingMinted = mintedAmount;
+              const toDisburse = [];
+              
+              for (const pending of sortedPending) {
+                if (pending.tx.amount <= remainingMinted) {
+                  toDisburse.push(pending);
+                  remainingMinted -= pending.tx.amount;
+                }
+              }
+              
+              if (toDisburse.length === 0) {
+                log('⚠️ no pending txs matched for minted amount', mintedAmount);
+                // Continue to remove the key below to prevent stuck entries
+              } else {
+                log('disbursing', toDisburse.length, 'pending txs for', address);
+                
+                // Dequeue and disburse each matched pending tx
+                for (const pending of toDisburse) {
+                  const dequeuedTxs = statusManager.matchAndDequeueSettlement(
+                    address,
+                    pending.tx.amount,
+                  );
+                  
+                  // Disburse each dequeued tx
+                  for (const p of dequeuedTxs) {
+                    const fullValue = AmountMath.make(USDC, p.tx.amount);
+                    void self.disburse(p.txHash, fullValue, p.aux.recipientAddress);
+                  }
+                }
+              }
+              
+              // Remove the minted early key to prevent it from remaining stuck
+              // even if nothing matched. This ensures forward progress.
+              asMultiset(mintedEarly).remove(key);
             }
           }
         },
