@@ -1410,7 +1410,7 @@ test('remediateMintedEarly: disburse when minted amount exceeds pending advance'
             denom: 'uusdc',
             sender: evidence.tx.forwardingAddress,
             receiver: encodeAddressHook(
-              'agoric1fakeLCAAddress1',
+              'agoric1fakelcaaddress1',
               harden({ EUD: evidence.aux.recipientAddress }),
             ),
           }),
@@ -1480,13 +1480,14 @@ test('remediateMintedEarly: greedy algorithm matches multiple pending txs', asyn
   });
   const simulate = makeSimulate(settler.notifier);
 
-  const forwardingAddress = MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx
-    .forwardingAddress;
+  const forwardingAddress =
+    MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx.forwardingAddress;
 
   t.log('Simulate three advances: 30, 50, 80 USDC');
   const evidence30 = simulate.advance({
     ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
-    txHash: '0x0000000000000000000000000000000000000000000000000000000000000001',
+    txHash:
+      '0x0000000000000000000000000000000000000000000000000000000000000001',
     tx: {
       ...MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx,
       amount: 30_000000n,
@@ -1495,7 +1496,8 @@ test('remediateMintedEarly: greedy algorithm matches multiple pending txs', asyn
 
   const evidence50 = simulate.advance({
     ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
-    txHash: '0x0000000000000000000000000000000000000000000000000000000000000002',
+    txHash:
+      '0x0000000000000000000000000000000000000000000000000000000000000002',
     tx: {
       ...MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx,
       amount: 50_000000n,
@@ -1504,7 +1506,8 @@ test('remediateMintedEarly: greedy algorithm matches multiple pending txs', asyn
 
   const evidence80 = simulate.advance({
     ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
-    txHash: '0x0000000000000000000000000000000000000000000000000000000000000003',
+    txHash:
+      '0x0000000000000000000000000000000000000000000000000000000000000003',
     tx: {
       ...MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx,
       amount: 80_000000n,
@@ -1523,7 +1526,7 @@ test('remediateMintedEarly: greedy algorithm matches multiple pending txs', asyn
             denom: 'uusdc',
             sender: forwardingAddress,
             receiver: encodeAddressHook(
-              'agoric1fakeLCAAddress1',
+              'agoric1fakelcaaddress1',
               harden({ EUD: evidence30.aux.recipientAddress }),
             ),
           }),
@@ -1577,13 +1580,14 @@ test('remediateMintedEarly: only processes Advanced status txs', async t => {
   });
   const simulate = makeSimulate(settler.notifier);
 
-  const forwardingAddress = MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx
-    .forwardingAddress;
+  const forwardingAddress =
+    MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx.forwardingAddress;
 
   t.log('Simulate one successful advance and one failed advance');
   const evidenceAdvanced = simulate.advance({
     ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
-    txHash: '0x0000000000000000000000000000000000000000000000000000000000000001',
+    txHash:
+      '0x0000000000000000000000000000000000000000000000000000000000000001',
     tx: {
       ...MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx,
       amount: 100_000000n,
@@ -1592,7 +1596,8 @@ test('remediateMintedEarly: only processes Advanced status txs', async t => {
 
   const evidenceFailed = simulate.startAdvance({
     ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
-    txHash: '0x0000000000000000000000000000000000000000000000000000000000000002',
+    txHash:
+      '0x0000000000000000000000000000000000000000000000000000000000000002',
     tx: {
       ...MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx,
       amount: 50_000000n,
@@ -1612,7 +1617,7 @@ test('remediateMintedEarly: only processes Advanced status txs', async t => {
             denom: 'uusdc',
             sender: forwardingAddress,
             receiver: encodeAddressHook(
-              'agoric1fakeLCAAddress1',
+              'agoric1fakelcaaddress1',
               harden({ EUD: evidenceAdvanced.aux.recipientAddress }),
             ),
           }),
@@ -1659,8 +1664,8 @@ test('remediateMintedEarly: removes key even when no matches found', async t => 
     ...defaultSettlerParams,
   });
 
-  const forwardingAddress = MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx
-    .forwardingAddress;
+  const forwardingAddress =
+    MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx.forwardingAddress;
 
   t.log('Simulate minting of 100 USDC with no corresponding advance');
   void settler.tap.receiveUpcall(
@@ -1673,9 +1678,10 @@ test('remediateMintedEarly: removes key even when no matches found', async t => 
             denom: 'uusdc',
             sender: forwardingAddress,
             receiver: encodeAddressHook(
-              'agoric1fakeLCAAddress1',
+              'agoric1fakelcaaddress1',
               harden({
-                EUD: MockCctpTxEvidences.AGORIC_PLUS_OSMO().aux.recipientAddress,
+                EUD: MockCctpTxEvidences.AGORIC_PLUS_OSMO().aux
+                  .recipientAddress,
               }),
             ),
           }),
