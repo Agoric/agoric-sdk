@@ -23,6 +23,7 @@ import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.
 import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
 import { USDN, type CosmosRestClient } from './cosmos-rest-client.js';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
+import type { BeefyBalanceClient } from './beefy-balance-client.js';
 
 const getOwn = <O, K extends PropertyKey>(
   obj: O,
@@ -40,7 +41,12 @@ export const getCurrentBalance = async (
   {
     spectrum,
     cosmosRest,
-  }: { spectrum: SpectrumClient; cosmosRest: CosmosRestClient },
+    beefyBalance,
+  }: {
+    spectrum: SpectrumClient;
+    cosmosRest: CosmosRestClient;
+    beefyBalance: BeefyBalanceClient;
+  },
 ): Promise<bigint> => {
   await null;
   switch (protocol) {
@@ -65,8 +71,12 @@ export const getCurrentBalance = async (
         Fail`Invalid balance for chain ${q(chain)} pool ${q(pool)} address ${addr}: ${balance}`;
       return BigInt(balance);
     }
+    case 'Beefy': {
+      const accountId = accountIdByChain[chainName] as `${string}:${string}:${string}`;
+      const balance = await beefyBalance.getVaultBalance(chainName, accountId);
+      return balance;
+    }
     default:
-      // TODO: Beefy
       throw Fail`Unknown protocol: ${q(protocol)}`;
   }
 };
@@ -77,6 +87,7 @@ export const getCurrentBalances = async (
   powers: {
     spectrum: SpectrumClient;
     cosmosRest: CosmosRestClient;
+    beefyBalance: BeefyBalanceClient;
   },
 ) => {
   const { positionKeys, accountIdByChain } = status;
@@ -296,6 +307,7 @@ export const handleDeposit = async (
     readPublished: VstorageKit['readPublished'];
     spectrum: SpectrumClient;
     cosmosRest: CosmosRestClient;
+    beefyBalance: BeefyBalanceClient;
     gasEstimator: GasEstimator;
   },
   network: NetworkSpec = PROD_NETWORK,
