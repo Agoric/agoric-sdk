@@ -56,6 +56,7 @@ import {
   planWithdrawFromAllocations,
 } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
+import { BeefyBalanceClient } from './beefy-balance-client.js';
 import {
   handlePendingTx,
   type EvmContext,
@@ -164,6 +165,7 @@ type Powers = {
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
+  beefyBalance: BeefyBalanceClient;
   signingSmartWalletKit: SigningSmartWalletKit;
   walletStore: ReturnType<typeof reflectWalletStore>;
   getWalletInvocationUpdate: (
@@ -190,6 +192,7 @@ type ProcessPortfolioPowers = Pick<
     portfoliosPathPrefix: string;
     pendingTxPathPrefix: string;
   };
+  beefyBalance: BeefyBalanceClient;
 };
 
 const processPortfolioEvents = async (
@@ -206,6 +209,7 @@ const processPortfolioEvents = async (
     getWalletInvocationUpdate,
     spectrum,
     vstoragePathPrefixes,
+    beefyBalance,
 
     portfolioKeyForDepositAddr,
   }: ProcessPortfolioPowers,
@@ -234,7 +238,7 @@ const processPortfolioEvents = async (
     const currentBalances = await getCurrentBalances(
       portfolioStatus,
       depositBrand,
-      { cosmosRest, spectrum },
+      { cosmosRest, spectrum, beefyBalance },
     );
     const errorContext: Record<string, unknown> = {
       flowDetail,
@@ -497,6 +501,7 @@ export const startEngine = async (
     getWalletInvocationUpdate,
     now,
     gasEstimator,
+    beefyBalance,
   }: Powers,
   {
     contractInstance,
@@ -515,7 +520,7 @@ export const startEngine = async (
 
   // Test balance querying (using dummy addresses for now).
   {
-    const balanceQueryPowers = { spectrum, cosmosRest };
+    const balanceQueryPowers = { spectrum, cosmosRest, beefyBalance };
     const poolPlaceInfoByProtocol = new Map(
       values(PoolPlaces).map(info => [info.protocol, info]),
     );
@@ -621,6 +626,7 @@ export const startEngine = async (
     getWalletInvocationUpdate,
     spectrum,
     vstoragePathPrefixes,
+    beefyBalance,
 
     portfolioKeyForDepositAddr,
   });
