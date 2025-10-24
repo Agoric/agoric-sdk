@@ -20,7 +20,10 @@ import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { CosmosChainAddress } from '@agoric/orchestration';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
-import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
+import type {
+  InvokeEntryMessage,
+  OfferSpec,
+} from '@agoric/smart-wallet/src/offers.js';
 import type { IBCChannelID } from '@agoric/vats';
 import { makePromiseKit } from '@endo/promise-kit';
 import { configurations } from '../src/utils/deploy-config.js';
@@ -102,10 +105,53 @@ const makeDirectTxOracle = (ctx: WalletFactoryTestContext, name: string) => {
   });
 };
 
+const makeInvokeTxOracle = (
+  ctx: WalletFactoryTestContext,
+  name: string,
+  addr: string,
+) => {
+  const oracle = makeOfferTxOracle(ctx, name, addr);
+  const walletPK = makePromiseKit<SmartWallet>();
+
+  return harden({
+    async provision() {
+      walletPK.resolve(oracle.provision());
+      return walletPK.promise;
+    },
+    async claim() {
+      const wallet = await walletPK.promise;
+      await oracle.claim();
+      await wallet.sendOffer({
+        id: 'get-operator-facet',
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: 'claim-oracle-invitation',
+          invitationMakerName: 'GetOperatorFacet',
+          invitationArgs: [],
+        },
+        proposal: {},
+        saveResult: { name: 'fastUsdcOperator', overwrite: true },
+      });
+    },
+    async submit(evidence: CctpTxEvidence, nonce: number) {
+      const wallet = await walletPK.promise;
+      const it: InvokeEntryMessage = {
+        id: `submit-evidence-${nonce}`,
+        targetName: 'fastUsdcOperator',
+        method: 'submitEvidence',
+        // @ts-expect-error
+        args: [evidence],
+      };
+      await wallet.invokeEntry(it);
+    },
+  });
+};
+
 type TxOracle = Pick<ReturnType<typeof makeOfferTxOracle>, 'submit'>;
 const oracleMakers = {
   offer: makeOfferTxOracle,
   direct: makeDirectTxOracle,
+  invoke: makeInvokeTxOracle,
 };
 
 const makeFastUsdcQuery = (ctx: WalletFactoryTestContext) => {
