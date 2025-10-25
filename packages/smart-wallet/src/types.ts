@@ -42,44 +42,11 @@ export type Cell<T> = {
   set(val: T): void;
 };
 
-/**
- * Defined by walletAction struct in msg_server.go
- *
- * @see {agoric.swingset.MsgWalletAction} and walletSpendAction in msg_server.go
- */
-export type WalletActionMsg = {
-  type: 'WALLET_ACTION';
-  /** base64 of Uint8Array of bech32 data  */
-  owner: string;
-  /** JSON of marshalled BridgeAction */
-  action: string;
-  blockHeight: unknown; // int64
-  blockTime: unknown; // int64
-};
-
-/**
- * Defined by walletSpendAction struct in msg_server.go
- *
- * @see {agoric.swingset.MsgWalletSpendAction} and walletSpendAction in msg_server.go
- */
-export type WalletSpendActionMsg = {
-  type: 'WALLET_SPEND_ACTION';
-  /** base64 of Uint8Array of bech32 data  */
-  owner: string;
-  /** JSON of BridgeActionCapData */
-  spendAction: string;
-  blockHeight: unknown; // int64
-  blockTime: unknown; // int64
-};
-
-/**
- * Messages transmitted over Cosmos chain, cryptographically verifying that the
- * message came from the 'owner'.
- *
- * The two wallet actions are distinguished by whether the user had to confirm
- * the sending of the message (as is the case for WALLET_SPEND_ACTION).
- */
-export type WalletBridgeMsg = WalletActionMsg | WalletSpendActionMsg;
+export type {
+  WalletBridgeMsg,
+  WalletActionMsg,
+  WalletSpendActionMsg,
+} from './schemas/codegen/type-guards.patterns.js';
 
 /**
  * Used for clientSupport helpers

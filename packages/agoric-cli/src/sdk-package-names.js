@@ -36,6 +36,7 @@ export default [
   "@agoric/pegasus",
   "@agoric/pola-io",
   "@agoric/portfolio-api",
+  "@agoric/schemas",
   "@agoric/smart-wallet",
   "@agoric/solo",
   "@agoric/sparse-ints",
