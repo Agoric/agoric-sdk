@@ -27,7 +27,6 @@ func TestKeeper_ParseRequestTypeURL(t *testing.T) {
 		{"empty", "", "/", "Response"},
 	}
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			fullMethod, responseURL := parseRequestTypeURL(tc.typeUrl)
 			if fullMethod != tc.fullMethod {
