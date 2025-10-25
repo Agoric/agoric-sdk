@@ -401,6 +401,10 @@ export async function makeSwingsetController(
 
       slogDuration,
 
+      dumpLog(idx) {
+        return deepCopyJsonable(kernel.dumpLog(idx));
+      },
+
       dump() {
         return deepCopyJsonable(kernel.dump());
       },

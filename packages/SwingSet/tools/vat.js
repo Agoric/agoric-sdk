@@ -83,8 +83,16 @@ async function main() {
   );
   if (command === 'run') {
     await controller.run();
+    for (const entry of controller.dumpLog()) console.log(entry);
     console.log('= vat finished');
   } else if (command === 'shell') {
+    let logIndex = 0;
+    const dumpLog = () => {
+      for (const entry of controller.dumpLog(logIndex)) {
+        logIndex += 1;
+        console.log(entry);
+      }
+    };
     const r = repl.start({ prompt: 'vat> ', replMode: repl.REPL_MODE_STRICT });
     r.context.dump = () => {
       const d = controller.dump();
@@ -98,13 +106,17 @@ async function main() {
       deepLog(d.acceptanceQueue);
     };
     r.context.dump2 = () => controller.dump();
-    r.context.run = () => {
+    r.context.run = async () => {
       console.log('run!');
-      return controller.run();
+      const result = await controller.run();
+      dumpLog();
+      return result;
     };
-    r.context.step = () => {
+    r.context.step = async () => {
       console.log('step!');
-      return controller.step();
+      const result = await controller.step();
+      dumpLog();
+      return result;
     };
   }
 }
