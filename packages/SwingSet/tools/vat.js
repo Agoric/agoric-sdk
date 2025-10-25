@@ -1,15 +1,22 @@
 #!/usr/bin/env node
 
+import { dirname } from 'node:path';
+import yargsParser from 'yargs-parser';
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
 import process from 'process';
 import repl from 'repl';
 import util from 'util';
-import { loadBasedir, buildVatController } from '../src/index.js';
+import {
+  loadSwingsetConfigFile,
+  loadBasedir,
+  buildVatController,
+} from '../src/index.js';
 import { buildLoopbox } from '../src/devices/loopbox/loopbox.js';
 
 const USAGE = `
-Usage: ${process.argv[1]} {run|shell} [<bootstrap dir>] [--] [<bootstrap arg>]...
+Usage: ${process.argv[1]} \\
+  {run|shell} [{-c|--config} <config file>] [<base dir>] [--] [<bootstrap arg>]...
 `.trim();
 
 const showUsage = (message, exitCode = 64) => {
@@ -24,31 +31,56 @@ function deepLog(item) {
 }
 
 async function main() {
-  const argv = process.argv.slice(2);
+  const {
+    _: argv,
+    '--': extraArgs = [],
+    ...options
+  } = yargsParser(process.argv.slice(2), {
+    configuration: { 'populate--': true, 'unknown-options-as-args': true },
+    string: ['config'],
+    alias: { config: ['c'] },
+  });
   const command = argv.shift();
-  if (command === undefined) return showUsage('Missing command');
-  if (command !== 'run' && command !== 'shell') {
+  if (command === undefined) {
+    if (argv.includes('--help')) return showUsage();
+    return showUsage('Missing command');
+  } else if (command !== 'run' && command !== 'shell') {
     return showUsage(
-      command === '--help' || command === 'help'
-        ? undefined
-        : `Unrecognized command: ${command}`,
+      command === 'help' ? undefined : `Unrecognized command: ${command}`,
     );
   }
-  const basedir = argv.length === 0 || argv[0] === '--' ? '.' : argv.shift();
-  const vatArgv = argv;
-  for (let i = 0; i < vatArgv.length; i += 1) {
-    if (vatArgv[i] !== '--') continue;
-    vatArgv.splice(i, 1);
-    break;
+  const configPath = options.config;
+  let basedir = /** @type {string | undefined} */ (argv.shift());
+  if (basedir === undefined) {
+    basedir = configPath ? dirname(configPath) : '.';
+  }
+  const vatArgv = /** @type {string[]} */ ([...argv, ...extraArgs]);
+
+  const config = await (options.config
+    ? loadSwingsetConfigFile(options.config)
+    : loadBasedir(basedir));
+  assert(config);
+  config.devices ||= {};
+  const deviceEndowments = /** @type {Record<string, unknown>} */ ({});
+  // @ts-expect-error TS2339: Property 'loopboxSenders' does not exist on type 'SwingSetConfig'.
+  const { loopboxSenders } = config;
+  // @ts-expect-error
+  delete config.loopboxSenders;
+  if (loopboxSenders) {
+    const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
+    config.devices.loopbox = {
+      sourceSpec: loopboxSrcPath,
+      parameters: { senders: loopboxSenders },
+    };
+    deviceEndowments.loopbox = { ...loopboxEndowments };
   }
 
-  assert(basedir);
-  const config = await loadBasedir(basedir);
-  const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
-  config.devices = [['loopbox', loopboxSrcPath, loopboxEndowments]];
-
-  // @ts-expect-error expects string[], not boolean, in second position
-  const controller = await buildVatController(config, withSES, vatArgv);
+  const controller = await buildVatController(
+    config,
+    vatArgv,
+    {},
+    deviceEndowments,
+  );
   if (command === 'run') {
     await controller.run();
     console.log('= vat finished');
