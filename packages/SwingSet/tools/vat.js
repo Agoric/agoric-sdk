@@ -8,24 +8,39 @@ import util from 'util';
 import { loadBasedir, buildVatController } from '../src/index.js';
 import { buildLoopbox } from '../src/devices/loopbox/loopbox.js';
 
+const USAGE = `
+Usage: ${process.argv[1]} {run|shell} [<bootstrap dir>] [--] [<bootstrap arg>]...
+`.trim();
+
+const showUsage = (message, exitCode = 64) => {
+  const log = message ? console.error : console.log;
+  if (message) log(`${message}\n`);
+  log(USAGE);
+  return exitCode;
+};
+
 function deepLog(item) {
   console.log(util.inspect(item, false, null, true));
 }
 
 async function main() {
-  const argv = process.argv.splice(2);
-  let withSES = true;
-  if (argv[0] === '--no-ses') {
-    withSES = false;
-    argv.shift();
-  }
+  const argv = process.argv.slice(2);
   const command = argv.shift();
+  if (command === undefined) return showUsage('Missing command');
   if (command !== 'run' && command !== 'shell') {
-    throw Error(`use 'vat run' or 'vat shell', not 'vat ${command}'`);
+    return showUsage(
+      command === '--help' || command === 'help'
+        ? undefined
+        : `Unrecognized command: ${command}`,
+    );
   }
-  const basedir =
-    argv[0] === '--' || argv[0] === undefined ? '.' : argv.shift();
-  const vatArgv = argv[0] === '--' ? argv.slice(1) : argv;
+  const basedir = argv.length === 0 || argv[0] === '--' ? '.' : argv.shift();
+  const vatArgv = argv;
+  for (let i = 0; i < vatArgv.length; i += 1) {
+    if (vatArgv[i] !== '--') continue;
+    vatArgv.splice(i, 1);
+    break;
+  }
 
   assert(basedir);
   const config = await loadBasedir(basedir);
@@ -62,4 +77,12 @@ async function main() {
   }
 }
 
-void main();
+main().then(
+  exitCode => {
+    if (exitCode !== undefined) process.exitCode ||= exitCode;
+  },
+  err => {
+    console.error(err);
+    process.exitCode ||= 1;
+  },
+);
