@@ -16,9 +16,9 @@ this is insufficient to provide persistence across restarts.
 More docs are in the works. For now, try:
 
 ```console
-$ npm install
-$ npm test
-$ bin/vat run demo/encouragementBot
+$ yarn install
+$ yarn test
+$ bin/vat run --config demo/encouragementBot/swingset.json
 ```
 
 This repository is still in early development: APIs and features are not
@@ -27,7 +27,7 @@ expected to stabilize for a while.
 ## REPL Shell
 
 ```console
-$ bin/vat shell demo/encouragementBot
+$ bin/vat shell --config demo/encouragementBot/swingset.json
 vat>
 ```
 
