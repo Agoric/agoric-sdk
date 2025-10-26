@@ -7,7 +7,7 @@
   "type": "module",
   "main": "./src/index.js",
   "scripts": {
-    "build": "node scripts/build-bundle.js",
+    "build": "node --conditions=development scripts/build-bundle.js",
     "clean": "rm -rf dist",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:js": "eslint 'src/**/*.js' 'lib/**/*.js' 'scripts/**/*.js' 'test/**/*.js'",
