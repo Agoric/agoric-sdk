@@ -12,6 +12,12 @@
       },
       "types": "./src/index.js"
     },
+    "./vat.js": {
+      "import": {
+        "development": "./vat.js",
+        "default": "./vat.js"
+      }
+    },
     "./src/*": {
       "import": {
         "development": "./src/*",

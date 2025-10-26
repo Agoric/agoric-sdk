@@ -17,6 +17,12 @@
         "development": "./src/*",
         "default": "./src/*"
       }
+    },
+    "./tools/*": {
+      "import": {
+        "development": "./tools/*",
+        "default": "./tools/*"
+      }
     }
   },
   "engines": {
