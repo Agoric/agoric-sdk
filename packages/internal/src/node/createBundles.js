@@ -36,6 +36,7 @@ export const createBundlesFromAbsolute = async sourceBundles => {
       /** @type {unknown} */ ({
         __proto__: process.env,
         LOCKDOWN_OVERRIDE_TAMING: 'severe',
+        NODE_OPTIONS: '--conditions=development',
       })
     );
     const { status } = spawnSync(prog, args, { stdio: 'inherit', env });
