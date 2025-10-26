@@ -5,7 +5,19 @@
   "type": "module",
   "main": "./src/index.js",
   "exports": {
-    ".": "./src/index.js"
+    ".": {
+      "import": {
+        "development": "./src/index.js",
+        "default": "./src/index.js"
+      },
+      "types": "./src/index.js"
+    },
+    "./src/*": {
+      "import": {
+        "development": "./src/*",
+        "default": "./src/*"
+      }
+    }
   },
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",

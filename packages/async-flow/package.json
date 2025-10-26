@@ -5,6 +5,21 @@
   "type": "module",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "main": "./index.js",
+  "exports": {
+    ".": {
+      "import": {
+        "development": "./index.js",
+        "default": "./index.js"
+      },
+      "types": "./index.js"
+    },
+    "./src/*": {
+      "import": {
+        "development": "./src/*",
+        "default": "./src/*"
+      }
+    }
+  },
   "scripts": {
     "build": "exit 0",
     "prepack": "yarn run -T tsc --build tsconfig.build.json",

@@ -132,6 +132,9 @@
     "files": [
       "packages/*/test/**/*.test.*"
     ],
-    "timeout": "30m"
+    "timeout": "30m",
+    "nodeArguments": [
+      "--conditions=development"
+    ]
   }
 }

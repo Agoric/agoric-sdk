@@ -11,5 +11,4 @@ export { makeSnapStore } from './snapStore.js';
 export { makeSnapStoreIO } from './snapStoreIO.js';
 export { makeBundleStore, bundleIDFromName } from './bundleStore.js';
 
-// eslint-disable-next-line import/export
-export * from './types-index.js';
+// Type exports (see types-index.d.ts for type re-exports from source files)

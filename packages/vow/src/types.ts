@@ -2,6 +2,9 @@ import type { Remote } from '@agoric/internal';
 import type { Zone } from '@agoric/zone';
 import type { CopyTagged, RemotableObject } from '@endo/pass-style';
 
+// XXX re-exporting the Remote type for back-compat
+export type { Remote } from '@agoric/internal';
+
 /**
  * Return truthy if a rejection reason should result in a retry.
  */

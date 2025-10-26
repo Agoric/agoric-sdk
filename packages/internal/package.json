@@ -4,6 +4,21 @@
   "description": "Externally unsupported utilities internal to agoric-sdk",
   "type": "module",
   "main": "src/index.js",
+  "exports": {
+    ".": {
+      "import": {
+        "development": "./src/index.js",
+        "default": "./src/index.js"
+      },
+      "types": "./src/index.js"
+    },
+    "./src/*": {
+      "import": {
+        "development": "./src/*",
+        "default": "./src/*"
+      }
+    }
+  },
   "engines": {
     "node": "^20.9 || ^22.11"
   },
