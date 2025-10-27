@@ -65,7 +65,7 @@ export type FlowStep = {
   amount: NatAmount;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
-  meta?: Record<string, any>;
+  phases?: Record<string, any>;
 };
 
 export type PortfolioKey = `portfolio${number}`;
