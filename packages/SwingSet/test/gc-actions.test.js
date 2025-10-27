@@ -27,7 +27,7 @@ test('gc actions', t => {
     },
     getObjectRefCount(kref) {
       const [reachable, recognizable] = rc[kref];
-      return { reachable, recognizable };
+      return { exists: true, reachable, recognizable };
     },
     // @ts-expect-error mock
     emitCrankHashes() {},
