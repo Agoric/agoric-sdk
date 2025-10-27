@@ -71,6 +71,10 @@ export type MetaTrafficEntry<
   seq: { status: 'pending' | 'unknown' } | number | bigint | string;
 };
 
+export type MetaWithTraffic = Record<string, any> & {
+  traffic?: MetaTrafficEntry[];
+};
+
 /**
  * @example
  *

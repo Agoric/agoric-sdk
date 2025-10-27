@@ -732,9 +732,9 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
       },
       /**
-       * TODO: transferWatcher can be removed once there is no instance of this
-       * CosmosOrchestrationAccountKit that was initialized (i.e. not just
-       * upgraded) before 2025-10-14.
+       * @deprecated TODO: transferWatcher can be removed once there is no
+       *   instance of this CosmosOrchestrationAccountKit that was initialized
+       *   (i.e. not just upgraded) before 2025-10-14.
        */
       transferWatcher: {
         onFulfilled(...args) {
@@ -799,18 +799,18 @@ export const prepareCosmosOrchestrationAccountKit = (
       updateMetaTrafficWatcher: {
         /**
          * @param {ResultMeta<any>} param0
-         * @param {MetaTrafficEntry} traffic
-         * @returns {ResultMeta<{ followTraffic: MetaTrafficEntry }>}
+         * @param {MetaTrafficEntry} newTrafficEntry
+         * @returns {ResultMeta<'FOLLOW_TRAFFIC'>}
          */
-        onFulfilled({ result, meta }, traffic) {
+        onFulfilled({ result, meta }, newTrafficEntry) {
           trace('updateMetaTrafficWatcher', {
             result,
             meta,
-            traffic,
+            newTrafficEntry,
           });
           const newMeta = {
             ...meta,
-            traffic: [...(meta.traffic || []), traffic],
+            traffic: [...(meta.traffic || []), newTrafficEntry],
           };
           const newResult = watch(
             result,
@@ -824,6 +824,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         /**
          * @param {string} sequenceResp
          * @param {Record<string, any>} meta
+         * @returns {ResultMeta<'FOLLOW_TRAFFIC'>}
          */
         onFulfilled(sequenceResp, meta) {
           trace('fillSequenceWatcher', {
@@ -834,31 +835,36 @@ export const prepareCosmosOrchestrationAccountKit = (
           const [{ sequence }] = tryDecodeResponses(sequenceResp, [
             MsgTransferResponse,
           ]);
-          const lastMetaTraffic = meta.traffic?.at(-1);
-          lastMetaTraffic ||
+          const lastTrafficEntry = meta.traffic?.at(-1);
+          lastTrafficEntry ||
             Fail`expected meta.traffic to have at least one entry: ${q(meta)}`;
-          const baseSequence = lastMetaTraffic?.seq;
+          const baseSequence = lastTrafficEntry?.seq;
           baseSequence?.status === 'pending' ||
             Fail`expected traffic?.seq ${baseSequence} to be pending`;
           sequence != null ||
             Fail`expected sequenceResp.sequence ${sequence} to be non-nullish`;
 
-          const newTransferTraffic = { ...lastMetaTraffic, seq: sequence };
+          const lastTrafficEntryWithSeq = {
+            ...lastTrafficEntry,
+            seq: sequence,
+          };
           /** @type {Record<string, any>} */
           const newMeta = {
             ...meta,
             traffic: [
               ...(meta.traffic ? meta.traffic.slice(0, -1) : []),
-              newTransferTraffic,
+              lastTrafficEntryWithSeq,
             ],
           };
-          // Result is not known to this account.  Ask the caller to follow the
-          // traffic.
-          const nextMeta = harden({
-            result: { followTraffic: newTransferTraffic },
-            meta: newMeta,
-          });
-          return nextMeta;
+          // Result is not known to this account.  Rely on the caller to follow
+          // the traffic.
+          const newResultMeta = harden(
+            /** @type const */ ({
+              result: 'FOLLOW_TRAFFIC',
+              meta: newMeta,
+            }),
+          );
+          return newResultMeta;
         },
       },
       invitationMakers: {
