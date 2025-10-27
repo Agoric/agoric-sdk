@@ -351,18 +351,9 @@ test('transfer', async t => {
   t.like(
     transferResult,
     {
-      result: {
-        followTraffic: {
-          dst: ['ibc', 'transfer', 'channel-4'],
-          dstChainId: 'cosmos:noble-1',
-          op: 'transfer',
-          seq: 0n,
-          src: ['ibc', 'transfer', 'channel-536'],
-          srcChainId: 'cosmos:cosmoshub-4',
-        },
-      },
+      result: 'FOLLOW_TRAFFIC',
     },
-    'transfer returns followTraffic',
+    'transfer returns result of FOLLOW_TRAFFIC',
   );
   t.snapshot(transferResult, 'transfer full result');
 
@@ -408,18 +399,9 @@ test('transfer', async t => {
   t.like(
     resultMetaResult,
     {
-      result: {
-        followTraffic: {
-          dst: ['ibc', 'transfer', 'channel-4'],
-          dstChainId: 'cosmos:noble-1',
-          op: 'transfer',
-          seq: 0n,
-          src: ['ibc', 'transfer', 'channel-536'],
-          srcChainId: 'cosmos:cosmoshub-4',
-        },
-      },
+      result: 'FOLLOW_TRAFFIC',
     },
-    'transfer returns followTraffic result',
+    'transfer returns result of FOLLOW_TRAFFIC',
   );
   t.snapshot(resultMeta, 'transferWithMeta full result');
 
