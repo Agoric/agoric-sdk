@@ -5,22 +5,6 @@
   "type": "module",
   "main": "index.js",
   "types": "index.js",
-  "exports": {
-    ".": {
-      "import": {
-        "development": "./index.js",
-        "default": "./index.js"
-      },
-      "types": "./index.js"
-    },
-    "./src/*": {
-      "import": {
-        "development": "./src/*",
-        "default": "./src/*"
-      }
-    },
-    "./*": "./*"
-  },
   "engines": {
     "node": "^20.9 || ^22.11"
   },

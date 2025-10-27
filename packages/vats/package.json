@@ -4,22 +4,6 @@
   "description": "Agoric's Vat library",
   "type": "module",
   "main": "./index.js",
-  "exports": {
-    ".": {
-      "import": {
-        "development": "./index.js",
-        "default": "./index.js"
-      },
-      "types": "./index.js"
-    },
-    "./src/*": {
-      "import": {
-        "development": "./src/*",
-        "default": "./src/*"
-      }
-    },
-    "./*": "./*"
-  },
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
     "build": "yarn build:bundles",

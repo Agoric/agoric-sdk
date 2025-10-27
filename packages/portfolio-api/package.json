@@ -8,22 +8,6 @@
     "tools"
   ],
   "main": "src/main.js",
-  "exports": {
-    ".": {
-      "import": {
-        "development": "./src/main.js",
-        "default": "./src/main.js"
-      },
-      "types": "./src/main.js"
-    },
-    "./src/*": {
-      "import": {
-        "development": "./src/*",
-        "default": "./src/*"
-      }
-    },
-    "./*": "./src/*"
-  },
   "bin": "./src/cli/bin.js",
   "scripts": {
     "build": "exit 0",

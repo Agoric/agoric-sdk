@@ -4,28 +4,6 @@
   "description": "Remote (shortening and disconnection-tolerant) Promise-likes",
   "type": "module",
   "main": "src/index.js",
-  "exports": {
-    ".": {
-      "import": {
-        "development": "./src/index.js",
-        "default": "./src/index.js"
-      },
-      "types": "./src/index.js"
-    },
-    "./vat.js": {
-      "import": {
-        "development": "./vat.js",
-        "default": "./vat.js"
-      }
-    },
-    "./src/*": {
-      "import": {
-        "development": "./src/*",
-        "default": "./src/*"
-      }
-    },
-    "./*": "./*"
-  },
   "engines": {
     "node": "^20.9 || ^22.11"
   },
