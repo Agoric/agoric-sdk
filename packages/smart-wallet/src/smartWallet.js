@@ -15,7 +15,7 @@ import {
   StorageNodeShape,
 } from '@agoric/internal';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
-import { M, mustMatch } from '@agoric/store';
+import { M, matches, mustMatch } from '@agoric/store';
 import {
   appendToStoredArray,
   provideLazy,
@@ -36,6 +36,7 @@ import {
 import {
   AmountKeywordRecordShape,
   PaymentPKeywordRecordShape,
+  InvitationElementShape,
 } from '@agoric/zoe/src/typeGuards.js';
 import { prepareVowTools } from '@agoric/vow';
 import { makeDurableZone } from '@agoric/zone/durable.js';
@@ -48,7 +49,7 @@ import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
 /**
  * @import {ERemote, Remote} from '@agoric/internal';
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
- * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
+ * @import {Amount, Brand, Issuer, Payment, Purse, SetAmount} from '@agoric/ertp';
  * @import {WeakMapStore, MapStore} from '@agoric/store'
  * @import {InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
  * @import {CopyRecord} from '@endo/pass-style';
@@ -235,13 +236,13 @@ const trace = makeTracer('SmrtWlt');
  */
 const namesOf = async (target, nameHub) => {
   const entries = await E(nameHub).entries();
-  const matches = [];
+  const results = [];
   for (const [name, candidate] of entries) {
     if (candidate === target) {
-      matches.push(name);
+      results.push(name);
     }
   }
-  return harden(matches);
+  return harden(results);
 };
 
 /**
@@ -362,6 +363,28 @@ export const prepareSmartWallet = (baggage, shared) => {
     );
 
   const makeAmountWatcher = prepareAmountWatcher();
+
+  /**
+   * @param {Amount} amount
+   * @returns {Amount}
+   */
+  const cleanAmountForPublish = amount => {
+    mustMatch(amount, AmountShape);
+    if (
+      !matches(amount.brand, shared.invitationBrand) ||
+      !matches(amount.value, harden([InvitationElementShape]))
+    ) {
+      return amount;
+    }
+
+    const [{ handle: _, ...filteredInvitationDetails }] =
+      /** @type {SetAmount<InvitationDetails>} */ (amount).value;
+
+    return harden({
+      brand: shared.invitationBrand,
+      value: [filteredInvitationDetails],
+    });
+  };
 
   /**
    * @param {UniqueParams} unique
@@ -561,7 +584,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           }
           void updateRecorderKit.recorder.write({
             updated: 'balance',
-            currentAmount: balance,
+            currentAmount: cleanAmountForPublish(balance),
           });
           const { helper } = this.facets;
           helper.publishCurrentState();
@@ -578,9 +601,11 @@ export const prepareSmartWallet = (baggage, shared) => {
           void currentRecorderKit.recorder.write({
             purses: [...purseBalances.values()].map(a => ({
               brand: a.brand,
-              balance: a,
+              balance: cleanAmountForPublish(a),
             })),
-            offerToUsedInvitation: [...offerToUsedInvitation.entries()],
+            offerToUsedInvitation: [...offerToUsedInvitation.entries()].map(
+              ([offerId, a]) => [offerId, cleanAmountForPublish(a)],
+            ),
             offerToPublicSubscriberPaths: [
               ...offerToPublicSubscriberPaths.entries(),
             ],
