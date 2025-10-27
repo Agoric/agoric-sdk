@@ -1194,6 +1194,8 @@ export default function buildKernel(
         // prettier-ignore
         return `changeVatOptions ${message.vatID} options: ${JSON.stringify(message.options)}`;
       case 'startVat':
+      case 'cleanup-terminated-vat':
+      case 'negated-gc-action':
       case 'bringOutYourDead':
         return `${message.type} ${message.vatID}`;
       default:
