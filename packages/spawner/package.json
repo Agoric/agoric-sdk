@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "yarn build:bundles",
-    "build:bundles": "node --conditions=development scripts/build-bundles.js",
+    "build:bundles": "node scripts/build-bundles.js",
     "test": "ava",
     "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "test:xs": "exit 0",

@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "yarn build:bundles",
-    "build:bundles": "node --conditions=development ./scripts/build-bundles.js",
+    "build:bundles": "node ./scripts/build-bundles.js",
     "prepack": "yarn run -T tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.*ts*' '*.tsbuildinfo'",
     "test": "ava",

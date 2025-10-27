@@ -23,7 +23,8 @@
         "development": "./src/*",
         "default": "./src/*"
       }
-    }
+    },
+    "./*": "./*"
   },
   "engines": {
     "node": "^20.9 || ^22.11"

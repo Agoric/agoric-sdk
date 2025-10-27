@@ -18,7 +18,8 @@
         "development": "./src/*",
         "default": "./src/*"
       }
-    }
+    },
+    "./*": "./src/*"
   },
   "engines": {
     "node": "^20.9 || ^22.11"

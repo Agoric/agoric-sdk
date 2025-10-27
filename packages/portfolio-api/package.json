@@ -21,7 +21,8 @@
         "development": "./src/*",
         "default": "./src/*"
       }
-    }
+    },
+    "./*": "./src/*"
   },
   "bin": "./src/cli/bin.js",
   "scripts": {

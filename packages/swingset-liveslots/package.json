@@ -23,7 +23,8 @@
         "development": "./tools/*",
         "default": "./tools/*"
       }
-    }
+    },
+    "./*": "./*"
   },
   "engines": {
     "node": "^20.9 || ^22.11"

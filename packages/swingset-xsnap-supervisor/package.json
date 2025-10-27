@@ -11,7 +11,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build:bundle": "node --conditions=development scripts/build-bundle.js",
+    "build:bundle": "node scripts/build-bundle.js",
     "build": "yarn build:bundle",
     "clean": "rm -rf dist",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
