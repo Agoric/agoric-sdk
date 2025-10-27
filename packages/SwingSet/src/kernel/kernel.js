@@ -62,15 +62,21 @@ import { makeVatAdminHooks } from './vat-admin-hooks.js';
  * } from '../types-internal.js';
  */
 
-/** @type {Set<RunQueueEvent['type']>} */
-const gcTypes = new Set([
+/** @typedef {typeof gcMessageTypes[number]} GcMessageType */
+const gcMessageTypes = /** @type {const} */ ([
   'bringOutYourDead',
   'dropExports',
   'retireExports',
   'retireImports',
 ]);
-/** @type {(messageType: RunQueueEvent['type']) => boolean} */
-const isGCType = messageType => gcTypes.has(messageType);
+
+/** @typedef {Extract<RunQueueEvent, { type: GcMessageType }>} GcMessage */
+
+/** @type {Set<RunQueueEvent['type']>} */
+const gcMessageTypesSet = new Set(gcMessageTypes);
+
+/** @type {(message: RunQueueEvent) => message is GcMessage} */
+const isGcMessage = message => gcMessageTypesSet.has(message.type);
 
 function abbreviateReplacer(_, arg) {
   if (typeof arg === 'bigint') {
@@ -1162,35 +1168,41 @@ export default function buildKernel(
     return results;
   }
 
+  /** @type {(message: RunQueueEvent) => string} */
   function legibilizeMessage(message) {
-    if (message.type === 'send') {
-      const msg = message.msg;
-      const [method, argList] = legibilizeMessageArgs(msg.methargs);
-      const result = msg.result ? msg.result : 'null';
-      return `@${message.target} <- ${method}(${argList}) : @${result}`;
-    } else if (message.type === 'notify') {
-      return `notify(vatID: ${message.vatID}, kpid: @${message.kpid})`;
-    } else if (message.type === 'create-vat') {
-      // prettier-ignore
-      return `create-vat ${message.vatID} opts: ${JSON.stringify(message.dynamicOptions)} vatParameters: ${JSON.stringify(message.vatParameters)}`;
-    } else if (message.type === 'upgrade-vat') {
-      // prettier-ignore
-      return `upgrade-vat ${message.vatID} upgradeID: ${message.upgradeID} vatParameters: ${JSON.stringify(message.vatParameters)}`;
-    } else if (message.type === 'changeVatOptions') {
-      // prettier-ignore
-      return `changeVatOptions ${message.vatID} options: ${JSON.stringify(message.options)}`;
-    } else if (
-      message.type === 'bringOutYourDead' ||
-      message.type === 'startVat'
-    ) {
-      return `${message.type} ${message.vatID}`;
-    } else if (isGCType(message.type)) {
-      // All GC messages other than bringOutYourDead include a list of krefs.
-      const krefs = message.krefs.map(e => `@${e}`).join(' ');
-      // prettier-ignore
-      return `${message.type} ${message.vatID} ${krefs}`;
-    } else {
-      return `unknown message type ${message.type}`;
+    switch (message.type) {
+      case 'send': {
+        const msg = message.msg;
+        const [method, argList] = legibilizeMessageArgs(msg.methargs);
+        const result = msg.result ? msg.result : 'null';
+        return `@${message.target} <- ${method}(${argList}) : @${result}`;
+      }
+      case 'notify':
+        return `notify(vatID: ${message.vatID}, kpid: @${message.kpid})`;
+      case 'create-vat': {
+        const optsStr = JSON.stringify(message.dynamicOptions);
+        const vatParametersStr = JSON.stringify(message.vatParameters);
+        // prettier-ignore
+        return `create-vat ${message.vatID} opts: ${optsStr} vatParameters: ${vatParametersStr}`;
+      }
+      case 'upgrade-vat': {
+        const vatParametersStr = JSON.stringify(message.vatParameters);
+        // prettier-ignore
+        return `upgrade-vat ${message.vatID} upgradeID: ${message.upgradeID} vatParameters: ${vatParametersStr}`;
+      }
+      case 'changeVatOptions':
+        // prettier-ignore
+        return `changeVatOptions ${message.vatID} options: ${JSON.stringify(message.options)}`;
+      case 'startVat':
+      case 'bringOutYourDead':
+        return `${message.type} ${message.vatID}`;
+      default:
+        if (isGcMessage(message)) {
+          const krefs = message.krefs.map(e => `@${e}`).join(' ');
+          return `${message.type} ${message.vatID} ${krefs}`;
+        }
+        // @ts-expect-error unreachable
+        return `unknown message type ${message.type}`;
     }
   }
 
@@ -1352,17 +1364,17 @@ export default function buildKernel(
       deliverP = processUpgradeVat(message);
     } else if (message.type === 'changeVatOptions') {
       deliverP = processChangeVatOptions(message);
+    } else if (message.type === 'cleanup-terminated-vat') {
+      deliverP = processCleanupTerminatedVat(message);
     } else if (message.type === 'negated-gc-action') {
       // processGCActionSet pruned some negated actions, but had no GC
       // action to perform. Record the DB changes in their own crank.
-    } else if (message.type === 'cleanup-terminated-vat') {
-      deliverP = processCleanupTerminatedVat(message);
-    } else if (isGCType(message.type)) {
-      deliverP =
-        message.type === 'bringOutYourDead'
-          ? processBringOutYourDead(message)
-          : processGCMessage(message);
+    } else if (message.type === 'bringOutYourDead') {
+      deliverP = processBringOutYourDead(message);
+    } else if (isGcMessage(message)) {
+      deliverP = processGCMessage(message);
     } else {
+      // @ts-expect-error unreachable
       Fail`unable to process message.type ${message.type}`;
     }
 
@@ -1490,7 +1502,7 @@ export default function buildKernel(
     const { lostKrefs } = kernelKeeper.processRefcounts();
     // Lost krefs are expected for GC, but can also occur when a crank is rolled
     // back.
-    if (lostKrefs.length && !isGCType(messageType)) {
+    if (lostKrefs.length && !isGcMessage(message)) {
       const vatID = crankResults.didDelivery;
       console.log(
         `⚠️ Ignoring lost krefs from crankNum ${crankNum} ${vatID} ${messageSummary}${didSnapshot ? ' + snapshot' : ''}`,
