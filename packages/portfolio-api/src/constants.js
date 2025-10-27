@@ -46,7 +46,13 @@ harden(AxelarChain);
  * @enum {(typeof SupportedChain)[keyof typeof SupportedChain]}
  */
 export const SupportedChain = /** @type {const} */ ({
-  ...AxelarChain,
+  // ...AxelarChain works locally but gets lost in .d.ts generation
+  Arbitrum: 'Arbitrum',
+  Avalanche: 'Avalanche',
+  Base: 'Base',
+  Ethereum: 'Ethereum',
+  Optimism: 'Optimism',
+  // Unique to this object
   agoric: 'agoric',
   noble: 'noble',
   // XXX: check privateArgs for chainInfo for all of these
@@ -71,3 +77,9 @@ export const RebalanceStrategy = /** @type {const} */ ({
   PreserveExistingProportions: 'pep',
 });
 harden(RebalanceStrategy);
+
+/**
+ * Treat account deltas smaller than this value (in micro-units) as dust.
+ * This corresponds to 100 uusdc, i.e., $0.0001 for USDC.
+ */
+export const ACCOUNT_DUST_EPSILON = 100n;

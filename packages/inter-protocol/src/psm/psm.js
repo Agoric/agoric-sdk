@@ -12,6 +12,7 @@ import {
   publicMixinAPI,
 } from '@agoric/governance';
 import { StorageNodeShape } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { M, prepareExo, provide } from '@agoric/vat-data';
 import {
   atomicTransfer,
@@ -45,6 +46,8 @@ import { makeNatAmountShape } from '../contractSupport.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {TypedPattern, Remote} from '@agoric/internal';
+ * @import {Baggage} from '@agoric/vat-data'
  * @import {ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
  */
 
@@ -61,11 +64,6 @@ import { makeNatAmountShape } from '../contractSupport.js';
  *   given by this contract
  * @property {Amount<'nat'>} totalMintedProvided running sum of Minted ever
  *   given by this contract
- */
-
-/**
- * @import {TypedPattern, Remote} from '@agoric/internal';
- * @import {Baggage} from '@agoric/vat-data'
  */
 
 /** @type {ContractMeta} */
@@ -128,9 +126,12 @@ export const start = async (zcf, privateArgs, baggage) => {
   const { anchorBrand, anchorPerMinted } = zcf.getTerms();
   console.log('PSM Starting', anchorBrand, anchorPerMinted);
 
+  const { marshaller: remoteMarshaller } = privateArgs;
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
+
   const { makeRecorderKit } = prepareRecorderKitMakers(
     baggage,
-    privateArgs.marshaller,
+    cachingMarshaller,
   );
 
   const { stableMint } = await provideAll(baggage, {
@@ -157,7 +158,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         WantMintedFee: ParamTypes.RATIO,
       },
       privateArgs.storageNode,
-      privateArgs.marshaller,
+      cachingMarshaller,
     );
 
   const anchorPool = provideEmptySeat(zcf, baggage, 'anchorPoolSeat');

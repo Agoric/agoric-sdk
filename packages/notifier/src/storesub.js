@@ -12,6 +12,7 @@ import { subscribeEach } from './subscribe.js';
  * @import {ERef} from '@endo/far';
  * @import {IterationObserver, LatestTopic, Notifier, NotifierRecord, PublicationRecord, Publisher, PublishKit, StoredPublishKit, StoredSubscription, StoredSubscriber, Subscriber, Subscription, UpdateRecord} from '../src/types.js';
  * @import {StorageNode, Unserializer} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  */
 
 /**
@@ -48,7 +49,7 @@ export const forEachPublicationRecord = async (subscriber, consumeValue) => {
  * @template {import('@endo/marshal').PassableCap} T
  * @param {Subscriber<T>} subscriber
  * @param {ERemote<StorageNode>} storageNode
- * @param {ERemote<Marshaller>} marshaller
+ * @param {ERemote<EMarshaller>} marshaller
  * @returns {StoredSubscriber<T>}
  */
 export const makeStoredSubscriber = (subscriber, storageNode, marshaller) => {
@@ -93,7 +94,7 @@ export const makeStoredSubscriber = (subscriber, storageNode, marshaller) => {
  * @template T
  * @param {Subscription<T>} subscription
  * @param {ERemote<StorageNode> | null} [storageNode]
- * @param {ERemote<Marshaller>} [marshaller]
+ * @param {ERemote<EMarshaller>} [marshaller]
  * @returns {StoredSubscription<T>}
  */
 export const makeStoredSubscription = (
@@ -179,7 +180,7 @@ harden(makeStoredSubscription);
  *
  * @template [T=unknown]
  * @param {ERemote<StorageNode> | null} [storageNode]
- * @param {ERemote<Marshaller>} [marshaller]
+ * @param {ERemote<EMarshaller>} [marshaller]
  * @param {string} [childPath]
  * @returns {StoredPublisherKit<T>}
  */
@@ -214,7 +215,7 @@ export const makeStoredPublisherKit = (storageNode, marshaller, childPath) => {
  *
  * @template [T=unknown]
  * @param {ERemote<StorageNode>} storageNode
- * @param {ERemote<Marshaller>} marshaller
+ * @param {ERemote<EMarshaller>} marshaller
  * @returns {StoredPublishKit<T>}
  */
 export const makeStoredPublishKit = (storageNode, marshaller) => {

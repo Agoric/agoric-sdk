@@ -18,6 +18,7 @@ import { crc6 } from './crc.js';
 
 /**
  * @import {ERemote, TypedPattern} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {RemotableObject} from '@endo/pass-style';
  * @import {CapData} from '@endo/marshal';
  * @import {Key} from '@endo/patterns';
@@ -378,7 +379,7 @@ export const prepareRecorderFactory = zone => {
 
   /**
    * @param {string} label
-   * @param {ERemote<Marshaller>} marshaller
+   * @param {ERemote<EMarshaller>} marshaller
    */
   const prepareRecorderKit = (label, marshaller) => {
     const myZone = zone.subZone(label);

@@ -17,6 +17,7 @@ import { amountPattern, ratioPattern } from '../contractSupport.js';
 
 /**
  * @import {ERemote, Remote} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {MapStore} from '@agoric/store';
  * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
  */
@@ -182,7 +183,7 @@ harden(makeGovernedTerms);
  * NB: changes from initial values will be lost upon restart
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {ERemote<Marshaller>} marshaller
+ * @param {ERemote<EMarshaller>} marshaller
  * @param {Record<string, VaultManagerParamOverrides>} managerParamOverrides
  */
 export const provideVaultParamManagers = (

@@ -8,6 +8,7 @@
  */
 
 import { makeTracer, WalletName } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { M, makeExo, makeScalarMapStore, mustMatch } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
@@ -231,7 +232,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     invitationIssuer,
     invitationBrand,
     invitationDisplayInfo,
-    publicMarshaller,
+    publicMarshaller: remotePublicMarshaller,
   } = await provideAll(baggage, {
     invitationIssuer: () => invitationIssuerP,
     invitationBrand: () => E(invitationIssuerP).getBrand(),
@@ -242,12 +243,14 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   const registry = makeAssetRegistry(assetPublisher);
 
+  const publicCachingMarshaller = wrapRemoteMarshaller(remotePublicMarshaller);
+
   const shared = harden({
     agoricNames,
     invitationBrand,
     invitationDisplayInfo,
     invitationIssuer,
-    publicMarshaller,
+    publicMarshaller: publicCachingMarshaller,
     registry,
     zoe,
   });

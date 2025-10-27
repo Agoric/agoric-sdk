@@ -1,14 +1,14 @@
-import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
+import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { makeTracer } from '@agoric/internal';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
+import { AnyNatAmountShape } from '../typeGuards.js';
+import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as sharedFlows from './shared.flows.js';
 import { swapAnythingViaHook, swapIt } from './swap-anything.flows.js';
-import { AnyNatAmountShape } from '../typeGuards.js';
-import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 
 const trace = makeTracer('SwapAnything.Contract');
 const interfaceTODO = undefined;
@@ -45,7 +45,7 @@ export const contract = async (
   zcf,
   privateArgs,
   zone,
-  { chainHub, orchestrate, vowTools, zoeTools },
+  { cachingMarshaller, chainHub, orchestrate, vowTools, zoeTools },
 ) => {
   const creatorFacet = prepareChainHubAdmin(zone, chainHub);
 
@@ -155,7 +155,7 @@ export const contract = async (
   void vowTools.when(sharedLocalAccountP, async lca => {
     sharedLocalAccount = lca;
     await sharedLocalAccount.monitorTransfers(tap);
-    const encoded = await E(privateArgs.marshaller).toCapData({
+    const encoded = await E(cachingMarshaller).toCapData({
       sharedLocalAccount: sharedLocalAccount.getAddress(),
     });
     void E(privateArgs.storageNode).setValue(JSON.stringify(encoded));

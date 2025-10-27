@@ -14,18 +14,13 @@ const ackNFA = (utils, ix = 0) =>
 
 test('openPortfolio stores and publishes target allocation', async t => {
   const { trader1, common } = await setupTrader(t);
-  const { usdc } = common.brands;
 
   // target: 60% USDN, 40% Aave on Arbitrum
   const targetAllocation = { USDN: 6000n, Aave_Arbitrum: 4000n };
 
   // Open portfolio with target allocation
   await Promise.all([
-    trader1.openPortfolio(
-      t,
-      { Deposit: usdc.units(1_000) },
-      { targetAllocation },
-    ),
+    trader1.openPortfolio(t, {}, { targetAllocation }),
     ackNFA(common.utils),
   ]);
 
@@ -112,20 +107,12 @@ test('multiple portfolios have independent allocations', async t => {
 
   // Open portfolios with different allocations
   await Promise.all([
-    trader1.openPortfolio(
-      t,
-      { Deposit: usdc.units(5_000) },
-      { targetAllocation: allocation1 },
-    ),
+    trader1.openPortfolio(t, {}, { targetAllocation: allocation1 }),
     ackNFA(common.utils, 0),
   ]);
 
   await Promise.all([
-    trader2.openPortfolio(
-      t,
-      { Deposit: usdc.units(7_000) },
-      { targetAllocation: allocation2 },
-    ),
+    trader2.openPortfolio(t, {}, { targetAllocation: allocation2 }),
     ackNFA(common.utils, -1),
   ]);
 

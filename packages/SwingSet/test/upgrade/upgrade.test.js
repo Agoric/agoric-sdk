@@ -2,9 +2,11 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import { assert } from '@endo/errors';
 import bundleSource from '@endo/bundle-source';
-import { objectMap } from '@agoric/internal';
+import { assert } from '@endo/errors';
+import { isPromise } from '@endo/promise-kit';
+import { objectMap, objectMapMutable } from '@agoric/internal';
+import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import { kser, kunser, krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { parseReachableAndVatSlot } from '../../src/kernel/state/reachable.js';
@@ -14,9 +16,13 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '../../src/index.js';
+import { makeRunUtils } from '../../tools/run-utils.js';
 import { bundleOpts, restartVatAdminVat } from '../util.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
+/** @type {(pathRecord: Record<string, string>) => Record<string, { sourceSpec: string }>} */
+const specsFromPaths = pathRecord =>
+  objectMapMutable(pathRecord, path => ({ sourceSpec: bfile(path) }));
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
@@ -44,29 +50,16 @@ const dumpState = (debug, vatID) => {
  */
 const makeConfigFromPaths = (bootstrapVatPath, options = {}) => {
   const { staticVatPaths = {}, bundlePaths = {}, ...kernelOptions } = options;
-  /**
-   * @param {Record<string, string>} paths
-   * @returns {Record<string, {sourceSpec: string}>}
-   */
-  const specsFromPaths = paths => {
-    const entries = Object.entries(paths).map(([name, path]) => [
-      name,
-      { sourceSpec: bfile(path) },
-    ]);
-    return Object.fromEntries(entries);
-  };
+
   assert(!Object.hasOwn(staticVatPaths, 'bootstrap'));
-  const vats = specsFromPaths({
-    bootstrap: bootstrapVatPath,
-    ...staticVatPaths,
-  });
-  const bundles = specsFromPaths(bundlePaths);
+  const vatPaths = { bootstrap: bootstrapVatPath, ...staticVatPaths };
+
   return {
     includeDevDependencies: true, // for vat-data
     ...kernelOptions,
     bootstrap: 'bootstrap',
-    vats,
-    bundles,
+    vats: specsFromPaths(vatPaths),
+    bundles: specsFromPaths(bundlePaths),
   };
 };
 
@@ -835,6 +828,113 @@ test('failed upgrade - explode', async t => {
 
   // TODO: who should see the details of what v2 did wrong? calling
   // vat? only the console?
+});
+
+test('failed upgrade - lost promise export', async t => {
+  const config = makeConfigFromPaths('../../tools/bootstrap-relay.js', {
+    defaultManagerType: 'xs-worker',
+    defaultReapInterval: 'never',
+    bundlePaths: {
+      puppet: '../../tools/vat-puppet.js',
+    },
+  });
+  const { controller } = await initKernelForTest(t, t.context.data, config);
+  const { EV } = makeRunUtils(controller);
+
+  class DiffablePromise {
+    constructor(state, settlement) {
+      this.state = state;
+      this.settlement = settlement;
+    }
+  }
+
+  // Create a spy in the bootstrap vat.
+  const spy = await EV.vat('bootstrap').makeRemotable('Spy', {
+    log: true,
+    onFulfilled: true,
+    onRejected: true,
+  });
+  const expectSpyCalls = [];
+  const assertSpyCalls = async (message, newCalls) => {
+    expectSpyCalls.push(...newCalls);
+    const actualSpyCalls = await EV.vat('bootstrap').getLogForRemotable(spy);
+
+    // Translate Promise instances in top-level position into DiffablePromise
+    // instances.
+    const diffableSpyCalls = actualSpyCalls.map(actualCall =>
+      actualCall.map(v => {
+        if (!isPromise(v)) return v;
+        const kpid = krefOf(v);
+        const status = controller.kpStatus(kpid);
+        const settlementCapData =
+          status === 'fulfilled' || status === 'rejected'
+            ? controller.kpResolution(kpid)
+            : kser(undefined);
+        return new DiffablePromise(status, kunser(settlementCapData));
+      }),
+    );
+
+    arrayIsLike(t, diffableSpyCalls, expectSpyCalls, message);
+  };
+
+  // Create a puppet vat that sends messages during buildRootObject.
+  const puppet = await EV.vat('bootstrap').createVat({
+    name: 'puppet',
+    vatParameters: {
+      version: 1,
+      initialCalls: [
+        ['makeSettledPromise', 'v1'],
+        ['sendOnly', spy, 'log', 'v1', Symbol.for(-1)],
+        ['watchSettledPromiseByProxy', 'v1', spy],
+      ],
+    },
+  });
+  await assertSpyCalls('started v1', [
+    ['log', 'v1', new DiffablePromise('fulfilled', 'v1')],
+    ['onFulfilled', 'v1'],
+  ]);
+  t.like(await EV(puppet).getVatParameters(), { version: 1 });
+
+  // Upgrade the puppet and observe new calls from it.
+  const { incarnationNumber: puppet2IncarnationNumber } = await EV.vat(
+    'bootstrap',
+  ).upgradeVat({
+    name: 'puppet',
+    vatParameters: {
+      version: 2,
+      initialCalls: [
+        ['makeSettledPromise', 'v2'],
+        ['sendOnly', spy, 'log', 'v2', Symbol.for(-1)],
+        ['watchSettledPromiseByProxy', 'v2', spy],
+      ],
+    },
+  });
+  t.is(puppet2IncarnationNumber, 1);
+  await assertSpyCalls('started v2', [
+    ['log', 'v2', new DiffablePromise('fulfilled', 'v2')],
+    ['onFulfilled', 'v2'],
+  ]);
+  t.like(await EV(puppet).getVatParameters(), { version: 2 });
+
+  // Make a failed upgrade attempt (including a promise export) and observe
+  // the lack of new calls from it due to rollback.
+  await t.throwsAsync(
+    EV.vat('bootstrap').upgradeVat({
+      name: 'puppet',
+      vatParameters: {
+        version: 3,
+        initialCalls: [
+          ['makeSettledPromise', 'v3'],
+          ['sendOnly', spy, 'log', 'v3', Symbol.for(-1)],
+          ['watchSettledPromiseByProxy', 'v3', spy],
+          ['throw', 'forced failure'],
+        ],
+      },
+    }),
+    { message: /vat-upgrade failure/ },
+  );
+  await assertSpyCalls('failed to start v3', []);
+  t.like(await EV(puppet).getVatParameters(), { version: 2 });
 });
 
 async function testKindMode(t, v1mode, v2mode, complaint) {

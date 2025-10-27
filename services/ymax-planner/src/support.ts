@@ -6,7 +6,7 @@ import {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { ClusterName } from './config.ts';
-import { TX_TIMEOUT_MS, type EvmContext } from './pending-tx-manager.ts';
+import type { EvmContext } from './pending-tx-manager.ts';
 
 const { entries } = Object;
 
@@ -76,26 +76,10 @@ export const walletOperationFallbackGasLimit = 276_809n;
 /**
  * Average block times for supported EVM chains in milliseconds.
  *
- * Sources:
- * - Ethereum:
- *   Mainnet ~12s → https://etherscan.io/chart/blocktime
- *   Sepolia ~12s → https://eth-sepolia.blockscout.com/
- *
- * - Arbitrum:
- *   Mainnet ~0.3s → https://arbitrum.blockscout.com/
- *   Sepolia ~0.3s → https://arbitrum-sepolia.blockscout.com/
- *
- * - Avalanche:
- *   Mainnet ~2s → https://snowscan.xyz/chart/blocktime
- *   Fuji ~2s → Didn't find any specific resource for it
- *
- * - Base:
- *   Mainnet ~2.5s → https://base.blockscout.com/stats
- *   Sepolia ~2s → https://base-sepolia.blockscout.com/
- *
- * - Optimism:
- *   Mainnet ~2s → https://explorer.optimism.io/
- *   Sepolia ~2s → https://testnet-explorer.optimism.io/
+ * Mainnet data: https://eth.blockscout.com/ (except Avalanche),
+ *   https://chainspect.app/ , https://subnets.avax.network/c-chain
+ * Testnet data: https://eth.blockscout.com/ (except Avalanche),
+ *   https://subnets-test.avax.network/c-chain
  */
 const chainBlockTimesMs: Record<CaipChainId, number> = harden({
   // ========= Mainnet =========
@@ -291,57 +275,46 @@ export const binarySearch = (async <Index extends number | bigint>(
   return greatestFound;
 }) as BinarySearch;
 
-const findBlockByTimestamp = async (
+/**
+ * Returns the highest block number whose real time (i.e., published timestamp
+ * as adjusted by clock skew of up to fudgeFactorMs) is known to be less than or
+ * equal to targetMs.
+ */
+export const getBlockNumberBeforeRealTime = async (
   provider: WebSocketProvider,
   targetMs: number,
+  {
+    fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
+    meanBlockDurationMs,
+  }: {
+    fudgeFactorMs?: number;
+    meanBlockDurationMs?: number;
+  } = {},
 ) => {
-  const posixSeconds = Math.floor(targetMs / 1000);
-  const startBlockNumber = await binarySearch(
-    0,
-    await provider.getBlockNumber(),
-    async blockNumber => {
-      const block = await provider.getBlock(blockNumber);
-      return block?.timestamp ? block.timestamp <= posixSeconds : false;
-    },
-  );
-  return startBlockNumber;
-};
+  const posixSeconds = Math.floor((targetMs - fudgeFactorMs) / 1000);
 
-export const buildTimeWindow = async (
-  provider: WebSocketProvider,
-  publishTimeMs: number,
-  log: (...args: unknown[]) => void,
-  chainId: CaipChainId,
-  fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
-) => {
-  const adjustedTime = publishTimeMs - fudgeFactorMs;
-  const fromBlock = await findBlockByTimestamp(provider, adjustedTime);
-
-  const fromBlockInfo = await provider.getBlock(fromBlock);
-  const fromBlockTime = (fromBlockInfo?.timestamp || 0) * 1000;
-  // Add fudgeFactorMs back to TX_TIMEOUT_MS to compensate for the earlier subtraction
-  const endTime = fromBlockTime + TX_TIMEOUT_MS + fudgeFactorMs;
-
-  const currentBlock = await provider.getBlockNumber();
-  const currentBlockInfo = await provider.getBlock(currentBlock);
-  const currentBlockTime = (currentBlockInfo?.timestamp || 0) * 1000;
-
-  if (endTime <= currentBlockTime) {
-    log('end time is in the past');
-    return { fromBlock, toBlock: currentBlock };
+  // Try to find a good starting point.
+  let startNumber = 0;
+  const latestNumber = await provider.getBlockNumber();
+  const latestBlock = await provider.getBlock(latestNumber);
+  const deltaSec = latestBlock!.timestamp - posixSeconds;
+  if (deltaSec <= 0) return latestNumber;
+  if (deltaSec > 0 && meanBlockDurationMs) {
+    const deltaBlocks = Math.ceil(deltaSec / (meanBlockDurationMs / 1000));
+    const pastNumber = latestNumber - deltaBlocks * 2;
+    if (startNumber < pastNumber) {
+      const pastBlock = await provider.getBlock(pastNumber);
+      if (pastBlock?.timestamp && pastBlock.timestamp <= posixSeconds) {
+        startNumber = pastNumber;
+      }
+    }
   }
 
-  log('end time is in the future - estimate blocks ahead');
-
-  const blockTimeMs = getBlockTimeMs(chainId);
-  log(`using block time ${blockTimeMs}ms for chain ${chainId}`);
-
-  const timeUntilEnd = endTime - currentBlockTime;
-  const estimatedFutureBlocks = Math.ceil(timeUntilEnd / blockTimeMs);
-  log('future blocks', estimatedFutureBlocks);
-
-  const toBlock = currentBlock + estimatedFutureBlocks;
-  return { fromBlock, toBlock };
+  const blockNumber = await binarySearch(startNumber, latestNumber, async n => {
+    const block = await provider.getBlock(n);
+    return block?.timestamp ? block.timestamp <= posixSeconds : false;
+  });
+  return blockNumber;
 };
 
 type LogPredicate = (log: Log) => boolean | Promise<boolean>;
@@ -422,4 +395,19 @@ export const scanEvmLogsInChunks = async (
     start += chunkSize;
   }
   return undefined;
+};
+
+export const waitForBlock = async (
+  provider: WebSocketProvider,
+  targetBlock: number,
+) => {
+  return new Promise(resolve => {
+    const listener = blockNumber => {
+      if (blockNumber >= targetBlock) {
+        void provider.off('block', listener);
+        resolve(blockNumber);
+      }
+    };
+    void provider.on('block', listener);
+  });
 };

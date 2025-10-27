@@ -3,10 +3,8 @@
  */
 import { AmountMath, type Brand } from '@agoric/ertp';
 import { makeTracer, mustMatch, type ERemote } from '@agoric/internal';
-import type {
-  Marshaller,
-  StorageNode,
-} from '@agoric/internal/src/lib-chainStorage.js';
+import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import {
   type AccountId,
   type CaipChainId,
@@ -195,7 +193,7 @@ export const preparePortfolioKit = (
     vowTools: VowTools;
     zcf: ZCF;
     portfoliosNode: ERemote<StorageNode>;
-    marshaller: ERemote<Marshaller>;
+    marshaller: ERemote<EMarshaller>;
     usdcBrand: Brand<'nat'>;
   },
 ) => {
@@ -451,13 +449,14 @@ export const preparePortfolioKit = (
             this.facets.reporter.publishStatus();
           }
         },
-        startFlow(detail: FlowDetail) {
-          const { nextFlowId, flowsRunning } = this.state;
-          this.state.nextFlowId = nextFlowId + 1;
+        startFlow(detail: FlowDetail, steps?: MovementDesc[]) {
+          const { nextFlowId: flowId, flowsRunning } = this.state;
+          this.state.nextFlowId = flowId + 1;
           const sync: VowKit<MovementDesc[]> = vowTools.makeVowKit();
-          flowsRunning.init(nextFlowId, harden({ sync, ...detail }));
+          if (steps) sync.resolver.resolve(steps);
+          flowsRunning.init(flowId, harden({ sync, ...detail }));
           this.facets.reporter.publishStatus();
-          return { stepsP: sync.vow, flowId: nextFlowId };
+          return { stepsP: sync.vow, flowId };
         },
         providePosition(
           poolKey: PoolKey,

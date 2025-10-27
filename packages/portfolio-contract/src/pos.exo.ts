@@ -14,7 +14,7 @@ import { type PublishStatusFn } from './portfolio.exo.ts';
 import { makePositionPath, type PoolKey } from './type-guards.ts';
 
 const { assign } = Object;
-const { add, subtract } = AmountMath;
+const { add } = AmountMath;
 
 interface PositionRd {
   getPoolKey(): PoolKey;
@@ -33,7 +33,6 @@ export interface Position extends PositionPub {
 export type TransferStatus = {
   totalIn: Amount<'nat'>;
   totalOut: Amount<'nat'>;
-  netTransfers: Amount<'nat'>;
 };
 
 const recordTransferIn = (
@@ -41,13 +40,12 @@ const recordTransferIn = (
   state: TransferStatus,
   position: Pick<Position, 'publishStatus'>,
 ) => {
-  const { netTransfers, totalIn } = state;
+  const { totalIn } = state;
   assign(state, {
-    netTransfers: add(netTransfers, amount),
     totalIn: add(totalIn, amount),
   });
   position.publishStatus();
-  return state.netTransfers;
+  return totalIn;
 };
 
 const recordTransferOut = (
@@ -55,22 +53,26 @@ const recordTransferOut = (
   state: TransferStatus,
   position: Pick<Position, 'publishStatus'>,
 ) => {
-  const { netTransfers, totalOut } = state;
+  const { totalOut } = state;
   assign(state, {
-    netTransfers: subtract(netTransfers, amount),
     totalOut: add(totalOut, amount),
   });
   position.publishStatus();
-  return state.netTransfers;
+  return totalOut;
 };
 
-type PositionState = TransferStatus & {
-  portfolioId: number;
-  protocol: YieldProtocol;
-  poolKey: PoolKey;
-  accountId: AccountId;
-  etc: unknown;
+type ObsoleteTransferStatus = {
+  netTransfers: Amount<'nat'>;
 };
+
+type PositionState = TransferStatus &
+  ObsoleteTransferStatus & {
+    portfolioId: number;
+    protocol: YieldProtocol;
+    poolKey: PoolKey;
+    accountId: AccountId;
+    etc: unknown;
+  };
 
 // a bit more lax than the type to facilitate evolution; hence not a TypedPattern
 export const PositionStateShape = {
@@ -102,6 +104,7 @@ export const preparePosition = (
       portfolioId,
       protocol,
       ...emptyTransferState,
+      netTransfers: emptyTransferState.totalIn, // XXX ObsoleteTransferStatus
       poolKey,
       accountId,
       etc: undefined,
@@ -121,20 +124,12 @@ export const preparePosition = (
         return recordTransferOut(amount, this.state, this.self);
       },
       publishStatus() {
-        const {
-          portfolioId,
-          poolKey,
-          protocol,
-          accountId,
-          netTransfers,
-          totalIn,
-          totalOut,
-        } = this.state;
+        const { portfolioId, poolKey, protocol, accountId, totalIn, totalOut } =
+          this.state;
         const key = makePositionPath(portfolioId, poolKey);
         const status = harden({
           protocol,
           accountId,
-          netTransfers,
           totalIn,
           totalOut,
         });

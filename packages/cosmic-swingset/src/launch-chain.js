@@ -7,9 +7,10 @@ import '@agoric/builders';
 import anylogger from 'anylogger';
 
 import bundleSource from '@endo/bundle-source';
-import { assert, Fail } from '@endo/errors';
+import { assert, Fail, makeError, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
+import { toThrowable, passStyleOf } from '@endo/marshal';
 
 import {
   buildMailbox,
@@ -661,12 +662,32 @@ export async function launchAndShareInternals({
     if (installationPublisher === undefined) {
       return;
     }
+    let throwable;
+    try {
+      throwable = toThrowable(error);
+    } catch (err) {
+      throwable = makeError(X`Failed to make throwable from ${error}: ${err}`);
+    }
+
+    let bundleId = null;
+    try {
+      // If the validation failed, we're not guaranteed that endoZipBase64Sha512
+      // is a passable string. We cannot simply attempt to coerce to a string
+      // because passStyleOf / marshal may enforce stronger constraints such as
+      // being well-formed. Since the bundle validation would already report an
+      // invalid bundleId, we simply use a null value in such cases.
+      if (passStyleOf(endoZipBase64Sha512) === 'string') {
+        bundleId = endoZipBase64Sha512;
+      }
+    } catch {
+      // leave bundleId null
+    }
 
     await installationPublisher.publish(
       harden({
-        endoZipBase64Sha512,
+        endoZipBase64Sha512: bundleId,
         installed: error === null,
-        error,
+        error: throwable,
       }),
     );
   }

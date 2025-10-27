@@ -67,6 +67,7 @@ import { AuctionPFShape } from '../auction/auctioneer.js';
 
 /**
  * @import {ERemote, Remote} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {EReturn} from '@endo/far';
  * @import {ZCFMint} from '@agoric/zoe';
@@ -219,7 +220,7 @@ const collateralEphemera = makeEphemeraProvider(() => /** @type {any} */ ({}));
  * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {{
  *   zcf: import('./vaultFactory.js').VaultFactoryZCF;
- *   marshaller: ERemote<Marshaller>;
+ *   marshaller: ERemote<EMarshaller>;
  *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
  *   makeERecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit;
  *   factoryPowers: import('./vaultDirector.js').FactoryPowersFacet;

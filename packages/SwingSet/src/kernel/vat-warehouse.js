@@ -570,6 +570,7 @@ export function makeVatWarehouse({
    *
    * @param {VatID} vatID
    * @param {number} [minDeliveryCount]
+   * @returns {Promise<boolean>} whether a snapshot was saved
    */
   async function maybeSaveSnapshot(vatID, minDeliveryCount = snapshotInterval) {
     kernelKeeper.vatIsAlive(vatID) || Fail`${q(vatID)}: not alive`;

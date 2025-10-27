@@ -11,12 +11,17 @@ import type { PublishedTx } from './resolver.js';
 export type SeatKeyword = 'Cash' | 'Deposit';
 
 /**
- * `+agoric` is `lcaIn`
+ * Reference to a local chain accounts (LCA).
+ * '+agoric' is published as `depositAddress`
  */
+export type LocalChainAccountRef = '+agoric';
+
+export type InterChainAccountRef = `@${SupportedChain}`;
+
 export type AssetPlaceRef =
   | `<${SeatKeyword}>`
-  | '+agoric'
-  | `@${SupportedChain}`
+  | LocalChainAccountRef
+  | InterChainAccountRef
   | InstrumentId;
 
 type Empty = Record<never, NatAmount>;
@@ -84,6 +89,7 @@ export type StatusFor = {
     accountIdByChain: Partial<Record<SupportedChain, AccountId>>;
     accountsPending?: SupportedChain[];
     depositAddress?: Bech32Address;
+    /** Noble Forwarding Address (NFA) registered by the contract for the `@agoric` address */
     nobleForwardingAddress?: Bech32Address;
     targetAllocation?: TargetAllocation;
     /** incremented by the contract every time the user sends a transaction that the planner should respond to */
@@ -97,7 +103,6 @@ export type StatusFor = {
   position: {
     protocol: YieldProtocol;
     accountId: AccountId;
-    netTransfers: NatAmount;
     totalIn: NatAmount;
     totalOut: NatAmount;
   };

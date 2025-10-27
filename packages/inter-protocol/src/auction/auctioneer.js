@@ -7,6 +7,7 @@ import { Far } from '@endo/marshal';
 import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { mustMatch } from '@agoric/store';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
@@ -35,8 +36,7 @@ import { makeScheduler } from './scheduler.js';
 import { AuctionState } from './util.js';
 
 /**
- * @import {Remote} from '@agoric/internal';
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {Remote, TypedPattern} from '@agoric/internal';
  * @import {MapStore} from '@agoric/store';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
@@ -425,11 +425,15 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   let bookCounter = 0;
 
+  const { marshaller: remoteMarshaller } = privateArgs;
+
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
+
   const makeDurablePublishKit = prepareDurablePublishKit(
     baggage,
     'Auction publish kit',
   );
-  const makeRecorder = prepareRecorder(baggage, privateArgs.marshaller);
+  const makeRecorder = prepareRecorder(baggage, cachingMarshaller);
 
   const makeRecorderKit = defineRecorderKit({
     makeRecorder,
@@ -535,7 +539,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       privateArgs.initialPoserInvitation,
       auctioneerParamTypes,
       privateArgs.storageNode,
-      privateArgs.marshaller,
+      cachingMarshaller,
     );
 
   const tradeEveryBook = () => {

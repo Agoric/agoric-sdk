@@ -11,6 +11,7 @@ import { objectMap } from '@agoric/internal';
 import { Far } from '@endo/pass-style';
 import { CosmosRestClient, USDN } from '../src/cosmos-rest-client.ts';
 import {
+  getNonDustBalances,
   handleDeposit,
   planDepositToAllocations,
   planRebalanceToAllocations,
@@ -25,6 +26,94 @@ const makeDeposit = value => AmountMath.make(depositBrand, value);
 const feeBrand = Far('fee brand (BLD)') as Brand<'nat'>;
 
 const powers = { fetch, setTimeout };
+
+test('getNonDustBalances filters balances at or below the dust epsilon', async t => {
+  const status = {
+    positionKeys: ['Aave_Arbitrum', 'Compound_Base'],
+    accountIdByChain: {
+      Arbitrum: 'chain:mock:addr-arb',
+      Base: 'chain:mock:addr-base',
+    },
+  } as any;
+
+  class MockSpectrumClientDust extends SpectrumClient {
+    constructor() {
+      super(powers);
+    }
+
+    async getPoolBalance(chain: any, pool: any, addr: any) {
+      if (chain === 'arbitrum' && pool === 'aave') {
+        return {
+          pool,
+          chain,
+          address: addr,
+          balance: { supplyBalance: 100, borrowAmount: 0 },
+        };
+      }
+      if (chain === 'base' && pool === 'compound') {
+        return {
+          pool,
+          chain,
+          address: addr,
+          balance: { supplyBalance: 150, borrowAmount: 0 },
+        };
+      }
+      return {
+        pool,
+        chain,
+        address: addr,
+        balance: { supplyBalance: 0, borrowAmount: 0 },
+      };
+    }
+  }
+  const mockSpectrumClient = new MockSpectrumClientDust();
+  const mockCosmosRestClient = {
+    async getAccountBalance() {
+      throw new Error('unexpected Cosmos balance request');
+    },
+  } as unknown as CosmosRestClient;
+
+  const balances = await getNonDustBalances(status, depositBrand, {
+    spectrum: mockSpectrumClient,
+    cosmosRest: mockCosmosRestClient,
+  });
+
+  t.deepEqual(Object.keys(balances), ['Compound_Base']);
+  t.false(Object.hasOwn(balances, 'Aave_Arbitrum'));
+  t.is(balances.Compound_Base.value, 150n);
+});
+
+test('getNonDustBalances retains noble balances above the dust epsilon', async t => {
+  const status = {
+    positionKeys: ['USDN'],
+    accountIdByChain: {
+      noble: 'chain:mock:addr-noble',
+    },
+  } as any;
+
+  const spectrumStub = {
+    async getPoolBalance() {
+      throw new Error('unexpected Spectrum balance request');
+    },
+  } as unknown as SpectrumClient;
+
+  const mockCosmosRestClient = {
+    async getAccountBalance(chainName: string, addr: string, denom: string) {
+      t.is(chainName, 'noble');
+      t.is(denom, 'uusdn');
+      t.truthy(addr);
+      return { denom, amount: '101' };
+    },
+  } as unknown as CosmosRestClient;
+
+  const balances = await getNonDustBalances(status, depositBrand, {
+    spectrum: spectrumStub,
+    cosmosRest: mockCosmosRestClient,
+  });
+
+  t.deepEqual(Object.keys(balances), ['USDN']);
+  t.is(balances.USDN.value, 101n);
+});
 
 /**
  * Deposit: 1000n
@@ -395,4 +484,73 @@ test('planDepositToAllocations produces steps expected by contract', async t => 
 
 test('USDN denom', t => {
   t.is(USDN.base, 'uusdn');
+});
+
+async function singleSourceRebalanceSteps(scale: number) {
+  const targetAllocation = {
+    Aave_Arbitrum: 10n,
+    Aave_Avalanche: 11n,
+    Aave_Base: 11n,
+    Aave_Ethereum: 10n,
+    Aave_Optimism: 10n,
+  };
+
+  const currentBalances = {
+    Aave_Avalanche: makeDeposit(3750061n * BigInt(scale)),
+  };
+
+  const steps = await planRebalanceToAllocations({
+    brand: depositBrand,
+    currentBalances,
+    targetAllocation,
+    // TODO: Refactor this test against a stable network dedicated to testing.
+    network: PROD_NETWORK,
+    feeBrand,
+    gasEstimator: mockGasEstimator,
+  });
+  return steps;
+}
+
+test('planRebalanceToAllocations regression - single source', async t => {
+  // TODO: For human comprehensibility, adopt something like `readableSteps`
+  // from packages/portfolio-contract/test/rebalance.test.ts.
+  const steps = await singleSourceRebalanceSteps(1);
+  t.snapshot(steps);
+});
+
+test('planRebalanceToAllocations regression - single source, 10x', async t => {
+  const steps = await singleSourceRebalanceSteps(10);
+  t.snapshot(steps);
+});
+
+test('planRebalanceToAllocations regression - multiple sources', async t => {
+  const targetAllocation = {
+    Aave_Arbitrum: 10n,
+    Aave_Avalanche: 11n,
+    Aave_Base: 11n,
+    Aave_Ethereum: 10n,
+    Aave_Optimism: 10n,
+    Compound_Arbitrum: 5n,
+    Compound_Base: 10n,
+    Compound_Ethereum: 10n,
+    Compound_Optimism: 23n,
+  };
+
+  const currentBalances = {
+    Aave_Avalanche: makeDeposit(3750061n),
+    Aave_Base: makeDeposit(4800007n),
+    Aave_Optimism: makeDeposit(3600002n),
+    Compound_Arbitrum: makeDeposit(2849999n),
+  };
+
+  const steps = await planRebalanceToAllocations({
+    brand: depositBrand,
+    currentBalances,
+    targetAllocation,
+    // TODO: Refactor this test against a stable network dedicated to testing.
+    network: PROD_NETWORK,
+    feeBrand,
+    gasEstimator: mockGasEstimator,
+  });
+  t.snapshot(steps);
 });

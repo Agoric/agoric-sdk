@@ -228,7 +228,6 @@ export const contract = async (
     assetInfo,
     axelarIds,
     contracts,
-    marshaller,
     storageNode,
     gmpAddresses,
   } = privateArgs;
@@ -267,11 +266,13 @@ export const contract = async (
   const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
 
+  const { cachingMarshaller } = tools;
+
   const resolverZone = zone.subZone('Resolver');
   const makeResolverKit = prepareResolverKit(resolverZone, zcf, {
     vowTools,
     pendingTxsNode: E(storageNode).makeChildNode(PENDING_TXS_NODE_KEY),
-    marshaller,
+    marshaller: cachingMarshaller,
   });
   const {
     client: resolverClient,
@@ -354,7 +355,7 @@ export const contract = async (
     offerArgsShapes,
     transferChannels,
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
-    marshaller,
+    marshaller: cachingMarshaller,
     usdcBrand: brands.USDC,
   });
 

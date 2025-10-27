@@ -186,16 +186,7 @@ export const CCTPfromEVM = {
 
     return { result: doneP, meta };
   },
-  recover: async (_ctx, _amount, _src, _dest) => {
-    throw Error('TODO: do away with recover. see #NNNN');
-  },
-} as const satisfies TransportDetail<
-  'CCTP',
-  AxelarChain,
-  'agoric',
-  EVMContext,
-  PortfolioInstanceContext
->;
+} as const satisfies TransportDetail<'CCTP', AxelarChain, 'agoric', EVMContext>;
 harden(CCTPfromEVM);
 
 export const CCTP = {
@@ -223,11 +214,6 @@ export const CCTP = {
     ]);
     traceTransfer('transfer complete.');
     return {};
-  },
-  recover: async (_ctx, _amount, _src, _dest) => {
-    // XXX evmCtx needs a GMP fee
-    // return CCTPfromEVM.apply(evmCtx, amount, dest, src);
-    throw Error('TODO(Luqi): how to recover from CCTP transfer?');
   },
 } as const satisfies TransportDetail<'CCTP', 'noble', AxelarChain>;
 harden(CCTP);

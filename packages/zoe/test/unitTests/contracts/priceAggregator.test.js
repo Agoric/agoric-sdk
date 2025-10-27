@@ -165,7 +165,9 @@ test.before('setup aggregator and oracles', async t => {
 
     const timer = buildManualTimer(() => {}, 0n, { eventLoopIteration });
     const POLL_INTERVAL = 1n;
-    const storageNode = E(storageRoot).makeChildNode('priceAggregator');
+    const storageNode = await E(
+      E(storageRoot).makeChildNode('priceAggregator'),
+    ).makeChildNode('ATOM-USD_price_feed');
     const aggregator = await E(zoe).startInstance(
       aggregatorInstallation,
       undefined,
@@ -178,7 +180,7 @@ test.before('setup aggregator and oracles', async t => {
       },
       {
         marshaller,
-        storageNode: E(storageNode).makeChildNode('ATOM-USD_price_feed'),
+        storageNode,
       },
     );
     return { ...aggregator, mockStorageRoot: storageRoot };

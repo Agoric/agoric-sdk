@@ -50,7 +50,7 @@ import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import {
   getCurrentBalance,
-  getCurrentBalances,
+  getNonDustBalances,
   planDepositToAllocations,
   planRebalanceToAllocations,
   planWithdrawFromAllocations,
@@ -231,7 +231,7 @@ const processPortfolioEvents = async (
     flowDetail: FlowDetail,
   ) => {
     const path = `${portfoliosPathPrefix}.${portfolioKey}`;
-    const currentBalances = await getCurrentBalances(
+    const currentBalances = await getNonDustBalances(
       portfolioStatus,
       depositBrand,
       { cosmosRest, spectrum },
@@ -774,6 +774,13 @@ export const startEngine = async (
   }
 
   // We expect to run forever, but the server can terminate our connection.
+  await null;
+  const closeEvent = await Promise.race([rpc.closed(), Promise.resolve()]);
+  if (closeEvent) {
+    const { code, reason, wasClean } = closeEvent;
+    const cleanly = q(wasClean ? 'cleanly' : 'not cleanly');
+    Fail`⚠️ rpc.subscribeAll finished (${cleanly}) with code ${q(code)}: ${q(reason)}`;
+  }
   Fail`⚠️ rpc.subscribeAll finished`;
 };
 harden(startEngine);

@@ -240,7 +240,10 @@ export const makeTrader = (
         ),
       );
       return fromEntries(
-        positionStatuses.map(info => [info.protocol, info.netTransfers]),
+        positionStatuses.map(info => [
+          info.protocol,
+          AmountMath.subtract(info.totalIn, info.totalOut),
+        ]),
       );
     },
   });

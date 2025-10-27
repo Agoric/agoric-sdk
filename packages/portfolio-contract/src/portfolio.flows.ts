@@ -36,7 +36,6 @@ import {
   reduceResultMeta,
   transformResultMeta,
   unwrapResultMeta,
-  wrapResultMeta,
 } from '@agoric/orchestration/src/utils/result-meta.js';
 import {
   AxelarChain,
@@ -144,15 +143,10 @@ type AssetMovement = {
       destPos?: Position;
     }>
   >;
-  recover: (
-    accounts: AccountsByChain,
-    tracer: TraceLogger,
-  ) => Promise<MaybeResultMeta<object>>;
 };
 
 const moveStatus = ({
   apply: _a,
-  recover: _r,
   ...data
 }: AssetMovement): StatusFor['flowStep'] => data;
 const errmsg = (err: any) => ('message' in err ? err.message : `${err}`);
@@ -162,18 +156,11 @@ export type TransportDetail<
   S extends SupportedChain,
   D extends SupportedChain,
   CTX = unknown,
-  RecoverCTX = CTX,
 > = {
   how: How;
   connections: { src: S; dest: D }[];
   apply: (
     ctx: CTX,
-    amount: NatAmount,
-    src: AccountInfoFor[S],
-    dest: AccountInfoFor[D],
-  ) => Promise<MaybeResultMeta<object>>;
-  recover: (
-    ctx: RecoverCTX,
     amount: NatAmount,
     src: AccountInfoFor[S],
     dest: AccountInfoFor[D],
@@ -347,9 +334,9 @@ const makeTrafficPublishingReducer = ({
 };
 
 /**
- * **Failure Handling**: Attempts to unwind failed operations, but recovery
- * itself can fail. In that case, publishes final asset location to vstorage
- * and gives up. Clients must manually rebalance to recover.
+ * **Failure Handling**: Logs failures and publishes status without attempting
+ * to unwind already-completed steps. Operators must resolve any partial
+ * effects manually.
  */
 const trackFlow = async (
   reporter: GuestInterface<PortfolioKit['reporter']>,
@@ -396,43 +383,15 @@ const trackFlow = async (
     reporter.publishFlowStatus(flowId, { state: 'done' });
     // TODO(#NNNN): delete the flow storage node
   } catch (err) {
-    traceFlow('⚠️ step', step, ' failed', err);
+    traceFlow('⚠️ step', step, 'failed', err);
     const failure = moves[step - 1];
-    const errStep = step;
-    while (step > 1) {
-      step -= 1;
-      const traceStep = traceFlow.sub(`step${step}`);
-      const move = moves[step - 1];
-      const how = `unwind: ${move.how}`;
-      reporter.publishFlowStatus(flowId, { state: 'undo', step, how });
-      try {
-        await reduceResultMeta(
-          move.recover(accounts, traceStep),
-          makeTrafficPublishingReducer(
-            makeFlowStepPowers(
-              { flowId, assetMoves: moves, step, phase: 'undo' },
-              { reporter, resolverClient, phasesForStep },
-            ),
-          ),
-        );
-      } catch (errInUnwind) {
-        traceStep('⚠️ unwind failed', errInUnwind);
-        // if a recover fails, we just give up and report `where` the assets are
-        const { dest: where } = move;
-        reporter.publishFlowStatus(flowId, {
-          state: 'fail',
-          step,
-          how,
-          error: errmsg(errInUnwind),
-          where,
-        });
-        throw errInUnwind;
-      }
+    if (failure) {
+      traceFlow('failed movement details', moveStatus(failure));
     }
     reporter.publishFlowStatus(flowId, {
       state: 'fail',
-      step: errStep,
-      how: failure.how,
+      step,
+      how: failure?.how ?? 'unknown',
       error: errmsg(err),
     });
     throw err;
@@ -735,22 +694,6 @@ const stepFlow = async (
           );
         }
       },
-      recover: async ({ [evmChain]: gInfo }) => {
-        assert(gInfo, evmChain);
-        if ('src' in way) {
-          assert.fail('last step. cannot recover');
-        }
-        const { lca } = agoric;
-        const { poolKey } = way;
-        const evmCtx = await makeEVMPoolCtx(
-          evmChain,
-          move,
-          lca,
-          poolKey,
-          ctx.transferChannels.noble.counterPartyChannelId,
-        );
-        return pImpl.supply(evmCtx, amount, gInfo);
-      },
     });
   };
 
@@ -760,8 +703,8 @@ const stepFlow = async (
   traceFlow('checking', moves.length, 'moves');
   for (const [i, move] of entries(moves)) {
     const traceMove = traceFlow.sub(`move${i}`);
-    // @@@ traceMove('wayFromSrcToDesc?', move);
     const way = wayFromSrcToDesc(move);
+    traceMove('plan', { move, way });
     const { amount } = move;
     switch (way.how) {
       case 'localTransfer': {
@@ -777,13 +720,6 @@ const stepFlow = async (
             const account = move.dest === '+agoric' ? lcaIn : lca;
             return ctx.zoeTools
               .localTransfer(src.seat, account, amounts)
-              .then(() => ({}));
-          },
-          recover: async ({ agoric }) => {
-            const { lca, lcaIn } = agoric;
-            const account = move.dest === '+agoric' ? lcaIn : lca;
-            return ctx.zoeTools
-              .withdrawToSeat(account, seat, amounts)
               .then(() => ({}));
           },
         });
@@ -802,11 +738,6 @@ const stepFlow = async (
               .withdrawToSeat(agoric.lca, seat, amounts)
               .then(() => ({}));
           },
-          recover: async ({ agoric }) => {
-            return ctx.zoeTools
-              .localTransfer(seat, agoric.lca, amounts)
-              .then(() => ({}));
-          },
         });
         break;
       }
@@ -820,10 +751,6 @@ const stepFlow = async (
           apply: async ({ agoric }) => {
             const { lca, lcaIn } = agoric;
             await lcaIn.send(lca.getAddress(), amount);
-            return {};
-          },
-          recover: async () => {
-            traceMove('recover send is noop; not sending back to deposit LCA');
             return {};
           },
         });
@@ -849,15 +776,6 @@ const stepFlow = async (
               return agoricToNoble.apply(ctxI, amount, agoric, noble);
             } else {
               return nobleToAgoric.apply(ctxI, amount, noble, agoric);
-            }
-          },
-          recover: async ({ agoric, noble }) => {
-            assert(noble); // per nobleMentioned below
-            await null;
-            if (way.src === 'agoric') {
-              return agoricToNoble.recover(ctxI, amount, agoric, noble);
-            } else {
-              return nobleToAgoric.recover(ctxI, amount, noble, agoric);
             }
           },
         });
@@ -889,13 +807,6 @@ const stepFlow = async (
               ctx.transferChannels.noble.counterPartyChannelId,
             );
             return CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric);
-          },
-          recover: async ({ [evmChain]: gInfo, agoric, noble }) => {
-            assert(gInfo && noble, evmChain);
-            if (outbound) {
-              return CCTP.recover(ctx, amount, noble, gInfo);
-            }
-            return CCTPfromEVM.recover(ctx, amount, gInfo, agoric);
           },
         });
 
@@ -936,13 +847,6 @@ const stepFlow = async (
                 }),
               );
             }
-          },
-          recover: async ({ noble }) => {
-            assert(noble); // per nobleMentioned below
-            if (isSupply) {
-              Fail`no recovery from supply (final step)`;
-            }
-            return wrapResultMeta(protocolUSDN.supply(ctxU, amount, noble));
           },
         });
 
@@ -1090,11 +994,12 @@ const stepFlow = async (
  * More generally: move assets as instructed by client.
  *
  * **Non-Atomic Operations**: Cross-chain flows are not atomic. If operations
- * fail partway through, assets may be left in intermediate accounts.
- * Recovery is attempted but can also fail, leaving assets "stranded".
+ * fail partway through, assets may be left in intermediate accounts and must
+ * be reconciled manually.
  *
  * **Client Recovery**: If rebalancing fails, check flow status in vstorage
- * and call rebalance() again to move assets to desired destinations.
+ * and call rebalance() again (or another corrective flow) to move assets to
+ * desired destinations.
  *
  * **Input Validation**: ASSUME caller validates args
  *
@@ -1115,20 +1020,21 @@ export const rebalance = (async (
   const traceP = makeTracer('rebalance').sub(`portfolio${id}`);
   const proposal = seat.getProposal() as ProposalType['rebalance'];
   traceP('proposal', proposal.give, proposal.want, offerArgs);
+  const { flow, targetAllocation } = offerArgs;
 
   await null;
   let flowId: number | undefined;
   try {
-    if (offerArgs.targetAllocation) {
-      kit.manager.setTargetAllocation(offerArgs.targetAllocation);
-    } else if ((offerArgs.flow || []).some(step => step.dest === '+agoric')) {
-      // steps include a deposit that the planner should respond to
+    if (targetAllocation) {
+      kit.manager.setTargetAllocation(targetAllocation);
+    } else if (flow?.some(step => step.dest === '+agoric')) {
+      // flow includes a deposit that the planner should respond to
       kit.manager.incrPolicyVersion();
     }
 
-    if (offerArgs.flow) {
-      ({ flowId } = kit.manager.startFlow({ type: 'rebalance' }));
-      await stepFlow(orch, ctx, seat, offerArgs.flow, kit, traceP, flowId);
+    if (flow) {
+      ({ flowId } = kit.manager.startFlow({ type: 'rebalance' }, flow));
+      await stepFlow(orch, ctx, seat, flow, kit, traceP, flowId);
     }
 
     if (!seat.hasExited()) {
@@ -1371,10 +1277,22 @@ export const openPortfolio = (async (
       await registerNobleForwardingAccount(sender, dest, forwarding, traceP);
     }
 
+    const { give } = seat.getProposal() as ProposalType['openPortfolio'];
     try {
-      await rebalance(orch, ctxI, seat, offerArgs, kit);
+      if (offerArgs.flow) {
+        // XXX only for testing recovery?
+        await rebalance(orch, ctxI, seat, offerArgs, kit);
+      } else if (offerArgs.targetAllocation) {
+        kit.manager.setTargetAllocation(offerArgs.targetAllocation);
+        if (give.Deposit) {
+          await executePlan(orch, ctxI, seat, offerArgs, kit, {
+            type: 'deposit',
+            amount: give.Deposit,
+          });
+        }
+      }
     } catch (err) {
-      traceP('⚠️ rebalance failed', err);
+      traceP('⚠️ initial flow failed', err);
       if (!seat.hasExited()) seat.fail(err);
     }
 
@@ -1411,17 +1329,16 @@ export const executePlan = (async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
-  _offerArgs: unknown,
+  offerArgs: { flow?: MovementDesc[] },
   pKit: GuestInterface<PortfolioKit>,
   flowDetail: FlowDetail,
 ): Promise<`flow${number}`> => {
   const pId = pKit.reader.getPortfolioId();
   const traceP = makeTracer(flowDetail.type).sub(`portfolio${pId}`);
 
-  // XXX enhancement: let caller supply steps
-  const { stepsP, flowId } = pKit.manager.startFlow(flowDetail);
+  const { stepsP, flowId } = pKit.manager.startFlow(flowDetail, offerArgs.flow);
   const traceFlow = traceP.sub(`flow${flowId}`);
-  traceFlow('waiting for steps from planner');
+  if (!offerArgs.flow) traceFlow('waiting for steps from planner');
   // idea: race with seat.getSubscriber()
   const steps = await (stepsP as unknown as Promise<MovementDesc[]>); // XXX Guest/Host types UNTIL #9822
   try {

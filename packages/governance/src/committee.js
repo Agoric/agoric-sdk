@@ -3,6 +3,7 @@ import { M } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 
 import { StorageNodeShape } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
 import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import {
@@ -75,9 +76,14 @@ export const start = (zcf, privateArgs, baggage) => {
   const questionNode = E(privateArgs.storageNode).makeChildNode(
     'latestQuestion',
   );
+
+  const { marshaller: remoteMarshaller } = privateArgs;
+
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
+
   /** @type {StoredPublishKit<QuestionDetails>} */
   const { subscriber: questionsSubscriber, publisher: questionsPublisher } =
-    makeStoredPublishKit(questionNode, privateArgs.marshaller);
+    makeStoredPublishKit(questionNode, cachingMarshaller);
 
   const makeCommitteeVoterInvitation = index => {
     // https://github.com/Agoric/agoric-sdk/pull/3448/files#r704003612
@@ -156,7 +162,7 @@ export const start = (zcf, privateArgs, baggage) => {
         /** @type {StoredPublishKit<OutcomeRecord>} */
         const { publisher: outcomePublisher } = makeStoredPublishKit(
           outcomeNode,
-          privateArgs.marshaller,
+          cachingMarshaller,
         );
 
         return startCounter(

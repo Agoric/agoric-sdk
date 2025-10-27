@@ -169,6 +169,7 @@ __metadata:
   resolution: "@agoric/internal@portal:../../agoric-sdk/packages/internal::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
     "@agoric/base-zone": "workspace:*"
+    "@endo/cache-map": "npm:^1.1.0"
     "@endo/common": "npm:^1.2.13"
     "@endo/compartment-mapper": "npm:^1.6.3"
     "@endo/errors": "npm:^1.2.13"
