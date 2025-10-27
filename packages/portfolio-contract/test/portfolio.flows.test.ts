@@ -200,11 +200,24 @@ const mocks = (
   let nonce = 0;
   const tapPK = makePromiseKit<TargetApp>();
   const factoryPK = makePromiseKit();
+
+  const cosmosChainIdToName = {
+    [fetchedChainInfo.noble.chainId]: 'noble',
+    [fetchedChainInfo.axelar.chainId]: 'axelar',
+  } as const;
+
+  const agoricConns = fetchedChainInfo.agoric.connections;
+  const transferChannels = {
+    noble: agoricConns[fetchedChainInfo.noble.chainId].transferChannel,
+    axelar: agoricConns[fetchedChainInfo.axelar.chainId].transferChannel,
+  } as const;
+
   const chains = new Map();
   const orch = harden({
     async getChain(name: string) {
       if (chains.has(name)) return chains.get(name);
-      const chainId = `${name}-${name.length}`;
+      const chainId =
+        fetchedChainInfo[name]?.chainId ?? `${name}-${name.length}`;
       const stakingTokens = {
         noble: undefined,
         axelar: [{ denom: 'uaxl' }],
@@ -245,7 +258,7 @@ const mocks = (
               if (
                 err &&
                 !(err instanceof Map) &&
-                !err.message.includes(address.chainId)
+                !err.message.includes(cosmosChainIdToName[address.chainId])
               )
                 throwIfErr('transfer');
               if (opts?.memo && address.value.startsWith('axelar1')) {
@@ -267,15 +280,51 @@ const mocks = (
                 traffic.push(...(meta?.traffic ?? []));
                 lastResult = lastResult.then(() => result);
               }
-              const transferTraffic = {
+
+              const getTransferChannel = (caipChainId: string) => {
+                const cosmosChainId = caipChainId.replace(/^cosmos:/, '');
+                const channel =
+                  transferChannels[cosmosChainIdToName[cosmosChainId]];
+                return channel;
+              };
+
+              const srcChainId = `cosmos:${chainId}`;
+              const transferTrafficBase = {
                 op: 'transfer',
-                srcChainId: `cosmos:${chainId}`,
-                src: ['ibc', 'transferPort', 'channel-5'],
+                srcChainId,
                 dstChainId,
-                dst: ['ibc', 'transferPort2', 'channel-42'],
                 seq: 339n,
-              } as MetaTrafficEntry;
-              traffic.push(transferTraffic);
+              };
+
+              const channel = getTransferChannel(dstChainId);
+              if (channel) {
+                const transferTraffic = {
+                  ...transferTrafficBase,
+                  src: ['ibc', channel.portId, channel.channelId],
+                  dst: [
+                    'ibc',
+                    channel.counterPartyPortId,
+                    channel.counterPartyChannelId,
+                  ],
+                } as MetaTrafficEntry;
+                traffic.push(transferTraffic);
+              } else {
+                const revChannel = getTransferChannel(srcChainId);
+                assert(
+                  revChannel,
+                  `no transfer channel for ${dstChainId} nor ${srcChainId}`,
+                );
+                const transferTraffic = {
+                  ...transferTrafficBase,
+                  src: [
+                    'ibc',
+                    revChannel.counterPartyPortId,
+                    revChannel.counterPartyChannelId,
+                  ],
+                  dst: ['ibc', revChannel.portId, revChannel.channelId],
+                } as MetaTrafficEntry;
+                traffic.push(transferTraffic);
+              }
 
               return harden({ result: lastResult, meta: { traffic } });
             },
@@ -288,12 +337,14 @@ const mocks = (
             async executeEncodedTxWithMeta(msgs) {
               log({ _cap: addr.value, _method: 'executeEncodedTx', msgs });
               throwIfErr('executeEncodedTx');
+              const agoricChain = await orch.getChain('agoric');
+              const agoricInfo = await agoricChain.getChainInfo();
               const traffic = [
                 {
                   op: 'ICA',
-                  srcChainId: `cosmos:${chainId}`,
+                  srcChainId: `cosmos:${agoricInfo.chainId}`,
                   src: ['ibc', 'icacontroller-2', 'channel-7'],
-                  dstChainId: `cosmos:${name}`,
+                  dstChainId: `cosmos:${chainId}`,
                   dst: ['ibc', 'icahost-9', 'channel-1'],
                   // XXX emulate an unknown sequence number, at least until the
                   // Network API connection.sendWithMeta provides it.
@@ -426,12 +477,6 @@ const mocks = (
       marshaller,
     })();
 
-  const transferChannels = {
-    noble: fetchedChainInfo.agoric.connections['noble-1'].transferChannel,
-    axelar:
-      fetchedChainInfo.agoric.connections['axelar-dojo-1'].transferChannel,
-  } as const;
-
   const txfrCtx: OnTransferContext = {
     axelarIds: axelarIdsMock,
     gmpAddresses,
@@ -500,8 +545,9 @@ const mocks = (
         const txId = p.split('.').at(-1) as `tx${number}`;
 
         if (info.type === 'CCTP_TO_AGORIC') {
-          // console.debug('CCTP_TO_AGORIC', txId, info);
+          console.debug('CCTP_TO_AGORIC', txId, info);
           const { amount, destinationAddress: cctpDest } = info;
+          assert(cctpDest, 'missing destinationAddress in CCTP_TO_AGORIC tx');
           const { accountAddress: target } = parseAccountId(cctpDest);
           const tap = await tapPK.promise;
           const fwdEvent = makeIncomingVTransferEvent({
@@ -532,6 +578,12 @@ const mocks = (
     },
   });
 
+  const cosmosId = async (name: string) => {
+    const chain = await orch.getChain(name);
+    const info = await chain.getChainInfo();
+    return info.chainId;
+  };
+
   return {
     orch,
     tapPK,
@@ -543,6 +595,7 @@ const mocks = (
     },
     vowTools,
     txResolver,
+    cosmosId,
   };
 };
 
@@ -556,7 +609,7 @@ const docOpts = {
 };
 
 test('open portfolio with no positions', async t => {
-  const { orch, ctx, offer, storage } = mocks();
+  const { orch, ctx, offer, storage, cosmosId } = mocks();
   const { log, seat } = offer;
 
   const shapes = makeProposalShapes(USDC);
@@ -567,7 +620,10 @@ test('open portfolio with no positions', async t => {
 
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    {
+      _method: 'transfer',
+      address: { chainId: await cosmosId('noble') },
+    },
     { _method: 'exit' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -628,7 +684,7 @@ test('open portfolio with USDN position', async t => {
   const { give, steps } = await makePortfolioSteps({
     USDN: make(USDC, 50_000_000n),
   });
-  const { orch, ctx, offer, storage } = mocks({}, give);
+  const { orch, ctx, offer, storage, cosmosId } = mocks({}, give);
   const { log, seat } = offer;
 
   const shapes = makeProposalShapes(USDC);
@@ -639,9 +695,9 @@ test('open portfolio with USDN position', async t => {
 
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: await cosmosId('noble') } },
     { _method: 'localTransfer', sourceSeat: seat },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: await cosmosId('noble') } },
     { _method: 'executeEncodedTx', _cap: 'noble11056' },
     { _method: 'exit' },
   ]);
@@ -696,7 +752,7 @@ test('open portfolio with Aave position', async t => {
   const feeAcct = AmountMath.make(BLD, 50n);
   const detail = { evmGas: 50n };
   const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage, txResolver } = mocks(
+  const { orch, tapPK, ctx, offer, storage, txResolver, cosmosId } = mocks(
     {},
     { Deposit: amount },
   );
@@ -722,20 +778,22 @@ test('open portfolio with Aave position', async t => {
   ]);
   const { log } = offer;
   t.log(log.map(msg => msg._method).join(', '));
+  const nobleId = await cosmosId('noble');
+  const axelarId = await cosmosId('axelar');
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: nobleId } },
 
     { _method: 'send' },
-    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'transfer', address: { chainId: axelarId } },
     {
       _method: 'localTransfer',
       amounts: { Deposit: { value: 300n } },
     },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: nobleId } },
     { _method: 'depositForBurn' },
     { _method: 'send' },
-    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'transfer', address: { chainId: axelarId } },
     { _method: 'exit', _cap: 'seat' },
   ]);
 
@@ -762,7 +820,10 @@ test('open portfolio with Compound position', async t => {
     { Compound: make(USDC, 300n) },
     { fees: { Compound: { Account: make(BLD, 300n), Call: make(BLD, 100n) } } },
   );
-  const { orch, tapPK, ctx, offer, storage, txResolver } = mocks({}, give);
+  const { orch, tapPK, ctx, offer, storage, txResolver, cosmosId } = mocks(
+    {},
+    give,
+  );
 
   const [actual] = await Promise.all([
     openPortfolio(orch, { ...ctx }, offer.seat, {
@@ -777,16 +838,18 @@ test('open portfolio with Compound position', async t => {
   ]);
   const { log } = offer;
   t.log(log.map(msg => msg._method).join(', '));
+  const nobleId = await cosmosId('noble');
+  const axelarId = await cosmosId('axelar');
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: nobleId } },
     { _method: 'send' },
-    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'transfer', address: { chainId: axelarId } },
     { _method: 'localTransfer', amounts: { Deposit: { value: 300n } } },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: nobleId } },
     { _method: 'depositForBurn' },
     { _method: 'send' },
-    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'transfer', address: { chainId: axelarId } },
     { _method: 'exit', _cap: 'seat' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -796,7 +859,7 @@ test('open portfolio with Compound position', async t => {
 
 test('handle failure in localTransfer from seat to local account', async t => {
   const amount = make(USDC, 100n);
-  const { orch, ctx, offer, storage } = mocks(
+  const { orch, ctx, offer, storage, cosmosId } = mocks(
     { localTransfer: Error('localTransfer from seat failed') },
     { Deposit: amount },
   );
@@ -807,9 +870,11 @@ test('handle failure in localTransfer from seat to local account', async t => {
   });
   t.log(log.map(msg => msg._method).join(', '));
   t.snapshot(log, 'call log');
+
+  const nobleId = await cosmosId('noble');
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: nobleId } },
     { _method: 'localTransfer', sourceSeat: seat },
     { _method: 'fail' },
   ]);
@@ -821,7 +886,7 @@ test('handle failure in localTransfer from seat to local account', async t => {
 // IBC failure causes NFA set-up to fail
 test.skip('handle failure in IBC transfer', async t => {
   const { give, steps } = await makePortfolioSteps({ USDN: make(USDC, 100n) });
-  const { orch, ctx, offer, storage } = mocks(
+  const { orch, ctx, offer, storage, cosmosId } = mocks(
     { transfer: Error('IBC is on the fritz!!') },
     give,
   );
@@ -831,11 +896,12 @@ test.skip('handle failure in IBC transfer', async t => {
     flow: steps,
   });
   t.log(log.map(msg => msg._method).join(', '));
+  const nobleId = await cosmosId('noble');
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: nobleId } },
     { _method: 'localTransfer', sourceSeat: seat },
-    { _method: 'transfer', address: { chainId: 'noble-5' } }, // failed
+    { _method: 'transfer', address: { chainId: nobleId } }, // failed
     { _method: 'withdrawToSeat' }, // unwind
     { _method: 'fail' },
   ]);
@@ -846,7 +912,7 @@ test.skip('handle failure in IBC transfer', async t => {
 
 test('handle failure in executeEncodedTx', async t => {
   const { give, steps } = await makePortfolioSteps({ USDN: make(USDC, 100n) });
-  const { orch, ctx, offer, storage } = mocks(
+  const { orch, ctx, offer, storage, cosmosId } = mocks(
     { executeEncodedTx: Error('exec swaplock went kerflewey') },
     give,
   );
@@ -856,13 +922,15 @@ test('handle failure in executeEncodedTx', async t => {
     flow: steps,
   });
   t.log(log.map(msg => msg._method).join(', '));
+  const nobleId = await cosmosId('noble');
+  const agoricId = await cosmosId('agoric');
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: nobleId } },
     { _method: 'localTransfer', sourceSeat: seat },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: nobleId } },
     { _method: 'executeEncodedTx', _cap: 'noble11056' }, // fail
-    { _method: 'transfer', address: { chainId: 'agoric-6' } }, // unwind
+    { _method: 'transfer', address: { chainId: agoricId } }, // unwind
     { _method: 'executeEncodedTx' }, // unwind
     { _method: 'withdrawToSeat' }, // unwind
     { _method: 'fail' },
@@ -874,10 +942,10 @@ test('handle failure in executeEncodedTx', async t => {
 
 test('handle failure in recovery from executeEncodedTx', async t => {
   const amount = make(USDC, 100n);
-  const { orch, ctx, offer, storage } = mocks(
+  const { orch, ctx, offer, storage, cosmosId } = mocks(
     {
       executeEncodedTx: Error('cannot swap. your money is no good here'),
-      transfer: Error('road from noble-5 washed out'),
+      transfer: Error('road from noble washed out'),
     },
     { Deposit: amount },
   );
@@ -892,13 +960,15 @@ test('handle failure in recovery from executeEncodedTx', async t => {
     ],
   });
   t.log(log.map(msg => msg._method).join(', '));
+  const nobleId = await cosmosId('noble');
+  const agoricId = await cosmosId('agoric');
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: nobleId } },
     { _method: 'localTransfer', sourceSeat: seat },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: nobleId } },
     { _method: 'executeEncodedTx', _cap: 'noble11056' }, // fail
-    { _method: 'transfer', address: { chainId: 'agoric-6' } }, // fail to recover
+    { _method: 'transfer', address: { chainId: agoricId } }, // fail to recover
     { _method: 'fail' },
   ]);
   t.snapshot(log, 'call log');
@@ -910,7 +980,7 @@ test.skip('handle failure in sendGmp with Aave position', async t => {
   const amount = AmountMath.make(USDC, 300n);
   const feeAcct = AmountMath.make(BLD, 300n);
   const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage } = mocks(
+  const { orch, tapPK, ctx, offer, storage, cosmosId } = mocks(
     { transfer: Error('ag->axelar: SOS!') },
     { Deposit: amount },
   );
@@ -933,10 +1003,11 @@ test.skip('handle failure in sendGmp with Aave position', async t => {
   const actual = await portfolioPromise;
   const { log } = offer;
   t.log(log.map(msg => msg._method).join(', '));
+  const axelarId = await cosmosId('axelar');
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', amounts: { Account: { value: 300n } } },
-    { _method: 'transfer', address: { chainId: 'axelar-5' } }, // fails
+    { _method: 'transfer', address: { chainId: axelarId } }, // fails
     { _method: 'withdrawToSeat' }, // sendGmp recovery
     { _method: 'fail' },
   ]);
@@ -997,7 +1068,7 @@ test('claim rewards on Aave position', async t => {
   const amount = AmountMath.make(USDC, 300n);
   const emptyAmount = AmountMath.make(USDC, 0n);
   const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage, txResolver } = mocks(
+  const { orch, tapPK, ctx, offer, storage, txResolver, cosmosId } = mocks(
     {},
     { Deposit: amount },
   );
@@ -1031,12 +1102,13 @@ test('claim rewards on Aave position', async t => {
 
   const { log } = offer;
   t.log(log.map(msg => msg._method).join(', '));
+  const axelarId = await cosmosId('axelar');
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'send' },
-    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'transfer', address: { chainId: axelarId } },
     { _method: 'send' },
-    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'transfer', address: { chainId: axelarId } },
     { _method: 'exit', _cap: 'seat' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -1056,10 +1128,13 @@ test('open portfolio with Beefy position', async t => {
   const feeAcct = AmountMath.make(BLD, 50n);
   const detail = { evmGas: 50n };
   const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage, txResolver } = mocks(
+  const { orch, tapPK, ctx, offer, storage, txResolver, cosmosId } = mocks(
     {},
     { Deposit: amount },
   );
+
+  const nobleId = await cosmosId('noble');
+  const axelarId = await cosmosId('axelar');
 
   const [actual] = await Promise.all([
     openPortfolio(orch, ctx, offer.seat, {
@@ -1089,17 +1164,17 @@ test('open portfolio with Beefy position', async t => {
   t.log(log.map(msg => msg._method).join(', '));
   t.like(log, [
     { _method: 'monitorTransfers' },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: nobleId } },
     { _method: 'send' },
-    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'transfer', address: { chainId: axelarId } },
     {
       _method: 'localTransfer',
       amounts: { Deposit: { value: 300n } },
     },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: nobleId } },
     { _method: 'depositForBurn' },
     { _method: 'send' },
-    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'transfer', address: { chainId: axelarId } },
     { _method: 'exit', _cap: 'seat' },
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
@@ -1340,7 +1415,10 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
 test.todo('recover from send step');
 
 test('withdraw in coordination with planner', async t => {
-  const { orch, ctx, offer, storage, tapPK, txResolver } = mocks({});
+  const { orch, ctx, offer, storage, tapPK, txResolver, cosmosId } = mocks({});
+
+  const nobleId = await cosmosId('noble');
+  const axelarId = await cosmosId('axelar');
 
   const { getPortfolioStatus } = makeStorageTools(storage);
 
@@ -1414,7 +1492,7 @@ test('withdraw in coordination with planner', async t => {
     { _method: 'send', _cap: 'agoric11014' }, // from fee account
     { _method: 'transfer' }, // makeAccount
     { _method: 'localTransfer', amounts: { Deposit: { value: 50000000n } } },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: nobleId } },
     { _method: 'depositForBurn' },
     { _method: 'send' },
     { _method: 'transfer' }, // supply call
@@ -1425,7 +1503,7 @@ test('withdraw in coordination with planner', async t => {
     {
       _cap: 'agoric11028',
       _method: 'transfer',
-      address: { chainId: 'axelar-6' },
+      address: { chainId: axelarId },
       amount: { value: 100n },
     },
     { _method: 'send', _cap: 'agoric11014' },
@@ -1439,7 +1517,9 @@ test('withdraw in coordination with planner', async t => {
 });
 
 test('deposit in coordination with planner', async t => {
-  const { orch, ctx, offer, storage } = mocks({});
+  const { orch, ctx, offer, storage, cosmosId } = mocks({});
+
+  const nobleId = await cosmosId('noble');
 
   const { getPortfolioStatus } = makeStorageTools(storage);
 
@@ -1478,7 +1558,7 @@ test('deposit in coordination with planner', async t => {
     // deposit calls
     { _method: 'monitorTransfers' },
     { _method: 'localTransfer', amounts: { Deposit: { value: 1000000n } } },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: nobleId } },
     { msgs: [{ typeUrl: '/noble.swap.v1.MsgSwap' }] },
     { _method: 'exit' },
   ]);

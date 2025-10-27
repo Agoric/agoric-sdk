@@ -51,7 +51,7 @@ const findEVMChains = (moves: MovementDesc[]) => {
 
 const rebalanceScenarioMacro = test.macro({
   async exec(t, description: string) {
-    const { trader1, common, started, zoe } = await setupTrader(t);
+    const { trader1, common, started, zoe, txResolver } = await setupTrader(t);
     const scenarios = await scenariosP;
     const scenario = scenarios[description];
     if (!scenario) return t.fail(`Scenario "${description}" not found`);
@@ -128,6 +128,8 @@ const rebalanceScenarioMacro = test.macro({
           t.log('nothing to ack?', oops);
         }
       }
+      // await txResolver.drainPending('success');
+      // await eventLoopIteration();
     };
 
     const openPortfolioAndAck = async (
