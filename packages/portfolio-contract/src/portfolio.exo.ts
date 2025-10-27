@@ -33,7 +33,6 @@ import { preparePosition, type Position } from './pos.exo.js';
 import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
 import {
   makeFlowPath,
-  makeFlowStepPath,
   makeFlowStepsPath,
   makePortfolioPath,
   PoolKeyShapeExt,
@@ -374,14 +373,6 @@ export const preparePortfolioKit = (
         publishFlowSteps(id: number, steps: StatusFor['flowSteps']) {
           const { portfolioId } = this.state;
           publishStatus(makeFlowStepsPath(portfolioId, id), steps);
-        },
-        publishFlowOneStep(
-          id: number,
-          step: number,
-          status: StatusFor['flowStep'],
-        ) {
-          const { portfolioId } = this.state;
-          publishStatus(makeFlowStepPath(portfolioId, id, step), status);
         },
         publishFlowStatus(id: number, status: StatusFor['flow']) {
           const { portfolioId } = this.state;

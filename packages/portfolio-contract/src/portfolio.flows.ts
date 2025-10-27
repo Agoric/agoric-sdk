@@ -23,6 +23,8 @@ import type {
   OrchestrationFlow,
   Orchestrator,
   MetaTrafficEntry,
+  MetaWithTraffic,
+  ResultMeta,
 } from '@agoric/orchestration';
 import type { AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
@@ -47,6 +49,8 @@ import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { decodeBase64 } from '@endo/base64';
 import { assert, Fail, q } from '@endo/errors';
+import { makeMarshal } from '@endo/marshal';
+import type { EVow } from '@agoric/vow';
 import { DECODE_CONTRACT_CALL_RESULT_ABI } from './evm-facade.ts';
 import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
@@ -86,12 +90,19 @@ import {
   type ProposalType,
   type StatusFor,
 } from './type-guards.ts';
+import type { TxId } from './resolver/types.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const { keys, entries, fromEntries } = Object;
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
+
+type ResultMetaWithTraffic<T = any> = ResultMeta<T> & {
+  meta: MetaWithTraffic;
+};
+
+type StepPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply' | 'undo';
 
 export type PortfolioInstanceContext = {
   axelarIds: AxelarId;
@@ -129,7 +140,6 @@ type AssetMovement = {
     tracer: TraceLogger,
   ) => Promise<
     MaybeResultMeta<{
-      followTraffic?: MetaTrafficEntry;
       srcPos?: Position;
       destPos?: Position;
     }>
@@ -140,16 +150,6 @@ type AssetMovement = {
   ) => Promise<MaybeResultMeta<object>>;
 };
 
-const moveDescStatus = ({
-  amount,
-  src,
-  dest,
-}: MovementDesc): StatusFor['flowStep'] => ({
-  how: 'makeAccount',
-  amount,
-  src,
-  dest,
-});
 const moveStatus = ({
   apply: _a,
   recover: _r,
@@ -200,6 +200,152 @@ export type ProtocolDetail<
   ) => Promise<MaybeResultMeta<object>>;
 };
 
+const { toCapData } = makeMarshal(undefined, undefined, {
+  serializeBodyFormat: 'smallcaps',
+});
+
+/**
+ * Deeply compares two serializable (smallcaps) values for equality.
+ *
+ * @param a - first value
+ * @param b - second value
+ * @returns true if a and b are deeply equal (naive implementation)
+ */
+const deepEqual = (a: any, b: any): boolean =>
+  toCapData(harden(a)).body === toCapData(harden(b)).body;
+
+type FlowStepPowers = {
+  createPendingTx: ResolverKit['client']['createPendingTx'];
+  updateTxMeta: ResolverKit['client']['updateTxMeta'];
+  updateFirstTx: (txId: TxId) => void;
+};
+
+const makeFlowStepPowers = (
+  {
+    flowId,
+    step,
+    phase,
+    assetMoves,
+  }: {
+    flowId: number;
+    step: number;
+    phase: StepPhase;
+    assetMoves?: AssetMovement[];
+    moveDescs?: MovementDesc[];
+  },
+  {
+    reporter,
+    resolverClient,
+    phasesForStep,
+  }: {
+    reporter: GuestInterface<PortfolioKit['reporter']>;
+    resolverClient: GuestInterface<ResolverKit['client']>;
+    phasesForStep: Map<StepPhase, TxId>[];
+  },
+): FlowStepPowers => ({
+  createPendingTx: (txMeta: PendingTxMeta) =>
+    resolverClient.createPendingTx(txMeta),
+  updateTxMeta: (txId: TxId, txMeta: PendingTxMeta) =>
+    resolverClient.updateTxMeta(txId, txMeta),
+  updateFirstTx: (txId: TxId) => {
+    phasesForStep[step - 1].set(phase, txId);
+    if (!assetMoves) {
+      // XXX what can we publish before AssetMovements are initialized?
+      return;
+    }
+    // Publish each move with updated step phase information.
+    const movesWithPhases = assetMoves.map((m, i) => ({
+      ...moveStatus(m),
+      phases: Object.fromEntries(phasesForStep[i].entries()),
+    }));
+    reporter.publishFlowSteps(flowId, movesWithPhases);
+  },
+});
+
+type PendingTxMeta = MetaTrafficEntry & {
+  type: TxType;
+  nextTxId?: TxId;
+};
+
+type PendingTxsEntry = {
+  txId: TxId;
+  result: EVow<void>;
+  meta: PendingTxMeta;
+};
+
+const makeTrafficPublishingReducer = ({
+  createPendingTx,
+  updateTxMeta,
+  updateFirstTx,
+}: FlowStepPowers) => {
+  const pendingTxs: PendingTxsEntry[] = [];
+  return async (
+    resultMeta: ResultMetaWithTraffic<unknown>,
+    { meta: priorMeta }: ResultMetaWithTraffic,
+  ) => {
+    await null;
+    const { result: thisResult, meta: thisMeta } = resultMeta;
+    const { traffic = [] } = thisMeta || {};
+    const { traffic: priorTraffic = [] } = priorMeta;
+    if (thisResult === 'FOLLOW_TRAFFIC') {
+      // Wait for our last tx to complete.
+      return pendingTxs.at(-1)?.result;
+    }
+    if (deepEqual(traffic, priorTraffic)) {
+      return resultMeta;
+    }
+    const firstTxId: TxId | undefined = pendingTxs[0]?.txId;
+    let nextTxId: TxId | undefined;
+
+    // Iterate backwards through the trafficEntry array, so we can link them via
+    // nextTxId.
+    for (let i = traffic.length - 1; i >= 0; i -= 1) {
+      const trafficEntry = traffic[i];
+
+      // Convert the source protocol to a TxType.
+      let type: TxType;
+      switch (trafficEntry.src[0]) {
+        case 'ibc': {
+          if (i === 0) {
+            type = TxType.IBC_FROM_AGORIC;
+          } else {
+            type = TxType.IBC_FROM_REMOTE;
+          }
+          break;
+        }
+        default: {
+          // TODO: handle other traffic types.
+          type = TxType.UNKNOWN;
+          break;
+        }
+      }
+
+      const newTxMeta: PendingTxMeta = { ...trafficEntry, type, nextTxId };
+      const pendingTxsEntry = pendingTxs[i];
+      if (pendingTxsEntry) {
+        if (!deepEqual(newTxMeta, pendingTxsEntry.meta)) {
+          // sync up our pendingTx with the traffic entry.
+          const newPendingTxsEntry = { ...pendingTxsEntry, meta: newTxMeta };
+          pendingTxs[i] = newPendingTxsEntry;
+          updateTxMeta(pendingTxsEntry.txId, newTxMeta);
+          nextTxId = pendingTxsEntry.txId;
+        }
+        continue;
+      }
+
+      // create new tx entry since it's missing.
+      const { txId, result } = await createPendingTx(newTxMeta);
+      pendingTxs[i] = { txId, result, meta: newTxMeta };
+      nextTxId = pendingTxs[i].txId;
+    }
+    const newFirstTxId = pendingTxs[0]?.txId;
+    if (newFirstTxId != null && newFirstTxId !== firstTxId) {
+      updateFirstTx(newFirstTxId);
+    }
+    return { result: thisResult, meta: { ...priorMeta, ...thisMeta } };
+  };
+};
+
 /**
  * **Failure Handling**: Attempts to unwind failed operations, but recovery
  * itself can fail. In that case, publishes final asset location to vstorage
@@ -212,6 +358,7 @@ const trackFlow = async (
   traceFlow: TraceLogger,
   accounts: AccountsByChain,
   resolverClient: GuestInterface<ResolverKit['client']>,
+  phasesForStep: Map<StepPhase, TxId>[],
 ) => {
   await null; // cf. wiki:NoNestedAwait
 
@@ -225,27 +372,16 @@ const trackFlow = async (
       reporter.publishFlowStatus(flowId, { state: 'run', step, how });
 
       const {
-        result: { srcPos, destPos, followTraffic },
+        result: { srcPos, destPos },
       } = await reduceResultMeta(
         move.apply(accounts, traceStep),
-        (thisMeta, prior) => {
-          const meta = { ...prior, ...thisMeta };
-          reporter.publishFlowOneStep(flowId, step, {
-            ...moveStatus(move),
-            meta,
-          });
-          return meta;
-        },
+        makeTrafficPublishingReducer(
+          makeFlowStepPowers(
+            { flowId, assetMoves: moves, step, phase: 'apply' },
+            { reporter, resolverClient, phasesForStep },
+          ),
+        ),
       );
-
-      if (followTraffic) {
-        const { result } = resolverClient.registerTransaction(
-          TxType.TRAFFIC,
-          followTraffic,
-          amount.value,
-        );
-        await result;
-      }
 
       traceStep('done:', how);
 
@@ -272,14 +408,12 @@ const trackFlow = async (
       try {
         await reduceResultMeta(
           move.recover(accounts, traceStep),
-          (thisMeta, prior) => {
-            const meta = { ...prior, ...thisMeta };
-            reporter.publishFlowOneStep(flowId, step, {
-              ...moveStatus(move),
-              meta,
-            });
-            return meta;
-          },
+          makeTrafficPublishingReducer(
+            makeFlowStepPowers(
+              { flowId, assetMoves: moves, step, phase: 'undo' },
+              { reporter, resolverClient, phasesForStep },
+            ),
+          ),
         );
       } catch (errInUnwind) {
         traceStep('⚠️ unwind failed', errInUnwind);
@@ -501,6 +635,9 @@ const stepFlow = async (
   traceP: TraceLogger,
   flowId: number,
 ) => {
+  const phasesForStep: Map<StepPhase, TxId>[] = moves.map(
+    () => new Map<StepPhase, TxId>(),
+  );
   const todo: AssetMovement[] = [];
 
   const makeEVMCtx = async (
@@ -562,6 +699,7 @@ const stepFlow = async (
       amount,
       src: move.src,
       dest: move.dest,
+      phases: {} as Record<StepPhase, TxId>,
       apply: async ({ [evmChain]: gInfo, agoric }) => {
         assert(gInfo, evmChain);
         const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
@@ -845,10 +983,7 @@ const stepFlow = async (
     step: 0,
     how: `makeAccounts(${acctsToDo.join(', ')})`,
   });
-  reporter.publishFlowSteps(
-    flowId,
-    todo.map(({ apply: _a, recover: _r, ...data }) => data),
-  );
+  reporter.publishFlowSteps(flowId, todo.map(moveStatus));
 
   const { result: agoric } = await unwrapResultMeta(
     provideCosmosAccount(orch, 'agoric', kit, traceFlow),
@@ -885,7 +1020,7 @@ const stepFlow = async (
 
     const seen = new Set<AxelarChain>();
     const chainToAcctP = moves.flatMap((move, moveIndex) =>
-      [move.src, move.dest].flatMap(ref => {
+      [move.src, move.dest].flatMap((ref, isDest) => {
         const maybeChain = getChainNameOfPlaceRef(ref);
         if (!evmChains.includes(maybeChain)) return [];
         const chain = maybeChain as AxelarChain;
@@ -901,14 +1036,17 @@ const stepFlow = async (
         const acctP = forChain(chain, async () => {
           const { result } = await reduceResultMeta(
             provideEVMAccount(chain, gmp, agoric.lca, ctx, kit),
-            (thisMeta, prior) => {
-              const meta = { ...prior, ...thisMeta };
-              reporter.publishFlowOneStep(flowId, moveIndex, {
-                ...moveDescStatus(move),
-                meta,
-              });
-              return meta;
-            },
+            makeTrafficPublishingReducer(
+              makeFlowStepPowers(
+                {
+                  flowId,
+                  moveDescs: moves,
+                  step: moveIndex + 1,
+                  phase: isDest ? 'makeDestAccount' : 'makeSrcAccount',
+                },
+                { reporter, resolverClient: ctx.resolverClient, phasesForStep },
+              ),
+            ),
           );
           return result;
         });
@@ -942,6 +1080,7 @@ const stepFlow = async (
     traceFlow,
     accounts,
     ctx.resolverClient,
+    phasesForStep,
   );
   traceFlow('stepFlow done');
 };
