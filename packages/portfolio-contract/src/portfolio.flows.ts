@@ -1022,6 +1022,8 @@ export const openPortfolio = (async (
     const traceP = trace.sub(`portfolio${id}`);
     traceP('portfolio opened');
 
+    // TODO provide a way to recover if any of these provisionings fail
+    // SEE https://github.com/Agoric/agoric-private/issues/488
     // Register Noble Forwarding Account (NFA) for CCTP transfers
     {
       const sender = await ctxI.contractAccount;
