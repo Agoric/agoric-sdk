@@ -1007,13 +1007,14 @@ export const openPortfolio = (async (
   ctx: PortfolioBootstrapContext,
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['openPortfolio'],
+  madeKit?: GuestInterface<PortfolioKit>,
 ) => {
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   const trace = makeTracer('openPortfolio');
   try {
     const { makePortfolioKit, ...ctxI } = ctx;
     const { inertSubscriber, transferChannels } = ctxI;
-    const kit = makePortfolioKit();
+    const kit = madeKit ?? makePortfolioKit();
     const id = kit.reader.getPortfolioId();
     const traceP = trace.sub(`portfolio${id}`);
     traceP('portfolio opened');

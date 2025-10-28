@@ -46,6 +46,7 @@ import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
+import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import { preparePlanner } from './planner.exo.ts';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
@@ -361,19 +362,23 @@ export const contract = async (
 
   const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
 
+  /**
+   * Generate sequential portfolio IDs while keeping the portfolios collection private.
+   * Each portfolio kit only gets access to its own state, not the full collection.
+   */
+  const makeNextPortfolioKit = () => {
+    const portfolioId = portfolios.getSize();
+    const it = makePortfolioKit({ portfolioId });
+    portfolios.init(portfolioId, it);
+    return it;
+  };
+
   // Create openPortfolio flow with makePortfolioKit - circular dependency avoided
   const { openPortfolio } = orchestrateAll(
     { openPortfolio: flows.openPortfolio },
     {
       ...ctx1,
-      // Generate sequential portfolio IDs while keeping the portfolios collection private.
-      // Each portfolio kit only gets access to its own state, not the full collection.
-      makePortfolioKit: (() => {
-        const portfolioId = portfolios.getSize();
-        const it = makePortfolioKit({ portfolioId });
-        portfolios.init(portfolioId, it);
-        return it;
-      }) as any, // XXX Guest...
+      makePortfolioKit: makeNextPortfolioKit as any, // XXX Guest...
       inertSubscriber,
     },
   );
@@ -408,10 +413,35 @@ export const contract = async (
     makeOpenPortfolioInvitation() {
       trace('makeOpenPortfolioInvitation');
       return zcf.makeInvitation(
-        (seat, offerArgs) => {
+        async (seat, offerArgs) => {
           mustMatch(offerArgs, offerArgsShapes.openPortfolio);
+          await null;
           consumeAccessToken(seat);
-          return openPortfolio(seat, offerArgs);
+
+          const kit = makeNextPortfolioKit();
+
+          const publicSubscribers: PublicSubscribers = {
+            portfolio: {
+              description: 'Portfolio',
+              // getStoragePath() is a vow for async flow membrane but we know it will resolve promptly
+              storagePath: await vowTools.asPromise(
+                kit.reader.getStoragePath(),
+              ),
+              subscriber: null as any,
+            },
+          };
+          // This flow does its own error handling and always exits the seat
+          void openPortfolio(
+            seat,
+            offerArgs,
+            // @ts-expect-error XXX Guest...
+            kit,
+          );
+          // Return immediately to avoid blocking on transfers the flow may initiate
+          return harden({
+            invitationMakers: kit.invitationMakers,
+            publicSubscribers,
+          });
         },
         'openPortfolio',
         undefined,
