@@ -110,7 +110,6 @@ export const watchGmp = ({
         log(
           `✗ No MulticallStatus or MulticallExecuted found for txId ${txId} within ${timeoutMs / 60000} minutes`,
         );
-        finish(false);
       }
     }, timeoutMs);
   });
