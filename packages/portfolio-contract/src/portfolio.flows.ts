@@ -1079,6 +1079,10 @@ export const makeLCA = (async (orch: Orchestrator): Promise<LocalAccount> => {
 }) satisfies OrchestrationFlow;
 harden(makeLCA);
 
+/**
+ * Offer handler to execute a planned flow of asset movements. It takes
+ * responsibility for the `seat` and exits it when done.
+ */
 export const executePlan = (async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -1097,10 +1101,10 @@ export const executePlan = (async (
   const steps = await (stepsP as unknown as Promise<MovementDesc[]>); // XXX Guest/Host types UNTIL #9822
   try {
     await stepFlow(orch, ctx, seat, steps, pKit, traceP, flowId);
-
-    if (!seat.hasExited()) seat.exit();
     return `flow${flowId}`;
   } finally {
+    // The seat must be exited no matter what to avoid leaks
+    if (!seat.hasExited()) seat.exit();
     // XXX flow.finish() would eliminate the possibility of sending the wrong one,
     // at the cost of an exo (or Far?)
     pKit.reporter.finishFlow(flowId);
