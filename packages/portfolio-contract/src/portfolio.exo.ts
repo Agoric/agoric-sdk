@@ -448,6 +448,11 @@ export const preparePortfolioKit = (
             this.facets.reporter.publishStatus();
           }
         },
+        /**
+         * Start a flow of asset movements. Reserves a flowId and records updates vstorage.
+         *
+         * NB: `flowId` is a counter, not the key in vstorage.
+         */
         startFlow(detail: FlowDetail, steps?: MovementDesc[]) {
           const { nextFlowId: flowId, flowsRunning } = this.state;
           this.state.nextFlowId = flowId + 1;
@@ -503,38 +508,67 @@ export const preparePortfolioKit = (
         },
       },
       depositHandler: {
-        async handle(seat: ZCFSeat, offerArgs: unknown) {
+        handle(seat: ZCFSeat, offerArgs: unknown) {
           mustMatch(offerArgs, offerArgsShapes.deposit);
           const proposal =
             seat.getProposal() as unknown as ProposalType['deposit'];
-          return executePlan(seat, offerArgs, this.facets, {
+          const flowDetail = {
             type: 'deposit',
             amount: proposal.give.Deposit,
-          });
+          } as FlowDetail;
+          const startedFlow = this.facets.manager.startFlow(
+            flowDetail,
+            offerArgs.flow,
+          );
+          // This flow does its own error handling and always exits the seat
+          void executePlan(
+            seat,
+            offerArgs,
+            this.facets,
+            flowDetail,
+            startedFlow,
+          );
+          return `flow${startedFlow.flowId}`;
         },
       },
       simpleRebalanceHandler: {
-        async handle(seat: ZCFSeat, offerArgs: unknown) {
+        handle(seat: ZCFSeat, offerArgs: unknown) {
           // XXX offerArgs.flow shouldn't be allowed
           mustMatch(offerArgs, offerArgsShapes.rebalance);
           if (offerArgs.targetAllocation) {
             const { manager } = this.facets;
             manager.setTargetAllocation(offerArgs.targetAllocation);
           }
-          return executePlan(seat, offerArgs, this.facets, {
+          const flowDetail = {
             type: 'rebalance',
-          });
+          } as FlowDetail;
+          const startedFlow = this.facets.manager.startFlow(
+            flowDetail,
+            offerArgs.flow,
+          );
+          // This flow does its own error handling and always exits the seat
+          void executePlan(
+            seat,
+            offerArgs,
+            this.facets,
+            flowDetail,
+            startedFlow,
+          );
+          return `flow${startedFlow.flowId}`;
         },
       },
       withdrawHandler: {
-        async handle(seat: ZCFSeat, offerArgs: unknown) {
-          mustMatch(offerArgs, harden({}));
+        handle(seat: ZCFSeat) {
           const proposal =
             seat.getProposal() as unknown as ProposalType['withdraw'];
-          return executePlan(seat, offerArgs, this.facets, {
+          const flowDetail = {
             type: 'withdraw',
             amount: proposal.want.Cash,
-          });
+          } as FlowDetail;
+          const startedFlow = this.facets.manager.startFlow(flowDetail);
+          // This flow does its own error handling and always exits the seat
+          void executePlan(seat, {}, this.facets, flowDetail, startedFlow);
+          return `flow${startedFlow.flowId}`;
         },
       },
 
