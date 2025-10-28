@@ -262,7 +262,7 @@ const agoricNamesForChainInfo = (vsk: VstorageKit) => {
     const out: [string, unknown][] = [];
     const children = await vstorage.keys(`published.agoricNames.${kind}`);
     for (const child of children) {
-      console.debug('readPublished', kind, child);
+      // console.error('readPublished', kind, child);
       const value = await readPublished(`agoricNames.${kind}.${child}`);
       // console.debug(kind, child, value);
       if (kind === 'chain') {
@@ -381,10 +381,6 @@ const overridesForEthChainInfo = async (
     gmpAddresses,
     walletBytecode,
   });
-  console.log(
-    'privateArgsOverrides',
-    JSON.stringify(privateArgsOverrides, null, 2),
-  );
   return privateArgsOverrides;
 };
 
