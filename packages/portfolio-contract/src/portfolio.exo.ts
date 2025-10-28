@@ -171,6 +171,7 @@ export const preparePortfolioKit = (
       seat: ZCFSeat,
       offerArgs: unknown,
       kit: PortfolioKitCycleBreaker,
+      startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
     ) => Vow<unknown>;
     executePlan: (
       seat: ZCFSeat,

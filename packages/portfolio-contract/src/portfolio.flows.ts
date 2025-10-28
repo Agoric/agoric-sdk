@@ -777,6 +777,9 @@ export const rebalance = (async (
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['rebalance'],
   kit: GuestInterface<PortfolioKit>,
+  startedFlow?: ReturnType<
+    GuestInterface<PortfolioKit>['manager']['startFlow']
+  >,
 ) => {
   const id = kit.reader.getPortfolioId();
   const traceP = makeTracer('rebalance').sub(`portfolio${id}`);
@@ -795,7 +798,8 @@ export const rebalance = (async (
     }
 
     if (flow) {
-      ({ flowId } = kit.manager.startFlow({ type: 'rebalance' }, flow));
+      ({ flowId } =
+        startedFlow ?? kit.manager.startFlow({ type: 'rebalance' }, flow));
       await stepFlow(orch, ctx, seat, flow, kit, traceP, flowId);
     }
 
