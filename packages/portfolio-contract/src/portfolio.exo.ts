@@ -505,7 +505,14 @@ export const preparePortfolioKit = (
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
           mustMatch(offerArgs, offerArgsShapes.rebalance);
-          return rebalance(seat, offerArgs, this.facets);
+          const startedFlow = this.facets.manager.startFlow(
+            { type: 'rebalance' },
+            offerArgs.flow,
+          );
+
+          // This flow does its own error handling and always exits the seat
+          void rebalance(seat, offerArgs, this.facets, startedFlow);
+          return `flow${startedFlow.flowId}`;
         },
       },
       depositHandler: {

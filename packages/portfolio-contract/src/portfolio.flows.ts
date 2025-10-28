@@ -810,7 +810,6 @@ export const rebalance = (async (
     if (!seat.hasExited()) {
       seat.fail(err);
     }
-    throw err;
   } finally {
     if (flowId) kit.reporter.finishFlow(flowId);
   }

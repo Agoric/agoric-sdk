@@ -1127,17 +1127,18 @@ test('handle failure in provideCosmosAccount makeAccount', async t => {
 
   const attempt1 = rebalance(orch, ctx, seat1, { flow: steps }, kit);
 
-  await t.throwsAsync(
-    attempt1,
-    { message: 'timeout creating ICA' },
-    'rebalance should fail when noble account creation fails',
-  );
+  t.is(await attempt1, undefined);
 
   // Check failure evidence
   const failCall = log.find(entry => entry._method === 'fail');
   t.truthy(
     failCall,
     'seat.fail() should be called when noble account creation fails',
+  );
+  t.deepEqual(
+    failCall!.reason,
+    Error('timeout creating ICA'),
+    'rebalance should fail when noble account creation fails',
   );
 
   const { getPortfolioStatus } = makeStorageTools(storage);
@@ -1194,13 +1195,14 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
   const seat1 = makeMockSeat(give, undefined, log);
 
   const attempt1P = rebalance(orch, ctx, seat1, { flow: steps }, pKit);
+  t.is(await attempt1P, undefined);
 
-  await t.throwsAsync(
-    attempt1P,
-    { message: 'Insufficient funds - piggy bank sprang a leak' },
+  const seatFails = log.find(e => e._method === 'fail' && e._cap === 'seat');
+  t.deepEqual(
+    seatFails?.reason,
+    Error('Insufficient funds - piggy bank sprang a leak'),
     'rebalance should fail when EVM account creation fails',
   );
-  t.truthy(log.find(entry => entry._method === 'fail'));
 
   const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
 
