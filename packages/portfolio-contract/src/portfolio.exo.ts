@@ -177,6 +177,7 @@ export const preparePortfolioKit = (
       offerArgs: unknown,
       kit: PortfolioKitCycleBreaker,
       flowDetail: FlowDetail,
+      startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
     ) => Vow<unknown>;
     onAgoricTransfer: (
       event: VTransferIBCEvent,

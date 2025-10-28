@@ -1090,11 +1090,16 @@ export const executePlan = (async (
   offerArgs: { flow?: MovementDesc[] },
   pKit: GuestInterface<PortfolioKit>,
   flowDetail: FlowDetail,
+  startedFlow?: ReturnType<
+    GuestInterface<PortfolioKit>['manager']['startFlow']
+  >,
 ): Promise<`flow${number}`> => {
   const pId = pKit.reader.getPortfolioId();
   const traceP = makeTracer(flowDetail.type).sub(`portfolio${pId}`);
 
-  const { stepsP, flowId } = pKit.manager.startFlow(flowDetail, offerArgs.flow);
+  // XXX for backwards compatibility, startedFlow may be undefined
+  const { stepsP, flowId } =
+    startedFlow ?? pKit.manager.startFlow(flowDetail, offerArgs.flow);
   const traceFlow = traceP.sub(`flow${flowId}`);
   if (!offerArgs.flow) traceFlow('waiting for steps from planner');
   // idea: race with seat.getSubscriber()
