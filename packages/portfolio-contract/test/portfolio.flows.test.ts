@@ -153,13 +153,20 @@ const makeMockSeat = <M extends keyof ProposalType>(
   } as any as ZCFSeat;
 };
 
+interface MockLogEvent {
+  _method: string;
+  _cap?: string;
+  opts?: Record<string, string>;
+  [key: string]: unknown;
+}
+
 // XXX move to mocks.ts for readability?
 const mocks = (
   errs: Record<string, Error | Map<string, Error>> = {},
   give: ProposalType['openPortfolio']['give'] = {},
 ) => {
-  const buf = [] as any[];
-  const log = ev => {
+  const buf = [] as MockLogEvent[];
+  const log = (ev: MockLogEvent) => {
     buf.push(ev);
   };
   let nonce = 0;
@@ -650,7 +657,7 @@ test('open portfolio with Aave position', async t => {
   ]);
 
   t.like(
-    JSON.parse(log[3].opts.memo),
+    JSON.parse(log[3].opts!.memo),
     { payload: buildGasPayload(50n) },
     '1st transfer to axelar carries evmGas for return message',
   );
@@ -950,7 +957,7 @@ test('claim rewards on Aave position', async t => {
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
 
-  const rawMemo = log[4].opts.memo;
+  const rawMemo = log[4].opts!.memo;
   const decodedCalls = decodeFunctionCall(rawMemo, [
     'claimAllRewardsToSelf(address[])',
     'withdraw(address,uint256,address)',
@@ -1015,7 +1022,7 @@ test('open portfolio with Beefy position', async t => {
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
 
-  const rawMemo = log[8].opts.memo;
+  const rawMemo = log[8].opts!.memo;
   const decodedCalls = decodeFunctionCall(rawMemo, [
     'approve(address,uint256)',
     'deposit(uint256)',
