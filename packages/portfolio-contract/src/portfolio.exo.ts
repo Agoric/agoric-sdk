@@ -504,7 +504,7 @@ export const preparePortfolioKit = (
       },
       depositHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
-          mustMatch(offerArgs, harden({}));
+          mustMatch(offerArgs, offerArgsShapes.deposit);
           const proposal =
             seat.getProposal() as unknown as ProposalType['deposit'];
           return executePlan(seat, offerArgs, this.facets, {

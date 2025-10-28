@@ -73,6 +73,7 @@ export type MovementDesc = {
 
 // XXX strategy: AllocationStrategyInfo;
 export type OfferArgsFor = {
+  deposit: { flow?: MovementDesc[] };
   openPortfolio: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
   rebalance: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
 };
@@ -94,6 +95,13 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
   );
 
   return {
+    deposit: M.splitRecord(
+      {},
+      {
+        flow: M.arrayOf(movementDescShape),
+      },
+      {},
+    ) as TypedPattern<OfferArgsFor['deposit']>,
     openPortfolio: M.splitRecord(
       {},
       {
