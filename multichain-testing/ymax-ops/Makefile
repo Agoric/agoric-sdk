@@ -143,9 +143,11 @@ fund-fee-acct: ,$(CONTRACT)-node.json
 	echo "await E(ymaxControl).upgrade('$$(cat ,ymax-bundle-id)').catch(err=>console.error(err));" >$@
 
 
-,$(CONTRACT)-upgraded: ,ymax-bundle-id ,ymax-installed ,privateArgsOverrides.json
-	# check that the account we're using matches the contract we're upgrading...
+# check that the account we're using matches the contract we're upgrading...
+check-control-account:
 	$(YMAX_TOOL) --repl </dev/null | grep $(YMAX_CONTROL_ADDR)
+
+,$(CONTRACT)-upgraded: ,ymax-bundle-id ,ymax-installed ,privateArgsOverrides.json check-control-account
 	AGORIC_NET=$(AGORIC_NET) \
 		$(YMAX_TOOL) --upgrade <,privateArgsOverrides.json $$(cat ,ymax-bundle-id) >$@ || (rm $@; false)
 
