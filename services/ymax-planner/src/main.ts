@@ -21,6 +21,7 @@ import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { startEngine } from './engine.ts';
 import { createEVMContext, verifyEvmChains } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
+import { BeefyBalanceClient } from './beefy-balance-client.js';
 import { makeGasEstimator } from './gas-estimation.ts';
 
 const assertChainId = async (
@@ -109,6 +110,12 @@ export const main = async (
   console.warn('Verifying EVM chain connectivity...');
   await verifyEvmChains(evmCtx.evmProviders);
 
+  const beefyBalance = new BeefyBalanceClient({
+    evmProviders: evmCtx.evmProviders,
+    clusterName,
+    log: (...args) => console.log(...args),
+  });
+
   const gasEstimator = makeGasEstimator({
     axelarApiAddress: config.axelar.apiUrl,
     axelarChainIdMap: config.axelar.chainIdMap,
@@ -120,6 +127,7 @@ export const main = async (
     rpc,
     spectrum,
     cosmosRest,
+    beefyBalance,
     signingSmartWalletKit,
     walletStore,
     getWalletInvocationUpdate: (messageId, opts) => {

@@ -123,10 +123,6 @@ export const BeefyPoolPlaces = {
     protocol: 'Beefy',
     chainName: 'Ethereum',
   },
-  Beefy_morphoSeamlessUsdc_Base: {
-    protocol: 'Beefy',
-    chainName: 'Base',
-  },
   Beefy_compoundUsdc_Optimism: {
     protocol: 'Beefy',
     chainName: 'Optimism',
@@ -134,6 +130,10 @@ export const BeefyPoolPlaces = {
   Beefy_compoundUsdc_Arbitrum: {
     protocol: 'Beefy',
     chainName: 'Arbitrum',
+  },
+  Beefy_morphoSeamlessUsdc_Base: {
+    protocol: 'Beefy',
+    chainName: 'Base',
   },
 } as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
 
