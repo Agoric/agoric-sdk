@@ -153,13 +153,20 @@ const makeMockSeat = <M extends keyof ProposalType>(
   } as any as ZCFSeat;
 };
 
+interface MockLogEvent {
+  _method: string;
+  _cap?: string;
+  opts?: Record<string, string>;
+  [key: string]: unknown;
+}
+
 // XXX move to mocks.ts for readability?
 const mocks = (
   errs: Record<string, Error | Map<string, Error>> = {},
   give: ProposalType['openPortfolio']['give'] = {},
 ) => {
-  const buf = [] as any[];
-  const log = ev => {
+  const buf = [] as MockLogEvent[];
+  const log = (ev: MockLogEvent) => {
     buf.push(ev);
   };
   let nonce = 0;
@@ -650,7 +657,7 @@ test('open portfolio with Aave position', async t => {
   ]);
 
   t.like(
-    JSON.parse(log[3].opts.memo),
+    JSON.parse(log[3].opts!.memo),
     { payload: buildGasPayload(50n) },
     '1st transfer to axelar carries evmGas for return message',
   );
@@ -950,7 +957,7 @@ test('claim rewards on Aave position', async t => {
   ]);
   t.snapshot(log, 'call log'); // see snapshot for remaining arg details
 
-  const rawMemo = log[4].opts.memo;
+  const rawMemo = log[4].opts!.memo;
   const decodedCalls = decodeFunctionCall(rawMemo, [
     'claimAllRewardsToSelf(address[])',
     'withdraw(address,uint256,address)',
@@ -1015,7 +1022,7 @@ test('open portfolio with Beefy position', async t => {
   t.is(passStyleOf(actual.invitationMakers), 'remotable');
   await documentStorageSchema(t, storage, docOpts);
 
-  const rawMemo = log[8].opts.memo;
+  const rawMemo = log[8].opts!.memo;
   const decodedCalls = decodeFunctionCall(rawMemo, [
     'approve(address,uint256)',
     'deposit(uint256)',
@@ -1120,17 +1127,18 @@ test('handle failure in provideCosmosAccount makeAccount', async t => {
 
   const attempt1 = rebalance(orch, ctx, seat1, { flow: steps }, kit);
 
-  await t.throwsAsync(
-    attempt1,
-    { message: 'timeout creating ICA' },
-    'rebalance should fail when noble account creation fails',
-  );
+  t.is(await attempt1, undefined);
 
   // Check failure evidence
   const failCall = log.find(entry => entry._method === 'fail');
   t.truthy(
     failCall,
     'seat.fail() should be called when noble account creation fails',
+  );
+  t.deepEqual(
+    failCall!.reason,
+    Error('timeout creating ICA'),
+    'rebalance should fail when noble account creation fails',
   );
 
   const { getPortfolioStatus } = makeStorageTools(storage);
@@ -1187,13 +1195,14 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
   const seat1 = makeMockSeat(give, undefined, log);
 
   const attempt1P = rebalance(orch, ctx, seat1, { flow: steps }, pKit);
+  t.is(await attempt1P, undefined);
 
-  await t.throwsAsync(
-    attempt1P,
-    { message: 'Insufficient funds - piggy bank sprang a leak' },
+  const seatFails = log.find(e => e._method === 'fail' && e._cap === 'seat');
+  t.deepEqual(
+    seatFails?.reason,
+    Error('Insufficient funds - piggy bank sprang a leak'),
     'rebalance should fail when EVM account creation fails',
   );
-  t.truthy(log.find(entry => entry._method === 'fail'));
 
   const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
 

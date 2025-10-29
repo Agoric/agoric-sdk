@@ -25,6 +25,7 @@ import type { Zone } from '@agoric/zone';
 import { Fail, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import type { PortfolioContinuingInvitationMaker } from '@agoric/portfolio-api';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
@@ -171,12 +172,14 @@ export const preparePortfolioKit = (
       seat: ZCFSeat,
       offerArgs: unknown,
       kit: PortfolioKitCycleBreaker,
+      startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
     ) => Vow<unknown>;
     executePlan: (
       seat: ZCFSeat,
       offerArgs: unknown,
       kit: PortfolioKitCycleBreaker,
       flowDetail: FlowDetail,
+      startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
     ) => Vow<unknown>;
     onAgoricTransfer: (
       event: VTransferIBCEvent,
@@ -447,6 +450,11 @@ export const preparePortfolioKit = (
             this.facets.reporter.publishStatus();
           }
         },
+        /**
+         * Start a flow of asset movements. Reserves a flowId and records updates vstorage.
+         *
+         * NB: `flowId` is a counter, not the key in vstorage.
+         */
         startFlow(detail: FlowDetail, steps?: MovementDesc[]) {
           const { nextFlowId: flowId, flowsRunning } = this.state;
           this.state.nextFlowId = flowId + 1;
@@ -498,42 +506,78 @@ export const preparePortfolioKit = (
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
           mustMatch(offerArgs, offerArgsShapes.rebalance);
-          return rebalance(seat, offerArgs, this.facets);
+          const startedFlow = this.facets.manager.startFlow(
+            { type: 'rebalance' },
+            offerArgs.flow,
+          );
+
+          // This flow does its own error handling and always exits the seat
+          void rebalance(seat, offerArgs, this.facets, startedFlow);
+          return `flow${startedFlow.flowId}`;
         },
       },
       depositHandler: {
-        async handle(seat: ZCFSeat, offerArgs: unknown) {
-          mustMatch(offerArgs, harden({}));
+        handle(seat: ZCFSeat, offerArgs: unknown) {
+          mustMatch(offerArgs, offerArgsShapes.deposit);
           const proposal =
             seat.getProposal() as unknown as ProposalType['deposit'];
-          return executePlan(seat, offerArgs, this.facets, {
+          const flowDetail = {
             type: 'deposit',
             amount: proposal.give.Deposit,
-          });
+          } as FlowDetail;
+          const startedFlow = this.facets.manager.startFlow(
+            flowDetail,
+            offerArgs.flow,
+          );
+          // This flow does its own error handling and always exits the seat
+          void executePlan(
+            seat,
+            offerArgs,
+            this.facets,
+            flowDetail,
+            startedFlow,
+          );
+          return `flow${startedFlow.flowId}`;
         },
       },
       simpleRebalanceHandler: {
-        async handle(seat: ZCFSeat, offerArgs: unknown) {
+        handle(seat: ZCFSeat, offerArgs: unknown) {
           // XXX offerArgs.flow shouldn't be allowed
           mustMatch(offerArgs, offerArgsShapes.rebalance);
           if (offerArgs.targetAllocation) {
             const { manager } = this.facets;
             manager.setTargetAllocation(offerArgs.targetAllocation);
           }
-          return executePlan(seat, offerArgs, this.facets, {
+          const flowDetail = {
             type: 'rebalance',
-          });
+          } as FlowDetail;
+          const startedFlow = this.facets.manager.startFlow(
+            flowDetail,
+            offerArgs.flow,
+          );
+          // This flow does its own error handling and always exits the seat
+          void executePlan(
+            seat,
+            offerArgs,
+            this.facets,
+            flowDetail,
+            startedFlow,
+          );
+          return `flow${startedFlow.flowId}`;
         },
       },
       withdrawHandler: {
-        async handle(seat: ZCFSeat, offerArgs: unknown) {
-          mustMatch(offerArgs, harden({}));
+        handle(seat: ZCFSeat) {
           const proposal =
             seat.getProposal() as unknown as ProposalType['withdraw'];
-          return executePlan(seat, offerArgs, this.facets, {
+          const flowDetail = {
             type: 'withdraw',
             amount: proposal.want.Cash,
-          });
+          } as FlowDetail;
+          const startedFlow = this.facets.manager.startFlow(flowDetail);
+          // This flow does its own error handling and always exits the seat
+          void executePlan(seat, {}, this.facets, flowDetail, startedFlow);
+          return `flow${startedFlow.flowId}`;
         },
       },
 
@@ -574,7 +618,8 @@ export const preparePortfolioKit = (
             proposalShapes.rebalance,
           );
         },
-      },
+      } satisfies Record<PortfolioContinuingInvitationMaker, any> &
+        ThisType<any>,
     },
     {
       stateShape: PortfolioStateShape,

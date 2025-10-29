@@ -777,6 +777,9 @@ export const rebalance = (async (
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['rebalance'],
   kit: GuestInterface<PortfolioKit>,
+  startedFlow?: ReturnType<
+    GuestInterface<PortfolioKit>['manager']['startFlow']
+  >,
 ) => {
   const id = kit.reader.getPortfolioId();
   const traceP = makeTracer('rebalance').sub(`portfolio${id}`);
@@ -795,7 +798,8 @@ export const rebalance = (async (
     }
 
     if (flow) {
-      ({ flowId } = kit.manager.startFlow({ type: 'rebalance' }, flow));
+      ({ flowId } =
+        startedFlow ?? kit.manager.startFlow({ type: 'rebalance' }, flow));
       await stepFlow(orch, ctx, seat, flow, kit, traceP, flowId);
     }
 
@@ -806,7 +810,6 @@ export const rebalance = (async (
     if (!seat.hasExited()) {
       seat.fail(err);
     }
-    throw err;
   } finally {
     if (flowId) kit.reporter.finishFlow(flowId);
   }
@@ -1007,17 +1010,20 @@ export const openPortfolio = (async (
   ctx: PortfolioBootstrapContext,
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['openPortfolio'],
+  madeKit?: GuestInterface<PortfolioKit>,
 ) => {
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   const trace = makeTracer('openPortfolio');
   try {
     const { makePortfolioKit, ...ctxI } = ctx;
     const { inertSubscriber, transferChannels } = ctxI;
-    const kit = makePortfolioKit();
+    const kit = madeKit ?? makePortfolioKit();
     const id = kit.reader.getPortfolioId();
     const traceP = trace.sub(`portfolio${id}`);
     traceP('portfolio opened');
 
+    // TODO provide a way to recover if any of these provisionings fail
+    // SEE https://github.com/Agoric/agoric-private/issues/488
     // Register Noble Forwarding Account (NFA) for CCTP transfers
     {
       const sender = await ctxI.contractAccount;
@@ -1079,6 +1085,10 @@ export const makeLCA = (async (orch: Orchestrator): Promise<LocalAccount> => {
 }) satisfies OrchestrationFlow;
 harden(makeLCA);
 
+/**
+ * Offer handler to execute a planned flow of asset movements. It takes
+ * responsibility for the `seat` and exits it when done.
+ */
 export const executePlan = (async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -1086,21 +1096,26 @@ export const executePlan = (async (
   offerArgs: { flow?: MovementDesc[] },
   pKit: GuestInterface<PortfolioKit>,
   flowDetail: FlowDetail,
+  startedFlow?: ReturnType<
+    GuestInterface<PortfolioKit>['manager']['startFlow']
+  >,
 ): Promise<`flow${number}`> => {
   const pId = pKit.reader.getPortfolioId();
   const traceP = makeTracer(flowDetail.type).sub(`portfolio${pId}`);
 
-  const { stepsP, flowId } = pKit.manager.startFlow(flowDetail, offerArgs.flow);
+  // XXX for backwards compatibility, startedFlow may be undefined
+  const { stepsP, flowId } =
+    startedFlow ?? pKit.manager.startFlow(flowDetail, offerArgs.flow);
   const traceFlow = traceP.sub(`flow${flowId}`);
   if (!offerArgs.flow) traceFlow('waiting for steps from planner');
   // idea: race with seat.getSubscriber()
   const steps = await (stepsP as unknown as Promise<MovementDesc[]>); // XXX Guest/Host types UNTIL #9822
   try {
     await stepFlow(orch, ctx, seat, steps, pKit, traceP, flowId);
-
-    if (!seat.hasExited()) seat.exit();
     return `flow${flowId}`;
   } finally {
+    // The seat must be exited no matter what to avoid leaks
+    if (!seat.hasExited()) seat.exit();
     // XXX flow.finish() would eliminate the possibility of sending the wrong one,
     // at the cost of an exo (or Far?)
     pKit.reporter.finishFlow(flowId);

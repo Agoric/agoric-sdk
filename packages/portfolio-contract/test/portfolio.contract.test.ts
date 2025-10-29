@@ -468,7 +468,7 @@ test('USDN claim fails currently', async t => {
     'LCA',
   );
 
-  const rebalanceP = trader1.rebalance(
+  const rebalanceRet = await trader1.rebalance(
     t,
     { give: {}, want: {} },
     {
@@ -483,9 +483,16 @@ test('USDN claim fails currently', async t => {
     },
   );
 
-  await t.throwsAsync(rebalanceP, {
-    message: /claiming USDN is not supported/,
+  t.deepEqual(rebalanceRet, {
+    result: 'flow2',
+    payouts: {},
   });
+
+  const portfolioInfo = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  const flowInfo =
+    portfolioInfo.contents[`${storagePath}.flows.${rebalanceRet.result}`];
+  t.snapshot(flowInfo, 'flow info after failed claim');
+  t.is(flowInfo.at(-1).error, 'claiming USDN is not supported');
 });
 
 const beefyTestMacro = test.macro({
