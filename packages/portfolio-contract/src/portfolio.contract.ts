@@ -47,6 +47,7 @@ import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
+import type { PortfolioPublicInvitationMaker } from '@agoric/portfolio-api';
 import { preparePlanner } from './planner.exo.ts';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
@@ -365,12 +366,15 @@ export const contract = async (
   /**
    * Generate sequential portfolio IDs while keeping the portfolios collection private.
    * Each portfolio kit only gets access to its own state, not the full collection.
+   *
+   * NB: this assumes portfolios are never deleted; if deletion is added,
+   * a more robust ID generation strategy will be needed.
    */
   const makeNextPortfolioKit = () => {
     const portfolioId = portfolios.getSize();
-    const it = makePortfolioKit({ portfolioId });
-    portfolios.init(portfolioId, it);
-    return it;
+    const kit = makePortfolioKit({ portfolioId });
+    portfolios.init(portfolioId, kit);
+    return kit;
   };
 
   // Create openPortfolio flow with makePortfolioKit - circular dependency avoided
@@ -378,6 +382,7 @@ export const contract = async (
     { openPortfolio: flows.openPortfolio },
     {
       ...ctx1,
+      // Older name maintained for upgrade compatibility
       makePortfolioKit: makeNextPortfolioKit as any, // XXX Guest...
       inertSubscriber,
     },
@@ -448,7 +453,7 @@ export const contract = async (
         proposalShapes.openPortfolio,
       );
     },
-  });
+  } satisfies Record<PortfolioPublicInvitationMaker, any> & ThisType<any>);
 
   const makeResolverInvitation = () => {
     trace('makeResolverInvitation');

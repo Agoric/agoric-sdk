@@ -1,9 +1,14 @@
+/* eslint-disable @typescript-eslint/no-unused-vars -- doesn't see type usage in JSDoc */
 import type { NatAmount } from '@agoric/ertp';
 import {
   type AccountId,
   type Bech32Address,
   type CosmosChainAddress,
 } from '@agoric/orchestration';
+import type {
+  ContinuingInvitationSpec,
+  ContractInvitationSpec,
+} from '@agoric/smart-wallet/src/invitations.js';
 import type { SupportedChain, YieldProtocol } from './constants.js';
 import type { InstrumentId } from './instruments.js';
 import type { PublishedTx } from './resolver.js';
@@ -108,3 +113,20 @@ export type StatusFor = {
   flow: FlowStatus;
   flowSteps: FlowStep[];
 };
+
+/**
+ * Names suitable for use as `publicInvitationMaker` in {@link ContractInvitationSpec}.
+ */
+export type PortfolioPublicInvitationMaker = 'makeOpenPortfolioInvitation';
+
+/**
+ * Names suitable for use as `invitationMakerName` in {@link ContinuingInvitationSpec}.
+ *
+ * These continuing invitation makers are returned from portfolio creation and enable
+ * ongoing operations like rebalancing between yield protocols.
+ */
+export type PortfolioContinuingInvitationMaker =
+  | 'Deposit'
+  | 'Withdraw'
+  | 'Rebalance'
+  | 'SimpleRebalance';
