@@ -49,9 +49,9 @@ import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
 /**
  * @import {ERemote, Remote} from '@agoric/internal';
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
- * @import {Amount, Brand, Issuer, Payment, Purse, SetAmount} from '@agoric/ertp';
+ * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
  * @import {WeakMapStore, MapStore} from '@agoric/store'
- * @import {InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
+ * @import {InvitationAmount, InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
  * @import {CopyRecord} from '@endo/pass-style';
  * @import {EReturn} from '@endo/far';
  * @import {OfferId, OfferStatus, OfferSpec, InvokeEntryMessage, ResultPlan} from './offers.js';
@@ -372,17 +372,20 @@ export const prepareSmartWallet = (baggage, shared) => {
     mustMatch(amount, AmountShape);
     if (
       !matches(amount.brand, shared.invitationBrand) ||
-      !matches(amount.value, harden([InvitationElementShape]))
+      !matches(amount.value, M.arrayOf(InvitationElementShape))
     ) {
       return amount;
     }
 
-    const [{ handle: _, ...filteredInvitationDetails }] =
-      /** @type {SetAmount<InvitationDetails>} */ (amount).value;
+    const invitationAmount = /** @type {InvitationAmount} */ (amount);
+    const filteredInvitationValue = invitationAmount.value.map(
+      ({ handle: _, ...filteredInvitationDetails }) =>
+        filteredInvitationDetails,
+    );
 
     return harden({
       brand: shared.invitationBrand,
-      value: [filteredInvitationDetails],
+      value: filteredInvitationValue,
     });
   };
 
