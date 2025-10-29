@@ -20,6 +20,10 @@
       "default": "./dist/index.js"
     },
     "./package.json": "./package.json",
+    "./json-safe": {
+      "types": "./src/codegen/json-safe.d.ts",
+      "default": "./src/codegen/json-safe.js"
+    },
     "./address-hooks.js": {
       "types": "./dist/address-hooks.d.ts",
       "default": "./dist/address-hooks.js"
