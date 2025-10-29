@@ -47,6 +47,7 @@ import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
+import type { PortfolioPublicInvitationMaker } from '@agoric/portfolio-api';
 import { preparePlanner } from './planner.exo.ts';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
@@ -452,7 +453,7 @@ export const contract = async (
         proposalShapes.openPortfolio,
       );
     },
-  });
+  } satisfies Record<PortfolioPublicInvitationMaker, any> & ThisType<any>);
 
   const makeResolverInvitation = () => {
     trace('makeResolverInvitation');

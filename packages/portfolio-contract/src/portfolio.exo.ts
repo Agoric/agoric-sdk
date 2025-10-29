@@ -25,6 +25,7 @@ import type { Zone } from '@agoric/zone';
 import { Fail, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import type { PortfolioContinuingInvitationMaker } from '@agoric/portfolio-api';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
@@ -617,7 +618,8 @@ export const preparePortfolioKit = (
             proposalShapes.rebalance,
           );
         },
-      },
+      } satisfies Record<PortfolioContinuingInvitationMaker, any> &
+        ThisType<any>,
     },
     {
       stateShape: PortfolioStateShape,

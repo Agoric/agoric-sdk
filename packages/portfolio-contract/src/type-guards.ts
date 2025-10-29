@@ -45,7 +45,7 @@ import type {
 import { Fail } from '@endo/errors';
 import { isNat } from '@endo/nat';
 import { M } from '@endo/patterns';
-import type { EVMContractAddresses, start } from './portfolio.contract.js';
+import type { EVMContractAddresses } from './portfolio.contract.js';
 
 export type { OfferArgsFor } from './type-guards-steps.js';
 
@@ -61,27 +61,6 @@ const AnyString = <_T>() => M.string();
 export const makeNatAmountShape = (brand: Brand<'nat'>, min?: NatValue) =>
   harden({ brand, value: min ? M.gte(min) : M.nat() });
 // #endregion
-
-/**
- * Names suitable for use as `publicInvitationMaker` in {@link ContractInvitationSpec}.
- *
- * @see {@link start} for the contract implementation
- * @see {@link makeTrader.openPortfolio} for usage example
- */
-export type PortfolioPublicFacet = Awaited<
-  ReturnType<typeof start>
->['publicFacet'];
-export type { PortfolioPublicInvitationMaker as PortfolioInvitationMaker } from '@agoric/portfolio-api';
-
-/**
- * Names suitable for use as `invitationMakerName` in {@link ContinuingInvitationSpec}.
- *
- * These continuing invitation makers are returned from portfolio creation and enable
- * ongoing operations like rebalancing between yield protocols.
- *
- * @see {@link makeTrader.rebalance} for usage example
- */
-export type { PortfolioContinuingInvitationMaker } from '@agoric/portfolio-api';
 
 // #region Proposal Shapes
 
