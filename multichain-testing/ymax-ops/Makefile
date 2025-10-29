@@ -3,6 +3,8 @@
 # safe default with explicit prod usage: make AGORIC_NET=main ...
 AGORIC_NET ?= devnet
 
+CONTRACT ?= ymax0
+
 YMAX_TOOL=../scripts/ymax-tool.ts
 AGD=agd
 AGORIC=agoric
@@ -13,8 +15,6 @@ DEPLOY=../../packages/portfolio-deploy
 ##
 # default make target: no chain interaction
 build: ,ymax-bundle-id
-
-CONTRACT=ymax1
 
 ##
 # whole system update. see ymax0-terminate first, though.
@@ -33,7 +33,11 @@ provision-ymaxControl: ,$(CONTRACT)-control-provisioned.json
 
 ## per https://www.mintscan.io/agoric/proposals/111
 ifeq ($(CONTRACT),ymax0)
+ifeq ($(AGORIC_NET),main)
 YMAX_CONTROL_ADDR := agoric1e80twfutmrm3wrk3fysjcnef4j82mq8dn6nmcq
+else ifeq ($(AGORIC_NET),devnet)
+YMAX_CONTROL_ADDR := agoric10utru593dspjwfewcgdak8lvp9tkz0xttvcnxv
+endif
 else ifeq ($(CONTRACT),ymax1)
 YMAX_CONTROL_ADDR := agoric18dx5f8ck5xy2dgkgeyp2w478dztxv3z2mnz928
 endif
