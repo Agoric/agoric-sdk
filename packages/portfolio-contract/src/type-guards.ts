@@ -46,7 +46,6 @@ import { Fail } from '@endo/errors';
 import { isNat } from '@endo/nat';
 import { M } from '@endo/patterns';
 import type { EVMContractAddresses, start } from './portfolio.contract.js';
-import type { PortfolioKit } from './portfolio.exo.js';
 
 export type { OfferArgsFor } from './type-guards-steps.js';
 
@@ -72,7 +71,7 @@ export const makeNatAmountShape = (brand: Brand<'nat'>, min?: NatValue) =>
 export type PortfolioPublicFacet = Awaited<
   ReturnType<typeof start>
 >['publicFacet'];
-export type PortfolioInvitationMaker = keyof PortfolioPublicFacet;
+export type { PortfolioPublicInvitationMaker as PortfolioInvitationMaker } from '@agoric/portfolio-api';
 
 /**
  * Names suitable for use as `invitationMakerName` in {@link ContinuingInvitationSpec}.
@@ -82,8 +81,7 @@ export type PortfolioInvitationMaker = keyof PortfolioPublicFacet;
  *
  * @see {@link makeTrader.rebalance} for usage example
  */
-export type PortfolioContinuingInvitationMaker =
-  keyof PortfolioKit['invitationMakers'];
+export type { PortfolioContinuingInvitationMaker } from '@agoric/portfolio-api';
 
 // #region Proposal Shapes
 
