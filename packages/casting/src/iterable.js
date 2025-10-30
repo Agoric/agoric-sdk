@@ -20,7 +20,7 @@ export const mapAsyncIterable = (iterable, transform) => {
 };
 
 /**
- * TODO: Remove this function when we have an @endo/publish-kit that suppports pull topics
+ * TODO: Remove this function when we have an @endo/publish-kit that supports pull topics
  *
  * @template T
  * @param {ERef<import('./types.js').Follower<T>>} follower
@@ -39,7 +39,7 @@ export const iterateLatest = follower =>
   });
 
 /**
- * TODO: Remove this function when we have an @endo/publish-kit that suppports pull topics
+ * TODO: Remove this function when we have an @endo/publish-kit that supports pull topics
  *
  * @template T
  * @param {ERef<import('./types.js').Follower<T>>} follower
