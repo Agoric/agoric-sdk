@@ -25,7 +25,10 @@ import type { Zone } from '@agoric/zone';
 import { Fail, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import type { PortfolioContinuingInvitationMaker } from '@agoric/portfolio-api';
+import type {
+  FundsFlowPlan,
+  PortfolioContinuingInvitationMaker,
+} from '@agoric/portfolio-api';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
@@ -75,7 +78,10 @@ type PortfolioKitState = {
   accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
   accounts: MapStore<SupportedChain, AccountInfo>;
   positions: MapStore<PoolKey, Position>;
-  flowsRunning: MapStore<number, { sync: VowKit<MovementDesc[]> } & FlowDetail>;
+  flowsRunning: MapStore<
+    number,
+    { sync: VowKit<MovementDesc[] | FundsFlowPlan> } & FlowDetail
+  >;
   nextFlowId: number;
   targetAllocation?: TargetAllocation;
   policyVersion: number;
@@ -369,9 +375,16 @@ export const preparePortfolioKit = (
           this.facets.reporter.publishStatus();
         },
         // XXX collecting flow nodes is TBD
-        publishFlowSteps(id: number, steps: StatusFor['flowSteps']) {
+        publishFlowSteps(
+          id: number,
+          steps: StatusFor['flowSteps'],
+          order?: FundsFlowPlan['order'],
+        ) {
           const { portfolioId } = this.state;
-          publishStatus(makeFlowStepsPath(portfolioId, id), steps);
+          publishStatus(makeFlowStepsPath(portfolioId, id, 'steps'), steps);
+          if (order) {
+            publishStatus(makeFlowStepsPath(portfolioId, id, 'order'), order);
+          }
         },
         publishFlowStatus(id: number, status: StatusFor['flow']) {
           const { portfolioId } = this.state;
@@ -388,7 +401,7 @@ export const preparePortfolioKit = (
           this.state.rebalanceCount += 1;
           this.facets.reporter.publishStatus();
         },
-        resolveFlowPlan(flowId: number, steps: MovementDesc[]) {
+        resolveFlowPlan(flowId: number, steps: MovementDesc[] | FundsFlowPlan) {
           const { flowsRunning } = this.state;
           const detail = flowsRunning.get(flowId);
           detail.sync.resolver.resolve(steps);
