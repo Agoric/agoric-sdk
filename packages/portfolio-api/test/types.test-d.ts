@@ -149,6 +149,10 @@ const status: StatusFor = {
   },
   flow: { state: 'done' },
   flowSteps,
+  flowOrder: [
+    [4, [2, 3]],
+    [5, [3]],
+  ],
 };
 
 expectType<StatusFor>(status);
