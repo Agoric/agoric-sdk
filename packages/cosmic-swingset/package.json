@@ -73,7 +73,7 @@
       "test/**/*.test.*"
     ],
     "nodeArguments": [
-      "--import=ts-blank-space/register",
+      "--import=@aglocal/strict-ts-loader",
       "--no-warnings"
     ],
     "require": [

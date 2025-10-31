@@ -12,6 +12,14 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aglocal/strict-ts-loader@portal:../../agoric-sdk/packages/strict-ts-loader::locator=root-workspace-0b6124%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@aglocal/strict-ts-loader@portal:../../agoric-sdk/packages/strict-ts-loader::locator=root-workspace-0b6124%40workspace%3A."
+  dependencies:
+    ts-blank-space: "npm:^0.6.2"
+  languageName: node
+  linkType: soft
+
 "@agoric/async-flow@portal:../packages/async-flow::locator=root-workspace-0b6124%40workspace%3A.":
   version: 0.0.0-use.local
   resolution: "@agoric/async-flow@portal:../packages/async-flow::locator=root-workspace-0b6124%40workspace%3A."
@@ -4367,6 +4375,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
+    "@aglocal/strict-ts-loader": "npm:MULTICHAIN_TESTING"
     "@agoric/cosmic-proto": "npm:MULTICHAIN_TESTING"
     "@agoric/fast-usdc": "npm:MULTICHAIN_TESTING"
     "@agoric/internal": "npm:MULTICHAIN_TESTING"
@@ -4392,7 +4401,6 @@ __metadata:
     fs-extra: "npm:^11.2.0"
     osmojs: "npm:^16.15.0"
     starshipjs: "npm:^3.3.0"
-    ts-blank-space: "npm:^0.4.4"
     typescript: "npm:~5.8.2"
   languageName: unknown
   linkType: soft
@@ -4824,12 +4832,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-blank-space@npm:^0.4.1, ts-blank-space@npm:^0.4.4":
+"ts-blank-space@npm:^0.4.1":
   version: 0.4.4
   resolution: "ts-blank-space@npm:0.4.4"
   dependencies:
     typescript: "npm:5.1.6 - 5.7.x"
   checksum: 10c0/31b8d9b7c814dfccd41f26871d93560fcb1396c290852064a5cb604c552840540cc1c9d18732c5d918d08209ccc945774de4bbeaf32b49bf6a3019bee2809a07
+  languageName: node
+  linkType: hard
+
+"ts-blank-space@npm:^0.6.2":
+  version: 0.6.2
+  resolution: "ts-blank-space@npm:0.6.2"
+  dependencies:
+    typescript: "npm:5.1.6 - 5.9.x"
+  checksum: 10c0/fcc0fca1f2d8a711d8abdad26335d3dd86eef54a2c853a1703d2f9a4adb79de0b2ef1bb3dc38b4417cb74786fbc4f1c8096cc32acf0aaad868e91bba9bf9cc77
   languageName: node
   linkType: hard
 
@@ -4865,7 +4882,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:5.1.6 - 5.7.x":
+"typescript@npm:5.1.6 - 5.7.x, typescript@npm:5.1.6 - 5.9.x":
   version: 5.7.3
   resolution: "typescript@npm:5.7.3"
   bin:
@@ -4885,7 +4902,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A5.1.6 - 5.7.x#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A5.1.6 - 5.7.x#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A5.1.6 - 5.9.x#optional!builtin<compat/typescript>":
   version: 5.7.3
   resolution: "typescript@patch:typescript@npm%3A5.7.3#optional!builtin<compat/typescript>::version=5.7.3&hash=5786d5"
   bin:

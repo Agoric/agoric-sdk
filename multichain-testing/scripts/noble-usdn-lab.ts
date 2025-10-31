@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --import ts-blank-space/register
+#!/usr/bin/env -S node --import @aglocal/strict-ts-loader
 /**
  * @file verify that `nobled tx swap swap ...` etc. work
  *

@@ -1,4 +1,4 @@
-/** @import {ChainPolicy} from '@agoric/fast-usdc/src/types.js'; */
+/** @import {ChainPolicy} from '@agoric/fast-usdc/src/types.ts'; */
 
 /** ABI for DepositForBurn event in TokenMessenger contract */
 export const DepositForBurnEvent =

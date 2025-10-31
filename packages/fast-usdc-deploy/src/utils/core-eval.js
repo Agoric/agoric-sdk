@@ -9,7 +9,7 @@ const trace = makeTracer('FUCoreEval');
  * @import {Remote} from '@agoric/internal';
  * @import {Brand, DepositFacet} from '@agoric/ertp';
  * @import {FastUSDCKit} from '../start-fast-usdc.core.js'
- * @import {FeedPolicy} from '@agoric/fast-usdc/src/types.js'
+ * @import {FeedPolicy} from '@agoric/fast-usdc/src/types.ts'
  */
 
 export const FEED_POLICY = 'feedPolicy';

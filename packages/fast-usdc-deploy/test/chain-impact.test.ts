@@ -13,7 +13,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
-import { makeSwingsetHarness } from '@aglocal/boot/tools/supports.js';
+import { makeSwingsetHarness } from '@aglocal/boot/tools/supports.ts';
 
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/agoric/swingset/swingset.js';
 import { makeArchiveSnapshot, type SnapStoreDebug } from '@agoric/swing-store';

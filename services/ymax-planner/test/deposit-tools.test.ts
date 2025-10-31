@@ -2,7 +2,7 @@
 /* eslint-disable max-classes-per-file, class-methods-use-this */
 import test from 'ava';
 
-import { planUSDNDeposit } from '@aglocal/portfolio-contract/test/mocks.js';
+import { planUSDNDeposit } from '@aglocal/portfolio-contract/test/mocks.ts';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
 import PROD_NETWORK from '@aglocal/portfolio-contract/tools/network/network.prod.ts';
 import type { VstorageKit } from '@agoric/client-utils';

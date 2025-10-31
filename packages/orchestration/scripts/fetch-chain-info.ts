@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --import ts-blank-space/register
+#!/usr/bin/env -S node --import @aglocal/strict-ts-loader
 /** @file Fetch canonical chain info to generate the minimum needed for agoricNames */
 import { ChainRegistryClient } from '@chain-registry/client';
 import fsp from 'node:fs/promises';

@@ -391,6 +391,9 @@ jobs:
       - name: yarn test (zone)
         if: (success() || failure())
         run: cd packages/zone && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (strict-ts-loader)
+        if: (success() || failure())
+        run: cd packages/strict-ts-loader && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
 
         # The meta-test!
       - name: Check for untested packages

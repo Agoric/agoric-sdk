@@ -37,7 +37,7 @@ import type {
   FeeConfig,
   LogFn,
   NobleAddress,
-} from '@agoric/fast-usdc/src/types.js';
+} from '@agoric/fast-usdc/src/types.ts';
 import type {
   AccountId,
   AccountIdArg,

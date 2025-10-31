@@ -16,6 +16,7 @@
   },
   "packageManager": "yarn@4.9.3",
   "devDependencies": {
+    "@aglocal/strict-ts-loader": "MULTICHAIN_TESTING",
     "@agoric/cosmic-proto": "MULTICHAIN_TESTING",
     "@agoric/fast-usdc": "MULTICHAIN_TESTING",
     "@agoric/internal": "MULTICHAIN_TESTING",
@@ -41,7 +42,6 @@
     "fs-extra": "^11.2.0",
     "osmojs": "^16.15.0",
     "starshipjs": "^3.3.0",
-    "ts-blank-space": "^0.4.4",
     "typescript": "~5.8.2"
   },
   "resolutions": {
@@ -107,6 +107,7 @@
     "@aglocal/fast-usdc-contract": "portal:../../agoric-sdk/packages/fast-usdc-contract",
     "@aglocal/portfolio-contract": "portal:../../agoric-sdk/packages/portfolio-contract",
     "@aglocal/portfolio-deploy": "portal:../../agoric-sdk/packages/portfolio-deploy",
+    "@aglocal/strict-ts-loader": "portal:../../agoric-sdk/packages/strict-ts-loader",
     "@cosmjs/amino@npm:0.32.3": "npm:^0.36.0",
     "@cosmjs/encoding@npm:0.32.3": "npm:^0.36.0",
     "@cosmjs/math@npm:0.32.3": "npm:^0.36.0",
