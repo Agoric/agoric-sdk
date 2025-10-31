@@ -156,6 +156,7 @@ export const makeVStorage = ({ fetch }, config) => {
   };
 
   const vstorage = {
+    networkConfig: config,
     readStorageMeta,
     readStorage,
     /**
@@ -233,6 +234,6 @@ export const makeVStorage = ({ fetch }, config) => {
       return /** @type {string[]} */ (parts.flat());
     },
   };
-  return vstorage;
+  return harden(vstorage);
 };
 /** @typedef {ReturnType<typeof makeVStorage>} VStorage */

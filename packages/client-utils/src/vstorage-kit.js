@@ -97,51 +97,62 @@ export const makeAgoricNames = async (ctx, vstorage) => {
  * @param {{ fetch: typeof window.fetch }} io
  * @param {MinimalNetworkConfig} networkConfig
  */
+/**
+ * @param {VStorage} vstorage
+ */
+export const composeVstorageKit = vstorage => {
+  const fromBoard = makeFromBoard();
+
+  const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
+
+  /** @type {(txt: string | {value: string}) => unknown} */
+  const unserializeHead = txt =>
+    storageHelper.unserializeTxt(txt, fromBoard).at(-1);
+
+  /**
+   * Read latest at path and unmarshal it
+   * @template T
+   * @type {(path: string) => Promise<T>}
+   */
+  const readLatestHead = path =>
+    // @ts-expect-error cast
+    vstorage.readLatest(path).then(unserializeHead);
+
+  /**
+   * Read latest at published path and unmarshal it.
+   *
+   * Note this does not perform a runtime check to verify the shape. The
+   * static types come from the spec of what is supposed to be written to
+   * vstorage, which is validated in testing of the chain code that is run
+   * in consensus.
+   *
+   * @type {<T extends string>(subpath: T) => Promise<TypedPublished<T>>}
+   */
+  const readPublished = subpath =>
+    // @ts-expect-error cast
+    readLatestHead(`published.${subpath}`);
+
+  return {
+    fromBoard,
+    marshaller,
+    networkConfig: vstorage.networkConfig, // backwards compatibility
+    readLatestHead,
+    readPublished,
+    unserializeHead,
+    vstorage,
+  };
+};
+
+/**
+ * @param {{ fetch: typeof window.fetch }} io
+ * @param {MinimalNetworkConfig} networkConfig
+ */
 export const makeVstorageKit = ({ fetch }, networkConfig) => {
   try {
     const vstorage = makeVStorage({ fetch }, networkConfig);
-    const fromBoard = makeFromBoard();
-
-    const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
-
-    /** @type {(txt: string | {value: string}) => unknown} */
-    const unserializeHead = txt =>
-      storageHelper.unserializeTxt(txt, fromBoard).at(-1);
-
-    /**
-     * Read latest at path and unmarshal it
-     * @template T
-     * @type {(path: string) => Promise<T>}
-     */
-    const readLatestHead = path =>
-      // @ts-expect-error cast
-      vstorage.readLatest(path).then(unserializeHead);
-
-    /**
-     * Read latest at published path and unmarshal it.
-     *
-     * Note this does not perform a runtime check to verify the shape. The
-     * static types come from the spec of what is supposed to be written to
-     * vstorage, which is validated in testing of the chain code that is run
-     * in consensus.
-     *
-     * @type {<T extends string>(subpath: T) => Promise<TypedPublished<T>>}
-     */
-    const readPublished = subpath =>
-      // @ts-expect-error cast
-      readLatestHead(`published.${subpath}`);
-
-    return {
-      fromBoard,
-      marshaller,
-      networkConfig,
-      readLatestHead,
-      readPublished,
-      unserializeHead,
-      vstorage,
-    };
+    return composeVstorageKit(vstorage);
   } catch (err) {
     throw Error(`RPC failure (${networkConfig.rpcAddrs}): ${err.message}`);
   }
 };
-/** @typedef {ReturnType<typeof makeVstorageKit>} VstorageKit */
+/** @typedef {ReturnType<typeof composeVstorageKit>} VstorageKit */
