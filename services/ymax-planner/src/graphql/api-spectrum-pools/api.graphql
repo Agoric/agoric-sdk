@@ -1,0 +1,116 @@
+type APYResult {
+  baseApy: String
+  extraApy: String
+  totalApy: String
+}
+
+"""The JSON scalar type for method information"""
+scalar JSON
+
+type PendleImpliedApyCalculation {
+  address: String
+  chain: Int
+  daysToExpiry: Float
+  effectivePtExchangeRate: Float
+  error: String
+  expiryDate: String
+  impliedApy: Float
+  pool: String
+}
+
+input PendlePoolUserImpliedAPYInput {
+  address: String!
+  chain: String!
+  pool: String!
+}
+
+type PoolBalanceData {
+  address: String!
+  borrowAmount: Float!
+  chain: String!
+  pool: String!
+  results: [PoolBalanceResult!]!
+  supplyBalance: Float!
+}
+
+type PoolBalanceResult {
+  borrowAmount: Float
+  error: String
+  pool: String!
+  supplyBalance: Float
+}
+
+type ProtocolAPRData {
+  apr: Float!
+  chain: String!
+  height: Int!
+  protocol: String!
+}
+
+input ProtocolPoolChainInput {
+  chain: String!
+  pool: String!
+  protocol: String!
+}
+
+type ProtocolPoolDetailsResult {
+  apy: APYResult
+  chain: String!
+  error: String
+  pool: String
+  protocol: String
+  tvl: TVLResult
+}
+
+input ProtocolPoolPriceInput {
+  chain: String!
+  pool: String!
+  protocol: String!
+}
+
+type ProtocolPoolPriceResult {
+  chain: String!
+  error: String
+  pool: String!
+  price: JSON
+  protocol: String!
+}
+
+input ProtocolPoolUserBalanceInput {
+  address: String!
+  chain: String!
+  pool: String!
+  protocol: String
+}
+
+type ProtocolPoolUserBalanceResult {
+  balance: JSON
+  chain: String!
+  error: String
+  pool: String
+  protocol: String
+}
+
+type Query {
+  """Get all available methods for each chain"""
+  getMethodInfo: JSON!
+
+  """Get the details for a pool protocol (TVL and APY)"""
+  getProtocolPoolDetails(input: [ProtocolPoolChainInput!]!): [ProtocolPoolDetailsResult!]!
+
+  """
+  Get protocol pool price(s) in USD for supported protocols (aave, morpho, pendle)
+  """
+  getProtocolPoolPrice(input: [ProtocolPoolPriceInput!]!): [ProtocolPoolPriceResult!]!
+
+  """Get the user balance in a pool for protocol on a chain"""
+  getProtocolPoolUserBalance(input: [ProtocolPoolUserBalanceInput!]!): [ProtocolPoolUserBalanceResult!]!
+
+  """Calculate implied APY for a user's PT position"""
+  pendleImpliedApy(input: [PendlePoolUserImpliedAPYInput!]!): [PendleImpliedApyCalculation!]!
+}
+
+type TVLResult {
+  totals: JSON
+  underlying: JSON
+}
