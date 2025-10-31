@@ -127,19 +127,21 @@ export const makeStorageTools = (storage: FakeStorageKit) => {
       .at(-1) as StatusFor['portfolio'];
   };
 
-  const getFlowStatus = async (pId: number, fId: number) => {
+  const getFlowHistory = async (pId: number, fId: number) => {
     await vstoragePendingWrites();
-    return storage
-      .getDeserialized(
-        `published.ymax0.portfolios.portfolio${pId}.flows.flow${fId}`,
-      )
-      .at(-1) as StatusFor['flow'];
+    return storage.getDeserialized(
+      `published.ymax0.portfolios.portfolio${pId}.flows.flow${fId}`,
+    ) as StatusFor['flow'][];
   };
+
+  const getFlowStatus = async (pId: number, fId: number) =>
+    getFlowHistory(pId, fId).then(xs => xs.at(-1));
 
   return harden({
     readPublished,
     readLegible,
     getPortfolioStatus,
+    getFlowHistory,
     getFlowStatus,
   });
 };
