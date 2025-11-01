@@ -116,6 +116,7 @@ export type EVMContractAddresses = {
   aaveUSDC: `0x${string}`;
   aaveRewardsController: `0x${string}`;
   compoundRewardsController: `0x${string}`;
+  walletHelper: `0x${string}`;
 } & Partial<BeefyContracts>;
 
 export type AxelarId = {

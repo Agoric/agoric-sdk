@@ -33,6 +33,7 @@ import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.j
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import { Fail, q, X } from '@endo/errors';
+import { maxUint256 } from 'viem';
 import { ERC20, makeEVMSession, type EVMT } from './evm-facade.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type {
@@ -418,11 +419,21 @@ export const CompoundProtocol = {
 type BeefyVaultI = {
   deposit: ['uint256'];
   withdraw: ['uint256'];
+  approve: ['address', 'uint256'];
 };
 
 const BeefyVault: BeefyVaultI = {
   deposit: ['uint256'],
   withdraw: ['uint256'],
+  approve: ['address', 'uint256'],
+};
+
+type WalletHelperI = {
+  beefyWithdrawUSDC: ['address', 'uint256'];
+};
+
+const WalletHelper: WalletHelperI = {
+  beefyWithdrawUSDC: ['address', 'uint256'],
 };
 
 export const BeefyProtocol = {
@@ -449,7 +460,11 @@ export const BeefyProtocol = {
       a[poolKey] ||
       assert.fail(X`Beefy pool key ${q(poolKey)} not found in addresses`);
     const vault = session.makeContract(vaultAddress, BeefyVault);
-    vault.withdraw(amount.value);
+    const walletHelper = session.makeContract(a.walletHelper, WalletHelper);
+    // Give infinite approval because we dont know the exact amount the helper will withdraw
+    vault.approve(a.walletHelper, maxUint256);
+    walletHelper.beefyWithdrawUSDC(vaultAddress, amount.value);
+    vault.approve(a.walletHelper, 0n);
     const calls = session.finish();
 
     await sendGMPContractCall(ctx, dest, calls);
