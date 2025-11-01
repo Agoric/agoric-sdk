@@ -79,11 +79,11 @@ test('loadConfig uses default values when optional fields are missing', async t 
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemyApiKey, 'test1234');
   t.is(config.spectrum.apiUrl, undefined);
-  t.is(config.spectrum.timeout, 30000);
+  t.is(config.spectrum.timeout, 10000);
   t.is(config.spectrum.retries, 3);
   t.is(config.cosmosRest.agoricNetworkSpec, 'local');
   t.is(config.cosmosRest.agoricNetSubdomain, 'local');
-  t.is(config.cosmosRest.timeout, 15000);
+  t.is(config.cosmosRest.timeout, 10000);
   t.is(config.cosmosRest.retries, 3);
 });
 

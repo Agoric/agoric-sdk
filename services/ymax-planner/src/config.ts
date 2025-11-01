@@ -16,11 +16,20 @@ export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
     mainnet: 'main',
   });
 
+/** `maxRetries` is a count; all other numbers are in milliseconds. */
+export type RequestLimits = {
+  timeout: number;
+  maxRetries: number;
+  backoffBase: number;
+  maxBackoff: number;
+};
+
 export interface YmaxPlannerConfig {
   readonly clusterName: ClusterName;
   readonly contractInstance: string;
   readonly mnemonic: string;
   readonly alchemyApiKey: string;
+  readonly requestLimits: Partial<RequestLimits>;
   readonly spectrum: {
     readonly apiUrl?: string;
     readonly timeout: number;
@@ -144,21 +153,25 @@ export const loadConfig = async (
     throw Fail`CONTRACT_INSTANCE must be 'ymax0' or 'ymax1', got: ${contractInstance}`;
   }
 
+  const timeout = parsePositiveInteger(env, 'REQUEST_TIMEOUT', 10000);
+  const maxRetries = parsePositiveInteger(env, 'REQUEST_RETRIES', 3);
+
   const config: YmaxPlannerConfig = harden({
     clusterName,
     contractInstance,
     mnemonic,
     alchemyApiKey: validateRequired(env, 'ALCHEMY_API_KEY'),
+    requestLimits: { timeout, maxRetries },
     spectrum: {
       apiUrl: validateUrl(env, 'SPECTRUM_API_URL', undefined),
-      timeout: parsePositiveInteger(env, 'SPECTRUM_API_TIMEOUT', 30000),
-      retries: parsePositiveInteger(env, 'SPECTRUM_API_RETRIES', 3),
+      timeout: parsePositiveInteger(env, 'SPECTRUM_API_TIMEOUT', timeout),
+      retries: parsePositiveInteger(env, 'SPECTRUM_API_RETRIES', maxRetries),
     },
     cosmosRest: {
       agoricNetworkSpec,
       agoricNetSubdomain,
-      timeout: parsePositiveInteger(env, 'COSMOS_REST_TIMEOUT', 15000),
-      retries: parsePositiveInteger(env, 'COSMOS_REST_RETRIES', 3),
+      timeout: parsePositiveInteger(env, 'COSMOS_REST_TIMEOUT', timeout),
+      retries: parsePositiveInteger(env, 'COSMOS_REST_RETRIES', maxRetries),
     },
     axelar: {
       apiUrl: axelarApiAddress,
