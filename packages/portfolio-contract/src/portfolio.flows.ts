@@ -533,6 +533,8 @@ const stepFlow = async (
   const order = maybeOrder || fullOrder(moves.length);
 
   traceFlow('checking', moves.length, 'moves');
+  moves.length > 0 || Fail`moves list must not be empty`;
+
   for (const [i, move] of entries(moves)) {
     const traceMove = traceFlow.sub(`move${i}`);
     const way = wayFromSrcToDesc(move);
