@@ -7,12 +7,7 @@ import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import type { CodegenConfig } from '@graphql-codegen/cli';
 
-const getOwn = <O, K extends PropertyKey>(
-  obj: O,
-  key: K,
-): K extends keyof O ? O[K] : undefined =>
-  // @ts-expect-error TS doesn't let `hasOwn(obj, key)` support `obj[key]`.
-  Object.hasOwn(obj, key) ? obj[key] : undefined;
+import { getOwn, parseGraphqlEndpoints } from '../utils.ts';
 
 // Read environment variables .env files in this and/or parent directories, but
 // allow actual environment variables to override them.
@@ -39,15 +34,11 @@ dotenv.config({ path: dotEnvPaths, processEnv: dotEnvVars });
 const env = { ...dotEnvVars, ...envCopy };
 
 // Read GraphQL API endpoints from environment variable GRAPHQL_ENDPOINTS.
-const endpointsByApi = (jsonText => {
-  const type = typeof jsonText;
-  if (type !== 'string') throw Error('GRAPHQL_ENDPOINTS is required');
-  try {
-    return JSON.parse(jsonText as string);
-  } catch (cause) {
-    throw Error('GRAPHQL_ENDPOINTS must be valid JSON', { cause });
-  }
-})(env.GRAPHQL_ENDPOINTS);
+const endpointsByApi = parseGraphqlEndpoints(
+  // @ts-expect-error we want a runtime exception when GRAPHQL_ENDPOINTS is undefined
+  env.GRAPHQL_ENDPOINTS,
+  'GRAPHQL_ENDPOINTS',
+);
 
 const graphqlDir = pathlib.dirname(fileURLToPath(import.meta.url));
 

@@ -15,6 +15,10 @@ const minimalEnv = {
   MNEMONIC: 'test mnemonic phrase',
   ALCHEMY_API_KEY: 'test1234',
   CONTRACT_INSTANCE: 'ymax1',
+  GRAPHQL_ENDPOINTS: JSON.stringify({
+    'api-spectrum-blockchain': ['https://example.invalid/'],
+    'api-spectrum-pools': ['https://example.invalid/'],
+  }),
 };
 
 const makeFakeSecretManager = (mnemonic?: string) =>
@@ -34,7 +38,7 @@ const callLoadConfig = (
 ) => loadConfig({ ...minimalEnv, ...envOverrides }, secretManager);
 
 test('loadConfig validates required MNEMONIC', async t => {
-  const env = {};
+  const env = { GRAPHQL_ENDPOINTS: minimalEnv.GRAPHQL_ENDPOINTS };
   const secretManager = makeFakeSecretManager();
 
   await t.throwsAsync(() => loadConfig(env, secretManager), {
@@ -54,6 +58,7 @@ test('loadConfig accepts valid configuration', async t => {
     AGORIC_NET: 'devnet,myChainId',
     COSMOS_REST_TIMEOUT: '10000',
     COSMOS_REST_RETRIES: '5',
+    GRAPHQL_ENDPOINTS: minimalEnv.GRAPHQL_ENDPOINTS,
   };
   const secretManager = makeFakeSecretManager();
 

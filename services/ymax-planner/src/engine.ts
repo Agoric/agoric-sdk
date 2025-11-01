@@ -49,6 +49,8 @@ import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
+import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
+import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import {
   getCurrentBalance,
   getNonDustBalances,
@@ -174,6 +176,8 @@ type Powers = {
   evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
+  spectrumBlockchain?: SpectrumBlockchainSdk;
+  spectrumPools?: SpectrumPoolsSdk;
   cosmosRest: CosmosRestClient;
   signingSmartWalletKit: SigningSmartWalletKit;
   walletStore: ReturnType<typeof reflectWalletStore>;
@@ -189,6 +193,8 @@ type ProcessPortfolioPowers = Pick<
   Powers,
   | 'cosmosRest'
   | 'spectrum'
+  | 'spectrumBlockchain'
+  | 'spectrumPools'
   | 'signingSmartWalletKit'
   | 'walletStore'
   | 'getWalletInvocationUpdate'
@@ -218,6 +224,8 @@ const processPortfolioEvents = async (
     walletStore,
     getWalletInvocationUpdate,
     spectrum,
+    spectrumBlockchain,
+    spectrumPools,
     vstoragePathPrefixes,
 
     portfolioKeyForDepositAddr,
@@ -240,6 +248,8 @@ const processPortfolioEvents = async (
   const balanceQueryPowers: BalanceQueryPowers = {
     cosmosRest,
     spectrum,
+    spectrumBlockchain,
+    spectrumPools,
   };
   const startFlow = async (
     portfolioStatus: StatusFor['portfolio'],

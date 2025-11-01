@@ -19,11 +19,15 @@ import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
 import { USDN, type CosmosRestClient } from './cosmos-rest-client.js';
+import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
+import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 import { getOwn } from './utils.js';
 
 export type BalanceQueryPowers = {
   spectrum: SpectrumClient;
+  spectrumBlockchain?: SpectrumBlockchainSdk;
+  spectrumPools?: SpectrumPoolsSdk;
   cosmosRest: CosmosRestClient;
 };
 

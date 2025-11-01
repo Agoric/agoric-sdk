@@ -1,7 +1,10 @@
+/* eslint-env node */
+
 import timersPromises from 'node:timers/promises';
 import { inspect } from 'node:util';
 
 import { SigningStargateClient } from '@cosmjs/stargate';
+import type { GraphQLClient } from 'graphql-request';
 import * as ws from 'ws';
 
 import { Fail, q } from '@endo/errors';
@@ -20,6 +23,9 @@ import { objectMetaMap } from '@agoric/internal';
 import { loadConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
+import { makeGraphqlMultiClient } from './graphql-client.ts';
+import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
+import { getSdk as getSpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import { startEngine } from './engine.ts';
 import { createEVMContext, verifyEvmChains } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
@@ -38,6 +44,57 @@ const assertChainId = async (
     Fail`Expected chain ID ${q(actualChainId)} to be ${q(chainId)}`;
 };
 
+/**
+ * Mock the abort reason of `AbortSignal.timeout(ms)`.
+ * https://dom.spec.whatwg.org/#dom-abortsignal-timeout
+ */
+const makeTimeoutReason = () =>
+  Object.defineProperty(Error('Timed out'), 'name', {
+    value: 'TimeoutError',
+  });
+
+const prepareAbortController = ({
+  setTimeout,
+  AbortController = globalThis.AbortController,
+  AbortSignal = globalThis.AbortSignal,
+}: {
+  setTimeout: typeof globalThis.setTimeout;
+  AbortController?: typeof globalThis.AbortController;
+  AbortSignal?: typeof globalThis.AbortSignal;
+}) => {
+  /**
+   * Abstract AbortController/AbortSignal functionality upon a provided
+   * setTimeout.
+   */
+  const makeAbortController = (
+    timeoutMillisec?: number,
+    racingSignals: Iterable<AbortSignal> = [],
+  ) => {
+    let controller: AbortController | null = new AbortController();
+    const abort: AbortController['abort'] = reason => {
+      try {
+        return controller?.abort(reason);
+      } finally {
+        controller = null;
+      }
+    };
+    if (timeoutMillisec !== undefined) {
+      setTimeout(() => abort(makeTimeoutReason()), timeoutMillisec);
+    }
+    const signal = AbortSignal.any([controller.signal, ...racingSignals]);
+    signal.addEventListener('abort', _event => abort());
+    return { abort, signal };
+  };
+  return makeAbortController;
+};
+
+export type SimplePowers = {
+  fetch: typeof fetch;
+  setTimeout: typeof setTimeout;
+  delay: (ms: number) => Promise<void>;
+  makeAbortController: ReturnType<typeof prepareAbortController>;
+};
+
 export const main = async (
   args: string[],
   {
@@ -47,6 +104,8 @@ export const main = async (
     now = Date.now,
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
+    AbortController = globalThis.AbortController,
+    AbortSignal = globalThis.AbortSignal,
     WebSocket = ws.WebSocket,
   } = {},
 ) => {
@@ -55,9 +114,16 @@ export const main = async (
   const isDryRun = maybeOpts.includes('--dry-run');
   const isVerbose = maybeOpts.includes('--verbose');
 
-  const delay = ms =>
-    new Promise(resolve => setTimeout(resolve, ms)).then(() => {});
-  const simplePowers = { fetch, setTimeout, delay };
+  const simplePowers: SimplePowers = {
+    fetch,
+    setTimeout,
+    delay: ms => new Promise(resolve => setTimeout(resolve, ms)).then(() => {}),
+    makeAbortController: prepareAbortController({
+      setTimeout,
+      AbortController,
+      AbortSignal,
+    }),
+  };
 
   const config = await loadConfig(env);
   const { clusterName } = config;
@@ -146,6 +212,25 @@ export const main = async (
     retries: config.spectrum.retries,
   });
 
+  const makeOptionalGqlSdk = <Sdk>(
+    makeSdk: (client: GraphQLClient) => Sdk,
+    endpoints?: string[],
+  ): Sdk | undefined => {
+    if (!endpoints) return undefined;
+    const multiClient = makeGraphqlMultiClient(endpoints, simplePowers, {
+      requestLimits: config.requestLimits,
+    });
+    return makeSdk(multiClient);
+  };
+  const spectrumBlockchain = makeOptionalGqlSdk(
+    getSpectrumBlockchainSdk,
+    config.spectrumBlockchainEndpoints,
+  );
+  const spectrumPools = makeOptionalGqlSdk(
+    getSpectrumPoolsSdk,
+    config.spectrumPoolsEndpoints,
+  );
+
   const evmCtx = await createEVMContext({
     clusterName,
     alchemyApiKey: config.alchemyApiKey,
@@ -165,6 +250,8 @@ export const main = async (
     evmCtx,
     rpc,
     spectrum,
+    spectrumBlockchain,
+    spectrumPools,
     cosmosRest,
     signingSmartWalletKit,
     walletStore,
