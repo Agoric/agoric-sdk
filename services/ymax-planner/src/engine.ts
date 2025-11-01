@@ -2,6 +2,7 @@
 /* eslint-env node */
 
 import { inspect } from 'node:util';
+import type { InspectOptions } from 'node:util';
 
 import type { Coin } from '@cosmjs/stargate';
 
@@ -75,6 +76,15 @@ const { entries, fromEntries, values } = Object;
 
 // eslint-disable-next-line no-nested-ternary
 const compareBigints = (a: bigint, b: bigint) => (a > b ? 1 : a < b ? -1 : 0);
+
+const stdoutIsTty = process.stdout.isTTY;
+const stderrIsTty = process.stderr.isTTY;
+const inspectOptsForStdout: InspectOptions = { depth: 4, colors: stdoutIsTty };
+const inspectOptsForStderr: InspectOptions = { depth: 4, colors: stderrIsTty };
+const inspectForStdout = (obj: unknown, options?: InspectOptions) =>
+  inspect(obj, { ...inspectOptsForStdout, ...options });
+const inspectForStderr = (obj: unknown, options?: InspectOptions) =>
+  inspect(obj, { ...inspectOptsForStderr, ...options });
 
 const knownErrorProps = harden(['cause', 'errors', 'message', 'name', 'stack']);
 
@@ -183,6 +193,7 @@ type ProcessPortfolioPowers = Pick<
   | 'getWalletInvocationUpdate'
   | 'gasEstimator'
 > & {
+  isDryRun?: boolean;
   depositBrand: Brand<'nat'>;
   feeBrand: Brand<'nat'>;
   portfolioKeyForDepositAddr: Map<Bech32Address, string>;
@@ -197,6 +208,7 @@ const processPortfolioEvents = async (
   blockHeight: bigint,
   deferrals: EventRecord[],
   {
+    isDryRun,
     cosmosRest,
     depositBrand,
     feeBrand,
@@ -289,19 +301,27 @@ const processPortfolioEvents = async (
       );
       // The transaction has been submitted, but we won't know about a rejection
       // for at least another block.
-      void getWalletInvocationUpdate(id as any).catch(err => {
-        console.warn(
-          `⚠️ Failure for ${path} in-progress flow ${flowKey} resolvePlan`,
-          { policyVersion, rebalanceCount },
-          steps,
-          err,
-        );
-      });
+      if (!isDryRun) {
+        void getWalletInvocationUpdate(id as any).catch(err => {
+          console.warn(
+            `⚠️ Failure for ${path} in-progress flow ${flowKey} resolvePlan`,
+            { policyVersion, rebalanceCount },
+            steps,
+            err,
+          );
+        });
+      }
       console.log(
         `Resolving ${path} in-progress flow ${flowKey}`,
         flowDetail,
         currentBalances,
-        { portfolioId, flowId, steps, policyVersion, rebalanceCount },
+        inspectForStdout({
+          portfolioId,
+          flowId,
+          steps,
+          policyVersion,
+          rebalanceCount,
+        }),
         tx,
       );
     } catch (err) {
@@ -347,10 +367,10 @@ const processPortfolioEvents = async (
         // Stale responses are an unfortunate possibility when connecting with
         // more than one follower node, but we expect to recover automatically.
         const msg = `⚠️  Deferring ${path} of age ${age} block(s)`;
-        console.warn(msg, eventRecord);
+        console.warn(msg, inspectForStderr(eventRecord));
       } else {
         const msg = `🚨 Deferring ${path} of age ${age} block(s)`;
-        console.error(msg, eventRecord, err);
+        console.error(msg, inspectForStderr(eventRecord), err);
       }
       deferrals.push(eventRecord);
     }
@@ -499,10 +519,12 @@ export const startEngine = async (
     gasEstimator,
   }: Powers,
   {
+    isDryRun,
     contractInstance,
     depositBrandName,
     feeBrandName,
   }: {
+    isDryRun?: boolean;
     contractInstance: string;
     depositBrandName: string;
     feeBrandName: string;
@@ -614,6 +636,7 @@ export const startEngine = async (
   const processPortfolioPowers: ProcessPortfolioPowers = Object.freeze({
     cosmosRest,
     gasEstimator,
+    isDryRun,
     depositBrand: depositAsset.brand as Brand<'nat'>,
     feeBrand: feeAsset.brand as Brand<'nat'>,
     signingSmartWalletKit,
@@ -763,13 +786,11 @@ export const startEngine = async (
     await processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers);
 
     console.log(
-      inspect(
-        {
-          portfolioEvents,
-          pendingTxEvents,
-        },
-        { depth: 10 },
-      ),
+      inspectForStdout({
+        blockHeight: respHeight,
+        portfolioEvents,
+        pendingTxEvents,
+      }),
     );
   }
 

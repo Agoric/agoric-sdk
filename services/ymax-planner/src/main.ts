@@ -1,4 +1,5 @@
 import timersPromises from 'node:timers/promises';
+import { inspect } from 'node:util';
 
 import { SigningStargateClient } from '@cosmjs/stargate';
 import * as ws from 'ws';
@@ -13,6 +14,7 @@ import {
   makeSmartWalletKit,
   reflectWalletStore,
 } from '@agoric/client-utils';
+import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import { objectMetaMap } from '@agoric/internal';
 
 import { loadConfig } from './config.ts';
@@ -37,7 +39,7 @@ const assertChainId = async (
 };
 
 export const main = async (
-  argv,
+  args: string[],
   {
     env = process.env,
     fetch = globalThis.fetch,
@@ -48,6 +50,11 @@ export const main = async (
     WebSocket = ws.WebSocket,
   } = {},
 ) => {
+  const dashIdx = [...args, '--'].indexOf('--');
+  const maybeOpts = args.slice(0, dashIdx);
+  const isDryRun = maybeOpts.includes('--dry-run');
+  const isVerbose = maybeOpts.includes('--verbose');
+
   const delay = ms =>
     new Promise(resolve => setTimeout(resolve, ms)).then(() => {});
   const simplePowers = { fetch, setTimeout, delay };
@@ -67,8 +74,8 @@ export const main = async (
     heartbeats: generateInterval(6000),
   });
   await rpc.opened();
-  await assertChainId(rpc, networkConfig.chainName, (...args) =>
-    console.warn('Agoric chain status', ...args),
+  await assertChainId(rpc, networkConfig.chainName, (...logArgs) =>
+    console.warn('Agoric chain status', ...logArgs),
   );
 
   const cosmosRest = new CosmosRestClient(simplePowers, {
@@ -84,10 +91,49 @@ export const main = async (
   console.warn('Agoric chain versions', agoricVersions && agoricSummary);
 
   const walletUtils = await makeSmartWalletKit(simplePowers, networkConfig);
-  const signingSmartWalletKit = await makeSigningSmartWalletKit(
+  let signingSmartWalletKit = await makeSigningSmartWalletKit(
     { connectWithSigner, walletUtils },
     config.mnemonic,
   );
+  if (isDryRun) {
+    const stdoutIsTty = process.stdout.isTTY;
+    const bridgeActionInspectOpts = { depth: 6, colors: stdoutIsTty };
+    const { address, query, pollOffer } = signingSmartWalletKit;
+    const sendBridgeAction: SigningSmartWalletKit['sendBridgeAction'] = async (
+      action,
+      fee,
+      memo,
+      signerData,
+    ) => {
+      if (isVerbose) {
+        console.log(
+          '[sendBridgeAction]',
+          inspect({ action, fee, memo, signerData }, bridgeActionInspectOpts),
+        );
+      }
+      return {
+        height: 0,
+        txIndex: 0,
+        code: 0,
+        transactionHash: '',
+        events: [],
+        msgResponses: [],
+        gasUsed: 0n,
+        gasWanted: 0n,
+      };
+    };
+    signingSmartWalletKit = {
+      ...walletUtils,
+      address,
+      query,
+      sendBridgeAction,
+      executeOffer: async offer => {
+        const offerP = pollOffer(address, offer.id);
+        await sendBridgeAction({ method: 'executeOffer', offer });
+        return offerP;
+      },
+    };
+  }
   console.warn('Signer address:', signingSmartWalletKit.address);
   const walletStore = reflectWalletStore(signingSmartWalletKit, {
     setTimeout,
@@ -131,6 +177,7 @@ export const main = async (
     gasEstimator,
   };
   await startEngine(powers, {
+    isDryRun,
     contractInstance: config.contractInstance,
     depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
     feeBrandName: env.FEE_BRAND_NAME || 'BLD',

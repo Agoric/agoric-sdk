@@ -58,10 +58,11 @@ yarn start:deps
 ### Local Development
 
 ```bash
-yarn dev
+yarn dev --dry-run
 ```
 
-This starts the development server with hot reloading.
+This starts the development server with hot reloading (omit `--dry-run` to make
+the planner actually sign and submit actions rather than just logging them).
 
 ### Testing
 
