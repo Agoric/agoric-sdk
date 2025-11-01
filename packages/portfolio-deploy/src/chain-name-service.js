@@ -111,7 +111,7 @@ export const makeAssetInfo = (
       if (holdingChain === chain) continue;
       if (chainInfo[holdingChain].namespace !== 'cosmos') continue;
       if (!chainInfo[chain]?.connections?.[chainInfo[holdingChain].chainId]) {
-        console.debug(
+        console.error(
           'Cannot register',
           denom,
           'on',
