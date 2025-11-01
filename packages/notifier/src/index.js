@@ -29,4 +29,4 @@ export * from './storesub.js';
 export * from './stored-notifier.js';
 
 // eslint-disable-next-line import/export
-export * from './types-index.js'; // no named exports in JS
+export * from './types.js'; // no named exports in JS
