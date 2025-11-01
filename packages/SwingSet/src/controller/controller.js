@@ -401,6 +401,10 @@ export async function makeSwingsetController(
 
       slogDuration,
 
+      dumpLog(idx) {
+        return deepCopyJsonable(kernel.dumpLog(idx));
+      },
+
       dump() {
         return deepCopyJsonable(kernel.dump());
       },
@@ -617,7 +621,7 @@ export async function makeSwingsetController(
  * the two stages; this can happen, for example, in some debugging cases.
  *
  * @param {SwingSetConfig} config
- * @param {string[]} argv
+ * @param {string[]} bootstrapArgs
  * @param {{
  *   kernelStorage?: SwingStoreKernelStorage;
  *   env?: Record<string, string>;
@@ -634,7 +638,7 @@ export async function makeSwingsetController(
  */
 export async function buildVatController(
   config,
-  argv = [],
+  bootstrapArgs = [],
   runtimeOptions = {},
   deviceEndowments = {},
 ) {
@@ -670,7 +674,7 @@ export async function buildVatController(
   if (!swingsetIsInitialized(kernelStorage)) {
     bootstrapResult = await initializeSwingset(
       config,
-      argv,
+      bootstrapArgs,
       kernelStorage,
       initializationOptions,
       runtimeOptions,

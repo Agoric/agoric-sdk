@@ -191,8 +191,8 @@ export default function buildKernel(
 
   // This is a low-level output-only string logger used by old unit tests to
   // see whether vats made progress or not. The array it appends to is
-  // available as c.dump().log . New unit tests should instead use the
-  // 'result' value returned by c.queueToKref()
+  // available from controller methods `dumpLog` and `dump`. New unit tests
+  // should instead use the 'result' value returned by c.queueToKref().
   function testLog(...args) {
     const rendered = args.map(arg =>
       typeof arg === 'string' ? arg : JSON.stringify(arg, abbreviateReplacer),
@@ -2310,14 +2310,18 @@ export default function buildKernel(
       };
     },
 
+    // Note: Logs are not deterministic, since log() does not go through the
+    // syscall interface (and we replay transcripts one vat at a time, so any
+    // log() calls that were interleaved during their original execution will be
+    // sorted by vat in the replay). They are therefore not kept in the
+    // persistent state and remain ephemeral.
+    dumpLog(idx = 0) {
+      return ephemeral.log.slice(idx);
+    },
     dump() {
-      // note: dump().log is not deterministic, since log() does not go
-      // through the syscall interface (and we replay transcripts one vat at
-      // a time, so any log() calls that were interleaved during their
-      // original execution will be sorted by vat in the replay). Logs are
-      // not kept in the persistent state, only in ephemeral state.
       return { log: ephemeral.log, ...kernelKeeper.dump() };
     },
+
     kdebugEnable,
 
     addImport,
