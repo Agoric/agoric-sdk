@@ -27,7 +27,11 @@ import type { AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-typ
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
-import { TxType } from '@agoric/portfolio-api';
+import {
+  TxType,
+  type FlowErrors,
+  type FundsFlowPlan,
+} from '@agoric/portfolio-api';
 import {
   AxelarChain,
   SupportedChain,
@@ -77,6 +81,7 @@ import {
   type PoolKey,
   type ProposalType,
 } from './type-guards.ts';
+import { runJob, type Job } from './schedule-order.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const { keys, entries, fromEntries } = Object;
@@ -122,7 +127,8 @@ type AssetMovement = {
 };
 
 const moveStatus = ({ apply: _a, ...data }: AssetMovement) => data;
-const errmsg = (err: any) => ('message' in err ? err.message : `${err}`);
+const errmsg = (err: any) =>
+  `${err != null && 'message' in err ? err.message : err}`;
 
 export type TransportDetail<
   How extends string,
@@ -160,6 +166,11 @@ export type ProtocolDetail<
   ) => Promise<void>;
 };
 
+const { min } = Math;
+const range = (n: number) => Array.from(Array(n).keys());
+const fullOrder = (length: number): Job['order'] =>
+  range(length - 1).map(lo => [lo + 1, [lo]]);
+
 /**
  * **Failure Handling**: Logs failures and publishes status without attempting
  * to unwind already-completed steps. Operators must resolve any partial
@@ -171,17 +182,25 @@ const trackFlow = async (
   flowId: number,
   traceFlow: TraceLogger,
   accounts: AccountsByChain,
+  order: Job['order'],
 ) => {
-  await null; // cf. wiki:NoNestedAwait
-
-  let step = 1;
-  try {
-    for (const move of moves) {
-      const traceStep = traceFlow.sub(`step${step}`);
+  const runTask = async (ix: number, running: number[]) => {
+    // steps are 1-based. the scheduler is 0-based
+    const step = ix + 1;
+    const steps = running.map(i => i + 1);
+    const move = moves[ix];
+    const traceStep = traceFlow.sub(`step${step}`);
+    reporter.publishFlowStatus(flowId, {
+      state: 'run',
+      steps,
+      step: min(...steps),
+      how: moves[min(...running)].how,
+    });
+    await null;
+    try {
       traceStep('starting', moveStatus(move));
-      const { amount, how } = move;
-      reporter.publishFlowStatus(flowId, { state: 'run', step, how });
       const { srcPos, destPos } = await move.apply(accounts, traceStep);
+      const { amount, how } = move;
       traceStep('done:', how);
 
       if (srcPos) {
@@ -190,27 +209,40 @@ const trackFlow = async (
       if (destPos) {
         destPos.recordTransferIn(amount);
       }
-      step += 1;
+
+      // TODO(#NNNN): delete the flow storage node
+    } catch (err) {
+      traceFlow('⚠️ step', step, 'failed', err);
+      const failure = moves[step - 1];
+      if (failure) {
+        traceFlow('failed movement details', moveStatus(failure));
+      }
+      throw err;
     }
-    reporter.publishFlowStatus(flowId, { state: 'done' });
-    // TODO(#NNNN): delete the flow storage node
-  } catch (err) {
-    traceFlow('⚠️ step', step, 'failed', err);
-    const failure = moves[step - 1];
-    if (failure) {
-      traceFlow('failed movement details', moveStatus(failure));
-    }
-    reporter.publishFlowStatus(flowId, {
-      state: 'fail',
-      step,
-      how: failure?.how ?? 'unknown',
-      error: errmsg(err),
-    });
-    throw err;
+  };
+
+  const job: Job = { taskQty: moves.length, order };
+  const results = await runJob(job, runTask, traceFlow);
+  if (results.some(r => r.status === 'rejected')) {
+    const reasons = [...results].reverse().reduce((next, r, ix) => {
+      if (r.status !== 'rejected') return next;
+      const errs: FlowErrors = {
+        step: ix + 1,
+        how: moves[ix].how,
+        error: errmsg(r.reason),
+        next,
+      };
+      return errs;
+    }, undefined);
+    assert(reasons); // guaranteed by results.some(...) above
+    reporter.publishFlowStatus(flowId, { state: 'fail', ...reasons });
+    throw results;
   }
+
+  reporter.publishFlowStatus(flowId, { state: 'done' });
 };
 
-const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
+export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
   orch: Orchestrator,
   chainName: C,
   kit: GuestInterface<PortfolioKit>, // Guest<T>?
@@ -401,7 +433,7 @@ const stepFlow = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
-  moves: MovementDesc[],
+  plan: MovementDesc[] | FundsFlowPlan,
   kit: GuestInterface<PortfolioKit>,
   traceP: TraceLogger,
   flowId: number,
@@ -495,7 +527,14 @@ const stepFlow = async (
   const { reporter } = kit;
   const traceFlow = traceP.sub(`flow${flowId}`);
 
+  const { flow: moves, order: maybeOrder } = Array.isArray(plan)
+    ? { flow: plan }
+    : plan;
+  const order = maybeOrder || fullOrder(moves.length);
+
   traceFlow('checking', moves.length, 'moves');
+  moves.length > 0 || Fail`moves list must not be empty`;
+
   for (const [i, move] of entries(moves)) {
     const traceMove = traceFlow.sub(`move${i}`);
     const way = wayFromSrcToDesc(move);
@@ -676,6 +715,7 @@ const stepFlow = async (
   reporter.publishFlowSteps(
     flowId,
     todo.map(({ apply: _a, ...data }) => data),
+    maybeOrder,
   );
 
   const agoric = await provideCosmosAccount(orch, 'agoric', kit, traceFlow);
@@ -747,7 +787,7 @@ const stepFlow = async (
   };
   traceFlow('accounts for trackFlow', keys(accounts));
 
-  await trackFlow(reporter, todo, flowId, traceFlow, accounts);
+  await trackFlow(reporter, todo, flowId, traceFlow, accounts, order);
   traceFlow('stepFlow done');
 };
 
@@ -1109,9 +1149,11 @@ export const executePlan = (async (
   const traceFlow = traceP.sub(`flow${flowId}`);
   if (!offerArgs.flow) traceFlow('waiting for steps from planner');
   // idea: race with seat.getSubscriber()
-  const steps = await (stepsP as unknown as Promise<MovementDesc[]>); // XXX Guest/Host types UNTIL #9822
+  const plan = await (stepsP as unknown as Promise<
+    MovementDesc[] | FundsFlowPlan
+  >); // XXX Guest/Host types UNTIL #9822
   try {
-    await stepFlow(orch, ctx, seat, steps, pKit, traceP, flowId);
+    await stepFlow(orch, ctx, seat, plan, pKit, traceP, flowId);
     return `flow${flowId}`;
   } finally {
     // The seat must be exited no matter what to avoid leaks

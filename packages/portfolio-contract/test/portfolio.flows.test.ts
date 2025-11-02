@@ -10,10 +10,12 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { GuestInterface } from '@agoric/async-flow';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import { AmountMath, makeIssuerKit, type NatAmount } from '@agoric/ertp';
-import { mustMatch } from '@agoric/internal';
+import { makeTracer, mustMatch } from '@agoric/internal';
+import { type StorageMessage } from '@agoric/internal/src/lib-chainStorage.js';
 import {
   defaultSerializer,
   documentStorageSchema,
+  makeAsyncQueue,
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -27,6 +29,7 @@ import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { buildGasPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import {
   RebalanceStrategy,
   YieldProtocol,
@@ -48,6 +51,7 @@ import {
   executePlan,
   onAgoricTransfer,
   openPortfolio,
+  provideCosmosAccount,
   rebalance,
   wayFromSrcToDesc,
   type OnTransferContext,
@@ -289,7 +293,7 @@ const mocks = (
           if (name === 'noble') {
             return Far('NobleAccount', {
               ...account,
-              depositForBurn: (destinationAddress, denomAmount) => {
+              depositForBurn: async (destinationAddress, denomAmount) => {
                 if (!('denom' in denomAmount)) throw Error('#10449');
                 log({
                   _cap: addr.value,
@@ -326,7 +330,16 @@ const mocks = (
   const board = makeFakeBoard();
   const marshaller = board.getReadonlyMarshaller();
 
-  const storage = makeFakeStorageKit('published', { sequence: true });
+  const {
+    enqueue: eachMessage,
+    iterable: storageUpdates,
+    cancel: cancelStorageupdates,
+  } = makeAsyncQueue<StorageMessage>();
+  const storage = makeFakeStorageKit(
+    'published',
+    { sequence: true },
+    { eachMessage },
+  );
   const ymaxNode = storage.rootNode.makeChildNode('ymax0');
   const pendingTxsNode = ymaxNode.makeChildNode(PENDING_TXS_NODE_KEY);
   const portfoliosNode = ymaxNode.makeChildNode('portfolios');
@@ -447,6 +460,23 @@ const mocks = (
         }
       }
     },
+    settleUntil: async (
+      done: Promise<unknown>,
+      status: Exclude<TxStatus, 'pending'> = 'success',
+    ) => {
+      void done.then(() => cancelStorageupdates());
+      for await (const message of storageUpdates) {
+        if (!message) continue;
+        const { method, args } = message;
+        if (method !== 'append') continue;
+        const [[key, _val]] = args;
+        if (!key.includes('.pendingTxs.')) continue;
+        const info = getDeserialized(key).at(-1) as PublishedTx;
+        if (info.status !== 'pending') continue;
+        const txId = key.split('.').at(-1) as `tx${number}`;
+        resolverService.settleTransaction({ txId, status });
+      }
+    },
   });
 
   return {
@@ -457,6 +487,7 @@ const mocks = (
     storage: {
       ...storage,
       getDeserialized,
+      updates: storageUpdates,
     },
     vowTools,
     txResolver,
@@ -1493,4 +1524,110 @@ test('simple rebalance in coordination with planner', async t => {
   t.snapshot(log, 'call log');
 
   await documentStorageSchema(t, storage, docOpts);
+});
+
+test('parallel execution with scheduler', async t => {
+  const { orch, ctx, offer, storage, tapPK, txResolver } = mocks({});
+
+  const trace = makeTracer('PExec');
+  const kit = await ctx.makePortfolioKit();
+  await provideCosmosAccount(orch, 'agoric', kit, trace);
+  const portfolioId = kit.reader.getPortfolioId();
+
+  const { getPortfolioStatus, getFlowHistory } = makeStorageTools(storage);
+
+  const webUiDone = (async () => {
+    const Deposit = make(USDC, 40_000_000n);
+    const dSeat = makeMockSeat({ Deposit }, {}, offer.log);
+
+    return executePlan(orch, ctx, dSeat, {}, kit, {
+      type: 'deposit',
+      amount: Deposit,
+    });
+  })();
+
+  const plannerP = (async () => {
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+    // XXX brand from vstorage isn't suitable for use in call to kit
+    const amount = make(USDC, detail.amount.value);
+    const amt60 = make(USDC, (amount.value * 60n) / 100n);
+    const amt40 = make(USDC, (amount.value * 40n) / 100n);
+    const feeAcct = AmountMath.make(BLD, 50n);
+    const steps: MovementDesc[] = [
+      { src: '<Deposit>', dest: '@agoric', amount },
+      { src: '@agoric', dest: '@noble', amount },
+      { src: '@noble', dest: 'USDN', amount: amt40 },
+      { src: '@noble', dest: '@Arbitrum', amount: amt60, fee: feeAcct },
+      { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount: amt60 },
+    ];
+
+    const plan: FundsFlowPlan = {
+      flow: steps,
+      order: [
+        [1, [0]],
+        [2, [1]],
+        [3, [1]],
+        [4, [3]],
+      ],
+    };
+    kit.planner.resolveFlowPlan(Number(flowId.replace('flow', '')), plan);
+  })();
+
+  const resolverP = txResolver.settleUntil(webUiDone);
+
+  // Simulate external system responses for cross-chain operations
+  const simulationP = (async () => {
+    const tap = await tapPK.promise;
+    await offer.factoryPK.promise;
+    await tap.receiveUpcall(makeIncomingEVMEvent({ sourceChain }));
+  })();
+
+  const [result] = await Promise.all([
+    webUiDone,
+    plannerP,
+    resolverP,
+    simulationP,
+  ]);
+
+  const { log } = offer;
+  t.log('calls:', log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'send' },
+    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    {
+      _method: 'localTransfer',
+      amounts: { Deposit: { value: 40_000_000n } },
+    },
+    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    {
+      _method: 'executeEncodedTx',
+      msgs: [{ typeUrl: '/noble.swap.v1.MsgSwap' }],
+    }, // USDN swap (parallel)
+    { _method: 'depositForBurn', denomAmount: { value: 24_000_000n } },
+    { _method: 'send' },
+    { _method: 'transfer' }, // Aave supply call
+    { _method: 'exit' },
+  ]);
+
+  t.log('result', result);
+  t.is(result, 'flow1');
+
+  const flowHistory = {
+    [`portfolio${portfolioId}.flows.flow1`]: await getFlowHistory(
+      portfolioId,
+      1,
+    ),
+  };
+  t.log(flowHistory);
+  const parallel = Object.values(flowHistory)[0].flatMap(s =>
+    s.state === 'run' && (s.steps || []).length > 1 ? [s] : [],
+  );
+  t.log('parallel', parallel);
+  t.true(parallel.length > 0);
+
+  t.snapshot(flowHistory, 'parallel flow history');
 });
