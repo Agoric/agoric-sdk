@@ -475,6 +475,7 @@ export const preparePortfolioKit = (
           if (steps) sync.resolver.resolve(steps);
           flowsRunning.init(flowId, harden({ sync, ...detail }));
           this.facets.reporter.publishStatus();
+          this.facets.reporter.publishFlowStatus(flowId, { state: 'init' });
           return { stepsP: sync.vow, flowId };
         },
         providePosition(
