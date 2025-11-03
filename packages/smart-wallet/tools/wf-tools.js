@@ -13,7 +13,7 @@ import * as wfExports from '../src/walletFactory.js';
 /**
  * @import {start as StartFn} from '../src/walletFactory.js';
  * @import {SmartWallet} from '../src/smartWallet.js'
- * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils';
+ * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
 const ROOT_STORAGE_PATH = 'ROOT';

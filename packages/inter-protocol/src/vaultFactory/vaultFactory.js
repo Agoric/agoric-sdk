@@ -41,7 +41,7 @@ const trace = makeTracer('VF', true);
 
 /**
  * @typedef {ZCF<
- *   GovernanceTerms<import('./params').VaultDirectorParams> & {
+ *   GovernanceTerms<import('./params.js').VaultDirectorParams> & {
  *     priceAuthority: ERef<PriceAuthority>;
  *     reservePublicFacet: AssetReservePublicFacet;
  *     timerService: import('@agoric/time').TimerService;

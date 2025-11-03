@@ -62,7 +62,7 @@ const withMutex = operation => {
  * @typedef {SlogSenderPipeAPI[PipeAPICommand]["reply"]} PipeAPIReply
  */
 
-/** @param {import('.').MakeSlogSenderOptions} options */
+/** @param {import('./index.js').MakeSlogSenderOptions} options */
 export const makeSlogSender = async options => {
   const { env = {} } = options;
   const { registerShutdown } = makeShutdown();
