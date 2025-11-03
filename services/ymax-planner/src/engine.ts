@@ -45,6 +45,7 @@ import {
 } from '@agoric/internal';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
+import type { FlowStatus } from '@agoric/portfolio-api';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
@@ -192,6 +193,57 @@ type ProcessPortfolioPowers = Pick<
   };
 };
 
+/**
+ * Determines if a plan needs to be submitted for a given portfolio flow.
+ * A plan is needed if:
+ * - The flow does not have vstorage data (flowKeys does not contain flowKey), OR
+ * - The flow exists but has status: 'init'
+ *
+ * @param portfolioKey - The portfolio key (e.g., "portfolio1")
+ * @param flowKey - The flow key (e.g., "flow1")
+ * @param flowKeys - Set of flow keys that have vstorage data
+ * @param vstorage - Vstorage query interface
+ * @param portfoliosPathPrefix - Prefix for portfolio vstorage paths
+ * @param marshaller - Marshaller for reading vstorage data
+ * @param readOpts - Options for reading vstorage
+ * @param readOpts.minBlockHeight - Minimum block height for reading
+ * @param readOpts.retries - Number of retries for reading
+ * @returns Promise<boolean> - true if a plan needs to be submitted
+ */
+export const planNeeded = async (
+  portfolioKey: string,
+  flowKey: string,
+  flowKeys: Set<string>,
+  vstorage: SigningSmartWalletKit['query']['vstorage'],
+  portfoliosPathPrefix: string,
+  marshaller: SigningSmartWalletKit['marshaller'],
+  readOpts: { minBlockHeight: bigint; retries: number },
+): Promise<boolean> => {
+  await null;
+  // If vstorage has no data for this flow, a plan is needed
+  if (!flowKeys.has(flowKey)) {
+    return true;
+  }
+
+  // If vstorage has data, check if the status is 'init'
+  const flowPath = `${portfoliosPathPrefix}.${portfolioKey}.flows.${flowKey}`;
+  try {
+    const flowStatusCapdata = await readStreamCellValue(
+      vstorage,
+      flowPath,
+      readOpts,
+    );
+    const flowStatus = marshaller.fromCapData(flowStatusCapdata) as FlowStatus;
+    // A plan is needed if the status is 'init'
+    return flowStatus.state === 'init';
+  } catch (err) {
+    // If we can't read the flow status, assume a plan is not needed
+    // (conservative approach - the flow data exists but we can't read it)
+    console.warn(`⚠️ Could not read flow status for ${flowPath}`, err);
+    return false;
+  }
+};
+
 const processPortfolioEvents = async (
   portfolioEvents: VstorageEventDetail[],
   blockHeight: bigint,
@@ -329,15 +381,24 @@ const processPortfolioEvents = async (
         setPortfolioKeyForDepositAddr(depositAddress, portfolioKey);
       }
       // If any in-progress flows need activation (as indicated by not having
-      // its own dedicated vstorage data), then find the first such flow and
-      // respond to it. Responding to the rest now is pointless because
-      // acceptance of the first submission would invalidate the others as
-      // stale, but we'll see them again when such acceptance prompts changes
-      // to the portfolio status.
+      // its own dedicated vstorage data or having status: 'init'), then find 
+      // the first such flow and respond to it. Responding to the rest now is 
+      // pointless because acceptance of the first submission would invalidate 
+      // the others as stale, but we'll see them again when such acceptance 
+      // prompts changes to the portfolio status.
       const flowKeys = new Set(flowKeysResp.result.children);
       for (const [flowKey, flowDetail] of entries(status.flowsRunning || {})) {
-        // If vstorage has data for this flow then we've already responded.
-        if (flowKeys.has(flowKey)) continue;
+        // Check if a plan needs to be submitted for this flow
+        const needsPlan = await planNeeded(
+          portfolioKey,
+          flowKey,
+          flowKeys,
+          vstorage,
+          portfoliosPathPrefix,
+          marshaller,
+          readOpts,
+        );
+        if (!needsPlan) continue;
         await startFlow(status, portfolioKey, flowKey, flowDetail);
         return;
       }

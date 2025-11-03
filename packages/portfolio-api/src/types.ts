@@ -73,6 +73,7 @@ export type FlowErrors = {
 };
 
 export type FlowStatus =
+  | { state: 'init' }
   | {
       state: 'run';
       /** minimum currently running step */
