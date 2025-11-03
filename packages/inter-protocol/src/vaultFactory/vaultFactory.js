@@ -1,6 +1,6 @@
 // @jessie-check
-/// <reference types="@agoric/governance/exported" />
-/// <reference types="@agoric/zoe/exported" />
+/// <reference types="@agoric/governance/exported.js" />
+/// <reference types="@agoric/zoe/exported.js" />
 
 // The vaultFactory owns a number of VaultManagers and a mint for Minted.
 //

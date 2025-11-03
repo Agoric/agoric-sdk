@@ -9,7 +9,7 @@
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 
-/// <reference types="@agoric/vats/src/core/types-ambient"/>
+/// <reference types="@agoric/vats/src/core/types-ambient.js"/>
 /** @import {Instance} from '@agoric/zoe/src/zoeService/utils.js'; */
 
 const trace = makeTracer('provokeBOYD', true);
