@@ -74,6 +74,10 @@ export type FlowErrors = {
 
 export type FlowStatus =
   | {
+      /** requested; awaiting plan */
+      state: 'init';
+    }
+  | {
       state: 'run';
       /** minimum currently running step */
       step: number;
