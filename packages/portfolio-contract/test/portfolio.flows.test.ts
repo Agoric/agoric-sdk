@@ -1246,6 +1246,7 @@ test('handle failure in provideEVMAccount sendMakeAccountCall', async t => {
     const fs = await getFlowStatus(1, 1);
     t.log(fs);
     t.deepEqual(fs, {
+      type: 'rebalance',
       state: 'fail',
       step: 0,
       how: 'makeAccount: Arbitrum',
