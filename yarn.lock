@@ -152,6 +152,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aglocal/fast-usdc-deploy@workspace:packages/fast-usdc-deploy"
   dependencies:
+    "@aglocal/boot": "workspace:*"
     "@aglocal/strict-ts-loader": "workspace:*"
     "@agoric/client-utils": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"

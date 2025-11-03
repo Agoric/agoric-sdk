@@ -20,6 +20,7 @@
     "lint:types": "yarn run -T tsc"
   },
   "devDependencies": {
+    "@aglocal/boot": "workspace:*",
     "@aglocal/strict-ts-loader": "workspace:*",
     "@agoric/swing-store": "workspace:*",
     "@agoric/vats": "workspace:*",
