@@ -1,8 +1,9 @@
+/// <reference types="../types-ambient.js" />
+
 import {
   insistVatSyscallObject,
   insistVatSyscallResult,
 } from '../lib/message.js';
-import '../types-ambient.js';
 
 /**
  * @import {VatDeliveryObject} from '@agoric/swingset-liveslots'
