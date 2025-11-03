@@ -15,15 +15,16 @@ import {
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
+import type { CosmosRPCClient } from './cosmos-rpc.ts';
+import type { KeyValueStore } from './kv-store.ts';
 import { resolvePendingTx } from './resolver.ts';
 import {
   waitForBlock,
   type EvmProviders,
   type UsdcAddresses,
 } from './support.ts';
-import { watchGmp, lookBackGmp } from './watchers/gmp-watcher.ts';
-import { watchCctpTransfer, lookBackCctp } from './watchers/cctp-watcher.ts';
-import type { CosmosRPCClient } from './cosmos-rpc.ts';
+import { lookBackCctp, watchCctpTransfer } from './watchers/cctp-watcher.ts';
+import { lookBackGmp, watchGmp } from './watchers/gmp-watcher.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
 
@@ -253,6 +254,7 @@ export type HandlePendingTxOpts = {
     portfoliosPathPrefix: string;
     pendingTxPathPrefix: string;
   };
+  kvStore: KeyValueStore;
 } & EvmContext;
 
 export const TX_TIMEOUT_MS = 30 * 60 * 1000; // 30 min

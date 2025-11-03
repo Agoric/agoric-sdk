@@ -6,38 +6,38 @@ import type { InspectOptions } from 'node:util';
 
 import type { Coin } from '@cosmjs/stargate';
 
-import { Fail, annotateError, q } from '@endo/errors';
-import { Nat } from '@endo/nat';
-import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
+import { getInvocationUpdate, reflectWalletStore } from '@agoric/client-utils';
 import type { RetryOptionsAndPowers } from '@agoric/client-utils/src/sync-tools.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
+import { Fail, annotateError, q } from '@endo/errors';
+import { Nat } from '@endo/nat';
 
 import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
-import {
-  PublishedTxShape,
-  type PendingTx,
-  type TxId,
-} from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import {
   TxStatus,
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import {
-  flowIdFromKey,
-  portfolioIdFromKey,
+  PublishedTxShape,
+  type PendingTx,
+  type TxId,
+} from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
+import {
   PoolPlaces,
   PortfolioStatusShapeExt,
+  flowIdFromKey,
+  portfolioIdFromKey,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type {
   FlowDetail,
   PoolKey as InstrumentId,
   StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import {
@@ -55,6 +55,12 @@ import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
+import { getResolverLastActiveTime, type KeyValueStore } from './kv-store.ts';
+import {
+  handlePendingTx,
+  type EvmContext,
+  type HandlePendingTxOpts,
+} from './pending-tx-manager.ts';
 import {
   getCurrentBalance,
   getNonDustBalances,
@@ -65,18 +71,13 @@ import {
 import type { BalanceQueryPowers } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import {
-  handlePendingTx,
-  type EvmContext,
-  type HandlePendingTxOpts,
-} from './pending-tx-manager.ts';
-import {
+  STALE_RESPONSE,
   parseStreamCell,
   parseStreamCellValue,
   readStorageMeta,
   readStreamCellValue,
   vstoragePathIsAncestorOf,
   vstoragePathIsParentOf,
-  STALE_RESPONSE,
 } from './vstorage-utils.ts';
 
 const { entries, fromEntries, values } = Object;
@@ -194,6 +195,7 @@ type Powers = {
   now: typeof Date.now;
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
+  kvStore: KeyValueStore;
 };
 
 type ProcessPortfolioPowers = Pick<
@@ -543,29 +545,40 @@ export const processInitialPendingTransactions = async (
   txPowers: HandlePendingTxOpts,
   handlePendingTxFn = handlePendingTx,
 ) => {
-  const { error = () => {}, log = () => {}, cosmosRpc } = txPowers;
+  const { error = () => {}, log = () => {}, cosmosRpc, kvStore } = txPowers;
 
   log(`Processing ${initialPendingTxData.length} pending transactions`);
 
-  // Cache timestamps for block heights to avoid duplicate RPC calls
+  const resolverLastActiveTime = await getResolverLastActiveTime(kvStore);
+
   const blockHeightToTimestamp = new Map<bigint, Promise<number>>();
 
   await makeWorkPool(initialPendingTxData, undefined, async pendingTxRecord => {
     const { blockHeight, tx } = pendingTxRecord;
-    const timestampMs = await provideLazyMap(
-      blockHeightToTimestamp,
-      blockHeight,
-      async () => {
-        const resp = await cosmosRpc.request('block', {
-          height: `${blockHeight}`,
-        });
-        const date = new Date(resp.block.header.time);
-        return date.getTime();
-      },
-    ).catch(err => {
-      const msg = `🚨 Couldn't get block time for pending tx ${tx.txId} at height ${blockHeight}`;
-      error(msg, err);
-    });
+
+    let timestampMs: number | undefined;
+
+    await null;
+    if (resolverLastActiveTime !== undefined) {
+      timestampMs = resolverLastActiveTime;
+    } else {
+      timestampMs = await provideLazyMap(
+        blockHeightToTimestamp,
+        blockHeight,
+        async () => {
+          const resp = await cosmosRpc.request('block', {
+            height: `${blockHeight}`,
+          });
+          const date = new Date(resp.block.header.time);
+          return date.getTime();
+        },
+      ).catch(err => {
+        const msg = `🚨 Couldn't get block time for pending tx ${tx.txId} at height ${blockHeight}`;
+        error(msg, err);
+        return undefined;
+      });
+    }
+
     if (timestampMs === undefined) return;
 
     log(`Processing pending tx ${tx.txId} with lookback`);
@@ -592,7 +605,8 @@ export const startEngine = async (
     feeBrandName: string;
   },
 ) => {
-  const { evmCtx, cosmosRest, now, rpc, signingSmartWalletKit } = powers;
+  const { evmCtx, cosmosRest, now, rpc, signingSmartWalletKit, kvStore } =
+    powers;
   const vstoragePathPrefixes = makeVstoragePathPrefixes(contractInstance);
   const { portfoliosPathPrefix, pendingTxPathPrefix } = vstoragePathPrefixes;
   await null;
@@ -735,6 +749,7 @@ export const startEngine = async (
     now,
     signingSmartWalletKit,
     vstoragePathPrefixes,
+    kvStore,
   });
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
 

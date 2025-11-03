@@ -39,6 +39,10 @@ import {
 } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
+import {
+  InMemoryKeyValueStore,
+  setResolverLastActiveTime,
+} from './kv-store.ts';
 
 const assertChainId = async (
   rpc: CosmosRPCClient,
@@ -268,6 +272,33 @@ export const main = async (
     fetch,
   });
 
+  const kvStore = new InMemoryKeyValueStore();
+
+  const RESOLVER_UPDATE_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+  const updateResolverTimestamp = async () => {
+    const timestamp = now();
+    await setResolverLastActiveTime(kvStore, timestamp);
+    console.log(
+      `Updated RESOLVER_LAST_ACTIVE_TIME: ${new Date(timestamp).toISOString()}`,
+    );
+  };
+
+  const resolverTimestampInterval = setInterval(() => {
+    void updateResolverTimestamp().catch(err => {
+      console.error('Failed to update RESOLVER_LAST_ACTIVE_TIME:', err);
+    });
+  }, RESOLVER_UPDATE_INTERVAL_MS);
+
+  // Clean up interval on process exit
+  process.on('SIGINT', () => {
+    clearInterval(resolverTimestampInterval);
+    process.exit(0);
+  });
+  process.on('SIGTERM', () => {
+    clearInterval(resolverTimestampInterval);
+    process.exit(0);
+  });
+
   const powers = {
     evmCtx,
     rpc,
@@ -287,6 +318,7 @@ export const main = async (
     now,
     gasEstimator,
     usdcTokensByChain,
+    kvStore,
   };
   await startEngine(powers, {
     isDryRun,
