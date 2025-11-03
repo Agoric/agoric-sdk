@@ -147,7 +147,7 @@ const status: StatusFor = {
     totalIn: natAmount,
     totalOut: natAmount,
   },
-  flow: { state: 'done' },
+  flow: { state: 'done', type: 'rebalance' },
   flowSteps,
   flowOrder: [
     [4, [2, 3]],

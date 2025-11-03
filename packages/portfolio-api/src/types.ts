@@ -144,7 +144,7 @@ export type StatusFor = {
     totalIn: NatAmount;
     totalOut: NatAmount;
   };
-  flow: FlowStatus;
+  flow: FlowStatus & FlowDetail;
   flowSteps: FlowStep[];
   flowOrder: FundsFlowPlan['order'];
 };
