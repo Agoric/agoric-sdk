@@ -9,7 +9,7 @@ import { makeHeapZone } from '@agoric/zone';
 import { prepareContractControl } from './contract-control.js';
 
 /**
- * @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils';
+ * @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {ChainStoragePresent} from './chain-info.core.js'
  * @import {PostalServiceBoot} from './postal-service.core.js';
  * @import {AttenuatedDepositPowers} from './attenuated-deposit.core.js';

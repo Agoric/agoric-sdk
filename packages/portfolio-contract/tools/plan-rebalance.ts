@@ -1,6 +1,6 @@
 import { AmountMath } from '@agoric/ertp';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
-import type { PoolKey } from '@aglocal/portfolio-contract/src/type-guards';
+import type { PoolKey } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
 
 /**
