@@ -15,6 +15,12 @@ import {
   coreUserSeatMethods,
 } from './originalZoeSeat.js';
 
+/**
+ * @import {PaymentPKeywordRecord} from '../types.js';
+ * @import {InstanceAdminHelper, WithdrawFacet, ExitObj, PromiseRecordOf} from '../internal-types.js';
+ * @import {PromiseKit} from '@endo/promise-kit';
+ */
+
 // ZoeSeatAdmin has the implementation of coreUserSeatMethods, but ZoeUserSeat
 // is the facet shared with users. The latter transparently forwards to the
 // former.

@@ -23,6 +23,8 @@ import {
  * @import {Baggage} from '@agoric/vat-data';
  * @import {WeakMapStore} from '@agoric/store';
  * @import {BundleCap} from '@agoric/swingset-vat';
+ * @import {ERef} from '@endo/far';
+ * @import {ZoeStorageManager, SeatHandle, ZoeSeatAdmin, Completion, InstanceAdmin, ZoeInstanceStorageManager, ZoeInstanceAdmin, ZCFRoot} from '../internal-types.js';
  */
 
 /**

@@ -37,7 +37,8 @@ import './internal-types.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
- * @import {InvitationAmount} from '@agoric/zoe';
+ * @import {InvitationAmount, Issuer, Brand} from '@agoric/zoe';
+ * @import {CreateZCFVat, GetBundleCapForID, ShutdownWithFailure, GetFeeIssuerKit, InstanceState, InstanceRecord, InstanceStorageManager, ZoeInstanceStorageManager} from '../internal-types.js';
  */
 
 const { ownKeys } = Reflect;
