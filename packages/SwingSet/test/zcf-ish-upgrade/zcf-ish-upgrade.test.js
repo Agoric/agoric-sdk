@@ -5,6 +5,10 @@ import { assert } from '@endo/errors';
 import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
+/**
+ * @import {SwingSetConfig} from '../../src/types-external.js';
+ */
+
 const bfile = name => new URL(name, import.meta.url).pathname;
 
 test('zcf-ish upgrade', async t => {

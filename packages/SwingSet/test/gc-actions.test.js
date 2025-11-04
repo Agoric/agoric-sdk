@@ -2,6 +2,10 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 import { processGCActionSet } from '../src/kernel/gc-actions.js';
 
+/**
+ * @import {KernelKeeper} from '../src/kernel/state/kernelKeeper.js';
+ */
+
 test('gc actions', t => {
   let rc = {};
   let actions = [];

@@ -40,6 +40,14 @@ import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
  * @import {EReturn} from '@endo/far';
  * @import {LimitedConsole} from '@agoric/internal';
  * @import {VatID} from '../types-internal.js';
+ * @import {SwingStoreKernelStorage} from '../types-external.js';
+ * @import {Bundle} from '../types-external.js';
+ * @import {EndoZipBase64Bundle} from '../types-external.js';
+ * @import {BundleID} from '../types-external.js';
+ * @import {RunPolicy} from '../types-external.js';
+ * @import {ResolutionPolicy} from '../types-external.js';
+ * @import {SwingSetCapData} from '../types-external.js';
+ * @import {SwingSetConfig} from '../types-external.js';
  */
 
 /**
