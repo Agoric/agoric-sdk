@@ -1,5 +1,6 @@
 /**
  * @file Durable exo managing EVM chain account provisioning.
+ * @see {prepareEvmChainKit}
  */
 import { makeTracer } from '@agoric/internal';
 import { Fail } from '@endo/errors';
@@ -29,7 +30,11 @@ export type ProvisionContext = {
   evmGas: bigint;
 };
 
-// Waiters remain an in-memory array (VowKit is not Passable); ready becomes simple array.
+// Waiters are stored in a durable queue. The resolver (part of a VowKit) is
+// supported by our durable layer, so each WaiterEntry can be safely enqueued
+// durably. Ready accounts are stored as a simple array of passable
+// GMPAccountInfo records inside durable state (the `ready` field), not merely
+// ephemeral.
 
 type WaiterEntry = { tag: string; resolver: VowResolver<GMPAccountInfo> };
 type EvmChainState = {
@@ -45,6 +50,26 @@ type EvmChainState = {
   readonly provisionBase: ProvisionContext;
   /** Durable queue of waiter entries including resolver. */
   waiters: DurableQueue<WaiterEntry>;
+  /**
+   * Monotonically increasing attempt counter. It is consumed ONLY when a
+   * provisioning attempt is scheduled (admin.provisionMany), including retries.
+   *
+   * Usage patterns:
+   *  - account.requestAccount() uses the CURRENT value (without increment) to
+   *    form the waiter tag so the first attempt's label and its waiter share
+   *    the same numeric suffix.
+   *  - admin.provisionMany() then uses that same suffix for the attempt label
+   *    and increments the counter afterwards.
+   *  - Retries (manager.handleFailure → admin.provisionMany) consume a NEW
+   *    suffix even if no additional waiter was enqueued, ensuring each attempt
+   *    is uniquely traceable.
+   *
+   * Rationale: We want 1:1 pairing of initial waiter tag and first attempt
+   * label for readability, while keeping subsequent retry labels unique. If we
+   * increment during waiter enqueue we would lose that pairing. If distinct
+   * counters for waiters vs attempts become desirable later, introduce
+   * nextWaiterSuffix; current scheme is sufficient for tracing and tests.
+   */
   nextLabelSuffix: number;
   outstanding: number;
   factoryAddress?: `0x${string}`;
@@ -62,15 +87,20 @@ const makeStatusPayload = (state: EvmChainState): Passable => {
 export type EvmChainKit = ReturnType<ReturnType<typeof prepareEvmChainKit>>;
 
 // Internal default implementation performing the actual Axelar make-account flow.
-const internalProvisionOne = async (context: ProvisionContext) => {
+// Receives the shared immutable base context and a per-attempt unique label.
+const internalProvisionOne = async (
+  context: ProvisionContext,
+  label: string,
+) => {
   const feeAccount = await context.feeAccountP;
   const fee = context.fee;
   fee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
   const src = feeAccount.getAddress();
-  trace.sub(context.gmpChain).sub(context.label)(
+  trace.sub(context.gmpChain).sub(label)(
     'send makeAccountCall Axelar fee from',
     src.value,
   );
+  // TODO DT remove the lcaAccount usage
   await feeAccount.send(context.lca.getAddress(), fee);
   await sendMakeAccountCall(
     context.target,
@@ -93,9 +123,9 @@ export const prepareEvmChainKit = (
     vowTools: Pick<VowTools, 'makeVowKit' | 'asVow'>;
     /**
      * Implementation of a single provisioning attempt. Must return a Promise.
-     * Rejection triggers retry via manager.handleFailure.
+     * Receives the shared base context and a unique per-attempt label.
      */
-    provisionOneImpl?: (ctx: ProvisionContext) => Promise<void>;
+    provisionOneImpl?: (base: ProvisionContext, label: string) => Promise<void>;
   },
 ) => {
   const makeWaitersQueue = prepareDurableQueue<WaiterEntry>(
@@ -115,14 +145,11 @@ export const prepareEvmChainKit = (
       }),
       admin: M.interface('EvmChainAdminFacet', {
         provisionMany: M.call(M.number()).returns(M.undefined()),
+        getStateSnapshot: M.call().returns(M.record()),
       }),
       manager: M.interface('EvmChainManagerFacet', {
         handleReady: M.call(M.any()).returns(M.undefined()),
         handleFailure: M.call(M.any()).returns(M.undefined()),
-      }),
-      tester: M.interface('EvmChainDebugFacet', {
-        getStateSnapshot: M.call().returns(M.record()),
-        dequeueWaiter: M.call().returns(M.opt(M.record())),
       }),
     },
     (
@@ -175,19 +202,25 @@ export const prepareEvmChainKit = (
           const { state, facets } = this;
           for (let i = 0; i < count; i += 1) {
             const suffix = state.nextLabelSuffix;
-            state.nextLabelSuffix += 1;
-            const ctx = harden({
-              ...state.provisionBase,
-              label: `${state.provisionBase.label}#${suffix}`,
-            });
+            state.nextLabelSuffix = suffix + 1;
+            const label = `${state.provisionBase.label}.${suffix}`;
             state.outstanding += 1;
             // Assume promise-returning implementation; attach failure handler.
-            void provisionOneImpl(ctx).catch(reason => {
+            void provisionOneImpl(state.provisionBase, label).catch(reason => {
               trace('provisionOneImpl failed', reason);
               facets.manager.handleFailure(reason);
             });
           }
           facets.helper.publishState();
+        },
+        getStateSnapshot() {
+          const { state } = this;
+          return harden({
+            ready: [...state.ready],
+            waiterCount: Number(state.waiters.size()),
+            outstanding: state.outstanding,
+            nextLabelSuffix: state.nextLabelSuffix,
+          });
         },
       },
       manager: {
@@ -211,20 +244,6 @@ export const prepareEvmChainKit = (
           }
           trace('provision failure; retrying', reason);
           facets.admin.provisionMany(1);
-        },
-      },
-      tester: {
-        getStateSnapshot() {
-          const { state } = this;
-          return harden({
-            ready: [...state.ready],
-            waiterCount: Number(state.waiters.size()),
-            outstanding: state.outstanding,
-            nextLabelSuffix: state.nextLabelSuffix,
-          });
-        },
-        dequeueWaiter() {
-          return this.state.waiters.dequeue();
         },
       },
     },

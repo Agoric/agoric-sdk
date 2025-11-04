@@ -26,12 +26,6 @@ test('durable queue preserves FIFO order', t => {
 
   t.deepEqual(queue.getIndices(), { head: 0n, tail: 3n });
 
-  t.deepEqual(queue.entries(), [
-    { index: 0n, value: 'alpha' },
-    { index: 1n, value: 'beta' },
-    { index: 2n, value: 'gamma' },
-  ]);
-
   t.is(queue.dequeue(), 'alpha');
   t.is(queue.dequeue(), 'beta');
   t.is(queue.dequeue(), 'gamma');
@@ -50,8 +44,7 @@ test('durable queue clear and guards', t => {
   t.true(queue.isEmpty());
   t.deepEqual(queue.getIndices(), { head: 0n, tail: 0n });
 
-  const entries = queue.entries();
-  t.deepEqual(entries, []);
+  t.is(queue.dequeue(), undefined);
 
   t.throws(() => queue.enqueue(123 as any), {
     message: /string/i,

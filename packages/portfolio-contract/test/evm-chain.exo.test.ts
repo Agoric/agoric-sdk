@@ -36,10 +36,19 @@ const makeFakeLocalAccount = () => {
   return acct as any;
 };
 
-test('evm-chain: requestAccount returns ready immediately when pre-populated', async t => {
+// Shared test context builder.
+type TestCtx = {
+  zone: ReturnType<typeof makeHeapZone>;
+  vowTools: ReturnType<typeof prepareVowTools>;
+  provisionBase: any; // simplified for test scope
+  makeKit: (
+    provisionOneImpl?: (base: any, label: string) => Promise<void>,
+  ) => ReturnType<ReturnType<typeof prepareEvmChainKit>>;
+};
+
+const makeTestContext = (): TestCtx => {
   const zone = makeHeapZone();
   const vowTools = prepareVowTools(zone);
-
   const provisionBase = {
     label: 'base',
     lca: makeFakeLocalAccount(),
@@ -53,23 +62,31 @@ test('evm-chain: requestAccount returns ready immediately when pre-populated', a
     gmpAddresses: {} as any,
     evmGas: 1n,
   };
+  // Base kit preparation (unused directly; each test injects its own provisionOneImpl).
+  const makeKit = (
+    provisionOneImpl: (
+      base: any,
+      label: string,
+    ) => Promise<void> = async () => {},
+  ) =>
+    prepareEvmChainKit(zone, {
+      publishStatus: () => {},
+      vowTools,
+      provisionOneImpl,
+    })('arbitrum' as any, ['status'], 'store', provisionBase);
+  return { zone, vowTools, provisionBase, makeKit };
+};
 
+test.beforeEach(t => {
+  t.context = makeTestContext();
+});
+
+test('evm-chain: requestAccount returns ready immediately when pre-populated', async t => {
+  const { vowTools, makeKit } = t.context as TestCtx;
   let provisionCalls = 0;
-  const makeKit = prepareEvmChainKit(zone, {
-    publishStatus: () => {},
-    vowTools,
-    provisionOneImpl: async () => {
-      provisionCalls += 1;
-    },
+  const { account, manager } = makeKit(async () => {
+    provisionCalls += 1;
   });
-  const { account, manager } = makeKit(
-    'arbitrum' as any,
-    ['status'],
-    'store',
-    provisionBase,
-  );
-
-  // Simulate a provisioned account arriving before any request
   manager.handleReady(makeAccountInfo(1));
   const vow = account.requestAccount();
   const value = await vowTools.when(vow);
@@ -78,133 +95,57 @@ test('evm-chain: requestAccount returns ready immediately when pre-populated', a
 });
 
 test('evm-chain: waits and resolves FIFO', async t => {
-  const zone = makeHeapZone();
-  const vowTools = prepareVowTools(zone);
-  const provisionBase = {
-    label: 'base',
-    lca: makeFakeLocalAccount(),
-    feeAccountP: Promise.resolve(makeFakeLocalAccount()),
-    fee: { brand: null as any, value: 1n, denom: 'atest' },
-    target: {
-      axelarId: 'axelar-arbitrum',
-      remoteAddress: '0xabc' as `0x${string}`,
-    },
-    gmpChain: makeFakeGmpChain() as any,
-    gmpAddresses: {} as any,
-    evmGas: 1n,
-  };
-  const provisioned: any[] = [];
-  const makeKit = prepareEvmChainKit(zone, {
-    publishStatus: () => {},
-    vowTools,
-    provisionOneImpl: async ctx => {
-      provisioned.push(ctx.label);
-    },
+  const { vowTools, makeKit } = t.context as TestCtx;
+  const provisioned: string[] = [];
+  const { account, manager, admin } = makeKit(async (_base, label) => {
+    provisioned.push(label);
   });
-  const { account, manager, tester } = makeKit(
-    'arbitrum' as any,
-    ['status'],
-    'store',
-    provisionBase,
-  );
 
   const v1 = account.requestAccount();
   const v2 = account.requestAccount();
-  t.is(tester.getStateSnapshot().waiterCount, 2);
+  t.is(admin.getStateSnapshot().waiterCount, 2);
   t.is(provisioned.length, 2, 'two provisioning attempts started');
 
   // Resolve first waiter
   manager.handleReady(makeAccountInfo(1));
   const r1 = await vowTools.when(v1);
   t.is(r1.remoteAddress, makeAccountInfo(1).remoteAddress);
-  t.is(tester.getStateSnapshot().waiterCount, 1);
+  t.is(admin.getStateSnapshot().waiterCount, 1);
 
   // Resolve second waiter
   manager.handleReady(makeAccountInfo(2));
   const r2 = await vowTools.when(v2);
   t.is(r2.remoteAddress, makeAccountInfo(2).remoteAddress);
-  t.is(tester.getStateSnapshot().waiterCount, 0);
+  t.is(admin.getStateSnapshot().waiterCount, 0);
 });
 
 test('evm-chain: ready buffering when extra accounts arrive', async t => {
-  const zone = makeHeapZone();
-  const vowTools = prepareVowTools(zone);
-  const provisionBase = {
-    label: 'base',
-    lca: makeFakeLocalAccount(),
-    feeAccountP: Promise.resolve(makeFakeLocalAccount()),
-    fee: { brand: null as any, value: 1n, denom: 'atest' },
-    target: {
-      axelarId: 'axelar-arbitrum',
-      remoteAddress: '0xabc' as `0x${string}`,
-    },
-    gmpChain: makeFakeGmpChain() as any,
-    gmpAddresses: {} as any,
-    evmGas: 1n,
-  };
-  const makeKit = prepareEvmChainKit(zone, {
-    publishStatus: () => {},
-    vowTools,
-    provisionOneImpl: async () => {},
-  });
-  const { account, manager, tester } = makeKit(
-    'arbitrum' as any,
-    ['status'],
-    'store',
-    provisionBase,
-  );
+  const { vowTools, makeKit } = t.context as TestCtx;
+  const { account, manager, admin } = makeKit(async () => {});
 
   // Arrive two accounts before any request
   manager.handleReady(makeAccountInfo(1));
   manager.handleReady(makeAccountInfo(2));
-  t.is(
-    tester.getStateSnapshot().ready.length,
-    2,
-    'two buffered ready accounts',
-  );
-  t.is(tester.getStateSnapshot().waiterCount, 0);
+  t.is(admin.getStateSnapshot().ready.length, 2, 'two buffered ready accounts');
+  t.is(admin.getStateSnapshot().waiterCount, 0);
 
   const v1 = account.requestAccount();
   const r1 = await vowTools.when(v1);
   t.is(r1.remoteAddress, makeAccountInfo(1).remoteAddress);
-  t.is(tester.getStateSnapshot().ready.length, 1);
+  t.is(admin.getStateSnapshot().ready.length, 1);
 
   const v2 = account.requestAccount();
   const r2 = await vowTools.when(v2);
   t.is(r2.remoteAddress, makeAccountInfo(2).remoteAddress);
-  t.is(tester.getStateSnapshot().ready.length, 0);
+  t.is(admin.getStateSnapshot().ready.length, 0);
 });
 
 test('evm-chain: multiple waiters resolved FIFO', async t => {
-  const zone = makeHeapZone();
-  const vowTools = prepareVowTools(zone);
-  const provisionBase = {
-    label: 'base',
-    lca: makeFakeLocalAccount(),
-    feeAccountP: Promise.resolve(makeFakeLocalAccount()),
-    fee: { brand: null as any, value: 1n, denom: 'atest' },
-    target: {
-      axelarId: 'axelar-arbitrum',
-      remoteAddress: '0xabc' as `0x${string}`,
-    },
-    gmpChain: makeFakeGmpChain() as any,
-    gmpAddresses: {} as any,
-    evmGas: 1n,
-  };
-  const makeKit = prepareEvmChainKit(zone, {
-    publishStatus: () => {},
-    vowTools,
-    provisionOneImpl: async () => {},
-  });
-  const { account, manager, tester } = makeKit(
-    'arbitrum' as any,
-    ['status'],
-    'store',
-    provisionBase,
-  );
+  const { vowTools, makeKit } = t.context as TestCtx;
+  const { account, manager, admin } = makeKit(async () => {});
   const qty = 5;
   const vows = Array.from({ length: qty }, () => account.requestAccount());
-  t.is(tester.getStateSnapshot().waiterCount, qty);
+  t.is(admin.getStateSnapshot().waiterCount, qty);
   for (let i = 0; i < qty; i += 1) {
     manager.handleReady(makeAccountInfo(i + 1));
     const resolved = await vowTools.when(vows[i]);
@@ -214,43 +155,19 @@ test('evm-chain: multiple waiters resolved FIFO', async t => {
       `waiter ${i} resolved in order`,
     );
   }
-  t.is(tester.getStateSnapshot().waiterCount, 0);
+  t.is(admin.getStateSnapshot().waiterCount, 0);
 });
 
 test('evm-chain: partial pool consumption with extra requests', async t => {
-  const zone = makeHeapZone();
-  const vowTools = prepareVowTools(zone);
-  const provisionBase = {
-    label: 'base',
-    lca: makeFakeLocalAccount(),
-    feeAccountP: Promise.resolve(makeFakeLocalAccount()),
-    fee: { brand: null as any, value: 1n, denom: 'atest' },
-    target: {
-      axelarId: 'axelar-arbitrum',
-      remoteAddress: '0xabc' as `0x${string}`,
-    },
-    gmpChain: makeFakeGmpChain() as any,
-    gmpAddresses: {} as any,
-    evmGas: 1n,
-  };
+  const { vowTools, makeKit } = t.context as TestCtx;
   const calls: string[] = [];
-  const makeKit = prepareEvmChainKit(zone, {
-    publishStatus: () => {},
-    vowTools,
-    provisionOneImpl: async ctx => {
-      calls.push(ctx.label);
-    },
+  const { account, manager, admin } = makeKit(async (_base, label) => {
+    calls.push(label);
   });
-  const { account, manager, tester } = makeKit(
-    'arbitrum' as any,
-    ['status'],
-    'store',
-    provisionBase,
-  );
   // Pre-fill two ready accounts
   manager.handleReady(makeAccountInfo(1));
   manager.handleReady(makeAccountInfo(2));
-  t.is(tester.getStateSnapshot().ready.length, 2);
+  t.is(admin.getStateSnapshot().ready.length, 2);
 
   const v1 = account.requestAccount();
   const v2 = account.requestAccount();
@@ -259,43 +176,19 @@ test('evm-chain: partial pool consumption with extra requests', async t => {
   const r2 = await vowTools.when(v2);
   t.is(r1.remoteAddress, makeAccountInfo(1).remoteAddress);
   t.is(r2.remoteAddress, makeAccountInfo(2).remoteAddress);
-  t.is(tester.getStateSnapshot().ready.length, 0);
-  t.is(tester.getStateSnapshot().waiterCount, 1, 'third request waiting');
+  t.is(admin.getStateSnapshot().ready.length, 0);
+  t.is(admin.getStateSnapshot().waiterCount, 1, 'third request waiting');
   manager.handleReady(makeAccountInfo(3));
   const r3 = await vowTools.when(v3);
   t.is(r3.remoteAddress, makeAccountInfo(3).remoteAddress);
 });
 
 test('evm-chain: failure triggers retry provisioning', async t => {
-  const zone = makeHeapZone();
-  const vowTools = prepareVowTools(zone);
-  const provisionBase = {
-    label: 'base',
-    lca: makeFakeLocalAccount(),
-    feeAccountP: Promise.resolve(makeFakeLocalAccount()),
-    fee: { brand: null as any, value: 1n, denom: 'atest' },
-    target: {
-      axelarId: 'axelar-arbitrum',
-      remoteAddress: '0xabc' as `0x${string}`,
-    },
-    gmpChain: makeFakeGmpChain() as any,
-    gmpAddresses: {} as any,
-    evmGas: 1n,
-  };
+  const { vowTools, makeKit } = t.context as TestCtx;
   let attempts = 0;
-  const makeKit = prepareEvmChainKit(zone, {
-    publishStatus: () => {},
-    vowTools,
-    provisionOneImpl: async () => {
-      attempts += 1;
-    },
+  const { account, manager, admin } = makeKit(async () => {
+    attempts += 1;
   });
-  const { account, manager, tester } = makeKit(
-    'arbitrum' as any,
-    ['status'],
-    'store',
-    provisionBase,
-  );
   const v = account.requestAccount();
   t.is(attempts, 1);
   manager.handleFailure(new Error('net glitch'));
@@ -303,51 +196,27 @@ test('evm-chain: failure triggers retry provisioning', async t => {
   manager.handleReady(makeAccountInfo(7));
   const r = await vowTools.when(v);
   t.is(r.remoteAddress, makeAccountInfo(7).remoteAddress);
-  t.is(tester.getStateSnapshot().waiterCount, 0);
+  t.is(admin.getStateSnapshot().waiterCount, 0);
 });
 
 test('evm-chain: outstanding counter consistency', async t => {
-  const zone = makeHeapZone();
-  const vowTools = prepareVowTools(zone);
-  const provisionBase = {
-    label: 'base',
-    lca: makeFakeLocalAccount(),
-    feeAccountP: Promise.resolve(makeFakeLocalAccount()),
-    fee: { brand: null as any, value: 1n, denom: 'atest' },
-    target: {
-      axelarId: 'axelar-arbitrum',
-      remoteAddress: '0xabc' as `0x${string}`,
-    },
-    gmpChain: makeFakeGmpChain() as any,
-    gmpAddresses: {} as any,
-    evmGas: 1n,
-  };
-  const makeKit = prepareEvmChainKit(zone, {
-    publishStatus: () => {},
-    vowTools,
-    provisionOneImpl: async () => {},
-  });
-  const { account, manager, tester } = makeKit(
-    'arbitrum' as any,
-    ['status'],
-    'store',
-    provisionBase,
-  );
+  const { vowTools, makeKit } = t.context as TestCtx;
+  const { account, manager, admin } = makeKit(async () => {});
   const v1 = account.requestAccount();
   const v2 = account.requestAccount();
-  const snap1 = tester.getStateSnapshot();
+  const snap1 = admin.getStateSnapshot();
   t.is(snap1.outstanding, 2, 'two outstanding after two requests');
   manager.handleReady(makeAccountInfo(10));
   await vowTools.when(v1);
-  const mid = tester.getStateSnapshot();
+  const mid = admin.getStateSnapshot();
   t.is(mid.outstanding, 1, 'one outstanding after one resolve');
   manager.handleFailure(new Error('boom'));
-  const afterFail = tester.getStateSnapshot();
+  const afterFail = admin.getStateSnapshot();
   t.true(
     afterFail.outstanding >= 1,
     'retry increments outstanding (implementation-specific)',
   );
   manager.handleReady(makeAccountInfo(11));
   await vowTools.when(v2);
-  t.is(tester.getStateSnapshot().waiterCount, 0);
+  t.is(admin.getStateSnapshot().waiterCount, 0);
 });
