@@ -7,8 +7,8 @@ import type { Coin } from '@cosmjs/stargate';
 
 import { Fail, X, annotateError, q } from '@endo/errors';
 import { Nat } from '@endo/nat';
-import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
+import { getInvocationUpdate } from '@agoric/client-utils';
+import type { SigningSmartWalletKit, WalletStore } from '@agoric/client-utils';
 import type { RetryOptionsAndPowers } from '@agoric/client-utils/src/sync-tools.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import type { Bech32Address } from '@agoric/orchestration';
@@ -165,7 +165,7 @@ type Powers = {
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
   signingSmartWalletKit: SigningSmartWalletKit;
-  walletStore: ReturnType<typeof reflectWalletStore>;
+  walletStore: WalletStore;
   getWalletInvocationUpdate: (
     messageId: string | number,
     retryOpts?: RetryOptionsAndPowers,
