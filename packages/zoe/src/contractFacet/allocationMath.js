@@ -2,6 +2,11 @@ import { Fail, q } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 
 /**
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Allocation, AmountKeywordRecord, Keyword} from '../types.js';
+ */
+
+/**
  * @callback Operation
  *
  * An operation such as add or subtract.

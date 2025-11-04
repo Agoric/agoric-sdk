@@ -10,6 +10,8 @@ import { cleanKeywords } from '../cleanProposal.js';
 
 /**
  * @import {WeakMapStore} from '@agoric/store';
+ * @import {Brand, Purse, Issuer} from '@agoric/ertp';
+ * @import {CreatePurse, ProvideLocalPurse, DepositPayments} from './internal-types.js';
  */
 
 /**

@@ -11,6 +11,7 @@ export const MAX_KEYWORD_LENGTH = 100;
 
 /**
  * @import {ExitRule, Proposal, ProposalRecord} from '@agoric/zoe';
+ * @import {GetAssetKindByBrand} from './internal-types.js';
  */
 
 const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;

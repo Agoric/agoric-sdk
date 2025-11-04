@@ -10,6 +10,10 @@ import { ZcfMintI } from './typeGuards.js';
 
 /**
  * @import {ZCFMint, ZCFSeat} from '@agoric/zoe';
+ * @import {AssetKind, Amount, AmountKeywordRecord} from '@agoric/ertp';
+ * @import {UserSeat} from '../zoeService/types.ts';
+ * @import {ZoeIssuerRecord, ZoeMint, ZcfMintReallocator} from '../internal-types.js';
+ * @import {GetAssetKindByBrand} from '../internal-types.js';
  */
 
 /**
