@@ -1,5 +1,5 @@
 // @jessie-check
-/// <reference types="@agoric/internal/exported" />
+/// <reference types="@agoric/internal/exported.js" />
 
 export * from './amountMath.js';
 export * from './issuerKit.js';
