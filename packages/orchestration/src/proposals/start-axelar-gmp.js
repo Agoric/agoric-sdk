@@ -1,4 +1,4 @@
-/// <reference types="@agoric/vats/src/core/types-ambient"/>
+/// <reference types="@agoric/vats/src/core/types-ambient.js"/>
 
 import {
   deeplyFulfilledObject,
