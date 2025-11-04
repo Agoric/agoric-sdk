@@ -1,9 +1,9 @@
 import test from 'ava';
 import { WebSocketProvider } from 'ethers';
+import type { ClusterName } from '@agoric/client-utils';
 import {
   loadConfig,
   defaultAgoricNetworkSpecForCluster,
-  type ClusterName,
   type SecretManager,
 } from '../src/config.ts';
 import { createEVMContext } from '../src/support.ts';

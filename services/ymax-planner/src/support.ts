@@ -1,11 +1,11 @@
 import { WebSocketProvider, Log, type Filter } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
+import type { ClusterName } from '@agoric/client-utils';
 import { objectMap } from '@agoric/internal';
 import {
   EvmWalletOperationType,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
-import type { ClusterName } from './config.ts';
 import type { EvmContext } from './pending-tx-manager.ts';
 
 const { entries } = Object;

@@ -5,11 +5,11 @@ import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 
 import { AxelarChainIdMap } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import * as AgoricClientUtils from '@agoric/client-utils';
+import type { ClusterName } from '@agoric/client-utils';
 import { objectMap } from '@agoric/internal';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants';
 import { parseGraphqlEndpoints } from './utils.ts';
 
-export type ClusterName = 'local' | 'testnet' | 'mainnet';
 export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
   harden({
     local: AgoricClientUtils.LOCAL_CONFIG_KEY,

@@ -12,7 +12,7 @@ import { chain as nobleTest } from 'chain-registry/testnet/nobletestnet/index.js
 import { chain as agoricTest } from 'chain-registry/testnet/agoricdevnet/index.js'; // agoricdev was named before testnets were a thing
 import { Fail } from '@endo/errors';
 
-import type { ClusterName } from './config.ts';
+import type { ClusterName } from '@agoric/client-utils';
 
 interface CosmosRestClientConfig {
   clusterName: ClusterName;
