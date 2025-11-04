@@ -2,7 +2,7 @@
  * sourced from https://developers.circle.com/stablecoins/supported-domains and
  * https://chainlist.org/ on 19 March 2025
  *
- * @satisfies {Record<string, import('./orchestration-api').BaseChainInfo>}
+ * @satisfies {Record<string, import('./orchestration-api.js').BaseChainInfo>}
  */
 export default /** @type {const} } */ ({
   ethereum: {
