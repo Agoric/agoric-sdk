@@ -40,7 +40,7 @@ import {
 import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
 import {
-  InMemoryKeyValueStore,
+  makeSQLiteKeyValueStore,
   setResolverLastActiveTime,
 } from './kv-store.ts';
 
@@ -272,7 +272,9 @@ export const main = async (
     fetch,
   });
 
-  const kvStore = new InMemoryKeyValueStore();
+  const kvStore = makeSQLiteKeyValueStore({
+    dbPath: config.sqlite.dbPath,
+  });
 
   const RESOLVER_UPDATE_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
   const updateResolverTimestamp = async () => {

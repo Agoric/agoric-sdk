@@ -10,6 +10,7 @@ import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
+import type { KeyValueStore } from '../src/kv-store.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
@@ -144,6 +145,20 @@ export const createMockCosmosRestClient = (
   } as any;
 };
 
+const createMockKeyValueStore = (): KeyValueStore => {
+  const store = new Map<string, string>();
+  return {
+    get: async (key: string) => store.get(key),
+    set: async (key: string, value: string) => {
+      store.set(key, value);
+    },
+    delete: async (key: string) => {
+      store.delete(key);
+    },
+    has: async (key: string) => store.has(key),
+  };
+};
+
 export const createMockPendingTxOpts = (): HandlePendingTxOpts => ({
   cosmosRest: {} as unknown as CosmosRestClient,
   cosmosRpc: {} as unknown as CosmosRPCClient,
@@ -162,6 +177,7 @@ export const createMockPendingTxOpts = (): HandlePendingTxOpts => ({
     portfoliosPathPrefix: 'IGNORED',
     pendingTxPathPrefix: PENDING_TX_PATH_PREFIX,
   },
+  kvStore: createMockKeyValueStore(),
 });
 
 export const createMockPendingTxEvent = (

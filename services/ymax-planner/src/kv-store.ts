@@ -2,6 +2,7 @@
  * Key-value store interface for storing and retrieving configuration values.
  * This abstraction allows for different storage backends to be plugged in.
  */
+import Database from 'better-sqlite3';
 
 export interface KeyValueStore {
   /**
@@ -31,29 +32,85 @@ export interface KeyValueStore {
   has(key: string): Promise<boolean>;
 }
 
+export type SQLiteKeyValueStoreConfig = {
+  dbPath: string;
+  tableName?: string;
+};
+
 /**
- * In-memory implementation of KeyValueStore.
- * Useful for testing or as a default implementation.
+ * SQLite implementation of KeyValueStore.
+ * Stores key-value pairs in a SQLite database file.
+ * Useful for production environments with persistent local storage.
+ *
+ * The table will be created automatically if it doesn't exist with the following schema:
+ * - key_name: TEXT PRIMARY KEY
+ * - key_value: TEXT NOT NULL
+ * - updated_at: INTEGER (timestamp in milliseconds)
+ *
+ * Usage:
+ * ```typescript
+ * const kvStore = makeSQLiteKeyValueStore({
+ *   dbPath: './data/kv-store.db',
+ *   tableName: 'kv_store', // optional, defaults to 'kv_store'
+ * });
+ * ```
  */
-export class InMemoryKeyValueStore implements KeyValueStore {
-  private store = new Map<string, string>();
+export const makeSQLiteKeyValueStore = (
+  config: SQLiteKeyValueStoreConfig,
+): KeyValueStore => {
+  const { dbPath, tableName = 'kv_store' } = config;
 
-  async get(key: string): Promise<string | undefined> {
-    return this.store.get(key);
+  const db = new Database(dbPath);
+
+  const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS ${tableName} (
+      key_name TEXT PRIMARY KEY,
+      key_value TEXT NOT NULL,
+      updated_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
+    )
+  `;
+
+  try {
+    db.exec(createTableQuery);
+  } catch (error) {
+    console.error('Failed to initialize SQLite key-value store table:', error);
+    throw error;
   }
 
-  async set(key: string, value: string): Promise<void> {
-    this.store.set(key, value);
-  }
+  return {
+    async get(key: string): Promise<string | undefined> {
+      const stmt = db.prepare(
+        `SELECT key_value FROM ${tableName} WHERE key_name = ?`,
+      );
+      const row = stmt.get(key) as { key_value: string } | undefined;
+      return row?.key_value;
+    },
 
-  async delete(key: string): Promise<void> {
-    this.store.delete(key);
-  }
+    async set(key: string, value: string): Promise<void> {
+      const stmt = db.prepare(
+        `INSERT INTO ${tableName} (key_name, key_value, updated_at)
+         VALUES (?, ?, ?)
+         ON CONFLICT(key_name) DO UPDATE SET
+           key_value = excluded.key_value,
+           updated_at = excluded.updated_at`,
+      );
+      stmt.run(key, value, Date.now());
+    },
 
-  async has(key: string): Promise<boolean> {
-    return this.store.has(key);
-  }
-}
+    async delete(key: string): Promise<void> {
+      const stmt = db.prepare(`DELETE FROM ${tableName} WHERE key_name = ?`);
+      stmt.run(key);
+    },
+
+    async has(key: string): Promise<boolean> {
+      const stmt = db.prepare(
+        `SELECT 1 FROM ${tableName} WHERE key_name = ? LIMIT 1`,
+      );
+      const row = stmt.get(key);
+      return row !== undefined;
+    },
+  };
+};
 
 export const KV_KEYS = {
   RESOLVER_LAST_ACTIVE_TIME: 'RESOLVER_LAST_ACTIVE_TIME',
