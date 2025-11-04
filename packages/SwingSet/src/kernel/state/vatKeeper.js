@@ -16,19 +16,8 @@ import {
 import { enumeratePrefixedKeys } from './storageHelper.js';
 
 /**
- * @typedef { import('../../types-external.js').KVStore } KVStore
- * @typedef { import('../../types-external.js').SnapStore } SnapStore
- * @typedef { import('../../types-external.js').SourceOfBundle } SourceOfBundle
- * @typedef { import('../../types-external.js').TranscriptStore } TranscriptStore
- * @typedef { import('../../types-external.js').KernelSlog } KernelSlog
- * @typedef { import('../../types-external.js').SwingSetCapData } SwingSetCapData
- * @typedef { import('../../types-internal.js').Dirt } Dirt
- * @typedef { import('../../types-internal.js').VatManager } VatManager
- * @typedef { import('../../types-internal.js').ReapDirtThreshold } ReapDirtThreshold
- * @typedef { import('../../types-internal.js').RecordedVatOptions } RecordedVatOptions
- * @typedef { import('../../types-internal.js').TranscriptEntry } TranscriptEntry
- * @import {TranscriptDeliverySaveSnapshot} from '../../types-internal.js'
- * @import {TranscriptDeliveryLoadSnapshot} from '../../types-internal.js'
+ * @import { KVStore, SnapStore, SourceOfBundle, TranscriptStore, KernelSlog, SwingSetCapData } from '../../types-external.js'
+ * @import { Dirt, VatManager, ReapDirtThreshold, RecordedVatOptions, TranscriptEntry, TranscriptDeliverySaveSnapshot, TranscriptDeliveryLoadSnapshot } from '../../types-internal.js'
  */
 
 // makeVatKeeper is a pure function: all state is kept in the argument object

@@ -36,21 +36,10 @@ import {
 const enableKernelGC = true;
 
 /**
- * @typedef { import('../../types-external.js').BundleCap } BundleCap
- * @typedef { import('../../types-external.js').BundleID } BundleID
- * @typedef { import('../../types-external.js').EndoZipBase64Bundle } EndoZipBase64Bundle
- * @typedef { import('../../types-external.js').KernelSlog } KernelSlog
- * @typedef { import('../../types-external.js').ManagerType } ManagerType
- * @typedef { import('../../types-external.js').SnapStore } SnapStore
- * @typedef { import('../../types-external.js').TranscriptStore } TranscriptStore
- * @typedef { import('../../types-external.js').VatKeeper } VatKeeper
- * @typedef { Pick<VatKeeper, 'deleteCListEntry' | 'deleteSnapshots' | 'deleteTranscripts'> } VatUndertaker
- * @typedef { import('../../types-internal.js').InternalKernelOptions } InternalKernelOptions
- * @typedef { import('../../types-internal.js').ReapDirtThreshold } ReapDirtThreshold
- * @import {PromiseRecord} from '../../types-internal.js';
- * @import {CleanupBudget, CleanupWork, PolicyOutputCleanupBudget} from '../../types-external.js';
- * @import {RunQueueEventCleanupTerminatedVat} from '../../types-internal.js';
  * @import {SwingStoreKernelStorage} from '@agoric/swing-store';
+ * @import { BundleCap, BundleID, EndoZipBase64Bundle, KernelSlog, ManagerType, SnapStore, TranscriptStore, VatKeeper, CleanupBudget, CleanupWork, PolicyOutputCleanupBudget } from '../../types-external.js'
+ * @import { InternalKernelOptions, ReapDirtThreshold, PromiseRecord, RunQueueEventCleanupTerminatedVat } from '../../types-internal.js'
+ * @typedef { Pick<VatKeeper, 'deleteCListEntry' | 'deleteSnapshots' | 'deleteTranscripts'> } VatUndertaker
  */
 
 export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
