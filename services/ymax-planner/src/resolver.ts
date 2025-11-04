@@ -1,10 +1,11 @@
-import { type SigningSmartWalletKit } from '@agoric/client-utils';
+import type { SigningSmartWalletKit, WalletStore } from '@agoric/client-utils';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
 import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 
 type ResolveTxParams = {
   signingSmartWalletKit: SigningSmartWalletKit;
+  walletStore: WalletStore;
   txId: TxId;
   status: Exclude<TxStatus, 'pending'>;
   proposal?: object;

@@ -160,7 +160,10 @@ export const makeVstorageEvent = (
 };
 
 type Powers = {
-  evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
+  evmCtx: Omit<
+    EvmContext,
+    'signingSmartWalletKit' | 'walletStore' | 'fetch' | 'cosmosRest'
+  >;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   cosmosRest: CosmosRestClient;
@@ -654,6 +657,7 @@ export const startEngine = async (
     marshaller,
     now,
     signingSmartWalletKit,
+    walletStore,
     vstoragePathPrefixes,
   });
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
