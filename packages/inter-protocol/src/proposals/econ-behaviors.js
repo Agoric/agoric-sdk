@@ -6,7 +6,6 @@ import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { Stable } from '@agoric/internal/src/tokens.js';
-import { makeGovernedTerms as makeGovernedATerms } from '../auction/params.js';
 import { makeReserveTerms } from '../reserve/params.js';
 import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params.js';
 
@@ -53,8 +52,6 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  * @property {AdminFacet} psmAdminFacet
  */
 
-/** @typedef {GovernanceFacetKit<import('../auction/auctioneer.js').start>} AuctioneerKit */
-
 /**
  * @typedef {WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace} EconomyBootstrapPowers
  *
@@ -76,8 +73,6 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  *     import('../reserve/assetReserve.js')['start']
  *   >;
  *   vaultFactoryKit: GovernanceFacetKit<VFStart>;
- *   auctioneerKit: AuctioneerKit;
- *   newAuctioneerKit: AuctioneerKit | undefined;
  *   minInitialDebt: NatValue;
  * }>} EconomyBootstrapSpace
  */
@@ -232,7 +227,6 @@ export const setupVaultFactoryArguments = async (
     feeMintAccess: feeMintAccessP,
     economicCommitteeCreatorFacet: electorateCreatorFacet,
     reserveKit,
-    auctioneerKit,
   } = consume;
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
@@ -246,14 +240,12 @@ export const setupVaultFactoryArguments = async (
     initialShortfallInvitation,
     shortfallInvitationAmount,
     feeMintAccess,
-    auctioneerInstance,
   ] = await Promise.all([
     poserInvitationP,
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
     shortfallInvitationP,
     E(E(zoe).getInvitationIssuer()).getAmountOf(shortfallInvitationP),
     feeMintAccessP,
-    E.get(auctioneerKit).instance,
   ]);
 
   const reservePublicFacet = await E.get(reserveKit).publicFacet;
@@ -273,7 +265,6 @@ export const setupVaultFactoryArguments = async (
   });
 
   const vaultFactoryPrivateArgs = {
-    auctioneerInstance,
     feeMintAccess,
     initialPoserInvitation,
     initialShortfallInvitation,
@@ -525,130 +516,3 @@ export const startRewardDistributor = async ({
   );
 };
 harden(startRewardDistributor);
-
-/**
- * @param {EconomyBootstrapPowers} powers
- * @param {object} config
- * @param {any} [config.auctionParams]
- */
-export const startAuctioneer = async (
-  {
-    consume: {
-      zoe,
-      board,
-      chainTimerService,
-      priceAuthority,
-      chainStorage,
-      economicCommitteeCreatorFacet: electorateCreatorFacet,
-    },
-    produce: { auctioneerKit },
-    instance: {
-      produce: { auctioneer: auctionInstance },
-      consume: { reserve: reserveInstance },
-    },
-    installation: {
-      consume: {
-        auctioneer: auctionInstallation,
-        contractGovernor: contractGovernorInstallation,
-      },
-    },
-    issuer: {
-      consume: { [Stable.symbol]: stableIssuerP },
-    },
-  },
-  {
-    auctionParams = {
-      StartFrequency: 1n * SECONDS_PER_HOUR,
-      ClockStep: 3n * SECONDS_PER_MINUTE,
-      StartingRate: 10500n,
-      LowestRate: 6500n,
-      DiscountStep: 500n,
-      AuctionStartDelay: 2n,
-      PriceLockPeriod: SECONDS_PER_HOUR / 2n,
-    },
-  } = {},
-) => {
-  trace('startAuctioneer');
-  const STORAGE_PATH = 'auction';
-
-  const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
-
-  const [initialPoserInvitation, electorateInvitationAmount, stableIssuer] =
-    await Promise.all([
-      poserInvitationP,
-      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
-      stableIssuerP,
-    ]);
-
-  const timerBrand = await E(chainTimerService).getTimerBrand();
-
-  const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
-  const marshaller = await E(board).getReadonlyMarshaller();
-
-  const reservePublicFacet = await E(zoe).getPublicFacet(reserveInstance);
-
-  const auctionTerms = makeGovernedATerms(
-    { storageNode, marshaller },
-    chainTimerService,
-    priceAuthority,
-    reservePublicFacet,
-    {
-      ...auctionParams,
-      ElectorateInvitationAmount: electorateInvitationAmount,
-      TimerBrand: timerBrand,
-    },
-  );
-
-  const governorTerms = await deeplyFulfilledObject(
-    harden({
-      timer: chainTimerService,
-      governedContractInstallation: auctionInstallation,
-      governed: {
-        terms: auctionTerms,
-        issuerKeywordRecord: { Bid: stableIssuer },
-        storageNode,
-        marshaller,
-        label: 'auctioneer',
-      },
-    }),
-  );
-
-  /** @type {GovernorStartedInstallationKit<typeof auctionInstallation>} */
-  const governorStartResult = await E(zoe).startInstance(
-    contractGovernorInstallation,
-    undefined,
-    governorTerms,
-    harden({
-      electorateCreatorFacet,
-      governed: {
-        initialPoserInvitation,
-        storageNode,
-        marshaller,
-      },
-    }),
-    'auctioneer.governor',
-  );
-
-  const [governedInstance, governedCreatorFacet, governedPublicFacet] =
-    await Promise.all([
-      E(governorStartResult.creatorFacet).getInstance(),
-      E(governorStartResult.creatorFacet).getCreatorFacet(),
-      E(governorStartResult.creatorFacet).getPublicFacet(),
-    ]);
-
-  auctioneerKit.resolve(
-    harden({
-      label: 'auctioneer',
-      creatorFacet: governedCreatorFacet,
-      adminFacet: governorStartResult.adminFacet,
-      publicFacet: governedPublicFacet,
-      instance: governedInstance,
-
-      governor: governorStartResult.instance,
-      governorCreatorFacet: governorStartResult.creatorFacet,
-      governorAdminFacet: governorStartResult.adminFacet,
-    }),
-  );
-
-  auctionInstance.resolve(governedInstance);
-};
