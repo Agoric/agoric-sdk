@@ -739,3 +739,7 @@ export function makeVatTranslators(vatID, kernelKeeper) {
     kernelSyscallResultToVatSyscallResult: mKSR(vatID, kernelKeeper),
   });
 }
+
+/**
+ * @typedef { ReturnType<typeof makeVatTranslators> } VatTranslators
+ */
