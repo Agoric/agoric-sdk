@@ -183,6 +183,7 @@ const trackFlow = async (
   traceFlow: TraceLogger,
   accounts: AccountsByChain,
   order: Job['order'],
+  detail: FlowDetail,
 ) => {
   const runTask = async (ix: number, running: number[]) => {
     // steps are 1-based. the scheduler is 0-based
@@ -195,6 +196,7 @@ const trackFlow = async (
       steps,
       step: min(...steps),
       how: moves[min(...running)].how,
+      ...detail,
     });
     await null;
     try {
@@ -235,11 +237,15 @@ const trackFlow = async (
       return errs;
     }, undefined);
     assert(reasons); // guaranteed by results.some(...) above
-    reporter.publishFlowStatus(flowId, { state: 'fail', ...reasons });
+    reporter.publishFlowStatus(flowId, {
+      state: 'fail',
+      ...reasons,
+      ...detail,
+    });
     throw results;
   }
 
-  reporter.publishFlowStatus(flowId, { state: 'done' });
+  reporter.publishFlowStatus(flowId, { state: 'done', ...detail });
 };
 
 export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
@@ -437,6 +443,7 @@ const stepFlow = async (
   kit: GuestInterface<PortfolioKit>,
   traceP: TraceLogger,
   flowId: number,
+  flowDetail: FlowDetail,
 ) => {
   const todo: AssetMovement[] = [];
 
@@ -711,6 +718,7 @@ const stepFlow = async (
     state: 'run',
     step: 0,
     how: `makeAccounts(${acctsToDo.join(', ')})`,
+    ...flowDetail,
   });
   reporter.publishFlowSteps(
     flowId,
@@ -736,6 +744,7 @@ const stepFlow = async (
         step: 0,
         how: `makeAccount: ${chain}`,
         error: err && typeof err === 'object' ? err.message : `${err}`,
+        ...flowDetail,
       });
       throw err;
     }
@@ -787,7 +796,15 @@ const stepFlow = async (
   };
   traceFlow('accounts for trackFlow', keys(accounts));
 
-  await trackFlow(reporter, todo, flowId, traceFlow, accounts, order);
+  await trackFlow(
+    reporter,
+    todo,
+    flowId,
+    traceFlow,
+    accounts,
+    order,
+    flowDetail,
+  );
   traceFlow('stepFlow done');
 };
 
@@ -840,7 +857,9 @@ export const rebalance = (async (
     if (flow) {
       ({ flowId } =
         startedFlow ?? kit.manager.startFlow({ type: 'rebalance' }, flow));
-      await stepFlow(orch, ctx, seat, flow, kit, traceP, flowId);
+      await stepFlow(orch, ctx, seat, flow, kit, traceP, flowId, {
+        type: 'rebalance',
+      });
     }
 
     if (!seat.hasExited()) {
@@ -1153,7 +1172,7 @@ export const executePlan = (async (
     MovementDesc[] | FundsFlowPlan
   >); // XXX Guest/Host types UNTIL #9822
   try {
-    await stepFlow(orch, ctx, seat, plan, pKit, traceP, flowId);
+    await stepFlow(orch, ctx, seat, plan, pKit, traceP, flowId, flowDetail);
     return `flow${flowId}`;
   } finally {
     // The seat must be exited no matter what to avoid leaks
