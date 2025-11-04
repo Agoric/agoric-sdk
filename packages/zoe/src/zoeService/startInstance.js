@@ -24,7 +24,9 @@ import {
  * @import {WeakMapStore} from '@agoric/store';
  * @import {BundleCap} from '@agoric/swingset-vat';
  * @import {ERef} from '@endo/far';
- * @import {ZoeStorageManager, SeatHandle, ZoeSeatAdmin, Completion, InstanceAdmin, ZoeInstanceStorageManager, ZoeInstanceAdmin, ZCFRoot} from '../internal-types.js';
+ * @import {ZoeStorageManager, ZoeInstanceStorageManager} from './internal-types.js';
+ * @import {SeatHandle, ZoeSeatAdmin, InstanceAdmin, ZoeInstanceAdmin, ZCFRoot} from '../internal-types.js';
+ * @import {Completion} from '../contractFacet/types.ts';
  */
 
 /**

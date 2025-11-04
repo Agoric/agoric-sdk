@@ -16,7 +16,7 @@ import {
 } from './originalZoeSeat.js';
 
 /**
- * @import {PaymentPKeywordRecord} from '../types.js';
+ * @import {PaymentPKeywordRecord} from '@agoric/zoe';
  * @import {InstanceAdminHelper, WithdrawFacet, ExitObj, PromiseRecordOf} from '../internal-types.js';
  * @import {PromiseKit} from '@endo/promise-kit';
  */

@@ -3,7 +3,8 @@ import { AmountMath } from '@agoric/ertp';
 
 /**
  * @import {Amount} from '@agoric/ertp';
- * @import {Allocation, AmountKeywordRecord, Keyword} from '../types.js';
+ * @import {Allocation} from './types.ts';
+ * @import {AmountKeywordRecord, Keyword} from '@agoric/zoe';
  */
 
 /**

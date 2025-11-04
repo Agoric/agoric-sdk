@@ -15,7 +15,7 @@ import {
 } from '../typeGuards.js';
 
 /**
- * @import {PaymentPKeywordRecord} from '../types.js';
+ * @import {PaymentPKeywordRecord} from '@agoric/zoe';
  * @import {InstanceAdminHelper, ExitObj, WithdrawFacet} from '../internal-types.js';
  * @import {PublishKit} from '@agoric/notifier';
  * @import {PromiseKit} from '@endo/promise-kit';

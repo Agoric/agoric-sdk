@@ -9,11 +9,11 @@ import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 import { ZcfMintI } from './typeGuards.js';
 
 /**
- * @import {ZCFMint, ZCFSeat} from '@agoric/zoe';
- * @import {AssetKind, Amount, AmountKeywordRecord} from '@agoric/ertp';
- * @import {UserSeat} from '../zoeService/types.ts';
- * @import {ZoeIssuerRecord, ZoeMint, ZcfMintReallocator} from '../internal-types.js';
- * @import {GetAssetKindByBrand} from '../internal-types.js';
+ * @import {ZCFMint, ZCFSeat, AmountKeywordRecord} from '@agoric/zoe';
+ * @import {AssetKind, Amount} from '@agoric/ertp';
+ * @import {UserSeat} from '@agoric/zoe';
+ * @import {ZoeMint, ZcfMintReallocator, GetAssetKindByBrand} from '../internal-types.js';
+ * @import {ZoeIssuerRecord} from './types.ts';
  */
 
 /**
