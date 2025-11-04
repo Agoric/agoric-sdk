@@ -56,6 +56,7 @@ import {
   planRebalanceToAllocations,
   planWithdrawFromAllocations,
 } from './plan-deposit.ts';
+import type { BalanceQueryPowers } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import {
   handlePendingTx,
@@ -236,6 +237,10 @@ const processPortfolioEvents = async (
     }
     portfolioKeyForDepositAddr.set(addr, key);
   };
+  const balanceQueryPowers: BalanceQueryPowers = {
+    cosmosRest,
+    spectrum,
+  };
   const startFlow = async (
     portfolioStatus: StatusFor['portfolio'],
     portfolioKey: string,
@@ -246,7 +251,7 @@ const processPortfolioEvents = async (
     const currentBalances = await getNonDustBalances(
       portfolioStatus,
       depositBrand,
-      { cosmosRest, spectrum },
+      balanceQueryPowers,
     );
     const errorContext: Record<string, unknown> = {
       flowDetail,
@@ -507,17 +512,7 @@ export const processInitialPendingTransactions = async (
 };
 
 export const startEngine = async (
-  {
-    evmCtx,
-    rpc,
-    spectrum,
-    cosmosRest,
-    signingSmartWalletKit,
-    walletStore,
-    getWalletInvocationUpdate,
-    now,
-    gasEstimator,
-  }: Powers,
+  powers: Powers,
   {
     isDryRun,
     contractInstance,
@@ -530,6 +525,8 @@ export const startEngine = async (
     feeBrandName: string;
   },
 ) => {
+  const { evmCtx, cosmosRest, now, rpc, spectrum } = powers;
+  const { signingSmartWalletKit } = powers;
   const vstoragePathPrefixes = makeVstoragePathPrefixes(contractInstance);
   const { portfoliosPathPrefix, pendingTxPathPrefix } = vstoragePathPrefixes;
   await null;
@@ -634,17 +631,11 @@ export const startEngine = async (
   //       the first result from `responses`.
   const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
   const processPortfolioPowers: ProcessPortfolioPowers = Object.freeze({
-    cosmosRest,
-    gasEstimator,
+    ...powers,
     isDryRun,
     depositBrand: depositAsset.brand as Brand<'nat'>,
     feeBrand: feeAsset.brand as Brand<'nat'>,
-    signingSmartWalletKit,
-    walletStore,
-    getWalletInvocationUpdate,
-    spectrum,
     vstoragePathPrefixes,
-
     portfolioKeyForDepositAddr,
   });
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {

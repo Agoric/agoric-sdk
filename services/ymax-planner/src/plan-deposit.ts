@@ -31,16 +31,18 @@ const getOwn = <O, K extends PropertyKey>(
   // @ts-expect-error TS doesn't let `hasOwn(obj, key)` support `obj[key]`.
   Object.hasOwn(obj, key) ? obj[key] : undefined;
 
+export type BalanceQueryPowers = {
+  spectrum: SpectrumClient;
+  cosmosRest: CosmosRestClient;
+};
+
 const addressOfAccountId = (aid: `${string}:${string}:${string}`) =>
   aid.split(':', 3)[2];
 
 export const getCurrentBalance = async (
   { protocol, chainName, ..._details }: PoolPlaceInfo,
   accountIdByChain: StatusFor['portfolio']['accountIdByChain'],
-  {
-    spectrum,
-    cosmosRest,
-  }: { spectrum: SpectrumClient; cosmosRest: CosmosRestClient },
+  { spectrum, cosmosRest }: BalanceQueryPowers,
 ): Promise<bigint> => {
   await null;
   switch (protocol) {
@@ -74,10 +76,7 @@ export const getCurrentBalance = async (
 export const getCurrentBalances = async (
   status: StatusFor['portfolio'],
   brand: Brand<'nat'>,
-  powers: {
-    spectrum: SpectrumClient;
-    cosmosRest: CosmosRestClient;
-  },
+  powers: BalanceQueryPowers,
 ) => {
   const { positionKeys, accountIdByChain } = status;
   const errors = [] as Error[];
@@ -111,10 +110,7 @@ export const getCurrentBalances = async (
 export const getNonDustBalances = async (
   status: StatusFor['portfolio'],
   brand: Brand<'nat'>,
-  powers: {
-    spectrum: SpectrumClient;
-    cosmosRest: CosmosRestClient;
-  },
+  powers: BalanceQueryPowers,
 ) => {
   const currentBalances = await getCurrentBalances(status, brand, powers);
   const nonDustBalances = Object.fromEntries(
