@@ -6,7 +6,7 @@ import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 type ResolveTxParams = {
   signingSmartWalletKit: SigningSmartWalletKit;
   txId: TxId;
-  status: Omit<TxStatus, 'pending'>;
+  status: Exclude<TxStatus, 'pending'>;
   proposal?: object;
 };
 
