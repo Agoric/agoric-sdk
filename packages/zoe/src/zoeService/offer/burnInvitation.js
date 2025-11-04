@@ -4,6 +4,13 @@ import { Fail, assert, X, makeError, annotateError } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
 /**
+ * @import {AssetKind, Issuer, Payment} from '@agoric/ertp';
+ * @import {ERef} from '@endo/far';
+ * @import {Instance} from '@agoric/zoe';
+ * @import {InvitationHandle} from '../../types.js';
+ */
+
+/**
  * Burn the invitation, assert that only one invitation was burned,
  * and extract and return the instanceHandle and invitationHandle
  *

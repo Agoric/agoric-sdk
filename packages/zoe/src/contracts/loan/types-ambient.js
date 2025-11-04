@@ -1,4 +1,10 @@
 /**
+ * @import {Ratio} from '../../contractSupport/ratio.js';
+ * @import {Instance, Brand} from '@agoric/zoe';
+ * @import {Notifier} from '@agoric/notifier';
+ */
+
+/**
  * @typedef {Notifier<import('@agoric/time').TimestampRecord>} PeriodNotifier
  *
  *  The Notifier that provides notifications that periods have passed.

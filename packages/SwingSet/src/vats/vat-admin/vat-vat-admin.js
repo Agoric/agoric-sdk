@@ -22,6 +22,9 @@ import {
  * @import {VatAdminRootDeviceNode} from '../../devices/vat-admin/device-vat-admin.js';
  * @import {DProxy} from'../../types-external.js';
  * @import {Baggage} from '@agoric/vat-data';
+ * @import {VatPowers} from '../../types-external.js';
+ * @import {BundleID} from '../../types-external.js';
+ * @import {BundleCap} from '../../types-external.js';
  */
 
 const managerTypes = ['local', 'node-subprocess', 'xsnap', 'xs-worker']; // xs-worker is alias

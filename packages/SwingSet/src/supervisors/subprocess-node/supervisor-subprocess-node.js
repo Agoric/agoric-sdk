@@ -27,6 +27,10 @@ import {
   makeVatConsole,
 } from '../supervisor-helper.js';
 
+/**
+ * @import {Bundle} from '../../types-external.js';
+ */
+
 // eslint-disable-next-line no-unused-vars
 function workerLog(first, ...args) {
   // console.error(`---worker: ${first}`, ...args);
@@ -126,6 +130,8 @@ function handleSetBundle(margs) {
   });
 
   const makeLogMaker = tag => {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore TODO remove when anylogger has types
     const logger = anylogger(tag);
     const makeLog = level => {
       const log = logger[level];

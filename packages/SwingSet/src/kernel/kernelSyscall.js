@@ -3,6 +3,17 @@ import { insistKernelType } from './parseKernelSlots.js';
 import { insistCapData } from '../lib/capdata.js';
 import { insistDeviceID, insistVatID } from '../lib/id.js';
 
+/**
+ * @import {KVStore} from '../types-external.js';
+ * @import {DeviceID} from '../types-internal.js';
+ * @import {VatID} from '../types-internal.js';
+ * @import {KernelSlog} from '../types-external.js';
+ * @import {SwingSetCapData} from '../types-external.js';
+ * @import {KernelSyscallResult} from '../types-external.js';
+ * @import {KernelSyscallObject} from '../types-external.js';
+ * @import {DeviceInvocationResult} from '../types-external.js';
+ */
+
 /** @type { KernelSyscallResult } */
 const OKNULL = harden(['ok', null]);
 

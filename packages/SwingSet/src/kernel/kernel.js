@@ -43,6 +43,26 @@ import { makeVatAdminHooks } from './vat-admin-hooks.js';
 /**
  * @import {MeterConsumption, VatDeliveryObject, VatDeliveryResult, VatSyscallObject, VatSyscallResult} from '@agoric/swingset-liveslots';
  * @import {PolicyInputCleanupCounts} from '../types-external.js';
+ * @import {RunPolicy} from '../types-external.js';
+ * @import {KernelSlog} from '../types-external.js';
+ * @import {Bundle} from '../types-external.js';
+ * @import {BundleID} from '../types-external.js';
+ * @import {SwingSetCapData} from '../types-external.js';
+ * @import {KernelDeliveryMessage} from '../types-external.js';
+ * @import {KernelDeliveryObject} from '../types-external.js';
+ * @import {KernelDeliveryNotify} from '../types-external.js';
+ * @import {KernelDeliveryOneNotify} from '../types-external.js';
+ * @import {KernelDeliveryDropExports} from '../types-external.js';
+ * @import {KernelDeliveryRetireExports} from '../types-external.js';
+ * @import {KernelDeliveryRetireImports} from '../types-external.js';
+ * @import {KernelDeliveryBringOutYourDead} from '../types-external.js';
+ * @import {KernelDeliveryStartVat} from '../types-external.js';
+ * @import {KernelDeliveryChangeVatOptions} from '../types-external.js';
+ * @import {ResolutionPolicy} from '../types-external.js';
+ * @import {Message} from '../types-external.js';
+ * @import {EndoZipBase64Bundle} from '../types-external.js';
+ * @import {PolicyInput} from '../types-external.js';
+ * @import {SlogFinishSyscall} from '../types-external.js';
  * @import {
  *   VatID,
  *   InternalDynamicVatOptions,
@@ -60,6 +80,9 @@ import { makeVatAdminHooks } from './vat-admin-hooks.js';
  *   RunQueueEventBringOutYourDead,
  *   RunQueueEventCleanupTerminatedVat,
  * } from '../types-internal.js';
+ * @import {KernelKeeper} from './state/kernelKeeper.js';
+ * @import {KernelSyscallObject} from '../types-external.js';
+ * @import {KernelSyscallResult} from '../types-external.js';
  */
 
 /** @typedef {typeof gcMessageTypes[number]} GcMessageType */

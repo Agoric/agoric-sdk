@@ -7,7 +7,7 @@ import { makeDurableZoeKit } from '../src/zoeService/zoe.js';
 import fakeVatAdmin, { makeFakeVatAdmin } from './fakeVatAdmin.js';
 
 /**
- * @import {EndoZipBase64Bundle, TestBundle} from '@agoric/swingset-vat';
+ * @import {EndoZipBase64Bundle, TestBundle, VatAdminSvc} from '@agoric/swingset-vat';
  * @import {FeeIssuerConfig, Installation} from '../src/types-index.js';
  */
 

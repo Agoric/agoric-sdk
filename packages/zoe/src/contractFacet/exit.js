@@ -10,6 +10,10 @@ import {
   isWaivedExitRule,
 } from '../typeGuards.js';
 
+/**
+ * @import {MakeExitObj} from '../internal-types.js';
+ */
+
 const ExitObjectI = M.interface('ExitObject', { exit: M.call().returns() });
 const WakerI = M.interface('Waker', {
   wake: M.call(TimestampShape).returns(),

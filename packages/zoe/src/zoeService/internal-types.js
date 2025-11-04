@@ -2,8 +2,14 @@
 /// <reference types="@agoric/zoe/exported.js" />
 
 /**
- * @import {FeeMintAccess, GetBrands, GetBundleIDFromInstallation, GetIssuers, InstallBundle, InstallBundleID, SourceBundle} from './types.js';
- * @import {InstanceRecord} from './utils.js';
+ * @import {FeeMintAccess, GetBrands, GetBundleIDFromInstallation, GetIssuers, InstallBundle, InstallBundleID, SourceBundle} from './types.ts';
+ * @import {InstanceRecord, Instance, Installation} from './utils.d.ts';
+ * @import {Issuer, Brand, Purse} from '@agoric/ertp';
+ * @import {ERef} from '@endo/far';
+ * @import {ProposalRecord, PaymentPKeywordRecord, IssuerKeywordRecord} from '@agoric/zoe';
+ * @import {Allocation, InstanceAdmin, AnyTerms, BrandKeywordRecord, MakeZoeMint, RegisterFeeMint, ZoeInstanceAdminMakeInvitation, InvitationHandle, GetAssetKindByBrand, IssuerRecords} from '../internal-types.js';
+ * @import {ZCF} from '../contractFacet/types.ts';
+ * @import {BundleCap, BundleID} from '@agoric/swingset-vat';
  */
 
 /**

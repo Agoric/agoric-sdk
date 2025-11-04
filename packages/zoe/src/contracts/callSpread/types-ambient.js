@@ -1,4 +1,9 @@
 /**
+ * @import {Ratio} from '../../contractSupport/ratio.js';
+ * @import {Invitation} from '@agoric/zoe';
+ */
+
+/**
  * @typedef {'long' | 'short'} PositionKind
  */
 

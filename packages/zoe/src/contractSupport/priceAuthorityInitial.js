@@ -14,6 +14,8 @@ import { mintQuote } from './priceAuthorityTransform.js';
  * @import {Amount, Brand, Mint} from '@agoric/ertp';
  * @import {Notifier} from '@agoric/notifier';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {ERef} from '@endo/far';
+ * @import {Ratio} from '@agoric/zoe/src/contractSupport/ratio.js';
  */
 
 /**

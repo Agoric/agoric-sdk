@@ -15,6 +15,10 @@ import { makeZCFZygote } from './zcfZygote.js';
 
 /**
  * @import {ZoeService} from '@agoric/zoe';
+ * @import {VatPowers, BundleCap} from '@agoric/swingset-vat';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {ZCF} from './types.ts';
+ * @import {StartZcf} from '../internal-types.js';
  */
 
 /**

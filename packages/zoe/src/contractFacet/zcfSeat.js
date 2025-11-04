@@ -25,6 +25,9 @@ import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Allocation} from './types.js';
+ * @import {ZCFSeat} from './types.ts';
+ * @import {ERef} from '@endo/far';
+ * @import {ZoeInstanceAdmin, GetAssetKindByBrand, ZcfSeatManager, ZcfMintReallocator, SeatHandle} from '../internal-types.js';
  */
 
 /**

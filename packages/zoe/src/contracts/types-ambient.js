@@ -1,4 +1,9 @@
 /**
+ * @import {Issuer, Amount, Instance, Installation} from '@agoric/zoe';
+ * @import {UserSeat} from '../zoeService/types.ts';
+ */
+
+/**
  * @typedef {object} SellItemsPublicFacet
  * @property {() => Issuer} getItemsIssuer
  * @property {() => Amount} getAvailableItems

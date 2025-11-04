@@ -20,6 +20,8 @@ import { enumeratePrefixedKeys } from './storageHelper.js';
  * @typedef { import('../../types-external.js').SnapStore } SnapStore
  * @typedef { import('../../types-external.js').SourceOfBundle } SourceOfBundle
  * @typedef { import('../../types-external.js').TranscriptStore } TranscriptStore
+ * @typedef { import('../../types-external.js').KernelSlog } KernelSlog
+ * @typedef { import('../../types-external.js').SwingSetCapData } SwingSetCapData
  * @typedef { import('../../types-internal.js').Dirt } Dirt
  * @typedef { import('../../types-internal.js').VatManager } VatManager
  * @typedef { import('../../types-internal.js').ReapDirtThreshold } ReapDirtThreshold

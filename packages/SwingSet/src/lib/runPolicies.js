@@ -1,5 +1,9 @@
 import { assert } from '@endo/errors';
 
+/**
+ * @import {RunPolicy} from '../types-external.js';
+ */
+
 export function foreverPolicy() {
   /** @type { RunPolicy } */
   return harden({
