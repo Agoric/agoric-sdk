@@ -4,6 +4,13 @@
 /**
  * @import {FeeMintAccess, GetBrands, GetBundleIDFromInstallation, GetIssuers, InstallBundle, InstallBundleID, SourceBundle} from './types.js';
  * @import {InstanceRecord} from './utils.js';
+ * @import {Issuer, Brand, Purse} from '@agoric/ertp';
+ * @import {ERef} from '@endo/far';
+ * @import {ProposalRecord} from '@agoric/zoe';
+ * @import {PaymentPKeywordRecord, Allocation, Instance, Installation, IssuerKeywordRecord} from '../types.js';
+ * @import {InstanceAdmin, ZCF, AnyTerms, BrandKeywordRecord, MakeZoeMint, RegisterFeeMint, ZoeInstanceAdminMakeInvitation, InvitationHandle, GetAssetKindByBrand} from '../internal-types.js';
+ * @import {BundleCap, BundleID} from '@agoric/swingset-vat';
+ * @import {IssuerRecords} from '../internal-types.js';
  */
 
 /**

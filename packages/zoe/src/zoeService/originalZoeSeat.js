@@ -14,6 +14,13 @@ import {
   PaymentPKeywordRecordShape,
 } from '../typeGuards.js';
 
+/**
+ * @import {PaymentPKeywordRecord} from '../types.js';
+ * @import {InstanceAdminHelper, ExitObj, WithdrawFacet} from '../internal-types.js';
+ * @import {PublishKit} from '@agoric/notifier';
+ * @import {PromiseKit} from '@endo/promise-kit';
+ */
+
 export const coreUserSeatMethods = harden({
   getProposal: M.call().returns(M.promise()),
   getPayouts: M.call().returns(M.promise()),

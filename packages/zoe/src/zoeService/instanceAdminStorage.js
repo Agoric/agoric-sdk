@@ -20,6 +20,8 @@ import { makeZoeSeatAdminFactory } from './zoeSeat.js';
 
 /**
  * @import {WeakMapStore} from '@agoric/store';
+ * @import {InstanceAdmin, InstanceAdminHelper} from '../internal-types.js';
+ * @import {Handle} from '../types.js';
  */
 
 /**
