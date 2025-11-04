@@ -5,6 +5,10 @@ import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { extractMethod } from '../../src/lib/kdebug.js';
 
+/**
+ * @import {SwingSetConfig} from '../../src/types-external.js';
+ */
+
 function dumpObjects(c) {
   const out = {};
   for (const row of c.dump().objects) {

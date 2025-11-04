@@ -19,6 +19,17 @@ import {
 
 import '../types-ambient.js';
 
+/**
+ * @import {BundleFormat} from '../types-external.js';
+ * @import {SwingSetConfig} from '../types-external.js';
+ * @import {SwingSetKernelConfig} from '../types-external.js';
+ * @import {SwingSetConfigDescriptor} from '../types-external.js';
+ * @import {SwingSetConfigProperties} from '../types-external.js';
+ * @import {Bundle} from '../types-external.js';
+ * @import {SwingStoreKernelStorage} from '../types-external.js';
+ * @import {EndoZipBase64Bundle} from '../types-external.js';
+ */
+
 const trace = makeTracer('IniSwi', false);
 
 /**

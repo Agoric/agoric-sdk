@@ -18,6 +18,10 @@ import djson from '../lib/djson.js';
  * @import {TranscriptDeliveryShutdownWorker} from '../types-internal.js'
  * @import {TranscriptDeliveryResults} from '../types-internal.js'
  * @import {TranscriptEntry} from '../types-internal.js'
+ * @import {KernelKeeper} from './state/kernelKeeper.js'
+ * @import {VatSlog} from '../types-external.js'
+ * @import {SlogFinishDelivery} from '../types-external.js'
+ * @typedef {ReturnType<typeof import('./vatTranslator.js').makeVatTranslators>} VatTranslators
  * @typedef {{ body: string, slots: unknown[] }} Capdata
  * @typedef { [unknown, ...unknown[]] } Tagged
  * @typedef { { moduleFormat: string }} Bundle
