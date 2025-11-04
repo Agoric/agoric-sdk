@@ -646,7 +646,6 @@ export async function makeSwingsetController(
  *   warehousePolicy?: import('../types-external.js').VatWarehousePolicy;
  * }} runtimeOptions
  * @param {Record<string, unknown>} deviceEndowments
- * @typedef { import('@agoric/swing-store').KVStore } KVStore
  */
 export async function buildVatController(
   config,

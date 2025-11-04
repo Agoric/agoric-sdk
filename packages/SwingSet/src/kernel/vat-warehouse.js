@@ -5,26 +5,36 @@ import { insistVatDeliveryResult } from '../lib/message.js';
 import djson from '../lib/djson.js';
 
 /**
- * @import {VatDeliveryObject} from '@agoric/swingset-liveslots'
- * @import {VatDeliveryResult} from '@agoric/swingset-liveslots'
- * @import {VatSyscallObject} from '@agoric/swingset-liveslots'
- * @import {VatSyscallResult} from '@agoric/swingset-liveslots'
- * @import {VatSyscallHandler} from '@agoric/swingset-liveslots'
- * @import {KernelDeliveryObject} from '../types-external.js'
- * @import {VatManager} from '../types-internal.js'
- * @import {VatID} from '../types-internal.js'
- * @import {TranscriptDeliveryInitializeWorkerOptions} from '../types-internal.js'
- * @import {TranscriptDeliveryInitializeWorker} from '../types-internal.js'
- * @import {TranscriptDeliveryShutdownWorker} from '../types-internal.js'
- * @import {TranscriptDeliveryResults} from '../types-internal.js'
- * @import {TranscriptEntry} from '../types-internal.js'
+ *
+ * @import {
+ *    VatDeliveryObject,
+ *    VatDeliveryResult,
+ *    VatSyscallObject,
+ *    VatSyscallResult,
+ *    VatSyscallHandler,
+ * } from '@agoric/swingset-liveslots'
+ * @import {
+ *    KernelDeliveryObject,
+ *    VatKeeper,
+ *    VatSlog,
+ *    SlogFinishDelivery,
+ *    VatWarehousePolicy,
+ *    KernelSlog,
+ * } from '../types-external.js'
+ * @import {
+ *    VatManager,
+ *    VatID,
+ *    TranscriptDeliveryInitializeWorkerOptions,
+ *    TranscriptDeliveryInitializeWorker,
+ *    TranscriptDeliveryShutdownWorker,
+ *    TranscriptDeliveryResults,
+ *    TranscriptEntry,
+ *    KernelPanic,
+ *    RecordedVatOptions,
+ *    MeterID,
+ * } from '../types-internal.js'
  * @import {KernelKeeper} from './state/kernelKeeper.js'
- * @import {VatSlog} from '../types-external.js'
- * @import {SlogFinishDelivery} from '../types-external.js'
  * @import {VatTranslators} from './vatTranslator.js'
- * @typedef {{ body: string, slots: unknown[] }} Capdata
- * @typedef { [unknown, ...unknown[]] } Tagged
- * @typedef { { moduleFormat: string }} Bundle
  */
 
 /**
@@ -243,9 +253,9 @@ export const makeLRU = max => {
  * @param {KernelKeeper} details.kernelKeeper
  * @param {ReturnType<typeof import('./vat-loader/vat-loader.js').makeVatLoader>} details.vatLoader
  * @param {(vatID: string, translators: VatTranslators) => VatSyscallHandler} details.buildVatSyscallHandler
- * @param { import('../types-internal.js').KernelPanic } details.panic
- * @param { import('../types-external.js').VatWarehousePolicy } details.warehousePolicy
- * @param { import('../types-external.js').KernelSlog } details.kernelSlog
+ * @param { KernelPanic } details.panic
+ * @param { VatWarehousePolicy } details.warehousePolicy
+ * @param { KernelSlog } details.kernelSlog
  */
 export function makeVatWarehouse({
   kernelSlog,
@@ -272,7 +282,7 @@ export function makeVatWarehouse({
    *   translators: VatTranslators,
    *   syscallHandler: VatSyscallHandler,
    *   enablePipelining: boolean,
-   *   options: import('../types-internal.js').RecordedVatOptions,
+   *   options: RecordedVatOptions,
    * }} VatInfo
    */
   const ephemeral = {
@@ -296,7 +306,7 @@ export function makeVatWarehouse({
 
   /**
    * @param {string} vatID
-   * @param {import('../types-external.js').VatKeeper} vatKeeper
+   * @param {VatKeeper} vatKeeper
    * @param {VatManager} manager
    * @returns {Promise<void>}
    */
@@ -446,10 +456,6 @@ export function makeVatWarehouse({
       numPreloaded += 1;
     }
   }
-
-  /**
-   * @typedef { import('../types-internal.js').MeterID } MeterID
-   */
 
   /**
    * @param {string} vatID
