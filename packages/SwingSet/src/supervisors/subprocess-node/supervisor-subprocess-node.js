@@ -126,6 +126,8 @@ function handleSetBundle(margs) {
   });
 
   const makeLogMaker = tag => {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore TODO remove when anylogger has types
     const logger = anylogger(tag);
     const makeLog = level => {
       const log = logger[level];
