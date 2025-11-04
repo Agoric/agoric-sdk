@@ -7,7 +7,8 @@
  * @import {Issuer, Brand, Purse} from '@agoric/ertp';
  * @import {ERef} from '@endo/far';
  * @import {ProposalRecord, PaymentPKeywordRecord, IssuerKeywordRecord} from '@agoric/zoe';
- * @import {Allocation, InstanceAdmin, AnyTerms, BrandKeywordRecord, MakeZoeMint, RegisterFeeMint, ZoeInstanceAdminMakeInvitation, InvitationHandle, GetAssetKindByBrand, IssuerRecords, ZCF} from '../internal-types.js';
+ * @import {Allocation, InstanceAdmin, AnyTerms, BrandKeywordRecord, MakeZoeMint, RegisterFeeMint, ZoeInstanceAdminMakeInvitation, InvitationHandle, GetAssetKindByBrand, IssuerRecords} from '../internal-types.js';
+ * @import {ZCF} from '../contractFacet/types.ts';
  * @import {BundleCap, BundleID} from '@agoric/swingset-vat';
  */
 
