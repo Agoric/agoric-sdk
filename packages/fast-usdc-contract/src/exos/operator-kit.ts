@@ -5,7 +5,7 @@ import { Fail } from '@endo/errors';
 import type {
   CctpTxEvidence,
   RiskAssessment,
-} from '@agoric/fast-usdc/src/types.js';
+} from '@agoric/fast-usdc/src/types.ts';
 import type { Invitation } from '@agoric/zoe';
 
 const trace: (...args: unknown[]) => void = makeTracer('TxOperator');

@@ -20,6 +20,8 @@
     "lint:types": "yarn run -T tsc"
   },
   "devDependencies": {
+    "@aglocal/boot": "workspace:*",
+    "@aglocal/strict-ts-loader": "workspace:*",
     "@agoric/swing-store": "workspace:*",
     "@agoric/vats": "workspace:*",
     "@endo/promise-kit": "^1.1.13",
@@ -27,8 +29,7 @@
     "c8": "^10.1.3",
     "esbuild": "^0.25.2",
     "execa": "^9.5.2",
-    "tmp": "^0.2.1",
-    "ts-blank-space": "^0.6.2"
+    "tmp": "^0.2.1"
   },
   "dependencies": {
     "@agoric/client-utils": "workspace:*",
@@ -62,7 +63,7 @@
       "test/**/*.test.*"
     ],
     "nodeArguments": [
-      "--import=ts-blank-space/register",
+      "--import=@aglocal/strict-ts-loader",
       "--no-warnings"
     ],
     "require": [

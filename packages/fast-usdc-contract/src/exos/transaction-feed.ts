@@ -20,7 +20,7 @@ import type {
   CctpTxEvidence,
   EvidenceWithRisk,
   RiskAssessment,
-} from '@agoric/fast-usdc/src/types.js';
+} from '@agoric/fast-usdc/src/types.ts';
 import type { ZCF, Invitation } from '@agoric/zoe';
 import { defineInertInvitation } from '../utils/zoe.ts';
 import { prepareOperatorKit } from './operator-kit.ts';

@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --import ts-blank-space/register
+#!/usr/bin/env -S node --import @aglocal/strict-ts-loader
 /* eslint-env node */
 
 import '@endo/init';

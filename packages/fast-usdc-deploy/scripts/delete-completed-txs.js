@@ -1,7 +1,7 @@
 // import { E } from '@endo/far';
 /* global E */
 
-/** @import {FastUSDCCorePowers} from '../src/start-fast-usdc.core' */
+/** @import {FastUSDCCorePowers} from '../src/start-fast-usdc.core.js' */
 
 const trace = (...args) => console.log('FUPS', ...args);
 trace('script starting');

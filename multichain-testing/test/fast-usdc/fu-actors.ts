@@ -2,7 +2,7 @@ import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type {
   CctpTxEvidence,
   PoolMetrics,
-} from '@agoric/fast-usdc/src/types.js';
+} from '@agoric/fast-usdc/src/types.ts';
 import type {
   CurrentWalletRecord,
   UpdateRecord,

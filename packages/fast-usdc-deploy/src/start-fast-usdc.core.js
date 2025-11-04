@@ -17,7 +17,7 @@ import {
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
  * @import {FastUsdcSF} from '@aglocal/fast-usdc-contract/src/fast-usdc.contract.ts'
- * @import {FastUSDCConfig} from '@agoric/fast-usdc/src/types.js'
+ * @import {FastUSDCConfig} from '@agoric/fast-usdc/src/types.ts'
  */
 
 const ShareAssetInfo = /** @type {const} */ harden({

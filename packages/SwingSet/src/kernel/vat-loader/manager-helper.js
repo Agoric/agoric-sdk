@@ -1,5 +1,6 @@
+/// <reference types="../../types-ambient.js" />
+
 import { assert } from '@endo/errors';
-import '../../types-ambient.js';
 import {
   insistVatDeliveryResult,
   insistVatSyscallResult,

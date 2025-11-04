@@ -17,7 +17,7 @@ import {
 } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Brand, Issuer, NatAmount, Payment } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
-import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.js';
+import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.ts';
 import type {
   CosmosChainAddress,
   DenomAmount,

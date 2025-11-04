@@ -6,7 +6,7 @@ import {
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {InvokeEntryMessage, ResultPlan} from './offers';
+ * @import {InvokeEntryMessage, ResultPlan} from './offers.js';
  */
 
 /** @type {TypedPattern<ResultPlan>} */

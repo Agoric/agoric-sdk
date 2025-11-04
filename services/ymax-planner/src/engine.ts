@@ -33,7 +33,7 @@ import {
   type StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
-import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
+import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.ts';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import {
   mustMatch,

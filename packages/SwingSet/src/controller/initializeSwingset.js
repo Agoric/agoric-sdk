@@ -1,4 +1,7 @@
 /* eslint-env node */
+
+/// <reference types="../types-ambient.js" />
+
 import fs from 'fs';
 import path from 'path';
 
@@ -16,8 +19,6 @@ import {
   makeWorkerBundleHandler,
   makeXsnapBundleData,
 } from './bundle-handler.js';
-
-import '../types-ambient.js';
 
 const trace = makeTracer('IniSwi', false);
 

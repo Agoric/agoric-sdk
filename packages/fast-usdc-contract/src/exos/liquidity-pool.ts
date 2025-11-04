@@ -14,7 +14,7 @@ import {
   makeProposalShapes,
   PoolMetricsShape,
 } from '@agoric/fast-usdc/src/type-guards.js';
-import type { PoolStats } from '@agoric/fast-usdc/src/types.js';
+import type { PoolStats } from '@agoric/fast-usdc/src/types.ts';
 import type { RepayAmountKWR } from '@agoric/fast-usdc/src/utils/fees.js';
 import type { Remote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';

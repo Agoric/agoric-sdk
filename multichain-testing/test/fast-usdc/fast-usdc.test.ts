@@ -6,7 +6,7 @@ import type { QueryBalanceResponseSDKType } from '@agoric/cosmic-proto/cosmos/ba
 import { AmountMath } from '@agoric/ertp';
 import { divideBy, multiplyBy } from '@agoric/ertp/src/ratio.js';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
-import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
+import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.ts';
 import { makeTracer } from '@agoric/internal';
 import type { AccountId, Denom, DenomDetail } from '@agoric/orchestration';
 import type { ExecutionContext, TestFn } from 'ava';

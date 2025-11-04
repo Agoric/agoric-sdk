@@ -251,8 +251,8 @@ const testPrometheusMetrics = async t => {
 };
 
 // TODO(#11175): skip flaky test
-if (false && !IS_SUBPROCESS_RETRY) {
-  avaRetry(test, 'Prometheus metric definitions', testPrometheusMetrics);
-} else {
-  test.skip('Prometheus metric definitions', testPrometheusMetrics);
-}
+// if (!IS_SUBPROCESS_RETRY) {
+//   avaRetry(test, 'Prometheus metric definitions', testPrometheusMetrics);
+// } else {
+test.skip('Prometheus metric definitions', testPrometheusMetrics);
+// }

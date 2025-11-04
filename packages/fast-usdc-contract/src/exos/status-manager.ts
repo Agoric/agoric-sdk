@@ -16,7 +16,7 @@ import type {
   NobleAddress,
   PendingTx,
   TransactionRecord,
-} from '@agoric/fast-usdc/src/types.js';
+} from '@agoric/fast-usdc/src/types.ts';
 import type { RepayAmountKWR } from '@agoric/fast-usdc/src/utils/fees.js';
 import type { ERemote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';

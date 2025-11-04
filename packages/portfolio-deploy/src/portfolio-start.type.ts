@@ -1,8 +1,8 @@
-import { start } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import type { start } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import type { CorePowersG } from './orch.start.types.js';
-import {
+import type {
   name as contractName,
-  type permit,
+  permit,
 } from './portfolio.contract.permit.js';
 
 export type StartFn = typeof start;
