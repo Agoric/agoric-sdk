@@ -140,6 +140,8 @@ export function makeRetireImports(...vrefs) {
 }
 
 export const makeConsole = tag => {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore TODO remove when anylogger has types
   const log = anylogger(tag);
   const cons = /** @type {any} */ (
     Object.fromEntries(logLevels.map(level => [level, log[level]]))
