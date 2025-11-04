@@ -26,7 +26,7 @@ import {
   makeUSDNIBCTraffic,
   portfolio0lcaOrch,
 } from './mocks.ts';
-import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
+import { getResolverHelperKit, settleTransaction } from './resolver-helpers.ts';
 
 // Use an EVM chain whose axelar ID differs from its chain name
 const { sourceChain } = evmNamingDistinction;
@@ -76,7 +76,10 @@ const rebalanceScenarioMacro = test.macro({
       ? withBrand(scenarios[scenario.previous], usdc.brand)
       : undefined;
 
-    const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+    const resolverHelperKit = await getResolverHelperKit(
+      started.creatorFacet,
+      zoe,
+    );
 
     if (description.includes('Recover')) {
       // simulate arrival of funds in the LCA via IBC from Noble
@@ -110,16 +113,16 @@ const rebalanceScenarioMacro = test.macro({
         await eventLoopIteration();
         if (move.dest === '@Arbitrum') {
           // Also confirm CCTP transaction for flows to Arbitrum
-          await settleTransaction(zoe, resolverMakers, index, 'success');
+          await settleTransaction(resolverHelperKit, index, 'success');
           index += 1;
         }
         if (move.src === '@Arbitrum') {
-          await settleTransaction(zoe, resolverMakers, index, 'success');
+          await settleTransaction(resolverHelperKit, index, 'success');
           index += 1;
           if (move.dest === '@agoric') {
             await transmitVTransferEvent('acknowledgementPacket', -1);
             // Also confirm Noble transaction for flows to Noble
-            await settleTransaction(zoe, resolverMakers, index, 'success');
+            await settleTransaction(resolverHelperKit, index, 'success');
             index += 1;
           }
         }

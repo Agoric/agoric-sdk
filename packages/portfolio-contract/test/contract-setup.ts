@@ -23,7 +23,7 @@ import {
   makeUSDNIBCTraffic,
   portfolio0lcaOrch,
 } from './mocks.ts';
-import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
+import { getResolverHelperKit, settleTransaction } from './resolver-helpers.ts';
 import {
   chainInfoWithCCTP,
   makeIncomingEVMEvent,
@@ -142,7 +142,10 @@ export const setupTrader = async (t, initial = 10_000) => {
     ibcBridge.addMockAck(msg, ack);
   }
 
-  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+  const resolverHelperKit = await getResolverHelperKit(
+    started.creatorFacet,
+    zoe,
+  );
 
   /**
    * Read pure data (CapData that has no slots) from the storage path
@@ -173,7 +176,7 @@ export const setupTrader = async (t, initial = 10_000) => {
         if (!txIds.length) break;
         for (const txId of txIds) {
           const txNum = Number(txId.replace(/^tx/, ''));
-          await settleTransaction(zoe, resolverMakers, txNum, status);
+          await settleTransaction(resolverHelperKit, txNum, status);
           done.push(txId);
         }
       }

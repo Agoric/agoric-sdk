@@ -50,6 +50,6 @@ export const resolvePendingTx = async ({
     proposal,
   });
 
-  const result = await signingSmartWalletKit.executeOffer(action);
-  return result;
+  // An offer error will result in a throw
+  await signingSmartWalletKit.executeOffer(action);
 };
