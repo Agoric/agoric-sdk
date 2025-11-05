@@ -124,7 +124,7 @@ test('getNonDustBalances filters balances at or below the dust epsilon', async t
 
   t.deepEqual(Object.keys(balances), ['Compound_Base']);
   t.false(Object.hasOwn(balances, 'Aave_Arbitrum'));
-  t.is(balances.Compound_Base.value, 150n);
+  t.is(balances.Compound_Base!.value, 150n);
 });
 
 test('getNonDustBalances retains noble balances above the dust epsilon', async t => {
@@ -159,7 +159,7 @@ test('getNonDustBalances retains noble balances above the dust epsilon', async t
   });
 
   t.deepEqual(Object.keys(balances), ['USDN']);
-  t.is(balances.USDN.value, 101n);
+  t.is(balances.USDN!.value, 101n);
 });
 
 /**
@@ -351,8 +351,8 @@ test('handleDeposit handles different position types correctly', async t => {
         flowCount: 0,
         accountIdByChain: {
           noble: 'noble:test:addr1',
-          Avalanche: 'avalanche:test:addr2',
-          Ethereum: 'ethereum:test:addr3',
+          Avalanche: 'example:avalanche:addr2',
+          Ethereum: 'example:ethereum:addr3',
         },
         targetAllocation: {
           USDN: 40n,

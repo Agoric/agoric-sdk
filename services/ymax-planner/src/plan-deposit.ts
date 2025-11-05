@@ -7,7 +7,13 @@ import {
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
-import { typedEntries } from '@agoric/internal';
+import {
+  fromTypedEntries,
+  objectMetaMap,
+  typedEntries,
+} from '@agoric/internal';
+import type { AccountId, Caip10Record } from '@agoric/orchestration';
+import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { Fail, q } from '@endo/errors';
 // import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
 import type {
@@ -23,7 +29,8 @@ import { USDN, type CosmosRestClient } from './cosmos-rest-client.js';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
-import { getOwn } from './utils.js';
+import { spectrumProtocols } from './support.ts';
+import { getOwn, translateData } from './utils.js';
 
 export type BalanceQueryPowers = {
   cosmosRest: CosmosRestClient;
@@ -35,8 +42,12 @@ export type BalanceQueryPowers = {
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
 };
 
-const addressOfAccountId = (aid: `${string}:${string}:${string}`) =>
-  aid.split(':', 3)[2];
+// UNTIL https://github.com/Agoric/agoric-sdk/issues/12186
+// This should move into @agoric/orchestration/src/utils/address.js, which
+// itself should be updated to conform with CAIP-10.
+// cf. https://github.com/Agoric/agoric-sdk/pull/12185/commits/34667cf25cb11a90d348f72750af6e50d632a22d
+const addressOfAccountId = (caip10AccountId: AccountId) =>
+  parseAccountId(caip10AccountId).accountAddress;
 
 export const getCurrentBalance = async (
   { protocol, chainName, ..._details }: PoolPlaceInfo,
@@ -72,13 +83,151 @@ export const getCurrentBalance = async (
   }
 };
 
+type AccountQueryDescriptor = {
+  place: AssetPlaceRef;
+  chainName: SupportedChain;
+  address: string;
+  asset: string;
+};
+
+type PositionQueryDescriptor = {
+  place: PoolKey;
+  chainName: SupportedChain;
+  protocol: PoolPlaceInfo['protocol'];
+  address: string;
+};
+
+const makeSpectrumAccountQuery = (
+  desc: AccountQueryDescriptor,
+  powers: BalanceQueryPowers,
+) => {
+  const { chainName, address, asset } = desc;
+  const chainId = translateData(powers.spectrumChainIds, chainName);
+  if (asset !== 'USDC') {
+    // "USDN" -> "usdn"
+    return { chain: chainId, address, token: asset.toLowerCase() };
+  }
+  const token = translateData(powers.usdcTokensByChain, chainName);
+  return { chain: chainId, address, token };
+};
+
+const makeSpectrumPoolQuery = (
+  desc: PositionQueryDescriptor,
+  powers: BalanceQueryPowers,
+) => {
+  const { place, chainName, protocol, address } = desc;
+  return {
+    chain: translateData(powers.spectrumChainIds, chainName),
+    protocol: translateData(spectrumProtocols, protocol),
+    pool: translateData(powers.spectrumPoolIds, place),
+    address,
+  };
+};
+
 export const getCurrentBalances = async (
   status: StatusFor['portfolio'],
   brand: Brand<'nat'>,
   powers: BalanceQueryPowers,
-) => {
+): Promise<Partial<Record<AssetPlaceRef, NatAmount | undefined>>> => {
   const { positionKeys, accountIdByChain } = status;
+  const { spectrumBlockchain, spectrumPools } = powers;
+  const addressInfo = new Map<SupportedChain, Caip10Record>();
+  const accountQueries = [] as AccountQueryDescriptor[];
+  const positionQueries = [] as PositionQueryDescriptor[];
+  const balances = new Map<AssetPlaceRef, NatAmount | undefined>();
   const errors = [] as Error[];
+  for (const [chainName, accountId] of typedEntries(
+    accountIdByChain as Required<typeof accountIdByChain>,
+  )) {
+    const place = `@${chainName}` as AssetPlaceRef;
+    balances.set(place, undefined);
+    try {
+      const addressParts = parseAccountId(accountId);
+      addressInfo.set(chainName, addressParts);
+      const { accountAddress: address } = addressParts;
+      accountQueries.push({ place, chainName, address, asset: 'USDC' });
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_err) {
+      errors.push(Error(`Invalid CAIP-10 address for chain: ${chainName}`));
+    }
+  }
+  for (const instrument of positionKeys) {
+    const place = instrument;
+    balances.set(place, undefined);
+    try {
+      const poolPlaceInfo =
+        getOwn(PoolPlaces, instrument) ||
+        Fail`Unknown instrument: ${instrument}`;
+      const { chainName, protocol } = poolPlaceInfo;
+      const { namespace, accountAddress: address } =
+        addressInfo.get(chainName) ||
+        Fail`No ${chainName} address for instrument ${instrument}`;
+      if (namespace !== 'eip155') {
+        // USDN Vaults are not "pools" and specifically are not in the Spectrum
+        // Pools API.
+        accountQueries.push({ place, chainName, address, asset: protocol });
+        continue;
+      }
+      positionQueries.push({ place, chainName, protocol, address });
+    } catch (err) {
+      errors.push(err);
+    }
+  }
+  await null;
+  if (spectrumBlockchain && spectrumPools) {
+    const spectrumAccountQueries = accountQueries.map(desc =>
+      makeSpectrumAccountQuery(desc, powers),
+    );
+    const spectrumPoolQueries = positionQueries.map(desc =>
+      makeSpectrumPoolQuery(desc, powers),
+    );
+    const [accountResult, positionResult] = await Promise.allSettled([
+      spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries }),
+      spectrumPools.getBalances({ positions: spectrumPoolQueries }),
+    ]);
+    if (
+      accountResult.status !== 'fulfilled' ||
+      positionResult.status !== 'fulfilled'
+    ) {
+      const rejections = [accountResult, positionResult].flatMap(settlement =>
+        settlement.status === 'fulfilled' ? [] : [settlement.reason],
+      );
+      errors.push(...rejections);
+      throw AggregateError(errors, 'Could not get balances');
+    }
+    const accountBalances = accountResult.value.balances;
+    const positionBalances = positionResult.value.balances;
+    if (
+      accountBalances.length !== accountQueries.length ||
+      positionBalances.length !== positionQueries.length
+    ) {
+      const msg = `Bad balance query response(s), expected [${[accountBalances.length, positionBalances.length]}] results but got [${[accountQueries.length, positionQueries.length]}]`;
+      throw AggregateError(errors, msg);
+    }
+    for (let i = 0; i < accountQueries.length; i += 1) {
+      const { place } = accountQueries[i];
+      const result = accountBalances[i];
+      if (result.error) errors.push(Error(result.error));
+      balances.set(place, undefined);
+      if (!result.balance) continue;
+      const amountValue = BigInt(Math.round(Number(result.balance) * 1e6));
+      balances.set(place, AmountMath.make(brand, amountValue));
+    }
+    for (let i = 0; i < positionQueries.length; i += 1) {
+      const { place } = positionQueries[i];
+      const result = positionBalances[i];
+      if (result.error) errors.push(Error(result.error));
+      balances.set(place, undefined);
+      if (typeof result.balance?.USDC !== 'number') continue;
+      const amountValue = BigInt(Math.round(result.balance.USDC * 1e6));
+      balances.set(place, AmountMath.make(brand, amountValue));
+    }
+    if (errors.length) {
+      throw AggregateError(errors, 'Could not accept balances');
+    }
+    return Object.fromEntries(balances);
+  }
+  // XXX Fallback during the transition to using only Spectrum GraphQL.
   const balanceEntries = await Promise.all(
     positionKeys.map(async (posKey: PoolKey): Promise<[PoolKey, NatAmount]> => {
       await null;
@@ -102,7 +251,7 @@ export const getCurrentBalances = async (
   if (errors.length) {
     throw AggregateError(errors, 'Could not get balances');
   }
-  const currentBalances = Object.fromEntries(balanceEntries);
+  const currentBalances = fromTypedEntries(balanceEntries);
   return currentBalances;
 };
 
@@ -110,12 +259,10 @@ export const getNonDustBalances = async (
   status: StatusFor['portfolio'],
   brand: Brand<'nat'>,
   powers: BalanceQueryPowers,
-) => {
+): Promise<Partial<Record<AssetPlaceRef, NatAmount>>> => {
   const currentBalances = await getCurrentBalances(status, brand, powers);
-  const nonDustBalances = Object.fromEntries(
-    Object.entries(currentBalances).filter(
-      ([, amount]) => amount.value > ACCOUNT_DUST_EPSILON,
-    ),
+  const nonDustBalances = objectMetaMap(currentBalances, desc =>
+    desc.value && desc.value.value > ACCOUNT_DUST_EPSILON ? desc : undefined,
   );
   return nonDustBalances;
 };
