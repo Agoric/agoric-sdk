@@ -2,7 +2,6 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
@@ -13,7 +12,6 @@ import {
   makeOfferArgsShapes,
   type MovementDesc,
 } from '../src/type-guards-steps.ts';
-import type { StatusFor } from '../src/type-guards.ts';
 import { makeStorageTools } from './supports.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
@@ -131,7 +129,7 @@ test('planner can reject a plan due to insufficient funds', async t => {
 
   const board = makeFakeBoard();
   const storage = makeFakeStorageKit('published', { sequence: true });
-  const { getPortfolioStatus, getFlowStatus } = makeStorageTools(storage);
+  const { getPortfolioStatus } = makeStorageTools(storage);
   const marshaller = board.getReadonlyMarshaller();
   const makePortfolio = preparePortfolioKit(zone, {
     usdcBrand: USDC,

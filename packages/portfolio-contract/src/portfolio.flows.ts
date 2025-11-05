@@ -1167,6 +1167,7 @@ export const executePlan = (async (
     startedFlow ?? pKit.manager.startFlow(flowDetail, offerArgs.flow);
   const traceFlow = traceP.sub(`flow${flowId}`);
   if (!offerArgs.flow) traceFlow('waiting for steps from planner');
+  await null;
   try {
     // idea: race with seat.getSubscriber()
     const plan = await (stepsP as unknown as Promise<
