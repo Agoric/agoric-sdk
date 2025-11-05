@@ -21,6 +21,11 @@
     "lint:eslint": "yarn run -T eslint .",
     "lint:types": "yarn run -T tsc"
   },
+  "dependencies": {
+    "@agoric/client-utils": "workspace:*",
+    "@agoric/orchestration": "workspace:*",
+    "@endo/common": "^1.2.13"
+  },
   "devDependencies": {
     "ava": "^5.3.0",
     "c8": "^10.1.3",
