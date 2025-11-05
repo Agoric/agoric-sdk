@@ -5,14 +5,18 @@ import test from 'ava';
 import { planUSDNDeposit } from '@aglocal/portfolio-contract/test/mocks.js';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
 import PROD_NETWORK from '@aglocal/portfolio-contract/tools/network/network.prod.ts';
+import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
+import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
+import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
 import type { VstorageKit } from '@agoric/client-utils';
-import { AmountMath, type Brand } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
+import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import { objectMap } from '@agoric/internal';
 import { Far } from '@endo/pass-style';
 import { CosmosRestClient, USDN } from '../src/cosmos-rest-client.ts';
 import {
+  getCurrentBalances,
   getNonDustBalances,
-  handleDeposit,
   planDepositToAllocations,
   planRebalanceToAllocations,
   planWithdrawFromAllocations,
@@ -26,6 +30,42 @@ const makeDeposit = value => AmountMath.make(depositBrand, value);
 const feeBrand = Far('fee brand (BLD)') as Brand<'nat'>;
 
 const powers = { fetch, setTimeout };
+
+/**
+ * Helper for test results
+ */
+const handleDeposit = async (
+  portfolioKey: `${string}.portfolios.portfolio${number}`,
+  amount: NatAmount,
+  feeBrand: Brand<'nat'>,
+  powers: {
+    readPublished: VstorageKit['readPublished'];
+    spectrum: SpectrumClient;
+    cosmosRest: CosmosRestClient;
+    gasEstimator: GasEstimator;
+  },
+  network: NetworkSpec = PROD_NETWORK,
+) => {
+  const querier = makePortfolioQuery(powers.readPublished, portfolioKey);
+  const status = await querier.getPortfolioStatus();
+  const { policyVersion, rebalanceCount, targetAllocation } = status;
+  if (!targetAllocation) return { policyVersion, rebalanceCount, steps: [] };
+  const currentBalances = await getCurrentBalances(
+    status,
+    amount.brand,
+    powers,
+  );
+  const steps = await planDepositToAllocations({
+    amount,
+    brand: amount.brand,
+    currentBalances,
+    targetAllocation,
+    network,
+    feeBrand,
+    gasEstimator: powers.gasEstimator,
+  });
+  return { policyVersion, rebalanceCount, steps };
+};
 
 test('getNonDustBalances filters balances at or below the dust epsilon', async t => {
   const status = {

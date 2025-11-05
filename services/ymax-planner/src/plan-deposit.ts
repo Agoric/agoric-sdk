@@ -5,8 +5,6 @@ import {
   type StatusFor,
   type TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.js';
-import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
-import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
 import { typedEntries } from '@agoric/internal';
@@ -17,7 +15,6 @@ import type {
   MovementDesc,
 } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
-import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
@@ -278,41 +275,4 @@ export const planWithdrawFromAllocations = async (
     gasEstimator,
   });
   return flowDetail.steps;
-};
-
-/**
- * Back-compat utility used by CLI or handlers
- * @deprecated in favor of planDepositToAllocations
- */
-export const handleDeposit = async (
-  portfolioKey: `${string}.portfolios.portfolio${number}`,
-  amount: NatAmount,
-  feeBrand: Brand<'nat'>,
-  powers: {
-    readPublished: VstorageKit['readPublished'];
-    spectrum: SpectrumClient;
-    cosmosRest: CosmosRestClient;
-    gasEstimator: GasEstimator;
-  },
-  network: NetworkSpec = PROD_NETWORK,
-) => {
-  const querier = makePortfolioQuery(powers.readPublished, portfolioKey);
-  const status = await querier.getPortfolioStatus();
-  const { policyVersion, rebalanceCount, targetAllocation } = status;
-  if (!targetAllocation) return { policyVersion, rebalanceCount, steps: [] };
-  const currentBalances = await getCurrentBalances(
-    status,
-    amount.brand,
-    powers,
-  );
-  const steps = await planDepositToAllocations({
-    amount,
-    brand: amount.brand,
-    currentBalances,
-    targetAllocation,
-    network,
-    feeBrand,
-    gasEstimator: powers.gasEstimator,
-  });
-  return { policyVersion, rebalanceCount, steps };
 };
