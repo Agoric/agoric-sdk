@@ -403,6 +403,18 @@ export const preparePortfolioKit = (
           const detail = flowsRunning.get(flowId);
           detail.sync.resolver.resolve(steps);
         },
+        rejectFlowPlan(flowId: number, reason: string) {
+          const { flowsRunning } = this.state;
+          if (!flowsRunning.has(flowId)) {
+            const traceFlow = trace
+              .sub(`portfolio${this.state.portfolioId}`)
+              .sub(`flow${flowId}`);
+            traceFlow('flowsRunning has nothing to reject');
+            return;
+          }
+          const detail = flowsRunning.get(flowId);
+          detail.sync.resolver.reject(new Error(reason));
+        },
       },
       /**
        * Manages a cooperative reservation protocol for per-chain accounts.

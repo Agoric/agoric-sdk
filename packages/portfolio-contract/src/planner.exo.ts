@@ -60,6 +60,9 @@ export const preparePlanner = (
     resolvePlan: M.call(M.number(), M.number(), planCompatShape, M.number())
       .optional(M.number())
       .returns(),
+    rejectPlan: M.call(M.number(), M.number(), M.string())
+      .optional(M.number(), M.number())
+      .returns(),
   });
 
   return zone.exoClass(
@@ -111,6 +114,18 @@ export const preparePlanner = (
         const { planner: portfolioPlanner } = getPortfolio(portfolioId);
         portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
         portfolioPlanner.resolveFlowPlan(flowId, planOrSteps);
+      },
+      rejectPlan(
+        portfolioId: number,
+        flowId: number,
+        reason: string,
+        policyVersion: number,
+        rebalanceCount: number,
+      ) {
+        trace('reject plan', { portfolioId, flowId, reason });
+        const { planner: portfolioPlanner } = getPortfolio(portfolioId);
+        portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
+        portfolioPlanner.rejectFlowPlan(flowId, reason);
       },
     },
     {
