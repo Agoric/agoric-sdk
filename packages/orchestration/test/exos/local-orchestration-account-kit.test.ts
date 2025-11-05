@@ -200,20 +200,6 @@ test('transfer', async t => {
     'cannot create transfer msg with unknown chainId',
   );
 
-  const doTransferWithMeta = async (
-    amount: AmountArg,
-    dest: CosmosChainAddress,
-    opts: IBCMsgTransferOptions = {},
-  ) => {
-    const resultMeta = VE(account).transferWithMeta(dest, amount, opts);
-
-    // Ensure the toBridge of the transferP happens before the fromBridge is awaited after this function returns
-    await eventLoopIteration();
-
-    await transmitVTransferEvent('acknowledgementPacket');
-    return resultMeta;
-  };
-
   /**
    * Helper to start the transfer AND send the ack packet so this promise can be awaited
    */
@@ -291,8 +277,10 @@ test('transfer', async t => {
     },
   });
 
-  const resultMeta = await doTransferWithMeta(aDenomAmount, dydxDest);
-  const { result: multiHopResult, meta: multiHopMeta } = resultMeta;
+  const metaUpdater = await VE(account).makeMetaUpdater();
+  const multiHopResult = await doTransfer(aDenomAmount, dydxDest, {
+    metaUpdater,
+  });
 
   t.is(latestTxMsg().receiver, PFM_RECEIVER, 'defaults to "pfm" receiver');
   t.deepEqual(JSON.parse(latestTxMsg().memo), {
@@ -305,6 +293,7 @@ test('transfer', async t => {
     },
   });
 
+  const multiHopMeta = await VE(metaUpdater).finishMeta();
   t.deepEqual(
     multiHopMeta,
     {
@@ -322,7 +311,7 @@ test('transfer', async t => {
     'we only receive meta for the first hop of a PFM-forwarded transfer',
   );
 
-  t.assert(isVow(multiHopResult), 'multiHopResult is vow');
+  t.assert(!isVow(multiHopResult), 'multiHopResult is not vow');
   t.is(
     await when(multiHopResult),
     ICS20_TRANSFER_SUCCESS_RESULT,

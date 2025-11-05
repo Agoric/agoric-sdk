@@ -52,7 +52,7 @@ const findEVMChains = (moves: MovementDesc[]) => {
 
 const rebalanceScenarioMacro = test.macro({
   async exec(t, description: string) {
-    const { trader1, common, started, zoe, txResolver } = await setupTrader(t);
+    const { trader1, common, started, zoe } = await setupTrader(t);
     const scenarios = await scenariosP;
     const rawScenario = scenarios[description];
     if (!rawScenario) return t.fail(`Scenario "${description}" not found`);

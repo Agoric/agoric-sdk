@@ -20,9 +20,12 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   denomHash,
   type Bech32Address,
+  type Metadata,
   type MetaTrafficEntry,
+  type MetaUpdater,
   type Orchestrator,
 } from '@agoric/orchestration';
+import { prepareMetaUpdater } from '@agoric/orchestration/src/utils/result-meta.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import {
   parseAccountId,
@@ -30,7 +33,6 @@ import {
 } from '@agoric/orchestration/src/utils/address.js';
 import { buildGasPayload } from '@agoric/orchestration/src/utils/gmp.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { unwrapResultMeta } from '@agoric/orchestration/src/utils/result-meta.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
   RebalanceStrategy,
@@ -237,6 +239,9 @@ const mocks = (
             value: `${name}1${1000 + 7 * (nonce += 2)}`,
           });
           const account = {
+            makeMetaUpdater(initialMeta: Metadata = {}) {
+              return makeMetaUpdater(initialMeta);
+            },
             getAddress() {
               return addr;
             },
@@ -245,7 +250,11 @@ const mocks = (
               if (sendErr && amount?.value === 13n) throwIfErr('send');
               log({ _cap: addr.value, _method: 'send', toAccount, amount });
             },
-            async transferWithMeta(address, amount, opts) {
+            async transfer(
+              address,
+              amount,
+              opts: { metaUpdater?: MetaUpdater; memo?: string } = {},
+            ) {
               if (!('denom' in amount)) throw Error('#10449');
               log({
                 _cap: addr.value,
@@ -261,6 +270,7 @@ const mocks = (
                 !err.message.includes(cosmosChainIdToName[address.chainId])
               )
                 throwIfErr('transfer');
+              const metaUpdater = opts?.metaUpdater;
               if (opts?.memo && address.value.startsWith('axelar1')) {
                 factoryPK.resolve(opts.memo);
               }
@@ -269,112 +279,115 @@ const mocks = (
               const traffic = [] as MetaTrafficEntry[];
               let lastResult = Promise.resolve({});
               if (name !== 'agoric') {
-                const { result, meta } = await account.executeEncodedTxWithMeta(
+                const result = await account.executeEncodedTx(
                   [
                     {
                       typeUrl: '/ibc.applications.transfer.v1.MsgTransfer',
                       value: { sequence: 223n },
                     },
                   ],
+                  { metaUpdater },
                 );
-                traffic.push(...(meta?.traffic ?? []));
                 lastResult = lastResult.then(() => result);
               }
 
-              const getTransferChannel = (caipChainId: string) => {
-                const cosmosChainId = caipChainId.replace(/^cosmos:/, '');
-                const channel =
-                  transferChannels[cosmosChainIdToName[cosmosChainId]];
-                return channel;
-              };
+              if (metaUpdater) {
+                const getTransferChannel = (caipChainId: string) => {
+                  const cosmosChainId = caipChainId.replace(/^cosmos:/, '');
+                  const channel =
+                    transferChannels[cosmosChainIdToName[cosmosChainId]];
+                  return channel;
+                };
 
-              const srcChainId = `cosmos:${chainId}`;
-              const transferTrafficBase = {
-                op: 'transfer',
-                srcChainId,
-                dstChainId,
-                seq: 339n,
-              };
+                const srcChainId = `cosmos:${chainId}`;
+                const transferTrafficBase = {
+                  op: 'transfer',
+                  srcChainId,
+                  dstChainId,
+                  seq: 339n,
+                };
 
-              const channel = getTransferChannel(dstChainId);
-              if (channel) {
-                const transferTraffic = {
-                  ...transferTrafficBase,
-                  src: ['ibc', channel.portId, channel.channelId],
-                  dst: [
-                    'ibc',
-                    channel.counterPartyPortId,
-                    channel.counterPartyChannelId,
-                  ],
-                } as MetaTrafficEntry;
-                traffic.push(transferTraffic);
-              } else {
-                const revChannel = getTransferChannel(srcChainId);
-                assert(
-                  revChannel,
-                  `no transfer channel for ${dstChainId} nor ${srcChainId}`,
-                );
-                const transferTraffic = {
-                  ...transferTrafficBase,
-                  src: [
-                    'ibc',
-                    revChannel.counterPartyPortId,
-                    revChannel.counterPartyChannelId,
-                  ],
-                  dst: ['ibc', revChannel.portId, revChannel.channelId],
-                } as MetaTrafficEntry;
-                traffic.push(transferTraffic);
+                const channel = getTransferChannel(dstChainId);
+                if (channel) {
+                  const transferTraffic = {
+                    ...transferTrafficBase,
+                    src: ['ibc', channel.portId, channel.channelId],
+                    dst: [
+                      'ibc',
+                      channel.counterPartyPortId,
+                      channel.counterPartyChannelId,
+                    ],
+                  } as MetaTrafficEntry;
+                  traffic.push(transferTraffic);
+                } else {
+                  const revChannel = getTransferChannel(srcChainId);
+                  assert(
+                    revChannel,
+                    `no transfer channel for ${dstChainId} nor ${srcChainId}`,
+                  );
+                  const transferTraffic = {
+                    ...transferTrafficBase,
+                    src: [
+                      'ibc',
+                      revChannel.counterPartyPortId,
+                      revChannel.counterPartyChannelId,
+                    ],
+                    dst: ['ibc', revChannel.portId, revChannel.channelId],
+                  } as MetaTrafficEntry;
+                  traffic.push(transferTraffic);
+                }
+                const priorMeta = metaUpdater.get();
+                const newMeta = {
+                  ...priorMeta,
+                  traffic: [...(priorMeta.traffic ?? []), ...traffic],
+                };
+                metaUpdater.update(harden(newMeta));
               }
 
-              return harden({ result: lastResult, meta: { traffic } });
+              return lastResult;
             },
-            async transfer(address, amount, opts) {
-              const { result } = await unwrapResultMeta(
-                account.transferWithMeta(address, amount, opts),
-              );
-              return result;
-            },
-            async executeEncodedTxWithMeta(msgs) {
+            async executeEncodedTx(
+              msgs,
+              opts: { metaUpdater?: MetaUpdater } = {},
+            ) {
               log({ _cap: addr.value, _method: 'executeEncodedTx', msgs });
               throwIfErr('executeEncodedTx');
-              const agoricChain = await orch.getChain('agoric');
-              const agoricInfo = await agoricChain.getChainInfo();
-              const traffic = [
-                {
-                  op: 'ICA',
-                  srcChainId: `cosmos:${agoricInfo.chainId}`,
-                  src: ['ibc', 'icacontroller-2', 'channel-7'],
-                  dstChainId: `cosmos:${chainId}`,
-                  dst: ['ibc', 'icahost-9', 'channel-1'],
-                  // XXX emulate an unknown sequence number, at least until the
-                  // Network API connection.sendWithMeta provides it.
-                  seq: { status: 'unknown' },
-                },
-              ] as MetaTrafficEntry[];
+              /** @type {MetaUpdater | undefined} */
+              const metaUpdater = opts?.metaUpdater;
+              if (metaUpdater) {
+                const agoricChain = await orch.getChain('agoric');
+                const agoricInfo = await agoricChain.getChainInfo();
+                const newTraffic = [
+                  {
+                    op: 'ICA',
+                    srcChainId: `cosmos:${agoricInfo.chainId}`,
+                    src: ['ibc', 'icacontroller-2', 'channel-7'],
+                    dstChainId: `cosmos:${chainId}`,
+                    dst: ['ibc', 'icahost-9', 'channel-1'],
+                    // XXX emulate an unknown sequence number, at least until the
+                    // Network API connection.sendWithMeta provides it.
+                    seq: { status: 'unknown' },
+                  },
+                ] as MetaTrafficEntry[];
+                const priorMeta = metaUpdater.get();
+                const meta = {
+                  ...priorMeta,
+                  traffic: [...(priorMeta.traffic ?? []), ...newTraffic],
+                };
+                metaUpdater.update(meta);
+              }
 
-              return harden({
-                result: msgs.map(({ typeUrl, response = {} }) => {
-                  if (typeUrl.startsWith('/')) {
-                    return response;
-                  }
-                  return {};
-                }),
-                meta: { traffic },
+              const result = msgs.map(({ typeUrl, response = {} }) => {
+                if (typeUrl.startsWith('/')) {
+                  return response;
+                }
+                return {};
               });
-            },
-            async executeEncodedTx(msgs) {
-              const { result } = await unwrapResultMeta(
-                account.executeEncodedTxWithMeta(msgs),
-              );
               return result;
             },
           };
           if (name === 'agoric') {
-            const {
-              executeEncodedTx: _,
-              executeEncodedTxWithMeta: _2,
-              ...localAccount
-            } = account;
+            const { executeEncodedTx: _, ...localAccount } = account;
             return Far('AgoricAccount', {
               ...localAccount,
               monitorTransfers: async tap => {
@@ -456,6 +469,7 @@ const mocks = (
   }) as GuestInterface<ZoeTools>;
 
   const vowTools: VowTools = makeVowToolsAreJustPromises();
+  const makeMetaUpdater = prepareMetaUpdater(zone, { vowTools });
 
   const board = makeFakeBoard();
   const marshaller = board.getReadonlyMarshaller();
