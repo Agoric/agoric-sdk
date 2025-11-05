@@ -4,7 +4,6 @@ import { protoMsgMockMap } from '@aglocal/boot/tools/ibc/mocks.ts';
 import { AckBehavior } from '@aglocal/boot/tools/supports.ts';
 import { makeProposalShapes } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.ts';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeClientMarshaller } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
 import { BridgeId } from '@agoric/internal';
@@ -13,6 +12,7 @@ import {
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
 import type { ChainInfo } from '@agoric/orchestration';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import { passStyleOf, type CopyRecord } from '@endo/pass-style';
 import { mustMatch } from '@endo/patterns';
 import type { TestFn } from 'ava';
@@ -307,8 +307,7 @@ test.serial('delegate control', async t => {
   t.pass('ymaxControl is invocable');
 });
 
-// XXX this needs a CCTP tx setup to work which is not available atm
-test.skip('CCTP settlement works', async t => {
+test.serial('Setup CCTP resolver', async t => {
   const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
   const marshaller = makeClientMarshaller(v => (v as any).getBoardId());
 
@@ -337,18 +336,36 @@ test.skip('CCTP settlement works', async t => {
 
   const currentWalletRecord = await wallet.getCurrentWalletRecord();
 
-  t.log('Using resolver invitation to get invitationMaker');
-  await wallet.executeOffer({
+  t.log('Redeeming resolver service invitation');
+  const offer: OfferSpec = {
     id: 'settle-cctp',
     invitationSpec: {
       source: 'purse',
       instance: currentWalletRecord.purses[0].balance.value[0].instance,
       description: 'resolver',
     },
-    proposal: { give: {}, want: {} },
-  });
+    proposal: {},
+  };
+  await wallet.executeOffer(offer);
 
-  await eventLoopIteration();
+  const latestWalletRecord = wallet.getLatestUpdateRecord();
+
+  t.like(latestWalletRecord, {
+    updated: 'offerStatus',
+    status: {
+      ...offer,
+      numWantsSatisfied: 1,
+      result: 'UNPUBLISHED',
+    },
+  });
+});
+
+// XXX this needs a CCTP tx setup to work which is not available atm
+test.skip('CCTP settlement works', async t => {
+  const { walletFactoryDriver: wfd } = t.context;
+  const marshaller = makeClientMarshaller(v => (v as any).getBoardId());
+
+  const wallet = await wfd.provideSmartWallet(beneficiary, marshaller);
 
   t.log('Executing CCTP settlement offer');
   await wallet.executeOffer({
@@ -595,7 +612,7 @@ test.serial('remove old contract; start new contract', async t => {
 });
 
 test.serial(
-  'CCTP settlement with old invitation doesnt work with new contract instance',
+  'CCTP settlement with old resolver doesnt work with new contract instance',
   async t => {
     const { walletFactoryDriver: wfd } = t.context;
     const marshaller = makeClientMarshaller(v => (v as any).getBoardId());
@@ -603,31 +620,39 @@ test.serial(
     const wallet = await wfd.provideSmartWallet(beneficiary, marshaller);
 
     const id = Date.now().toString();
-    await t.throwsAsync(
-      wallet.executeOffer({
-        id,
-        invitationSpec: {
-          source: 'continuing',
-          previousOffer: 'settle-cctp',
-          invitationMakerName: 'SettleTransaction',
+    const offer: OfferSpec = {
+      id,
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'settle-cctp',
+        invitationMakerName: 'SettleTransaction',
+      },
+      proposal: { give: {}, want: {} },
+      offerArgs: {
+        txDetails: {
+          amount: 10_000n,
+          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+          status: 'success',
         },
-        proposal: { give: {}, want: {} },
-        offerArgs: {
-          txDetails: {
-            amount: 10_000n,
-            remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-            status: 'success',
-          },
-          txId: 'tx0',
-          remoteAxelarChain: 'eip155:42161',
-        },
-      }),
-    );
+        txId: 'tx0',
+        remoteAxelarChain: 'eip155:42161',
+      },
+    };
+    await t.throwsAsync(wallet.executeOffer(offer));
+
+    const latestWalletRecord = wallet.getLatestUpdateRecord();
+
+    t.like(latestWalletRecord, {
+      updated: 'offerStatus',
+      status: {
+        ...offer,
+        error: 'Error: vat terminated',
+      },
+    });
   },
 );
 
-// XXX this needs a CCTP tx setup to work which is not available atm
-test.skip('CCTP settlement works with new invitation after contract remove and start', async t => {
+test.serial('Setup CCTP resolver with new contract', async t => {
   const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
   const marshaller = makeClientMarshaller(v => (v as any).getBoardId());
 
@@ -655,17 +680,36 @@ test.skip('CCTP settlement works with new invitation after contract remove and s
 
   const currentWalletRecord = await wallet.getCurrentWalletRecord();
 
-  await wallet.executeOffer({
+  t.log('Redeeming resolver service invitation for new contract');
+  const offer: OfferSpec = {
     id: 'settle-cctp-new',
     invitationSpec: {
       source: 'purse',
       instance: currentWalletRecord.purses[0].balance.value[0].instance,
       description: 'resolver',
     },
-    proposal: { give: {}, want: {} },
-  });
+    proposal: {},
+  };
+  await wallet.executeOffer(offer);
 
-  await eventLoopIteration();
+  const latestWalletRecord = wallet.getLatestUpdateRecord();
+
+  t.like(latestWalletRecord, {
+    updated: 'offerStatus',
+    status: {
+      ...offer,
+      numWantsSatisfied: 1,
+      result: 'UNPUBLISHED',
+    },
+  });
+});
+
+// XXX this needs a CCTP tx setup to work which is not available atm
+test.skip('CCTP settlement works with new resolver after contract remove and start', async t => {
+  const { walletFactoryDriver: wfd } = t.context;
+  const marshaller = makeClientMarshaller(v => (v as any).getBoardId());
+
+  const wallet = await wfd.provideSmartWallet(beneficiary, marshaller);
 
   const id = Date.now().toString();
   await wallet.executeOffer({
@@ -686,27 +730,6 @@ test.skip('CCTP settlement works with new invitation after contract remove and s
     },
   });
   const latestWalletRecord = wallet.getLatestUpdateRecord();
-
-  t.like(latestWalletRecord, {
-    status: {
-      id,
-      invitationSpec: {
-        invitationMakerName: 'SettleTransaction',
-        source: 'continuing',
-        previousOffer: 'settle-cctp-new',
-      },
-      numWantsSatisfied: 1,
-      offerArgs: {
-        remoteAxelarChain: 'eip155:42161',
-        txDetails: {
-          amount: 10000n,
-          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-          status: 'success',
-        },
-        txId: 'tx0',
-      },
-    },
-  });
 
   t.like(latestWalletRecord, {
     status: {
