@@ -15,6 +15,7 @@ import { AmountMath, type Brand } from '@agoric/ertp';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 
+import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import {
   PublishedTxShape,
@@ -30,8 +31,11 @@ import {
   portfolioIdFromKey,
   PoolPlaces,
   PortfolioStatusShapeExt,
-  type FlowDetail,
-  type StatusFor,
+} from '@aglocal/portfolio-contract/src/type-guards.ts';
+import type {
+  FlowDetail,
+  PoolKey as InstrumentId,
+  StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
@@ -178,6 +182,8 @@ type Powers = {
   spectrum: SpectrumClient;
   spectrumBlockchain?: SpectrumBlockchainSdk;
   spectrumPools?: SpectrumPoolsSdk;
+  spectrumChainIds: Partial<Record<SupportedChain, string>>;
+  spectrumPoolIds: Partial<Record<InstrumentId, string>>;
   cosmosRest: CosmosRestClient;
   signingSmartWalletKit: SigningSmartWalletKit;
   walletStore: ReturnType<typeof reflectWalletStore>;
@@ -187,6 +193,7 @@ type Powers = {
   ) => ReturnType<typeof getInvocationUpdate>;
   now: typeof Date.now;
   gasEstimator: GasEstimator;
+  usdcTokensByChain: Partial<Record<SupportedChain, string>>;
 };
 
 type ProcessPortfolioPowers = Pick<
@@ -195,10 +202,13 @@ type ProcessPortfolioPowers = Pick<
   | 'spectrum'
   | 'spectrumBlockchain'
   | 'spectrumPools'
+  | 'spectrumChainIds'
+  | 'spectrumPoolIds'
   | 'signingSmartWalletKit'
   | 'walletStore'
   | 'getWalletInvocationUpdate'
   | 'gasEstimator'
+  | 'usdcTokensByChain'
 > & {
   isDryRun?: boolean;
   depositBrand: Brand<'nat'>;
@@ -226,6 +236,9 @@ const processPortfolioEvents = async (
     spectrum,
     spectrumBlockchain,
     spectrumPools,
+    spectrumChainIds,
+    spectrumPoolIds,
+    usdcTokensByChain,
     vstoragePathPrefixes,
 
     portfolioKeyForDepositAddr,
@@ -250,6 +263,9 @@ const processPortfolioEvents = async (
     spectrum,
     spectrumBlockchain,
     spectrumPools,
+    spectrumChainIds,
+    spectrumPoolIds,
+    usdcTokensByChain,
   };
   const startFlow = async (
     portfolioStatus: StatusFor['portfolio'],
@@ -535,8 +551,7 @@ export const startEngine = async (
     feeBrandName: string;
   },
 ) => {
-  const { evmCtx, cosmosRest, now, rpc, spectrum } = powers;
-  const { signingSmartWalletKit } = powers;
+  const { evmCtx, cosmosRest, now, rpc, signingSmartWalletKit } = powers;
   const vstoragePathPrefixes = makeVstoragePathPrefixes(contractInstance);
   const { portfoliosPathPrefix, pendingTxPathPrefix } = vstoragePathPrefixes;
   await null;
@@ -544,7 +559,6 @@ export const startEngine = async (
 
   // Test balance querying (using dummy addresses for now).
   {
-    const balanceQueryPowers = { spectrum, cosmosRest };
     const poolPlaceInfoByProtocol = new Map(
       values(PoolPlaces).map(info => [info.protocol, info]),
     );
@@ -560,7 +574,7 @@ export const startEngine = async (
                   entries(evmCtx.usdcAddresses)[0],
                 );
           const accountIdByChain = { [chainName]: dummyAddress } as any;
-          await getCurrentBalance(info, accountIdByChain, balanceQueryPowers);
+          await getCurrentBalance(info, accountIdByChain, powers);
         } catch (err) {
           const expandos = partialMap(Reflect.ownKeys(err), key =>
             knownErrorProps.includes(key as any) ? false : [key, err[key]],

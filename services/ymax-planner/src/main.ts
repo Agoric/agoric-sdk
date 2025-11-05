@@ -19,6 +19,7 @@ import {
 } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import { objectMetaMap } from '@agoric/internal';
+import { UsdcTokenIds } from '@agoric/portfolio-api/src/constants.js';
 
 import { loadConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
@@ -27,7 +28,12 @@ import { makeGraphqlMultiClient } from './graphql-client.ts';
 import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import { getSdk as getSpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import { startEngine } from './engine.ts';
-import { createEVMContext, verifyEvmChains } from './support.ts';
+import {
+  createEVMContext,
+  spectrumChainIdsByCluster,
+  spectrumPoolIdsByCluster,
+  verifyEvmChains,
+} from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
 
@@ -127,6 +133,9 @@ export const main = async (
 
   const config = await loadConfig(env);
   const { clusterName } = config;
+  const spectrumChainIds = spectrumChainIdsByCluster[clusterName];
+  const spectrumPoolIds = spectrumPoolIdsByCluster[clusterName];
+  const usdcTokensByChain = UsdcTokenIds[clusterName];
 
   const networkConfig = await fetchEnvNetworkConfig({
     env: { AGORIC_NET: config.cosmosRest.agoricNetworkSpec },
@@ -250,6 +259,8 @@ export const main = async (
     evmCtx,
     rpc,
     spectrum,
+    spectrumChainIds,
+    spectrumPoolIds,
     spectrumBlockchain,
     spectrumPools,
     cosmosRest,
@@ -262,6 +273,7 @@ export const main = async (
     },
     now,
     gasEstimator,
+    usdcTokensByChain,
   };
   await startEngine(powers, {
     isDryRun,

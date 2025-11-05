@@ -1,20 +1,105 @@
-import { WebSocketProvider, Log, type Filter } from 'ethers';
+import { WebSocketProvider, Log } from 'ethers';
+import type { Filter } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from '@agoric/client-utils';
-import { objectMap } from '@agoric/internal';
+import { fromTypedEntries, objectMap, typedEntries } from '@agoric/internal';
 import {
+  CaipChainIds,
   EvmWalletOperationType,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
+import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
+import type {
+  PoolKey as InstrumentId,
+  PoolPlaceInfo,
+} from '@aglocal/portfolio-contract/src/type-guards.js';
+import {
+  aaveRewardsControllerAddresses,
+  compoundAddresses,
+} from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import type { EvmContext } from './pending-tx-manager.ts';
+
+type ROPartial<K extends string, V> = Readonly<Partial<Record<K, V>>>;
 
 const { entries } = Object;
 
 type HexAddress = `0x${string}`;
 
+/**
+ * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
+ *   or @agoric/orchestration
+ */
 export type UsdcAddresses = {
   mainnet: Record<CaipChainId, HexAddress>;
   testnet: Record<CaipChainId, HexAddress>;
+};
+
+const spectrumChainIdFromCaipChainId = (caipChainId: CaipChainId) => {
+  const [namespace, chain] = caipChainId.split(':');
+  return namespace === 'eip155'
+    ? `0x${BigInt(chain).toString(16).toLowerCase()}`
+    : chain;
+};
+
+export const spectrumChainIdsByCluster: Readonly<
+  Record<ClusterName, ROPartial<SupportedChain, string>>
+> = {
+  mainnet: {
+    ...objectMap(CaipChainIds.mainnet, spectrumChainIdFromCaipChainId),
+  },
+  testnet: {
+    ...objectMap(CaipChainIds.testnet, spectrumChainIdFromCaipChainId),
+  },
+  local: {
+    ...objectMap(CaipChainIds.local, spectrumChainIdFromCaipChainId),
+  },
+};
+
+export const spectrumPoolIdsByCluster: Readonly<
+  Record<ClusterName, ROPartial<InstrumentId, string>>
+> = {
+  mainnet: {
+    ...fromTypedEntries(
+      typedEntries(aaveRewardsControllerAddresses.mainnet).map(
+        ([chainName, _addr]) => [`Aave_${chainName}` as InstrumentId, 'USDC'],
+      ),
+    ),
+    ...fromTypedEntries(
+      typedEntries(compoundAddresses.mainnet).map(([chainName, addr]) => [
+        `Compound_${chainName}` as InstrumentId,
+        addr,
+      ]),
+    ),
+    Beefy_re7_Avalanche: 'euler-avax-re7labs-usdc',
+    Beefy_morphoGauntletUsdc_Ethereum: 'morpho-gauntlet-usdc',
+    Beefy_morphoSmokehouseUsdc_Ethereum: 'morpho-smokehouse-usdc',
+    Beefy_morphoSeamlessUsdc_Base: 'morpho-seamless-usdc',
+    Beefy_compoundUsdc_Optimism: 'compound-op-usdc',
+    Beefy_compoundUsdc_Arbitrum: 'compound-arbitrum-usdc',
+  },
+  testnet: {
+    ...fromTypedEntries(
+      typedEntries(aaveRewardsControllerAddresses.testnet).map(
+        ([chainName, _addr]) => [`Aave_${chainName}` as InstrumentId, 'USDC'],
+      ),
+    ),
+    ...fromTypedEntries(
+      typedEntries(compoundAddresses.testnet).map(([chainName, addr]) => [
+        `Compound_${chainName}` as InstrumentId,
+        addr,
+      ]),
+    ),
+  },
+  local: {},
+};
+
+export const spectrumProtocols: Readonly<
+  Record<PoolPlaceInfo['protocol'], string>
+> = {
+  Aave: 'aave',
+  Beefy: 'beefy',
+  Compound: 'compound',
+  USDN: 'USDN',
 };
 
 /**
@@ -25,11 +110,9 @@ export type UsdcAddresses = {
  * - https://developers.circle.com/cctp/evm-smart-contracts
  * - https://developers.circle.com/stablecoins/usdc-contract-addresses
  *
- * Notes:
- * - This list should conceptually come from an orchestration type
- *   for supported EVM networks.
- * - Currently this config mirrors the EVM chains defined in
- *   packages/orchestration/src/cctp-chain-info.js
+ * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
+ *   or @agoric/orchestration
+ * @see {@link ../../../packages/orchestration/src/cctp-chain-info.js}
  */
 export const usdcAddresses: UsdcAddresses = {
   mainnet: {
@@ -80,6 +163,9 @@ export const walletOperationFallbackGasLimit = 276_809n;
  *   https://chainspect.app/ , https://subnets.avax.network/c-chain
  * Testnet data: https://eth.blockscout.com/ (except Avalanche),
  *   https://subnets-test.avax.network/c-chain
+ *
+ * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
+ *   or @agoric/orchestration
  */
 const chainBlockTimesMs: Record<CaipChainId, number> = harden({
   // ========= Mainnet =========
@@ -105,6 +191,10 @@ export const getBlockTimeMs = (chainId: CaipChainId): number => {
   return chainBlockTimesMs[chainId] ?? 12_000; // Default to Ethereum's conservative 12s
 };
 
+/**
+ * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
+ *   or @agoric/orchestration
+ */
 export const getEvmRpcMap = (
   clusterName: ClusterName,
   alchemyApiKey: string,
@@ -222,10 +312,13 @@ export const createEVMContext = async ({
 
   return {
     evmProviders,
+    // XXX Remove now that @agoric/portfolio-api/src/constants.js
+    // defines UsdcTokenIds.
     usdcAddresses: usdcAddresses[clusterName],
   };
 };
 
+// XXX This can move to ./utils.ts.
 type BinarySearch = {
   (
     start: number,

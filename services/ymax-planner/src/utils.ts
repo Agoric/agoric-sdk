@@ -3,6 +3,8 @@
  *   hardened environment.
  */
 
+import { typedEntries } from '@agoric/internal/src/js-utils.js';
+
 const { hasOwn } = Object;
 
 export const getOwn = <O, K extends PropertyKey>(
@@ -27,4 +29,38 @@ export const parseGraphqlEndpoints = (
   } catch (cause) {
     throw Error(`${label} must be valid JSON`, { cause });
   }
+};
+
+/**
+ * Treat a source object as a one-to-one dictionary, returning the value
+ * associated with the provided key or throwing an error if there is no such own
+ * property.
+ */
+export const translateData = <K extends string, V>(
+  source: Partial<Record<K, V>>,
+  key: K,
+): V => {
+  const value = getOwn(source, key);
+  if (value === undefined && !hasOwn(source, key)) {
+    throw Error(`no value for key: ${key}`);
+  }
+  return value as V;
+};
+
+/**
+ * Treat a source object as a one-to-one dictionary, returning the key
+ * associated with the provided value or throwing an error if there is no such
+ * own property.
+ * This allows the same source object to be used for translation in both
+ * directions.
+ */
+export const untranslateData = <K extends string, V>(
+  source: Partial<Record<K, V>>,
+  value: V,
+): K => {
+  const entry = typedEntries(source).find(([_k, v]) => v === value);
+  if (entry === undefined) {
+    throw Error(`no key for value: ${value}`);
+  }
+  return entry[0] as K;
 };

@@ -18,6 +18,7 @@ import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/netw
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
+import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
 import { USDN, type CosmosRestClient } from './cosmos-rest-client.js';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
@@ -25,10 +26,13 @@ import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 import { getOwn } from './utils.js';
 
 export type BalanceQueryPowers = {
+  cosmosRest: CosmosRestClient;
   spectrum: SpectrumClient;
   spectrumBlockchain?: SpectrumBlockchainSdk;
   spectrumPools?: SpectrumPoolsSdk;
-  cosmosRest: CosmosRestClient;
+  spectrumChainIds: Partial<Record<SupportedChain, string>>;
+  spectrumPoolIds: Partial<Record<PoolKey, string>>;
+  usdcTokensByChain: Partial<Record<SupportedChain, string>>;
 };
 
 const addressOfAccountId = (aid: `${string}:${string}:${string}`) =>

@@ -50,11 +50,12 @@ const handleDeposit = async (
   const status = await querier.getPortfolioStatus();
   const { policyVersion, rebalanceCount, targetAllocation } = status;
   if (!targetAllocation) return { policyVersion, rebalanceCount, steps: [] };
-  const currentBalances = await getCurrentBalances(
-    status,
-    amount.brand,
-    powers,
-  );
+  const currentBalances = await getCurrentBalances(status, amount.brand, {
+    spectrumChainIds: {},
+    spectrumPoolIds: {},
+    usdcTokensByChain: {},
+    ...powers,
+  });
   const steps = await planDepositToAllocations({
     amount,
     brand: amount.brand,
@@ -114,8 +115,11 @@ test('getNonDustBalances filters balances at or below the dust epsilon', async t
   } as unknown as CosmosRestClient;
 
   const balances = await getNonDustBalances(status, depositBrand, {
-    spectrum: mockSpectrumClient,
     cosmosRest: mockCosmosRestClient,
+    spectrum: mockSpectrumClient,
+    spectrumChainIds: {},
+    spectrumPoolIds: {},
+    usdcTokensByChain: {},
   });
 
   t.deepEqual(Object.keys(balances), ['Compound_Base']);
@@ -147,8 +151,11 @@ test('getNonDustBalances retains noble balances above the dust epsilon', async t
   } as unknown as CosmosRestClient;
 
   const balances = await getNonDustBalances(status, depositBrand, {
-    spectrum: spectrumStub,
     cosmosRest: mockCosmosRestClient,
+    spectrum: spectrumStub,
+    spectrumChainIds: {},
+    spectrumPoolIds: {},
+    usdcTokensByChain: {},
   });
 
   t.deepEqual(Object.keys(balances), ['USDN']);
