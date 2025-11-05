@@ -545,7 +545,7 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.GMP} tx`,
     `[${txId}] Watching for MulticallStatus and MulticallExecuted events for txId: ${txId} at contract: ${contractAddress}`,
-    `[${txId}] Searching blocks ${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
+    `[${txId}] Searching blocks ${fromBlock}/${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] [LogScan] Searching chunk ${fromBlock} → ${expectedChunkEnd}`,
     `[${txId}] [LogScan] Match in tx=${event.transactionHash}`,

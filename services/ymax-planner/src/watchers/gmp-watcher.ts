@@ -121,7 +121,7 @@ export const watchGmp = ({
   });
 };
 
-const EVENTS = {
+export const EVENTS = {
   MULTICALL_EXECUTED: 'executed',
   MULTICALL_STATUS: 'status',
 };
