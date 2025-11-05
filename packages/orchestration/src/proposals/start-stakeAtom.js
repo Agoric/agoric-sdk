@@ -9,7 +9,7 @@ import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 /**
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {IBCConnectionID} from '@agoric/vats';
- * @import {StakeIcaSF,  StakeIcaTerms} from '../examples/stake-ica.contract';
+ * @import {StakeIcaSF,  StakeIcaTerms} from '../examples/stake-ica.contract.js';
  */
 
 const trace = makeTracer('StartStakeAtom', true);

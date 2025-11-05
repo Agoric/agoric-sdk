@@ -41,9 +41,43 @@ import { notifyTermination } from './notifyTermination.js';
 import { makeVatAdminHooks } from './vat-admin-hooks.js';
 
 /**
- * @import {MeterConsumption, VatDeliveryObject, VatDeliveryResult, VatSyscallObject, VatSyscallResult} from '@agoric/swingset-liveslots';
- * @import {PolicyInputCleanupCounts} from '../types-external.js';
  * @import {
+ *    MeterConsumption,
+ *    VatDeliveryObject,
+ *    VatDeliveryResult,
+ *    VatSyscallObject,
+ *    VatSyscallResult,
+ * } from '@agoric/swingset-liveslots';
+ * @import {
+ *    PolicyInputCleanupCounts,
+ *    RunPolicy,
+ *    KernelSlog,
+ *    Bundle,
+ *    BundleID,
+ *    SwingSetCapData,
+ *    KernelDeliveryMessage,
+ *    KernelDeliveryObject,
+ *    KernelDeliveryNotify,
+ *    KernelDeliveryOneNotify,
+ *    KernelDeliveryDropExports,
+ *    KernelDeliveryRetireExports,
+ *    KernelDeliveryRetireImports,
+ *    KernelDeliveryBringOutYourDead,
+ *    KernelDeliveryStartVat,
+ *    KernelDeliveryChangeVatOptions,
+ *    ResolutionPolicy,
+ *    Message,
+ *    EndoZipBase64Bundle,
+ *    PolicyInput,
+ *    SlogFinishSyscall,
+ *    KernelSyscallObject,
+ *    KernelSyscallResult,
+ *    ManagerType,
+ * } from '../types-external.js';
+ * @import {
+ *   MeterID,
+ *   Dirt,
+ *   KernelPanic,
  *   VatID,
  *   InternalDynamicVatOptions,
  *   RunQueueEvent,
@@ -60,6 +94,7 @@ import { makeVatAdminHooks } from './vat-admin-hooks.js';
  *   RunQueueEventBringOutYourDead,
  *   RunQueueEventCleanupTerminatedVat,
  * } from '../types-internal.js';
+ * @import {KernelKeeper} from './state/kernelKeeper.js';
  */
 
 /** @typedef {typeof gcMessageTypes[number]} GcMessageType */
@@ -281,7 +316,7 @@ export default function buildKernel(
   // error at the first opportunity
   let kernelPanic = null;
 
-  /** @type {import('../types-internal.js').KernelPanic} */
+  /** @type {KernelPanic} */
   function panic(problem, err = undefined) {
     console.error(`##### KERNEL PANIC: ${problem} #####`);
     kernelPanic = err || Error(`kernel panic ${problem}`);
@@ -420,10 +455,6 @@ export default function buildKernel(
   });
 
   /**
-   *
-   * @typedef { import('../types-internal.js').MeterID } MeterID
-   * @typedef { import('../types-internal.js').Dirt } Dirt
-   *
    *  Any delivery crank (send, notify, start-vat.. anything which is allowed
    *  to make vat delivery) emits one of these status events if a delivery
    *  actually happened.
@@ -1033,7 +1064,7 @@ export default function buildKernel(
     // send BOYD so the terminating vat has one last chance to clean
     // up, drop imports, and delete durable data.
     // If a vat is so broken it can't do BOYD, we can make this optional.
-    /** @type { import('../types-external.js').KernelDeliveryBringOutYourDead } */
+    /** @type { KernelDeliveryBringOutYourDead } */
     const boydKD = harden(['bringOutYourDead']);
     const boydVD = vatWarehouse.kernelDeliveryToVatDelivery(vatID, boydKD);
     const boydStatus = await deliverAndLogToVat(vatID, boydKD, boydVD);
@@ -1116,7 +1147,7 @@ export default function buildKernel(
     // between the old and the new. this moment will never come again.
 
     // deliver a startVat with the new vatParameters
-    /** @type { import('../types-external.js').KernelDeliveryStartVat } */
+    /** @type { KernelDeliveryStartVat } */
     const startVatKD = harden(['startVat', vatParameters]);
     const startVatVD = vatWarehouse.kernelDeliveryToVatDelivery(
       vatID,
@@ -1773,7 +1804,7 @@ export default function buildKernel(
     logStartup(`assigned VatID ${vatID} for test vat ${name}`);
 
     const source = { bundleID };
-    /** @type {import('../types-external.js').ManagerType} */
+    /** @type {ManagerType} */
     const managerType = 'local';
     const options = {
       name,

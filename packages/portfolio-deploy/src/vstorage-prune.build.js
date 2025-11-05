@@ -17,7 +17,7 @@ const sourceSpec = './vstorage-prune.core.js';
 
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import {PruneOpts} from './vstorage-prune.core';
+ * @import {PruneOpts} from './vstorage-prune.core.js';
  */
 
 /**

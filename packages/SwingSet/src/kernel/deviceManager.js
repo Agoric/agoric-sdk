@@ -4,6 +4,11 @@ import { insistCapData } from '../lib/capdata.js';
 
 import '../types-ambient.js';
 
+/**
+ * @import {DeviceInvocation} from '../types-external.js';
+ * @import {DeviceInvocationResult} from '../types-external.js';
+ */
+
 /* The DeviceManager is much simpler than the VatManager, because the feature
  * set is smaller:
  *  * the only Delivery is `invoke`

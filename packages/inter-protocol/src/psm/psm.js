@@ -1,6 +1,6 @@
 // @jessie-check
-/// <reference types="@agoric/governance/exported" />
-/// <reference types="@agoric/zoe/exported" />
+/// <reference types="@agoric/governance/exported.js" />
+/// <reference types="@agoric/zoe/exported.js" />
 
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';

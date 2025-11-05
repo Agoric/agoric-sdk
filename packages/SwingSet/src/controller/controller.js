@@ -40,6 +40,14 @@ import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
  * @import {EReturn} from '@endo/far';
  * @import {LimitedConsole} from '@agoric/internal';
  * @import {VatID} from '../types-internal.js';
+ * @import {SwingStoreKernelStorage} from '../types-external.js';
+ * @import {Bundle} from '../types-external.js';
+ * @import {EndoZipBase64Bundle} from '../types-external.js';
+ * @import {BundleID} from '../types-external.js';
+ * @import {RunPolicy} from '../types-external.js';
+ * @import {ResolutionPolicy} from '../types-external.js';
+ * @import {SwingSetCapData} from '../types-external.js';
+ * @import {SwingSetConfig} from '../types-external.js';
  */
 
 /**
@@ -71,6 +79,8 @@ export function computeSha512(bytes) {
  */
 function makeConsole(prefixer) {
   if (typeof prefixer !== 'function') {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore TODO remove when anylogger has types
     const logger = anylogger(prefixer);
     return makeLimitedConsole(level => logger[level]);
   }
@@ -81,6 +91,8 @@ function makeConsole(prefixer) {
       const prefix = prefixer(source);
       let logger = prefixToLogger.get(prefix);
       if (!logger) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore TODO remove when anylogger has types
         logger = anylogger(prefix);
         prefixToLogger.set(prefix, logger);
       }
@@ -634,7 +646,6 @@ export async function makeSwingsetController(
  *   warehousePolicy?: import('../types-external.js').VatWarehousePolicy;
  * }} runtimeOptions
  * @param {Record<string, unknown>} deviceEndowments
- * @typedef { import('@agoric/swing-store').KVStore } KVStore
  */
 export async function buildVatController(
   config,

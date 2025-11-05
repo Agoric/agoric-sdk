@@ -15,10 +15,8 @@ import { exportRootObject } from '../kernel/kernel.js';
 import { makeKernelQueueHandler } from '../kernel/kernelQueue.js';
 
 /**
- * @typedef { import('../types-external.js').SwingSetKernelConfig } SwingSetKernelConfig
- * @typedef { import('../types-external.js').SwingStoreKernelStorage } SwingStoreKernelStorage
- * @typedef { import('../types-internal.js').InternalKernelOptions } InternalKernelOptions
- * @typedef { import('../types-internal.js').ReapDirtThreshold } ReapDirtThreshold
+ * @import { SwingSetKernelConfig, SwingStoreKernelStorage } from '../types-external.js'
+ * @import { InternalKernelOptions, ReapDirtThreshold } from '../types-internal.js'
  */
 
 function makeVatRootObjectSlot() {
