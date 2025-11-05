@@ -383,6 +383,7 @@ type ScanOpts = {
   chunkSize?: number;
   log?: (...args: unknown[]) => void;
   signal?: AbortSignal;
+  chunkCallback?: (startBlock: number, endBlock: number) => void;
 };
 
 /**
@@ -442,6 +443,7 @@ export const scanEvmLogsInChunks = async (
           return evt;
         }
       }
+      await opts.chunkCallback?.(start, end);
     } catch (err) {
       log(`[LogScan] Error searching chunk ${start}–${end}:`, err);
       // continue

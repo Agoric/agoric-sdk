@@ -6,6 +6,11 @@ import {
   scanEvmLogsInChunks,
 } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
+import {
+  getResolverLastActiveBlock,
+  setResolverLastActiveBlock,
+  type KeyValueStore,
+} from '../kv-store.ts';
 
 // TODO: Remove once all contracts are upgraded to emit MulticallStatus
 const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
@@ -20,6 +25,7 @@ type WatchGmp = {
   contractAddress: `0x${string}`;
   txId: TxId;
   log: (...args: unknown[]) => void;
+  kvStore: KeyValueStore;
 };
 
 export const watchGmp = ({
@@ -115,6 +121,11 @@ export const watchGmp = ({
   });
 };
 
+const EVENTS = {
+  MULTICALL_EXECUTED: 'executed',
+  MULTICALL_STATUS: 'status',
+};
+
 export const lookBackGmp = async ({
   provider,
   contractAddress,
@@ -123,6 +134,7 @@ export const lookBackGmp = async ({
   chainId,
   log = () => {},
   signal,
+  kvStore,
 }: WatchGmp & {
   publishTimeMs: number;
   chainId: CaipChainId;
@@ -136,8 +148,21 @@ export const lookBackGmp = async ({
     );
     const toBlock = await provider.getBlockNumber();
 
+    const multicallStatusFromBlock =
+      (await getResolverLastActiveBlock(
+        kvStore,
+        txId,
+        EVENTS.MULTICALL_STATUS,
+      )) || fromBlock;
+    const multicallExecutedFromBlock =
+      (await getResolverLastActiveBlock(
+        kvStore,
+        txId,
+        EVENTS.MULTICALL_EXECUTED,
+      )) || fromBlock;
+
     log(
-      `Searching blocks ${fromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
+      `Searching blocks ${multicallStatusFromBlock}/${multicallExecutedFromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
     );
     const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
 
@@ -166,11 +191,19 @@ export const lookBackGmp = async ({
         {
           provider,
           baseFilter: statusFilter,
-          fromBlock,
+          fromBlock: multicallStatusFromBlock,
           toBlock,
           chainId,
           log,
           signal: statusController.signal,
+          chunkCallback: async (_, to) => {
+            await setResolverLastActiveBlock(
+              kvStore,
+              txId,
+              to,
+              EVENTS.MULTICALL_STATUS,
+            );
+          },
         },
         ev => ev.topics[1] === expectedIdTopic,
       ).then(result => {
@@ -181,11 +214,19 @@ export const lookBackGmp = async ({
         {
           provider,
           baseFilter: executedFilter,
-          fromBlock,
+          fromBlock: multicallExecutedFromBlock,
           toBlock,
           chainId,
           log,
           signal: executedController.signal,
+          chunkCallback: async (_, to) => {
+            await setResolverLastActiveBlock(
+              kvStore,
+              txId,
+              to,
+              EVENTS.MULTICALL_EXECUTED,
+            );
+          },
         },
         ev => ev.topics[1] === expectedIdTopic,
       ).then(result => {

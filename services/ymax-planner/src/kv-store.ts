@@ -112,19 +112,22 @@ export const makeSQLiteKeyValueStore = (
   };
 };
 
-export const KV_KEYS = {
-  RESOLVER_LAST_ACTIVE_TIME: 'RESOLVER_LAST_ACTIVE_TIME',
-} as const;
+const getResolverLastBlockKey = (txId: `tx${number}`, suffix?: string) =>
+  `RESOLVER_LAST_BLOCK_${txId}${suffix ? `_${suffix}` : ''}`;
 
 /**
  * Helper to get the resolver's last active time from the store
  * @param store - The key-value store instance
+ * @param txId - The transaction ID
+ * @param suffix - Additional suffix to add to the end of the key
  * @returns The timestamp in milliseconds, or undefined if not found
  */
-export const getResolverLastActiveTime = async (
+export const getResolverLastActiveBlock = async (
   store: KeyValueStore,
+  txId: `tx${number}`,
+  suffix?: string,
 ): Promise<number | undefined> => {
-  const value = await store.get(KV_KEYS.RESOLVER_LAST_ACTIVE_TIME);
+  const value = await store.get(getResolverLastBlockKey(txId, suffix));
   if (value === undefined) return undefined;
 
   const timestamp = Number(value);
@@ -134,11 +137,15 @@ export const getResolverLastActiveTime = async (
 /**
  * Helper to set the resolver's last active time in the store
  * @param store - The key-value store instance
- * @param timestampMs - The timestamp in milliseconds
+ * @param txId - The transaction ID
+ * @param block - The block number to add as value
+ * @param suffix - Additional suffix to add to the end of the key
  */
-export const setResolverLastActiveTime = async (
+export const setResolverLastActiveBlock = async (
   store: KeyValueStore,
-  timestampMs: number,
+  txId: `tx${number}`,
+  block: number,
+  suffix?: string,
 ): Promise<void> => {
-  await store.set(KV_KEYS.RESOLVER_LAST_ACTIVE_TIME, String(timestampMs));
+  await store.set(getResolverLastBlockKey(txId, suffix), String(block));
 };

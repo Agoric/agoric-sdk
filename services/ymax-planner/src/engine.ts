@@ -55,7 +55,7 @@ import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
-import { getResolverLastActiveTime, type KeyValueStore } from './kv-store.ts';
+import { type KeyValueStore } from './kv-store.ts';
 import {
   handlePendingTx,
   type EvmContext,
@@ -178,7 +178,10 @@ export const makeVstorageEvent = (
 };
 
 type Powers = {
-  evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
+  evmCtx: Omit<
+    EvmContext,
+    'signingSmartWalletKit' | 'fetch' | 'cosmosRest' | 'kvStore'
+  >;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   spectrumBlockchain?: SpectrumBlockchainSdk;
@@ -545,39 +548,32 @@ export const processInitialPendingTransactions = async (
   txPowers: HandlePendingTxOpts,
   handlePendingTxFn = handlePendingTx,
 ) => {
-  const { error = () => {}, log = () => {}, cosmosRpc, kvStore } = txPowers;
+  const { error = () => {}, log = () => {}, cosmosRpc } = txPowers;
 
   log(`Processing ${initialPendingTxData.length} pending transactions`);
 
-  const resolverLastActiveTime = await getResolverLastActiveTime(kvStore);
+  // Cache timestamps for block heights to avoid duplicate RPC calls
 
   const blockHeightToTimestamp = new Map<bigint, Promise<number>>();
 
   await makeWorkPool(initialPendingTxData, undefined, async pendingTxRecord => {
     const { blockHeight, tx } = pendingTxRecord;
 
-    let timestampMs: number | undefined;
-
-    await null;
-    if (resolverLastActiveTime !== undefined) {
-      timestampMs = resolverLastActiveTime;
-    } else {
-      timestampMs = await provideLazyMap(
-        blockHeightToTimestamp,
-        blockHeight,
-        async () => {
-          const resp = await cosmosRpc.request('block', {
-            height: `${blockHeight}`,
-          });
-          const date = new Date(resp.block.header.time);
-          return date.getTime();
-        },
-      ).catch(err => {
-        const msg = `🚨 Couldn't get block time for pending tx ${tx.txId} at height ${blockHeight}`;
-        error(msg, err);
-        return undefined;
-      });
-    }
+    const timestampMs = await provideLazyMap(
+      blockHeightToTimestamp,
+      blockHeight,
+      async () => {
+        const resp = await cosmosRpc.request('block', {
+          height: `${blockHeight}`,
+        });
+        const date = new Date(resp.block.header.time);
+        return date.getTime();
+      },
+    ).catch(err => {
+      const msg = `🚨 Couldn't get block time for pending tx ${tx.txId} at height ${blockHeight}`;
+      error(msg, err);
+      return undefined;
+    });
 
     if (timestampMs === undefined) return;
 

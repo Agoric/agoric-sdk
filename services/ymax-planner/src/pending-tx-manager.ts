@@ -34,6 +34,7 @@ export type EvmContext = {
   evmProviders: EvmProviders;
   signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
+  kvStore: KeyValueStore;
 };
 
 export type GmpTransfer = {
@@ -103,6 +104,8 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       transferStatus = await watchCctpTransfer({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
+        kvStore: ctx.kvStore,
+        txId,
       });
     } else {
       // Lookback mode with concurrent live watching
@@ -112,6 +115,8 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
         signal: abortController.signal,
+        kvStore: ctx.kvStore,
+        txId,
       });
       void liveResultP.then(found => {
         if (found) {
@@ -131,6 +136,8 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
         publishTimeMs: opts.publishTimeMs,
         chainId: caipId,
         signal: abortController.signal,
+        kvStore: ctx.kvStore,
+        txId,
       });
 
       if (transferStatus) {
@@ -185,6 +192,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       transferStatus = await watchGmp({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
+        kvStore: ctx.kvStore,
       });
     } else {
       // Lookback mode with concurrent live watching
@@ -194,6 +202,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
         signal: abortController.signal,
+        kvStore: ctx.kvStore,
       });
       void liveResultP.then(found => {
         if (found) {
@@ -213,6 +222,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         publishTimeMs: opts.publishTimeMs,
         chainId: caipId,
         signal: abortController.signal,
+        kvStore: ctx.kvStore,
       });
 
       if (transferStatus) {
@@ -254,7 +264,6 @@ export type HandlePendingTxOpts = {
     portfoliosPathPrefix: string;
     pendingTxPathPrefix: string;
   };
-  kvStore: KeyValueStore;
 } & EvmContext;
 
 export const TX_TIMEOUT_MS = 30 * 60 * 1000; // 30 min

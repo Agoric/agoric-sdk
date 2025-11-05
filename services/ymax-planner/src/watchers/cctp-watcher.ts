@@ -6,6 +6,11 @@ import {
   scanEvmLogsInChunks,
 } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
+import {
+  getResolverLastActiveBlock,
+  setResolverLastActiveBlock,
+  type KeyValueStore,
+} from '../kv-store.ts';
 
 /**
  * The Keccak256 hash (event signature) of the standard ERC-20 `Transfer` event.
@@ -35,6 +40,8 @@ type CctpWatch = {
   toAddress: `0x${string}`;
   expectedAmount: bigint;
   log?: (...args: unknown[]) => void;
+  kvStore: KeyValueStore;
+  txId: `tx${number}`;
 };
 
 const parseTransferLog = log => {
@@ -151,6 +158,8 @@ export const lookBackCctp = async ({
   chainId,
   log = () => {},
   signal,
+  kvStore,
+  txId,
 }: CctpWatch & {
   publishTimeMs: number;
   chainId: CaipChainId;
@@ -164,8 +173,10 @@ export const lookBackCctp = async ({
     );
     const toBlock = await provider.getBlockNumber();
 
+    const savedFromblock =
+      (await getResolverLastActiveBlock(kvStore, txId)) || fromBlock;
     log(
-      `Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${toAddress} with amount ${expectedAmount}`,
+      `Searching blocks ${savedFromblock} → ${toBlock} for Transfer to ${toAddress} with amount ${expectedAmount}`,
     );
 
     const toTopic = ethers.zeroPadValue(toAddress.toLowerCase(), 32);
@@ -177,7 +188,18 @@ export const lookBackCctp = async ({
     // TODO: Consider async iteration pattern for more flexible log scanning
     // See: https://github.com/Agoric/agoric-sdk/pull/11915#discussion_r2353872425
     const matchingEvent = await scanEvmLogsInChunks(
-      { provider, baseFilter, fromBlock, toBlock, chainId, log, signal },
+      {
+        provider,
+        baseFilter,
+        fromBlock: savedFromblock,
+        toBlock,
+        chainId,
+        log,
+        signal,
+        chunkCallback: async (_, to) => {
+          await setResolverLastActiveBlock(kvStore, txId, to);
+        },
+      },
       ev => {
         try {
           const t = parseTransferLog(ev);
