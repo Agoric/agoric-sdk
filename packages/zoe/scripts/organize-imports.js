@@ -1,26 +1,171 @@
 #!/usr/bin/env node
+/* eslint-disable @jessie.js/safe-await-separator */
+/* eslint-disable no-underscore-dangle */
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { Project } from 'ts-morph';
 import prettier from 'prettier';
+import ts from 'typescript';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const packageRoot = resolve(__dirname, '..');
 
+const toPosix = filePath => filePath.replaceAll('\\', '/');
+
 const userPatterns = process.argv.slice(2);
-const defaultPattern = 'src/**/*.js';
-const globPatterns = (userPatterns.length ? userPatterns : [defaultPattern]).map(pattern =>
-  resolve(packageRoot, pattern),
+if (userPatterns.length === 0) {
+  console.error('Usage: node scripts/organize-imports.js "<glob>" [...more]');
+  process.exit(1);
+}
+const globPatterns = userPatterns.map(pattern => resolve(packageRoot, pattern));
+
+const tsConfigPath = resolve(packageRoot, 'tsconfig.json');
+
+const readTsConfig = ts.readConfigFile(tsConfigPath, ts.sys.readFile);
+if (readTsConfig.error) {
+  throw new Error(
+    `Failed to read tsconfig at ${tsConfigPath}: ${readTsConfig.error.messageText}`,
+  );
+}
+const parsedTsConfig = ts.parseJsonConfigFileContent(
+  readTsConfig.config,
+  ts.sys,
+  packageRoot,
+);
+const compilerOptions = {
+  ...parsedTsConfig.options,
+  module: ts.ModuleKind.NodeNext,
+  moduleResolution: ts.ModuleResolutionKind.NodeNext,
+};
+const scriptFileNames = new Set(parsedTsConfig.fileNames.map(toPosix));
+let projectVersion = 0;
+const languageServiceHost = {
+  ...ts.createCompilerHost(compilerOptions),
+  getCompilationSettings: () => compilerOptions,
+  getScriptFileNames: () => Array.from(scriptFileNames),
+  getProjectVersion: () => `${projectVersion}`,
+  getScriptVersion: () => '0',
+  getScriptSnapshot: fileName => {
+    if (!ts.sys.fileExists(fileName)) {
+      return undefined;
+    }
+    return ts.ScriptSnapshot.fromString(ts.sys.readFile(fileName));
+  },
+  getCurrentDirectory: () => packageRoot,
+};
+const languageService = ts.createLanguageService(
+  languageServiceHost,
+  ts.createDocumentRegistry(),
 );
 
 const project = new Project({
-  compilerOptions: {
-    allowJs: true,
-    allowSyntheticDefaultImports: true,
-  },
-  skipAddingFilesFromTsConfig: true,
+  tsConfigFilePath: tsConfigPath,
+  compilerOptions,
+  // skipAddingFilesFromTsConfig: true,
 });
+
+const ensureFileInService = absPath => {
+  const normalizedPath = toPosix(absPath);
+  if (!scriptFileNames.has(normalizedPath)) {
+    scriptFileNames.add(normalizedPath);
+    projectVersion += 1;
+  }
+  return normalizedPath;
+};
+
+const typeImportPreferences = {
+  importModuleSpecifierPreference: 'shortest',
+  includePackageJsonAutoImports: 'on',
+  preferTypeOnlyAutoImports: true,
+  allowRenameOfImportPath: true,
+  displayPartsForJSDoc: true,
+  autoImportFileExcludePatterns: ['**/node_modules/**', '**/dist/**'],
+};
+
+const applyInlineTypeImportFixes = sourceFile => {
+  const absPath = sourceFile.getFilePath();
+  const normalizedPath = ensureFileInService(absPath);
+  const program = languageService.getProgram();
+  if (!program?.getSourceFile(normalizedPath)) {
+    return 0;
+  }
+  const diagnostics = [
+    ...languageService.getSemanticDiagnostics(normalizedPath),
+    ...languageService.getSuggestionDiagnostics(normalizedPath),
+  ];
+  const pendingChanges = [];
+  const seen = new Set();
+  for (const diagnostic of diagnostics) {
+    if (diagnostic.start === undefined) {
+      continue;
+    }
+    if (diagnostic.code !== 2304) {
+      continue;
+    }
+    const start = diagnostic.start;
+    const length = diagnostic.length ?? 0;
+    let fixes;
+    try {
+      fixes = languageService.getCodeFixesAtPosition(
+        normalizedPath,
+        start,
+        start + length,
+        [diagnostic.code],
+        {},
+        typeImportPreferences,
+      );
+    } catch (err) {
+      console.warn(
+        `Skipping code fixes for ${normalizedPath} at ${start}: ${err.message}`,
+      );
+      continue;
+    }
+    const importFix = fixes.find(
+      fix =>
+        fix.fixName === 'import' &&
+        fix.changes.some(change =>
+          change.textChanges.some(textChange =>
+            textChange.newText.includes('import('),
+          ),
+        ),
+    );
+    if (!importFix) {
+      continue;
+    }
+    for (const change of importFix.changes) {
+      const changePath = toPosix(change.fileName);
+      if (changePath !== normalizedPath) {
+        continue;
+      }
+      for (const textChange of change.textChanges) {
+        const key = `${textChange.span.start}:${textChange.span.length}:${textChange.newText}`;
+        if (seen.has(key)) {
+          continue;
+        }
+        seen.add(key);
+        pendingChanges.push({
+          start: textChange.span.start,
+          length: textChange.span.length,
+          newText: textChange.newText,
+        });
+      }
+    }
+  }
+  if (pendingChanges.length === 0) {
+    return 0;
+  }
+  pendingChanges.sort((a, b) => b.start - a.start);
+  let updatedText = sourceFile.getFullText();
+  for (const change of pendingChanges) {
+    updatedText =
+      updatedText.slice(0, change.start) +
+      change.newText +
+      updatedText.slice(change.start + change.length);
+  }
+  sourceFile.replaceWithText(updatedText);
+  return pendingChanges.length;
+};
 
 const sourceFiles = project.addSourceFilesAtPaths(globPatterns);
 
@@ -45,21 +190,22 @@ const resolvePrettierOptions = async filePath => {
   };
 };
 
-let organizedCount = 0;
-let formattedCount = 0;
-
 for (const sourceFile of sourceFiles) {
-  const before = sourceFile.getFullText();
-  sourceFile.organizeImports();
-  const after = sourceFile.getFullText();
-  if (before !== after) {
-    organizedCount += 1;
+  console.log(`Processing ${sourceFile.getFilePath()}`);
+  const originalText = sourceFile.getFullText();
+  applyInlineTypeImportFixes(sourceFile);
+  sourceFile.organizeImports(); // the Organize Imports action in VSCode
+  sourceFile.fixMissingImports({}, typeImportPreferences); // the Add all missing imports action in VSCode
+  const finalText = sourceFile.getFullText();
+  const changed = originalText !== finalText;
+  if (changed) {
     try {
-      const prettierOptions = await resolvePrettierOptions(sourceFile.getFilePath());
-      const formatted = await prettier.format(after, prettierOptions);
-      if (formatted !== after) {
+      const prettierOptions = await resolvePrettierOptions(
+        sourceFile.getFilePath(),
+      );
+      const formatted = await prettier.format(finalText, prettierOptions);
+      if (formatted !== finalText) {
         sourceFile.replaceWithText(formatted);
-        formattedCount += 1;
       }
     } catch (err) {
       console.warn(`Prettier failed for ${sourceFile.getFilePath()}:`, err);
@@ -70,5 +216,5 @@ for (const sourceFile of sourceFiles) {
 await project.save();
 
 console.log(
-  `Organize imports finished: ${organizedCount} file(s) updated, ${formattedCount} formatted, out of ${sourceFiles.length} scanned.`,
+  `Organize imports finished processing ${sourceFiles.length} files.`,
 );
