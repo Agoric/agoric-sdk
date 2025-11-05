@@ -1,11 +1,11 @@
+import { AmountMath } from '@agoric/ertp';
+import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
+import { TimeMath } from '@agoric/time';
 import { annotateError, X } from '@endo/errors';
 import { Far } from '@endo/marshal';
-import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
-import { AmountMath } from '@agoric/ertp';
-import { TimeMath } from '@agoric/time';
 
-import { scheduleLiquidation } from './scheduleLiquidation.js';
 import { ceilMultiplyBy } from '../../contractSupport/index.js';
+import { scheduleLiquidation } from './scheduleLiquidation.js';
 
 /**
  * @import {TimestampRecord} from '@agoric/time';

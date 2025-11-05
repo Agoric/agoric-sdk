@@ -1,11 +1,11 @@
 // @jessie-check
 
 export {
+  calcLiqValueToMint,
+  calcSecondaryRequired,
+  calcValueToRemove,
   getInputPrice,
   getOutputPrice,
-  calcLiqValueToMint,
-  calcValueToRemove,
-  calcSecondaryRequired,
 } from './bondingCurves.js';
 
 export { natSafeMath } from '@agoric/ertp/src/safeMath.js';
@@ -20,18 +20,18 @@ export {
 } from './atomicTransfer.js';
 
 export {
-  defaultAcceptanceMsg,
-  swap,
-  fitProposalShape,
-  assertProposalShape,
   assertIssuerKeywords,
-  satisfies,
   assertNatAssetKind,
-  swapExact,
+  assertProposalShape,
+  defaultAcceptanceMsg,
   depositToSeat,
-  withdrawFromSeat,
-  saveAllIssuers,
+  fitProposalShape,
   offerTo,
+  satisfies,
+  saveAllIssuers,
+  swap,
+  swapExact,
+  withdrawFromSeat,
 } from './zoeHelpers.js';
 
 export * from '@agoric/ertp/src/ratio.js';
@@ -40,6 +40,6 @@ export * from './durability.js';
 export * from './prepare-ownable.js';
 export * from './priceAuthority.js';
 export * from './priceQuote.js';
-export * from './statistics.js';
 export * from './recorder.js';
+export * from './statistics.js';
 export * from './topics.js';

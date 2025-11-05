@@ -1,14 +1,14 @@
 import {
   canBeDurable,
-  makeScalarBigSetStore,
-  provideDurableWeakMapStore,
-  prepareKindMulti,
-  prepareExoClassKit,
   M,
+  makeScalarBigSetStore,
+  prepareExoClassKit,
+  prepareKindMulti,
   provide,
+  provideDurableWeakMapStore,
 } from '@agoric/vat-data';
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-import { q, Fail } from '@endo/errors';
 import { defineDurableHandle } from '../makeHandle.js';
 import {
   BrandKeywordRecordShape,

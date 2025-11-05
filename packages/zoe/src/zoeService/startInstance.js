@@ -1,23 +1,23 @@
-import { E } from '@endo/eventual-send';
-import { passStyleOf } from '@endo/marshal';
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
+import { initEmpty } from '@agoric/store';
 import {
   M,
-  provideDurableWeakMapStore,
-  prepareExoClass,
   prepareExo,
+  prepareExoClass,
+  provideDurableWeakMapStore,
   watchPromise,
 } from '@agoric/vat-data';
-import { initEmpty } from '@agoric/store';
-import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
+import { E } from '@endo/eventual-send';
+import { passStyleOf } from '@endo/marshal';
 
 import { Fail, q } from '@endo/errors';
 import { defineDurableHandle } from '../makeHandle.js';
-import { makeInstanceAdminMaker } from './instanceAdminStorage.js';
 import {
   AdminFacetI,
   InstanceAdminI,
   InstanceAdminShape,
 } from '../typeGuards.js';
+import { makeInstanceAdminMaker } from './instanceAdminStorage.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
