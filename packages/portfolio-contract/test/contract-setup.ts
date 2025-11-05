@@ -23,7 +23,10 @@ import {
   makeUSDNIBCTraffic,
   portfolio0lcaOrch,
 } from './mocks.ts';
-import { getResolverHelperKit, settleTransaction } from './resolver-helpers.ts';
+import {
+  getResolverHelperKitForInvokeService as getResolverHelperKit,
+  settleTransaction,
+} from './resolver-helpers.ts';
 import {
   chainInfoWithCCTP,
   makeIncomingEVMEvent,

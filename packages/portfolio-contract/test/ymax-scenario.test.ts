@@ -26,7 +26,10 @@ import {
   makeUSDNIBCTraffic,
   portfolio0lcaOrch,
 } from './mocks.ts';
-import { getResolverHelperKit, settleTransaction } from './resolver-helpers.ts';
+import {
+  getResolverHelperKitForInvitationMakers as getResolverHelperKit,
+  settleTransaction,
+} from './resolver-helpers.ts';
 
 // Use an EVM chain whose axelar ID differs from its chain name
 const { sourceChain } = evmNamingDistinction;

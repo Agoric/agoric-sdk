@@ -330,21 +330,20 @@ test.serial('Setup CCTP resolver', async t => {
   await controllerWallet.invokeEntry({
     id: inviteId,
     targetName: 'ymax0.creatorFacet',
-    method: 'deliverResolverInvitation',
+    method: 'deliverResolverServiceInvitation',
     args: [beneficiary, postalService],
   });
 
-  const currentWalletRecord = await wallet.getCurrentWalletRecord();
-
   t.log('Redeeming resolver service invitation');
   const offer: OfferSpec = {
-    id: 'settle-cctp',
+    id: 'resolver-1',
     invitationSpec: {
       source: 'purse',
-      instance: currentWalletRecord.purses[0].balance.value[0].instance,
-      description: 'resolver',
+      instance: agoricNamesRemotes.instance.ymax0,
+      description: 'resolver service',
     },
     proposal: {},
+    saveResult: { name: 'resolver' },
   };
   await wallet.executeOffer(offer);
 
@@ -354,8 +353,7 @@ test.serial('Setup CCTP resolver', async t => {
     updated: 'offerStatus',
     status: {
       ...offer,
-      numWantsSatisfied: 1,
-      result: 'UNPUBLISHED',
+      result: { name: 'resolver', passStyle: 'remotable' },
     },
   });
 });
@@ -367,46 +365,30 @@ test.skip('CCTP settlement works', async t => {
 
   const wallet = await wfd.provideSmartWallet(beneficiary, marshaller);
 
+  const settleId = Date.now().toString();
   t.log('Executing CCTP settlement offer');
-  await wallet.executeOffer({
-    id: '123',
-    invitationSpec: {
-      source: 'continuing',
-      previousOffer: 'settle-cctp',
-      invitationMakerName: 'SettleTransaction',
-    },
-    proposal: { give: {}, want: {} },
-    offerArgs: {
-      txDetails: {
-        amount: 10_000n,
-        remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-        status: 'success',
+  await wallet.invokeEntry({
+    id: settleId,
+    targetName: 'resolver',
+    method: 'settleTransaction',
+    args: [
+      {
+        txDetails: {
+          amount: 10_000n,
+          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+          status: 'success',
+        },
+        remoteAxelarChain: 'eip155:42161',
+        txId: 'tx0',
       },
-      remoteAxelarChain: 'eip155:42161',
-      txId: 'tx0',
-    },
+    ],
   });
   const latestWalletRecord = wallet.getLatestUpdateRecord();
 
   t.like(latestWalletRecord, {
-    status: {
-      id: '123',
-      invitationSpec: {
-        invitationMakerName: 'SettleTransaction',
-        source: 'continuing',
-        previousOffer: 'settle-cctp',
-      },
-      numWantsSatisfied: 1,
-      offerArgs: {
-        remoteAxelarChain: 'eip155:42161',
-        txDetails: {
-          amount: 10000n,
-          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-          status: 'success',
-        },
-        txId: 'tx0',
-      },
-    },
+    updated: 'invocation',
+    id: settleId,
+    result: { passStyle: 'undefined' },
   });
 });
 
@@ -496,47 +478,30 @@ test.skip('CCTP settlement works across contract restarts', async t => {
   const myMarshaller = makeClientMarshaller(v => (v as any).getBoardId());
   const wallet = await wfd.provideSmartWallet(beneficiary, myMarshaller);
 
-  await wallet.executeOffer({
-    id: '456',
-    invitationSpec: {
-      source: 'continuing',
-      previousOffer: 'settle-cctp',
-      invitationMakerName: 'SettleTransaction',
-    },
-    proposal: { give: {}, want: {} },
-    offerArgs: {
-      txDetails: {
-        amount: 40_000n,
-        remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-        status: 'success',
+  const settleId = Date.now().toString();
+  await wallet.invokeEntry({
+    id: settleId,
+    targetName: 'resolver',
+    method: 'settleTransaction',
+    args: [
+      {
+        txDetails: {
+          amount: 40_000n,
+          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+          status: 'success',
+        },
+        remoteAxelarChain: 'eip155:42161',
+        txId: 'tx0',
       },
-      remoteAxelarChain: 'eip155:42161',
-      txId: 'tx0',
-    },
+    ],
   });
-
   const finalUpdate = wallet.getLatestUpdateRecord();
   t.log('Final wallet update:', finalUpdate);
 
   t.like(finalUpdate, {
-    status: {
-      id: '456',
-      invitationSpec: {
-        invitationMakerName: 'SettleTransaction',
-        source: 'continuing',
-        previousOffer: 'settle-cctp',
-      },
-      numWantsSatisfied: 1,
-      offerArgs: {
-        remoteAxelarChain: 'eip155:42161',
-        txDetails: {
-          amount: 40000n,
-          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-          status: 'success',
-        },
-        txId: 'tx0',
-      },
-    },
+    updated: 'invocation',
+    id: settleId,
+    result: { passStyle: 'undefined' },
   });
 
   t.log('Test completed: CCTP settlement works across contract restarts');
@@ -619,35 +584,30 @@ test.serial(
 
     const wallet = await wfd.provideSmartWallet(beneficiary, marshaller);
 
-    const id = Date.now().toString();
-    const offer: OfferSpec = {
-      id,
-      invitationSpec: {
-        source: 'continuing',
-        previousOffer: 'settle-cctp',
-        invitationMakerName: 'SettleTransaction',
-      },
-      proposal: { give: {}, want: {} },
-      offerArgs: {
-        txDetails: {
-          amount: 10_000n,
-          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-          status: 'success',
+    const settleId = Date.now().toString();
+    await wallet.invokeEntry({
+      id: settleId,
+      targetName: 'resolver',
+      method: 'settleTransaction',
+      args: [
+        {
+          txDetails: {
+            amount: 10_000n,
+            remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+            status: 'success',
+          },
+          txId: 'tx0',
+          remoteAxelarChain: 'eip155:42161',
         },
-        txId: 'tx0',
-        remoteAxelarChain: 'eip155:42161',
-      },
-    };
-    await t.throwsAsync(wallet.executeOffer(offer));
+      ],
+    });
 
     const latestWalletRecord = wallet.getLatestUpdateRecord();
 
     t.like(latestWalletRecord, {
-      updated: 'offerStatus',
-      status: {
-        ...offer,
-        error: 'Error: vat terminated',
-      },
+      updated: 'invocation',
+      id: settleId,
+      error: 'Error: vat terminated',
     });
   },
 );
@@ -674,21 +634,20 @@ test.serial('Setup CCTP resolver with new contract', async t => {
   await controllerWallet.invokeEntry({
     id: inviteId,
     targetName: 'ymax0.creatorFacet-new',
-    method: 'deliverResolverInvitation',
+    method: 'deliverResolverServiceInvitation',
     args: [beneficiary, postalService],
   });
 
-  const currentWalletRecord = await wallet.getCurrentWalletRecord();
-
   t.log('Redeeming resolver service invitation for new contract');
   const offer: OfferSpec = {
-    id: 'settle-cctp-new',
+    id: 'resolver-new',
     invitationSpec: {
       source: 'purse',
-      instance: currentWalletRecord.purses[0].balance.value[0].instance,
-      description: 'resolver',
+      instance: agoricNamesRemotes.instance.ymax0,
+      description: 'resolver service',
     },
     proposal: {},
+    saveResult: { name: 'resolver-new' },
   };
   await wallet.executeOffer(offer);
 
@@ -698,8 +657,7 @@ test.serial('Setup CCTP resolver with new contract', async t => {
     updated: 'offerStatus',
     status: {
       ...offer,
-      numWantsSatisfied: 1,
-      result: 'UNPUBLISHED',
+      result: { name: 'resolver-new', passStyle: 'remotable' },
     },
   });
 });
@@ -711,45 +669,28 @@ test.skip('CCTP settlement works with new resolver after contract remove and sta
 
   const wallet = await wfd.provideSmartWallet(beneficiary, marshaller);
 
-  const id = Date.now().toString();
-  await wallet.executeOffer({
-    id,
-    invitationSpec: {
-      source: 'continuing',
-      previousOffer: 'settle-cctp-new',
-      invitationMakerName: 'SettleTransaction',
-    },
-    proposal: { give: {}, want: {} },
-    offerArgs: {
-      txDetails: {
-        amount: 10_000n,
-        remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-        status: 'success',
+  const settleId = Date.now().toString();
+  await wallet.invokeEntry({
+    id: settleId,
+    targetName: 'resolver-new',
+    method: 'settleTransaction',
+    args: [
+      {
+        txDetails: {
+          amount: 10_000n,
+          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+          status: 'success',
+        },
+        remoteAxelarChain: 'eip155:42161',
       },
-      remoteAxelarChain: 'eip155:42161',
-    },
+    ],
   });
   const latestWalletRecord = wallet.getLatestUpdateRecord();
 
   t.like(latestWalletRecord, {
-    status: {
-      id,
-      invitationSpec: {
-        invitationMakerName: 'SettleTransaction',
-        source: 'continuing',
-        previousOffer: 'settle-cctp-new',
-      },
-      numWantsSatisfied: 1,
-      offerArgs: {
-        remoteAxelarChain: 'eip155:42161',
-        txDetails: {
-          amount: 10000n,
-          remoteAddress: '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-          status: 'success',
-        },
-        txId: 'tx0',
-      },
-    },
+    updated: 'invocation',
+    id: settleId,
+    result: { passStyle: 'undefined' },
   });
 });
 

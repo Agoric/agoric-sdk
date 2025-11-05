@@ -3,7 +3,10 @@
 import { E } from '@endo/far';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { UserSeat, ZoeService } from '@agoric/zoe';
-import type { ResolverInvitationMakers } from '../src/resolver/resolver.exo.js';
+import type {
+  ResolverInvitationMakers,
+  ResolverKit,
+} from '../src/resolver/resolver.exo.js';
 import type { TxStatus } from '../src/resolver/constants.js';
 
 /**
@@ -14,7 +17,7 @@ import type { TxStatus } from '../src/resolver/constants.js';
  * @param creatorFacet - The creator facet that has makeResolverInvitation
  * @param zoe - Zoe service instance
  */
-export const getResolverHelperKit = async (
+export const getResolverHelperKitForInvitationMakers = async (
   creatorFacet: any,
   zoe: ZoeService,
 ): Promise<{ zoe: ZoeService; invitationMakers: ResolverInvitationMakers }> => {
@@ -26,9 +29,23 @@ export const getResolverHelperKit = async (
   return { zoe, invitationMakers };
 };
 
-export type ResolverHelperKit = Awaited<
-  ReturnType<typeof getResolverHelperKit>
->;
+/**
+ * Helper to get a resolver kit from a creator facet's resolver service.
+ *
+ * @param creatorFacet - The creator facet that has getResolverService
+ * @returns {Promise<ResolverKit['service']>}
+ */
+export const getResolverHelperKitForInvokeService = async (
+  creatorFacet: any,
+  _zoe?: ZoeService,
+): Promise<{ resolverService: ResolverKit['service'] }> => {
+  const resolverService = await E(creatorFacet).getResolverService();
+  return { resolverService };
+};
+
+export type ResolverHelperKit =
+  | Awaited<ReturnType<typeof getResolverHelperKitForInvitationMakers>>
+  | Awaited<ReturnType<typeof getResolverHelperKitForInvokeService>>;
 
 /**
  * Helper to manually settle a transaction in tests.
@@ -49,22 +66,31 @@ export const settleTransaction = async (
   await eventLoopIteration();
   await eventLoopIteration(); // XXX for some reason we need two iterations here to pass the tests
 
-  log('Creating transaction settlement invitation...');
-  const settleInvitation = await E(
-    helperKit.invitationMakers,
-  ).SettleTransaction();
-  log('Got settlement invitation, making offer...');
+  if ('resolverService' in helperKit) {
+    log('Calling resolver transaction settlement ...');
 
-  const settlementSeat = await E(helperKit.zoe).offer(
-    settleInvitation,
-    {},
-    undefined,
-    {
+    await E(helperKit.resolverService).settleTransaction({
       status,
       txId: `tx${txNumber}`,
-    },
-  );
+    });
+  } else {
+    log('Creating transaction settlement invitation...');
+    const settleInvitation = await E(
+      helperKit.invitationMakers,
+    ).SettleTransaction();
+    log('Got settlement invitation, making offer...');
 
-  const result = (await E(settlementSeat).getOfferResult()) as string;
-  log(`Transaction settlement got result:`, result);
+    const settlementSeat = await E(helperKit.zoe).offer(
+      settleInvitation,
+      {},
+      undefined,
+      {
+        status,
+        txId: `tx${txNumber}`,
+      },
+    );
+
+    const result = (await E(settlementSeat).getOfferResult()) as string;
+    log(`Transaction settlement got result:`, result);
+  }
 };
