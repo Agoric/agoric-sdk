@@ -6,8 +6,8 @@ import {
   floorMultiplyBy,
 } from '../contractSupport/index.js';
 import { makeInitialTransform } from '../contractSupport/priceAuthorityInitial.js';
-import { makePriceAuthorityTransform } from '../contractSupport/priceAuthorityTransform.js';
 import { provideQuoteMint } from '../contractSupport/priceAuthorityQuoteMint.js';
+import { makePriceAuthorityTransform } from '../contractSupport/priceAuthorityTransform.js';
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
