@@ -20,13 +20,7 @@ import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.
 import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
 import { USDN, type CosmosRestClient } from './cosmos-rest-client.js';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
-
-const getOwn = <O, K extends PropertyKey>(
-  obj: O,
-  key: K,
-): K extends keyof O ? O[K] : undefined =>
-  // @ts-expect-error TS doesn't let `hasOwn(obj, key)` support `obj[key]`.
-  Object.hasOwn(obj, key) ? obj[key] : undefined;
+import { getOwn } from './utils.js';
 
 export type BalanceQueryPowers = {
   spectrum: SpectrumClient;
