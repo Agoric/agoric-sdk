@@ -2,7 +2,9 @@
 import { toRequestQueryJson, CodecHelper } from '@agoric/cosmic-proto';
 import {
   MsgDepositForBurn as MsgDepositForBurnType,
+  MsgDepositForBurnResponse as MsgDepositForBurnResponseType,
   MsgDepositForBurnWithCaller as MsgDepositForBurnWithCallerType,
+  MsgDepositForBurnWithCallerResponse as MsgDepositForBurnWithCallerResponseType,
 } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import {
   QueryAllBalancesRequest as QueryAllBalancesRequestType,
@@ -10,7 +12,10 @@ import {
   QueryBalanceRequest as QueryBalanceRequestType,
   QueryBalanceResponse as QueryBalanceResponseType,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import { MsgSend as MsgSendType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+import {
+  MsgSendResponse as MsgSendResponseType,
+  MsgSend as MsgSendType,
+} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import {
   QueryDelegationRewardsRequest as QueryDelegationRewardsRequestType,
   QueryDelegationRewardsResponse as QueryDelegationRewardsResponseType,
@@ -35,7 +40,9 @@ import {
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
 import {
   MsgBeginRedelegate as MsgBeginRedelegateType,
+  MsgBeginRedelegateResponse as MsgBeginRedelegateResponseType,
   MsgDelegate as MsgDelegateType,
+  MsgDelegateResponse as MsgDelegateResponseType,
   MsgUndelegate as MsgUndelegateType,
   MsgUndelegateResponse as MsgUndelegateResponseType,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
@@ -54,12 +61,13 @@ import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
 import {
   AmountArgShape,
+  CoinShape,
   CosmosChainAddressShape,
   DelegationShape,
   DenomAmountShape,
   IBCTransferOptionsShape,
   Proto3Shape,
-  ExecuteICATxOptsShape,
+  EvaluateTxOptionsShape,
 } from '../typeGuards.js';
 import { coerceCoin, coerceDenom } from '../utils/amounts.js';
 import {
@@ -68,25 +76,27 @@ import {
   toCosmosValidatorAddress,
   toDenomAmount,
   toTruncatedDenomAmount,
-  tryDecodeResponse,
   tryDecodeResponses,
 } from '../utils/cosmos.js';
-import {
-  orchestrationAccountMethods,
-  pickData,
-} from '../utils/orchestrationAccount.js';
+import { makePickTools } from '../utils/pick-tools.js';
+import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
 import { accountIdTo32Bytes, parseAccountId } from '../utils/address.js';
 
 const MsgDepositForBurn = CodecHelper(MsgDepositForBurnType);
+const MsgDepositForBurnResponse = CodecHelper(MsgDepositForBurnResponseType);
 const MsgDepositForBurnWithCaller = CodecHelper(
   MsgDepositForBurnWithCallerType,
 );
+const MsgDepositForBurnWithCallerResponse = CodecHelper(
+  MsgDepositForBurnWithCallerResponseType,
+);
+const MsgSend = CodecHelper(MsgSendType);
+const MsgSendResponse = CodecHelper(MsgSendResponseType);
 const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);
 const QueryAllBalancesResponse = CodecHelper(QueryAllBalancesResponseType);
 const QueryBalanceRequest = CodecHelper(QueryBalanceRequestType);
 const QueryBalanceResponse = CodecHelper(QueryBalanceResponseType);
-const MsgSend = CodecHelper(MsgSendType);
 const QueryDelegationRewardsRequest = CodecHelper(
   QueryDelegationRewardsRequestType,
 );
@@ -126,31 +136,65 @@ const QueryUnbondingDelegationResponse = CodecHelper(
   QueryUnbondingDelegationResponseType,
 );
 const MsgBeginRedelegate = CodecHelper(MsgBeginRedelegateType);
+const MsgBeginRedelegateResponse = CodecHelper(MsgBeginRedelegateResponseType);
 const MsgDelegate = CodecHelper(MsgDelegateType);
+const MsgDelegateResponse = CodecHelper(MsgDelegateResponseType);
 const MsgUndelegate = CodecHelper(MsgUndelegateType);
 const MsgUndelegateResponse = CodecHelper(MsgUndelegateResponseType);
-const Any = CodecHelper(AnyType);
+export const Any = Object.freeze({
+  ...CodecHelper(AnyType),
+  /**
+   * @template {string} [TU=keyof TypeFromUrl]
+   * @param {Partial<Omit<AnyType, 'typeUrl'> & { typeUrl: TU }>} msg
+   */
+  toJSON: msg => {
+    const ne = CodecHelper(AnyType).toJSON(msg);
+    return /** @type {Omit<typeof ne, 'typeUrl'> & { typeUrl: TU }} */ (ne);
+  },
+});
 const MsgTransfer = CodecHelper(MsgTransferType);
 const MsgTransferResponse = CodecHelper(MsgTransferResponseType);
 
+const responseCodecForTypeUrl = /** @type {const} */ ({
+  [MsgDepositForBurn.typeUrl]: MsgDepositForBurnResponse,
+  [MsgDepositForBurnWithCaller.typeUrl]: MsgDepositForBurnWithCallerResponse,
+  [MsgUndelegate.typeUrl]: MsgUndelegateResponse,
+  [MsgBeginRedelegate.typeUrl]: MsgBeginRedelegateResponse,
+  [MsgDelegate.typeUrl]: MsgDelegateResponse,
+  [MsgWithdrawDelegatorReward.typeUrl]: MsgWithdrawDelegatorRewardResponse,
+  [MsgSend.typeUrl]: MsgSendResponse,
+  [MsgTransfer.typeUrl]: MsgTransferResponse,
+  [QueryBalanceRequest.typeUrl]: QueryBalanceResponse,
+  [QueryAllBalancesRequest.typeUrl]: QueryAllBalancesResponse,
+  [QueryDelegationRequest.typeUrl]: QueryDelegationResponse,
+  [QueryDelegatorDelegationsRequest.typeUrl]: QueryDelegatorDelegationsResponse,
+  [QueryDelegatorUnbondingDelegationsRequest.typeUrl]:
+    QueryDelegatorUnbondingDelegationsResponse,
+  [QueryRedelegationsRequest.typeUrl]: QueryRedelegationsResponse,
+  [QueryUnbondingDelegationRequest.typeUrl]: QueryUnbondingDelegationResponse,
+  [QueryDelegationRewardsRequest.typeUrl]: QueryDelegationRewardsResponse,
+  [QueryDelegationTotalRewardsRequest.typeUrl]:
+    QueryDelegationTotalRewardsResponse,
+});
+
 /**
  * @import {HostInterface, HostOf} from '@agoric/async-flow';
- * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, NobleMethods, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse, CaipChainId, AccountIdArg, ChainInfo, MetaTrafficEntry, ResultMeta} from '../types.js';
+ * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, NobleMethods, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse, CaipChainId, AccountIdArg, ChainInfo, MetaTrafficEntry, ResultMeta, MetaUpdater, SendTxOptions, MakeMetaUpdater} from '../types.js';
  * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Remote} from '@agoric/internal';
- * @import {DelegationResponse} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Vow, VowTools, PromiseVow} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
- * @import {AnyJson, JsonSafe} from '@agoric/cosmic-proto';
+ * @import {AnyJson, JsonSafe, MessageBody, TypeFromUrl, ResponseTypeUrl} from '@agoric/cosmic-proto';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {Matcher} from '@endo/patterns';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  * @import {SendOptions} from '@agoric/network';
+ * @import {Metadata} from '../utils/result-meta.js';
  */
 
 const trace = makeTracer('CosmosOrchAccount');
@@ -239,11 +283,8 @@ const stakingAccountQueriesMethods = {
 /** @see {NobleMethods} */
 const nobleMethods = {
   depositForBurn: M.call(M.string(), AmountArgShape)
-    .optional(M.string())
+    .optional(M.string(), EvaluateTxOptionsShape)
     .returns(VowShape),
-  depositForBurnWithMeta: M.call(M.string(), AmountArgShape)
-    .optional(M.string())
-    .returns(EVow$({ result: EVow$(M.any()), meta: M.record({}) })),
 };
 
 /** @see {OrchestrationAccountCommon} */
@@ -255,11 +296,11 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   deactivate: M.call().returns(VowShape),
   reactivate: M.call().returns(VowShape),
   executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
-    .optional(ExecuteICATxOptsShape)
-    .returns(VowShape),
-  executeEncodedTxWithMeta: M.call(M.arrayOf(Proto3Shape))
-    .optional(ExecuteICATxOptsShape)
-    .returns(EVow$({ result: EVow$(M.any()), meta: M.record({}) })),
+    .optional(EvaluateTxOptionsShape)
+    .returns(EVow$(M.string())),
+  evaluateTx: M.call(M.arrayOf(Proto3Shape))
+    .optional(EvaluateTxOptionsShape)
+    .returns(Vow$(M.array())),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
@@ -294,6 +335,7 @@ harden(CosmosOrchestrationInvitationMakersI);
  * @param {Zone} zone
  * @param {object} powers
  * @param {ChainHub} powers.chainHub
+ * @param {MakeMetaUpdater} powers.makeMetaUpdater
  * @param {MakeRecorderKit} powers.makeRecorderKit
  * @param {Remote<TimerService>} powers.timerService
  * @param {VowTools} powers.vowTools
@@ -301,19 +343,26 @@ harden(CosmosOrchestrationInvitationMakersI);
  */
 export const prepareCosmosOrchestrationAccountKit = (
   zone,
-  {
-    chainHub,
-    makeRecorderKit,
-    timerService,
-    vowTools: { watch, asVow, when, allVows },
-    zcf,
-  },
+  { chainHub, makeMetaUpdater, makeRecorderKit, timerService, vowTools, zcf },
 ) => {
+  /**
+   * Abandon the icaAccountToDetails weakMapStore, since it introduced a caching
+   * layer that was never properly invalidated. So, we mark it as a tombstone
+   * (null) that's part of new contract instance baggage, while leaving older
+   * contracts with the undisturbed zone slot assignment.
+   */
+  void zone.makeOnce('icaAccountToDetails', () => null);
+
+  const { watch, asVow, when, allVows } = vowTools;
+
+  const pickTools = makePickTools({ watch });
   const timestampHelper = makeTimestampHelper(timerService);
   const makeCosmosOrchestrationAccountKit = zone.exoClassKit(
     'Cosmos Orchestration Account Holder',
     {
+      ...pickTools.watcherShapes,
       helper: M.interface('helper', {
+        ...pickTools.helperShapes,
         owned: M.call().returns(M.remotable()),
         getUpdater: M.call().returns(M.remotable()),
         amountToCoin: M.call(AmountArgShape).returns(M.record()),
@@ -321,15 +370,20 @@ export const prepareCosmosOrchestrationAccountKit = (
       attachTxMetaWatcher: M.interface('attachTxMetaWatcher', {
         onFulfilled: M.call(
           M.arrayOf(M.any()),
-          EVow$(M.splitRecord({ result: EVow$(M.any()), meta: M.record() })),
-          M.string(),
-        ).returns(EVow$(M.any())),
+          M.splitRecord({
+            metaUpdater: M.remotable('MetaUpdater'),
+            protocol: M.string(),
+            trafficEntryIndex: M.number(),
+          }),
+        ).returns(),
       }),
-      pickDataWatcher: pickData.shape,
       returnVoidWatcher: M.interface('returnVoidWatcher', {
-        onFulfilled: M.call(M.any())
-          .optional(M.arrayOf(M.undefined()))
-          .returns(M.undefined()),
+        onFulfilled: M.call().rest(M.any()).returns(M.undefined()),
+      }),
+      decodeResponsesWatcher: M.interface('decodeResponsesWatcher', {
+        onFulfilled: M.call(M.string(), M.arrayOf(M.string())).returns(
+          M.arrayOf(M.any()),
+        ),
       }),
       balanceQueryWatcher: M.interface('balanceQueryWatcher', {
         onFulfilled: M.call(M.arrayOf(M.record()))
@@ -342,20 +396,18 @@ export const prepareCosmosOrchestrationAccountKit = (
         ),
       }),
       undelegateWatcher: M.interface('undelegateWatcher', {
-        onFulfilled: M.call(M.string())
-          .optional(M.arrayOf(M.undefined())) // empty context
-          .returns(Vow$(M.promise())),
+        onFulfilled: M.call(M.arrayOf(M.any())).returns(Vow$(M.promise())),
       }),
       withdrawRewardWatcher: M.interface('withdrawRewardWatcher', {
-        onFulfilled: M.call(M.string())
+        onFulfilled: M.call(M.splitRecord({ amount: M.arrayOf(CoinShape) }))
           .optional(M.arrayOf(M.undefined())) // empty context
           .returns(M.arrayOf(DenomAmountShape)),
       }),
       transferWatcher: M.interface('transferWatcher', {
-        onFulfilled: M.call(M.nat())
+        onFulfilled: M.call([M.any(), M.opt(M.nat())])
           .optional({
             destination: CosmosChainAddressShape,
-            opts: M.or(M.undefined(), IBCTransferOptionsShape),
+            opts: M.opt(IBCTransferOptionsShape),
             token: {
               denom: M.string(),
               amount: M.string(),
@@ -363,30 +415,16 @@ export const prepareCosmosOrchestrationAccountKit = (
           })
           .returns(Vow$(M.any())),
       }),
-      transferWithMetaWatcher: M.interface('transferWithMetaWatcher', {
-        onFulfilled: M.call([M.record(), M.nat()])
-          .optional({
-            destination: CosmosChainAddressShape,
-            opts: M.or(M.undefined(), IBCTransferOptionsShape),
-            token: {
-              denom: M.string(),
-              amount: M.string(),
-            },
-          })
-          .returns(Vow$({ result: Vow$(M.any()), meta: M.record() })),
-      }),
       parseTransferWatcher: M.interface('parseTransferWatcher', {
         onFulfilled: M.call([M.string(), M.record()], M.record()).returns(
           Vow$(M.record()),
         ),
       }),
-      updateMetaTrafficWatcher: M.interface('updateMetaTrafficWatcher', {
-        onFulfilled: M.call(M.record(), M.record())
-          .optional(M.remotable('nextWatcher'))
-          .returns(Vow$(M.record())),
-      }),
       fillSequenceWatcher: M.interface('fillSequenceWatcher', {
-        onFulfilled: M.call(M.string(), M.record()).returns(Vow$(M.record())),
+        onFulfilled: M.call(
+          [M.splitRecord({ sequence: M.bigint() })],
+          M.record(),
+        ).returns(),
       }),
       delegationQueryWatcher: M.interface('delegationQueryWatcher', {
         onFulfilled: M.call(M.arrayOf(M.record())).returns(M.record()),
@@ -479,6 +517,7 @@ export const prepareCosmosOrchestrationAccountKit = (
     },
     {
       helper: {
+        ...pickTools.helper,
         /** @throws if this holder no longer owns the account */
         owned() {
           const { account } = this.state;
@@ -501,47 +540,46 @@ export const prepareCosmosOrchestrationAccountKit = (
           return coerceCoin(chainHub, amount);
         },
       },
+      ...pickTools.watchers,
       attachTxMetaWatcher: {
         /**
-         * TODO(#1994): Subsume with IcaAccount.executeEncodedTxWithMeta().
-         *
-         * @param {[
+         * @param {readonly [
          *   agoric: ChainInfo<'cosmos'>,
          *   la: LocalIbcAddress,
-         *   counterparty: CaipChainId,
          *   ra: RemoteIbcAddress,
          * ]} param0
-         * @param {{ result: Vow<any>; meta: Record<string, any> }} param1
-         * @param {string} protocol
+         * @param {{
+         *   metaUpdater: MetaUpdater;
+         *   trafficEntryIndex: number;
+         *   protocol: string;
+         * }} opts
          */
         onFulfilled(
-          [agoric, la, counterparty, ra],
-          { result, meta: origMeta },
-          protocol,
+          [agoric, la, ra],
+          { metaUpdater, trafficEntryIndex, protocol },
         ) {
-          const cp = counterparty.split(':', 2);
           const lad = decodeIbcEndpoint(la);
           const rad = decodeIbcEndpoint(ra);
 
+          const priorMeta = metaUpdater.get();
           const meta = {
-            ...origMeta,
-            traffic: [
-              ...(origMeta.traffic || []),
-              /** @type {MetaTrafficEntry} */ ({
-                op: 'ICA',
-                srcChainId: `${agoric.namespace}:${agoric.reference}`,
-                src: [protocol, lad.portID, lad.channelID],
-                dstChainId: `${cp[0]}:${cp[1]}`,
-                dst: [protocol, rad.portID, rad.channelID],
-                // TODO(#11994): Need to expose from Network API `conn.sendWithMeta(...)`
-                seq: { status: 'unknown' },
-              }),
-            ],
+            ...priorMeta,
+            traffic: priorMeta.traffic?.map((entry, i) =>
+              i === trafficEntryIndex
+                ? {
+                    ...entry,
+                    srcChainId: `${agoric.namespace}:${agoric.reference}`,
+                    src: [protocol, lad.portID, lad.channelID],
+                    dst: [protocol, rad.portID, rad.channelID],
+                    // TODO(#11994): Need to expose from Network API `conn.sendWithMeta(...)`
+                    seq: { status: 'unknown' },
+                  }
+                : entry,
+            ),
           };
-          return harden({ result, meta });
+          metaUpdater.update(meta);
         },
       },
-      pickDataWatcher: pickData.watcher,
       balanceQueryWatcher: {
         /**
          * @param {JsonSafe<ResponseQuery>[]} results
@@ -695,57 +733,86 @@ export const prepareCosmosOrchestrationAccountKit = (
       },
       undelegateWatcher: {
         /**
-         * @param {string} result
+         * @param {MsgUndelegateResponseType[]} responses
          */
-        onFulfilled(result) {
-          const response = tryDecodeResponse(result, MsgUndelegateResponse);
-          trace('undelegate response', response);
-          const { completionTime } = response;
-          completionTime || Fail`No completion time result ${result}`;
-          return watch(
+        onFulfilled(responses) {
+          trace('undelegate response', responses);
+          const completionSeconds = responses.reduce((maxTime, resp) => {
             // ignore nanoseconds and just use seconds from Timestamp
-            E(this.state.timer).wakeAt(completionTime.seconds + maxClockSkew),
+            const completionS = resp?.completionTime?.seconds ?? 0n;
+            return completionS > maxTime ? completionS : maxTime;
+          }, 0n);
+          return watch(
+            E(this.state.timer).wakeAt(completionSeconds + maxClockSkew),
           );
         },
       },
       /**
-       * takes an array of results (from `executeEncodedTx`) and returns void
-       * since we are not interested in the result
+       * takes any arguments and returns void since we are not interested in the
+       * result
        */
       returnVoidWatcher: {
-        /** @param {string | Record<string, unknown>} result */
-        onFulfilled(result) {
-          trace('Result', result);
+        /**
+         * @param {unknown[]} args
+         * @returns {void}
+         */
+        onFulfilled(...args) {
+          trace('Voiding result', args);
           return undefined;
         },
       },
       withdrawRewardWatcher: {
-        /** @param {string} result */
-        onFulfilled(result) {
-          const response = tryDecodeResponse(
-            result,
-            MsgWithdrawDelegatorRewardResponse,
-          );
+        /** @param {{ amount: Coin[] }} response */
+        onFulfilled(response) {
           trace('withdrawReward response', response);
           const { amount: coins } = response;
           return harden(coins.map(toDenomAmount));
         },
       },
+
       /**
-       * @deprecated TODO: transferWatcher can be removed once there is no
-       *   instance of this CosmosOrchestrationAccountKit that was initialized
-       *   (i.e. not just upgraded) before 2025-10-14.
+       * Decode responses based on the typeUrls of the original requests.
        */
-      transferWatcher: {
-        onFulfilled(...args) {
-          throw Fail`obsolete transferWatcher(${args}) only defined for upgrade; please retry`;
+      decodeResponsesWatcher: {
+        /**
+         * @template {readonly string[]} TUS
+         * @param {string} resultStr
+         * @param {TUS} typeUrls
+         * @returns {{
+         *   [P in keyof TUS]: MessageBody<ResponseTypeUrl<TUS[P]>>;
+         * }}
+         */
+        onFulfilled(resultStr, typeUrls) {
+          const responseCodecs = typeUrls.map(
+            typeUrl =>
+              responseCodecForTypeUrl[typeUrl] || {
+                /**
+                 * Pass through an Any if we don't have a codec for the request
+                 * typeUrl.
+                 *
+                 * @param {AnyType} msg
+                 */
+                fromProtoMsg(msg) {
+                  return msg;
+                },
+              },
+          );
+
+          const decoded = tryDecodeResponses(resultStr, responseCodecs);
+
+          /**
+           * @typedef {{
+           *   [P in keyof TUS]: MessageBody<ResponseTypeUrl<TUS[P]>>;
+           * }} Result
+           */
+          return /** @type {Result} */ (harden(decoded));
         },
       },
-      transferWithMetaWatcher: {
+      transferWatcher: {
         /**
-         * @param {[
+         * @param {readonly [
          *   { transferChannel: IBCConnectionInfo['transferChannel'] },
-         *   bigint,
+         *   bigint | undefined,
          * ]} results
          * @param {{
          *   destination: CosmosChainAddress;
@@ -757,114 +824,92 @@ export const prepareCosmosOrchestrationAccountKit = (
           [{ transferChannel }, timeoutTimestamp],
           { opts, token, destination },
         ) {
+          const { holder } = this.facets;
           const { chainAddress } = this.state;
-          const resultMeta = this.facets.holder.executeEncodedTxWithMeta([
-            Any.toJSON(
-              MsgTransfer.toProtoMsg({
-                sourcePort: transferChannel.portId,
-                sourceChannel: transferChannel.channelId,
-                token,
-                sender: this.state.chainAddress.value,
-                receiver: destination.value,
-                timeoutHeight: opts?.timeoutHeight,
-                timeoutTimestamp,
-                memo: opts?.memo,
-              }),
-            ),
-          ]);
-          const transferTraffic = /** @type {MetaTrafficEntry} */ ({
-            op: 'transfer',
-            srcChainId: `cosmos:${chainAddress.chainId}`,
-            src: ['ibc', transferChannel.portId, transferChannel.channelId],
-            dstChainId: `cosmos:${destination.chainId}`,
-            dst: [
-              'ibc',
-              transferChannel.counterPartyPortId,
-              transferChannel.counterPartyChannelId,
+          const metaUpdater = opts?.metaUpdater;
+          const results = holder.evaluateTx(
+            [
+              Any.toJSON(
+                MsgTransfer.toProtoMsg({
+                  sourcePort: transferChannel.portId,
+                  sourceChannel: transferChannel.channelId,
+                  token,
+                  sender: this.state.chainAddress.value,
+                  receiver: destination.value,
+                  timeoutHeight: opts?.timeoutHeight,
+                  timeoutTimestamp,
+                  memo: opts?.memo,
+                }),
+              ),
             ],
-            seq: { status: 'pending' }, // filled in by fillSequenceWatcher.onFulfilled below
-          });
-          return watch(
-            resultMeta,
-            this.facets.updateMetaTrafficWatcher,
-            transferTraffic,
+            { metaUpdater },
           );
+
+          if (metaUpdater) {
+            const priorMeta = metaUpdater.get();
+            const transferTraffic = /** @type {MetaTrafficEntry} */ ({
+              op: 'transfer',
+              srcChainId: `cosmos:${chainAddress.chainId}`,
+              src: ['ibc', transferChannel.portId, transferChannel.channelId],
+              dstChainId: `cosmos:${destination.chainId}`,
+              dst: [
+                'ibc',
+                transferChannel.counterPartyPortId,
+                transferChannel.counterPartyChannelId,
+              ],
+              seq: { status: 'pending' }, // filled in by fillSequenceWatcher.onFulfilled below
+            });
+            const meta = {
+              ...priorMeta,
+              traffic: [...(priorMeta.traffic || []), transferTraffic],
+            };
+            const trafficEntryIndex = meta.traffic.length - 1;
+            metaUpdater.update(meta);
+            watch(results, this.facets.fillSequenceWatcher, {
+              metaUpdater,
+              trafficEntryIndex,
+            });
+          }
+          return this.facets.helper.overrideVow(results, 'FOLLOW_TRAFFIC');
         },
       },
       parseTransferWatcher: {
         onFulfilled(_1, _2) {
-          throw Fail`obsolete parseTransferWatcher(${_1}, ${_2}); please retry`;
-        },
-      },
-      updateMetaTrafficWatcher: {
-        /**
-         * @param {ResultMeta<any>} param0
-         * @param {MetaTrafficEntry} newTrafficEntry
-         * @returns {ResultMeta<'FOLLOW_TRAFFIC'>}
-         */
-        onFulfilled({ result, meta }, newTrafficEntry) {
-          trace('updateMetaTrafficWatcher', {
-            result,
-            meta,
-            newTrafficEntry,
-          });
-          const newMeta = {
-            ...meta,
-            traffic: [...(meta.traffic || []), newTrafficEntry],
-          };
-          const newResult = watch(
-            result,
-            this.facets.fillSequenceWatcher,
-            newMeta,
-          );
-          return harden({ result: newResult, meta: newMeta });
+          throw Fail`obsolete parseTransferWatcher(${_1}, ${_2}); please retry the transfer which will trigger a supported code path`;
         },
       },
       fillSequenceWatcher: {
         /**
-         * @param {string} sequenceResp
-         * @param {Record<string, any>} meta
-         * @returns {ResultMeta<'FOLLOW_TRAFFIC'>}
+         * @param {[{ sequence: bigint }]} transferResponse
+         * @param {object} opts
+         * @param {MetaUpdater} opts.metaUpdater
+         * @param {number} opts.trafficEntryIndex
          */
-        onFulfilled(sequenceResp, meta) {
+        onFulfilled([{ sequence }], { metaUpdater, trafficEntryIndex }) {
+          const meta = metaUpdater.get();
           trace('fillSequenceWatcher', {
-            submitted: sequenceResp,
+            sequence,
             meta,
+            trafficEntryIndex,
           });
 
-          const [{ sequence }] = tryDecodeResponses(sequenceResp, [
-            MsgTransferResponse,
-          ]);
-          const lastTrafficEntry = meta.traffic?.at(-1);
-          lastTrafficEntry ||
-            Fail`expected meta.traffic to have at least one entry: ${q(meta)}`;
-          const baseSequence = lastTrafficEntry?.seq;
+          const targetTrafficEntry = meta.traffic[trafficEntryIndex];
+          targetTrafficEntry ||
+            Fail`expected meta.traffic to have at an entry at ${trafficEntryIndex}: ${q(meta)}`;
+          const baseSequence = targetTrafficEntry?.seq;
           baseSequence?.status === 'pending' ||
             Fail`expected traffic?.seq ${baseSequence} to be pending`;
           sequence != null ||
-            Fail`expected sequenceResp.sequence ${sequence} to be non-nullish`;
+            Fail`expected transferResp.sequence ${sequence} to be non-nullish`;
 
-          const lastTrafficEntryWithSeq = {
-            ...lastTrafficEntry,
-            seq: sequence,
-          };
-          /** @type {Record<string, any>} */
+          /** @type {Metadata} */
           const newMeta = {
             ...meta,
-            traffic: [
-              ...(meta.traffic ? meta.traffic.slice(0, -1) : []),
-              lastTrafficEntryWithSeq,
-            ],
+            traffic: meta.traffic?.map((entry, i) =>
+              i === trafficEntryIndex ? { ...entry, seq: sequence } : entry,
+            ),
           };
-          // Result is not known to this account.  Rely on the caller to follow
-          // the traffic.
-          const newResultMeta = harden(
-            /** @type const */ ({
-              result: 'FOLLOW_TRAFFIC',
-              meta: newMeta,
-            }),
-          );
-          return newResultMeta;
+          metaUpdater.update(harden(newMeta));
         },
       },
       invitationMakers: {
@@ -932,12 +977,16 @@ export const prepareCosmosOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: AccountIdArg; amount: AmountArg }
+           *   {
+           *     toAccount: AccountIdArg;
+           *     amount: AmountArg;
+           *     opts?: { metaUpdater?: MetaUpdater };
+           *   }
            * >}
            */
-          const offerHandler = (seat, { toAccount, amount }) => {
+          const offerHandler = (seat, { toAccount, amount, opts }) => {
             seat.exit();
-            return watch(this.facets.holder.send(toAccount, amount));
+            return watch(this.facets.holder.send(toAccount, amount, opts));
           };
           return zcf.makeInvitation(offerHandler, 'Send');
         },
@@ -945,12 +994,16 @@ export const prepareCosmosOrchestrationAccountKit = (
           /**
            * @type {OfferHandler<
            *   Vow<void>,
-           *   { toAccount: CosmosChainAddress; amounts: AmountArg[] }
+           *   {
+           *     toAccount: CosmosChainAddress;
+           *     amounts: AmountArg[];
+           *     opts?: SendTxOptions;
+           *   }
            * >}
            */
-          const offerHandler = (seat, { toAccount, amounts }) => {
+          const offerHandler = (seat, { toAccount, amounts, opts }) => {
             seat.exit();
-            return watch(this.facets.holder.sendAll(toAccount, amounts));
+            return watch(this.facets.holder.sendAll(toAccount, amounts, opts));
           };
           return zcf.makeInvitation(offerHandler, 'SendAll');
         },
@@ -983,6 +1036,10 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
       },
       holder: {
+        /** @type {OrchestrationAccountCommon['makeMetaUpdater']} */
+        makeMetaUpdater() {
+          return makeMetaUpdater();
+        },
         /** @type {HostOf<OrchestrationAccountCommon['asContinuingOffer']>} */
         asContinuingOffer() {
           // @ts-expect-error XXX invitationMakers
@@ -1031,23 +1088,21 @@ export const prepareCosmosOrchestrationAccountKit = (
         delegate(validator, amount) {
           return asVow(() => {
             trace('delegate', validator, amount);
-            const { helper } = this.facets;
+            const { helper, holder } = this.facets;
             const { chainAddress } = this.state;
 
             const amountAsCoin = helper.amountToCoin(amount);
 
-            return watch(
-              E(helper.owned()).executeEncodedTx([
-                Any.toJSON(
-                  MsgDelegate.toProtoMsg({
-                    delegatorAddress: chainAddress.value,
-                    validatorAddress: validator.value,
-                    amount: amountAsCoin,
-                  }),
-                ),
-              ]),
-              this.facets.returnVoidWatcher,
-            );
+            const result = holder.evaluateTx([
+              Any.toJSON(
+                MsgDelegate.toProtoMsg({
+                  delegatorAddress: chainAddress.value,
+                  validatorAddress: validator.value,
+                  amount: amountAsCoin,
+                }),
+              ),
+            ]);
+            return helper.pickVowIndex(result, 0);
           });
         },
 
@@ -1055,10 +1110,10 @@ export const prepareCosmosOrchestrationAccountKit = (
         redelegate(srcValidator, dstValidator, amount) {
           return asVow(() => {
             trace('redelegate', srcValidator, dstValidator, amount);
-            const { helper } = this.facets;
+            const { helper, holder } = this.facets;
             const { chainAddress } = this.state;
 
-            const results = E(helper.owned()).executeEncodedTx([
+            const results = holder.evaluateTx([
               Any.toJSON(
                 MsgBeginRedelegate.toProtoMsg({
                   delegatorAddress: chainAddress.value,
@@ -1069,27 +1124,24 @@ export const prepareCosmosOrchestrationAccountKit = (
               ),
             ]);
 
-            return watch(
-              results,
-              // NOTE: response, including completionTime, is currently discarded.
-              this.facets.returnVoidWatcher,
-            );
+            // NOTE: response, including completionTime, is currently discarded.
+            return helper.pickVowIndex(results, 0);
           });
         },
         /** @type {HostOf<StakingAccountActions['withdrawReward']>} */
         withdrawReward(validator) {
           return asVow(() => {
             trace('withdrawReward', validator);
-            const { helper } = this.facets;
+            const { helper, holder } = this.facets;
             const { chainAddress } = this.state;
             const msg = MsgWithdrawDelegatorReward.toProtoMsg({
               delegatorAddress: chainAddress.value,
               validatorAddress: validator.value,
             });
-            const account = helper.owned();
 
-            const results = E(account).executeEncodedTx([Any.toJSON(msg)]);
-            return watch(results, this.facets.withdrawRewardWatcher);
+            const result = holder.evaluateTx([Any.toJSON(msg)]);
+            const reward = helper.pickVowIndex(result, 0);
+            return watch(reward, this.facets.withdrawRewardWatcher);
           });
         },
         /** @type {HostOf<OrchestrationAccountCommon['getBalance']>} */
@@ -1130,16 +1182,16 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
 
         /** @type {HostOf<OrchestrationAccountCommon['send']>} */
-        send(toAccount, amount) {
+        send(toAccount, amount, opts) {
           return asVow(() => {
-            trace('send', toAccount, amount);
+            trace('send', toAccount, amount, opts);
             const cosmosDest = chainHub.coerceCosmosAddress(toAccount);
             const { chainAddress } = this.state;
             cosmosDest.chainId === chainAddress.chainId ||
               Fail`bank/send cannot send to a different chain ${q(cosmosDest.chainId)}`;
-            const { helper } = this.facets;
-            return watch(
-              E(helper.owned()).executeEncodedTx([
+            const { helper, holder } = this.facets;
+            const result = holder.evaluateTx(
+              [
                 Any.toJSON(
                   MsgSend.toProtoMsg({
                     fromAddress: chainAddress.value,
@@ -1147,20 +1199,21 @@ export const prepareCosmosOrchestrationAccountKit = (
                     amount: [helper.amountToCoin(amount)],
                   }),
                 ),
-              ]),
-              this.facets.returnVoidWatcher,
+              ],
+              opts,
             );
+            return helper.pickVowIndex(result, 0);
           });
         },
 
         /** @type {HostOf<OrchestrationAccountCommon['sendAll']>} */
-        sendAll(toAccount, amounts) {
+        sendAll(toAccount, amounts, opts = {}) {
           return asVow(() => {
             trace('sendAll', toAccount, amounts);
-            const { helper } = this.facets;
+            const { helper, holder } = this.facets;
             const { chainAddress } = this.state;
-            return watch(
-              E(helper.owned()).executeEncodedTx([
+            const result = holder.evaluateTx(
+              [
                 Any.toJSON(
                   MsgSend.toProtoMsg({
                     fromAddress: chainAddress.value,
@@ -1168,24 +1221,16 @@ export const prepareCosmosOrchestrationAccountKit = (
                     amount: amounts.map(x => helper.amountToCoin(x)),
                   }),
                 ),
-              ]),
-              this.facets.returnVoidWatcher,
+              ],
+              opts,
             );
+            return helper.pickVowIndex(result, 0);
           });
         },
 
         /** @type {HostOf<OrchestrationAccountCommon['transfer']>} */
         transfer(destination, amount, opts) {
-          const resultMeta = this.facets.holder.transferWithMeta(
-            destination,
-            amount,
-            opts,
-          );
-          return watch(resultMeta, this.facets.pickDataWatcher, 'result');
-        },
-        /** @type {HostOf<OrchestrationAccountCommon['transferWithMeta']>} */
-        transferWithMeta(destination, amount, opts) {
-          trace('transferWithMeta', destination, amount, opts);
+          trace('transfer', destination, amount, opts);
           return asVow(() => {
             const cosmosDest = chainHub.coerceCosmosAddress(destination);
             const { helper } = this.facets;
@@ -1196,11 +1241,13 @@ export const prepareCosmosOrchestrationAccountKit = (
             );
 
             return watch(
-              allVows([
-                connectionInfoV,
-                timestampHelper.vowOrValueFromOpts(opts),
-              ]),
-              this.facets.transferWithMetaWatcher,
+              allVows(
+                /** @type {const} */ ([
+                  connectionInfoV,
+                  timestampHelper.vowOrValueFromOpts(opts),
+                ]),
+              ),
+              this.facets.transferWatcher,
               { opts, token, destination: cosmosDest },
             );
           });
@@ -1221,7 +1268,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         undelegate(delegations) {
           return asVow(() => {
             trace('undelegate', delegations);
-            const { helper } = this.facets;
+            const { holder } = this.facets;
             const { chainAddress } = this.state;
 
             delegations.every(d =>
@@ -1229,7 +1276,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             ) || Fail`Some delegation record is for another delegator`;
 
             const undelegateV = watch(
-              E(helper.owned()).executeEncodedTx(
+              holder.evaluateTx(
                 delegations.map(({ validator, amount }) =>
                   Any.toJSON(
                     MsgUndelegate.toProtoMsg({
@@ -1389,78 +1436,87 @@ export const prepareCosmosOrchestrationAccountKit = (
           });
         },
         /** @type {HostOf<IcaAccount['executeEncodedTx']>} */
-        executeEncodedTx(msgs, opts) {
+        executeEncodedTx(msgs, opts = {}) {
           return asVow(() =>
-            watch(E(this.facets.helper.owned()).executeEncodedTx(msgs, opts)),
+            E(this.facets.helper.owned()).executeEncodedTx(msgs, opts),
           );
         },
-        // TODO(#11944): When IcaAccount is upgraded to provide this method directly, use it.
-        // /** @type {HostOf<IcaAccount['executeEncodedTxWithMeta']>} */
-        // executeEncodedTxWithMeta(msgs, opts = {}) {
-        //   return asVow(() =>
-        //     E(this.facets.helper.owned()).executeEncodedTxWithMeta(msgs, opts),
-        //   );
-        // },
         /**
-         * Submit a transaction on behalf of the remote account for execution on
-         * the remote chain.
+         * Evaluate a transaction on behalf of the remote account for execution
+         * on the remote chain.
          *
          * Set `relativeTimeoutNs` to provide a timeout for the IBC packet.
          *
          * `TxBody` fields like `timeoutHeight` and `memo` can be set, but these
          * typically do not affect IBC app protocols like PFM, ICA.
          *
-         * @param {AnyJson[]} msgs
-         * @param {Partial<Omit<TxBody, 'messages'>> & {
-         *   sendOpts?: SendOptions;
-         * }} [opts]
-         * @returns {Vow<{ result: Vow<string>; meta: Record<string, any> }>}
-         *   .result is a vow for a base64 encoded bytes string. Can be decoded
-         *   using `tryDecodeResponses`.
-         * @throws {Error} if packet fails to send or an error is returned
+         * @template {string[]} TUS
+         * @param {{
+         *   [K in keyof TUS]: Omit<AnyJson, 'typeUrl'> & { typeUrl: TUS[K] };
+         * }} msgs
+         * @param {SendTxOptions} [opts]
+         * @returns {Vow<{
+         *   [K in keyof TUS]: MessageBody<ResponseTypeUrl<TUS[K]>>;
+         * }>}
          */
-        executeEncodedTxWithMeta(msgs, opts = {}) {
-          return asVow(() => {
-            const { chainAddress } = this.state;
-            const { helper } = this.facets;
-            const acct = helper.owned();
-            const result = watch(E(acct).executeEncodedTx(msgs, opts));
+        evaluateTx(msgs, opts = {}) {
+          const { chainAddress } = this.state;
+          const { helper } = this.facets;
+          const acct = helper.owned();
 
+          const decodedResult = watch(
+            E(acct).executeEncodedTx(msgs, opts),
+            this.facets.decodeResponsesWatcher,
+            /** @type {TUS} */ (msgs.map(m => m.typeUrl)),
+          );
+
+          const { metaUpdater } = opts;
+          if (metaUpdater) {
             const agoric = chainHub.getChainInfo('agoric');
             const la = E(acct).getLocalAddress();
+            /** @type {CaipChainId} */
             const counterparty = `cosmos:${chainAddress.chainId}`;
             const ra = E(acct).getRemoteAddress();
 
-            return watch(
-              allVows([agoric, la, counterparty, ra]),
+            // Identify this as an ICA operation.
+            const priorMeta = metaUpdater.get();
+            const meta = {
+              ...priorMeta,
+              traffic: [
+                ...(priorMeta.traffic || []),
+                {
+                  op: 'ICA',
+                  dstChainId: counterparty,
+                },
+              ],
+            };
+            const trafficEntryIndex = meta.traffic.length - 1;
+
+            metaUpdater.update(meta);
+            // Update metadata when we can.
+            void watch(
+              allVows(/** @type {const} */ ([agoric, la, ra])),
               this.facets.attachTxMetaWatcher,
-              { result, meta: {} },
-              'ibc',
+              { metaUpdater, protocol: 'ibc', trafficEntryIndex },
             );
-          });
+          }
+
+          const result =
+            /**
+             * @type {Vow<{
+             *   [K in keyof TUS]: MessageBody<ResponseTypeUrl<TUS[K]>>;
+             * }>}
+             */
+            (decodedResult);
+          return result;
         },
         /**
          * @type {HostOf<NobleMethods['depositForBurn']>}
          */
-        depositForBurn(destination, amount, caller) {
-          return watch(
-            E(this.facets.holder).depositForBurnWithMeta(
-              destination,
-              amount,
-              caller,
-            ),
-            this.facets.pickDataWatcher,
-            'result',
-          );
-        },
-        /**
-         * @type {HostOf<NobleMethods['depositForBurnWithMeta']>}
-         */
-        depositForBurnWithMeta(destination, amount, caller) {
-          // @ts-expect-error HostOf typing doesn't recurse here
+        depositForBurn(destination, amount, caller, opts = {}) {
+          trace('depositForBurn', { destination, amount });
           return asVow(() => {
-            trace('depositForBurnWithMeta', { destination, amount });
-            const { helper } = this.facets;
+            const { helper, holder } = this.facets;
             const { chainAddress } = this.state;
 
             const destParts = parseAccountId(destination);
@@ -1473,7 +1529,7 @@ export const prepareCosmosOrchestrationAccountKit = (
               throw Fail`${q(chainId)} does not have "cctpDestinationDomain" set in ChainInfo`;
             }
 
-            /** @type {MsgDepositForBurnType} */
+            /** @satisfies {Partial<MsgDepositForBurnType>} */
             const depositForBurn = {
               amount: helper.amountToCoin(amount)?.amount,
               from: chainAddress.value,
@@ -1491,16 +1547,20 @@ export const prepareCosmosOrchestrationAccountKit = (
               return accountIdTo32Bytes(caller);
             })();
 
-            return this.facets.holder.executeEncodedTxWithMeta([
-              Any.toJSON(
-                destinationCaller
-                  ? MsgDepositForBurnWithCaller.toProtoMsg({
-                      ...depositForBurn,
-                      destinationCaller,
-                    })
-                  : MsgDepositForBurn.toProtoMsg(depositForBurn),
-              ),
-            ]);
+            const result = holder.evaluateTx(
+              [
+                Any.toJSON(
+                  destinationCaller
+                    ? MsgDepositForBurnWithCaller.toProtoMsg({
+                        ...depositForBurn,
+                        destinationCaller,
+                      })
+                    : MsgDepositForBurn.toProtoMsg(depositForBurn),
+                ),
+              ],
+              opts,
+            );
+            return helper.pickVowIndex(result, 0);
           });
         },
       },
@@ -1520,6 +1580,7 @@ export const prepareCosmosOrchestrationAccountKit = (
  * @param {Zone} zone
  * @param {object} powers
  * @param {ChainHub} powers.chainHub
+ * @param {MakeMetaUpdater} powers.makeMetaUpdater
  * @param {MakeRecorderKit} powers.makeRecorderKit
  * @param {Remote<TimerService>} powers.timerService
  * @param {VowTools} powers.vowTools
@@ -1532,10 +1593,11 @@ export const prepareCosmosOrchestrationAccountKit = (
  */
 export const prepareCosmosOrchestrationAccount = (
   zone,
-  { chainHub, makeRecorderKit, timerService, vowTools, zcf },
+  { chainHub, makeMetaUpdater, makeRecorderKit, timerService, vowTools, zcf },
 ) => {
   const makeKit = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
+    makeMetaUpdater,
     makeRecorderKit,
     timerService,
     vowTools,

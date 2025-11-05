@@ -161,13 +161,13 @@ export const makeZoeTools = (zcf, { when, allVows, allSettled, asVow }) => {
         throw makeError(`One or more withdrawals failed ${q(errors)}`);
       }
       // successfully withdrew payments from srcLocalAccount, deposit to recipientSeat
+      const fulfilledPayments =
+        /** @type {PromiseFulfilledResult<Payment<'nat'>>[]} */ (
+          settledWithdrawals
+        );
       const paymentKwr = harden(
         keys(amounts).reduce(
-          (acc, kw, i) =>
-            assign(acc, {
-              [kw]: /** @type {{ value: Amount }[]} */ (settledWithdrawals)[i]
-                .value,
-            }),
+          (acc, kw, i) => assign(acc, { [kw]: fulfilledPayments[i].value }),
           {},
         ),
       );

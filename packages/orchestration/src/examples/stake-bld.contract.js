@@ -14,6 +14,7 @@ import { makeChainHub } from '../exos/chain-hub.js';
 import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
 import fetchedChainInfo from '../fetched-chain-info.js';
 import { makeZoeTools } from '../utils/zoe-tools.js';
+import { prepareMetaUpdater } from '../utils/result-meta.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -48,6 +49,10 @@ export const start = async (zcf, privateArgs, baggage) => {
     cachingMarshaller,
   );
   const vowTools = prepareVowTools(zone.subZone('vows'));
+  const makeMetaUpdater = await prepareMetaUpdater(
+    zone.subZone('orchestration'),
+    { vowTools },
+  );
 
   const chainHub = makeChainHub(
     zone.subZone('chainHub'),
@@ -60,6 +65,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zone,
     {
+      makeMetaUpdater,
       makeRecorderKit,
       zcf,
       timerService,

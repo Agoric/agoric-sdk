@@ -14,12 +14,12 @@ import {
   MsgLock as MsgLockType,
   MsgUnlock as MsgUnlockType,
 } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
+import { VaultType } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/vaults.js';
 import { MsgSwap as MsgSwapType } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import { type NatValue } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { type CosmosChainAddress, type Denom } from '@agoric/orchestration';
-import { unwrapResultMeta } from '@agoric/orchestration/src/utils/result-meta.js';
-// XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
+import type { MetaUpdater } from '@agoric/orchestration/src/utils/result-meta.js';
 import {
   type ProtocolDetail,
   type TransportDetail,
@@ -72,7 +72,7 @@ export const makeUnlockSwapMessages = (
     poolId = 0n,
     denom = 'uusdn',
     denomTo = 'uusdc',
-    vault = 1, // VaultType.STAKED
+    vault = VaultType.STAKED,
     usdnOut = undefined as bigint | undefined,
   } = {},
 ) => {
@@ -105,7 +105,7 @@ export const protocolUSDN = {
   protocol: 'USDN',
   chains: ['noble'],
   supply: async (ctx, amount, src) => {
-    const { usdnOut, vault } = ctx;
+    const { usdnOut, vault, metaUpdater } = ctx;
     const { ica } = src;
     const nobleAddr = ica.getAddress();
 
@@ -116,18 +116,16 @@ export const protocolUSDN = {
     );
 
     trace('executing', [msgSwap, msgLock].filter(Boolean));
-    const ret = ica.executeEncodedTxWithMeta(protoMessages);
-    unwrapResultMeta(ret).then(
-      ({ result }) => trace('supply result', result),
-      e => trace('supply error', e),
-    );
-    return ret;
+    const result = await ica.executeEncodedTx(protoMessages, {
+      metaUpdater,
+    });
+    trace('supply result', result);
   },
   withdraw: async (ctx, amount, dest, claim) => {
     if (claim) {
       throw new Error('claiming USDN is not supported');
     }
-    const { usdnOut } = ctx;
+    const { usdnOut, metaUpdater } = ctx;
     const { ica } = dest;
     const address = ica.getAddress();
     const { msgUnlock, msgSwap, protoMessages } = makeUnlockSwapMessages(
@@ -136,17 +134,13 @@ export const protocolUSDN = {
       { usdnOut },
     );
     trace('executing', [msgUnlock, msgSwap].filter(Boolean));
-    const resultMeta = ica.executeEncodedTxWithMeta(protoMessages);
-    unwrapResultMeta(resultMeta).then(
-      ({ result }) => trace('withdraw result', result),
-      e => trace('withdraw error', e),
-    );
-    return resultMeta;
+    const result = await ica.executeEncodedTx(protoMessages, { metaUpdater });
+    trace('withdraw result', result);
   },
 } as const satisfies ProtocolDetail<
   'USDN',
   'noble',
-  { usdnOut?: NatValue; vault?: number }
+  { usdnOut?: NatValue; vault?: number; metaUpdater?: MetaUpdater }
 >;
 harden(protocolUSDN);
 
@@ -156,27 +150,31 @@ export const agoricToNoble = {
   apply: async (ctx, amount, src, dest) => {
     const { denom } = ctx.usdc;
     const denomAmount = { value: amount.value, denom };
-    return src.lca.transferWithMeta(dest.ica.getAddress(), denomAmount);
+    await src.lca.transfer(dest.ica.getAddress(), denomAmount, {
+      metaUpdater: ctx.metaUpdater,
+    });
   },
 } as const satisfies TransportDetail<
   'IBC to Noble',
   'agoric',
   'noble',
-  { usdc: { denom: Denom } }
+  { usdc: { denom: Denom }; metaUpdater?: MetaUpdater }
 >;
 harden(agoricToNoble);
 
 export const nobleToAgoric = {
   how: 'IBC from Noble',
   connections: [{ src: 'noble', dest: 'agoric' }],
-  apply: async (_ctx, amount, src, dest) => {
+  apply: async (ctx, amount, src, dest) => {
     const nobleAmount = { value: amount.value, denom: 'uusdc' };
-    return src.ica.transferWithMeta(dest.lca.getAddress(), nobleAmount);
+    await src.ica.transfer(dest.lca.getAddress(), nobleAmount, {
+      metaUpdater: ctx.metaUpdater,
+    });
   },
 } as const satisfies TransportDetail<
   'IBC from Noble',
   'noble',
   'agoric',
-  { usdc: { denom: Denom } }
+  { usdc: { denom: Denom }; metaUpdater?: MetaUpdater }
 >;
 harden(agoricToNoble);

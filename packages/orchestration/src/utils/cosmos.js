@@ -18,7 +18,9 @@ export const maxClockSkew = 10n * 60n;
 /**
  * @template {string[]} TUS
  * @param {string} ackStr
- * @param {{ [K in keyof TUS]: Proto3CodecHelper<TUS[K]> }} codecs
+ * @param {{
+ *   [K in keyof TUS]: Pick<Proto3CodecHelper<TUS[K]>, 'fromProtoMsg'>;
+ * }} codecs
  */
 export const tryDecodeResponses = (ackStr, codecs) => {
   try {
@@ -36,7 +38,7 @@ export const tryDecodeResponses = (ackStr, codecs) => {
  * @deprecated use {@link tryDecodeResponses} instead
  * @template {string} TU
  * @param {string} ackStr
- * @param {Proto3CodecHelper<TU>} codec
+ * @param {Pick<Proto3CodecHelper<TU>, 'fromProtoMsg'>} codec
  */
 export const tryDecodeResponse = (ackStr, codec) =>
   tryDecodeResponses(ackStr, /** @type {const} */ ([codec]))[0];

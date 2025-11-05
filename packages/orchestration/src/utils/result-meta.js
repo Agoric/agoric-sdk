@@ -1,205 +1,219 @@
-import { makeTracer } from '@agoric/internal';
-import { heapVowTools } from '@agoric/vow';
-import { makePromiseKit } from '@endo/promise-kit';
-
 /**
- * @import {TraceLogger} from '@agoric/internal';
- * @import {ERef} from '@endo/far';
- * @import {EVow} from '@agoric/vow';
+ * @file Utilities for working with ResultMeta<T>.
  */
 
-const { when } = heapVowTools;
+import { isVow } from '@agoric/vow/src/vow-utils.js';
 
 /**
- * @template T
- * @typedef {T | ResultMeta<T>} MaybeResultMeta
+ * @import {EVow, VowTools, VowKit, Fulfilled} from '@agoric/vow';
+ * @import {Zone} from '@agoric/base-zone';
  */
 
 /**
- * @template T
- * @typedef {{
- *   result: EVow<T | ResultMeta<T>>;
- *   meta: Record<string, any>;
- * }} ResultMeta
+ * @typedef {{ [key: string]: any; nextMeta?: EVow<Metadata> }} Metadata
  */
 
 /**
  * @template T
- * @typedef {{ result: T; meta: Record<string, any> }} UnwrappedResultMeta
+ * @typedef {object} ResultMeta
+ * @property {EVow<T>} result final value of this operation
+ * @property {Metadata} meta snapshot of metadata for this instance
  */
-
-/**
- * Checks if a value is a ResultMeta.
- *
- * @param {unknown} specimen
- * @returns {specimen is ResultMeta<any> | { result: any; meta: null }}
- */
-export const isResultMeta = specimen => {
-  return (
-    specimen != null &&
-    typeof specimen === 'object' &&
-    'result' in specimen &&
-    'meta' in specimen
-  );
-};
-
-/**
- * Extracts `meta` from a chained ResultMeta, calling `reducer` on each.
- *
- * @template T
- * @param {ERef<MaybeResultMeta<T>>} resultP
- * @param {(
- *   resultMeta: ResultMeta<T> | { result: T; meta: null },
- *   priorResultMeta: ResultMeta<T>,
- * ) => ERef<MaybeResultMeta<T> | { result: T; meta: null }>} reducer
- * @param {Record<string, any>} [initialMeta]
- * @returns {Promise<UnwrappedResultMeta<T>>} the final awaited result and the
- *   accumulated meta
- */
-export const reduceResultMeta = async (resultP, reducer, initialMeta = {}) => {
-  /** @type {MaybeResultMeta<T>} */
-  let result = await when(resultP);
-  /** @type {ResultMeta<T>} */
-  let priorResultMeta = { result, meta: initialMeta };
-  do {
-    const resultMeta = isResultMeta(result) ? result : { result, meta: null };
-    const reduction = await reducer(resultMeta, priorResultMeta);
-    harden(reduction);
-
-    if (isResultMeta(reduction)) {
-      if (reduction.meta == null) {
-        // No meta means to use the prior's meta.
-        priorResultMeta = {
-          result: reduction.result,
-          meta: priorResultMeta.meta,
-        };
-      } else {
-        // Update both result and meta.
-        priorResultMeta = reduction;
-      }
-    } else {
-      // Just update the result, keep the prior meta.
-      priorResultMeta = { result: reduction, meta: priorResultMeta.meta };
-    }
-
-    result = await when(priorResultMeta.result);
-  } while (isResultMeta(result));
-
-  // No more layers to reduce.
-  return { result, meta: priorResultMeta.meta };
-};
-harden(reduceResultMeta);
-
-/**
- * Unwraps the result and shallow-merged meta information from a
- * ResultMetaArg<T> promise.
- *
- * @template T
- * @param {ERef<MaybeResultMeta<T>>} resultP
- * @param {string} [message]
- * @param {Record<string, any>} [details]
- * @param {TraceLogger} [trace]
- */
-export const unwrapResultMeta = async (
-  resultP,
-  message,
-  details = {},
-  trace = message ? makeTracer('unwrapResultMeta') : undefined,
-) => {
-  return reduceResultMeta(
-    resultP,
-    ({ result, meta }, priorResultMeta) => {
-      const next = { meta: { ...priorResultMeta.meta, ...meta }, result };
-      trace?.(message, { ...details, meta }, '=>', next);
-      return next;
-    },
-    { debug: { message, details } },
-  );
-};
-harden(unwrapResultMeta);
-
-/**
- * Awaits the result and shallow-merges the meta information from a
- * MaybeResultMeta<T> promise.
- *
- * @template T
- * @param {ERef<MaybeResultMeta<T>>} resultP
- * @param {Record<string, any>} [initialMeta]
- */
-export const wrapResultMeta = async (resultP, initialMeta = {}) => {
-  const result = await resultP;
-  if (
-    result != null &&
-    typeof result === 'object' &&
-    'result' in result &&
-    'meta' in result
-  ) {
-    return {
-      result: Promise.resolve(result.result),
-      meta: { ...initialMeta, ...result.meta },
-    };
-  }
-  return { result: Promise.resolve(result), meta: initialMeta };
-};
-harden(wrapResultMeta);
 
 /**
  * @template T
- * @template [U=T]
- * @param {EVow<MaybeResultMeta<T>>} resultP
- * @param {(rm: ResultMeta<T>) => ERef<MaybeResultMeta<U>>} transform
- * @returns {Promise<ResultMeta<U>>}
+ * @typedef {EVow<T | ResultMeta<T>>} MaybeResultMeta
  */
-export const transformResultMeta = (resultP, transform) => {
-  /** @type {PromiseKit<ResultMeta<U>>} */
-  const firstPK = makePromiseKit();
+
+/**
+ * @template T
+ * @callback MetaReducer Called on each layer of the ResultMeta. This function
+ *   should perform any side-effects it can when it receives a new single
+ *   Metadata, since there is no guarantee that the final ResultMeta value chain
+ *   will be prompt (it may take a long time with cross-chain communication) or
+ *   ever fulfill (it may result in a rejection).
+ * @param {Metadata | undefined | null} meta `meta == null` is a sentinel for
+ *   the final reducer call.
+ * @param {T} accum previous reduction value
+ * @returns {EVow<T | null>} Returning `null` exits the reduction
+ */
+
+/**
+ * @param {unknown} obj
+ * @returns {obj is ResultMeta<any>}
+ */
+export const isResultMeta = obj =>
+  obj != null && typeof obj === 'object' && 'result' in obj && 'meta' in obj;
+harden(isResultMeta);
+
+/**
+ * Utilities for working with ResultMeta within an async flow.
+ */
+export const resultMetaAsyncFlowUtils = {
+  /**
+   * Converts a specimen to a Promise. Since the use of Vows is only needed
+   * outside of async-flows, just reject if we encounter one.
+   *
+   * @template T
+   * @param {EVow<T>} specimen
+   * @returns {Promise<Fulfilled<T>>}
+   */
+  promiseFromVow: async specimen => {
+    const maybeVow = await specimen;
+    !isVow(maybeVow) ||
+      assert.Fail`Unexpected Vow ${maybeVow}; only use ResultMeta utilities within async flows (withOrchestration)`;
+
+    return /** @type {Fulfilled<T>} */ (maybeVow);
+  },
 
   /**
-   * Create a shallow copy of all the ResultMeta layers, with the last layer
-   * replaced by the transform function.
-   *
-   * @param {EVow<MaybeResultMeta<T>>} firstResult
-   * @param {PromiseKit<MaybeResultMeta<U>>} lastPromiseKit
+   * @template {ResultMeta<unknown> | unknown} [T=unknown]
+   * @param {T} specimen
+   * @returns {T extends ResultMeta<infer U> ? ResultMeta<U> : ResultMeta<T>}
    */
-  const cloneThenTransformResultMeta = async (firstResult, lastPromiseKit) => {
-    await null;
-    let lastPK = lastPromiseKit;
-    try {
-      let lastMeta = {};
-      let nextResult = firstResult;
-      for (;;) {
-        const resultOrMeta = await when(nextResult);
-        if (!isResultMeta(resultOrMeta)) {
-          // Base case: not a ResultMeta, just resolve the last promise with the
-          // transformation.
-          const result = /** @type {T} */ (resultOrMeta);
-          const transformation = transform({ result, meta: lastMeta });
-          lastPK.resolve(transformation);
-          return;
-        }
-
-        // Resolve the last promise with a copy of this layer.
-        assert(resultOrMeta.meta != null);
-        lastMeta = resultOrMeta.meta;
-        const nextPK = makePromiseKit();
-        lastPK.resolve({ result: nextPK.promise, meta: lastMeta });
-
-        // Update the last promise kit and get the next result.
-        lastPK = nextPK;
-        nextResult = resultOrMeta.result;
-      }
-    } catch (e) {
-      lastPK.reject(e);
+  coerceResultMeta: specimen => {
+    if (isResultMeta(specimen)) {
+      // @ts-expect-error how to cast this correctly?
+      return specimen;
     }
-  };
+    const result = /** @type {EVow<T>} */ (specimen);
+    /** @type {Metadata} */
+    const meta = harden({});
 
-  // Run the loop in the background, so that it doesn't block the return of the
-  // first promise in the chain.
-  void cloneThenTransformResultMeta(resultP, firstPK).catch(reason =>
-    firstPK.reject(reason),
-  );
+    // @ts-expect-error how to cast this correctly?
+    return harden({
+      result,
+      meta,
+    });
+  },
 
-  return firstPK.promise;
+  /**
+   * @template T Extracts `meta` from a chained ResultMeta, calling `reducer` on
+   *   each.
+   * @param {EVow<Metadata>} metaP
+   * @param {MetaReducer<T>} reducer
+   * @param {T} initialAccum accumulator to pass to the reducer on the first
+   *   call
+   * @returns {Promise<T>} the accumulated result
+   */
+  reduceMeta: async (metaP, reducer, initialAccum) => {
+    const { promiseFromVow } = resultMetaAsyncFlowUtils;
+
+    /** @type {Metadata | null} */
+    let nextMeta = await promiseFromVow(metaP);
+    let accum = harden(initialAccum);
+
+    while (true) {
+      const reduction = await promiseFromVow(reducer(nextMeta, accum));
+      harden(reduction);
+
+      if (reduction == null) {
+        nextMeta = null;
+      } else {
+        accum = /** @type {T} */ (reduction);
+      }
+      if (nextMeta == null) {
+        return accum;
+      }
+
+      nextMeta = (await promiseFromVow(nextMeta?.nextMeta)) ?? null;
+    }
+  },
+
+  /**
+   * Returns a promise for the ResultMeta<T> final result.
+   *
+   * @template T
+   * @param {EVow<ResultMeta<T>>} resultP
+   * @returns {Promise<T>}
+   */
+  getFinalResult: async resultP => {
+    const { promiseFromVow } = resultMetaAsyncFlowUtils;
+    const { result } = await promiseFromVow(resultP);
+    return /** @type {Promise<T>} */ (promiseFromVow(result));
+  },
 };
 
-harden(transformResultMeta);
+harden(resultMetaAsyncFlowUtils);
+
+/**
+ * A helper for ResultMeta operations via VowTools.
+ *
+ * @param {Zone} zone
+ * @param {object} powers
+ * @param {Pick<VowTools, 'makeVowKit'>} powers.vowTools
+ */
+export const prepareMetaUpdater = (zone, { vowTools: { makeVowKit } }) => {
+  const makeMetaUpdaterKit = zone.exoClassKit(
+    'MetaUpdaterKit',
+    undefined,
+    /**
+     * @param {Metadata} [initialMeta]
+     */
+    (initialMeta = {}) => {
+      const { vow: nextMeta, resolver: nextMetaResolver } = makeVowKit();
+
+      /** @type {Metadata} */
+      const currentMeta = harden({
+        ...initialMeta,
+        nextMeta,
+      });
+      return {
+        finished: false,
+        currentMeta,
+        nextMetaResolver,
+      };
+    },
+    {
+      helper: {},
+      public: {
+        get() {
+          return this.state.currentMeta;
+        },
+        /**
+         * @param {Metadata} thisMeta
+         */
+        update(thisMeta) {
+          const { currentMeta, nextMetaResolver, finished } = this.state;
+          if (finished) {
+            return currentMeta;
+          }
+
+          const { vow: nextMeta, resolver: nextNextMetaResolver } =
+            makeVowKit();
+
+          const meta = harden({ ...thisMeta, nextMeta });
+          this.state.currentMeta = meta;
+          nextMetaResolver.resolve(meta);
+          this.state.nextMetaResolver = nextNextMetaResolver;
+          return meta;
+        },
+        finish() {
+          const { currentMeta, nextMetaResolver, finished } = this.state;
+          if (finished) {
+            return currentMeta;
+          }
+
+          this.state.finished = true;
+          nextMetaResolver.resolve(null);
+          const { nextMeta: _, ...meta } = currentMeta;
+          this.state.currentMeta = harden(meta);
+          return harden(meta);
+        },
+      },
+    },
+  );
+
+  /** @param {Metadata} [initialMeta] */
+  const makeMetaUpdater = initialMeta => makeMetaUpdaterKit(initialMeta).public;
+  return harden(makeMetaUpdater);
+};
+harden(prepareMetaUpdater);
+
+/**
+ * @typedef {ReturnType<typeof prepareMetaUpdater>} MakeMetaUpdater
+ */
+
+/**
+ * @typedef {ReturnType<MakeMetaUpdater>} MetaUpdater
+ */

@@ -24,19 +24,14 @@ import type {
   Orchestrator,
   MetaTrafficEntry,
   MetaWithTraffic,
-  ResultMeta,
+  MetaUpdater,
 } from '@agoric/orchestration';
 import type { AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { TxType } from '@agoric/portfolio-api';
-import {
-  type MaybeResultMeta,
-  reduceResultMeta,
-  transformResultMeta,
-  unwrapResultMeta,
-} from '@agoric/orchestration/src/utils/result-meta.js';
+import { resultMetaAsyncFlowUtils } from '@agoric/orchestration/src/utils/result-meta.js';
 import {
   AxelarChain,
   SupportedChain,
@@ -93,13 +88,10 @@ import type { TxId } from './resolver/types.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const { keys, entries, fromEntries } = Object;
+const { reduceMeta } = resultMetaAsyncFlowUtils;
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
-
-type ResultMetaWithTraffic<T = any> = ResultMeta<T> & {
-  meta: MetaWithTraffic;
-};
 
 type StepPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply' | 'undo';
 
@@ -137,12 +129,11 @@ type AssetMovement = {
   apply: (
     accounts: AccountsByChain,
     tracer: TraceLogger,
-  ) => Promise<
-    MaybeResultMeta<{
-      srcPos?: Position;
-      destPos?: Position;
-    }>
-  >;
+    metaUpdater: MetaUpdater,
+  ) => Promise<{
+    srcPos?: Position;
+    destPos?: Position;
+  }>;
 };
 
 const moveStatus = ({
@@ -164,7 +155,8 @@ export type TransportDetail<
     amount: NatAmount,
     src: AccountInfoFor[S],
     dest: AccountInfoFor[D],
-  ) => Promise<MaybeResultMeta<object>>;
+    metaUpdater: MetaUpdater | undefined,
+  ) => Promise<void>;
 };
 
 export type ProtocolDetail<
@@ -178,13 +170,15 @@ export type ProtocolDetail<
     ctx: CTX,
     amount: NatAmount,
     src: AccountInfoFor[C],
-  ) => Promise<MaybeResultMeta<object>>;
+    metaUpdater?: MetaUpdater,
+  ) => Promise<void>;
   withdraw: (
     ctx: CTX,
     amount: NatAmount,
     dest: AccountInfoFor[C],
     claim?: boolean,
-  ) => Promise<MaybeResultMeta<object>>;
+    metaUpdater?: MetaUpdater,
+  ) => Promise<void>;
 };
 
 const { toCapData } = makeMarshal(undefined, undefined, {
@@ -265,33 +259,24 @@ const makeTrafficPublishingReducer = ({
   updateTxMeta,
   updateFirstTx,
 }: FlowStepPowers) => {
-  const pendingTxs: PendingTxsEntry[] = [];
-  return async (
-    resultMeta: ResultMetaWithTraffic<unknown>,
-    { meta: priorMeta }: ResultMetaWithTraffic,
-  ) => {
-    await null;
-    const { result: thisResult, meta: thisMeta } = resultMeta;
-    const { traffic = [] } = thisMeta || {};
-    const { traffic: priorTraffic = [] } = priorMeta;
-    if (thisResult === 'FOLLOW_TRAFFIC') {
-      // Wait for our last tx to complete.
-      return pendingTxs.at(-1)?.result;
+  return async (thisMeta: MetaWithTraffic, priorTxs: PendingTxsEntry[]) => {
+    const { traffic: thisTraffic = [] } = thisMeta || {};
+    if (thisMeta == null) {
+      return null;
     }
-    if (deepEqual(traffic, priorTraffic)) {
-      return resultMeta;
-    }
-    const firstTxId: TxId | undefined = pendingTxs[0]?.txId;
+    const txs = [...priorTxs];
+    const firstTxId: TxId | undefined = txs[0]?.txId;
     let nextTxId: TxId | undefined;
 
     // Iterate backwards through the trafficEntry array, so we can link them via
     // nextTxId.
-    for (let i = traffic.length - 1; i >= 0; i -= 1) {
-      const trafficEntry = traffic[i];
+    await null;
+    for (let i = thisTraffic.length - 1; i >= 0; i -= 1) {
+      const trafficEntry = thisTraffic[i];
 
       // Convert the source protocol to a TxType.
       let type: TxType;
-      switch (trafficEntry.src[0]) {
+      switch (trafficEntry.src?.[0]) {
         case 'ibc': {
           if (i === 0) {
             type = TxType.IBC_FROM_AGORIC;
@@ -307,29 +292,33 @@ const makeTrafficPublishingReducer = ({
         }
       }
 
-      const newTxMeta: PendingTxMeta = { ...trafficEntry, type, nextTxId };
-      const pendingTxsEntry = pendingTxs[i];
-      if (pendingTxsEntry) {
-        if (!deepEqual(newTxMeta, pendingTxsEntry.meta)) {
+      const newTxMeta: PendingTxMeta = {
+        ...trafficEntry,
+        type,
+        ...(nextTxId === undefined ? {} : { nextTxId }),
+      };
+      const txMeta: PendingTxMeta = txs[i]?.meta;
+      if (txMeta) {
+        if (!deepEqual(newTxMeta, txMeta)) {
           // sync up our pendingTx with the traffic entry.
-          const newPendingTxsEntry = { ...pendingTxsEntry, meta: newTxMeta };
-          pendingTxs[i] = newPendingTxsEntry;
-          updateTxMeta(pendingTxsEntry.txId, newTxMeta);
-          nextTxId = pendingTxsEntry.txId;
+          const newPendingTxsEntry = { ...txs[i], meta: newTxMeta };
+          txs[i] = newPendingTxsEntry;
+          updateTxMeta(newPendingTxsEntry.txId, newTxMeta);
+          nextTxId = newPendingTxsEntry.txId;
         }
         continue;
       }
 
       // create new tx entry since it's missing.
       const { txId, result } = await createPendingTx(newTxMeta);
-      pendingTxs[i] = { txId, result, meta: newTxMeta };
-      nextTxId = pendingTxs[i].txId;
+      txs[i] = { txId, result, meta: newTxMeta };
+      nextTxId = txId;
     }
-    const newFirstTxId = pendingTxs[0]?.txId;
+    const newFirstTxId = txs[0]?.txId;
     if (newFirstTxId != null && newFirstTxId !== firstTxId) {
       updateFirstTx(newFirstTxId);
     }
-    return { result: thisResult, meta: { ...priorMeta, ...thisMeta } };
+    return txs;
   };
 };
 
@@ -358,18 +347,27 @@ const trackFlow = async (
 
       reporter.publishFlowStatus(flowId, { state: 'run', step, how });
 
-      const {
-        result: { srcPos, destPos },
-      } = await reduceResultMeta(
-        move.apply(accounts, traceStep),
+      // Publish the step's traffic entries as they are produced.
+      const metaUpdater = accounts.agoric.lca.makeMetaUpdater();
+      void reduceMeta(
+        metaUpdater.get(),
         makeTrafficPublishingReducer(
           makeFlowStepPowers(
             { flowId, assetMoves: moves, step, phase: 'apply' },
             { reporter, resolverClient, phasesForStep },
           ),
         ),
+        [] as PendingTxsEntry[],
       );
 
+      // Wait for the move to complete.
+      const { srcPos, destPos } = await move.apply(
+        accounts,
+        traceStep,
+        metaUpdater,
+      );
+      // Finish the meta updater.
+      metaUpdater.finish();
       traceStep('done:', how);
 
       if (srcPos) {
@@ -403,7 +401,7 @@ const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
   chainName: C,
   kit: GuestInterface<PortfolioKit>, // Guest<T>?
   tracePortfolio: TraceLogger,
-): Promise<MaybeResultMeta<AccountInfoFor[C]>> => {
+): Promise<AccountInfoFor[C]> => {
   await null;
   const traceChain = tracePortfolio.sub(chainName);
   const promiseMaybe = kit.manager.reserveAccount(chainName);
@@ -465,11 +463,13 @@ const registerNobleForwardingAccount = async (
   forwarding: RegisterAccountMemo['noble']['forwarding'],
   trace: TraceLogger,
   amount: DenomAmount = { denom: 'ubld', value: 1n },
+  metaUpdater?: MetaUpdater,
 ): Promise<void> => {
   trace('Registering NFA', forwarding, 'from', sender.getAddress().value);
 
   await sender.transfer(dest, amount, {
     memo: JSON.stringify({ noble: { forwarding } }),
+    metaUpdater,
   });
   trace('NFA registration transfer sent');
 };
@@ -604,6 +604,7 @@ const stepFlow = async (
     move: MovementDesc,
     lca: LocalAccount,
     nobleForwardingChannel: `channel-${number}`,
+    metaUpdater: MetaUpdater | undefined,
   ) => {
     const [axelar, feeAccount] = await Promise.all([
       orch.getChain('axelar'),
@@ -623,6 +624,7 @@ const stepFlow = async (
       resolverClient: ctx.resolverClient,
       feeAccount,
       nobleForwardingChannel,
+      metaUpdater,
     });
     return evmCtx;
   };
@@ -632,8 +634,15 @@ const stepFlow = async (
     lca: LocalAccount,
     poolKey: PoolKey,
     nobleForwardingChannel: `channel-${number}`,
+    metaUpdater: MetaUpdater | undefined,
   ): Promise<EVMContext & { poolKey: PoolKey }> => {
-    const evmCtx = await makeEVMCtx(chain, move, lca, nobleForwardingChannel);
+    const evmCtx = await makeEVMCtx(
+      chain,
+      move,
+      lca,
+      nobleForwardingChannel,
+      metaUpdater,
+    );
     return harden({ ...evmCtx, poolKey });
   };
 
@@ -659,7 +668,7 @@ const stepFlow = async (
       src: move.src,
       dest: move.dest,
       phases: {} as Record<StepPhase, TxId>,
-      apply: async ({ [evmChain]: gInfo, agoric }) => {
+      apply: async ({ [evmChain]: gInfo, agoric }, _traceStep, metaUpdater) => {
         assert(gInfo, evmChain);
         const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
         const { poolKey, how } = way;
@@ -671,27 +680,14 @@ const stepFlow = async (
           lca,
           poolKey,
           ctx.transferChannels.noble.counterPartyChannelId,
+          metaUpdater,
         );
         if ('src' in way) {
-          return transformResultMeta(
-            pImpl.supply(evmCtx, amount, gInfo),
-            ({ result, meta }) => {
-              return {
-                result: Promise.resolve(result).then(() => ({ destPos: pos })),
-                meta,
-              };
-            },
-          );
+          await pImpl.supply(evmCtx, amount, gInfo);
+          return harden({ destPos: pos });
         } else {
-          return transformResultMeta(
-            pImpl.withdraw(evmCtx, amount, gInfo, way.claim),
-            ({ result, meta }) => {
-              return {
-                result: Promise.resolve(result).then(() => ({ srcPos: pos })),
-                meta,
-              };
-            },
-          );
+          await pImpl.withdraw(evmCtx, amount, gInfo, way.claim);
+          return harden({ srcPos: pos });
         }
       },
     });
@@ -718,9 +714,8 @@ const stepFlow = async (
           apply: async ({ agoric }) => {
             const { lca, lcaIn } = agoric;
             const account = move.dest === '+agoric' ? lcaIn : lca;
-            return ctx.zoeTools
-              .localTransfer(src.seat, account, amounts)
-              .then(() => ({}));
+            await ctx.zoeTools.localTransfer(src.seat, account, amounts);
+            return {};
           },
         });
         break;
@@ -769,14 +764,16 @@ const stepFlow = async (
           amount,
           src: move.src,
           dest: move.dest,
-          apply: async ({ agoric, noble }) => {
+          apply: async ({ agoric, noble }, _tracer, metaUpdater) => {
             assert(noble, 'nobleMentioned'); // per nobleMentioned below
+            const ctxMeta = harden({ ...ctxI, metaUpdater });
             await null;
             if (way.src === 'agoric') {
-              return agoricToNoble.apply(ctxI, amount, agoric, noble);
+              await agoricToNoble.apply(ctxMeta, amount, agoric, noble);
             } else {
-              return nobleToAgoric.apply(ctxI, amount, noble, agoric);
+              await nobleToAgoric.apply(ctxMeta, amount, noble, agoric);
             }
+            return {};
           },
         });
 
@@ -793,20 +790,28 @@ const stepFlow = async (
           amount,
           src: move.src,
           dest: move.dest,
-          apply: async ({ [evmChain]: gInfo, noble, agoric }) => {
+          apply: async (
+            { [evmChain]: gInfo, noble, agoric },
+            _tracer,
+            metaUpdater,
+          ) => {
             // If an EVM account is in a move, it's available
             // in the accounts arg, along with noble.
             assert(gInfo && noble, evmChain);
+            await null;
             if (outbound) {
-              return CCTP.apply(ctx, amount, noble, gInfo);
+              await CCTP.apply({ ...ctx, metaUpdater }, amount, noble, gInfo);
+              return {};
             }
             const evmCtx = await makeEVMCtx(
               evmChain,
               move,
               agoric.lca,
               ctx.transferChannels.noble.counterPartyChannelId,
+              metaUpdater,
             );
-            return CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric);
+            await CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric);
+            return {};
           },
         });
 
@@ -824,28 +829,18 @@ const stepFlow = async (
           src: move.src,
           dest: move.dest,
           amount,
-          apply: async ({ noble }) => {
+          apply: async ({ noble }, _tracer, metaUpdater) => {
             assert(noble); // per nobleMentioned below
+            await null;
+            const ctxMeta = harden({ ...ctxU, metaUpdater });
             const acctId = coerceAccountId(noble.ica.getAddress());
             const pos = kit.manager.providePosition('USDN', 'USDN', acctId);
             if (isSupply) {
-              return transformResultMeta(
-                protocolUSDN.supply(ctxU, amount, noble),
-                ({ result, meta }) => ({
-                  result: Promise.resolve(result).then(() => ({
-                    destPos: pos,
-                  })),
-                  meta,
-                }),
-              );
+              await protocolUSDN.supply(ctxMeta, amount, noble);
+              return harden({ destPos: pos });
             } else {
-              return transformResultMeta(
-                protocolUSDN.withdraw(ctxU, amount, noble, way.claim),
-                ({ result, meta }) => ({
-                  result: Promise.resolve(result).then(() => ({ srcPos: pos })),
-                  meta,
-                }),
-              );
+              await protocolUSDN.withdraw(ctxMeta, amount, noble, way.claim);
+              return harden({ srcPos: pos });
             }
           },
         });
@@ -889,9 +884,7 @@ const stepFlow = async (
   });
   reporter.publishFlowSteps(flowId, todo.map(moveStatus));
 
-  const { result: agoric } = await unwrapResultMeta(
-    provideCosmosAccount(orch, 'agoric', kit, traceFlow),
-  );
+  const agoric = await provideCosmosAccount(orch, 'agoric', kit, traceFlow);
 
   /** run thunk(); on failure, report to vstorage */
   const forChain = async <T>(
@@ -938,21 +931,39 @@ const stepFlow = async (
         };
 
         const acctP = forChain(chain, async () => {
-          const { result } = await reduceResultMeta(
-            provideEVMAccount(chain, gmp, agoric.lca, ctx, kit),
-            makeTrafficPublishingReducer(
-              makeFlowStepPowers(
-                {
-                  flowId,
-                  moveDescs: moves,
-                  step: moveIndex + 1,
-                  phase: isDest ? 'makeDestAccount' : 'makeSrcAccount',
-                },
-                { reporter, resolverClient: ctx.resolverClient, phasesForStep },
+          const metaUpdater = await agoric.lca.makeMetaUpdater();
+          try {
+            void reduceMeta(
+              metaUpdater.get(),
+              makeTrafficPublishingReducer(
+                makeFlowStepPowers(
+                  {
+                    flowId,
+                    moveDescs: moves,
+                    step: moveIndex + 1,
+                    phase: isDest ? 'makeDestAccount' : 'makeSrcAccount',
+                  },
+                  {
+                    reporter,
+                    resolverClient: ctx.resolverClient,
+                    phasesForStep,
+                  },
+                ),
               ),
-            ),
-          );
-          return result;
+              [] as PendingTxsEntry[],
+            );
+            const account = await provideEVMAccount(
+              chain,
+              gmp,
+              agoric.lca,
+              ctx,
+              kit,
+              metaUpdater,
+            );
+            return account;
+          } finally {
+            metaUpdater.finish();
+          }
         });
         return [asEntry(chain, acctP)];
       }),
@@ -964,8 +975,11 @@ const stepFlow = async (
   const nobleMentioned = moves.some(m => [m.src, m.dest].includes('@noble'));
   const nobleInfo = await (nobleMentioned || keys(evmAcctInfo).length > 0
     ? forChain('noble', async () => {
-        const { result } = await unwrapResultMeta(
-          provideCosmosAccount(orch, 'noble', kit, traceFlow),
+        const result = await provideCosmosAccount(
+          orch,
+          'noble',
+          kit,
+          traceFlow,
         );
         return result;
       })
@@ -1259,22 +1273,20 @@ export const openPortfolio = (async (
     // Register Noble Forwarding Account (NFA) for CCTP transfers
     {
       const sender = await ctxI.contractAccount;
-      const {
-        result: { lca },
-      } = await unwrapResultMeta(
-        provideCosmosAccount(orch, 'agoric', kit, traceP),
-      );
-      const {
-        result: { ica },
-      } = await unwrapResultMeta(
-        provideCosmosAccount(orch, 'noble', kit, traceP),
-      );
+      const { lca } = await provideCosmosAccount(orch, 'agoric', kit, traceP);
+      const { ica } = await provideCosmosAccount(orch, 'noble', kit, traceP);
       const forwarding = {
         channel: transferChannels.noble.counterPartyChannelId,
         recipient: lca.getAddress().value,
       };
       const dest = ica.getAddress();
-      await registerNobleForwardingAccount(sender, dest, forwarding, traceP);
+      await registerNobleForwardingAccount(
+        sender,
+        dest,
+        forwarding,
+        traceP,
+        undefined,
+      );
     }
 
     const { give } = seat.getProposal() as ProposalType['openPortfolio'];

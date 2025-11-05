@@ -223,7 +223,7 @@ harden(TimestampProtoShape);
  *
  * @internal
  */
-export const ExecuteICATxOptsShape = M.splitRecord(
+export const EvaluateTxOptionsShape = M.splitRecord(
   {},
   {
     memo: M.string(),
@@ -231,8 +231,14 @@ export const ExecuteICATxOptsShape = M.splitRecord(
     extensionOptions: M.arrayOf(M.any()),
     nonCriticalExtensionOptions: M.arrayOf(M.any()),
     sendOpts: SendOptionsShape,
+    metaUpdater: M.remotable(),
   },
 );
+
+/**
+ * @deprecated use {@link EvaluateTxOptionsShape}
+ */
+export const ExecuteICATxOptsShape = EvaluateTxOptionsShape;
 
 /**
  * Ensures at least one {@link AmountKeywordRecord} entry is present and only
@@ -298,6 +304,7 @@ export const ForwardOptsShape = M.splitRecord(
 export const IBCTransferOptionsShape = M.splitRecord(
   {},
   {
+    metaUpdater: M.remotable(),
     timeoutTimestamp: M.bigint(),
     timeoutHeight: {
       revisionHeight: M.bigint(),

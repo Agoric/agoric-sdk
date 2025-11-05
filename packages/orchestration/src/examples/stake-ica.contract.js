@@ -12,6 +12,7 @@ import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
+import { prepareMetaUpdater } from '../utils/result-meta.js';
 import { makeChainHub } from '../exos/chain-hub.js';
 
 const trace = makeTracer('StakeIca');
@@ -95,6 +96,10 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const vowTools = prepareVowTools(zone.subZone('vows'));
 
+  const makeMetaUpdater = prepareMetaUpdater(zone.subZone('orchestration'), {
+    vowTools,
+  });
+
   const chainHub = makeChainHub(
     zone.subZone('chainHub'),
     agoricNames,
@@ -105,6 +110,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     zone,
     {
       chainHub,
+      makeMetaUpdater,
       makeRecorderKit,
       timerService: timer,
       vowTools,
