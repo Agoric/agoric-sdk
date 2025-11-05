@@ -1,8 +1,8 @@
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   assertIssuerKeywords,
-  swap,
   assertProposalShape,
+  swap,
 } from '../contractSupport/index.js';
 
 /**

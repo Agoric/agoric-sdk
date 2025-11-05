@@ -1,9 +1,9 @@
+import { AssetKind } from '@agoric/ertp';
+import { fromUniqueEntries } from '@agoric/internal';
+import { keyEQ, mustMatch } from '@agoric/store';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
-import { mustMatch, keyEQ } from '@agoric/store';
-import { AssetKind } from '@agoric/ertp';
-import { fromUniqueEntries } from '@agoric/internal';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 import { atomicTransfer, fromOnly, toOnly } from './atomicTransfer.js';
 

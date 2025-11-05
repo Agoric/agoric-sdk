@@ -8,8 +8,8 @@
 // `yarn build-zcfBundle`.
 
 import { Fail } from '@endo/errors';
-import { Far } from '@endo/marshal';
 import { E } from '@endo/far';
+import { Far } from '@endo/marshal';
 
 import { makeZCFZygote } from './zcfZygote.js';
 

@@ -1,20 +1,20 @@
+import { AmountMath } from '@agoric/ertp';
 import { assert, Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { AmountMath } from '@agoric/ertp';
 
 import {
   assertProposalShape,
-  getAmountOut,
   ceilMultiplyBy,
+  getAmountOut,
   getTimestamp,
 } from '../../contractSupport/index.js';
 
+import { makeAddCollateralInvitation } from './addCollateral.js';
+import { makeCloseLoanInvitation } from './close.js';
 import { scheduleLiquidation } from './scheduleLiquidation.js';
 import { calculateInterest, makeDebtCalculator } from './updateDebt.js';
-import { makeCloseLoanInvitation } from './close.js';
-import { makeAddCollateralInvitation } from './addCollateral.js';
 
 /** @type {MakeBorrowInvitation} */
 export const makeBorrowInvitation = (zcf, config) => {

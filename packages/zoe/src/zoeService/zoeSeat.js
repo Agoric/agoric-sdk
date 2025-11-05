@@ -1,18 +1,18 @@
-import { Fail } from '@endo/errors';
+import { NonNullish } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
-import { E } from '@endo/eventual-send';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { NonNullish } from '@agoric/internal';
 
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 
 import {
+  coreUserSeatMethods,
   declareOldZoeSeatAdminKind,
   OriginalZoeSeatIKit,
   ZoeUserSeatShape,
-  coreUserSeatMethods,
 } from './originalZoeSeat.js';
 
 /**

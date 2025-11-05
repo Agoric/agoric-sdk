@@ -1,5 +1,5 @@
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { assert } from '@endo/errors';
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 

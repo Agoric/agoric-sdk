@@ -4,8 +4,8 @@
 import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
 
-import { makeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
+import { makeNotifier } from '@agoric/notifier';
 
 import { multiplyBy } from '@agoric/ertp/src/ratio.js';
 import { mintQuote } from './priceAuthorityTransform.js';

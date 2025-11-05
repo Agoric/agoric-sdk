@@ -1,10 +1,10 @@
-import { Fail, q } from '@endo/errors';
 import {
   M,
   prepareExo,
   prepareKind,
   provideDurableWeakMapStore,
 } from '@agoric/vat-data';
+import { Fail, q } from '@endo/errors';
 import {
   InstallationShape,
   UnwrappedInstallationShape,
