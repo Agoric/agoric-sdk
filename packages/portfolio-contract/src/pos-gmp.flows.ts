@@ -171,6 +171,13 @@ export const CCTPfromEVM = {
 } as const satisfies TransportDetail<'CCTP', AxelarChain, 'agoric', EVMContext>;
 harden(CCTPfromEVM);
 
+/**
+ * Noble CCTP relayer policy is to not relay very small amounts.
+ *
+ * XXX could be configurable for test networks
+ */
+const CCTP_OUTBOUND_THRESHOLD = 1_000_000n;
+
 export const CCTP = {
   how: 'CCTP',
   connections: keys(AxelarChain).map((dest: AxelarChain) => ({
@@ -182,6 +189,8 @@ export const CCTP = {
     const denomAmount: DenomAmount = { denom: 'uusdc', value: amount.value };
     const { chainId, remoteAddress } = dest;
     traceTransfer('transfer', denomAmount, 'to', remoteAddress);
+    amount.value >= CCTP_OUTBOUND_THRESHOLD ||
+      Fail`too small to relay: ${amount} below ${CCTP_OUTBOUND_THRESHOLD}`;
     const destinationAddress: AccountId = `${chainId}:${remoteAddress}`;
     const { ica } = src;
 
