@@ -18,6 +18,7 @@ import {
   compoundAddresses,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import type { EvmContext } from './pending-tx-manager.ts';
+import { lookupValueForKey } from './utils.ts';
 
 type ROPartial<K extends string, V> = Readonly<Partial<Record<K, V>>>;
 
@@ -34,24 +35,43 @@ export type UsdcAddresses = {
   testnet: Record<CaipChainId, HexAddress>;
 };
 
-const spectrumChainIdFromCaipChainId = (caipChainId: CaipChainId) => {
-  const [namespace, chain] = caipChainId.split(':');
-  return namespace === 'eip155'
-    ? `0x${BigInt(chain).toString(16).toLowerCase()}`
-    : chain;
+const spectrumChainIds: Record<`${CaipChainId} ${SupportedChain}`, string> = {
+  // for mainnet
+  'eip155:42161 Arbitrum': '0xa4b1',
+  'eip155:43114 Avalanche': '0xa86a',
+  'eip155:8453 Base': '0x2105',
+  'eip155:1 Ethereum': '0x1',
+  'eip155:10 Optimism': '0xa',
+  'cosmos:agoric-3 agoric': 'agoric-3',
+  'cosmos:noble-1 noble': 'noble-1',
+  // for testnet (EVM chains are mostly "Sepolia", but Avalanche is "Fuji")
+  'eip155:421614 Arbitrum': '0x66eee',
+  'eip155:43113 Avalanche': '0xa869',
+  'eip155:84532 Base': '0x14a34',
+  'eip155:11155111 Ethereum': '0xaa36a7',
+  'eip155:11155420 Optimism': '0xaa37dc',
+  'cosmos:agoricdev-25 agoric': 'agoricdev-25',
+  'cosmos:grand-1 noble': 'grand-1',
 };
 
+// Note that lookupValueForKey throws when the key is not found.
 export const spectrumChainIdsByCluster: Readonly<
   Record<ClusterName, ROPartial<SupportedChain, string>>
 > = {
   mainnet: {
-    ...objectMap(CaipChainIds.mainnet, spectrumChainIdFromCaipChainId),
+    ...objectMap(CaipChainIds.mainnet, (chainId, chainLabel) =>
+      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
+    ),
   },
   testnet: {
-    ...objectMap(CaipChainIds.testnet, spectrumChainIdFromCaipChainId),
+    ...objectMap(CaipChainIds.testnet, (chainId, chainLabel) =>
+      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
+    ),
   },
   local: {
-    ...objectMap(CaipChainIds.local, spectrumChainIdFromCaipChainId),
+    ...objectMap(CaipChainIds.local, (chainId, chainLabel) =>
+      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
+    ),
   },
 };
 

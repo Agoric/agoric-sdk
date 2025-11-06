@@ -93,7 +93,10 @@ const caipChainIdFromEip155 = chainId => `eip155:${chainId}`;
 
 /**
  * cf. https://chainagnostic.org/CAIPs/caip-2
+ * Please keep in sync with ../../../services/ymax-planner/src/support.ts `spectrumChainIds`
+ *
  * XXX this probably belongs in @agoric/orchestration
+ *
  * @type {Readonly<Record<ClusterName, Readonly<Partial<Record<SupportedChain, CaipChainId>>>>>}
  */
 export const CaipChainIds = {
