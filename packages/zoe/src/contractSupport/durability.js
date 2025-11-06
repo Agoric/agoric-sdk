@@ -5,7 +5,6 @@ import { E } from '@endo/eventual-send';
 /**
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {Baggage} from '@agoric/swingset-liveslots';
- * @import {Baggage} from '@agoric/vat-data';
  */
 
 /**

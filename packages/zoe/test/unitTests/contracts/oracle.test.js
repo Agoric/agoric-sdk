@@ -24,8 +24,6 @@ import { makeZoeForTest } from '../../../tools/setup-zoe.js';
  * @property {(t: ExecutionContext) => Promise<OracleKit>} makePingOracle
  * @property {Amount} feeAmount
  * @property {IssuerKit} link
- *
- * @typedef {ExecutionContext<TestContext>} ExecutionContext
  */
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -34,7 +32,7 @@ const contractPath = `${dirname}/../../../src/contracts/oracle.js`;
 
 test.before(
   'setup oracle',
-  /** @param {ExecutionContext} ot */ async ot => {
+  /** @param {ExecutionContext<TestContext>} ot */ async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
     const { admin, vatAdminState } = makeFakeVatAdmin();
@@ -56,7 +54,7 @@ test.before(
 
     const feeAmount = AmountMath.make(link.brand, 1000n);
     /**
-     * @param {ExecutionContext} _t
+     * @param {ExecutionContext<TestContext>} _t
      * @returns {Promise<OracleKit>}
      */
     const makePingOracle = async _t => {
@@ -102,7 +100,7 @@ test.before(
   },
 );
 
-test('single oracle', /** @param {ExecutionContext} t */ async t => {
+test('single oracle', /** @param {ExecutionContext<TestContext>} t */ async t => {
   const { zoe, link, makePingOracle, feeAmount } = t.context;
 
   // Get the Zoe invitation issuer from Zoe.

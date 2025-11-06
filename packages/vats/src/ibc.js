@@ -18,10 +18,11 @@ import {
 const trace = makeTracer('IBC', false);
 
 /**
- * @import {LocalIbcAddress, RemoteIbcAddress} from '../tools/ibc-utils.js';
  * @import {AttemptDescription} from '@agoric/network';
- * @import {Remote} from '@agoric/vow';
- * @import {VowKit} from '@agoric/vow';
+ * @import {Endpoint, Connection, ConnectionHandler, InboundAttempt, Bytes, ProtocolHandler, ProtocolImpl} from '@agoric/network';
+ * @import {BridgeHandler, ScopedBridgeManager, ConnectingInfo, IBCChannelID, IBCChannelOrdering, IBCEvent, IBCPacket, IBCPortID, IBCDowncallPacket, IBCDowncallMethod, IBCDowncallReturn, IBCDowncall, IBCBridgeEvent} from './types.js';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {PromiseVow, Remote, VowKit, VowResolver, VowTools} from '@agoric/vow';
  */
 
 // CAVEAT: IBC acks cannot be empty, as the Cosmos IAVL tree cannot represent
@@ -30,13 +31,6 @@ const DEFAULT_ACKNOWLEDGEMENT = '\x00';
 
 // Default timeout after 60 minutes.
 const DEFAULT_PACKET_TIMEOUT_NS = 60n * 60n * 1_000_000_000n;
-
-/**
- * @import {Endpoint, Connection, ConnectionHandler, InboundAttempt, Bytes, ProtocolHandler, ProtocolImpl} from '@agoric/network';
- * @import {BridgeHandler, ScopedBridgeManager, ConnectingInfo, IBCChannelID, IBCChannelOrdering, IBCEvent, IBCPacket, IBCPortID, IBCDowncallPacket, IBCDowncallMethod, IBCDowncallReturn, IBCDowncall, IBCBridgeEvent} from './types.js';
- * @import {Zone} from '@agoric/base-zone';
- * @import {PromiseVow, Remote, VowKit, VowResolver, VowTools} from '@agoric/vow';
- */
 
 /** @typedef {VowKit<AttemptDescription>} OnConnectP */
 

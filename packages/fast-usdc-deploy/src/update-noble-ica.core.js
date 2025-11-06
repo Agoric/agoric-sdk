@@ -11,7 +11,7 @@ const trace = makeTracer('FUSD-2', true);
 /** @type {typeof AmountMath.make} */
 // @ts-expect-error AssetKind conditionals aren't captured
 const make = (brand, value) => harden({ brand, value });
-/** @type {typeof makeRatio} */
+/** @type {typeof ertpMakeRatio} */
 const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
   harden({
     numerator: make(numeratorBrand, numerator),
@@ -28,7 +28,7 @@ const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
  * @import {FastUSDCCorePowers} from './start-fast-usdc.core.js';
  * @import {ContractRecord, FeeConfig, FeedPolicy} from '@agoric/fast-usdc/src/types.js';
  * @import {AmountMath} from '@agoric/ertp';
- * @import {makeRatio} from '@agoric/ertp/src/ratio.js';
+ * @import {makeRatio as ertpMakeRatio} from '@agoric/ertp/src/ratio.js';
  */
 
 /**

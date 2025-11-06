@@ -19,7 +19,7 @@ import {
 } from '../../../src/walletFactory.js';
 
 /**
- * @import {prepare} from '../../../src/walletFactory.js';
+ * @import {prepare as wfPrepare} from '../../../src/walletFactory.js';
  * @import {SmartWallet} from '../../../src/smartWallet.js';
  * @import {WalletBridgeMsg} from '../../../src/types.js';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
@@ -27,7 +27,7 @@ import {
  */
 
 /**
- * @type {typeof prepare}
+ * @type {typeof wfPrepare}
  */
 export const prepare = async (zcf, privateArgs, baggage) => {
   // copy paste from original contract, with type imports fixed and sayHelloUpgrade method added to creatorFacet)

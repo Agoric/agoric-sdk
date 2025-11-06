@@ -30,7 +30,6 @@ const onSend = makeMessageBreakpointTester('ENDO_SEND_BREAKPOINTS');
 
 /**
  * @import { HandledPromiseConstructor, RemotableBrand } from '@endo/eventual-send'
- * @import { EUnwrap } from './types.js'
  */
 /** @typedef {(...args: unknown[]) => any} Callable */
 

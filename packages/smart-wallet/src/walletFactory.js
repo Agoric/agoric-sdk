@@ -32,7 +32,6 @@ import { shape } from './typeGuards.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {WalletBridgeMsg} from './types.js';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
- * @import {NameAdmin} from '@agoric/vats/src/types.js';
  */
 
 const trace = makeTracer('WltFct');

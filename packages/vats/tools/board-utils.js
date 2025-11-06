@@ -3,7 +3,6 @@
  * @import {DisplayInfo, Issuer} from '@agoric/ertp';
  * @import {BoardRemote} from '@agoric/internal/src/marshal/board-client-utils.js';
  * @import {FakeStorageKit} from '@agoric/internal/src/storage-test-utils.js';
- * @import {BoardRemote} from '@agoric/vats/tools/board-utils.js';
  */
 
 /**

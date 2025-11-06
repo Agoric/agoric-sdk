@@ -6,7 +6,7 @@ import { Far } from '@endo/marshal';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 
 /**
- * @import {start} from './sellItems.js';
+ * @import {start as sellItemStart} from './sellItems.js';
  */
 
 /**
@@ -43,7 +43,7 @@ const start = zcf => {
 
   /**
    * @param {object} obj
-   * @param {Installation<start>} obj.sellItemsInstallation
+   * @param {Installation<sellItemStart>} obj.sellItemsInstallation
    * @param {*} obj.customValueProperties
    * @param {number} obj.count
    * @param {*} obj.moneyIssuer

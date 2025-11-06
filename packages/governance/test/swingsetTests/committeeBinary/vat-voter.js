@@ -16,7 +16,7 @@ import { keyEQ } from '@agoric/store';
  * @param {(msg: any)=> void} log
  * @param {Issue} issue
  * @param {ERef<CommitteeElectoratePublic>} electoratePublicFacet
- * @param {Record<string, Instance>} instances
+ * @param {Record<string, Instance<unknown>>} instances
  */
 const verify = async (log, issue, electoratePublicFacet, instances) => {
   const questionHandles = await E(electoratePublicFacet).getOpenQuestions();
