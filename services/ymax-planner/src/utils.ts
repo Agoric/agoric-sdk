@@ -36,7 +36,7 @@ export const parseGraphqlEndpoints = (
  * associated with the provided key or throwing an error if there is no such own
  * property.
  */
-export const translateData = <K extends string, V>(
+export const lookupValueForKey = <K extends string, V>(
   source: Partial<Record<K, V>>,
   key: K,
 ): V => {
@@ -54,7 +54,7 @@ export const translateData = <K extends string, V>(
  * This allows the same source object to be used for translation in both
  * directions.
  */
-export const untranslateData = <K extends string, V>(
+export const lookupKeyForValue = <K extends string, V>(
   source: Partial<Record<K, V>>,
   value: V,
 ): K => {

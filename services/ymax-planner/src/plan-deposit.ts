@@ -30,7 +30,7 @@ import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockc
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 import { spectrumProtocols } from './support.ts';
-import { getOwn, translateData } from './utils.js';
+import { getOwn, lookupValueForKey } from './utils.js';
 
 export type BalanceQueryPowers = {
   cosmosRest: CosmosRestClient;
@@ -102,12 +102,12 @@ const makeSpectrumAccountQuery = (
   powers: BalanceQueryPowers,
 ) => {
   const { chainName, address, asset } = desc;
-  const chainId = translateData(powers.spectrumChainIds, chainName);
+  const chainId = lookupValueForKey(powers.spectrumChainIds, chainName);
   if (asset !== 'USDC') {
     // "USDN" -> "usdn"
     return { chain: chainId, address, token: asset.toLowerCase() };
   }
-  const token = translateData(powers.usdcTokensByChain, chainName);
+  const token = lookupValueForKey(powers.usdcTokensByChain, chainName);
   return { chain: chainId, address, token };
 };
 
@@ -117,9 +117,9 @@ const makeSpectrumPoolQuery = (
 ) => {
   const { place, chainName, protocol, address } = desc;
   return {
-    chain: translateData(powers.spectrumChainIds, chainName),
-    protocol: translateData(spectrumProtocols, protocol),
-    pool: translateData(powers.spectrumPoolIds, place),
+    chain: lookupValueForKey(powers.spectrumChainIds, chainName),
+    protocol: lookupValueForKey(spectrumProtocols, protocol),
+    pool: lookupValueForKey(powers.spectrumPoolIds, place),
     address,
   };
 };
