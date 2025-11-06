@@ -1,10 +1,10 @@
 /**
  * @file offerArgs types / shapes - temporarily separate from type-guards.ts
  */
-import type { Brand, NatAmount, NatValue } from '@agoric/ertp';
+import type { Brand } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { AnyNatAmountShape } from '@agoric/orchestration';
-import type { AssetPlaceRef } from '@agoric/portfolio-api';
+import type { AssetPlaceRef, MovementDesc } from '@agoric/portfolio-api';
 import {
   AxelarChain,
   SupportedChain,
@@ -60,19 +60,8 @@ export const getKeywordOfPlaceRef = (
   return keyword as SeatKeyword;
 };
 
-export type MovementDesc = {
-  amount: NatAmount;
-  src: AssetPlaceRef;
-  dest: AssetPlaceRef;
-  /** for example: GMP fee */
-  fee?: NatAmount;
-  /** for example: { usdnOut: 98n } */
-  detail?: Record<string, NatValue>;
-  claim?: boolean;
-};
-
-// XXX strategy: AllocationStrategyInfo;
 export type OfferArgsFor = {
+  deposit: { flow?: MovementDesc[] };
   openPortfolio: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
   rebalance: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
 };
@@ -94,6 +83,13 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
   );
 
   return {
+    deposit: M.splitRecord(
+      {},
+      {
+        flow: M.arrayOf(movementDescShape),
+      },
+      {},
+    ) as TypedPattern<OfferArgsFor['deposit']>,
     openPortfolio: M.splitRecord(
       {},
       {
@@ -116,4 +112,4 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
 };
 harden(makeOfferArgsShapes);
 
-export type { AssetPlaceRef };
+export type { AssetPlaceRef, MovementDesc };

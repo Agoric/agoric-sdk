@@ -5,7 +5,7 @@
  *     agoric run /path/to/$0 [<bootstrap powers produce key> [<label>]]
  */
 
-/// <reference types="@agoric/vats/src/core/types-ambient"/>
+/// <reference types="@agoric/vats/src/core/types-ambient.js"/>
 
 /* eslint-disable import/no-extraneous-dependencies */
 // dynamic import { makeHelpers } from '@agoric/deploy-script-support';

@@ -15,11 +15,10 @@ import zcfBundle from '../bundles/bundle-contractFacet.js';
 
 /**
  * @import {MapStore} from '@agoric/swingset-liveslots';
- * @import {BundleID, EndoZipBase64Bundle, TestBundle} from '@agoric/swingset-vat';
+ * @import {BundleCap, BundleID, EndoZipBase64Bundle, TestBundle} from '@agoric/swingset-vat';
  */
 
 // this simulates a bundlecap, which is normally a swingset "device node"
-/** @typedef { import('@agoric/swingset-vat').BundleCap } BundleCap */
 /** @type {() => BundleCap} */
 const fakeBundleCap = () => makeHandle('FakeBundleCap');
 const bogusBundleCap = () => makeHandle('BogusBundleCap');

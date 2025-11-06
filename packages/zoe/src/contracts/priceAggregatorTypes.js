@@ -12,7 +12,7 @@
  */
 
 /**
- * @typedef {Pick<import("./priceAggregator").PriceAggregatorContract, 'creatorFacet' | 'publicFacet'>} PriceAggregatorKit
+ * @typedef {Pick<import("./priceAggregator.js").PriceAggregatorContract, 'creatorFacet' | 'publicFacet'>} PriceAggregatorKit
  */
 
 /**

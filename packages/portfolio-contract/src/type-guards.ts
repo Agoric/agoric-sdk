@@ -45,8 +45,7 @@ import type {
 import { Fail } from '@endo/errors';
 import { isNat } from '@endo/nat';
 import { M } from '@endo/patterns';
-import type { EVMContractAddresses, start } from './portfolio.contract.js';
-import type { PortfolioKit } from './portfolio.exo.js';
+import type { EVMContractAddresses } from './portfolio.contract.js';
 
 export type { OfferArgsFor } from './type-guards-steps.js';
 
@@ -62,28 +61,6 @@ const AnyString = <_T>() => M.string();
 export const makeNatAmountShape = (brand: Brand<'nat'>, min?: NatValue) =>
   harden({ brand, value: min ? M.gte(min) : M.nat() });
 // #endregion
-
-/**
- * Names suitable for use as `publicInvitationMaker` in {@link ContractInvitationSpec}.
- *
- * @see {@link start} for the contract implementation
- * @see {@link makeTrader.openPortfolio} for usage example
- */
-export type PortfolioPublicFacet = Awaited<
-  ReturnType<typeof start>
->['publicFacet'];
-export type PortfolioInvitationMaker = keyof PortfolioPublicFacet;
-
-/**
- * Names suitable for use as `invitationMakerName` in {@link ContinuingInvitationSpec}.
- *
- * These continuing invitation makers are returned from portfolio creation and enable
- * ongoing operations like rebalancing between yield protocols.
- *
- * @see {@link makeTrader.rebalance} for usage example
- */
-export type PortfolioContinuingInvitationMaker =
-  keyof PortfolioKit['invitationMakers'];
 
 // #region Proposal Shapes
 
@@ -324,20 +301,31 @@ export const makeFlowPath = (parent: number, id: number) => [
   `flow${id}`,
 ];
 
-export const makeFlowStepsPath = (parent: number, id: number) => [
-  `portfolio${parent}`,
-  'flows',
-  `flow${id}`,
-  'steps',
-];
+export const makeFlowStepsPath = (
+  parent: number,
+  id: number,
+  prop: 'steps' | 'order' = 'steps',
+) => [`portfolio${parent}`, 'flows', `flow${id}`, prop];
+
+const FlowDetailsProps = {
+  type: M.string(),
+  amount: AnyNatAmountShape,
+};
 
 export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.or(
-  { state: 'run', step: M.number(), how: M.string() },
+  M.splitRecord(
+    { state: 'run', step: M.number(), how: M.string() },
+    { steps: M.arrayOf(M.number()), ...FlowDetailsProps },
+  ),
   { state: 'undo', step: M.number(), how: M.string() }, // XXX Not currently used
-  { state: 'done' },
+  M.splitRecord({ state: 'done' }, FlowDetailsProps),
   M.splitRecord(
     { state: 'fail', step: M.number(), how: M.string(), error: M.string() },
-    { where: AnyString<AssetPlaceRef>() },
+    {
+      next: M.record(), // XXX recursive pattern
+      where: AnyString<AssetPlaceRef>(), // XXX obsolete
+      ...FlowDetailsProps,
+    },
     {},
   ),
 );

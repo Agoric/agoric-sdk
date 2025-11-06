@@ -79,7 +79,7 @@ test('handlePendingTx processes CCTP transaction successfully', async t => {
   ]);
 });
 
-test('handlePendingTx keeps tx pending on amount mismatch until timeout', async t => {
+test('handlePendingTx keeps tx pending on amount mismatch until timeout and then logs it', async t => {
   const opts = createMockPendingTxOpts();
   const txId = 'tx2';
   opts.fetch = mockFetch({ txId });
@@ -89,6 +89,7 @@ test('handlePendingTx keeps tx pending on amount mismatch until timeout', async 
   const receiver = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
   const provider = opts.evmProviders[chain];
   const type = TxType.CCTP_TO_EVM;
+  const amount = 1_000_000n; // 1 USDC
 
   const logMessages: string[] = [];
   const logger = (...args: any[]) => logMessages.push(args.join(' '));
@@ -125,6 +126,30 @@ test('handlePendingTx keeps tx pending on amount mismatch until timeout', async 
     (provider as any).emit(filter, mockLog);
   }, 50);
 
+  setTimeout(() => {
+    const mockLog = {
+      address: usdcAddress, // USDC contract
+      topics: [
+        id('Transfer(address,address,uint256)'), // Transfer event signature
+        '0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266', // from
+        zeroPadValue(receiver.toLowerCase(), 32), // to (our watch address)
+      ],
+      data: encodeAmount(amount),
+      transactionHash: '0x123abc',
+      blockNumber: 18500000,
+    };
+
+    const filter = {
+      topics: [
+        id('Transfer(address,address,uint256)'),
+        null,
+        zeroPadValue(receiver.toLowerCase(), 32),
+      ],
+    };
+
+    (provider as any).emit(filter, mockLog);
+  }, 3010);
+
   await t.notThrowsAsync(async () => {
     await handlePendingTx(cctpTx, {
       ...opts,
@@ -139,6 +164,8 @@ test('handlePendingTx keeps tx pending on amount mismatch until timeout', async 
     `[${txId}] Transfer detected: token=${usdcAddress} from=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 to=${receiver} amount=${notExpectedAmt} tx=0x123abc`,
     `[${txId}] Amount mismatch. Expected: ${expectedAmount}, Received: ${notExpectedAmt}`,
     `[${txId}] ✗ No matching transfer found within 0.05 minutes`,
+    `[${txId}] Transfer detected: token=${usdcAddress} from=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 to=${receiver} amount=${amount} tx=0x123abc`,
+    `[${txId}] ✓ Amount matches! Expected: ${amount}, Received: ${amount}`,
     `[${txId}] CCTP tx resolved`,
   ]);
 });

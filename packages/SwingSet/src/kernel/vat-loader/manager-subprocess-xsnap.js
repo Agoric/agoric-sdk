@@ -17,6 +17,10 @@ import {
  * @import {VatSyscallResult} from '@agoric/swingset-liveslots'
  * @import {LiveSlotsOptions} from '@agoric/swingset-liveslots'
  * @import {VatManagerFactory} from '../../types-internal.js'
+ * @import {KernelKeeper} from '../state/kernelKeeper.js'
+ * @import {KernelSlog} from '../../types-external.js'
+ * @import {SnapStore} from '../../types-external.js'
+ * @import {SnapshotResult} from '../../types-external.js'
  */
 
 // eslint-disable-next-line no-unused-vars

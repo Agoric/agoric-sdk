@@ -1,6 +1,6 @@
-/// <reference types="@agoric/internal/exported" />
-/// <reference types="@agoric/vats/src/core/types-ambient" />
-/// <reference types="@agoric/zoe/exported" />
+/// <reference types="@agoric/internal/exported.js" />
+/// <reference types="@agoric/vats/src/core/types-ambient.js" />
+/// <reference types="@agoric/zoe/exported.js" />
 
 // eslint-disable-next-line import/export
 export * from './src/types-index.js'; // no named exports

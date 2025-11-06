@@ -4,7 +4,7 @@ import { throwRedacted as Fail } from '@endo/errors';
 /**
  * @import { StreamCell } from '@agoric/internal/src/lib-chainStorage.js';
  * @import { VStorage } from '@agoric/client-utils';
- * @import {PruneOpts} from './vstorage-prune.core';
+ * @import {PruneOpts} from './vstorage-prune.core.js';
  */
 
 /**

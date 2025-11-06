@@ -150,20 +150,27 @@ test('numeric position references are rejected', t => {
 });
 
 test('vstorage flow type matches shape', t => {
+  const amount = usdc(200n);
   const passCases: Record<string, StatusFor['flow']> = harden({
     runningFlow: {
       state: 'run',
       step: 1,
       how: 'deposit',
+      type: 'deposit',
+      amount,
     },
     completedFlow: {
       state: 'done',
+      type: 'deposit',
+      amount,
     },
     failedFlow: {
       state: 'fail',
       step: 0,
       how: 'transfer',
       error: 'Insufficient funds',
+      type: 'deposit',
+      amount,
     },
     failedFlowWithLocation: {
       state: 'fail',
@@ -171,6 +178,8 @@ test('vstorage flow type matches shape', t => {
       how: 'deposit',
       error: 'Network timeout',
       where: '@Arbitrum',
+      type: 'deposit',
+      amount,
     },
   });
 

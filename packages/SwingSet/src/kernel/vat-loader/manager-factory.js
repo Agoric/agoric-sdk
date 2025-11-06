@@ -4,6 +4,10 @@ import { makeLocalVatManagerFactory } from './manager-local.js';
 import { makeNodeSubprocessFactory } from './manager-subprocess-node.js';
 import { makeXsSubprocessFactory } from './manager-subprocess-xsnap.js';
 
+/**
+ * @import {Bundle} from '../../types-external.js';
+ */
+
 export function makeVatManagerMaker({
   allVatPowers,
   kernelKeeper,

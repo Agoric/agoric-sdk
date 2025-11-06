@@ -11,9 +11,10 @@ import {
 } from '@agoric/internal/src/testing-utils.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
-import type { AssetPlaceRef, MovementDesc } from '../src/type-guards-steps.ts';
+import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
 import type {
   OfferArgsFor,
   StatusFor,
@@ -468,7 +469,7 @@ test('USDN claim fails currently', async t => {
     'LCA',
   );
 
-  const rebalanceP = trader1.rebalance(
+  const rebalanceRet = await trader1.rebalance(
     t,
     { give: {}, want: {} },
     {
@@ -483,9 +484,16 @@ test('USDN claim fails currently', async t => {
     },
   );
 
-  await t.throwsAsync(rebalanceP, {
-    message: /claiming USDN is not supported/,
+  t.deepEqual(rebalanceRet, {
+    result: 'flow2',
+    payouts: {},
   });
+
+  const portfolioInfo = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  const flowInfo =
+    portfolioInfo.contents[`${storagePath}.flows.${rebalanceRet.result}`];
+  t.snapshot(flowInfo, 'flow info after failed claim');
+  t.is(flowInfo.at(-1).error, 'claiming USDN is not supported');
 });
 
 const beefyTestMacro = test.macro({
@@ -1013,7 +1021,10 @@ test('withdraw using planner', async t => {
     // XXX brand from vstorage isn't suitable for use in call to kit
     const amount = AmountMath.make(Deposit.brand, detail.amount.value);
 
-    const plan: MovementDesc[] = [{ src: '@agoric', dest: '<Cash>', amount }];
+    const plan: FundsFlowPlan = {
+      flow: [{ src: '@agoric', dest: '<Cash>', amount }],
+      order: [],
+    };
     await E(planner1.stub).resolvePlan(
       pId,
       fId,
@@ -1134,9 +1145,10 @@ test('deposit using planner', async t => {
     // XXX brand from vstorage isn't suitable for use in call to kit
     const amount = AmountMath.make(Deposit.brand, detail.amount.value);
 
-    const plan: MovementDesc[] = [
-      { src: '<Deposit>', dest: '@agoric', amount },
-    ];
+    const plan: FundsFlowPlan = {
+      flow: [{ src: '<Deposit>', dest: '@agoric', amount }],
+      order: [],
+    };
     await E(planner1.stub).resolvePlan(
       pId,
       fId,
@@ -1201,7 +1213,10 @@ test('simple rebalance using planner', async t => {
 
     const amount = AmountMath.make(usdc.brand, 1_000n);
 
-    const plan: MovementDesc[] = [{ src: '@agoric', dest: '<Cash>', amount }];
+    const plan: FundsFlowPlan = {
+      flow: [{ src: '@agoric', dest: '<Cash>', amount }],
+      order: [[0, []]],
+    };
     await E(planner1.stub).resolvePlan(
       pId,
       fId,
@@ -1266,9 +1281,10 @@ test('create+deposit using planner', async t => {
     // XXX brand from vstorage isn't suitable for use in call to kit
     const amount = AmountMath.make(usdc.brand, detail.amount.value);
 
-    const plan: MovementDesc[] = [
-      { src: '<Deposit>', dest: '@agoric', amount },
-    ];
+    const plan: FundsFlowPlan = {
+      flow: [{ src: '<Deposit>', dest: '@agoric', amount }],
+      order: [],
+    };
     await E(planner1.stub).resolvePlan(
       pId,
       fId,

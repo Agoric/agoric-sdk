@@ -16,7 +16,7 @@
  *   liquidated. If the auction is unsuccessful, the liquidation may be
  *   reverted.
  */
-/// <reference types="@agoric/zoe/exported" />
+/// <reference types="@agoric/zoe/exported.js" />
 
 import { X, Fail, q, makeError } from '@endo/errors';
 import { E } from '@endo/eventual-send';

@@ -11,8 +11,8 @@ import { makeScopedBridge } from '../bridge.js';
 /**
  * @param {BootstrapPowers & {
  *   consume: {
- *     bridgeManager: import('../types').BridgeManager;
- *     vtransferBridgeManager: import('../types').ScopedBridgeManager<'vtransfer'>;
+ *     bridgeManager: import('../types.js').BridgeManager;
+ *     vtransferBridgeManager: import('../types.js').ScopedBridgeManager<'vtransfer'>;
  *   };
  *   produce: {
  *     transferMiddleware: Producer<any>;

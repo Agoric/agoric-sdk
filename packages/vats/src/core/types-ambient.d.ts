@@ -381,7 +381,7 @@ type ChainBootstrapSpaceT = {
   priceAuthority: import('@agoric/zoe/tools/types.js').PriceAuthority;
   // signal that price feeds have #8400 QuotePayments storage leak fixed
   priceAuthority8400: import('@agoric/zoe/tools/types.js').PriceAuthority;
-  priceAuthorityAdmin: import('@agoric/vats/src/priceAuthorityRegistry').PriceAuthorityRegistryAdmin;
+  priceAuthorityAdmin: import('@agoric/vats/src/priceAuthorityRegistry.js').PriceAuthorityRegistryAdmin;
   provisioning: Awaited<ProvisioningVat> | undefined;
   provisionBridgeManager:
     | import('../types.js').ScopedBridgeManager<'provision'>

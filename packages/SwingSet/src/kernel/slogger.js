@@ -7,6 +7,7 @@ import { makeLimitedConsole } from '@agoric/internal/src/ses-utils.js';
 /** @import {Callable} from '@agoric/internal'; */
 /** @import {LimitedConsole} from '@agoric/internal/src/js-utils.js'; */
 /** @import {SlogProps, SlogDurationProps, SwingsetController} from '../controller/controller.js'; */
+/** @import {KernelSlog} from '../types-external.js'; */
 
 const IDLE = 'idle';
 const STARTUP = 'startup';

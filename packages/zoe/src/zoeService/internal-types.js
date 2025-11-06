@@ -1,5 +1,5 @@
 // @jessie-check
-/// <reference types="@agoric/zoe/exported" />
+/// <reference types="@agoric/zoe/exported.js" />
 
 /**
  * @import {FeeMintAccess, GetBrands, GetBundleIDFromInstallation, GetIssuers, InstallBundle, InstallBundleID, SourceBundle} from './types.js';

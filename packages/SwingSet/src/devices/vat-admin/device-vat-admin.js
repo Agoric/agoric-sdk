@@ -4,6 +4,10 @@ import { kunser } from '@agoric/kmarshal';
 import { buildSerializationTools } from '../lib/deviceTools.js';
 import { insistVatID } from '../../lib/id.js';
 
+/**
+ * @import { Bundle, BundleCap, BundleID } from '../../types-external.js'
+ */
+
 /*
 
 The "vatAdmin device" manages code bundles, meters, and the creation /
@@ -68,12 +72,6 @@ Dynamic vats are created with either a bundlecap (which we convert into a
 bundleID before submitting to the kernel), or (temporarily) a full bundle.
 
 */
-
-/**
- * @typedef { import('../../types-external.js').Bundle } Bundle
- * @typedef { import('../../types-external.js').BundleCap } BundleCap
- * @typedef { import('../../types-external.js').BundleID } BundleID
- */
 
 /**
  * if you're into types, this might loosely describe devices.vatAdmin

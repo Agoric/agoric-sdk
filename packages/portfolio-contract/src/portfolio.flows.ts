@@ -30,8 +30,12 @@ import type { AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-typ
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
-import { TxType } from '@agoric/portfolio-api';
 import { resultMetaAsyncFlowUtils } from '@agoric/orchestration/src/utils/result-meta.js';
+import {
+  TxType,
+  type FlowErrors,
+  type FundsFlowPlan,
+} from '@agoric/portfolio-api';
 import {
   AxelarChain,
   SupportedChain,
@@ -85,6 +89,7 @@ import {
   type StatusFor,
 } from './type-guards.ts';
 import type { TxId } from './resolver/types.ts';
+import { runJob, type Job } from './schedule-order.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const { keys, entries, fromEntries } = Object;
@@ -140,7 +145,8 @@ const moveStatus = ({
   apply: _a,
   ...data
 }: AssetMovement): StatusFor['flowStep'] => data;
-const errmsg = (err: any) => ('message' in err ? err.message : `${err}`);
+const errmsg = (err: any) =>
+  `${err != null && 'message' in err ? err.message : err}`;
 
 export type TransportDetail<
   How extends string,
@@ -180,6 +186,11 @@ export type ProtocolDetail<
     metaUpdater?: MetaUpdater,
   ) => Promise<void>;
 };
+
+const { min } = Math;
+const range = (n: number) => Array.from(Array(n).keys());
+const fullOrder = (length: number): Job['order'] =>
+  range(length - 1).map(lo => [lo + 1, [lo]]);
 
 const { toCapData } = makeMarshal(undefined, undefined, {
   serializeBodyFormat: 'smallcaps',
@@ -335,17 +346,26 @@ const trackFlow = async (
   accounts: AccountsByChain,
   resolverClient: GuestInterface<ResolverKit['client']>,
   phasesForStep: Map<StepPhase, TxId>[],
+  order: Job['order'],
+  detail: FlowDetail,
 ) => {
-  await null; // cf. wiki:NoNestedAwait
-
-  let step = 1;
-  try {
-    for (const move of moves) {
-      const traceStep = traceFlow.sub(`step${step}`);
+  const runTask = async (ix: number, running: number[]) => {
+    // steps are 1-based. the scheduler is 0-based
+    const step = ix + 1;
+    const steps = running.map(i => i + 1);
+    const move = moves[ix];
+    const traceStep = traceFlow.sub(`step${step}`);
+    reporter.publishFlowStatus(flowId, {
+      state: 'run',
+      steps,
+      step: min(...steps),
+      how: moves[min(...running)].how,
+      ...detail,
+    });
+    await null;
+    try {
       traceStep('starting', moveStatus(move));
       const { amount, how } = move;
-
-      reporter.publishFlowStatus(flowId, { state: 'run', step, how });
 
       // Publish the step's traffic entries as they are produced.
       const metaUpdater = accounts.agoric.lca.makeMetaUpdater();
@@ -366,6 +386,7 @@ const trackFlow = async (
         traceStep,
         metaUpdater,
       );
+
       // Finish the meta updater.
       metaUpdater.finish();
       traceStep('done:', how);
@@ -376,27 +397,44 @@ const trackFlow = async (
       if (destPos) {
         destPos.recordTransferIn(amount);
       }
-      step += 1;
+
+      // TODO(#NNNN): delete the flow storage node
+    } catch (err) {
+      traceFlow('⚠️ step', step, 'failed', err);
+      const failure = moves[step - 1];
+      if (failure) {
+        traceFlow('failed movement details', moveStatus(failure));
+      }
+      throw err;
     }
-    reporter.publishFlowStatus(flowId, { state: 'done' });
-    // TODO(#NNNN): delete the flow storage node
-  } catch (err) {
-    traceFlow('⚠️ step', step, 'failed', err);
-    const failure = moves[step - 1];
-    if (failure) {
-      traceFlow('failed movement details', moveStatus(failure));
-    }
+  };
+
+  const job: Job = { taskQty: moves.length, order };
+  const results = await runJob(job, runTask, traceFlow);
+  if (results.some(r => r.status === 'rejected')) {
+    const reasons = [...results].reverse().reduce((next, r, ix) => {
+      if (r.status !== 'rejected') return next;
+      const errs: FlowErrors = {
+        step: ix + 1,
+        how: moves[ix].how,
+        error: errmsg(r.reason),
+        next,
+      };
+      return errs;
+    }, undefined);
+    assert(reasons); // guaranteed by results.some(...) above
     reporter.publishFlowStatus(flowId, {
       state: 'fail',
-      step,
-      how: failure?.how ?? 'unknown',
-      error: errmsg(err),
+      ...reasons,
+      ...detail,
     });
-    throw err;
+    throw results;
   }
+
+  reporter.publishFlowStatus(flowId, { state: 'done', ...detail });
 };
 
-const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
+export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
   orch: Orchestrator,
   chainName: C,
   kit: GuestInterface<PortfolioKit>, // Guest<T>?
@@ -589,11 +627,16 @@ const stepFlow = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
-  moves: MovementDesc[],
+  plan: MovementDesc[] | FundsFlowPlan,
   kit: GuestInterface<PortfolioKit>,
   traceP: TraceLogger,
   flowId: number,
+  flowDetail: FlowDetail,
 ) => {
+  const { flow: moves, order: maybeOrder } = Array.isArray(plan)
+    ? { flow: plan }
+    : plan;
+
   const phasesForStep: Map<StepPhase, TxId>[] = moves.map(
     () => new Map<StepPhase, TxId>(),
   );
@@ -696,7 +739,11 @@ const stepFlow = async (
   const { reporter } = kit;
   const traceFlow = traceP.sub(`flow${flowId}`);
 
+  const order = maybeOrder || fullOrder(moves.length);
+
   traceFlow('checking', moves.length, 'moves');
+  moves.length > 0 || Fail`moves list must not be empty`;
+
   for (const [i, move] of entries(moves)) {
     const traceMove = traceFlow.sub(`move${i}`);
     const way = wayFromSrcToDesc(move);
@@ -881,8 +928,9 @@ const stepFlow = async (
     state: 'run',
     step: 0,
     how: `makeAccounts(${acctsToDo.join(', ')})`,
+    ...flowDetail,
   });
-  reporter.publishFlowSteps(flowId, todo.map(moveStatus));
+  reporter.publishFlowSteps(flowId, todo.map(moveStatus), maybeOrder);
 
   const agoric = await provideCosmosAccount(orch, 'agoric', kit, traceFlow);
 
@@ -902,6 +950,7 @@ const stepFlow = async (
         step: 0,
         how: `makeAccount: ${chain}`,
         error: err && typeof err === 'object' ? err.message : `${err}`,
+        ...flowDetail,
       });
       throw err;
     }
@@ -999,6 +1048,8 @@ const stepFlow = async (
     accounts,
     ctx.resolverClient,
     phasesForStep,
+    order,
+    flowDetail,
   );
   traceFlow('stepFlow done');
 };
@@ -1029,6 +1080,9 @@ export const rebalance = (async (
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['rebalance'],
   kit: GuestInterface<PortfolioKit>,
+  startedFlow?: ReturnType<
+    GuestInterface<PortfolioKit>['manager']['startFlow']
+  >,
 ) => {
   const id = kit.reader.getPortfolioId();
   const traceP = makeTracer('rebalance').sub(`portfolio${id}`);
@@ -1047,8 +1101,11 @@ export const rebalance = (async (
     }
 
     if (flow) {
-      ({ flowId } = kit.manager.startFlow({ type: 'rebalance' }, flow));
-      await stepFlow(orch, ctx, seat, flow, kit, traceP, flowId);
+      ({ flowId } =
+        startedFlow ?? kit.manager.startFlow({ type: 'rebalance' }, flow));
+      await stepFlow(orch, ctx, seat, flow, kit, traceP, flowId, {
+        type: 'rebalance',
+      });
     }
 
     if (!seat.hasExited()) {
@@ -1058,7 +1115,6 @@ export const rebalance = (async (
     if (!seat.hasExited()) {
       seat.fail(err);
     }
-    throw err;
   } finally {
     if (flowId) kit.reporter.finishFlow(flowId);
   }
@@ -1259,17 +1315,20 @@ export const openPortfolio = (async (
   ctx: PortfolioBootstrapContext,
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['openPortfolio'],
+  madeKit?: GuestInterface<PortfolioKit>,
 ) => {
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   const trace = makeTracer('openPortfolio');
   try {
     const { makePortfolioKit, ...ctxI } = ctx;
     const { inertSubscriber, transferChannels } = ctxI;
-    const kit = makePortfolioKit();
+    const kit = madeKit ?? makePortfolioKit();
     const id = kit.reader.getPortfolioId();
     const traceP = trace.sub(`portfolio${id}`);
     traceP('portfolio opened');
 
+    // TODO provide a way to recover if any of these provisionings fail
+    // SEE https://github.com/Agoric/agoric-private/issues/488
     // Register Noble Forwarding Account (NFA) for CCTP transfers
     {
       const sender = await ctxI.contractAccount;
@@ -1337,6 +1396,10 @@ export const makeLCA = (async (orch: Orchestrator): Promise<LocalAccount> => {
 }) satisfies OrchestrationFlow;
 harden(makeLCA);
 
+/**
+ * Offer handler to execute a planned flow of asset movements. It takes
+ * responsibility for the `seat` and exits it when done.
+ */
 export const executePlan = (async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -1344,21 +1407,28 @@ export const executePlan = (async (
   offerArgs: { flow?: MovementDesc[] },
   pKit: GuestInterface<PortfolioKit>,
   flowDetail: FlowDetail,
+  startedFlow?: ReturnType<
+    GuestInterface<PortfolioKit>['manager']['startFlow']
+  >,
 ): Promise<`flow${number}`> => {
   const pId = pKit.reader.getPortfolioId();
   const traceP = makeTracer(flowDetail.type).sub(`portfolio${pId}`);
 
-  const { stepsP, flowId } = pKit.manager.startFlow(flowDetail, offerArgs.flow);
+  // XXX for backwards compatibility, startedFlow may be undefined
+  const { stepsP, flowId } =
+    startedFlow ?? pKit.manager.startFlow(flowDetail, offerArgs.flow);
   const traceFlow = traceP.sub(`flow${flowId}`);
   if (!offerArgs.flow) traceFlow('waiting for steps from planner');
   // idea: race with seat.getSubscriber()
-  const steps = await (stepsP as unknown as Promise<MovementDesc[]>); // XXX Guest/Host types UNTIL #9822
+  const plan = await (stepsP as unknown as Promise<
+    MovementDesc[] | FundsFlowPlan
+  >); // XXX Guest/Host types UNTIL #9822
   try {
-    await stepFlow(orch, ctx, seat, steps, pKit, traceP, flowId);
-
-    if (!seat.hasExited()) seat.exit();
+    await stepFlow(orch, ctx, seat, plan, pKit, traceP, flowId, flowDetail);
     return `flow${flowId}`;
   } finally {
+    // The seat must be exited no matter what to avoid leaks
+    if (!seat.hasExited()) seat.exit();
     // XXX flow.finish() would eliminate the possibility of sending the wrong one,
     // at the cost of an exo (or Far?)
     pKit.reporter.finishFlow(flowId);

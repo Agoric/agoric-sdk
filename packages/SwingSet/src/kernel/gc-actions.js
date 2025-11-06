@@ -3,6 +3,7 @@ import { insistKernelType } from './parseKernelSlots.js';
 import { insistVatID } from '../lib/id.js';
 
 /** @import {TotalMap} from '@agoric/internal'; */
+/** @import {KernelKeeper} from './state/kernelKeeper.js'; */
 
 /**
  * @typedef {`v${number}`} VatID

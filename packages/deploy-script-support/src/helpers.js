@@ -1,6 +1,6 @@
 // @ts-check
 
-/// <reference path="../../zoe/exported.js" />
+/// <reference types="@agoric/zoe/exported.js" />
 
 import { E } from '@endo/far';
 import bundleSource from '@endo/bundle-source';

@@ -6,6 +6,10 @@ import { kslot, kunser } from '@agoric/kmarshal';
 
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
+/**
+ * @import {SwingSetConfig} from '../../src/types-external.js';
+ */
+
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
 }

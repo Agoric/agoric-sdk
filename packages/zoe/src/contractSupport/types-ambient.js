@@ -1,7 +1,7 @@
 // @jessie-check
 
 /// <reference types="ses" />
-/// <reference types="@agoric/zoe/exported" />
+/// <reference types="@agoric/zoe/exported.js" />
 
 /**
  * @typedef {object} SeatGainsLossesRecord

@@ -24,7 +24,7 @@ const initEmpty = harden(() => emptyRecord);
  * This implementation of `defineVirtualExo` only exists to ensure there are no
  * gaps in the virtualZone API.
  *
- * @type {import('.').Zone['exo']}
+ * @type {import('./index.js').Zone['exo']}
  */
 const makeVirtualExo = (
   label,
@@ -46,7 +46,7 @@ const makeVirtualExo = (
   return makeInstance();
 };
 
-/** @type {import('.').Stores} */
+/** @type {import('./index.js').Stores} */
 const detachedVirtualStores = Far('virtualStores', {
   detached: () => detachedVirtualStores,
   isStorable: isPassable,
@@ -61,7 +61,7 @@ const detachedVirtualStores = Far('virtualStores', {
  * current vat.
  *
  * @param {string} [baseLabel]
- * @returns {import('.').Zone}
+ * @returns {import('./index.js').Zone}
  */
 export const makeVirtualZone = (baseLabel = 'virtualZone') => {
   const { makeOnce, wrapProvider } = makeOnceKit(

@@ -96,7 +96,7 @@ export const publishAgoricBrandsDisplayInfo = async ({
 };
 harden(publishAgoricBrandsDisplayInfo);
 
-/** @type {import('@agoric/vats/src/core/lib-boot').BootstrapManifest} */
+/** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest} */
 const manifest = {
   [upgradeWalletFactory.name]: {
     // include rationale for closely-held, high authority capabilities

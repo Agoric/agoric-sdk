@@ -1,6 +1,6 @@
 /* eslint-disable -- doesn't understand .d.ts */
 
-/// <reference types="@agoric/ertp/exported" />
+/// <reference types="@agoric/ertp/exported.js" />
 /// <reference types="@endo/pass-style" />
 
 import './src/contractSupport/types-ambient.js';

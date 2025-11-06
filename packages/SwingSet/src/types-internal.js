@@ -1,6 +1,16 @@
 export {};
 
 /**
+ * @import {ManagerType} from './types-external.js';
+ * @import {BundleID} from './types-external.js';
+ * @import {SwingSetCapData} from './types-external.js';
+ * @import {Bundle} from './types-external.js';
+ * @import {Message} from './types-external.js';
+ * @import {SnapStore} from './types-external.js';
+ * @import {SnapshotResult} from './types-external.js';
+ */
+
+/**
  * The host provides (external) KernelOptions as part of the
  * SwingSetConfig record it passes to initializeSwingset(). This
  * internal type represents the modified form passed to

@@ -10,7 +10,7 @@
  * validate that.
  */
 
-/// <reference types="@agoric/internal/exported" />
+/// <reference types="@agoric/internal/exported.js" />
 /// <reference types="@agoric/notifier/exported.js" />
 /// <reference path="../internal-types.js" />
 

@@ -2,7 +2,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type {
   SmartWallet,
   UpdateRecord,
-} from '@agoric/smart-wallet/src/smartWallet';
+} from '@agoric/smart-wallet/src/smartWallet.js';
 import type { EMethods } from '@agoric/vow/src/E.js';
 import { E } from '@endo/far';
 import type { PortfolioPlanner } from '../src/planner.exo.js';

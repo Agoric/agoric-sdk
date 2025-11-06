@@ -1,6 +1,6 @@
 // @jessie-check
 
-/// <reference types="@agoric/zoe/exported" />
+/// <reference types="@agoric/zoe/exported.js" />
 
 import { makeTracer } from '@agoric/internal';
 import { prepareVaultHolder } from './vaultHolder.js';

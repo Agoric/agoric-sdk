@@ -40,6 +40,14 @@ import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
  * @import {EReturn} from '@endo/far';
  * @import {LimitedConsole} from '@agoric/internal';
  * @import {VatID} from '../types-internal.js';
+ * @import {SwingStoreKernelStorage} from '../types-external.js';
+ * @import {Bundle} from '../types-external.js';
+ * @import {EndoZipBase64Bundle} from '../types-external.js';
+ * @import {BundleID} from '../types-external.js';
+ * @import {RunPolicy} from '../types-external.js';
+ * @import {ResolutionPolicy} from '../types-external.js';
+ * @import {SwingSetCapData} from '../types-external.js';
+ * @import {SwingSetConfig} from '../types-external.js';
  */
 
 /**
@@ -71,6 +79,8 @@ export function computeSha512(bytes) {
  */
 function makeConsole(prefixer) {
   if (typeof prefixer !== 'function') {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore TODO remove when anylogger has types
     const logger = anylogger(prefixer);
     return makeLimitedConsole(level => logger[level]);
   }
@@ -81,6 +91,8 @@ function makeConsole(prefixer) {
       const prefix = prefixer(source);
       let logger = prefixToLogger.get(prefix);
       if (!logger) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore TODO remove when anylogger has types
         logger = anylogger(prefix);
         prefixToLogger.set(prefix, logger);
       }
@@ -401,6 +413,10 @@ export async function makeSwingsetController(
 
       slogDuration,
 
+      dumpLog(idx) {
+        return deepCopyJsonable(kernel.dumpLog(idx));
+      },
+
       dump() {
         return deepCopyJsonable(kernel.dump());
       },
@@ -617,7 +633,7 @@ export async function makeSwingsetController(
  * the two stages; this can happen, for example, in some debugging cases.
  *
  * @param {SwingSetConfig} config
- * @param {string[]} argv
+ * @param {string[]} bootstrapArgs
  * @param {{
  *   kernelStorage?: SwingStoreKernelStorage;
  *   env?: Record<string, string>;
@@ -630,11 +646,10 @@ export async function makeSwingsetController(
  *   warehousePolicy?: import('../types-external.js').VatWarehousePolicy;
  * }} runtimeOptions
  * @param {Record<string, unknown>} deviceEndowments
- * @typedef { import('@agoric/swing-store').KVStore } KVStore
  */
 export async function buildVatController(
   config,
-  argv = [],
+  bootstrapArgs = [],
   runtimeOptions = {},
   deviceEndowments = {},
 ) {
@@ -670,7 +685,7 @@ export async function buildVatController(
   if (!swingsetIsInitialized(kernelStorage)) {
     bootstrapResult = await initializeSwingset(
       config,
-      argv,
+      bootstrapArgs,
       kernelStorage,
       initializationOptions,
       runtimeOptions,

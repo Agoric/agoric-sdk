@@ -1,5 +1,5 @@
 /* global E */
-/// <reference types="@agoric/vats/src/core/core-eval-env" />
+/// <reference types="@agoric/vats/src/core/core-eval-env.js" />
 // @ts-check
 
 // FIXME: we need to hardcode these values because the vbank reserve purse

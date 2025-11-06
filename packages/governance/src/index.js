@@ -1,6 +1,6 @@
-/// <reference types="@agoric/internal/exported" />
-/// <reference types="@agoric/ertp/exported" />
-/// <reference types="@agoric/zoe/exported" />
+/// <reference types="@agoric/internal/exported.js" />
+/// <reference types="@agoric/ertp/exported.js" />
+/// <reference types="@agoric/zoe/exported.js" />
 
 export {
   ChoiceMethod,

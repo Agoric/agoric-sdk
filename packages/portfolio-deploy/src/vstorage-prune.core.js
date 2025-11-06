@@ -5,7 +5,7 @@
  */
 
 /**
- * @import {ChainStoragePresent} from './chain-info.core'
+ * @import {ChainStoragePresent} from './chain-info.core.js'
  */
 
 import { makeTracer, zip } from '@agoric/internal';

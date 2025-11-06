@@ -8,6 +8,11 @@ import {
   netstringDecoderStream,
 } from '../netstring.js';
 
+/**
+ * @import {IOType} from 'child_process'
+ * @import {Writable} from 'stream'
+ */
+
 // Start a subprocess from a given executable, and arrange a bidirectional
 // message channel with a "supervisor" within that process. Return a {
 // toChild, fromChild } pair of Streams which accept/emit hardened Arrays of
@@ -17,9 +22,6 @@ import {
 function parentLog(first, ...args) {
   // console.error(`--parent: ${first}`, ...args);
 }
-
-/** @typedef {import('child_process').IOType} IOType */
-/** @typedef {import('stream').Writable} Writable */
 
 // we send on fd3, and receive on fd4. We pass fd1/2 (stdout/err) through, so
 // console log/err from the child shows up normally. We don't use Node's

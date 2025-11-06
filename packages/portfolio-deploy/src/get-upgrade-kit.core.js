@@ -5,7 +5,7 @@
 import { E } from '@endo/eventual-send';
 
 /**
- * @import {ContractStartFunction, Instance} from '@agoric/zoe/src/zoeService/utils';
+ * @import {ContractStartFunction, Instance} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
 const trace = (...args) => console.log('---- GetUpgradeKit', ...args);

@@ -137,7 +137,6 @@ export const watchCctpTransfer = ({
     timeoutId = setTimeout(() => {
       if (!transferFound) {
         log(`✗ No matching transfer found within ${timeoutMs / 60000} minutes`);
-        finish(false);
       }
     }, timeoutMs);
   });

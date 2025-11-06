@@ -1,9 +1,14 @@
+/* eslint-disable @typescript-eslint/no-unused-vars -- doesn't see type usage in JSDoc */
 import type { NatAmount } from '@agoric/ertp';
 import {
   type AccountId,
   type Bech32Address,
   type CosmosChainAddress,
 } from '@agoric/orchestration';
+import type {
+  ContinuingInvitationSpec,
+  ContractInvitationSpec,
+} from '@agoric/smart-wallet/src/invitations.js';
 import type { SupportedChain, YieldProtocol } from './constants.js';
 import type { InstrumentId } from './instruments.js';
 import type { PublishedTx } from './resolver.js';
@@ -59,11 +64,38 @@ export type FlowDetail =
   | { type: 'deposit'; amount: NatAmount }
   | { type: 'rebalance' }; // aka simpleRebalance
 
+/** linked list of concurrent failures, including dependencies */
+export type FlowErrors = {
+  step: number;
+  how: string;
+  error: string;
+  next?: FlowErrors;
+};
+
 export type FlowStatus =
-  | { state: 'run'; step: number; how: string }
+  | {
+      state: 'run';
+      /** minimum currently running step */
+      step: number;
+      how: string;
+      /** currently running steps, when executing concurrently */
+      steps?: number[];
+    }
+  /** @deprecated - contract no longer does automatic recovery */
   | { state: 'undo'; step: number; how: string }
   | { state: 'done' }
-  | { state: 'fail'; step: number; how: string; error: string; where?: string };
+  | ({ state: 'fail' } & FlowErrors);
+
+export type MovementDesc = {
+  amount: NatAmount;
+  src: AssetPlaceRef;
+  dest: AssetPlaceRef;
+  /** for example: GMP fee */
+  fee?: NatAmount;
+  /** for example: { usdnOut: 98n } */
+  detail?: Record<string, bigint>;
+  claim?: boolean;
+};
 
 export type FlowStep = {
   how: string;
@@ -71,6 +103,13 @@ export type FlowStep = {
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
   phases?: Record<string, any>;
+  // XXX all parts: fee etc.
+};
+
+export type FundsFlowPlan = {
+  flow: MovementDesc[];
+  /** default to full order */
+  order?: [target: number, prereqs: number[]][];
 };
 
 export type PortfolioKey = `portfolio${number}`;
@@ -106,7 +145,25 @@ export type StatusFor = {
     totalIn: NatAmount;
     totalOut: NatAmount;
   };
-  flow: FlowStatus;
+  flow: FlowStatus & FlowDetail;
   flowStep: FlowStep;
   flowSteps: FlowStep[];
+  flowOrder: FundsFlowPlan['order'];
 };
+
+/**
+ * Names suitable for use as `publicInvitationMaker` in {@link ContractInvitationSpec}.
+ */
+export type PortfolioPublicInvitationMaker = 'makeOpenPortfolioInvitation';
+
+/**
+ * Names suitable for use as `invitationMakerName` in {@link ContinuingInvitationSpec}.
+ *
+ * These continuing invitation makers are returned from portfolio creation and enable
+ * ongoing operations like rebalancing between yield protocols.
+ */
+export type PortfolioContinuingInvitationMaker =
+  | 'Deposit'
+  | 'Withdraw'
+  | 'Rebalance'
+  | 'SimpleRebalance';
