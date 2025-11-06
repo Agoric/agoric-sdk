@@ -35,8 +35,7 @@ const env = { ...dotEnvVars, ...envCopy };
 
 // Read GraphQL API endpoints from environment variable GRAPHQL_ENDPOINTS.
 const endpointsByApi = parseGraphqlEndpoints(
-  // @ts-expect-error we want a runtime exception when GRAPHQL_ENDPOINTS is undefined
-  env.GRAPHQL_ENDPOINTS,
+  env.GRAPHQL_ENDPOINTS || '{}',
   'GRAPHQL_ENDPOINTS',
 );
 
@@ -55,8 +54,11 @@ export const makeCodegenConfigForFileUrl = (codegenConfigFileUrl: string) => {
     );
   }
   const apiName = pathlib.basename(apiDir);
-  const endpoints = getOwn(endpointsByApi, apiName);
-  if (!endpoints) throw Error(`no endpoints for API ${apiName}`);
+  const endpointsFromEnv = getOwn(endpointsByApi, apiName);
+  if (!endpointsFromEnv) {
+    console.warn(`⚠️ No endpoints for API ${apiName}; using local api.graphql`);
+  }
+  const endpoints = endpointsFromEnv || ['./api.graphql'];
   const config: CodegenConfig = {
     schema: endpoints,
     documents: './request-documents/*.graphql',
