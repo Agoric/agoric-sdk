@@ -858,7 +858,7 @@ export const prepareLocalOrchestrationAccountKit = (
          *
          * @type {HostOf<OrchestrationAccountCommon['send']>}
          */
-        send(toAccount, amount, opts = {}) {
+        send(toAccount, amount, _opts = {}) {
           return asVow(() => {
             trace('send', toAccount, amount);
             const cosmosDest = chainHub.coerceCosmosAddress(toAccount);

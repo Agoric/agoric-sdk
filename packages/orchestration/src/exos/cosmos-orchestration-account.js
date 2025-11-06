@@ -141,17 +141,25 @@ const MsgDelegate = CodecHelper(MsgDelegateType);
 const MsgDelegateResponse = CodecHelper(MsgDelegateResponseType);
 const MsgUndelegate = CodecHelper(MsgUndelegateType);
 const MsgUndelegateResponse = CodecHelper(MsgUndelegateResponseType);
-export const Any = Object.freeze({
-  ...CodecHelper(AnyType),
+
+const AnyRawHelper = CodecHelper(AnyType);
+const AnyToJSON = {
   /**
    * @template {string} [TU=keyof TypeFromUrl]
    * @param {Partial<Omit<AnyType, 'typeUrl'> & { typeUrl: TU }>} msg
    */
   toJSON: msg => {
-    const ne = CodecHelper(AnyType).toJSON(msg);
+    const ne = AnyRawHelper.toJSON(msg);
     return /** @type {Omit<typeof ne, 'typeUrl'> & { typeUrl: TU }} */ (ne);
   },
+};
+
+/** @type {Omit<typeof AnyRawHelper, 'toJSON'> & typeof AnyToJSON} */
+export const Any = Object.freeze({
+  ...AnyRawHelper,
+  ...AnyToJSON,
 });
+
 const MsgTransfer = CodecHelper(MsgTransferType);
 const MsgTransferResponse = CodecHelper(MsgTransferResponseType);
 

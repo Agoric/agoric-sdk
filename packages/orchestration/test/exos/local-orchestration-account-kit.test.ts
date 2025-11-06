@@ -293,7 +293,14 @@ test('transfer', async t => {
     },
   });
 
-  const multiHopMeta = await VE(metaUpdater).finishMeta();
+  t.assert(!isVow(multiHopResult), 'multiHopResult is not vow');
+  t.is(
+    await when(multiHopResult),
+    ICS20_TRANSFER_SUCCESS_RESULT,
+    'multiHopResult resolves to ICS20_TRANSFER_SUCCESS',
+  );
+
+  const multiHopMeta = await VE(metaUpdater).finish();
   t.deepEqual(
     multiHopMeta,
     {
@@ -309,13 +316,6 @@ test('transfer', async t => {
       ] as MetaTrafficEntry[],
     },
     'we only receive meta for the first hop of a PFM-forwarded transfer',
-  );
-
-  t.assert(!isVow(multiHopResult), 'multiHopResult is not vow');
-  t.is(
-    await when(multiHopResult),
-    ICS20_TRANSFER_SUCCESS_RESULT,
-    'multiHopResult resolves to ICS20_TRANSFER_SUCCESS',
   );
 
   t.log('accepts pfm `forwardOpts`');

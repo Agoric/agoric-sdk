@@ -1790,12 +1790,12 @@ test('parallel execution with scheduler', async t => {
   t.like(log, [
     { _method: 'monitorTransfers' },
     { _method: 'send' },
-    { _method: 'transfer', address: { chainId: 'axelar-6' } },
+    { _method: 'transfer', address: { chainId: 'axelar-dojo-1' } },
     {
       _method: 'localTransfer',
       amounts: { Deposit: { value: 40_000_000n } },
     },
-    { _method: 'transfer', address: { chainId: 'noble-5' } },
+    { _method: 'transfer', address: { chainId: 'noble-1' } },
     {
       _method: 'executeEncodedTx',
       msgs: [{ typeUrl: '/noble.swap.v1.MsgSwap' }],
