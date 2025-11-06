@@ -14,7 +14,10 @@
   ],
   "scripts": {
     "build": "exit 0",
-    "test": "node --test **/*.test.*"
+    "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
+    "lint:types": "yarn run -T tsc",
+    "test": "node --test **/*.test.*",
+    "test:xs": "exit 0"
   },
   "peerDependencies": {
     "eslint": "^9.0.0"
