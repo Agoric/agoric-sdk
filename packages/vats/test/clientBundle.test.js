@@ -24,6 +24,11 @@ import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
 import { makeNameHubKit, prepareMixinMyAddress } from '../src/nameHub.js';
 
 /**
+ * @import {UserPaymentRecord} from '../src/core/demoIssuers.js';
+ * @import {MyAddressNameAdmin} from '../src/types.js';
+ */
+
+/**
  * @typedef {{
  *   (n: 'board'): BoardVat;
  *   (n: 'mint'): MintsVat;
@@ -136,7 +141,7 @@ test('connectFaucet produces payments', async t => {
 
   // t.deepEqual(Object.keys(userBundle), '@@todo');
 
-  /** @type {import('../src/core/demoIssuers.js').UserPaymentRecord[]} */
+  /** @type {UserPaymentRecord[]} */
   const pmts = await E(userBundle.faucet).tapFaucet();
 
   const detail = await Promise.all(
@@ -165,7 +170,7 @@ test('namesByAddressAdmin provideChild', async t => {
   const baggage = makeScalarBigMapStore('fake baggage', { durable: true });
   const provisioning = buildProvisioningRoot(undefined, undefined, baggage);
   const { namesByAddressAdmin } = await E(provisioning).getNamesByAddressKit();
-  /** @type {{ nameAdmin: import('../src/types.js').MyAddressNameAdmin }} */
+  /** @type {{ nameAdmin: MyAddressNameAdmin }} */
   // @ts-expect-error XXX why doesn't the provideChild override work?
   const { nameAdmin } = E.get(E(namesByAddressAdmin).provideChild(addr));
   t.is(await E(nameAdmin).getMyAddress(), addr);

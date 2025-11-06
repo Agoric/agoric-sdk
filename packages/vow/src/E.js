@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * @file provides a `makeE` that can be parameterized with an `unwrap` function
- * and corresponding `import('./types.js').EUnwrap<T>`.  These will be used to
+ * and corresponding `EUnwrap<T>`.  These will be used to
  * extract the final settlement from a chain of PromiseLikes and PromiseSteps or
  * similar non-thenable pseudo-promises.
  *
@@ -21,6 +21,7 @@ import { makeMessageBreakpointTester } from './message-breakpoints.js';
 
 /**
  * @import {ERef} from '@endo/far';
+ * @import {EUnwrap} from './types.js';
  */
 
 const { assign, create } = Object;

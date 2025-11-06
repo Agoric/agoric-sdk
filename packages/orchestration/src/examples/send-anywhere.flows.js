@@ -11,6 +11,7 @@ import { M, mustMatch } from '@endo/patterns';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
  * @import {Orchestrator, OrchestrationFlow, LocalAccountMethods, ChainHub, ChainInfo} from '../types.js';
  * @import {AccountIdArg} from '../orchestration-api.ts';
+ * @import {CosmosOrchestrationAccountKit} from '../exos/cosmos-orchestration-account.js';
  */
 
 const { entries } = Object;
@@ -46,7 +47,7 @@ const denomForBrand = async (orch, brand) => {
  * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
  * @param {Promise<
  *   GuestInterface<
- *     import('../exos/cosmos-orchestration-account.js').CosmosOrchestrationAccountKit['holder']
+ *     CosmosOrchestrationAccountKit['holder']
  *   >
  * >} ctx.nobleAccountP
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools

@@ -20,6 +20,7 @@ import { remoteNullMarshaller } from '../swingsetTests/utils.js';
 
 /**
  * @import {SimpleIssue} from '../../src/types.js';
+ * @import {start} from '../../src/binaryVoteCounter.js';
  */
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -41,7 +42,7 @@ const setupContract = async (
   ]);
   // install the contract
   /** @typedef {Installation<import('../../src/committee.js')['start']>} CommitteInstallation */
-  /** @typedef {Installation<import('../../src/binaryVoteCounter.js').start>} CounterInstallation */
+  /** @typedef {Installation<start>} CounterInstallation */
   /** @type {[CommitteInstallation, CounterInstallation] } */
   const [electorateInstallation, counterInstallation] = await Promise.all([
     E(zoe).install(electorateBundle),

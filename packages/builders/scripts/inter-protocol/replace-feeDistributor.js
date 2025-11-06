@@ -2,7 +2,12 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 import { getManifestForReplaceFeeDistributor } from '@agoric/inter-protocol/src/proposals/replace-fee-distributor.js';
 import { SECONDS_PER_HOUR } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
   console.log('feeDist OPTS', opts);
   return harden({
@@ -20,7 +25,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 

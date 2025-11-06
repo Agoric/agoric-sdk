@@ -12,13 +12,15 @@ import { makeZoeForTest, setUpZoeForTest } from '../../../tools/setup-zoe.js';
 /**
  * @import {start as startValueVow} from '../../../src/contracts/valueVow.contract.js';
  * @import {Installation} from '../../../src/zoeService/utils.js';
+ * @import {TestFn} from 'ava';
+ * @import {Baggage} from '@agoric/swingset-liveslots';
  */
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractFile = `${dirname}/../../../src/contracts/valueVow.contract.js`;
 
-/** @type {import('ava').TestFn<{ installation: Installation<typeof startValueVow>, zoe: ReturnType<typeof makeZoeForTest> }>} */
+/** @type {TestFn<{ installation: Installation<typeof startValueVow>, zoe: ReturnType<typeof makeZoeForTest> }>} */
 const test = anyTest;
 
 test.before(async t => {
@@ -61,7 +63,7 @@ test('invitations', async t => {
 });
 
 test('baggage', async t => {
-  /** @type {import('@agoric/swingset-liveslots').Baggage} */
+  /** @type {Baggage} */
   let contractBaggage;
   const setJig = ({ baggage }) => {
     contractBaggage = baggage;

@@ -12,7 +12,12 @@ import {
 } from './supports.js';
 
 /**
- * @type {import('ava').TestFn<
+ * @import {TestFn} from 'ava';
+ * @import {OfferSpec} from '../src/offers.js';
+ */
+
+/**
+ * @type {TestFn<
  *   Awaited<ReturnType<makeDefaultTestContext>>
  * >}
  */
@@ -38,7 +43,7 @@ test('bridge handler', async t => {
 
   // fund the wallet with anchor
 
-  /** @type {import('../src/offers.js').OfferSpec} */
+  /** @type {OfferSpec} */
   const offerSpec = {
     id: 1,
     invitationSpec: {
@@ -92,7 +97,7 @@ test('bridge with offerId string', async t => {
 
   // fund the wallet with anchor
 
-  /** @type {import('../src/offers.js').OfferSpec} */
+  /** @type {OfferSpec} */
   const offerSpec = {
     id: 'uniqueString',
     invitationSpec: {

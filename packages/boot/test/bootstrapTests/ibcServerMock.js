@@ -9,6 +9,7 @@ const { log } = console;
 
 /**
  * @import {ListenHandler, PortAllocator} from '@agoric/network';
+ * @import {Baggage} from '@agoric/vat-data';
  */
 
 /**
@@ -18,7 +19,7 @@ const { log } = console;
  *   address: string,
  *   portAllocator: ERef<PortAllocator>;
  * }} privateArgs
- * @param {import('@agoric/vat-data').Baggage} _baggage
+ * @param {Baggage} _baggage
  */
 export const start = async (zcf, privateArgs, _baggage) => {
   const { portAllocator } = privateArgs;

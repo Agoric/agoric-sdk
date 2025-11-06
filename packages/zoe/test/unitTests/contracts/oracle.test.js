@@ -14,6 +14,8 @@ import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
 /**
  * @import {ZoeService} from '@agoric/zoe';
+ * @import {ExecutionContext} from 'ava';
+ * @import {OracleStart} from '../../../src/contracts/oracle.js';
  */
 
 /**
@@ -23,7 +25,7 @@ import { makeZoeForTest } from '../../../tools/setup-zoe.js';
  * @property {Amount} feeAmount
  * @property {IssuerKit} link
  *
- * @typedef {import('ava').ExecutionContext<TestContext>} ExecutionContext
+ * @typedef {ExecutionContext<TestContext>} ExecutionContext
  */
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -49,7 +51,7 @@ test.before(
     // of tests, we can also send the installation to someone
     // else, and they can use it to create a new contract instance
     // using the same code.
-    /** @type {Installation<import('../../../src/contracts/oracle.js').OracleStart>} */
+    /** @type {Installation<OracleStart>} */
     const installation = await E(zoe).installBundleID('b1-oracle');
 
     const feeAmount = AmountMath.make(link.brand, 1000n);

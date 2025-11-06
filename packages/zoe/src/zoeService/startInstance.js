@@ -23,6 +23,9 @@ import {
  * @import {Baggage} from '@agoric/vat-data';
  * @import {WeakMapStore} from '@agoric/store';
  * @import {BundleCap} from '@agoric/swingset-vat';
+ * @import {StartInstance} from './utils.js';
+ * @import {PromiseWatcher} from '@agoric/swingset-liveslots';
+ * @import {VatAdminFacet} from '@agoric/swingset-vat';
  */
 
 /**
@@ -30,7 +33,7 @@ import {
  * @param {() => ERef<BundleCap>} getZcfBundleCapP
  * @param {(id: string) => BundleCap} getBundleCapByIdNow
  * @param {Baggage} zoeBaggage
- * @returns {import('./utils.js').StartInstance}
+ * @returns {StartInstance}
  */
 export const makeStartInstance = (
   startInstanceAccess,
@@ -64,7 +67,7 @@ export const makeStartInstance = (
     adminNode: M.remotable('adminNode'),
   });
 
-  /** @type {import('@agoric/swingset-liveslots').PromiseWatcher<Completion, [InstanceAdmin, Handle<'adminNode'>]>} */
+  /** @type {PromiseWatcher<Completion, [InstanceAdmin, Handle<'adminNode'>]>} */
   const watcher = prepareExo(
     zoeBaggage,
     'InstanceCompletionWatcher',
@@ -107,7 +110,7 @@ export const makeStartInstance = (
      * @param {ZoeInstanceStorageManager} instanceStorage
      * @param {InstanceAdmin} instanceAdmin
      * @param {WeakMapStore<SeatHandle, ZoeSeatAdmin>} seatHandleToSeatAdmin
-     * @param {import('@agoric/swingset-vat').VatAdminFacet} adminNode
+     * @param {VatAdminFacet} adminNode
      */
     (instanceStorage, instanceAdmin, seatHandleToSeatAdmin, adminNode) => ({
       instanceStorage,
@@ -229,7 +232,7 @@ export const makeStartInstance = (
     AdminFacetI,
     /**
      *
-     * @param {import('@agoric/swingset-vat').VatAdminFacet} adminNode
+     * @param {VatAdminFacet} adminNode
      * @param {*} contractBundleCap
      */
     (adminNode, contractBundleCap) => ({
@@ -277,7 +280,7 @@ export const makeStartInstance = (
   );
 
   /**
-   * @type {import('./utils.js').StartInstance}
+   * @type {StartInstance}
    */
   const startInstance = async (
     installationP,

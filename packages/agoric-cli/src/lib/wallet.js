@@ -11,6 +11,13 @@ import { execSwingsetTransaction, pollTx } from './chain.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
  * @import {MinimalNetworkConfig, VstorageKit} from '@agoric/client-utils';
+ * @import {UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {Writable} from 'stream';
+ * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
+ * @import {Follower} from '@agoric/casting';
+ * @import {ValueFollowerElement} from '@agoric/casting';
+ * @import {execFileSync} from 'child_process';
  */
 
 const marshaller = boardSlottingMarshaller();
@@ -26,13 +33,13 @@ const emptyCurrentRecord = {
 /**
  * @param {string} addr
  * @param {Pick<VstorageKit, 'readPublished'>} io
- * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord>}
+ * @returns {Promise<CurrentWalletRecord>}
  */
 export const getCurrent = async (addr, { readPublished }) => {
   // Partial because older writes may not have had all properties
   // NB: assumes changes are only additions
   let current =
-    /** @type {Partial<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord> | undefined} */ (
+    /** @type {Partial<CurrentWalletRecord> | undefined} */ (
       await readPublished(`wallet.${addr}.current`)
     );
   if (current === undefined) {
@@ -61,15 +68,15 @@ export const getCurrent = async (addr, { readPublished }) => {
 /**
  * @param {string} addr
  * @param {Pick<VstorageKit, 'readPublished'>} io
- * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord>}
+ * @returns {Promise<UpdateRecord>}
  */
 export const getLastUpdate = (addr, { readPublished }) => {
   return readPublished(`wallet.${addr}`);
 };
 
 /**
- * @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction
- * @param {Pick<import('stream').Writable,'write'>} [stdout]
+ * @param {BridgeAction} bridgeAction
+ * @param {Pick<Writable,'write'>} [stdout]
  */
 export const outputAction = (bridgeAction, stdout = process.stdout) => {
   const capData = marshaller.toCapData(harden(bridgeAction));
@@ -81,10 +88,10 @@ export const sendHint =
   'Now use `agoric wallet send ...` to sign and broadcast the offer.\n';
 
 /**
- * @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction
+ * @param {BridgeAction} bridgeAction
  * @param {{
- *   stdout: Pick<import('stream').Writable,'write'>,
- *   stderr: Pick<import('stream').Writable,'write'>,
+ *   stdout: Pick<Writable,'write'>,
+ *   stderr: Pick<Writable,'write'>,
  * }} io
  */
 export const outputActionAndHint = (bridgeAction, { stdout, stderr }) => {
@@ -93,16 +100,16 @@ export const outputActionAndHint = (bridgeAction, { stdout, stderr }) => {
 };
 
 /**
- * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
- * @param {Pick<import('stream').Writable,'write'>} [stdout]
- * @param {Pick<import('stream').Writable,'write'>} [stderr]
+ * @param {OfferSpec} offer
+ * @param {Pick<Writable,'write'>} [stdout]
+ * @param {Pick<Writable,'write'>} [stderr]
  */
 export const outputExecuteOfferAction = (
   offer,
   stdout = process.stdout,
   stderr = process.stderr,
 ) => {
-  /** @type {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} */
+  /** @type {BridgeAction} */
   const spendAction = {
     method: 'executeOffer',
     offer,
@@ -113,7 +120,7 @@ export const outputExecuteOfferAction = (
 
 /**
  * @deprecated use `.current` node for current state
- * @param {import('@agoric/casting').Follower<import('@agoric/casting').ValueFollowerElement<import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord>>} follower
+ * @param {Follower<ValueFollowerElement<UpdateRecord>>} follower
  * @param {Brand<'set'>} [invitationBrand]
  */
 export const coalesceWalletState = async (follower, invitationBrand) => {
@@ -143,14 +150,14 @@ export const coalesceWalletState = async (follower, invitationBrand) => {
  * Sign and broadcast a wallet-action.
  *
  * @throws { Error & { code: number } } if transaction fails
- * @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction
+ * @param {BridgeAction} bridgeAction
  * @param {MinimalNetworkConfig & {
  *   from: string,
  *   fees?: string,
  *   verbose?: boolean,
  *   keyring?: {home?: string, backend: string},
- *   stdout?: Pick<import('stream').Writable, 'write'>,
- *   execFileSync: typeof import('child_process').execFileSync,
+ *   stdout?: Pick<Writable, 'write'>,
+ *   execFileSync: typeof execFileSync,
  *   delay: (ms: number) => Promise<void>,
  *   dryRun?: boolean,
  * }} opts

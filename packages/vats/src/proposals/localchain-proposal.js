@@ -4,14 +4,23 @@ import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { makeScopedBridge } from '../bridge.js';
 
 /**
+ * @import {BridgeManager} from '../types.js';
+ * @import {ScopedBridgeManager} from '../types.js';
+ * @import {BankManager} from '../vat-bank.js';
+ * @import {TransferMiddleware} from '../transfer.js';
+ * @import {LocalChainVat} from '../vat-localchain.js';
+ * @import {LocalChain} from '../localchain.js';
+ */
+
+/**
  * @param {BootstrapPowers & {
  *   consume: {
- *     bridgeManager: import('../types.js').BridgeManager;
- *     localchainBridgeManager: import('../types.js').ScopedBridgeManager<'vlocalchain'>;
- *     bankManager: Promise<import('../vat-bank.js').BankManager>;
- *     transferMiddleware: Promise<import('../transfer.js').TransferMiddleware>;
+ *     bridgeManager: BridgeManager;
+ *     localchainBridgeManager: ScopedBridgeManager<'vlocalchain'>;
+ *     bankManager: Promise<BankManager>;
+ *     transferMiddleware: Promise<TransferMiddleware>;
  *     vtransferBridgeManager: Promise<
- *       import('../types.js').ScopedBridgeManager<'vtransfer'>
+ *       ScopedBridgeManager<'vtransfer'>
  *     >;
  *   };
  *   produce: {
@@ -24,7 +33,7 @@ import { makeScopedBridge } from '../bridge.js';
  * @param {{ localchainRef: VatSourceRef }} options.options
  *
  * @typedef {{
- *   localchain: ERef<import('../vat-localchain.js').LocalChainVat>;
+ *   localchain: ERef<LocalChainVat>;
  * }} LocalChainVats
  */
 export const setupLocalChainVat = async (
@@ -59,7 +68,7 @@ export const setupLocalChainVat = async (
 
   localchainVat.reset();
   localchainVat.resolve(vats.localchain);
-  /** @type {import('../types.js').ScopedBridgeManager<'vlocalchain'>} */
+  /** @type {ScopedBridgeManager<'vlocalchain'>} */
   let scopedManager;
   try {
     scopedManager = await makeScopedBridge(
@@ -102,7 +111,7 @@ export const setupLocalChainVat = async (
 /**
  * @param {BootstrapPowers & {
  *   consume: {
- *     localchain: import('../localchain.js').LocalChain;
+ *     localchain: LocalChain;
  *   };
  * }} powers
  * @param {object} _options

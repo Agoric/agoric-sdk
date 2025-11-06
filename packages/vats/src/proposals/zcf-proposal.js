@@ -2,12 +2,16 @@
 import { E } from '@endo/far';
 
 /**
+ * @import {CreateVatResults} from '@agoric/swingset-vat';
+ */
+
+/**
  * @param {BootstrapPowers & {
  *   consume: {
  *     vatAdminSvc: VatAdminSvc;
  *     vatStore: MapStore<
  *       string,
- *       import('@agoric/swingset-vat').CreateVatResults
+ *       CreateVatResults
  *     >;
  *   };
  * }} powers

@@ -5,6 +5,7 @@ import { E, getInterfaceOf } from '@endo/far';
 
 /**
  * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ * @import {EconomyBootstrapSpace} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
  */
 
 const trace = makeTracer('RV');
@@ -31,7 +32,7 @@ const vatUpgradeStatus = {
 
 /**
  * @param {BootstrapPowers &
- *   import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace} space
+ *   EconomyBootstrapSpace} space
  * @param {object} config
  * @param {{ skip: string[] }} config.options
  */

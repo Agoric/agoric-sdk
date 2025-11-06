@@ -14,6 +14,11 @@ import {
 } from '@agoric/inter-protocol/src/proposals/core-proposal.js';
 import { makeInstallCache } from '@agoric/inter-protocol/src/proposals/utils.js';
 
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
 // TODO end inter-package filesystem references https://github.com/Agoric/agoric-sdk/issues/8178
 
 /** @type {Record<string, Record<string, [string, string]>>} */
@@ -125,7 +130,7 @@ export const mainProposalBuilder = async ({
 };
 
 // Build proposal for sim-chain etc.
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async (
   { publishRef, install },
   options = {},
@@ -184,7 +189,7 @@ export const defaultProposalBuilder = async (
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 

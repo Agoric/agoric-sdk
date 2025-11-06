@@ -31,6 +31,10 @@ import { encodeAbiParameters } from 'viem';
 import type { StatusFor } from '../src/type-guards.ts';
 import { gmpAddresses } from './mocks.ts';
 
+/**
+ * @import {BaseChainInfo} from './orchestration-api.js';
+ */
+
 export const makeIncomingEVMEvent = ({
   sender = gmpAddresses.AXELAR_GMP,
   address = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
@@ -161,7 +165,7 @@ export {
  * - https://docs.simplehash.com/reference/supported-chains-testnets (accessed on
  *   4 July 2025)
  *
- * @satisfies {Record<string, import('./orchestration-api.js').BaseChainInfo>}
+ * @satisfies {Record<string, BaseChainInfo>}
  */
 export const axelarCCTPConfig = {
   Ethereum: {

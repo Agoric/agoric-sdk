@@ -25,12 +25,20 @@ import {
 } from './export-kernel-db.js';
 
 /**
+ * @import {SwingStoreExportDataMode} from './export-kernel-db.js';
+ * @import {SwingStoreArtifactMode} from './export-kernel-db.js';
+ * @import {StateSyncManifest} from './export-kernel-db.js';
+ * @import {ImportSwingStoreOptions} from '@agoric/swing-store';
+ * @import {SwingStoreExporter} from '@agoric/swing-store';
+ */
+
+/**
  * @typedef {object} StateSyncImporterOptions
  * @property {string} stateDir the directory containing the SwingStore to export
  * @property {string} exportDir the directory where to place the exported artifacts and manifest
  * @property {number} [blockHeight] block height to check for
- * @property {import('./export-kernel-db.js').SwingStoreExportDataMode} [exportDataMode] how to handle export data
- * @property {import('./export-kernel-db.js').SwingStoreArtifactMode} [artifactMode] the level of historical artifacts to import
+ * @property {SwingStoreExportDataMode} [exportDataMode] how to handle export data
+ * @property {SwingStoreArtifactMode} [artifactMode] the level of historical artifacts to import
  */
 
 /**
@@ -54,8 +62,8 @@ export const validateImporterOptions = options => {
 
 /**
  * @param {Pick<StateSyncImporterOptions, 'artifactMode' | 'exportDataMode' >} options
- * @param {Readonly<import('./export-kernel-db.js').StateSyncManifest>} manifest
- * @returns {import('@agoric/swing-store').ImportSwingStoreOptions}
+ * @param {Readonly<StateSyncManifest>} manifest
+ * @returns {ImportSwingStoreOptions}
  */
 const checkAndGetImportSwingStoreOptions = (options, manifest) => {
   typeof manifest.blockHeight === 'number' ||
@@ -130,7 +138,7 @@ export const performStateSyncImport = async (
   };
 
   const manifestPath = safeExportFileResolve(ExportManifestFileName);
-  /** @type {Readonly<import('./export-kernel-db.js').StateSyncManifest>} */
+  /** @type {Readonly<StateSyncManifest>} */
   const manifest = await readFile(manifestPath, { encoding: 'utf-8' }).then(
     data => JSON.parse(data),
   );
@@ -144,7 +152,7 @@ export const performStateSyncImport = async (
   const artifacts = harden(Object.fromEntries(manifest.artifacts || []));
 
   // Represent the data in `exportDir` as a SwingSetExporter object.
-  /** @type {import('@agoric/swing-store').SwingStoreExporter} */
+  /** @type {SwingStoreExporter} */
   const exporter = harden({
     getHostKV(_key) {
       return undefined;
@@ -261,7 +269,7 @@ export const main = async (
   );
 
   const artifactMode =
-    /** @type {import('./export-kernel-db.js').SwingStoreArtifactMode | undefined} */ (
+    /** @type {SwingStoreArtifactMode | undefined} */ (
       processValue.getFlag('artifact-mode')
     );
   checkArtifactMode(artifactMode);

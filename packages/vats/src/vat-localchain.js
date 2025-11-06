@@ -7,6 +7,8 @@ import { prepareLocalChainTools } from './localchain.js';
 
 /**
  * @import {LocalChainPowers} from './localchain.js';
+ * @import {TransferMiddleware} from './transfer.js';
+ * @import {ScopedBridgeManager} from './types.js';
  */
 
 export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
@@ -38,9 +40,9 @@ export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
      * By using a WeakMap, we ensure that only possession of both the map and a
      * TransferMiddleware ocap can be amplified into the associated manager.
      *
-     * @param {import('./transfer.js').TransferMiddleware} transfer
+     * @param {TransferMiddleware} transfer
      * @param {Pick<
-     *   import('./types.js').ScopedBridgeManager<'vtransfer'>,
+     *   ScopedBridgeManager<'vtransfer'>,
      *   'fromBridge'
      * >} transferBridgeManager
      */

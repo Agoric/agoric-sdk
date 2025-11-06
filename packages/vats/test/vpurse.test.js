@@ -13,9 +13,12 @@ import { prepareVirtualPurse } from '../src/virtual-purse.js';
 /**
  * @import {Amount} from '@agoric/ertp';
  * @import {NotifierRecord} from '@agoric/notifier';
+ * @import {TestFn} from 'ava';
+ * @import {Zone} from '@agoric/zone';
+ * @import {VirtualPurseController} from '../src/virtual-purse.js';
  */
 
-/** @type {import('ava').TestFn<ReturnType<makeTestContext>>} */
+/** @type {TestFn<ReturnType<makeTestContext>>} */
 const test = rawTest;
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
@@ -29,7 +32,7 @@ test.before(t => {
 
 /**
  * @param {any} t
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  * @param {bigint} [escrowValue]
  */
 const setup = (t, zone, escrowValue = 0n) => {
@@ -60,7 +63,7 @@ const setup = (t, zone, escrowValue = 0n) => {
     },
   });
 
-  /** @type {import('../src/virtual-purse.js').VirtualPurseController} */
+  /** @type {VirtualPurseController} */
   const vpcontroller = zone.exo('TestController', undefined, {
     getBalances(b) {
       t.is(b, brand);

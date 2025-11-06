@@ -19,7 +19,15 @@ import {
 } from '../../../src/walletFactory.js';
 
 /**
- * @type {typeof import('../../../src/walletFactory.js').prepare}
+ * @import {prepare} from '../../../src/walletFactory.js';
+ * @import {SmartWallet} from '../../../src/smartWallet.js';
+ * @import {WalletBridgeMsg} from '../../../src/types.js';
+ * @import {Bank} from '@agoric/vats/src/vat-bank.js';
+ * @import {NameAdmin} from '@agoric/vats/src/types.js';
+ */
+
+/**
+ * @type {typeof prepare}
  */
 export const prepare = async (zcf, privateArgs, baggage) => {
   // copy paste from original contract, with type imports fixed and sayHelloUpgrade method added to creatorFacet)
@@ -31,7 +39,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   /**
    * @type {MapStore<
    *   string,
-   *   import('../../../src/smartWallet.js').SmartWallet
+   *   SmartWallet
    * >}
    */
   const walletsByAddress = provideDurableMapStore(baggage, 'walletsByAddress');
@@ -44,7 +52,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     }),
     {
       /**
-       * @param {import('../../../src/types.js').WalletBridgeMsg} obj validated
+       * @param {WalletBridgeMsg} obj validated
        *   by shape.WalletBridgeMsg
        */
       fromBridge: async obj => {
@@ -118,10 +126,10 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     {
       /**
        * @param {string} address
-       * @param {ERef<import('@agoric/vats/src/vat-bank.js').Bank>} bank
-       * @param {ERef<import('@agoric/vats/src/types.js').NameAdmin>} namesByAddressAdmin
+       * @param {ERef<Bank>} bank
+       * @param {ERef<NameAdmin>} namesByAddressAdmin
        * @returns {Promise<
-       *   [import('../../../src/smartWallet.js').SmartWallet, boolean]
+       *   [SmartWallet, boolean]
        * >}
        *   wallet along with a flag to distinguish between looking up an existing
        *   wallet and creating a new one.
@@ -130,7 +138,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
         let makerCalled = false;
         /**
          * @type {() => Promise<
-         *   import('../../../src/smartWallet.js').SmartWallet
+         *   SmartWallet
          * >}
          */
         const maker = async () => {

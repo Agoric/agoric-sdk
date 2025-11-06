@@ -16,7 +16,13 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { getManifestForReplaceAllElectorates } from '@agoric/inter-protocol/src/proposals/replaceElectorate.js';
 
-/** @typedef {Parameters<typeof import('@agoric/inter-protocol/src/proposals/replaceElectorate.js').replaceAllElectorates>[1]['options']} ReplaceElectorateOptions */
+/**
+ * @import {replaceAllElectorates} from '@agoric/inter-protocol/src/proposals/replaceElectorate.js';
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
+/** @typedef {Parameters<typeof replaceAllElectorates>[1]['options']} ReplaceElectorateOptions */
 
 /** @type {Record<string, ReplaceElectorateOptions>} */
 const configurations = {
@@ -93,7 +99,7 @@ const configurations = {
 const { keys } = Object;
 const knownVariants = keys(configurations);
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
   const config = opts.config || configurations[opts.variant];
   if (!config) {
@@ -131,7 +137,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
 
 const Usage = `agoric run replace-electorate-core.js ${[...knownVariants, '<json-config>'].join(' | ')}`;
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
   const variantOrConfig = scriptArgs?.[0];

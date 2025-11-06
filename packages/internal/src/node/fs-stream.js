@@ -3,9 +3,15 @@ import process from 'node:process';
 import { promisify } from 'node:util';
 
 /**
- * @param {import('fs').ReadStream
- *   | import('fs').WriteStream
- *   | import('net').Socket} stream
+ * @import {ReadStream} from 'fs';
+ * @import {WriteStream} from 'fs';
+ * @import {Socket} from 'net';
+ */
+
+/**
+ * @param {ReadStream
+ *   | WriteStream
+ *   | Socket} stream
  * @returns {Promise<void>}
  */
 export const fsStreamReady = stream =>
@@ -61,7 +67,7 @@ export const makeFsStreamWriter = async filePath => {
     useStdout || !(/** @type {any} */ (stream).close)
       ? undefined
       : promisify(
-          /** @type {import('fs').WriteStream} */ (stream).close.bind(stream),
+          /** @type {WriteStream} */ (stream).close.bind(stream),
         );
 
   let flushed = Promise.resolve();

@@ -18,6 +18,9 @@ import { MALLEABLE_NUMBER } from '@agoric/governance/test/swingsetTests/contract
 
 /**
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {EconomyBootstrapPowers} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  */
 
 const trace = makeTracer('startGovernedInstance', true);
@@ -25,7 +28,7 @@ const trace = makeTracer('startGovernedInstance', true);
 /**
  * Start a new governed contract instance.
  *
- * @param {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers} powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {object} config
  * @param {object} config.options
  * @param {Installation} [config.options.contractInstallation]
@@ -166,7 +169,7 @@ export const getManifestForGovernedContract = async (
   };
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async (
   { publishRef, install },
   [producedKey, label = producedKey] = [],
@@ -193,7 +196,7 @@ export const defaultProposalBuilder = async (
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
   // Dynamic import to avoid inclusion in the proposal bundle.

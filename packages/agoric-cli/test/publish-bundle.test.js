@@ -12,7 +12,11 @@ import {
   makeHttpBundlePublisher,
 } from '../src/publish.js';
 
-/** @type {import('../src/publish.js').EndoZipBase64Bundle} */
+/**
+ * @import {EndoZipBase64Bundle} from '../src/publish.js';
+ */
+
+/** @type {EndoZipBase64Bundle} */
 const bundle = {
   moduleFormat: 'endoZipBase64',
   endoZipBase64: '',

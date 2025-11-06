@@ -4,6 +4,10 @@ import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 
+/**
+ * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
+ */
+
 console.warn('start-game1-proposal.js module evaluating');
 
 // vstorage paths under published.*
@@ -93,7 +97,7 @@ export const startGameContract = async permittedPowers => {
   console.log('game1 (re)installed');
 };
 
-/** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest} */
+/** @type {BootstrapManifest} */
 const gameManifest = {
   [startGameContract.name]: {
     consume: {

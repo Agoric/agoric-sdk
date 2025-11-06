@@ -1,5 +1,10 @@
 // @jessie-check
 
+/**
+ * @import {DefineKindOptions} from '@agoric/swingset-liveslots';
+ * @import {MapStore} from '@agoric/swingset-liveslots';
+ */
+
 /// <reference types="ses" />
 export {
   M,
@@ -45,12 +50,12 @@ export {
 // TODO re-export these
 /**
  * @template T @typedef
- *   {import('@agoric/swingset-liveslots').DefineKindOptions<T>}
+ *   {DefineKindOptions<T>}
  *   DefineKindOptions
  */
 // Copy this type because aliasing it by `import('@agoric/swingset-liveslots').Baggage`
 // causes this error in typedoc: Expected a symbol for node with kind Identifier
-/** @typedef {import('@agoric/swingset-liveslots').MapStore<string, any>} Baggage */
+/** @typedef {MapStore<string, any>} Baggage */
 
 // //////////////////////////// deprecated /////////////////////////////////////
 

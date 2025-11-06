@@ -21,6 +21,9 @@ const { entries } = Object;
 /**
  * @import { Command } from 'commander';
  * @import { BoardRemote, VBankAssetDetail } from '@agoric/vats/tools/board-utils.js';
+ * @import {execFileSync} from 'child_process';
+ * @import {OfferStatus} from '@agoric/smart-wallet/src/offers.js';
+ * @import {OfferSpec} from '@agoric/inter-protocol/src/auction/auctionBook.js';
  */
 
 /**
@@ -134,7 +137,7 @@ const testKeyring = {
 };
 
 const makeProcess = (t, keyring, out) => {
-  /** @type {typeof import('child_process').execFileSync} */
+  /** @type {typeof execFileSync} */
   // @ts-expect-error mock
   const execFileSync = (file, args) => {
     switch (file) {
@@ -207,8 +210,8 @@ const makeProcess = (t, keyring, out) => {
 };
 
 /**
- * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
- *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec}}
+ * @type {OfferStatus &
+ *         { offerArgs: OfferSpec}}
  */
 const offerStatus2 = harden({
   id: 'bid-1680241587424',
@@ -270,8 +273,8 @@ test('amount parsing', t => {
 });
 
 /**
- * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
- *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec}}
+ * @type {OfferStatus &
+ *         { offerArgs: OfferSpec}}
  */
 const offerStatus1 = harden({
   error: 'Error: "nameKey" not found: (a string)',

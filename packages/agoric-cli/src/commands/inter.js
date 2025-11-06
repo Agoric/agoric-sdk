@@ -26,7 +26,17 @@ const bidInvitationShape = harden({
   callPipe: [['makeBidInvitation', M.any()]],
 });
 
-/** @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js'; */
+/**
+ * @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
+ * @import {Timestamp} from '@agoric/time';
+ * @import {RelativeTimeRecord} from '@agoric/time';
+ * @import {OfferStatus} from '@agoric/smart-wallet/src/offers.js';
+ * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
+ * @import {Writable} from 'stream';
+ * @import {createCommand} from 'commander';
+ * @import {execFileSync} from 'child_process';
+ * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
+ */
 /** @import {TryExitOfferAction} from '@agoric/smart-wallet/src/smartWallet.js'; */
 /** @import {OfferSpec as BidSpec} from '@agoric/inter-protocol/src/auction/auctionBook.js' */
 /** @import {ScheduleNotification} from '@agoric/inter-protocol/src/auction/scheduler.js' */
@@ -58,12 +68,12 @@ const makeFormatters = assets => {
     r4(100 - (Number(r.numerator.value) / Number(r.denominator.value)) * 100);
 
   // XXX real TimeMath.absValue requires real Remotable timerBrand
-  /** @param {import('@agoric/time').Timestamp} ts */
+  /** @param {Timestamp} ts */
   const absValue = ts => (typeof ts === 'bigint' ? ts : ts.absValue);
 
-  /** @param {import('@agoric/time').Timestamp} tr */
+  /** @param {Timestamp} tr */
   const absTime = tr => new Date(Number(absValue(tr)) * 1000).toISOString();
-  /** @param {import('@agoric/time').RelativeTimeRecord} tr */
+  /** @param {RelativeTimeRecord} tr */
   const relTime = tr =>
     new Date(Number(tr.relValue) * 1000).toISOString().slice(11, 19);
 
@@ -94,8 +104,8 @@ const makeFormatters = assets => {
 /**
  * Dynamic check that an OfferStatus is also a BidSpec.
  *
- * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus} offerStatus
- * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNames
+ * @param {OfferStatus} offerStatus
+ * @param {AgoricNamesRemotes} agoricNames
  * @param {typeof console.warn} warn
  * returns null if offerStatus is not a BidSpec
  */
@@ -118,7 +128,7 @@ const coerceBid = (offerStatus, agoricNames, warn) => {
   }
 
   /**
-   * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
+   * @type {OfferStatus &
    *        { offerArgs: BidSpec}}
    */
   // @ts-expect-error dynamic cast
@@ -129,7 +139,7 @@ const coerceBid = (offerStatus, agoricNames, warn) => {
 /**
  * Format amounts etc. in a BidSpec OfferStatus
  *
- * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
+ * @param {OfferStatus &
  *         { offerArgs: BidSpec}} bid
  * @param {VBankAssetDetail[]} assets
  */
@@ -168,12 +178,12 @@ export const fmtBid = (bid, assets) => {
  *
  * @param {{
  *   env: Partial<Record<string, string>>,
- *   stdout: Pick<import('stream').Writable,'write'>,
- *   stderr: Pick<import('stream').Writable,'write'>,
+ *   stdout: Pick<Writable,'write'>,
+ *   stderr: Pick<Writable,'write'>,
  *   now: () => number,
  *   createCommand: // Note: includes access to process.stdout, .stderr, .exit
- *     typeof import('commander').createCommand,
- *   execFileSync: typeof import('child_process').execFileSync,
+ *     typeof createCommand,
+ *   execFileSync: typeof execFileSync,
  *   setTimeout: typeof setTimeout,
  * }} process
  * @param {{ fetch: typeof window.fetch }} net
@@ -205,7 +215,7 @@ export const makeInterCommand = (
       env.AGORIC_KEYRING_BACKEND,
     );
 
-  /** @type {typeof import('child_process').execFileSync} */
+  /** @type {typeof execFileSync} */
   // @ts-expect-error execFileSync is overloaded
   const execFileSync = (file, args, ...opts) => {
     try {
@@ -323,7 +333,7 @@ inter auction status
 
   /**
    * @param {string} from
-   * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
+   * @param {OfferSpec} offer
    * @param {Awaited<ReturnType<tryMakeUtils>>} tools
    * @param {boolean | undefined} dryRun
    */

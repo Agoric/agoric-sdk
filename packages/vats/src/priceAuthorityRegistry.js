@@ -44,7 +44,7 @@ import { PriceAuthorityI } from '@agoric/zoe/src/contractSupport/priceAuthority.
 /**
  * Make a singleton registry for priceAuthorities
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @returns {PriceAuthorityRegistry}
  */
 export const providePriceAuthorityRegistry = baggage => {

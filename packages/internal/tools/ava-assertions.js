@@ -4,7 +4,7 @@
  * those of `expected`, including having matching lengths, with pretty diffs in
  * case of mismatch.
  *
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {unknown[]} array
  * @param {unknown[]} expected
  * @param {string} [message]
@@ -18,6 +18,10 @@ export const arrayIsLike = (t, array, expected, message) => {
       ? [...expected, ...Array.from({ length: actualExcess })]
       : expected;
   t.like(array, comparable, message);
+
+/**
+ * @import {ExecutionContext} from 'ava';
+ */
 
   if (actualLength === expectedLength) return;
 

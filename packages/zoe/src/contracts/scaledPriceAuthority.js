@@ -12,6 +12,7 @@ import { provideQuoteMint } from '../contractSupport/priceAuthorityQuoteMint.js'
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {ZCF} from '@agoric/zoe';
+ * @import {Baggage} from '@agoric/vat-data';
  */
 
 /**
@@ -33,7 +34,7 @@ import { provideQuoteMint } from '../contractSupport/priceAuthorityQuoteMint.js'
  *
  * @param {ZCF<ScaledPriceAuthorityOpts>} zcf
  * @param {object} privateArgs
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 // 'prepare' is deprecated but still supported
 export const prepare = async (zcf, privateArgs, baggage) => {

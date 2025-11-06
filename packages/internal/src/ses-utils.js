@@ -17,7 +17,11 @@ import { makeQueue } from '@endo/stream';
 import { asyncGenerate } from 'jessie.js';
 import { logLevels } from './js-utils.js';
 
-/** @import {LimitedConsole} from './js-utils.js'; */
+/**
+ * @import {LimitedConsole} from './js-utils.js';
+ * @import {AsyncQueue} from '@endo/stream';
+ * @import {PromiseKit} from '@endo/promise-kit';
+ */
 
 /** @import {ERef} from '@endo/far'; */
 /** @import {RemotableBrand} from '@endo/eventual-send'; */
@@ -418,7 +422,7 @@ export const synchronizedTee = (sourceStream, readerCount) => {
    *   (value: PromiseLike<IteratorResult<T>>) => void
    * >} QueuePayload
    */
-  /** @type {import('@endo/stream').AsyncQueue<QueuePayload>[]} */
+  /** @type {AsyncQueue<QueuePayload>[]} */
   const queues = [];
 
   /** @returns {Promise<void>} */
@@ -472,7 +476,7 @@ export const synchronizedTee = (sourceStream, readerCount) => {
   };
 
   const readers = Array.from({ length: readerCount }).map(() => {
-    /** @type {import('@endo/stream').AsyncQueue<QueuePayload>} */
+    /** @type {AsyncQueue<QueuePayload>} */
     const queue = makeQueue();
     queues.push(queue);
 
@@ -480,7 +484,7 @@ export const synchronizedTee = (sourceStream, readerCount) => {
     const reader = harden({
       async next() {
         /**
-         * @type {import('@endo/promise-kit').PromiseKit<
+         * @type {PromiseKit<
          *   IteratorResult<T>
          * >}
          */
@@ -490,7 +494,7 @@ export const synchronizedTee = (sourceStream, readerCount) => {
       },
       async return() {
         /**
-         * @type {import('@endo/promise-kit').PromiseKit<
+         * @type {PromiseKit<
          *   IteratorResult<T>
          * >}
          */

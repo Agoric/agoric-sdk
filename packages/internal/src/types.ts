@@ -5,6 +5,10 @@ import type { Pattern } from '@endo/patterns';
 import type { Callable } from './ses-utils.js';
 
 /**
+ * @import {mustMatch} from '@endo/patterns';
+ */
+
+/**
  * A map corresponding with a total function such that `get(key)` is assumed to
  * always succeed.
  */
@@ -121,7 +125,7 @@ export declare type PatternType<TM extends TypedPattern<any>> =
  *
  * Note: remotables can only be matched as "remotable", not the specific kind.
  *
- * @see {import('@endo/patterns').mustMatch} for the implementation. This one has a type annotation to narrow if the pattern is a TypedPattern.
+ * @see {mustMatch} for the implementation. This one has a type annotation to narrow if the pattern is a TypedPattern.
  */
 export declare type MustMatch = <P extends Pattern>(
   specimen: unknown,

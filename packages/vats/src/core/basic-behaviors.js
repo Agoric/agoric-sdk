@@ -19,7 +19,15 @@ import { PowerFlags } from '../walletFlags.js';
 import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
 import { makeScopedBridge } from '../bridge.js';
 
-/** @import {GovernableStartFn, GovernanceFacetKit} from '@agoric/governance/src/types.js'; */
+/**
+ * @import {GovernableStartFn, GovernanceFacetKit} from '@agoric/governance/src/types.js';
+ * @import {Zone} from '@agoric/zone';
+ * @import {TimerService} from '@agoric/time';
+ * @import {EconomyBootstrapPowers} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+ * @import {InitMsg} from '@agoric/internal/src/chain-utils.js';
+ * @import {start} from '../centralSupply.js';
+ * @import {BootstrapManifest} from './lib-boot.js';
+ */
 
 /**
  * TODO: review behaviors carefully for powers that go out of scope, since we
@@ -110,7 +118,7 @@ export const produceDiagnostics = async ({ produce }) => {
   produce.instancePrivateArgs.resolve(instancePrivateArgs);
 };
 
-/** @param {BootstrapSpace & { zone: import('@agoric/zone').Zone }} powers */
+/** @param {BootstrapSpace & { zone: Zone }} powers */
 export const produceStartUpgradable = async ({
   zone,
   consume: { diagnostics, zoe },
@@ -158,9 +166,9 @@ harden(produceStartUpgradable);
  * }} zoeArgs
  * @param {{
  *   governedParams: Record<string, unknown>;
- *   timer: ERef<import('@agoric/time').TimerService>;
+ *   timer: ERef<TimerService>;
  *   contractGovernor: ERef<Installation>;
- *   economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet'];
+ *   economicCommitteeCreatorFacet: EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet'];
  * }} govArgs
  * @returns {Promise<GovernanceFacetKit<SF>>}
  */
@@ -238,9 +246,9 @@ const startGovernedInstance = async (
 
 /**
  * @param {BootstrapSpace & {
- *   zone: import('@agoric/zone').Zone;
+ *   zone: Zone;
  *   consume: {
- *     economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet'];
+ *     economicCommitteeCreatorFacet: EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet'];
  *   };
  * }} powers
  */
@@ -539,7 +547,7 @@ export const installBootContracts = async ({
  * @param {BootstrapPowers & {
  *   vatParameters: {
  *     argv: {
- *       bootMsg?: import('@agoric/internal/src/chain-utils.js').InitMsg;
+ *       bootMsg?: InitMsg;
  *     };
  *   };
  * }} powers
@@ -564,7 +572,7 @@ export const mintInitialSupply = async ({
 
   /**
    * @type {Awaited<
-   *   ReturnType<typeof import('../centralSupply.js').start>
+   *   ReturnType<typeof start>
    * >}
    */
   const { creatorFacet } = await E(zoe).startInstance(
@@ -672,7 +680,7 @@ export const addBankAssets = async ({
 };
 harden(addBankAssets);
 
-/** @type {import('./lib-boot.js').BootstrapManifest} */
+/** @type {BootstrapManifest} */
 export const BASIC_BOOTSTRAP_PERMITS = {
   bridgeCoreEval: true, // Needs all the powers.
   [makeOracleBrands.name]: {

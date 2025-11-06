@@ -1,14 +1,17 @@
 /**
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {DisplayInfo, Issuer} from '@agoric/ertp';
+ * @import {BoardRemote} from '@agoric/internal/src/marshal/board-client-utils.js';
+ * @import {FakeStorageKit} from '@agoric/internal/src/storage-test-utils.js';
+ * @import {BoardRemote} from '@agoric/vats/tools/board-utils.js';
  */
 
 /**
  * @typedef {{
- *   brand: import('@agoric/internal/src/marshal/board-client-utils.js').BoardRemote;
+ *   brand: BoardRemote;
  *   denom: string;
  *   displayInfo: DisplayInfo;
- *   issuer: import('@agoric/internal/src/marshal/board-client-utils.js').BoardRemote;
+ *   issuer: BoardRemote;
  *   issuerName: string;
  *   proposedName: string;
  * }} VBankAssetDetail
@@ -17,7 +20,7 @@
  * @typedef {{
  *   brand: Record<
  *     string,
- *     import('@agoric/internal/src/marshal/board-client-utils.js').BoardRemote
+ *     BoardRemote
  *   >;
  *   instance: Record<string, Instance>;
  *   installation: Record<string, Installation>;
@@ -38,7 +41,7 @@ import { prepareBoardKit } from '../src/lib-board.js';
 export * from '@agoric/internal/src/marshal/board-client-utils.js';
 
 /**
- * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} fakeStorageKit
+ * @param {FakeStorageKit} fakeStorageKit
  * @returns {AgoricNamesRemotes}
  */
 export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
@@ -53,7 +56,7 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
     /**
      * @type {[
      *   string,
-     *   import('@agoric/vats/tools/board-utils.js').BoardRemote,
+     *   BoardRemote,
      * ][]}
      */
     const parts = unmarshalFromVstorage(

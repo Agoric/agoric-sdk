@@ -24,6 +24,7 @@ import { invertPromiseSettlement } from './iterable-testing-tools.js';
 /**
  * @import {makePublishKit as MakePublishKit} from '../src/index.js';
  * @import {PublicationRecord} from '../src/types.js';
+ * @import {Bundle} from '@agoric/swingset-vat/src/types-external.js';
  */
 
 const { ownKeys } = Reflect;
@@ -253,7 +254,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   const { kernelStorage } = initSwingStore();
   const { kernel: kernelBundle, ...kernelBundles } = await buildKernelBundles();
   const initOpts =
-    /** @type {{kernelBundles: Record<string, import('@agoric/swingset-vat/src/types-external.js').Bundle>}} */ ({
+    /** @type {{kernelBundles: Record<string, Bundle>}} */ ({
       kernelBundles,
     });
   const runtimeOpts = { kernelBundle };

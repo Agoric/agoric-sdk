@@ -4,6 +4,11 @@
 import { Transform } from 'node:stream';
 
 /**
+ * @import {TransformOptions} from 'node:stream';
+ * @import {TransformCallback} from 'node:stream';
+ */
+
+/**
  * @typedef {object} BufferLineTransformOptions
  * @property {Buffer | string | number} [break] line break matcher for
  *   Buffer.indexOf() (default: 10)
@@ -16,7 +21,7 @@ export default class BufferLineTransform extends Transform {
    * The BufferLineTransform is reading String or Buffer content from a Readable
    * stream and writing each line as a Buffer in object mode
    *
-   * @param {import('node:stream').TransformOptions &
+   * @param {TransformOptions &
    *   BufferLineTransformOptions} [options]
    */
   constructor(options) {
@@ -47,7 +52,7 @@ export default class BufferLineTransform extends Transform {
   /**
    * @param {any} chunk
    * @param {BufferEncoding | 'buffer'} encoding
-   * @param {import('node:stream').TransformCallback} cb
+   * @param {TransformCallback} cb
    * @override
    */
   _transform(chunk, encoding, cb) {
@@ -99,7 +104,7 @@ export default class BufferLineTransform extends Transform {
   }
 
   /**
-   * @param {import('node:stream').TransformCallback} cb
+   * @param {TransformCallback} cb
    * @override
    */
   _flush(cb) {

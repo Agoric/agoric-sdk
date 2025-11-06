@@ -6,6 +6,10 @@ import { Far } from '@endo/marshal';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 
 /**
+ * @import {start} from './sellItems.js';
+ */
+
+/**
  * This contract mints non-fungible tokens and creates a selling contract
  * instance to sell the tokens in exchange for some sort of money.
  *
@@ -39,7 +43,7 @@ const start = zcf => {
 
   /**
    * @param {object} obj
-   * @param {Installation<import('./sellItems.js').start>} obj.sellItemsInstallation
+   * @param {Installation<start>} obj.sellItemsInstallation
    * @param {*} obj.customValueProperties
    * @param {number} obj.count
    * @param {*} obj.moneyIssuer

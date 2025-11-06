@@ -10,6 +10,10 @@ import { TargetAppI, AppTransformerI } from './bridge-target.js';
  * @import {ERef} from '@endo/far';
  * @import {TargetApp, TargetHost} from './bridge-target.js'
  * @import {VTransferIBCEvent} from './types.js';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {VowTools} from '@agoric/vow';
+ * @import {Vow} from '@agoric/vow';
+ * @import {TargetRegistry} from './bridge-target.js';
  */
 
 /**
@@ -19,8 +23,8 @@ import { TargetAppI, AppTransformerI } from './bridge-target.js';
 const ReactionGuard = M.call(M.any()).optional(M.any()).returns(M.any());
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
- * @param {import('@agoric/vow').VowTools} vowTools
+ * @param {Zone} zone
+ * @param {VowTools} vowTools
  */
 const prepareTransferInterceptor = (zone, vowTools) => {
   const { watch } = vowTools;
@@ -60,7 +64,7 @@ const prepareTransferInterceptor = (zone, vowTools) => {
 
           // First, call our target contract listener.
           // A VTransfer active interceptor can return a write acknowledgement
-          /** @type {import('@agoric/vow').Vow<unknown>} */
+          /** @type {Vow<unknown>} */
           let retP = watch(E(tap).receiveUpcall(obj));
 
           // See if the upcall result needs special handling.
@@ -168,7 +172,7 @@ const TransferMiddlewareI = M.interface('TransferMiddleware', {
 /**
  * @callback RegisterTap
  * @param {string} target String identifying the bridge target.
- * @param {ERef<import('./bridge-target.js').TargetApp>} tap The "application
+ * @param {ERef<TargetApp>} tap The "application
  *   tap" to register for the target.
  */
 
@@ -184,7 +188,7 @@ const TransferMiddlewareI = M.interface('TransferMiddleware', {
  * before making further use of the TransferMiddlewareKit or connecting the
  * BridgeTargetKit to a bridge).
  *
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {ReturnType<typeof prepareTransferInterceptor>} makeTransferInterceptor
  */
 const prepareTransferMiddlewareKit = (zone, makeTransferInterceptor) =>
@@ -196,13 +200,13 @@ const prepareTransferMiddlewareKit = (zone, makeTransferInterceptor) =>
       transferMiddleware: TransferMiddlewareI,
     },
     () => ({
-      /** @type {import('./bridge-target.js').TargetRegistry | undefined} */
+      /** @type {TargetRegistry | undefined} */
       targetRegistry: undefined,
     }),
     {
       finisher: {
         /**
-         * @param {import('./bridge-target.js').TargetRegistry} registry
+         * @param {TargetRegistry} registry
          */
         useRegistry(registry) {
           this.state.targetRegistry = registry;
@@ -253,8 +257,8 @@ const prepareTransferMiddlewareKit = (zone, makeTransferInterceptor) =>
 /** @typedef {TransferMiddlewareKit['transferMiddleware']} TransferMiddleware */
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
- * @param {import('@agoric/vow').VowTools} vowTools
+ * @param {Zone} zone
+ * @param {VowTools} vowTools
  */
 export const prepareTransferTools = (zone, vowTools) => {
   const makeTransferInterceptor = prepareTransferInterceptor(zone, vowTools);

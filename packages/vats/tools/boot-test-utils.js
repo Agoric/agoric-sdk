@@ -20,6 +20,10 @@ import { buildRootObject as priceAuthorityRoot } from '../src/vat-priceAuthority
 import { buildRootObject as provisioningRoot } from '../src/vat-provisioning.js';
 import { buildRootObject as zoeRoot } from '../src/vat-zoe.js';
 
+/**
+ * @import {VatAdminFacet} from '@agoric/swingset-vat';
+ */
+
 export const vatRoots = {
   agoricNames: agoricNamesRoot,
   bank: bankRoot,
@@ -125,7 +129,7 @@ export const makePopulatedFakeVatAdmin = () => {
     }
     const baggage = makeScalarBigMapStore('baggage');
     const adminNode =
-      /** @type {import('@agoric/swingset-vat').VatAdminFacet} */ ({});
+      /** @type {VatAdminFacet} */ ({});
     const rootP = buildRoot({}, vatParameters, baggage);
     return E.when(rootP, root => harden({ root, adminNode }));
   };

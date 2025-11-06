@@ -13,6 +13,12 @@ import { outputActionAndHint } from '../lib/wallet.js';
  * @import {ParamTypesMap, ParamTypesMapFromRecord} from '@agoric/governance/src/contractGovernance/typedParamManager.js'
  * @import {AuctionParamRecord} from '@agoric/inter-protocol/src/auction/params.js';
  * @import {ParamValueForType} from '@agoric/governance/src/types.js'
+ * @import {Logger} from 'anylogger';
+ * @import {createCommand} from 'commander';
+ * @import {Writable} from 'stream';
+ * @import {RelativeTimeRecord} from '@agoric/time';
+ * @import {ParamChangesOfferArgs} from '@agoric/inter-protocol/src/econCommitteeCharter.js';
+ * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  */
 
 const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
@@ -27,12 +33,12 @@ const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 /** @typedef {ParamValues<ParamTypesMapFromRecord<AuctionParamRecord>>} AuctionParams */
 
 /**
- * @param {import('anylogger').Logger} _logger
+ * @param {Logger} _logger
  * @param {{
- *   createCommand: typeof import('commander').createCommand,
+ *   createCommand: typeof createCommand,
  *   fetch: typeof window.fetch,
- *   stdout: Pick<import('stream').Writable, 'write'>,
- *   stderr: Pick<import('stream').Writable, 'write'>,
+ *   stdout: Pick<Writable, 'write'>,
+ *   stderr: Pick<Writable, 'write'>,
  *   now: () => number,
  * }} io
  */
@@ -112,7 +118,7 @@ export const makeAuctionCommand = (
          * but TimeMath.toRel prodocues a RelativeTime (which may be a bare bigint).
          *
          * @param {bigint} relValue
-         * @returns {import('@agoric/time').RelativeTimeRecord}
+         * @returns {RelativeTimeRecord}
          */
         const toRel = relValue => ({ timerBrand, relValue });
 
@@ -142,7 +148,7 @@ export const makeAuctionCommand = (
         const t0 = now();
         const deadline = BigInt(Math.round(t0 / 1000) + 60 * opts.deadline);
 
-        /** @type {import('@agoric/inter-protocol/src/econCommitteeCharter.js').ParamChangesOfferArgs} */
+        /** @type {ParamChangesOfferArgs} */
         const offerArgs = {
           deadline,
           params,
@@ -150,7 +156,7 @@ export const makeAuctionCommand = (
           path: { paramPath: { key: 'governedParams' } },
         };
 
-        /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
+        /** @type {OfferSpec} */
         const offer = {
           id: opts.offerId,
           invitationSpec: {
