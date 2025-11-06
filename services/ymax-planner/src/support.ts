@@ -1,7 +1,7 @@
 import { WebSocketProvider, Log } from 'ethers';
 import type { Filter } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
-import type { ClusterName } from '@agoric/client-utils';
+import type { ClusterName } from '@agoric/internal';
 import { fromTypedEntries, objectMap, typedEntries } from '@agoric/internal';
 import {
   CaipChainIds,

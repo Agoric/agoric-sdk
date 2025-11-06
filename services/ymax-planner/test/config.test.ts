@@ -1,6 +1,6 @@
 import test from 'ava';
 import { WebSocketProvider } from 'ethers';
-import type { ClusterName } from '@agoric/client-utils';
+import type { ClusterName } from '@agoric/internal';
 import {
   loadConfig,
   defaultAgoricNetworkSpecForCluster,

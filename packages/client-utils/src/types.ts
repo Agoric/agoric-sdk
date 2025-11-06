@@ -27,22 +27,6 @@ import type {
   Instance,
 } from '@agoric/zoe/src/zoeService/types.js';
 
-/**
- * ClusterName specifies a collection of networks.
- * The specific networks associated with a particular name may vary from context
- * to context, and may also overlap (e.g. a "local" cluster may connect to the
- * same remote networks as a "testnet" cluster), but this type nevertheless
- * supports cross-package coordination where the values associated with static
- * labels are subject to choice of cluster. Some examples:
- *   - the chain ID for a static label like "Agoric" or "Ethereum"
- *   - the cryptographic hash for a static label like "BLD" or "USDC"
- *   - the URL for a service like "Agoric RPC" or "Axelar" or "Spectrum"
- *
- * "mainnet" should always include the Agoric network described by
- * https://main.agoric.net/network-config rather than some other alternative.
- */
-export type ClusterName = 'local' | 'testnet' | 'mainnet';
-
 // For static string key types. String template matching has to be in the ternary below.
 type PublishedTypeMap = {
   'auction.governance': { current: AuctionParamRecord };

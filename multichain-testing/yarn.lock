@@ -72,7 +72,6 @@ __metadata:
     "@agoric/cosmic-proto": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/internal": "workspace:*"
-    "@agoric/portfolio-api": "workspace:*"
     "@agoric/smart-wallet": "workspace:*"
     "@agoric/vats": "workspace:*"
     "@cosmjs/crypto": "npm:^0.36.0"
@@ -263,14 +262,6 @@ __metadata:
     "@endo/patterns": "npm:^1.7.0"
     "@noble/hashes": "npm:~1.5.0"
     bs58: "npm:^6.0.0"
-  languageName: node
-  linkType: soft
-
-"@agoric/portfolio-api@portal:../../agoric-sdk/packages/portfolio-api::locator=root-workspace-0b6124%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@agoric/portfolio-api@portal:../../agoric-sdk/packages/portfolio-api::locator=root-workspace-0b6124%40workspace%3A."
-  bin:
-    portfolio-api: ./src/cli/bin.js
   languageName: node
   linkType: soft
 

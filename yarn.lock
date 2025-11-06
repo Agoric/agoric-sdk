@@ -957,7 +957,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/portfolio-api@workspace:packages/portfolio-api"
   dependencies:
-    "@agoric/client-utils": "workspace:*"
+    "@agoric/internal": "workspace:*"
     "@agoric/orchestration": "workspace:*"
     "@endo/common": "npm:^1.2.13"
     ava: "npm:^5.3.0"

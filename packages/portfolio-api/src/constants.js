@@ -4,7 +4,7 @@
 
 import { objectMap } from '@endo/common/object-map.js';
 
-/** @import {ClusterName} from '@agoric/client-utils'; */
+/** @import {ClusterName} from '@agoric/internal'; */
 /** @import {CaipChainId} from '@agoric/orchestration'; */
 
 /**
