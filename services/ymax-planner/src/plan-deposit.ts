@@ -26,11 +26,37 @@ import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.
 import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
 import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
 import { USDN, type CosmosRestClient } from './cosmos-rest-client.js';
+import type { ChainAddressTokenBalance } from './graphql/api-spectrum-blockchain/__generated/graphql.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
+import type { ProtocolPoolUserBalanceResult } from './graphql/api-spectrum-pools/__generated/graphql.ts';
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import type { Chain, Pool, SpectrumClient } from './spectrum-client.js';
 import { spectrumProtocols } from './support.ts';
 import { getOwn, lookupValueForKey } from './utils.js';
+
+const scale6 = (x: number) => {
+  assert.typeof(x, 'number');
+  return BigInt(Math.round(x * 1e6));
+};
+
+// Note the differences in the shape of field `balance` between the two Spectrum
+// APIs (string vs. Record<'USDC' | 'USD' | string, number>).
+type AccountBalance = ChainAddressTokenBalance['balance'];
+const amountFromAccountBalance = (
+  brand: Brand<'nat'>,
+  balance: AccountBalance,
+) =>
+  balance === undefined
+    ? undefined
+    : AmountMath.make(brand, scale6(Number(balance)));
+type PositionBalance = ProtocolPoolUserBalanceResult['balance'];
+const amountFromPositionBalance = (
+  brand: Brand<'nat'>,
+  balanceRecord: PositionBalance,
+) =>
+  balanceRecord?.USDC === undefined
+    ? undefined
+    : AmountMath.make(brand, scale6(balanceRecord.USDC));
 
 export type BalanceQueryPowers = {
   cosmosRest: CosmosRestClient;
@@ -208,19 +234,13 @@ export const getCurrentBalances = async (
       const { place } = accountQueries[i];
       const result = accountBalances[i];
       if (result.error) errors.push(Error(result.error));
-      balances.set(place, undefined);
-      if (!result.balance) continue;
-      const amountValue = BigInt(Math.round(Number(result.balance) * 1e6));
-      balances.set(place, AmountMath.make(brand, amountValue));
+      balances.set(place, amountFromAccountBalance(brand, result.balance));
     }
     for (let i = 0; i < positionQueries.length; i += 1) {
       const { place } = positionQueries[i];
       const result = positionBalances[i];
       if (result.error) errors.push(Error(result.error));
-      balances.set(place, undefined);
-      if (typeof result.balance?.USDC !== 'number') continue;
-      const amountValue = BigInt(Math.round(result.balance.USDC * 1e6));
-      balances.set(place, AmountMath.make(brand, amountValue));
+      balances.set(place, amountFromPositionBalance(brand, result.balance));
     }
     if (errors.length) {
       throw AggregateError(errors, 'Could not accept balances');
