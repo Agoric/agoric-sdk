@@ -21,7 +21,6 @@ import { agoricVatDataKeys as keys, makeOnceKit } from '@agoric/base-zone';
 
 /**
  * @import {Zone} from './index.js';
- * @import {Baggage} from '@agoric/vat-data';
  * @import {Stores} from './index.js';
  * @import {Baggage} from '@agoric/swingset-liveslots';
  */

@@ -3,7 +3,6 @@
  * @import {DisplayInfo, Issuer} from '@agoric/ertp';
  * @import {BoardRemote} from '@agoric/internal/src/marshal/board-client-utils.js';
  * @import {FakeStorageKit} from '@agoric/internal/src/storage-test-utils.js';
- * @import {BoardRemote} from '@agoric/vats/tools/board-utils.js';
  */
 
 /**
@@ -18,10 +17,7 @@
  */
 /**
  * @typedef {{
- *   brand: Record<
- *     string,
- *     BoardRemote
- *   >;
+ *   brand: Record<string, BoardRemote>;
  *   instance: Record<string, Instance>;
  *   installation: Record<string, Installation>;
  *   issuer: Record<string, Issuer>;
@@ -54,10 +50,7 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
   const reverse = {};
   const entries = ['brand', 'instance', 'installation', 'issuer'].map(kind => {
     /**
-     * @type {[
-     *   string,
-     *   BoardRemote,
-     * ][]}
+     * @type {[string, BoardRemote][]}
      */
     const parts = unmarshalFromVstorage(
       data,

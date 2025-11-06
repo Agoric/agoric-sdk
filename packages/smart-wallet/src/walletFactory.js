@@ -32,7 +32,6 @@ import { shape } from './typeGuards.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {WalletBridgeMsg} from './types.js';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
- * @import {NameAdmin} from '@agoric/vats/src/types.js';
  */
 
 const trace = makeTracer('WltFct');
@@ -141,18 +140,14 @@ export const makeAssetRegistry = assetPublisher => {
  *
  *
  * @typedef {{
- *   getAssetSubscription: () => ERef<
- *     IterableEachTopic<AssetDescriptor>
- *   >;
+ *   getAssetSubscription: () => ERef<IterableEachTopic<AssetDescriptor>>;
  * }} AssetPublisher
  *
  *
  * @typedef {boolean} IsRevive
  *
  * @typedef {{
- *   reviveWallet: (
- *     address: string,
- *   ) => Promise<SmartWallet>;
+ *   reviveWallet: (address: string) => Promise<SmartWallet>;
  *   ackWallet: (address: string) => IsRevive;
  * }} WalletReviver
  */
@@ -164,9 +159,7 @@ export const makeAssetRegistry = assetPublisher => {
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
  *   storageNode: ERemote<StorageNode>;
- *   walletBridgeManager?: ERef<
- *     ScopedBridgeManager<'wallet'>
- *   >;
+ *   walletBridgeManager?: ERef<ScopedBridgeManager<'wallet'>>;
  *   walletReviver?: ERef<WalletReviver>;
  * }} privateArgs
  * @param {Baggage} baggage
@@ -203,8 +196,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
        * Once the owner is known, this calls handleBridgeAction which ensures
        * that all errors are published in the owner wallet's vstorage path.
        *
-       * @param {WalletBridgeMsg} obj validated by
-       *   shape.WalletBridgeMsg
+       * @param {WalletBridgeMsg} obj validated by shape.WalletBridgeMsg
        * @returns {Promise<void>}
        */
       fromBridge: async obj => {
@@ -288,19 +280,15 @@ export const prepare = async (zcf, privateArgs, baggage) => {
        * @param {string} address
        * @param {ERef<Bank>} bank
        * @param {ERef<NameAdmin>} namesByAddressAdmin
-       * @returns {Promise<
-       *   [wallet: SmartWallet, isNew: boolean]
-       * >}
-       *   wallet along with a flag to distinguish between looking up an existing
-       *   wallet and creating a new one.
+       * @returns {Promise<[wallet: SmartWallet, isNew: boolean]>} wallet along
+       *   with a flag to distinguish between looking up an existing wallet and
+       *   creating a new one.
        */
       provideSmartWallet(address, bank, namesByAddressAdmin) {
         let isNew = false;
 
         /**
-         * @type {(
-         *   address: string,
-         * ) => Promise<SmartWallet>}
+         * @type {(address: string) => Promise<SmartWallet>}
          */
         const maker = async _address => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();

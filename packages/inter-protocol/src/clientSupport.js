@@ -218,7 +218,7 @@ const makePsmProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
  *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes,
  *   'brand'
  * >} agoricNames
- * @param {Instance} instance
+ * @param {Instance<unknown>} instance
  * @param {{ offerId: string; feePct?: number; pair: [string, string] } & (
  *   | { wantMinted: number }
  *   | { giveMinted: number }

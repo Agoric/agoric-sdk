@@ -36,13 +36,12 @@ import { start } from '../../../src/contracts/priceAggregator.js';
  * @import {Timestamp} from '@agoric/time';
  * @import {TestFn} from 'ava';
  * @import {OracleStart} from '../../../src/contracts/oracle.js';
- * @import {start} from '../../../src/contracts/priceAggregator.js';
  */
 
 /**
  * @callback MakeFakePriceOracle
  * @param {bigint} [valueOut]
- * @returns {Promise<OracleKit & { instance: Instance }>}
+ * @returns {Promise<OracleKit & { instance: Instance<unknown> }>}
  */
 
 /**

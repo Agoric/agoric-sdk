@@ -19,7 +19,7 @@ import {
 } from '../../../src/walletFactory.js';
 
 /**
- * @import {prepare} from '../../../src/walletFactory.js';
+ * @import {prepare as wfPrepare} from '../../../src/walletFactory.js';
  * @import {SmartWallet} from '../../../src/smartWallet.js';
  * @import {WalletBridgeMsg} from '../../../src/types.js';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
@@ -27,7 +27,7 @@ import {
  */
 
 /**
- * @type {typeof prepare}
+ * @type {typeof wfPrepare}
  */
 export const prepare = async (zcf, privateArgs, baggage) => {
   // copy paste from original contract, with type imports fixed and sayHelloUpgrade method added to creatorFacet)
@@ -37,10 +37,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const { storageNode, walletBridgeManager } = privateArgs;
 
   /**
-   * @type {MapStore<
-   *   string,
-   *   SmartWallet
-   * >}
+   * @type {MapStore<string, SmartWallet>}
    */
   const walletsByAddress = provideDurableMapStore(baggage, 'walletsByAddress');
   const provider = makeAtomicProvider(walletsByAddress);
@@ -52,8 +49,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     }),
     {
       /**
-       * @param {WalletBridgeMsg} obj validated
-       *   by shape.WalletBridgeMsg
+       * @param {WalletBridgeMsg} obj validated by shape.WalletBridgeMsg
        */
       fromBridge: async obj => {
         console.log('walletFactory.fromBridge:', obj);
@@ -128,18 +124,14 @@ export const prepare = async (zcf, privateArgs, baggage) => {
        * @param {string} address
        * @param {ERef<Bank>} bank
        * @param {ERef<NameAdmin>} namesByAddressAdmin
-       * @returns {Promise<
-       *   [SmartWallet, boolean]
-       * >}
-       *   wallet along with a flag to distinguish between looking up an existing
-       *   wallet and creating a new one.
+       * @returns {Promise<[SmartWallet, boolean]>} wallet along with a flag to
+       *   distinguish between looking up an existing wallet and creating a new
+       *   one.
        */
       provideSmartWallet(address, bank, namesByAddressAdmin) {
         let makerCalled = false;
         /**
-         * @type {() => Promise<
-         *   SmartWallet
-         * >}
+         * @type {() => Promise<SmartWallet>}
          */
         const maker = async () => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();

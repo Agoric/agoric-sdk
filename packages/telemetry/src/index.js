@@ -20,7 +20,7 @@ export * from './make-slog-sender.js';
  * }} SlogSender
  */
 /**
- * @typedef {(opts: MakeSlogSenderOptions) => SlogSender | undefined} MakeSlogSender
+ * @typedef {(opts: MakeSlogSenderOptions) => Promise<SlogSender | undefined>} MakeSlogSender
  */
 /**
  * @typedef {MakeSlogSenderCommonOptions & Record<string, unknown>} MakeSlogSenderOptions
