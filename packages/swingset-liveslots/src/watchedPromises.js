@@ -8,19 +8,28 @@ import { initEmpty, M } from '@agoric/store';
 import { parseVatSlot } from './parseVatSlots.js';
 
 /**
+ * @import {PromiseWatcher} from './types.js';
+ * @import {VirtualReferenceManager} from './virtualReferences.js';
+ * @import {VirtualObjectManager} from './virtualObjectManager.js';
+ * @import {ConvertValToSlot} from '@endo/marshal';
+ * @import {ConvertSlotToVal} from '@endo/marshal';
+ * @import {DurableKindHandle} from './vatDataTypes.js';
+ */
+
+/**
  * @template V
  * @template {any[]} [A=unknown[]]
- * @typedef {[watcher: import('./types.js').PromiseWatcher<V, A>, ...args: A]} PromiseWatcherTuple
+ * @typedef {[watcher: PromiseWatcher<V, A>, ...args: A]} PromiseWatcherTuple
  */
 
 /**
  * @param {object} options
  * @param {*} options.syscall
- * @param {import('./virtualReferences.js').VirtualReferenceManager} options.vrm
- * @param {import('./virtualObjectManager.js').VirtualObjectManager} options.vom
+ * @param {VirtualReferenceManager} options.vrm
+ * @param {VirtualObjectManager} options.vom
  * @param {*} options.collectionManager
- * @param {import('@endo/marshal').ConvertValToSlot<any>} options.convertValToSlot
- * @param {import('@endo/marshal').ConvertSlotToVal<any>} options.convertSlotToVal
+ * @param {ConvertValToSlot<any>} options.convertValToSlot
+ * @param {ConvertSlotToVal<any>} options.convertSlotToVal
  * @param {(vref: any) => boolean} options.maybeExportPromise
  */
 export function makeWatchedPromiseManager({
@@ -54,7 +63,7 @@ export function makeWatchedPromiseManager({
   /**
    * defined promise watcher objects indexed by kindHandle
    *
-   * @type {MapStore<import('./vatDataTypes.js').DurableKindHandle, import('./types.js').PromiseWatcher<unknown>>}
+   * @type {MapStore<DurableKindHandle, PromiseWatcher<unknown>>}
    */
   let promiseWatcherByKindTable;
 
@@ -153,10 +162,10 @@ export function makeWatchedPromiseManager({
   /**
    * @template V
    * @template {any[]} A]
-   * @param {import('./vatDataTypes.js').DurableKindHandle} kindHandle
+   * @param {DurableKindHandle} kindHandle
    * @param {(value: V, ...args: A) => void} fulfillHandler
    * @param {(reason: any, ...args: A) => void} rejectHandler
-   * @returns {import('./types.js').PromiseWatcher<V, A>}
+   * @returns {PromiseWatcher<V, A>}
    */
   function providePromiseWatcher(
     kindHandle,
@@ -191,7 +200,7 @@ export function makeWatchedPromiseManager({
   }
 
   /**
-   * @type {<P extends Promise<any>, A extends any[]>(p: P, watcher: import('./types.js').PromiseWatcher<Awaited<P>, A>, ...args: A) => void}
+   * @type {<P extends Promise<any>, A extends any[]>(p: P, watcher: PromiseWatcher<Awaited<P>, A>, ...args: A) => void}
    */
   function watchPromise(p, watcher, ...args) {
     // The following wrapping defers setting up the promise watcher itself to a

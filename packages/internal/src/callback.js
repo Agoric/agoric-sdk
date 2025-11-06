@@ -4,7 +4,14 @@ import { E } from '@endo/far';
 import { isPrimitive, isPassableSymbol } from '@endo/pass-style';
 import { getInterfaceMethodKeys } from '@endo/patterns';
 
-/** @import {ERef} from '@endo/far' */
+/**
+ * @import {ERef} from '@endo/far'
+ * @import {Methods} from '@endo/exo';
+ * @import {Farable} from '@endo/exo';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {InterfaceGuard} from '@endo/patterns';
+ * @import {MethodGuard} from '@endo/patterns';
+ */
 /** @import {Callback, SyncCallback} from './types.js' */
 
 const { fromEntries } = Object;
@@ -16,10 +23,10 @@ const ownKeys =
   );
 
 /**
- * @template {import('@endo/exo').Methods} T
+ * @template {Methods} T
  * @typedef {(
  *   ...args: Parameters<ReturnType<prepareAttenuator>>
- * ) => import('@endo/exo').Farable<T>} MakeAttenuator
+ * ) => Farable<T>} MakeAttenuator
  */
 
 /**
@@ -185,12 +192,11 @@ harden(isCallback);
  * Prepare an attenuator class whose methods can be redirected via callbacks.
  *
  * @template {PropertyKey} M
- * @param {import('@agoric/base-zone').Zone} zone The zone in which to allocate
- *   attenuators.
+ * @param {Zone} zone The zone in which to allocate attenuators.
  * @param {M[]} methodNames Methods to forward.
  * @param {object} opts
- * @param {import('@endo/patterns').InterfaceGuard<{
- *   [K in M]: import('@endo/patterns').MethodGuard;
+ * @param {InterfaceGuard<{
+ *   [K in M]: MethodGuard;
  * }>} [opts.interfaceGuard]
  *   An interface guard for the new attenuator.
  * @param {string} [opts.tag] A tag for the new attenuator exoClass.
@@ -299,8 +305,8 @@ harden(prepareAttenuator);
 /**
  * Prepare an attenuator whose methodNames are derived from the interfaceGuard.
  *
- * @template {import('@endo/patterns').InterfaceGuard} G
- * @param {import('@agoric/base-zone').Zone} zone
+ * @template {InterfaceGuard} G
+ * @param {Zone} zone
  * @param {G} interfaceGuard
  * @param {object} [opts]
  * @param {string} [opts.tag]

@@ -24,7 +24,16 @@ import {
 import { DEFAULT_SIM_SWINGSET_PARAMS } from '../src/sim-params.js';
 import { makeQueue } from '../src/helpers/make-queue.js';
 
-/** @import {EReturn} from '@endo/far'; */
+/**
+ * @import {EReturn} from '@endo/far';
+ * @import {SlogSender} from '@agoric/telemetry';
+ * @import {CosmosSwingsetConfig} from '../src/chain-main.js';
+ * @import {SwingStore} from '@agoric/swing-store';
+ * @import {resolve} from 'node:path';
+ * @import {launchAndShareInternals} from '../src/launch-chain.js';
+ * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js';
+ * @import {CoreEvalSDKType} from '@agoric/cosmic-proto/swingset/swingset.js';
+ */
 /** @import { BlockInfo, InitMsg } from '@agoric/internal/src/chain-utils.js' */
 /** @import { ManagerType, SwingSetConfig } from '@agoric/swingset-vat' */
 /** @import { InboundQueue } from '../src/launch-chain.js'; */
@@ -144,9 +153,9 @@ const baseConfig = harden({
  *   any changes
  * @param {Replacer<SwingSetConfig>} [options.fixupConfig] a final opportunity
  *   to make any changes
- * @param {import('@agoric/telemetry').SlogSender} [options.slogSender]
- * @param {import('../src/chain-main.js').CosmosSwingsetConfig} [options.swingsetConfig]
- * @param {import('@agoric/swing-store').SwingStore} [options.swingStore]
+ * @param {SlogSender} [options.slogSender]
+ * @param {CosmosSwingsetConfig} [options.swingsetConfig]
+ * @param {SwingStore} [options.swingStore]
  *   defaults to a new in-memory store
  * @param {SwingSetConfig['vats']} [options.vats] extra static vat configuration
  * @param {string} [options.baseBootstrapManifest] identifies the colletion of
@@ -160,7 +169,7 @@ const baseConfig = harden({
  *   called with a set of powers, each in their own isolated compartment
  * @param {object} [powers]
  * @param {Pick<import('node:fs/promises'), 'mkdir'>} [powers.fsp]
- * @param {typeof import('node:path').resolve} [powers.resolvePath]
+ * @param {typeof resolve} [powers.resolvePath]
  */
 export const makeCosmicSwingsetTestKit = async (
   receiveBridgeSend,
@@ -270,9 +279,7 @@ export const makeCosmicSwingsetTestKit = async (
     blockingSend,
     shutdown: shutdownKernel,
     internals,
-  } = /** @type {EReturn<import('../src/launch-chain.js').launchAndShareInternals>} */ (
-    launchResult
-  );
+  } = /** @type {EReturn<launchAndShareInternals>} */ (launchResult);
   /** @type {(options?: { kernelOnly?: boolean }) => Promise<void>} */
   const shutdown = async ({ kernelOnly = false } = {}) => {
     await shutdownKernel();
@@ -382,10 +389,10 @@ export const makeCosmicSwingsetTestKit = async (
     // This must be refactored if there is ever a need for such input.
     const fn = new Compartment().evaluate(fnText);
     typeof fn === 'function' || Fail`text must evaluate to a function`;
-    /** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifestPermit} */
+    /** @type {BootstrapManifestPermit} */
     // eslint-disable-next-line no-unused-vars
     const permit = JSON.parse(jsonPermits);
-    /** @type {import('@agoric/cosmic-proto/swingset/swingset.js').CoreEvalSDKType} */
+    /** @type {CoreEvalSDKType} */
     const coreEvalDesc = {
       json_permits: jsonPermits,
       js_code: fnText,

@@ -4,6 +4,12 @@ import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 
+/**
+ * @import {MakeSlogSenderOptions} from './index.js';
+ * @import {ResourceAttributes} from '@opentelemetry/resources';
+ * @import {View} from '@opentelemetry/sdk-metrics';
+ */
+
 export * from './make-slog-sender.js';
 
 /**
@@ -14,7 +20,7 @@ export * from './make-slog-sender.js';
  * }} SlogSender
  */
 /**
- * @typedef {(opts: import('./index.js').MakeSlogSenderOptions) => SlogSender | undefined} MakeSlogSender
+ * @typedef {(opts: MakeSlogSenderOptions) => SlogSender | undefined} MakeSlogSender
  */
 /**
  * @typedef {MakeSlogSenderCommonOptions & Record<string, unknown>} MakeSlogSenderOptions
@@ -56,7 +62,7 @@ export const getResourceAttributes = ({
 }) => {
   const { OTEL_RESOURCE_ATTRIBUTES, SDK_REVISION } = env;
 
-  /** @type {import('@opentelemetry/resources').ResourceAttributes} */
+  /** @type {ResourceAttributes} */
   const resourceAttributes = {};
   if (SDK_REVISION) {
     // Detect testnet-load-generator target revision.
@@ -86,7 +92,7 @@ export const getResourceAttributes = ({
  * @typedef {object} Powers
  * @property {Pick<Console, 'warn'>} console
  * @property {NodeJS.ProcessEnv} env
- * @property {import('@opentelemetry/sdk-metrics').View[]} views
+ * @property {View[]} views
  * @property {string} [serviceName]
  */
 

@@ -9,6 +9,10 @@ import { GET_METHOD_NAMES } from '@endo/marshal';
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
+/**
+ * @import {start} from './ownable-counter.js';
+ */
+
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const root = `${dirname}/ownable-counter.js`;
@@ -22,7 +26,7 @@ test('zoe - ownable-counter contract', async t => {
   // Pack the contract.
   const bundle = await bundleSource(root);
   vatAdminState.installBundle('b1-ownable-counter', bundle);
-  /** @type {Installation<import('./ownable-counter.js').start>} */
+  /** @type {Installation<start>} */
   const installation = await E(zoe).installBundleID('b1-ownable-counter');
 
   const { creatorFacet: firstCounter, publicFacet: viewCounter } = await E(

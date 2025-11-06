@@ -21,6 +21,9 @@ import { agoricVatDataKeys as keys, makeOnceKit } from '@agoric/base-zone';
 
 /**
  * @import {Zone} from './index.js';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {Stores} from './index.js';
+ * @import {Baggage} from '@agoric/swingset-liveslots';
  */
 
 /**
@@ -33,7 +36,7 @@ const isStorable = specimen => isPassable(specimen) && canBeDurable(specimen);
 harden(isStorable);
 
 /**
- * @param {() => import('@agoric/vat-data').Baggage} getBaggage
+ * @param {() => Baggage} getBaggage
  */
 const attachDurableStores = getBaggage => {
   /** @type {Zone['mapStore']} */
@@ -52,7 +55,7 @@ const attachDurableStores = getBaggage => {
   const weakMapStore = (label, options) =>
     provideDurableWeakMapStore(getBaggage(), label, options);
 
-  /** @type {import('./index.js').Stores} */
+  /** @type {Stores} */
   return Far('durableStores', {
     detached: () => detachedDurableStores,
     isStorable,
@@ -63,7 +66,7 @@ const attachDurableStores = getBaggage => {
   });
 };
 
-/** @type {import('./index.js').Stores} */
+/** @type {Stores} */
 const detachedDurableStores = attachDurableStores(() =>
   makeScalarMapStore('detached'),
 );
@@ -71,7 +74,7 @@ const detachedDurableStores = attachDurableStores(() =>
 /**
  * Create a zone whose objects persist between Agoric vat upgrades.
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @param {string} [baseLabel]
  * @returns {Zone}
  */
@@ -99,7 +102,7 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
 
   /** @type {Zone['subZone']} */
   const subZone = (label, options = {}) => {
-    /** @type {import('@agoric/swingset-liveslots').Baggage} */
+    /** @type {Baggage} */
     const subBaggage = subZoneStore(label, options);
     return makeDurableZone(subBaggage, `${baseLabel}.${label}`);
   };

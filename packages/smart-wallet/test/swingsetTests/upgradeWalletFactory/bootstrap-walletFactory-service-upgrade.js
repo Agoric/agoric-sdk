@@ -13,6 +13,8 @@ import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ * @import {SmartWallet} from '../../../src/smartWallet.js';
+ * @import {start} from '../../../src/walletFactory.js';
  */
 
 const trace = makeTracer('BootWFUpg', false);
@@ -41,13 +43,13 @@ export const buildRootObject = async () => {
   /** @type {AdminFacet} */
   let adminFacet;
   let creatorFacet;
-  /** @type {import('../../../src/smartWallet.js').SmartWallet} */
+  /** @type {SmartWallet} */
   let wallet;
 
   const bank = await E(bankManager).getBankForAddress(walletAddr);
 
   // for startInstance
-  /** @type {Installation<import('../../../src/walletFactory.js').start>} */
+  /** @type {Installation<start>} */
   let installation;
   const terms = {
     agoricNames,

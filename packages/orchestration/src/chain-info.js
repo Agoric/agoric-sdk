@@ -17,6 +17,7 @@ import { ChainInfoShape, CosmosAssetInfoShape } from './typeGuards.js';
  * @import {CosmosAssetInfo, CosmosChainInfo, IBCConnectionInfo} from './types.js';
  * @import {NameAdmin} from '@agoric/vats';
  * @import {ChainInfo} from './orchestration-api.js';
+ * @import {NameHubKit} from '@agoric/vats';
  */
 
 /**
@@ -93,9 +94,7 @@ export const registerChain = async (
       .then(() => log(`registered agoricNames chain.${name}`)),
   ];
 
-  const { chainId } = /** @type {import('./types.js').CosmosChainInfo} */ (
-    chainInfo
-  );
+  const { chainId } = /** @type {CosmosChainInfo} */ (chainInfo);
   for (const [counterChainId, connInfo] of Object.entries(connections)) {
     const [key, connectionInfo] = normalizeConnectionInfo(
       chainId,
@@ -123,7 +122,7 @@ export const registerChain = async (
  *
  * Not active on or planned for mainnet.
  *
- * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
+ * @param {ERef<NameHubKit['nameAdmin']>} agoricNamesAdmin
  * @param {(...messages: string[]) => void} [log]
  * @param {Record<string, ChainInfo>} chains
  */

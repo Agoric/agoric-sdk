@@ -8,9 +8,12 @@ import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import * as centralSupply from '../src/centralSupply.js';
 import { feeIssuerConfig } from '../src/core/utils.js';
 
-/** @import {FeeMintAccess, Installation} from '@agoric/zoe' */
 /**
- * @typedef {import('ava').ExecutionContext<{
+ * @import {FeeMintAccess, Installation} from '@agoric/zoe'
+ * @import {ExecutionContext} from 'ava';
+ */
+/**
+ * @typedef {ExecutionContext<{
  *   zoe: ZoeService;
  *   feeMintAccess: FeeMintAccess;
  *   issuer: Record<'IST', Issuer>;

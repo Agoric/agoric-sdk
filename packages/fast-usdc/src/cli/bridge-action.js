@@ -2,6 +2,7 @@ import { boardSlottingMarshaller } from '@agoric/client-utils';
 
 /**
  * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {Writable} from 'stream';
  */
 
 const defaultMarshaller = boardSlottingMarshaller();
@@ -10,7 +11,7 @@ const defaultMarshaller = boardSlottingMarshaller();
 
 /**
  * @param {BridgeAction} bridgeAction
- * @param {Pick<import('stream').Writable,'write'>} stdout
+ * @param {Pick<Writable,'write'>} stdout
  * @param {BoardSlottingMarshaller} marshaller
  */
 const outputAction = (bridgeAction, stdout, marshaller) => {
@@ -25,8 +26,8 @@ export const sendHint =
 /**
  * @param {BridgeAction} bridgeAction
  * @param {{
- *   stdout: Pick<import('stream').Writable,'write'>,
- *   stderr: Pick<import('stream').Writable,'write'>,
+ *   stdout: Pick<Writable,'write'>,
+ *   stderr: Pick<Writable,'write'>,
  * }} io
  * @param {BoardSlottingMarshaller | undefined} marshaller
  */

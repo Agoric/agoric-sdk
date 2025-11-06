@@ -13,11 +13,12 @@ import {
  * @import {MetricOptions, ObservableCounter, ObservableUpDownCounter} from '@opentelemetry/api';
  * @import {MeterProvider} from '@opentelemetry/sdk-metrics';
  * @import {TotalMap} from '@agoric/internal';
+ * @import {MakeSlogSenderOptions} from './index.js';
  */
 
 const knownActionTypes = new Set(Object.values(ActionType.QueuedActionType));
 
-/** @param {import('./index.js').MakeSlogSenderOptions & {otelMeterName: string, otelMeterProvider?: MeterProvider}} opts */
+/** @param {MakeSlogSenderOptions & {otelMeterName: string, otelMeterProvider?: MeterProvider}} opts */
 export const makeSlogSender = async (opts = /** @type {any} */ ({})) => {
   const { otelMeterName, otelMeterProvider } = opts;
   if (!otelMeterName) throw Fail`OTel meter name is required`;

@@ -13,6 +13,7 @@ import { MALLEABLE_NUMBER } from './governedContract.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {BuildRootObjectForTestVat} from '@agoric/swingset-vat/src/kernel/vat-loader/types.js';
  */
 
 const build = async (log, zoe) => {
@@ -112,7 +113,7 @@ const build = async (log, zoe) => {
  * @typedef {ReturnType<EReturn<typeof build>['createVoter']>} EVatVoter
  */
 
-/** @type {import('@agoric/swingset-vat/src/kernel/vat-loader/types.js').BuildRootObjectForTestVat} */
+/** @type {BuildRootObjectForTestVat} */
 export const buildRootObject = vatPowers =>
   Far('root', {
     build: (...args) => build(vatPowers.testLog, ...args),

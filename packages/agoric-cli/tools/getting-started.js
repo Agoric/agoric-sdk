@@ -11,6 +11,11 @@ import { spawn } from 'child_process';
 
 import { makePspawn } from '../src/helpers.js';
 
+/**
+ * @import {ExecutionContext} from 'ava';
+ * @import {ChildProcess} from 'child_process';
+ */
+
 const RETRY_BLOCKHEIGHT_SECONDS = 3;
 const SOCKET_TIMEOUT_SECONDS = 2;
 
@@ -66,7 +71,7 @@ const getLatestBlockHeight = url =>
  * Test the "getting started" workflow. Note that this function may be imported
  * by external repositories.
  *
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {{ init?: string[], install?: string[] }} [options]
  */
 export const gettingStartedWorkflowTest = async (t, options = {}) => {
@@ -110,7 +115,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
 
   /**
    * @param {string[]} args
-   * @returns {{childProcess?: import('child_process').ChildProcess} & Promise<void>}
+   * @returns {{childProcess?: ChildProcess} & Promise<void>}
    */
   function yarn(...args) {
     const ps = pspawnStdout('yarn', args, {
@@ -118,7 +123,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
       env: { ...process.env },
       detached: true,
     });
-    /** @type {{childProcess?: import('child_process').ChildProcess} & Promise<void>} */
+    /** @type {{childProcess?: ChildProcess} & Promise<void>} */
     const p = new Promise((resolve, reject) => {
       ps.then(code => {
         if (code !== 0) {

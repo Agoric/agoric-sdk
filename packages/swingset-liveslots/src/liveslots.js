@@ -14,7 +14,12 @@ import { makeCollectionManager } from './collectionManager.js';
 import { makeWatchedPromiseManager } from './watchedPromises.js';
 import { makeBOYDKit } from './boyd-gc.js';
 
-/** @import {LimitedConsole} from '@agoric/internal/src/js-utils.js'; */
+/**
+ * @import {LimitedConsole} from '@agoric/internal/src/js-utils.js';
+ * @import {LiveSlotsOptions} from './types.js';
+ * @import {VatDeliveryObject} from './types.js';
+ * @import {SwingSetCapData} from './types.js';
+ */
 
 const SYSCALL_CAPDATA_BODY_SIZE_LIMIT = 10_000_000;
 const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
@@ -31,7 +36,7 @@ const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
  * @param {*} forVatID  Vat ID label, for use in debug diagnostics
  * @param {*} vatPowers
- * @param {import('./types.js').LiveSlotsOptions} liveSlotsOptions
+ * @param {LiveSlotsOptions} liveSlotsOptions
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize,
  *                      meterControl }
  * @param {LimitedConsole} console
@@ -1320,7 +1325,7 @@ function build(
   }
 
   /**
-   * @param {import('./types.js').VatDeliveryObject} delivery
+   * @param {VatDeliveryObject} delivery
    * @returns {undefined | ReturnType<startVat>}
    */
   function dispatchToUserspace(delivery) {
@@ -1384,7 +1389,7 @@ function build(
   });
 
   /**
-   * @param { import('./types.js').SwingSetCapData } _disconnectObjectCapData
+   * @param { SwingSetCapData } _disconnectObjectCapData
    * @returns {Promise<void>}
    */
   async function stopVat(_disconnectObjectCapData) {
@@ -1446,7 +1451,7 @@ function build(
    * terminate the vat). Userspace should not be able to cause the delivery
    * to fail: only a bug in liveslots should trigger a failure.
    *
-   * @param {import('./types.js').VatDeliveryObject} delivery
+   * @param {VatDeliveryObject} delivery
    * @returns {Promise<void>}
    */
   async function dispatch(delivery) {
@@ -1496,7 +1501,7 @@ function build(
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {*} vatPowers
- * @param {import('./types.js').LiveSlotsOptions} liveSlotsOptions
+ * @param {LiveSlotsOptions} liveSlotsOptions
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {LimitedConsole} [liveSlotsConsole]
  * @param {*} [buildVatNamespace]

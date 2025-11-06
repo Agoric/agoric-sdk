@@ -8,10 +8,10 @@ import { publishFeedPolicy } from './utils/core-eval.js';
 const trace = makeTracer('FUSD-2', true);
 
 // avoid importing all of @agoric/ertp
-/** @type {typeof import('@agoric/ertp').AmountMath.make} */
+/** @type {typeof AmountMath.make} */
 // @ts-expect-error AssetKind conditionals aren't captured
 const make = (brand, value) => harden({ brand, value });
-/** @type {typeof import('@agoric/ertp/src/ratio.js').makeRatio} */
+/** @type {typeof makeRatio} */
 const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
   harden({
     numerator: make(numeratorBrand, numerator),
@@ -27,6 +27,8 @@ const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
  * @import {FastUSDCCorePowers} from './start-fast-usdc.core.js';
  * @import {ContractRecord, FeeConfig, FeedPolicy} from '@agoric/fast-usdc/src/types.js';
+ * @import {AmountMath} from '@agoric/ertp';
+ * @import {makeRatio} from '@agoric/ertp/src/ratio.js';
  */
 
 /**

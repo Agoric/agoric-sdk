@@ -12,6 +12,8 @@ const trace = makeTracer('RestartSA', true);
 
 /**
  * @import {start as StartFn} from '@agoric/orchestration/src/examples/stake-ica.contract.js';
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  */
 
 /**
@@ -73,7 +75,7 @@ export const getManifest = () => {
   };
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async () =>
   harden({
     // Somewhat unorthodox, source the exports from this builder module
@@ -81,7 +83,7 @@ export const defaultProposalBuilder = async () =>
     getManifestCall: [getManifest.name],
   });
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   // import dynamically so the module can work in CoreEval environment
   const dspModule = await import('@agoric/deploy-script-support');

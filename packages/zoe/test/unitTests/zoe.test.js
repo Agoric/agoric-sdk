@@ -11,6 +11,10 @@ import bundleSource from '@endo/bundle-source';
 import { setup } from './setupBasicMints.js';
 import { setupZCFTest } from './zcf/setupZcfTest.js';
 
+/**
+ * @import {start} from '@agoric/zoe/src/contracts/automaticRefund.js';
+ */
+
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 test(`zoe.getInvitationIssuer`, async t => {
@@ -104,7 +108,7 @@ test(`E(zoe).getPublicFacet`, async t => {
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   vatAdminState.installBundle('b1-refund', bundle);
-  /** @type {Installation<import('@agoric/zoe/src/contracts/automaticRefund.js').start>} */
+  /** @type {Installation<start>} */
   const installation = await E(zoe).installBundleID('b1-refund');
   const { publicFacet, instance } = await E(zoe).startInstance(installation);
   await t.throwsAsync(() =>
@@ -226,7 +230,7 @@ test(`zoe.getTerms`, async t => {
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   vatAdminState.installBundle('b1-refund', bundle);
-  /** @type {Installation<import('@agoric/zoe/src/contracts/automaticRefund.js').start>} */
+  /** @type {Installation<start>} */
   const installation = await E(zoe).installBundleID('b1-refund');
   const { instance } = await E(zoe).startInstance(
     installation,

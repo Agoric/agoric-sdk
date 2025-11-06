@@ -2,7 +2,13 @@ import { deeplyFulfilledObject, objectMap, makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { E } from '@endo/far';
 
-/** @import {OfferId, OfferStatus} from './offers.js'; */
+/**
+ * @import {OfferId, OfferStatus} from './offers.js';
+ * @import {UpdateRecord} from './smartWallet.js';
+ * @import {Follower} from '@agoric/casting';
+ * @import {PublicSubscribers} from './types.js';
+ * @import {TopicsRecord} from '@agoric/zoe/src/contractSupport/index.js';
+ */
 
 export const NO_SMART_WALLET_ERROR = 'no smart wallet';
 
@@ -30,8 +36,7 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
   const invitationsReceived = new Map();
 
   /**
-   * @param {import('./smartWallet.js').UpdateRecord | {}} updateRecord newer
-   *   than previous
+   * @param {UpdateRecord | {}} updateRecord newer than previous
    */
   const update = updateRecord => {
     if (!('updated' in updateRecord)) {
@@ -104,7 +109,7 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
  * If this proves to be a problem we can add an option to this or a related
  * utility to reset state from RPC.
  *
- * @param {ERef<Subscriber<import('./smartWallet.js').UpdateRecord>>} updates
+ * @param {ERef<Subscriber<UpdateRecord>>} updates
  * @param {Brand<'set'>} [invitationBrand]
  */
 export const coalesceUpdates = (updates, invitationBrand) => {
@@ -119,7 +124,7 @@ export const coalesceUpdates = (updates, invitationBrand) => {
 };
 
 /**
- * @param {import('@agoric/casting').Follower<any>} follower
+ * @param {Follower<any>} follower
  * @throws if there is no first height
  */
 export const assertHasData = async follower => {
@@ -136,8 +141,7 @@ export const assertHasData = async follower => {
 /**
  * Handles the case of falsy argument so the caller can consistently await.
  *
- * @param {import('./types.js').PublicSubscribers
- *   | import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord} [subscribers]
+ * @param {PublicSubscribers | TopicsRecord} [subscribers]
  * @returns {ERef<Record<string, string>> | null}
  */
 export const objectMapStoragePath = subscribers => {

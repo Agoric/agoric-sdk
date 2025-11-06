@@ -11,6 +11,8 @@ export { boardSlottingMarshaller };
  * @import {MinimalNetworkConfig} from './network-config.js';
  * @import {TypedPublished} from './types.js';
  * @import {VStorage} from './vstorage.js';
+ * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
+ * @import {BoardRemote} from '@agoric/vats/tools/board-utils.js';
  */
 
 /** @deprecated */
@@ -70,7 +72,7 @@ harden(storageHelper);
  * @deprecated
  * @param {IdMap} ctx
  * @param {VStorage} vstorage
- * @returns {Promise<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes>}
+ * @returns {Promise<AgoricNamesRemotes>}
  */
 export const makeAgoricNames = async (ctx, vstorage) => {
   assertAllDefined({ ctx, vstorage });
@@ -80,7 +82,7 @@ export const makeAgoricNames = async (ctx, vstorage) => {
       const content = await vstorage.readLatest(
         `published.agoricNames.${kind}`,
       );
-      /** @type {Array<[string, import('@agoric/vats/tools/board-utils.js').BoardRemote]>} */
+      /** @type {Array<[string, BoardRemote]>} */
       const parts = storageHelper.unserializeTxt(content, ctx).at(-1);
       for (const [name, remote] of parts) {
         if ('getBoardId' in remote) {

@@ -7,6 +7,7 @@ import { makeScalarStoreCoordinator } from './store.js';
 /**
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {Key, Pattern} from '@endo/patterns';
+ * @import {Coordinator} from './types.js';
  */
 
 /**
@@ -17,7 +18,7 @@ import { makeScalarStoreCoordinator } from './store.js';
  */
 
 /**
- * @param {ERef<import('./types.js').Coordinator>} [coordinator]
+ * @param {ERef<Coordinator>} [coordinator]
  */
 export const makeCache = (coordinator = makeScalarStoreCoordinator()) => {
   /**

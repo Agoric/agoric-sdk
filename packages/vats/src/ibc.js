@@ -20,6 +20,8 @@ const trace = makeTracer('IBC', false);
 /**
  * @import {LocalIbcAddress, RemoteIbcAddress} from '../tools/ibc-utils.js';
  * @import {AttemptDescription} from '@agoric/network';
+ * @import {Remote} from '@agoric/vow';
+ * @import {VowKit} from '@agoric/vow';
  */
 
 // CAVEAT: IBC acks cannot be empty, as the Cosmos IAVL tree cannot represent
@@ -69,16 +71,10 @@ export const prepareIBCConnectionHandler = zone => {
     /**
      * @param {{
      *   protocolUtils: any;
-     *   channelKeyToConnP: MapStore<
-     *     string,
-     *     import('@agoric/vow').Remote<Connection>
-     *   >;
+     *   channelKeyToConnP: MapStore<string, Remote<Connection>>;
      *   channelKeyToSeqAck: MapStore<
      *     string,
-     *     MapStore<
-     *       bigint | number,
-     *       Partial<import('@agoric/vow').VowKit<Bytes>>
-     *     >
+     *     MapStore<bigint | number, Partial<VowKit<Bytes>>>
      *   >;
      * }} param0
      * @param {{

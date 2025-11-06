@@ -9,6 +9,7 @@ import { wrapRemoteMarshallerSendSlotsOnly as wrapRemoteMarshaller } from '../sr
 /**
  * @import {Marshal} from '@endo/marshal';
  * @import {Farable} from '@endo/exo';
+ * @import {ExecutionContext} from 'ava';
  */
 
 /**
@@ -66,7 +67,7 @@ const makeMockMarshaller = ({
 };
 
 /**
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {any} val
  */
 const checkRemoteMarshallerValueInvariants = (t, val) => {
