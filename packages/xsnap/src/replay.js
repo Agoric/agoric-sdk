@@ -96,7 +96,7 @@ function makeSyncAccess(path, { readdirSync, readFileSync }) {
  * @returns {XSnap}
  *
  * @typedef {ReturnType <typeof import('./xsnap.js').xsnap>} XSnap
- * @typedef { import('./xsnap.js').XSnapOptions } XSnapOptions
+ * @import {XSnapOptions} from './xsnap.js';
  */
 export async function recordXSnap(options, folderPath, { writeFileSync }) {
   const folder = makeSyncStorage(folderPath, { writeFileSync });

@@ -291,7 +291,7 @@ export const makeFakeStorageKit = (
 
   return {
     rootNode,
-    // eslint-disable-next-line object-shorthand
+
     data: /** @type {Map<string, string>} */ (data),
     updateNewCellBlockHeight,
     getValues,

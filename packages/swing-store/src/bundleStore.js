@@ -15,8 +15,8 @@ import { createSHA256 } from './hasher.js';
  * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle } Bundle
  */
 /**
- * @typedef { import('./exporter.js').SwingStoreExporter } SwingStoreExporter
- * @typedef { import('./internal.js').ArtifactMode } ArtifactMode
+ * @import {SwingStoreExporter} from './exporter.js';
+ * @import {ArtifactMode} from './internal.js';
  *
  * @typedef {{
  *   addBundle: (bundleID: string, bundle: Bundle) => void;
