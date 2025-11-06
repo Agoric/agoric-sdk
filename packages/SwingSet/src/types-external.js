@@ -1,3 +1,4 @@
+/* eslint-disable @agoric/no-typedef-import -- it's the only way to re-export with JSDoc */
 export {};
 
 /**

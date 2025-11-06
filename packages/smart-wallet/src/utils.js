@@ -19,7 +19,7 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
    * keyed by description; xxx assumes unique
    *
    * @type {Map<
-   *   OfferId,
+   *   string,
    *   {
    *     acceptedIn: OfferId;
    *     description: string;

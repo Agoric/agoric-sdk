@@ -570,7 +570,7 @@ $ inter bid list --from my-acct
           ? state.offerStatuses.entries()
           : current.liveOffers;
         for (const [id, spec] of entries) {
-          const offerStatus = state.offerStatuses.get(id) || spec;
+          const offerStatus = state.offerStatuses.get(String(id)) || spec;
           harden(offerStatus); // coalesceWalletState should do this
           // console.debug(offerStatus.invitationSpec);
           if (!matches(offerStatus.invitationSpec, bidInvitationShape))
