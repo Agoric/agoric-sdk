@@ -94,6 +94,7 @@ const capacityOfDefaultCache = 50;
  * @template V
  * @param {boolean} [weakKey]
  */
+// eslint-disable-next-line no-unused-vars
 const makeDefaultCacheMap = weakKey =>
   /** @type {WeakMapAPI<K, V>} */ (
     makeCacheMapKit(capacityOfDefaultCache, {
