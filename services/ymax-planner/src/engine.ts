@@ -2,6 +2,7 @@
 /* eslint-env node */
 
 import { inspect } from 'node:util';
+import type { InspectOptions } from 'node:util';
 
 import type { Coin } from '@cosmjs/stargate';
 
@@ -14,6 +15,7 @@ import { AmountMath, type Brand } from '@agoric/ertp';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 
+import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import {
   PublishedTxShape,
@@ -29,8 +31,11 @@ import {
   portfolioIdFromKey,
   PoolPlaces,
   PortfolioStatusShapeExt,
-  type FlowDetail,
-  type StatusFor,
+} from '@aglocal/portfolio-contract/src/type-guards.ts';
+import type {
+  FlowDetail,
+  PoolKey as InstrumentId,
+  StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/network.prod.js';
@@ -48,6 +53,8 @@ import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
+import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
+import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import {
   getCurrentBalance,
   getNonDustBalances,
@@ -55,6 +62,7 @@ import {
   planRebalanceToAllocations,
   planWithdrawFromAllocations,
 } from './plan-deposit.ts';
+import type { BalanceQueryPowers } from './plan-deposit.ts';
 import type { SpectrumClient } from './spectrum-client.ts';
 import {
   handlePendingTx,
@@ -75,6 +83,15 @@ const { entries, fromEntries, values } = Object;
 
 // eslint-disable-next-line no-nested-ternary
 const compareBigints = (a: bigint, b: bigint) => (a > b ? 1 : a < b ? -1 : 0);
+
+const stdoutIsTty = process.stdout.isTTY;
+const stderrIsTty = process.stderr.isTTY;
+const inspectOptsForStdout: InspectOptions = { depth: 4, colors: stdoutIsTty };
+const inspectOptsForStderr: InspectOptions = { depth: 4, colors: stderrIsTty };
+const inspectForStdout = (obj: unknown, options?: InspectOptions) =>
+  inspect(obj, { ...inspectOptsForStdout, ...options });
+const inspectForStderr = (obj: unknown, options?: InspectOptions) =>
+  inspect(obj, { ...inspectOptsForStderr, ...options });
 
 const knownErrorProps = harden(['cause', 'errors', 'message', 'name', 'stack']);
 
@@ -163,6 +180,10 @@ type Powers = {
   evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
+  spectrumBlockchain?: SpectrumBlockchainSdk;
+  spectrumPools?: SpectrumPoolsSdk;
+  spectrumChainIds: Partial<Record<SupportedChain, string>>;
+  spectrumPoolIds: Partial<Record<InstrumentId, string>>;
   cosmosRest: CosmosRestClient;
   signingSmartWalletKit: SigningSmartWalletKit;
   walletStore: ReturnType<typeof reflectWalletStore>;
@@ -172,17 +193,24 @@ type Powers = {
   ) => ReturnType<typeof getInvocationUpdate>;
   now: typeof Date.now;
   gasEstimator: GasEstimator;
+  usdcTokensByChain: Partial<Record<SupportedChain, string>>;
 };
 
 type ProcessPortfolioPowers = Pick<
   Powers,
   | 'cosmosRest'
   | 'spectrum'
+  | 'spectrumBlockchain'
+  | 'spectrumPools'
+  | 'spectrumChainIds'
+  | 'spectrumPoolIds'
   | 'signingSmartWalletKit'
   | 'walletStore'
   | 'getWalletInvocationUpdate'
   | 'gasEstimator'
+  | 'usdcTokensByChain'
 > & {
+  isDryRun?: boolean;
   depositBrand: Brand<'nat'>;
   feeBrand: Brand<'nat'>;
   portfolioKeyForDepositAddr: Map<Bech32Address, string>;
@@ -197,6 +225,7 @@ const processPortfolioEvents = async (
   blockHeight: bigint,
   deferrals: EventRecord[],
   {
+    isDryRun,
     cosmosRest,
     depositBrand,
     feeBrand,
@@ -205,6 +234,11 @@ const processPortfolioEvents = async (
     walletStore,
     getWalletInvocationUpdate,
     spectrum,
+    spectrumBlockchain,
+    spectrumPools,
+    spectrumChainIds,
+    spectrumPoolIds,
+    usdcTokensByChain,
     vstoragePathPrefixes,
 
     portfolioKeyForDepositAddr,
@@ -224,6 +258,15 @@ const processPortfolioEvents = async (
     }
     portfolioKeyForDepositAddr.set(addr, key);
   };
+  const balanceQueryPowers: BalanceQueryPowers = {
+    cosmosRest,
+    spectrum,
+    spectrumBlockchain,
+    spectrumPools,
+    spectrumChainIds,
+    spectrumPoolIds,
+    usdcTokensByChain,
+  };
   const startFlow = async (
     portfolioStatus: StatusFor['portfolio'],
     portfolioKey: string,
@@ -234,7 +277,7 @@ const processPortfolioEvents = async (
     const currentBalances = await getNonDustBalances(
       portfolioStatus,
       depositBrand,
-      { cosmosRest, spectrum },
+      balanceQueryPowers,
     );
     const errorContext: Record<string, unknown> = {
       flowDetail,
@@ -289,19 +332,27 @@ const processPortfolioEvents = async (
       );
       // The transaction has been submitted, but we won't know about a rejection
       // for at least another block.
-      void getWalletInvocationUpdate(id as any).catch(err => {
-        console.warn(
-          `⚠️ Failure for ${path} in-progress flow ${flowKey} resolvePlan`,
-          { policyVersion, rebalanceCount },
-          steps,
-          err,
-        );
-      });
+      if (!isDryRun) {
+        void getWalletInvocationUpdate(id as any).catch(err => {
+          console.warn(
+            `⚠️ Failure for ${path} in-progress flow ${flowKey} resolvePlan`,
+            { policyVersion, rebalanceCount },
+            steps,
+            err,
+          );
+        });
+      }
       console.log(
         `Resolving ${path} in-progress flow ${flowKey}`,
         flowDetail,
         currentBalances,
-        { portfolioId, flowId, steps, policyVersion, rebalanceCount },
+        inspectForStdout({
+          portfolioId,
+          flowId,
+          steps,
+          policyVersion,
+          rebalanceCount,
+        }),
         tx,
       );
     } catch (err) {
@@ -347,10 +398,10 @@ const processPortfolioEvents = async (
         // Stale responses are an unfortunate possibility when connecting with
         // more than one follower node, but we expect to recover automatically.
         const msg = `⚠️  Deferring ${path} of age ${age} block(s)`;
-        console.warn(msg, eventRecord);
+        console.warn(msg, inspectForStderr(eventRecord));
       } else {
         const msg = `🚨 Deferring ${path} of age ${age} block(s)`;
-        console.error(msg, eventRecord, err);
+        console.error(msg, inspectForStderr(eventRecord), err);
       }
       deferrals.push(eventRecord);
     }
@@ -487,27 +538,20 @@ export const processInitialPendingTransactions = async (
 };
 
 export const startEngine = async (
+  powers: Powers,
   {
-    evmCtx,
-    rpc,
-    spectrum,
-    cosmosRest,
-    signingSmartWalletKit,
-    walletStore,
-    getWalletInvocationUpdate,
-    now,
-    gasEstimator,
-  }: Powers,
-  {
+    isDryRun,
     contractInstance,
     depositBrandName,
     feeBrandName,
   }: {
+    isDryRun?: boolean;
     contractInstance: string;
     depositBrandName: string;
     feeBrandName: string;
   },
 ) => {
+  const { evmCtx, cosmosRest, now, rpc, signingSmartWalletKit } = powers;
   const vstoragePathPrefixes = makeVstoragePathPrefixes(contractInstance);
   const { portfoliosPathPrefix, pendingTxPathPrefix } = vstoragePathPrefixes;
   await null;
@@ -515,7 +559,6 @@ export const startEngine = async (
 
   // Test balance querying (using dummy addresses for now).
   {
-    const balanceQueryPowers = { spectrum, cosmosRest };
     const poolPlaceInfoByProtocol = new Map(
       values(PoolPlaces).map(info => [info.protocol, info]),
     );
@@ -531,7 +574,7 @@ export const startEngine = async (
                   entries(evmCtx.usdcAddresses)[0],
                 );
           const accountIdByChain = { [chainName]: dummyAddress } as any;
-          await getCurrentBalance(info, accountIdByChain, balanceQueryPowers);
+          await getCurrentBalance(info, accountIdByChain, powers);
         } catch (err) {
           const expandos = partialMap(Reflect.ownKeys(err), key =>
             knownErrorProps.includes(key as any) ? false : [key, err[key]],
@@ -612,16 +655,11 @@ export const startEngine = async (
   //       the first result from `responses`.
   const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
   const processPortfolioPowers: ProcessPortfolioPowers = Object.freeze({
-    cosmosRest,
-    gasEstimator,
+    ...powers,
+    isDryRun,
     depositBrand: depositAsset.brand as Brand<'nat'>,
     feeBrand: feeAsset.brand as Brand<'nat'>,
-    signingSmartWalletKit,
-    walletStore,
-    getWalletInvocationUpdate,
-    spectrum,
     vstoragePathPrefixes,
-
     portfolioKeyForDepositAddr,
   });
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
@@ -763,13 +801,11 @@ export const startEngine = async (
     await processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers);
 
     console.log(
-      inspect(
-        {
-          portfolioEvents,
-          pendingTxEvents,
-        },
-        { depth: 10 },
-      ),
+      inspectForStdout({
+        blockHeight: respHeight,
+        portfolioEvents,
+        pendingTxEvents,
+      }),
     );
   }
 

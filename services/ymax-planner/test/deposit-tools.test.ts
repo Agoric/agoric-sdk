@@ -5,14 +5,18 @@ import test from 'ava';
 import { planUSDNDeposit } from '@aglocal/portfolio-contract/test/mocks.js';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
 import PROD_NETWORK from '@aglocal/portfolio-contract/tools/network/network.prod.ts';
+import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
+import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
+import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
 import type { VstorageKit } from '@agoric/client-utils';
-import { AmountMath, type Brand } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
+import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import { objectMap } from '@agoric/internal';
 import { Far } from '@endo/pass-style';
 import { CosmosRestClient, USDN } from '../src/cosmos-rest-client.ts';
 import {
+  getCurrentBalances,
   getNonDustBalances,
-  handleDeposit,
   planDepositToAllocations,
   planRebalanceToAllocations,
   planWithdrawFromAllocations,
@@ -26,6 +30,43 @@ const makeDeposit = value => AmountMath.make(depositBrand, value);
 const feeBrand = Far('fee brand (BLD)') as Brand<'nat'>;
 
 const powers = { fetch, setTimeout };
+
+/**
+ * Helper for test results
+ */
+const handleDeposit = async (
+  portfolioKey: `${string}.portfolios.portfolio${number}`,
+  amount: NatAmount,
+  feeBrand: Brand<'nat'>,
+  powers: {
+    readPublished: VstorageKit['readPublished'];
+    spectrum: SpectrumClient;
+    cosmosRest: CosmosRestClient;
+    gasEstimator: GasEstimator;
+  },
+  network: NetworkSpec = PROD_NETWORK,
+) => {
+  const querier = makePortfolioQuery(powers.readPublished, portfolioKey);
+  const status = await querier.getPortfolioStatus();
+  const { policyVersion, rebalanceCount, targetAllocation } = status;
+  if (!targetAllocation) return { policyVersion, rebalanceCount, steps: [] };
+  const currentBalances = await getCurrentBalances(status, amount.brand, {
+    spectrumChainIds: {},
+    spectrumPoolIds: {},
+    usdcTokensByChain: {},
+    ...powers,
+  });
+  const steps = await planDepositToAllocations({
+    amount,
+    brand: amount.brand,
+    currentBalances,
+    targetAllocation,
+    network,
+    feeBrand,
+    gasEstimator: powers.gasEstimator,
+  });
+  return { policyVersion, rebalanceCount, steps };
+};
 
 test('getNonDustBalances filters balances at or below the dust epsilon', async t => {
   const status = {
@@ -74,13 +115,16 @@ test('getNonDustBalances filters balances at or below the dust epsilon', async t
   } as unknown as CosmosRestClient;
 
   const balances = await getNonDustBalances(status, depositBrand, {
-    spectrum: mockSpectrumClient,
     cosmosRest: mockCosmosRestClient,
+    spectrum: mockSpectrumClient,
+    spectrumChainIds: {},
+    spectrumPoolIds: {},
+    usdcTokensByChain: {},
   });
 
   t.deepEqual(Object.keys(balances), ['Compound_Base']);
   t.false(Object.hasOwn(balances, 'Aave_Arbitrum'));
-  t.is(balances.Compound_Base.value, 150n);
+  t.is(balances.Compound_Base!.value, 150n);
 });
 
 test('getNonDustBalances retains noble balances above the dust epsilon', async t => {
@@ -107,12 +151,15 @@ test('getNonDustBalances retains noble balances above the dust epsilon', async t
   } as unknown as CosmosRestClient;
 
   const balances = await getNonDustBalances(status, depositBrand, {
-    spectrum: spectrumStub,
     cosmosRest: mockCosmosRestClient,
+    spectrum: spectrumStub,
+    spectrumChainIds: {},
+    spectrumPoolIds: {},
+    usdcTokensByChain: {},
   });
 
   t.deepEqual(Object.keys(balances), ['USDN']);
-  t.is(balances.USDN.value, 101n);
+  t.is(balances.USDN!.value, 101n);
 });
 
 /**
@@ -304,8 +351,8 @@ test('handleDeposit handles different position types correctly', async t => {
         flowCount: 0,
         accountIdByChain: {
           noble: 'noble:test:addr1',
-          Avalanche: 'avalanche:test:addr2',
-          Ethereum: 'ethereum:test:addr3',
+          Avalanche: 'example:avalanche:addr2',
+          Ethereum: 'example:ethereum:addr3',
         },
         targetAllocation: {
           USDN: 40n,

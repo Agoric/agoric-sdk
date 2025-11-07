@@ -50,6 +50,7 @@ const deprecatedTerminology = Object.fromEntries(
 export default [
   {
     ignores: [
+      '**/__generated',
       '**/codegen',
       '**/coverage/',
       '**/node_modules/',
