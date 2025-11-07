@@ -3,7 +3,7 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import { Far, type EReturn } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import { prepareLocalOrchestrationAccountKit } from '../../src/exos/local-orchestration-account.js';
-import { prepareMetaUpdater } from '../../src/utils/result-meta.js';
+import { prepareProgressReporter } from '../../src/utils/progress.js';
 import { commonSetup } from '../supports.js';
 
 /**
@@ -30,8 +30,8 @@ export const prepareMakeTestLOAKit = (
     marshaller,
   );
 
-  const makeMetaUpdater = prepareMetaUpdater(
-    rootZone.subZone('loaMetaUpdater'),
+  const makeProgressReporter = prepareProgressReporter(
+    rootZone.subZone('loaProgressReporter'),
     {
       vowTools,
     },
@@ -40,7 +40,7 @@ export const prepareMakeTestLOAKit = (
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     rootZone,
     {
-      makeMetaUpdater,
+      makeProgressReporter,
       makeRecorderKit,
       // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
       zcf,

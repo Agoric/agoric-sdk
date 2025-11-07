@@ -22,12 +22,12 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   denomHash,
   type Bech32Address,
-  type Metadata,
-  type MetaTrafficEntry,
-  type MetaUpdater,
+  type ProgressReport,
+  type TrafficEntry,
+  type ProgressReporter,
   type Orchestrator,
 } from '@agoric/orchestration';
-import { prepareMetaUpdater } from '@agoric/orchestration/src/utils/result-meta.js';
+import { prepareProgressReporter } from '@agoric/orchestration/src/utils/progress.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import {
   parseAccountId,
@@ -250,8 +250,8 @@ const mocks = (
             value: `${name}1${1000 + 7 * (nonce += 2)}`,
           });
           const account = {
-            makeMetaUpdater(initialMeta: Metadata = {}) {
-              return makeMetaUpdater(initialMeta);
+            makeProgressReporter(initialMeta: ProgressReport = {}) {
+              return makeProgressReporter(initialMeta);
             },
             getAddress() {
               return addr;
@@ -264,7 +264,7 @@ const mocks = (
             async transfer(
               address,
               amount,
-              opts: { metaUpdater?: MetaUpdater; memo?: string } = {},
+              opts: { progressReporter?: ProgressReporter; memo?: string } = {},
             ) {
               if (!('denom' in amount)) throw Error('#10449');
               log({
@@ -281,13 +281,13 @@ const mocks = (
                 !err.message.includes(cosmosChainIdToName[address.chainId])
               )
                 throwIfErr('transfer');
-              const metaUpdater = opts?.metaUpdater;
+              const progressReporter = opts?.progressReporter;
               if (opts?.memo && address.value.startsWith('axelar1')) {
                 factoryPK.resolve(opts.memo);
               }
               const dstChainId = chainOfAccount(address);
 
-              const traffic = [] as MetaTrafficEntry[];
+              const traffic = [] as TrafficEntry[];
               let lastResult = Promise.resolve({});
               if (name !== 'agoric') {
                 const result = await account.executeEncodedTx(
@@ -297,12 +297,12 @@ const mocks = (
                       value: { sequence: 223n },
                     },
                   ],
-                  { metaUpdater },
+                  { progressReporter },
                 );
                 lastResult = lastResult.then(() => result);
               }
 
-              if (metaUpdater) {
+              if (progressReporter) {
                 const getTransferChannel = (caipChainId: string) => {
                   const cosmosChainId = caipChainId.replace(/^cosmos:/, '');
                   const channel =
@@ -328,7 +328,7 @@ const mocks = (
                       channel.counterPartyPortId,
                       channel.counterPartyChannelId,
                     ],
-                  } as MetaTrafficEntry;
+                  } as TrafficEntry;
                   traffic.push(transferTraffic);
                 } else {
                   const revChannel = getTransferChannel(srcChainId);
@@ -344,28 +344,28 @@ const mocks = (
                       revChannel.counterPartyChannelId,
                     ],
                     dst: ['ibc', revChannel.portId, revChannel.channelId],
-                  } as MetaTrafficEntry;
+                  } as TrafficEntry;
                   traffic.push(transferTraffic);
                 }
-                const priorMeta = metaUpdater.get();
+                const priorMeta = progressReporter.get();
                 const newMeta = {
                   ...priorMeta,
                   traffic: [...(priorMeta.traffic ?? []), ...traffic],
                 };
-                metaUpdater.update(harden(newMeta));
+                progressReporter.update(harden(newMeta));
               }
 
               return lastResult;
             },
             async executeEncodedTx(
               msgs,
-              opts: { metaUpdater?: MetaUpdater } = {},
+              opts: { progressReporter?: ProgressReporter } = {},
             ) {
               log({ _cap: addr.value, _method: 'executeEncodedTx', msgs });
               throwIfErr('executeEncodedTx');
-              /** @type {MetaUpdater | undefined} */
-              const metaUpdater = opts?.metaUpdater;
-              if (metaUpdater) {
+              /** @type {ProgressReporter | undefined} */
+              const progressReporter = opts?.progressReporter;
+              if (progressReporter) {
                 const agoricChain = await orch.getChain('agoric');
                 const agoricInfo = await agoricChain.getChainInfo();
                 const newTraffic = [
@@ -379,13 +379,13 @@ const mocks = (
                     // Network API connection.sendWithMeta provides it.
                     seq: { status: 'unknown' },
                   },
-                ] as MetaTrafficEntry[];
-                const priorMeta = metaUpdater.get();
-                const meta = {
-                  ...priorMeta,
-                  traffic: [...(priorMeta.traffic ?? []), ...newTraffic],
+                ] as TrafficEntry[];
+                const priorReport = progressReporter.get();
+                const report = {
+                  ...priorReport,
+                  traffic: [...(priorReport.traffic ?? []), ...newTraffic],
                 };
-                metaUpdater.update(meta);
+                progressReporter.update(report);
               }
 
               const result = msgs.map(({ typeUrl, response = {} }) => {
@@ -480,7 +480,7 @@ const mocks = (
   }) as GuestInterface<ZoeTools>;
 
   const vowTools: VowTools = makeVowToolsAreJustPromises();
-  const makeMetaUpdater = prepareMetaUpdater(zone, { vowTools });
+  const makeProgressReporter = prepareProgressReporter(zone, { vowTools });
 
   const board = makeFakeBoard();
   const marshaller = board.getReadonlyMarshaller();

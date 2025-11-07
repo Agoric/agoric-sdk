@@ -13,7 +13,7 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { isVow } from '@agoric/vow/src/vow-utils.js';
 import type {
   IBCMsgTransferOptions,
-  MetaTrafficEntry,
+  TrafficEntry,
 } from '../../src/cosmos-api.js';
 import { PFM_RECEIVER } from '../../src/exos/chain-hub.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
@@ -277,9 +277,9 @@ test('transfer', async t => {
     },
   });
 
-  const metaUpdater = await VE(account).makeMetaUpdater();
+  const progressReporter = await VE(account).makeProgressReporter();
   const multiHopResult = await doTransfer(aDenomAmount, dydxDest, {
-    metaUpdater,
+    progressReporter,
   });
 
   t.is(latestTxMsg().receiver, PFM_RECEIVER, 'defaults to "pfm" receiver');
@@ -300,7 +300,7 @@ test('transfer', async t => {
     'multiHopResult resolves to ICS20_TRANSFER_SUCCESS',
   );
 
-  const multiHopMeta = await VE(metaUpdater).finish();
+  const multiHopMeta = await VE(progressReporter).finish();
   t.deepEqual(
     multiHopMeta,
     {
@@ -313,7 +313,7 @@ test('transfer', async t => {
           dst: ['ibc', 'transfer', 'channel-21'],
           seq: 7,
         },
-      ] as MetaTrafficEntry[],
+      ] as TrafficEntry[],
     },
     'we only receive meta for the first hop of a PFM-forwarded transfer',
   );

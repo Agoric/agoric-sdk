@@ -5,7 +5,7 @@ import type { ExecutionContext } from 'ava';
 import { prepareCosmosOrchestrationAccount } from '../../src/exos/cosmos-orchestration-account.js';
 import { commonSetup } from '../supports.js';
 import type { ICQConnection } from '../../src/exos/icq-connection-kit.js';
-import { prepareMetaUpdater } from '../../src/utils/result-meta.js';
+import { prepareProgressReporter } from '../../src/utils/progress.js';
 
 /**
  * A testing utility that creates a (Cosmos)ChainAccount and makes a
@@ -28,8 +28,8 @@ export const prepareMakeTestCOAKit = (
   t.log('exo setup - prepareCosmosOrchestrationAccount');
   const { cosmosInterchainService, rootZone, timer, vowTools } = bootstrap;
 
-  const makeMetaUpdater = prepareMetaUpdater(
-    rootZone.subZone('coaMetaUpdater'),
+  const makeProgressReporter = prepareProgressReporter(
+    rootZone.subZone('coaProgressReporter'),
     {
       vowTools,
     },
@@ -44,7 +44,7 @@ export const prepareMakeTestCOAKit = (
     rootZone.subZone('CosmosOrchAccount'),
     {
       chainHub: facadeServices.chainHub,
-      makeMetaUpdater,
+      makeProgressReporter,
       makeRecorderKit,
       timerService: timer,
       vowTools,

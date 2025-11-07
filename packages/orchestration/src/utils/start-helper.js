@@ -7,7 +7,7 @@ import { makeChainHub } from '../exos/chain-hub.js';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
 import { prepareLocalChainFacade } from '../exos/local-chain-facade.js';
 import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
-import { prepareMetaUpdater } from './result-meta.js';
+import { prepareProgressReporter } from './progress.js';
 import { prepareOrchestrator } from '../exos/orchestrator.js';
 import { prepareRemoteChainFacade } from '../exos/remote-chain-facade.js';
 import { makeOrchestrationFacade } from '../facade.js';
@@ -104,11 +104,13 @@ export const provideOrchestration = (
     baggage,
     cachingMarshaller,
   );
-  const makeMetaUpdater = prepareMetaUpdater(zones.orchestration, { vowTools });
+  const makeProgressReporter = prepareProgressReporter(zones.orchestration, {
+    vowTools,
+  });
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zones.orchestration,
     {
-      makeMetaUpdater,
+      makeProgressReporter,
       makeRecorderKit,
       zcf,
       timerService,
@@ -127,7 +129,7 @@ export const provideOrchestration = (
     zones.orchestration,
     {
       chainHub,
-      makeMetaUpdater,
+      makeProgressReporter,
       makeRecorderKit,
       timerService,
       vowTools,

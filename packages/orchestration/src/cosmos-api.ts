@@ -44,15 +44,14 @@ import type {
   CosmosChainAddress,
   Denom,
   DenomAmount,
-  ResultMeta,
-  MetaUpdater,
+  ProgressReporter,
 } from './types.js';
 
 /**
  * Logical record of Network API traffic for a specific data packet sent between
  * two chains.
  */
-export type MetaTrafficEntry<
+export type TrafficEntry<
   /** Source Protocol (like `'ibc'`) */
   SP extends keyof NetworkEndpoints = keyof NetworkEndpoints,
   /** Destination Protocol */
@@ -73,12 +72,12 @@ export type MetaTrafficEntry<
 };
 
 export type MetaWithTraffic = Record<string, any> & {
-  traffic?: MetaTrafficEntry[];
+  traffic?: TrafficEntry[];
 };
 
 export type SendTxOptions = Partial<Omit<TxBody, 'messages'>> & {
   sendOpts?: SendOptions;
-  metaUpdater?: MetaUpdater;
+  progressReporter?: ProgressReporter;
 };
 
 /**
@@ -429,7 +428,7 @@ export type IBCMsgTransferOptions = {
     timeout?: ForwardInfo['forward']['timeout'];
     retries?: ForwardInfo['forward']['retries'];
   };
-  metaUpdater?: MetaUpdater;
+  progressReporter?: ProgressReporter;
 };
 
 /**

@@ -33,7 +33,7 @@ import {
 } from '../typeGuards.js';
 import { maxClockSkew, toDenomAmount } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
-import { makePickTools } from '../utils/pick-tools.js';
+import { makeVowExoHelpers } from '../utils/exo-helpers.js';
 import { makeTimestampHelper } from '../utils/time.js';
 import { preparePacketTools } from './packet-tools.js';
 import { prepareIBCTools } from './ibc-packet.js';
@@ -56,7 +56,7 @@ const MsgSend = CodecHelper(MsgSendType);
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
  * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions,
- *   OrchestrationAccountCommon, LocalAccountMethods, MetaTrafficEntry, TransferRoute,
+ *   OrchestrationAccountCommon, LocalAccountMethods, TrafficEntry, TransferRoute,
  *   AccountIdArg, Denom, Bech32Address, IBCConnectionInfo, ChainInfo, CosmosChainInfo} from '@agoric/orchestration';
  * @import {OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {IBCEvent} from '@agoric/vats';
@@ -74,7 +74,7 @@ const MsgSend = CodecHelper(MsgSendType);
  * @import {ChainHub} from './chain-hub.js';
  * @import {PacketTools} from './packet-tools.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
- * @import {MakeMetaUpdater} from '../utils/result-meta.js';
+ * @import {MakeProgressReporter} from '../utils/progress.js';
  */
 
 const trace = makeTracer('LocalOrchAccount');
@@ -158,13 +158,13 @@ const ErrTraceNotFound = 'denomination trace not found';
  * @param {ChainHub} powers.chainHub
  * @param {Remote<LocalChain>} powers.localchain
  * @param {ZoeTools} powers.zoeTools
- * @param {MakeMetaUpdater} powers.makeMetaUpdater
+ * @param {MakeProgressReporter} powers.makeProgressReporter
  */
 export const prepareLocalOrchestrationAccountKit = (
   zone,
   {
     makeRecorderKit,
-    makeMetaUpdater,
+    makeProgressReporter,
     zcf,
     timerService,
     vowTools,
@@ -174,7 +174,7 @@ export const prepareLocalOrchestrationAccountKit = (
   },
 ) => {
   const { watch, asVow, when } = vowTools;
-  const pickTools = makePickTools({ watch });
+  const vowExo = makeVowExoHelpers({ watch });
   const { makeIBCTransferSender } = prepareIBCTools(
     zone.subZone('ibcTools'),
     vowTools,
@@ -189,9 +189,9 @@ export const prepareLocalOrchestrationAccountKit = (
   const makeLocalOrchestrationAccountKit = zone.exoClassKit(
     'Local Orchestration Account Kit',
     {
-      ...pickTools.watcherShapes,
+      ...vowExo.watcherShapes,
       helper: M.interface('helper', {
-        ...pickTools.helperShapes,
+        ...vowExo.helperShapes,
         amountToCoin: M.call(AmountArgShape).returns(M.record()),
       }),
       holder: HolderI,
@@ -280,9 +280,9 @@ export const prepareLocalOrchestrationAccountKit = (
       return { account, address, packetTools, topicKit };
     },
     {
-      ...pickTools.watchers,
+      ...vowExo.watchers,
       helper: {
-        ...pickTools.helper,
+        ...vowExo.helper,
         /**
          * @param {AmountArg} amount
          * @returns {Coin}
@@ -514,11 +514,11 @@ export const prepareLocalOrchestrationAccountKit = (
 
           /** @type {number | undefined} */
           let trafficEntryIndex;
-          const metaUpdater = opts?.metaUpdater;
-          if (metaUpdater) {
-            const priorMeta = metaUpdater.get() || {};
+          const progressReporter = opts?.progressReporter;
+          if (progressReporter) {
+            const priorMeta = progressReporter.get() || {};
 
-            /** @type {MetaTrafficEntry} */
+            /** @type {TrafficEntry} */
             const newTrafficEntry = {
               op: 'transfer',
               srcChainId: `${srcChainInfo.namespace}:${srcChainInfo.reference}`,
@@ -544,13 +544,13 @@ export const prepareLocalOrchestrationAccountKit = (
             trafficEntryIndex = priorTrafficEntries.length;
             const newMeta = {
               ...priorMeta,
-              traffic: /** @type {MetaTrafficEntry[]} */ ([
+              traffic: /** @type {TrafficEntry[]} */ ([
                 ...priorTrafficEntries,
                 newTrafficEntry,
               ]),
             };
 
-            metaUpdater.update(newMeta);
+            progressReporter.update(newMeta);
           }
 
           // Begin capturing packets, send the transfer packet, then return a
@@ -701,9 +701,9 @@ export const prepareLocalOrchestrationAccountKit = (
         },
       },
       holder: {
-        /** @type {OrchestrationAccountCommon['makeMetaUpdater']} */
-        makeMetaUpdater(initialMeta = {}) {
-          return makeMetaUpdater(initialMeta);
+        /** @type {OrchestrationAccountCommon['makeProgressReporter']} */
+        makeProgressReporter(initialMeta = {}) {
+          return makeProgressReporter(initialMeta);
         },
 
         /** @type {HostOf<OrchestrationAccountCommon['asContinuingOffer']>} */

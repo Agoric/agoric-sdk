@@ -231,7 +231,7 @@ export const EvaluateTxOptionsShape = M.splitRecord(
     extensionOptions: M.arrayOf(M.any()),
     nonCriticalExtensionOptions: M.arrayOf(M.any()),
     sendOpts: SendOptionsShape,
-    metaUpdater: M.remotable(),
+    progressReporter: M.remotable(),
   },
 );
 
@@ -304,7 +304,7 @@ export const ForwardOptsShape = M.splitRecord(
 export const IBCTransferOptionsShape = M.splitRecord(
   {},
   {
-    metaUpdater: M.remotable(),
+    progressReporter: M.remotable(),
     timeoutTimestamp: M.bigint(),
     timeoutHeight: {
       revisionHeight: M.bigint(),

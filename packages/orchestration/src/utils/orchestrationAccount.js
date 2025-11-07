@@ -38,5 +38,5 @@ export const orchestrationAccountMethods = {
     }),
   ),
   getPublicTopics: M.call().returns(Vow$(TopicsRecordShape)),
-  makeMetaUpdater: M.call().returns(M.remotable('MetaUpdater')),
+  makeProgressReporter: M.call().returns(M.remotable('ProgressReporter')),
 };

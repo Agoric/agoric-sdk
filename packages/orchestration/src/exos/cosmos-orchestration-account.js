@@ -78,7 +78,7 @@ import {
   toTruncatedDenomAmount,
   tryDecodeResponses,
 } from '../utils/cosmos.js';
-import { makePickTools } from '../utils/pick-tools.js';
+import { makeVowExoHelpers } from '../utils/exo-helpers.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
 import { accountIdTo32Bytes, parseAccountId } from '../utils/address.js';
@@ -187,7 +187,7 @@ const responseCodecForTypeUrl = /** @type {const} */ ({
 
 /**
  * @import {HostInterface, HostOf} from '@agoric/async-flow';
- * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, NobleMethods, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse, CaipChainId, AccountIdArg, ChainInfo, MetaTrafficEntry, ResultMeta, MetaUpdater, SendTxOptions, MakeMetaUpdater} from '../types.js';
+ * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, NobleMethods, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse, CaipChainId, AccountIdArg, ChainInfo, TrafficEntry, ProgressReporter, SendTxOptions, MakeProgressReporter} from '../types.js';
  * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
@@ -202,7 +202,7 @@ const responseCodecForTypeUrl = /** @type {const} */ ({
  * @import {Matcher} from '@endo/patterns';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  * @import {SendOptions} from '@agoric/network';
- * @import {Metadata} from '../utils/result-meta.js';
+ * @import {ProgressReport} from '../utils/progress.js';
  */
 
 const trace = makeTracer('CosmosOrchAccount');
@@ -343,7 +343,7 @@ harden(CosmosOrchestrationInvitationMakersI);
  * @param {Zone} zone
  * @param {object} powers
  * @param {ChainHub} powers.chainHub
- * @param {MakeMetaUpdater} powers.makeMetaUpdater
+ * @param {MakeProgressReporter} powers.makeProgressReporter
  * @param {MakeRecorderKit} powers.makeRecorderKit
  * @param {Remote<TimerService>} powers.timerService
  * @param {VowTools} powers.vowTools
@@ -351,7 +351,14 @@ harden(CosmosOrchestrationInvitationMakersI);
  */
 export const prepareCosmosOrchestrationAccountKit = (
   zone,
-  { chainHub, makeMetaUpdater, makeRecorderKit, timerService, vowTools, zcf },
+  {
+    chainHub,
+    makeProgressReporter,
+    makeRecorderKit,
+    timerService,
+    vowTools,
+    zcf,
+  },
 ) => {
   /**
    * Abandon the icaAccountToDetails weakMapStore, since it introduced a caching
@@ -363,14 +370,14 @@ export const prepareCosmosOrchestrationAccountKit = (
 
   const { watch, asVow, when, allVows } = vowTools;
 
-  const pickTools = makePickTools({ watch });
+  const vowExo = makeVowExoHelpers({ watch });
   const timestampHelper = makeTimestampHelper(timerService);
   const makeCosmosOrchestrationAccountKit = zone.exoClassKit(
     'Cosmos Orchestration Account Holder',
     {
-      ...pickTools.watcherShapes,
+      ...vowExo.watcherShapes,
       helper: M.interface('helper', {
-        ...pickTools.helperShapes,
+        ...vowExo.helperShapes,
         owned: M.call().returns(M.remotable()),
         getUpdater: M.call().returns(M.remotable()),
         amountToCoin: M.call(AmountArgShape).returns(M.record()),
@@ -379,7 +386,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         onFulfilled: M.call(
           M.arrayOf(M.any()),
           M.splitRecord({
-            metaUpdater: M.remotable('MetaUpdater'),
+            progressReporter: M.remotable('ProgressReporter'),
             protocol: M.string(),
             trafficEntryIndex: M.number(),
           }),
@@ -525,7 +532,7 @@ export const prepareCosmosOrchestrationAccountKit = (
     },
     {
       helper: {
-        ...pickTools.helper,
+        ...vowExo.helper,
         /** @throws if this holder no longer owns the account */
         owned() {
           const { account } = this.state;
@@ -548,7 +555,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           return coerceCoin(chainHub, amount);
         },
       },
-      ...pickTools.watchers,
+      ...vowExo.watchers,
       attachTxMetaWatcher: {
         /**
          * @param {readonly [
@@ -557,35 +564,40 @@ export const prepareCosmosOrchestrationAccountKit = (
          *   ra: RemoteIbcAddress,
          * ]} param0
          * @param {{
-         *   metaUpdater: MetaUpdater;
+         *   progressReporter: ProgressReporter;
          *   trafficEntryIndex: number;
          *   protocol: string;
          * }} opts
          */
         onFulfilled(
           [agoric, la, ra],
-          { metaUpdater, trafficEntryIndex, protocol },
+          { progressReporter, trafficEntryIndex, protocol },
         ) {
           const lad = decodeIbcEndpoint(la);
           const rad = decodeIbcEndpoint(ra);
 
-          const priorMeta = metaUpdater.get();
-          const meta = {
-            ...priorMeta,
-            traffic: priorMeta.traffic?.map((entry, i) =>
-              i === trafficEntryIndex
-                ? {
-                    ...entry,
-                    srcChainId: `${agoric.namespace}:${agoric.reference}`,
-                    src: [protocol, lad.portID, lad.channelID],
-                    dst: [protocol, rad.portID, rad.channelID],
-                    // TODO(#11994): Need to expose from Network API `conn.sendWithMeta(...)`
-                    seq: { status: 'unknown' },
-                  }
-                : entry,
+          const priorReport = progressReporter.get();
+          const report = {
+            ...priorReport,
+            traffic: priorReport.traffic?.map(
+              /**
+               * @param {TrafficEntry} entry
+               * @param {number} i
+               */
+              (entry, i) =>
+                i === trafficEntryIndex
+                  ? /** @satisfies {TrafficEntry} */ {
+                      ...entry,
+                      srcChainId: `${agoric.namespace}:${agoric.reference}`,
+                      src: [protocol, lad.portID, lad.channelID],
+                      dst: [protocol, rad.portID, rad.channelID],
+                      // TODO(#11994): Need to expose from Network API `conn.sendWithMeta(...)`
+                      seq: { status: 'unknown' },
+                    }
+                  : entry,
             ),
           };
-          metaUpdater.update(meta);
+          progressReporter.update(report);
         },
       },
       balanceQueryWatcher: {
@@ -834,7 +846,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         ) {
           const { holder } = this.facets;
           const { chainAddress } = this.state;
-          const metaUpdater = opts?.metaUpdater;
+          const progressReporter = opts?.progressReporter;
           const results = holder.evaluateTx(
             [
               Any.toJSON(
@@ -850,12 +862,12 @@ export const prepareCosmosOrchestrationAccountKit = (
                 }),
               ),
             ],
-            { metaUpdater },
+            { progressReporter },
           );
 
-          if (metaUpdater) {
-            const priorMeta = metaUpdater.get();
-            const transferTraffic = /** @type {MetaTrafficEntry} */ ({
+          if (progressReporter) {
+            const priorReport = progressReporter.get();
+            const transferTraffic = /** @type {TrafficEntry} */ ({
               op: 'transfer',
               srcChainId: `cosmos:${chainAddress.chainId}`,
               src: ['ibc', transferChannel.portId, transferChannel.channelId],
@@ -867,14 +879,14 @@ export const prepareCosmosOrchestrationAccountKit = (
               ],
               seq: { status: 'pending' }, // filled in by fillSequenceWatcher.onFulfilled below
             });
-            const meta = {
-              ...priorMeta,
-              traffic: [...(priorMeta.traffic || []), transferTraffic],
+            const report = {
+              ...priorReport,
+              traffic: [...(priorReport.traffic || []), transferTraffic],
             };
-            const trafficEntryIndex = meta.traffic.length - 1;
-            metaUpdater.update(meta);
+            const trafficEntryIndex = report.traffic.length - 1;
+            progressReporter.update(report);
             watch(results, this.facets.fillSequenceWatcher, {
-              metaUpdater,
+              progressReporter,
               trafficEntryIndex,
             });
           }
@@ -890,34 +902,39 @@ export const prepareCosmosOrchestrationAccountKit = (
         /**
          * @param {[{ sequence: bigint }]} transferResponse
          * @param {object} opts
-         * @param {MetaUpdater} opts.metaUpdater
+         * @param {ProgressReporter} opts.progressReporter
          * @param {number} opts.trafficEntryIndex
          */
-        onFulfilled([{ sequence }], { metaUpdater, trafficEntryIndex }) {
-          const meta = metaUpdater.get();
+        onFulfilled([{ sequence }], { progressReporter, trafficEntryIndex }) {
+          const priorReport = progressReporter.get();
           trace('fillSequenceWatcher', {
             sequence,
-            meta,
+            priorReport,
             trafficEntryIndex,
           });
 
-          const targetTrafficEntry = meta.traffic[trafficEntryIndex];
+          const targetTrafficEntry = priorReport.traffic[trafficEntryIndex];
           targetTrafficEntry ||
-            Fail`expected meta.traffic to have at an entry at ${trafficEntryIndex}: ${q(meta)}`;
+            Fail`expected meta.traffic to have at an entry at ${trafficEntryIndex}: ${q(priorReport)}`;
           const baseSequence = targetTrafficEntry?.seq;
           baseSequence?.status === 'pending' ||
             Fail`expected traffic?.seq ${baseSequence} to be pending`;
           sequence != null ||
             Fail`expected transferResp.sequence ${sequence} to be non-nullish`;
 
-          /** @type {Metadata} */
-          const newMeta = {
-            ...meta,
-            traffic: meta.traffic?.map((entry, i) =>
-              i === trafficEntryIndex ? { ...entry, seq: sequence } : entry,
+          /** @type {ProgressReport} */
+          const report = {
+            ...priorReport,
+            traffic: priorReport.traffic?.map(
+              /**
+               * @param {TrafficEntry} entry
+               * @param {number} i
+               */
+              (entry, i) =>
+                i === trafficEntryIndex ? { ...entry, seq: sequence } : entry,
             ),
           };
-          metaUpdater.update(harden(newMeta));
+          progressReporter.update(harden(report));
         },
       },
       invitationMakers: {
@@ -988,7 +1005,7 @@ export const prepareCosmosOrchestrationAccountKit = (
            *   {
            *     toAccount: AccountIdArg;
            *     amount: AmountArg;
-           *     opts?: { metaUpdater?: MetaUpdater };
+           *     opts?: { progressReporter?: ProgressReporter };
            *   }
            * >}
            */
@@ -1044,9 +1061,9 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
       },
       holder: {
-        /** @type {OrchestrationAccountCommon['makeMetaUpdater']} */
-        makeMetaUpdater() {
-          return makeMetaUpdater();
+        /** @type {OrchestrationAccountCommon['makeProgressReporter']} */
+        makeProgressReporter() {
+          return makeProgressReporter();
         },
         /** @type {HostOf<OrchestrationAccountCommon['asContinuingOffer']>} */
         asContinuingOffer() {
@@ -1478,8 +1495,8 @@ export const prepareCosmosOrchestrationAccountKit = (
             /** @type {TUS} */ (msgs.map(m => m.typeUrl)),
           );
 
-          const { metaUpdater } = opts;
-          if (metaUpdater) {
+          const { progressReporter } = opts;
+          if (progressReporter) {
             const agoric = chainHub.getChainInfo('agoric');
             const la = E(acct).getLocalAddress();
             /** @type {CaipChainId} */
@@ -1487,25 +1504,25 @@ export const prepareCosmosOrchestrationAccountKit = (
             const ra = E(acct).getRemoteAddress();
 
             // Identify this as an ICA operation.
-            const priorMeta = metaUpdater.get();
-            const meta = {
-              ...priorMeta,
+            const priorReport = progressReporter.get();
+            const report = {
+              ...priorReport,
               traffic: [
-                ...(priorMeta.traffic || []),
+                ...(priorReport.traffic || []),
                 {
                   op: 'ICA',
                   dstChainId: counterparty,
                 },
               ],
             };
-            const trafficEntryIndex = meta.traffic.length - 1;
+            const trafficEntryIndex = report.traffic.length - 1;
 
-            metaUpdater.update(meta);
+            progressReporter.update(report);
             // Update metadata when we can.
             void watch(
               allVows(/** @type {const} */ ([agoric, la, ra])),
               this.facets.attachTxMetaWatcher,
-              { metaUpdater, protocol: 'ibc', trafficEntryIndex },
+              { progressReporter, protocol: 'ibc', trafficEntryIndex },
             );
           }
 
@@ -1588,7 +1605,7 @@ export const prepareCosmosOrchestrationAccountKit = (
  * @param {Zone} zone
  * @param {object} powers
  * @param {ChainHub} powers.chainHub
- * @param {MakeMetaUpdater} powers.makeMetaUpdater
+ * @param {MakeProgressReporter} powers.makeProgressReporter
  * @param {MakeRecorderKit} powers.makeRecorderKit
  * @param {Remote<TimerService>} powers.timerService
  * @param {VowTools} powers.vowTools
@@ -1601,11 +1618,18 @@ export const prepareCosmosOrchestrationAccountKit = (
  */
 export const prepareCosmosOrchestrationAccount = (
   zone,
-  { chainHub, makeMetaUpdater, makeRecorderKit, timerService, vowTools, zcf },
+  {
+    chainHub,
+    makeProgressReporter,
+    makeRecorderKit,
+    timerService,
+    vowTools,
+    zcf,
+  },
 ) => {
   const makeKit = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
-    makeMetaUpdater,
+    makeProgressReporter,
     makeRecorderKit,
     timerService,
     vowTools,

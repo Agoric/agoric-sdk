@@ -37,7 +37,7 @@ import type {
 } from '../src/types.js';
 import { MILLISECONDS_PER_SECOND } from '../src/utils/time.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';
-import { prepareMetaUpdater } from '../src/utils/result-meta.js';
+import { prepareProgressReporter } from '../src/utils/progress.js';
 
 const Any = CodecHelper(AnyType);
 const MsgBeginRedelegateResponse = CodecHelper(MsgBeginRedelegateResponseType);
@@ -175,7 +175,7 @@ const makeScenario = () => {
 
     const account: IcaAccount = Far('MockAccount', {
       getAddress: () => chainAddress,
-      makeMetaUpdater: () => makeMetaUpdater(),
+      makeProgressReporter: () => makeProgressReporter(),
       executeEncodedTx: async msgs => {
         assert.equal(msgs.length, 1);
         const { typeUrl } = msgs[0];
@@ -243,9 +243,12 @@ const makeScenario = () => {
   });
 
   const vowTools = prepareVowTools(zone.subZone('VowTools'));
-  const makeMetaUpdater = prepareMetaUpdater(zone.subZone('MetaUpdater'), {
-    vowTools,
-  });
+  const makeProgressReporter = prepareProgressReporter(
+    zone.subZone('ProgressReporter'),
+    {
+      vowTools,
+    },
+  );
 
   const icqConnection = Far('ICQConnection', {}) as ICQConnection;
 
@@ -264,7 +267,7 @@ const makeScenario = () => {
   return {
     baggage,
     zone,
-    makeMetaUpdater,
+    makeProgressReporter,
     makeRecorderKit,
     ...mockAccount(undefined, delegations),
     storageNode: rootNode,
@@ -281,7 +284,7 @@ test('makeAccount() writes to storage', async t => {
   const s = makeScenario();
   const { account, timer } = s;
   const {
-    makeMetaUpdater,
+    makeProgressReporter,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -292,7 +295,7 @@ test('makeAccount() writes to storage', async t => {
   } = s;
   const make = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
-    makeMetaUpdater,
+    makeProgressReporter,
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -331,7 +334,7 @@ test('withdrawRewards() on StakingAccountHolder formats message correctly', asyn
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
-    makeMetaUpdater,
+    makeProgressReporter,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -342,7 +345,7 @@ test('withdrawRewards() on StakingAccountHolder formats message correctly', asyn
   } = s;
   const make = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
-    makeMetaUpdater,
+    makeProgressReporter,
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -377,7 +380,7 @@ test(`delegate; redelegate using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
-    makeMetaUpdater,
+    makeProgressReporter,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -389,7 +392,7 @@ test(`delegate; redelegate using invitationMakers`, async t => {
   } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
-    makeMetaUpdater,
+    makeProgressReporter,
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -471,7 +474,7 @@ test(`withdraw rewards using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
-    makeMetaUpdater,
+    makeProgressReporter,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -483,7 +486,7 @@ test(`withdraw rewards using invitationMakers`, async t => {
   } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
-    makeMetaUpdater,
+    makeProgressReporter,
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -521,7 +524,7 @@ test(`undelegate waits for unbonding period`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
-    makeMetaUpdater,
+    makeProgressReporter,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -533,7 +536,7 @@ test(`undelegate waits for unbonding period`, async t => {
   } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
-    makeMetaUpdater,
+    makeProgressReporter,
     makeRecorderKit,
     timerService: timer,
     vowTools,

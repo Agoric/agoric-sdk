@@ -30,7 +30,7 @@ import {
   buildGMPPayload,
 } from '@agoric/orchestration/src/utils/gmp.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
-import { type MetaUpdater } from '@agoric/orchestration/src/utils/result-meta.js';
+import { type ProgressReporter } from '@agoric/orchestration/src/utils/progress.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import { Fail, q, X } from '@endo/errors';
@@ -66,7 +66,7 @@ export const provideEVMAccount = async (
   lca: LocalAccount,
   ctx: PortfolioInstanceContext,
   pk: GuestInterface<PortfolioKit>,
-  metaUpdater: MetaUpdater | undefined,
+  progressReporter: ProgressReporter | undefined,
 ): Promise<GMPAccountInfo> => {
   await null;
   const found = pk.manager.reserveAccount(chainName);
@@ -88,7 +88,7 @@ export const provideEVMAccount = async (
     const feeAccount = await ctx.contractAccount;
     const src = feeAccount.getAddress();
     traceChain('send makeAccountCall Axelar fee from', src.value);
-    await feeAccount.send(lca.getAddress(), fee, { metaUpdater });
+    await feeAccount.send(lca.getAddress(), fee, { progressReporter });
     await sendMakeAccountCall(
       target,
       fee,
@@ -96,7 +96,7 @@ export const provideEVMAccount = async (
       gmp.chain,
       ctx.gmpAddresses,
       gmp.evmGas,
-      metaUpdater,
+      progressReporter,
     );
     return pk.reader.getGMPInfo(chainName);
   } catch (reason) {
@@ -177,7 +177,7 @@ export const CCTP = {
     dest,
   })),
   apply: async (
-    ctx: PortfolioInstanceContext & { metaUpdater: MetaUpdater | undefined },
+    ctx: PortfolioInstanceContext & { progressReporter: ProgressReporter | undefined },
     amount,
     src,
     dest,
@@ -224,7 +224,7 @@ export const sendMakeAccountCall = async (
   gmpChain: Chain<{ chainId: string }>,
   gmpAddresses: GmpAddresses,
   evmGas: bigint,
-  metaUpdater: MetaUpdater | undefined,
+  progressReporter: ProgressReporter | undefined,
 ) => {
   const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
   const memo: AxelarGmpOutgoingMemo = {
@@ -236,7 +236,7 @@ export const sendMakeAccountCall = async (
   };
   const { chainId } = await gmpChain.getChainInfo();
   const gmp = { chainId, value: AXELAR_GMP, encoding: 'bech32' as const };
-  return lca.transfer(gmp, fee, { memo: JSON.stringify(memo), metaUpdater });
+  return lca.transfer(gmp, fee, { memo: JSON.stringify(memo), progressReporter });
 };
 
 /**
@@ -263,7 +263,7 @@ export const sendGMPContractCall = async (
     gmpAddresses,
     resolverClient,
     axelarIds,
-    metaUpdater,
+    progressReporter,
   } = ctx;
   const { chainName, remoteAddress, chainId: gmpChainId } = gmpAcct;
   const axelarId = axelarIds[chainName];
@@ -287,10 +287,10 @@ export const sendGMPContractCall = async (
     value: AXELAR_GMP,
     encoding: 'bech32' as const,
   };
-  await ctx.feeAccount.send(lca.getAddress(), fee, { metaUpdater });
+  await ctx.feeAccount.send(lca.getAddress(), fee, { progressReporter });
   await lca.transfer(gmp, fee, {
     memo: JSON.stringify(memo),
-    metaUpdater,
+    progressReporter,
   });
   await result;
 };
@@ -306,7 +306,7 @@ export type EVMContext = {
   poolKey?: PoolKey;
   resolverClient: GuestInterface<ResolverKit['client']>;
   nobleForwardingChannel: `channel-${number}`;
-  metaUpdater?: MetaUpdater;
+  progressReporter?: ProgressReporter;
 };
 
 type AaveI = {

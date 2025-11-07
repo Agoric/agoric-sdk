@@ -17,12 +17,7 @@ import type { ResponseQuery } from '@agoric/cosmic-proto/tendermint/abci/types.j
 import type { Vow, VowTools } from '@agoric/vow';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Passable } from '@endo/marshal';
-import {
-  expectAssignable,
-  expectNotAssignable,
-  expectNotType,
-  expectType,
-} from 'tsd';
+import { expectAssignable, expectNotType, expectType } from 'tsd';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import type {
   TargetApp,
@@ -47,7 +42,6 @@ import type {
   Orchestrator,
   StakingAccountActions,
   KnownChains,
-  ResultMeta,
 } from '../src/types.js';
 import type { ResolvedContinuingOfferResult } from '../src/utils/zoe-tools.js';
 import { withChainCapabilities } from '../src/chain-capabilities.js';

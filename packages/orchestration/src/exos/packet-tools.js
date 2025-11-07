@@ -4,7 +4,7 @@ import { M, matches } from '@endo/patterns';
 import { E } from '@endo/far';
 import { pickFacet } from '@agoric/vat-data';
 import { makeTracer } from '@agoric/internal';
-import { makePickTools } from '../utils/pick-tools.js';
+import { makeVowExoHelpers } from '../utils/exo-helpers.js';
 
 const trace = makeTracer('PacketTools');
 
@@ -21,7 +21,7 @@ const just = obj => {
  * @import {Pattern} from '@endo/patterns';
  * @import {EVow, Remote, Vow, VowKit, VowResolver, VowTools} from '@agoric/vow';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {MetaUpdater} from '../types.js';
+ * @import {ProgressReporter} from '../types.js';
  * @import {IBCEvent, VTransferIBCEvent} from '@agoric/vats';
  * @import {TargetApp, TargetRegistration} from '@agoric/vats/src/bridge-target.js';
  */
@@ -47,7 +47,7 @@ const just = obj => {
  * @typedef {object} PacketOptions
  * @property {string} [opName]
  * @property {PacketTimeout} [timeout]
- * @property {MetaUpdater} [metaUpdater]
+ * @property {ProgressReporter} [progressReporter]
  * @property {number} [trafficEntryIndex]
  */
 
@@ -71,7 +71,7 @@ harden(sink);
  */
 export const preparePacketTools = (zone, vowTools) => {
   const { allVows, makeVowKit, watch, when } = vowTools;
-  const pickTools = makePickTools(vowTools);
+  const vowExo = makeVowExoHelpers(vowTools);
 
   const makePacketToolsKit = zone.exoClassKit(
     'PacketToolsKit',
@@ -85,7 +85,7 @@ export const preparePacketTools = (zone, vowTools) => {
           EVow$(M.any()),
         ),
       }),
-      pickDataWatcher: pickTools.watcherShapes.pickDataWatcher,
+      pickDataWatcher: vowExo.watcherShapes.pickDataWatcher,
       tap: M.interface('tap', {
         // eslint-disable-next-line no-restricted-syntax
         receiveUpcall: M.callWhen(M.any()).returns(M.any()),
@@ -122,7 +122,7 @@ export const preparePacketTools = (zone, vowTools) => {
         ).returns(M.any()),
       }),
       utils: M.interface('utils', {
-        pickVowProp: pickTools.helperShapes.pickVowProp,
+        pickVowProp: vowExo.helperShapes.pickVowProp,
         subscribeToTransfers: M.call().returns(M.promise()),
         unsubscribeFromTransfers: M.call().returns(M.undefined()),
         incrPendingPatterns: M.call().returns(Vow$(M.undefined())),
@@ -204,7 +204,7 @@ export const preparePacketTools = (zone, vowTools) => {
           });
         },
       },
-      pickDataWatcher: pickTools.watchers.pickDataWatcher,
+      pickDataWatcher: vowExo.watchers.pickDataWatcher,
       monitorRegistration: {
         /** @type {TargetRegistration['updateTargetApp']} */
         // eslint-disable-next-line no-restricted-syntax
@@ -347,7 +347,7 @@ export const preparePacketTools = (zone, vowTools) => {
         },
       },
       utils: {
-        pickVowProp: pickTools.helper.pickVowProp,
+        pickVowProp: vowExo.helper.pickVowProp,
         incrPendingPatterns() {
           const { pending, reg, upcallQueue } = this.state;
           this.state.pending += 1;

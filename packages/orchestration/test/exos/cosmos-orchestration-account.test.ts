@@ -52,7 +52,7 @@ import { CodecHelper } from '@agoric/cosmic-proto';
 import { Height as HeightType } from '@agoric/cosmic-proto/ibc/core/client/v1/client.js';
 import type {
   CosmosValidatorAddress,
-  MetaTrafficEntry,
+  TrafficEntry,
 } from '../../src/cosmos-api.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type {
@@ -355,12 +355,12 @@ test('transfer', async t => {
   );
   t.snapshot(transferResult, 'transfer full result');
 
-  const metaUpdater = await E(account).makeMetaUpdater();
+  const progressReporter = await E(account).makeProgressReporter();
   const resultP = E(account).transfer(mockDestination, mockAmountArg, {
-    metaUpdater,
+    progressReporter,
   });
   await eventLoopIteration();
-  metaUpdater.finish();
+  progressReporter.finish();
 
   const pktWithMeta = await getAndDecodeLatestPacket();
   t.deepEqual(
@@ -370,7 +370,7 @@ test('transfer', async t => {
   );
 
   const result = await heapVowTools.when(resultP);
-  const resultMeta = { result, meta: metaUpdater.get() };
+  const resultMeta = { result, meta: progressReporter.get() };
   t.deepEqual(
     resultMeta.meta,
     {
@@ -391,7 +391,7 @@ test('transfer', async t => {
           dstChainId: 'cosmos:noble-1',
           dst: ['ibc', 'transfer', 'channel-4'],
         },
-      ] as MetaTrafficEntry[],
+      ] as TrafficEntry[],
     },
     'transfer returns proper meta',
   );

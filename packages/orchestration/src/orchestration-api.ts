@@ -21,8 +21,8 @@ import type {
   KnownNamespace,
   NobleMethods,
   Bech32Address,
-  MetaUpdater,
-  Metadata,
+  ProgressReporter,
+  ProgressReport,
 } from './types.js';
 import type { ResolvedContinuingOfferResult } from './utils/zoe-tools.js';
 
@@ -252,22 +252,22 @@ export interface OrchestrationAccountCommon {
   getBalance: (denom: DenomArg) => Promise<DenomAmount>;
 
   /**
-   * @returns a metaUpdater that can be used to give incremental updates to an
+   * @returns a progressReporter that can be used to give incremental updates to an
    * orchestration client.
    */
-  makeMetaUpdater: (initialMeta?: Metadata) => MetaUpdater;
+  makeProgressReporter: (initialMeta?: ProgressReport) => ProgressReporter;
 
   /**
    * Transfer amount to another account on the same chain. The promise settles when the transfer is complete.
    * @param toAccount - the account to send the amount to. MUST be on the same chain
    * @param amount - the amount to send
-   * @param [opts] - optional metaUpdater to track the operation progress
+   * @param [opts] - optional progressReporter to track the operation progress
    * @returns void
    */
   send: (
     toAccount: AccountIdArg,
     amount: AmountArg,
-    opts?: { metaUpdater?: MetaUpdater },
+    opts?: { progressReporter?: ProgressReporter },
   ) => Promise<unknown>;
 
   /**
@@ -279,7 +279,7 @@ export interface OrchestrationAccountCommon {
   sendAll: (
     toAccount: CosmosChainAddress,
     amounts: AmountArg[],
-    opts?: { metaUpdater?: MetaUpdater },
+    opts?: { progressReporter?: ProgressReporter },
   ) => Promise<unknown>;
 
   /**
