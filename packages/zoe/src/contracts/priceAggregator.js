@@ -447,7 +447,7 @@ const start = async (zcf, privateArgs) => {
      * directly to manage the price submissions as well as to terminate the
      * relationship.
      *
-     * @param {Instance | string} [oracleKey]
+     * @param {Instance<unknown> | string} [oracleKey]
      */
     makeOracleInvitation: async oracleKey => {
       /**
@@ -516,7 +516,7 @@ const start = async (zcf, privateArgs) => {
       await updateQuote(deletedNow);
     },
     /**
-     * @param {Instance | string} [oracleInstance]
+     * @param {Instance<unknown> | string} [oracleInstance]
      * @param {OracleQuery} [query]
      * @returns {Promise<OracleAdmin<Price>>}
      */
@@ -597,10 +597,9 @@ const start = async (zcf, privateArgs) => {
 
       // Obtain the oracle's publicFacet.
       assert(oracleInstance);
-      const oracle =
-        /** @type {OracleContract['publicFacet']} */ (
-          await E(zoe).getPublicFacet(oracleInstance)
-        );
+      const oracle = /** @type {OracleContract['publicFacet']} */ (
+        await E(zoe).getPublicFacet(oracleInstance)
+      );
       assert(records.has(record), 'Oracle record is already deleted');
 
       /** @type {Timestamp} */

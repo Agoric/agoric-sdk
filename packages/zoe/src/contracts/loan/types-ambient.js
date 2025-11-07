@@ -12,10 +12,7 @@
  * @import {TimestampRecord} from '@agoric/time';
  * @import {PriceAuthority} from '../../../tools/types.js';
  * @import {RelativeTime} from '@agoric/time';
- * @import {ZCFSeat} from '../../types-index.js';
  * @import {PriceQuote} from '../../../tools/types.js';
- * @import {ZCF} from '../../types-index.js';
- * @import {Invitation} from '../../types-index.js';
  * @import {Timestamp} from '@agoric/time';
  */
 
