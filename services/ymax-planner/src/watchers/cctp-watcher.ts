@@ -173,10 +173,10 @@ export const lookBackCctp = async ({
     );
     const toBlock = await provider.getBlockNumber();
 
-    const savedFromblock =
+    const savedFromBlock =
       (await getResolverLastActiveBlock(kvStore, txId)) || fromBlock;
     log(
-      `Searching blocks ${savedFromblock} → ${toBlock} for Transfer to ${toAddress} with amount ${expectedAmount}`,
+      `Searching blocks ${savedFromBlock} → ${toBlock} for Transfer to ${toAddress} with amount ${expectedAmount}`,
     );
 
     const toTopic = ethers.zeroPadValue(toAddress.toLowerCase(), 32);
@@ -191,7 +191,7 @@ export const lookBackCctp = async ({
       {
         provider,
         baseFilter,
-        fromBlock: savedFromblock,
+        fromBlock: savedFromBlock,
         toBlock,
         chainId,
         log,

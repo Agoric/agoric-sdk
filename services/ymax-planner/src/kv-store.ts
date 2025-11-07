@@ -42,6 +42,9 @@ export type SQLiteKeyValueStoreConfig = {
  * Stores key-value pairs in a SQLite database file.
  * Useful for production environments with persistent local storage.
  *
+ * Note: this implementation uses better-sqlite which is synchronous (https://github.com/WiseLibs/better-sqlite3)
+ * but the functions still use `async` since they implement the KeyValueStore interface
+ *
  * The table will be created automatically if it doesn't exist with the following schema:
  * - key_name: TEXT PRIMARY KEY
  * - key_value: TEXT NOT NULL
@@ -62,11 +65,20 @@ export const makeSQLiteKeyValueStore = (
 
   const db = new Database(dbPath);
 
+  db.pragma('journal_mode = WAL');
+  db.pragma('synchronous = NORMAL');
+  db.pragma('busy_timeout = 5000');
+
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(tableName)) {
+    throw new Error(`Invalid table name: ${tableName}`);
+  }
+
   const createTableQuery = `
     CREATE TABLE IF NOT EXISTS ${tableName} (
       key_name TEXT PRIMARY KEY,
       key_value TEXT NOT NULL,
-      updated_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `;
 
@@ -76,37 +88,40 @@ export const makeSQLiteKeyValueStore = (
     console.error('Failed to initialize SQLite key-value store table:', error);
     throw error;
   }
+  const getStmt = db.prepare(
+    `SELECT key_value FROM ${tableName} WHERE key_name = ?`,
+  );
+
+  const setStmt = db.prepare(
+    `INSERT INTO ${tableName} (key_name, key_value)
+         VALUES (?, ?)
+         ON CONFLICT(key_name) DO UPDATE SET
+           key_value = excluded.key_value,
+           updated_at = CURRENT_TIMESTAMP`,
+  );
+
+  const delStmt = db.prepare(`DELETE FROM ${tableName} WHERE key_name = ?`);
+
+  const hasStmt = db.prepare(
+    `SELECT 1 FROM ${tableName} WHERE key_name = ? LIMIT 1`,
+  );
 
   return {
     async get(key: string): Promise<string | undefined> {
-      const stmt = db.prepare(
-        `SELECT key_value FROM ${tableName} WHERE key_name = ?`,
-      );
-      const row = stmt.get(key) as { key_value: string } | undefined;
+      const row = getStmt.get(key) as { key_value: string } | undefined;
       return row?.key_value;
     },
 
     async set(key: string, value: string): Promise<void> {
-      const stmt = db.prepare(
-        `INSERT INTO ${tableName} (key_name, key_value, updated_at)
-         VALUES (?, ?, ?)
-         ON CONFLICT(key_name) DO UPDATE SET
-           key_value = excluded.key_value,
-           updated_at = excluded.updated_at`,
-      );
-      stmt.run(key, value, Date.now());
+      setStmt.run(key, value);
     },
 
     async delete(key: string): Promise<void> {
-      const stmt = db.prepare(`DELETE FROM ${tableName} WHERE key_name = ?`);
-      stmt.run(key);
+      delStmt.run(key);
     },
 
     async has(key: string): Promise<boolean> {
-      const stmt = db.prepare(
-        `SELECT 1 FROM ${tableName} WHERE key_name = ? LIMIT 1`,
-      );
-      const row = stmt.get(key);
+      const row = hasStmt.get(key);
       return row !== undefined;
     },
   };
@@ -116,11 +131,11 @@ const getResolverLastBlockKey = (txId: `tx${number}`, suffix?: string) =>
   `RESOLVER_LAST_BLOCK_${txId}${suffix ? `_${suffix}` : ''}`;
 
 /**
- * Helper to get the resolver's last active time from the store
+ * Helper to get the resolver's last active block from the store
  * @param store - The key-value store instance
  * @param txId - The transaction ID
  * @param suffix - Additional suffix to add to the end of the key
- * @returns The timestamp in milliseconds, or undefined if not found
+ * @returns The block number, or undefined if not found
  */
 export const getResolverLastActiveBlock = async (
   store: KeyValueStore,
@@ -135,7 +150,7 @@ export const getResolverLastActiveBlock = async (
 };
 
 /**
- * Helper to set the resolver's last active time in the store
+ * Helper to set the resolver's last active block in the store
  * @param store - The key-value store instance
  * @param txId - The transaction ID
  * @param block - The block number to add as value
