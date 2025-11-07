@@ -7,8 +7,6 @@
  * @import {VatAdminFacet} from '@agoric/swingset-vat';
  * @import {GetPublicFacet} from './utils.js';
  * @import {GetTerms} from './utils.js';
- * @import {Instance} from './utils.js';
- * @import {Pattern} from '@endo/patterns';
  * @import {CreateVatResults} from '@agoric/swingset-vat';
  */
 
@@ -140,7 +138,7 @@
  * @property {GetIssuers} getIssuers
  * @property {GetTerms} getTerms
  * @property {(instance: Instance<any>) => string[]} getOfferFilter
- * @property {(instance: Instance, strings: string[]) => any} setOfferFilter
+ * @property {(instance: Instance<any>, strings: string[]) => any} setOfferFilter
  * @property {(instance: Instance<any>) => Promise<Installation>} getInstallationForInstance
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation

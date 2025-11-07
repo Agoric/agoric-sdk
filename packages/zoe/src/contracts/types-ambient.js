@@ -11,10 +11,6 @@
  */
 
 /**
- * @import {Invitation} from '../types-index.js';
- */
-
-/**
  * @typedef {object} SellItemsParameters
  * @property {Record<string, any>} customValueProperties
  * @property {number} count
