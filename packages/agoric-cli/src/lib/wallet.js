@@ -38,10 +38,9 @@ const emptyCurrentRecord = {
 export const getCurrent = async (addr, { readPublished }) => {
   // Partial because older writes may not have had all properties
   // NB: assumes changes are only additions
-  let current =
-    /** @type {Partial<CurrentWalletRecord> | undefined} */ (
-      await readPublished(`wallet.${addr}.current`)
-    );
+  let current = /** @type {Partial<CurrentWalletRecord> | undefined} */ (
+    await readPublished(`wallet.${addr}.current`)
+  );
   if (current === undefined) {
     throw Error(`undefined current node for ${addr}`);
   }

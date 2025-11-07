@@ -22,9 +22,7 @@ import { E } from '@endo/far';
  * @template {BridgeId} BridgeId
  * @param {ERef<BridgeManager>} bridgeManager
  * @param {BridgeId} bridgeIdValue
- * @param {Remote<
- *   BridgeHandler
- * >} [handler]
+ * @param {Remote<BridgeHandler>} [handler]
  * @returns {Promise<ScopedBridgeManager<BridgeId>>}
  */
 export const makeScopedBridge = (bridgeManager, bridgeIdValue, handler) =>

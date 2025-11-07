@@ -41,10 +41,7 @@ export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
      * TransferMiddleware ocap can be amplified into the associated manager.
      *
      * @param {TransferMiddleware} transfer
-     * @param {Pick<
-     *   ScopedBridgeManager<'vtransfer'>,
-     *   'fromBridge'
-     * >} transferBridgeManager
+     * @param {Pick<ScopedBridgeManager<'vtransfer'>, 'fromBridge'>} transferBridgeManager
      */
     linkTransferMiddlewareToBridgeManager(transfer, transferBridgeManager) {
       if (!powersForTransfer.has(transfer)) {

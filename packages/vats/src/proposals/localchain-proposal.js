@@ -19,9 +19,7 @@ import { makeScopedBridge } from '../bridge.js';
  *     localchainBridgeManager: ScopedBridgeManager<'vlocalchain'>;
  *     bankManager: Promise<BankManager>;
  *     transferMiddleware: Promise<TransferMiddleware>;
- *     vtransferBridgeManager: Promise<
- *       ScopedBridgeManager<'vtransfer'>
- *     >;
+ *     vtransferBridgeManager: Promise<ScopedBridgeManager<'vtransfer'>>;
  *   };
  *   produce: {
  *     localchain: Producer<any>;

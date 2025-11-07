@@ -484,9 +484,7 @@ export const synchronizedTee = (sourceStream, readerCount) => {
     const reader = harden({
       async next() {
         /**
-         * @type {PromiseKit<
-         *   IteratorResult<T>
-         * >}
+         * @type {PromiseKit<IteratorResult<T>>}
          */
         const { promise, resolve } = makePromiseKit();
         queue.put({ value: resolve, done: false });
@@ -494,9 +492,7 @@ export const synchronizedTee = (sourceStream, readerCount) => {
       },
       async return() {
         /**
-         * @type {PromiseKit<
-         *   IteratorResult<T>
-         * >}
+         * @type {PromiseKit<IteratorResult<T>>}
          */
         const { promise, resolve } = makePromiseKit();
         queue.put({ value: resolve, done: true });

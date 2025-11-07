@@ -192,8 +192,7 @@ harden(isCallback);
  * Prepare an attenuator class whose methods can be redirected via callbacks.
  *
  * @template {PropertyKey} M
- * @param {Zone} zone The zone in which to allocate
- *   attenuators.
+ * @param {Zone} zone The zone in which to allocate attenuators.
  * @param {M[]} methodNames Methods to forward.
  * @param {object} opts
  * @param {InterfaceGuard<{

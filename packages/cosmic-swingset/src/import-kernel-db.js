@@ -268,10 +268,9 @@ export const main = async (
     /** @type {string} */ (processValue.getFlag('export-dir', '.')),
   );
 
-  const artifactMode =
-    /** @type {SwingStoreArtifactMode | undefined} */ (
-      processValue.getFlag('artifact-mode')
-    );
+  const artifactMode = /** @type {SwingStoreArtifactMode | undefined} */ (
+    processValue.getFlag('artifact-mode')
+  );
   checkArtifactMode(artifactMode);
 
   const exportDataMode = processValue.getFlag('export-data-mode');

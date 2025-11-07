@@ -571,9 +571,7 @@ export const mintInitialSupply = async ({
   const bootstrapPaymentValue = Nat(BigInt(centralBootstrapSupply.amount));
 
   /**
-   * @type {Awaited<
-   *   ReturnType<typeof start>
-   * >}
+   * @type {Awaited<ReturnType<typeof start>>}
    */
   const { creatorFacet } = await E(zoe).startInstance(
     centralSupply,

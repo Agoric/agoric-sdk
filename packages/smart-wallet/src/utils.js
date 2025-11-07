@@ -36,8 +36,7 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
   const invitationsReceived = new Map();
 
   /**
-   * @param {UpdateRecord | {}} updateRecord newer
-   *   than previous
+   * @param {UpdateRecord | {}} updateRecord newer than previous
    */
   const update = updateRecord => {
     if (!('updated' in updateRecord)) {
@@ -142,8 +141,7 @@ export const assertHasData = async follower => {
 /**
  * Handles the case of falsy argument so the caller can consistently await.
  *
- * @param {PublicSubscribers
- *   | TopicsRecord} [subscribers]
+ * @param {PublicSubscribers | TopicsRecord} [subscribers]
  * @returns {ERef<Record<string, string>> | null}
  */
 export const objectMapStoragePath = subscribers => {

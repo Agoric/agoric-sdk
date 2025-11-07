@@ -172,8 +172,8 @@ const TransferMiddlewareI = M.interface('TransferMiddleware', {
 /**
  * @callback RegisterTap
  * @param {string} target String identifying the bridge target.
- * @param {ERef<TargetApp>} tap The "application
- *   tap" to register for the target.
+ * @param {ERef<TargetApp>} tap The "application tap" to register for the
+ *   target.
  */
 
 /**

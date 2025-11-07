@@ -436,10 +436,7 @@ const prepareBank = (
   /** @type {MapStore<string, VirtualPurse>} */
   const addressDenomToPurse = zone.mapStore('addressDenomToPurse');
   /**
-   * @type {AtomicProvider<
-   *     string,
-   *     VirtualPurse
-   *   >}
+   * @type {AtomicProvider<string, VirtualPurse>}
    */
   const purseProvider = makeAtomicProvider(addressDenomToPurse);
 
@@ -649,11 +646,7 @@ const prepareBankManager = (
       /**
        * @param {string} denom
        * @param {AssetIssuerKit} feeKit
-       * @returns {ERef<
-       *   EOnly<
-       *     DepositFacet
-       *   >
-       * >}
+       * @returns {ERef<EOnly<DepositFacet>>}
        */
       getRewardDistributorDepositFacet(denom, feeKit) {
         const { bankChannel } = this.state;
@@ -876,13 +869,11 @@ export function buildRootObject(_vatPowers, _args, baggage) {
 
   return Far('bankMaker', {
     /**
-     * @param {ERef<
-     *   ScopedBridgeManager<'bank'> | undefined
-     * >} [bankBridgeManagerP]
+     * @param {ERef<ScopedBridgeManager<'bank'> | undefined>} [bankBridgeManagerP]
      *   a bridge manager for the "remote" bank (such as on cosmos-sdk). If not
      *   supplied (such as on sim-chain), we just use local purses.
-     * @param {ERef<{ update: NameAdmin['update'] }>} [nameAdminP]
-     *   update facet of a NameAdmin; see addAsset() for detail.
+     * @param {ERef<{ update: NameAdmin['update'] }>} [nameAdminP] update facet
+     *   of a NameAdmin; see addAsset() for detail.
      */
     async makeBankManager(
       bankBridgeManagerP = undefined,

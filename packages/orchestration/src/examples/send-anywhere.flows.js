@@ -45,11 +45,7 @@ const denomForBrand = async (orch, brand) => {
  * @param {object} ctx
  * @param {GuestInterface<ChainHub>} ctx.chainHub
  * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
- * @param {Promise<
- *   GuestInterface<
- *     CosmosOrchestrationAccountKit['holder']
- *   >
- * >} ctx.nobleAccountP
+ * @param {Promise<GuestInterface<CosmosOrchestrationAccountKit['holder']>>} ctx.nobleAccountP
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
  * @param {GuestOf<(msg: string) => Vow<void>>} ctx.log
  * @param {Brand} ctx.USDC

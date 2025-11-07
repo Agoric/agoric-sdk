@@ -153,11 +153,9 @@ export const prepareChainStorageNode = zone => {
   /**
    * Create a storage node for a given backing storage interface and path.
    *
-   * @param {Callback<
-   *   (message: StorageMessage) => any
-   * >} messenger
-   *   a callback for sending a storageMessage object to the storage
-   *   implementation (cf. golang/cosmos/x/vstorage/vstorage.go)
+   * @param {Callback<(message: StorageMessage) => any>} messenger a callback
+   *   for sending a storageMessage object to the storage implementation (cf.
+   *   golang/cosmos/x/vstorage/vstorage.go)
    * @param {string} path
    * @param {object} [options]
    * @param {boolean} [options.sequence] set values with `append` messages
@@ -170,9 +168,7 @@ export const prepareChainStorageNode = zone => {
     'ChainStorageNode',
     ChainStorageNodeI,
     /**
-     * @param {Callback<
-     *   (message: StorageMessage) => any
-     * >} messenger
+     * @param {Callback<(message: StorageMessage) => any>} messenger
      * @param {string} path
      * @param {object} [options]
      * @param {boolean} [options.sequence]

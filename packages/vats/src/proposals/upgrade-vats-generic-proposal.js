@@ -13,10 +13,7 @@ const trace = makeTracer('UpgradeVats');
  * @param {BootstrapPowers & {
  *   consume: {
  *     vatAdminSvc: VatAdminSvc;
- *     vatStore: MapStore<
- *       string,
- *       CreateVatResults
- *     >;
+ *     vatStore: MapStore<string, CreateVatResults>;
  *   };
  * }} powers
  * @param {object} options

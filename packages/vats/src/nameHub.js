@@ -58,9 +58,7 @@ export const prepareMixinMyAddress = zone => {
     getMyAddress: M.call().returns(M.string()),
   });
   /**
-   * @type {MakeAttenuator<
-   *   MyAddressNameAdmin
-   * >}
+   * @type {MakeAttenuator<MyAddressNameAdmin>}
    */
   const mixin = prepareGuardedAttenuator(zone, MixinI, {
     tag: 'MyAddressNameAdmin',

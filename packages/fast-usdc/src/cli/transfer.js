@@ -48,9 +48,7 @@ export const transfer = async (
   env = process.env,
   setTimeout = globalThis.setTimeout,
 ) => {
-  const execute = async (
-    /** @type {ConfigOpts} */ config,
-  ) => {
+  const execute = async (/** @type {ConfigOpts} */ config) => {
     const netConfig = await fetchEnvNetworkConfig({ env, fetch });
     vstorage ||= makeVStorage(
       { fetch },

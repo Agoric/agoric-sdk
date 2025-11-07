@@ -86,9 +86,7 @@ const makeTestContext = async t => {
   const startAnyContract = async () => {
     const bundle = await bundleCache.load(asset.anyContract, 'automaticRefund');
     /**
-     * @type {Promise<
-     *   Installation<prepare>
-     * >}
+     * @type {Promise<Installation<prepare>>}
      */
     const installation = E(zoe).install(bundle);
     return E(zoe).startInstance(installation);
@@ -125,10 +123,7 @@ const makeTestContext = async t => {
       }),
     );
     /**
-     * @type {MapStore<
-     *   Brand,
-     *   BrandDescriptor
-     * >}
+     * @type {MapStore<Brand, BrandDescriptor>}
      */
     const store = makeScalarMapStore('registry');
     store.addAll(harden(descriptors.map(d => [d.brand, d])));

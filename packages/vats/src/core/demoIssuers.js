@@ -469,6 +469,6 @@ export const poolRates = (issuerName, record, kits, central) => {
 
 /**
  * @param {EconomyBootstrapPowers & {
- *     consume: { mints };
- *   }} powers
+ *   consume: { mints };
+ * }} powers
  */

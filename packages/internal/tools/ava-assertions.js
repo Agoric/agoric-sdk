@@ -19,9 +19,9 @@ export const arrayIsLike = (t, array, expected, message) => {
       : expected;
   t.like(array, comparable, message);
 
-/**
- * @import {ExecutionContext} from 'ava';
- */
+  /**
+   * @import {ExecutionContext} from 'ava';
+   */
 
   if (actualLength === expectedLength) return;
 

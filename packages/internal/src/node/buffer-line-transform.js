@@ -21,8 +21,7 @@ export default class BufferLineTransform extends Transform {
    * The BufferLineTransform is reading String or Buffer content from a Readable
    * stream and writing each line as a Buffer in object mode
    *
-   * @param {TransformOptions &
-   *   BufferLineTransformOptions} [options]
+   * @param {TransformOptions & BufferLineTransformOptions} [options]
    */
   constructor(options) {
     const {

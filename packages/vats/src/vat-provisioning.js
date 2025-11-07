@@ -30,9 +30,7 @@ const prepareSpecializedNameAdmin = zone => {
   const mixinMyAddress = prepareMixinMyAddress(zone);
 
   /**
-   * @type {MakeAttenuator<
-   *   NamesByAddressAdmin
-   * >}
+   * @type {MakeAttenuator<NamesByAddressAdmin>}
    */
   const specialize = prepareGuardedAttenuator(zone, NameHubIKit.nameAdmin, {
     tag: 'NamesByAddressAdmin',

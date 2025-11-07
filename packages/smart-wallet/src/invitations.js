@@ -66,10 +66,7 @@ const MAX_PIPE_LENGTH = 2;
  */
 
 /**
- * @typedef {Pick<
- *   InvitationDetails,
- *   'description' | 'instance'
- * >} InvitationsPurseQuery
+ * @typedef {Pick<InvitationDetails, 'description' | 'instance'>} InvitationsPurseQuery
  */
 
 /**

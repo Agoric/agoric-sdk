@@ -22,9 +22,7 @@ const importConfig = async configName =>
     .pathname;
 
 const test =
-  /** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>}} */ (
-    anyTest
-  );
+  /** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>}} */ (anyTest);
 
 const PROD_CONFIG_FILES = [
   'decentral-main-vaults-config.json',

@@ -94,9 +94,7 @@ export const registerChain = async (
       .then(() => log(`registered agoricNames chain.${name}`)),
   ];
 
-  const { chainId } = /** @type {CosmosChainInfo} */ (
-    chainInfo
-  );
+  const { chainId } = /** @type {CosmosChainInfo} */ (chainInfo);
   for (const [counterChainId, connInfo] of Object.entries(connections)) {
     const [key, connectionInfo] = normalizeConnectionInfo(
       chainId,

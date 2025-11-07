@@ -213,10 +213,7 @@ const trace = makeTracer('SmrtWlt');
  * @typedef {Readonly<
  *   UniqueParams & {
  *     paymentQueues: MapStore<Brand, Payment[]>;
- *     offerToInvitationMakers: MapStore<
- *       string,
- *       InvitationMakers
- *     >;
+ *     offerToInvitationMakers: MapStore<string, InvitationMakers>;
  *     offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>;
  *     offerToUsedInvitation: MapStore<string, Amount<'set'>>;
  *     purseBalances: MapStore<Purse, Amount>;
@@ -655,8 +652,7 @@ export const prepareSmartWallet = (baggage, shared) => {
          * transition to decentralized introductions.
          *
          * @param {Brand} brand
-         * @param {ERef<NameHub>} known - namehub with
-         *   brand, issuer branches
+         * @param {ERef<NameHub>} known - namehub with brand, issuer branches
          * @returns {Promise<Purse | undefined>} undefined if brand is not known
          */
         async getPurseIfKnownBrand(brand, known) {
@@ -1188,8 +1184,7 @@ export const prepareSmartWallet = (baggage, shared) => {
          * Umarshals the actionCapData and delegates to the appropriate action
          * handler.
          *
-         * @param {CapData<string | null>} actionCapData
-         *   of type BridgeAction
+         * @param {CapData<string | null>} actionCapData of type BridgeAction
          * @param {boolean} [canSpend]
          * @returns {Promise<void>}
          */

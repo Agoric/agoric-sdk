@@ -9,10 +9,7 @@ import { E } from '@endo/far';
  * @param {BootstrapPowers & {
  *   consume: {
  *     vatAdminSvc: VatAdminSvc;
- *     vatStore: MapStore<
- *       string,
- *       CreateVatResults
- *     >;
+ *     vatStore: MapStore<string, CreateVatResults>;
  *   };
  * }} powers
  * @param {object} options

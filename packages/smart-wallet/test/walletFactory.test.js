@@ -17,9 +17,7 @@ import {
  */
 
 /**
- * @type {TestFn<
- *   Awaited<ReturnType<makeDefaultTestContext>>
- * >}
+ * @type {TestFn<Awaited<ReturnType<makeDefaultTestContext>>>}
  */
 const test = anyTest;
 

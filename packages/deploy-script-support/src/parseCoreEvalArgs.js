@@ -12,9 +12,9 @@ export const parseScriptArgs = async (endowments, name, knownVariants) => {
   const variantOrConfig =
     scriptArgs && scriptArgs.length > 0 ? scriptArgs : undefined;
 
-/**
- * @import {DeployScriptEndownments} from './externalTypes.js';
- */
+  /**
+   * @import {DeployScriptEndownments} from './externalTypes.js';
+   */
 
   console.log(`${name}`, variantOrConfig);
 

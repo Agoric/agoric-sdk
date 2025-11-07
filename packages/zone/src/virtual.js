@@ -39,9 +39,7 @@ const makeVirtualExo = (
   options = undefined,
 ) => {
   const defineKindOptions =
-    /** @type {DefineKindOptions<{ self: typeof methods }>} */ (
-      options
-    );
+    /** @type {DefineKindOptions<{ self: typeof methods }>} */ (options);
   const makeInstance = defineVirtualExoClass(
     label,
     interfaceGuard,

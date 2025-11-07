@@ -253,10 +253,9 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   };
   const { kernelStorage } = initSwingStore();
   const { kernel: kernelBundle, ...kernelBundles } = await buildKernelBundles();
-  const initOpts =
-    /** @type {{kernelBundles: Record<string, Bundle>}} */ ({
-      kernelBundles,
-    });
+  const initOpts = /** @type {{kernelBundles: Record<string, Bundle>}} */ ({
+    kernelBundles,
+  });
   const runtimeOpts = { kernelBundle };
   await initializeSwingset(config, [], kernelStorage, initOpts);
   const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);

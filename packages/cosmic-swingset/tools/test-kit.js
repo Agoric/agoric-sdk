@@ -279,9 +279,7 @@ export const makeCosmicSwingsetTestKit = async (
     blockingSend,
     shutdown: shutdownKernel,
     internals,
-  } = /** @type {EReturn<launchAndShareInternals>} */ (
-    launchResult
-  );
+  } = /** @type {EReturn<launchAndShareInternals>} */ (launchResult);
   /** @type {(options?: { kernelOnly?: boolean }) => Promise<void>} */
   const shutdown = async ({ kernelOnly = false } = {}) => {
     await shutdownKernel();

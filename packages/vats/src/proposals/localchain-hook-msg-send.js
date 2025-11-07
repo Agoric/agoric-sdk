@@ -17,10 +17,7 @@ import {
  *     vtransferBridgeManager: ScopedBridgeManager<'vtransfer'>;
  *     transferMiddleware: TransferMiddleware;
  *     vatAdminSvc: VatAdminSvc;
- *     vatStore: MapStore<
- *       string,
- *       CreateVatResults
- *     >;
+ *     vatStore: MapStore<string, CreateVatResults>;
  *   };
  * }} powers
  * @param {object} options

@@ -9,9 +9,7 @@ import { promisify } from 'node:util';
  */
 
 /**
- * @param {ReadStream
- *   | WriteStream
- *   | Socket} stream
+ * @param {ReadStream | WriteStream | Socket} stream
  * @returns {Promise<void>}
  */
 export const fsStreamReady = stream =>
@@ -66,9 +64,7 @@ export const makeFsStreamWriter = async filePath => {
   const closeAsync =
     useStdout || !(/** @type {any} */ (stream).close)
       ? undefined
-      : promisify(
-          /** @type {WriteStream} */ (stream).close.bind(stream),
-        );
+      : promisify(/** @type {WriteStream} */ (stream).close.bind(stream));
 
   let flushed = Promise.resolve();
   let closed = false;

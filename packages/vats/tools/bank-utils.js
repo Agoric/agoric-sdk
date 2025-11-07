@@ -24,10 +24,7 @@ export const makeFakeBankKit = issuerKits => {
   /** @type {MapStore<Brand, Issuer>} */
   const issuers = makeScalarMapStore();
   /**
-   * @type {MapStore<
-   *   Brand,
-   *   ERef<VirtualPurse>
-   * >}
+   * @type {MapStore<Brand, ERef<VirtualPurse>>}
    */
   const purses = makeScalarMapStore();
 
@@ -39,9 +36,7 @@ export const makeFakeBankKit = issuerKits => {
   }
 
   /**
-   * @type {SubscriptionRecord<
-   *   AssetDescriptor
-   * >}
+   * @type {SubscriptionRecord<AssetDescriptor>}
    */
   const { subscription, publication } = makeSubscriptionKit();
 

@@ -31,8 +31,7 @@ const vatUpgradeStatus = {
 };
 
 /**
- * @param {BootstrapPowers &
- *   EconomyBootstrapSpace} space
+ * @param {BootstrapPowers & EconomyBootstrapSpace} space
  * @param {object} config
  * @param {{ skip: string[] }} config.options
  */

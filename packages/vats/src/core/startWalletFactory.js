@@ -26,10 +26,7 @@ const trace = makeTracer('StartWF', 'verbose');
 
 /**
  * @param {ERef<ZoeService>} zoe
- * @param {Installation<
- *   start
- * >} inst
- *
+ * @param {Installation<start>} inst
  *
  * @typedef {EReturn<typeof startFactoryInstance>} WalletFactoryStartResult
  */

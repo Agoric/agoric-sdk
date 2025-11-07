@@ -259,8 +259,7 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
          * If promise disconnected, watch again. Or if there's an Error, handle
          * it.
          *
-         * @param {Error
-         *   | UpgradeDisconnection} reason
+         * @param {Error | UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
         onRejected(reason, seat) {
@@ -296,8 +295,7 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
          * If promise disconnected, watch again. Or if there's an Error, handle
          * it.
          *
-         * @param {Error
-         *   | UpgradeDisconnection} reason
+         * @param {Error | UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
         onRejected(reason, seat) {
@@ -326,8 +324,7 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
          * and getPayouts() settle the same (they await the same promise and
          * then synchronously return a local value).
          *
-         * @param {Error
-         *   | UpgradeDisconnection} reason
+         * @param {Error | UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
         onRejected(reason, seat) {
