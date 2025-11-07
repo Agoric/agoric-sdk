@@ -6,31 +6,21 @@ import { registerNetworkProtocols } from '../proposals/network-proposal.js';
 import { makeVatsFromBundles } from './basic-behaviors.js';
 
 /**
- * @import {buildRootObject} from '@agoric/solo/src/vat-spawner.js';
- * @import {buildRootObject} from '@agoric/solo/src/vat-http.js';
- * @import {buildRootObject} from '../vat-network.js';
- * @import {buildRootObject} from '@agoric/solo/src/vat-uploads.js';
- * @import {Zone} from '@agoric/base-zone';
- * @import {BootstrapManifest} from './lib-boot.js';
- * @import {BootstrapManifestPermit} from './lib-boot.js';
- */
-
-/**
  * @typedef SoloVats
  * @property {ERef<
  *   ReturnType<
- *     typeof buildRootObject
+ *     typeof import('@agoric/solo/src/vat-spawner.js').buildRootObject
  *   >
  * >} spawner
  * @property {ERef<
- *   ReturnType<typeof buildRootObject>
+ *   ReturnType<typeof import('@agoric/solo/src/vat-http.js').buildRootObject>
  * >} http
  * @property {ERef<
- *   ReturnType<typeof buildRootObject>
+ *   ReturnType<typeof import('../vat-network.js').buildRootObject>
  * >} network
  * @property {ERef<
  *   ReturnType<
- *     typeof buildRootObject
+ *     typeof import('@agoric/solo/src/vat-uploads.js').buildRootObject
  *   >
  * >} uploads
  */
@@ -115,7 +105,7 @@ async function createLocalBundle(vats, devices, vatAdminSvc, vatPowers) {
  *   BootstrapSpace & {
  *     vatParameters: BootstrapVatParams;
  *     vats: SwingsetVats & SoloVats;
- *     zone: Zone;
+ *     zone: import('@agoric/base-zone').Zone;
  *   }} powers
  */
 export const startClient = async ({
@@ -197,9 +187,9 @@ export const startClient = async ({
 };
 harden(startClient);
 
-/** @type {BootstrapManifest} */
+/** @type {import('./lib-boot.js').BootstrapManifest} */
 export const CLIENT_BOOTSTRAP_MANIFEST = harden({
-  /** @type {BootstrapManifestPermit} */
+  /** @type {import('./lib-boot.js').BootstrapManifestPermit} */
   [makeVatsFromBundles.name]: {
     vats: {
       vatAdmin: 'vatAdmin',

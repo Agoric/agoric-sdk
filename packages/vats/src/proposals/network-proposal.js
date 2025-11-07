@@ -17,29 +17,24 @@ const { when } = heapVowTools;
 /**
  * @import {ProtocolHandler} from '@agoric/network';
  * @import {Remote} from '@agoric/vow';
- * @import {buildRootObject} from '@agoric/solo/src/vat-spawner.js';
- * @import {buildRootObject} from '@agoric/solo/src/vat-http.js';
- * @import {buildRootObject} from '../vat-network.js';
- * @import {buildRootObject} from '@agoric/solo/src/vat-uploads.js';
- * @import {ScopedBridgeManager} from '../types.js';
  */
 
 /**
  * @typedef SoloVats
  * @property {ERef<
  *   ReturnType<
- *     typeof buildRootObject
+ *     typeof import('@agoric/solo/src/vat-spawner.js').buildRootObject
  *   >
  * >} spawner
  * @property {ERef<
- *   ReturnType<typeof buildRootObject>
+ *   ReturnType<typeof import('@agoric/solo/src/vat-http.js').buildRootObject>
  * >} http
  * @property {ERef<
- *   ReturnType<typeof buildRootObject>
+ *   ReturnType<typeof import('../vat-network.js').buildRootObject>
  * >} network
  * @property {ERef<
  *   ReturnType<
- *     typeof buildRootObject
+ *     typeof import('@agoric/solo/src/vat-uploads.js').buildRootObject
  *   >
  * >} uploads
  */
@@ -47,7 +42,7 @@ const NUM_IBC_PORTS_PER_CLIENT = 3;
 
 /**
  * @param {SoloVats | NetVats} vats
- * @param {ERef<ScopedBridgeManager<'dibc'>>} [dibcBridgeManager]
+ * @param {ERef<import('../types.js').ScopedBridgeManager<'dibc'>>} [dibcBridgeManager]
  */
 export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
   /** @type {Promise<void>[]} */

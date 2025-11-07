@@ -3,11 +3,6 @@ export {};
 
 /**
  * @import {NameHub} from '@agoric/vats';
- * @import {default} from '@endo/bundle-source';
- * @import {ScratchPad} from '@agoric/internal/src/scratch.js';
- * @import {Bank} from '@agoric/vats/src/vat-bank.js';
- * @import {Board} from '@agoric/vats';
- * @import {NameAdmin} from '@agoric/vats';
  */
 
 // TODO move this type somewhere better
@@ -59,7 +54,7 @@ export {};
 
 /**
  * @typedef {{
- *  bundleSource: typeof default,
+ *  bundleSource: typeof import('@endo/bundle-source').default,
  *  cacheDir: string,
  *  lookup: (...path: string[]) => unknown,
  *  now: () => number,
@@ -71,7 +66,7 @@ export {};
 
 /**
  * @typedef {{
- *   scratch: ERef<ScratchPad>,
+ *   scratch: ERef<import('@agoric/internal/src/scratch.js').ScratchPad>,
  * }} CommonHome
  */
 
@@ -79,10 +74,10 @@ export {};
 /**
  * @typedef {CommonHome & {
  * agoricNames: ERef<NameHub>,
- * bank: ERef<Bank>,
- * board: ERef<Board>,
+ * bank: ERef<import("@agoric/vats/src/vat-bank.js").Bank>,
+ * board: ERef<import("@agoric/vats").Board>,
  * faucet: unknown,
- * myAddressNameAdmin: ERef<NameAdmin>,
+ * myAddressNameAdmin: ERef<import("@agoric/vats").NameAdmin>,
  * namesByAddress: ERef<NameHub>,
  * wallet: any,
  * zoe: ERef<ZoeService>,
