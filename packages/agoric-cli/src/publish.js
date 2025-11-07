@@ -299,17 +299,19 @@ export const makeCosmosBundlePublisher = ({
           '--compress',
           ...['--gas', gas],
           ...['--gas-adjustment', gasAdjustment],
-          ...(feeGranter !== undefined? ['--fee-granter', feeGranter] : []),
-          ...(feePayer !== undefined? ['--fee-payer', feePayer] : []),
-          ...(fees!== undefined ? ['--fees', fees] : []),
-          ...(gasPrices !== undefined? ['--gas-prices', gasPrices] : []),
-          ...(home !== undefined? ['--home', home] : []),
+          ...(feeGranter !== undefined ? ['--fee-granter', feeGranter] : []),
+          ...(feePayer !== undefined ? ['--fee-payer', feePayer] : []),
+          ...(fees !== undefined ? ['--fees', fees] : []),
+          ...(gasPrices !== undefined ? ['--gas-prices', gasPrices] : []),
+          ...(home !== undefined ? ['--home', home] : []),
           ...(ledger ? ['--ledger'] : []),
           ...(note !== undefined ? ['--note', note] : []),
           ...(signMode !== undefined ? ['--sign-mode', signMode] : []),
           ...['--node', node],
           ...['--keyring-backend', keyringBackend],
-          ...(keyringDirectory !== undefined ? ['--keyring-dir', keyringDirectory] : []),
+          ...(keyringDirectory !== undefined
+            ? ['--keyring-dir', keyringDirectory]
+            : []),
           ...['--from', fromLabel],
           ...['--chain-id', chainID],
           // The CLI help claims that the modes are sync|async.
@@ -317,7 +319,9 @@ export const makeCosmosBundlePublisher = ({
           ...['--broadcast-mode', 'sync'],
           ...['--output', 'json'],
           ...(interactive ? [] : ['--yes']),
-          ...(timeoutHeight !== undefined ? ['--timeout-height', timeoutHeight] : []),
+          ...(timeoutHeight !== undefined
+            ? ['--timeout-height', timeoutHeight]
+            : []),
           // Cosmos CLI went with snake_case for log flags and no governing
           // principle is in evidence.
           ...(logFormat !== undefined ? ['--log_format', logFormat] : []),
@@ -331,7 +335,9 @@ export const makeCosmosBundlePublisher = ({
         const { childProcess } = promise;
         const { stdout } = childProcess;
         assert(stdout);
-        const buffer = new ArrayBuffer(1024, { maxByteLength: 0x1_00_00_00_00});
+        const buffer = new ArrayBuffer(1024, {
+          maxByteLength: 0x1_00_00_00_00,
+        });
         const bytes = new Uint8Array(buffer);
         let byteLength = 0;
         stdout.on('data', chunk => {

@@ -8,10 +8,7 @@ import tmp from 'tmp';
 
 import { parseLocatedJson } from './json.js';
 
-import {
-  makeBundlePublisher,
-  makeCosmosBundlePublisher,
-} from './publish.js';
+import { makeBundlePublisher, makeCosmosBundlePublisher } from './publish.js';
 
 /** @import { AgdLoggingLevel, AgdSignMode } from './publish.js' */
 
@@ -54,9 +51,18 @@ const publishMain = async (progname, rawArgs, powers, opts) => {
     allegedLogFormat === undefined ||
       ['json', 'plain'].includes(allegedLogFormat),
   );
-  const logFormat = /** @type {'json' | 'plain'} */ (allegedLogFormat ?? 'plain');
-  assert(allegedLoggingLevel === undefined || ['trace', 'debug', 'info', 'warn', 'error', 'panic'].includes(allegedLoggingLevel));
-  const loggingLevel = /** @type {AgdLoggingLevel} */(allegedLoggingLevel ?? 'info');
+  const logFormat = /** @type {'json' | 'plain'} */ (
+    allegedLogFormat ?? 'plain'
+  );
+  assert(
+    allegedLoggingLevel === undefined ||
+      ['trace', 'debug', 'info', 'warn', 'error', 'panic'].includes(
+        allegedLoggingLevel,
+      ),
+  );
+  const loggingLevel = /** @type {AgdLoggingLevel} */ (
+    allegedLoggingLevel ?? 'info'
+  );
 
   /** @type {import('./publish.js').TransactionSpec} */
   const transactionSpec = {
