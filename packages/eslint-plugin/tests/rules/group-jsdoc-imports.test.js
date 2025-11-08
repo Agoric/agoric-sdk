@@ -130,5 +130,31 @@ const kind = 'hi';
         { message: 'Move inline type import to top-level JSDoc import block' },
       ],
     },
+    {
+      // Handle blocks containing both @import and @typedef with import
+      code: `
+/**
+ * @import {SnapStoreInternal} from './snapStore.js';
+ *
+ * @typedef {{
+ *    dirPath: string | null,
+ *    kvStore: import('./kvStore.js').KVStore,
+ * }} SwingStoreInternal
+ */`,
+      options: [{ paths: ['@agoric/', 'fs/'] }],
+      output: `
+/**
+ * @import {SnapStoreInternal} from './snapStore.js';
+ * @import {KVStore} from './kvStore.js';
+ *
+ * @typedef {{
+ *    dirPath: string | null,
+ *    kvStore: KVStore,
+ * }} SwingStoreInternal
+ */`,
+      errors: [
+        { message: 'Move inline type import to top-level JSDoc import block' },
+      ],
+    },
   ],
 });
