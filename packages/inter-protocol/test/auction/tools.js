@@ -11,22 +11,15 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 /**
- * @import {start} from '@agoric/zoe/src/contracts/automaticRefund.js';
- * @import {start} from '../../src/auction/auctioneer.js';
- * @import {start} from '../../src/reserve/assetReserve.js';
- * @import {StoredPublisherKit} from '@agoric/notifier';
- */
-
-/**
  * @typedef {{
  *   autoRefund: Installation<
- *     start
+ *     import('@agoric/zoe/src/contracts/automaticRefund.js').start
  *   >;
- *   auctioneer: Installation<start>;
+ *   auctioneer: Installation<import('../../src/auction/auctioneer.js').start>;
  *   governor: Installation<
  *     import('@agoric/governance/src/contractGovernor.js')['start']
  *   >;
- *   reserve: Installation<start>;
+ *   reserve: Installation<import('../../src/reserve/assetReserve.js').start>;
  * }} AuctionTestInstallations
  */
 
@@ -102,7 +95,7 @@ export const getInvitation = async (zoe, installations) => {
   return { fakeInvitationPayment, fakeInvitationAmount };
 };
 
-/** @returns {StoredPublisherKit<GovernanceSubscriptionState>} */
+/** @returns {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} */
 export const makeGovernancePublisherFromFakes = () => {
   const storageRoot = makeMockChainStorageRoot();
 

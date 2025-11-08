@@ -2,7 +2,6 @@
 
 /**
  * @import {VaultFactoryContract} from './vaultFactory.js';
- * @import {Allocation} from '@agoric/zoe';
  * @import {TimerWaker} from '@agoric/time';
  * @import {PriceQuote} from '@agoric/zoe/tools/types.js';
  * @import {Proposal} from '@agoric/zoe';
@@ -104,10 +103,7 @@
 /**
  * @typedef {object} LiquidationStrategy
  * @property {() => KeywordKeywordRecord} keywordMapping
- * @property {(
- *   collateral: Amount,
- *   run: Amount,
- * ) => Proposal} makeProposal
+ * @property {(collateral: Amount, run: Amount) => Proposal} makeProposal
  * @property {(debt: Amount) => Promise<Invitation>} makeInvitation
  */
 
