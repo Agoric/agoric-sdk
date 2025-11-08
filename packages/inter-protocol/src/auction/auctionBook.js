@@ -32,7 +32,6 @@ import {
  * @import {Baggage} from '@agoric/vat-data';
  * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
  * @import {TypedPattern, Remote} from '@agoric/internal';
- * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  */
 
 const { makeEmpty } = AmountMath;
@@ -115,7 +114,7 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
 /**
  * @param {Baggage} baggage
  * @param {ZCF} zcf
- * @param {MakeRecorderKit} makeRecorderKit
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  */
 export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
   const makeScaledBidBook = prepareScaledBidBook(baggage);

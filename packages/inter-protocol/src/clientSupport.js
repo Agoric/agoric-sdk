@@ -12,7 +12,7 @@ import { parseRatio } from '@agoric/ertp/src/ratio.js';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {BoardRemote} from '@agoric/internal/src/marshal/board-client-utils.js';
- * @import {OfferSpec} from './auction/auctionBook.js';
+ * @import {OfferSpec as AuctionOfferSpec} from './auction/auctionBook.js';
  * @import {OfferMaker} from '@agoric/smart-wallet/src/types.js';
  */
 
@@ -294,7 +294,6 @@ export const makeParseAmount =
  *       discount: number; // -1 to 1. e.g. 0.10 for 10% discount, -0.05 for 5% markup
  *     }
  * )} opts
- * @returns {OfferSpec}
  */
 const makeBidOffer = (agoricNames, opts) => {
   assertAllDefined({
@@ -321,7 +320,7 @@ const makeBidOffer = (agoricNames, opts) => {
     'price' in opts || 'discount' in opts,
     'must specify price or discount',
   );
-  /** @type {OfferSpec} */
+  /** @type {AuctionOfferSpec} */
   const offerArgs =
     'price' in opts
       ? {
@@ -337,7 +336,6 @@ const makeBidOffer = (agoricNames, opts) => {
           ),
         };
 
-  /** @type {OfferSpec} */
   const offerSpec = {
     id: opts.offerId,
     invitationSpec: {
@@ -413,6 +411,7 @@ const makePushPriceOffer = (_agoricNames, opts, previousOffer) => {
  */
 export const Offers = {
   auction: {
+    // @ts-expect-error XXX auction types
     Bid: makeBidOffer,
   },
   fluxAggregator: {
