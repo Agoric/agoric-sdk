@@ -11,20 +11,20 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 /**
- * @import {start} from '@agoric/zoe/src/contracts/automaticRefund.js';
- * @import {start} from '../../src/auction/auctioneer.js';
- * @import {start} from '../../src/reserve/assetReserve.js';
+ * @import {start as refundStart} from '@agoric/zoe/src/contracts/automaticRefund.js';
+ * @import {start as auctioneerStart} from '../../src/auction/auctioneer.js';
+ * @import {start as reserveStart} from '../../src/reserve/assetReserve.js';
  * @import {StoredPublisherKit} from '@agoric/notifier';
  */
 
 /**
  * @typedef {{
- *   autoRefund: Installation<start>;
- *   auctioneer: Installation<start>;
+ *   autoRefund: Installation<refundStart>;
+ *   auctioneer: Installation<auctioneerStart>;
  *   governor: Installation<
  *     import('@agoric/governance/src/contractGovernor.js')['start']
  *   >;
- *   reserve: Installation<start>;
+ *   reserve: Installation<reserveStart>;
  * }} AuctionTestInstallations
  */
 
