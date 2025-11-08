@@ -65,13 +65,11 @@ import { makeCosmicSwingsetTestKit } from './test-kit.js';
 /**
  * @import {Database} from 'better-sqlite3';
  * @import {ManagerType, SwingSetConfig} from '@agoric/swingset-vat';
- * @import {KVStore} from '../src/helpers/bufferedStorage.js';
  * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js';
  * @import {CoreEvalSDKType} from '@agoric/cosmic-proto/swingset/swingset.js';
  * @import {makeTranscriptStore} from '@agoric/swing-store';
  * @import {makeSnapStore} from '@agoric/swing-store';
  * @import {SnapshotResult} from '@agoric/swing-store';
- * @import {makeBundleStore} from '@agoric/swing-store';
  */
 
 const useColors = process.stdout?.hasColors?.();
