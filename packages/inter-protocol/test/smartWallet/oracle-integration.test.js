@@ -132,9 +132,7 @@ const setupFeedWithWallets = async (t, oracleAddresses) => {
   await t.context.simpleCreatePriceFeed(oracleAddresses, 'ATOM', 'USD');
 
   /**
-   * @type {Instance<
-   *   start
-   * >}
+   * @type {Instance<start>}
    */
   const governedPriceAggregator = await E(agoricNames).lookup(
     'instance',
@@ -210,7 +208,9 @@ test.serial('invitations', async t => {
    * @param {string} desc
    * @param {number} len
    * @param {any} balances XXX please improve this
-   * @returns {Promise<[{ description: string; instance: Instance }]>}
+   * @returns {Promise<
+   *   [{ description: string; instance: Instance<unknown> }]
+   * >}
    */
   const getInvitationFor = async (desc, len, balances) => {
     await eventLoopIteration();
@@ -408,7 +408,9 @@ test.serial('govern oracles list', async t => {
    * @param {string} desc
    * @param {number} len
    * @param {{ get: (b: Brand) => Amount | undefined }} balances
-   * @returns {Promise<[{ description: string; instance: Instance }]>}
+   * @returns {Promise<
+   *   [{ description: string; instance: Instance<unknown> }]
+   * >}
    */
   const getInvitationFor = async (desc, len, balances) =>
     E(E(zoe).getInvitationIssuer())
