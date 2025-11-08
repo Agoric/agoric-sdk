@@ -3,10 +3,6 @@ import { promisify } from 'node:util';
 import * as cmd from '../cmd.js';
 
 /**
- * @import {Environment} from '../cmd.js';
- */
-
-/**
  * Access to run a command with flags appended.
  *
  * @example
@@ -17,7 +13,7 @@ import * as cmd from '../cmd.js';
  * TODO? .withPath('/opt') or .withEnv({PATH: `${env.PATH}:/opt`})
  *
  * @param {string} file
- * @param {{ execFile?: any, defaultEnv?: Environment }} [io]
+ * @param {{ execFile?: any, defaultEnv?: import('../cmd.js').Environment }} [io]
  */
 export const makeCmdRunner = (
   file,

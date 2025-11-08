@@ -1,14 +1,7 @@
 // @jessie-check
 
 /**
- * @import {VaultFactoryContract} from './vaultFactory.js';
- * @import {TimerWaker} from '@agoric/time';
- * @import {PriceQuote} from '@agoric/zoe/tools/types.js';
- * @import {Proposal} from '@agoric/zoe';
- */
-
-/**
- * @typedef {VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
+ * @typedef {import('./vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
  * @import {VaultNotification} from './vault.js'
  * @import {Vault} from './vault.js'
  * @import {VaultKit} from './vaultKit.js'
@@ -53,10 +46,10 @@
 /**
  * @typedef {object} VaultFactoryCreatorFacet
  * @property {AddVaultType} addVaultType
- * @property {() => Allocation} getRewardAllocation
+ * @property {() => import('@agoric/zoe').Allocation} getRewardAllocation
  * @property {() => Promise<Invitation<string, never>>} makeCollectFeesInvitation
- * @property {() => TimerWaker} makeLiquidationWaker
- * @property {() => TimerWaker} makePriceLockWaker
+ * @property {() => import('@agoric/time').TimerWaker} makeLiquidationWaker
+ * @property {() => import('@agoric/time').TimerWaker} makePriceLockWaker
  */
 
 /**
@@ -83,7 +76,7 @@
  * @typedef {object} GetVaultParams
  * @property {() => Ratio} getLiquidationMargin
  * @property {() => Ratio} getMintFee
- * @property {() => Promise<PriceQuote>} getCollateralQuote
+ * @property {() => Promise<import('@agoric/zoe/tools/types.js').PriceQuote>} getCollateralQuote
  * @property {() => Ratio} getInterestRate - The annual interest rate on a debt
  *   position
  * @property {() => RelativeTime} getChargingPeriod - The period (in seconds) at
@@ -103,7 +96,10 @@
 /**
  * @typedef {object} LiquidationStrategy
  * @property {() => KeywordKeywordRecord} keywordMapping
- * @property {(collateral: Amount, run: Amount) => Proposal} makeProposal
+ * @property {(
+ *   collateral: Amount,
+ *   run: Amount,
+ * ) => import('@agoric/zoe').Proposal} makeProposal
  * @property {(debt: Amount) => Promise<Invitation>} makeInvitation
  */
 
