@@ -6,7 +6,7 @@ import { xsnap, recordXSnap } from '@agoric/xsnap';
 /**
  * @import {BundleHandler} from './bundle-handler.js';
  * @import {SnapStore} from '@agoric/swing-store';
- * @import {spawn} from 'child_process';
+ * @import {spawn as procSpawn} from 'child_process';
  * @import {Bundle} from '../types-external.js';
  * @import {XSnapOptions} from '@agoric/xsnap/src/xsnap.js';
  * @import {BundleID} from '../types-external.js';
@@ -44,7 +44,7 @@ const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
  * @param {{
  *   bundleHandler: BundleHandler,
  *   snapStore?: SnapStore,
- *   spawn: typeof spawn
+ *   spawn: typeof procSpawn,
  *   fs: import('fs'),
  *   tmpName: import('tmp')['tmpName'],
  *   debug?: boolean,
