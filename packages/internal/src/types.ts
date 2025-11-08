@@ -1,9 +1,10 @@
 /* eslint-disable max-classes-per-file */
 import type { ERef, RemotableBrand } from '@endo/eventual-send';
 import type { Primitive } from '@endo/pass-style';
-import type { Pattern } from '@endo/patterns';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used in JSDoc
+import type { mustMatch as endoMustMatch, Pattern } from '@endo/patterns';
 import type { Callable } from './ses-utils.js';
-import type { mustMatch as endoMustMatch } from '@endo/patterns';
+
 /**
  * A map corresponding with a total function such that `get(key)` is assumed to
  * always succeed.
