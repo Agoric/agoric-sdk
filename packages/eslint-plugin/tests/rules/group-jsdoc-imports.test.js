@@ -144,8 +144,11 @@ const kind = 'hi';
       options: [{ paths: ['@agoric/', 'fs/'] }],
       output: `
 /**
- * @import {SnapStoreInternal} from './snapStore.js';
  * @import {KVStore} from './kvStore.js';
+ */
+
+/**
+ * @import {SnapStoreInternal} from './snapStore.js';
  *
  * @typedef {{
  *    dirPath: string | null,

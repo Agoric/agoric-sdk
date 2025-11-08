@@ -236,8 +236,18 @@ module.exports = {
             // (somewhere in the file) and this inline usage.
             const fixOps = [];
 
+            const inlineStart =
+              comment.range[0] +
+              2 +
+              (match.index ?? commentText.indexOf(fullMatch));
+            const inlineEnd = inlineStart + fullMatch.length;
+
             // (a) We locate or create a top-level block
             const topBlockComment = findTopBlockComment(allComments);
+            const topBlockIsSameAsComment =
+              topBlockComment &&
+              topBlockComment.range[0] === comment.range[0] &&
+              topBlockComment.range[1] === comment.range[1];
 
             if (!topBlockComment) {
               // If no block with @import found, create a new block at top
@@ -251,6 +261,13 @@ module.exports = {
                 fixer.insertTextBeforeRange(
                   [insertIndex, insertIndex],
                   `${newBlockPrefix}${buildNewBlock(importTypeName, importPath)}${trailingSpacer}`,
+                ),
+              );
+            } else if (topBlockIsSameAsComment) {
+              fixOps.push(
+                fixer.insertTextBeforeRange(
+                  [comment.range[0], comment.range[0]],
+                  `${buildNewBlock(importTypeName, importPath)}\n`,
                 ),
               );
             } else {
@@ -277,13 +294,9 @@ module.exports = {
 
             // (b) Remove the inline usage from *this* comment
             // Replace `import('...').Foo` → `Foo`
-            const inlineStart =
-              comment.range[0] +
-              2 +
-              (match.index ?? commentText.indexOf(fullMatch));
             fixOps.push(
               fixer.replaceTextRange(
-                [inlineStart, inlineStart + fullMatch.length],
+                [inlineStart, inlineEnd],
                 typeName,
               ),
             );
