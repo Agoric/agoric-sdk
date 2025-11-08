@@ -9,6 +9,10 @@ import { makeSwingStoreExporter } from '../src/exporter.js';
 import { importSwingStore } from '../src/importer.js';
 import { buffer } from '../src/util.js';
 
+/**
+ * @import {Bundle} from '../src/bundleStore.js';
+ */
+
 const tmpDir = makeTempDirFactory(tmp);
 
 function makeB0ID(bundle) {
