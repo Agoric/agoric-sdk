@@ -6,7 +6,10 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { calculateDistributionPlan } from '../../src/vaultFactory/proceeds.js';
 import { withAmountUtils } from '../supports.js';
 
-/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
+/**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {VaultBalances} from '../../src/vaultFactory/proceeds.js';
+ */
 
 const debt = withAmountUtils(makeIssuerKit('IST'));
 const coll = withAmountUtils(makeIssuerKit('aEth'));
@@ -17,7 +20,7 @@ const test = unknownTest;
  * @param {bigint} debtN
  * @param {bigint} collN
  * @param {bigint} currN
- * @returns {import('../../src/vaultFactory/proceeds.js').VaultBalances}
+ * @returns {VaultBalances}
  */
 const makeVaultBalance = (debtN, collN, currN = debtN) => {
   return {

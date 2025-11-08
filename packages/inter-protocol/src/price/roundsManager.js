@@ -19,6 +19,8 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * @import {Timestamp, TimerService} from '@agoric/time'
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {OracleStatus} from './priceOracleKit.js'
+ * @import {ChainlinkConfig} from './fluxAggregatorKit.js';
+ * @import {Recorder} from '@agoric/zoe/src/contractSupport/recorder.js';
  */
 
 /** @type {string} */
@@ -67,12 +69,12 @@ const validRoundId = roundId => {
 
 /**
  * @typedef {Readonly<
- *   import('./fluxAggregatorKit.js').ChainlinkConfig & {
+ *   ChainlinkConfig & {
  *     quoteKit: QuoteKit;
  *     answerPublisher: Publisher<void>;
  *     brandIn: Brand<'nat'>;
  *     brandOut: Brand<'nat'>;
- *     latestRoundPublisher: import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<LatestRound>;
+ *     latestRoundPublisher: Recorder<LatestRound>;
  *     timerPresence: TimerService;
  *   }
  * >} HeldParams

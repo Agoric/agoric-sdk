@@ -13,6 +13,11 @@ import {
   reserveThenGetNames,
 } from './utils.js';
 
+/**
+ * @import {ChainlinkConfig} from '@agoric/inter-protocol/src/price/fluxAggregatorKit.js';
+ * @import {EconomyBootstrapPowers} from './econ-behaviors.js';
+ */
+
 // backwards compatibility
 export { oracleBrandFeedName as instanceNameFor };
 
@@ -88,7 +93,7 @@ export const ensureOracleBrands = async (
  *     priceFeedOptions: {
  *       AGORIC_INSTANCE_NAME: string;
  *       oracleAddresses: string[];
- *       contractTerms: import('@agoric/inter-protocol/src/price/fluxAggregatorKit.js').ChainlinkConfig;
+ *       contractTerms: ChainlinkConfig;
  *       IN_BRAND_NAME: string;
  *       OUT_BRAND_NAME: string;
  *       priceAggregatorRef: Installation;
@@ -316,7 +321,7 @@ export const getManifestForPriceFeed = async (
 });
 
 /**
- * @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {object} [config]
  * @param {object} [config.options]
  * @param {string[]} [config.options.demoOracleAddresses]

@@ -23,6 +23,10 @@ import {
  * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
  * @import {ContractMeta, Invitation, StandardTerms, ZCF} from '@agoric/zoe';
  * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
+ * @import {ERef} from '@endo/far';
+ * @import {Bank} from '@agoric/vats/src/vat-bank.js';
+ * @import {MetricsNotification} from './provisionPoolKit.js';
+ * @import {Baggage} from '@agoric/vat-data';
  */
 
 /** @type {ContractMeta} */
@@ -51,16 +55,16 @@ harden(meta);
  *   TODO: ERef<GovernedCreatorFacet<ProvisionCreator>>
  * @param {ZCF<ProvisionTerms>} zcf
  * @param {{
- *   poolBank: import('@endo/far').ERef<
- *     import('@agoric/vats/src/vat-bank.js').Bank
+ *   poolBank: ERef<
+ *     Bank
  *   >;
  *   initialPoserInvitation: Invitation;
  *   storageNode: Remote<StorageNode>;
  *   marshaller: Remote<Marshaller>;
- *   metricsOverride?: import('./provisionPoolKit.js').MetricsNotification;
+ *   metricsOverride?: MetricsNotification;
  *   governedParamOverrides?: Record<string, Amount | undefined>;
  * }} privateArgs
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
   const { poolBank, metricsOverride } = privateArgs;

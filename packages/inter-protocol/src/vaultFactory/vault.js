@@ -21,6 +21,11 @@ const trace = makeTracer('Vault', true);
  * @import {EReturn} from '@endo/far';
  * @import {Brand} from '@agoric/ertp/src/types.js';
  * @import {NormalizedDebt} from './storeUtils.js';
+ * @import {AssetState} from './vaultManager.js';
+ * @import {GovernedParamGetters} from './vaultManager.js';
+ * @import {Recorder} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {Baggage} from '@agoric/swingset-liveslots';
+ * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  */
 
 /**
@@ -88,7 +93,7 @@ const validTransitions = {
 // XXX masks typedef from types.js, but using that causes circular def problems
 /**
  * @typedef {object} VaultManager
- * @property {() => Subscriber<import('./vaultManager.js').AssetState>} getAssetSubscriber
+ * @property {() => Subscriber<AssetState>} getAssetSubscriber
  * @property {(collateralAmount: Amount) => Amount<'nat'>} maxDebtFor
  * @property {() => Brand<'nat'>} getCollateralBrand
  * @property {(base: string) => string} scopeDescription
@@ -97,13 +102,13 @@ const validTransitions = {
  * @property {(amount: Amount, seat: ZCFSeat) => void} burn
  * @property {() => Ratio} getCompoundedInterest
  * @property {(
- *   oldDebt: import('./storeUtils.js').NormalizedDebt,
+ *   oldDebt: NormalizedDebt,
  *   oldCollateral: Amount<'nat'>,
  *   vaultId: VaultId,
  *   vaultPhase: VaultPhase,
  *   vault: Vault,
  * ) => void} handleBalanceChange
- * @property {() => import('./vaultManager.js').GovernedParamGetters} getGovernedParams
+ * @property {() => GovernedParamGetters} getGovernedParams
  */
 
 /**
@@ -124,7 +129,7 @@ const validTransitions = {
  *   phase: VaultPhase;
  *   debtSnapshot: Amount<'nat'>;
  *   outerUpdater:
- *     | import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<VaultNotification>
+ *     | Recorder<VaultNotification>
  *     | null;
  * }} MutableState
  */
@@ -155,8 +160,8 @@ const VaultStateShape = harden({
 });
 
 /**
- * @param {import('@agoric/swingset-liveslots').Baggage} baggage
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
+ * @param {Baggage} baggage
+ * @param {MakeRecorderKit} makeRecorderKit
  * @param {ZCF} zcf
  */
 export const prepareVault = (baggage, makeRecorderKit, zcf) => {
@@ -857,7 +862,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
          * order vaults by their debt-to-collateral ratios without having to
          * mutate the debts as the interest accrues.
          *
-         * @returns {import('./storeUtils.js').NormalizedDebt} as if the vault
+         * @returns {NormalizedDebt} as if the vault
          *   was open at the launch of this manager, before any interest
          *   accrued
          * @see getActualDebAmount

@@ -21,6 +21,11 @@ import { E } from '@endo/far';
 /**
  * @import {SourceBundle} from '@agoric/zoe';
  * @import {EconomyBootstrapPowers as Space} from '../src/proposals/econ-behaviors.js'
+ * @import {TimerService} from '@agoric/time';
+ * @import {start} from '@agoric/vats/src/centralSupply.js';
+ * @import {TopicsRecord} from '@agoric/zoe/src/contractSupport/index.js';
+ * @import {ExecutionContext} from 'ava';
+ * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  */
 
 export { makeMockChainStorageRoot };
@@ -58,7 +63,7 @@ harden(setUpZoeForTest);
 
 /**
  * @param {any} t
- * @param {import('@agoric/time').TimerService} [optTimer]
+ * @param {TimerService} [optTimer]
  */
 export const setupBootstrap = async (t, optTimer) => {
   const trace = makeTracer('PromiseSpace', false);
@@ -113,7 +118,7 @@ export const installPuppetGovernance = (zoe, produce) => {
  * @param {bigint} value
  * @param {{
  *   centralSupply: ERef<
- *     Installation<import('@agoric/vats/src/centralSupply.js').start>
+ *     Installation<start>
  *   >;
  *   feeMintAccess: ERef<FeeMintAccess>;
  *   zoe: ERef<ZoeService>;
@@ -168,7 +173,7 @@ export const subscriptionKey = subscription => {
 
 /**
  * @param {ERef<{
- *   getPublicTopics: () => import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord;
+ *   getPublicTopics: () => TopicsRecord;
  * }>} hasTopics
  * @param {string} subscriberName
  */
@@ -201,9 +206,9 @@ export const headValueLegacy = async subscription => {
 };
 
 /**
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {ERef<{
- *   getPublicTopics: () => import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord;
+ *   getPublicTopics: () => TopicsRecord;
  * }>} hasTopics
  * @param {string} topicName
  * @param {string} path
@@ -239,10 +244,10 @@ export const assertTopicPathData = async (
  *
  * @param {ERef<
  *   Subscriber<
- *     import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord
+ *     CurrentWalletRecord
  *   >
  * >} currents
- * @returns {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord[]}
+ * @returns {CurrentWalletRecord[]}
  *   array that grows as the subscription feeds
  */
 export const sequenceCurrents = currents => {

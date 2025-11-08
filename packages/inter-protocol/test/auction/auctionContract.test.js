@@ -36,12 +36,18 @@ import {
 } from '../supports.js';
 import { setUpInstallations } from './tools.js';
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
+/** @type {TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
 
 /**
  * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js'
  * @import {ExitRule} from '@agoric/zoe';
+ * @import {TestFn} from 'ava';
+ * @import {BookDataNotification} from '../../src/auction/auctionBook.js';
+ * @import {ExecutionContext} from 'ava';
+ * @import {Baggage} from '@agoric/swingset-liveslots';
+ * @import {ManualPriceAuthority} from '@agoric/zoe/tools/manualPriceAuthority.js';
+ * @import {MockChainStorageRoot} from '@agoric/internal/src/storage-test-utils.js';
  */
 
 /**
@@ -56,7 +62,7 @@ const test = anyTest;
  * @typedef {Awaited<
  *   ReturnType<
  *     subscriptionTracker<
- *       import('../../src/auction/auctionBook.js').BookDataNotification
+ *       BookDataNotification
  *     >
  *   >
  * >} BookDataTracker
@@ -99,7 +105,7 @@ test.before(async t => {
 });
 
 /**
- * @param {import('ava').ExecutionContext<
+ * @param {ExecutionContext<
  *   Awaited<ReturnType<makeTestContext>>
  * >} t
  * @param {any} params
@@ -132,7 +138,7 @@ export const setupServices = async (t, params = defaultParams) => {
 
   void E(reserveCF).addIssuer(collateral.issuer, 'Collateral');
 
-  /** @type {import('@agoric/swingset-liveslots').Baggage} */
+  /** @type {Baggage} */
   const paBaggage = makeScalarMapStore();
   const { priceAuthority, adminFacet: registry } =
     providePriceAuthorityRegistry(paBaggage);
@@ -143,7 +149,7 @@ export const setupServices = async (t, params = defaultParams) => {
 };
 
 /**
- * @param {import('ava').ExecutionContext<
+ * @param {ExecutionContext<
  *   Awaited<ReturnType<makeTestContext>>
  * >} t
  * @param {any} [params]
@@ -153,7 +159,7 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
   /**
    * @type {MapStore<
    *   Brand,
-   *   import('@agoric/zoe/tools/manualPriceAuthority.js').ManualPriceAuthority
+   *   ManualPriceAuthority
    * >}
    */
   const priceAuthorities = makeScalarMapStore();
@@ -161,7 +167,7 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
   const { space, timer, registry } = await setupServices(t, params);
   // Each driver needs its own mockChainStorage to avoid state pollution between tests
   const mockChainStorage =
-    /** @type {import('@agoric/internal/src/storage-test-utils.js').MockChainStorageRoot} */ (
+    /** @type {MockChainStorageRoot} */ (
       await space.consume.chainStorage
     );
   const { auctioneerKit: auctioneerKitP, reserveKit } = space.consume;

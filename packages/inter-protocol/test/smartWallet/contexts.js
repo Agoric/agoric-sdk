@@ -15,6 +15,16 @@ import { oracleBrandFeedName } from '../../src/proposals/utils.js';
 import { createPriceFeed } from '../../src/proposals/price-feed-proposal.js';
 import { withAmountUtils } from '../supports.js';
 
+/**
+ * @import {ExecutionContext} from 'ava';
+ * @import {start} from '@agoric/smart-wallet/src/walletFactory.js';
+ * @import {ScopedBridgeManager} from '@agoric/vats';
+ * @import {NameAdmin} from '@agoric/vats';
+ * @import {start} from '@agoric/inter-protocol/src/price/fluxAggregatorContract.js';
+ * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {ContinuingInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
+ */
+
 // referenced by TS
 coalesceUpdates;
 
@@ -40,7 +50,7 @@ export const importBootTestUtils = async (log, bundleCache) => {
 };
 
 /**
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {(logger, cache) => Promise<ChainBootstrapSpace>} makeSpace
  */
 export const makeDefaultTestContext = async (t, makeSpace) => {
@@ -70,7 +80,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   );
   /**
    * @type {Promise<
-   *   Installation<import('@agoric/smart-wallet/src/walletFactory.js').start>
+   *   Installation<start>
    * >}
    */
   const installation = E(zoe).install(bundle);
@@ -107,7 +117,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   const bridgeManager = await consume.bridgeManager;
   /**
    * @type {undefined
-   *   | import('@agoric/vats').ScopedBridgeManager<'wallet'>}
+   *   | ScopedBridgeManager<'wallet'>}
    */
   const walletBridgeManager = await (bridgeManager &&
     makeScopedBridge(bridgeManager, BridgeId.WALLET));
@@ -164,7 +174,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     outBrandName = 'USD',
   ) => {
     // copied from coreProposalBehavior: Publish the installations for behavior dependencies.
-    /** @type {ERef<import('@agoric/vats').NameAdmin>} */
+    /** @type {ERef<NameAdmin>} */
     const installAdmin = E(consume.agoricNamesAdmin).lookupAdmin(
       'installation',
     );
@@ -175,7 +185,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     /**
      * @type {Promise<
      *   Installation<
-     *     import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start
+     *     start
      *   >
      * >}
      */
@@ -234,7 +244,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
 };
 
 /**
- * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} record
+ * @param {CurrentWalletRecord} record
  * @param {Brand<'nat'>} brand
  */
 export const currentPurseBalance = (record, brand) => {
@@ -254,7 +264,7 @@ export const currentPurseBalance = (record, brand) => {
  * @param {ERef<CommitteeElectoratePublic>} committeePublic
  * @param {string} voterAcceptanceOID
  * @returns {Promise<
- *   import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec
+ *   ContinuingInvitationSpec
  * >}
  */
 export const voteForOpenQuestion = async (
@@ -267,7 +277,7 @@ export const voteForOpenQuestion = async (
   const { positions, questionHandle } = await E(question).getDetails();
   const yesPosition = harden([positions[0]]);
 
-  /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
+  /** @type {ContinuingInvitationSpec} */
   const getVoteSpec = {
     source: 'continuing',
     previousOffer: voterAcceptanceOID,

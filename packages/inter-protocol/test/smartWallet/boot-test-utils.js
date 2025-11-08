@@ -16,6 +16,10 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { vatRoots } from '@agoric/vats/tools/boot-test-utils.js';
 import { bundles, devices } from './devices.js';
 
+/**
+ * @import {VatAdminFacet} from '@agoric/swingset-vat';
+ */
+
 export const noop = () => {};
 
 export const mockDProxy = /** @type {DProxy} */ (d => d);
@@ -108,7 +112,7 @@ export const makePopulatedFakeVatAdmin = () => {
     }
     const baggage = makeScalarBigMapStore('baggage');
     const adminNode =
-      /** @type {import('@agoric/swingset-vat').VatAdminFacet} */ ({});
+      /** @type {VatAdminFacet} */ ({});
     const rootP = buildRoot({}, vatParameters, baggage);
     return E.when(rootP, root => harden({ root, adminNode }));
   };

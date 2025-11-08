@@ -28,6 +28,11 @@ export const BASIS_POINTS = 10000n;
  * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js';
  * @import {IssuerKit} from '@agoric/ertp';
  * @import {PriceDescription} from '@agoric/zoe/tools/types.js';
+ * @import {unsafeMakeBundleCache} from '@agoric/swingset-vat/tools/bundleTool.js';
+ * @import {ExecutionContext} from 'ava';
+ * @import {AuctionParams} from '../../src/auction/params.js';
+ * @import {ManualPriceAuthority} from '@agoric/zoe/tools/manualPriceAuthority.js';
+ * @import {start} from './faucet.js';
  */
 
 /**
@@ -36,7 +41,7 @@ export const BASIS_POINTS = 10000n;
  *   run: IssuerKit & AmountUtils;
  *   bundleCache: Awaited<
  *     ReturnType<
- *       typeof import('@agoric/swingset-vat/tools/bundleTool.js').unsafeMakeBundleCache
+ *       typeof unsafeMakeBundleCache
  *     >
  *   >;
  *   rates: VaultManagerParamValues;
@@ -65,13 +70,13 @@ export const defaultParamValues = debtBrand =>
   });
 
 /**
- * @param {import('ava').ExecutionContext<Context>} t
+ * @param {ExecutionContext<Context>} t
  * @param {IssuerKit<'nat'>} run
  * @param {IssuerKit<'nat'>} aeth
  * @param {NatValue[] | Ratio} priceOrList
  * @param {RelativeTime} quoteInterval
  * @param {Amount<'nat'> | undefined} unitAmountIn
- * @param {Partial<import('../../src/auction/params.js').AuctionParams>} actionParamArgs
+ * @param {Partial<AuctionParams>} actionParamArgs
  */
 export const setupElectorateReserveAndAuction = async (
   t,
@@ -108,7 +113,7 @@ export const setupElectorateReserveAndAuction = async (
   // individual priceAuthorities, including aethPriceAuthority.
   // priceAuthorityAdmin supports registering more individual priceAuthorities
   // with the registry.
-  /** @type {import('@agoric/zoe/tools/manualPriceAuthority.js').ManualPriceAuthority} */
+  /** @type {ManualPriceAuthority} */
   // @ts-expect-error scriptedPriceAuthority doesn't actually match this, but manualPriceAuthority does
   const aethTestPriceAuthority = Array.isArray(priceOrList)
     ? makeScriptedPriceAuthority({
@@ -158,7 +163,7 @@ export const setupElectorateReserveAndAuction = async (
 };
 
 /**
- * @param {import('ava').ExecutionContext<any>} t
+ * @param {ExecutionContext<any>} t
  * @param {bigint} amount
  */
 export const getRunFromFaucet = async (t, amount) => {
@@ -168,7 +173,7 @@ export const getRunFromFaucet = async (t, amount) => {
     feeMintAccess,
     run,
   } = t.context;
-  /** @type {Promise<Installation<import('./faucet.js').start>>} */
+  /** @type {Promise<Installation<start>>} */
   // On-chain, there will be pre-existing RUN. The faucet replicates that
   // @ts-expect-error
   const { creatorFacet: faucetCreator } = await E(zoe).startInstance(

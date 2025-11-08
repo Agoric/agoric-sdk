@@ -72,6 +72,16 @@ import { AuctionPFShape } from '../auction/auctioneer.js';
  * @import {EReturn} from '@endo/far';
  * @import {ZCFMint} from '@agoric/zoe';
  * @import {PriceQuote} from '@agoric/zoe/tools/types.js';
+ * @import {PromiseWatcher} from '@agoric/swingset-liveslots';
+ * @import {RecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {StoredNotifier} from '@agoric/notifier';
+ * @import {Baggage} from '@agoric/swingset-liveslots';
+ * @import {VaultFactoryZCF} from './vaultFactory.js';
+ * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {MakeERecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {FactoryPowersFacet} from './vaultDirector.js';
+ * @import {VaultBalances} from './proceeds.js';
+ * @import {DistributionPlan} from './proceeds.js';
  */
 
 const trace = makeTracer('VM');
@@ -84,7 +94,7 @@ const trace = makeTracer('VM');
  * @template T notifier topic
  * @template {any[]} [A=unknown[]] arbitrary arguments
  * @param {ERef<LatestTopic<T>>} notifierP
- * @param {import('@agoric/swingset-liveslots').PromiseWatcher<T, A>} watcher
+ * @param {PromiseWatcher<T, A>} watcher
  * @param {A} args
  */
 export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
@@ -177,7 +187,7 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
 
 /**
  * @typedef {{
- *   assetTopicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<AssetState>;
+ *   assetTopicKit: RecorderKit<AssetState>;
  *   debtBrand: Brand<'nat'>;
  *   liquidatingVaults: SetStore<Vault>;
  *   metricsTopicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<MetricsNotification>;
@@ -209,7 +219,7 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
 /**
  * @type {(brand: Brand) => {
  *   prioritizedVaults: ReturnType<typeof makePrioritizedVaults>;
- *   storedQuotesNotifier: import('@agoric/notifier').StoredNotifier<PriceQuote>;
+ *   storedQuotesNotifier: StoredNotifier<PriceQuote>;
  *   storedCollateralQuote: PriceQuote | null;
  * }}
  */
@@ -217,13 +227,13 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
 const collateralEphemera = makeEphemeraProvider(() => /** @type {any} */ ({}));
 
 /**
- * @param {import('@agoric/swingset-liveslots').Baggage} baggage
+ * @param {Baggage} baggage
  * @param {{
- *   zcf: import('./vaultFactory.js').VaultFactoryZCF;
+ *   zcf: VaultFactoryZCF;
  *   marshaller: ERemote<EMarshaller>;
- *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
- *   makeERecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit;
- *   factoryPowers: import('./vaultDirector.js').FactoryPowersFacet;
+ *   makeRecorderKit: MakeRecorderKit;
+ *   makeERecorderKit: MakeERecorderKit;
+ *   factoryPowers: FactoryPowersFacet;
  * }} powers
  */
 export const prepareVaultManagerKit = (
@@ -721,7 +731,7 @@ export const prepareVaultManagerKit = (
           // unzip the entry tuples
           const vaultsInPlan = /** @type {Vault[]} */ ([]);
           const vaultsBalances =
-            /** @type {import('./proceeds.js').VaultBalances[]} */ ([]);
+            /** @type {VaultBalances[]} */ ([]);
           for (const [vault, balances] of bestToWorst) {
             vaultsInPlan.push(vault);
             vaultsBalances.push({
@@ -752,7 +762,7 @@ export const prepareVaultManagerKit = (
          * manually in dev and verified this function recovers as expected.
          *
          * @param {object} obj
-         * @param {import('./proceeds.js').DistributionPlan} obj.plan
+         * @param {DistributionPlan} obj.plan
          * @param {Vault[]} obj.vaultsInPlan
          * @param {ZCFSeat} obj.liqSeat
          * @param {Amount<'nat'>} obj.totalCollateral

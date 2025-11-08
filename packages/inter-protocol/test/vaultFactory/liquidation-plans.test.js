@@ -8,8 +8,13 @@ import {
   makeManagerDriver,
 } from './driver.js';
 
-/** @typedef {import('./driver.js').DriverContext & {}} Context */
-/** @type {import('ava').TestFn<Context>} */
+/**
+ * @import {DriverContext} from './driver.js';
+ * @import {TestFn} from 'ava';
+ */
+
+/** @typedef {DriverContext & {}} Context */
+/** @type {TestFn<Context>} */
 const test = unknownTest;
 
 const trace = makeTracer('TestLP', false);

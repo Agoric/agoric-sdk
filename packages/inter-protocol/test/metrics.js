@@ -8,6 +8,13 @@ import { diff } from 'deep-object-diff';
 
 import { makeTracer } from '@agoric/internal';
 
+/**
+ * @import {PublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
+ * @import {ExecutionContext} from 'ava';
+ * @import {CollateralManager} from '../src/vaultFactory/vaultManager.js';
+ * @import {MetricsNotification} from '../src/vaultFactory/vaultManager.js';
+ */
+
 // While t.log has the advantage of omitting by default when tests pass,
 // when debugging it's most valuable to have the messages in sequence with app
 // code logging which doesn't have access to t.log.
@@ -16,7 +23,7 @@ const trace = makeTracer('TestMetrics', false);
 /**
  * @template {object} N
  * @param {AsyncIterable<N, N>
- *   | import('@agoric/zoe/src/contractSupport/topics.js').PublicTopic<N>} mixed
+ *   | PublicTopic<N>} mixed
  */
 const asNotifier = mixed => {
   if ('subscriber' in mixed) {
@@ -27,9 +34,9 @@ const asNotifier = mixed => {
 
 /**
  * @template {object} N
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {AsyncIterable<N, N>
- *   | import('@agoric/zoe/src/contractSupport/topics.js').PublicTopic<N>} subscription
+ *   | PublicTopic<N>} subscription
  */
 export const subscriptionTracker = async (t, subscription) => {
   const metrics = asNotifier(subscription);
@@ -77,7 +84,7 @@ export const subscriptionTracker = async (t, subscription) => {
  * For public facets that have a `metrics` topic
  *
  * @template {object} N
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {ERef<{
  *   getPublicTopics?: () => { metrics: { subscriber: Subscriber<N> } };
  * }>} publicFacet
@@ -88,8 +95,8 @@ export const metricsTracker = async (t, publicFacet) => {
 };
 
 /**
- * @param {import('ava').ExecutionContext} t
- * @param {import('../src/vaultFactory/vaultManager.js').CollateralManager} publicFacet
+ * @param {ExecutionContext} t
+ * @param {CollateralManager} publicFacet
  */
 export const vaultManagerMetricsTracker = async (t, publicFacet) => {
   let totalDebtEver = 0n;
@@ -97,7 +104,7 @@ export const vaultManagerMetricsTracker = async (t, publicFacet) => {
    * @type {Awaited<
    *   ReturnType<
    *     typeof subscriptionTracker<
-   *       import('../src/vaultFactory/vaultManager.js').MetricsNotification
+   *       MetricsNotification
    *     >
    *   >
    * >}

@@ -17,6 +17,10 @@ const trace = makeTracer('FluxAgg', false);
  * @import {Baggage} from '@agoric/vat-data'
  * @import {TimerService} from '@agoric/time'
  * @import {Remote} from '@agoric/internal';
+ * @import {ChainlinkConfig} from './fluxAggregatorKit.js';
+ * @import {PrioritySendersManager} from '@agoric/internal/src/priority-senders.js';
+ * @import {NameAdmin} from '@agoric/vats';
+ * @import {QuoteKit} from './roundsManager.js';
  */
 
 /** @type {ContractMeta} */
@@ -47,7 +51,7 @@ harden(meta);
  * feeds](https://blog.chain.link/levels-of-data-aggregation-in-chainlink-price-feeds/).
  *
  * @param {ZCF<
- *   import('./fluxAggregatorKit.js').ChainlinkConfig & {
+ *   ChainlinkConfig & {
  *     timer: TimerService;
  *     brandIn: Brand<'nat'>;
  *     brandOut: Brand<'nat'>;
@@ -56,10 +60,10 @@ harden(meta);
  *   }
  * >} zcf
  * @param {{
- *   highPrioritySendersManager?: import('@agoric/internal/src/priority-senders.js').PrioritySendersManager;
+ *   highPrioritySendersManager?: PrioritySendersManager;
  *   initialPoserInvitation: Invitation;
  *   marshaller: Remote<Marshaller>;
- *   namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>;
+ *   namesByAddressAdmin: ERef<NameAdmin>;
  *   storageNode: Remote<StorageNode>;
  * }} privateArgs
  * @param {Baggage} baggage
@@ -68,7 +72,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   trace('prepare with baggage keys', [...baggage.keys()]);
 
   // xxx uses contract baggage as issuerBagage, assumes one issuer in this contract
-  /** @type {import('./roundsManager.js').QuoteKit} */
+  /** @type {QuoteKit} */
   // @ts-expect-error cast
   const quoteIssuerKit = prepareIssuerKit(
     baggage,

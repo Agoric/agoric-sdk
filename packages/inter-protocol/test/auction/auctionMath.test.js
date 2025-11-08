@@ -7,6 +7,7 @@ import { amountsToSettle } from '../../src/auction/auctionMath.js';
 
 /**
  * @import {Amount, Brand} from '@agoric/ertp/src/types.js';
+ * @import {ExecutionContext} from 'ava';
  */
 
 const brand = /** @type {any} */ (Far('fungible brand', {}));
@@ -14,7 +15,7 @@ const brand = /** @type {any} */ (Far('fungible brand', {}));
 const testAmounts = test.macro(
   /**
    * @type {(
-   *   t: import('ava').ExecutionContext<unknown>,
+   *   t: ExecutionContext<unknown>,
    *   input: any,
    *   output: any,
    * ) => Promise<void>}

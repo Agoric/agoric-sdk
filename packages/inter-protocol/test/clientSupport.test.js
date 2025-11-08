@@ -5,6 +5,10 @@ import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { Offers } from '../src/clientSupport.js';
 import { withAmountUtils } from './supports.js';
 
+/**
+ * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
+ */
+
 const ist = withAmountUtils(makeIssuerKit('IST'));
 const atom = withAmountUtils(makeIssuerKit('ATOM'));
 const stAtom = withAmountUtils(makeIssuerKit('stATOM'));
@@ -12,7 +16,7 @@ const stAtom = withAmountUtils(makeIssuerKit('stATOM'));
 // uses actual Brand objects instead of BoardRemote to make the test output more legible
 /**
  * @satisfies {Partial<
- *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes
+ *   AgoricNamesRemotes
  * >}
  */
 const agoricNames = {

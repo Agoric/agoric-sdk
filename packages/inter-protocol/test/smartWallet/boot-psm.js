@@ -52,7 +52,10 @@ import {
   startEconCharter,
 } from '../../src/proposals/committee-proposal.js';
 
-/** @import {EconomyBootstrapSpace} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js' */
+/**
+ * @import {EconomyBootstrapSpace} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js'
+ * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
+ */
 
 /** @param {BootstrapSpace & EconomyBootstrapSpace} powers */
 export const installGovAndPSMContracts = async ({
@@ -94,7 +97,7 @@ export const installGovAndPSMContracts = async ({
  * PSM and gov contracts are available as named swingset bundles only in
  * decentral-psm-config.json
  *
- * @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest}
+ * @type {BootstrapManifest}
  */
 export const PSM_GOV_MANIFEST = {
   [installGovAndPSMContracts.name]: {

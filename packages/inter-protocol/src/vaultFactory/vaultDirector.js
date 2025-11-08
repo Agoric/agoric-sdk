@@ -45,6 +45,16 @@ import {
  * @import {EReturn} from '@endo/far';
  * @import {TypedPattern, ERemote, Remote} from '@agoric/internal';
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
+ * @import {GovernedParamGetters} from './vaultManager.js';
+ * @import {ShortfallReporter} from '../reserve/assetReserve.js';
+ * @import {TypedParamManager} from '@agoric/governance/src/contractGovernance/typedParamManager.js';
+ * @import {VaultDirectorParams} from './params.js';
+ * @import {Baggage} from '@agoric/swingset-liveslots';
+ * @import {VaultFactoryZCF} from './vaultFactory.js';
+ * @import {TimerService} from '@agoric/time';
+ * @import {AuctioneerPublicFacet} from '../auction/auctioneer.js';
+ * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {MakeERecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  */
 
 const trace = makeTracer('VD', true);
@@ -66,10 +76,10 @@ const trace = makeTracer('VD', true);
  *   burnDebt: BurnDebt;
  *   getGovernedParams: (
  *     collateralBrand: Brand,
- *   ) => import('./vaultManager.js').GovernedParamGetters;
+ *   ) => GovernedParamGetters;
  *   mintAndTransfer: MintAndTransfer;
  *   getShortfallReporter: () => Promise<
- *     import('../reserve/assetReserve.js').ShortfallReporter
+ *     ShortfallReporter
  *   >;
  * }} FactoryPowersFacet
  *
@@ -78,8 +88,8 @@ const trace = makeTracer('VD', true);
  *   state: State;
  * }>} MethodContext
  *
- * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager.js').TypedParamManager<
- *     import('./params.js').VaultDirectorParams
+ * @typedef {TypedParamManager<
+ *     VaultDirectorParams
  *   >} VaultDirectorParamManager
  */
 
@@ -101,16 +111,16 @@ export const makeAllManagersDo = (collateralManagers, vaultManagers) => {
 };
 
 /**
- * @param {import('@agoric/swingset-liveslots').Baggage} baggage
- * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
+ * @param {Baggage} baggage
+ * @param {VaultFactoryZCF} zcf
  * @param {VaultDirectorParamManager} directorParamManager
  * @param {ZCFMint<'nat'>} debtMint
- * @param {ERef<import('@agoric/time').TimerService>} timer
- * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneer
+ * @param {ERef<TimerService>} timer
+ * @param {ERef<AuctioneerPublicFacet>} auctioneer
  * @param {ERemote<StorageNode>} storageNode
  * @param {ERemote<EMarshaller>} marshaller
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
+ * @param {MakeRecorderKit} makeRecorderKit
+ * @param {MakeERecorderKit} makeERecorderKit
  * @param {Record<string, import('./params.js').VaultManagerParamOverrides>} managerParams
  */
 const prepareVaultDirector = (
@@ -126,7 +136,7 @@ const prepareVaultDirector = (
   makeERecorderKit,
   managerParams,
 ) => {
-  /** @type {import('../reserve/assetReserve.js').ShortfallReporter} */
+  /** @type {ShortfallReporter} */
   let shortfallReporter;
 
   /** For holding newly minted tokens until transferred */
@@ -297,7 +307,7 @@ const prepareVaultDirector = (
   /**
    * "Director" of the vault factory, overseeing "vault managers".
    *
-   * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
+   * @param {VaultFactoryZCF} zcf
    * @param {VaultDirectorParamManager} directorParamManager
    * @param {ZCFMint<'nat'>} debtMint
    */

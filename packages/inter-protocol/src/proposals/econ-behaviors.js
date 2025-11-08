@@ -15,14 +15,22 @@ import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params
  * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {AdminFacet} from '@agoric/zoe';
  * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {RelativeTime} from '@agoric/time';
+ * @import {start} from '../psm/psm.js';
+ * @import {start} from '../../../governance/src/contractGovernor.js';
+ * @import {start} from '../auction/auctioneer.js';
+ * @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js';
+ * @import {start} from '../feeDistributor.js';
+ * @import {PeriodicFeeCollector} from '../feeDistributor.js';
+ * @import {start} from '@agoric/inter-protocol/src/feeDistributor.js';
  */
 
 // Duplicated from vaultFactory/types-ambient.js to solve a CI problem.
 // Not worth refactoring to DRY because vaultFactory is going away.
 /**
  * @typedef {object} InterestTiming
- * @property {import('@agoric/time').RelativeTime} chargingPeriod in seconds
- * @property {import('@agoric/time').RelativeTime} recordingPeriod in seconds
+ * @property {RelativeTime} chargingPeriod in seconds
+ * @property {RelativeTime} recordingPeriod in seconds
  */
 
 const trace = makeTracer('RunEconBehaviors', true);
@@ -38,9 +46,9 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 /**
  * @typedef {object} PSMKit
  * @property {string} label
- * @property {Instance<import('../psm/psm.js').start>} psm
+ * @property {Instance<start>} psm
  * @property {Instance<
- *   import('../../../governance/src/contractGovernor.js').start
+ *   start
  * >} psmGovernor
  * @property {Awaited<
  *   ReturnType<
@@ -53,7 +61,7 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  * @property {AdminFacet} psmAdminFacet
  */
 
-/** @typedef {GovernanceFacetKit<import('../auction/auctioneer.js').start>} AuctioneerKit */
+/** @typedef {GovernanceFacetKit<start>} AuctioneerKit */
 
 /**
  * @typedef {WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace} EconomyBootstrapPowers
@@ -61,13 +69,13 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  *
  * @typedef {PromiseSpaceOf<{
  *   economicCommitteeKit: CommitteeStartResult;
- *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet;
+ *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet;
  *   feeDistributorKit: StartedInstanceKit<
- *     typeof import('../feeDistributor.js').start
+ *     typeof start
  *   >;
  *   periodicFeeCollectors: MapStore<
  *     number,
- *     import('../feeDistributor.js').PeriodicFeeCollector
+ *     PeriodicFeeCollector
  *   >;
  *   psmKit: MapStore<Brand, PSMKit>;
  *   anchorBalancePayments: MapStore<Brand, Payment<'nat'>>;
@@ -473,7 +481,7 @@ export const startRewardDistributor = async ({
 
   /**
    * @type {StartedInstanceKit<
-   *   typeof import('@agoric/inter-protocol/src/feeDistributor.js').start
+   *   typeof start
    * >}
    */
   const instanceKit = await E(zoe).startInstance(
