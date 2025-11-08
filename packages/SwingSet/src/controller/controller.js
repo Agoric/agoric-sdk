@@ -48,6 +48,12 @@ import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
  * @import {ResolutionPolicy} from '../types-external.js';
  * @import {SwingSetCapData} from '../types-external.js';
  * @import {SwingSetConfig} from '../types-external.js';
+ * @import {SlogSender} from '@agoric/telemetry';
+ * @import {VatWarehousePolicy} from '../types-external.js';
+ * @import {spawn} from 'child_process';
+ * @import {makeXsnapBundleData} from './bundle-handler.js';
+ * @import {BundleHandler} from './bundle-handler.js';
+ * @import {default} from '../kernel/kernel.js';
  */
 
 /**
@@ -134,15 +140,15 @@ function onUnhandledRejection(e, pr) {
  *   verbose?: boolean,
  *   debugPrefix?: string,
  *   slogCallbacks?: unknown,
- *   slogSender?: import('@agoric/telemetry').SlogSender,
+ *   slogSender?: SlogSender,
  *   testTrackDecref?: unknown,
- *   warehousePolicy?: import('../types-external.js').VatWarehousePolicy,
+ *   warehousePolicy?: VatWarehousePolicy,
  *   overrideVatManagerOptions?: unknown,
- *   spawn?: typeof import('child_process').spawn,
+ *   spawn?: typeof spawn,
  *   env?: Record<string, string | undefined>,
  *   kernelBundle?: Bundle
- *   xsnapBundleData?: ReturnType<import('./bundle-handler.js').makeXsnapBundleData>,
- *   bundleHandler?: import('./bundle-handler.js').BundleHandler,
+ *   xsnapBundleData?: ReturnType<makeXsnapBundleData>,
+ *   bundleHandler?: BundleHandler,
  *   profileVats?: string[],
  *   debugVats?: string[],
  * }} runtimeOptions
@@ -366,7 +372,7 @@ export async function makeSwingsetController(
       overrideVatManagerOptions,
     };
 
-    /** @type { ReturnType<typeof import('../kernel/kernel.js').default> } */
+    /** @type { ReturnType<typeof default> } */
     const kernel = buildKernel(
       kernelEndowments,
       deviceEndowments,
@@ -641,9 +647,9 @@ export async function makeSwingsetController(
  *   kernelBundles?: Record<string, Bundle>;
  *   debugPrefix?: string;
  *   slogCallbacks?: unknown;
- *   slogSender?: import('@agoric/telemetry').SlogSender;
+ *   slogSender?: SlogSender;
  *   testTrackDecref?: unknown;
- *   warehousePolicy?: import('../types-external.js').VatWarehousePolicy;
+ *   warehousePolicy?: VatWarehousePolicy;
  * }} runtimeOptions
  * @param {Record<string, unknown>} deviceEndowments
  */

@@ -1,16 +1,20 @@
 import { runDVOTest, test } from '../../tools/dvo-test-harness.js';
 
+/**
+ * @import {ExecutionContext} from 'ava';
+ */
+
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
 }
 
 /**
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {'before' | 'after' | 'succeed'} mode
  */
 const dvo = test.macro(async (t, mode) => {
   /**
-   * @param {import('ava').ExecutionContext} _t
+   * @param {ExecutionContext} _t
    * @param {'before' | 'after'} phase
    * @param {string[]} log
    */

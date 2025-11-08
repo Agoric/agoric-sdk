@@ -3,6 +3,15 @@ import { Fail } from '@endo/errors';
 import { type as osType } from 'os';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
 
+/**
+ * @import {BundleHandler} from './bundle-handler.js';
+ * @import {SnapStore} from '@agoric/swing-store';
+ * @import {spawn} from 'child_process';
+ * @import {Bundle} from '../types-external.js';
+ * @import {XSnapOptions} from '@agoric/xsnap/src/xsnap.js';
+ * @import {BundleID} from '../types-external.js';
+ */
+
 const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
 
 /**
@@ -33,14 +42,14 @@ const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
 
 /**
  * @param {{
- *   bundleHandler: import('./bundle-handler.js').BundleHandler,
- *   snapStore?: import('@agoric/swing-store').SnapStore,
- *   spawn: typeof import('child_process').spawn
+ *   bundleHandler: BundleHandler,
+ *   snapStore?: SnapStore,
+ *   spawn: typeof spawn
  *   fs: import('fs'),
  *   tmpName: import('tmp')['tmpName'],
  *   debug?: boolean,
  *   workerTraceRootPath?: string,
- *   overrideBundles?: import('../types-external.js').Bundle[],
+ *   overrideBundles?: Bundle[],
  *   profileVats?: string[],
  *   debugVats?: string[],
  * }} options
@@ -81,7 +90,7 @@ export function makeStartXSnap(options) {
     };
   }
 
-  /** @type { import('@agoric/xsnap/src/xsnap.js').XSnapOptions } */
+  /** @type { XSnapOptions } */
   const xsnapOpts = {
     os: osType(),
     fs: { ...fs, ...fs.promises, tmpName },
@@ -126,7 +135,7 @@ export function makeStartXSnap(options) {
   /**
    * @param {string} name
    * @param {object} details
-   * @param {import('../types-external.js').BundleID[]} details.bundleIDs
+   * @param {BundleID[]} details.bundleIDs
    * @param {string} details.vatID
    * @param {(request: Uint8Array) => Promise<Uint8Array>} details.handleCommand
    * @param {boolean} [details.metered]

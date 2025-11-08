@@ -40,6 +40,8 @@ const enableKernelGC = true;
  * @import { BundleCap, BundleID, EndoZipBase64Bundle, KernelSlog, ManagerType, SnapStore, TranscriptStore, VatKeeper, CleanupBudget, CleanupWork, PolicyOutputCleanupBudget } from '../../types-external.js'
  * @import { InternalKernelOptions, ReapDirtThreshold, PromiseRecord, RunQueueEventCleanupTerminatedVat } from '../../types-internal.js'
  * @typedef { Pick<VatKeeper, 'deleteCListEntry' | 'deleteSnapshots' | 'deleteTranscripts'> } VatUndertaker
+ * @import {KVStore} from '@agoric/swing-store';
+ * @import {VatKeeperPowers} from './vatKeeper.js';
  */
 
 export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
@@ -237,7 +239,7 @@ const setObjectReferenceCount = (kvStore, kref, counts) => {
  * and "recognizable" counts.
  *
  * @param { (key: string) => string} getRequired
- * @param { import('@agoric/swing-store').KVStore } kvStore
+ * @param { KVStore } kvStore
  * @param {string} kref  The kernel slot whose refcount is to be incremented.
  * @param {string?} tag  Debugging note with rough source of the reference.
  * @param {{ isExport?: boolean, onlyRecognizable?: boolean }} options
@@ -1705,7 +1707,7 @@ export default function makeKernelKeeper(
     initializeVatState(kvStore, transcriptStore, vatID, source, options);
   }
 
-  /** @type {import('./vatKeeper.js').VatKeeperPowers} */
+  /** @type {VatKeeperPowers} */
   const vatKeeperPowers = {
     transcriptStore,
     kernelSlog,

@@ -35,6 +35,7 @@ import djson from '../lib/djson.js';
  * } from '../types-internal.js'
  * @import {KernelKeeper} from './state/kernelKeeper.js'
  * @import {VatTranslators} from './vatTranslator.js'
+ * @import {makeVatLoader} from './vat-loader/vat-loader.js';
  */
 
 /**
@@ -251,7 +252,7 @@ export const makeLRU = max => {
 /**
  * @param {object} details
  * @param {KernelKeeper} details.kernelKeeper
- * @param {ReturnType<typeof import('./vat-loader/vat-loader.js').makeVatLoader>} details.vatLoader
+ * @param {ReturnType<typeof makeVatLoader>} details.vatLoader
  * @param {(vatID: string, translators: VatTranslators) => VatSyscallHandler} details.buildVatSyscallHandler
  * @param { KernelPanic } details.panic
  * @param { VatWarehousePolicy } details.warehousePolicy
