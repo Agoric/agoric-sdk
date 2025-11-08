@@ -3,11 +3,7 @@ import type { ERef, RemotableBrand } from '@endo/eventual-send';
 import type { Primitive } from '@endo/pass-style';
 import type { Pattern } from '@endo/patterns';
 import type { Callable } from './ses-utils.js';
-
-/**
- * @import {mustMatch} from '@endo/patterns';
- */
-
+import type { mustMatch as endoMustMatch } from '@endo/patterns';
 /**
  * A map corresponding with a total function such that `get(key)` is assumed to
  * always succeed.
@@ -125,7 +121,7 @@ export declare type PatternType<TM extends TypedPattern<any>> =
  *
  * Note: remotables can only be matched as "remotable", not the specific kind.
  *
- * @see {mustMatch} for the implementation. This one has a type annotation to narrow if the pattern is a TypedPattern.
+ * @see {endoMustMatch} for the implementation. This one has a type annotation to narrow if the pattern is a TypedPattern.
  */
 export declare type MustMatch = <P extends Pattern>(
   specimen: unknown,

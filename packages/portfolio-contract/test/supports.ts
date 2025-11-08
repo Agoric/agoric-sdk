@@ -10,6 +10,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   denomHash,
   withChainCapabilities,
+  type BaseChainInfo,
   type ChainInfo,
   type CosmosChainInfo,
   type Denom,
@@ -30,10 +31,6 @@ import type { ExecutionContext } from 'ava';
 import { encodeAbiParameters } from 'viem';
 import type { StatusFor } from '../src/type-guards.ts';
 import { gmpAddresses } from './mocks.ts';
-
-/**
- * @import {BaseChainInfo} from './orchestration-api.js';
- */
 
 export const makeIncomingEVMEvent = ({
   sender = gmpAddresses.AXELAR_GMP,
@@ -165,7 +162,7 @@ export {
  * - https://docs.simplehash.com/reference/supported-chains-testnets (accessed on
  *   4 July 2025)
  *
- * @satisfies {Record<string, BaseChainInfo>}
+ * 
  */
 export const axelarCCTPConfig = {
   Ethereum: {
@@ -193,7 +190,7 @@ export const axelarCCTPConfig = {
     reference: '8453',
     cctpDestinationDomain: 6,
   },
-};
+} satisfies Record<string, BaseChainInfo>;
 
 export const chainInfoWithCCTP = {
   ...withChainCapabilities(fetchedChainInfo),
