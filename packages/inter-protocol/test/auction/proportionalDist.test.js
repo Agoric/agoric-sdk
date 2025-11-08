@@ -32,9 +32,7 @@ test.before(async t => {
 });
 
 /**
- * @param {ExecutionContext<
- *   Awaited<ReturnType<makeTestContext>>
- * >} t
+ * @param {ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
  * @param {[collateralReturned: bigint, bidRaise: bigint]} amountsReturned
  * @param {{ deposit: number; goal?: number }[]} rawDeposits
  * @param {[transfers: [bigint, bigint][], leftovers: [bigint, bigint]]} rawExpected

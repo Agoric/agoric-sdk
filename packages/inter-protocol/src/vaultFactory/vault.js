@@ -128,9 +128,7 @@ const validTransitions = {
  *   interestSnapshot: Ratio;
  *   phase: VaultPhase;
  *   debtSnapshot: Amount<'nat'>;
- *   outerUpdater:
- *     | Recorder<VaultNotification>
- *     | null;
+ *   outerUpdater: Recorder<VaultNotification> | null;
  * }} MutableState
  */
 
@@ -862,9 +860,8 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
          * order vaults by their debt-to-collateral ratios without having to
          * mutate the debts as the interest accrues.
          *
-         * @returns {NormalizedDebt} as if the vault
-         *   was open at the launch of this manager, before any interest
-         *   accrued
+         * @returns {NormalizedDebt} as if the vault was open at the launch of
+         *   this manager, before any interest accrued
          * @see getActualDebAmount
          */
         getNormalizedDebt() {

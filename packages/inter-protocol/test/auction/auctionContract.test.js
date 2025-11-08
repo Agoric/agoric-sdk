@@ -59,13 +59,7 @@ const test = anyTest;
  */
 
 /**
- * @typedef {Awaited<
- *   ReturnType<
- *     subscriptionTracker<
- *       BookDataNotification
- *     >
- *   >
- * >} BookDataTracker
+ * @typedef {Awaited<ReturnType<subscriptionTracker<BookDataNotification>>>} BookDataTracker
  */
 
 const trace = makeTracer('Test AuctContract', false);
@@ -105,9 +99,7 @@ test.before(async t => {
 });
 
 /**
- * @param {ExecutionContext<
- *   Awaited<ReturnType<makeTestContext>>
- * >} t
+ * @param {ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
  * @param {any} params
  */
 export const setupServices = async (t, params = defaultParams) => {
@@ -149,27 +141,21 @@ export const setupServices = async (t, params = defaultParams) => {
 };
 
 /**
- * @param {ExecutionContext<
- *   Awaited<ReturnType<makeTestContext>>
- * >} t
+ * @param {ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
  * @param {any} [params]
  */
 const makeAuctionDriver = async (t, params = defaultParams) => {
   const { zoe, bid } = t.context;
   /**
-   * @type {MapStore<
-   *   Brand,
-   *   ManualPriceAuthority
-   * >}
+   * @type {MapStore<Brand, ManualPriceAuthority>}
    */
   const priceAuthorities = makeScalarMapStore();
 
   const { space, timer, registry } = await setupServices(t, params);
   // Each driver needs its own mockChainStorage to avoid state pollution between tests
-  const mockChainStorage =
-    /** @type {MockChainStorageRoot} */ (
-      await space.consume.chainStorage
-    );
+  const mockChainStorage = /** @type {MockChainStorageRoot} */ (
+    await space.consume.chainStorage
+  );
   const { auctioneerKit: auctioneerKitP, reserveKit } = space.consume;
   const auctioneerKit = await auctioneerKitP;
 

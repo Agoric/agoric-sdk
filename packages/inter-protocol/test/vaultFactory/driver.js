@@ -91,9 +91,7 @@ const defaultParamValues = debt =>
  *   puppetGovernors: {
  *     [contractName: string]:
  *       | undefined
- *       | ERef<
- *           PuppetContractGovernorKit<any>['creatorFacet']
- *         >;
+ *       | ERef<PuppetContractGovernorKit<any>['creatorFacet']>;
  *   };
  *   electorateTerms: any;
  *   feeMintAccess: FeeMintAccess;

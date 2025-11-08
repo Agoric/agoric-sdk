@@ -42,10 +42,7 @@ export const setupPsmBootstrap = async (
     setUpZoeForTest());
 
   const space = /** @type {any} */ (makePromiseSpace());
-  const { produce, consume } =
-    /** @type {EconomyBootstrapPowers} */ (
-      space
-    );
+  const { produce, consume } = /** @type {EconomyBootstrapPowers} */ (space);
 
   produce.chainTimerService.resolve(timer);
   produce.zoe.resolve(wrappedZoe);

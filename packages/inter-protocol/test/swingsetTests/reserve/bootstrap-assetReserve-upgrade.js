@@ -46,15 +46,11 @@ export const buildRootObject = async () => {
   let feeMintAccess;
 
   /**
-   * @type {Subscriber<
-   *   MetricsNotification
-   * >}
+   * @type {Subscriber<MetricsNotification>}
    */
   let metrics;
   /**
-   * @type {UpdateRecord<
-   *   MetricsNotification
-   * >}
+   * @type {UpdateRecord<MetricsNotification>}
    */
   let metricsRecord;
 
@@ -81,27 +77,18 @@ export const buildRootObject = async () => {
   const installations = {};
 
   /**
-   * @type {PuppetContractGovernorKit<
-   *     start
-   *   >}
+   * @type {PuppetContractGovernorKit<start>}
    */
   let governorFacets;
   /**
    * @type {ReturnType<
-   *   Awaited<
-   *     ReturnType<start>
-   *   >['creatorFacet']['getLimitedCreatorFacet']
+   *   Awaited<ReturnType<start>>['creatorFacet']['getLimitedCreatorFacet']
    * >}
    */
   let arLimitedFacet;
 
   /**
-   * @type {Omit<
-   *   StartParams<
-   *     start
-   *   >['terms'],
-   *   'issuers' | 'brands'
-   * >}
+   * @type {Omit<StartParams<start>['terms'], 'issuers' | 'brands'>}
    */
   const arTerms = {
     governedParams: {

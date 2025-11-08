@@ -81,9 +81,7 @@ export const replaceFeeDistributor = async (
     });
 
   /**
-   * @type {StartedInstanceKit<
-   *   typeof start
-   * >}
+   * @type {StartedInstanceKit<typeof start>}
    */
   const instanceKit = await E(zoe).startInstance(
     feeDistributor,

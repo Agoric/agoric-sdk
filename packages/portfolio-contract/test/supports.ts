@@ -162,7 +162,7 @@ export {
  * - https://docs.simplehash.com/reference/supported-chains-testnets (accessed on
  *   4 July 2025)
  *
- * 
+ *
  */
 export const axelarCCTPConfig = {
   Ethereum: {

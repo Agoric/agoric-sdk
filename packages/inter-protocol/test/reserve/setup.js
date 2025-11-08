@@ -35,10 +35,7 @@ import * as faucetContractExports from '../vaultFactory/faucet.js';
  */
 const setupReserveBootstrap = async (t, timer, farZoeKit) => {
   const space = /** @type {any} */ (makePromiseSpace());
-  const { produce, consume } =
-    /** @type {EconomyBootstrapPowers} */ (
-      space
-    );
+  const { produce, consume } = /** @type {EconomyBootstrapPowers} */ (space);
 
   const { zoe, feeMintAccessP } = await E.get(farZoeKit);
 

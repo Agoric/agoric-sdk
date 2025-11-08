@@ -174,9 +174,7 @@ test.before(async t => {
 });
 
 /**
- * @param {ExecutionContext<
- *   Awaited<ReturnType<makeTestContext>>
- * >} t
+ * @param {ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
  * @param {{}} [customTerms]
  */
 async function makePsmDriver(t, customTerms) {

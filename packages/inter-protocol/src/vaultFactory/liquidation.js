@@ -246,9 +246,7 @@ export const watchForGovernanceChange = (
  * @param {PriceQuote} collateralizationDetails.quote
  * @param {Ratio} collateralizationDetails.interest
  * @param {Ratio} collateralizationDetails.margin
- * @param {ReturnType<
- *   typeof makePrioritizedVaults
- * >} prioritizedVaults
+ * @param {ReturnType<typeof makePrioritizedVaults>} prioritizedVaults
  * @param {SetStore<Vault>} liquidatingVaults
  * @param {Brand<'nat'>} debtBrand
  * @param {Brand<'nat'>} collateralBrand

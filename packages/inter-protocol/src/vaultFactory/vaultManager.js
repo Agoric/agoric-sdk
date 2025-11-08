@@ -730,8 +730,7 @@ export const prepareVaultManagerKit = (
 
           // unzip the entry tuples
           const vaultsInPlan = /** @type {Vault[]} */ ([]);
-          const vaultsBalances =
-            /** @type {VaultBalances[]} */ ([]);
+          const vaultsBalances = /** @type {VaultBalances[]} */ ([]);
           for (const [vault, balances] of bestToWorst) {
             vaultsInPlan.push(vault);
             vaultsBalances.push({

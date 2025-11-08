@@ -295,10 +295,7 @@ module.exports = {
             // (b) Remove the inline usage from *this* comment
             // Replace `import('...').Foo` → `Foo`
             fixOps.push(
-              fixer.replaceTextRange(
-                [inlineStart, inlineEnd],
-                typeName,
-              ),
+              fixer.replaceTextRange([inlineStart, inlineEnd], typeName),
             );
 
             return fixOps;

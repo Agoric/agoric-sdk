@@ -74,13 +74,9 @@ const trace = makeTracer('VD', true);
  *
  * @typedef {{
  *   burnDebt: BurnDebt;
- *   getGovernedParams: (
- *     collateralBrand: Brand,
- *   ) => GovernedParamGetters;
+ *   getGovernedParams: (collateralBrand: Brand) => GovernedParamGetters;
  *   mintAndTransfer: MintAndTransfer;
- *   getShortfallReporter: () => Promise<
- *     ShortfallReporter
- *   >;
+ *   getShortfallReporter: () => Promise<ShortfallReporter>;
  * }} FactoryPowersFacet
  *
  *
@@ -88,9 +84,7 @@ const trace = makeTracer('VD', true);
  *   state: State;
  * }>} MethodContext
  *
- * @typedef {TypedParamManager<
- *     VaultDirectorParams
- *   >} VaultDirectorParamManager
+ * @typedef {TypedParamManager<VaultDirectorParams>} VaultDirectorParamManager
  */
 
 const shortfallInvitationKey = 'shortfallInvitation';

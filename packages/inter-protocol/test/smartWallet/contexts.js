@@ -79,9 +79,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     'walletFactory',
   );
   /**
-   * @type {Promise<
-   *   Installation<start>
-   * >}
+   * @type {Promise<Installation<start>>}
    */
   const installation = E(zoe).install(bundle);
 
@@ -116,8 +114,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   );
   const bridgeManager = await consume.bridgeManager;
   /**
-   * @type {undefined
-   *   | ScopedBridgeManager<'wallet'>}
+   * @type {undefined | ScopedBridgeManager<'wallet'>}
    */
   const walletBridgeManager = await (bridgeManager &&
     makeScopedBridge(bridgeManager, BridgeId.WALLET));
@@ -183,11 +180,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
       'priceAggregator',
     );
     /**
-     * @type {Promise<
-     *   Installation<
-     *     start
-     *   >
-     * >}
+     * @type {Promise<Installation<start>>}
      */
     const paInstallation = E(zoe).install(paBundle);
     await E(installAdmin).update('priceAggregator', paInstallation);
@@ -263,9 +256,7 @@ export const currentPurseBalance = (record, brand) => {
  *
  * @param {ERef<CommitteeElectoratePublic>} committeePublic
  * @param {string} voterAcceptanceOID
- * @returns {Promise<
- *   ContinuingInvitationSpec
- * >}
+ * @returns {Promise<ContinuingInvitationSpec>}
  */
 export const voteForOpenQuestion = async (
   committeePublic,

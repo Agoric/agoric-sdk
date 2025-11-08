@@ -117,9 +117,7 @@ export const installPuppetGovernance = (zoe, produce) => {
 /**
  * @param {bigint} value
  * @param {{
- *   centralSupply: ERef<
- *     Installation<start>
- *   >;
+ *   centralSupply: ERef<Installation<start>>;
  *   feeMintAccess: ERef<FeeMintAccess>;
  *   zoe: ERef<ZoeService>;
  * }} powers
@@ -242,13 +240,8 @@ export const assertTopicPathData = async (
  * If this proves to be a problem we can add an option to this or a related
  * utility to reset state from RPC.
  *
- * @param {ERef<
- *   Subscriber<
- *     CurrentWalletRecord
- *   >
- * >} currents
- * @returns {CurrentWalletRecord[]}
- *   array that grows as the subscription feeds
+ * @param {ERef<Subscriber<CurrentWalletRecord>>} currents
+ * @returns {CurrentWalletRecord[]} array that grows as the subscription feeds
  */
 export const sequenceCurrents = currents => {
   const sequence = [];

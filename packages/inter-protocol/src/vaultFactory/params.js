@@ -91,8 +91,8 @@ harden(makeVaultDirectorParams);
 
 /**
  * @typedef {ParamTypesMapFromRecord<
- *     ReturnType<typeof makeVaultDirectorParams>
- *   >} VaultDirectorParams
+ *   ReturnType<typeof makeVaultDirectorParams>
+ * >} VaultDirectorParams
  */
 
 /** @type {(liquidationMargin: Ratio) => Ratio} */

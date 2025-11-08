@@ -57,15 +57,11 @@ export const buildRootObject = async () => {
   let psmPublicFacet;
 
   /**
-   * @type {Subscriber<
-   *   MetricsNotification
-   * >}
+   * @type {Subscriber<MetricsNotification>}
    */
   let metrics;
   /**
-   * @type {UpdateRecord<
-   *   MetricsNotification
-   * >}
+   * @type {UpdateRecord<MetricsNotification>}
    */
   let metricsRecord;
 
@@ -82,9 +78,7 @@ export const buildRootObject = async () => {
    *     import('@agoric/governance/src/committee.js')['start']
    *   >;
    *   psmV1?: Installation<PsmSF>;
-   *   puppetContractGovernor?: Installation<
-   *     start
-   *   >;
+   *   puppetContractGovernor?: Installation<start>;
    * }}
    */
   const installations = {};
@@ -93,10 +87,7 @@ export const buildRootObject = async () => {
   let governorFacets;
 
   /**
-   * @type {Omit<
-   *   StartParams<PsmSF>['terms'],
-   *   'issuers' | 'brands'
-   * >}
+   * @type {Omit<StartParams<PsmSF>['terms'], 'issuers' | 'brands'>}
    */
   const psmTerms = {
     anchorBrand: anchor.brand,

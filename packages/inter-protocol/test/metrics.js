@@ -22,8 +22,7 @@ const trace = makeTracer('TestMetrics', false);
 
 /**
  * @template {object} N
- * @param {AsyncIterable<N, N>
- *   | PublicTopic<N>} mixed
+ * @param {AsyncIterable<N, N> | PublicTopic<N>} mixed
  */
 const asNotifier = mixed => {
   if ('subscriber' in mixed) {
@@ -35,8 +34,7 @@ const asNotifier = mixed => {
 /**
  * @template {object} N
  * @param {ExecutionContext} t
- * @param {AsyncIterable<N, N>
- *   | PublicTopic<N>} subscription
+ * @param {AsyncIterable<N, N> | PublicTopic<N>} subscription
  */
 export const subscriptionTracker = async (t, subscription) => {
   const metrics = asNotifier(subscription);
@@ -102,11 +100,7 @@ export const vaultManagerMetricsTracker = async (t, publicFacet) => {
   let totalDebtEver = 0n;
   /**
    * @type {Awaited<
-   *   ReturnType<
-   *     typeof subscriptionTracker<
-   *       MetricsNotification
-   *     >
-   *   >
+   *   ReturnType<typeof subscriptionTracker<MetricsNotification>>
    * >}
    */
   const m = await metricsTracker(t, publicFacet);

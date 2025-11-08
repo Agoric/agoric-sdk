@@ -15,9 +15,7 @@ const stAtom = withAmountUtils(makeIssuerKit('stATOM'));
 
 // uses actual Brand objects instead of BoardRemote to make the test output more legible
 /**
- * @satisfies {Partial<
- *   AgoricNamesRemotes
- * >}
+ * @satisfies {Partial<AgoricNamesRemotes>}
  */
 const agoricNames = {
   brand: {

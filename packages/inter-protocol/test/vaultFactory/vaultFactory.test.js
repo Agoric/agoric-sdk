@@ -1968,9 +1968,7 @@ test('manager notifiers, with snapshot', async t => {
   });
 
   /**
-   * @type {ReturnType<
-   *   makeMockChainStorageRoot
-   * >}
+   * @type {ReturnType<makeMockChainStorageRoot>}
    */
   // @ts-expect-error mock
   const storage = await services.space.consume.chainStorage;

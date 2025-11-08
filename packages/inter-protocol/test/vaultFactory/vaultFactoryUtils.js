@@ -39,11 +39,7 @@ export const BASIS_POINTS = 10000n;
  * @typedef {Record<string, any> & {
  *   aeth: IssuerKit & AmountUtils;
  *   run: IssuerKit & AmountUtils;
- *   bundleCache: Awaited<
- *     ReturnType<
- *       typeof unsafeMakeBundleCache
- *     >
- *   >;
+ *   bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>;
  *   rates: VaultManagerParamValues;
  *   interestTiming: InterestTiming;
  *   zoe: ZoeService;

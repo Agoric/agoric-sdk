@@ -26,10 +26,7 @@ const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));
 /**
  * Give/want
  *
- * @param {Pick<
- *   AgoricNamesRemotes,
- *   'brand'
- * >} agoricNames
+ * @param {Pick<AgoricNamesRemotes, 'brand'>} agoricNames
  * @param {{ giveMinted?: number; wantMinted?: number }
  *   | {
  *       collateralBrandKey: string;
@@ -73,10 +70,7 @@ const makeVaultProposal = ({ brand }, opts) => {
 };
 
 /**
- * @param {Pick<
- *   AgoricNamesRemotes,
- *   'brand'
- * >} agoricNames
+ * @param {Pick<AgoricNamesRemotes, 'brand'>} agoricNames
  * @param {{
  *   offerId: string;
  *   wantMinted: number;
@@ -109,10 +103,7 @@ const makeOpenOffer = ({ brand }, opts) => {
 };
 
 /**
- * @param {Pick<
- *   AgoricNamesRemotes,
- *   'brand'
- * >} agoricNames
+ * @param {Pick<AgoricNamesRemotes, 'brand'>} agoricNames
  * @param {{
  *   offerId: string;
  *   collateralBrandKey?: string;
@@ -142,10 +133,7 @@ const makeAdjustOffer = ({ brand }, opts, previousOffer) => {
 };
 
 /**
- * @param {Pick<
- *   AgoricNamesRemotes,
- *   'brand'
- * >} agoricNames
+ * @param {Pick<AgoricNamesRemotes, 'brand'>} agoricNames
  * @param {{
  *   offerId: string;
  *   collateralBrandKey?: string;
@@ -170,9 +158,7 @@ const makeCloseOffer = ({ brand }, opts, previousOffer) => {
 
 /**
  * @param {string} vaultId
- * @param {Promise<
- *   CurrentWalletRecord
- * >} currentP
+ * @param {Promise<CurrentWalletRecord>} currentP
  * @returns {Promise<string>} offer id in which the vault was made
  */
 export const lookupOfferIdForVault = async (vaultId, currentP) => {
@@ -187,10 +173,7 @@ export const lookupOfferIdForVault = async (vaultId, currentP) => {
 };
 
 /**
- * @param {Record<
- *   string,
- *   BoardRemote
- * >} brands
+ * @param {Record<string, BoardRemote>} brands
  * @param {{ wantMinted: number; giveMinted?: undefined }
  *   | { giveMinted: number; wantMinted?: undefined }} opts
  * @param {number} [fee]
@@ -220,10 +203,7 @@ const makePsmProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
 };
 
 /**
- * @param {Pick<
- *   AgoricNamesRemotes,
- *   'brand'
- * >} agoricNames
+ * @param {Pick<AgoricNamesRemotes, 'brand'>} agoricNames
  * @param {Instance<unknown>} instance
  * @param {{ offerId: string; feePct?: number; pair: [string, string] } & (
  *   | { wantMinted: number }
@@ -260,10 +240,7 @@ const makePsmSwapOffer = ({ brand }, instance, opts) => {
 };
 
 /**
- * @param {Pick<
- *   AgoricNamesRemotes,
- *   'brand' | 'vbankAsset'
- * >} agoricNames
+ * @param {Pick<AgoricNamesRemotes, 'brand' | 'vbankAsset'>} agoricNames
  * @param {(msg: string) => Error} makeError error constructor
  * @returns {(a: string) => Amount<'nat'>}
  */
@@ -303,10 +280,7 @@ export const makeParseAmount =
   };
 
 /**
- * @param {Pick<
- *   AgoricNamesRemotes,
- *   'brand' | 'vbankAsset'
- * >} agoricNames
+ * @param {Pick<AgoricNamesRemotes, 'brand' | 'vbankAsset'>} agoricNames
  * @param {{
  *   offerId: string;
  *   give: string;
@@ -378,10 +352,7 @@ const makeBidOffer = (agoricNames, opts) => {
 };
 
 /**
- * @param {Pick<
- *   AgoricNamesRemotes,
- *   'brand'
- * >} agoricNames
+ * @param {Pick<AgoricNamesRemotes, 'brand'>} agoricNames
  * @param {{
  *   offerId: string;
  *   give: number;
@@ -438,10 +409,7 @@ const makePushPriceOffer = (_agoricNames, opts, previousOffer) => {
 };
 
 /**
- * @satisfies {Record<
- *   string,
- *   Record<string, OfferMaker>
- * >}
+ * @satisfies {Record<string, Record<string, OfferMaker>>}
  */
 export const Offers = {
   auction: {

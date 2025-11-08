@@ -180,17 +180,16 @@ async function replay(transcriptFile) {
 
   const snapshotActivityFd = fs.openSync('snapshot-activity.jsonl', 'a');
 
-  const fakeKernelKeeper =
-    /** @type {KernelKeeper} */ ({
-      provideVatKeeper: _vatID =>
-        /** @type {VatKeeper} */ (
-          /** @type {Partial<import('../src/types-external.js').VatKeeper>} */ ({
-            addToTranscript: () => {},
-            getSnapshotInfo: () => loadSnapshotID && { hash: loadSnapshotID },
-          })
-        ),
-      getRelaxDurabilityRules: () => false,
-    });
+  const fakeKernelKeeper = /** @type {KernelKeeper} */ ({
+    provideVatKeeper: _vatID =>
+      /** @type {VatKeeper} */ (
+        /** @type {Partial<import('../src/types-external.js').VatKeeper>} */ ({
+          addToTranscript: () => {},
+          getSnapshotInfo: () => loadSnapshotID && { hash: loadSnapshotID },
+        })
+      ),
+    getRelaxDurabilityRules: () => false,
+  });
 
   let bundleIDs;
   /** @type {BundleHandler} */
@@ -205,14 +204,13 @@ async function replay(transcriptFile) {
     },
   });
 
-  const kernelSlog =
-    /** @type {KernelSlog} */ (
-      /** @type {Partial<import('../src/types-external.js').KernelSlog>} */ ({
-        write() {},
-        delivery: () => () => undefined,
-        syscall: () => () => undefined,
-      })
-    );
+  const kernelSlog = /** @type {KernelSlog} */ (
+    /** @type {Partial<import('../src/types-external.js').KernelSlog>} */ ({
+      write() {},
+      delivery: () => () => undefined,
+      syscall: () => () => undefined,
+    })
+  );
 
   if (argv.ignoreSnapshotHashDifference && !argv.useCustomSnapStore) {
     console.warn(
@@ -279,12 +277,11 @@ async function replay(transcriptFile) {
     gcAndFinalize: makeGcAndFinalize(engineGC),
     meterControl,
   });
-  const allVatPowers =
-    /** @type {VatPowers} */ (
-      /** @type {Partial<import('../src/types-external.js').VatPowers>} */ ({
-        testLog,
-      })
-    );
+  const allVatPowers = /** @type {VatPowers} */ (
+    /** @type {Partial<import('../src/types-external.js').VatPowers>} */ ({
+      testLog,
+    })
+  );
   /**
    * @typedef {{
    *  manager: VatManager;
@@ -438,18 +435,17 @@ async function replay(transcriptFile) {
     workers.push(workerData);
     updateWorkersSynced();
     const currentBundleIDs = await bundleHandler.getCurrentBundleIDs();
-    const managerOptions =
-      /** @type {ManagerOptions} */ (
-        /** @type {Partial<import('../src/types-internal.js').ManagerOptions>} */ ({
-          sourcedConsole: console,
-          vatParameters,
-          useTranscript: true,
-          workerOptions: {
-            type: worker === 'xs-worker' ? 'xsnap' : worker,
-            bundleIDs: currentBundleIDs,
-          },
-        })
-      );
+    const managerOptions = /** @type {ManagerOptions} */ (
+      /** @type {Partial<import('../src/types-internal.js').ManagerOptions>} */ ({
+        sourcedConsole: console,
+        vatParameters,
+        useTranscript: true,
+        workerOptions: {
+          type: worker === 'xs-worker' ? 'xsnap' : worker,
+          bundleIDs: currentBundleIDs,
+        },
+      })
+    );
     if (!vatSourceBundle && !loadSnapshotID) {
       vatSourceBundle = await bundleHandler.getBundle(vatSourceBundleID);
     }

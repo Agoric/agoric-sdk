@@ -27,8 +27,7 @@ const trace = makeTracer('upgrade Vaults proposal');
  */
 
 /**
- * @param {EconomyBootstrapPowers &
- *     interlockPowers} powers
+ * @param {EconomyBootstrapPowers & interlockPowers} powers
  * @param {{
  *   options: {
  *     VaultFactoryBundle: { bundleID: string };

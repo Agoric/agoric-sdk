@@ -55,9 +55,7 @@ harden(meta);
  *   TODO: ERef<GovernedCreatorFacet<ProvisionCreator>>
  * @param {ZCF<ProvisionTerms>} zcf
  * @param {{
- *   poolBank: ERef<
- *     Bank
- *   >;
+ *   poolBank: ERef<Bank>;
  *   initialPoserInvitation: Invitation;
  *   storageNode: Remote<StorageNode>;
  *   marshaller: Remote<Marshaller>;

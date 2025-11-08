@@ -88,9 +88,7 @@ export const reserveThenDeposit = async (
 
 /**
  * @type {<T>(
- *   store: ERef<
- *     Map<string, T> | ScratchPad
- *   >,
+ *   store: ERef<Map<string, T> | ScratchPad>,
  *   key: string,
  *   make: () => T,
  * ) => Promise<T>}

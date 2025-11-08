@@ -22,8 +22,7 @@ const trace = makeTracer('NewAuction', true);
  */
 
 /**
- * @param {EconomyBootstrapPowers &
- *   interlockPowers} powers
+ * @param {EconomyBootstrapPowers & interlockPowers} powers
  * @param {{
  *   options: {
  *     contractGovernorRef: { bundleID: string };

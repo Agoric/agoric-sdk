@@ -111,8 +111,7 @@ export const makePopulatedFakeVatAdmin = () => {
       vatParameters.zcfBundleName = 'zcf';
     }
     const baggage = makeScalarBigMapStore('baggage');
-    const adminNode =
-      /** @type {VatAdminFacet} */ ({});
+    const adminNode = /** @type {VatAdminFacet} */ ({});
     const rootP = buildRoot({}, vatParameters, baggage);
     return E.when(rootP, root => harden({ root, adminNode }));
   };
