@@ -10,7 +10,6 @@ import { buffer } from './util.js';
 /**
  * @import { AnyIterable, SwingStoreExporter } from './exporter.js';
  * @import { ArtifactMode } from './internal.js';
- * @import {Readable} from 'stream';
  * @import {makeMeasureSeconds} from '@agoric/internal';
  */
 
@@ -70,7 +69,7 @@ import { buffer } from './util.js';
  * @callback SnapshotCallback
  * Called with the gzipped contents of a new heap snapshot.
  * @param {string} name  an export key, e.g. `snapshot.${vatID}.${deliveryCount}`
- * @param {Parameters<Readable.from>[0]} compressedData
+ * @param {Parameters<typeof Readable.from>[0]} compressedData
  * @returns {Promise<void>}
  */
 
