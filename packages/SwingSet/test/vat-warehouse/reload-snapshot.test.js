@@ -10,18 +10,22 @@ import {
 } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
-/** @import {SwingSetConfigProperties, VatConfigOptions} from '../../src/types-external.js' */
+/**
+ * @import {SwingSetConfigProperties, VatConfigOptions} from '../../src/types-external.js'
+ * @import {ExecutionContext} from 'ava';
+ * @import {SwingSetConfig} from '../../src/types-external.js';
+ */
 
 /** @typedef {[snapPos: number, spanStart: number, spanEnd: number]} ExpectedPosition */
 
 /**
  *
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {boolean} restartWorkerOnSnapshot
  * @param {SwingSetConfigProperties<VatConfigOptions>} vatConfig
  */
 const vatReload = async (t, restartWorkerOnSnapshot, vatConfig) => {
-  /** @type {import('../../src/types-external.js').SwingSetConfig} */
+  /** @type {SwingSetConfig} */
   const config = {
     defaultReapInterval: 'never',
     snapshotInitial: 3,
