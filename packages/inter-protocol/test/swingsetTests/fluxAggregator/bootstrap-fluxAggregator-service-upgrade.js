@@ -17,6 +17,13 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
+/**
+ * @import {start} from '../../../src/price/fluxAggregatorContract.js';
+ * @import {start} from '@agoric/governance/tools/puppetContractGovernor.js';
+ * @import {OracleKit} from '../../../src/price/priceOracleKit.js';
+ * @import {StartParams} from '@agoric/zoe/src/zoeService/utils.js';
+ */
+
 const trace = makeTracer('BootFAUpg');
 
 export const faV1BundleName = 'fluxAggregatorV1';
@@ -46,12 +53,8 @@ export const buildRootObject = async () => {
    *   committee?: Installation<
    *     import('@agoric/governance/src/committee.js')['start']
    *   >;
-   *   fluxAggregatorV1?: Installation<
-   *     import('../../../src/price/fluxAggregatorContract.js').start
-   *   >;
-   *   puppetContractGovernor?: Installation<
-   *     import('@agoric/governance/tools/puppetContractGovernor.js').start
-   *   >;
+   *   fluxAggregatorV1?: Installation<start>;
+   *   puppetContractGovernor?: Installation<start>;
    * }}
    */
   const installations = {};
@@ -59,16 +62,12 @@ export const buildRootObject = async () => {
   let governorFacets;
   /**
    * @type {ReturnType<
-   *   Awaited<
-   *     ReturnType<
-   *       import('../../../src/price/fluxAggregatorContract.js').start
-   *     >
-   *   >['creatorFacet']['getLimitedCreatorFacet']
+   *   Awaited<ReturnType<start>>['creatorFacet']['getLimitedCreatorFacet']
    * >}
    */
   let faLimitedFacet;
 
-  /** @type {import('../../../src/price/priceOracleKit.js').OracleKit} */
+  /** @type {OracleKit} */
   let oracleA;
   /** @type {Subscriber<any>} */
   let quoteSubscriber1;
@@ -76,12 +75,7 @@ export const buildRootObject = async () => {
   let lastQuote;
 
   /**
-   * @type {Omit<
-   *   import('@agoric/zoe/src/zoeService/utils.js').StartParams<
-   *     import('../../../src/price/fluxAggregatorContract.js').start
-   *   >['terms'],
-   *   'issuers' | 'brands'
-   * >}
+   * @type {Omit<StartParams<start>['terms'], 'issuers' | 'brands'>}
    */
   const faTerms = {
     // driven by one oracle

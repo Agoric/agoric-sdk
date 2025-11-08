@@ -34,6 +34,12 @@ import {
  * @import {PriceDescription} from '@agoric/zoe/tools/types.js';
  * @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js';
  * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js';
+ * @import {EconomyBootstrapPowers} from '../../src/proposals/econ-behaviors.js';
+ * @import {PuppetContractGovernorKit} from '@agoric/governance/tools/puppetContractGovernor.js';
+ * @import {ExecutionContext} from 'ava';
+ * @import {start} from './faucet.js';
+ * @import {VaultPhase} from '../../src/vaultFactory/vault.js';
+ * @import {AuctionParams} from '../../src/auction/params.js';
  */
 
 const trace = makeTracer('VFDriver');
@@ -81,13 +87,11 @@ const defaultParamValues = debt =>
  * @typedef {{
  *   aeth: IssuerKit & AmountUtils;
  *   aethInitialLiquidity: Amount<'nat'>;
- *   consume: import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume'];
+ *   consume: EconomyBootstrapPowers['consume'];
  *   puppetGovernors: {
  *     [contractName: string]:
  *       | undefined
- *       | ERef<
- *           import('@agoric/governance/tools/puppetContractGovernor.js').PuppetContractGovernorKit<any>['creatorFacet']
- *         >;
+ *       | ERef<PuppetContractGovernorKit<any>['creatorFacet']>;
  *   };
  *   electorateTerms: any;
  *   feeMintAccess: FeeMintAccess;
@@ -150,7 +154,7 @@ export const makeDriverContext = async ({
   /* eslint-enable @typescript-eslint/ban-ts-comment */
 };
 
-/** @param {import('ava').ExecutionContext<DriverContext>} t */
+/** @param {ExecutionContext<DriverContext>} t */
 const setupReserveAndElectorate = async t => {
   const {
     zoe,
@@ -176,7 +180,7 @@ const setupReserveAndElectorate = async t => {
 };
 
 /**
- * @param {import('ava').ExecutionContext<DriverContext>} t
+ * @param {ExecutionContext<DriverContext>} t
  * @param {Amount<'nat'>} amt
  */
 const getRunFromFaucet = async (t, amt) => {
@@ -185,7 +189,7 @@ const getRunFromFaucet = async (t, amt) => {
     zoe,
     feeMintAccess,
   } = t.context;
-  /** @type {Promise<Installation<import('./faucet.js').start>>} */
+  /** @type {Promise<Installation<start>>} */
   // @ts-expect-error cast
   // On-chain, there will be pre-existing RUN. The faucet replicates that
   const { creatorFacet: faucetCreator } = await E(zoe).startInstance(
@@ -210,7 +214,7 @@ const getRunFromFaucet = async (t, amt) => {
  * NOTE: called separately by each test so zoe/priceAuthority/etc. don't
  * interfere.
  *
- * @param {import('ava').ExecutionContext<DriverContext>} t
+ * @param {ExecutionContext<DriverContext>} t
  * @param {Amount} initialPrice
  * @param {Amount} priceBase
  */
@@ -316,7 +320,7 @@ const setupServices = async (t, initialPrice, priceBase) => {
 };
 
 /**
- * @param {import('ava').ExecutionContext<DriverContext>} t
+ * @param {ExecutionContext<DriverContext>} t
  * @param {Amount<'nat'>} [initialPrice]
  * @param {Amount<'nat'>} [priceBase]
  */
@@ -438,7 +442,7 @@ export const makeManagerDriver = async (
         t.truthy(await E(vaultSeat).hasExited());
       },
       /**
-       * @param {import('../../src/vaultFactory/vault.js').VaultPhase} phase
+       * @param {VaultPhase} phase
        * @param {object} [likeExpected]
        * @param {AT_NEXT | number} [optSince] AT_NEXT is an alias for
        *   updateCount of the last update, forcing to wait for another
@@ -592,7 +596,7 @@ export const makeManagerDriver = async (
   return driver;
 };
 
-/** @param {import('ava').ExecutionContext<DriverContext>} t */
+/** @param {ExecutionContext<DriverContext>} t */
 export const makeAuctioneerDriver = async t => {
   const auctioneerKit = await t.context.consume.auctioneerKit;
 
@@ -636,7 +640,7 @@ export const makeAuctioneerDriver = async t => {
       }
     },
     /**
-     * @param {keyof import('../../src/auction/params.js').AuctionParams} name
+     * @param {keyof AuctionParams} name
      * @param {any} newValue
      */
     setGovernedParam: async (name, newValue) => {

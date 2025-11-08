@@ -10,6 +10,12 @@ import { makeTracer } from '@agoric/internal/src/index.js';
 import { Fail } from '@endo/errors';
 import { TimeMath } from '@agoric/time';
 
+/**
+ * @import {EconomyBootstrapPowers} from '../../src/proposals/econ-behaviors';
+ * @import {start} from '../auction/auctioneer.js';
+ * @import {VaultFactoryContract} from '../../src/vaultFactory/vaultFactory';
+ */
+
 const trace = makeTracer('upgrade Vaults proposal');
 
 /**
@@ -21,8 +27,7 @@ const trace = makeTracer('upgrade Vaults proposal');
  */
 
 /**
- * @param {import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers &
- *     interlockPowers} powers
+ * @param {EconomyBootstrapPowers & interlockPowers} powers
  * @param {{
  *   options: {
  *     VaultFactoryBundle: { bundleID: string };
@@ -55,7 +60,7 @@ export const upgradeVaults = async (
 
   await priceAuthority8400;
 
-  /** @type {Instance<import('../auction/auctioneer.js').start>} */
+  /** @type {Instance<start>} */
   const auctionNewInstance = await auctionUpgradeNewInstance;
   auctionUpgradeNewInstanceProducer.reset();
   const publicFacet = E(zoe).getPublicFacet(auctionNewInstance);
@@ -129,7 +134,7 @@ export const upgradeVaults = async (
       electorateCreatorFacet,
     ).getPoserInvitation();
 
-    /** @type {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract['privateArgs']} */
+    /** @type {VaultFactoryContract['privateArgs']} */
     const newPrivateArgs = harden({
       ...privateArgs,
       auctioneerInstance: auctionNewInstance,

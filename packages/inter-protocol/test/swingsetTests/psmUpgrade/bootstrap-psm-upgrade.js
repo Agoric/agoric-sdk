@@ -21,6 +21,10 @@ import { scale6, withAmountUtils } from '../../supports.js';
 
 /**
  * @import {FeeMintAccess} from '@agoric/zoe';
+ * @import {MetricsNotification} from '../../../src/psm/psm.js';
+ * @import {start} from '@agoric/governance/tools/puppetContractGovernor.js';
+ * @import {PuppetContractGovernorKit} from '@agoric/governance/tools/puppetContractGovernor.js';
+ * @import {StartParams} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
 const trace = makeTracer('BootPSMUpg');
@@ -53,15 +57,11 @@ export const buildRootObject = async () => {
   let psmPublicFacet;
 
   /**
-   * @type {Subscriber<
-   *   import('../../../src/psm/psm.js').MetricsNotification
-   * >}
+   * @type {Subscriber<MetricsNotification>}
    */
   let metrics;
   /**
-   * @type {UpdateRecord<
-   *   import('../../../src/psm/psm.js').MetricsNotification
-   * >}
+   * @type {UpdateRecord<MetricsNotification>}
    */
   let metricsRecord;
 
@@ -78,21 +78,16 @@ export const buildRootObject = async () => {
    *     import('@agoric/governance/src/committee.js')['start']
    *   >;
    *   psmV1?: Installation<PsmSF>;
-   *   puppetContractGovernor?: Installation<
-   *     import('@agoric/governance/tools/puppetContractGovernor.js').start
-   *   >;
+   *   puppetContractGovernor?: Installation<start>;
    * }}
    */
   const installations = {};
 
-  /** @type {import('@agoric/governance/tools/puppetContractGovernor.js').PuppetContractGovernorKit<PsmSF>} */
+  /** @type {PuppetContractGovernorKit<PsmSF>} */
   let governorFacets;
 
   /**
-   * @type {Omit<
-   *   import('@agoric/zoe/src/zoeService/utils.js').StartParams<PsmSF>['terms'],
-   *   'issuers' | 'brands'
-   * >}
+   * @type {Omit<StartParams<PsmSF>['terms'], 'issuers' | 'brands'>}
    */
   const psmTerms = {
     anchorBrand: anchor.brand,

@@ -35,16 +35,21 @@ import { provideDirector } from './vaultDirector.js';
  * @import {ContractMeta, FeeMintAccess, HandleOffer, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
  * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {VaultDirectorParams} from './params.js';
+ * @import {TimerService} from '@agoric/time';
+ * @import {start} from '../auction/auctioneer.js';
+ * @import {VaultManagerParamOverrides} from './params.js';
+ * @import {Baggage} from '@agoric/swingset-liveslots';
  */
 
 const trace = makeTracer('VF', true);
 
 /**
  * @typedef {ZCF<
- *   GovernanceTerms<import('./params.js').VaultDirectorParams> & {
+ *   GovernanceTerms<VaultDirectorParams> & {
  *     priceAuthority: ERef<PriceAuthority>;
  *     reservePublicFacet: AssetReservePublicFacet;
- *     timerService: import('@agoric/time').TimerService;
+ *     timerService: TimerService;
  *   }
  * >} VaultFactoryZCF
  */
@@ -75,14 +80,11 @@ harden(meta);
  *   initialShortfallInvitation: Invitation;
  *   storageNode: Remote<StorageNode>;
  *   marshaller: Remote<Marshaller>;
- *   auctioneerInstance: Instance<import('../auction/auctioneer.js').start>;
- *   managerParams: Record<
- *     string,
- *     import('./params.js').VaultManagerParamOverrides
- *   >;
+ *   auctioneerInstance: Instance<start>;
+ *   managerParams: Record<string, VaultManagerParamOverrides>;
  *   directorParamOverrides: [object];
  * }} privateArgs
- * @param {import('@agoric/swingset-liveslots').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
   trace('prepare start', privateArgs, [...baggage.keys()]);

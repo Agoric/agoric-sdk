@@ -34,6 +34,16 @@ import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
  * @import {ERef} from '@endo/far'
  * @import {Bank, BankManager} from '@agoric/vats/src/vat-bank.js'
  * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {start} from '@agoric/inter-protocol/src/psm/psm.js';
+ * @import {NameAdmin} from '@agoric/vats';
+ * @import {WalletFactoryStartResult} from '@agoric/vats/src/core/startWalletFactory.js';
+ * @import {Zone} from '@agoric/zone';
+ * @import {start} from '@agoric/smart-wallet/src/walletFactory.js';
+ * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {RecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {BridgeHandler} from '@agoric/vats';
+ * @import {AssetDescriptor} from '@agoric/vats/src/vat-bank.js';
  */
 
 const trace = makeTracer('ProvPool');
@@ -53,18 +63,14 @@ const FIRST_LOWER_NEAR_KEYWORD = /^[a-z][a-zA-Z0-9_$]*$/;
  */
 
 /**
- * @typedef {import('@agoric/zoe/src/zoeService/utils.js').Instance<
- *   import('@agoric/inter-protocol/src/psm/psm.js').start
- * >} PsmInstance
+ * @typedef {Instance<start>} PsmInstance
  */
 
 /**
  * @typedef {object} ProvisionPoolKitReferences
  * @property {ERef<BankManager>} bankManager
- * @property {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
- * @property {ERef<
- *   import('@agoric/vats/src/core/startWalletFactory.js').WalletFactoryStartResult['creatorFacet']
- * >} walletFactory
+ * @property {ERef<NameAdmin>} namesByAddressAdmin
+ * @property {ERef<WalletFactoryStartResult['creatorFacet']>} walletFactory
  */
 
 /**
@@ -81,7 +87,7 @@ const FIRST_LOWER_NEAR_KEYWORD = /^[a-z][a-zA-Z0-9_$]*$/;
  * Given attenuated access to the funding purse, handle requests to provision
  * smart wallets.
  *
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  */
 export const prepareBridgeProvisionTool = zone =>
   zone.exoClass(
@@ -91,12 +97,8 @@ export const prepareBridgeProvisionTool = zone =>
     }),
     /**
      * @param {ERef<BankManager>} bankManager
-     * @param {ERef<
-     *   EReturn<
-     *     import('@agoric/smart-wallet/src/walletFactory.js').start
-     *   >['creatorFacet']
-     * >} walletFactory
-     * @param {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
+     * @param {ERef<EReturn<start>['creatorFacet']>} walletFactory
+     * @param {ERef<NameAdmin>} namesByAddressAdmin
      * @param {ProvisionPoolKit['forHandler']} forHandler
      */
     (bankManager, walletFactory, namesByAddressAdmin, forHandler) => ({
@@ -138,11 +140,11 @@ export const prepareBridgeProvisionTool = zone =>
   );
 
 /**
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  * @param {{
- *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
+ *   makeRecorderKit: MakeRecorderKit;
  *   params: any;
- *   poolBank: import('@endo/far').ERef<Bank>;
+ *   poolBank: ERef<Bank>;
  *   zcf: ZCF;
  *   makeBridgeProvisionTool: ReturnType<typeof prepareBridgeProvisionTool>;
  * }} powers
@@ -202,7 +204,7 @@ export const prepareProvisionPoolKit = (
      * @param {Remote<StorageNode>} opts.metricsNode
      */
     ({ fundPurse, poolBrand, metricsNode }) => {
-      /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<MetricsNotification>} */
+      /** @type {RecorderKit<MetricsNotification>} */
       const metricsRecorderKit = makeRecorderKit(metricsNode);
 
       /** @type {MapStore<ERef<Brand>, PsmInstance>} */
@@ -257,7 +259,7 @@ export const prepareProvisionPoolKit = (
           const refs = await deeplyFulfilledObject(obj);
           Object.assign(this.state, refs);
         },
-        /** @returns {import('@agoric/vats').BridgeHandler} */
+        /** @returns {BridgeHandler} */
         makeHandler() {
           const { bankManager, namesByAddressAdmin, walletFactory } =
             this.state;
@@ -403,7 +405,7 @@ export const prepareProvisionPoolKit = (
           const { facets } = this;
           const { helper } = facets;
 
-          /** @param {import('@agoric/vats/src/vat-bank.js').AssetDescriptor} desc */
+          /** @param {AssetDescriptor} desc */
           const repairDesc = desc => {
             if (desc.issuerName.match(FIRST_UPPER_KEYWORD)) {
               trace(`Saving Issuer ${desc.issuerName}`);

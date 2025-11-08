@@ -32,6 +32,8 @@ import {
  * @import {Bank} from '@agoric/vats/src/vat-bank.js'
  * @import {SmartWallet} from '@agoric/smart-wallet/src/smartWallet.js'
  * @import {WalletReviver} from '@agoric/smart-wallet/src/walletFactory.js'
+ * @import {TestFn} from 'ava';
+ * @import {WalletFactoryStartResult} from '@agoric/vats/src/core/startWalletFactory.js';
  */
 
 const pathname = new URL(import.meta.url).pathname;
@@ -47,7 +49,7 @@ const WantMintedFeeBP = 1n;
 const GiveMintedFeeBP = 3n;
 const MINT_LIMIT = scale6(20_000_000);
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
+/** @type {TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = unknownTest;
 
 const makeTestContext = async () => {
@@ -324,7 +326,7 @@ const makeWalletFactoryKitForAddresses = async addresses => {
   };
 
   const done = new Set();
-  /** @type {import('@agoric/vats/src/core/startWalletFactory.js').WalletFactoryStartResult['creatorFacet']} */
+  /** @type {WalletFactoryStartResult['creatorFacet']} */
   const walletFactory = Far('mock walletFactory', {
     provideSmartWallet: async (addr, _b, nameAdmin) => {
       const wallet = wallets.get(addr);

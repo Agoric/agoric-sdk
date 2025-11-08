@@ -23,6 +23,11 @@ import { prepareRoundsManagerKit } from './roundsManager.js';
  * @import {TypedPattern, Remote} from '@agoric/internal';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {QuoteKit} from './roundsManager.js';
+ * @import {MakeRecorder} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {LatestRound} from './roundsManager.js';
+ * @import {OracleKit} from './priceOracleKit.js';
+ * @import {PriceRound} from './roundsManager.js';
  */
 
 const trace = makeTracer('FlxAgg', true);
@@ -86,10 +91,10 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  *   }
  * >} zcf
  * @param {TimerService} timerPresence
- * @param {import('./roundsManager.js').QuoteKit} quoteKit
+ * @param {QuoteKit} quoteKit
  * @param {Remote<StorageNode>} storageNode
  * @param {() => PublishKit<any>} makeDurablePublishKit
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorder} makeRecorder
+ * @param {MakeRecorder} makeRecorder
  */
 export const prepareFluxAggregatorKit = async (
   baggage,
@@ -155,7 +160,7 @@ export const prepareFluxAggregatorKit = async (
         makeRecorderKit(
           node,
           /**
-           * @type {TypedPattern<import('./roundsManager.js').LatestRound>}
+           * @type {TypedPattern<LatestRound>}
            */ (M.any()),
         ),
       ),
@@ -223,7 +228,7 @@ export const prepareFluxAggregatorKit = async (
       }),
     },
     () => {
-      /** @type {MapStore<string, import('./priceOracleKit.js').OracleKit>} */
+      /** @type {MapStore<string, OracleKit>} */
       const oracles = makeScalarBigMapStore('oracles', {
         durable: true,
       });
@@ -256,7 +261,7 @@ export const prepareFluxAggregatorKit = async (
             seat.exit();
             const { oracle } = await facets.creator.initOracle(oracleId);
             const invitationMakers = Far('invitation makers', {
-              /** @param {import('./roundsManager.js').PriceRound} result */
+              /** @param {PriceRound} result */
               PushPrice(result) {
                 return zcf.makeInvitation(
                   /** @param {ZCFSeat} cSeat */

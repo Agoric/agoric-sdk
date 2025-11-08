@@ -19,6 +19,10 @@ import { withAmountUtils } from '../../supports.js';
 
 /**
  * @import {FeeMintAccess} from '@agoric/zoe';
+ * @import {MetricsNotification} from '../../../src/reserve/assetReserveKit.js';
+ * @import {PuppetContractGovernorKit} from '@agoric/governance/tools/puppetContractGovernor.js';
+ * @import {start} from '../../../src/reserve/assetReserve.js';
+ * @import {StartParams} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
 const trace = makeTracer('BootFAUpg');
@@ -42,15 +46,11 @@ export const buildRootObject = async () => {
   let feeMintAccess;
 
   /**
-   * @type {Subscriber<
-   *   import('../../../src/reserve/assetReserveKit.js').MetricsNotification
-   * >}
+   * @type {Subscriber<MetricsNotification>}
    */
   let metrics;
   /**
-   * @type {UpdateRecord<
-   *   import('../../../src/reserve/assetReserveKit.js').MetricsNotification
-   * >}
+   * @type {UpdateRecord<MetricsNotification>}
    */
   let metricsRecord;
 
@@ -77,27 +77,18 @@ export const buildRootObject = async () => {
   const installations = {};
 
   /**
-   * @type {import('@agoric/governance/tools/puppetContractGovernor.js').PuppetContractGovernorKit<
-   *     import('../../../src/reserve/assetReserve.js').start
-   *   >}
+   * @type {PuppetContractGovernorKit<start>}
    */
   let governorFacets;
   /**
    * @type {ReturnType<
-   *   Awaited<
-   *     ReturnType<import('../../../src/reserve/assetReserve.js').start>
-   *   >['creatorFacet']['getLimitedCreatorFacet']
+   *   Awaited<ReturnType<start>>['creatorFacet']['getLimitedCreatorFacet']
    * >}
    */
   let arLimitedFacet;
 
   /**
-   * @type {Omit<
-   *   import('@agoric/zoe/src/zoeService/utils.js').StartParams<
-   *     import('../../../src/reserve/assetReserve.js').start
-   *   >['terms'],
-   *   'issuers' | 'brands'
-   * >}
+   * @type {Omit<StartParams<start>['terms'], 'issuers' | 'brands'>}
    */
   const arTerms = {
     governedParams: {
