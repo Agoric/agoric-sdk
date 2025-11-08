@@ -17,10 +17,10 @@ import { withAmountUtils } from '../supports.js';
 
 /**
  * @import {ExecutionContext} from 'ava';
- * @import {start} from '@agoric/smart-wallet/src/walletFactory.js';
+ * @import {start as startWalletFactory} from '@agoric/smart-wallet/src/walletFactory.js';
  * @import {ScopedBridgeManager} from '@agoric/vats';
  * @import {NameAdmin} from '@agoric/vats';
- * @import {start} from '@agoric/inter-protocol/src/price/fluxAggregatorContract.js';
+ * @import {FluxStartFn} from '@agoric/inter-protocol/src/price/fluxAggregatorContract.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {ContinuingInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
  */
@@ -79,7 +79,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     'walletFactory',
   );
   /**
-   * @type {Promise<Installation<start>>}
+   * @type {Promise<Installation<startWalletFactory>>}
    */
   const installation = E(zoe).install(bundle);
 
@@ -180,7 +180,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
       'priceAggregator',
     );
     /**
-     * @type {Promise<Installation<start>>}
+     * @type {Promise<Installation<FluxStartFn>>}
      */
     const paInstallation = E(zoe).install(paBundle);
     await E(installAdmin).update('priceAggregator', paInstallation);
