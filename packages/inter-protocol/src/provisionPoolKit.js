@@ -35,11 +35,11 @@ import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
  * @import {Bank, BankManager} from '@agoric/vats/src/vat-bank.js'
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
- * @import {start} from '@agoric/inter-protocol/src/psm/psm.js';
+ * @import {start as psmStart} from '@agoric/inter-protocol/src/psm/psm.js';
  * @import {NameAdmin} from '@agoric/vats';
  * @import {WalletFactoryStartResult} from '@agoric/vats/src/core/startWalletFactory.js';
  * @import {Zone} from '@agoric/zone';
- * @import {start} from '@agoric/smart-wallet/src/walletFactory.js';
+ * @import {start as walletFactoryStart} from '@agoric/smart-wallet/src/walletFactory.js';
  * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {RecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {BridgeHandler} from '@agoric/vats';
@@ -63,18 +63,14 @@ const FIRST_LOWER_NEAR_KEYWORD = /^[a-z][a-zA-Z0-9_$]*$/;
  */
 
 /**
- * @typedef {Instance<
- *   start
- * >} PsmInstance
+ * @typedef {Instance<psmStart>} PsmInstance
  */
 
 /**
  * @typedef {object} ProvisionPoolKitReferences
  * @property {ERef<BankManager>} bankManager
  * @property {ERef<NameAdmin>} namesByAddressAdmin
- * @property {ERef<
- *   WalletFactoryStartResult['creatorFacet']
- * >} walletFactory
+ * @property {ERef<WalletFactoryStartResult['creatorFacet']>} walletFactory
  */
 
 /**
@@ -101,11 +97,7 @@ export const prepareBridgeProvisionTool = zone =>
     }),
     /**
      * @param {ERef<BankManager>} bankManager
-     * @param {ERef<
-     *   EReturn<
-     *     start
-     *   >['creatorFacet']
-     * >} walletFactory
+     * @param {ERef<EReturn<walletFactoryStart>['creatorFacet']>} walletFactory
      * @param {ERef<NameAdmin>} namesByAddressAdmin
      * @param {ProvisionPoolKit['forHandler']} forHandler
      */

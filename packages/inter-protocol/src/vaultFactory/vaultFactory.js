@@ -37,7 +37,7 @@ import { provideDirector } from './vaultDirector.js';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {VaultDirectorParams} from './params.js';
  * @import {TimerService} from '@agoric/time';
- * @import {start} from '../auction/auctioneer.js';
+ * @import {start as auctioneerStart} from '../auction/auctioneer.js';
  * @import {VaultManagerParamOverrides} from './params.js';
  * @import {Baggage} from '@agoric/swingset-liveslots';
  */
@@ -80,11 +80,8 @@ harden(meta);
  *   initialShortfallInvitation: Invitation;
  *   storageNode: Remote<StorageNode>;
  *   marshaller: Remote<Marshaller>;
- *   auctioneerInstance: Instance<start>;
- *   managerParams: Record<
- *     string,
- *     VaultManagerParamOverrides
- *   >;
+ *   auctioneerInstance: Instance<auctioneerStart>;
+ *   managerParams: Record<string, VaultManagerParamOverrides>;
  *   directorParamOverrides: [object];
  * }} privateArgs
  * @param {Baggage} baggage
