@@ -10,6 +10,8 @@ import { buffer } from './util.js';
 /**
  * @import { AnyIterable, SwingStoreExporter } from './exporter.js';
  * @import { ArtifactMode } from './internal.js';
+ * @import {Readable} from 'stream';
+ * @import {makeMeasureSeconds} from '@agoric/internal';
  */
 
 /**
@@ -68,7 +70,7 @@ import { buffer } from './util.js';
  * @callback SnapshotCallback
  * Called with the gzipped contents of a new heap snapshot.
  * @param {string} name  an export key, e.g. `snapshot.${vatID}.${deliveryCount}`
- * @param {Parameters<import('stream').Readable.from>[0]} compressedData
+ * @param {Parameters<Readable.from>[0]} compressedData
  * @returns {Promise<void>}
  */
 
@@ -78,7 +80,7 @@ const finished = promisify(finishedCallback);
  * @param {*} db
  * @param {() => void} ensureTxn
  * @param {{
- *   measureSeconds: ReturnType<typeof import('@agoric/internal').makeMeasureSeconds>,
+ *   measureSeconds: ReturnType<typeof makeMeasureSeconds>,
  * }} io
  * @param {(key: string, value: string | undefined) => void} noteExport
  * @param {object} [options]

@@ -28,6 +28,13 @@ const IN_MEMORY = ':memory:';
  */
 
 /**
+ * @import {SwingStoreExporter} from './exporter.js';
+ * @import {SwingStoreInternal} from './internal.js';
+ * @import {SnapshotCallback} from './snapStore.js';
+ * @import {TranscriptCallback} from './transcriptStore.js';
+ */
+
+/**
  * @import {KVStore} from './kvStore.js';
  *
  * @import {SnapStore} from './snapStore.js';
@@ -59,7 +66,7 @@ const IN_MEMORY = ':memory:';
  *   commit: () => Promise<void>,  // commit changes made since the last commit
  *   close: () => Promise<void>,   // shutdown the store, abandoning any uncommitted changes
  *   diskUsage?: () => number, // optional stats method
- *   repairMetadata: (exporter: import('./exporter.js').SwingStoreExporter) => Promise<void>,
+ *   repairMetadata: (exporter: SwingStoreExporter) => Promise<void>,
  * }} SwingStoreHostStorage
  */
 
@@ -79,7 +86,7 @@ const IN_MEMORY = ':memory:';
  *  kernelStorage: SwingStoreKernelStorage,
  *  hostStorage: SwingStoreHostStorage,
  *  debug: SwingStoreDebugTools,
- *  internal: import('./internal.js').SwingStoreInternal,
+ *  internal: SwingStoreInternal,
  * }} SwingStore
  */
 
@@ -139,8 +146,8 @@ const IN_MEMORY = ':memory:';
  * @property {string} [traceFile]  Path at which to record KVStore set/delete activity
  * @property {boolean} [keepSnapshots]  Retain old heap snapshots
  * @property {boolean} [keepTranscripts]  Retain old transcript span items
- * @property {import('./snapStore.js').SnapshotCallback} [archiveSnapshot]  Called after creation of a new heap snapshot
- * @property {import('./transcriptStore.js').TranscriptCallback} [archiveTranscript]  Called after a formerly-current transcript span is finalized
+ * @property {SnapshotCallback} [archiveSnapshot]  Called after creation of a new heap snapshot
+ * @property {TranscriptCallback} [archiveTranscript]  Called after a formerly-current transcript span is finalized
  * @property {(pendingExports: Iterable<[key: string, value: string | null]>) => void} [exportCallback]
  * @property {Replacer<ReturnType<makeKVStore>>} [wrapKvStore]
  * @property {Replacer<ReturnType<makeTranscriptStore>>} [wrapTranscriptStore]
@@ -515,7 +522,7 @@ export function makeSwingStore(path, forceReset, options = {}) {
     stopTrace();
   }
 
-  /** @type {import('./internal.js').SwingStoreInternal} */
+  /** @type {SwingStoreInternal} */
   const internal = harden({
     dirPath: asFile ? null : path,
     asFile,
