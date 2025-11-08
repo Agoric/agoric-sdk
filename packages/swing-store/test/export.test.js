@@ -23,7 +23,7 @@ const snapshotData = 'snapshot data';
 const snapHash =
   'e7dee7266896538616b630a5da40a90e007726a383e005a9c9c5dd0c2daf9329';
 
-/** @type {import('../src/bundleStore.js').Bundle} */
+/** @type {Bundle} */
 const bundle0 = { moduleFormat: 'nestedEvaluate', source: '1+1' };
 const bundle0ID = makeB0ID(bundle0);
 
@@ -86,7 +86,10 @@ const exportTest = test.macro(async (t, mode) => {
   // historical transcript spans, and no historical snapshots
 
   assert.typeof(mode, 'string');
-  /** @import {ArtifactMode} from '../src/internal.js' */
+  /**
+   * @import {ArtifactMode} from '../src/internal.js'
+   * @import {Bundle} from '../src/bundleStore.js';
+   */
   let artifactMode = /** @type {ArtifactMode} */ (mode);
   if (mode === 'debug-on-pruned') {
     artifactMode = 'debug';
