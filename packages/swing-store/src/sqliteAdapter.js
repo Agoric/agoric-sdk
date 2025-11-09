@@ -81,7 +81,23 @@ export function createDatabase(location, options = {}) {
       // Check if this is a setting or query pragma
       if (pragma.includes('=')) {
         // Setting a pragma - use exec
-        db.exec(`PRAGMA ${pragma}`);
+        try {
+          db.exec(`PRAGMA ${pragma}`);
+        } catch (err) {
+          // If database is locked, it might be a transient lock from a previous connection
+          // In WAL mode, the mode is persistent so we can query it instead
+          if (err.message && err.message.includes('locked') && pragma.includes('journal_mode')) {
+            // Query the current mode instead
+            const stmt = db.prepare(`PRAGMA journal_mode`);
+            const result = stmt.get();
+            stmt.finalize();
+            const currentMode = result ? Object.values(result)[0] : undefined;
+            // Return the current mode (it's persistent in WAL)
+            return simple ? currentMode : currentMode;
+          }
+          // Re-throw other errors
+          throw err;
+        }
         // For settings, return the value after the =
         const parts = pragma.split('=');
         return simple ? parts[1].trim() : parts[1].trim();

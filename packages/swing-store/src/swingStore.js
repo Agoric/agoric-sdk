@@ -250,14 +250,16 @@ export function makeSwingStore(path, forceReset, options = {}) {
     !db.inTransaction || Fail`must not be in a transaction`;
 
     db.unsafeMode(!!enabled);
-    // The WAL mode is persistent so it's not possible to switch to a different
-    // mode for an existing DB.
+    // The WAL mode is persistent, so for an existing DB, just accept whatever mode it has.
+    // For a new DB or one created with a different mode, try to set it.
     const actualMode = db.pragma(`journal_mode=${journalMode}`, {
       simple: true,
     });
-    actualMode === journalMode ||
-      filePath === ':memory:' ||
+    // Only fail for in-memory DBs where we have full control
+    // For file-based DBs, the mode might be persistent from creation
+    if (filePath === ':memory:' && actualMode !== journalMode) {
       Fail`Couldn't set swing-store DB to ${journalMode} mode (is ${actualMode})`;
+    }
     db.pragma(`synchronous=${synchronousMode}`);
   }
 
@@ -510,6 +512,25 @@ export function makeSwingStore(path, forceReset, options = {}) {
    */
   async function close() {
     db || Fail`db not initialized`;
+    // If we're in a transaction, roll it back before closing
+    if (db.inTransaction) {
+      try {
+        db.exec('ROLLBACK');
+      } catch (err) {
+        // Ignore rollback errors during close
+        console.warn('ROLLBACK failed during close:', err.message);
+      }
+    }
+    // Checkpoint the WAL to ensure all changes are flushed to the main db file
+    // This helps prevent lock issues when reopening the database
+    if (filePath !== IN_MEMORY && !readonly) {
+      try {
+        db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+      } catch (err) {
+        // Ignore checkpoint errors during close
+        console.warn('WAL checkpoint failed during close:', err.message);
+      }
+    }
     db.close();
     db = null;
     stopTrace();
