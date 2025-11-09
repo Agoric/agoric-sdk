@@ -95,7 +95,7 @@
     "@graphql-tools/optimize@npm:^2.0.0": "patch:@graphql-tools/optimize@npm%3A2.0.0#~/.yarn/patches/@graphql-tools-optimize-npm-2.0.0-710bf461f3.patch"
   },
   "dependenciesMeta": {
-    "@photostructure/sqlite@0.2.0": {
+    "@photostructure/sqlite@0.0.1": {
       "built": true
     },
     "esbuild@0.25.10": {

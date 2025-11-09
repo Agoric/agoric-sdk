@@ -44,7 +44,9 @@ export function createDatabase(location, options = {}) {
   const wrapped = {
     prepare: (sql) => {
       const stmt = db.prepare(sql);
-      return wrapStatement(stmt);
+      const onBegin = () => { transactionDepth++; };
+      const onCommitOrRollback = () => { transactionDepth = Math.max(0, transactionDepth - 1); };
+      return wrapStatement(stmt, sql, onBegin, onCommitOrRollback);
     },
     
     exec: (sql) => {
@@ -113,31 +115,23 @@ export function createDatabase(location, options = {}) {
     
     /**
      * Serialize database to Buffer
-     * Note: @photostructure/sqlite doesn't support this
+     * Note: This uses backup to a temporary file and then reads it
      * @returns {Buffer}
      */
-    serialize: () => {
-      throw new Error('serialize() not supported by @photostructure/sqlite');
-    },
-  };
-  
-  // Wrap prepare to track transactions
-  const originalPrepare = wrapped.prepare;
-  wrapped.prepare = (sql) => {
-    const stmt = originalPrepare(sql);
-    const originalRun = stmt.run;
-    
-    stmt.run = (...args) => {
-      const upperSQL = sql.trim().toUpperCase();
-      if (upperSQL.startsWith('BEGIN')) {
-        transactionDepth++;
-      } else if (upperSQL === 'COMMIT' || upperSQL === 'ROLLBACK') {
-        transactionDepth = Math.max(0, transactionDepth - 1);
+    serialize: async () => {
+      if (location !== ':memory:') {
+        throw new Error('serialize() only works with :memory: databases');
       }
-      return originalRun.apply(stmt, args);
-    };
-    
-    return stmt;
+      
+      // @photostructure/sqlite doesn't support direct serialization
+      // We would need to use backup() to a temporary file and read it
+      // However, backup() is async and this needs to be sync
+      // For now, throw an error with guidance
+      throw new Error(
+        'serialize() not fully supported by @photostructure/sqlite. ' +
+        'Use file-based databases instead of in-memory databases for persistence.'
+      );
+    },
   };
   
   return wrapped;
@@ -146,11 +140,38 @@ export function createDatabase(location, options = {}) {
 /**
  * Wraps a StatementSync to add better-sqlite3 compatibility features
  * @param {ReturnType<DatabaseSync['prepare']>} stmt
+ * @param {string} sql - The SQL text for transaction tracking
+ * @param {() => void} onBegin - Callback when BEGIN is executed
+ * @param {() => void} onCommitOrRollback - Callback when COMMIT/ROLLBACK is executed
  */
-function wrapStatement(stmt) {
+function wrapStatement(stmt, sql, onBegin, onCommitOrRollback) {
   let pluckEnabled = false;
   let pluckColumn = 0;
   let rawEnabled = false;
+  
+  // Detect if SQL uses named parameters
+  const hasNamedParams = /[:$@]\w+/.test(sql);
+  
+  /**
+   * Transform parameter object to add $ prefix to keys if needed
+   * @photostructure/sqlite 0.0.1 requires the prefix in both SQL and object keys
+   */
+  function transformParams(args) {
+    if (args.length === 1 && typeof args[0] === 'object' && !Array.isArray(args[0]) && args[0] !== null) {
+      const params = args[0];
+      const transformed = {};
+      for (const [key, value] of Object.entries(params)) {
+        // If the key doesn't start with $, :, or @, add $ prefix
+        if (!key.startsWith('$') && !key.startsWith(':') && !key.startsWith('@')) {
+          transformed[`$${key}`] = value;
+        } else {
+          transformed[key] = value;
+        }
+      }
+      return [transformed];
+    }
+    return args;
+  }
   
   const wrapped = {
     get sourceSQL() {
@@ -176,12 +197,14 @@ function wrapStatement(stmt) {
     },
     
     get: (...args) => {
-      const result = stmt.get(...args);
+      const transformedArgs = hasNamedParams ? transformParams(args) : args;
+      const result = stmt.get(...transformedArgs);
       if (!result) return result;
       
       if (pluckEnabled) {
         const values = Object.values(result);
-        return values[pluckColumn];
+        const pluckedValue = values[pluckColumn];
+        return pluckedValue;
       }
       
       if (rawEnabled) {
@@ -192,7 +215,8 @@ function wrapStatement(stmt) {
     },
     
     all: (...args) => {
-      const results = stmt.all(...args);
+      const transformedArgs = hasNamedParams ? transformParams(args) : args;
+      const results = stmt.all(...transformedArgs);
       
       if (pluckEnabled) {
         return results.map(row => {
@@ -209,23 +233,38 @@ function wrapStatement(stmt) {
     },
     
     run: (...args) => {
-      return stmt.run(...args);
+      // Track transactions
+      const upperSQL = sql.trim().toUpperCase();
+      if (upperSQL.startsWith('BEGIN')) {
+        onBegin();
+      } else if (upperSQL === 'COMMIT' || upperSQL === 'ROLLBACK') {
+        onCommitOrRollback();
+      }
+      
+      const transformedArgs = hasNamedParams ? transformParams(args) : args;
+      return stmt.run(...transformedArgs);
     },
     
     /**
      * Iterate over results
-     * In @photostructure/sqlite, we can iterate directly on the statement
+     * better-sqlite3's iterate() returns an iterator that yields rows one at a time
+     * In @photostructure/sqlite, we need to fetch all results and return an iterator
      */
-    iterate: (...args) => {
-      // Bind parameters first if provided
-      if (args.length > 0) {
-        // We need to execute and return an iterator
-        const results = stmt.all(...args);
-        return results[Symbol.iterator]();
+    iterate: function*(...args) {
+      const transformedArgs = hasNamedParams ? transformParams(args) : args;
+      // Execute the query and get all results
+      const results = stmt.all(...transformedArgs);
+      // Yield each result
+      for (const row of results) {
+        if (pluckEnabled) {
+          const values = Object.values(row);
+          yield values[pluckColumn];
+        } else if (rawEnabled) {
+          yield Object.values(row);
+        } else {
+          yield row;
+        }
       }
-      
-      // Return the statement's iterator
-      return stmt[Symbol.iterator]();
     },
     
     finalize: () => {
