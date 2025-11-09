@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"bytes"
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
@@ -69,6 +70,39 @@ type ExtensionSnapshotter struct {
 	getSwingStoreExportDataShadowCopyReader func(height int64) agoric.KVEntryReader
 	logger                                  log.Logger
 	activeSnapshot                          *snapshotDetails
+}
+
+func compressToGzip(data []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	gzipWriter := gzip.NewWriter(&buf)
+
+	_, err := gzipWriter.Write(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to write gzip data: %s", err.Error())
+	}
+
+	err = gzipWriter.Close()
+	if err != nil {
+		return nil, fmt.Errorf("failed to close gzip writer: %s", err.Error())
+	}
+
+	return buf.Bytes(), nil
+}
+
+func decompressFromGzip(data []byte) ([]byte, error) {
+	reader, err := gzip.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create gzip reader: %s", err.Error())
+	}
+	defer reader.Close()
+
+	var out bytes.Buffer
+	_, err = io.Copy(&out, reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decompress: %s", err.Error())
+	}
+
+	return out.Bytes(), nil
 }
 
 // NewExtensionSnapshotter creates a new swingset ExtensionSnapshotter
@@ -222,7 +256,16 @@ func (snapshotter *ExtensionSnapshotter) OnExportRetrieved(provider SwingStoreEx
 		return fmt.Errorf("SwingStore export received for unexpected block height %d (app snapshot height is %d)", provider.BlockHeight, snapshotDetails.blockHeight)
 	}
 
-	writeArtifactToPayload := func(artifact types.SwingStoreArtifact) error {
+	writeArtifactToPayload := func(artifact types.SwingStoreArtifact, decompress bool) error {
+		if decompress {
+			decompressedData, err := decompressFromGzip(artifact.Data)
+			if err != nil {
+				return err
+			} else {
+				artifact.Data = decompressedData
+			}
+		}
+
 		payloadBytes, err := artifact.Marshal()
 		if err != nil {
 			return err
@@ -244,7 +287,7 @@ func (snapshotter *ExtensionSnapshotter) OnExportRetrieved(provider SwingStoreEx
 			return err
 		}
 
-		err = writeArtifactToPayload(artifact)
+		err = writeArtifactToPayload(artifact, provider.Compressed)
 		if err != nil {
 			return err
 		}
@@ -271,7 +314,7 @@ func (snapshotter *ExtensionSnapshotter) OnExportRetrieved(provider SwingStoreEx
 	}
 	exportDataArtifact.Data = encodedExportData.Bytes()
 
-	err = writeArtifactToPayload(exportDataArtifact)
+	err = writeArtifactToPayload(exportDataArtifact, false)
 	encodedExportData.Reset()
 	if err != nil {
 		return err
@@ -308,11 +351,30 @@ func (snapshotter *ExtensionSnapshotter) RestoreExtension(blockHeight uint64, fo
 		}
 
 		err = artifact.Unmarshal(payloadBytes)
+		if err != nil {
+			return artifact, err
+		}
+
+		compressData, err := compressToGzip(artifact.Data)
+		if err != nil {
+			return artifact, err
+		} else {
+			artifact.Data = compressData
+		}
+
 		return artifact, err
 	}
 
 	return snapshotter.swingStoreExportsHandler.RestoreExport(
-		SwingStoreExportProvider{BlockHeight: blockHeight, GetExportDataReader: getExportDataReader, ReadNextArtifact: readNextArtifact},
-		SwingStoreRestoreOptions{ArtifactMode: SwingStoreArtifactModeOperational, ExportDataMode: SwingStoreExportDataModeAll},
+		SwingStoreExportProvider{
+			BlockHeight:         blockHeight,
+			Compressed:          true,
+			GetExportDataReader: getExportDataReader,
+			ReadNextArtifact:    readNextArtifact,
+		},
+		SwingStoreRestoreOptions{
+			ArtifactMode:   SwingStoreArtifactModeOperational,
+			ExportDataMode: SwingStoreExportDataModeAll,
+		},
 	)
 }

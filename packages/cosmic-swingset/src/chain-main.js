@@ -656,6 +656,16 @@ export default async function main(
     await exportData?.cleanup?.();
   }
 
+  /**
+   * @param {number} blockHeight
+   * @param {string} request
+   * @param {Array<{
+   *  artifactMode: import("@agoric/cosmic-swingset/src/export-kernel-db.js").StateSyncExporterOptions['artifactMode'];
+   *  compressed: boolean;
+   *  exportDataMode: import("@agoric/cosmic-swingset/src/export-kernel-db.js").StateSyncExporterOptions['exportDataMode'];
+   *  exportDir: import("@agoric/cosmic-swingset/src/export-kernel-db.js").StateSyncExporterOptions['exportDir'];
+   * }>} requestArgs
+   */
   async function handleSwingStoreExport(blockHeight, request, requestArgs) {
     await null;
     switch (request) {

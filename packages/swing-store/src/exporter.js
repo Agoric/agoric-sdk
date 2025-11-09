@@ -3,7 +3,7 @@ import sqlite3 from 'better-sqlite3';
 import { Fail, q } from '@endo/errors';
 
 import { dbFileInDirectory } from './util.js';
-import { getKeyType } from './kvStore.js';
+import { getKeyType, makeKVStore } from './kvStore.js';
 import { makeBundleStore } from './bundleStore.js';
 import { makeSnapStore } from './snapStore.js';
 import { makeSnapStoreIO } from './snapStoreIO.js';
@@ -80,6 +80,7 @@ import { validateArtifactMode } from './internal.js';
 /**
  * @typedef { object } ExportSwingStoreOptions
  * @property { import('./internal.js').ArtifactMode } [artifactMode]  What artifacts should/must the exporter provide?
+ * @property { boolean } [compressed]  What artifacts should/must the exporter provide?
  */
 
 /**
@@ -89,7 +90,7 @@ import { validateArtifactMode } from './internal.js';
  */
 export function makeSwingStoreExporter(dirPath, options = {}) {
   typeof dirPath === 'string' || Fail`dirPath must be a string`;
-  const { artifactMode = 'operational' } = options;
+  const { artifactMode = 'operational', compressed = false } = options;
   validateArtifactMode(artifactMode);
 
   const filePath = dbFileInDirectory(dirPath);
@@ -103,9 +104,16 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
 
   // ensureTxn can be a dummy, we just started one
   const ensureTxn = () => {};
-  const snapStore = makeSnapStore(db, ensureTxn, makeSnapStoreIO());
-  const bundleStore = makeBundleStore(db, ensureTxn);
-  const transcriptStore = makeTranscriptStore(db, ensureTxn, () => {});
+  const bundleStore = makeBundleStore(db, ensureTxn, () => {}, {
+    compressed,
+  });
+  const kvStore = makeKVStore(db, ensureTxn, () => {});
+  const snapStore = makeSnapStore(db, ensureTxn, makeSnapStoreIO(), () => {}, {
+    compressed,
+  });
+  const transcriptStore = makeTranscriptStore(db, ensureTxn, () => {}, {
+    compressed,
+  });
 
   const sqlKVGet = db.prepare(`
     SELECT value
@@ -134,23 +142,12 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
     return sqlKVGet.get(key);
   }
 
-  /** @type {any} */
-  const sqlGetAllKVData = db.prepare(`
-    SELECT key, value
-    FROM kvStore
-    ORDER BY key
-  `);
-
   /**
    * @returns {AsyncIterableIterator<KVPair>}
    * @yields {KVPair}
    */
   async function* getExportData() {
-    for (const { key, value } of sqlGetAllKVData.iterate()) {
-      if (getKeyType(key) === 'consensus') {
-        yield [`kv.${key}`, value];
-      }
-    }
+    yield* kvStore.getExportData();
     yield* snapStore.getExportRecords(true);
     yield* transcriptStore.getExportRecords(true);
     yield* bundleStore.getExportRecords();
