@@ -2,7 +2,7 @@
 
 import path from 'path';
 import test from 'ava';
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from '../src/sqliteAdapter.js';
 import tmp from 'tmp';
 
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
@@ -28,7 +28,7 @@ test('repair metadata', async t => {
   await ssi.hostStorage.close();
 
   const filePath = path.join(dbDir, 'swingstore.sqlite');
-  const db = sqlite3(filePath);
+  const db = createDatabase(filePath);
 
   const getTS = db.prepare(
     'SELECT startPos FROM transcriptSpans WHERE vatID = ? ORDER BY startPos',

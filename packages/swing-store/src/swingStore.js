@@ -3,7 +3,7 @@
 import * as fs from 'fs';
 import * as pathlib from 'path';
 
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from './sqliteAdapter.js';
 
 import { Fail, q } from '@endo/errors';
 
@@ -19,7 +19,7 @@ import { createSHA256 } from './hasher.js';
 import { makeSnapStoreIO } from './snapStoreIO.js';
 import { doRepairMetadata } from './repairMetadata.js';
 
-// https://github.com/WiseLibs/better-sqlite3/blob/HEAD/docs/api.md#new-databasepath-options
+// https://nodejs.org/api/sqlite.html
 const IN_MEMORY = ':memory:';
 
 /**
@@ -226,7 +226,7 @@ export function makeSwingStore(path, forceReset, options = {}) {
   }
 
   /** @type {*} */
-  let db = sqlite3(/** @type {string} */ (serialized || filePath), {
+  let db = createDatabase(/** @type {string} */ (serialized || filePath), {
     readonly,
     // verbose: console.log,
   });

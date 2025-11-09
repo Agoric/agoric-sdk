@@ -5,7 +5,7 @@ import { createGunzip } from 'zlib';
 import { Readable } from 'stream';
 import { Buffer } from 'buffer';
 
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from '../src/sqliteAdapter.js';
 import test from 'ava';
 import tmp from 'tmp';
 import { decodeBase64 } from '@endo/base64';
@@ -155,7 +155,7 @@ const importTest = test.macro(async (t, mode) => {
   t.deepEqual(data.bundles, { [bundle0ID]: bundle0 });
 
   // look directly at the DB to confirm presence of metadata rows
-  const db = sqlite3(path.join(dbDir, 'swingstore.sqlite'));
+  const db = createDatabase(path.join(dbDir, 'swingstore.sqlite'));
   const spanRows = [
     ...db.prepare('SELECT * FROM transcriptSpans ORDER BY startPos').iterate(),
   ];

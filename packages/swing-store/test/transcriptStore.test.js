@@ -1,7 +1,7 @@
 // @ts-check
 import test from 'ava';
 
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from '../src/sqliteAdapter.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
 
@@ -57,7 +57,7 @@ function makeArchiveTranscript() {
 function ensureTxn() {}
 
 const closeSpanMacro = test.macro(async (t, useArchiver) => {
-  const db = sqlite3(':memory:');
+  const db = createDatabase(':memory:');
   const exportLog = makeExportLog();
   const { archiveTranscript, getTranscriptArtifact } = useArchiver
     ? makeArchiveTranscript()

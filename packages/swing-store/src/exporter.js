@@ -1,4 +1,4 @@
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from './sqliteAdapter.js';
 
 import { Fail, q } from '@endo/errors';
 
@@ -93,7 +93,7 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
   validateArtifactMode(artifactMode);
 
   const filePath = dbFileInDirectory(dirPath);
-  const db = sqlite3(filePath);
+  const db = createDatabase(filePath);
 
   // Execute the data export in a (read) transaction, to ensure that we are
   // capturing the state of the database at a single point in time. Our close()

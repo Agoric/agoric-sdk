@@ -11,5 +11,8 @@ export { makeSnapStore } from './snapStore.js';
 export { makeSnapStoreIO } from './snapStoreIO.js';
 export { makeBundleStore, bundleIDFromName } from './bundleStore.js';
 
+// SQLite adapter for compatibility with @photostructure/sqlite
+export { createDatabase } from './sqliteAdapter.js';
+
 // eslint-disable-next-line import/export
 export * from './types-index.js';

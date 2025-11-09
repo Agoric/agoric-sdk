@@ -5,7 +5,7 @@ import { Buffer } from 'node:buffer';
 import path from 'node:path';
 import fs from 'node:fs';
 import zlib from 'node:zlib';
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from '../src/sqliteAdapter.js';
 import tmp from 'tmp';
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
@@ -146,7 +146,7 @@ const reImport = async (t, dbDir, artifactMode) => {
   const exporter = makeSwingStoreExporter(dbDir, { artifactMode });
   const ss2 = await importSwingStore(exporter, dbDir2, { artifactMode });
   await ss2.hostStorage.commit();
-  return sqlite3(path.join(dbDir2, 'swingstore.sqlite'));
+  return createDatabase(path.join(dbDir2, 'swingstore.sqlite'));
 };
 
 const stripHashes = exportData => {
@@ -189,7 +189,7 @@ const setupTranscript = async (t, keepTranscripts) => {
   const { transcriptStore } = kernelStorage;
   const { commit } = hostStorage;
   // look directly at DB to confirm changes
-  const db = sqlite3(path.join(dbDir, 'swingstore.sqlite'));
+  const db = createDatabase(path.join(dbDir, 'swingstore.sqlite'));
 
   // two incarnations, two spans each
   transcriptStore.initTranscript(vatID);
@@ -540,7 +540,7 @@ const setupSnapshots = async t => {
   const { snapStore } = kernelStorage;
   const { commit } = hostStorage;
   // look directly at DB to confirm changes
-  const db = sqlite3(path.join(dbDir, 'swingstore.sqlite'));
+  const db = createDatabase(path.join(dbDir, 'swingstore.sqlite'));
 
   await snapStore.saveSnapshot(vatID, 10, getSnapshotStream());
   await snapStore.saveSnapshot(vatID, 11, getSnapshotStream());

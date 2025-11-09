@@ -5,7 +5,7 @@ import { Buffer } from 'node:buffer';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from '../src/sqliteAdapter.js';
 import tmp from 'tmp';
 
 import { makeMeasureSeconds, makeTempDirFactory } from '@agoric/internal';
@@ -35,7 +35,7 @@ async function* getSnapshotStream(payload) {
 harden(getSnapshotStream);
 
 test('compress to cache file; closes snapshot stream', async t => {
-  const db = sqlite3(':memory:');
+  const db = createDatabase(':memory:');
   const exportLog = makeExportLog();
   const [archiveDir, cleanupArchives] = tmpDir('archives');
   t.teardown(cleanupArchives);
@@ -127,7 +127,7 @@ test('snapStore prepare / commit delete is robust', async t => {
   const io = {
     measureSeconds: makeMeasureSeconds(() => 0),
   };
-  const db = sqlite3(':memory:');
+  const db = createDatabase(':memory:');
   const [archiveDir, cleanupArchives] = tmpDir('archives');
   t.teardown(cleanupArchives);
   const fsPowers = { fs, path, tmp };
