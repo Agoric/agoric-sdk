@@ -1,6 +1,6 @@
+import { Fail, q } from '@endo/errors';
 import { createDatabase } from './sqliteAdapter.js';
 
-import { Fail, q } from '@endo/errors';
 
 import { dbFileInDirectory } from './util.js';
 import { getKeyType } from './kvStore.js';

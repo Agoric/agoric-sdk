@@ -31,7 +31,7 @@ export function createDatabase(location, options = {}) {
   let transactionDepth = 0;
   
   /**
-   * @typedef {Object} WrappedDatabase
+   * @typedef {object} WrappedDatabase
    * @property {typeof db.prepare} prepare
    * @property {typeof db.exec} exec
    * @property {typeof db.close} close
@@ -44,7 +44,7 @@ export function createDatabase(location, options = {}) {
   const wrapped = {
     prepare: (sql) => {
       const stmt = db.prepare(sql);
-      const onBegin = () => { transactionDepth++; };
+      const onBegin = () => { transactionDepth += 1; };
       const onCommitOrRollback = () => { transactionDepth = Math.max(0, transactionDepth - 1); };
       return wrapStatement(stmt, sql, onBegin, onCommitOrRollback);
     },
@@ -73,10 +73,10 @@ export function createDatabase(location, options = {}) {
     /**
      * Execute a PRAGMA statement
      * @param {string} pragma - PRAGMA statement
-     * @param {{ simple?: boolean }} [options]
+     * @param {{ simple?: boolean }} [opts]
      */
-    pragma: (pragma, options = {}) => {
-      const { simple = false } = options;
+    pragma: (pragma, opts = {}) => {
+      const { simple = false } = opts;
       
       // Check if this is a setting or query pragma
       if (pragma.includes('=')) {
@@ -170,7 +170,9 @@ function wrapStatement(stmt, sql, onBegin, onCommitOrRollback) {
   
   /**
    * Transform parameter object to add $ prefix to keys if needed
-   * @photostructure/sqlite 0.0.1 requires the prefix in both SQL and object keys
+   * Note: @photostructure/sqlite 0.0.1 requires the prefix in both SQL and object keys
+   * @param {any[]} args
+   * @returns {any[]}
    */
   function transformParams(args) {
     if (args.length === 1 && typeof args[0] === 'object' && !Array.isArray(args[0]) && args[0] !== null) {
@@ -265,8 +267,9 @@ function wrapStatement(stmt, sql, onBegin, onCommitOrRollback) {
      * Iterate over results
      * better-sqlite3's iterate() returns an iterator that yields rows one at a time
      * In @photostructure/sqlite, we need to fetch all results and return an iterator
+     * @param {...any} args
      */
-    iterate: function*(...args) {
+    *iterate(...args) {
       const transformedArgs = hasNamedParams ? transformParams(args) : args;
       // Execute the query and get all results
       const results = stmt.all(...transformedArgs);

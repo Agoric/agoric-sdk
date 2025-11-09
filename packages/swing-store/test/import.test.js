@@ -5,12 +5,12 @@ import { createGunzip } from 'zlib';
 import { Readable } from 'stream';
 import { Buffer } from 'buffer';
 
-import { createDatabase } from '../src/sqliteAdapter.js';
 import test from 'ava';
 import tmp from 'tmp';
 import { decodeBase64 } from '@endo/base64';
 
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
+import { createDatabase } from '../src/sqliteAdapter.js';
 
 import { buffer } from '../src/util.js';
 import { importSwingStore, makeSwingStoreExporter } from '../src/index.js';

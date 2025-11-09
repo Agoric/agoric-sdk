@@ -3,12 +3,12 @@
 import * as fs from 'fs';
 import * as pathlib from 'path';
 
-import { createDatabase } from './sqliteAdapter.js';
 
 import { Fail, q } from '@endo/errors';
 
 import { attenuate } from '@agoric/internal';
 import { TRUE } from '@agoric/internal/src/js-utils.js';
+import { createDatabase } from './sqliteAdapter.js';
 
 import { dbFileInDirectory } from './util.js';
 import { makeKVStore, getKeyType } from './kvStore.js';
@@ -525,6 +525,7 @@ export function makeSwingStore(path, forceReset, options = {}) {
     // This helps prevent lock issues when reopening the database
     if (filePath !== IN_MEMORY && !readonly) {
       try {
+        // eslint-disable-next-line no-restricted-syntax
         db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
       } catch (err) {
         // Ignore checkpoint errors during close

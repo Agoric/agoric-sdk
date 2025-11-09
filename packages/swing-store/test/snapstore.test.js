@@ -5,10 +5,10 @@ import { Buffer } from 'node:buffer';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import { createDatabase } from '../src/sqliteAdapter.js';
 import tmp from 'tmp';
 
 import { makeMeasureSeconds, makeTempDirFactory } from '@agoric/internal';
+import { createDatabase } from '../src/sqliteAdapter.js';
 import { makeSnapStore } from '../src/snapStore.js';
 import { makeArchiveSnapshot } from '../src/archiver.js';
 

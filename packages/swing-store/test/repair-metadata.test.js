@@ -2,10 +2,10 @@
 
 import path from 'path';
 import test from 'ava';
-import { createDatabase } from '../src/sqliteAdapter.js';
 import tmp from 'tmp';
 
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
+import { createDatabase } from '../src/sqliteAdapter.js';
 
 import { importSwingStore, openSwingStore } from '../src/index.js';
 

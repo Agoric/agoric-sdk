@@ -1,9 +1,9 @@
 // @ts-check
 import test from 'ava';
 
-import { createDatabase } from '../src/sqliteAdapter.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
+import { createDatabase } from '../src/sqliteAdapter.js';
 
 import { makeTranscriptStore } from '../src/transcriptStore.js';
 
