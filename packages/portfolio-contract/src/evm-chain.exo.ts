@@ -20,14 +20,18 @@ import { sendMakeAccountCall } from './pos-gmp.flows.ts';
 const trace = makeTracer('EvmChain');
 
 export type ProvisionContext = {
+  /** Stable prefix for attempt and waiter labels */
   label: string;
+  /** Local chain account (logical owner/controller) */
   lca: LocalAccount;
+  /** Promise for fee funding account (resolved once, reused) */
   feeAccountP: Promise<LocalAccount>;
-  fee: DenomAmount;
+  /** Axelar routing + factory contract target */
   target: { axelarId: string; remoteAddress: `0x${string}` };
+  /** Axelar (cosmos) chain handle (passable) */
   gmpChain: Chain<{ chainId: string }>;
+  /** Cosmos-side Axelar bech32 addresses */
   gmpAddresses: GmpAddresses;
-  evmGas: bigint;
 };
 
 // Waiters are stored in a durable queue. The resolver (part of a VowKit) is
@@ -91,9 +95,10 @@ export type EvmChainKit = ReturnType<ReturnType<typeof prepareEvmChainKit>>;
 const internalProvisionOne = async (
   context: ProvisionContext,
   label: string,
+  fee: DenomAmount,
+  evmGas: bigint,
 ) => {
   const feeAccount = await context.feeAccountP;
-  const fee = context.fee;
   fee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
   const src = feeAccount.getAddress();
   trace.sub(context.gmpChain).sub(label)(
@@ -108,7 +113,7 @@ const internalProvisionOne = async (
     context.lca,
     context.gmpChain,
     context.gmpAddresses,
-    context.evmGas,
+    evmGas,
   );
 };
 
@@ -125,7 +130,12 @@ export const prepareEvmChainKit = (
      * Implementation of a single provisioning attempt. Must return a Promise.
      * Receives the shared base context and a unique per-attempt label.
      */
-    provisionOneImpl?: (base: ProvisionContext, label: string) => Promise<void>;
+    provisionOneImpl?: (
+      base: ProvisionContext,
+      label: string,
+      fee: DenomAmount,
+      evmGas: bigint,
+    ) => Promise<void>;
   },
 ) => {
   const makeWaitersQueue = prepareDurableQueue<WaiterEntry>(
@@ -134,6 +144,10 @@ export const prepareEvmChainKit = (
     { valueShape: M.any() },
   );
 
+  // Closure locals to retain last attempt's dynamic params for retry.
+  let lastFee: DenomAmount | undefined;
+  let lastGas: bigint | undefined;
+
   return zone.exoClassKit(
     'EvmChainKit',
     {
@@ -141,10 +155,13 @@ export const prepareEvmChainKit = (
         publishState: M.call().returns(M.undefined()),
       }),
       account: M.interface('EvmChainAccountFacet', {
-        requestAccount: M.call().returns(VowShape),
+        // request an account with per-attempt fee + evmGas
+        requestAccount: M.call(M.record(), M.bigint()).returns(VowShape),
       }),
       admin: M.interface('EvmChainAdminFacet', {
-        provisionMany: M.call(M.number()).returns(M.undefined()),
+        provisionMany: M.call(M.number(), M.record(), M.bigint()).returns(
+          M.undefined(),
+        ),
         getStateSnapshot: M.call().returns(M.record()),
       }),
       manager: M.interface('EvmChainManagerFacet', {
@@ -170,9 +187,7 @@ export const prepareEvmChainKit = (
     }),
     {
       helper: {
-        /**
-         * Publish the current queue and provisioning status for external observers.
-         */
+        /** Publish the current queue and provisioning status for external observers. */
         publishState() {
           const { state } = this;
           publishStatus(
@@ -182,7 +197,7 @@ export const prepareEvmChainKit = (
         },
       },
       account: {
-        requestAccount(): Vow<GMPAccountInfo> {
+        requestAccount(fee: DenomAmount, evmGas: bigint): Vow<GMPAccountInfo> {
           const { state, facets } = this;
           const [readyInfo, ...rest] = state.ready;
           if (readyInfo) {
@@ -193,20 +208,26 @@ export const prepareEvmChainKit = (
           const kit = vowTools.makeVowKit<GMPAccountInfo>();
           const tag = `${state.provisionBase.label}-waiter-${state.nextLabelSuffix}`;
           state.waiters.enqueue(harden({ tag, resolver: kit.resolver }));
-          facets.admin.provisionMany(1);
+          facets.admin.provisionMany(1, fee, evmGas);
           return kit.vow;
         },
       },
       admin: {
-        provisionMany(count: number) {
+        provisionMany(count: number, fee: DenomAmount, evmGas: bigint) {
           const { state, facets } = this;
+          lastFee = fee;
+          lastGas = evmGas;
           for (let i = 0; i < count; i += 1) {
             const suffix = state.nextLabelSuffix;
             state.nextLabelSuffix = suffix + 1;
             const label = `${state.provisionBase.label}.${suffix}`;
             state.outstanding += 1;
-            // Assume promise-returning implementation; attach failure handler.
-            void provisionOneImpl(state.provisionBase, label).catch(reason => {
+            void provisionOneImpl(
+              state.provisionBase,
+              label,
+              fee,
+              evmGas,
+            ).catch(reason => {
               trace('provisionOneImpl failed', reason);
               facets.manager.handleFailure(reason);
             });
@@ -243,7 +264,9 @@ export const prepareEvmChainKit = (
             state.outstanding -= 1;
           }
           trace('provision failure; retrying', reason);
-          facets.admin.provisionMany(1);
+          if (lastFee && lastGas !== undefined) {
+            facets.admin.provisionMany(1, lastFee, lastGas);
+          }
         },
       },
     },

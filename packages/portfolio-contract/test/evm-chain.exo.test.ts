@@ -46,6 +46,10 @@ type TestCtx = {
   ) => ReturnType<ReturnType<typeof prepareEvmChainKit>>;
 };
 
+// Common per-attempt parameters (chosen for easy log visibility)
+const TEST_FEE = { denom: 'atest', value: 1234n } as const;
+const TEST_GAS = 5432n;
+
 const makeTestContext = (): TestCtx => {
   const zone = makeHeapZone();
   const vowTools = prepareVowTools(zone);
@@ -53,20 +57,20 @@ const makeTestContext = (): TestCtx => {
     label: 'base',
     lca: makeFakeLocalAccount(),
     feeAccountP: Promise.resolve(makeFakeLocalAccount()),
-    fee: { brand: null as any, value: 1n, denom: 'atest' },
     target: {
       axelarId: 'axelar-arbitrum',
       remoteAddress: '0xabc' as `0x${string}`,
     },
     gmpChain: makeFakeGmpChain() as any,
     gmpAddresses: {} as any,
-    evmGas: 1n,
   };
   // Base kit preparation (unused directly; each test injects its own provisionOneImpl).
   const makeKit = (
     provisionOneImpl: (
       base: any,
       label: string,
+      fee: { denom: string; value: bigint },
+      evmGas: bigint,
     ) => Promise<void> = async () => {},
   ) =>
     prepareEvmChainKit(zone, {
@@ -88,7 +92,7 @@ test('evm-chain: requestAccount returns ready immediately when pre-populated', a
     provisionCalls += 1;
   });
   manager.handleReady(makeAccountInfo(1));
-  const vow = account.requestAccount();
+  const vow = account.requestAccount(TEST_FEE, TEST_GAS);
   const value = await vowTools.when(vow);
   t.is(value.remoteAddress, makeAccountInfo(1).remoteAddress);
   t.is(provisionCalls, 0, 'no provisioning triggered when ready available');
@@ -101,8 +105,8 @@ test('evm-chain: waits and resolves FIFO', async t => {
     provisioned.push(label);
   });
 
-  const v1 = account.requestAccount();
-  const v2 = account.requestAccount();
+  const v1 = account.requestAccount(TEST_FEE, TEST_GAS);
+  const v2 = account.requestAccount(TEST_FEE, TEST_GAS);
   t.is(admin.getStateSnapshot().waiterCount, 2);
   t.is(provisioned.length, 2, 'two provisioning attempts started');
 
@@ -129,12 +133,12 @@ test('evm-chain: ready buffering when extra accounts arrive', async t => {
   t.is(admin.getStateSnapshot().ready.length, 2, 'two buffered ready accounts');
   t.is(admin.getStateSnapshot().waiterCount, 0);
 
-  const v1 = account.requestAccount();
+  const v1 = account.requestAccount(TEST_FEE, TEST_GAS);
   const r1 = await vowTools.when(v1);
   t.is(r1.remoteAddress, makeAccountInfo(1).remoteAddress);
   t.is(admin.getStateSnapshot().ready.length, 1);
 
-  const v2 = account.requestAccount();
+  const v2 = account.requestAccount(TEST_FEE, TEST_GAS);
   const r2 = await vowTools.when(v2);
   t.is(r2.remoteAddress, makeAccountInfo(2).remoteAddress);
   t.is(admin.getStateSnapshot().ready.length, 0);
@@ -144,7 +148,9 @@ test('evm-chain: multiple waiters resolved FIFO', async t => {
   const { vowTools, makeKit } = t.context as TestCtx;
   const { account, manager, admin } = makeKit(async () => {});
   const qty = 5;
-  const vows = Array.from({ length: qty }, () => account.requestAccount());
+  const vows = Array.from({ length: qty }, () =>
+    account.requestAccount(TEST_FEE, TEST_GAS),
+  );
   t.is(admin.getStateSnapshot().waiterCount, qty);
   for (let i = 0; i < qty; i += 1) {
     manager.handleReady(makeAccountInfo(i + 1));
@@ -169,9 +175,9 @@ test('evm-chain: partial pool consumption with extra requests', async t => {
   manager.handleReady(makeAccountInfo(2));
   t.is(admin.getStateSnapshot().ready.length, 2);
 
-  const v1 = account.requestAccount();
-  const v2 = account.requestAccount();
-  const v3 = account.requestAccount();
+  const v1 = account.requestAccount(TEST_FEE, TEST_GAS);
+  const v2 = account.requestAccount(TEST_FEE, TEST_GAS);
+  const v3 = account.requestAccount(TEST_FEE, TEST_GAS);
   const r1 = await vowTools.when(v1);
   const r2 = await vowTools.when(v2);
   t.is(r1.remoteAddress, makeAccountInfo(1).remoteAddress);
@@ -189,7 +195,7 @@ test('evm-chain: failure triggers retry provisioning', async t => {
   const { account, manager, admin } = makeKit(async () => {
     attempts += 1;
   });
-  const v = account.requestAccount();
+  const v = account.requestAccount(TEST_FEE, TEST_GAS);
   t.is(attempts, 1);
   manager.handleFailure(new Error('net glitch'));
   t.is(attempts, 2, 'retry triggered');
@@ -202,8 +208,8 @@ test('evm-chain: failure triggers retry provisioning', async t => {
 test('evm-chain: outstanding counter consistency', async t => {
   const { vowTools, makeKit } = t.context as TestCtx;
   const { account, manager, admin } = makeKit(async () => {});
-  const v1 = account.requestAccount();
-  const v2 = account.requestAccount();
+  const v1 = account.requestAccount(TEST_FEE, TEST_GAS);
+  const v2 = account.requestAccount(TEST_FEE, TEST_GAS);
   const snap1 = admin.getStateSnapshot();
   t.is(snap1.outstanding, 2, 'two outstanding after two requests');
   manager.handleReady(makeAccountInfo(10));
