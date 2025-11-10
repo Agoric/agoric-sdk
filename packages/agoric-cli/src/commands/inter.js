@@ -5,26 +5,13 @@
 
 // @ts-check
 import { fetchEnvNetworkConfig, makeWalletUtils } from '@agoric/client-utils';
-import { makeOfferSpecShape } from '@agoric/inter-protocol/src/auction/auctionBook.js';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { objectMap } from '@agoric/internal';
-import { M, matches } from '@endo/patterns';
-import { CommanderError, InvalidArgumentError } from 'commander';
-import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
+import { CommanderError } from 'commander';
 import {
   asBoardRemote,
   bigintReplacer,
   makeAmountFormatter,
 } from '../lib/format.js';
-import { getCurrent, outputActionAndHint, sendAction } from '../lib/wallet.js';
-
-const { values } = Object;
-
-const bidInvitationShape = harden({
-  source: 'agoricContract',
-  instancePath: ['auctioneer'],
-  callPipe: [['makeBidInvitation', M.any()]],
-});
 
 /**
  * @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
@@ -102,41 +89,6 @@ const makeFormatters = assets => {
 };
 
 /**
- * Dynamic check that an OfferStatus is also a BidSpec.
- *
- * @param {OfferStatus} offerStatus
- * @param {AgoricNamesRemotes} agoricNames
- * @param {typeof console.warn} warn
- * returns null if offerStatus is not a BidSpec
- */
-const coerceBid = (offerStatus, agoricNames, warn) => {
-  const { offerArgs } = offerStatus;
-  /** @type {unknown} */
-  const collateralBrand = /** @type {any} */ (offerArgs)?.maxBuy?.brand;
-  if (!collateralBrand) {
-    warn('mal-formed bid offerArgs', offerStatus.id, offerArgs);
-    return null;
-  }
-  const bidSpecShape = makeOfferSpecShape(
-    // @ts-expect-error XXX AssetKind narrowing?
-    agoricNames.brand.IST,
-    collateralBrand,
-  );
-  if (!matches(offerStatus.offerArgs, bidSpecShape)) {
-    warn('mal-formed bid offerArgs', offerArgs);
-    return null;
-  }
-
-  /**
-   * @type {OfferStatus &
-   *        { offerArgs: BidSpec}}
-   */
-  // @ts-expect-error dynamic cast
-  const bid = offerStatus;
-  return bid;
-};
-
-/**
  * Format amounts etc. in a BidSpec OfferStatus
  *
  * @param {OfferStatus &
@@ -189,15 +141,7 @@ export const fmtBid = (bid, assets) => {
  * @param {{ fetch: typeof window.fetch }} net
  */
 export const makeInterCommand = (
-  {
-    env,
-    stdout,
-    stderr,
-    now,
-    setTimeout,
-    execFileSync: rawExec,
-    createCommand,
-  },
+  { env, stdout, setTimeout, createCommand },
   { fetch },
 ) => {
   const interCmd = createCommand('inter')
@@ -214,20 +158,6 @@ export const makeInterCommand = (
       }")`,
       env.AGORIC_KEYRING_BACKEND,
     );
-
-  /** @type {typeof execFileSync} */
-  // @ts-expect-error execFileSync is overloaded
-  const execFileSync = (file, args, ...opts) => {
-    try {
-      return rawExec(file, args, ...opts);
-    } catch (err) {
-      // InvalidArgumentError is a class constructor, and so
-      // must be invoked with `new`.
-      throw new InvalidArgumentError(
-        `${err.message}: is ${file} in your $PATH?`,
-      );
-    }
-  };
 
   /** @param {number} ms */
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -324,274 +254,6 @@ inter auction status
         };
 
         show(info, true);
-      },
-    );
-
-  const bidCmd = interCmd
-    .command('bid')
-    .description('auction bidding commands');
-
-  /**
-   * @param {string} from
-   * @param {OfferSpec} offer
-   * @param {Awaited<ReturnType<tryMakeUtils>>} tools
-   * @param {boolean | undefined} dryRun
-   */
-  const placeBid = async (from, offer, tools, dryRun = false) => {
-    const { networkConfig, agoricNames, pollOffer } = tools;
-    const io = { ...networkConfig, execFileSync, delay, stdout };
-
-    const { home, keyringBackend: backend, fees } = interCmd.opts();
-    const result = await sendAction(
-      { method: 'executeOffer', offer },
-      { keyring: { home, backend }, from, fees, verbose: false, dryRun, ...io },
-    );
-    if (dryRun) {
-      return;
-    }
-
-    assert(result); // Not dry-run
-    const { timestamp, txhash, height } = result;
-    console.error('bid is broadcast:');
-    show({ timestamp, height, offerId: offer.id, txhash });
-    const found = await pollOffer(from, offer.id, height);
-    // TODO: command to wait 'till bid exits?
-    const bid = coerceBid(found, agoricNames, console.warn);
-    if (!bid) {
-      console.warn('malformed bid', found);
-      return;
-    }
-    const info = fmtBid(bid, values(agoricNames.vbankAsset));
-    show(info);
-  };
-
-  /** @param {string} literalOrName */
-  const normalizeAddress = literalOrName =>
-    normalizeAddressWithOptions(literalOrName, interCmd.opts(), {
-      execFileSync,
-    });
-
-  /**
-   * @typedef {{
-   *   give: string,
-   *   maxBuy: string,
-   *   wantMinimum?: string,
-   *   offerId: string,
-   *   from: string,
-   *   generateOnly?: boolean,
-   *   dryRun?: boolean,
-   * }} SharedBidOpts
-   */
-
-  /** @param {ReturnType<createCommand>} cmd */
-  const withSharedBidOptions = cmd =>
-    cmd
-      .requiredOption(
-        '--from <address>',
-        'wallet address literal or name',
-        normalizeAddress,
-      )
-      .requiredOption('--give <amount>', 'IST to bid')
-      .option(
-        '--maxBuy <amount>',
-        'max Collateral wanted',
-        String,
-        '1_000_000ATOM',
-      )
-      .option(
-        '--wantMinimum <amount>',
-        'only transact a bid that supplies this much collateral',
-      )
-      .option('--offer-id <string>', 'Offer id', String, `bid-${now()}`)
-      .option('--generate-only', 'print wallet action only')
-      .option('--dry-run', 'dry run only');
-
-  withSharedBidOptions(bidCmd.command('by-price'))
-    .description('Place a bid on collateral by price.')
-    .requiredOption('--price <number>', 'bid price (IST/Collateral)', Number)
-    .action(
-      /**
-       * @param {SharedBidOpts & {
-       *   price: number,
-       * }} opts
-       */
-      async ({ generateOnly, dryRun, ...opts }) => {
-        const tools = await tryMakeUtils();
-
-        const offer = Offers.auction.Bid(tools.agoricNames, opts);
-
-        if (generateOnly) {
-          outputActionAndHint(
-            { method: 'executeOffer', offer },
-            { stdout, stderr },
-          );
-          return;
-        }
-
-        await placeBid(opts.from, offer, tools, dryRun);
-      },
-    );
-
-  /** @param {string} v */
-  const parsePercent = v => {
-    const p = Number(v);
-    if (!(p >= -100 && p <= 100)) {
-      // InvalidArgumentError is a class constructor, and so
-      // must be invoked with `new`.
-      throw new InvalidArgumentError('must be between -100 and 100');
-    }
-    return p / 100;
-  };
-
-  withSharedBidOptions(bidCmd.command('by-discount'))
-    .description(
-      `Place a bid on collateral based on discount from oracle price.`,
-    )
-    .requiredOption(
-      '--discount <percent>',
-      'bid discount (0 to 100) or markup (0 to -100) %',
-      parsePercent,
-    )
-    .action(
-      /**
-       * @param {SharedBidOpts & {
-       *   discount: number,
-       * }} opts
-       */
-      async ({ generateOnly, ...opts }) => {
-        const tools = await tryMakeUtils();
-
-        const offer = Offers.auction.Bid(tools.agoricNames, opts);
-        if (generateOnly) {
-          outputActionAndHint(
-            { method: 'executeOffer', offer },
-            { stdout, stderr },
-          );
-          return;
-        }
-        await placeBid(opts.from, offer, tools);
-      },
-    );
-
-  bidCmd
-    .command('cancel')
-    .description('Try to exit a bid offer')
-    .argument('id', 'offer id (as from bid list)')
-    .requiredOption(
-      '--from <address>',
-      'wallet address literal or name',
-      normalizeAddress,
-    )
-    .option('--generate-only', 'print wallet action only')
-    .action(
-      /**
-       * @param {string} id
-       * @param {{
-       *   from: string,
-       *   generateOnly?: boolean,
-       * }} opts
-       */
-      async (id, { from, generateOnly }) => {
-        /** @type {TryExitOfferAction} */
-        const action = { method: 'tryExitOffer', offerId: id };
-
-        if (generateOnly) {
-          outputActionAndHint(action, { stdout, stderr });
-          return;
-        }
-
-        const { networkConfig, readPublished } = await tryMakeUtils();
-
-        const current = await getCurrent(from, { readPublished });
-        const liveIds = current.liveOffers.map(([i, _s]) => i);
-        if (!liveIds.includes(id)) {
-          // InvalidArgumentError is a class constructor, and so
-          // must be invoked with `new`.
-          throw new InvalidArgumentError(
-            `${id} not in live offer ids: ${liveIds}`,
-          );
-        }
-
-        const io = { ...networkConfig, execFileSync, delay, stdout };
-
-        const { home, keyringBackend: backend } = interCmd.opts();
-        const result = await sendAction(action, {
-          keyring: { home, backend },
-          from,
-          verbose: false,
-          ...io,
-        });
-        assert(result); // not dry-run
-        const { timestamp, txhash, height } = result;
-        console.error('cancel action is broadcast:');
-        show({ timestamp, height, offerId: id, txhash });
-
-        const checkGone = async blockInfo => {
-          const pollResult = await getCurrent(from, { readPublished });
-          const found = pollResult.liveOffers.find(([i, _]) => i === id);
-          if (found) throw Error('retry');
-          return blockInfo;
-        };
-        const blockInfo = await pollBlocks({
-          retryMessage: 'offer still live in block',
-          ...networkConfig,
-          execFileSync,
-          delay,
-        })(checkGone);
-        console.error('bid', id, 'is no longer live');
-        show(blockInfo);
-      },
-    );
-
-  bidCmd
-    .command('list')
-    .description(
-      `Show status of bid offers.
-
-For example:
-
-$ inter bid list --from my-acct
-{"id":"bid-1679677228803","price":"9 IST/ATOM","give":{"Bid":"50IST"},"want":"5ATOM"}
-{"id":"bid-1679677312341","discount":10,"give":{"Bid":"200IST"},"want":"1ATOM"}
-`,
-    )
-    .requiredOption(
-      '--from <address>',
-      'wallet address literal or name',
-      normalizeAddress,
-    )
-    .option('--all', 'show exited bids as well')
-    .action(
-      /**
-       * @param {{
-       *   from: string,
-       *   all?: boolean,
-       * }} opts
-       */
-      async opts => {
-        const { agoricNames, readPublished, storedWalletState } =
-          await tryMakeUtils();
-
-        const [current, state] = await Promise.all([
-          getCurrent(opts.from, { readPublished }),
-          storedWalletState(opts.from),
-        ]);
-        const entries = opts.all
-          ? state.offerStatuses.entries()
-          : current.liveOffers;
-        for (const [id, spec] of entries) {
-          const offerStatus = state.offerStatuses.get(String(id)) || spec;
-          harden(offerStatus); // coalesceWalletState should do this
-          // console.debug(offerStatus.invitationSpec);
-          if (!matches(offerStatus.invitationSpec, bidInvitationShape))
-            continue;
-
-          const bid = coerceBid(offerStatus, agoricNames, console.warn);
-          if (!bid) continue;
-
-          const info = fmtBid(bid, values(agoricNames.vbankAsset));
-          show(info);
-        }
       },
     );
 

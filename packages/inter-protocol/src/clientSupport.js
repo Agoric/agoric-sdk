@@ -1,9 +1,7 @@
 // @ts-check
 
-import { Fail } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
-import { assertAllDefined } from '@agoric/internal';
-import { parseRatio } from '@agoric/ertp/src/ratio.js';
+import { Fail } from '@endo/errors';
 
 /**
  * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
@@ -280,76 +278,6 @@ export const makeParseAmount =
   };
 
 /**
- * @param {Pick<AgoricNamesRemotes, 'brand' | 'vbankAsset'>} agoricNames
- * @param {{
- *   offerId: string;
- *   give: string;
- *   maxBuy: string;
- *   wantMinimum?: string;
- * } & (
- *   | {
- *       price: number;
- *     }
- *   | {
- *       discount: number; // -1 to 1. e.g. 0.10 for 10% discount, -0.05 for 5% markup
- *     }
- * )} opts
- */
-const makeBidOffer = (agoricNames, opts) => {
-  assertAllDefined({
-    offerId: opts.offerId,
-    give: opts.give,
-    maxBuy: opts.maxBuy,
-  });
-  const parseAmount = makeParseAmount(agoricNames);
-  const proposal = {
-    give: { Bid: parseAmount(opts.give) },
-    ...(opts.wantMinimum
-      ? { want: { Collateral: parseAmount(opts.wantMinimum) } }
-      : {}),
-  };
-  const istBrand = proposal.give.Bid.brand;
-  const maxBuy = parseAmount(opts.maxBuy);
-
-  const bounds = (x, lo, hi) => {
-    assert(x >= lo && x <= hi);
-    return x;
-  };
-
-  assert(
-    'price' in opts || 'discount' in opts,
-    'must specify price or discount',
-  );
-  /** @type {AuctionOfferSpec} */
-  const offerArgs =
-    'price' in opts
-      ? {
-          maxBuy: parseAmount(opts.maxBuy),
-          offerPrice: parseRatio(opts.price, istBrand, maxBuy.brand),
-        }
-      : {
-          maxBuy,
-          offerBidScaling: parseRatio(
-            (1 - bounds(opts.discount, -1, 1)).toFixed(2),
-            istBrand,
-            istBrand,
-          ),
-        };
-
-  const offerSpec = {
-    id: opts.offerId,
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['auctioneer'],
-      callPipe: [['makeBidInvitation', [maxBuy.brand]]],
-    },
-    proposal,
-    offerArgs,
-  };
-  return offerSpec;
-};
-
-/**
  * @param {Pick<AgoricNamesRemotes, 'brand'>} agoricNames
  * @param {{
  *   offerId: string;
@@ -410,10 +338,6 @@ const makePushPriceOffer = (_agoricNames, opts, previousOffer) => {
  * @satisfies {Record<string, Record<string, OfferMaker>>}
  */
 export const Offers = {
-  auction: {
-    // @ts-expect-error XXX auction types
-    Bid: makeBidOffer,
-  },
   fluxAggregator: {
     PushPrice: makePushPriceOffer,
   },
