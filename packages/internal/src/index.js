@@ -23,6 +23,7 @@ export * from './ses-utils.js';
 export * from './tmpDir.js';
 export * from './typeCheck.js';
 export * from './typeGuards.js';
+export * from './kv-store.js';
 
 // eslint-disable-next-line import/export -- just types
 export * from './types-index.js';

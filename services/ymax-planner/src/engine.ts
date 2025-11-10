@@ -55,12 +55,8 @@ import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
-import { type KeyValueStore } from './kv-store.ts';
-import {
-  handlePendingTx,
-  type EvmContext,
-  type HandlePendingTxOpts,
-} from './pending-tx-manager.ts';
+import { handlePendingTx } from './pending-tx-manager.ts';
+import type { EvmContext, HandlePendingTxOpts } from './pending-tx-manager.ts';
 import {
   getCurrentBalance,
   getNonDustBalances,
@@ -178,10 +174,7 @@ export const makeVstorageEvent = (
 };
 
 type Powers = {
-  evmCtx: Omit<
-    EvmContext,
-    'signingSmartWalletKit' | 'fetch' | 'cosmosRest' | 'kvStore'
-  >;
+  evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   spectrumBlockchain?: SpectrumBlockchainSdk;
@@ -198,7 +191,6 @@ type Powers = {
   now: typeof Date.now;
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
-  kvStore: KeyValueStore;
 };
 
 type ProcessPortfolioPowers = Pick<
@@ -572,7 +564,6 @@ export const processInitialPendingTransactions = async (
     ).catch(err => {
       const msg = `🚨 Couldn't get block time for pending tx ${tx.txId} at height ${blockHeight}`;
       error(msg, err);
-      return undefined;
     });
 
     if (timestampMs === undefined) return;
@@ -601,8 +592,7 @@ export const startEngine = async (
     feeBrandName: string;
   },
 ) => {
-  const { evmCtx, cosmosRest, now, rpc, signingSmartWalletKit, kvStore } =
-    powers;
+  const { evmCtx, cosmosRest, now, rpc, signingSmartWalletKit } = powers;
   const vstoragePathPrefixes = makeVstoragePathPrefixes(contractInstance);
   const { portfoliosPathPrefix, pendingTxPathPrefix } = vstoragePathPrefixes;
   await null;
@@ -745,7 +735,6 @@ export const startEngine = async (
     now,
     signingSmartWalletKit,
     vstoragePathPrefixes,
-    kvStore,
   });
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
 

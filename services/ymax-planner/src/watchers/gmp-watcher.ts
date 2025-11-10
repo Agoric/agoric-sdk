@@ -1,16 +1,13 @@
 import { ethers, type Filter, type WebSocketProvider, type Log } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 import type { CaipChainId } from '@agoric/orchestration';
+import type { KVStore } from '@agoric/internal';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
 } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
-import {
-  getResolverLastActiveBlock,
-  setResolverLastActiveBlock,
-  type KeyValueStore,
-} from '../kv-store.ts';
+import { getTxBlockLowerBound, setTxBlockLowerBound } from '../kv-store.ts';
 
 // TODO: Remove once all contracts are upgraded to emit MulticallStatus
 const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
@@ -25,7 +22,7 @@ type WatchGmp = {
   contractAddress: `0x${string}`;
   txId: TxId;
   log: (...args: unknown[]) => void;
-  kvStore: KeyValueStore;
+  kvStore: KVStore;
 };
 
 export const watchGmp = ({
@@ -121,6 +118,7 @@ export const watchGmp = ({
   });
 };
 
+// Event names used by lookBackGmp for key differentiation in kvStore.
 export const EVENTS = {
   MULTICALL_EXECUTED: 'executed',
   MULTICALL_STATUS: 'status',
@@ -148,24 +146,25 @@ export const lookBackGmp = async ({
     );
     const toBlock = await provider.getBlockNumber();
 
-    const multicallStatusFromBlock =
-      (await getResolverLastActiveBlock(
-        kvStore,
-        txId,
-        EVENTS.MULTICALL_STATUS,
-      )) || fromBlock;
-    const multicallExecutedFromBlock =
-      (await getResolverLastActiveBlock(
-        kvStore,
-        txId,
-        EVENTS.MULTICALL_EXECUTED,
-      )) || fromBlock;
+    // We don't know whether resolution will take the form of "executed" or
+    // "status", so we look for both and track progress separately.
+    const statusEventLowerBound =
+      (await getTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_STATUS)) ||
+      fromBlock;
+    const executedEventLowerBound =
+      (await getTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_EXECUTED)) ||
+      fromBlock;
 
     log(
-      `Searching blocks ${multicallStatusFromBlock}/${multicallExecutedFromBlock} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
+      `Searching blocks ${statusEventLowerBound}/${executedEventLowerBound} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
     );
     const expectedIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
+    const isMatch = ev => ev.topics[1] === expectedIdTopic;
 
+    // XXX It should be possible to combine both filters into one disjunction:
+    // https://docs.ethers.org/v6/api/providers/#TopicFilter
+    // > array is effectively an OR-ed set, where any one of those values must
+    // > match
     const statusFilter: Filter = {
       address: contractAddress,
       topics: [MULTICALL_STATUS_SIGNATURE, expectedIdTopic],
@@ -175,6 +174,12 @@ export const lookBackGmp = async ({
       address: contractAddress,
       topics: [MULTICALL_EXECUTED_SIGNATURE, expectedIdTopic],
     };
+
+    const updateStatusEventLowerBound = (_from: number, to: number) =>
+      setTxBlockLowerBound(kvStore, txId, to, EVENTS.MULTICALL_STATUS);
+
+    const updateExecutedEventLowerBound = (_from: number, to: number) =>
+      setTxBlockLowerBound(kvStore, txId, to, EVENTS.MULTICALL_EXECUTED);
 
     const statusController = new AbortController();
     const executedController = new AbortController();
@@ -186,49 +191,37 @@ export const lookBackGmp = async ({
       });
     }
 
+    // Options shared by both scans
+    const baseScanOpts = {
+      provider,
+      toBlock,
+      chainId,
+      log,
+    };
+
     const matchingEvent = await Promise.race([
       scanEvmLogsInChunks(
         {
-          provider,
+          ...baseScanOpts,
           baseFilter: statusFilter,
-          fromBlock: multicallStatusFromBlock,
-          toBlock,
-          chainId,
-          log,
+          fromBlock: statusEventLowerBound,
           signal: statusController.signal,
-          chunkCallback: async (_, to) => {
-            await setResolverLastActiveBlock(
-              kvStore,
-              txId,
-              to,
-              EVENTS.MULTICALL_STATUS,
-            );
-          },
+          onRejectedChunk: updateStatusEventLowerBound,
         },
-        ev => ev.topics[1] === expectedIdTopic,
+        isMatch,
       ).then(result => {
         executedController.abort();
         return result;
       }),
       scanEvmLogsInChunks(
         {
-          provider,
+          ...baseScanOpts,
           baseFilter: executedFilter,
-          fromBlock: multicallExecutedFromBlock,
-          toBlock,
-          chainId,
-          log,
+          fromBlock: executedEventLowerBound,
           signal: executedController.signal,
-          chunkCallback: async (_, to) => {
-            await setResolverLastActiveBlock(
-              kvStore,
-              txId,
-              to,
-              EVENTS.MULTICALL_EXECUTED,
-            );
-          },
+          onRejectedChunk: updateExecutedEventLowerBound,
         },
-        ev => ev.topics[1] === expectedIdTopic,
+        isMatch,
       ).then(result => {
         statusController.abort();
         return result;

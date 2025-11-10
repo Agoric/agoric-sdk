@@ -269,12 +269,15 @@ export const main = async (
     fetch,
   });
 
-  const kvStore = makeSQLiteKeyValueStore({
-    dbPath: config.sqlite.dbPath,
+  const kvStore = makeSQLiteKeyValueStore(config.sqlite.dbPath, {
+    trace: console.log,
   });
 
   const powers = {
-    evmCtx,
+    evmCtx: {
+      kvStore,
+      ...evmCtx,
+    },
     rpc,
     spectrum,
     spectrumChainIds,

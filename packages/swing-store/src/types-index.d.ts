@@ -3,7 +3,6 @@ export type {
   SwingStoreKernelStorage,
   SwingStoreHostStorage,
 } from './swingStore.js';
-export type { KVStore } from './kvStore.js';
 export type { BundleStore } from './bundleStore.js';
 export type {
   SnapStore,

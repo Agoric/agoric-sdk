@@ -7,11 +7,11 @@ import sqlite3 from 'better-sqlite3';
 
 import { Fail, q } from '@endo/errors';
 
-import { attenuate } from '@agoric/internal';
+import { attenuate, makeKVStore } from '@agoric/internal';
 import { TRUE } from '@agoric/internal/src/js-utils.js';
 
 import { dbFileInDirectory } from './util.js';
-import { makeKVStore, getKeyType } from './kvStore.js';
+import { getKeyType } from './kvStoreUtils.js';
 import { makeTranscriptStore } from './transcriptStore.js';
 import { makeSnapStore } from './snapStore.js';
 import { makeBundleStore } from './bundleStore.js';
@@ -35,7 +35,7 @@ const IN_MEMORY = ':memory:';
  */
 
 /**
- * @import {KVStore} from './kvStore.js';
+ * @import {KVStore} from '@agoric/internal';
  *
  * @import {SnapStore} from './snapStore.js';
  * @import {SnapshotResult} from './snapStore.js';

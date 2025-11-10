@@ -239,7 +239,7 @@ const setObjectReferenceCount = (kvStore, kref, counts) => {
  * and "recognizable" counts.
  *
  * @param { (key: string) => string} getRequired
- * @param { KVStore } kvStore
+ * @param { import('@agoric/internal').KVStore } kvStore
  * @param {string} kref  The kernel slot whose refcount is to be incremented.
  * @param {string?} tag  Debugging note with rough source of the reference.
  * @param {{ isExport?: boolean, onlyRecognizable?: boolean }} options

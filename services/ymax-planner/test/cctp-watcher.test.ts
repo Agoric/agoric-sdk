@@ -2,6 +2,7 @@ import test from 'ava';
 import { id, toBeHex, zeroPadValue } from 'ethers';
 import { watchCctpTransfer } from '../src/watchers/cctp-watcher.ts';
 import {
+  createMockKeyValueStore,
   createMockPendingTxOpts,
   createMockProvider,
   mockFetch,
@@ -173,6 +174,7 @@ test('handlePendingTx keeps tx pending on amount mismatch until timeout and then
 test('watchCCTPTransfer detects multiple transfers but only matches exact amount', async t => {
   const provider = createMockProvider();
   const expectedAmount = 5_000_000n; // 5 USDC
+  const mockKvStore = createMockKeyValueStore();
 
   const watchPromise = watchCctpTransfer({
     usdcAddress,
@@ -181,6 +183,8 @@ test('watchCCTPTransfer detects multiple transfers but only matches exact amount
     expectedAmount,
     timeoutMs: 6000,
     log: console.log,
+    kvStore: mockKvStore,
+    txId: 'tx0',
   });
 
   const transfers = [

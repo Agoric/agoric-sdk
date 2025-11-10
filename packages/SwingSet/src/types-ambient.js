@@ -6,5 +6,5 @@
  */
 
 /**
- * @import { KVStore, TranscriptStore, SwingStore, SwingStoreKernelStorage, SwingStoreHostStorage, } from '@agoric/swing-store';
+ * @import { TranscriptStore, SwingStore, SwingStoreKernelStorage, SwingStoreHostStorage, } from '@agoric/swing-store';
  */

@@ -1,16 +1,13 @@
 import type { Filter, WebSocketProvider, Log } from 'ethers';
 import { id, zeroPadValue, getAddress, ethers } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
+import type { KVStore } from '@agoric/internal';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
 } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
-import {
-  getResolverLastActiveBlock,
-  setResolverLastActiveBlock,
-  type KeyValueStore,
-} from '../kv-store.ts';
+import { getTxBlockLowerBound, setTxBlockLowerBound } from '../kv-store.ts';
 
 /**
  * The Keccak256 hash (event signature) of the standard ERC-20 `Transfer` event.
@@ -40,7 +37,7 @@ type CctpWatch = {
   toAddress: `0x${string}`;
   expectedAmount: bigint;
   log?: (...args: unknown[]) => void;
-  kvStore: KeyValueStore;
+  kvStore: KVStore;
   txId: `tx${number}`;
 };
 
@@ -174,7 +171,7 @@ export const lookBackCctp = async ({
     const toBlock = await provider.getBlockNumber();
 
     const savedFromBlock =
-      (await getResolverLastActiveBlock(kvStore, txId)) || fromBlock;
+      (await getTxBlockLowerBound(kvStore, txId)) || fromBlock;
     log(
       `Searching blocks ${savedFromBlock} → ${toBlock} for Transfer to ${toAddress} with amount ${expectedAmount}`,
     );
@@ -196,8 +193,8 @@ export const lookBackCctp = async ({
         chainId,
         log,
         signal,
-        chunkCallback: async (_, to) => {
-          await setResolverLastActiveBlock(kvStore, txId, to);
+        onRejectedChunk: async (_, to) => {
+          await setTxBlockLowerBound(kvStore, txId, to);
         },
       },
       ev => {

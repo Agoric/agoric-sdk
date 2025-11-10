@@ -10,8 +10,8 @@ import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
-import type { KeyValueStore } from '../src/kv-store.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
+import type { KVStore } from '@agoric/internal';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 
@@ -145,17 +145,18 @@ export const createMockCosmosRestClient = (
   } as any;
 };
 
-const createMockKeyValueStore = (): KeyValueStore => {
+export const createMockKeyValueStore = (): KVStore => {
   const store = new Map<string, string>();
   return {
-    get: async (key: string) => store.get(key),
+    get: (key: string) => store.get(key),
     set: async (key: string, value: string) => {
       store.set(key, value);
     },
     delete: async (key: string) => {
       store.delete(key);
     },
-    has: async (key: string) => store.has(key),
+    has: (key: string) => store.has(key),
+    getNextKey: () => '',
   };
 };
 

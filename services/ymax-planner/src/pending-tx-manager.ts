@@ -13,16 +13,13 @@ import {
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type { KVStore } from '@agoric/internal';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
-import type { KeyValueStore } from './kv-store.ts';
 import { resolvePendingTx } from './resolver.ts';
-import {
-  waitForBlock,
-  type EvmProviders,
-  type UsdcAddresses,
-} from './support.ts';
+import { waitForBlock } from './support.ts';
+import type { EvmProviders, UsdcAddresses } from './support.ts';
 import { lookBackCctp, watchCctpTransfer } from './watchers/cctp-watcher.ts';
 import { lookBackGmp, watchGmp } from './watchers/gmp-watcher.ts';
 
@@ -34,7 +31,7 @@ export type EvmContext = {
   evmProviders: EvmProviders;
   signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
-  kvStore: KeyValueStore;
+  kvStore: KVStore;
 };
 
 export type GmpTransfer = {
