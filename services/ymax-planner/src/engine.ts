@@ -356,7 +356,7 @@ const processPortfolioEvents = async (
         tx,
       );
     } catch (err) {
-      annotateError(err, X`${errorContext}`);
+      annotateError(err, inspect(errorContext, { depth: 4 }));
       throw err;
     }
   };
@@ -400,7 +400,7 @@ const processPortfolioEvents = async (
         const msg = `⚠️  Deferring ${path} of age ${age} block(s)`;
         console.warn(msg, inspectForStderr(eventRecord));
       } else {
-        const msg = `🚨 Deferring ${path} of age ${age} block(s)`;
+        const msg = `🚨 Deferring ${path} of age ${age} block(s) for error: ${err.message}`;
         console.error(msg, inspectForStderr(eventRecord), err);
       }
       deferrals.push(eventRecord);
@@ -412,7 +412,8 @@ const processPortfolioEvents = async (
     const { path, value: cellJson, eventRecord } = portfolioEvent;
     const defer = err => {
       const age = blockHeight - eventRecord.blockHeight;
-      console.error(`🚨 Deferring ${path} of age ${age} block(s)`, err);
+      const msg = `🚨 Deferring ${path} of age ${age} block(s) for error: ${err?.message}`;
+      console.error(msg, err);
       deferrals.push(eventRecord);
     };
     if (path === portfoliosPathPrefix) {
