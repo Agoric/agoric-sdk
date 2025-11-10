@@ -22,6 +22,7 @@ import {
   deeplyFulfilledObject,
   objectMap,
   objectMetaMap,
+  withDeferredCleanup,
 } from '@agoric/internal';
 import { UsdcTokenIds } from '@agoric/portfolio-api/src/constants.js';
 
@@ -269,7 +270,7 @@ export const main = async (
     fetch,
   });
 
-  const kvStore = makeSQLiteKeyValueStore(config.sqlite.dbPath, {
+  const { db, kvStore } = makeSQLiteKeyValueStore(config.sqlite.dbPath, {
     trace: console.log,
   });
 
@@ -297,11 +298,18 @@ export const main = async (
     usdcTokensByChain,
     kvStore,
   };
-  await startEngine(powers, {
-    isDryRun,
-    contractInstance: config.contractInstance,
-    depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
-    feeBrandName: env.FEE_BRAND_NAME || 'BLD',
+
+  await withDeferredCleanup(async addCleanup => {
+    await startEngine(powers, {
+      isDryRun,
+      contractInstance: config.contractInstance,
+      depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
+      feeBrandName: env.FEE_BRAND_NAME || 'BLD',
+    });
+    addCleanup(async () => {
+      console.log('fraz close');
+      await db.close();
+    });
   });
 };
 harden(main);

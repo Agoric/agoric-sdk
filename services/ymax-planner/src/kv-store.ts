@@ -4,6 +4,7 @@
  */
 import type { KVStore } from '@agoric/internal';
 import { makeKVStore } from '@agoric/internal';
+import type { Database as SQLiteDatabase } from 'better-sqlite3';
 import Database from 'better-sqlite3';
 
 export type SQLiteKeyValueStoreOptions = {
@@ -14,7 +15,10 @@ export type SQLiteKeyValueStoreOptions = {
 export const makeSQLiteKeyValueStore = (
   dbPath: string,
   options: SQLiteKeyValueStoreOptions,
-): KVStore => {
+): {
+  db: SQLiteDatabase;
+  kvStore: KVStore;
+} => {
   const { tableName = 'kv_store' } = options;
 
   // Note that the `dbPath` file is created if necessary:
@@ -35,7 +39,8 @@ export const makeSQLiteKeyValueStore = (
    * to be committed instantly
    */
   const emptyEnsure = () => null;
-  return makeKVStore(db, emptyEnsure, options.trace, tableName);
+  const kvStore = makeKVStore(db, emptyEnsure, options.trace, tableName);
+  return { db, kvStore };
 };
 
 const getResolverLastBlockKey = (txId: `tx${number}`, suffix?: string) =>
