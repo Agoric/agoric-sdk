@@ -22,8 +22,6 @@ import { lookupValueForKey } from './utils.ts';
 
 type ROPartial<K extends string, V> = Readonly<Partial<Record<K, V>>>;
 
-const { entries } = Object;
-
 type HexAddress = `0x${string}`;
 
 /**
@@ -256,62 +254,6 @@ type CreateContextParams = {
 };
 
 export type EvmProviders = Record<CaipChainId, WebSocketProvider>;
-
-/**
- * Verifies that all EVM chains are accessible via their providers.
- * Throws an error if any chain fails to connect.
- */
-export const verifyEvmChains = async (
-  evmProviders: EvmProviders,
-): Promise<void> => {
-  const chainResults = await Promise.allSettled(
-    entries(evmProviders).map(async ([chainId, provider]) => {
-      await null;
-      try {
-        await provider.getBlockNumber();
-        return { chainId, success: true };
-      } catch (error: any) {
-        return { chainId, success: false, error: error.message };
-      }
-    }),
-  );
-
-  const workingChains: string[] = [];
-  const failedChains: Array<{ chainId: string; error: string }> = [];
-
-  for (const result of chainResults) {
-    if (result.status === 'fulfilled') {
-      const chainResult = result.value;
-      if (chainResult.success) {
-        workingChains.push(chainResult.chainId);
-      } else {
-        failedChains.push({
-          chainId: chainResult.chainId,
-          error: chainResult.error,
-        });
-      }
-    } else {
-      failedChains.push({
-        chainId: 'unknown',
-        error: result.reason?.message || 'Unknown error',
-      });
-    }
-  }
-
-  console.warn(`✓ Working chains (${workingChains.length}):`, workingChains);
-
-  if (failedChains.length > 0) {
-    console.error(`✗ Failed chains (${failedChains.length}):`);
-    for (const { chainId, error } of failedChains) {
-      console.error(`  - ${chainId}: ${error}`);
-    }
-    throw new Error(
-      `Failed to connect to ${failedChains.length} EVM chain(s). ` +
-        `Ensure all required chains are enabled in your Alchemy dashboard. ` +
-        `Failed chains: ${failedChains.map(c => c.chainId).join(', ')}`,
-    );
-  }
-};
 
 export const createEVMContext = async ({
   clusterName,

@@ -18,7 +18,11 @@ import {
   reflectWalletStore,
 } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import { objectMetaMap } from '@agoric/internal';
+import {
+  deeplyFulfilledObject,
+  objectMap,
+  objectMetaMap,
+} from '@agoric/internal';
 import { UsdcTokenIds } from '@agoric/portfolio-api/src/constants.js';
 
 import { loadConfig } from './config.ts';
@@ -32,7 +36,6 @@ import {
   createEVMContext,
   spectrumChainIdsByCluster,
   spectrumPoolIdsByCluster,
-  verifyEvmChains,
 } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
@@ -142,7 +145,7 @@ export const main = async (
     fetch,
   });
   const agoricRpcAddr = networkConfig.rpcAddrs[0];
-  console.warn('Initializing planner', networkConfig);
+  console.warn('Initializing planner:', networkConfig);
 
   const rpc = new CosmosRPCClient(agoricRpcAddr, {
     WebSocket,
@@ -150,7 +153,7 @@ export const main = async (
   });
   await rpc.opened();
   await assertChainId(rpc, networkConfig.chainName, (...logArgs) =>
-    console.warn('Agoric chain status', ...logArgs),
+    console.warn('Agoric chain status:', ...logArgs),
   );
 
   const cosmosRest = new CosmosRestClient(simplePowers, {
@@ -163,7 +166,7 @@ export const main = async (
   const agoricSummary = objectMetaMap(agoricVersions || {}, desc =>
     isPrimitive(desc.value) ? desc : undefined,
   );
-  console.warn('Agoric chain versions', agoricVersions && agoricSummary);
+  console.warn('Agoric chain versions:', agoricVersions && agoricSummary);
 
   const walletUtils = await makeSmartWalletKit(simplePowers, networkConfig);
   let signingSmartWalletKit = await makeSigningSmartWalletKit(
@@ -245,9 +248,19 @@ export const main = async (
     alchemyApiKey: config.alchemyApiKey,
   });
 
-  // Verify Alchemy chain availability - throws if any chain fails
-  console.warn('Verifying EVM chain connectivity...');
-  await verifyEvmChains(evmCtx.evmProviders);
+  // Verify Alchemy chain availability.
+  const failedEvmChains = [] as Array<keyof typeof evmCtx.evmProviders>;
+  const evmHeights = await deeplyFulfilledObject(
+    objectMap(evmCtx.evmProviders, (provider, chainId) =>
+      provider.getBlockNumber().catch(err => {
+        failedEvmChains.push(chainId);
+        return { error: err.message };
+      }),
+    ),
+  );
+  console.warn('EVM chain heights:', evmHeights);
+  failedEvmChains.length === 0 ||
+    Fail`Could not connect to EVM chains: ${q(failedEvmChains)}. Ensure they are enabled in your Alchemy dashboard.`;
 
   const gasEstimator = makeGasEstimator({
     axelarApiAddress: config.axelar.apiUrl,
