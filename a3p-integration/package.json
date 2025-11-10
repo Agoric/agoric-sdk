@@ -1,7 +1,7 @@
 {
   "private": true,
   "agoricSyntheticChain": {
-    "fromTag": "use-ymax-alpha4"
+    "fromTag": "use-upgrade-22"
   },
   "scripts": {
     "build": "yarn run build:sdk && yarn run build:submissions && yarn run build:synthetic-chain",
@@ -16,7 +16,7 @@
     "doctor": "yarn synthetic-chain doctor"
   },
   "dependencies": {
-    "@agoric/synthetic-chain": "^0.6.1"
+    "@agoric/synthetic-chain": "^0.6.5"
   },
   "devDependencies": {
     "eslint": "^8.57.1",
