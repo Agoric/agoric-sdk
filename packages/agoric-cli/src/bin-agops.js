@@ -19,7 +19,6 @@ import { makeReserveCommand } from './commands/reserve.js';
 import { makeVaultsCommand } from './commands/vaults.js';
 import { makePerfCommand } from './commands/perf.js';
 import { makeInterCommand } from './commands/inter.js';
-import { makeAuctionCommand } from './commands/auction.js';
 import { makeTestCommand } from './commands/test-upgrade.js';
 
 const logger = anylogger('agops');
@@ -68,7 +67,6 @@ const procIO = {
 
 program.addCommand(makeOracleCommand(procIO, logger));
 program.addCommand(makeReserveCommand(logger, procIO));
-program.addCommand(makeAuctionCommand(logger, { ...procIO, fetch }));
 program.addCommand(makeInterCommand(procIO, { fetch }));
 program.addCommand(makeTestCommand(procIO, { fetch }));
 
