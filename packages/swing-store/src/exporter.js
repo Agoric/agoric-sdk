@@ -107,6 +107,7 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
   const bundleStore = makeBundleStore(db, ensureTxn);
   const transcriptStore = makeTranscriptStore(db, ensureTxn, () => {});
 
+  /** @type {any} */
   const sqlKVGet = db.prepare(`
     SELECT value
     FROM kvStore
@@ -130,7 +131,6 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
    */
   function getHostKV(key) {
     getKeyType(key) === 'host' || Fail`getHostKV requires host keys`;
-    // @ts-expect-error unknown
     return sqlKVGet.get(key);
   }
 

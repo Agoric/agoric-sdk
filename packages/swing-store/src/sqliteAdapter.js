@@ -32,15 +32,16 @@ export function createDatabase(location, options = {}) {
   
   /**
    * @typedef {object} WrappedDatabase
-   * @property {typeof db.prepare} prepare
-   * @property {typeof db.exec} exec
-   * @property {typeof db.close} close
+   * @property {(sql: string) => any} prepare
+   * @property {(sql: string) => void} exec
+   * @property {() => void} close
    * @property {boolean} inTransaction
    * @property {(enabled: boolean) => void} unsafeMode
-   * @property {(sql: string, options?: { simple?: boolean }) => any} pragma
+   * @property {(sql: string, opts?: { simple?: boolean }) => any} pragma
    * @property {() => Buffer} serialize
    */
   
+  // @ts-ignore - We're intentionally creating a wrapper with extended functionality
   const wrapped = {
     prepare: (sql) => {
       const stmt = db.prepare(sql);
@@ -134,7 +135,7 @@ export function createDatabase(location, options = {}) {
      * Note: This uses backup to a temporary file and then reads it
      * @returns {Buffer}
      */
-    serialize: async () => {
+    serialize: () => {
       if (location !== ':memory:') {
         throw new Error('serialize() only works with :memory: databases');
       }
@@ -155,7 +156,7 @@ export function createDatabase(location, options = {}) {
 
 /**
  * Wraps a StatementSync to add better-sqlite3 compatibility features
- * @param {ReturnType<DatabaseSync['prepare']>} stmt
+ * @param {any} stmt - The statement instance from DatabaseSync
  * @param {string} sql - The SQL text for transaction tracking
  * @param {() => void} onBegin - Callback when BEGIN is executed
  * @param {() => void} onCommitOrRollback - Callback when COMMIT/ROLLBACK is executed
