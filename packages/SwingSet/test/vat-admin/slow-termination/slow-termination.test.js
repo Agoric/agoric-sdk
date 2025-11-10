@@ -3,7 +3,7 @@
 import { test } from '../../../tools/prepare-test-env-ava.js';
 
 import tmp from 'tmp';
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from '@agoric/swing-store';
 import path from 'path';
 
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
@@ -86,7 +86,7 @@ async function doSlowTerminate(t, mode) {
   const { commit } = ss.hostStorage;
   const { kvStore } = kernelStorage;
   // look directly at DB to confirm changes
-  const db = sqlite3(path.join(dbDir, 'swingstore.sqlite'));
+  const db = createDatabase(path.join(dbDir, 'swingstore.sqlite'));
 
   const controller = await buildVatController(config, [], {
     ...t.context.data,

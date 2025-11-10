@@ -5,10 +5,10 @@ import zlib from 'zlib';
 import process from 'process';
 import readline from 'readline';
 
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from '@agoric/swing-store';
 
 function makeDB(dbPath) {
-  const db = sqlite3(dbPath);
+  const db = createDatabase(dbPath);
   const indexes = [];
   const sql = {};
   db.exec(`PRAGMA journal_mode=WAL`);

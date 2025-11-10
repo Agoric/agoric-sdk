@@ -3,12 +3,11 @@
 import * as fs from 'fs';
 import * as pathlib from 'path';
 
-import sqlite3 from 'better-sqlite3';
-
 import { Fail, q } from '@endo/errors';
 
 import { attenuate } from '@agoric/internal';
 import { TRUE } from '@agoric/internal/src/js-utils.js';
+import { createDatabase } from './sqliteAdapter.js';
 
 import { dbFileInDirectory } from './util.js';
 import { makeKVStore, getKeyType } from './kvStore.js';
@@ -19,7 +18,7 @@ import { createSHA256 } from './hasher.js';
 import { makeSnapStoreIO } from './snapStoreIO.js';
 import { doRepairMetadata } from './repairMetadata.js';
 
-// https://github.com/WiseLibs/better-sqlite3/blob/HEAD/docs/api.md#new-databasepath-options
+// https://nodejs.org/api/sqlite.html
 const IN_MEMORY = ':memory:';
 
 /**
@@ -226,7 +225,7 @@ export function makeSwingStore(path, forceReset, options = {}) {
   }
 
   /** @type {*} */
-  let db = sqlite3(/** @type {string} */ (serialized || filePath), {
+  let db = createDatabase(/** @type {string} */ (serialized || filePath), {
     readonly,
     // verbose: console.log,
   });
@@ -250,14 +249,16 @@ export function makeSwingStore(path, forceReset, options = {}) {
     !db.inTransaction || Fail`must not be in a transaction`;
 
     db.unsafeMode(!!enabled);
-    // The WAL mode is persistent so it's not possible to switch to a different
-    // mode for an existing DB.
+    // The WAL mode is persistent, so for an existing DB, just accept whatever mode it has.
+    // For a new DB or one created with a different mode, try to set it.
     const actualMode = db.pragma(`journal_mode=${journalMode}`, {
       simple: true,
     });
-    actualMode === journalMode ||
-      filePath === ':memory:' ||
+    // Only fail for in-memory DBs where we have full control
+    // For file-based DBs, the mode might be persistent from creation
+    if (filePath === ':memory:' && actualMode !== journalMode) {
       Fail`Couldn't set swing-store DB to ${journalMode} mode (is ${actualMode})`;
+    }
     db.pragma(`synchronous=${synchronousMode}`);
   }
 
@@ -510,6 +511,26 @@ export function makeSwingStore(path, forceReset, options = {}) {
    */
   async function close() {
     db || Fail`db not initialized`;
+    // If we're in a transaction, roll it back before closing
+    if (db.inTransaction) {
+      try {
+        db.exec('ROLLBACK');
+      } catch (err) {
+        // Ignore rollback errors during close
+        console.warn('ROLLBACK failed during close:', err.message);
+      }
+    }
+    // Checkpoint the WAL to ensure all changes are flushed to the main db file
+    // This helps prevent lock issues when reopening the database
+    if (filePath !== IN_MEMORY && !readonly) {
+      try {
+        // eslint-disable-next-line no-restricted-syntax
+        db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+      } catch (err) {
+        // Ignore checkpoint errors during close
+        console.warn('WAL checkpoint failed during close:', err.message);
+      }
+    }
     db.close();
     db = null;
     stopTrace();

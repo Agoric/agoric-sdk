@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from '@agoric/swing-store';
 import {
   initSwingStore,
   makeSnapStore,
@@ -32,7 +32,7 @@ const vatReload = async (t, restartWorkerOnSnapshot, vatConfig) => {
     },
   };
 
-  const db = sqlite3(':memory:');
+  const db = createDatabase(':memory:');
   const snapStore = makeSnapStore(db, () => {}, makeSnapStoreIO());
   const kernelStorage = { ...initSwingStore().kernelStorage, snapStore };
 

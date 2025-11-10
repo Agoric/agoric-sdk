@@ -38,7 +38,7 @@ import { fileURLToPath } from 'node:url';
 import { inspect, parseArgs } from 'node:util';
 import { isMainThread } from 'node:worker_threads';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from '@agoric/swing-store';
 import { Fail, b, q } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 import { objectMap, BridgeId } from '@agoric/internal';
@@ -63,7 +63,7 @@ import {
 import { makeCosmicSwingsetTestKit } from './test-kit.js';
 
 /**
- * @import {Database} from 'better-sqlite3';
+ * @import {WrappedDatabase} from '@agoric/swing-store';
  * @import {ManagerType, SwingSetConfig} from '@agoric/swingset-vat';
  * @import {KVStore} from '../src/helpers/bufferedStorage.js';
  */
@@ -91,7 +91,7 @@ const storeExportAPI = ['getExportRecords', 'getArtifactNames'];
 
 /**
  * @param {object} opt
- * @param {Database} opt.db
+ * @param {WrappedDatabase} opt.db
  * @param {any} opt.EV
  */
 export const makeHelpers = ({ db, EV }) => {
@@ -640,7 +640,7 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
       });
     },
     wrapBundleStore: bundleStore => {
-      const overlayDB = sqlite3(':memory:');
+      const overlayDB = createDatabase(':memory:');
       const overlay = makeBundleStore(overlayDB, noop, noop);
       let modified = false;
       const onNewBundle = (operation, key, ...details) => {

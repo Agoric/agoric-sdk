@@ -2,7 +2,7 @@
 // @ts-nocheck XXX
 /* eslint no-labels: "off", no-extra-label: "off", no-underscore-dangle: "off" */
 import process from 'process';
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from '@agoric/swing-store';
 import yargsParser from 'yargs-parser';
 import '@endo/init/debug.js';
 import { makeStandinPromise, krefOf } from '@agoric/kmarshal';
@@ -157,7 +157,7 @@ const decodeResolveSyscall = syscall => {
  * In either case, it also returns a reverse-sorted `krefHistory` and a
  * forward-sorted `syscalls` list representing the trace.
  *
- * @param {import('better-sqlite3').Statement<[kpid: string]>} getSyscallsForKref
+ * @param {import('@agoric/swing-store').WrappedStatement} getSyscallsForKref
  * @param {string} kref
  * @returns {SyscallTraceFailure | SyscallTraceSuccess}
  */
@@ -290,7 +290,7 @@ const methargsZoeSeatMethodShape = harden([
  * Searches for and decodes the syscall.send whose result corresponds with a provided kpid,
  * or explains failure to do so.
  *
- * @param {import('better-sqlite3').Statement<[kpid: string]>} getSyscallsForKref
+ * @param {import('@agoric/swing-store').WrappedStatement} getSyscallsForKref
  * @param {string} kpid
  * @returns {{failure: string, kpidSyscalls: unknown[]} | ReturnType<decodeSendSyscall>}
  */
@@ -338,7 +338,7 @@ const main = rawArgv => {
   }
 
   const [dbPath] = args;
-  const db = sqlite3(/** @type {string} */ (dbPath));
+  const db = createDatabase(/** @type {string} */ (dbPath));
   /** @type {any} */
   const getUnsettledPromises = db.prepare(`
       SELECT d.kpid, d.decider, s.subscriber

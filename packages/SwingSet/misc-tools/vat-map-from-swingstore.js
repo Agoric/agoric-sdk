@@ -1,6 +1,6 @@
 // @ts-nocheck
 import '@endo/init';
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from '@agoric/swing-store';
 import fs from 'fs';
 import process from 'process';
 
@@ -27,7 +27,7 @@ assert(
   fs.existsSync(swingstoreDBPath),
   `missing SQLite file: ${swingstoreDBPath}`,
 );
-const ssdb = sqlite3(swingstoreDBPath);
+const ssdb = createDatabase(swingstoreDBPath);
 
 const sqlGet = ssdb
   .prepare('SELECT value FROM kvStore WHERE key = ?')

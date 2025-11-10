@@ -14,7 +14,7 @@ import { createHash } from 'crypto';
 import { Readable, finished as finishedCallback } from 'stream';
 import { performance } from 'perf_hooks';
 import { tmpName, dirSync as tmpDirSync } from 'tmp';
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from '@agoric/swing-store';
 import yargsParser from 'yargs-parser';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
@@ -251,7 +251,7 @@ async function replay(transcriptFile) {
     });
     cleanupSnapStore = tmpDb.removeCallback;
     snapStore = makeSnapStore(
-      sqlite3(`${tmpDb.name}/snapstore.sqlite`),
+      createDatabase(`${tmpDb.name}/snapstore.sqlite`),
       () => {},
       makeSnapStoreIO(),
       undefined,

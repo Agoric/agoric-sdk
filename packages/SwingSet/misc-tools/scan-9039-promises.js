@@ -9,7 +9,7 @@
 
 import process from 'process';
 import fs from 'fs';
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from '@agoric/swing-store';
 import yargsParser from 'yargs-parser';
 import '@endo/init/debug.js';
 
@@ -31,7 +31,7 @@ const main = rawArgv => {
   if (!fs.existsSync(ssDBPath)) {
     throw Error(`swingstore DB path (${ssDBPath}) must exist`);
   }
-  const ssDB = sqlite3(/** @type {string} */ (ssDBPath));
+  const ssDB = createDatabase(/** @type {string} */ (ssDBPath));
   let queries = 0;
 
   const sqlGet = ssDB.prepare('SELECT value FROM kvStore WHERE key=?').pluck();

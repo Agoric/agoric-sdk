@@ -5,7 +5,7 @@ import { spawn } from 'child_process';
 import fs from 'fs';
 import { tmpName } from 'tmp';
 import { type as osType } from 'os';
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from '@agoric/swing-store';
 import test from 'ava';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { xsnap } from '@agoric/xsnap';
@@ -63,7 +63,7 @@ test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to smaller`, as
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
   t.teardown(() => vat.close());
 
-  const db = sqlite3(':memory:');
+  const db = createDatabase(':memory:');
   const store = makeSnapStore(db, () => {}, makeMockSnapStoreIO());
 
   const { compressedSize } = await store.saveSnapshot(
@@ -84,7 +84,7 @@ test('SES bootstrap, save, compress', async t => {
   const vat = await bootSESWorker('ses-boot1', async m => m);
   t.teardown(() => vat.close());
 
-  const db = sqlite3(':memory:');
+  const db = createDatabase(':memory:');
   const store = makeSnapStore(db, () => {}, makeMockSnapStoreIO());
 
   await vat.evaluate('globalThis.x = harden({a: 1})');
@@ -102,7 +102,7 @@ test('SES bootstrap, save, compress', async t => {
 });
 
 test('create SES worker, save, restore, resume', async t => {
-  const db = sqlite3(':memory:');
+  const db = createDatabase(':memory:');
   const store = makeSnapStore(db, () => {}, makeMockSnapStoreIO());
 
   const vat0 = await bootSESWorker('ses-boot2', async m => m);
@@ -140,7 +140,7 @@ test('XS + SES snapshots are long-term deterministic', async t => {
     return;
   }
 
-  const db = sqlite3(':memory:');
+  const db = createDatabase(':memory:');
   const store = makeSnapStore(db, () => {}, makeMockSnapStoreIO());
 
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
@@ -186,7 +186,7 @@ Then commit the changes in .../snapshots/ path.
 });
 
 async function makeTestSnapshot() {
-  const db = sqlite3(':memory:');
+  const db = createDatabase(':memory:');
   const store = makeSnapStore(db, () => {}, makeMockSnapStoreIO());
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
   const bootScript = await getBootScript();

@@ -2,10 +2,10 @@
 
 import path from 'path';
 import test from 'ava';
-import sqlite3 from 'better-sqlite3';
 import tmp from 'tmp';
 
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
+import { createDatabase } from '../src/sqliteAdapter.js';
 
 import { importSwingStore, openSwingStore } from '../src/index.js';
 
@@ -28,7 +28,7 @@ test('repair metadata', async t => {
   await ssi.hostStorage.close();
 
   const filePath = path.join(dbDir, 'swingstore.sqlite');
-  const db = sqlite3(filePath);
+  const db = createDatabase(filePath);
 
   const getTS = db.prepare(
     'SELECT startPos FROM transcriptSpans WHERE vatID = ? ORDER BY startPos',
@@ -55,25 +55,40 @@ test('repair metadata', async t => {
   const ss2 = getSS.all('v1');
   t.deepEqual(ss2, [7]);
 
+  // Close the direct database connection before opening through SwingStore
+  db.close();
+
   // now fix it
   const ss = openSwingStore(dbDir);
   t.teardown(ss.hostStorage.close);
+
+  // Reopen db connection to check metadata
+  const db2 = ss.debug.getDatabase();
+  const getTS2 = db2.prepare(
+    'SELECT startPos FROM transcriptSpans WHERE vatID = ? ORDER BY startPos',
+  );
+  getTS2.pluck();
+  const getSS2 = db2.prepare(
+    'SELECT snapPos FROM snapshots WHERE vatID = ? ORDER BY snapPos',
+  );
+  getSS2.pluck();
+
   await ss.hostStorage.repairMetadata(exporter);
   await ss.hostStorage.commit();
 
   // and check that the metadata is back
-  const ts3 = getTS.all('v1');
+  const ts3 = getTS2.all('v1');
   t.deepEqual(ts3, [0, 2, 5, 8]); // all four again
-  const ss3 = getSS.all('v1');
+  const ss3 = getSS2.all('v1');
   t.deepEqual(ss3, [4, 7]);
 
   // repair should be idempotent
   await ss.hostStorage.repairMetadata(exporter);
   await ss.hostStorage.commit();
 
-  const ts4 = getTS.all('v1');
+  const ts4 = getTS2.all('v1');
   t.deepEqual(ts4, [0, 2, 5, 8]); // still there
-  const ss4 = getSS.all('v1');
+  const ss4 = getSS2.all('v1');
   t.deepEqual(ss4, [4, 7]);
 });
 
