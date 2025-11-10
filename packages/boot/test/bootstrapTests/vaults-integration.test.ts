@@ -132,7 +132,7 @@ test('adjust balances', async t => {
     updated: 'offerStatus',
     status: {
       id: 'adjust',
-      numWantsSatisfied: 1,
+      numWantsSatisfied: Infinity,
     },
   });
 });
@@ -193,7 +193,8 @@ test('close vault', async t => {
     updated: 'offerStatus',
     status: {
       id: 'close-insufficient',
-      numWantsSatisfied: 1, // trivially true because proposal `want` was empty.
+      // XXX there were no wants. Zoe treats as Infinitely satisfied
+      numWantsSatisfied: Infinity,
       error: `Error: ${message}`,
     },
   });
@@ -218,6 +219,7 @@ test('close vault', async t => {
       result: 'your vault is closed, thank you for your business',
       // funds are returned
       payouts: likePayouts(giveCollateral, 0),
+      numWantsSatisfied: Infinity,
     },
   });
 });
@@ -284,7 +286,7 @@ test('exit bid', async t => {
     status: {
       id: 'bid',
       result: 'Your bid has been accepted', // it was accepted before being exited
-      numWantsSatisfied: 1, // trivially 1 because there were no "wants" in the proposal
+      numWantsSatisfied: Infinity, // trivially, because there were no "wants" in the proposal
       payouts: {
         // got back the give
         Bid: { value: 100000n },
@@ -313,7 +315,9 @@ test('propose change to auction governance param', async t => {
   });
 
   await eventLoopIteration();
-  t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { numWantsSatisfied: Infinity },
+  });
 
   const auctioneer = agoricNamesRemotes.instance.auctioneer;
   const timerBrand = agoricNamesRemotes.brand.timer;
@@ -344,7 +348,9 @@ test('propose change to auction governance param', async t => {
   });
 
   await eventLoopIteration();
-  t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { numWantsSatisfied: Infinity },
+  });
 
   const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
   const key = `published.committees.Economic_Committee.latestQuestion`;
