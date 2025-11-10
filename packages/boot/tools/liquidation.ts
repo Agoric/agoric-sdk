@@ -257,52 +257,10 @@ export const makeLiquidationTestKit = async ({
     }
   };
 
-  const placeBids = async (
-    collateralBrandKey: string,
-    buyerWalletAddress: string,
-    setup: LiquidationSetup,
-    base = 0, // number of bids made before
-  ) => {
-    const buyer =
-      await walletFactoryDriver.provideSmartWallet(buyerWalletAddress);
-
-    await buyer.sendOffer(
-      Offers.psm.swap(
-        agoricNamesRemotes,
-        agoricNamesRemotes.instance['psm-IST-USDC_axl'],
-        {
-          offerId: `print-${collateralBrandKey}-ist`,
-          wantMinted: 1_000,
-          pair: ['IST', 'USDC_axl'],
-        },
-      ),
-    );
-
-    const maxBuy = `10000${collateralBrandKey}`;
-
-    for (let i = 0; i < setup.bids.length; i += 1) {
-      const offerId = `${collateralBrandKey}-bid${i + 1 + base}`;
-      // bids are long-lasting offers so we can't wait here for completion
-      await buyer.sendOfferMaker(Offers.auction.Bid, {
-        offerId,
-        ...setup.bids[i],
-        maxBuy,
-      });
-      t.like(swingsetTestKit.readPublished(`wallet.${buyerWalletAddress}`), {
-        status: {
-          id: offerId,
-          result: 'Your bid has been accepted',
-          payouts: undefined,
-        },
-      });
-    }
-  };
-
   return {
     check,
     priceFeedDrivers,
     setupVaults,
-    placeBids,
   };
 };
 
