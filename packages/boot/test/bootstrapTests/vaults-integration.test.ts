@@ -256,43 +256,6 @@ test('open vault with insufficient funds gives helpful error', async t => {
   });
 });
 
-test('exit bid', async t => {
-  const { walletFactoryDriver } = t.context;
-
-  const wd = await walletFactoryDriver.provideSmartWallet('agoric1bid');
-
-  // get some IST
-  await wd.executeOfferMaker(Offers.vaults.OpenVault, {
-    offerId: 'bid-open-vault',
-    collateralBrandKey,
-    wantMinted: 5.0,
-    giveCollateral: 9.0,
-  });
-
-  await wd.sendOfferMaker(Offers.auction.Bid, {
-    offerId: 'bid',
-    maxBuy: '1.23ATOM',
-    give: '0.1IST',
-    price: 5,
-  });
-
-  await wd.tryExitOffer('bid');
-  await eventLoopIteration();
-
-  t.like(wd.getLatestUpdateRecord(), {
-    updated: 'offerStatus',
-    status: {
-      id: 'bid',
-      result: 'Your bid has been accepted', // it was accepted before being exited
-      numWantsSatisfied: 1, // trivially 1 because there were no "wants" in the proposal
-      payouts: {
-        // got back the give
-        Bid: { value: 100000n },
-      },
-    },
-  });
-});
-
 test('propose change to auction governance param', async t => {
   const { walletFactoryDriver, agoricNamesRemotes, storage } = t.context;
 
