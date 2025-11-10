@@ -42,7 +42,7 @@ jobs:
 
   deploy-ymax-planner:
     needs: docker-ymax
-    if: needs.docker-ymax.result == 'failure'
+    if: needs.docker-ymax.result == 'success'
     runs-on: ubuntu-latest
     strategy:
       matrix:
