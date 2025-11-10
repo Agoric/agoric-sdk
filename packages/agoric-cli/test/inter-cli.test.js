@@ -14,7 +14,7 @@ import { Far } from '@endo/far';
 import { boardSlottingMarshaller, makeFromBoard } from '@agoric/client-utils';
 
 import { decodeHex } from '@agoric/internal/src/hex.js';
-import { fmtBid, makeInterCommand } from '../src/commands/inter.js';
+import { makeInterCommand } from '../src/commands/inter.js';
 
 const { entries } = Object;
 
@@ -272,56 +272,6 @@ test('amount parsing', t => {
   });
 });
 
-/**
- * @type {OfferStatus &
- *         { offerArgs: OfferSpec}}
- */
-const offerStatus1 = harden({
-  error: 'Error: "nameKey" not found: (a string)',
-  id: 1678990150266,
-  invitationSpec: {
-    callPipe: [['makeBidInvitation', [topBrands.ATOM]]],
-    instancePath: ['auctioneer'],
-    source: 'agoricContract',
-  },
-  offerArgs: {
-    offerPrice: {
-      denominator: { brand: topBrands.ATOM, value: 2000000n },
-      numerator: { brand: topBrands.IST, value: 20000000n },
-    },
-    maxBuy: { brand: topBrands.ATOM, value: 2000000n },
-  },
-  proposal: {
-    give: {
-      Bid: { brand: topBrands.IST, value: 20000000n },
-    },
-  },
-});
-
-test('README ex: inter bid list: finds one bid', async t => {
-  const argv = 'node inter bid list --from gov1'.split(' ');
-  const expected = {
-    id: 'bid-1680241587424',
-    payouts: { Collateral: '3.105 ATOM', Bid: '37 IST' },
-  };
-
-  const out = [];
-
-  const net = makeNet({ ...publishedNames, wallet: govWallets });
-  const cmd = await makeInterCommand(makeProcess(t, testKeyring, out), net);
-  cmd.exitOverride(() => t.fail('exited'));
-
-  await cmd.parseAsync(argv);
-  const txt = out.join('').trim();
-  t.deepEqual(JSON.parse(txt), {
-    ...expected,
-    // boring details not shown in README
-    discount: 10,
-    give: { Bid: '20 IST' },
-    maxBuy: '2 ATOM',
-  });
-});
-
 /** @type {(c: Command) => Command[]} */
 const subCommands = c => [c, ...c.commands.flatMap(subCommands)];
 
@@ -345,35 +295,6 @@ test('README: inter usage', async t => {
   const txt = diag.join('').trim();
   t.true(txt.startsWith(usage));
   t.true(txt.includes(description));
-});
-
-test('diagnostic for agd ENOENT', async t => {
-  const argv = 'node inter bid list --from gov1'.split(' ');
-
-  const out = [];
-  const diag = [];
-  const proc = makeProcess(t, testKeyring, out);
-  const cmd = await makeInterCommand(
-    {
-      ...proc,
-      execFileSync: file => {
-        t.is(file, 'agd');
-        throw Error('ENOENT');
-      },
-    },
-    makeNet({}),
-  );
-  for (const c of subCommands(cmd)) {
-    c.exitOverride();
-    c.configureOutput({ writeErr: s => diag.push(s) });
-  }
-
-  await t.throwsAsync(cmd.parseAsync(argv), { instanceOf: CommanderError });
-  t.is(
-    diag.join('').trim(),
-    "error: option '--from <address>' argument 'gov1' is invalid. ENOENT: is agd in your $PATH?",
-  );
-  t.is(out.join('').trim(), '');
 });
 
 const usageTest = (words, blurb = 'Command usage:') => {
@@ -404,35 +325,7 @@ const usageTest = (words, blurb = 'Command usage:') => {
 };
 usageTest('inter');
 usageTest('inter auction status');
-usageTest('inter bid by-price');
-usageTest('inter bid by-discount');
-usageTest('inter bid list');
-usageTest('inter bid cancel');
 usageTest('inter vbank list');
-
-test('formatBid', t => {
-  const { values } = Object;
-  {
-    const actual = fmtBid(offerStatus1, values(agoricNames.vbankAsset));
-    t.deepEqual(actual, {
-      id: 1678990150266,
-      error: 'Error: "nameKey" not found: (a string)',
-      give: { Bid: '20 IST' },
-      price: '10 IST/ATOM',
-      maxBuy: '2 ATOM',
-    });
-  }
-  {
-    const actual = fmtBid(offerStatus2, values(agoricNames.vbankAsset));
-    t.deepEqual(actual, {
-      id: 'bid-1680241587424',
-      give: { Bid: '20 IST' },
-      payouts: { Collateral: '3.105 ATOM', Bid: '37 IST' },
-      maxBuy: '2 ATOM',
-      discount: 10,
-    });
-  }
-});
 
 /*
 _not_ like this:
@@ -597,45 +490,3 @@ test('README: inter vbank list', async t => {
   await cmd.parseAsync(argv);
   t.deepEqual(JSON.parse(out.join('')), expected);
 });
-
-test('README ex1: inter bid place by-price: printed offer is correct', async t => {
-  // The README example shows "bid is broadcast" but we test only bid format.
-  const noNet = '--dry-run';
-  const argv =
-    `node inter bid by-price --give 85IST --price 8.55 --from test-acct ${noNet}`
-      .trim()
-      .split(' ');
-  const out = [];
-  const net = makeNet({ ...publishedNames, wallet: govWallets });
-  const cmd = await makeInterCommand(
-    { ...makeProcess(t, testKeyring, out) },
-    net,
-  );
-  cmd.exitOverride(() => t.fail('exited'));
-
-  await cmd.parseAsync(argv);
-  const txt = out.join('').trim();
-
-  const expected = [
-    'Run this interactive command in shell:\n\n',
-    'agd ',
-    '--node=http://0.0.0.0:26657 --chain-id=agoriclocal --gas=auto --gas-adjustment=1.2 --from=agoric18jr9nlvp300feu726y3v4n07ykfjwup3twnlyn tx swingset wallet-action --allow-spend {"body":"#{\\"method\\":\\"executeOffer\\",\\"offer\\":{\\"id\\":\\"bid-1680241587424\\",\\"invitationSpec\\":{\\"callPipe\\":[[\\"makeBidInvitation\\",[\\"$0.Alleged: BoardRemoteBrand\\"]]],\\"instancePath\\":[\\"auctioneer\\"],\\"source\\":\\"agoricContract\\"},\\"offerArgs\\":{\\"maxBuy\\":{\\"brand\\":\\"$0\\",\\"value\\":\\"+1000000000000\\"},\\"offerPrice\\":{\\"denominator\\":{\\"brand\\":\\"$0\\",\\"value\\":\\"+100\\"},\\"numerator\\":{\\"brand\\":\\"$1.Alleged: BoardRemoteBrand\\",\\"value\\":\\"+855\\"}}},\\"proposal\\":{\\"give\\":{\\"Bid\\":{\\"brand\\":\\"$1\\",\\"value\\":\\"+85000000\\"}}}}}","slots":["board03446","board0566"]} --output json',
-  ].join('');
-  t.deepEqual(txt, expected);
-});
-
-/*
-$ agops inter bid by-price --price 0.81 --give 0.5 --maxBuy 3 --from gov2
-2023-03-30T21:48:14.479332418Z not in block 49618 retrying...
-bid is broadcast:
-{"timestamp":"2023-03-30T21:48:19Z","height":"49619","offerId":"bid-1680212903989","txhash":"472A47AAE24F27E747E3E64F4644860D2A5D3AD7EC5388C4C849805034E20D38"}
-first bid update:
-{"id":"bid-1680212903989","price":"0.81 IST/ATOM","give":{"Bid":"0.5IST"},"want":"3ATOM","result":"Your bid has been accepted"}
-*/
-
-/*
-$ agops inter bid cancel --from gov2 bid-1680211556497
-bid-1680211556497 not in live offer ids: bid-1680211593489,bid-1680212903989,bid-1680213097499,bid-1680220217218,bid-1680220368714,bid-1680220406939
-*/
-
-// TODO improve test coverage https://github.com/Agoric/agoric-sdk/issues/9965
