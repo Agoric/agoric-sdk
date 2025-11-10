@@ -48,9 +48,9 @@ jobs:
       matrix:
         target:
           - instance: ymax-test-planner
-            env_secret: ENV_GCP_FILE
+            env_secret: YMAX0_PLANNER_ENV
           - instance: ymax-test-planner-2
-            env_secret: ENV_GCP_FILE_2
+            env_secret: YMAX1_PLANNER_ENV
 
     steps:
       - name: Auth to Google Cloud (SA key)
