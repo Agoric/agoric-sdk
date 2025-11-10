@@ -1,5 +1,5 @@
 {
-  "@type": "/cosmos.params.v1beta1.ParameterChangeProposal",
+  "@type": "/cosmos.staking.v1beta1.MsgUpdateParams",
   "title": "Denominate swingset fees in BLD",
   "description": "...",
   "changes": [
