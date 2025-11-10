@@ -5,7 +5,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import { spawn } from 'child_process';
 import fs from 'fs';
 import { tmpName } from 'tmp';
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from '@agoric/swing-store';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
 
@@ -49,7 +49,7 @@ function checkMetered(t, args, metered) {
 }
 
 async function doTest(t, metered) {
-  const db = sqlite3(':memory:');
+  const db = createDatabase(':memory:');
   const store = makeSnapStore(db, () => {}, makeSnapStoreIO());
 
   const { p: p1, startXSnap: start1 } = make(store);

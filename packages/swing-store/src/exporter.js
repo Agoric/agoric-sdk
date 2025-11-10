@@ -107,7 +107,7 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
   const bundleStore = makeBundleStore(db, ensureTxn);
   const transcriptStore = makeTranscriptStore(db, ensureTxn, () => {});
 
-  /** @type {any} */
+  /** @type {import('./sqliteAdapter.js').WrappedStatement} */
   const sqlKVGet = db.prepare(`
     SELECT value
     FROM kvStore
@@ -131,10 +131,10 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
    */
   function getHostKV(key) {
     getKeyType(key) === 'host' || Fail`getHostKV requires host keys`;
-    return sqlKVGet.get(key);
+    return /** @type {string | undefined} */ (sqlKVGet.get(key));
   }
 
-  /** @type {any} */
+  /** @type {import('./sqliteAdapter.js').WrappedStatement} */
   const sqlGetAllKVData = db.prepare(`
     SELECT key, value
     FROM kvStore
@@ -146,7 +146,8 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
    * @yields {KVPair}
    */
   async function* getExportData() {
-    for (const { key, value } of sqlGetAllKVData.iterate()) {
+    for (const row of sqlGetAllKVData.iterate()) {
+      const { key, value } = /** @type {{ key: string, value: string }} */ (row);
       if (getKeyType(key) === 'consensus') {
         yield [`kv.${key}`, value];
       }

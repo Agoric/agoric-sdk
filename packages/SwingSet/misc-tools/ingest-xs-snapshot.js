@@ -5,7 +5,7 @@
 import fs from 'fs';
 import zlib from 'zlib';
 import process from 'process';
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from '@agoric/swing-store';
 
 // super-experimental tool to parse an XS heap snapshot file (as
 // extracted from kerneldb by extract-snapshot.js) and populate a
@@ -18,7 +18,7 @@ import sqlite3 from 'better-sqlite3';
 // sqlite3 output.sqlite .schema
 
 function makeDB(dbfn) {
-  const db = sqlite3(dbfn);
+  const db = createDatabase(dbfn);
   db.exec(`PRAGMA journal_mode=WAL`);
   // these tables hold the snapshot contents more-or-less verbatim
   db.exec(`CREATE TABLE chunk (chunk BLOB)`);

@@ -1,5 +1,5 @@
 import process from 'process';
-import sqlite3 from 'better-sqlite3';
+import { createDatabase } from '@agoric/swing-store';
 import '@endo/init/debug.js';
 import { checkBaggage } from '../tools/baggage-check.js';
 
@@ -12,7 +12,7 @@ function main() {
   const vatID = argv[0];
   const dbPath = argv[1];
 
-  const db = sqlite3(dbPath);
+  const db = createDatabase(dbPath);
   checkBaggage(db, vatID, true);
 }
 

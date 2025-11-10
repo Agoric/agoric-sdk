@@ -9,6 +9,29 @@
 import { DatabaseSync } from '@photostructure/sqlite';
 
 /**
+ * @typedef {object} WrappedStatement
+ * @property {string} sourceSQL
+ * @property {(column?: boolean | number) => WrappedStatement} pluck
+ * @property {() => WrappedStatement} raw
+ * @property {(...args: unknown[]) => unknown} get
+ * @property {(...args: unknown[]) => unknown[]} all
+ * @property {(...args: unknown[]) => { changes: number, lastInsertRowid: number | bigint }} run
+ * @property {(...args: unknown[]) => IterableIterator<unknown>} iterate
+ * @property {() => void} finalize
+ */
+
+/**
+ * @typedef {object} WrappedDatabase
+ * @property {(sql: string) => WrappedStatement} prepare
+ * @property {(sql: string) => void} exec
+ * @property {() => void} close
+ * @property {boolean} inTransaction
+ * @property {(enabled: boolean) => void} unsafeMode
+ * @property {(sql: string, opts?: { simple?: boolean }) => unknown} pragma
+ * @property {() => Buffer} serialize
+ */
+
+/**
  * Wraps a DatabaseSync to add better-sqlite3 compatibility features
  * 
  * @param {string | Buffer} location - Path to database file or Buffer for serialized DB
@@ -29,17 +52,6 @@ export function createDatabase(location, options = {}) {
   
   // Track transaction state manually since @photostructure/sqlite doesn't expose it
   let transactionDepth = 0;
-  
-  /**
-   * @typedef {object} WrappedDatabase
-   * @property {(sql: string) => any} prepare
-   * @property {(sql: string) => void} exec
-   * @property {() => void} close
-   * @property {boolean} inTransaction
-   * @property {(enabled: boolean) => void} unsafeMode
-   * @property {(sql: string, opts?: { simple?: boolean }) => any} pragma
-   * @property {() => Buffer} serialize
-   */
   
   // @ts-ignore - We're intentionally creating a wrapper with extended functionality
   const wrapped = {
@@ -156,10 +168,11 @@ export function createDatabase(location, options = {}) {
 
 /**
  * Wraps a StatementSync to add better-sqlite3 compatibility features
- * @param {any} stmt - The statement instance from DatabaseSync
+ * @param {import('@photostructure/sqlite').StatementSync} stmt - The statement instance from DatabaseSync
  * @param {string} sql - The SQL text for transaction tracking
  * @param {() => void} onBegin - Callback when BEGIN is executed
  * @param {() => void} onCommitOrRollback - Callback when COMMIT/ROLLBACK is executed
+ * @returns {WrappedStatement}
  */
 function wrapStatement(stmt, sql, onBegin, onCommitOrRollback) {
   let pluckEnabled = false;
