@@ -5,7 +5,8 @@ import tmpambient from 'tmp';
  * @param {{ createDatabase?: typeof createDatabase, tmp?: typeof tmpambient }} [io]
  */
 export const makeTempKVDatabase = io => {
-  const { createDatabase: createDB = createDatabase, tmp = tmpambient } = io || {};
+  const { createDatabase: createDB = createDatabase, tmp = tmpambient } =
+    io || {};
 
   const tmpfile = tmp.fileSync({
     prefix: 'slog-to-otel-',

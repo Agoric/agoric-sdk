@@ -3,7 +3,6 @@
 import * as fs from 'fs';
 import * as pathlib from 'path';
 
-
 import { Fail, q } from '@endo/errors';
 
 import { attenuate } from '@agoric/internal';

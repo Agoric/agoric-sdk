@@ -1,7 +1,6 @@
 import { Fail, q } from '@endo/errors';
 import { createDatabase } from './sqliteAdapter.js';
 
-
 import { dbFileInDirectory } from './util.js';
 import { getKeyType } from './kvStore.js';
 import { makeBundleStore } from './bundleStore.js';
@@ -147,7 +146,9 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
    */
   async function* getExportData() {
     for (const row of sqlGetAllKVData.iterate()) {
-      const { key, value } = /** @type {{ key: string, value: string }} */ (row);
+      const { key, value } = /** @type {{ key: string, value: string }} */ (
+        row
+      );
       if (getKeyType(key) === 'consensus') {
         yield [`kv.${key}`, value];
       }

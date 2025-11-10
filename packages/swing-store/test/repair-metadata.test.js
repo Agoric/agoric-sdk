@@ -61,7 +61,7 @@ test('repair metadata', async t => {
   // now fix it
   const ss = openSwingStore(dbDir);
   t.teardown(ss.hostStorage.close);
-  
+
   // Reopen db connection to check metadata
   const db2 = ss.debug.getDatabase();
   const getTS2 = db2.prepare(
@@ -72,7 +72,7 @@ test('repair metadata', async t => {
     'SELECT snapPos FROM snapshots WHERE vatID = ? ORDER BY snapPos',
   );
   getSS2.pluck();
-  
+
   await ss.hostStorage.repairMetadata(exporter);
   await ss.hostStorage.commit();
 
