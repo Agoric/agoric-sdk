@@ -94,11 +94,13 @@ const capacityOfDefaultCache = 50;
  * @template V
  * @param {boolean} [weakKey]
  */
-// eslint-disable-next-line no-unused-vars
 const makeDefaultCacheMap = weakKey =>
   /** @type {WeakMapAPI<K, V>} */ (
     makeCacheMapKit(capacityOfDefaultCache, {
-      makeMap: Map,
+      // We use a Map even for weakKey as the assumption is that we run under
+      // liveslots which virtualizes WeakMap, and since the mapping is
+      // bidirectional by default, the key would be pinned anyway.
+      makeMap: weakKey ? Map : Map,
     }).cache
   );
 
