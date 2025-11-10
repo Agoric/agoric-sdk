@@ -14,7 +14,7 @@ fi
 agd tx bank send validator "$GOV1ADDR" 25000000000ubld $SIGN_BROADCAST_OPTS
 
 # shellcheck disable=SC2086
-agd tx gov submit-proposal param-change drop-ist.json $SIGN_BROADCAST_OPTS --deposit=25000000000ubld
+agd tx gov submit-proposal param-change drop-ist.json $SIGN_BROADCAST_OPTS --from gov1
 
 voteLatestProposalAndWait
 
