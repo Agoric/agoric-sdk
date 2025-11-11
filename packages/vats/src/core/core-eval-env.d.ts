@@ -4,7 +4,7 @@
  *
  *   To use add this to the top of the proposal:
  *
- *   /// <reference types="@agoric/vats/src/core/core-eval-env" />
+ *   /// <reference types="@agoric/vats/src/core/core-eval-env.js" />
  *
  *   That directive has to be before imports, but this one's only useful in
  *   modules that have no imports or named exports.

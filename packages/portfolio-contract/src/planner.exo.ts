@@ -2,7 +2,8 @@
  * @file Planner exo for off-chain planning services to submit portfolio rebalancing plans.
  * @see {@link preparePlanner}
  */
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, type TypedPattern } from '@agoric/internal';
+import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import { type Vow, VowShape, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
@@ -12,6 +13,11 @@ import type { MovementDesc, OfferArgsFor } from './type-guards-steps.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
 
 const trace = makeTracer('PPLN');
+
+const OrderShape: TypedPattern<FundsFlowPlan['order']> = M.arrayOf([
+  M.number(),
+  M.arrayOf(M.number()),
+]);
 
 /**
  * Prepare a Planner exoClass for off-chain planning services.
@@ -41,16 +47,17 @@ export const preparePlanner = (
   },
 ) => {
   const { movementDescShape } = shapes;
+  const planShape: TypedPattern<FundsFlowPlan> = M.splitRecord(
+    { flow: M.arrayOf(movementDescShape) },
+    { order: OrderShape },
+  );
+  const planCompatShape = M.or(planShape, M.arrayOf(movementDescShape));
+
   const PlannerI = M.interface('Planner', {
     submit: M.call(M.number(), M.arrayOf(movementDescShape), M.number())
       .optional(M.number())
       .returns(VowShape),
-    resolvePlan: M.call(
-      M.number(),
-      M.number(),
-      M.arrayOf(movementDescShape),
-      M.number(),
-    )
+    resolvePlan: M.call(M.number(), M.number(), planCompatShape, M.number())
       .optional(M.number())
       .returns(),
   });
@@ -65,6 +72,9 @@ export const preparePlanner = (
        *
        * Used by off-chain planning services to carry out expressed wishes
        * of a portfolio owner.
+       *
+       * @deprecated
+       * @see resolvePlan
        *
        * @param portfolioId - Target portfolio identifier
        * @param plan - Array of asset movements to execute
@@ -90,14 +100,14 @@ export const preparePlanner = (
       resolvePlan(
         portfolioId: number,
         flowId: number,
-        plan: MovementDesc[],
+        planOrSteps: FundsFlowPlan | MovementDesc[],
         policyVersion: number,
         rebalanceCount = 0,
       ) {
-        trace('TODO(#11782): vet plan', { portfolioId, plan });
+        trace('TODO(#11782): vet plan', { portfolioId, plan: planOrSteps });
         const { planner: portfolioPlanner } = getPortfolio(portfolioId);
         portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
-        portfolioPlanner.resolveFlowPlan(flowId, plan);
+        portfolioPlanner.resolveFlowPlan(flowId, planOrSteps);
       },
     },
     {

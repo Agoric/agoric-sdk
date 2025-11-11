@@ -9,6 +9,7 @@
  * @see {@link AaveProtocol}
  * @see {@link CompoundProtocol}
  */
+import type { GuestInterface } from '@agoric/async-flow';
 import type { NatValue } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { encodeHex } from '@agoric/internal/src/hex.js';
@@ -31,9 +32,9 @@ import {
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
-import { q, X } from '@endo/errors';
-import type { GuestInterface } from '@agoric/async-flow';
+import { Fail, q, X } from '@endo/errors';
 import { ERC20, makeEVMSession, type EVMT } from './evm-facade.ts';
+import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type {
   AxelarId,
   EVMContractAddresses,
@@ -81,10 +82,12 @@ export const provideEVMAccount = async (
       remoteAddress: ctx.contracts[chainName].factory,
     };
     const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
+    fee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
     const feeAccount = await ctx.contractAccount;
     const src = feeAccount.getAddress();
     traceChain('send makeAccountCall Axelar fee from', src.value);
     await feeAccount.send(lca.getAddress(), fee);
+
     await sendMakeAccountCall(
       target,
       fee,
@@ -134,24 +137,29 @@ export const CCTPfromEVM = {
   how: 'CCTP',
   connections: keys(AxelarChain).map((src: AxelarChain) => ({
     src,
-    dest: 'noble',
+    dest: 'agoric',
   })),
   apply: async (ctx, amount, src, dest) => {
     const traceTransfer = trace.sub('CCTPin').sub(src.chainName);
     traceTransfer('transfer', amount, 'from', src.remoteAddress);
-    const { addresses: a } = ctx;
-    const mintRecipient = bech32ToBytes32(dest.ica.getAddress().value);
+    const { addresses, nobleForwardingChannel } = ctx;
+    const fwdAddr = generateNobleForwardingAddress(
+      nobleForwardingChannel,
+      dest.lca.getAddress().value,
+    );
+    traceTransfer('Noble forwarding address', fwdAddr);
+    const mintRecipient = bech32ToBytes32(fwdAddr); // XXX we generate bech32 only to go back to bytes
 
     const session = makeEVMSession();
-    const usdc = session.makeContract(a.usdc, ERC20);
-    const tm = session.makeContract(a.tokenMessenger, TokenMessenger);
-    usdc.approve(a.tokenMessenger, amount.value);
-    tm.depositForBurn(amount.value, nobleDomain, mintRecipient, a.usdc);
+    const usdc = session.makeContract(addresses.usdc, ERC20);
+    const tm = session.makeContract(addresses.tokenMessenger, TokenMessenger);
+    usdc.approve(addresses.tokenMessenger, amount.value);
+    tm.depositForBurn(amount.value, nobleDomain, mintRecipient, addresses.usdc);
     const calls = session.finish();
 
     const { result } = ctx.resolverClient.registerTransaction(
-      TxType.CCTP_TO_NOBLE,
-      coerceAccountId(dest.ica.getAddress()),
+      TxType.CCTP_TO_AGORIC,
+      coerceAccountId(dest.lca.getAddress()),
       amount.value,
     );
 
@@ -160,16 +168,7 @@ export const CCTPfromEVM = {
     await Promise.all([result, contractCallP]);
     traceTransfer('transfer complete.');
   },
-  recover: async (ctx, amount, src, dest) => {
-    return CCTP.apply(ctx, amount, dest, src);
-  },
-} as const satisfies TransportDetail<
-  'CCTP',
-  AxelarChain,
-  'noble',
-  EVMContext,
-  PortfolioInstanceContext
->;
+} as const satisfies TransportDetail<'CCTP', AxelarChain, 'agoric', EVMContext>;
 harden(CCTPfromEVM);
 
 export const CCTP = {
@@ -196,11 +195,6 @@ export const CCTP = {
       result,
     ]);
     traceTransfer('transfer complete.');
-  },
-  recover: async (_ctx, _amount, _src, _dest) => {
-    // XXX evmCtx needs a GMP fee
-    // return CCTPfromEVM.apply(evmCtx, amount, dest, src);
-    throw Error('TODO(Luqi): how to recover from CCTP transfer?');
   },
 } as const satisfies TransportDetail<'CCTP', 'noble', AxelarChain>;
 harden(CCTP);
@@ -302,6 +296,7 @@ export type EVMContext = {
   axelarIds: AxelarId;
   poolKey?: PoolKey;
   resolverClient: GuestInterface<ResolverKit['client']>;
+  nobleForwardingChannel: `channel-${number}`;
 };
 
 type AaveI = {

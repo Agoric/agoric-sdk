@@ -2,6 +2,7 @@
 
 import { assert, Fail } from '@endo/errors';
 import { isNat } from '@endo/nat';
+import { toPassableError } from '@endo/marshal';
 import { mustMatch, M } from '@endo/patterns';
 import { importBundle } from '@endo/import-bundle';
 import { objectMetaMap, PromiseAllOrErrors } from '@agoric/internal';
@@ -40,9 +41,77 @@ import { notifyTermination } from './notifyTermination.js';
 import { makeVatAdminHooks } from './vat-admin-hooks.js';
 
 /**
- * @import {MeterConsumption, VatDeliveryObject, VatDeliveryResult, VatSyscallObject, VatSyscallResult} from '@agoric/swingset-liveslots';
- * @import {PolicyInputCleanupCounts} from '../types-external.js';
+ * @import {
+ *    MeterConsumption,
+ *    VatDeliveryObject,
+ *    VatDeliveryResult,
+ *    VatSyscallObject,
+ *    VatSyscallResult,
+ * } from '@agoric/swingset-liveslots';
+ * @import {
+ *    PolicyInputCleanupCounts,
+ *    RunPolicy,
+ *    KernelSlog,
+ *    Bundle,
+ *    BundleID,
+ *    SwingSetCapData,
+ *    KernelDeliveryMessage,
+ *    KernelDeliveryObject,
+ *    KernelDeliveryNotify,
+ *    KernelDeliveryOneNotify,
+ *    KernelDeliveryDropExports,
+ *    KernelDeliveryRetireExports,
+ *    KernelDeliveryRetireImports,
+ *    KernelDeliveryBringOutYourDead,
+ *    KernelDeliveryStartVat,
+ *    KernelDeliveryChangeVatOptions,
+ *    ResolutionPolicy,
+ *    Message,
+ *    EndoZipBase64Bundle,
+ *    PolicyInput,
+ *    SlogFinishSyscall,
+ *    KernelSyscallObject,
+ *    KernelSyscallResult,
+ *    ManagerType,
+ * } from '../types-external.js';
+ * @import {
+ *   MeterID,
+ *   Dirt,
+ *   KernelPanic,
+ *   VatID,
+ *   InternalDynamicVatOptions,
+ *   RunQueueEvent,
+ *   RunQueueEventNotify,
+ *   RunQueueEventSend,
+ *   RunQueueEventCreateVat,
+ *   RunQueueEventUpgradeVat,
+ *   RunQueueEventChangeVatOptions,
+ *   RunQueueEventStartVat,
+ *   RunQueueEventDropExports,
+ *   RunQueueEventRetireExports,
+ *   RunQueueEventRetireImports,
+ *   RunQueueEventNegatedGCAction,
+ *   RunQueueEventBringOutYourDead,
+ *   RunQueueEventCleanupTerminatedVat,
+ * } from '../types-internal.js';
+ * @import {KernelKeeper} from './state/kernelKeeper.js';
  */
+
+/** @typedef {typeof gcMessageTypes[number]} GcMessageType */
+const gcMessageTypes = /** @type {const} */ ([
+  'bringOutYourDead',
+  'dropExports',
+  'retireExports',
+  'retireImports',
+]);
+
+/** @typedef {Extract<RunQueueEvent, { type: GcMessageType }>} GcMessage */
+
+/** @type {Set<RunQueueEvent['type']>} */
+const gcMessageTypesSet = new Set(gcMessageTypes);
+
+/** @type {(message: RunQueueEvent) => message is GcMessage} */
+const isGcMessage = message => gcMessageTypesSet.has(message.type);
 
 function abbreviateReplacer(_, arg) {
   if (typeof arg === 'bigint') {
@@ -157,8 +226,8 @@ export default function buildKernel(
 
   // This is a low-level output-only string logger used by old unit tests to
   // see whether vats made progress or not. The array it appends to is
-  // available as c.dump().log . New unit tests should instead use the
-  // 'result' value returned by c.queueToKref()
+  // available from controller methods `dumpLog` and `dump`. New unit tests
+  // should instead use the 'result' value returned by c.queueToKref().
   function testLog(...args) {
     const rendered = args.map(arg =>
       typeof arg === 'string' ? arg : JSON.stringify(arg, abbreviateReplacer),
@@ -247,7 +316,7 @@ export default function buildKernel(
   // error at the first opportunity
   let kernelPanic = null;
 
-  /** @type {import('../types-internal.js').KernelPanic} */
+  /** @type {KernelPanic} */
   function panic(problem, err = undefined) {
     console.error(`##### KERNEL PANIC: ${problem} #####`);
     kernelPanic = err || Error(`kernel panic ${problem}`);
@@ -386,10 +455,6 @@ export default function buildKernel(
   });
 
   /**
-   *
-   * @typedef { import('../types-internal.js').MeterID } MeterID
-   * @typedef { import('../types-internal.js').Dirt } Dirt
-   *
    *  Any delivery crank (send, notify, start-vat.. anything which is allowed
    *  to make vat delivery) emits one of these status events if a delivery
    *  actually happened.
@@ -704,34 +769,43 @@ export default function buildKernel(
    */
   async function processCleanupTerminatedVat(message) {
     const { vatID, budget } = message;
-    const { done, work } = kernelKeeper.cleanupAfterTerminatedVat(
+    const finish = kernelSlog.startDuration([undefined, 'vat-cleanup'], {
       vatID,
-      budget,
-    );
-    const zeroFreeWorkCounts = objectMetaMap(work, desc =>
-      desc.value ? desc : undefined,
-    );
-    kernelSlog.write({ type: 'vat-cleanup', vatID, work: zeroFreeWorkCounts });
+    });
+    let slogged = false;
+    try {
+      const { done, work } = kernelKeeper.cleanupAfterTerminatedVat(
+        vatID,
+        budget,
+      );
+      const zeroFreeWorkCounts = objectMetaMap(work, desc =>
+        desc.value ? desc : undefined,
+      );
+      finish({ work: zeroFreeWorkCounts });
+      slogged = true;
 
-    /** @type {PolicyInputCleanupCounts} */
-    const cleanups = {
-      total:
+      if (done) {
+        kernelKeeper.forgetTerminatedVat(vatID);
+        kernelSlog.write({ type: 'vat-cleanup-complete', vatID });
+      }
+
+      // We don't perform any deliveries here, so there are no computrons to
+      // report, but we do tell the runPolicy know how much kernel-side DB
+      // work we did, so it can decide how much was too much.
+      const total =
         work.exports +
         work.imports +
         work.promises +
         work.kv +
         work.snapshots +
-        work.transcripts,
-      ...work,
-    };
-    if (done) {
-      kernelKeeper.forgetTerminatedVat(vatID);
-      kernelSlog.write({ type: 'vat-cleanup-complete', vatID });
+        work.transcripts;
+      /** @type {PolicyInputCleanupCounts} */
+      const cleanups = { total, ...work };
+      return harden({ computrons: 0n, cleanups });
+    } catch (err) {
+      if (!slogged) finish({ error: err.message });
+      throw err;
     }
-    // We don't perform any deliveries here, so there are no computrons to
-    // report, but we do tell the runPolicy know how much kernel-side DB
-    // work we did, so it can decide how much was too much.
-    return harden({ computrons: 0n, cleanups });
   }
 
   /**
@@ -832,6 +906,7 @@ export default function buildKernel(
     // the new vat's root object
 
     const kernelRootObjSlot = exportRootObject(kernelKeeper, vatID);
+    // This arg will be part of a delivery so it must be passable.
     const arg = { rootObject: kslot(kernelRootObjSlot) };
     /** @type { RawMethargs } */
     const vatAdminMethargs = ['newVatCallback', [vatID, arg]];
@@ -954,10 +1029,13 @@ export default function buildKernel(
       // notify vat-admin of the failed upgrade without revealing error details
       insistCapData(errorCapData);
       // const error = kunser(errorCapData);
-      const error = Error('vat-upgrade failure');
+      // The error will be included in delivery arguments so we need to make
+      // sure it's passable or marshal will throw, and we'll panic.
+      const error = toPassableError(Error('vat-upgrade failure'));
       /** @type {RawMethargs} */
       const vatAdminMethargs = [
         'vatUpgradeCallback',
+        // upgradeID is generated by the kernel in makeUpgradeID
         [upgradeID, false, error],
       ];
 
@@ -986,7 +1064,7 @@ export default function buildKernel(
     // send BOYD so the terminating vat has one last chance to clean
     // up, drop imports, and delete durable data.
     // If a vat is so broken it can't do BOYD, we can make this optional.
-    /** @type { import('../types-external.js').KernelDeliveryBringOutYourDead } */
+    /** @type { KernelDeliveryBringOutYourDead } */
     const boydKD = harden(['bringOutYourDead']);
     const boydVD = vatWarehouse.kernelDeliveryToVatDelivery(vatID, boydKD);
     const boydStatus = await deliverAndLogToVat(vatID, boydKD, boydVD);
@@ -1069,7 +1147,7 @@ export default function buildKernel(
     // between the old and the new. this moment will never come again.
 
     // deliver a startVat with the new vatParameters
-    /** @type { import('../types-external.js').KernelDeliveryStartVat } */
+    /** @type { KernelDeliveryStartVat } */
     const startVatKD = harden(['startVat', vatParameters]);
     const startVatVD = vatWarehouse.kernelDeliveryToVatDelivery(
       vatID,
@@ -1108,6 +1186,8 @@ export default function buildKernel(
       `vat ${vatID} upgraded from incarnation ${oldIncarnation} to ${newIncarnation} with source ${bundleID}`,
     );
 
+    // These args will be part of a delivery so they must be passable.
+    // upgradeID is generated by the kernel in makeUpgradeID
     const args = [upgradeID, true, undefined, newIncarnation];
     /** @type {RawMethargs} */
     const vatAdminMethargs = ['vatUpgradeCallback', args];
@@ -1119,33 +1199,43 @@ export default function buildKernel(
     return results;
   }
 
+  /** @type {(message: RunQueueEvent) => string} */
   function legibilizeMessage(message) {
-    if (message.type === 'send') {
-      const msg = message.msg;
-      const [method, argList] = legibilizeMessageArgs(msg.methargs);
-      const result = msg.result ? msg.result : 'null';
-      return `@${message.target} <- ${method}(${argList}) : @${result}`;
-    } else if (message.type === 'notify') {
-      return `notify(vatID: ${message.vatID}, kpid: @${message.kpid})`;
-    } else if (message.type === 'create-vat') {
-      // prettier-ignore
-      return `create-vat ${message.vatID} opts: ${JSON.stringify(message.dynamicOptions)} vatParameters: ${JSON.stringify(message.vatParameters)}`;
-    } else if (message.type === 'upgrade-vat') {
-      // prettier-ignore
-      return `upgrade-vat ${message.vatID} upgradeID: ${message.upgradeID} vatParameters: ${JSON.stringify(message.vatParameters)}`;
-    } else if (message.type === 'changeVatOptions') {
-      // prettier-ignore
-      return `changeVatOptions ${message.vatID} options: ${JSON.stringify(message.options)}`;
-    } else if (gcMessages.includes(message.type)) {
-      // prettier-ignore
-      return `${message.type} ${message.vatID} ${message.krefs.map(e=>`@${e}`).join(' ')}`;
-    } else if (
-      message.type === 'bringOutYourDead' ||
-      message.type === 'startVat'
-    ) {
-      return `${message.type} ${message.vatID}`;
-    } else {
-      return `unknown message type ${message.type}`;
+    switch (message.type) {
+      case 'send': {
+        const msg = message.msg;
+        const [method, argList] = legibilizeMessageArgs(msg.methargs);
+        const result = msg.result ? msg.result : 'null';
+        return `@${message.target} <- ${method}(${argList}) : @${result}`;
+      }
+      case 'notify':
+        return `notify(vatID: ${message.vatID}, kpid: @${message.kpid})`;
+      case 'create-vat': {
+        const optsStr = JSON.stringify(message.dynamicOptions);
+        const vatParametersStr = JSON.stringify(message.vatParameters);
+        // prettier-ignore
+        return `create-vat ${message.vatID} opts: ${optsStr} vatParameters: ${vatParametersStr}`;
+      }
+      case 'upgrade-vat': {
+        const vatParametersStr = JSON.stringify(message.vatParameters);
+        // prettier-ignore
+        return `upgrade-vat ${message.vatID} upgradeID: ${message.upgradeID} vatParameters: ${vatParametersStr}`;
+      }
+      case 'changeVatOptions':
+        // prettier-ignore
+        return `changeVatOptions ${message.vatID} options: ${JSON.stringify(message.options)}`;
+      case 'startVat':
+      case 'cleanup-terminated-vat':
+      case 'negated-gc-action':
+      case 'bringOutYourDead':
+        return `${message.type} ${message.vatID}`;
+      default:
+        if (isGcMessage(message)) {
+          const krefs = message.krefs.map(e => `@${e}`).join(' ');
+          return `${message.type} ${message.vatID} ${krefs}`;
+        }
+        // @ts-expect-error unreachable
+        return `unknown message type ${message.type}`;
     }
   }
 
@@ -1248,27 +1338,6 @@ export default function buildKernel(
     kernelKeeper.decrementRefCount(message.kpid, `deq|notify`);
   }
 
-  const gcMessages = ['dropExports', 'retireExports', 'retireImports'];
-
-  /**
-   * @typedef { import('../types-internal.js').VatID } VatID
-   * @typedef { import('../types-internal.js').InternalDynamicVatOptions } InternalDynamicVatOptions
-   *
-   * @typedef { import('../types-internal.js').RunQueueEventNotify } RunQueueEventNotify
-   * @typedef { import('../types-internal.js').RunQueueEventSend } RunQueueEventSend
-   * @typedef { import('../types-internal.js').RunQueueEventCreateVat } RunQueueEventCreateVat
-   * @typedef { import('../types-internal.js').RunQueueEventUpgradeVat } RunQueueEventUpgradeVat
-   * @typedef { import('../types-internal.js').RunQueueEventChangeVatOptions } RunQueueEventChangeVatOptions
-   * @typedef { import('../types-internal.js').RunQueueEventStartVat } RunQueueEventStartVat
-   * @typedef { import('../types-internal.js').RunQueueEventDropExports } RunQueueEventDropExports
-   * @typedef { import('../types-internal.js').RunQueueEventRetireExports } RunQueueEventRetireExports
-   * @typedef { import('../types-internal.js').RunQueueEventRetireImports } RunQueueEventRetireImports
-   * @typedef { import('../types-internal.js').RunQueueEventNegatedGCAction } RunQueueEventNegatedGCAction
-   * @typedef { import('../types-internal.js').RunQueueEventBringOutYourDead } RunQueueEventBringOutYourDead
-   * @typedef { import('../types-internal.js').RunQueueEventCleanupTerminatedVat } RunQueueEventCleanupTerminatedVat
-   * @typedef { import('../types-internal.js').RunQueueEvent } RunQueueEvent
-   */
-
   /**
    *
    * Dispatch one delivery event. Eventually, this will be called in a
@@ -1328,16 +1397,17 @@ export default function buildKernel(
       deliverP = processUpgradeVat(message);
     } else if (message.type === 'changeVatOptions') {
       deliverP = processChangeVatOptions(message);
-    } else if (message.type === 'bringOutYourDead') {
-      deliverP = processBringOutYourDead(message);
+    } else if (message.type === 'cleanup-terminated-vat') {
+      deliverP = processCleanupTerminatedVat(message);
     } else if (message.type === 'negated-gc-action') {
       // processGCActionSet pruned some negated actions, but had no GC
       // action to perform. Record the DB changes in their own crank.
-    } else if (message.type === 'cleanup-terminated-vat') {
-      deliverP = processCleanupTerminatedVat(message);
-    } else if (gcMessages.includes(message.type)) {
+    } else if (message.type === 'bringOutYourDead') {
+      deliverP = processBringOutYourDead(message);
+    } else if (isGcMessage(message)) {
       deliverP = processGCMessage(message);
     } else {
+      // @ts-expect-error unreachable
       Fail`unable to process message.type ${message.type}`;
     }
 
@@ -1353,13 +1423,16 @@ export default function buildKernel(
    */
   async function processDeliveryMessage(message) {
     const messageType = message.type;
+    const messageSummary = legibilizeMessage(message);
+    const crankNum = kernelKeeper.getCrankNumber();
+
     kdebug('');
-    // prettier-ignore
-    kdebug(`processQ crank ${kernelKeeper.getCrankNumber()} ${JSON.stringify(message)}`);
-    kdebug(legibilizeMessage(message));
+    kdebug(`processQ crank ${crankNum} ${JSON.stringify(message)}`);
+    kdebug(messageSummary);
+
     const finish = kernelSlog.startDuration(['crank-start', 'crank-finish'], {
       crankType: 'delivery',
-      crankNum: kernelKeeper.getCrankNumber(),
+      crankNum,
       messageType,
       message,
     });
@@ -1384,7 +1457,7 @@ export default function buildKernel(
 
     kernelKeeper.establishCrankSavepoint('deliver');
     const crankResults = await deliverRunQueueEvent(message);
-    // { abort/commit, deduct, terminate+notify, consumeMessage }
+    let didSnapshot = false;
 
     if (message.type === 'cleanup-terminated-vat') {
       const { cleanups } = crankResults;
@@ -1417,7 +1490,7 @@ export default function buildKernel(
     } else {
       const vatID = crankResults.didDelivery;
       if (vatID) {
-        await vatWarehouse.maybeSaveSnapshot(vatID);
+        didSnapshot = await vatWarehouse.maybeSaveSnapshot(vatID);
       }
     }
     const { computrons, meterID } = crankResults;
@@ -1454,12 +1527,23 @@ export default function buildKernel(
       // we use terminateVat() to notify vat-admin about failed vat
       // creation, but vatAdminMethargs for successful vat creation,
       // and failed/successful vat upgrades.
+      // Note: relies on vatAdminMethargs being passable
       const [method, args] = crankResults.vatAdminMethargs;
       queueToKref(vatAdminRootKref, method, args, 'logFailure');
     }
 
-    kernelKeeper.processRefcounts();
-    const crankNum = kernelKeeper.getCrankNumber();
+    const { lostKrefs } = kernelKeeper.processRefcounts();
+    // Lost krefs are expected for GC, but can also occur when a crank is rolled
+    // back.
+    if (lostKrefs.length && !isGcMessage(message)) {
+      const vatID = crankResults.didDelivery;
+      console.log(
+        `⚠️ Ignoring lost krefs from crankNum ${crankNum} ${vatID} ${messageSummary}${didSnapshot ? ' + snapshot' : ''}`,
+        lostKrefs,
+        message,
+        crankResults,
+      );
+    }
     kernelKeeper.incrementCrankNumber();
     const { crankhash, activityhash } = kernelKeeper.emitCrankHashes();
     finish({
@@ -1720,7 +1804,7 @@ export default function buildKernel(
     logStartup(`assigned VatID ${vatID} for test vat ${name}`);
 
     const source = { bundleID };
-    /** @type {import('../types-external.js').ManagerType} */
+    /** @type {ManagerType} */
     const managerType = 'local';
     const options = {
       name,
@@ -2257,14 +2341,18 @@ export default function buildKernel(
       };
     },
 
+    // Note: Logs are not deterministic, since log() does not go through the
+    // syscall interface (and we replay transcripts one vat at a time, so any
+    // log() calls that were interleaved during their original execution will be
+    // sorted by vat in the replay). They are therefore not kept in the
+    // persistent state and remain ephemeral.
+    dumpLog(idx = 0) {
+      return ephemeral.log.slice(idx);
+    },
     dump() {
-      // note: dump().log is not deterministic, since log() does not go
-      // through the syscall interface (and we replay transcripts one vat at
-      // a time, so any log() calls that were interleaved during their
-      // original execution will be sorted by vat in the replay). Logs are
-      // not kept in the persistent state, only in ephemeral state.
       return { log: ephemeral.log, ...kernelKeeper.dump() };
     },
+
     kdebugEnable,
 
     addImport,

@@ -52,7 +52,7 @@ const just = obj => {
 
 /**
  * @typedef {Pick<
- *   import('../cosmos-api').IBCMsgTransferOptions,
+ *   import('../cosmos-api.js').IBCMsgTransferOptions,
  *   'timeoutHeight' | 'timeoutTimestamp'
  * >} PacketTimeout
  */

@@ -1,19 +1,19 @@
 /**
  * @file offerArgs types / shapes - temporarily separate from type-guards.ts
  */
-import type { Brand, NatAmount, NatValue } from '@agoric/ertp';
+import type { Brand } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { AnyNatAmountShape } from '@agoric/orchestration';
-import { M } from '@endo/patterns';
+import type { AssetPlaceRef, MovementDesc } from '@agoric/portfolio-api';
 import {
   AxelarChain,
   SupportedChain,
 } from '@agoric/portfolio-api/src/constants.js';
+import { M } from '@endo/patterns';
 import {
   makeNatAmountShape,
   PoolPlaces,
   TargetAllocationShape,
-  type PoolKey,
   type TargetAllocation,
 } from './type-guards.ts';
 
@@ -23,11 +23,6 @@ export type SeatKeyword = 'Cash' | 'Deposit';
 export const seatKeywords: SeatKeyword[] = ['Cash', 'Deposit'];
 harden(seatKeywords);
 
-export type AssetPlaceRef =
-  | `<${SeatKeyword}>`
-  | '+agoric' // deposit LCA
-  | `@${SupportedChain}`
-  | PoolKey;
 const AssetPlaceRefShape = M.or(
   ...seatKeywords.map(kw => `<${kw}>`),
   '+agoric',
@@ -65,19 +60,8 @@ export const getKeywordOfPlaceRef = (
   return keyword as SeatKeyword;
 };
 
-export type MovementDesc = {
-  amount: NatAmount;
-  src: AssetPlaceRef;
-  dest: AssetPlaceRef;
-  /** for example: GMP fee */
-  fee?: NatAmount;
-  /** for example: { usdnOut: 98n } */
-  detail?: Record<string, NatValue>;
-  claim?: boolean;
-};
-
-// XXX strategy: AllocationStrategyInfo;
 export type OfferArgsFor = {
+  deposit: { flow?: MovementDesc[] };
   openPortfolio: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
   rebalance: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
 };
@@ -99,6 +83,13 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
   );
 
   return {
+    deposit: M.splitRecord(
+      {},
+      {
+        flow: M.arrayOf(movementDescShape),
+      },
+      {},
+    ) as TypedPattern<OfferArgsFor['deposit']>,
     openPortfolio: M.splitRecord(
       {},
       {
@@ -120,3 +111,5 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
   };
 };
 harden(makeOfferArgsShapes);
+
+export type { AssetPlaceRef, MovementDesc };

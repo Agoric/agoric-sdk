@@ -1,7 +1,10 @@
-import type { Filter, JsonRpcProvider, Log } from 'ethers';
+import type { Filter, WebSocketProvider, Log } from 'ethers';
 import { id, zeroPadValue, getAddress, ethers } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
-import { buildTimeWindow, scanEvmLogsInChunks } from '../support.ts';
+import {
+  getBlockNumberBeforeRealTime,
+  scanEvmLogsInChunks,
+} from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 
 /**
@@ -28,7 +31,7 @@ const TRANSFER_SIGNATURE = id('Transfer(address,address,uint256)');
 
 type CctpWatch = {
   usdcAddress: `0x${string}`;
-  provider: JsonRpcProvider;
+  provider: WebSocketProvider;
   toAddress: `0x${string}`;
   expectedAmount: bigint;
   log?: (...args: unknown[]) => void;
@@ -64,11 +67,18 @@ export const watchCctpTransfer = ({
   timeoutMs = TX_TIMEOUT_MS,
   log = () => {},
   setTimeout = globalThis.setTimeout,
+  signal,
 }: CctpWatch & {
   timeoutMs?: number;
   setTimeout?: typeof globalThis.setTimeout;
+  signal?: AbortSignal;
 }): Promise<boolean> => {
   return new Promise(resolve => {
+    if (signal?.aborted) {
+      resolve(false);
+      return;
+    }
+
     const TO_TOPIC = zeroPadValue(toAddress.toLowerCase(), 32);
     const filter = {
       topics: [TRANSFER_SIGNATURE, null, TO_TOPIC],
@@ -82,13 +92,16 @@ export const watchCctpTransfer = ({
     let timeoutId: NodeJS.Timeout;
     let listeners: Array<{ event: any; listener: any }> = [];
 
-    const cleanup = () => {
+    const finish = (result: boolean) => {
+      resolve(result);
       if (timeoutId) clearTimeout(timeoutId);
       for (const { event, listener } of listeners) {
         void provider.off(event, listener);
       }
       listeners = [];
     };
+
+    signal?.addEventListener('abort', () => finish(false));
 
     const listenForTransfer = (eventLog: Log) => {
       let transferData;
@@ -111,8 +124,7 @@ export const watchCctpTransfer = ({
           `✓ Amount matches! Expected: ${expectedAmount}, Received: ${amount}`,
         );
         transferFound = true;
-        cleanup();
-        resolve(true);
+        finish(true);
         return;
       }
       // Warn and continue watching.
@@ -125,8 +137,6 @@ export const watchCctpTransfer = ({
     timeoutId = setTimeout(() => {
       if (!transferFound) {
         log(`✗ No matching transfer found within ${timeoutMs / 60000} minutes`);
-        cleanup();
-        resolve(false);
       }
     }, timeoutMs);
   });
@@ -140,18 +150,19 @@ export const lookBackCctp = async ({
   publishTimeMs,
   chainId,
   log = () => {},
+  signal,
 }: CctpWatch & {
   publishTimeMs: number;
   chainId: CaipChainId;
+  signal?: AbortSignal;
 }): Promise<boolean> => {
   await null;
   try {
-    const { fromBlock, toBlock } = await buildTimeWindow(
+    const fromBlock = await getBlockNumberBeforeRealTime(
       provider,
       publishTimeMs,
-      log,
-      chainId,
     );
+    const toBlock = await provider.getBlockNumber();
 
     log(
       `Searching blocks ${fromBlock} → ${toBlock} for Transfer to ${toAddress} with amount ${expectedAmount}`,
@@ -166,7 +177,7 @@ export const lookBackCctp = async ({
     // TODO: Consider async iteration pattern for more flexible log scanning
     // See: https://github.com/Agoric/agoric-sdk/pull/11915#discussion_r2353872425
     const matchingEvent = await scanEvmLogsInChunks(
-      { provider, baseFilter, fromBlock, toBlock, chainId, log },
+      { provider, baseFilter, fromBlock, toBlock, chainId, log, signal },
       ev => {
         try {
           const t = parseTransferLog(ev);

@@ -24,9 +24,11 @@ import {
   type AccountId,
   type Bech32Address,
   type ChainInfo,
+  type CosmosChainInfo,
   type Denom,
   type DenomAmount,
   type DenomDetail,
+  type IBCConnectionInfo,
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
@@ -44,6 +46,8 @@ import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
+import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
+import type { PortfolioPublicInvitationMaker } from '@agoric/portfolio-api';
 import { preparePlanner } from './planner.exo.ts';
 import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
@@ -181,6 +185,16 @@ const publishStatus = <K extends keyof StatusFor>(
   void E(node).setValue(JSON.stringify(capData));
 };
 
+// Until we find a need for on-chain subscribers, this stop-gap will do.
+const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
+  getUpdateSince() {
+    assert.fail('use off-chain queries');
+  },
+  subscribeAfter() {
+    assert.fail('use off-chain queries');
+  },
+};
+
 /**
  * Portfolio contract implementation. Creates and manages diversified stablecoin portfolios
  * that can be rebalanced across different yield protocols.
@@ -216,7 +230,6 @@ export const contract = async (
     assetInfo,
     axelarIds,
     contracts,
-    marshaller,
     storageNode,
     gmpAddresses,
   } = privateArgs;
@@ -226,10 +239,6 @@ export const contract = async (
   assert(brands.USDC, 'USDC missing from brands in terms');
   assert(brands.Fee, 'Fee missing from brands in terms');
 
-  if (!('axelar' in chainInfo)) {
-    trace('⚠️ no axelar chainInfo; GMP not available', Object.keys(chainInfo));
-  }
-
   // Only register chains and assets if chainHub is empty to avoid conflicts on restart
   if (chainHub.isEmpty()) {
     trace('chainHub:', Object.keys(chainInfo));
@@ -238,27 +247,38 @@ export const contract = async (
     trace('chainHub already populated, using existing entries');
   }
 
+  // Extract transfer channel info synchronously
+  const transferChannels = (() => {
+    const { agoric, axelar, noble } = chainInfo as Record<
+      string,
+      CosmosChainInfo
+    >;
+    const { connections } = agoric;
+
+    const nobleConn = connections![noble.chainId].transferChannel;
+    let axelarConn: IBCConnectionInfo['transferChannel'] | undefined;
+    if ('axelar' in chainInfo) {
+      axelarConn = connections![axelar.chainId].transferChannel;
+    } else {
+      trace('⚠️ no axelar chainInfo; GMP not available', keys(chainInfo));
+    }
+    return harden({ noble: nobleConn, axelar: axelarConn });
+  })();
+
   const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
 
-  // Until we find a need for on-chain subscribers, this stop-gap will do.
-  const inertSubscriber: ResolvedPublicTopic<never>['subscriber'] = {
-    getUpdateSince() {
-      assert.fail('use off-chain queries');
-    },
-    subscribeAfter() {
-      assert.fail('use off-chain queries');
-    },
-  };
+  const { cachingMarshaller } = tools;
 
   const resolverZone = zone.subZone('Resolver');
   const makeResolverKit = prepareResolverKit(resolverZone, zcf, {
     vowTools,
     pendingTxsNode: E(storageNode).makeChildNode(PENDING_TXS_NODE_KEY),
-    marshaller,
+    marshaller: cachingMarshaller,
   });
   const {
     client: resolverClient,
+    service: resolverService,
     invitationMakers: makeResolverInvitationMakers,
   } = resolverZone.makeOnce('resolverKit', () => makeResolverKit());
 
@@ -292,52 +312,78 @@ export const contract = async (
     resolverClient,
     inertSubscriber,
     contractAccount: contractAccountV as any, // XXX Guest...
+    transferChannels,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
-  const { executePlan, rebalance, parseInboundTransfer } = orchestrateAll(
+  const { executePlan, rebalance } = orchestrateAll(
     {
       executePlan: flows.executePlan,
       rebalance: flows.rebalance,
-      parseInboundTransfer: flows.parseInboundTransfer,
     },
     ctx1,
+  );
+
+  // unused but must be defined for upgrade
+  const { parseInboundTransfer: _obsolete } = orchestrateAll(
+    { parseInboundTransfer: flows.parseInboundTransfer },
+    ctx1,
+  );
+
+  /**
+   * Distinct context for POLA to only provide resolverService
+   * where required.
+   */
+  const txfrCtx: flows.OnTransferContext = {
+    axelarIds,
+    gmpAddresses,
+    resolverService,
+    transferChannels,
+  };
+  const { onAgoricTransfer } = orchestrateAll(
+    {
+      onAgoricTransfer: flows.onAgoricTransfer,
+    },
+    txfrCtx,
   );
 
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
     vowTools,
-    axelarIds,
-    gmpAddresses,
     executePlan,
     rebalance,
-    parseInboundTransfer,
+    onAgoricTransfer,
     proposalShapes,
     offerArgsShapes,
-    chainHubTools: {
-      getChainInfo: chainHub.getChainInfo.bind(chainHub),
-      getChainsAndConnection: chainHub.getChainsAndConnection.bind(chainHub),
-    },
+    transferChannels,
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
-    marshaller,
+    marshaller: cachingMarshaller,
     usdcBrand: brands.USDC,
   });
 
   const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
+
+  /**
+   * Generate sequential portfolio IDs while keeping the portfolios collection private.
+   * Each portfolio kit only gets access to its own state, not the full collection.
+   *
+   * NB: this assumes portfolios are never deleted; if deletion is added,
+   * a more robust ID generation strategy will be needed.
+   */
+  const makeNextPortfolioKit = () => {
+    const portfolioId = portfolios.getSize();
+    const kit = makePortfolioKit({ portfolioId });
+    portfolios.init(portfolioId, kit);
+    return kit;
+  };
 
   // Create openPortfolio flow with makePortfolioKit - circular dependency avoided
   const { openPortfolio } = orchestrateAll(
     { openPortfolio: flows.openPortfolio },
     {
       ...ctx1,
-      // Generate sequential portfolio IDs while keeping the portfolios collection private.
-      // Each portfolio kit only gets access to its own state, not the full collection.
-      makePortfolioKit: (() => {
-        const portfolioId = portfolios.getSize();
-        const it = makePortfolioKit({ portfolioId });
-        portfolios.init(portfolioId, it);
-        return it;
-      }) as any, // XXX Guest...
+      // Older name maintained for upgrade compatibility
+      makePortfolioKit: makeNextPortfolioKit as any, // XXX Guest...
       inertSubscriber,
     },
   );
@@ -372,17 +418,42 @@ export const contract = async (
     makeOpenPortfolioInvitation() {
       trace('makeOpenPortfolioInvitation');
       return zcf.makeInvitation(
-        (seat, offerArgs) => {
+        async (seat, offerArgs) => {
           mustMatch(offerArgs, offerArgsShapes.openPortfolio);
+          await null;
           consumeAccessToken(seat);
-          return openPortfolio(seat, offerArgs);
+
+          const kit = makeNextPortfolioKit();
+
+          const publicSubscribers: PublicSubscribers = {
+            portfolio: {
+              description: 'Portfolio',
+              // getStoragePath() is a vow for async flow membrane but we know it will resolve promptly
+              storagePath: await vowTools.asPromise(
+                kit.reader.getStoragePath(),
+              ),
+              subscriber: null as any,
+            },
+          };
+          // This flow does its own error handling and always exits the seat
+          void openPortfolio(
+            seat,
+            offerArgs,
+            // @ts-expect-error XXX Guest...
+            kit,
+          );
+          // Return immediately to avoid blocking on transfers the flow may initiate
+          return harden({
+            invitationMakers: kit.invitationMakers,
+            publicSubscribers,
+          });
         },
         'openPortfolio',
         undefined,
         proposalShapes.openPortfolio,
       );
     },
-  });
+  } satisfies Record<PortfolioPublicInvitationMaker, any> & ThisType<any>);
 
   const makeResolverInvitation = () => {
     trace('makeResolverInvitation');

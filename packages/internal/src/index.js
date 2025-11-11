@@ -15,7 +15,7 @@ export * from './config.js';
 export * from './debug.js';
 export * from './errors.js';
 export * from './js-utils.js';
-export { pureDataMarshaller } from './marshal.js';
+export { pureDataMarshaller } from './marshal/pure-data.js';
 export * from './method-tools.js';
 export * from './metrics.js';
 export * from './natural-sort.js';

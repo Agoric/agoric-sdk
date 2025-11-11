@@ -1,5 +1,6 @@
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 import {
   makeNotifierKit,
@@ -29,6 +30,7 @@ import {
 } from '../contractSupport/index.js';
 
 /**
+ * @import {Remote} from '@agoric/internal';
  * @import {LegacyMap} from '@agoric/store'
  * @import {ContractOf} from '../zoeService/utils.js';
  * @import {PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
@@ -60,9 +62,9 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * unitAmountIn: Amount<'nat'>,
  * }>} zcf
  * @param {{
- * marshaller: Marshaller,
+ * marshaller: Remote<Marshaller>,
  * quoteMint?: ERef<Mint<'set', PriceDescription>>,
- * storageNode: ERef<StorageNode>,
+ * storageNode: Remote<StorageNode>,
  * }} privateArgs
  */
 const start = async (zcf, privateArgs) => {
@@ -76,8 +78,10 @@ const start = async (zcf, privateArgs) => {
   assertAllDefined({ brandIn, brandOut, POLL_INTERVAL, timer, unitAmountIn });
 
   assert(privateArgs, 'Missing privateArgs in priceAggregator start');
-  const { marshaller, storageNode } = privateArgs;
-  assertAllDefined({ marshaller, storageNode });
+  const { marshaller: remoteMarshaller, storageNode } = privateArgs;
+  assertAllDefined({ remoteMarshaller, storageNode });
+
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
   /** @type {ERef<Mint<'set', PriceDescription>>} */
   const quoteMint =
@@ -117,7 +121,7 @@ const start = async (zcf, privateArgs) => {
   // For publishing priceAuthority values to off-chain storage
   const { publisher, subscriber } = makeStoredPublishKit(
     storageNode,
-    marshaller,
+    cachingMarshaller,
   );
 
   const zoe = zcf.getZoeService();

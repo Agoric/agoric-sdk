@@ -370,6 +370,9 @@ jobs:
       - name: yarn test (eslint-config)
         if: (success() || failure())
         run: cd packages/eslint-config && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (eslint-plugin)
+        if: (success() || failure())
+        run: cd packages/eslint-plugin && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (vat-data)
         if: (success() || failure())
         run: cd packages/vat-data && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT

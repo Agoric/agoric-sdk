@@ -97,12 +97,12 @@ test('planRebalanceFlow uses NetworkSpec (legacy links param ignored at type lev
     ],
   } as any;
   const current = {
-    Aave_Arbitrum: makeAmt(50n),
+    Aave_Arbitrum: makeAmt(500n),
     Beefy_re7_Avalanche: makeAmt(0n),
   } as any;
   const target = {
-    Aave_Arbitrum: makeAmt(20n),
-    Beefy_re7_Avalanche: makeAmt(30n),
+    Aave_Arbitrum: makeAmt(200n),
+    Beefy_re7_Avalanche: makeAmt(300n),
   } as any;
   const res = await planRebalanceFlow({
     network: net,

@@ -6,9 +6,9 @@
  */
 
 import type { TypedPattern } from '@agoric/internal';
-import type { AccountId } from '@agoric/orchestration';
+import type { PublishedTx } from '@agoric/portfolio-api';
+import { TxStatus, TxType } from '@agoric/portfolio-api/src/resolver.js';
 import { M } from '@endo/patterns';
-import { TxStatus, TxType } from './constants.js';
 
 export type TxId = `tx${number}`;
 
@@ -41,13 +41,6 @@ harden(ResolverOfferArgsShapes);
 
 export const PENDING_TXS_NODE_KEY = 'pendingTxs';
 
-export type PublishedTx = {
-  type: TxType;
-  amount?: bigint;
-  destinationAddress: AccountId;
-  status: TxStatus;
-};
-
 /**
  * A PendingTx is a PublishedTx (published by ymax contract) with an additional
  * txId property used by the resolver to track and manage pending transactions.
@@ -55,12 +48,12 @@ export type PublishedTx = {
 export type PendingTx = { txId: TxId } & PublishedTx;
 
 export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
-  // CCTP_TO_EVM and CCTP_TO_NOBLE require amount
+  // CCTP_TO_EVM require amount
   M.splitRecord(
     {
-      type: M.or(TxType.CCTP_TO_EVM, TxType.CCTP_TO_NOBLE),
+      type: M.or(TxType.CCTP_TO_EVM),
       destinationAddress: M.string(), // Format: `${chainId}:${chainId}:${remotAddess}`
-      status: M.or(TxStatus.PENDING),
+      status: TxStatus.PENDING,
       amount: M.nat(),
     },
     {},
@@ -71,7 +64,7 @@ export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
     {
       type: M.or(TxType.GMP),
       destinationAddress: M.string(),
-      status: M.or(TxStatus.PENDING),
+      status: TxStatus.PENDING,
     },
     {
       amount: M.nat(),
@@ -80,4 +73,6 @@ export const PublishedTxShape: TypedPattern<PublishedTx> = M.or(
   ),
 );
 
-export type * from './constants.js';
+// Backwards compatibility
+export * from '@agoric/portfolio-api/src/resolver.js';
+export type { PublishedTx };

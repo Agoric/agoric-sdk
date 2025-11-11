@@ -2,23 +2,20 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow/vat.js';
 import type { ZCF } from '@agoric/zoe';
 import { makeHeapZone } from '@agoric/zone';
 import type { TestFn } from 'ava';
-import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { TxStatus, TxType } from '../src/resolver/constants.js';
 import { prepareResolverKit } from '../src/resolver/resolver.exo.ts';
 import type { PublishedTx } from '../src/resolver/types.ts';
 
-const test = anyTest as TestFn<{
-  nodeUpdates: Record<string, PublishedTx>;
-  makeMockNode: (here: string) => StorageNode;
-}>;
+const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 
-test.beforeEach(async t => {
+const makeTestContext = async _t => {
   const nodeUpdates: Record<string, PublishedTx> = {};
   const makeMockNode = (here: string) => {
     return harden({
@@ -29,14 +26,6 @@ test.beforeEach(async t => {
     }) as unknown as StorageNode;
   };
 
-  t.context = {
-    nodeUpdates,
-    makeMockNode,
-  };
-});
-
-test('resolver creates nodes in chain storage on registerTransaction', async t => {
-  const { nodeUpdates, makeMockNode } = t.context;
   const zone = makeHeapZone();
   const board = makeFakeBoard();
   const marshaller = board.getReadonlyMarshaller();
@@ -53,6 +42,19 @@ test('resolver creates nodes in chain storage on registerTransaction', async t =
     pendingTxsNode: makeMockNode('pendingTxs'),
     marshaller,
   });
+
+  return {
+    nodeUpdates,
+    makeMockNode,
+    vowTools,
+    makeResolverKit,
+  };
+};
+
+test.beforeEach(async t => (t.context = await makeTestContext(t)));
+
+test('resolver creates nodes in chain storage on registerTransaction', async t => {
+  const { nodeUpdates, makeResolverKit } = t.context;
 
   const { client } = makeResolverKit();
 
@@ -85,30 +87,13 @@ test('resolver creates nodes in chain storage on registerTransaction', async t =
 });
 
 test('resolver updates nodes in chain storage on settleTransaction', async t => {
-  const { nodeUpdates, makeMockNode } = t.context;
-
-  const zone = makeHeapZone();
-  const board = makeFakeBoard();
-  const marshaller = board.getReadonlyMarshaller();
-  const vowTools = prepareVowTools(zone);
-
-  const zcf = {
-    makeEmptySeatKit: () => ({
-      zcfSeat: null as any,
-    }),
-  } as ZCF;
-
-  const makeResolverKit = prepareResolverKit(zone, zcf, {
-    vowTools,
-    pendingTxsNode: makeMockNode('pendingTxs'),
-    marshaller,
-  });
+  const { nodeUpdates, makeResolverKit } = t.context;
 
   const { client, service } = makeResolverKit();
 
   // Register transaction
   const tx = client.registerTransaction(
-    TxType.CCTP_TO_NOBLE,
+    TxType.CCTP_TO_AGORIC,
     'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
     250n,
   );
@@ -118,7 +103,7 @@ test('resolver updates nodes in chain storage on settleTransaction', async t => 
   t.deepEqual(
     nodeUpdates['pendingTxs.tx0'],
     {
-      type: TxType.CCTP_TO_NOBLE,
+      type: TxType.CCTP_TO_AGORIC,
       destinationAddress:
         'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
       status: TxStatus.PENDING,
@@ -140,7 +125,7 @@ test('resolver updates nodes in chain storage on settleTransaction', async t => 
     {
       destinationAddress:
         'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
-      type: TxType.CCTP_TO_NOBLE,
+      type: TxType.CCTP_TO_AGORIC,
       status: TxStatus.SUCCESS,
       amount: 250n,
     },
@@ -149,24 +134,7 @@ test('resolver updates nodes in chain storage on settleTransaction', async t => 
 });
 
 test('resolver creates ids in sequence on registerTransaction', async t => {
-  const { makeMockNode } = t.context;
-
-  const zone = makeHeapZone();
-  const board = makeFakeBoard();
-  const marshaller = board.getReadonlyMarshaller();
-  const vowTools = prepareVowTools(zone);
-
-  const zcf = {
-    makeEmptySeatKit: () => ({
-      zcfSeat: null as any,
-    }),
-  } as ZCF;
-
-  const makeResolverKit = prepareResolverKit(zone, zcf, {
-    vowTools,
-    pendingTxsNode: makeMockNode('pendingTxs'),
-    marshaller,
-  });
+  const { makeResolverKit } = t.context;
 
   const { client } = makeResolverKit();
 
@@ -183,7 +151,7 @@ test('resolver creates ids in sequence on registerTransaction', async t => {
   );
 
   const tx3 = client.registerTransaction(
-    TxType.CCTP_TO_NOBLE,
+    TxType.CCTP_TO_AGORIC,
     'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
     500n,
   );
@@ -194,24 +162,7 @@ test('resolver creates ids in sequence on registerTransaction', async t => {
 });
 
 test('resolver creates correct types for different TxTypes', async t => {
-  const { nodeUpdates, makeMockNode } = t.context;
-
-  const zone = makeHeapZone();
-  const board = makeFakeBoard();
-  const marshaller = board.getReadonlyMarshaller();
-  const vowTools = prepareVowTools(zone);
-
-  const zcf = {
-    makeEmptySeatKit: () => ({
-      zcfSeat: null as any,
-    }),
-  } as ZCF;
-
-  const makeResolverKit = prepareResolverKit(zone, zcf, {
-    vowTools,
-    pendingTxsNode: makeMockNode('pendingTxs'),
-    marshaller,
-  });
+  const { nodeUpdates, makeResolverKit } = t.context;
 
   const { client } = makeResolverKit();
 
@@ -228,9 +179,9 @@ test('resolver creates correct types for different TxTypes', async t => {
     'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
   );
 
-  // Test CCTP_TO_NOBLE transaction with amount
+  // Test CCTP_TO_AGORIC transaction with amount
   client.registerTransaction(
-    TxType.CCTP_TO_NOBLE,
+    TxType.CCTP_TO_AGORIC,
     'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
     500n,
   );
@@ -262,7 +213,7 @@ test('resolver creates correct types for different TxTypes', async t => {
   t.deepEqual(
     nodeUpdates['pendingTxs.tx2'],
     {
-      type: TxType.CCTP_TO_NOBLE,
+      type: TxType.CCTP_TO_AGORIC,
       destinationAddress:
         'eip155:56:0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
       status: TxStatus.PENDING,
@@ -274,24 +225,7 @@ test('resolver creates correct types for different TxTypes', async t => {
 
 // XXX: figure out why failing settlement crashes the entire transaction.
 test.skip('resolver sets status to SUCCESS or FAILED on settlement', async t => {
-  const { nodeUpdates, makeMockNode } = t.context;
-
-  const zone = makeHeapZone();
-  const board = makeFakeBoard();
-  const marshaller = board.getReadonlyMarshaller();
-  const vowTools = prepareVowTools(zone);
-
-  const zcf = {
-    makeEmptySeatKit: () => ({
-      zcfSeat: null as any,
-    }),
-  } as ZCF;
-
-  const makeResolverKit = prepareResolverKit(zone, zcf, {
-    vowTools,
-    pendingTxsNode: makeMockNode('pendingTxs'),
-    marshaller,
-  });
+  const { nodeUpdates, makeResolverKit } = t.context;
 
   const { client, service } = makeResolverKit();
 
@@ -368,4 +302,33 @@ test.skip('resolver sets status to SUCCESS or FAILED on settlement', async t => 
     },
     'second transaction settles as failed with correct data',
   );
+});
+
+test('resolver can find incoming CCTP txs by amount', async t => {
+  const { vowTools, nodeUpdates, makeResolverKit } = t.context;
+
+  const { client, service } = makeResolverKit();
+
+  const lca =
+    'cosmos:agoric-3:agoric1zlnuqyjceyuwhgy68d9lsqu208q68j2c9lhzdl2vq5y2ee57uwcs3ydtlr' as const;
+  const reg = await vowTools.when(
+    client.registerTransaction('CCTP_TO_AGORIC', lca, 12345n),
+  );
+  t.log(nodeUpdates);
+
+  const found = service.lookupTx({
+    type: 'CCTP_TO_AGORIC',
+    destination: lca,
+    amountValue: 12345n,
+  });
+
+  t.is(found, reg.txId);
+
+  const notFound = service.lookupTx({
+    type: 'CCTP_TO_AGORIC',
+    destination: lca,
+    amountValue: 123n,
+  });
+
+  t.is(notFound, undefined);
 });

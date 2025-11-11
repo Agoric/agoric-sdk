@@ -4,6 +4,7 @@
  * @see {openPortfolio}
  * @see {rebalance}
  */
+import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import type { GuestInterface } from '@agoric/async-flow';
 import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
 import {
@@ -13,13 +14,24 @@ import {
 } from '@agoric/internal';
 import type {
   AccountId,
+  CaipChainId,
+  CosmosChainAddress,
   Denom,
+  DenomAmount,
+  IBCConnectionInfo,
   OrchestrationAccount,
   OrchestrationFlow,
   Orchestrator,
 } from '@agoric/orchestration';
+import type { AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
+import {
+  TxType,
+  type FlowErrors,
+  type FundsFlowPlan,
+} from '@agoric/portfolio-api';
 import {
   AxelarChain,
   SupportedChain,
@@ -29,7 +41,10 @@ import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import { decodeBase64 } from '@endo/base64';
 import { assert, Fail, q } from '@endo/errors';
+import { DECODE_CONTRACT_CALL_RESULT_ABI } from './evm-facade.ts';
+import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
 import type {
   AccountInfoFor,
@@ -66,6 +81,7 @@ import {
   type PoolKey,
   type ProposalType,
 } from './type-guards.ts';
+import { runJob, type Job } from './schedule-order.ts';
 // XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
 
 const { keys, entries, fromEntries } = Object;
@@ -83,6 +99,10 @@ export type PortfolioInstanceContext = {
   zoeTools: GuestInterface<ZoeTools>;
   resolverClient: GuestInterface<ResolverKit['client']>;
   contractAccount: Promise<OrchestrationAccount<{ chainId: 'agoric-any' }>>;
+  transferChannels: {
+    noble: IBCConnectionInfo['transferChannel'];
+    axelar?: IBCConnectionInfo['transferChannel'];
+  };
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
@@ -104,29 +124,22 @@ type AssetMovement = {
     accounts: AccountsByChain,
     tracer: TraceLogger,
   ) => Promise<{ srcPos?: Position; destPos?: Position }>;
-  recover: (accounts: AccountsByChain, tracer: TraceLogger) => Promise<void>;
 };
 
-const moveStatus = ({ apply: _a, recover: _r, ...data }: AssetMovement) => data;
-const errmsg = (err: any) => ('message' in err ? err.message : `${err}`);
+const moveStatus = ({ apply: _a, ...data }: AssetMovement) => data;
+const errmsg = (err: any) =>
+  `${err != null && 'message' in err ? err.message : err}`;
 
 export type TransportDetail<
   How extends string,
   S extends SupportedChain,
   D extends SupportedChain,
   CTX = unknown,
-  RecoverCTX = CTX,
 > = {
   how: How;
   connections: { src: S; dest: D }[];
   apply: (
     ctx: CTX,
-    amount: NatAmount,
-    src: AccountInfoFor[S],
-    dest: AccountInfoFor[D],
-  ) => Promise<void>;
-  recover: (
-    ctx: RecoverCTX,
     amount: NatAmount,
     src: AccountInfoFor[S],
     dest: AccountInfoFor[D],
@@ -153,10 +166,15 @@ export type ProtocolDetail<
   ) => Promise<void>;
 };
 
+const { min } = Math;
+const range = (n: number) => Array.from(Array(n).keys());
+const fullOrder = (length: number): Job['order'] =>
+  range(length - 1).map(lo => [lo + 1, [lo]]);
+
 /**
- * **Failure Handling**: Attempts to unwind failed operations, but recovery
- * itself can fail. In that case, publishes final asset location to vstorage
- * and gives up. Clients must manually rebalance to recover.
+ * **Failure Handling**: Logs failures and publishes status without attempting
+ * to unwind already-completed steps. Operators must resolve any partial
+ * effects manually.
  */
 const trackFlow = async (
   reporter: GuestInterface<PortfolioKit['reporter']>,
@@ -164,17 +182,27 @@ const trackFlow = async (
   flowId: number,
   traceFlow: TraceLogger,
   accounts: AccountsByChain,
+  order: Job['order'],
+  detail: FlowDetail,
 ) => {
-  await null; // cf. wiki:NoNestedAwait
-
-  let step = 1;
-  try {
-    for (const move of moves) {
-      const traceStep = traceFlow.sub(`step${step}`);
+  const runTask = async (ix: number, running: number[]) => {
+    // steps are 1-based. the scheduler is 0-based
+    const step = ix + 1;
+    const steps = running.map(i => i + 1);
+    const move = moves[ix];
+    const traceStep = traceFlow.sub(`step${step}`);
+    reporter.publishFlowStatus(flowId, {
+      state: 'run',
+      steps,
+      step: min(...steps),
+      how: moves[min(...running)].how,
+      ...detail,
+    });
+    await null;
+    try {
       traceStep('starting', moveStatus(move));
-      const { amount, how } = move;
-      reporter.publishFlowStatus(flowId, { state: 'run', step, how });
       const { srcPos, destPos } = await move.apply(accounts, traceStep);
+      const { amount, how } = move;
       traceStep('done:', how);
 
       if (srcPos) {
@@ -183,47 +211,44 @@ const trackFlow = async (
       if (destPos) {
         destPos.recordTransferIn(amount);
       }
-      step += 1;
-    }
-    reporter.publishFlowStatus(flowId, { state: 'done' });
-    // TODO(#NNNN): delete the flow storage node
-  } catch (err) {
-    traceFlow('⚠️ step', step, ' failed', err);
-    const failure = moves[step - 1];
-    const errStep = step;
-    while (step > 1) {
-      step -= 1;
-      const traceStep = traceFlow.sub(`step${step}`);
-      const move = moves[step - 1];
-      const how = `unwind: ${move.how}`;
-      reporter.publishFlowStatus(flowId, { state: 'undo', step, how });
-      try {
-        await move.recover(accounts, traceStep);
-      } catch (errInUnwind) {
-        traceStep('⚠️ unwind failed', errInUnwind);
-        // if a recover fails, we just give up and report `where` the assets are
-        const { dest: where } = move;
-        reporter.publishFlowStatus(flowId, {
-          state: 'fail',
-          step,
-          how,
-          error: errmsg(errInUnwind),
-          where,
-        });
-        throw errInUnwind;
+
+      // TODO(#NNNN): delete the flow storage node
+    } catch (err) {
+      traceFlow('⚠️ step', step, 'failed', err);
+      const failure = moves[step - 1];
+      if (failure) {
+        traceFlow('failed movement details', moveStatus(failure));
       }
+      throw err;
     }
+  };
+
+  const job: Job = { taskQty: moves.length, order };
+  const results = await runJob(job, runTask, traceFlow);
+  if (results.some(r => r.status === 'rejected')) {
+    const reasons = [...results].reverse().reduce((next, r, ix) => {
+      if (r.status !== 'rejected') return next;
+      const errs: FlowErrors = {
+        step: ix + 1,
+        how: moves[ix].how,
+        error: errmsg(r.reason),
+        next,
+      };
+      return errs;
+    }, undefined);
+    assert(reasons); // guaranteed by results.some(...) above
     reporter.publishFlowStatus(flowId, {
       state: 'fail',
-      step: errStep,
-      how: failure.how,
-      error: errmsg(err),
+      ...reasons,
+      ...detail,
     });
-    throw err;
+    throw results;
   }
+
+  reporter.publishFlowStatus(flowId, { state: 'done', ...detail });
 };
 
-const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
+export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
   orch: Orchestrator,
   chainName: C,
   kit: GuestInterface<PortfolioKit>, // Guest<T>?
@@ -276,6 +301,27 @@ const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
     kit.manager.releaseAccount(chainName, reason);
     throw reason;
   }
+};
+
+/**
+ * Send minimal BLD amount to LCA for registering the forwarding account
+ *
+ * @param sender - must have at least `amount`
+ * @param dest - on Noble chain
+ */
+const registerNobleForwardingAccount = async (
+  sender: LocalAccount,
+  dest: CosmosChainAddress,
+  forwarding: RegisterAccountMemo['noble']['forwarding'],
+  trace: TraceLogger,
+  amount: DenomAmount = { denom: 'ubld', value: 1n },
+): Promise<void> => {
+  trace('Registering NFA', forwarding, 'from', sender.getAddress().value);
+
+  await sender.transfer(dest, amount, {
+    memo: JSON.stringify({ noble: { forwarding } }),
+  });
+  trace('NFA registration transfer sent');
 };
 
 const getAssetPlaceRefKind = (
@@ -363,7 +409,8 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
             return { how: 'CCTP', dest: destName as AxelarChain };
           }
           if (keys(AxelarChain).includes(srcName)) {
-            destName === 'noble' || Fail`dest for ${q(srcName)} must be noble`;
+            destName === 'agoric' ||
+              Fail`dest for ${q(srcName)} must be agoric`;
             return { how: 'CCTP', src: srcName as AxelarChain };
           }
           if (srcName === 'agoric' && destName === 'noble') {
@@ -392,10 +439,11 @@ const stepFlow = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
-  moves: MovementDesc[],
+  plan: MovementDesc[] | FundsFlowPlan,
   kit: GuestInterface<PortfolioKit>,
   traceP: TraceLogger,
   flowId: number,
+  flowDetail: FlowDetail,
 ) => {
   const todo: AssetMovement[] = [];
 
@@ -403,6 +451,7 @@ const stepFlow = async (
     chain: AxelarChain,
     move: MovementDesc,
     lca: LocalAccount,
+    nobleForwardingChannel: `channel-${number}`,
   ) => {
     const [axelar, feeAccount] = await Promise.all([
       orch.getChain('axelar'),
@@ -421,6 +470,7 @@ const stepFlow = async (
       gmpAddresses,
       resolverClient: ctx.resolverClient,
       feeAccount,
+      nobleForwardingChannel,
     });
     return evmCtx;
   };
@@ -429,8 +479,9 @@ const stepFlow = async (
     move: MovementDesc,
     lca: LocalAccount,
     poolKey: PoolKey,
+    nobleForwardingChannel: `channel-${number}`,
   ): Promise<EVMContext & { poolKey: PoolKey }> => {
-    const evmCtx = await makeEVMCtx(chain, move, lca);
+    const evmCtx = await makeEVMCtx(chain, move, lca, nobleForwardingChannel);
     return harden({ ...evmCtx, poolKey });
   };
 
@@ -461,7 +512,13 @@ const stepFlow = async (
         const { poolKey, how } = way;
         const pos = kit.manager.providePosition(poolKey, how, accountId);
         const { lca } = agoric;
-        const evmCtx = await makeEVMPoolCtx(evmChain, move, lca, poolKey);
+        const evmCtx = await makeEVMPoolCtx(
+          evmChain,
+          move,
+          lca,
+          poolKey,
+          ctx.transferChannels.noble.counterPartyChannelId,
+        );
         await null;
         if ('src' in way) {
           await pImpl.supply(evmCtx, amount, gInfo);
@@ -471,29 +528,24 @@ const stepFlow = async (
           return { srcPos: pos };
         }
       },
-      recover: async ({ [evmChain]: gInfo }) => {
-        assert(gInfo, evmChain);
-        await null;
-        if ('src' in way) {
-          assert.fail('last step. cannot recover');
-        } else {
-          const { lca } = agoric;
-          const { poolKey } = way;
-          const evmCtx = await makeEVMPoolCtx(evmChain, move, lca, poolKey);
-          await pImpl.supply(evmCtx, amount, gInfo);
-        }
-      },
     });
   };
 
   const { reporter } = kit;
   const traceFlow = traceP.sub(`flow${flowId}`);
 
+  const { flow: moves, order: maybeOrder } = Array.isArray(plan)
+    ? { flow: plan }
+    : plan;
+  const order = maybeOrder || fullOrder(moves.length);
+
   traceFlow('checking', moves.length, 'moves');
+  moves.length > 0 || Fail`moves list must not be empty`;
+
   for (const [i, move] of entries(moves)) {
     const traceMove = traceFlow.sub(`move${i}`);
-    // @@@ traceMove('wayFromSrcToDesc?', move);
     const way = wayFromSrcToDesc(move);
+    traceMove('plan', { move, way });
     const { amount } = move;
     switch (way.how) {
       case 'localTransfer': {
@@ -510,11 +562,6 @@ const stepFlow = async (
             await ctx.zoeTools.localTransfer(src.seat, account, amounts);
             return {};
           },
-          recover: async ({ agoric }) => {
-            const { lca, lcaIn } = agoric;
-            const account = move.dest === '+agoric' ? lcaIn : lca;
-            await ctx.zoeTools.withdrawToSeat(account, seat, amounts);
-          },
         });
         break;
       }
@@ -530,9 +577,6 @@ const stepFlow = async (
             await ctx.zoeTools.withdrawToSeat(agoric.lca, seat, amounts);
             return {};
           },
-          recover: async ({ agoric }) => {
-            await ctx.zoeTools.localTransfer(seat, agoric.lca, amounts);
-          },
         });
         break;
       }
@@ -547,9 +591,6 @@ const stepFlow = async (
             const { lca, lcaIn } = agoric;
             await lcaIn.send(lca.getAddress(), amount);
             return {};
-          },
-          recover: async () => {
-            traceMove('recover send is noop; not sending back to deposit LCA');
           },
         });
         break;
@@ -577,15 +618,6 @@ const stepFlow = async (
             }
             return {};
           },
-          recover: async ({ agoric, noble }) => {
-            assert(noble); // per nobleMentioned below
-            await null;
-            if (way.src === 'agoric') {
-              await agoricToNoble.recover(ctxI, amount, agoric, noble);
-            } else {
-              await nobleToAgoric.recover(ctxI, amount, noble, agoric);
-            }
-          },
         });
 
         break;
@@ -601,7 +633,7 @@ const stepFlow = async (
           amount,
           src: move.src,
           dest: move.dest,
-          apply: async ({ [evmChain]: gInfo, noble }) => {
+          apply: async ({ [evmChain]: gInfo, noble, agoric }) => {
             // If an EVM account is in a move, it's available
             // in the accounts arg, along with noble.
             assert(gInfo && noble, evmChain);
@@ -609,19 +641,15 @@ const stepFlow = async (
             if (outbound) {
               await CCTP.apply(ctx, amount, noble, gInfo);
             } else {
-              const evmCtx = await makeEVMCtx(evmChain, move, agoric.lca);
-              await CCTPfromEVM.apply(evmCtx, amount, gInfo, noble);
+              const evmCtx = await makeEVMCtx(
+                evmChain,
+                move,
+                agoric.lca,
+                ctx.transferChannels.noble.counterPartyChannelId,
+              );
+              await CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric);
             }
             return {};
-          },
-          recover: async ({ [evmChain]: gInfo, noble }) => {
-            assert(gInfo && noble, evmChain);
-            await null;
-            if (outbound) {
-              await CCTP.recover(ctx, amount, noble, gInfo);
-            } else {
-              await CCTPfromEVM.recover(ctx, amount, gInfo, noble);
-            }
           },
         });
 
@@ -650,15 +678,6 @@ const stepFlow = async (
             } else {
               await protocolUSDN.withdraw(ctxU, amount, noble, way.claim);
               return { srcPos: pos };
-            }
-          },
-          recover: async ({ noble }) => {
-            assert(noble); // per nobleMentioned below
-            await null;
-            if (isSupply) {
-              Fail`no recovery from supply (final step)`;
-            } else {
-              await protocolUSDN.supply(ctxU, amount, noble);
             }
           },
         });
@@ -699,10 +718,12 @@ const stepFlow = async (
     state: 'run',
     step: 0,
     how: `makeAccounts(${acctsToDo.join(', ')})`,
+    ...flowDetail,
   });
   reporter.publishFlowSteps(
     flowId,
-    todo.map(({ apply: _a, recover: _r, ...data }) => data),
+    todo.map(({ apply: _a, ...data }) => data),
+    maybeOrder,
   );
 
   const agoric = await provideCosmosAccount(orch, 'agoric', kit, traceFlow);
@@ -723,6 +744,7 @@ const stepFlow = async (
         step: 0,
         how: `makeAccount: ${chain}`,
         error: err && typeof err === 'object' ? err.message : `${err}`,
+        ...flowDetail,
       });
       throw err;
     }
@@ -774,7 +796,15 @@ const stepFlow = async (
   };
   traceFlow('accounts for trackFlow', keys(accounts));
 
-  await trackFlow(reporter, todo, flowId, traceFlow, accounts);
+  await trackFlow(
+    reporter,
+    todo,
+    flowId,
+    traceFlow,
+    accounts,
+    order,
+    flowDetail,
+  );
   traceFlow('stepFlow done');
 };
 
@@ -783,11 +813,12 @@ const stepFlow = async (
  * More generally: move assets as instructed by client.
  *
  * **Non-Atomic Operations**: Cross-chain flows are not atomic. If operations
- * fail partway through, assets may be left in intermediate accounts.
- * Recovery is attempted but can also fail, leaving assets "stranded".
+ * fail partway through, assets may be left in intermediate accounts and must
+ * be reconciled manually.
  *
  * **Client Recovery**: If rebalancing fails, check flow status in vstorage
- * and call rebalance() again to move assets to desired destinations.
+ * and call rebalance() again (or another corrective flow) to move assets to
+ * desired destinations.
  *
  * **Input Validation**: ASSUME caller validates args
  *
@@ -803,25 +834,32 @@ export const rebalance = (async (
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['rebalance'],
   kit: GuestInterface<PortfolioKit>,
+  startedFlow?: ReturnType<
+    GuestInterface<PortfolioKit>['manager']['startFlow']
+  >,
 ) => {
   const id = kit.reader.getPortfolioId();
   const traceP = makeTracer('rebalance').sub(`portfolio${id}`);
   const proposal = seat.getProposal() as ProposalType['rebalance'];
   traceP('proposal', proposal.give, proposal.want, offerArgs);
+  const { flow, targetAllocation } = offerArgs;
 
   await null;
   let flowId: number | undefined;
   try {
-    if (offerArgs.targetAllocation) {
-      kit.manager.setTargetAllocation(offerArgs.targetAllocation);
-    } else if ((offerArgs.flow || []).some(step => step.dest === '+agoric')) {
-      // steps include a deposit that the planner should respond to
+    if (targetAllocation) {
+      kit.manager.setTargetAllocation(targetAllocation);
+    } else if (flow?.some(step => step.dest === '+agoric')) {
+      // flow includes a deposit that the planner should respond to
       kit.manager.incrPolicyVersion();
     }
 
-    if (offerArgs.flow) {
-      ({ flowId } = kit.manager.startFlow({ type: 'rebalance' }));
-      await stepFlow(orch, ctx, seat, offerArgs.flow, kit, traceP, flowId);
+    if (flow) {
+      ({ flowId } =
+        startedFlow ?? kit.manager.startFlow({ type: 'rebalance' }, flow));
+      await stepFlow(orch, ctx, seat, flow, kit, traceP, flowId, {
+        type: 'rebalance',
+      });
     }
 
     if (!seat.hasExited()) {
@@ -831,7 +869,6 @@ export const rebalance = (async (
     if (!seat.hasExited()) {
       seat.fail(err);
     }
-    throw err;
   } finally {
     if (flowId) kit.reporter.finishFlow(flowId);
   }
@@ -840,14 +877,179 @@ export const rebalance = (async (
 export const parseInboundTransfer = (async (
   _orch: Orchestrator,
   _ctx: PortfolioInstanceContext,
-  packet: VTransferIBCEvent['packet'],
-  kit: PortfolioKit,
+  _packet: VTransferIBCEvent['packet'],
+  _kit: PortfolioKit,
 ): Promise<Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>> => {
-  const { reader } = kit;
+  throw Error('obsolete');
+}) satisfies OrchestrationFlow;
 
+const eventAbbr = ({ packet }: VTransferIBCEvent) => ({
+  destination_channel: packet.destination_channel,
+  destination_port: packet.destination_port,
+  sequence: packet.sequence,
+});
+
+type UpcallData = Pick<PortfolioInstanceContext, 'gmpAddresses' | 'axelarIds'>;
+export type OnTransferContext = UpcallData &
+  Pick<PortfolioInstanceContext, 'transferChannels'> & {
+    resolverService: GuestInterface<ResolverKit['service']>;
+  };
+
+/**
+ * Resolve EVM account creation from Axelar GMP memo.
+ *
+ * @param memo - GMP memo from AXELAR_GMP via axelar channel
+ * @param axelarIds - name -> axelar id mapping
+ * @param orch - Orchestrator to get chain information
+ * @param portfolioManager - Portfolio manager to resolve the account
+ * @param traceUpcall - Logger for tracing
+ * @returns Promise<boolean> - true if account was resolved, false otherwise
+ */
+const resolveEVMAccount = async (
+  memo: AxelarGmpIncomingMemo,
+  axelarIds: AxelarId,
+  orch: Orchestrator,
+  portfolioManager: GuestInterface<PortfolioKit['manager']>,
+  traceUpcall: TraceLogger,
+) => {
+  traceUpcall('GMP', memo);
+
+  const result = (entries(axelarIds) as [AxelarChain, string][]).find(
+    ([_, chainId]) => chainId === memo.source_chain,
+  );
+  if (!result) {
+    traceUpcall('unknown source_chain', memo);
+    return false;
+  }
+
+  const [chainName, _] = result;
+
+  const payloadBytes = decodeBase64(memo.payload);
+  const [{ data }] = decodeAbiParameters(
+    DECODE_CONTRACT_CALL_RESULT_ABI,
+    payloadBytes,
+  ) as [AgoricResponse];
+
+  traceUpcall('Decoded:', JSON.stringify({ data }));
+
+  const [message] = data;
+  const { success, result: result2 } = message;
+  if (!success) return false;
+
+  const [address] = decodeAbiParameters([{ type: 'address' }], result2);
+
+  const chainInfo = await (await orch.getChain(chainName)).getChainInfo();
+  const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
+
+  traceUpcall(chainName, 'remoteAddress', address);
+  portfolioManager.resolveAccount({
+    namespace: 'eip155',
+    chainName,
+    chainId: caipId,
+    remoteAddress: address,
+  });
+
+  return true;
+};
+
+/**
+ * Resolve CCTP transfer completion by looking up and settling the transaction.
+ *
+ * @param parsed - authenticated inbound transfer data (in particular: amount)
+ * @param destination - of tx to be resolved
+ * @param resolverService
+ * @returns Promise<boolean> - true if transaction was found and settled, false otherwise
+ */
+const resolveCCTPIn = (
+  parsed: Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>,
+  destination: AccountId,
+  resolverService: GuestInterface<ResolverKit['service']>,
+  traceUpcall: TraceLogger,
+): boolean => {
+  traceUpcall('CCTPin', parsed);
+  // XXX check parsed.amount is USDC-on-Agoric
+  const txId = resolverService.lookupTx({
+    type: TxType.CCTP_TO_AGORIC,
+    destination,
+    amountValue: parsed.amount.value,
+  });
+  if (!txId) {
+    traceUpcall('lookupTx found nothing');
+    return false;
+  }
+  resolverService.settleTransaction({ status: 'success', txId });
+  return true;
+};
+
+/**
+ * Handle notification of transfer in/out of agoric LCA (@agoric)
+ *
+ * Prompt.
+ */
+export const onAgoricTransfer = (async (
+  orch: Orchestrator,
+  ctx: OnTransferContext,
+  event: VTransferIBCEvent,
+  pKit: PortfolioKit,
+): Promise<boolean> => {
+  const { reader } = pKit;
+  const pId = reader.getPortfolioId();
+  const traceUpcall = makeTracer('upcall').sub(`portfolio${pId}`);
+  traceUpcall('event', eventAbbr(event));
+  if (event.packet.destination_port !== 'transfer') return false;
+
+  const { gmpAddresses, axelarIds, transferChannels } = ctx;
+  const { destination_channel: packetDest } = event.packet;
   const lca = reader.getLocalAccount();
-  const parsed = await lca.parseInboundTransfer(packet);
-  return parsed;
+
+  await null;
+
+  switch (packetDest) {
+    case transferChannels.axelar?.channelId: {
+      const parsed = await lca.parseInboundTransfer(event.packet);
+      const { extra } = parsed;
+      if (extra.sender !== gmpAddresses.AXELAR_GMP) {
+        traceUpcall(
+          `GMP early exit; AXELAR_GMP sender expected ${gmpAddresses.AXELAR_GMP}, got ${extra.sender}`,
+        );
+        return false;
+      }
+
+      if (!extra.memo) return false;
+
+      const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
+      return resolveEVMAccount(
+        memo,
+        axelarIds,
+        orch,
+        pKit.manager,
+        traceUpcall,
+      );
+    }
+    case transferChannels.noble.channelId: {
+      const parsed = await lca.parseInboundTransfer(event.packet);
+      return resolveCCTPIn(
+        parsed,
+        coerceAccountId(lca.getAddress()),
+        ctx.resolverService,
+        traceUpcall,
+      );
+    }
+    default:
+      switch (event.packet.source_channel) {
+        case transferChannels.axelar?.channelId:
+          traceUpcall('ignore packet to axelar');
+          break;
+        case transferChannels.noble.channelId:
+          traceUpcall('ignore packet to noble');
+          break;
+        default: {
+          const parsed = await lca.parseInboundTransfer(event.packet);
+          traceUpcall('ignore packet: unknown src/dest', parsed);
+        }
+      }
+      return false;
+  }
 }) satisfies OrchestrationFlow;
 
 /**
@@ -867,28 +1069,51 @@ export const openPortfolio = (async (
   ctx: PortfolioBootstrapContext,
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['openPortfolio'],
+  madeKit?: GuestInterface<PortfolioKit>,
 ) => {
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   const trace = makeTracer('openPortfolio');
   try {
     const { makePortfolioKit, ...ctxI } = ctx;
-    const { inertSubscriber } = ctxI;
-    const kit = makePortfolioKit();
+    const { inertSubscriber, transferChannels } = ctxI;
+    const kit = madeKit ?? makePortfolioKit();
     const id = kit.reader.getPortfolioId();
     const traceP = trace.sub(`portfolio${id}`);
     traceP('portfolio opened');
-    await provideCosmosAccount(orch, 'agoric', kit, traceP);
 
-    if (!seat.hasExited()) {
-      try {
-        await rebalance(orch, ctxI, seat, offerArgs, kit);
-      } catch (err) {
-        traceP('⚠️ rebalance failed', err);
-        if (!seat.hasExited()) seat.fail(err);
-      }
+    // TODO provide a way to recover if any of these provisionings fail
+    // SEE https://github.com/Agoric/agoric-private/issues/488
+    // Register Noble Forwarding Account (NFA) for CCTP transfers
+    {
+      const sender = await ctxI.contractAccount;
+      const { lca } = await provideCosmosAccount(orch, 'agoric', kit, traceP);
+      const { ica } = await provideCosmosAccount(orch, 'noble', kit, traceP);
+      const forwarding = {
+        channel: transferChannels.noble.counterPartyChannelId,
+        recipient: lca.getAddress().value,
+      };
+      const dest = ica.getAddress();
+      await registerNobleForwardingAccount(sender, dest, forwarding, traceP);
     }
 
-    if (!seat.hasExited()) seat.exit();
+    const { give } = seat.getProposal() as ProposalType['openPortfolio'];
+    try {
+      if (offerArgs.flow) {
+        // XXX only for testing recovery?
+        await rebalance(orch, ctxI, seat, offerArgs, kit);
+      } else if (offerArgs.targetAllocation) {
+        kit.manager.setTargetAllocation(offerArgs.targetAllocation);
+        if (give.Deposit) {
+          await executePlan(orch, ctxI, seat, offerArgs, kit, {
+            type: 'deposit',
+            amount: give.Deposit,
+          });
+        }
+      }
+    } catch (err) {
+      traceP('⚠️ initial flow failed', err);
+      if (!seat.hasExited()) seat.fail(err);
+    }
 
     const publicSubscribers: GuestInterface<PublicSubscribers> = {
       portfolio: {
@@ -906,8 +1131,10 @@ export const openPortfolio = (async (
     // XXX async flow DX: stack traces don't cross vow boundaries?
     trace('🚨 openPortfolio flow failed', err);
     throw err;
+    /* c8 ignore end */
+  } finally {
+    if (!seat.hasExited()) seat.exit();
   }
-  /* c8 ignore end */
 }) satisfies OrchestrationFlow;
 harden(openPortfolio);
 
@@ -917,29 +1144,39 @@ export const makeLCA = (async (orch: Orchestrator): Promise<LocalAccount> => {
 }) satisfies OrchestrationFlow;
 harden(makeLCA);
 
+/**
+ * Offer handler to execute a planned flow of asset movements. It takes
+ * responsibility for the `seat` and exits it when done.
+ */
 export const executePlan = (async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
   seat: ZCFSeat,
-  _offerArgs: unknown,
+  offerArgs: { flow?: MovementDesc[] },
   pKit: GuestInterface<PortfolioKit>,
   flowDetail: FlowDetail,
+  startedFlow?: ReturnType<
+    GuestInterface<PortfolioKit>['manager']['startFlow']
+  >,
 ): Promise<`flow${number}`> => {
   const pId = pKit.reader.getPortfolioId();
   const traceP = makeTracer(flowDetail.type).sub(`portfolio${pId}`);
 
-  // XXX enhancement: let caller supply steps
-  const { stepsP, flowId } = pKit.manager.startFlow(flowDetail);
+  // XXX for backwards compatibility, startedFlow may be undefined
+  const { stepsP, flowId } =
+    startedFlow ?? pKit.manager.startFlow(flowDetail, offerArgs.flow);
   const traceFlow = traceP.sub(`flow${flowId}`);
-  traceFlow('waiting for steps from planner');
+  if (!offerArgs.flow) traceFlow('waiting for steps from planner');
   // idea: race with seat.getSubscriber()
-  const steps = await (stepsP as unknown as Promise<MovementDesc[]>); // XXX Guest/Host types UNTIL #9822
+  const plan = await (stepsP as unknown as Promise<
+    MovementDesc[] | FundsFlowPlan
+  >); // XXX Guest/Host types UNTIL #9822
   try {
-    await stepFlow(orch, ctx, seat, steps, pKit, traceP, flowId);
-
-    if (!seat.hasExited()) seat.exit();
+    await stepFlow(orch, ctx, seat, plan, pKit, traceP, flowId, flowDetail);
     return `flow${flowId}`;
   } finally {
+    // The seat must be exited no matter what to avoid leaks
+    if (!seat.hasExited()) seat.exit();
     // XXX flow.finish() would eliminate the possibility of sending the wrong one,
     // at the cost of an exo (or Far?)
     pKit.reporter.finishFlow(flowId);

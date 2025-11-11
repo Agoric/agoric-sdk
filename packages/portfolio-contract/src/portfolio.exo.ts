@@ -1,21 +1,16 @@
 /**
  * NOTE: This is host side code; can't use await.
  */
-import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import { makeTracer, mustMatch, type ERemote } from '@agoric/internal';
-import type {
-  Marshaller,
-  StorageNode,
-} from '@agoric/internal/src/lib-chainStorage.js';
+import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import {
   type AccountId,
   type CaipChainId,
-  type ChainHub,
+  type IBCConnectionInfo,
 } from '@agoric/orchestration';
-import { type AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
-import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import {
   AxelarChain,
   SupportedChain,
@@ -27,11 +22,14 @@ import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { decodeBase64 } from '@endo/base64';
 import { Fail, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import type { AxelarId, GmpAddresses } from './portfolio.contract.js';
+import type {
+  FundsFlowPlan,
+  PortfolioContinuingInvitationMaker,
+} from '@agoric/portfolio-api';
+import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
 import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
@@ -49,24 +47,6 @@ import {
 } from './type-guards.js';
 
 const trace = makeTracer('PortExo');
-
-export const DECODE_CONTRACT_CALL_RESULT_ABI = [
-  {
-    type: 'tuple',
-    components: [
-      { name: 'isContractCallResult', type: 'bool' },
-      {
-        name: 'data',
-        type: 'tuple[]',
-        components: [
-          { name: 'success', type: 'bool' },
-          { name: 'result', type: 'bytes' },
-        ],
-      },
-    ],
-  },
-] as const;
-harden(DECODE_CONTRACT_CALL_RESULT_ABI);
 
 export type AccountInfo = GMPAccountInfo | AgoricAccountInfo | NobleAccountInfo;
 export type GMPAccountInfo = {
@@ -98,7 +78,10 @@ type PortfolioKitState = {
   accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
   accounts: MapStore<SupportedChain, AccountInfo>;
   positions: MapStore<PoolKey, Position>;
-  flowsRunning: MapStore<number, { sync: VowKit<MovementDesc[]> } & FlowDetail>;
+  flowsRunning: MapStore<
+    number,
+    { sync: VowKit<MovementDesc[] | FundsFlowPlan> } & FlowDetail
+  >;
   nextFlowId: number;
   targetAllocation?: TargetAllocation;
   policyVersion: number;
@@ -173,23 +156,16 @@ export type PublishStatusFn = <K extends keyof StatusFor>(
   status: StatusFor[K],
 ) => void;
 
-const eventAbbr = (e: VTransferIBCEvent) => {
-  const { destination_channel: dest, sequence } = e.packet;
-  return { destination_channel: dest, sequence };
-};
-
 /** avoid circular reference */
 type PortfolioKitCycleBreaker = unknown;
 
 export const preparePortfolioKit = (
   zone: Zone,
   {
-    axelarIds,
-    gmpAddresses,
     rebalance,
     executePlan,
-    parseInboundTransfer,
-    chainHubTools,
+    onAgoricTransfer,
+    transferChannels,
     proposalShapes,
     offerArgsShapes,
     vowTools,
@@ -198,30 +174,33 @@ export const preparePortfolioKit = (
     marshaller,
     usdcBrand,
   }: {
-    axelarIds: AxelarId;
-    gmpAddresses: GmpAddresses;
     rebalance: (
       seat: ZCFSeat,
       offerArgs: unknown,
       kit: PortfolioKitCycleBreaker,
+      startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
     ) => Vow<unknown>;
     executePlan: (
       seat: ZCFSeat,
       offerArgs: unknown,
       kit: PortfolioKitCycleBreaker,
       flowDetail: FlowDetail,
+      startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
     ) => Vow<unknown>;
-    parseInboundTransfer: (
-      packet: VTransferIBCEvent['packet'],
+    onAgoricTransfer: (
+      event: VTransferIBCEvent,
       kit: PortfolioKitCycleBreaker,
-    ) => Vow<Awaited<ReturnType<LocalAccount['parseInboundTransfer']>>>;
-    chainHubTools: Pick<ChainHub, 'getChainInfo' | 'getChainsAndConnection'>;
+    ) => Vow<boolean>;
+    transferChannels: {
+      noble: IBCConnectionInfo['transferChannel'];
+      axelar?: IBCConnectionInfo['transferChannel'];
+    };
     proposalShapes: ReturnType<typeof makeProposalShapes>;
     offerArgsShapes: ReturnType<typeof makeOfferArgsShapes>;
     vowTools: VowTools;
     zcf: ZCF;
     portfoliosNode: ERemote<StorageNode>;
-    marshaller: ERemote<Marshaller>;
+    marshaller: ERemote<EMarshaller>;
     usdcBrand: Brand<'nat'>;
   },
 ) => {
@@ -299,105 +278,16 @@ export const preparePortfolioKit = (
     {
       tap: {
         async receiveUpcall(event: VTransferIBCEvent) {
-          const traceUpcall = trace
-            .sub(`portfolio${this.state.portfolioId}`)
-            .sub('upcall');
-          traceUpcall('event', eventAbbr(event));
-          const { destination_channel: packetDest } = event.packet;
-
-          // Validate that this is really from Axelar to Agoric.
-          const [_agoric, _axelar, connection] = await vowTools.when(
-            chainHubTools.getChainsAndConnection('agoric', 'axelar'),
-          );
-          const { channelId: agoricToAxelar } = connection.transferChannel;
-          if (packetDest !== agoricToAxelar) {
-            traceUpcall(
-              `GMP early exit: ${packetDest} != ${agoricToAxelar}: not from axelar`,
-            );
-            return false;
-          }
-
-          return vowTools.watch(
-            parseInboundTransfer(event.packet, this.facets),
-            this.facets.parseInboundTransferWatcher,
-          );
+          // onAgoricTransfer is prompt
+          return vowTools.when(onAgoricTransfer(event, this.facets));
         },
       },
       parseInboundTransferWatcher: {
-        onRejected(reason) {
-          const traceP = trace.sub(`portfolio${this.state.portfolioId}`);
-          traceP('⚠️ parseInboundTransfer failure', reason);
-          throw reason;
+        onRejected(_reason) {
+          Fail`vestigial`;
         },
-        async onFulfilled(parsed) {
-          const traceUpcall = trace
-            .sub(`portfolio${this.state.portfolioId}`)
-            .sub('upcall');
-          if (!parsed) {
-            traceUpcall('GMP early exit: no parsed inbound transfer');
-            return false;
-          }
-
-          const { extra } = parsed;
-          if (!extra.memo) return;
-          if (extra.sender !== gmpAddresses.AXELAR_GMP) {
-            traceUpcall(
-              `GMP early exit; AXELAR_GMP sender expected ${gmpAddresses.AXELAR_GMP}, got ${extra.sender}`,
-            );
-            return false;
-          }
-          const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
-
-          const result = (
-            Object.entries(axelarIds) as [AxelarChain, string][]
-          ).find(([_, chainId]) => chainId === memo.source_chain);
-
-          if (!result) {
-            traceUpcall('unknown source_chain', memo);
-            return false;
-          }
-
-          const [chainName, _] = result;
-
-          const payloadBytes = decodeBase64(memo.payload);
-          const [{ isContractCallResult, data }] = decodeAbiParameters(
-            DECODE_CONTRACT_CALL_RESULT_ABI,
-            payloadBytes,
-          ) as [AgoricResponse];
-
-          traceUpcall(
-            'Decoded:',
-            JSON.stringify({ isContractCallResult, data }),
-          );
-
-          if (isContractCallResult) {
-            traceUpcall('TODO: Handle the result of the contract call', data);
-            return false;
-          }
-
-          const [message] = data;
-          const { success, result: result2 } = message;
-          if (!success) return;
-
-          const [address] = decodeAbiParameters([{ type: 'address' }], result2);
-
-          // chainInfo is safe to await: registerChain(...) ensure it's already resolved,
-          // so vowTools.when won't cause async delays or cross-vat calls.
-          const chainInfo = await vowTools.when(
-            chainHubTools.getChainInfo(chainName),
-          );
-          const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
-
-          traceUpcall(chainName, 'remoteAddress', address);
-          this.facets.manager.resolveAccount({
-            namespace: 'eip155',
-            chainName,
-            chainId: caipId,
-            remoteAddress: address,
-          });
-
-          traceUpcall('completed');
-          return true;
+        async onFulfilled(_parsed) {
+          Fail`vestigial`;
         },
       },
       reader: {
@@ -453,9 +343,18 @@ export const preparePortfolioKit = (
             rebalanceCount,
           } = this.state;
 
-          const depositAddr = () => {
-            const { lcaIn } = accounts.get('agoric') as AgoricAccountInfo;
-            return { depositAddress: lcaIn.getAddress().value };
+          const agoricAux = (): Pick<
+            StatusFor['portfolio'],
+            'depositAddress' | 'nobleForwardingAddress'
+          > => {
+            const { lca, lcaIn } = accounts.get('agoric') as AgoricAccountInfo;
+            const { value: recipient } = lca.getAddress();
+            const { value: depositAddress } = lcaIn.getAddress();
+            const nobleForwardingAddress = generateNobleForwardingAddress(
+              transferChannels.noble.counterPartyChannelId,
+              recipient,
+            );
+            return { depositAddress, nobleForwardingAddress };
           };
 
           publishStatus(makePortfolioPath(portfolioId), {
@@ -463,7 +362,7 @@ export const preparePortfolioKit = (
             flowCount: nextFlowId - 1,
             flowsRunning: makeFlowsRunningRecord(flowsRunning),
             accountIdByChain: accountIdByChain(accounts),
-            ...(accounts.has('agoric') ? depositAddr() : {}),
+            ...(accounts.has('agoric') ? agoricAux() : {}),
             ...(targetAllocation && { targetAllocation }),
             accountsPending: [...accountsPending.keys()],
             policyVersion,
@@ -476,9 +375,16 @@ export const preparePortfolioKit = (
           this.facets.reporter.publishStatus();
         },
         // XXX collecting flow nodes is TBD
-        publishFlowSteps(id: number, steps: StatusFor['flowSteps']) {
+        publishFlowSteps(
+          id: number,
+          steps: StatusFor['flowSteps'],
+          order?: FundsFlowPlan['order'],
+        ) {
           const { portfolioId } = this.state;
-          publishStatus(makeFlowStepsPath(portfolioId, id), steps);
+          publishStatus(makeFlowStepsPath(portfolioId, id, 'steps'), steps);
+          if (order) {
+            publishStatus(makeFlowStepsPath(portfolioId, id, 'order'), order);
+          }
         },
         publishFlowStatus(id: number, status: StatusFor['flow']) {
           const { portfolioId } = this.state;
@@ -495,7 +401,7 @@ export const preparePortfolioKit = (
           this.state.rebalanceCount += 1;
           this.facets.reporter.publishStatus();
         },
-        resolveFlowPlan(flowId: number, steps: MovementDesc[]) {
+        resolveFlowPlan(flowId: number, steps: MovementDesc[] | FundsFlowPlan) {
           const { flowsRunning } = this.state;
           const detail = flowsRunning.get(flowId);
           detail.sync.resolver.resolve(steps);
@@ -557,13 +463,19 @@ export const preparePortfolioKit = (
             this.facets.reporter.publishStatus();
           }
         },
-        startFlow(detail: FlowDetail) {
-          const { nextFlowId, flowsRunning } = this.state;
-          this.state.nextFlowId = nextFlowId + 1;
+        /**
+         * Start a flow of asset movements. Reserves a flowId and records updates vstorage.
+         *
+         * NB: `flowId` is a counter, not the key in vstorage.
+         */
+        startFlow(detail: FlowDetail, steps?: MovementDesc[]) {
+          const { nextFlowId: flowId, flowsRunning } = this.state;
+          this.state.nextFlowId = flowId + 1;
           const sync: VowKit<MovementDesc[]> = vowTools.makeVowKit();
-          flowsRunning.init(nextFlowId, harden({ sync, ...detail }));
+          if (steps) sync.resolver.resolve(steps);
+          flowsRunning.init(flowId, harden({ sync, ...detail }));
           this.facets.reporter.publishStatus();
-          return { stepsP: sync.vow, flowId: nextFlowId };
+          return { stepsP: sync.vow, flowId };
         },
         providePosition(
           poolKey: PoolKey,
@@ -607,42 +519,78 @@ export const preparePortfolioKit = (
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
           mustMatch(offerArgs, offerArgsShapes.rebalance);
-          return rebalance(seat, offerArgs, this.facets);
+          const startedFlow = this.facets.manager.startFlow(
+            { type: 'rebalance' },
+            offerArgs.flow,
+          );
+
+          // This flow does its own error handling and always exits the seat
+          void rebalance(seat, offerArgs, this.facets, startedFlow);
+          return `flow${startedFlow.flowId}`;
         },
       },
       depositHandler: {
-        async handle(seat: ZCFSeat, offerArgs: unknown) {
-          mustMatch(offerArgs, harden({}));
+        handle(seat: ZCFSeat, offerArgs: unknown) {
+          mustMatch(offerArgs, offerArgsShapes.deposit);
           const proposal =
             seat.getProposal() as unknown as ProposalType['deposit'];
-          return executePlan(seat, offerArgs, this.facets, {
+          const flowDetail = {
             type: 'deposit',
             amount: proposal.give.Deposit,
-          });
+          } as FlowDetail;
+          const startedFlow = this.facets.manager.startFlow(
+            flowDetail,
+            offerArgs.flow,
+          );
+          // This flow does its own error handling and always exits the seat
+          void executePlan(
+            seat,
+            offerArgs,
+            this.facets,
+            flowDetail,
+            startedFlow,
+          );
+          return `flow${startedFlow.flowId}`;
         },
       },
       simpleRebalanceHandler: {
-        async handle(seat: ZCFSeat, offerArgs: unknown) {
+        handle(seat: ZCFSeat, offerArgs: unknown) {
           // XXX offerArgs.flow shouldn't be allowed
           mustMatch(offerArgs, offerArgsShapes.rebalance);
           if (offerArgs.targetAllocation) {
             const { manager } = this.facets;
             manager.setTargetAllocation(offerArgs.targetAllocation);
           }
-          return executePlan(seat, offerArgs, this.facets, {
+          const flowDetail = {
             type: 'rebalance',
-          });
+          } as FlowDetail;
+          const startedFlow = this.facets.manager.startFlow(
+            flowDetail,
+            offerArgs.flow,
+          );
+          // This flow does its own error handling and always exits the seat
+          void executePlan(
+            seat,
+            offerArgs,
+            this.facets,
+            flowDetail,
+            startedFlow,
+          );
+          return `flow${startedFlow.flowId}`;
         },
       },
       withdrawHandler: {
-        async handle(seat: ZCFSeat, offerArgs: unknown) {
-          mustMatch(offerArgs, harden({}));
+        handle(seat: ZCFSeat) {
           const proposal =
             seat.getProposal() as unknown as ProposalType['withdraw'];
-          return executePlan(seat, offerArgs, this.facets, {
+          const flowDetail = {
             type: 'withdraw',
             amount: proposal.want.Cash,
-          });
+          } as FlowDetail;
+          const startedFlow = this.facets.manager.startFlow(flowDetail);
+          // This flow does its own error handling and always exits the seat
+          void executePlan(seat, {}, this.facets, flowDetail, startedFlow);
+          return `flow${startedFlow.flowId}`;
         },
       },
 
@@ -683,7 +631,8 @@ export const preparePortfolioKit = (
             proposalShapes.rebalance,
           );
         },
-      },
+      } satisfies Record<PortfolioContinuingInvitationMaker, any> &
+        ThisType<any>,
     },
     {
       stateShape: PortfolioStateShape,

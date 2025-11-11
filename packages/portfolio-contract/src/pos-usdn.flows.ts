@@ -149,10 +149,6 @@ export const agoricToNoble = {
     const denomAmount = { value: amount.value, denom };
     await src.lca.transfer(dest.ica.getAddress(), denomAmount);
   },
-  recover: async (ctx, amount, src, dest) => {
-    const nobleAmount = { value: amount.value, denom: 'uusdc' };
-    await dest.ica.transfer(src.lca.getAddress(), nobleAmount);
-  },
 } as const satisfies TransportDetail<
   'IBC to Noble',
   'agoric',
@@ -167,11 +163,6 @@ export const nobleToAgoric = {
   apply: async (_ctx, amount, src, dest) => {
     const nobleAmount = { value: amount.value, denom: 'uusdc' };
     await src.ica.transfer(dest.lca.getAddress(), nobleAmount);
-  },
-  recover: async (ctx, amount, src, dest) => {
-    const { denom } = ctx.usdc;
-    const denomAmount = { value: amount.value, denom };
-    await dest.lca.transfer(src.ica.getAddress(), denomAmount);
   },
 } as const satisfies TransportDetail<
   'IBC from Noble',

@@ -1,4 +1,5 @@
 import { JSONRPCClient, type JSONRPCResponse } from 'json-rpc-2.0';
+import type { CloseEvent, WebSocket } from 'ws';
 
 const MAX_SUBSCRIPTIONS = 5;
 
@@ -16,20 +17,33 @@ export class CosmosRPCClient extends JSONRPCClient {
     number,
     {
       query: string;
-      notified: (response: JSONRPCResponse) => void;
+      notify: (response: JSONRPCResponse) => void;
+      finish: () => void;
+      fail: (error: unknown) => void;
       unsubscribe: () => void;
     }
   >;
 
   #openedPK: PromiseWithResolvers<void>;
 
-  #closedPK: PromiseWithResolvers<void>;
+  #closedPK: PromiseWithResolvers<CloseEvent>;
+
+  #isClosed: boolean;
 
   #lastSentId: number;
 
   #ws: WebSocket;
 
-  constructor(url) {
+  constructor(
+    url: string | URL,
+    {
+      WebSocket,
+      heartbeats,
+    }: {
+      WebSocket: typeof import('ws').WebSocket;
+      heartbeats?: AsyncIterable<unknown>;
+    },
+  ) {
     const wsUrl = new URL('/websocket', url);
     wsUrl.protocol = wsUrl.protocol.replace(/^http/, 'ws');
     wsUrl.pathname = '/websocket';
@@ -41,27 +55,68 @@ export class CosmosRPCClient extends JSONRPCClient {
     });
     this.#ws = ws;
     this.#subscriptions = new Map();
-    this.#openedPK = Promise.withResolvers<void>();
-    this.#closedPK = Promise.withResolvers<void>();
+    this.#openedPK = Promise.withResolvers();
+    this.#closedPK = Promise.withResolvers();
+    this.#isClosed = false;
     this.#lastSentId = -1;
 
-    ws.addEventListener('close', () => {
-      this.#closedPK.resolve();
+    ws.addEventListener('close', event => {
+      this.#closedPK.resolve(event);
+      this.#isClosed = true;
+      for (const sub of this.#subscriptions.values()) {
+        sub.finish();
+      }
       this.#subscriptions.clear();
+      this.rejectAllPendingRequests('socket closed');
     });
 
-    ws.addEventListener('error', ev => {
-      const err = new Error(`WebSocket ${wsUrl.href} error: ${ev}`);
+    const onError = err => {
       this.#openedPK.reject(err);
       this.#closedPK.reject(err);
+      this.#isClosed = true;
+      for (const sub of this.#subscriptions.values()) {
+        sub.fail(err);
+      }
+      this.#subscriptions.clear();
+      this.rejectAllPendingRequests(err?.message ?? 'unknown error');
+    };
+
+    ws.addEventListener('error', event => {
+      const cause = event.error;
+      const msg = `WebSocket ${wsUrl.href} error: ${cause?.message}`;
+      onError(Error(msg, { cause }));
     });
+
+    if (heartbeats) {
+      let gotPong = true;
+      ws.on('pong', () => {
+        gotPong = true;
+      });
+      void (async () => {
+        for await (const _ of heartbeats) {
+          if (this.#isClosed) break;
+          if (!gotPong) {
+            const err = Error('WebSocket pong timeout');
+            Object.defineProperty(err, 'code', {
+              value: 'WEBSOCKET_PONG_TIMEOUT',
+              enumerable: true,
+            });
+            onError(err);
+            ws.terminate();
+            break;
+          }
+          gotPong = false;
+          ws.ping();
+        }
+      })();
+    }
 
     ws.addEventListener('message', event => {
       const str = event.data.toString('utf8');
       const response = JSON.parse(str);
       const sub = this.#subscriptions.get(response.id);
       if (sub) {
-        sub.notified(response);
+        sub.notify(response);
       }
       this.receive(response);
     });
@@ -69,6 +124,11 @@ export class CosmosRPCClient extends JSONRPCClient {
     ws.addEventListener('open', () => {
       this.#openedPK.resolve();
     });
+  }
+
+  async send(payload: any) {
+    if (this.#isClosed) throw Error('already closed');
+    return super.send(payload);
   }
 
   receive(response: JSONRPCResponse) {
@@ -79,7 +139,6 @@ export class CosmosRPCClient extends JSONRPCClient {
   close() {
     this.rejectAllPendingRequests('RPC client closed');
     this.#ws.close();
-    this.#subscriptions.clear();
   }
 
   opened() {
@@ -117,7 +176,7 @@ export class CosmosRPCClient extends JSONRPCClient {
 
     type Cell = { head: JSONRPCResponse; tail: Promise<Cell> };
     let lastPK = Promise.withResolvers<Cell>();
-    let nextCell = lastPK.promise;
+    let nextCellP = lastPK.promise;
 
     const subscriptionKits = [...newQueries.keys()].map(query => {
       const subP = this.request('subscribe', { query });
@@ -133,7 +192,18 @@ export class CosmosRPCClient extends JSONRPCClient {
       };
       this.#subscriptions.set(subId, {
         query,
-        notified: (response: JSONRPCResponse) => {
+        finish: () => {
+          readyKit.isSettled = true;
+          readyKit.resolve(undefined);
+          // @ts-expect-error undefined is not a Cell but indicates conclusion
+          lastPK.resolve(undefined);
+        },
+        fail: (err: unknown) => {
+          readyKit.isSettled = true;
+          readyKit.reject(err);
+          lastPK.reject(err);
+        },
+        notify: (response: JSONRPCResponse) => {
           // Ignore an initial empty-result response.
           if (!readyKit.isSettled) {
             readyKit.isSettled = true;
@@ -163,19 +233,17 @@ export class CosmosRPCClient extends JSONRPCClient {
     // console.log('wait forever?');
     try {
       while (true) {
-        // console.log('wait for next event');
-        const { head, tail } = await nextCell;
-        nextCell = tail;
+        const nextCell = await nextCellP;
+        if (!nextCell) break;
+        const { head, tail } = nextCell;
+        nextCellP = tail;
         if (head.error) {
-          // Propagate errors non-fatally.
+          // Propagate application-level errors non-fatally.
           yield Promise.reject(Error(head.error.message));
           continue;
         }
         yield head.result;
       }
-    } catch (error) {
-      console.error('Subscription error:', error);
-      lastPK.reject(error);
     } finally {
       for (const { unsubscribe } of subscriptionKits) {
         unsubscribe();

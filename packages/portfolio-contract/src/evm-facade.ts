@@ -60,3 +60,21 @@ export const makeEVMSession = () => {
     finish,
   });
 };
+
+export const DECODE_CONTRACT_CALL_RESULT_ABI = [
+  {
+    type: 'tuple',
+    components: [
+      { name: 'isContractCallResult', type: 'bool' },
+      {
+        name: 'data',
+        type: 'tuple[]',
+        components: [
+          { name: 'success', type: 'bool' },
+          { name: 'result', type: 'bytes' },
+        ],
+      },
+    ],
+  },
+] as const;
+harden(DECODE_CONTRACT_CALL_RESULT_ABI);

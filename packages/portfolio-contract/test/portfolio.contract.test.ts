@@ -11,9 +11,10 @@ import {
 } from '@agoric/internal/src/testing-utils.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.ts';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
-import type { AssetPlaceRef, MovementDesc } from '../src/type-guards-steps.ts';
+import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
 import type {
   OfferArgsFor,
   StatusFor,
@@ -32,7 +33,6 @@ import {
   makeCCTPTraffic,
   portfolio0lcaOrch,
 } from './mocks.ts';
-import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
 import { makeStorageTools } from './supports.ts';
 
 const { fromEntries, keys, values } = Object;
@@ -73,6 +73,9 @@ const getPortfolioInfo = (key: string, storage: FakeStorage) => {
   return { contents, positionPaths: posPaths, flowPaths };
 };
 
+const ackNFA = (utils, ix = 0) =>
+  utils.transmitVTransferEvent('acknowledgementPacket', ix);
+
 test('open portfolio with USDN position', async t => {
   const { trader1, common } = await setupTrader(t);
   const { usdc, poc26 } = common.brands;
@@ -90,7 +93,8 @@ test('open portfolio with USDN position', async t => {
     },
   );
 
-  // ack IBC transfer for forward
+  // ack IBC transfer for NFA, forward
+  await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
 
   const done = await doneP;
@@ -123,49 +127,45 @@ test('open portfolio with USDN position', async t => {
   t.snapshot(done.payouts, 'refund payouts');
 });
 
-test.serial('open a portfolio with Aave position', async t => {
-  const { trader1, common, started, zoe } = await setupTrader(t);
+test('open a portfolio with Aave position', async t => {
+  const { trader1, common, txResolver } = await setupTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
-  const amount = usdc.units(3_333.33);
-  const feeAcct = bld.make(100n);
-  const feeCall = bld.make(100n);
-  const detail = { evmGas: 175n };
+  const portfolioP = (async () => {
+    const amount = usdc.units(3_333.33);
+    const feeAcct = bld.make(100n);
+    const feeCall = bld.make(100n);
+    const detail = { evmGas: 175n };
 
-  const actualP = trader1.openPortfolio(
-    t,
-    { Deposit: amount, Access: poc26.make(1n) },
-    {
-      flow: [
-        { src: '<Deposit>', dest: '@agoric', amount },
-        { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct, detail },
-        { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
-      ],
-    },
-  );
+    return trader1.openPortfolio(
+      t,
+      { Deposit: amount, Access: poc26.make(1n) },
+      {
+        flow: [
+          { src: '<Deposit>', dest: '@agoric', amount },
+          { src: '@agoric', dest: '@noble', amount },
+          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct, detail },
+          { src: '@Arbitrum', dest: 'Aave_Arbitrum', amount, fee: feeCall },
+        ],
+      },
+    );
+  })();
 
-  await eventLoopIteration();
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  t.log('ackd send to Axelar to create account');
+  const chainP = (async () => {
+    await ackNFA(common.utils);
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    t.log('ackd send to Axelar to create account');
+    await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
+    await simulateCCTPAck(common.utils);
+    const misc = await txResolver.drainPending();
+    // NOTE: Axelar Ack has to come _after_ drainPending.
+    await simulateAckTransferToAxelar(common.utils);
+    return misc;
+  })();
 
-  await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
+  const [actual, misc] = await Promise.all([portfolioP, chainP]);
 
-  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleTransaction(zoe, resolverMakers);
-  const gmpSettlementPromise = settleTransaction(zoe, resolverMakers, 1);
-
-  await simulateCCTPAck(common.utils).finally(() =>
-    simulateAckTransferToAxelar(common.utils),
-  );
-
-  const [actual, cctpResult] = await Promise.all([
-    actualP,
-    cctpSettlementPromise,
-    gmpSettlementPromise,
-  ]);
-
-  t.log('=== Portfolio completed, CCTP result:', cctpResult);
+  t.log('=== Portfolio completed. resolved:', misc);
   const result = actual.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
 
@@ -178,7 +178,7 @@ test.serial('open a portfolio with Aave position', async t => {
 });
 
 test('open a portfolio with Compound position', async t => {
-  const { trader1, common, started, zoe } = await setupTrader(t);
+  const { trader1, common, txResolver } = await setupTrader(t);
   const { bld, usdc, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
@@ -202,27 +202,22 @@ test('open a portfolio with Compound position', async t => {
   );
 
   await eventLoopIteration(); // let IBC message go out
+  await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  t.log('ackd send to Axelar to create account');
+  t.log('ackd NFA, send to Axelar to create account');
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
-  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleTransaction(zoe, resolverMakers);
-  const gmpSettlementPromise = settleTransaction(zoe, resolverMakers, 1);
-
   await simulateCCTPAck(common.utils).finally(() =>
-    simulateAckTransferToAxelar(common.utils),
+    txResolver
+      .drainPending()
+      .then(() => simulateAckTransferToAxelar(common.utils)),
   );
 
   t.log('=== Waiting for portfolio completion and CCTP confirmation ===');
-  const [actual, cctpResult] = await Promise.all([
-    actualP,
-    cctpSettlementPromise,
-    gmpSettlementPromise,
-  ]);
+  const actual = await actualP;
 
-  t.log('=== Portfolio completed, CCTP result:', cctpResult);
+  t.log('=== Portfolio completed');
   const result = actual.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
 
@@ -235,8 +230,7 @@ test('open a portfolio with Compound position', async t => {
 });
 
 test('open portfolio with USDN, Aave positions', async t => {
-  const { trader1, common, contractBaggage, started, zoe } =
-    await setupTrader(t);
+  const { trader1, common, contractBaggage, txResolver } = await setupTrader(t);
   const { bld, usdc, poc26 } = common.brands;
 
   const { add } = AmountMath;
@@ -264,29 +258,21 @@ test('open portfolio with USDN, Aave positions', async t => {
 
   await eventLoopIteration(); // let outgoing IBC happen
   t.log('openPortfolio, eventloop');
+  await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-  t.log('ackd send to noble');
+  t.log('ackd NFA, send to noble');
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
-  // Start CCTP confirmation for the Aave portion (amount goes to Arbitrum)
-  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleTransaction(zoe, resolverMakers);
-  const gmpSettlementPromise = settleTransaction(zoe, resolverMakers, 1);
-
   await simulateCCTPAck(common.utils).finally(() =>
-    simulateAckTransferToAxelar(common.utils),
+    txResolver
+      .drainPending()
+      .then(() => simulateAckTransferToAxelar(common.utils)),
   );
 
-  await eventLoopIteration(); // let bridge I/O happen
+  const done = await doneP;
 
-  const [done, cctpResult] = await Promise.all([
-    doneP,
-    cctpSettlementPromise,
-    gmpSettlementPromise,
-  ]);
-
-  t.log('=== Portfolio completed, CCTP result:', cctpResult);
+  t.log('=== Portfolio completed');
   const result = done.result as any;
   t.is(passStyleOf(result.invitationMakers), 'remotable');
 
@@ -342,6 +328,7 @@ test('open portfolio with target allocations', async t => {
     { Access: poc26.make(1n) },
     { targetAllocation },
   );
+  await ackNFA(common.utils);
 
   const done = await doneP;
   const result = done.result as any;
@@ -360,7 +347,7 @@ test('open portfolio with target allocations', async t => {
 });
 
 test('claim rewards on Aave position successfully', async t => {
-  const { trader1, common, started, zoe } = await setupTrader(t);
+  const { trader1, common, txResolver } = await setupTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
@@ -381,26 +368,21 @@ test('claim rewards on Aave position successfully', async t => {
   );
 
   await eventLoopIteration(); // let IBC message go out
+  await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   t.log('ackd send to Axelar to create account');
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
-  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleTransaction(zoe, resolverMakers);
-  const gmpSettlementPromise = settleTransaction(zoe, resolverMakers, 1);
-
   await simulateCCTPAck(common.utils).finally(() =>
-    simulateAckTransferToAxelar(common.utils),
+    txResolver
+      .drainPending()
+      .then(() => simulateAckTransferToAxelar(common.utils)),
   );
 
-  const [done, cctpResult] = await Promise.all([
-    actualP,
-    cctpSettlementPromise,
-    gmpSettlementPromise,
-  ]);
+  const done = await actualP;
 
-  t.log('=== Portfolio completed, CCTP result:', cctpResult);
+  t.log('=== Portfolio completed');
   const result = done.result as any;
 
   const { storagePath } = result.publicSubscribers.portfolio;
@@ -422,7 +404,7 @@ test('claim rewards on Aave position successfully', async t => {
     },
   );
 
-  await settleTransaction(zoe, resolverMakers, 2);
+  await txResolver.drainPending();
 
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   const rebalanceResult = await rebalanceP;
@@ -457,6 +439,7 @@ test('USDN claim fails currently', async t => {
   );
 
   // ack IBC transfer for forward
+  await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
 
   const done = await doneP;
@@ -486,7 +469,7 @@ test('USDN claim fails currently', async t => {
     'LCA',
   );
 
-  const rebalanceP = trader1.rebalance(
+  const rebalanceRet = await trader1.rebalance(
     t,
     { give: {}, want: {} },
     {
@@ -501,14 +484,21 @@ test('USDN claim fails currently', async t => {
     },
   );
 
-  await t.throwsAsync(rebalanceP, {
-    message: /claiming USDN is not supported/,
+  t.deepEqual(rebalanceRet, {
+    result: 'flow2',
+    payouts: {},
   });
+
+  const portfolioInfo = getPortfolioInfo(storagePath, common.bootstrap.storage);
+  const flowInfo =
+    portfolioInfo.contents[`${storagePath}.flows.${rebalanceRet.result}`];
+  t.snapshot(flowInfo, 'flow info after failed claim');
+  t.is(flowInfo.at(-1).error, 'claiming USDN is not supported');
 });
 
 const beefyTestMacro = test.macro({
   async exec(t, vaultKey: AssetPlaceRef) {
-    const { trader1, common, started, zoe } = await setupTrader(t);
+    const { trader1, common, txResolver } = await setupTrader(t);
     const { usdc, bld, poc26 } = common.brands;
 
     const amount = usdc.units(3_333.33);
@@ -529,25 +519,20 @@ const beefyTestMacro = test.macro({
     );
 
     await eventLoopIteration(); // let IBC message go out
+    await ackNFA(common.utils);
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     t.log('ackd send to Axelar to create account');
 
     await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
-    const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-    const cctpSettlementPromise = settleTransaction(zoe, resolverMakers);
-    const gmpSettlementPromise = settleTransaction(zoe, resolverMakers, 1);
-
     await simulateCCTPAck(common.utils).finally(() =>
-      simulateAckTransferToAxelar(common.utils),
+      txResolver
+        .drainPending()
+        .then(() => simulateAckTransferToAxelar(common.utils)),
     );
-    const [actual, cctpResult] = await Promise.all([
-      actualP,
-      cctpSettlementPromise,
-      gmpSettlementPromise,
-    ]);
+    const actual = await actualP;
 
-    t.log('=== Portfolio completed, CCTP result:', cctpResult);
+    t.log('=== Portfolio completed');
     const result = actual.result as any;
     t.is(passStyleOf(result.invitationMakers), 'remotable');
 
@@ -598,7 +583,7 @@ test(
 );
 
 test('Withdraw from a Beefy position (future client)', async t => {
-  const { trader1, common, started, zoe } = await setupTrader(t);
+  const { trader1, common, txResolver } = await setupTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
   const amount = usdc.units(3_333.33);
@@ -619,23 +604,18 @@ test('Withdraw from a Beefy position (future client)', async t => {
   );
 
   await eventLoopIteration(); // let IBC message go out
+  await ackNFA(common.utils);
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   t.log('ackd send to Axelar to create account');
 
   await simulateUpcallFromAxelar(common.mocks.transferBridge, sourceChain);
 
-  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-  const cctpSettlementPromise = settleTransaction(zoe, resolverMakers);
-  const gmpSettlementPromise = settleTransaction(zoe, resolverMakers, 1);
-
   await simulateCCTPAck(common.utils).finally(() =>
-    simulateAckTransferToAxelar(common.utils),
+    txResolver
+      .drainPending()
+      .then(() => simulateAckTransferToAxelar(common.utils)),
   );
-  const [actual] = await Promise.all([
-    actualP,
-    cctpSettlementPromise,
-    gmpSettlementPromise,
-  ]);
+  const actual = await actualP;
 
   const result = actual.result as any;
 
@@ -652,11 +632,6 @@ test('Withdraw from a Beefy position (future client)', async t => {
         },
         {
           src: '@Arbitrum',
-          dest: '@noble',
-          amount,
-        },
-        {
-          src: '@noble',
           dest: '@agoric',
           amount,
         },
@@ -670,17 +645,14 @@ test('Withdraw from a Beefy position (future client)', async t => {
   );
 
   // GMP transaction settlement for the withdraw
-  await settleTransaction(zoe, resolverMakers, 2);
+  await txResolver.drainPending();
 
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   await simulateCCTPAck(common.utils).finally(() =>
-    simulateAckTransferToAxelar(common.utils),
+    txResolver
+      .drainPending()
+      .then(() => simulateAckTransferToAxelar(common.utils)),
   );
-
-  // CCTP transaction settlement for the withdraw
-  await settleTransaction(zoe, resolverMakers, 3);
-  // Transaction settlement on noble for the withdraw
-  await settleTransaction(zoe, resolverMakers, 4);
 
   const withdraw = await withdrawP;
 
@@ -698,13 +670,19 @@ test('portfolios node updates for each new portfolio', async t => {
   const give = { Access: poc26.make(1n) };
   {
     const trader = await makeFundedTrader();
-    await trader.openPortfolio(t, give);
+    await Promise.all([
+      trader.openPortfolio(t, give),
+      ackNFA(common.utils, -1),
+    ]);
     const x = storage.getDeserialized(`${ROOT_STORAGE_PATH}.portfolios`).at(-1);
     t.deepEqual(x, { addPortfolio: `portfolio0` });
   }
   {
     const trader = await makeFundedTrader();
-    await trader.openPortfolio(t, give);
+    await Promise.all([
+      trader.openPortfolio(t, give),
+      ackNFA(common.utils, -1),
+    ]);
     const x = storage.getDeserialized(`${ROOT_STORAGE_PATH}.portfolios`).at(-1);
     t.deepEqual(x, { addPortfolio: `portfolio1` });
   }
@@ -722,7 +700,7 @@ test('initial baggage', async t => {
 test.serial(
   'open 2 positions on an EVM chain, with a CCTP confirmation for each',
   async t => {
-    const { trader1, common, started, zoe } = await setupTrader(t);
+    const { trader1, common, txResolver } = await setupTrader(t);
     const { usdc, bld, poc26 } = common.brands;
 
     const amount = usdc.units(6_666.66);
@@ -755,6 +733,7 @@ test.serial(
     );
 
     await eventLoopIteration();
+    await ackNFA(common.utils);
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     t.log('ackd send to Axelar to create account');
 
@@ -763,32 +742,23 @@ test.serial(
     await common.utils
       .transmitVTransferEvent('acknowledgementPacket', -1)
       .then(() => eventLoopIteration());
-    await eventLoopIteration();
-
-    const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
-    const cctpSettlementPromise = settleTransaction(zoe, resolverMakers, 0);
 
     await simulateCCTPAck(common.utils).finally(() =>
-      simulateAckTransferToAxelar(common.utils),
+      txResolver
+        .drainPending()
+        .then(() => simulateAckTransferToAxelar(common.utils)),
     );
-    const gmpSettlementPromise = settleTransaction(zoe, resolverMakers, 1);
 
     await common.utils
       .transmitVTransferEvent('acknowledgementPacket', -1)
       .then(() => eventLoopIteration());
-    await eventLoopIteration();
-
-    const cctpSettlementPromise2 = settleTransaction(zoe, resolverMakers, 2);
 
     await simulateCCTPAck(common.utils).finally(() =>
-      simulateAckTransferToAxelar(common.utils),
+      txResolver
+        .drainPending()
+        .then(() => simulateAckTransferToAxelar(common.utils)),
     );
 
-    await Promise.all([
-      cctpSettlementPromise,
-      cctpSettlementPromise2,
-      gmpSettlementPromise,
-    ]);
     const actual = await actualP;
 
     const result = actual.result as any;
@@ -807,9 +777,8 @@ test.serial(
 );
 
 test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
-  const { trader1, common, started, zoe, trader2 } = await setupTrader(t);
+  const { trader1, common, txResolver, trader2 } = await setupTrader(t);
   const { usdc, bld, poc26 } = common.brands;
-  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
 
   const addr2 = {
     lca: makeTestAddress(3), // agoric1q...rytxkw
@@ -862,15 +831,7 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
     simulateAckTransferToAxelar(common.utils),
   );
 
-  await Promise.all([
-    settleTransaction(zoe, resolverMakers),
-    settleTransaction(zoe, resolverMakers, 1),
-  ]);
-
-  await Promise.all([
-    settleTransaction(zoe, resolverMakers, 2),
-    settleTransaction(zoe, resolverMakers, 3),
-  ]);
+  await txResolver.drainPending();
 
   await eventLoopIteration(); // let IBC message go out
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
@@ -896,11 +857,10 @@ test('start deposit more to same', async t => {
     USDN: 60n,
     Aave_Arbitrum: 40n,
   };
-  await trader1.openPortfolio(
-    t,
-    { Access: poc26.make(1n) },
-    { targetAllocation },
-  );
+  await Promise.all([
+    trader1.openPortfolio(t, { Access: poc26.make(1n) }, { targetAllocation }),
+    ackNFA(common.utils),
+  ]);
 
   const amount = usdc.units(3_333.33);
   await trader1.rebalance(
@@ -932,7 +892,7 @@ const setupPlanner = async t => {
   const planner1 = plannerClientMock(walletPlanner, started.instance, () =>
     readPublished(`wallet.agoric1planner`),
   );
-  return { common, zoe, started, trader1, planner1 };
+  return { common, zoe, started, trader1, planner1, readPublished };
 };
 
 test('redeem, use planner invitation', async t => {
@@ -940,7 +900,7 @@ test('redeem, use planner invitation', async t => {
 
   await planner1.redeem();
 
-  await trader1.openPortfolio(t, {}, {});
+  await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
   const { usdc } = common.brands;
   const Deposit = usdc.units(3_333.33);
   await trader1.rebalance(
@@ -978,7 +938,10 @@ test('request rebalance - send same targetAllocation', async t => {
     Aave_Avalanche: 60n,
     Compound_Arbitrum: 40n,
   };
-  await trader1.openPortfolio(t, {}, { targetAllocation });
+  await Promise.all([
+    trader1.openPortfolio(t, {}, { targetAllocation }),
+    ackNFA(common.utils),
+  ]);
   t.like(await trader1.getPortfolioStatus(), {
     policyVersion: 1,
     rebalanceCount: 0,
@@ -1023,7 +986,7 @@ test('withdraw using planner', async t => {
   const { common, trader1, planner1 } = await setupPlanner(t);
 
   await planner1.redeem();
-  await trader1.openPortfolio(t, {}, {});
+  await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
   const pId: number = trader1.getPortfolioId();
   const { usdc } = common.brands;
   const Deposit = usdc.units(3_333.33);
@@ -1058,7 +1021,10 @@ test('withdraw using planner', async t => {
     // XXX brand from vstorage isn't suitable for use in call to kit
     const amount = AmountMath.make(Deposit.brand, detail.amount.value);
 
-    const plan: MovementDesc[] = [{ src: '@agoric', dest: '<Cash>', amount }];
+    const plan: FundsFlowPlan = {
+      flow: [{ src: '@agoric', dest: '<Cash>', amount }],
+      order: [],
+    };
     await E(planner1.stub).resolvePlan(
       pId,
       fId,
@@ -1073,7 +1039,7 @@ test('withdraw using planner', async t => {
 
   const bankTraffic = common.utils.inspectBankBridge();
   const { accountIdByChain } = await trader1.getPortfolioStatus();
-  const [_ns, _ref, addr] = accountIdByChain.agoric.split(':');
+  const [_ns, _ref, addr] = accountIdByChain.agoric!.split(':');
   const myVBankIO = bankTraffic.filter(obj =>
     [obj.sender, obj.recipient].includes(addr),
   );
@@ -1152,7 +1118,7 @@ test('deposit using planner', async t => {
   const { common, trader1, planner1 } = await setupPlanner(t);
 
   await planner1.redeem();
-  await trader1.openPortfolio(t, {}, {});
+  await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
   const pId: number = trader1.getPortfolioId();
   const { usdc } = common.brands;
   const Deposit = usdc.units(1_000);
@@ -1179,9 +1145,10 @@ test('deposit using planner', async t => {
     // XXX brand from vstorage isn't suitable for use in call to kit
     const amount = AmountMath.make(Deposit.brand, detail.amount.value);
 
-    const plan: MovementDesc[] = [
-      { src: '<Deposit>', dest: '@agoric', amount },
-    ];
+    const plan: FundsFlowPlan = {
+      flow: [{ src: '<Deposit>', dest: '@agoric', amount }],
+      order: [],
+    };
     await E(planner1.stub).resolvePlan(
       pId,
       fId,
@@ -1196,7 +1163,7 @@ test('deposit using planner', async t => {
 
   const bankTraffic = common.utils.inspectBankBridge();
   const { accountIdByChain } = await trader1.getPortfolioStatus();
-  const [_ns, _ref, addr] = accountIdByChain.agoric.split(':');
+  const [_ns, _ref, addr] = accountIdByChain.agoric!.split(':');
   const myVBankIO = bankTraffic.filter(obj =>
     [obj.sender, obj.recipient].includes(addr),
   );
@@ -1208,7 +1175,7 @@ test('simple rebalance using planner', async t => {
   const { common, trader1, planner1 } = await setupPlanner(t);
 
   await planner1.redeem();
-  await trader1.openPortfolio(t, {}, { targetAllocation: { USDN: 10000n } });
+  await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
   const pId: number = trader1.getPortfolioId();
   const { usdc } = common.brands;
   const Deposit = usdc.units(3_333.33);
@@ -1246,7 +1213,10 @@ test('simple rebalance using planner', async t => {
 
     const amount = AmountMath.make(usdc.brand, 1_000n);
 
-    const plan: MovementDesc[] = [{ src: '@agoric', dest: '<Cash>', amount }];
+    const plan: FundsFlowPlan = {
+      flow: [{ src: '@agoric', dest: '<Cash>', amount }],
+      order: [[0, []]],
+    };
     await E(planner1.stub).resolvePlan(
       pId,
       fId,
@@ -1261,7 +1231,7 @@ test('simple rebalance using planner', async t => {
 
   const bankTraffic = common.utils.inspectBankBridge();
   const { accountIdByChain } = await trader1.getPortfolioStatus();
-  const [_ns, _ref, addr] = accountIdByChain.agoric.split(':');
+  const [_ns, _ref, addr] = accountIdByChain.agoric!.split(':');
   const myVBankIO = bankTraffic.filter(obj =>
     [obj.sender, obj.recipient].includes(addr),
   );
@@ -1271,4 +1241,68 @@ test('simple rebalance using planner', async t => {
     { type: 'VBANK_GRAB', amount: '1000' },
   ]);
   t.is(833332500n, (3333330000n * 25n) / 100n);
+});
+
+test('create+deposit using planner', async t => {
+  const { common, trader1, planner1, readPublished } = await setupPlanner(t);
+  const { usdc } = common.brands;
+
+  await planner1.redeem();
+
+  const traderP = (async () => {
+    const Deposit = usdc.units(1_000);
+    await Promise.all([
+      trader1.openPortfolio(t, { Deposit }, { targetAllocation: { USDN: 1n } }),
+      ackNFA(common.utils),
+    ]);
+    t.log('trader created with deposit', Deposit);
+  })();
+
+  const plannerP = (async () => {
+    const getStatus = async pId => {
+      // NOTE: readPublished uses eventLoopIteration() to let vstorage writes settle
+      const x = await readPublished(`portfolios.portfolio${pId}`);
+      return x as unknown as StatusFor['portfolio'];
+    };
+
+    const pId = 0;
+    const {
+      flowsRunning = {},
+      policyVersion,
+      rebalanceCount,
+    } = await getStatus(pId);
+    t.is(keys(flowsRunning).length, 1);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    const fId = Number(flowId.replace('flow', ''));
+
+    // narrow the type
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+
+    // XXX brand from vstorage isn't suitable for use in call to kit
+    const amount = AmountMath.make(usdc.brand, detail.amount.value);
+
+    const plan: FundsFlowPlan = {
+      flow: [{ src: '<Deposit>', dest: '@agoric', amount }],
+      order: [],
+    };
+    await E(planner1.stub).resolvePlan(
+      pId,
+      fId,
+      plan,
+      policyVersion,
+      rebalanceCount,
+    );
+    t.log('planner resolved plan');
+  })();
+
+  await Promise.all([traderP, plannerP]);
+
+  const bankTraffic = common.utils.inspectBankBridge();
+  const { accountIdByChain } = await trader1.getPortfolioStatus();
+  const [_ns, _ref, addr] = accountIdByChain.agoric!.split(':');
+  const myVBankIO = bankTraffic.filter(obj =>
+    [obj.sender, obj.recipient].includes(addr),
+  );
+  t.log('bankBridge for', addr, myVBankIO);
+  t.like(myVBankIO, [{ type: 'VBANK_GIVE', amount: '1000000000' }]);
 });

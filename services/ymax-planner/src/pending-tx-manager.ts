@@ -1,9 +1,9 @@
-import type { JsonRpcProvider } from 'ethers';
+import type { WebSocketProvider } from 'ethers';
 
 import { Fail } from '@endo/errors';
 
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import type { Bech32Address, CaipChainId } from '@agoric/orchestration';
+import type { CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 
@@ -16,13 +16,13 @@ import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.t
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import { resolvePendingTx } from './resolver.ts';
-import type { EvmProviders, UsdcAddresses } from './support.ts';
+import {
+  waitForBlock,
+  type EvmProviders,
+  type UsdcAddresses,
+} from './support.ts';
 import { watchGmp, lookBackGmp } from './watchers/gmp-watcher.ts';
 import { watchCctpTransfer, lookBackCctp } from './watchers/cctp-watcher.ts';
-import {
-  lookBackNobleTransfer,
-  watchNobleTransfer,
-} from './watchers/noble-watcher.ts';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
@@ -43,13 +43,13 @@ export type GmpTransfer = {
 
 type CctpTx = PendingTx & { type: typeof TxType.CCTP_TO_EVM; amount: bigint };
 type GmpTx = PendingTx & { type: typeof TxType.GMP };
-type NobleWithdrawTx = PendingTx & {
-  type: typeof TxType.CCTP_TO_NOBLE;
-  amount: bigint;
-};
 
 type LiveWatchOpts = { mode: 'live'; timeoutMs: number };
-type LookBackWatchOpts = { mode: 'lookback'; publishTimeMs: number };
+type LookBackWatchOpts = {
+  mode: 'lookback';
+  publishTimeMs: number;
+  timeoutMs: number;
+};
 type WatchOpts = LiveWatchOpts | LookBackWatchOpts;
 
 export type PendingTxMonitor<
@@ -67,11 +67,12 @@ export type PendingTxMonitor<
 type MonitorRegistry = {
   [TxType.CCTP_TO_EVM]: PendingTxMonitor<CctpTx, EvmContext>;
   [TxType.GMP]: PendingTxMonitor<GmpTx, EvmContext>;
-  [TxType.CCTP_TO_NOBLE]: PendingTxMonitor<NobleWithdrawTx, EvmContext>;
 };
 
 const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
   watch: async (ctx, tx, log, opts) => {
+    await null;
+
     const { txId, destinationAddress, amount } = tx;
     const logPrefix = `[${txId}]`;
 
@@ -94,13 +95,55 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       provider,
       log: (msg, ...args) => log(logPrefix, msg, ...args),
     };
-    const transferStatus = await (opts.mode === 'live'
-      ? watchCctpTransfer({ ...watchArgs, timeoutMs: opts.timeoutMs })
-      : lookBackCctp({
-          ...watchArgs,
-          publishTimeMs: opts.publishTimeMs,
-          chainId: caipId,
-        }));
+
+    let transferStatus: boolean | undefined;
+
+    if (opts.mode === 'live') {
+      transferStatus = await watchCctpTransfer({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+      });
+    } else {
+      // Lookback mode with concurrent live watching
+      // Start live mode now in case the txId has not yet appeared
+      const abortController = new AbortController();
+      const liveResultP = watchCctpTransfer({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+        signal: abortController.signal,
+      });
+      void liveResultP.then(found => {
+        if (found) {
+          log(`${logPrefix} Live mode completed`);
+          abortController.abort();
+        }
+      });
+
+      await null;
+      // Wait for at least one block to ensure overlap between lookback and live mode
+      const currentBlock = await provider.getBlockNumber();
+      await waitForBlock(provider, currentBlock + 1);
+
+      // Scan historical blocks
+      transferStatus = await lookBackCctp({
+        ...watchArgs,
+        publishTimeMs: opts.publishTimeMs,
+        chainId: caipId,
+        signal: abortController.signal,
+      });
+
+      if (transferStatus) {
+        // Found in lookback, cancel live mode
+        log(`${logPrefix} Lookback found transaction`);
+        abortController.abort();
+      } else {
+        // Not found in lookback, rely on live mode
+        log(
+          `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
+        );
+        transferStatus = await liveResultP;
+      }
+    }
 
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
@@ -114,6 +157,8 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
 
 const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
   watch: async (ctx, tx, log, opts) => {
+    await null;
+
     const { txId, destinationAddress } = tx;
     const logPrefix = `[${txId}]`;
 
@@ -124,7 +169,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
     caipId in ctx.evmProviders ||
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
-    const provider = ctx.evmProviders[caipId] as JsonRpcProvider;
+    const provider = ctx.evmProviders[caipId] as WebSocketProvider;
 
     const watchArgs = {
       provider,
@@ -132,13 +177,55 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       txId,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
     };
-    const transferStatus = await (opts.mode === 'live'
-      ? watchGmp({ ...watchArgs, timeoutMs: opts.timeoutMs })
-      : lookBackGmp({
-          ...watchArgs,
-          publishTimeMs: opts.publishTimeMs,
-          chainId: caipId,
-        }));
+
+    let transferStatus: boolean | undefined;
+
+    if (opts.mode === 'live') {
+      transferStatus = await watchGmp({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+      });
+    } else {
+      // Lookback mode with concurrent live watching
+      // Start live mode now in case the txId has not yet appeared
+      const abortController = new AbortController();
+      const liveResultP = watchGmp({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+        signal: abortController.signal,
+      });
+      void liveResultP.then(found => {
+        if (found) {
+          log(`${logPrefix} Live mode completed`);
+          abortController.abort();
+        }
+      });
+
+      await null;
+      // Wait for at least one block to ensure overlap between lookback and live mode
+      const currentBlock = await provider.getBlockNumber();
+      await waitForBlock(provider, currentBlock + 1);
+
+      // Scan historical blocks
+      transferStatus = await lookBackGmp({
+        ...watchArgs,
+        publishTimeMs: opts.publishTimeMs,
+        chainId: caipId,
+        signal: abortController.signal,
+      });
+
+      if (transferStatus) {
+        // Found in lookback, cancel live mode
+        log(`${logPrefix} Lookback found transaction`);
+        abortController.abort();
+      } else {
+        // Not found in lookback, rely on live mode
+        log(
+          `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
+        );
+        transferStatus = await liveResultP;
+      }
+    }
 
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
@@ -150,56 +237,9 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
   },
 };
 
-const nobleWithdrawMonitor: PendingTxMonitor<NobleWithdrawTx, EvmContext> = {
-  watch: async (ctx, tx, log, opts) => {
-    const { txId, destinationAddress, amount } = tx;
-    const logPrefix = `[${txId}]`;
-
-    const { accountAddress } = parseAccountId(destinationAddress);
-
-    const nobleAddress = accountAddress as Bech32Address;
-
-    /**
-     * - depositForBurn initiated from Ethereum:
-     *   https://sepolia.etherscan.io/tx/0x68c2c427e43e089db94ae105c30645e5fe00bf6124fcac9eab9df9f8a8f7fb83
-     *
-     * - Corresponding message received on Noble:
-     *   https://www.mintscan.io/noble-testnet/tx/6D165B5B8F1BF6004AA9A61FE00CC8B841C09120BDB433A11063C2A7F71C7028?height=39572351
-     *
-     * This confirms the expected denom is `uusdc`.
-     */
-    const expectedDenom = 'uusdc';
-
-    log(
-      `${logPrefix} Watching Noble withdrawal to ${nobleAddress} for ${amount} ${expectedDenom}`,
-    );
-
-    const watchArgs = {
-      cosmosRest: ctx.cosmosRest,
-      watchAddress: nobleAddress,
-      expectedAmount: amount,
-      expectedDenom,
-      chainKey: 'noble',
-      log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
-    };
-    const transferStatus = await (opts.mode === 'live'
-      ? watchNobleTransfer({ ...watchArgs, timeoutMs: opts.timeoutMs })
-      : lookBackNobleTransfer({ ...watchArgs }));
-
-    await resolvePendingTx({
-      signingSmartWalletKit: ctx.signingSmartWalletKit,
-      txId,
-      status: transferStatus ? TxStatus.SUCCESS : TxStatus.FAILED,
-    });
-
-    log(`${logPrefix} Noble withdraw tx resolved`);
-  },
-};
-
 const createMonitorRegistry = (): MonitorRegistry => ({
   [TxType.CCTP_TO_EVM]: cctpMonitor,
   [TxType.GMP]: gmpMonitor,
-  [TxType.CCTP_TO_NOBLE]: nobleWithdrawMonitor,
 });
 
 export type HandlePendingTxOpts = {
@@ -237,6 +277,7 @@ export const handlePendingTx = async (
     await monitor.watch(evmCtx, tx, log, {
       mode: 'lookback',
       publishTimeMs: txTimestampMs,
+      timeoutMs,
     });
   } else {
     await monitor.watch(evmCtx, tx, log, { mode: 'live', timeoutMs });

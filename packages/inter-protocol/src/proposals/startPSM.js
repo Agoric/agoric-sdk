@@ -11,7 +11,7 @@ import {
   makeHistoryReviver,
   makeBoardRemote,
   slotToBoardRemote,
-} from '@agoric/internal/src/marshal.js';
+} from '@agoric/internal/src/marshal/board-client-utils.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { Stable } from '@agoric/internal/src/tokens.js';

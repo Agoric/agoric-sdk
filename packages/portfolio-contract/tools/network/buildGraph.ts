@@ -21,6 +21,7 @@ export interface FlowEdge {
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
   capacity?: number; // numeric for LP; derived from bigint
+  min?: number; // numeric for LP; derived from bigint
   variableFee: number; // cost coefficient per unit flow in basis points
   fixedFee?: number; // optional fixed cost (cheapest mode)
   timeFixed?: number; // optional time cost (fastest mode)
@@ -260,6 +261,7 @@ export const makeGraphFromDefinition = (
   for (const link of spec.links) {
     addOrReplaceEdge(link.src, link.dest, {
       capacity: link.capacity === undefined ? undefined : Number(link.capacity),
+      min: link.min === undefined ? undefined : Number(link.min),
       variableFee: link.variableFeeBps ?? 0,
       fixedFee: link.flatFee === undefined ? undefined : Number(link.flatFee),
       timeFixed: link.timeSec,

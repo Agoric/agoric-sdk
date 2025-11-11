@@ -1,3 +1,4 @@
+/* eslint-disable @agoric/no-typedef-import -- it's the only way to re-export with JSDoc */
 export {};
 
 /**
@@ -5,7 +6,8 @@ export {};
  * @import {ERef} from '@endo/far';
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {LimitedConsole} from '@agoric/internal/src/js-utils.js';
- * @import {SlogProps, SlogDurationProps} from './controller/controller.js';
+ * @import {SlogProps} from './controller/controller.js';
+ * @import {StartDuration} from './kernel/slogger.js';
  */
 
 /* This file defines types that part of the external API of swingset. That
@@ -18,10 +20,6 @@ export {};
  */
 
 /** @typedef {<T>(target: Device<T>) => T} DProxy (approximately) */
-
-/**
- * @typedef {(extraProps?: SlogDurationProps) => void} FinishSlogDuration
- */
 
 /**
  * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
@@ -147,8 +145,7 @@ export {};
  * @typedef { (dr: VatDeliveryResult) => void } SlogFinishDelivery
  * @typedef { (ksr: KernelSyscallResult, vsr: VatSyscallResult) => void } SlogFinishSyscall
  * @typedef { { write: (obj: SlogProps) => void,
- *              startDuration:     (labels: readonly [startLabel: string, endLabel: string],
- *                                  startProps: SlogDurationProps) => FinishSlogDuration,
+ *              startDuration:     StartDuration,
  *              provideVatSlogger: (vatID: string,
  *                                  dynamic?: boolean,
  *                                  description?: string,
@@ -159,14 +156,14 @@ export {};
  *              vatConsole: (vatID: string, origConsole: LimitedConsole) => LimitedConsole,
  *              startup: (vatID: string) => () => void,
  *              delivery: (vatID: string,
- *                         newCrankNum: BigInt, newDeliveryNum: BigInt,
+ *                         newCrankNum: bigint, newDeliveryNum: bigint,
  *                         kd: KernelDeliveryObject, vd: VatDeliveryObject,
  *                         replay?: boolean) => SlogFinishDelivery,
  *              syscall: (vatID: string,
  *                        ksc: KernelSyscallObject | undefined,
  *                        vsc: VatSyscallObject) => SlogFinishSyscall,
  *              changeCList: (vatID: string,
- *                            crankNum: BigInt,
+ *                            crankNum: bigint,
  *                            mode: 'import' | 'export' | 'drop',
  *                            kernelSlot: string,
  *                            vatSlot: string) => void,

@@ -1,5 +1,5 @@
-/// <reference types="@agoric/governance/exported" />
-/// <reference types="@agoric/zoe/exported" />
+/// <reference types="@agoric/governance/exported.js" />
+/// <reference types="@agoric/zoe/exported.js" />
 
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
@@ -44,6 +44,7 @@ import {
  * @import {TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';
  * @import {EReturn} from '@endo/far';
  * @import {TypedPattern, ERemote, Remote} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  */
 
 const trace = makeTracer('VD', true);
@@ -107,7 +108,7 @@ export const makeAllManagersDo = (collateralManagers, vaultManagers) => {
  * @param {ERef<import('@agoric/time').TimerService>} timer
  * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneer
  * @param {ERemote<StorageNode>} storageNode
- * @param {ERemote<Marshaller>} marshaller
+ * @param {ERemote<EMarshaller>} marshaller
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
  * @param {Record<string, import('./params.js').VaultManagerParamOverrides>} managerParams

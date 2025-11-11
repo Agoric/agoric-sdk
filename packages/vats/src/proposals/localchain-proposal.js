@@ -6,12 +6,12 @@ import { makeScopedBridge } from '../bridge.js';
 /**
  * @param {BootstrapPowers & {
  *   consume: {
- *     bridgeManager: import('../types').BridgeManager;
- *     localchainBridgeManager: import('../types').ScopedBridgeManager<'vlocalchain'>;
+ *     bridgeManager: import('../types.js').BridgeManager;
+ *     localchainBridgeManager: import('../types.js').ScopedBridgeManager<'vlocalchain'>;
  *     bankManager: Promise<import('../vat-bank.js').BankManager>;
  *     transferMiddleware: Promise<import('../transfer.js').TransferMiddleware>;
  *     vtransferBridgeManager: Promise<
- *       import('../types').ScopedBridgeManager<'vtransfer'>
+ *       import('../types.js').ScopedBridgeManager<'vtransfer'>
  *     >;
  *   };
  *   produce: {
@@ -59,7 +59,7 @@ export const setupLocalChainVat = async (
 
   localchainVat.reset();
   localchainVat.resolve(vats.localchain);
-  /** @type {import('../types').ScopedBridgeManager<'vlocalchain'>} */
+  /** @type {import('../types.js').ScopedBridgeManager<'vlocalchain'>} */
   let scopedManager;
   try {
     scopedManager = await makeScopedBridge(

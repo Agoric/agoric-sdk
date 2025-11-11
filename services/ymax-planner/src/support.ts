@@ -1,15 +1,123 @@
-import { JsonRpcProvider, Log, type Filter } from 'ethers';
+import { WebSocketProvider, Log } from 'ethers';
+import type { Filter } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
-import type { ClusterName } from './config.ts';
-import { TX_TIMEOUT_MS, type EvmContext } from './pending-tx-manager.ts';
+import type { ClusterName } from '@agoric/internal';
+import { fromTypedEntries, objectMap, typedEntries } from '@agoric/internal';
+import {
+  CaipChainIds,
+  EvmWalletOperationType,
+  YieldProtocol,
+} from '@agoric/portfolio-api/src/constants.js';
+import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
+import type {
+  PoolKey as InstrumentId,
+  PoolPlaceInfo,
+} from '@aglocal/portfolio-contract/src/type-guards.js';
+import {
+  aaveRewardsControllerAddresses,
+  compoundAddresses,
+} from '@aglocal/portfolio-deploy/src/axelar-configs.js';
+import type { EvmContext } from './pending-tx-manager.ts';
+import { lookupValueForKey } from './utils.ts';
 
-const { entries } = Object;
+type ROPartial<K extends string, V> = Readonly<Partial<Record<K, V>>>;
 
 type HexAddress = `0x${string}`;
 
+/**
+ * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
+ *   or @agoric/orchestration
+ */
 export type UsdcAddresses = {
   mainnet: Record<CaipChainId, HexAddress>;
   testnet: Record<CaipChainId, HexAddress>;
+};
+
+const spectrumChainIds: Record<`${CaipChainId} ${SupportedChain}`, string> = {
+  // for mainnet
+  'eip155:42161 Arbitrum': '0xa4b1',
+  'eip155:43114 Avalanche': '0xa86a',
+  'eip155:8453 Base': '0x2105',
+  'eip155:1 Ethereum': '0x1',
+  'eip155:10 Optimism': '0xa',
+  'cosmos:agoric-3 agoric': 'agoric-3',
+  'cosmos:noble-1 noble': 'noble-1',
+  // for testnet (EVM chains are mostly "Sepolia", but Avalanche is "Fuji")
+  'eip155:421614 Arbitrum': '0x66eee',
+  'eip155:43113 Avalanche': '0xa869',
+  'eip155:84532 Base': '0x14a34',
+  'eip155:11155111 Ethereum': '0xaa36a7',
+  'eip155:11155420 Optimism': '0xaa37dc',
+  'cosmos:agoricdev-25 agoric': 'agoricdev-25',
+  'cosmos:grand-1 noble': 'grand-1',
+};
+
+// Note that lookupValueForKey throws when the key is not found.
+export const spectrumChainIdsByCluster: Readonly<
+  Record<ClusterName, ROPartial<SupportedChain, string>>
+> = {
+  mainnet: {
+    ...objectMap(CaipChainIds.mainnet, (chainId, chainLabel) =>
+      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
+    ),
+  },
+  testnet: {
+    ...objectMap(CaipChainIds.testnet, (chainId, chainLabel) =>
+      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
+    ),
+  },
+  local: {
+    ...objectMap(CaipChainIds.local, (chainId, chainLabel) =>
+      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
+    ),
+  },
+};
+
+export const spectrumPoolIdsByCluster: Readonly<
+  Record<ClusterName, ROPartial<InstrumentId, string>>
+> = {
+  mainnet: {
+    ...fromTypedEntries(
+      typedEntries(aaveRewardsControllerAddresses.mainnet).map(
+        ([chainName, _addr]) => [`Aave_${chainName}` as InstrumentId, 'USDC'],
+      ),
+    ),
+    ...fromTypedEntries(
+      typedEntries(compoundAddresses.mainnet).map(([chainName, addr]) => [
+        `Compound_${chainName}` as InstrumentId,
+        addr,
+      ]),
+    ),
+    Beefy_re7_Avalanche: 'euler-avax-re7labs-usdc',
+    Beefy_morphoGauntletUsdc_Ethereum: 'morpho-gauntlet-usdc',
+    Beefy_morphoSmokehouseUsdc_Ethereum: 'morpho-smokehouse-usdc',
+    Beefy_morphoSeamlessUsdc_Base: 'morpho-seamless-usdc',
+    Beefy_compoundUsdc_Optimism: 'compound-op-usdc',
+    Beefy_compoundUsdc_Arbitrum: 'compound-arbitrum-usdc',
+  },
+  testnet: {
+    ...fromTypedEntries(
+      typedEntries(aaveRewardsControllerAddresses.testnet).map(
+        ([chainName, _addr]) => [`Aave_${chainName}` as InstrumentId, 'USDC'],
+      ),
+    ),
+    ...fromTypedEntries(
+      typedEntries(compoundAddresses.testnet).map(([chainName, addr]) => [
+        `Compound_${chainName}` as InstrumentId,
+        addr,
+      ]),
+    ),
+  },
+  local: {},
+};
+
+export const spectrumProtocols: Readonly<
+  Record<PoolPlaceInfo['protocol'], string>
+> = {
+  Aave: 'aave',
+  Beefy: 'beefy',
+  Compound: 'compound',
+  USDN: 'USDN',
 };
 
 /**
@@ -20,11 +128,9 @@ export type UsdcAddresses = {
  * - https://developers.circle.com/cctp/evm-smart-contracts
  * - https://developers.circle.com/stablecoins/usdc-contract-addresses
  *
- * Notes:
- * - This list should conceptually come from an orchestration type
- *   for supported EVM networks.
- * - Currently this config mirrors the EVM chains defined in
- *   packages/orchestration/src/cctp-chain-info.js
+ * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
+ *   or @agoric/orchestration
+ * @see {@link ../../../packages/orchestration/src/cctp-chain-info.js}
  */
 export const usdcAddresses: UsdcAddresses = {
   mainnet: {
@@ -43,35 +149,41 @@ export const usdcAddresses: UsdcAddresses = {
   },
 };
 
-// Avg measurements of Actual Gas used for EVM Txs
-export const gasLimitEstimates = {
-  Factory: 1_209_435n, // https://sepolia.arbiscan.io/tx/0xfdb38b1680c10919b7ff360b21703e349b74eac585f15c70ba9733c7ddaccfe6
-  Wallet: 276_809n,
+export const walletOperationGasLimitEstimates: Record<
+  EvmWalletOperationType,
+  Partial<Record<YieldProtocol, bigint>>
+> = {
+  // Assume that creation has the same gas cost on every chain.
+  // https://sepolia.arbiscan.io/tx/0xfdb38b1680c10919b7ff360b21703e349b74eac585f15c70ba9733c7ddaccfe6
+  [EvmWalletOperationType.Create]: objectMap(YieldProtocol, () => 1_209_435n),
+  // https://github.com/Agoric/agoric-sdk/issues/12021#issuecomment-3361285596
+  [EvmWalletOperationType.Supply]: {
+    [YieldProtocol.Aave]: 279_473n,
+    [YieldProtocol.Compound]: 151_692n,
+  },
+  [EvmWalletOperationType.Withdraw]: {
+    [YieldProtocol.Aave]: 234_327n,
+    [YieldProtocol.Compound]: 123_081n,
+  },
+  [EvmWalletOperationType.DepositForBurn]: objectMap(
+    YieldProtocol,
+    () => 151_320n,
+  ),
 };
+
+/** In the absence of a more specific gas estimate, use this one. */
+export const walletOperationFallbackGasLimit = 276_809n;
 
 /**
  * Average block times for supported EVM chains in milliseconds.
  *
- * Sources:
- * - Ethereum:
- *   Mainnet ~12s → https://etherscan.io/chart/blocktime
- *   Sepolia ~12s → https://eth-sepolia.blockscout.com/
+ * Mainnet data: https://eth.blockscout.com/ (except Avalanche),
+ *   https://chainspect.app/ , https://subnets.avax.network/c-chain
+ * Testnet data: https://eth.blockscout.com/ (except Avalanche),
+ *   https://subnets-test.avax.network/c-chain
  *
- * - Arbitrum:
- *   Mainnet ~0.3s → https://arbitrum.blockscout.com/
- *   Sepolia ~0.3s → https://arbitrum-sepolia.blockscout.com/
- *
- * - Avalanche:
- *   Mainnet ~2s → https://snowscan.xyz/chart/blocktime
- *   Fuji ~2s → Didn't find any specific resource for it
- *
- * - Base:
- *   Mainnet ~2.5s → https://base.blockscout.com/stats
- *   Sepolia ~2s → https://base-sepolia.blockscout.com/
- *
- * - Optimism:
- *   Mainnet ~2s → https://explorer.optimism.io/
- *   Sepolia ~2s → https://testnet-explorer.optimism.io/
+ * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
+ *   or @agoric/orchestration
  */
 const chainBlockTimesMs: Record<CaipChainId, number> = harden({
   // ========= Mainnet =========
@@ -97,6 +209,10 @@ export const getBlockTimeMs = (chainId: CaipChainId): number => {
   return chainBlockTimesMs[chainId] ?? 12_000; // Default to Ethereum's conservative 12s
 };
 
+/**
+ * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
+ *   or @agoric/orchestration
+ */
 export const getEvmRpcMap = (
   clusterName: ClusterName,
   alchemyApiKey: string,
@@ -105,28 +221,28 @@ export const getEvmRpcMap = (
     case 'mainnet':
       return {
         // Source: https://www.alchemy.com/rpc/ethereum
-        'eip155:1': `https://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:1': `wss://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/avalanche
-        'eip155:43114': `https://avax-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:43114': `wss://avax-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source:  https://www.alchemy.com/rpc/arbitrum
-        'eip155:42161': `https://arb-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:42161': `wss://arb-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/optimism
-        'eip155:10': `https://opt-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:10': `wss://opt-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/base
-        'eip155:8453': `https://base-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:8453': `wss://base-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
       };
     case 'testnet':
       return {
         // Source: https://www.alchemy.com/rpc/ethereum-sepolia
-        'eip155:11155111': `https://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:11155111': `wss://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/avalanche-fuji
-        'eip155:43113': `https://avax-fuji.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:43113': `wss://avax-fuji.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/arbitrum-sepolia
-        'eip155:421614': `https://arb-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:421614': `wss://arb-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/optimism-sepolia
-        'eip155:11155420': `https://opt-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:11155420': `wss://opt-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/base-sepolia
-        'eip155:84532': `https://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:84532': `wss://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
       };
     default:
       throw Error(`Unsupported cluster name ${clusterName}`);
@@ -137,63 +253,7 @@ type CreateContextParams = {
   alchemyApiKey: string;
 };
 
-export type EvmProviders = Record<CaipChainId, JsonRpcProvider>;
-
-/**
- * Verifies that all EVM chains are accessible via their providers.
- * Throws an error if any chain fails to connect.
- */
-export const verifyEvmChains = async (
-  evmProviders: EvmProviders,
-): Promise<void> => {
-  const chainResults = await Promise.allSettled(
-    entries(evmProviders).map(async ([chainId, provider]) => {
-      await null;
-      try {
-        await provider.getBlockNumber();
-        return { chainId, success: true };
-      } catch (error: any) {
-        return { chainId, success: false, error: error.message };
-      }
-    }),
-  );
-
-  const workingChains: string[] = [];
-  const failedChains: Array<{ chainId: string; error: string }> = [];
-
-  for (const result of chainResults) {
-    if (result.status === 'fulfilled') {
-      const chainResult = result.value;
-      if (chainResult.success) {
-        workingChains.push(chainResult.chainId);
-      } else {
-        failedChains.push({
-          chainId: chainResult.chainId,
-          error: chainResult.error,
-        });
-      }
-    } else {
-      failedChains.push({
-        chainId: 'unknown',
-        error: result.reason?.message || 'Unknown error',
-      });
-    }
-  }
-
-  console.warn(`✓ Working chains (${workingChains.length}):`, workingChains);
-
-  if (failedChains.length > 0) {
-    console.error(`✗ Failed chains (${failedChains.length}):`);
-    for (const { chainId, error } of failedChains) {
-      console.error(`  - ${chainId}: ${error}`);
-    }
-    throw new Error(
-      `Failed to connect to ${failedChains.length} EVM chain(s). ` +
-        `Ensure all required chains are enabled in your Alchemy dashboard. ` +
-        `Failed chains: ${failedChains.map(c => c.chainId).join(', ')}`,
-    );
-  }
-};
+export type EvmProviders = Record<CaipChainId, WebSocketProvider>;
 
 export const createEVMContext = async ({
   clusterName,
@@ -206,18 +266,21 @@ export const createEVMContext = async ({
 
   const urls = getEvmRpcMap(clusterName, alchemyApiKey);
   const evmProviders = Object.fromEntries(
-    Object.entries(urls).map(([caip, rpcUrl]) => [
+    Object.entries(urls).map(([caip, wsUrl]) => [
       caip,
-      new JsonRpcProvider(rpcUrl),
+      new WebSocketProvider(wsUrl),
     ]),
   ) as EvmProviders;
 
   return {
     evmProviders,
+    // XXX Remove now that @agoric/portfolio-api/src/constants.js
+    // defines UsdcTokenIds.
     usdcAddresses: usdcAddresses[clusterName],
   };
 };
 
+// XXX This can move to ./utils.ts.
 type BinarySearch = {
   (
     start: number,
@@ -267,63 +330,52 @@ export const binarySearch = (async <Index extends number | bigint>(
   return greatestFound;
 }) as BinarySearch;
 
-const findBlockByTimestamp = async (
-  provider: JsonRpcProvider,
+/**
+ * Returns the highest block number whose real time (i.e., published timestamp
+ * as adjusted by clock skew of up to fudgeFactorMs) is known to be less than or
+ * equal to targetMs.
+ */
+export const getBlockNumberBeforeRealTime = async (
+  provider: WebSocketProvider,
   targetMs: number,
+  {
+    fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
+    meanBlockDurationMs,
+  }: {
+    fudgeFactorMs?: number;
+    meanBlockDurationMs?: number;
+  } = {},
 ) => {
-  const posixSeconds = Math.floor(targetMs / 1000);
-  const startBlockNumber = await binarySearch(
-    0,
-    await provider.getBlockNumber(),
-    async blockNumber => {
-      const block = await provider.getBlock(blockNumber);
-      return block?.timestamp ? block.timestamp <= posixSeconds : false;
-    },
-  );
-  return startBlockNumber;
-};
+  const posixSeconds = Math.floor((targetMs - fudgeFactorMs) / 1000);
 
-export const buildTimeWindow = async (
-  provider: JsonRpcProvider,
-  publishTimeMs: number,
-  log: (...args: unknown[]) => void,
-  chainId: CaipChainId,
-  fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
-) => {
-  const adjustedTime = publishTimeMs - fudgeFactorMs;
-  const fromBlock = await findBlockByTimestamp(provider, adjustedTime);
-
-  const fromBlockInfo = await provider.getBlock(fromBlock);
-  const fromBlockTime = (fromBlockInfo?.timestamp || 0) * 1000;
-  // Add fudgeFactorMs back to TX_TIMEOUT_MS to compensate for the earlier subtraction
-  const endTime = fromBlockTime + TX_TIMEOUT_MS + fudgeFactorMs;
-
-  const currentBlock = await provider.getBlockNumber();
-  const currentBlockInfo = await provider.getBlock(currentBlock);
-  const currentBlockTime = (currentBlockInfo?.timestamp || 0) * 1000;
-
-  if (endTime <= currentBlockTime) {
-    log('end time is in the past');
-    return { fromBlock, toBlock: currentBlock };
+  // Try to find a good starting point.
+  let startNumber = 0;
+  const latestNumber = await provider.getBlockNumber();
+  const latestBlock = await provider.getBlock(latestNumber);
+  const deltaSec = latestBlock!.timestamp - posixSeconds;
+  if (deltaSec <= 0) return latestNumber;
+  if (deltaSec > 0 && meanBlockDurationMs) {
+    const deltaBlocks = Math.ceil(deltaSec / (meanBlockDurationMs / 1000));
+    const pastNumber = latestNumber - deltaBlocks * 2;
+    if (startNumber < pastNumber) {
+      const pastBlock = await provider.getBlock(pastNumber);
+      if (pastBlock?.timestamp && pastBlock.timestamp <= posixSeconds) {
+        startNumber = pastNumber;
+      }
+    }
   }
 
-  log('end time is in the future - estimate blocks ahead');
-
-  const blockTimeMs = getBlockTimeMs(chainId);
-  log(`using block time ${blockTimeMs}ms for chain ${chainId}`);
-
-  const timeUntilEnd = endTime - currentBlockTime;
-  const estimatedFutureBlocks = Math.ceil(timeUntilEnd / blockTimeMs);
-  log('future blocks', estimatedFutureBlocks);
-
-  const toBlock = currentBlock + estimatedFutureBlocks;
-  return { fromBlock, toBlock };
+  const blockNumber = await binarySearch(startNumber, latestNumber, async n => {
+    const block = await provider.getBlock(n);
+    return block?.timestamp ? block.timestamp <= posixSeconds : false;
+  });
+  return blockNumber;
 };
 
 type LogPredicate = (log: Log) => boolean | Promise<boolean>;
 
 type ScanOpts = {
-  provider: JsonRpcProvider;
+  provider: WebSocketProvider;
   baseFilter: Omit<Filter, 'fromBlock' | 'toBlock'> & Partial<Filter>;
   fromBlock: number;
   toBlock: number;
@@ -398,4 +450,19 @@ export const scanEvmLogsInChunks = async (
     start += chunkSize;
   }
   return undefined;
+};
+
+export const waitForBlock = async (
+  provider: WebSocketProvider,
+  targetBlock: number,
+) => {
+  return new Promise(resolve => {
+    const listener = blockNumber => {
+      if (blockNumber >= targetBlock) {
+        void provider.off('block', listener);
+        resolve(blockNumber);
+      }
+    };
+    void provider.on('block', listener);
+  });
 };

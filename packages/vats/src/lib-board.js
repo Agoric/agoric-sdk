@@ -10,15 +10,17 @@ import {
   defineRecorderKit,
   prepareRecorder,
 } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
 import { isRemotable, makeMarshal } from '@endo/marshal';
 
-import { CapDataShape } from '@agoric/internal/src/marshal.js';
+import { makeInaccessibleVal } from '@agoric/internal/src/marshal/inaccessible-val.js';
 import { crc6 } from './crc.js';
 
 /**
- * @import {ERemote} from '@agoric/internal';
+ * @import {ERemote, TypedPattern} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {RemotableObject} from '@endo/pass-style';
+ * @import {CapData} from '@endo/marshal';
  * @import {Key} from '@endo/patterns';
  */
 
@@ -26,6 +28,11 @@ export const DEFAULT_CRC_DIGITS = 2;
 export const DEFAULT_PREFIX = 'board0';
 
 //#region Interface Guards
+
+// TODO move CapDataShape to Endo
+/** @type {TypedPattern<CapData<any>>} */
+const CapDataShape = { body: M.string(), slots: M.array() };
+
 const MarshalI = M.interface('Marshaller', {
   toCapData: M.call(M.any()).returns(CapDataShape),
   serialize: M.call(M.any()).returns(CapDataShape),
@@ -182,9 +189,6 @@ const getValue = (id, { prefix, crcDigits, idToVal }) => {
 
 /** @param {BoardState} state */
 const makeSlotToVal = state => {
-  const ifaceAllegedPrefix = 'Alleged: ';
-  const ifaceInaccessiblePrefix = 'SEVERED: ';
-
   /**
    * @param {BoardId} slot
    * @param {string} iface
@@ -196,10 +200,7 @@ const makeSlotToVal = state => {
     }
 
     // Private object.
-    if (typeof iface === 'string' && iface.startsWith(ifaceAllegedPrefix)) {
-      iface = iface.slice(ifaceAllegedPrefix.length);
-    }
-    return Far(`${ifaceInaccessiblePrefix}${iface}`, {});
+    return makeInaccessibleVal(iface);
   };
   return slotToVal;
 };
@@ -378,7 +379,7 @@ export const prepareRecorderFactory = zone => {
 
   /**
    * @param {string} label
-   * @param {ERemote<Marshaller>} marshaller
+   * @param {ERemote<EMarshaller>} marshaller
    */
   const prepareRecorderKit = (label, marshaller) => {
     const myZone = zone.subZone(label);

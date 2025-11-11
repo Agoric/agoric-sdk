@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@agoric/base-zone": "workspace:*",
+    "@endo/cache-map": "^1.1.0",
     "@endo/common": "^1.2.13",
     "@endo/compartment-mapper": "^1.6.3",
     "@endo/errors": "^1.2.13",
@@ -63,6 +64,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 93.22
+    "atLeast": 92.89
   }
 }

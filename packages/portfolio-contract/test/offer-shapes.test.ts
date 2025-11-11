@@ -150,25 +150,27 @@ test('numeric position references are rejected', t => {
 });
 
 test('vstorage flow type matches shape', t => {
+  const amount = usdc(200n);
   const passCases: Record<string, StatusFor['flow']> = harden({
     runningFlow: {
       state: 'run',
       step: 1,
       how: 'deposit',
-    },
-    undoingFlow: {
-      state: 'undo',
-      step: 2,
-      how: 'withdraw',
+      type: 'deposit',
+      amount,
     },
     completedFlow: {
       state: 'done',
+      type: 'deposit',
+      amount,
     },
     failedFlow: {
       state: 'fail',
       step: 0,
       how: 'transfer',
       error: 'Insufficient funds',
+      type: 'deposit',
+      amount,
     },
     failedFlowWithLocation: {
       state: 'fail',
@@ -176,6 +178,8 @@ test('vstorage flow type matches shape', t => {
       how: 'deposit',
       error: 'Network timeout',
       where: '@Arbitrum',
+      type: 'deposit',
+      amount,
     },
   });
 
@@ -346,25 +350,60 @@ test('vstorage position type matches shape', t => {
   }
 });
 
-test('porfolio node includes flowsRunning', t => {
-  const status1: StatusFor['portfolio'] = harden({
-    accountIdByChain: {
-      agoric: 'cosmos:agoric-6:agoric11028',
-      noble: 'cosmos:noble-5:noble11056',
+test('portfolio node includes flowsRunning, nobleForwardingAddress', t => {
+  const passCases: Record<string, StatusFor['portfolio']> = harden({
+    minimalInTheory: {
+      accountIdByChain: {},
+      positionKeys: [],
+      flowCount: 0,
+      policyVersion: 0,
+      rebalanceCount: 0,
     },
-    accountsPending: [],
-    depositAddress: 'agoric11042',
-    flowCount: 2,
-    flowsRunning: {},
-    policyVersion: 0,
-    positionKeys: ['USDN'],
-    rebalanceCount: 0,
+    minimalInPractice: {
+      accountIdByChain: {
+        agoric: 'cosmos:agoric-6:agoric11028',
+      },
+      depositAddress: 'agoric11028asdf',
+      nobleForwardingAddress: 'noble1sdlfjlsdjf',
+      positionKeys: [],
+      flowCount: 0,
+      policyVersion: 0,
+      rebalanceCount: 0,
+    },
+    status1: {
+      accountIdByChain: {
+        agoric: 'cosmos:agoric-6:agoric11028',
+        noble: 'cosmos:noble-5:noble11056',
+      },
+      accountsPending: [],
+      depositAddress: 'agoric11042',
+      flowCount: 2,
+      flowsRunning: {},
+      policyVersion: 0,
+      positionKeys: ['USDN'],
+      rebalanceCount: 0,
+    },
   });
-  t.notThrows(() => mustMatch(status1, PortfolioStatusShapeExt));
 
-  const badFlowsRunning = harden({
-    ...status1,
-    flowsRunning: { flow2: 'quack!' },
+  const failCases = harden({
+    badFlowsRunning: {
+      ...passCases.status1,
+      flowsRunning: { flow2: 'quack!' },
+    },
+    badNFA: {
+      ...passCases.status1,
+      nobleForwardingAddress: { value: 'noble1dlkj' },
+    },
   });
-  t.throws(() => mustMatch(badFlowsRunning, PortfolioStatusShapeExt));
+
+  const { entries } = Object;
+  for (const [name, position] of entries(passCases)) {
+    t.notThrows(
+      () => mustMatch(position, PortfolioStatusShapeExt),
+      `pass: ${name}`,
+    );
+  }
+  for (const [name, position] of entries(failCases)) {
+    t.false(matches(position, PortfolioStatusShapeExt), `fail: ${name}`);
+  }
 });

@@ -228,6 +228,8 @@ const makeScenario = () => {
 
   const baggage = makeScalarBigMapStore('b1') as Baggage;
   const zone = makeDurableZone(baggage);
+  // withOrchestration() provides a cachingMarshaller but this this doesn't use that
+  // helper and doesn't need to exercise caching.
   const marshaller = makeFakeBoard().getReadonlyMarshaller();
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 

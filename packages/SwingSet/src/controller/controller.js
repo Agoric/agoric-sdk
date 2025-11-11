@@ -40,6 +40,14 @@ import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
  * @import {EReturn} from '@endo/far';
  * @import {LimitedConsole} from '@agoric/internal';
  * @import {VatID} from '../types-internal.js';
+ * @import {SwingStoreKernelStorage} from '../types-external.js';
+ * @import {Bundle} from '../types-external.js';
+ * @import {EndoZipBase64Bundle} from '../types-external.js';
+ * @import {BundleID} from '../types-external.js';
+ * @import {RunPolicy} from '../types-external.js';
+ * @import {ResolutionPolicy} from '../types-external.js';
+ * @import {SwingSetCapData} from '../types-external.js';
+ * @import {SwingSetConfig} from '../types-external.js';
  */
 
 /**
@@ -71,6 +79,8 @@ export function computeSha512(bytes) {
  */
 function makeConsole(prefixer) {
   if (typeof prefixer !== 'function') {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore TODO remove when anylogger has types
     const logger = anylogger(prefixer);
     return makeLimitedConsole(level => logger[level]);
   }
@@ -81,6 +91,8 @@ function makeConsole(prefixer) {
       const prefix = prefixer(source);
       let logger = prefixToLogger.get(prefix);
       if (!logger) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore TODO remove when anylogger has types
         logger = anylogger(prefix);
         prefixToLogger.set(prefix, logger);
       }
@@ -186,15 +198,16 @@ export async function makeSwingsetController(
 
   /**
    * Capture an extended process in the slog, writing an entry with `type`
-   * $startLabel and then later (if the function returns successfully or calls
-   * the finish callback provided to it) another entry with `type` $endLabel and
-   * a `seconds` property valued with the total elapsed duration in seconds.
+   * $startLabel if provided and then later (if the function returns
+   * successfully or calls the finish callback provided to it) another entry
+   * with `type` $endLabel and a `seconds` property valued with the total
+   * elapsed duration in seconds.
    * Finish is implied by settlement of the function's awaited return value, so
    * any explicit use of the finish callback MUST NOT follow that settlement.
    *
    * @template T
    * @template {unknown[]} A
-   * @param {readonly [startLabel: string, endLabel: string]} labels
+   * @param {readonly [startLabel: string | undefined, endLabel: string]} labels
    * @param {SlogDurationProps} startProps for both slog entries
    * @param {(finish: (extraProps?: SlogDurationProps) => void, ...args: A) => (T | Promise<T>)} fn
    * @param {unknown[] & A} args
@@ -202,6 +215,7 @@ export async function makeSwingsetController(
    */
   const slogDuration = async (labels, startProps, fn, ...args) => {
     const [startLabel, endLabel] = labels;
+    const bestLabel = startLabel || endLabel;
     const props = { ...startProps };
     if (hasOwn(props, 'type') || hasOwn(props, 'seconds')) {
       const msg = 'startProps must not include "type" or "seconds"';
@@ -216,7 +230,7 @@ export async function makeSwingsetController(
       if (finished) {
         // `finish` should only be called once.
         // Log a stack-bearing error instance, but throw something more opaque.
-        const msg = `slog event ${startLabel} ${q(startProps || {})} already finished; ignoring props ${q(extraProps || {})}`;
+        const msg = `slog event ${q(bestLabel)} ${q(startProps || {})} already finished; ignoring props ${q(extraProps || {})}`;
         sloggingConsole.error(Error(msg));
         Fail`slog event ${startLabel} already finished`;
       }
@@ -238,7 +252,9 @@ export async function makeSwingsetController(
       writeSlogObject({ type: endLabel, ...props, ...extraProps, seconds });
     };
 
-    writeSlogObject({ type: startLabel, ...props });
+    if (startLabel !== undefined) {
+      writeSlogObject({ type: startLabel, ...props });
+    }
     const t0 = performance.now();
     try {
       // We need to synchronously provide the finish function.
@@ -248,7 +264,7 @@ export async function makeSwingsetController(
       return result;
     } catch (cause) {
       if (!finished) {
-        const msg = `unfinished slog event ${startLabel} ${q(startProps || {})}`;
+        const msg = `unfinished slog event ${q(bestLabel)} ${q(startProps || {})}`;
         sloggingConsole.error(Error(msg, { cause }));
       }
       throw cause;
@@ -396,6 +412,10 @@ export async function makeSwingsetController(
       writeSlogObject,
 
       slogDuration,
+
+      dumpLog(idx) {
+        return deepCopyJsonable(kernel.dumpLog(idx));
+      },
 
       dump() {
         return deepCopyJsonable(kernel.dump());
@@ -613,7 +633,7 @@ export async function makeSwingsetController(
  * the two stages; this can happen, for example, in some debugging cases.
  *
  * @param {SwingSetConfig} config
- * @param {string[]} argv
+ * @param {string[]} bootstrapArgs
  * @param {{
  *   kernelStorage?: SwingStoreKernelStorage;
  *   env?: Record<string, string>;
@@ -626,11 +646,10 @@ export async function makeSwingsetController(
  *   warehousePolicy?: import('../types-external.js').VatWarehousePolicy;
  * }} runtimeOptions
  * @param {Record<string, unknown>} deviceEndowments
- * @typedef { import('@agoric/swing-store').KVStore } KVStore
  */
 export async function buildVatController(
   config,
-  argv = [],
+  bootstrapArgs = [],
   runtimeOptions = {},
   deviceEndowments = {},
 ) {
@@ -666,7 +685,7 @@ export async function buildVatController(
   if (!swingsetIsInitialized(kernelStorage)) {
     bootstrapResult = await initializeSwingset(
       config,
-      argv,
+      bootstrapArgs,
       kernelStorage,
       initializationOptions,
       runtimeOptions,

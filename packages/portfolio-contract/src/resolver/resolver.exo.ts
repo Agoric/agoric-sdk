@@ -7,12 +7,10 @@
  */
 
 import { makeTracer, type ERemote } from '@agoric/internal';
-import type {
-  Marshaller,
-  StorageNode,
-} from '@agoric/internal/src/lib-chainStorage.js';
+import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import type { AccountId } from '@agoric/orchestration';
-import { type Vow, type VowKit, VowShape, type VowTools } from '@agoric/vow';
+import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Zone } from '@agoric/zone';
@@ -39,10 +37,13 @@ type TransactionEntry = {
 
 const trace = makeTracer('Resolver');
 
+// allow Promises for unit testing
+const PromiseVowShape = M.any();
+
 const ClientFacetI = M.interface('ResolverClient', {
   registerTransaction: M.call(M.or(...Object.values(TxType)), M.string())
     .optional(M.nat())
-    .returns(M.splitRecord({ result: VowShape, txId: M.string() })),
+    .returns(M.splitRecord({ result: PromiseVowShape, txId: M.string() })),
 });
 
 const ReporterI = M.interface('Reporter', {
@@ -59,8 +60,13 @@ const ReporterI = M.interface('Reporter', {
   ).returns(),
 });
 
+const TargetShape = M.splitRecord(
+  { type: M.string(), destination: M.string() },
+  { amountValue: M.nat() },
+);
 const ServiceFacetI = M.interface('ResolverService', {
   settleTransaction: M.call(TransactionSettlementOfferArgsShape).returns(),
+  lookupTx: M.call(TargetShape).returns(M.opt(M.string())),
 });
 
 const InvitationMakersFacetI = M.interface('ResolverInvitationMakers', {
@@ -95,7 +101,7 @@ export const prepareResolverKit = (
   }: {
     vowTools: VowTools;
     pendingTxsNode: ERemote<StorageNode>;
-    marshaller: ERemote<Marshaller>;
+    marshaller: ERemote<EMarshaller>;
   },
 ) => {
   const writeToNode = (
@@ -203,10 +209,7 @@ export const prepareResolverKit = (
 
           switch (status) {
             case TxStatus.SUCCESS:
-              trace(
-                'Transaction confirmed - resolving pending operation for key:',
-                txId,
-              );
+              trace('fulfill:', txId, registryEntry.type);
               registryEntry.vowKit.resolver.resolve();
               this.facets.reporter.completePendingTransaction(
                 txId,
@@ -216,10 +219,7 @@ export const prepareResolverKit = (
               return;
 
             case TxStatus.FAILED:
-              trace(
-                'Transaction failed - rejecting pending operation for key:',
-                txId,
-              );
+              trace('reject:', txId, registryEntry.type);
               registryEntry.vowKit.resolver.reject(
                 Error(rejectionReason || 'Transaction failed'),
               );
@@ -233,6 +233,24 @@ export const prepareResolverKit = (
             default:
               throw Fail`Unexpected status ${q(status)} for transaction: ${q(txId)}`;
           }
+        },
+        // XXX O(n) in pending transactions
+        lookupTx(pattern: {
+          type: TxType;
+          destination: AccountId;
+          amountValue: NatValue;
+        }) {
+          const { transactionRegistry } = this.state;
+          for (const [txId, info] of transactionRegistry.entries()) {
+            if (
+              info.type === pattern.type &&
+              info.destinationAddress === pattern.destination &&
+              info.amountValue === pattern.amountValue
+            ) {
+              return txId;
+            }
+          }
+          return undefined;
         },
       },
       settlementHandler: {

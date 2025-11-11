@@ -1,5 +1,5 @@
 // @jessie-check
-/// <reference types="@agoric/ertp/exported" />
+/// <reference types="@agoric/ertp/exported.js" />
 
 /**
  * @import {RemotableObject, Passable} from '@endo/pass-style';

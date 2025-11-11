@@ -2,6 +2,11 @@ import { assert, Fail } from '@endo/errors';
 import { assertKnownOptions } from '../../lib/assertOptions.js';
 import { makeVatSlot } from '../../lib/parseVatSlots.js';
 
+/**
+ * @import {VatManager} from '../../types-internal.js';
+ * @import {SourceOfBundle} from '../../types-external.js';
+ */
+
 export function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0n);
 }
@@ -14,8 +19,6 @@ export function makeVatLoader(stuff) {
     makeSourcedConsole,
     kernelKeeper,
   } = stuff;
-
-  /** @import {VatManager} from '../../types-internal.js' */
 
   const allowedOptions = [
     'name',

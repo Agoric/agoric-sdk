@@ -93,7 +93,7 @@ export const startGameContract = async permittedPowers => {
   console.log('game1 (re)installed');
 };
 
-/** @type {import('@agoric/vats/src/core/lib-boot').BootstrapManifest} */
+/** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest} */
 const gameManifest = {
   [startGameContract.name]: {
     consume: {

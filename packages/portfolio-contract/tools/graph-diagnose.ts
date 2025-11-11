@@ -4,7 +4,7 @@
 import { Fail, q } from '@endo/errors';
 
 import type { NatAmount } from '@agoric/ertp/src/types.js';
-import { provideLazyMap } from '@agoric/internal/src/js-utils.js';
+import { provideLazyMap, typedEntries } from '@agoric/internal/src/js-utils.js';
 
 import {
   PoolPlaces,
@@ -447,4 +447,77 @@ export const formatInfeasibleDiagnostics = (
     }
   }
   return `${diag}${nearStr}${example}`;
+};
+
+/**
+ * Validate solved flows for consistency.
+ * Checks:
+ * 1. Total supply sums to 0 (conservation)
+ * 2. Each flow has sufficient supply at its source
+ * 3. Hub chains end with zero balance (proper routing)
+ *
+ * @param graph - The rebalance graph with initial supplies
+ * @param flows - Solved flows from the optimizer
+ * @returns Validation result with ok flag and details
+ */
+export const validateSolvedFlows = (
+  graph: RebalanceGraph,
+  flows: Array<{
+    edge: { src: string; dest: string; id: string };
+    flow: number;
+  }>,
+): {
+  ok: boolean;
+  errors: string[];
+  warnings: string[];
+  finalBalances: Map<string, number>;
+} => {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Check 1: Total supply sums to 0
+  let totalSupply = 0;
+  for (const node of graph.nodes) {
+    totalSupply += graph.supplies[node] || 0;
+  }
+  if (totalSupply !== 0) {
+    errors.push(
+      `Supply conservation violated: total supply = ${totalSupply}, expected 0`,
+    );
+  }
+
+  // Check 2: Simulate flow execution to verify supply sufficiency
+  const balances = new Map(typedEntries(graph.supplies));
+  for (const { edge, flow } of flows) {
+    const srcBalance = balances.get(edge.src) || 0;
+
+    // Check if source has sufficient balance
+    if (srcBalance < flow) {
+      errors.push(
+        `Flow ${edge.id}: insufficient balance at ${edge.src}. ` +
+          `Need ${flow}, have ${srcBalance} (shortage: ${flow - srcBalance})`,
+      );
+    }
+
+    // Update balances
+    balances.set(edge.src, srcBalance - flow);
+    const destBalance = balances.get(edge.dest) || 0;
+    balances.set(edge.dest, destBalance + flow);
+  }
+
+  // Check 3: Hub chains should end with 0 balance
+  for (const hub of graph.nodes) {
+    if (!hub.startsWith('@')) continue;
+    const finalBalance = balances.get(hub) || 0;
+    if (finalBalance !== 0) {
+      warnings.push(`Hub ${hub} has non-zero final balance: ${finalBalance}`);
+    }
+  }
+
+  return {
+    ok: errors.length === 0,
+    errors,
+    warnings,
+    finalBalances: balances,
+  };
 };

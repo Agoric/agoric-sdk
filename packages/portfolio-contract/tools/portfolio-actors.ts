@@ -21,13 +21,15 @@ import {
   makePositionPath,
   portfolioIdOfPath,
   type OfferArgsFor,
-  type PortfolioContinuingInvitationMaker,
-  type PortfolioInvitationMaker,
   type ProposalType,
   type StatusFor,
   type PoolKey,
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { WalletTool } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.js';
+import type {
+  PortfolioPublicInvitationMaker,
+  PortfolioContinuingInvitationMaker,
+} from '@agoric/portfolio-api';
 
 const { fromEntries } = Object;
 
@@ -108,7 +110,7 @@ export const makeTrader = (
       if (portfolioPath !== undefined) throw Error('already opened');
       if (openId) throw Error('already opening');
 
-      const publicInvitationMaker: PortfolioInvitationMaker =
+      const publicInvitationMaker: PortfolioPublicInvitationMaker =
         'makeOpenPortfolioInvitation';
 
       const invitationSpec = {
@@ -240,7 +242,10 @@ export const makeTrader = (
         ),
       );
       return fromEntries(
-        positionStatuses.map(info => [info.protocol, info.netTransfers]),
+        positionStatuses.map(info => [
+          info.protocol,
+          AmountMath.subtract(info.totalIn, info.totalOut),
+        ]),
       );
     },
   });
