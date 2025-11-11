@@ -220,10 +220,33 @@ type ProcessPortfolioPowers = Pick<
   };
 };
 
+type PortfoliosMemory = {
+  deferrals: EventRecord[];
+  snapshots?: Map<string, { fingerprint: string; repeats: number }>;
+};
+
+const fingerprintPortfolioState = (
+  status: StatusFor['portfolio'],
+  activeFlowKeys: Set<string>,
+  { marshaller }: { marshaller: SigningSmartWalletKit['marshaller'] },
+): string => {
+  // Ignore rebalanceCount, which can increment from one of our submissions even
+  // if nothing actually changes.
+  const { rebalanceCount: _rebalanceCount, ...statusFields } = status;
+  const sortedFlowKeys = [...activeFlowKeys].sort((a, b) =>
+    naturalCompare(a, b),
+  );
+  // Rely on the determinism of @endo/marshal.
+  const fingerprint = marshaller.toCapData(
+    harden({ statusFields, activeFlowKeys: sortedFlowKeys }),
+  );
+  return fingerprint.body;
+};
+
 const processPortfolioEvents = async (
   portfolioEvents: VstorageEventDetail[],
   blockHeight: bigint,
-  deferrals: EventRecord[],
+  memory: PortfoliosMemory,
   {
     isDryRun,
     cosmosRest,
@@ -244,6 +267,7 @@ const processPortfolioEvents = async (
     portfolioKeyForDepositAddr,
   }: ProcessPortfolioPowers,
 ) => {
+  const { deferrals } = memory;
   const { query, marshaller } = signingSmartWalletKit;
   const { portfoliosPathPrefix } = vstoragePathPrefixes;
   const { vstorage } = query;
@@ -375,17 +399,32 @@ const processPortfolioEvents = async (
       ]);
       const status = marshaller.fromCapData(statusCapdata);
       mustMatch(status, PortfolioStatusShapeExt, path);
+      const flowKeys = new Set(flowKeysResp.result.children);
+
       const { depositAddress } = status;
       if (depositAddress) {
         setPortfolioKeyForDepositAddr(depositAddress, portfolioKey);
       }
+
+      // If this (portfolio, flows) data hasn't changed since our last
+      // submission, there's no point in trying again.
+      memory.snapshots ||= new Map();
+      const oldState = memory.snapshots.get(portfolioKey);
+      const oldFingerprint = oldState?.fingerprint;
+      const fingerprint = fingerprintPortfolioState(status, flowKeys, { marshaller });
+      if (fingerprint === oldFingerprint) {
+        assert(oldState);
+        if (!oldState.repeats) console.warn(`⚠️  Ignoring unchanged ${path}`);
+        oldState.repeats += 1;
+      }
+      memory.snapshots.set(portfolioKey, { fingerprint, repeats: 0 });
+
       // If any in-progress flows need activation (as indicated by not having
       // its own dedicated vstorage data), then find the first such flow and
       // respond to it. Responding to the rest now is pointless because
       // acceptance of the first submission would invalidate the others as
       // stale, but we'll see them again when such acceptance prompts changes
       // to the portfolio status.
-      const flowKeys = new Set(flowKeysResp.result.children);
       for (const [flowKey, flowDetail] of entries(status.flowsRunning || {})) {
         // If vstorage has data for this flow then we've already responded.
         if (flowKeys.has(flowKey)) continue;
@@ -601,6 +640,7 @@ export const startEngine = async (
     Fail`Could not find vbankAsset for ${q(feeBrandName)}`;
 
   const deferrals = [] as EventRecord[];
+  const portfoliosMemory: PortfoliosMemory = { deferrals };
 
   const blockHeightFromSubscriptionResponse = (resp: SubscriptionResponse) => {
     const { type: respType, value: respData } = resp;
@@ -678,7 +718,7 @@ export const startEngine = async (
     await processPortfolioEvents(
       [{ path: portfoliosPathPrefix, value: streamCellJson, eventRecord }],
       initialBlockHeight,
-      deferrals,
+      portfoliosMemory,
       processPortfolioPowers,
     );
   }).done;
@@ -795,7 +835,7 @@ export const startEngine = async (
     await processPortfolioEvents(
       portfolioEvents,
       respHeight,
-      deferrals,
+      portfoliosMemory,
       processPortfolioPowers,
     );
 
