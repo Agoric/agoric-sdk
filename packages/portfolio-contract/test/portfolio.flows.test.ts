@@ -31,6 +31,7 @@ import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import {
+  AxelarChain,
   RebalanceStrategy,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
@@ -57,6 +58,7 @@ import {
   type OnTransferContext,
   type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
+import type { WalletArtifact } from '../src/evm/wallet-artifact.ts';
 import {
   makeSwapLockMessages,
   makeUnlockSwapMessages,
@@ -372,6 +374,28 @@ const mocks = (
   const onAgoricTransferHost = (event, kit) =>
     onAgoricTransfer(orch, txfrCtx, event, kit);
 
+  const walletArtifactMock: WalletArtifact = {
+    bytecode: '0x60006000556001600055',
+  };
+
+  const evmChainInfo = harden(
+    Object.keys(axelarCCTPConfig).reduce(
+      (acc, key) => {
+        const chain = key as AxelarChain;
+        const info = axelarCCTPConfig[chain];
+        acc[chain] = {
+          namespace: 'eip155',
+          reference: info.reference as `${number}`,
+        };
+        return acc;
+      },
+      {} as Record<
+        AxelarChain,
+        { namespace: 'eip155'; reference: `${number}` }
+      >,
+    ),
+  );
+
   const ctx1: PortfolioInstanceContext = {
     axelarIds: axelarIdsMock,
     contracts: contractsMock,
@@ -383,6 +407,8 @@ const mocks = (
     resolverClient,
     contractAccount: orch.getChain('agoric').then(ch => ch.makeAccount()),
     transferChannels,
+    walletArtifact: walletArtifactMock,
+    evmChainInfo,
   };
 
   const rebalanceHost = (seat, offerArgs, kit) =>

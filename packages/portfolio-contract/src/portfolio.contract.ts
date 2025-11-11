@@ -62,6 +62,7 @@ import {
   type ProposalType,
   type StatusFor,
 } from './type-guards.ts';
+import { WALLET_ARTIFACT } from './evm/wallet-artifact.ts';
 
 const trace = makeTracer('PortC');
 const { fromEntries, keys } = Object;
@@ -73,6 +74,8 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
     aavePool: M.string(),
     compound: M.string(),
     factory: M.string(),
+    gateway: M.string(),
+    gasService: M.string(),
     usdc: M.string(),
   });
 
@@ -111,6 +114,8 @@ export type EVMContractAddresses = {
   aavePool: `0x${string}`;
   compound: `0x${string}`;
   factory: `0x${string}`;
+  gateway: `0x${string}`;
+  gasService: `0x${string}`;
   usdc: `0x${string}`;
   tokenMessenger: `0x${string}`;
   aaveUSDC: `0x${string}`;
@@ -265,6 +270,28 @@ export const contract = async (
     return harden({ noble: nobleConn, axelar: axelarConn });
   })();
 
+  const evmChainInfo = harden(
+    keys(AxelarChain).reduce(
+      (acc, chainName) => {
+        const typed = chainName as AxelarChain;
+        const info = chainInfo[typed];
+        info || Fail`missing chainInfo for ${typed}`;
+        info.namespace === 'eip155' ||
+          Fail`unexpected namespace ${info.namespace} for ${typed}`;
+        const info155 = info as ChainInfo<'eip155'>;
+        acc[typed] = {
+          namespace: info155.namespace,
+          reference: info155.reference,
+        };
+        return acc;
+      },
+      {} as Record<
+        AxelarChain,
+        Pick<ChainInfo<'eip155'>, 'namespace' | 'reference'>
+      >,
+    ),
+  );
+
   const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
 
@@ -313,6 +340,8 @@ export const contract = async (
     inertSubscriber,
     contractAccount: contractAccountV as any, // XXX Guest...
     transferChannels,
+    walletArtifact: WALLET_ARTIFACT,
+    evmChainInfo,
   };
 
   // Create rebalance flow first - needed by preparePortfolioKit
