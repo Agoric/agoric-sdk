@@ -13,7 +13,7 @@ import {
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import type { KVStore } from '@agoric/internal';
+import type { KVStore } from '@agoric/internal/src/kv-store.js';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
@@ -22,6 +22,7 @@ import { waitForBlock } from './support.ts';
 import type { EvmProviders, UsdcAddresses } from './support.ts';
 import { lookBackCctp, watchCctpTransfer } from './watchers/cctp-watcher.ts';
 import { lookBackGmp, watchGmp } from './watchers/gmp-watcher.ts';
+import type { MakeAbortController } from './main.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
 
@@ -32,6 +33,7 @@ export type EvmContext = {
   signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
   kvStore: KVStore;
+  makeAbortController: MakeAbortController;
 };
 
 export type GmpTransfer = {
@@ -190,6 +192,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
         kvStore: ctx.kvStore,
+        makeAbortController: ctx.makeAbortController,
       });
     } else {
       // Lookback mode with concurrent live watching
@@ -200,6 +203,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         timeoutMs: opts.timeoutMs,
         signal: abortController.signal,
         kvStore: ctx.kvStore,
+        makeAbortController: ctx.makeAbortController,
       });
       void liveResultP.then(found => {
         if (found) {
@@ -220,6 +224,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         chainId: caipId,
         signal: abortController.signal,
         kvStore: ctx.kvStore,
+        makeAbortController: ctx.makeAbortController,
       });
 
       if (transferStatus) {

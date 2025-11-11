@@ -1,13 +1,18 @@
 import { ethers, type Filter, type WebSocketProvider, type Log } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types';
 import type { CaipChainId } from '@agoric/orchestration';
-import type { KVStore } from '@agoric/internal';
+import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
 } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
-import { getTxBlockLowerBound, setTxBlockLowerBound } from '../kv-store.ts';
+import {
+  deleteTxBlockLowerBound,
+  getTxBlockLowerBound,
+  setTxBlockLowerBound,
+} from '../kv-store.ts';
+import type { MakeAbortController } from '../main.ts';
 
 // TODO: Remove once all contracts are upgraded to emit MulticallStatus
 const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
@@ -23,6 +28,7 @@ type WatchGmp = {
   txId: TxId;
   log: (...args: unknown[]) => void;
   kvStore: KVStore;
+  makeAbortController: MakeAbortController;
 };
 
 export const watchGmp = ({
@@ -118,7 +124,12 @@ export const watchGmp = ({
   });
 };
 
-// Event names used by lookBackGmp for key differentiation in kvStore.
+// We search separately for MulticallExecuted vs. MulticallStatus events
+// indicating resolution of any given transaction.
+// XXX It should be possible to combine them per
+// https://docs.ethers.org/v6/api/providers/#TopicFilter , but we only search
+// for the former to maintain backwards compatibility and so have not pursued
+// such an approach.
 export const EVENTS = {
   MULTICALL_EXECUTED: 'executed',
   MULTICALL_STATUS: 'status',
@@ -133,6 +144,7 @@ export const lookBackGmp = async ({
   log = () => {},
   signal,
   kvStore,
+  makeAbortController,
 }: WatchGmp & {
   publishTimeMs: number;
   chainId: CaipChainId;
@@ -149,10 +161,9 @@ export const lookBackGmp = async ({
     // We don't know whether resolution will take the form of "executed" or
     // "status", so we look for both and track progress separately.
     const statusEventLowerBound =
-      (await getTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_STATUS)) ||
-      fromBlock;
+      getTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_STATUS) || fromBlock;
     const executedEventLowerBound =
-      (await getTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_EXECUTED)) ||
+      getTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_EXECUTED) ||
       fromBlock;
 
     log(
@@ -181,22 +192,19 @@ export const lookBackGmp = async ({
     const updateExecutedEventLowerBound = (_from: number, to: number) =>
       setTxBlockLowerBound(kvStore, txId, to, EVENTS.MULTICALL_EXECUTED);
 
-    const statusController = new AbortController();
-    const executedController = new AbortController();
-
-    if (signal) {
-      signal.addEventListener('abort', () => {
-        statusController.abort();
-        executedController.abort();
-      });
-    }
-
-    // Options shared by both scans
+    // Options shared by both scans (including an abort signal that is triggered
+    // by a match from either).
+    // see `prepareAbortController` in services/ymax-planner/src/main.ts
+    const { abort: abortScans, signal: sharedSignal } = makeAbortController(
+      undefined,
+      signal ? [signal] : [],
+    );
     const baseScanOpts = {
       provider,
       toBlock,
       chainId,
       log,
+      signal: sharedSignal,
     };
 
     const matchingEvent = await Promise.race([
@@ -205,31 +213,27 @@ export const lookBackGmp = async ({
           ...baseScanOpts,
           baseFilter: statusFilter,
           fromBlock: statusEventLowerBound,
-          signal: statusController.signal,
           onRejectedChunk: updateStatusEventLowerBound,
         },
         isMatch,
-      ).then(result => {
-        executedController.abort();
-        return result;
-      }),
+      ),
       scanEvmLogsInChunks(
         {
           ...baseScanOpts,
           baseFilter: executedFilter,
           fromBlock: executedEventLowerBound,
-          signal: executedController.signal,
           onRejectedChunk: updateExecutedEventLowerBound,
         },
         isMatch,
-      ).then(result => {
-        statusController.abort();
-        return result;
-      }),
+      ),
     ]);
+
+    abortScans();
 
     if (matchingEvent) {
       log(`Found matching event`);
+      deleteTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_EXECUTED);
+      deleteTxBlockLowerBound(kvStore, txId, EVENTS.MULTICALL_STATUS);
       return true;
     }
 

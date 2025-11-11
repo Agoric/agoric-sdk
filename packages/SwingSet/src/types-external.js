@@ -240,7 +240,7 @@ export {};
  * @typedef {BundleName | BundleRef | {bundleID: BundleID}} SourceOfBundle
  */
 /**
- * @typedef { import('@agoric/internal').KVStore } KVStore
+ * @typedef { import('@agoric/internal/src/kv-store.js').KVStore } KVStore
  * @typedef { import('@agoric/swing-store').SnapStore } SnapStore
  * @typedef { import('@agoric/swing-store').SnapshotResult } SnapshotResult
  * @typedef { import('@agoric/swing-store').TranscriptStore } TranscriptStore

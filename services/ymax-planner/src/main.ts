@@ -99,6 +99,8 @@ const prepareAbortController = ({
   return makeAbortController;
 };
 
+export type MakeAbortController = ReturnType<typeof prepareAbortController>;
+
 export type SimplePowers = {
   fetch: typeof fetch;
   setTimeout: typeof setTimeout;
@@ -125,15 +127,17 @@ export const main = async (
   const isDryRun = maybeOpts.includes('--dry-run');
   const isVerbose = maybeOpts.includes('--verbose');
 
+  const makeAbortController = prepareAbortController({
+    setTimeout,
+    AbortController,
+    AbortSignal,
+  });
+
   const simplePowers: SimplePowers = {
     fetch,
     setTimeout,
     delay: ms => new Promise(resolve => setTimeout(resolve, ms)).then(() => {}),
-    makeAbortController: prepareAbortController({
-      setTimeout,
-      AbortController,
-      AbortSignal,
-    }),
+    makeAbortController,
   };
 
   const config = await loadConfig(env);
@@ -271,12 +275,13 @@ export const main = async (
   });
 
   const { db, kvStore } = makeSQLiteKeyValueStore(config.sqlite.dbPath, {
-    trace: console.log,
+    trace: () => {},
   });
 
   const powers = {
     evmCtx: {
       kvStore,
+      makeAbortController,
       ...evmCtx,
     },
     rpc,
@@ -300,15 +305,14 @@ export const main = async (
   };
 
   await withDeferredCleanup(async addCleanup => {
+    addCleanup(async () => {
+      await db.close();
+    });
     await startEngine(powers, {
       isDryRun,
       contractInstance: config.contractInstance,
       depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
       feeBrandName: env.FEE_BRAND_NAME || 'BLD',
-    });
-    addCleanup(async () => {
-      console.log('fraz close');
-      await db.close();
     });
   });
 };

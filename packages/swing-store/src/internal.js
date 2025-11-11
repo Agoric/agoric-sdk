@@ -12,7 +12,7 @@ import { Fail, q } from '@endo/errors';
  * @typedef {{
  *    dirPath: string | null,
  *    db: ReturnType<import('better-sqlite3')>,
- *    kvStore: import('@agoric/internal').KVStore,
+ *    kvStore: import('@agoric/internal/src/kv-store.js').KVStore,
  *    transcriptStore: TranscriptStoreInternal,
  *    snapStore: SnapStoreInternal,
  *    bundleStore: BundleStoreInternal,

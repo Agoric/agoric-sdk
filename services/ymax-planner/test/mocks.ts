@@ -11,7 +11,7 @@ import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
-import type { KVStore } from '@agoric/internal';
+import type { KVStore } from '@agoric/internal/src/kv-store.js';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 
@@ -39,9 +39,17 @@ export const mockGasEstimator = makeGasEstimator({
   fetch: mockFetchForGasEstimate,
 });
 
-export const createMockProvider = () => {
+export const createMockProvider = (
+  latestBlock = 1000,
+  eventData?: {
+    event: {};
+    block: number;
+  },
+) => {
   const eventListeners = new Map<string, Function[]>();
-  let currentBlock = 1000;
+  let currentBlock = latestBlock;
+  const currentTimeMs = 1700000000; // 2023-11-14T22:13:20Z
+  const avgBlockTimeMs = 300;
 
   const mockProvider = {
     on: (eventOrFilter: any, listener: Function) => {
@@ -80,6 +88,18 @@ export const createMockProvider = () => {
     waitForBlock: blockTag => {},
     getBlockNumber: async () => {
       return currentBlock;
+    },
+    getBlock: async (blockNumber: number) => {
+      const blocksAgo = latestBlock - blockNumber;
+      const ts = currentTimeMs - blocksAgo * avgBlockTimeMs;
+      return { number: blockNumber, timestamp: Math.floor(ts / 1000) };
+    },
+    getLogs: async (args: { fromBlock: number; toBlock: number }) => {
+      if (eventData === undefined)
+        throw new Error('No event data provided in mock');
+      if (eventData.block >= args.fromBlock && eventData.block <= args.toBlock)
+        return [eventData.event];
+      else return [];
     },
   } as WebSocketProvider;
 
@@ -160,12 +180,18 @@ export const createMockKeyValueStore = (): KVStore => {
   };
 };
 
-export const createMockPendingTxOpts = (): HandlePendingTxOpts => ({
+export const createMockPendingTxOpts = (
+  latestBlock = 1000,
+  eventData?: {
+    event: {};
+    block: number;
+  },
+): HandlePendingTxOpts => ({
   cosmosRest: {} as unknown as CosmosRestClient,
   cosmosRpc: {} as unknown as CosmosRPCClient,
   evmProviders: {
-    'eip155:1': createMockProvider(),
-    'eip155:42161': createMockProvider(),
+    'eip155:1': createMockProvider(latestBlock, eventData),
+    'eip155:42161': createMockProvider(latestBlock, eventData),
   },
   fetch: global.fetch,
   marshaller: boardSlottingMarshaller(),
@@ -179,6 +205,20 @@ export const createMockPendingTxOpts = (): HandlePendingTxOpts => ({
     pendingTxPathPrefix: PENDING_TX_PATH_PREFIX,
   },
   kvStore: createMockKeyValueStore(),
+  makeAbortController: (timeoutMillisec?: number, racingSignals = []) => {
+    const controller = new AbortController();
+    const abort = (reason?: any) => controller.abort(reason);
+    if (timeoutMillisec !== undefined) {
+      setTimeout(() => abort(new Error('Timeout')), timeoutMillisec);
+    }
+    const racingSignalsArray = Array.from(racingSignals);
+    const signal =
+      racingSignalsArray.length > 0
+        ? AbortSignal.any([controller.signal, ...racingSignalsArray])
+        : controller.signal;
+    signal.addEventListener('abort', () => abort());
+    return { abort, signal };
+  },
 });
 
 export const createMockPendingTxEvent = (

@@ -2,14 +2,13 @@
  * Key-value store interface for storing and retrieving configuration values.
  * This abstraction allows for different storage backends to be plugged in.
  */
-import type { KVStore } from '@agoric/internal';
-import { makeKVStore } from '@agoric/internal';
+import type { KVStore } from '@agoric/internal/src/kv-store.js';
+import { makeKVStore } from '@agoric/internal/src/kv-store.js';
 import type { Database as SQLiteDatabase } from 'better-sqlite3';
 import Database from 'better-sqlite3';
 
-export type SQLiteKeyValueStoreOptions = {
+type SQLiteKeyValueStoreOptions = {
   trace: (...args: string[]) => void;
-  tableName?: string;
 };
 
 export const makeSQLiteKeyValueStore = (
@@ -19,8 +18,6 @@ export const makeSQLiteKeyValueStore = (
   db: SQLiteDatabase;
   kvStore: KVStore;
 } => {
-  const { tableName = 'kv_store' } = options;
-
   // Note that the `dbPath` file is created if necessary:
   // https://github.com/WiseLibs/better-sqlite3/blob/HEAD/docs/api.md#new-databasepath-options
   const db = new Database(dbPath);
@@ -29,37 +26,32 @@ export const makeSQLiteKeyValueStore = (
   db.pragma('synchronous = NORMAL');
   db.pragma('busy_timeout = 5000');
 
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(tableName)) {
-    throw new Error(`Invalid table name: ${tableName}`);
-  }
-
-  /**
-   * @see https://github.com/Agoric/agoric-sdk/blob/a62e38f05bf0b676c708b7861b88b2b70b841469/packages/swing-store/src/swingStore.js#L274-L287
-   * ensureTx is not required here since we want each write to the db
-   * to be committed instantly
-   */
-  const emptyEnsure = () => null;
-  const kvStore = makeKVStore(db, emptyEnsure, options.trace, tableName);
+  // We have no pre-mutation code; each write should be committed instantly.
+  const noop = () => {};
+  const kvStore = makeKVStore(db, noop, options.trace);
   return { db, kvStore };
 };
 
-const getResolverLastBlockKey = (txId: `tx${number}`, suffix?: string) =>
-  `RESOLVER_LAST_BLOCK_${txId}${suffix ? `_${suffix}` : ''}`;
+const getTxBlockLowerBoundKey = (txId: `tx${number}`, scope?: string) =>
+  `${txId}.blockLowerBound${scope ? `_${scope}` : ''}`;
 
 /**
- * Helper to get a tx's last searched block
+ * Get the highest block height that is known from prior searching to precede
+ * inclusion of a transaction.
  * @param store - The key-value store instance
  * @param txId - The transaction ID
- * @param suffix - Additional suffix to add to the end of the key. helps to differentiate
- * between two different searches on the same txID
+ * @param scope - if provided, identifies one of multiple independent searches
+ * for the same txID and constrains behavior to that particular search (i.e.,
+ * each scope has its own data that is entirely unrelated to the data for any
+ * other scope)
  * @returns The block number, or undefined if not found
  */
-export const getTxBlockLowerBound = async (
+export const getTxBlockLowerBound = (
   store: KVStore,
   txId: `tx${number}`,
-  suffix?: string,
-): Promise<number | undefined> => {
-  const value = await store.get(getResolverLastBlockKey(txId, suffix));
+  scope?: string,
+): number | undefined => {
+  const value = store.get(getTxBlockLowerBoundKey(txId, scope));
   if (value === undefined) return undefined;
 
   if (!/^(?:0|[1-9][0-9]*)$/.test(value)) {
@@ -69,18 +61,38 @@ export const getTxBlockLowerBound = async (
 };
 
 /**
- * Helper to set the tx's last searched block
+ * Set the highest block height that is known from prior searching to precede
+ * inclusion of a transaction.
  * @param store - The key-value store instance
  * @param txId - The transaction ID
- * @param block - The block number to add as value
- * @param suffix - Additional suffix to add to the end of the key. helps to differentiate
- * between two different searches on the same txID
+ * @param block - The new lower bound
+ * @param scope - if provided, identifies one of multiple independent searches
+ * for the same txID and constrains behavior to that particular search (i.e.,
+ * each scope has its own data that is entirely unrelated to the data for any
+ * other scope)
  */
-export const setTxBlockLowerBound = async (
+export const setTxBlockLowerBound = (
   store: KVStore,
   txId: `tx${number}`,
   block: number,
-  suffix?: string,
-): Promise<void> => {
-  await store.set(getResolverLastBlockKey(txId, suffix), String(block));
+  scope?: string,
+): void => {
+  store.set(getTxBlockLowerBoundKey(txId, scope), String(block));
+};
+
+/**
+ * Delete the stored block height for a transaction.
+ * @param store - The key-value store instance
+ * @param txId - The transaction ID
+ * @param scope - if provided, identifies one of multiple independent searches
+ * for the same txID and constrains behavior to that particular search (i.e.,
+ * each scope has its own data that is entirely unrelated to the data for any
+ * other scope)
+ */
+export const deleteTxBlockLowerBound = (
+  store: KVStore,
+  txId: `tx${number}`,
+  scope?: string,
+): void => {
+  store.delete(getTxBlockLowerBoundKey(txId, scope));
 };

@@ -107,8 +107,9 @@ Environment variables:
 - `SPECTRUM_API_URL`: URL for the [Spectrum](https://spectrumnodes.com/) API (default "https://pools-api.spectrumnodes.com")
 - `SPECTRUM_API_TIMEOUT`: Overrides `REQUEST_TIMEOUT` for the Spectrum REST API (optional)
 - `SPECTRUM_API_RETRIES`: Overrides `REQUEST_RETRIES` for the Spectrum REST API (optional)
+- `SQLITE_DB_PATH`: The path where the SQLiteDB used by the resolver should be created. While a relative path can be provided (relative to the cwd), 
+an absolute path is recommended 
 - `DOTENV`: Path to environment file containing defaults of above (default ".env")
-- `SQLITE_DB_PATH`: The path where the SQLiteDB used by the resolver should be created. While a relative path can be provided, and absolute path is preferred. 
 
 ## Architecture
 

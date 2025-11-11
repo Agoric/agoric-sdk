@@ -3,7 +3,7 @@ import sqlite3 from 'better-sqlite3';
 import { Fail, q } from '@endo/errors';
 
 import { dbFileInDirectory } from './util.js';
-import { getKeyType } from './kvStoreUtils.js';
+import { getKeyType } from './util.js';
 import { makeBundleStore } from './bundleStore.js';
 import { makeSnapStore } from './snapStore.js';
 import { makeSnapStoreIO } from './snapStoreIO.js';

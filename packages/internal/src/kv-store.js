@@ -13,16 +13,16 @@ import { Fail } from '@endo/errors';
 
 /**
  * @param {object} db The SQLite database connection.
- * @param {() => void} ensureTxn Called before mutating methods to establish a
- *   DB transaction
+ * @param {() => void} beforeMutation Called before mutating methods to
+ *   establish a DB transaction if needed
  * @param {(...args: string[]) => void} trace Called after set/delete to record
  *   a debug log
  * @returns {KVStore}
  */
 
-export function makeKVStore(db, ensureTxn, trace, tableName = 'kvStore') {
+export function makeKVStore(db, beforeMutation, trace) {
   db.exec(`
-    CREATE TABLE IF NOT EXISTS ${tableName} (
+    CREATE TABLE IF NOT EXISTS kvStore (
       key TEXT,
       value TEXT,
       PRIMARY KEY (key)
@@ -31,7 +31,7 @@ export function makeKVStore(db, ensureTxn, trace, tableName = 'kvStore') {
 
   const sqlKVGet = db.prepare(`
     SELECT value
-    FROM ${tableName}
+    FROM kvStore
     WHERE key = ?
   `);
   sqlKVGet.pluck(true);
@@ -51,7 +51,7 @@ export function makeKVStore(db, ensureTxn, trace, tableName = 'kvStore') {
 
   const sqlKVGetNextKey = db.prepare(`
     SELECT key
-    FROM ${tableName}
+    FROM kvStore
     WHERE key > ?
     LIMIT 1
   `);
@@ -62,9 +62,22 @@ export function makeKVStore(db, ensureTxn, trace, tableName = 'kvStore') {
    * To build an iterator of all keys from start (inclusive) to end (exclusive),
    * do:
    *
-   * function* iterate(start, end) { if (kvStore.has(start)) { yield start; }
-   * let prev = start; while (true) { let next = kvStore.getNextKey(prev); if
-   * (!next || next >= end) { break; } yield next; prev = next; } }
+   * ```js
+   * function* iterate(start, end) {
+   *   if (kvStore.has(start)) {
+   *     yield start;
+   *   }
+   *   let prev = start;
+   *   while (true) {
+   *     let next = kvStore.getNextKey(prev);
+   *     if (!next || next >= end) {
+   *       break;
+   *     }
+   *     yield next;
+   *     prev = next;
+   *   }
+   * }
+   * ```
    *
    * @param {string} previousKey The key returned will always be later than this
    *   one.
@@ -91,7 +104,7 @@ export function makeKVStore(db, ensureTxn, trace, tableName = 'kvStore') {
   }
 
   const sqlKVSet = db.prepare(`
-    INSERT INTO ${tableName} (key, value)
+    INSERT INTO kvStore (key, value)
     VALUES (?, ?)
     ON CONFLICT DO UPDATE SET value = excluded.value
   `);
@@ -109,13 +122,13 @@ export function makeKVStore(db, ensureTxn, trace, tableName = 'kvStore') {
     typeof value === 'string' || Fail`value must be a string`;
     // synchronous read after write within a transaction is safe
     // The transaction's overall success will be awaited during commit
-    ensureTxn();
+    beforeMutation();
     sqlKVSet.run(key, value);
     trace('set', key, value);
   }
 
   const sqlKVDel = db.prepare(`
-    DELETE FROM ${tableName}
+    DELETE FROM kvStore
     WHERE key = ?
   `);
 
@@ -128,7 +141,7 @@ export function makeKVStore(db, ensureTxn, trace, tableName = 'kvStore') {
    */
   function del(key) {
     typeof key === 'string' || Fail`key must be a string`;
-    ensureTxn();
+    beforeMutation();
     sqlKVDel.run(key);
     trace('del', key);
   }

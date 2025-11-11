@@ -1,13 +1,17 @@
 import type { Filter, WebSocketProvider, Log } from 'ethers';
 import { id, zeroPadValue, getAddress, ethers } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
-import type { KVStore } from '@agoric/internal';
+import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
 } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
-import { getTxBlockLowerBound, setTxBlockLowerBound } from '../kv-store.ts';
+import {
+  deleteTxBlockLowerBound,
+  getTxBlockLowerBound,
+  setTxBlockLowerBound,
+} from '../kv-store.ts';
 
 /**
  * The Keccak256 hash (event signature) of the standard ERC-20 `Transfer` event.
@@ -210,6 +214,8 @@ export const lookBackCctp = async ({
     );
 
     if (!matchingEvent) log(`No matching transfer found`);
+    deleteTxBlockLowerBound(kvStore, txId);
+
     return !!matchingEvent;
   } catch (error) {
     log(`Error:`, error);
