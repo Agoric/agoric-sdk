@@ -1,6 +1,4 @@
-import type { CosmosRestClient } from './cosmos-rest-client.ts';
-
-type AccountInfo = {
+export type AccountInfo = {
   '@type': string;
   address: string;
   pub_key?: {
@@ -15,16 +13,23 @@ export type AccountResponse = {
   account: AccountInfo;
 };
 
+/**
+ * Function to fetch account information from the network
+ */
+export type FetchAccountInfo = (address: string) => Promise<AccountResponse>;
+
 type SequenceManagerConfig = {
   address: string;
-  chainKey: string;
+  fetchAccountInfo: FetchAccountInfo;
 };
 
 type SequenceManagerPowers = {
-  cosmosRest: CosmosRestClient;
   log?: (...args: unknown[]) => void;
 };
 
+/**
+ * @alpha
+ */
 export type SequenceManager = {
   getSequence: () => number;
   getAccountNumber: () => number;
@@ -33,22 +38,21 @@ export type SequenceManager = {
 
 /**
  * Create a new SequenceManager by fetching current account info from the network
+ *
+ * @alpha
  */
 export const makeSequenceManager = async (
   io: SequenceManagerPowers,
   config: SequenceManagerConfig,
 ): Promise<SequenceManager> => {
   await null;
-  const { cosmosRest, log = () => {} } = io;
-  const { chainKey, address } = config;
+  const { log = () => {} } = io;
+  const { address, fetchAccountInfo } = config;
 
-  const fetchAccountInfo = async (): Promise<AccountInfo> => {
+  const fetchAccount = async (): Promise<AccountInfo> => {
     await null;
     try {
-      const response = (await cosmosRest.getAccountSequence(
-        chainKey,
-        address,
-      )) as AccountResponse;
+      const response = await fetchAccountInfo(address);
       return response.account;
     } catch (error) {
       log(`Failed to fetch account info for ${address}:`, error);
@@ -56,7 +60,7 @@ export const makeSequenceManager = async (
     }
   };
 
-  const accountInfo = await fetchAccountInfo();
+  const accountInfo = await fetchAccount();
 
   let sequence = Number(accountInfo.sequence);
   const accountNumber = Number(accountInfo.account_number);
@@ -84,7 +88,7 @@ export const makeSequenceManager = async (
    */
   const syncSequence = async () => {
     const oldSequence = sequence;
-    const acctInfo = await fetchAccountInfo();
+    const acctInfo = await fetchAccount();
     sequence = Number(acctInfo.sequence);
     log(
       `Synced sequence: ${oldSequence} → ${sequence} (network: ${acctInfo.sequence})`,

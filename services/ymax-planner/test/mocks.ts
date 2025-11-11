@@ -3,7 +3,7 @@ import { ethers, type WebSocketProvider } from 'ethers';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import {
   boardSlottingMarshaller,
-  type SigningSmartWalletKit,
+  type AccountResponse,
 } from '@agoric/client-utils';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
@@ -128,7 +128,12 @@ export const createMockSigningSmartWalletKit =
   };
 
 type BalanceResponse = { amount: string; denom: string };
-type Account = { sequence: string; account_number: string };
+type Account = {
+  '@type': string;
+  address: string;
+  account_number: string;
+  sequence: string;
+};
 type CosmosRestClientConfig = {
   balanceResponses?: BalanceResponse[];
   initialAccount?: Account;
@@ -136,7 +141,12 @@ type CosmosRestClientConfig = {
 const DEFAULT_BALANCE_RESPONSES: BalanceResponse[] = [
   { amount: '1000000', denom: 'uusdc' },
 ];
-const DEFAULT_ACCOUNT: Account = { account_number: '377', sequence: '100' };
+const DEFAULT_ACCOUNT: Account = {
+  '@type': '/cosmos.auth.v1beta1.BaseAccount',
+  address: 'agoric1test',
+  account_number: '377',
+  sequence: '100',
+};
 export const createMockCosmosRestClient = (
   config: CosmosRestClientConfig = {},
 ) => {
@@ -156,7 +166,10 @@ export const createMockCosmosRestClient = (
         amount: response.amount,
       };
     },
-    async getAccountSequence(chainKey: string, address: string) {
+    async getAccountSequence(
+      chainKey: string,
+      address: string,
+    ): Promise<AccountResponse> {
       callCount++;
       return { account: mockAccount };
     },

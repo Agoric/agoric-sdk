@@ -13,7 +13,7 @@ import { chain as agoricTest } from 'chain-registry/testnet/agoricdevnet/index.j
 import { Fail } from '@endo/errors';
 
 import type { ClusterName } from '@agoric/internal';
-import type { AccountResponse } from './sequence-manager.ts';
+import type { AccountResponse } from '@agoric/client-utils';
 
 interface CosmosRestClientConfig {
   clusterName: ClusterName;

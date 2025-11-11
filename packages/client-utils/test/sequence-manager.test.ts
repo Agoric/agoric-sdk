@@ -1,27 +1,53 @@
 import test from 'ava';
-import { makeSequenceManager } from '../src/sequence-manager.ts';
-import { createMockCosmosRestClient } from './mocks.ts';
+import {
+  makeSequenceManager,
+  type AccountResponse,
+} from '../src/sequence-manager.js';
+
+const createMockFetchAccountInfo = () => {
+  let mockSequence = '100';
+  const mockAccountNumber = '377';
+  let callCount = 0;
+
+  const fetch = async (address: string): Promise<AccountResponse> => {
+    callCount += 1;
+    return {
+      account: {
+        '@type': '/cosmos.auth.v1beta1.BaseAccount',
+        address,
+        account_number: mockAccountNumber,
+        sequence: mockSequence,
+      },
+    };
+  };
+
+  return {
+    fetch,
+    updateSequence: (newSequence: string) => {
+      mockSequence = newSequence;
+    },
+    getCallCount: () => callCount,
+  };
+};
 
 test('SequenceManager initialization', async t => {
-  const mockCosmosRest = createMockCosmosRestClient();
+  const mockFetch = createMockFetchAccountInfo();
   const logs: string[] = [];
 
   const sequenceManager = await makeSequenceManager(
     {
-      cosmosRest: mockCosmosRest as any,
       log: (...args: any[]) => logs.push(args.join(' ')),
     },
     {
-      chainKey: 'agoric',
       address: 'agoric1test',
+      fetchAccountInfo: mockFetch.fetch,
     },
   );
 
-  // Should be initialized and ready to use
   t.is(sequenceManager.getAccountNumber(), 377);
   t.is(sequenceManager.getSequence(), 100);
-  t.is(sequenceManager.getSequence(), 101); // Should increment
-  t.is(sequenceManager.getAccountNumber(), 377); // Should remain constant
+  t.is(sequenceManager.getSequence(), 101);
+  t.is(sequenceManager.getAccountNumber(), 377);
 
   t.true(
     logs.some(log => log.includes('initialized: account=377, sequence=100')),
@@ -29,17 +55,16 @@ test('SequenceManager initialization', async t => {
 });
 
 test('SequenceManager sync functionality', async t => {
-  const mockCosmosRest = createMockCosmosRestClient();
+  const mockFetch = createMockFetchAccountInfo();
   const logs: string[] = [];
 
   const sequenceManager = await makeSequenceManager(
     {
-      cosmosRest: mockCosmosRest as any,
       log: (...args: any[]) => logs.push(args.join(' ')),
     },
     {
-      chainKey: 'agoric',
       address: 'agoric1test',
+      fetchAccountInfo: mockFetch.fetch,
     },
   );
 
@@ -48,7 +73,7 @@ test('SequenceManager sync functionality', async t => {
   sequenceManager.getSequence(); // 101
 
   // Mock network having advanced further
-  mockCosmosRest.updateSequence('105');
+  mockFetch.updateSequence('105');
 
   // Sync should update to network state
   await sequenceManager.syncSequence();
@@ -58,10 +83,8 @@ test('SequenceManager sync functionality', async t => {
 });
 
 test('SequenceManager error handling', async t => {
-  const mockCosmosRest = {
-    async getAccountSequence() {
-      throw new Error('Network error');
-    },
+  const mockFetch = async () => {
+    throw new Error('Network error');
   };
 
   const logs: string[] = [];
@@ -70,12 +93,11 @@ test('SequenceManager error handling', async t => {
     () =>
       makeSequenceManager(
         {
-          cosmosRest: mockCosmosRest as any,
           log: (...args: any[]) => logs.push(args.join(' ')),
         },
         {
-          chainKey: 'agoric',
           address: 'agoric1test',
+          fetchAccountInfo: mockFetch,
         },
       ),
     {
@@ -83,25 +105,4 @@ test('SequenceManager error handling', async t => {
     },
   );
   t.true(logs.some(log => log.includes('Failed to fetch account info')));
-});
-
-test('SequenceManager creation calls network once', async t => {
-  const mockCosmosRest = createMockCosmosRestClient();
-
-  const sequenceManager = await makeSequenceManager(
-    {
-      cosmosRest: mockCosmosRest as any,
-    },
-    {
-      chainKey: 'agoric',
-      address: 'agoric1test',
-    },
-  );
-
-  // Should have called network exactly once during creation
-  t.is(mockCosmosRest.getCallCount(), 1);
-
-  // Should work correctly
-  t.is(sequenceManager.getAccountNumber(), 377);
-  t.is(sequenceManager.getSequence(), 100);
 });

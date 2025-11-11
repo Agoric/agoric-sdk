@@ -1,8 +1,12 @@
+/**
+ * @file Smart wallet wrapper with queue-based transaction sequence management
+ */
+
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { SignerData } from '@cosmjs/stargate';
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import type { SequenceManager } from './sequence-manager.ts';
+import type { SigningSmartWalletKit } from './signing-smart-wallet-kit.js';
+import type { SequenceManager } from './sequence-manager.js';
 
 type SmartWalletWithSequencePowers = {
   signingSmartWalletKit: SigningSmartWalletKit;
@@ -21,6 +25,9 @@ type QueuedOperation<T> = {
   context: string;
 };
 
+/**
+ * @alpha
+ */
 export type SmartWalletWithSequence = {
   sendBridgeAction: (
     action: BridgeAction,
@@ -32,6 +39,13 @@ export type SmartWalletWithSequence = {
 
 /**
  * A smart wallet kit wrapper that manages sequence numbers for wallet operations.
+ *
+ * Provides:
+ * - Queue-based transaction serialization to prevent sequence conflicts
+ * - Automatic error recovery for sequence mismatches
+ * - Network sync on sequence errors with retry logic
+ *
+ * @alpha
  */
 export const makeSmartWalletWithSequence = (
   powers: SmartWalletWithSequencePowers,

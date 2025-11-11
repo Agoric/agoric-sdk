@@ -13,11 +13,16 @@ import { isPrimitive } from '@endo/pass-style';
 import {
   fetchEnvNetworkConfig,
   getInvocationUpdate,
+  makeSequenceManager,
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
+  makeSmartWalletWithSequence,
   reflectWalletStore,
 } from '@agoric/client-utils';
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
+import type {
+  FetchAccountInfo,
+  SigningSmartWalletKit,
+} from '@agoric/client-utils';
 import {
   deeplyFulfilledObject,
   objectMap,
@@ -40,8 +45,6 @@ import {
 } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
-import { makeSequenceManager } from './sequence-manager.ts';
-import { makeSmartWalletWithSequence } from './smart-wallet-with-sequence.ts';
 
 export type SmartWalletKitWithSequence = Omit<
   SigningSmartWalletKit,
@@ -117,7 +120,7 @@ export type SimplePowers = {
 };
 
 export const main = async (
-  args: string[],
+  argsArr: string[],
   {
     env = process.env,
     fetch = globalThis.fetch,
@@ -130,8 +133,8 @@ export const main = async (
     WebSocket = ws.WebSocket,
   } = {},
 ) => {
-  const dashIdx = [...args, '--'].indexOf('--');
-  const maybeOpts = args.slice(0, dashIdx);
+  const dashIdx = [...argsArr, '--'].indexOf('--');
+  const maybeOpts = argsArr.slice(0, dashIdx);
   const isDryRun = maybeOpts.includes('--dry-run');
   const isVerbose = maybeOpts.includes('--verbose');
 
@@ -230,12 +233,18 @@ export const main = async (
     makeNonce: () => new Date(now()).toISOString(),
   });
 
+  const fetchAccountInfo: FetchAccountInfo = async address => {
+    return cosmosRest.getAccountSequence('agoric', address);
+  };
+
   const sequenceManager = await makeSequenceManager(
     {
-      cosmosRest,
       log: (...args) => console.log('[SequenceManager]:', ...args),
     },
-    { chainKey: 'agoric', address: signingSmartWalletKit.address },
+    {
+      address: signingSmartWalletKit.address,
+      fetchAccountInfo,
+    },
   );
 
   const smartWalletWithSequence = makeSmartWalletWithSequence(

@@ -6,7 +6,7 @@ import type { InspectOptions } from 'node:util';
 
 import type { Coin } from '@cosmjs/stargate';
 
-import { Fail, X, annotateError, q } from '@endo/errors';
+import { Fail, annotateError, q } from '@endo/errors';
 import { Nat } from '@endo/nat';
 import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
