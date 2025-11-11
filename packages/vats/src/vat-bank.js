@@ -418,9 +418,9 @@ export const BankI = M.interface('Bank', {
 /**
  * @param {Zone} zone
  * @param {object} makers
- * @param {ReturnType<prepareAssetSubscription>} makers.provideAssetSubscription
- * @param {ReturnType<prepareDurablePublishKit>} makers.makePublishKit
- * @param {ReturnType<prepareVirtualPurse>} makers.makeVirtualPurse
+ * @param {ReturnType<typeof prepareAssetSubscription>} makers.provideAssetSubscription
+ * @param {ReturnType<typeof prepareDurablePublishKit>} makers.makePublishKit
+ * @param {ReturnType<typeof prepareVirtualPurse>} makers.makeVirtualPurse
  */
 const prepareBank = (
   zone,
@@ -567,11 +567,11 @@ const BankManagerI = M.interface('BankManager', {
 /**
  * @param {Zone} zone
  * @param {object} makers
- * @param {ReturnType<prepareAssetSubscription>} makers.provideAssetSubscription
- * @param {ReturnType<prepareBank>} makers.makeBank
- * @param {ReturnType<prepareDurablePublishKit>} makers.makePublishKit
- * @param {ReturnType<prepareRewardPurseController>} makers.makeRewardPurseController
- * @param {ReturnType<prepareVirtualPurse>} makers.makeVirtualPurse
+ * @param {ReturnType<typeof prepareAssetSubscription>} makers.provideAssetSubscription
+ * @param {ReturnType<typeof prepareBank>} makers.makeBank
+ * @param {ReturnType<typeof prepareDurablePublishKit>} makers.makePublishKit
+ * @param {ReturnType<typeof prepareRewardPurseController>} makers.makeRewardPurseController
+ * @param {ReturnType<typeof prepareVirtualPurse>} makers.makeVirtualPurse
  */
 const prepareBankManager = (
   zone,

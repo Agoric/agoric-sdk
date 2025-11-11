@@ -12,7 +12,7 @@ import { setup } from './setupBasicMints.js';
 import { setupZCFTest } from './zcf/setupZcfTest.js';
 
 /**
- * @import {start} from '@agoric/zoe/src/contracts/automaticRefund.js';
+ * @import {start as startAutomaticRefund} from '@agoric/zoe/src/contracts/automaticRefund.js';
  */
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -108,7 +108,7 @@ test(`E(zoe).getPublicFacet`, async t => {
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   vatAdminState.installBundle('b1-refund', bundle);
-  /** @type {Installation<start>} */
+  /** @type {Installation<typeof startAutomaticRefund>} */
   const installation = await E(zoe).installBundleID('b1-refund');
   const { publicFacet, instance } = await E(zoe).startInstance(installation);
   await t.throwsAsync(() =>
@@ -230,7 +230,7 @@ test(`zoe.getTerms`, async t => {
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   vatAdminState.installBundle('b1-refund', bundle);
-  /** @type {Installation<start>} */
+  /** @type {Installation<typeof startAutomaticRefund>} */
   const installation = await E(zoe).installBundleID('b1-refund');
   const { instance } = await E(zoe).startInstance(
     installation,

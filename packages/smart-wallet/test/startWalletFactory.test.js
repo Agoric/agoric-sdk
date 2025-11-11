@@ -32,7 +32,7 @@ const makeTestContext = async () => {
     `${dirname}/../src/walletFactory.js`,
     'walletFactory',
   );
-  /** @type {Promise<Installation<start>>} */
+  /** @type {Promise<Installation<typeof start>>} */
   const installation = E(zoe).install(bundle);
   //#endregion
 

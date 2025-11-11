@@ -60,7 +60,7 @@ export const upgradeVaults = async (
 
   await priceAuthority8400;
 
-  /** @type {Instance<start>} */
+  /** @type {Instance<typeof start>} */
   const auctionNewInstance = await auctionUpgradeNewInstance;
   auctionUpgradeNewInstanceProducer.reset();
   const publicFacet = E(zoe).getPublicFacet(auctionNewInstance);

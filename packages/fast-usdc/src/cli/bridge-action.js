@@ -7,7 +7,7 @@ import { boardSlottingMarshaller } from '@agoric/client-utils';
 
 const defaultMarshaller = boardSlottingMarshaller();
 
-/** @typedef {ReturnType<boardSlottingMarshaller>} BoardSlottingMarshaller */
+/** @typedef {ReturnType<typeof boardSlottingMarshaller>} BoardSlottingMarshaller */
 
 /**
  * @param {BridgeAction} bridgeAction

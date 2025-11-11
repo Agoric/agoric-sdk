@@ -24,7 +24,7 @@ import {
  */
 
 //#region ambient authority limited to test set-up
-/** @typedef {ExecutionContext<ReturnType<makeTestContext>>} ECtx */
+/** @typedef {ExecutionContext<ReturnType<typeof makeTestContext>>} ECtx */
 
 const makeTestContext = () => {
   const bundleSource = bundleSourceAmbient;

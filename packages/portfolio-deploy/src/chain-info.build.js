@@ -198,7 +198,7 @@ const makeAgd = (
  *
  * @param {string} chainId of agoric chain
  * @param {string[]} peers bech32prefix:connection-12:channel-34:ustake
- * @param {{ agd: ReturnType<makeAgd> }} io
+ * @param {{ agd: ReturnType<typeof makeAgd> }} io
  * @returns {Promise<Record<string, CosmosChainInfo>>} where
  *   info.agoric.connections has a connection to each peeer
  */

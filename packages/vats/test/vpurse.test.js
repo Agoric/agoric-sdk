@@ -18,7 +18,7 @@ import { prepareVirtualPurse } from '../src/virtual-purse.js';
  * @import {VirtualPurseController} from '../src/virtual-purse.js';
  */
 
-/** @type {TestFn<ReturnType<makeTestContext>>} */
+/** @type {TestFn<ReturnType<typeof makeTestContext>>} */
 const test = rawTest;
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });

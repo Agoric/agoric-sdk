@@ -73,7 +73,7 @@ test('baggage', async t => {
   });
 
   await E(zoe).startInstance(
-    /** @type {Installation<startValueVow>} */
+    /** @type {Installation<typeof startValueVow>} */
     (await bundleAndInstall(contractFile)),
   );
 

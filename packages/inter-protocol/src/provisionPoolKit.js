@@ -63,7 +63,7 @@ const FIRST_LOWER_NEAR_KEYWORD = /^[a-z][a-zA-Z0-9_$]*$/;
  */
 
 /**
- * @typedef {Instance<psmStart>} PsmInstance
+ * @typedef {Instance<typeof psmStart>} PsmInstance
  */
 
 /**

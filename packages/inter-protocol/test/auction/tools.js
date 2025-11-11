@@ -19,12 +19,12 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 /**
  * @typedef {{
- *   autoRefund: Installation<refundStart>;
- *   auctioneer: Installation<auctioneerStart>;
+ *   autoRefund: Installation<typeof refundStart>;
+ *   auctioneer: Installation<typeof auctioneerStart>;
  *   governor: Installation<
- *     import('@agoric/governance/src/contractGovernor.js')['start']
+ *     typeof import('@agoric/governance/src/contractGovernor.js').start
  *   >;
- *   reserve: Installation<reserveStart>;
+ *   reserve: Installation<typeof reserveStart>;
  * }} AuctionTestInstallations
  */
 

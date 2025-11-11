@@ -19,7 +19,7 @@ const trace = makeTracer('StartStakeAtom', true);
  * @param {BootstrapPowers & {
  *   installation: {
  *     consume: {
- *       stakeIca: Installation<start>;
+ *       stakeIca: Installation<typeof start>;
  *     };
  *   };
  * }} powers

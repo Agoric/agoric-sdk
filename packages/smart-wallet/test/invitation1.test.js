@@ -28,7 +28,7 @@ import { prepareSmartWallet } from '../src/smartWallet.js';
  * @import {BridgeAction} from '../src/smartWallet.js';
  */
 
-/** @type {TestFn<Awaited<ReturnType<makeTestContext>>>} */
+/** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -86,7 +86,7 @@ const makeTestContext = async t => {
   const startAnyContract = async () => {
     const bundle = await bundleCache.load(asset.anyContract, 'automaticRefund');
     /**
-     * @type {Promise<Installation<prepare>>}
+     * @type {Promise<Installation<typeof prepare>>}
      */
     const installation = E(zoe).install(bundle);
     return E(zoe).startInstance(installation);

@@ -36,7 +36,7 @@ import {
 } from '../supports.js';
 import { setUpInstallations } from './tools.js';
 
-/** @type {TestFn<Awaited<ReturnType<makeTestContext>>>} */
+/** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
 
 /**
@@ -59,7 +59,9 @@ const test = anyTest;
  */
 
 /**
- * @typedef {Awaited<ReturnType<subscriptionTracker<BookDataNotification>>>} BookDataTracker
+ * @typedef {Awaited<
+ *   ReturnType<typeof subscriptionTracker<BookDataNotification>>
+ * >} BookDataTracker
  */
 
 const trace = makeTracer('Test AuctContract', false);
@@ -99,7 +101,7 @@ test.before(async t => {
 });
 
 /**
- * @param {ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
+ * @param {ExecutionContext<Awaited<ReturnType<typeof makeTestContext>>>} t
  * @param {any} params
  */
 export const setupServices = async (t, params = defaultParams) => {
@@ -141,7 +143,7 @@ export const setupServices = async (t, params = defaultParams) => {
 };
 
 /**
- * @param {ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
+ * @param {ExecutionContext<Awaited<ReturnType<typeof makeTestContext>>>} t
  * @param {any} [params]
  */
 const makeAuctionDriver = async (t, params = defaultParams) => {

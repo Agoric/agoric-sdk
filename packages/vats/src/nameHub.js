@@ -142,7 +142,7 @@ export const prepareNameHubKit = zone => {
     /** @type {Map<string, PromiseKit<unknown>>} */
     keyToAdminPK: new Map(),
   });
-  /** @type {WeakMap<any, ReturnType<init1>>} */
+  /** @type {WeakMap<any, ReturnType<typeof init1>>} */
   const ephemera = new WeakMap();
   /** @param {{}} me */
   const my = me => provideWeak(ephemera, me, init1);

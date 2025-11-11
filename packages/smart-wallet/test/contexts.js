@@ -8,7 +8,7 @@ import { withAmountUtils } from './supports.js';
 
 /**
  * @import {ExecutionContext} from 'ava';
- * @import {start} from '../src/walletFactory.js';
+ * @import {start as StartWalletFactory} from '../src/walletFactory.js';
  */
 
 /**
@@ -30,7 +30,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     `${dirname}/../src/walletFactory.js`,
     'walletFactory',
   );
-  /** @type {Promise<Installation<start>>} */
+  /** @type {Promise<Installation<StartWalletFactory>>} */
   const installation = E(zoe).install(bundle);
   //#endregion
 

@@ -26,7 +26,7 @@ import {
  * @import {AdditionalTransferPowers} from '../src/localchain.js';
  */
 
-/** @type {TestFn<Awaited<ReturnType<makeTestContext>>>} */
+/** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });

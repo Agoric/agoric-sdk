@@ -45,7 +45,7 @@ import { anchorAssets, chainStorageEntries } from './psm-storage-fixture.js';
  * @import {EconomyBootstrapPowers} from '../../src/proposals/econ-behaviors.js';
  */
 
-/** @type {TestFn<Awaited<ReturnType<makeTestContext>>>} */
+/** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
 
 const trace = makeTracer('TestPSM', false);
@@ -174,7 +174,7 @@ test.before(async t => {
 });
 
 /**
- * @param {ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
+ * @param {ExecutionContext<Awaited<ReturnType<typeof makeTestContext>>>} t
  * @param {{}} [customTerms]
  */
 async function makePsmDriver(t, customTerms) {
@@ -190,7 +190,7 @@ async function makePsmDriver(t, customTerms) {
   // Each driver needs its own to avoid state pollution between tests
   const mockChainStorage = makeMockChainStorageRoot();
 
-  /** @type {StartedInstanceKit<start>} */
+  /** @type {StartedInstanceKit<typeof start>} */
   const { creatorFacet, publicFacet } = await E(zoe).startInstance(
     psmInstall,
     harden({ AUSD: anchor.issuer }),
