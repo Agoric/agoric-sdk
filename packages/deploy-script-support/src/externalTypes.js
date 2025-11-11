@@ -1,3 +1,4 @@
+/* eslint-disable @agoric/group-jsdoc-imports */
 // @ts-check
 export {};
 
