@@ -9,17 +9,17 @@ import {
   setIsSuperset,
   setDisjointUnion,
   setDisjointSubtract,
-} from '@agoric/store';
+} from '@endo/patterns';
 
 /**
+ * @import {Key, CopySet} from '@endo/patterns'
  * @import {MathHelpers} from '../types.js'
- * @import {CopySet} from '@endo/patterns'
  */
 
 /** @type {CopySet} */
 const empty = makeCopySet([]);
 
-/** @type {MathHelpers<CopySet>} */
+/** @type {MathHelpers<'copySet', Key, CopySet<Key>>} */
 export const copySetMathHelpers = harden({
   doCoerce: set => {
     mustMatch(set, M.set(), 'set of amount');

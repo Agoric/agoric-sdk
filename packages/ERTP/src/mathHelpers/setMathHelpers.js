@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { passStyleOf } from '@endo/marshal';
+import { passStyleOf } from '@endo/pass-style';
 import {
   assertKey,
   elementsIsSuperset,
@@ -8,9 +8,12 @@ import {
   elementsDisjointSubtract,
   coerceToElements,
   elementsCompare,
-} from '@agoric/store';
+} from '@endo/patterns';
 
-/** @import {MathHelpers, SetValue} from '../types.js' */
+/**
+ * @import {Key} from '@endo/patterns'
+ * @import {MathHelpers, SetValue} from '../types.js'
+ */
 
 // Operations for arrays with unique objects identifying and providing
 // information about digital assets. Used for Zoe invites.
@@ -19,7 +22,7 @@ const empty = harden([]);
 
 /**
  * @deprecated Replace array-based SetMath with CopySet-based CopySetMath
- * @type {MathHelpers<SetValue>}
+ * @type {MathHelpers<'set', Key, SetValue<Key>>}
  */
 export const setMathHelpers = harden({
   doCoerce: list => {

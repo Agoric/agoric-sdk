@@ -40,6 +40,8 @@ export const claim = async (
 ) => {
   const srcPayment = await srcPaymentP;
   return E.when(E(recoveryPurse).deposit(srcPayment, optAmountShape), amount =>
+    // @ts-expect-error Why doesn't TS know that an Amount is a kind
+    // of AmountBound?
     E(recoveryPurse).withdraw(amount),
   );
 };
@@ -87,6 +89,8 @@ export const combine = async (
   if (optTotalAmount !== undefined) {
     mustMatch(total, optTotalAmount, 'amount');
   }
+  // @ts-expect-error Why doesn't TS know that an Amount is a kind
+  // of AmountBound?
   return E(recoveryPurse).withdraw(total);
 };
 harden(combine);
@@ -111,7 +115,11 @@ export const split = async (recoveryPurse, srcPaymentP, paymentAmountA) => {
   const srcAmount = await E(recoveryPurse).deposit(srcPayment);
   const paymentAmountB = AmountMath.subtract(srcAmount, paymentAmountA);
   return Promise.all([
+    // @ts-expect-error Why doesn't TS know that an Amount is a kind
+    // of AmountBound?
     E(recoveryPurse).withdraw(paymentAmountA),
+    // @ts-expect-error Why doesn't TS know that an Amount is a kind
+    // of AmountBound?
     E(recoveryPurse).withdraw(paymentAmountB),
   ]);
 };
@@ -147,6 +155,12 @@ export const splitMany = async (recoveryPurse, srcPaymentP, amounts) => {
   AmountMath.isEqual(srcAmount, total) ||
     Fail`rights were not conserved: ${total} vs ${srcAmount}`;
 
-  return Promise.all(amounts.map(amount => E(recoveryPurse).withdraw(amount)));
+  return Promise.all(
+    amounts.map(amount =>
+      // @ts-expect-error Why doesn't TS know that an Amount is a kind
+      // of AmountBound?
+      E(recoveryPurse).withdraw(amount),
+    ),
+  );
 };
 harden(splitMany);

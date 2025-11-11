@@ -19,8 +19,27 @@ export const AmountShape = harden({
   value: AmountValueShape,
 });
 
+/**
+ * TODO: need a pattern to test `kindOf(specimen) === 'match:containerHas'` to
+ * to ensure that the pattern-level invariants are met.
+ *
+ * TODO: check all uses of M.tagged to see if they have the same weakness.
+ *
+ * @see {HasBound}
+ */
+export const HasBoundShape = M.tagged('match:containerHas');
+
+/** @see {AmountValueBound} */
+const AmountValueBoundShape = M.or(AmountValueShape, HasBoundShape);
+
+/** @see {AmountBound} */
+export const AmountBoundShape = harden({
+  brand: BrandShape,
+  value: AmountValueBoundShape,
+});
+
 const AmountKeywordRecordShape = M.recordOf(M.string(), AmountShape);
-const AmountPatternKeywordRecordShape = M.recordOf(M.string(), M.pattern());
+const AmountBoundKeywordRecordShape = M.recordOf(M.string(), AmountBoundShape);
 
 const TimerBrandShape = M.remotable('TimerBrand');
 const TimestampValueShape = M.nat();
@@ -31,7 +50,7 @@ const TimestampRecordShape = harden({
 const TimestampShape = M.or(TimestampRecordShape, TimestampValueShape);
 
 export const FullProposalShape = harden({
-  want: AmountPatternKeywordRecordShape,
+  want: AmountBoundKeywordRecordShape,
   give: AmountKeywordRecordShape,
   // To accept only one, we could use M.or rather than M.partial,
   // but the error messages would have been worse. Rather,

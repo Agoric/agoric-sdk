@@ -2,7 +2,7 @@
 
 import { M, matches, getInterfaceGuardPayload } from '@endo/patterns';
 /**
- * @import {AmountValue, Ratio} from './types.js'
+ * @import {AmountValue, Amount, AmountValueHasBound, AmountValueBound, AmountBound, Ratio, NatValue} from './types.js'
  * @import {TypedPattern} from '@agoric/internal'
  * @import {CopyBag, CopySet, Pattern} from '@endo/patterns';
  */
@@ -69,6 +69,10 @@ const SetValueShape = M.arrayOf(M.key());
  */
 const CopyBagValueShape = M.bag();
 
+/**
+ * @see {AmountValue}
+ * @see {AssetValueForKind}
+ */
 const AmountValueShape = M.or(
   NatValueShape,
   CopySetValueShape,
@@ -76,6 +80,7 @@ const AmountValueShape = M.or(
   CopyBagValueShape,
 );
 
+/** @see {Amount} */
 export const AmountShape = { brand: BrandShape, value: AmountValueShape };
 harden(AmountShape);
 
@@ -92,6 +97,31 @@ harden(AmountShape);
  */
 export const AmountPatternShape = M.pattern();
 
+/**
+ * TODO: need a pattern to test `kindOf(specimen) === 'match:containerHas'` to
+ * to ensure that the pattern-level invariants are met.
+ *
+ * TODO: check all uses of M.tagged to see if they have the same weakness.
+ *
+ * @see {HasBound}
+ */
+export const HasBoundShape = M.tagged('match:containerHas');
+
+/** @see {AmountValueBound} */
+const AmountValueBoundShape = M.or(AmountValueShape, HasBoundShape);
+
+/** @see {AmountBound} */
+export const AmountBoundShape = {
+  brand: BrandShape,
+  value: AmountValueBoundShape,
+};
+harden(AmountBoundShape);
+
+export const AmountHasBoundShape = {
+  brand: BrandShape,
+  value: HasBoundShape,
+};
+
 /** @type {TypedPattern<Ratio>} */
 export const RatioShape = { numerator: AmountShape, denominator: AmountShape };
 harden(RatioShape);
@@ -99,8 +129,8 @@ harden(RatioShape);
 /**
  * Returns true if value is a Nat bigint.
  *
- * @param {AmountValue} value
- * @returns {value is import('./types.js').NatValue}
+ * @param {AmountValueBound} value
+ * @returns {value is NatValue}
  */
 export const isNatValue = value => matches(value, NatValueShape);
 harden(isNatValue);
@@ -224,7 +254,7 @@ export const makeIssuerInterfaces = (
       .optional(AmountPatternShape)
       .returns(amountShape),
     getDepositFacet: M.call().returns(DepositFacetShape),
-    withdraw: M.call(amountShape).returns(PaymentShape),
+    withdraw: M.call(AmountBoundShape).returns(PaymentShape),
     getRecoverySet: M.call().returns(M.setOf(PaymentShape)),
     recoverAll: M.call().returns(amountShape),
   });

@@ -3,7 +3,10 @@
 import { Fail } from '@endo/errors';
 import { Nat, isNat } from '@endo/nat';
 
-/** @import {MathHelpers, NatValue} from '../types.js' */
+/**
+ * @import {Key} from '@endo/patterns'
+ * @import {MathHelpers, NatValue} from '../types.js'
+ */
 
 const empty = 0n;
 
@@ -16,7 +19,7 @@ const empty = 0n;
  * smallest whole unit such that the `natMathHelpers` never deals with
  * fractional parts.
  *
- * @type {MathHelpers<NatValue>}
+ * @type {MathHelpers<'nat', Key, NatValue>}
  */
 export const natMathHelpers = harden({
   doCoerce: nat => {
