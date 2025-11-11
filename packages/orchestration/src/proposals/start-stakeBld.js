@@ -13,7 +13,7 @@ const trace = makeTracer('StartStakeBld', true);
  * @param {BootstrapPowers & {
  *   installation: {
  *     consume: {
- *       stakeBld: Installation<start>;
+ *       stakeBld: Installation<typeof start>;
  *     };
  *   };
  * }} powers
@@ -51,7 +51,7 @@ export const startStakeBld = async ({
   ]);
 
   /**
-   * @type {StartUpgradableOpts<start>}
+   * @type {StartUpgradableOpts<typeof start>}
    */
   const startOpts = {
     label: 'stakeBld',

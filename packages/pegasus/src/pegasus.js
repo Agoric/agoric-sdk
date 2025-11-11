@@ -35,7 +35,7 @@ const TRANSFER_PROPOSAL_SHAPE = {
  * @param {ZCF} powers.zcf the Zoe Contract Facet
  * @param {Remote<BoardDepositFacet>} powers.board where to find depositFacets by boardID
  * @param {Remote<NameHub>} powers.namesByAddress where to find depositFacets by bech32
- * @param {ReturnType<prepareVowTools>['when']} powers.when
+ * @param {ReturnType<typeof prepareVowTools>['when']} powers.when
  *
  * @import {NameHub} from '@agoric/vats'
  */

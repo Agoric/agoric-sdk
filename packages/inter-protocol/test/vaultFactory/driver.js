@@ -189,7 +189,7 @@ const getRunFromFaucet = async (t, amt) => {
     zoe,
     feeMintAccess,
   } = t.context;
-  /** @type {Promise<Installation<start>>} */
+  /** @type {Promise<Installation<typeof start>>} */
   // @ts-expect-error cast
   // On-chain, there will be pre-existing RUN. The faucet replicates that
   const { creatorFacet: faucetCreator } = await E(zoe).startInstance(

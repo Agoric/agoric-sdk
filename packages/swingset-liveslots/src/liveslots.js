@@ -1326,7 +1326,7 @@ function build(
 
   /**
    * @param {VatDeliveryObject} delivery
-   * @returns {undefined | ReturnType<startVat>}
+   * @returns {undefined | ReturnType<typeof startVat>}
    */
   function dispatchToUserspace(delivery) {
     let result;

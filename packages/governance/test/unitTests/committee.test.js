@@ -41,8 +41,8 @@ const setupContract = async (
     bundleSource(counterRoot),
   ]);
   // install the contract
-  /** @typedef {Installation<import('../../src/committee.js')['start']>} CommitteInstallation */
-  /** @typedef {Installation<start>} CounterInstallation */
+  /** @typedef {Installation<typeof import('../../src/committee.js').start>} CommitteInstallation */
+  /** @typedef {Installation<typeof start>} CounterInstallation */
   /** @type {[CommitteInstallation, CounterInstallation] } */
   const [electorateInstallation, counterInstallation] = await Promise.all([
     E(zoe).install(electorateBundle),

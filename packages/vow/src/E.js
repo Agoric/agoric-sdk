@@ -310,7 +310,7 @@ const makeE = (HandledPromise, powers = {}) => {
 
 export default makeE;
 
-/** @typedef {ReturnType<makeE>} EProxy */
+/** @typedef {ReturnType<typeof makeE>} EProxy */
 
 /**
  * `DataOnly<T>` means to return a record type `T2` consisting only of

@@ -141,7 +141,7 @@ function onUnhandledRejection(e, pr) {
  *   spawn?: typeof import('child_process').spawn,
  *   env?: Record<string, string | undefined>,
  *   kernelBundle?: Bundle
- *   xsnapBundleData?: ReturnType<import('./bundle-handler.js').makeXsnapBundleData>,
+ *   xsnapBundleData?: ReturnType<typeof import('./bundle-handler.js').makeXsnapBundleData>,
  *   bundleHandler?: import('./bundle-handler.js').BundleHandler,
  *   profileVats?: string[],
  *   debugVats?: string[],

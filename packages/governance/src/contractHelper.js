@@ -163,7 +163,7 @@ const facetHelpers = (zcf, paramManager) => {
    * @param {LCF} limitedCreatorFacet
    */
   const makeVirtualGovernorFacet = limitedCreatorFacet => {
-    /** @type {FunctionsPlusContext<unknown, GovernedCreatorFacet<limitedCreatorFacet>>} */
+    /** @type {FunctionsPlusContext<unknown, GovernedCreatorFacet<typeof limitedCreatorFacet>>} */
     const governorFacet = harden({
       getParamMgrRetriever: () =>
         Far('paramRetriever', { get: () => paramManager }),

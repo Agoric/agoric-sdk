@@ -132,7 +132,7 @@ const setupFeedWithWallets = async (t, oracleAddresses) => {
   await t.context.simpleCreatePriceFeed(oracleAddresses, 'ATOM', 'USD');
 
   /**
-   * @type {Instance<start>}
+   * @type {Instance<typeof start>}
    */
   const governedPriceAggregator = await E(agoricNames).lookup(
     'instance',
@@ -393,7 +393,7 @@ test.serial('govern oracles list', async t => {
   );
   /**
    * @type {Instance<
-   *   import('@agoric/governance/src/committee.js')['start']
+   *   typeof import('@agoric/governance/src/committee.js').start
    * >}
    */
   const economicCommittee = await E(agoricNames).lookup(

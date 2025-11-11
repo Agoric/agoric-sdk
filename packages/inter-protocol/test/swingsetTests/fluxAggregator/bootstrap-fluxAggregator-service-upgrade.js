@@ -44,13 +44,13 @@ export const buildRootObject = async () => {
   /**
    * @type {{
    *   committee?: Installation<
-   *     import('@agoric/governance/src/committee.js')['start']
+   *     typeof import('@agoric/governance/src/committee.js').start
    *   >;
    *   fluxAggregatorV1?: Installation<
-   *     import('../../../src/price/fluxAggregatorContract.js').start
+   *     typeof import('../../../src/price/fluxAggregatorContract.js').start
    *   >;
    *   puppetContractGovernor?: Installation<
-   *     import('@agoric/governance/tools/puppetContractGovernor.js').start
+   *     typeof import('@agoric/governance/tools/puppetContractGovernor.js').start
    *   >;
    * }}
    */

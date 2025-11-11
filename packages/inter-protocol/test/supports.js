@@ -117,7 +117,7 @@ export const installPuppetGovernance = (zoe, produce) => {
 /**
  * @param {bigint} value
  * @param {{
- *   centralSupply: ERef<Installation<start>>;
+ *   centralSupply: ERef<Installation<typeof start>>;
  *   feeMintAccess: ERef<FeeMintAccess>;
  *   zoe: ERef<ZoeService>;
  * }} powers

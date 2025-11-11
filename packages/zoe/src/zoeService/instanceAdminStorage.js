@@ -116,7 +116,7 @@ harden(makeInstanceAdminStorage);
 
 /**
  * @param {Baggage} zoeBaggage
- * @param {ReturnType<makeZoeSeatAdminFactory>} makeZoeSeatAdminKit
+ * @param {ReturnType<typeof makeZoeSeatAdminFactory>} makeZoeSeatAdminKit
  */
 const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
   const makeSeatHandle = defineDurableHandle(zoeBaggage, 'Seat');

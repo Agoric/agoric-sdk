@@ -29,7 +29,7 @@ import { headValue, sequenceCurrents, withAmountUtils } from '../supports.js';
 
 /**
  * @type {TestFn<
- *   Awaited<ReturnType<makeDefaultTestContext>> & {
+ *   Awaited<ReturnType<typeof makeDefaultTestContext>> & {
  *     consume: EconomyBootstrapPowers['consume'];
  *   }
  * >}

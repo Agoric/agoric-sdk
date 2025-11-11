@@ -49,7 +49,7 @@ const WantMintedFeeBP = 1n;
 const GiveMintedFeeBP = 3n;
 const MINT_LIMIT = scale6(20_000_000);
 
-/** @type {TestFn<Awaited<ReturnType<makeTestContext>>>} */
+/** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = unknownTest;
 
 const makeTestContext = async () => {
@@ -66,7 +66,7 @@ const makeTestContext = async () => {
   const committeeInstall = await E(zoe).install(committeeBundle);
   const psmInstall = await E(zoe).install(psmBundle);
   const centralSupply = await E(zoe).install(centralSupplyBundle);
-  /** @type {Installation<import('../src/provisionPool.js')['start']>} */
+  /** @type {Installation<typeof import('../src/provisionPool.js').start>} */
   const policyInstall = await E(zoe).install(policyBundle);
 
   const mintLimit = AmountMath.make(mintedBrand, MINT_LIMIT);

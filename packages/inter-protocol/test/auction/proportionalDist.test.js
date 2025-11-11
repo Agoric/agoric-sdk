@@ -11,7 +11,7 @@ import { distributeProportionalSharesWithLimits } from '../../src/auction/auctio
  * @import {ExecutionContext} from 'ava';
  */
 
-/** @type {TestFn<Awaited<ReturnType<makeTestContext>>>} */
+/** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
 
 const trace = makeTracer('Test AuctContract', false);
@@ -32,7 +32,7 @@ test.before(async t => {
 });
 
 /**
- * @param {ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
+ * @param {ExecutionContext<Awaited<ReturnType<typeof makeTestContext>>>} t
  * @param {[collateralReturned: bigint, bidRaise: bigint]} amountsReturned
  * @param {{ deposit: number; goal?: number }[]} rawDeposits
  * @param {[transfers: [bigint, bigint][], leftovers: [bigint, bigint]]} rawExpected

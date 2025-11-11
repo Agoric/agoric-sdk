@@ -11,7 +11,7 @@ import { makeFakeTransferBridge } from '../tools/fake-bridge.js';
  * @import {TestFn} from 'ava';
  */
 
-/** @type {TestFn<Awaited<ReturnType<makeTestContext>>>} */
+/** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });

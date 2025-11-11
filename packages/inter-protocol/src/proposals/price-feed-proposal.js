@@ -172,7 +172,9 @@ export const createPriceFeed = async (
   /**
    * @type {[
    *   [Brand<'nat'>, Brand<'nat'>],
-   *   Installation<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js')['start]>,
+   *   Installation<
+   *     typeof import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start
+   *   >,
    *   Timer,
    * ]}
    */

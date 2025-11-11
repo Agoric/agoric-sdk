@@ -87,7 +87,7 @@ export const makeBlockTool = ({ rpc, delay }) => {
 
   return { waitForBlock };
 };
-/** @typedef {ReturnType<makeBlockTool>} BlockTool */
+/** @typedef {ReturnType<typeof makeBlockTool>} BlockTool */
 
 /**
  * @param {string} fullPath
@@ -695,4 +695,4 @@ export const makeDoOffer = wallet => {
   return doOffer;
 };
 
-/** @typedef {Awaited<ReturnType<makeE2ETools>>} E2ETools */
+/** @typedef {Awaited<ReturnType<typeof makeE2ETools>>} E2ETools */

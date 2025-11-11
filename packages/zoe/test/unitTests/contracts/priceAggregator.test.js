@@ -118,7 +118,7 @@ test.before('setup aggregator and oracles', async t => {
   /** @type {Installation<OracleStart>} */
   const oracleInstallation = await E(zoe).installBundleID('b1-oracle');
   vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
-  /** @type {Installation<start>} */
+  /** @type {Installation<typeof start>} */
   const aggregatorInstallation = await E(zoe).installBundleID('b1-aggregator');
 
   const link = makeIssuerKit('$ATOM');

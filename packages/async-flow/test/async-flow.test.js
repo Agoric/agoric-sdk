@@ -51,7 +51,7 @@ const prepareOrchestra = (zone, k = 1) =>
     },
   );
 
-/** @typedef {ReturnType<ReturnType<prepareOrchestra>>} Orchestra */
+/** @typedef {ReturnType<ReturnType<typeof prepareOrchestra>>} Orchestra */
 
 const firstLogLen = 7;
 

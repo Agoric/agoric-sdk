@@ -149,10 +149,10 @@ const IN_MEMORY = ':memory:';
  * @property {SnapshotCallback} [archiveSnapshot]  Called after creation of a new heap snapshot
  * @property {TranscriptCallback} [archiveTranscript]  Called after a formerly-current transcript span is finalized
  * @property {(pendingExports: Iterable<[key: string, value: string | null]>) => void} [exportCallback]
- * @property {Replacer<ReturnType<makeKVStore>>} [wrapKvStore]
- * @property {Replacer<ReturnType<makeTranscriptStore>>} [wrapTranscriptStore]
- * @property {Replacer<ReturnType<makeSnapStore>>} [wrapSnapStore]
- * @property {Replacer<ReturnType<makeBundleStore>>} [wrapBundleStore]
+ * @property {Replacer<ReturnType<typeof makeKVStore>>} [wrapKvStore]
+ * @property {Replacer<ReturnType<typeof makeTranscriptStore>>} [wrapTranscriptStore]
+ * @property {Replacer<ReturnType<typeof makeSnapStore>>} [wrapSnapStore]
+ * @property {Replacer<ReturnType<typeof makeBundleStore>>} [wrapBundleStore]
  */
 
 /**

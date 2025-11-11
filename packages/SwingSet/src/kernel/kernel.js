@@ -195,14 +195,14 @@ export default function buildKernel(
     kernelSlog,
   );
 
-  /** @type {ReturnType<makeVatWarehouse>} */
+  /** @type {ReturnType<typeof makeVatWarehouse>} */
   let vatWarehouse;
   let started = false;
 
   /**
    * @typedef {{
    *   manager: unknown,
-   *   translators: ReturnType<makeDeviceTranslators>,
+   *   translators: ReturnType<typeof makeDeviceTranslators>,
    * }} DeviceInfo
    */
   const ephemeral = {

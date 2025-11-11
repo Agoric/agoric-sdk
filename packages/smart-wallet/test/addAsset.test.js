@@ -19,7 +19,7 @@ const importSpec = async spec =>
   new URL(importMetaResolve(spec, import.meta.url)).pathname;
 
 /**
- * @type {TestFn<Awaited<ReturnType<makeDefaultTestContext>>>}
+ * @type {TestFn<Awaited<ReturnType<typeof makeDefaultTestContext>>>}
  */
 const test = anyTest;
 
@@ -136,7 +136,9 @@ const IST_UNIT = 1_000_000n;
 const CENT = IST_UNIT / 100n;
 
 /**
- * @param {ExecutionContext<Awaited<ReturnType<makeDefaultTestContext>>>} t
+ * @param {ExecutionContext<
+ *   Awaited<ReturnType<typeof makeDefaultTestContext>>
+ * >} t
  */
 const makeScenario = t => {
   /**

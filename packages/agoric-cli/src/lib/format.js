@@ -175,7 +175,7 @@ export const offerStatusTuples = (state, agoricNames) => {
 
 /**
  * @param {CurrentWalletRecord} current
- * @param {ReturnType<makeWalletStateCoalescer>['state']} coalesced
+ * @param {ReturnType<typeof makeWalletStateCoalescer>['state']} coalesced
  * @param {AgoricNamesRemotes} agoricNames
  */
 export const summarize = (current, coalesced, agoricNames) => {

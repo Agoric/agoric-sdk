@@ -80,7 +80,7 @@ harden(meta);
  *   initialShortfallInvitation: Invitation;
  *   storageNode: Remote<StorageNode>;
  *   marshaller: Remote<Marshaller>;
- *   auctioneerInstance: Instance<auctioneerStart>;
+ *   auctioneerInstance: Instance<typeof auctioneerStart>;
  *   managerParams: Record<string, VaultManagerParamOverrides>;
  *   directorParamOverrides: [object];
  * }} privateArgs

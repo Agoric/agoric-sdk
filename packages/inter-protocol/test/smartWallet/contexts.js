@@ -17,7 +17,7 @@ import { withAmountUtils } from '../supports.js';
 
 /**
  * @import {ExecutionContext} from 'ava';
- * @import {start as startWalletFactory} from '@agoric/smart-wallet/src/walletFactory.js';
+ * @import {start as StartWalletFactory} from '@agoric/smart-wallet/src/walletFactory.js';
  * @import {ScopedBridgeManager} from '@agoric/vats';
  * @import {NameAdmin} from '@agoric/vats';
  * @import {FluxStartFn} from '@agoric/inter-protocol/src/price/fluxAggregatorContract.js';
@@ -79,7 +79,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     'walletFactory',
   );
   /**
-   * @type {Promise<Installation<startWalletFactory>>}
+   * @type {Promise<Installation<StartWalletFactory>>}
    */
   const installation = E(zoe).install(bundle);
 

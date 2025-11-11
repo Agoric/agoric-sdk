@@ -43,7 +43,7 @@ const start = zcf => {
 
   /**
    * @param {object} obj
-   * @param {Installation<sellItemStart>} obj.sellItemsInstallation
+   * @param {Installation<typeof sellItemStart>} obj.sellItemsInstallation
    * @param {*} obj.customValueProperties
    * @param {number} obj.count
    * @param {*} obj.moneyIssuer

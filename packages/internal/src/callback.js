@@ -25,7 +25,7 @@ const ownKeys =
 /**
  * @template {Methods} T
  * @typedef {(
- *   ...args: Parameters<ReturnType<prepareAttenuator>>
+ *   ...args: Parameters<ReturnType<typeof prepareAttenuator>>
  * ) => Farable<T>} MakeAttenuator
  */
 

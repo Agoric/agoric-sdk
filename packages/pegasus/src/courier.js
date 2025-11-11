@@ -47,7 +47,7 @@ export const getCourierPK = (key, keyToCourierPK) => {
  * @property {(zcfSeat: ZCFSeat, amounts: AmountKeywordRecord) => void} retain
  * @property {(zcfSeat: ZCFSeat, amounts: AmountKeywordRecord) => void} redeem
  * @property {Remote<TransferProtocol>} transferProtocol
- * @property {ReturnType<prepareVowTools>['when']} when
+ * @property {ReturnType<typeof prepareVowTools>['when']} when
  * @param {Remote<Connection>} connection
  * @returns {(args: CourierArgs) => Courier}
  */

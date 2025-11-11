@@ -64,31 +64,33 @@ export const buildRootObject = async () => {
   /**
    * @type {{
    *   committee?: Installation<
-   *     import('@agoric/governance/src/committee.js')['start']
+   *     typeof import('@agoric/governance/src/committee.js').start
    *   >;
    *   assetReserveV1?: Installation<
-   *     import('../../../src/reserve/assetReserve.js')['start']
+   *     typeof import('../../../src/reserve/assetReserve.js').start
    *   >;
    *   puppetContractGovernor?: Installation<
-   *     import('@agoric/governance/tools/puppetContractGovernor.js')['start']
+   *     typeof import('@agoric/governance/tools/puppetContractGovernor.js').start
    *   >;
    * }}
    */
   const installations = {};
 
   /**
-   * @type {PuppetContractGovernorKit<start>}
+   * @type {PuppetContractGovernorKit<typeof start>}
    */
   let governorFacets;
   /**
    * @type {ReturnType<
-   *   Awaited<ReturnType<start>>['creatorFacet']['getLimitedCreatorFacet']
+   *   Awaited<
+   *     ReturnType<typeof start>
+   *   >['creatorFacet']['getLimitedCreatorFacet']
    * >}
    */
   let arLimitedFacet;
 
   /**
-   * @type {Omit<StartParams<start>['terms'], 'issuers' | 'brands'>}
+   * @type {Omit<StartParams<typeof start>['terms'], 'issuers' | 'brands'>}
    */
   const arTerms = {
     governedParams: {
