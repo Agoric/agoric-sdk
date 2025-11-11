@@ -11,6 +11,7 @@ import {
   netstringEncoderStream,
   netstringDecoderStream,
 } from '@agoric/internal/src/netstring.js';
+import { fromString } from '@agoric/internal/src/uint8array-utils.js';
 
 test('arrayEncoderStream', async t => {
   const e = arrayEncoderStream();
@@ -19,8 +20,9 @@ test('arrayEncoderStream', async t => {
   e.write([]);
 
   function eq(expected) {
+    // Node.js streams may convert Uint8Array to Buffer, so we convert to string for comparison
     t.deepEqual(
-      chunks.map(buf => buf.toString()),
+      chunks.map(buf => (buf instanceof Uint8Array ? new TextDecoder().decode(buf) : buf.toString())),
       expected,
     );
   }
@@ -38,7 +40,7 @@ test('encode stream', async t => {
   nsStream.on('data', data => chunks.push(data));
   function eq(expected) {
     t.deepEqual(
-      chunks.map(buf => buf.toString()),
+      chunks.map(buf => (buf instanceof Uint8Array ? new TextDecoder().decode(buf) : buf.toString())),
       expected,
     );
   }
@@ -54,8 +56,12 @@ test('decode stream', async t => {
   const nsStream = netstringDecoderStream();
   const aStream = arrayDecoderStream();
   nsStream.pipe(aStream);
-  function write(s) {
-    nsStream.write(Buffer.from(s));
+  function write(data) {
+    if (typeof data === 'string') {
+      nsStream.write(fromString(data));
+    } else {
+      nsStream.write(data);
+    }
   }
 
   const msgs = [];
@@ -65,14 +71,14 @@ test('decode stream', async t => {
     t.deepEqual(msgs, expected);
   }
 
-  let buf = encode(Buffer.from(JSON.stringify([1])));
+  let buf = encode(fromString(JSON.stringify([1])));
   write(buf.slice(0, 1));
   eq([]);
   write(buf.slice(1));
   eq([[1]]);
   msgs.pop();
 
-  buf = encode(Buffer.from(JSON.stringify(['command', { foo: 2 }])));
+  buf = encode(fromString(JSON.stringify(['command', { foo: 2 }])));
   write(buf.slice(0, 4));
   eq([]);
   write(buf.slice(4));

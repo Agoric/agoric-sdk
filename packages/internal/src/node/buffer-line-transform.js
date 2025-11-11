@@ -2,22 +2,23 @@
 /* eslint-disable no-underscore-dangle */
 
 import { Transform } from 'node:stream';
+import { concatUint8Arrays, fromString, toString, isUint8Array, fromData } from '../uint8array-utils.js';
 
 /**
- * @typedef {object} BufferLineTransformOptions
- * @property {Buffer | string | number} [break] line break matcher for
- *   Buffer.indexOf() (default: 10)
+ * @typedef {object} Uint8ArrayLineTransformOptions
+ * @property {Uint8Array | string | number} [break] line break matcher for
+ *   Uint8Array.indexOf() (default: 10)
  * @property {BufferEncoding} [breakEncoding] if break is a string, the encoding
  *   to use
  */
 
 export default class BufferLineTransform extends Transform {
   /**
-   * The BufferLineTransform is reading String or Buffer content from a Readable
-   * stream and writing each line as a Buffer in object mode
+   * The BufferLineTransform is reading String or Uint8Array content from a Readable
+   * stream and writing each line as a Uint8Array in object mode
    *
    * @param {import('node:stream').TransformOptions &
-   *   BufferLineTransformOptions} [options]
+   *   Uint8ArrayLineTransformOptions} [options]
    */
   constructor(options) {
     const {
@@ -33,15 +34,46 @@ export default class BufferLineTransform extends Transform {
     let breakLength;
     if (!breakValue || typeof breakValue === 'number') {
       breakLength = 1;
-    } else if (Buffer.isBuffer(breakValue)) {
+    } else if (isUint8Array(breakValue)) {
       breakLength = breakValue.length;
     } else {
-      breakLength = Buffer.from(breakValue, breakEncoding).length;
+      breakLength = fromData(breakValue, breakEncoding).length;
     }
     this._breakLength = breakLength;
 
-    /** @type {Buffer[]} */
+    /** @type {Uint8Array[]} */
     this._chunks = [];
+  }
+
+  /**
+   * Find the index of the break value in the buffer
+   * @param {Uint8Array} buf 
+   * @returns {number} index or -1 if not found
+   */
+  _findBreakIndex(buf) {
+    if (typeof this._breakValue === 'number') {
+      return buf.indexOf(this._breakValue);
+    }
+    
+    // For string or Uint8Array break values, we need to search manually
+    const breakBytes = isUint8Array(this._breakValue) 
+      ? this._breakValue 
+      : fromData(this._breakValue, this._breakEncoding);
+      
+    // Simple search for the break pattern
+    for (let i = 0; i <= buf.length - breakBytes.length; i++) {
+      let found = true;
+      for (let j = 0; j < breakBytes.length; j++) {
+        if (buf[i + j] !== breakBytes[j]) {
+          found = false;
+          break;
+        }
+      }
+      if (found) {
+        return i;
+      }
+    }
+    return -1;
   }
 
   /**
@@ -52,35 +84,35 @@ export default class BufferLineTransform extends Transform {
    */
   _transform(chunk, encoding, cb) {
     try {
-      /** @type {Buffer} */
+      /** @type {Uint8Array} */
       let buf =
-        Buffer.isBuffer(chunk) || encoding === 'buffer'
+        isUint8Array(chunk) || encoding === 'buffer'
           ? chunk
-          : Buffer.from(chunk, encoding);
+          : fromData(chunk, encoding);
 
       // In case the break value is more than a single byte, it may span
       // multiple chunks. Since Node doesn't provide a way to get partial
       // search result, fallback to a less optimal early concatenation
       if (this._breakLength > 1 && this._chunks.length) {
-        buf = Buffer.concat([/** @type {Buffer} */ (this._chunks.pop()), buf]);
+        buf = concatUint8Arrays([/** @type {Uint8Array} */ (this._chunks.pop()), buf]);
       }
 
       while (buf.length) {
-        const offset = buf.indexOf(this._breakValue, 0, this._breakEncoding);
+        const offset = this._findBreakIndex(buf);
 
         /** @type {number} */
         let endOffset;
         if (offset >= 0) {
           endOffset = offset + this._breakLength;
           if (this._chunks.length) {
-            const concatLength = this._chunks.reduce(
+            const totalChunksLength = this._chunks.reduce(
               (acc, { length }) => acc + length,
-              endOffset,
+              0,
             );
             this._writeItem(
-              Buffer.concat(
-                [...this._chunks.splice(0, this._chunks.length), buf],
-                concatLength,
+              concatUint8Arrays(
+                [...this._chunks.splice(0, this._chunks.length), buf.subarray(0, endOffset)],
+                totalChunksLength + endOffset,
               ),
             );
           } else {
@@ -105,16 +137,16 @@ export default class BufferLineTransform extends Transform {
   _flush(cb) {
     if (this._chunks.length) {
       this._writeItem(
-        Buffer.concat(this._chunks.splice(0, this._chunks.length)),
+        concatUint8Arrays(this._chunks.splice(0, this._chunks.length)),
       );
     }
     cb();
   }
 
-  /** @param {Buffer} line */
+  /** @param {Uint8Array} line */
   _writeItem(line) {
     if (this.readableEncoding) {
-      this.push(line.toString(this.readableEncoding), this.readableEncoding);
+      this.push(toString(line), this.readableEncoding);
     } else {
       this.push(line);
     }
