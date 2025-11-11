@@ -327,7 +327,7 @@ export async function buildSwingset(
  * @template [T=unknown]
  * @typedef {object} LaunchOptions
  * @property {QueueStorage} actionQueueStorage
- * @property {import('./helpers/make-queue.js').QueueStorage} highPriorityQueueStorage
+ * @property {QueueStorage} highPriorityQueueStorage
  * @property {string} [kernelStateDBDir]
  * @property {SwingStore} [swingStore]
  * @property {BufferedKVStore<Mailbox>} mailboxStorage
