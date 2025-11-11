@@ -3,10 +3,9 @@ import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import type { StdFee } from '@cosmjs/stargate';
-import type { SmartWalletKitWithSequence } from './main.js';
 
 type ResolveTxParams = {
-  signingSmartWalletKit: SmartWalletKitWithSequence;
+  signingSmartWalletKit: SigningSmartWalletKit;
   txId: TxId;
   status: Omit<TxStatus, 'pending'>;
   proposal?: object;
@@ -23,7 +22,7 @@ const smartWalletFee: StdFee = {
   amount: [{ denom: 'ubld', amount: '10000' }],
 };
 
-const getInvitationMakers = async (wallet: SmartWalletKitWithSequence) => {
+const getInvitationMakers = async (wallet: SigningSmartWalletKit) => {
   const getCurrentWalletRecord = await wallet.query.getCurrentWalletRecord();
   const invitation = getCurrentWalletRecord.offerToUsedInvitation
     .filter(inv => inv[1].value[0].description === 'resolver')
@@ -62,6 +61,9 @@ export const resolvePendingTx = async ({
     proposal,
   });
 
-  const result = await signingSmartWalletKit.executeOffer(action);
+  const result = await signingSmartWalletKit.executeOffer(
+    action,
+    smartWalletFee,
+  );
   return result;
 };

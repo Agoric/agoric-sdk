@@ -6,14 +6,14 @@ import { inspect } from 'node:util';
 
 import type { Coin } from '@cosmjs/stargate';
 
+import { Fail, annotateError, q } from '@endo/errors';
+import { Nat } from '@endo/nat';
+import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import { getInvocationUpdate, reflectWalletStore } from '@agoric/client-utils';
 import type { RetryOptionsAndPowers } from '@agoric/client-utils/src/sync-tools.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
-import { annotateError, Fail, q } from '@endo/errors';
-import { Nat } from '@endo/nat';
 
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import {
@@ -76,7 +76,6 @@ import {
   vstoragePathIsAncestorOf,
   vstoragePathIsParentOf,
 } from './vstorage-utils.ts';
-import type { SmartWalletKitWithSequence } from './main.ts';
 
 const { entries, fromEntries, values } = Object;
 
@@ -184,7 +183,7 @@ export type Powers = {
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
   spectrumPoolIds: Partial<Record<InstrumentId, string>>;
   cosmosRest: CosmosRestClient;
-  signingSmartWalletKit: SmartWalletKitWithSequence;
+  signingSmartWalletKit: SigningSmartWalletKit;
   walletStore: ReturnType<typeof reflectWalletStore>;
   getWalletInvocationUpdate: (
     messageId: string | number,

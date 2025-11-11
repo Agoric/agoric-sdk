@@ -15,7 +15,6 @@ import type { Powers as EnginePowers } from '../src/engine.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 import { prepareAbortController } from '../src/support.ts';
-import type { SmartWalletKitWithSequence } from '../src/main.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 
@@ -137,49 +136,53 @@ export const createMockProvider = (
   return mockProvider;
 };
 
-export const createMockSigningSmartWalletKit =
-  (): SmartWalletKitWithSequence => {
-    const executedOffers: OfferSpec[] = [];
+export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
+  const executedOffers: OfferSpec[] = [];
 
-    return {
-      address: 'agoric1mockplanner123456789abcdefghijklmnopqrstuvwxyz',
+  return {
+    address: 'agoric1mockplanner123456789abcdefghijklmnopqrstuvwxyz',
 
-      query: {
-        getCurrentWalletRecord: async () => ({
-          offerToUsedInvitation: [
-            [
-              'resolver-offer-1',
-              {
-                value: [
-                  {
-                    description: 'resolver',
-                    instance: 'mock-instance',
-                    installation: 'mock-installation',
-                  },
-                ],
-              },
-            ],
+    query: {
+      getCurrentWalletRecord: async () => ({
+        offerToUsedInvitation: [
+          [
+            'resolver-offer-1',
+            {
+              value: [
+                {
+                  description: 'resolver',
+                  instance: 'mock-instance',
+                  installation: 'mock-installation',
+                },
+              ],
+            },
           ],
-          liveOffers: [],
-          purses: [],
-        }),
-      },
+        ],
+        liveOffers: [],
+        purses: [],
+      }),
+    },
 
-      executeOffer: async (offerSpec: OfferSpec) => {
-        executedOffers.push(offerSpec);
-        return {
-          offerId: offerSpec.id,
-          invitationSpec: offerSpec.invitationSpec,
-          offerArgs: offerSpec.offerArgs,
-          proposal: offerSpec.proposal,
-          status: 'executed',
-        };
-      },
-    } as any;
-  };
+    executeOffer: async (offerSpec: OfferSpec) => {
+      executedOffers.push(offerSpec);
+      return {
+        offerId: offerSpec.id,
+        invitationSpec: offerSpec.invitationSpec,
+        offerArgs: offerSpec.offerArgs,
+        proposal: offerSpec.proposal,
+        status: 'executed',
+      };
+    },
+  } as any;
+};
 
 type BalanceResponse = { amount: string; denom: string };
-type Account = { sequence: string; account_number: string };
+type Account = {
+  '@type': string;
+  address: string;
+  account_number: string;
+  sequence: string;
+};
 type CosmosRestClientConfig = {
   balanceResponses?: BalanceResponse[];
   initialAccount?: Account;
@@ -187,7 +190,12 @@ type CosmosRestClientConfig = {
 const DEFAULT_BALANCE_RESPONSES: BalanceResponse[] = [
   { amount: '1000000', denom: 'uusdc' },
 ];
-const DEFAULT_ACCOUNT: Account = { account_number: '377', sequence: '100' };
+const DEFAULT_ACCOUNT: Account = {
+  '@type': '/cosmos.auth.v1beta1.BaseAccount',
+  address: 'agoric1test',
+  account_number: '377',
+  sequence: '100',
+};
 export const createMockCosmosRestClient = (
   config: CosmosRestClientConfig = {},
 ) => {

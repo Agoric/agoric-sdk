@@ -13,8 +13,10 @@ import { isPrimitive } from '@endo/pass-style';
 import {
   fetchEnvNetworkConfig,
   getInvocationUpdate,
+  makeTxSequencer,
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
+  makeSequencingSmartWallet,
   reflectWalletStore,
 } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
@@ -25,7 +27,6 @@ import {
   withDeferredCleanup,
 } from '@agoric/internal';
 import { UsdcTokenIds } from '@agoric/portfolio-api/src/constants.js';
-import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 
 import { loadConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
@@ -44,17 +45,7 @@ import type { MakeAbortController } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
 import { makeSQLiteKeyValueStore } from './kv-store.ts';
-import { makeSequenceManager } from './sequence-manager.ts';
-import { makeSmartWalletWithSequence } from './smart-wallet-with-sequence.ts';
 
-export type SmartWalletKitWithSequence = Omit<
-  SigningSmartWalletKit,
-  'executeOffer'
-> & {
-  executeOffer: (
-    offer: OfferSpec,
-  ) => Promise<Awaited<ReturnType<SigningSmartWalletKit['sendBridgeAction']>>>;
-};
 
 const assertChainId = async (
   rpc: CosmosRPCClient,
@@ -77,7 +68,7 @@ export type SimplePowers = {
 };
 
 export const main = async (
-  args: string[],
+  cliArgs: string[],
   {
     env = process.env,
     fetch = globalThis.fetch,
@@ -90,8 +81,8 @@ export const main = async (
     WebSocket = ws.WebSocket,
   } = {},
 ) => {
-  const dashIdx = [...args, '--'].indexOf('--');
-  const maybeOpts = args.slice(0, dashIdx);
+  const dashIdx = [...cliArgs, '--'].indexOf('--');
+  const maybeOpts = cliArgs.slice(0, dashIdx);
   const isDryRun = maybeOpts.includes('--dry-run');
   const isVerbose = maybeOpts.includes('--verbose');
 
@@ -202,30 +193,27 @@ export const main = async (
     },
   });
 
-  const sequenceManager = await makeSequenceManager(
-    {
-      cosmosRest,
-      log: (...args) => console.log('[SequenceManager]:', ...args),
-    },
-    { chainKey: 'agoric', address: signingSmartWalletKit.address },
-  );
-
-  const smartWalletWithSequence = makeSmartWalletWithSequence(
-    {
-      signingSmartWalletKit,
-      sequenceManager,
-      log: (...args) => console.log('[SmartWalletWithSequence]:', ...args),
-    },
-    { chainId: networkConfig.chainName },
-  );
-
-  // create a wrapper that uses SmartWalletWithSequence methods
-  const smartWalletKitWithSequence: SmartWalletKitWithSequence = {
-    ...signingSmartWalletKit,
-    // override the three main methods to use SmartWalletWithSequence
-    sendBridgeAction: smartWalletWithSequence.sendBridgeAction,
-    executeOffer: smartWalletWithSequence.executeOffer,
+  const fetchAccount = async () => {
+    const response = await cosmosRest.getAccountSequence('agoric', signingSmartWalletKit.address);
+    const { account } = response as any;
+    return {
+      address: signingSmartWalletKit.address,
+      accountNumber: BigInt(account.account_number),
+      sequence: BigInt(account.sequence),
+    };
   };
+
+  const txSequencer = await makeTxSequencer(fetchAccount, {
+    log: (...args) => console.log('[TxSequencer]:', ...args),
+  });
+
+  const smartWalletKitWithSequence = makeSequencingSmartWallet(
+    signingSmartWalletKit,
+    txSequencer,
+    {
+      log: (...args) => console.log('[SequencingSmartWallet]:', ...args),
+    },
+  );
 
   const spectrum = new SpectrumClient(simplePowers, {
     baseUrl: config.spectrum.apiUrl,

@@ -13,7 +13,6 @@ import { chain as agoricTest } from 'chain-registry/testnet/agoricdevnet/index.j
 import { Fail } from '@endo/errors';
 
 import type { ClusterName } from '@agoric/internal';
-import type { AccountResponse } from './sequence-manager.ts';
 
 interface CosmosRestClientConfig {
   clusterName: ClusterName;
@@ -213,10 +212,7 @@ export class CosmosRestClient {
     );
   }
 
-  async getAccountSequence(
-    chainKey: string,
-    address: string,
-  ): Promise<AccountResponse> {
+  async getAccountSequence(chainKey: string, address: string) {
     const chainConfig = this.chainConfigs.get(chainKey);
     if (!chainConfig) {
       throw new Error(`Chain configuration not found for: ${chainKey}`);
