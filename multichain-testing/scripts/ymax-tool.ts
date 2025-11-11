@@ -95,6 +95,7 @@ const parseToolArgs = (argv: string[]) =>
       terminate: { type: 'string' },
       buildEthOverrides: { type: 'boolean' },
       installAndStart: { type: 'string' },
+      upgrade: { type: 'string' },
       invitePlanner: { type: 'string' },
       inviteResolver: { type: 'string' },
       checkStorage: { type: 'boolean' },
@@ -252,7 +253,7 @@ const agoricNamesForChainInfo = (vsk: VstorageKit) => {
     const out: [string, unknown][] = [];
     const children = await vstorage.keys(`published.agoricNames.${kind}`);
     for (const child of children) {
-      console.debug('readPublished', kind, child);
+      // console.error('readPublished', kind, child);
       const value = await readPublished(`agoricNames.${kind}.${child}`);
       // console.debug(kind, child, value);
       if (kind === 'chain') {
@@ -370,10 +371,6 @@ const overridesForEthChainInfo = async (
     chainInfo,
     gmpAddresses,
   });
-  console.log(
-    'privateArgsOverrides',
-    JSON.stringify(privateArgsOverrides, null, 2),
-  );
   return privateArgsOverrides;
 };
 
@@ -441,10 +438,11 @@ const main = async (
     MNEMONIC,
   );
   trace('address', sig.address);
+  const fresh = () => new Date(now()).toISOString();
   const walletStore = reflectWalletStore(sig, {
     setTimeout,
     log: trace,
-    fresh: () => new Date(now()).toISOString(),
+    fresh,
   });
 
   if (values.redeem) {
@@ -453,6 +451,22 @@ const main = async (
     const { [contract]: instance } = fromEntries(
       await walletKit.readPublished('agoricNames.instance'),
     );
+
+    // XXX generalize to --no-save or some such?
+    if (description === 'resolver') {
+      const id = `redeem-${fresh()}`;
+      await sig.sendBridgeAction({
+        method: 'executeOffer',
+        offer: {
+          id,
+          invitationSpec: { source: 'purse', description, instance },
+          proposal: {},
+        },
+      });
+      await sig.pollOffer(sig.address, id, undefined, true);
+      return;
+    }
+
     const result = await walletStore.saveOfferResult(
       { instance, description },
       description.replace(/^deliver /, ''),
@@ -512,6 +526,15 @@ const main = async (
       issuers: { USDC, BLD, Fee: BLD, Access: upoc26.issuer },
       privateArgsOverrides,
     });
+    return;
+  }
+
+  if (values.upgrade) {
+    const { upgrade: bundleId } = values;
+
+    const privateArgsOverrides = JSON.parse(await readText(stdin));
+
+    await yc.upgrade({ bundleId, privateArgsOverrides });
     return;
   }
 
