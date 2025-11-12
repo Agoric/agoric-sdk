@@ -145,12 +145,10 @@ sequenceDiagram
   Note over YP: think and generate steps
   YP ->> portfolio: send steps that include X BLD for GMP(agoric, arbitrum) and Y ARB for GMP(arbitrum, agoric)
   Note over portfolio, acctArb: Make Account if Needed
-  portfolio ->> LCAorch: LCAgas pays X BLD (#11781)
-  LCAorch ->> AX: makeAccount("Y ARB" for postage)
+  portfolio ->> LCAorch: LCAgas pays X BLD
+  LCAorch ->> AX: makeAccount
   AX ->> factory: invoke makeAccount
   factory ->> acctArb: makeAccount
-  factory ->> AX: return acctArb.accountID, Y ARB for postage
-  AX ->> LCAorch: return acctArb.accountID
 
   Note over LCAorch, acctArb: CCTP Out
   LCAin ->> LCAorch: $5k
@@ -160,7 +158,9 @@ sequenceDiagram
   icaN ->> LCAorch: ack
   icaN -->> acctArb: $5ku
   acctArb -->> Res: observe $5k arriving
-  Res ->> portfolio: ack
+  Res ->> portfolio: ack $5k arriving
+  acctArb -->> Res: observe makeAccount (??? discuss)
+  Res ->> portfolio: ack makeAccount
 
   Note over LCAorch, aavePos: Supply to Aave
   LCAorch ->> AX: supply $5k acctArb
