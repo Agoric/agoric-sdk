@@ -143,7 +143,7 @@ function getOrCreatePeer(state, peer) {
 }
 
 /**
- * @param {ReturnType<exportMailboxData>} data
+ * @param {ReturnType<typeof exportMailboxData>} data
  * @returns {Map<string, Mailbox>}
  */
 export function makeEphemeralMailboxStorage(data) {

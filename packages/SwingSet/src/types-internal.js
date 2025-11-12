@@ -8,6 +8,8 @@ export {};
  * @import {Message} from './types-external.js';
  * @import {SnapStore} from './types-external.js';
  * @import {SnapshotResult} from './types-external.js';
+ * @import {LimitedConsole} from '@agoric/internal/src/js-utils.js';
+ * @import {LiveSlotsOptions} from '@agoric/swingset-liveslots';
  */
 
 /**
@@ -121,7 +123,7 @@ export {};
  *   enableDisavow: boolean,
  *   useTranscript: boolean,
  *   name: string,
- *   sourcedConsole: import('@agoric/internal/src/js-utils.js').LimitedConsole,
+ *   sourcedConsole: LimitedConsole,
  *   enableSetup: boolean,
  *   setup?: unknown,
  *   retainSyscall?: boolean
@@ -138,7 +140,7 @@ export {};
  * @typedef { { createFromBundle: (vatID: string,
  *                                 bundle: Bundle,
  *                                 managerOptions: ManagerOptions,
- *                                 liveSlotsOptions: import('@agoric/swingset-liveslots').LiveSlotsOptions,
+ *                                 liveSlotsOptions: LiveSlotsOptions,
  *                                ) => Promise<VatManager>
  *            } } VatManagerFactory
  *

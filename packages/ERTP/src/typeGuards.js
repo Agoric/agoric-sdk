@@ -5,6 +5,7 @@ import { M, matches, getInterfaceGuardPayload } from '@endo/patterns';
  * @import {AmountValue, Ratio} from './types.js'
  * @import {TypedPattern} from '@agoric/internal'
  * @import {CopyBag, CopySet, Pattern} from '@endo/patterns';
+ * @import {NatValue} from './types.js';
  */
 
 export const BrandShape = M.remotable('Brand');
@@ -100,7 +101,7 @@ harden(RatioShape);
  * Returns true if value is a Nat bigint.
  *
  * @param {AmountValue} value
- * @returns {value is import('./types.js').NatValue}
+ * @returns {value is NatValue}
  */
 export const isNatValue = value => matches(value, NatValueShape);
 harden(isNatValue);

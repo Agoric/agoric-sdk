@@ -5,6 +5,11 @@ import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeManagerKit } from './manager-helper.js';
 
+/**
+ * @import {VatDeliveryObject} from '@agoric/swingset-liveslots';
+ * @import {VatDeliveryResult} from '@agoric/swingset-liveslots';
+ */
+
 // start a "Worker" (Node's tool for starting new threads) and load a bundle
 // into it
 
@@ -59,8 +64,8 @@ export function makeNodeSubprocessFactory(tools) {
     let waiting;
 
     /**
-     * @param {import('@agoric/swingset-liveslots').VatDeliveryObject} delivery
-     * @returns {Promise<import('@agoric/swingset-liveslots').VatDeliveryResult>}
+     * @param {VatDeliveryObject} delivery
+     * @returns {Promise<VatDeliveryResult>}
      */
     function deliverToWorker(delivery) {
       parentLog(`sending delivery`, delivery);

@@ -20,6 +20,9 @@ import { UNPUBLISHED_RESULT } from './offers.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {PaymentPKeywordRecord, Proposal, UserSeat, ZoeService} from '@agoric/zoe';
+ * @import {InvitationMakers} from './types.js';
+ * @import {PublicSubscribers} from './types.js';
+ * @import {UpgradeDisconnection} from '@agoric/internal/src/upgrade-api.js';
  */
 
 /**
@@ -165,8 +168,8 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
         /**
          * @param {string} offerId
          * @param {Amount<'set'>} invitationAmount
-         * @param {import('./types.js').InvitationMakers} invitationMakers
-         * @param {import('./types.js').PublicSubscribers} publicSubscribers
+         * @param {InvitationMakers} invitationMakers
+         * @param {PublicSubscribers} publicSubscribers
          */
         onNewContinuingOffer(
           offerId,
@@ -256,8 +259,7 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
          * If promise disconnected, watch again. Or if there's an Error, handle
          * it.
          *
-         * @param {Error
-         *   | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
+         * @param {Error | UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
         onRejected(reason, seat) {
@@ -293,8 +295,7 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
          * If promise disconnected, watch again. Or if there's an Error, handle
          * it.
          *
-         * @param {Error
-         *   | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
+         * @param {Error | UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
         onRejected(reason, seat) {
@@ -323,8 +324,7 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
          * and getPayouts() settle the same (they await the same promise and
          * then synchronously return a local value).
          *
-         * @param {Error
-         *   | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
+         * @param {Error | UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
         onRejected(reason, seat) {

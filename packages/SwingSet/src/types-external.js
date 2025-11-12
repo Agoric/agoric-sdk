@@ -8,6 +8,16 @@ export {};
  * @import {LimitedConsole} from '@agoric/internal/src/js-utils.js';
  * @import {SlogProps} from './controller/controller.js';
  * @import {StartDuration} from './kernel/slogger.js';
+ * @import {CapData} from '@endo/marshal';
+ * @import {Message} from '@agoric/swingset-liveslots';
+ * @import {VatDeliveryObject} from '@agoric/swingset-liveslots';
+ * @import {VatDeliveryResult} from '@agoric/swingset-liveslots';
+ * @import {VatSyscallObject} from '@agoric/swingset-liveslots';
+ * @import {VatSyscallResult} from '@agoric/swingset-liveslots';
+ * @import {makeVatKeeper} from './kernel/state/vatKeeper.js';
+ * @import {KernelKeeper} from './kernel/state/kernelKeeper.js';
+ * @import {xsnap} from '@agoric/xsnap';
+ * @import {KVStore} from '@agoric/swing-store';
  */
 
 /* This file defines types that part of the external API of swingset. That
@@ -22,7 +32,7 @@ export {};
 /** @typedef {<T>(target: Device<T>) => T} DProxy (approximately) */
 
 /**
- * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
+ * @typedef {CapData<string>} SwingSetCapData
  */
 
 // TODO move Bundle types into Endo
@@ -80,14 +90,14 @@ export {};
  */
 
 /**
- * @typedef { import('@agoric/swingset-liveslots').Message } Message
+ * @typedef { Message } Message
  *
  * @typedef { 'none' | 'ignore' | 'logAlways' | 'logFailure' | 'panic' } ResolutionPolicy
  *
- * @typedef { import('@agoric/swingset-liveslots').VatDeliveryObject } VatDeliveryObject
- * @typedef { import('@agoric/swingset-liveslots').VatDeliveryResult } VatDeliveryResult
- * @typedef { import('@agoric/swingset-liveslots').VatSyscallObject } VatSyscallObject
- * @typedef { import('@agoric/swingset-liveslots').VatSyscallResult } VatSyscallResult
+ * @typedef { VatDeliveryObject } VatDeliveryObject
+ * @typedef { VatDeliveryResult } VatDeliveryResult
+ * @typedef { VatSyscallObject } VatSyscallObject
+ * @typedef { VatSyscallResult } VatSyscallResult
  *
  * @typedef { [tag: 'message', target: string, msg: Message]} KernelDeliveryMessage
  * @typedef { [kpid: string, kp: { state: string, data: SwingSetCapData }] } KernelDeliveryOneNotify
@@ -133,15 +143,15 @@ export {};
  * @property {string} 0 Kernel slot designating the device node that is the target of
  * the invocation
  * @property {string} 1 A string naming the method to be invoked
- * @property {import('@endo/marshal').CapData<unknown>} 2 A capdata object containing the arguments to the invocation
+ * @property {CapData<unknown>} 2 A capdata object containing the arguments to the invocation
  * @typedef {[tag: 'ok', data: SwingSetCapData]} DeviceInvocationResultOk
  * @typedef {[tag: 'error', problem: string]} DeviceInvocationResultError
  * @typedef { DeviceInvocationResultOk | DeviceInvocationResultError } DeviceInvocationResult
  *
  * @typedef { { transcriptCount: number } } VatStats
- * @typedef { ReturnType<typeof import('./kernel/state/vatKeeper.js').makeVatKeeper> } VatKeeper
- * @typedef { import('./kernel/state/kernelKeeper.js').KernelKeeper } KernelKeeper
- * @typedef { Awaited<ReturnType<typeof import('@agoric/xsnap').xsnap>> } XSnap
+ * @typedef { ReturnType<typeof makeVatKeeper> } VatKeeper
+ * @typedef { KernelKeeper } KernelKeeper
+ * @typedef { Awaited<ReturnType<typeof xsnap>> } XSnap
  * @typedef { (dr: VatDeliveryResult) => void } SlogFinishDelivery
  * @typedef { (ksr: KernelSyscallResult, vsr: VatSyscallResult) => void } SlogFinishSyscall
  * @typedef { { write: (obj: SlogProps) => void,
@@ -230,7 +240,7 @@ export {};
  * @typedef {BundleName | BundleRef | {bundleID: BundleID}} SourceOfBundle
  */
 /**
- * @typedef { import('@agoric/swing-store').KVStore } KVStore
+ * @typedef { KVStore } KVStore
  * @typedef { import('@agoric/swing-store').SnapStore } SnapStore
  * @typedef { import('@agoric/swing-store').SnapshotResult } SnapshotResult
  * @typedef { import('@agoric/swing-store').TranscriptStore } TranscriptStore

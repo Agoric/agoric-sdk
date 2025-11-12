@@ -4,6 +4,10 @@ import { prepareExo, prepareExoClass } from '@agoric/vat-data';
 import { swapExact } from '../contractSupport/index.js';
 import { isAfterDeadlineExitRule, OfferHandlerI } from '../typeGuards.js';
 
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ */
+
 const sellSeatExpiredMsg = 'The covered call option is expired.';
 
 /**
@@ -19,7 +23,7 @@ const sellSeatExpiredMsg = 'The covered call option is expired.';
  *
  * @param {ZCF} zcf
  * @param {unknown} _privateArgs
- * @param {import('@agoric/vat-data').Baggage} instanceBaggage
+ * @param {Baggage} instanceBaggage
  */
 const start = async (zcf, _privateArgs, instanceBaggage) => {
   // for use by upgraded versions.

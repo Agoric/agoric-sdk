@@ -11,7 +11,10 @@ import {
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 import { Stake, Stable } from '@agoric/internal/src/tokens.js';
 
-/** @import {FeeMintAccess, Installation} from '@agoric/zoe' */
+/**
+ * @import {FeeMintAccess, Installation} from '@agoric/zoe'
+ * @import {EconomyBootstrapPowers} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+ */
 
 const { multiply, floorDivide } = natSafeMath;
 const { entries, fromEntries, keys, values } = Object;
@@ -465,7 +468,7 @@ export const poolRates = (issuerName, record, kits, central) => {
 };
 
 /**
- * @param {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers & {
- *     consume: { mints };
- *   }} powers
+ * @param {EconomyBootstrapPowers & {
+ *   consume: { mints };
+ * }} powers
  */

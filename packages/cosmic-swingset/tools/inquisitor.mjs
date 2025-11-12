@@ -65,7 +65,11 @@ import { makeCosmicSwingsetTestKit } from './test-kit.js';
 /**
  * @import {Database} from 'better-sqlite3';
  * @import {ManagerType, SwingSetConfig} from '@agoric/swingset-vat';
- * @import {KVStore} from '../src/helpers/bufferedStorage.js';
+ * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js';
+ * @import {CoreEvalSDKType} from '@agoric/cosmic-proto/swingset/swingset.js';
+ * @import {makeTranscriptStore} from '@agoric/swing-store';
+ * @import {makeSnapStore} from '@agoric/swing-store';
+ * @import {SnapshotResult} from '@agoric/swing-store';
  */
 
 const useColors = process.stdout?.hasColors?.();
@@ -359,14 +363,14 @@ export const makeHelpers = ({ db, EV }) => {
    * @param {string} fnText must evaluate to a function that will be invoked in
    *   a core eval compartment with a "powers" argument as attenuated by
    *   `permits` (with no attenuation by default).
-   * @param {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifestPermit} [permits]
+   * @param {BootstrapManifestPermit} [permits]
    */
   const runCoreEval = async (fnText, permits = true) => {
     // Fail noisily if fnText does not evaluate to a function.
     // This must be refactored if there is ever a need for such input.
     const fn = new Compartment().evaluate(fnText);
     typeof fn === 'function' || Fail`text must evaluate to a function`;
-    /** @type {import('@agoric/cosmic-proto/swingset/swingset.js').CoreEvalSDKType} */
+    /** @type {CoreEvalSDKType} */
     const coreEvalDesc = {
       json_permits: JSON.stringify(permits),
       js_code: fnText,
@@ -528,7 +532,7 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
     wrapTranscriptStore: transcriptStore => {
       const wrapHelpers = makeWrapHelpers();
       const pendingItemsByVat = new Map();
-      /** @type {ReturnType<import('@agoric/swing-store').makeTranscriptStore>} */
+      /** @type {ReturnType<makeTranscriptStore>} */
       const transcriptStoreOverride = {
         ...transcriptStore,
         addItem: (vatID, item) => {
@@ -595,7 +599,7 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
     },
     wrapSnapStore: snapStore => {
       const wrapHelpers = makeWrapHelpers();
-      /** @type {ReturnType<import('@agoric/swing-store').makeSnapStore>} */
+      /** @type {ReturnType<makeSnapStore>} */
       const snapStoreOverride = {
         ...snapStore,
         saveSnapshot: async (vatID, snapPos, dataStream) => {
@@ -610,7 +614,7 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
             recordCall(...entryPrefix, `<error after ${size} bytes>`);
             throw err;
           }
-          return /** @type {import('@agoric/swing-store').SnapshotResult} */ (
+          return /** @type {SnapshotResult} */ (
             harden({ uncompressedSize: size })
           );
         },
@@ -650,7 +654,7 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
         !bundleStore.hasBundle(bundleID) ||
           Fail`base bundleStore already has ${bundleID}`;
       };
-      /** @type {ReturnType<import('@agoric/swing-store').makeBundleStore>} */
+      /** @type {ReturnType<makeBundleStore>} */
       const bundleStoreOverride = {
         ...bundleStore,
         // writes

@@ -6,6 +6,7 @@ import { PositionShape, QuestionHandleShape } from './typeGuards.js';
 /**
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, CompletedBallet, Position} from './types.js';
+ * @import {Baggage} from '@agoric/vat-data';
  */
 
 const VoterI = M.interface('voter', {
@@ -24,7 +25,7 @@ const InvitationMakerI = M.interface('invitationMaker', {
 /**
  * Make a kit suitable for returning to a voter invited to a committee.
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @param {object} powers
  * @param {ZCF} powers.zcf
  * @param {(questionHandle: Handle<'Question'>, voterHandle: Handle<'Voter'>, chosenPositions: Position[], weight: bigint) => ERef<CompletedBallet>} powers.submitVote

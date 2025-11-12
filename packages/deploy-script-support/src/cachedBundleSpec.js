@@ -1,13 +1,19 @@
 import { Fail } from '@endo/errors';
 
 /**
+ * @import {promises} from 'fs';
+ * @import {resolve} from 'path';
+ * @import {BundleSourceResult} from '@endo/bundle-source';
+ */
+
+/**
  * @param {string} cacheDir
- * @param {{ now: typeof Date.now, fs: import('fs').promises, pathResolve: typeof import('path').resolve }} param1
+ * @param {{ now: typeof Date.now, fs: promises, pathResolve: typeof resolve }} param1
  */
 export const makeCacheAndGetBundleSpec =
   (cacheDir, { now, fs, pathResolve }) =>
   /**
-   * @param {Promise<import('@endo/bundle-source').BundleSourceResult<'endoZipBase64'>>} bundleP
+   * @param {Promise<BundleSourceResult<'endoZipBase64'>>} bundleP
    */
   async bundleP => {
     const bundle = await bundleP;

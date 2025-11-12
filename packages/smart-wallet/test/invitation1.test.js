@@ -19,9 +19,16 @@ import { prepareSmartWallet } from '../src/smartWallet.js';
 
 /**
  * @import {InvitationDetails, Proposal} from '@agoric/zoe';
+ * @import {TestFn} from 'ava';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {prepare} from '../src/walletFactory.js';
+ * @import {BrandDescriptor} from '../src/smartWallet.js';
+ * @import {BrandDescriptorRegistry} from '../src/smartWallet.js';
+ * @import {Bank} from '@agoric/vats/src/vat-bank.js';
+ * @import {BridgeAction} from '../src/smartWallet.js';
  */
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
+/** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -37,7 +44,7 @@ const mockBootstrapPowers = async (
   log,
   spaceNames = ['installation', 'instance', 'issuer', 'brand'],
 ) => {
-  /** @type {import('@agoric/vat-data').Baggage} */
+  /** @type {Baggage} */
   const baggage = makeScalarMapStore('bootstrap');
   const zone = makeDurableZone(baggage);
   const { produce, consume } = makePromiseSpace();
@@ -79,9 +86,7 @@ const makeTestContext = async t => {
   const startAnyContract = async () => {
     const bundle = await bundleCache.load(asset.anyContract, 'automaticRefund');
     /**
-     * @type {Promise<
-     *   Installation<import('../src/walletFactory.js').prepare>
-     * >}
+     * @type {Promise<Installation<typeof prepare>>}
      */
     const installation = E(zoe).install(bundle);
     return E(zoe).startInstance(installation);
@@ -107,7 +112,7 @@ const makeTestContext = async t => {
     const byName = Object.fromEntries(ie);
     const descriptors = await Promise.all(
       be.map(([name, b]) => {
-        /** @type {Promise<import('../src/smartWallet.js').BrandDescriptor>} */
+        /** @type {Promise<BrandDescriptor>} */
         const d = allValues({
           brand: b,
           displayInfo: E(b).getDisplayInfo(),
@@ -118,19 +123,16 @@ const makeTestContext = async t => {
       }),
     );
     /**
-     * @type {MapStore<
-     *   Brand,
-     *   import('../src/smartWallet.js').BrandDescriptor
-     * >}
+     * @type {MapStore<Brand, BrandDescriptor>}
      */
     const store = makeScalarMapStore('registry');
     store.addAll(harden(descriptors.map(d => [d.brand, d])));
     return store;
   };
-  /** @type {import('../src/smartWallet.js').BrandDescriptorRegistry} */
+  /** @type {BrandDescriptorRegistry} */
   const registry = await makeRegistry();
 
-  /** @type {import('@agoric/vat-data').Baggage} */
+  /** @type {Baggage} */
   const swBaggage = makeScalarMapStore('smart-wallet');
 
   const { brand: brandSpace, issuer: issuerSpace } = bootKit.powers;
@@ -171,7 +173,7 @@ test.serial('handle failure to create invitation', async t => {
 
   const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
 
-  /** @type {() => import('@agoric/vats/src/vat-bank.js').Bank} */
+  /** @type {() => Bank} */
   const makeBank = () =>
     Far('Bank', {
       getPurse: async brand => {
@@ -212,7 +214,7 @@ test.serial('handle failure to create invitation', async t => {
   const { anyInstance } = t.context;
   const In = AmountMath.make(spendable.brand, 5n);
 
-  /** @type {import('../src/smartWallet.js').BridgeAction} */
+  /** @type {BridgeAction} */
   const spec1 = {
     method: 'executeOffer',
     offer: {
@@ -242,7 +244,7 @@ test.serial('recover withdrawn payments', async t => {
   const { powers, shared } = t.context;
   const { thePurse, theWallet } = shared;
 
-  /** @type {import('../src/smartWallet.js').BridgeAction} */
+  /** @type {BridgeAction} */
   const spec1 = {
     method: 'tryExitOffer',
     offerId: 1,

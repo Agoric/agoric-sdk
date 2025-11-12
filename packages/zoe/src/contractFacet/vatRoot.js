@@ -15,12 +15,13 @@ import { makeZCFZygote } from './zcfZygote.js';
 
 /**
  * @import {ZoeService} from '@agoric/zoe';
+ * @import {Baggage} from '@agoric/vat-data';
  */
 
 /**
  * @param {VatPowers & { testJigSetter: ( {zcf}: {zcf: ZCF} ) => void }} powers
  * @param {{contractBundleCap: BundleCap, zoeService: ZoeService, invitationIssuer: Issuer<'set'>, privateArgs?: any}} vatParameters
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export async function buildRootObject(powers, vatParameters, baggage) {
   // Currently, there is only one function, `executeContract` called

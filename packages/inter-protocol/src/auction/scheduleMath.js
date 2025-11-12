@@ -5,7 +5,11 @@ import { TimeMath } from '@agoric/time';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 
-/** @import {TimestampRecord} from '@agoric/time'; */
+/**
+ * @import {TimestampRecord} from '@agoric/time';
+ * @import {AuctionParamManager} from './params.js';
+ * @import {Schedule} from './scheduler.js';
+ */
 
 const { subtract, multiply, floorDivide } = natSafeMath;
 
@@ -36,9 +40,9 @@ const subtract1 = relTime =>
  * selling early (e.g. reaching their target debt to raise or selling all of
  * their collateral).
  *
- * @param {Awaited<import('./params.js').AuctionParamManager>} params
+ * @param {Awaited<AuctionParamManager>} params
  * @param {TimestampRecord} baseTime
- * @returns {import('./scheduler.js').Schedule}
+ * @returns {Schedule}
  */
 export const computeRoundTiming = (params, baseTime) => {
   const freq = params.getStartFrequency();
@@ -96,7 +100,7 @@ export const computeRoundTiming = (params, baseTime) => {
   const endTime = TimeMath.addAbsRel(startTime, actualDuration);
   const lockTime = TimeMath.subtractAbsRel(startTime, lockPeriod);
 
-  /** @type {import('./scheduler.js').Schedule} */
+  /** @type {Schedule} */
   const next = {
     startTime,
     endTime,
@@ -116,8 +120,8 @@ harden(computeRoundTiming);
  * started, then it'll be nextSchedule.startTime. Otherwise, it's the start of
  * the step following the current step.
  *
- * @param {import('./scheduler.js').Schedule | null} liveSchedule
- * @param {import('./scheduler.js').Schedule | null} nextSchedule
+ * @param {Schedule | null} liveSchedule
+ * @param {Schedule | null} nextSchedule
  * @param {Timestamp} now
  * @returns {Timestamp | null}
  */
@@ -147,7 +151,7 @@ harden(nextDescendingStepTime);
 
 /**
  * @param {Timestamp} time
- * @param {import('./scheduler.js').Schedule} schedule
+ * @param {Schedule} schedule
  * @returns {'before' | 'during' | 'endExactly' | 'after'}
  */
 export const timeVsSchedule = (time, schedule) => {

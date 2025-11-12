@@ -1,8 +1,13 @@
 import * as g from './greeter.js';
 
 /**
- * @param {import('ava').Assertions} t
- * @param {import('../src/index.js').Zone} rootZone
+ * @import {Assertions} from 'ava';
+ * @import {Zone} from '../src/index.js';
+ */
+
+/**
+ * @param {Assertions} t
+ * @param {Zone} rootZone
  */
 export const testMakeOnce = (t, rootZone) => {
   const subZone = rootZone.subZone('sub');
@@ -52,7 +57,7 @@ const alreadyExceptionSpec = {
 
 /**
  * @template T
- * @param {import('ava').Assertions} t
+ * @param {Assertions} t
  * @param {() => T} fn
  * @param {*} spec
  * @returns {T}
@@ -64,8 +69,8 @@ const secondThrows = (t, fn, spec = alreadyExceptionSpec) => {
 };
 
 /**
- * @param {import('ava').Assertions} t
- * @param {import('../src/index.js').Zone} rootZone
+ * @param {Assertions} t
+ * @param {Zone} rootZone
  */
 export const testFirstZoneIncarnation = (t, rootZone) => {
   const subZone = secondThrows(t, () => rootZone.subZone('sub'));
@@ -93,8 +98,8 @@ export const testFirstZoneIncarnation = (t, rootZone) => {
 };
 
 /**
- * @param {import('ava').Assertions} t
- * @param {import('../src/index.js').Zone} rootZone
+ * @param {Assertions} t
+ * @param {Zone} rootZone
  */
 export const testSecondZoneIncarnation = (t, rootZone) => {
   const subZone = secondThrows(t, () => rootZone.subZone('sub'));

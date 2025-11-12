@@ -12,6 +12,10 @@ import { assertComplete } from './assertComplete.js';
 import { validateArtifactMode } from './internal.js';
 
 /**
+ * @import {ArtifactMode} from './internal.js';
+ */
+
+/**
  * @template T
  * @typedef  { Iterable<T> | AsyncIterable<T> } AnyIterable
  */
@@ -79,7 +83,7 @@ import { validateArtifactMode } from './internal.js';
 
 /**
  * @typedef { object } ExportSwingStoreOptions
- * @property { import('./internal.js').ArtifactMode } [artifactMode]  What artifacts should/must the exporter provide?
+ * @property { ArtifactMode } [artifactMode]  What artifacts should/must the exporter provide?
  */
 
 /**

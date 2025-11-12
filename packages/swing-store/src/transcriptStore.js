@@ -374,7 +374,7 @@ export function makeTranscriptStore(
    * transcript.${vatID}.current export record are responsibility of the caller.
    *
    * @param {string} vatID
-   * @param {ReturnType<getCurrentSpanBounds>} bounds
+   * @param {ReturnType<typeof getCurrentSpanBounds>} bounds
    * @returns {{deferredTask: Promise<void>}}
    */
   function closeSpan(vatID, bounds) {

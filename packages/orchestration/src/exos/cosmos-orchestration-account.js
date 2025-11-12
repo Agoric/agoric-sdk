@@ -150,6 +150,7 @@ const MsgTransferResponse = CodecHelper(MsgTransferResponseType);
  * @import {Matcher} from '@endo/patterns';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  * @import {SendOptions} from '@agoric/network';
+ * @import {WeakMapStore} from '@agoric/store';
  */
 
 const trace = makeTracer('CosmosOrchAccount');
@@ -309,7 +310,7 @@ export const prepareCosmosOrchestrationAccountKit = (
    * Use a WeakMapStore to memoize some additional details about the ICA
    * Account.
    *
-   * @type {import('@agoric/store').WeakMapStore<
+   * @type {WeakMapStore<
    *   IcaAccount,
    *   {
    *     agoric: ChainInfo<'cosmos'>;

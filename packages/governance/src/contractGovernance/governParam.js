@@ -14,6 +14,8 @@ import { ParamChangesQuestionDetailsShape } from '../typeGuards.js';
 /**
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {ParamValue, ParamChangePositions, QuestionSpec, ChangeParamsPosition, ParamChangeIssue, ParamGovernor, ParamManagerRetriever, PoserFacet, VoteOnParamChanges} from '../types.js';
+ * @import {TimerService} from '@agoric/time';
+ * @import {Passable} from '@endo/marshal';
  */
 
 /**
@@ -58,7 +60,7 @@ const assertBallotConcernsParam = (paramSpec, questionSpec) => {
 /**
  * @param {() => ERef<ParamManagerRetriever>} paramManagerRetrieverAccessor
  * @param {Instance} contractInstance
- * @param {import('@agoric/time').TimerService} timer
+ * @param {TimerService} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @returns {ParamGovernor}
  */
@@ -79,7 +81,7 @@ const setupParamGovernance = (
   ) => {
     const paramManagerRetriever = paramManagerRetrieverAccessor();
     const paramMgr = await E(paramManagerRetriever).get(paramSpec.paramPath);
-    /** @type {import('@endo/marshal').Passable} */
+    /** @type {Passable} */
     const changePs = {};
     for (const name of Object.keys(paramSpec.changes)) {
       const proposedValue = E(paramMgr).getVisibleValue(

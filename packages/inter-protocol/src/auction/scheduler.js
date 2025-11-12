@@ -12,6 +12,14 @@ import {
   timeVsSchedule,
 } from './scheduleMath.js';
 
+/**
+ * @import {TimerService} from '@agoric/time';
+ * @import {AuctionParamManager} from './params.js';
+ * @import {TimerBrand} from '@agoric/time';
+ * @import {Recorder} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {TimestampRecord} from '@agoric/time';
+ */
+
 const trace = makeTracer('SCHED', true);
 
 // If the startAuction wakeup is no more than 5 minutes late, go ahead with it.
@@ -70,10 +78,10 @@ const nominalStartTime = nextSchedule =>
 
 /**
  * @param {AuctionDriver} auctionDriver
- * @param {import('@agoric/time').TimerService} timer
- * @param {Awaited<import('./params.js').AuctionParamManager>} params
- * @param {import('@agoric/time').TimerBrand} timerBrand
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<ScheduleNotification>} scheduleRecorder
+ * @param {TimerService} timer
+ * @param {Awaited<AuctionParamManager>} params
+ * @param {TimerBrand} timerBrand
+ * @param {Recorder<ScheduleNotification>} scheduleRecorder
  * @param {StoredSubscription<GovernanceSubscriptionState>} paramUpdateSubscription
  */
 export const makeScheduler = async (
@@ -360,8 +368,8 @@ export const makeScheduler = async (
 
 /**
  * @typedef {object} Schedule
- * @property {import('@agoric/time').TimestampRecord} startTime
- * @property {import('@agoric/time').TimestampRecord} endTime
+ * @property {TimestampRecord} startTime
+ * @property {TimestampRecord} endTime
  * @property {NatValue} steps
  * @property {NatValue} endRate
  * @property {RelativeTime} startDelay

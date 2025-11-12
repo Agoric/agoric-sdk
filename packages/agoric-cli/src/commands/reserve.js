@@ -10,10 +10,15 @@ import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Command } from 'commander';
 import { outputActionAndHint } from '../lib/wallet.js';
 
+/**
+ * @import {Logger} from 'anylogger';
+ * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
+ */
+
 const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 /**
- * @param {import('anylogger').Logger} _logger
+ * @param {Logger} _logger
  * @param {*} io
  */
 export const makeReserveCommand = (_logger, io = {}) => {
@@ -78,7 +83,7 @@ export const makeReserveCommand = (_logger, io = {}) => {
 
       const feesToBurn = { brand: agoricNames.brand.IST, value: opts.value };
 
-      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
+      /** @type {OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {

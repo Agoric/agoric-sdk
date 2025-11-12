@@ -7,13 +7,16 @@ import { keyEQ } from '@agoric/store';
 
 /**
  * @import {CommitteeElectoratePublic, Issue} from '../../../src/types.js';
+ * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {start} from '@agoric/governance/src/committee.js';
+ * @import {BuildRootObjectForTestVat} from '@agoric/swingset-vat/src/kernel/vat-loader/types.js';
  */
 
 /**
  * @param {(msg: any)=> void} log
  * @param {Issue} issue
  * @param {ERef<CommitteeElectoratePublic>} electoratePublicFacet
- * @param {Record<string, Instance>} instances
+ * @param {Record<string, Instance<unknown>>} instances
  */
 const verify = async (log, issue, electoratePublicFacet, instances) => {
   const questionHandles = await E(electoratePublicFacet).getOpenQuestions();
@@ -44,7 +47,7 @@ const verify = async (log, issue, electoratePublicFacet, instances) => {
 const build = async (log, zoe) => {
   return Far('voter', {
     createVoter: async (name, invitation, choice) => {
-      /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<typeof import('@agoric/governance/src/committee.js').start>} */
+      /** @type {Instance<typeof start>} */
       const electorateInstance = await E(zoe).getInstance(invitation);
       const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);
       const seat = E(zoe).offer(invitation);
@@ -105,7 +108,7 @@ const build = async (log, zoe) => {
   });
 };
 
-/** @type {import('@agoric/swingset-vat/src/kernel/vat-loader/types.js').BuildRootObjectForTestVat} */
+/** @type {BuildRootObjectForTestVat} */
 export const buildRootObject = vatPowers =>
   Far('root', {
     /** @param {ZoeService} zoe */

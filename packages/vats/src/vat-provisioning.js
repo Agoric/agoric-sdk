@@ -12,17 +12,25 @@ import {
   prepareNameHubKit,
 } from './nameHub.js';
 
+/**
+ * @import {Zone} from '@agoric/zone';
+ * @import {MakeAttenuator} from '@agoric/internal/src/callback.js';
+ * @import {NamesByAddressAdmin} from './types.js';
+ * @import {NameAdmin} from './types.js';
+ * @import {NameHub} from './types.js';
+ * @import {MyAddressNameAdmin} from './types.js';
+ * @import {Baggage} from '@agoric/vat-data';
+ */
+
 // This vat contains the controller-side provisioning service. To enable local
 // testing, it is loaded by both the controller and other ag-solo vat machines.
 
-/** @param {import('@agoric/zone').Zone} zone */
+/** @param {Zone} zone */
 const prepareSpecializedNameAdmin = zone => {
   const mixinMyAddress = prepareMixinMyAddress(zone);
 
   /**
-   * @type {import('@agoric/internal/src/callback.js').MakeAttenuator<
-   *   import('./types.js').NamesByAddressAdmin
-   * >}
+   * @type {MakeAttenuator<NamesByAddressAdmin>}
    */
   const specialize = prepareGuardedAttenuator(zone, NameHubIKit.nameAdmin, {
     tag: 'NamesByAddressAdmin',
@@ -31,15 +39,15 @@ const prepareSpecializedNameAdmin = zone => {
   const makeOverrideFacet = zone.exoClass(
     'NamesByAddressAdminFacet',
     undefined, // TODO: interface guard. same as nameAdmin?
-    /** @param {import('./types.js').NameAdmin} nameAdmin */
+    /** @param {NameAdmin} nameAdmin */
     nameAdmin => ({ nameAdmin }),
     {
       /**
        * @param {string} address
        * @param {string[]} [reserved]
        * @returns {Promise<{
-       *   nameHub: import('./types.js').NameHub;
-       *   nameAdmin: import('./types.js').MyAddressNameAdmin;
+       *   nameHub: NameHub;
+       *   nameAdmin: MyAddressNameAdmin;
        * }>}
        */
       async provideChild(address, reserved) {
@@ -56,7 +64,7 @@ const prepareSpecializedNameAdmin = zone => {
         // XXX relies on callers not to provide other admins via update()
         // TODO: enforce?
 
-        /** @type {import('./types.js').MyAddressNameAdmin} */
+        /** @type {MyAddressNameAdmin} */
 
         // @ts-expect-error cast
         const myAdmin = nameAdmin.lookupAdmin(address);
@@ -65,7 +73,7 @@ const prepareSpecializedNameAdmin = zone => {
     },
   );
 
-  /** @param {import('./types.js').NameAdmin} nameAdmin */
+  /** @param {NameAdmin} nameAdmin */
   const makeMyAddressNameAdmin = nameAdmin => {
     const overrideFacet = makeOverrideFacet(nameAdmin);
     return specialize({
@@ -83,7 +91,7 @@ const prepareSpecializedNameAdmin = zone => {
 /**
  * @param {unknown} _vatPowers
  * @param {unknown} _vatParameters
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export function buildRootObject(_vatPowers, _vatParameters, baggage) {
   const zone = makeDurableZone(baggage);

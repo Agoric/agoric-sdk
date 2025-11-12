@@ -19,6 +19,10 @@ import {
 import { makeRunUtils } from '../../tools/run-utils.js';
 import { bundleOpts, restartVatAdminVat } from '../util.js';
 
+/**
+ * @import {ExecutionContext} from 'ava';
+ */
+
 const bfile = name => new URL(name, import.meta.url).pathname;
 /** @type {(pathRecord: Record<string, string>) => Record<string, { sourceSpec: string }>} */
 const specsFromPaths = pathRecord =>
@@ -64,7 +68,7 @@ const makeConfigFromPaths = (bootstrapVatPath, options = {}) => {
 };
 
 /**
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {object} bundleData
  * @param {SwingSetConfig} config
  * @param {object} [options]
@@ -278,7 +282,7 @@ test('kernel sends bringOutYourDead for vat upgrade', async t => {
 });
 
 /**
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {ManagerType} defaultManagerType
  * @param {object} [options]
  * @param {boolean} [options.restartVatAdmin]

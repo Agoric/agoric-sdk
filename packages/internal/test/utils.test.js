@@ -24,7 +24,11 @@ import {
 } from '../src/ses-utils.js';
 import { arrayIsLike } from '../tools/ava-assertions.js';
 
-/** @import {Permit, Attenuated} from '../src/types.js'; */
+/**
+ * @import {Permit, Attenuated} from '../src/types.js';
+ * @import {Macro} from 'ava';
+ * @import {ThrowsExpectation} from 'ava';
+ */
 /** @import {Arbitrary} from 'fast-check'; */
 
 const { ownKeys } = Reflect;
@@ -446,7 +450,7 @@ test('deeplyFulfilledObject', async t => {
  * @property {any} [expectedOutput]
  */
 
-/** @type {import('ava').Macro<[DeepMapObjectTestParams]>} */
+/** @type {Macro<[DeepMapObjectTestParams]>} */
 const deepMapObjectTest = test.macro({
   title(providedTitle, { input }) {
     return `deepMapObject - ${providedTitle || JSON.stringify(input)}`;
@@ -647,15 +651,15 @@ test('tryJsonParse(invalidJson, replacer)', t => {
 
 /**
  * @template {(...args: unknown[]) => any} F
- * @type {import('ava').Macro<
+ * @type {Macro<
  *   [
  *     F | ((...args: Parameters<F>) => never),
  *     ((err: Error) => any) | undefined,
  *     {
  *       args?: Parameters<F>;
- *       catches?: import('ava').ThrowsExpectation<Error>;
+ *       catches?: ThrowsExpectation<Error>;
  *       returns?: any;
- *       throws?: import('ava').ThrowsExpectation<Error> & {
+ *       throws?: ThrowsExpectation<Error> & {
  *         withCause?: boolean;
  *       };
  *     },

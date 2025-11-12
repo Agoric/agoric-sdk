@@ -10,6 +10,7 @@ import { ZcfMintI } from './typeGuards.js';
 
 /**
  * @import {ZCFMint, ZCFSeat} from '@agoric/zoe';
+ * @import {Baggage} from '@agoric/vat-data';
  */
 
 /**
@@ -30,7 +31,7 @@ export const sumAmountKeywordRecord = (amr, issuerRecord) => {
 };
 
 /**
- * @param {import('@agoric/vat-data').Baggage} zcfBaggage
+ * @param {Baggage} zcfBaggage
  * @param {{ (keyword: string, issuerRecord: ZoeIssuerRecord): void }} recordIssuer
  * @param {GetAssetKindByBrand} getAssetKindByBrand
  * @param {(exit?: undefined) => { zcfSeat: any; userSeat: Promise<UserSeat> }} makeEmptySeatKit

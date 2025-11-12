@@ -83,7 +83,7 @@ export const pspawn = (bin, { spawn, cwd }) => {
  * @param {object} io
  * @param {ReturnType<typeof pspawn>} io.pspawnMake promise-style spawn of 'make' with cwd set
  * @param {ReturnType<typeof pspawn>} io.pspawnAgd promise-style spawn of 'agd' with cwd set
- * @param {import('child_process').StdioOptions} [io.stdio]
+ * @param {StdioOptions} [io.stdio]
  * @param {typeof console.log} io.log
  */
 export const makeScenario2 = ({ pspawnMake, pspawnAgd, log, stdio }) => {

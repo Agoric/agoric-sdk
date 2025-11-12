@@ -28,6 +28,8 @@ import { makeCache } from './cache.js';
 /**
  * @import {ToCapData, FromCapData} from '@endo/marshal';
  * @import {Pattern} from '@endo/patterns';
+ * @import {VirtualReferenceManager} from './virtualReferences.js';
+ * @import {Cache} from './cache.js';
  */
 
 // XXX TODO: The following key length limit was put in place due to limitations
@@ -116,7 +118,7 @@ function makeSchemaCache(syscall, unserialize) {
 
 /**
  * @param {*} syscall
- * @param {import('./virtualReferences.js').VirtualReferenceManager} vrm
+ * @param {VirtualReferenceManager} vrm
  * @param {() => number} allocateExportID
  * @param {() => number} allocateCollectionID
  * @param {(val: any) => string | undefined} convertValToSlot
@@ -140,7 +142,7 @@ export function makeCollectionManager(
 ) {
   const storeKindIDToName = new Map();
 
-  /** @type { import('./cache.js').Cache<SchemaCacheValue>} */
+  /** @type { Cache<SchemaCacheValue>} */
   const schemaCache = makeSchemaCache(syscall, unserialize);
 
   const storeKindInfo = {

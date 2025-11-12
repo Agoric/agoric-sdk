@@ -5,6 +5,10 @@ import * as basicBehaviorsPlus from './basic-behaviors.js';
 import * as chainBehaviorsPlus from './chain-behaviors.js';
 import * as utils from './utils.js';
 
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ */
+
 const { BASIC_BOOTSTRAP_PERMITS: _b, ...basicBehaviors } = basicBehaviorsPlus;
 const {
   CHAIN_BOOTSTRAP_MANIFEST,
@@ -31,7 +35,7 @@ export const MANIFEST = CHAIN_BOOTSTRAP_MANIFEST;
  * @param {{
  *   coreProposalCodeSteps?: string[];
  * }} vatParameters
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const buildRootObject = (vatPowers, vatParameters, baggage) => {
   console.debug(`chain bootstrap starting`);

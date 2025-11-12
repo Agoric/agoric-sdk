@@ -12,6 +12,7 @@ import { eventLoopIteration } from './testing-utils.js';
 /**
  * @import {TotalMap} from './types.js';
  * @import {Marshaller, StorageEntry, StorageMessage, StorageNode, StreamCell} from './lib-chainStorage.js';
+ * @import {ExecutionContext} from 'ava';
  */
 
 const trace = makeTracer('StorTU', false);
@@ -336,9 +337,7 @@ export const makeMockChainStorageRoot = () => {
     getBody: (path, marshaller = defaultMarshaller, index = -1) => {
       data.size || Fail`no data in storage`;
       /**
-       * @type {ReturnType<
-       *   typeof import('@endo/marshal').makeMarshal
-       * >['fromCapData']}
+       * @type {ReturnType<typeof makeMarshal>['fromCapData']}
        */
       const fromCapData = (...args) =>
         Reflect.apply(marshaller.fromCapData, marshaller, args);
@@ -349,7 +348,7 @@ export const makeMockChainStorageRoot = () => {
 };
 
 /**
- * @param {import('ava').ExecutionContext<unknown>} t
+ * @param {ExecutionContext<unknown>} t
  * @param {MockChainStorageRoot | FakeStorageKit} storage
  * @param {({ note: string } | { node: string; owner: string }) &
  *   ({ pattern: string; replacement: string } | {}) & {

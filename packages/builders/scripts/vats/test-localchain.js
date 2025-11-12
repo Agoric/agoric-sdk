@@ -1,6 +1,11 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async _powers =>
   harden({
     sourceSpec: '@agoric/vats/src/proposals/localchain-test.js',
@@ -12,7 +17,7 @@ export const defaultProposalBuilder = async _powers =>
     ],
   });
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval('test-localchain', defaultProposalBuilder);
