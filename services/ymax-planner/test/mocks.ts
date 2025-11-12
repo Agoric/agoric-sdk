@@ -7,11 +7,13 @@ import {
 } from '@agoric/client-utils';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers';
+import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
+import type { Log } from 'ethers/providers';
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
-import type { KVStore } from '@agoric/internal/src/kv-store.js';
+import { prepareAbortController } from '../src/support.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 
@@ -41,11 +43,8 @@ export const mockGasEstimator = makeGasEstimator({
 
 export const createMockProvider = (
   latestBlock = 1000,
-  eventData?: {
-    event: {};
-    block: number;
-  },
-) => {
+  events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[],
+): WebSocketProvider => {
   const eventListeners = new Map<string, Function[]>();
   let currentBlock = latestBlock;
   const currentTimeMs = 1700000000; // 2023-11-14T22:13:20Z
@@ -85,7 +84,7 @@ export const createMockProvider = (
         listeners.forEach(listener => listener(log));
       }
     },
-    waitForBlock: blockTag => {},
+    waitForBlock: _blockTag => {},
     getBlockNumber: async () => {
       return currentBlock;
     },
@@ -95,11 +94,12 @@ export const createMockProvider = (
       return { number: blockNumber, timestamp: Math.floor(ts / 1000) };
     },
     getLogs: async (args: { fromBlock: number; toBlock: number }) => {
-      if (eventData === undefined)
-        throw new Error('No event data provided in mock');
-      if (eventData.block >= args.fromBlock && eventData.block <= args.toBlock)
-        return [eventData.event];
-      else return [];
+      if (events === undefined) throw Error('No event data provided in mock');
+      return events.filter(
+        event =>
+          event.blockNumber >= args.fromBlock &&
+          event.blockNumber <= args.toBlock,
+      );
     },
   } as WebSocketProvider;
 
@@ -165,33 +165,15 @@ export const createMockCosmosRestClient = (
   } as any;
 };
 
-export const createMockKeyValueStore = (): KVStore => {
-  const store = new Map<string, string>();
-  return {
-    get: (key: string) => store.get(key),
-    set: async (key: string, value: string) => {
-      store.set(key, value);
-    },
-    delete: async (key: string) => {
-      store.delete(key);
-    },
-    has: (key: string) => store.has(key),
-    getNextKey: () => '',
-  };
-};
-
 export const createMockPendingTxOpts = (
   latestBlock = 1000,
-  eventData?: {
-    event: {};
-    block: number;
-  },
+  events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[],
 ): HandlePendingTxOpts => ({
   cosmosRest: {} as unknown as CosmosRestClient,
   cosmosRpc: {} as unknown as CosmosRPCClient,
   evmProviders: {
-    'eip155:1': createMockProvider(latestBlock, eventData),
-    'eip155:42161': createMockProvider(latestBlock, eventData),
+    'eip155:1': createMockProvider(latestBlock, events),
+    'eip155:42161': createMockProvider(latestBlock, events),
   },
   fetch: global.fetch,
   marshaller: boardSlottingMarshaller(),
@@ -204,21 +186,12 @@ export const createMockPendingTxOpts = (
     portfoliosPathPrefix: 'IGNORED',
     pendingTxPathPrefix: PENDING_TX_PATH_PREFIX,
   },
-  kvStore: createMockKeyValueStore(),
-  makeAbortController: (timeoutMillisec?: number, racingSignals = []) => {
-    const controller = new AbortController();
-    const abort = (reason?: any) => controller.abort(reason);
-    if (timeoutMillisec !== undefined) {
-      setTimeout(() => abort(new Error('Timeout')), timeoutMillisec);
-    }
-    const racingSignalsArray = Array.from(racingSignals);
-    const signal =
-      racingSignalsArray.length > 0
-        ? AbortSignal.any([controller.signal, ...racingSignalsArray])
-        : controller.signal;
-    signal.addEventListener('abort', () => abort());
-    return { abort, signal };
-  },
+  kvStore: makeKVStoreFromMap(new Map()),
+  makeAbortController: prepareAbortController({
+    setTimeout,
+    AbortController,
+    AbortSignal,
+  }),
 });
 
 export const createMockPendingTxEvent = (
@@ -399,13 +372,17 @@ export const createMockTransferEvent = (
   };
 };
 
-export const createMockGmpExecutionEvent = (txId: string) => {
+export const createMockGmpExecutionEvent = (
+  txId: string,
+  blockNumber: number,
+): Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'> => {
   const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
     'MulticallExecuted(string,(bool,bytes)[])',
   );
   const txIdTopic = ethers.keccak256(ethers.toUtf8Bytes(txId));
 
   return {
+    blockNumber,
     topics: [MULTICALL_EXECUTED_SIGNATURE, txIdTopic],
     data: '0x',
     transactionHash: '0x1234567890abcdef1234567890abcdef12345678',

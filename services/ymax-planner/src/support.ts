@@ -471,3 +471,49 @@ export const waitForBlock = async (
     void provider.on('block', listener);
   });
 };
+
+/**
+ * Mock the abort reason of `AbortSignal.timeout(ms)`.
+ * https://dom.spec.whatwg.org/#dom-abortsignal-timeout
+ */
+const makeTimeoutReason = () =>
+  Object.defineProperty(Error('Timed out'), 'name', {
+    value: 'TimeoutError',
+  });
+
+export const prepareAbortController = ({
+  setTimeout,
+  AbortController = globalThis.AbortController,
+  AbortSignal = globalThis.AbortSignal,
+}: {
+  setTimeout: typeof globalThis.setTimeout;
+  AbortController?: typeof globalThis.AbortController;
+  AbortSignal?: typeof globalThis.AbortSignal;
+}) => {
+  /**
+   * Abstract AbortController/AbortSignal functionality upon a provided
+   * setTimeout.
+   */
+  const makeAbortController = (
+    timeoutMillisec?: number,
+    racingSignals: Iterable<AbortSignal> = [],
+  ) => {
+    let controller: AbortController | null = new AbortController();
+    const abort: AbortController['abort'] = reason => {
+      try {
+        return controller?.abort(reason);
+      } finally {
+        controller = null;
+      }
+    };
+    if (timeoutMillisec !== undefined) {
+      setTimeout(() => abort(makeTimeoutReason()), timeoutMillisec);
+    }
+    const signal = AbortSignal.any([controller.signal, ...racingSignals]);
+    signal.addEventListener('abort', _event => abort());
+    return { abort, signal };
+  };
+  return makeAbortController;
+};
+
+export type MakeAbortController = ReturnType<typeof prepareAbortController>;

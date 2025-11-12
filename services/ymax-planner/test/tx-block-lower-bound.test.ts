@@ -5,6 +5,7 @@ import test from 'ava';
 
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
+import type { AccountId, CaipChainId } from '@agoric/orchestration';
 import { getTxBlockLowerBound, setTxBlockLowerBound } from '../src/kv-store.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import { EVENTS } from '../src/watchers/gmp-watcher.ts';
@@ -12,21 +13,15 @@ import {
   createMockGmpExecutionEvent,
   createMockPendingTxOpts,
 } from './mocks.ts';
-import type { AccountId, CaipChainId } from '@agoric/orchestration';
 
 /**
  * Sets up a test environment for testing transaction block lower bound functionality.
  *
- * Creates mock of all the utlities required by `handlePendingTx` inluding
+ * Mocks of all the utilities required by `handlePendingTx`:
  * - EVM providers
  * - Events associated with the providers
  * - GMP tx data
  * - logger utility
- *
- * @param latestBlock - The current latest block number in the mock evmProvider
- * @param blockWithEvent - The block number where the mock event should be found
- * @param txId - The transaction identifier to use for the pending transaction
- * @param contractAddress - The destination contract address for the GMP transaction
  */
 const setupEnvironment = ({
   latestBlock,
@@ -49,19 +44,16 @@ const setupEnvironment = ({
     destinationAddress,
   });
 
-  const event = createMockGmpExecutionEvent(txId);
-  const opts = createMockPendingTxOpts(latestBlock, {
-    block: blockWithEvent,
-    event,
-  });
+  const event = createMockGmpExecutionEvent(txId, blockWithEvent);
+  const opts = createMockPendingTxOpts(latestBlock, [event]);
   const mockProvider = opts.evmProviders[chainId];
 
   const currentTimeMs = 1700000000; // 2023-11-14T22:13:20Z
   const txTimestampMs = currentTimeMs - 10 * 1000; // 10 seconds ago
   // Trigger block event to resolve waitForBlock
-  setTimeout(() => {
-    mockProvider.emit('block', latestBlock + 1);
+  setTimeout(async () => {
     latestBlock += 1;
+    await mockProvider.emit('block', latestBlock);
   }, 10);
 
   return {
@@ -74,16 +66,12 @@ const setupEnvironment = ({
 };
 
 test('updates lower bound when a pending tx is being searched', async t => {
-  const latestBlock = 100;
   const txId = 'tx2';
-  const contractAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
-
-  const blockWithEvent = 99;
   const { ctx, gmpTx, mockLog, txTimestampMs } = setupEnvironment({
-    contractAddress,
-    latestBlock,
-    blockWithEvent,
+    contractAddress: '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF',
     txId,
+    latestBlock: 100,
+    blockWithEvent: 99,
   });
 
   const initialExecutedBlockSaved = await getTxBlockLowerBound(

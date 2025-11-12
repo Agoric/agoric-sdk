@@ -497,7 +497,7 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
   // Trigger block event to resolve waitForBlock
   setTimeout(() => mockProvider.emit('block', latestBlock + 1), 10);
 
-  const event = createMockGmpExecutionEvent(txId);
+  const event = createMockGmpExecutionEvent(txId, latestBlock);
   mockProvider.getLogs = async () => [event];
 
   const ctxWithFetch = harden({
@@ -518,7 +518,7 @@ test('resolves a 10 second old pending GMP transaction in lookback mode', async 
               executed: {
                 transactionHash: '0xexecuted123',
                 receipt: {
-                  logs: [createMockGmpExecutionEvent(txId)],
+                  logs: [event],
                 },
               },
             },

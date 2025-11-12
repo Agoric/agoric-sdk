@@ -19,10 +19,13 @@ import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient } from './cosmos-rpc.ts';
 import { resolvePendingTx } from './resolver.ts';
 import { waitForBlock } from './support.ts';
-import type { EvmProviders, UsdcAddresses } from './support.ts';
+import type {
+  EvmProviders,
+  MakeAbortController,
+  UsdcAddresses,
+} from './support.ts';
 import { lookBackCctp, watchCctpTransfer } from './watchers/cctp-watcher.ts';
 import { lookBackGmp, watchGmp } from './watchers/gmp-watcher.ts';
-import type { MakeAbortController } from './main.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
 

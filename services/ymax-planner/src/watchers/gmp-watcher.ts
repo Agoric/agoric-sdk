@@ -6,13 +6,13 @@ import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
 } from '../support.ts';
+import type { MakeAbortController } from '../support.ts';
 import { TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
   getTxBlockLowerBound,
   setTxBlockLowerBound,
 } from '../kv-store.ts';
-import type { MakeAbortController } from '../main.ts';
 
 // TODO: Remove once all contracts are upgraded to emit MulticallStatus
 const MULTICALL_EXECUTED_SIGNATURE = ethers.id(
