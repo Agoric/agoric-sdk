@@ -249,6 +249,16 @@ fund-provision-pool:
 	  jq -e -r '.account | .value // .base_account | .address') && \
 	  $(MAKE) ACCT_ADDR="$$PROVISION_POOL" FUNDS=1000000000ibc/toyusdc fund-acct
 
+query-balance: # given ACCT_NAME
+	ACCT_ADDR=$$($(AGCH) keys list --output json | \
+		jq -r '.[] | select(.name == $$name) | .address' --arg name "$(ACCT_NAME)") && \
+		$(AGCH) query bank balances $$ACCT_ADDR -o json | jq .
+
+fund-name: # given ACCT_NAME and FUNDS
+	ACCT_ADDR=$$($(AGCH) keys list --output json | \
+		jq -r '.[] | select(.name == $$name) | .address' --arg name "$(ACCT_NAME)") && \
+		$(MAKE) fund-acct ACCT_ADDR="$$ACCT_ADDR"
+
 fund-acct:
 	$(AGCH) \
 	  --home=t1/bootstrap --keyring-backend=test --from=bootstrap \
