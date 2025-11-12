@@ -273,6 +273,8 @@ const checkMutual = (issuer, brand) =>
     E(brand).isMyIssuer(issuer),
   ]).then(checks => checks.every(Boolean));
 
+export const EXISTING_WALLET_MY_STORES_KEY = 'existingWalletMyStores';
+
 export const BRAND_TO_PURSES_KEY = 'brandToPurses';
 
 const getBrandToPurses = (walletPurses, key) => {
@@ -315,6 +317,8 @@ export const prepareSmartWallet = (baggage, shared, setTestJig) => {
     });
     return store;
   });
+
+  const existingWalletMyStores = zone.weakMapStore('myStore by wallet');
 
   let withMyStore = true;
 
@@ -457,8 +461,9 @@ export const prepareSmartWallet = (baggage, shared, setTestJig) => {
           durable: true,
         },
       ),
-      // NB: Wallets before this state property was added do not support
-      // saving results or invoking the saved items.
+      // NB: Wallets before this state property was added also support saving
+      // results or invoking the saved items, but through the alternate
+      // EXISTING_WALLET_MY_STORES_KEY baggage map.
       myStore: withMyStore ? zone.detached().mapStore('my items') : undefined,
     };
 
@@ -518,6 +523,7 @@ export const prepareSmartWallet = (baggage, shared, setTestJig) => {
       logWalletInfo: M.call().rest(M.arrayOf(M.any())).returns(),
       logWalletError: M.call().rest(M.arrayOf(M.any())).returns(),
       getLiveOfferPayments: M.call().returns(M.remotable('mapStore')),
+      getMyStore: M.call().returns(M.remotable('my items store')),
       saveEntry: M.call(shape.ResultPlan, M.any()).returns(M.string()),
       findUnusedName: M.call(M.string()).returns(M.string()),
     }),
@@ -821,12 +827,25 @@ export const prepareSmartWallet = (baggage, shared, setTestJig) => {
           }
           return baggage.get(state.address);
         },
+        /**
+         * @returns {NonNullable<ImmutableState['myStore']>}
+         */
+        getMyStore() {
+          const {
+            state,
+            facets: { self },
+          } = this;
+          if ('myStore' in state && state.myStore != null) {
+            return state.myStore;
+          }
+
+          return provideLazy(existingWalletMyStores, self, _k =>
+            zone.detached().mapStore('my items'),
+          );
+        },
         /** @param {string} suggestion */
         findUnusedName(suggestion) {
-          const { myStore } = this.state;
-          if (!myStore) {
-            throw Fail`expected a new smart wallet with myStore`;
-          }
+          const myStore = this.facets.helper.getMyStore();
           let nonce = 0;
           let name = suggestion;
           while (myStore.has(name)) {
@@ -840,10 +859,7 @@ export const prepareSmartWallet = (baggage, shared, setTestJig) => {
          * @param {unknown} value
          */
         saveEntry(plan, value) {
-          const { myStore } = this.state;
-          if (!myStore) {
-            throw Fail`expected a new smart wallet with myStore`;
-          }
+          const myStore = this.facets.helper.getMyStore();
           const name = plan.overwrite
             ? plan.name
             : this.facets.helper.findUnusedName(plan.name);
@@ -1137,12 +1153,8 @@ export const prepareSmartWallet = (baggage, shared, setTestJig) => {
          */
         async invokeEntry(message) {
           trace('invokeEntry', message);
-          const { myStore } = this.state;
-          const { resultStepWatcher } = this.facets;
-
-          if (!myStore) {
-            throw Fail`expected a new smart wallet with myStore`;
-          }
+          const { resultStepWatcher, helper } = this.facets;
+          const myStore = helper.getMyStore();
 
           const { targetName: name, method, args, saveResult, id } = message;
           myStore.has(name) || Fail`cannot invoke ${q(name)}: no such item`;
@@ -1216,7 +1228,7 @@ export const prepareSmartWallet = (baggage, shared, setTestJig) => {
          * @returns {Promise<void>}
          */
         handleBridgeAction(actionCapData, canSpend = false) {
-          const { facets, state } = this;
+          const { facets } = this;
           const { offers, invoke } = facets;
           const { publicMarshaller } = shared;
 
@@ -1230,8 +1242,6 @@ export const prepareSmartWallet = (baggage, shared, setTestJig) => {
             });
           };
 
-          const walletHasNameHub = 'myStore' in state && state.myStore != null;
-
           // use E.when to retain distributed stack trace
           return E.when(
             E(publicMarshaller).fromCapData(actionCapData),
@@ -1241,9 +1251,6 @@ export const prepareSmartWallet = (baggage, shared, setTestJig) => {
                 switch (action.method) {
                   case 'executeOffer': {
                     canSpend || Fail`executeOffer requires spend authority`;
-                    if (action.offer.saveResult != null && !walletHasNameHub) {
-                      Fail`executeOffer saveResult requires a new smart wallet with myStore`;
-                    }
 
                     return offers.executeOffer(action.offer);
                   }
@@ -1252,8 +1259,6 @@ export const prepareSmartWallet = (baggage, shared, setTestJig) => {
                     return offers.tryExitOffer(action.offerId);
                   }
                   case 'invokeEntry': {
-                    walletHasNameHub ||
-                      Fail`invokeEntry requires a new smart wallet with myStore`;
                     return invoke.invokeEntry(action.message);
                   }
                   default: {

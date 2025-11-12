@@ -344,10 +344,6 @@ test('invoke with old wallet', async t => {
   } = t.context;
   const marshaller = E(board).getReadonlyMarshaller();
 
-  const expectedInvokeError = {
-    message: 'expected a new smart wallet with myStore',
-  };
-
   setWithMyStore(false);
   const addr = 'agoric1-old-wallet';
   const [wallet] = await provisionSmartWallet(addr);
@@ -370,15 +366,15 @@ test('invoke with old wallet', async t => {
   const { structure: redeemUpdateStructure } = await readLegible(
     `ROOT.wallet.${addr}`,
   );
-  t.deepEqual(redeemUpdateStructure, {
-    updated: 'walletAction',
+  t.like(redeemUpdateStructure, {
+    updated: 'offerStatus',
     status: {
-      error: 'executeOffer saveResult requires a new smart wallet with myStore',
+      result: {
+        name: 'priceSetter',
+        passStyle: 'remotable',
+      },
     },
   });
-
-  t.log('attempt redeem by direct executeOffer');
-  await redeemAdminInvitation(t, { wallet, instance }, expectedInvokeError);
 
   /** @type {InvokeEntryMessage} */
   const message = {
@@ -399,14 +395,14 @@ test('invoke with old wallet', async t => {
   const { structure: invokeUpdateStructure } = await readLegible(
     `ROOT.wallet.${addr}`,
   );
-  t.deepEqual(invokeUpdateStructure, {
-    updated: 'walletAction',
-    status: {
-      error: 'invokeEntry requires a new smart wallet with myStore',
+  t.like(invokeUpdateStructure, {
+    updated: 'invocation',
+    result: {
+      passStyle: 'undefined',
     },
   });
 
   t.log('attempt direct invokeEntry');
   const invokeP = E(wallet).getInvokeFacet();
-  await t.throwsAsync(E(invokeP).invokeEntry(message), expectedInvokeError);
+  await t.notThrowsAsync(E(invokeP).invokeEntry(message));
 });
