@@ -17,8 +17,8 @@ const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 const mockFetchForGasEstimate = async (_, options?: any) => {
   return {
     ok: true,
-    json: async () => JSON.parse(options.body).gasLimit,
-    text: async () => JSON.parse(options.body).gasLimit,
+    json: async () => String(BigInt(JSON.parse(options.body).gasLimit) * 10n),
+    text: async () => String(BigInt(JSON.parse(options.body).gasLimit) * 10n),
   } as Response;
 };
 
