@@ -11,7 +11,7 @@ import { attenuate } from '@agoric/internal';
 import { makeKVStore } from '@agoric/internal/src/kv-store.js';
 import { TRUE } from '@agoric/internal/src/js-utils.js';
 
-import { dbFileInDirectory, getKeyType } from './util.js';
+import { dbFileInDirectory, getKVStoreKeyType } from './util.js';
 import { makeTranscriptStore } from './transcriptStore.js';
 import { makeSnapStore } from './snapStore.js';
 import { makeBundleStore } from './bundleStore.js';
@@ -358,7 +358,7 @@ export function makeSwingStore(path, forceReset, options = {}) {
   const kernelKVStore = {
     ...kvStore,
     set(key, value) {
-      const keyType = getKeyType(key);
+      const keyType = getKVStoreKeyType(key);
       keyType !== 'host' || Fail`kernelKVStore refuses host keys`;
       kvStore.set(key, value);
       if (keyType === 'consensus') {
@@ -372,7 +372,7 @@ export function makeSwingStore(path, forceReset, options = {}) {
       }
     },
     delete(key) {
-      const keyType = getKeyType(key);
+      const keyType = getKVStoreKeyType(key);
       keyType !== 'host' || Fail`kernelKVStore refuses host keys`;
       kvStore.delete(key);
       if (keyType === 'consensus') {
@@ -388,12 +388,12 @@ export function makeSwingStore(path, forceReset, options = {}) {
   const hostKVStore = {
     ...kvStore,
     set(key, value) {
-      const keyType = getKeyType(key);
+      const keyType = getKVStoreKeyType(key);
       keyType === 'host' || Fail`hostKVStore requires host keys`;
       kvStore.set(key, value);
     },
     delete(key) {
-      const keyType = getKeyType(key);
+      const keyType = getKVStoreKeyType(key);
       keyType === 'host' || Fail`hostKVStore requires host keys`;
       kvStore.delete(key);
     },

@@ -5,7 +5,7 @@ export { importSwingStore } from './importer.js';
 export { makeArchiveSnapshot, makeArchiveTranscript } from './archiver.js';
 
 // for the benefit of tools like SwingSet/misc-tools/replay-transcript.js
-export { getKeyType } from './util.js';
+export { getKVStoreKeyType } from './util.js';
 export { makeTranscriptStore } from './transcriptStore.js';
 export { makeSnapStore } from './snapStore.js';
 export { makeSnapStoreIO } from './snapStoreIO.js';

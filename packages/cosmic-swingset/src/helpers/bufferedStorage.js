@@ -1,18 +1,13 @@
 import { assert, Fail } from '@endo/errors';
+import {
+  makeKVStoreFromMap,
+  compareByCodePoints,
+} from '@agoric/internal/src/kv-store.js';
 
 // XXX Do these "StorageAPI" functions belong in their own package?
-
 /**
- * @template [T=unknown]
- * @typedef {{
- *   has: (key: string) => boolean,
- *   get: (key: string) => T | undefined,
- *   getNextKey: (previousKey: string) => string | undefined,
- *   set: (key: string, value: T ) => void,
- *   delete: (key: string) => void,
- * }} KVStore
+ * @import {KVStore} from '@agoric/internal/src/kv-store.js'
  */
-
 /**
  * @template [T=unknown]
  * @typedef {KVStore<T> & {commit: () => void, abort: () => void}} BufferedKVStore
@@ -35,100 +30,6 @@ export function insistStorageAPI(kvStore) {
     n in kvStore || Fail`kvStore.${n} is missing, cannot use`;
   }
 }
-
-// TODO: Replace compareByCodePoints and makeKVStoreFromMap and
-// provideEnhancedKVStore with imports when
-// available.
-// https://github.com/Agoric/agoric-sdk/pull/10299
-
-const compareByCodePoints = (left, right) => {
-  const leftIter = left[Symbol.iterator]();
-  const rightIter = right[Symbol.iterator]();
-  for (;;) {
-    const { value: leftChar } = leftIter.next();
-    const { value: rightChar } = rightIter.next();
-    if (leftChar === undefined && rightChar === undefined) {
-      return 0;
-    } else if (leftChar === undefined) {
-      // left is a prefix of right.
-      return -1;
-    } else if (rightChar === undefined) {
-      // right is a prefix of left.
-      return 1;
-    }
-    const leftCodepoint = /** @type {number} */ (leftChar.codePointAt(0));
-    const rightCodepoint = /** @type {number} */ (rightChar.codePointAt(0));
-    if (leftCodepoint < rightCodepoint) return -1;
-    if (leftCodepoint > rightCodepoint) return 1;
-  }
-};
-
-/**
- * @template [T=unknown]
- * @param {Map<string, T>} map
- * @returns {KVStore<T>}
- */
-export const makeKVStoreFromMap = map => {
-  let sortedKeys;
-  let priorKeyReturned;
-  let priorKeyIndex;
-
-  const ensureSorted = () => {
-    if (sortedKeys) return;
-    sortedKeys = [...map.keys()].sort(compareByCodePoints);
-  };
-
-  const clearGetNextKeyCache = () => {
-    priorKeyReturned = undefined;
-    priorKeyIndex = -1;
-  };
-  clearGetNextKeyCache();
-
-  const clearSorted = () => {
-    sortedKeys = undefined;
-    clearGetNextKeyCache();
-  };
-
-  /** @type {KVStore<T>} */
-  const fakeStore = harden({
-    has: key => map.has(key),
-    get: key => map.get(key),
-    getNextKey: priorKey => {
-      assert.typeof(priorKey, 'string');
-      ensureSorted();
-      const start =
-        priorKeyReturned === undefined
-          ? 0
-          : // If priorKeyReturned <= priorKey, start just after it.
-            (compareByCodePoints(priorKeyReturned, priorKey) <= 0 &&
-              priorKeyIndex + 1) ||
-            // Else if priorKeyReturned immediately follows priorKey, start at
-            // its index (and expect to return it again).
-            (sortedKeys.at(priorKeyIndex - 1) === priorKey && priorKeyIndex) ||
-            // Otherwise, start at the beginning.
-            0;
-      for (let i = start; i < sortedKeys.length; i += 1) {
-        const key = sortedKeys[i];
-        if (compareByCodePoints(key, priorKey) <= 0) continue;
-        priorKeyReturned = key;
-        priorKeyIndex = i;
-        return key;
-      }
-      // reached end without finding the key, so clear our cache
-      clearGetNextKeyCache();
-      return undefined;
-    },
-    set: (key, value) => {
-      if (!map.has(key)) clearSorted();
-      map.set(key, value);
-    },
-    delete: key => {
-      if (map.has(key)) clearSorted();
-      map.delete(key);
-    },
-  });
-  return fakeStore;
-};
 
 /**
  * Return an object representing KVStore contents as both a KVStore and a Map.
@@ -364,7 +265,7 @@ export const makeReadCachingStorage = kvStore => {
     // Enqueue a write of any retrieved value, to handle callers like mailbox.js
     // that expect local mutations to be automatically written back.
     onGet(key, value) {
-      buffered.set(key, value);
+      if (value !== undefined) buffered.set(key, value);
     },
 
     // Reset the read cache upon commit or abort.

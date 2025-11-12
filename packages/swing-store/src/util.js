@@ -1,6 +1,6 @@
-import { Fail } from '@endo/errors';
 import { Buffer } from 'buffer';
 import path from 'path';
+import { Fail } from '@endo/errors';
 
 /**
  * @import {AnyIterable} from './exporter.js';
@@ -29,7 +29,7 @@ export function dbFileInDirectory(dirPath) {
 /**
  * @param {string} key
  */
-export function getKeyType(key) {
+export function getKVStoreKeyType(key) {
   typeof key === 'string' || Fail`key must be a string`;
   if (key.startsWith('local.')) {
     return 'local';
