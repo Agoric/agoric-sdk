@@ -416,6 +416,7 @@ const processPortfolioEvents = async (
         assert(oldState);
         if (!oldState.repeats) console.warn(`⚠️  Ignoring unchanged ${path}`);
         oldState.repeats += 1;
+        return;
       }
       memory.snapshots.set(portfolioKey, { fingerprint, repeats: 0 });
 
