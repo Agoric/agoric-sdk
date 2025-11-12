@@ -19,13 +19,17 @@ import {
   normalizeAddressWithOptions,
 } from '../lib/chain.js';
 
+/**
+ * @import {Logger} from 'anylogger';
+ */
+
 // tight for perf testing but less than this tends to hang.
 const SLEEP_SECONDS = 0.1;
 
 const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 /**
- * @param {import('anylogger').Logger} logger
+ * @param {Logger} logger
  */
 export const makePerfCommand = logger => {
   const perf = new Command('perf')

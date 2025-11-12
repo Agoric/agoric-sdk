@@ -3,6 +3,10 @@
 
 import { M } from '@endo/patterns';
 
+/**
+ * @import {TypedPattern} from './types.js';
+ */
+
 export const StorageNodeShape = M.remotable('StorageNode');
 
 /** To be used only for 'helper' facets where the calls are from trusted code. */
@@ -20,6 +24,6 @@ export const UnguardedHelperI = M.interface(
  */
 
 /**
- * @type {import('./types.js').TypedPattern<BridgeBigInt>}
+ * @type {TypedPattern<BridgeBigInt>}
  */
 export const BridgeBigIntShape = M.or(M.number(), M.string());

@@ -12,6 +12,11 @@ import { Command } from 'commander';
 import { asPercent } from '../lib/format.js';
 import { outputExecuteOfferAction } from '../lib/wallet.js';
 
+/**
+ * @import {Logger} from 'anylogger';
+ * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
+ */
+
 const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 // Adapted from https://gist.github.com/dckc/8b5b2f16395cb4d7f2ff340e0bc6b610#file-psm-tool
@@ -36,7 +41,7 @@ function collectValues(val, memo) {
 }
 
 /**
- * @param {import('anylogger').Logger} logger
+ * @param {Logger} logger
  */
 export const makePsmCommand = logger => {
   const psm = new Command('psm').description('PSM commands').usage(
@@ -205,7 +210,7 @@ export const makePsmCommand = logger => {
       const { lookupPsmInstance } = await rpcTools();
       const psmInstance = lookupPsmInstance(opts.pair);
 
-      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
+      /** @type {OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {
@@ -260,7 +265,7 @@ export const makePsmCommand = logger => {
         brand: istBrand,
         value: BigInt(opts.limit * 1_000_000),
       });
-      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
+      /** @type {OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {

@@ -274,7 +274,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
 /**
  *
  * @param {import('ava').ExecutionContext} t
- * @param {Awaited<ReturnType<makeGovernanceDriver>>} governanceDriver
+ * @param {Awaited<ReturnType<typeof makeGovernanceDriver>>} governanceDriver
  * @param {{
  *   instanceName: string;
  *   duration: number;

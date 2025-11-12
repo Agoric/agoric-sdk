@@ -56,6 +56,15 @@ import { computronCounter } from './computron-counter.js';
  * @import {SwingStoreKernelStorage} from '@agoric/swing-store';
  * @import {Mailbox, RunPolicy, SwingSetConfig} from '@agoric/swingset-vat';
  * @import {KVStore, BufferedKVStore} from './helpers/bufferedStorage.js';
+ * @import {ConfigProposal} from '@agoric/deploy-script-support/src/extract-proposal.js';
+ * @import {ERef} from '@endo/far';
+ * @import {QueueStorage} from './helpers/make-queue.js';
+ * @import {SwingStore} from '@agoric/swing-store';
+ * @import {SlogSender} from '@agoric/telemetry';
+ * @import {makeArchiveSnapshot} from '@agoric/swing-store';
+ * @import {makeArchiveTranscript} from '@agoric/swing-store';
+ * @import {CosmosSwingsetConfig} from './chain-main.js';
+ * @import {PromiseKit} from '@endo/promise-kit';
  */
 
 /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} InboundQueue */
@@ -97,7 +106,7 @@ const parseUpgradePlanInfo = (upgradePlan, prefix = '') => {
 
 /**
  * @typedef {object} CosmicSwingsetConfig
- * @property {import('@agoric/deploy-script-support/src/extract-proposal.js').ConfigProposal[]} [coreProposals]
+ * @property {ConfigProposal[]} [coreProposals]
  * @property {string[]} [clearStorageSubtrees] chain storage paths identifying
  *   roots of subtrees for which data should be deleted (including overlaps with
  *   exportStorageSubtrees, which are *not* preserved).
@@ -154,7 +163,7 @@ const getHostKey = path => `host.${path}`;
  * @param {KVStore<Mailbox>} mailboxStorage
  * @param {((destPort: string, msg: unknown) => unknown)} bridgeOutbound
  * @param {SwingStoreKernelStorage} kernelStorage
- * @param {import('@endo/far').ERef<string | SwingSetConfig> | (() => ERef<string | SwingSetConfig>)} getVatConfig
+ * @param {ERef<string | SwingSetConfig> | (() => ERef<string | SwingSetConfig>)} getVatConfig
  * @param {unknown} bootstrapArgs JSON-serializable data
  * @param {{}} env
  * @param {*} options
@@ -317,17 +326,17 @@ export async function buildSwingset(
 /**
  * @template [T=unknown]
  * @typedef {object} LaunchOptions
- * @property {import('./helpers/make-queue.js').QueueStorage} actionQueueStorage
- * @property {import('./helpers/make-queue.js').QueueStorage} highPriorityQueueStorage
+ * @property {QueueStorage} actionQueueStorage
+ * @property {QueueStorage} highPriorityQueueStorage
  * @property {string} [kernelStateDBDir]
- * @property {import('@agoric/swing-store').SwingStore} [swingStore]
+ * @property {SwingStore} [swingStore]
  * @property {BufferedKVStore<Mailbox>} mailboxStorage
  *   TODO: Merge together BufferedKVStore and QueueStorage (get/set/delete/commit/abort)
  * @property {() => Promise<unknown>} clearChainSends
  * @property {() => void} replayChainSends
  * @property {((destPort: string, msg: unknown) => unknown)} bridgeOutbound
  * @property {() => ({publish: (value: unknown) => Promise<void>})} [makeInstallationPublisher]
- * @property {import('@endo/far').ERef<string | SwingSetConfig> | (() => ERef<string | SwingSetConfig>)} vatconfig
+ * @property {ERef<string | SwingSetConfig> | (() => ERef<string | SwingSetConfig>)} vatconfig
  *   either an object or a path to a file which JSON-decodes into an object,
  *   provided directly or through a thunk and/or promise. If the result is an
  *   object, it may be mutated to normalize and/or extend it.
@@ -336,17 +345,17 @@ export async function buildSwingset(
  * @property {typeof process['env']} [env]
  * @property {string} [debugName]
  * @property {boolean} [verboseBlocks]
- * @property {ReturnType<typeof import('./kernel-stats.js').makeDefaultMeterProvider>} [metricsProvider]
- * @property {import('@agoric/telemetry').SlogSender} [slogSender]
+ * @property {ReturnType<typeof makeDefaultMeterProvider>} [metricsProvider]
+ * @property {SlogSender} [slogSender]
  * @property {string} [swingStoreTraceFile]
  * @property {(...args: unknown[]) => Promise<void> | void} [swingStoreExportCallback]
  * @property {boolean} [keepSnapshots]
  * @property {boolean} [keepTranscripts]
- * @property {ReturnType<typeof import('@agoric/swing-store').makeArchiveSnapshot>} [archiveSnapshot]
- * @property {ReturnType<typeof import('@agoric/swing-store').makeArchiveTranscript>} [archiveTranscript]
+ * @property {ReturnType<typeof makeArchiveSnapshot>} [archiveSnapshot]
+ * @property {ReturnType<typeof makeArchiveTranscript>} [archiveTranscript]
  * @property {() => object | Promise<object>} [afterCommitCallback]
- * @property {import('./chain-main.js').CosmosSwingsetConfig} swingsetConfig
- *   TODO refactor to clarify relationship vs. import('@agoric/swingset-vat').SwingSetConfig
+ * @property {CosmosSwingsetConfig} swingsetConfig
+ *   TODO refactor to clarify relationship vs. SwingSetConfig
  *   --- maybe partition into in-consensus "config" vs. consensus-independent "options"?
  *   (which would mostly just require `bundleCachePath` to become a `buildSwingset` input)
  */
@@ -717,7 +726,7 @@ export async function launchAndShareInternals({
   let swingsetCommitDuration = NaN;
   let blockParams;
   let decohered;
-  /** @type {undefined | import('@endo/promise-kit').PromiseKit<Record<string, unknown>>} */
+  /** @type {undefined | PromiseKit<Record<string, unknown>>} */
   let pendingCommitKit;
   /** @type {undefined | Promise<void>} */
   let afterCommitWorkDone;

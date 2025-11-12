@@ -11,6 +11,9 @@ import { M } from '@agoric/store';
  * @import {SyncSpecTuple} from '@agoric/governance/src/contractGovernance/typedParamManager.js';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {Remote} from '@agoric/internal';
+ * @import {TimerBrand} from '@agoric/time';
+ * @import {StoredPublisherKit} from '@agoric/notifier';
+ * @import {TimerService} from '@agoric/time';
  */
 
 // TODO duplicated with zoe/src/TypeGuards.js
@@ -74,7 +77,7 @@ export const auctioneerParamTypes = harden({
  * @property {bigint} DiscountStep
  * @property {RelativeTime} AuctionStartDelay
  * @property {RelativeTime} PriceLockPeriod
- * @property {import('@agoric/time').TimerBrand} TimerBrand
+ * @property {TimerBrand} TimerBrand
  */
 
 /** @param {AuctionParams} initial */
@@ -118,7 +121,7 @@ export const makeAuctioneerParams = ({
 harden(makeAuctioneerParams);
 
 /**
- * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
+ * @param {StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {ZCF} zcf
  * @param {AuctionParams} initial
  */
@@ -155,7 +158,7 @@ harden(makeAuctioneerParamManager);
  *   storageNode: Remote<StorageNode>;
  *   marshaller: Remote<Marshaller>;
  * }} caps
- * @param {ERef<import('@agoric/time').TimerService>} timer
+ * @param {ERef<TimerService>} timer
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {ERef<AssetReservePublicFacet>} reservePublicFacet
  * @param {AuctionParams} params

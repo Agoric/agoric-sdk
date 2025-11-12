@@ -10,6 +10,11 @@ import { reserveInitialState, subscriptionTracker } from '../metrics.js';
 import { setupReserveServices } from './setup.js';
 
 /**
+ * @import {Macro} from 'ava';
+ * @import {Assertions} from 'ava';
+ */
+
+/**
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<FeeMintAccess>} feeMintAccessP
  * @param {any} faucetInstallation
@@ -78,11 +83,11 @@ test('reserve add collateral', async t => {
 });
 
 /**
- * @type {import('ava').Macro<
+ * @type {Macro<
  *   [
  *     {
  *       makeInvitationMaker: (
- *         t: import('ava').Assertions,
+ *         t: Assertions,
  *         powers: { zoe; reserve },
  *       ) => {
  *         makeInvitation: () => Promise<Invitation>;

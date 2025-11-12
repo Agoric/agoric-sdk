@@ -8,11 +8,14 @@ import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 /**
  * @import {Remote} from '@agoric/internal';
  * @import {Key, Pattern} from '@endo/patterns';
+ * @import {RecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {Baggage} from '@agoric/swingset-liveslots';
+ * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  */
 
 /**
  * @typedef {{
- *   topicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<VaultNotification>;
+ *   topicKit: RecorderKit<VaultNotification>;
  *   vault: Vault | null;
  * }} State
  */
@@ -33,8 +36,8 @@ const PUBLIC_TOPICS = {
 };
 
 /**
- * @param {import('@agoric/swingset-liveslots').Baggage} baggage
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
+ * @param {Baggage} baggage
+ * @param {MakeRecorderKit} makeRecorderKit
  */
 export const prepareVaultHolder = (baggage, makeRecorderKit) => {
   const makeVaultHolderKit = prepareExoClassKit(

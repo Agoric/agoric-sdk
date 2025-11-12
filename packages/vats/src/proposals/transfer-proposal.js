@@ -6,13 +6,15 @@ import { makeScopedBridge } from '../bridge.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {BridgeManager} from '../types.js';
+ * @import {ScopedBridgeManager} from '../types.js';
  */
 
 /**
  * @param {BootstrapPowers & {
  *   consume: {
- *     bridgeManager: import('../types.js').BridgeManager;
- *     vtransferBridgeManager: import('../types.js').ScopedBridgeManager<'vtransfer'>;
+ *     bridgeManager: BridgeManager;
+ *     vtransferBridgeManager: ScopedBridgeManager<'vtransfer'>;
  *   };
  *   produce: {
  *     transferMiddleware: Producer<any>;

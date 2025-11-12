@@ -15,15 +15,21 @@ import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
 import { makeSlogSender } from './make-slog-sender.js';
 
+/**
+ * @import {PipeAPIReply} from './slog-sender-pipe.js';
+ * @import {MakeSlogSenderOptions} from './index.js';
+ * @import {SlogSender} from './index.js';
+ */
+
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore TODO remove when anylogger has types
 const logger = anylogger('slog-sender-pipe-entrypoint');
 
-/** @type {(msg: import('./slog-sender-pipe.js').PipeAPIReply) => void} */
+/** @type {(msg: PipeAPIReply) => void} */
 const send = Function.prototype.bind.call(process.send, process);
 
 /**
- * @typedef {{type: 'init', options: import('./index.js').MakeSlogSenderOptions }} InitMessage
+ * @typedef {{type: 'init', options: MakeSlogSenderOptions }} InitMessage
  * @typedef {{type: 'flush' }} FlushMessage
  * @typedef {{type: 'send', obj: Record<string, unknown> }} SendMessage
  *
@@ -33,7 +39,7 @@ const send = Function.prototype.bind.call(process.send, process);
  */
 
 const main = async () => {
-  /** @type {import('./index.js').SlogSender | undefined} */
+  /** @type {SlogSender | undefined} */
   let slogSender;
 
   const sendErrors = [];
@@ -46,7 +52,7 @@ const main = async () => {
     process.disconnect?.();
   });
 
-  /** @param {import('./index.js').MakeSlogSenderOptions} opts */
+  /** @param {MakeSlogSenderOptions} opts */
   const init = async ({ env, ...otherOpts } = {}) => {
     !slogSender || Fail`Already initialized`;
 

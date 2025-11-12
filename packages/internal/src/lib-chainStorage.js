@@ -11,6 +11,8 @@ import * as cb from './callback.js';
  * @import {Marshal, Passable} from '@endo/marshal';
  * @import {Remote, ERemote, TypedPattern} from './types.js';
  * @import {EMarshaller} from './marshal/wrap-marshaller.js';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {Callback} from './types.js';
  */
 
 /** @typedef {Marshal<unknown>} Marshaller */
@@ -145,17 +147,15 @@ harden(assertPathSegment);
  */
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  */
 export const prepareChainStorageNode = zone => {
   /**
    * Create a storage node for a given backing storage interface and path.
    *
-   * @param {import('./types.js').Callback<
-   *   (message: StorageMessage) => any
-   * >} messenger
-   *   a callback for sending a storageMessage object to the storage
-   *   implementation (cf. golang/cosmos/x/vstorage/vstorage.go)
+   * @param {Callback<(message: StorageMessage) => any>} messenger a callback
+   *   for sending a storageMessage object to the storage implementation (cf.
+   *   golang/cosmos/x/vstorage/vstorage.go)
    * @param {string} path
    * @param {object} [options]
    * @param {boolean} [options.sequence] set values with `append` messages
@@ -168,9 +168,7 @@ export const prepareChainStorageNode = zone => {
     'ChainStorageNode',
     ChainStorageNodeI,
     /**
-     * @param {import('./types.js').Callback<
-     *   (message: StorageMessage) => any
-     * >} messenger
+     * @param {Callback<(message: StorageMessage) => any>} messenger
      * @param {string} path
      * @param {object} [options]
      * @param {boolean} [options.sequence]

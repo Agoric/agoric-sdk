@@ -22,6 +22,8 @@ import {
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {VstorageKit} from '@agoric/client-utils';
+ * @import {Logger} from 'anylogger';
+ * @import {Writable} from 'stream';
  */
 
 const collectValues = (val, memo) => {
@@ -34,12 +36,12 @@ const defaultKeyring = process.env.AGORIC_KEYRING_BACKEND || 'test';
 const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 /**
- * @param {import('anylogger').Logger} _logger
+ * @param {Logger} _logger
  * @param {{
  *   env?: Record<string, string|undefined>,
  *   fetch?: typeof window.fetch,
- *   stdout?: Pick<import('stream').Writable, 'write'>,
- *   stderr?: Pick<import('stream').Writable, 'write'>,
+ *   stdout?: Pick<Writable, 'write'>,
+ *   stderr?: Pick<Writable, 'write'>,
  *   execFileSync?: typeof execFileSyncAmbient,
  *   delay?: (ms: number) => Promise<void>,
  * }} [io]

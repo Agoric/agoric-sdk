@@ -4,10 +4,15 @@ import { shuffle } from './shuffle.js';
 import { makePollingChangeFollower } from './change-follower.js';
 
 /**
+ * @import {LeaderOptions} from './types.js';
+ * @import {Leader} from './types.js';
+ */
+
+/**
  * Create a chain leader that rotates through a list of endpoints.
  *
  * @param {string[]} endpoints
- * @param {import('./types.js').LeaderOptions} leaderOptions
+ * @param {LeaderOptions} leaderOptions
  */
 export const makeRoundRobinLeader = (endpoints, leaderOptions = {}) => {
   const { retryCallback = DEFAULT_RETRY_CALLBACK, jitter = DEFAULT_JITTER } =
@@ -21,7 +26,7 @@ export const makeRoundRobinLeader = (endpoints, leaderOptions = {}) => {
   let thisAttempt = 0;
   let retrying;
 
-  /** @type {import('./types.js').Leader} */
+  /** @type {Leader} */
   const leader = Far('round robin leader', {
     getOptions: () => leaderOptions,
     jitter: async where => jitter && jitter(where),

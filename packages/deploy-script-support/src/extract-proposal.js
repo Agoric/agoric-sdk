@@ -12,6 +12,11 @@ import {
 } from './coreProposalBehavior.js';
 
 /**
+ * @import {CoreEvalBuilder} from './externalTypes.js';
+ * @import {PublishBundleRef} from './externalTypes.js';
+ */
+
+/**
  * @typedef {string | {module: string, entrypoint?: string, args?: Array<unknown>}} ConfigProposal
  */
 
@@ -155,7 +160,7 @@ export const extractCoreProposalBundles = async (
           const thisProposalSequence = getSequenceForProposal(key);
           const initPath = findModule(dirname, module);
           const initDir = path.dirname(initPath);
-          /** @type {Record<string, import('./externalTypes.js').CoreEvalBuilder>} */
+          /** @type {Record<string, CoreEvalBuilder>} */
           const ns = await import(initPath);
           const install = (srcSpec, bundlePath) => {
             const absoluteSrc = findModule(initDir, srcSpec);
@@ -181,7 +186,7 @@ export const extractCoreProposalBundles = async (
             );
             return bundleHandle;
           };
-          /** @type {import('./externalTypes.js').PublishBundleRef} */
+          /** @type {PublishBundleRef} */
           const publishRef = async handleP => {
             const handle = await handleP;
             bundleHandleToAbsolutePaths.has(handle) ||

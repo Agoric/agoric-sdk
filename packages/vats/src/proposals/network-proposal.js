@@ -1,3 +1,4 @@
+/* eslint-disable @agoric/group-jsdoc-imports */
 /**
  * @file CoreEval module to set up network, IBC vats.
  * @see {setupNetworkProtocols}

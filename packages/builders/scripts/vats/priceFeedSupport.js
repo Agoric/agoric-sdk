@@ -2,12 +2,16 @@
 
 import { DEFAULT_CONTRACT_TERMS } from '../inter-protocol/price-feed-core.js';
 
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
 const { Fail } = assert;
 
 /**
  * modified copy of ../inter-protocol/price-feed-core.js
  *
- * @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder}
+ * @type {CoreEvalBuilder}
  */
 export const strictPriceFeedProposalBuilder = async (
   { publishRef, install },
@@ -55,7 +59,7 @@ export const strictPriceFeedProposalBuilder = async (
 
 /**
  * @deprecated use `strictPriceFeedProposalBuilder` and specify arguments instead
- * @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder}
+ * @type {CoreEvalBuilder}
  */
 export const deprecatedPriceFeedProposalBuilder = async (powers, options) => {
   console.warn(
@@ -85,6 +89,6 @@ export const deprecatedPriceFeedProposalBuilder = async (powers, options) => {
 
 /**
  * @deprecated use `strictPriceFeedProposalBuilder` and specify arguments instead
- * @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder}
+ * @type {CoreEvalBuilder}
  */
 export const priceFeedProposalBuilder = deprecatedPriceFeedProposalBuilder;

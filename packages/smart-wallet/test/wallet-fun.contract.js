@@ -3,17 +3,23 @@ import { makeTracer } from '@agoric/internal';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
 
+/**
+ * @import {Baggage} from '@agoric/swingset-liveslots';
+ * @import {SetStore} from '@agoric/store';
+ * @import {NatValue} from '@agoric/ertp';
+ */
+
 const trace = makeTracer('WFun');
 
 /**
  * @param {ZCF} zcf
  * @param {unknown} _pa
- * @param {import('@agoric/swingset-liveslots').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const start = (zcf, _pa, baggage) => {
   const zone = makeDurableZone(baggage);
 
-  /** @type {import('@agoric/store').SetStore<ReturnType<typeof makeAdmin>>} */
+  /** @type {SetStore<ReturnType<typeof makeAdmin>>} */
   const admins = zone.setStore('admins');
 
   let value;
@@ -65,7 +71,7 @@ export const start = (zcf, _pa, baggage) => {
       getPrice() {
         return this.state.price;
       },
-      /** @param {import('@agoric/ertp').NatValue} p */
+      /** @param {NatValue} p */
       setPrice(p) {
         this.state.price = p;
         console.log('price', p);

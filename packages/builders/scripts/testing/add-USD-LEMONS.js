@@ -1,6 +1,10 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { psmProposalBuilder } from '../inter-protocol/add-collateral-core.js';
 
+/**
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
 const addUsdLemonsProposalBuilder = async powers => {
   return psmProposalBuilder(powers, {
     anchorOptions: {
@@ -12,7 +16,7 @@ const addUsdLemonsProposalBuilder = async powers => {
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval('add-LEMONS-PSM', addUsdLemonsProposalBuilder);

@@ -5,6 +5,7 @@
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {ExecuteOfferAction} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {USDCProposalShapes} from '../pool-share-math.js';
+ * @import {SmartWalletKit} from '@agoric/client-utils';
  */
 
 import {
@@ -50,7 +51,7 @@ const parseUSDCAmount = (amountString, usdc) => {
  * @param {Command} program
  * @param {{
  *   fetch?: Window['fetch'];
- *    smartWalletKit?: import('@agoric/client-utils').SmartWalletKit;
+ *    smartWalletKit?: SmartWalletKit;
  *   stdout: typeof process.stdout;
  *   stderr: typeof process.stderr;
  *   env: typeof process.env;

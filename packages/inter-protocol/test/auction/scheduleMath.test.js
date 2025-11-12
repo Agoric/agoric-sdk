@@ -10,7 +10,11 @@ import {
   timeVsSchedule,
 } from '../../src/auction/scheduleMath.js';
 
-/** @type {import('@agoric/time').TimerBrand} */
+/**
+ * @import {TimerBrand} from '@agoric/time';
+ */
+
+/** @type {TimerBrand} */
 const timerBrand = Far('timerBrand');
 const coerceAbs = time => TimeMath.coerceTimestampRecord(time, timerBrand);
 const coerceRel = time => TimeMath.coerceRelativeTimeRecord(time, timerBrand);

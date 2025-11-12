@@ -7,6 +7,10 @@ import readline from 'readline';
 
 import sqlite3 from 'better-sqlite3';
 
+/**
+ * @import {Readable} from 'stream';
+ */
+
 function makeDB(dbPath) {
   const db = sqlite3(dbPath);
   const indexes = [];
@@ -285,7 +289,7 @@ function extractSmallcaps(methargs_smallcaps) {
 
 async function processFile(slogfileName, sql, commitAndReopenTransaction) {
   console.log(`processFile`, slogfileName);
-  /** @type {import('stream').Readable} */
+  /** @type {Readable} */
   let slog = fs.createReadStream(slogfileName);
   if (slogfileName.endsWith('.gz')) {
     slog = slog.pipe(zlib.createGunzip());

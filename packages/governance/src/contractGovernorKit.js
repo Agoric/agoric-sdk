@@ -20,6 +20,10 @@ import { ClosingRuleShape, ParamChangesSpecShape } from './typeGuards.js';
  * @import {EReturn} from '@endo/far';
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {ClosingRule, GovernableStartFn, LimitedCF, PoserFacet, VoteOnApiInvocation, VoteOnOfferFilter, VoteOnParamChanges} from './types.js';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {TimerService} from '@agoric/time';
+ * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {TypedParamManager} from './contractGovernance/typedParamManager.js';
  */
 
 const trace = makeTracer('CGK', false);
@@ -60,9 +64,9 @@ const ContractGovernorKitI = {
 
 /**
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @param {{
- *   timer: import('@agoric/time').TimerService,
+ *   timer: TimerService,
  *   zoe: ERef<ZoeService>,
  * }} powers
  */
@@ -85,7 +89,7 @@ export const prepareContractGovernorKit = (baggage, powers) => {
     'ContractGovernorKit',
     ContractGovernorKitI,
     /**
-     * @param {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<GovernableStartFn>} startedInstanceKit
+     * @param {StartedInstanceKit<GovernableStartFn>} startedInstanceKit
      * @param {LimitedCF<unknown>} limitedCreatorFacet
      */
     (startedInstanceKit, limitedCreatorFacet) => {
@@ -177,7 +181,7 @@ export const prepareContractGovernorKit = (baggage, powers) => {
          */
         replaceElectorate(poserInvitation) {
           const { creatorFacet } = this.state;
-          /** @type {Promise<import('./contractGovernance/typedParamManager.js').TypedParamManager<{'Electorate': 'invitation'}>>} */
+          /** @type {Promise<TypedParamManager<{'Electorate': 'invitation'}>>} */
 
           // @ts-expect-error cast
           const paramMgr = E(E(creatorFacet).getParamMgrRetriever()).get({

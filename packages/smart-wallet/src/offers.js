@@ -1,6 +1,7 @@
 /**
  * @import {Proposal} from '@agoric/zoe';
  * @import {Passable} from '@endo/pass-style';
+ * @import {InvitationSpec} from './invitations.js';
  */
 
 /**
@@ -28,7 +29,7 @@
 /**
  * @typedef {{
  *   id: OfferId;
- *   invitationSpec: import('./invitations.js').InvitationSpec;
+ *   invitationSpec: InvitationSpec;
  *   proposal: Proposal;
  *   offerArgs?: any;
  *   saveResult?: ResultPlan;

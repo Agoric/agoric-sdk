@@ -16,6 +16,7 @@
 /**
  * @import {IBCChannelID, IBCChannelOrdering,
  *   IBCConnectionID, IBCPortID} from '../src/types.js';
+ * @import {Endpoint} from '@agoric/network';
  */
 
 export const IBC_ADDR_RE =
@@ -114,7 +115,7 @@ harden(decodeIbcEndpoint);
  * @param {'ordered' | 'unordered' | 'ORDERED' | 'UNORDERED'} spec.order
  * @param {string} spec.version
  * @param {string} [spec.channelID]
- * @returns {import('@agoric/network').Endpoint}
+ * @returns {Endpoint}
  */
 export const encodeIbcEndpoint = ({
   hops = [],

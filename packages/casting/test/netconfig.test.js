@@ -1,9 +1,13 @@
 import { test } from './prepare-test-env-ava.js';
 import { assertNetworkConfig } from '../src/netconfig.js';
 
+/**
+ * @import {NetworkConfig} from '@agoric/casting/src/netconfig.js';
+ */
+
 test('https://main.agoric.net/network-config 2022-10-27', t => {
   /**
-   * @type {import('@agoric/casting/src/netconfig.js').NetworkConfig}
+   * @type {NetworkConfig}
    */
   const specimen = {
     chainName: 'agoric-3',
@@ -23,7 +27,7 @@ test('https://main.agoric.net/network-config 2022-10-27', t => {
 
 test('https://ollinet.agoric.net/network-config 2022-10-27', t => {
   /**
-   * @type {import('@agoric/casting/src/netconfig.js').NetworkConfig}
+   * @type {NetworkConfig}
    */
   const specimen = {
     chainName: 'agoricollinet-44',
