@@ -130,12 +130,13 @@ const makeBootstrap = async t => {
     await eventLoopIteration();
     return getCapDataStructure(storage.getValues(path).at(-1));
   };
+  const getTestJig = () => ({});
   const { provisionSmartWallet } = await deployWalletFactory({
     boot: async () => {
       return {
         ...common.bootstrap,
         zoe: zoe as any, // XXX Guarded<ZoeService>
-        utils: { ...common.utils, readLegible, bundleAndInstall },
+        utils: { ...common.utils, readLegible, bundleAndInstall, getTestJig },
       };
     },
   });

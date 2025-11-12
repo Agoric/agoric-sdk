@@ -51,7 +51,7 @@ import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {Amount, Brand, Issuer, Payment, Purse} from '@agoric/ertp';
  * @import {WeakMapStore, MapStore} from '@agoric/store'
- * @import {InvitationAmount, InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat} from '@agoric/zoe';
+ * @import {InvitationAmount, InvitationDetails, PaymentPKeywordRecord, Proposal, UserSeat, SetTestJig} from '@agoric/zoe';
  * @import {CopyRecord} from '@endo/pass-style';
  * @import {EReturn} from '@endo/far';
  * @import {OfferId, OfferStatus, OfferSpec, InvokeEntryMessage, ResultPlan} from './offers.js';
@@ -222,7 +222,7 @@ const trace = makeTracer('SmrtWlt');
  *     liveOffers: MapStore<OfferId, OfferStatus>;
  *     liveOfferSeats: MapStore<OfferId, UserSeat<unknown>>;
  *     liveOfferPayments: MapStore<OfferId, MapStore<Brand, Payment>>;
- *     myStore: MapStore;
+ *     myStore?: MapStore<string, unknown> | undefined;
  *   }
  * >} ImmutableState
  *
@@ -230,6 +230,11 @@ const trace = makeTracer('SmrtWlt');
  * @typedef {BrandDescriptor & { purse: Purse }} PurseRecord
  *
  * @typedef {{}} MutableState
+ */
+
+/**
+ * @typedef {object} SmartWalletTestJig
+ * @property {(enabled: boolean) => void} setWithMyStore
  */
 
 /**
@@ -284,8 +289,9 @@ const getBrandToPurses = (walletPurses, key) => {
 /**
  * @param {Baggage} baggage
  * @param {SharedParams} shared
+ * @param {SetTestJig} [setTestJig]
  */
-export const prepareSmartWallet = (baggage, shared) => {
+export const prepareSmartWallet = (baggage, shared, setTestJig) => {
   const { registry: _r, ...passableShared } = shared;
   mustMatch(
     harden(passableShared),
@@ -309,6 +315,17 @@ export const prepareSmartWallet = (baggage, shared) => {
     });
     return store;
   });
+
+  let withMyStore = true;
+
+  setTestJig?.(
+    () =>
+      /** @type {SmartWalletTestJig} */ ({
+        setWithMyStore: value => {
+          withMyStore = value;
+        },
+      }),
+  );
 
   const vowTools = prepareVowTools(zone.subZone('vow'));
 
@@ -442,7 +459,7 @@ export const prepareSmartWallet = (baggage, shared) => {
       ),
       // NB: Wallets before this state property was added do not support
       // saving results or invoking the saved items.
-      myStore: zone.detached().mapStore('my items'),
+      myStore: withMyStore ? zone.detached().mapStore('my items') : undefined,
     };
 
     /** @type {RecorderKit<UpdateRecord>} */
@@ -807,6 +824,9 @@ export const prepareSmartWallet = (baggage, shared) => {
         /** @param {string} suggestion */
         findUnusedName(suggestion) {
           const { myStore } = this.state;
+          if (!myStore) {
+            throw Fail`expected a new smart wallet with myStore`;
+          }
           let nonce = 0;
           let name = suggestion;
           while (myStore.has(name)) {
@@ -821,6 +841,9 @@ export const prepareSmartWallet = (baggage, shared) => {
          */
         saveEntry(plan, value) {
           const { myStore } = this.state;
+          if (!myStore) {
+            throw Fail`expected a new smart wallet with myStore`;
+          }
           const name = plan.overwrite
             ? plan.name
             : this.facets.helper.findUnusedName(plan.name);
@@ -1116,6 +1139,10 @@ export const prepareSmartWallet = (baggage, shared) => {
           trace('invokeEntry', message);
           const { myStore } = this.state;
           const { resultStepWatcher } = this.facets;
+
+          if (!myStore) {
+            throw Fail`expected a new smart wallet with myStore`;
+          }
 
           const { targetName: name, method, args, saveResult, id } = message;
           myStore.has(name) || Fail`cannot invoke ${q(name)}: no such item`;
