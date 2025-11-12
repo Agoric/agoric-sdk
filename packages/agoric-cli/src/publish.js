@@ -205,6 +205,189 @@ const urlForRpcAddress = address => {
   }
 };
 
+const getSwingsetParams = async ({
+  pspawn,
+  rpcAddresses,
+  random,
+  transactionSpec,
+  cosmosHelper,
+  pathResolve,
+  leader,
+  homeDirectory,
+}) => {
+  const rpcAddress = choose(rpcAddresses, random());
+
+  const {
+    gas = 'auto',
+    gasAdjustment = '1.2',
+    gasPrices = undefined,
+    home = homeDirectory
+      ? pathResolve(homeDirectory, 'ag-cosmos-helper-statedir')
+      : undefined,
+    node = urlForRpcAddress(rpcAddress),
+    keyringBackend = 'test', // TODO thread transactionOption for keyringBackend
+    keyringDirectory = undefined, // TODO DITTO
+    from: fromLabel = 'ag-solo',
+    interactive = false,
+    ledger = false,
+    feeGranter = undefined,
+    feePayer = undefined,
+    fees = undefined,
+    note = undefined,
+    signMode = undefined,
+    timeoutHeight = undefined,
+    logFormat = undefined,
+    logNoColor = false,
+    trace = false,
+  } = transactionSpec ?? {};
+
+  const args = [
+    'query',
+    'swingset',
+    'params',
+    ...['-o', 'json'],
+    ...['--node', node],
+    // Cosmos CLI went with snake_case for log flags and no governing
+    // principle is in evidence.
+    ...(logFormat !== undefined ? ['--log_format', logFormat] : []),
+    ...(logNoColor ? ['--log_no_color'] : []),
+    ...(trace ? ['--trace'] : []),
+  ];
+  const childPromise = pspawn(cosmosHelper, args, {
+    stdio: ['inherit', 'pipe', 'inherit'],
+    captureStdout: true,
+  });
+  const exitCode = await childPromise;
+  if (exitCode === 0) {
+    return childPromise.json();
+  }
+  throw new Error(`agd exited with status: ${exitCode}`);
+};
+
+const agdInstallWholeBundle = async ({
+  leader,
+  transactionSpec,
+  pathResolve,
+  writeFile,
+  rpcAddresses,
+  random,
+  homeDirectory,
+  cosmosHelper,
+  pspawn,
+  tmpDirSync,
+  chainID,
+  height,
+}, bundle) => {
+  const { name: tempDirPath, removeCallback: removeTemporaryBundle } =
+    tmpDirSync({
+      unsafeCleanup: true,
+      prefix: 'agoric-cli-bundle-',
+    });
+
+  const { retry = 0 } = transactionSpec ?? {};
+
+  try {
+    // TODO it should be possible to refactor this such that the temporary file
+    // is not necessary.
+    // Some, but not workflows to the bundler start with a file.
+    // We could abstract a File handle that might be backed by a file or memory
+    // and write a temporary file only in the former case, or pipe to stdin.
+    const tempFilePath = pathResolve(tempDirPath, 'bundle.json');
+    await writeFile(tempFilePath, `${JSON.stringify(bundle)}\n`);
+
+    for (let attempt = 0; ; attempt += 1) {
+      const rpcAddress = choose(rpcAddresses, random());
+
+      const {
+        gas = 'auto',
+        gasAdjustment = '1.2',
+        gasPrices = undefined,
+        home = homeDirectory
+          ? pathResolve(homeDirectory, 'ag-cosmos-helper-statedir')
+          : undefined,
+        node = urlForRpcAddress(rpcAddress),
+        keyringBackend = 'test',
+        keyringDirectory = undefined,
+        from: fromLabel = 'ag-solo',
+        interactive = false,
+        ledger = false,
+        feeGranter = undefined,
+        feePayer = undefined,
+        fees = undefined,
+        note = undefined,
+        signMode = undefined,
+        timeoutHeight = undefined,
+        logFormat = undefined,
+        logNoColor = false,
+        trace = false,
+        retry = 0,
+      } = transactionSpec ?? {};
+
+      const args = [
+        'tx',
+        'swingset',
+        'install-bundle',
+        '--compress',
+        ...['--gas', gas],
+        ...['--gas-adjustment', gasAdjustment],
+        ...(feeGranter !== undefined ? ['--fee-granter', feeGranter] : []),
+        ...(feePayer !== undefined ? ['--fee-payer', feePayer] : []),
+        ...(fees !== undefined ? ['--fees', fees] : []),
+        ...(gasPrices !== undefined ? ['--gas-prices', gasPrices] : []),
+        ...(home !== undefined ? ['--home', home] : []),
+        ...(ledger ? ['--ledger'] : []),
+        ...(note !== undefined ? ['--note', note] : []),
+        ...(signMode !== undefined ? ['--sign-mode', signMode] : []),
+        ...['--node', node],
+        ...['--keyring-backend', keyringBackend],
+        ...(keyringDirectory !== undefined
+          ? ['--keyring-dir', keyringDirectory]
+          : []),
+        ...['--from', fromLabel],
+        ...['--chain-id', chainID],
+        // The CLI help claims that the modes are sync|async.
+        // The mode "block" works, and is presumed equivalent to sync.
+        ...['--broadcast-mode', 'sync'],
+        ...['--output', 'json'],
+        ...(interactive ? [] : ['--yes']),
+        ...(timeoutHeight !== undefined
+          ? ['--timeout-height', timeoutHeight]
+          : []),
+        // Cosmos CLI went with snake_case for log flags and no governing
+        // principle is in evidence.
+        ...(logFormat !== undefined ? ['--log_format', logFormat] : []),
+        ...(logNoColor ? ['--log_no_color'] : []),
+        ...(trace ? ['--trace'] : []),
+        `@${tempFilePath}`,
+      ];
+      const childPromise = pspawn(cosmosHelper, args, {
+        stdio: ['inherit', 'pipe', 'inherit'],
+        captureStdout: true,
+      });
+      const exitCode = await childPromise;
+      if (exitCode === 0) {
+        const json = childPromise.json();
+        const { code } = json;
+        if (code === 0) {
+          const { height: heightString } = json;
+          height = parseInt(heightString, 10);
+          break;
+        }
+        console.error(json);
+      }
+
+      if (attempt >= retry) {
+        throw new Error(`Chain swingset parameter query failed with exit code: ${exitCode}`);
+      }
+
+      // AWAIT
+      await E(leader).jitter('agoric CLI deploy');
+    }
+  } finally {
+    removeTemporaryBundle();
+  }
+};
+
 /**
  * @param {object} powers
  * @param {typeof import('path').resolve} powers.pathResolve
@@ -252,120 +435,39 @@ export const makeCosmosBundlePublisher = ({
       rpcAddresses,
     } = connectionSpec;
 
-    const { name: tempDirPath, removeCallback: removeTemporaryBundle } =
-      tmpDirSync({
-        unsafeCleanup: true,
-        prefix: 'agoric-cli-bundle-',
-      });
-
     const leader = makeLeaderFromRpcAddresses(rpcAddresses);
     let height;
 
-    try {
-      const tempFilePath = pathResolve(tempDirPath, 'bundle.json');
-      await writeFile(tempFilePath, `${JSON.stringify(bundle)}\n`);
+    // const swingsetParams = await getSwingsetParams({
+    //   pspawn,
+    //   rpcAddresses,
+    //   random,
+    //   transactionSpec,
+    //   cosmosHelper,
+    //   pathResolve,
+    //   leader,
+    //   homeDirectory,
+    // });
 
-      for (let attempt = 0; ; attempt += 1) {
-        const rpcAddress = choose(rpcAddresses, random());
+    // const {
+    //   bundle_uncompressed_size_limit_bytes: bundleUncompressedSizeLimitBytesString = undefined,
+    //   chunk_size_limit_bytes: chunkSizeLimitBytesString = undefined,
+    // } = swingsetParams;
 
-        const {
-          gas = 'auto',
-          gasAdjustment = '1.2',
-          gasPrices = undefined,
-          home = homeDirectory
-            ? pathResolve(homeDirectory, 'ag-cosmos-helper-statedir')
-            : undefined,
-          node = urlForRpcAddress(rpcAddress),
-          keyringBackend = 'test',
-          keyringDirectory = undefined,
-          from: fromLabel = 'ag-solo',
-          interactive = false,
-          ledger = false,
-          feeGranter = undefined,
-          feePayer = undefined,
-          fees = undefined,
-          note = undefined,
-          signMode = undefined,
-          timeoutHeight = undefined,
-          logFormat = undefined,
-          logNoColor = false,
-          trace = false,
-        } = transactionSpec ?? {};
-
-        const args = [
-          'tx',
-          'swingset',
-          'install-bundle',
-          '--compress',
-          ...['--gas', gas],
-          ...['--gas-adjustment', gasAdjustment],
-          ...(feeGranter !== undefined ? ['--fee-granter', feeGranter] : []),
-          ...(feePayer !== undefined ? ['--fee-payer', feePayer] : []),
-          ...(fees !== undefined ? ['--fees', fees] : []),
-          ...(gasPrices !== undefined ? ['--gas-prices', gasPrices] : []),
-          ...(home !== undefined ? ['--home', home] : []),
-          ...(ledger ? ['--ledger'] : []),
-          ...(note !== undefined ? ['--note', note] : []),
-          ...(signMode !== undefined ? ['--sign-mode', signMode] : []),
-          ...['--node', node],
-          ...['--keyring-backend', keyringBackend],
-          ...(keyringDirectory !== undefined
-            ? ['--keyring-dir', keyringDirectory]
-            : []),
-          ...['--from', fromLabel],
-          ...['--chain-id', chainID],
-          // The CLI help claims that the modes are sync|async.
-          // The mode "block" works, and is presumed equivalent to sync.
-          ...['--broadcast-mode', 'sync'],
-          ...['--output', 'json'],
-          ...(interactive ? [] : ['--yes']),
-          ...(timeoutHeight !== undefined
-            ? ['--timeout-height', timeoutHeight]
-            : []),
-          // Cosmos CLI went with snake_case for log flags and no governing
-          // principle is in evidence.
-          ...(logFormat !== undefined ? ['--log_format', logFormat] : []),
-          ...(logNoColor ? ['--log_no_color'] : []),
-          ...(trace ? ['--trace'] : []),
-          `@${tempFilePath}`,
-        ];
-        const promise = pspawn(cosmosHelper, args, {
-          stdio: ['inherit', 'pipe', 'inherit'],
-        });
-        const { childProcess } = promise;
-        const { stdout } = childProcess;
-        assert(stdout);
-        const buffer = new ArrayBuffer(1024, {
-          maxByteLength: 0x1_00_00_00_00,
-        });
-        const bytes = new Uint8Array(buffer);
-        let byteLength = 0;
-        stdout.on('data', chunk => {
-          while (byteLength + chunk.byteLength >= buffer.byteLength) {
-            buffer.resize(buffer.byteLength * 2);
-          }
-          bytes.set(chunk, byteLength);
-          byteLength += chunk.byteLength;
-        });
-        const exitCode = await promise;
-        if (exitCode === 0) {
-          const text = new TextDecoder().decode(bytes.subarray(0, byteLength));
-          const json = JSON.parse(text);
-          const { code } = json;
-          if (code === 0) {
-            const { height: heightString } = json;
-            height = parseInt(heightString, 10);
-            break;
-          }
-          console.error(json);
-        }
-
-        // AWAIT
-        await E(leader).jitter('agoric CLI deploy');
-      }
-    } finally {
-      removeTemporaryBundle();
-    }
+    await agdInstallWholeBundle({
+      transactionSpec,
+      pathResolve,
+      writeFile,
+      rpcAddresses,
+      random,
+      homeDirectory,
+      cosmosHelper,
+      pspawn,
+      tmpDirSync,
+      chainID,
+      leader,
+      height,
+    }, bundle);
 
     const castingSpec = makeCastingSpec(':bundles');
     const follower = makeFollower(castingSpec, leader);

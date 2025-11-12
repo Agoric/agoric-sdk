@@ -87,6 +87,7 @@ const publishMain = async (progname, rawArgs, powers, opts) => {
     tip: opts.tip,
     trace: opts.trace,
     useSdk: opts.sdk,
+    retry: opts.retry,
   };
 
   await null;

@@ -56,7 +56,7 @@ export const makePspawn = ({
   function pspawn(
     cmd,
     cargs,
-    { stdio = 'inherit', env = defaultEnv, ...rest } = {},
+    { stdio = 'inherit', env = defaultEnv, captureStdout = false, ...rest } = {},
   ) {
     const color = (method, ...args) => {
       if (chalk && chalk[method]) {
@@ -89,5 +89,42 @@ export const makePspawn = ({
         resolve(-1);
       });
     });
-    return Object.assign(pr, { childProcess: cp });
+
+    const makeStdoutAddons = () => {
+      if (!captureStdout) {
+        return {};
+      }
+
+      const { stdout } = cp;
+      assert(stdout);
+      const buffer = new ArrayBuffer(1024, {
+        maxByteLength: 0x1_00_00_00_00,
+      });
+      const bytes = new Uint8Array(buffer);
+      let byteLength = 0;
+      stdout.on('data', chunk => {
+        while (byteLength + chunk.byteLength >= buffer.byteLength) {
+          buffer.resize(buffer.byteLength * 2);
+        }
+        bytes.set(chunk, byteLength);
+        byteLength += chunk.byteLength;
+      });
+
+      const getBytes = () => bytes.subarray(0, byteLength);
+
+      const getText = () => new TextDecoder().decode(getBytes());
+
+      const getJson = () => JSON.parse(getText());
+
+      return {
+        text: getText,
+        bytes: getBytes,
+        json: getJson,
+      }
+    };
+
+    return Object.assign(pr, {
+      childProcess: cp,
+      ...makeStdoutAddons()
+    });
   };

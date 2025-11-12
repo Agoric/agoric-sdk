@@ -377,6 +377,9 @@ const main = async (progname, rawArgs, powers) => {
     )
     .option('--log_no_color, --log-no-color', 'Disable colored logs')
     .option('--trace', 'print out full stack trace on errors')
+    .option('--retry <retry>', 'max retries (default: 0)', value =>
+      parseInt(value, 10),
+    )
     .description('publish a bundle to a Cosmos chain')
     .action(async (bundles, _options, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
