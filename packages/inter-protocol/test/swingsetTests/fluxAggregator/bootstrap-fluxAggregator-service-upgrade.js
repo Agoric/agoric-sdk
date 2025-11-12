@@ -17,6 +17,14 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
+/**
+ * @import {start as committeeStart} from '@agoric/governance/src/committee.js';
+ * @import {start as fluxAggregatorStart} from '../../../src/price/fluxAggregatorContract.js';
+ * @import {start as puppetGovernorStart} from '@agoric/governance/tools/puppetContractGovernor.js';
+ * @import {OracleKit} from '../../../src/price/priceOracleKit.js';
+ * @import {StartParams} from '@agoric/zoe/src/zoeService/utils.js';
+ */
+
 const trace = makeTracer('BootFAUpg');
 
 export const faV1BundleName = 'fluxAggregatorV1';
@@ -43,15 +51,9 @@ export const buildRootObject = async () => {
   // for startInstance
   /**
    * @type {{
-   *   committee?: Installation<
-   *     typeof import('@agoric/governance/src/committee.js').start
-   *   >;
-   *   fluxAggregatorV1?: Installation<
-   *     typeof import('../../../src/price/fluxAggregatorContract.js').start
-   *   >;
-   *   puppetContractGovernor?: Installation<
-   *     typeof import('@agoric/governance/tools/puppetContractGovernor.js').start
-   *   >;
+   *   committee?: Installation<typeof committeeStart>;
+   *   fluxAggregatorV1?: Installation<typeof fluxAggregatorStart>;
+   *   puppetContractGovernor?: Installation<typeof puppetGovernorStart>;
    * }}
    */
   const installations = {};
@@ -60,15 +62,13 @@ export const buildRootObject = async () => {
   /**
    * @type {ReturnType<
    *   Awaited<
-   *     ReturnType<
-   *       import('../../../src/price/fluxAggregatorContract.js').start
-   *     >
+   *     ReturnType<typeof fluxAggregatorStart>
    *   >['creatorFacet']['getLimitedCreatorFacet']
    * >}
    */
   let faLimitedFacet;
 
-  /** @type {import('../../../src/price/priceOracleKit.js').OracleKit} */
+  /** @type {OracleKit} */
   let oracleA;
   /** @type {Subscriber<any>} */
   let quoteSubscriber1;
@@ -77,9 +77,7 @@ export const buildRootObject = async () => {
 
   /**
    * @type {Omit<
-   *   import('@agoric/zoe/src/zoeService/utils.js').StartParams<
-   *     import('../../../src/price/fluxAggregatorContract.js').start
-   *   >['terms'],
+   *   StartParams<typeof fluxAggregatorStart>['terms'],
    *   'issuers' | 'brands'
    * >}
    */

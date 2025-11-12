@@ -39,7 +39,7 @@ import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
  * @import {NameAdmin} from '@agoric/vats';
  * @import {WalletFactoryStartResult} from '@agoric/vats/src/core/startWalletFactory.js';
  * @import {Zone} from '@agoric/zone';
- * @import {start as walletFactoryStart} from '@agoric/smart-wallet/src/walletFactory.js';
+ * @import {start as StartWalletFactory} from '@agoric/smart-wallet/src/walletFactory.js';
  * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {RecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {BridgeHandler} from '@agoric/vats';
@@ -97,7 +97,7 @@ export const prepareBridgeProvisionTool = zone =>
     }),
     /**
      * @param {ERef<BankManager>} bankManager
-     * @param {ERef<EReturn<walletFactoryStart>['creatorFacet']>} walletFactory
+     * @param {ERef<EReturn<StartWalletFactory>['creatorFacet']>} walletFactory
      * @param {ERef<NameAdmin>} namesByAddressAdmin
      * @param {ProvisionPoolKit['forHandler']} forHandler
      */
