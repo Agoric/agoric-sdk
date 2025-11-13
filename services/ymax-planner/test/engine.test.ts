@@ -1,5 +1,7 @@
 import test from 'ava';
 
+import { Fail } from '@endo/errors';
+
 import { boardSlottingMarshaller } from '@agoric/client-utils';
 import {
   AmountMath,
@@ -16,27 +18,35 @@ import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { Far } from '@endo/pass-style';
 import { pickBalance, processPortfolioEvents } from '../src/engine.ts';
 
-const mockDepositAsset = (name: string, assetKind: 'nat') => {
+let lastIbcId = 100;
+const mockAsset = (
+  name: string,
+): AssetInfo & { brand: Brand<'nat'>; boardId: string } => {
   // avoid VatData but provide boardSlottingMarshaller-friendly brands
+  const boardId = `${name}-brand-slot`;
   const brand = Far(`${name} brand`, {
-    getBoardId: () => `${name}-brand-slot`,
+    getBoardId: () => boardId,
   }) as unknown as Brand<'nat'>;
   const issuer = Far(`${name} issuer`) as Issuer<'nat'>;
-  const displayInfo: DisplayInfo = harden({ assetKind, decimalPlaces: 6 });
-  const denom = 'ibc/123';
-  const depositAsset: AssetInfo = harden({
+  const displayInfo: DisplayInfo = harden({
+    assetKind: 'nat',
+    decimalPlaces: 6,
+  });
+  const denom = `ibc/${++lastIbcId}`;
+  return harden({
     brand,
     denom,
     issuer,
     displayInfo,
     issuerName: name,
     proposedName: name,
+
+    boardId,
   });
-  return depositAsset;
 };
 
 test('ignore additional balances', t => {
-  const usdc = mockDepositAsset('USDC', 'nat');
+  const usdc = mockAsset('USDC');
   const { denom, brand } = usdc;
 
   const balances = [
@@ -49,21 +59,15 @@ test('ignore additional balances', t => {
 });
 
 test('processPortfolioEvents only resolves flows for new portfolio states', async t => {
-  const depositAsset = mockDepositAsset('USDC', 'nat');
-  const feeAsset = mockDepositAsset('Fee', 'nat');
-  const depositBrand = depositAsset.brand as Brand<'nat'>;
-  const feeBrand = feeAsset.brand as Brand<'nat'>;
+  const { brand: depositBrand, boardId: depositBoardId } = mockAsset('USDC');
+  const { brand: feeBrand, boardId: feeBoardId } = mockAsset('Fee');
   const slotRegistry = new Map([
-    ['USDC-brand-slot', depositBrand],
-    ['Fee-brand-slot', feeBrand],
+    [depositBoardId, depositBrand],
+    [feeBoardId, feeBrand],
   ]);
-  const marshaller = boardSlottingMarshaller(slot => {
-    const value = slotRegistry.get(slot as string);
-    if (!value) {
-      throw Error(`Unknown slot ${slot}`);
-    }
-    return value;
-  });
+  const marshaller = boardSlottingMarshaller(
+    slot => slotRegistry.get(slot as string) || Fail`Unknown slot ${slot}`,
+  );
   const flowKey = 'flow1';
   const flowDetail: FlowDetail = harden({
     type: 'deposit',
