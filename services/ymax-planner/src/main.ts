@@ -257,7 +257,6 @@ export const main = async (
     now,
     gasEstimator,
     usdcTokensByChain,
-    kvStore,
   };
 
   await withDeferredCleanup(async addCleanup => {

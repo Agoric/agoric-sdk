@@ -1,10 +1,6 @@
 import { Fail, q } from '@endo/errors';
 
 /**
- * @import {KVStore} from './kvStore.js';
- */
-
-/**
  * @import {SnapStoreInternal} from './snapStore.js';
  * @import {TranscriptStoreInternal} from './transcriptStore.js';
  * @import {BundleStoreInternal} from './bundleStore.js';

@@ -6,14 +6,14 @@ import type { InspectOptions } from 'node:util';
 
 import type { Coin } from '@cosmjs/stargate';
 
+import { Fail, annotateError, q } from '@endo/errors';
+import { Nat } from '@endo/nat';
+import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import { getInvocationUpdate, reflectWalletStore } from '@agoric/client-utils';
 import type { RetryOptionsAndPowers } from '@agoric/client-utils/src/sync-tools.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
-import { Fail, annotateError, q } from '@endo/errors';
-import { Nat } from '@endo/nat';
 
 import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
@@ -28,10 +28,10 @@ import {
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import {
-  PoolPlaces,
-  PortfolioStatusShapeExt,
   flowIdFromKey,
+  PoolPlaces,
   portfolioIdFromKey,
+  PortfolioStatusShapeExt,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type {
   FlowDetail,
@@ -53,10 +53,10 @@ import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
-import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
-import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import { handlePendingTx } from './pending-tx-manager.ts';
 import type { EvmContext, HandlePendingTxOpts } from './pending-tx-manager.ts';
+import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
+import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import {
   getCurrentBalance,
   getNonDustBalances,
@@ -413,7 +413,6 @@ const processPortfolioEvents = async (
         assert(oldState);
         if (!oldState.repeats) console.warn(`⚠️  Ignoring unchanged ${path}`);
         oldState.repeats += 1;
-        return;
       }
       memory.snapshots.set(portfolioKey, { fingerprint, repeats: 0 });
 
