@@ -294,3 +294,5 @@ export const reflectWalletStore = (
     saveOfferResult,
   });
 };
+
+export type WalletStore = ReturnType<typeof reflectWalletStore>;

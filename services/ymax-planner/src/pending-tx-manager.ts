@@ -2,7 +2,7 @@ import type { WebSocketProvider } from 'ethers';
 
 import { Fail } from '@endo/errors';
 
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
+import type { SigningSmartWalletKit, WalletStore } from '@agoric/client-utils';
 import type { CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
@@ -32,6 +32,7 @@ export type EvmContext = {
   usdcAddresses: UsdcAddresses['mainnet' | 'testnet'];
   evmProviders: EvmProviders;
   signingSmartWalletKit: SigningSmartWalletKit;
+  walletStore: WalletStore;
   fetch: typeof fetch;
 };
 
@@ -147,6 +148,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
 
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
+      walletStore: ctx.walletStore,
       txId,
       status: transferStatus ? TxStatus.SUCCESS : TxStatus.FAILED,
     });
@@ -229,6 +231,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
 
     await resolvePendingTx({
       signingSmartWalletKit: ctx.signingSmartWalletKit,
+      walletStore: ctx.walletStore,
       txId,
       status: transferStatus ? TxStatus.SUCCESS : TxStatus.FAILED,
     });

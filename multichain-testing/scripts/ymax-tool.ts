@@ -550,6 +550,7 @@ const main = async (
       await walletKit.readPublished('agoricNames.instance'),
     );
     await cf.deliverResolverInvitation(resolver, postalService);
+    await cf.deliverResolverServiceInvitation(resolver, postalService);
     return;
   }
 

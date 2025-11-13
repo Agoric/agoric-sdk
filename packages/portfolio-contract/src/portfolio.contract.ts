@@ -481,11 +481,22 @@ export const contract = async (
       return makePlanner();
     }, 'planner');
 
+  const makeResolverServiceInvitation = () =>
+    zcf.makeInvitation(seat => {
+      seat.exit();
+      return resolverService;
+    }, 'resolver service');
+
   const creatorFacet = zone.exo(
     'PortfolioAdmin',
     M.interface('PortfolioAdmin', {
       makeResolverInvitation: M.callWhen().returns(InvitationShape),
+      getResolverService: M.call().returns(M.remotable()),
       deliverResolverInvitation: M.callWhen(
+        M.string(),
+        M.remotable('Instance'),
+      ).returns(),
+      deliverResolverServiceInvitation: M.callWhen(
         M.string(),
         M.remotable('Instance'),
       ).returns(),
@@ -502,6 +513,9 @@ export const contract = async (
       makeResolverInvitation() {
         return makeResolverInvitation();
       },
+      getResolverService() {
+        return resolverService;
+      },
       async deliverResolverInvitation(
         address: string,
         instancePS: Instance<() => { publicFacet: PostalServiceI }>,
@@ -512,6 +526,17 @@ export const contract = async (
         trace('made resolver invitation', invitation);
         await E(pfP).deliverPayment(address, invitation);
         trace('delivered resolver invitation');
+      },
+      async deliverResolverServiceInvitation(
+        address: string,
+        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+      ) {
+        const zoe = zcf.getZoeService();
+        const pfP = E(zoe).getPublicFacet(instancePS);
+        const invitation = await makeResolverServiceInvitation();
+        trace('made resolver service invitation', invitation);
+        await E(pfP).deliverPayment(address, invitation);
+        trace('delivered resolver service invitation');
       },
       makePlannerInvitation() {
         return makePlannerInvitation();

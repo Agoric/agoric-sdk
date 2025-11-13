@@ -8,8 +8,8 @@ import type { Coin } from '@cosmjs/stargate';
 
 import { Fail, annotateError, q } from '@endo/errors';
 import { Nat } from '@endo/nat';
-import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
+import { getInvocationUpdate } from '@agoric/client-utils';
+import type { SigningSmartWalletKit, WalletStore } from '@agoric/client-utils';
 import type { RetryOptionsAndPowers } from '@agoric/client-utils/src/sync-tools.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import type { Bech32Address } from '@agoric/orchestration';
@@ -177,7 +177,10 @@ export const makeVstorageEvent = (
 };
 
 type Powers = {
-  evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
+  evmCtx: Omit<
+    EvmContext,
+    'signingSmartWalletKit' | 'walletStore' | 'fetch' | 'cosmosRest'
+  >;
   rpc: CosmosRPCClient;
   spectrum: SpectrumClient;
   spectrumBlockchain?: SpectrumBlockchainSdk;
@@ -186,7 +189,7 @@ type Powers = {
   spectrumPoolIds: Partial<Record<InstrumentId, string>>;
   cosmosRest: CosmosRestClient;
   signingSmartWalletKit: SigningSmartWalletKit;
-  walletStore: ReturnType<typeof reflectWalletStore>;
+  walletStore: WalletStore;
   getWalletInvocationUpdate: (
     messageId: string | number,
     retryOpts?: RetryOptionsAndPowers,
@@ -734,6 +737,7 @@ export const startEngine = async (
     marshaller,
     now,
     signingSmartWalletKit,
+    walletStore,
     vstoragePathPrefixes,
   });
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
