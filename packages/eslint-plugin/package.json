@@ -1,0 +1,33 @@
+{
+  "name": "@agoric/eslint-plugin",
+  "version": "0.1.0",
+  "description": "ESLint plugin for Agoric best practices",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "files": [
+    "src"
+  ],
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "eslint-plugin"
+  ],
+  "scripts": {
+    "build": "exit 0",
+    "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
+    "lint:types": "yarn run -T tsc",
+    "test": "node --test **/*.test.*",
+    "test:xs": "exit 0"
+  },
+  "peerDependencies": {
+    "eslint": "^9.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "eslint-plugin-eslint-plugin": "^7.2.0"
+  },
+  "license": "Apache-2.0",
+  "engines": {
+    "node": "^20.9 || ^22.11"
+  }
+}

@@ -9,10 +9,11 @@ import { fromExternalConfig } from './utils/config-marshal.js';
  * @import {CopyRecord} from '@endo/pass-style'
  * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
+ * @import {Bech32Address} from '@agoric/orchestration';
  */
 
 /**
- * @typedef {{ destinationAddress: import('@agoric/orchestration').Bech32Address, principal: Amount<'nat'>} &
+ * @typedef {{ destinationAddress: Bech32Address, principal: Amount<'nat'>} &
  *  CopyRecord
  * } ReimbursementTerms
  */

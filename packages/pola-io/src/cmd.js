@@ -80,4 +80,4 @@ export const makeCmdRunner = (file, { execFile, defaultEnv } = {}) => {
   return make({ preArgs: [], postArgs: [], postEnv: {} });
 };
 freeze(makeCmdRunner);
-/** @typedef {ReturnType<makeCmdRunner>} CmdRunner */
+/** @typedef {ReturnType<typeof makeCmdRunner>} CmdRunner */

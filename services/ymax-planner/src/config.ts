@@ -6,9 +6,10 @@ import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { AxelarChainIdMap } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import * as AgoricClientUtils from '@agoric/client-utils';
 import { objectMap } from '@agoric/internal';
+import type { ClusterName } from '@agoric/internal';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants';
+import { parseGraphqlEndpoints } from './utils.ts';
 
-export type ClusterName = 'local' | 'testnet' | 'mainnet';
 export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
   harden({
     local: AgoricClientUtils.LOCAL_CONFIG_KEY,
@@ -16,16 +17,27 @@ export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
     mainnet: 'main',
   });
 
+/** `maxRetries` is a count; all other numbers are in milliseconds. */
+export type RequestLimits = {
+  timeout: number;
+  maxRetries: number;
+  backoffBase: number;
+  maxBackoff: number;
+};
+
 export interface YmaxPlannerConfig {
   readonly clusterName: ClusterName;
   readonly contractInstance: string;
   readonly mnemonic: string;
   readonly alchemyApiKey: string;
+  readonly requestLimits: Partial<RequestLimits>;
   readonly spectrum: {
     readonly apiUrl?: string;
     readonly timeout: number;
     readonly retries: number;
   };
+  readonly spectrumBlockchainEndpoints?: string[];
+  readonly spectrumPoolsEndpoints?: string[];
   readonly cosmosRest: {
     readonly agoricNetworkSpec: string;
     readonly agoricNetSubdomain?: string;
@@ -144,21 +156,40 @@ export const loadConfig = async (
     throw Fail`CONTRACT_INSTANCE must be 'ymax0' or 'ymax1', got: ${contractInstance}`;
   }
 
+  const timeout = parsePositiveInteger(env, 'REQUEST_TIMEOUT', 10000);
+  const maxRetries = parsePositiveInteger(env, 'REQUEST_RETRIES', 3);
+  const graphqlEndpoints = parseGraphqlEndpoints(
+    env.GRAPHQL_ENDPOINTS || '{}',
+    'GRAPHQL_ENDPOINTS',
+  );
+  const {
+    'api-spectrum-blockchain': spectrumBlockchainEndpoints,
+    'api-spectrum-pools': spectrumPoolsEndpoints,
+  } = graphqlEndpoints;
+  if (!spectrumBlockchainEndpoints || !spectrumPoolsEndpoints) {
+    console.warn(
+      '⚠️  Missing GRAPHQL_ENDPOINTS configuration for api-spectrum-blockchain and/or api-spectrum-blockchain. SPECTRUM_API_URL is deprecated.',
+    );
+  }
+
   const config: YmaxPlannerConfig = harden({
     clusterName,
     contractInstance,
     mnemonic,
     alchemyApiKey: validateRequired(env, 'ALCHEMY_API_KEY'),
+    requestLimits: { timeout, maxRetries },
     spectrum: {
       apiUrl: validateUrl(env, 'SPECTRUM_API_URL', undefined),
-      timeout: parsePositiveInteger(env, 'SPECTRUM_API_TIMEOUT', 30000),
-      retries: parsePositiveInteger(env, 'SPECTRUM_API_RETRIES', 3),
+      timeout: parsePositiveInteger(env, 'SPECTRUM_API_TIMEOUT', timeout),
+      retries: parsePositiveInteger(env, 'SPECTRUM_API_RETRIES', maxRetries),
     },
+    spectrumBlockchainEndpoints,
+    spectrumPoolsEndpoints,
     cosmosRest: {
       agoricNetworkSpec,
       agoricNetSubdomain,
-      timeout: parsePositiveInteger(env, 'COSMOS_REST_TIMEOUT', 15000),
-      retries: parsePositiveInteger(env, 'COSMOS_REST_RETRIES', 3),
+      timeout: parsePositiveInteger(env, 'COSMOS_REST_TIMEOUT', timeout),
+      retries: parsePositiveInteger(env, 'COSMOS_REST_RETRIES', maxRetries),
     },
     axelar: {
       apiUrl: axelarApiAddress,

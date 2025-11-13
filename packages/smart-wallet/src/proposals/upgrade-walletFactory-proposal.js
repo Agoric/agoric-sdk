@@ -4,6 +4,11 @@ import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { allValues } from '@agoric/internal';
 
+/**
+ * @import {NameHub} from '@agoric/vats';
+ * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
+ */
+
 console.warn('upgrade-walletFactory-proposal.js module evaluating');
 
 // vstorage paths under published.*
@@ -88,7 +93,7 @@ export const publishAgoricBrandsDisplayInfo = async ({
     await E(node).setValue(JSON.stringify(aux));
   };
 
-  /** @type {ERef<import('@agoric/vats').NameHub>} */
+  /** @type {ERef<NameHub>} */
   const brandHub = E(agoricNames).lookup('brand');
   const brands = await E(brandHub).values();
   // tolerate failure; in particular, for the timer brand
@@ -96,7 +101,7 @@ export const publishAgoricBrandsDisplayInfo = async ({
 };
 harden(publishAgoricBrandsDisplayInfo);
 
-/** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest} */
+/** @type {BootstrapManifest} */
 const manifest = {
   [upgradeWalletFactory.name]: {
     // include rationale for closely-held, high authority capabilities

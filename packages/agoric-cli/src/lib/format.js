@@ -4,6 +4,9 @@ import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
 /**
  * @import {Amount, Brand} from '@agoric/ertp'
  * @import {AgoricNamesRemotes, BoardRemote, VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
+ * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {CoalescedWalletState} from '@agoric/smart-wallet/src/utils.js';
+ * @import {makeWalletStateCoalescer} from '@agoric/smart-wallet/src/utils.js';
  */
 
 // TODO Move to packages/internal.
@@ -87,7 +90,7 @@ export const asBoardRemote = x => {
 /**
  * Summarize the balances array as user-facing informative tuples
  *
- * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord['purses']} purses
+ * @param {CurrentWalletRecord['purses']} purses
  * @param {VBankAssetDetail[]} assets
  */
 export const purseBalanceTuples = (purses, assets) => {
@@ -115,7 +118,7 @@ export const fmtRecordOfLines = record => {
 /**
  * Summarize the offerStatuses of the state as user-facing informative tuples
  *
- * @param {import('@agoric/smart-wallet/src/utils.js').CoalescedWalletState} state
+ * @param {CoalescedWalletState} state
  * @param {AgoricNamesRemotes} agoricNames
  */
 export const offerStatusTuples = (state, agoricNames) => {
@@ -171,8 +174,8 @@ export const offerStatusTuples = (state, agoricNames) => {
 };
 
 /**
- * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} current
- * @param {ReturnType<import('@agoric/smart-wallet/src/utils.js').makeWalletStateCoalescer>['state']} coalesced
+ * @param {CurrentWalletRecord} current
+ * @param {ReturnType<typeof makeWalletStateCoalescer>['state']} coalesced
  * @param {AgoricNamesRemotes} agoricNames
  */
 export const summarize = (current, coalesced, agoricNames) => {

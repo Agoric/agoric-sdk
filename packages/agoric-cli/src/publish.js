@@ -18,6 +18,13 @@ import { fromBech32 } from '@cosmjs/encoding';
 import { CodecHelper } from '@agoric/cosmic-proto';
 import { MsgInstallBundle as MsgInstallBundleType } from '@agoric/cosmic-proto/swingset/msgs.js';
 
+/**
+ * @import {resolve} from 'path';
+ * @import {promises} from 'fs';
+ * @import {SigningStargateClient} from '@cosmjs/stargate';
+ * @import {EncodeObject} from '@cosmjs/proto-signing';
+ */
+
 const MsgInstallBundle = CodecHelper(MsgInstallBundleType);
 
 // https://github.com/Agoric/agoric-sdk/blob/master/golang/cosmos/daemon/main.go
@@ -229,9 +236,9 @@ const urlForRpcAddress = address => {
 
 /**
  * @param {object} args
- * @param {typeof import('path').resolve} args.pathResolve
- * @param {typeof import('fs').promises.readFile} args.readFile
- * @param {typeof import('@cosmjs/stargate').SigningStargateClient.connectWithSigner} args.connectWithSigner
+ * @param {typeof resolve} args.pathResolve
+ * @param {typeof promises.readFile} args.readFile
+ * @param {typeof SigningStargateClient.connectWithSigner} args.connectWithSigner
  * @param {() => number} args.random - a random number in the interval [0, 1)
  */
 export const makeCosmosBundlePublisher = ({
@@ -272,7 +279,7 @@ export const makeCosmosBundlePublisher = ({
       submitter: fromBech32(from.address).data,
     };
 
-    /** @type {Array<import('@cosmjs/proto-signing').EncodeObject>} */
+    /** @type {Array<EncodeObject>} */
     const encodeObjects = [
       {
         typeUrl: Agoric.proto.swingset.InstallBundle.typeUrl,

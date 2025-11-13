@@ -5,6 +5,10 @@ import * as cb from '@agoric/internal/src/callback.js';
 import { prepareChainStorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { prepareBridgeManager } from './bridge.js';
 
+/**
+ * @import {ScopedBridgeManager} from './types.js';
+ */
+
 export function buildRootObject(vatPowers, _args, baggage) {
   const { D } = vatPowers;
   D || Fail`D missing in vatPowers ${Object.keys(vatPowers)}`;
@@ -20,7 +24,7 @@ export function buildRootObject(vatPowers, _args, baggage) {
   );
 
   /**
-   * @param {ERef<import('./types.js').ScopedBridgeManager<'storage'>>} storageBridgeManagerP
+   * @param {ERef<ScopedBridgeManager<'storage'>>} storageBridgeManagerP
    * @param {string} rootPath must be unique (caller responsibility to ensure)
    * @param {object} [options]
    */

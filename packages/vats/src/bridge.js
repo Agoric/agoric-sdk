@@ -3,6 +3,15 @@ import { M } from '@agoric/store';
 import { E } from '@endo/far';
 
 /**
+ * @import {BridgeId} from '@agoric/internal';
+ * @import {BridgeManager} from './types.js';
+ * @import {Remote} from '@agoric/internal';
+ * @import {BridgeHandler} from './types.js';
+ * @import {ScopedBridgeManager} from './types.js';
+ * @import {Zone} from '@agoric/zone';
+ */
+
+/**
  * Helper to type the registered scoped bridge correctly.
  *
  * FIXME: This is needed because `register` is not an async function, so
@@ -10,16 +19,14 @@ import { E } from '@endo/far';
  * loses the function's genericity. If `register` was async, we could use its
  * type directly, and it would remain generic.
  *
- * @template {import('@agoric/internal').BridgeId} BridgeId
- * @param {ERef<import('./types.js').BridgeManager>} bridgeManager
+ * @template {BridgeId} BridgeId
+ * @param {ERef<BridgeManager>} bridgeManager
  * @param {BridgeId} bridgeIdValue
- * @param {import('@agoric/internal').Remote<
- *   import('./types.js').BridgeHandler
- * >} [handler]
- * @returns {Promise<import('./types.js').ScopedBridgeManager<BridgeId>>}
+ * @param {Remote<BridgeHandler>} [handler]
+ * @returns {Promise<ScopedBridgeManager<BridgeId>>}
  */
 export const makeScopedBridge = (bridgeManager, bridgeIdValue, handler) =>
-  /** @type {Promise<import('./types.js').ScopedBridgeManager<BridgeId>>} */ (
+  /** @type {Promise<ScopedBridgeManager<BridgeId>>} */ (
     E(bridgeManager).register(bridgeIdValue, handler)
   );
 
@@ -50,7 +57,7 @@ const BridgeManagerIKit = harden({
   }),
 });
 
-/** @param {import('@agoric/zone').Zone} zone */
+/** @param {Zone} zone */
 const prepareScopedManager = zone => {
   const makeScopedManager = zone.exoClass(
     'BridgeScopedManager',
@@ -60,7 +67,7 @@ const prepareScopedManager = zone => {
      * @param {{
      *   outbound: (bridgeId: string, obj: unknown) => Promise<any>;
      * }} toBridge
-     * @param {import('./types.js').BridgeHandler} [inboundHandler]
+     * @param {BridgeHandler} [inboundHandler]
      */
     (bridgeId, toBridge, inboundHandler) => ({
       bridgeId,
@@ -102,7 +109,7 @@ const prepareScopedManager = zone => {
 };
 
 /**
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  * @param {DProxy} D The device sender
  */
 export const prepareBridgeManager = (zone, D) => {
@@ -114,7 +121,7 @@ export const prepareBridgeManager = (zone, D) => {
    *
    * @param {BridgeDevice} bridgeDevice The bridge to manage
    * @returns {{
-   *   manager: import('./types.js').BridgeManager;
+   *   manager: BridgeManager;
    *   privateInbounder: { inbound(srcID: string, obj: unknown): void };
    *   privateOutbounder: {
    *     outbound(dstID: string, obj: unknown): Promise<any>;
@@ -191,7 +198,7 @@ export const prepareBridgeManager = (zone, D) => {
    * Obtain the single manager associated with a bridge device.
    *
    * @param {BridgeDevice} bridgeDevice
-   * @returns {import('./types.js').BridgeManager}
+   * @returns {BridgeManager}
    */
   const provideManagerForBridge = bridgeDevice => {
     let kit;

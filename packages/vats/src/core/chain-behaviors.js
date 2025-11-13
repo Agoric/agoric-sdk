@@ -22,6 +22,7 @@ import { makeScopedBridge } from '../bridge.js';
 
 /**
  * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
+ * @import {BootstrapManifest} from './lib-boot.js';
  */
 
 const { keys } = Object;
@@ -495,7 +496,7 @@ export const connectChainFaucet = async ({ consume: { client } }) => {
 };
 harden(connectChainFaucet);
 
-/** @type {import('./lib-boot.js').BootstrapManifest} */
+/** @type {BootstrapManifest} */
 export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
   ...BASIC_BOOTSTRAP_PERMITS,
 
@@ -573,7 +574,7 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
 };
 harden(SHARED_CHAIN_BOOTSTRAP_MANIFEST);
 
-/** @type {import('./lib-boot.js').BootstrapManifest} */
+/** @type {BootstrapManifest} */
 export const CHAIN_BOOTSTRAP_MANIFEST = harden({
   ...SHARED_CHAIN_BOOTSTRAP_MANIFEST,
   [connectChainFaucet.name]: {

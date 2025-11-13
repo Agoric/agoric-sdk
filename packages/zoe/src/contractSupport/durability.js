@@ -4,6 +4,7 @@ import { E } from '@endo/eventual-send';
 
 /**
  * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {Baggage} from '@agoric/swingset-liveslots';
  */
 
 /**
@@ -40,7 +41,7 @@ harden(makeEphemeraProvider);
  * Provide an empty ZCF seat.
  *
  * @param {ZCF} zcf
- * @param {import('@agoric/swingset-liveslots').Baggage} baggage
+ * @param {Baggage} baggage
  * @param {string} name
  * @returns {ZCFSeat}
  */
@@ -110,7 +111,7 @@ harden(provideAll);
  * @see {makeAtomicProvider}
  * @see {AtomicProvider}
  * @template {() => ERef<any>} T
- * @param {import('@agoric/vat-data').Baggage} mapStore
+ * @param {Baggage} mapStore
  * @param {string} key
  * @param {T} makeValue
  * @param {(value: Awaited<ReturnType<T>>) => void} [withValue]

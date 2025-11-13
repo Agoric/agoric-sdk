@@ -5,6 +5,13 @@ import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { shape } from './typeGuards.js';
 
+/**
+ * @import {OfferId} from './offers.js';
+ * @import {InvitationDetails} from '@agoric/zoe';
+ * @import {NameHub} from '@agoric/vats';
+ * @import {InvitationMakers} from './types.js';
+ */
+
 // A safety limit
 const MAX_PIPE_LENGTH = 2;
 
@@ -50,7 +57,7 @@ const MAX_PIPE_LENGTH = 2;
  *
  * @typedef {{
  *   source: 'continuing';
- *   previousOffer: import('./offers.js').OfferId;
+ *   previousOffer: OfferId;
  *   invitationMakerName: string;
  *   invitationArgs?: any[];
  * }} ContinuingInvitationSpec
@@ -59,18 +66,15 @@ const MAX_PIPE_LENGTH = 2;
  */
 
 /**
- * @typedef {Pick<
- *   import('@agoric/zoe').InvitationDetails,
- *   'description' | 'instance'
- * >} InvitationsPurseQuery
+ * @typedef {Pick<InvitationDetails, 'description' | 'instance'>} InvitationsPurseQuery
  */
 
 /**
  * @param {ERef<ZoeService>} zoe
- * @param {ERef<import('@agoric/vats').NameHub>} agoricNames
+ * @param {ERef<NameHub>} agoricNames
  * @param {Brand<'set'>} invitationBrand
- * @param {Purse<'set', import('@agoric/zoe').InvitationDetails>} invitationsPurse
- * @param {(fromOfferId: string) => import('./types.js').InvitationMakers} getInvitationContinuation
+ * @param {Purse<'set', InvitationDetails>} invitationsPurse
+ * @param {(fromOfferId: string) => InvitationMakers} getInvitationContinuation
  */
 export const makeInvitationsHelper = (
   zoe,

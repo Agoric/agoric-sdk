@@ -4,6 +4,10 @@ export {};
 /**
  * @import {Amount, Brand, DepositFacet, Issuer, IssuerKit, Payment} from '@agoric/ertp';
  * @import {Notifier} from '@agoric/notifier';
+ * @import {RemotableObject} from '@endo/pass-style';
+ * @import {TimerService} from '@agoric/time';
+ * @import {TimestampRecord} from '@agoric/time';
+ * @import {Timestamp} from '@agoric/time';
  */
 
 /**
@@ -27,9 +31,9 @@ export {};
  * The amount supplied to a trade
  * @property {Amount<'nat'>} amountOut
  * The quoted result of trading `amountIn`
- * @property {import('@endo/pass-style').RemotableObject & import('@agoric/time').TimerService} timer
+ * @property {RemotableObject & TimerService} timer
  * The service that gave the `timestamp`
- * @property {import('@agoric/time').TimestampRecord} timestamp
+ * @property {TimestampRecord} timestamp
  * A timestamp according to `timer` for the quote
  * @property {any} [conditions]
  * Additional conditions for the quote
@@ -74,7 +78,7 @@ export {};
  *
  * @property {(brandIn: Brand,
  *             brandOut: Brand
- * ) => ERef<import('@agoric/time').TimerService>} getTimerService
+ * ) => ERef<TimerService>} getTimerService
  * Get the timer used in PriceQuotes for a given brandIn/brandOut pair
  *
  * @property {(amountIn: Amount<'nat'>,
@@ -84,7 +88,7 @@ export {};
  * `amountIn`.  The rate at which these are issued may be very different between
  * `priceAuthorities`.
  *
- * @property {(deadline: import('@agoric/time').Timestamp,
+ * @property {(deadline: Timestamp,
  *             amountIn: Amount<'nat'>,
  *             brandOut: Brand<'nat'>
  * ) => Promise<PriceQuote>} quoteAtTime
@@ -152,7 +156,7 @@ export {};
  * @callback PriceQuery
  * @param {PriceCalculator} calcAmountIn
  * @param {PriceCalculator} calcAmountOut
- * @returns {{ amountIn: Amount<'nat'>, amountOut: Amount<'nat'>, timestamp?: import('@agoric/time').TimestampRecord } | undefined}
+ * @returns {{ amountIn: Amount<'nat'>, amountOut: Amount<'nat'>, timestamp?: TimestampRecord } | undefined}
  */
 
 /**

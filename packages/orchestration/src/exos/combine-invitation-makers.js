@@ -8,6 +8,7 @@ import { getStringMethodNames } from '@agoric/internal';
 /**
  * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {Zone} from '@agoric/zone';
+ * @import {InterfaceGuard} from '@endo/patterns';
  */
 
 // TODO use a helper from Endo https://github.com/endojs/endo/issues/2448
@@ -20,7 +21,7 @@ import { getStringMethodNames } from '@agoric/internal';
  * platform-provided ones like `Delegate`, `Transfer`, `Send`.
  *
  * @param {Zone} zone
- * @param {import('@endo/patterns').InterfaceGuard[]} interfaceGuards
+ * @param {InterfaceGuard[]} interfaceGuards
  */
 export const prepareCombineInvitationMakers = (zone, ...interfaceGuards) => {
   const methodGuards = interfaceGuards.map(ig => ig.payload.methodGuards);

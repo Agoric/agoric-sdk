@@ -3,13 +3,17 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { Far } from '@endo/marshal';
 import { prepareRecorderFactory, prepareBoardKit } from './lib-board.js';
 
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ */
+
 // There is only one board in this vat.
 const THE_BOARD = 'theboard';
 
 /**
  * @param {unknown} _vatPowers
  * @param {unknown} _vatParameters
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export function buildRootObject(_vatPowers, _vatParameters, baggage) {
   const zone = makeDurableZone(baggage);

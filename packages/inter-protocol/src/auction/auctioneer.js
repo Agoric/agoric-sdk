@@ -41,6 +41,11 @@ import { AuctionState } from './util.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {TimerService} from '@agoric/time';
+ * @import {AuctionBook} from './auctionBook.js';
+ * @import {ScheduleNotification} from './scheduler.js';
+ * @import {OfferSpec} from './auctionBook.js';
+ * @import {FullSchedule} from './scheduler.js';
  */
 
 const BASIS_POINTS = 10_000n;
@@ -390,7 +395,7 @@ export const distributeProportionalSharesWithLimits = (
 /**
  * @param {ZCF<
  *   GovernanceTerms<typeof auctioneerParamTypes> & {
- *     timerService: import('@agoric/time').TimerService;
+ *     timerService: TimerService;
  *     reservePublicFacet: AssetReservePublicFacet;
  *     priceAuthority: PriceAuthority;
  *   }
@@ -409,7 +414,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const bidAmountShape = { brand: brands.Bid, value: M.nat() };
 
-  /** @type {MapStore<Brand, import('./auctionBook.js').AuctionBook>} */
+  /** @type {MapStore<Brand, AuctionBook>} */
   const books = provideDurableMapStore(baggage, 'auctionBooks');
   /**
    * @type {MapStore<
@@ -449,7 +454,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const scheduleKit = makeERecorderKit(
     E(privateArgs.storageNode).makeChildNode('schedule'),
     /**
-     * @type {TypedPattern<import('./scheduler.js').ScheduleNotification>}
+     * @type {TypedPattern<ScheduleNotification>}
      */ (M.any()),
   );
 
@@ -641,7 +646,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         const offerSpecShape = makeOfferSpecShape(brands.Bid, collateralBrand);
         /**
          * @param {ZCFSeat} zcfSeat
-         * @param {import('./auctionBook.js').OfferSpec} offerSpec
+         * @param {OfferSpec} offerSpec
          */
         const newBidHandler = (zcfSeat, offerSpec) => {
           // xxx consider having Zoe guard the offerArgs with a provided shape
@@ -722,7 +727,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         books.init(brand, newBook);
         brandToKeyword.init(brand, kwd);
       },
-      /** @returns {Promise<import('./scheduler.js').FullSchedule>} */
+      /** @returns {Promise<FullSchedule>} */
       getSchedule() {
         return E(scheduler).getSchedule();
       },

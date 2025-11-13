@@ -19,9 +19,7 @@ const importSpec = async spec =>
   new URL(importMetaResolve(spec, import.meta.url)).pathname;
 
 /**
- * @type {import('ava').TestFn<
- *   Awaited<ReturnType<makeDefaultTestContext>>
- * >}
+ * @type {TestFn<Awaited<ReturnType<typeof makeDefaultTestContext>>>}
  */
 const test = anyTest;
 
@@ -124,14 +122,22 @@ const the = async xP => {
   return x;
 };
 
-/** @import {MockChainStorageRoot as MockVStorageRoot} from '@agoric/internal/src/storage-test-utils.js' */
+/**
+ * @import {MockChainStorageRoot as MockVStorageRoot} from '@agoric/internal/src/storage-test-utils.js'
+ * @import {TestFn} from 'ava';
+ * @import {ExecutionContext} from 'ava';
+ * @import {BridgeAction} from '../src/smartWallet.js';
+ * @import {CapData} from '@endo/marshal';
+ * @import {OfferSpec} from '../src/offers.js';
+ * @import {UpdateRecord} from '../src/smartWallet.js';
+ */
 
 const IST_UNIT = 1_000_000n;
 const CENT = IST_UNIT / 100n;
 
 /**
- * @param {import('ava').ExecutionContext<
- *   Awaited<ReturnType<makeDefaultTestContext>>
+ * @param {ExecutionContext<
+ *   Awaited<ReturnType<typeof makeDefaultTestContext>>
  * >} t
  */
 const makeScenario = t => {
@@ -165,7 +171,7 @@ const makeScenario = t => {
     t.log(addr, 'wallet UI: ingest well-known brands', wkBrand.Place);
 
     assert(broadcastMsg);
-    /** @param {import('../src/smartWallet.js').BridgeAction} action */
+    /** @param {BridgeAction} action */
     const signAndBroadcast = async action => {
       const actionEncoding = ctx.fromBoard.toCapData(action);
       const addIssuerMsg = {
@@ -186,9 +192,9 @@ const makeScenario = t => {
 
     const { entries } = Object;
     const uiBridge = Far('UIBridge', {
-      /** @param {import('@endo/marshal').CapData<string>} offerEncoding */
+      /** @param {CapData<string>} offerEncoding */
       proposeOffer: async offerEncoding => {
-        const offer = /** @type {import('../src/offers.js').OfferSpec} */ (
+        const offer = /** @type {OfferSpec} */ (
           ctx.fromBoard.fromCapData(offerEncoding)
         );
         const { give, want } = offer.proposal;
@@ -345,7 +351,7 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
       ),
     };
     const give = { Price: AmountMath.make(wkBrand.IST, 25n * CENT) };
-    /** @type {import('../src/offers.js').OfferSpec} */
+    /** @type {OfferSpec} */
     const offer1 = harden({
       id: 'joinGame1234',
       invitationSpec: {
@@ -422,7 +428,7 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
       ['Boardwalk', 1n],
     ];
 
-    /** @type {import('../src/smartWallet.js').UpdateRecord} */
+    /** @type {UpdateRecord} */
     const update = await headValue(updates);
     assert(update.updated === 'offerStatus');
     // t.log(update.status);
@@ -487,7 +493,7 @@ test.serial('non-vbank asset: give before deposit', async t => {
     };
     const want = { Price: AmountMath.make(wkBrand.IST, 25n * CENT) };
 
-    /** @type {import('../src/offers.js').OfferSpec} */
+    /** @type {OfferSpec} */
     const offer1 = harden({
       id: 'joinGame2345',
       invitationSpec: {
@@ -527,14 +533,14 @@ test.serial('non-vbank asset: give before deposit', async t => {
     vsGet(`agoricNames.instance`);
 
     /**
-     * @type {import('../src/smartWallet.js').UpdateRecord & {
+     * @type {UpdateRecord & {
      *   updated: 'offerStatus';
      * }}
      */
     let offerUpdate;
     let ix = -1;
     for (;;) {
-      /** @type {import('../src/smartWallet.js').UpdateRecord} */
+      /** @type {UpdateRecord} */
       // @ts-expect-error
       const update = vsGet(`wallet.${addr2}`, ix);
       if (update.updated === 'offerStatus') {

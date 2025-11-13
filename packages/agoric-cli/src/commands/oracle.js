@@ -23,7 +23,15 @@ import {
   sendHint,
 } from '../lib/wallet.js';
 
-/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
+/**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {createCommand} from 'commander';
+ * @import {execFileSync} from 'child_process';
+ * @import {Writable} from 'stream';
+ * @import {Logger} from 'anylogger';
+ * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
+ * @import {TimestampRecord} from '@agoric/time';
+ */
 
 // XXX support other decimal places
 const COSMOS_UNIT = 1_000_000n;
@@ -34,15 +42,15 @@ const scaleDecimals = num => BigInt(Math.round(num * Number(COSMOS_UNIT)));
  * Prints JSON output to stdout and diagnostic info (like logs) to stderr
  *
  * @param {{
- *   createCommand: typeof import('commander').createCommand,
+ *   createCommand: typeof createCommand,
  *   env: Partial<Record<string, string>>,
- *   execFileSync: typeof import('child_process').execFileSync,
+ *   execFileSync: typeof execFileSync,
  *   now: () => number,
  *   setTimeout: typeof setTimeout,
- *   stderr: Pick<import('stream').Writable,'write'>,
- *   stdout: Pick<import('stream').Writable,'write'>,
+ *   stderr: Pick<Writable,'write'>,
+ *   stdout: Pick<Writable,'write'>,
  * }} process
- * @param {import('anylogger').Logger} [logger]
+ * @param {Logger} [logger]
  */
 export const makeOracleCommand = (
   { env, execFileSync, setTimeout, stderr, stdout },
@@ -132,7 +140,7 @@ export const makeOracleCommand = (
       const { lookupPriceAggregatorInstance } = await rpcTools();
       const instance = lookupPriceAggregatorInstance(opts.pair);
 
-      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
+      /** @type {OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {
@@ -326,7 +334,7 @@ export const makeOracleCommand = (
           );
 
           const latestRoundP =
-            /** @type {Promise<{roundId: number, startedAt: import('@agoric/time').TimestampRecord, startedBy: string}>} */ (
+            /** @type {Promise<{roundId: number, startedAt: TimestampRecord, startedBy: string}>} */ (
               readLatestHead(
                 `published.priceFeed.${pair[0]}-${pair[1]}_price_feed.latestRound`,
               )

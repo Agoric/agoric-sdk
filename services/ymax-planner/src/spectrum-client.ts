@@ -74,14 +74,16 @@ export class SpectrumClient {
     this.http = ky.create({
       fetch: this.fetch,
       retry: {
-        // ky's limit is the number of retries after the initial request
-        limit: this.config.retries,
         methods: ['get'],
+        limit: this.config.retries,
+        backoffLimit: 1500,
+        retryOnTimeout: true,
+        jitter: true,
       },
       timeout: this.config.timeout,
       headers: {
         Accept: 'application/json',
-        'User-Agent': 'Agoric-Portfolio-Planner/1.0.0',
+        'User-Agent': 'Agoric-YMax-Planner/1.0.0',
       },
     });
   }

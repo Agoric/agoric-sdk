@@ -1,6 +1,11 @@
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
 const trace = makeTracer('RecordedRetired', true);
 
 /**
@@ -63,7 +68,7 @@ export const getManifestForRecordedRetiredInstances = () => {
   };
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async () =>
   harden({
     sourceSpec:
@@ -71,7 +76,7 @@ export const defaultProposalBuilder = async () =>
     getManifestCall: ['getManifestForRecordedRetiredInstances', {}],
   });
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   // import dynamically so the module can work in CoreEval environment
   const dspModule = await import('@agoric/deploy-script-support');

@@ -264,5 +264,5 @@ export const prepareLogStore = zone => {
 };
 
 /**
- * @typedef {ReturnType<ReturnType<prepareLogStore>>} LogStore
+ * @typedef {ReturnType<ReturnType<typeof prepareLogStore>>} LogStore
  */

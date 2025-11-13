@@ -17,6 +17,7 @@ const interfaceTODO = undefined;
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {VTransferIBCEvent} from '@agoric/vats';
  */
 
 export const SingleNatAmountRecord = M.and(
@@ -101,7 +102,7 @@ export const contract = async (
     console.log('making tap');
     return zone.exo('tap', interfaceTODO, {
       /**
-       * @param {import('@agoric/vats').VTransferIBCEvent} event
+       * @param {VTransferIBCEvent} event
        */
       async receiveUpcall(event) {
         await null;

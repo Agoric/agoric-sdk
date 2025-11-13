@@ -22,6 +22,11 @@ import { CONTRACT_ELECTORATE } from './governParam.js';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {AnyParamManager, GovernanceSubscriptionState, ParamManagerBase, ParamStateRecord, ParamValueTyped, UpdateParams} from '../types.js';
+ * @import {CopyRecord} from '@endo/marshal';
+ * @import {Timestamp} from '@agoric/time';
+ * @import {RelativeTime} from '@agoric/time';
+ * @import {StoredPublisherKit} from '@agoric/notifier';
+ * @import {ParamType} from '../constants.js';
  */
 
 /**
@@ -49,16 +54,16 @@ const assertElectorateMatches = (paramManager, governedParams) => {
  * @property {(name: string, value: Invitation) => ParamManagerBuilder} addInvitation
  * @property {(name: string, value: bigint) => ParamManagerBuilder} addNat
  * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatio
- * @property {(name: string, value: import('@endo/marshal').CopyRecord<any>) => ParamManagerBuilder} addRecord
+ * @property {(name: string, value: CopyRecord<any>) => ParamManagerBuilder} addRecord
  * @property {(name: string, value: string) => ParamManagerBuilder} addString
- * @property {(name: string, value: import('@agoric/time').Timestamp) => ParamManagerBuilder} addTimestamp
- * @property {(name: string, value: import('@agoric/time').RelativeTime) => ParamManagerBuilder} addRelativeTime
+ * @property {(name: string, value: Timestamp) => ParamManagerBuilder} addTimestamp
+ * @property {(name: string, value: RelativeTime) => ParamManagerBuilder} addRelativeTime
  * @property {(name: string, value: any) => ParamManagerBuilder} addUnknown
  * @property {() => AnyParamManager} build
  */
 
 /**
- * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
+ * @param {StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {ERef<ZoeService>} [zoe]
  */
 const makeParamManagerBuilder = (publisherKit, zoe) => {
@@ -94,7 +99,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
    * @param {Keyword} name
    * @param {unknown} value
    * @param {(val) => void} assertion
-   * @param {import('../constants.js').ParamType} type
+   * @param {ParamType} type
    */
   const buildCopyParam = (name, value, assertion, type) => {
     let current;
@@ -183,7 +188,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     return builder;
   };
 
-  /** @type {(name: string, value: import('@endo/marshal').CopyRecord, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /** @type {(name: string, value: CopyRecord, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addRecord = (name, value, builder) => {
     const assertRecord = v => {
       passStyleOf(v);
@@ -200,13 +205,13 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     return builder;
   };
 
-  /** @type {(name: string, value: import('@agoric/time').Timestamp, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /** @type {(name: string, value: Timestamp, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addTimestamp = (name, value, builder) => {
     buildCopyParam(name, value, assertTimestamp, ParamTypes.TIMESTAMP);
     return builder;
   };
 
-  /** @type {(name: string, value: import('@agoric/time').RelativeTime, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /** @type {(name: string, value: RelativeTime, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addRelativeTime = (name, value, builder) => {
     buildCopyParam(name, value, assertRelativeTime, ParamTypes.RELATIVE_TIME);
     return builder;

@@ -4,6 +4,10 @@ import { canBeDurable } from '@agoric/vat-data';
 import { makePromiseKit } from '@endo/promise-kit';
 
 /**
+ * @import {Passable} from '@endo/marshal';
+ */
+
+/**
  * @typedef {{
  *   onAddKey: (key: string) => void;
  *   onResolve: (key: string, value: ERef<unknown>) => void;
@@ -31,7 +35,7 @@ export const makeLogHooks = log =>
  * Note: caller is responsible for synchronization in case of onResolve() called
  * with a promise.
  *
- * @param {MapStore<string, import('@endo/marshal').Passable>} store
+ * @param {MapStore<string, Passable>} store
  * @param {typeof console.log} [log]
  * @returns {PromiseSpaceHooks}
  */

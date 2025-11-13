@@ -20,13 +20,19 @@ import { makeSwingStoreExporter } from '@agoric/swing-store';
 import { isEntrypoint } from './helpers/is-entrypoint.js';
 import { makeProcessValue } from './helpers/process-value.js';
 
+/**
+ * @import {ArtifactMode} from '@agoric/swing-store';
+ * @import {PromiseKit} from '@endo/promise-kit';
+ * @import {ExportMessage} from './export-kernel-db.js';
+ */
+
 // ExportManifestFilename is the manifest filename which must be synchronized
 // with the golang SwingStoreExportsHandler in golang/cosmos/x/swingset/keeper/swing_store_exports_handler.go
 export const ExportManifestFileName = 'export-manifest.json';
 
 /**
  * @typedef {'none'  // No artifacts included
- *  | import("@agoric/swing-store").ArtifactMode
+ *  | ArtifactMode
  * } SwingStoreArtifactMode
  */
 
@@ -39,7 +45,7 @@ export const ExportManifestFileName = 'export-manifest.json';
 
 /**
  * @param {SwingStoreArtifactMode | undefined} artifactMode
- * @returns {import('@agoric/swing-store').ArtifactMode}
+ * @returns {ArtifactMode}
  */
 export const getEffectiveArtifactMode = artifactMode => {
   switch (artifactMode) {
@@ -161,7 +167,7 @@ export const initiateSwingStoreExport = (
   /** @type {number | undefined} */
   let savedBlockHeight;
 
-  /** @type {import('@endo/promise-kit').PromiseKit<void>} */
+  /** @type {PromiseKit<void>} */
   const startedKit = makePromiseKit();
 
   /** @type {Error | undefined} */
@@ -409,9 +415,9 @@ export const spawnSwingStoreExport = (
   });
 
   const kits = harden({
-    /** @type {import('@endo/promise-kit').PromiseKit<void>} */
+    /** @type {PromiseKit<void>} */
     started: makePromiseKit(),
-    /** @type {import('@endo/promise-kit').PromiseKit<void>} */
+    /** @type {PromiseKit<void>} */
     done: makePromiseKit(),
   });
 
@@ -431,7 +437,7 @@ export const spawnSwingStoreExport = (
   /** @type {number | undefined} */
   let exportBlockHeight;
 
-  /** @param {import('./export-kernel-db.js').ExportMessage} msg */
+  /** @param {ExportMessage} msg */
   const onMessage = msg => {
     switch (msg.type) {
       case 'started': {

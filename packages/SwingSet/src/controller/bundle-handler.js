@@ -22,7 +22,7 @@ export const makeXsnapBundleData = harden(() => {
 
 /**
  * @param {import('@agoric/swing-store').BundleStore} bundleStore
- * @param {ReturnType<makeXsnapBundleData>} bundleData
+ * @param {ReturnType<typeof makeXsnapBundleData>} bundleData
  * @returns {BundleHandler}
  */
 export const makeWorkerBundleHandler = harden((bundleStore, bundleData) => {

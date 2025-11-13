@@ -11,7 +11,7 @@ export { insistCapData } from '@agoric/swingset-liveslots/src/capdata.js';
  * Returns the slot of a presence if the provided capdata is composed
  * of a single presence, `null` otherwise
  *
- * @param {import('@endo/marshal').CapData<string>} data
+ * @param {CapData<string>} data
  */
 export function extractSingleSlot(data) {
   const value = kunser(data);

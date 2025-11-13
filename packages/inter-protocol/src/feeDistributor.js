@@ -9,6 +9,8 @@ import { KeywordShape } from '@agoric/zoe/src/typeGuards.js';
 
 /**
  * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {EOnly} from '@endo/far';
+ * @import {DepositFacet} from '@agoric/ertp/src/types.js';
  */
 
 const KeywordSharesShape = M.recordOf(KeywordShape, M.nat());
@@ -272,9 +274,7 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
     },
 
     /**
-     * @param {import('@endo/far').EOnly<
-     *   import('@agoric/ertp/src/types.js').DepositFacet
-     * >} depositFacet
+     * @param {EOnly<DepositFacet>} depositFacet
      */
     makeDepositFacetDestination: depositFacet => {
       return Far(`DepositFacetDestination`, {

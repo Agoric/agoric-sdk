@@ -17,6 +17,10 @@ import { setup } from './setupBasicMints.js';
 import { assertPayoutAmount } from '../zoeTestHelpers.js';
 import { makeScriptedOracle } from '../../tools/scriptedOracle.js';
 
+/**
+ * @import {ExecutionContext} from 'ava';
+ */
+
 // This test shows how to set up a fake oracle and use it in a contract.
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -33,7 +37,7 @@ const bountyContractPath = `${dirname}/bounty.js`;
  * @property {Issuer} moolaIssuer
  * @property {(value: AmountValue) => Amount} moola
  *
- * @typedef {import('ava').ExecutionContext<TestContext>} ExecutionContext
+ * @typedef {ExecutionContext<TestContext>} ExecutionContext
  */
 
 test.before(

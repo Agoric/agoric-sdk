@@ -9,6 +9,7 @@ import { claim, combine } from '../../src/legacy-payment-helpers.js';
 
 /**
  * @import {IssuerKit} from '../../src/types.js'
+ * @import {TypedPattern} from '@agoric/internal';
  */
 
 test('mint.getIssuer', t => {
@@ -28,7 +29,7 @@ test('mint.mintPayment default nat AssetKind', async t => {
   t.assert(AmountMath.isEqual(paymentBalance2, fungible1000));
 });
 
-/** @type {import('@agoric/internal').TypedPattern<string>} */
+/** @type {TypedPattern<string>} */
 const StringPattern = M.string();
 
 test('mint.mintPayment set w strings AssetKind', async t => {

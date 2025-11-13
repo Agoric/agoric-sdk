@@ -5,7 +5,12 @@ import { makeContextualSlogProcessor } from './context-aware-slog.js';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
 /**
- * @param {import('./index.js').MakeSlogSenderOptions} options
+ * @import {MakeSlogSenderOptions} from './index.js';
+ * @import {Slog} from './context-aware-slog.js';
+ */
+
+/**
+ * @param {MakeSlogSenderOptions} options
  */
 export const makeSlogSender = async options => {
   const { CHAIN_ID, CONTEXTUAL_SLOGFILE } = options.env || {};
@@ -26,7 +31,7 @@ export const makeSlogSender = async options => {
   });
 
   /**
-   * @param {import('./context-aware-slog.js').Slog} slog
+   * @param {Slog} slog
    */
   const slogSender = slog => {
     const contextualizedSlog = contextualSlogProcessor(slog);

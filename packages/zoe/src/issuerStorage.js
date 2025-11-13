@@ -11,12 +11,13 @@ const STORAGE_INSTANTIATED_KEY = 'IssuerStorageInstantiated';
 /**
  * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
  * @import {ZoeIssuerRecord} from '@agoric/zoe';
+ * @import {Baggage} from '@agoric/vat-data';
  */
 
 /**
  * Make the Issuer Storage.
  *
- * @param {import('@agoric/vat-data').Baggage} zcfBaggage
+ * @param {Baggage} zcfBaggage
  */
 export const provideIssuerStorage = zcfBaggage => {
   /** @type {WeakMapStore<Brand, ZoeIssuerRecord>} */

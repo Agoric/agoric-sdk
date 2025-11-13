@@ -24,6 +24,8 @@ const just = obj => {
  * @import {ProgressReporter} from '../types.js';
  * @import {IBCEvent, VTransferIBCEvent} from '@agoric/vats';
  * @import {TargetApp, TargetRegistration} from '@agoric/vats/src/bridge-target.js';
+ * @import {IBCMsgTransferOptions} from '../cosmos-api.js';
+ * @import {Zone} from '@agoric/base-zone';
  */
 
 /**
@@ -53,7 +55,7 @@ const just = obj => {
 
 /**
  * @typedef {Pick<
- *   import('../cosmos-api.js').IBCMsgTransferOptions,
+ *   IBCMsgTransferOptions,
  *   'timeoutHeight' | 'timeoutTimestamp'
  * >} PacketTimeout
  */
@@ -66,7 +68,7 @@ const sink = () => {};
 harden(sink);
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools} vowTools
  */
 export const preparePacketTools = (zone, vowTools) => {
@@ -178,7 +180,7 @@ export const preparePacketTools = (zone, vowTools) => {
          * @returns {Vow<string>}
          */
         sendThenWaitForAck(packetSender, opts = {}) {
-          /** @type {import('@agoric/vow').VowKit<Pattern>} */
+          /** @type {VowKit<Pattern>} */
           const pattern = makeVowKit();
 
           // Establish the packet matcher immediately, but don't fulfill

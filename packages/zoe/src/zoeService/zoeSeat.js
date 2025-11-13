@@ -15,6 +15,10 @@ import {
   coreUserSeatMethods,
 } from './originalZoeSeat.js';
 
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ */
+
 // ZoeSeatAdmin has the implementation of coreUserSeatMethods, but ZoeUserSeat
 // is the facet shared with users. The latter transparently forwards to the
 // former.
@@ -46,7 +50,7 @@ const ZoeUserSeat = harden({
  * The zoeSeatAdmin is passed by Zoe to the ContractFacet (zcf), to allow zcf to
  * query or update the allocation or exit the seat cleanly.
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const makeZoeSeatAdminFactory = baggage => {
   const makeDurablePublishKit = prepareDurablePublishKit(

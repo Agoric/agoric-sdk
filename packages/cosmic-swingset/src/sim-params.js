@@ -4,6 +4,11 @@
 import { Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
 
+/**
+ * @import {PowerFlagFeeSDKType} from '@agoric/cosmic-proto/swingset/swingset.js';
+ * @import {ParamsSDKType} from '@agoric/cosmic-proto/swingset/swingset.js';
+ */
+
 const makeStringBeans = (key, beans) => ({ key, beans: `${Nat(beans)}` });
 const makeCoin = (denom, amount) => ({ denom, amount: `${Nat(amount)}` });
 /**
@@ -74,7 +79,7 @@ export const defaultBeansPerUnit = [
 const defaultBootstrapVatConfig =
   '@agoric/vm-config/decentral-demo-config.json';
 
-/** @type {import('@agoric/cosmic-proto/swingset/swingset.js').PowerFlagFeeSDKType[]} */
+/** @type {PowerFlagFeeSDKType[]} */
 export const defaultPowerFlagFees = [
   { power_flag: 'SMART_WALLET', fee: [makeCoin('ubld', 10_000_000n)] },
 ];
@@ -108,7 +113,7 @@ export const VatCleanupDefaults = {
 
 /**
  * @param {VatCleanupKeywordsRecord} keywordsRecord
- * @returns {import('@agoric/cosmic-proto/swingset/swingset.js').ParamsSDKType['vat_cleanup_budget']}
+ * @returns {ParamsSDKType['vat_cleanup_budget']}
  */
 export const makeVatCleanupBudgetFromKeywords = keywordsRecord => {
   return Object.entries(keywordsRecord).map(([keyName, value]) => {
@@ -125,7 +130,7 @@ export const defaultVatCleanupBudget =
   makeVatCleanupBudgetFromKeywords(VatCleanupDefaults);
 
 /**
- * @type {import('@agoric/cosmic-proto/swingset/swingset.js').ParamsSDKType}
+ * @type {ParamsSDKType}
  */
 export const DEFAULT_SIM_SWINGSET_PARAMS = {
   beans_per_unit: defaultBeansPerUnit,

@@ -3,9 +3,13 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareOwnable } from '../../../src/contractSupport/prepare-ownable.js';
 
 /**
+ * @import {Baggage} from '@agoric/vat-data';
+ */
+
+/**
  * @param {ZCF} zcf
  * @param {{ count: bigint}} privateArgs
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
   const zone = makeDurableZone(baggage, 'rootZone');

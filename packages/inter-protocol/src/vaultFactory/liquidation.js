@@ -16,6 +16,10 @@ const trace = makeTracer('LIQ');
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {RelativeTimeRecord, TimerService, TimerWaker} from '@agoric/time';
  * @import {PriceQuote} from '@agoric/zoe/tools/types.js';
+ * @import {Schedule} from '../auction/scheduler.js';
+ * @import {TimestampRecord} from '@agoric/time';
+ * @import {AuctioneerPublicFacet} from '../auction/auctioneer.js';
+ * @import {makePrioritizedVaults} from './prioritizedVaults.js';
  */
 
 const makeCancelToken = makeCancelTokenMaker('liq');
@@ -64,8 +68,8 @@ const cancelWakeups = timer => {
  * @param {TimerWaker} opts.priceLockWaker
  * @param {TimerWaker} opts.liquidationWaker
  * @param {TimerWaker} opts.reschedulerWaker
- * @param {import('../auction/scheduler.js').Schedule} opts.nextAuctionSchedule
- * @param {import('@agoric/time').TimestampRecord} opts.now
+ * @param {Schedule} opts.nextAuctionSchedule
+ * @param {TimestampRecord} opts.now
  * @param {ParamStateRecord} opts.params
  * @returns {void}
  */
@@ -139,7 +143,7 @@ const setWakeups = ({
  * Called by vaultDirector's resetWakeupsForNextAuction at start() and every
  * time there's a "reschedule" wakeup.
  *
- * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
+ * @param {ERef<AuctioneerPublicFacet>} auctioneerPublicFacet
  * @param {ERef<TimerService>} timer
  * @param {TimerWaker} priceLockWaker
  * @param {TimerWaker} liquidationWaker
@@ -205,7 +209,7 @@ harden(liquidationResults);
 /**
  * Watch governed params for change
  *
- * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
+ * @param {ERef<AuctioneerPublicFacet>} auctioneerPublicFacet
  * @param {ERef<TimerService>} timer
  * @param {TimerWaker} reschedulerWaker
  * @returns {void}
@@ -242,9 +246,7 @@ export const watchForGovernanceChange = (
  * @param {PriceQuote} collateralizationDetails.quote
  * @param {Ratio} collateralizationDetails.interest
  * @param {Ratio} collateralizationDetails.margin
- * @param {ReturnType<
- *   typeof import('./prioritizedVaults.js').makePrioritizedVaults
- * >} prioritizedVaults
+ * @param {ReturnType<typeof makePrioritizedVaults>} prioritizedVaults
  * @param {SetStore<Vault>} liquidatingVaults
  * @param {Brand<'nat'>} debtBrand
  * @param {Brand<'nat'>} collateralBrand

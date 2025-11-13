@@ -8,6 +8,7 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {PriceRound} from './roundsManager.js';
  */
 
 /**
@@ -16,7 +17,7 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
  *   roundPowers: {
  *     handlePush: (
  *       status: OracleStatus,
- *       result: import('./roundsManager.js').PriceRound,
+ *       result: PriceRound,
  *     ) => Promise<OracleStatus>;
  *   };
  * }} HeldParams

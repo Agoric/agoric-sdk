@@ -37,7 +37,7 @@ const preparePingee = zone =>
   });
 
 /**
- * @typedef {ReturnType<ReturnType<preparePingee>>} Pingee
+ * @typedef {ReturnType<ReturnType<typeof preparePingee>>} Pingee
  */
 
 const testMode = /** @type {const} */ ({

@@ -1,0 +1,23 @@
+diff --git a/cjs/optimizers/remove-description.js b/cjs/optimizers/remove-description.js
+index f8239012a5f6006a494918c23cc781f864f85bf0..9289b254f2e22338e071d74e201a17669925568e 100644
+--- a/cjs/optimizers/remove-description.js
++++ b/cjs/optimizers/remove-description.js
+@@ -24,6 +24,7 @@ const removeDescriptions = input => {
+         InputValueDefinition: transformNode,
+         FieldDefinition: transformNode,
+         DirectiveDefinition: transformNode,
++        OperationDefinition: transformNode,
+     });
+ };
+ exports.removeDescriptions = removeDescriptions;
+diff --git a/esm/optimizers/remove-description.js b/esm/optimizers/remove-description.js
+index 203c39afaffe637d86535d918cf7cc5f22f7cc0e..4dab176ea9345ce0666763eedcacbc970f2810f8 100644
+--- a/esm/optimizers/remove-description.js
++++ b/esm/optimizers/remove-description.js
+@@ -21,5 +21,6 @@ export const removeDescriptions = input => {
+         InputValueDefinition: transformNode,
+         FieldDefinition: transformNode,
+         DirectiveDefinition: transformNode,
++        OperationDefinition: transformNode,
+     });
+ };

@@ -2,7 +2,7 @@
 
 import { makeSmartWalletKit } from './smart-wallet-kit.js';
 
-/** @typedef {import('./smart-wallet-kit.js').SmartWalletKit} WalletUtils  */
+/** @import {SmartWalletKit} from './smart-wallet-kit.js';  */
 
 /** @deprecated use `makeSmartWalletKit` */
 export const makeWalletUtils = makeSmartWalletKit;

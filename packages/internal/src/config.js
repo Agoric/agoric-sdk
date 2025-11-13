@@ -14,6 +14,27 @@
  */
 
 /**
+ * ClusterName specifies a collection of networks. The specific networks
+ * associated with a particular name may vary from context to context, and may
+ * also overlap (e.g. a "local" cluster may connect to the same remote networks
+ * as a "testnet" cluster), but this type nevertheless supports cross-package
+ * coordination where the values associated with static labels are subject to
+ * choice of cluster. Some examples:
+ *
+ * - the chain ID for a static label like "Agoric" or "Ethereum"
+ * - the cryptographic hash for a static label like "BLD" or "USDC"
+ * - the URL for a service like "Agoric RPC" or "Axelar" or "Spectrum"
+ *
+ * "mainnet" should always include the Agoric network described by
+ * https://main.agoric.net/network-config rather than some other alternative.
+ *
+ * XXX This actually belongs somewhere else, possibly with refactoring.
+ * https://github.com/Agoric/agoric-sdk/pull/12185#discussion_r2500123226
+ *
+ * @typedef {'local' | 'testnet' | 'mainnet'} ClusterName
+ */
+
+/**
  * Event source ids used by the bridge device.
  *
  * @enum {(typeof BridgeId)[keyof typeof BridgeId]}

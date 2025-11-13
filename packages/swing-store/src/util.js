@@ -2,11 +2,15 @@ import path from 'path';
 import { Buffer } from 'buffer';
 
 /**
+ * @import {AnyIterable} from './exporter.js';
+ */
+
+/**
  * This is a polyfill for the `buffer` function from Node's
  * 'stream/consumers' package, which unfortunately only exists in newer versions
  * of Node.
  *
- * @param {import('./exporter.js').AnyIterable<Uint8Array>} inStream
+ * @param {AnyIterable<Uint8Array>} inStream
  */
 export const buffer = async inStream => {
   const chunks = [];

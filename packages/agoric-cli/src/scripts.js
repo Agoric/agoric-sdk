@@ -6,6 +6,12 @@ import { E } from '@endo/captp';
 import { createRequire } from 'module';
 import path from 'path';
 
+/**
+ * @import {ModuleFormat} from '@endo/bundle-source';
+ * @import {BundleOptions} from '@endo/bundle-source';
+ * @import {BundleSourceResult} from '@endo/bundle-source';
+ */
+
 const require = createRequire(import.meta.url);
 
 const PATH_SEP_RE = new RegExp(`${path.sep.replace(/\\/g, '\\\\')}`, 'g');
@@ -135,10 +141,10 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
       const allEndowments = harden({
         home: bootP,
         /**
-         * @template {import('@endo/bundle-source').ModuleFormat} ModuleFormat
+         * @template {ModuleFormat} ModuleFormat
          * @param {string} file
-         * @param {import('@endo/bundle-source').BundleOptions<ModuleFormat>} options
-         * @returns {Promise<import('@endo/bundle-source').BundleSourceResult<ModuleFormat>>}
+         * @param {BundleOptions<ModuleFormat>} options
+         * @returns {Promise<BundleSourceResult<ModuleFormat>>}
          */
         bundleSource: (file, options = {}) =>
           bundleSource(pathResolve(file), {

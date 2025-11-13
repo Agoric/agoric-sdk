@@ -10,6 +10,7 @@ import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
  * @import {CurrentWalletRecord, UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
  * @import {RetryOptionsAndPowers} from './sync-tools.js';
+ * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
  */
 
 /**
@@ -136,7 +137,7 @@ export const makeSmartWalletKit = async (
 
   const agoricNames = await (names
     ? makeAgoricNames(vsk.fromBoard, vsk.vstorage)
-    : /** @type {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} */ ({}));
+    : /** @type {AgoricNamesRemotes} */ ({}));
 
   /**
    * @param {string} from

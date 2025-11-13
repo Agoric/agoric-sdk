@@ -4,19 +4,23 @@ import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
 import { makeAmountStore } from './amountStore.js';
 
-/** @import {AssetKind, RecoverySetsOption, Brand, Payment} from './types.js' */
+/**
+ * @import {AssetKind, RecoverySetsOption, Brand, Payment} from './types.js'
+ * @import {Zone} from '@agoric/zone';
+ * @import {InterfaceGuard} from '@endo/patterns';
+ */
 
 const EMPTY_COPY_SET = makeCopySet([]);
 
 // TODO Type InterfaceGuard better than InterfaceGuard<any>
 /**
- * @param {import('@agoric/zone').Zone} issuerZone
+ * @param {Zone} issuerZone
  * @param {string} name
  * @param {AssetKind} assetKind
  * @param {Brand} brand
  * @param {{
- *   purse: import('@endo/patterns').InterfaceGuard<any>;
- *   depositFacet: import('@endo/patterns').InterfaceGuard<any>;
+ *   purse: InterfaceGuard<any>;
+ *   depositFacet: InterfaceGuard<any>;
  * }} PurseIKit
  * @param {{
  *   depositInternal: any;

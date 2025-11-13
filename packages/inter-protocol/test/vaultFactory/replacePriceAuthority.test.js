@@ -41,6 +41,11 @@ import { defaultParamValues } from './vaultFactoryUtils.js';
  * @import {EReturn} from '@endo/far';
  * @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js';
  * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js';
+ * @import {TestFn} from 'ava';
+ * @import {ExecutionContext} from 'ava';
+ * @import {AuctionParams} from '../../src/auction/params.js';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {TimerService} from '@agoric/time';
  */
 
 /**
@@ -54,7 +59,7 @@ import { defaultParamValues } from './vaultFactoryUtils.js';
  * }} Context
  */
 
-/** @type {import('ava').TestFn<Context>} */
+/** @type {TestFn<Context>} */
 
 const test = unknownTest;
 
@@ -126,13 +131,13 @@ test.before(async t => {
 });
 
 /**
- * @param {import('ava').ExecutionContext<Context>} t
+ * @param {ExecutionContext<Context>} t
  * @param {IssuerKit<'nat'>} run
  * @param {IssuerKit<'nat'>} aeth
  * @param {NatValue[] | Ratio} priceOrList
  * @param {RelativeTime} quoteInterval
  * @param {Amount | undefined} unitAmountIn
- * @param {Partial<import('../../src/auction/params.js').AuctionParams>} actionParamArgs
+ * @param {Partial<AuctionParams>} actionParamArgs
  */
 export const setupElectorateReserveAndAuction = async (
   t,
@@ -164,7 +169,7 @@ export const setupElectorateReserveAndAuction = async (
   await startEconomicCommittee(space, electorateTerms);
   await setupReserve(space);
 
-  /** @type {import('@agoric/vat-data').Baggage} */
+  /** @type {Baggage} */
   const paBaggage = makeScalarMapStore();
   const { priceAuthority, adminFacet: registry } =
     providePriceAuthorityRegistry(paBaggage);
@@ -195,13 +200,13 @@ export const setupElectorateReserveAndAuction = async (
 /**
  * NOTE: called separately by each test so zoe/priceAuthority don't interfere
  *
- * @param {import('ava').ExecutionContext<Context>} t
+ * @param {ExecutionContext<Context>} t
  * @param {NatValue[] | Ratio} priceOrList
  * @param {Amount | undefined} unitAmountIn
- * @param {import('@agoric/time').TimerService} timer
+ * @param {TimerService} timer
  * @param {RelativeTime} quoteInterval
  * @param {bigint} stableInitialLiquidity
- * @param {Partial<import('../../src/auction/params.js').AuctionParams>} [auctionParams]
+ * @param {Partial<AuctionParams>} [auctionParams]
  */
 const setupServices = async (
   t,

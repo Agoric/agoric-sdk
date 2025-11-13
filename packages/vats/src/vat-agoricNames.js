@@ -6,7 +6,13 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { provideLazy } from '@agoric/store';
 import { prepareNameHubKit } from './nameHub.js';
 
-/** @param {import('@agoric/zone').Zone} zone */
+/**
+ * @import {Zone} from '@agoric/zone';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {NameAdmin} from './types.js';
+ */
+
+/** @param {Zone} zone */
 const prepareNatBrand = zone => {
   // XXX generalize past Nat; move into ERTP
   /** @type {(name: string, d: DisplayInfo) => Brand} */
@@ -38,7 +44,7 @@ const prepareNatBrand = zone => {
 /**
  * @param {unknown} _vatPowers
  * @param {unknown} _vatParameters
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
   const zone = makeDurableZone(baggage);
@@ -57,7 +63,7 @@ export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
   const publishNameHubs = async (nameStorage, vatBoard, kinds) => {
     await Promise.all(
       kinds.map(async kind => {
-        /** @type {import('./types.js').NameAdmin} */
+        /** @type {NameAdmin} */
         const kindAdmin = await E(agoricNamesAdmin).lookupAdmin(kind);
 
         const kindNode = await E(nameStorage).makeChildNode(kind);

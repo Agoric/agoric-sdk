@@ -8,6 +8,10 @@
 
 import { Fail } from '@endo/errors';
 
+/**
+ * @import {NameAdmin} from '@agoric/vats';
+ */
+
 const runConfig = {
   committeeName: 'Economic Committee',
   economicCommitteeAddresses: {
@@ -27,12 +31,12 @@ const { values } = Object;
 const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 
 /**
- * @param {ERef<import('@agoric/vats').NameAdmin>} nameAdmin
+ * @param {ERef<NameAdmin>} nameAdmin
  * @param {string[][]} paths
  */
 const reserveThenGetNamePaths = async (nameAdmin, paths) => {
   /**
-   * @param {ERef<import('@agoric/vats').NameAdmin>} nextAdmin
+   * @param {ERef<NameAdmin>} nextAdmin
    * @param {string[]} path
    */
   const nextPath = async (nextAdmin, path) => {

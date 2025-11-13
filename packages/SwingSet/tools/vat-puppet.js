@@ -11,6 +11,11 @@ import { M } from '@agoric/store';
 import { prepareExoClass, watchPromise } from '@agoric/vat-data';
 
 /**
+ * @import {VatPowers} from '@agoric/swingset-vat';
+ * @import {Baggage} from '@agoric/vat-data';
+ */
+
+/**
  * @callback Die
  * @param {unknown} completion
  * @param {[target: unknown, method: string, ...args: unknown[]]} [finalSend]
@@ -54,8 +59,8 @@ const promiseWatcherMethods = {
 };
 
 /**
- * @param {import('@agoric/swingset-vat').VatPowers} vatPowers
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {VatPowers} vatPowers
+ * @param {Baggage} baggage
  * @param {unknown} [vatParameters]
  */
 export const makeReflectionMethods = (vatPowers, baggage, vatParameters) => {

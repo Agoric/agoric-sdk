@@ -9,6 +9,10 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeExpectUnhandledRejection } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import { prepareVowTools } from '../vat.js';
 
+/**
+ * @import {VowResolver} from '../src/types.js';
+ */
+
 const expectUnhandled = makeExpectUnhandledRejection({
   test,
   importMetaUrl: import.meta.url,
@@ -109,7 +113,7 @@ test(expectUnhandled(5), 'vow resolve across upgrade', async t => {
         },
       });
 
-      /** @type {import('../src/types.js').VowResolver} */
+      /** @type {VowResolver} */
       const testVowKitResolver = zone.makeOnce('testVowKit', () => {
         t.fail('testVowKit maker called');
       }).resolver;

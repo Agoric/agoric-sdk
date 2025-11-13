@@ -15,20 +15,23 @@ import { makeManualPriceAuthority } from '../../../tools/manualPriceAuthority.js
 
 /**
  * @import {FeeIssuerConfig, ZoeService} from '@agoric/zoe';
+ * @import {prepare} from '../../../src/contracts/scaledPriceAuthority.js';
+ * @import {TestFn} from 'ava';
+ * @import {ExecutionContext} from 'ava';
  */
 
 // This contract still uses 'prepare', so this test covers that case.
 /**
  * @typedef {object} TestContext
  * @property {ZoeService} zoe
- * @property {Installation<typeof import('../../../src/contracts/scaledPriceAuthority.js').prepare>} scaledPriceInstallation
+ * @property {Installation<typeof prepare>} scaledPriceInstallation
  * @property {Brand<'nat'>} atomBrand
  * @property {Brand<'nat'>} usdBrand
  * @property {IssuerKit<'nat'>} atom
  * @property {IssuerKit<'nat'>} run
  */
 
-const test = /** @type {import('ava').TestFn<TestContext>} */ (unknownTest);
+const test = /** @type {TestFn<TestContext>} */ (unknownTest);
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -72,7 +75,7 @@ test.before('setup scaled price authority', async ot => {
 });
 
 /**
- * @param {import('ava').ExecutionContext<TestContext>} t
+ * @param {ExecutionContext<TestContext>} t
  * @param {bigint} [initialPriceInCents]
  */
 const makeScenario = async (t, initialPriceInCents) => {

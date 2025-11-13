@@ -34,7 +34,11 @@ export * from './startPSM.js';
  * @property {number} [initialPrice]
  */
 
-/** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
+/**
+ * @import {EconomyBootstrapPowers} from './econ-behaviors.js'
+ * @import {FullSchedule} from '../auction/scheduler.js';
+ * @import {TimerService} from '@agoric/time';
+ */
 
 /**
  * @param {BootstrapPowers} powers
@@ -269,8 +273,8 @@ const COMPLETION = 20n * 60n;
  * defined, 3) run now. If there is only a nextSchedule, 4) run now if startTime
  * is far enough away, else 5) run after endTime
  *
- * @param {import('../auction/scheduler.js').FullSchedule} schedules
- * @param {ERef<import('@agoric/time').TimerService>} timer
+ * @param {FullSchedule} schedules
+ * @param {ERef<TimerService>} timer
  * @param {() => void} thunk
  */
 const whenQuiescent = async (schedules, timer, thunk) => {

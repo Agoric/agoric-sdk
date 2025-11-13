@@ -19,6 +19,7 @@ import { buildRootObject } from '../src/vats/timer/vat-timer.js';
  * @property {bigint} now
  * @property {undefined | bigint} currentWakeup
  * @property {undefined | Waker} currentHandler
+ * @import {RelativeTime} from '@agoric/time';
  */
 
 /**
@@ -78,7 +79,7 @@ const setup = callbacks => {
  * @param {object} [options]
  * @param {Timestamp} [options.startTime]
  * @param {ManualTimerCallbacks} [options.callbacks]
- * @returns {TimerService & { advanceTo: (when: Timestamp, msg?: string) => bigint; advanceBy: (rel: import('@agoric/time').RelativeTime, msg?: string) => bigint; }}
+ * @returns {TimerService & { advanceTo: (when: Timestamp, msg?: string) => bigint; advanceBy: (rel: RelativeTime, msg?: string) => bigint; }}
  */
 export const buildManualTimer = (options = {}) => {
   const { startTime = 0n, callbacks = {}, ...other } = options;

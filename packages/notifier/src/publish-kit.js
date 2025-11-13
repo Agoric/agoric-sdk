@@ -9,6 +9,7 @@ import { canBeDurable, prepareExoClassKit } from '@agoric/vat-data';
 /**
  * @import {ERef} from '@endo/far';
  * @import {DurablePublishKitState, DurablePublishKitValueDurability, LatestTopic, Notifier, NotifierRecord, PublicationRecord, Publisher, PublishKit, Subscriber, UpdateRecord} from '../src/types.js';
+ * @import {Baggage} from '@agoric/swingset-liveslots';
  */
 
 const sink = () => {};
@@ -400,7 +401,7 @@ const advanceDurablePublishKit = (context, value, targetStatus = 'live') => {
 };
 
 /**
- * @param {import('@agoric/swingset-liveslots').Baggage} baggage
+ * @param {Baggage} baggage
  * @param {string} kindName
  * @returns {<T>(options?: Parameters<typeof initDurablePublishKitState>[0]) => PublishKit<T>}
  */

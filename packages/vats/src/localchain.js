@@ -29,6 +29,9 @@ const { Vow$ } = NetworkShape;
  * @import {TargetApp, TargetRegistration} from './bridge-target.js';
  * @import {BankManager, Bank} from './vat-bank.js';
  * @import {IBCEvent, IBCPacket, ScopedBridgeManager} from './types.js';
+ * @import {TransferMiddleware} from './transfer.js';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {Bech32Address} from '@agoric/orchestration';
  */
 
 /**
@@ -91,7 +94,7 @@ const { Vow$ } = NetworkShape;
  * @typedef {{
  *   system: ScopedBridgeManager<'vlocalchain'>;
  *   bankManager: BankManager;
- *   transfer: import('./transfer.js').TransferMiddleware;
+ *   transfer: TransferMiddleware;
  * }} LocalChainPowers
  */
 
@@ -123,7 +126,7 @@ export const LocalChainAccountI = M.interface('LocalChainAccount', {
 });
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools & {
  *   powersForTransfer: AdditionalTransferPowers;
  * }} powers
@@ -152,7 +155,7 @@ export const prepareLocalChainAccountKit = (
       }),
     },
     /**
-     * @param {import('@agoric/orchestration').Bech32Address} address
+     * @param {Bech32Address} address
      * @param {AccountPowers} accountPowers
      */
     (address, { bank, system, transfer }) => ({
@@ -467,7 +470,7 @@ export const LocalChainI = M.interface('LocalChain', {
 });
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {ReturnType<typeof prepareLocalChainAccountKit>} makeAccountKit
  * @param {VowTools} vowTools
  */
@@ -561,7 +564,7 @@ const prepareLocalChain = (zone, makeAccountKit, { watch }) => {
 };
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools & { powersForTransfer: AdditionalTransferPowers }} powers
  */
 export const prepareLocalChainTools = (zone, powers) => {

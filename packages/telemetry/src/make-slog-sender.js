@@ -9,7 +9,10 @@ export const DEFAULT_SLOGSENDER_MODULE =
 export const SLOGFILE_SENDER_MODULE = '@agoric/telemetry/src/slog-file.js';
 export const PROMETHEUS_SENDER_MODULE = '@agoric/telemetry/src/prometheus.js';
 
-/** @import {SlogSender} from './index.js' */
+/**
+ * @import {SlogSender} from './index.js'
+ * @import {MakeSlogSender} from './index.js';
+ */
 
 /**
  * @template T
@@ -36,7 +39,7 @@ const filterTruthy = arr => /** @type {any[]} */ (arr.filter(Boolean));
  * When there are no subordinates, the return value will be `undefined` rather
  * than a slog sender function.
  *
- * @type {import('./index.js').MakeSlogSender}
+ * @type {MakeSlogSender}
  */
 export const makeSlogSender = async (opts = {}) => {
   const { env = {}, stateDir: stateDirOption, ...otherOpts } = opts;
@@ -102,7 +105,7 @@ export const makeSlogSender = async (opts = {}) => {
     console.warn('Loading slog sender modules:', ...slogSenderModules);
   }
 
-  /** @type {Map<import('./index.js').MakeSlogSender, string>} */
+  /** @type {Map<MakeSlogSender, string>} */
   const makerMap = new Map();
   await Promise.all(
     [...slogSenderModules].map(async moduleIdentifier => {

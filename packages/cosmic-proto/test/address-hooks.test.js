@@ -6,10 +6,17 @@ import { importBundle } from '@endo/import-bundle';
 
 import { createRequire } from 'node:module';
 
+/**
+ * @import {TestFn} from 'ava';
+ * @import {Macro} from 'ava';
+ * @import {HookQuery} from '../src/address-hooks.js';
+ * @import {Bech32Address} from '../src/address-hooks.js';
+ */
+
 const require = createRequire(import.meta.url);
 
 /**
- * @type {import('ava').TestFn<{
+ * @type {TestFn<{
  *   addressHooks: import('../src/address-hooks.js');
  * }>}
  */
@@ -44,7 +51,7 @@ test.before(async t => {
 });
 
 /**
- * @type {import('ava').Macro<
+ * @type {Macro<
  *  [addressHook: string, baseAddress: string, hookDataStr: string, error?: any],
  *   { addressHooks: import('../src/address-hooks.js') }
  * >}
@@ -100,7 +107,7 @@ test(
 );
 
 /**
- * @type {import('ava').Macro<
+ * @type {Macro<
  *   [string, ArrayLike<number> | undefined, ArrayLike<number>, string],
  *   { addressHooks: import('../src/address-hooks.js') }
  * >}
@@ -161,7 +168,7 @@ test(
 );
 
 /**
- * @type {import('ava').Macro<
+ * @type {Macro<
  *   [
  *     string,
  *     ArrayLike<number>,
@@ -225,11 +232,11 @@ const lengthCheckMacro = test.macro({
 }
 
 /**
- * @type {import('ava').Macro<
+ * @type {Macro<
  *   [
  *     baseAddress: string,
- *     query: import('../src/address-hooks.js').HookQuery,
- *     expected: import('../src/address-hooks.js').Bech32Address,
+ *     query: HookQuery,
+ *     expected: Bech32Address,
  *   ]
  * >}
  */

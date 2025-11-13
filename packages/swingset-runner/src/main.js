@@ -28,6 +28,10 @@ import {
   outputStats,
 } from './printStats.js';
 
+/**
+ * @import {Session} from 'inspector';
+ */
+
 const log = console.log;
 
 function p(item) {
@@ -260,7 +264,7 @@ export async function main() {
   let heapProfileFilePath;
   /** @type {number} */
   let heapSamplingInterval = 1024;
-  /** @type {import('inspector').Session | undefined} */
+  /** @type {Session | undefined} */
   let inspectorSession;
   /** @type {string | undefined} */
   let nextArg;

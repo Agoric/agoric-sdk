@@ -25,6 +25,10 @@ import { priceFrom } from '../../src/auction/util.js';
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
 import { prepareVault } from '../../src/vaultFactory/vault.js';
 
+/**
+ * @import {Baggage} from '@agoric/swingset-liveslots';
+ */
+
 const BASIS_POINTS = 10000n;
 const SECONDS_PER_HOUR = 60n * 60n;
 const DAY = SECONDS_PER_HOUR * 24n;
@@ -34,7 +38,7 @@ const marshaller = makeFakeMarshaller();
 /**
  * @param {ZCF} zcf
  * @param {{ feeMintAccess: FeeMintAccess }} privateArgs
- * @param {import('@agoric/swingset-liveslots').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export async function start(zcf, privateArgs, baggage) {
   console.log(`contract started`);

@@ -46,6 +46,10 @@ import {
  * @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js';
  * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js';
  * @import {EReturn} from '@endo/far';
+ * @import {TestFn} from 'ava';
+ * @import {ExecutionContext} from 'ava';
+ * @import {TimerService} from '@agoric/time';
+ * @import {AuctionParams} from '../../src/auction/params.js';
  */
 
 /**
@@ -59,7 +63,7 @@ import {
  * }} Context
  */
 
-/** @type {import('ava').TestFn<Context>} */
+/** @type {TestFn<Context>} */
 
 const test = unknownTest;
 
@@ -133,13 +137,13 @@ test.before(async t => {
 /**
  * NOTE: called separately by each test so zoe/priceAuthority don't interfere
  *
- * @param {import('ava').ExecutionContext<Context>} t
+ * @param {ExecutionContext<Context>} t
  * @param {NatValue[] | Ratio} priceOrList
  * @param {Amount | undefined} unitAmountIn
- * @param {import('@agoric/time').TimerService} timer
+ * @param {TimerService} timer
  * @param {RelativeTime} quoteInterval
  * @param {bigint} stableInitialLiquidity
- * @param {Partial<import('../../src/auction/params.js').AuctionParams>} [auctionParams]
+ * @param {Partial<AuctionParams>} [auctionParams]
  */
 const setupServices = async (
   t,

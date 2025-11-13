@@ -1,5 +1,10 @@
 import { E, Far } from '@endo/far';
 
+/**
+ * @import {Follower} from './types.js';
+ * @import {IterateEachOptions} from './types.js';
+ */
+
 export { subscribeEach, subscribeLatest } from '@agoric/notifier/subscribe.js';
 
 /**
@@ -23,7 +28,7 @@ export const mapAsyncIterable = (iterable, transform) => {
  * TODO: Remove this function when we have an @endo/publish-kit that suppports pull topics
  *
  * @template T
- * @param {ERef<import('./types.js').Follower<T>>} follower
+ * @param {ERef<Follower<T>>} follower
  */
 export const iterateLatest = follower =>
   // For now, just pass through the iterable.
@@ -42,8 +47,8 @@ export const iterateLatest = follower =>
  * TODO: Remove this function when we have an @endo/publish-kit that suppports pull topics
  *
  * @template T
- * @param {ERef<import('./types.js').Follower<T>>} follower
- * @param {import('./types.js').IterateEachOptions} [options]
+ * @param {ERef<Follower<T>>} follower
+ * @param {IterateEachOptions} [options]
  */
 export const iterateEach = (follower, options) =>
   // For now, just pass through the iterable.
@@ -60,8 +65,8 @@ export const iterateEach = (follower, options) =>
 
 /**
  * @template T
- * @param {ERef<import('./types.js').Follower<T>>} follower
- * @param {import('./types.js').IterateEachOptions} [options]
+ * @param {ERef<Follower<T>>} follower
+ * @param {IterateEachOptions} [options]
  */
 export const iterateReverse = (follower, options) =>
   // For now, just pass through the iterable.

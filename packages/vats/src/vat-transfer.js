@@ -7,6 +7,12 @@ import { prepareVowTools } from '@agoric/vow/vat.js';
 import { prepareBridgeTargetModule } from './bridge-target.js';
 import { prepareTransferTools } from './transfer.js';
 
+/**
+ * @import {ScopedBridgeManager} from './types.js';
+ * @import {BridgeId} from '@agoric/internal';
+ * @import {AppTransformer} from './bridge-target.js';
+ */
+
 export const buildRootObject = (_vatPowers, _args, baggage) => {
   const zone = makeDurableZone(baggage);
 
@@ -26,17 +32,17 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
    * well as accommodate the lack of complex keys.
    *
    * @type {WeakMapStore<
-   *   import('./types.js').ScopedBridgeManager<any>,
+   *   ScopedBridgeManager<any>,
    *   MapStore<string, ReturnType<typeof makeBridgeTargetKit>>
    * >}
    */
   const managerToKits = zone.weakMapStore('managerToHandler');
   return Far('TransferVat', {
     /**
-     * @template {import('@agoric/internal').BridgeId} T
-     * @param {import('./types.js').ScopedBridgeManager<T>} manager
+     * @template {BridgeId} T
+     * @param {ScopedBridgeManager<T>} manager
      * @param {string} [inboundType]
-     * @param {import('./bridge-target.js').AppTransformer} [appTransformer]
+     * @param {AppTransformer} [appTransformer]
      */
     provideBridgeTargetKit(
       manager,

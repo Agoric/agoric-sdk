@@ -206,7 +206,7 @@ harden(runModuleBehaviors);
 const noop = harden(() => {});
 
 /**
- * @param {ERef<import('../types.js').NameAdmin>} nameAdmin
+ * @param {ERef<NameAdmin>} nameAdmin
  * @param {typeof console.log} [log]
  */
 export const makePromiseSpaceForNameHub = (nameAdmin, log = noop) => {
@@ -234,7 +234,7 @@ export const makePromiseSpaceForNameHub = (nameAdmin, log = noop) => {
 };
 
 /**
- * @param {ERef<import('../types.js').NameAdmin>} parentAdmin
+ * @param {ERef<NameAdmin>} parentAdmin
  * @param {typeof console.log} [log]
  * @param {string[]} [kinds]
  */
@@ -271,8 +271,8 @@ export const makeWellKnownSpaces = async (
  *   For static typing and integrating with the bootstrap permit system, return {
  *   produce, consume } spaces rather than NameAdmins.
  * @returns {Promise<{
- *   agoricNames: import('../types.js').NameHub;
- *   agoricNamesAdmin: import('../types.js').NameAdmin;
+ *   agoricNames: NameHub;
+ *   agoricNamesAdmin: NameAdmin;
  *   spaces: WellKnownSpaces;
  * }>}
  */
@@ -306,7 +306,7 @@ export const makeMyAddressNameAdminKit = address => {
   // Create a name hub for this address.
   const { nameHub, nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
 
-  /** @type {import('../types.js').MyAddressNameAdmin} */
+  /** @type {MyAddressNameAdmin} */
   const myAddressNameAdmin = Far('myAddressNameAdmin', {
     ...rawMyAddressNameAdmin,
     getMyAddress: () => address,
@@ -327,6 +327,9 @@ export const makeMyAddressNameAdminKit = address => {
  * @param {string} [label]
  * @import {CreateVatResults} from '@agoric/swingset-vat'
  *   as from createVatByName
+ * @import {NameAdmin} from '../types.js';
+ * @import {NameHub} from '../types.js';
+ * @import {MyAddressNameAdmin} from '../types.js';
  */
 export const makeVatSpace = (
   svc,

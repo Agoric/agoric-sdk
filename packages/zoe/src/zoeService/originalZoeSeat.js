@@ -14,6 +14,10 @@ import {
   PaymentPKeywordRecordShape,
 } from '../typeGuards.js';
 
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ */
+
 export const coreUserSeatMethods = harden({
   getProposal: M.call().returns(M.promise()),
   getPayouts: M.call().returns(M.promise()),
@@ -72,7 +76,7 @@ const assertHasNotExited = (c, msg) => {
  * The zoeSeatAdmin is passed by Zoe to the ContractFacet (zcf), to allow zcf to
  * query or update the allocation or exit the seat cleanly.
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @param {() => PublishKit<any>} makeDurablePublishKit
  */
 export const declareOldZoeSeatAdminKind = (baggage, makeDurablePublishKit) => {

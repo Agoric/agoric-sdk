@@ -1,0 +1,428 @@
+type BitcoinBlockDetails {
+  bits: String
+  chain: String!
+  chainwork: String
+  confirmations: String
+  difficulty: String
+  hash: String
+  height: String
+  mediantime: String
+  merkleroot: String
+  nTx: String
+  nonce: String
+  previousblockhash: String
+  size: String
+  strippedsize: String
+  time: String
+  tx: [String]
+  version: String
+  versionHex: String
+  weight: String
+}
+
+""" The block details, can be an EVM, Solana, Tendermint or Bitcoin block 
+"""
+union BlockDetails = BitcoinBlockDetails | EVMBlockDetails | SolanaBlockDetails | TendermintBlockDetails
+
+"""The response when getting an address' balance of a token on a chain"""
+type ChainAddressTokenBalance {
+  """ The address """
+  address: String
+
+  """ The balance """
+  balance: String
+
+  """ The chain name """
+  chain: String!
+
+  """ An error string """
+  error: String
+
+  """ The token, this can be native | address | denom """
+  token: String
+}
+
+"""The input to get a balance of a user for a token on a chain"""
+input ChainAddressTokenInput {
+  """ The address to query """
+  address: String!
+
+  """ The chain name """
+  chain: String!
+
+  """ The token to query, this can be native | address | denom """
+  token: String!
+}
+
+"""The response when getting a block of a chain"""
+type ChainBlockDetails {
+  """ The block details """
+  block: BlockDetails
+
+  """ The chain name """
+  chain: String!
+
+  """ Error message """
+  error: String
+
+  """ The hash of the block """
+  hash: String
+
+  """ The block number """
+  height: String
+}
+
+"""The input to get a block by number/height for a chain"""
+input ChainBlockNumberInput {
+  """ The block number or height """
+  block: String!
+
+  """ The chain name """
+  chain: String!
+}
+
+"""The input to get a block by hash for a chain"""
+input ChainHashInput {
+  """ The chain name """
+  chain: String!
+
+  """ The hash of the block """
+  hash: String!
+}
+
+"""The response when getting the latest block of a chain"""
+type ChainHeight {
+  """ The chain name """
+  chain: String!
+
+  """ Error message """
+  error: String
+
+  """ The latest block number / height """
+  height: String
+}
+
+"""The response when getting method information for a chain"""
+type ChainMethodInfo {
+  """ The chain ID """
+  chainId: String!
+
+  """ The available methods for this chain """
+  methods: [String!]!
+
+  """ The chain name """
+  name: String!
+
+  """ The chain type (EVM, Solana, Bitcoin, Tendermint) """
+  type: String!
+}
+
+"""The response when getting a transaction of a chain"""
+type ChainTransactionDetails {
+  """ The chain name """
+  chain: String!
+
+  """ Error message """
+  error: String
+
+  """ The block number """
+  hash: String
+
+  """ The transaction details """
+  transaction: TransactionDetails
+}
+
+type EVMBlockDetails {
+  baseFeePerGas: String
+  blobGasUsed: String
+  chain: String!
+  difficulty: String
+  excessBlobGas: String
+  extraData: String
+  gasLimit: String
+  gasUsed: String
+  hash: String
+  logsBloom: String
+  miner: String
+  mixHash: String
+  nonce: String
+  number: String
+  parentBeaconBlockRoot: String
+  parentHash: String
+  receiptsRoot: String
+  sha3Uncles: String
+  size: String
+  stateRoot: String
+  timestamp: String
+  transactions: [String]
+  transactionsRoot: String
+  withdrawals: [EVMWithdrawal]
+  withdrawalsRoot: String
+}
+
+type EVMBlockFeeInfo {
+  baseFeePerGas: String
+  chain: String!
+  error: String
+  maxPriorityFeePerGas: String
+}
+
+type EVMTransactionDetails {
+  accessList: [String]
+  blockHash: String
+  blockNumber: String
+  chain: String!
+  chainId: String
+  from: String
+  gas: String
+  gasPrice: String
+  hash: String
+  input: String
+  maxFeePerGas: String
+  maxPriorityFeePerGas: String
+  nonce: String
+  r: String
+  s: String
+  to: String
+  transactionIndex: String
+  type: String
+  v: String
+  value: String
+  yParity: String
+}
+
+type EVMWithdrawal {
+  address: String
+  amount: String
+  index: String
+  validatorIndex: String
+}
+
+type InnerInstruction {
+  index: String
+  instructions: [Instruction]
+}
+
+type Instruction {
+  accounts: [String]
+  data: String
+  programIdIndex: Int
+  stackHeight: Int
+}
+
+scalar JSON
+
+type LoadedAddresses {
+  readonly: [String]
+  writable: [String]
+}
+
+type Query {
+  """Get the balance of an address for a token on different chains"""
+  getAddressBalance(input: [ChainAddressTokenInput!]!): [ChainAddressTokenBalance!]!
+
+  """Get the block by hash on different chains"""
+  getBlockByHash(input: [ChainHashInput!]!): [ChainBlockDetails!]!
+
+  """Get the block by number/height on different chains"""
+  getBlockByNumber(input: [ChainBlockNumberInput!]!): [ChainBlockDetails!]!
+
+  """
+  Get block fee information (baseFeePerGas and maxPriorityFeePerGas) for EVM chains
+  """
+  getBlockFee(chains: [String!]!): [EVMBlockFeeInfo!]!
+
+  """Get the latest block heights on different chains"""
+  getBlockHeights(chains: [String!]!): [ChainHeight!]!
+
+  """Get all available methods for each chain"""
+  getMethodInfo: JSON!
+
+  """Get the transaction by hash on different chains"""
+  getTransactionByHash(input: [ChainHashInput!]!): [ChainTransactionDetails!]!
+}
+
+type SolanaBlockDetails {
+  blockHeight: String
+  blockTime: String
+  blockhash: String
+  chain: String!
+  parentSlot: String
+  previousBlockhash: String
+  rewards: [SolanaRewards]
+  transactions: [SolanaTransaction]
+}
+
+type SolanaMeta {
+  computeUnitsConsumed: String
+  err: String
+  fee: String
+  innerInstructions: [InnerInstruction]
+  loadedAddresses: LoadedAddresses
+  logMessages: [String]
+}
+
+type SolanaRewards {
+  commission: String
+  lamports: String
+  postBalance: String
+  pubkey: String
+  rewardType: String
+}
+
+type SolanaTransaction {
+  meta: JSON
+  transaction: JSON
+  version: JSON
+}
+
+type SolanaTransactionDetails {
+  blockTime: String
+  chain: String!
+  meta: SolanaMeta
+}
+
+type TendermintAuthInfo {
+  fee: TendermintFee!
+  signer_infos: [TendermintSignerInfo!]!
+  tip: String
+}
+
+type TendermintBlockDetails {
+  chain: String!
+  data: TendermintData
+  evidence: TendermintEvidence
+  header: TendermintHeader
+  last_commit: TendermintLastCommit
+}
+
+type TendermintBlockId {
+  hash: String
+  part_set_header: TendermintPartSetHeader
+}
+
+type TendermintCoin {
+  amount: String!
+  denom: String!
+}
+
+type TendermintData {
+  txs: [String]
+}
+
+type TendermintEvent {
+  attributes: [TendermintEventAttribute!]!
+  type: String!
+}
+
+type TendermintEventAttribute {
+  index: Boolean!
+  key: String!
+  value: String!
+}
+
+type TendermintEvidence {
+  evidence: [String]
+}
+
+type TendermintFee {
+  amount: [TendermintCoin!]!
+  gas_limit: String!
+  granter: String!
+  payer: String!
+}
+
+type TendermintHeader {
+  app_hash: String
+  chain_id: String
+  consensus_hash: String
+  data_hash: String
+  evidence_hash: String
+  height: String
+  last_block_id: TendermintBlockId
+  last_commit_hash: String
+  last_results_hash: String
+  next_validators_hash: String
+  proposer_address: String
+  time: String
+  validators_hash: String
+  version: TendermintVersion
+}
+
+type TendermintLastCommit {
+  block_id: TendermintBlockId
+  height: String
+  round: String
+  signatures: [TendermintSignature]
+}
+
+type TendermintModeInfo {
+  single: TendermintSingleMode!
+}
+
+type TendermintPartSetHeader {
+  hash: String
+  total: Int
+}
+
+type TendermintPublicKey {
+  _type: String! @deprecated(reason: "Maps '@type' in JSON")
+  key: String!
+}
+
+type TendermintSignature {
+  block_id_flag: String
+  signature: String
+  timestamp: String
+  validator_address: String
+}
+
+type TendermintSignerInfo {
+  mode_info: TendermintModeInfo!
+  public_key: TendermintPublicKey!
+  sequence: String!
+}
+
+type TendermintSingleMode {
+  mode: String!
+}
+
+type TendermintTransactionDetails {
+  chain: String!
+  tx_response: TendermintTxResponse
+}
+
+type TendermintTx {
+  auth_info: TendermintAuthInfo!
+  body: TendermintTxBody!
+  signatures: [String!]!
+}
+
+type TendermintTxBody {
+  memo: String!
+  messages: [JSON!]!
+  timeout_height: String!
+}
+
+type TendermintTxResponse {
+  code: Int!
+  codespace: String!
+  data: String!
+  events: [TendermintEvent!]!
+  gas_used: String!
+  gas_wanted: String!
+  height: String!
+  info: String!
+  raw_log: String!
+  timestamp: String!
+  tx: TendermintTx!
+  txhash: String!
+}
+
+type TendermintVersion {
+  app: String
+  block: String
+}
+
+""" The transaction details, can be an EVM, Solana or Cosmos transaction """
+union TransactionDetails = EVMTransactionDetails | SolanaTransactionDetails | TendermintTransactionDetails

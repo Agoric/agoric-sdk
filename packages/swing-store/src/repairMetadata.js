@@ -2,6 +2,12 @@ import { Fail, q } from '@endo/errors';
 import { assertComplete } from './assertComplete.js';
 
 /**
+ * @import {SwingStoreInternal} from './internal.js';
+ * @import {SwingStoreExporter} from './exporter.js';
+ * @import {ArtifactMode} from './internal.js';
+ */
+
+/**
  * Given a pre-existing swingstore and a SwingStoreExporter, read in
  * all the metadata from the exporter and use it to regenerate any
  * missing metadata records. This can be used to fix the damage caused
@@ -24,8 +30,8 @@ import { assertComplete } from './assertComplete.js';
  * an open transaction. The caller is responsible for calling
  * `hostStorage.commit()` when they are ready.
  *
- * @param {import('./internal.js').SwingStoreInternal} internal
- * @param {import('./exporter.js').SwingStoreExporter} exporter
+ * @param {SwingStoreInternal} internal
+ * @param {SwingStoreExporter} exporter
  * @returns {Promise<void>}
  */
 export async function doRepairMetadata(internal, exporter) {
@@ -60,7 +66,7 @@ export async function doRepairMetadata(internal, exporter) {
   }
 
   // and do a completeness check
-  /** @type { import('./internal.js').ArtifactMode } */
+  /** @type { ArtifactMode } */
   const artifactMode = 'operational';
   assertComplete(internal, artifactMode);
   await exporter.close();

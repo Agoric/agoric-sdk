@@ -14,6 +14,10 @@ import * as secondPriceLogic from './secondPriceLogic.js';
 import * as firstPriceLogic from './firstPriceLogic.js';
 import { assertBidSeat } from './assertBidSeat.js';
 
+/**
+ * @import {TimerService} from '@agoric/time';
+ */
+
 const FIRST_PRICE = 'first-price';
 const SECOND_PRICE = 'second-price';
 
@@ -35,7 +39,7 @@ const SECOND_PRICE = 'second-price';
  * null } want: { Asset: null } }.
  *
  * @param {ZCF<{
- * timeAuthority: import('@agoric/time').TimerService,
+ * timeAuthority: TimerService,
  * winnerPriceOption?: FIRST_PRICE | SECOND_PRICE,
  * bidDuration: bigint,
  * }>} zcf

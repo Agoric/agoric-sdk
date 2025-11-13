@@ -13,6 +13,7 @@ import {
  * @import {Brand} from '@agoric/ertp';
  * @import {TimerService, RelativeTime} from '@agoric/time';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery} from '@agoric/zoe/tools/types.js';
+ * @import {Timestamp} from '@agoric/time';
  */
 
 /**
@@ -82,7 +83,7 @@ export function makeScriptedPriceAuthority(options) {
       );
   }
 
-  /** @type {ERef<Notifier<import('@agoric/time').Timestamp>>} */
+  /** @type {ERef<Notifier<Timestamp>>} */
   const notifier = E(timer).makeNotifier(0n, quoteInterval);
   const priceAuthorityOptions = harden({
     timer,

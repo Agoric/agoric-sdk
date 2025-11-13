@@ -3,6 +3,7 @@
 /// <reference types="ses" />
 /**
  * @import {Bytes, ConnectionHandler} from '@agoric/network';
+ * @import {AmountValue} from '@agoric/ertp/src/types.js';
  */
 
 /**
@@ -12,7 +13,7 @@
 
 /**
  * @typedef {object} PacketParts
- * @property {import('@agoric/ertp/src/types.js').AmountValue} value
+ * @property {AmountValue} value
  * @property {Denom} remoteDenom
  * @property {DepositAddress} depositAddress
  * @property {string} memo

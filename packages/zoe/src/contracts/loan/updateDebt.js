@@ -7,6 +7,10 @@ import { TimeMath } from '@agoric/time';
 import { scheduleLiquidation } from './scheduleLiquidation.js';
 import { ceilMultiplyBy } from '../../contractSupport/index.js';
 
+/**
+ * @import {TimestampRecord} from '@agoric/time';
+ */
+
 // Update the debt by adding the new interest on every period, as
 // indicated by the periodNotifier
 
@@ -45,7 +49,7 @@ export const makeDebtCalculator = debtCalculatorConfig => {
   const config = { ...configMinusGetDebt, getDebt };
 
   const periodObserver = Far('periodObserver', {
-    /** @type {(timestamp: import('@agoric/time').TimestampRecord) => void} */
+    /** @type {(timestamp: TimestampRecord) => void} */
     updateState: timestamp => {
       let updatedLoan = false;
       // we could calculate the number of required updates and multiply by a power

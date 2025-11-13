@@ -16,6 +16,10 @@ import {
 } from '@agoric/casting';
 import { makeLeaderOptions } from './lib/casting.js';
 
+/**
+ * @import {FollowerOptions} from '@agoric/casting';
+ */
+
 const makeCapDataToQclass = () => {
   const valToSlot = new WeakMap();
   const slotToVal = new Map();
@@ -57,7 +61,7 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
     jitter,
   } = opts;
 
-  /** @type {import('@agoric/casting').FollowerOptions} */
+  /** @type {FollowerOptions} */
   const followerOptions = {
     proof,
   };

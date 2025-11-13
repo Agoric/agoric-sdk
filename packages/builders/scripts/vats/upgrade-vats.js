@@ -1,4 +1,4 @@
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const upgradeVatsProposalBuilder = async (
   { publishRef, install },
   vatNameToEntrypoint,
@@ -22,7 +22,11 @@ export const upgradeVatsProposalBuilder = async (
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
+/** @type {CoreEvalBuilder} */
 export const upgradeZoeContractsProposalBuilder = async (
   { publishRef, install },
   contractKitSpecs,

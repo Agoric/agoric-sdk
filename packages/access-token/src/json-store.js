@@ -5,6 +5,10 @@ import process from 'process';
 import lockfile from 'proper-lockfile';
 import Readlines from 'n-readlines';
 
+/**
+ * @import {LockOptions} from 'proper-lockfile';
+ */
+
 // TODO: Update this when we make a breaking change.
 // const DATA_FILE = 'data.jsonlines';
 //
@@ -159,7 +163,7 @@ function makeStorageInMemory() {
  * @param {string} [dirPath]  Path to a directory in which database files may be kept, or
  *   null.
  * @param {boolean} [forceReset]  If true, initialize the database to an empty state
- * @param {null | import('proper-lockfile').LockOptions['retries']} [lockRetries] If null, do not lock the database.
+ * @param {null | LockOptions['retries']} [lockRetries] If null, do not lock the database.
  *
  * @returns {Promise<{
  *   storage: JSONStore, // a storage API object to load and store data

@@ -5,12 +5,14 @@ import { makeQueue } from '@endo/stream';
 /**
  * @import { ERef } from '@endo/far'
  * @import { RunPolicy } from '../src/types-external.js'
+ * @import {SwingsetController} from '../src/controller/controller.js';
+ * @import {EProxy} from '@endo/eventual-send';
  */
 
 /** @typedef {{ provideRunPolicy: () => RunPolicy | undefined }} RunHarness */
 
 /**
- * @param {import('../src/controller/controller.js').SwingsetController} controller
+ * @param {SwingsetController} controller
  * @param {RunHarness} [harness]
  */
 export const makeRunUtils = (controller, harness) => {
@@ -67,7 +69,7 @@ export const makeRunUtils = (controller, harness) => {
    *   property manifests as a promise.
    */
   /**
-   * @typedef {import('@endo/eventual-send').EProxy & EVProxyMethods} EVProxy
+   * @typedef {EProxy & EVProxyMethods} EVProxy
    *   Given a presence, return a "methods proxy" for which each requested
    *   property manifests as a method that forwards its invocation through the
    *   controller to the presence as an invocation of an identically-named method

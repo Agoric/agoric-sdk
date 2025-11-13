@@ -1,6 +1,10 @@
 /* eslint-env node */
 import { makeHelpers } from '@agoric/deploy-script-support';
 
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
 export const DEFAULT_CONTRACT_TERMS = {
   POLL_INTERVAL: 30n,
   maxSubmissionCount: 1000,
@@ -11,7 +15,7 @@ export const DEFAULT_CONTRACT_TERMS = {
   maxSubmissionValue: 2n ** 256n,
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async (
   { publishRef, install },
   options = {},

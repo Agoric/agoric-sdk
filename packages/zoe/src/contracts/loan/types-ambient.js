@@ -1,3 +1,4 @@
+/* eslint-disable @agoric/group-jsdoc-imports */
 /**
  * @typedef {Notifier<import('@agoric/time').TimestampRecord>} PeriodNotifier
  *

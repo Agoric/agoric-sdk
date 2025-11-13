@@ -24,7 +24,10 @@ import {
   inviteToEconCharter,
 } from './committee-proposal.js';
 
-/** @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js' */
+/**
+ * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
+ * @import {PSMKit} from './econ-behaviors.js';
+ */
 /** @import {MetricsNotification} from '../psm/psm.js' */
 /** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
 
@@ -249,7 +252,7 @@ export const startPSM = async (
   };
   await (oldState.metrics && restoreMetrics(oldState.metrics));
 
-  /** @type {import('./econ-behaviors.js').PSMKit} */
+  /** @type {PSMKit} */
   const newpsmKit = harden({
     label: instanceKey,
     psm,
@@ -262,7 +265,7 @@ export const startPSM = async (
   // Provide pattern with a promise.
   producepsmKit.resolve(makeScalarBigMapStore('PSM Kits', { durable: true }));
 
-  /** @type {MapStore<Brand, import('./econ-behaviors.js').PSMKit>} */
+  /** @type {MapStore<Brand, PSMKit>} */
   const psmKitMap = await psmKit;
 
   // TODO init into governedContractKits too to simplify testing

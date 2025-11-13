@@ -1,14 +1,18 @@
 import { Fail, q } from '@endo/errors';
 
 /**
- * @typedef { import('./snapStore.js').SnapStoreInternal } SnapStoreInternal
- * @typedef { import('./transcriptStore.js').TranscriptStoreInternal } TranscriptStoreInternal
- * @typedef { import('./bundleStore.js').BundleStoreInternal } BundleStoreInternal
+ * @import {KVStore} from './kvStore.js';
+ */
+
+/**
+ * @import {SnapStoreInternal} from './snapStore.js';
+ * @import {TranscriptStoreInternal} from './transcriptStore.js';
+ * @import {BundleStoreInternal} from './bundleStore.js';
  *
  * @typedef {{
  *    dirPath: string | null,
  *    db: ReturnType<import('better-sqlite3')>,
- *    kvStore: import('./kvStore.js').KVStore,
+ *    kvStore: KVStore,
  *    transcriptStore: TranscriptStoreInternal,
  *    snapStore: SnapStoreInternal,
  *    bundleStore: BundleStoreInternal,

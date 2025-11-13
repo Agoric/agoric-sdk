@@ -9,9 +9,14 @@ import {
 import { assertNetworkConfig } from './netconfig.js';
 
 /**
+ * @import {LeaderOptions} from './types.js';
+ * @import {Leader} from './types.js';
+ */
+
+/**
  * @param {string[]} rpcAddrs
- * @param {import('./types.js').LeaderOptions} [leaderOptions]
- * @returns {import('./types.js').Leader}
+ * @param {LeaderOptions} [leaderOptions]
+ * @returns {Leader}
  */
 export const makeLeaderFromRpcAddresses = (rpcAddrs, leaderOptions) => {
   Array.isArray(rpcAddrs) || Fail`rpcAddrs ${rpcAddrs} must be an array`;
@@ -30,12 +35,12 @@ export const makeLeaderFromRpcAddresses = (rpcAddrs, leaderOptions) => {
 
 /**
  * @param {string} netconfigURL
- * @param {import('./types.js').LeaderOptions} [options]
+ * @param {LeaderOptions} [options]
  */
 export const makeLeaderFromNetworkConfig = (netconfigURL, options = {}) => {
   const { retryCallback = DEFAULT_RETRY_CALLBACK, jitter = DEFAULT_JITTER } =
     options;
-  /** @type {import('./types.js').LeaderOptions['retryCallback']} */
+  /** @type {LeaderOptions['retryCallback']} */
   const retry = async (where, err, attempt) => {
     if (retryCallback) {
       return retryCallback(where, err, attempt);
@@ -69,8 +74,8 @@ export const makeLeaderFromNetworkConfig = (netconfigURL, options = {}) => {
 
 /**
  * @param {string} [bootstrap]
- * @param {import('./types.js').LeaderOptions} [options]
- * @returns {ERef<import('./types.js').Leader>}
+ * @param {LeaderOptions} [options]
+ * @returns {ERef<Leader>}
  */
 export const makeLeader = (bootstrap = DEFAULT_BOOTSTRAP, options) => {
   if (bootstrap.includes('network-config')) {

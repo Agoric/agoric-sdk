@@ -8,6 +8,12 @@ import { provide, VatData as globalVatData } from './vat-data-bindings.js';
  * @import {InterfaceGuard} from '@endo/patterns';
  * @import {RemotableObject} from '@endo/pass-style';
  * @import {Baggage, DefineKindOptions, DurableKindHandle, InterfaceGuardKit} from '@agoric/swingset-liveslots';
+ * @import {PlusContext} from '@agoric/swingset-liveslots';
+ * @import {VatData} from '@agoric/swingset-liveslots';
+ * @import {PrepareKind} from '@agoric/swingset-liveslots';
+ * @import {PrepareKindMulti} from '@agoric/swingset-liveslots';
+ * @import {Guarded} from '@endo/exo';
+ * @import {GuardedKit} from '@endo/exo';
  */
 
 // Some feedback if the init function is async
@@ -25,7 +31,7 @@ import { provide, VatData as globalVatData } from './vat-data-bindings.js';
  *
  * @type {<T extends (...args: any) => any>(
  *   fn: T,
- * ) => import('@agoric/swingset-liveslots').PlusContext<never, T>}
+ * ) => PlusContext<never, T>}
  */
 export const ignoreContext =
   fn =>
@@ -34,7 +40,7 @@ export const ignoreContext =
 harden(ignoreContext);
 
 // TODO: Find a good home for this function used by @agoric/vat-data and testing code
-/** @param {import('@agoric/swingset-liveslots').VatData} VatData */
+/** @param {VatData} VatData */
 export const makeExoUtils = VatData => {
   const {
     defineKind,
@@ -56,7 +62,7 @@ export const makeExoUtils = VatData => {
 
   /**
    * @deprecated Use prepareExoClass instead
-   * @type {import('@agoric/swingset-liveslots').PrepareKind}
+   * @type {PrepareKind}
    */
   const prepareKind = (
     baggage,
@@ -75,7 +81,7 @@ export const makeExoUtils = VatData => {
 
   /**
    * @deprecated Use prepareExoClassKit instead
-   * @type {import('@agoric/swingset-liveslots').PrepareKindMulti}
+   * @type {PrepareKindMulti}
    */
   const prepareKindMulti = (
     baggage,
@@ -107,7 +113,7 @@ export const makeExoUtils = VatData => {
    *   self: T;
    *   state: StateResult<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => import('@endo/exo').Guarded<T>}
+   * @returns {(...args: Parameters<I>) => Guarded<T>}
    */
   const defineVirtualExoClass = (tag, interfaceGuard, init, methods, options) =>
     // @ts-expect-error cast
@@ -126,14 +132,14 @@ export const makeExoUtils = VatData => {
    * @param {I} init
    * @param {T &
    *   ThisType<{
-   *     facets: import('@endo/exo').GuardedKit<T>;
+   *     facets: GuardedKit<T>;
    *     state: StateResult<I>;
    *   }>} facets
    * @param {DefineKindOptions<{
    *   facets: T;
    *   state: StateResult<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => import('@endo/exo').GuardedKit<T>}
+   * @returns {(...args: Parameters<I>) => GuardedKit<T>}
    */
   const defineVirtualExoClassKit = (
     tag,
@@ -165,7 +171,7 @@ export const makeExoUtils = VatData => {
    *   self: T;
    *   state: StateResult<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => import('@endo/exo').Guarded<T>}
+   * @returns {(...args: Parameters<I>) => Guarded<T>}
    */
   const defineDurableExoClass = (
     kindHandle,
@@ -190,14 +196,14 @@ export const makeExoUtils = VatData => {
    * @param {I} init
    * @param {T &
    *   ThisType<{
-   *     facets: import('@endo/exo').GuardedKit<T>;
+   *     facets: GuardedKit<T>;
    *     state: StateResult<I>;
    *   }>} facets
    * @param {DefineKindOptions<{
    *   facets: T;
    *   state: StateResult<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => import('@endo/exo').GuardedKit<T>}
+   * @returns {(...args: Parameters<I>) => GuardedKit<T>}
    */
   const defineDurableExoClassKit = (
     kindHandle,
@@ -230,7 +236,7 @@ export const makeExoUtils = VatData => {
    *   self: T;
    *   state: StateResult<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => import('@endo/exo').Guarded<T>}
+   * @returns {(...args: Parameters<I>) => Guarded<T>}
    */
   const prepareExoClass = (
     baggage,
@@ -258,14 +264,14 @@ export const makeExoUtils = VatData => {
    * @param {I} init
    * @param {T &
    *   ThisType<{
-   *     facets: import('@endo/exo').GuardedKit<T>;
+   *     facets: GuardedKit<T>;
    *     state: StateResult<I>;
    *   }>} facets
    * @param {DefineKindOptions<{
    *   facets: T;
    *   state: StateResult<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => import('@endo/exo').GuardedKit<T>}
+   * @returns {(...args: Parameters<I>) => GuardedKit<T>}
    */
   const prepareExoClassKit = (
     baggage,
@@ -294,7 +300,7 @@ export const makeExoUtils = VatData => {
    *     self: RemotableObject & M;
    *   }>} methods
    * @param {DefineKindOptions<{ self: M }>} [options]
-   * @returns {import('@endo/exo').Guarded<M>}
+   * @returns {Guarded<M>}
    */
   const prepareExo = (
     baggage,
@@ -323,7 +329,7 @@ export const makeExoUtils = VatData => {
    * @param {string} kindName
    * @param {M} methods
    * @param {DefineKindOptions<{ self: M }>} [options]
-   * @returns {import('@endo/exo').Guarded<M>}
+   * @returns {Guarded<M>}
    */
   const prepareSingleton = (baggage, kindName, methods, options = undefined) =>
     prepareExo(baggage, kindName, undefined, methods, options);

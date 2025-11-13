@@ -14,6 +14,11 @@
  */
 
 /**
+ * @import {RemotableObject} from '@endo/marshal';
+ * @import {VstorageKit} from './vstorage-kit';
+ */
+
+/**
  * @typedef {object} RetryOptions
  * @property {number} [maxRetries]
  * @property {number} [retryIntervalMs]
@@ -342,18 +347,18 @@ export const waitUntilOfferExited = async (addr, offerId, io, options) => {
  * @typedef {{
  *   latestOutcome: {
  *     outcome: string;
- *     question: import('@endo/marshal').RemotableObject
+ *     question: RemotableObject
  *   },
  *   latestQuestion: {
  *     closingRule: { deadline: bigint },
- *     questionHandle: import('@endo/marshal').RemotableObject
+ *     questionHandle: RemotableObject
  *   }
  * }} ElectionResult
  */
 
 /**
  * @param {string} basePath
- * @param {import('./vstorage-kit').VstorageKit} vstorage
+ * @param {VstorageKit} vstorage
  * @returns {Promise<ElectionResult>}
  */
 const fetchLatestEcQuestion = async (basePath, vstorage) => {
@@ -406,7 +411,7 @@ const checkCommitteeElectionResult = (electionResult, expectedResult) => {
  *   deadline: bigint;
  * }} expectedResult
  * @param {{
- *   vstorage: import('./vstorage-kit').VstorageKit;
+ *   vstorage: VstorageKit;
  *   log: typeof console.log,
  *   setTimeout: typeof global.setTimeout
  * }} io

@@ -11,6 +11,12 @@ import { makeContextualSlogProcessor } from './context-aware-slog.js';
 import { getResourceAttributes } from './index.js';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
+/**
+ * @import {Context} from './context-aware-slog.js';
+ * @import {MakeSlogSenderOptions} from './index.js';
+ * @import {Slog} from './context-aware-slog.js';
+ */
+
 const DEFAULT_CONTEXT_FILE = 'slog-context.json';
 const FILE_ENCODING = 'utf8';
 
@@ -22,7 +28,7 @@ export const getContextFilePersistenceUtils = filePath => {
 
   return {
     /**
-     * @param {import('./context-aware-slog.js').Context} context
+     * @param {Context} context
      */
     persistContext: context => {
       try {
@@ -33,7 +39,7 @@ export const getContextFilePersistenceUtils = filePath => {
     },
 
     /**
-     * @returns {import('./context-aware-slog.js').Context | null}
+     * @returns {Context | null}
      */
     restoreContext: () => {
       try {
@@ -47,7 +53,7 @@ export const getContextFilePersistenceUtils = filePath => {
 };
 
 /**
- * @param {import('./index.js').MakeSlogSenderOptions} options
+ * @param {MakeSlogSenderOptions} options
  */
 export const makeSlogSender = async options => {
   const { CHAIN_ID, OTEL_EXPORTER_OTLP_ENDPOINT } = options.env || {};
@@ -79,7 +85,7 @@ export const makeSlogSender = async options => {
   );
 
   /**
-   * @param {import('./context-aware-slog.js').Slog} slog
+   * @param {Slog} slog
    */
   const slogSender = slog => {
     const { time, ...logRecord } = contextualSlogProcessor(slog);

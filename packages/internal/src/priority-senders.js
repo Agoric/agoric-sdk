@@ -1,8 +1,10 @@
 import { Fail, q } from '@endo/errors';
 import { E, Far } from '@endo/far';
 
-/** @import {ERef} from '@endo/far'; */
-/** @import {StorageNode} from './lib-chainStorage.js'; */
+/**
+ * @import {ERef} from '@endo/far';
+ * @import {StorageNode} from './lib-chainStorage.js';
+ */
 
 const PRIORITY_SENDERS_NAMESPACE_RE = /^[a-zA-Z0-9_-]{1,50}$/;
 
@@ -18,7 +20,7 @@ harden(normalizeSenderNamespace);
 /**
  * XXX lets holder manage sender list for all namespaces
  *
- * @param {ERef<import('./lib-chainStorage.js').StorageNode>} sendersNode
+ * @param {ERef<StorageNode>} sendersNode
  */
 export const makePrioritySendersManager = sendersNode => {
   /**
@@ -35,7 +37,7 @@ export const makePrioritySendersManager = sendersNode => {
   /**
    * Write a list of namespaces into a storage node.
    *
-   * @param {import('./lib-chainStorage.js').StorageNode} node
+   * @param {StorageNode} node
    * @param {Set<string>} namespaces
    */
   const refreshVstorage = (node, namespaces) => {

@@ -9,6 +9,10 @@ import {
 } from '../contractSupport/index.js';
 
 /**
+ * @import {TimerService} from '@agoric/time';
+ */
+
+/**
  * This contract is inspired by the description of an OTC Desk smart
  * contract in this article:
  * https://medium.com/dragonfly-research/unbundling-uniswap-the-future-of-on-chain-market-making-1c7d6948d570
@@ -58,7 +62,7 @@ const start = zcf => {
    *
    * @param {AmountKeywordRecord} price
    * @param {AmountKeywordRecord} assets
-   * @param {import('@agoric/time').TimerService} timeAuthority
+   * @param {TimerService} timeAuthority
    * @param {any} deadline
    * @returns {Promise<Payment>}
    */

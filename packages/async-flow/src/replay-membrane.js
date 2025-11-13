@@ -714,4 +714,4 @@ export const makeReplayMembraneForTesting = ({
 };
 harden(makeReplayMembrane);
 
-/** @typedef {ReturnType<makeReplayMembrane>} ReplayMembrane */
+/** @typedef {ReturnType<typeof makeReplayMembrane>} ReplayMembrane */

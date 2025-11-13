@@ -3,10 +3,14 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import * as ambientFs from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
+/**
+ * @import {TestFn} from 'ava';
+ */
+
 const configSpecifier = '@agoric/vm-config/decentral-itest-vaults-config.json';
 const noop = harden(() => {});
 
-/** @type {import('ava').TestFn<ReturnType<typeof makeTestContext>>} */
+/** @type {TestFn<ReturnType<typeof makeTestContext>>} */
 const test = anyTest;
 
 //#region test setup, isolating ambient authority

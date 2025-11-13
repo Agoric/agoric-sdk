@@ -11,6 +11,7 @@ import { Nat } from '@endo/nat';
  * @import {MsgSendResponse} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
  * @import {BridgeHandler, ScopedBridgeManager} from '../src/types.js';
  * @import {Remote} from '@agoric/vow';
+ * @import {Zone} from '@agoric/zone';
  */
 const trace = makeTracer('FakeBridge');
 
@@ -26,7 +27,7 @@ const INFINITE_AMOUNT = 99999999999n;
  * always huge. When you withdraw, it's as if it is topped up again by a Cosmos
  * transaction outside the Agoric VM. (Similarly for deposits.)
  *
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  * @param {object} [opts]
  * @param {Balances} [opts.balances] initial balances
  * @param {(obj) => void} [opts.onToBridge]
@@ -129,7 +130,7 @@ export const makeFakeBankBridge = (
 };
 
 /**
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  * @param {(obj) => void} onToBridge
  * @returns {ScopedBridgeManager<'dibc'>}
  */
@@ -329,7 +330,7 @@ export const fakeLocalChainBridgeQueryHandler = message => {
 };
 
 /**
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  * @param {(obj: object, result: unknown) => void} [onToBridge] Log message and
  *   result
  * @param {(index: number) => string} makeAddressFn
@@ -412,7 +413,7 @@ export const makeFakeLocalchainBridge = (
 };
 
 /**
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  * @param {(obj) => void} [onToBridge]
  * @returns {ScopedBridgeManager<'vtransfer'>}
  */

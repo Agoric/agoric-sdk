@@ -6,7 +6,12 @@ import { makeTracer } from '@agoric/internal';
 import { withAmountUtils } from '../supports.js';
 import { distributeProportionalSharesWithLimits } from '../../src/auction/auctioneer.js';
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
+/**
+ * @import {TestFn} from 'ava';
+ * @import {ExecutionContext} from 'ava';
+ */
+
+/** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
 
 const trace = makeTracer('Test AuctContract', false);
@@ -27,9 +32,7 @@ test.before(async t => {
 });
 
 /**
- * @param {import('ava').ExecutionContext<
- *   Awaited<ReturnType<makeTestContext>>
- * >} t
+ * @param {ExecutionContext<Awaited<ReturnType<typeof makeTestContext>>>} t
  * @param {[collateralReturned: bigint, bidRaise: bigint]} amountsReturned
  * @param {{ deposit: number; goal?: number }[]} rawDeposits
  * @param {[transfers: [bigint, bigint][], leftovers: [bigint, bigint]]} rawExpected

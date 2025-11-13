@@ -22,7 +22,11 @@ import { makeHeapZone } from '../heap.js';
 import { makeVirtualZone } from '../virtual.js';
 
 /**
- * @param {import('ava').Assertions} t
+ * @import {Assertions} from 'ava';
+ */
+
+/**
+ * @param {Assertions} t
  * @param {MapStore} baggage
  */
 const testFirstVatDataIncarnation = (t, baggage) => {

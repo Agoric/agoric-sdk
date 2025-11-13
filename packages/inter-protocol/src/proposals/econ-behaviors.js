@@ -38,22 +38,28 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 /**
  * @typedef {object} PSMKit
  * @property {string} label
- * @property {Instance<import('../psm/psm.js').start>} psm
+ * @property {Instance<typeof import('../psm/psm.js').start>} psm
  * @property {Instance<
- *   import('../../../governance/src/contractGovernor.js').start
+ *   typeof import('../../../governance/src/contractGovernor.js').start
  * >} psmGovernor
  * @property {Awaited<
  *   ReturnType<
  *     Awaited<
- *       ReturnType<import('../psm/psm.js')['start']>
+ *       ReturnType<typeof import('../psm/psm.js').start>
  *     >['creatorFacet']['getLimitedCreatorFacet']
  *   >
  * >} psmCreatorFacet
- * @property {GovernorCreatorFacet<import('../../src/psm/psm.js')['start']>} psmGovernorCreatorFacet
+ * @property {GovernorCreatorFacet<
+ *   typeof import('../../src/psm/psm.js').start
+ * >} psmGovernorCreatorFacet
  * @property {AdminFacet} psmAdminFacet
  */
 
-/** @typedef {GovernanceFacetKit<import('../auction/auctioneer.js').start>} AuctioneerKit */
+/**
+ * @typedef {GovernanceFacetKit<
+ *   typeof import('../auction/auctioneer.js').start
+ * >} AuctioneerKit
+ */
 
 /**
  * @typedef {WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace} EconomyBootstrapPowers
@@ -73,7 +79,7 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  *   anchorBalancePayments: MapStore<Brand, Payment<'nat'>>;
  *   econCharterKit: EconCharterStartResult;
  *   reserveKit: GovernanceFacetKit<
- *     import('../reserve/assetReserve.js')['start']
+ *     typeof import('../reserve/assetReserve.js').start
  *   >;
  *   vaultFactoryKit: GovernanceFacetKit<VFStart>;
  *   auctioneerKit: AuctioneerKit;
@@ -84,12 +90,12 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 
 /**
  * @typedef {StartedInstanceKit<
- *   import('../econCommitteeCharter.js')['start']
+ *   typeof import('../econCommitteeCharter.js').start
  * >} EconCharterStartResult
  */
 /**
  * @typedef {StartedInstanceKit<
- *   import('@agoric/governance/src/committee.js')['start']
+ *   typeof import('@agoric/governance/src/committee.js').start
  * >} CommitteeStartResult
  */
 

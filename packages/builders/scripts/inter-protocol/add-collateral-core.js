@@ -5,7 +5,13 @@ import { getManifestForAddAssetToVault } from '@agoric/inter-protocol/src/propos
 import { getManifestForPsm } from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import { makeInstallCache } from '@agoric/inter-protocol/src/proposals/utils.js';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {InterchainAssetOptions} from '@agoric/inter-protocol/src/proposals/addAssetToVault.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async (
   { publishRef, install: install0, wrapInstall },
   {
@@ -15,7 +21,7 @@ export const defaultProposalBuilder = async (
   } = {},
   { env = process.env } = {},
 ) => {
-  /** @type {import('@agoric/inter-protocol/src/proposals/addAssetToVault.js').InterchainAssetOptions} */
+  /** @type {InterchainAssetOptions} */
   const {
     issuerBoardId = env.INTERCHAIN_ISSUER_BOARD_ID,
     denom = env.INTERCHAIN_DENOM,
@@ -62,7 +68,7 @@ export const defaultProposalBuilder = async (
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const psmProposalBuilder = async (
   { publishRef, install: install0, wrapInstall },
   { anchorOptions = /** @type {object} */ ({}) } = {},
@@ -103,7 +109,7 @@ export const psmProposalBuilder = async (
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 

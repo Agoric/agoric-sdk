@@ -1,12 +1,17 @@
 import { Buffer } from 'buffer';
 import { makeB0ID } from './util.js';
 
+/**
+ * @import {Bundle} from '../src/bundleStore.js';
+ * @import {KVPair} from '../src/exporter.js';
+ */
+
 export const snapshotData = 'snapshot data';
 // this snapHash was computed manually
 export const snapHash =
   'e7dee7266896538616b630a5da40a90e007726a383e005a9c9c5dd0c2daf9329';
 
-/** @type {import('../src/bundleStore.js').Bundle} */
+/** @type {Bundle} */
 export const bundle0 = { moduleFormat: 'nestedEvaluate', source: '1+1' };
 export const bundle0ID = makeB0ID(bundle0);
 
@@ -81,7 +86,7 @@ export function makeExporter(exportData, artifacts) {
     },
     async *getExportData() {
       for (const [key, value] of exportData.entries()) {
-        /** @type { import('../src/exporter.js').KVPair } */
+        /** @type { KVPair } */
         const pair = [key, value];
         yield pair;
       }

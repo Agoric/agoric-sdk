@@ -9,6 +9,10 @@ import {
   defineVirtualExoClassKit,
 } from '../src/exo-utils.js';
 
+/**
+ * @import {IsInstance} from '@endo/exo';
+ */
+
 const UpCounterI = M.interface('UpCounter', {
   incr: M.call().optional(M.gte(0)).returns(M.number()),
 });
@@ -18,7 +22,7 @@ const DownCounterI = M.interface('DownCounter', {
 });
 
 test('test isInstance defineVirtualExoClass', t => {
-  /** @type {import('@endo/exo').IsInstance} */
+  /** @type {IsInstance} */
   let isInstance;
   const makeUpCounter = defineVirtualExoClass(
     'UpCounter',
@@ -59,7 +63,7 @@ test('test isInstance defineVirtualExoClass', t => {
 });
 
 test('test isInstance defineVirtualExoClassKit', t => {
-  /** @type {import('@endo/exo').IsInstance} */
+  /** @type {IsInstance} */
   let isInstance;
   const makeCounterKit = defineVirtualExoClassKit(
     'Counter',

@@ -55,6 +55,15 @@ import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
  * @import {CopyRecord} from '@endo/pass-style';
  * @import {EReturn} from '@endo/far';
  * @import {OfferId, OfferStatus, OfferSpec, InvokeEntryMessage, ResultPlan} from './offers.js';
+ * @import {MakeOfferWatcher} from './offerWatcher.js';
+ * @import {Petname} from './types.js';
+ * @import {Bank} from '@agoric/vats/src/vat-bank.js';
+ * @import {NameHub} from '@agoric/vats';
+ * @import {InvitationMakers} from './types.js';
+ * @import {RecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {PublicSubscribers} from './types.js';
+ * @import {CapData} from '@endo/marshal';
  */
 
 const trace = makeTracer('SmrtWlt');
@@ -70,7 +79,7 @@ const trace = makeTracer('SmrtWlt');
  *     info: (...args: any[]) => void;
  *     error: (...args: any[]) => void;
  *   };
- *   makeOfferWatcher: import('./offerWatcher.js').MakeOfferWatcher;
+ *   makeOfferWatcher: MakeOfferWatcher;
  *   invitationFromSpec: ERef<Invitation>;
  * }} ExecutorPowers
  */
@@ -162,7 +171,7 @@ const trace = makeTracer('SmrtWlt');
  *   brand: Brand;
  *   displayInfo: DisplayInfo;
  *   issuer: Issuer;
- *   petname: import('./types.js').Petname;
+ *   petname: Petname;
  * }} BrandDescriptor
  *   For use by clients to describe brands to users. Includes `displayInfo` to
  *   save a remote call.
@@ -171,7 +180,7 @@ const trace = makeTracer('SmrtWlt');
 /**
  * @typedef {{
  *   address: string;
- *   bank: ERef<import('@agoric/vats/src/vat-bank.js').Bank>;
+ *   bank: ERef<Bank>;
  *   currentStorageNode: Remote<StorageNode>;
  *   invitationPurse: Purse<'set', InvitationDetails>;
  *   walletStorageNode: Remote<StorageNode>;
@@ -182,7 +191,7 @@ const trace = makeTracer('SmrtWlt');
  *
  *
  * @typedef {{
- *   agoricNames: ERef<import('@agoric/vats').NameHub>;
+ *   agoricNames: ERef<NameHub>;
  *   registry: BrandDescriptorRegistry;
  *   invitationIssuer: Issuer<'set'>;
  *   invitationBrand: Brand<'set'>;
@@ -204,15 +213,12 @@ const trace = makeTracer('SmrtWlt');
  * @typedef {Readonly<
  *   UniqueParams & {
  *     paymentQueues: MapStore<Brand, Payment[]>;
- *     offerToInvitationMakers: MapStore<
- *       string,
- *       import('./types.js').InvitationMakers
- *     >;
+ *     offerToInvitationMakers: MapStore<string, InvitationMakers>;
  *     offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>;
  *     offerToUsedInvitation: MapStore<string, Amount<'set'>>;
  *     purseBalances: MapStore<Purse, Amount>;
- *     updateRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>;
- *     currentRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>;
+ *     updateRecorderKit: RecorderKit<UpdateRecord>;
+ *     currentRecorderKit: RecorderKit<CurrentWalletRecord>;
  *     liveOffers: MapStore<OfferId, OfferStatus>;
  *     liveOfferSeats: MapStore<OfferId, UserSeat<unknown>>;
  *     liveOfferPayments: MapStore<OfferId, MapStore<Brand, Payment>>;
@@ -232,7 +238,7 @@ const trace = makeTracer('SmrtWlt');
  * TODO: consider moving to nameHub.js?
  *
  * @param {unknown} target - passable Key
- * @param {ERef<import('@agoric/vats').NameHub>} nameHub
+ * @param {ERef<NameHub>} nameHub
  */
 const namesOf = async (target, nameHub) => {
   const entries = await E(nameHub).entries();
@@ -276,7 +282,7 @@ const getBrandToPurses = (walletPurses, key) => {
 };
 
 /**
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @param {SharedParams} shared
  */
 export const prepareSmartWallet = (baggage, shared) => {
@@ -439,12 +445,12 @@ export const prepareSmartWallet = (baggage, shared) => {
       myStore: zone.detached().mapStore('my items'),
     };
 
-    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>} */
+    /** @type {RecorderKit<UpdateRecord>} */
     const updateRecorderKit = makeRecorderKit(unique.walletStorageNode);
     // NB: state size must not grow monotonically
     // This is the node that UIs subscribe to for everything they need.
     // e.g. agoric follow :published.wallet.agoric1nqxg4pye30n3trct0hf7dclcwfxz8au84hr3ht
-    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>} */
+    /** @type {RecorderKit<CurrentWalletRecord>} */
     const currentRecorderKit = makeRecorderKit(unique.currentStorageNode);
 
     const nonpreciousState = {
@@ -646,8 +652,7 @@ export const prepareSmartWallet = (baggage, shared) => {
          * transition to decentralized introductions.
          *
          * @param {Brand} brand
-         * @param {ERef<import('@agoric/vats').NameHub>} known - namehub with
-         *   brand, issuer branches
+         * @param {ERef<NameHub>} known - namehub with brand, issuer branches
          * @returns {Promise<Purse | undefined>} undefined if brand is not known
          */
         async getPurseIfKnownBrand(brand, known) {
@@ -726,8 +731,8 @@ export const prepareSmartWallet = (baggage, shared) => {
         /**
          * @param {string} offerId
          * @param {Amount<'set'>} invitationAmount
-         * @param {import('./types.js').InvitationMakers} invitationMakers
-         * @param {import('./types.js').PublicSubscribers} publicSubscribers
+         * @param {InvitationMakers} invitationMakers
+         * @param {PublicSubscribers} publicSubscribers
          */
         async addContinuingOffer(
           offerId,
@@ -1179,8 +1184,7 @@ export const prepareSmartWallet = (baggage, shared) => {
          * Umarshals the actionCapData and delegates to the appropriate action
          * handler.
          *
-         * @param {import('@endo/marshal').CapData<string | null>} actionCapData
-         *   of type BridgeAction
+         * @param {CapData<string | null>} actionCapData of type BridgeAction
          * @param {boolean} [canSpend]
          * @returns {Promise<void>}
          */

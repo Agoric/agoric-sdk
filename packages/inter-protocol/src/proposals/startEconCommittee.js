@@ -5,6 +5,10 @@ import {
 } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 
+/**
+ * @import {EconomyBootstrapPowers} from './econ-behaviors.js';
+ */
+
 const trace = makeTracer('RunEconCommittee', true);
 
 /** @type {(name: string) => string} */
@@ -21,7 +25,7 @@ const sanitizePathSegment = name => {
  */
 
 /**
- * @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {object} config
  * @param {object} [config.options]
  * @param {EconCommitteeOptions} [config.options.econCommitteeOptions]

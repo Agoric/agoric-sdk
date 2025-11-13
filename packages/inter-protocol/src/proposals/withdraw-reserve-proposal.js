@@ -6,7 +6,7 @@ import { reserveThenDeposit } from './utils.js';
  * @param {BootstrapPowers & {
  *   consume: {
  *     reserveKit: Promise<
- *       ReturnType<import('../reserve/assetReserve.js')['start']>
+ *       ReturnType<typeof import('../reserve/assetReserve.js').start>
  *     >;
  *   };
  * }} powers

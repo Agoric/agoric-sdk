@@ -7,6 +7,11 @@ import {
   BeansPerXsnapComputron,
 } from './sim-params.js';
 
+/**
+ * @import {CleanupBudget} from '@agoric/swingset-vat';
+ * @import {ChainRunPolicy} from './launch-chain.js';
+ */
+
 const { hasOwn } = Object;
 
 /**
@@ -26,9 +31,9 @@ const { hasOwn } = Object;
  *
  * @param {object} params
  * @param {BeansPerUnit} params.beansPerUnit
- * @param {import('@agoric/swingset-vat').CleanupBudget} [params.vatCleanupBudget]
+ * @param {CleanupBudget} [params.vatCleanupBudget]
  * @param {boolean} [ignoreBlockLimit]
- * @returns {import('./launch-chain.js').ChainRunPolicy}
+ * @returns {ChainRunPolicy}
  */
 export function computronCounter(
   { beansPerUnit, vatCleanupBudget },
@@ -52,7 +57,7 @@ export function computronCounter(
   let cleanupDone = false;
   const cleanupPossible = Object.values(remainingCleanups).some(n => n > 0);
   if (!cleanupPossible) cleanupDone = true;
-  /** @type {() => (false | import('@agoric/swingset-vat').CleanupBudget)} */
+  /** @type {() => (false | CleanupBudget)} */
   const allowCleanup = () =>
     cleanupStarted && !cleanupDone && { ...remainingCleanups };
   const startCleanup = () => {

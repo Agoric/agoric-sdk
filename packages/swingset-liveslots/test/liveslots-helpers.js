@@ -15,6 +15,10 @@ import {
 } from './util.js';
 
 /**
+ * @import {ExecutionContext} from 'ava';
+ */
+
+/**
  * @param {object} [options]
  * @param {boolean} [options.skipLogging]
  * @param {Map<string, string>} [options.kvStore]
@@ -164,7 +168,7 @@ function makeRPMaker(nextNumber = 1) {
 }
 
 /**
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {Function} buildRootObject
  * @param {string} vatName
  * @param {object} [options]

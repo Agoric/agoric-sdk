@@ -16,6 +16,11 @@ import * as basicBehaviorsNamespace from '../src/core/basic-behaviors.js';
 import * as chainBehaviorsNamespace from '../src/core/chain-behaviors.js';
 import * as utils from '../src/core/utils.js';
 
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {CreateVatResults} from '@agoric/swingset-vat';
+ */
+
 // Gather up all defined bootstrap behaviors.
 const { BASIC_BOOTSTRAP_PERMITS: BASIC_BOOTSTRAP, ...basicBehaviors } =
   basicBehaviorsNamespace;
@@ -64,7 +69,7 @@ manifests.MINIMAL = makeManifestForBehaviors([
  *   addBehaviors?: string[];
  *   coreProposalCodeSteps?: string[];
  * }} bootstrapParameters
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
   const manualTimer = buildManualTimer();
@@ -74,7 +79,7 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
   /** @typedef {{ root: object; incarnationNumber?: number }} VatRecord */
   /**
    * @typedef {VatRecord &
-   *   import('@agoric/swingset-vat').CreateVatResults & {
+   *   CreateVatResults & {
    *     bundleCap: unknown;
    *   }} DynamicVatRecord
    */

@@ -9,6 +9,7 @@ const trace = makeTracer('NewAuction', true);
 
 /**
  * @import {Remote} from '@agoric/internal';
+ * @import {EconomyBootstrapPowers} from './econ-behaviors.js';
  */
 
 /**
@@ -21,8 +22,7 @@ const trace = makeTracer('NewAuction', true);
  */
 
 /**
- * @param {import('./econ-behaviors.js').EconomyBootstrapPowers &
- *   interlockPowers} powers
+ * @param {EconomyBootstrapPowers & interlockPowers} powers
  * @param {{
  *   options: {
  *     contractGovernorRef: { bundleID: string };

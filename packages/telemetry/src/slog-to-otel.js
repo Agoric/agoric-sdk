@@ -14,7 +14,13 @@ import {
 
 // diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.VERBOSE);
 
-/** @import {Span, Link as SpanLink} from '@opentelemetry/api' */
+/**
+ * @import {Span, Link as SpanLink} from '@opentelemetry/api'
+ * @import {Tracer} from '@opentelemetry/api';
+ * @import {SwingSetCapData} from '@agoric/swingset-vat';
+ * @import {Message} from '@agoric/swingset-vat';
+ * @import {KernelSyscallObject} from '@agoric/swingset-vat';
+ */
 /** @import {SpanContext, SpanOptions} from '@opentelemetry/api' */
 
 const { assign } = Object;
@@ -76,7 +82,7 @@ export const floatSecondsToHiRes = sFloat => {
 };
 
 /**
- * @param {import('@opentelemetry/api').Tracer} tracer
+ * @param {Tracer} tracer
  * @param {Record<string, any>} [overrideAttrs]
  */
 export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
@@ -140,7 +146,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
   });
 
   /**
-   * @param {import('@agoric/swingset-vat').SwingSetCapData} data
+   * @param {SwingSetCapData} data
    * @returns {any}
    */
   const unserialize = data => {
@@ -156,12 +162,12 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
   /**
    * @typedef {{
    *   method: string;
-   *   args: import('@agoric/swingset-vat').SwingSetCapData;
+   *   args: SwingSetCapData;
    *   result?: string | undefined | null,
    * }} OldMessage
    */
   /** @typedef {ReturnType<typeof parseMsg>} ParsedMessage */
-  /** @param {import('@agoric/swingset-vat').Message | OldMessage} msg */
+  /** @param {Message | OldMessage} msg */
   const parseMsg = msg => {
     /** @type {string | symbol | null} */
     let method = null;
@@ -699,7 +705,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         if (isReplaying) {
           break;
         }
-        /** @type {{ksc: import('@agoric/swingset-vat').KernelSyscallObject } & Record<string, unknown>} */
+        /** @type {{ksc: KernelSyscallObject } & Record<string, unknown>} */
         const { ksc, vsc: _1, ...attrs } = slogAttrs;
         if (!ksc) {
           break;

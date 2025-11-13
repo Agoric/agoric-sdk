@@ -1,7 +1,13 @@
 /// <reference types="ses" />
 import { makeHelpers } from '@agoric/deploy-script-support';
 
-/** @type {Record<string, import('@agoric/orchestration').ChainInfo>} */
+/**
+ * @import {ChainInfo} from '@agoric/orchestration';
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
+/** @type {Record<string, ChainInfo>} */
 const chainInfo = {
   agoric: {
     bech32Prefix: 'agoric',
@@ -37,7 +43,7 @@ const chainInfo = {
   },
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async () =>
   harden({
     sourceSpec: '@agoric/orchestration/src/proposals/revise-chain-info.js',
@@ -49,7 +55,7 @@ export const defaultProposalBuilder = async () =>
     ],
   });
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval('revise-chain-info', defaultProposalBuilder);

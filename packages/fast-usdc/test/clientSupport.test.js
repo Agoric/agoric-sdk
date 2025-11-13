@@ -2,10 +2,14 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { Offers } from '../src/clientSupport.js';
 
+/**
+ * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
+ */
+
 const usdc = makeIssuerKit('USDC');
 const fastLP = makeIssuerKit('FastLP');
 
-/** @type {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} */
+/** @type {AgoricNamesRemotes} */
 const agoricNames = {
   brand: {
     // @ts-expect-error not a real BoardRemote

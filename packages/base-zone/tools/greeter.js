@@ -1,6 +1,10 @@
 import { M, getInterfaceGuardPayload } from '@endo/patterns';
 
 /**
+ * @import {Zone} from '../src/types.js';
+ */
+
+/**
  * @template {{}} T
  * @param {T} obj
  * @param {unknown} that
@@ -38,7 +42,7 @@ export const GreeterWithAdminI = M.interface('GreeterWithAdmin', {
 });
 
 /**
- * @param {import('../src/types.js').Zone} zone
+ * @param {Zone} zone
  * @param {string} label
  * @param {string} nick
  */
@@ -51,7 +55,7 @@ export const prepareGreeterSingleton = (zone, label, nick) => {
 };
 
 /**
- * @param {import('../src/types.js').Zone} zone
+ * @param {Zone} zone
  */
 export const prepareGreeter = zone =>
   zone.exoClass('Greeter', GreeterWithAdminI, nick => ({ nick }), {
@@ -60,7 +64,7 @@ export const prepareGreeter = zone =>
   });
 
 /**
- * @param {import('../src/types.js').Zone} zone
+ * @param {Zone} zone
  */
 export const prepareGreeterKit = zone =>
   zone.exoClassKit(

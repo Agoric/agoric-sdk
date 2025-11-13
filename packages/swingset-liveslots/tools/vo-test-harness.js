@@ -1,13 +1,17 @@
 import { Far } from '@endo/marshal';
 import { setupTestLiveslots } from '../test/liveslots-helpers.js';
 
+/**
+ * @import {ExecutionContext} from 'ava';
+ */
+
 // This file contains a test harness for virtual objects. runVOTest()
 // is to to help verify that a VO can be garbage collected and then
 // reloaded from persistent storage while maintaining functionality.
 
 /**
  * A spy wrapping Ava's t for tests that are testing the harness itself.
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  */
 export const makeSpy = t => {
   const tSpy = {

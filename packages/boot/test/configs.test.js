@@ -12,14 +12,17 @@ import { mustMatch } from '@agoric/store';
 import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
 import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 
+/**
+ * @import {TestFn} from 'ava';
+ * @import {spawn} from 'child_process';
+ */
+
 const importConfig = async configName =>
   new URL(importMetaResolve(`@agoric/vm-config/${configName}`, import.meta.url))
     .pathname;
 
 const test =
-  /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>}} */ (
-    anyTest
-  );
+  /** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>}} */ (anyTest);
 
 const PROD_CONFIG_FILES = [
   'decentral-main-vaults-config.json',
@@ -37,12 +40,12 @@ const NON_UPGRADEABLE_VATS = ['pegasus', 'mints'];
 
 /**
  * @param {string} bin
- * @param {{ spawn: typeof import('child_process').spawn }} io
+ * @param {{ spawn: typeof spawn }} io
  */
 export const pspawn =
   (bin, { spawn }) =>
   (args = [], opts = {}) => {
-    /** @type {ReturnType<typeof import('child_process').spawn> | undefined} */
+    /** @type {ReturnType<typeof spawn> | undefined} */
     let child;
     const exit = new Promise((resolve, reject) => {
       // console.debug('spawn', bin, args, { cwd: makefileDir, ...opts });

@@ -20,6 +20,8 @@ import { E, Far } from '@endo/far';
 
 /**
  * @import {StoredFacet} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {BridgeManager} from '@agoric/vats';
+ * @import {TopicsRecord} from '@agoric/zoe/src/contractSupport/index.js';
  */
 
 export { ActionType };
@@ -61,7 +63,7 @@ export const subscriptionKey = subscription => {
     });
 };
 
-/** @returns {import('@agoric/vats').BridgeManager} */
+/** @returns {BridgeManager} */
 const makeFakeBridgeManager = () =>
   Far('fakeBridgeManager', {
     register(bridgeId, handler) {
@@ -159,7 +161,7 @@ export const makeMockTestSpace = async log => {
 
 /**
  * @param {ERef<{
- *   getPublicTopics: () => import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord;
+ *   getPublicTopics: () => TopicsRecord;
  * }>} hasTopics
  * @param {string} subscriberName
  */

@@ -4,11 +4,15 @@ import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
 import zcfBundle from '../../../bundles/bundle-contractFacet.js';
 
+/**
+ * @import {TestFn} from 'ava';
+ */
+
 const CONTRACT_FILES = ['minimalMakeKindContract'];
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-/** @type {import('ava').TestFn<{ data: { kernelBundles: any, config: any } }>} */
+/** @type {TestFn<{ data: { kernelBundles: any, config: any } }>} */
 const test = anyTest;
 
 test.before(async t => {

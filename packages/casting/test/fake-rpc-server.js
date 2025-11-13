@@ -8,6 +8,10 @@ import express from 'express';
 
 import { toAscii, toBase64 } from '@cosmjs/encoding';
 
+/**
+ * @import {ExecutionContext} from 'ava';
+ */
+
 const chainName = 'fakeChain';
 
 let lastPort = 8989;
@@ -72,7 +76,7 @@ const fakeStatusResult = {
   },
 };
 
-/** @typedef {Partial<import('ava').ExecutionContext<{cleanups: Array<() => void>}>> & {context}} FakeServerTestContext */
+/** @typedef {Partial<ExecutionContext<{cleanups: Array<() => void>}>> & {context}} FakeServerTestContext */
 /**
  * @param {FakeServerTestContext} t
  * @param {Array<{any}>} fakeValues

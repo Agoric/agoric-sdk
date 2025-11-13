@@ -47,6 +47,7 @@ export function assertValidVatstoreKey(key) {
  * @import {VatID} from '../types-internal.js'
  * @import {KernelKeeper} from './state/kernelKeeper.js'
  *
+ * @import {KernelSyscallAbandonExports} from '../types-external.js';
  */
 
 /**
@@ -495,7 +496,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   /**
    *
    * @param {string[]} vrefs
-   * @returns {import('../types-external.js').KernelSyscallAbandonExports}
+   * @returns {KernelSyscallAbandonExports}
    */
   function translateAbandonExports(vrefs) {
     Array.isArray(vrefs) || Fail`abandonExports() given non-Array ${vrefs}`;

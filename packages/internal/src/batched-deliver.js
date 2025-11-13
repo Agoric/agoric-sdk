@@ -1,6 +1,11 @@
 // @jessie-check
 // @ts-check
 
+/**
+ * @import {clearTimeout} from 'node:timers';
+ * @import {setTimeout} from 'node:timers';
+ */
+
 export const DEFAULT_BATCH_TIMEOUT_MS = 1000;
 
 /**
@@ -10,8 +15,8 @@ export const DEFAULT_BATCH_TIMEOUT_MS = 1000;
 /**
  * @param {DeliverMessages} deliver
  * @param {{
- *   clearTimeout: import('node:timers').clearTimeout;
- *   setTimeout: import('node:timers').setTimeout;
+ *   clearTimeout: clearTimeout;
+ *   setTimeout: setTimeout;
  * }} io
  * @param {number} batchTimeoutMs
  */

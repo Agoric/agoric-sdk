@@ -129,7 +129,7 @@ const parseIfJSON = d => {
 };
 
 /**
- * @param {ReturnType<makeVStorage>} vstorage
+ * @param {ReturnType<typeof makeVStorage>} vstorage
  * @param {FromCapData<string>} unmarshal
  * @param {[AgoricChainStoragePathKind, string][]} paths
  */

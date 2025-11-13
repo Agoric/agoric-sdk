@@ -16,6 +16,11 @@ import { E, passStyleOf } from '@endo/far';
 import { makeTracer } from '@agoric/internal/src/debug.js';
 import { isAbandonedError } from '@agoric/internal/src/upgrade-api.js';
 
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
 const USAGE = `Usage: agoric run /path/to/terminate-governed-instance.js \\
   <$instanceHandleBoardID:$instanceKitLabel>...`;
 
@@ -208,7 +213,7 @@ export const getManifest = (_powers, targetSpecifiers) => {
   };
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async (_utils, targetSpecifiers) => {
   parseTargets(targetSpecifiers);
 
@@ -222,7 +227,7 @@ export const defaultProposalBuilder = async (_utils, targetSpecifiers) => {
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
   parseTargets(scriptArgs, makeUsageError);

@@ -28,6 +28,7 @@ import '../types-ambient.js';
  * @import {Bundle} from '../types-external.js';
  * @import {SwingStoreKernelStorage} from '../types-external.js';
  * @import {EndoZipBase64Bundle} from '../types-external.js';
+ * @import {BundleHandler} from './bundle-handler.js';
  */
 
 const trace = makeTracer('IniSwi', false);
@@ -311,7 +312,7 @@ function sortObjectProperties(obj, firsts = []) {
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {InitializationOptions} initializationOptions
  * @param {{ env?: Record<string, string | undefined >,
- *           bundleHandler?: import('./bundle-handler.js').BundleHandler,
+ *           bundleHandler?: BundleHandler,
  *         }} runtimeOptions
  * @returns {Promise<string | undefined>} KPID of the bootstrap message result promise
  */

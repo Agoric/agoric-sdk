@@ -10,13 +10,14 @@ import { cleanKeywords } from '../cleanProposal.js';
 
 /**
  * @import {WeakMapStore} from '@agoric/store';
+ * @import {Baggage} from '@agoric/vat-data';
  */
 
 /**
  * Store the pool purses whose purpose is to escrow assets, with one
  * purse per brand.
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const provideEscrowStorage = baggage => {
   /** @type {WeakMapStore<Brand, Purse>} */

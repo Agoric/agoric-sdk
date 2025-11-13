@@ -3,18 +3,21 @@ import { assertAllDefined } from '@agoric/internal';
 
 /**
  * @import {USDCProposalShapes} from './pool-share-math.js';
+ * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
+ * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
+ * @import {OfferMaker} from '@agoric/smart-wallet/src/types.js';
  */
 
 /**
  * @param {Pick<
- *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes,
+ *   AgoricNamesRemotes,
  *   'brand'
  * >} agoricNames
  * @param {object} opts
  * @param {string} opts.offerId
  * @param {bigint} opts.fastLPAmount
  * @param {bigint} opts.usdcAmount
- * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec & {proposal: USDCProposalShapes['deposit']}}
+ * @returns {OfferSpec & {proposal: USDCProposalShapes['deposit']}}
  */
 const makeDepositOffer = ({ brand }, { offerId, fastLPAmount, usdcAmount }) => {
   assertAllDefined({ offerId, fastLPAmount, usdcAmount });
@@ -47,14 +50,14 @@ const makeDepositOffer = ({ brand }, { offerId, fastLPAmount, usdcAmount }) => {
 
 /**
  * @param {Pick<
- *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes,
+ *   AgoricNamesRemotes,
  *   'brand'
  * >} agoricNames
  * @param {object} opts
  * @param {string} opts.offerId
  * @param {bigint} opts.fastLPAmount
  * @param {bigint} opts.usdcAmount
- * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
+ * @returns {OfferSpec}
  */
 const makeWithdrawOffer = (
   { brand },
@@ -87,7 +90,7 @@ const makeWithdrawOffer = (
 /**
  * @satisfies {Record<
  *   string,
- *   Record<string, import('@agoric/smart-wallet/src/types.js').OfferMaker>
+ *   Record<string, OfferMaker>
  * >}
  */
 export const Offers = {

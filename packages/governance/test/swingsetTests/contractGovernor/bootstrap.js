@@ -14,6 +14,7 @@ import { makeTerms, MALLEABLE_NUMBER } from './governedContract.js';
 
 /**
  * @import {ContractGovernanceVoteResult, GovernedPublicFacetMethods, GovernorCreatorFacet, ParamChangesSpec, QuestionDetails, SimpleIssue, StandardParamPath} from '../../../src/types.js';
+ * @import {EVatVoter} from './vat-voter.js';
  */
 
 /**
@@ -110,7 +111,7 @@ const votersVote = async (detailsP, votersP, selections) => {
 };
 
 /**
- * @param {ERef<import('./vat-voter.js').EVatVoter[]>} votersP
+ * @param {ERef<EVatVoter[]>} votersP
  * @param {ERef<QuestionDetails>} detailsP
  * @param {ERef<Instance>} governedInstanceP
  * @param {Instance} electorateInstance

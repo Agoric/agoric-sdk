@@ -22,14 +22,24 @@ import {
 /**
  * @import {ZoeManualTimer} from '@agoric/zoe/tools/manualTimer.js';
  * @import {EReturn} from '@endo/far';
+ * @import {EconomyBootstrapPowers} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+ * @import {TestFn} from 'ava';
+ * @import {PriceFeedOptions} from '@agoric/inter-protocol/src/proposals/price-feed-proposal.js';
+ * @import {ExecutionContext} from 'ava';
+ * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {start} from '@agoric/inter-protocol/src/price/fluxAggregatorContract.js';
+ * @import {PurseInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
+ * @import {SmartWallet} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {PriceRound} from '@agoric/inter-protocol/src/price/roundsManager.js';
+ * @import {ContinuingInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
  */
 
 /**
  * @typedef {EReturn<typeof makeDefaultTestContext> & {
- *   consume: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume'];
+ *   consume: EconomyBootstrapPowers['consume'];
  * }} TestContext
  */
-/** @type {import('ava').TestFn<TestContext>} */
+/** @type {TestFn<TestContext>} */
 const test = anyTest;
 
 const committeeAddress = 'econCommitteeMemberA';
@@ -69,7 +79,7 @@ const makeTestSpace = async (log, bundleCache) => {
   const timer = buildZoeManualTimer(log);
   space.produce.chainTimerService.resolve(timer);
 
-  /** @type {import('@agoric/inter-protocol/src/proposals/price-feed-proposal.js').PriceFeedOptions} */
+  /** @type {PriceFeedOptions} */
   const priceFeedOptions = {
     IN_BRAND_NAME: 'ATOM',
     IN_BRAND_DECIMALS: '6',
@@ -107,7 +117,7 @@ test.before(async t => {
 });
 
 /**
- * @param {import('ava').ExecutionContext<TestContext>} t
+ * @param {ExecutionContext<TestContext>} t
  * @param {string[]} oracleAddresses
  */
 const setupFeedWithWallets = async (t, oracleAddresses) => {
@@ -122,9 +132,7 @@ const setupFeedWithWallets = async (t, oracleAddresses) => {
   await t.context.simpleCreatePriceFeed(oracleAddresses, 'ATOM', 'USD');
 
   /**
-   * @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<
-   *   import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start
-   * >}
+   * @type {Instance<typeof start>}
    */
   const governedPriceAggregator = await E(agoricNames).lookup(
     'instance',
@@ -138,7 +146,7 @@ let acceptInvitationCounter = 0;
 const acceptInvitation = async (wallet, priceAggregator) => {
   acceptInvitationCounter += 1;
   const id = `acceptInvitation${acceptInvitationCounter}`;
-  /** @type {import('@agoric/smart-wallet/src/invitations.js').PurseInvitationSpec} */
+  /** @type {PurseInvitationSpec} */
   const getInvMakersSpec = {
     source: 'purse',
     instance: priceAggregator,
@@ -156,13 +164,13 @@ const acceptInvitation = async (wallet, priceAggregator) => {
 
 let pushPriceCounter = 0;
 /**
- * @param {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} wallet
+ * @param {SmartWallet} wallet
  * @param {string} adminOfferId
- * @param {import('@agoric/inter-protocol/src/price/roundsManager.js').PriceRound} priceRound
+ * @param {PriceRound} priceRound
  * @returns {Promise<string>} offer id
  */
 const pushPrice = async (wallet, adminOfferId, priceRound) => {
-  /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
+  /** @type {ContinuingInvitationSpec} */
   const proposeInvitationSpec = {
     source: 'continuing',
     previousOffer: adminOfferId,
@@ -200,7 +208,9 @@ test.serial('invitations', async t => {
    * @param {string} desc
    * @param {number} len
    * @param {any} balances XXX please improve this
-   * @returns {Promise<[{ description: string; instance: Instance }]>}
+   * @returns {Promise<
+   *   [{ description: string; instance: Instance<unknown> }]
+   * >}
    */
   const getInvitationFor = async (desc, len, balances) => {
     await eventLoopIteration();
@@ -228,7 +238,7 @@ test.serial('invitations', async t => {
 
   // The purse has the invitation to get the makers
 
-  /** @type {import('@agoric/smart-wallet/src/invitations.js').PurseInvitationSpec} */
+  /** @type {PurseInvitationSpec} */
   const getInvMakersSpec = {
     source: 'purse',
     instance: governedPriceAggregator,
@@ -270,7 +280,7 @@ test.serial('admin price', async t => {
 
   // Push a new price result /////////////////////////
 
-  /** @type {import('@agoric/inter-protocol/src/price/roundsManager.js').PriceRound} */
+  /** @type {PriceRound} */
   const result = { roundId: 1, unitPrice: 123n };
 
   await pushPrice(wallet, adminOfferId, result);
@@ -382,8 +392,8 @@ test.serial('govern oracles list', async t => {
     'econCommitteeCharter',
   );
   /**
-   * @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<
-   *   import('@agoric/governance/src/committee.js')['start']
+   * @type {Instance<
+   *   typeof import('@agoric/governance/src/committee.js').start
    * >}
    */
   const economicCommittee = await E(agoricNames).lookup(
@@ -398,7 +408,9 @@ test.serial('govern oracles list', async t => {
    * @param {string} desc
    * @param {number} len
    * @param {{ get: (b: Brand) => Amount | undefined }} balances
-   * @returns {Promise<[{ description: string; instance: Instance }]>}
+   * @returns {Promise<
+   *   [{ description: string; instance: Instance<unknown> }]
+   * >}
    */
   const getInvitationFor = async (desc, len, balances) =>
     E(E(zoe).getInvitationIssuer())
@@ -427,7 +439,7 @@ test.serial('govern oracles list', async t => {
 
   // Accept the EC invitation makers ///////////
   {
-    /** @type {import('@agoric/smart-wallet/src/invitations.js').PurseInvitationSpec} */
+    /** @type {PurseInvitationSpec} */
     const getInvMakersSpec = {
       source: 'purse',
       instance: econCharter,

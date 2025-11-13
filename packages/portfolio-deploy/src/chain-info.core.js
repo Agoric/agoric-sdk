@@ -10,6 +10,7 @@ import { makeMarshal } from '@endo/marshal';
  * @import {Remote, ERemote} from '@agoric/internal';
  * @import {ChainInfo} from '@agoric/orchestration';
  * @import {NameHub, NameAdmin} from '@agoric/vats';
+ * @import {AxelarChainConfigMap} from './axelar-configs.js';
  */
 
 const trace = makeTracer('ChainInfoCore', true);
@@ -107,7 +108,7 @@ const publishChainInfoToChainStorage = async (
  * @param {{
  *   options: {
  *     chainInfo?: Record<string, ChainInfo>;
- *     axelarConfig: import('./axelar-configs.js').AxelarChainConfigMap;
+ *     axelarConfig: AxelarChainConfigMap;
  *   };
  * }} config
  */

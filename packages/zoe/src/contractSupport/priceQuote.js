@@ -7,6 +7,7 @@ import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {Timestamp} from '@agoric/time';
  */
 
 // PriceAuthorities return quotes as a pair of an amount and a payment, both
@@ -28,7 +29,7 @@ export const getPriceDescription = quote => {
 export const getAmountIn = quote => getPriceDescription(quote).amountIn;
 /** @param {PriceQuote} quote */
 export const getAmountOut = quote => getPriceDescription(quote).amountOut;
-/** @type {(quote: PriceQuote) => import('@agoric/time').Timestamp} */
+/** @type {(quote: PriceQuote) => Timestamp} */
 export const getTimestamp = quote => getPriceDescription(quote).timestamp;
 
 /** @param {Brand<'nat'>} brand */

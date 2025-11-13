@@ -11,12 +11,15 @@ import {
   bagDisjointSubtract,
 } from '@agoric/store';
 
-/** @import {MathHelpers} from '../types.js' */
+/**
+ * @import {MathHelpers} from '../types.js'
+ * @import {CopyBag} from '@endo/patterns';
+ */
 
-/** @type {import('@endo/patterns').CopyBag} */
+/** @type {CopyBag} */
 const empty = makeCopyBag([]);
 
-/** @type {MathHelpers<import('@endo/patterns').CopyBag>} */
+/** @type {MathHelpers<CopyBag>} */
 export const copyBagMathHelpers = harden({
   doCoerce: bag => {
     mustMatch(bag, M.bag(), 'bag of amount');

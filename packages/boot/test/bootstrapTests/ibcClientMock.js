@@ -7,6 +7,7 @@ import { heapVowE as E } from '@agoric/vow/vat.js';
  * @import {Connection, PortAllocator} from '@agoric/network';
  * @import {ERemote} from '@agoric/internal';
  * @import {ERef} from '@agoric/vow';
+ * @import {Baggage} from '@agoric/vat-data';
  */
 
 /**
@@ -14,7 +15,7 @@ import { heapVowE as E } from '@agoric/vow/vat.js';
  * @param {{
  *   portAllocator: ERemote<PortAllocator>;
  * }} privateArgs
- * @param {import('@agoric/vat-data').Baggage} _baggage
+ * @param {Baggage} _baggage
  */
 export const start = async (zcf, privateArgs, _baggage) => {
   const { portAllocator } = privateArgs;

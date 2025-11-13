@@ -124,7 +124,7 @@ const aaveUsdcAddresses = harden({
 });
 
 /** @type {AddressesMap} */
-const aaveRewardsControllerAddresses = harden({
+export const aaveRewardsControllerAddresses = harden({
   mainnet: {
     Ethereum: '0x8164Cc65827dcFe994AB23944CBC90e0aa80bFcb', // https://aave.com/docs/resources/addresses -> Ethereum V3 Market -> DefaultIncentivesController contract
     Avalanche: '0x929EC64c34a17401F460460D4B9390518E5B473e', // https://aave.com/docs/resources/addresses -> Avalanche V3 Market -> DefaultIncentivesController contract
@@ -142,7 +142,7 @@ const aaveRewardsControllerAddresses = harden({
 });
 
 /** @type {AddressesMap} */
-const compoundAddresses = harden({
+export const compoundAddresses = harden({
   mainnet: {
     Ethereum: '0xc3d688B66703497DAA19211EEdff47f25384cdc3', // https://docs.compound.finance/#networks -> Ethereum USDC -> cUSDCv3 contract
     Arbitrum: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf', // https://docs.compound.finance/#networks -> Arbitrum USDC -> cUSDCv3 contract

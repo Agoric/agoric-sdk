@@ -8,10 +8,12 @@ import { makeMockTestSpace } from './supports.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {TestFn} from 'ava';
+ * @import {start as StartWalletFactory} from '../src/walletFactory.js';
  */
 
 /**
- * @type {import('ava').TestFn<EReturn<typeof makeTestContext>>}
+ * @type {TestFn<EReturn<typeof makeTestContext>>}
  */
 const test = anyTest;
 
@@ -30,7 +32,7 @@ const makeTestContext = async () => {
     `${dirname}/../src/walletFactory.js`,
     'walletFactory',
   );
-  /** @type {Promise<Installation<import('../src/walletFactory.js').start>>} */
+  /** @type {Promise<Installation<StartWalletFactory>>} */
   const installation = E(zoe).install(bundle);
   //#endregion
 

@@ -16,7 +16,7 @@ import {
 const log = false ? console.log : () => {};
 
 /**
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  * @param {MakeEchoConnectionKit} makeEchoConnectionHandler
  * @param {{when: any}} powers
  */

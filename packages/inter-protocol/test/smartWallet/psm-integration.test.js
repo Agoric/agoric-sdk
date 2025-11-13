@@ -19,9 +19,18 @@ import {
 import { headValue, sequenceCurrents, withAmountUtils } from '../supports.js';
 
 /**
- * @type {import('ava').TestFn<
- *   Awaited<ReturnType<makeDefaultTestContext>> & {
- *     consume: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume'];
+ * @import {TestFn} from 'ava';
+ * @import {EconomyBootstrapPowers} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+ * @import {AgoricContractInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
+ * @import {PurseInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
+ * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {ContinuingInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
+ */
+
+/**
+ * @type {TestFn<
+ *   Awaited<ReturnType<typeof makeDefaultTestContext>> & {
+ *     consume: EconomyBootstrapPowers['consume'];
  *   }
  * >}
  */
@@ -67,7 +76,7 @@ test('null swap', async t => {
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
   const currents = sequenceCurrents(E(wallet).getCurrentSubscriber());
 
-  /** @type {import('@agoric/smart-wallet/src/invitations.js').AgoricContractInvitationSpec} */
+  /** @type {AgoricContractInvitationSpec} */
   const invitationSpec = {
     source: 'agoricContract',
     instancePath: ['psm-IST-AUSD'],
@@ -131,7 +140,7 @@ test('want stable', async t => {
   await wallet.getDepositFacet().receive(payment);
 
   t.log('Execute the swap');
-  /** @type {import('@agoric/smart-wallet/src/invitations.js').AgoricContractInvitationSpec} */
+  /** @type {AgoricContractInvitationSpec} */
   const invitationSpec = {
     source: 'agoricContract',
     instancePath: ['psm-IST-AUSD'],
@@ -176,7 +185,7 @@ test('want stable (insufficient funds)', async t => {
   await wallet.getDepositFacet().receive(payment);
 
   t.log('Execute the swap');
-  /** @type {import('@agoric/smart-wallet/src/invitations.js').AgoricContractInvitationSpec} */
+  /** @type {AgoricContractInvitationSpec} */
   const invitationSpec = {
     source: 'agoricContract',
     instancePath: ['psm-IST-AUSD'],
@@ -268,7 +277,7 @@ test('govern offerFilter', async t => {
 
   // The purse has the invitation to get the makers ///////////
 
-  /** @type {import('@agoric/smart-wallet/src/invitations.js').PurseInvitationSpec} */
+  /** @type {PurseInvitationSpec} */
   const getInvMakersSpec = {
     source: 'purse',
     instance: econCharter,
@@ -281,7 +290,7 @@ test('govern offerFilter', async t => {
     proposal: {},
   });
 
-  /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */
+  /** @type {CurrentWalletRecord} */
   let currentState = await headValue(currentSub);
   t.is(
     // @ts-expect-error cast amount kind
@@ -309,7 +318,7 @@ test('govern offerFilter', async t => {
   t.is(voteInvitationDetail.description, 'Voter0');
   t.is(voteInvitationDetail.instance, economicCommittee);
 
-  /** @type {import('@agoric/smart-wallet/src/invitations.js').PurseInvitationSpec} */
+  /** @type {PurseInvitationSpec} */
   const getCommitteeInvMakersSpec = {
     source: 'purse',
     instance: economicCommittee,
@@ -338,7 +347,7 @@ test('govern offerFilter', async t => {
 
   // Call for a vote ////////////////////////////////
 
-  /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
+  /** @type {ContinuingInvitationSpec} */
   const proposeInvitationSpec = {
     source: 'continuing',
     previousOffer: 'acceptEcInvitationOID',

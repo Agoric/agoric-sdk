@@ -30,17 +30,21 @@ import {
 } from '../lib/format.js';
 import { coalesceWalletState, getCurrent } from '../lib/wallet.js';
 
+/**
+ * @import {Command} from 'commander';
+ */
+
 const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 const SLEEP_SECONDS = 3;
 
 /**
- * @param {import('commander').Command['command']} command
- * @returns {Promise<import('commander').Command>}
+ * @param {Command['command']} command
+ * @returns {Promise<Command>}
  */
 export const makeWalletCommand = async command => {
   /**
-   * @param {import('commander').Command} baseCmd
+   * @param {Command} baseCmd
    */
   const withSharedTxOptions = baseCmd =>
     baseCmd

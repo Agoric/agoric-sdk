@@ -7,7 +7,12 @@ import { makeScopedBridge } from '@agoric/vats';
 import { withAmountUtils } from './supports.js';
 
 /**
- * @param {import('ava').ExecutionContext} t
+ * @import {ExecutionContext} from 'ava';
+ * @import {start as StartWalletFactory} from '../src/walletFactory.js';
+ */
+
+/**
+ * @param {ExecutionContext} t
  * @param {(logger) => Promise<ChainBootstrapSpace>} makeSpace
  */
 export const makeDefaultTestContext = async (t, makeSpace) => {
@@ -25,7 +30,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     `${dirname}/../src/walletFactory.js`,
     'walletFactory',
   );
-  /** @type {Promise<Installation<import('../src/walletFactory.js').start>>} */
+  /** @type {Promise<Installation<StartWalletFactory>>} */
   const installation = E(zoe).install(bundle);
   //#endregion
 

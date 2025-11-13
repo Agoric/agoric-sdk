@@ -11,6 +11,9 @@ import { ParamChangesQuestionDetailsShape } from './typeGuards.js';
 /**
  * @import {ContractMeta, Installation, Instance, Invitation, StandardTerms, ZCF} from '@agoric/zoe';
  * @import {GovernableStartFn, GovernorCreatorFacet, GovernorPublic, ParamChangeIssueDetails} from './types.js';
+ * @import {TimerService} from '@agoric/time';
+ * @import {InvitationParam} from './contractGovernance/typedParamManager.js';
+ * @import {Baggage} from '@agoric/vat-data';
  */
 
 const trace = makeTracer('CGov', false);
@@ -73,7 +76,7 @@ harden(validateQuestionFromCounter);
 
 /**
  * @typedef {StandardTerms} ContractGovernorTerms
- * @property {import('@agoric/time').TimerService} timer
+ * @property {TimerService} timer
  * @property {Installation} governedContractInstallation
  */
 
@@ -127,7 +130,7 @@ harden(validateQuestionFromCounter);
  * GovernorPublic,
  * GovernorCreatorFacet<PF,CF>,
  * {
- *   timer: import('@agoric/time').TimerService,
+ *   timer: TimerService,
  *   governedContractInstallation: Installation<CF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
@@ -141,11 +144,11 @@ harden(validateQuestionFromCounter);
  *
  * @template {GovernableStartFn} SF Start function of governed contract
  * @param {ZCF<{
- *   timer: import('@agoric/time').TimerService,
+ *   timer: TimerService,
  *   governedContractInstallation: Installation<SF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
- *     terms: {governedParams: {[CONTRACT_ELECTORATE]: import('./contractGovernance/typedParamManager.js').InvitationParam}},
+ *     terms: {governedParams: {[CONTRACT_ELECTORATE]: InvitationParam}},
  *     label?: string,
  *   }
  * }>} zcf
@@ -156,7 +159,7 @@ harden(validateQuestionFromCounter);
  *   creatorFacet: GovernorCreatorFacet<SF>,
  *   publicFacet: GovernorPublic,
  * }>}
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
   trace('start');

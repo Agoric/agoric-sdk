@@ -14,6 +14,7 @@ import {
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {Position, ApiGovernor, ApiInvocationIssue, PoserFacet, VoteOnApiInvocation, GovernedApis} from '../types.js';
+ * @import {TimerService} from '@agoric/time';
  */
 
 /**
@@ -35,7 +36,7 @@ const makeApiInvocationPositions = (apiMethodName, methodArgs) => {
  *
  * @param {() => ERef<GovernedApis>} getGovernedApis
  * @param {() => Promise<Array<string | symbol>>} getGovernedNames names of the governed API methods
- * @param {ERef<import('@agoric/time').TimerService>} timer
+ * @param {ERef<TimerService>} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @returns {ApiGovernor}
  */

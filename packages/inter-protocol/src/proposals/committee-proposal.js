@@ -2,6 +2,11 @@ import { deeplyFulfilledObject } from '@agoric/internal';
 import { E } from '@endo/far';
 import { reserveThenDeposit } from './utils.js';
 
+/**
+ * @import {EconomyBootstrapPowers} from './econ-behaviors.js';
+ * @import {EconCharterStartResult} from './econ-behaviors.js';
+ */
+
 const { values } = Object;
 
 /** @type {<X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
@@ -10,7 +15,7 @@ const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 const EC_HIGH_PRIORITY_SENDERS_NAMESPACE = 'economicCommittee';
 
 /**
- * @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {{ options: { voterAddresses: Record<string, string> } }} param1
  */
 export const inviteCommitteeMembers = async (
@@ -51,7 +56,7 @@ export const inviteCommitteeMembers = async (
 
 harden(inviteCommitteeMembers);
 
-/** @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers */
+/** @param {EconomyBootstrapPowers} powers */
 export const startEconCharter = async ({
   consume: { zoe },
   produce: { econCharterKit },
@@ -72,7 +77,7 @@ export const startEconCharter = async ({
     }),
   );
 
-  /** @type {Promise<import('./econ-behaviors.js').EconCharterStartResult>} */
+  /** @type {Promise<EconCharterStartResult>} */
   const startResult = E(zoe).startInstance(
     charterInstall,
     undefined,
@@ -88,7 +93,7 @@ harden(startEconCharter);
 /**
  * Introduce charter to governed creator facets.
  *
- * @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers
+ * @param {EconomyBootstrapPowers} powers
  */
 export const addGovernorsToEconCharter = async ({
   consume: { reserveKit, vaultFactoryKit, econCharterKit, auctioneerKit },
@@ -126,7 +131,7 @@ export const addGovernorsToEconCharter = async ({
 harden(addGovernorsToEconCharter);
 
 /**
- * @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {{ options: { voterAddresses: Record<string, string> } }} param1
  */
 export const inviteToEconCharter = async (

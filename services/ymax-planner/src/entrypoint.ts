@@ -37,10 +37,8 @@ import { main } from './main.ts';
 
   const env = harden({ ...dotEnvAdditions, ...processEnv });
 
-  return main(process.argv.slice(1), { env });
-})()
-  .then(() => process.exit())
-  .catch(err => {
-    console.error(err);
-    process.exit(1);
-  });
+  return main(process.argv.slice(2), { env });
+})().catch(err => {
+  console.error(err);
+  process.exit(1);
+});

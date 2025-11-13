@@ -4,6 +4,12 @@ import { Stable } from '@agoric/internal/src/tokens.js';
 import * as econBehaviors from './econ-behaviors.js';
 import { ECON_COMMITTEE_MANIFEST } from './startEconCommittee.js';
 
+/**
+ * @import {EconomyBootstrapPowers} from './econ-behaviors.js';
+ * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
+ * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js';
+ */
+
 export * from './econ-behaviors.js';
 export * from './startPSM.js';
 export * from './startEconCommittee.js';
@@ -13,7 +19,7 @@ export * from './startEconCommittee.js';
 // require updating a lot of tests. So for now, we just
 // grab the kits afterward and store them.
 
-/** @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers */
+/** @param {EconomyBootstrapPowers} powers */
 export const storeInterContractStartKits = async ({
   consume: {
     contractKits,
@@ -50,9 +56,9 @@ export const storeInterContractStartKits = async ({
   ]);
 };
 
-/** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest} */
+/** @type {BootstrapManifest} */
 const SHARED_MAIN_MANIFEST = harden({
-  /** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifestPermit} */
+  /** @type {BootstrapManifestPermit} */
   [econBehaviors.startVaultFactory.name]: {
     consume: {
       board: 'board',

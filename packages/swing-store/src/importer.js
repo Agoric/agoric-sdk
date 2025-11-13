@@ -6,8 +6,14 @@ import { validateArtifactMode } from './internal.js';
 import { assertComplete } from './assertComplete.js';
 
 /**
+ * @import {ArtifactMode} from './internal.js';
+ * @import {SwingStoreExporter} from './exporter.js';
+ * @import {SwingStore} from './swingStore.js';
+ */
+
+/**
  * @typedef { object } ImportSwingStoreOptions
- * @property { import('./internal.js').ArtifactMode } [artifactMode]  What artifacts should the importer use and require?
+ * @property { ArtifactMode } [artifactMode]  What artifacts should the importer use and require?
  */
 
 /**
@@ -17,10 +23,10 @@ import { assertComplete } from './assertComplete.js';
  * returned swingStore is not suitable for execution, and thus only contains
  * the host facet for committing the populated swingStore.
  *
- * @param {import('./exporter.js').SwingStoreExporter} exporter
+ * @param {SwingStoreExporter} exporter
  * @param {string | null} [dirPath]
  * @param {ImportSwingStoreOptions} [options]
- * @returns {Promise<Pick<import('./swingStore.js').SwingStore, 'hostStorage' | 'debug'>>}
+ * @returns {Promise<Pick<SwingStore, 'hostStorage' | 'debug'>>}
  */
 export async function importSwingStore(exporter, dirPath = null, options = {}) {
   if (dirPath && typeof dirPath !== 'string') {

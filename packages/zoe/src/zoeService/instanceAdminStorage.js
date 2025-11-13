@@ -20,6 +20,7 @@ import { makeZoeSeatAdminFactory } from './zoeSeat.js';
 
 /**
  * @import {WeakMapStore} from '@agoric/store';
+ * @import {Baggage} from '@agoric/vat-data';
  */
 
 /**
@@ -51,7 +52,7 @@ const InstanceAdminStorageIKit = harden({
   }),
 });
 
-/** @param {import('@agoric/vat-data').Baggage} baggage */
+/** @param {Baggage} baggage */
 export const makeInstanceAdminStorage = baggage => {
   const makeIAS = prepareExoClassKit(
     baggage,
@@ -114,8 +115,8 @@ export const makeInstanceAdminStorage = baggage => {
 harden(makeInstanceAdminStorage);
 
 /**
- * @param {import('@agoric/vat-data').Baggage} zoeBaggage
- * @param {ReturnType<makeZoeSeatAdminFactory>} makeZoeSeatAdminKit
+ * @param {Baggage} zoeBaggage
+ * @param {ReturnType<typeof makeZoeSeatAdminFactory>} makeZoeSeatAdminKit
  */
 const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
   const makeSeatHandle = defineDurableHandle(zoeBaggage, 'Seat');
@@ -261,7 +262,7 @@ const helperBehavior = {
  */
 
 /**
- * @param {import('@agoric/vat-data').Baggage} zoeBaggage
+ * @param {Baggage} zoeBaggage
  * @param {WeakMapStore<SeatHandle, ZoeSeatAdmin>} seatHandleToZoeSeatAdmin
  */
 export const makeInstanceAdminMaker = (

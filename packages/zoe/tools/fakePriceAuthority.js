@@ -17,6 +17,9 @@ import {
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {TimerService} from '@agoric/time';
+ * @import {RelativeTime} from '@agoric/time';
+ * @import {Timestamp} from '@agoric/time';
  */
 
 const { coerceRelativeTimeRecord } = TimeMath;
@@ -32,8 +35,8 @@ const timestampLTE = (a, b) => TimeMath.compareAbs(a, b) <= 0;
  * @property {Brand<'nat'>} actualBrandOut
  * @property {Array<number>} [priceList]
  * @property {Array<[number, number]>} [tradeList]
- * @property {import('@agoric/time').TimerService} timer
- * @property {import('@agoric/time').RelativeTime} [quoteInterval]
+ * @property {TimerService} timer
+ * @property {RelativeTime} [quoteInterval]
  * @property {ERef<Mint<'set', PriceDescription>>} [quoteMint]
  * @property {Amount<'nat'>} [unitAmountIn]
  */
@@ -90,7 +93,7 @@ export async function makeFakePriceAuthority(options) {
   const quoteBrand = await E(quoteIssuer).getBrand();
 
   /**
-   * @type {NotifierRecord<import('@agoric/time').Timestamp>}
+   * @type {NotifierRecord<Timestamp>}
    * We need to have a notifier driven by the
    * TimerService because if the timer pushes updates to individual
    * QuoteNotifiers, we have a dependency inversion and the timer can never know
@@ -110,7 +113,7 @@ export async function makeFakePriceAuthority(options) {
    *
    * @param {Amount<'nat'>} amountIn
    * @param {Brand} brandOut
-   * @param {import('@agoric/time').Timestamp} quoteTime
+   * @param {Timestamp} quoteTime
    * @returns {PriceQuote}
    */
   function priceInQuote(amountIn, brandOut, quoteTime) {
@@ -145,7 +148,7 @@ export async function makeFakePriceAuthority(options) {
   /**
    * @param {Brand<'nat'>} brandIn
    * @param {Amount<'nat'>} amountOut
-   * @param {import('@agoric/time').Timestamp} quoteTime
+   * @param {Timestamp} quoteTime
    * @returns {PriceQuote}
    */
   function priceOutQuote(brandIn, amountOut, quoteTime) {
@@ -167,7 +170,7 @@ export async function makeFakePriceAuthority(options) {
   let latestTick;
 
   // clients who are waiting for a specific timestamp
-  /** @type { [when: import('@agoric/time').Timestamp, resolve: (quote: PriceQuote) => void][] } */
+  /** @type { [when: Timestamp, resolve: (quote: PriceQuote) => void][] } */
   let timeClients = [];
 
   // Check if a comparison request has been satisfied.

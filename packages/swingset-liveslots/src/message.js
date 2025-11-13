@@ -3,11 +3,15 @@ import { insistCapData } from './capdata.js';
 
 /**
  * @import {VatDeliveryResult} from './types.js';
+ * @import {SwingSetCapData} from './types.js';
+ * @import {VatDeliveryObject} from './types.js';
+ * @import {VatSyscallObject} from './types.js';
+ * @import {VatSyscallResult} from './types.js';
  */
 
 /**
  * @typedef {{
- * methargs: import('./types.js').SwingSetCapData, // of [method, args]
+ * methargs: SwingSetCapData, // of [method, args]
  * result: string | undefined | null,
  * }} Message
  */
@@ -36,7 +40,7 @@ export function insistMessage(message) {
 
 /**
  * @param {unknown} vdo
- * @returns {asserts vdo is import('./types.js').VatDeliveryObject}
+ * @returns {asserts vdo is VatDeliveryObject}
  */
 
 export function insistVatDeliveryObject(vdo) {
@@ -118,7 +122,7 @@ export function insistVatDeliveryResult(vdr) {
 
 /**
  * @param {unknown} vso
- * @returns {asserts vso is import('./types.js').VatSyscallObject}
+ * @returns {asserts vso is VatSyscallObject}
  */
 
 export function insistVatSyscallObject(vso) {
@@ -198,7 +202,7 @@ export function insistVatSyscallObject(vso) {
 
 /**
  * @param {unknown} vsr
- * @returns {asserts vsr is import('./types.js').VatSyscallResult}
+ * @returns {asserts vsr is VatSyscallResult}
  */
 
 export function insistVatSyscallResult(vsr) {

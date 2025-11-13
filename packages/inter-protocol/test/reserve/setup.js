@@ -13,7 +13,13 @@ import {
 } from '../supports.js';
 import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 
-/** @import {ZoeManualTimer} from '@agoric/zoe/tools/manualTimer.js'; */
+/**
+ * @import {ZoeManualTimer} from '@agoric/zoe/tools/manualTimer.js';
+ * @import {EconomyBootstrapPowers} from '../../src/proposals/econ-behaviors.js';
+ * @import {AssetReserveLimitedCreatorFacet} from '../../src/reserve/assetReserve.js';
+ * @import {AssetReservePublicFacet} from '../../src/reserve/assetReserve.js';
+ * @import {ExecutionContext} from 'ava';
+ */
 
 import * as reserveContractExports from '../../src/reserve/assetReserve.js'; // package relative
 import * as faucetContractExports from '../vaultFactory/faucet.js';
@@ -29,10 +35,7 @@ import * as faucetContractExports from '../vaultFactory/faucet.js';
  */
 const setupReserveBootstrap = async (t, timer, farZoeKit) => {
   const space = /** @type {any} */ (makePromiseSpace());
-  const { produce, consume } =
-    /** @type {import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers} */ (
-      space
-    );
+  const { produce, consume } = /** @type {EconomyBootstrapPowers} */ (space);
 
   const { zoe, feeMintAccessP } = await E.get(farZoeKit);
 
@@ -55,8 +58,8 @@ const setupReserveBootstrap = async (t, timer, farZoeKit) => {
 
 /**
  * @typedef {{
- *   reserveCreatorFacet: import('../../src/reserve/assetReserve.js').AssetReserveLimitedCreatorFacet;
- *   reservePublicFacet: import('../../src/reserve/assetReserve.js').AssetReservePublicFacet;
+ *   reserveCreatorFacet: AssetReserveLimitedCreatorFacet;
+ *   reservePublicFacet: AssetReservePublicFacet;
  *   instance: Instance;
  * }} ReserveKit
  */
@@ -64,7 +67,7 @@ const setupReserveBootstrap = async (t, timer, farZoeKit) => {
 /**
  * NOTE: called separately by each test so contracts don't interfere
  *
- * @param {import('ava').ExecutionContext<unknown>} t
+ * @param {ExecutionContext<unknown>} t
  * @param {{ committeeName: string; committeeSize: number }} electorateTerms
  * @param {ZoeManualTimer} [timer]
  */

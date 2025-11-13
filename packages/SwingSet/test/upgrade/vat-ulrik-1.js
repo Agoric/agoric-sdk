@@ -11,6 +11,10 @@ import {
   watchPromise,
 } from '@agoric/vat-data';
 
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ */
+
 // we set up a lot of ephemeral, merely-virtual, and durable objects
 // holding references to imported objects
 // to test what gets deleted vs retained (see object-graph.pdf for the test plan)
@@ -49,7 +53,7 @@ const makeWatcher = defineDurableKind(
 let modRetains;
 
 /**
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @param {[unknown, ...object]} imp
  * Objects to import, preceded by a dummy element.
  * The `imp` name itself is three characters long for visual similarity

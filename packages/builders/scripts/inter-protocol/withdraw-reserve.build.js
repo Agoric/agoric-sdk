@@ -5,6 +5,11 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 import { getManifestForInviteWithdrawer } from '@agoric/inter-protocol/src/proposals/withdraw-reserve-proposal.js';
 
 /**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
+/**
  * @template {{ type: string }} T
  * @typedef { T['type'] extends 'string' ? string : T['type'] extends 'boolean' ? boolean : (string | boolean) } TypeFromParseArgsOptionDescriptor
  */
@@ -29,7 +34,7 @@ const cliOptions = /** @type {const} */ ({
   count: { type: 'string', multiple: false },
 });
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async (
   { publishRef: _publishRef, install: _install },
   namedArgs = {},
@@ -48,7 +53,7 @@ export const defaultProposalBuilder = async (
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs: argv } = endowments;
   /** @type {{ values: Partial<CliOptions<typeof cliOptions>> }} */

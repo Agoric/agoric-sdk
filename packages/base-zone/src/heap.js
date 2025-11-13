@@ -15,7 +15,12 @@ import { agoricVatDataKeys as keys } from './keys.js';
 import { watchPromise } from './watch-promise.js';
 
 /**
- * @type {import('./types.js').Stores}
+ * @import {Stores} from './types.js';
+ * @import {Zone} from './types.js';
+ */
+
+/**
+ * @type {Stores}
  */
 const detachedHeapStores = Far('heapStores', {
   detached: () => detachedHeapStores,
@@ -31,7 +36,7 @@ const detachedHeapStores = Far('heapStores', {
  * Create a heap (in-memory) zone that uses the default exo and store implementations.
  *
  * @param {string} [baseLabel]
- * @returns {import('./types.js').Zone}
+ * @returns {Zone}
  */
 export const makeHeapZone = (baseLabel = 'heapZone') => {
   const { makeOnce, wrapProvider } = makeOnceKit(baseLabel, detachedHeapStores);

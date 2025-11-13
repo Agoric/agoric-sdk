@@ -16,7 +16,7 @@ import * as priceExports from './wallet-fun.contract.js';
  */
 
 /**
- * @typedef {Awaited<ReturnType<makeTestContext>>} WTestCtx
+ * @typedef {Awaited<ReturnType<typeof makeTestContext>>} WTestCtx
  */
 
 const contractName = 'walletFactory';

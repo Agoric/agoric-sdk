@@ -9,6 +9,10 @@ import {
   slotStringUnserialize,
 } from '../src/storage-test-utils.js';
 
+/**
+ * @import {RemotableObject} from '@endo/marshal';
+ */
+
 test('makeFakeStorageKit', async t => {
   const rootPath = 'root';
   const opts = { sequence: false };
@@ -285,9 +289,7 @@ test('makeFakeStorageKit sequence data', async t => {
 
 const testUnmarshaller = test.macro((t, format) => {
   /**
-   * @type {(
-   *   val: import('@endo/marshal').RemotableObject & SlottedRemotable,
-   * ) => string}
+   * @type {(val: RemotableObject & SlottedRemotable) => string}
    */
   const convertValToSlot = val => val.getBoardId();
   const serializeBodyFormat = /** @type {any} */ (format);
