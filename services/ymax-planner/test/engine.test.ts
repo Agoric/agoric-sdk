@@ -3,7 +3,11 @@ import test from 'ava';
 import { Fail } from '@endo/errors';
 
 import { boardSlottingMarshaller } from '@agoric/client-utils';
-import type { VStorage } from '@agoric/client-utils';
+import type {
+  QueryChildrenMetaResponse,
+  QueryDataMetaResponse,
+  VStorage,
+} from '@agoric/client-utils';
 import {
   AmountMath,
   type Brand,
@@ -80,7 +84,10 @@ test('processPortfolioEvents only resolves flows for new portfolio states', asyn
 
   const portfoliosPathPrefix = 'published.ymaxTest.portfolios';
   const portfolioKey = 'portfolio5';
-  const portfolioStatus: StatusFor['portfolio'] = harden({
+
+  /** Updated as the test progresses. */
+  let currentBlockHeight = 30n;
+  const portfolioStatus: StatusFor['portfolio'] = {
     positionKeys: ['USDN'],
     flowCount: 1,
     accountIdByChain: {
@@ -97,31 +104,37 @@ test('processPortfolioEvents only resolves flows for new portfolio states', asyn
         amount: AmountMath.make(depositBrand, 1_000_000n),
       },
     },
-  });
-  const portfolioStreamCellJson = JSON.stringify({
-    blockHeight: '10',
-    values: [JSON.stringify(marshaller.toCapData(portfolioStatus))],
-  });
-
+  };
+  const portfolioDataKey = `${portfoliosPathPrefix}.${portfolioKey} data`;
   const vstorageData: Record<string, string[] | string> = {
-    [`${portfoliosPathPrefix}.${portfolioKey} data`]: portfolioStreamCellJson,
+    [portfolioDataKey]: '<uninitialized>',
     [`${portfoliosPathPrefix}.${portfolioKey}.flows children`]: [],
   };
-  const readStorageMetaResponses = objectMap(vstorageData, (data, key) => {
-    const base = { blockHeight: 40n };
-    if (key.endsWith(' children')) {
-      return { ...base, result: { children: data } };
-    } else if (key.endsWith(' data')) {
-      return { ...base, result: { value: data } };
-    }
-    Fail`Invalid vstorage query: ${key}`;
-  });
+  const advanceBlock = () => {
+    currentBlockHeight += 1n;
+    portfolioStatus.rebalanceCount += 1;
+    const newStatus = harden({ ...portfolioStatus });
+    const newStreamCell = {
+      blockHeight: `${currentBlockHeight}`,
+      values: [JSON.stringify(marshaller.toCapData(newStatus))],
+    };
+    vstorageData[portfolioDataKey] = JSON.stringify(newStreamCell);
+  };
+
   const readStorageMeta: VStorage['readStorageMeta'] = async (
     path,
     { kind } = {},
-  ) =>
-    (readStorageMetaResponses[`${path} ${kind}`] as any) ||
-    Fail`Unexpected vstorage query: ${path} ${kind}`;
+  ) => {
+    const data =
+      (vstorageData[`${path} ${kind}`] as any) ||
+      Fail`Unexpected vstorage query: ${path} ${kind}`;
+
+    const base = { blockHeight: currentBlockHeight };
+    let resp: QueryChildrenMetaResponse | QueryDataMetaResponse | undefined;
+    if (kind === 'children') resp = { ...base, result: { children: data } };
+    if (kind === 'data') resp = { ...base, result: { value: data } };
+    return (resp as any) || Fail`Unreachable`;
+  };
   const sswkQuery = { vstorage: { readStorageMeta } };
 
   const signingSmartWalletKit = { marshaller, query: sswkQuery } as any;
@@ -153,23 +166,22 @@ test('processPortfolioEvents only resolves flows for new portfolio states', asyn
     vstoragePathPrefixes: { portfoliosPathPrefix },
   };
 
-  const makeEvents = (
-    blockHeight: bigint,
-  ): Parameters<typeof processPortfolioEvents>[0] => [
-    {
+  const memory: any = { deferrals: [] as any[] };
+  const processNextBlock = async () => {
+    advanceBlock();
+    const event = {
       path: `${portfoliosPathPrefix}.${portfolioKey}`,
-      value: portfolioStreamCellJson,
+      value: vstorageData[portfolioDataKey] as string,
       eventRecord: {
-        blockHeight,
+        blockHeight: currentBlockHeight,
         type: 'kvstore' as const,
         event: { type: 'state_change', attributes: [] },
       },
-    },
-  ];
-
-  const memory: any = { deferrals: [] as any[] };
-  await processPortfolioEvents(makeEvents(30n), 30n, memory, powers);
-  await processPortfolioEvents(makeEvents(31n), 31n, memory, powers);
+    };
+    await processPortfolioEvents([event], currentBlockHeight, memory, powers);
+  };
+  await processNextBlock();
+  await processNextBlock();
 
   t.is(recordedSteps.length, 1, 'planner invoked exactly once');
   t.true(recordedSteps[0]!.length > 0, 'planner receives non-empty steps');
