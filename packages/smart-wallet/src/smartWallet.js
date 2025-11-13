@@ -545,7 +545,7 @@ export const prepareSmartWallet = (baggage, shared, setTestJig) => {
       tryExitOffer: M.call(M.scalar()).returns(M.promise()),
     }),
     invoke: M.interface('invoke', {
-      invokeEntry: M.callWhen(shape.InvokeEntryMessage).returns(),
+      invokeEntry: M.call(shape.InvokeEntryMessage).returns(M.promise()),
     }),
     resultStepWatcher: M.interface('resultStepWatcher', {
       onFulfilled: M.call(M.any(), invocationResultShape).returns(),
@@ -1151,28 +1151,49 @@ export const prepareSmartWallet = (baggage, shared, setTestJig) => {
         /**
          * @param {InvokeEntryMessage} message
          */
-        async invokeEntry(message) {
+        invokeEntry(message) {
           trace('invokeEntry', message);
           const { resultStepWatcher, helper } = this.facets;
-          const myStore = helper.getMyStore();
 
           const { targetName: name, method, args, saveResult, id } = message;
-          myStore.has(name) || Fail`cannot invoke ${q(name)}: no such item`;
-          const value = myStore.get(name);
-          trace('entry', name, value);
-          trace('invoke', value, '.', method, '(', args, ')');
-          if (id) {
-            const { updateRecorderKit } = this.state;
-            void updateRecorderKit.recorder.write({
-              updated: 'invocation',
-              id,
-            });
-          }
-          const callP = E(value)[method](...args);
-          if (id || saveResult) {
-            vowTools.watch(callP, resultStepWatcher, { id, saveResult });
-          } else {
-            void callP;
+          // From here on we can report status records related to the id
+          try {
+            const myStore = helper.getMyStore();
+            myStore.has(name) || Fail`cannot invoke ${q(name)}: no such item`;
+            const value = myStore.get(name);
+            trace('entry', name, value);
+            trace('invoke', value, '.', method, '(', args, ')');
+            if (id) {
+              const { updateRecorderKit } = this.state;
+              void updateRecorderKit.recorder.write({
+                updated: 'invocation',
+                id,
+              });
+            }
+            const callP = E(value)[method](...args);
+            if (id || saveResult) {
+              vowTools.watch(callP, resultStepWatcher, { id, saveResult });
+            } else {
+              void callP;
+            }
+            return Promise.resolve();
+          } catch (reason) {
+            if (id) {
+              const { updateRecorderKit } = this.state;
+              void updateRecorderKit.recorder.write({
+                updated: 'invocation',
+                id,
+                error: String(reason),
+              });
+              // handleBridgeAction records sync error so return a rejected
+              // Promise to avoid overriding our update, but still report an
+              // error to any test caller of `handleBridgeAction`
+              return Promise.reject(reason);
+            } else {
+              // We could'd report the failure, so let `handleBridgeAction` do
+              // some best effort reporting
+              throw reason;
+            }
           }
         },
       },

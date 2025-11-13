@@ -322,7 +322,15 @@ test('save result of method call - overwrite cases', async t => {
 });
 
 test('invoke with bad targetName', async t => {
-  const { provisionSmartWallet } = t.context;
+  const {
+    provisionSmartWallet,
+    bootstrap: {
+      board,
+      utils: { readLegible },
+    },
+  } = t.context;
+  const marshaller = E(board).getReadonlyMarshaller();
+
   const addr = 'agoric1price-oracle2';
   const [wallet] = await provisionSmartWallet(addr);
   const invokeP = E(wallet).getInvokeFacet();
@@ -331,6 +339,62 @@ test('invoke with bad targetName', async t => {
     E(invokeP).invokeEntry({ targetName: 'item3', method: '?', args: [] }),
     { message: /no such item/ },
   );
+
+  const invokeActionCapData = await E(marshaller).toCapData({
+    method: 'invokeEntry',
+    message: { targetName: 'item4', method: '?', args: [] },
+  });
+  // The smart wallet reporting handles and doesn't pass through the error...
+  await t.notThrowsAsync(
+    E(wallet).handleBridgeAction(invokeActionCapData, true),
+  );
+  const { structure: bridgeActionWithoutId } = await readLegible(
+    `ROOT.wallet.${addr}`,
+  );
+  t.like(bridgeActionWithoutId, {
+    updated: 'walletAction',
+    status: { error: 'cannot invoke "item4": no such item' },
+  });
+
+  await t.throwsAsync(
+    E(invokeP).invokeEntry({
+      id: 'bogusInvoke',
+      targetName: 'item5',
+      method: '?',
+      args: [],
+    }),
+    { message: /no such item/ },
+  );
+  const { structure: invokeWithId } = await readLegible(`ROOT.wallet.${addr}`);
+  t.like(invokeWithId, {
+    updated: 'invocation',
+    id: 'bogusInvoke',
+    error: 'Error: cannot invoke "item5": no such item',
+  });
+
+  const invokeActionWithIdCapData = await E(marshaller).toCapData({
+    method: 'invokeEntry',
+    message: {
+      id: 'bogusInvokeAction',
+      targetName: 'item6',
+      method: '?',
+      args: [],
+    },
+  });
+  await t.throwsAsync(
+    E(wallet).handleBridgeAction(invokeActionWithIdCapData, true),
+    {
+      message: /no such item/,
+    },
+  );
+  const { structure: bridgeActionWithId } = await readLegible(
+    `ROOT.wallet.${addr}`,
+  );
+  t.like(bridgeActionWithId, {
+    updated: 'invocation',
+    id: 'bogusInvokeAction',
+    error: 'Error: cannot invoke "item6": no such item',
+  });
 });
 
 test('invoke with old wallet', async t => {
