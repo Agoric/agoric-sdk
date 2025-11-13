@@ -1086,7 +1086,9 @@ export async function launchAndShareInternals({
           const { bundles, codeSteps: coreEvalCodeSteps } =
             await extractCoreProposalBundles(coreProposals, myFilename, {
               handleToBundleSpec: async (handle, source, _sequence, _piece) => {
-                const bundle = await bundleSource(source);
+                const bundle = await bundleSource(source, {
+                  byteLimit: Infinity,
+                });
                 const { endoZipBase64Sha512: hash } = bundle;
                 const bundleID = `b1-${hash}`;
                 handle.bundleID = bundleID;
