@@ -213,7 +213,6 @@ type ProcessPortfolioPowers = Pick<
   portfolioKeyForDepositAddr: Map<Bech32Address, string>;
   vstoragePathPrefixes: {
     portfoliosPathPrefix: string;
-    pendingTxPathPrefix: string;
   };
 };
 

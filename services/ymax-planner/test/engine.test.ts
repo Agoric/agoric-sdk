@@ -79,7 +79,6 @@ test('processPortfolioEvents only resolves flows for new portfolio states', asyn
   );
 
   const portfoliosPathPrefix = 'published.ymaxTest.portfolios';
-  const pendingTxPathPrefix = 'published.ymaxTest.pendingTxs';
   const portfolioKey = 'portfolio5';
   const portfolioStatus: StatusFor['portfolio'] = harden({
     positionKeys: ['USDN'],
@@ -151,7 +150,7 @@ test('processPortfolioEvents only resolves flows for new portfolio states', asyn
     depositBrand,
     feeBrand,
     portfolioKeyForDepositAddr,
-    vstoragePathPrefixes: { portfoliosPathPrefix, pendingTxPathPrefix },
+    vstoragePathPrefixes: { portfoliosPathPrefix },
   };
 
   const makeEvents = (
