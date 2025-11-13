@@ -13,17 +13,23 @@ import { isPrimitive } from '@endo/pass-style';
 import {
   fetchEnvNetworkConfig,
   getInvocationUpdate,
+  makeSequenceManager,
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
+  makeSmartWalletWithSequence,
   reflectWalletStore,
 } from '@agoric/client-utils';
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
+import type {
+  FetchAccountInfo,
+  SigningSmartWalletKit,
+} from '@agoric/client-utils';
 import {
   deeplyFulfilledObject,
   objectMap,
   objectMetaMap,
 } from '@agoric/internal';
 import { UsdcTokenIds } from '@agoric/portfolio-api/src/constants.js';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 
 import { loadConfig } from './config.ts';
 import { CosmosRestClient } from './cosmos-rest-client.ts';
@@ -39,6 +45,15 @@ import {
 } from './support.ts';
 import { SpectrumClient } from './spectrum-client.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
+
+export type SmartWalletKitWithSequence = Omit<
+  SigningSmartWalletKit,
+  'executeOffer'
+> & {
+  executeOffer: (
+    offer: OfferSpec,
+  ) => Promise<Awaited<ReturnType<SigningSmartWalletKit['sendBridgeAction']>>>;
+};
 
 const assertChainId = async (
   rpc: CosmosRPCClient,
@@ -105,7 +120,7 @@ export type SimplePowers = {
 };
 
 export const main = async (
-  args: string[],
+  cliArgs: string[],
   {
     env = process.env,
     fetch = globalThis.fetch,
@@ -118,8 +133,8 @@ export const main = async (
     WebSocket = ws.WebSocket,
   } = {},
 ) => {
-  const dashIdx = [...args, '--'].indexOf('--');
-  const maybeOpts = args.slice(0, dashIdx);
+  const dashIdx = [...cliArgs, '--'].indexOf('--');
+  const maybeOpts = cliArgs.slice(0, dashIdx);
   const isDryRun = maybeOpts.includes('--dry-run');
   const isVerbose = maybeOpts.includes('--verbose');
 
@@ -218,6 +233,37 @@ export const main = async (
     makeNonce: () => new Date(now()).toISOString(),
   });
 
+  const fetchAccountInfo: FetchAccountInfo = async address => {
+    return cosmosRest.getAccountSequence('agoric', address);
+  };
+
+  const sequenceManager = await makeSequenceManager(
+    {
+      log: (...args) => console.log('[TxSequencer]:', ...args),
+    },
+    {
+      address: signingSmartWalletKit.address,
+      fetchAccountInfo,
+    },
+  );
+
+  const smartWalletWithSequence = makeSmartWalletWithSequence(
+    {
+      signingSmartWalletKit,
+      sequenceManager,
+      log: (...args) => console.log('[SigningSmartWallet]:', ...args),
+    },
+    { chainId: networkConfig.chainName },
+  );
+
+  // create a wrapper that uses SmartWalletWithSequence methods
+  const smartWalletKitWithSequence: SmartWalletKitWithSequence = {
+    ...signingSmartWalletKit,
+    // override the three main methods to use SmartWalletWithSequence
+    sendBridgeAction: smartWalletWithSequence.sendBridgeAction,
+    executeOffer: smartWalletWithSequence.executeOffer,
+  };
+
   const spectrum = new SpectrumClient(simplePowers, {
     baseUrl: config.spectrum.apiUrl,
     timeout: config.spectrum.timeout,
@@ -277,7 +323,7 @@ export const main = async (
     spectrumBlockchain,
     spectrumPools,
     cosmosRest,
-    signingSmartWalletKit,
+    signingSmartWalletKit: smartWalletKitWithSequence,
     walletStore,
     getWalletInvocationUpdate: (messageId, opts) => {
       const { getLastUpdate } = signingSmartWalletKit.query;

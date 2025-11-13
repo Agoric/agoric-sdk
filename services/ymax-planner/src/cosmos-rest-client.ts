@@ -13,6 +13,7 @@ import { chain as agoricTest } from 'chain-registry/testnet/agoricdevnet/index.j
 import { Fail } from '@endo/errors';
 
 import type { ClusterName } from '@agoric/internal';
+import type { AccountResponse } from '@agoric/client-utils';
 
 interface CosmosRestClientConfig {
   clusterName: ClusterName;
@@ -204,6 +205,25 @@ export class CosmosRestClient {
     this.log(
       `[CosmosRestClient] Fetching chain info for ${chainConfig.name}: ${url}`,
     );
+
+    return this.makeRequest(
+      url,
+      chainConfig,
+      `Chain info for ${chainConfig.name}`,
+    );
+  }
+
+  async getAccountSequence(
+    chainKey: string,
+    address: string,
+  ): Promise<AccountResponse> {
+    const chainConfig = this.chainConfigs.get(chainKey);
+    if (!chainConfig) {
+      throw new Error(`Chain configuration not found for: ${chainKey}`);
+    }
+    const url = `${chainConfig.restEndpoint}/cosmos/auth/v1beta1/accounts/${address}`;
+
+    this.log(`[CosmosRestClient] Fetching account sequence for ${address}`);
 
     return this.makeRequest(
       url,
