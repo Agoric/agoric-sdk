@@ -186,6 +186,14 @@ test('resolver creates correct types for different TxTypes', async t => {
     500n,
   );
 
+  // Test MAKE_ACCOUNT transaction without amount
+  client.registerTransaction(
+    TxType.MAKE_ACCOUNT,
+    'eip155:42161:0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+    undefined,
+    '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+  );
+
   await eventLoopIteration();
 
   t.deepEqual(
@@ -219,7 +227,19 @@ test('resolver creates correct types for different TxTypes', async t => {
       status: TxStatus.PENDING,
       amount: 500n,
     },
-    'NOBLE_WITHDRAW transaction has correct type and includes amount',
+    'CCTP_TO_AGORIC transaction has correct type and includes amount',
+  );
+
+  t.deepEqual(
+    nodeUpdates['pendingTxs.tx3'],
+    {
+      type: TxType.MAKE_ACCOUNT,
+      destinationAddress:
+        'eip155:42161:0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+      status: TxStatus.PENDING,
+      expectedAddr: '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+    },
+    'MAKE_ACCOUNT transaction has correct type and excludes amount',
   );
 });
 
